@@ -260,7 +260,7 @@ fun SettingsScreen(
                 .clickable {
                   if (!isActive) {
                     viewModel.switchProfile(profile.id)
-                    Toast.makeText(context, "Cambiado a perfil: ${profile.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Cambiado a perfil: ${profile.name.ifBlank { "Sin nombre" }}", Toast.LENGTH_SHORT).show()
                   }
                 }
                 .testTag("profile_chip_${profile.id}")
@@ -273,7 +273,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                   Text(
-                    text = profile.name,
+                    text = profile.name.ifBlank { "Sin nombre" },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                     color = if (isActive) TealPrimary else MaterialTheme.colorScheme.onSurface
@@ -495,7 +495,7 @@ fun SettingsScreen(
         }
 
         Text(
-          text = "Ajusta cómo la aplicación adapta el nivel de desafío y estímulo a las capacidades y objetivos de ${userSettings.name}.",
+          text = "Ajusta cómo la aplicación adapta el nivel de desafío y estímulo a tus capacidades y objetivos.",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -1503,7 +1503,7 @@ fun SettingsScreen(
       onDismissRequest = { profileToDelete = null },
       title = { Text("¿Eliminar perfil?") },
       text = {
-        Text("Se eliminarán las preferencias y la configuración de dificultad de '${profile.name}' guardadas en Room.")
+        Text("Se eliminarán las preferencias y la configuración de dificultad de '${profile.name.ifBlank { "Sin nombre" }}' guardadas en Room.")
       },
       confirmButton = {
         Button(

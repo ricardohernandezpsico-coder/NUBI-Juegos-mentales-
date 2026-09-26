@@ -127,7 +127,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
             contentAlignment = Alignment.Center
           ) { Text(userSettings.avatar, fontSize = 26.sp) }
         }
-        Text(userSettings.name, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
+        Text(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
         Text(
           text = "Liga ${tier.tierName}" + (index?.let { "  ·  nivel ${levelWord(it / 100f).lowercase()}" } ?: ""),
           color = Color(0xFFB4BFEA),

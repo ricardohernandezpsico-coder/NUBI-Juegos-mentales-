@@ -667,6 +667,11 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       repository.resetData()
       _activeGame.value = null
       _lastResult.value = null
+      _promotion.value = null
+      _achievementQueue.value = emptyList()
+      _baselineRun.value = null
+      pausedGame = null
+      _currentTab.value = AppTab.HOY
     }
   }
 

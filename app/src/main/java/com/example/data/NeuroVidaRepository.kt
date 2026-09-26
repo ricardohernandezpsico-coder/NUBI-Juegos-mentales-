@@ -60,7 +60,7 @@ class NeuroVidaRepository(
     .stateIn(
       scope = repositoryScope,
       started = SharingStarted.Eagerly,
-      initialValue = defaultSeedHistory()
+      initialValue = emptyList()
     )
 
   // 3. Reactive Game Levels Map from Room
@@ -335,51 +335,18 @@ class NeuroVidaRepository(
     }
   }
 
+  /**
+   * Instalación nueva (o después de "Borrar datos"): un perfil vacío (sin nombre ni rango de edad, así se abre el
+   * onboarding) y los 9 juegos en cero. Nada de historial de ejemplo: todo lo que se ve (logros, ligas, camino de
+   * Hoy, mapa) sale de partidas reales.
+   */
   private suspend fun initializeDatabaseDefaults() {
-    // 1. User Profile in Room
-    val existingProfiles = userProfileDao.getAllProfilesSync()
-    if (existingProfiles.isEmpty()) {
-      userProfileDao.insertOrUpdate(
-        UserProfileEntity(
-          name = "Ana",
-          avatar = "🧠",
-          isActive = true,
-          weeklyGoal = 4,
-          difficultyMode = "ADAPTIVE",
-          difficultyMemoria = 2,
-          difficultyAtencion = 2,
-          difficultyRazonamiento = 2,
-          difficultyLenguaje = 2,
-          difficultyCalculo = 2,
-          difficultyVelocidad = 2,
-          cognitiveAssistance = true
-        )
-      )
+    if (userProfileDao.getAllProfilesSync().isEmpty()) {
+      userProfileDao.insertOrUpdate(UserProfileEntity(isActive = true, weeklyGoal = 4, difficultyMode = "ADAPTIVE"))
     }
 
-    // 2. Game Results in Room
-    if (gameResultDao.getCount() == 0) {
-      gameResultDao.insertAll(defaultSeedHistory().map { it.toEntity() })
-    }
-
-    // 3. Game Progress in Room
-    val existingProgress = gameProgressDao.getAllProgressSync()
-    if (existingProgress.isEmpty()) {
-      val initialProgress = GameRegistry.allGames.map { game ->
-        GameProgressEntity(
-          gameId = game.id,
-          currentLevel = 1,
-          highestScore = when (game.id) {
-            "calculo" -> 80
-            "parejas" -> 85
-            "stroop" -> 90
-            else -> 0
-          },
-          totalGamesPlayed = if (listOf("calculo", "parejas", "stroop").contains(game.id)) 1 else 0,
-          lastPlayedTimestamp = System.currentTimeMillis()
-        )
-      }
-      gameProgressDao.insertAll(initialProgress)
+    if (gameProgressDao.getAllProgressSync().isEmpty()) {
+      gameProgressDao.insertAll(GameRegistry.allGames.map { GameProgressEntity(gameId = it.id, currentLevel = 1) })
     }
 
     // 4. Domain mastery: sin filas nuevas que crear (arranca en 0 para los 6,
@@ -486,16 +453,6 @@ class NeuroVidaRepository(
       )
       userProfileDao.insertOrUpdate(updated)
     }
-  }
-
-  private fun defaultSeedHistory(): List<GamePlayResult> {
-    val now = System.currentTimeMillis()
-    val day = 24 * 60 * 60 * 1000L
-    return listOf(
-      GamePlayResult(gameId = "calculo", score = 80, correctAnswers = 8, totalTrials = 10, timed = false, level = 1, timestamp = now - 2 * day),
-      GamePlayResult(gameId = "parejas", score = 85, correctAnswers = 9, totalTrials = 10, timed = false, level = 1, timestamp = now - 1 * day),
-      GamePlayResult(gameId = "stroop", score = 90, correctAnswers = 9, totalTrials = 10, timed = false, level = 1, timestamp = now - 3 * 3600 * 1000L)
-    )
   }
 
   private fun pickSessionQueue(history: List<GamePlayResult>): List<String> {
@@ -734,6 +691,15 @@ class NeuroVidaRepository(
     domainMasteryDao.deleteAll()
     claimedWeeklyChallengeDao.deleteAll()
     _claimedChallenges.value = emptySet()
+    // Lo guardado fuera de Room también (si no, tras borrar quedaban logros, ascensos y el mapa de antes).
+    leaguePrefs.edit().clear().apply()
+    _leagueEvents.value = emptyList()
+    achievementPrefs.edit().clear().apply()
+    _achievementUnlocks.value = emptyMap()
+    profilePrefs.edit().clear().apply()
+    _education.value = null
+    _goals.value = emptySet()
+    _baseline.value = null
     initializeDatabaseDefaults()
   }
 }

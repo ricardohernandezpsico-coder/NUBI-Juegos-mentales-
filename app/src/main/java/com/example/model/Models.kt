@@ -324,7 +324,7 @@ data class GameRankInfo(
 
 data class UserSettings(
   val id: Long = 1L,
-  val name: String = "Ana",
+  val name: String = "",
   val avatar: String = "🧠",
   val isActive: Boolean = true,
   val weeklyGoal: Int = 4, // days per week
