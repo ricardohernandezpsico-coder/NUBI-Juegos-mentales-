@@ -217,8 +217,8 @@ namespace NeuroVida.Games.Anagramas
                 GameFeel.Correct(_streak);
                 StartCoroutine(PlayCelebrationTone());
                 StartCoroutine(Flash(GoodColor, 0.08f, 0.28f));
-                StartCoroutine(UiFx.SparkBurst(_fxRect, SlotsCenter(), Accent, 16, _slotSize * n * 0.55f, 46f, 0.7f));
-                StartCoroutine(UiFx.RingBurst(_fxRect, SlotsCenter(), Color.white, _slotSize * 1.5f, _slotSize * n * 0.9f, 0.6f));
+                StartCoroutine(UiFx.SparkBurst(_fxRect, SlotsCenter(), Accent, 16, _slotSize * Mathf.Min(n, 6) * 0.55f, 46f, 0.7f));
+                StartCoroutine(UiFx.RingBurst(_fxRect, SlotsCenter(), Color.white, _slotSize * 1.5f, _slotSize * Mathf.Min(n, 6) * 0.9f, 0.6f));
                 yield return StartCoroutine(JumpWave());
 
                 var change = _dda.Register(true);
@@ -784,34 +784,45 @@ namespace NeuroVida.Games.Anagramas
             _toast.SetTopOffset(0f);
         }
 
-        /// <summary>Casillas arriba y banco de fichas debajo, según el largo de la palabra actual.</summary>
+        /// <summary>Casillas arriba y banco de fichas debajo, según el largo de la palabra actual.
+        /// Palabras de 7+ letras: casillas Y fichas en dos filas (antes las casillas seguian en una sola fila y,
+        /// con 11 letras, medían ~74 px mientras la ficha no bajaba de 90: fichas vecinas se pisaban).</summary>
         private void LayoutWord(int n)
         {
             float gapSlot = 14f;
-            _slotSize = Mathf.Min(150f, (_contentW - (n - 1) * gapSlot) / n);
+            int slotRows = n <= 6 ? 1 : 2;
+            int perRowSlots = slotRows == 1 ? n : Mathf.CeilToInt(n / 2f);
+            _slotSize = Mathf.Min(150f, (_contentW - (perRowSlots - 1) * gapSlot) / perRowSlots);
+            float slotsBlockH = slotRows * _slotSize + (slotRows - 1) * gapSlot;
+
             int perRow = n <= 6 ? n : Mathf.CeilToInt(n / 2f);
             int rows = n <= 6 ? 1 : 2;
             float gapTile = 18f;
-            float availableH = _actionsTopY - _yAfterBanner - _slotSize - 150f;
+            float availableH = _actionsTopY - _yAfterBanner - slotsBlockH - 150f;
             _tileSize = Mathf.Clamp(Mathf.Min((_contentW - (perRow - 1) * gapTile) / perRow, (availableH - (rows - 1) * gapTile) / rows), 90f, 175f);
+            // Una ficha ya colocada nunca debe pisar a la de la casilla vecina.
+            _tileSize = Mathf.Min(_tileSize, _slotSize + gapSlot - 6f);
 
             // Filas de casillas y de banco centradas en el espacio disponible.
-            float blockH = _slotSize + 110f + rows * _tileSize + (rows - 1) * gapTile;
+            float blockH = slotsBlockH + 110f + rows * _tileSize + (rows - 1) * gapTile;
             float free = Mathf.Max(0f, _actionsTopY - _yAfterBanner - blockH - 30f);
-            float slotsY = _yAfterBanner + free * 0.35f + _slotSize / 2f;
-            _slotsCenterY = slotsY;
+            float slotsTop = _yAfterBanner + free * 0.35f;
+            _slotsCenterY = slotsTop + slotsBlockH / 2f;
 
             for (int i = 0; i < n; i++)
             {
-                float x = (i - (n - 1) / 2f) * (_slotSize + gapSlot);
-                _slotPositions[i] = new Vector2(x, -slotsY);
+                int row = i / perRowSlots, col = i % perRowSlots;
+                int inRow = row == 0 ? Mathf.Min(perRowSlots, n) : n - perRowSlots;
+                float x = (col - (inRow - 1) / 2f) * (_slotSize + gapSlot);
+                float y = slotsTop + row * (_slotSize + gapSlot) + _slotSize / 2f;
+                _slotPositions[i] = new Vector2(x, -y);
                 var r = _slotRects[i];
                 r.sizeDelta = new Vector2(_slotSize, _slotSize);
                 r.anchoredPosition = _slotPositions[i];
                 r.localScale = Vector3.one;
             }
 
-            float poolTop = slotsY + _slotSize / 2f + 110f + _tileSize / 2f;
+            float poolTop = slotsTop + slotsBlockH + 110f + _tileSize / 2f;
             for (int i = 0; i < n; i++)
             {
                 int row = i / perRow, col = i % perRow;
