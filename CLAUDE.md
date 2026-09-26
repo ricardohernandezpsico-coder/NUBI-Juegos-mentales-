@@ -106,7 +106,8 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 - Última prueba de Ricardo en su teléfono: después de la limpieza del 26-sep (tramos 1 y 2), todo OK.
 - En curso: depuración para fijar el punto base `v0.1-base` (tramo 3: esta memoria + READMEs; tramo 4:
-  verificación completa, prueba manual guiada, juntar la rama con `main` y marcar la versión).
+  verificación completa, prueba manual con [`docs/prueba-manual.md`](docs/prueba-manual.md), juntar la rama con `main` y
+  marcar la versión).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
   re-chequeo mensual del punto de partida; tutorial de primera vez por juego; marca ✓/✗ de arcilla sobre la
   respuesta; alinear Secuencia y Parejas con el DDA común; calibrar el DDA y la referencia de percentiles con datos.
