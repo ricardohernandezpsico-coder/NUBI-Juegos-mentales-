@@ -44,6 +44,9 @@ namespace NeuroVida.Games.Anagramas
 
         private sealed class Letter
         {
+            /// <summary>Contenedor: se mueve (banco -> casilla) y se achica al tamaño de la casilla.</summary>
+            public RectTransform Holder;
+            /// <summary>La ficha propia (hija del contenedor): rebote, hundido al tocar y fundido.</summary>
             public RectTransform Rect;
             public Image Image;
             public Text Label;
@@ -81,6 +84,8 @@ namespace NeuroVida.Games.Anagramas
         private readonly List<Image> _slotImages = new List<Image>();
         private Button _backButton, _hintButton, _skipButton;
         private float _slotSize, _tileSize;
+        /// <summary>Escala de una ficha ya colocada (casilla / ficha): 1 en palabras cortas, ~0,55 con 11 letras.</summary>
+        private float _slotShrink = 1f;
         private float _slotsCenterY;
         private Vector2[] _poolPositions = new Vector2[MaxLetters];
         private Vector2[] _slotPositions = new Vector2[MaxLetters];
@@ -90,8 +95,11 @@ namespace NeuroVida.Games.Anagramas
         {
             float k = 1f - Mathf.Exp(-16f * GameClock.DeltaTime);
             foreach (var l in _letters)
-                if (l != null && l.Rect != null)
-                    l.Rect.anchoredPosition = Vector2.Lerp(l.Rect.anchoredPosition, l.Target, k);
+            {
+                if (l == null || l.Holder == null) continue;
+                l.Holder.anchoredPosition = Vector2.Lerp(l.Holder.anchoredPosition, l.Target, k);
+                l.Holder.localScale = Vector3.Lerp(l.Holder.localScale, Vector3.one * (l.InSlot ? _slotShrink : 1f), k);
+            }
         }
 
         // ------------------------------------------------------------------ sesión
@@ -705,18 +713,26 @@ namespace NeuroVida.Games.Anagramas
 
         private Letter CreateLetter(char c, int poolIndex)
         {
-            var go = new GameObject("Letter_" + c + "_" + poolIndex);
-            go.transform.SetParent(_boardRect, false);
+            var holderGo = new GameObject("Letter_" + c + "_" + poolIndex);
+            holderGo.transform.SetParent(_boardRect, false);
+            var holder = holderGo.AddComponent<RectTransform>();
+            holder.anchorMin = holder.anchorMax = new Vector2(0.5f, 1f);
+            holder.pivot = new Vector2(0.5f, 0.5f);
+            holder.sizeDelta = new Vector2(_tileSize / ShapeScale, _tileSize / ShapeScale);
+
+            var go = new GameObject("Tile");
+            go.transform.SetParent(holder, false);
             var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(_tileSize / ShapeScale, _tileSize / ShapeScale);
             var img = go.AddComponent<Image>();
             img.sprite = TileSprites.Get();
             img.color = TileCream;
             img.alphaHitTestMinimumThreshold = 0.1f;
 
-            var letter = new Letter { Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex] };
+            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex] };
             var button = go.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => OnLetterTapped(letter));
@@ -732,14 +748,14 @@ namespace NeuroVida.Games.Anagramas
             letter.Label.text = c.ToString();
 
             // Las fichas nacen en su lugar del banco (sin volar desde el origen).
-            rect.anchoredPosition = letter.Target;
+            holder.anchoredPosition = letter.Target;
             rect.localScale = Vector3.zero;
             return letter;
         }
 
         private void ClearLetters()
         {
-            foreach (var l in _letters) if (l != null && l.Rect != null) Destroy(l.Rect.gameObject);
+            foreach (var l in _letters) if (l != null && l.Holder != null) Destroy(l.Holder.gameObject);
             _letters.Clear();
             _assembly.Clear();
         }
@@ -784,16 +800,19 @@ namespace NeuroVida.Games.Anagramas
             _toast.SetTopOffset(0f);
         }
 
-        /// <summary>Casillas arriba y banco de fichas debajo, según el largo de la palabra actual.</summary>
+        /// <summary>Casillas arriba (siempre UNA fila, la palabra se lee corrida) y banco de fichas debajo.
+        /// Las fichas del banco son grandes para tocar rapido; al colocarse se achican hasta el tamaño de su casilla
+        /// (<see cref="_slotShrink"/>), asi que nunca se pisan aunque la palabra tenga 11 letras.</summary>
         private void LayoutWord(int n)
         {
-            float gapSlot = 14f;
+            float gapSlot = n <= 7 ? 14f : 8f;
             _slotSize = Mathf.Min(150f, (_contentW - (n - 1) * gapSlot) / n);
             int perRow = n <= 6 ? n : Mathf.CeilToInt(n / 2f);
             int rows = n <= 6 ? 1 : 2;
             float gapTile = 18f;
             float availableH = _actionsTopY - _yAfterBanner - _slotSize - 150f;
             _tileSize = Mathf.Clamp(Mathf.Min((_contentW - (perRow - 1) * gapTile) / perRow, (availableH - (rows - 1) * gapTile) / rows), 90f, 175f);
+            _slotShrink = Mathf.Min(1f, _slotSize / _tileSize);
 
             // Filas de casillas y de banco centradas en el espacio disponible.
             float blockH = _slotSize + 110f + rows * _tileSize + (rows - 1) * gapTile;
