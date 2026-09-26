@@ -81,8 +81,12 @@ def draw(ic,gid):
         ic.clay(drop(30,44,20),CORAL,gloss=True)
     elif gid=='cambiochip':
         ic.clay(rrect(24,24,52,52,12),CREAM)
-        ic.stroke([(50,67),(50,33)],INK,13); ic.stroke([(39.5,39.5),(50,33),(60.5,39.5)],INK,13)
-        ic.stroke([(50,67),(50,33)],CORAL,8); ic.stroke([(39.5,39.5),(50,33),(60.5,39.5)],CORAL,8)
+        ic.clay([(44.4,66.8),(55.6,66.8),(50.0,79.4)],SUN,border=3.5,shadow=False)
+        ic.clay([(41.6,50.0),(31.8,64.0),(31.8,69.6),(41.6,64.0)],CORAL,border=3.5,shadow=False)
+        ic.clay([(58.4,50.0),(68.2,64.0),(68.2,69.6),(58.4,64.0)],CORAL,border=3.5,shadow=False)
+        ic.clay([(40.2,66.8),(40.2,41.6),(50.0,22.0),(59.8,41.6),(59.8,66.8)],CREAM,border=3.5,shadow=False)
+        ic.clay([(43.7,34.6),(50.0,22.0),(56.3,34.6)],CORAL,border=3.5,shadow=False)
+        ic.clay(circ(50,47.2,5.0),SKY,border=2.5,shadow=False)
         for st in (200,20):
             arc=[(50+44*math.cos(math.radians(st+70*i/20)),50+44*math.sin(math.radians(st+70*i/20))) for i in range(21)]
             e=math.radians(st+70); tip=(50+44*math.cos(e),50+44*math.sin(e)); t=(-math.sin(e),math.cos(e)); n=(math.cos(e),math.sin(e)); h=9

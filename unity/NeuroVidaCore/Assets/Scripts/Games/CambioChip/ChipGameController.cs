@@ -11,9 +11,9 @@ using static NeuroVida.Games.Shared.UiKit;
 namespace NeuroVida.Games.CambioChip
 {
     /// <summary>
-    /// "Cambio de Chip" en Unity (flexibilidad cognitiva): una ficha con una flecha aparece en
-    /// uno de los cuatro bordes de la arena; según la regla activa hay que tocar HACIA DÓNDE
-    /// APUNTA la flecha o DÓNDE ESTÁ la ficha. La regla cambia cada cierto número de ensayos
+    /// "Cambio de Chip" en Unity (flexibilidad cognitiva): una ficha con una nave de arcilla
+    /// (<see cref="ChipShipSprite"/>) aparece en uno de los cuatro bordes de la arena; según la regla
+    /// activa hay que tocar HACIA DÓNDE APUNTA la nave o DÓNDE ESTÁ la ficha. La regla cambia cada cierto número de ensayos
     /// (y a veces por sorpresa), y el cambio se ve: el cartel se voltea y suena un aviso.
     /// Reglas de <c>CambioChipGame.kt</c> (ver <see cref="ChipContract"/>). Modo Reto = 60 s
     /// sin límite de ensayos; Precisión = 12 ensayos. Telemetría: reusa <see cref="StroopTelemetry"/>.
@@ -35,7 +35,6 @@ namespace NeuroVida.Games.CambioChip
         private static readonly Color AmberColor = new Color(0xF5 / 255f, 0x9E / 255f, 0x0B / 255f);
         private static readonly Color ArenaFill = new Color(0x1B / 255f, 0x27 / 255f, 0x40 / 255f);
         private static readonly Color ChipColor = new Color(0xF8 / 255f, 0xFA / 255f, 0xFC / 255f);
-        private static readonly Color ChipArrow = new Color(0x0F / 255f, 0x17 / 255f, 0x2A / 255f);
         // Orden de los botones = orden de ChipDirection: Up, Down, Left, Right.
         private static readonly Color[] PadColors =
         {
@@ -198,10 +197,10 @@ namespace NeuroVida.Games.CambioChip
 
             _pill.Set(_trial.Rule == ChipRule.Direction ? "Toca hacia dónde APUNTA" : "Toca dónde ESTÁ", _ruleAccent);
 
-            // La ficha aparece en su borde y la flecha se orienta.
+            // La ficha aparece en su borde y la nave se orienta.
             Vector2 slot = SlotPosition(_trial.Position);
             _chipRect.anchoredPosition = slot;
-            _chipArrowImage.rectTransform.localRotation = Rotation(_trial.Pointing);
+            _chipArrowImage.sprite = ChipShipSprite.Get(_trial.Pointing); // una por dirección: la sombra siempre abajo
             _chipImage.color = ChipColor;
             _arenaBorder.color = new Color(_ruleAccent.r, _ruleAccent.g, _ruleAccent.b, 0.95f);
             _arenaRect.anchoredPosition = _arenaRestPos;
@@ -391,17 +390,6 @@ namespace NeuroVida.Games.CambioChip
             }
         }
 
-        private static Quaternion Rotation(ChipDirection d)
-        {
-            switch (d)
-            {
-                case ChipDirection.Up: return Quaternion.identity;
-                case ChipDirection.Down: return Quaternion.Euler(0f, 0f, 180f);
-                case ChipDirection.Left: return Quaternion.Euler(0f, 0f, 90f);
-                default: return Quaternion.Euler(0f, 0f, -90f);
-            }
-        }
-
         private Vector2 SlotPosition(ChipDirection d)
         {
             float reach = _arenaSize * 0.5f - _chipSize * 0.5f - _arenaSize * 0.10f;
@@ -415,11 +403,13 @@ namespace NeuroVida.Games.CambioChip
             bool dir = rule == ChipRule.Direction;
             _ruleAccent = dir ? DirAccent : PosAccent;
             _bannerBg.color = Color.Lerp(new Color(0.09f, 0.13f, 0.24f, 1f), _ruleAccent, 0.32f);
-            _bannerDisc.color = _ruleAccent;
-            _bannerArrow.gameObject.SetActive(dir);
-            _bannerRing.gameObject.SetActive(!dir);
+            // La insignia (flecha / marcador de ubicación) distingue la regla por forma, no solo por color.
+            _bannerDisc.sprite = RuleBadgeSprite.Get(dir ? RuleBadgeSprite.Kind.Direction : RuleBadgeSprite.Kind.Position);
+            _bannerDisc.color = Color.white;
+            _bannerArrow.gameObject.SetActive(false);
+            _bannerRing.gameObject.SetActive(false);
             _bannerText.text = dir ? "DIRECCIÓN" : "POSICIÓN";
-            _bannerSub.text = dir ? "Toca hacia dónde apunta la flecha" : "Toca dónde está la ficha";
+            _bannerSub.text = dir ? "Toca hacia dónde apunta la nave" : "Toca dónde está la nave";
             _labelBg.color = _ruleAccent;
             _chipLabel.text = dir ? "DIRECCIÓN" : "POSICIÓN";
             _arenaBorder.color = new Color(_ruleAccent.r, _ruleAccent.g, _ruleAccent.b, 0.95f);
@@ -527,16 +517,17 @@ namespace NeuroVida.Games.CambioChip
             _bannerBg.sprite = RoundedRectSprite.Get(64);
             _bannerBg.type = Image.Type.Sliced;
             _bannerBg.raycastTarget = false;
+            NeuroStyle.ClayFrame(_bannerBg, 4f, 8f);
 
             var discGo = new GameObject("Icon");
             discGo.transform.SetParent(go.transform, false);
             var dr = discGo.AddComponent<RectTransform>();
             dr.anchorMin = dr.anchorMax = new Vector2(0f, 0.5f);
             dr.pivot = new Vector2(0.5f, 0.5f);
-            dr.sizeDelta = new Vector2(96f, 96f);
-            dr.anchoredPosition = new Vector2(72f, 0f);
+            dr.sizeDelta = new Vector2(112f, 112f);
+            dr.anchoredPosition = new Vector2(74f, 0f);
             _bannerDisc = discGo.AddComponent<Image>();
-            _bannerDisc.sprite = DiscSprite.Get();
+            _bannerDisc.sprite = RuleBadgeSprite.Get(RuleBadgeSprite.Kind.Direction); // insignia: flecha / marcador
             _bannerDisc.raycastTarget = false;
 
             var arrowGo = new GameObject("Arrow");
@@ -632,7 +623,7 @@ namespace NeuroVida.Games.CambioChip
             sr.offsetMin = sr.offsetMax = Vector2.zero;
             var shImg = shadowGo.AddComponent<Image>();
             shImg.sprite = RadialGlowSprite.Get();
-            shImg.color = new Color(0f, 0f, 0f, 0.5f);
+            shImg.color = new Color(0f, 0f, 0f, 0.3f);
             shImg.raycastTarget = false;
 
             var borderGo = new GameObject("Border");
@@ -642,6 +633,7 @@ namespace NeuroVida.Games.CambioChip
             _arenaBorder.sprite = RoundedRectSprite.Get(56);
             _arenaBorder.type = Image.Type.Sliced;
             _arenaBorder.raycastTarget = false;
+            NeuroStyle.ClayFrame(_arenaBorder, 5f, 12f);
 
             var fillGo = new GameObject("Fill");
             fillGo.transform.SetParent(root.transform, false);
@@ -672,7 +664,7 @@ namespace NeuroVida.Games.CambioChip
                 _slotRects.Add(r);
             }
 
-            // La ficha: cuadrado de arcilla claro con la flecha oscura.
+            // La ficha: cuadrado de arcilla claro con una nave de arcilla que apunta (ver ChipShipSprite).
             var chipGo = new GameObject("Chip");
             chipGo.transform.SetParent(root.transform, false);
             _chipRect = chipGo.AddComponent<RectTransform>();
@@ -687,12 +679,12 @@ namespace NeuroVida.Games.CambioChip
             var arrowGo = new GameObject("Arrow");
             arrowGo.transform.SetParent(chipGo.transform, false);
             var ar = arrowGo.AddComponent<RectTransform>();
-            ar.anchorMin = new Vector2(0.25f, 0.27f);
-            ar.anchorMax = new Vector2(0.75f, 0.77f);
+            ar.anchorMin = new Vector2(0.12f, 0.15f);
+            ar.anchorMax = new Vector2(0.88f, 0.91f);
             ar.offsetMin = ar.offsetMax = Vector2.zero;
             _chipArrowImage = arrowGo.AddComponent<Image>();
-            _chipArrowImage.sprite = ArrowSprite.Get();
-            _chipArrowImage.color = ChipArrow;
+            _chipArrowImage.sprite = ChipShipSprite.Get(ChipDirection.Up);
+            _chipArrowImage.color = Color.white;
             _chipArrowImage.raycastTarget = false;
 
             // Etiqueta de la regla montada sobre el borde superior de la arena.
@@ -707,6 +699,7 @@ namespace NeuroVida.Games.CambioChip
             _labelBg.sprite = RoundedRectSprite.Get(64);
             _labelBg.type = Image.Type.Sliced;
             _labelBg.raycastTarget = false;
+            NeuroStyle.ClayFrame(_labelBg, 4f, 7f);
             _chipLabel = MakeText(labelGo.transform, "LabelText", 52, TextAnchor.MiddleCenter, new Color(0.06f, 0.09f, 0.16f), 0f, 0f);
             BestFit(_chipLabel, 30);
         }
@@ -736,12 +729,10 @@ namespace NeuroVida.Games.CambioChip
                 ar.anchorMin = new Vector2(0.23f, 0.25f);
                 ar.anchorMax = new Vector2(0.77f, 0.79f);
                 ar.offsetMin = ar.offsetMax = Vector2.zero;
-                ar.localRotation = Rotation(arrowRotations[i]);
                 var arrow = arrowGo.AddComponent<Image>();
-                arrow.sprite = ArrowSprite.Get();
+                arrow.sprite = ClayArrowSprite.Get((int)arrowRotations[i]); // flecha de arcilla, una por dirección
                 arrow.color = Color.white;
                 arrow.raycastTarget = false;
-                UiFonts.AddSoftShadow(arrowGo, 3f, 0.35f);
 
                 _padRects.Add(rect);
                 _padImages.Add(img);

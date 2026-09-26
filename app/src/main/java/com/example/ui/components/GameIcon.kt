@@ -43,7 +43,7 @@ import kotlin.math.sin
  * - Parejas Ocultas: una carta boca abajo y otra dada vuelta.
  * - Ruta del Tesoro: cristales estelares sobre una roca lunar (los tesoros espaciales del juego).
  * - Tinta o Palabra: gota de tinta y tarjeta con palabra.
- * - Cambio de Chip: ficha con flecha y dos flechas de cambio.
+ * - Cambio de Chip: ficha con una nave que apunta y dos flechas de cambio (como la nave del juego).
  * - Detective de Series: lupa sobre una serie que crece.
  * - Anagramas: dos fichas de letras.
  * - Cálculo Sereno: + − × =.
@@ -119,7 +119,13 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
     }
     "cambiochip" -> {
       clay(roundRect(24f, 24f, 52f, 52f, 12f), Cream)
-      arrow(Offset(50f, 50f), 17f, Clay.Coral)
+      // Nave que apunta arriba: llama, aletas, casco con punta y ventanilla.
+      clay(poly(44.4f, 66.8f, 55.6f, 66.8f, 50.0f, 79.4f), Clay.Sun, border = 3.5f, shadow = false)
+      clay(poly(41.6f, 50.0f, 31.8f, 64.0f, 31.8f, 69.6f, 41.6f, 64.0f), Clay.Coral, border = 3.5f, shadow = false)
+      clay(poly(58.4f, 50.0f, 68.2f, 64.0f, 68.2f, 69.6f, 58.4f, 64.0f), Clay.Coral, border = 3.5f, shadow = false)
+      clay(poly(40.2f, 66.8f, 40.2f, 41.6f, 50.0f, 22.0f, 59.8f, 41.6f, 59.8f, 66.8f), Cream, border = 3.5f, shadow = false)
+      clay(poly(43.7f, 34.6f, 50.0f, 22.0f, 56.3f, 34.6f), Clay.Coral, border = 3.5f, shadow = false)
+      clay(circle(Offset(50f, 47.2f), 5.0f), Clay.Sky, border = 2.5f, shadow = false)
       curvedArrow(Offset(50f, 50f), 44f, 200f, 70f, Clay.Sky)
       curvedArrow(Offset(50f, 50f), 44f, 20f, 70f, Clay.Sky)
     }

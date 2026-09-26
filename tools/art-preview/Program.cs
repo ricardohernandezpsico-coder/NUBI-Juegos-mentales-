@@ -1,11 +1,15 @@
 using System;
 using System.IO;
+using NeuroVida.Games.Anagramas;
+using NeuroVida.Games.Calculo;
+using NeuroVida.Games.CambioChip;
 using NeuroVida.Games.Comparacion;
 using NeuroVida.Games.Parejas;
 using NeuroVida.Games.RutaTesoro;
 using NeuroVida.Games.Secuencia;
 using NeuroVida.Games.Series;
 using NeuroVida.Games.Shared;
+using NeuroVida.Games.Stroop;
 using UnityEngine;
 
 /// Vuelca cada sprite procedural a <carpeta>/<nombre>.raw (int32 lado + RGBA, fila 0 = abajo).
@@ -46,6 +50,13 @@ internal static class Program
         Dump("magnifier", MagnifierSprite.Get());
         Dump("tile", TileSprites.Get());
         DumpRect("surface", LunarSurfaceSprite.Render(ClayRaster.Hex(0x9C94D6)), LunarSurfaceSprite.Width, LunarSurfaceSprite.Height);
+        foreach (RuleBadgeSprite.Kind k in Enum.GetValues(typeof(RuleBadgeSprite.Kind))) Dump("badge_" + k, RuleBadgeSprite.Get(k));
+        for (int d = 0; d < 4; d++) Dump("arrow_" + d, ClayArrowSprite.Get(d));
+        for (int d = 0; d < 4; d++) Dump("ship_" + d, ChipShipSprite.Get((ChipDirection)d));
+        for (int v = 0; v < 2; v++) Dump("lily_" + v, PondSprites.LilyPad(v));
+        Dump("slot", AnagramSprites.Slot());
+        foreach (AnagramSprites.Icon ic in Enum.GetValues(typeof(AnagramSprites.Icon))) Dump("icon_" + ic, AnagramSprites.ActionIcon(ic));
+        Dump("screw", NeonSignSprites.Screw());
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)
             {

@@ -85,7 +85,7 @@ object GameRegistry {
       title = "Cambio de Chip",
       domain = DomainType.ATENCION,
       subtitle = "Flexibilidad cognitiva",
-      instruction = "Sigue la regla del cartel: responde hacia dónde apunta la flecha (DIRECCIÓN) o en qué borde está (POSICIÓN).",
+      instruction = "Sigue la regla del cartel: responde hacia dónde apunta la nave (DIRECCIÓN) o en qué borde está (POSICIÓN).",
       iconEmoji = "🔄"
     ),
     GameDefinition(

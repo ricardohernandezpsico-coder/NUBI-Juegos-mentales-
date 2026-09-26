@@ -28,6 +28,13 @@
     <Compile Include="$(Src)/Secuencia/TileSprites.cs" />
     <Compile Include="$(Src)/Secuencia/TilePalette.cs" />
     <Compile Include="$(Src)/Shared/LunarSurfaceSprite.cs" />
+    <Compile Include="$(Src)/Shared/RuleBadgeSprite.cs" />
+    <Compile Include="$(Src)/Shared/ClayArrowSprite.cs" />
+    <Compile Include="$(Src)/CambioChip/ChipShipSprite.cs" />
+    <Compile Include="$(Src)/CambioChip/ChipContract.cs" />
+    <Compile Include="$(Src)/Calculo/PondSprites.cs" />
+    <Compile Include="$(Src)/Anagramas/AnagramSprites.cs" />
+    <Compile Include="$(Src)/Stroop/NeonSignSprites.cs" />
     <Compile Include="$(Src)/Comparacion/CountStarSprite.cs" />
     <Compile Include="$(Src)/Series/MagnifierSprite.cs" />
   </ItemGroup>

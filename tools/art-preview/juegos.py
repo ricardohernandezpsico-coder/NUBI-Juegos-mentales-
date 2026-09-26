@@ -1,7 +1,9 @@
 """Maquetas de pantalla (aproximadas en la disposición, exactas en el arte) de Ruta del Tesoro, Secuencia,
 Comparación y Series, armadas con los .raw que vuelca ArtPreview.
 
-Uso: python3 tools/art-preview/juegos.py <raw> [--out docs/previews]   ->  arte-juegos.png
+Uso: python3 tools/art-preview/juegos.py <raw> [--out docs/previews]
+     ->  arte-juegos.png (Ruta del Tesoro, Secuencia, Comparación, Series)
+         arte-juegos-2.png (Tinta o Palabra, Cambio de Chip, Cálculo, Anagramas)
 """
 import argparse
 import os
@@ -177,6 +179,133 @@ def series(raw):
     return im
 
 
+def clay_rect(im, box, fill, r=28, border=5, drop=10):
+    d = ImageDraw.Draw(im)
+    x0, y0, x1, y1 = box
+    d.rounded_rectangle((x0 - border, y0 - border + drop, x1 + border, y1 + border + drop), r + border, fill=INK)
+    d.rounded_rectangle((x0 - border, y0 - border, x1 + border, y1 + border), r + border, fill=INK)
+    d.rounded_rectangle(box, r, fill=fill)
+
+
+def banner(im, raw, badge, word, sub, accent):
+    base = (0x17, 0x21, 0x3D)
+    col = tuple(int(base[i] + (accent[i] - base[i]) * 0.32) for i in range(3))
+    clay_rect(im, (30, 110, W - 30, 205), col, r=30, border=3, drop=6)
+    put(im, load(f'{raw}/badge_{badge}.raw'), 30 + 38, 157, 58)
+    d = ImageDraw.Draw(im)
+    d.text((110, 142), word, font=ImageFont.truetype(FB, 40), fill=(255, 255, 255), anchor='lm', stroke_width=1, stroke_fill=INK)
+    d.text((110, 182), sub, font=ImageFont.truetype(FB, 17), fill=(235, 238, 255), anchor='lm')
+
+
+def stroop(raw):
+    im = night(5)
+    glow(im, 80, 300, 180, (0xFF, 0x6B, 0x4A), 40)
+    glow(im, 470, 700, 180, (0xB8, 0xA4, 0xFF), 45)
+    d = ImageDraw.Draw(im)
+    title(d, 'Tinta o Palabra')
+    banner(im, raw, 'Ink', 'TINTA', 'Toca el color con que está escrita', (0x60, 0xA5, 0xFA))
+    accent = (0x60, 0xA5, 0xFA)
+    clay_rect(im, (40, 280, W - 40, 520), accent, r=30, border=3, drop=6)
+    ImageDraw.Draw(im).rounded_rectangle((45, 285, W - 45, 515), 26, fill=(0x1B, 0x27, 0x40))
+    for cx, cy in [(62, 302), (W - 62, 302), (62, 498), (W - 62, 498)]:
+        put(im, load(f'{raw}/screw.raw'), cx, cy, 20)
+    glow(im, W / 2, 400, 150, (0xEF, 0x44, 0x44), 90)
+    d = ImageDraw.Draw(im)
+    d.text((W / 2, 400), 'VERDE', font=ImageFont.truetype(FB, 92), fill=(0xFF, 0x6B, 0x6B), anchor='mm')
+    clay_rect(im, (W / 2 - 80, 262, W / 2 + 80, 300), accent, r=19, border=2, drop=4)
+    ImageDraw.Draw(im).text((W / 2, 281), 'TINTA', font=ImageFont.truetype(FB, 24), fill=INK, anchor='mm')
+    tile = load(f'{raw}/tile.raw')
+    cols = [((0xEF, 0x44, 0x44), 'ROJO'), ((0x3B, 0x82, 0xF6), 'AZUL'), ((0x22, 0xC5, 0x5E), 'VERDE'), ((0xF5, 0x9E, 0x0B), 'AMARILLO'), ((0xA8, 0x55, 0xF7), 'MORADO')]
+    for i, (c, n) in enumerate(cols):
+        cx = W / 2 + (i - 1) * 180 if i < 3 else W / 2 + (i - 3.5) * 180
+        cy = 640 if i < 3 else 790
+        put(im, tinted(tile, c), cx, cy, 160)
+        ImageDraw.Draw(im).text((cx, cy - 6), n, font=ImageFont.truetype(FB, 24 if len(n) > 5 else 30), fill=(255, 255, 255), anchor='mm', stroke_width=1, stroke_fill=INK)
+    return im
+
+
+def chip(raw):
+    im = night(6)
+    d = ImageDraw.Draw(im)
+    for rr, a in [(420, 30), (560, 22)]:
+        d.ellipse((W / 2 - rr / 2, 420 - rr / 2, W / 2 + rr / 2, 420 + rr / 2), outline=(255, 248, 236, a), width=2)
+    title(d, 'Cambio de Chip')
+    banner(im, raw, 'Direction', 'DIRECCIÓN', 'Toca hacia dónde apunta la nave', (0x38, 0xBD, 0xF8))
+    accent = (0x38, 0xBD, 0xF8)
+    clay_rect(im, (90, 260, W - 90, 620), accent, r=30, border=3, drop=6)
+    ImageDraw.Draw(im).rounded_rectangle((95, 265, W - 95, 615), 26, fill=(0x1B, 0x27, 0x40))
+    clay_rect(im, (W / 2 - 95, 242, W / 2 + 95, 280), accent, r=19, border=2, drop=4)
+    ImageDraw.Draw(im).text((W / 2, 261), 'DIRECCIÓN', font=ImageFont.truetype(FB, 22), fill=INK, anchor='mm')
+    tile = load(f'{raw}/tile.raw')
+    cx, cy = W / 2 + 105, 440
+    put(im, tinted(tile, (0xF8, 0xFA, 0xFC)), cx, cy, 130)
+    put(im, load(f'{raw}/ship_2.raw'), cx, cy - 4, 99)
+    pads = [((0x38, 0xBD, 0xF8), 0, W / 2, 700), ((0xF4, 0x72, 0xB6), 1, W / 2, 880), ((0xA3, 0xE6, 0x35), 2, W / 2 - 150, 790), ((0xFB, 0xBF, 0x24), 3, W / 2 + 150, 790)]
+    for c, dirn, px, py in pads:
+        put(im, tinted(tile, c), px, py, 140)
+        put(im, load(f'{raw}/arrow_{dirn}.raw'), px, py - 6, 72)
+    return im
+
+
+def calculo(raw):
+    im = night(7)
+    glow(im, 100, 180, 150, (0xFF, 0xF4, 0xD6), 70)
+    d = ImageDraw.Draw(im)
+    d.ellipse((60, 110, 150, 200), fill=(0xFF, 0xF4, 0xD6))
+    title(d, 'Cálculo Sereno')
+    clay_rect(im, (120, 250, W - 120, 360), (0xE0, 0xF2, 0xFE), r=50, border=4, drop=8)
+    d = ImageDraw.Draw(im)
+    d.ellipse((150, 262, 200, 280), fill=(255, 255, 255, 200))
+    d.text((W / 2, 305), '7 × 8', font=ImageFont.truetype(FB, 64), fill=(0x0B, 0x2A, 0x3F), anchor='mm')
+    water = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(water).rounded_rectangle((30, 480, W - 30, 610), 28, fill=(26, 92, 158, 200), outline=INK, width=4)
+    im.alpha_composite(water)
+    ImageDraw.Draw(im).rounded_rectangle((45, 488, W - 45, 492), 2, fill=(205, 242, 255))
+    put(im, load(f'{raw}/lily_0.raw'), 0.13 * W, 470, 76)
+    put(im, load(f'{raw}/lily_1.raw'), 0.87 * W, 466, 90)
+    tile = load(f'{raw}/tile.raw')
+    opts = [('54', (0x7D, 0xD3, 0xFC)), ('56', (0xA7, 0xF3, 0xD0)), ('58', (0xFD, 0xE6, 0x8A)), ('48', (0xF9, 0xA8, 0xD4))]
+    for i, (t, c) in enumerate(opts):
+        cx, cy = 150 + (i % 2) * 240, 710 + (i // 2) * 170
+        put(im, tinted(tile, c), cx, cy, 170)
+        ImageDraw.Draw(im).text((cx, cy - 8), t, font=ImageFont.truetype(FB, 58), fill=(0x0B, 0x2A, 0x3F), anchor='mm')
+    return im
+
+
+def anagramas(raw):
+    im = night(8)
+    d = ImageDraw.Draw(im)
+    rng = random.Random(9)
+    for ch in 'AEMNORSL':
+        d.text((rng.random() * W, 150 + rng.random() * 700), ch, font=ImageFont.truetype(FB, rng.randint(40, 80)), fill=(0xB8, 0xA4, 0xFF, 40))
+    title(d, 'Anagramas')
+    clay_rect(im, (30, 110, W - 30, 200), (0x5A, 0x2E, 0x6E), r=30, border=3, drop=6)
+    ImageDraw.Draw(im).text((W / 2, 155), 'Pista: se ve de noche', font=ImageFont.truetype(FB, 26), fill=(255, 255, 255), anchor='mm')
+    slot = load(f'{raw}/slot.raw')
+    tile = load(f'{raw}/tile.raw')
+    word, placed = 'LUNA', 2
+    n, size = 4, 100
+    x0 = (W - n * (size + 12)) / 2 + size / 2
+    for i in range(n):
+        cx = x0 + i * (size + 12)
+        put(im, slot, cx, 330, size)
+        if i < placed:
+            put(im, tinted(tile, (0xFF, 0xD1, 0x7A)), cx, 326, size / 0.86)
+            ImageDraw.Draw(im).text((cx, 320), word[i], font=ImageFont.truetype(FB, 58), fill=(0x2A, 0x17, 0x40), anchor='mm')
+    for i, ch in enumerate('NA'):
+        cx = W / 2 - 60 + i * 120
+        put(im, tinted(tile, (0xFD, 0xE9, 0xC8)), cx, 520, size / 0.86)
+        ImageDraw.Draw(im).text((cx, 514), ch, font=ImageFont.truetype(FB, 58), fill=(0x2A, 0x17, 0x40), anchor='mm')
+    acts = [('Borrar', (0x5C, 0x4D, 0x9E), 'Backspace'), ('Pista', (0xD9, 0x8C, 0x1A), 'Hint'), ('Pasar', (0xC7, 0x47, 0x80), 'Skip')]
+    bw = (W - 60 - 20) / 3
+    for i, (t, c, ic) in enumerate(acts):
+        x = 30 + i * (bw + 10)
+        clay_rect(im, (x, 860, x + bw, 925), c, r=24, border=3, drop=5)
+        put(im, load(f'{raw}/icon_{ic}.raw'), x + bw * 0.2, 892, 44)
+        ImageDraw.Draw(im).text((x + bw * 0.63, 892), t, font=ImageFont.truetype(FB, 26), fill=(255, 255, 255), anchor='mm', stroke_width=1, stroke_fill=INK)
+    return im
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('raw')
@@ -189,6 +318,11 @@ def main():
         sheet.alpha_composite(p, (gap + i * (W + gap), gap))
     os.makedirs(a.out, exist_ok=True)
     sheet.convert('RGB').save(os.path.join(a.out, 'arte-juegos.png'))
+    panels = [stroop(a.raw), chip(a.raw), calculo(a.raw), anagramas(a.raw)]
+    sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
+    for i, p in enumerate(panels):
+        sheet.alpha_composite(p, (gap + i * (W + gap), gap))
+    sheet.convert('RGB').save(os.path.join(a.out, 'arte-juegos-2.png'))
     print('OK')
 
 

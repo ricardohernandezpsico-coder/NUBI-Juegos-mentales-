@@ -583,21 +583,16 @@ namespace NeuroVida.Games.Anagramas
                 r.anchorMin = r.anchorMax = new Vector2(0.5f, 1f);
                 r.pivot = new Vector2(0.5f, 0.5f);
                 var img = go.AddComponent<Image>();
-                img.sprite = RoundedRectSprite.Get(36);
-                img.type = Image.Type.Sliced;
+                img.sprite = AnagramSprites.Slot(); // hueco hundido de arcilla: ahí "cae" la ficha
                 img.color = SlotColor(false);
                 img.raycastTarget = false;
-                var outline = go.AddComponent<Outline>();
-                outline.effectColor = new Color(1f, 1f, 1f, 0.16f);
-                outline.effectDistance = new Vector2(2.5f, -2.5f);
                 go.SetActive(false);
                 _slotRects.Add(r);
                 _slotImages.Add(img);
             }
         }
 
-        private static Color SlotColor(bool filled) =>
-            filled ? new Color(0.35f, 0.25f, 0.55f, 0.6f) : new Color(0.10f, 0.06f, 0.20f, 0.55f);
+        private static Color SlotColor(bool filled) => filled ? new Color(1f, 1f, 1f, 0.7f) : Color.white;
 
         private void BuildActions()
         {
@@ -608,12 +603,12 @@ namespace NeuroVida.Games.Anagramas
             _actionsRoot.pivot = new Vector2(0.5f, 0.5f);
             _actionsRoot.sizeDelta = new Vector2(10f, 10f);
 
-            _backButton = MakeAction("Borrar", new Color(0.36f, 0.30f, 0.62f), OnBackspace);
-            _hintButton = MakeAction("Pista", new Color(0.85f, 0.55f, 0.10f), OnHint);
-            _skipButton = MakeAction("Pasar", new Color(0.78f, 0.28f, 0.50f), OnSkip);
+            _backButton = MakeAction("Borrar", new Color(0.36f, 0.30f, 0.62f), AnagramSprites.Icon.Backspace, OnBackspace);
+            _hintButton = MakeAction("Pista", new Color(0.85f, 0.55f, 0.10f), AnagramSprites.Icon.Hint, OnHint);
+            _skipButton = MakeAction("Pasar", new Color(0.78f, 0.28f, 0.50f), AnagramSprites.Icon.Skip, OnSkip);
         }
 
-        private Button MakeAction(string label, Color color, UnityEngine.Events.UnityAction onClick)
+        private Button MakeAction(string label, Color color, AnagramSprites.Icon icon, UnityEngine.Events.UnityAction onClick)
         {
             var go = new GameObject("Btn_" + label);
             go.transform.SetParent(_actionsRoot, false);
@@ -624,14 +619,27 @@ namespace NeuroVida.Games.Anagramas
             img.sprite = RoundedRectSprite.Get(48);
             img.type = Image.Type.Sliced;
             img.color = color;
-            var shadow = go.AddComponent<Outline>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.25f);
-            shadow.effectDistance = new Vector2(0f, -4f);
+            NeuroStyle.ClayFrame(img, 4f, 8f); // botón de arcilla: borde tinta y sombra dura
             var b = go.AddComponent<Button>();
             b.transition = Selectable.Transition.None;
             b.onClick.AddListener(onClick);
             go.AddComponent<PressScale>();
+            // Ícono de arcilla + texto (nunca solo ícono).
+            var iconGo = new GameObject("Icon");
+            iconGo.transform.SetParent(go.transform, false);
+            var ir = iconGo.AddComponent<RectTransform>();
+            ir.anchorMin = new Vector2(0.06f, 0.14f);
+            ir.anchorMax = new Vector2(0.34f, 0.86f);
+            ir.offsetMin = ir.offsetMax = Vector2.zero;
+            var iconImg = iconGo.AddComponent<Image>();
+            iconImg.sprite = AnagramSprites.ActionIcon(icon);
+            iconImg.preserveAspect = true;
+            iconImg.raycastTarget = false;
             var text = MakeText(go.transform, "Label", 52, TextAnchor.MiddleCenter, Color.white, 2f, 0.3f);
+            var tr = text.rectTransform;
+            tr.anchorMin = new Vector2(0.30f, 0f);
+            tr.anchorMax = new Vector2(0.96f, 1f);
+            tr.offsetMin = tr.offsetMax = Vector2.zero;
             BestFit(text, 30);
             text.text = label;
             return b;

@@ -436,16 +436,17 @@ namespace NeuroVida.Games.Stroop
             _bannerBg.sprite = RoundedRectSprite.Get(64);
             _bannerBg.type = Image.Type.Sliced;
             _bannerBg.raycastTarget = false;
+            NeuroStyle.ClayFrame(_bannerBg, 4f, 8f);
 
             var discGo = new GameObject("Icon");
             discGo.transform.SetParent(go.transform, false);
             var dr = discGo.AddComponent<RectTransform>();
             dr.anchorMin = dr.anchorMax = new Vector2(0f, 0.5f);
             dr.pivot = new Vector2(0.5f, 0.5f);
-            dr.sizeDelta = new Vector2(96f, 96f);
-            dr.anchoredPosition = new Vector2(72f, 0f);
+            dr.sizeDelta = new Vector2(112f, 112f);
+            dr.anchoredPosition = new Vector2(74f, 0f);
             _bannerDisc = discGo.AddComponent<Image>();
-            _bannerDisc.sprite = DiscSprite.Get();
+            _bannerDisc.sprite = RuleBadgeSprite.Get(RuleBadgeSprite.Kind.Ink); // insignia de arcilla: gota / globo de texto
             _bannerDisc.raycastTarget = false;
 
             var dropGo = new GameObject("Drop");
@@ -484,9 +485,11 @@ namespace NeuroVida.Games.Stroop
             bool ink = rule == StroopRule.Ink;
             var accent = ink ? InkAccent : WordAccent;
             _bannerBg.color = Color.Lerp(new Color(0.09f, 0.13f, 0.24f, 1f), accent, 0.32f);
-            _bannerDisc.color = accent;
-            _bannerDrop.gameObject.SetActive(ink);
-            _bannerAw.gameObject.SetActive(!ink);
+            // La insignia (gota de tinta / globo de texto) distingue la regla por forma, no solo por color.
+            _bannerDisc.sprite = RuleBadgeSprite.Get(ink ? RuleBadgeSprite.Kind.Ink : RuleBadgeSprite.Kind.Word);
+            _bannerDisc.color = Color.white;
+            _bannerDrop.gameObject.SetActive(false);
+            _bannerAw.gameObject.SetActive(false);
             _bannerAw.color = new Color(0.06f, 0.09f, 0.16f);
             _bannerText.text = ink ? "TINTA" : "PALABRA";
             _bannerSub.text = ink ? "Toca el color con que está escrita" : "Toca lo que dice, sin importar el color";
@@ -568,7 +571,7 @@ namespace NeuroVida.Games.Stroop
             _cardGroup = root.AddComponent<CanvasGroup>();
             _cardGroup.blocksRaycasts = false;
 
-            // Sombra suave (mancha radial, sin bordes duros) debajo de la tarjeta.
+            // Resplandor del letrero sobre la pared (el volumen lo da el marco de arcilla, más abajo).
             var shadowGo = new GameObject("Shadow");
             shadowGo.transform.SetParent(root.transform, false);
             var sr = shadowGo.AddComponent<RectTransform>();
@@ -577,7 +580,7 @@ namespace NeuroVida.Games.Stroop
             sr.offsetMin = sr.offsetMax = Vector2.zero;
             var shImg = shadowGo.AddComponent<Image>();
             shImg.sprite = RadialGlowSprite.Get();
-            shImg.color = new Color(0f, 0f, 0f, 0.55f);
+            shImg.color = new Color(0f, 0f, 0f, 0.35f);
             shImg.raycastTarget = false;
 
             var borderGo = new GameObject("Border");
@@ -587,6 +590,7 @@ namespace NeuroVida.Games.Stroop
             _cardBorder.sprite = RoundedRectSprite.Get(56);
             _cardBorder.type = Image.Type.Sliced;
             _cardBorder.raycastTarget = false;
+            NeuroStyle.ClayFrame(_cardBorder, 5f, 12f); // letrero de arcilla: borde tinta y sombra dura
 
             var fillGo = new GameObject("Fill");
             fillGo.transform.SetParent(root.transform, false);
@@ -600,6 +604,21 @@ namespace NeuroVida.Games.Stroop
             fillImg.type = Image.Type.Sliced;
             fillImg.color = CardFill;
             fillImg.raycastTarget = false;
+
+            // Cuatro tornillos en las esquinas: la tarjeta es un letrero de neón montado en la pared.
+            for (int s = 0; s < 4; s++)
+            {
+                var screwGo = new GameObject("Screw");
+                screwGo.transform.SetParent(root.transform, false);
+                var scr = screwGo.AddComponent<RectTransform>();
+                var corner = new Vector2(s % 2, s / 2);
+                scr.anchorMin = scr.anchorMax = corner;
+                scr.sizeDelta = new Vector2(38f, 38f);
+                scr.anchoredPosition = new Vector2(corner.x > 0.5f ? -36f : 36f, corner.y > 0.5f ? -36f : 36f);
+                var screw = screwGo.AddComponent<Image>();
+                screw.sprite = NeonSignSprites.Screw();
+                screw.raycastTarget = false;
+            }
 
             // Brillo de la palabra (neón) detrás del texto.
             var glowGo = new GameObject("WordGlow");
@@ -632,6 +651,7 @@ namespace NeuroVida.Games.Stroop
             _chipBg.sprite = RoundedRectSprite.Get(64);
             _chipBg.type = Image.Type.Sliced;
             _chipBg.raycastTarget = false;
+            NeuroStyle.ClayFrame(_chipBg, 4f, 7f);
             _chipText = MakeText(chipGo.transform, "ChipText", 52, TextAnchor.MiddleCenter, new Color(0.06f, 0.09f, 0.16f), 0f, 0f);
             BestFit(_chipText, 30);
         }

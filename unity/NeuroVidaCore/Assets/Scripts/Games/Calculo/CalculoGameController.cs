@@ -63,7 +63,7 @@ namespace NeuroVida.Games.Calculo
         private bool Endless => _config != null && _config.config.timed;
 
         // UI
-        private RectTransform _safe, _timerBg, _timerFill, _fxRect, _bubbleRect, _waterRect, _optionsRoot, _waveA, _waveB;
+        private RectTransform _safe, _timerBg, _timerFill, _fxRect, _bubbleRect, _waterRect, _optionsRoot, _waveA, _waveB, _lilyA, _lilyB;
         private Text _bubbleText;
         private Image _timerFillImage, _bubbleFill, _bubbleBorder;
         private CanvasGroup _bubbleGroup;
@@ -188,7 +188,7 @@ namespace NeuroVida.Games.Calculo
             FitBubbleText(_question.Prompt);
             _bubbleText.color = InkColor;
             _bubbleFill.color = BubbleCalm;
-            _bubbleBorder.color = new Color(1f, 1f, 1f, 0.75f);
+            _bubbleBorder.color = NeuroStyle.Ink;
             for (int i = 0; i < 4; i++)
             {
                 _optionLabels[i].text = _question.Options[i].ToString();
@@ -418,6 +418,8 @@ namespace NeuroVida.Games.Calculo
                 float t = GameClock.Time;
                 if (_waveA != null) _waveA.anchoredPosition = new Vector2(Mathf.Sin(t * 0.5f) * 160f, _waveA.anchoredPosition.y);
                 if (_waveB != null) _waveB.anchoredPosition = new Vector2(Mathf.Sin(t * 0.37f + 2f) * -200f, _waveB.anchoredPosition.y);
+                if (_lilyA != null) _lilyA.anchoredPosition = new Vector2(0f, Mathf.Sin(t * 0.9f) * 5f);
+                if (_lilyB != null) _lilyB.anchoredPosition = new Vector2(0f, Mathf.Sin(t * 0.8f + 1.3f) * 5f);
                 yield return null;
             }
         }
@@ -525,15 +527,43 @@ namespace NeuroVida.Games.Calculo
             var img = go.AddComponent<Image>();
             img.sprite = RoundedRectSprite.Get(56);
             img.type = Image.Type.Sliced;
-            img.color = new Color(0.22f, 0.74f, 0.97f, 0.26f);
+            img.color = new Color(0.10f, 0.36f, 0.62f, 0.78f);
             img.raycastTarget = false;
-            var outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(0.65f, 0.9f, 1f, 0.35f);
-            outline.effectDistance = new Vector2(3f, -3f);
+            NeuroStyle.ClayFrame(img, 4f, 0f); // estanque de arcilla: borde tinta
 
-            // Dos manchas de luz que se deslizan sobre el agua.
+            // Canto de luz en la superficie y dos manchas de luz que se deslizan sobre el agua.
+            var foamGo = new GameObject("Surface");
+            foamGo.transform.SetParent(go.transform, false);
+            var foam = foamGo.AddComponent<RectTransform>();
+            foam.anchorMin = new Vector2(0.03f, 1f);
+            foam.anchorMax = new Vector2(0.97f, 1f);
+            foam.sizeDelta = new Vector2(0f, 8f);
+            foam.anchoredPosition = new Vector2(0f, -14f);
+            var foamImg = foamGo.AddComponent<Image>();
+            foamImg.sprite = RoundedRectSprite.Get(4);
+            foamImg.type = Image.Type.Sliced;
+            foamImg.color = new Color(0.8f, 0.95f, 1f, 0.45f);
+            foamImg.raycastTarget = false;
             _waveA = MakeWave(go.transform, new Color(0.7f, 0.93f, 1f, 0.16f), 0.68f);
             _waveB = MakeWave(go.transform, new Color(0.55f, 0.85f, 1f, 0.12f), 0.32f);
+
+            // Arte propio: nenúfares de arcilla en las orillas (uno con flor de loto) que se mecen despacio.
+            _lilyA = MakeLily(go.transform, 0, new Vector2(0.13f, 1f), 150f);
+            _lilyB = MakeLily(go.transform, 1, new Vector2(0.87f, 1f), 180f);
+        }
+
+        private static RectTransform MakeLily(Transform parent, int variant, Vector2 anchor, float size)
+        {
+            var go = new GameObject("LilyPad");
+            go.transform.SetParent(parent, false);
+            var r = go.AddComponent<RectTransform>();
+            r.anchorMin = r.anchorMax = anchor;
+            r.pivot = new Vector2(0.5f, 0.32f); // la hoja queda sobre la línea del agua
+            r.sizeDelta = new Vector2(size, size);
+            var img = go.AddComponent<Image>();
+            img.sprite = PondSprites.LilyPad(variant);
+            img.raycastTarget = false;
+            return r;
         }
 
         private static RectTransform MakeWave(Transform parent, Color color, float heightFraction)
@@ -579,6 +609,7 @@ namespace NeuroVida.Games.Calculo
             _bubbleBorder.sprite = RoundedRectSprite.Get(64);
             _bubbleBorder.type = Image.Type.Sliced;
             _bubbleBorder.raycastTarget = false;
+            NeuroStyle.ClayFrame(_bubbleBorder, 2f, 10f); // burbuja de arcilla: borde tinta y sombra dura
 
             var fillGo = new GameObject("Fill");
             fillGo.transform.SetParent(go.transform, false);
@@ -592,16 +623,16 @@ namespace NeuroVida.Games.Calculo
             _bubbleFill.type = Image.Type.Sliced;
             _bubbleFill.raycastTarget = false;
 
-            // Brillo suave arriba-izquierda para que parezca una burbuja y no un rectángulo.
+            // Brillo de arcilla (óvalo nítido) arriba a la izquierda.
             var shineGo = new GameObject("Shine");
             shineGo.transform.SetParent(go.transform, false);
             var shr = shineGo.AddComponent<RectTransform>();
-            shr.anchorMin = new Vector2(0.04f, 0.58f);
-            shr.anchorMax = new Vector2(0.46f, 0.96f);
+            shr.anchorMin = new Vector2(0.07f, 0.72f);
+            shr.anchorMax = new Vector2(0.30f, 0.86f);
             shr.offsetMin = shr.offsetMax = Vector2.zero;
             var shImg = shineGo.AddComponent<Image>();
-            shImg.sprite = RadialGlowSprite.Get();
-            shImg.color = new Color(1f, 1f, 1f, 0.55f);
+            shImg.sprite = DiscSprite.Get();
+            shImg.color = new Color(1f, 1f, 1f, 0.6f);
             shImg.raycastTarget = false;
 
             _bubbleText = MakeText(go.transform, "Equation", 130, TextAnchor.MiddleCenter, InkColor, 0f, 0f);
