@@ -37,8 +37,6 @@ namespace NeuroVida.Games.Calculo
         public const int EndlessTargetTrials = 20;
         public const int MaxLevel = 9;
 
-        public static int CorrectPerLevelUp(bool endless) => endless ? 5 : 3;
-
         public static int LiveIntensity(int intensity, int streak) => intensity + (streak / 3) * 2;
 
         /// <summary>Segundos que tarda la gota en caer (modo Reto): baja con el nivel y la maestría.</summary>

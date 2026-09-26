@@ -60,7 +60,6 @@ private val BarColor = Color(0xFFFFFFFF)
 private val Ink = Color(0xFF1A1240)
 private val InkDim = Color(0xFF6B6790)
 private val Blue = Color(0xFFFF6B4A)
-private val Orange = Color(0xFFFFC93C)
 private val Amber = Color(0xFFFFC93C)
 
 private data class NavItem(val tab: AppTab, val label: String, val on: ImageVector, val off: ImageVector)

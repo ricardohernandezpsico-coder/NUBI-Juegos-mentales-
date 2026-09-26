@@ -160,8 +160,6 @@ namespace NeuroVida.Games.Shared
             rootGo.SetActive(false);
         }
 
-        public bool IsActive => _root.gameObject.activeSelf;
-
         /// <summary>Reproduce la pantalla completa. <paramref name="onRevealStart"/> se llama
         /// cuando empieza el desvanecimiento final -- ahí el juego debe volver a mostrar su
         /// contenido (queda visible debajo mientras la pantalla se desvanece).</summary>

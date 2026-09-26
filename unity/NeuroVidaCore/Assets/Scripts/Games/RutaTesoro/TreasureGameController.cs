@@ -706,8 +706,6 @@ namespace NeuroVida.Games.RutaTesoro
             _hud.SetInfo($"Tesoros {_found}/{spec.Treasures}");
         }
 
-        private void RebuildDotsIfNeeded() { }
-
         // ------------------------------------------------------------------ helpers
 
         private void Shuffle(List<int> list)

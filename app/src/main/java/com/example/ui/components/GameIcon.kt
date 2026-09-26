@@ -266,16 +266,6 @@ private fun DrawScope.clayStroke(path: Path, color: Color, width: Float) {
   drawPath(path, color, style = Stroke(width, cap = StrokeCap.Round, join = StrokeJoin.Round))
 }
 
-/** Flecha hacia arriba centrada en [c]. */
-private fun DrawScope.arrow(c: Offset, len: Float, color: Color) {
-  val p = Path().apply {
-    moveTo(c.x, c.y + len); lineTo(c.x, c.y - len)
-    moveTo(c.x - len * 0.62f, c.y - len * 0.38f); lineTo(c.x, c.y - len); lineTo(c.x + len * 0.62f, c.y - len * 0.38f)
-  }
-  drawPath(p, Ink, style = Stroke(9f + 4f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-  drawPath(p, color, style = Stroke(9f - 1f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-}
-
 /** Arco de [sweep] grados desde [startDeg] (0 = derecha, sentido horario) con punta de flecha al final. */
 private fun DrawScope.curvedArrow(c: Offset, r: Float, startDeg: Float, sweep: Float, color: Color) {
   val p = Path().apply { arcTo(Rect(c.x - r, c.y - r, c.x + r, c.y + r), startDeg, sweep, true) }

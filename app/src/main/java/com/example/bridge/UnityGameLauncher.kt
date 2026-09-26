@@ -8,17 +8,9 @@ import com.squareup.moshi.Moshi
 import com.unity3d.player.UnityPlayerGameActivity
 
 /**
- * Lanza el piloto de Secuencia Lumínica en Unity (Fase 1 del roadmap, ver
- * NeuroVida/CLAUDE.md). En vez de que el lado nativo llame a
- * `UnityPlayer.UnitySendMessage` sobre una instancia del player ya corriendo (frágil de
- * verificar sin poder probarlo en un dispositivo real -- depende de detalles internos de
- * la arquitectura GameActivity de Unity 6 que no se pudieron validar en esta sesión), el
- * JSON de configuración viaja como extra del propio Intent que arranca la Activity.
- * Unity lo lee solo al arrancar la escena
- * (`Assets/Scripts/Bootstrap/LaunchIntentConfigReader.cs`) vía
- * `UnityPlayer.currentActivity.getIntent()` -- un patrón mucho más estable porque no
- * depende de la clase Activity específica que genera cada versión de Unity, solo de la
- * API pública y estable de `UnityPlayer`.
+ * Arma el Intent que abre un juego en Unity. La configuración (juego, nivel, modo, edad, rating guardado, evaluación)
+ * viaja como JSON en un extra del Intent; Unity la lee al arrancar la partida
+ * (`Assets/Scripts/Bootstrap/LaunchIntentConfigReader.cs`, vía `UnityPlayer.currentActivity.getIntent()`).
  */
 object UnityGameLauncher {
   const val EXTRA_CONFIG_JSON = "neurovida_game_config_json"
@@ -57,105 +49,6 @@ object UnityGameLauncher {
   private val moshi = Moshi.Builder().build()
   private val adapter = moshi.adapter(InitConfigDto::class.java)
 
-  fun launchSecuenciaLuminica(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "secuencia", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** Piloto de la Fase 2 (ver NeuroVida/CLAUDE.md) -- mismo mecanismo de Intent extra que
-   *  Secuencia Lumínica, ver [launchSecuenciaLuminica]. */
-  fun launchParejasOcultas(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "parejas", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Tinta o Palabra" (Stroop) en Unity -- mismo mecanismo de Intent extra. */
-  fun launchStroop(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "stroop", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Comparación Instantánea" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchComparacion(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "comparacion", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Cambio de Chip" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchCambioChip(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "cambiochip", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Ruta del Tesoro" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchRutaTesoro(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "rutatesoro", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Detective de Series" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchSeries(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "series", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Cálculo Sereno" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchCalculo(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "calculo", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Anagramas" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchAnagramas(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "anagramas", level, baseIntensity, timed, ageBand, soundEnabled)
-
   /**
    * Intent para jugar cualquiera de los 9 juegos en Unity desde el menú principal / sesión diaria. Trae al
    * frente la Activity de Unity si ya está viva (FLAG_ACTIVITY_REORDER_TO_FRONT: sin volver a arrancar el motor)
@@ -175,19 +68,6 @@ object UnityGameLauncher {
     assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
     assessmentTotal: Int = 0
   ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal)
-
-  private fun launch(
-    context: Context,
-    userId: String,
-    gameId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean
-  ) {
-    context.startActivity(buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled))
-  }
 
   private fun buildIntent(
     context: Context,

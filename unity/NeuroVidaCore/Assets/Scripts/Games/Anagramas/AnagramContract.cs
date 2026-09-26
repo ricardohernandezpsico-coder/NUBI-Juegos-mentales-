@@ -31,8 +31,6 @@ namespace NeuroVida.Games.Anagramas
         public const int EndlessTargetTrials = 9;
         public const int MaxLevel = 7;
 
-        public static int CorrectPerLevelUp(bool endless) => 2;
-
         /// <summary>Largo (mínimo, máximo) de las palabras de cada nivel: crece de a poco.</summary>
         public static (int min, int max) LengthRange(int level)
         {

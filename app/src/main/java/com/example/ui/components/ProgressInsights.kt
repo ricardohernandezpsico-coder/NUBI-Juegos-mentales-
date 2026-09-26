@@ -68,52 +68,6 @@ fun levelWord(v: Float): String = when {
 }
 
 @Composable
-fun ProgressHeroCard(levels: GameLevels, accent: Color, modifier: Modifier = Modifier) {
-  val index = overallIndex(levels)
-  val measured = levels.values.count { it != null }
-  val track = MaterialTheme.colorScheme.surfaceVariant
-  Column(modifier = modifier.fillMaxWidth()) {
-    Row(
-      modifier = Modifier.padding(22.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-      Box(modifier = Modifier.size(112.dp), contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.size(112.dp)) {
-          val stroke = 12.dp.toPx()
-          val inset = stroke / 2
-          val arcSize = Size(size.width - stroke, size.height - stroke)
-          drawArc(track, -90f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
-          if (index != null) {
-            drawArc(accent, -90f, 360f * index / 100f, false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
-          }
-        }
-        Text(
-          text = index?.toString() ?: "–",
-          fontSize = 34.sp,
-          fontWeight = FontWeight.Black,
-          color = MaterialTheme.colorScheme.onSurface
-        )
-      }
-      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("Tu nivel general", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(
-          text = if (index == null) "Juega para medir tu nivel" else levelWord(index / 100f),
-          style = MaterialTheme.typography.titleLarge,
-          fontWeight = FontWeight.Black,
-          color = accent
-        )
-        Text(
-          text = "$measured de ${GameRegistry.allGames.size} juegos medidos",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-      }
-    }
-  }
-}
-
-@Composable
 fun DomainRadarCard(levels: GameLevels, modifier: Modifier = Modifier) {
   val scores = domainScores(levels)
   val domains = DomainType.values().toList()
@@ -177,51 +131,6 @@ fun DomainLegend(levels: GameLevels, modifier: Modifier = Modifier) {
           fontWeight = FontWeight.SemiBold
         )
       }
-    }
-  }
-}
-
-@Composable
-fun GameLevelsCard(levels: GameLevels, modifier: Modifier = Modifier) {
-  Column(modifier = modifier.fillMaxWidth()) {
-    Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-      Text("Nivel por juego", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-      GameRegistry.allGames.forEach { g ->
-        val v = levels[g.id]
-        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(g.title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Text(
-              text = if (v == null) "Sin medir" else "${levelWord(v)} · P${Percentile.of(v)}",
-              style = MaterialTheme.typography.labelSmall,
-              color = if (v == null) MaterialTheme.colorScheme.onSurfaceVariant else g.domain.color,
-              fontWeight = FontWeight.Bold
-            )
-          }
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .height(8.dp)
-              .clip(RoundedCornerShape(4.dp))
-              .background(MaterialTheme.colorScheme.surfaceVariant)
-          ) {
-            if (v != null) {
-              Box(
-                modifier = Modifier
-                  .fillMaxWidth(v.coerceIn(0.04f, 1f))
-                  .height(8.dp)
-                  .clip(RoundedCornerShape(4.dp))
-                  .background(g.domain.color)
-              )
-            }
-          }
-        }
-      }
-      Text(
-        "Estimación interna según cómo se adapta la dificultad a ti; no es una medida clínica.",
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-      )
     }
   }
 }

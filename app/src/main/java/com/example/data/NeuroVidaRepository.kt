@@ -656,33 +656,6 @@ class NeuroVidaRepository(
     return streak
   }
 
-  fun getSessionsThisWeek(history: List<GamePlayResult>): Int {
-    val cal = Calendar.getInstance()
-    cal.firstDayOfWeek = Calendar.MONDAY
-    cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-    cal.set(Calendar.HOUR_OF_DAY, 0)
-    cal.set(Calendar.MINUTE, 0)
-    cal.set(Calendar.SECOND, 0)
-    val startOfWeek = cal.timeInMillis
-    return history.count { it.timestamp >= startOfWeek }
-  }
-
-  fun getLast7DaysActivity(history: List<GamePlayResult>): List<Pair<String, Boolean>> {
-    val daysWithSessions = history.map { formatDate(it.timestamp) }.toSet()
-    val cal = Calendar.getInstance()
-    val days = mutableListOf<Pair<String, Boolean>>()
-    val dayNames = arrayOf("D", "L", "M", "X", "J", "V", "S")
-
-    for (i in 6 downTo 0) {
-      val tempCal = Calendar.getInstance()
-      tempCal.add(Calendar.DAY_OF_YEAR, -i)
-      val key = synchronized(dateFormat) { dateFormat.format(tempCal.time) }
-      val dayLetter = dayNames[tempCal.get(Calendar.DAY_OF_WEEK) - 1]
-      days.add(Pair(dayLetter, daysWithSessions.contains(key)))
-    }
-    return days
-  }
-
   suspend fun resetData() = withContext(Dispatchers.IO) {
     gameResultDao.deleteAll()
     gameProgressDao.deleteAll()

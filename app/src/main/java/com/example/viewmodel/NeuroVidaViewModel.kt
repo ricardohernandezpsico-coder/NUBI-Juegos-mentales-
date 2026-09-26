@@ -50,13 +50,6 @@ data class BaselineRun(
   val result: com.example.data.Baseline? = null
 )
 
-data class DomainStats(
-  val domain: DomainType,
-  val averageScore: Int,
-  val totalPlayed: Int,
-  val competenceLevel: Int // 1 to 5
-)
-
 class NeuroVidaViewModel(application: Application) : AndroidViewModel(application) {
   private val repository = NeuroVidaRepository(application)
 
@@ -229,39 +222,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   val currentStreak: StateFlow<Int> = combine(gameHistory) { history ->
     repository.calculateStreak(history[0])
   }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-
-  // Last 7 days activity (Day letter to boolean)
-  val last7DaysActivity: StateFlow<List<Pair<String, Boolean>>> = combine(gameHistory) { history ->
-    repository.getLast7DaysActivity(history[0])
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-  // Domain competencies
-  val domainStats: StateFlow<List<DomainStats>> = combine(gameHistory, gameLevels) { history, levels ->
-    DomainType.values().map { domain ->
-      val gamesInDomain = GameRegistry.allGames.filter { it.domain == domain }
-      val resultsInDomain = history.filter { r -> gamesInDomain.any { it.id == r.gameId } }
-      val avg = if (resultsInDomain.isEmpty()) 50 else resultsInDomain.map { it.score }.average().toInt()
-      val highestLvl = gamesInDomain.maxOfOrNull { levels[it.id] ?: 1 } ?: 1
-      DomainStats(
-        domain = domain,
-        averageScore = avg,
-        totalPlayed = resultsInDomain.size,
-        competenceLevel = highestLvl
-      )
-    }
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-  // Sparkline data for sessions (counts per day over 7 days)
-  val sessionsSparkline: StateFlow<List<Float>> = combine(gameHistory) { history ->
-    val last7 = repository.getLast7DaysActivity(history[0])
-    last7.map { if (it.second) 1f else 0f }
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, listOf(0f, 1f, 1f, 0f, 1f, 1f, 1f))
-
-  // Sparkline data for recent scores
-  val scoresSparkline: StateFlow<List<Float>> = combine(gameHistory) { history ->
-    val recent = history[0].take(7).reversed()
-    if (recent.isEmpty()) listOf(50f, 60f, 70f) else recent.map { it.score.toFloat() }
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, listOf(60f, 75f, 80f, 85f))
 
   init {
     viewModelScope.launch { com.example.bridge.UnityResultBus.results.collect { onUnityResult(it) } }

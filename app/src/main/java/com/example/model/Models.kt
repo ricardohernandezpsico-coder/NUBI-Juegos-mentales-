@@ -161,14 +161,8 @@ enum class ThemeMode(val label: String) {
 }
 
 /**
- * Piloto de perfiles por edad (20-sep): Ricardo compartió material sobre calibrar el DDA
- * (y la accesibilidad de la UI) según el perfil del usuario en vez de un solo valor
- * global para todos -- ej. el área táctil/espaciado recomendado para adultos mayores es
- * literalmente más grande que lo que un adulto joven encuentra cómodo, no hay un
- * "tamaño correcto" único. Arranca como piloto en Parejas Ocultas
- * (`com.example.games.parejas`, ver `LocalAgeBand`), no en los 9 juegos todavía.
- * `null` en [UserSettings.ageBand] significa "todavía no se preguntó" -- gatilla la
- * pantalla de onboarding una sola vez.
+ * Rango de edad: calibra el DDA de los juegos (Unity lo recibe como `age_band`) y la comparación del punto de
+ * partida. `null` en [UserSettings.ageBand] significa "todavía no se preguntó": abre el onboarding.
  */
 enum class AgeBand(val label: String) {
   UNDER_18("Menos de 18"),
@@ -318,8 +312,6 @@ data class GameRankInfo(
     else (5 - (intoTier / RankTier.DIVISION_SIZE)).coerceIn(1, 5)
   val label: String get() =
     if (tier == RankTier.MAESTRO) "${tier.tierName} · $rating" else "${tier.tierName} $division"
-  val progressInDivision: Float get() =
-    (intoTier % RankTier.DIVISION_SIZE) / RankTier.DIVISION_SIZE.toFloat()
 }
 
 data class UserSettings(

@@ -42,9 +42,6 @@ namespace NeuroVida.Games.Series
         public const int EndlessTargetTrials = 14;
         public const int MaxLevel = 9;
 
-        /// <summary>Aciertos para subir de nivel dentro de la partida (Reto / Precisión).</summary>
-        public static int CorrectPerLevelUp(bool endless) => endless ? 5 : 3;
-
         /// <summary>Maestría "en vivo": cada 3 aciertos seguidos suman 2 puntos de intensidad.</summary>
         public static int LiveIntensity(int intensity, int streak) => intensity + (streak / 3) * 2;
 
