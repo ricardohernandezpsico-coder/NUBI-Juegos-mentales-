@@ -84,9 +84,10 @@ Pendiente: mostrar el rating en la pantalla de Progreso.
 
 ## 6. Lo que NO cambió
 
-- `SequenceDDAEngine` (Secuencia): regla anti-frustración por ventana de 3 ensayos, validada en dispositivo.
+- Secuencia: escalera fija de 16 niveles (`SequenceLevelConfig`: sube con 2 aciertos seguidos, 3 vidas). El motor
+  anterior (`SequenceDDAEngine`, ventana de 3 ensayos) se borró el 26-sep.
 - `VisualWorkingMemoryDDA` (Parejas): controlador continuo D(t) hacia ~80% con Z-score. Es la misma familia
-  de ideas que el motor común; unificarlos es posible pero no urgente. Ambos ya comparten los perfiles de
+  de ideas que el motor común; unificarlos es posible pero no urgente. Comparte los perfiles de
   edad (`DdaUserProfileConfig`).
 
 ## 7. Siguientes pasos sugeridos
