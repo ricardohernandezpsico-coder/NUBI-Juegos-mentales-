@@ -15,8 +15,7 @@ namespace NeuroVida.Games.Secuencia
     /// escribe <c>SequenceGameContainer.endSession</c> del lado Android.
     ///
     /// Reglas de juego (las dio Ricardo en la cuarta/quinta pasada, no son interpretación
-    /// propia; el motor <see cref="SequenceDDAEngine"/> sigue intacto y testeado 1:1 con
-    /// Kotlin pero ya NO se usa en este juego):
+    /// propia):
     ///   - Tabla fija de 16+ niveles (<see cref="SequenceLevelDatabase"/>) con cuadrícula,
     ///     longitud de secuencia y velocidad (ISI) por peldaño.
     ///   - Avance: 2 aciertos consecutivos en el nivel actual -> sube 1 nivel.

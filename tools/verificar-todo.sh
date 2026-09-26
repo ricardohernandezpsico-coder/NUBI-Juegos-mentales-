@@ -24,7 +24,7 @@ echo "=== 1/5: Recrear la escena piloto ==="
 "$UNITY" -batchmode -nographics -quit -projectPath "$PROJ" \
   -executeMethod NeuroVida.Bridge.EditorTools.CreatePilotTestScene.Create -logFile "$RESULTS/v-1-scene.log"
 
-echo "=== 2/5: Pruebas EditMode (esperado: todas en verde; 107 al 26-sep) ==="
+echo "=== 2/5: Pruebas EditMode (esperado: todas en verde; 94 al 26-sep) ==="
 "$UNITY" -batchmode -nographics -projectPath "$PROJ" -runTests -testPlatform EditMode \
   -testResults "$RESULTS/v-2-tests.xml" -logFile "$RESULTS/v-2-tests.log" || true
 grep -o 'result="[A-Za-z]*" total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' "$RESULTS/v-2-tests.xml" | head -1

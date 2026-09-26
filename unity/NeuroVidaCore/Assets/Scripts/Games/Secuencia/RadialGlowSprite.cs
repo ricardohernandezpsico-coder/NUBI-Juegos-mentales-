@@ -9,7 +9,7 @@ namespace NeuroVida.Games.Secuencia
     /// <c>SequenceGameController.RegenerateDistractors</c>), paridad con
     /// <c>DistractorGlow</c> en <c>SecuenciaGame.kt</c> (Kotlin) -- blobs pasivos
     /// detrás de la grilla que crecen en cantidad con la dificultad
-    /// (<c>SequenceDDAEngine.DifficultyProfile.DistractorCount</c>), nunca elementos a
+    /// (según el nivel), nunca elementos a
     /// identificar o tocar.
     /// </summary>
     public static class RadialGlowSprite
