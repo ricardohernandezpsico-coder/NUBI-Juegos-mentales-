@@ -33,6 +33,13 @@ namespace NeuroVida.Games
         public const int WarmupTrials = 2;
         private const int ProvisionalTrials = 6;
         private const float ProvisionalBoost = 1.5f;
+
+        /// <summary>Evaluación inicial ("Tu punto de partida"): la partida es corta (60 s) y parte del medio de la
+        /// escala, así que los primeros ensayos dan pasos más grandes para llegar antes al nivel de la persona.
+        /// La fija <c>GameEntryPoint</c> con la config de cada partida (false en las partidas normales).</summary>
+        public static bool FastCalibration;
+        private const int FastProvisionalTrials = 10;
+        private const float FastProvisionalBoost = 2.2f;
         private const float StruggleExtraDrop = 0.15f;
         private const int BoredomStreak = 6;
         private const float BoredomBonus = 0.20f;
@@ -120,7 +127,9 @@ namespace NeuroVida.Games
             int before = Level;
             Trials++;
             float z = UpdateReactionZ(reactionMs);
-            float provisional = Trials <= ProvisionalTrials ? ProvisionalBoost : 1f;
+            float provisional = FastCalibration
+                ? (Trials <= FastProvisionalTrials ? FastProvisionalBoost : 1f)
+                : (Trials <= ProvisionalTrials ? ProvisionalBoost : 1f);
             float delta;
 
             if (correct)

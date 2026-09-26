@@ -96,6 +96,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val unlocks by viewModel.achievementUnlocks.collectAsState()
   val achStats by viewModel.achievementStats.collectAsState()
+  val baseline by viewModel.baseline.collectAsState()
   var achievementDetail by remember { mutableStateOf<AchievementDef?>(null) }
 
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
@@ -151,6 +152,23 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
         SpaceSectionTitle("Tus dominios", hint = "Cómo vas en cada área")
         Spacer(Modifier.height(12.dp))
         DomainLegend(levels)
+      }
+    }
+
+    // Punto de partida: si se saltó, invitación a hacerlo; si ya se hizo, repetirlo (p. ej. tras un tiempo).
+    item {
+      Column {
+        SpaceSectionTitle(
+          "Tu punto de partida",
+          hint = if (baseline == null) "3 juegos cortos para que cada juego empiece a tu medida" else "Puedes repetirlo cuando quieras"
+        )
+        Spacer(Modifier.height(12.dp))
+        ClayButton(
+          text = if (baseline == null) "Encontrar mi punto de partida" else "Repetir la evaluación",
+          onClick = { viewModel.startBaseline() },
+          color = if (baseline == null) Clay.Sun else Clay.Cream,
+          modifier = Modifier.testTag("btn_profile_baseline")
+        )
       }
     }
 

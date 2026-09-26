@@ -127,7 +127,7 @@ namespace NeuroVida.Games.Stroop
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Tinta o Palabra", "Prepárate", () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("Tinta o Palabra", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null; // deja que el Canvas calcule el rect del Safe Area antes de medir
             ApplySafeArea(_safe);

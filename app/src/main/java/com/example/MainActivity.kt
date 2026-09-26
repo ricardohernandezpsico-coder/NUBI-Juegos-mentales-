@@ -87,10 +87,12 @@ class MainActivity : ComponentActivity() {
       ) {
         NeuroVidaTheme(darkTheme = darkTheme) {
           // Primera experiencia (ver OnboardingScreen): mientras no se resuelva `ageBand` no se monta la app
-          // normal. Al terminar se guarda todo junto y, si eligió jugar, arranca la sesión de hoy.
+          // normal. Al terminar se guarda todo junto y, si eligió "Empezar", arranca la evaluación "Tu punto de partida".
           if (userSettings.ageBand == null) {
             com.example.ui.screens.OnboardingScreen(
-              onFinish = { name, band, goal, hour, play -> viewModel.completeOnboarding(name, band, goal, hour, play) }
+              onFinish = { name, band, goal, hour, education, goals, baseline ->
+                viewModel.completeOnboarding(name, band, goal, hour, education, goals, baseline)
+              }
             )
           } else {
             NeuroVidaApp(viewModel = viewModel)
@@ -142,6 +144,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val streak by viewModel.currentStreak.collectAsState()
   val achievementQueue by viewModel.achievementQueue.collectAsState()
   val achievementUnlocks by viewModel.achievementUnlocks.collectAsState()
+  val baselineRun by viewModel.baselineRun.collectAsState()
+  val education by viewModel.education.collectAsState()
   // Tras la primera celebración de una partida, las siguientes (más logros) aparecen enseguida.
   var celebratedOne by remember(lastResult) { mutableStateOf(false) }
 
@@ -154,7 +158,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       containerColor = androidx.compose.ui.graphics.Color.Transparent,
       bottomBar = {
         // Show bottom bar only when not playing a game or looking at results
-        if (activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty()) {
+        if (activeGame == null && lastResult == null && baselineRun == null && promotion == null && achievementQueue.isEmpty()) {
           com.example.ui.components.NeuroNavBar(
             current = currentTab,
             onSelect = { viewModel.setTab(it) },
@@ -178,7 +182,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       ) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
-        if (activeGame == null && lastResult == null) AnimatedContent(
+        if (activeGame == null && lastResult == null && baselineRun == null) AnimatedContent(
           targetState = currentTab,
           transitionSpec = { fadeIn() togetherWith fadeOut() },
           label = "TabTransition"
@@ -208,6 +212,18 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               onHostResumed = { viewModel.onHostResumed() }
             )
           }
+        }
+
+        // Evaluación inicial "Tu punto de partida": entre juego y juego (y el mapa al final). Ver data/Baseline.kt.
+        if (activeGame == null) baselineRun?.let { run ->
+          com.example.ui.screens.BaselineScreen(
+            run = run,
+            ageBand = userSettings.ageBand,
+            education = education,
+            onContinue = { viewModel.continueBaseline() },
+            onLater = { viewModel.skipBaseline() },
+            onFinish = { viewModel.finishBaseline() }
+          )
         }
 
         // Last Result Screen Overlay

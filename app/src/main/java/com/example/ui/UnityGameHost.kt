@@ -66,7 +66,9 @@ fun UnityGameHost(
         timed = session.timed,
         ageBand = ageBand,
         soundEnabled = soundEnabled,
-        launchId = session.resumeLaunchId
+        launchId = session.resumeLaunchId,
+        assessmentStep = session.assessmentStep,
+        assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0
       )
     )
     onLaunched()
@@ -79,6 +81,8 @@ fun UnityGameHost(
     game = session.gameDef,
     level = session.level,
     timed = session.timed,
-    fadeInDelayMs = 250L
+    fadeInDelayMs = 250L,
+    assessmentStep = session.assessmentStep,
+    assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0
   )
 }

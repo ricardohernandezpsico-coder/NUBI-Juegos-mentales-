@@ -65,6 +65,8 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
     val config = root.optJSONObject("config")
     val level = config?.optInt("level", 0)?.takeIf { it > 0 }
     val timed = if (config?.has("timed") == true) config.optBoolean("timed") else null
+    val assessmentStep = if (config?.optBoolean("assessment") == true) config.optInt("assessment_step", 0) else 0
+    val assessmentTotal = config?.optInt("assessment_total", 0) ?: 0
 
     val layer = FrameLayout(activity).apply {
       setBackgroundColor(NIGHT)
@@ -74,7 +76,12 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
       // ComponentActivity.addContentView deja listos los "dueños" de ciclo de vida que ComposeView necesita.
       layer.addView(
         ComposeView(activity).apply {
-          setContent { GameLoadingScreen(game = game, level = level, timed = timed, withSky = true) }
+          setContent {
+            GameLoadingScreen(
+              game = game, level = level, timed = timed, withSky = true,
+              assessmentStep = assessmentStep, assessmentTotal = assessmentTotal
+            )
+          }
         },
         FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
       )

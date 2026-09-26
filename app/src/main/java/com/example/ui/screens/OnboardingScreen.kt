@@ -36,6 +36,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -72,7 +74,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.Achievements
+import com.example.data.BaselinePlan
+import com.example.data.Education
 import com.example.model.AgeBand
+import com.example.model.DomainType
 import com.example.model.GameRegistry
 import com.example.model.RankTier
 import com.example.ui.components.AchievementMedal
@@ -89,21 +94,30 @@ import kotlin.math.sin
 
 private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = Color(0xFFB4BFEA)
-private const val Pages = 6
+private const val Pages = 9
 
 /**
- * Primera experiencia (una sola vez, mientras `UserSettings.ageBand == null`): 5 pasos cortos sobre el cielo de
- * la app, sin formularios largos ni recuadros. 1) Bienvenida: los 9 juegos orbitando. 2) Tu nombre (opcional).
- * 3) Rango de edad (ajusta el ritmo de los juegos; es el único dato que hace falta). 4) Cuántos días por semana.
- * 5) Recordatorio diario: hora o ninguno (aquí se pide el permiso de notificaciones de Android 13+).
- * 6) Cómo funciona (camino diario, ligas, logros) y "Jugar mi primera sesión", que arranca la sesión de hoy.
+ * Primera experiencia (una sola vez, mientras `UserSettings.ageBand == null`): pasos cortos sobre el cielo de la
+ * app, sin formularios largos ni recuadros. 1) Bienvenida: los 9 juegos orbitando. 2) Tu nombre (opcional).
+ * 3) Rango de edad. 4) Nivel educacional (con "prefiero no decir"; sirve para comparar, no cambia la dificultad).
+ * 5) Metas: qué quiere entrenar (hasta 3; el camino diario las prioriza). 6) Cuántos días por semana.
+ * 7) Recordatorio diario: hora o ninguno (aquí se pide el permiso de notificaciones de Android 13+).
+ * 8) Cómo funciona (camino diario, ligas, logros). 9) "Encontremos tu punto de partida": la evaluación de 3 juegos
+ * cortos (al estilo del Fit Test de Lumosity) o "Hacerlo después". Ver data/Baseline.kt.
  * Atrás vuelve al paso anterior. Todo se guarda al final ([onFinish]).
  */
 @Composable
-fun OnboardingScreen(onFinish: (name: String, band: AgeBand, weeklyGoal: Int, reminderHour: Int?, play: Boolean) -> Unit) {
+fun OnboardingScreen(
+  onFinish: (
+    name: String, band: AgeBand, weeklyGoal: Int, reminderHour: Int?,
+    education: Education?, goals: Set<DomainType>, startBaseline: Boolean
+  ) -> Unit
+) {
   var page by rememberSaveable { mutableIntStateOf(0) }
   var name by rememberSaveable { mutableStateOf("") }
   var band by rememberSaveable { mutableStateOf<AgeBand?>(null) }
+  var education by rememberSaveable { mutableStateOf<Education?>(null) }
+  var goals by rememberSaveable { mutableStateOf(emptySet<DomainType>()) }
   var goal by rememberSaveable { mutableIntStateOf(4) }
   // Hora del recordatorio (-1 = sin recordatorios). Se guarda recién si Android da el permiso de notificaciones.
   var reminderHour by rememberSaveable { mutableIntStateOf(19) }
@@ -119,18 +133,18 @@ fun OnboardingScreen(onFinish: (name: String, band: AgeBand, weeklyGoal: Int, re
   // Android 13+: el permiso de notificaciones se pide acá, con contexto ("a la hora que elegiste").
   val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
     reminderHour = if (granted) askedHour else -1
-    go(5)
+    go(7)
   }
   fun pickReminder(hour: Int?) {
     if (hour == null) {
       reminderHour = -1
-      go(5)
+      go(7)
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       askedHour = hour
       notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     } else {
       reminderHour = hour
-      go(5)
+      go(7)
     }
   }
 
@@ -199,15 +213,29 @@ fun OnboardingScreen(onFinish: (name: String, band: AgeBand, weeklyGoal: Int, re
             onPick = { i -> band = AgeBand.entries[i]; go(3) }
           )
           3 -> ChoicePage(
+            title = "¿Cuál es tu nivel de estudios?",
+            hint = "Nos ayuda a compararte con personas parecidas a ti. No cambia la dificultad: eso lo decide cómo juegas.",
+            options = Education.entries.map { it.label to null },
+            selected = education?.ordinal,
+            tagPrefix = "education_",
+            tags = Education.entries.map { it.name.lowercase() },
+            onPick = { i -> education = Education.entries[i]; go(4) }
+          )
+          4 -> GoalsPage(
+            selected = goals,
+            onToggle = { d -> goals = if (d in goals) goals - d else if (goals.size < 3) goals + d else goals },
+            onNext = { go(5) }
+          )
+          5 -> ChoicePage(
             title = "¿Cuántos días por semana quieres entrenar?",
             hint = "Unos 5 minutos por día. Mejor poco y seguido que mucho de una vez.",
             options = listOf("3 días" to "Suave", "4 días" to "Recomendado", "5 días" to "Intenso", "Todos los días" to "Sin pausa"),
             selected = listOf(3, 4, 5, 7).indexOf(goal).takeIf { it >= 0 },
             tagPrefix = "weekly_goal_",
             tags = listOf("3", "4", "5", "7"),
-            onPick = { i -> goal = listOf(3, 4, 5, 7)[i]; go(4) }
+            onPick = { i -> goal = listOf(3, 4, 5, 7)[i]; go(6) }
           )
-          4 -> ChoicePage(
+          6 -> ChoicePage(
             title = "¿Te recordamos cada día?",
             hint = "Un aviso corto a la hora que elijas. Si ya completaste tu camino de hoy, no llega.",
             options = listOf("Por la mañana" to "9:00", "Al mediodía" to "13:00", "Por la tarde" to "19:00", "Por la noche" to "21:00", "Sin recordatorios" to null),
@@ -216,9 +244,10 @@ fun OnboardingScreen(onFinish: (name: String, band: AgeBand, weeklyGoal: Int, re
             tags = listOf("9", "13", "19", "21", "off"),
             onPick = { i -> pickReminder(listOf(9, 13, 19, 21, null)[i]) }
           )
-          else -> HowItWorksPage(
-            onPlay = { onFinish(name, band ?: AgeBand.ADULT, goal, reminderHour.takeIf { it >= 0 }, true) },
-            onExplore = { onFinish(name, band ?: AgeBand.ADULT, goal, reminderHour.takeIf { it >= 0 }, false) }
+          7 -> HowItWorksPage(onNext = { go(8) })
+          else -> StartingPointPage(
+            onStart = { onFinish(name, band ?: AgeBand.ADULT, goal, reminderHour.takeIf { it >= 0 }, education, goals, true) },
+            onLater = { onFinish(name, band ?: AgeBand.ADULT, goal, reminderHour.takeIf { it >= 0 }, education, goals, false) }
           )
         }
       }
@@ -355,22 +384,25 @@ private fun ChoicePage(
       hint, color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 8.dp, bottom = 26.dp)
     )
-    options.forEachIndexed { i, (label, sub) ->
-      val isSel = selected == i
-      ClayButton(
-        text = if (sub != null) "$label · $sub" else label,
-        color = if (isSel) Clay.Sun else Clay.Cream,
-        onClick = { onPick(i) },
-        modifier = Modifier.testTag("$tagPrefix${tags[i]}")
-      )
-      Spacer(Modifier.height(14.dp))
+    // Con pantallas chicas o letra grande las opciones se desplazan en vez de cortarse.
+    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+      options.forEachIndexed { i, (label, sub) ->
+        val isSel = selected == i
+        ClayButton(
+          text = if (sub != null) "$label · $sub" else label,
+          color = if (isSel) Clay.Sun else Clay.Cream,
+          onClick = { onPick(i) },
+          modifier = Modifier.testTag("$tagPrefix${tags[i]}")
+        )
+        Spacer(Modifier.height(14.dp))
+      }
     }
     Spacer(Modifier.weight(0.7f))
   }
 }
 
 @Composable
-private fun HowItWorksPage(onPlay: () -> Unit, onExplore: () -> Unit) {
+private fun HowItWorksPage(onNext: () -> Unit) {
   Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
     Spacer(Modifier.weight(0.45f))
     Text("Así funciona", color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 32.sp)
@@ -391,14 +423,109 @@ private fun HowItWorksPage(onPlay: () -> Unit, onExplore: () -> Unit) {
       text = "Vuelve cada día para mantener tu racha y desbloquear medallas."
     )
     Spacer(Modifier.weight(0.55f))
-    ClayButton(text = "Jugar mi primera sesión", onClick = onPlay, modifier = Modifier.testTag("btn_onboarding_play"))
+    ClayButton(text = "Siguiente", onClick = onNext, modifier = Modifier.testTag("btn_onboarding_how_next"))
+    Spacer(Modifier.height(20.dp))
+  }
+}
+
+/** Metas: hasta 3 dominios que quiere entrenar (el camino diario los prioriza). Se puede seguir sin elegir. */
+@Composable
+private fun GoalsPage(selected: Set<DomainType>, onToggle: (DomainType) -> Unit, onNext: () -> Unit) {
+  Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Spacer(Modifier.weight(0.25f))
+    Text("¿Qué quieres entrenar?", color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, textAlign = TextAlign.Center)
     Text(
-      "Explorar primero",
+      "Elige hasta 3. Tu camino de cada día les dará prioridad.",
+      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
+      modifier = Modifier.padding(top = 8.dp, bottom = 22.dp)
+    )
+    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+      DomainType.values().forEach { d ->
+        val on = d in selected
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (on) Clay.Cream else Color.White.copy(alpha = 0.06f))
+            .border(if (on) Clay.Border else 1.5.dp, if (on) Clay.Ink else Color.White.copy(alpha = 0.18f), RoundedCornerShape(20.dp))
+            .clickable { onToggle(d) }
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag("goal_${d.name.lowercase()}"),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Box(Modifier.size(18.dp).clip(CircleShape).background(d.color).border(2.dp, Clay.Ink, CircleShape))
+          Spacer(Modifier.width(12.dp))
+          Column(Modifier.weight(1f)) {
+            Text(d.displayName, color = if (on) Clay.Ink else Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(d.description, color = if (on) Clay.InkSoft else OnNightDim, fontFamily = FredokaFamily, fontSize = 13.sp)
+          }
+          // Marca de elegido (forma, no solo color).
+          Box(
+            Modifier.size(26.dp).clip(CircleShape)
+              .background(if (on) Clay.Lime else Color.Transparent)
+              .border(2.dp, if (on) Clay.Ink else Color.White.copy(alpha = 0.35f), CircleShape),
+            contentAlignment = Alignment.Center
+          ) { if (on) Text("✓", color = Clay.Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
+        }
+      }
+    }
+    Spacer(Modifier.weight(0.75f))
+    ClayButton(text = if (selected.isEmpty()) "Saltar" else "Siguiente", onClick = onNext, modifier = Modifier.testTag("btn_onboarding_goals_next"))
+    Spacer(Modifier.height(20.dp))
+  }
+}
+
+/**
+ * Invitación a la evaluación inicial: los 3 juegos como planetas (qué mide cada uno), cuánto dura y que no es un
+ * examen. "Empezar" la juega ahora; "Hacerlo después" estima el punto de partida y la deja en Perfil.
+ */
+@Composable
+private fun StartingPointPage(onStart: () -> Unit, onLater: () -> Unit) {
+  Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Spacer(Modifier.weight(0.35f))
+    Text(
+      "Encontremos tu punto de partida",
+      color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 34.sp,
+      textAlign = TextAlign.Center
+    )
+    Text(
+      "3 juegos cortos, unos 5 minutos. No es un examen: con esto cada juego empieza a tu medida.",
+      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
+      modifier = Modifier.padding(top = 10.dp, bottom = 30.dp)
+    )
+    Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
+      BaselinePlan.steps.forEachIndexed { i, step ->
+        val game = GameRegistry.getById(step.gameId)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(96.dp)) {
+          Box(
+            modifier = Modifier
+              .size(76.dp)
+              .clip(CircleShape)
+              .background(step.domain.color)
+              .border(3.dp, Clay.Ink, CircleShape),
+            contentAlignment = Alignment.Center
+          ) { GameIcon(step.gameId, size = 50.dp) }
+          Text(
+            "${i + 1}. ${step.domain.displayName}",
+            color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+            modifier = Modifier.padding(top = 8.dp)
+          )
+          Text(
+            game?.title ?: "", color = OnNightDim, fontFamily = FredokaFamily, fontSize = 12.sp, textAlign = TextAlign.Center
+          )
+        }
+      }
+    }
+    Spacer(Modifier.weight(0.65f))
+    ClayButton(text = "Empezar", onClick = onStart, modifier = Modifier.testTag("btn_onboarding_baseline"))
+    Text(
+      "Hacerlo después",
       color = OnNight, fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
       modifier = Modifier
         .padding(top = 8.dp)
         .clip(RoundedCornerShape(12.dp))
-        .clickable(onClick = onExplore)
+        .clickable(onClick = onLater)
         .padding(horizontal = 16.dp, vertical = 14.dp) // área de toque >= 48 dp
         .testTag("btn_onboarding_explore")
     )

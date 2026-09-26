@@ -39,7 +39,12 @@ object UnityGameLauncher {
     val haptics_enabled: Boolean = true,
     // DDA común: rating guardado del juego (0..1). `has_dda_rating` evita confundir "sin dato" con 0.
     val has_dda_rating: Boolean = false,
-    val dda_rating: Double = 0.0
+    val dda_rating: Double = 0.0,
+    // Evaluación inicial "Tu punto de partida" (ver data/Baseline.kt): partida corta que busca el nivel; paso N
+    // de M se muestra en la cuenta regresiva. En la evaluación NO se manda el rating guardado (se mide de cero).
+    val assessment: Boolean = false,
+    val assessment_step: Int = 0,
+    val assessment_total: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -166,8 +171,10 @@ object UnityGameLauncher {
     timed: Boolean,
     ageBand: AgeBand,
     soundEnabled: Boolean = true,
-    launchId: String? = null // una partida en pausa se retoma con SU id (Unity no la reinicia)
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId)
+    launchId: String? = null, // una partida en pausa se retoma con SU id (Unity no la reinicia)
+    assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
+    assessmentTotal: Int = 0
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal)
 
   private fun launch(
     context: Context,
@@ -191,9 +198,12 @@ object UnityGameLauncher {
     timed: Boolean,
     ageBand: AgeBand,
     soundEnabled: Boolean,
-    launchId: String? = null
+    launchId: String? = null,
+    assessmentStep: Int = 0,
+    assessmentTotal: Int = 0
   ): Intent {
-    val savedRating = com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
+    val assessment = assessmentStep > 0
+    val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
     val config = InitConfigDto(
       user_id = userId,
       game_id = gameId, // mismo id de texto que GameRegistry (Models.kt), no un int
@@ -205,7 +215,10 @@ object UnityGameLauncher {
         sound_enabled = soundEnabled,
         haptics_enabled = com.example.NeuroVidaApplication.instance.repository.userSettings.value.hapticsEnabled,
         has_dda_rating = savedRating >= 0f,
-        dda_rating = savedRating.coerceAtLeast(0f).toDouble()
+        dda_rating = savedRating.coerceAtLeast(0f).toDouble(),
+        assessment = assessment,
+        assessment_step = assessmentStep,
+        assessment_total = assessmentTotal
       )
     )
     val json = adapter.toJson(config)

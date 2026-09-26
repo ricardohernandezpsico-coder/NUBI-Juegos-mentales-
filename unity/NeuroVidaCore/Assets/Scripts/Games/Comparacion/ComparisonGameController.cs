@@ -119,7 +119,7 @@ namespace NeuroVida.Games.Comparacion
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Comparación", "Prepárate", () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("Comparación", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);

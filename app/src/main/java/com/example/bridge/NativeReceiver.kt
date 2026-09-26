@@ -45,7 +45,9 @@ object NativeReceiver {
     val average_response_time_ms: Double,
     val final_span_length: Int,
     val level: Int,
-    val timed: Boolean
+    val timed: Boolean,
+    // Nivel más alto alcanzado (1..16+); 0 en versiones viejas de Unity. Se guarda como rating 0..1 (memoria).
+    val peak_level: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -232,7 +234,8 @@ object NativeReceiver {
       // NeuroVidaViewModel.finishActiveGame, que tampoco recalcula nada, solo reusa
       // ActiveGameSession.level/.timed.
       timed = metrics.timed,
-      level = metrics.level
+      level = metrics.level,
+      endRating = metrics.peak_level.takeIf { it > 0 }?.let { com.example.data.ratingFromSequencePeak(it) }
     )
   }
 

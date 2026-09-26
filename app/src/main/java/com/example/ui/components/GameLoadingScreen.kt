@@ -67,7 +67,10 @@ fun GameLoadingScreen(
   timed: Boolean?,
   modifier: Modifier = Modifier,
   withSky: Boolean = false,
-  fadeInDelayMs: Long = 0L
+  fadeInDelayMs: Long = 0L,
+  // Evaluación inicial: "Punto de partida · 1 de 3" en vez de nivel y modo (ver data/Baseline.kt).
+  assessmentStep: Int = 0,
+  assessmentTotal: Int = 0
 ) {
   val context = LocalContext.current
   val reduceMotion = remember {
@@ -118,7 +121,7 @@ fun GameLoadingScreen(
         color = Color.White,
         textAlign = TextAlign.Center
       )
-      val details = buildList {
+      val details = if (assessmentStep > 0) listOf("Punto de partida · $assessmentStep de $assessmentTotal") else buildList {
         if (level != null) add("Nivel $level · ${LevelTier.fromLevel(level).tierName}")
         if (timed != null) add(if (timed) "Reto" else "Precisión")
       }

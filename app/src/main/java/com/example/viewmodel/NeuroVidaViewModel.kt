@@ -35,7 +35,19 @@ data class ActiveGameSession(
   // Progresión sin techo más allá de nivel 5 (Experto) — ver GameProgressEntity.masteryStreak.
   val intensity: Int = 0,
   // Partida en pausa que se retoma: se relanza Unity con este id de lanzamiento y la partida sigue donde quedó.
-  val resumeLaunchId: String? = null
+  val resumeLaunchId: String? = null,
+  // Evaluación inicial "Tu punto de partida": paso 1..N (0 = partida normal). Ver data/Baseline.kt.
+  val assessmentStep: Int = 0
+)
+
+/**
+ * Estado de la evaluación inicial mientras se juega ([done] juegos terminados de BaselinePlan.steps, ratings
+ * medidos por juego) y, al terminar, el mapa ([result]).
+ */
+data class BaselineRun(
+  val done: Int = 0,
+  val measured: Map<String, Float> = emptyMap(),
+  val result: com.example.data.Baseline? = null
 )
 
 data class DomainStats(
@@ -67,6 +79,91 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     GameRegistry.allGames.map { g -> GameRankInfo(gameId = g.id, rating = ratingMap[g.id] ?: 0) }
   }.stateIn(viewModelScope, SharingStarted.Eagerly, GameRegistry.allGames.map { GameRankInfo(it.id, 0) })
   val dailySession = repository.dailySession
+
+  /** Punto de partida: educación, metas y el mapa guardado (null = no hizo la evaluación). */
+  val education = repository.education
+  val goals = repository.goals
+  val baseline = repository.baseline
+
+  /** Evaluación en curso o su resultado por mostrar (null = no se está haciendo). */
+  private val _baselineRun = MutableStateFlow<BaselineRun?>(null)
+  val baselineRun: StateFlow<BaselineRun?> = _baselineRun.asStateFlow()
+
+  /** Logros conseguidos durante la evaluación: se celebran al cerrar el mapa, no entre juego y juego. */
+  private var baselineAchievements: List<String> = emptyList()
+
+  /** Rango de edad con que arranca la evaluación (al salir del onboarding los ajustes todavía no se recargaron). */
+  private var baselineAge: AgeBand? = null
+
+  /** Empieza (o vuelve a empezar) la evaluación: 3 juegos cortos, uno tras otro. */
+  fun startBaseline(age: AgeBand? = null) {
+    baselineAge = age ?: userSettings.value.ageBand
+    _baselineRun.value = BaselineRun()
+    baselineAchievements = emptyList()
+    _lastResult.value = null
+    launchBaselineStep(0)
+  }
+
+  /** Juega el siguiente juego de la evaluación (o repite el que quedó a medias). */
+  fun continueBaseline() {
+    val run = _baselineRun.value ?: return
+    if (run.result == null && run.done < com.example.data.BaselinePlan.steps.size) launchBaselineStep(run.done)
+  }
+
+  private fun launchBaselineStep(index: Int) {
+    val step = com.example.data.BaselinePlan.steps[index]
+    val def = GameRegistry.getById(step.gameId) ?: return
+    pausedGame = null
+    _activeGame.value = ActiveGameSession(
+      gameDef = def,
+      level = com.example.data.BaselinePlan.startLevel(baselineAge ?: userSettings.value.ageBand),
+      timed = step.timed,
+      assessmentStep = index + 1
+    )
+  }
+
+  /** "Terminar después" a mitad de la evaluación: se estima el punto de partida y queda para hacerla desde Perfil. */
+  fun skipBaseline() {
+    _baselineRun.value = null
+    _activeGame.value = null
+    viewModelScope.launch {
+      repository.applyPriorIfNeeded(userSettings.value.ageBand, education.value)
+      flushBaselineAchievements()
+    }
+  }
+
+  /** Cierra el mapa ("Empezar mi camino"): vuelve a Hoy y celebra los logros que quedaron pendientes. */
+  fun finishBaseline() {
+    _baselineRun.value = null
+    setTab(AppTab.HOY)
+    flushBaselineAchievements()
+  }
+
+  private fun flushBaselineAchievements() {
+    if (baselineAchievements.isNotEmpty()) _achievementQueue.value = _achievementQueue.value + baselineAchievements
+    baselineAchievements = emptyList()
+  }
+
+  private fun onBaselineResult(session: ActiveGameSession, result: GamePlayResult) {
+    val rating = result.endRating ?: (result.score / 100f)
+    _activeGame.value = null
+    viewModelScope.launch {
+      val outcome = repository.recordGameResult(result, countsForDailySession = false)
+      baselineAchievements = baselineAchievements + outcome.newAchievements
+      val run = _baselineRun.value ?: BaselineRun()
+      val measured = run.measured + (session.gameDef.id to rating)
+      val done = maxOf(run.done, session.assessmentStep)
+      if (done >= com.example.data.BaselinePlan.steps.size) {
+        val baseline = com.example.data.buildBaseline(measured)
+        repository.applyBaseline(baseline)
+        _baselineRun.value = BaselineRun(done, measured, baseline)
+        triggerHapticFeedback(HapticType.SUCCESS)
+      } else {
+        _baselineRun.value = BaselineRun(done, measured)
+        triggerHapticFeedback(HapticType.LIGHT)
+      }
+    }
+  }
 
   /** Ascensos de liga guardados (para marcarlos en el camino de Hoy). */
   val leagueEvents = repository.leagueEvents
@@ -256,6 +353,10 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
    */
   fun onUnityResult(result: GamePlayResult) {
     val current = _activeGame.value
+    if (current != null && current.assessmentStep > 0 && current.gameDef.id == result.gameId) {
+      onBaselineResult(current, result)
+      return
+    }
     viewModelScope.launch {
       val outcome = repository.recordGameResult(result)
       if (current != null && current.gameDef.id == result.gameId) {
@@ -324,8 +425,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     awaitingUnityReturn = false
     if (paused) {
       // "Salir" del menú de pausa: la partida sigue viva (en pausa) en Unity; se vuelve al menú de la app.
+      // En la evaluación inicial no se retoma: ese juego se vuelve a jugar desde el principio ("Seguir").
       val session = _activeGame.value
-      if (session != null && launchId != null) pausedGame = session to launchId
+      if (session != null && launchId != null && session.assessmentStep == 0) pausedGame = session to launchId
       _activeGame.value = null
       return
     }
@@ -505,10 +607,20 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /**
    * Fin del onboarding (primera vez): guarda nombre (si lo escribió), meta de días por semana, recordatorio
-   * ([reminderHour] null = sin recordatorios) y rango de edad de una sola vez. Poner `ageBand` es lo que saca al usuario del onboarding (ver `MainActivity`). Con
-   * [startFirstSession] arranca enseguida la sesión de hoy.
+   * ([reminderHour] null = sin recordatorios), rango de edad, nivel educacional y metas de una sola vez. Poner
+   * `ageBand` es lo que saca al usuario del onboarding (ver `MainActivity`). Con [playBaseline] arranca la
+   * evaluación "Tu punto de partida"; si no, se estima el punto de partida (ver data/Baseline.kt).
    */
-  fun completeOnboarding(name: String, band: AgeBand, weeklyGoal: Int, reminderHour: Int?, startFirstSession: Boolean) {
+  fun completeOnboarding(
+    name: String,
+    band: AgeBand,
+    weeklyGoal: Int,
+    reminderHour: Int?,
+    education: com.example.data.Education?,
+    goals: Set<DomainType>,
+    playBaseline: Boolean
+  ) {
+    repository.saveProfileExtras(education, goals)
     viewModelScope.launch {
       val current = userSettings.value
       repository.updateSettings(
@@ -521,7 +633,12 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
           ageBand = band
         )
       )
-      if (startFirstSession) startDailySession()
+      if (playBaseline) {
+        startBaseline(band)
+      } else {
+        // "Hacerlo después": punto de partida estimado; la evaluación queda disponible en Perfil.
+        repository.applyPriorIfNeeded(band, education)
+      }
     }
   }
 

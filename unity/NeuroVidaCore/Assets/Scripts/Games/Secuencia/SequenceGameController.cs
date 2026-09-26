@@ -52,6 +52,12 @@ namespace NeuroVida.Games.Secuencia
         private const float IsiSlowdownMs = 200f; // regla anti-frustración
         private const int SafetyMaxRounds = 60; // la escalera de niveles no tiene techo natural; esto evita una sesión infinita
 
+        // Evaluación inicial ("Tu punto de partida", ver Shared/Assessment): escalera corta tipo span de Corsi.
+        // Parte del nivel 3 (secuencia de 4), cada acierto sube un nivel (no dos seguidos), 3 vidas y como
+        // máximo 12 secuencias: en ~1-2 minutos se encuentra el techo de la persona (nivel más alto alcanzado).
+        private const int AssessmentStartLevel = 3;
+        private const int AssessmentMaxRounds = 12;
+
         // ---- Constantes de layout ----
         // 1080x1920 de referencia -> 1080/360dp = 3 unidades de Canvas por dp. Con
         // CanvasScaler en ScaleWithScreenSize, TODOS los tamaños de acá en más están en
@@ -163,6 +169,7 @@ namespace NeuroVida.Games.Secuencia
         /// (Kotlin), pero mapeado a un índice de nivel en vez de un span continuo.</summary>
         private int SeedLevelIndex()
         {
+            if (Assessment.Active) return AssessmentStartLevel;
             int fromAppLevel = Mathf.Clamp(_config.config.level, 1, 6);
             int fromMastery = Mathf.Clamp(_config.config.base_intensity / 20, 0, 4);
             return Mathf.Clamp(fromAppLevel + fromMastery, 1, SequenceLevelDatabase.MaxDefinedLevel);
@@ -204,7 +211,7 @@ namespace NeuroVida.Games.Secuencia
                 _safeAreaContentRect.gameObject.SetActive(false);
                 yield return StartCoroutine(_countdown.Play(
                     $"Nivel {_currentLevelIndex}",
-                    "¿Listos?",
+                    Assessment.Subtitle("¿Listos?"),
                     () =>
                     {
                         _safeAreaContentRect.gameObject.SetActive(true);
@@ -352,7 +359,7 @@ namespace NeuroVida.Games.Secuencia
                 StartCoroutine(UiFx.SparkBurst(_fxLayerRect, Vector2.zero, new Color(1f, 0.88f, 0.35f), 16, _boardContentWidth * 0.6f, 44f, 0.65f));
                 hold = 0.75f;
 
-                if (_consecutiveCorrectAtLevel >= 2)
+                if (_consecutiveCorrectAtLevel >= (Assessment.Active ? 1 : 2))
                 {
                     _consecutiveCorrectAtLevel = 0;
                     _currentLevelIndex++;
@@ -387,7 +394,7 @@ namespace NeuroVida.Games.Secuencia
             {
                 EndSession(gameOver: true);
             }
-            else if (roundNumber >= SafetyMaxRounds)
+            else if (roundNumber >= (Assessment.Active ? AssessmentMaxRounds : SafetyMaxRounds))
             {
                 EndSession(gameOver: false);
             }
@@ -429,7 +436,8 @@ namespace NeuroVida.Games.Secuencia
                     average_response_time_ms = avgReaction,
                     final_span_length = peakLevel.SequenceLength,
                     level = _config.config.level,
-                    timed = _config.config.timed
+                    timed = _config.config.timed,
+                    peak_level = _peakLevelIndex
                 }
             };
 

@@ -46,5 +46,11 @@ namespace NeuroVida.Contracts
         /// <summary>Rating guardado del DDA común (0..1) si la app tiene uno para este juego.</summary>
         public bool has_dda_rating;
         public float dda_rating;
+        /// <summary>Evaluación inicial "Tu punto de partida" (onboarding): partida corta que busca el nivel de la
+        /// persona. <c>assessment_step</c> de <c>assessment_total</c> (1..3) se muestra en la cuenta regresiva.
+        /// Ver <c>Games/Shared/Assessment.cs</c>.</summary>
+        public bool assessment;
+        public int assessment_step;
+        public int assessment_total;
     }
 }

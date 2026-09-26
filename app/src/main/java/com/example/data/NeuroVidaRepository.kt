@@ -12,6 +12,9 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
+/** Juegos con motor de dificultad propio (no usan el rating del DDA común guardado en `ddaRating`). */
+private val OWN_ENGINE_GAMES = setOf("secuencia", "parejas")
+
 class NeuroVidaRepository(
   context: Context,
   private val database: NeuroVidaDatabase = NeuroVidaDatabase.getDatabase(context)
@@ -149,6 +152,82 @@ class NeuroVidaRepository(
   private val achievementPrefs = context.getSharedPreferences("achievements", Context.MODE_PRIVATE)
   private val _achievementUnlocks = MutableStateFlow(decodeUnlocks(achievementPrefs.getString("unlocks", null)))
   val achievementUnlocks: StateFlow<Map<String, Long>> = _achievementUnlocks.asStateFlow()
+
+  // "Tu punto de partida" (ver Baseline.kt): nivel educacional, metas y el mapa de la evaluación inicial. En
+  // SharedPreferences (como ligas y logros) para no migrar Room por datos que solo se escriben en el onboarding.
+  private val profilePrefs = context.getSharedPreferences("profile_extra", Context.MODE_PRIVATE)
+  private val _education = MutableStateFlow(
+    profilePrefs.getString("education", null)?.let { n -> Education.values().firstOrNull { it.name == n } }
+  )
+  val education: StateFlow<Education?> = _education.asStateFlow()
+  private val _goals = MutableStateFlow(decodeGoals(profilePrefs.getString("goals", null)))
+  val goals: StateFlow<Set<DomainType>> = _goals.asStateFlow()
+  private val _baseline = MutableStateFlow(decodeBaseline(profilePrefs.getString("baseline", null)))
+  val baseline: StateFlow<Baseline?> = _baseline.asStateFlow()
+
+  /** Datos del onboarding para el punto de partida (educación null = no respondió; metas vacías = sin preferencia). */
+  fun saveProfileExtras(education: Education?, goals: Set<DomainType>) {
+    _education.value = education
+    _goals.value = goals
+    profilePrefs.edit()
+      .putString("education", education?.name)
+      .putString("goals", encodeGoals(goals))
+      .apply()
+  }
+
+  /**
+   * Guarda el mapa de la evaluación y siembra el punto de partida de los 9 juegos (cada uno toma el rating de su
+   * dominio). La primera evaluación reemplaza el nivel y el rating de todos los juegos que no se jugaron después
+   * del punto de partida estimado (si se había saltado); si se repite más adelante, solo completa los juegos del DDA
+   * común que todavía no tienen rating (no pisa lo ya jugado). Los juegos medidos ya guardaron su rating al jugarse.
+   */
+  suspend fun applyBaseline(baseline: Baseline) = withContext(Dispatchers.IO) {
+    val firstEvaluation = _baseline.value == null
+    val priorAt = profilePrefs.getLong("prior_at", 0L)
+    seedStartingPoint(seedRatings(baseline)) { p -> firstEvaluation && (priorAt == 0L || p.lastPlayedTimestamp <= priorAt) }
+    _baseline.value = baseline
+    profilePrefs.edit().putString("baseline", encodeBaseline(baseline)).apply()
+    refreshTodaySession()
+  }
+
+  /**
+   * Se saltó la evaluación: punto de partida ESTIMADO por edad y educación ([priorRating]), una sola vez y solo
+   * donde no hay datos. El DDA lo corrige en la primera partida de cada juego.
+   */
+  suspend fun applyPriorIfNeeded(age: AgeBand?, education: Education?) = withContext(Dispatchers.IO) {
+    if (_baseline.value != null || profilePrefs.getLong("prior_at", 0L) > 0L) return@withContext
+    val prior = priorRating(age, education)
+    seedStartingPoint(GameRegistry.allGames.associate { it.id to prior }) { true }
+    profilePrefs.edit().putLong("prior_at", System.currentTimeMillis()).apply()
+    refreshTodaySession()
+  }
+
+  /** [overwrite] = si ese juego toma el punto de partida aunque ya tenga nivel/rating; si no, solo completa lo vacío. */
+  private suspend fun seedStartingPoint(ratings: Map<String, Float>, overwrite: (GameProgressEntity) -> Boolean) {
+    val all = gameProgressDao.getAllProgressSync().associateBy { it.gameId }
+    ratings.forEach { (id, r) ->
+      val p = all[id] ?: GameProgressEntity(gameId = id, currentLevel = 1)
+      val replace = overwrite(p)
+      val commonDda = id !in OWN_ENGINE_GAMES
+      gameProgressDao.insertOrUpdate(
+        p.copy(
+          currentLevel = if (replace) levelFromRating(r) else p.currentLevel,
+          ddaRating = if (commonDda && (replace || p.ddaRating < 0f)) r.coerceIn(0f, 1f) else p.ddaRating
+        )
+      )
+    }
+  }
+
+  /** Si el camino de hoy todavía no empezó, se vuelve a elegir (con las metas y el mapa nuevos). */
+  suspend fun refreshTodaySession() = withContext(Dispatchers.IO) {
+    val today = getTodayDateKey()
+    val current = dailySessionDao.getDailySessionSync(today)
+    if (current != null && current.toDomain().completedCount > 0) return@withContext
+    val queue = pickSessionQueue(gameResultDao.getAllResultsSync().map { it.toDomain() })
+    val entity = DailySessionEntity(dateKey = today, gameIdsRaw = queue.joinToString(","), completedCount = 0, scoresRaw = "")
+    dailySessionDao.insertOrUpdate(entity)
+    _dailySession.value = entity.toDomain()
+  }
 
   private fun saveUnlocks(unlocks: Map<String, Long>) {
     _achievementUnlocks.value = unlocks
@@ -429,10 +508,17 @@ class NeuroVidaRepository(
       }
     }
 
-    val sortedDomains = DomainType.values().sortedBy { domain ->
+    // Nivel por dominio: puntaje promedio jugado (0..1) o, sin partidas, el del mapa del punto de partida.
+    val baselineNow = _baseline.value
+    val domainLevel = DomainType.values().associateWith { domain ->
       val scores = domainScores[domain].orEmpty()
-      if (scores.isEmpty()) 0.0 else scores.average()
+      if (scores.isNotEmpty()) scores.average().toFloat() / 100f else baselineNow?.domains?.get(domain) ?: 0f
     }
+    // Primero las metas (la más baja primero) y lo más bajo; el tercer juego sale de un dominio que no es meta,
+    // para que el camino no repita siempre los mismos dominios.
+    val goalsNow = _goals.value
+    val ranked = rankDomainsForSession(goalsNow, domainLevel)
+    val sortedDomains = ranked.take(2) + (ranked.drop(2).firstOrNull { it !in goalsNow } ?: ranked[2])
 
     val selected = mutableListOf<String>()
     sortedDomains.take(3).forEach { domain ->
@@ -449,7 +535,8 @@ class NeuroVidaRepository(
     return selected
   }
 
-  suspend fun recordGameResult(result: GamePlayResult): RecordOutcome = withContext(Dispatchers.IO) {
+  /** [countsForDailySession] false = no avanza el camino de hoy (juegos de la evaluación inicial). */
+  suspend fun recordGameResult(result: GamePlayResult, countsForDailySession: Boolean = true): RecordOutcome = withContext(Dispatchers.IO) {
     seedAchievementsIfNeeded() // antes de guardar: lo que consiga ESTA partida sí se celebra
     // 1. Add to Room game_results table
     gameResultDao.insert(result.toEntity())
@@ -510,7 +597,7 @@ class NeuroVidaRepository(
     // 3. Advance Daily Session in Room if game matches current queue
     val today = getTodayDateKey()
     val currentSessionEntity = dailySessionDao.getDailySessionSync(today)
-    if (currentSessionEntity != null) {
+    if (currentSessionEntity != null && countsForDailySession) {
       val domainSession = currentSessionEntity.toDomain()
       if (domainSession.completedCount < domainSession.gameIds.size) {
         val expectedGame = domainSession.gameIds[domainSession.completedCount]
