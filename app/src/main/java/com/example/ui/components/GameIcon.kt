@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -269,6 +269,21 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(Offset(27f, 72f), 7f), Clay.Coral, border = 3.5f, shadow = false)
       clay(diamond(Offset(76f, 22f), 9f, 13f), Clay.Sky, gloss = true)
       sparkle(Offset(90f, 40f), 7f, Color.White)
+    }
+    "correo" -> {
+      // Un sobre que vuela (estela de puntos sol) hacia un planeta coral con anillo.
+      listOf(Offset(14f, 80f), Offset(22f, 72f), Offset(30f, 64f)).forEachIndexed { i, o ->
+        drawCircle(Ink, 3.8f + i * 0.4f, o)
+        drawCircle(Clay.Sun, 2.3f + i * 0.4f, o)
+      }
+      clay(circle(Offset(72f, 26f), 15f), Clay.Coral, gloss = true)
+      drawPath(Path().apply { addOval(Rect(50f, 21f, 94f, 31f)) }, Ink, style = Stroke(4f))
+      drawPath(Path().apply { addArc(Rect(50f, 21f, 94f, 31f), 0f, 180f) }, Clay.Sun, style = Stroke(2.2f))
+      rotate(-14f, Offset(50f, 60f)) {
+        clay(roundRect(28f, 44f, 44f, 30f, 6f), Cream, gloss = true)
+        drawPath(Path().apply { moveTo(31f, 47f); lineTo(50f, 62f); lineTo(69f, 47f) }, Ink, style = Stroke(3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        clay(circle(Offset(50f, 60f), 5f), Clay.Coral, border = 2.5f, shadow = false)
+      }
     }
     "trafico" -> {
       // Estación de carga arriba; la ruta baja en curva hasta un desvío (disco con flecha) y se abre hacia dos planetas.

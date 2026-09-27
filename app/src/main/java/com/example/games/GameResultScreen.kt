@@ -678,11 +678,66 @@ fun GameResultScreen(
       }
     }
 
+    // Correo Estelar: "tu memoria para lo pendiente", por lugar (planetas) y por hora (radio), y cómo se usó el reloj.
+    result.mailEventTotal?.let { evTotal ->
+      Spacer(Modifier.height(14.dp))
+      val evHits = result.mailEventHits ?: 0
+      val raTotal = result.mailRadioTotal ?: 0
+      val raHits = result.mailRadioHits ?: 0
+      Text(
+        text = "Tu memoria para lo pendiente: ${evHits + raHits} de ${evTotal + raTotal} encargos",
+        color = Clay.Sun,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = FredokaFamily,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 24.dp)
+      )
+      Text(
+        text = "Acordarte de hacer algo en el momento justo, sin que nada te avise del todo: como tomar un remedio o hacer una llamada.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+      Spacer(Modifier.height(6.dp))
+      Text("Por lugar (planetas): $evHits de $evTotal", color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+      FilledSlots(evHits, evTotal, Clay.Coral, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por lugar: $evHits de $evTotal" })
+      if (raTotal > 0) {
+        Text(
+          "Por hora (radio): $raHits de $raTotal",
+          color = Clay.Cream,
+          fontSize = 15.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 8.dp)
+        )
+        FilledSlots(raHits, raTotal, Clay.Grape, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por hora: $raHits de $raTotal" })
+      }
+      val notes = listOfNotNull(
+        com.example.data.Mail.commissionMessage(result.mailCommissions ?: 0, result.mailLureCommissions ?: 0),
+        com.example.data.Mail.clockMessage(result.mailClockChecks ?: -1, result.mailClockLate ?: 0, raTotal),
+        com.example.data.Mail.compareMessage(evHits, evTotal, raHits, raTotal)
+      )
+      notes.forEach {
+        Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+      }
+      val lane = result.mailLanePct
+      val envelopes = result.mailEnvelopes
+      if (lane != null && lane >= 0) {
+        Text(
+          text = "Ruta: $lane% del vuelo" + (envelopes?.takeIf { it >= 0 }?.let { " · $it sobres" } ?: ""),
+          color = TextSoft,
+          fontSize = 13.sp,
+          modifier = Modifier.padding(top = 4.dp)
+        )
+      }
+    }
+
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
-      result.homingErrorPct
+      result.homingErrorPct, result.mailEventTotal
     ).any { it != null }
     if (hasStarMeasure) {
       Text(

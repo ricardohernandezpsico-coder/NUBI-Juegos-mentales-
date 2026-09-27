@@ -129,7 +129,20 @@ object NativeReceiver {
     val homing_along: List<Double>? = null,
     val homing_lateral: List<Double>? = null,
     val homing_beacon: List<Int>? = null,
-    val homing_perfect: Int = 0
+    val homing_perfect: Int = 0,
+    // Solo Correo Estelar (ver StroopTelemetry.cs): encargos por lugar y por hora, errores, reloj, ruta y sobres. -1 = no aplica.
+    val mail_event_hits: Int = -1,
+    val mail_event_total: Int = -1,
+    val mail_commissions: Int = -1,
+    val mail_lure_commissions: Int = -1,
+    val mail_radio_hits: Int = -1,
+    val mail_radio_total: Int = -1,
+    val mail_radio_offtime: Int = -1,
+    val mail_radio_period_s: Int = -1,
+    val mail_clock_checks: Int = -1,
+    val mail_clock_late: Int = -1,
+    val mail_lane_pct: Int = -1,
+    val mail_envelopes: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -257,7 +270,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -320,6 +333,8 @@ object NativeReceiver {
     Log.i(TAG, "DDA ${telemetry.game_id}: end_rating=${metrics.end_rating} peak_level=${metrics.peak_level}")
     // Rumbo a Casa: una terna por viaje (dónde quedó a lo largo y a lo ancho de la vuelta justa, y si había faro);
     // solo si las tres listas vienen completas y del mismo largo.
+    // Correo Estelar: sus campos solo valen si el juego es Correo y trajo encargos por lugar.
+    val mail = telemetry.game_id == "correo" && metrics.mail_event_total >= 0
     val homing = run {
       val along = metrics.homing_along
       val lateral = metrics.homing_lateral
@@ -372,7 +387,19 @@ object NativeReceiver {
       homingAlong = homing?.let { h -> h.map { it.first } },
       homingLateral = homing?.let { h -> h.map { it.second } },
       homingBeacon = homing?.let { h -> h.map { it.third } },
-      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 }
+      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 },
+      mailEventHits = metrics.mail_event_hits.takeIf { mail },
+      mailEventTotal = metrics.mail_event_total.takeIf { mail },
+      mailCommissions = metrics.mail_commissions.takeIf { mail },
+      mailLureCommissions = metrics.mail_lure_commissions.takeIf { mail },
+      mailRadioHits = metrics.mail_radio_hits.takeIf { mail },
+      mailRadioTotal = metrics.mail_radio_total.takeIf { mail },
+      mailRadioOfftime = metrics.mail_radio_offtime.takeIf { mail },
+      mailRadioPeriodS = metrics.mail_radio_period_s.takeIf { mail },
+      mailClockChecks = metrics.mail_clock_checks.takeIf { mail },
+      mailClockLate = metrics.mail_clock_late.takeIf { mail },
+      mailLanePct = metrics.mail_lane_pct.takeIf { mail },
+      mailEnvelopes = metrics.mail_envelopes.takeIf { mail }
     )
   }
 }

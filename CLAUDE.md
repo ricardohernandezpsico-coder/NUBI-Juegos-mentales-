@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 18 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 19 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -15,7 +15,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
   `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 18 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 19 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
@@ -41,7 +41,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   (`GamesLibraryScreen`, planetas) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`; y
+- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
@@ -358,6 +358,29 @@ Lección (tras Constelación y Primer Contacto): nada de juegos "pesados" de exp
 Estelar: movimiento continuo, se entiende al instante, enganche inmediato. Queda de esa etapa: `Toast.FitSize` cuenta
 los renglones reales (los avisos largos ya no se salen del recuadro, en todos los juegos).
 
+**Correo Estelar** (`Games/Correo/`, id `correo`, dominio MEMORIA; 28-sep, elegido por Ricardo entre 4 propuestas con el
+movimiento de Piloto Estelar; maqueta aprobada antes de programar: `tools/art-preview/correo.py` →
+`docs/previews/correo-estelar.png`): MEMORIA PROSPECTIVA, acordarse de hacer algo en el momento justo (Rummel y
+Kvavilashvili, 2023). Nadie en la competencia la mide.
+- Hoja de ruta antes de salir (sin recuadros: ícono + texto; "durante el vuelo no los verás"; truco de intención de
+  implementación, Chen et al. 2015) y botón "¡A volar!". Vuelo de 150 s con la ruta de Piloto (reusa `PilotContract`:
+  ancho, curvas, velocidad × 0,85; sin piloto automático) y sobres sobre la ruta (+10, tarea en curso).
+- Por lugar: planetas-puerto de Tráfico (`TrafficSprites.Port`) a los costados de la ruta; tocar el del color del
+  encargo = el paquete vuela en arco, ✓ "¡Entregado!"; otro = ✗ "No es de tu encargo"; si se va = "Se fue sin su
+  paquete" (suave). Por hora: radio abajo a la derecha, ventana ±5 s ("¡Aviso recibido!" / "Aún no es la hora" / "Ya
+  pasó la hora"; al cerrarse sin aviso, "Se pasó la hora del aviso"); reloj tapado arriba a la derecha, se destapa 1,6 s.
+- Reglas y pruebas: `MailContract` / `MailContractTests` (5): 10 niveles; encargos por lugar 1 color (2 desde el 6); radio
+  desde el nivel 2 cada 30 s (25 desde el 6, 20 desde el 9); parecidos desde el 3 (15% → 45%; pares coral/amarillo →
+  naranjo, celeste → menta, lila → rosado); ~23% de planetas del encargo, nunca dos seguidos; un planeta cada 6 → 4,2 s.
+  Un DDA (`stepUp` 0.5) registra cada encargo (entrega, planeta perdido, error, hora con o sin aviso); los encargos se
+  fijan al salir, la ruta y el ritmo se adaptan en vuelo.
+- Medida: **tu memoria para lo pendiente** (por lugar / por hora, `FilledSlots`), errores, **el reloj** (miradas y
+  cuántas en el último 30% del intervalo) y lugar contra hora con consejo (`data/Mail.kt`, 3 pruebas). Telemetría
+  `mail_*` → `GamePlayResult.mail*` → `GameResultScreen`.
+- Arte `MailSprites` (sobre, paquete, radio, reloj tapado/destapado), sonidos `MailSounds` (marimba y campanas: sobre,
+  entrega, error, perdido, radio a tiempo/destiempo, tic-tac del reloj); muestra `docs/previews/correo-sonidos.wav`.
+  Sin probar en el teléfono.
+
 ## Reglas que no se rompen
 
 - **Diseño**: "noche + arcilla": cielo nocturno animado; lo tocable es arcilla (borde tinta grueso `Ink` 0x1A1240,
@@ -389,8 +412,8 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 56 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 167 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 18 smoke tests.
+- Kotlin: 59 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Unity EditMode: 172 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

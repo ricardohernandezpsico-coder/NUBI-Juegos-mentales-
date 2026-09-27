@@ -129,6 +129,14 @@ object GameRegistry {
       iconEmoji = "🧭"
     ),
     GameDefinition(
+      id = "correo",
+      title = "Correo Estelar",
+      domain = DomainType.MEMORIA,
+      subtitle = "Memoria para lo pendiente: acordarte a tiempo",
+      instruction = "Guía la nave y recoge sobres. Antes de salir recibes encargos: tocar los planetas de un color cuando pasen y avisar por radio cada cierto tiempo. Durante el vuelo nadie te los recuerda.",
+      iconEmoji = "✉️"
+    ),
+    GameDefinition(
       id = "anagramas",
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
@@ -267,7 +275,22 @@ data class GamePlayResult(
   val homingAlong: List<Float>? = null,
   val homingLateral: List<Float>? = null,
   val homingBeacon: List<Boolean>? = null,
-  val homingPerfect: Int? = null
+  val homingPerfect: Int? = null,
+  // Solo Correo Estelar: encargos por lugar (planetas entregados de los que pasaron), planetas tocados por error (y de
+  // color parecido), encargos por hora (avisos por radio a tiempo, a destiempo, período), cómo se usó el reloj (miradas y
+  // cuántas justo antes de la hora), % en la ruta y sobres. La lectura está en data/Mail.kt. No se guardan en Room.
+  val mailEventHits: Int? = null,
+  val mailEventTotal: Int? = null,
+  val mailCommissions: Int? = null,
+  val mailLureCommissions: Int? = null,
+  val mailRadioHits: Int? = null,
+  val mailRadioTotal: Int? = null,
+  val mailRadioOfftime: Int? = null,
+  val mailRadioPeriodS: Int? = null,
+  val mailClockChecks: Int? = null,
+  val mailClockLate: Int? = null,
+  val mailLanePct: Int? = null,
+  val mailEnvelopes: Int? = null
 )
 
 data class DailySessionState(

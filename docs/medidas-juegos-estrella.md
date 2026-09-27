@@ -188,6 +188,33 @@ Loomis et al., 1993), pero con 6-8 viajes por partida no se nombra ese patrón.
 
 ---
 
+## Correo Estelar: "Tu memoria para lo pendiente"
+
+**Qué mide.** Memoria prospectiva: acordarse de hacer algo en el momento justo mientras se está ocupado en otra cosa
+(Rummel y Kvavilashvili, 2023). Es la base de muchos olvidos del día a día (tomar un remedio, hacer una llamada). La tarea
+en curso es el vuelo de Piloto Estelar (mantenerse en la ruta y recoger sobres); los encargos se dan antes de salir y
+NO se muestran durante el vuelo.
+- **Por lugar** (evento): tocar los planetas de un color cuando pasan. Algo del entorno avisa (el planeta), pero hay
+  que reconocerlo a tiempo. Pocos planetas son del encargo (~23%) y desde el nivel 3 algunos tienen un color parecido.
+- **Por hora** (tiempo): tocar la radio cada 30 s (25 o 20 en niveles altos), con ±5 s de margen. Nada avisa; el reloj
+  va tapado y tocarlo lo destapa 1,6 s. Cuándo se mira es la estrategia: lo eficaz es mirar poco al principio y más
+  cerca de la hora (el patrón clásico de las tareas por tiempo).
+
+**Qué se dice y con qué mínimos.**
+- "N de M encargos" y el detalle por lugar y por hora.
+- Planetas tocados por error, sin culpa (y cuántos de color parecido).
+- El reloj, solo con 2 o más horas de radio: sin mirarlo, mirando sobre todo justo antes (≥ 50% de las miradas en el
+  último 30% del intervalo), mirando todo el rato (más de 3 veces por hora), o un truco.
+- Lugar contra hora, solo con 3 o más de cada uno y 25 puntos de diferencia, con un consejo para el día: si se pasan los
+  de hora, convertirlos en encargos de lugar (dejar el remedio junto al cepillo); si se pasan los de lugar, la intención
+  de implementación ("cuando vea el planeta, lo toco"; metaanálisis de Chen et al., 2015). El mismo truco aparece en la
+  hoja de ruta.
+
+**Qué NO se dice.** No se compara con normas ni se habla de "memoria prospectiva" como rasgo: con 150 s de vuelo y unos
+7 encargos de cada tipo, la medida es de esta partida.
+
+---
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -199,6 +226,9 @@ Loomis et al., 1993), pero con 6-8 viajes por partida no se nombra ese patrón.
   Verbal Behavior*, 9, 529–533.
 - Braver, T. S. (2012). The variable nature of cognitive control: a dual mechanisms framework. *Trends in Cognitive
   Sciences*, 16, 106–113.
+- Chen, X.-J., Wang, Y., Liu, L.-L., Cui, J.-F., Gan, M.-Y., Shum, D. H. K., y Chan, R. C. K. (2015). The effect of
+  implementation intention on prospective memory: a systematic and meta-analytic review. *Psychiatry Research*, 226,
+  14–22.
 - Coutrot, A., et al. (2018). Global determinants of navigation ability. *Current Biology*, 28, 2861–2866.
 - Cooper, L. A., y Shepard, R. N. (1973). Chronometric studies of the rotation of mental images. En W. G. Chase (Ed.),
   *Visual Information Processing*.
@@ -214,6 +244,8 @@ Loomis et al., 1993), pero con 6-8 viajes por partida no se nombra ese patrón.
   of path integration ability. *Journal of Experimental Psychology: General*, 122, 73–91.
 - Roediger, H. L., y Karpicke, J. D. (2006). Test-enhanced learning: taking memory tests improves long-term
   retention. *Psychological Science*, 17, 249–255.
+- Rummel, J., y Kvavilashvili, L. (2023). Current theories of prospective memory and new directions for theory
+  development. *Nature Reviews Psychology*, 2, 40–54.
 - Schneider, M., et al. (2018). Associations of number line estimation with mathematical competence: a meta-analysis.
   *Child Development*, 89, 1467–1484.
 - Siegler, R. S., y Opfer, J. E. (2003). The development of numerical estimation. *Psychological Science*, 14, 237–243.
