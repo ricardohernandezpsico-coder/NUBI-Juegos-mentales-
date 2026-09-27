@@ -19,7 +19,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 27-sep · r`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 27-sep · s`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -232,12 +232,15 @@ las otras, riel de arcilla apagado (visible para planificar). Cápsulas con este
   3,4 → 1,4 s (Precisión: más lento y espaciado, 30 cápsulas). Oleadas de 10: sin errores = +200; entre oleadas, si
   cambia la cantidad de puertos, la red se rearma (y se enrosca más). DDA `stepUp` 0.2 por cápsula entregada, sin
   tiempo de reacción. Reto 120 s.
-- Sonido arcade propio (`TrafficSounds`, sintetizado; pedido de Ricardo tras probarlo: "que la nave vaya sonando"):
-  motor en bucle (fuente aparte, `_engine`) que suena solo mientras hay cápsulas en viaje: más cápsulas = un poco más
-  fuerte y agudo, más nivel = más agudo, y se corre a izquierda/derecha según dónde van; "fiu" al salir, "blip" al
-  mover un desvío, "clac" de riel al pasar por uno, moneda que sube con la racha al entregar, "buuu-om" al fallar,
-  fanfarria de oleada perfecta, barrido al subir de nivel. Respeta sonido apagado y la pausa. Muestra escuchable con el
-  código real: ArtPreview vuelca `trafico-sonidos.wav` (copia en `docs/previews/`).
+- Sonido (`TrafficSounds`, sintetizado) con la identidad de la app, NO arcade (Ricardo probó una versión arcade y la
+  rechazó: "debe ser mejor y asociado a lo que queremos en la app"): marimba y campana en la pentatónica de do de
+  `GameFeel`, así todo suena afinado entre sí. Vuelo en bucle (fuente aparte `_engine`, colchón do + sol con soplo
+  suave que respira) solo mientras hay cápsulas en viaje: más cápsulas = algo más de volumen (el tono NO cambia), y se
+  corre a izquierda/derecha según dónde van. Salida = soplo + marimba grave; desvío = golpecito de madera (mi/sol según
+  el lado); al pasar por un desvío, campanita con la NOTA DEL COLOR de la cápsula (color + símbolo + nota: el tráfico
+  arma una melodía); entrega = "pling" de racha de `GameFeel` + marimba grave del color; error y subir de nivel =
+  los de `GameFeel`; oleada perfecta = lluvia de campanas. Respeta sonido apagado y pausa. Muestra escuchable:
+  ArtPreview vuelca `trafico-sonidos.wav` (copia en `docs/previews/`; los sonidos de `GameFeel` van replicados ahí).
 - Dibujo: `RailLine` (malla propia de la UI que sigue los puntos; sección de textura con bordes suaves: arcilla con
   borde tinta, cinta pareja o resplandor). Por tramo: resplandor, sombra dura, riel y línea de luz, cada uno en su capa.
 - Medida propia: **tu anticipación** (mediana de cuánto antes de que pase la cápsula se movió el desvío que la mandó
@@ -247,7 +250,7 @@ las otras, riel de arcilla apagado (visible para planificar). Cápsulas con este
 - Arte: `TrafficSprites` (estación, puertos, cápsulas, desvío), `GameWorld.TrafficHub`. Vista previa (redes y curvas
   reales de `BuildNetwork` que vuelca ArtPreview): `python3 tools/art-preview/trafico.py <raw>` →
   `docs/previews/trafico.png`. Ricardo vio la primera maqueta (27-sep): "muy rígida, poco llamativa", pidió curvas y
-  cambios de sentido → rehecho así. Probado por Ricardo (27-sep): le gustó la estructura; pidió sonido arcade → hecho.
+  cambios de sentido → rehecho así. Probado por Ricardo (27-sep): le gustó la estructura; pidió que la nave suene al viajar (ver Sonido).
 
 ## Reglas que no se rompen
 

@@ -124,17 +124,17 @@ internal static class Program
     static void TrafficSoundDemo(string path)
     {
         const int rate = 44100;
-        float seconds = 9f;
+        float seconds = 9.5f;
         var mix = new float[(int)(seconds * rate)];
-        // Motor: entra al salir la primera cápsula, crece con más cápsulas (volumen y tono) y se apaga al final.
+        // Vuelo: entra al salir la primera cápsula, crece con más cápsulas (volumen) y se apaga al final.
         var engine = NeuroVida.Games.Trafico.TrafficSounds.EngineLoop().data;
         double pos = 0;
         for (int i = 0; i < mix.Length; i++)
         {
             float t = i / (float)rate;
             int flying = t < 0.5f ? 0 : t < 2.5f ? 1 : t < 4.5f ? 2 : t < 7f ? 4 : t < 8f ? 1 : 0;
-            float vol = flying > 0 ? 0.14f + 0.03f * Math.Min(flying - 1, 6) : 0f;
-            float pitch = 0.95f + 0.035f * Math.Max(flying - 1, 0);
+            float vol = flying > 0 ? 0.12f + 0.025f * Math.Min(flying - 1, 6) : 0f;
+            float pitch = 1f; // el juego no cambia el tono del vuelo (queda afinado con campanas y marimba)
             pos = (pos + pitch) % engine.Length;
             mix[i] += vol * engine[(int)pos];
         }
@@ -143,20 +143,35 @@ internal static class Program
             int start = (int)(t * rate);
             for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
         }
-        At(0.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.35f);
+        // Réplicas de los sonidos comunes de la app (GameFeel: "pling" de la racha, error suave, subir de nivel), que el
+        // juego toca junto con los propios; acá solo para escuchar el conjunto.
+        float[] penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880f, 1046.5f, 1174.66f, 1318.51f };
+        float Env(float x, float at, float tau) => x < 0 ? 0 : (x < at ? x / at : 1f) * (float)Math.Exp(-Math.Max(0, x - at) / tau);
+        float Sn(float hz, float x) => (float)Math.Sin(2 * Math.PI * hz * x);
+        void Synth(float t0, float seconds, Func<float, float> f, float v)
+        {
+            int start = (int)(t0 * rate);
+            for (int k = 0; k < seconds * rate && start + k < mix.Length; k++) mix[start + k] += v * f(k / (float)rate);
+        }
+        void Pling(float t0, int streak) { float hz = penta[Math.Min(streak - 1, 7)]; Synth(t0, 0.26f, x => 0.8f * Sn(hz, x) * Env(x, 0.004f, 0.11f) + 0.22f * Sn(hz * 4, x) * Env(x, 0.002f, 0.025f), 0.55f); }
+        void Wrong(float t0) => Synth(t0, 0.34f, x => { float hz = x < 0.11f ? 220f : 185f; float l = x < 0.11f ? x : x - 0.11f; return 0.7f * Env(l, 0.006f, 0.09f) * (x < 0.11f ? 0.75f : 1f) * (Sn(hz, x) + 0.18f * Sn(hz * 3, x)); }, 0.5f);
+        void LevelUp(float t0) { float[] n = { 523.25f, 659.25f, 783.99f, 1046.5f }; Synth(t0, 0.5f, x => { float s2 = 0; for (int i = 0; i < 4; i++) { float st = i * 0.065f; if (x < st) break; s2 += 0.42f * Sn(n[i], x) * Env(x - st, 0.004f, 0.14f) + 0.1f * Sn(n[i] * 4, x) * Env(x - st, 0.002f, 0.03f); } return s2; }, 0.5f); }
+
+        At(0.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.3f);
         At(1.2f, NeuroVida.Games.Trafico.TrafficSounds.Switch(true), 0.4f);
-        At(1.8f, NeuroVida.Games.Trafico.TrafficSounds.Clack(), 0.22f);
-        At(2.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.35f);
-        At(2.9f, NeuroVida.Games.Trafico.TrafficSounds.Clack(), 0.22f);
-        At(3.3f, NeuroVida.Games.Trafico.TrafficSounds.Coin(1), 0.5f);
+        At(1.8f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(2), 0.2f);
+        At(2.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.3f);
+        At(2.9f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(4), 0.2f);
+        Pling(3.3f, 1); At(3.3f, NeuroVida.Games.Trafico.TrafficSounds.Landing(2), 0.3f);
         At(3.8f, NeuroVida.Games.Trafico.TrafficSounds.Switch(false), 0.4f);
-        At(4.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.35f);
-        At(4.9f, NeuroVida.Games.Trafico.TrafficSounds.Coin(2), 0.5f);
-        At(5.4f, NeuroVida.Games.Trafico.TrafficSounds.Clack(), 0.22f);
-        At(5.8f, NeuroVida.Games.Trafico.TrafficSounds.Coin(3), 0.5f);
-        At(6.4f, NeuroVida.Games.Trafico.TrafficSounds.Miss(), 0.5f);
-        At(7.1f, NeuroVida.Games.Trafico.TrafficSounds.PowerUp(), 0.45f);
-        At(8.0f, NeuroVida.Games.Trafico.TrafficSounds.Fanfare(), 0.5f);
+        At(4.2f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(0), 0.2f);
+        At(4.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.3f);
+        Pling(4.9f, 2); At(4.9f, NeuroVida.Games.Trafico.TrafficSounds.Landing(4), 0.3f);
+        At(5.4f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(5), 0.2f);
+        Pling(5.8f, 3); At(5.8f, NeuroVida.Games.Trafico.TrafficSounds.Landing(0), 0.3f);
+        Wrong(6.4f);
+        LevelUp(7.1f);
+        At(8.0f, NeuroVida.Games.Trafico.TrafficSounds.Cascade(), 0.5f);
         using (var w = new BinaryWriter(File.Create(path)))
         {
             int n = mix.Length;
