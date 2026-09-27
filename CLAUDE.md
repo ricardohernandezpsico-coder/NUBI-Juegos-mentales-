@@ -95,6 +95,15 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 - **Decisiones de Ricardo**: servidores, cuentas, Firebase, suscripciones y requisitos de tiendas se dejan para el
   FINAL. La app debe ser masiva, social y motivadora (ligas, logros, compartir), no clínica.
 
+## Cuando Android cierra la app durante un juego
+
+Con Unity al frente, Android puede cerrar el proceso de la app (pasa en el Motorola de Ricardo). Por eso lo que el
+flujo necesita vive en disco (`bridge/GameSessionStore`): la partida en curso con su launch id (la anota
+`onUnityLaunched`), la evaluación en curso, y el resultado que llegue por broadcast sin ViewModel vivo (queda
+pendiente y lo procesa el ViewModel al volver: `processPendingResult`, en `init` y en `onReturnedFromGame`).
+`onUnityResult(result, launchId)` busca la sesión viva o la guardada. Solo las partidas sin sesión (botones Debug)
+se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conservar actividades".
+
 ## Pruebas
 
 - Kotlin: 43 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).

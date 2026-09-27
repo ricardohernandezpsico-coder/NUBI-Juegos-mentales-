@@ -79,6 +79,7 @@ import com.example.ui.components.overallIndex
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.theme.Clay
+import com.example.ui.theme.ClayButton
 import com.example.ui.theme.ClayCard
 import com.example.ui.theme.ClayPill
 import com.example.viewmodel.NeuroVidaViewModel
@@ -127,6 +128,8 @@ fun HomeScreen(
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val weeklyChallenges by viewModel.weeklyChallengeProgress.collectAsState()
   val leagueEvents by viewModel.leagueEvents.collectAsState()
+  val pausedGameId by viewModel.pausedGameId.collectAsState()
+  val baseline by viewModel.baseline.collectAsState()
   val eventsByDay = remember(leagueEvents) { leagueEvents.groupBy { dayIndex(it.timestamp) } }
   val lang = LocalAppLanguage.current
   val scope = rememberCoroutineScope()
@@ -253,6 +256,19 @@ fun HomeScreen(
         )
       }
     }
+
+    // Acción de hoy, fuera del camino inclinado (siempre a mano y con un área de toque normal): seguir la partida
+    // en pausa o jugar el siguiente juego del camino. Debajo, si todavía no hizo la evaluación, una invitación.
+    TodayAction(
+      pausedGameId = pausedGameId,
+      nextGameId = dailySession.gameIds.getOrNull(dailySession.completedCount)?.takeIf { dailySession.completedCount < 3 },
+      completed = dailySession.completedCount,
+      hasBaseline = baseline != null,
+      lang = lang,
+      onResume = { viewModel.resumePausedGame() },
+      onPlay = { viewModel.startDailySession() },
+      onBaseline = { viewModel.startBaseline() }
+    )
   }
 
   dayDetail?.let { item ->
@@ -481,6 +497,53 @@ private fun PathRow(
     }
   }
 }
+
+@Composable
+private fun TodayAction(
+  pausedGameId: String?,
+  nextGameId: String?,
+  completed: Int,
+  hasBaseline: Boolean,
+  lang: com.example.model.AppLanguage,
+  onResume: () -> Unit,
+  onPlay: () -> Unit,
+  onBaseline: () -> Unit
+) {
+  val paused = pausedGameId?.let { GameRegistry.getById(it) }
+  val next = nextGameId?.let { GameRegistry.getById(it) }
+  Column(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 8.dp)) {
+    val (label, def, action, tag) = when {
+      paused != null -> Quad("Tienes una partida en pausa", paused, onResume, "btn_resume_paused")
+      next != null -> Quad(if (completed == 0) "Tu sesión de hoy · 3 juegos" else "Tu sesión de hoy · juego ${completed + 1} de 3", next, onPlay, "btn_home_play")
+      else -> Quad(null, null, onPlay, "")
+    }
+    if (def != null) {
+      Text(label.orEmpty(), color = OnNightDim, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+      ClayButton(
+        text = getGameTitle(def.id, lang, def.title),
+        onClick = action,
+        icon = Icons.Default.PlayArrow,
+        modifier = Modifier.testTag(tag)
+      )
+    }
+    if (!hasBaseline) {
+      Text(
+        text = "¿Aún sin tu punto de partida? Encuéntralo en 5 minutos",
+        color = Clay.Sun,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+          .padding(top = 8.dp)
+          .clip(RoundedCornerShape(10.dp))
+          .clickable(onClick = onBaseline)
+          .padding(horizontal = 4.dp, vertical = 6.dp)
+          .testTag("btn_home_baseline")
+      )
+    }
+  }
+}
+
+private data class Quad(val label: String?, val def: com.example.model.GameDefinition?, val action: () -> Unit, val tag: String)
 
 @Composable
 private fun TodayNode(done: Boolean, onClick: () -> Unit) {

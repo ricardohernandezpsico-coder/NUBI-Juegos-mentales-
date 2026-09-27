@@ -182,10 +182,15 @@ object NativeReceiver {
     if (!UnityResultInbox.claim(launchId)) return // ya llegó con la vuelta a la app
     val result = parse(json) ?: return
 
-    // Si la UI está escuchando (ViewModel vivo), ella guarda el resultado y muestra la pantalla de
-    // resultado de la app; si no, se guarda directamente para no perder la partida.
-    if (UnityResultBus.publish(result)) {
+    // Si la UI está escuchando (ViewModel vivo), ella guarda el resultado y muestra la pantalla de resultado de
+    // la app. Si no (Android cerró la app mientras Unity estaba al frente) y la partida era de un flujo de la app
+    // (camino diario, evaluación...), queda pendiente para que la app la procese al volver y siga el flujo. Solo las
+    // partidas sueltas (herramientas de prueba) se guardan directo.
+    if (UnityResultBus.publish(FinishedGame(result, launchId))) {
       Log.i(TAG, "Resultado de Unity entregado a la UI: $result")
+    } else if (GameSessionStore.hasInFlight(launchId)) {
+      Log.i(TAG, "Resultado de Unity pendiente hasta que vuelva la app: $result")
+      GameSessionStore.savePendingResult(launchId, json)
     } else {
       scope.launch {
         Log.i(TAG, "Persistiendo resultado de Unity: $result")

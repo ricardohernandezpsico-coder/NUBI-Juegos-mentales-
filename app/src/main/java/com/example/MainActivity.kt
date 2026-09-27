@@ -136,6 +136,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val currentTab by viewModel.currentTab.collectAsState()
   val activeGame by viewModel.activeGame.collectAsState()
   val lastResult by viewModel.lastResult.collectAsState()
+  val lastResultDaily by viewModel.lastResultDaily.collectAsState()
   val dailySession by viewModel.dailySession.collectAsState()
   val gameRanks by viewModel.gameRanks.collectAsState()
   val promotion by viewModel.promotion.collectAsState()
@@ -206,7 +207,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               userId = userSettings.id.toString(),
               ageBand = userSettings.ageBand ?: com.example.model.AgeBand.ADULT,
               soundEnabled = userSettings.soundEnabled,
-              onLaunched = { viewModel.onUnityLaunched() },
+              onLaunched = { id -> viewModel.onUnityLaunched(id) },
               onHostResumed = { viewModel.onHostResumed() }
             )
           }
@@ -229,7 +230,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           GameResultScreen(
             result = result,
             didLevelUp = didLevelUp,
-            isDailyFlow = activeGame?.isDailyFlow ?: (dailySession.completedCount in 1..3),
+            isDailyFlow = lastResultDaily,
             dailyCompletedCount = dailySession.completedCount,
             dailyTotalCount = 3,
             rank = gameRanks.firstOrNull { it.gameId == result.gameId },
@@ -237,7 +238,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               viewModel.launchGame(result.gameId, customLevel = result.level, customTimed = result.timed)
             },
             onContinue = {
-              if (dailySession.completedCount < 3) {
+              if (lastResultDaily && dailySession.completedCount < 3) {
                 viewModel.continueDailyFlow()
               } else {
                 viewModel.closeGameOrResult()

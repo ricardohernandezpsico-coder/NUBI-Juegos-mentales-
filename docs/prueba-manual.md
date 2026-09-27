@@ -23,8 +23,9 @@ Marca cada punto con ✓ o anota lo que viste. Si algo falla, basta con decir el
 
 ## C. Camino diario y partidas
 
-7. Hoy → jugar la sesión completa (3 juegos). Después de cada uno: "¡Listo!" en Unity y enseguida la pantalla de
-   resultado de la app (puntaje, estrellas, trofeos). "Siguiente juego" sigue el camino.
+7. Hoy → botón de abajo (el juego que toca) → jugar la sesión completa (3 juegos). Después de cada uno: "¡Listo!"
+   en Unity y enseguida la pantalla de resultado de la app (puntaje, estrellas, trofeos). "Siguiente juego (2 de 3)"
+   sigue el camino. Un juego abierto desde la pestaña Juegos muestra "Continuar", no "Siguiente juego".
 8. La segunda partida abre rápido (Unity ya está vivo). La primera tras abrir la app muestra la pantalla de carga
    del juego (planeta con luna), sin pantalla negra.
 9. Al completar la sesión, el día de hoy queda marcado en el camino y la racha sube.
@@ -38,11 +39,14 @@ Marca cada punto con ✓ o anota lo que viste. Si algo falla, basta con decir el
 ## E. Pausa y salidas
 
 19. A mitad de partida: Atrás → menú de pausa (el reloj se detiene). Continuar sigue donde estaba.
-20. Pausa → Salir → volver a abrir el mismo juego desde Hoy: aparece la pausa y se puede continuar.
+20. Pausa → Salir → en Hoy aparece "Tienes una partida en pausa" con el juego; al tocarlo vuelve a la pausa y se
+    puede continuar.
 21. Pausa → Reiniciar: la misma partida desde cero.
-22. Botón Inicio a mitad de partida y volver con el ícono: el juego sigue ahí (en pausa).
+22. A mitad de partida, deslizar desde el borde inferior para que aparezcan los botones del sistema (el juego los
+    esconde), ir a Inicio y volver con el ícono: el juego sigue ahí (en pausa).
 23. Atrás en Hoy: la app pasa a segundo plano (no se ve Unity detrás).
-24. Girar el teléfono en un juego y en la app: todo queda vertical, nada se desarma.
+24. Girar el teléfono en un juego y en la app: la pantalla NO gira (queda siempre vertical, es a propósito) y nada
+    se desarma.
 
 ## F. Recompensas
 
@@ -55,4 +59,16 @@ Marca cada punto con ✓ o anota lo que viste. Si algo falla, basta con decir el
 
 28. Apagar sonido y vibración → un juego queda en silencio y sin vibrar. Volver a encenderlos.
 29. Notificación de prueba: muestra un texto acorde al día (si ya completaste la sesión, no aparece: es lo esperado).
-30. "[Debug] Ver el onboarding otra vez" → "Hacerlo después" en el punto de partida: la app sigue normal.
+30. "[Debug] Ver el onboarding otra vez" → "Hacerlo después" en el punto de partida: la app vuelve a Hoy, que
+    invita a encontrar el punto de partida.
+
+## H. Cuando Android cierra la app mientras se juega
+
+En teléfonos con poca memoria Android puede cerrar la app mientras un juego está abierto. Para probarlo a propósito:
+Ajustes del teléfono → Opciones de desarrollador → activar **"No conservar actividades"** (desactivarlo al terminar: con
+ella activa Unity arranca de cero en cada juego y la pausa no se conserva).
+
+31. Con la opción activa, jugar la sesión diaria: después de cada juego aparece la pantalla de resultado y
+    "Siguiente juego" sigue el camino.
+32. Con la opción activa, hacer la evaluación ("Encuéntralo en 5 minutos" en Hoy): se juegan los 3 juegos y al final
+    aparece "Tu mapa".

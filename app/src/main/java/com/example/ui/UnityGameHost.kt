@@ -38,11 +38,14 @@ fun UnityGameHost(
   userId: String,
   ageBand: AgeBand,
   soundEnabled: Boolean,
-  onLaunched: () -> Unit,
+  onLaunched: (launchId: String) -> Unit,
   onHostResumed: () -> Unit
 ) {
   val context = LocalContext.current
   var launched by rememberSaveable { mutableStateOf(false) }
+  // Id de esta partida: el de la partida en pausa que se retoma, o uno nuevo. La app lo anota (ver
+  // GameSessionStore) para reconocer el resultado aunque Android la cierre mientras se juega.
+  val launchId = rememberSaveable { session.resumeLaunchId ?: java.util.UUID.randomUUID().toString() }
 
   val lifecycleOwner = LocalLifecycleOwner.current
   DisposableEffect(lifecycleOwner) {
@@ -66,12 +69,12 @@ fun UnityGameHost(
         timed = session.timed,
         ageBand = ageBand,
         soundEnabled = soundEnabled,
-        launchId = session.resumeLaunchId,
+        launchId = launchId,
         assessmentStep = session.assessmentStep,
         assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0
       )
     )
-    onLaunched()
+    onLaunched(launchId)
   }
 
   // Mismo aspecto que la capa de carga encima de Unity (bridge/UnityLoadingOverlay): el paso app -> Unity no se
