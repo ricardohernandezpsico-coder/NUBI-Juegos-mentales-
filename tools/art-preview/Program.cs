@@ -139,6 +139,13 @@ internal static class Program
                 System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "homing_trips.txt"), sb.ToString());
             }
             RumboSoundDemo(Path.Combine(dir, "rumbo-sonidos.wav"));
+            // Correo Estelar: sobre, paquete, radio y reloj (tapado y destapado).
+            Dump("mail_envelope", NeuroVida.Games.Correo.MailSprites.Envelope());
+            Dump("mail_package", NeuroVida.Games.Correo.MailSprites.Package());
+            Dump("mail_radio", NeuroVida.Games.Correo.MailSprites.Radio());
+            Dump("mail_clock", NeuroVida.Games.Correo.MailSprites.ClockFace());
+            Dump("mail_clock_cover", NeuroVida.Games.Correo.MailSprites.ClockCover());
+            CorreoSoundDemo(Path.Combine(dir, "correo-sonidos.wav"));
             // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (var (ports, seed, twist) in new[] { (4, 3, 0.2f), (6, 11, 0.55f), (8, 5, 1f), (6, 21, 0.55f) })
@@ -224,6 +231,33 @@ internal static class Program
             w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
             foreach (float v in mix) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
         }
+    }
+
+    /// <summary>Muestra de Correo Estelar: sobres que se recogen, una entrega, un planeta equivocado, mirar el reloj,
+    /// el aviso por radio a tiempo y a destiempo, y un planeta que se fue sin su paquete.</summary>
+    static void CorreoSoundDemo(string path)
+    {
+        const int rate = 44100;
+        var mix = new float[(int)(9f * rate)];
+        void At(float t, UnityEngine.AudioClip c, float v)
+        {
+            int start = (int)(t * rate);
+            for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
+        }
+        for (int i = 0; i < 4; i++) At(0.2f + 0.45f * i, NeuroVida.Games.Correo.MailSounds.Pickup(i + 1), 0.4f);
+        At(2.2f, NeuroVida.Games.Correo.MailSounds.Deliver(), 0.55f);
+        At(3.6f, NeuroVida.Games.Correo.MailSounds.WrongPlanet(), 0.5f);
+        At(4.5f, NeuroVida.Games.Correo.MailSounds.Peek(), 0.45f);
+        At(5.3f, NeuroVida.Games.Correo.MailSounds.RadioOk(), 0.55f);
+        At(6.4f, NeuroVida.Games.Correo.MailSounds.RadioOff(), 0.45f);
+        At(7.2f, NeuroVida.Games.Correo.MailSounds.Missed(), 0.45f);
+        using var file = File.Create(path);
+        var w = new BinaryWriter(file);
+        int n = mix.Length;
+        w.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + n * 2); w.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));
+        w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
+        w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
+        for (int i = 0; i < n; i++) w.Write((short)(Math.Max(-1f, Math.Min(1f, mix[i])) * 32000));
     }
 
     static void RumboSoundDemo(string path)

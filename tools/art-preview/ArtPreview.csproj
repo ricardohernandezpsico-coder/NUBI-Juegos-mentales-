@@ -53,5 +53,8 @@
     <Compile Include="$(Src)/Rumbo/HomingContract.cs" />
     <Compile Include="$(Src)/Rumbo/HomingSprites.cs" />
     <Compile Include="$(Src)/Rumbo/HomingSounds.cs" />
+    <Compile Include="$(Src)/Correo/MailContract.cs" />
+    <Compile Include="$(Src)/Correo/MailSprites.cs" />
+    <Compile Include="$(Src)/Correo/MailSounds.cs" />
   </ItemGroup>
 </Project>

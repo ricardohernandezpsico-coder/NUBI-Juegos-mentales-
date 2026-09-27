@@ -94,5 +94,22 @@ namespace NeuroVida.Contracts
         public int[] homing_beacon;
         /// <summary>Solo Rumbo a Casa: llegadas perfectas.</summary>
         public int homing_perfect;
+        /// <summary>Solo Correo Estelar: encargos por lugar (planetas entregados de los que pasaron), planetas tocados que no
+        /// eran del encargo (y cuántos de color parecido), encargos por hora (avisos a tiempo de las horas que hubo; período
+        /// en segundos, 0 = sin radio), avisos a destiempo, miradas al reloj (y cuántas justo antes de la hora), % en la ruta y
+        /// sobres. -1 = no aplica.</summary>
+        public int mail_event_hits = -1;
+        public int mail_event_total = -1;
+        public int mail_commissions = -1;
+        public int mail_lure_commissions = -1;
+        public int mail_radio_hits = -1;
+        public int mail_radio_total = -1;
+        public int mail_radio_offtime = -1;
+        public int mail_radio_period_s = -1;
+        public int mail_clock_checks = -1;
+        public int mail_clock_late = -1;
+        public int mail_lane_pct = -1;
+        public int mail_envelopes = -1;
+        public int mail_envelopes_total = -1;
     }
 }
