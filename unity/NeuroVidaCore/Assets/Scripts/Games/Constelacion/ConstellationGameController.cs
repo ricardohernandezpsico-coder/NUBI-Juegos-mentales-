@@ -62,7 +62,10 @@ namespace NeuroVida.Games.Constelacion
         private float _roundStart, _endsAt;
         private int _lastTickSecond = -1;
         private int _points, _pointsBefore;
-        private bool _offline;
+        private bool _offline, _continuous;
+        private float _pollTimer;
+        /// <summary>Cada cuánto se leen los eventos de la voz (antes era en cada cuadro: costaba y trababa).</summary>
+        private const float PollEvery = 0.1f;
 
         // ronda
         private readonly List<FluencyWord> _said = new List<FluencyWord>();
@@ -84,6 +87,8 @@ namespace NeuroVida.Games.Constelacion
         private readonly List<string> _tops = new List<string>();
         private readonly List<string> _words = new List<string>();
         private int _roundUnknown;
+        private readonly List<string> _roundUnknownWords = new List<string>();
+        private readonly List<string> _unknownWords = new List<string>();
 
         // UI
         private RectTransform _safe, _play, _sky, _fxRect, _micRect, _micRings, _keyboardRoot, _addButton, _writeButton, _timerBg, _timerFill;
@@ -117,8 +122,29 @@ namespace NeuroVida.Games.Constelacion
             _exit.Hide();
             _hud.SetStreak(0);
 
+            _unknownWords.Clear();
+            _continuous = false;
+            Prewarm();
             StopAllCoroutines();
             StartCoroutine(GameLoop());
+        }
+
+        /// <summary>
+        /// Lo que se arma la primera vez que se usa (estrellas de cada color, sonidos, listas de palabras) se prepara
+        /// antes de empezar, durante la cuenta regresiva: así no hay tirones cuando nace la primera estrella de un color.
+        /// </summary>
+        private static void Prewarm()
+        {
+            for (int i = 0; i < ConstellationSprites.Colors.Length; i++) ConstellationSprites.Star(i);
+            ConstellationSprites.Neutral();
+            ConstellationSprites.Mic();
+            for (int i = 0; i < 10; i++) ConstellationSounds.Star(i);
+            ConstellationSounds.Formed();
+            ConstellationSounds.Repeat();
+            ConstellationSounds.Listen();
+            ConstellationSounds.Stop();
+            ConstellationSounds.RoundEnd();
+            foreach (var id in FluencyContract.SemanticIds) FluencyContract.Get(id);
         }
 
         private void OnDisable()
@@ -150,6 +176,7 @@ namespace NeuroVida.Games.Constelacion
             ClearSky();
             _pointsBefore = _points;
             _roundUnknown = 0;
+            _roundUnknownWords.Clear();
             _roundLabel.text = $"Ronda {_round + 1} de {_plan.Length}";
             _title.text = _cat.Title;
             _prompt.text = _cat.Prompt;
@@ -194,14 +221,24 @@ namespace NeuroVida.Games.Constelacion
             _endsAt = _roundStart + FluencyContract.RoundSeconds;
             _lastTickSecond = -1;
             Sfx(ConstellationSounds.Listen(), 0.45f);
-            if (!_keyboard) SpeechClient.Start(offline: true);
+            if (!_keyboard)
+            {
+                // La lista de la ronda al reconocedor, para que la favorezca (en las de letra, ninguna: vale cualquiera).
+                SpeechClient.SetBiasing(_cat.Kind == FluencyKind.Semantic ? _cat.BiasPhrases.ToArray() : new string[0]);
+                SpeechClient.Start(offline: true);
+                _pollTimer = 0f;
+            }
             else FocusInput();
             while (GameClock.Time < _endsAt) yield return null;
 
             // ¡Tiempo! Se espera la última frase y se confirma lo que quedó a medio decir.
             _phase = Phase.Closing;
             // Se lee al final (el reconocedor arranca en el hilo de Android, no al instante).
-            if (!_keyboard) _offline = SpeechClient.Offline;
+            if (!_keyboard)
+            {
+                _offline = SpeechClient.Offline;
+                _continuous |= SpeechClient.Continuous;
+            }
             if (!_keyboard) SpeechClient.Stop();
             Sfx(ConstellationSounds.Stop(), 0.4f);
             SetCaption("");
@@ -209,9 +246,9 @@ namespace NeuroVida.Games.Constelacion
             float grace = 0f;
             while (grace < CloseGrace && !_keyboard)
             {
-                grace += GameClock.DeltaTime;
+                grace += PollEvery;
                 PumpSpeech();
-                yield return null;
+                yield return StartCoroutine(Wait(PollEvery));
             }
             if (_liveWords.Count > 0) Commit(new List<string>());
             if (_keyboard && _input != null && !string.IsNullOrWhiteSpace(_input.text)) SubmitTyped();
@@ -256,6 +293,7 @@ namespace NeuroVida.Games.Constelacion
             foreach (var w in _said) if (w.Repeat) rep++;
             _repeats.Add(rep);
             _unknowns.Add(_roundUnknown);
+            _unknownWords.Add(string.Join("|", _roundUnknownWords));
             _meanClusters.Add(FluencyContract.MeanClusterSize(clusters));
             _switches.Add(switches);
             _quarters.AddRange(FluencyContract.Quarters(_said));
@@ -286,7 +324,15 @@ namespace NeuroVida.Games.Constelacion
                 else if (!GameClock.Paused && _pausedSpeech) { SpeechClient.Start(offline: true); _pausedSpeech = false; }
             }
             if (GameClock.DeltaTime <= 0f) return;
-            if (!_keyboard && _phase == Phase.Listening) PumpSpeech();
+            if (!_keyboard && _phase == Phase.Listening)
+            {
+                _pollTimer += GameClock.DeltaTime;
+                if (_pollTimer >= PollEvery)
+                {
+                    _pollTimer = 0f;
+                    PumpSpeech();
+                }
+            }
             HandleTaps();
         }
 
@@ -370,6 +416,7 @@ namespace NeuroVida.Games.Constelacion
             foreach (var u in unknown)
             {
                 _roundUnknown++;
+                if (_roundUnknownWords.Count < 40 && !_roundUnknownWords.Contains(u)) _roundUnknownWords.Add(u);
                 if (shown++ < 2) StartCoroutine(FloatText(new Vector2((shown - 1.5f) * 260f, _caption.rectTransform.anchoredPosition.y + 40f), u + "?", new Color(1f, 1f, 1f, 0.45f), 38));
             }
         }
@@ -792,6 +839,8 @@ namespace NeuroVida.Games.Constelacion
                     fluency_top = _tops.ToArray(),
                     fluency_words = _words.ToArray(),
                     fluency_input = _keyboard ? "teclado" : (_offline ? "voz_telefono" : "voz"),
+                    fluency_unknown_words = _unknownWords.ToArray(),
+                    fluency_continuous = _keyboard ? -1 : (_continuous ? 1 : 0),
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));

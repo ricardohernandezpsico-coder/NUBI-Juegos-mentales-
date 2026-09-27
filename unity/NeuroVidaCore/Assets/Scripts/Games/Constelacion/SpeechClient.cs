@@ -33,6 +33,12 @@ namespace NeuroVida.Games.Constelacion
         [Serializable]
         private sealed class Batch { public SpeechEvent[] items; }
 
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Una sola referencia a la clase Kotlin (antes se creaba una en cada consulta: costaba en cada cuadro).
+        private static AndroidJavaClass _bridge;
+        private static AndroidJavaClass Bridge => _bridge ?? (_bridge = new AndroidJavaClass(BridgeClass));
+#endif
+
         /// <summary>¿Hay reconocimiento de voz en este teléfono?</summary>
         public static bool Available
         {
@@ -41,8 +47,7 @@ namespace NeuroVida.Games.Constelacion
 #if UNITY_ANDROID && !UNITY_EDITOR
                 try
                 {
-                    using (var bridge = new AndroidJavaClass(BridgeClass))
-                        return bridge.CallStatic<bool>("isAvailable", Activity());
+                    return Bridge.CallStatic<bool>("isAvailable", Activity());
                 }
                 catch (Exception e)
                 {
@@ -91,11 +96,8 @@ namespace NeuroVida.Games.Constelacion
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
             {
-                using (var bridge = new AndroidJavaClass(BridgeClass))
-                {
-                    string lang = bridge.CallStatic<string>("defaultLanguage");
-                    bridge.CallStatic("start", Activity(), lang, offline);
-                }
+                string lang = Bridge.CallStatic<string>("defaultLanguage");
+                Bridge.CallStatic("start", Activity(), lang, offline, true);
             }
             catch (Exception e)
             {
@@ -109,13 +111,46 @@ namespace NeuroVida.Games.Constelacion
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
             {
-                using (var bridge = new AndroidJavaClass(BridgeClass)) bridge.CallStatic("stop");
+                Bridge.CallStatic("stop");
             }
             catch (Exception e)
             {
                 Debug.LogWarning("[SpeechClient] stop: " + e.Message);
             }
 #endif
+        }
+
+        /// <summary>
+        /// Palabras que se esperan en la ronda: el reconocedor las favorece al dudar (Android 13+; es una sugerencia).
+        /// Vacío = ninguna (rondas de letra).
+        /// </summary>
+        public static void SetBiasing(string[] words)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                // Se pasa como UN argumento (si no, C# lo abriría como la lista de argumentos).
+                Bridge.CallStatic("setBiasing", new object[] { words ?? new string[0] });
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[SpeechClient] setBiasing: " + e.Message);
+            }
+#endif
+        }
+
+        /// <summary>¿El reconocedor aceptó la escucha continua (sin reinicios entre frases)?</summary>
+        public static bool Continuous
+        {
+            get
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                try { return Bridge.CallStatic<bool>("isContinuous"); }
+                catch (Exception) { return false; }
+#else
+                return false;
+#endif
+            }
         }
 
         /// <summary>¿Está reconociendo en el teléfono (sin internet)?</summary>
@@ -126,7 +161,7 @@ namespace NeuroVida.Games.Constelacion
 #if UNITY_ANDROID && !UNITY_EDITOR
                 try
                 {
-                    using (var bridge = new AndroidJavaClass(BridgeClass)) return bridge.CallStatic<bool>("isOffline");
+                    return Bridge.CallStatic<bool>("isOffline");
                 }
                 catch (Exception) { return false; }
 #else
@@ -142,9 +177,7 @@ namespace NeuroVida.Games.Constelacion
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
             {
-                string json;
-                using (var bridge = new AndroidJavaClass(BridgeClass)) json = bridge.CallStatic<string>("poll");
-                list.AddRange(Parse(json));
+                list.AddRange(Parse(Bridge.CallStatic<string>("poll")));
             }
             catch (Exception e)
             {

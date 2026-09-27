@@ -65,6 +65,7 @@ fun VoiceTestDialog(onDismiss: () -> Unit) {
   var secondsLeft by remember { mutableIntStateOf(60) }
   var partial by remember { mutableStateOf("") }
   var restarts by remember { mutableIntStateOf(0) }
+  var mode by remember { mutableStateOf("") }
   var firstWordMs by remember { mutableStateOf<Long?>(null) }
   val words = remember { mutableStateListOf<String>() }
   val phrases = remember { mutableStateListOf<String>() }
@@ -75,7 +76,7 @@ fun VoiceTestDialog(onDismiss: () -> Unit) {
 
   fun begin() {
     words.clear(); phrases.clear(); errors.clear()
-    partial = ""; restarts = 0; firstWordMs = null; secondsLeft = 60
+    partial = ""; restarts = 0; firstWordMs = null; secondsLeft = 60; mode = ""
     stopRequested = false; finished = false
     SpeechBridge.start(context, language, offline)
     running = true
@@ -111,6 +112,7 @@ fun VoiceTestDialog(onDismiss: () -> Unit) {
             }
           }
           "restart" -> restarts = e.optInt("code")
+          "mode" -> mode = text
           "error" -> errors.add("${t / 1000} s: $text")
         }
       }
@@ -134,6 +136,7 @@ fun VoiceTestDialog(onDismiss: () -> Unit) {
     appendLine("Teléfono: ${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE}")
     appendLine("Idioma: $language · Sin internet: ${if (offline) "sí" else "no"} (el teléfono ${if (onDevice) "sí" else "no"} lo permite)")
     appendLine("Palabras distintas: ${words.size}" + (firstWordMs?.let { " (la primera a los ${it / 1000} s)" } ?: ""))
+    appendLine("Escucha continua: " + when (mode) { "continuo" -> "sí"; "reinicios" -> "no (el teléfono no la aceptó)"; else -> "no se activó" })
     appendLine("Reinicios del micrófono: $restarts")
     appendLine("Errores: " + (errors.joinToString("; ").ifBlank { "ninguno" }))
     appendLine("Palabras: " + words.joinToString(", "))
@@ -169,7 +172,10 @@ fun VoiceTestDialog(onDismiss: () -> Unit) {
           Text("Entendió ${words.size}:", fontWeight = FontWeight.Bold)
           Text(words.joinToString(" · "))
         }
-        if (running || finished) Text("Reinicios del micrófono: $restarts", fontSize = 13.sp)
+        if (running || finished) {
+          Text("Escucha continua: " + when (mode) { "continuo" -> "sí"; "reinicios" -> "no"; else -> "…" }, fontSize = 13.sp)
+          Text("Reinicios del micrófono: $restarts", fontSize = 13.sp)
+        }
         errors.takeLast(3).forEach { Text("Error: $it", fontSize = 13.sp) }
         if (finished) {
           Text("Listo. Copia el resumen y pégamelo en la conversación.", fontWeight = FontWeight.Bold)

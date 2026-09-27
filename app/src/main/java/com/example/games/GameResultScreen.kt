@@ -762,6 +762,19 @@ fun GameResultScreen(
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
         )
       }
+      // Solo en las versiones de prueba: lo que no se ubicó y si la escucha continua funcionó (para ajustar la lista
+      // de palabras y el reconocedor con lo que pasa de verdad en el teléfono).
+      if (com.example.BuildConfig.DEBUG) {
+        val unknown = result.fluencyUnknownWords.orEmpty().flatMap { it.split('|') }.filter { it.isNotBlank() }
+        Text(
+          text = "[Prueba] Escucha continua: " + when (result.fluencyContinuous) { 1 -> "sí"; 0 -> "no"; else -> "—" } +
+            " · No ubicadas: " + (unknown.joinToString(", ").ifBlank { "ninguna" }),
+          color = TextSoft.copy(alpha = 0.8f),
+          fontSize = 12.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+      }
       result.wordSkyTotal?.let { total ->
         Text(
           text = "Tu cielo de palabras: $total distintas" + (result.wordSkyNew?.takeIf { it > 0 }?.let { " · $it nuevas hoy" } ?: ""),

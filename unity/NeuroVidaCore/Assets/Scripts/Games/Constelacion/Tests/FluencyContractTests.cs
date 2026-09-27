@@ -105,7 +105,7 @@ namespace NeuroVida.Games.Constelacion.Tests
                 "tiburón", "tiburón blanco", "tiburón ballena",
             }, said.Select(w => w.Canonical).ToArray());
             Assert.IsTrue(said.All(w => !w.Repeat));
-            Assert.AreEqual("boa constructor", said[11].Display); // se muestra como se dijo
+            Assert.AreEqual("boa constrictor", said[11].Display); // error típico del reconocedor: se muestra bien escrito
             Assert.AreEqual("oso koala", said[2].Display);
             // Un tipo queda en los grupos de lo que precisa.
             CollectionAssert.Contains(said[6].Groups, "felinos");
@@ -124,6 +124,33 @@ namespace NeuroVida.Games.Constelacion.Tests
             Assert.AreEqual("gato montés", read[1].Display);
             Assert.AreEqual("gato montés", read[1].Canonical);
             Assert.AreEqual(6, FluencyContract.Tokenize("el perro y un gato montés").Count);
+        }
+
+        [Test]
+        public void SoundsLike_ForWhatTheRecognizerMisspells()
+        {
+            var c = FluencyContract.Get("animales");
+            Assert.AreEqual(FluencyContract.Phonetic("avoceta"), FluencyContract.Phonetic("avosetta"));
+            Assert.AreEqual(FluencyContract.Phonetic("oso koala"), FluencyContract.Phonetic("ozocoala"));
+            Assert.AreEqual(1, FluencyContract.EditDistance("fregata", "fragata", 2));
+
+            // Errores reales del reconocedor en las pruebas de Ricardo (28-sep): se entienden y se muestra bien escrito.
+            var said = new List<FluencyWord>();
+            var unknown = FluencyContract.Accept(c, said, "fregata avosetta boa constructor ozocoala gallinera", 0f);
+            CollectionAssert.AreEqual(new[] { "fragata", "avoceta", "boa constrictor", "koala", "gallina de guinea" },
+                said.Select(w => w.Display).ToArray());
+            Assert.IsEmpty(unknown);
+
+            // Palabras cortas no se "corrigen" (serían adivinanzas): "dato" no es "gato". Ni lo que no se parece a nada.
+            var s2 = new List<FluencyWord>();
+            var unk2 = FluencyContract.Accept(c, s2, "dato silueta", 0f);
+            Assert.IsEmpty(s2);
+            CollectionAssert.AreEqual(new[] { "dato", "silueta" }, unk2);
+
+            // La lista de la ronda va al reconocedor, bien escrita y sin los errores típicos.
+            CollectionAssert.Contains(c.BiasPhrases, "boa constrictor");
+            CollectionAssert.DoesNotContain(c.BiasPhrases, "boa constructor");
+            Assert.Greater(c.BiasPhrases.Count, 300);
         }
 
         [Test]

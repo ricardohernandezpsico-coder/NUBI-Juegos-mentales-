@@ -25,6 +25,15 @@ namespace NeuroVida.Games.Constelacion
         public readonly Dictionary<string, int> Lookup = new Dictionary<string, int>();
         /// <summary>Largo máximo (en palabras) de una entrada: "estrella de mar" = 3.</summary>
         public int MaxTokens = 1;
+        /// <summary>Formas que el reconocedor suele escribir mal ("boa constructor"): se entienden, pero se muestra la
+        /// palabra bien escrita. En la lista van con "~" delante.</summary>
+        public readonly HashSet<string> ShowCanonical = new HashSet<string>();
+        /// <summary>Cómo SUENA cada forma (ver <see cref="FluencyContract.Phonetic"/>) → palabra: para entender lo que el
+        /// reconocedor escribió parecido ("fregata" → fragata, "ozocoala" → koala).</summary>
+        public readonly Dictionary<string, int> PhoneticExact = new Dictionary<string, int>();
+        public readonly List<(string key, int word, int tokens)> PhoneticList = new List<(string, int, int)>();
+        /// <summary>Palabras que se le pasan al reconocedor para que las favorezca (las de la lista, como se escriben).</summary>
+        public readonly List<string> BiasPhrases = new List<string>();
     }
 
     /// <summary>Una palabra dicha en la ronda.</summary>
@@ -146,17 +155,75 @@ namespace NeuroVida.Games.Constelacion
                         c.WordGroups.Add(new List<int>());
                     }
                     if (!c.WordGroups[w].Contains(group)) c.WordGroups[w].Add(group);
-                    foreach (var f in forms)
+                    foreach (var f0 in forms)
                     {
+                        string f = f0.Trim();
+                        bool misheard = f.StartsWith("~", StringComparison.Ordinal);
+                        if (misheard) f = f.Substring(1);
                         string n = Normalize(f);
                         if (n.Length == 0) continue;
                         c.Lookup[n] = w; // una variante repetida en otro grupo apunta a la misma palabra
                         c.MaxTokens = Math.Max(c.MaxTokens, n.Split(' ').Length);
+                        if (misheard) c.ShowCanonical.Add(n);
+                        else if (!c.BiasPhrases.Contains(f)) c.BiasPhrases.Add(f);
                     }
                 }
             }
+            foreach (var kv in c.Lookup)
+            {
+                string ph = Phonetic(kv.Key);
+                if (ph.Length == 0) continue;
+                if (!c.PhoneticExact.ContainsKey(ph)) c.PhoneticExact[ph] = kv.Value;
+                c.PhoneticList.Add((ph, kv.Value, kv.Key.Split(' ').Length));
+            }
             return c;
         }
+
+        /// <summary>
+        /// Cómo suena una palabra en español, simplificado, para comparar lo que escribió el reconocedor con la lista:
+        /// sin espacios ni h muda; b = v; s = z = c (ante e, i); k = c = qu; j = g (ante e, i); y = ll; letras dobles, una.
+        /// ("avosetta" y "avoceta" suenan igual: "aboseta").
+        /// </summary>
+        public static string Phonetic(string normalized)
+        {
+            if (string.IsNullOrEmpty(normalized)) return "";
+            string w = normalized.Replace(" ", "");
+            w = w.Replace("ch", "#").Replace("h", "").Replace("#", "ch");
+            w = w.Replace("ge", "je").Replace("gi", "ji").Replace("gue", "ge").Replace("gui", "gi");
+            w = w.Replace("qu", "k").Replace("ce", "se").Replace("ci", "si").Replace("z", "s").Replace("x", "ks");
+            w = w.Replace("ch", "#").Replace("c", "k").Replace("#", "ch");
+            w = w.Replace("v", "b").Replace("ll", "y").Replace("w", "u");
+            var sb = new StringBuilder(w.Length);
+            foreach (char ch in w)
+                if (sb.Length == 0 || sb[sb.Length - 1] != ch) sb.Append(ch);
+            return sb.ToString();
+        }
+
+        /// <summary>Distancia de edición (letras que hay que cambiar, agregar o quitar), cortando si pasa de <paramref name="max"/>.</summary>
+        public static int EditDistance(string a, string b, int max)
+        {
+            if (Math.Abs(a.Length - b.Length) > max) return max + 1;
+            var prev = new int[b.Length + 1];
+            var cur = new int[b.Length + 1];
+            for (int j = 0; j <= b.Length; j++) prev[j] = j;
+            for (int i = 1; i <= a.Length; i++)
+            {
+                cur[0] = i;
+                int rowMin = cur[0];
+                for (int j = 1; j <= b.Length; j++)
+                {
+                    int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                    cur[j] = Math.Min(Math.Min(prev[j] + 1, cur[j - 1] + 1), prev[j - 1] + cost);
+                    rowMin = Math.Min(rowMin, cur[j]);
+                }
+                if (rowMin > max) return max + 1;
+                var t = prev; prev = cur; cur = t;
+            }
+            return prev[b.Length];
+        }
+
+        /// <summary>Cuántas letras de diferencia se aceptan según el largo: cortas, ninguna ("dato" no es "gato").</summary>
+        public static int FuzzyAllowance(int phoneticLength) => phoneticLength >= 9 ? 2 : phoneticLength >= 5 ? 1 : 0;
 
         /// <summary>Minúsculas, sin tildes (la ñ se conserva), solo letras y un espacio entre palabras.</summary>
         public static string Normalize(string s)
@@ -212,22 +279,56 @@ namespace NeuroVida.Games.Constelacion
             return list;
         }
 
-        private static int Find(FluencyCategory c, List<string> tokens)
+        private static int Find(FluencyCategory c, List<string> tokens) => Find(c, tokens, false, out _);
+
+        /// <summary>
+        /// Busca la palabra de la lista para estas palabras dichas. Primero tal cual y con sus variantes (plural,
+        /// diminutivo...). Con <paramref name="fuzzy"/>, además, por cómo SUENA: igual, o con una letra de diferencia (dos
+        /// en las largas). <paramref name="showCanonical"/>: mostrar la palabra de la lista (lo dicho estaba mal escrito).
+        /// </summary>
+        private static int Find(FluencyCategory c, List<string> tokens, bool fuzzy, out bool showCanonical)
         {
+            showCanonical = false;
             string phrase = string.Join(" ", tokens);
-            if (c.Lookup.TryGetValue(phrase, out int w)) return w;
+            if (c.Lookup.TryGetValue(phrase, out int w)) { showCanonical = c.ShowCanonical.Contains(phrase); return w; }
             // Variantes de la última palabra ("perritos" → "perro") y, en las entradas largas, de la primera
             // ("estrellas de mar" → "estrella de mar").
             int n = tokens.Count;
             string head = n > 1 ? string.Join(" ", tokens.GetRange(0, n - 1)) + " " : "";
-            foreach (var v in Variants(tokens[n - 1]))
-                if (c.Lookup.TryGetValue(head + v, out w)) return w;
+            var lastVariants = Variants(tokens[n - 1]);
+            foreach (var v in lastVariants)
+                if (c.Lookup.TryGetValue(head + v, out w)) { showCanonical = c.ShowCanonical.Contains(head + v); return w; }
             if (n > 1)
             {
                 string tail = " " + string.Join(" ", tokens.GetRange(1, n - 1));
                 foreach (var v in Variants(tokens[0]))
                     if (c.Lookup.TryGetValue(v + tail, out w)) return w;
             }
+            if (!fuzzy) return -1;
+
+            // Por cómo suena (lo que el reconocedor escribió parecido). Se muestra la palabra bien escrita.
+            showCanonical = true;
+            foreach (var v in lastVariants)
+            {
+                string key = Phonetic(head + v);
+                if (key.Length < 3) continue;
+                if (c.PhoneticExact.TryGetValue(key, out w)) return w;
+            }
+            foreach (var v in lastVariants)
+            {
+                string key = Phonetic(head + v);
+                int allow = FuzzyAllowance(key.Length);
+                if (allow == 0) continue;
+                int best = -1, bestD = allow + 1;
+                foreach (var (pk, word, toks) in c.PhoneticList)
+                {
+                    if (toks != n || pk[0] != key[0]) continue;
+                    int d = EditDistance(key, pk, allow);
+                    if (d < bestD) { bestD = d; best = word; }
+                }
+                if (best >= 0) return best;
+            }
+            showCanonical = false;
             return -1;
         }
 
@@ -338,11 +439,15 @@ namespace NeuroVida.Games.Constelacion
             while (k < tokens.Count)
             {
                 int found = -1, len = 0;
-                for (int n = Math.Min(c.MaxTokens, tokens.Count - k); n >= 1 && found < 0; n--)
-                {
-                    found = Find(c, tokens.GetRange(k, n));
-                    if (found >= 0) len = n;
-                }
+                bool asListed = false;
+                // Primero tal cual (en cualquier largo); solo si nada calza, por cómo suena.
+                for (int pass = 0; pass < 2 && found < 0; pass++)
+                    for (int n = Math.Min(c.MaxTokens, tokens.Count - k); n >= 1 && found < 0; n--)
+                    {
+                        if (pass == 1 && Fillers.Contains(tokens[k])) break;
+                        found = Find(c, tokens.GetRange(k, n), pass == 1, out asListed);
+                        if (found >= 0) len = n;
+                    }
                 if (found >= 0)
                 {
                     var groups = new List<string>();
@@ -364,7 +469,9 @@ namespace NeuroVida.Games.Constelacion
                     }
                     var shown = new List<string>();
                     for (int t = k; t < next; t++) shown.Add(toks[t].raw);
-                    string display = string.Join(" ", shown);
+                    string display = asListed
+                        ? c.Words[found] + (next > k + len ? " " + string.Join(" ", shown.GetRange(len, shown.Count - len)) : "")
+                        : string.Join(" ", shown);
                     string canonical = c.Words[found] + (extra.Count > 0 ? " " + string.Join(" ", shown.GetRange(len, shown.Count - len)) : "");
                     words.Add(new FluencyWord
                     {

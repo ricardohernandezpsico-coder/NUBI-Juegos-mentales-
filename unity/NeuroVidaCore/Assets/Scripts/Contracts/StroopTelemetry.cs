@@ -109,5 +109,9 @@ namespace NeuroVida.Contracts
         public string[] fluency_words;
         /// <summary>Solo Constelación: "voz", "voz_telefono" (reconocida en el teléfono, sin internet) o "teclado".</summary>
         public string fluency_input = "";
+        /// <summary>Solo Constelación (para revisar en pruebas): lo que no se pudo ubicar, por ronda (separado por |), y si el
+        /// reconocedor aceptó la escucha continua (1 sí, 0 no, -1 con teclado).</summary>
+        public string[] fluency_unknown_words;
+        public int fluency_continuous = -1;
     }
 }

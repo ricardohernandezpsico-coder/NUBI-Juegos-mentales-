@@ -19,7 +19,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · c`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · d`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -355,6 +355,17 @@ Ninguna app de la competencia pide PRODUCIR palabras.
   `SpeechClient` (`AndroidJavaClass`, permiso de micrófono con `UnityEngine.Android.Permission`). Manifiesto:
   `RECORD_AUDIO` + `<queries>` de `RecognitionService`. Prueba de voz de Ricardo (28-sep, Motorola edge 60 pro,
   Android 16, `[Debug] Prueba de voz` = `ui/screens/VoiceTest.kt`): con y sin internet bien, sin "bip", al instante.
+- Voz más ágil (28-sep, tras jugarlo Ricardo: "hay palabras que no reconoce y de repente se pega"; eligió la opción A
+  de 4: sacarle el partido al reconocedor de Android; si no le convence, se piensa en otro juego o en Vosk con la
+  lista como gramática): **escucha continua** (Android 13+, `EXTRA_SEGMENTED_SESSION` de 70 s, tramos por
+  `onSegmentResults`; si el reconocedor falla 2 veces sin dar nada, vuelve a los reinicios; evento `mode`);
+  **lista de la ronda al reconocedor** (`EXTRA_BIASING_STRINGS`, `FluencyCategory.BiasPhrases`; en las de letra,
+  ninguna); **palabras que suenan parecido** (`FluencyContract.Phonetic` + `EditDistance`: igual al oído, o 1 letra
+  de diferencia desde 5 letras y 2 desde 9; las cortas no: "dato" no es "gato"; se muestra bien escrita) y errores
+  típicos con "~" en la lista ("~boa constructor"); leer la voz cada 0,1 s (no en cada cuadro) y una sola referencia
+  a la clase Kotlin; estrellas, sonidos y listas preparados durante la cuenta regresiva. En las versiones de prueba el
+  final muestra "[Prueba] Escucha continua: sí/no · No ubicadas: ..." (`fluency_unknown_words`, `fluency_continuous`).
+  Ambas mejoras de Android son sugerencias: cada reconocedor decide si las usa.
 - Juego (`ConstellationGameController`): se toca el micrófono; cada palabra NACE como estrella MIENTRAS se habla
   (resultados parciales; cada palabra con la hora en que apareció, `Tokenize` + `TokenIndex`) y se confirma al terminar
   la frase; las seguidas del mismo grupo se unen con líneas (`RailLine`) y llevan el nombre del grupo sobre la estrella
@@ -369,7 +380,7 @@ Ninguna app de la competencia pide PRODUCIR palabras.
   diminutivos, femeninos y plural de la primera palabra en entradas largas; tipos "tigre de bengala" / "tiburón
   blanco" por `Modifiers` o "de X"; muestra la palabra como se dijo y guarda la de la lista; otras lecturas del
   reconocedor; en las de letra sin nombres propios, rasgos de sonido; constelaciones por grupo común) /
-  `FluencyContractTests` (8, con frases reales de la prueba de Ricardo).
+  `FluencyContractTests` (9, con frases reales de la prueba de Ricardo).
 - Telemetría `fluency_*` (por ronda) → `GamePlayResult.fluencyRounds` (`data/Fluency.kt`, 3 pruebas: estilo desde 8
   palabras, "salieron rápido al principio", colección) → `GameResultScreen` ("Tu cielo", agrupas/saltas,
   constelaciones, "Tu minuto" con 4 columnas, truco, aviso de teclado) + colección **"tu cielo de palabras"**
@@ -410,7 +421,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 59 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 175 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Unity EditMode: 176 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

@@ -140,7 +140,9 @@ object NativeReceiver {
     val fluency_quarters: List<Int>? = null,
     val fluency_top: List<String>? = null,
     val fluency_words: List<String>? = null,
-    val fluency_input: String = ""
+    val fluency_input: String = "",
+    val fluency_unknown_words: List<String>? = null,
+    val fluency_continuous: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -396,7 +398,9 @@ object NativeReceiver {
         tops = metrics.fluency_top.orEmpty(),
         words = metrics.fluency_words.orEmpty()
       ).takeIf { it.isNotEmpty() },
-      fluencyInput = metrics.fluency_input.takeIf { telemetry.game_id == "constelacion" && it.isNotBlank() }
+      fluencyInput = metrics.fluency_input.takeIf { telemetry.game_id == "constelacion" && it.isNotBlank() },
+      fluencyUnknownWords = metrics.fluency_unknown_words?.takeIf { telemetry.game_id == "constelacion" },
+      fluencyContinuous = metrics.fluency_continuous.takeIf { telemetry.game_id == "constelacion" && it >= 0 }
     )
   }
 }

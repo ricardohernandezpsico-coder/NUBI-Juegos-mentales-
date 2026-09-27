@@ -282,6 +282,9 @@ data class GamePlayResult(
   // está en data/Fluency.kt. No se guardan en Room.
   val fluencyRounds: List<com.example.data.FluencyRound>? = null,
   val fluencyInput: String? = null,
+  /** Constelación, solo para revisar en pruebas: lo que no se ubicó (por ronda) y si hubo escucha continua (1/0). */
+  val fluencyUnknownWords: List<String>? = null,
+  val fluencyContinuous: Int? = null,
   val wordSkyTotal: Int? = null,
   val wordSkyNew: Int? = null
 )
