@@ -12,13 +12,29 @@ namespace NeuroVida.Games.Correo.Tests
         {
             Assert.AreEqual(1, MailContract.EventColors(1));
             Assert.AreEqual(2, MailContract.EventColors(MailContract.MaxLevel));
-            Assert.AreEqual(0f, MailContract.RadioPeriod(1));          // nivel 1: solo el encargo por lugar
-            Assert.AreEqual(30f, MailContract.RadioPeriod(2));
+            Assert.AreEqual(30f, MailContract.RadioPeriod(1));          // los dos tipos de encargo desde el primer vuelo
             Assert.AreEqual(20f, MailContract.RadioPeriod(MailContract.MaxLevel));
-            Assert.AreEqual(0f, MailContract.LureChance(2));
-            Assert.Greater(MailContract.LureChance(MailContract.MaxLevel), MailContract.LureChance(3));
-            Assert.Greater(MailContract.PlanetGap(1), MailContract.PlanetGap(MailContract.MaxLevel));
+            Assert.AreEqual(0f, MailContract.LureChance(1));
+            Assert.Greater(MailContract.LureChance(MailContract.MaxLevel), MailContract.LureChance(2));
+            Assert.Greater(MailContract.PlanetGap(1, 0f), MailContract.PlanetGap(MailContract.MaxLevel, 0f));
             Assert.LessOrEqual(MailContract.FlightLevel(MailContract.MaxLevel), 9);
+        }
+
+        [Test]
+        public void Flight_Accelerates_InThreeStages()
+        {
+            Assert.AreEqual(0, MailContract.Stage(0.1f));
+            Assert.AreEqual(1, MailContract.Stage(0.5f));
+            Assert.AreEqual(2, MailContract.Stage(0.9f));
+            Assert.AreEqual(1f, MailContract.SpeedRamp(0f));
+            Assert.AreEqual(1.5f, MailContract.SpeedRamp(1f), 1e-5f);
+            Assert.Greater(MailContract.CurveRamp(1f), MailContract.CurveRamp(0f));
+            Assert.Less(MailContract.LaneRamp(1f), MailContract.LaneRamp(0f));
+            // Al final del vuelo, más planetas y más asteroides (pero nunca uno encima del otro).
+            Assert.Less(MailContract.PlanetGap(3, 1f), MailContract.PlanetGap(3, 0f));
+            Assert.Less(MailContract.AsteroidGap(3, 1f), MailContract.AsteroidGap(3, 0f));
+            Assert.Less(MailContract.AsteroidGap(9, 0f), MailContract.AsteroidGap(1, 0f));
+            Assert.GreaterOrEqual(MailContract.AsteroidGap(9, 1f), 1.1f);
         }
 
         [Test]
@@ -45,7 +61,7 @@ namespace NeuroVida.Games.Correo.Tests
                 }
                 float share = (float)hits / n;
                 Assert.That(share, Is.InRange(0.15f, 0.3f), $"nivel {level}: {share:0.00}");
-                if (level <= 2) Assert.AreEqual(0, lures);
+                if (level <= 1) Assert.AreEqual(0, lures);
                 else Assert.Greater(lures, 0);
             }
         }
@@ -65,7 +81,7 @@ namespace NeuroVida.Games.Correo.Tests
             Assert.AreEqual(RadioJudgement.Late, MailContract.JudgeRadio(40f, targets, answered, out _));
             Assert.AreEqual(RadioJudgement.OnTime, MailContract.JudgeRadio(64.9f, targets, answered, out i));
             Assert.AreEqual(1, i);
-            Assert.IsEmpty(MailContract.RadioTargets(0f, MailContract.FlightSeconds));
+            Assert.IsEmpty(MailContract.RadioTargets(0f, MailContract.FlightSeconds));   // sin período, sin horas
         }
 
         [Test]

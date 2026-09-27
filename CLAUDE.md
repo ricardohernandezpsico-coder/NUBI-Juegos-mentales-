@@ -19,7 +19,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · i`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · j`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -369,14 +369,22 @@ Kvavilashvili, 2023). Nadie en la competencia la mide.
   encargo = el paquete vuela en arco, ✓ "¡Entregado!"; otro = ✗ "No es de tu encargo"; si se va = "Se fue sin su
   paquete" (suave). Por hora: radio abajo a la derecha, ventana ±5 s ("¡Aviso recibido!" / "Aún no es la hora" / "Ya
   pasó la hora"; al cerrarse sin aviso, "Se pasó la hora del aviso"); reloj tapado arriba a la derecha, se destapa 1,6 s.
-- Reglas y pruebas: `MailContract` / `MailContractTests` (5): 10 niveles; encargos por lugar 1 color (2 desde el 6); radio
-  desde el nivel 2 cada 30 s (25 desde el 6, 20 desde el 9); parecidos desde el 3 (15% → 45%; pares coral/amarillo →
-  naranjo, celeste → menta, lila → rosado); ~23% de planetas del encargo, nunca dos seguidos; un planeta cada 6 → 4,2 s.
-  Un DDA (`stepUp` 0.5) registra cada encargo (entrega, planeta perdido, error, hora con o sin aviso); los encargos se
-  fijan al salir, la ruta y el ritmo se adaptan en vuelo.
+- Reglas y pruebas: `MailContract` / `MailContractTests` (6): 10 niveles; los dos tipos de encargo desde el nivel 1;
+  2 colores desde el 4; radio cada 30 s (25 desde el 5, 20 desde el 8); parecidos desde el 2 (15% → 45%; pares
+  coral/amarillo → naranjo, celeste → menta, lila → rosado); ~23% de planetas del encargo, nunca dos seguidos; un
+  planeta cada 3,6 → 2,4 s. DOS dificultades, como en Piloto: la de encargos (`stepUp` 0.5, cada entrega, planeta
+  perdido, error u hora con o sin aviso; los encargos se fijan al salir) y la de pilotaje (`stepUp` 0.14, ventanas de
+  1,5 s con ≥ 85% en la ruta y sin chocar: velocidad, curvas, ancho, asteroides).
+- Versión "con aceleración" (28-sep, Ricardo lo probó: "demasiado lento, monótono, sin dificultad; a nivel gráfico,
+  excelente"; y un punto blanco tapaba "¡A volar!" = la píldora de estado vacía, ahora aparece al despegar): el vuelo
+  tiene 3 TRAMOS (aviso "Tramo 2 de 3 · ¡La ruta se acelera!", destello e hiperespacio); a lo largo del vuelo la
+  velocidad sube × 1 → × 1,5, las curvas × 1,5, el ancho × 0,85 y los planetas y asteroides salen 30-35% más seguido.
+  **Asteroides** sobre la ruta (cargados a un lado, siempre hay por dónde pasar; `SymbolSprite` Asteroid): chocar =
+  golpe sordo, la nave tiembla, "¡Asteroide!" (no quita encargos). El sobre suena siempre igual (la escala que subía
+  y bajaba irritaba).
 - Medida: **tu memoria para lo pendiente** (por lugar / por hora, `FilledSlots`), errores, **el reloj** (miradas y
   cuántas en el último 30% del intervalo) y lugar contra hora con consejo (`data/Mail.kt`, 3 pruebas). Telemetría
-  `mail_*` → `GamePlayResult.mail*` → `GameResultScreen`.
+  `mail_*` → `GamePlayResult.mail*` → `GameResultScreen` (más "esquivaste N de M asteroides").
 - Arte `MailSprites` (sobre, paquete, radio, reloj tapado/destapado), sonidos `MailSounds` (marimba y campanas: sobre,
   entrega, error, perdido, radio a tiempo/destiempo, tic-tac del reloj); muestra `docs/previews/correo-sonidos.wav`.
   Sin probar en el teléfono.
@@ -413,7 +421,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 59 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 172 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Unity EditMode: 173 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

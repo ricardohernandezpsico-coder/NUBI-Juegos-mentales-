@@ -142,7 +142,9 @@ object NativeReceiver {
     val mail_clock_checks: Int = -1,
     val mail_clock_late: Int = -1,
     val mail_lane_pct: Int = -1,
-    val mail_envelopes: Int = -1
+    val mail_envelopes: Int = -1,
+    val mail_asteroid_hits: Int = -1,
+    val mail_asteroids: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -399,7 +401,9 @@ object NativeReceiver {
       mailClockChecks = metrics.mail_clock_checks.takeIf { mail },
       mailClockLate = metrics.mail_clock_late.takeIf { mail },
       mailLanePct = metrics.mail_lane_pct.takeIf { mail },
-      mailEnvelopes = metrics.mail_envelopes.takeIf { mail }
+      mailEnvelopes = metrics.mail_envelopes.takeIf { mail },
+      mailAsteroidHits = metrics.mail_asteroid_hits.takeIf { mail && it >= 0 },
+      mailAsteroids = metrics.mail_asteroids.takeIf { mail && it >= 0 }
     )
   }
 }

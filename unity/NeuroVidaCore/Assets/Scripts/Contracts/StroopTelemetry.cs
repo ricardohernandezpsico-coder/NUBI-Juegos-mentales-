@@ -111,5 +111,8 @@ namespace NeuroVida.Contracts
         public int mail_lane_pct = -1;
         public int mail_envelopes = -1;
         public int mail_envelopes_total = -1;
+        /// <summary>Solo Correo Estelar: asteroides chocados y asteroides que pasaron junto a la nave (esquivados + chocados).</summary>
+        public int mail_asteroid_hits = -1;
+        public int mail_asteroids = -1;
     }
 }

@@ -196,7 +196,9 @@ en curso es el vuelo de Piloto Estelar (mantenerse en la ruta y recoger sobres);
 NO se muestran durante el vuelo.
 - **Por lugar** (evento): tocar los planetas de un color cuando pasan. Algo del entorno avisa (el planeta), pero hay
   que reconocerlo a tiempo. Pocos planetas son del encargo (~23%) y desde el nivel 3 algunos tienen un color parecido.
-- **Por hora** (tiempo): tocar la radio cada 30 s (25 o 20 en niveles altos), con ±5 s de margen. Nada avisa; el reloj
+- **Por hora** (tiempo): tocar la radio cada 30 s (25 o 20 en niveles altos), con ±5 s de margen. Los dos tipos de
+  encargo van desde el primer vuelo, y la tarea en curso se pone exigente: el vuelo se acelera en tres tramos y hay
+  asteroides que esquivar (sin carga, los encargos serían fáciles de recordar y no medirían lo que pasa en el día). Nada avisa; el reloj
   va tapado y tocarlo lo destapa 1,6 s. Cuándo se mira es la estrategia: lo eficaz es mirar poco al principio y más
   cerca de la hora (el patrón clásico de las tareas por tiempo).
 

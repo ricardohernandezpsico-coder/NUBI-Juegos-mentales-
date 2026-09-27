@@ -79,32 +79,62 @@ namespace NeuroVida.Games.Correo
 
         // ------------------------------------------------------------------ niveles
 
-        /// <summary>Colores de planeta con encargo: 1 (niveles 1-5) o 2 (6-10).</summary>
-        public static int EventColors(int level) => Clamp(level) >= 6 ? 2 : 1;
+        /// <summary>Colores de planeta con encargo: 1 (niveles 1-3) o 2 (desde el 4).</summary>
+        public static int EventColors(int level) => Clamp(level) >= 4 ? 2 : 1;
 
-        /// <summary>Cada cuántos segundos hay que avisar por radio (0 = sin encargo por hora en el nivel 1).</summary>
+        /// <summary>Cada cuántos segundos hay que avisar por radio: 30 (niveles 1-4), 25 (5-7), 20 (8-10). Desde el nivel 1:
+        /// los dos tipos de encargo desde el primer vuelo (Ricardo, 28-sep: con uno solo "no tuve que trabajar la memoria").</summary>
         public static float RadioPeriod(int level)
         {
             level = Clamp(level);
-            if (level == 1) return 0f;
-            return level <= 5 ? 30f : level <= 8 ? 25f : 20f;
+            return level <= 4 ? 30f : level <= 7 ? 25f : 20f;
         }
 
-        /// <summary>Probabilidad de que un planeta que no es del encargo tenga un color parecido: 0 (niveles 1-2) → 0,45.</summary>
+        /// <summary>Probabilidad de que un planeta que no es del encargo tenga un color parecido: 0 (nivel 1), 0,15 → 0,45.</summary>
         public static float LureChance(int level)
         {
             level = Clamp(level);
-            return level <= 2 ? 0f : 0.15f + 0.3f * (level - 3) / (MaxLevel - 3);
+            return level <= 1 ? 0f : 0.15f + 0.3f * (level - 2) / (MaxLevel - 2);
         }
 
-        /// <summary>Segundos entre un planeta y el siguiente: 6 → 4,2.</summary>
-        public static float PlanetGap(int level) => 6f - 1.8f * (Clamp(level) - 1) / (MaxLevel - 1);
+        /// <summary>
+        /// Segundos entre un planeta y el siguiente: 3,6 (nivel 1) → 2,4 (nivel 10), y un 30% menos al final del vuelo
+        /// (<paramref name="progress"/> 0..1). Muchos planetas: casi todos hay que dejarlos pasar.
+        /// </summary>
+        public static float PlanetGap(int level, float progress) =>
+            (3.6f - 1.2f * (Clamp(level) - 1) / (MaxLevel - 1)) * (1f - 0.3f * Clamp01(progress));
 
         /// <summary>Proporción de planetas que son del encargo (pocos: si fueran muchos, no habría que recordar nada).</summary>
         public const float TargetChance = 0.3f;
 
         /// <summary>Nivel de la ruta (ancho, curvas y velocidad: los de Piloto Estelar, que tiene 9).</summary>
         public static int FlightLevel(int level) => Math.Max(1, Math.Min(9, Clamp(level)));
+
+        // ------------------------------------------------------------------ el vuelo se acelera
+
+        /// <summary>El vuelo tiene tres tramos (0, 1, 2); en cada uno la ruta va más rápida, más curva y más angosta.</summary>
+        public static int Stage(float progress) => progress < 1f / 3f ? 0 : progress < 2f / 3f ? 1 : 2;
+
+        /// <summary>Velocidad: × 1 al salir → × 1,5 al final del vuelo (sube de a poco, se nota en cada tramo).</summary>
+        public static float SpeedRamp(float progress) => 1f + 0.5f * Clamp01(progress);
+
+        /// <summary>Curvas: × 1 → × 1,5 (la ruta se vuelve más sinuosa).</summary>
+        public static float CurveRamp(float progress) => 1f + 0.5f * Clamp01(progress);
+
+        /// <summary>Ancho de la ruta: × 1 → × 0,85.</summary>
+        public static float LaneRamp(float progress) => 1f - 0.15f * Clamp01(progress);
+
+        /// <summary>
+        /// Segundos entre un asteroide y el siguiente en la ruta (hay que esquivarlos): 3,4 (pilotaje nivel 1) → 1,8 (9), y
+        /// un 35% menos al final del vuelo; nunca menos de 1,1.
+        /// </summary>
+        public static float AsteroidGap(int driveLevel, float progress)
+        {
+            float g = 3.4f - 1.6f * (Math.Max(1, Math.Min(9, driveLevel)) - 1) / 8f;
+            return Math.Max(1.1f, g * (1f - 0.35f * Clamp01(progress)));
+        }
+
+        private static float Clamp01(float x) => Math.Max(0f, Math.Min(1f, x));
 
         // ------------------------------------------------------------------ encargos
 

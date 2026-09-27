@@ -722,10 +722,11 @@ fun GameResultScreen(
         Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
       }
       val lane = result.mailLanePct
-      val envelopes = result.mailEnvelopes
+      val asteroids = result.mailAsteroids
+      val dodged = asteroids?.let { it - (result.mailAsteroidHits ?: 0) }
       if (lane != null && lane >= 0) {
         Text(
-          text = "Ruta: $lane% del vuelo" + (envelopes?.takeIf { it >= 0 }?.let { " · $it sobres" } ?: ""),
+          text = "Ruta: $lane% del vuelo" + (if (asteroids != null && asteroids > 0) " · esquivaste $dodged de $asteroids asteroides" else ""),
           color = TextSoft,
           fontSize = 13.sp,
           modifier = Modifier.padding(top = 4.dp)

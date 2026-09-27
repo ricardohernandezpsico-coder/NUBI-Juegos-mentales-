@@ -6,6 +6,7 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia;  // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.CambioChip; // ChipShipSprite (la nave de Piloto Estelar)
+using NeuroVida.Games.Parejas;    // SymbolSprite (asteroides)
 using NeuroVida.Games.Piloto;     // PilotContract: la ruta (ancho, curvas, velocidad)
 using NeuroVida.Games.Shared;
 using NeuroVida.Games.Trafico;    // TrafficSprites.Port: planetas de color con símbolo
@@ -39,7 +40,9 @@ namespace NeuroVida.Games.Correo
         private const float RadioSize = 190f;
         private const float ClockSize = 140f;
         private const int TrailPool = 12;
-        private const int PlanetPool = 4;
+        private const int PlanetPool = 6;
+        private const int AsteroidPool = 6;
+        private const float AsteroidSize = 130f;
         private const int EnvelopePool = 8;
 
         private static readonly Color GoodColor = NeuroStyle.Lime;
@@ -72,7 +75,9 @@ namespace NeuroVida.Games.Correo
         }
 
         private System.Random _rng;
-        private AdaptiveDifficulty _dda;
+        /// <summary>Dos dificultades, como en Piloto: la de los encargos (<see cref="_dda"/>: colores, parecidos, ritmo de
+        /// planetas) y la del pilotaje (<see cref="_driveDda"/>: velocidad, curvas, ancho y asteroides).</summary>
+        private AdaptiveDifficulty _dda, _driveDda;
         private Phase _phase = Phase.Idle;
         private bool Precision => _config != null && !_config.config.timed;
         private int _startLevel;
@@ -91,6 +96,21 @@ namespace NeuroVida.Games.Correo
         private int _steerFinger = -1;
         private bool _mouseSteer, _inLane = true, _labelFading;
         private float _flightTime, _inLaneTime;
+        private float _windowT, _windowIn;
+        private bool _windowHit;
+        private int _stage;
+
+        // asteroides (hay que esquivarlos)
+        private sealed class AsteroidView
+        {
+            public RectTransform Rect;
+            public Image Img;
+            public float D, X, Spin;
+            public bool Live, Hit;
+        }
+        private readonly List<AsteroidView> _asteroids = new List<AsteroidView>();
+        private float _nextAsteroidAt, _hitUntil;
+        private int _asteroidHits, _asteroidsPassed;
 
         // planetas y sobres
         private readonly List<PlanetView> _planets = new List<PlanetView>();
@@ -135,6 +155,8 @@ namespace NeuroVida.Games.Correo
             float start = AdaptiveDifficulty.StartRating(config.config, MailContract.MaxLevel);
             // Pocos registros por vuelo (un encargo cada ~10 s): pasos grandes.
             _dda = new AdaptiveDifficulty(MailContract.MaxLevel, age, start, stepUp: 0.5f, useReaction: false);
+            // Pilotaje: ventanas de 1,5 s (muchas por vuelo), pasos chicos como en Piloto Estelar.
+            _driveDda = new AdaptiveDifficulty(9, age, AdaptiveDifficulty.StartRating(config.config, 9), stepUp: 0.14f, useReaction: false);
             _startLevel = _dda.PresentedLevel;
             _targets = MailContract.PickTargets(_startLevel, _rng);
             _period = MailContract.RadioPeriod(_startLevel);
@@ -144,9 +166,9 @@ namespace NeuroVida.Games.Correo
 
             _phase = Phase.Idle;
             _segments.Clear();
-            int fl = MailContract.FlightLevel(_startLevel);
+            int fl = _driveDda.PresentedLevel;
             _traveled = 0f;
-            _speed = PilotContract.ScrollSpeed(fl, Precision) * 0.85f;
+            _speed = PilotContract.ScrollSpeed(fl, Precision);
             _amp = PilotContract.Curviness(fl) * 0.6f;
             _half = PilotContract.LaneHalfWidth(fl);
             _shipX = _shipTargetX = 0.5f;
@@ -156,7 +178,12 @@ namespace NeuroVida.Games.Correo
             _inLane = true;
             _labelFading = false;
             _controlLabel.color = new Color(1f, 1f, 1f, 0.7f);
-            _flightTime = _inLaneTime = 0f;
+            _flightTime = _inLaneTime = _windowT = _windowIn = 0f;
+            _windowHit = false;
+            _stage = 0;
+            _hitUntil = 0f;
+            _asteroidHits = _asteroidsPassed = 0;
+            foreach (var a in _asteroids) RetireAsteroid(a);
             _eventHits = _eventTotal = _commissions = _lureCommissions = _deliveryStreak = 0;
             _radioHits = _radioOfftime = 0;
             _clockChecks.Clear();
@@ -176,6 +203,8 @@ namespace NeuroVida.Games.Correo
             _radioRect.gameObject.SetActive(radio);
             _clockRect.gameObject.SetActive(radio);
             ShowClock(false);
+            // La píldora de estado ("En la ruta") aparece al despegar: vacía se veía como un punto blanco sobre "¡A volar!".
+            _pill.Rect.gameObject.SetActive(false);
 
             StopAllCoroutines();
             StartCoroutine(GameLoop());
@@ -202,9 +231,11 @@ namespace NeuroVida.Games.Correo
             while (_phase == Phase.Brief) yield return null;
 
             _flightStart = GameClock.Time;
-            _nextPlanetAt = _flightStart + 3f;
+            _nextPlanetAt = _flightStart + 2.5f;
+            _nextAsteroidAt = _flightStart + 4f;
             _nextEnvelopeD = _traveled + _playH * 0.5f;
             _hud.SetInfo("Entregas 0");
+            _pill.Rect.gameObject.SetActive(true);
             _pill.Set("En la ruta", GoodColor);
             GameFeel.LevelUp();
 
@@ -239,7 +270,9 @@ namespace NeuroVida.Games.Correo
             HandleInput();
             UpdateFlight(dt);
             UpdateEnvelopes();
+            UpdateAsteroids(now);
             UpdatePlanets(now);
+            UpdateStage();
             UpdateRadio(now);
             UpdateEffects(dt, now);
             if (_clockShownUntil > 0f && now >= _clockShownUntil) ShowClock(false);
@@ -352,8 +385,8 @@ namespace NeuroVida.Games.Correo
 
         private void UpdateFlight(float dt)
         {
-            int fl = MailContract.FlightLevel(_dda.PresentedLevel);
-            float targetSpeed = PilotContract.ScrollSpeed(fl, Precision) * 0.85f;
+            int fl = _driveDda.PresentedLevel;
+            float targetSpeed = PilotContract.ScrollSpeed(fl, Precision) * MailContract.SpeedRamp(Progress);
             _speed = Mathf.MoveTowards(_speed, targetSpeed, 120f * dt);
             _traveled += _speed * dt;
             FillPath();
@@ -369,6 +402,17 @@ namespace NeuroVida.Games.Correo
             bool inLane = PilotContract.InLane(_shipX, center, half);
             _flightTime += dt;
             if (inLane) _inLaneTime += dt;
+            // Dificultad del pilotaje: cada 1,5 s, "bien" = 85% del tiempo en la ruta y sin chocar un asteroide.
+            _windowT += dt;
+            if (inLane) _windowIn += dt;
+            if (_windowT >= PilotContract.DriveWindowSeconds)
+            {
+                bool pass = _windowIn / _windowT >= PilotContract.DriveWindowPass && !_windowHit;
+                _driveDda.Register(pass);
+                _windowT = _windowIn = 0f;
+                _windowHit = false;
+                UpdateHudLevel();
+            }
             if (_inLane && !inLane)
             {
                 PlayTone(196f, 0.16f, 0.12f);
@@ -378,8 +422,9 @@ namespace NeuroVida.Games.Correo
             _inLane = inLane;
 
             _shipRect.anchoredPosition = new Vector2((_shipX - 0.5f) * _playW, _shipY);
-            _shipRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Clamp(-_shipVx * 22f, -16f, 16f));
-            _shipImage.color = inLane ? Color.white : new Color(1f, 0.78f, 0.74f, 1f);
+            float wobble = GameClock.Time < _hitUntil ? 14f * Mathf.Sin(GameClock.Time * 40f) : 0f;
+            _shipRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Clamp(-_shipVx * 22f, -16f, 16f) + wobble);
+            _shipImage.color = inLane && GameClock.Time >= _hitUntil ? Color.white : new Color(1f, 0.78f, 0.74f, 1f);
             LayoutPath(center);
         }
 
@@ -387,9 +432,10 @@ namespace NeuroVida.Games.Correo
         {
             float ahead = _playH + 200f;
             float lastD = _segments.Count > 0 ? _segments[_segments.Count - 1].D : _traveled - _shipY - _playH;
-            int fl = MailContract.FlightLevel(_dda.PresentedLevel);
-            float targetAmp = PilotContract.Curviness(fl);
-            float targetHalf = PilotContract.LaneHalfWidth(fl);
+            int fl = _driveDda.PresentedLevel;
+            // En cada tramo del vuelo la ruta se vuelve más sinuosa y algo más angosta.
+            float targetAmp = Mathf.Min(0.36f, PilotContract.Curviness(fl) * MailContract.CurveRamp(Progress));
+            float targetHalf = PilotContract.LaneHalfWidth(fl) * MailContract.LaneRamp(Progress);
             while (lastD < _traveled + ahead)
             {
                 lastD += Spacing;
@@ -499,7 +545,7 @@ namespace NeuroVida.Games.Correo
                     _envelopesTotal++;
                     _envelopeStreak++;
                     _points += 10;
-                    Sfx(MailSounds.Pickup(_envelopeStreak), 0.4f);
+                    Sfx(MailSounds.Pickup(), 0.3f);
                     StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(e.X, y), NeuroStyle.Cream, 6, 70f, 14f));
                     RetireEnvelope(e);
                 }
@@ -531,7 +577,7 @@ namespace NeuroVida.Games.Correo
                     _lastWasTarget = data.IsTarget;
                     SpawnPlanet(free, data);
                 }
-                _nextPlanetAt = now + MailContract.PlanetGap(_dda.PresentedLevel) * (0.85f + 0.3f * (float)_rng.NextDouble());
+                _nextPlanetAt = now + MailContract.PlanetGap(_dda.PresentedLevel, Progress) * (0.85f + 0.3f * (float)_rng.NextDouble());
             }
             float bottom = -_playH * 0.5f - PlanetSize;
             foreach (var p in _planets)
@@ -770,7 +816,85 @@ namespace NeuroVida.Games.Correo
             }
         }
 
-        private void UpdateHudLevel() => _hud.SetLevel(_dda.PresentedLevel);
+        private void UpdateHudLevel() => _hud.SetLevel(Mathf.RoundToInt((_dda.PresentedLevel + _driveDda.PresentedLevel) * 0.5f));
+
+        private float Progress => _phase == Phase.Flight || _phase == Phase.Done
+            ? Mathf.Clamp01((GameClock.Time - _flightStart) / MailContract.FlightSeconds) : 0f;
+
+        /// <summary>Cambio de tramo: aviso, destello y un empujón de hiperespacio (se siente la aceleración).</summary>
+        private void UpdateStage()
+        {
+            int stage = MailContract.Stage(Progress);
+            if (stage <= _stage) return;
+            _stage = stage;
+            _toast.Show($"Tramo {stage + 1} de 3", stage == 1 ? "¡La ruta se acelera!" : "¡Último tramo: a toda velocidad!", AmberColor, 1.6f);
+            GameFeel.LevelUp();
+            GameFeel.Haptic(GameFeel.HapticKind.Firm);
+            if (_stars != null) _stars.Warp = 0.9f;
+            StartCoroutine(UiFx.RingBurst(_fxRect, new Vector2(0f, _shipY), AmberColor, 160f, 1100f, 0.6f));
+        }
+
+        // ------------------------------------------------------------------ asteroides (hay que esquivarlos)
+
+        private void UpdateAsteroids(float now)
+        {
+            if (now >= _nextAsteroidAt)
+            {
+                var free = _asteroids.Find(a => !a.Live);
+                if (free != null) SpawnAsteroid(free);
+                _nextAsteroidAt = now + MailContract.AsteroidGap(_driveDda.PresentedLevel, Progress) * (0.8f + 0.4f * (float)_rng.NextDouble());
+            }
+            Vector2 ship = _shipRect.anchoredPosition;
+            float dt = GameClock.DeltaTime;
+            foreach (var a in _asteroids)
+            {
+                if (!a.Live) continue;
+                float y = YOf(a.D);
+                a.Rect.anchoredPosition = new Vector2(a.X, y);
+                a.Rect.localRotation = Quaternion.Euler(0f, 0f, a.Rect.localEulerAngles.z + a.Spin * dt);
+                if (!a.Hit && Mathf.Abs(y - ship.y) < AsteroidSize * 0.5f && Mathf.Abs(a.X - ship.x) < AsteroidSize * 0.55f)
+                {
+                    a.Hit = true;
+                    _asteroidHits++;
+                    _windowHit = true;
+                    _envelopeStreak = 0;
+                    _hitUntil = now + 0.45f;
+                    Sfx(MailSounds.Bump(), 0.55f);
+                    GameFeel.Haptic(GameFeel.HapticKind.Double);
+                    a.Img.color = new Color(1f, 1f, 1f, 0.45f);
+                    StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(a.X, y), NeuroStyle.Coral, 10, 120f, 22f));
+                    StartCoroutine(FloatText(new Vector2(ship.x, ship.y + 40f), "¡Asteroide!", BadColor));
+                    _vignetteL.color = _vignetteR.color = NeuroStyle.WithAlpha(BadColor, 0.7f);
+                }
+                if (y < ship.y - ShipSize)
+                {
+                    if (!a.Hit) _asteroidsPassed++;
+                    RetireAsteroid(a);
+                }
+            }
+        }
+
+        /// <summary>Un asteroide sobre la ruta, cargado a un lado (siempre queda por dónde pasar).</summary>
+        private void SpawnAsteroid(AsteroidView a)
+        {
+            a.D = _traveled + (_playH * 0.5f - _shipY) + AsteroidSize;
+            float c = CenterAt(a.D, out float half);
+            float side = _rng.Next(2) == 0 ? -1f : 1f;
+            float off = side * half * (0.35f + 0.4f * (float)_rng.NextDouble());
+            a.X = (c + off - 0.5f) * _playW;
+            a.Spin = (_rng.Next(2) == 0 ? -1f : 1f) * (30f + 50f * (float)_rng.NextDouble());
+            a.Live = true;
+            a.Hit = false;
+            a.Img.sprite = SymbolSprite.Get(ShapeKind.Asteroid, _rng.Next(3));
+            a.Img.color = Color.white;
+            a.Rect.gameObject.SetActive(true);
+        }
+
+        private static void RetireAsteroid(AsteroidView a)
+        {
+            a.Live = false;
+            if (a.Rect != null) a.Rect.gameObject.SetActive(false);
+        }
 
         private IEnumerator FadeControlLabel()
         {
@@ -957,6 +1081,7 @@ namespace NeuroVida.Games.Correo
             // Los planetas que todavía se veían no cuentan (aún se podían tocar).
             foreach (var p in _planets) RetirePlanet(p);
             foreach (var e in _envelopes) RetireEnvelope(e);
+            foreach (var a in _asteroids) RetireAsteroid(a);
             // Horas de radio: las que cerraron su ventana, más las que ya tenían aviso aunque su ventana siga abierta.
             UpdateRadio(GameClock.Time);
             int radioTotal = _radioChecked;
@@ -965,6 +1090,7 @@ namespace NeuroVida.Games.Correo
             float lane = _flightTime > 0f ? _inLaneTime / _flightTime : 0f;
             var clock = MailContract.Monitoring(_clockChecks, _radioTargets.GetRange(0, Mathf.Min(radioTotal, _radioTargets.Count)), _period);
             int score = MailContract.Score(_eventHits, _eventTotal, _commissions, _radioHits, radioTotal, lane, _dda.PeakLevel);
+            int asteroids = _asteroidHits + _asteroidsPassed;
 
             _pill.Set("Ruta completa", GoodColor);
             _bigText.text = "¡RUTA COMPLETA!";
@@ -977,7 +1103,7 @@ namespace NeuroVida.Games.Correo
             _exit.Show();
             _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Correo impecable!" : score >= 65 ? "¡Buen reparto!" : "Ruta completa";
             _resultRoot.Find("Detail").GetComponent<Text>().text = $"Planetas: {_eventHits} de {_eventTotal}" + (radioTotal > 0 ? $" · Radio: {_radioHits} de {radioTotal}" : "");
-            _resultRoot.Find("Extra").GetComponent<Text>().text = $"{Mathf.RoundToInt(lane * 100f)}% en la ruta · {_envelopesGot} sobres";
+            _resultRoot.Find("Extra").GetComponent<Text>().text = $"{Mathf.RoundToInt(lane * 100f)}% en la ruta · esquivaste {_asteroidsPassed} de {asteroids} asteroides";
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
 
@@ -994,7 +1120,7 @@ namespace NeuroVida.Games.Correo
                     level = _config.config.level,
                     timed = _config.config.timed,
                     end_rating = _dda.RatingNormalized,
-                    peak_level = _dda.PeakLevel,
+                    peak_level = Mathf.Max(_dda.PeakLevel, _driveDda.PeakLevel),
                     mail_event_hits = _eventHits,
                     mail_event_total = _eventTotal,
                     mail_commissions = _commissions,
@@ -1007,7 +1133,9 @@ namespace NeuroVida.Games.Correo
                     mail_clock_late = clock.LateChecks,
                     mail_lane_pct = Mathf.RoundToInt(lane * 100f),
                     mail_envelopes = _envelopesGot,
-                    mail_envelopes_total = _envelopesTotal
+                    mail_envelopes_total = _envelopesTotal,
+                    mail_asteroid_hits = _asteroidHits,
+                    mail_asteroids = asteroids
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
@@ -1106,6 +1234,13 @@ namespace NeuroVida.Games.Correo
                 var img = NewImage(envRoot, "Envelope", MailSprites.Envelope());
                 img.rectTransform.sizeDelta = new Vector2(EnvelopeSize, EnvelopeSize);
                 _envelopes.Add(new EnvelopeView { Rect = img.rectTransform, Img = img });
+            }
+            var asteroidRoot = Layer(_play, "Asteroids");
+            for (int i = 0; i < AsteroidPool; i++)
+            {
+                var img = NewImage(asteroidRoot, "Asteroid", null);
+                img.rectTransform.sizeDelta = new Vector2(AsteroidSize, AsteroidSize);
+                _asteroids.Add(new AsteroidView { Rect = img.rectTransform, Img = img });
             }
             var planetRoot = Layer(_play, "Planets");
             for (int i = 0; i < PlanetPool; i++) _planets.Add(BuildPlanet(planetRoot));

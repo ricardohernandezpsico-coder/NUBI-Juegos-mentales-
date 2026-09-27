@@ -8,7 +8,7 @@ namespace NeuroVida.Games.Correo
     /// Sonido de "Correo Estelar", con la identidad de la app (marimba y campanas en la pentatónica de do, como Tráfico y la
     /// Bitácora; nada de maquinita):
     /// <list type="bullet">
-    /// <item><see cref="Pickup"/>: se recoge un sobre (marimba; sube una nota por cada sobre seguido).</item>
+    /// <item><see cref="Pickup"/>: se recoge un sobre (una nota suave, siempre la misma). <see cref="Bump"/>: choque con un asteroide.</item>
     /// <item><see cref="Deliver"/>: paquete entregado (soplo + campanas do-mi-sol).</item>
     /// <item><see cref="WrongPlanet"/>: planeta equivocado (dos notas suaves que bajan, sin castigo).</item>
     /// <item><see cref="Missed"/>: un planeta del encargo se fue sin su paquete (campana grave, suave).</item>
@@ -19,14 +19,15 @@ namespace NeuroVida.Games.Correo
     public static class MailSounds
     {
         private const int Rate = 44100;
-        private static readonly float[] Penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880.00f, 1046.50f, 1174.66f, 1318.51f };
         private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();
 
-        public static AudioClip Pickup(int streak) => Get("pickup" + (streak % 8), () => Make("pickup", 0.3f, t =>
-        {
-            float hz = Penta[Math.Min(streak, Penta.Length - 1) % Penta.Length];
-            return 0.45f * (0.8f * Sin(hz, t) * Env(t, 0.003f, 0.09f) + 0.2f * Sin(hz * 4f, t) * Env(t, 0.001f, 0.02f));
-        }));
+        /// <summary>Siempre la misma nota corta y suave (Ricardo, 28-sep: la escala que subía y bajaba terminaba irritando).</summary>
+        public static AudioClip Pickup() => Get("pickup", () => Make("pickup", 0.22f, t =>
+            0.4f * (0.8f * Sin(783.99f, t) * Env(t, 0.003f, 0.06f) + 0.15f * Sin(783.99f * 3f, t) * Env(t, 0.001f, 0.015f))));
+
+        /// <summary>Choque con un asteroide: golpe sordo y grave (sin estridencia).</summary>
+        public static AudioClip Bump() => Get("bump", () => Make("bump", 0.4f, t =>
+            0.55f * Sin(98f + 60f * Mathf.Exp(-t / 0.05f), t) * Env(t, 0.002f, 0.12f) + 0.2f * Noise(t, 400f) * Env(t, 0.001f, 0.05f)));
 
         public static AudioClip Deliver() => Get("deliver", () => Make("deliver", 1.1f, t =>
         {

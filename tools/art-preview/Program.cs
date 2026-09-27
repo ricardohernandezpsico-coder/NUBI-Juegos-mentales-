@@ -244,7 +244,8 @@ internal static class Program
             int start = (int)(t * rate);
             for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
         }
-        for (int i = 0; i < 4; i++) At(0.2f + 0.45f * i, NeuroVida.Games.Correo.MailSounds.Pickup(i + 1), 0.4f);
+        for (int i = 0; i < 4; i++) At(0.2f + 0.45f * i, NeuroVida.Games.Correo.MailSounds.Pickup(), 0.3f);
+        At(1.95f, NeuroVida.Games.Correo.MailSounds.Bump(), 0.55f);
         At(2.2f, NeuroVida.Games.Correo.MailSounds.Deliver(), 0.55f);
         At(3.6f, NeuroVida.Games.Correo.MailSounds.WrongPlanet(), 0.5f);
         At(4.5f, NeuroVida.Games.Correo.MailSounds.Peek(), 0.45f);
