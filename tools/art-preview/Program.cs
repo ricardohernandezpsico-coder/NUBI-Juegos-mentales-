@@ -92,13 +92,22 @@ internal static class Program
                 Dump("traffic_pod_" + c, NeuroVida.Games.Trafico.TrafficSprites.Pod(c));
             }
             Dump("traffic_knob", NeuroVida.Games.Trafico.TrafficSprites.SwitchKnob());
-            // Redes de ejemplo (nodos: x y padre color) para la maqueta.
-            foreach (var (ports, seed) in new[] { (4, 3), (6, 11), (8, 5) })
+            Dump("traffic_station", NeuroVida.Games.Trafico.TrafficSprites.Station());
+            // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            foreach (var (ports, seed, twist) in new[] { (4, 3, 0.2f), (6, 11, 0.55f), (8, 5, 1f), (6, 21, 0.55f) })
             {
-                var net = NeuroVida.Games.Trafico.TrafficContract.BuildNetwork(ports, new System.Random(seed));
+                var net = NeuroVida.Games.Trafico.TrafficContract.BuildNetwork(ports, new System.Random(seed), 825f / 500f, twist);
                 var sb = new System.Text.StringBuilder();
-                for (int n = 0; n < net.Count; n++) sb.AppendLine(string.Join(" ", net.X[n].ToString(System.Globalization.CultureInfo.InvariantCulture), net.Y[n].ToString(System.Globalization.CultureInfo.InvariantCulture), net.Parent[n], net.PortColor[n]));
-                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"traffic_net_{ports}.txt"), sb.ToString());
+                for (int n = 0; n < net.Count; n++)
+                    sb.AppendLine(string.Join(" ", "N", net.X[n].ToString(inv), net.Y[n].ToString(inv), net.Parent[n], net.PortColor[n]));
+                for (int n = 1; n < net.Count; n++)
+                {
+                    sb.Append("P ").Append(n);
+                    for (int i = 0; i < net.PathX[n].Length; i++) sb.Append(' ').Append(net.PathX[n][i].ToString(inv)).Append(' ').Append(net.PathY[n][i].ToString(inv));
+                    sb.AppendLine();
+                }
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"traffic_net_{ports}_{seed}.txt"), sb.ToString());
             }
         }
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))

@@ -10,13 +10,15 @@ namespace NeuroVida.Games.Trafico.Tests
         public void Networks_AreTreesWithoutCrossingsAtEverySize()
         {
             var rng = new Random(4);
-            // Teléfonos más bajos o más altos: la separación se mide con la proporción real del campo.
+            // Teléfonos más bajos o más altos (la separación se mide con la proporción real del campo), y rutas suaves
+            // (nivel 1) o en serpentina (nivel 12).
             foreach (float aspect in new[] { 1.3f, 1.6f, 2.0f })
+            foreach (float twist in new[] { 0f, 1f })
             for (int ports = 2; ports <= TrafficContract.MaxPorts; ports++)
             {
-                for (int i = 0; i < 25; i++)
+                for (int i = 0; i < 12; i++)
                 {
-                    var net = TrafficContract.BuildNetwork(ports, rng, aspect);
+                    var net = TrafficContract.BuildNetwork(ports, rng, aspect, twist);
                     int portCount = 0, switches = 0;
                     var colors = new HashSet<int>();
                     for (int n = 0; n < net.Count; n++)
@@ -33,10 +35,85 @@ namespace NeuroVida.Games.Trafico.Tests
                     Assert.IsTrue(TrafficContract.IsPlanar(net), $"{ports} puertos: tramos cruzados");
                     Assert.GreaterOrEqual(TrafficContract.MinGap(net, aspect), TrafficContract.MinNodeGap, $"{ports} puertos, proporción {aspect}: nodos muy juntos");
                     Assert.GreaterOrEqual(TrafficContract.MinNodeToRail(net, aspect), TrafficContract.MinRailGap, $"{ports} puertos, proporción {aspect}: una ruta pasa rozando un nodo ajeno");
+                    Assert.GreaterOrEqual(TrafficContract.MinRouteGap(net), TrafficContract.MinRouteGapWidth, $"{ports} puertos, proporción {aspect}: dos rutas van pegadas");
+                    for (int n = 1; n < net.Count; n++)
+                    {
+                        // Cada recorrido une de verdad al padre con el nodo, y sin saltos.
+                        var xs = net.PathX[n];
+                        var ys = net.PathY[n];
+                        int p = net.Parent[n];
+                        Assert.AreEqual(net.X[p], xs[0], 1e-4f);
+                        Assert.AreEqual(net.Y[p], ys[0], 1e-4f);
+                        Assert.AreEqual(net.X[n], xs[xs.Length - 1], 1e-4f);
+                        Assert.AreEqual(net.Y[n], ys[ys.Length - 1], 1e-4f);
+                        for (int k = 1; k < xs.Length; k++) Assert.Less(Math.Abs(xs[k] - xs[k - 1]) + Math.Abs(ys[k] - ys[k - 1]), 0.1f);
+                    }
                     Assert.AreEqual(1, net.Children[0].Length);        // el portal tiene una sola salida
                     for (int c = 0; c < ports; c++) Assert.GreaterOrEqual(net.PortOfColor(c), 0);
                 }
             }
+        }
+
+        [Test]
+        public void Routes_CurveAndWindMoreAtHighLevels()
+        {
+            // Las rutas son más largas que las rectas (curvas), y en nivel alto la del portal serpentea: su largo crece
+            // y cambia de sentido a lo ancho varias veces.
+            float Stretch(float twist, out int turns)
+            {
+                var rng = new Random(9);
+                float ratio = 0f;
+                turns = 0;
+                const int nets = 20;
+                for (int i = 0; i < nets; i++)
+                {
+                    var net = TrafficContract.BuildNetwork(5, rng, 1.6f, twist);
+                    int trunk = net.Children[0][0];
+                    float straight = (float)Math.Sqrt(Math.Pow((net.X[trunk] - net.X[0]) / 1.6f, 2) + Math.Pow(net.Y[trunk] - net.Y[0], 2));
+                    ratio += net.PathLength(trunk) / straight / nets;
+                    var xs = net.PathX[trunk];
+                    int dir = 0;
+                    for (int k = 1; k < xs.Length; k++)
+                    {
+                        float d = xs[k] - xs[k - 1];
+                        if (Math.Abs(d) < 1e-4f) continue;
+                        int sgn = d > 0 ? 1 : -1;
+                        if (dir != 0 && sgn != dir) turns++;
+                        dir = sgn;
+                    }
+                }
+                return ratio;
+            }
+            float soft = Stretch(0f, out int softTurns);
+            float wound = Stretch(1f, out int woundTurns);
+            Assert.Greater(soft, 1.02f);
+            Assert.Greater(wound, soft * 1.5f);
+            Assert.Greater(woundTurns, softTurns);
+            Assert.Less(TrafficContract.Twist(1), TrafficContract.Twist(12));
+        }
+
+        [Test]
+        public void Pods_MoveAlongTheCurveAtConstantSpeed()
+        {
+            var net = ThreePorts();
+            // Tramo 0 → 1 en forma de arco (medio círculo aplanado).
+            var xs = new float[21];
+            var ys = new float[21];
+            for (int i = 0; i <= 20; i++)
+            {
+                double t = Math.PI * i / 20.0;
+                xs[i] = 0.5f + 0.2f * (float)Math.Sin(t);
+                ys[i] = 0.3f * i / 20f;
+            }
+            net.EnsurePaths();
+            net.SetPath(1, xs, ys);
+            Assert.Greater(net.PathLength(1), 0.3f);   // más largo que la recta
+            var sim = new TrafficSim(net) { Speed = 0.1f };
+            var pod = sim.Spawn(0);
+            sim.Step(net.PathLength(1) * 0.5f / 0.1f, null);
+            sim.Position(pod, out float x, out float y);
+            Assert.AreEqual(0.7f, x, 0.01f);             // a mitad de camino está en lo más ancho del arco
+            Assert.AreEqual(0.15f, y, 0.01f);
         }
 
         private static TrafficNetwork ThreePorts()

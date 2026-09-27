@@ -12,9 +12,9 @@ namespace NeuroVida.Games.Trafico
 {
     /// <summary>
     /// "Tráfico Estelar": juego estrella de atención dividida y planificación (ver <see cref="TrafficContract"/>). Eres
-    /// control de tráfico: del portal salen cápsulas de colores que viajan por rutas de luz; tocando los desvíos haces
-    /// que cada una llegue al planeta-puerto de su color (y su símbolo). Cada vez salen más seguido, más rápido y hay
-    /// más puertos.
+    /// control de tráfico: de la estación de carga salen cápsulas de colores que viajan por rutas curvas; tocando los
+    /// desvíos haces que cada una llegue al planeta-puerto de su color (y su símbolo). Cada vez salen más seguido, más
+    /// rápido, hay más puertos y las rutas se enroscan más (cornisas con cambios de sentido).
     /// <list type="bullet">
     /// <item>Oleadas de 10 cápsulas; oleada sin errores = bono. Entre oleadas, si cambia la cantidad de puertos, la red
     /// se rearma.</item>
@@ -31,7 +31,11 @@ namespace NeuroVida.Games.Trafico
         private const float MarginU = 40f;
         private const int PodPool = 16;
         private const int EdgePool = 2 * TrafficContract.MaxPorts;
-        private const float PortSize = 150f, PodSize = 86f, KnobSize = 128f, TapReach = 100f;
+        private const float PortSize = 150f, PodSize = 86f, KnobSize = 128f, TapReach = 100f, StationSize = 220f;
+        private const int FlowPool = 110, TrailDots = 3, TrailHistory = 12;
+        /// <summary>Luces que corren por las rutas activas: separación y velocidad (unidades del canvas).</summary>
+        private const float FlowSpacing = 80f, FlowSpeed = 150f;
+        private static readonly Color RailIdle = NeuroStyle.Hex(0x4B4F9A);
 
         private static readonly Color GoodColor = NeuroStyle.Lime;
         private static readonly Color BadColor = NeuroStyle.Coral;
@@ -39,8 +43,39 @@ namespace NeuroVida.Games.Trafico
 
         private enum Phase { Idle, Playing, Rebuild, Done }
 
-        private sealed class EdgeView { public Image Shadow, Base, Glow; public int From, To; }
-        private sealed class PodView { public RectTransform Rect; public Image Body, Glow; public int PodId = -1; }
+        private sealed class EdgeView
+        {
+            public RailLine Halo, Shadow, Rail, Core;
+            public int From, To;
+            public bool Active;
+            public readonly List<Vector2> Points = new List<Vector2>();
+            public float[] Cum = new float[0];
+            public float Length;
+
+            public RailLine[] All => new[] { Halo, Shadow, Rail, Core };
+
+            /// <summary>Punto de la ruta a una distancia (unidades del canvas) desde su inicio.</summary>
+            public Vector2 At(float d)
+            {
+                int n = Points.Count;
+                if (n == 0) return Vector2.zero;
+                d = Mathf.Clamp(d, 0f, Length);
+                int i = 1;
+                while (i < n - 1 && Cum[i] < d) i++;
+                float seg = Mathf.Max(1e-4f, Cum[i] - Cum[i - 1]);
+                return Vector2.Lerp(Points[i - 1], Points[i], Mathf.Clamp01((d - Cum[i - 1]) / seg));
+            }
+        }
+
+        private sealed class PodView
+        {
+            public RectTransform Rect;
+            public Image Body, Glow;
+            public Image[] Trail;
+            public readonly Vector2[] History = new Vector2[TrailHistory];
+            public int Head;
+            public int PodId = -1;
+        }
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
@@ -61,10 +96,12 @@ namespace NeuroVida.Games.Trafico
         private int _lastTickSecond = -1;
 
         // UI
-        private RectTransform _safe, _play, _field, _fxRect, _portal, _timerBg, _timerFill;
-        private Image _portalRing;
+        private RectTransform _safe, _play, _field, _fxRect, _station, _timerBg, _timerFill;
+        private Image _beacon, _doorGlow;
+        private readonly List<RectTransform> _flow = new List<RectTransform>();
         private Text _prompt;
         private readonly List<EdgeView> _edges = new List<EdgeView>();
+        private int _edgeCount;
         private readonly Dictionary<int, RectTransform> _knobs = new Dictionary<int, RectTransform>();
         private readonly Dictionary<int, float> _knobAngle = new Dictionary<int, float>();
         private readonly Dictionary<int, RectTransform> _ports = new Dictionary<int, RectTransform>();
@@ -187,6 +224,12 @@ namespace NeuroVida.Games.Trafico
         private void Update()
         {
             UpdateClock();
+            if (_sim != null && _phase != Phase.Done && GameClock.DeltaTime > 0f)
+            {
+                // Vida de la red también durante las instrucciones: luces que corren y la baliza de la antena.
+                UpdateFlow();
+                _beacon.color = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.35f + 0.3f * Mathf.Sin(GameClock.Time * 4f));
+            }
             if (_phase != Phase.Playing && _phase != Phase.Rebuild) return;
             float dt = GameClock.DeltaTime;
             if (dt <= 0f || _sim == null) return;
@@ -206,7 +249,7 @@ namespace NeuroVida.Games.Trafico
                 _waveSpawned++;
                 _nextSpawnAt = GameClock.Time + TrafficContract.SpawnInterval(level, Precision) * (0.85f + 0.3f * (float)_rng.NextDouble());
                 PlayTone(659f, 0.05f, 0.04f);
-                StartCoroutine(PopRect(_portal, 1.2f, 0.2f));
+                StartCoroutine(StationLaunch());
                 _peakInFlight = Mathf.Max(_peakInFlight, _sim.InFlight);
             }
 
@@ -216,7 +259,25 @@ namespace NeuroVida.Games.Trafico
 
             DrawPods();
             UpdateKnobs(dt);
-            _portalRing.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -GameClock.Time * 90f);
+        }
+
+        /// <summary>La compuerta se enciende y la estación da un saltito cuando sale una cápsula.</summary>
+        private IEnumerator StationLaunch()
+        {
+            var r = _doorGlow.rectTransform;
+            float e = 0f;
+            const float seconds = 0.45f;
+            while (e < seconds)
+            {
+                e += GameClock.DeltaTime;
+                float k = Mathf.Clamp01(e / seconds);
+                r.localScale = Vector3.one * (0.8f + 0.6f * k);
+                _doorGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.85f * (1f - k));
+                _station.localScale = Vector3.one * (1f + 0.05f * Mathf.Sin(k * Mathf.PI));
+                yield return null;
+            }
+            _doorGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0f);
+            _station.localScale = Vector3.one;
         }
 
         private void HandleTap()
@@ -301,26 +362,35 @@ namespace NeuroVida.Games.Trafico
         {
             // Si había una red, se desvanece; después aparece la nueva (rutas, desvíos y puertos en cascada).
             HideNetwork();
-            _net = TrafficContract.BuildNetwork(ports, _rng, _fieldH / Mathf.Max(1f, _fieldW));
+            // Rutas más enroscadas en niveles altos (curvas suaves al principio; cornisas con cambios de sentido después).
+            _net = TrafficContract.BuildNetwork(ports, _rng, _fieldH / Mathf.Max(1f, _fieldW), TrafficContract.Twist(_dda.PresentedLevel));
             _sim = new TrafficSim(_net) { Speed = TrafficContract.Speed(_dda.PresentedLevel, Precision) };
             _knobs.Clear();
             _knobAngle.Clear();
             _ports.Clear();
 
-            _portal.anchoredPosition = ToUi(_net.X[0], _net.Y[0]);
+            var door = ToUi(_net.X[0], _net.Y[0]);
+            _station.anchoredPosition = door + new Vector2(0f, 0.2f * StationSize);
             int e = 0, k = 0, p = 0;
             for (int n = 0; n < _net.Count; n++)
             {
                 foreach (int c in _net.Children[n])
                 {
                     var ev = _edges[e++];
+                    _edgeCount = e;
                     ev.From = n;
                     ev.To = c;
-                    var a = ToUi(_net.X[n], _net.Y[n]);
-                    var b = ToUi(_net.X[c], _net.Y[c]);
-                    Segment(ev.Shadow, a + new Vector2(0f, -5f), b + new Vector2(0f, -5f), 22f);
-                    Segment(ev.Base, a, b, 16f);
-                    Segment(ev.Glow, a, b, 9f);
+                    ev.Points.Clear();
+                    var xs = _net.PathX[c];
+                    var ys = _net.PathY[c];
+                    for (int i = 0; i < xs.Length; i++) ev.Points.Add(ToUi(xs[i], ys[i]));
+                    ev.Cum = new float[ev.Points.Count];
+                    for (int i = 1; i < ev.Points.Count; i++) ev.Cum[i] = ev.Cum[i - 1] + Vector2.Distance(ev.Points[i - 1], ev.Points[i]);
+                    ev.Length = ev.Cum[ev.Cum.Length - 1];
+                    ev.Halo.SetPoints(ev.Points, Vector2.zero);
+                    ev.Shadow.SetPoints(ev.Points, new Vector2(0f, -7f));
+                    ev.Rail.SetPoints(ev.Points, Vector2.zero);
+                    ev.Core.SetPoints(ev.Points, Vector2.zero);
                 }
                 if (_net.IsSwitch(n))
                 {
@@ -343,14 +413,12 @@ namespace NeuroVida.Games.Trafico
             for (int i = 0; i < _edges.Count; i++)
             {
                 bool on = i < e;
-                _edges[i].Shadow.gameObject.SetActive(on);
-                _edges[i].Base.gameObject.SetActive(on);
-                _edges[i].Glow.gameObject.SetActive(on);
+                foreach (var line in _edges[i].All) line.gameObject.SetActive(on);
             }
             RefreshEdges();
-            _portal.gameObject.SetActive(true);
+            _station.gameObject.SetActive(true);
             PlayTone(523f, 0.1f, 0.05f);
-            StartCoroutine(PopIn(_portal, 0.25f));
+            StartCoroutine(PopIn(_station, 0.25f));
             foreach (var kv in _knobs) StartCoroutine(PopIn(kv.Value, 0.25f));
             int order = 0;
             foreach (var kv in _ports)
@@ -369,31 +437,64 @@ namespace NeuroVida.Games.Trafico
 
         private void HideNetwork()
         {
-            foreach (var ev in _edges) { ev.Shadow.gameObject.SetActive(false); ev.Base.gameObject.SetActive(false); ev.Glow.gameObject.SetActive(false); }
+            _edgeCount = 0;
+            foreach (var ev in _edges) { ev.Active = false; foreach (var line in ev.All) line.gameObject.SetActive(false); }
             foreach (var r in _knobPool) r.gameObject.SetActive(false);
             foreach (var r in _portPool) r.gameObject.SetActive(false);
-            foreach (var pv in _pods) { pv.Rect.gameObject.SetActive(false); pv.PodId = -1; }
-            if (_portal != null) _portal.gameObject.SetActive(false);
+            foreach (var r in _flow) r.gameObject.SetActive(false);
+            foreach (var pv in _pods) HidePod(pv);
+            if (_station != null) _station.gameObject.SetActive(false);
         }
 
-        /// <summary>Tramos: los activos brillan (por dónde irá una cápsula ahora); los otros quedan tenues.</summary>
+        /// <summary>
+        /// Rutas: las activas (por donde irá una cápsula que llegue ahora) son rieles celestes con resplandor y luces que
+        /// corren; las otras quedan como rieles de arcilla apagados, visibles para planificar.
+        /// </summary>
         private void RefreshEdges()
         {
             foreach (var ev in _edges)
             {
-                if (!ev.Base.gameObject.activeSelf) continue;
-                bool active = !_net.IsSwitch(ev.From) || _net.Children[ev.From][_sim.SwitchState[ev.From]] == ev.To;
-                ev.Base.color = active ? NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.9f) : NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.22f);
-                ev.Glow.color = active ? NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.95f) : new Color(1f, 1f, 1f, 0f);
-                ev.Shadow.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, active ? 0.9f : 0.4f);
+                if (!ev.Rail.gameObject.activeSelf) continue;
+                ev.Active = !_net.IsSwitch(ev.From) || _net.Children[ev.From][_sim.SwitchState[ev.From]] == ev.To;
+                ev.Halo.color = NeuroStyle.WithAlpha(NeuroStyle.Sky, ev.Active ? 0.3f : 0f);
+                ev.Shadow.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, ev.Active ? 0.9f : 0.55f);
+                ev.Rail.color = ev.Active ? NeuroStyle.Sky : RailIdle;
+                ev.Core.color = new Color(1f, 1f, 1f, ev.Active ? 0.5f : 0f);
             }
+        }
+
+        /// <summary>Luces que corren por las rutas activas, en el sentido del viaje (se mueven solo donde irá la carga).</summary>
+        private void UpdateFlow()
+        {
+            float phase = Mathf.Repeat(GameClock.Time * FlowSpeed, FlowSpacing);
+            int used = 0;
+            foreach (var ev in _edges)
+            {
+                if (!ev.Active || !ev.Rail.gameObject.activeSelf) continue;
+                for (float d = phase; d < ev.Length && used < _flow.Count; d += FlowSpacing)
+                {
+                    var dot = _flow[used++];
+                    dot.anchoredPosition = ev.At(d);
+                    if (!dot.gameObject.activeSelf) dot.gameObject.SetActive(true);
+                }
+            }
+            for (int i = used; i < _flow.Count; i++)
+                if (_flow[i].gameObject.activeSelf) _flow[i].gameObject.SetActive(false);
+        }
+
+        private EdgeView EdgeTo(int child)
+        {
+            for (int i = 0; i < _edgeCount; i++) if (_edges[i].To == child) return _edges[i];
+            return null;
         }
 
         private float TargetAngle(int sw)
         {
             int child = _net.Children[sw][_sim.SwitchState[sw]];
+            // La flecha apunta hacia donde SALE la ruta activa (su primer tramo), no hacia el nodo lejano.
             var a = ToUi(_net.X[sw], _net.Y[sw]);
-            var b = ToUi(_net.X[child], _net.Y[child]);
+            var ev = EdgeTo(child);
+            var b = ev != null ? ev.At(Mathf.Min(45f, ev.Length * 0.5f)) : ToUi(_net.X[child], _net.Y[child]);
             // La flecha del sprite apunta hacia arriba.
             return Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg - 90f;
         }
@@ -410,15 +511,6 @@ namespace NeuroVida.Games.Trafico
             }
         }
 
-        private static void Segment(Image img, Vector2 a, Vector2 b, float thickness)
-        {
-            var r = img.rectTransform;
-            var d = b - a;
-            r.anchoredPosition = (a + b) * 0.5f;
-            r.sizeDelta = new Vector2(d.magnitude + thickness, thickness);
-            r.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
-        }
-
         private void DrawPods()
         {
             // Una vista por cápsula en viaje (se reciclan las que terminaron).
@@ -426,15 +518,13 @@ namespace NeuroVida.Games.Trafico
             {
                 if (pv.PodId < 0) continue;
                 var pod = _sim.Pods.Find(q => q.Id == pv.PodId);
-                if (pod == null || pod.Done)
-                {
-                    pv.PodId = -1;
-                    pv.Rect.gameObject.SetActive(false);
-                }
+                if (pod == null || pod.Done) HidePod(pv);
             }
             foreach (var pod in _sim.Pods)
             {
                 if (pod.Done) continue;
+                _sim.Position(pod, out float x, out float y);
+                var pos = ToUi(x, y);
                 var pv = _pods.Find(v => v.PodId == pod.Id);
                 if (pv == null)
                 {
@@ -442,15 +532,36 @@ namespace NeuroVida.Games.Trafico
                     if (pv == null) continue;
                     pv.PodId = pod.Id;
                     pv.Body.sprite = TrafficSprites.Pod(pod.Color);
-                    pv.Glow.color = NeuroStyle.WithAlpha(TrafficSprites.Colors[pod.Color], 0.45f);
+                    var tint = TrafficSprites.Colors[pod.Color];
+                    pv.Glow.color = NeuroStyle.WithAlpha(tint, 0.45f);
+                    for (int i = 0; i < pv.Trail.Length; i++)
+                    {
+                        pv.Trail[i].color = NeuroStyle.WithAlpha(tint, 0.5f - 0.14f * i);
+                        pv.Trail[i].gameObject.SetActive(true);
+                    }
+                    for (int i = 0; i < pv.History.Length; i++) pv.History[i] = pos;
                     pv.Rect.gameObject.SetActive(true);
                     StartCoroutine(PopIn(pv.Rect, 0.2f));
                 }
-                _sim.Position(pod, out float x, out float y);
-                pv.Rect.anchoredPosition = ToUi(x, y);
+                pv.Rect.anchoredPosition = pos;
+                // Estela: puntos del color de la cápsula donde estuvo hace unos cuadros.
+                pv.Head = (pv.Head + 1) % pv.History.Length;
+                pv.History[pv.Head] = pos;
+                for (int i = 0; i < pv.Trail.Length; i++)
+                {
+                    int back = (pv.Head - 3 * (i + 1) + pv.History.Length * 4) % pv.History.Length;
+                    pv.Trail[i].rectTransform.anchoredPosition = pv.History[back];
+                }
             }
             // Limpieza: las cápsulas entregadas ya no hacen falta en la simulación.
             _sim.Pods.RemoveAll(q => q.Done && _pods.TrueForAll(v => v.PodId != q.Id));
+        }
+
+        private static void HidePod(PodView pv)
+        {
+            pv.PodId = -1;
+            pv.Rect.gameObject.SetActive(false);
+            foreach (var t in pv.Trail) t.gameObject.SetActive(false);
         }
 
         // ------------------------------------------------------------------ efectos
@@ -596,41 +707,54 @@ namespace NeuroVida.Games.Trafico
             _field = fieldGo.AddComponent<RectTransform>();
             _field.anchorMin = _field.anchorMax = new Vector2(0.5f, 0.5f);
 
-            var edgeRoot = Layer(_field, "Rails");
+            // Capas de las rutas: resplandor, sombras, rieles y línea de luz (cada capa entera sobre la anterior, así
+            // ninguna sombra pisa un riel vecino).
+            var haloRoot = Layer(_field, "RailHalos");
+            var shadowRoot = Layer(_field, "RailShadows");
+            var railRoot = Layer(_field, "Rails");
+            var coreRoot = Layer(_field, "RailCores");
             for (int i = 0; i < EdgePool; i++)
             {
-                var ev = new EdgeView
+                _edges.Add(new EdgeView
                 {
-                    Shadow = NewImage(edgeRoot, "RailShadow", RoundedRectSprite.Get(10)),
-                };
-                ev.Base = NewImage(edgeRoot, "Rail", RoundedRectSprite.Get(10));
-                ev.Glow = NewImage(edgeRoot, "RailGlow", RoundedRectSprite.Get(10));
-                foreach (var img in new[] { ev.Shadow, ev.Base, ev.Glow }) img.type = Image.Type.Sliced;
-                _edges.Add(ev);
+                    Halo = NewRail(haloRoot, RailLine.Style.Soft, 70f),
+                    Shadow = NewRail(shadowRoot, RailLine.Style.Solid, 30f),
+                    Rail = NewRail(railRoot, RailLine.Style.Clay, 30f),
+                    Core = NewRail(coreRoot, RailLine.Style.Solid, 6f),
+                });
+            }
+            var flowRoot = Layer(_field, "Flow");
+            for (int i = 0; i < FlowPool; i++)
+            {
+                var dot = NewImage(flowRoot, "Light", DiscSprite.Get());
+                dot.rectTransform.sizeDelta = new Vector2(12f, 12f);
+                dot.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.95f);
+                _flow.Add(dot.rectTransform);
             }
 
-            // Portal (agujero de gusano): resplandor uva y un aro que gira.
-            var portalGo = new GameObject("Portal");
-            portalGo.transform.SetParent(_field, false);
-            _portal = portalGo.AddComponent<RectTransform>();
-            _portal.anchorMin = _portal.anchorMax = new Vector2(0.5f, 0.5f);
-            _portal.sizeDelta = new Vector2(150f, 150f);
-            var pg = NewImage(_portal, "Glow", RadialGlowSprite.Get());
-            pg.rectTransform.sizeDelta = new Vector2(300f, 300f);
-            pg.color = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.7f);
-            pg.gameObject.SetActive(true);
-            _portalRing = NewImage(_portal, "Ring", RingSprite.Get());
-            Stretch(_portalRing.rectTransform);
-            _portalRing.color = NeuroStyle.Grape;
-            _portalRing.type = Image.Type.Filled;
-            _portalRing.fillMethod = Image.FillMethod.Radial360;
-            _portalRing.fillAmount = 0.8f;
-            _portalRing.gameObject.SetActive(true);
-            var core = NewImage(_portal, "Core", DiscSprite.Get());
-            core.rectTransform.sizeDelta = new Vector2(70f, 70f);
-            core.color = NeuroStyle.Ink;
-            core.gameObject.SetActive(true);
-            portalGo.SetActive(false);
+            // Estación de carga: de su compuerta salen las cápsulas.
+            var stationGo = new GameObject("Station");
+            stationGo.transform.SetParent(_field, false);
+            _station = stationGo.AddComponent<RectTransform>();
+            _station.anchorMin = _station.anchorMax = new Vector2(0.5f, 0.5f);
+            _station.sizeDelta = new Vector2(StationSize, StationSize);
+            var sg = NewImage(_station, "Glow", RadialGlowSprite.Get());
+            sg.rectTransform.sizeDelta = new Vector2(StationSize * 1.9f, StationSize * 1.5f);
+            sg.color = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.35f);
+            sg.gameObject.SetActive(true);
+            _beacon = NewImage(_station, "Beacon", RadialGlowSprite.Get());
+            _beacon.rectTransform.sizeDelta = new Vector2(90f, 90f);
+            _beacon.rectTransform.anchoredPosition = new Vector2(0f, 0.72f / 2.24f * StationSize);
+            _beacon.gameObject.SetActive(true);
+            var hull = NewImage(_station, "Body", TrafficSprites.Station());
+            Stretch(hull.rectTransform);
+            hull.gameObject.SetActive(true);
+            _doorGlow = NewImage(_station, "DoorGlow", RadialGlowSprite.Get());
+            _doorGlow.rectTransform.sizeDelta = new Vector2(150f, 150f);
+            _doorGlow.rectTransform.anchoredPosition = new Vector2(0f, TrafficSprites.StationDoorY * StationSize + 20f);
+            _doorGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0f);
+            _doorGlow.gameObject.SetActive(true);
+            stationGo.SetActive(false);
 
             var portRoot = Layer(_field, "Ports");
             for (int i = 0; i < TrafficContract.MaxPorts; i++)
@@ -646,9 +770,16 @@ namespace NeuroVida.Games.Trafico
                 img.rectTransform.sizeDelta = new Vector2(KnobSize, KnobSize);
                 _knobPool.Add(img.rectTransform);
             }
+            var trailRoot = Layer(_field, "Trails");
             var podRoot = Layer(_field, "Pods");
             for (int i = 0; i < PodPool; i++)
             {
+                var trail = new Image[TrailDots];
+                for (int t = 0; t < TrailDots; t++)
+                {
+                    trail[t] = NewImage(trailRoot, "Trail", DiscSprite.Get());
+                    trail[t].rectTransform.sizeDelta = Vector2.one * (30f - 7f * t);
+                }
                 var go = new GameObject("Pod");
                 go.transform.SetParent(podRoot, false);
                 var r = go.AddComponent<RectTransform>();
@@ -661,7 +792,7 @@ namespace NeuroVida.Games.Trafico
                 Stretch(body.rectTransform);
                 body.gameObject.SetActive(true);
                 go.SetActive(false);
-                _pods.Add(new PodView { Rect = r, Body = body, Glow = glow });
+                _pods.Add(new PodView { Rect = r, Body = body, Glow = glow, Trail = trail });
             }
             _fxRect = Layer(_field, "Fx");
 
@@ -739,6 +870,20 @@ namespace NeuroVida.Games.Trafico
             AddResultText("Detail", 48, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
             AddResultText("Extra", 44, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
             go.SetActive(false);
+        }
+
+        private static RailLine NewRail(Transform parent, RailLine.Style style, float thickness)
+        {
+            var go = new GameObject("Route");
+            go.transform.SetParent(parent, false);
+            var r = go.AddComponent<RectTransform>();
+            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
+            r.pivot = new Vector2(0.5f, 0.5f);
+            r.sizeDelta = Vector2.zero;
+            var line = go.AddComponent<RailLine>();
+            line.Setup(style, thickness);
+            go.SetActive(false);
+            return line;
         }
 
         private static RectTransform Layer(Transform parent, string name)

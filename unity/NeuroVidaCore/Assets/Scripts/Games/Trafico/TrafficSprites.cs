@@ -21,7 +21,7 @@ namespace NeuroVida.Games.Trafico
 
         private static readonly Sprite[] _ports = new Sprite[8];
         private static readonly Sprite[] _pods = new Sprite[8];
-        private static Sprite _knob;
+        private static Sprite _knob, _station;
 
         public static Sprite Port(int color)
         {
@@ -36,6 +36,13 @@ namespace NeuroVida.Games.Trafico
         }
 
         public static Sprite SwitchKnob() => _knob != null ? _knob : _knob = ToSprite(RenderKnob(160), 160, 160);
+
+        /// <summary>La estación de carga de donde salen las cápsulas (la ruta nace en su compuerta, abajo al centro).</summary>
+        public static Sprite Station() => _station != null ? _station : _station = ToSprite(RenderStation(256), 256, 256);
+
+        /// <summary>Alto de la compuerta respecto del centro del sprite, como fracción del lado (para ubicar la ruta).</summary>
+        public const float StationDoorY = -0.66f / (2f * StationZoom);
+        private const float StationZoom = 1.12f;
 
         // ------------------------------------------------------------------ símbolos
 
@@ -95,6 +102,58 @@ namespace NeuroVida.Games.Trafico
             float g = Glyph(color, x, y - 0.02f, 0.3f);
             p.Over(Ink, Cover(g - 0.06f, aa));
             p.Over(Cream, Cover(g, aa));
+        });
+
+        // Estación: cúpula crema sobre una plataforma azul noche, compuerta iluminada al centro, ventanas y antena.
+        private static float Dome(float x, float y) => Mathf.Max(Circle(x, y, 0f, -0.22f, 0.7f), -0.22f - y);
+        private static float Deck(float x, float y) => RoundBox(x, y, 0f, -0.36f, 0.98f, 0.17f, 0.12f);
+        private static float Door(float x, float y) => RoundBox(x, y, 0f, -0.42f, 0.22f, 0.24f, 0.16f);
+        private static float Antenna(float x, float y) => Mathf.Min(Capsule(x, y, 0f, 0.42f, 0f, 0.66f, 0.035f), Circle(x, y, 0f, 0.72f, 0.08f));
+        private static float Thrusters(float x, float y) =>
+            Mathf.Min(RoundBox(x, y, -0.62f, -0.56f, 0.15f, 0.08f, 0.05f), RoundBox(x, y, 0.62f, -0.56f, 0.15f, 0.08f, 0.05f));
+
+        private static float StationBody(float x, float y) =>
+            Mathf.Min(Mathf.Min(Dome(x, y), Deck(x, y)), Mathf.Min(Mathf.Min(Door(x, y), Antenna(x, y)), Thrusters(x, y)));
+
+        public static Color32[] RenderStation(int size) => RenderClay(size, StationZoom, 0.05f, 0.07f, 0.014f, StationBody, (ref Px p, float x, float y) =>
+        {
+            const float aa = 0.014f, line = 0.04f;
+            var navy = Hex(0x2A3590);
+            // Propulsores y antena.
+            p.Over(Shade(Grape, 0.7f), Cover(Thrusters(x, y), aa));
+            p.Over(Cream, Cover(Capsule(x, y, 0f, 0.42f, 0f, 0.66f, 0.035f), aa));
+            p.Over(Ink, Cover(Circle(x, y, 0f, 0.72f, 0.08f), aa));
+            p.Over(Coral, Cover(Circle(x, y, 0f, 0.72f, 0.08f - line), aa));
+            // Cúpula con banda uva abajo y brillo.
+            float dome = Dome(x, y);
+            p.Over(Cream, Cover(dome, aa));
+            p.Over(Grape, Cover(Mathf.Max(dome, y - (-0.1f)), aa));
+            p.Over(Ink, Cover(Mathf.Abs(y + 0.1f) - 0.012f, aa) * Cover(dome, aa));
+            p.Over(new Color(1f, 1f, 1f, 0.55f), Cover(Ellipse(x, y, -0.3f, 0.3f, 0.16f, 0.06f), aa));
+            // Ventanas.
+            foreach (var w in new[] { new Vector2(-0.36f, 0.06f), new Vector2(0f, 0.2f), new Vector2(0.36f, 0.06f) })
+            {
+                float win = Circle(x, y, w.x, w.y, 0.085f);
+                p.Over(Ink, Cover(win - line, aa));
+                p.Over(Sky, Cover(win, aa));
+                p.Over(new Color(1f, 1f, 1f, 0.8f), Cover(Circle(x, y, w.x - 0.03f, w.y + 0.03f, 0.025f), aa));
+            }
+            // Plataforma azul noche con luces.
+            float deck = Deck(x, y);
+            p.Over(Ink, Cover(deck, aa));
+            p.Over(navy, Cover(deck + line, aa));
+            p.Over(new Color(1f, 1f, 1f, 0.18f), Cover(RoundBox(x, y, 0f, -0.26f, 0.86f, 0.025f, 0.02f), aa));
+            foreach (float lx in new[] { -0.78f, -0.56f, 0.56f, 0.78f })
+                p.Over(Sun, Cover(Circle(x, y, lx, -0.38f, 0.045f), aa));
+            // Compuerta encendida (de ahí salen las cápsulas): marco tinta, luz sol que se aclara hacia abajo.
+            float door = Door(x, y);
+            p.Over(Ink, Cover(door, aa));
+            float k = Mathf.Clamp01((-0.2f - y) / 0.44f);
+            p.Over(Color.Lerp(Amber, Tint(Sun, 0.55f), k), Cover(door + line, aa));
+            // Arco interior: la compuerta se lee como la boca de un hangar (de ahí sale la ruta).
+            float inner = RoundBox(x, y, 0f, -0.44f, 0.13f, 0.17f, 0.12f);
+            p.Over(WithAlpha(Ink, 0.3f), Cover(Mathf.Abs(inner) - 0.012f, aa) * Cover(door + line, aa));
+            p.Over(new Color(1f, 1f, 1f, 0.45f), Cover(inner + 0.02f, aa) * Cover(-0.5f - y, aa));
         });
 
         private static float KnobBody(float x, float y) => Circle(x, y, 0f, 0f, 0.72f);
