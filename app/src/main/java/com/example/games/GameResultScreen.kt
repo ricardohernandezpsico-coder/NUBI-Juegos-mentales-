@@ -350,6 +350,49 @@ fun GameResultScreen(
       )
     }
 
+    // Aterrizaje Lunar: "tu precisión numérica" y "tu línea" (cada blanco y dónde te posaste), con la lectura de sesgo.
+    result.numlineErrorPct?.let { err ->
+      Spacer(Modifier.height(14.dp))
+      val errText = String.format(java.util.Locale("es"), "%.1f", err)
+      Text(
+        text = "Tu precisión numérica: te desvías $errText%",
+        color = Clay.Sky,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = FredokaFamily,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 24.dp)
+      )
+      val trues = result.numlineTrue
+      val givens = result.numlineGiven
+      if (trues != null && givens != null) {
+        val bias = com.example.data.NumberLine.bias(trues, givens)
+        Spacer(Modifier.height(8.dp))
+        Text("Tu línea", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+        NumberLineStrip(
+          trues, givens,
+          Modifier.fillMaxWidth().padding(horizontal = 28.dp).height(64.dp)
+            .semantics { contentDescription = "Tu línea: ${com.example.data.NumberLine.message(bias)}" }
+        )
+        Text(
+          text = com.example.data.NumberLine.message(bias),
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+      }
+      result.numlineBullseyes?.takeIf { it > 0 }?.let { n ->
+        Text(
+          text = if (n == 1) "1 diana lunar" else "$n dianas lunares",
+          color = Clay.Sun,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 4.dp)
+        )
+      }
+    }
+
     if (didLevelUp) {
       Spacer(Modifier.height(18.dp))
       ClayPill(
@@ -613,5 +656,37 @@ private fun BrakeGauge(brakeMs: Int, modifier: Modifier = Modifier) {
       drawCircle(Clay.Sun, 5.dp.toPx(), c)
     }
     Text("rápido", color = TextSoft, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp))
+  }
+}
+
+// ---------- Aterrizaje Lunar: "tu línea" ----------
+
+/**
+ * La regla de 0 a 1 con cada aterrizaje: una marca tinta donde estaba el blanco y un punto donde se posó la nave,
+ * unidos por una línea fina (lima si quedó cerca, sol si no). La distancia se ve por la posición, no por el color.
+ */
+@Composable
+private fun NumberLineStrip(trues: List<Float>, givens: List<Float>, modifier: Modifier = Modifier) {
+  Canvas(modifier) {
+    val y = size.height * 0.62f
+    val l = 8.dp.toPx()
+    val r = size.width - 8.dp.toPx()
+    val w = r - l
+    drawLine(Clay.Ink, Offset(l, y + 3.dp.toPx()), Offset(r, y + 3.dp.toPx()), 8.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
+    drawLine(Clay.Cream, Offset(l, y), Offset(r, y), 6.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
+    for (x in listOf(l, r)) drawLine(Clay.Ink, Offset(x, y - 10.dp.toPx()), Offset(x, y + 10.dp.toPx()), 3.dp.toPx())
+    val n = minOf(trues.size, givens.size)
+    for (i in 0 until n) {
+      val tx = l + w * trues[i].coerceIn(0f, 1f)
+      val gx = l + w * givens[i].coerceIn(0f, 1f)
+      // Cada intento a una altura un poco distinta, para que no se tapen.
+      val gy = y - (14f + (i % 4) * 7f) * density
+      val near = kotlin.math.abs(trues[i] - givens[i]) <= 0.05f
+      val col = if (near) Clay.Lime else Clay.Sun
+      drawLine(col.copy(alpha = 0.7f), Offset(tx, y - 4.dp.toPx()), Offset(gx, gy), 1.5.dp.toPx())
+      drawLine(Clay.Ink, Offset(tx, y - 5.dp.toPx()), Offset(tx, y + 5.dp.toPx()), 2.dp.toPx())
+      drawCircle(Clay.Ink, 4.5.dp.toPx(), Offset(gx, gy))
+      drawCircle(col, 3.dp.toPx(), Offset(gx, gy))
+    }
   }
 }

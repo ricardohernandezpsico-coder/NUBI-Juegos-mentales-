@@ -140,6 +140,16 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.1f, 0.4f),
         };
 
+        /// <summary>Aterrizaje Lunar: la superficie de una luna ocupa la cuarta parte de abajo (la regla va en su
+        /// borde) y un planeta asoma a la derecha.</summary>
+        public static GameWorld LunarRange => new GameWorld
+        {
+            Name = "Campo de aterrizaje", SurfaceHeight = 0.26f, Stars = 50, VanishingPoint = new Vector2(0.5f, 0.4f),
+            Planets = new[] { new Vector3(1.04f, 0.56f, 340f) }, PlanetColors = new[] { NeuroStyle.Grape },
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.16f), NebulaAPos = new Vector2(0.15f, 0.85f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.10f), NebulaBPos = new Vector2(0.5f, 0.3f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

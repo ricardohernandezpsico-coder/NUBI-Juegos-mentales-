@@ -145,6 +145,14 @@ object GameRegistry {
       iconEmoji = "📡"
     ),
     GameDefinition(
+      id = "aterrizaje",
+      title = "Aterrizaje Lunar",
+      domain = DomainType.CALCULO,
+      subtitle = "Sentido numérico: estimar en la línea numérica",
+      instruction = "Posa la nave justo en el número de la misión. La regla solo tiene marcados los extremos: arrastra para mover la nave y suelta para aterrizar.",
+      iconEmoji = "🌙"
+    ),
+    GameDefinition(
       id = "comparacion",
       title = "Comparación Instantánea",
       domain = DomainType.VELOCIDAD,
@@ -184,7 +192,13 @@ data class GamePlayResult(
   val brakeMs: Int? = null,
   val stopsOk: Int? = null,
   val stopsTotal: Int? = null,
-  val brakeBestSsdMs: Int? = null
+  val brakeBestSsdMs: Int? = null,
+  // Solo Aterrizaje Lunar: error medio (% del largo de la regla), y por aterrizaje dónde estaba el blanco y dónde se
+  // posó (0..1), para dibujar "tu línea". No se guardan en Room.
+  val numlineErrorPct: Float? = null,
+  val numlineTrue: List<Float>? = null,
+  val numlineGiven: List<Float>? = null,
+  val numlineBullseyes: Int? = null
 )
 
 data class DailySessionState(

@@ -67,6 +67,8 @@ internal static class Program
         Dump("brake_pad", NeuroVida.Games.Freno.BrakeSprites.LaunchPad());
         Dump("brake_button", NeuroVida.Games.Freno.BrakeSprites.LaunchButton(false));
         Dump("brake_button_lit", NeuroVida.Games.Freno.BrakeSprites.LaunchButton(true));
+        Dump("land_lander", NeuroVida.Games.Aterrizaje.LandingSprites.Lander());
+        Dump("land_flag", NeuroVida.Games.Aterrizaje.LandingSprites.Flag());
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)
             {

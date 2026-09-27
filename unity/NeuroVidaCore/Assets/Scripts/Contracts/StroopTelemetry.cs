@@ -49,5 +49,12 @@ namespace NeuroVida.Contracts
         public int stops_total;
         /// <summary>Solo Freno de Emergencia: el alto más tardío que se frenó (ms). -1 = ninguno.</summary>
         public int brake_best_ssd_ms = -1;
+        /// <summary>Solo Aterrizaje Lunar: error medio en % del largo de la regla. -1 = no aplica.</summary>
+        public float numline_error_pct = -1f;
+        /// <summary>Solo Aterrizaje Lunar: en cada aterrizaje, dónde estaba el blanco y dónde se posó (0..1 de la regla).</summary>
+        public float[] numline_true;
+        public float[] numline_given;
+        /// <summary>Solo Aterrizaje Lunar: dianas (justo en el blanco).</summary>
+        public int numline_bullseyes;
     }
 }

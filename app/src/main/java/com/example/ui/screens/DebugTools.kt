@@ -31,7 +31,8 @@ private val DebugGames = listOf(
   DebugGame("piloto", "Piloto Estelar (Reto 90 s)", level = 1, timed = true),
   DebugGame("radar", "Radar (Reto 90 s)", level = 1, timed = true),
   DebugGame("satelites", "Satélites (Reto 120 s)", level = 1, timed = true),
-  DebugGame("freno", "Freno de Emergencia (Reto 120 s)", level = 1, timed = true)
+  DebugGame("freno", "Freno de Emergencia (Reto 120 s)", level = 1, timed = true),
+  DebugGame("aterrizaje", "Aterrizaje Lunar (Reto 120 s)", level = 1, timed = true)
 )
 
 /**

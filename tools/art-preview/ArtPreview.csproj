@@ -41,5 +41,6 @@
     <Compile Include="$(Src)/Radar/RadarContract.cs" />
     <Compile Include="$(Src)/Radar/RadarSprites.cs" />
     <Compile Include="$(Src)/Freno/BrakeSprites.cs" />
+    <Compile Include="$(Src)/Aterrizaje/LandingSprites.cs" />
   </ItemGroup>
 </Project>

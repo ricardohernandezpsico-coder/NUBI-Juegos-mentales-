@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno",
+  "piloto", "radar", "satelites", "freno", "aterrizaje",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -209,6 +209,21 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
         clay(poly(43.7f, 34.6f, 50.0f, 22.0f, 56.3f, 34.6f), Clay.Sky, border = 3.5f, shadow = false)
         clay(circle(Offset(50f, 47.2f), 5.0f), Clay.Sky, border = 2.5f, shadow = false)
       }
+    }
+    "aterrizaje" -> {
+      // Regla sobre la luna con sus extremos, la bandera en el blanco y el módulo lunar bajando con su haz.
+      clay(roundRect(10f, 74f, 80f, 8f, 4f), Cream)
+      clay(roundRect(9f, 68f, 5f, 20f, 2.5f), Ink, border = 0f, shadow = false)
+      clay(roundRect(86f, 68f, 5f, 20f, 2.5f), Ink, border = 0f, shadow = false)
+      for (k in 0..3) drawCircle(Clay.Lime.copy(alpha = 0.45f + k * 0.15f), 2.4f, Offset(38f, 50f + k * 6f))
+      clay(roundRect(64.5f, 44f, 4f, 31f, 2f), Cream, border = 3f, shadow = false)
+      clay(poly(68f, 44f, 86f, 48f, 68f, 56f), Clay.Coral, border = 3f, shadow = false)
+      // Módulo: patas, base dorada, cabina con ventanilla.
+      drawLine(Ink, Offset(28f, 40f), Offset(22f, 50f), 3.5f, StrokeCap.Round)
+      drawLine(Ink, Offset(48f, 40f), Offset(54f, 50f), 3.5f, StrokeCap.Round)
+      clay(poly(24f, 42f, 52f, 42f, 48f, 34f, 28f, 34f), Clay.Sun, border = 3f)
+      clay(roundRect(27f, 14f, 22f, 20f, 7f), Cream, border = 3.5f)
+      clay(circle(Offset(38f, 24f), 5f), Clay.Sky, border = 2.5f, shadow = false)
     }
     "series" -> {
       // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).
