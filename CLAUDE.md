@@ -344,6 +344,25 @@ Lumosity, Peak, Elevate ni NeuroNation tienen algo así. En la app NO se nombran
   `docs/previews/rumbo-sonidos.wav` y `rumbo-sonidos-llegadas.wav` (las tres llegadas). Sin probar en el teléfono:
   revisar si marea el giro, si se entiende tocar la señal y el dial, y el ritmo (~25 s por viaje).
 
+**Constelación de Palabras** (`Games/Constelacion/`, id `constelacion`, dominio LENGUAJE; EN CONSTRUCCIÓN, 28-sep): el
+primer juego estrella de lenguaje (era el único dominio sin uno). FLUIDEZ VERBAL: decir en voz alta en 60 s todas las
+palabras de una categoría (Animales + Frutas y verduras o Cosas de la casa) o que empiecen con una letra (P, M o R, las
+de fluidez en español). Cada palabra sube como estrella; las del mismo grupo forman una constelación. Puntuación de
+Troyer, Moscovitch y Winocur (1997): **agrupar** (tamaño medio de las constelaciones, desde la segunda palabra) y
+**saltar** (cambios de grupo); además el ritmo por cuartos de la ronda. Ninguna app de la competencia pide PRODUCIR
+palabras.
+- Paso 1 (hecho, para probar en el teléfono): `bridge/SpeechBridge.kt` (reconocimiento de voz de Android que se
+  reinicia solo tras cada frase o silencio; eventos en cola JSON con `poll()`, para Compose y para Unity vía
+  `AndroidJavaClass`, sin callbacks), permiso `RECORD_AUDIO` + `<queries>` de `RecognitionService` en el manifiesto, y
+  `ui/screens/VoiceTest.kt`: botón "[Debug] Prueba de voz" (60 s diciendo animales; resumen para copiar).
+- Reglas y lista (hechas): `FluencyLexicon` (≈300 animales, ≈160 frutas y verduras, ≈240 cosas de la casa, en grupos
+  que se superponen; variantes de Chile y del resto: chancho/cerdo, palta/aguacate, frutilla/fresa...) y
+  `FluencyContract` (normaliza, entradas de varias palabras, plurales/diminutivos/femeninos, otras lecturas del
+  reconocedor, nombres propios fuera en las rondas de letra, constelaciones por grupo común, puntaje) /
+  `FluencyContractTests` (7).
+- Falta (después de la prueba de voz de Ricardo): controlador Unity (cielo que se llena, constelaciones, sonidos),
+  teclado de respaldo, telemetría y final en la app, medida en `docs/medidas-juegos-estrella.md`.
+
 ## Reglas que no se rompen
 
 - **Diseño**: "noche + arcilla": cielo nocturno animado; lo tocable es arcilla (borde tinta grueso `Ink` 0x1A1240,
@@ -376,7 +395,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 56 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 167 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 18 smoke tests.
+- Unity EditMode: 174 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 18 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 
