@@ -90,7 +90,10 @@ object NativeReceiver {
     // Solo Radar: vistazo en ms (-1 = no aplica) y aciertos/ensayos por dirección (8).
     val glance_ms: Int = -1,
     val sector_hits: List<Int>? = null,
-    val sector_trials: List<Int>? = null
+    val sector_trials: List<Int>? = null,
+    // Solo Satélites: seguimiento (satélites a la vez) y velocidad superada (-1 = no aplica).
+    val tracking_capacity: Double = -1.0,
+    val tracking_speed: Double = -1.0
   )
 
   @JsonClass(generateAdapter = true)
@@ -218,7 +221,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -290,7 +293,9 @@ object NativeReceiver {
       multitaskCost = metrics.multitask_cost.takeIf { it >= 0 },
       glanceMs = metrics.glance_ms.takeIf { it > 0 },
       sectorHits = metrics.sector_hits?.takeIf { it.size == 8 },
-      sectorTrials = metrics.sector_trials?.takeIf { it.size == 8 }
+      sectorTrials = metrics.sector_trials?.takeIf { it.size == 8 },
+      trackingCapacity = metrics.tracking_capacity.takeIf { it >= 0.0 }?.toFloat(),
+      trackingSpeed = metrics.tracking_speed.takeIf { it > 0.0 }?.toFloat()
     )
   }
 }

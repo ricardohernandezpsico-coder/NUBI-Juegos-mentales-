@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar",
+  "piloto", "radar", "satelites",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -171,6 +171,14 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawCircle(Cream, 4f, Offset(50f, 50f))
       clay(circle(Offset(68f, 36f), 7f), Clay.Sun, border = 3f, shadow = false)
     }
+    "satelites" -> {
+      // Tres satélites iguales; el del centro lleva la señal (aro crema) y deja su estela de puntos.
+      for (k in 0..3) drawCircle(Cream.copy(alpha = 0.4f + k * 0.15f), 3f, Offset(12f + k * 7f, 90f - k * 7f))
+      satellite(Offset(78f, 20f), 0.8f)
+      satellite(Offset(80f, 80f), 0.8f)
+      drawCircle(Cream, 27f, Offset(48f, 52f), style = Stroke(4.5f))
+      satellite(Offset(48f, 52f), 1.35f)
+    }
     "series" -> {
       // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).
       rotate(45f, Offset(40f, 40f)) { clay(roundRect(64f, 31.5f, 34f, 17f, 8.5f), Clay.Sun) }
@@ -206,6 +214,18 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(Offset(87f, 50f), 10f), Cream)
       chevron(Offset(58f, 50f), 13f, Clay.Sun)
     }
+  }
+}
+
+/** Satélite de arcilla: cuerpo sol y dos paneles celestes, inclinado. */
+private fun DrawScope.satellite(c: Offset, k: Float) {
+  withTransform({
+    rotate(-25f, c)
+    scale(k, k, c)
+  }) {
+    clay(roundRect(c.x - 19f, c.y - 5f, 12f, 10f, 2.5f), Clay.Sky, border = 3f, shadow = false)
+    clay(roundRect(c.x + 7f, c.y - 5f, 12f, 10f, 2.5f), Clay.Sky, border = 3f, shadow = false)
+    clay(roundRect(c.x - 6.5f, c.y - 6.5f, 13f, 13f, 3.5f), Clay.Sun, border = 3f)
   }
 }
 

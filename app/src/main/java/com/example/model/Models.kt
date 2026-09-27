@@ -121,6 +121,14 @@ object GameRegistry {
       iconEmoji = "🚀"
     ),
     GameDefinition(
+      id = "satelites",
+      title = "Satélites",
+      domain = DomainType.ATENCION,
+      subtitle = "Seguimiento de varios objetos a la vez",
+      instruction = "Algunos satélites encienden su señal y se apagan. Todos se mueven y se cruzan: síguelos con la vista y, cuando se detengan, toca los que brillaban.",
+      iconEmoji = "🛰️"
+    ),
+    GameDefinition(
       id = "radar",
       title = "Radar",
       domain = DomainType.VELOCIDAD,
@@ -158,7 +166,11 @@ data class GamePlayResult(
   // por dirección (8, 0 = arriba y en sentido horario) para dibujar "tu radar". No se guardan en Room.
   val glanceMs: Int? = null,
   val sectorHits: List<Int>? = null,
-  val sectorTrials: List<Int>? = null
+  val sectorTrials: List<Int>? = null,
+  // Solo Satélites: cuántos se siguen de verdad a la vez (descontando la suerte) y la velocidad más alta superada
+  // completa (múltiplo de la del nivel 1). No se guardan en Room.
+  val trackingCapacity: Float? = null,
+  val trackingSpeed: Float? = null
 )
 
 data class DailySessionState(

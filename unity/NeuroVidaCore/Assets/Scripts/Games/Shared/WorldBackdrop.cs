@@ -123,6 +123,14 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.16f), NebulaBPos = new Vector2(0.9f, 0.08f),
         };
 
+        /// <summary>Satélites: cielo quieto (nada se mueve que se parezca a un satélite), resplandor sol y celeste.</summary>
+        public static GameWorld MissionControl => new GameWorld
+        {
+            Name = "Control de misión", Stars = 45,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.10f), NebulaAPos = new Vector2(0.15f, 0.9f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.18f), NebulaBPos = new Vector2(0.85f, 0.1f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

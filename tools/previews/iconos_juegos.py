@@ -9,7 +9,7 @@ INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
        ('stroop','Tinta o Palabra','atencion'),('cambiochip','Cambio de Chip','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad')]
+       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -136,6 +136,21 @@ def draw(ic,gid):
         ic.stroke([(50,50),(50,21)],LIME,3)
         q=ic.P(50,50); r=4*ic.k; ic.d.ellipse([q[0]-r,q[1]-r,q[0]+r,q[1]+r],fill=CREAM)
         ic.clay(circ(68,36,7),SUN,border=3,shadow=False)
+    elif gid=='satelites':
+        def sat(cx,cy,sc):
+            tf=lambda pts:[(cx+(x-cx)*sc,cy+(y-cy)*sc) for x,y in pts]
+            ic.rot.append((-25,cx,cy))
+            ic.clay(tf(rrect(cx-19,cy-5,12,10,2.5)),SKY,border=3,shadow=False)
+            ic.clay(tf(rrect(cx+7,cy-5,12,10,2.5)),SKY,border=3,shadow=False)
+            ic.clay(tf(rrect(cx-6.5,cy-6.5,13,13,3.5)),SUN,border=3)
+            ic.rot.pop()
+        o=Image.new('RGBA',ic.im.size,(0,0,0,0)); od=ImageDraw.Draw(o)
+        for k in range(4):
+            q=ic.P(12+k*7,90-k*7); r=3*ic.k; od.ellipse([q[0]-r,q[1]-r,q[0]+r,q[1]+r],fill=CREAM+(int(255*(0.4+k*0.15)),))
+        ic.im.alpha_composite(o); ic.d=ImageDraw.Draw(ic.im)
+        sat(78,20,0.8); sat(80,80,0.8)
+        q=ic.P(48,52); r=27*ic.k; ic.d.ellipse([q[0]-r,q[1]-r,q[0]+r,q[1]+r],outline=CREAM,width=int(4.5*ic.k))
+        sat(48,52,1.35)
     elif gid=='comparacion':
         ic.clay(circ(22,50,20),CREAM,gloss=True); ic.clay(circ(87,50,10),CREAM)
         ic.claystroke([[(58-7.8,37),(58+7.8,50),(58-7.8,63)]],SUN,7)

@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -284,6 +285,37 @@ fun GameResultScreen(
       )
     }
 
+    // Satélites: "tu seguimiento" (cuántos se siguen de verdad a la vez, sin contar la suerte) y la velocidad superada.
+    result.trackingCapacity?.let { cap ->
+      Spacer(Modifier.height(14.dp))
+      val capText = String.format(java.util.Locale("es"), "%.1f", cap)
+      Text(
+        text = "Tu seguimiento: $capText a la vez",
+        color = Clay.Sun,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = FredokaFamily
+      )
+      Spacer(Modifier.height(6.dp))
+      TrackingSlots(cap, Modifier.semantics { contentDescription = "Sigues $capText satélites a la vez" })
+      result.trackingSpeed?.let { speed ->
+        Text(
+          text = "Velocidad más alta superada: ${String.format(java.util.Locale("es"), "%.1f", speed)}×",
+          color = Clay.Cream,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 6.dp)
+        )
+      }
+      Text(
+        text = "Cuántos satélites sigues de verdad al mismo tiempo, sin contar los que aciertas por suerte. En los estudios, la mayoría de los adultos sigue alrededor de 4.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+      )
+    }
+
     if (didLevelUp) {
       Spacer(Modifier.height(18.dp))
       ClayPill(
@@ -489,5 +521,32 @@ private fun RadarField(hits: List<Int>, trials: List<Int>, modifier: Modifier = 
       drawArc(Clay.Ink, angle - 19f, 38f, useCenter = true, topLeft = topLeft, size = Size(wr * 2f, wr * 2f), style = Stroke(2.dp.toPx()))
     }
     drawCircle(Clay.Cream, 4.dp.toPx(), c)
+  }
+}
+
+// ---------- Satélites: "tu seguimiento" ----------
+
+/**
+ * Cinco discos de arcilla: se llenan en sol hasta la capacidad de seguimiento (3,4 = tres llenos y el cuarto al 40%).
+ * La cantidad se lee por cuántos están llenos, no por el color.
+ */
+@Composable
+private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier) {
+  Canvas(modifier.size(width = 5 * 34.dp + 4 * 10.dp, height = 40.dp)) {
+    val r = 17.dp.toPx()
+    val gap = 10.dp.toPx()
+    val border = 2.5.dp.toPx()
+    for (i in 0 until 5) {
+      val c = Offset(r + i * (2 * r + gap), size.height / 2f - 2.dp.toPx())
+      val fill = (capacity - i).coerceIn(0f, 1f)
+      drawCircle(Clay.Ink, r, c + Offset(0f, 3.dp.toPx()))
+      drawCircle(Color(0xFF1B2466), r, c)
+      if (fill > 0f) {
+        // Se llena de abajo hacia arriba.
+        val top = c.y + r - 2f * r * fill
+        clipRect(left = c.x - r, top = top, right = c.x + r, bottom = c.y + r) { drawCircle(Clay.Sun, r, c) }
+      }
+      drawCircle(Clay.Ink, r, c, style = Stroke(border))
+    }
   }
 }
