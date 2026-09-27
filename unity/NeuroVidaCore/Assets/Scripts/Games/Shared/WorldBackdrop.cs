@@ -177,6 +177,16 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.16f), NebulaBPos = new Vector2(0.85f, 0.2f),
         };
 
+        /// <summary>Rumbo a Casa: espacio profundo SIN estrellas de fondo (unas estrellas lejanas fijas servirían de
+        /// brújula y regalarían el rumbo: la única referencia lejana es el faro, y solo en la mitad de los viajes). El juego
+        /// dibuja su propio polvo de estrellas, que se mueve con la nave. Nebulosas muy tenues.</summary>
+        public static GameWorld DeepSpace => new GameWorld
+        {
+            Name = "Espacio profundo", Stars = 0,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.10f), NebulaAPos = new Vector2(0.5f, 0.75f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.14f), NebulaBPos = new Vector2(0.5f, 0.2f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

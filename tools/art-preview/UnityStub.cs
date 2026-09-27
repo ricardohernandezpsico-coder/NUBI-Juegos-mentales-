@@ -26,6 +26,7 @@ public static class Mathf {
   public static int CeilToInt(float a) => (int)Math.Ceiling(a);
   public static float Sign(float v) => v >= 0f ? 1f : -1f;
   public static float Floor(float v) => (float)Math.Floor(v);
+  public static float Round(float v) => (float)Math.Round(v);
   public static float Repeat(float t, float l) => Clamp(t - Floor(t / l) * l, 0f, l);
   public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
   public static float SmoothStep(float from, float to, float t) { t = Clamp01(t); t = -2f*t*t*t + 3f*t*t; return to*t + from*(1f-t); }
@@ -34,7 +35,8 @@ public struct Color { public float r,g,b,a;
   public Color(float r,float g,float b,float a=1f){this.r=r;this.g=g;this.b=b;this.a=a;}
   public static Color white => new Color(1,1,1,1);
   public static Color Lerp(Color x, Color y, float t){ t=Mathf.Clamp01(t); return new Color(x.r+(y.r-x.r)*t,x.g+(y.g-x.g)*t,x.b+(y.b-x.b)*t,x.a+(y.a-x.a)*t);} }
-public struct Color32 { public byte r,g,b,a; public Color32(byte r,byte g,byte b,byte a){this.r=r;this.g=g;this.b=b;this.a=a;} }
+public struct Color32 { public byte r,g,b,a; public Color32(byte r,byte g,byte b,byte a){this.r=r;this.g=g;this.b=b;this.a=a;}
+  public static implicit operator Color32(Color c) => new Color32((byte)(Mathf.Clamp01(c.r)*255f+0.5f),(byte)(Mathf.Clamp01(c.g)*255f+0.5f),(byte)(Mathf.Clamp01(c.b)*255f+0.5f),(byte)(Mathf.Clamp01(c.a)*255f+0.5f)); }
 public struct Vector2 { public float x,y; public Vector2(float x,float y){this.x=x;this.y=y;} }
 public struct Vector4 { public float x,y,z,w; public Vector4(float x,float y,float z,float w){this.x=x;this.y=y;this.z=z;this.w=w;} }
 public struct Rect { public Rect(float x,float y,float w,float h){} }

@@ -110,6 +110,35 @@ internal static class Program
             // Muestra de sonido de Tráfico Estelar (WAV): el motor de fondo con los efectos encima, como en una partida.
             TrafficSoundDemo(Path.Combine(dir, "trafico-sonidos.wav"));
             BitacoraSoundDemo(Path.Combine(dir, "bitacora-sonidos.wav"));
+            // Rumbo a Casa: sprites, un viaje real del contrato (con una vuelta de ejemplo) y la muestra de sonido.
+            Dump("homing_ship", NeuroVida.Games.Rumbo.HomingSprites.Ship());
+            Dump("homing_ship_flat", NeuroVida.Games.Rumbo.HomingSprites.Ship(false));
+            Dump("homing_base", NeuroVida.Games.Rumbo.HomingSprites.Base());
+            Dump("homing_beacon", NeuroVida.Games.Rumbo.HomingSprites.Beacon());
+            Dump("homing_arrow", NeuroVida.Games.Rumbo.HomingSprites.AimArrow());
+            Dump("homing_dial", NeuroVida.Games.Rumbo.HomingSprites.Dial());
+            Dump("homing_fog", NeuroVida.Games.Rumbo.HomingSprites.Fog());
+            for (int c = 0; c < 5; c++) Dump("homing_crystal_" + c, NeuroVida.Games.Rumbo.HomingSprites.Crystal(c));
+            {
+                var ic = System.Globalization.CultureInfo.InvariantCulture;
+                var sb = new System.Text.StringBuilder();
+                foreach (var (level, seed, dTurn, dRatio) in new[] { (1, 4, 14f, 0.92f), (4, 9, -22f, 1.18f), (7, 2, 8f, 0.8f) })
+                {
+                    var trip = NeuroVida.Games.Rumbo.HomingContract.NextTrip(level, true, new System.Random(seed));
+                    float turn = NeuroVida.Games.Rumbo.HomingContract.CorrectTurn(trip) + dTurn;
+                    float traveled = trip.HomeDistance * dRatio;
+                    var o = NeuroVida.Games.Rumbo.HomingContract.Evaluate(trip, turn, traveled);
+                    NeuroVida.Games.Rumbo.HomingContract.Dir(trip.ArrivalHeading + turn, out float ux, out float uy);
+                    sb.Append("T ").Append(level);
+                    for (int i = 0; i < trip.Legs; i++) sb.Append(' ').Append(trip.CrystalX[i].ToString(ic)).Append(' ').Append(trip.CrystalY[i].ToString(ic));
+                    sb.AppendLine();
+                    sb.AppendLine("E " + (trip.StartX + ux * traveled).ToString(ic) + " " + (trip.StartY + uy * traveled).ToString(ic)
+                        + " " + trip.ArrivalHeading.ToString(ic) + " " + turn.ToString(ic) + " " + o.AngleError.ToString(ic)
+                        + " " + o.DistanceRatio.ToString(ic) + " " + o.ErrorRatio.ToString(ic) + " " + trip.BeaconBearing.ToString(ic));
+                }
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "homing_trips.txt"), sb.ToString());
+            }
+            RumboSoundDemo(Path.Combine(dir, "rumbo-sonidos.wav"));
             // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (var (ports, seed, twist) in new[] { (4, 3, 0.2f), (6, 11, 0.55f), (8, 5, 1f), (6, 21, 0.55f) })
@@ -194,6 +223,69 @@ internal static class Program
             w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
             w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
             foreach (float v in mix) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
+        }
+    }
+
+    static void RumboSoundDemo(string path)
+    {
+        const int rate = 44100;
+        var mix = new float[(int)(17f * rate)];
+        void At(float t, UnityEngine.AudioClip c, float v)
+        {
+            int start = (int)(t * rate);
+            for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
+        }
+        // Vuelo (el colchón de nave de la app) solo mientras la nave avanza.
+        var engine = NeuroVida.Games.Trafico.TrafficSounds.EngineLoop().data;
+        (float a, float b)[] flying = { (1.0f, 2.8f), (4.3f, 6.0f), (7.5f, 9.2f), (11.2f, 13.2f) };
+        for (int i = 0; i < mix.Length; i++)
+        {
+            float t = i / (float)rate;
+            float vol = 0f;
+            foreach (var (a, b) in flying)
+                vol = Math.Max(vol, 0.16f * Math.Clamp(Math.Min((t - a) / 0.3f, (b - t) / 0.3f), 0f, 1f));
+            mix[i] += vol * engine[i % engine.Length];
+        }
+        // Ida: señal → (giro) → vuelo → cristal, tres veces (cada cristal una nota más alta).
+        At(0.2f, NeuroVida.Games.Rumbo.HomingSounds.Ping(), 0.45f);
+        At(2.8f, NeuroVida.Games.Rumbo.HomingSounds.Crystal(0), 0.55f);
+        At(3.3f, NeuroVida.Games.Rumbo.HomingSounds.Ping(), 0.45f);
+        At(3.7f, NeuroVida.Games.Rumbo.HomingSounds.Turn(), 0.35f);
+        At(6.0f, NeuroVida.Games.Rumbo.HomingSounds.Crystal(1), 0.55f);
+        At(6.5f, NeuroVida.Games.Rumbo.HomingSounds.Ping(), 0.45f);
+        At(6.9f, NeuroVida.Games.Rumbo.HomingSounds.Turn(), 0.35f);
+        At(9.2f, NeuroVida.Games.Rumbo.HomingSounds.Crystal(2), 0.55f);
+        // Vuelta: rumbo fijado, giro, avance, ¡AQUÍ!, vista desde arriba y llegada perfecta ("vuelve a do").
+        At(10.3f, NeuroVida.Games.Rumbo.HomingSounds.Lock(), 0.5f);
+        At(10.5f, NeuroVida.Games.Rumbo.HomingSounds.Turn(), 0.35f);
+        At(11.2f, NeuroVida.Games.Rumbo.HomingSounds.Turn(), 0.25f);
+        At(13.4f, NeuroVida.Games.Rumbo.HomingSounds.MapReveal(), 0.5f);
+        At(14.9f, NeuroVida.Games.Rumbo.HomingSounds.Arrival(0), 0.6f);
+        using (var w = new BinaryWriter(File.Create(path)))
+        {
+            int n = mix.Length;
+            w.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + n * 2); w.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));
+            w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
+            w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
+            foreach (float v in mix) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
+        }
+        // Las tres llegadas por separado, para comparar: justo en casa, cerca y lejos ("en suspenso").
+        var arr = new float[(int)(6.6f * rate)];
+        void AtA(float t, UnityEngine.AudioClip c, float v)
+        {
+            int start = (int)(t * rate);
+            for (int k = 0; k < c.data.Length && start + k < arr.Length; k++) arr[start + k] += v * c.data[k];
+        }
+        AtA(0.2f, NeuroVida.Games.Rumbo.HomingSounds.Arrival(0), 0.6f);
+        AtA(2.4f, NeuroVida.Games.Rumbo.HomingSounds.Arrival(1), 0.55f);
+        AtA(4.6f, NeuroVida.Games.Rumbo.HomingSounds.Arrival(2), 0.5f);
+        using (var w = new BinaryWriter(File.Create(path.Replace(".wav", "-llegadas.wav"))))
+        {
+            int n = arr.Length;
+            w.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + n * 2); w.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));
+            w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
+            w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
+            foreach (float v in arr) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
         }
     }
 

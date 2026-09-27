@@ -83,5 +83,16 @@ namespace NeuroVida.Contracts
         public int traffic_proactive_pct = -1;
         /// <summary>Solo Tráfico Estelar: más cápsulas en viaje a la vez.</summary>
         public int traffic_peak_pods;
+        /// <summary>Solo Rumbo a Casa: "tu brújula interna", a qué distancia de casa quedó la nave en promedio (% de la
+        /// distancia que había hasta la base). -1 = no aplica.</summary>
+        public float homing_error_pct = -1f;
+        /// <summary>Solo Rumbo a Casa: dónde quedó cada vuelta en el marco de la vuelta justa, en fracciones de la
+        /// distancia a casa (la base en along = 1, lateral = 0; lateral + = a la derecha).</summary>
+        public float[] homing_along;
+        public float[] homing_lateral;
+        /// <summary>Solo Rumbo a Casa: 1 si ese viaje tenía faro.</summary>
+        public int[] homing_beacon;
+        /// <summary>Solo Rumbo a Casa: llegadas perfectas.</summary>
+        public int homing_perfect;
     }
 }
