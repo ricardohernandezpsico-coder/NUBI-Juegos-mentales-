@@ -131,6 +131,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.18f), NebulaBPos = new Vector2(0.85f, 0.1f),
         };
 
+        /// <summary>Freno de Emergencia: base de lanzamiento sobre la superficie de una luna; resplandor coral arriba
+        /// (hacia donde despegan los cohetes).</summary>
+        public static GameWorld LaunchBase => new GameWorld
+        {
+            Name = "Base de lanzamiento", SurfaceHeight = 0.2f, Stars = 50, VanishingPoint = new Vector2(0.5f, 0.35f),
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.16f), NebulaAPos = new Vector2(0.5f, 0.95f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.1f, 0.4f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

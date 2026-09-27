@@ -316,6 +316,40 @@ fun GameResultScreen(
       )
     }
 
+    // Freno de Emergencia: "tu freno" (tiempo de frenado, SSRT) en un velocímetro de arcilla + cuántos altos frenó.
+    if (result.stopsTotal != null) {
+      Spacer(Modifier.height(14.dp))
+      val brake = result.brakeMs
+      if (brake != null) {
+        Text(
+          text = "Tu freno: $brake ms",
+          color = Clay.Coral,
+          fontWeight = FontWeight.Bold,
+          fontSize = 18.sp,
+          fontFamily = FredokaFamily
+        )
+        Spacer(Modifier.height(6.dp))
+        BrakeGauge(brake, Modifier.semantics { contentDescription = "Tu freno: $brake milisegundos" })
+      }
+      val record = result.brakeBestSsdMs?.let { " · récord: frenaste con el alto a $it ms" } ?: ""
+      Text(
+        text = "Frenaste ${result.stopsOk ?: 0} de ${result.stopsTotal} altos$record",
+        color = Clay.Cream,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+      )
+      Text(
+        text = if (brake != null) "El tiempo que necesita tu mente para detener una acción que ya empezó. Mientras más bajo, mejor frenas."
+        else "Tu freno se mide con al menos 6 altos: en una partida más larga lo verás.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+    }
+
     if (didLevelUp) {
       Spacer(Modifier.height(18.dp))
       ClayPill(
@@ -548,5 +582,36 @@ private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier) {
       }
       drawCircle(Clay.Ink, r, c, style = Stroke(border))
     }
+  }
+}
+
+// ---------- Freno de Emergencia: "tu freno" ----------
+
+/**
+ * Velocímetro de arcilla: medio aro de 450 ms (izquierda, freno lento) a 150 ms (derecha, freno rápido), con la aguja
+ * en el tiempo de frenado. Rótulos en texto a los lados: el valor no depende del color.
+ */
+@Composable
+private fun BrakeGauge(brakeMs: Int, modifier: Modifier = Modifier) {
+  Row(modifier, verticalAlignment = Alignment.Bottom) {
+    Text("lento", color = TextSoft, fontSize = 12.sp, modifier = Modifier.padding(end = 6.dp))
+    Canvas(Modifier.size(width = 150.dp, height = 84.dp)) {
+      val stroke = 14.dp.toPx()
+      val r = size.width / 2f - stroke
+      val c = Offset(size.width / 2f, size.height - 6.dp.toPx())
+      val topLeft = c - Offset(r, r)
+      val arc = Size(r * 2f, r * 2f)
+      drawArc(Clay.Ink, 180f, 180f, useCenter = false, topLeft = topLeft + Offset(0f, 3.dp.toPx()), size = arc, style = Stroke(stroke + 6.dp.toPx()))
+      drawArc(Color(0xFF1B2466), 180f, 180f, useCenter = false, topLeft = topLeft, size = arc, style = Stroke(stroke))
+      val k = ((450f - brakeMs) / 300f).coerceIn(0f, 1f)
+      drawArc(Clay.Coral, 180f, 180f * k, useCenter = false, topLeft = topLeft, size = arc, style = Stroke(stroke))
+      val ang = Math.toRadians((180.0 + 180.0 * k))
+      val tip = c + Offset((kotlin.math.cos(ang) * r * 0.95f).toFloat(), (kotlin.math.sin(ang) * r * 0.95f).toFloat())
+      drawLine(Clay.Ink, c, tip, 7.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
+      drawLine(Clay.Cream, c, tip, 3.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
+      drawCircle(Clay.Ink, 8.dp.toPx(), c)
+      drawCircle(Clay.Sun, 5.dp.toPx(), c)
+    }
+    Text("rápido", color = TextSoft, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp))
   }
 }

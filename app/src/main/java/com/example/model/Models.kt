@@ -121,6 +121,14 @@ object GameRegistry {
       iconEmoji = "🚀"
     ),
     GameDefinition(
+      id = "freno",
+      title = "Freno de Emergencia",
+      domain = DomainType.ATENCION,
+      subtitle = "Control inhibitorio: frenar a tiempo",
+      instruction = "Lanza lo más rápido que puedas el cohete que se enciende. Si suena la alarma y aparece ¡ALTO!, no toques: frena a tiempo.",
+      iconEmoji = "🛑"
+    ),
+    GameDefinition(
       id = "satelites",
       title = "Satélites",
       domain = DomainType.ATENCION,
@@ -170,7 +178,13 @@ data class GamePlayResult(
   // Solo Satélites: cuántos se siguen de verdad a la vez (descontando la suerte) y la velocidad más alta superada
   // completa (múltiplo de la del nivel 1). No se guardan en Room.
   val trackingCapacity: Float? = null,
-  val trackingSpeed: Float? = null
+  val trackingSpeed: Float? = null,
+  // Solo Freno de Emergencia: "tu freno" (tiempo de frenado, ms), altos frenados / totales y el alto más tardío
+  // que se frenó (ms). No se guardan en Room.
+  val brakeMs: Int? = null,
+  val stopsOk: Int? = null,
+  val stopsTotal: Int? = null,
+  val brakeBestSsdMs: Int? = null
 )
 
 data class DailySessionState(

@@ -93,7 +93,12 @@ object NativeReceiver {
     val sector_trials: List<Int>? = null,
     // Solo Satélites: seguimiento (satélites a la vez) y velocidad superada (-1 = no aplica).
     val tracking_capacity: Double = -1.0,
-    val tracking_speed: Double = -1.0
+    val tracking_speed: Double = -1.0,
+    // Solo Freno de Emergencia: tiempo de frenado (ms, -1 = sin estimación), altos frenados / totales, récord.
+    val brake_ms: Int = -1,
+    val stops_ok: Int = 0,
+    val stops_total: Int = 0,
+    val brake_best_ssd_ms: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -221,7 +226,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -295,7 +300,11 @@ object NativeReceiver {
       sectorHits = metrics.sector_hits?.takeIf { it.size == 8 },
       sectorTrials = metrics.sector_trials?.takeIf { it.size == 8 },
       trackingCapacity = metrics.tracking_capacity.takeIf { it >= 0.0 }?.toFloat(),
-      trackingSpeed = metrics.tracking_speed.takeIf { it > 0.0 }?.toFloat()
+      trackingSpeed = metrics.tracking_speed.takeIf { it > 0.0 }?.toFloat(),
+      brakeMs = metrics.brake_ms.takeIf { it > 0 },
+      stopsOk = metrics.stops_ok.takeIf { metrics.stops_total > 0 },
+      stopsTotal = metrics.stops_total.takeIf { it > 0 },
+      brakeBestSsdMs = metrics.brake_best_ssd_ms.takeIf { it > 0 }
     )
   }
 }

@@ -12,6 +12,7 @@ using NeuroVida.Games.Anagramas;
 using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Radar;
 using NeuroVida.Games.Satelites;
+using NeuroVida.Games.Freno;
 
 namespace NeuroVida.Bridge
 {
@@ -44,6 +45,7 @@ namespace NeuroVida.Bridge
         [SerializeField] private PilotGameController pilotGameController;
         [SerializeField] private RadarGameController radarGameController;
         [SerializeField] private SatelliteGameController satelliteGameController;
+        [SerializeField] private BrakeGameController brakeGameController;
 
         /// <summary>Los 9 juegos arman su interfaz una sola vez para 1080x1920 vertical: al girar el teléfono se
         /// desarmaban. Se fija la orientación antes de cargar la escena, además de Player Settings (Portrait) y del
@@ -265,6 +267,16 @@ namespace NeuroVida.Bridge
                     }
                     satelliteGameController.gameObject.SetActive(true);
                     satelliteGameController.StartSession(config);
+                    break;
+                case BrakeGameController.GameId:
+                    if (brakeGameController == null)
+                    {
+                        var go = new GameObject("BrakeGameController");
+                        go.transform.SetParent(transform, false);
+                        brakeGameController = go.AddComponent<BrakeGameController>();
+                    }
+                    brakeGameController.gameObject.SetActive(true);
+                    brakeGameController.StartSession(config);
                     break;
                 default:
                     Debug.LogError($"[GameEntryPoint] game_id {config.game_id} no tiene un controlador registrado todavía.");

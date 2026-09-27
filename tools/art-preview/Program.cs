@@ -63,6 +63,10 @@ internal static class Program
         Dump("radar_sweep", NeuroVida.Games.Radar.RadarSprites.Sweep());
         Dump("radar_pad", NeuroVida.Games.Radar.RadarSprites.Pad());
         for (int i = 0; i < 2; i++) Dump("radar_mask_" + i, NeuroVida.Games.Radar.RadarSprites.Mask(i));
+        Dump("brake_stop", NeuroVida.Games.Freno.BrakeSprites.StopSign());
+        Dump("brake_pad", NeuroVida.Games.Freno.BrakeSprites.LaunchPad());
+        Dump("brake_button", NeuroVida.Games.Freno.BrakeSprites.LaunchButton(false));
+        Dump("brake_button_lit", NeuroVida.Games.Freno.BrakeSprites.LaunchButton(true));
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)
             {

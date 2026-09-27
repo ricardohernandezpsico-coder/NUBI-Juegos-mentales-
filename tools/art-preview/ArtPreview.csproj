@@ -40,5 +40,6 @@
     <Compile Include="$(Src)/Shared/AnswerMarkSprite.cs" />
     <Compile Include="$(Src)/Radar/RadarContract.cs" />
     <Compile Include="$(Src)/Radar/RadarSprites.cs" />
+    <Compile Include="$(Src)/Freno/BrakeSprites.cs" />
   </ItemGroup>
 </Project>

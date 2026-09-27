@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites",
+  "piloto", "radar", "satelites", "freno",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -178,6 +178,37 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       satellite(Offset(80f, 80f), 0.8f)
       drawCircle(Cream, 27f, Offset(48f, 52f), style = Stroke(4.5f))
       satellite(Offset(48f, 52f), 1.35f)
+    }
+    "freno" -> {
+      // Señal de ALTO de arcilla (octágono coral con aro crema) y un cohete que se quedó en su lugar.
+      val oct = FloatArray(16).also { a ->
+        for (i in 0 until 8) {
+          val ang = (PI / 8 + i * PI / 4).toFloat()
+          a[i * 2] = 60f + 30f * cos(ang)
+          a[i * 2 + 1] = 42f + 30f * sin(ang)
+        }
+      }
+      val inner = FloatArray(16).also { a ->
+        for (i in 0 until 8) {
+          val ang = (PI / 8 + i * PI / 4).toFloat()
+          a[i * 2] = 60f + 23f * cos(ang)
+          a[i * 2 + 1] = 42f + 23f * sin(ang)
+        }
+      }
+      clay(poly(*oct), Clay.Coral, gloss = true)
+      drawPath(poly(*inner), Cream, style = Stroke(3.5f))
+      drawLine(Cream, Offset(47f, 42f), Offset(73f, 42f), 7f, StrokeCap.Round)
+      withTransform({
+        translate(-25f, 17f)
+        scale(0.8f, 0.8f, Offset(50f, 50f))
+      }) {
+        clay(poly(44.4f, 66.8f, 55.6f, 66.8f, 50.0f, 79.4f), Clay.Sun, border = 3.5f, shadow = false)
+        clay(poly(41.6f, 50.0f, 31.8f, 64.0f, 31.8f, 69.6f, 41.6f, 64.0f), Clay.Sky, border = 3.5f, shadow = false)
+        clay(poly(58.4f, 50.0f, 68.2f, 64.0f, 68.2f, 69.6f, 58.4f, 64.0f), Clay.Sky, border = 3.5f, shadow = false)
+        clay(poly(40.2f, 66.8f, 40.2f, 41.6f, 50.0f, 22.0f, 59.8f, 41.6f, 59.8f, 66.8f), Cream, border = 3.5f)
+        clay(poly(43.7f, 34.6f, 50.0f, 22.0f, 56.3f, 34.6f), Clay.Sky, border = 3.5f, shadow = false)
+        clay(circle(Offset(50f, 47.2f), 5.0f), Clay.Sky, border = 2.5f, shadow = false)
+      }
     }
     "series" -> {
       // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).

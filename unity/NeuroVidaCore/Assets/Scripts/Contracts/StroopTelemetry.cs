@@ -42,5 +42,12 @@ namespace NeuroVida.Contracts
         public float tracking_capacity = -1f;
         /// <summary>Solo Satélites: velocidad del nivel más alto superado completo, como múltiplo de la del nivel 1. -1 = ninguno.</summary>
         public float tracking_speed = -1f;
+        /// <summary>Solo Freno de Emergencia: "tu freno" (tiempo de frenado, SSRT, ms). -1 = sin estimación confiable.</summary>
+        public int brake_ms = -1;
+        /// <summary>Solo Freno de Emergencia: altos frenados y altos totales.</summary>
+        public int stops_ok;
+        public int stops_total;
+        /// <summary>Solo Freno de Emergencia: el alto más tardío que se frenó (ms). -1 = ninguno.</summary>
+        public int brake_best_ssd_ms = -1;
     }
 }
