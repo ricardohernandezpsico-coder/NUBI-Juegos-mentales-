@@ -39,6 +39,79 @@ namespace NeuroVida.Games.Correo
     }
 
     /// <summary>
+    /// El escudo de la nave (28-sep, idea de Ricardo: "que el cohete se vaya dañando"): cada asteroide rompe un segmento;
+    /// volar limpio lo repara; sin escudo, una REPARACIÓN DE EMERGENCIA de unos segundos (nave lenta, sin sobres) y se
+    /// sigue con un segmento. Nunca termina el vuelo: los encargos necesitan los 150 s para medirse igual en todos.
+    /// </summary>
+    public sealed class ShipShield
+    {
+        public const int Max = 3;
+        /// <summary>Segundos sin chocar para recuperar un segmento.</summary>
+        public const float RepairSeconds = 20f;
+        /// <summary>Duración de la reparación de emergencia.</summary>
+        public const float EmergencySeconds = 3.5f;
+
+        public int Segments { get; private set; } = Max;
+        public int Emergencies { get; private set; }
+        private float _calmSince, _emergencyUntil = -1f, _intactTime, _lastT;
+        private bool _started;
+
+        public void Start(float now)
+        {
+            Segments = Max;
+            Emergencies = 0;
+            _calmSince = _lastT = now;
+            _emergencyUntil = -1f;
+            _intactTime = 0f;
+            _started = true;
+        }
+
+        public bool InEmergency(float now) => now < _emergencyUntil;
+
+        /// <summary>Un choque. Devuelve true si deja la nave sin escudo (empieza la reparación de emergencia). Durante la
+        /// emergencia los asteroides no la tocan.</summary>
+        public bool Hit(float now)
+        {
+            Advance(now);
+            if (InEmergency(now) || Segments <= 0) return false;
+            Segments--;
+            _calmSince = now;
+            if (Segments > 0) return false;
+            Emergencies++;
+            _emergencyUntil = now + EmergencySeconds;
+            return true;
+        }
+
+        /// <summary>Avanza el reloj del escudo. Devuelve true si en este paso se recuperó un segmento (por vuelo limpio o
+        /// al terminar la emergencia).</summary>
+        public bool Advance(float now)
+        {
+            if (!_started) Start(now);
+            if (Segments == Max) _intactTime += Math.Max(0f, now - _lastT);
+            _lastT = now;
+            if (Segments == 0 && _emergencyUntil >= 0f && now >= _emergencyUntil)
+            {
+                Segments = 1;
+                _calmSince = now;
+                return true;
+            }
+            if (Segments > 0 && Segments < Max && now - _calmSince >= RepairSeconds)
+            {
+                Segments++;
+                _calmSince = now;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Parte del vuelo con la nave intacta (0..1).</summary>
+        public float IntactShare(float flightSeconds) => flightSeconds <= 0f ? 1f : Math.Min(1f, _intactTime / flightSeconds);
+
+        /// <summary>Qué tan lento va la nave: 1 normal; durante la emergencia, a la mitad.</summary>
+        public float SpeedFactor(float now) => InEmergency(now) ? 0.5f : 1f;
+    }
+
+    /// <summary>
     /// Reglas puras de "Correo Estelar": el vuelo de Piloto Estelar (mantenerse en la ruta y recoger sobres es la tarea en
     /// curso) con ENCARGOS que hay que recordar en el momento justo, sin que nadie avise: memoria prospectiva (Rummel y
     /// Kvavilashvili, 2023, revisión en Nature Reviews Psychology).

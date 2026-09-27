@@ -212,6 +212,14 @@ NO se muestran durante el vuelo.
   de implementación ("cuando vea el planeta, lo toco"; metaanálisis de Chen et al., 2015). El mismo truco aparece en la
   hoja de ruta.
 
+**Cuidado de la nave (escudo).** Cada asteroide rompe un segmento del escudo y la nave se ve dañada; volar limpio lo
+repara. Tener algo propio que cuidar da motivo para anticiparse en vez de reaccionar (motivación y control proactivo:
+Braver, 2012; Botvinick y Braver, 2015). A propósito, quedarse sin escudo NO termina el vuelo (solo una reparación de
+emergencia de 3,5 s): si terminara, quien pilota peor tendría menos encargos y la medida de memoria dependería del
+pilotaje; además, con un castigo fuerte en una de dos tareas la gente descuida la otra. Al final se dice "Nave intacta
+el N% del vuelo" y cuántas reparaciones hubo; con menos de la mitad del vuelo intacta, un truco concreto (mirar más
+arriba de la nave para ver venir los asteroides). No es una medida de memoria: es parte del juego.
+
 **Qué NO se dice.** No se compara con normas ni se habla de "memoria prospectiva" como rasgo: con 150 s de vuelo y unos
 7 encargos de cada tipo, la medida es de esta partida.
 
@@ -224,6 +232,8 @@ NO se muestran durante el vuelo.
 - Ball, K., et al. (2002). Effects of cognitive training interventions with older adults. *JAMA*, 288, 2271–2281.
 - Barth, H. C., y Paladino, A. M. (2011). The development of numerical estimation: evidence against a representational
   shift. *Developmental Science*, 14, 125–135.
+- Botvinick, M., y Braver, T. (2015). Motivation and cognitive control: from behavior to neural mechanism. *Annual
+  Review of Psychology*, 66, 83–113.
 - Bower, G. H. (1970). Imagery as a relational organizer in associative learning. *Journal of Verbal Learning and
   Verbal Behavior*, 9, 529–533.
 - Braver, T. S. (2012). The variable nature of cognitive control: a dual mechanisms framework. *Trends in Cognitive

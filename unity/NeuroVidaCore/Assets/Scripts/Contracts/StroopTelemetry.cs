@@ -114,5 +114,9 @@ namespace NeuroVida.Contracts
         /// <summary>Solo Correo Estelar: asteroides chocados y asteroides que pasaron junto a la nave (esquivados + chocados).</summary>
         public int mail_asteroid_hits = -1;
         public int mail_asteroids = -1;
+        /// <summary>Correo Estelar: % del vuelo con el escudo entero (cuidado de la nave).</summary>
+        public int mail_hull_intact_pct = -1;
+        /// <summary>Correo Estelar: reparaciones de emergencia (veces que se quedó sin escudo).</summary>
+        public int mail_emergencies = -1;
     }
 }

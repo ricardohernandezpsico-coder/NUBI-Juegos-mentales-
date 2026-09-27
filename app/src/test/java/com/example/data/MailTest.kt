@@ -33,4 +33,13 @@ class MailTest {
     assertEquals(0.5f, Mail.rate(2, 4)!!, 1e-6f)
     assertNull(Mail.rate(0, 0))
   }
+
+  @Test
+  fun `cuidado de la nave - intacta, reparaciones y truco solo si hace falta`() {
+    assertNull(Mail.shipMessage(-1, 0))
+    assertEquals("Nave intacta el 80% del vuelo.", Mail.shipMessage(80, 0))
+    assertTrue(Mail.shipMessage(60, 1)!!.contains("1 reparación de emergencia"))
+    assertTrue(Mail.shipMessage(30, 2)!!.contains("2 reparaciones"))
+    assertTrue(Mail.shipMessage(30, 2)!!.contains("Truco"))
+  }
 }

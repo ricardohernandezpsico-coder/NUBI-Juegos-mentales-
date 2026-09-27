@@ -144,7 +144,9 @@ object NativeReceiver {
     val mail_lane_pct: Int = -1,
     val mail_envelopes: Int = -1,
     val mail_asteroid_hits: Int = -1,
-    val mail_asteroids: Int = -1
+    val mail_asteroids: Int = -1,
+    val mail_hull_intact_pct: Int = -1,
+    val mail_emergencies: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -403,7 +405,9 @@ object NativeReceiver {
       mailLanePct = metrics.mail_lane_pct.takeIf { mail },
       mailEnvelopes = metrics.mail_envelopes.takeIf { mail },
       mailAsteroidHits = metrics.mail_asteroid_hits.takeIf { mail && it >= 0 },
-      mailAsteroids = metrics.mail_asteroids.takeIf { mail && it >= 0 }
+      mailAsteroids = metrics.mail_asteroids.takeIf { mail && it >= 0 },
+      mailHullIntactPct = metrics.mail_hull_intact_pct.takeIf { mail && it >= 0 },
+      mailEmergencies = metrics.mail_emergencies.takeIf { mail && it >= 0 }
     )
   }
 }

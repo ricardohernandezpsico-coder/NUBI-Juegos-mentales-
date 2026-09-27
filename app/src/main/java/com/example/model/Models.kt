@@ -292,7 +292,9 @@ data class GamePlayResult(
   val mailLanePct: Int? = null,
   val mailEnvelopes: Int? = null,
   val mailAsteroidHits: Int? = null,
-  val mailAsteroids: Int? = null
+  val mailAsteroids: Int? = null,
+  val mailHullIntactPct: Int? = null,
+  val mailEmergencies: Int? = null
 )
 
 data class DailySessionState(

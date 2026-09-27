@@ -102,6 +102,37 @@ namespace NeuroVida.Games.Correo.Tests
         }
 
         [Test]
+        public void Shield_BreaksWithHits_RepairsFlyingClean_AndNeverEndsTheFlight()
+        {
+            var s = new ShipShield();
+            s.Start(0f);
+            Assert.AreEqual(ShipShield.Max, s.Segments);
+            Assert.IsFalse(s.Hit(10f));
+            Assert.AreEqual(2, s.Segments);
+            // Vuelo limpio: a los 20 s del choque vuelve un segmento; otro choque reinicia la cuenta.
+            Assert.IsFalse(s.Advance(29f));
+            Assert.IsTrue(s.Advance(30f));
+            Assert.AreEqual(3, s.Segments);
+            s.Hit(40f);
+            s.Hit(45f);
+            Assert.IsFalse(s.Advance(64f), "la cuenta empieza en el último choque");
+            // Tercer choque: sin escudo = reparación de emergencia (lenta, sin más daño), luego sigue con 1.
+            Assert.IsTrue(s.Hit(50f));
+            Assert.AreEqual(0, s.Segments);
+            Assert.AreEqual(1, s.Emergencies);
+            Assert.IsTrue(s.InEmergency(52f));
+            Assert.AreEqual(0.5f, s.SpeedFactor(52f));
+            Assert.IsFalse(s.Hit(52f), "durante la emergencia los asteroides no la tocan");
+            Assert.AreEqual(0, s.Segments);
+            Assert.IsTrue(s.Advance(50f + ShipShield.EmergencySeconds));
+            Assert.AreEqual(1, s.Segments);
+            Assert.AreEqual(1f, s.SpeedFactor(60f));
+            // Intacta: de 0 a 10 y de 30 a 40 = 20 de 100 s.
+            s.Advance(100f);
+            Assert.AreEqual(0.2f, s.IntactShare(100f), 1e-4f);
+        }
+
+        [Test]
         public void Score_RewardsEncargos_PenalizesWrongPlanets()
         {
             int perfect = MailContract.Score(6, 6, 0, 4, 4, 1f, MailContract.MaxLevel);

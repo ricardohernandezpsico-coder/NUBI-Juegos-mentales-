@@ -19,7 +19,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · j`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · k`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -382,8 +382,15 @@ Kvavilashvili, 2023). Nadie en la competencia la mide.
   **Asteroides** sobre la ruta (cargados a un lado, siempre hay por dónde pasar; `SymbolSprite` Asteroid): chocar =
   golpe sordo, la nave tiembla, "¡Asteroide!" (no quita encargos). El sobre suena siempre igual (la escala que subía
   y bajaba irritaba).
+- **Escudo** (28-sep, idea de Ricardo: "que el cohete se vaya dañando", para cuidar la nave): 3 segmentos arriba a la
+  izquierda (`ShipShield` en el contrato, 1 prueba). Cada choque rompe uno (cristal que se quiebra) y la nave se ve
+  dañada (`MailSprites.ShipDamage`: grietas; con 1 segmento, humo); 20 s sin chocar reparan uno. Sin escudo:
+  "¡Reparación de emergencia!" 3,5 s (nave a la mitad de velocidad y parpadeando, sin sobres, los asteroides la
+  atraviesan, el DDA de pilotaje no cuenta) y sigue con 1 segmento. NUNCA termina el vuelo: los encargos necesitan los
+  150 s para medirse igual (decisión razonada con Ricardo). Al final: "Nave intacta el N% del vuelo · reparaciones"
+  (`Mail.shipMessage`; telemetría `mail_hull_intact_pct / mail_emergencies`). Lámina `docs/previews/correo-escudo.png`.
 - Medida: **tu memoria para lo pendiente** (por lugar / por hora, `FilledSlots`), errores, **el reloj** (miradas y
-  cuántas en el último 30% del intervalo) y lugar contra hora con consejo (`data/Mail.kt`, 3 pruebas). Telemetría
+  cuántas en el último 30% del intervalo) y lugar contra hora con consejo (`data/Mail.kt`, 4 pruebas). Telemetría
   `mail_*` → `GamePlayResult.mail*` → `GameResultScreen` (más "esquivaste N de M asteroides").
 - Arte `MailSprites` (sobre, paquete, radio, reloj tapado/destapado), sonidos `MailSounds` (marimba y campanas: sobre,
   entrega, error, perdido, radio a tiempo/destiempo, tic-tac del reloj); muestra `docs/previews/correo-sonidos.wav`.
@@ -420,8 +427,8 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 59 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 173 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Kotlin: 60 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Unity EditMode: 174 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

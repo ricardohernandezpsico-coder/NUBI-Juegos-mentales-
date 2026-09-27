@@ -59,4 +59,15 @@ object Mail {
       else -> null
     }
   }
+
+  /**
+   * Cuidado de la nave: cuánto del vuelo fue con el escudo entero y cuántas reparaciones de emergencia hubo. Con menos
+   * de la mitad del vuelo intacta, un consejo concreto para ver venir los asteroides.
+   */
+  fun shipMessage(intactPct: Int, emergencies: Int): String? {
+    if (intactPct < 0) return null
+    val base = "Nave intacta el $intactPct% del vuelo" +
+      if (emergencies > 0) " · $emergencies ${if (emergencies == 1) "reparación" else "reparaciones"} de emergencia" else ""
+    return if (intactPct < 50) "$base. Truco: mira un poco más arriba de la nave, así ves venir los asteroides con tiempo." else "$base."
+  }
 }

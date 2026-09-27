@@ -145,6 +145,10 @@ internal static class Program
             Dump("mail_radio", NeuroVida.Games.Correo.MailSprites.Radio());
             Dump("mail_clock", NeuroVida.Games.Correo.MailSprites.ClockFace());
             Dump("mail_clock_cover", NeuroVida.Games.Correo.MailSprites.ClockCover());
+            Dump("mail_shield_full", NeuroVida.Games.Correo.MailSprites.ShieldPip(true));
+            Dump("mail_shield_empty", NeuroVida.Games.Correo.MailSprites.ShieldPip(false));
+            Dump("mail_damage1", NeuroVida.Games.Correo.MailSprites.ShipDamage(1));
+            Dump("mail_damage2", NeuroVida.Games.Correo.MailSprites.ShipDamage(2));
             CorreoSoundDemo(Path.Combine(dir, "correo-sonidos.wav"));
             // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
             var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -234,11 +238,12 @@ internal static class Program
     }
 
     /// <summary>Muestra de Correo Estelar: sobres que se recogen, una entrega, un planeta equivocado, mirar el reloj,
-    /// el aviso por radio a tiempo y a destiempo, y un planeta que se fue sin su paquete.</summary>
+    /// el aviso por radio a tiempo y a destiempo, un planeta que se fue sin su paquete, y el escudo (choque que rompe un
+    /// segmento, reparación de emergencia, segmento reparado).</summary>
     static void CorreoSoundDemo(string path)
     {
         const int rate = 44100;
-        var mix = new float[(int)(9f * rate)];
+        var mix = new float[(int)(12.5f * rate)];
         void At(float t, UnityEngine.AudioClip c, float v)
         {
             int start = (int)(t * rate);
@@ -252,6 +257,10 @@ internal static class Program
         At(5.3f, NeuroVida.Games.Correo.MailSounds.RadioOk(), 0.55f);
         At(6.4f, NeuroVida.Games.Correo.MailSounds.RadioOff(), 0.45f);
         At(7.2f, NeuroVida.Games.Correo.MailSounds.Missed(), 0.45f);
+        At(8.4f, NeuroVida.Games.Correo.MailSounds.Bump(), 0.55f);
+        At(8.4f, NeuroVida.Games.Correo.MailSounds.ShieldCrack(), 0.4f);
+        At(8.6f, NeuroVida.Games.Correo.MailSounds.Emergency(), 0.5f);
+        At(10.6f, NeuroVida.Games.Correo.MailSounds.Repair(), 0.4f);
         using var file = File.Create(path);
         var w = new BinaryWriter(file);
         int n = mix.Length;

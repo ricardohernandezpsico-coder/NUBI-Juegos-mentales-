@@ -14,6 +14,9 @@ namespace NeuroVida.Games.Correo
     /// <item><see cref="Missed"/>: un planeta del encargo se fue sin su paquete (campana grave, suave).</item>
     /// <item><see cref="RadioOk"/> / <see cref="RadioOff"/>: aviso por radio a tiempo (dos pitidos claros) o a destiempo.</item>
     /// <item><see cref="Peek"/>: se mira el reloj (tic-tac de madera).</item>
+    /// <item><see cref="ShieldCrack"/> / <see cref="Repair"/> / <see cref="Emergency"/>: se rompe un segmento del escudo
+    /// (cristal que se quiebra), se repara uno (marimba que sube con destellos) y reparación de emergencia (dos campanas
+    /// graves que se alternan, como una alarma suave).</item>
     /// </list>
     /// </summary>
     public static class MailSounds
@@ -57,6 +60,24 @@ namespace NeuroVida.Games.Correo
 
         public static AudioClip Peek() => Get("peek", () => Make("peek", 0.35f, t =>
             0.4f * (Wood(2400f, t) + 0.8f * Wood(1800f, t - 0.16f))));
+
+        /// <summary>Se rompe un segmento del escudo: cristal agudo que se quiebra y cae (va encima del golpe sordo).</summary>
+        public static AudioClip ShieldCrack() => Get("crack", () => Make("crack", 0.5f, t =>
+            0.16f * Noise(t, 5200f) * Env(t, 0.001f, 0.03f)
+            + 0.18f * (Bell(1567.98f, t, 0.08f) + 0.7f * Bell(1174.66f, t - 0.07f, 0.12f))));
+
+        /// <summary>Un segmento del escudo vuelve: sol-do-mi que sube, con destellos.</summary>
+        public static AudioClip Repair() => Get("repair", () => Make("repair", 0.9f, t =>
+            0.26f * (Marimba(783.99f, t) + Marimba(1046.5f, t - 0.09f) + Marimba(1318.51f, t - 0.18f))
+            + 0.1f * Bell(2637.02f, t - 0.24f, 0.25f), echo: true));
+
+        /// <summary>Sin escudo: dos campanas graves que se alternan dos veces (alarma suave, no estridente).</summary>
+        public static AudioClip Emergency() => Get("emergency", () => Make("emergency", 1.3f, t =>
+        {
+            float s = 0f;
+            for (int i = 0; i < 4; i++) s += Bell(i % 2 == 0 ? 523.25f : 392f, t - 0.22f * i, 0.18f);
+            return 0.2f * s;
+        }));
 
         // ------------------------------------------------------------------ síntesis
 

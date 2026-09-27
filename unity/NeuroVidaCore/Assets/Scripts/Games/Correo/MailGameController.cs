@@ -24,6 +24,8 @@ namespace NeuroVida.Games.Correo
     /// <item><b>Vuelo</b> de 150 s: planetas que pasan a los costados (pocos son del encargo; desde el nivel 3, algunos de
     /// color parecido), la radio abajo a la derecha y el reloj arriba a la derecha.</item>
     /// </list>
+    /// La nave lleva un ESCUDO de 3 segmentos (<see cref="ShipShield"/>): cada asteroide rompe uno y la nave se ve dañada;
+    /// volar limpio lo repara; sin escudo, reparación de emergencia (lenta unos segundos). El vuelo nunca termina antes.
     /// Telemetría: <see cref="StroopTelemetry"/> con los campos <c>mail_*</c>.
     /// </summary>
     public class MailGameController : GameControllerBase
@@ -112,6 +114,19 @@ namespace NeuroVida.Games.Correo
         private float _nextAsteroidAt, _hitUntil;
         private int _asteroidHits, _asteroidsPassed;
 
+        // escudo de la nave (cuidarla: cada choque rompe un segmento; volar limpio lo repara)
+        private const int SmokePool = 8;
+        private const float PipSize = 78f;
+        private readonly ShipShield _shield = new ShipShield();
+        private RectTransform _shieldRoot;
+        private readonly Image[] _pips = new Image[ShipShield.Max];
+        private Image _damageImage;
+        private readonly List<Image> _smoke = new List<Image>();
+        private readonly List<float> _smokeAge = new List<float>();
+        private int _smokeNext;
+        private float _smokeEmitAt;
+        private bool _wasEmergency;
+
         // planetas y sobres
         private readonly List<PlanetView> _planets = new List<PlanetView>();
         private readonly List<EnvelopeView> _envelopes = new List<EnvelopeView>();
@@ -184,6 +199,11 @@ namespace NeuroVida.Games.Correo
             _hitUntil = 0f;
             _asteroidHits = _asteroidsPassed = 0;
             foreach (var a in _asteroids) RetireAsteroid(a);
+            _shield.Start(0f);
+            _wasEmergency = false;
+            RefreshShield();
+            _shieldRoot.gameObject.SetActive(false);
+            foreach (var sm in _smoke) sm.gameObject.SetActive(false);
             _eventHits = _eventTotal = _commissions = _lureCommissions = _deliveryStreak = 0;
             _radioHits = _radioOfftime = 0;
             _clockChecks.Clear();
@@ -237,6 +257,9 @@ namespace NeuroVida.Games.Correo
             _hud.SetInfo("Entregas 0");
             _pill.Rect.gameObject.SetActive(true);
             _pill.Set("En la ruta", GoodColor);
+            _shield.Start(_flightStart);
+            RefreshShield();
+            _shieldRoot.gameObject.SetActive(true);
             GameFeel.LevelUp();
 
             while (_phase == Phase.Flight && GameClock.Time - _flightStart < MailContract.FlightSeconds) yield return null;
@@ -271,6 +294,7 @@ namespace NeuroVida.Games.Correo
             UpdateFlight(dt);
             UpdateEnvelopes();
             UpdateAsteroids(now);
+            UpdateShield(now);
             UpdatePlanets(now);
             UpdateStage();
             UpdateRadio(now);
@@ -386,8 +410,10 @@ namespace NeuroVida.Games.Correo
         private void UpdateFlight(float dt)
         {
             int fl = _driveDda.PresentedLevel;
-            float targetSpeed = PilotContract.ScrollSpeed(fl, Precision) * MailContract.SpeedRamp(Progress);
-            _speed = Mathf.MoveTowards(_speed, targetSpeed, 120f * dt);
+            bool emergency = _shield.InEmergency(GameClock.Time);
+            float targetSpeed = PilotContract.ScrollSpeed(fl, Precision) * MailContract.SpeedRamp(Progress) * _shield.SpeedFactor(GameClock.Time);
+            // Al quedar sin escudo frena de golpe; al salir de la reparación acelera de a poco.
+            _speed = Mathf.MoveTowards(_speed, targetSpeed, (emergency ? 900f : 120f) * dt);
             _traveled += _speed * dt;
             FillPath();
 
@@ -405,7 +431,13 @@ namespace NeuroVida.Games.Correo
             // Dificultad del pilotaje: cada 1,5 s, "bien" = 85% del tiempo en la ruta y sin chocar un asteroide.
             _windowT += dt;
             if (inLane) _windowIn += dt;
-            if (_windowT >= PilotContract.DriveWindowSeconds)
+            if (emergency)
+            {
+                // Mientras se repara, la dificultad del pilotaje no cuenta (la nave va lenta y sin escudo).
+                _windowT = _windowIn = 0f;
+                _windowHit = false;
+            }
+            else if (_windowT >= PilotContract.DriveWindowSeconds)
             {
                 bool pass = _windowIn / _windowT >= PilotContract.DriveWindowPass && !_windowHit;
                 _driveDda.Register(pass);
@@ -418,7 +450,7 @@ namespace NeuroVida.Games.Correo
                 PlayTone(196f, 0.16f, 0.12f);
                 _pill.Set("¡Vuelve a la ruta!", BadColor);
             }
-            else if (!_inLane && inLane) _pill.Set("En la ruta", GoodColor);
+            else if (!_inLane && inLane && !emergency) _pill.Set("En la ruta", GoodColor);
             _inLane = inLane;
 
             _shipRect.anchoredPosition = new Vector2((_shipX - 0.5f) * _playW, _shipY);
@@ -539,7 +571,7 @@ namespace NeuroVida.Games.Correo
                 e.Rect.anchoredPosition = new Vector2(e.X, y);
                 e.Rect.localRotation = Quaternion.Euler(0f, 0f, 8f * Mathf.Sin(GameClock.Time * 3f + e.D * 0.01f));
                 Vector2 ship = _shipRect.anchoredPosition;
-                if (Mathf.Abs(y - ship.y) < 70f && Mathf.Abs(e.X - ship.x) < 80f)
+                if (Mathf.Abs(y - ship.y) < 70f && Mathf.Abs(e.X - ship.x) < 80f && !_shield.InEmergency(GameClock.Time))
                 {
                     _envelopesGot++;
                     _envelopesTotal++;
@@ -788,7 +820,9 @@ namespace NeuroVida.Games.Correo
             float target = !_inLane ? 0.55f : 0f;
             float a = Mathf.MoveTowards(_vignetteL.color.a, target, dt * 3f);
             _vignetteL.color = _vignetteR.color = NeuroStyle.WithAlpha(BadColor, a);
-            _shipGlow.color = NeuroStyle.WithAlpha(LaneColor, 0.30f + 0.08f * Mathf.Sin(now * 5f));
+            _shipGlow.color = _shield.InEmergency(now)
+                ? NeuroStyle.WithAlpha(AmberColor, 0.35f + 0.2f * Mathf.Sin(now * 12f))
+                : NeuroStyle.WithAlpha(LaneColor, 0.30f + 0.08f * Mathf.Sin(now * 5f));
             if (now >= _trailEmitAt)
             {
                 _trailEmitAt = now + 0.045f;
@@ -852,9 +886,17 @@ namespace NeuroVida.Games.Correo
                 float y = YOf(a.D);
                 a.Rect.anchoredPosition = new Vector2(a.X, y);
                 a.Rect.localRotation = Quaternion.Euler(0f, 0f, a.Rect.localEulerAngles.z + a.Spin * dt);
-                if (!a.Hit && Mathf.Abs(y - ship.y) < AsteroidSize * 0.5f && Mathf.Abs(a.X - ship.x) < AsteroidSize * 0.55f)
+                bool touching = Mathf.Abs(y - ship.y) < AsteroidSize * 0.5f && Mathf.Abs(a.X - ship.x) < AsteroidSize * 0.55f;
+                if (!a.Hit && touching && _shield.InEmergency(now))
+                {
+                    // En la reparación de emergencia los asteroides la atraviesan: no cuentan ni como choque ni como esquivado.
+                    a.Hit = true;
+                    a.Img.color = new Color(1f, 1f, 1f, 0.45f);
+                }
+                else if (!a.Hit && touching)
                 {
                     a.Hit = true;
+                    BreakShield(now);
                     _asteroidHits++;
                     _windowHit = true;
                     _envelopeStreak = 0;
@@ -894,6 +936,94 @@ namespace NeuroVida.Games.Correo
         {
             a.Live = false;
             if (a.Rect != null) a.Rect.gameObject.SetActive(false);
+        }
+
+        // ------------------------------------------------------------------ escudo de la nave
+
+        /// <summary>Un choque: se rompe un segmento (y si era el último, reparación de emergencia).</summary>
+        private void BreakShield(float now)
+        {
+            bool empty = _shield.Hit(now);
+            RefreshShield();
+            var pip = _pips[Mathf.Clamp(_shield.Segments, 0, ShipShield.Max - 1)];
+            Sfx(MailSounds.ShieldCrack(), 0.4f);
+            StartCoroutine(PopRect(pip.rectTransform, 1.35f, 0.25f));
+            StartCoroutine(UiFx.SparkBurst(_shieldRoot, pip.rectTransform.anchoredPosition, NeuroStyle.Sky, 8, 70f, 14f));
+            if (!empty) return;
+            _toast.Show("¡Reparación de emergencia!", "Sin escudo: la nave va lenta unos segundos", AmberColor, 1.8f);
+            _pill.Set("Reparando la nave…", AmberColor);
+            Sfx(MailSounds.Emergency(), 0.5f);
+            GameFeel.Haptic(GameFeel.HapticKind.Firm);
+            StartCoroutine(UiFx.RingBurst(_fxRect, _shipRect.anchoredPosition, AmberColor, 140f, 520f, 0.5f));
+        }
+
+        private void UpdateShield(float now)
+        {
+            bool fromEmergency = _wasEmergency;
+            if (_shield.Advance(now)) OnShieldRepaired(fromEmergency);
+            bool emergency = _shield.InEmergency(now);
+            _wasEmergency = emergency;
+            if (emergency)
+            {
+                // Parpadea mientras se repara.
+                float k = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(now * 9f));
+                _shipImage.color = NeuroStyle.WithAlpha(_shipImage.color, k);
+                _damageImage.color = new Color(1f, 1f, 1f, k);
+            }
+            else _damageImage.color = Color.white;
+
+            // Humo: con un segmento o sin escudo, la nave va echando humo (más cuanto peor está).
+            if (_shield.Segments <= 1 && now >= _smokeEmitAt)
+            {
+                _smokeEmitAt = now + (_shield.Segments == 0 ? 0.08f : 0.16f);
+                var img = _smoke[_smokeNext];
+                _smokeAge[_smokeNext] = 0f;
+                img.gameObject.SetActive(true);
+                float jitter = ((float)_rng.NextDouble() * 2f - 1f) * ShipSize * 0.15f;
+                img.rectTransform.anchoredPosition = _shipRect.anchoredPosition + new Vector2(jitter, -ShipSize * 0.1f);
+                _smokeNext = (_smokeNext + 1) % _smoke.Count;
+            }
+            float dt = GameClock.DeltaTime;
+            for (int i = 0; i < _smoke.Count; i++)
+            {
+                if (!_smoke[i].gameObject.activeSelf) continue;
+                _smokeAge[i] += dt;
+                float k = _smokeAge[i] / 0.9f;
+                if (k >= 1f)
+                {
+                    _smoke[i].gameObject.SetActive(false);
+                    continue;
+                }
+                var r = _smoke[i].rectTransform;
+                r.anchoredPosition += new Vector2(0f, -_speed * 0.55f * dt);
+                float size = Mathf.Lerp(40f, 120f, k);
+                r.sizeDelta = new Vector2(size, size);
+                _smoke[i].color = new Color(0.62f, 0.6f, 0.74f, 0.45f * (1f - k));
+            }
+        }
+
+        private void OnShieldRepaired(bool afterEmergency)
+        {
+            RefreshShield();
+            var pip = _pips[Mathf.Clamp(_shield.Segments - 1, 0, ShipShield.Max - 1)];
+            Sfx(MailSounds.Repair(), 0.4f);
+            StartCoroutine(PopRect(pip.rectTransform, 1.3f, 0.3f));
+            StartCoroutine(UiFx.SparkBurst(_shieldRoot, pip.rectTransform.anchoredPosition, GoodColor, 8, 80f, 14f));
+            if (afterEmergency)
+            {
+                StartCoroutine(FloatText(_shipRect.anchoredPosition + new Vector2(0f, 40f), "¡Nave reparada!", GoodColor));
+                if (_inLane) _pill.Set("En la ruta", GoodColor);
+            }
+            else StartCoroutine(FloatText(_shieldRoot.anchoredPosition + new Vector2(0f, -150f), "Escudo reparado", GoodColor));
+        }
+
+        /// <summary>Segmentos llenos o rotos y el daño visible de la nave (grietas según lo que falta).</summary>
+        private void RefreshShield()
+        {
+            for (int i = 0; i < _pips.Length; i++) _pips[i].sprite = MailSprites.ShieldPip(i < _shield.Segments);
+            int lost = ShipShield.Max - _shield.Segments;
+            _damageImage.gameObject.SetActive(lost > 0);
+            if (lost > 0) _damageImage.sprite = MailSprites.ShipDamage(Mathf.Min(lost, 2));
         }
 
         private IEnumerator FadeControlLabel()
@@ -1091,6 +1221,11 @@ namespace NeuroVida.Games.Correo
             var clock = MailContract.Monitoring(_clockChecks, _radioTargets.GetRange(0, Mathf.Min(radioTotal, _radioTargets.Count)), _period);
             int score = MailContract.Score(_eventHits, _eventTotal, _commissions, _radioHits, radioTotal, lane, _dda.PeakLevel);
             int asteroids = _asteroidHits + _asteroidsPassed;
+            float flown = Mathf.Min(MailContract.FlightSeconds, GameClock.Time - _flightStart);
+            _shield.Advance(_flightStart + flown);
+            int intactPct = Mathf.RoundToInt(_shield.IntactShare(flown) * 100f);
+            foreach (var sm in _smoke) sm.gameObject.SetActive(false);
+            _shieldRoot.gameObject.SetActive(false);
 
             _pill.Set("Ruta completa", GoodColor);
             _bigText.text = "¡RUTA COMPLETA!";
@@ -1103,7 +1238,7 @@ namespace NeuroVida.Games.Correo
             _exit.Show();
             _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Correo impecable!" : score >= 65 ? "¡Buen reparto!" : "Ruta completa";
             _resultRoot.Find("Detail").GetComponent<Text>().text = $"Planetas: {_eventHits} de {_eventTotal}" + (radioTotal > 0 ? $" · Radio: {_radioHits} de {radioTotal}" : "");
-            _resultRoot.Find("Extra").GetComponent<Text>().text = $"{Mathf.RoundToInt(lane * 100f)}% en la ruta · esquivaste {_asteroidsPassed} de {asteroids} asteroides";
+            _resultRoot.Find("Extra").GetComponent<Text>().text = $"Esquivaste {_asteroidsPassed} de {asteroids} asteroides · nave intacta {intactPct}%";
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
 
@@ -1135,7 +1270,9 @@ namespace NeuroVida.Games.Correo
                     mail_envelopes = _envelopesGot,
                     mail_envelopes_total = _envelopesTotal,
                     mail_asteroid_hits = _asteroidHits,
-                    mail_asteroids = asteroids
+                    mail_asteroids = asteroids,
+                    mail_hull_intact_pct = intactPct,
+                    mail_emergencies = _shield.Emergencies
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
@@ -1260,6 +1397,13 @@ namespace NeuroVida.Games.Correo
                 _trailAge.Add(1f);
             }
 
+            var smokeRoot = Layer(_play, "Smoke");
+            for (int i = 0; i < SmokePool; i++)
+            {
+                _smoke.Add(NewImage(smokeRoot, "Smoke", RadialGlowSprite.Get()));
+                _smokeAge.Add(1f);
+            }
+
             var shipGo = new GameObject("Ship");
             shipGo.transform.SetParent(_play, false);
             _shipRect = shipGo.AddComponent<RectTransform>();
@@ -1279,6 +1423,29 @@ namespace NeuroVida.Games.Correo
             _shipImage = bodyGo.AddComponent<Image>();
             _shipImage.sprite = ChipShipSprite.Get(ChipDirection.Up);
             _shipImage.raycastTarget = false;
+            // Grietas encima de la nave (mismo encuadre que su sprite).
+            _damageImage = NewImage(shipGo.transform, "Damage", null);
+            Stretch(_damageImage.rectTransform);
+
+            // Escudo: 3 segmentos arriba a la izquierda, con su rótulo.
+            var shieldGo = new GameObject("Shield");
+            shieldGo.transform.SetParent(_play, false);
+            _shieldRoot = shieldGo.AddComponent<RectTransform>();
+            _shieldRoot.anchorMin = _shieldRoot.anchorMax = new Vector2(0.5f, 0.5f);
+            _shieldRoot.sizeDelta = new Vector2(PipSize * 3.4f, PipSize * 1.6f);
+            for (int i = 0; i < _pips.Length; i++)
+            {
+                _pips[i] = NewImage(_shieldRoot, "Pip", MailSprites.ShieldPip(true));
+                _pips[i].rectTransform.sizeDelta = new Vector2(PipSize, PipSize);
+                _pips[i].rectTransform.anchoredPosition = new Vector2((i - 1) * (PipSize + 8f), 12f);
+                _pips[i].gameObject.SetActive(true);
+            }
+            var shieldLabel = MakeText(_shieldRoot, "Label", 30, TextAnchor.MiddleCenter, NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.75f), 0f, 0f);
+            shieldLabel.rectTransform.anchorMin = shieldLabel.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            shieldLabel.rectTransform.sizeDelta = new Vector2(PipSize * 3.4f, 40f);
+            shieldLabel.rectTransform.anchoredPosition = new Vector2(0f, -PipSize * 0.5f - 12f);
+            shieldLabel.text = "escudo";
+            _shieldRoot.gameObject.SetActive(false);
 
             // Radio (abajo a la derecha, sobre la franja de control) y reloj tapado (arriba a la derecha).
             var radioGo = new GameObject("Radio");
@@ -1413,6 +1580,7 @@ namespace NeuroVida.Games.Correo
             _controlTop = -_playH * 0.5f + 18f + controlH;
             _shipY = _controlTop + ShipSize * 0.75f;
             _radioRect.anchoredPosition = new Vector2(_playW * 0.5f - MarginU - RadioSize * 0.5f, _controlTop + RadioSize * 0.62f);
+            _shieldRoot.anchoredPosition = new Vector2(-_playW * 0.5f + MarginU * 0.5f + PipSize * 1.7f, _playH * 0.5f - PipSize * 0.8f);
 
             float vh = _playH * 0.9f;
             _vignetteL.rectTransform.sizeDelta = _vignetteR.rectTransform.sizeDelta = new Vector2(520f, vh);

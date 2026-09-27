@@ -14,13 +14,26 @@ namespace NeuroVida.Games.Correo
     {
         private const float Aa = 0.02f, Line = 0.06f;
         private static readonly Color Kraft = Hex(0xD9A066);
-        private static Sprite _envelope, _package, _radio, _clockFace, _clockCover;
+        private static Sprite _envelope, _package, _radio, _clockFace, _clockCover, _shieldFull, _shieldEmpty;
+        private static readonly Sprite[] _damage = new Sprite[3];
 
         public static Sprite Envelope() => _envelope != null ? _envelope : _envelope = ToSprite(RenderEnvelope(160), 160, 160);
         public static Sprite Package() => _package != null ? _package : _package = ToSprite(RenderPackage(160), 160, 160);
         public static Sprite Radio() => _radio != null ? _radio : _radio = ToSprite(RenderRadio(224), 224, 224);
         public static Sprite ClockFace() => _clockFace != null ? _clockFace : _clockFace = ToSprite(RenderClock(192, false), 192, 192);
         public static Sprite ClockCover() => _clockCover != null ? _clockCover : _clockCover = ToSprite(RenderClock(192, true), 192, 192);
+        /// <summary>Un segmento del escudo: entero (celeste, con brillo) o roto (hueco oscuro con una grieta): se distinguen
+        /// por la forma, no solo por el color.</summary>
+        public static Sprite ShieldPip(bool full) => full
+            ? (_shieldFull != null ? _shieldFull : _shieldFull = ToSprite(RenderShieldPip(112, true), 112, 112))
+            : (_shieldEmpty != null ? _shieldEmpty : _shieldEmpty = ToSprite(RenderShieldPip(112, false), 112, 112));
+        /// <summary>Daño que se pone ENCIMA de la nave de Piloto (<c>ChipShipSprite</c>, mismo tamaño y encuadre):
+        /// 1 = una grieta, 2 = dos grietas y una quemadura.</summary>
+        public static Sprite ShipDamage(int damage)
+        {
+            int d = Mathf.Clamp(damage, 1, 2);
+            return _damage[d] != null ? _damage[d] : _damage[d] = ToSprite(RenderShipDamage(192, d), 192, 192);
+        }
 
         // ------------------------------------------------------------------ sobre y paquete
 
@@ -57,6 +70,74 @@ namespace NeuroVida.Games.Correo
                 p.Over(Ink, Cover(bow - 0.04f, Aa));
                 p.Over(Sun, Cover(bow, Aa));
             });
+
+        // ------------------------------------------------------------------ escudo y daño de la nave
+
+        private static readonly float[] ShieldPts = { 0f, 0.78f, 0.62f, 0.56f, 0.58f, -0.08f, 0f, -0.8f, -0.58f, -0.08f, -0.62f, 0.56f };
+
+        private static float ShieldBody(float x, float y) => Polygon(x, y, ShieldPts) - 0.08f;
+
+        public static Color32[] RenderShieldPip(int size, bool full) =>
+            RenderClay(size, 1.12f, Line, full ? 0.08f : 0f, Aa, ShieldBody, (ref Px p, float x, float y) =>
+            {
+                float body = ShieldBody(x, y);
+                if (!full)
+                {
+                    // Hueco apagado (se distingue del cielo) partido por una grieta crema en zigzag.
+                    p.Over(Hex(0x4A5299), Cover(body, Aa));
+                    float crack = Mathf.Min(Mathf.Min(Capsule(x, y, -0.06f, 0.72f, 0.12f, 0.3f, 0.055f), Capsule(x, y, 0.12f, 0.3f, -0.1f, -0.05f, 0.055f)),
+                        Capsule(x, y, -0.1f, -0.05f, 0.06f, -0.45f, 0.055f));
+                    p.Over(Ink, Cover(crack - 0.03f, Aa));
+                    p.Over(WithAlpha(Cream, 0.85f), Cover(crack, Aa));
+                    return;
+                }
+                p.Over(Sky, Cover(body, Aa));
+                p.Over(Shade(Sky, 0.82f), Cover(Mathf.Max(body, -x), Aa));
+                p.Over(new Color(1f, 1f, 1f, 0.55f), Cover(Ellipse(x, y, -0.24f, 0.38f, 0.14f, 0.2f), Aa));
+            });
+
+        // La silueta del casco de la nave de Piloto (ChipShipSprite, mirando arriba), para recortar las grietas.
+        private static float ShipHull(float u, float v) =>
+            Mathf.Max(Mathf.Max(Circle(u, v, -0.62f, -0.06f, 0.92f), Circle(u, v, 0.62f, -0.06f, 0.92f)), -0.58f - v);
+
+        private static float Zigzag(float x, float y, float[] pts, float r)
+        {
+            float d = 99f;
+            for (int i = 0; i + 3 < pts.Length; i += 2) d = Mathf.Min(d, Capsule(x, y, pts[i], pts[i + 1], pts[i + 2], pts[i + 3], r));
+            return d;
+        }
+
+        private static readonly float[] Crack1 = { 0.34f, -0.08f, 0.17f, -0.17f, 0.21f, -0.29f, 0.07f, -0.4f };
+        private static readonly float[] Crack2 = { -0.34f, 0.2f, -0.17f, 0.1f, -0.21f, -0.02f, -0.09f, -0.12f };
+
+        public static Color32[] RenderShipDamage(int size, int damage)
+        {
+            const float zoom = 1.1f;
+            var pixels = new Color32[size * size];
+            for (int py = 0; py < size; py++)
+            {
+                for (int px = 0; px < size; px++)
+                {
+                    float x = ((px + 0.5f) / size * 2f - 1f) * zoom;
+                    float y = ((py + 0.5f) / size * 2f - 1f) * zoom;
+                    float inside = Cover(ShipHull(x, y) + 0.06f, Aa);
+                    var p = new Px();
+                    if (inside > 0f)
+                    {
+                        if (damage >= 2) p.Over(new Color(Ink.r, Ink.g, Ink.b, 0.35f), inside * Cover(Ellipse(x, y, 0.12f, -0.3f, 0.17f, 0.13f), 0.12f));
+                        p.Over(new Color(1f, 1f, 1f, 0.7f), inside * Cover(Zigzag(x - 0.022f, y + 0.022f, Crack1, 0.04f), Aa));
+                        p.Over(Ink, inside * Cover(Zigzag(x, y, Crack1, 0.036f), Aa));
+                        if (damage >= 2)
+                        {
+                            p.Over(new Color(1f, 1f, 1f, 0.7f), inside * Cover(Zigzag(x - 0.022f, y + 0.022f, Crack2, 0.04f), Aa));
+                            p.Over(Ink, inside * Cover(Zigzag(x, y, Crack2, 0.036f), Aa));
+                        }
+                    }
+                    pixels[py * size + px] = p.ToColor32();
+                }
+            }
+            return pixels;
+        }
 
         // ------------------------------------------------------------------ radio
 

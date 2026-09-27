@@ -5,7 +5,8 @@ marcas); el sobre, la radio y el reloj tapado se dibujan acá.
 Tres momentos: la hoja de ruta (los encargos), el vuelo con un planeta coral que pasa (¡tócalo!) y la entrega con el
 reloj destapado.
 
-Uso: python3 tools/art-preview/correo.py <raw> [--out docs/previews]  ->  correo-estelar.png
+Uso: python3 tools/art-preview/correo.py <raw> [--out docs/previews]  ->  correo-estelar.png y correo-escudo.png
+(el escudo de la nave con el arte REAL de MailSprites: entera, dañada, con humo y en reparación de emergencia).
 """
 import argparse
 import os
@@ -170,6 +171,46 @@ def frame_deliver(raw):
     return im
 
 
+def shield_frame(raw, segments, emergency=False):
+    """Vuelo con el escudo (3 segmentos arriba a la izquierda) y la nave con el daño que corresponde."""
+    im = night(40 + segments)
+    glow(im, W / 2, 0, 260, SKY, 50)
+    hud(im, 3, 'Entregas 2')
+    clock(im, W - 60, 60)
+    c = lane(im, 3900 + 300 * segments, 703, 0.14, 0.24, False)
+    # Escudo: segmentos del arte real.
+    for i in range(3):
+        pip = load(f'{raw}/mail_shield_{"full" if i < segments else "empty"}.raw')
+        put(im, pip, 40 + i * 43, 128, 39)
+    d = ImageDraw.Draw(im)
+    d.text((83, 158), 'escudo', font=font(15), fill=CREAM + (190,), anchor='mm')
+    x, y = c * W + 4, 703
+    lost = 3 - segments
+    if lost >= 2:
+        for k in range(6):
+            r = 10 + k * 5
+            glow(im, x + (k % 2) * 6 - 3, y + 20 + k * 22, r, (158, 153, 189), 110 - k * 16)
+    if emergency:
+        glow(im, x, y, 110, SUN, 90)
+    ship(im, raw, x, y, -4)
+    if lost > 0:
+        dmg = load(f'{raw}/mail_damage{min(lost, 2)}.raw').resize((88, 88), Image.LANCZOS).rotate(-4, resample=Image.BICUBIC, expand=True)
+        im.alpha_composite(dmg, (int(x - dmg.width / 2), int(y - dmg.height / 2)))
+    radio(im, W - 62, 700)
+    d = ImageDraw.Draw(im)
+    if emergency:
+        clay_text(d, (W / 2, 330), '¡Reparación de emergencia!', 30, SUN)
+        d.text((W / 2, 368), 'Sin escudo: la nave va lenta unos segundos', font=font(17), fill=CREAM, anchor='mm')
+        control(im, d, '‹  Desliza aquí para guiar la nave  ›', 'Reparando la nave…', SUN)
+    else:
+        if segments == 2:
+            clay_text(d, (x, 620), '¡Asteroide!', 26, CORAL)
+        if segments == 3:
+            clay_text(d, (83, 210), 'Escudo reparado', 20, LIME)
+        control(im, d, '‹  Desliza aquí para guiar la nave  ›', 'En la ruta', LIME)
+    return im
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('raw')
@@ -182,6 +223,11 @@ def main():
         sheet.alpha_composite(p, (gap + i * (W + gap), gap))
     os.makedirs(a.out, exist_ok=True)
     sheet.convert('RGB').save(os.path.join(a.out, 'correo-estelar.png'))
+    panels = [shield_frame(a.raw, 3), shield_frame(a.raw, 2), shield_frame(a.raw, 1), shield_frame(a.raw, 0, True)]
+    sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
+    for i, p in enumerate(panels):
+        sheet.alpha_composite(p, (gap + i * (W + gap), gap))
+    sheet.convert('RGB').save(os.path.join(a.out, 'correo-escudo.png'))
     print('OK')
 
 

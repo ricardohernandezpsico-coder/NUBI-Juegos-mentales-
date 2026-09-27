@@ -732,6 +732,9 @@ fun GameResultScreen(
           modifier = Modifier.padding(top = 4.dp)
         )
       }
+      com.example.data.Mail.shipMessage(result.mailHullIntactPct ?: -1, result.mailEmergencies ?: 0)?.let {
+        Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+      }
     }
 
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
