@@ -93,6 +93,7 @@ object NativeReceiver {
     val sector_trials: List<Int>? = null,
     // Solo Satélites: seguimiento (satélites a la vez) y velocidad superada (-1 = no aplica).
     val tracking_capacity: Double = -1.0,
+    val tracking_targets: Double = -1.0,
     val tracking_speed: Double = -1.0,
     // Solo Freno de Emergencia: tiempo de frenado (ms, -1 = sin estimación), altos frenados / totales, récord.
     val brake_ms: Int = -1,
@@ -106,7 +107,46 @@ object NativeReceiver {
     val numline_bullseyes: Int = 0,
     // Solo Acoplamiento: giro mental (°/s, -1 = sin medida) y curva de giro (5 columnas, -1 = sin datos).
     val rotation_speed_dps: Int = -1,
-    val rotation_curve_ms: List<Int>? = null
+    val rotation_curve_ms: List<Int>? = null,
+    // Solo Tráfico Estelar: anticipación (ms, -1 = sin medida), % proactivo (-1) y más cápsulas a la vez.
+    val traffic_lead_ms: Int = -1,
+    val traffic_proactive_pct: Int = -1,
+    val traffic_peak_pods: Int = 0,
+    val mem_phase: String = "",
+    val mem_seed: Int = -1,
+    val mem_level: Int = -1,
+    val mem_items: Int = -1,
+    val mem_learned: Int = -1,
+    val mem_learned_mask: Int = -1,
+    val mem_recalled: Int = -1,
+    val mem_recalled_mask: Int = -1,
+    val mem_intrusions: Int = -1,
+    val mem_order_ok: Int = -1,
+    val mem_delay_s: Int = -1,
+    // Solo Rumbo a Casa: a qué distancia de casa quedó (% de la distancia que había, -1 = no aplica), dónde quedó cada
+    // vuelta (a lo largo y a lo ancho de la vuelta justa, en fracciones de esa distancia), faro (1/0) y perfectas.
+    val homing_error_pct: Double = -1.0,
+    val homing_along: List<Double>? = null,
+    val homing_lateral: List<Double>? = null,
+    val homing_beacon: List<Int>? = null,
+    val homing_perfect: Int = 0,
+    // Solo Correo Estelar (ver StroopTelemetry.cs): encargos por lugar y por hora, errores, reloj, ruta y sobres. -1 = no aplica.
+    val mail_event_hits: Int = -1,
+    val mail_event_total: Int = -1,
+    val mail_commissions: Int = -1,
+    val mail_lure_commissions: Int = -1,
+    val mail_radio_hits: Int = -1,
+    val mail_radio_total: Int = -1,
+    val mail_radio_offtime: Int = -1,
+    val mail_radio_period_s: Int = -1,
+    val mail_clock_checks: Int = -1,
+    val mail_clock_late: Int = -1,
+    val mail_lane_pct: Int = -1,
+    val mail_envelopes: Int = -1,
+    val mail_asteroid_hits: Int = -1,
+    val mail_asteroids: Int = -1,
+    val mail_hull_intact_pct: Int = -1,
+    val mail_emergencies: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -234,7 +274,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -295,6 +335,19 @@ object NativeReceiver {
 
     val metrics = telemetry.session_metrics
     Log.i(TAG, "DDA ${telemetry.game_id}: end_rating=${metrics.end_rating} peak_level=${metrics.peak_level}")
+    // Rumbo a Casa: una terna por viaje (dónde quedó a lo largo y a lo ancho de la vuelta justa, y si había faro);
+    // solo si las tres listas vienen completas y del mismo largo.
+    // Correo Estelar: sus campos solo valen si el juego es Correo y trajo encargos por lugar.
+    val mail = telemetry.game_id == "correo" && metrics.mail_event_total >= 0
+    val homing = run {
+      val along = metrics.homing_along
+      val lateral = metrics.homing_lateral
+      val beacon = metrics.homing_beacon
+      if (telemetry.game_id != "rumbo" || along.isNullOrEmpty() || lateral == null || beacon == null ||
+        lateral.size != along.size || beacon.size != along.size
+      ) null
+      else along.indices.map { i -> Triple(along[i].toFloat(), lateral[i].toFloat(), beacon[i] == 1) }
+    }
     return GamePlayResult(
       gameId = telemetry.game_id,
       score = metrics.calculated_score.coerceIn(0, 100),
@@ -308,6 +361,7 @@ object NativeReceiver {
       sectorHits = metrics.sector_hits?.takeIf { it.size == 8 },
       sectorTrials = metrics.sector_trials?.takeIf { it.size == 8 },
       trackingCapacity = metrics.tracking_capacity.takeIf { it >= 0.0 }?.toFloat(),
+      trackingTargets = metrics.tracking_targets.takeIf { it > 0.0 }?.toFloat(),
       trackingSpeed = metrics.tracking_speed.takeIf { it > 0.0 }?.toFloat(),
       brakeMs = metrics.brake_ms.takeIf { it > 0 },
       stopsOk = metrics.stops_ok.takeIf { metrics.stops_total > 0 },
@@ -318,7 +372,42 @@ object NativeReceiver {
       numlineGiven = metrics.numline_given?.map { it.toFloat() }?.takeIf { it.isNotEmpty() },
       numlineBullseyes = metrics.numline_bullseyes.takeIf { metrics.numline_error_pct >= 0.0 },
       rotationSpeedDps = metrics.rotation_speed_dps.takeIf { it > 0 },
-      rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } }
+      rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } },
+      trafficLeadMs = metrics.traffic_lead_ms.takeIf { it >= 0 },
+      trafficProactivePct = metrics.traffic_proactive_pct.takeIf { it >= 0 },
+      trafficPeakPods = metrics.traffic_peak_pods.takeIf { it > 0 && telemetry.game_id == "trafico" },
+      memPhase = metrics.mem_phase.takeIf { telemetry.game_id == "bitacora" },
+      memSeed = metrics.mem_seed.takeIf { it >= 0 && telemetry.game_id == "bitacora" },
+      memLevel = metrics.mem_level.takeIf { it > 0 },
+      memItems = metrics.mem_items.takeIf { it > 0 },
+      memLearned = metrics.mem_learned.takeIf { it >= 0 },
+      memLearnedMask = metrics.mem_learned_mask.takeIf { it >= 0 },
+      memRecalled = metrics.mem_recalled.takeIf { it >= 0 },
+      memRecalledMask = metrics.mem_recalled_mask.takeIf { it >= 0 },
+      memIntrusions = metrics.mem_intrusions.takeIf { it >= 0 },
+      memOrderOk = metrics.mem_order_ok.takeIf { it >= 0 },
+      memDelayS = metrics.mem_delay_s.takeIf { it >= 0 },
+      homingErrorPct = metrics.homing_error_pct.takeIf { it >= 0.0 }?.toFloat(),
+      homingAlong = homing?.let { h -> h.map { it.first } },
+      homingLateral = homing?.let { h -> h.map { it.second } },
+      homingBeacon = homing?.let { h -> h.map { it.third } },
+      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 },
+      mailEventHits = metrics.mail_event_hits.takeIf { mail },
+      mailEventTotal = metrics.mail_event_total.takeIf { mail },
+      mailCommissions = metrics.mail_commissions.takeIf { mail },
+      mailLureCommissions = metrics.mail_lure_commissions.takeIf { mail },
+      mailRadioHits = metrics.mail_radio_hits.takeIf { mail },
+      mailRadioTotal = metrics.mail_radio_total.takeIf { mail },
+      mailRadioOfftime = metrics.mail_radio_offtime.takeIf { mail },
+      mailRadioPeriodS = metrics.mail_radio_period_s.takeIf { mail },
+      mailClockChecks = metrics.mail_clock_checks.takeIf { mail },
+      mailClockLate = metrics.mail_clock_late.takeIf { mail },
+      mailLanePct = metrics.mail_lane_pct.takeIf { mail },
+      mailEnvelopes = metrics.mail_envelopes.takeIf { mail },
+      mailAsteroidHits = metrics.mail_asteroid_hits.takeIf { mail && it >= 0 },
+      mailAsteroids = metrics.mail_asteroids.takeIf { mail && it >= 0 },
+      mailHullIntactPct = metrics.mail_hull_intact_pct.takeIf { mail && it >= 0 },
+      mailEmergencies = metrics.mail_emergencies.takeIf { mail && it >= 0 }
     )
   }
 }

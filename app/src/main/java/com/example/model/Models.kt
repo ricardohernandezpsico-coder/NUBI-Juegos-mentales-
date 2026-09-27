@@ -105,6 +105,38 @@ object GameRegistry {
       iconEmoji = "🧩"
     ),
     GameDefinition(
+      id = "trafico",
+      title = "Tráfico Estelar",
+      domain = DomainType.RAZONAMIENTO,
+      subtitle = "Planificación y atención dividida",
+      instruction = "Del portal salen cápsulas de colores. Toca los desvíos para que cada una llegue al planeta de su color y su símbolo. Anticípate: cada vez llegan más.",
+      iconEmoji = "🚦"
+    ),
+    GameDefinition(
+      id = "bitacora",
+      title = "Bitácora de Misión",
+      domain = DomainType.MEMORIA,
+      subtitle = "Memoria de lo vivido: qué, dónde y en qué orden",
+      instruction = "Llega una transmisión: una sonda deja hallazgos en planetas. Guárdalos en la bitácora y, más tarde, informa qué había en cada planeta y en qué orden pasó.",
+      iconEmoji = "📡"
+    ),
+    GameDefinition(
+      id = "rumbo",
+      title = "Rumbo a Casa",
+      domain = DomainType.MEMORIA,
+      subtitle = "Orientación: volver a casa sin mapa",
+      instruction = "Toca las señales para ir de cristal en cristal: el espacio gira a tu alrededor. Al final, apunta hacia tu base y avanza hasta donde creas que está. Recuerda cada giro.",
+      iconEmoji = "🧭"
+    ),
+    GameDefinition(
+      id = "correo",
+      title = "Correo Estelar",
+      domain = DomainType.MEMORIA,
+      subtitle = "Memoria para lo pendiente: acordarte a tiempo",
+      instruction = "Guía la nave y recoge sobres. Antes de salir recibes encargos: tocar los planetas de un color cuando pasen y avisar por radio cada cierto tiempo. Durante el vuelo nadie te los recuerda.",
+      iconEmoji = "✉️"
+    ),
+    GameDefinition(
       id = "anagramas",
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
@@ -194,6 +226,8 @@ data class GamePlayResult(
   // Solo Satélites: cuántos se siguen de verdad a la vez (descontando la suerte) y la velocidad más alta superada
   // completa (múltiplo de la del nivel 1). No se guardan en Room.
   val trackingCapacity: Float? = null,
+  /** Satélites: cuántos había que seguir por ronda, en promedio (techo de trackingCapacity en esa partida). */
+  val trackingTargets: Float? = null,
   val trackingSpeed: Float? = null,
   // Solo Freno de Emergencia: "tu freno" (tiempo de frenado, ms), altos frenados / totales y el alto más tardío
   // que se frenó (ms). No se guardan en Room.
@@ -210,7 +244,57 @@ data class GamePlayResult(
   // Solo Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (ms medios a 0/45/90/135/180°;
   // null = sin datos en esa columna). No se guardan en Room.
   val rotationSpeedDps: Int? = null,
-  val rotationCurveMs: List<Int?>? = null
+  val rotationCurveMs: List<Int?>? = null,
+  // Solo Tráfico Estelar: "tu anticipación" (mediana, ms), % de desvíos preparados con tiempo y más cápsulas a la
+  // vez. No se guardan en Room.
+  val trafficLeadMs: Int? = null,
+  val trafficProactivePct: Int? = null,
+  val trafficPeakPods: Int? = null,
+  // Solo Bitácora de Misión: fase ("" completa, "encode" transmisión, "recall" informe), semilla y nivel de la misión,
+  // paradas, aprendidas en el primer repaso (y cuáles, en bits), recordadas en el informe (y cuáles), hallazgos
+  // elegidos que no estaban, paradas de la ruta en su lugar y segundos de demora. La app completa la retención y la
+  // colección (ver data/MissionLog.kt). No se guardan en Room.
+  val memPhase: String? = null,
+  val memSeed: Int? = null,
+  val memLevel: Int? = null,
+  val memItems: Int? = null,
+  val memLearned: Int? = null,
+  val memLearnedMask: Int? = null,
+  val memRecalled: Int? = null,
+  val memRecalledMask: Int? = null,
+  val memIntrusions: Int? = null,
+  val memOrderOk: Int? = null,
+  val memDelayS: Int? = null,
+  val memRetentionPct: Int? = null,
+  val memArchivedTotal: Int? = null,
+  // Solo Rumbo a Casa: "tu brújula interna" (a qué distancia de casa quedaste, en % de la distancia que había), dónde
+  // quedó cada vuelta en el marco de la vuelta justa (en fracciones de esa distancia: la base en along = 1,
+  // lateral = 0; lateral + = a la derecha), si el viaje tenía faro y llegadas perfectas. La lectura está en
+  // data/Homing.kt. No se guardan en Room.
+  val homingErrorPct: Float? = null,
+  val homingAlong: List<Float>? = null,
+  val homingLateral: List<Float>? = null,
+  val homingBeacon: List<Boolean>? = null,
+  val homingPerfect: Int? = null,
+  // Solo Correo Estelar: encargos por lugar (planetas entregados de los que pasaron), planetas tocados por error (y de
+  // color parecido), encargos por hora (avisos por radio a tiempo, a destiempo, período), cómo se usó el reloj (miradas y
+  // cuántas justo antes de la hora), % en la ruta y sobres. La lectura está en data/Mail.kt. No se guardan en Room.
+  val mailEventHits: Int? = null,
+  val mailEventTotal: Int? = null,
+  val mailCommissions: Int? = null,
+  val mailLureCommissions: Int? = null,
+  val mailRadioHits: Int? = null,
+  val mailRadioTotal: Int? = null,
+  val mailRadioOfftime: Int? = null,
+  val mailRadioPeriodS: Int? = null,
+  val mailClockChecks: Int? = null,
+  val mailClockLate: Int? = null,
+  val mailLanePct: Int? = null,
+  val mailEnvelopes: Int? = null,
+  val mailAsteroidHits: Int? = null,
+  val mailAsteroids: Int? = null,
+  val mailHullIntactPct: Int? = null,
+  val mailEmergencies: Int? = null
 )
 
 data class DailySessionState(

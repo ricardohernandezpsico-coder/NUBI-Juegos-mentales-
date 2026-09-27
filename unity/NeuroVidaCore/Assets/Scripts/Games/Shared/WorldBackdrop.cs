@@ -160,6 +160,33 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.10f), NebulaBPos = new Vector2(0.5f, 0.25f),
         };
 
+        /// <summary>Tráfico Estelar: centro de tráfico; cielo quieto con nebulosa uva arriba (de donde sale el portal).</summary>
+        public static GameWorld TrafficHub => new GameWorld
+        {
+            Name = "Centro de tráfico", Stars = 50,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaAPos = new Vector2(0.5f, 0.95f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.5f, 0.1f),
+        };
+
+        /// <summary>Bitácora de Misión: cielo de exploración con constelaciones tenues y alguna estrella fugaz (destellos
+        /// lentos, lejos del mapa: decoran sin distraer).</summary>
+        public static GameWorld Logbook => new GameWorld
+        {
+            Name = "Bitácora", Stars = 60, Constellations = 2, MeteorEverySeconds = 9f,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaAPos = new Vector2(0.2f, 0.85f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.16f), NebulaBPos = new Vector2(0.85f, 0.2f),
+        };
+
+        /// <summary>Rumbo a Casa: espacio profundo SIN estrellas de fondo (unas estrellas lejanas fijas servirían de
+        /// brújula y regalarían el rumbo: la única referencia lejana es el faro, y solo en la mitad de los viajes). El juego
+        /// dibuja su propio polvo de estrellas, que se mueve con la nave. Nebulosas muy tenues.</summary>
+        public static GameWorld DeepSpace => new GameWorld
+        {
+            Name = "Espacio profundo", Stars = 0,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.10f), NebulaAPos = new Vector2(0.5f, 0.75f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.14f), NebulaBPos = new Vector2(0.5f, 0.2f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

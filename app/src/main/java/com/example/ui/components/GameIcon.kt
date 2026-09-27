@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -234,6 +234,76 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawPath(hole, Ink.copy(alpha = 0.85f))
       drawPath(hole, Cream, style = Stroke(3f, join = StrokeJoin.Round))
       curvedArrow(Offset(30f, 33f), 30f, 190f, 95f, Clay.Sun)
+    }
+    "bitacora" -> {
+      // Bitácora abierta y, encima, un hallazgo que llega con destello (la estela de la sonda desde la derecha).
+      clay(poly(16f, 42f, 50f, 50f, 50f, 86f, 16f, 78f), Cream)
+      clay(poly(50f, 50f, 84f, 42f, 84f, 78f, 50f, 86f), Cream, gloss = true)
+      for (k in 0 until 3) {
+        drawLine(Ink.copy(alpha = 0.3f), Offset(23f, 54f + 8f * k), Offset(44f, 58f + 8f * k), 2.5f, StrokeCap.Round)
+        drawLine(Ink.copy(alpha = 0.3f), Offset(56f, 58f + 8f * k), Offset(77f, 54f + 8f * k), 2.5f, StrokeCap.Round)
+      }
+      drawCircle(Clay.Sky.copy(alpha = 0.55f), 3f, Offset(88f, 14f))
+      drawCircle(Clay.Sky.copy(alpha = 0.75f), 3.5f, Offset(78f, 18f))
+      drawCircle(Clay.Sky, 4f, Offset(67f, 22f))
+      clay(star(Offset(48f, 25f), 15f, 7f, 5, round = true), Clay.Sun, border = 4f)
+      sparkle(Offset(26f, 20f), 8f, Color.White)
+    }
+    "rumbo" -> {
+      // Tu base (casa), la ruta de ida en puntos lima hasta un cristal, y la flecha sol que vuelve a casa.
+      val trail = listOf(Offset(29f, 50f), Offset(30f, 40f), Offset(31f, 30f), Offset(40f, 27f), Offset(50f, 26f), Offset(60f, 25f))
+      trail.forEach { o ->
+        drawCircle(Ink, 4.2f, o)
+        drawCircle(Clay.Lime, 2.6f, o)
+      }
+      val back = Path().apply {
+        moveTo(74f, 38f)
+        quadraticBezierTo(72f, 66f, 49f, 71f)
+        // Punta de la flecha (dirección de llegada: hacia la izquierda y un poco abajo).
+        moveTo(57.8f, 78.2f)
+        lineTo(47f, 71.4f)
+        lineTo(53.8f, 60.6f)
+      }
+      clayStroke(back, Clay.Sun, 6f)
+      clay(circle(Offset(27f, 72f), 17f), Cream, gloss = true)
+      clay(circle(Offset(27f, 72f), 7f), Clay.Coral, border = 3.5f, shadow = false)
+      clay(diamond(Offset(76f, 22f), 9f, 13f), Clay.Sky, gloss = true)
+      sparkle(Offset(90f, 40f), 7f, Color.White)
+    }
+    "correo" -> {
+      // Un sobre que vuela (estela de puntos sol) hacia un planeta coral con anillo.
+      listOf(Offset(14f, 80f), Offset(22f, 72f), Offset(30f, 64f)).forEachIndexed { i, o ->
+        drawCircle(Ink, 3.8f + i * 0.4f, o)
+        drawCircle(Clay.Sun, 2.3f + i * 0.4f, o)
+      }
+      clay(circle(Offset(72f, 26f), 15f), Clay.Coral, gloss = true)
+      drawPath(Path().apply { addOval(Rect(50f, 21f, 94f, 31f)) }, Ink, style = Stroke(4f))
+      drawPath(Path().apply { addArc(Rect(50f, 21f, 94f, 31f), 0f, 180f) }, Clay.Sun, style = Stroke(2.2f))
+      rotate(-14f, Offset(50f, 60f)) {
+        clay(roundRect(28f, 44f, 44f, 30f, 6f), Cream, gloss = true)
+        drawPath(Path().apply { moveTo(31f, 47f); lineTo(50f, 62f); lineTo(69f, 47f) }, Ink, style = Stroke(3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        clay(circle(Offset(50f, 60f), 5f), Clay.Coral, border = 2.5f, shadow = false)
+      }
+    }
+    "trafico" -> {
+      // Estación de carga arriba; la ruta baja en curva hasta un desvío (disco con flecha) y se abre hacia dos planetas.
+      val trunk = Path().apply { moveTo(50f, 34f); cubicTo(50f, 44f, 26f, 40f, 30f, 50f); cubicTo(33f, 57f, 50f, 52f, 50f, 60f) }
+      val left = Path().apply { moveTo(50f, 60f); cubicTo(42f, 68f, 20f, 66f, 18f, 82f) }
+      val right = Path().apply { moveTo(50f, 60f); cubicTo(58f, 68f, 80f, 66f, 82f, 82f) }
+      for (route in listOf(trunk, left, right)) drawPath(route, Ink, style = Stroke(10f, cap = StrokeCap.Round))
+      drawPath(trunk, Clay.Sky, style = Stroke(5f, cap = StrokeCap.Round))
+      drawPath(left, Color(0xFF4B4F9A), style = Stroke(5f, cap = StrokeCap.Round))
+      drawPath(right, Clay.Sky, style = Stroke(5f, cap = StrokeCap.Round))
+      clay(Path().apply { addArc(Rect(30f, 6f, 70f, 46f), 180f, 180f); close() }, Cream, gloss = true)
+      clay(roundRect(20f, 24f, 60f, 12f, 6f), Color(0xFF2A3590))
+      clay(roundRect(43f, 25f, 14f, 15f, 5f), Clay.Sun, border = 3f, shadow = false)
+      clay(circle(Offset(18f, 82f), 12f), Clay.Coral, border = 3.5f)
+      clay(circle(Offset(82f, 82f), 12f), Clay.Sun, border = 3.5f, gloss = true)
+      clay(circle(Offset(50f, 60f), 10f), Color(0xFF2A3590), border = 3.5f)
+      // Flecha del desvío hacia la derecha-abajo (la ruta activa).
+      drawLine(Cream, Offset(46f, 56f), Offset(54f, 64f), 3f, StrokeCap.Round)
+      drawLine(Cream, Offset(54f, 64f), Offset(54f, 58f), 3f, StrokeCap.Round)
+      drawLine(Cream, Offset(54f, 64f), Offset(48f, 64f), 3f, StrokeCap.Round)
     }
     "series" -> {
       // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).

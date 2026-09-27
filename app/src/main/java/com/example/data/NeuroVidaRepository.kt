@@ -15,6 +15,9 @@ import java.util.*
 /** Juegos con motor de dificultad propio (no usan el rating del DDA común guardado en `ddaRating`). */
 private val OWN_ENGINE_GAMES = setOf("secuencia", "parejas")
 
+/** Juegos que no entran al camino diario de 3: Bitácora de Misión va antes (transmisión) y después (informe). */
+internal val BOOKEND_GAMES = setOf("bitacora")
+
 class NeuroVidaRepository(
   context: Context,
   private val database: NeuroVidaDatabase = NeuroVidaDatabase.getDatabase(context)
@@ -147,6 +150,12 @@ class NeuroVidaRepository(
   private val _leagueEvents = MutableStateFlow(decodeLeagueEvents(leaguePrefs.getString("events", null)))
   val leagueEvents: StateFlow<List<LeagueEvent>> = _leagueEvents.asStateFlow()
 
+  // Medidas propias de los juegos estrella, una por partida (ver StarMeasures.kt): su evolución se muestra en Hoy
+  // ("descubrimiento del día") y en la ventana de cada zona del planeta. SharedPreferences: solo se agregan.
+  private val measurePrefs = context.getSharedPreferences("star_measures", Context.MODE_PRIVATE)
+  private val _starMeasures = MutableStateFlow(StarMeasures.decode(measurePrefs.getString("points", null)))
+  val starMeasures: StateFlow<List<MeasurePoint>> = _starMeasures.asStateFlow()
+
   // Logros conseguidos (id -> cuándo). Se derivan del historial y los trofeos (ver Achievements.kt); acá solo
   // se recuerda cuáles ya se celebraron.
   private val achievementPrefs = context.getSharedPreferences("achievements", Context.MODE_PRIVATE)
@@ -256,6 +265,36 @@ class NeuroVidaRepository(
     val new = Achievements.all.map { it.id }.filter { it in got && it !in known }
     if (new.isNotEmpty()) saveUnlocks(known + new.associateWith { timestamp })
     return new
+  }
+
+  private fun recordStarMeasures(result: GamePlayResult) {
+    val new = starPoints(result)
+    if (new.isEmpty()) return
+    val all = (_starMeasures.value + new).takeLast(3000)
+    _starMeasures.value = all
+    measurePrefs.edit().putString("points", StarMeasures.encode(all)).apply()
+  }
+
+  /** La medida propia de la partida, si es de un juego estrella y trajo una estimación válida. */
+  private fun starPoints(r: GamePlayResult): List<MeasurePoint> {
+    fun pct(hits: Int?, total: Int?) = if (hits != null && total != null && total > 0) 100f * hits / total else null
+    val (key, value) = when (r.gameId) {
+      "radar" -> "glance" to r.glanceMs?.toFloat()
+      "freno" -> "brake" to r.brakeMs?.toFloat()
+      "satelites" -> "tracking" to r.trackingCapacity
+      "aterrizaje" -> "numline" to r.numlineErrorPct
+      "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
+      "trafico" -> "load" to r.trafficPeakPods?.toFloat()
+      "piloto" -> "multitask" to r.multitaskCost?.toFloat()
+      "rumbo" -> "homing" to r.homingErrorPct
+      "bitacora" -> "recall" to (if (r.memPhase == "encode") null else pct(r.memRecalled, r.memItems))
+      "correo" -> "pending" to pct(
+        (r.mailEventHits ?: 0) + (r.mailRadioHits ?: 0),
+        if (r.mailEventTotal == null) null else r.mailEventTotal + (r.mailRadioTotal ?: 0)
+      )
+      else -> return emptyList()
+    }
+    return if (value == null || value.isNaN()) emptyList() else listOf(MeasurePoint(r.timestamp, key, value))
   }
 
   private fun recordLeagueEvents(outcome: RecordOutcome, gameId: String, timestamp: Long) {
@@ -479,7 +518,8 @@ class NeuroVidaRepository(
 
     val selected = mutableListOf<String>()
     sortedDomains.take(3).forEach { domain ->
-      val gameInDomain = GameRegistry.allGames.filter { it.domain == domain }.randomOrNull()
+      // Bitácora de Misión no entra al camino: va antes y después (transmisión al empezar, informe al terminar).
+      val gameInDomain = GameRegistry.allGames.filter { it.domain == domain && it.id !in BOOKEND_GAMES }.randomOrNull()
       if (gameInDomain != null) {
         selected.add(gameInDomain.id)
       }
@@ -487,7 +527,7 @@ class NeuroVidaRepository(
 
     while (selected.size < 3) {
       val candidate = GameRegistry.allGames.random().id
-      if (!selected.contains(candidate)) selected.add(candidate)
+      if (!selected.contains(candidate) && candidate !in BOOKEND_GAMES) selected.add(candidate)
     }
     return selected
   }
@@ -598,6 +638,7 @@ class NeuroVidaRepository(
       newAchievements = unlockNewAchievements(computeAchievementStats(allResults, ratingsAfter), result.timestamp)
     )
     recordLeagueEvents(outcome, result.gameId, result.timestamp)
+    recordStarMeasures(result)
     outcome
   }
 
@@ -669,6 +710,8 @@ class NeuroVidaRepository(
     _leagueEvents.value = emptyList()
     achievementPrefs.edit().clear().apply()
     _achievementUnlocks.value = emptyMap()
+    measurePrefs.edit().clear().apply()
+    _starMeasures.value = emptyList()
     profilePrefs.edit().clear().apply()
     _education.value = null
     _goals.value = emptySet()

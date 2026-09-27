@@ -71,6 +71,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -242,7 +243,7 @@ fun GameResultScreen(
         fontFamily = FredokaFamily
       )
       Text(
-        text = "Cuánto baja tu precisión al pilotar y atrapar señales a la vez. Mientras más bajo, mejor.",
+        text = "Cuánto bajó tu puntería con las señales al pasar de solo mirarlas (piloto automático) a pilotar y mirarlas a la vez. Mientras más bajo, mejor repartes la atención. Con práctica suele bajar.",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -262,7 +263,7 @@ fun GameResultScreen(
         fontFamily = FredokaFamily
       )
       Text(
-        text = "El destello más breve con el que sigues acertando casi siempre. Mientras más bajo, más rápido captas.",
+        text = "El destello más breve con el que aciertas unas 4 de cada 5 veces (la nave del centro y dónde estaba el astronauta). Mientras menos milisegundos, más rápido captas.",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -290,8 +291,10 @@ fun GameResultScreen(
     result.trackingCapacity?.let { cap ->
       Spacer(Modifier.height(14.dp))
       val capText = String.format(java.util.Locale("es"), "%.1f", cap)
+      val targets = result.trackingTargets
+      val ofText = targets?.let { " de " + String.format(java.util.Locale("es"), if (it % 1f == 0f) "%.0f" else "%.1f", it) } ?: ""
       Text(
-        text = "Tu seguimiento: $capText a la vez",
+        text = "Tu seguimiento: $capText$ofText a la vez",
         color = Clay.Sun,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
@@ -309,7 +312,10 @@ fun GameResultScreen(
         )
       }
       Text(
-        text = "Cuántos satélites sigues de verdad al mismo tiempo, sin contar los que aciertas por suerte. En los estudios, la mayoría de los adultos sigue alrededor de 4.",
+        text = if (targets != null && targets < 3.5f)
+          "Cuántos seguiste de verdad de los que había que seguir, sin contar los que aciertas por suerte. El juego suma satélites y velocidad a medida que aciertas: así se ve hasta dónde llegas."
+        else
+          "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. A velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri, 2007).",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -342,8 +348,8 @@ fun GameResultScreen(
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
       )
       Text(
-        text = if (brake != null) "El tiempo que necesita tu mente para detener una acción que ya empezó. Mientras más bajo, mejor frenas."
-        else "Tu freno se mide con al menos 6 altos: en una partida más larga lo verás.",
+        text = if (brake != null) "Estimación de cuánto tardas en frenar una acción que ya ibas a hacer. Mientras más bajo, más rápido frenas. Con pocos altos por partida varía bastante: mira cómo va en varias."
+        else "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4. Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona.",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -351,12 +357,12 @@ fun GameResultScreen(
       )
     }
 
-    // Aterrizaje Lunar: "tu precisión numérica" y "tu línea" (cada blanco y dónde te posaste), con la lectura de sesgo.
+    // Aterrizaje Lunar: "tu estimación" y "tu línea" (cada blanco y dónde te posaste), con el tramo donde más se aleja.
     result.numlineErrorPct?.let { err ->
       Spacer(Modifier.height(14.dp))
       val errText = String.format(java.util.Locale("es"), "%.1f", err)
       Text(
-        text = "Tu precisión numérica: te desvías $errText%",
+        text = "Tu estimación: a $errText% del blanco",
         color = Clay.Sky,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
@@ -364,10 +370,17 @@ fun GameResultScreen(
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 24.dp)
       )
+      Text(
+        text = "En promedio, qué tan lejos del blanco te posaste (en % del largo de la regla). Ubicar un número en una regla junta dos cosas: saber cuánto vale y calcular a ojo qué parte de la regla le toca.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
       val trues = result.numlineTrue
       val givens = result.numlineGiven
       if (trues != null && givens != null) {
-        val bias = com.example.data.NumberLine.bias(trues, givens)
+        val bias = com.example.data.NumberLine.reading(trues, givens)
         Spacer(Modifier.height(8.dp))
         Text("Tu línea", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
         NumberLineStrip(
@@ -416,12 +429,327 @@ fun GameResultScreen(
         )
       }
       Text(
-        text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Shepard y Metzler, 1971). Mientras más plana tu curva, más rápido giras."
-        else "Con más aciertos en distintos ángulos se mide tu giro mental.",
+        text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. En Precisión, sin apuro de combustible, la medida es más fiel."
+        else "Tu giro mental se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+      )
+    }
+
+    // Tráfico Estelar: "tu carga" (cuántas cápsulas coordinaste a la vez sin errores) y "tu anticipación" (control
+    // proactivo vs reactivo, Braver 2012).
+    if (result.trafficLeadMs != null || result.trafficPeakPods != null) {
+      Spacer(Modifier.height(14.dp))
+      result.trafficPeakPods?.let { n ->
+        Text(
+          text = if (n == 1) "Tu carga: 1 cápsula a la vez" else "Tu carga: $n cápsulas a la vez",
+          color = Clay.Sun,
+          fontWeight = FontWeight.Bold,
+          fontSize = 20.sp,
+          fontFamily = FredokaFamily
+        )
+        Spacer(Modifier.height(6.dp))
+        LoadSlots(n, Modifier.semantics { contentDescription = "Coordinaste $n cápsulas a la vez sin errores" })
+        Text(
+          text = "Las que tuviste en viaje al mismo tiempo sin ningún error entre ellas. Sube a medida que el juego te da más tráfico.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+      }
+      result.trafficLeadMs?.let { ms ->
+        Text(
+          text = "Tu anticipación: " + String.format(java.util.Locale("es"), "%.1f s", ms / 1000f),
+          color = Clay.Sky,
+          fontWeight = FontWeight.Bold,
+          fontSize = 18.sp,
+          fontFamily = FredokaFamily
+        )
+        Text(
+          text = "Cuánto antes de que pase la cápsula dejas listo su desvío (valor típico de la partida).",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+      }
+      result.trafficProactivePct?.let { pct ->
+        Spacer(Modifier.height(8.dp))
+        PlanReactBar(
+          pct,
+          Modifier.padding(horizontal = 36.dp).fillMaxWidth().height(26.dp)
+            .semantics { contentDescription = "Planificas $pct por ciento, a último momento ${100 - pct} por ciento" }
+        )
+        Row(Modifier.padding(horizontal = 36.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+          Text("Planificas $pct%", color = Clay.Lime, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+          Text("A último momento ${100 - pct}%", color = Clay.Sun, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Text(
+          text = if (pct >= 50) "Te anticipas: eso deja holgura cuando el tráfico aumenta."
+          else "Reaccionas a tiempo, pero justo. Prueba mirar las próximas y preparar la ruta antes de que salgan.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+      }
+    }
+
+    // Bitácora de Misión: memoria con demora (qué-dónde y orden), retención de lo aprendido y la colección.
+    if (result.memPhase != null) {
+      Spacer(Modifier.height(14.dp))
+      val items = result.memItems ?: 0
+      if (result.memPhase == "encode") {
+        val learned = result.memLearned ?: 0
+        Text("Transmisión guardada", color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = FredokaFamily)
+        Spacer(Modifier.height(6.dp))
+        FilledSlots(learned, items, Clay.Sky, Modifier.semantics { contentDescription = "Aprendiste $learned de $items" })
+        Text(
+          text = "Aprendiste $learned de $items en el primer repaso. El informe se abre al terminar tu sesión de hoy (o en 10 minutos). No hace falta repasar: la idea es ver cuánto guarda tu memoria por sí sola.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+      } else {
+        val recalled = result.memRecalled ?: 0
+        val delay = result.memDelayS?.let { com.example.data.MissionLog.delayLabel(it) } ?: ""
+        Text(
+          text = "Tu memoria $delay: $recalled de $items",
+          color = Clay.Sun,
+          fontWeight = FontWeight.Bold,
+          fontSize = 20.sp,
+          fontFamily = FredokaFamily,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        Spacer(Modifier.height(6.dp))
+        FilledSlots(recalled, items, Clay.Sun, Modifier.semantics { contentDescription = "Recordaste $recalled de $items en su lugar" })
+        Text(
+          text = "Hallazgos que recordaste en su planeta, sin ayuda.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+        result.memRetentionPct?.let { pct ->
+          Text(
+            text = "Guardaste el $pct% de lo que aprendiste",
+            color = Clay.Lime,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp)
+          )
+          Text(
+            text = "De lo que acertaste en el primer repaso, cuánto seguía ahí en el informe. Separa aprender de retener.",
+            color = TextSoft,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+        result.memOrderOk?.let { ok ->
+          Text(
+            text = "La ruta: $ok de $items en orden",
+            color = Clay.Cream,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp)
+          )
+        }
+        result.memIntrusions?.takeIf { it > 0 }?.let { n ->
+          Text(
+            text = (if (n == 1) "Elegiste 1 hallazgo que no estaba en la misión" else "Elegiste $n hallazgos que no estaban en la misión") +
+              ": la memoria a veces completa huecos con lo que parece probable. Es normal.",
+            color = TextSoft,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+          )
+        }
+        Text(
+          text = "Truco para la próxima: imagina cada hallazgo haciendo algo en su planeta. Una escena se recuerda mejor que un dato suelto.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+      }
+      result.memArchivedTotal?.takeIf { it > 0 }?.let { total ->
+        Text(
+          text = if (total == 1) "Tu bitácora: 1 hallazgo archivado" else "Tu bitácora: $total hallazgos archivados",
+          color = Clay.Sun,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 6.dp)
+        )
+      }
+    }
+
+    // Rumbo a Casa: "tu brújula interna" (a qué distancia de casa quedaste) y "tus llegadas" (cada vuelta alrededor de
+    // la base), separando rumbo y distancia; con faro / sin faro si hubo viajes suficientes de cada tipo.
+    result.homingErrorPct?.let { err ->
+      Spacer(Modifier.height(14.dp))
+      Text(
+        text = "Tu brújula interna: a ${err.roundToInt()}% de casa",
+        color = Clay.Lime,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = FredokaFamily,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 24.dp)
+      )
+      Text(
+        text = "En promedio, a qué distancia de tu base quedaste, en % de lo que había que volver. Volver sin mapa usa lo que registras al moverte: cuánto giras y cuánto avanzas.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+      val along = result.homingAlong
+      val lateral = result.homingLateral
+      val beacon = result.homingBeacon
+      if (along != null && lateral != null && beacon != null) {
+        val trips = com.example.data.Homing.trips(along, lateral, beacon)
+        val angle = com.example.data.Homing.meanAbsAngle(trips)
+        val distance = com.example.data.Homing.distanceMessage(com.example.data.Homing.distance(trips))
+        Spacer(Modifier.height(8.dp))
+        Text("Tus llegadas", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+        HomingTarget(
+          trips,
+          Modifier.fillMaxWidth().padding(horizontal = 56.dp).height(230.dp)
+            .semantics {
+              contentDescription = "Tus llegadas: ${trips.size} vueltas alrededor de tu base." +
+                (angle?.let { " Te desviaste ${it.roundToInt()} grados en promedio." } ?: "") + (distance?.let { " $it" } ?: "")
+            }
+        )
+        Text(
+          text = "Cada punto es dónde quedaste. Encima de tu base es pasarte, debajo es quedarte corto y a los lados es desviar el rumbo.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+        angle?.let { a ->
+          Text(
+            text = "Rumbo: te desviaste ${a.roundToInt()}° en promedio",
+            color = Clay.Cream,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+        distance?.let {
+          Text(
+            text = it,
+            color = Clay.Cream,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+        com.example.data.Homing.sourceMessage(com.example.data.Homing.source(trips))?.let {
+          Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+        }
+        com.example.data.Homing.beaconAngles(trips)?.let { (withDeg, withoutDeg) ->
+          Text(
+            text = com.example.data.Homing.beaconMessage(withDeg, withoutDeg),
+            color = TextSoft,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+      }
+      result.homingPerfect?.takeIf { it > 0 }?.let { n ->
+        Text(
+          text = if (n == 1) "1 llegada perfecta" else "$n llegadas perfectas",
+          color = Clay.Sun,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 4.dp)
+        )
+      }
+    }
+
+    // Correo Estelar: "tu memoria para lo pendiente", por lugar (planetas) y por hora (radio), y cómo se usó el reloj.
+    result.mailEventTotal?.let { evTotal ->
+      Spacer(Modifier.height(14.dp))
+      val evHits = result.mailEventHits ?: 0
+      val raTotal = result.mailRadioTotal ?: 0
+      val raHits = result.mailRadioHits ?: 0
+      Text(
+        text = "Tu memoria para lo pendiente: ${evHits + raHits} de ${evTotal + raTotal} encargos",
+        color = Clay.Sun,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = FredokaFamily,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 24.dp)
+      )
+      Text(
+        text = "Acordarte de hacer algo en el momento justo, sin que nada te avise del todo: como tomar un remedio o hacer una llamada.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+      Spacer(Modifier.height(6.dp))
+      Text("Por lugar (planetas): $evHits de $evTotal", color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+      FilledSlots(evHits, evTotal, Clay.Coral, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por lugar: $evHits de $evTotal" })
+      if (raTotal > 0) {
+        Text(
+          "Por hora (radio): $raHits de $raTotal",
+          color = Clay.Cream,
+          fontSize = 15.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 8.dp)
+        )
+        FilledSlots(raHits, raTotal, Clay.Grape, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por hora: $raHits de $raTotal" })
+      }
+      val notes = listOfNotNull(
+        com.example.data.Mail.commissionMessage(result.mailCommissions ?: 0, result.mailLureCommissions ?: 0),
+        com.example.data.Mail.clockMessage(result.mailClockChecks ?: -1, result.mailClockLate ?: 0, raTotal),
+        com.example.data.Mail.compareMessage(evHits, evTotal, raHits, raTotal)
+      )
+      notes.forEach {
+        Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+      }
+      val lane = result.mailLanePct
+      val asteroids = result.mailAsteroids
+      val dodged = asteroids?.let { it - (result.mailAsteroidHits ?: 0) }
+      if (lane != null && lane >= 0) {
+        Text(
+          text = "Ruta: $lane% del vuelo" + (if (asteroids != null && asteroids > 0) " · esquivaste $dodged de $asteroids asteroides" else ""),
+          color = TextSoft,
+          fontSize = 13.sp,
+          modifier = Modifier.padding(top = 4.dp)
+        )
+      }
+      com.example.data.Mail.shipMessage(result.mailHullIntactPct ?: -1, result.mailEmergencies ?: 0)?.let {
+        Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+      }
+    }
+
+    // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
+    val hasStarMeasure = listOf(
+      result.multitaskCost, result.glanceMs, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
+      result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
+      result.homingErrorPct, result.mailEventTotal
+    ).any { it != null }
+    if (hasStarMeasure) {
+      Text(
+        text = "Medida de esta partida: cambia de un día a otro. Lo que vale es cómo evoluciona, no un resultado suelto. No es un diagnóstico.",
+        color = TextSoft.copy(alpha = 0.8f),
+        fontSize = 12.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 32.dp, vertical = 10.dp)
       )
     }
 
@@ -459,14 +787,17 @@ fun GameResultScreen(
       icon = Icons.AutoMirrored.Filled.ArrowForward,
       modifier = Modifier.testTag("btn_result_continue")
     )
-    Spacer(Modifier.height(14.dp))
-    ClayButton(
-      text = "Jugar de nuevo",
-      onClick = onPlayAgain,
-      color = Clay.Cream,
-      icon = Icons.Filled.Refresh,
-      modifier = Modifier.testTag("btn_result_replay")
-    )
+    // La transmisión y el informe de la misión del día no se repiten (serían otra misión): sin "Jugar de nuevo".
+    if (result.memPhase.isNullOrEmpty()) {
+      Spacer(Modifier.height(14.dp))
+      ClayButton(
+        text = "Jugar de nuevo",
+        onClick = onPlayAgain,
+        color = Clay.Cream,
+        icon = Icons.Filled.Refresh,
+        modifier = Modifier.testTag("btn_result_replay")
+      )
+    }
   }
 }
 
@@ -591,12 +922,14 @@ private val RadarDirections = listOf(
 
 /** Dónde se rescató más y dónde menos (solo direcciones con al menos 2 destellos, para no sacar conclusiones de uno). */
 private fun radarSummary(hits: List<Int>, trials: List<Int>): String {
-  val rated = (0 until 8).filter { trials[it] >= 2 }.map { it to hits[it].toFloat() / trials[it] }
-  if (rated.size < 2) return "Cada cuña es una dirección: mientras más larga, más astronautas rescataste ahí."
+  // Con pocos destellos por dirección las diferencias suelen ser azar: solo se nombra una dirección con 4 o más
+  // destellos en cada una y una diferencia grande (40 puntos).
+  val rated = (0 until 8).filter { trials[it] >= 4 }.map { it to hits[it].toFloat() / trials[it] }
+  if (rated.size < 4) return "Cada cuña es una dirección: mientras más larga, más astronautas rescataste ahí. Con más destellos se ve si alguna dirección te cuesta más."
   val best = rated.maxBy { it.second }
   val worst = rated.minBy { it.second }
-  if (best.second - worst.second < 0.2f) return "Parejo en todas las direcciones. Cada cuña larga = muchos rescates."
-  return "Donde más rescataste: ${RadarDirections[best.first]}. Donde menos: ${RadarDirections[worst.first]}."
+  if (best.second - worst.second < 0.4f) return "Parejo en todas las direcciones. Cada cuña larga = muchos rescates."
+  return "En esta partida rescataste más ${RadarDirections[best.first]} y menos ${RadarDirections[worst.first]}. Si se repite en otras partidas, vale la pena mirar más hacia ese lado."
 }
 
 /**
@@ -655,6 +988,52 @@ private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier) {
         val top = c.y + r - 2f * r * fill
         clipRect(left = c.x - r, top = top, right = c.x + r, bottom = c.y + r) { drawCircle(Clay.Sun, r, c) }
       }
+      drawCircle(Clay.Ink, r, c, style = Stroke(border))
+    }
+  }
+}
+
+// ---------- Bitácora de Misión ----------
+
+/** Fila de discos de arcilla: [filled] encendidos (del color dado) de [total]. El número va en el texto de arriba. */
+@Composable
+private fun FilledSlots(filled: Int, total: Int, color: Color, modifier: Modifier = Modifier) {
+  val n = total.coerceIn(1, 8)
+  Canvas(modifier.size(width = 26.dp * n + 8.dp * (n - 1), height = 32.dp)) {
+    val r = 13.dp.toPx()
+    val gap = 8.dp.toPx()
+    val border = 2.5.dp.toPx()
+    for (i in 0 until n) {
+      val c = Offset(r + i * (2 * r + gap), size.height / 2f - 2.dp.toPx())
+      drawCircle(Clay.Ink, r, c + Offset(0f, 3.dp.toPx()))
+      drawCircle(if (i < filled) color else Color(0xFF1B2466), r, c)
+      drawCircle(Clay.Ink, r, c, style = Stroke(border))
+    }
+  }
+}
+
+// ---------- Tráfico Estelar: "tu carga" ----------
+
+/** Colores de las cápsulas del juego (mismo orden que TrafficSprites.Colors en Unity). */
+private val PodColors = listOf(
+  Color(0xFFFF6B4A), Color(0xFFFFC93C), Color(0xFF4CC9F0), Color(0xFF9BE564),
+  Color(0xFFB8A4FF), Color(0xFFFF7BC0), Color(0xFF5FD68A), Color(0xFFFF8A3D)
+)
+
+/**
+ * Ocho cápsulas de arcilla en fila: se encienden (cada una con su color) tantas como las que coordinaste a la vez; las
+ * demás quedan apagadas. El número va en el texto de arriba: no depende del color.
+ */
+@Composable
+private fun LoadSlots(load: Int, modifier: Modifier = Modifier) {
+  Canvas(modifier.size(width = 26.dp * 8 + 8.dp * 7, height = 32.dp)) {
+    val r = 13.dp.toPx()
+    val gap = 8.dp.toPx()
+    val border = 2.5.dp.toPx()
+    for (i in 0 until 8) {
+      val c = Offset(r + i * (2 * r + gap), size.height / 2f - 2.dp.toPx())
+      drawCircle(Clay.Ink, r, c + Offset(0f, 3.dp.toPx()))
+      drawCircle(if (i < load) PodColors[i] else Color(0xFF1B2466), r, c)
       drawCircle(Clay.Ink, r, c, style = Stroke(border))
     }
   }
@@ -723,6 +1102,53 @@ private fun NumberLineStrip(trues: List<Float>, givens: List<Float>, modifier: M
   }
 }
 
+// ---------- Rumbo a Casa: "tus llegadas" ----------
+
+/**
+ * Diana alrededor de tu base: la base arriba al centro y, abajo, el punto donde empezó la vuelta (la vuelta justa es la
+ * línea crema entre los dos). Cada vuelta es un punto donde quedó la nave, en fracciones de la distancia que había:
+ * encima de la base = te pasaste, debajo = te quedaste corto, a los costados = desviaste el rumbo. Dos anillos finos:
+ * "llegada perfecta" (12%) y "llegaste a casa" (35%). Lo que se lee es la posición (con texto aparte), no el color.
+ */
+@Composable
+private fun HomingTarget(trips: List<com.example.data.HomingTrip>, modifier: Modifier = Modifier) {
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  Canvas(modifier) {
+    val homeY = size.height * 0.34f
+    val startY = size.height * 0.9f
+    val unit = startY - homeY
+    val cx = size.width / 2f
+    val home = Offset(cx, homeY)
+    // Vuelta justa, anillos y rótulos.
+    drawLine(
+      Clay.Cream.copy(alpha = 0.45f), Offset(cx, startY), home, 2.dp.toPx(),
+      pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
+    )
+    drawCircle(Clay.Cream.copy(alpha = 0.35f), unit * 0.35f, home, style = Stroke(1.5.dp.toPx()))
+    drawCircle(Clay.Lime.copy(alpha = 0.6f), unit * 0.12f, home, style = Stroke(1.5.dp.toPx()))
+    drawCircle(Clay.Ink, 5.dp.toPx(), Offset(cx, startY))
+    drawCircle(Clay.Cream, 3.dp.toPx(), Offset(cx, startY))
+    val small = TextStyle(color = TextSoft, fontSize = 11.sp)
+    val startLab = measurer.measure("inicio de la vuelta", small)
+    drawText(startLab, topLeft = Offset(cx + 10.dp.toPx(), startY - startLab.size.height / 2f))
+    // Tu base: anillo crema con centro coral (como en el juego).
+    drawCircle(Clay.Ink, 13.dp.toPx(), home + Offset(0f, 3.dp.toPx()))
+    drawCircle(Clay.Ink, 13.dp.toPx(), home)
+    drawCircle(Clay.Cream, 10.5.dp.toPx(), home)
+    drawCircle(Clay.Coral, 4.5.dp.toPx(), home)
+    val homeLab = measurer.measure("tu base", small)
+    drawText(homeLab, topLeft = Offset(cx - homeLab.size.width / 2f, homeY - 17.dp.toPx() - homeLab.size.height))
+    // Llegadas.
+    val pad = 6.dp.toPx()
+    for (t in trips) {
+      val x = (cx + t.lateral * unit).coerceIn(pad, size.width - pad)
+      val y = (homeY + (1f - t.along) * unit).coerceIn(pad, size.height - pad)
+      drawCircle(Clay.Ink, 6.dp.toPx(), Offset(x, y))
+      drawCircle(Clay.Sun, 4.5.dp.toPx(), Offset(x, y))
+    }
+  }
+}
+
 // ---------- Acoplamiento: "tu curva de giro" ----------
 
 /**
@@ -755,5 +1181,24 @@ private fun RotationCurve(curve: List<Int?>, modifier: Modifier = Modifier) {
       val v = measurer.measure(String.format(java.util.Locale("es"), "%.1f s", ms / 1000f), small.copy(color = Clay.Cream))
       drawText(v, topLeft = Offset(cx - v.size.width / 2f, top - v.size.height - 2.dp.toPx()))
     }
+  }
+}
+
+// ---------- Tráfico Estelar: planificas / a último momento ----------
+
+/** Barra de arcilla partida en dos: lima (planificas) y sol (a último momento). Los % van en texto debajo. */
+@Composable
+private fun PlanReactBar(proactivePct: Int, modifier: Modifier = Modifier) {
+  Canvas(modifier) {
+    val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+    val drop = 3.dp.toPx()
+    val h = size.height - drop
+    drawRoundRect(Clay.Ink, Offset(0f, drop), androidx.compose.ui.geometry.Size(size.width, h), r)
+    drawRoundRect(Clay.Sun, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r)
+    val w = size.width * proactivePct.coerceIn(0, 100) / 100f
+    if (w > 0f) {
+      clipRect(right = w) { drawRoundRect(Clay.Lime, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r) }
+    }
+    drawRoundRect(Clay.Ink, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r, style = Stroke(2.5.dp.toPx()))
   }
 }

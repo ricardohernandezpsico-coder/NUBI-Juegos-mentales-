@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 15 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 19 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -12,14 +12,16 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 ## Cómo trabajamos (nube ↔ PC)
 
 - Las sesiones en la nube editan, verifican C# con `dotnet build tools/unity-compile-check -v q` y hacen push a la
-  rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
-  `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
+  rama de trabajo. En la nube no hay Unity, pero **la app Kotlin SÍ se compila y prueba**: `bash tools/nube-compilar-app.sh`
+  (instala el SDK la primera vez, pone un unityLibrary FALSO en `unity/AndroidExport/` y corre `:app:testDebugUnitTest`;
+  con `fotos` graba las capturas Roborazzi, p. ej. `HomePlanetScreenshotTest`, para ver pantallas sin teléfono).
+  No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 15 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 19 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 27-sep · o`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · k`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -37,16 +39,18 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
-- Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, camino de días en perspectiva) · Juegos
+- Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, "Tu planeta": ver abajo) · Juegos
   (`GamesLibraryScreen`, planetas) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `LeagueEvents`, `NumberLine`, `Percentile`; y
+- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
+  `Planet`, `StarMeasures`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
   onboarding van en **SharedPreferences** para no migrar: `league_events`, `achievements`, `profile_extra`
-  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity.
+  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity, `star_measures` (la medida
+  propia de cada partida de los juegos estrella, `StarMeasures.encode`), `mission_log`.
   Al cambiar el esquema de Room: entidad → subir versión → `Migration(N, N+1)` en SQL → compilar → comitear `schemas/<N+1>.json`.
 - Diseño "noche + arcilla" (`ui/theme/Clay.kt`, `Type.kt` con Fredoka, `ui/components/CosmosBackground.kt`).
 
@@ -89,7 +93,8 @@ Torre de Lunas (Torre de Londres), Matriz Perdida (tipo Raven), Constelación de
 
 Segunda tanda (27-sep, pedido de Ricardo: "que generen enganche", paso a paso y probando cada uno): **Freno de
 Emergencia** (hecho; Ricardo: "funciona muy bien") → **Aterrizaje Lunar** (hecho; Ricardo: "todo ok") →
-**Acoplamiento** (hecho, primera versión). Después: Escuadrón (ANT: perfil alerta /
+**Acoplamiento** (hecho; Ricardo lo instaló y probó) → **Tráfico Estelar** (pedido de Ricardo, inspirado en la
+mecánica de trenes y desvíos que recordaba de Lumosity; hecho, primera versión). Después: Escuadrón (ANT: perfil alerta /
 orientación / control, reemplaza a Formación), Eco Estelar (n-back doble con notas), Torre de Lunas, Constelación.
 Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ricardo de Radar).
 
@@ -126,8 +131,10 @@ bien = rescatado (vuela a la fila de abajo).
 - Medidas propias: **tu vistazo** (`GlanceMs`: media geométrica de las duraciones reales de los últimos 12 destellos,
   sin los 4 primeros = donde se asentó la escalera, ~80% de aciertos) y **tu radar** (aciertos de ubicación por
   dirección). Viajan en `StroopSessionMetrics.glance_ms / sector_hits / sector_trials` → `GamePlayResult.glanceMs /
-  sectorHits / sectorTrials` (no se guardan en Room) → `GameResultScreen`: "Tu vistazo: N ms" y un radar con una cuña
-  por dirección (largo = proporción rescatada) + dónde más y dónde menos (con 2+ destellos por dirección).
+  sectorHits / sectorTrials` (no se guardan en Room) → `GameResultScreen`: "Tu vistazo: N ms" ("aciertas unas 4 de cada
+  5 veces": la escalera apunta a ~80%) y un radar con una cuña por dirección (largo = proporción rescatada); solo nombra
+  dónde más y dónde menos con 4+ destellos en cada dirección y 40 puntos de diferencia ("en esta partida... si se
+  repite"): con menos es azar.
 - Arte: `RadarSprites` (radar, haz, interferencia, botones de dirección), `GameWorld.RadarStation` (cielo quieto).
   Vista previa: `python3 tools/art-preview/radar.py <raw>` → `docs/previews/radar.png`.
 - Probado por Ricardo (27-sep): "espectacular", le encantó sobre todo la información del final ("un área
@@ -145,9 +152,11 @@ elegido por error (`ClosestApproach` sobre las trayectorias muestreadas cada 0,1
   `stepUp` 0.5 (pocas rondas); acierto = todos los de la señal. Reto 120 s; Precisión 8 rondas. 60 cuadros por segundo.
 - Medida propia: **tu seguimiento** (`TrackedEstimate`: cuántos se siguieron de verdad descontando la suerte, modelo
   aciertos = m + (k − m)² / (n − m); promedio de las rondas) y la velocidad más alta superada completa. Viajan en
-  `StroopSessionMetrics.tracking_capacity / tracking_speed` → `GamePlayResult.trackingCapacity / trackingSpeed` →
-  `GameResultScreen`: "Tu seguimiento: 3,4 a la vez" con 5 discos que se llenan + velocidad + "la mayoría de los
-  adultos sigue alrededor de 4".
+  `StroopSessionMetrics.tracking_capacity / tracking_targets / tracking_speed` → `GamePlayResult.trackingCapacity /
+  trackingTargets / trackingSpeed` → `GameResultScreen`: "Tu seguimiento: 2,6 de 3 a la vez" (el "de N" = cuántos había
+  que seguir en promedio: es el techo de esa partida, no un límite personal) con 5 discos que se llenan + velocidad; la
+  referencia "a velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri,
+  2007)" solo aparece si había que seguir 3,5 o más.
 - Arte y vista previa: `GameWorld.MissionControl` (cielo quieto); `python3 tools/art-preview/satelites.py <raw>` →
   `docs/previews/satelites.png`. Sin probar en el teléfono: revisar tamaño de los satélites, ritmo (~12 s por ronda),
   que se entienda el "¿Aquí se cruzaron?".
@@ -165,7 +174,8 @@ en ~30% aparece la señal ¡ALTO! (octágono coral con texto + sirena) un instan
   más tarde llegó el alto) y empuja el medidor "Límite del freno" (marca sol = récord, aviso "¡Nuevo límite!"); no
   frenar = el cohete da un salto y vuelve (sin choques).
 - Medida propia: **tu freno** (SSRT por integración con reemplazo de omisiones; -1 con menos de 6 altos o
-  p(responder|alto) fuera de 0,15-0,85). Viaja en `brake_ms / stops_ok / stops_total / brake_best_ssd_ms` →
+  p(responder|alto) fuera de 0,25-0,75, el criterio del consenso de Verbruggen et al., 2019; si no hay estimación, el
+  final lo explica y pide lanzar sin esperar al ALTO). Viaja en `brake_ms / stops_ok / stops_total / brake_best_ssd_ms` →
   `GamePlayResult.brakeMs / stopsOk / stopsTotal / brakeBestSsdMs` → `GameResultScreen`: velocímetro de arcilla
   (450 ms lento → 150 ms rápido) + "Frenaste N de M altos · récord".
 - Arte: `BrakeSprites` (alto, plataforma, botón), `GameWorld.LaunchBase`. Vista previa:
@@ -182,10 +192,14 @@ tramo "a 3" (lima si ≤5%, coral si no). "¡DIANA LUNAR!" con ≤1,2% de error.
   del medio) → 0-1000 → fracciones → decimales/porcentajes → regla que no empieza en 0 → sumas → fracciones 0-2 →
   negativos (-50 a 50). Acierto = error ≤ 5% del largo. Bajada 6 → 3,5 s (Precisión 10 s). DDA `stepUp` 0.3, sin tiempo
   de reacción. Reto 120 s; Precisión 15 aterrizajes. Formato de números sin culturas del teléfono (coma decimal fija).
-- Medida propia: **tu precisión numérica** (error medio %) y **tu línea**: `numline_true / numline_given` (0..1 por
-  aterrizaje) → `GamePlayResult.numlineTrue / numlineGiven` → `GameResultScreen` dibuja la regla con cada blanco y dónde
-  se posó, y `data/NumberLine` (lógica pura con pruebas) lee el sesgo: pareja, agranda los chicos, achica los grandes o
-  comprime (el patrón logarítmico de Siegler).
+- Medida propia: **tu estimación** ("a X% del blanco": distancia media en % del largo de la regla; NO se llama
+  "precisión numérica": en adultos la tarea con regla acotada se resuelve como juicio de proporción con puntos de
+  referencia y se apoya en habilidades visoespaciales, Barth y Paladino 2011; Sullivan et al. 2011; Simms et al. 2016)
+  y **tu línea**: `numline_true / numline_given` (0..1 por aterrizaje) → `GamePlayResult.numlineTrue / numlineGiven` →
+  `GameResultScreen` dibuja la regla con cada blanco y dónde se posó, y `data/NumberLine.reading` (lógica pura con
+  pruebas) nombra el TRAMO de la regla (inicio / centro / final) donde más se aleja del blanco, con distancia SIN signo
+  (el error con signo cerca de los extremos sale sesgado por construcción), y da un truco de puntos de referencia.
+  Revisión del 27-sep por pedido de Ricardo ("¿de qué sirve saber que pongo los grandes a la izquierda?").
 - Arte: `LandingSprites` (módulo lunar, bandera), `GameWorld.LunarRange`. Vista previa:
   `python3 tools/art-preview/aterrizaje.py <raw>` → `docs/previews/aterrizaje.png`. Probado por Ricardo (27-sep): ok.
 
@@ -203,12 +217,188 @@ baja al puerto (clunk, puerto lima) y se suma a "tu estación" (fila de arriba, 
   una sola silueta; juntas tenues y remaches simétricos, que no delatan la orientación). La sombra dura va aparte
   (silueta en tinta, en un contenedor que no gira): cae siempre hacia abajo aunque la pieza gire.
 - Medida propia: **tu giro mental** (`RotationSpeed`: recta de mínimos cuadrados del tiempo contra el ángulo en los
-  aciertos; 1000 / pendiente = grados por segundo; -1 con menos de 8 aciertos o menos de 3 ángulos) y **tu curva de
+  aciertos; 1000 / pendiente = grados por segundo; -1 con menos de 8 aciertos, menos de 3 ángulos o menos de 70% de
+  aciertos en total: con mucho azar la curva sale plana y parecería un giro rapidísimo) y **tu curva de
   giro** (tiempo medio a 0/45/90/135/180°). Viajan en `rotation_speed_dps / rotation_curve_ms` →
   `GamePlayResult.rotationSpeedDps / rotationCurveMs` → `GameResultScreen`: "Tu giro mental: N° por segundo" y cinco
   columnas uva con el tiempo encima y el ángulo debajo.
 - Arte: `DockingSprites`, `GameWorld.DockingBay` (cielo quieto: nada gira en el fondo). Vista previa:
-  `python3 tools/art-preview/acoplamiento.py <raw>` → `docs/previews/acoplamiento.png`. Sin probar en el teléfono.
+  `python3 tools/art-preview/acoplamiento.py <raw>` → `docs/previews/acoplamiento.png`. Probado por Ricardo (27-sep).
+
+**Tráfico Estelar** (`Games/Trafico/`, id `trafico`, dominio razonamiento): ruteo con desvíos (mecánica genérica;
+nombre, arte y medidas propios), atención dividida y planificación bajo presión de tiempo, en la línea de la tarea de
+control de tráfico aéreo de Kanfer y Ackerman (1989). De la compuerta de una estación de carga (cúpula crema sobre
+plataforma azul, arriba; reemplazó al "vórtice" que no le gustó a Ricardo) salen cápsulas de colores por rutas CURVAS;
+tocando los desvíos (discos con flecha que apunta hacia donde sale la ruta activa; alcance de toque 100 u) cada una
+debe llegar al planeta-puerto de su color Y su símbolo (8 pares color + forma: corazón, estrella, rombo, triángulo,
+luna, cruz, cuadrado, aro). Rutas activas: riel celeste con resplandor y luces que corren en el sentido del viaje;
+las otras, riel de arcilla apagado (visible para planificar). Cápsulas con estela de su color.
+- Reglas y pruebas: `TrafficContract` + `TrafficNetwork` + `TrafficSim` (simulación pura: las cápsulas avanzan por el
+  RECORRIDO de cada tramo, `PathX/PathY`, a velocidad constante; toman la salida activa AL LLEGAR al desvío; mover un
+  desvío después no cambia a la que ya pasó) / `TrafficContractTests` (11). La red es un árbol: puertos en una "U" con
+  algo de desorden, el grupo se parte al azar en dos, cada desvío entre el portal y el centro de sus puertos; `Relax`
+  separa desvíos pegados; se acepta si no hay cruces, nodos a < 0,14 anchos, rutas rozando nodos (0,08) ni rutas
+  pegadas (0,055). Después `CurveRoutes`: cada tramo sale del desvío girado ±38° respecto de la ruta que llega (como un
+  cambio de vía) y llega en Bézier; según `Twist(nivel)` la ruta de la estación es una "S" (niveles 1-3) o una cornisa
+  que va y vuelve con medias vueltas redondas (`Switchback`: 2 tramos desde el 4, 3 desde el 8), y algunos tramos
+  largos ondulan. Cada curva se acepta solo si no cruza ni roza nada y su radio de giro es ≥ 0,035; si no, una más
+  suave, y en el peor caso la recta.
+- Ritmo "lento y lleno" (Ricardo, tras probarlo: iban "casi una a la vez" y muy rápido; el juego de trenes de
+  Lumosity le parecía mejor): lo que sube con el nivel es CUÁNTAS van a la vez (`TargetInFlight` 2,5 → 7,5), no el
+  apuro. Velocidad 0,09 → 0,18 alturas/s (viaje ~8-9 s); cada cuánto sale una = viaje medio de ESTA red
+  (`MeanRouteLength` / velocidad) / `TargetInFlight`, mínimo 0,9 s (Precisión: 20% más lento y 30% más espaciado, 30
+  cápsulas). Flujo continuo: la pantalla no se vacía; 10 entregas seguidas sin error = "¡Serie perfecta!" +200. Si
+  cambia la cantidad de puertos (y la red lleva ≥ 20 s), deja de sacar, se entregan las que van y la red se rearma.
+  12 niveles: puertos 2 → 8. DDA `stepUp` 0.2 por cápsula entregada, sin tiempo de reacción. Reto 120 s.
+- "Próximas" (propio, no está en el juego de trenes): las 3 que vienen esperan a la derecha de la compuerta (rótulo
+  suelto "próximas", la primera más grande); se puede preparar la ruta antes de que salgan (`Spawn(..., announcedAt)`:
+  mover un desvío mientras espera cuenta para "tu anticipación"). **Cápsula urgente** desde el nivel 5 (8% → 18%,
+  nunca dos seguidas): aro sol que late, un poco más grande, ×1,35 de velocidad, vale el doble, salida con dos
+  campanas; la primera vez, aviso "¡Cápsula urgente!".
+- Sonido (`TrafficSounds`, sintetizado) con la identidad de la app, NO arcade (Ricardo probó una versión arcade y la
+  rechazó: "debe ser mejor y asociado a lo que queremos en la app"): marimba y campana en la pentatónica de do de
+  `GameFeel`, así todo suena afinado entre sí. Vuelo en bucle (fuente aparte `_engine`, colchón do + sol con soplo
+  suave que respira) solo mientras hay cápsulas en viaje: más cápsulas = algo más de volumen (el tono NO cambia), y se
+  corre a izquierda/derecha según dónde van. Salida = soplo + marimba grave; desvío = golpecito de madera (mi/sol según
+  el lado); al pasar por un desvío, campanita con la NOTA DEL COLOR de la cápsula (color + símbolo + nota: el tráfico
+  arma una melodía); entrega = "pling" de racha de `GameFeel` + marimba grave del color; error y subir de nivel =
+  los de `GameFeel`; serie perfecta = lluvia de campanas; urgente = salida con dos campanas agudas. Respeta sonido apagado y pausa. Muestra escuchable:
+  ArtPreview vuelca `trafico-sonidos.wav` (copia en `docs/previews/`; los sonidos de `GameFeel` van replicados ahí).
+- Dibujo: `RailLine` (malla propia de la UI que sigue los puntos; sección de textura con bordes suaves: arcilla con
+  borde tinta, cinta pareja o resplandor). Por tramo: resplandor, sombra dura, riel y línea de luz, cada uno en su capa.
+- Medida principal: **tu carga** (`CleanPeakLoad`: la mayor cantidad en viaje a la vez en un momento LIMPIO, sin
+  ninguna mal entregada en viaje; cada error ensucia desde que esa cápsula se vio hasta que llegó; muestras cada 0,5 s).
+  Viaja en `traffic_peak_pods` → `GameResultScreen`: "Tu carga: N cápsulas a la vez" + 8 cápsulas que se encienden.
+  Además **tu anticipación** (mediana de cuánto antes de que pase la cápsula se movió el desvío que la mandó
+  bien; solo desvíos movidos para ella) y **planificas / a último momento** (% con ≥ 1 s: control proactivo vs reactivo,
+  Braver 2012). Viajan en `traffic_lead_ms / traffic_proactive_pct / traffic_peak_pods` →
+  `GamePlayResult.trafficLeadMs / trafficProactivePct / trafficPeakPods` → `GameResultScreen`: barra partida lima/sol.
+- Arte: `TrafficSprites` (estación, puertos, cápsulas, desvío), `GameWorld.TrafficHub`. Vista previa (redes y curvas
+  reales de `BuildNetwork` que vuelca ArtPreview): `python3 tools/art-preview/trafico.py <raw>` →
+  `docs/previews/trafico.png`. Ricardo vio la primera maqueta (27-sep): "muy rígida, poco llamativa", pidió curvas y
+  cambios de sentido → rehecho así. Probado por Ricardo (27-sep): le gustó la estructura; pidió que la nave suene al viajar (ver Sonido) y más
+  trabajo simultáneo (ver Ritmo). Versión "lento y lleno" sin probar en el teléfono.
+
+**Bitácora de Misión** (`Games/Bitacora/`, id `bitacora`, dominio MEMORIA; primer juego estrella de memoria, 28-sep,
+pedido de Ricardo: "muy innovadora, con enganche, llamativa, sonidos modernos, destellos"): memoria episódica (qué,
+dónde y en qué orden) con recuerdo DIFERIDO, como las pruebas de aprendizaje y recuerdo diferido (tipo RAVLT). Ninguna
+app de la competencia mide memoria con demora a lo largo de la sesión.
+- Partida: **transmisión** (una sonda recorre planetas del mapa, los de Tráfico Estelar con color + símbolo + nombre:
+  Coral, Sol, Cielo...; en cada parada aparece un hallazgo con destello, su nota y "Planeta Sol · una llave"; la
+  persona lo TOCA para guardarlo en la bitácora, fila de abajo; si no, se guarda solo a los 5 s) → **primer repaso**
+  (planeta por planeta, en otro orden, elegir el hallazgo en un cajón con los de la misión + señuelos; respuesta al
+  instante: se aprende) → **espera** → **informe** (lo mismo sin ayuda) → **la ruta** (tocar los planetas en el orden de
+  la sonda) → **revelación** (la sonda repite la ruta; ✓ lo recordado vuela a la bitácora, ✗ muestra lo que era).
+  Consejo del juego: imaginar el hallazgo EN su planeta como una escena (Bower, 1970).
+- Fases por configuración (`SequenceConfigDetails.memory_phase / memory_seed / memory_level / memory_elapsed_s`):
+  "" = completa (la espera es una **patrulla** de 45 s atrapando cometas, que ocupa la atención sin repasar);
+  "encode" = transmisión y repaso; "recall" = informe. La misión se rearma con la semilla (`MissionRng` xorshift propio:
+  igual en cualquier versión) y el nivel.
+- **Sesión diaria** (app, `data/MissionLog` + `MissionLogStore` en SharedPreferences `mission_log`): la transmisión va
+  ANTES del primer juego y el informe DESPUÉS del último (o pasados 10 min); un informe pendiente de otro día se hace
+  primero (memoria a un día). `NeuroVidaViewModel.launchMissionIfDue` en `startDailySession` y `continueDailyFlow`
+  ("Continuar" del resultado en la sesión siempre sigue el flujo). Bitácora no entra al camino de 3 (`BOOKEND_GAMES`).
+  Hoy muestra la línea de la Bitácora (`MissionLine`: transmisión / espera con minutos / informe listo / al día con la
+  colección). La transmisión sola NO se guarda en Room (no es partida completa): muestra su pantalla y sigue.
+- Reglas y pruebas: `BitacoraContract` / `BitacoraContractTests` (5). 10 niveles: paradas 3 → 8, planetas extra que la
+  sonda no visita (0, 1 desde el 3, 2 desde el 6), señuelos 2 → 5. DDA `stepUp` 0.5 por parada del informe.
+- Medidas: **tu memoria a los X minutos** (paradas recordadas en su planeta), **retención** (de lo aprendido en el
+  repaso, cuánto seguía en el informe: la app la calcula con la máscara guardada, `MissionLog.retentionPct`), **la
+  ruta** (paradas en su lugar), **hallazgos que no estaban** (intrusiones, dicho sin culpa) y **tu bitácora**
+  (colección acumulada). Telemetría `mem_*` → `GamePlayResult.mem*` → `GameResultScreen` (`FilledSlots`).
+- Arte: `BitacoraSprites` (16 hallazgos de silueta distinta y fácil de nombrar: llave, campana, pluma, concha, reloj de
+  arena, brújula, farol, corona, bellota, libro, copa, gema, hongo, ancla, estrella de mar, paraguas; y la sonda),
+  `GameWorld.Logbook`. Sonido `BitacoraSounds`: cristal y "destellos" (parciales muy agudos) con eco suave, en la
+  pentatónica de la app; cada parada con su nota (la misión suena como melodía). Vista previa:
+  `python3 tools/art-preview/bitacora.py <raw>` → `docs/previews/bitacora.png`; sonidos → `docs/previews/bitacora-sonidos.wav`.
+  Sin probar en el teléfono.
+
+**Rumbo a Casa** (`Games/Rumbo/`, id `rumbo`, dominio MEMORIA; juego estrella de orientación, 28-sep, elegido por
+Ricardo entre varias propuestas: "calidad, enganche, teoría y que se diferencie del mercado"): INTEGRACIÓN DE TRAYECTO,
+volver al punto de partida sin verlo (tarea de completar el triángulo: Klatzky et al., 1990; Loomis et al., 1993;
+células de red, Hafting et al., 2005; realidad virtual: Howett et al., 2019; Sea Hero Quest, Coutrot et al., 2018). Ni
+Lumosity, Peak, Elevate ni NeuroNation tienen algo así. En la app NO se nombran enfermedades.
+- Vista de CABINA: la nave fija un poco abajo del centro, mirando hacia arriba; el mundo (`_pivot` gira/escala,
+  `_content` lleva las coordenadas del mapa) gira y pasa alrededor. Polvo de estrellas propio (150 puntos que se
+  envuelven alrededor de la cámara) = flujo óptico; niebla redonda (`HomingSprites.Fog`: se ve hasta 380, nada desde
+  520). Fondo `GameWorld.DeepSpace` SIN estrellas (serían una brújula).
+- Ida: aparece la SEÑAL del próximo cristal en el borde de la vista (anillo del color del cristal); se toca (o sola a
+  los 8 s), la nave gira hacia él (80 → 150°/s) y vuela a velocidad FIJA (300 u/s, igual en ida y vuelta: el paso del
+  polvo mide la distancia). 2 → 5 tramos (el primero sale derecho de la base). Vuelta: "¿Hacia dónde está casa?"
+  (dial con 12 marcas que gira con la nave + flecha sol; tocar/arrastrar) → FIJAR RUMBO → la nave avanza → ¡AQUÍ!
+  (si pasa 2,2 × la distancia: "Sin combustible"). Revelación: la cámara se aleja hasta el mapa con el norte arriba;
+  ida lima, vuelta sol, vuelta justa crema, tramo que faltó; ✓/✗ + "Rumbo: 14° a la derecha · distancia justa".
+- **Faro** en la mitad de los viajes (de a pares, orden al azar): estrella sol lejanísima que solo cambia de lugar al
+  girar (en el infinito); da el rumbo, no la posición. Así el final compara con faro / sin faro.
+- Reglas y pruebas: `HomingContract` / `HomingContractTests` (7). `NextTrip` acepta el viaje si la vuelta mide 820-2600,
+  la ruta no vuelve cerca de la base tras la primera parada (600), las paradas quedan separadas y no se cruza.
+  `Evaluate` separa rumbo y distancia. Llegada = a ≤ 35% de la distancia a casa; perfecta ≤ 12%. DDA `stepUp` 0.5 por
+  viaje, sin tiempo de reacción. 10 niveles. Reto 150 s (termina el viaje en curso); Precisión 8 viajes. 60 cuadros/s.
+- Medidas: **tu brújula interna** ("a X% de casa") y **tus llegadas** (diana alrededor de la base: encima = te
+  pasaste, debajo = corto, a los lados = rumbo). Telemetría `homing_error_pct / homing_along / homing_lateral /
+  homing_beacon / homing_perfect` → `GamePlayResult.homing*` → `GameResultScreen` (`HomingTarget`); la lectura
+  (`data/Homing.kt`, 5 pruebas): desvío medio del rumbo, distancia (justa / corto / largo / varía, desde 4 viajes y
+  70% para el mismo lado), qué aleja más de casa (rumbo o distancia, 1,5 veces y 5 puntos) con un truco, y faro vs
+  sin faro (3+ de cada uno, 8° de diferencia).
+- Sonido `HomingSounds` (identidad de la app): la ida sube nota a nota (un cristal = una nota) y la llegada "vuelve a
+  do": justo en casa, acorde completo con destellos; cerca, do y sol; lejos, acorde en suspenso. Ping de sonar con eco
+  para la señal, soplo al girar, madera al fijar rumbo; vuelo con el colchón de `TrafficSounds.EngineLoop`.
+- Arte: `HomingSprites` (nave con y sin sombra, base en anillo con casita, 5 cristales, faro, flecha, dial, niebla).
+  Vista previa: `python3 tools/art-preview/rumbo.py <raw>` → `docs/previews/rumbo.png`; sonidos →
+  `docs/previews/rumbo-sonidos.wav` y `rumbo-sonidos-llegadas.wav` (las tres llegadas). Sin probar en el teléfono:
+  revisar si marea el giro, si se entiende tocar la señal y el dial, y el ritmo (~25 s por viaje).
+
+**Constelación de Palabras (DESCARTADA, 28-sep)**: fluidez verbal por voz (reconocedor de Android, puntuación de
+Troyer: agrupar y saltar). Funcionaba, pero a Ricardo no le convenció: la voz no se sentía fluida (palabras que no
+reconocía, pausas), incluso tras la "opción A" (escucha continua, lista al reconocedor, parecidos al oído). Se sacó
+todo, también el permiso de micrófono. El código completo queda en el historial de git (commit `caf19b8`: juego Unity,
+`SpeechBridge.kt`, prueba de voz, léxico de ≈700 palabras). Lección para lenguaje: nada de voz; interacción táctil y fluida.
+
+**Primer Contacto (DESCARTADO, 28-sep)**: aprender palabras de un idioma extraterrestre deduciéndolas de escena en escena
+(aprendizaje entre situaciones, Yu y Smith 2007), con voz sintetizada propia (`NuriVoice`, formantes) y diccionario que
+crecía día a día. Ricardo: la voz y la fluidez bien, pero "poco entendible"; ni con guía de la primera vez y pistas le
+convenció ("una persona que no lo entienda no lo vuelve a jugar"). Código en el historial de git (commit `20eb246`).
+Lección (tras Constelación y Primer Contacto): nada de juegos "pesados" de explicar; lo que funciona es lo de Piloto
+Estelar: movimiento continuo, se entiende al instante, enganche inmediato. Queda de esa etapa: `Toast.FitSize` cuenta
+los renglones reales (los avisos largos ya no se salen del recuadro, en todos los juegos).
+
+**Correo Estelar** (`Games/Correo/`, id `correo`, dominio MEMORIA; 28-sep, elegido por Ricardo entre 4 propuestas con el
+movimiento de Piloto Estelar; maqueta aprobada antes de programar: `tools/art-preview/correo.py` →
+`docs/previews/correo-estelar.png`): MEMORIA PROSPECTIVA, acordarse de hacer algo en el momento justo (Rummel y
+Kvavilashvili, 2023). Nadie en la competencia la mide.
+- Hoja de ruta antes de salir (sin recuadros: ícono + texto; "durante el vuelo no los verás"; truco de intención de
+  implementación, Chen et al. 2015) y botón "¡A volar!". Vuelo de 150 s con la ruta de Piloto (reusa `PilotContract`:
+  ancho, curvas, velocidad × 0,85; sin piloto automático) y sobres sobre la ruta (+10, tarea en curso).
+- Por lugar: planetas-puerto de Tráfico (`TrafficSprites.Port`) a los costados de la ruta; tocar el del color del
+  encargo = el paquete vuela en arco, ✓ "¡Entregado!"; otro = ✗ "No es de tu encargo"; si se va = "Se fue sin su
+  paquete" (suave). Por hora: radio abajo a la derecha, ventana ±5 s ("¡Aviso recibido!" / "Aún no es la hora" / "Ya
+  pasó la hora"; al cerrarse sin aviso, "Se pasó la hora del aviso"); reloj tapado arriba a la derecha, se destapa 1,6 s.
+- Reglas y pruebas: `MailContract` / `MailContractTests` (6): 10 niveles; los dos tipos de encargo desde el nivel 1;
+  2 colores desde el 4; radio cada 30 s (25 desde el 5, 20 desde el 8); parecidos desde el 2 (15% → 45%; pares
+  coral/amarillo → naranjo, celeste → menta, lila → rosado); ~23% de planetas del encargo, nunca dos seguidos; un
+  planeta cada 3,6 → 2,4 s. DOS dificultades, como en Piloto: la de encargos (`stepUp` 0.5, cada entrega, planeta
+  perdido, error u hora con o sin aviso; los encargos se fijan al salir) y la de pilotaje (`stepUp` 0.14, ventanas de
+  1,5 s con ≥ 85% en la ruta y sin chocar: velocidad, curvas, ancho, asteroides).
+- Versión "con aceleración" (28-sep, Ricardo lo probó: "demasiado lento, monótono, sin dificultad; a nivel gráfico,
+  excelente"; y un punto blanco tapaba "¡A volar!" = la píldora de estado vacía, ahora aparece al despegar): el vuelo
+  tiene 3 TRAMOS (aviso "Tramo 2 de 3 · ¡La ruta se acelera!", destello e hiperespacio); a lo largo del vuelo la
+  velocidad sube × 1 → × 1,5, las curvas × 1,5, el ancho × 0,85 y los planetas y asteroides salen 30-35% más seguido.
+  **Asteroides** sobre la ruta (cargados a un lado, siempre hay por dónde pasar; `SymbolSprite` Asteroid): chocar =
+  golpe sordo, la nave tiembla, "¡Asteroide!" (no quita encargos). El sobre suena siempre igual (la escala que subía
+  y bajaba irritaba).
+- **Escudo** (28-sep, idea de Ricardo: "que el cohete se vaya dañando", para cuidar la nave): 3 segmentos arriba a la
+  izquierda (`ShipShield` en el contrato, 1 prueba). Cada choque rompe uno (cristal que se quiebra) y la nave se ve
+  dañada (`MailSprites.ShipDamage`: grietas; con 1 segmento, humo); 20 s sin chocar reparan uno. Sin escudo:
+  "¡Reparación de emergencia!" 3,5 s (nave a la mitad de velocidad y parpadeando, sin sobres, los asteroides la
+  atraviesan, el DDA de pilotaje no cuenta) y sigue con 1 segmento. NUNCA termina el vuelo: los encargos necesitan los
+  150 s para medirse igual (decisión razonada con Ricardo). Al final: "Nave intacta el N% del vuelo · reparaciones"
+  (`Mail.shipMessage`; telemetría `mail_hull_intact_pct / mail_emergencies`). Lámina `docs/previews/correo-escudo.png`.
+- Medida: **tu memoria para lo pendiente** (por lugar / por hora, `FilledSlots`), errores, **el reloj** (miradas y
+  cuántas en el último 30% del intervalo) y lugar contra hora con consejo (`data/Mail.kt`, 4 pruebas). Telemetría
+  `mail_*` → `GamePlayResult.mail*` → `GameResultScreen` (más "esquivaste N de M asteroides").
+- Arte `MailSprites` (sobre, paquete, radio, reloj tapado/destapado), sonidos `MailSounds` (marimba y campanas: sobre,
+  entrega, error, perdido, radio a tiempo/destiempo, tic-tac del reloj); muestra `docs/previews/correo-sonidos.wav`.
+  Sin probar en el teléfono.
 
 ## Reglas que no se rompen
 
@@ -220,6 +410,11 @@ baja al puerto (clunk, puerto lima) y se suma a "tu estación" (fila de arriba, 
 - **Juegos Unity**: medir el tiempo con `GameClock.Time/DeltaTime` (no `Time.unscaled*`), para que la pausa funcione.
   El arte se hornea en sprites con `ClayRaster` (`Image.color` blanco); la sombra dura cae siempre hacia abajo.
 - **Textos**: español, cercanos, sin culpa ni promesas de salud ("no es un examen", nada de "fortalece neuronas").
+  **Medidas del final de los juegos estrella** (revisión 27-sep): nombrar lo que se mide de verdad (no un rasgo:
+  "tu estimación", no "tu precisión numérica"), decir cómo leerlo, no sacar conclusiones de pocos ensayos, dar un
+  consejo concreto cuando se pueda, y comparar con estudios solo si la condición es comparable. Al pie va la nota
+  común "Medida de esta partida... No es un diagnóstico". Justificación de cada medida, con referencias:
+  [`docs/medidas-juegos-estrella.md`](docs/medidas-juegos-estrella.md). Al crear un juego estrella nuevo, agregar ahí su medida.
   Percentiles y comparaciones se rotulan "estimación provisional" (referencia media 0.45, sd 0.20: supuesto, no dato).
 - **Licencias**: mecánicas genéricas, pero nombres, arte, textos y sonidos propios (no copiar a Lumosity & co.).
 - **Decisiones de Ricardo**: servidores, cuentas, Firebase, suscripciones y requisitos de tiendas se dejan para el
@@ -236,8 +431,8 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 46 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 144 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 15 smoke tests.
+- Kotlin: 70 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Unity EditMode: 174 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 
@@ -248,7 +443,19 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 - `ActiveGameSession.sessionToken` + `key(session.sessionToken)` en `MainActivity`: cada sesión de juego es su propio
   grupo de composición (si no, `UnityGameHost` heredaba el `launched` guardado de la anterior al recrearse la pantalla).
 - Idea de Ricardo tras Radar (27-sep): la información del final de cada juego estrella es lo más valioso para el
-  usuario; explorar más ese camino (propuesta pendiente: guardar las medidas propias por partida y mostrar su evolución).
+  usuario. Desde el 28-sep la medida propia de cada partida se guarda (`star_measures`) y se muestra en Hoy.
+- **Hoy = "Tu planeta"** (28-sep; Ricardo eligió la mezcla de las propuestas 1 y 2 de `docs/previews/inicio-propuestas.png`;
+  maqueta `docs/previews/inicio-planeta.png`, `tools/previews/inicio_planeta.py`). Reemplaza al camino de días en
+  perspectiva. `ui/components/HomePlanet`: planeta de arcilla con una zona por dominio (Memoria cristales, Atención
+  faros, Razonamiento torres, Lenguaje árboles, Cálculo domos, Velocidad antenas, al centro) que crece con cada partida
+  (`data/Planet`: crecimiento logarítmico, nunca baja; construcciones 1-5), gira despacio (quieto con "quitar
+  animaciones"), las 3 partidas del día orbitan y aterrizan con ✓ en su zona, las zonas jugadas hoy brillan y arriba
+  dice "¡Creció X!". Debajo: la línea "Esta semana creció / Quieta hace N días · Aún sin explorar" y el
+  **descubrimiento del día** (`data/StarMeasures.discover`: con 3+ partidas de un juego estrella, primero un récord de los
+  últimos 7 días, si no la mayor mejora ≥ 5%, si no "se mantiene"; gráfico de las últimas 6 con "mejor" hacia arriba; sin
+  datos, invitación tocable "Juega Radar para descubrir tu vistazo"). Tocar una zona abre su ventana (`ZoneDialog`):
+  partidas por semana (4), cada juego del dominio con su última medida o cuándo se jugó, y "Jugar X" (el sin jugar o el
+  más olvidado). Captura real (Roborazzi): `docs/previews/inicio-planeta-real.png`. Sin probar en el teléfono.
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");

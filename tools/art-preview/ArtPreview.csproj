@@ -44,5 +44,17 @@
     <Compile Include="$(Src)/Aterrizaje/LandingSprites.cs" />
     <Compile Include="$(Src)/Acoplamiento/DockingSprites.cs" />
     <Compile Include="$(Src)/Acoplamiento/DockingContract.cs" />
+    <Compile Include="$(Src)/Trafico/TrafficSprites.cs" />
+    <Compile Include="$(Src)/Trafico/TrafficContract.cs" />
+    <Compile Include="$(Src)/Trafico/TrafficSounds.cs" />
+    <Compile Include="$(Src)/Bitacora/BitacoraSprites.cs" />
+    <Compile Include="$(Src)/Bitacora/BitacoraContract.cs" />
+    <Compile Include="$(Src)/Bitacora/BitacoraSounds.cs" />
+    <Compile Include="$(Src)/Rumbo/HomingContract.cs" />
+    <Compile Include="$(Src)/Rumbo/HomingSprites.cs" />
+    <Compile Include="$(Src)/Rumbo/HomingSounds.cs" />
+    <Compile Include="$(Src)/Correo/MailContract.cs" />
+    <Compile Include="$(Src)/Correo/MailSprites.cs" />
+    <Compile Include="$(Src)/Correo/MailSounds.cs" />
   </ItemGroup>
 </Project>

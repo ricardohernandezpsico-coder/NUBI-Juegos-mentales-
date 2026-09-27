@@ -40,6 +40,23 @@ namespace NeuroVida.Contracts
         public int[] sector_trials;
         /// <summary>Solo Satélites: "tu seguimiento", cuántos se siguen de verdad a la vez (descontando la suerte). -1 = no aplica.</summary>
         public float tracking_capacity = -1f;
+        /// <summary>Solo Satélites: cuántos había que seguir por ronda, en promedio (el techo de "tu seguimiento"). -1 = no aplica.</summary>
+        public float tracking_targets = -1f;
+        /// <summary>Solo Bitácora de Misión: fase jugada ("" completa, "encode" transmisión, "recall" informe).</summary>
+        public string mem_phase = "";
+        /// <summary>Solo Bitácora: semilla y nivel de la misión, paradas, aprendidas en el primer repaso (y cuáles, en bits),
+        /// recordadas en el informe (y cuáles), hallazgos elegidos que no estaban, paradas de la ruta en su lugar y
+        /// segundos entre la transmisión y el informe. -1 = no aplica.</summary>
+        public int mem_seed = -1;
+        public int mem_level = -1;
+        public int mem_items = -1;
+        public int mem_learned = -1;
+        public int mem_learned_mask = -1;
+        public int mem_recalled = -1;
+        public int mem_recalled_mask = -1;
+        public int mem_intrusions = -1;
+        public int mem_order_ok = -1;
+        public int mem_delay_s = -1;
         /// <summary>Solo Satélites: velocidad del nivel más alto superado completo, como múltiplo de la del nivel 1. -1 = ninguno.</summary>
         public float tracking_speed = -1f;
         /// <summary>Solo Freno de Emergencia: "tu freno" (tiempo de frenado, SSRT, ms). -1 = sin estimación confiable.</summary>
@@ -60,5 +77,46 @@ namespace NeuroVida.Contracts
         public int rotation_speed_dps = -1;
         /// <summary>Solo Acoplamiento: tiempo medio de los aciertos a 0°, 45°, 90°, 135° y 180° (-1 = sin datos).</summary>
         public int[] rotation_curve_ms;
+        /// <summary>Solo Tráfico Estelar: "tu anticipación" (mediana, ms, de cuánto antes se preparan los desvíos). -1 = sin medida.</summary>
+        public int traffic_lead_ms = -1;
+        /// <summary>Solo Tráfico Estelar: % de desvíos preparados con tiempo (≥ 1 s). -1 = sin medida.</summary>
+        public int traffic_proactive_pct = -1;
+        /// <summary>Solo Tráfico Estelar: más cápsulas en viaje a la vez.</summary>
+        public int traffic_peak_pods;
+        /// <summary>Solo Rumbo a Casa: "tu brújula interna", a qué distancia de casa quedó la nave en promedio (% de la
+        /// distancia que había hasta la base). -1 = no aplica.</summary>
+        public float homing_error_pct = -1f;
+        /// <summary>Solo Rumbo a Casa: dónde quedó cada vuelta en el marco de la vuelta justa, en fracciones de la
+        /// distancia a casa (la base en along = 1, lateral = 0; lateral + = a la derecha).</summary>
+        public float[] homing_along;
+        public float[] homing_lateral;
+        /// <summary>Solo Rumbo a Casa: 1 si ese viaje tenía faro.</summary>
+        public int[] homing_beacon;
+        /// <summary>Solo Rumbo a Casa: llegadas perfectas.</summary>
+        public int homing_perfect;
+        /// <summary>Solo Correo Estelar: encargos por lugar (planetas entregados de los que pasaron), planetas tocados que no
+        /// eran del encargo (y cuántos de color parecido), encargos por hora (avisos a tiempo de las horas que hubo; período
+        /// en segundos, 0 = sin radio), avisos a destiempo, miradas al reloj (y cuántas justo antes de la hora), % en la ruta y
+        /// sobres. -1 = no aplica.</summary>
+        public int mail_event_hits = -1;
+        public int mail_event_total = -1;
+        public int mail_commissions = -1;
+        public int mail_lure_commissions = -1;
+        public int mail_radio_hits = -1;
+        public int mail_radio_total = -1;
+        public int mail_radio_offtime = -1;
+        public int mail_radio_period_s = -1;
+        public int mail_clock_checks = -1;
+        public int mail_clock_late = -1;
+        public int mail_lane_pct = -1;
+        public int mail_envelopes = -1;
+        public int mail_envelopes_total = -1;
+        /// <summary>Solo Correo Estelar: asteroides chocados y asteroides que pasaron junto a la nave (esquivados + chocados).</summary>
+        public int mail_asteroid_hits = -1;
+        public int mail_asteroids = -1;
+        /// <summary>Correo Estelar: % del vuelo con el escudo entero (cuidado de la nave).</summary>
+        public int mail_hull_intact_pct = -1;
+        /// <summary>Correo Estelar: reparaciones de emergencia (veces que se quedó sin escudo).</summary>
+        public int mail_emergencies = -1;
     }
 }

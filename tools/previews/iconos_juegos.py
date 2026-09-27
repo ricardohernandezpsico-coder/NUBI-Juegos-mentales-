@@ -9,7 +9,7 @@ INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
        ('stroop','Tinta o Palabra','atencion'),('cambiochip','Cambio de Chip','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento')]
+       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -182,6 +182,45 @@ def draw(ic,gid):
         ic.d.polygon(ic.poly(hole),fill=INK); ic.d.line(ic.poly(hole)+[ic.poly(hole)[0]],fill=CREAM,width=int(3*ic.k),joint='curve')
         arc=[(30+30*math.cos(math.radians(a)),33+30*math.sin(math.radians(a))) for a in range(190,286,5)]
         ic.claystroke([arc],SUN,5)
+    elif gid=='trafico':
+        trunk=[(50,34)]+cub((50,34),(50,44),(26,40),(30,50))+cub((30,50),(33,57),(50,52),(50,60))
+        left=[(50,60)]+cub((50,60),(42,68),(20,66),(18,82)); right=[(50,60)]+cub((50,60),(58,68),(80,66),(82,82))
+        for r in (trunk,left,right): ic.stroke(r,INK,10)
+        ic.stroke(trunk,SKY,5); ic.stroke(left,(75,79,154),5); ic.stroke(right,SKY,5)
+        dome=[(50+20*math.cos(math.pi+math.pi*i/24),26+20*math.sin(math.pi+math.pi*i/24)) for i in range(25)]
+        ic.clay(dome,CREAM,gloss=True); ic.clay(rrect(20,24,60,12,6),(42,53,144)); ic.clay(rrect(43,25,14,15,5),SUN,border=3,shadow=False)
+        ic.clay(circ(18,82,12),CORAL,border=3.5); ic.clay(circ(82,82,12),SUN,border=3.5,gloss=True)
+        ic.clay(circ(50,60,10),(42,53,144),border=3.5)
+        ic.stroke([(46,56),(54,64)],CREAM,3); ic.stroke([(54,64),(54,58)],CREAM,3); ic.stroke([(54,64),(48,64)],CREAM,3)
+    elif gid=='bitacora':
+        ic.clay([(16,42),(50,50),(50,86),(16,78)],CREAM); ic.clay([(50,50),(84,42),(84,78),(50,86)],CREAM,gloss=True)
+        for k in range(3):
+            ic.stroke([(23,54+8*k),(44,58+8*k)],(70,64,110),2.5); ic.stroke([(56,58+8*k),(77,54+8*k)],(70,64,110),2.5)
+        for (x,y,r) in [(88,14,3),(78,18,3.5),(67,22,4)]:
+            q=ic.P(x,y); rr=r*ic.k; ic.d.ellipse([q[0]-rr,q[1]-rr,q[0]+rr,q[1]+rr],fill=SKY)
+        ic.clay(star(48,25,15,7,5,True),SUN,border=4)
+        sparkle(ic,26,20,8,WHITE)
+    elif gid=='rumbo':
+        LIME=(155,229,100)
+        for (x,y) in [(29,50),(30,40),(31,30),(40,27),(50,26),(60,25)]:
+            q=ic.P(x,y); r1=4.2*ic.k; r2=2.6*ic.k
+            ic.d.ellipse([q[0]-r1,q[1]-r1,q[0]+r1,q[1]+r1],fill=INK); ic.d.ellipse([q[0]-r2,q[1]-r2,q[0]+r2,q[1]+r2],fill=LIME)
+        ic.claystroke([[(74,38)]+quad((74,38),(72,66),(49,71)),[(57.8,78.2),(47,71.4),(53.8,60.6)]],SUN,6)
+        ic.clay(circ(27,72,17),CREAM,gloss=True); ic.clay(circ(27,72,7),CORAL,border=3.5,shadow=False)
+        ic.clay([(76,9),(85,22),(76,35),(67,22)],SKY,gloss=True)
+        sparkle(ic,90,40,7,WHITE)
+    elif gid=='correo':
+        for i,(x,y) in enumerate([(14,80),(22,72),(30,64)]):
+            q=ic.P(x,y); r1=(3.8+i*0.4)*ic.k; r2=(2.3+i*0.4)*ic.k
+            ic.d.ellipse([q[0]-r1,q[1]-r1,q[0]+r1,q[1]+r1],fill=INK); ic.d.ellipse([q[0]-r2,q[1]-r2,q[0]+r2,q[1]+r2],fill=SUN)
+        ic.clay(circ(72,26,15),CORAL,gloss=True)
+        ring=[(72+22*math.cos(2*math.pi*i/40),26+5*math.sin(2*math.pi*i/40)) for i in range(41)]
+        ic.stroke(ring,INK,4); ic.stroke(ring[:21],SUN,2.2)
+        ic.rot.append((-14,50,60))
+        ic.clay(rrect(28,44,44,30,6),CREAM,gloss=True)
+        ic.stroke([(31,47),(50,62),(69,47)],INK,3)
+        ic.clay(circ(50,60,5),CORAL,border=2.5,shadow=False)
+        ic.rot.pop()
     elif gid=='comparacion':
         ic.clay(circ(22,50,20),CREAM,gloss=True); ic.clay(circ(87,50,10),CREAM)
         ic.claystroke([[(58-7.8,37),(58+7.8,50),(58-7.8,63)]],SUN,7)

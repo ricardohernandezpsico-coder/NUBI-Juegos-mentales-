@@ -544,11 +544,14 @@ namespace NeuroVida.Games.Satelites
 
             float hitRate = _targetsTotal > 0 ? (float)_hitsTotal / _targetsTotal : 0f;
             float capacity = SatelliteContract.Capacity(_rounds);
+            float meanTargets = 0f;
+            foreach (var r in _rounds) meanTargets += r.targets;
+            meanTargets = _rounds.Count > 0 ? meanTargets / _rounds.Count : -1f;
             float speedReached = _bestCleared > 0 ? SatelliteContract.SpeedFactor(_bestCleared) : -1f;
             int score = SatelliteContract.Score(hitRate, _bestCleared);
 
             SetPrompt("Fin de la misión", GoodColor);
-            ShowResult(score, capacity);
+            ShowResult(score, capacity, meanTargets);
 
             var telemetry = new StroopTelemetry
             {
@@ -565,6 +568,7 @@ namespace NeuroVida.Games.Satelites
                     end_rating = _dda.RatingNormalized,
                     peak_level = _dda.PeakLevel,
                     tracking_capacity = capacity,
+                    tracking_targets = meanTargets,
                     tracking_speed = speedReached
                 }
             };
@@ -572,12 +576,14 @@ namespace NeuroVida.Games.Satelites
             yield break;
         }
 
-        private void ShowResult(int score, float capacity)
+        private void ShowResult(int score, float capacity, float meanTargets)
         {
             _exit.Show();
             _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Control de misión experto!" : score >= 65 ? "¡Buena misión!" : "Misión completada";
             _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_hitsTotal} de {_targetsTotal} satélites encontrados";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = capacity >= 0f ? $"Sigues {capacity:0.0} a la vez".Replace('.', ',') : $"Mejor racha {_bestStreak}";
+            // "de N": cuántos había que seguir. El juego sube esa cantidad al acertar: el número no es un techo personal.
+            _resultRoot.Find("Extra").GetComponent<Text>().text = capacity >= 0f
+                ? $"Seguiste {capacity:0.0} de {meanTargets:0.#} a la vez".Replace('.', ',') : $"Mejor racha {_bestStreak}";
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
         }

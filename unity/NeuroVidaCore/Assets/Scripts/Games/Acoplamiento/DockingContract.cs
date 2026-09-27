@@ -175,8 +175,12 @@ namespace NeuroVida.Games.Acoplamiento
         /// <summary>
         /// "Tu giro mental" (grados por segundo): recta de mínimos cuadrados del tiempo de respuesta contra el ángulo, en
         /// los aciertos. La pendiente (ms por grado) es el costo de girar; su inversa, la velocidad. -1 si hay menos de 8
-        /// aciertos, menos de 3 ángulos distintos o la recta no sube (sin efecto de giro medible).
+        /// aciertos, menos de 3 ángulos distintos, menos de 70% de aciertos en total (con muchas respuestas al azar la
+        /// curva sale plana y parecería un giro rapidísimo) o la recta no sube (sin efecto de giro medible).
         /// </summary>
+        /// <summary>Proporción mínima de aciertos (incluidas las respuestas sin tiempo) para calcular el giro mental.</summary>
+        public const float MinRotationAccuracy = 0.7f;
+
         public static int RotationSpeed(IReadOnlyList<int> disparities, IReadOnlyList<float> rtsMs, IReadOnlyList<bool> correct)
         {
             if (disparities == null || rtsMs == null || correct == null) return -1;
@@ -192,6 +196,7 @@ namespace NeuroVida.Games.Acoplamiento
                 distinct.Add(Bin(disparities[i]));
             }
             if (xs.Count < 8 || distinct.Count < 3) return -1;
+            if (xs.Count < MinRotationAccuracy * n) return -1;
             double mx = 0, my = 0;
             for (int i = 0; i < xs.Count; i++) { mx += xs[i]; my += ys[i]; }
             mx /= xs.Count;

@@ -101,6 +101,14 @@ namespace NeuroVida.Games.Acoplamiento.Tests
             foreach (int a in d) flat.Add(900);
             Assert.AreEqual(-1, DockingContract.RotationSpeed(d, flat, ok));
             Assert.AreEqual(-1, DockingContract.RotationSpeed(new List<int> { 0, 90, 180 }, new List<float> { 500, 800, 1100 }, new List<bool> { true, true, true }));
+
+            // Con menos de 70% de aciertos (mucho azar) tampoco: la curva no reflejaría un giro real.
+            var guessD = new List<int>(d);
+            var guessRt = new List<float>(rt);
+            var guessOk = new List<bool>(ok);
+            for (int i = 0; i < 6; i++) { guessD.Add(90); guessRt.Add(700); guessOk.Add(false); }
+            Assert.Less((float)guessOk.FindAll(x => x).Count / guessOk.Count, DockingContract.MinRotationAccuracy);
+            Assert.AreEqual(-1, DockingContract.RotationSpeed(guessD, guessRt, guessOk));
         }
 
         [Test]

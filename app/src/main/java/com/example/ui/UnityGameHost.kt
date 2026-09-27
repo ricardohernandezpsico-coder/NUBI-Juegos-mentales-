@@ -71,7 +71,8 @@ fun UnityGameHost(
         soundEnabled = soundEnabled,
         launchId = launchId,
         assessmentStep = session.assessmentStep,
-        assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0
+        assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0,
+        memory = session.memory
       )
     )
     onLaunched(launchId)

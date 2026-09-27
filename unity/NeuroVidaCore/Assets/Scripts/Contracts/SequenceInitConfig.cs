@@ -52,5 +52,15 @@ namespace NeuroVida.Contracts
         public bool assessment;
         public int assessment_step;
         public int assessment_total;
+
+        /// <summary>Solo Bitácora de Misión: "" = partida completa (transmisión, patrulla e informe); "encode" = solo la
+        /// transmisión (al empezar la sesión diaria); "recall" = solo el informe (al terminarla). Ver BitacoraContract.</summary>
+        public string memory_phase = "";
+        /// <summary>Solo Bitácora: semilla de la misión (la transmisión la elige; el informe recibe la misma).</summary>
+        public int memory_seed;
+        /// <summary>Solo Bitácora (informe): nivel con que se armó la misión en la transmisión.</summary>
+        public int memory_level;
+        /// <summary>Solo Bitácora (informe): segundos desde la transmisión.</summary>
+        public int memory_elapsed_s;
     }
 }
