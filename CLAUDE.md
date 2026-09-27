@@ -111,12 +111,12 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 
-## Estado y pendientes (26-sep)
+## Estado y pendientes (27-sep)
 
-- Última prueba de Ricardo en su teléfono: después de la limpieza del 26-sep (tramos 1 y 2), todo OK.
-- En curso: depuración para fijar el punto base `v0.1-base` (tramo 3: esta memoria + READMEs; tramo 4:
-  verificación completa, prueba manual con [`docs/prueba-manual.md`](docs/prueba-manual.md), juntar la rama con `main` y
-  marcar la versión).
+- 27-sep: prueba manual completa (`docs/prueba-manual.md`, incluida la sección H con "No conservar actividades")
+  aprobada por Ricardo en su teléfono. Es el punto base `v0.1-base`.
+- `ActiveGameSession.sessionToken` + `key(session.sessionToken)` en `MainActivity`: cada sesión de juego es su propio
+  grupo de composición (si no, `UnityGameHost` heredaba el `launched` guardado de la anterior al recrearse la pantalla).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
   re-chequeo mensual del punto de partida; tutorial de primera vez por juego; marca ✓/✗ de arcilla sobre la
   respuesta; alinear Secuencia y Parejas con el DDA común; calibrar el DDA y la referencia de percentiles con datos.
