@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -248,6 +248,27 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawCircle(Clay.Sky, 4f, Offset(67f, 22f))
       clay(star(Offset(48f, 25f), 15f, 7f, 5, round = true), Clay.Sun, border = 4f)
       sparkle(Offset(26f, 20f), 8f, Color.White)
+    }
+    "rumbo" -> {
+      // Tu base (casa), la ruta de ida en puntos lima hasta un cristal, y la flecha sol que vuelve a casa.
+      val trail = listOf(Offset(29f, 50f), Offset(30f, 40f), Offset(31f, 30f), Offset(40f, 27f), Offset(50f, 26f), Offset(60f, 25f))
+      trail.forEach { o ->
+        drawCircle(Ink, 4.2f, o)
+        drawCircle(Clay.Lime, 2.6f, o)
+      }
+      val back = Path().apply {
+        moveTo(74f, 38f)
+        quadraticBezierTo(72f, 66f, 49f, 71f)
+        // Punta de la flecha (dirección de llegada: hacia la izquierda y un poco abajo).
+        moveTo(57.8f, 78.2f)
+        lineTo(47f, 71.4f)
+        lineTo(53.8f, 60.6f)
+      }
+      clayStroke(back, Clay.Sun, 6f)
+      clay(circle(Offset(27f, 72f), 17f), Cream, gloss = true)
+      clay(circle(Offset(27f, 72f), 7f), Clay.Coral, border = 3.5f, shadow = false)
+      clay(diamond(Offset(76f, 22f), 9f, 13f), Clay.Sky, gloss = true)
+      sparkle(Offset(90f, 40f), 7f, Color.White)
     }
     "trafico" -> {
       // Estación de carga arriba; la ruta baja en curva hasta un desvío (disco con flecha) y se abre hacia dos planetas.

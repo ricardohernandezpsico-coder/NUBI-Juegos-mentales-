@@ -71,6 +71,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -589,10 +590,99 @@ fun GameResultScreen(
       }
     }
 
+    // Rumbo a Casa: "tu brújula interna" (a qué distancia de casa quedaste) y "tus llegadas" (cada vuelta alrededor de
+    // la base), separando rumbo y distancia; con faro / sin faro si hubo viajes suficientes de cada tipo.
+    result.homingErrorPct?.let { err ->
+      Spacer(Modifier.height(14.dp))
+      Text(
+        text = "Tu brújula interna: a ${err.roundToInt()}% de casa",
+        color = Clay.Lime,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = FredokaFamily,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 24.dp)
+      )
+      Text(
+        text = "En promedio, a qué distancia de tu base quedaste, en % de lo que había que volver. Volver sin mapa usa lo que registras al moverte: cuánto giras y cuánto avanzas.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+      val along = result.homingAlong
+      val lateral = result.homingLateral
+      val beacon = result.homingBeacon
+      if (along != null && lateral != null && beacon != null) {
+        val trips = com.example.data.Homing.trips(along, lateral, beacon)
+        val angle = com.example.data.Homing.meanAbsAngle(trips)
+        val distance = com.example.data.Homing.distanceMessage(com.example.data.Homing.distance(trips))
+        Spacer(Modifier.height(8.dp))
+        Text("Tus llegadas", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+        HomingTarget(
+          trips,
+          Modifier.fillMaxWidth().padding(horizontal = 56.dp).height(230.dp)
+            .semantics {
+              contentDescription = "Tus llegadas: ${trips.size} vueltas alrededor de tu base." +
+                (angle?.let { " Te desviaste ${it.roundToInt()} grados en promedio." } ?: "") + (distance?.let { " $it" } ?: "")
+            }
+        )
+        Text(
+          text = "Cada punto es dónde quedaste. Encima de tu base es pasarte, debajo es quedarte corto y a los lados es desviar el rumbo.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+        angle?.let { a ->
+          Text(
+            text = "Rumbo: te desviaste ${a.roundToInt()}° en promedio",
+            color = Clay.Cream,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+        distance?.let {
+          Text(
+            text = it,
+            color = Clay.Cream,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+        com.example.data.Homing.sourceMessage(com.example.data.Homing.source(trips))?.let {
+          Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+        }
+        com.example.data.Homing.beaconAngles(trips)?.let { (withDeg, withoutDeg) ->
+          Text(
+            text = com.example.data.Homing.beaconMessage(withDeg, withoutDeg),
+            color = TextSoft,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+      }
+      result.homingPerfect?.takeIf { it > 0 }?.let { n ->
+        Text(
+          text = if (n == 1) "1 llegada perfecta" else "$n llegadas perfectas",
+          color = Clay.Sun,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 4.dp)
+        )
+      }
+    }
+
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
-      result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled
+      result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
+      result.homingErrorPct
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -949,6 +1039,53 @@ private fun NumberLineStrip(trues: List<Float>, givens: List<Float>, modifier: M
       drawLine(Clay.Ink, Offset(tx, y - 5.dp.toPx()), Offset(tx, y + 5.dp.toPx()), 2.dp.toPx())
       drawCircle(Clay.Ink, 4.5.dp.toPx(), Offset(gx, gy))
       drawCircle(col, 3.dp.toPx(), Offset(gx, gy))
+    }
+  }
+}
+
+// ---------- Rumbo a Casa: "tus llegadas" ----------
+
+/**
+ * Diana alrededor de tu base: la base arriba al centro y, abajo, el punto donde empezó la vuelta (la vuelta justa es la
+ * línea crema entre los dos). Cada vuelta es un punto donde quedó la nave, en fracciones de la distancia que había:
+ * encima de la base = te pasaste, debajo = te quedaste corto, a los costados = desviaste el rumbo. Dos anillos finos:
+ * "llegada perfecta" (12%) y "llegaste a casa" (35%). Lo que se lee es la posición (con texto aparte), no el color.
+ */
+@Composable
+private fun HomingTarget(trips: List<com.example.data.HomingTrip>, modifier: Modifier = Modifier) {
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  Canvas(modifier) {
+    val homeY = size.height * 0.34f
+    val startY = size.height * 0.9f
+    val unit = startY - homeY
+    val cx = size.width / 2f
+    val home = Offset(cx, homeY)
+    // Vuelta justa, anillos y rótulos.
+    drawLine(
+      Clay.Cream.copy(alpha = 0.45f), Offset(cx, startY), home, 2.dp.toPx(),
+      pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
+    )
+    drawCircle(Clay.Cream.copy(alpha = 0.35f), unit * 0.35f, home, style = Stroke(1.5.dp.toPx()))
+    drawCircle(Clay.Lime.copy(alpha = 0.6f), unit * 0.12f, home, style = Stroke(1.5.dp.toPx()))
+    drawCircle(Clay.Ink, 5.dp.toPx(), Offset(cx, startY))
+    drawCircle(Clay.Cream, 3.dp.toPx(), Offset(cx, startY))
+    val small = TextStyle(color = TextSoft, fontSize = 11.sp)
+    val startLab = measurer.measure("inicio de la vuelta", small)
+    drawText(startLab, topLeft = Offset(cx + 10.dp.toPx(), startY - startLab.size.height / 2f))
+    // Tu base: anillo crema con centro coral (como en el juego).
+    drawCircle(Clay.Ink, 13.dp.toPx(), home + Offset(0f, 3.dp.toPx()))
+    drawCircle(Clay.Ink, 13.dp.toPx(), home)
+    drawCircle(Clay.Cream, 10.5.dp.toPx(), home)
+    drawCircle(Clay.Coral, 4.5.dp.toPx(), home)
+    val homeLab = measurer.measure("tu base", small)
+    drawText(homeLab, topLeft = Offset(cx - homeLab.size.width / 2f, homeY - 17.dp.toPx() - homeLab.size.height))
+    // Llegadas.
+    val pad = 6.dp.toPx()
+    for (t in trips) {
+      val x = (cx + t.lateral * unit).coerceIn(pad, size.width - pad)
+      val y = (homeY + (1f - t.along) * unit).coerceIn(pad, size.height - pad)
+      drawCircle(Clay.Ink, 6.dp.toPx(), Offset(x, y))
+      drawCircle(Clay.Sun, 4.5.dp.toPx(), Offset(x, y))
     }
   }
 }

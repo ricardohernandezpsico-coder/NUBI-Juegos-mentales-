@@ -122,7 +122,14 @@ object NativeReceiver {
     val mem_recalled_mask: Int = -1,
     val mem_intrusions: Int = -1,
     val mem_order_ok: Int = -1,
-    val mem_delay_s: Int = -1
+    val mem_delay_s: Int = -1,
+    // Solo Rumbo a Casa: a qué distancia de casa quedó (% de la distancia que había, -1 = no aplica), dónde quedó cada
+    // vuelta (a lo largo y a lo ancho de la vuelta justa, en fracciones de esa distancia), faro (1/0) y perfectas.
+    val homing_error_pct: Double = -1.0,
+    val homing_along: List<Double>? = null,
+    val homing_lateral: List<Double>? = null,
+    val homing_beacon: List<Int>? = null,
+    val homing_perfect: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -250,7 +257,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -311,6 +318,17 @@ object NativeReceiver {
 
     val metrics = telemetry.session_metrics
     Log.i(TAG, "DDA ${telemetry.game_id}: end_rating=${metrics.end_rating} peak_level=${metrics.peak_level}")
+    // Rumbo a Casa: una terna por viaje (dónde quedó a lo largo y a lo ancho de la vuelta justa, y si había faro);
+    // solo si las tres listas vienen completas y del mismo largo.
+    val homing = run {
+      val along = metrics.homing_along
+      val lateral = metrics.homing_lateral
+      val beacon = metrics.homing_beacon
+      if (telemetry.game_id != "rumbo" || along.isNullOrEmpty() || lateral == null || beacon == null ||
+        lateral.size != along.size || beacon.size != along.size
+      ) null
+      else along.indices.map { i -> Triple(along[i].toFloat(), lateral[i].toFloat(), beacon[i] == 1) }
+    }
     return GamePlayResult(
       gameId = telemetry.game_id,
       score = metrics.calculated_score.coerceIn(0, 100),
@@ -349,7 +367,12 @@ object NativeReceiver {
       memRecalledMask = metrics.mem_recalled_mask.takeIf { it >= 0 },
       memIntrusions = metrics.mem_intrusions.takeIf { it >= 0 },
       memOrderOk = metrics.mem_order_ok.takeIf { it >= 0 },
-      memDelayS = metrics.mem_delay_s.takeIf { it >= 0 }
+      memDelayS = metrics.mem_delay_s.takeIf { it >= 0 },
+      homingErrorPct = metrics.homing_error_pct.takeIf { it >= 0.0 }?.toFloat(),
+      homingAlong = homing?.let { h -> h.map { it.first } },
+      homingLateral = homing?.let { h -> h.map { it.second } },
+      homingBeacon = homing?.let { h -> h.map { it.third } },
+      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 }
     )
   }
 }

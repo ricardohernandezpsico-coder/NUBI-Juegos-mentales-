@@ -159,6 +159,35 @@ Practicar el recuerdo afianza (Roediger y Karpicke, 2006).
 
 ---
 
+## Rumbo a Casa: "Tu brújula interna" y "Tus llegadas"
+
+**Qué mide.** Integración de trayecto: volver al punto de partida sin verlo, usando solo lo que se registró al moverse
+(cuánto se giró y cuánto se avanzó). Es la tarea de completar el triángulo (Klatzky et al., 1990; Loomis et al., 1993),
+que depende de las células de red de la corteza entorrinal (Hafting et al., 2005) y se usa en los estudios de
+orientación en realidad virtual (Howett et al., 2019) y en Sea Hero Quest (Coutrot et al., 2018). La base
+científica explica por qué vale la pena; en la app **no se nombran enfermedades** ni se sugiere que el juego detecte
+algo.
+
+**Cómo se calcula.** En cada vuelta se registra dónde quedó la nave en el marco de la vuelta justa (la base adelante,
+a distancia 1). De ahí salen, sin suposiciones, el desvío del rumbo (grados) y la distancia recorrida (1 = justa).
+"Tu brújula interna" es la distancia media a la base, en % de lo que había que volver.
+
+**Qué se dice y con qué mínimos.**
+- El desvío medio del rumbo, siempre.
+- La distancia ("la calculas bien", "sueles quedarte corto", "sueles pasarte", "a veces corto y a veces largo") solo
+  desde 4 viajes y con 70% de los viajes para el mismo lado. En los giros no hay bordes que sesguen el error, así que
+  el signo sí se puede leer (a diferencia de la regla de Aterrizaje Lunar).
+- Qué aleja más de casa (los costados = rumbo; antes/después = distancia) solo si una parte es 1,5 veces la otra y 5
+  puntos mayor, con un truco concreto para esa parte.
+- Con faro / sin faro solo con 3 viajes o más de cada tipo, y "te ayudó" solo con 8° de diferencia. El faro está en el
+  infinito: da el rumbo, no la posición (los puntos de referencia lejanos ayudan a orientarse).
+
+**Qué NO se dice.** No se compara con normas: el aparato, la escala y la demora no son los de ningún estudio. Se sabe
+que en esta tarea las respuestas tienden hacia el promedio (giros grandes se quedan cortos, giros chicos se pasan;
+Loomis et al., 1993), pero con 6-8 viajes por partida no se nombra ese patrón.
+
+---
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -170,10 +199,19 @@ Practicar el recuerdo afianza (Roediger y Karpicke, 2006).
   Verbal Behavior*, 9, 529–533.
 - Braver, T. S. (2012). The variable nature of cognitive control: a dual mechanisms framework. *Trends in Cognitive
   Sciences*, 16, 106–113.
+- Coutrot, A., et al. (2018). Global determinants of navigation ability. *Current Biology*, 28, 2861–2866.
 - Cooper, L. A., y Shepard, R. N. (1973). Chronometric studies of the rotation of mental images. En W. G. Chase (Ed.),
   *Visual Information Processing*.
 - Edwards, J. D., et al. (2005). Reliability and validity of Useful Field of View test scores as administered by
   personal computer. *Journal of Clinical and Experimental Neuropsychology*, 27, 529–543.
+- Hafting, T., Fyhn, M., Molden, S., Moser, M.-B., y Moser, E. I. (2005). Microstructure of a spatial map in the
+  entorhinal cortex. *Nature*, 436, 801–806.
+- Howett, D., et al. (2019). Differentiation of mild cognitive impairment using an entorhinal cortex-based test of
+  virtual reality navigation. *Brain*, 142, 1751–1766.
+- Klatzky, R. L., Loomis, J. M., Golledge, R. G., et al. (1990). Acquisition of route and survey knowledge in the
+  absence of vision. *Journal of Motor Behavior*, 22, 19–43.
+- Loomis, J. M., Klatzky, R. L., Golledge, R. G., et al. (1993). Nonvisual navigation by blind and sighted: assessment
+  of path integration ability. *Journal of Experimental Psychology: General*, 122, 73–91.
 - Roediger, H. L., y Karpicke, J. D. (2006). Test-enhanced learning: taking memory tests improves long-term
   retention. *Psychological Science*, 17, 249–255.
 - Schneider, M., et al. (2018). Associations of number line estimation with mathematical competence: a meta-analysis.

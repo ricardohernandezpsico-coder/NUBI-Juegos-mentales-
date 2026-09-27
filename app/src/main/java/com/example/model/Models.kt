@@ -121,6 +121,14 @@ object GameRegistry {
       iconEmoji = "📡"
     ),
     GameDefinition(
+      id = "rumbo",
+      title = "Rumbo a Casa",
+      domain = DomainType.MEMORIA,
+      subtitle = "Orientación: volver a casa sin mapa",
+      instruction = "Toca las señales para ir de cristal en cristal: el espacio gira a tu alrededor. Al final, apunta hacia tu base y avanza hasta donde creas que está. Recuerda cada giro.",
+      iconEmoji = "🧭"
+    ),
+    GameDefinition(
       id = "anagramas",
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
@@ -250,7 +258,16 @@ data class GamePlayResult(
   val memOrderOk: Int? = null,
   val memDelayS: Int? = null,
   val memRetentionPct: Int? = null,
-  val memArchivedTotal: Int? = null
+  val memArchivedTotal: Int? = null,
+  // Solo Rumbo a Casa: "tu brújula interna" (a qué distancia de casa quedaste, en % de la distancia que había), dónde
+  // quedó cada vuelta en el marco de la vuelta justa (en fracciones de esa distancia: la base en along = 1,
+  // lateral = 0; lateral + = a la derecha), si el viaje tenía faro y llegadas perfectas. La lectura está en
+  // data/Homing.kt. No se guardan en Room.
+  val homingErrorPct: Float? = null,
+  val homingAlong: List<Float>? = null,
+  val homingLateral: List<Float>? = null,
+  val homingBeacon: List<Boolean>? = null,
+  val homingPerfect: Int? = null
 )
 
 data class DailySessionState(
