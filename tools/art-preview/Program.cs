@@ -69,6 +69,22 @@ internal static class Program
         Dump("brake_button_lit", NeuroVida.Games.Freno.BrakeSprites.LaunchButton(true));
         Dump("land_lander", NeuroVida.Games.Aterrizaje.LandingSprites.Lander());
         Dump("land_flag", NeuroVida.Games.Aterrizaje.LandingSprites.Flag());
+        Dump("dock_cell", NeuroVida.Games.Acoplamiento.DockingSprites.ModuleCell());
+        Dump("dock_socket", NeuroVida.Games.Acoplamiento.DockingSprites.SocketCell());
+        Dump("dock_sil", NeuroVida.Games.Acoplamiento.DockingSprites.CellSilhouette());
+        Dump("dock_fit", NeuroVida.Games.Acoplamiento.DockingSprites.FitIcon());
+        Dump("dock_mirror", NeuroVida.Games.Acoplamiento.DockingSprites.MirrorIcon());
+        {
+            // Pieza de la maqueta: pentominó F (quiral).
+            var f = new[] { new NeuroVida.Games.Acoplamiento.Cell(1, 0), new NeuroVida.Games.Acoplamiento.Cell(0, 1), new NeuroVida.Games.Acoplamiento.Cell(1, 1),
+                new NeuroVida.Games.Acoplamiento.Cell(1, 2), new NeuroVida.Games.Acoplamiento.Cell(2, 2) };
+            var L = NeuroVida.Games.Acoplamiento.DockingSprites.PieceLayer.Body;
+            Dump("dock_piece", NeuroVida.Games.Acoplamiento.DockingSprites.PieceSprite(f, false, L, 288));
+            Dump("dock_piece_m", NeuroVida.Games.Acoplamiento.DockingSprites.PieceSprite(f, true, L, 288));
+            Dump("dock_piece_sil", NeuroVida.Games.Acoplamiento.DockingSprites.PieceSprite(f, false, NeuroVida.Games.Acoplamiento.DockingSprites.PieceLayer.Silhouette, 288));
+            Dump("dock_piece_sil_m", NeuroVida.Games.Acoplamiento.DockingSprites.PieceSprite(f, true, NeuroVida.Games.Acoplamiento.DockingSprites.PieceLayer.Silhouette, 288));
+            Dump("dock_piece_socket", NeuroVida.Games.Acoplamiento.DockingSprites.PieceSprite(f, false, NeuroVida.Games.Acoplamiento.DockingSprites.PieceLayer.Socket, 288));
+        }
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)
             {

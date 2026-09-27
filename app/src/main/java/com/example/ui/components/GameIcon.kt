@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -224,6 +224,16 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(poly(24f, 42f, 52f, 42f, 48f, 34f, 28f, 34f), Clay.Sun, border = 3f)
       clay(roundRect(27f, 14f, 22f, 20f, 7f), Cream, border = 3.5f)
       clay(circle(Offset(38f, 24f), 5f), Clay.Sky, border = 2.5f, shadow = false)
+    }
+    "acoplamiento" -> {
+      // Pieza en L celeste, girada, con su flecha de giro; abajo, su hueco en el puerto (tinta con borde crema).
+      withTransform({ rotate(-35f, Offset(30f, 33f)) }) {
+        clay(poly(15f, 10f, 30f, 10f, 30f, 41f, 45f, 41f, 45f, 56f, 15f, 56f), Clay.Sky, gloss = true)
+      }
+      val hole = poly(54f, 44f, 68f, 44f, 68f, 73f, 82f, 73f, 82f, 87f, 54f, 87f)
+      drawPath(hole, Ink.copy(alpha = 0.85f))
+      drawPath(hole, Cream, style = Stroke(3f, join = StrokeJoin.Round))
+      curvedArrow(Offset(30f, 33f), 30f, 190f, 95f, Clay.Sun)
     }
     "series" -> {
       // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).

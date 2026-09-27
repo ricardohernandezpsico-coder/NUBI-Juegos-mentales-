@@ -97,6 +97,14 @@ object GameRegistry {
       iconEmoji = "🔍"
     ),
     GameDefinition(
+      id = "acoplamiento",
+      title = "Acoplamiento",
+      domain = DomainType.RAZONAMIENTO,
+      subtitle = "Razonamiento espacial: rotación mental",
+      instruction = "Llega un módulo girado: ¿encaja en el puerto o es su reflejo en espejo? Gíralo en tu mente y decide.",
+      iconEmoji = "🧩"
+    ),
+    GameDefinition(
       id = "anagramas",
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
@@ -198,7 +206,11 @@ data class GamePlayResult(
   val numlineErrorPct: Float? = null,
   val numlineTrue: List<Float>? = null,
   val numlineGiven: List<Float>? = null,
-  val numlineBullseyes: Int? = null
+  val numlineBullseyes: Int? = null,
+  // Solo Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (ms medios a 0/45/90/135/180°;
+  // null = sin datos en esa columna). No se guardan en Room.
+  val rotationSpeedDps: Int? = null,
+  val rotationCurveMs: List<Int?>? = null
 )
 
 data class DailySessionState(

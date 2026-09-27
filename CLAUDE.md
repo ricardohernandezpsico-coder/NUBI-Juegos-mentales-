@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 14 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 15 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -15,11 +15,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
   `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 14 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 15 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 27-sep · n`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 27-sep · o`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -88,8 +88,8 @@ Pedido de Ricardo: juegos que diferencien a la app, con respaldo científico y m
 Torre de Lunas (Torre de Londres), Matriz Perdida (tipo Raven), Constelación de Palabras (fluidez verbal).
 
 Segunda tanda (27-sep, pedido de Ricardo: "que generen enganche", paso a paso y probando cada uno): **Freno de
-Emergencia** (hecho; Ricardo: "funciona muy bien") → **Aterrizaje Lunar** (hecho, primera versión) →
-**Acoplamiento** (rotación mental; medida "giro mental" en grados/s). Después: Escuadrón (ANT: perfil alerta /
+Emergencia** (hecho; Ricardo: "funciona muy bien") → **Aterrizaje Lunar** (hecho; Ricardo: "todo ok") →
+**Acoplamiento** (hecho, primera versión). Después: Escuadrón (ANT: perfil alerta /
 orientación / control, reemplaza a Formación), Eco Estelar (n-back doble con notas), Torre de Lunas, Constelación.
 Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ricardo de Radar).
 
@@ -187,7 +187,28 @@ tramo "a 3" (lima si ≤5%, coral si no). "¡DIANA LUNAR!" con ≤1,2% de error.
   se posó, y `data/NumberLine` (lógica pura con pruebas) lee el sesgo: pareja, agranda los chicos, achica los grandes o
   comprime (el patrón logarítmico de Siegler).
 - Arte: `LandingSprites` (módulo lunar, bandera), `GameWorld.LunarRange`. Vista previa:
-  `python3 tools/art-preview/aterrizaje.py <raw>` → `docs/previews/aterrizaje.png`. Sin probar en el teléfono.
+  `python3 tools/art-preview/aterrizaje.py <raw>` → `docs/previews/aterrizaje.png`. Probado por Ricardo (27-sep): ok.
+
+**Acoplamiento** (`Games/Acoplamiento/`, id `acoplamiento`, dominio razonamiento): rotación mental (Shepard y Metzler,
+1971; Cooper y Shepard, 1973; meta-análisis de Uttal et al., 2013). Abajo el puerto de la estación con el hueco de una
+pieza (poliominó quiral al azar); arriba llega el módulo girado, que es la pieza o su reflejo. Botones grandes
+"ENCAJA" (lima) y "ESPEJO" (uva), con texto e ícono; la respuesta cuenta al PRESIONAR. Siempre se muestra la verdad:
+el módulo gira hasta quedar derecho; si era el reflejo se da vuelta como un espejo (escala x 1 → −1); si encajaba,
+baja al puerto (clunk, puerto lima) y se suma a "tu estación" (fila de arriba, crece en la partida).
+- Reglas y pruebas: `DockingContract` / `DockingContractTests` (7): piezas conexas y quirales (`IsChiral` compara con
+  los 4 giros del reflejo), 12 niveles: 4 → 7 bloques, giro máximo 90/135/180°, ángulos de a 45° y desde el 5 de a
+  15°, "combustible" (tiempo para decidir) 6 → 2,5 s en Reto (Precisión 12 s, 24 módulos). DDA `stepUp` 0.3 SIN
+  modular por tiempo (el tiempo es la medida).
+- La pieza se hornea ENTERA en cada intento (`DockingSprites.PieceSprite`: SDF de bloques + "puentes" entre vecinos,
+  una sola silueta; juntas tenues y remaches simétricos, que no delatan la orientación). La sombra dura va aparte
+  (silueta en tinta, en un contenedor que no gira): cae siempre hacia abajo aunque la pieza gire.
+- Medida propia: **tu giro mental** (`RotationSpeed`: recta de mínimos cuadrados del tiempo contra el ángulo en los
+  aciertos; 1000 / pendiente = grados por segundo; -1 con menos de 8 aciertos o menos de 3 ángulos) y **tu curva de
+  giro** (tiempo medio a 0/45/90/135/180°). Viajan en `rotation_speed_dps / rotation_curve_ms` →
+  `GamePlayResult.rotationSpeedDps / rotationCurveMs` → `GameResultScreen`: "Tu giro mental: N° por segundo" y cinco
+  columnas uva con el tiempo encima y el ángulo debajo.
+- Arte: `DockingSprites`, `GameWorld.DockingBay` (cielo quieto: nada gira en el fondo). Vista previa:
+  `python3 tools/art-preview/acoplamiento.py <raw>` → `docs/previews/acoplamiento.png`. Sin probar en el teléfono.
 
 ## Reglas que no se rompen
 
@@ -216,7 +237,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 46 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 137 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 14 smoke tests.
+- Unity EditMode: 144 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 15 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

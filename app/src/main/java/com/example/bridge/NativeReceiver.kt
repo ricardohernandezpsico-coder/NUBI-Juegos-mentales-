@@ -103,7 +103,10 @@ object NativeReceiver {
     val numline_error_pct: Double = -1.0,
     val numline_true: List<Double>? = null,
     val numline_given: List<Double>? = null,
-    val numline_bullseyes: Int = 0
+    val numline_bullseyes: Int = 0,
+    // Solo Acoplamiento: giro mental (°/s, -1 = sin medida) y curva de giro (5 columnas, -1 = sin datos).
+    val rotation_speed_dps: Int = -1,
+    val rotation_curve_ms: List<Int>? = null
   )
 
   @JsonClass(generateAdapter = true)
@@ -231,7 +234,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -313,7 +316,9 @@ object NativeReceiver {
       numlineErrorPct = metrics.numline_error_pct.takeIf { it >= 0.0 }?.toFloat(),
       numlineTrue = metrics.numline_true?.map { it.toFloat() }?.takeIf { it.isNotEmpty() },
       numlineGiven = metrics.numline_given?.map { it.toFloat() }?.takeIf { it.isNotEmpty() },
-      numlineBullseyes = metrics.numline_bullseyes.takeIf { metrics.numline_error_pct >= 0.0 }
+      numlineBullseyes = metrics.numline_bullseyes.takeIf { metrics.numline_error_pct >= 0.0 },
+      rotationSpeedDps = metrics.rotation_speed_dps.takeIf { it > 0 },
+      rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } }
     )
   }
 }

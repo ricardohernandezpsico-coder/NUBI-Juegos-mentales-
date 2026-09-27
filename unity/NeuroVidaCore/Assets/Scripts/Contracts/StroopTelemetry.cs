@@ -56,5 +56,9 @@ namespace NeuroVida.Contracts
         public float[] numline_given;
         /// <summary>Solo Aterrizaje Lunar: dianas (justo en el blanco).</summary>
         public int numline_bullseyes;
+        /// <summary>Solo Acoplamiento: "tu giro mental" (grados por segundo). -1 = sin medida.</summary>
+        public int rotation_speed_dps = -1;
+        /// <summary>Solo Acoplamiento: tiempo medio de los aciertos a 0°, 45°, 90°, 135° y 180° (-1 = sin datos).</summary>
+        public int[] rotation_curve_ms;
     }
 }

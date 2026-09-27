@@ -150,6 +150,16 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.10f), NebulaBPos = new Vector2(0.5f, 0.3f),
         };
 
+        /// <summary>Acoplamiento: muelle de la estación, cielo quieto (nada gira en el fondo: el giro es la tarea) y un
+        /// planeta celeste asomando abajo a la izquierda.</summary>
+        public static GameWorld DockingBay => new GameWorld
+        {
+            Name = "Muelle de la estación", Stars = 48,
+            Planets = new[] { new Vector3(-0.06f, 0.36f, 380f) }, PlanetColors = new[] { NeuroStyle.Sky },
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.20f), NebulaAPos = new Vector2(0.85f, 0.8f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.10f), NebulaBPos = new Vector2(0.5f, 0.25f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

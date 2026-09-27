@@ -3,6 +3,7 @@
 using System;
 namespace UnityEngine {
 public static class Mathf {
+    public static int RoundToInt(float v) => (int)System.Math.Round(v, System.MidpointRounding.ToEven);
   public const float PI = (float)Math.PI;
   public static float Clamp01(float v) => v < 0 ? 0 : v > 1 ? 1 : v;
   public static float Clamp(float v, float a, float b) => v < a ? a : v > b ? b : v;

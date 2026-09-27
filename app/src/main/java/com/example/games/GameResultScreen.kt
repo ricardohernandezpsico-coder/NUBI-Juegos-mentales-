@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -393,6 +394,37 @@ fun GameResultScreen(
       }
     }
 
+    // Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (cuánto más tarda cuanto más girado).
+    if (result.rotationSpeedDps != null || result.rotationCurveMs != null) {
+      Spacer(Modifier.height(14.dp))
+      result.rotationSpeedDps?.let { dps ->
+        Text(
+          text = "Tu giro mental: $dps° por segundo",
+          color = Clay.Grape,
+          fontWeight = FontWeight.Bold,
+          fontSize = 18.sp,
+          fontFamily = FredokaFamily
+        )
+      }
+      result.rotationCurveMs?.let { curve ->
+        Spacer(Modifier.height(8.dp))
+        Text("Tu curva de giro", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+        RotationCurve(
+          curve,
+          Modifier.padding(horizontal = 40.dp).fillMaxWidth().height(110.dp)
+            .semantics { contentDescription = "Tu curva de giro: tiempo de respuesta según cuán girada venía la pieza" }
+        )
+      }
+      Text(
+        text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Shepard y Metzler, 1971). Mientras más plana tu curva, más rápido giras."
+        else "Con más aciertos en distintos ángulos se mide tu giro mental.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+      )
+    }
+
     if (didLevelUp) {
       Spacer(Modifier.height(18.dp))
       ClayPill(
@@ -687,6 +719,41 @@ private fun NumberLineStrip(trues: List<Float>, givens: List<Float>, modifier: M
       drawLine(Clay.Ink, Offset(tx, y - 5.dp.toPx()), Offset(tx, y + 5.dp.toPx()), 2.dp.toPx())
       drawCircle(Clay.Ink, 4.5.dp.toPx(), Offset(gx, gy))
       drawCircle(col, 3.dp.toPx(), Offset(gx, gy))
+    }
+  }
+}
+
+// ---------- Acoplamiento: "tu curva de giro" ----------
+
+/**
+ * Cinco columnas de arcilla (0°, 45°, 90°, 135°, 180°): la altura es el tiempo medio de respuesta a ese ángulo. Rótulo
+ * del ángulo debajo y del tiempo (en segundos) encima: los valores se leen en texto, no solo por la altura.
+ */
+@Composable
+private fun RotationCurve(curve: List<Int?>, modifier: Modifier = Modifier) {
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  val labels = listOf("0°", "45°", "90°", "135°", "180°")
+  Canvas(modifier) {
+    val maxMs = (curve.filterNotNull().maxOrNull() ?: 1).coerceAtLeast(1)
+    val slot = size.width / 5f
+    val barW = slot * 0.46f
+    val labelH = 18.dp.toPx()
+    val valueH = 16.dp.toPx()
+    val chartH = size.height - labelH - valueH
+    val small = TextStyle(color = TextSoft, fontSize = 11.sp)
+    for (i in 0 until 5) {
+      val cx = slot * (i + 0.5f)
+      val lab = measurer.measure(labels[i], small)
+      drawText(lab, topLeft = Offset(cx - lab.size.width / 2f, size.height - lab.size.height.toFloat()))
+      val ms = curve.getOrNull(i) ?: continue
+      val h = (chartH * ms / maxMs).coerceAtLeast(4.dp.toPx())
+      val top = valueH + chartH - h
+      drawRoundRect(Clay.Ink, Offset(cx - barW / 2f, top + 3.dp.toPx()), androidx.compose.ui.geometry.Size(barW, h),
+        androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()))
+      drawRoundRect(Clay.Grape, Offset(cx - barW / 2f, top), androidx.compose.ui.geometry.Size(barW, h),
+        androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()))
+      val v = measurer.measure(String.format(java.util.Locale("es"), "%.1f s", ms / 1000f), small.copy(color = Clay.Cream))
+      drawText(v, topLeft = Offset(cx - v.size.width / 2f, top - v.size.height - 2.dp.toPx()))
     }
   }
 }
