@@ -12,8 +12,10 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 ## Cómo trabajamos (nube ↔ PC)
 
 - Las sesiones en la nube editan, verifican C# con `dotnet build tools/unity-compile-check -v q` y hacen push a la
-  rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
-  `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
+  rama de trabajo. En la nube no hay Unity, pero **la app Kotlin SÍ se compila y prueba**: `bash tools/nube-compilar-app.sh`
+  (instala el SDK la primera vez, pone un unityLibrary FALSO en `unity/AndroidExport/` y corre `:app:testDebugUnitTest`;
+  con `fotos` graba las capturas Roborazzi, p. ej. `HomePlanetScreenshotTest`, para ver pantallas sin teléfono).
+  No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
   escena piloto, pruebas EditMode, smoke de los 19 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
@@ -37,16 +39,18 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
-- Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, camino de días en perspectiva) · Juegos
+- Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, "Tu planeta": ver abajo) · Juegos
   (`GamesLibraryScreen`, planetas) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`; y
+- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
+  `Planet`, `StarMeasures`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
   onboarding van en **SharedPreferences** para no migrar: `league_events`, `achievements`, `profile_extra`
-  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity.
+  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity, `star_measures` (la medida
+  propia de cada partida de los juegos estrella, `StarMeasures.encode`), `mission_log`.
   Al cambiar el esquema de Room: entidad → subir versión → `Migration(N, N+1)` en SQL → compilar → comitear `schemas/<N+1>.json`.
 - Diseño "noche + arcilla" (`ui/theme/Clay.kt`, `Type.kt` con Fredoka, `ui/components/CosmosBackground.kt`).
 
@@ -427,7 +431,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 60 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 70 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 174 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
@@ -439,7 +443,19 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 - `ActiveGameSession.sessionToken` + `key(session.sessionToken)` en `MainActivity`: cada sesión de juego es su propio
   grupo de composición (si no, `UnityGameHost` heredaba el `launched` guardado de la anterior al recrearse la pantalla).
 - Idea de Ricardo tras Radar (27-sep): la información del final de cada juego estrella es lo más valioso para el
-  usuario; explorar más ese camino (propuesta pendiente: guardar las medidas propias por partida y mostrar su evolución).
+  usuario. Desde el 28-sep la medida propia de cada partida se guarda (`star_measures`) y se muestra en Hoy.
+- **Hoy = "Tu planeta"** (28-sep; Ricardo eligió la mezcla de las propuestas 1 y 2 de `docs/previews/inicio-propuestas.png`;
+  maqueta `docs/previews/inicio-planeta.png`, `tools/previews/inicio_planeta.py`). Reemplaza al camino de días en
+  perspectiva. `ui/components/HomePlanet`: planeta de arcilla con una zona por dominio (Memoria cristales, Atención
+  faros, Razonamiento torres, Lenguaje árboles, Cálculo domos, Velocidad antenas, al centro) que crece con cada partida
+  (`data/Planet`: crecimiento logarítmico, nunca baja; construcciones 1-5), gira despacio (quieto con "quitar
+  animaciones"), las 3 partidas del día orbitan y aterrizan con ✓ en su zona, las zonas jugadas hoy brillan y arriba
+  dice "¡Creció X!". Debajo: la línea "Esta semana creció / Quieta hace N días · Aún sin explorar" y el
+  **descubrimiento del día** (`data/StarMeasures.discover`: con 3+ partidas de un juego estrella, primero un récord de los
+  últimos 7 días, si no la mayor mejora ≥ 5%, si no "se mantiene"; gráfico de las últimas 6 con "mejor" hacia arriba; sin
+  datos, invitación tocable "Juega Radar para descubrir tu vistazo"). Tocar una zona abre su ventana (`ZoneDialog`):
+  partidas por semana (4), cada juego del dominio con su última medida o cuándo se jugó, y "Jugar X" (el sin jugar o el
+  más olvidado). Captura real (Roborazzi): `docs/previews/inicio-planeta-real.png`. Sin probar en el teléfono.
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");

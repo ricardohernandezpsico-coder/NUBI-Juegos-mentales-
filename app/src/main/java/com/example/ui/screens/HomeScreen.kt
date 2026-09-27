@@ -1,35 +1,25 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
@@ -37,83 +27,64 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.data.Discovery
+import com.example.data.DiscoveryKind
+import com.example.data.DiscoveryNudge
+import com.example.data.MeasurePoint
+import com.example.data.Planet
+import com.example.data.PlanetPlay
+import com.example.data.PlanetState
+import com.example.data.StarMeasures
 import com.example.model.GamePlayResult
 import com.example.model.GameRegistry
 import com.example.model.RankTier
 import com.example.ui.components.CosmosScroll
+import com.example.ui.components.HomePlanet
 import com.example.ui.components.LeagueShield
-import com.example.ui.components.palette
-import com.example.data.LeagueEvent
+import com.example.ui.components.MiniPlanet
+import com.example.ui.components.PlanetShip
+import com.example.ui.components.domainOf
+import com.example.ui.components.domainTextColor
+import com.example.ui.components.levelWord
 import com.example.ui.components.overallIndex
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.ui.theme.ClayCard
-import com.example.ui.theme.ClayPill
 import com.example.viewmodel.NeuroVidaViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.TimeZone
-import kotlin.math.roundToInt
-import kotlin.math.sin
-import kotlinx.coroutines.launch
 
 private const val DAY_MS = 86_400_000L
-private const val PathTilt = 32f
-private val RowHeight = 120.dp
 private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = Color(0xFFC7D0FF)
-private val Milestones = listOf(3, 7, 14, 30, 50, 100, 200, 365)
+private val OnNightSoft = Color(0xFF9AA3D6)
 
 private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)) / DAY_MS
 
-private sealed class PathItem {
-  data class Past(val day: Long, val results: List<GamePlayResult>) : PathItem()
-  data class Today(val day: Long, val results: List<GamePlayResult>) : PathItem()
-  /** [flagTarget] != null: hito de racha (bandera) con [remaining] días por delante. */
-  data class Future(val flagTarget: Int?, val remaining: Int) : PathItem()
-}
-
-/** Posición horizontal (0..1) del nodo i: una sinusoide suave, así el trazo es continuo entre filas. */
-private fun fx(i: Int): Float = 0.5f + 0.27f * sin(i * 0.9f)
-
 /**
- * Inicio ("Hoy") como un CAMINO por el espacio: cada día es un nodo de un sendero sinuoso; hoy es el nodo grande
- * (toca para entrenar), lo anterior queda hacia arriba (desliza para ver tu recorrido) y adelante hay un hito
- * de racha. El fondo de estrellas viaja con el desplazamiento (paralaje), ver [CosmosScroll].
+ * Inicio ("Hoy") como TU PLANETA (28-sep, elegido por Ricardo entre 6 propuestas; maqueta en
+ * `docs/previews/inicio-planeta.png`): cada partida hace crecer la zona de su dominio (ver [Planet]), las 3 partidas
+ * del día orbitan y aterrizan al jugarlas, y debajo va el DESCUBRIMIENTO DEL DÍA: una medida de un juego estrella con
+ * su evolución (ver [StarMeasures]). Tocar una zona abre su ventana (juegos, medidas, partidas por semana).
  */
 @Composable
 fun HomeScreen(
@@ -127,55 +98,40 @@ fun HomeScreen(
   val ranks by viewModel.gameRanks.collectAsState()
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val weeklyChallenges by viewModel.weeklyChallengeProgress.collectAsState()
-  val leagueEvents by viewModel.leagueEvents.collectAsState()
   val pausedGameId by viewModel.pausedGameId.collectAsState()
   val baseline by viewModel.baseline.collectAsState()
   val mission by viewModel.mission.collectAsState()
-  // Reloj de la línea de la Bitácora ("el informe se abre en N min"): se refresca cada 30 s.
+  val measures by viewModel.starMeasures.collectAsState()
+  // Reloj de la línea de la Bitácora ("el informe se abre en N min") y del planeta: se refresca cada 30 s.
   var clock by remember { mutableStateOf(System.currentTimeMillis()) }
   LaunchedEffect(Unit) {
+    CosmosScroll.offset = 0f // el camino de antes movía las estrellas al deslizar; el planeta no
     while (true) {
       kotlinx.coroutines.delay(30_000L)
       clock = System.currentTimeMillis()
     }
   }
   val missionStep = remember(mission, dailySession, clock) { viewModel.missionStep(clock) }
-  val eventsByDay = remember(leagueEvents) { leagueEvents.groupBy { dayIndex(it.timestamp) } }
   val lang = LocalAppLanguage.current
-  val scope = rememberCoroutineScope()
 
-  var dayDetail by remember { mutableStateOf<PathItem?>(null) }
   var showChallenges by remember { mutableStateOf(false) }
+  var openZone by remember { mutableStateOf<String?>(null) }
 
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
   val index = overallIndex(levels)
 
-  val items = remember(history, streak) {
-    val today = dayIndex(System.currentTimeMillis())
-    val byDay = history.groupBy { dayIndex(it.timestamp) }
-    val first = minOf(byDay.keys.minOrNull() ?: today, today - 13)
-    val list = mutableListOf<PathItem>()
-    for (d in first until today) list += PathItem.Past(d, byDay[d].orEmpty())
-    list += PathItem.Today(today, byDay[today].orEmpty())
-    val target = Milestones.firstOrNull { it > streak } ?: (streak + 30)
-    val remaining = (target - streak).coerceAtLeast(1)
-    val ahead = minOf(remaining, 3)
-    for (k in 1 until ahead) list += PathItem.Future(null, remaining)
-    list += PathItem.Future(target, remaining)
-    list
+  val plays = remember(history) {
+    history.mapNotNull { r -> GameRegistry.getById(r.gameId)?.let { PlanetPlay(it.domain.name, r.timestamp) } }
   }
-  val todayIdx = items.indexOfFirst { it is PathItem.Today }
-
-  val listState = rememberLazyListState(initialFirstVisibleItemIndex = (todayIdx - 3).coerceAtLeast(0))
-  val rowPx = with(LocalDensity.current) { RowHeight.toPx() }
-  LaunchedEffect(listState, rowPx) {
-    snapshotFlow { listState.firstVisibleItemIndex * rowPx + listState.firstVisibleItemScrollOffset }
-      .collect { CosmosScroll.offset = it }
+  val planet = remember(plays, clock) { Planet.build(plays, clock, ::dayIndex) }
+  val ships = remember(dailySession) {
+    dailySession.gameIds.mapIndexedNotNull { i, id ->
+      GameRegistry.getById(id)?.let { PlanetShip(id, it.domain.name, landed = i < dailySession.completedCount) }
+    }
   }
-  val todayVisible by remember {
-    derivedStateOf { listState.layoutInfo.visibleItemsInfo.any { it.index == todayIdx } }
-  }
+  val discovery = remember(measures, clock) { StarMeasures.discover(measures, clock) }
+  val nudge = remember(measures) { StarMeasures.nudge(measures) }
 
   Column(modifier = modifier.fillMaxSize()) {
     // Cabecera fija: liga, nivel y racha en una sola línea (sin recuadros)
@@ -206,69 +162,29 @@ fun HomeScreen(
       )
     }
     Text(
-      text = "Tu camino",
+      text = "Tu planeta",
       color = OnNight,
       fontSize = 28.sp,
       fontWeight = FontWeight.Bold,
-      modifier = Modifier.padding(start = 20.dp, top = 6.dp, bottom = 4.dp)
+      modifier = Modifier.padding(start = 20.dp, top = 2.dp)
     )
 
-    BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
-      val widthPx = with(LocalDensity.current) { maxWidth.toPx() }
-      val camera = with(LocalDensity.current) { 14.dp.toPx() * 8f }
-      LazyColumn(
-        state = listState,
-        modifier = Modifier
-          .fillMaxSize()
-          .graphicsLayer {
-            // Perspectiva "texto de Star Wars": el camino se inclina hacia el horizonte
-            rotationX = PathTilt
-            transformOrigin = TransformOrigin(0.5f, 1f)
-            cameraDistance = camera
-            compositingStrategy = CompositingStrategy.Offscreen
-          }
-          .drawWithContent {
-            drawContent()
-            // Lo lejano se desvanece en las estrellas
-            drawRect(
-              Brush.verticalGradient(0f to Color.Transparent, 0.30f to Color.Black, 0.92f to Color.Black, 1f to Color.Transparent),
-              blendMode = BlendMode.DstIn
-            )
-          },
-        contentPadding = PaddingValues(bottom = 24.dp)
-      ) {
-        items(items.size) { i ->
-          PathRow(
-            index = i,
-            item = items[i],
-            widthPx = widthPx,
-            gameIds = dailySession.gameIds,
-            completedToday = dailySession.completedCount,
-            lang = lang,
-            onStart = { viewModel.startDailySession() },
-            onOpenDay = { dayDetail = it },
-            events = when (val row = items[i]) {
-              is PathItem.Past -> eventsByDay[row.day].orEmpty()
-              is PathItem.Today -> eventsByDay[row.day].orEmpty()
-              else -> emptyList()
-            }
-          )
-        }
-      }
-      if (!todayVisible) {
-        ClayPill(
-          text = "Volver a hoy",
-          color = Clay.Sun,
-          modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .padding(bottom = 12.dp)
-            .clickable { scope.launch { listState.animateScrollToItem((todayIdx - 3).coerceAtLeast(0)) } }
-        )
-      }
-    }
+    HomePlanet(
+      state = planet,
+      ships = ships,
+      onZone = { openZone = it },
+      modifier = Modifier
+        .weight(1f)
+        .heightIn(min = 180.dp)
+        .fillMaxWidth()
+        .testTag("home_planet")
+    )
 
-    // Acción de hoy, fuera del camino inclinado (siempre a mano y con un área de toque normal): seguir la partida
-    // en pausa o jugar el siguiente juego del camino. Debajo, si todavía no hizo la evaluación, una invitación.
+    ZonesLine(planet, onZone = { openZone = it })
+    DiscoveryBlock(discovery, nudge, onPlay = { viewModel.launchGame(it) })
+
+    // Acción de hoy (siempre a mano y con un área de toque normal): seguir la partida en pausa o jugar el siguiente
+    // juego del camino. Debajo, si todavía no hizo la evaluación, una invitación.
     TodayAction(
       pausedGameId = pausedGameId,
       nextGameId = dailySession.gameIds.getOrNull(dailySession.completedCount)?.takeIf { dailySession.completedCount < 3 },
@@ -287,50 +203,21 @@ fun HomeScreen(
     )
   }
 
-  dayDetail?.let { item ->
-    val results = when (item) {
-      is PathItem.Past -> item.results
-      is PathItem.Today -> item.results
-      else -> emptyList()
-    }
-    val day = when (item) {
-      is PathItem.Past -> item.day
-      is PathItem.Today -> item.day
-      else -> 0L
-    }
-    Dialog(onDismissRequest = { dayDetail = null }) {
-      ClayCard(modifier = Modifier.fillMaxWidth().padding(8.dp), color = Clay.Cream, radius = 28.dp, contentPadding = 20.dp) {
-        Text(dateLabel(day), color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(10.dp))
-        // Ascensos de liga de ese día, arriba de las partidas: son lo más importante que pasó.
-        eventsByDay[day].orEmpty().forEach { ev ->
-          val gameName = ev.gameId?.let { id -> GameRegistry.getById(id)?.let { getGameTitle(it.id, lang, it.title) } }
-          Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            LeagueShield(tier = ev.tier, size = 30.dp, pips = 1)
-            Spacer(Modifier.width(10.dp))
-            Column {
-              Text("Subiste a ${ev.tier.tierName}", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-              Text(gameName ?: "Liga general", color = Clay.InkSoft, fontSize = 13.sp)
-            }
-          }
-        }
-        if (eventsByDay[day].orEmpty().isNotEmpty()) Spacer(Modifier.height(8.dp))
-        if (results.isEmpty()) {
-          Text("Sin partidas este día.", color = Clay.InkSoft, fontSize = 15.sp)
-        } else {
-          results.sortedBy { it.timestamp }.forEach { r ->
-            val def = GameRegistry.getById(r.gameId)
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-              Text(
-                text = if (def != null) getGameTitle(def.id, lang, def.title) else r.gameId,
-                color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold
-              )
-              Text("${r.score} pts", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-          }
-        }
-      }
-    }
+  openZone?.let { key ->
+    ZoneDialog(
+      domainKey = key,
+      planet = planet,
+      history = history,
+      measures = measures,
+      levels = levels,
+      now = clock,
+      lang = lang,
+      onPlay = { id ->
+        openZone = null
+        viewModel.launchGame(id)
+      },
+      onDismiss = { openZone = null }
+    )
   }
 
   if (showChallenges) {
@@ -367,148 +254,257 @@ fun HomeScreen(
   }
 }
 
-private fun dateLabel(day: Long): String {
-  val f = SimpleDateFormat("EEE d MMM", Locale("es")).apply { timeZone = TimeZone.getTimeZone("UTC") }
-  return f.format(Date(day * DAY_MS)).replaceFirstChar { it.uppercase() }
+/**
+ * Una línea bajo el planeta (texto suelto, sin recuadros): lo jugado hoy; o qué zona creció esta semana y cuál está
+ * quieta (o aún sin explorar). Tocar un nombre abre su zona.
+ */
+@Composable
+internal fun ZonesLine(planet: PlanetState, onZone: (String) -> Unit) {
+  Row(
+    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 6.dp),
+    verticalAlignment = Alignment.Bottom
+  ) {
+    if (planet.playedToday.isNotEmpty()) {
+      Column {
+        Text("Hoy entrenaste", color = OnNightDim, fontSize = 12.sp)
+        Text(
+          planet.playedToday.mapNotNull { domainOf(it)?.displayName }.joinToString(" · "),
+          color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold
+        )
+      }
+      return@Row
+    }
+    val grew = planet.grewThisWeek
+    val quiet = planet.quiet
+    if (grew == null && quiet == null) {
+      Text("Cada partida hace crecer su zona del planeta", color = OnNightDim, fontSize = 13.sp)
+      return@Row
+    }
+    if (grew != null) {
+      Column(Modifier.clip(RoundedCornerShape(10.dp)).clickable { onZone(grew) }.padding(2.dp)) {
+        Text("Esta semana creció", color = OnNightDim, fontSize = 12.sp)
+        Text(domainOf(grew)?.displayName ?: "", color = domainTextColor(grew), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+      }
+    }
+    Spacer(Modifier.weight(1f))
+    if (quiet != null) {
+      Column(
+        horizontalAlignment = Alignment.End,
+        modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { onZone(quiet) }.padding(2.dp)
+      ) {
+        Text(
+          if (planet.quietDays < 0) "Aún sin explorar" else "Quieta hace ${planet.quietDays} días",
+          color = OnNightDim, fontSize = 12.sp
+        )
+        Text(domainOf(quiet)?.displayName ?: "", color = domainTextColor(quiet), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+      }
+    }
+  }
 }
 
+/**
+ * El descubrimiento del día: la medida de un juego estrella con sus últimas partidas (récord, mejora o "se mantiene",
+ * ver [StarMeasures.discover]). Sin 3 partidas de ningún juego estrella, una invitación a jugar uno (se puede tocar).
+ */
 @Composable
-private fun PathRow(
-  index: Int,
-  item: PathItem,
-  widthPx: Float,
-  gameIds: List<String>,
-  completedToday: Int,
-  lang: com.example.model.AppLanguage,
-  onStart: () -> Unit,
-  onOpenDay: (PathItem) -> Unit,
-  events: List<LeagueEvent> = emptyList()
-) {
-  val density = LocalDensity.current
-  val hPx = with(density) { RowHeight.toPx() }
-  val x = fx(index) * widthPx
-  val xTop = (fx(index - 1) + fx(index)) / 2f * widthPx
-  val xBot = (fx(index) + fx(index + 1)) / 2f * widthPx
-  val onLeftHalf = x < widthPx / 2f
-  val done = (item is PathItem.Past && item.results.isNotEmpty()) || (item is PathItem.Today && completedToday >= 3)
-  val trail = when {
-    item is PathItem.Future -> Color.White.copy(alpha = 0.25f)
-    item is PathItem.Past && item.results.isNotEmpty() -> Clay.Lime.copy(alpha = 0.65f)
-    item is PathItem.Today -> Clay.Sun.copy(alpha = 0.8f)
-    else -> Color.White.copy(alpha = 0.16f)
-  }
-
-  Box(modifier = Modifier.fillMaxWidth().height(RowHeight)) {
-    Canvas(modifier = Modifier.matchParentSize()) {
-      val p = Path().apply {
-        moveTo(xTop, 0f)
-        cubicTo(xTop, hPx * 0.25f, x, hPx * 0.25f, x, hPx / 2f)
-        cubicTo(x, hPx * 0.75f, xBot, hPx * 0.75f, xBot, hPx)
+internal fun DiscoveryBlock(discovery: Discovery?, nudge: DiscoveryNudge, onPlay: (String) -> Unit) {
+  Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.14f)))
+    Text(
+      "DESCUBRIMIENTO DEL DÍA", color = Clay.Sun, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+      letterSpacing = 1.sp, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+    )
+    if (discovery == null) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+          .fillMaxWidth()
+          .clip(RoundedCornerShape(12.dp))
+          .clickable { onPlay(nudge.def.gameId) }
+          .padding(vertical = 4.dp)
+          .testTag("discovery_nudge")
+      ) {
+        MiniPlanet(nudge.def.gameId, 32.dp)
+        Spacer(Modifier.width(12.dp))
+        Text(nudge.text, color = OnNight, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
       }
-      drawPath(
-        p, trail,
-        style = Stroke(
-          width = 5.dp.toPx(), cap = StrokeCap.Round,
-          pathEffect = PathEffect.dashPathEffect(floatArrayOf(1f, 11.dp.toPx()))
-        )
-      )
+      return
     }
-
-    // Nodo
-    val nodeR = when {
-      item is PathItem.Today -> 32.dp
-      item is PathItem.Future && item.flagTarget != null -> 24.dp
-      done -> 20.dp
-      else -> 7.dp
-    }
-    val nodeRpx = with(density) { nodeR.toPx() }
-    Box(
-      modifier = Modifier
-        .offset { IntOffset((x - nodeRpx).roundToInt(), (hPx / 2f - nodeRpx).roundToInt()) }
-        .size(nodeR * 2),
-      contentAlignment = Alignment.Center
-    ) {
-      when {
-        item is PathItem.Today -> TodayNode(done = done, onClick = onStart)
-        item is PathItem.Future && item.flagTarget != null ->
-          Box(
-            modifier = Modifier.fillMaxSize().clip(CircleShape).background(Clay.Coral).border(3.dp, Clay.Ink, CircleShape),
-            contentAlignment = Alignment.Center
-          ) { Icon(Icons.Default.Flag, contentDescription = "Hito de racha", tint = Color.White, modifier = Modifier.size(24.dp)) }
-        item is PathItem.Future ->
-          Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(Color.White.copy(alpha = 0.18f)).border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape))
-        done ->
-          Box(
-            modifier = Modifier
-              .fillMaxSize()
-              .clip(CircleShape)
-              .background(Clay.Lime)
-              .border(3.dp, Clay.Ink, CircleShape)
-              .clickable { onOpenDay(item) },
-            contentAlignment = Alignment.Center
-          ) { Icon(Icons.Default.Check, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(22.dp)) }
-        else ->
-          Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(Color.White.copy(alpha = 0.22f)))
-      }
-    }
-
-    // Ascenso de liga ese día: escudito pegado arriba del nodo (la liga general manda sobre la de un juego).
-    val best = events.maxWithOrNull(compareBy<LeagueEvent>({ it.gameId == null }, { it.tier.ordinal }))
-    if (best != null) {
-      val badge = 26.dp
-      val badgePx = with(density) { badge.toPx() }
-      Box(
-        modifier = Modifier.offset {
-          IntOffset((x + nodeRpx * 0.55f - badgePx / 2f).roundToInt(), (hPx / 2f - nodeRpx - badgePx * 0.75f).roundToInt())
+    val def = discovery.def
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("discovery")) {
+      Column(Modifier.weight(1f)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          MiniPlanet(def.gameId, 22.dp)
+          Spacer(Modifier.width(8.dp))
+          Text(def.title, color = OnNightDim, fontSize = 13.sp)
         }
-      ) { LeagueShield(tier = best.tier, size = badge, pips = 1) }
-    }
-
-    // Etiqueta al lado del nodo (hacia el lado con más espacio)
-    val labelW = 150.dp
-    val gap = 14.dp
-    val labelWpx = with(density) { labelW.toPx() }
-    val gapPx = with(density) { gap.toPx() }
-    val lx = if (onLeftHalf) x + nodeRpx + gapPx else x - nodeRpx - gapPx - labelWpx
-    Column(
-      modifier = Modifier
-        .offset { IntOffset(lx.roundToInt(), (hPx / 2f - with(density) { 24.dp.toPx() }).roundToInt()) }
-        .width(labelW),
-      horizontalAlignment = if (onLeftHalf) Alignment.Start else Alignment.End
-    ) {
-      val align = if (onLeftHalf) TextAlign.Start else TextAlign.End
-      when (item) {
-        is PathItem.Today -> {
-          val next = if (completedToday < 3) gameIds.getOrNull(completedToday) else null
-          val def = next?.let { GameRegistry.getById(it) }
-          Text(if (done) "Hoy" else "Ahora", color = OnNightDim, fontSize = 12.sp, textAlign = align)
-          Text(
-            text = if (done) "¡Sesión completa!" else if (def != null) getGameTitle(def.id, lang, def.title) else "Entrenar",
-            color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp,
-            maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = align
-          )
-          Text(
-            text = if (done) "Toca para otra ronda" else "Falta${if (3 - completedToday == 1) "" else "n"} ${3 - completedToday} de 3",
-            color = OnNightDim, fontSize = 12.sp, textAlign = align
-          )
-        }
-        is PathItem.Past -> if (item.results.isNotEmpty()) {
-          Text(dateLabel(item.day), color = OnNightDim, fontSize = 12.sp, textAlign = align)
-          Text(
-            "${item.results.size} ${if (item.results.size == 1) "juego" else "juegos"}",
-            color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = align
-          )
-          if (best != null) {
+        Row(verticalAlignment = Alignment.Bottom) {
+          Text(def.format(discovery.values.last()), color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+          Spacer(Modifier.width(6.dp))
+          Text(def.unit, color = OnNightDim, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 6.dp))
+          if (discovery.kind == DiscoveryKind.RECORD) {
+            Spacer(Modifier.width(8.dp))
             Text(
-              "Subiste a ${best.tier.tierName}",
-              color = best.tier.palette().light, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = align
+              "Récord",
+              color = Clay.Ink, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+              modifier = Modifier
+                .padding(bottom = 9.dp)
+                .clip(RoundedCornerShape(50))
+                .background(Clay.Sun)
+                .border(2.dp, Clay.Ink, RoundedCornerShape(50))
+                .padding(horizontal = 8.dp, vertical = 1.dp)
             )
           }
         }
-        is PathItem.Future -> if (item.flagTarget != null) {
-          Text("Racha de ${item.flagTarget} días", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = align)
-          Text("faltan ${item.remaining}", color = Clay.Sun, fontSize = 13.sp, textAlign = align)
+        Text(discovery.caption, color = OnNightDim, fontSize = 13.sp)
+      }
+      Spacer(Modifier.width(10.dp))
+      Sparkline(discovery.values, def.lowerIsBetter, def::format)
+    }
+  }
+}
+
+/** Evolución breve: una línea con las últimas partidas, "mejor" siempre hacia arriba; la última en sol. */
+@Composable
+private fun Sparkline(values: List<Float>, lowerIsBetter: Boolean, format: (Float) -> String) {
+  Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(118.dp)) {
+    Text("tus últimas ${values.size} partidas", color = OnNightSoft, fontSize = 10.sp)
+    Canvas(Modifier.fillMaxWidth().height(46.dp).padding(vertical = 5.dp)) {
+      val lo = values.minOrNull() ?: 0f
+      val hi = values.maxOrNull() ?: 0f
+      val span = (hi - lo).takeIf { it > 1e-6f } ?: 1f
+      fun y(v: Float): Float {
+        val k = (v - lo) / span
+        return if (lowerIsBetter) k * size.height else (1f - k) * size.height
+      }
+      val pts = values.mapIndexed { i, v -> Offset(size.width * i / (values.size - 1).coerceAtLeast(1), y(v)) }
+      drawLine(Color.White.copy(alpha = 0.16f), Offset(0f, size.height + 4.dp.toPx()), Offset(size.width, size.height + 4.dp.toPx()), 1.dp.toPx())
+      val path = Path().apply { pts.forEachIndexed { i, p -> if (i == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y) } }
+      drawPath(path, Clay.Sky, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+      pts.forEachIndexed { i, p ->
+        val last = i == pts.lastIndex
+        val rr = (if (last) 5 else 3).dp.toPx()
+        drawCircle(Clay.Ink, rr + 1.5.dp.toPx(), p)
+        drawCircle(if (last) Clay.Sun else Clay.Sky, rr, p)
+      }
+    }
+    Row(Modifier.fillMaxWidth()) {
+      Text(format(values.first()), color = OnNightSoft, fontSize = 11.sp)
+      Spacer(Modifier.weight(1f))
+      Text(format(values.last()), color = Clay.Sun, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    }
+  }
+}
+
+/**
+ * Ventana de una zona (las tarjetas solo van en diálogos): cuánto se jugó, partidas por semana (4 semanas) y cada
+ * juego del dominio con su última medida o su nivel. El botón propone el juego sin jugar, o el que lleva más tiempo.
+ */
+@Composable
+private fun ZoneDialog(
+  domainKey: String,
+  planet: PlanetState,
+  history: List<GamePlayResult>,
+  measures: List<MeasurePoint>,
+  levels: Map<String, Float?>,
+  now: Long,
+  lang: com.example.model.AppLanguage,
+  onPlay: (String) -> Unit,
+  onDismiss: () -> Unit
+) {
+  val domain = domainOf(domainKey) ?: return
+  val zone = planet.zones.firstOrNull { it.domain == domainKey }
+  val games = GameRegistry.allGames.filter { it.domain == domain }
+  val lastPlayed = games.associate { g -> g.id to history.filter { it.gameId == g.id }.maxOfOrNull { it.timestamp } }
+  val suggested = games.minByOrNull { lastPlayed[it.id] ?: Long.MIN_VALUE }
+  val weekly = Planet.weeklyCounts(history.filter { r -> games.any { it.id == r.gameId } }.map { it.timestamp }, now, ::dayIndex)
+  val domainLevel = games.mapNotNull { levels[it.id] }.takeIf { it.isNotEmpty() }?.average()?.toFloat()
+
+  Dialog(onDismissRequest = onDismiss) {
+    ClayCard(modifier = Modifier.fillMaxWidth().padding(8.dp), color = Clay.Cream, radius = 28.dp, contentPadding = 20.dp) {
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(50)).background(domain.color).border(3.dp, Clay.Ink, RoundedCornerShape(50))
+          )
+          Spacer(Modifier.width(12.dp))
+          Column {
+            Text("Zona de ${domain.displayName}", color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            val plays = zone?.plays ?: 0
+            Text(
+              when {
+                plays == 0 -> "Aún sin explorar: tu primera partida la hace nacer"
+                else -> (domainLevel?.let { "${levelWord(it)} · " } ?: "") +
+                  "${if (plays == 1) "1 partida" else "$plays partidas"} · ${zone?.weekPlays ?: 0} esta semana"
+              },
+              color = Clay.InkSoft, fontSize = 13.sp
+            )
+          }
         }
+        Spacer(Modifier.height(14.dp))
+        Text("Partidas por semana", color = Clay.InkSoft, fontSize = 12.sp)
+        WeekBars(weekly, domain.color)
+        Row(Modifier.fillMaxWidth()) {
+          Text("hace 4 semanas", color = Clay.InkSoft, fontSize = 11.sp)
+          Spacer(Modifier.weight(1f))
+          Text("esta semana", color = Clay.Ink, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(10.dp))
+        games.forEach { g ->
+          val m = StarMeasures.latest(measures, g.id)
+          val last = lastPlayed[g.id]
+          val detail = when {
+            m != null -> "${m.first.format(m.second)} ${m.first.unit} · tu última"
+            last == null -> "Sin jugar aún"
+            else -> {
+              val days = (dayIndex(now) - dayIndex(last)).toInt()
+              when (days) { 0 -> "Jugado hoy"; 1 -> "Jugado ayer"; else -> "Jugado hace $days días" }
+            }
+          }
+          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            MiniPlanet(g.id, 34.dp)
+            Spacer(Modifier.width(12.dp))
+            Column {
+              Text(getGameTitle(g.id, lang, g.title), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+              Text(detail, color = Clay.InkSoft, fontSize = 12.sp)
+            }
+          }
+        }
+        if (suggested != null) {
+          Spacer(Modifier.height(10.dp))
+          ClayButton(
+            text = "Jugar ${getGameTitle(suggested.id, lang, suggested.title)}",
+            onClick = { onPlay(suggested.id) },
+            icon = Icons.Default.PlayArrow,
+            modifier = Modifier.testTag("zone_play")
+          )
+        }
+      }
+    }
+  }
+}
+
+/** 4 barras de arcilla (partidas por semana); la de esta semana, con borde más grueso. */
+@Composable
+private fun WeekBars(counts: List<Int>, color: Color) {
+  val max = (counts.maxOrNull() ?: 0).coerceAtLeast(1)
+  Row(
+    modifier = Modifier.fillMaxWidth().height(64.dp).padding(vertical = 6.dp),
+    verticalAlignment = Alignment.Bottom,
+    horizontalArrangement = Arrangement.spacedBy(10.dp)
+  ) {
+    counts.forEachIndexed { i, n ->
+      Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("$n", color = Clay.Ink, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        val frac = if (n == 0) 0.06f else 0.15f + 0.85f * n / max
+        Box(
+          Modifier
+            .fillMaxWidth()
+            .height(34.dp * frac)
+            .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+            .background(if (n == 0) Clay.InkSoft.copy(alpha = 0.25f) else color)
+            .border((if (i == counts.lastIndex) 3 else 2).dp, Clay.Ink, RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+        )
       }
     }
   }
@@ -614,34 +610,3 @@ private fun MissionLine(
 }
 
 private data class Quad(val label: String?, val def: com.example.model.GameDefinition?, val action: () -> Unit, val tag: String)
-
-@Composable
-private fun TodayNode(done: Boolean, onClick: () -> Unit) {
-  val pulse = rememberInfiniteTransition(label = "todayPulse")
-  val s by pulse.animateFloat(
-    initialValue = 1f, targetValue = 1.28f,
-    animationSpec = infiniteRepeatable(tween(1400), RepeatMode.Reverse), label = "s"
-  )
-  Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-    if (!done) {
-      Box(modifier = Modifier.fillMaxSize().scale(s).border(3.dp, Clay.Sun.copy(alpha = 0.55f * (1.4f - s)), CircleShape))
-    }
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .clip(CircleShape)
-        .background(if (done) Clay.Lime else Clay.Sun)
-        .border(3.5.dp, Clay.Ink, CircleShape)
-        .clickable(onClick = onClick)
-        .testTag("btn_start_daily_session"),
-      contentAlignment = Alignment.Center
-    ) {
-      Icon(
-        if (done) Icons.Default.Check else Icons.Default.PlayArrow,
-        contentDescription = "Entrenar",
-        tint = Clay.Ink,
-        modifier = Modifier.size(36.dp)
-      )
-    }
-  }
-}

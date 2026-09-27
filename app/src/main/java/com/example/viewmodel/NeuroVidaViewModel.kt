@@ -250,6 +250,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** Ascensos de liga guardados (para marcarlos en el camino de Hoy). */
   val leagueEvents = repository.leagueEvents
 
+  /** Medidas propias de los juegos estrella por partida (descubrimiento del día y zonas del planeta en Hoy). */
+  val starMeasures = repository.starMeasures
+
   /** Logros conseguidos (id -> cuándo) y las cifras con que se calculan (para el avance "4/7" de los bloqueados). */
   val achievementUnlocks = repository.achievementUnlocks
   val achievementStats: StateFlow<com.example.data.AchievementStats> = combine(gameHistory, gameRanks) { hist, ranks ->
