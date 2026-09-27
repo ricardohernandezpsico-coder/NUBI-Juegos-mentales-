@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 19 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 18 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -15,11 +15,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
   `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 19 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 18 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · d`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · e`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -41,7 +41,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   (`GamesLibraryScreen`, planetas) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Fluency`, `Homing`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`; y
+- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
@@ -344,50 +344,11 @@ Lumosity, Peak, Elevate ni NeuroNation tienen algo así. En la app NO se nombran
   `docs/previews/rumbo-sonidos.wav` y `rumbo-sonidos-llegadas.wav` (las tres llegadas). Sin probar en el teléfono:
   revisar si marea el giro, si se entiende tocar la señal y el dial, y el ritmo (~25 s por viaje).
 
-**Constelación de Palabras** (`Games/Constelacion/`, id `constelacion`, dominio LENGUAJE; 28-sep): el primer juego
-estrella de lenguaje (era el único dominio sin uno). FLUIDEZ VERBAL por VOZ: dos rondas de un minuto (`Plan`: una de
-categoría —Animales la mitad de las veces, si no Frutas y verduras o Cosas de la casa— y una de letra P, M o R, las de
-fluidez en español). Puntuación de Troyer, Moscovitch y Winocur (1997): **agrupar** (tamaño medio de las
-constelaciones, desde la segunda palabra) y **saltar** (cambios de grupo); más el ritmo por cuartos del minuto.
-Ninguna app de la competencia pide PRODUCIR palabras.
-- Voz: `bridge/SpeechBridge.kt` (Android `SpeechRecognizer` que se reinicia solo tras cada frase o silencio; eventos
-  en cola JSON con `poll()`; en el teléfono si se puede, y si le falta el español pasa al de internet) ← Unity
-  `SpeechClient` (`AndroidJavaClass`, permiso de micrófono con `UnityEngine.Android.Permission`). Manifiesto:
-  `RECORD_AUDIO` + `<queries>` de `RecognitionService`. Prueba de voz de Ricardo (28-sep, Motorola edge 60 pro,
-  Android 16, `[Debug] Prueba de voz` = `ui/screens/VoiceTest.kt`): con y sin internet bien, sin "bip", al instante.
-- Voz más ágil (28-sep, tras jugarlo Ricardo: "hay palabras que no reconoce y de repente se pega"; eligió la opción A
-  de 4: sacarle el partido al reconocedor de Android; si no le convence, se piensa en otro juego o en Vosk con la
-  lista como gramática): **escucha continua** (Android 13+, `EXTRA_SEGMENTED_SESSION` de 70 s, tramos por
-  `onSegmentResults`; si el reconocedor falla 2 veces sin dar nada, vuelve a los reinicios; evento `mode`);
-  **lista de la ronda al reconocedor** (`EXTRA_BIASING_STRINGS`, `FluencyCategory.BiasPhrases`; en las de letra,
-  ninguna); **palabras que suenan parecido** (`FluencyContract.Phonetic` + `EditDistance`: igual al oído, o 1 letra
-  de diferencia desde 5 letras y 2 desde 9; las cortas no: "dato" no es "gato"; se muestra bien escrita) y errores
-  típicos con "~" en la lista ("~boa constructor"); leer la voz cada 0,1 s (no en cada cuadro) y una sola referencia
-  a la clase Kotlin; estrellas, sonidos y listas preparados durante la cuenta regresiva. En las versiones de prueba el
-  final muestra "[Prueba] Escucha continua: sí/no · No ubicadas: ..." (`fluency_unknown_words`, `fluency_continuous`).
-  Ambas mejoras de Android son sugerencias: cada reconocedor decide si las usa.
-- Juego (`ConstellationGameController`): se toca el micrófono; cada palabra NACE como estrella MIENTRAS se habla
-  (resultados parciales; cada palabra con la hora en que apareció, `Tokenize` + `TokenIndex`) y se confirma al terminar
-  la frase; las seguidas del mismo grupo se unen con líneas (`RailLine`) y llevan el nombre del grupo sobre la estrella
-  más alta. Nueva constelación = junto a la anterior; salto = lugar libre del cielo. Repetida: la estrella que ya estaba
-  late (sin castigo); no reconocida: aparece un momento en gris. Teclado de respaldo (`InputField`) sin voz, sin
-  permiso o por "Prefiero escribir". Pausa (Atrás) deja de escuchar y retoma. Puntos: 10 por palabra, 15 por formar
-  constelación, 5 × lugar por cada una que la sigue.
-- Sonido `ConstellationSounds`: cada palabra que sigue una constelación suena una nota más arriba; al saltar vuelve a la
-  de partida (se OYE agrupar y saltar); destello al formarse una constelación; lluvia de campanas al final de la ronda.
-- Reglas y pruebas: `FluencyLexicon` (≈300 animales, ≈160 frutas y verduras, ≈240 cosas de la casa, grupos que se
-  superponen, variantes de Chile y del resto) + `FluencyContract` (normaliza; entradas de varias palabras; plurales,
-  diminutivos, femeninos y plural de la primera palabra en entradas largas; tipos "tigre de bengala" / "tiburón
-  blanco" por `Modifiers` o "de X"; muestra la palabra como se dijo y guarda la de la lista; otras lecturas del
-  reconocedor; en las de letra sin nombres propios, rasgos de sonido; constelaciones por grupo común) /
-  `FluencyContractTests` (9, con frases reales de la prueba de Ricardo).
-- Telemetría `fluency_*` (por ronda) → `GamePlayResult.fluencyRounds` (`data/Fluency.kt`, 3 pruebas: estilo desde 8
-  palabras, "salieron rápido al principio", colección) → `GameResultScreen` ("Tu cielo", agrupas/saltas,
-  constelaciones, "Tu minuto" con 4 columnas, truco, aviso de teclado) + colección **"tu cielo de palabras"**
-  (`WordSkyStore`, SharedPreferences `word_sky`; la suma `onUnityResult`).
-- Arte: `ConstellationSprites` (estrella de arcilla por color, estrella suelta crema, micrófono), `GameWorld.WordSky`.
-  Vista previa: `python3 tools/art-preview/constelacion.py <raw>` → `docs/previews/constelacion.png` (ronda real de la
-  prueba de Ricardo); sonidos → `docs/previews/constelacion-sonidos.wav`. Sin probar en el teléfono.
+**Constelación de Palabras (DESCARTADA, 28-sep)**: fluidez verbal por voz (reconocedor de Android, puntuación de
+Troyer: agrupar y saltar). Funcionaba, pero a Ricardo no le convenció: la voz no se sentía fluida (palabras que no
+reconocía, pausas), incluso tras la "opción A" (escucha continua, lista al reconocedor, parecidos al oído). Se sacó
+todo, también el permiso de micrófono. El código completo queda en el historial de git (commit `caf19b8`: juego Unity,
+`SpeechBridge.kt`, prueba de voz, léxico de ≈700 palabras). Lección para lenguaje: nada de voz; interacción táctil y fluida.
 
 ## Reglas que no se rompen
 
@@ -420,8 +381,8 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 59 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 176 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Kotlin: 56 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Unity EditMode: 167 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 18 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

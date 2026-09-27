@@ -9,7 +9,7 @@ INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
        ('stroop','Tinta o Palabra','atencion'),('cambiochip','Cambio de Chip','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('constelacion','Constelación de Palabras','lenguaje')]
+       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -200,13 +200,6 @@ def draw(ic,gid):
             q=ic.P(x,y); rr=r*ic.k; ic.d.ellipse([q[0]-rr,q[1]-rr,q[0]+rr,q[1]+rr],fill=SKY)
         ic.clay(star(48,25,15,7,5,True),SUN,border=4)
         sparkle(ic,26,20,8,WHITE)
-    elif gid=='constelacion':
-        pts=[(20,72),(40,44),(66,54),(82,24)]
-        for i in range(3): ic.stroke([pts[i],pts[i+1]],INK,7); ic.stroke([pts[i],pts[i+1]],SKY,3.5)
-        for (x,y),r,col,g in zip(pts,[13,15,12,13],[SKY,SUN,(155,229,100),SKY],[False,True,False,False]):
-            ic.clay(star(x,y,r,r*0.46,4,True),col,gloss=g,border=3.5)
-        ic.clay(star(24,22,9,4.2,4,True),CREAM,border=3)
-        sparkle(ic,80,82,7,WHITE)
     elif gid=='rumbo':
         LIME=(155,229,100)
         for (x,y) in [(29,50),(30,40),(31,30),(40,27),(50,26),(60,25)]:

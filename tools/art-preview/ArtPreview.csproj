@@ -53,9 +53,5 @@
     <Compile Include="$(Src)/Rumbo/HomingContract.cs" />
     <Compile Include="$(Src)/Rumbo/HomingSprites.cs" />
     <Compile Include="$(Src)/Rumbo/HomingSounds.cs" />
-    <Compile Include="$(Src)/Constelacion/FluencyContract.cs" />
-    <Compile Include="$(Src)/Constelacion/FluencyLexicon.cs" />
-    <Compile Include="$(Src)/Constelacion/ConstellationSprites.cs" />
-    <Compile Include="$(Src)/Constelacion/ConstellationSounds.cs" />
   </ItemGroup>
 </Project>

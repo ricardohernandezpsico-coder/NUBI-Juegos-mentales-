@@ -139,31 +139,6 @@ internal static class Program
                 System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "homing_trips.txt"), sb.ToString());
             }
             RumboSoundDemo(Path.Combine(dir, "rumbo-sonidos.wav"));
-            // Constelación de Palabras: estrellas, micrófono, una ronda REAL (frases de la prueba de voz de Ricardo, 28-sep)
-            // leída por el contrato del juego, y la muestra de sonido.
-            for (int c = 0; c < 8; c++) Dump("const_star_" + c, NeuroVida.Games.Constelacion.ConstellationSprites.Star(c));
-            Dump("const_star_neutral", NeuroVida.Games.Constelacion.ConstellationSprites.Neutral());
-            Dump("const_mic", NeuroVida.Games.Constelacion.ConstellationSprites.Mic());
-            {
-                var cat = NeuroVida.Games.Constelacion.FluencyContract.Get("animales");
-                var said = new System.Collections.Generic.List<NeuroVida.Games.Constelacion.FluencyWord>();
-                foreach (var (t, text) in new[] { (12f, "perro gato oso koala León Puma tigre tigre de bengala"), (23f, "León del Atlas serpiente Cascabel boa boa constructor"),
-                                                  (27f, "calamar"), (38f, "tiburón tiburón blanco tiburón ballena"), (46f, "ñandú emu"), (52f, "zorzal"), (57f, "loro") })
-                    NeuroVida.Games.Constelacion.FluencyContract.Accept(cat, said, text, t);
-                var valid = said.FindAll(w => !w.Repeat);
-                var clusters = NeuroVida.Games.Constelacion.FluencyContract.Clusters(valid);
-                var sb = new System.Text.StringBuilder();
-                int ordinal = 0;
-                foreach (var cl in clusters)
-                {
-                    int color = cl.Count >= 2 ? ordinal++ : -1;
-                    for (int i = cl.Start; i < cl.Start + cl.Count; i++)
-                        sb.AppendLine($"W|{valid[i].Display}|{color}|{i - cl.Start}|{(cl.Count >= 2 ? cl.Group : "")}");
-                }
-                sb.AppendLine($"S|{valid.Count}|{NeuroVida.Games.Constelacion.FluencyContract.MeanClusterSize(clusters).ToString(System.Globalization.CultureInfo.InvariantCulture)}|{NeuroVida.Games.Constelacion.FluencyContract.Switches(clusters)}|{string.Join(",", NeuroVida.Games.Constelacion.FluencyContract.Quarters(said))}");
-                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "const_round.txt"), sb.ToString());
-            }
-            ConstelacionSoundDemo(Path.Combine(dir, "constelacion-sonidos.wav"));
             // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (var (ports, seed, twist) in new[] { (4, 3, 0.2f), (6, 11, 0.55f), (8, 5, 1f), (6, 21, 0.55f) })
@@ -311,43 +286,6 @@ internal static class Program
             w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
             w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
             foreach (float v in arr) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
-        }
-    }
-
-    static void ConstelacionSoundDemo(string path)
-    {
-        const int rate = 44100;
-        var mix = new float[(int)(12f * rate)];
-        void At(float t, UnityEngine.AudioClip c, float v)
-        {
-            int start = (int)(t * rate);
-            for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
-        }
-        // Micrófono encendido; una constelación de felinos (la melodía sube con cada palabra del grupo), un salto a los
-        // reptiles (vuelve a la nota de partida), una palabra repetida, y el cielo de la ronda.
-        At(0.2f, NeuroVida.Games.Constelacion.ConstellationSounds.Listen(), 0.45f);
-        float t0 = 1.2f;
-        for (int i = 0; i < 5; i++)
-        {
-            At(t0 + 0.55f * i, NeuroVida.Games.Constelacion.ConstellationSounds.Star(i), 0.4f);
-            if (i == 1) At(t0 + 0.55f * i, NeuroVida.Games.Constelacion.ConstellationSounds.Formed(), 0.35f);
-        }
-        float t1 = 4.4f;
-        for (int i = 0; i < 4; i++)
-        {
-            At(t1 + 0.6f * i, NeuroVida.Games.Constelacion.ConstellationSounds.Star(i), 0.4f);
-            if (i == 1) At(t1 + 0.6f * i, NeuroVida.Games.Constelacion.ConstellationSounds.Formed(), 0.35f);
-        }
-        At(7.2f, NeuroVida.Games.Constelacion.ConstellationSounds.Repeat(), 0.35f);
-        At(8.0f, NeuroVida.Games.Constelacion.ConstellationSounds.Stop(), 0.4f);
-        At(8.9f, NeuroVida.Games.Constelacion.ConstellationSounds.RoundEnd(), 0.5f);
-        using (var w = new BinaryWriter(File.Create(path)))
-        {
-            int n = mix.Length;
-            w.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + n * 2); w.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));
-            w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
-            w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
-            foreach (float v in mix) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
         }
     }
 

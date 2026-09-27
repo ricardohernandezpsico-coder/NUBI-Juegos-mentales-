@@ -129,20 +129,7 @@ object NativeReceiver {
     val homing_along: List<Double>? = null,
     val homing_lateral: List<Double>? = null,
     val homing_beacon: List<Int>? = null,
-    val homing_perfect: Int = 0,
-    // Solo Constelación de Palabras: una entrada por ronda (ver StroopTelemetry.cs), cuartos de 4 en 4, y cómo se jugó.
-    val fluency_categories: List<String>? = null,
-    val fluency_valid: List<Int>? = null,
-    val fluency_repeats: List<Int>? = null,
-    val fluency_unknown: List<Int>? = null,
-    val fluency_cluster: List<Double>? = null,
-    val fluency_switches: List<Int>? = null,
-    val fluency_quarters: List<Int>? = null,
-    val fluency_top: List<String>? = null,
-    val fluency_words: List<String>? = null,
-    val fluency_input: String = "",
-    val fluency_unknown_words: List<String>? = null,
-    val fluency_continuous: Int = -1
+    val homing_perfect: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -270,7 +257,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "constelacion" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -385,22 +372,7 @@ object NativeReceiver {
       homingAlong = homing?.let { h -> h.map { it.first } },
       homingLateral = homing?.let { h -> h.map { it.second } },
       homingBeacon = homing?.let { h -> h.map { it.third } },
-      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 },
-      fluencyRounds = if (telemetry.game_id != "constelacion" || metrics.fluency_categories.isNullOrEmpty()) null
-      else com.example.data.Fluency.rounds(
-        categories = metrics.fluency_categories,
-        valid = metrics.fluency_valid.orEmpty(),
-        repeats = metrics.fluency_repeats.orEmpty(),
-        unknown = metrics.fluency_unknown.orEmpty(),
-        cluster = metrics.fluency_cluster.orEmpty().map { it.toFloat() },
-        switches = metrics.fluency_switches.orEmpty(),
-        quarters = metrics.fluency_quarters.orEmpty(),
-        tops = metrics.fluency_top.orEmpty(),
-        words = metrics.fluency_words.orEmpty()
-      ).takeIf { it.isNotEmpty() },
-      fluencyInput = metrics.fluency_input.takeIf { telemetry.game_id == "constelacion" && it.isNotBlank() },
-      fluencyUnknownWords = metrics.fluency_unknown_words?.takeIf { telemetry.game_id == "constelacion" },
-      fluencyContinuous = metrics.fluency_continuous.takeIf { telemetry.game_id == "constelacion" && it >= 0 }
+      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 }
     )
   }
 }

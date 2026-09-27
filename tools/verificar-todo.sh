@@ -24,13 +24,13 @@ echo "=== 1/5: Recrear la escena piloto ==="
 "$UNITY" -batchmode -nographics -quit -projectPath "$PROJ" \
   -executeMethod NeuroVida.Bridge.EditorTools.CreatePilotTestScene.Create -logFile "$RESULTS/v-1-scene.log"
 
-echo "=== 2/5: Pruebas EditMode (esperado: todas en verde; 176 al 28-sep) ==="
+echo "=== 2/5: Pruebas EditMode (esperado: todas en verde; 167 al 28-sep) ==="
 "$UNITY" -batchmode -nographics -projectPath "$PROJ" -runTests -testPlatform EditMode \
   -testResults "$RESULTS/v-2-tests.xml" -logFile "$RESULTS/v-2-tests.log" || true
 grep -o 'result="[A-Za-z]*" total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' "$RESULTS/v-2-tests.xml" | head -1
 
-echo "=== 3/5: Arranque de los 19 juegos (smoke) ==="
-for G in Run RunStroop RunComparacion RunCambioChip RunRutaTesoro RunSeries RunCalculo RunAnagramas RunParejas RunPiloto RunRadar RunSatelites RunFreno RunAterrizaje RunAcoplamiento RunTrafico RunBitacora RunRumbo RunConstelacion; do
+echo "=== 3/5: Arranque de los 18 juegos (smoke) ==="
+for G in Run RunStroop RunComparacion RunCambioChip RunRutaTesoro RunSeries RunCalculo RunAnagramas RunParejas RunPiloto RunRadar RunSatelites RunFreno RunAterrizaje RunAcoplamiento RunTrafico RunBitacora RunRumbo; do
   "$UNITY" -batchmode -nographics -projectPath "$PROJ" \
     -executeMethod NeuroVida.Bridge.EditorTools.HeadlessPlaymodeSmokeTest.$G -logFile "$RESULTS/v-3-$G.log" || true
   echo "$G: $(grep '\[SmokeTest\]' "$RESULTS/v-3-$G.log" | tail -1)"
