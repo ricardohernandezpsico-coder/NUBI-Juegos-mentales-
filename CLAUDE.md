@@ -185,6 +185,8 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   grupo de composición (si no, `UnityGameHost` heredaba el `launched` guardado de la anterior al recrearse la pantalla).
 - Idea de Ricardo tras Radar (27-sep): la información del final de cada juego estrella es lo más valioso para el
   usuario; explorar más ese camino (propuesta pendiente: guardar las medidas propias por partida y mostrar su evolución).
+- Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
+  "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
   re-chequeo mensual del punto de partida; tutorial de primera vez por juego; marca ✓/✗ de arcilla sobre la
   respuesta; alinear Secuencia y Parejas con el DDA común; calibrar el DDA y la referencia de percentiles con datos.
