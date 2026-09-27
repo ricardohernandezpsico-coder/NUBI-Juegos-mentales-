@@ -234,12 +234,11 @@ namespace NeuroVida.Games.Contacto.Tests
         }
 
         [Test]
-        public void Score_And_Points()
+        public void Score_RewardsDecoding_Speed_AndLevel()
         {
             Assert.AreEqual(100, ContactContract.Score(5, 5, 3f, ContactContract.MaxLevel));
             Assert.AreEqual(0, ContactContract.Score(0, 5, -1f, 1));
             Assert.Greater(ContactContract.Score(4, 5, 3.5f, 3), ContactContract.Score(2, 5, 5f, 3));
-            Assert.Greater(ContactContract.DecodePoints(1, 3), ContactContract.DecodePoints(1, 6));
         }
     }
 }

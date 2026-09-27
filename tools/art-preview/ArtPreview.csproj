@@ -53,5 +53,9 @@
     <Compile Include="$(Src)/Rumbo/HomingContract.cs" />
     <Compile Include="$(Src)/Rumbo/HomingSprites.cs" />
     <Compile Include="$(Src)/Rumbo/HomingSounds.cs" />
+    <Compile Include="$(Src)/Contacto/ContactContract.cs" />
+    <Compile Include="$(Src)/Contacto/NuriVoice.cs" />
+    <Compile Include="$(Src)/Contacto/ContactSounds.cs" />
+    <Compile Include="$(Src)/Contacto/ContactSprites.cs" />
   </ItemGroup>
 </Project>

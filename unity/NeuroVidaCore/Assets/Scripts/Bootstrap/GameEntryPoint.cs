@@ -18,6 +18,7 @@ using NeuroVida.Games.Acoplamiento;
 using NeuroVida.Games.Trafico;
 using NeuroVida.Games.Bitacora;
 using NeuroVida.Games.Rumbo;
+using NeuroVida.Games.Contacto;
 
 namespace NeuroVida.Bridge
 {
@@ -56,6 +57,7 @@ namespace NeuroVida.Bridge
         [SerializeField] private TrafficGameController trafficGameController;
         [SerializeField] private BitacoraGameController bitacoraGameController;
         [SerializeField] private HomingGameController homingGameController;
+        [SerializeField] private ContactGameController contactGameController;
 
         /// <summary>Los 9 juegos arman su interfaz una sola vez para 1080x1920 vertical: al girar el teléfono se
         /// desarmaban. Se fija la orientación antes de cargar la escena, además de Player Settings (Portrait) y del
@@ -337,6 +339,16 @@ namespace NeuroVida.Bridge
                     }
                     homingGameController.gameObject.SetActive(true);
                     homingGameController.StartSession(config);
+                    break;
+                case ContactGameController.GameId:
+                    if (contactGameController == null)
+                    {
+                        var go = new GameObject("ContactGameController");
+                        go.transform.SetParent(transform, false);
+                        contactGameController = go.AddComponent<ContactGameController>();
+                    }
+                    contactGameController.gameObject.SetActive(true);
+                    contactGameController.StartSession(config);
                     break;
                 default:
                     Debug.LogError($"[GameEntryPoint] game_id {config.game_id} no tiene un controlador registrado todavía.");

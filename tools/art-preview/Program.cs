@@ -139,6 +139,28 @@ internal static class Program
                 System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "homing_trips.txt"), sb.ToString());
             }
             RumboSoundDemo(Path.Combine(dir, "rumbo-sonidos.wav"));
+            // Primer Contacto: el nuri, los íconos del cielo en los 5 colores, una escena REAL del contrato y la voz.
+            Dump("contact_alien_closed", NeuroVida.Games.Contacto.ContactSprites.Alien(false));
+            Dump("contact_alien_open", NeuroVida.Games.Contacto.ContactSprites.Alien(true));
+            Dump("contact_tail", NeuroVida.Games.Contacto.ContactSprites.Tail());
+            for (int k = 0; k < NeuroVida.Games.Contacto.ContactContract.SkyObjects; k++)
+                for (int c = 0; c < NeuroVida.Games.Contacto.ContactContract.ColorCount; c++)
+                    Dump($"contact_obj_{k}_{c}", NeuroVida.Games.Contacto.ContactSprites.Object(new NeuroVida.Games.Contacto.Thing(k, c)));
+            {
+                // Lección de colores (se saben las 8 primeras cosas del cielo), nivel 5, y una escena con la palabra KI.
+                var known = new System.Collections.Generic.List<int>();
+                for (int i = 0; i < 8; i++) known.Add(NeuroVida.Games.Contacto.ContactContract.Curriculum[i]);
+                var lesson = NeuroVida.Games.Contacto.ContactContract.BuildLesson(known, null, 5);
+                var rng = new System.Random(12);
+                var scene = NeuroVida.Games.Contacto.ContactContract.MakeScene(lesson, 13, 4, rng);
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("PHRASE " + NeuroVida.Games.Contacto.ContactContract.PhraseText(scene.Phrase));
+                sb.AppendLine("TARGET " + scene.Target);
+                foreach (var t in scene.Things) sb.AppendLine($"THING {t.Obj} {t.Color} {t.Count}");
+                foreach (int w in lesson.Targets) sb.AppendLine($"SLOT {w} {NeuroVida.Games.Contacto.ContactContract.Words[w]}");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "contact_scene.txt"), sb.ToString());
+            }
+            ContactoSoundDemo(Path.Combine(dir, "contacto-sonidos.wav"));
             // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (var (ports, seed, twist) in new[] { (4, 3, 0.2f), (6, 11, 0.55f), (8, 5, 1f), (6, 21, 0.55f) })
@@ -224,6 +246,63 @@ internal static class Program
             w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
             foreach (float v in mix) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
         }
+    }
+
+    /// <summary>Muestra de Primer Contacto: llegada, escenas con la voz de los nuri (una palabra, frases de dos y tres),
+    /// el "mm" del nuri, una palabra descifrada y una que queda para otro día.</summary>
+    static void ContactoSoundDemo(string path)
+    {
+        const int rate = 44100;
+        var mix = new float[(int)(19f * rate)];
+        void At(float t, UnityEngine.AudioClip c, float v)
+        {
+            int start = (int)(t * rate);
+            if (c.frequency == rate)
+            {
+                for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
+                return;
+            }
+            // La voz va a 22 050 Hz: se estira a 44 100 (interpolación lineal).
+            double step = c.frequency / (double)rate;
+            for (int k = 0; start + k < mix.Length; k++)
+            {
+                double src = k * step;
+                int i0 = (int)src;
+                if (i0 + 1 >= c.data.Length) break;
+                float f = (float)(src - i0);
+                mix[start + k] += v * (c.data[i0] * (1f - f) + c.data[i0 + 1] * f);
+            }
+        }
+        int[] W(params string[] words)
+        {
+            var ids = new int[words.Length];
+            for (int i = 0; i < words.Length; i++) ids[i] = Array.IndexOf(NeuroVida.Games.Contacto.ContactContract.Words, words[i]);
+            return ids;
+        }
+        At(0.1f, NeuroVida.Games.Contacto.ContactSounds.Arrival(), 0.5f);
+        float t = 1.8f;
+        foreach (var (phrase, end) in new[] {
+            (W("KITU"), "ack"), (W("ZOBA"), "ack"), (W("KITU"), "ack"), (W("KITU"), "decoded"),
+            (W("NUPA", "KI"), "ack"), (W("LIRO", "LU"), "ack"), (W("GAMU", "PE", "NAS"), "ack"), (W("SUKE", "RA", "BEL"), "parked") })
+        {
+            At(t, NeuroVida.Games.Contacto.ContactSounds.Materialize(), 0.35f);
+            t += 0.45f;
+            var voice = NeuroVida.Games.Contacto.ContactSounds.Voice(phrase);
+            At(t, voice, 0.9f);
+            t += voice.data.Length / (float)voice.frequency - 0.2f;
+            At(t, NeuroVida.Games.Contacto.ContactSounds.Pick(), 0.5f);
+            t += 0.15f;
+            if (end == "ack") At(t, NeuroVida.Games.Contacto.ContactSounds.Ack(), 0.5f);
+            else if (end == "decoded") At(t, NeuroVida.Games.Contacto.ContactSounds.Decoded(), 0.55f);
+            else At(t, NeuroVida.Games.Contacto.ContactSounds.Parked(), 0.45f);
+            t += end == "decoded" ? 1.2f : 0.7f;
+        }
+        using var file = File.Create(path);
+        var w = new BinaryWriter(file);
+        int len = Math.Min(mix.Length, (int)((t + 0.5f) * rate));
+        w.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + len * 2); w.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt ")); w.Write(16); w.Write((short)1); w.Write((short)1);
+        w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16); w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(len * 2);
+        for (int i = 0; i < len; i++) w.Write((short)(Math.Max(-1f, Math.Min(1f, mix[i])) * 32000));
     }
 
     static void RumboSoundDemo(string path)

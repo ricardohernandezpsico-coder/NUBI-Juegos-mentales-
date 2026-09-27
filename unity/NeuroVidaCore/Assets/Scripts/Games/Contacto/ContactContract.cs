@@ -141,7 +141,7 @@ namespace NeuroVida.Games.Contacto
         {
             // cielo: planeta, cohete, cometa, estrella, luna, ovni, satélite, sol, casco, asteroide, telescopio, cristal
             "ZOBA", "KITU", "FEDI", "NUPA", "LIRO", "GAMU", "TEBI", "SUKE", "MOVA", "DAKO", "PIFO", "NELI",
-            // colores: coral, sol, cielo, uva, lima
+            // colores: coral, amarillo, celeste, lila, verde (los de la paleta de la app)
             "RA", "KI", "LU", "ZO", "PE",
             // hallazgos: llave, campana, pluma, concha, reloj de arena, brújula, farol, corona, bellota, libro, copa, gema,
             // hongo, ancla, estrella de mar, paraguas
@@ -159,14 +159,14 @@ namespace NeuroVida.Games.Contacto
         {
             "un planeta", "un cohete", "un cometa", "una estrella", "una luna", "un ovni", "un satélite", "un sol", "un casco",
             "un asteroide", "un telescopio", "un cristal",
-            "coral", "sol", "cielo", "uva", "lima",
+            "coral", "amarillo", "celeste", "lila", "verde",
             "una llave", "una campana", "una pluma", "una concha", "un reloj de arena", "una brújula", "un farol", "una corona",
             "una bellota", "un libro", "una copa", "una gema", "un hongo", "un ancla", "una estrella de mar", "un paraguas",
             "uno", "dos", "tres",
         };
 
         /// <summary>Nombres de los colores de la paleta, en el orden de los valores 0..4.</summary>
-        public static readonly string[] ColorNames = { "coral", "sol", "cielo", "uva", "lima" };
+        public static readonly string[] ColorNames = { "coral", "amarillo", "celeste", "lila", "verde" };
 
         /// <summary>
         /// Orden en que se aprende el idioma: primero cosas del cielo (fáciles de nombrar), luego colores (frases de dos
@@ -199,8 +199,11 @@ namespace NeuroVida.Games.Contacto
         public static int ColorWord(int color) => FirstColor + color;
         public static int CountWord(int count) => FirstCount + count - 1;
 
-        /// <summary>Las cosas del cielo se pintan de cualquier color de la paleta; los hallazgos tienen los suyos.</summary>
-        public static bool Colorable(int obj) => obj >= 0 && obj < SkyObjects;
+        /// <summary>
+        /// Las cosas del cielo se pintan de cualquier color de la paleta; los hallazgos tienen los suyos. El satélite
+        /// también (su color va en una pieza chica y los paneles son azules: el color de la frase no se leería bien).
+        /// </summary>
+        public static bool Colorable(int obj) => obj >= 0 && obj < SkyObjects && obj != 6;
 
         /// <summary>Frase nuri para una cosa: nombre, color (si el color está en juego y la cosa lo tiene) y cantidad.</summary>
         public static int[] PhraseFor(Thing t, bool colorOn, bool countOn)
@@ -564,9 +567,6 @@ namespace NeuroVida.Games.Contacto
 
         /// <summary>Lo mínimo para descifrar una palabra: oírla 3 veces (la primera es adivinar; después, dos aciertos seguidos).</summary>
         public const int MinHearings = 3;
-
-        public static int DecodePoints(int level, int hearings) =>
-            100 + 20 * (Clamp(level) - 1) + (hearings <= MinHearings ? 50 : hearings == MinHearings + 1 ? 20 : 0);
 
         /// <summary>Puntaje 0-100: palabras descifradas (60%), qué tan rápido (20%: 3 / escenas por palabra) y nivel (20%).</summary>
         public static int Score(int decoded, int lessonSize, float meanHearings, int level)

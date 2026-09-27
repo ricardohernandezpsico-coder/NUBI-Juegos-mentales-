@@ -187,6 +187,18 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.14f), NebulaBPos = new Vector2(0.5f, 0.2f),
         };
 
+        /// <summary>Primer Contacto: el cielo de los nuri, con su planeta uva asomando a la derecha (lejos del diccionario de
+        /// abajo), una luna lila arriba a la derecha y luces desenfocadas (cálido y amable: es un encuentro, no una
+        /// invasión).</summary>
+        public static GameWorld FirstContact => new GameWorld
+        {
+            Name = "Primer contacto", Stars = 55, Bokeh = 4,
+            Planets = new[] { new Vector3(1.1f, 0.5f, 340f) }, PlanetColors = new[] { NeuroStyle.Grape },
+            Moons = new[] { new Vector3(0.88f, 0.9f, 90f) }, MoonTints = new[] { NeuroStyle.Hex(0xE4DCFF) },
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.14f), NebulaAPos = new Vector2(0.5f, 0.8f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.22f), NebulaBPos = new Vector2(0.15f, 0.2f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

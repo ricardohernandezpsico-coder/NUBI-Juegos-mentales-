@@ -94,5 +94,20 @@ namespace NeuroVida.Contracts
         public int[] homing_beacon;
         /// <summary>Solo Rumbo a Casa: llegadas perfectas.</summary>
         public int homing_perfect;
+        /// <summary>Solo Primer Contacto: palabras de la lección de la partida, las que se descifraron y cuántas veces se
+        /// oyó cada una hasta descifrarla (misma posición que <see cref="contact_decoded"/>).</summary>
+        public int[] contact_lesson;
+        public int[] contact_decoded;
+        public int[] contact_hearings;
+        /// <summary>Solo Primer Contacto: palabras de otros días repasadas al empezar y si se recordaron (1/0).</summary>
+        public int[] contact_review;
+        public int[] contact_review_ok;
+        /// <summary>Solo Primer Contacto: escenas por palabra (promedio de veces oída hasta descifrarla). -1 = ninguna.</summary>
+        public float contact_mean_hearings = -1f;
+        /// <summary>Solo Primer Contacto: escenas en que se podía descartar lo que ya tenía nombre y en cuántas se descartó. -1 = no aplica.</summary>
+        public int contact_me_total = -1;
+        public int contact_me_ok = -1;
+        /// <summary>Solo Primer Contacto: 1 si fue conversación (ya sabía todo el idioma).</summary>
+        public int contact_practice;
     }
 }
