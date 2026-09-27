@@ -130,7 +130,6 @@ namespace NeuroVida.Games.Parejas
         private AudioSource _audioSource;
         private readonly Dictionary<float, AudioClip> _toneCache = new Dictionary<float, AudioClip>();
 
-        private static readonly Color BackgroundColor = new Color(0x0F / 255f, 0x17 / 255f, 0x2A / 255f);
         private static readonly Color DomainMemoriaColor = new Color(0x3B / 255f, 0x82 / 255f, 0xF6 / 255f);
         // Las cartas traen sus colores en el sprite (ver CardSprites); estos son solo tintes
         // puntuales por encima (Image.color multiplica).
@@ -238,7 +237,7 @@ namespace NeuroVida.Games.Parejas
             float elapsed = 0f;
             while (elapsed < total)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 for (int i = 0; i < count; i++)
                 {
                     if (!_cardImages.TryGetValue(i, out var image)) continue;
@@ -386,7 +385,7 @@ namespace NeuroVida.Games.Parejas
             int faceUpUnmatched = _cards.Count(c => c.IsFaceUp && !c.IsMatched);
             if (faceUpUnmatched == 0)
             {
-                _firstFlipTime = Time.unscaledTime;
+                _firstFlipTime = GameClock.Time;
                 SetCardFaceUp(id, true);
                 PlayTone(FlipToneHz, 0.08f, 0.12f);
             }
@@ -410,7 +409,7 @@ namespace NeuroVida.Games.Parejas
             var b = faceUp[1];
             bool matched = a.PairKey == b.PairKey;
 
-            long reactionMs = (long)System.Math.Max(0f, (Time.unscaledTime - _firstFlipTime) * 1000f);
+            long reactionMs = (long)System.Math.Max(0f, (GameClock.Time - _firstFlipTime) * 1000f);
             var profile = _dda.RegisterTrial(new VisualWorkingMemoryDDA.TrialResult(matched, false, reactionMs), _totalPairs);
 
             _attempts++;
@@ -596,12 +595,8 @@ namespace NeuroVida.Games.Parejas
             backgroundRect.anchorMax = Vector2.one;
             backgroundRect.offsetMin = Vector2.zero;
             backgroundRect.offsetMax = Vector2.zero;
-            backgroundGo.AddComponent<Image>().color = BackgroundColor;
-
-            // Dos resplandores grandes y suaves (violeta arriba-izquierda, azul abajo-derecha)
-            // para que el fondo no sea un color plano -- el azul base es el mismo de siempre.
-            AddBackgroundGlow(backgroundGo.transform, new Vector2(0.15f, 0.85f), 1500f, new Color(0.49f, 0.36f, 0.95f, 0.26f));
-            AddBackgroundGlow(backgroundGo.transform, new Vector2(0.9f, 0.12f), 1400f, new Color(0.23f, 0.51f, 0.96f, 0.22f));
+            // Mundo "TwinMoons": cielo nocturno de la app + su elemento propio (ver Shared/WorldBackdrop.cs).
+            WorldBackdrop.Build(backgroundRect, GameWorld.TwinMoons);
 
             var safeAreaGo = new GameObject("SafeAreaContent");
             safeAreaGo.transform.SetParent(canvasGo.transform, false);
@@ -895,7 +890,7 @@ namespace NeuroVida.Games.Parejas
             float total = stagger * cardCount + popDuration;
             while (elapsed < total)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 for (int i = 0; i < cardCount; i++)
                 {
                     if (!_cardImages.TryGetValue(i, out var image)) continue;
@@ -936,7 +931,7 @@ namespace NeuroVida.Games.Parejas
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 float pulse = 1f + 0.16f * Mathf.Sin(t * Mathf.PI);
                 rect.localScale = new Vector3(pulse, pulse, 1f);
@@ -965,7 +960,7 @@ namespace NeuroVida.Games.Parejas
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 float angle = Mathf.Sin(t * Mathf.PI * 6f) * 9f * (1f - t);
                 rect.localRotation = Quaternion.Euler(0f, 0f, angle);
@@ -1011,7 +1006,7 @@ namespace NeuroVida.Games.Parejas
             float elapsed = 0f;
             while (elapsed < FlipHalfSeconds)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / FlipHalfSeconds);
                 rect.localScale = new Vector3(Mathf.Lerp(1f, 0f, t), Mathf.Lerp(1f, 1.06f, t), 1f);
                 yield return null;
@@ -1023,7 +1018,7 @@ namespace NeuroVida.Games.Parejas
             elapsed = 0f;
             while (elapsed < FlipHalfSeconds)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / FlipHalfSeconds);
                 rect.localScale = new Vector3(Mathf.Lerp(0f, 1f, t), Mathf.Lerp(1.06f, 1f, t), 1f);
                 yield return null;
@@ -1113,17 +1108,21 @@ namespace NeuroVida.Games.Parejas
         // ---- Audio: tonos simples generados por código (misma síntesis que Secuencia, HarmonicTone) ----
 
         private const float FlipToneHz = 300f;
-        private const float MismatchToneHz = 220f;
+
+        /// <summary>Parejas seguidas sin error: la nota del acierto sube con ellas (sonido común, ver GameFeel).</summary>
+        private int _matchRun;
 
         private void PlayMatchOrMismatchFeedback(bool matched)
         {
             if (matched)
             {
-                PlayTone(659.25f, 0.35f, 0.2f);
+                _matchRun++;
+                GameFeel.Correct(_matchRun);
             }
             else
             {
-                PlayTone(MismatchToneHz, 0.3f, 0.18f);
+                _matchRun = 0;
+                GameFeel.Wrong();
             }
         }
 
@@ -1132,7 +1131,7 @@ namespace NeuroVida.Games.Parejas
             // Mismo desfase de 150ms que Kotlin -- evita que el tono de subida de nivel
             // suene amontonado encima del de acierto/error.
             yield return new WaitForSeconds(0.15f);
-            PlayTone(1046.50f, 0.4f, 0.22f);
+            GameFeel.LevelUp();
         }
 
         private void PlayTone(float hz, float durationSeconds, float volume)

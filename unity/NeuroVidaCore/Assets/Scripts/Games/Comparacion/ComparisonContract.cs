@@ -63,9 +63,6 @@ namespace NeuroVida.Games.Comparacion
         /// <summary>Ventana del bono de velocidad: 900 ms, se acorta con la maestría (piso 500).</summary>
         public static int SpeedBonusMs(int intensity) => Math.Max(900 - intensity * 15, 500);
 
-        /// <summary>Aciertos necesarios para subir de nivel dentro de la partida.</summary>
-        public static int CorrectPerLevelUp(bool endless) => endless ? 8 : 4;
-
         public static ComparisonTrial GenerateTrial(int level, int intensity, Random rng)
         {
             level = Math.Max(1, Math.Min(level, MaxLevel));

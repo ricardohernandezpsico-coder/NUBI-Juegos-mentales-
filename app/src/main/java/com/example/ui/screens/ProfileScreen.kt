@@ -37,7 +37,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
+import com.example.data.AchievementDef
+import com.example.data.AchievementStats
+import com.example.data.Achievements
 import com.example.model.RankTier
+import com.example.ui.components.AchievementMedal
+import com.example.ui.components.medalColor
 import com.example.ui.components.DomainLegend
 import com.example.ui.components.LeagueShield
 import com.example.ui.components.SpaceSectionTitle
@@ -86,6 +94,10 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
   val history by viewModel.gameHistory.collectAsState()
   val ranks by viewModel.gameRanks.collectAsState()
   val levels by viewModel.gameLevelsForProgress.collectAsState()
+  val unlocks by viewModel.achievementUnlocks.collectAsState()
+  val achStats by viewModel.achievementStats.collectAsState()
+  val baseline by viewModel.baseline.collectAsState()
+  var achievementDetail by remember { mutableStateOf<AchievementDef?>(null) }
 
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
@@ -115,7 +127,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
             contentAlignment = Alignment.Center
           ) { Text(userSettings.avatar, fontSize = 26.sp) }
         }
-        Text(userSettings.name, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
+        Text(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
         Text(
           text = "Liga ${tier.tierName}" + (index?.let { "  ·  nivel ${levelWord(it / 100f).lowercase()}" } ?: ""),
           color = Color(0xFFB4BFEA),
@@ -143,6 +155,63 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
       }
     }
 
+    // Punto de partida: si se saltó, invitación a hacerlo; si ya se hizo, repetirlo (p. ej. tras un tiempo).
+    item {
+      Column {
+        SpaceSectionTitle(
+          "Tu punto de partida",
+          hint = if (baseline == null) "3 juegos cortos para que cada juego empiece a tu medida" else "Puedes repetirlo cuando quieras"
+        )
+        Spacer(Modifier.height(12.dp))
+        ClayButton(
+          text = if (baseline == null) "Encontrar mi punto de partida" else "Repetir la evaluación",
+          onClick = { viewModel.startBaseline() },
+          color = if (baseline == null) Clay.Sun else Clay.Cream,
+          modifier = Modifier.testTag("btn_profile_baseline")
+        )
+      }
+    }
+
+    // Logros: medallas en filas de 4; las bloqueadas muestran cuánto falta.
+    item {
+      Column {
+        SpaceSectionTitle("Logros", hint = "${unlocks.keys.count { Achievements.byId(it) != null }} de ${Achievements.all.size} conseguidos")
+        Spacer(Modifier.height(14.dp))
+        Achievements.all.chunked(4).forEach { row ->
+          Row(modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
+            row.forEach { def ->
+              val got = def.id in unlocks
+              Column(
+                modifier = Modifier
+                  .weight(1f)
+                  .clip(RoundedCornerShape(16.dp))
+                  .clickable { achievementDetail = def }
+                  .padding(vertical = 4.dp)
+                  .testTag("achievement_${def.id}"),
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+                AchievementMedal(def = def, unlocked = got, size = 64.dp)
+                Text(
+                  text = def.title,
+                  color = if (got) Color(0xFFEAF0FF) else Color(0xFFB4BFEA).copy(alpha = 0.7f),
+                  fontSize = 12.sp,
+                  fontWeight = FontWeight.SemiBold,
+                  textAlign = TextAlign.Center,
+                  maxLines = 2,
+                  lineHeight = 14.sp
+                )
+                if (!got) {
+                  val (cur, goal) = def.progress(achStats)
+                  Text("$cur/$goal", color = Clay.Sun.copy(alpha = 0.8f), fontSize = 11.sp)
+                }
+              }
+            }
+            repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+          }
+        }
+      }
+    }
+
     item {
       ClayButton(
         text = "Ajustes",
@@ -150,6 +219,57 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
         color = Clay.Cream,
         icon = Icons.Default.Settings
       )
+    }
+  }
+
+  achievementDetail?.let { def ->
+    AchievementDetailDialog(def, unlocks[def.id], achStats) { achievementDetail = null }
+  }
+}
+
+/** Detalle de un logro: medalla grande, qué hay que hacer, cuándo se consiguió o cuánto falta. */
+@Composable
+private fun AchievementDetailDialog(def: AchievementDef, unlockedAt: Long?, stats: AchievementStats, onDismiss: () -> Unit) {
+  androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+    com.example.ui.theme.ClayCard(
+      modifier = Modifier.fillMaxWidth().padding(8.dp),
+      color = Clay.Cream,
+      radius = 28.dp,
+      contentPadding = 22.dp
+    ) {
+      Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+          modifier = Modifier
+            .clip(CircleShape)
+            .background(Color(0xFF101A58))
+            .padding(10.dp)
+        ) { AchievementMedal(def = def, unlocked = unlockedAt != null, size = 110.dp) }
+        Text(def.title, color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp))
+        Text(def.description, color = Clay.InkSoft, fontSize = 15.sp, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(10.dp))
+        if (unlockedAt != null) {
+          val f = java.text.SimpleDateFormat("d 'de' MMMM yyyy", java.util.Locale("es"))
+          Text("Conseguido el ${f.format(java.util.Date(unlockedAt))}", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        } else {
+          val (cur, goal) = def.progress(stats)
+          Text("Llevas $cur de $goal", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+          Box(
+            modifier = Modifier
+              .padding(top = 8.dp)
+              .fillMaxWidth()
+              .height(10.dp)
+              .clip(RoundedCornerShape(5.dp))
+              .background(Clay.Ink.copy(alpha = 0.12f))
+          ) {
+            Box(
+              modifier = Modifier
+                .fillMaxWidth((cur.toFloat() / goal).coerceIn(0.03f, 1f))
+                .height(10.dp)
+                .background(def.medalColor())
+            )
+          }
+        }
+      }
     }
   }
 }

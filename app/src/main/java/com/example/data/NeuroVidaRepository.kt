@@ -12,6 +12,9 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
+/** Juegos con motor de dificultad propio (no usan el rating del DDA común guardado en `ddaRating`). */
+private val OWN_ENGINE_GAMES = setOf("secuencia", "parejas")
+
 class NeuroVidaRepository(
   context: Context,
   private val database: NeuroVidaDatabase = NeuroVidaDatabase.getDatabase(context)
@@ -57,7 +60,7 @@ class NeuroVidaRepository(
     .stateIn(
       scope = repositoryScope,
       started = SharingStarted.Eagerly,
-      initialValue = defaultSeedHistory()
+      initialValue = emptyList()
     )
 
   // 3. Reactive Game Levels Map from Room
@@ -138,6 +141,134 @@ class NeuroVidaRepository(
   // volver a otorgar el premio si se recalcula).
   private val _claimedChallenges = MutableStateFlow<Set<String>>(emptySet())
 
+  // Ascensos de liga (liga general y de cada juego), para marcarlos en el camino de Hoy. Van en
+  // SharedPreferences y no en Room: son pocos, solo se agregan, y así no hace falta una migración.
+  private val leaguePrefs = context.getSharedPreferences("league_events", Context.MODE_PRIVATE)
+  private val _leagueEvents = MutableStateFlow(decodeLeagueEvents(leaguePrefs.getString("events", null)))
+  val leagueEvents: StateFlow<List<LeagueEvent>> = _leagueEvents.asStateFlow()
+
+  // Logros conseguidos (id -> cuándo). Se derivan del historial y los trofeos (ver Achievements.kt); acá solo
+  // se recuerda cuáles ya se celebraron.
+  private val achievementPrefs = context.getSharedPreferences("achievements", Context.MODE_PRIVATE)
+  private val _achievementUnlocks = MutableStateFlow(decodeUnlocks(achievementPrefs.getString("unlocks", null)))
+  val achievementUnlocks: StateFlow<Map<String, Long>> = _achievementUnlocks.asStateFlow()
+
+  // "Tu punto de partida" (ver Baseline.kt): nivel educacional, metas y el mapa de la evaluación inicial. En
+  // SharedPreferences (como ligas y logros) para no migrar Room por datos que solo se escriben en el onboarding.
+  private val profilePrefs = context.getSharedPreferences("profile_extra", Context.MODE_PRIVATE)
+  private val _education = MutableStateFlow(
+    profilePrefs.getString("education", null)?.let { n -> Education.values().firstOrNull { it.name == n } }
+  )
+  val education: StateFlow<Education?> = _education.asStateFlow()
+  private val _goals = MutableStateFlow(decodeGoals(profilePrefs.getString("goals", null)))
+  val goals: StateFlow<Set<DomainType>> = _goals.asStateFlow()
+  private val _baseline = MutableStateFlow(decodeBaseline(profilePrefs.getString("baseline", null)))
+  val baseline: StateFlow<Baseline?> = _baseline.asStateFlow()
+
+  /** Datos del onboarding para el punto de partida (educación null = no respondió; metas vacías = sin preferencia). */
+  fun saveProfileExtras(education: Education?, goals: Set<DomainType>) {
+    _education.value = education
+    _goals.value = goals
+    profilePrefs.edit()
+      .putString("education", education?.name)
+      .putString("goals", encodeGoals(goals))
+      .apply()
+  }
+
+  /**
+   * Guarda el mapa de la evaluación y siembra el punto de partida de los 9 juegos (cada uno toma el rating de su
+   * dominio). La primera evaluación reemplaza el nivel y el rating de todos los juegos que no se jugaron después
+   * del punto de partida estimado (si se había saltado); si se repite más adelante, solo completa los juegos del DDA
+   * común que todavía no tienen rating (no pisa lo ya jugado). Los juegos medidos ya guardaron su rating al jugarse.
+   */
+  suspend fun applyBaseline(baseline: Baseline) = withContext(Dispatchers.IO) {
+    val firstEvaluation = _baseline.value == null
+    val priorAt = profilePrefs.getLong("prior_at", 0L)
+    seedStartingPoint(seedRatings(baseline)) { p -> firstEvaluation && (priorAt == 0L || p.lastPlayedTimestamp <= priorAt) }
+    _baseline.value = baseline
+    profilePrefs.edit().putString("baseline", encodeBaseline(baseline)).apply()
+    refreshTodaySession()
+  }
+
+  /**
+   * Se saltó la evaluación: punto de partida ESTIMADO por edad y educación ([priorRating]), una sola vez y solo
+   * donde no hay datos. El DDA lo corrige en la primera partida de cada juego.
+   */
+  suspend fun applyPriorIfNeeded(age: AgeBand?, education: Education?) = withContext(Dispatchers.IO) {
+    if (_baseline.value != null || profilePrefs.getLong("prior_at", 0L) > 0L) return@withContext
+    val prior = priorRating(age, education)
+    seedStartingPoint(GameRegistry.allGames.associate { it.id to prior }) { true }
+    profilePrefs.edit().putLong("prior_at", System.currentTimeMillis()).apply()
+    refreshTodaySession()
+  }
+
+  /** [overwrite] = si ese juego toma el punto de partida aunque ya tenga nivel/rating; si no, solo completa lo vacío. */
+  private suspend fun seedStartingPoint(ratings: Map<String, Float>, overwrite: (GameProgressEntity) -> Boolean) {
+    val all = gameProgressDao.getAllProgressSync().associateBy { it.gameId }
+    ratings.forEach { (id, r) ->
+      val p = all[id] ?: GameProgressEntity(gameId = id, currentLevel = 1)
+      val replace = overwrite(p)
+      val commonDda = id !in OWN_ENGINE_GAMES
+      gameProgressDao.insertOrUpdate(
+        p.copy(
+          currentLevel = if (replace) levelFromRating(r) else p.currentLevel,
+          ddaRating = if (commonDda && (replace || p.ddaRating < 0f)) r.coerceIn(0f, 1f) else p.ddaRating
+        )
+      )
+    }
+  }
+
+  /** Si el camino de hoy todavía no empezó, se vuelve a elegir (con las metas y el mapa nuevos). */
+  suspend fun refreshTodaySession() = withContext(Dispatchers.IO) {
+    val today = getTodayDateKey()
+    val current = dailySessionDao.getDailySessionSync(today)
+    if (current != null && current.toDomain().completedCount > 0) return@withContext
+    val queue = pickSessionQueue(gameResultDao.getAllResultsSync().map { it.toDomain() })
+    val entity = DailySessionEntity(dateKey = today, gameIdsRaw = queue.joinToString(","), completedCount = 0, scoresRaw = "")
+    dailySessionDao.insertOrUpdate(entity)
+    _dailySession.value = entity.toDomain()
+  }
+
+  private fun saveUnlocks(unlocks: Map<String, Long>) {
+    _achievementUnlocks.value = unlocks
+    achievementPrefs.edit().putString("unlocks", encodeUnlocks(unlocks)).apply()
+  }
+
+  /**
+   * La primera vez (app actualizada con historial previo) lo ya conseguido se registra SIN celebrar: si no, la
+   * próxima partida dispararía una lluvia de logros viejos. Debe correr antes de guardar una partida nueva.
+   */
+  private suspend fun seedAchievementsIfNeeded() {
+    if (achievementPrefs.getBoolean("seeded", false)) return
+    val stats = computeAchievementStats(
+      gameResultDao.getAllResultsSync().map { it.toDomain() },
+      gameProgressDao.getAllProgressSync().associate { it.gameId to it.eloRating }
+    )
+    val now = System.currentTimeMillis()
+    saveUnlocks(Achievements.unlocked(stats).associateWith { now } + _achievementUnlocks.value)
+    achievementPrefs.edit().putBoolean("seeded", true).apply()
+  }
+
+  /** Registra los logros nuevos con estas cifras y los devuelve (en orden de catálogo). */
+  private fun unlockNewAchievements(stats: AchievementStats, timestamp: Long): List<String> {
+    val known = _achievementUnlocks.value
+    val got = Achievements.unlocked(stats)
+    val new = Achievements.all.map { it.id }.filter { it in got && it !in known }
+    if (new.isNotEmpty()) saveUnlocks(known + new.associateWith { timestamp })
+    return new
+  }
+
+  private fun recordLeagueEvents(outcome: RecordOutcome, gameId: String, timestamp: Long) {
+    val new = listOfNotNull(
+      outcome.globalPromotion()?.let { LeagueEvent(timestamp, it.tier, null) },
+      outcome.gamePromotion(gameId)?.let { LeagueEvent(timestamp, it.tier, gameId) }
+    )
+    if (new.isEmpty()) return
+    val all = (_leagueEvents.value + new).takeLast(500)
+    _leagueEvents.value = all
+    leaguePrefs.edit().putString("events", encodeLeagueEvents(all)).apply()
+  }
+
   val weeklyChallengeProgress: StateFlow<List<WeeklyChallengeProgress>> =
     combine(gameHistory, _claimedChallenges) { history, claimed ->
       computeWeeklyProgress(history, claimed, getWeekKey())
@@ -200,54 +331,22 @@ class NeuroVidaRepository(
     repositoryScope.launch {
       initializeDatabaseDefaults()
       observeDailySession()
+      seedAchievementsIfNeeded()
     }
   }
 
+  /**
+   * Instalación nueva (o después de "Borrar datos"): un perfil vacío (sin nombre ni rango de edad, así se abre el
+   * onboarding) y los 9 juegos en cero. Nada de historial de ejemplo: todo lo que se ve (logros, ligas, camino de
+   * Hoy, mapa) sale de partidas reales.
+   */
   private suspend fun initializeDatabaseDefaults() {
-    // 1. User Profile in Room
-    val existingProfiles = userProfileDao.getAllProfilesSync()
-    if (existingProfiles.isEmpty()) {
-      userProfileDao.insertOrUpdate(
-        UserProfileEntity(
-          name = "Ana",
-          avatar = "🧠",
-          isActive = true,
-          weeklyGoal = 4,
-          difficultyMode = "ADAPTIVE",
-          difficultyMemoria = 2,
-          difficultyAtencion = 2,
-          difficultyRazonamiento = 2,
-          difficultyLenguaje = 2,
-          difficultyCalculo = 2,
-          difficultyVelocidad = 2,
-          cognitiveAssistance = true
-        )
-      )
+    if (userProfileDao.getAllProfilesSync().isEmpty()) {
+      userProfileDao.insertOrUpdate(UserProfileEntity(isActive = true, weeklyGoal = 4, difficultyMode = "ADAPTIVE"))
     }
 
-    // 2. Game Results in Room
-    if (gameResultDao.getCount() == 0) {
-      gameResultDao.insertAll(defaultSeedHistory().map { it.toEntity() })
-    }
-
-    // 3. Game Progress in Room
-    val existingProgress = gameProgressDao.getAllProgressSync()
-    if (existingProgress.isEmpty()) {
-      val initialProgress = GameRegistry.allGames.map { game ->
-        GameProgressEntity(
-          gameId = game.id,
-          currentLevel = 1,
-          highestScore = when (game.id) {
-            "calculo" -> 80
-            "parejas" -> 85
-            "stroop" -> 90
-            else -> 0
-          },
-          totalGamesPlayed = if (listOf("calculo", "parejas", "stroop").contains(game.id)) 1 else 0,
-          lastPlayedTimestamp = System.currentTimeMillis()
-        )
-      }
-      gameProgressDao.insertAll(initialProgress)
+    if (gameProgressDao.getAllProgressSync().isEmpty()) {
+      gameProgressDao.insertAll(GameRegistry.allGames.map { GameProgressEntity(gameId = it.id, currentLevel = 1) })
     }
 
     // 4. Domain mastery: sin filas nuevas que crear (arranca en 0 para los 6,
@@ -356,16 +455,6 @@ class NeuroVidaRepository(
     }
   }
 
-  private fun defaultSeedHistory(): List<GamePlayResult> {
-    val now = System.currentTimeMillis()
-    val day = 24 * 60 * 60 * 1000L
-    return listOf(
-      GamePlayResult(gameId = "calculo", score = 80, correctAnswers = 8, totalTrials = 10, timed = false, level = 1, timestamp = now - 2 * day),
-      GamePlayResult(gameId = "parejas", score = 85, correctAnswers = 9, totalTrials = 10, timed = false, level = 1, timestamp = now - 1 * day),
-      GamePlayResult(gameId = "stroop", score = 90, correctAnswers = 9, totalTrials = 10, timed = false, level = 1, timestamp = now - 3 * 3600 * 1000L)
-    )
-  }
-
   private fun pickSessionQueue(history: List<GamePlayResult>): List<String> {
     val domainScores = mutableMapOf<DomainType, MutableList<Int>>()
     DomainType.values().forEach { domainScores[it] = mutableListOf() }
@@ -376,10 +465,17 @@ class NeuroVidaRepository(
       }
     }
 
-    val sortedDomains = DomainType.values().sortedBy { domain ->
+    // Nivel por dominio: puntaje promedio jugado (0..1) o, sin partidas, el del mapa del punto de partida.
+    val baselineNow = _baseline.value
+    val domainLevel = DomainType.values().associateWith { domain ->
       val scores = domainScores[domain].orEmpty()
-      if (scores.isEmpty()) 0.0 else scores.average()
+      if (scores.isNotEmpty()) scores.average().toFloat() / 100f else baselineNow?.domains?.get(domain) ?: 0f
     }
+    // Primero las metas (la más baja primero) y lo más bajo; el tercer juego sale de un dominio que no es meta,
+    // para que el camino no repita siempre los mismos dominios.
+    val goalsNow = _goals.value
+    val ranked = rankDomainsForSession(goalsNow, domainLevel)
+    val sortedDomains = ranked.take(2) + (ranked.drop(2).firstOrNull { it !in goalsNow } ?: ranked[2])
 
     val selected = mutableListOf<String>()
     sortedDomains.take(3).forEach { domain ->
@@ -396,13 +492,17 @@ class NeuroVidaRepository(
     return selected
   }
 
-  suspend fun recordGameResult(result: GamePlayResult): Boolean = withContext(Dispatchers.IO) {
+  /** [countsForDailySession] false = no avanza el camino de hoy (juegos de la evaluación inicial). */
+  suspend fun recordGameResult(result: GamePlayResult, countsForDailySession: Boolean = true): RecordOutcome = withContext(Dispatchers.IO) {
+    seedAchievementsIfNeeded() // antes de guardar: lo que consiga ESTA partida sí se celebra
     // 1. Add to Room game_results table
     gameResultDao.insert(result.toEntity())
 
     // 2. Adaptive level calculation and progress update in Room
     val currentProgress = gameProgressDao.getProgressForGameSync(result.gameId)
       ?: GameProgressEntity(gameId = result.gameId, currentLevel = 1)
+    // Trofeos de los 9 juegos antes de esta partida (liga general = promedio; sin jugar = 0).
+    val ratingsBefore = gameProgressDao.getAllProgressSync().associate { it.gameId to it.eloRating }
 
     val activeProfile = userProfileDao.getActiveProfileSync() ?: userProfileDao.getUserProfileSync()
     val isAdaptive = activeProfile?.difficultyMode == "ADAPTIVE"
@@ -448,11 +548,13 @@ class NeuroVidaRepository(
       lastPlayedTimestamp = result.timestamp
     )
     gameProgressDao.insertOrUpdate(updatedProgress)
+    val ratingsAfter = ratingsBefore + (result.gameId to newRating)
+    val globalOf = { m: Map<String, Int> -> GameRegistry.allGames.sumOf { m[it.id] ?: 0 } / GameRegistry.allGames.size }
 
     // 3. Advance Daily Session in Room if game matches current queue
     val today = getTodayDateKey()
     val currentSessionEntity = dailySessionDao.getDailySessionSync(today)
-    if (currentSessionEntity != null) {
+    if (currentSessionEntity != null && countsForDailySession) {
       val domainSession = currentSessionEntity.toDomain()
       if (domainSession.completedCount < domainSession.gameIds.size) {
         val expectedGame = domainSession.gameIds[domainSession.completedCount]
@@ -487,7 +589,16 @@ class NeuroVidaRepository(
       _claimedChallenges.value = _claimedChallenges.value + claimId
     }
 
-    didLevelUp
+    val outcome = RecordOutcome(
+      didLevelUp = didLevelUp,
+      gameRatingBefore = currentProgress.eloRating,
+      gameRatingAfter = newRating,
+      globalBefore = globalOf(ratingsBefore),
+      globalAfter = globalOf(ratingsAfter),
+      newAchievements = unlockNewAchievements(computeAchievementStats(allResults, ratingsAfter), result.timestamp)
+    )
+    recordLeagueEvents(outcome, result.gameId, result.timestamp)
+    outcome
   }
 
   // Cuánto sube o baja el ELO de un juego tras una partida. A mayor tier, más
@@ -545,33 +656,6 @@ class NeuroVidaRepository(
     return streak
   }
 
-  fun getSessionsThisWeek(history: List<GamePlayResult>): Int {
-    val cal = Calendar.getInstance()
-    cal.firstDayOfWeek = Calendar.MONDAY
-    cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-    cal.set(Calendar.HOUR_OF_DAY, 0)
-    cal.set(Calendar.MINUTE, 0)
-    cal.set(Calendar.SECOND, 0)
-    val startOfWeek = cal.timeInMillis
-    return history.count { it.timestamp >= startOfWeek }
-  }
-
-  fun getLast7DaysActivity(history: List<GamePlayResult>): List<Pair<String, Boolean>> {
-    val daysWithSessions = history.map { formatDate(it.timestamp) }.toSet()
-    val cal = Calendar.getInstance()
-    val days = mutableListOf<Pair<String, Boolean>>()
-    val dayNames = arrayOf("D", "L", "M", "X", "J", "V", "S")
-
-    for (i in 6 downTo 0) {
-      val tempCal = Calendar.getInstance()
-      tempCal.add(Calendar.DAY_OF_YEAR, -i)
-      val key = synchronized(dateFormat) { dateFormat.format(tempCal.time) }
-      val dayLetter = dayNames[tempCal.get(Calendar.DAY_OF_WEEK) - 1]
-      days.add(Pair(dayLetter, daysWithSessions.contains(key)))
-    }
-    return days
-  }
-
   suspend fun resetData() = withContext(Dispatchers.IO) {
     gameResultDao.deleteAll()
     gameProgressDao.deleteAll()
@@ -580,6 +664,15 @@ class NeuroVidaRepository(
     domainMasteryDao.deleteAll()
     claimedWeeklyChallengeDao.deleteAll()
     _claimedChallenges.value = emptySet()
+    // Lo guardado fuera de Room también (si no, tras borrar quedaban logros, ascensos y el mapa de antes).
+    leaguePrefs.edit().clear().apply()
+    _leagueEvents.value = emptyList()
+    achievementPrefs.edit().clear().apply()
+    _achievementUnlocks.value = emptyMap()
+    profilePrefs.edit().clear().apply()
+    _education.value = null
+    _goals.value = emptySet()
+    _baseline.value = null
     initializeDatabaseDefaults()
   }
 }

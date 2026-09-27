@@ -36,5 +36,7 @@ namespace NeuroVida.Contracts
         /// lado Kotlin, que hasta ahora no tenía cómo saberlos.</summary>
         public int level;
         public bool timed;
+        /// <summary>Nivel más alto alcanzado (1..16+): la app lo convierte en el rating 0..1 de memoria.</summary>
+        public int peak_level;
     }
 }

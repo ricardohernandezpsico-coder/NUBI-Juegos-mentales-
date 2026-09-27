@@ -33,7 +33,6 @@ import com.example.model.AgeBand
 import com.example.model.AppLanguage
 import com.example.model.DifficultyMode
 import com.example.model.DomainType
-import com.example.model.ThemeMode
 import com.example.model.UserSettings
 import com.example.ui.i18n.strings
 import com.example.ui.theme.EmeraldAccent
@@ -68,7 +67,8 @@ fun SettingsScreen(
   var diffVelocidad by remember(userSettings.difficultyVelocidad) { mutableStateOf(userSettings.difficultyVelocidad) }
   var cognitiveAssistance by remember(userSettings.cognitiveAssistance) { mutableStateOf(userSettings.cognitiveAssistance) }
   var timeScaleFactor by remember(userSettings.timeScaleFactor) { mutableStateOf(userSettings.timeScaleFactor) }
-  var themeMode by remember(userSettings.themeMode) { mutableStateOf(userSettings.themeMode) }
+  // El tema es único (cosmos oscuro, ver Theme.kt): ya no hay selector; se reenvía el valor guardado tal cual.
+  val themeMode = userSettings.themeMode
   var appLanguage by remember(userSettings.language) { mutableStateOf(userSettings.language) }
   var ageBand by remember(userSettings.ageBand) { mutableStateOf(userSettings.ageBand ?: AgeBand.ADULT) }
 
@@ -260,7 +260,7 @@ fun SettingsScreen(
                 .clickable {
                   if (!isActive) {
                     viewModel.switchProfile(profile.id)
-                    Toast.makeText(context, "Cambiado a perfil: ${profile.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Cambiado a perfil: ${profile.name.ifBlank { "Sin nombre" }}", Toast.LENGTH_SHORT).show()
                   }
                 }
                 .testTag("profile_chip_${profile.id}")
@@ -273,7 +273,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                   Text(
-                    text = profile.name,
+                    text = profile.name.ifBlank { "Sin nombre" },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                     color = if (isActive) TealPrimary else MaterialTheme.colorScheme.onSurface
@@ -495,7 +495,7 @@ fun SettingsScreen(
         }
 
         Text(
-          text = "Ajusta cómo la aplicación adapta el nivel de desafío y estímulo a las capacidades y objetivos de ${userSettings.name}.",
+          text = "Ajusta cómo la aplicación adapta el nivel de desafío y estímulo a tus capacidades y objetivos.",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -778,58 +778,8 @@ fun SettingsScreen(
 
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-        // Theme mode selector (Claro / Oscuro / Sistema)
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.DarkMode, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-              text = "Tema de la app",
-              style = MaterialTheme.typography.bodyMedium,
-              fontWeight = FontWeight.SemiBold
-            )
-          }
-          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ThemeMode.values().forEach { mode ->
-              FilterChip(
-                selected = themeMode == mode,
-                onClick = {
-                  themeMode = mode
-                  viewModel.updateSettings(
-                    name = nameInput,
-                    weeklyGoal = weeklyGoal,
-                    defaultTimed = defaultTimed,
-                    sound = soundEnabled,
-                    haptics = hapticsEnabled,
-                    notificationsEnabled = notificationsEnabled,
-                    reminderHour = reminderHour,
-                    reminderMinute = reminderMinute,
-                    themeMode = mode
-                  )
-                },
-                label = {
-                  Text(
-                    text = when (mode) {
-                      ThemeMode.LIGHT -> "☀️ Claro"
-                      ThemeMode.DARK -> "🌙 Oscuro"
-                      ThemeMode.SYSTEM -> "⚙️ Sistema"
-                    }
-                  )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                  selectedContainerColor = TealPrimary.copy(alpha = 0.15f),
-                  selectedLabelColor = TealPrimary
-                ),
-                modifier = Modifier.testTag("chip_theme_${mode.name.lowercase()}")
-              )
-            }
-          }
-        }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-
-        // Rango de edad (piloto de perfiles por edad, 20-sep): mismo patrón visual que
-        // el selector de tema. Cambia el DDA/tamaño de cartas en Parejas Ocultas
+        // Rango de edad (piloto de perfiles por edad, 20-sep): chips, mismo patrón visual
+        // que el selector de idioma. Cambia el DDA/tamaño de cartas en Parejas Ocultas
         // únicamente por ahora -- el onboarding prometió "podés cambiarlo cuando
         // quieras desde Ajustes", esto cumple esa promesa.
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1157,206 +1107,9 @@ fun SettingsScreen(
       }
     }
 
-    // Debug: piloto de Secuencia Lumínica en Unity (Fase 1 del roadmap, ver
-    // NeuroVida/CLAUDE.md). Solo en builds debug -- requiere dispositivo ARM64 real, no
-    // corre en el emulador x86_64 que usa hoy el proyecto para pruebas.
+    // Herramientas de prueba (solo en builds de depuración), ver DebugTools.kt.
     if (com.example.BuildConfig.DEBUG) {
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchSecuenciaLuminica(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 1,
-            baseIntensity = 0,
-            timed = false,
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_secuencia")
-      ) {
-        Text("[Debug] Probar Secuencia Lumínica en Unity")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      // Piloto de Fase 2 (ver NeuroVida/CLAUDE.md) -- mismo criterio que el botón de
-      // Secuencia Lumínica de arriba.
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchParejasOcultas(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 1,
-            baseIntensity = 0,
-            timed = false,
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_parejas")
-      ) {
-        Text("[Debug] Probar Parejas Ocultas en Unity")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      // "Tinta o Palabra" (Stroop) en Unity -- mismo criterio que los botones de arriba.
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchStroop(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 4, // desde el nivel 4 la regla cambia (tinta/palabra) -- así se ve el cartel que se voltea,
-            baseIntensity = 0,
-            timed = true, // modo Reto: 60 s sin límite de ensayos (sin reloj = 12 ensayos),
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_stroop")
-      ) {
-        Text("[Debug] Probar Tinta o Palabra en Unity (Reto 60 s)")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      // "Comparación Instantánea" en Unity -- modo Reto (60 s) para verlo con el reloj.
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchComparacion(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 2,
-            baseIntensity = 0,
-            timed = true,
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_comparacion")
-      ) {
-        Text("[Debug] Probar Comparación en Unity (Reto 60 s)")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      // "Cambio de Chip" en Unity -- nivel 2 (la regla cambia cada 3 ensayos) en modo Reto.
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchCambioChip(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 2,
-            baseIntensity = 0,
-            timed = true,
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_cambiochip")
-      ) {
-        Text("[Debug] Probar Cambio de Chip en Unity (Reto 60 s)")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      // "Ruta del Tesoro" en Unity -- con reloj para ver la barra de tiempo al buscar.
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchRutaTesoro(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 1,
-            baseIntensity = 0,
-            timed = true,
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_rutatesoro")
-      ) {
-        Text("[Debug] Probar Ruta del Tesoro en Unity")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      // "Detective de Series" en Unity -- modo Reto (120 s) para ver reloj y subida de nivel.
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchSeries(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 1, // la dificultad sube sola desde lo más fácil
-            baseIntensity = 0,
-            timed = true,
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_series")
-      ) {
-        Text("[Debug] Probar Detective de Series en Unity (Reto 120 s)")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      // "Cálculo Sereno" en Unity -- modo Reto (90 s): la burbuja cae y el nivel sube al acertar.
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchCalculo(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 1, // la dificultad sube sola desde lo más fácil
-            baseIntensity = 0,
-            timed = true,
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_calculo")
-      ) {
-        Text("[Debug] Probar Cálculo Sereno en Unity (Reto 90 s)")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      // "Anagramas" en Unity -- modo Reto (120 s): el largo de las palabras sube de a poco.
-      OutlinedButton(
-        onClick = {
-          com.example.bridge.UnityGameLauncher.launchAnagramas(
-            context = context,
-            userId = userSettings.id.toString(),
-            level = 1,
-            baseIntensity = 0,
-            timed = true,
-            ageBand = ageBand
-          )
-        },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_debug_unity_anagramas")
-      ) {
-        Text("[Debug] Probar Anagramas en Unity (Reto 120 s)")
-      }
-
+      DebugTools(viewModel, userSettings.id, ageBand)
       Spacer(modifier = Modifier.height(12.dp))
     }
 
@@ -1517,7 +1270,7 @@ fun SettingsScreen(
       onDismissRequest = { profileToDelete = null },
       title = { Text("¿Eliminar perfil?") },
       text = {
-        Text("Se eliminarán las preferencias y la configuración de dificultad de '${profile.name}' guardadas en Room.")
+        Text("Se eliminarán las preferencias y la configuración de dificultad de '${profile.name.ifBlank { "Sin nombre" }}' guardadas en Room.")
       },
       confirmButton = {
         Button(

@@ -56,15 +56,6 @@ namespace NeuroVida.Games.RutaTesoro.Tests
         }
 
         [Test]
-        public void NextStage_UpOnClearDownOnFailWithinBounds()
-        {
-            Assert.AreEqual(5, TreasureContract.NextStage(4, true));
-            Assert.AreEqual(3, TreasureContract.NextStage(4, false));
-            Assert.AreEqual(1, TreasureContract.NextStage(1, false));
-            Assert.AreEqual(TreasureContract.MaxStage, TreasureContract.NextStage(TreasureContract.MaxStage, true));
-        }
-
-        [Test]
         public void Score_IsTenPercentPerClearedRouteCappedAt100()
         {
             Assert.AreEqual(0, TreasureContract.Score(0));

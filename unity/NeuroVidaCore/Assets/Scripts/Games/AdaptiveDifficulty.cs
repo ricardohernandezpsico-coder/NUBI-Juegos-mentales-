@@ -33,6 +33,13 @@ namespace NeuroVida.Games
         public const int WarmupTrials = 2;
         private const int ProvisionalTrials = 6;
         private const float ProvisionalBoost = 1.5f;
+
+        /// <summary>Evaluación inicial ("Tu punto de partida"): la partida es corta (60 s) y parte del medio de la
+        /// escala, así que los primeros ensayos dan pasos más grandes para llegar antes al nivel de la persona.
+        /// La fija <c>GameEntryPoint</c> con la config de cada partida (false en las partidas normales).</summary>
+        public static bool FastCalibration;
+        private const int FastProvisionalTrials = 10;
+        private const float FastProvisionalBoost = 2.2f;
         private const float StruggleExtraDrop = 0.15f;
         private const int BoredomStreak = 6;
         private const float BoredomBonus = 0.20f;
@@ -64,13 +71,8 @@ namespace NeuroVida.Games
         /// <summary>Nivel a presentar: durante el calentamiento, uno por debajo.</summary>
         public int PresentedLevel => Trials < WarmupTrials ? Math.Max(1, Level - 1) : Level;
 
-        /// <summary>Avance dentro del nivel actual (0..1) para parámetros continuos.</summary>
-        public float Fraction => Rating - (float)Math.Floor(Rating);
-
         /// <summary>Rating normalizado 0..1 (para guardarlo entre sesiones y compararlo entre juegos).</summary>
         public float RatingNormalized => Math.Max(0f, Math.Min(1f, (Rating - 1f) / MaxLevel));
-
-        public float Accuracy => Trials == 0 ? 0f : (float)Correct / Trials;
 
         /// <param name="stepUp">Niveles que sube por acierto (0.15 = ~7 aciertos por nivel). Juegos con pocos
         /// ensayos por sesión usan pasos mayores.</param>
@@ -120,7 +122,9 @@ namespace NeuroVida.Games
             int before = Level;
             Trials++;
             float z = UpdateReactionZ(reactionMs);
-            float provisional = Trials <= ProvisionalTrials ? ProvisionalBoost : 1f;
+            float provisional = FastCalibration
+                ? (Trials <= FastProvisionalTrials ? FastProvisionalBoost : 1f)
+                : (Trials <= ProvisionalTrials ? ProvisionalBoost : 1f);
             float delta;
 
             if (correct)

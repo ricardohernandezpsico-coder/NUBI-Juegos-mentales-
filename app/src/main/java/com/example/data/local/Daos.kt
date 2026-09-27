@@ -14,8 +14,6 @@ interface GameResultDao {
   @Query("SELECT * FROM game_results ORDER BY timestamp DESC")
   suspend fun getAllResultsSync(): List<GameResultEntity>
 
-  @Query("SELECT * FROM game_results WHERE gameId = :gameId ORDER BY timestamp DESC")
-  fun getResultsForGame(gameId: String): Flow<List<GameResultEntity>>
 
   @Query("SELECT COUNT(*) FROM game_results")
   suspend fun getCount(): Int
@@ -38,8 +36,6 @@ interface GameProgressDao {
   @Query("SELECT * FROM game_progress")
   suspend fun getAllProgressSync(): List<GameProgressEntity>
 
-  @Query("SELECT * FROM game_progress WHERE gameId = :gameId")
-  fun getProgressForGame(gameId: String): Flow<GameProgressEntity?>
 
   @Query("SELECT * FROM game_progress WHERE gameId = :gameId")
   suspend fun getProgressForGameSync(gameId: String): GameProgressEntity?
@@ -116,8 +112,6 @@ interface UserProfileDao {
   @Query("SELECT * FROM user_profile WHERE id = :id LIMIT 1")
   suspend fun getProfileById(id: Long): UserProfileEntity?
 
-  @Query("SELECT * FROM user_profile WHERE isActive = 1 OR id = 1 LIMIT 1")
-  fun getUserProfile(): Flow<UserProfileEntity?>
 
   @Query("SELECT * FROM user_profile WHERE isActive = 1 OR id = 1 LIMIT 1")
   suspend fun getUserProfileSync(): UserProfileEntity?

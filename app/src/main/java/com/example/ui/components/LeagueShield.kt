@@ -83,90 +83,59 @@ private fun DrawScope.drawStar(center: Offset, radius: Float, color: Color) {
  */
 @Composable
 fun LeagueShield(tier: RankTier, modifier: Modifier = Modifier, size: Dp = 72.dp, pips: Int = 0, glow: Boolean = false) {
-  val pal = tier.palette()
   Canvas(modifier = modifier.size(width = size, height = size * 1.12f)) {
-    val w = this.size.width
-    val h = this.size.height
-    val edge = w * 0.03f
-    if (glow) {
-      drawCircle(
-        Brush.radialGradient(listOf(pal.glow.copy(alpha = 0.55f), Color.Transparent), Offset(w / 2, h * 0.5f), w * 0.85f),
-        radius = w * 0.85f, center = Offset(w / 2, h * 0.5f)
-      )
-    }
-    // Sombra
-    drawPath(shieldPath(w, h, edge), Color.Black.copy(alpha = 0.18f))
-    // Borde metalico
-    drawPath(shieldPath(w, h, edge), Brush.verticalGradient(listOf(pal.light, pal.dark), 0f, h))
-    // Cara
-    val faceInset = w * 0.085f
-    val face = shieldPath(w, h, faceInset)
-    drawPath(face, Brush.verticalGradient(listOf(pal.light, pal.base, pal.dark), 0f, h))
-    // Bisel interior
-    drawPath(shieldPath(w, h, w * 0.13f), Brush.verticalGradient(listOf(pal.dark.copy(alpha = 0.35f), pal.base.copy(alpha = 0.10f)), 0f, h))
-    drawPath(shieldPath(w, h, w * 0.13f), pal.light.copy(alpha = 0.55f), style = Stroke(w * 0.012f))
-    // Brillo especular arriba-izquierda
-    drawPath(
-      Path().apply {
-        moveTo(w * 0.22f, h * 0.16f)
-        cubicTo(w * 0.32f, h * 0.10f, w * 0.60f, h * 0.10f, w * 0.72f, h * 0.15f)
-        cubicTo(w * 0.55f, h * 0.24f, w * 0.34f, h * 0.30f, w * 0.22f, h * 0.36f)
-        close()
-      },
-      Color.White.copy(alpha = 0.35f)
+    drawLeagueShield(tier, pips, glow)
+  }
+}
+
+/**
+ * Dibuja el escudo ocupando todo el lienzo (ancho w, alto w * 1.12). Separado del composable para poder
+ * dibujarlo también fuera de la pantalla (tarjeta para compartir, ver `ShareCard`).
+ */
+fun DrawScope.drawLeagueShield(tier: RankTier, pips: Int = 0, glow: Boolean = false) {
+  val pal = tier.palette()
+  val w = this.size.width
+  val h = this.size.height
+  val edge = w * 0.03f
+  if (glow) {
+    drawCircle(
+      Brush.radialGradient(listOf(pal.glow.copy(alpha = 0.55f), Color.Transparent), Offset(w / 2, h * 0.5f), w * 0.85f),
+      radius = w * 0.85f, center = Offset(w / 2, h * 0.5f)
     )
-    // Emblema: estrella central grande
-    val c = Offset(w / 2, h * 0.47f)
-    drawStar(Offset(c.x, c.y + w * 0.012f), w * 0.20f, pal.dark.copy(alpha = 0.55f))
-    drawStar(c, w * 0.20f, Color.White.copy(alpha = 0.92f))
-    // Divisiones: pequenas estrellas bajo el emblema
-    val n = pips.coerceIn(0, 5)
-    if (n > 0) {
-      val gap = w * 0.13f
-      val startX = w / 2 - gap * (n - 1) / 2f
-      for (i in 0 until n) drawStar(Offset(startX + i * gap, h * 0.72f), w * 0.05f, Color.White.copy(alpha = 0.95f))
-    }
+  }
+  // Sombra
+  drawPath(shieldPath(w, h, edge), Color.Black.copy(alpha = 0.18f))
+  // Borde metalico
+  drawPath(shieldPath(w, h, edge), Brush.verticalGradient(listOf(pal.light, pal.dark), 0f, h))
+  // Cara
+  val faceInset = w * 0.085f
+  val face = shieldPath(w, h, faceInset)
+  drawPath(face, Brush.verticalGradient(listOf(pal.light, pal.base, pal.dark), 0f, h))
+  // Bisel interior
+  drawPath(shieldPath(w, h, w * 0.13f), Brush.verticalGradient(listOf(pal.dark.copy(alpha = 0.35f), pal.base.copy(alpha = 0.10f)), 0f, h))
+  drawPath(shieldPath(w, h, w * 0.13f), pal.light.copy(alpha = 0.55f), style = Stroke(w * 0.012f))
+  // Brillo especular arriba-izquierda
+  drawPath(
+    Path().apply {
+      moveTo(w * 0.22f, h * 0.16f)
+      cubicTo(w * 0.32f, h * 0.10f, w * 0.60f, h * 0.10f, w * 0.72f, h * 0.15f)
+      cubicTo(w * 0.55f, h * 0.24f, w * 0.34f, h * 0.30f, w * 0.22f, h * 0.36f)
+      close()
+    },
+    Color.White.copy(alpha = 0.35f)
+  )
+  // Emblema: estrella central grande
+  val c = Offset(w / 2, h * 0.47f)
+  drawStar(Offset(c.x, c.y + w * 0.012f), w * 0.20f, pal.dark.copy(alpha = 0.55f))
+  drawStar(c, w * 0.20f, Color.White.copy(alpha = 0.92f))
+  // Divisiones: pequenas estrellas bajo el emblema
+  val n = pips.coerceIn(0, 5)
+  if (n > 0) {
+    val gap = w * 0.13f
+    val startX = w / 2 - gap * (n - 1) / 2f
+    for (i in 0 until n) drawStar(Offset(startX + i * gap, h * 0.72f), w * 0.05f, Color.White.copy(alpha = 0.95f))
   }
 }
 
 /** Division 1..5 -> estrellas encendidas (5 = recien ascendido, 1 = a punto de ascender, como en el ladder). */
 fun GameRankInfo.pipCount(): Int = if (tier == RankTier.MAESTRO) 3 else (6 - (division ?: 5)).coerceIn(1, 5)
-
-@Composable
-fun GlobalLeagueCard(tier: RankTier, rating: Int, progress: Float, modifier: Modifier = Modifier) {
-  val pal = tier.palette()
-  val next = RankTier.entries.getOrNull(tier.ordinal + 1)
-  com.example.ui.theme.ClayLightCard(modifier = modifier.fillMaxWidth()) {
-    Row(
-      modifier = Modifier.padding(22.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-      LeagueShield(tier = tier, size = 104.dp, pips = ((progress * 5).toInt() + 1).coerceIn(1, 5), glow = true)
-      Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f)) {
-        Text("Tu liga", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(tier.tierName, fontSize = 30.sp, fontWeight = FontWeight.Black, color = pal.base)
-        Text(
-          text = "$rating trofeos" + if (next != null) " · faltan ${(next.minRating - rating).coerceAtLeast(0)} para ${next.tierName}" else "",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(8.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-          Box(
-            modifier = Modifier
-              .fillMaxWidth(progress.coerceIn(0.03f, 1f))
-              .height(8.dp)
-              .clip(RoundedCornerShape(4.dp))
-              .background(pal.base)
-          )
-        }
-      }
-    }
-  }
-}

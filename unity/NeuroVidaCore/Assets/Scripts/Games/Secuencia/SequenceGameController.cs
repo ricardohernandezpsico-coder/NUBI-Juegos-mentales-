@@ -15,8 +15,7 @@ namespace NeuroVida.Games.Secuencia
     /// escribe <c>SequenceGameContainer.endSession</c> del lado Android.
     ///
     /// Reglas de juego (las dio Ricardo en la cuarta/quinta pasada, no son interpretación
-    /// propia; el motor <see cref="SequenceDDAEngine"/> sigue intacto y testeado 1:1 con
-    /// Kotlin pero ya NO se usa en este juego):
+    /// propia):
     ///   - Tabla fija de 16+ niveles (<see cref="SequenceLevelDatabase"/>) con cuadrícula,
     ///     longitud de secuencia y velocidad (ISI) por peldaño.
     ///   - Avance: 2 aciertos consecutivos en el nivel actual -> sube 1 nivel.
@@ -28,7 +27,8 @@ namespace NeuroVida.Games.Secuencia
     /// de la App Store tipo Lumosity"):
     ///   - Fichas 3D estilo "clay" (<see cref="TileSprites"/>), paleta vívida y bien separada
     ///     (<see cref="TilePalette"/>), que en reposo se ven atenuadas y al iluminarse se
-    ///     encienden con un resplandor, una onda y un leve rebote.
+    ///     encienden con un resplandor, una onda y un leve rebote. Cada ficha lleva un símbolo de arcilla propio
+    ///     (<see cref="TileGlyphSprite"/>: estrella, luna, planeta...).
     ///   - HUD: insignia de nivel con color por fase + nombre de la fase, vidas en píldora
     ///     (compartida con Parejas) y puntos de progreso de la secuencia (uno por paso) en
     ///     vez de una barra: durante la presentación cuentan cuántas luces hay y durante la
@@ -50,6 +50,12 @@ namespace NeuroVida.Games.Secuencia
         private const int MaxLives = 3;
         private const float IsiSlowdownMs = 200f; // regla anti-frustración
         private const int SafetyMaxRounds = 60; // la escalera de niveles no tiene techo natural; esto evita una sesión infinita
+
+        // Evaluación inicial ("Tu punto de partida", ver Shared/Assessment): escalera corta tipo span de Corsi.
+        // Parte del nivel 3 (secuencia de 4), cada acierto sube un nivel (no dos seguidos), 3 vidas y como
+        // máximo 12 secuencias: en ~1-2 minutos se encuentra el techo de la persona (nivel más alto alcanzado).
+        private const int AssessmentStartLevel = 3;
+        private const int AssessmentMaxRounds = 12;
 
         // ---- Constantes de layout ----
         // 1080x1920 de referencia -> 1080/360dp = 3 unidades de Canvas por dp. Con
@@ -115,7 +121,6 @@ namespace NeuroVida.Games.Secuencia
         private AudioSource _audioSource;
         private AudioSource _distractorAudioSource; // sin AudioReverbFilter -- el drone no debe sonar "en la sala" como los tonos reales
 
-        private static readonly Color BackgroundColor = new Color(0x0F / 255f, 0x17 / 255f, 0x2A / 255f);
         private static readonly Color PhaseBlue = new Color(0x3B / 255f, 0x82 / 255f, 0xF6 / 255f);
         private static readonly Color PhaseGreen = new Color(0x22 / 255f, 0xC5 / 255f, 0x5E / 255f);
         private static readonly Color PhaseAmber = new Color(0xF5 / 255f, 0x9E / 255f, 0x0B / 255f);
@@ -163,6 +168,7 @@ namespace NeuroVida.Games.Secuencia
         /// (Kotlin), pero mapeado a un índice de nivel en vez de un span continuo.</summary>
         private int SeedLevelIndex()
         {
+            if (Assessment.Active) return AssessmentStartLevel;
             int fromAppLevel = Mathf.Clamp(_config.config.level, 1, 6);
             int fromMastery = Mathf.Clamp(_config.config.base_intensity / 20, 0, 4);
             return Mathf.Clamp(fromAppLevel + fromMastery, 1, SequenceLevelDatabase.MaxDefinedLevel);
@@ -204,7 +210,7 @@ namespace NeuroVida.Games.Secuencia
                 _safeAreaContentRect.gameObject.SetActive(false);
                 yield return StartCoroutine(_countdown.Play(
                     $"Nivel {_currentLevelIndex}",
-                    "¿Listos?",
+                    Assessment.Subtitle("¿Listos?"),
                     () =>
                     {
                         _safeAreaContentRect.gameObject.SetActive(true);
@@ -284,7 +290,7 @@ namespace NeuroVida.Games.Secuencia
             ResetDots();
             _phasePill.Set("Tu turno · repite la secuencia", PhaseGreen);
             _awaitingInput = true;
-            _inputReadyAtTime = Time.unscaledTime;
+            _inputReadyAtTime = GameClock.Time;
             SetTilesInteractable(true);
         }
 
@@ -292,7 +298,7 @@ namespace NeuroVida.Games.Secuencia
         {
             if (!_awaitingInput) return;
 
-            float now = Time.unscaledTime;
+            float now = GameClock.Time;
             double reactionMs = System.Math.Max(0, (now - _inputReadyAtTime) * 1000.0);
             _reactionTimesMs.Add(reactionMs);
             _inputReadyAtTime = now;
@@ -352,7 +358,7 @@ namespace NeuroVida.Games.Secuencia
                 StartCoroutine(UiFx.SparkBurst(_fxLayerRect, Vector2.zero, new Color(1f, 0.88f, 0.35f), 16, _boardContentWidth * 0.6f, 44f, 0.65f));
                 hold = 0.75f;
 
-                if (_consecutiveCorrectAtLevel >= 2)
+                if (_consecutiveCorrectAtLevel >= (Assessment.Active ? 1 : 2))
                 {
                     _consecutiveCorrectAtLevel = 0;
                     _currentLevelIndex++;
@@ -360,6 +366,7 @@ namespace NeuroVida.Games.Secuencia
                     yield return new WaitForSeconds(0.2f);
                     UpdateHud();
                     _toast.Show($"¡Nivel {_currentLevelIndex}!", PhaseNameFor(_currentLevelIndex), AccentFor(_currentLevelIndex), 1.3f);
+                    GameFeel.LevelUp();
                     hold = 0.9f;
                 }
             }
@@ -386,7 +393,7 @@ namespace NeuroVida.Games.Secuencia
             {
                 EndSession(gameOver: true);
             }
-            else if (roundNumber >= SafetyMaxRounds)
+            else if (roundNumber >= (Assessment.Active ? AssessmentMaxRounds : SafetyMaxRounds))
             {
                 EndSession(gameOver: false);
             }
@@ -428,7 +435,8 @@ namespace NeuroVida.Games.Secuencia
                     average_response_time_ms = avgReaction,
                     final_span_length = peakLevel.SequenceLength,
                     level = _config.config.level,
-                    timed = _config.config.timed
+                    timed = _config.config.timed,
+                    peak_level = _peakLevelIndex
                 }
             };
 
@@ -468,14 +476,8 @@ namespace NeuroVida.Games.Secuencia
             backgroundRect.anchorMax = Vector2.one;
             backgroundRect.offsetMin = Vector2.zero;
             backgroundRect.offsetMax = Vector2.zero;
-            backgroundGo.AddComponent<Image>().color = BackgroundColor;
-
-            // Profundidad: dos resplandores suaves y burbujas de luz que suben despacio.
-            UiFx.AddBackgroundGlow(backgroundGo.transform, new Vector2(0.15f, 0.85f), 1500f, new Color(0.49f, 0.36f, 0.95f, 0.24f));
-            UiFx.AddBackgroundGlow(backgroundGo.transform, new Vector2(0.9f, 0.12f), 1400f, new Color(0.23f, 0.51f, 0.96f, 0.20f));
-            backgroundGo.AddComponent<CountdownAmbient>().Build(backgroundRect, 8);
-
-            // Safe Area real: todo el HUD/grilla/texto vive DENTRO de esto.
+            // Mundo "Constellation": cielo nocturno de la app + su elemento propio (ver Shared/WorldBackdrop.cs).
+            WorldBackdrop.Build(backgroundRect, GameWorld.Constellation);
             var safeAreaGo = new GameObject("SafeAreaContent");
             safeAreaGo.transform.SetParent(canvasGo.transform, false);
             _safeAreaContentRect = safeAreaGo.AddComponent<RectTransform>();
@@ -694,7 +696,7 @@ namespace NeuroVida.Games.Secuencia
             while (elapsed < seconds)
             {
                 if (rect == null) yield break;
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / seconds);
                 rect.localScale = Vector3.one * Mathf.Lerp(peak, 1f, UiFx.EaseOutCubic(t));
                 yield return null;
@@ -815,7 +817,20 @@ namespace NeuroVida.Games.Secuencia
             button.transition = Selectable.Transition.None; // la animación de glow/scale la maneja SetTileGlow
             button.onClick.AddListener(() => OnTileTapped(index));
 
-            // Sin etiqueta de texto: fichas que se distinguen solo por color.
+            // Símbolo de arcilla propio de cada ficha (estrella, luna, planeta...): arte del cielo nocturno y
+            // otra pista además del color (daltonismo). Va sobre la cara de la ficha, que está un poco más
+            // arriba del centro del sprite (debajo asoma la sombra dura).
+            var glyphGo = new GameObject("Glyph");
+            glyphGo.transform.SetParent(go.transform, false);
+            var glyphRect = glyphGo.AddComponent<RectTransform>();
+            glyphRect.anchorMin = new Vector2(0.27f, 0.30f);
+            glyphRect.anchorMax = new Vector2(0.73f, 0.76f);
+            glyphRect.offsetMin = Vector2.zero;
+            glyphRect.offsetMax = Vector2.zero;
+            var glyph = glyphGo.AddComponent<Image>();
+            glyph.sprite = TileGlyphSprite.Get(index);
+            glyph.preserveAspect = true;
+            glyph.raycastTarget = false;
 
             _tileButtons[index] = button;
             _tileImages[index] = image;
@@ -875,7 +890,7 @@ namespace NeuroVida.Games.Secuencia
             float elapsed = 0f;
             while (elapsed < total)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 for (int i = 0; i < count; i++)
                 {
                     if (!_tileImages.TryGetValue(i, out var image)) continue;
@@ -895,7 +910,7 @@ namespace NeuroVida.Games.Secuencia
             float elapsed = 0f;
             while (elapsed < seconds)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / seconds);
                 foreach (var image in _tileImages.Values)
                 {
@@ -916,7 +931,7 @@ namespace NeuroVida.Games.Secuencia
             float elapsed = 0f;
             while (elapsed < total)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 for (int i = 0; i < count; i++)
                 {
                     if (!_tileImages.TryGetValue(i, out var image)) continue;
@@ -980,7 +995,7 @@ namespace NeuroVida.Games.Secuencia
             float elapsed = 0f;
             while (elapsed < durationSeconds)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / durationSeconds);
                 image.color = Color.Lerp(fromColor, toColor, t);
                 glow.color = new Color(info.LightColor.r, info.LightColor.g, info.LightColor.b, Mathf.Lerp(fromGlow, toGlow, t));
@@ -1004,7 +1019,7 @@ namespace NeuroVida.Games.Secuencia
             float elapsed = 0f;
             while (elapsed < seconds)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / seconds);
                 image.color = Color.Lerp(red, info.NormalColor, UiFx.EaseOutCubic(t));
                 rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * Mathf.PI * 6f) * 8f * (1f - t));
@@ -1065,19 +1080,22 @@ namespace NeuroVida.Games.Secuencia
 
         private static readonly Color SuccessFlashColor = new Color(0x2F / 255f, 0xBF / 255f, 0x71 / 255f, 0.16f);
         private static readonly Color ErrorFlashColor = new Color(0xEF / 255f, 0x47 / 255f, 0x6F / 255f, 0.16f);
-        private const float ErrorToneHz = 220f; // A3 -- grave y cálido, no un "buzz" de error
+
+        /// <summary>Secuencias seguidas sin error (la nota del acierto sube con ellas; sonido común, ver GameFeel).</summary>
+        private int _feelStreak;
 
         private void PlaySuccessFeedback()
         {
             StartCoroutine(FlashFeedback(SuccessFlashColor));
-            PlayConcordantTone(TilePalette.Get(0).ToneHz);
-            PlayConcordantTone(TilePalette.Get(3).ToneHz); // quinta (Do+Sol) -- "tono armónico combinado"
+            _feelStreak++;
+            GameFeel.Correct(_feelStreak);
         }
 
         private void PlayErrorFeedback()
         {
             StartCoroutine(FlashFeedback(ErrorFlashColor));
-            PlayConcordantTone(ErrorToneHz);
+            _feelStreak = 0;
+            GameFeel.Wrong();
         }
 
         private IEnumerator FlashFeedback(Color peakColor)
@@ -1087,14 +1105,14 @@ namespace NeuroVida.Games.Secuencia
             float elapsed = 0f;
             while (elapsed < inSeconds)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 _feedbackFlashImage.color = Color.Lerp(new Color(peakColor.r, peakColor.g, peakColor.b, 0f), peakColor, elapsed / inSeconds);
                 yield return null;
             }
             elapsed = 0f;
             while (elapsed < outSeconds)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameClock.DeltaTime;
                 _feedbackFlashImage.color = Color.Lerp(peakColor, new Color(peakColor.r, peakColor.g, peakColor.b, 0f), elapsed / outSeconds);
                 yield return null;
             }

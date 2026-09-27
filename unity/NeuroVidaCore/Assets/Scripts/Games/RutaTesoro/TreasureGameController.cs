@@ -6,18 +6,20 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite / TileSprites / TilePalette / HarmonicTone
 using NeuroVida.Games.Shared;
+using static NeuroVida.Games.Shared.UiKit;
 
 namespace NeuroVida.Games.RutaTesoro
 {
     /// <summary>
-    /// "Ruta del Tesoro" en Unity (memoria espacial). Un mapa de casillas de arena: durante unos
-    /// segundos se iluminan los tesoros de playa (estrellas de mar, conchas, perlas), luego se ocultan y hay que encontrarlas.
-    /// Con 2 errores la ruta se pierde (cuesta 1 de 3 vidas y se revelan las gemas que faltaban);
-    /// al completarla, el mapa crece y hay más gemas. En modo Reto se suma un reloj para
+    /// "Ruta del Tesoro" en Unity (memoria espacial). Un mapa de placas de roca lunar sobre la superficie de
+    /// una luna: durante unos segundos se iluminan los tesoros espaciales (cristales, estrellas en órbita,
+    /// meteoritos; ver <see cref="TreasureSprites"/>), luego se ocultan y hay que encontrarlos.
+    /// Con 2 errores la ruta se pierde (cuesta 1 de 3 vidas y se revelan los tesoros que faltaban);
+    /// al completarla, el mapa crece y hay más tesoros. En modo Reto se suma un reloj para
     /// encontrarlas. Nada de pantallas intermedias: los cambios de nivel ocurren sobre el mismo
     /// mapa (ola de casillas + aviso arriba). Telemetría: reusa <see cref="StroopTelemetry"/>.
     /// </summary>
-    public class TreasureGameController : MonoBehaviour
+    public class TreasureGameController : GameControllerBase
     {
         public const string GameId = TreasureContract.GameId;
 
@@ -25,8 +27,7 @@ namespace NeuroVida.Games.RutaTesoro
         private const float MarginU = 60f;
         private const float ShapeScale = 0.86f;
 
-        private static readonly Color BackgroundColor = new Color(0x08 / 255f, 0x1B / 255f, 0x36 / 255f);
-        private static readonly Color SandColor = new Color(0xF0 / 255f, 0xD9 / 255f, 0xA6 / 255f);
+        private static readonly Color RockColor = NeuroStyle.Hex(0xC9C3EE); // placa de roca lunar (antes: arena)
         private static readonly Color RevealColor = new Color(0x7D / 255f, 0xD3 / 255f, 0xFC / 255f); // celeste suave: nada dorado (parecía tragamonedas)
         private static readonly Color FoundColor = new Color(0x2D / 255f, 0xD4 / 255f, 0xBF / 255f);
         private static readonly Color WrongColor = new Color(0xFB / 255f, 0x71 / 255f, 0x85 / 255f);
@@ -48,10 +49,7 @@ namespace NeuroVida.Games.RutaTesoro
             public TileState State;
         }
 
-        private SequenceInitConfig _config;
         private System.Random _rng;
-        private AudioSource _audioSource;
-        private readonly Dictionary<float, AudioClip> _toneCache = new Dictionary<float, AudioClip>();
 
         private AdaptiveDifficulty _dda; // DDA común (ver docs/DDA-comun.md)
         private int _stage, _maxStage, _hearts, _cleared, _played, _found, _misses, _treasuresFoundTotal;
@@ -65,9 +63,9 @@ namespace NeuroVida.Games.RutaTesoro
         private readonly List<Tile> _tiles = new List<Tile>();
 
         // UI
-        private RectTransform _safe, _boardRect, _timerBg, _timerFill, _fxRect, _resultRoot;
-        private Text _titleText, _subText;
-        private Image _boardPanel, _flash, _timerFillImage;
+        private RectTransform _safe, _boardRect, _timerBg, _timerFill, _fxRect;
+        private GameHud _hud;
+        private Image _boardPanel, _timerFillImage;
         private ProgressDots _dots;
         private LivesHud _livesHud;
         private PhasePill _pill;
@@ -78,13 +76,6 @@ namespace NeuroVida.Games.RutaTesoro
         private Vector2 _boardCenter;
 
         private bool Timed => _config != null && _config.config.timed;
-
-        private void Awake()
-        {
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            BuildUi();
-            gameObject.SetActive(false);
-        }
 
         // ------------------------------------------------------------------ sesión
 
@@ -161,7 +152,7 @@ namespace NeuroVida.Games.RutaTesoro
 
             _treasures = TreasureContract.PickTreasures(spec, _rng);
 
-            // ---- Memorizar: las gemas se iluminan una a una.
+            // ---- Memorizar: los tesoros se iluminan uno a uno.
             _pill.Set($"Memoriza los {spec.Treasures} tesoros", AmberColor);
             SetTimerVisible(true, RevealColor);
             var order = new List<int>(_treasures);
@@ -173,10 +164,10 @@ namespace NeuroVida.Games.RutaTesoro
                 RevealGem(order[i], i);
                 yield return new WaitForSeconds(stagger);
             }
-            float shownAt = Time.unscaledTime;
-            while (Time.unscaledTime - shownAt < showMs / 1000f)
+            float shownAt = GameClock.Time;
+            while (GameClock.Time - shownAt < showMs / 1000f)
             {
-                SetTimerFraction(1f - (Time.unscaledTime - shownAt) / (showMs / 1000f), RevealColor);
+                SetTimerFraction(1f - (GameClock.Time - shownAt) / (showMs / 1000f), RevealColor);
                 yield return null;
             }
 
@@ -184,7 +175,7 @@ namespace NeuroVida.Games.RutaTesoro
             PlayTone(330f, 0.18f, 0.14f);
             yield return StartCoroutine(HideGems(order));
             _pill.Set("Ahora encuéntralos", TealAccent);
-            _roundStartedAt = Time.unscaledTime;
+            _roundStartedAt = GameClock.Time;
             _acceptInput = true;
             float findSeconds = TreasureContract.FindSeconds(_stage);
             SetTimerVisible(Timed, TealAccent);
@@ -193,7 +184,7 @@ namespace NeuroVida.Games.RutaTesoro
             {
                 if (Timed)
                 {
-                    float left = 1f - (Time.unscaledTime - _roundStartedAt) / findSeconds;
+                    float left = 1f - (GameClock.Time - _roundStartedAt) / findSeconds;
                     SetTimerFraction(left, left > 0.35f ? TealAccent : (left > 0.15f ? AmberColor : BadColor));
                     if (left <= 0f) _result = RoundResult.TimedOut;
                 }
@@ -207,8 +198,7 @@ namespace NeuroVida.Games.RutaTesoro
             {
                 _cleared++;
                 _pill.Set("¡Ruta completa!", GoodColor);
-                PlayTone(659.25f, 0.3f, 0.2f);
-                StartCoroutine(PlayCelebrationTone());
+                GameFeel.LevelUp(); // ruta completa = arpegio común de logro
                 StartCoroutine(UiFx.SparkBurst(_fxRect, _boardCenter, RevealColor, 22, _boardSize * 0.55f, 54f, 0.8f));
                 StartCoroutine(UiFx.RingBurst(_fxRect, _boardCenter, RevealColor, _boardSize * 0.3f, _boardSize * 1.2f, 0.7f));
                 StartCoroutine(Flash(GoodColor, 0.10f, 0.35f));
@@ -223,7 +213,7 @@ namespace NeuroVida.Games.RutaTesoro
                 _hearts--;
                 _livesHud.SetLives(_hearts);
                 _pill.Set(_result == RoundResult.TimedOut ? "Se acabó el tiempo" : "Se perdió la ruta", AmberColor);
-                PlayTone(196f, 0.4f, 0.2f);
+                GameFeel.Wrong();
                 StartCoroutine(Flash(BadColor, 0.14f, 0.35f));
                 yield return StartCoroutine(RevealMissed());
                 yield return new WaitForSeconds(1.1f);
@@ -249,7 +239,7 @@ namespace NeuroVida.Games.RutaTesoro
                 tile.State = TileState.Found;
                 _found++;
                 _treasuresFoundTotal++;
-                _findMsSum += (long)((Time.unscaledTime - _roundStartedAt) * 1000f / _found);
+                _findMsSum += (long)((GameClock.Time - _roundStartedAt) * 1000f / _found);
                 _findCount++;
                 _dots.Mark(_found - 1, true);
                 UpdateHud(TreasureContract.StageFor(_stage));
@@ -269,7 +259,7 @@ namespace NeuroVida.Games.RutaTesoro
                 tile.Mark.gameObject.SetActive(true);
                 StartCoroutine(PopRect(tile.Mark, 1.5f, 0.28f));
                 StartCoroutine(UiFx.Shake(16f, 0.3f, tile.Rect));
-                PlayTone(196f, 0.25f, 0.18f);
+                GameFeel.Wrong();
                 StartCoroutine(Flash(BadColor, 0.08f, 0.22f));
                 int left = TreasureContract.MaxMisses - _misses;
                 _pill.Set(left > 0 ? $"Ahí no · te queda {left} intento" : "Se perdió la ruta", left > 0 ? AmberColor : BadColor);
@@ -297,7 +287,7 @@ namespace NeuroVida.Games.RutaTesoro
             const float seconds = 0.28f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 r.localScale = Vector3.one * Mathf.LerpUnclamped(0.2f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(t / seconds)));
                 yield return null;
             }
@@ -311,24 +301,24 @@ namespace NeuroVida.Games.RutaTesoro
             const float seconds = 0.22f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
                 foreach (int i in order)
                 {
                     var tile = _tiles[i];
                     tile.Gem.rectTransform.localScale = Vector3.one * (1f - k);
-                    tile.Image.color = Color.Lerp(RevealColor, SandColor, k);
+                    tile.Image.color = Color.Lerp(RevealColor, RockColor, k);
                 }
                 yield return null;
             }
             foreach (int i in order)
             {
                 _tiles[i].Gem.gameObject.SetActive(false);
-                _tiles[i].Image.color = SandColor;
+                _tiles[i].Image.color = RockColor;
             }
         }
 
-        /// <summary>Al perder la ruta se muestran las gemas que faltaban (semitransparentes) para
+        /// <summary>Al perder la ruta se muestran los tesoros que faltaban (semitransparentes) para
         /// que el jugador vea dónde estaban.</summary>
         private IEnumerator RevealMissed()
         {
@@ -336,7 +326,7 @@ namespace NeuroVida.Games.RutaTesoro
             {
                 var tile = _tiles[i];
                 if (tile.State == TileState.Found) continue;
-                tile.Image.color = Color.Lerp(SandColor, RevealColor, 0.55f);
+                tile.Image.color = Color.Lerp(RockColor, RevealColor, 0.55f);
                 tile.Gem.gameObject.SetActive(true);
                 tile.Gem.sprite = TreasureSprites.ForIndex(i);
                 StartCoroutine(PopGem(tile, true));
@@ -351,7 +341,7 @@ namespace NeuroVida.Games.RutaTesoro
             float t = 0f;
             while (t < total + 0.3f)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 for (int i = 0; i < _tiles.Count; i++)
                 {
                     int r = i / n, c = i % n;
@@ -365,14 +355,6 @@ namespace NeuroVida.Games.RutaTesoro
             foreach (var tile in _tiles) tile.Rect.localScale = Vector3.one;
         }
 
-        private IEnumerator PlayCelebrationTone()
-        {
-            yield return new WaitForSeconds(0.14f);
-            PlayTone(783.99f, 0.25f, 0.18f);
-            yield return new WaitForSeconds(0.14f);
-            PlayTone(1046.5f, 0.35f, 0.2f);
-        }
-
         private IEnumerator WaveIn()
         {
             int n = _gridN;
@@ -381,7 +363,7 @@ namespace NeuroVida.Games.RutaTesoro
             foreach (var tile in _tiles) tile.Rect.localScale = Vector3.zero;
             while (t < total + 0.3f)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 for (int i = 0; i < _tiles.Count; i++)
                 {
                     int r = i / n, c = i % n;
@@ -400,7 +382,7 @@ namespace NeuroVida.Games.RutaTesoro
             const float seconds = 0.25f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
                 foreach (var tile in _tiles) tile.Rect.localScale = Vector3.one * (1f - k);
                 yield return null;
@@ -412,7 +394,7 @@ namespace NeuroVida.Games.RutaTesoro
             foreach (var tile in _tiles)
             {
                 tile.State = TileState.Hidden;
-                tile.Image.color = SandColor;
+                tile.Image.color = RockColor;
                 tile.Gem.gameObject.SetActive(false);
                 tile.Mark.gameObject.SetActive(false);
                 tile.Rect.localScale = Vector3.one;
@@ -449,7 +431,6 @@ namespace NeuroVida.Games.RutaTesoro
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
-            PlayTone(659.25f, 0.4f, 0.22f);
             yield break;
         }
 
@@ -470,26 +451,9 @@ namespace NeuroVida.Games.RutaTesoro
             StartCoroutine(UiFx.SparkBurst(_fxRect, Vector2.zero, RevealColor, 24, 420f, 56f, 0.9f));
         }
 
-        private IEnumerator AnimateResult(int score)
-        {
-            var scoreText = _resultRoot.Find("Score").GetComponent<Text>();
-            float t = 0f;
-            const float seconds = 0.9f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _resultRoot.localScale = Vector3.one * Mathf.LerpUnclamped(0.7f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 2f)));
-                scoreText.text = Mathf.RoundToInt(score * UiFx.EaseOutCubic(k)).ToString();
-                yield return null;
-            }
-            scoreText.text = score.ToString();
-            _resultRoot.localScale = Vector3.one;
-        }
-
         // ------------------------------------------------------------------ construcción de UI
 
-        private void BuildUi()
+        protected override void BuildUi()
         {
             if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
             {
@@ -509,15 +473,12 @@ namespace NeuroVida.Games.RutaTesoro
             scaler.matchWidthOrHeight = 0f;
             canvasGo.AddComponent<GraphicRaycaster>();
 
-            // Fondo "mar profundo" con dos resplandores (turquesa y dorado) y burbujas.
             var bg = new GameObject("Background");
             bg.transform.SetParent(canvasGo.transform, false);
             var bgRect = bg.AddComponent<RectTransform>();
             Stretch(bgRect);
-            bg.AddComponent<Image>().color = BackgroundColor;
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.15f, 0.90f), 1500f, new Color(0.18f, 0.83f, 0.75f, 0.20f));
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.90f, 0.10f), 1400f, new Color(0.98f, 0.55f, 0.45f, 0.13f));
-            bg.AddComponent<CountdownAmbient>().Build(bgRect, 10);
+            // Mundo "TreasureMoon": cielo nocturno de la app + su elemento propio (ver Shared/WorldBackdrop.cs).
+            WorldBackdrop.Build(bgRect, GameWorld.TreasureMoon);
 
             var safeGo = new GameObject("SafeAreaContent");
             safeGo.transform.SetParent(canvasGo.transform, false);
@@ -566,28 +527,12 @@ namespace NeuroVida.Games.RutaTesoro
 
         private void BuildHud()
         {
-            var hudGo = new GameObject("Hud");
-            hudGo.transform.SetParent(_safe, false);
-            var hudRect = hudGo.AddComponent<RectTransform>();
-            hudRect.anchorMin = new Vector2(0f, 1f);
-            hudRect.anchorMax = new Vector2(1f, 1f);
-            hudRect.pivot = new Vector2(0.5f, 1f);
-            hudRect.sizeDelta = new Vector2(0f, 190f);
-            hudRect.anchoredPosition = Vector2.zero;
-
             float heartU = 26f * UnitsPerDp;
             float livesW = 3f * heartU + 2f * heartU * 0.16f + heartU * 0.44f;
-            _livesHud = new LivesHud(hudGo.transform, this, TreasureContract.Lives,
+            // Marcador común (GameHud) con las vidas a la derecha en lugar de la racha.
+            _hud = new GameHud(_safe, "Ruta del Tesoro", MarginU, this, withStreak: false, rightReserve: livesW + 24f);
+            _livesHud = new LivesHud(_hud.Rect, this, TreasureContract.Lives,
                 alignRight: true, marginU: MarginU, topOffsetU: -26f, heartSizeU: heartU);
-
-            _titleText = MakeText(hudGo.transform, "Title", 78, TextAnchor.UpperLeft, Color.white, 3f, 0.45f);
-            _subText = MakeText(hudGo.transform, "Sub", 48, TextAnchor.UpperLeft, new Color(1f, 1f, 1f, 0.72f), 2f, 0.35f);
-            float right = MarginU + livesW + 24f;
-            PlaceTopText(_titleText, MarginU, right, -22f, 100f);
-            PlaceTopText(_subText, MarginU, right, -112f, 70f);
-            BestFit(_titleText, 46);
-            BestFit(_subText, 30);
-            _titleText.text = "Ruta del Tesoro";
 
             _dots = new ProgressDots(_safe, this, UnitsPerDp, 3);
         }
@@ -597,16 +542,6 @@ namespace NeuroVida.Games.RutaTesoro
             if (_dots != null) Destroy(_dots.Rect.gameObject);
             _dots = new ProgressDots(_safe, this, UnitsPerDp, count, 15f);
             _dots.Rect.anchoredPosition = new Vector2(0f, -190f);
-        }
-
-        private static void PlaceTopText(Text text, float left, float right, float topY, float height)
-        {
-            var r = text.rectTransform;
-            r.anchorMin = new Vector2(0f, 1f);
-            r.anchorMax = new Vector2(1f, 1f);
-            r.pivot = new Vector2(0f, 1f);
-            r.offsetMin = new Vector2(left, topY - height);
-            r.offsetMax = new Vector2(-right, topY);
         }
 
         private void BuildTimer()
@@ -671,17 +606,6 @@ namespace NeuroVida.Games.RutaTesoro
             go.SetActive(false);
         }
 
-        private void AddResultText(string name, int size, Vector2 pos, Color color)
-        {
-            var t = MakeText(_resultRoot, name, size, TextAnchor.MiddleCenter, color, 3f, 0.4f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(820f, size * 1.4f);
-            r.anchoredPosition = pos;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-        }
-
         // ------------------------------------------------------------------ mapa
 
         private void BuildBoard(int n)
@@ -707,7 +631,7 @@ namespace NeuroVida.Games.RutaTesoro
                 rt.anchoredPosition = new Vector2((c - (n - 1) / 2f) * cell, ((n - 1) / 2f - r) * cell);
                 var img = go.AddComponent<Image>();
                 img.sprite = TileSprites.Get();
-                img.color = SandColor;
+                img.color = RockColor;
                 img.alphaHitTestMinimumThreshold = 0.1f;
                 var button = go.AddComponent<Button>();
                 button.transition = Selectable.Transition.None;
@@ -778,27 +702,11 @@ namespace NeuroVida.Games.RutaTesoro
 
         private void UpdateHud(TreasureStage spec)
         {
-            _subText.text = $"Nivel {_stage} · Tesoros {_found}/{spec.Treasures}";
+            _hud.SetLevel(_stage);
+            _hud.SetInfo($"Tesoros {_found}/{spec.Treasures}");
         }
-
-        private void RebuildDotsIfNeeded() { }
 
         // ------------------------------------------------------------------ helpers
-
-        private static void ApplySafeArea(RectTransform target)
-        {
-            Rect safeArea = Screen.safeArea;
-            Vector2 min = safeArea.position;
-            Vector2 max = safeArea.position + safeArea.size;
-            min.x /= Screen.width;
-            min.y /= Screen.height;
-            max.x /= Screen.width;
-            max.y /= Screen.height;
-            target.anchorMin = min;
-            target.anchorMax = max;
-            target.offsetMin = Vector2.zero;
-            target.offsetMax = Vector2.zero;
-        }
 
         private void Shuffle(List<int> list)
         {
@@ -809,83 +717,6 @@ namespace NeuroVida.Games.RutaTesoro
                 list[i] = list[j];
                 list[j] = tmp;
             }
-        }
-
-        private static Vector2 LocalIn(RectTransform space, RectTransform target)
-        {
-            Vector3 local = space.InverseTransformPoint(target.position);
-            return new Vector2(local.x, local.y);
-        }
-
-        private IEnumerator Flash(Color color, float maxAlpha, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _flash.color = new Color(color.r, color.g, color.b, maxAlpha * (1f - k));
-                yield return null;
-            }
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-        }
-
-        private static IEnumerator PopRect(RectTransform rect, float peak, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                if (rect == null) yield break;
-                t += Time.unscaledDeltaTime;
-                rect.localScale = Vector3.one * Mathf.Lerp(peak, 1f, UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds)));
-                yield return null;
-            }
-            if (rect != null) rect.localScale = Vector3.one;
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
-
-        private static void BestFit(Text text, int minSize)
-        {
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = minSize;
-            text.resizeTextMaxSize = text.fontSize;
-        }
-
-        private static Text MakeText(Transform parent, string name, int fontPx, TextAnchor align, Color color, float shadowDistance, float shadowAlpha)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var rect = go.AddComponent<RectTransform>();
-            Stretch(rect);
-            var text = go.AddComponent<Text>();
-            text.font = UiFonts.Bold;
-            text.fontSize = fontPx;
-            text.alignment = align;
-            text.color = color;
-            text.raycastTarget = false;
-            if (shadowAlpha > 0f) UiFonts.AddSoftShadow(go, shadowDistance, shadowAlpha);
-            return text;
-        }
-
-        private void PlayTone(float hz, float seconds, float volume)
-        {
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            float key = Mathf.Round(hz * 10f) + seconds * 100000f;
-            if (!_toneCache.TryGetValue(key, out var clip))
-            {
-                clip = HarmonicTone.Build(hz, seconds, volume);
-                _toneCache[key] = clip;
-            }
-            _audioSource.PlayOneShot(clip);
         }
     }
 }

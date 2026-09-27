@@ -5,23 +5,19 @@ import android.content.Intent
 import com.example.model.AgeBand
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.unity3d.player.appui.AppUIGameActivity
+import com.unity3d.player.UnityPlayerGameActivity
 
 /**
- * Lanza el piloto de Secuencia Lumínica en Unity (Fase 1 del roadmap, ver
- * NeuroVida/CLAUDE.md). En vez de que el lado nativo llame a
- * `UnityPlayer.UnitySendMessage` sobre una instancia del player ya corriendo (frágil de
- * verificar sin poder probarlo en un dispositivo real -- depende de detalles internos de
- * la arquitectura GameActivity de Unity 6 que no se pudieron validar en esta sesión), el
- * JSON de configuración viaja como extra del propio Intent que arranca la Activity.
- * Unity lo lee solo al arrancar la escena
- * (`Assets/Scripts/Bootstrap/LaunchIntentConfigReader.cs`) vía
- * `UnityPlayer.currentActivity.getIntent()` -- un patrón mucho más estable porque no
- * depende de la clase Activity específica que genera cada versión de Unity, solo de la
- * API pública y estable de `UnityPlayer`.
+ * Arma el Intent que abre un juego en Unity. La configuración (juego, nivel, modo, edad, rating guardado, evaluación)
+ * viaja como JSON en un extra del Intent; Unity la lee al arrancar la partida
+ * (`Assets/Scripts/Bootstrap/LaunchIntentConfigReader.cs`, vía `UnityPlayer.currentActivity.getIntent()`).
  */
 object UnityGameLauncher {
   const val EXTRA_CONFIG_JSON = "neurovida_game_config_json"
+
+  /** Id único de cada partida lanzada. Unity queda vivo entre partidas: con este id detecta que llegó una nueva
+   *  (Intent nuevo con REORDER_TO_FRONT) y la app sabe a qué partida pertenece el resultado que vuelve. */
+  const val EXTRA_LAUNCH_ID = "neurovida_launch_id"
 
   @JsonClass(generateAdapter = true)
   data class ConfigDetailsDto(
@@ -30,9 +26,17 @@ object UnityGameLauncher {
     val timed: Boolean,
     val age_band: String,
     val sound_enabled: Boolean,
+    // Vibración corta en aciertos importantes, errores y fin de partida (Ajustes > Vibración). Unity la
+    // da por activada si falta (versiones viejas de la app).
+    val haptics_enabled: Boolean = true,
     // DDA común: rating guardado del juego (0..1). `has_dda_rating` evita confundir "sin dato" con 0.
     val has_dda_rating: Boolean = false,
-    val dda_rating: Double = 0.0
+    val dda_rating: Double = 0.0,
+    // Evaluación inicial "Tu punto de partida" (ver data/Baseline.kt): partida corta que busca el nivel; paso N
+    // de M se muestra en la cuenta regresiva. En la evaluación NO se manda el rating guardado (se mide de cero).
+    val assessment: Boolean = false,
+    val assessment_step: Int = 0,
+    val assessment_total: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -45,107 +49,13 @@ object UnityGameLauncher {
   private val moshi = Moshi.Builder().build()
   private val adapter = moshi.adapter(InitConfigDto::class.java)
 
-  fun launchSecuenciaLuminica(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "secuencia", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** Piloto de la Fase 2 (ver NeuroVida/CLAUDE.md) -- mismo mecanismo de Intent extra que
-   *  Secuencia Lumínica, ver [launchSecuenciaLuminica]. */
-  fun launchParejasOcultas(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "parejas", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Tinta o Palabra" (Stroop) en Unity -- mismo mecanismo de Intent extra. */
-  fun launchStroop(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "stroop", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Comparación Instantánea" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchComparacion(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "comparacion", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Cambio de Chip" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchCambioChip(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "cambiochip", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Ruta del Tesoro" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchRutaTesoro(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "rutatesoro", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Detective de Series" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchSeries(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "series", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Cálculo Sereno" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchCalculo(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "calculo", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** "Anagramas" en Unity -- mismo mecanismo de Intent extra. */
-  fun launchAnagramas(
-    context: Context,
-    userId: String,
-    level: Int,
-    baseIntensity: Int,
-    timed: Boolean,
-    ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, "anagramas", level, baseIntensity, timed, ageBand, soundEnabled)
-
-  /** Lanza cualquiera de los 9 juegos en Unity para una sesión del menú principal / sesión diaria. */
-  fun launchGame(
+  /**
+   * Intent para jugar cualquiera de los 9 juegos en Unity desde el menú principal / sesión diaria. Trae al
+   * frente la Activity de Unity si ya está viva (FLAG_ACTIVITY_REORDER_TO_FRONT: sin volver a arrancar el motor)
+   * con un [EXTRA_LAUNCH_ID] nuevo. La vuelta a la app llega a `MainActivity.onNewIntent` (ver
+   * `NativeReceiver.returnToApp`).
+   */
+  fun buildGameIntent(
     context: Context,
     gameId: String,
     userId: String,
@@ -153,10 +63,13 @@ object UnityGameLauncher {
     baseIntensity: Int,
     timed: Boolean,
     ageBand: AgeBand,
-    soundEnabled: Boolean = true
-  ) = launch(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled)
+    soundEnabled: Boolean = true,
+    launchId: String? = null, // una partida en pausa se retoma con SU id (Unity no la reinicia)
+    assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
+    assessmentTotal: Int = 0
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal)
 
-  private fun launch(
+  private fun buildIntent(
     context: Context,
     userId: String,
     gameId: String,
@@ -164,9 +77,13 @@ object UnityGameLauncher {
     baseIntensity: Int,
     timed: Boolean,
     ageBand: AgeBand,
-    soundEnabled: Boolean
-  ) {
-    val savedRating = com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
+    soundEnabled: Boolean,
+    launchId: String? = null,
+    assessmentStep: Int = 0,
+    assessmentTotal: Int = 0
+  ): Intent {
+    val assessment = assessmentStep > 0
+    val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
     val config = InitConfigDto(
       user_id = userId,
       game_id = gameId, // mismo id de texto que GameRegistry (Models.kt), no un int
@@ -176,14 +93,19 @@ object UnityGameLauncher {
         timed = timed,
         age_band = ageBand.name, // "SENIOR"/"ADULT"/"UNDER_18" -- coincide 1:1 con DdaUserProfileConfig.ParseAgeBand en C#
         sound_enabled = soundEnabled,
+        haptics_enabled = com.example.NeuroVidaApplication.instance.repository.userSettings.value.hapticsEnabled,
         has_dda_rating = savedRating >= 0f,
-        dda_rating = savedRating.coerceAtLeast(0f).toDouble()
+        dda_rating = savedRating.coerceAtLeast(0f).toDouble(),
+        assessment = assessment,
+        assessment_step = assessmentStep,
+        assessment_total = assessmentTotal
       )
     )
     val json = adapter.toJson(config)
 
-    val intent = Intent(context, AppUIGameActivity::class.java)
-    intent.putExtra(EXTRA_CONFIG_JSON, json)
-    context.startActivity(intent)
+    return Intent(context, UnityPlayerGameActivity::class.java)
+      .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+      .putExtra(EXTRA_CONFIG_JSON, json)
+      .putExtra(EXTRA_LAUNCH_ID, launchId ?: java.util.UUID.randomUUID().toString())
   }
 }

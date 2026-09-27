@@ -40,8 +40,17 @@ namespace NeuroVida.Contracts
         /// onboarding de la app nativa (dato de salud/personal reducido a lo imprescindible).</summary>
         public string age_band;
         public bool sound_enabled;
+        /// <summary>Vibración (Ajustes > Vibración de la app). Por defecto activada: si el JSON no la trae (app
+        /// vieja), <c>JsonUtility</c> conserva este valor inicial.</summary>
+        public bool haptics_enabled = true;
         /// <summary>Rating guardado del DDA común (0..1) si la app tiene uno para este juego.</summary>
         public bool has_dda_rating;
         public float dda_rating;
+        /// <summary>Evaluación inicial "Tu punto de partida" (onboarding): partida corta que busca el nivel de la
+        /// persona. <c>assessment_step</c> de <c>assessment_total</c> (1..3) se muestra en la cuenta regresiva.
+        /// Ver <c>Games/Shared/Assessment.cs</c>.</summary>
+        public bool assessment;
+        public int assessment_step;
+        public int assessment_total;
     }
 }

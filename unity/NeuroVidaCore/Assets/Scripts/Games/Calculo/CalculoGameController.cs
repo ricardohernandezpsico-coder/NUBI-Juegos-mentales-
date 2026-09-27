@@ -6,6 +6,7 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
+using static NeuroVida.Games.Shared.UiKit;
 
 namespace NeuroVida.Games.Calculo
 {
@@ -19,7 +20,7 @@ namespace NeuroVida.Games.Calculo
     /// más familias nuevas (ver <see cref="CalculoContract"/>). Telemetría: reusa
     /// <see cref="StroopTelemetry"/>.
     /// </summary>
-    public class CalculoGameController : MonoBehaviour
+    public class CalculoGameController : GameControllerBase
     {
         public const string GameId = CalculoContract.GameId;
 
@@ -30,7 +31,6 @@ namespace NeuroVida.Games.Calculo
         private const int Splashed = -4; // la burbuja tocó el agua
         private const float ShapeScale = 0.86f;
 
-        private static readonly Color BackgroundColor = new Color(0x06 / 255f, 0x22 / 255f, 0x36 / 255f);
         private static readonly Color Aqua = new Color(0x38 / 255f, 0xBD / 255f, 0xF8 / 255f);
         private static readonly Color BubbleCalm = new Color(0xE0 / 255f, 0xF2 / 255f, 0xFE / 255f);
         private static readonly Color BubbleWarn = new Color(0xFE / 255f, 0xF3 / 255f, 0xC7 / 255f);
@@ -48,10 +48,7 @@ namespace NeuroVida.Games.Calculo
         };
         private static readonly Color OptionInk = new Color(0x0B / 255f, 0x2A / 255f, 0x3F / 255f);
 
-        private SequenceInitConfig _config;
         private System.Random _rng;
-        private AudioSource _audioSource;
-        private readonly Dictionary<float, AudioClip> _toneCache = new Dictionary<float, AudioClip>();
 
         private int _trialIndex, _correct, _streak, _bestStreak, _totalAnswered, _points, _effLevel;
         private long _responseMsSum;
@@ -66,25 +63,19 @@ namespace NeuroVida.Games.Calculo
         private bool Endless => _config != null && _config.config.timed;
 
         // UI
-        private RectTransform _safe, _streakPill, _timerBg, _timerFill, _fxRect, _resultRoot, _bubbleRect, _waterRect, _optionsRoot, _waveA, _waveB;
-        private Text _titleText, _subText, _streakText, _bubbleText;
-        private Image _streakDisc, _flash, _timerFillImage, _bubbleFill, _bubbleBorder;
+        private RectTransform _safe, _timerBg, _timerFill, _fxRect, _bubbleRect, _waterRect, _optionsRoot, _waveA, _waveB, _lilyA, _lilyB;
+        private Text _bubbleText;
+        private Image _timerFillImage, _bubbleFill, _bubbleBorder;
         private CanvasGroup _bubbleGroup;
         private ProgressDots _dots;
         private Toast _toast;
         private ExitButton _exit;
+        private GameHud _hud;
         private CountdownScreen _countdown;
         private readonly List<RectTransform> _optionRects = new List<RectTransform>();
         private readonly List<Image> _optionImages = new List<Image>();
         private readonly List<Text> _optionLabels = new List<Text>();
         private float _bubbleTopY, _bubbleWaterY, _bubbleRestY, _waterSurfaceY, _contentW, _bubbleH;
-
-        private void Awake()
-        {
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            BuildUi();
-            gameObject.SetActive(false);
-        }
 
         // ------------------------------------------------------------------ sesión
 
@@ -128,26 +119,26 @@ namespace NeuroVida.Games.Calculo
             Canvas.ForceUpdateCanvases();
             Layout();
 
-            _roundEndsAt = Time.unscaledTime + CalculoContract.EndlessSeconds;
+            _roundEndsAt = GameClock.Time + CalculoContract.EndlessSeconds;
             _trialIndex = 0;
-            while (Endless ? Time.unscaledTime < _roundEndsAt : _trialIndex < CalculoContract.TotalTrials)
+            while (Endless ? GameClock.Time < _roundEndsAt : _trialIndex < CalculoContract.TotalTrials)
             {
                 yield return StartCoroutine(PresentQuestion());
 
-                float startedAt = Time.unscaledTime;
+                float startedAt = GameClock.Time;
                 float fall = CalculoContract.FallSeconds(_effLevel, _config.config.base_intensity);
                 float lastWarn = 0f;
                 while (_answerIndex == NoAnswer)
                 {
-                    float t = Time.unscaledTime - startedAt;
+                    float t = GameClock.Time - startedAt;
                     if (Endless)
                     {
                         if (UpdateRoundClock()) { _answerIndex = TimeUp; break; }
                         float progress = Mathf.Clamp01(t / fall);
                         SetBubble(progress);
-                        if (progress > 0.72f && Time.unscaledTime - lastWarn > 0.7f)
+                        if (progress > 0.72f && GameClock.Time - lastWarn > 0.7f)
                         {
-                            lastWarn = Time.unscaledTime;
+                            lastWarn = GameClock.Time;
                             PlayTone(660f, 0.06f, 0.07f);
                         }
                         if (progress >= 1f) { _answerIndex = Splashed; break; }
@@ -155,7 +146,7 @@ namespace NeuroVida.Games.Calculo
                     else
                     {
                         // Sin reloj: la burbuja flota suavemente en su sitio.
-                        _bubbleRect.anchoredPosition = new Vector2(0f, _bubbleRestY + Mathf.Sin(Time.unscaledTime * 1.6f) * 10f);
+                        _bubbleRect.anchoredPosition = new Vector2(0f, _bubbleRestY + Mathf.Sin(GameClock.Time * 1.6f) * 10f);
                     }
                     yield return null;
                 }
@@ -197,7 +188,7 @@ namespace NeuroVida.Games.Calculo
             FitBubbleText(_question.Prompt);
             _bubbleText.color = InkColor;
             _bubbleFill.color = BubbleCalm;
-            _bubbleBorder.color = new Color(1f, 1f, 1f, 0.75f);
+            _bubbleBorder.color = NeuroStyle.Ink;
             for (int i = 0; i < 4; i++)
             {
                 _optionLabels[i].text = _question.Options[i].ToString();
@@ -215,7 +206,7 @@ namespace NeuroVida.Games.Calculo
             const float seconds = 0.26f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
                 _bubbleRect.localScale = Vector3.one * Mathf.LerpUnclamped(0.5f, 1f, UiFx.EaseOutBack(k));
                 _bubbleGroup.alpha = Mathf.Clamp01(k * 2.5f);
@@ -266,7 +257,7 @@ namespace NeuroVida.Games.Calculo
                 UpdateHudText();
                 _bubbleFill.color = new Color(0.78f, 0.97f, 0.85f);
                 _optionImages[chosen].color = GoodColor;
-                PlayTone(523.25f * Mathf.Pow(2f, Mathf.Min(_streak - 1, 7) * 2f / 12f), 0.3f, 0.2f);
+                GameFeel.Correct(_streak);
                 StartCoroutine(Flash(GoodColor, 0.08f, 0.26f));
                 StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _optionRects[chosen]), Color.white, 120f, 420f, 0.45f));
 
@@ -274,7 +265,7 @@ namespace NeuroVida.Games.Calculo
                 {
                     UpdateHudText();
                     _toast.Show($"Nivel {_effLevel}", LevelHint(_effLevel), Aqua, 1.1f);
-                    PlayTone(1046.5f, 0.35f, 0.2f);
+                    GameFeel.LevelUp();
                 }
                 else if (_streak == 4 || _streak == 8 || _streak == 12)
                 {
@@ -293,7 +284,7 @@ namespace NeuroVida.Games.Calculo
                 }
                 _bubbleFill.color = BubbleDanger;
                 _bubbleBorder.color = new Color(BadColor.r, BadColor.g, BadColor.b, 0.9f);
-                PlayTone(196f, 0.34f, 0.2f);
+                GameFeel.Wrong();
                 StartCoroutine(Flash(BadColor, 0.12f, 0.3f));
                 StartCoroutine(UiFx.Shake(20f, 0.4f, _bubbleRect));
                 for (int i = 0; i < 4; i++)
@@ -320,7 +311,7 @@ namespace NeuroVida.Games.Calculo
             float t = 0f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
                 _bubbleRect.anchoredPosition = new Vector2(0f, Mathf.Lerp(from.y, targetY, k));
                 _bubbleRect.localScale = Vector3.one * (1f - 0.25f * k);
@@ -342,7 +333,7 @@ namespace NeuroVida.Games.Calculo
             float from = _bubbleGroup.alpha;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 _bubbleGroup.alpha = from * (1f - Mathf.Clamp01(t / seconds));
                 yield return null;
             }
@@ -366,7 +357,7 @@ namespace NeuroVida.Games.Calculo
 
         private bool UpdateRoundClock()
         {
-            float left = _roundEndsAt - Time.unscaledTime;
+            float left = _roundEndsAt - GameClock.Time;
             float f = Mathf.Clamp01(left / CalculoContract.EndlessSeconds);
             _timerFill.anchorMax = new Vector2(f, 1f);
             _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
@@ -375,7 +366,7 @@ namespace NeuroVida.Games.Calculo
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
                 _lastTickSecond = whole;
-                PlayTone(880f, 0.08f, 0.10f);
+                GameFeel.Tick();
             }
             return left <= 0f;
         }
@@ -406,7 +397,6 @@ namespace NeuroVida.Games.Calculo
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
-            PlayTone(659.25f, 0.4f, 0.22f);
             yield break;
         }
 
@@ -414,7 +404,7 @@ namespace NeuroVida.Games.Calculo
         {
             if (!_acceptInput || _ended) return;
             _acceptInput = false;
-            _answerAt = Time.unscaledTime;
+            _answerAt = GameClock.Time;
             _answerIndex = index;
         }
 
@@ -425,16 +415,18 @@ namespace NeuroVida.Games.Calculo
             // Dos ondas lentas de luz que se cruzan sobre el estanque.
             while (true)
             {
-                float t = Time.unscaledTime;
+                float t = GameClock.Time;
                 if (_waveA != null) _waveA.anchoredPosition = new Vector2(Mathf.Sin(t * 0.5f) * 160f, _waveA.anchoredPosition.y);
                 if (_waveB != null) _waveB.anchoredPosition = new Vector2(Mathf.Sin(t * 0.37f + 2f) * -200f, _waveB.anchoredPosition.y);
+                if (_lilyA != null) _lilyA.anchoredPosition = new Vector2(0f, Mathf.Sin(t * 0.9f) * 5f);
+                if (_lilyB != null) _lilyB.anchoredPosition = new Vector2(0f, Mathf.Sin(t * 0.8f + 1.3f) * 5f);
                 yield return null;
             }
         }
 
         // ------------------------------------------------------------------ construcción de UI
 
-        private void BuildUi()
+        protected override void BuildUi()
         {
             if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
             {
@@ -458,10 +450,8 @@ namespace NeuroVida.Games.Calculo
             bg.transform.SetParent(canvasGo.transform, false);
             var bgRect = bg.AddComponent<RectTransform>();
             Stretch(bgRect);
-            bg.AddComponent<Image>().color = BackgroundColor;
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.15f, 0.90f), 1500f, new Color(0.22f, 0.74f, 0.97f, 0.20f));
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.90f, 0.15f), 1400f, new Color(0.65f, 0.55f, 0.98f, 0.14f));
-            bg.AddComponent<CountdownAmbient>().Build(bgRect, 10);
+            // Mundo "MoonPond": cielo nocturno de la app + su elemento propio (ver Shared/WorldBackdrop.cs).
+            WorldBackdrop.Build(bgRect, GameWorld.MoonPond);
 
             var safeGo = new GameObject("SafeAreaContent");
             safeGo.transform.SetParent(canvasGo.transform, false);
@@ -498,63 +488,7 @@ namespace NeuroVida.Games.Calculo
 
         private void BuildHud()
         {
-            var hudGo = new GameObject("Hud");
-            hudGo.transform.SetParent(_safe, false);
-            var hudRect = hudGo.AddComponent<RectTransform>();
-            hudRect.anchorMin = new Vector2(0f, 1f);
-            hudRect.anchorMax = new Vector2(1f, 1f);
-            hudRect.pivot = new Vector2(0.5f, 1f);
-            hudRect.sizeDelta = new Vector2(0f, 190f);
-            hudRect.anchoredPosition = Vector2.zero;
-
-            const float pillW = 300f, pillH = 100f;
-            var pillGo = new GameObject("StreakPill");
-            pillGo.transform.SetParent(hudGo.transform, false);
-            _streakPill = pillGo.AddComponent<RectTransform>();
-            _streakPill.anchorMin = _streakPill.anchorMax = _streakPill.pivot = new Vector2(1f, 1f);
-            _streakPill.sizeDelta = new Vector2(pillW, pillH);
-            _streakPill.anchoredPosition = new Vector2(-MarginU, -30f);
-            var pillImg = pillGo.AddComponent<Image>();
-            pillImg.sprite = RoundedRectSprite.Get(64);
-            pillImg.type = Image.Type.Sliced;
-            pillImg.color = new Color(0f, 0f, 0f, 0.30f);
-            pillImg.raycastTarget = false;
-
-            var discGo = new GameObject("Disc");
-            discGo.transform.SetParent(pillGo.transform, false);
-            var discRect = discGo.AddComponent<RectTransform>();
-            discRect.anchorMin = discRect.anchorMax = new Vector2(0f, 0.5f);
-            discRect.pivot = new Vector2(0.5f, 0.5f);
-            discRect.sizeDelta = new Vector2(52f, 52f);
-            discRect.anchoredPosition = new Vector2(50f, 0f);
-            _streakDisc = discGo.AddComponent<Image>();
-            _streakDisc.sprite = DiscSprite.Get();
-            _streakDisc.raycastTarget = false;
-
-            _streakText = MakeText(pillGo.transform, "StreakText", 58, TextAnchor.MiddleLeft, Color.white, 2f, 0.3f);
-            var sr = _streakText.rectTransform;
-            sr.offsetMin = new Vector2(96f, 0f);
-            sr.offsetMax = new Vector2(-24f, 0f);
-            BestFit(_streakText, 36);
-
-            _titleText = MakeText(hudGo.transform, "Title", 78, TextAnchor.UpperLeft, Color.white, 3f, 0.45f);
-            _subText = MakeText(hudGo.transform, "Sub", 48, TextAnchor.UpperLeft, new Color(1f, 1f, 1f, 0.72f), 2f, 0.35f);
-            float right = MarginU + pillW + 20f;
-            PlaceTopText(_titleText, MarginU, right, -22f, 100f);
-            PlaceTopText(_subText, MarginU, right, -112f, 70f);
-            BestFit(_titleText, 46);
-            BestFit(_subText, 30);
-            _titleText.text = "Cálculo Sereno";
-        }
-
-        private static void PlaceTopText(Text text, float left, float right, float topY, float height)
-        {
-            var r = text.rectTransform;
-            r.anchorMin = new Vector2(0f, 1f);
-            r.anchorMax = new Vector2(1f, 1f);
-            r.pivot = new Vector2(0f, 1f);
-            r.offsetMin = new Vector2(left, topY - height);
-            r.offsetMax = new Vector2(-right, topY);
+            _hud = new GameHud(_safe, "Cálculo Sereno", MarginU, this);
         }
 
         private void BuildTimer()
@@ -593,15 +527,43 @@ namespace NeuroVida.Games.Calculo
             var img = go.AddComponent<Image>();
             img.sprite = RoundedRectSprite.Get(56);
             img.type = Image.Type.Sliced;
-            img.color = new Color(0.22f, 0.74f, 0.97f, 0.26f);
+            img.color = new Color(0.10f, 0.36f, 0.62f, 0.78f);
             img.raycastTarget = false;
-            var outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(0.65f, 0.9f, 1f, 0.35f);
-            outline.effectDistance = new Vector2(3f, -3f);
+            NeuroStyle.ClayFrame(img, 4f, 0f); // estanque de arcilla: borde tinta
 
-            // Dos manchas de luz que se deslizan sobre el agua.
+            // Canto de luz en la superficie y dos manchas de luz que se deslizan sobre el agua.
+            var foamGo = new GameObject("Surface");
+            foamGo.transform.SetParent(go.transform, false);
+            var foam = foamGo.AddComponent<RectTransform>();
+            foam.anchorMin = new Vector2(0.03f, 1f);
+            foam.anchorMax = new Vector2(0.97f, 1f);
+            foam.sizeDelta = new Vector2(0f, 8f);
+            foam.anchoredPosition = new Vector2(0f, -14f);
+            var foamImg = foamGo.AddComponent<Image>();
+            foamImg.sprite = RoundedRectSprite.Get(4);
+            foamImg.type = Image.Type.Sliced;
+            foamImg.color = new Color(0.8f, 0.95f, 1f, 0.45f);
+            foamImg.raycastTarget = false;
             _waveA = MakeWave(go.transform, new Color(0.7f, 0.93f, 1f, 0.16f), 0.68f);
             _waveB = MakeWave(go.transform, new Color(0.55f, 0.85f, 1f, 0.12f), 0.32f);
+
+            // Arte propio: nenúfares de arcilla en las orillas (uno con flor de loto) que se mecen despacio.
+            _lilyA = MakeLily(go.transform, 0, new Vector2(0.13f, 1f), 150f);
+            _lilyB = MakeLily(go.transform, 1, new Vector2(0.87f, 1f), 180f);
+        }
+
+        private static RectTransform MakeLily(Transform parent, int variant, Vector2 anchor, float size)
+        {
+            var go = new GameObject("LilyPad");
+            go.transform.SetParent(parent, false);
+            var r = go.AddComponent<RectTransform>();
+            r.anchorMin = r.anchorMax = anchor;
+            r.pivot = new Vector2(0.5f, 0.32f); // la hoja queda sobre la línea del agua
+            r.sizeDelta = new Vector2(size, size);
+            var img = go.AddComponent<Image>();
+            img.sprite = PondSprites.LilyPad(variant);
+            img.raycastTarget = false;
+            return r;
         }
 
         private static RectTransform MakeWave(Transform parent, Color color, float heightFraction)
@@ -647,6 +609,7 @@ namespace NeuroVida.Games.Calculo
             _bubbleBorder.sprite = RoundedRectSprite.Get(64);
             _bubbleBorder.type = Image.Type.Sliced;
             _bubbleBorder.raycastTarget = false;
+            NeuroStyle.ClayFrame(_bubbleBorder, 2f, 10f); // burbuja de arcilla: borde tinta y sombra dura
 
             var fillGo = new GameObject("Fill");
             fillGo.transform.SetParent(go.transform, false);
@@ -660,16 +623,16 @@ namespace NeuroVida.Games.Calculo
             _bubbleFill.type = Image.Type.Sliced;
             _bubbleFill.raycastTarget = false;
 
-            // Brillo suave arriba-izquierda para que parezca una burbuja y no un rectángulo.
+            // Brillo de arcilla (óvalo nítido) arriba a la izquierda.
             var shineGo = new GameObject("Shine");
             shineGo.transform.SetParent(go.transform, false);
             var shr = shineGo.AddComponent<RectTransform>();
-            shr.anchorMin = new Vector2(0.04f, 0.58f);
-            shr.anchorMax = new Vector2(0.46f, 0.96f);
+            shr.anchorMin = new Vector2(0.07f, 0.72f);
+            shr.anchorMax = new Vector2(0.30f, 0.86f);
             shr.offsetMin = shr.offsetMax = Vector2.zero;
             var shImg = shineGo.AddComponent<Image>();
-            shImg.sprite = RadialGlowSprite.Get();
-            shImg.color = new Color(1f, 1f, 1f, 0.55f);
+            shImg.sprite = DiscSprite.Get();
+            shImg.color = new Color(1f, 1f, 1f, 0.6f);
             shImg.raycastTarget = false;
 
             _bubbleText = MakeText(go.transform, "Equation", 130, TextAnchor.MiddleCenter, InkColor, 0f, 0f);
@@ -740,17 +703,6 @@ namespace NeuroVida.Games.Calculo
             go.SetActive(false);
         }
 
-        private void AddResultText(string name, int size, Vector2 pos, Color color)
-        {
-            var t = MakeText(_resultRoot, name, size, TextAnchor.MiddleCenter, color, 3f, 0.4f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(820f, size * 1.4f);
-            r.anchoredPosition = pos;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-        }
-
         private void ShowResult(int score, int avgMs, int total)
         {
             _exit.Show();
@@ -771,23 +723,6 @@ namespace NeuroVida.Games.Calculo
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
             StartCoroutine(UiFx.SparkBurst(_fxRect, Vector2.zero, Aqua, 24, 420f, 56f, 0.9f));
-        }
-
-        private IEnumerator AnimateResult(int score)
-        {
-            var scoreText = _resultRoot.Find("Score").GetComponent<Text>();
-            float t = 0f;
-            const float seconds = 0.9f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _resultRoot.localScale = Vector3.one * Mathf.LerpUnclamped(0.7f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 2f)));
-                scoreText.text = Mathf.RoundToInt(score * UiFx.EaseOutCubic(k)).ToString();
-                yield return null;
-            }
-            scoreText.text = score.ToString();
-            _resultRoot.localScale = Vector3.one;
         }
 
         // ------------------------------------------------------------------ layout
@@ -860,125 +795,26 @@ namespace NeuroVida.Games.Calculo
             return w;
         }
 
-        private static void ApplySafeArea(RectTransform target)
-        {
-            Rect safeArea = Screen.safeArea;
-            Vector2 min = safeArea.position;
-            Vector2 max = safeArea.position + safeArea.size;
-            min.x /= Screen.width;
-            min.y /= Screen.height;
-            max.x /= Screen.width;
-            max.y /= Screen.height;
-            target.anchorMin = min;
-            target.anchorMax = max;
-            target.offsetMin = Vector2.zero;
-            target.offsetMax = Vector2.zero;
-        }
-
         // ------------------------------------------------------------------ helpers
 
         private void UpdateHudText()
         {
-            _subText.text = Endless
-                ? $"Puntos {_points} · Nivel {_effLevel}"
-                : $"Cuenta {_trialIndex + 1} de {CalculoContract.TotalTrials} · {_points} pts";
+            // Marcador común (GameHud): nivel + puntos que cuentan (Reto) o avance "3 de 12" (Precisión).
+            if (Endless)
+            {
+                _hud.SetLevel(_effLevel);
+                _hud.SetPoints(_points);
+            }
+            else
+            {
+                _hud.SetLevel(_effLevel);
+                _hud.SetInfo($"{_trialIndex + 1} de {CalculoContract.TotalTrials}");
+            }
         }
 
         private void SetStreak(int streak)
         {
-            _streakText.text = $"Racha {streak}";
-            _streakDisc.color = streak >= 3 ? AmberColor : new Color(1f, 1f, 1f, 0.30f);
-            if (streak > 0) StartCoroutine(PopRect(_streakPill, 1.12f, 0.22f));
-        }
-
-        private static IEnumerator PopIn(RectTransform rect, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                if (rect == null) yield break;
-                t += Time.unscaledDeltaTime;
-                rect.localScale = Vector3.one * Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(t / seconds)));
-                yield return null;
-            }
-            if (rect != null) rect.localScale = Vector3.one;
-        }
-
-        private static Vector2 LocalIn(RectTransform space, RectTransform target)
-        {
-            Vector3 local = space.InverseTransformPoint(target.position);
-            return new Vector2(local.x, local.y);
-        }
-
-        private IEnumerator Flash(Color color, float maxAlpha, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _flash.color = new Color(color.r, color.g, color.b, maxAlpha * (1f - k));
-                yield return null;
-            }
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-        }
-
-        private static IEnumerator PopRect(RectTransform rect, float peak, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                if (rect == null) yield break;
-                t += Time.unscaledDeltaTime;
-                rect.localScale = Vector3.one * Mathf.Lerp(peak, 1f, UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds)));
-                yield return null;
-            }
-            if (rect != null) rect.localScale = Vector3.one;
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
-
-        private static void BestFit(Text text, int minSize)
-        {
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = minSize;
-            text.resizeTextMaxSize = text.fontSize;
-        }
-
-        private static Text MakeText(Transform parent, string name, int fontPx, TextAnchor align, Color color, float shadowDistance, float shadowAlpha)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var rect = go.AddComponent<RectTransform>();
-            Stretch(rect);
-            var text = go.AddComponent<Text>();
-            text.font = UiFonts.Bold;
-            text.fontSize = fontPx;
-            text.alignment = align;
-            text.color = color;
-            text.raycastTarget = false;
-            if (shadowAlpha > 0f) UiFonts.AddSoftShadow(go, shadowDistance, shadowAlpha);
-            return text;
-        }
-
-        private void PlayTone(float hz, float seconds, float volume)
-        {
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            float key = Mathf.Round(hz * 10f) + seconds * 100000f;
-            if (!_toneCache.TryGetValue(key, out var clip))
-            {
-                clip = HarmonicTone.Build(hz, seconds, volume);
-                _toneCache[key] = clip;
-            }
-            _audioSource.PlayOneShot(clip);
+            _hud.SetStreak(streak);
         }
     }
 }

@@ -1,244 +1,124 @@
-# NeuroVida — memoria del proyecto (comprimida 23-sep)
+# NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva: 9 juegos, 6 dominios, dificultad adaptativa, maestría por
-dominio (XP), ranking ELO, desafíos semanales. Android nativo (Kotlin + Compose) +
-Unity como motor de juego (migración en curso). Repo GitHub:
-`https://github.com/ricardohernandezpsico-coder/APP-de-estimulacion-cognitiva`
+App de estimulación cognitiva para Android: 9 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
+racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
+Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
+Lumosity/Peak/Elevate en calidad y en motivación.
 
----
+El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de Ricardo) está en
+[`docs/historial-desarrollo.md`](docs/historial-desarrollo.md). Es historia: lo que manda es este archivo y el código.
 
-## Toolchain Android (Windows)
+## Cómo trabajamos (nube ↔ PC)
 
-- **Android CLI** en `C:\Users\RURAL7\AppData\AndroidCLI` (PATH).
-- **Android SDK** en `C:\Users\RURAL7\AppData\Local\Android\Sdk` (android-36, emulador `medium_phone`).
-- **JDK 21 Temurin** en `C:\Users\RURAL7\AppData\Local\Temurin21\jdk-21.0.12.1+1` — NO usar JBR de Android Studio (Java 25).
-- **Gradle 9.3.1 standalone** en `C:\Users\RURAL7\AppData\Local\Gradle\gradle-9.3.1` — solo para regenerar el wrapper si AI Studio lo borra (`gradle wrapper --gradle-version 9.3.1`).
-- `local.properties`: `sdk.dir=C\:\\Users\\RURAL7\\AppData\\Local\\Android\\Sdk` (gitignored).
-- `debug.keystore`: `keytool -genkey ... -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"` (gitignored).
-- **Compilar Android**: `export JAVA_HOME=".../Temurin21/jdk-21.0.12.1+1"` · `./gradlew.bat assembleDebug`.
-- **Unity Editor**: 6000.0.84f1 (LTS) + soporte Android. NDK/SDK/OpenJDK/Gradle en `PlaybackEngines/AndroidPlayer/`. Config-cache de Gradle **desactivado** (incompatible con el `build.gradle` que exporta Unity).
+- Las sesiones en la nube editan, verifican C# con `dotnet build tools/unity-compile-check -v q` y hacen push a la
+  rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
+  `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
+- En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
+  escena piloto, pruebas EditMode, smoke de los 9 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
+- `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
+  Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
+  (hoy `estilo 26-sep · i`). **Cambiarla con cada cambio visible de Unity.**
+- Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
+  UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
+  de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
+- Estilo con Ricardo: en español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
 
-## Estado de los 9 juegos (Android, al 23-sep)
+## Toolchain (PC Windows de Ricardo)
 
-| Juego | Motor DDA | FlowMVI | Migrado a Unity |
-|---|---|---|---|
-| Secuencia Lumínica | SequenceDDAEngine (3 ejes) | ✓ | ✓ FASE 1 CERRADA |
-| Parejas Ocultas | VisualWorkingMemoryDDA (2 ejes) | ✓ | ✓ FASE 2 EN CURSO |
-| Stroop (Tinta o Palabra) | AdaptiveDifficulty (DDA común) | no | ✓ migrado (24-sep, sin probar en dispositivo) |
-| Comparación Instantánea | AdaptiveDifficulty (DDA común) | no | ✓ migrado (24-sep, sin probar en dispositivo) |
-| Cambio de Chip | AdaptiveDifficulty (DDA común) | no | ✓ migrado (24-sep, sin probar en dispositivo) |
-| Cálculo Sereno | AdaptiveDifficulty (DDA común) | no | ✓ migrado (24-sep, sin probar en dispositivo) |
-| Detective de Series | AdaptiveDifficulty (DDA común) | no | ✓ migrado (24-sep, sin probar en dispositivo) |
-| Ruta del Tesoro | AdaptiveDifficulty (DDA común) | no | ✓ migrado (24-sep, sin probar en dispositivo) |
-| Anagramas | AdaptiveDifficulty (DDA común) | no | ✓ migrado (24-sep, sin probar en dispositivo) |
+- Android SDK `C:\Users\RURAL7\AppData\Local\Android\Sdk` (android-36; emulador `medium_phone` x86_64: sirve para
+  la UI Compose, no para los juegos Unity, que son arm64). Teléfono: Motorola (`DEVICE` en `verificar-todo.sh`).
+- JDK 21 Temurin `C:\Users\RURAL7\AppData\Local\Temurin21\jdk-21.0.12.1+1` (NO el JBR de Android Studio).
+- Unity 6000.0.84f1 LTS + soporte Android. Config-cache de Gradle desactivado (choca con el export de Unity).
+- `local.properties` y `debug.keystore` fuera de git. Compilar a mano: `./gradlew.bat assembleDebug`.
 
-Suite Kotlin: 51 tests unitarios en verde (`./gradlew.bat testDebugUnitTest`).
-Suite Unity: 108/108 en verde (EditMode: `SequenceDDAEngineTests` + `DdaUserProfileConfigTests` + `VisualWorkingMemoryDDATests` + `StroopContractTests` + `ComparisonContractTests` + `ChipContractTests` + `TreasureContractTests` + `SeriesContractTests` + `CalculoContractTests` + `AnagramContractTests` + `AdaptiveDifficultyTests`).
+## Arquitectura
 
-## Room DB (Android, v10 al 21-sep)
+**App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
+- `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
+- Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, camino de días en perspectiva) · Juegos
+  (`GamesLibraryScreen`, planetas) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
+  Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
+  9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
+- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `LeagueEvents`, `Percentile`; y
+  `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
+- Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
+  juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
+  onboarding van en **SharedPreferences** para no migrar: `league_events`, `achievements`, `profile_extra`
+  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity.
+  Al cambiar el esquema de Room: entidad → subir versión → `Migration(N, N+1)` en SQL → compilar → comitear `schemas/<N+1>.json`.
+- Diseño "noche + arcilla" (`ui/theme/Clay.kt`, `Type.kt` con Fredoka, `ui/components/CosmosBackground.kt`).
 
-`exportSchema = true`, esquemas en `app/schemas/`. Migraciones destructivas SOLO en debug.
-Al cambiar esquema: 1) entidad, 2) subir version, 3) `Migration(N, N+1)` en SQL, 4) compilar → comitear `schemas/<N+1>.json`.
+**Puente app ↔ Unity** (`bridge/`):
+- Lanzar: `UnityGameLauncher.buildGameIntent` → JSON de configuración en un extra del Intent (juego, nivel, modo,
+  edad, sonido, vibración, rating guardado, evaluación) + `EXTRA_LAUNCH_ID` por partida. Unity corre en el proceso
+  `:unity` y queda VIVO detrás de la app entre partidas (`REORDER_TO_FRONT`): solo la primera partida arranca en frío
+  (se tapa con `UnityLoadingOverlay` / `GameLoadingScreen`).
+- Volver: Unity → `NativeBridge.CloseGameScreen` → `NativeReceiver.returnToApp` trae `MainActivity` con el resultado
+  → `viewModel.onReturnedFromGame`. Respaldo: broadcast `ACTION_GAME_FINISHED` → `UnityResultReceiver`;
+  `UnityResultInbox` evita guardar dos veces. Pausa: Atrás en Unity abre menú de pausa; "Salir" vuelve con
+  `paused = true` y la partida se retoma con el mismo launch id.
+- Telemetría: `NativeReceiver` elige el adaptador por `game_id` (Secuencia, Parejas, y `StroopTelemetry` para los 7
+  del DDA común) y llama a `repository.recordGameResult` (devuelve `RecordOutcome`: nivel, ascensos, logros).
 
----
+**Unity** (`unity/NeuroVidaCore/Assets/Scripts/`, asmdefs `Contracts ← Bridge ← Games ← Bootstrap`):
+- `Bootstrap/`: `GameEntryPoint` (config, orientación vertical, Atrás), `LaunchIntentConfigReader` (lee el Intent,
+  arranca/reinicia partidas por launch id). `Bootstrap/Editor/`: exportar librería, escena piloto, smoke tests,
+  `SymbolPreviewExporter`.
+- `Contracts/`: `SequenceInitConfig` (config de entrada de TODOS los juegos), `SequenceTelemetry`, `CardsTelemetry`,
+  `StroopTelemetry` (salida común de los 7 del DDA común; lleva `end_rating` y `peak_level`).
+- `Games/AdaptiveDifficulty.cs`: DDA común (up-down ponderado de Kaernbach hacia 80% de aciertos, 85% en mayores;
+  ver `docs/DDA-comun.md`). Lo usan Tinta o Palabra (`Stroop/`), Comparación, Cambio de Chip, Ruta del Tesoro,
+  Series, Cálculo y Anagramas. **Secuencia** tiene su escalera fija de 16 niveles (`SequenceLevelConfig`, sube con 2
+  aciertos seguidos, 3 vidas) y **Parejas** su motor propio (`VisualWorkingMemoryDDA`, escalera de 10 tableros).
+- Cada juego: `XContract.cs` (reglas puras con pruebas) + `XGameController.cs` (UI construida por código). Los 7 del
+  DDA común heredan de `Shared/GameControllerBase` y usan `Shared/GameHud`.
+- `Games/Shared/`: sello visual y piezas comunes — `NeuroStyle` (paleta de la app, `ClayText`, `ClayFrame`),
+  `ClayRaster` (pincel SDF para todo el arte en arcilla), `WorldBackdrop` (cielo + un elemento propio por juego),
+  `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
+  `GameFeel` (sonidos sintetizados y vibración), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
+  (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `LivesHud`, `PressScale`, sprites varios.
 
-## Roadmap Unity
+## Reglas que no se rompen
 
-**Decisión**: Unity como motor de juego; Home/Progreso/Ajustes/Onboarding se quedan en Compose. Meta-progresión (Maestría/Rank/Retos) se queda en Kotlin/Room.
+- **Diseño**: "noche + arcilla": cielo nocturno animado; lo tocable es arcilla (borde tinta grueso `Ink` 0x1A1240,
+  sombra dura, colores Coral/Sun/Sky/Grape/Lime/Cream); tipografía Fredoka. Las pantallas principales NO usan
+  recuadros para informar (texto suelto, objetos, líneas finas); tarjetas solo en diálogos. Nada de emojis como
+  íconos; acierto/error nunca solo por color (forma o texto); contraste ≥ 4.5:1; respetar "quitar animaciones",
+  sonido y vibración apagados. Usar la skill `ui-ux-pro-max` (`.claude/skills/`) para decisiones de diseño.
+- **Juegos Unity**: medir el tiempo con `GameClock.Time/DeltaTime` (no `Time.unscaled*`), para que la pausa funcione.
+  El arte se hornea en sprites con `ClayRaster` (`Image.color` blanco); la sombra dura cae siempre hacia abajo.
+- **Textos**: español, cercanos, sin culpa ni promesas de salud ("no es un examen", nada de "fortalece neuronas").
+  Percentiles y comparaciones se rotulan "estimación provisional" (referencia media 0.45, sd 0.20: supuesto, no dato).
+- **Licencias**: mecánicas genéricas, pero nombres, arte, textos y sonidos propios (no copiar a Lumosity & co.).
+- **Decisiones de Ricardo**: servidores, cuentas, Firebase, suscripciones y requisitos de tiendas se dejan para el
+  FINAL. La app debe ser masiva, social y motivadora (ligas, logros, compartir), no clínica.
 
-- **Fase 1 — Secuencia Lumínica**: ✓ CERRADA (aprobada por Ricardo 23-sep)
-- **Fase 2 — Resto de juegos**: EN CURSO → Parejas Ocultas primero (Grupo A), luego los 7 restantes (Grupo B: formalizar DDA en Kotlin antes de portar)
-- **Fase 3** — Consolidación nativa + Play Store (juegos migrados estables)
-- **Fase 4/5/6** — iOS / Backend / WebGL (no prioritarias)
+## Cuando Android cierra la app durante un juego
 
----
+Con Unity al frente, Android puede cerrar el proceso de la app (pasa en el Motorola de Ricardo). Por eso lo que el
+flujo necesita vive en disco (`bridge/GameSessionStore`): la partida en curso con su launch id (la anota
+`onUnityLaunched`), la evaluación en curso, y el resultado que llegue por broadcast sin ViewModel vivo (queda
+pendiente y lo procesa el ViewModel al volver: `processPendingResult`, en `init` y en `onReturnedFromGame`).
+`onUnityResult(result, launchId)` busca la sesión viva o la guardada. Solo las partidas sin sesión (botones Debug)
+se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conservar actividades".
 
-## Unity — Arquitectura y archivos clave
+## Pruebas
 
-**Proyecto**: `NeuroVida/unity/NeuroVidaCore/`
-**Export Android**: `unity/AndroidExport/` (615MB, gitignored, regenerar con `NeuroVida > Exportar como librería Android` o `-executeMethod`)
-**Assembly order**: `NeuroVida.Contracts` ← `NeuroVida.Bridge` ← `NeuroVida.Games` ← `NeuroVida.Bootstrap`
+- Kotlin: 43 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Unity EditMode: 94 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 9 smoke tests.
+- Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
+  ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 
-### Archivos compartidos (`Assets/Scripts/Games/Shared/`)
-- `RoundedRectSprite.cs` — sprite redondeado 9-sliced generado por código (SDF de Quilez)
-- `RadialGlowSprite.cs` — blob radial suave (para distractores de fondo)
-- `DiscSprite.cs` — círculo antialiaseado
-- `RingSprite.cs` — anillo que se vacía en tiempo real (countdown timer)
-- `HarmonicTone.cs` — tono fundamental + 2 armónicos, envolvente ADSR, AudioReverbFilter "Room"
-- `DistractorDrone.cs` — zumbido grave (Re3) para distractor auditivo (niveles ≥12 de Secuencia)
-- `HeartSprite.cs` — corazón lleno (rojo brillante) / roto (gris con grieta), colores horneados
-- `LivesHud.cs` — fila de vidas en píldora translúcida, animación "salta y rompe" al perder
-- `CountdownScreen.cs` — 3-2-1 completo: degradé por paso, burbujas, anillo, onda, confeti en "¡Ya!"
-- `Toast.cs` — aviso flotante no bloqueante
-- `PhasePill.cs` — píldora de estado con punto de color y "pop" al cambiar
-- `UiFx.cs` — chispas, onda expansiva, sacudida, resplandor de fondo
-- `UiFonts.cs` — tipografía Outfit (`Assets/Resources/Fonts/Outfit-*.ttf`, OFL); sombra suave, sin combinar con `FontStyle.Bold`
+## Estado y pendientes (27-sep)
 
-### Contrato bridge (`Assets/Scripts/Contracts/`)
-- `SequenceInitConfig.cs` / `SequenceTelemetry.cs` — config entrada (Nativo→Unity) + telemetría salida. Reusada para Parejas en la config de entrada.
-- `CardsTelemetry.cs` — telemetría salida de Parejas (distinto a Secuencia: parejas/intentos, no rondas/span)
-- `game_id`: string ("secuencia" / "parejas"), coincide con `GameRegistry` en Kotlin
-
-### Lado Kotlin bridge (`app/src/main/java/com/example/bridge/`)
-- `NeuroVidaApplication.kt` — expone repositorio para que el bridge llegue a Room sin Context
-- `NativeReceiver.kt` — recibe telemetría vía Moshi, espía `game_id` y elige adapter (`SequenceTelemetryDto` vs `CardsTelemetryDto`), llama `repository.recordGameResult`
-- `UnityGameLauncher.kt` — lanza `AppUIGameActivity` con config como Intent extra (patrón estable)
-- Botones debug en Ajustes (`BuildConfig.DEBUG`): "Probar Secuencia" y "Probar Parejas" en Unity
-
-### Secuencia Lumínica — CERRADA (`Assets/Scripts/Games/Secuencia/`)
-- `SequenceDDAEngine.cs` — motor DDA 3 ejes (intacto, sin instanciarse ya en el juego actual)
-- `SequenceLevelConfig.cs` — tabla FIJA de 16 niveles (cols×rows, span, ISI, flags distractor). Niveles 17+ extrapolados.
-- `TileSprites.cs` — fichas 3D clay (bisel + brillo + labio + sombra horneada, escala 0.86), `TilePalette` 16 colores
-- `SequenceGameController.cs` — controlador principal (reglas finales aprobadas):
-  - 2 aciertos consecutivos → sube 1 nivel
-  - Cada error → −1 vida + +200ms ISI siguiente secuencia (nivel NO baja)
-  - Fin: 3 vidas perdidas
-  - Grilla puede ser rectangular (2×3, 3×4); `GridDimensionForSpan` mapea span 3-12 a tabla de 16 niveles
-  - HUD: insignia circular con nivel + nombre de fase (5 fases), vidas en píldora, puntos de progreso por paso de secuencia (verde/rojo en respuesta), `PhasePill` de estado
-  - Transiciones entre rondas: sobre el mismo tablero (sin pantalla completa), fichas salen/entran con rebote si cambia el tamaño de grilla
-  - `CanvasScaler` en `ScaleWithScreenSize` (1080×1920) + `SafeAreaContent` desde `Screen.safeArea`
-- `SymbolPreviewExporter.cs` (Editor) — vuelca PNG de preview a `unity/test-results/`. Correr tras cualquier cambio de arte procedural.
-
-### Parejas Ocultas — EN CURSO (`Assets/Scripts/Games/Parejas/`)
-- `VisualWorkingMemoryDDA.cs` — motor DDA 2 ejes (D(t) continuo: precisión + Z-score tiempo de reacción, pesos por perfil de edad). Puerto 1:1 desde Kotlin.
-- `CardsGameContract.cs` — escalera FIJA 10 niveles (2,3,4,5,6,7,8,9,10,12 parejas), sistema 3 fallas, `SymbolBank` por tiers de interferencia, `CountdownReason` (Start/Advance/Demoted/Retry)
-- `SymbolSprite.cs` — 14 íconos ilustrados × 4 variantes de color. Capas SDF: contorno + degradé + brillo especular + sombra. `Image.color` blanco (colores horneados).
-- `CardSprites.cs` — dorso violeta con rombos + destello; frente blanco (máx contraste); estado "pareja" verde menta; labio 3D
-- `CardsGameController.cs` — controlador principal (estado al 23-sep):
-  - Memorización (`previewExposureMs`) → flip automático → el jugador busca parejas de a 2 toques
-  - Pseudo-flip 2D (squash escala X 1→0→1, cara cambia en el punto medio)
-  - Sistema 3 fallas: 3 errores en tablero actual → 1ra baja nivel / 2da repite nivel bajado / 3ra termina
-  - Timeout Modo Reto: termina directo si `allowStrictTimeouts`=true (perfil adulto); si false, entra al sistema de 3 fallas
-  - Al completar tablero: va al siguiente nivel (hasta 10), animación escalonada out/in, `Toast` con nivel nuevo; pantalla completa 3-2-1 solo al inicio
-  - Distractores de fondo con opacidad variable (0.03–0.12 según D(t))
-  - Vidas: 3 corazones via `LivesHud`
-  - **Bugs ya corregidos**: símbolos eran emojis (invisible con fuente legacy) → reemplazados por `SymbolSprite`; parejas siempre contiguas (Id asignado antes de barajar) → ahora Id se asigna después; `SymbolBank.Select` no completaba mazo de 12 parejas → completa con otros tiers; casillas fantasma en grilla no cuadrada → fila incompleta en vez de celdas vacías
-
-**Pendiente Parejas**: rediseño visual (art + animaciones) NO probado en dispositivo todavía — solo batch + hojas de contacto PNG. Probar jugando antes de cerrar la Fase 2.
-
----
-
-## Pendientes generales
-
-- **Próximo**: probar Parejas Ocultas en dispositivo real (botón debug en Ajustes)
-- Firebase: definir qué partes usar (`firebase-ai` activo, resto comentado) → si se activa, agregar `google-services.json`
-- Build release firmado (keystore real) para Play Store
-- i18n: juegos hardcodeados en español — extender `Translations` cuando se necesite
-- DDA en vivo (`liveIntensity`): faltan Parejas/RutaTesoro/Stroop/Anagramas/Comparación en Android
-- Perfiles por edad: piloto activo en Secuencia + Parejas Unity; pendiente extender a los 7 restantes
-
-## Stroop ("Tinta o Palabra") migrado a Unity (24-sep)
-- Unity: `Games/Stroop/StroopContract.cs` (reglas puras, puerto 1:1 de `StroopGame.kt`, con tests) y `StroopGameController.cs` (UI por código: tarjeta oscura con palabra neón, cartel de regla que se voltea al cambiar, 5 botones de arcilla, racha con tono ascendente, puntos de avance, barra de tiempo en modo Reto, error que marca la respuesta correcta, panel de resultado). Nuevos compartidos: `Shared/PressScale.cs`, `Shared/ProgressDots.cs`. Contrato de salida `Contracts/StroopTelemetry.cs`.
-- Kotlin: `UnityGameLauncher.launchStroop`, `NativeReceiver.parseStroopResult`, botón "[Debug] Probar Tinta o Palabra en Unity" en Ajustes (nivel 4, modo Reto 60 s, para ver el cambio de regla). La ruta normal de la app sigue usando el Stroop Compose.
-- Smoke test: `HeadlessPlaymodeSmokeTest.RunStroop` / `RunParejas` (fuerzan el juego vía `EditorPlaytestBootstrap.GameIdOverride`); el pipeline los corre además de Secuencia.
-- Pendiente: probar en dispositivo; el diseño no se ha visto en pantalla real.
-- Stroop v2 (24-sep, feedback de Ricardo): **Reto = ronda de 60 s sin límite de ensayos** (estilo juegos de velocidad): barra de reloj global, puntos con bonus de racha, tic en los últimos 5 s, ritmo más rápido entre ensayos; puntaje 0-100 = `EndlessScore` (precisión × ritmo, 24 ensayos = ritmo completo). **Precisión (sin reloj) = 12 ensayos**. La regla se lee mejor: cartel con palabra clave enorme TINTA/PALABRA + línea explicativa, etiqueta sobre el borde de la tarjeta y borde de color (azul tinta / verde palabra). Tests: 47.
-- Criterio de licencias: mecánica genérica, pero textos/arte/sonidos propios; diferenciar más el juego al cerrarlo (no copiar nombres/gráficos/sonidos de Lumosity).
-
-## Comparación Instantánea migrada a Unity (24-sep)
-- `Games/Comparacion/ComparisonContract.cs` (reglas puras: puntos → números cercanos → producto vs número; sin empates; `PrecisionScore` con bono de velocidad, `EndlessScore` con 30 ensayos de ritmo completo) + `ComparisonGameController.cs` (duelo de dos tarjetas de arcilla que entran deslizándose; Reto = 60 s sin límite de ensayos con puntos/racha/bono "¡Rápido!"; Precisión = 12 ensayos; feedback con valores reales "12 > 9"). Reusa `StroopTelemetry` como contrato de salida y los componentes de `Shared/`.
-- Kotlin: `UnityGameLauncher.launchComparacion`; `NativeReceiver` parsea "stroop" y "comparacion" con `parseStroopResult`; botón "[Debug] Probar Comparación en Unity (Reto 60 s)" (nivel 2). Smoke: `HeadlessPlaymodeSmokeTest.RunComparacion`.
-- Pendiente: probar en dispositivo.
-
-## Cambio de Chip migrado a Unity + Comparación con niveles (24-sep)
-- **Comparación v2**: escalera de 7 niveles (puntos → números cercanos → suma/resta vs número → producto vs número → cuenta vs cuenta → cuentas de 3 términos). Dentro de la partida el nivel efectivo sube solo (`CorrectPerLevelUp`: 8 aciertos en Reto, 4 en Precisión) con aviso "Nivel N" y tono. Debug arranca en nivel 2.
-- **Cambio de Chip**: `Games/CambioChip/ChipContract.cs` (reglas puras: dirección/posición, `SwitchInterval`, `SurpriseChance`, puntajes) + `ChipGameController.cs` (arena oscura con ficha clara y flecha en uno de 4 bordes, cartel DIRECCIÓN/POSICIÓN que se voltea al cambiar la regla, etiqueta sobre la arena, cruz de 4 botones, Reto 60 s / Precisión 12) + `Shared/ArrowSprite.cs` (flecha procedural). Telemetría reusa `StroopTelemetry`. Kotlin: `launchCambioChip`, `NativeReceiver` ("stroop"/"comparacion"/"cambiochip" → `parseStroopResult`), botón debug (nivel 2, Reto). Smoke: `RunCambioChip`.
-- Deuda técnica: los controladores de Stroop, Comparación y Cambio de Chip duplican ~60% (HUD, barra de tiempo, panel de resultado, helpers de layout); candidato a extraer una base común antes de portar más juegos.
-- Pendiente: probar en dispositivo.
-- Ajustes de UI (24-sep, feedback de Ricardo): Comparación usa layout vertical (tarjetas apiladas a todo el ancho) desde el nivel 3 y el número va en una sola línea con tamaño calculado (`EmWidth`), sin best-fit (que partía "37 - 11" en dos renglones). Los avisos (`Toast`) de Stroop/Comparación/Cambio de Chip van arriba (`SetTopOffset(0)`) para no tapar el tablero. Cambio de Chip refuerza el cambio de regla con `PulseArenaBorder` (borde de la arena late) además del cartel que se voltea.
-
-## Ruta del Tesoro migrada a Unity (24-sep)
-- Rediseñada (no port 1:1): `Games/RutaTesoro/TreasureContract.cs` (escalera de 12 niveles, mapa 3x3 → 5x5 y 3 → 12 gemas; 3 vidas; 2 errores pierden la ruta y cuestan una vida; completar sube un nivel, perder baja uno; `ShowMs` de memorización crece con las gemas y baja con la maestría; Reto añade reloj de búsqueda `FindSeconds`; puntaje = rutas completas × 10 con tope 100 (`ClearedForFullScore`); `MaxRounds` 20) + `TreasureGameController.cs` (mapa de casillas de arena sobre fondo de mar, gemas que se iluminan una a una con nota musical, cruz de error, ola de casillas al completar/entrar, revela las gemas que faltaban al perder). Telemetría reusa `StroopTelemetry` (correct_trials = rutas completas). Kotlin: `launchRutaTesoro` + `parseStroopResult` compartido ("rutatesoro"); botón debug (nivel 1, con reloj). Smoke: `RunRutaTesoro`.
-- Pendiente: probar en dispositivo.
-
-## Detective de Series migrado + símbolos nuevos de Ruta del Tesoro (24-sep)
-- **Ruta del Tesoro**: las gemas doradas "parecían casino" (feedback de Ricardo) → ahora son tesoros de playa (`RutaTesoro/TreasureSprites.cs`: estrella de mar, concha, perla, 2 variantes de color, procedurales) y el color de revelado es celeste suave (`RevealColor`), sin dorado. `SymbolPreviewExporter` también vuelca `preview-treasures.png`.
-- **Detective de Series**: `Games/Series/SeriesContract.cs` (6 tipos de serie: suma, multiplicación, resta, diferencia creciente, cuadrados y cubos desde nivel 4; `StepLabels` calcula "+5"/"×3" entre términos; `LiveIntensity`; Reto = 120 s sin límite de series con `EndlessTargetTrials` 14; el nivel efectivo sube cada 4 aciertos (2 en Precisión); Precisión = 8 series) + `SeriesGameController.cs` (4 fichas que aparecen con tic ascendente + ficha "?" con aro que late; al responder se revela la regla entre las fichas y el "?" se vuelve la respuesta; opciones 2x2 de arcilla; fondo índigo con lupa ámbar). Telemetría reusa `StroopTelemetry`. Kotlin: `launchSeries` + parse compartido ("series"); botón debug (nivel 1, Reto). Smoke: `RunSeries`.
-- Quedan por migrar: Cálculo Sereno y Anagramas. Deuda técnica: extraer base común de los controladores de velocidad/razonamiento.
-- Pendiente: probar en dispositivo.
-- **Series v2 (24-sep, feedback: "monótono, faltan patrones más complejos")**: ahora hay 14 familias de patrones que se van sumando por nivel (L1 suma/multiplicación/resta; L2 + diferencia creciente y cuadrados; L3 + Fibonacci, alternar +a/-b, triangulares; L4 + cubos, ×m±c, cuadrados±c; L5+ + dos series intercaladas, alternar +a/×2, primos, con 60% de probabilidad de familias complejas). Las series tienen de 4 a 6 términos (`MaxTokens` 7, `ApplyRow` reparte las fichas) y `StepLabels` puede ser personalizado ("×2 +1", "+a/×2"). `PhasePill` achica o parte en dos renglones los textos largos. Botón debug de Series ahora arranca en nivel 4. Tests: 78.
-
-## Cálculo Sereno migrado a Unity (24-sep)
-- `Games/Calculo/CalculoContract.cs`: 18 familias de cuentas repartidas en 7 niveles (sumas/restas, tablas, divisiones exactas, porcentajes, paréntesis, número que falta, productos grandes, cuadrados, factor que falta, cuentas encadenadas, porcentajes difíciles); distractores de "error humano" (±1, ±10, cerca); `FallSeconds`, `PointsFor` (10 + 2 por racha), `Score` (Precisión = puntos×100/(total×15)), `EndlessScore` (Reto = precisión × ritmo, `EndlessTargetTrials` 20). Los tests resuelven cada enunciado de forma independiente para verificar la respuesta.
-- `CalculoGameController.cs`: la cuenta viaja en una burbuja que cae a un estanque; Reto = 90 s sin límite de cuentas (la burbuja cae `FallSeconds`, cambia de color calmo→aviso→peligro, tocar el agua cuenta como error); Precisión = 10 cuentas con la burbuja flotando quieta. El nivel efectivo sube cada 4 aciertos (3 en Precisión) con aviso arriba. Telemetría reusa `StroopTelemetry`. Kotlin: `launchCalculo` + parse compartido; botón debug (nivel 2, Reto 90 s). Smoke: `RunCalculo`.
-- Solo queda por migrar Anagramas. Deuda técnica: base común para los controladores.
-- Pendiente: probar en dispositivo.
-
-## Rampa de dificultad gradual en Series y Cálculo (24-sep)
-- Feedback de Ricardo: había series demasiado difíciles; la dificultad debe ir de lo más fácil a lo más complicado, ajustada al DDA.
-- Series y Cálculo tienen ahora una escala interna de 9 pasos (`MaxLevel` 9); el nivel elegido 1-5 se mapea a 1, 3, 5, 7, 9. Cada paso introduce familias nuevas (`Introduced[]`) y `PickFamily` saca ~65% de las recién introducidas y el resto de las conocidas. Los números (boost) crecen a la mitad de velocidad; los distractores empiezan lejos (`tightDelta = 12 - level - intensity/4`) y en Cálculo los errores típicos ±1/±10 solo desde el nivel 4. El nivel sube cada 5 aciertos (3 en Precisión) y baja un paso con 2 errores seguidos (`_levelCorrect` / `_wrongRun`). Botones debug de ambos arrancan en nivel 1. Tests: 86.
-- Pendiente (Ricardo: "lo vemos después"): unificar esto con un DDA común para todos los juegos.
-
-## Anagramas migrado + fix de Series — los 9 juegos ya están en Unity (24-sep)
-- **Anagramas**: `Games/Anagramas/AnagramContract.cs` (banco de ~95 palabras A-Z sin tildes con pista, 7 niveles por largo de 3 a 11 letras, `Pick` sin repetir, `Scramble`, `IsAccepted` acepta otros anagramas válidos del banco, `PointsFor` con -30 por usar la pista) + `AnagramGameController.cs` (fichas de arcilla que vuelan a las casillas con un resorte en `Update`, una ficha colocada se puede tocar para devolverla, validación automática al completar, al fallar las fichas se reordenan mostrando la solución, el cartel superior hace de pizarra para instrucción/pista, botones Borrar/Pista/Pasar; Reto 120 s sin límite de palabras, Precisión 6; sube cada 2 aciertos y baja un paso con 2 errores seguidos). Telemetría reusa `StroopTelemetry`. Kotlin: `launchAnagramas` + parse compartido; botón debug (nivel 1, Reto). Smoke: `RunAnagramas`.
-- **Series**: la explicación de la regla ahora va en el cartel superior (`SetBanner`) y no en la `PhasePill`, que tapaba las etiquetas de los pasos (+5, ×3).
-- Estado: los 9 juegos existen en Unity, pero solo se abren desde los botones "[Debug]" de Ajustes; la ruta normal de la app sigue usando las versiones Compose.
-- Pendiente: probar todo en dispositivo y ajustar; DDA común; base común para los controladores; conectar la app principal a los juegos Unity.
-
-## DDA común (24-sep)
-- Motor único de dificultad adaptativa `Games/AdaptiveDifficulty.cs` (up-down ponderado de Kaernbach: sube δ por acierto, baja δ·p/(1−p) por error → converge a la tasa de aciertos objetivo; 0.80 en adultos, 0.85 en mayores; modulación por Z-score del tiempo de reacción con el peso del perfil de edad; calibración inicial ×1.5, calentamiento un nivel abajo, red anti-frustración y anti-aburrimiento). Conectado a Stroop, Comparación, Cambio de Chip, Ruta del Tesoro (objetivo 0.70), Series, Cálculo y Anagramas. Secuencia y Parejas conservan sus motores.
-- Diseño, fundamentos y referencias: [`docs/DDA-comun.md`](docs/DDA-comun.md). Tests: `Games/Tests/AdaptiveDifficultyTests.cs` (asmdef propio `NeuroVida.Games.Common.Tests`, 13 pruebas con simulaciones de un usuario logístico).
-- La telemetría común (`StroopSessionMetrics`) ahora lleva `end_rating` (0..1) y `peak_level`; `NativeReceiver` los lee (opcionales) pero solo los registra en el log.
-- Se eliminó la lógica propia `_levelCorrect`/`_wrongRun` de cada controlador; `CorrectPerLevelUp` y `TreasureContract.NextStage` quedaron sin uso (candidatos a limpieza).
-- Pendiente: mostrar el rating en Progreso, calibrar con datos reales, puntaje normativo por percentil/edad, migrar o alinear Secuencia y Parejas.
-
-## Rating del DDA persistido entre sesiones (24-sep)
-- **Room v11** (`Migration(10, 11)`: `ALTER TABLE game_progress ADD COLUMN ddaRating REAL NOT NULL DEFAULT -1`; `GameProgressEntity.ddaRating`, -1 = sin dato; esquema `app/schemas/.../11.json`). Flow `repository.gameDdaRating`.
-- `GamePlayResult.endRating` (opcional) lo llena `NativeReceiver` desde `end_rating` de la telemetría; `recordGameResult` lo guarda con `blendDdaRating` (`data/DdaRating.kt`, 60% partida / 40% anterior; 4 pruebas en `DdaRatingTest`).
-- `UnityGameLauncher` envía `has_dda_rating` + `dda_rating` en la config; en Unity `AdaptiveDifficulty.StartRating(config, max)` continúa desde ese rating (si no hay, usa el nivel elegido + maestría). El nivel elegido en la app solo cuenta la primera vez.
-- Suites: Unity 108/108, Kotlin 55/55 (`./gradlew.bat testDebugUnitTest`).
-- Pendiente: instalar en el teléfono y verificar que la migración 10→11 no rompe la app (el teléfono estaba desconectado por USB al terminar); mostrar el rating en Progreso.
-
-## Menú principal conectado a Unity (24-sep)
-- Los 9 juegos del menú, la sesión diaria y "Jugar de nuevo" ahora abren la versión Unity (reemplazan a los juegos Compose). `MainActivity` monta `ui/UnityGameHost.kt` en vez de los 9 composables: lanza la Activity de Unity (`UnityGameLauncher.launchGame`, con nivel, modo Reto/Precisión, edad, sonido y rating guardado) y, al volver (ON_RESUME), llama a `viewModel.onUnityGameClosed()`.
-- Resultado: Unity → `NativeReceiver.onGameFinished` → `UnityResultBus` (SharedFlow) → `NeuroVidaViewModel.onUnityResult` (guarda una sola vez en Room y muestra la pantalla de resultado de la app con `didLevelUp`, sesión diaria, etc.). Si no hay suscriptor (ViewModel muerto) el receptor guarda directo. Partidas lanzadas desde los botones Debug de Ajustes (sin sesión activa) solo se guardan.
-- Unity: `Shared/ExitButton.cs` ("Continuar") aparece al terminar en los 9 controladores y llama a `NativeBridge.CloseGameScreen()` (Android: `runOnUiThread { finish() }`). Salir a mitad de partida: botón Atrás de Android (cierra la sesión sin guardar).
-- Código Compose de juegos (`app/src/main/java/com/example/games/*Game.kt`, `games/parejas/`, `games/secuencia/`) quedó SIN USO (candidato a borrar cuando Ricardo valide los juegos Unity en el teléfono; los tests Kotlin de contratos/DDA de esos paquetes siguen verdes).
-- Verificado: pipeline Unity completo (108 tests, 9 smoke tests, export) + `assembleDebug` + 55 tests Kotlin + instalación. NO verificado en pantalla: el teléfono estaba bloqueado (huella) al intentar la prueba con adb.
-- Pendiente: probar el flujo completo en el teléfono (menú → juego → Continuar → resultado → sesión diaria); botón de salir a mitad de partida dentro de Unity si Atrás no cierra bien; borrar el código Compose muerto.
-
-## Fix: la app se cerraba al tocar "Continuar" (24-sep)
-- Causa: al cerrarse la Activity de Unity, `UnityPlayer.destroy()` mata el proceso; compartiendo proceso con la app, se cerraba todo.
-- Solución: `AppUIGameActivity` corre en `android:process=":unity"` (manifest de `app`). `NativeReceiver.onGameFinished` (proceso Unity) ahora envía un broadcast explícito (`ACTION_GAME_FINISHED`) a `bridge/UnityResultReceiver` (proceso principal), que llama a `NativeReceiver.handleFinished` (parsea y publica al bus / guarda). Compila y Kotlin tests OK; falta confirmar en el teléfono.
-
-## Limpieza y Progreso nuevo (24-sep)
-- El código Compose de los 9 juegos (y `ParejasGameLayoutTest`) se movió a `NeuroVida/_respaldo_juegos_compose/` (fuera del código; recuperable, borrar la carpeta cuando se valide). Se conservan contratos y motores DDA de Kotlin con sus tests.
-- Progreso: `ui/components/ProgressInsights.kt` (nivel general en anillo, radar de 6 dominios con leyenda, barras por juego) alimentado por `viewModel.gameLevelsForProgress` (rating DDA común; Secuencia/Parejas aproximados con su nivel 1-5 hasta que usen el motor común). Estimación interna, no clínica. Texto en español fijo (falta i18n).
-
-## Posición en campana / percentil (fase A, 24-sep)
-- `data/Percentile.kt` (+ `PercentileTest`): percentil de un rating 0..1 frente a una distribución de referencia PROVISIONAL (media 0.45, sd 0.20: supuesto de diseño, no dato). `ProgressInsights.kt`: `BellCurveCard` (campana, punto "tú estás aquí", percentil, delta semanal de puntajes) y "P##" junto al nivel en la leyenda de dominios y en las barras por juego. Rotulado "estimación provisional".
-- Decisión de Ricardo: todo lo de servidores/conectores/requisitos de publicación (Play Store/App Store) se deja para el FINAL. Fase B (histograma agregado anónimo por juego y banda de edad que reemplace la referencia, con consentimiento y sin identificadores; muestra mínima ~30) queda documentada, no implementada. Enfoque actual: app, métricas y visual.
-
-## Ligas con escudos (24-sep) — primer paso del sistema de recompensa
-- Decisión de Ricardo: la app debe ser masiva, social y motivadora (no clínica): ligas/trofeos compartibles como motor; celebraciones, logros y compartir por historias vienen después. Servidores al final.
-- `RankTier` ahora tiene 7 ligas: Bronce, Plata, Oro, Platino, Esmeralda, Diamante, Maestro (250 trofeos cada una, 5 divisiones de 50; Maestro desde 1500 sin techo). `ui/components/LeagueShield.kt`: escudo metálico dibujado por código (paleta por liga, bisel, brillo, estrellas de división) + `GlobalLeagueCard`. Progreso muestra la liga global (promedio de trofeos de los 9 juegos) y un escudo por juego.
-- Pendiente: pantalla/animación de ascenso, celebraciones de fin de juego/sesión/hitos de racha, tarjeta compartible (hoja de compartir de Android), logros, y REMODELACIÓN COMPLETA de la interfaz (barra inferior, perfil separado de ajustes).
-
-## Remodelación de interfaz — fase 1: identidad y navegación (24-sep)
-- Sistema de diseño (skill ui-ux-pro-max: indigo + naranja energético, estilo arcilla): tema ÚNICO "cosmos" oscuro (`ui/theme/Theme.kt`, `background = Transparent`, superficies azul noche translúcidas); marca azul eléctrico `TealPrimary` (0x5B9BFF) + acento naranja `TealAccent` (0xFF8A3D) (se reutilizaron los nombres viejos de constantes). El modo claro/sistema quedó ignorado.
-- `ui/components/CosmosBackground.kt`: fondo animado (degradado noche, resplandores azul/naranja, 72 estrellas que titilan, 2 olas de agua). `ui/components/NeuroNavBar.kt`: barra flotante con Hoy · Juegos · [Entrenar naranja central = sesión diaria] · Liga (=PROGRESO) · Perfil (=AJUSTES). `MainActivity` usa ambos.
-- Principios acordados con Ricardo: no saturar (poca información por pantalla, jerarquía clara, revelar detalle bajo demanda), colores llamativos, distintivo. Pendiente: rediseñar cada pantalla (Hoy, Juegos, Liga, Perfil separado de Ajustes), celebraciones, compartir, logros; comprobar contraste de textos con colores fijos en pantallas antiguas.
-- No verificado en pantalla (teléfono bloqueado).
-
-## Remodelación — fase 2: "noche + arcilla" aplicada (24-sep)
-- Dirección elegida por Ricardo (boceto 24-sep): fondo nocturno animado (`CosmosBackground`, azul más vivo, resplandores celeste/coral) + arcilla en todo lo tocable (borde grueso tinta `Clay.Ink` 0x1A1240, sombra dura, colores Coral/Sun/Sky/Grape/Lime). Tipografía Fredoka (`res/font/fredoka.ttf`, variable, OFL; `ui/theme/Type.kt`). Componentes en `ui/theme/Clay.kt`: `ClayCard`, `ClayButton`, `ClayPill`, `ClayLightCard` (envuelve contenido antiguo en esquema claro para que se lea sobre crema).
-- Pantallas: Hoy (`HomeScreen.kt` reescrita: saludo+racha, sesión de hoy en coral, liga+nivel, semana, desafíos plegables, atajo a juegos), barra `NeuroNavBar` en arcilla con botón central amarillo, Juegos y Liga (Progreso) con tarjetas `ClayLightCard`, y NUEVA `ProfileScreen.kt` (pestaña Perfil = AppTab.AJUSTES): avatar, liga, racha/partidas/mejor y botón Ajustes que abre `SettingsScreen` con flecha y BackHandler.
-- Pendiente: llevar la MISMA paleta/tipografía a los 9 juegos de Unity (Fredoka + Ink/Coral/Sun/Sky/Grape/Lime, fondo noche); rediseñar Juegos/Liga más a fondo (hoy solo cambian de envoltorio); celebraciones, compartir, logros. Sin verificar en pantalla (teléfono bloqueado).
-
-## Hoy = camino estrellado con historial (24-sep)
-- Ricardo rechazó el look de "recuadros/plantilla" (se nota IA): las pantallas deben presentar la información de forma distinta, con objetos y texto suelto en vez de tarjetas. Elegida la propuesta C (camino) + historial deslizable + fondo estrellado con profundidad.
-- `ui/screens/HomeScreen.kt` (la versión de tarjetas quedó en `_respaldo_juegos_compose/HomeScreen_tarjetas.kt.txt`): `LazyColumn` de nodos día a día (pasado arriba, hoy grande con pulso y `btn_start_daily_session`, futuro con bandera de hito de racha 3/7/14/30/50/100/200/365). El trazo sinuoso (`fx(i)`) es continuo entre filas (curvas con tangente vertical en los bordes). Tocar un día con partidas abre detalle (juego + puntaje). Cabecera fija de una línea (liga · nivel · racha) y "Desafíos x/y" abre un diálogo. Botón "Volver a hoy" si hoy no está a la vista. Los días sin partidas se ven apagados, sin castigo visual.
-- Paralaje: `CosmosScroll.offset` (ui/components/CosmosBackground.kt) lo actualiza el camino; el fondo dibuja 110 estrellas en 3 capas de profundidad, nebulosas lejanas y estelas en las cercanas al deslizar rápido (se lee solo al dibujar, sin recomposición).
-- Pendiente: los ascensos de liga no se guardan como evento (no aparecen en el camino del pasado); usar estos hitos para logros/compartir; aplicar la misma idea "sin recuadros" a Juegos (mapa de islas), Liga (órbitas) y Perfil; llevar paleta y fondo a los juegos Unity. Sin verificar en pantalla (teléfono bloqueado).
-
-## Perspectiva "Star Wars" del camino + fondo más oscuro (24-sep)
-- El camino de Hoy se inclina hacia el horizonte (`graphicsLayer rotationX = PathTilt 32°`, origen abajo, `cameraDistance`, máscara de desvanecido arriba y abajo con `BlendMode.DstIn`). El fondo (`CosmosBackground`) es más oscuro (0x04061C→0x101A58) y sus 150 estrellas ya NO caen en vertical: nacen en un punto de fuga (50% ancho, 24% alto) y se abren hacia los bordes con perspectiva; al deslizar convergen/emergen de él y las cercanas dejan estelas radiales (efecto hiperespacio). La primera lectura de `CosmosScroll` solo fija la posición inicial (sin estela falsa).
-- Verificación visual: por primera vez se probó en el EMULADOR (`emulator -avd medium_phone -no-window -no-audio -gpu swiftshader_indirect`, esperar ~1 min tras el arranque, instalar y `adb -s emulator-5554 exec-out screencap -p`), porque el teléfono real queda bloqueado. Sirve para revisar la UI de Compose (no los juegos Unity, que son arm64).
-
-## Juegos, Liga y Perfil sin tarjetas (24-sep)
-- Regla de diseño: ninguna pantalla principal usa recuadros para informar; la información va como texto suelto, objetos (planetas, escudos, nodos) y secciones separadas por una línea fina (`SpaceSectionTitle`). La arcilla queda para lo que se toca (botones, planetas, nodos). Los diálogos modales (intro de juego, detalle de día, desafíos) sí usan tarjeta de arcilla.
-- Juegos (`GamesLibraryScreen.kt`): mapa de "planetas" (esfera de arcilla del color del dominio, resplandor, sombra dura, emoji, nombre y "Nivel N · Liga") en filas de 3 con la columna central desplazada; dominios como texto con punto de color que filtran. Tocar un planeta abre el diálogo de intro existente (nivel y modo).
-- Liga (`ProgressScreen.kt`, tab PROGRESO): `LeagueHero` (escudo 150dp con brillo, liga, trofeos, barra fina a la siguiente), campana, radar sin tarjeta, `GameLevelsList` (escudo de la liga de cada juego + barra de nivel + percentil), y "Ver más detalles" plegable (maestría por dominio, tendencia, historial). Componentes en `ui/components/SpaceSections.kt`.
-- Perfil (`ProfileScreen.kt`, tab AJUSTES): escudo grande con avatar, nombre, tres cifras (racha/partidas/mejor) como texto, "Tus dominios" y botón Ajustes.
-- `MainActivity`: el contenido de las pestañas se desvanece arriba y abajo (máscara `DstIn`) en vez de cortarse en seco.
-- Verificado en el emulador (capturas de Juegos, Liga, Perfil, Hoy). Pendiente: logros, tarjeta compartible, celebraciones, guardar ascensos de liga, pantalla de resultado y sesión con el mismo estilo, y llevar paleta/fondo a los juegos Unity.
+- 27-sep: prueba manual completa (`docs/prueba-manual.md`, incluida la sección H con "No conservar actividades")
+  aprobada por Ricardo en su teléfono. Es el punto base `v0.1-base`.
+- `ActiveGameSession.sessionToken` + `key(session.sessionToken)` en `MainActivity`: cada sesión de juego es su propio
+  grupo de composición (si no, `UnityGameHost` heredaba el `launched` guardado de la anterior al recrearse la pantalla).
+- Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
+  re-chequeo mensual del punto de partida; tutorial de primera vez por juego; marca ✓/✗ de arcilla sobre la
+  respuesta; alinear Secuencia y Parejas con el DDA común; calibrar el DDA y la referencia de percentiles con datos.
+- Para el final: i18n completo (hoy `ui/i18n/AppStrings` cubre solo algunos textos); `applicationId` propio
+  (cambiarlo = app nueva); `metadata.json` de AI Studio; firma release y Play Store; servidores.

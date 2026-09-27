@@ -40,3 +40,13 @@ unity/AndroidExport/
 # Logs de verificación de esta sesión (batch mode de Unity, resultados de tests) --
 # reproducibles, no hace falta versionarlos.
 unity/test-results/
+
+# Cache de Python de las skills
+__pycache__/
+*.pyc
+
+# Verificación de compilación de Unity sin Unity (tools/unity-compile-check)
+tools/unity-compile-check/bin/
+tools/unity-compile-check/obj/
+tools/art-preview/bin/
+tools/art-preview/obj/

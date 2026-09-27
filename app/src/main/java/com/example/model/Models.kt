@@ -53,7 +53,7 @@ object GameRegistry {
       title = "Parejas Ocultas",
       domain = DomainType.MEMORIA,
       subtitle = "Memoria de trabajo visual",
-      instruction = "Memoriza la posición de las figuras y encuentra todas las parejas idénticas en el menor número de intentos.",
+      instruction = "Memoriza dónde está cada figura antes de que las cartas se den vuelta y encuentra todas las parejas.",
       iconEmoji = "🃏"
     ),
     GameDefinition(
@@ -61,7 +61,7 @@ object GameRegistry {
       title = "Secuencia Lumínica",
       domain = DomainType.MEMORIA,
       subtitle = "Memoria secuencial a corto plazo",
-      instruction = "Observa con atención la secuencia de luces de colores y reprodúcela en el orden exacto.",
+      instruction = "Mira el orden en que se encienden las fichas y repítelo tocándolas en el mismo orden.",
       iconEmoji = "💡"
     ),
     GameDefinition(
@@ -69,15 +69,15 @@ object GameRegistry {
       title = "Ruta del Tesoro",
       domain = DomainType.MEMORIA,
       subtitle = "Memoria visoespacial",
-      instruction = "Memoriza dónde aparecen los tesoros en la cuadrícula antes de que se oculten y recupéralos todos.",
+      instruction = "Memoriza dónde aparecen los tesoros en el mapa y encuéntralos todos cuando se escondan.",
       iconEmoji = "💎"
     ),
     GameDefinition(
       id = "stroop",
-      title = "Color o Palabra",
+      title = "Tinta o Palabra",
       domain = DomainType.ATENCION,
       subtitle = "Efecto Stroop & Inhibición",
-      instruction = "Elige el COLOR con el que está escrita la palabra, ignorando lo que dice el texto.",
+      instruction = "Responde según la regla del cartel: el color de la TINTA o lo que dice la PALABRA. Atento: la regla cambia.",
       iconEmoji = "🎨"
     ),
     GameDefinition(
@@ -85,7 +85,7 @@ object GameRegistry {
       title = "Cambio de Chip",
       domain = DomainType.ATENCION,
       subtitle = "Flexibilidad cognitiva",
-      instruction = "Atiende a la regla activa en cada momento: responde según hacia dónde apunta la flecha o según en qué cuadrante está situada.",
+      instruction = "Sigue la regla del cartel: responde hacia dónde apunta la nave (DIRECCIÓN) o en qué borde está (POSICIÓN).",
       iconEmoji = "🔄"
     ),
     GameDefinition(
@@ -93,7 +93,7 @@ object GameRegistry {
       title = "Detective de Series",
       domain = DomainType.RAZONAMIENTO,
       subtitle = "Lógica secuencial",
-      instruction = "Descifra la regla matemática o geométrica que gobierna la serie y selecciona la opción que continúa la secuencia.",
+      instruction = "Descubre la regla que siguen los números y elige el que continúa la serie.",
       iconEmoji = "🔍"
     ),
     GameDefinition(
@@ -101,7 +101,7 @@ object GameRegistry {
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
       subtitle = "Léxico y procesamiento fonológico",
-      instruction = "Descubre la palabra escondida reordenando las letras desordenadas. ¡Puedes pedir una pista si la necesitas!",
+      instruction = "Ordena las letras para formar la palabra escondida. Si te trabas, puedes pedir una pista.",
       iconEmoji = "🔤"
     ),
     GameDefinition(
@@ -109,7 +109,7 @@ object GameRegistry {
       title = "Cálculo Sereno",
       domain = DomainType.CALCULO,
       subtitle = "Aritmética mental",
-      instruction = "Resuelve las operaciones matemáticas con precisión y mantén tu racha de aciertos.",
+      instruction = "Resuelve cada cuenta y toca el resultado. En modo Reto, antes de que la burbuja llegue al agua.",
       iconEmoji = "🧮"
     ),
     GameDefinition(
@@ -117,7 +117,7 @@ object GameRegistry {
       title = "Comparación Instantánea",
       domain = DomainType.VELOCIDAD,
       subtitle = "Velocidad perceptiva",
-      instruction = "Determina al instante cuál de los dos paneles contiene mayor cantidad o un valor numérico superior.",
+      instruction = "Elige la tarjeta que vale más: la de más puntos, el número mayor o la cuenta con mayor resultado.",
       iconEmoji = "⚡"
     )
   )
@@ -161,14 +161,8 @@ enum class ThemeMode(val label: String) {
 }
 
 /**
- * Piloto de perfiles por edad (20-sep): Ricardo compartió material sobre calibrar el DDA
- * (y la accesibilidad de la UI) según el perfil del usuario en vez de un solo valor
- * global para todos -- ej. el área táctil/espaciado recomendado para adultos mayores es
- * literalmente más grande que lo que un adulto joven encuentra cómodo, no hay un
- * "tamaño correcto" único. Arranca como piloto en Parejas Ocultas
- * (`com.example.games.parejas`, ver `LocalAgeBand`), no en los 9 juegos todavía.
- * `null` en [UserSettings.ageBand] significa "todavía no se preguntó" -- gatilla la
- * pantalla de onboarding una sola vez.
+ * Rango de edad: calibra el DDA de los juegos (Unity lo recibe como `age_band`) y la comparación del punto de
+ * partida. `null` en [UserSettings.ageBand] significa "todavía no se preguntó": abre el onboarding.
  */
 enum class AgeBand(val label: String) {
   UNDER_18("Menos de 18"),
@@ -272,6 +266,38 @@ enum class RankTier(val tierName: String, val minRating: Int, val icon: String, 
   }
 }
 
+/**
+ * Lo que dejó guardar una partida ([com.example.data.NeuroVidaRepository.recordGameResult]): si subió de nivel y
+ * los trofeos antes/después, del juego y de la liga general (promedio de los 9 juegos, sin jugar = 0).
+ */
+data class RecordOutcome(
+  val didLevelUp: Boolean,
+  val gameRatingBefore: Int,
+  val gameRatingAfter: Int,
+  val globalBefore: Int,
+  val globalAfter: Int,
+  /** Logros conseguidos con esta partida (ids de [com.example.data.Achievements]), en orden de catálogo. */
+  val newAchievements: List<String> = emptyList()
+) {
+  /** Ascenso de liga para celebrar: primero la liga general (más rara y más importante), si no la del juego. */
+  fun promotion(gameId: String): LeaguePromotion? = globalPromotion() ?: gamePromotion(gameId)
+
+  fun globalPromotion(): LeaguePromotion? {
+    val before = RankTier.fromRating(globalBefore)
+    val after = RankTier.fromRating(globalAfter)
+    return if (after.ordinal > before.ordinal) LeaguePromotion(after, before, gameId = null, rating = globalAfter) else null
+  }
+
+  fun gamePromotion(gameId: String): LeaguePromotion? {
+    val before = RankTier.fromRating(gameRatingBefore)
+    val after = RankTier.fromRating(gameRatingAfter)
+    return if (after.ordinal > before.ordinal) LeaguePromotion(after, before, gameId = gameId, rating = gameRatingAfter) else null
+  }
+}
+
+/** Subida a una liga nueva: [gameId] = liga de ese juego; null = liga general. */
+data class LeaguePromotion(val tier: RankTier, val previous: RankTier, val gameId: String?, val rating: Int)
+
 data class GameRankInfo(
   val gameId: String,
   val rating: Int
@@ -286,13 +312,11 @@ data class GameRankInfo(
     else (5 - (intoTier / RankTier.DIVISION_SIZE)).coerceIn(1, 5)
   val label: String get() =
     if (tier == RankTier.MAESTRO) "${tier.tierName} · $rating" else "${tier.tierName} $division"
-  val progressInDivision: Float get() =
-    (intoTier % RankTier.DIVISION_SIZE) / RankTier.DIVISION_SIZE.toFloat()
 }
 
 data class UserSettings(
   val id: Long = 1L,
-  val name: String = "Ana",
+  val name: String = "",
   val avatar: String = "🧠",
   val isActive: Boolean = true,
   val weeklyGoal: Int = 4, // days per week

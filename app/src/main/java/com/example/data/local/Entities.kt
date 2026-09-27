@@ -106,7 +106,7 @@ data class ClaimedWeeklyChallengeEntity(
 @Entity(tableName = "user_profile")
 data class UserProfileEntity(
   @PrimaryKey(autoGenerate = true) val id: Long = 0L,
-  val name: String = "Ana",
+  val name: String = "",
   val avatar: String = "🧠",
   val isActive: Boolean = true,
   val weeklyGoal: Int = 4,

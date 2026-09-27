@@ -6,6 +6,7 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
+using static NeuroVida.Games.Shared.UiKit;
 
 namespace NeuroVida.Games.Comparacion
 {
@@ -22,7 +23,7 @@ namespace NeuroVida.Games.Comparacion
     /// La telemetría de salida reusa <see cref="StroopTelemetry"/> (mismos campos: aciertos,
     /// ensayos, puntaje, tiempo medio, nivel, modo).
     /// </summary>
-    public class ComparisonGameController : MonoBehaviour
+    public class ComparisonGameController : GameControllerBase
     {
         public const string GameId = ComparisonContract.GameId;
 
@@ -32,7 +33,6 @@ namespace NeuroVida.Games.Comparacion
         private const int TimeUp = -3;
         private const float ShapeScale = 0.86f; // la ficha ocupa 86% del sprite (el resto es sombra)
 
-        private static readonly Color BackgroundColor = new Color(0x0F / 255f, 0x17 / 255f, 0x2A / 255f);
         private static readonly Color AccentColor = new Color(0xF5 / 255f, 0x9E / 255f, 0x0B / 255f);
         private static readonly Color GoodColor = new Color(0x22 / 255f, 0xC5 / 255f, 0x5E / 255f);
         private static readonly Color BadColor = new Color(0xEF / 255f, 0x44 / 255f, 0x44 / 255f);
@@ -42,10 +42,7 @@ namespace NeuroVida.Games.Comparacion
             new Color(0xA8 / 255f, 0x55 / 255f, 0xF7 / 255f),
         };
 
-        private SequenceInitConfig _config;
         private System.Random _rng;
-        private AudioSource _audioSource;
-        private readonly Dictionary<float, AudioClip> _toneCache = new Dictionary<float, AudioClip>();
 
         private int _trialIndex, _correct, _streak, _bestStreak, _totalAnswered, _points, _speedHits;
         private long _responseMsSum;
@@ -66,13 +63,12 @@ namespace NeuroVida.Games.Comparacion
         private bool Endless => _config != null && _config.config.timed;
 
         // UI
-        private RectTransform _safe, _streakPill, _timerBg, _timerFill, _fxRect, _resultRoot, _bannerRect;
-        private Text _titleText, _subText, _streakText;
-        private Image _streakDisc, _flash;
-        private ProgressDots _dots;
+        private RectTransform _safe, _timerBg, _timerFill, _fxRect, _bannerRect;
+                        private ProgressDots _dots;
         private PhasePill _pill;
         private Toast _toast;
         private ExitButton _exit;
+        private GameHud _hud;
         private CountdownScreen _countdown;
 
         private sealed class CardView
@@ -88,13 +84,6 @@ namespace NeuroVida.Games.Comparacion
         }
 
         private readonly CardView[] _cards = new CardView[2];
-
-        private void Awake()
-        {
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            BuildUi();
-            gameObject.SetActive(false);
-        }
 
         // ------------------------------------------------------------------ sesión
 
@@ -130,20 +119,20 @@ namespace NeuroVida.Games.Comparacion
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Comparación", "Prepárate", () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("Comparación", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
 
-            _roundEndsAt = Time.unscaledTime + ComparisonContract.EndlessSeconds;
+            _roundEndsAt = GameClock.Time + ComparisonContract.EndlessSeconds;
             _trialIndex = 0;
-            while (Endless ? Time.unscaledTime < _roundEndsAt : _trialIndex < ComparisonContract.TotalTrials)
+            while (Endless ? GameClock.Time < _roundEndsAt : _trialIndex < ComparisonContract.TotalTrials)
             {
                 yield return StartCoroutine(PresentTrial());
 
-                float startedAt = Time.unscaledTime;
+                float startedAt = GameClock.Time;
                 while (_answerSide == NoAnswer)
                 {
                     if (Endless && UpdateRoundClock()) _answerSide = TimeUp;
@@ -190,7 +179,7 @@ namespace NeuroVida.Games.Comparacion
             const float seconds = 0.22f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
                 float e = UiFx.EaseOutBack(k);
                 for (int i = 0; i < 2; i++)
@@ -284,7 +273,7 @@ namespace NeuroVida.Games.Comparacion
                 SetStreak(_streak);
                 UpdateHudText();
                 _pill.Set(fast ? $"¡Rápido! {max} > {min}" : $"¡Correcto! {max} > {min}", GoodColor);
-                PlayTone(523.25f * Mathf.Pow(2f, Mathf.Min(_streak - 1, 7) * 2f / 12f), 0.3f, 0.2f);
+                GameFeel.Correct(_streak);
                 _cards[chosen].Image.color = GoodColor;
                 StartCoroutine(Flash(GoodColor, 0.10f, 0.28f));
                 StartCoroutine(UiFx.SparkBurst(_fxRect, LocalIn(_fxRect, _cards[chosen].Rect), Color.white, 16, 280f, 44f, 0.6f));
@@ -293,7 +282,7 @@ namespace NeuroVida.Games.Comparacion
                 {
                     UpdateHudText();
                     _toast.Show($"Nivel {_effLevel}", LevelHint(_effLevel), AccentColor, 1.1f);
-                    PlayTone(1046.5f, 0.35f, 0.2f);
+                    GameFeel.LevelUp();
                 }
                 else if (_streak == 4 || _streak == 8 || _streak == 12 || _streak == 20)
                 {
@@ -312,7 +301,7 @@ namespace NeuroVida.Games.Comparacion
                     _toast.Show("Con calma", "Ajustamos la dificultad", AccentColor, 1.0f);
                 }
                 _pill.Set($"Era {max} > {min}", AccentColor);
-                PlayTone(196f, 0.32f, 0.2f);
+                GameFeel.Wrong();
                 _cards[chosen].Image.color = BadColor;
                 StartCoroutine(Flash(BadColor, 0.14f, 0.32f));
                 StartCoroutine(UiFx.Shake(24f, 0.4f, _cards[chosen].Rect));
@@ -340,7 +329,7 @@ namespace NeuroVida.Games.Comparacion
             float t = 0f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
                 for (int i = 0; i < 2; i++)
                 {
@@ -359,7 +348,7 @@ namespace NeuroVida.Games.Comparacion
             const float seconds = 0.15f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float a = 1f - Mathf.Clamp01(t / seconds);
                 foreach (var c in _cards) c.Group.alpha = Mathf.Min(c.Group.alpha, a);
                 yield return null;
@@ -369,13 +358,13 @@ namespace NeuroVida.Games.Comparacion
 
         private bool UpdateRoundClock()
         {
-            float left = _roundEndsAt - Time.unscaledTime;
+            float left = _roundEndsAt - GameClock.Time;
             SetTimerFraction(Mathf.Clamp01(left / ComparisonContract.EndlessSeconds));
             int whole = Mathf.CeilToInt(left);
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
                 _lastTickSecond = whole;
-                PlayTone(880f, 0.08f, 0.10f);
+                GameFeel.Tick();
             }
             return left <= 0f;
         }
@@ -409,7 +398,6 @@ namespace NeuroVida.Games.Comparacion
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
-            PlayTone(659.25f, 0.4f, 0.22f);
             yield break;
         }
 
@@ -417,13 +405,13 @@ namespace NeuroVida.Games.Comparacion
         {
             if (!_acceptInput || _ended) return;
             _acceptInput = false;
-            _answerAt = Time.unscaledTime;
+            _answerAt = GameClock.Time;
             _answerSide = side;
         }
 
         // ------------------------------------------------------------------ construcción de UI
 
-        private void BuildUi()
+        protected override void BuildUi()
         {
             if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
             {
@@ -447,10 +435,8 @@ namespace NeuroVida.Games.Comparacion
             bg.transform.SetParent(canvasGo.transform, false);
             var bgRect = bg.AddComponent<RectTransform>();
             Stretch(bgRect);
-            bg.AddComponent<Image>().color = BackgroundColor;
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.12f, 0.88f), 1500f, new Color(0.96f, 0.62f, 0.04f, 0.16f));
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.92f, 0.10f), 1400f, new Color(0.23f, 0.51f, 0.96f, 0.22f));
-            bg.AddComponent<CountdownAmbient>().Build(bgRect, 8);
+            // Mundo "PlanetDuel": cielo nocturno de la app + su elemento propio (ver Shared/WorldBackdrop.cs).
+            WorldBackdrop.Build(bgRect, GameWorld.PlanetDuel);
 
             var safeGo = new GameObject("SafeAreaContent");
             safeGo.transform.SetParent(canvasGo.transform, false);
@@ -488,63 +474,7 @@ namespace NeuroVida.Games.Comparacion
 
         private void BuildHud()
         {
-            var hudGo = new GameObject("Hud");
-            hudGo.transform.SetParent(_safe, false);
-            var hudRect = hudGo.AddComponent<RectTransform>();
-            hudRect.anchorMin = new Vector2(0f, 1f);
-            hudRect.anchorMax = new Vector2(1f, 1f);
-            hudRect.pivot = new Vector2(0.5f, 1f);
-            hudRect.sizeDelta = new Vector2(0f, 190f);
-            hudRect.anchoredPosition = Vector2.zero;
-
-            const float pillW = 300f, pillH = 100f;
-            var pillGo = new GameObject("StreakPill");
-            pillGo.transform.SetParent(hudGo.transform, false);
-            _streakPill = pillGo.AddComponent<RectTransform>();
-            _streakPill.anchorMin = _streakPill.anchorMax = _streakPill.pivot = new Vector2(1f, 1f);
-            _streakPill.sizeDelta = new Vector2(pillW, pillH);
-            _streakPill.anchoredPosition = new Vector2(-MarginU, -30f);
-            var pillImg = pillGo.AddComponent<Image>();
-            pillImg.sprite = RoundedRectSprite.Get(64);
-            pillImg.type = Image.Type.Sliced;
-            pillImg.color = new Color(0f, 0f, 0f, 0.30f);
-            pillImg.raycastTarget = false;
-
-            var discGo = new GameObject("Disc");
-            discGo.transform.SetParent(pillGo.transform, false);
-            var discRect = discGo.AddComponent<RectTransform>();
-            discRect.anchorMin = discRect.anchorMax = new Vector2(0f, 0.5f);
-            discRect.pivot = new Vector2(0.5f, 0.5f);
-            discRect.sizeDelta = new Vector2(52f, 52f);
-            discRect.anchoredPosition = new Vector2(50f, 0f);
-            _streakDisc = discGo.AddComponent<Image>();
-            _streakDisc.sprite = DiscSprite.Get();
-            _streakDisc.raycastTarget = false;
-
-            _streakText = MakeText(pillGo.transform, "StreakText", 58, TextAnchor.MiddleLeft, Color.white, 2f, 0.3f);
-            var sr = _streakText.rectTransform;
-            sr.offsetMin = new Vector2(96f, 0f);
-            sr.offsetMax = new Vector2(-24f, 0f);
-            BestFit(_streakText, 36);
-
-            _titleText = MakeText(hudGo.transform, "Title", 78, TextAnchor.UpperLeft, Color.white, 3f, 0.45f);
-            _subText = MakeText(hudGo.transform, "Sub", 48, TextAnchor.UpperLeft, new Color(1f, 1f, 1f, 0.72f), 2f, 0.35f);
-            float right = MarginU + pillW + 20f;
-            PlaceTopText(_titleText, MarginU, right, -22f, 100f);
-            PlaceTopText(_subText, MarginU, right, -112f, 70f);
-            BestFit(_titleText, 46);
-            BestFit(_subText, 30);
-            _titleText.text = "Comparación";
-        }
-
-        private static void PlaceTopText(Text text, float left, float right, float topY, float height)
-        {
-            var r = text.rectTransform;
-            r.anchorMin = new Vector2(0f, 1f);
-            r.anchorMax = new Vector2(1f, 1f);
-            r.pivot = new Vector2(0f, 1f);
-            r.offsetMin = new Vector2(left, topY - height);
-            r.offsetMax = new Vector2(-right, topY);
+            _hud = new GameHud(_safe, "Comparación", MarginU, this);
         }
 
         private void BuildBanner()
@@ -629,13 +559,15 @@ namespace NeuroVida.Games.Comparacion
                 r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
                 r.pivot = new Vector2(0.5f, 0.5f);
                 var img = d.AddComponent<Image>();
-                img.sprite = DiscSprite.Get();
-                img.color = new Color(1f, 1f, 1f, 0.96f);
+                img.sprite = CountStarSprite.Get(); // estrellas de arcilla para contar
+                img.color = Color.white;
+                img.preserveAspect = true;
                 img.raycastTarget = false;
                 view.Dots.Add(img);
             }
 
-            view.Number = MakeText(go.transform, "Number", 230, TextAnchor.MiddleCenter, Color.white, 5f, 0.35f);
+            view.Number = MakeText(go.transform, "Number", 230, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
+            NeuroStyle.ClayText(view.Number, 5f, 9f); // número "de arcilla": contorno tinta y sombra dura
             var nr = view.Number.rectTransform;
             nr.anchorMin = new Vector2(0.10f, 0.20f);
             nr.anchorMax = new Vector2(0.90f, 0.86f);
@@ -645,7 +577,8 @@ namespace NeuroVida.Games.Comparacion
             view.Number.horizontalOverflow = HorizontalWrapMode.Overflow;
             view.Number.verticalOverflow = VerticalWrapMode.Overflow;
 
-            view.Value = MakeText(go.transform, "Value", 64, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.92f), 2f, 0.35f);
+            view.Value = MakeText(go.transform, "Value", 64, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
+            NeuroStyle.ClayText(view.Value, 3f, 5f);
             var vr = view.Value.rectTransform;
             vr.anchorMin = new Vector2(0.10f, 0.08f);
             vr.anchorMax = new Vector2(0.90f, 0.22f);
@@ -678,17 +611,6 @@ namespace NeuroVida.Games.Comparacion
             go.SetActive(false);
         }
 
-        private void AddResultText(string name, int size, Vector2 pos, Color color)
-        {
-            var t = MakeText(_resultRoot, name, size, TextAnchor.MiddleCenter, color, 3f, 0.4f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(820f, size * 1.4f);
-            r.anchoredPosition = pos;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-        }
-
         private void ShowResult(int score, int avgMs, int total)
         {
             _exit.Show();
@@ -709,23 +631,6 @@ namespace NeuroVida.Games.Comparacion
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
             StartCoroutine(UiFx.SparkBurst(_fxRect, Vector2.zero, AccentColor, 24, 420f, 56f, 0.9f));
-        }
-
-        private IEnumerator AnimateResult(int score)
-        {
-            var scoreText = _resultRoot.Find("Score").GetComponent<Text>();
-            float t = 0f;
-            const float seconds = 0.9f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _resultRoot.localScale = Vector3.one * Mathf.LerpUnclamped(0.7f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 2f)));
-                scoreText.text = Mathf.RoundToInt(score * UiFx.EaseOutCubic(k)).ToString();
-                yield return null;
-            }
-            scoreText.text = score.ToString();
-            _resultRoot.localScale = Vector3.one;
         }
 
         // ------------------------------------------------------------------ layout
@@ -811,112 +716,26 @@ namespace NeuroVida.Games.Comparacion
             _pill.SetPosition(new Vector2(0f, sh / 2f - pillCenterFromTop));
         }
 
-        private static void ApplySafeArea(RectTransform target)
-        {
-            Rect safeArea = Screen.safeArea;
-            Vector2 min = safeArea.position;
-            Vector2 max = safeArea.position + safeArea.size;
-            min.x /= Screen.width;
-            min.y /= Screen.height;
-            max.x /= Screen.width;
-            max.y /= Screen.height;
-            target.anchorMin = min;
-            target.anchorMax = max;
-            target.offsetMin = Vector2.zero;
-            target.offsetMax = Vector2.zero;
-        }
-
         // ------------------------------------------------------------------ helpers
 
         private void UpdateHudText()
         {
-            _subText.text = Endless
-                ? $"Puntos {_points} · Nivel {_effLevel}"
-                : $"Ensayo {_trialIndex + 1} de {ComparisonContract.TotalTrials} · Nivel {_effLevel}";
+            // Marcador común (GameHud): nivel + puntos que cuentan (Reto) o avance "3 de 12" (Precisión).
+            if (Endless)
+            {
+                _hud.SetLevel(_effLevel);
+                _hud.SetPoints(_points);
+            }
+            else
+            {
+                _hud.SetLevel(_effLevel);
+                _hud.SetInfo($"{_trialIndex + 1} de {ComparisonContract.TotalTrials}");
+            }
         }
 
         private void SetStreak(int streak)
         {
-            _streakText.text = $"Racha {streak}";
-            _streakDisc.color = streak >= 3 ? AccentColor : new Color(1f, 1f, 1f, 0.30f);
-            if (streak > 0) StartCoroutine(PopRect(_streakPill, 1.12f, 0.22f));
-        }
-
-        private static Vector2 LocalIn(RectTransform space, RectTransform target)
-        {
-            Vector3 local = space.InverseTransformPoint(target.position);
-            return new Vector2(local.x, local.y);
-        }
-
-        private IEnumerator Flash(Color color, float maxAlpha, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _flash.color = new Color(color.r, color.g, color.b, maxAlpha * (1f - k));
-                yield return null;
-            }
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-        }
-
-        private static IEnumerator PopRect(RectTransform rect, float peak, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                if (rect == null) yield break;
-                t += Time.unscaledDeltaTime;
-                rect.localScale = Vector3.one * Mathf.Lerp(peak, 1f, UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds)));
-                yield return null;
-            }
-            if (rect != null) rect.localScale = Vector3.one;
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
-
-        private static void BestFit(Text text, int minSize)
-        {
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = minSize;
-            text.resizeTextMaxSize = text.fontSize;
-        }
-
-        private static Text MakeText(Transform parent, string name, int fontPx, TextAnchor align, Color color, float shadowDistance, float shadowAlpha)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var rect = go.AddComponent<RectTransform>();
-            Stretch(rect);
-            var text = go.AddComponent<Text>();
-            text.font = UiFonts.Bold;
-            text.fontSize = fontPx;
-            text.alignment = align;
-            text.color = color;
-            text.raycastTarget = false;
-            if (shadowAlpha > 0f) UiFonts.AddSoftShadow(go, shadowDistance, shadowAlpha);
-            return text;
-        }
-
-        private void PlayTone(float hz, float seconds, float volume)
-        {
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            float key = Mathf.Round(hz * 10f) + seconds * 100000f;
-            if (!_toneCache.TryGetValue(key, out var clip))
-            {
-                clip = HarmonicTone.Build(hz, seconds, volume);
-                _toneCache[key] = clip;
-            }
-            _audioSource.PlayOneShot(clip);
+            _hud.SetStreak(streak);
         }
     }
 }

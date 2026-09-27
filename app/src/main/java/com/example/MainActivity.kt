@@ -1,6 +1,8 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
+import androidx.activity.addCallback
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,6 +28,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
@@ -35,11 +41,11 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.example.bridge.NativeReceiver
+import com.example.bridge.UnityGameLauncher
 import com.example.games.*
-import com.example.ui.LocalAgeBand
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.i18n.strings
-import com.example.ui.screens.AgeBandOnboardingScreen
 import com.example.ui.screens.GamesLibraryScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProgressScreen
@@ -55,6 +61,14 @@ class MainActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    if (savedInstanceState == null) {
+      handleGameReturn(intent)
+      handleStartSession(intent)
+    }
+    // Atrás en la pantalla raíz: la app pasa a segundo plano en vez de cerrarse. Unity queda vivo DEBAJO de esta
+    // Activity entre partidas (ver UnityGameHost); cerrarla lo dejaría a la vista. Los BackHandler de Compose
+    // (diálogos, Ajustes) se registran después y tienen prioridad.
+    onBackPressedDispatcher.addCallback(this) { moveTaskToBack(true) }
     enableEdgeToEdge(
       statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
       navigationBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
@@ -67,21 +81,52 @@ class MainActivity : ComponentActivity() {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
       }
       CompositionLocalProvider(
-        LocalAppLanguage provides userSettings.language,
-        LocalAgeBand provides (userSettings.ageBand ?: com.example.model.AgeBand.ADULT)
+        LocalAppLanguage provides userSettings.language
       ) {
         NeuroVidaTheme(darkTheme = darkTheme) {
-          // Onboarding de edad (piloto de perfiles, 20-sep): mientras no se resuelva
-          // `ageBand`, no se monta la app normal (bottom nav, tabs, etc.) -- mismo
-          // criterio que Lumosity pidiendo un dato mínimo antes de la primera sesión.
+          // Primera experiencia (ver OnboardingScreen): mientras no se resuelva `ageBand` no se monta la app
+          // normal. Al terminar se guarda todo junto y, si eligió "Empezar", arranca la evaluación "Tu punto de partida".
           if (userSettings.ageBand == null) {
-            AgeBandOnboardingScreen(onSelected = { band -> viewModel.setAgeBand(band) })
+            com.example.ui.screens.OnboardingScreen(
+              onFinish = { name, band, goal, hour, education, goals, baseline ->
+                viewModel.completeOnboarding(name, band, goal, hour, education, goals, baseline)
+              }
+            )
           } else {
             NeuroVidaApp(viewModel = viewModel)
           }
         }
       }
     }
+  }
+
+  /** Unity trae la app al frente al terminar o salir de una partida (ver `NativeReceiver.returnToApp`). */
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    handleGameReturn(intent)
+    handleStartSession(intent)
+  }
+
+  /** "Jugar ahora" del recordatorio diario (ver `CognitiveReminderWorker`): arranca la sesión de hoy. */
+  private fun handleStartSession(intent: Intent?) {
+    if (intent?.getBooleanExtra(EXTRA_START_SESSION, false) != true) return
+    intent.removeExtra(EXTRA_START_SESSION)
+    viewModel.startDailySessionFromReminder()
+  }
+
+  companion object {
+    const val EXTRA_START_SESSION = "neurovida_start_session"
+  }
+
+  private fun handleGameReturn(intent: Intent?) {
+    if (intent?.getBooleanExtra(NativeReceiver.EXTRA_RETURN_FROM_GAME, false) != true) return
+    intent.removeExtra(NativeReceiver.EXTRA_RETURN_FROM_GAME)
+    viewModel.onReturnedFromGame(
+      launchId = intent.getStringExtra(UnityGameLauncher.EXTRA_LAUNCH_ID),
+      resultJson = intent.getStringExtra(NativeReceiver.EXTRA_JSON),
+      paused = intent.getBooleanExtra(NativeReceiver.EXTRA_PAUSED, false)
+    )
   }
 }
 
@@ -91,7 +136,17 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val currentTab by viewModel.currentTab.collectAsState()
   val activeGame by viewModel.activeGame.collectAsState()
   val lastResult by viewModel.lastResult.collectAsState()
+  val lastResultDaily by viewModel.lastResultDaily.collectAsState()
   val dailySession by viewModel.dailySession.collectAsState()
+  val gameRanks by viewModel.gameRanks.collectAsState()
+  val promotion by viewModel.promotion.collectAsState()
+  val streak by viewModel.currentStreak.collectAsState()
+  val achievementQueue by viewModel.achievementQueue.collectAsState()
+  val achievementUnlocks by viewModel.achievementUnlocks.collectAsState()
+  val baselineRun by viewModel.baselineRun.collectAsState()
+  val education by viewModel.education.collectAsState()
+  // Tras la primera celebración de una partida, las siguientes (más logros) aparecen enseguida.
+  var celebratedOne by remember(lastResult) { mutableStateOf(false) }
 
   Box(modifier = Modifier.fillMaxSize()) {
     com.example.ui.components.CosmosBackground()
@@ -102,7 +157,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       containerColor = androidx.compose.ui.graphics.Color.Transparent,
       bottomBar = {
         // Show bottom bar only when not playing a game or looking at results
-        if (activeGame == null && lastResult == null) {
+        if (activeGame == null && lastResult == null && baselineRun == null && promotion == null && achievementQueue.isEmpty()) {
           com.example.ui.components.NeuroNavBar(
             current = currentTab,
             onSelect = { viewModel.setTab(it) },
@@ -124,8 +179,9 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             )
           }
       ) {
-        // Content based on tab
-        AnimatedContent(
+        // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
+        // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
+        if (activeGame == null && lastResult == null && baselineRun == null) AnimatedContent(
           targetState = currentTab,
           transitionSpec = { fadeIn() togetherWith fadeOut() },
           label = "TabTransition"
@@ -146,14 +202,30 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           Box(modifier = Modifier.fillMaxSize()) {
             // Los 9 juegos se juegan ahora en Unity (ver docs y UnityGameHost): se lanza la Activity de Unity con
             // esta sesión y el resultado vuelve por UnityResultBus al ViewModel.
-            com.example.ui.UnityGameHost(
-              session = session,
-              userId = userSettings.id.toString(),
-              ageBand = userSettings.ageBand ?: com.example.model.AgeBand.ADULT,
-              soundEnabled = userSettings.soundEnabled,
-              onReturned = { viewModel.onUnityGameClosed() }
-            )
+            // key: cada sesión es su propio grupo de composición, así no hereda el estado guardado de la anterior.
+            androidx.compose.runtime.key(session.sessionToken) {
+              com.example.ui.UnityGameHost(
+                session = session,
+                userId = userSettings.id.toString(),
+                ageBand = userSettings.ageBand ?: com.example.model.AgeBand.ADULT,
+                soundEnabled = userSettings.soundEnabled,
+                onLaunched = { id -> viewModel.onUnityLaunched(id) },
+                onHostResumed = { viewModel.onHostResumed() }
+              )
+            }
           }
+        }
+
+        // Evaluación inicial "Tu punto de partida": entre juego y juego (y el mapa al final). Ver data/Baseline.kt.
+        if (activeGame == null) baselineRun?.let { run ->
+          com.example.ui.screens.BaselineScreen(
+            run = run,
+            ageBand = userSettings.ageBand,
+            education = education,
+            onContinue = { viewModel.continueBaseline() },
+            onLater = { viewModel.skipBaseline() },
+            onFinish = { viewModel.finishBaseline() }
+          )
         }
 
         // Last Result Screen Overlay
@@ -161,20 +233,48 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           GameResultScreen(
             result = result,
             didLevelUp = didLevelUp,
-            isDailyFlow = activeGame?.isDailyFlow ?: (dailySession.completedCount in 1..3),
+            isDailyFlow = lastResultDaily,
             dailyCompletedCount = dailySession.completedCount,
             dailyTotalCount = 3,
+            rank = gameRanks.firstOrNull { it.gameId == result.gameId },
             onPlayAgain = {
               viewModel.launchGame(result.gameId, customLevel = result.level, customTimed = result.timed)
             },
             onContinue = {
-              if (dailySession.completedCount < 3) {
+              if (lastResultDaily && dailySession.completedCount < 3) {
                 viewModel.continueDailyFlow()
               } else {
                 viewModel.closeGameOrResult()
               }
             }
           )
+        }
+
+        // Ascenso de liga: se celebra encima del resultado (después de que se vio el puntaje). No depende de que
+        // el resultado siga abierto: si el usuario lo cerró antes, la celebración aparece igual sobre la pestaña.
+        promotion?.let { p ->
+          com.example.ui.components.LeaguePromotionOverlay(
+            promotion = p,
+            onDismiss = { celebratedOne = true; viewModel.dismissPromotion() },
+            streak = streak
+          )
+        }
+
+        // Logros nuevos: después del ascenso (si lo hubo), de a uno.
+        if (promotion == null) achievementQueue.firstOrNull()?.let { id ->
+          val def = com.example.data.Achievements.byId(id)
+          if (def == null) {
+            LaunchedEffect(id) { viewModel.dismissAchievement() }
+          } else {
+            com.example.ui.components.AchievementOverlay(
+              def = def,
+              unlockedCount = achievementUnlocks.size,
+              totalCount = com.example.data.Achievements.all.size,
+              streak = streak,
+              onDismiss = { celebratedOne = true; viewModel.dismissAchievement() },
+              delayMs = if (celebratedOne) 250L else 1700L
+            )
+          }
         }
       }
     }

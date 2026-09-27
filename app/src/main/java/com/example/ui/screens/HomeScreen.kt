@@ -73,10 +73,13 @@ import com.example.model.GameRegistry
 import com.example.model.RankTier
 import com.example.ui.components.CosmosScroll
 import com.example.ui.components.LeagueShield
+import com.example.ui.components.palette
+import com.example.data.LeagueEvent
 import com.example.ui.components.overallIndex
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.theme.Clay
+import com.example.ui.theme.ClayButton
 import com.example.ui.theme.ClayCard
 import com.example.ui.theme.ClayPill
 import com.example.viewmodel.NeuroVidaViewModel
@@ -124,6 +127,10 @@ fun HomeScreen(
   val ranks by viewModel.gameRanks.collectAsState()
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val weeklyChallenges by viewModel.weeklyChallengeProgress.collectAsState()
+  val leagueEvents by viewModel.leagueEvents.collectAsState()
+  val pausedGameId by viewModel.pausedGameId.collectAsState()
+  val baseline by viewModel.baseline.collectAsState()
+  val eventsByDay = remember(leagueEvents) { leagueEvents.groupBy { dayIndex(it.timestamp) } }
   val lang = LocalAppLanguage.current
   val scope = rememberCoroutineScope()
 
@@ -229,7 +236,12 @@ fun HomeScreen(
             completedToday = dailySession.completedCount,
             lang = lang,
             onStart = { viewModel.startDailySession() },
-            onOpenDay = { dayDetail = it }
+            onOpenDay = { dayDetail = it },
+            events = when (val row = items[i]) {
+              is PathItem.Past -> eventsByDay[row.day].orEmpty()
+              is PathItem.Today -> eventsByDay[row.day].orEmpty()
+              else -> emptyList()
+            }
           )
         }
       }
@@ -244,6 +256,19 @@ fun HomeScreen(
         )
       }
     }
+
+    // Acción de hoy, fuera del camino inclinado (siempre a mano y con un área de toque normal): seguir la partida
+    // en pausa o jugar el siguiente juego del camino. Debajo, si todavía no hizo la evaluación, una invitación.
+    TodayAction(
+      pausedGameId = pausedGameId,
+      nextGameId = dailySession.gameIds.getOrNull(dailySession.completedCount)?.takeIf { dailySession.completedCount < 3 },
+      completed = dailySession.completedCount,
+      hasBaseline = baseline != null,
+      lang = lang,
+      onResume = { viewModel.resumePausedGame() },
+      onPlay = { viewModel.startDailySession() },
+      onBaseline = { viewModel.startBaseline() }
+    )
   }
 
   dayDetail?.let { item ->
@@ -261,6 +286,19 @@ fun HomeScreen(
       ClayCard(modifier = Modifier.fillMaxWidth().padding(8.dp), color = Clay.Cream, radius = 28.dp, contentPadding = 20.dp) {
         Text(dateLabel(day), color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
+        // Ascensos de liga de ese día, arriba de las partidas: son lo más importante que pasó.
+        eventsByDay[day].orEmpty().forEach { ev ->
+          val gameName = ev.gameId?.let { id -> GameRegistry.getById(id)?.let { getGameTitle(it.id, lang, it.title) } }
+          Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            LeagueShield(tier = ev.tier, size = 30.dp, pips = 1)
+            Spacer(Modifier.width(10.dp))
+            Column {
+              Text("Subiste a ${ev.tier.tierName}", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+              Text(gameName ?: "Liga general", color = Clay.InkSoft, fontSize = 13.sp)
+            }
+          }
+        }
+        if (eventsByDay[day].orEmpty().isNotEmpty()) Spacer(Modifier.height(8.dp))
         if (results.isEmpty()) {
           Text("Sin partidas este día.", color = Clay.InkSoft, fontSize = 15.sp)
         } else {
@@ -327,7 +365,8 @@ private fun PathRow(
   completedToday: Int,
   lang: com.example.model.AppLanguage,
   onStart: () -> Unit,
-  onOpenDay: (PathItem) -> Unit
+  onOpenDay: (PathItem) -> Unit,
+  events: List<LeagueEvent> = emptyList()
 ) {
   val density = LocalDensity.current
   val hPx = with(density) { RowHeight.toPx() }
@@ -397,6 +436,18 @@ private fun PathRow(
       }
     }
 
+    // Ascenso de liga ese día: escudito pegado arriba del nodo (la liga general manda sobre la de un juego).
+    val best = events.maxWithOrNull(compareBy<LeagueEvent>({ it.gameId == null }, { it.tier.ordinal }))
+    if (best != null) {
+      val badge = 26.dp
+      val badgePx = with(density) { badge.toPx() }
+      Box(
+        modifier = Modifier.offset {
+          IntOffset((x + nodeRpx * 0.55f - badgePx / 2f).roundToInt(), (hPx / 2f - nodeRpx - badgePx * 0.75f).roundToInt())
+        }
+      ) { LeagueShield(tier = best.tier, size = badge, pips = 1) }
+    }
+
     // Etiqueta al lado del nodo (hacia el lado con más espacio)
     val labelW = 150.dp
     val gap = 14.dp
@@ -431,6 +482,12 @@ private fun PathRow(
             "${item.results.size} ${if (item.results.size == 1) "juego" else "juegos"}",
             color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = align
           )
+          if (best != null) {
+            Text(
+              "Subiste a ${best.tier.tierName}",
+              color = best.tier.palette().light, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = align
+            )
+          }
         }
         is PathItem.Future -> if (item.flagTarget != null) {
           Text("Racha de ${item.flagTarget} días", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = align)
@@ -440,6 +497,53 @@ private fun PathRow(
     }
   }
 }
+
+@Composable
+private fun TodayAction(
+  pausedGameId: String?,
+  nextGameId: String?,
+  completed: Int,
+  hasBaseline: Boolean,
+  lang: com.example.model.AppLanguage,
+  onResume: () -> Unit,
+  onPlay: () -> Unit,
+  onBaseline: () -> Unit
+) {
+  val paused = pausedGameId?.let { GameRegistry.getById(it) }
+  val next = nextGameId?.let { GameRegistry.getById(it) }
+  Column(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 8.dp)) {
+    val (label, def, action, tag) = when {
+      paused != null -> Quad("Tienes una partida en pausa", paused, onResume, "btn_resume_paused")
+      next != null -> Quad(if (completed == 0) "Tu sesión de hoy · 3 juegos" else "Tu sesión de hoy · juego ${completed + 1} de 3", next, onPlay, "btn_home_play")
+      else -> Quad(null, null, onPlay, "")
+    }
+    if (def != null) {
+      Text(label.orEmpty(), color = OnNightDim, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+      ClayButton(
+        text = getGameTitle(def.id, lang, def.title),
+        onClick = action,
+        icon = Icons.Default.PlayArrow,
+        modifier = Modifier.testTag(tag)
+      )
+    }
+    if (!hasBaseline) {
+      Text(
+        text = "¿Aún sin tu punto de partida? Encuéntralo en 5 minutos",
+        color = Clay.Sun,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+          .padding(top = 8.dp)
+          .clip(RoundedCornerShape(10.dp))
+          .clickable(onClick = onBaseline)
+          .padding(horizontal = 4.dp, vertical = 6.dp)
+          .testTag("btn_home_baseline")
+      )
+    }
+  }
+}
+
+private data class Quad(val label: String?, val def: com.example.model.GameDefinition?, val action: () -> Unit, val tag: String)
 
 @Composable
 private fun TodayNode(done: Boolean, onClick: () -> Unit) {

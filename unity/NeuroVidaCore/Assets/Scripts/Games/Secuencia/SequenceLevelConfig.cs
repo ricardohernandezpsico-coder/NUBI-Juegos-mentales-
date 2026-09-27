@@ -5,11 +5,8 @@ namespace NeuroVida.Games.Secuencia
 {
     /// <summary>
     /// Cuarta pasada de rediseño (22-sep, spec detallado de Ricardo: "esquema extendido
-    /// de progresión multinivel", 16 niveles en 5 fases). Reemplaza a <see cref="SequenceDDAEngine"/>
-    /// como motor de dificultad de ESTE juego -- ese motor sigue existiendo intacto y
-    /// testeado 1:1 con Kotlin (ver sus tests), pero su ajuste CONTINUO por ventana
-    /// deslizante no es compatible con una tabla de niveles con nombre y parámetros
-    /// fijos por peldaño. <c>SequenceGameController</c> ya no lo instancia.
+    /// de progresión multinivel", 16 niveles en 5 fases): el motor de dificultad de este juego (reemplazó al
+    /// ajuste continuo por ventana deslizante del motor anterior, que se borró el 26-sep).
     ///
     /// Cada nivel fija cuadrícula (rows x cols, no necesariamente cuadrada), longitud de
     /// secuencia (span) y velocidad de presentación (ISI) -- valores tomados literal del

@@ -6,6 +6,7 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / TilePalette / HarmonicTone
 using NeuroVida.Games.Shared;
+using static NeuroVida.Games.Shared.UiKit;
 
 namespace NeuroVida.Games.Anagramas
 {
@@ -19,7 +20,7 @@ namespace NeuroVida.Games.Anagramas
     /// Reglas de <c>AnagramasGame.kt</c> (ver <see cref="AnagramContract"/>). Telemetría: reusa
     /// <see cref="StroopTelemetry"/>.
     /// </summary>
-    public class AnagramGameController : MonoBehaviour
+    public class AnagramGameController : GameControllerBase
     {
         public const string GameId = AnagramContract.GameId;
 
@@ -28,7 +29,6 @@ namespace NeuroVida.Games.Anagramas
         private const float ShapeScale = 0.86f;
         private const int MaxLetters = 11;
 
-        private static readonly Color BackgroundColor = new Color(0x18 / 255f, 0x0F / 255f, 0x2E / 255f);
         private static readonly Color Accent = new Color(0xF4 / 255f, 0x72 / 255f, 0xB6 / 255f);
         private static readonly Color TileCream = new Color(0xFD / 255f, 0xE9 / 255f, 0xC8 / 255f);
         private static readonly Color TilePlaced = new Color(0xFF / 255f, 0xD1 / 255f, 0x7A / 255f);
@@ -44,6 +44,9 @@ namespace NeuroVida.Games.Anagramas
 
         private sealed class Letter
         {
+            /// <summary>Contenedor: se mueve (banco -> casilla) y se achica al tamaño de la casilla.</summary>
+            public RectTransform Holder;
+            /// <summary>La ficha propia (hija del contenedor): rebote, hundido al tocar y fundido.</summary>
             public RectTransform Rect;
             public Image Image;
             public Text Label;
@@ -52,10 +55,7 @@ namespace NeuroVida.Games.Anagramas
             public Vector2 Target;
         }
 
-        private SequenceInitConfig _config;
         private System.Random _rng;
-        private AudioSource _audioSource;
-        private readonly Dictionary<float, AudioClip> _toneCache = new Dictionary<float, AudioClip>();
 
         private int _trialIndex, _correct, _streak, _bestStreak, _totalAttempts, _points, _effLevel;
         private AdaptiveDifficulty _dda; // DDA común (ver docs/DDA-comun.md)
@@ -72,35 +72,34 @@ namespace NeuroVida.Games.Anagramas
         private bool Endless => _config != null && _config.config.timed;
 
         // UI
-        private RectTransform _safe, _boardRect, _streakPill, _bannerRect, _timerBg, _timerFill, _fxRect, _resultRoot, _actionsRoot;
-        private Text _titleText, _subText, _streakText, _bannerText;
-        private Image _streakDisc, _flash, _timerFillImage, _bannerImage;
+        private RectTransform _safe, _boardRect, _bannerRect, _timerBg, _timerFill, _fxRect, _actionsRoot;
+        private Text _bannerText;
+        private Image _timerFillImage, _bannerImage;
         private ProgressDots _dots;
         private Toast _toast;
         private ExitButton _exit;
+        private GameHud _hud;
         private CountdownScreen _countdown;
         private readonly List<RectTransform> _slotRects = new List<RectTransform>();
         private readonly List<Image> _slotImages = new List<Image>();
         private Button _backButton, _hintButton, _skipButton;
         private float _slotSize, _tileSize;
+        /// <summary>Escala de una ficha ya colocada (casilla / ficha): 1 en palabras cortas, ~0,55 con 11 letras.</summary>
+        private float _slotShrink = 1f;
         private float _slotsCenterY;
         private Vector2[] _poolPositions = new Vector2[MaxLetters];
         private Vector2[] _slotPositions = new Vector2[MaxLetters];
 
-        private void Awake()
-        {
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            BuildUi();
-            gameObject.SetActive(false);
-        }
-
         // Las fichas se deslizan suavemente hacia su destino (resorte amortiguado, independiente del framerate).
         private void Update()
         {
-            float k = 1f - Mathf.Exp(-16f * Time.unscaledDeltaTime);
+            float k = 1f - Mathf.Exp(-16f * GameClock.DeltaTime);
             foreach (var l in _letters)
-                if (l != null && l.Rect != null)
-                    l.Rect.anchoredPosition = Vector2.Lerp(l.Rect.anchoredPosition, l.Target, k);
+            {
+                if (l == null || l.Holder == null) continue;
+                l.Holder.anchoredPosition = Vector2.Lerp(l.Holder.anchoredPosition, l.Target, k);
+                l.Holder.localScale = Vector3.Lerp(l.Holder.localScale, Vector3.one * (l.InSlot ? _slotShrink : 1f), k);
+            }
         }
 
         // ------------------------------------------------------------------ sesión
@@ -147,9 +146,9 @@ namespace NeuroVida.Games.Anagramas
             Canvas.ForceUpdateCanvases();
             LayoutStatic();
 
-            _roundEndsAt = Time.unscaledTime + AnagramContract.EndlessSeconds;
+            _roundEndsAt = GameClock.Time + AnagramContract.EndlessSeconds;
             _trialIndex = 0;
-            while (Endless ? Time.unscaledTime < _roundEndsAt : _trialIndex < AnagramContract.TotalTrials)
+            while (Endless ? GameClock.Time < _roundEndsAt : _trialIndex < AnagramContract.TotalTrials)
             {
                 yield return StartCoroutine(PlayWord());
                 if (_result == WordResult.TimeUp) break;
@@ -192,7 +191,7 @@ namespace NeuroVida.Games.Anagramas
             SetActionsInteractable(true);
             _acceptInput = true;
 
-            float startedAt = Time.unscaledTime;
+            float startedAt = GameClock.Time;
             while (_result == WordResult.Waiting)
             {
                 if (Endless && UpdateRoundClock()) _result = WordResult.TimeUp;
@@ -216,14 +215,14 @@ namespace NeuroVida.Games.Anagramas
                 _correct++;
                 _streak++;
                 _bestStreak = Mathf.Max(_bestStreak, _streak);
-                _solveMsSum += (long)((Time.unscaledTime - startedAt) * 1000f);
+                _solveMsSum += (long)((GameClock.Time - startedAt) * 1000f);
                 _solveCount++;
                 _points += AnagramContract.PointsFor(_streak, _hintUsed);
                 SetStreak(_streak);
                 UpdateHudText();
                 SetBanner("¡" + _word.Word + "!", GoodColor, 0.45f);
                 foreach (var l in _assembly) l.Image.color = TileGood;
-                PlayTone(523.25f * Mathf.Pow(2f, Mathf.Min(_streak - 1, 7) * 2f / 12f), 0.3f, 0.2f);
+                GameFeel.Correct(_streak);
                 StartCoroutine(PlayCelebrationTone());
                 StartCoroutine(Flash(GoodColor, 0.08f, 0.28f));
                 StartCoroutine(UiFx.SparkBurst(_fxRect, SlotsCenter(), Accent, 16, _slotSize * n * 0.55f, 46f, 0.7f));
@@ -237,7 +236,7 @@ namespace NeuroVida.Games.Anagramas
                     UpdateHudText();
                     var (min, max) = AnagramContract.LengthRange(_effLevel);
                     _toast.Show($"Nivel {_effLevel}", $"Palabras de {min} a {max} letras", Accent, 1.1f);
-                    PlayTone(1046.5f, 0.35f, 0.2f);
+                    GameFeel.LevelUp();
                 }
                 else if (_streak == 3 || _streak == 6 || _streak == 10)
                 {
@@ -256,7 +255,7 @@ namespace NeuroVida.Games.Anagramas
                     UpdateHudText();
                     _toast.Show("Con calma", "Ajustamos la dificultad", AmberColor, 1.0f);
                 }
-                PlayTone(196f, 0.32f, 0.2f);
+                GameFeel.Wrong();
                 StartCoroutine(Flash(BadColor, 0.10f, 0.3f));
                 if (_result == WordResult.Failed)
                 {
@@ -393,7 +392,7 @@ namespace NeuroVida.Games.Anagramas
             float t = 0f;
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
                 foreach (var l in _letters) if (l.Rect != null) l.Rect.localScale = Vector3.one * (1f - k);
                 for (int i = 0; i < _word.Word.Length && i < _slotRects.Count; i++) _slotRects[i].localScale = Vector3.one * (1f - k);
@@ -404,7 +403,7 @@ namespace NeuroVida.Games.Anagramas
 
         private bool UpdateRoundClock()
         {
-            float left = _roundEndsAt - Time.unscaledTime;
+            float left = _roundEndsAt - GameClock.Time;
             float f = Mathf.Clamp01(left / AnagramContract.EndlessSeconds);
             _timerFill.anchorMax = new Vector2(f, 1f);
             _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
@@ -413,7 +412,7 @@ namespace NeuroVida.Games.Anagramas
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
                 _lastTickSecond = whole;
-                PlayTone(880f, 0.08f, 0.10f);
+                GameFeel.Tick();
             }
             return left <= 0f;
         }
@@ -444,13 +443,12 @@ namespace NeuroVida.Games.Anagramas
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
-            PlayTone(659.25f, 0.4f, 0.22f);
             yield break;
         }
 
         // ------------------------------------------------------------------ construcción de UI
 
-        private void BuildUi()
+        protected override void BuildUi()
         {
             if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
             {
@@ -474,10 +472,8 @@ namespace NeuroVida.Games.Anagramas
             bg.transform.SetParent(canvasGo.transform, false);
             var bgRect = bg.AddComponent<RectTransform>();
             Stretch(bgRect);
-            bg.AddComponent<Image>().color = BackgroundColor;
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.12f, 0.88f), 1500f, new Color(0.96f, 0.45f, 0.71f, 0.17f));
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.92f, 0.12f), 1400f, new Color(0.55f, 0.36f, 0.96f, 0.18f));
-            bg.AddComponent<CountdownAmbient>().Build(bgRect, 8);
+            // Mundo "SkyLetters": cielo nocturno de la app + su elemento propio (ver Shared/WorldBackdrop.cs).
+            WorldBackdrop.Build(bgRect, GameWorld.SkyLetters);
 
             var safeGo = new GameObject("SafeAreaContent");
             safeGo.transform.SetParent(canvasGo.transform, false);
@@ -523,63 +519,7 @@ namespace NeuroVida.Games.Anagramas
 
         private void BuildHud()
         {
-            var hudGo = new GameObject("Hud");
-            hudGo.transform.SetParent(_safe, false);
-            var hudRect = hudGo.AddComponent<RectTransform>();
-            hudRect.anchorMin = new Vector2(0f, 1f);
-            hudRect.anchorMax = new Vector2(1f, 1f);
-            hudRect.pivot = new Vector2(0.5f, 1f);
-            hudRect.sizeDelta = new Vector2(0f, 190f);
-            hudRect.anchoredPosition = Vector2.zero;
-
-            const float pillW = 300f, pillH = 100f;
-            var pillGo = new GameObject("StreakPill");
-            pillGo.transform.SetParent(hudGo.transform, false);
-            _streakPill = pillGo.AddComponent<RectTransform>();
-            _streakPill.anchorMin = _streakPill.anchorMax = _streakPill.pivot = new Vector2(1f, 1f);
-            _streakPill.sizeDelta = new Vector2(pillW, pillH);
-            _streakPill.anchoredPosition = new Vector2(-MarginU, -30f);
-            var pillImg = pillGo.AddComponent<Image>();
-            pillImg.sprite = RoundedRectSprite.Get(64);
-            pillImg.type = Image.Type.Sliced;
-            pillImg.color = new Color(0f, 0f, 0f, 0.30f);
-            pillImg.raycastTarget = false;
-
-            var discGo = new GameObject("Disc");
-            discGo.transform.SetParent(pillGo.transform, false);
-            var discRect = discGo.AddComponent<RectTransform>();
-            discRect.anchorMin = discRect.anchorMax = new Vector2(0f, 0.5f);
-            discRect.pivot = new Vector2(0.5f, 0.5f);
-            discRect.sizeDelta = new Vector2(52f, 52f);
-            discRect.anchoredPosition = new Vector2(50f, 0f);
-            _streakDisc = discGo.AddComponent<Image>();
-            _streakDisc.sprite = DiscSprite.Get();
-            _streakDisc.raycastTarget = false;
-
-            _streakText = MakeText(pillGo.transform, "StreakText", 58, TextAnchor.MiddleLeft, Color.white, 2f, 0.3f);
-            var sr = _streakText.rectTransform;
-            sr.offsetMin = new Vector2(96f, 0f);
-            sr.offsetMax = new Vector2(-24f, 0f);
-            BestFit(_streakText, 36);
-
-            _titleText = MakeText(hudGo.transform, "Title", 78, TextAnchor.UpperLeft, Color.white, 3f, 0.45f);
-            _subText = MakeText(hudGo.transform, "Sub", 48, TextAnchor.UpperLeft, new Color(1f, 1f, 1f, 0.72f), 2f, 0.35f);
-            float right = MarginU + pillW + 20f;
-            PlaceTopText(_titleText, MarginU, right, -22f, 100f);
-            PlaceTopText(_subText, MarginU, right, -112f, 70f);
-            BestFit(_titleText, 46);
-            BestFit(_subText, 30);
-            _titleText.text = "Anagramas";
-        }
-
-        private static void PlaceTopText(Text text, float left, float right, float topY, float height)
-        {
-            var r = text.rectTransform;
-            r.anchorMin = new Vector2(0f, 1f);
-            r.anchorMax = new Vector2(1f, 1f);
-            r.pivot = new Vector2(0f, 1f);
-            r.offsetMin = new Vector2(left, topY - height);
-            r.offsetMax = new Vector2(-right, topY);
+            _hud = new GameHud(_safe, "Anagramas", MarginU, this);
         }
 
         private void BuildBanner()
@@ -651,21 +591,16 @@ namespace NeuroVida.Games.Anagramas
                 r.anchorMin = r.anchorMax = new Vector2(0.5f, 1f);
                 r.pivot = new Vector2(0.5f, 0.5f);
                 var img = go.AddComponent<Image>();
-                img.sprite = RoundedRectSprite.Get(36);
-                img.type = Image.Type.Sliced;
+                img.sprite = AnagramSprites.Slot(); // hueco hundido de arcilla: ahí "cae" la ficha
                 img.color = SlotColor(false);
                 img.raycastTarget = false;
-                var outline = go.AddComponent<Outline>();
-                outline.effectColor = new Color(1f, 1f, 1f, 0.16f);
-                outline.effectDistance = new Vector2(2.5f, -2.5f);
                 go.SetActive(false);
                 _slotRects.Add(r);
                 _slotImages.Add(img);
             }
         }
 
-        private static Color SlotColor(bool filled) =>
-            filled ? new Color(0.35f, 0.25f, 0.55f, 0.6f) : new Color(0.10f, 0.06f, 0.20f, 0.55f);
+        private static Color SlotColor(bool filled) => filled ? new Color(1f, 1f, 1f, 0.7f) : Color.white;
 
         private void BuildActions()
         {
@@ -676,12 +611,12 @@ namespace NeuroVida.Games.Anagramas
             _actionsRoot.pivot = new Vector2(0.5f, 0.5f);
             _actionsRoot.sizeDelta = new Vector2(10f, 10f);
 
-            _backButton = MakeAction("Borrar", new Color(0.36f, 0.30f, 0.62f), OnBackspace);
-            _hintButton = MakeAction("Pista", new Color(0.85f, 0.55f, 0.10f), OnHint);
-            _skipButton = MakeAction("Pasar", new Color(0.78f, 0.28f, 0.50f), OnSkip);
+            _backButton = MakeAction("Borrar", new Color(0.36f, 0.30f, 0.62f), AnagramSprites.Icon.Backspace, OnBackspace);
+            _hintButton = MakeAction("Pista", new Color(0.85f, 0.55f, 0.10f), AnagramSprites.Icon.Hint, OnHint);
+            _skipButton = MakeAction("Pasar", new Color(0.78f, 0.28f, 0.50f), AnagramSprites.Icon.Skip, OnSkip);
         }
 
-        private Button MakeAction(string label, Color color, UnityEngine.Events.UnityAction onClick)
+        private Button MakeAction(string label, Color color, AnagramSprites.Icon icon, UnityEngine.Events.UnityAction onClick)
         {
             var go = new GameObject("Btn_" + label);
             go.transform.SetParent(_actionsRoot, false);
@@ -692,14 +627,27 @@ namespace NeuroVida.Games.Anagramas
             img.sprite = RoundedRectSprite.Get(48);
             img.type = Image.Type.Sliced;
             img.color = color;
-            var shadow = go.AddComponent<Outline>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.25f);
-            shadow.effectDistance = new Vector2(0f, -4f);
+            NeuroStyle.ClayFrame(img, 4f, 8f); // botón de arcilla: borde tinta y sombra dura
             var b = go.AddComponent<Button>();
             b.transition = Selectable.Transition.None;
             b.onClick.AddListener(onClick);
             go.AddComponent<PressScale>();
+            // Ícono de arcilla + texto (nunca solo ícono).
+            var iconGo = new GameObject("Icon");
+            iconGo.transform.SetParent(go.transform, false);
+            var ir = iconGo.AddComponent<RectTransform>();
+            ir.anchorMin = new Vector2(0.06f, 0.14f);
+            ir.anchorMax = new Vector2(0.34f, 0.86f);
+            ir.offsetMin = ir.offsetMax = Vector2.zero;
+            var iconImg = iconGo.AddComponent<Image>();
+            iconImg.sprite = AnagramSprites.ActionIcon(icon);
+            iconImg.preserveAspect = true;
+            iconImg.raycastTarget = false;
             var text = MakeText(go.transform, "Label", 52, TextAnchor.MiddleCenter, Color.white, 2f, 0.3f);
+            var tr = text.rectTransform;
+            tr.anchorMin = new Vector2(0.30f, 0f);
+            tr.anchorMax = new Vector2(0.96f, 1f);
+            tr.offsetMin = tr.offsetMax = Vector2.zero;
             BestFit(text, 30);
             text.text = label;
             return b;
@@ -739,17 +687,6 @@ namespace NeuroVida.Games.Anagramas
             go.SetActive(false);
         }
 
-        private void AddResultText(string name, int size, Vector2 pos, Color color)
-        {
-            var t = MakeText(_resultRoot, name, size, TextAnchor.MiddleCenter, color, 3f, 0.4f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(820f, size * 1.4f);
-            r.anchoredPosition = pos;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-        }
-
         private void ShowResult(int score, int avgMs, int total)
         {
             _exit.Show();
@@ -772,39 +709,30 @@ namespace NeuroVida.Games.Anagramas
             StartCoroutine(UiFx.SparkBurst(_fxRect, Vector2.zero, Accent, 24, 420f, 56f, 0.9f));
         }
 
-        private IEnumerator AnimateResult(int score)
-        {
-            var scoreText = _resultRoot.Find("Score").GetComponent<Text>();
-            float t = 0f;
-            const float seconds = 0.9f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _resultRoot.localScale = Vector3.one * Mathf.LerpUnclamped(0.7f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 2f)));
-                scoreText.text = Mathf.RoundToInt(score * UiFx.EaseOutCubic(k)).ToString();
-                yield return null;
-            }
-            scoreText.text = score.ToString();
-            _resultRoot.localScale = Vector3.one;
-        }
-
         // ------------------------------------------------------------------ fichas
 
         private Letter CreateLetter(char c, int poolIndex)
         {
-            var go = new GameObject("Letter_" + c + "_" + poolIndex);
-            go.transform.SetParent(_boardRect, false);
+            var holderGo = new GameObject("Letter_" + c + "_" + poolIndex);
+            holderGo.transform.SetParent(_boardRect, false);
+            var holder = holderGo.AddComponent<RectTransform>();
+            holder.anchorMin = holder.anchorMax = new Vector2(0.5f, 1f);
+            holder.pivot = new Vector2(0.5f, 0.5f);
+            holder.sizeDelta = new Vector2(_tileSize / ShapeScale, _tileSize / ShapeScale);
+
+            var go = new GameObject("Tile");
+            go.transform.SetParent(holder, false);
             var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(_tileSize / ShapeScale, _tileSize / ShapeScale);
             var img = go.AddComponent<Image>();
             img.sprite = TileSprites.Get();
             img.color = TileCream;
             img.alphaHitTestMinimumThreshold = 0.1f;
 
-            var letter = new Letter { Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex] };
+            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex] };
             var button = go.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => OnLetterTapped(letter));
@@ -820,14 +748,14 @@ namespace NeuroVida.Games.Anagramas
             letter.Label.text = c.ToString();
 
             // Las fichas nacen en su lugar del banco (sin volar desde el origen).
-            rect.anchoredPosition = letter.Target;
+            holder.anchoredPosition = letter.Target;
             rect.localScale = Vector3.zero;
             return letter;
         }
 
         private void ClearLetters()
         {
-            foreach (var l in _letters) if (l != null && l.Rect != null) Destroy(l.Rect.gameObject);
+            foreach (var l in _letters) if (l != null && l.Holder != null) Destroy(l.Holder.gameObject);
             _letters.Clear();
             _assembly.Clear();
         }
@@ -872,16 +800,19 @@ namespace NeuroVida.Games.Anagramas
             _toast.SetTopOffset(0f);
         }
 
-        /// <summary>Casillas arriba y banco de fichas debajo, según el largo de la palabra actual.</summary>
+        /// <summary>Casillas arriba (siempre UNA fila, la palabra se lee corrida) y banco de fichas debajo.
+        /// Las fichas del banco son grandes para tocar rapido; al colocarse se achican hasta el tamaño de su casilla
+        /// (<see cref="_slotShrink"/>), asi que nunca se pisan aunque la palabra tenga 11 letras.</summary>
         private void LayoutWord(int n)
         {
-            float gapSlot = 14f;
+            float gapSlot = n <= 7 ? 14f : 8f;
             _slotSize = Mathf.Min(150f, (_contentW - (n - 1) * gapSlot) / n);
             int perRow = n <= 6 ? n : Mathf.CeilToInt(n / 2f);
             int rows = n <= 6 ? 1 : 2;
             float gapTile = 18f;
             float availableH = _actionsTopY - _yAfterBanner - _slotSize - 150f;
             _tileSize = Mathf.Clamp(Mathf.Min((_contentW - (perRow - 1) * gapTile) / perRow, (availableH - (rows - 1) * gapTile) / rows), 90f, 175f);
+            _slotShrink = Mathf.Min(1f, _slotSize / _tileSize);
 
             // Filas de casillas y de banco centradas en el espacio disponible.
             float blockH = _slotSize + 110f + rows * _tileSize + (rows - 1) * gapTile;
@@ -912,119 +843,26 @@ namespace NeuroVida.Games.Anagramas
 
         private Vector2 SlotsCenter() => new Vector2(0f, _safeH / 2f - _slotsCenterY);
 
-        private static void ApplySafeArea(RectTransform target)
-        {
-            Rect safeArea = Screen.safeArea;
-            Vector2 min = safeArea.position;
-            Vector2 max = safeArea.position + safeArea.size;
-            min.x /= Screen.width;
-            min.y /= Screen.height;
-            max.x /= Screen.width;
-            max.y /= Screen.height;
-            target.anchorMin = min;
-            target.anchorMax = max;
-            target.offsetMin = Vector2.zero;
-            target.offsetMax = Vector2.zero;
-        }
-
         // ------------------------------------------------------------------ helpers
 
         private void UpdateHudText()
         {
-            _subText.text = Endless
-                ? $"Puntos {_points} · Nivel {_effLevel}"
-                : $"Palabra {_trialIndex + 1} de {AnagramContract.TotalTrials} · Nivel {_effLevel}";
+            // Marcador común (GameHud): nivel + puntos que cuentan (Reto) o avance "3 de 12" (Precisión).
+            if (Endless)
+            {
+                _hud.SetLevel(_effLevel);
+                _hud.SetPoints(_points);
+            }
+            else
+            {
+                _hud.SetLevel(_effLevel);
+                _hud.SetInfo($"{_trialIndex + 1} de {AnagramContract.TotalTrials}");
+            }
         }
 
         private void SetStreak(int streak)
         {
-            _streakText.text = $"Racha {streak}";
-            _streakDisc.color = streak >= 3 ? AmberColor : new Color(1f, 1f, 1f, 0.30f);
-            if (streak > 0) StartCoroutine(PopRect(_streakPill, 1.12f, 0.22f));
-        }
-
-        private static IEnumerator PopIn(RectTransform rect, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                if (rect == null) yield break;
-                t += Time.unscaledDeltaTime;
-                rect.localScale = Vector3.one * Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(t / seconds)));
-                yield return null;
-            }
-            if (rect != null) rect.localScale = Vector3.one;
-        }
-
-        private IEnumerator Flash(Color color, float maxAlpha, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _flash.color = new Color(color.r, color.g, color.b, maxAlpha * (1f - k));
-                yield return null;
-            }
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-        }
-
-        private static IEnumerator PopRect(RectTransform rect, float peak, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                if (rect == null) yield break;
-                t += Time.unscaledDeltaTime;
-                rect.localScale = Vector3.one * Mathf.Lerp(peak, 1f, UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds)));
-                yield return null;
-            }
-            if (rect != null) rect.localScale = Vector3.one;
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
-
-        private static void BestFit(Text text, int minSize)
-        {
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = minSize;
-            text.resizeTextMaxSize = text.fontSize;
-        }
-
-        private static Text MakeText(Transform parent, string name, int fontPx, TextAnchor align, Color color, float shadowDistance, float shadowAlpha)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var rect = go.AddComponent<RectTransform>();
-            Stretch(rect);
-            var text = go.AddComponent<Text>();
-            text.font = UiFonts.Bold;
-            text.fontSize = fontPx;
-            text.alignment = align;
-            text.color = color;
-            text.raycastTarget = false;
-            if (shadowAlpha > 0f) UiFonts.AddSoftShadow(go, shadowDistance, shadowAlpha);
-            return text;
-        }
-
-        private void PlayTone(float hz, float seconds, float volume)
-        {
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            float key = Mathf.Round(hz * 10f) + seconds * 100000f;
-            if (!_toneCache.TryGetValue(key, out var clip))
-            {
-                clip = HarmonicTone.Build(hz, seconds, volume);
-                _toneCache[key] = clip;
-            }
-            _audioSource.PlayOneShot(clip);
+            _hud.SetStreak(streak);
         }
     }
 }

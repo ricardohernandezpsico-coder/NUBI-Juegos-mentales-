@@ -71,10 +71,6 @@ namespace NeuroVida.Games.RutaTesoro
             return set;
         }
 
-        /// <summary>Completar sube un nivel; perder la ruta baja uno (mínimo 1).</summary>
-        public static int NextStage(int stage, bool cleared) =>
-            cleared ? Math.Min(stage + 1, MaxStage) : Math.Max(stage - 1, 1);
-
         public static int Score(int cleared) =>
             Math.Max(0, Math.Min(100, cleared * 100 / ClearedForFullScore));
     }

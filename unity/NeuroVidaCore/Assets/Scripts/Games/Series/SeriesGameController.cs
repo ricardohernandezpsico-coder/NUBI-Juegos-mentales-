@@ -6,6 +6,7 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
+using static NeuroVida.Games.Shared.UiKit;
 
 namespace NeuroVida.Games.Series
 {
@@ -14,11 +15,12 @@ namespace NeuroVida.Games.Series
     /// una y una quinta, con un "?", late esperando. Se elige el número que sigue entre cuatro
     /// opciones. Al responder se REVELA la regla sobre el mismo tablero: entre las fichas aparecen
     /// los pasos ("+5", "×3"...) y el "?" se convierte en la respuesta, además de la explicación en
-    /// texto. Reto = ronda de 120 s sin límite de series (sube de nivel al ir acertando);
+    /// texto. Arte propio: una lupa de arcilla (<see cref="MagnifierSprite"/>) "busca" sobre la ficha "?" y los
+    /// números de las fichas van en arcilla (contorno tinta y sombra dura). Reto = ronda de 120 s sin límite de series (sube de nivel al ir acertando);
     /// Precisión = 8 series sin reloj. Reglas de <c>SeriesGame.kt</c> (ver <see cref="SeriesContract"/>).
     /// Telemetría: reusa <see cref="StroopTelemetry"/>.
     /// </summary>
-    public class SeriesGameController : MonoBehaviour
+    public class SeriesGameController : GameControllerBase
     {
         public const string GameId = SeriesContract.GameId;
 
@@ -28,7 +30,6 @@ namespace NeuroVida.Games.Series
         private const int TimeUp = -3;
         private const float ShapeScale = 0.86f;
 
-        private static readonly Color BackgroundColor = new Color(0x14 / 255f, 0x10 / 255f, 0x33 / 255f);
         private static readonly Color Accent = new Color(0xA7 / 255f, 0x8B / 255f, 0xFA / 255f);
         private static readonly Color LensColor = new Color(0xFB / 255f, 0xBF / 255f, 0x24 / 255f);
         private static readonly Color TermColor = new Color(0x5B / 255f, 0x6C / 255f, 0xF0 / 255f);
@@ -53,10 +54,7 @@ namespace NeuroVida.Games.Series
             public Image ChipBg;
         }
 
-        private SequenceInitConfig _config;
         private System.Random _rng;
-        private AudioSource _audioSource;
-        private readonly Dictionary<float, AudioClip> _toneCache = new Dictionary<float, AudioClip>();
 
         private int _trialIndex, _correct, _streak, _bestStreak, _totalAnswered, _points, _effLevel;
         private long _responseMsSum;
@@ -71,14 +69,14 @@ namespace NeuroVida.Games.Series
         private bool Endless => _config != null && _config.config.timed;
 
         // UI
-        private RectTransform _safe, _streakPill, _bannerRect, _timerBg, _timerFill, _fxRect, _resultRoot, _rowRect, _optionsRoot;
-        private Text _titleText, _subText, _streakText;
-        private Image _streakDisc, _flash, _timerFillImage, _lensRing, _bannerImage;
+        private RectTransform _safe, _bannerRect, _timerBg, _timerFill, _fxRect, _rowRect, _optionsRoot;
+                private Image _timerFillImage, _lensRing, _bannerImage, _magnifier;
         private Text _bannerText;
         private ProgressDots _dots;
         private PhasePill _pill;
         private Toast _toast;
         private ExitButton _exit;
+        private GameHud _hud;
         private CountdownScreen _countdown;
         private const int MaxTokens = 7; // hasta 6 términos + la ficha "?"
         private readonly Token[] _tokens = new Token[MaxTokens];
@@ -88,13 +86,6 @@ namespace NeuroVida.Games.Series
         private readonly List<Image> _optionImages = new List<Image>();
         private readonly List<Text> _optionLabels = new List<Text>();
         private float _tokenSize;
-
-        private void Awake()
-        {
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            BuildUi();
-            gameObject.SetActive(false);
-        }
 
         // ------------------------------------------------------------------ sesión
 
@@ -139,13 +130,13 @@ namespace NeuroVida.Games.Series
             Canvas.ForceUpdateCanvases();
             Layout();
 
-            _roundEndsAt = Time.unscaledTime + SeriesContract.EndlessSeconds;
+            _roundEndsAt = GameClock.Time + SeriesContract.EndlessSeconds;
             _trialIndex = 0;
-            while (Endless ? Time.unscaledTime < _roundEndsAt : _trialIndex < SeriesContract.TotalTrials)
+            while (Endless ? GameClock.Time < _roundEndsAt : _trialIndex < SeriesContract.TotalTrials)
             {
                 yield return StartCoroutine(PresentSeries());
 
-                float startedAt = Time.unscaledTime;
+                float startedAt = GameClock.Time;
                 while (_answerIndex == NoAnswer)
                 {
                     if (Endless && UpdateRoundClock()) _answerIndex = TimeUp;
@@ -199,11 +190,12 @@ namespace NeuroVida.Games.Series
                 t.Rect.gameObject.SetActive(true);
                 t.Rect.localScale = Vector3.zero;
                 t.Image.color = isTerm ? TermColor : LensColor;
-                t.Label.color = isTerm ? Color.white : new Color(0.20f, 0.12f, 0.02f);
+                t.Label.color = Color.white;
                 t.Label.text = isTerm ? _item.Terms[i].ToString() : "?";
                 FitToken(t, t.Label.text);
             }
             _lensRing.color = new Color(LensColor.r, LensColor.g, LensColor.b, 0f);
+            _magnifier.gameObject.SetActive(false);
             _rowRect.localScale = Vector3.one;
             _rowRect.anchoredPosition = _rowRest;
             for (int i = 0; i < 4; i++)
@@ -221,6 +213,8 @@ namespace NeuroVida.Games.Series
                 PlayTone(392f * Mathf.Pow(2f, i * 2f / 12f), 0.12f, 0.10f);
                 yield return new WaitForSeconds(i == _count - 2 ? 0.14f : 0.09f);
             }
+            _magnifier.gameObject.SetActive(true);
+            StartCoroutine(PopIn(_magnifier.rectTransform, 0.22f));
             StartCoroutine(PulseLens());
 
             // Opciones con rebote escalonado.
@@ -238,9 +232,10 @@ namespace NeuroVida.Games.Series
             // Aro que late alrededor de la ficha "?" mientras no se responda.
             while (_answerIndex == NoAnswer && !_ended)
             {
-                float t = Mathf.PingPong(Time.unscaledTime * 1.6f, 1f);
+                float t = Mathf.PingPong(GameClock.Time * 1.6f, 1f);
                 _lensRing.color = new Color(LensColor.r, LensColor.g, LensColor.b, 0.25f + 0.55f * t);
                 _lensRing.rectTransform.localScale = Vector3.one * (1.02f + 0.10f * t);
+                _magnifier.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -8f + 16f * t); // la lupa "busca"
                 yield return null;
             }
             _lensRing.color = new Color(LensColor.r, LensColor.g, LensColor.b, 0f);
@@ -254,6 +249,7 @@ namespace NeuroVida.Games.Series
             int answerIndex = System.Array.IndexOf(_item.Options, _item.Answer);
             if (!Endless) _dots.Mark(_trialIndex, correct);
 
+            _magnifier.gameObject.SetActive(false);
             var answerToken = _tokens[_count - 1];
             answerToken.Label.text = _item.Answer.ToString();
             answerToken.Label.color = Color.white;
@@ -271,7 +267,7 @@ namespace NeuroVida.Games.Series
                 UpdateHudText();
                 _optionImages[chosen].color = GoodColor;
                 SetBanner(_item.Rule, GoodColor, 0.45f);
-                PlayTone(523.25f * Mathf.Pow(2f, Mathf.Min(_streak - 1, 7) * 2f / 12f), 0.3f, 0.2f);
+                GameFeel.Correct(_streak);
                 StartCoroutine(Flash(GoodColor, 0.10f, 0.28f));
                 StartCoroutine(UiFx.SparkBurst(_fxRect, LocalIn(_fxRect, answerToken.Rect), Color.white, 14, 260f, 42f, 0.55f));
                 StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _optionRects[chosen]), Color.white, 120f, 420f, 0.45f));
@@ -280,7 +276,7 @@ namespace NeuroVida.Games.Series
                 {
                     UpdateHudText();
                     _toast.Show($"Nivel {_effLevel}", "Aparecen patrones nuevos", Accent, 1.1f);
-                    PlayTone(1046.5f, 0.35f, 0.2f);
+                    GameFeel.LevelUp();
                 }
                 else if (_streak == 3 || _streak == 6 || _streak == 10)
                 {
@@ -299,7 +295,7 @@ namespace NeuroVida.Games.Series
                 }
                 _optionImages[chosen].color = BadColor;
                 SetBanner(_item.Rule, AmberColor, 0.40f);
-                PlayTone(196f, 0.32f, 0.2f);
+                GameFeel.Wrong();
                 StartCoroutine(Flash(BadColor, 0.14f, 0.32f));
                 StartCoroutine(UiFx.Shake(20f, 0.4f, _optionRects[chosen]));
                 for (int i = 0; i < 4; i++)
@@ -333,7 +329,7 @@ namespace NeuroVida.Games.Series
             var optionScales = new Vector3[4];
             while (t < seconds)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
                 _rowRect.anchoredPosition = _rowRest + new Vector2(-220f * k, 0f);
                 foreach (var tok in _tokens)
@@ -349,7 +345,7 @@ namespace NeuroVida.Games.Series
 
         private bool UpdateRoundClock()
         {
-            float left = _roundEndsAt - Time.unscaledTime;
+            float left = _roundEndsAt - GameClock.Time;
             float f = Mathf.Clamp01(left / SeriesContract.EndlessSeconds);
             _timerFill.anchorMax = new Vector2(f, 1f);
             _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
@@ -358,7 +354,7 @@ namespace NeuroVida.Games.Series
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
                 _lastTickSecond = whole;
-                PlayTone(880f, 0.08f, 0.10f);
+                GameFeel.Tick();
             }
             return left <= 0f;
         }
@@ -389,7 +385,6 @@ namespace NeuroVida.Games.Series
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
-            PlayTone(659.25f, 0.4f, 0.22f);
             yield break;
         }
 
@@ -397,13 +392,13 @@ namespace NeuroVida.Games.Series
         {
             if (!_acceptInput || _ended) return;
             _acceptInput = false;
-            _answerAt = Time.unscaledTime;
+            _answerAt = GameClock.Time;
             _answerIndex = index;
         }
 
         // ------------------------------------------------------------------ construcción de UI
 
-        private void BuildUi()
+        protected override void BuildUi()
         {
             if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
             {
@@ -427,10 +422,8 @@ namespace NeuroVida.Games.Series
             bg.transform.SetParent(canvasGo.transform, false);
             var bgRect = bg.AddComponent<RectTransform>();
             Stretch(bgRect);
-            bg.AddComponent<Image>().color = BackgroundColor;
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.12f, 0.88f), 1500f, new Color(0.65f, 0.55f, 0.98f, 0.20f));
-            UiFx.AddBackgroundGlow(bg.transform, new Vector2(0.92f, 0.10f), 1400f, new Color(0.98f, 0.75f, 0.14f, 0.11f));
-            bg.AddComponent<CountdownAmbient>().Build(bgRect, 8);
+            // Mundo "MeteorShower": cielo nocturno de la app + su elemento propio (ver Shared/WorldBackdrop.cs).
+            WorldBackdrop.Build(bgRect, GameWorld.MeteorShower);
 
             var safeGo = new GameObject("SafeAreaContent");
             safeGo.transform.SetParent(canvasGo.transform, false);
@@ -468,63 +461,7 @@ namespace NeuroVida.Games.Series
 
         private void BuildHud()
         {
-            var hudGo = new GameObject("Hud");
-            hudGo.transform.SetParent(_safe, false);
-            var hudRect = hudGo.AddComponent<RectTransform>();
-            hudRect.anchorMin = new Vector2(0f, 1f);
-            hudRect.anchorMax = new Vector2(1f, 1f);
-            hudRect.pivot = new Vector2(0.5f, 1f);
-            hudRect.sizeDelta = new Vector2(0f, 190f);
-            hudRect.anchoredPosition = Vector2.zero;
-
-            const float pillW = 300f, pillH = 100f;
-            var pillGo = new GameObject("StreakPill");
-            pillGo.transform.SetParent(hudGo.transform, false);
-            _streakPill = pillGo.AddComponent<RectTransform>();
-            _streakPill.anchorMin = _streakPill.anchorMax = _streakPill.pivot = new Vector2(1f, 1f);
-            _streakPill.sizeDelta = new Vector2(pillW, pillH);
-            _streakPill.anchoredPosition = new Vector2(-MarginU, -30f);
-            var pillImg = pillGo.AddComponent<Image>();
-            pillImg.sprite = RoundedRectSprite.Get(64);
-            pillImg.type = Image.Type.Sliced;
-            pillImg.color = new Color(0f, 0f, 0f, 0.30f);
-            pillImg.raycastTarget = false;
-
-            var discGo = new GameObject("Disc");
-            discGo.transform.SetParent(pillGo.transform, false);
-            var discRect = discGo.AddComponent<RectTransform>();
-            discRect.anchorMin = discRect.anchorMax = new Vector2(0f, 0.5f);
-            discRect.pivot = new Vector2(0.5f, 0.5f);
-            discRect.sizeDelta = new Vector2(52f, 52f);
-            discRect.anchoredPosition = new Vector2(50f, 0f);
-            _streakDisc = discGo.AddComponent<Image>();
-            _streakDisc.sprite = DiscSprite.Get();
-            _streakDisc.raycastTarget = false;
-
-            _streakText = MakeText(pillGo.transform, "StreakText", 58, TextAnchor.MiddleLeft, Color.white, 2f, 0.3f);
-            var sr = _streakText.rectTransform;
-            sr.offsetMin = new Vector2(96f, 0f);
-            sr.offsetMax = new Vector2(-24f, 0f);
-            BestFit(_streakText, 36);
-
-            _titleText = MakeText(hudGo.transform, "Title", 78, TextAnchor.UpperLeft, Color.white, 3f, 0.45f);
-            _subText = MakeText(hudGo.transform, "Sub", 48, TextAnchor.UpperLeft, new Color(1f, 1f, 1f, 0.72f), 2f, 0.35f);
-            float right = MarginU + pillW + 20f;
-            PlaceTopText(_titleText, MarginU, right, -22f, 100f);
-            PlaceTopText(_subText, MarginU, right, -112f, 70f);
-            BestFit(_titleText, 46);
-            BestFit(_subText, 30);
-            _titleText.text = "Detective de Series";
-        }
-
-        private static void PlaceTopText(Text text, float left, float right, float topY, float height)
-        {
-            var r = text.rectTransform;
-            r.anchorMin = new Vector2(0f, 1f);
-            r.anchorMax = new Vector2(1f, 1f);
-            r.pivot = new Vector2(0f, 1f);
-            r.offsetMin = new Vector2(left, topY - height);
-            r.offsetMax = new Vector2(-right, topY);
+            _hud = new GameHud(_safe, "Detective de Series", MarginU, this);
         }
 
         private void BuildBanner()
@@ -608,7 +545,8 @@ namespace NeuroVida.Games.Series
                 t.Image.color = TermColor;
                 t.Image.raycastTarget = false;
 
-                t.Label = MakeText(go.transform, "Number", 90, TextAnchor.MiddleCenter, Color.white, 3f, 0.35f);
+                t.Label = MakeText(go.transform, "Number", 90, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
+                NeuroStyle.ClayText(t.Label, 4f, 7f); // número "de arcilla": contorno tinta y sombra dura
                 t.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
                 t.Label.verticalOverflow = VerticalWrapMode.Overflow;
                 var lr = t.Label.rectTransform;
@@ -646,6 +584,17 @@ namespace NeuroVida.Games.Series
             _lensRing.sprite = RadialGlowSprite.Get();
             _lensRing.raycastTarget = false;
             _lensRing.color = new Color(LensColor.r, LensColor.g, LensColor.b, 0f);
+
+            // Lupa de detective sobre la ficha "?": lo que hay que descubrir (se esconde al responder).
+            var magGo = new GameObject("Magnifier");
+            magGo.transform.SetParent(_rowRect, false);
+            var mr = magGo.AddComponent<RectTransform>();
+            mr.anchorMin = mr.anchorMax = new Vector2(0.5f, 0.5f);
+            mr.pivot = new Vector2(0.5f, 0.5f);
+            _magnifier = magGo.AddComponent<Image>();
+            _magnifier.sprite = MagnifierSprite.Get();
+            _magnifier.raycastTarget = false;
+            magGo.SetActive(false);
         }
 
         private void BuildOptions()
@@ -711,17 +660,6 @@ namespace NeuroVida.Games.Series
             go.SetActive(false);
         }
 
-        private void AddResultText(string name, int size, Vector2 pos, Color color)
-        {
-            var t = MakeText(_resultRoot, name, size, TextAnchor.MiddleCenter, color, 3f, 0.4f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(820f, size * 1.4f);
-            r.anchoredPosition = pos;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-        }
-
         private void ShowResult(int score, int avgMs, int total)
         {
             _exit.Show();
@@ -741,23 +679,6 @@ namespace NeuroVida.Games.Series
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
             StartCoroutine(UiFx.SparkBurst(_fxRect, Vector2.zero, Accent, 24, 420f, 56f, 0.9f));
-        }
-
-        private IEnumerator AnimateResult(int score)
-        {
-            var scoreText = _resultRoot.Find("Score").GetComponent<Text>();
-            float t = 0f;
-            const float seconds = 0.9f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _resultRoot.localScale = Vector3.one * Mathf.LerpUnclamped(0.7f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 2f)));
-                scoreText.text = Mathf.RoundToInt(score * UiFx.EaseOutCubic(k)).ToString();
-                yield return null;
-            }
-            scoreText.text = score.ToString();
-            _resultRoot.localScale = Vector3.one;
         }
 
         // ------------------------------------------------------------------ layout
@@ -788,6 +709,9 @@ namespace NeuroVida.Games.Series
             var ring = _lensRing.rectTransform;
             ring.sizeDelta = new Vector2(_tokenSize * 1.35f, _tokenSize * 1.35f);
             ring.anchoredPosition = TokenPos(_count - 1);
+            var mag = _magnifier.rectTransform;
+            mag.sizeDelta = new Vector2(_tokenSize * 0.66f, _tokenSize * 0.66f);
+            mag.anchoredPosition = TokenPos(_count - 1) + new Vector2(_tokenSize * 0.34f, _tokenSize * 0.38f);
         }
 
         private void Layout()
@@ -855,125 +779,26 @@ namespace NeuroVida.Games.Series
             _optionLabels[i].fontSize = Mathf.RoundToInt(Mathf.Max(40f, size));
         }
 
-        private static void ApplySafeArea(RectTransform target)
-        {
-            Rect safeArea = Screen.safeArea;
-            Vector2 min = safeArea.position;
-            Vector2 max = safeArea.position + safeArea.size;
-            min.x /= Screen.width;
-            min.y /= Screen.height;
-            max.x /= Screen.width;
-            max.y /= Screen.height;
-            target.anchorMin = min;
-            target.anchorMax = max;
-            target.offsetMin = Vector2.zero;
-            target.offsetMax = Vector2.zero;
-        }
-
         // ------------------------------------------------------------------ helpers
 
         private void UpdateHudText()
         {
-            _subText.text = Endless
-                ? $"Puntos {_points} · Nivel {_effLevel}"
-                : $"Serie {_trialIndex + 1} de {SeriesContract.TotalTrials} · Nivel {_effLevel}";
+            // Marcador común (GameHud): nivel + puntos que cuentan (Reto) o avance "3 de 12" (Precisión).
+            if (Endless)
+            {
+                _hud.SetLevel(_effLevel);
+                _hud.SetPoints(_points);
+            }
+            else
+            {
+                _hud.SetLevel(_effLevel);
+                _hud.SetInfo($"{_trialIndex + 1} de {SeriesContract.TotalTrials}");
+            }
         }
 
         private void SetStreak(int streak)
         {
-            _streakText.text = $"Racha {streak}";
-            _streakDisc.color = streak >= 3 ? AmberColor : new Color(1f, 1f, 1f, 0.30f);
-            if (streak > 0) StartCoroutine(PopRect(_streakPill, 1.12f, 0.22f));
-        }
-
-        private static IEnumerator PopIn(RectTransform rect, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                if (rect == null) yield break;
-                t += Time.unscaledDeltaTime;
-                rect.localScale = Vector3.one * Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(t / seconds)));
-                yield return null;
-            }
-            if (rect != null) rect.localScale = Vector3.one;
-        }
-
-        private static Vector2 LocalIn(RectTransform space, RectTransform target)
-        {
-            Vector3 local = space.InverseTransformPoint(target.position);
-            return new Vector2(local.x, local.y);
-        }
-
-        private IEnumerator Flash(Color color, float maxAlpha, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _flash.color = new Color(color.r, color.g, color.b, maxAlpha * (1f - k));
-                yield return null;
-            }
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-        }
-
-        private static IEnumerator PopRect(RectTransform rect, float peak, float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                if (rect == null) yield break;
-                t += Time.unscaledDeltaTime;
-                rect.localScale = Vector3.one * Mathf.Lerp(peak, 1f, UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds)));
-                yield return null;
-            }
-            if (rect != null) rect.localScale = Vector3.one;
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
-
-        private static void BestFit(Text text, int minSize)
-        {
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = minSize;
-            text.resizeTextMaxSize = text.fontSize;
-        }
-
-        private static Text MakeText(Transform parent, string name, int fontPx, TextAnchor align, Color color, float shadowDistance, float shadowAlpha)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var rect = go.AddComponent<RectTransform>();
-            Stretch(rect);
-            var text = go.AddComponent<Text>();
-            text.font = UiFonts.Bold;
-            text.fontSize = fontPx;
-            text.alignment = align;
-            text.color = color;
-            text.raycastTarget = false;
-            if (shadowAlpha > 0f) UiFonts.AddSoftShadow(go, shadowDistance, shadowAlpha);
-            return text;
-        }
-
-        private void PlayTone(float hz, float seconds, float volume)
-        {
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            float key = Mathf.Round(hz * 10f) + seconds * 100000f;
-            if (!_toneCache.TryGetValue(key, out var clip))
-            {
-                clip = HarmonicTone.Build(hz, seconds, volume);
-                _toneCache[key] = clip;
-            }
-            _audioSource.PlayOneShot(clip);
+            _hud.SetStreak(streak);
         }
     }
 }

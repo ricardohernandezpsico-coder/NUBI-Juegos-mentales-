@@ -8,6 +8,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.bridge.GameSessionStore
 import com.example.data.NeuroVidaRepository
 import com.example.model.*
 import com.example.notification.CognitiveReminderWorker
@@ -33,18 +34,29 @@ data class ActiveGameSession(
   val timed: Boolean,
   val isDailyFlow: Boolean = false,
   // Progresión sin techo más allá de nivel 5 (Experto) — ver GameProgressEntity.masteryStreak.
-  val intensity: Int = 0
+  val intensity: Int = 0,
+  // Partida en pausa que se retoma: se relanza Unity con este id de lanzamiento y la partida sigue donde quedó.
+  val resumeLaunchId: String? = null,
+  // Evaluación inicial "Tu punto de partida": paso 1..N (0 = partida normal). Ver data/Baseline.kt.
+  val assessmentStep: Int = 0,
+  // Identidad de esta sesión (no de la partida): la usa la UI para que el estado guardado de una sesión anterior
+  // (p. ej. "ya lancé Unity", que Android restaura al recrear la pantalla) no lo herede la siguiente.
+  val sessionToken: String = java.util.UUID.randomUUID().toString()
 )
 
-data class DomainStats(
-  val domain: DomainType,
-  val averageScore: Int,
-  val totalPlayed: Int,
-  val competenceLevel: Int // 1 to 5
+/**
+ * Estado de la evaluación inicial mientras se juega ([done] juegos terminados de BaselinePlan.steps, ratings
+ * medidos por juego) y, al terminar, el mapa ([result]).
+ */
+data class BaselineRun(
+  val done: Int = 0,
+  val measured: Map<String, Float> = emptyMap(),
+  val result: com.example.data.Baseline? = null
 )
 
 class NeuroVidaViewModel(application: Application) : AndroidViewModel(application) {
-  private val repository = NeuroVidaRepository(application)
+  // El mismo repositorio que usa el puente con Unity (una sola copia en memoria de ligas, logros y punto de partida).
+  private val repository = (application as? com.example.NeuroVidaApplication)?.repository ?: NeuroVidaRepository(application)
 
   val userSettings = repository.userSettings
   val allProfiles = repository.allProfiles
@@ -65,6 +77,111 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     GameRegistry.allGames.map { g -> GameRankInfo(gameId = g.id, rating = ratingMap[g.id] ?: 0) }
   }.stateIn(viewModelScope, SharingStarted.Eagerly, GameRegistry.allGames.map { GameRankInfo(it.id, 0) })
   val dailySession = repository.dailySession
+
+  /** Punto de partida: educación, metas y el mapa guardado (null = no hizo la evaluación). */
+  val education = repository.education
+  val goals = repository.goals
+  val baseline = repository.baseline
+
+  /** Evaluación en curso o su resultado por mostrar (null = no se está haciendo). */
+  private val _baselineRun = MutableStateFlow<BaselineRun?>(null)
+  val baselineRun: StateFlow<BaselineRun?> = _baselineRun.asStateFlow()
+
+  /** Logros conseguidos durante la evaluación: se celebran al cerrar el mapa, no entre juego y juego. */
+  private var baselineAchievements: List<String> = emptyList()
+
+  /** Rango de edad con que arranca la evaluación (al salir del onboarding los ajustes todavía no se recargaron). */
+  private var baselineAge: AgeBand? = null
+
+  /** Cambia el estado de la evaluación y lo guarda en disco mientras está en curso (sobrevive a que Android cierre
+   *  la app durante un juego; ver [GameSessionStore]). Con el mapa ya calculado o sin evaluación, no queda nada guardado. */
+  private fun setBaselineRun(run: BaselineRun?) {
+    _baselineRun.value = run
+    GameSessionStore.saveBaseline(
+      if (run == null || run.result != null) null
+      else GameSessionStore.BaselineProgress(run.done, run.measured, baselineAge?.name)
+    )
+  }
+
+  /** Empieza (o vuelve a empezar) la evaluación: 3 juegos cortos, uno tras otro. */
+  fun startBaseline(age: AgeBand? = null) {
+    baselineAge = age ?: userSettings.value.ageBand
+    setBaselineRun(BaselineRun())
+    baselineAchievements = emptyList()
+    _lastResult.value = null
+    launchBaselineStep(0)
+  }
+
+  /** Juega el siguiente juego de la evaluación (o repite el que quedó a medias). */
+  fun continueBaseline() {
+    val run = _baselineRun.value ?: return
+    if (run.result == null && run.done < com.example.data.BaselinePlan.steps.size) launchBaselineStep(run.done)
+  }
+
+  private fun launchBaselineStep(index: Int) {
+    val step = com.example.data.BaselinePlan.steps[index]
+    val def = GameRegistry.getById(step.gameId) ?: return
+    pausedGame = null
+    _activeGame.value = ActiveGameSession(
+      gameDef = def,
+      level = com.example.data.BaselinePlan.startLevel(baselineAge ?: userSettings.value.ageBand),
+      timed = step.timed,
+      assessmentStep = index + 1
+    )
+  }
+
+  /** "Terminar después" a mitad de la evaluación: se estima el punto de partida y queda para hacerla desde Perfil. */
+  fun skipBaseline() {
+    setBaselineRun(null)
+    _activeGame.value = null
+    _currentTab.value = AppTab.HOY
+    viewModelScope.launch {
+      repository.applyPriorIfNeeded(userSettings.value.ageBand, education.value)
+      flushBaselineAchievements()
+    }
+  }
+
+  /** Cierra el mapa ("Empezar mi camino"): vuelve a Hoy y celebra los logros que quedaron pendientes. */
+  fun finishBaseline() {
+    setBaselineRun(null)
+    setTab(AppTab.HOY)
+    flushBaselineAchievements()
+  }
+
+  private fun flushBaselineAchievements() {
+    if (baselineAchievements.isNotEmpty()) _achievementQueue.value = _achievementQueue.value + baselineAchievements
+    baselineAchievements = emptyList()
+  }
+
+  private fun onBaselineResult(session: ActiveGameSession, result: GamePlayResult) {
+    val rating = result.endRating ?: (result.score / 100f)
+    _activeGame.value = null
+    viewModelScope.launch {
+      val outcome = repository.recordGameResult(result, countsForDailySession = false)
+      baselineAchievements = baselineAchievements + outcome.newAchievements
+      val run = _baselineRun.value ?: BaselineRun()
+      val measured = run.measured + (session.gameDef.id to rating)
+      val done = maxOf(run.done, session.assessmentStep)
+      if (done >= com.example.data.BaselinePlan.steps.size) {
+        val baseline = com.example.data.buildBaseline(measured)
+        repository.applyBaseline(baseline)
+        setBaselineRun(BaselineRun(done, measured, baseline))
+        triggerHapticFeedback(HapticType.SUCCESS)
+      } else {
+        setBaselineRun(BaselineRun(done, measured))
+        triggerHapticFeedback(HapticType.LIGHT)
+      }
+    }
+  }
+
+  /** Ascensos de liga guardados (para marcarlos en el camino de Hoy). */
+  val leagueEvents = repository.leagueEvents
+
+  /** Logros conseguidos (id -> cuándo) y las cifras con que se calculan (para el avance "4/7" de los bloqueados). */
+  val achievementUnlocks = repository.achievementUnlocks
+  val achievementStats: StateFlow<com.example.data.AchievementStats> = combine(gameHistory, gameRanks) { hist, ranks ->
+    com.example.data.computeAchievementStats(hist, ranks.associate { it.gameId to it.rating })
+  }.stateIn(viewModelScope, SharingStarted.Eagerly, com.example.data.computeAchievementStats(emptyList(), emptyMap()))
 
   /** Nivel (0..1) por juego para Progreso: rating del DDA comun; en Secuencia/Parejas (motores propios) se
    *  aproxima con el nivel 1-5 si ya se jugaron; null = sin medir. */
@@ -91,46 +208,43 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   private val _lastResult = MutableStateFlow<Pair<GamePlayResult, Boolean>?>(null)
   val lastResult: StateFlow<Pair<GamePlayResult, Boolean>?> = _lastResult.asStateFlow()
 
+  /** Si el resultado que se muestra es de un juego del camino diario (ofrece "Siguiente juego"). */
+  private val _lastResultDaily = MutableStateFlow(false)
+  val lastResultDaily: StateFlow<Boolean> = _lastResultDaily.asStateFlow()
+
+  /** Ascenso de liga de la última partida (se celebra encima de la pantalla de resultado); null = no hubo. */
+  private val _promotion = MutableStateFlow<LeaguePromotion?>(null)
+  val promotion: StateFlow<LeaguePromotion?> = _promotion.asStateFlow()
+
+  fun dismissPromotion() {
+    _promotion.value = null
+  }
+
+  /** Logros conseguidos en las últimas partidas y todavía no celebrados (se muestran de a uno). */
+  private val _achievementQueue = MutableStateFlow<List<String>>(emptyList())
+  val achievementQueue: StateFlow<List<String>> = _achievementQueue.asStateFlow()
+
+  fun dismissAchievement() {
+    _achievementQueue.value = _achievementQueue.value.drop(1)
+  }
+
+  /** Solo depuración (botón en Ajustes): muestra la celebración de un logro. */
+  fun debugShowAchievement() {
+    _achievementQueue.value = _achievementQueue.value + "racha_7"
+  }
+
+  /** Solo depuración (botón en Ajustes): muestra la celebración sin tener que ganar 250 trofeos. */
+  fun debugShowPromotion() {
+    _promotion.value = LeaguePromotion(RankTier.PLATA, RankTier.BRONCE, gameId = "secuencia", rating = 255)
+  }
+
   // Computed streak
   val currentStreak: StateFlow<Int> = combine(gameHistory) { history ->
     repository.calculateStreak(history[0])
   }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
-  // Last 7 days activity (Day letter to boolean)
-  val last7DaysActivity: StateFlow<List<Pair<String, Boolean>>> = combine(gameHistory) { history ->
-    repository.getLast7DaysActivity(history[0])
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-  // Domain competencies
-  val domainStats: StateFlow<List<DomainStats>> = combine(gameHistory, gameLevels) { history, levels ->
-    DomainType.values().map { domain ->
-      val gamesInDomain = GameRegistry.allGames.filter { it.domain == domain }
-      val resultsInDomain = history.filter { r -> gamesInDomain.any { it.id == r.gameId } }
-      val avg = if (resultsInDomain.isEmpty()) 50 else resultsInDomain.map { it.score }.average().toInt()
-      val highestLvl = gamesInDomain.maxOfOrNull { levels[it.id] ?: 1 } ?: 1
-      DomainStats(
-        domain = domain,
-        averageScore = avg,
-        totalPlayed = resultsInDomain.size,
-        competenceLevel = highestLvl
-      )
-    }
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-  // Sparkline data for sessions (counts per day over 7 days)
-  val sessionsSparkline: StateFlow<List<Float>> = combine(gameHistory) { history ->
-    val last7 = repository.getLast7DaysActivity(history[0])
-    last7.map { if (it.second) 1f else 0f }
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, listOf(0f, 1f, 1f, 0f, 1f, 1f, 1f))
-
-  // Sparkline data for recent scores
-  val scoresSparkline: StateFlow<List<Float>> = combine(gameHistory) { history ->
-    val recent = history[0].take(7).reversed()
-    if (recent.isEmpty()) listOf(50f, 60f, 70f) else recent.map { it.score.toFloat() }
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, listOf(60f, 75f, 80f, 85f))
-
   init {
-    viewModelScope.launch { com.example.bridge.UnityResultBus.results.collect { onUnityResult(it) } }
+    viewModelScope.launch { com.example.bridge.UnityResultBus.results.collect { onUnityResult(it.result, it.launchId) } }
     viewModelScope.launch {
       userSettings.collect { settings ->
         if (settings.notificationsEnabled) {
@@ -192,6 +306,18 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   fun launchGame(gameId: String, customLevel: Int? = null, customTimed: Boolean? = null, isDailyFlow: Boolean = false) {
+    // Si ese juego quedó en pausa ("Salir" del menú de pausa), se retoma en vez de empezar de cero. "Jugar de
+    // nuevo" (customLevel) siempre es una partida nueva. Abrir otro juego descarta la pausa (Unity recarga).
+    val paused = pausedGame
+    pausedGame = null
+    if (paused != null && paused.first.gameDef.id == gameId && customLevel == null) {
+      _activeGame.value = paused.first.copy(
+        isDailyFlow = isDailyFlow || paused.first.isDailyFlow,
+        resumeLaunchId = paused.second
+      )
+      _lastResult.value = null
+      return
+    }
     val def = GameRegistry.getById(gameId) ?: return
     val lvl = customLevel ?: getEffectiveLevelForGame(gameId)
     val timed = customTimed ?: userSettings.value.defaultTimed
@@ -205,26 +331,153 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
    * vez en Room; si coincide con la sesión activa se muestra la pantalla de resultado de la app.
    * Las partidas lanzadas desde los botones de depuración (sin sesión activa) solo se guardan.
    */
-  fun onUnityResult(result: GamePlayResult) {
-    val current = _activeGame.value
+  fun onUnityResult(result: GamePlayResult, launchId: String? = null) {
+    // La sesión viva, o la anotada en disco si Android cerró la app durante el juego (ViewModel nuevo).
+    val live = _activeGame.value?.takeIf { it.gameDef.id == result.gameId }
+    val stored = GameSessionStore.inFlight(launchId)?.takeIf { it.gameId == result.gameId }?.let(::sessionFrom)
+    if (live != null || stored != null) GameSessionStore.clearInFlight()
+    val current = live ?: stored
+    if (current != null && current.assessmentStep > 0) {
+      onBaselineResult(current, result)
+      return
+    }
     viewModelScope.launch {
-      val levelUp = repository.recordGameResult(result)
-      if (current != null && current.gameDef.id == result.gameId) {
-        _lastResult.value = Pair(result, levelUp)
+      val outcome = repository.recordGameResult(result)
+      if (current != null) {
+        _promotion.value = outcome.promotion(result.gameId)
+        _achievementQueue.value = _achievementQueue.value + outcome.newAchievements
+        _lastResultDaily.value = current.isDailyFlow
+        _lastResult.value = Pair(result, outcome.didLevelUp)
         _activeGame.value = null
         triggerHapticFeedback(if (result.score >= 70) HapticType.SUCCESS else HapticType.LIGHT)
       }
     }
   }
 
-  /** El usuario volvió de Unity: si no llegó ningún resultado (salió sin terminar), se cierra la sesión. */
-  fun onUnityGameClosed() {
-    // Margen para que un resultado en camino (llega por broadcast desde el proceso de Unity) todavía se
-    // asocie a la sesión activa antes de cerrarla.
-    viewModelScope.launch {
-      kotlinx.coroutines.delay(1500)
-      if (_lastResult.value == null) _activeGame.value = null
+  private fun sessionFrom(p: GameSessionStore.InFlight): ActiveGameSession? {
+    val def = GameRegistry.getById(p.gameId) ?: return null
+    return ActiveGameSession(def, p.level, p.timed, p.daily, p.intensity, assessmentStep = p.assessmentStep)
+  }
+
+  /** Resultado que llegó mientras la app estaba cerrada (ver [GameSessionStore]): se procesa como si fuera en vivo. */
+  private fun processPendingResult(): Boolean {
+    val (launchId, json) = GameSessionStore.takePendingResult() ?: return false
+    val result = com.example.bridge.NativeReceiver.parse(json) ?: return false
+    onUnityResult(result, launchId)
+    return true
+  }
+
+  /** true entre que se lanza Unity y que vuelve la app (ver [onReturnedFromGame] / [onHostResumed]). */
+  private var awaitingUnityReturn = false
+
+  /** Partida que quedó en pausa dentro de Unity (sesión + id de lanzamiento), para retomarla en [launchGame]. */
+  //
+  // Se guarda en disco (SharedPreferences), no solo en memoria: al salir al escritorio Android puede destruir la
+  // app (y este ViewModel) mientras el proceso de Unity, que es aparte, sigue vivo con la partida en pausa. Sin
+  // esto, al volver y tocar Play se generaba un id de lanzamiento nuevo y Unity empezaba una partida desde cero.
+  private val pausePrefs by lazy {
+    getApplication<Application>().getSharedPreferences("paused_game", android.content.Context.MODE_PRIVATE)
+  }
+
+  /** Juego que quedó en pausa (para ofrecer "Seguir partida" en Hoy); null = ninguno. */
+  private val _pausedGameId = MutableStateFlow<String?>(null)
+  val pausedGameId: StateFlow<String?> = _pausedGameId.asStateFlow()
+
+  private var pausedGame: Pair<ActiveGameSession, String>?
+    get() {
+      val gameId = pausePrefs.getString("gameId", null) ?: return null
+      val launchId = pausePrefs.getString("launchId", null) ?: return null
+      val def = GameRegistry.getById(gameId) ?: return null
+      return ActiveGameSession(
+        gameDef = def,
+        level = pausePrefs.getInt("level", 1),
+        timed = pausePrefs.getBoolean("timed", false),
+        isDailyFlow = pausePrefs.getBoolean("daily", false),
+        intensity = pausePrefs.getInt("intensity", 0)
+      ) to launchId
     }
+    set(value) {
+      val e = pausePrefs.edit()
+      if (value == null) {
+        e.clear()
+      } else {
+        val (session, launchId) = value
+        e.putString("gameId", session.gameDef.id)
+          .putString("launchId", launchId)
+          .putInt("level", session.level)
+          .putBoolean("timed", session.timed)
+          .putBoolean("daily", session.isDailyFlow)
+          .putInt("intensity", session.intensity)
+      }
+      e.apply()
+      _pausedGameId.value = value?.first?.gameDef?.id
+    }
+
+  init {
+    // Lo que quedó en disco si Android cerró la app durante un juego: la evaluación en curso y un resultado que
+    // llegó mientras tanto (se muestra ahora, con su pantalla de resultado y el flujo donde iba).
+    _pausedGameId.value = pausedGame?.first?.gameDef?.id
+    GameSessionStore.loadBaseline()?.let { saved ->
+      baselineAge = saved.ageBand?.let { n -> AgeBand.values().firstOrNull { it.name == n } }
+      _baselineRun.value = BaselineRun(saved.done, saved.measured)
+    }
+    processPendingResult()
+  }
+
+  /** Retoma la partida en pausa (botón "Seguir partida" de Hoy). */
+  fun resumePausedGame() {
+    val (session, _) = pausedGame ?: return
+    launchGame(session.gameDef.id, isDailyFlow = session.isDailyFlow)
+  }
+
+  /** `UnityGameHost` acaba de traer al frente la pantalla de juego (Unity). */
+  fun onUnityLaunched(launchId: String) {
+    awaitingUnityReturn = true
+    _activeGame.value?.let {
+      GameSessionStore.saveInFlight(
+        GameSessionStore.InFlight(launchId, it.gameDef.id, it.level, it.timed, it.isDailyFlow, it.intensity, it.assessmentStep)
+      )
+    }
+  }
+
+  /**
+   * Unity devolvió la app al frente ("Continuar" o Atrás) -- llega por `MainActivity.onNewIntent`, antes de
+   * `onResume`. Si la partida terminó, [resultJson] trae su resultado y se muestra al instante (sin esperar al
+   * broadcast de respaldo; [com.example.bridge.UnityResultInbox] evita procesarlo dos veces). Sin resultado =
+   * salió a mitad de partida: se cierra la sesión.
+   */
+  fun onReturnedFromGame(launchId: String?, resultJson: String?, paused: Boolean = false) {
+    awaitingUnityReturn = false
+    if (paused) {
+      // "Salir" del menú de pausa: la partida sigue viva (en pausa) en Unity; se vuelve al menú de la app.
+      // En la evaluación inicial no se retoma: ese juego se vuelve a jugar desde el principio ("Seguir").
+      val session = _activeGame.value ?: GameSessionStore.inFlight(launchId)?.let(::sessionFrom)
+      GameSessionStore.clearInFlight()
+      if (session != null && launchId != null && session.assessmentStep == 0) pausedGame = session to launchId
+      _activeGame.value = null
+      return
+    }
+    if (resultJson != null && com.example.bridge.UnityResultInbox.claim(launchId)) {
+      val result = com.example.bridge.NativeReceiver.parse(resultJson)
+      if (result != null) {
+        onUnityResult(result, launchId)
+        return
+      }
+    }
+    // El resultado pudo llegar antes por el broadcast con la app cerrada: quedó pendiente en disco.
+    if (processPendingResult()) return
+    if (resultJson == null) GameSessionStore.clearInFlight() // salió sin terminar
+    if (_lastResult.value == null) _activeGame.value = null
+  }
+
+  /**
+   * La app volvió a primer plano. Si se esperaba la vuelta de Unity y no llegó (Unity se cerró o se cayó en
+   * vez de devolver la app), se cierra la sesión para no dejar la pantalla de carga colgada.
+   */
+  fun onHostResumed() {
+    if (!awaitingUnityReturn) return
+    awaitingUnityReturn = false
+    if (_lastResult.value == null) _activeGame.value = null
   }
 
   fun finishActiveGame(score: Int, correct: Int, total: Int) {
@@ -238,8 +491,11 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       level = current.level
     )
     viewModelScope.launch {
-      val levelUp = repository.recordGameResult(result)
-      _lastResult.value = Pair(result, levelUp)
+      val outcome = repository.recordGameResult(result)
+      _promotion.value = outcome.promotion(result.gameId)
+      _achievementQueue.value = _achievementQueue.value + outcome.newAchievements
+      _lastResultDaily.value = current.isDailyFlow
+      _lastResult.value = Pair(result, outcome.didLevelUp)
       _activeGame.value = null
     }
 
@@ -375,6 +631,60 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     }
   }
 
+  /**
+   * Fin del onboarding (primera vez): guarda nombre (si lo escribió), meta de días por semana, recordatorio
+   * ([reminderHour] null = sin recordatorios), rango de edad, nivel educacional y metas de una sola vez. Poner
+   * `ageBand` es lo que saca al usuario del onboarding (ver `MainActivity`). Con [playBaseline] arranca la
+   * evaluación "Tu punto de partida"; si no, se estima el punto de partida (ver data/Baseline.kt).
+   */
+  fun completeOnboarding(
+    name: String,
+    band: AgeBand,
+    weeklyGoal: Int,
+    reminderHour: Int?,
+    education: com.example.data.Education?,
+    goals: Set<DomainType>,
+    playBaseline: Boolean
+  ) {
+    _currentTab.value = AppTab.HOY
+    repository.saveProfileExtras(education, goals)
+    viewModelScope.launch {
+      val current = userSettings.value
+      repository.updateSettings(
+        current.copy(
+          name = name.trim().ifEmpty { current.name },
+          weeklyGoal = weeklyGoal,
+          notificationsEnabled = reminderHour != null,
+          reminderHour = reminderHour ?: current.reminderHour,
+          reminderMinute = if (reminderHour != null) 0 else current.reminderMinute,
+          ageBand = band
+        )
+      )
+      if (playBaseline) {
+        startBaseline(band)
+      } else {
+        // "Hacerlo después": punto de partida estimado; la evaluación queda disponible en Perfil.
+        repository.applyPriorIfNeeded(band, education)
+      }
+    }
+  }
+
+  /** Solo depuración (botón en Ajustes): vuelve a mostrar el onboarding (sin borrar partidas ni progreso). */
+  fun debugRestartOnboarding() {
+    viewModelScope.launch { repository.updateSettings(userSettings.value.copy(ageBand = null)) }
+  }
+
+  /**
+   * "Jugar ahora" desde el recordatorio. Espera un momento a que carguen los ajustes (al abrir en frío todavía
+   * valen los de fábrica) y solo arranca si ya pasó el onboarding y no hay otro juego en curso.
+   */
+  fun startDailySessionFromReminder() {
+    viewModelScope.launch {
+      kotlinx.coroutines.delay(700)
+      if (userSettings.value.ageBand != null && _activeGame.value == null && _lastResult.value == null) startDailySession()
+    }
+  }
+
   fun triggerTestNotification() {
     CognitiveReminderWorker.triggerImmediateTestReminder(getApplication())
   }
@@ -384,6 +694,12 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       repository.resetData()
       _activeGame.value = null
       _lastResult.value = null
+      _promotion.value = null
+      _achievementQueue.value = emptyList()
+      setBaselineRun(null)
+      pausedGame = null
+      GameSessionStore.clearAll()
+      _currentTab.value = AppTab.HOY
     }
   }
 
