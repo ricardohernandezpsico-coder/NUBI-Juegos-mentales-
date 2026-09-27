@@ -41,12 +41,7 @@ object UnityGameLauncher {
     val memory_phase: String = "",
     val memory_seed: Int = 0,
     val memory_level: Int = 0,
-    val memory_elapsed_s: Int = 0,
-    // Solo Primer Contacto (ver data/Contact.kt): el diccionario nuri de la persona y qué palabras de otros días repasar
-    // (con hace cuántos días se vieron).
-    val contact_known: List<Int>? = null,
-    val contact_review: List<Int>? = null,
-    val contact_review_days: List<Int>? = null
+    val memory_elapsed_s: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -96,10 +91,6 @@ object UnityGameLauncher {
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
-    // Primer Contacto: el diccionario vive en el teléfono; se manda con el repaso del día ya elegido.
-    val contact = if (gameId == "contacto") {
-      com.example.data.Contact.launch(com.example.data.ContactDictionaryStore(context).load(), com.example.data.Contact.today())
-    } else null
     val config = InitConfigDto(
       user_id = userId,
       game_id = gameId, // mismo id de texto que GameRegistry (Models.kt), no un int
@@ -118,10 +109,7 @@ object UnityGameLauncher {
         memory_phase = memory?.phase ?: "",
         memory_seed = memory?.seed ?: 0,
         memory_level = memory?.level ?: 0,
-        memory_elapsed_s = memory?.elapsedS ?: 0,
-        contact_known = contact?.known,
-        contact_review = contact?.review,
-        contact_review_days = contact?.reviewDays
+        memory_elapsed_s = memory?.elapsedS ?: 0
       )
     )
     val json = adapter.toJson(config)

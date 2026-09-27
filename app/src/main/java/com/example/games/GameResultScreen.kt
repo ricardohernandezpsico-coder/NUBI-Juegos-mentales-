@@ -678,99 +678,11 @@ fun GameResultScreen(
       }
     }
 
-    // Primer Contacto: palabras descifradas, escenas por palabra, descarte, repaso de otros días y el diccionario.
-    result.contactLesson?.let { lesson ->
-      Spacer(Modifier.height(14.dp))
-      if (result.contactPractice) {
-        Text("Ya sabes todo el nuri", color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = FredokaFamily)
-        Text(
-          text = "Entendiste ${result.correctAnswers} de ${result.totalTrials} frases completas.",
-          color = TextSoft,
-          fontSize = 13.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-        )
-      } else {
-        val decoded = result.contactDecoded.orEmpty()
-        val n = lesson.size
-        Text(
-          text = "Tu nuri: descifraste ${decoded.size} de $n",
-          color = Clay.Lime,
-          fontWeight = FontWeight.Bold,
-          fontSize = 20.sp,
-          fontFamily = FredokaFamily,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 24.dp)
-        )
-        Spacer(Modifier.height(6.dp))
-        FilledSlots(decoded.size, n, Clay.Lime, Modifier.semantics { contentDescription = "Descifraste ${decoded.size} de $n palabras" })
-        if (decoded.isNotEmpty()) {
-          Text(
-            text = com.example.data.Contact.decodedLine(decoded),
-            color = Clay.Cream,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-          )
-        }
-        if (decoded.size < n) {
-          Text(
-            text = "Las que faltan vuelven la próxima vez: se aprenden mejor con una pausa.",
-            color = TextSoft,
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-          )
-        }
-        result.contactMeanHearings?.let { mean ->
-          Text(
-            text = com.example.data.Contact.hearingsMessage(mean),
-            color = TextSoft,
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-          )
-        }
-        val meOk = result.contactMeOk
-        val meTotal = result.contactMeTotal
-        if (meOk != null && meTotal != null) {
-          com.example.data.Contact.exclusionMessage(meOk, meTotal)?.let {
-            Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
-          }
-        }
-      }
-      result.contactReview?.takeIf { it.isNotEmpty() }?.let { reviewed ->
-        val ok = result.contactReviewOk.orEmpty().count { it }
-        Text(
-          text = com.example.data.Contact.reviewMessage(ok, reviewed.size, result.contactReviewMaxDays),
-          color = Clay.Cream,
-          fontSize = 14.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp)
-        )
-      }
-      result.nuriKnown?.let { known ->
-        Text(
-          text = "Tu diccionario nuri: $known de ${com.example.data.Contact.WORD_COUNT} palabras",
-          color = Clay.Sun,
-          fontSize = 14.sp,
-          fontWeight = FontWeight.SemiBold,
-          modifier = Modifier.padding(top = 6.dp)
-        )
-        NuriDictionaryDots(
-          known,
-          com.example.data.Contact.WORD_COUNT,
-          Modifier.padding(top = 4.dp).semantics { contentDescription = "Sabes $known de ${com.example.data.Contact.WORD_COUNT} palabras nuri" }
-        )
-      }
-    }
-
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
-      result.homingErrorPct, result.contactLesson
+      result.homingErrorPct
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1037,25 +949,6 @@ private fun FilledSlots(filled: Int, total: Int, color: Color, modifier: Modifie
       drawCircle(Clay.Ink, r, c + Offset(0f, 3.dp.toPx()))
       drawCircle(if (i < filled) color else Color(0xFF1B2466), r, c)
       drawCircle(Clay.Ink, r, c, style = Stroke(border))
-    }
-  }
-}
-
-// ---------- Primer Contacto: "tu diccionario nuri" ----------
-
-/** Las palabras del idioma como puntos de arcilla (2 filas): encendidas las que ya sabes. El número va en el texto. */
-@Composable
-private fun NuriDictionaryDots(known: Int, total: Int, modifier: Modifier = Modifier) {
-  val perRow = (total + 1) / 2
-  Canvas(modifier.size(width = 13.dp * perRow + 4.dp * (perRow - 1), height = 34.dp)) {
-    val r = 6.5.dp.toPx()
-    val gap = 4.dp.toPx()
-    for (i in 0 until total) {
-      val row = i / perRow
-      val col = i % perRow
-      val c = Offset(r + col * (2 * r + gap), r + 1.dp.toPx() + row * (2 * r + 4.dp.toPx()))
-      drawCircle(if (i < known) Clay.Sun else Color(0xFF1B2466), r, c)
-      drawCircle(Clay.Ink, r, c, style = Stroke(1.5.dp.toPx()))
     }
   }
 }

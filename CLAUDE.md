@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 19 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 18 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -15,11 +15,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
   `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 19 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 18 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · g`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · h`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -41,12 +41,12 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   (`GamesLibraryScreen`, planetas) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `Contact`, `DdaRating`, `Homing`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`; y
+- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
   onboarding van en **SharedPreferences** para no migrar: `league_events`, `achievements`, `profile_extra`
-  (educación, metas, mapa, `prior_at`), `paused_game`, `mission_log`, `nuri_dictionary`, bandeja de resultados de Unity.
+  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity.
   Al cambiar el esquema de Room: entidad → subir versión → `Migration(N, N+1)` en SQL → compilar → comitear `schemas/<N+1>.json`.
 - Diseño "noche + arcilla" (`ui/theme/Clay.kt`, `Type.kt` con Fredoka, `ui/components/CosmosBackground.kt`).
 
@@ -350,48 +350,13 @@ reconocía, pausas), incluso tras la "opción A" (escucha continua, lista al rec
 todo, también el permiso de micrófono. El código completo queda en el historial de git (commit `caf19b8`: juego Unity,
 `SpeechBridge.kt`, prueba de voz, léxico de ≈700 palabras). Lección para lenguaje: nada de voz; interacción táctil y fluida.
 
-**Primer Contacto** (`Games/Contacto/`, id `contacto`, dominio LENGUAJE; 28-sep, elegido por Ricardo entre 7 propuestas
-en tabla tras descartar Constelación): APRENDER PALABRAS de un idioma extraterrestre (el **nuri**) deduciéndolas de
-escena en escena, sin que nadie diga qué significan: aprendizaje entre situaciones (Yu y Smith, 2007; Smith y Yu, 2008;
-aprendizaje estadístico, Saffran et al., 1996). Nadie en la competencia lo tiene.
-- Escena: el nuri (arcilla lima, tres ojos, antenas) dice una frase (globo crema; la palabra que suena, en coral) y
-  muestra 2-5 cosas sobre plataformas de luz; se toca la que se cree nombrada (se puede tocar mientras habla; tocar al
-  nuri repite). Una palabra queda **descifrada** con 2 aciertos seguidos SIN contar la primera vez que se oye (vuela al
-  diccionario de abajo, "¡Descifrada! KI = amarillo"). Si en 7 escenas no sale, queda "para otro día". Tope de escenas:
-  5 × palabras + 3.
-- Claridad (28-sep, Ricardo lo probó: "la voz suena bien, se siente fluido, pero es poco entendible"; los avisos de
-  arriba se salían del recuadro → `Toast.FitSize` ahora cuenta los renglones reales, arregla todos los juegos):
-  **guía de la primera vez** (sin diccionario: 3 escenas con la primera palabra, "la primera vez nadie lo sabe" → "¿qué
-  cosa ya estaba antes?" → descifrada; entra al diccionario pero NO a las medidas, `MarkTaught`); **pista "La vez
-  anterior:"** bajo el globo (miniaturas de lo que había la última vez que sonó la palabra; niveles 1-4, desde el 5 se
-  apaga con aviso "Sin pista"); **pregunta** "¿Qué es ZOBA?" bajo las cosas; **respuesta** desde la 2ª vez: "¡Vas bien!
-  Una vez más y queda descifrada" o "No era esa" (sin decir cuál era); en el diccionario, **dos puntos** por palabra
-  (aciertos seguidos) y **tu idea** tenue con el "?" encima.
-- Idioma FIJO de 36 palabras (`ContactContract.Words`, números que NO se cambian: la app guarda el diccionario con
-  ellos; mismas listas en `data/Contact.kt`): 12 cosas del cielo (`SymbolSprite`, pintadas del color de la frase con
-  `SymbolSprite.Colored`; el satélite no, su color no se lee), 5 colores (coral, amarillo, celeste, lila, verde = la
-  paleta), 16 hallazgos de la Bitácora (colores propios), números 1-3 (1-3 copias). Orden de aprendizaje en
-  `Curriculum`; las frases combinan: "KITU RA NAS" = dos cohetes corales (mini gramática).
-- Reglas y pruebas: `ContactContract` / `ContactContractTests` (9, con un jugador simulado que deduce —descifra todo en
-  ~3,2 escenas por palabra— y uno que toca al azar —20-40% desde 3 cosas por escena—). Lección = olvidadas primero y
-  luego las siguientes sin saber (3 → 8 según nivel); cosas por escena 2 → 5; la mitad de las otras cosas son "casi
-  iguales" (solo cambia el rasgo que se aprende); la mitad al azar ya tienen nombre (para poder descartar). DDA `stepUp`
-  0.5, registra desde la 2ª vez que suena la palabra. Todo sabido = "conversación" (12 frases con respuesta al instante).
-- **Diccionario** (app, `data/Contact.kt` + `ContactDictionaryStore`, SharedPreferences `nuri_dictionary`): lo lee
-  `UnityGameLauncher` al lanzar y manda `contact_known / contact_review / contact_review_days`; al empezar se repasan
-  hasta 4 palabras de otros días (las que hace más que no se ven; respuesta al instante): la olvidada sale y vuelve a la
-  lección. `NeuroVidaViewModel.applyContactResult` suma lo descifrado.
-- Voz de los nuri SINTETIZADA (`NuriVoice`, C# puro: formantes de las vocales del español, consonantes con explosión o
-  soplo, melodía propia por palabra en la pentatónica de la app, eco de octava; 22 050 Hz; se prepara en otro hilo con
-  `ContactSounds.Prepare`). Sonidos: aparecer, elegir (madera), "mm" del nuri (no dice si está bien), descifrada, otro día.
-- Medidas (`docs/medidas-juegos-estrella.md`): descifradas y su significado, **escenas por palabra** (mínimo 3; truco
-  si > 4,5), **descarte** de lo que ya tiene nombre (exclusividad mutua, Markman y Wachtel, 1988; desde 5 escenas),
-  **repaso** de otros días y **tu diccionario nuri** (N de 36, puntos). Telemetría `contact_*` → `GamePlayResult.contact*`
-  / `nuriKnown` → `GameResultScreen` (`NuriDictionaryDots`).
-- Arte: `ContactSprites` (nuri boca abierta/cerrada, punta del globo), `GameWorld.FirstContact`. Ícono de la app: nuri
-  lila (el lima no se ve sobre el planeta verde de Lenguaje). Vista previa: `python3 tools/art-preview/contacto.py <raw>`
-  → `docs/previews/contacto.png` (escena real del contrato); voz y sonidos → `docs/previews/contacto-sonidos.wav`.
-  Voz y fluidez aprobadas por Ricardo (28-sep); la versión con guía y pista, sin probar.
+**Primer Contacto (DESCARTADO, 28-sep)**: aprender palabras de un idioma extraterrestre deduciéndolas de escena en escena
+(aprendizaje entre situaciones, Yu y Smith 2007), con voz sintetizada propia (`NuriVoice`, formantes) y diccionario que
+crecía día a día. Ricardo: la voz y la fluidez bien, pero "poco entendible"; ni con guía de la primera vez y pistas le
+convenció ("una persona que no lo entienda no lo vuelve a jugar"). Código en el historial de git (commit `20eb246`).
+Lección (tras Constelación y Primer Contacto): nada de juegos "pesados" de explicar; lo que funciona es lo de Piloto
+Estelar: movimiento continuo, se entiende al instante, enganche inmediato. Queda de esa etapa: `Toast.FitSize` cuenta
+los renglones reales (los avisos largos ya no se salen del recuadro, en todos los juegos).
 
 ## Reglas que no se rompen
 
@@ -424,8 +389,8 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 60 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 176 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Kotlin: 56 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Unity EditMode: 167 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 18 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

@@ -62,13 +62,5 @@ namespace NeuroVida.Contracts
         public int memory_level;
         /// <summary>Solo Bitácora (informe): segundos desde la transmisión.</summary>
         public int memory_elapsed_s;
-
-        /// <summary>Solo Primer Contacto: palabras del idioma nuri que la persona ya sabe (su diccionario; números de
-        /// <c>ContactContract.Words</c>).</summary>
-        public int[] contact_known;
-        /// <summary>Solo Primer Contacto: palabras de otros días para repasar al empezar (las elige la app) y cuántos días
-        /// hace que se vieron por última vez (misma posición).</summary>
-        public int[] contact_review;
-        public int[] contact_review_days;
     }
 }

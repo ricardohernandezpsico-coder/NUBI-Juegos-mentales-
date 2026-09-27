@@ -188,41 +188,6 @@ Loomis et al., 1993), pero con 6-8 viajes por partida no se nombra ese patrón.
 
 ---
 
-## Primer Contacto: "Tu nuri", escenas por palabra, descarte y "tu diccionario"
-
-**Qué mide.** Aprender palabras nuevas deduciendo su significado de escena en escena, sin que nadie lo diga: el
-aprendizaje de palabras entre situaciones (Yu y Smith, 2007; Smith y Yu, 2008), el mismo mecanismo estadístico con que
-los niños aprenden a hablar (Saffran, Aslin y Newport, 1996). Cada escena es ambigua (varias cosas y una frase), pero la
-cosa nombrada está siempre que suena su palabra. Desde los colores, las frases combinan palabras ("KITU RA" = cohete
-coral): una mini gramática.
-
-**Cómo se calcula.** Una palabra queda **descifrada** cuando se acierta dos veces seguidas SIN contar la primera vez que
-se oye (esa siempre es adivinar). Desde la segunda vez el juego dice "¡Vas bien!" o "No era esa" sin decir cuál era, y en
-los niveles 1-4 muestra lo que había la vez anterior (desde el 5 hay que recordarlo): es aprendizaje entre situaciones
-con una ayuda para entender la tarea, no la versión sin respuesta de los estudios. La palabra de la guía de la primera
-vez (enseñada paso a paso) entra al diccionario pero no cuenta para las medidas. Así, tocar al azar descifra poco: en las pruebas del contrato, un jugador simulado que
-toca al azar descifra 20-40% de las palabras desde 3 cosas por escena, y uno que deduce (se queda con lo que se repite y
-descarta lo que ya tiene nombre) descifra todo en unas 3,2 escenas por palabra. Si una palabra no sale en 7 escenas,
-queda para otro día (no se insiste).
-
-**Qué se dice y con qué mínimos.**
-- "Descifraste N de M" y qué significa cada una ("KITU = cohete").
-- **Escenas por palabra**: cuántas veces se oyó cada palabra hasta descifrarla (el mínimo es 3). Con más de 4,5, un truco:
-  buscar qué cosa estaba también la vez anterior.
-- **Descarte** (exclusividad mutua, Markman y Wachtel, 1988): en las escenas con una palabra nueva y alguna cosa que ya
-  tenía nombre, en cuántas no se eligió esa cosa. Solo con 5 escenas o más. Con 70% o más se explica que es lo que hacen
-  los niños; con menos, un truco.
-- **Repaso**: al empezar cada partida se repasan hasta 4 palabras de otros días (las que hace más que no se ven): cuántas
-  se recordaron y de hace cuántos días. La que se olvida sale del diccionario y vuelve a la lección: recuerdo con demora y
-  práctica espaciada (Cepeda et al., 2006; Roediger y Karpicke, 2006).
-- **Tu diccionario nuri**: cuántas de las 36 palabras del idioma se saben hoy.
-
-**Qué NO se dice.** No se compara con normas ni se habla de "capacidad de aprendizaje": el formato (tocar para elegir,
-con descifrado a dos aciertos) no es el de los estudios. El idioma es el mismo para todos (se puede conversar entre
-jugadores) y sus palabras se revisaron para que no sean palabras del español.
-
----
-
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -234,8 +199,6 @@ jugadores) y sus palabras se revisaron para que no sean palabras del español.
   Verbal Behavior*, 9, 529–533.
 - Braver, T. S. (2012). The variable nature of cognitive control: a dual mechanisms framework. *Trends in Cognitive
   Sciences*, 16, 106–113.
-- Cepeda, N. J., Pashler, H., Vul, E., Wixted, J. T., y Rohrer, D. (2006). Distributed practice in verbal recall tasks:
-  a review and quantitative synthesis. *Psychological Bulletin*, 132, 354–380.
 - Coutrot, A., et al. (2018). Global determinants of navigation ability. *Current Biology*, 28, 2861–2866.
 - Cooper, L. A., y Shepard, R. N. (1973). Chronometric studies of the rotation of mental images. En W. G. Chase (Ed.),
   *Visual Information Processing*.
@@ -249,25 +212,17 @@ jugadores) y sus palabras se revisaron para que no sean palabras del español.
   absence of vision. *Journal of Motor Behavior*, 22, 19–43.
 - Loomis, J. M., Klatzky, R. L., Golledge, R. G., et al. (1993). Nonvisual navigation by blind and sighted: assessment
   of path integration ability. *Journal of Experimental Psychology: General*, 122, 73–91.
-- Markman, E. M., y Wachtel, G. F. (1988). Children's use of mutual exclusivity to constrain the meanings of words.
-  *Cognitive Psychology*, 20, 121–157.
 - Roediger, H. L., y Karpicke, J. D. (2006). Test-enhanced learning: taking memory tests improves long-term
   retention. *Psychological Science*, 17, 249–255.
-- Saffran, J. R., Aslin, R. N., y Newport, E. L. (1996). Statistical learning by 8-month-old infants. *Science*, 274,
-  1926–1928.
 - Schneider, M., et al. (2018). Associations of number line estimation with mathematical competence: a meta-analysis.
   *Child Development*, 89, 1467–1484.
 - Siegler, R. S., y Opfer, J. E. (2003). The development of numerical estimation. *Psychological Science*, 14, 237–243.
 - Simms, V., Clayton, S., Cragg, L., Gilmore, C., y Johnson, S. (2016). Explaining the relationship between number line
   estimation and mathematical achievement: the role of visuomotor integration and visuospatial skills. *Journal of
   Experimental Child Psychology*, 145, 22–33.
-- Smith, L., y Yu, C. (2008). Infants rapidly learn word-referent mappings via cross-situational statistics.
-  *Cognition*, 106, 1558–1568.
 - Snodgrass, J. G., y Corwin, J. (1988). Pragmatics of measuring recognition memory. *Journal of Experimental
   Psychology: General*, 117, 34–50.
 - Sullivan, J. L., Juhasz, B. J., Slattery, T. J., y Barth, H. C. (2011). Adults' number-line estimation strategies:
   evidence from eye movements. *Psychonomic Bulletin & Review*, 18, 557–563.
 - Verbruggen, F., et al. (2019). A consensus guide to capturing the ability to inhibit actions and impulsive behaviors
   in the stop-signal task. *eLife*, 8, e46323.
-- Yu, C., y Smith, L. B. (2007). Rapid word learning under uncertainty via cross-situational statistics.
-  *Psychological Science*, 18, 414–420.

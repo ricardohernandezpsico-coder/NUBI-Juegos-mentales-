@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "contacto",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -269,24 +269,6 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(Offset(27f, 72f), 7f), Clay.Coral, border = 3.5f, shadow = false)
       clay(diamond(Offset(76f, 22f), 9f, 13f), Clay.Sky, gloss = true)
       sparkle(Offset(90f, 40f), 7f, Color.White)
-    }
-    "contacto" -> {
-      // Un nuri (tres ojos, antenas con luz) que habla: su globo con tres puntos, abajo a la derecha. En el ícono va
-      // lila (en el juego es lima): sobre el planeta verde de Lenguaje, el lima no se distinguiría.
-      clayStroke(Path().apply { moveTo(38f, 32f); lineTo(29f, 14f); moveTo(58f, 32f); lineTo(67f, 14f) }, Clay.Grape, 4f)
-      clay(circle(Offset(29f, 13f), 6f), Clay.Sun, border = 3.5f)
-      clay(circle(Offset(67f, 13f), 6f), Clay.Sun, border = 3.5f)
-      clay(circle(Offset(48f, 55f), 29f), Clay.Grape, gloss = true)
-      clay(circle(Offset(48f, 52f), 10f), Cream, border = 3.5f, shadow = false)
-      drawCircle(Ink, 5f, Offset(49f, 53f))
-      drawCircle(Color.White, 1.8f, Offset(47f, 50.5f))
-      for (x in listOf(34f, 62f)) {
-        clay(circle(Offset(x, 40f), 5.5f), Cream, border = 3f, shadow = false)
-        drawCircle(Ink, 2.6f, Offset(if (x < 48f) x + 1f else x - 1f, 40.5f))
-      }
-      drawPath(Path().apply { addArc(Rect(40f, 58f, 56f, 70f), 20f, 140f) }, Ink, style = Stroke(3f, cap = StrokeCap.Round))
-      clay(roundRect(64f, 70f, 32f, 22f, 10f), Cream)
-      for (k in 0 until 3) drawCircle(Ink, 2.4f, Offset(72f + 8f * k, 81f))
     }
     "trafico" -> {
       // Estación de carga arriba; la ruta baja en curva hasta un desvío (disco con flecha) y se abre hacia dos planetas.

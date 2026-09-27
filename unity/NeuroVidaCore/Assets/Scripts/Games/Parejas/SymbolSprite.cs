@@ -69,26 +69,7 @@ namespace NeuroVida.Games.Parejas
         public static Color32[] Render(ShapeKind kind, int variant, int size)
         {
             variant = Mathf.Clamp(variant, 0, VariantCount - 1);
-            return RenderColored(kind, MainColors[(int)kind][variant], size);
-        }
-
-        private static readonly Dictionary<long, Sprite> ColoredCache = new Dictionary<long, Sprite>();
-
-        /// <summary>
-        /// El ícono con su color principal cambiado por <paramref name="main"/> (Primer Contacto: los nuri nombran los
-        /// colores, "KITU RA" = el cohete coral). Mismo dibujo; los detalles de otros colores se mantienen.
-        /// </summary>
-        public static Sprite Colored(ShapeKind kind, Color main)
-        {
-            long key = (long)kind << 32 | (uint)((Mathf.RoundToInt(main.r * 255f) << 16) | (Mathf.RoundToInt(main.g * 255f) << 8) | Mathf.RoundToInt(main.b * 255f));
-            if (ColoredCache.TryGetValue(key, out var cached) && cached != null) return cached;
-            var sprite = ToSprite(RenderColored(kind, main, SizePx), SizePx, SizePx);
-            ColoredCache[key] = sprite;
-            return sprite;
-        }
-
-        public static Color32[] RenderColored(ShapeKind kind, Color main, int size)
-        {
+            Color main = MainColors[(int)kind][variant];
             var pixels = new Color32[size * size];
             for (int py = 0; py < size; py++)
             {

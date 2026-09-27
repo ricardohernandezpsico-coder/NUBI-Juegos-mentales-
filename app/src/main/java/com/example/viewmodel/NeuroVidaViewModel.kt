@@ -431,11 +431,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       onBaselineResult(current, rawResult)
       return
     }
-    val result = when {
-      rawResult.gameId == "bitacora" && rawResult.memPhase != null -> applyMissionResult(rawResult)
-      rawResult.gameId == "contacto" && rawResult.contactLesson != null -> applyContactResult(rawResult)
-      else -> rawResult
-    }
+    val result = if (rawResult.gameId == "bitacora" && rawResult.memPhase != null) applyMissionResult(rawResult) else rawResult
     if (result.memPhase == "encode") {
       // La transmisión sola no es una partida completa: no suma a la liga ni al historial (el informe sí). Se muestra
       // su pantalla (cuánto se aprendió y cuándo llega el informe) y la sesión sigue.
@@ -457,21 +453,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
         triggerHapticFeedback(if (result.score >= 70) HapticType.SUCCESS else HapticType.LIGHT)
       }
     }
-  }
-
-  // ---------- Primer Contacto: el diccionario nuri (crece día a día; al empezar se repasan palabras de otros días) ----------
-
-  private val contactStore by lazy { com.example.data.ContactDictionaryStore(getApplication<Application>()) }
-
-  /** Lo descifrado entra al diccionario; lo repasado bien se renueva y lo olvidado sale (vuelve a aprenderse). */
-  private fun applyContactResult(result: GamePlayResult): GamePlayResult {
-    val today = com.example.data.Contact.today()
-    val before = contactStore.load()
-    val reviewed = result.contactReview.orEmpty()
-    val maxDays = reviewed.mapNotNull { id -> before[id]?.let { (today - it.lastSeenDay).toInt() } }.maxOrNull()
-    val after = com.example.data.Contact.apply(before, today, result.contactDecoded.orEmpty(), reviewed, result.contactReviewOk.orEmpty())
-    contactStore.save(after)
-    return result.copy(nuriKnown = after.size, contactReviewMaxDays = maxDays)
   }
 
   private fun sessionFrom(p: GameSessionStore.InFlight): ActiveGameSession? {
@@ -822,7 +803,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       pausedGame = null
       GameSessionStore.clearAll()
       missionStore.clear()
-      contactStore.clear()
       _mission.value = com.example.data.MissionState()
       _currentTab.value = AppTab.HOY
     }

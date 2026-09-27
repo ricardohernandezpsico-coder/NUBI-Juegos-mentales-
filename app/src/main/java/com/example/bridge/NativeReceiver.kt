@@ -129,18 +129,7 @@ object NativeReceiver {
     val homing_along: List<Double>? = null,
     val homing_lateral: List<Double>? = null,
     val homing_beacon: List<Int>? = null,
-    val homing_perfect: Int = 0,
-    // Solo Primer Contacto (ver StroopTelemetry.cs): lección, descifradas y veces oídas, repaso, escenas por palabra,
-    // descarte y si fue conversación.
-    val contact_lesson: List<Int>? = null,
-    val contact_decoded: List<Int>? = null,
-    val contact_hearings: List<Int>? = null,
-    val contact_review: List<Int>? = null,
-    val contact_review_ok: List<Int>? = null,
-    val contact_mean_hearings: Double = -1.0,
-    val contact_me_total: Int = -1,
-    val contact_me_ok: Int = -1,
-    val contact_practice: Int = 0
+    val homing_perfect: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -268,7 +257,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "contacto" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -383,16 +372,7 @@ object NativeReceiver {
       homingAlong = homing?.let { h -> h.map { it.first } },
       homingLateral = homing?.let { h -> h.map { it.second } },
       homingBeacon = homing?.let { h -> h.map { it.third } },
-      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 },
-      contactLesson = metrics.contact_lesson.takeIf { telemetry.game_id == "contacto" },
-      contactDecoded = metrics.contact_decoded.takeIf { telemetry.game_id == "contacto" },
-      contactHearings = metrics.contact_hearings.takeIf { telemetry.game_id == "contacto" },
-      contactReview = metrics.contact_review.takeIf { telemetry.game_id == "contacto" },
-      contactReviewOk = metrics.contact_review_ok?.map { it == 1 }?.takeIf { telemetry.game_id == "contacto" },
-      contactMeanHearings = metrics.contact_mean_hearings.takeIf { telemetry.game_id == "contacto" && it > 0.0 }?.toFloat(),
-      contactMeOk = metrics.contact_me_ok.takeIf { telemetry.game_id == "contacto" && metrics.contact_me_total >= 0 },
-      contactMeTotal = metrics.contact_me_total.takeIf { telemetry.game_id == "contacto" && it >= 0 },
-      contactPractice = telemetry.game_id == "contacto" && metrics.contact_practice == 1
+      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 }
     )
   }
 }
