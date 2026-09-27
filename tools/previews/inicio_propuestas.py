@@ -98,7 +98,7 @@ def action(im, label, gid, name, y=None, mission=True):
     play_tri(d, x1 - dp(32), y + h / 2, dp(16))
 
 
-def navbar(im):
+def navbar(im, sel=0):
     d = ImageDraw.Draw(im); y0 = H - dp(86); x0, x1 = dp(14), W - dp(14)
     d.rounded_rectangle([x0, y0 + dp(4), x1, y0 + dp(72)], radius=dp(30), fill=INK)
     d.rounded_rectangle([x0, y0, x1, y0 + dp(68)], radius=dp(30), fill=WHITE, outline=INK, width=int(dp(3)))
@@ -107,14 +107,14 @@ def navbar(im):
         cx = x0 + (x1 - x0) * (i + 0.5) / 5
         if i == 2:
             disc(d, cx, y0 + dp(18), dp(32), SUN, 3, 4); play_tri(d, cx + dp(3), y0 + dp(18), dp(24)); continue
-        col = CORAL if i == 0 else (107, 103, 144)
-        if i == 0: d.rounded_rectangle([cx - dp(26), y0 + dp(10), cx + dp(26), y0 + dp(40)], radius=dp(15), fill=(255, 225, 216))
+        col = CORAL if i == sel else (107, 103, 144)
+        if i == sel: d.rounded_rectangle([cx - dp(26), y0 + dp(10), cx + dp(26), y0 + dp(40)], radius=dp(15), fill=(255, 225, 216))
         s = dp(10); cy = y0 + dp(25)
         if i == 0: d.polygon([(cx, cy - s), (cx + s, cy), (cx + s * .7, cy), (cx + s * .7, cy + s), (cx - s * .7, cy + s), (cx - s * .7, cy), (cx - s, cy)], fill=col)
         elif i == 1: d.rounded_rectangle([cx - s, cy - s * .6, cx + s, cy + s * .6], radius=dp(5), fill=col)
         elif i == 3: d.polygon([(cx - s * .8, cy - s), (cx + s * .8, cy - s), (cx + s * .5, cy + s * .2), (cx - s * .5, cy + s * .2)], fill=col); d.rectangle([cx - dp(2), cy, cx + dp(2), cy + s], fill=col)
         else: d.ellipse([cx - s * .5, cy - s, cx + s * .5, cy], fill=col); d.pieslice([cx - s, cy + dp(1), cx + s, cy + s * 2], 180, 360, fill=col)
-        d.text((cx, y0 + dp(52)), lb, font=F(11, i == 0), fill=INK if i == 0 else (107, 103, 144), anchor='mm')
+        d.text((cx, y0 + dp(52)), lb, font=F(11, i == sel), fill=INK if i == sel else (107, 103, 144), anchor='mm')
 
 
 def note(im, x, y, text, anchor='la'):
