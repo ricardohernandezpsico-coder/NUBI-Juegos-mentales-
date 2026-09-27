@@ -100,14 +100,15 @@ namespace NeuroVida.Games.Constelacion.Tests
             FluencyContract.Accept(c, said, "tiburón tiburón blanco tiburón ballena", 38f);
             CollectionAssert.AreEqual(new[]
             {
-                "perro", "gato", "oso", "koala", "león", "puma", "tigre", "tigre de bengala",
+                "perro", "gato", "koala", "león", "puma", "tigre", "tigre de bengala", // "oso koala" es el koala
                 "león del atlas", "serpiente", "cascabel", "boa", "boa constrictor",
                 "tiburón", "tiburón blanco", "tiburón ballena",
             }, said.Select(w => w.Canonical).ToArray());
             Assert.IsTrue(said.All(w => !w.Repeat));
-            Assert.AreEqual("boa constructor", said[12].Display); // se muestra como se dijo
+            Assert.AreEqual("boa constructor", said[11].Display); // se muestra como se dijo
+            Assert.AreEqual("oso koala", said[2].Display);
             // Un tipo queda en los grupos de lo que precisa.
-            CollectionAssert.Contains(said[7].Groups, "felinos");
+            CollectionAssert.Contains(said[6].Groups, "felinos");
 
             // "es muy común" no se pega a "elefante" (hay palabras en medio); "común" no suma.
             var s2 = new List<FluencyWord>();
