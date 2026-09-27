@@ -30,8 +30,11 @@ namespace NeuroVida.Games.Constelacion
     /// <summary>Una palabra dicha en la ronda.</summary>
     public sealed class FluencyWord
     {
-        /// <summary>Cómo se muestra ("tiburón").</summary>
+        /// <summary>Cómo se muestra: tal como se dijo ("escorpión", "perritos", "tigre de bengala").</summary>
         public string Display;
+        /// <summary>La palabra de la lista a la que corresponde ("alacrán" para "escorpión"; en las de letra, la dicha).
+        /// Es la que entra a la colección "tu cielo de palabras".</summary>
+        public string Canonical;
         /// <summary>Clave de "misma palabra": índice en la lista (semántica) o raíz normalizada (letra).</summary>
         public string Key;
         /// <summary>Grupos a los que pertenece: nombres de grupo (semántica) o rasgos de sonido (letra).</summary>
@@ -40,6 +43,9 @@ namespace NeuroVida.Games.Constelacion
         public float Time;
         /// <summary>Ya se había dicho (no suma).</summary>
         public bool Repeat;
+        /// <summary>En qué palabra de la frase (<see cref="FluencyContract.Tokenize"/>) empieza: con eso el juego le pone la
+        /// hora en que apareció en los resultados parciales del reconocedor.</summary>
+        public int TokenIndex;
     }
 
     /// <summary>Una constelación: palabras seguidas del mismo grupo. <see cref="Count"/> 1 = palabra suelta.</summary>
@@ -101,7 +107,7 @@ namespace NeuroVida.Games.Constelacion
                         {
                             Id = id, Kind = FluencyKind.Letter, Letter = l,
                             Title = "Palabras con " + char.ToUpperInvariant(l),
-                            Prompt = "Di palabras que empiecen con " + char.ToUpperInvariant(l) + " (sin nombres de personas ni lugares)",
+                            Prompt = "Palabras que empiecen con " + char.ToUpperInvariant(l) + " · sin nombres propios",
                         };
                         break;
                     }
@@ -206,15 +212,22 @@ namespace NeuroVida.Games.Constelacion
             return list;
         }
 
-        private static int Find(FluencyCategory c, string phrase)
+        private static int Find(FluencyCategory c, List<string> tokens)
         {
+            string phrase = string.Join(" ", tokens);
             if (c.Lookup.TryGetValue(phrase, out int w)) return w;
-            // Variantes solo de la última palabra ("estrellas de mar" no; "perritos" sí).
-            int sp = phrase.LastIndexOf(' ');
-            string head = sp < 0 ? "" : phrase.Substring(0, sp + 1);
-            string last = sp < 0 ? phrase : phrase.Substring(sp + 1);
-            foreach (var v in Variants(last))
+            // Variantes de la última palabra ("perritos" → "perro") y, en las entradas largas, de la primera
+            // ("estrellas de mar" → "estrella de mar").
+            int n = tokens.Count;
+            string head = n > 1 ? string.Join(" ", tokens.GetRange(0, n - 1)) + " " : "";
+            foreach (var v in Variants(tokens[n - 1]))
                 if (c.Lookup.TryGetValue(head + v, out w)) return w;
+            if (n > 1)
+            {
+                string tail = " " + string.Join(" ", tokens.GetRange(1, n - 1));
+                foreach (var v in Variants(tokens[0]))
+                    if (c.Lookup.TryGetValue(v + tail, out w)) return w;
+            }
             return -1;
         }
 
@@ -222,10 +235,28 @@ namespace NeuroVida.Games.Constelacion
 
         /// <summary>
         /// Lee una frase del reconocedor y agrega a <paramref name="said"/> las palabras que cuentan (con
-        /// <see cref="FluencyWord.Repeat"/> si ya se había dicho). Devuelve lo que no se pudo ubicar (no suma).
-        /// <paramref name="alternatives"/>: otras lecturas del reconocedor; se usa la que ubique más palabras.
+        /// <see cref="FluencyWord.Repeat"/> si ya se había dicho), todas con la hora <paramref name="time"/>. Devuelve lo
+        /// que no se pudo ubicar (no suma). <paramref name="alternatives"/>: otras lecturas del reconocedor; se usa la
+        /// que ubique más palabras. (El juego usa <see cref="Read"/> para poner a cada palabra la hora en que apareció.)
         /// </summary>
         public static List<string> Accept(FluencyCategory c, List<FluencyWord> said, string text, float time, IList<string> alternatives = null)
+        {
+            var words = Read(c, said, text, alternatives, out var unknown);
+            foreach (var w in words)
+            {
+                w.Time = time;
+                said.Add(w);
+            }
+            return unknown;
+        }
+
+        /// <summary>
+        /// Lee una frase SIN agregarla: las palabras que ubica (con <see cref="FluencyWord.TokenIndex"/> = en qué palabra
+        /// de <see cref="Tokenize"/> empieza, y <see cref="FluencyWord.Repeat"/> respecto de <paramref name="said"/> y de
+        /// lo anterior de la misma frase). Sirve para mostrar las estrellas mientras la persona habla (resultados
+        /// parciales del reconocedor) y confirmarlas cuando la frase termina.
+        /// </summary>
+        public static List<FluencyWord> Read(FluencyCategory c, IReadOnlyList<FluencyWord> said, string text, IList<string> alternatives, out List<string> unknown)
         {
             var best = Parse(c, text);
             if (alternatives != null)
@@ -235,60 +266,112 @@ namespace NeuroVida.Games.Constelacion
                     if (p.words.Count > best.words.Count) best = p;
                 }
             var seen = new HashSet<string>();
-            foreach (var w in said) seen.Add(w.Key);
-            foreach (var w in best.words)
+            if (said != null) foreach (var w in said) seen.Add(w.Key);
+            foreach (var w in best.words) w.Repeat = !seen.Add(w.Key);
+            unknown = best.unknown;
+            return best.words;
+        }
+
+        /// <summary>Palabras de una frase, normalizadas, con la marca de "nombre propio" (mayúscula que no va primera).</summary>
+        public static List<(string word, bool proper, string raw)> Tokenize(string text)
+        {
+            var list = new List<(string, bool, string)>();
+            if (string.IsNullOrWhiteSpace(text)) return list;
+            var raw = text.Split(new[] { ' ', ',', '.', ';', ':', '!', '?', '¡', '¿', '-', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var r in raw)
             {
-                w.Time = time;
-                w.Repeat = !seen.Add(w.Key);
-                said.Add(w);
+                string n = Normalize(r);
+                if (n.Length == 0) continue;
+                // "raw": como se dijo, en minúsculas y con tildes (para mostrar).
+                var shown = new StringBuilder();
+                foreach (char ch in r.ToLowerInvariant()) if (char.IsLetter(ch)) shown.Append(ch);
+                list.Add((n, list.Count > 0 && char.IsUpper(r[0]), shown.ToString()));
             }
-            return best.unknown;
+            return list;
+        }
+
+        /// <summary>
+        /// Palabras que precisan un tipo sin ser un animal/cosa en sí ("tiburón blanco", "gato doméstico"). También vale
+        /// "de/del + una palabra" ("tigre de bengala", "león del atlas", "gallina de guinea"). Solo se unen si van pegadas
+        /// a lo que precisan; "elefante es muy común" no se une (hay palabras en medio).
+        /// </summary>
+        public static readonly HashSet<string> Modifiers = new HashSet<string>
+        {
+            "blanco", "negro", "gris", "pardo", "rojo", "azul", "verde", "dorado", "rosado", "amarillo", "cafe", "moteado",
+            "manchado", "rayado", "grande", "gigante", "enano", "pequeño", "comun", "real", "salvaje", "domestico",
+            "marino", "polar", "artico", "africano", "asiatico", "americano", "australiano", "europeo", "andino",
+            "chileno", "siberiano", "tropical", "silvestre", "electrico", "volador", "nocturno", "calvo", "imperial",
+            "emperador", "rey", "reina", "morado", "maduro",
+        };
+
+        private static bool IsModifier(string t)
+        {
+            if (Modifiers.Contains(t)) return true;
+            // Femenino y plural de un adjetivo de la lista ("blanca", "negros", "africanas").
+            foreach (var v in Variants(t)) if (Modifiers.Contains(v)) return true;
+            return false;
         }
 
         private static (List<FluencyWord> words, List<string> unknown) Parse(FluencyCategory c, string text)
         {
             var words = new List<FluencyWord>();
             var unknown = new List<string>();
-            if (string.IsNullOrWhiteSpace(text)) return (words, unknown);
-            // Se guardan las mayúsculas originales: en las rondas de letra, una palabra con mayúscula que no va al
-            // principio es un nombre propio ("Pedro", "Perú") y no vale.
-            var rawTokens = text.Split(new[] { ' ', ',', '.', ';', ':', '!', '?', '¡', '¿', '-', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            var tokens = new List<string>();
-            var proper = new List<bool>();
-            for (int i = 0; i < rawTokens.Length; i++)
-            {
-                string n = Normalize(rawTokens[i]);
-                if (n.Length == 0) continue;
-                tokens.Add(n);
-                proper.Add(tokens.Count > 1 && char.IsUpper(rawTokens[i][0]));
-            }
+            var toks = Tokenize(text);
+            if (toks.Count == 0) return (words, unknown);
 
             if (c.Kind == FluencyKind.Letter)
             {
-                foreach (var (t, i) in Indexed(tokens))
+                for (int i = 0; i < toks.Count; i++)
                 {
+                    var (t, proper, raw) = toks[i];
                     if (Fillers.Contains(t)) continue;
-                    if (t[0] != c.Letter || t.Length < MinLetterWord || proper[i]) { unknown.Add(t); continue; }
-                    words.Add(new FluencyWord { Display = t, Key = Stem(t), Groups = SoundFeatures(t) });
+                    // En las rondas de letra, una palabra con mayúscula que no va al principio es un nombre propio.
+                    if (t[0] != c.Letter || t.Length < MinLetterWord || proper) { unknown.Add(t); continue; }
+                    words.Add(new FluencyWord { Display = raw, Canonical = raw, Key = Stem(t), Groups = SoundFeatures(t), TokenIndex = i });
                 }
                 return (words, unknown);
             }
 
+            var tokens = new List<string>();
+            foreach (var t in toks) tokens.Add(t.word);
             int k = 0;
             while (k < tokens.Count)
             {
                 int found = -1, len = 0;
                 for (int n = Math.Min(c.MaxTokens, tokens.Count - k); n >= 1 && found < 0; n--)
                 {
-                    found = Find(c, string.Join(" ", tokens.GetRange(k, n)));
+                    found = Find(c, tokens.GetRange(k, n));
                     if (found >= 0) len = n;
                 }
                 if (found >= 0)
                 {
                     var groups = new List<string>();
                     foreach (int g in c.WordGroups[found]) groups.Add(c.GroupNames[g]);
-                    words.Add(new FluencyWord { Display = c.Words[found], Key = c.Words[found], Groups = groups });
-                    k += len;
+                    int next = k + len;
+                    // Un tipo: "tiburón blanco", "tigre de bengala" (cuenta como otra palabra, en los mismos grupos).
+                    var extra = new List<string>();
+                    if (next < tokens.Count && IsModifier(tokens[next]) && FindAt(c, tokens, next) < 0)
+                    {
+                        extra.Add(tokens[next]);
+                        next++;
+                    }
+                    else if (next + 1 < tokens.Count && (tokens[next] == "de" || tokens[next] == "del") &&
+                             !Fillers.Contains(tokens[next + 1]) && tokens[next + 1].Length >= 3 && FindAt(c, tokens, next + 1) < 0)
+                    {
+                        extra.Add(tokens[next]);
+                        extra.Add(tokens[next + 1]);
+                        next += 2;
+                    }
+                    var shown = new List<string>();
+                    for (int t = k; t < next; t++) shown.Add(toks[t].raw);
+                    string display = string.Join(" ", shown);
+                    string canonical = c.Words[found] + (extra.Count > 0 ? " " + string.Join(" ", shown.GetRange(len, shown.Count - len)) : "");
+                    words.Add(new FluencyWord
+                    {
+                        Display = display, Canonical = canonical, Key = extra.Count > 0 ? Normalize(canonical) : c.Words[found],
+                        Groups = groups, TokenIndex = k,
+                    });
+                    k = next;
                 }
                 else
                 {
@@ -299,9 +382,15 @@ namespace NeuroVida.Games.Constelacion
             return (words, unknown);
         }
 
-        private static IEnumerable<(string, int)> Indexed(List<string> list)
+        /// <summary>¿Empieza una entrada de la lista en la palabra <paramref name="at"/>?</summary>
+        private static int FindAt(FluencyCategory c, List<string> tokens, int at)
         {
-            for (int i = 0; i < list.Count; i++) yield return (list[i], i);
+            for (int n = Math.Min(c.MaxTokens, tokens.Count - at); n >= 1; n--)
+            {
+                int f = Find(c, tokens.GetRange(at, n));
+                if (f >= 0) return f;
+            }
+            return -1;
         }
 
         /// <summary>Raíz para no contar dos veces la misma palabra con otra terminación ("perro", "perritos").</summary>
@@ -425,15 +514,17 @@ namespace NeuroVida.Games.Constelacion
         }
 
         /// <summary>
-        /// Las tres rondas de una partida: Animales (la categoría clásica) + otra categoría + una letra, sin repetir la
-        /// misma combinación de la partida anterior si se puede. <paramref name="seed"/> la elige.
+        /// Las dos rondas de una partida (un minuto cada una, como las pruebas de fluidez): una de categoría (Animales, la
+        /// clásica, la mitad de las veces; si no, Frutas y verduras o Cosas de la casa) y una de letra (P, M o R).
+        /// <paramref name="seed"/> la elige.
         /// </summary>
         public static string[] Plan(int seed)
         {
             var rng = new Random(seed);
-            string other = SemanticIds[1 + rng.Next(SemanticIds.Length - 1)];
+            double r = rng.NextDouble();
+            string semantic = r < 0.5 ? "animales" : r < 0.75 ? "frutas" : "casa";
             char letter = Letters[rng.Next(Letters.Length)];
-            return new[] { "animales", other, "letra_" + letter };
+            return new[] { semantic, "letra_" + letter };
         }
     }
 }

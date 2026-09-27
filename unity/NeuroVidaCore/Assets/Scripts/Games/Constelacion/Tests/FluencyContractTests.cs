@@ -67,15 +67,18 @@ namespace NeuroVida.Games.Constelacion.Tests
         {
             var c = FluencyContract.Get("animales");
             var said = new List<FluencyWord>();
-            var unknown = FluencyContract.Accept(c, said, "Perro y gato, un caballo, eh... estrellas de mar no, estrella de mar", 3f);
-            CollectionAssert.AreEqual(new[] { "perro", "gato", "caballo", "estrella de mar" }, said.Select(w => w.Display).ToArray());
-            // "estrellas" (plural de la primera palabra de una entrada larga) no se ubica: queda como no reconocida.
-            CollectionAssert.Contains(unknown, "estrellas");
+            FluencyContract.Accept(c, said, "Perro y gato, un caballo, eh... estrellas de mar no, estrella de mar", 3f);
+            // "estrellas de mar": el plural de la primera palabra de una entrada larga también se entiende (y la segunda repite).
+            CollectionAssert.AreEqual(new[] { "perro", "gato", "caballo", "estrellas de mar", "estrella de mar" }, said.Select(w => w.Display).ToArray());
+            CollectionAssert.AreEqual(new[] { "perro", "gato", "caballo", "estrella de mar", "estrella de mar" }, said.Select(w => w.Canonical).ToArray());
+            Assert.IsTrue(said[4].Repeat);
+            said.RemoveAt(4);
 
             // Plural, diminutivo, femenino y variantes regionales cuentan como la misma palabra.
             FluencyContract.Accept(c, said, "perritos leona chancho cerdo palomas", 9f);
             var last = said.Skip(4).ToList();
-            CollectionAssert.AreEqual(new[] { "perro", "león", "cerdo", "cerdo", "paloma" }, last.Select(w => w.Display).ToArray());
+            CollectionAssert.AreEqual(new[] { "perritos", "leona", "chancho", "cerdo", "palomas" }, last.Select(w => w.Display).ToArray());
+            CollectionAssert.AreEqual(new[] { "perro", "león", "cerdo", "cerdo", "paloma" }, last.Select(w => w.Canonical).ToArray());
             CollectionAssert.AreEqual(new[] { true, false, false, true, false }, last.Select(w => w.Repeat).ToArray());
             Assert.AreEqual(9f, last[0].Time);
             Assert.AreEqual(7, FluencyContract.ValidCount(said)); // 4 + león, cerdo y paloma (perro y cerdo repetidos no suman)
@@ -84,6 +87,42 @@ namespace NeuroVida.Games.Constelacion.Tests
             var said2 = new List<FluencyWord>();
             FluencyContract.Accept(c, said2, "dato", 1f, new[] { "gato" });
             Assert.AreEqual("gato", said2.Single().Display);
+        }
+
+        [Test]
+        public void Types_AndTokenPositions_FromRicardosTest()
+        {
+            // Frases reales de la prueba de voz de Ricardo (28-sep).
+            var c = FluencyContract.Get("animales");
+            var said = new List<FluencyWord>();
+            FluencyContract.Accept(c, said, "perro gato oso koala León Puma tigre tigre de bengala", 12f);
+            FluencyContract.Accept(c, said, "León del Atlas serpiente Cascabel boa boa constructor", 23f);
+            FluencyContract.Accept(c, said, "tiburón tiburón blanco tiburón ballena", 38f);
+            CollectionAssert.AreEqual(new[]
+            {
+                "perro", "gato", "oso", "koala", "león", "puma", "tigre", "tigre de bengala",
+                "león del atlas", "serpiente", "cascabel", "boa", "boa constrictor",
+                "tiburón", "tiburón blanco", "tiburón ballena",
+            }, said.Select(w => w.Canonical).ToArray());
+            Assert.IsTrue(said.All(w => !w.Repeat));
+            Assert.AreEqual("boa constructor", said[12].Display); // se muestra como se dijo
+            // Un tipo queda en los grupos de lo que precisa.
+            CollectionAssert.Contains(said[7].Groups, "felinos");
+
+            // "es muy común" no se pega a "elefante" (hay palabras en medio); "común" no suma.
+            var s2 = new List<FluencyWord>();
+            var unk = FluencyContract.Accept(c, s2, "elefante es muy común erizo escorpión cerdo cerdo hormiguero gallina de Guinea", 0f);
+            CollectionAssert.AreEqual(new[] { "elefante", "erizo", "escorpión", "cerdo", "cerdo hormiguero", "gallina de guinea" },
+                s2.Select(w => w.Display).ToArray());
+            Assert.AreEqual("alacrán", s2[2].Canonical);
+            CollectionAssert.Contains(unk, "comun");
+
+            // Posición de cada palabra en la frase (para ponerle la hora en que apareció).
+            var read = FluencyContract.Read(c, null, "el perro y un gato montés", null, out _);
+            CollectionAssert.AreEqual(new[] { 1, 4 }, read.Select(w => w.TokenIndex).ToArray());
+            Assert.AreEqual("gato montés", read[1].Display);
+            Assert.AreEqual("gato montés", read[1].Canonical);
+            Assert.AreEqual(6, FluencyContract.Tokenize("el perro y un gato montés").Count);
         }
 
         [Test]
@@ -144,14 +183,16 @@ namespace NeuroVida.Games.Constelacion.Tests
             CollectionAssert.AreEqual(new[] { 2, 1, 0, 2 }, FluencyContract.Quarters(words));
             Assert.AreEqual(100, FluencyContract.Score(new[] { 30, 20 }, new[] { FluencyKind.Semantic, FluencyKind.Letter }));
             Assert.AreEqual(50, FluencyContract.Score(new[] { 11 }, new[] { FluencyKind.Semantic }));
-            for (int seed = 0; seed < 30; seed++)
+            int animals = 0;
+            for (int seed = 0; seed < 200; seed++)
             {
                 var plan = FluencyContract.Plan(seed);
-                Assert.AreEqual(3, plan.Length);
-                Assert.AreEqual("animales", plan[0]);
-                Assert.AreNotEqual("animales", plan[1]);
-                Assert.AreEqual(FluencyKind.Letter, FluencyContract.Get(plan[2]).Kind);
+                Assert.AreEqual(2, plan.Length);
+                Assert.AreEqual(FluencyKind.Semantic, FluencyContract.Get(plan[0]).Kind);
+                Assert.AreEqual(FluencyKind.Letter, FluencyContract.Get(plan[1]).Kind);
+                if (plan[0] == "animales") animals++;
             }
+            Assert.That(animals, Is.InRange(70, 130)); // Animales, la mitad de las veces
         }
     }
 }

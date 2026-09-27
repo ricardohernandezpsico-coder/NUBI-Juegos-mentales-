@@ -187,6 +187,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.14f), NebulaBPos = new Vector2(0.5f, 0.2f),
         };
 
+        /// <summary>Constelación de Palabras: cielo abierto con pocas estrellas de fondo (el cielo lo llenan las palabras),
+        /// nebulosas uva y celeste suaves.</summary>
+        public static GameWorld WordSky => new GameWorld
+        {
+            Name = "Cielo de palabras", Stars = 30, Bokeh = 2,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.22f), NebulaAPos = new Vector2(0.25f, 0.7f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.16f), NebulaBPos = new Vector2(0.8f, 0.35f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

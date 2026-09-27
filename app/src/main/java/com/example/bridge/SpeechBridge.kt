@@ -60,6 +60,10 @@ object SpeechBridge {
   @JvmStatic
   fun restartCount(): Int = restarts
 
+  /** ¿Está reconociendo en el propio teléfono (sin mandar la voz a internet)? */
+  @JvmStatic
+  fun isOffline(): Boolean = preferOffline
+
   /** Empieza a escuchar sin parar hasta [stop]. [offline] = reconocer en el teléfono (Android 12+, si está). */
   @JvmStatic
   @JvmOverloads
@@ -68,14 +72,14 @@ object SpeechBridge {
       stopInternal(emit = false)
       appContext = context.applicationContext
       language = languageTag
-      preferOffline = offline
+      preferOffline = offline && isOnDeviceAvailable(context)
       restarts = 0
       startedAt = SystemClock.elapsedRealtime()
       synchronized(events) { events.clear() }
       active = true
       val ctx = appContext!!
       recognizer = try {
-        if (offline && isOnDeviceAvailable(ctx) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        if (preferOffline && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
           SpeechRecognizer.createOnDeviceSpeechRecognizer(ctx)
         else SpeechRecognizer.createSpeechRecognizer(ctx)
       } catch (e: Exception) {
@@ -193,8 +197,18 @@ object SpeechBridge {
           emit("error", "sin permiso de micrófono", code = error)
           stopInternal(emit = true)
         }
+        12, 13, 11 -> {
+          // El reconocedor del teléfono no tiene el español (o se desconectó): se pasa al de internet y se sigue.
+          emit("error", errorName(error), code = error)
+          if (preferOffline) {
+            preferOffline = false
+            recognizer?.destroy()
+            recognizer = appContext?.let { SpeechRecognizer.createSpeechRecognizer(it) }?.also { it.setRecognitionListener(this) }
+          }
+          restart(300)
+        }
         else -> {
-          // Red, servidor, idioma no disponible…: se avisa y se reintenta (si se repite, el juego pasará al teclado).
+          // Red, servidor…: se avisa y se reintenta (si se repite, el juego pasa al teclado).
           emit("error", errorName(error), code = error)
           restart(500)
         }

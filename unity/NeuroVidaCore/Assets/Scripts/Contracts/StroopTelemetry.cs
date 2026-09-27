@@ -94,5 +94,20 @@ namespace NeuroVida.Contracts
         public int[] homing_beacon;
         /// <summary>Solo Rumbo a Casa: llegadas perfectas.</summary>
         public int homing_perfect;
+        /// <summary>Solo Constelación de Palabras, una entrada por ronda: categoría ("animales", "letra_p"...), palabras
+        /// que suman, repetidas, no reconocidas, tamaño medio de las constelaciones (Troyer: desde la segunda palabra),
+        /// saltos, las constelaciones de 2+ ("del mar:4;felinos:3") y las palabras (de la lista, separadas por |).
+        /// <c>fluency_quarters</c>: 4 números por ronda (palabras en cada cuarto del minuto).</summary>
+        public string[] fluency_categories;
+        public int[] fluency_valid;
+        public int[] fluency_repeats;
+        public int[] fluency_unknown;
+        public float[] fluency_cluster;
+        public int[] fluency_switches;
+        public int[] fluency_quarters;
+        public string[] fluency_top;
+        public string[] fluency_words;
+        /// <summary>Solo Constelación: "voz", "voz_telefono" (reconocida en el teléfono, sin internet) o "teclado".</summary>
+        public string fluency_input = "";
     }
 }
