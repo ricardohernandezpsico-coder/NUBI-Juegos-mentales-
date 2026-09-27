@@ -87,6 +87,21 @@ namespace NeuroVida.Games.Trafico
             return c[c.Length - 1];
         }
 
+        /// <summary>Largo medio del viaje completo, de la estación a cada puerto (alturas de campo).</summary>
+        public float MeanRouteLength()
+        {
+            EnsurePaths();
+            float sum = 0f;
+            int ports = 0;
+            for (int n = 0; n < Count; n++)
+            {
+                if (!IsPort(n)) continue;
+                ports++;
+                for (int k = n; Parent[k] >= 0; k = Parent[k]) sum += PathLength(k);
+            }
+            return ports > 0 ? sum / ports : 0f;
+        }
+
         /// <summary>Largo del tramo de <paramref name="from"/> a su hijo <paramref name="to"/> (alturas de campo).</summary>
         public float EdgeLength(int from, int to) => PathLength(to);
 
@@ -110,7 +125,11 @@ namespace NeuroVida.Games.Trafico
     public sealed class Pod
     {
         public int Id, Color, From, To;
+        /// <summary>SpawnTime: desde cuándo la persona la tiene a la vista (al salir, o antes si se anunció en "próximas").</summary>
         public float Progress, SpawnTime;
+        /// <summary>Cápsula urgente: va más rápido y vale el doble.</summary>
+        public bool Urgent;
+        public float SpeedFactor = 1f;
         public bool Done;
     }
 
@@ -166,9 +185,16 @@ namespace NeuroVida.Games.Trafico
             _lastToggle[sw] = Time;
         }
 
-        public Pod Spawn(int color)
+        /// <param name="announcedAt">Desde cuándo se veía en "próximas" (tiempo de esta simulación); si no, desde que sale.
+        /// Mover un desvío después de eso cuenta como prepararlo para ella.</param>
+        public Pod Spawn(int color, bool urgent = false, float announcedAt = float.NaN)
         {
-            var p = new Pod { Id = _nextId++, Color = color, From = 0, To = Net.Children[0][0], Progress = 0f, SpawnTime = Time };
+            var p = new Pod
+            {
+                Id = _nextId++, Color = color, From = 0, To = Net.Children[0][0], Progress = 0f,
+                SpawnTime = float.IsNaN(announcedAt) ? Time : Math.Min(Time, announcedAt),
+                Urgent = urgent, SpeedFactor = urgent ? TrafficContract.UrgentSpeedFactor : 1f
+            };
             Pods.Add(p);
             return p;
         }
@@ -190,7 +216,7 @@ namespace NeuroVida.Games.Trafico
             foreach (var p in Pods)
             {
                 if (p.Done) continue;
-                float remaining = Speed * dt;
+                float remaining = Speed * p.SpeedFactor * dt;
                 while (remaining > 0f && !p.Done)
                 {
                     float len = Math.Max(1e-4f, Net.EdgeLength(p.From, p.To));
@@ -254,8 +280,15 @@ namespace NeuroVida.Games.Trafico
         public const int RetoSeconds = 120;
         /// <summary>Precisión (sin reloj): cantidad de cápsulas.</summary>
         public const int PrecisionPods = 30;
-        /// <summary>Cápsulas por oleada (entre oleadas puede cambiar el mapa).</summary>
-        public const int WaveSize = 10;
+        /// <summary>Entregas seguidas sin error que dan el bono de "serie perfecta".</summary>
+        public const int SeriesSize = 10;
+        /// <summary>Cuántas cápsulas se ven esperando en "próximas", en la estación.</summary>
+        public const int QueueSize = 3;
+        /// <summary>Cápsula urgente: más rápida (×1,35) y vale el doble; desde el nivel 5.</summary>
+        public const float UrgentSpeedFactor = 1.35f;
+        public const int UrgentFromLevel = 5;
+        /// <summary>Separación mínima entre salidas (s): que dos cápsulas nunca se monten en la ruta de la estación.</summary>
+        public const float MinSpawnGap = 0.9f;
 
         /// <summary>Anticipación desde la que un desvío cuenta como "preparado con tiempo" (s).</summary>
         public const float ProactiveLead = 1.0f;
@@ -277,11 +310,30 @@ namespace NeuroVida.Games.Trafico
 
         public static int Ports(int level) => PortsByLevel[Clamp(level) - 1];
 
-        /// <summary>Velocidad (alturas de campo por segundo): 0,16 → 0,33.</summary>
-        public static float Speed(int level, bool precision) => (0.16f + 0.0155f * (Clamp(level) - 1)) * (precision ? 0.8f : 1f);
+        /// <summary>
+        /// Velocidad (alturas de campo por segundo): 0,09 → 0,18 (Precisión: 20% menos). Lento a propósito: lo que se
+        /// vuelve difícil es CUÁNTAS cápsulas hay a la vez (pedido de Ricardo: "más seguidas pero más lento"), no el apuro.
+        /// </summary>
+        public static float Speed(int level, bool precision) => (0.09f + 0.09f * (Clamp(level) - 1) / (MaxLevel - 1)) * (precision ? 0.8f : 1f);
 
-        /// <summary>Segundos entre cápsulas: 3,4 → 1,4 (Precisión: 30% más).</summary>
-        public static float SpawnInterval(int level, bool precision) => (3.4f - 0.18f * (Clamp(level) - 1)) * (precision ? 1.3f : 1f);
+        /// <summary>Cápsulas en viaje a la vez que busca el ritmo: 2,5 (nivel 1) → 7,5 (nivel 12).</summary>
+        public static float TargetInFlight(int level) => 2.5f + 5f * (Clamp(level) - 1) / (MaxLevel - 1);
+
+        /// <summary>
+        /// Segundos entre salidas para que haya <see cref="TargetInFlight"/> cápsulas en viaje, según lo que tarda en
+        /// promedio el viaje en ESTA red (<paramref name="meanTravelSeconds"/>). Nunca menos de <see cref="MinSpawnGap"/>;
+        /// en Precisión, 30% más espaciadas.
+        /// </summary>
+        public static float SpawnInterval(int level, bool precision, float meanTravelSeconds) =>
+            Math.Max(MinSpawnGap, Math.Min(4.5f, meanTravelSeconds / TargetInFlight(level))) * (precision ? 1.3f : 1f);
+
+        /// <summary>Probabilidad de que la próxima sea urgente: 0 antes del nivel 5; 8% → 18% hasta el 12.</summary>
+        public static float UrgentChance(int level) =>
+            Clamp(level) < UrgentFromLevel ? 0f : 0.08f + 0.1f * (Clamp(level) - UrgentFromLevel) / (MaxLevel - UrgentFromLevel);
+
+        /// <summary>¿La próxima es urgente? Nunca dos urgentes seguidas.</summary>
+        public static bool NextIsUrgent(int level, bool previousUrgent, Random rng) =>
+            !previousUrgent && rng.NextDouble() < UrgentChance(level);
 
         // ------------------------------------------------------------------ la red
 
@@ -912,8 +964,27 @@ namespace NeuroVida.Games.Trafico
 
         // ------------------------------------------------------------------ puntaje y medidas
 
-        public static int Points(bool correct, int level, int streak) =>
-            correct ? 50 + 10 * (Clamp(level) - 1) + 15 * Math.Min(Math.Max(streak - 1, 0), 10) : 0;
+        public static int Points(bool correct, int level, int streak, bool urgent = false) =>
+            correct ? (50 + 10 * (Clamp(level) - 1) + 15 * Math.Min(Math.Max(streak - 1, 0), 10)) * (urgent ? 2 : 1) : 0;
+
+        /// <summary>
+        /// "Tu carga": la mayor cantidad de cápsulas en viaje a la vez en un momento LIMPIO, es decir, sin ninguna cápsula
+        /// mal entregada en viaje (cada error ensucia el tramo de tiempo desde que esa cápsula se vio hasta que llegó).
+        /// Muestras: momento y cantidad en viaje. 0 si no hay momentos limpios.
+        /// </summary>
+        public static int CleanPeakLoad(IReadOnlyList<float> times, IReadOnlyList<int> inFlight,
+            IReadOnlyList<float> errorFrom, IReadOnlyList<float> errorTo)
+        {
+            int best = 0;
+            for (int i = 0; i < times.Count && i < inFlight.Count; i++)
+            {
+                bool clean = true;
+                for (int e = 0; e < errorFrom.Count && e < errorTo.Count; e++)
+                    if (times[i] >= errorFrom[e] && times[i] <= errorTo[e]) { clean = false; break; }
+                if (clean) best = Math.Max(best, inFlight[i]);
+            }
+            return best;
+        }
 
         /// <summary>
         /// "Tu anticipación": mediana de cuánto antes se preparan los desvíos (solo los movidos para la cápsula que

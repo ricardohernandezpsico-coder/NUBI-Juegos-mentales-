@@ -165,7 +165,7 @@ internal static class Program
         Pling(3.3f, 1); At(3.3f, NeuroVida.Games.Trafico.TrafficSounds.Landing(2), 0.3f);
         At(3.8f, NeuroVida.Games.Trafico.TrafficSounds.Switch(false), 0.4f);
         At(4.2f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(0), 0.2f);
-        At(4.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.3f);
+        At(4.5f, NeuroVida.Games.Trafico.TrafficSounds.UrgentLaunch(), 0.4f);
         Pling(4.9f, 2); At(4.9f, NeuroVida.Games.Trafico.TrafficSounds.Landing(4), 0.3f);
         At(5.4f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(5), 0.2f);
         Pling(5.8f, 3); At(5.8f, NeuroVida.Games.Trafico.TrafficSounds.Landing(0), 0.3f);

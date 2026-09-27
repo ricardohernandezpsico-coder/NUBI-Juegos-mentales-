@@ -425,9 +425,29 @@ fun GameResultScreen(
       )
     }
 
-    // Tráfico Estelar: "tu anticipación" (control proactivo vs reactivo, Braver 2012) y cuántas cápsulas a la vez.
+    // Tráfico Estelar: "tu carga" (cuántas cápsulas coordinaste a la vez sin errores) y "tu anticipación" (control
+    // proactivo vs reactivo, Braver 2012).
     if (result.trafficLeadMs != null || result.trafficPeakPods != null) {
       Spacer(Modifier.height(14.dp))
+      result.trafficPeakPods?.let { n ->
+        Text(
+          text = if (n == 1) "Tu carga: 1 cápsula a la vez" else "Tu carga: $n cápsulas a la vez",
+          color = Clay.Sun,
+          fontWeight = FontWeight.Bold,
+          fontSize = 20.sp,
+          fontFamily = FredokaFamily
+        )
+        Spacer(Modifier.height(6.dp))
+        LoadSlots(n, Modifier.semantics { contentDescription = "Coordinaste $n cápsulas a la vez sin errores" })
+        Text(
+          text = "Las que tuviste en viaje al mismo tiempo, sin ningún error entre ellas.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+      }
       result.trafficLeadMs?.let { ms ->
         Text(
           text = "Tu anticipación: " + String.format(java.util.Locale("es"), "%.1f s", ms / 1000f),
@@ -457,20 +477,11 @@ fun GameResultScreen(
         }
         Text(
           text = if (pct >= 50) "Te anticipas: eso deja holgura cuando el tráfico aumenta."
-          else "Reaccionas a tiempo, pero justo. Prueba mirar la cápsula apenas sale del portal.",
+          else "Reaccionas a tiempo, pero justo. Prueba mirar las próximas y preparar la ruta antes de que salgan.",
           color = TextSoft,
           fontSize = 13.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-        )
-      }
-      result.trafficPeakPods?.let { n ->
-        Text(
-          text = "Manejaste hasta $n cápsulas a la vez",
-          color = Clay.Cream,
-          fontSize = 14.sp,
-          fontWeight = FontWeight.SemiBold,
-          modifier = Modifier.padding(top = 2.dp)
         )
       }
     }
@@ -705,6 +716,33 @@ private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier) {
         val top = c.y + r - 2f * r * fill
         clipRect(left = c.x - r, top = top, right = c.x + r, bottom = c.y + r) { drawCircle(Clay.Sun, r, c) }
       }
+      drawCircle(Clay.Ink, r, c, style = Stroke(border))
+    }
+  }
+}
+
+// ---------- Tráfico Estelar: "tu carga" ----------
+
+/** Colores de las cápsulas del juego (mismo orden que TrafficSprites.Colors en Unity). */
+private val PodColors = listOf(
+  Color(0xFFFF6B4A), Color(0xFFFFC93C), Color(0xFF4CC9F0), Color(0xFF9BE564),
+  Color(0xFFB8A4FF), Color(0xFFFF7BC0), Color(0xFF5FD68A), Color(0xFFFF8A3D)
+)
+
+/**
+ * Ocho cápsulas de arcilla en fila: se encienden (cada una con su color) tantas como las que coordinaste a la vez; las
+ * demás quedan apagadas. El número va en el texto de arriba: no depende del color.
+ */
+@Composable
+private fun LoadSlots(load: Int, modifier: Modifier = Modifier) {
+  Canvas(modifier.size(width = 26.dp * 8 + 8.dp * 7, height = 32.dp)) {
+    val r = 13.dp.toPx()
+    val gap = 8.dp.toPx()
+    val border = 2.5.dp.toPx()
+    for (i in 0 until 8) {
+      val c = Offset(r + i * (2 * r + gap), size.height / 2f - 2.dp.toPx())
+      drawCircle(Clay.Ink, r, c + Offset(0f, 3.dp.toPx()))
+      drawCircle(if (i < load) PodColors[i] else Color(0xFF1B2466), r, c)
       drawCircle(Clay.Ink, r, c, style = Stroke(border))
     }
   }

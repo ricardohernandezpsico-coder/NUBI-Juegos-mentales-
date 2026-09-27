@@ -18,7 +18,8 @@ namespace NeuroVida.Games.Trafico
     /// <item><see cref="PassChime"/>: campanita afinada con el COLOR de la cápsula cuando pasa por un desvío (cada color
     /// tiene su nota: color + símbolo + nota).</item>
     /// <item><see cref="Landing"/>: marimba grave del color al posarse en su planeta (bajo el "pling" de la racha).</item>
-    /// <item><see cref="Cascade"/>: lluvia de campanas que sube (oleada perfecta).</item>
+    /// <item><see cref="UrgentLaunch"/>: salida de una urgente (dos campanas agudas encima).</item>
+    /// <item><see cref="Cascade"/>: lluvia de campanas que sube (serie perfecta).</item>
     /// </list>
     /// </summary>
     public static class TrafficSounds
@@ -69,6 +70,19 @@ namespace NeuroVida.Games.Trafico
             });
         });
 
+        /// <summary>Salida de una cápsula urgente: la misma salida con dos campanas agudas que llaman la atención sin alarma.</summary>
+        public static AudioClip UrgentLaunch() => Get("launch_urgent", () =>
+        {
+            var baseClip = Launch();
+            var data = new float[baseClip.samples];
+            baseClip.GetData(data, 0);
+            return Make("launch_urgent", data.Length / (float)Rate, t =>
+            {
+                int i = Mathf.Min(data.Length - 1, (int)(t * Rate));
+                return data[i] + 0.22f * Bell(1567.98f, t - 0.04f, 0.18f) + 0.22f * Bell(2093f, t - 0.12f, 0.25f);
+            });
+        });
+
         public static AudioClip Switch(bool second) => Get(second ? "switch_b" : "switch_a", () => Make("switch", 0.12f, t =>
         {
             float hz = second ? 783.99f : 659.25f;
@@ -98,7 +112,7 @@ namespace NeuroVida.Games.Trafico
         // ------------------------------------------------------------------ síntesis
 
         /// <summary>Campana: fundamental + parciales inarmónicos (2,76 y 5,4) que se apagan antes: brillo de cristal.</summary>
-        private static float Bell(float hz, float t, float tau) =>
+        private static float Bell(float hz, float t, float tau) => t < 0f ? 0f :
             Sin(hz, t) * Env(t, 0.003f, tau) + 0.25f * Sin(hz * 2.76f, t) * Env(t, 0.002f, tau * 0.3f)
             + 0.08f * Sin(hz * 5.4f, t) * Env(t, 0.001f, tau * 0.1f);
 

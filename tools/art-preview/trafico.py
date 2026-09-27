@@ -123,11 +123,35 @@ def network(im, raw, nodes, children, paths, states, phase=0.0):
             put(im, load(f'{raw}/traffic_port_{nodes[n][3]}.raw'), x, y, 75)
 
 
-def pod(im, raw, paths, edge, t, color):
+def urgent_ring(im, x, y, r):
+    layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    ImageDraw.Draw(layer).ellipse((x - r, y - r, x + r, y + r), outline=SUN + (240,), width=4)
+    im.alpha_composite(layer)
+
+
+def queue(im, raw, nodes, items):
+    """Fila de "próximas" a la derecha de la compuerta: (color, urgente)."""
+    sx, sy = ui(nodes[0])
+    d = ImageDraw.Draw(im)
+    d.text((sx + (175 + 82) * K, sy - 102 * K), 'próximas', fill=CREAM + (205,), anchor='mm', font=ImageFont.truetype(FB, 15))
+    for i, (color, urgent) in enumerate(items):
+        x, y = sx + (175 + 82 * i) * K, sy - 40 * K
+        size = [80, 70, 60][i] * K
+        if urgent:
+            glow(im, x, y, size * 0.9, SUN, 120)
+            urgent_ring(im, x, y, size * 0.75)
+        spr = load(f'{raw}/traffic_pod_{color}.raw').resize((int(size), int(size)), Image.LANCZOS)
+        if i:
+            a = spr.getchannel('A').point(lambda v: int(v * (1 - 0.18 * i)))
+            spr.putalpha(a)
+        im.alpha_composite(spr, (int(x - size / 2), int(y - size / 2)))
+
+
+def pod(im, raw, paths, edge, t, color, urgent=False):
     pts = paths[edge]
     L = length(pts)
     x, y = along(pts, L * t)
-    tint = hexc(COLORS[color])
+    tint = SUN if urgent else hexc(COLORS[color])
     trail = Image.new('RGBA', im.size, (0, 0, 0, 0))
     td = ImageDraw.Draw(trail)
     for i in range(3):
@@ -135,8 +159,10 @@ def pod(im, raw, paths, edge, t, color):
         r = (30 - 7 * i) * K / 2 + 1
         td.ellipse((bx - r, by - r, bx + r, by + r), fill=tint + (int(255 * (0.5 - 0.14 * i)),))
     im.alpha_composite(trail)
-    glow(im, x, y, 30, tint, 110)
-    put(im, load(f'{raw}/traffic_pod_{color}.raw'), x, y, 43)
+    glow(im, x, y, 34 if urgent else 30, tint, 130 if urgent else 110)
+    if urgent:
+        urgent_ring(im, x, y, 36)
+    put(im, load(f'{raw}/traffic_pod_{color}.raw'), x, y, 47 if urgent else 43)
 
 
 def port_of(nodes, color):
@@ -164,24 +190,29 @@ def route_to(nodes, children, port):
 
 
 def toast(im, text, sub, color):
+    """Como Toast en Unity: 300 x 84 dp pegado al borde de arriba (tapa el marcador un momento, no la estación)."""
     d = ImageDraw.Draw(im)
-    w = 190 if sub else 150
-    h = 28 if sub else 22
-    y = 150
-    d.rounded_rectangle((W / 2 - w, y - h, W / 2 + w, y + h), 24, fill=(0x1B, 0x24, 0x66, 255), outline=color, width=3)
+    top, h, w = 4, 126, 225
+    d.rounded_rectangle((W / 2 - w, top, W / 2 + w, top + h), 40, fill=(0x1B, 0x24, 0x66, 255), outline=INK, width=4)
+    d.ellipse((W / 2 - w + 14, top + h / 2 - 8, W / 2 - w + 30, top + h / 2 + 8), fill=color)
     if sub:
-        clay_text(d, (W / 2, y - 8), text, 17)
-        d.text((W / 2, y + 14), sub, fill=(215, 220, 245), anchor='mm', font=ImageFont.truetype(FB, 14))
+        clay_text(d, (W / 2, top + h / 2 - 16), text, 22)
+        d.text((W / 2, top + h / 2 + 20), sub, fill=(215, 220, 245), anchor='mm', font=ImageFont.truetype(FB, 16))
     else:
-        clay_text(d, (W / 2, y), text, 17)
+        clay_text(d, (W / 2, top + h / 2), text, 22)
 
 
 def frame_intro(raw):
     nodes, ch, paths = load_net(raw, '4_3')
     im = base(81, 3, 420, 2)
     network(im, raw, nodes, ch, paths, {}, 0.3)
-    pod(im, raw, paths, ch[0][0], 0.35, nodes[port_of(nodes, 1)][3])
-    toast(im, 'Lleva cada cápsula a su planeta', 'Toca los desvíos para cambiar la ruta', SKY)
+    trunk = ch[0][0]
+    pod(im, raw, paths, trunk, 0.3, 1)
+    sw = ch[trunk]
+    pod(im, raw, paths, sw[0], 0.55, 2)
+    pod(im, raw, paths, sw[1], 0.4, 3)
+    queue(im, raw, nodes, [(0, False), (2, False), (3, False)])
+    toast(im, 'Lleva cada cápsula a su planeta', 'Toca los desvíos · a la derecha, las próximas', SKY)
     return im
 
 
@@ -192,10 +223,13 @@ def frame_busy(raw):
     network(im, raw, nodes, ch, paths, st, 0.6)
     edges = sorted(paths)
     trunk = ch[0][0]
-    pod(im, raw, paths, trunk, 0.22, 2)
-    pod(im, raw, paths, trunk, 0.62, 5)
-    for k, e in enumerate([e for e in edges if e != trunk][1:12:3]):
-        pod(im, raw, paths, e, 0.4 + 0.12 * (k % 3), (k * 3) % 8)
+    pod(im, raw, paths, trunk, 0.12, 2)
+    pod(im, raw, paths, trunk, 0.42, 5)
+    pod(im, raw, paths, trunk, 0.75, 6, urgent=True)
+    others = [e for e in edges if e != trunk]
+    for k, e in enumerate(others[0:14:2]):
+        pod(im, raw, paths, e, 0.35 + 0.15 * (k % 3), (k * 3 + 1) % 8)
+    queue(im, raw, nodes, [(4, False), (7, True), (1, False)])
     return im
 
 
@@ -213,7 +247,12 @@ def frame_deliver(raw):
     put(im, load(f'{raw}/traffic_port_3.raw'), x, y, 90)
     d = ImageDraw.Draw(im)
     clay_text(d, (x, y - 70), '+140', 26, SUN)
-    pod(im, raw, paths, ch[0][0], 0.7, 0)
+    trunk = ch[0][0]
+    pod(im, raw, paths, trunk, 0.25, 0)
+    pod(im, raw, paths, trunk, 0.7, 5)
+    for k, e in enumerate([e for e in sorted(paths) if e != trunk][1:9:3]):
+        pod(im, raw, paths, e, 0.5, (k * 2 + 1) % 6)
+    queue(im, raw, nodes, [(2, False), (4, False), (1, False)])
     return im
 
 
@@ -227,7 +266,11 @@ def frame_wrong(raw):
     glow(im, x, y, 60, CORAL, 150)
     put(im, load(f'{raw}/traffic_port_1.raw'), x + 6, y, 75)
     put(im, load(f'{raw}/mark_cross.raw'), x + 28, y - 28, 40)
-    pod(im, raw, paths, ch[0][0], 0.5, 4)
+    trunk = ch[0][0]
+    pod(im, raw, paths, trunk, 0.5, 4)
+    for k, e in enumerate([e for e in sorted(paths) if e != trunk][0:10:3]):
+        pod(im, raw, paths, e, 0.45, (k * 2) % 6)
+    queue(im, raw, nodes, [(5, True), (0, False), (3, False)])
     toast(im, 'Mira el color y el símbolo', None, SUN)
     return im
 

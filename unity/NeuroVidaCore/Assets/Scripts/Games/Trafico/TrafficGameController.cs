@@ -16,8 +16,12 @@ namespace NeuroVida.Games.Trafico
     /// desvíos haces que cada una llegue al planeta-puerto de su color (y su símbolo). Cada vez salen más seguido, más
     /// rápido, hay más puertos y las rutas se enroscan más (cornisas con cambios de sentido).
     /// <list type="bullet">
-    /// <item>Oleadas de 10 cápsulas; oleada sin errores = bono. Entre oleadas, si cambia la cantidad de puertos, la red
-    /// se rearma.</item>
+    /// <item>Lento y lleno: las cápsulas van tranquilas pero salen seguidas, así hay varias en viaje a la vez (2-3 al
+    /// principio, 7-8 en nivel alto) y hay que coordinar desvíos que dos cápsulas necesitan en sentidos distintos.
+    /// Flujo continuo (la pantalla no se vacía); 10 entregas seguidas sin error = "serie perfecta".</item>
+    /// <item>"Próximas": las 3 que vienen esperan a la vista en la estación (se puede preparar la ruta antes de que
+    /// salgan). Desde el nivel 5, a veces sale una cápsula URGENTE (aro sol, más rápida, vale el doble).</item>
+    /// <item>Si cambia la cantidad de puertos, se terminan de entregar las que van en camino y la red se rearma.</item>
     /// <item>Medida propia: "tu anticipación" (cuánto antes preparas los desvíos) y cuánto planificas vs reaccionas a
     /// último momento (control proactivo / reactivo, Braver 2012), y cuántas cápsulas manejaste a la vez.</item>
     /// </list>
@@ -35,6 +39,9 @@ namespace NeuroVida.Games.Trafico
         private const int FlowPool = 110, TrailDots = 3, TrailHistory = 12;
         /// <summary>Luces que corren por las rutas activas: separación y velocidad (unidades del canvas).</summary>
         private const float FlowSpacing = 80f, FlowSpeed = 150f;
+        /// <summary>Fila de "próximas" a la derecha de la estación: dónde empieza, separación y tamaño de cada una.</summary>
+        private const float QueueX0 = 175f, QueueSpacing = 82f;
+        private static readonly float[] QueueSizes = { 80f, 70f, 60f };
         private static readonly Color RailIdle = NeuroStyle.Hex(0x4B4F9A);
 
         private static readonly Color GoodColor = NeuroStyle.Lime;
@@ -70,7 +77,7 @@ namespace NeuroVida.Games.Trafico
         private sealed class PodView
         {
             public RectTransform Rect;
-            public Image Body, Glow;
+            public Image Body, Glow, Ring;
             public Image[] Trail;
             public readonly Vector2[] History = new Vector2[TrailHistory];
             public int Head;
@@ -90,8 +97,23 @@ namespace NeuroVida.Games.Trafico
 
         // sesión
         private readonly List<float> _leads = new List<float>();
-        private int _spawned, _waveSpawned, _waveErrors, _delivered, _correct, _streak, _bestStreak, _points, _peakInFlight, _lastColor = -1;
-        private float _nextSpawnAt, _endsAt;
+        private int _spawned, _delivered, _correct, _streak, _bestStreak, _points;
+        private float _nextSpawnAt, _endsAt, _builtAt, _meanRoute;
+        private bool _urgentExplained;
+
+        // "próximas": las que esperan en la estación (color, urgente, desde cuándo se ven)
+        private struct Upcoming { public int Color; public bool Urgent; public float AnnouncedSim, AnnouncedPlay; }
+        private readonly List<Upcoming> _queue = new List<Upcoming>();
+        private int _lastQueuedColor = -1;
+        private bool _lastQueuedUrgent;
+
+        // "tu carga": muestras de cuántas van en viaje y tramos ensuciados por errores (en tiempo de juego)
+        private float _playTime, _nextSample;
+        private readonly List<float> _loadTimes = new List<float>();
+        private readonly List<int> _loadCounts = new List<int>();
+        private readonly List<float> _errFrom = new List<float>();
+        private readonly List<float> _errTo = new List<float>();
+        private readonly Dictionary<int, float> _podSeenAt = new Dictionary<int, float>();
         private bool _spawningClosed;
         private int _lastTickSecond = -1;
 
@@ -101,6 +123,11 @@ namespace NeuroVida.Games.Trafico
         private AudioSource _engine;
         private float _lastChime;
         private readonly List<RectTransform> _flow = new List<RectTransform>();
+        private readonly List<Image> _queuePods = new List<Image>();
+        private readonly List<Image> _queueRings = new List<Image>();
+        private readonly List<Vector2> _queueBase = new List<Vector2>();
+        private Text _queueLabel;
+        private float _queueShift;
         private Text _prompt;
         private readonly List<EdgeView> _edges = new List<EdgeView>();
         private int _edgeCount;
@@ -124,7 +151,7 @@ namespace NeuroVida.Games.Trafico
             _rng = new System.Random();
             var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
             float start = AdaptiveDifficulty.StartRating(config.config, TrafficContract.MaxLevel);
-            // Cada cápsula es un ensayo (~40 por partida). Sin tiempo de reacción: cuenta llegar bien.
+            // Cada cápsula es un ensayo (~60 por partida). Sin tiempo de reacción: cuenta llegar bien.
             _dda = new AdaptiveDifficulty(TrafficContract.MaxLevel, age, start, stepUp: 0.2f, useReaction: false);
 
             _previousFrameRate = Application.targetFrameRate;
@@ -132,8 +159,17 @@ namespace NeuroVida.Games.Trafico
 
             _phase = Phase.Idle;
             _leads.Clear();
-            _spawned = _waveSpawned = _waveErrors = _delivered = _correct = _streak = _bestStreak = _points = _peakInFlight = 0;
-            _lastColor = -1;
+            _spawned = _delivered = _correct = _streak = _bestStreak = _points = 0;
+            _queue.Clear();
+            _lastQueuedColor = -1;
+            _lastQueuedUrgent = false;
+            _urgentExplained = false;
+            _playTime = _nextSample = 0f;
+            _loadTimes.Clear();
+            _loadCounts.Clear();
+            _errFrom.Clear();
+            _errTo.Clear();
+            _podSeenAt.Clear();
             _endsAt = 0f;
             _spawningClosed = false;
             _lastTickSecond = -1;
@@ -168,20 +204,18 @@ namespace NeuroVida.Games.Trafico
             UpdateHud();
 
             yield return StartCoroutine(BuildNetwork(TrafficContract.Ports(_dda.PresentedLevel)));
-            // Instrucciones como aviso arriba (un texto en el medio taparía la ruta del portal).
-            _toast.Show("Lleva cada cápsula a su planeta", "Toca los desvíos para cambiar la ruta", NeuroStyle.Sky, 2.4f);
-            yield return StartCoroutine(Wait(2.6f));
+            for (int i = 0; i < TrafficContract.QueueSize; i++) EnqueueUpcoming(_dda.PresentedLevel);
+            RefreshQueue();
+            // Instrucciones como aviso arriba (un texto en el medio taparía la ruta de la estación).
+            _toast.Show("Lleva cada cápsula a su planeta", "Toca los desvíos · a la derecha, las próximas", NeuroStyle.Sky, 2.8f);
+            yield return StartCoroutine(Wait(3f));
 
             _endsAt = GameClock.Time + TrafficContract.RetoSeconds;
             _nextSpawnAt = GameClock.Time;
             _phase = Phase.Playing;
-            while (_phase != Phase.Done)
+            while (true)
             {
-                if (_phase == Phase.Playing && WaveOver())
-                {
-                    yield return StartCoroutine(EndWave());
-                    if (Finished()) break;
-                }
+                if (_phase == Phase.Playing && NeedsRebuild()) yield return StartCoroutine(Rebuild());
                 if (_spawningClosed && _sim.InFlight == 0) break;
                 yield return null;
             }
@@ -190,30 +224,74 @@ namespace NeuroVida.Games.Trafico
 
         private bool Finished() => Precision ? _spawned >= TrafficContract.PrecisionPods : GameClock.Time >= _endsAt;
 
-        private bool WaveOver() => _waveSpawned >= TrafficContract.WaveSize && _sim.InFlight == 0;
+        /// <summary>¿Hay que rearmar la red? Solo si cambió la cantidad de puertos y la actual lleva un rato en juego.</summary>
+        private bool NeedsRebuild() =>
+            !Finished() && TrafficContract.Ports(_dda.PresentedLevel) != CountPorts() && GameClock.Time - _builtAt >= 20f;
 
-        private IEnumerator EndWave()
+        /// <summary>Deja de sacar cápsulas, espera que lleguen las que van en camino y arma la red nueva.</summary>
+        private IEnumerator Rebuild()
         {
             _phase = Phase.Rebuild;
-            if (_waveErrors == 0)
+            bool more = TrafficContract.Ports(_dda.PresentedLevel) > CountPorts();
+            _toast.Show(more ? "¡Se suma un planeta!" : "Una ruta menos", "Termina de entregar las que van en camino", GoodColor, 1.8f);
+            float giveUp = GameClock.Time + 20f;
+            while (_sim.InFlight > 0 && GameClock.Time < giveUp) yield return null;
+            if (Finished())
             {
-                _points += 200;
-                _toast.Show("¡Oleada perfecta!", "+200", NeuroStyle.Sun, 1.1f);
-                Sfx(TrafficSounds.Cascade(), 0.5f);
-                GameFeel.Haptic(GameFeel.HapticKind.Firm);
-                UpdateHud();
+                _phase = Phase.Playing;
+                yield break;
             }
-            _waveSpawned = 0;
-            _waveErrors = 0;
-            yield return StartCoroutine(Wait(0.6f));
-            int ports = TrafficContract.Ports(_dda.PresentedLevel);
-            if (!Finished() && ports != (_net == null ? 0 : CountPorts()))
+            yield return StartCoroutine(Wait(0.3f));
+            yield return StartCoroutine(BuildNetwork(TrafficContract.Ports(_dda.PresentedLevel)));
+            // La simulación nueva empieza su reloj en 0; las que esperan en "próximas" se ven desde ahora, y si alguna
+            // tenía un color que ya no tiene puerto, cambia.
+            int ports = CountPorts();
+            int prev = -1;
+            for (int i = 0; i < _queue.Count; i++)
             {
-                _toast.Show(ports > CountPorts() ? "¡Nuevo puerto!" : "Una ruta menos", $"Ahora son {ports} planetas", GoodColor, 1.2f);
-                yield return StartCoroutine(BuildNetwork(ports));
+                var q = _queue[i];
+                q.AnnouncedSim = 0f;
+                if (q.Color >= ports || q.Color == prev) q.Color = TrafficContract.NextColor(ports, prev, _rng);
+                prev = q.Color;
+                _queue[i] = q;
             }
-            _nextSpawnAt = GameClock.Time + 0.4f;
+            _lastQueuedColor = prev;
+            _podSeenAt.Clear();
+            RefreshQueue();
+            _nextSpawnAt = GameClock.Time + 0.6f;
             _phase = Phase.Playing;
+        }
+
+        private void EnqueueUpcoming(int level)
+        {
+            int color = TrafficContract.NextColor(CountPorts(), _lastQueuedColor, _rng);
+            bool urgent = TrafficContract.NextIsUrgent(level, _lastQueuedUrgent, _rng);
+            _lastQueuedColor = color;
+            _lastQueuedUrgent = urgent;
+            _queue.Add(new Upcoming { Color = color, Urgent = urgent, AnnouncedSim = _sim != null ? _sim.Time : 0f, AnnouncedPlay = _playTime });
+        }
+
+        /// <summary>Sale la primera de "próximas"; entra otra al final de la fila.</summary>
+        private void SpawnNext(int level)
+        {
+            if (_queue.Count == 0) EnqueueUpcoming(level);
+            var next = _queue[0];
+            _queue.RemoveAt(0);
+            var pod = _sim.Spawn(next.Color, next.Urgent, next.AnnouncedSim);
+            _podSeenAt[pod.Id] = next.AnnouncedPlay;
+            _spawned++;
+            EnqueueUpcoming(level);
+            float travel = _meanRoute / Mathf.Max(0.01f, _sim.Speed);
+            _nextSpawnAt = GameClock.Time + TrafficContract.SpawnInterval(level, Precision, travel) * (0.85f + 0.3f * (float)_rng.NextDouble());
+            Sfx(next.Urgent ? TrafficSounds.UrgentLaunch() : TrafficSounds.Launch(), next.Urgent ? 0.4f : 0.3f);
+            StartCoroutine(StationLaunch());
+            _queueShift = QueueSpacing;
+            RefreshQueue();
+            if (next.Urgent && !_urgentExplained)
+            {
+                _urgentExplained = true;
+                _toast.Show("¡Cápsula urgente!", "Va más rápido y vale el doble", NeuroStyle.Sun, 1.6f);
+            }
         }
 
         private int CountPorts()
@@ -240,22 +318,24 @@ namespace NeuroVida.Games.Trafico
             if (dt <= 0f || _sim == null) return;
 
             HandleTap();
+            _playTime += dt;
 
-            // Salida de cápsulas (por oleadas).
+            // Salida de cápsulas: flujo continuo (salvo mientras se rearma la red).
             int level = _dda.PresentedLevel;
             _sim.Speed = TrafficContract.Speed(level, Precision);
-            if (Finished()) _spawningClosed = true;
-            if (_phase == Phase.Playing && !_spawningClosed && _waveSpawned < TrafficContract.WaveSize && GameClock.Time >= _nextSpawnAt)
+            if (Finished() && !_spawningClosed)
             {
-                int color = TrafficContract.NextColor(CountPorts(), _lastColor, _rng);
-                _lastColor = color;
-                _sim.Spawn(color);
-                _spawned++;
-                _waveSpawned++;
-                _nextSpawnAt = GameClock.Time + TrafficContract.SpawnInterval(level, Precision) * (0.85f + 0.3f * (float)_rng.NextDouble());
-                Sfx(TrafficSounds.Launch(), 0.3f);
-                StartCoroutine(StationLaunch());
-                _peakInFlight = Mathf.Max(_peakInFlight, _sim.InFlight);
+                _spawningClosed = true;
+                RefreshQueue();
+            }
+            if (_phase == Phase.Playing && !_spawningClosed && GameClock.Time >= _nextSpawnAt) SpawnNext(level);
+
+            // "Tu carga": cuántas van en viaje, dos veces por segundo.
+            if (_playTime >= _nextSample)
+            {
+                _loadTimes.Add(_playTime);
+                _loadCounts.Add(_sim.InFlight);
+                _nextSample = _playTime + 0.5f;
             }
 
             _events.Clear();
@@ -264,6 +344,7 @@ namespace NeuroVida.Games.Trafico
 
             DrawPods();
             UpdateKnobs(dt);
+            UpdateQueue(dt);
         }
 
         /// <summary>La compuerta se enciende y la estación da un saltito cuando sale una cápsula.</summary>
@@ -360,14 +441,23 @@ namespace NeuroVida.Games.Trafico
             }
             _delivered++;
             var port = _ports[e.Node];
+            var pod = _sim.Pods.Find(q => q.Id == e.PodId);
+            bool urgent = pod != null && pod.Urgent;
             var change = _dda.Register(e.Correct);
             if (e.Correct)
             {
                 _correct++;
                 _streak++;
                 _bestStreak = Mathf.Max(_bestStreak, _streak);
-                int pts = TrafficContract.Points(true, _dda.PresentedLevel, _streak);
+                int pts = TrafficContract.Points(true, _dda.PresentedLevel, _streak, urgent);
                 _points += pts;
+                if (_streak % TrafficContract.SeriesSize == 0)
+                {
+                    _points += 200;
+                    _toast.Show("¡Serie perfecta!", $"{_streak} seguidas sin error · +200", NeuroStyle.Sun, 1.3f);
+                    Sfx(TrafficSounds.Cascade(), 0.5f);
+                    GameFeel.Haptic(GameFeel.HapticKind.Firm);
+                }
                 // El "pling" de la racha (igual en toda la app) y, debajo, la marimba grave del color al posarse.
                 GameFeel.Correct(_streak);
                 Sfx(TrafficSounds.Landing(e.Color), 0.3f);
@@ -378,7 +468,9 @@ namespace NeuroVida.Games.Trafico
             else
             {
                 _streak = 0;
-                _waveErrors++;
+                // El error ensucia "tu carga" desde que esa cápsula se vio hasta ahora.
+                _errFrom.Add(_podSeenAt.TryGetValue(e.PodId, out float seen) ? seen : _playTime - 10f);
+                _errTo.Add(_playTime);
                 GameFeel.Wrong();
                 StartCoroutine(UiFx.Shake(14f, 0.3f, port));
                 StartCoroutine(MarkAt(port.anchoredPosition, false));
@@ -425,6 +517,17 @@ namespace NeuroVida.Games.Trafico
 
             var door = ToUi(_net.X[0], _net.Y[0]);
             _station.anchoredPosition = door + new Vector2(0f, 0.2f * StationSize);
+            _builtAt = GameClock.Time;
+            _meanRoute = _net.MeanRouteLength();
+            // "Próximas": en fila a la derecha de la compuerta (la primera, la más cercana y grande).
+            _queueBase.Clear();
+            for (int i = 0; i < _queuePods.Count; i++)
+            {
+                _queueBase.Add(door + new Vector2(QueueX0 + i * QueueSpacing, 40f));
+                _queuePods[i].rectTransform.anchoredPosition = _queueBase[i];
+                _queueRings[i].rectTransform.anchoredPosition = _queueBase[i];
+            }
+            _queueLabel.rectTransform.anchoredPosition = door + new Vector2(QueueX0 + QueueSpacing, 102f);
             int e = 0, k = 0, p = 0;
             for (int n = 0; n < _net.Count; n++)
             {
@@ -496,6 +599,9 @@ namespace NeuroVida.Games.Trafico
             foreach (var r in _knobPool) r.gameObject.SetActive(false);
             foreach (var r in _portPool) r.gameObject.SetActive(false);
             foreach (var r in _flow) r.gameObject.SetActive(false);
+            foreach (var img in _queuePods) img.gameObject.SetActive(false);
+            foreach (var img in _queueRings) img.gameObject.SetActive(false);
+            if (_queueLabel != null) _queueLabel.gameObject.SetActive(false);
             foreach (var pv in _pods) HidePod(pv);
             if (_station != null) _station.gameObject.SetActive(false);
         }
@@ -587,7 +693,8 @@ namespace NeuroVida.Games.Trafico
                     pv.PodId = pod.Id;
                     pv.Body.sprite = TrafficSprites.Pod(pod.Color);
                     var tint = TrafficSprites.Colors[pod.Color];
-                    pv.Glow.color = NeuroStyle.WithAlpha(tint, 0.45f);
+                    pv.Glow.color = pod.Urgent ? NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.6f) : NeuroStyle.WithAlpha(tint, 0.45f);
+                    pv.Ring.gameObject.SetActive(pod.Urgent);
                     for (int i = 0; i < pv.Trail.Length; i++)
                     {
                         pv.Trail[i].color = NeuroStyle.WithAlpha(tint, 0.5f - 0.14f * i);
@@ -598,6 +705,15 @@ namespace NeuroVida.Games.Trafico
                     StartCoroutine(PopIn(pv.Rect, 0.2f));
                 }
                 pv.Rect.anchoredPosition = pos;
+                if (pod.Urgent)
+                {
+                    // Urgente: aro sol que late (no solo color: forma y movimiento propios) y un poco más grande.
+                    float beat = 0.5f + 0.5f * Mathf.Sin(GameClock.Time * 9f);
+                    pv.Ring.rectTransform.localScale = Vector3.one * (1f + 0.12f * beat);
+                    pv.Ring.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.75f + 0.25f * beat);
+                    pv.Body.rectTransform.localScale = Vector3.one * 1.1f;
+                }
+                else pv.Body.rectTransform.localScale = Vector3.one;
                 // Estela: puntos del color de la cápsula donde estuvo hace unos cuadros.
                 pv.Head = (pv.Head + 1) % pv.History.Length;
                 pv.History[pv.Head] = pos;
@@ -611,10 +727,40 @@ namespace NeuroVida.Games.Trafico
             _sim.Pods.RemoveAll(q => q.Done && _pods.TrueForAll(v => v.PodId != q.Id));
         }
 
+        /// <summary>Muestra la fila de "próximas" (se oculta cuando ya no saldrán más).</summary>
+        private void RefreshQueue()
+        {
+            bool any = false;
+            for (int i = 0; i < _queuePods.Count; i++)
+            {
+                bool show = !_spawningClosed && i < _queue.Count && (!Precision || _spawned + i < TrafficContract.PrecisionPods);
+                _queuePods[i].gameObject.SetActive(show);
+                _queueRings[i].gameObject.SetActive(show && _queue[i].Urgent);
+                if (show) _queuePods[i].sprite = TrafficSprites.Pod(_queue[i].Color);
+                any |= show;
+            }
+            _queueLabel.gameObject.SetActive(any);
+        }
+
+        /// <summary>La fila avanza hacia la compuerta cuando sale una (se corre a la izquierda con suavidad).</summary>
+        private void UpdateQueue(float dt)
+        {
+            _queueShift = Mathf.MoveTowards(_queueShift, 0f, dt * 360f);
+            float beat = 0.5f + 0.5f * Mathf.Sin(GameClock.Time * 9f);
+            for (int i = 0; i < _queuePods.Count && i < _queueBase.Count; i++)
+            {
+                var p = _queueBase[i] + new Vector2(_queueShift, 0f);
+                _queuePods[i].rectTransform.anchoredPosition = p;
+                _queueRings[i].rectTransform.anchoredPosition = p;
+                _queueRings[i].rectTransform.localScale = Vector3.one * (1f + 0.1f * beat);
+            }
+        }
+
         private static void HidePod(PodView pv)
         {
             pv.PodId = -1;
             pv.Rect.gameObject.SetActive(false);
+            pv.Ring.gameObject.SetActive(false);
             foreach (var t in pv.Trail) t.gameObject.SetActive(false);
         }
 
@@ -678,9 +824,10 @@ namespace NeuroVida.Games.Trafico
             float median = TrafficContract.MedianLead(_leads);
             float share = TrafficContract.ProactiveShare(_leads);
             int score = TrafficContract.Score(accuracy, _dda.PeakLevel);
+            int load = TrafficContract.CleanPeakLoad(_loadTimes, _loadCounts, _errFrom, _errTo);
 
             SetPrompt("Fin del turno", GoodColor);
-            ShowResult(score, median);
+            ShowResult(score, median, load);
 
             var telemetry = new StroopTelemetry
             {
@@ -698,19 +845,20 @@ namespace NeuroVida.Games.Trafico
                     peak_level = _dda.PeakLevel,
                     traffic_lead_ms = median >= 0f ? Mathf.RoundToInt(median * 1000f) : -1,
                     traffic_proactive_pct = share >= 0f ? Mathf.RoundToInt(share * 100f) : -1,
-                    traffic_peak_pods = _peakInFlight
+                    traffic_peak_pods = load
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
             yield break;
         }
 
-        private void ShowResult(int score, float median)
+        private void ShowResult(int score, float median, int load)
         {
             _exit.Show();
             _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Tráfico impecable!" : score >= 65 ? "¡Buen turno!" : "Turno completado";
             _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_correct} de {_delivered} cápsulas a su planeta";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = median >= 0f ? $"Tu anticipación: {median:0.0} s".Replace('.', ',') : $"Mejor racha {_bestStreak}";
+            _resultRoot.Find("Extra").GetComponent<Text>().text = load > 0 ? $"Tu carga: {load} a la vez sin errores"
+                : median >= 0f ? $"Tu anticipación: {median:0.0} s".Replace('.', ',') : $"Mejor racha {_bestStreak}";
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
         }
@@ -819,6 +967,25 @@ namespace NeuroVida.Games.Trafico
             _doorGlow.gameObject.SetActive(true);
             stationGo.SetActive(false);
 
+            // "Próximas": las que esperan en la estación, con un rótulo suelto (sin recuadro).
+            var queueRoot = Layer(_field, "Queue");
+            _queueLabel = MakeText(queueRoot, "QueueLabel", 30, TextAnchor.MiddleCenter, NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.8f), 0f, 0f);
+            _queueLabel.rectTransform.anchorMin = _queueLabel.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            _queueLabel.rectTransform.sizeDelta = new Vector2(260f, 44f);
+            _queueLabel.text = "próximas";
+            _queueLabel.gameObject.SetActive(false);
+            for (int i = 0; i < TrafficContract.QueueSize; i++)
+            {
+                var ring = NewImage(queueRoot, "UrgentRing", RingSprite.Get());
+                ring.rectTransform.sizeDelta = Vector2.one * QueueSizes[i] * 1.5f;
+                ring.color = NeuroStyle.Sun;
+                _queueRings.Add(ring);
+                var qp = NewImage(queueRoot, "Next", null);
+                qp.rectTransform.sizeDelta = Vector2.one * QueueSizes[i];
+                qp.color = new Color(1f, 1f, 1f, 1f - 0.18f * i);
+                _queuePods.Add(qp);
+            }
+
             var portRoot = Layer(_field, "Ports");
             for (int i = 0; i < TrafficContract.MaxPorts; i++)
             {
@@ -851,11 +1018,13 @@ namespace NeuroVida.Games.Trafico
                 var glow = NewImage(r, "Glow", RadialGlowSprite.Get());
                 glow.rectTransform.sizeDelta = new Vector2(PodSize * 2f, PodSize * 2f);
                 glow.gameObject.SetActive(true);
+                var ringImg = NewImage(r, "UrgentRing", RingSprite.Get());
+                ringImg.rectTransform.sizeDelta = new Vector2(PodSize * 1.55f, PodSize * 1.55f);
                 var body = NewImage(r, "Body", null);
                 Stretch(body.rectTransform);
                 body.gameObject.SetActive(true);
                 go.SetActive(false);
-                _pods.Add(new PodView { Rect = r, Body = body, Glow = glow, Trail = trail });
+                _pods.Add(new PodView { Rect = r, Body = body, Glow = glow, Ring = ringImg, Trail = trail });
             }
             _fxRect = Layer(_field, "Fx");
 

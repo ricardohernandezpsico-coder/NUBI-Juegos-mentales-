@@ -187,9 +187,18 @@ namespace NeuroVida.Games.Trafico.Tests
             {
                 Assert.GreaterOrEqual(TrafficContract.Ports(l), TrafficContract.Ports(l - 1));
                 Assert.Greater(TrafficContract.Speed(l, false), TrafficContract.Speed(l - 1, false));
-                Assert.Less(TrafficContract.SpawnInterval(l, false), TrafficContract.SpawnInterval(l - 1, false));
+                Assert.Greater(TrafficContract.TargetInFlight(l), TrafficContract.TargetInFlight(l - 1));
+                Assert.Less(TrafficContract.SpawnInterval(l, false, 8.5f), TrafficContract.SpawnInterval(l - 1, false, 8.5f));
             }
             Assert.Less(TrafficContract.Speed(5, true), TrafficContract.Speed(5, false));
+            Assert.Greater(TrafficContract.SpawnInterval(5, true, 8.5f), TrafficContract.SpawnInterval(5, false, 8.5f));
+            // Lento y lleno: el viaje dura ~8-9 s y salen seguidas, así hay 2-3 cápsulas en viaje al principio y 7-8 al final.
+            Assert.AreEqual(2.5f, TrafficContract.TargetInFlight(1), 1e-4f);
+            Assert.AreEqual(7.5f, TrafficContract.TargetInFlight(12), 1e-4f);
+            Assert.AreEqual(8.5f / 2.5f, TrafficContract.SpawnInterval(1, false, 8.5f), 1e-4f);
+            Assert.AreEqual(TrafficContract.MinSpawnGap, TrafficContract.SpawnInterval(12, false, 3f), 1e-4f);
+            // Nunca dos cápsulas montadas en la ruta de la estación: la separación mínima deja más que una cápsula de largo.
+            Assert.Greater(TrafficContract.Speed(1, true) * TrafficContract.MinSpawnGap * 0.85f, 0.05f);
             var rng = new Random(1);
             int prev = -1;
             for (int i = 0; i < 300; i++)
@@ -202,6 +211,69 @@ namespace NeuroVida.Games.Trafico.Tests
             Assert.AreEqual(0, TrafficContract.Points(false, 5, 3));
             Assert.Greater(TrafficContract.Points(true, 6, 1), TrafficContract.Points(true, 1, 1));
             Assert.Greater(TrafficContract.Points(true, 1, 5), TrafficContract.Points(true, 1, 1));
+            Assert.AreEqual(2 * TrafficContract.Points(true, 6, 3), TrafficContract.Points(true, 6, 3, urgent: true));
+            Assert.AreEqual(0, TrafficContract.Points(false, 6, 3, urgent: true));
+        }
+
+        [Test]
+        public void UrgentPods_AreFasterAndNeverBackToBack()
+        {
+            var sim = new TrafficSim(ThreePorts()) { Speed = 0.3f };
+            var ev = new List<TrafficEvent>();
+            var slow = sim.Spawn(0);
+            var fast = sim.Spawn(0, urgent: true);
+            Assert.IsTrue(fast.Urgent);
+            for (int i = 0; i < 200 && !fast.Done; i++) sim.Step(0.05f, ev);
+            Assert.IsTrue(fast.Done);
+            Assert.IsFalse(slow.Done); // la urgente adelantó a la que salió junto con ella
+            Assert.AreEqual(0f, TrafficContract.UrgentChance(TrafficContract.UrgentFromLevel - 1));
+            Assert.Greater(TrafficContract.UrgentChance(12), TrafficContract.UrgentChance(TrafficContract.UrgentFromLevel));
+            var rng = new Random(2);
+            bool prev = false;
+            int urgents = 0;
+            for (int i = 0; i < 400; i++)
+            {
+                bool u = TrafficContract.NextIsUrgent(12, prev, rng);
+                Assert.IsFalse(prev && u);
+                if (u) urgents++;
+                prev = u;
+            }
+            Assert.That(urgents, Is.InRange(30, 90)); // ~18% con la regla de no repetir
+        }
+
+        [Test]
+        public void AnnouncedPods_CountTogglesMadeWhileTheyWaited()
+        {
+            // En "próximas" la cápsula ya se ve: mover el desvío antes de que salga cuenta como prepararlo para ella.
+            var sim = new TrafficSim(ThreePorts()) { Speed = 1f };
+            var ev = new List<TrafficEvent>();
+            sim.Step(1f, ev);          // pasa 1 s de juego
+            float announced = sim.Time;
+            sim.Step(0.5f, ev);
+            sim.Toggle(1);             // se prepara mientras espera
+            sim.Toggle(3);
+            var pod = sim.Spawn(2, announcedAt: announced); // color 2 = puerto 5: desvío 1 a la derecha y desvío 3 a la derecha
+            for (int i = 0; i < 100 && !pod.Done; i++) sim.Step(0.05f, ev);
+            Assert.IsTrue(ev.Find(e => e.Arrived).Correct);
+            Assert.IsTrue(ev.FindAll(e => !e.Arrived).TrueForAll(e => e.Lead > 0f));
+        }
+
+        [Test]
+        public void Load_CountsOnlyMomentsWithoutErrorsInFlight()
+        {
+            var times = new List<float> { 1f, 2f, 3f, 4f, 5f, 6f };
+            var counts = new List<int> { 2, 4, 7, 6, 5, 3 };
+            // Una cápsula mal entregada que se vio en el segundo 2,5 y llegó en el 4,5: esos momentos no cuentan.
+            Assert.AreEqual(5, TrafficContract.CleanPeakLoad(times, counts, new List<float> { 2.5f }, new List<float> { 4.5f }));
+            Assert.AreEqual(7, TrafficContract.CleanPeakLoad(times, counts, new List<float>(), new List<float>()));
+            Assert.AreEqual(0, TrafficContract.CleanPeakLoad(times, counts, new List<float> { 0f }, new List<float> { 9f }));
+            // Y el viaje medio de la red: el promedio de los recorridos completos de la estación a cada puerto.
+            var net = ThreePorts();
+            net.EnsurePaths();
+            float r2 = net.PathLength(1) + net.PathLength(2);
+            float r4 = net.PathLength(1) + net.PathLength(3) + net.PathLength(4);
+            float r5 = net.PathLength(1) + net.PathLength(3) + net.PathLength(5);
+            Assert.AreEqual((r2 + r4 + r5) / 3f, net.MeanRouteLength(), 1e-5f);
         }
 
         [Test]
