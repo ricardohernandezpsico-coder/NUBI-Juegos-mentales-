@@ -31,8 +31,8 @@ def clay_box(im, box, r, fill):
     rrect(d, box, r, fill + (255,), INK + (255,), 3)
 
 
-def hud(im, d, level, points, streak):
-    d.text((30, 38), 'Piloto Estelar', font=ImageFont.truetype(FB, 34), fill=(255, 255, 255), anchor='lm', stroke_width=2, stroke_fill=INK)
+def hud(im, d, level, points, streak, title='Piloto Estelar'):
+    d.text((30, 38), title, font=ImageFont.truetype(FB, 34), fill=(255, 255, 255), anchor='lm', stroke_width=2, stroke_fill=INK)
     f = ImageFont.truetype(FB, 20)
     clay_box(im, (30, 62, 132, 90), 14, SURFACE)
     d.text((81, 76), f'Nivel {level}', font=f, fill=SKY, anchor='mm')

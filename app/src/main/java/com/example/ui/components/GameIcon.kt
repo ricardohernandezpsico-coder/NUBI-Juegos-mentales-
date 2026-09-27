@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto",
+  "piloto", "radar",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -155,6 +155,21 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       }
       // La señal que hay que atrapar.
       clay(star(Offset(79f, 21f), 16f, 8f, 5), Clay.Sun, border = 3.5f)
+    }
+    "radar" -> {
+      // Pantalla de radar de arcilla: aro, vidrio, anillos, el haz que barre y el astronauta (punto sol).
+      clay(circle(Offset(50f, 50f), 40f), Color(0xFF2A3590), gloss = true)
+      drawCircle(Color(0xFF0C1648), 31f, Offset(50f, 50f))
+      drawCircle(Ink, 31f, Offset(50f, 50f), style = Stroke(3f))
+      drawCircle(Clay.Sky.copy(alpha = 0.35f), 20f, Offset(50f, 50f), style = Stroke(1.6f))
+      drawCircle(Clay.Sky.copy(alpha = 0.35f), 10f, Offset(50f, 50f), style = Stroke(1.6f))
+      drawArc(
+        Clay.Lime.copy(alpha = 0.35f), startAngle = -150f, sweepAngle = 60f, useCenter = true,
+        topLeft = Offset(21f, 21f), size = androidx.compose.ui.geometry.Size(58f, 58f)
+      )
+      drawLine(Clay.Lime, Offset(50f, 50f), Offset(50f, 21f), 3f, StrokeCap.Round)
+      drawCircle(Cream, 4f, Offset(50f, 50f))
+      clay(circle(Offset(68f, 36f), 7f), Clay.Sun, border = 3f, shadow = false)
     }
     "series" -> {
       // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).

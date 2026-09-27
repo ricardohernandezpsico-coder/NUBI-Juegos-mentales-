@@ -121,6 +121,14 @@ object GameRegistry {
       iconEmoji = "🚀"
     ),
     GameDefinition(
+      id = "radar",
+      title = "Radar",
+      domain = DomainType.VELOCIDAD,
+      subtitle = "Velocidad de procesamiento y visión periférica",
+      instruction = "Mira el centro del radar: un destello muestra una nave en el centro y un astronauta perdido. Di qué nave viste y toca dónde estaba el astronauta para rescatarlo.",
+      iconEmoji = "📡"
+    ),
+    GameDefinition(
       id = "comparacion",
       title = "Comparación Instantánea",
       domain = DomainType.VELOCIDAD,
@@ -145,7 +153,12 @@ data class GamePlayResult(
   // Rating final del DDA común (0..1) informado por los juegos Unity; null en los demás.
   val endRating: Float? = null,
   // Solo Piloto Estelar: costo de multitarea en % de esta partida (se muestra en el resultado; no se guarda en Room).
-  val multitaskCost: Int? = null
+  val multitaskCost: Int? = null,
+  // Solo Radar: "tu vistazo" en ms (duración de destello en la que se asentó la dificultad) y aciertos de ubicación
+  // por dirección (8, 0 = arriba y en sentido horario) para dibujar "tu radar". No se guardan en Room.
+  val glanceMs: Int? = null,
+  val sectorHits: List<Int>? = null,
+  val sectorTrials: List<Int>? = null
 )
 
 data class DailySessionState(

@@ -114,6 +114,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.14f), NebulaBPos = new Vector2(0.5f, 0.0f),
         };
 
+        /// <summary>Radar: cielo quieto y oscuro (nada debe competir con el destello), un resplandor verde de fósforo
+        /// detrás del radar y unas pocas luces desenfocadas.</summary>
+        public static GameWorld RadarStation => new GameWorld
+        {
+            Name = "Estación de radar", Stars = 40, Bokeh = 3,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.10f), NebulaAPos = new Vector2(0.5f, 0.62f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.16f), NebulaBPos = new Vector2(0.9f, 0.08f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

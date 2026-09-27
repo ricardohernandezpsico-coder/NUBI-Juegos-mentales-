@@ -38,5 +38,7 @@
     <Compile Include="$(Src)/Comparacion/CountStarSprite.cs" />
     <Compile Include="$(Src)/Series/MagnifierSprite.cs" />
     <Compile Include="$(Src)/Shared/AnswerMarkSprite.cs" />
+    <Compile Include="$(Src)/Radar/RadarContract.cs" />
+    <Compile Include="$(Src)/Radar/RadarSprites.cs" />
   </ItemGroup>
 </Project>

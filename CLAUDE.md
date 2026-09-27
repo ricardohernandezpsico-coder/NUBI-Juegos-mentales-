@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 10 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 11 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -15,11 +15,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
   `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 9 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 11 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 27-sep · j`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 27-sep · k`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -70,7 +70,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StroopTelemetry` (salida común de los 7 del DDA común; lleva `end_rating` y `peak_level`).
 - `Games/AdaptiveDifficulty.cs`: DDA común (up-down ponderado de Kaernbach hacia 80% de aciertos, 85% en mayores;
   ver `docs/DDA-comun.md`). Lo usan Tinta o Palabra (`Stroop/`), Comparación, Cambio de Chip, Ruta del Tesoro,
-  Series, Cálculo y Anagramas; **Piloto Estelar** usa DOS instancias (pilotaje y señales). **Secuencia** tiene su escalera fija de 16 niveles (`SequenceLevelConfig`, sube con 2
+  Series, Cálculo y Anagramas; **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Radar** una, sin tiempo de reacción. **Secuencia** tiene su escalera fija de 16 niveles (`SequenceLevelConfig`, sube con 2
   aciertos seguidos, 3 vidas) y **Parejas** su motor propio (`VisualWorkingMemoryDDA`, escalera de 10 tableros).
 - Cada juego: `XContract.cs` (reglas puras con pruebas) + `XGameController.cs` (UI construida por código). Los 7 del
   DDA común heredan de `Shared/GameControllerBase` y usan `Shared/GameHud`.
@@ -83,7 +83,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 ## Juegos estrella (27-sep)
 
 Pedido de Ricardo: juegos que diferencien a la app, con respaldo científico y mucho enganche. Orden acordado:
-**Piloto Estelar** (hecho, primera versión) → **Radar** (velocidad de procesamiento / campo visual útil, ensayo ACTIVE)
+**Piloto Estelar** (hecho, primera versión) → **Radar** (hecho, primera versión; velocidad de procesamiento / campo visual útil, ensayo ACTIVE)
 → **Satélites** (seguimiento de múltiples objetos). Después, catálogo: Formación (flancos), Eco Estelar (N-back),
 Torre de Lunas (Torre de Londres), Matriz Perdida (tipo Raven), Constelación de Palabras (fluidez verbal).
 
@@ -103,9 +103,29 @@ guía (tocar o arrastrar en la franja de abajo); el otro dedo atrapa solo las se
 - Nuevos compartidos: `Shared/AnswerMarkSprite` (✓/✗ de arcilla, sirve para la marca pendiente en los otros juegos),
   `GameWorld.Hyperspace`. App: `GameRegistry`, ícono en `GameIcon.kt`, botón Debug (Reto 90 s).
 - Vista previa: `python3 tools/art-preview/piloto.py <raw>` → `docs/previews/piloto-estelar.png`.
-- Sin probar en el teléfono. Revisar: que se entienda la misión, control con dos pulgares, legibilidad de las
-  señales rápidas, ritmo de la dificultad, que el piloto automático no aburra. Falta: respetar "quitar animaciones"
-  (la config de Unity no lo trae todavía), sonido propio del motor.
+- Probado por Ricardo (27-sep): "me encantó", sonidos muy bien. La primera vez no captó el momento de tomar los
+  mandos y el cartel de la misión confunde un poco al principio, pero el piloto automático sirve de práctica: por
+  ahora sin ajustes. Falta: respetar "quitar animaciones" (la config de Unity no lo trae), sonido propio del motor.
+
+**Radar** (`Games/Radar/`, id `radar`, dominio velocidad): tarea UFOV (Ball y Owsley; ensayo ACTIVE, Ball et al.,
+JAMA 2002; Edwards et al., 2017) con tema de rescate. Destello: una nave en la pantalla central + un astronauta (casco
+de `SymbolSprite`) en una de 8 direcciones y 3 anillos; interferencia (máscara) 350 ms; responder 1) qué nave pasó
+por el centro (2 opciones) y 2) tocar la dirección del astronauta (vale tocar cualquier parte del sector). Las dos
+bien = rescatado (vuela a la fila de abajo).
+- Reglas y pruebas: `RadarContract` / `RadarContractTests` (10). 12 niveles: destello 500 → 40 ms (~20% menos por
+  nivel); asteroides desde el 4 (7 → 15 → 23, por anillos completos); astronauta más lejos desde el 3 y el 6; pares del
+  centro fácil / mismo color / silueta parecida (5 y 9). DDA común con `stepUp` 0.3, sin tiempo de reacción.
+- El juego pide 60 cuadros por segundo mientras dura (`Application.targetFrameRate`; Android da 30) y mide la duración
+  REAL de cada destello. Una pausa en pleno destello lo anula y se repite. Reto 90 s; Precisión 20 destellos.
+- Medidas propias: **tu vistazo** (`GlanceMs`: media geométrica de las duraciones reales de los últimos 12 destellos,
+  sin los 4 primeros = donde se asentó la escalera, ~80% de aciertos) y **tu radar** (aciertos de ubicación por
+  dirección). Viajan en `StroopSessionMetrics.glance_ms / sector_hits / sector_trials` → `GamePlayResult.glanceMs /
+  sectorHits / sectorTrials` (no se guardan en Room) → `GameResultScreen`: "Tu vistazo: N ms" y un radar con una cuña
+  por dirección (largo = proporción rescatada) + dónde más y dónde menos (con 2+ destellos por dirección).
+- Arte: `RadarSprites` (radar, haz, interferencia, botones de dirección), `GameWorld.RadarStation` (cielo quieto).
+  Vista previa: `python3 tools/art-preview/radar.py <raw>` → `docs/previews/radar.png`.
+- Sin probar en el teléfono. Revisar: que se entienda qué mirar la primera vez, que el destello de 500 ms se vea
+  bien y el de ~100 ms sea un desafío, que la interferencia no moleste, ritmo (~3-4 s por destello).
 
 ## Reglas que no se rompen
 
@@ -134,7 +154,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 43 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 105 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 10 smoke tests.
+- Unity EditMode: 115 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 11 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

@@ -32,5 +32,11 @@ namespace NeuroVida.Contracts
         /// <summary>Solo Piloto Estelar: costo de multitarea en % (cuánto baja la precisión en señales al pilotar a la
         /// vez). -1 = no aplica o sin datos.</summary>
         public int multitask_cost = -1;
+        /// <summary>Solo Radar: "tu vistazo" en ms (duración de destello en la que se asentó la escalera). -1 = no aplica.</summary>
+        public int glance_ms = -1;
+        /// <summary>Solo Radar: aciertos de ubicación por dirección (8, 0 = arriba y en sentido horario).</summary>
+        public int[] sector_hits;
+        /// <summary>Solo Radar: ensayos por dirección (8).</summary>
+        public int[] sector_trials;
     }
 }

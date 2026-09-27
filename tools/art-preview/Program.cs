@@ -59,6 +59,10 @@ internal static class Program
         Dump("screw", NeonSignSprites.Screw());
         Dump("mark_check", AnswerMarkSprite.Check());
         Dump("mark_cross", AnswerMarkSprite.Cross());
+        Dump("radar_scope", NeuroVida.Games.Radar.RadarSprites.Scope());
+        Dump("radar_sweep", NeuroVida.Games.Radar.RadarSprites.Sweep());
+        Dump("radar_pad", NeuroVida.Games.Radar.RadarSprites.Pad());
+        for (int i = 0; i < 2; i++) Dump("radar_mask_" + i, NeuroVida.Games.Radar.RadarSprites.Mask(i));
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)
             {

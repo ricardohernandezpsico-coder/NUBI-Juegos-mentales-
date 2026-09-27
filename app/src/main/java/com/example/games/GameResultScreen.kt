@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -46,6 +47,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -245,6 +248,42 @@ fun GameResultScreen(
       )
     }
 
+    // Radar: sus dos medidas propias. "Tu vistazo" (tarea UFOV: el destello más breve que se maneja) y el mapa de
+    // aciertos por dirección, que ninguna otra app muestra.
+    result.glanceMs?.let { ms ->
+      Spacer(Modifier.height(14.dp))
+      Text(
+        text = "Tu vistazo: $ms ms",
+        color = Clay.Sky,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = FredokaFamily
+      )
+      Text(
+        text = "El destello más breve con el que sigues acertando casi siempre. Mientras más bajo, más rápido captas.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+    }
+    val hits = result.sectorHits
+    val trials = result.sectorTrials
+    if (hits != null && trials != null && trials.sum() > 0) {
+      Spacer(Modifier.height(12.dp))
+      val summary = radarSummary(hits, trials)
+      Text("Tu radar", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+      Spacer(Modifier.height(6.dp))
+      RadarField(hits, trials, Modifier.size(150.dp).semantics { contentDescription = "Tu radar. $summary" })
+      Text(
+        text = summary,
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+      )
+    }
+
     if (didLevelUp) {
       Spacer(Modifier.height(18.dp))
       ClayPill(
@@ -399,5 +438,56 @@ private fun DailyProgress(completed: Int, total: Int) {
         }
       }
     }
+  }
+}
+
+// ---------- Radar: "tu radar" ----------
+
+private val RadarDirections = listOf(
+  "arriba", "arriba a la derecha", "a la derecha", "abajo a la derecha",
+  "abajo", "abajo a la izquierda", "a la izquierda", "arriba a la izquierda"
+)
+
+/** Dónde se rescató más y dónde menos (solo direcciones con al menos 2 destellos, para no sacar conclusiones de uno). */
+private fun radarSummary(hits: List<Int>, trials: List<Int>): String {
+  val rated = (0 until 8).filter { trials[it] >= 2 }.map { it to hits[it].toFloat() / trials[it] }
+  if (rated.size < 2) return "Cada cuña es una dirección: mientras más larga, más astronautas rescataste ahí."
+  val best = rated.maxBy { it.second }
+  val worst = rated.minBy { it.second }
+  if (best.second - worst.second < 0.2f) return "Parejo en todas las direcciones. Cada cuña larga = muchos rescates."
+  return "Donde más rescataste: ${RadarDirections[best.first]}. Donde menos: ${RadarDirections[worst.first]}."
+}
+
+/**
+ * Mapa de aciertos por dirección: un radar de arcilla con una cuña por dirección, tan larga como la proporción de
+ * astronautas ubicados ahí (la longitud dice el valor; no depende del color). Direcciones sin destellos: un punto.
+ */
+@Composable
+private fun RadarField(hits: List<Int>, trials: List<Int>, modifier: Modifier = Modifier) {
+  Canvas(modifier) {
+    val c = center
+    val r = size.minDimension / 2f - 6.dp.toPx()
+    val border = 3.dp.toPx()
+    drawCircle(Clay.Ink, r + border, c + Offset(0f, 4.dp.toPx()))
+    drawCircle(Color(0xFF0C1648), r, c)
+    drawCircle(Clay.Ink, r, c, style = Stroke(border))
+    listOf(0.33f, 0.66f).forEach { k ->
+      drawCircle(Clay.Sky.copy(alpha = 0.22f), r * k, c, style = Stroke(1.dp.toPx()))
+    }
+    for (d in 0 until 8) {
+      val angle = -90f + 45f * d
+      if (trials[d] <= 0) {
+        val a = Math.toRadians(angle.toDouble())
+        val p = c + Offset((kotlin.math.cos(a) * r * 0.8f).toFloat(), (kotlin.math.sin(a) * r * 0.8f).toFloat())
+        drawCircle(Clay.Cream.copy(alpha = 0.35f), 3.dp.toPx(), p)
+        continue
+      }
+      val acc = hits[d].toFloat() / trials[d]
+      val wr = r * (0.18f + 0.78f * acc)
+      val topLeft = c - Offset(wr, wr)
+      drawArc(Clay.Lime, angle - 19f, 38f, useCenter = true, topLeft = topLeft, size = Size(wr * 2f, wr * 2f))
+      drawArc(Clay.Ink, angle - 19f, 38f, useCenter = true, topLeft = topLeft, size = Size(wr * 2f, wr * 2f), style = Stroke(2.dp.toPx()))
+    }
+    drawCircle(Clay.Cream, 4.dp.toPx(), c)
   }
 }

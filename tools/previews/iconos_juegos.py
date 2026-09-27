@@ -9,7 +9,7 @@ INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
        ('stroop','Tinta o Palabra','atencion'),('cambiochip','Cambio de Chip','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion')]
+       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -125,6 +125,17 @@ def draw(ic,gid):
         ic.clay(tf([(43.7,34.6),(50.0,22.0),(56.3,34.6)]),CORAL,border=3.5,shadow=False)
         ic.clay(tf(circ(50,47.2,5.0)),SKY,border=2.5,shadow=False)
         ic.clay(star(79,21,16,8,5),SUN,border=3.5)
+    elif gid=='radar':
+        LIME=(155,229,100)
+        ic.clay(circ(50,50,40),(42,53,144),gloss=True)
+        ic.d.polygon(ic.poly(circ(50,50,31)),fill=(12,22,72)); ic.d.line(ic.poly(circ(50,50,31))+[ic.poly(circ(50,50,31))[0]],fill=INK,width=int(3*ic.k))
+        o=Image.new('RGBA',ic.im.size,(0,0,0,0)); od=ImageDraw.Draw(o)
+        for rr in (20,10): od.line(ic.poly(circ(50,50,rr))+[ic.poly(circ(50,50,rr))[0]],fill=SKY+(90,),width=int(1.6*ic.k))
+        wedge=[(50,50)]+[(50+29*math.cos(math.radians(a)),50+29*math.sin(math.radians(a))) for a in range(-150,-89,5)]
+        od.polygon(ic.poly(wedge),fill=LIME+(90,)); ic.im.alpha_composite(o); ic.d=ImageDraw.Draw(ic.im)
+        ic.stroke([(50,50),(50,21)],LIME,3)
+        q=ic.P(50,50); r=4*ic.k; ic.d.ellipse([q[0]-r,q[1]-r,q[0]+r,q[1]+r],fill=CREAM)
+        ic.clay(circ(68,36,7),SUN,border=3,shadow=False)
     elif gid=='comparacion':
         ic.clay(circ(22,50,20),CREAM,gloss=True); ic.clay(circ(87,50,10),CREAM)
         ic.claystroke([[(58-7.8,37),(58+7.8,50),(58-7.8,63)]],SUN,7)
