@@ -111,7 +111,18 @@ object NativeReceiver {
     // Solo Tráfico Estelar: anticipación (ms, -1 = sin medida), % proactivo (-1) y más cápsulas a la vez.
     val traffic_lead_ms: Int = -1,
     val traffic_proactive_pct: Int = -1,
-    val traffic_peak_pods: Int = 0
+    val traffic_peak_pods: Int = 0,
+    val mem_phase: String = "",
+    val mem_seed: Int = -1,
+    val mem_level: Int = -1,
+    val mem_items: Int = -1,
+    val mem_learned: Int = -1,
+    val mem_learned_mask: Int = -1,
+    val mem_recalled: Int = -1,
+    val mem_recalled_mask: Int = -1,
+    val mem_intrusions: Int = -1,
+    val mem_order_ok: Int = -1,
+    val mem_delay_s: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -239,7 +250,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -327,7 +338,18 @@ object NativeReceiver {
       rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } },
       trafficLeadMs = metrics.traffic_lead_ms.takeIf { it >= 0 },
       trafficProactivePct = metrics.traffic_proactive_pct.takeIf { it >= 0 },
-      trafficPeakPods = metrics.traffic_peak_pods.takeIf { it > 0 && telemetry.game_id == "trafico" }
+      trafficPeakPods = metrics.traffic_peak_pods.takeIf { it > 0 && telemetry.game_id == "trafico" },
+      memPhase = metrics.mem_phase.takeIf { telemetry.game_id == "bitacora" },
+      memSeed = metrics.mem_seed.takeIf { it >= 0 && telemetry.game_id == "bitacora" },
+      memLevel = metrics.mem_level.takeIf { it > 0 },
+      memItems = metrics.mem_items.takeIf { it > 0 },
+      memLearned = metrics.mem_learned.takeIf { it >= 0 },
+      memLearnedMask = metrics.mem_learned_mask.takeIf { it >= 0 },
+      memRecalled = metrics.mem_recalled.takeIf { it >= 0 },
+      memRecalledMask = metrics.mem_recalled_mask.takeIf { it >= 0 },
+      memIntrusions = metrics.mem_intrusions.takeIf { it >= 0 },
+      memOrderOk = metrics.mem_order_ok.takeIf { it >= 0 },
+      memDelayS = metrics.mem_delay_s.takeIf { it >= 0 }
     )
   }
 }

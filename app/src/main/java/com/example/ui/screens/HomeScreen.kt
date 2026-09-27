@@ -130,6 +130,16 @@ fun HomeScreen(
   val leagueEvents by viewModel.leagueEvents.collectAsState()
   val pausedGameId by viewModel.pausedGameId.collectAsState()
   val baseline by viewModel.baseline.collectAsState()
+  val mission by viewModel.mission.collectAsState()
+  // Reloj de la línea de la Bitácora ("el informe se abre en N min"): se refresca cada 30 s.
+  var clock by remember { mutableStateOf(System.currentTimeMillis()) }
+  LaunchedEffect(Unit) {
+    while (true) {
+      kotlinx.coroutines.delay(30_000L)
+      clock = System.currentTimeMillis()
+    }
+  }
+  val missionStep = remember(mission, dailySession, clock) { viewModel.missionStep(clock) }
   val eventsByDay = remember(leagueEvents) { leagueEvents.groupBy { dayIndex(it.timestamp) } }
   val lang = LocalAppLanguage.current
   val scope = rememberCoroutineScope()
@@ -264,6 +274,12 @@ fun HomeScreen(
       nextGameId = dailySession.gameIds.getOrNull(dailySession.completedCount)?.takeIf { dailySession.completedCount < 3 },
       completed = dailySession.completedCount,
       hasBaseline = baseline != null,
+      missionStep = missionStep,
+      missionMinutesLeft = com.example.data.MissionLog.minutesLeft(mission, clock),
+      missionFromOtherDay = mission.dateKey.isNotEmpty() && mission.dateKey != dailySession.dateKey,
+      archivedTotal = mission.archivedTotal,
+      onTransmit = { viewModel.startMissionTransmission() },
+      onReport = { viewModel.startMissionReport() },
       lang = lang,
       onResume = { viewModel.resumePausedGame() },
       onPlay = { viewModel.startDailySession() },
@@ -504,6 +520,12 @@ private fun TodayAction(
   nextGameId: String?,
   completed: Int,
   hasBaseline: Boolean,
+  missionStep: com.example.data.MissionStep,
+  missionMinutesLeft: Int,
+  missionFromOtherDay: Boolean,
+  archivedTotal: Int,
+  onTransmit: () -> Unit,
+  onReport: () -> Unit,
   lang: com.example.model.AppLanguage,
   onResume: () -> Unit,
   onPlay: () -> Unit,
@@ -512,6 +534,7 @@ private fun TodayAction(
   val paused = pausedGameId?.let { GameRegistry.getById(it) }
   val next = nextGameId?.let { GameRegistry.getById(it) }
   Column(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 8.dp)) {
+    MissionLine(missionStep, missionMinutesLeft, missionFromOtherDay, archivedTotal, completed, onTransmit, onReport)
     val (label, def, action, tag) = when {
       paused != null -> Quad("Tienes una partida en pausa", paused, onResume, "btn_resume_paused")
       next != null -> Quad(if (completed == 0) "Tu sesión de hoy · 3 juegos" else "Tu sesión de hoy · juego ${completed + 1} de 3", next, onPlay, "btn_home_play")
@@ -540,6 +563,53 @@ private fun TodayAction(
           .testTag("btn_home_baseline")
       )
     }
+  }
+}
+
+/**
+ * Línea de la Bitácora de Misión en Hoy (texto suelto con su ícono, sin recuadro): dice en qué punto va la misión del
+ * día y, cuando hay algo que hacer fuera del flujo de la sesión, se puede tocar.
+ */
+@Composable
+private fun MissionLine(
+  step: com.example.data.MissionStep,
+  minutesLeft: Int,
+  fromOtherDay: Boolean,
+  archivedTotal: Int,
+  completed: Int,
+  onTransmit: () -> Unit,
+  onReport: () -> Unit
+) {
+  val (text, action) = when (step) {
+    com.example.data.MissionStep.TRANSMISION ->
+      if (completed == 0) "Bitácora: la transmisión del día llega al empezar tu sesión" to null
+      else "Bitácora: recibir la transmisión del día" to onTransmit
+    com.example.data.MissionStep.ESPERA ->
+      (if (minutesLeft > 0) "Bitácora: el informe se abre al terminar tu sesión o en $minutesLeft min"
+      else "Bitácora: el informe se abre al terminar tu sesión") to null
+    com.example.data.MissionStep.INFORME ->
+      (if (fromOtherDay) "Bitácora: tienes un informe pendiente" else "Bitácora: tu informe está listo") to onReport
+    com.example.data.MissionStep.AL_DIA ->
+      (if (archivedTotal == 1) "Bitácora al día · 1 hallazgo archivado" else "Bitácora al día · $archivedTotal hallazgos archivados") to null
+  }
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(bottom = 8.dp)
+      .clip(RoundedCornerShape(10.dp))
+      .then(if (action != null) Modifier.clickable(onClick = action) else Modifier)
+      .padding(horizontal = 4.dp, vertical = 4.dp)
+      .testTag("mission_line")
+  ) {
+    com.example.ui.components.GameIcon("bitacora", 30.dp)
+    Spacer(Modifier.width(10.dp))
+    Text(
+      text = text,
+      color = if (action != null) Clay.Sun else OnNightDim,
+      fontSize = 13.sp,
+      fontWeight = if (action != null) FontWeight.SemiBold else FontWeight.Normal
+    )
   }
 }
 

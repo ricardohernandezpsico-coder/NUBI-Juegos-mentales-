@@ -15,6 +15,9 @@ import java.util.*
 /** Juegos con motor de dificultad propio (no usan el rating del DDA común guardado en `ddaRating`). */
 private val OWN_ENGINE_GAMES = setOf("secuencia", "parejas")
 
+/** Juegos que no entran al camino diario de 3: Bitácora de Misión va antes (transmisión) y después (informe). */
+internal val BOOKEND_GAMES = setOf("bitacora")
+
 class NeuroVidaRepository(
   context: Context,
   private val database: NeuroVidaDatabase = NeuroVidaDatabase.getDatabase(context)
@@ -479,7 +482,8 @@ class NeuroVidaRepository(
 
     val selected = mutableListOf<String>()
     sortedDomains.take(3).forEach { domain ->
-      val gameInDomain = GameRegistry.allGames.filter { it.domain == domain }.randomOrNull()
+      // Bitácora de Misión no entra al camino: va antes y después (transmisión al empezar, informe al terminar).
+      val gameInDomain = GameRegistry.allGames.filter { it.domain == domain && it.id !in BOOKEND_GAMES }.randomOrNull()
       if (gameInDomain != null) {
         selected.add(gameInDomain.id)
       }
@@ -487,7 +491,7 @@ class NeuroVidaRepository(
 
     while (selected.size < 3) {
       val candidate = GameRegistry.allGames.random().id
-      if (!selected.contains(candidate)) selected.add(candidate)
+      if (!selected.contains(candidate) && candidate !in BOOKEND_GAMES) selected.add(candidate)
     }
     return selected
   }

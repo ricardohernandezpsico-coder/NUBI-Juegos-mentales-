@@ -36,7 +36,12 @@ object UnityGameLauncher {
     // de M se muestra en la cuenta regresiva. En la evaluación NO se manda el rating guardado (se mide de cero).
     val assessment: Boolean = false,
     val assessment_step: Int = 0,
-    val assessment_total: Int = 0
+    val assessment_total: Int = 0,
+    // Solo Bitácora de Misión (ver data/MissionLog.kt): fase, semilla, nivel de la misión y segundos desde la transmisión.
+    val memory_phase: String = "",
+    val memory_seed: Int = 0,
+    val memory_level: Int = 0,
+    val memory_elapsed_s: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -66,8 +71,9 @@ object UnityGameLauncher {
     soundEnabled: Boolean = true,
     launchId: String? = null, // una partida en pausa se retoma con SU id (Unity no la reinicia)
     assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
-    assessmentTotal: Int = 0
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal)
+    assessmentTotal: Int = 0,
+    memory: com.example.data.MemoryLaunch? = null // Bitácora de Misión: transmisión o informe de la misión del día
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, memory)
 
   private fun buildIntent(
     context: Context,
@@ -80,7 +86,8 @@ object UnityGameLauncher {
     soundEnabled: Boolean,
     launchId: String? = null,
     assessmentStep: Int = 0,
-    assessmentTotal: Int = 0
+    assessmentTotal: Int = 0,
+    memory: com.example.data.MemoryLaunch? = null
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
@@ -98,7 +105,11 @@ object UnityGameLauncher {
         dda_rating = savedRating.coerceAtLeast(0f).toDouble(),
         assessment = assessment,
         assessment_step = assessmentStep,
-        assessment_total = assessmentTotal
+        assessment_total = assessmentTotal,
+        memory_phase = memory?.phase ?: "",
+        memory_seed = memory?.seed ?: 0,
+        memory_level = memory?.level ?: 0,
+        memory_elapsed_s = memory?.elapsedS ?: 0
       )
     )
     val json = adapter.toJson(config)

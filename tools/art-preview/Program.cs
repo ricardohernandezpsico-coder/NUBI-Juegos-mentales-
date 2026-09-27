@@ -93,8 +93,23 @@ internal static class Program
             }
             Dump("traffic_knob", NeuroVida.Games.Trafico.TrafficSprites.SwitchKnob());
             Dump("traffic_station", NeuroVida.Games.Trafico.TrafficSprites.Station());
+            for (int f = 0; f < NeuroVida.Games.Bitacora.BitacoraContract.FindCount; f++)
+                Dump("bit_find_" + f, NeuroVida.Games.Bitacora.BitacoraSprites.Find(f));
+            Dump("bit_probe", NeuroVida.Games.Bitacora.BitacoraSprites.Probe());
+            // Una misión real (la genera el contrato del juego) para la maqueta: planetas, ruta, hallazgos y cajón.
+            {
+                var m = NeuroVida.Games.Bitacora.BitacoraContract.Generate(20260928, 6);
+                var ic = System.Globalization.CultureInfo.InvariantCulture;
+                var sb = new System.Text.StringBuilder();
+                for (int p = 0; p < m.Planets; p++) sb.AppendLine($"P {m.PlanetColors[p]} {m.PlanetX[p].ToString(ic)} {m.PlanetY[p].ToString(ic)}");
+                sb.AppendLine("R " + string.Join(" ", m.Route));
+                sb.AppendLine("F " + string.Join(" ", m.Finds));
+                sb.AppendLine("D " + string.Join(" ", m.Drawer));
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "bit_mission.txt"), sb.ToString());
+            }
             // Muestra de sonido de Tráfico Estelar (WAV): el motor de fondo con los efectos encima, como en una partida.
             TrafficSoundDemo(Path.Combine(dir, "trafico-sonidos.wav"));
+            BitacoraSoundDemo(Path.Combine(dir, "bitacora-sonidos.wav"));
             // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (var (ports, seed, twist) in new[] { (4, 3, 0.2f), (6, 11, 0.55f), (8, 5, 1f), (6, 21, 0.55f) })
@@ -172,6 +187,37 @@ internal static class Program
         Wrong(6.4f);
         LevelUp(7.1f);
         At(8.0f, NeuroVida.Games.Trafico.TrafficSounds.Cascade(), 0.5f);
+        using (var w = new BinaryWriter(File.Create(path)))
+        {
+            int n = mix.Length;
+            w.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + n * 2); w.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));
+            w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
+            w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
+            foreach (float v in mix) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
+        }
+    }
+
+    static void BitacoraSoundDemo(string path)
+    {
+        const int rate = 44100;
+        var mix = new float[(int)(11f * rate)];
+        void At(float t, UnityEngine.AudioClip c, float v)
+        {
+            int start = (int)(t * rate);
+            for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
+        }
+        // Llega la transmisión; la sonda viaja a 4 planetas (cada hallazgo con su nota y destello; se guarda al tocarlo);
+        // se abre el informe; lo recordado se archiva.
+        At(0.2f, NeuroVida.Games.Bitacora.BitacoraSounds.Incoming(), 0.5f);
+        for (int i = 0; i < 4; i++)
+        {
+            float t = 1.8f + 1.5f * i;
+            At(t, NeuroVida.Games.Bitacora.BitacoraSounds.Travel(), 0.3f);
+            At(t + 0.5f, NeuroVida.Games.Bitacora.BitacoraSounds.Reveal(i), 0.55f);
+            At(t + 1.1f, NeuroVida.Games.Bitacora.BitacoraSounds.Save(), 0.45f);
+        }
+        At(8.0f, NeuroVida.Games.Bitacora.BitacoraSounds.Report(), 0.5f);
+        At(9.4f, NeuroVida.Games.Bitacora.BitacoraSounds.Archive(), 0.55f);
         using (var w = new BinaryWriter(File.Create(path)))
         {
             int n = mix.Length;

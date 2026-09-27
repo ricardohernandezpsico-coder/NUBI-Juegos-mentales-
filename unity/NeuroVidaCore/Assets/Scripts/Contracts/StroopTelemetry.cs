@@ -42,6 +42,21 @@ namespace NeuroVida.Contracts
         public float tracking_capacity = -1f;
         /// <summary>Solo Satélites: cuántos había que seguir por ronda, en promedio (el techo de "tu seguimiento"). -1 = no aplica.</summary>
         public float tracking_targets = -1f;
+        /// <summary>Solo Bitácora de Misión: fase jugada ("" completa, "encode" transmisión, "recall" informe).</summary>
+        public string mem_phase = "";
+        /// <summary>Solo Bitácora: semilla y nivel de la misión, paradas, aprendidas en el primer repaso (y cuáles, en bits),
+        /// recordadas en el informe (y cuáles), hallazgos elegidos que no estaban, paradas de la ruta en su lugar y
+        /// segundos entre la transmisión y el informe. -1 = no aplica.</summary>
+        public int mem_seed = -1;
+        public int mem_level = -1;
+        public int mem_items = -1;
+        public int mem_learned = -1;
+        public int mem_learned_mask = -1;
+        public int mem_recalled = -1;
+        public int mem_recalled_mask = -1;
+        public int mem_intrusions = -1;
+        public int mem_order_ok = -1;
+        public int mem_delay_s = -1;
         /// <summary>Solo Satélites: velocidad del nivel más alto superado completo, como múltiplo de la del nivel 1. -1 = ninguno.</summary>
         public float tracking_speed = -1f;
         /// <summary>Solo Freno de Emergencia: "tu freno" (tiempo de frenado, SSRT, ms). -1 = sin estimación confiable.</summary>

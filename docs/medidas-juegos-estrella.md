@@ -141,6 +141,24 @@ mostró el estudio de NeuroRacer con la tarea entrenada.
 
 ---
 
+## Bitácora de Misión: "Tu memoria a los X minutos", "retención", "la ruta"
+
+**Qué mide.** Memoria episódica con recuerdo diferido: qué hallazgo había en cada planeta (asociación qué–dónde,
+recordada con la pista del lugar) y en qué orden pasó la sonda (el "cuándo"). La demora es real: en la sesión diaria,
+el informe llega después de los otros juegos (10 a 20 minutos); al jugar suelto, después de una patrulla de 45 s.
+
+**Retención.** De lo acertado en el primer repaso, cuánto seguía en el informe. Separar aprender de retener es la
+lógica de las pruebas de aprendizaje y recuerdo diferido (tipo RAVLT). Con 3 a 8 paradas por misión, una partida es
+poco: por eso se muestra junto con la nota común, y lo valioso es la evolución.
+
+**Qué NO se dice.** No se compara con normas clínicas: el material, la cantidad y la demora son propios del juego.
+Elegir un hallazgo que no estaba se cuenta y se explica sin culpa: la memoria reconstruye y a veces completa huecos.
+
+**Consejo.** Imaginar una escena que une el hallazgo con su planeta ayuda a recordar asociaciones (Bower, 1970).
+Practicar el recuerdo afianza (Roediger y Karpicke, 2006).
+
+---
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -148,12 +166,16 @@ mostró el estudio de NeuroRacer con la tarea entrenada.
 - Ball, K., et al. (2002). Effects of cognitive training interventions with older adults. *JAMA*, 288, 2271–2281.
 - Barth, H. C., y Paladino, A. M. (2011). The development of numerical estimation: evidence against a representational
   shift. *Developmental Science*, 14, 125–135.
+- Bower, G. H. (1970). Imagery as a relational organizer in associative learning. *Journal of Verbal Learning and
+  Verbal Behavior*, 9, 529–533.
 - Braver, T. S. (2012). The variable nature of cognitive control: a dual mechanisms framework. *Trends in Cognitive
   Sciences*, 16, 106–113.
 - Cooper, L. A., y Shepard, R. N. (1973). Chronometric studies of the rotation of mental images. En W. G. Chase (Ed.),
   *Visual Information Processing*.
 - Edwards, J. D., et al. (2005). Reliability and validity of Useful Field of View test scores as administered by
   personal computer. *Journal of Clinical and Experimental Neuropsychology*, 27, 529–543.
+- Roediger, H. L., y Karpicke, J. D. (2006). Test-enhanced learning: taking memory tests improves long-term
+  retention. *Psychological Science*, 17, 249–255.
 - Schneider, M., et al. (2018). Associations of number line estimation with mathematical competence: a meta-analysis.
   *Child Development*, 89, 1467–1484.
 - Siegler, R. S., y Opfer, J. E. (2003). The development of numerical estimation. *Psychological Science*, 14, 237–243.

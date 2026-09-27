@@ -47,5 +47,8 @@
     <Compile Include="$(Src)/Trafico/TrafficSprites.cs" />
     <Compile Include="$(Src)/Trafico/TrafficContract.cs" />
     <Compile Include="$(Src)/Trafico/TrafficSounds.cs" />
+    <Compile Include="$(Src)/Bitacora/BitacoraSprites.cs" />
+    <Compile Include="$(Src)/Bitacora/BitacoraContract.cs" />
+    <Compile Include="$(Src)/Bitacora/BitacoraSounds.cs" />
   </ItemGroup>
 </Project>

@@ -113,6 +113,14 @@ object GameRegistry {
       iconEmoji = "🚦"
     ),
     GameDefinition(
+      id = "bitacora",
+      title = "Bitácora de Misión",
+      domain = DomainType.MEMORIA,
+      subtitle = "Memoria de lo vivido: qué, dónde y en qué orden",
+      instruction = "Llega una transmisión: una sonda deja hallazgos en planetas. Guárdalos en la bitácora y, más tarde, informa qué había en cada planeta y en qué orden pasó.",
+      iconEmoji = "📡"
+    ),
+    GameDefinition(
       id = "anagramas",
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
@@ -225,7 +233,24 @@ data class GamePlayResult(
   // vez. No se guardan en Room.
   val trafficLeadMs: Int? = null,
   val trafficProactivePct: Int? = null,
-  val trafficPeakPods: Int? = null
+  val trafficPeakPods: Int? = null,
+  // Solo Bitácora de Misión: fase ("" completa, "encode" transmisión, "recall" informe), semilla y nivel de la misión,
+  // paradas, aprendidas en el primer repaso (y cuáles, en bits), recordadas en el informe (y cuáles), hallazgos
+  // elegidos que no estaban, paradas de la ruta en su lugar y segundos de demora. La app completa la retención y la
+  // colección (ver data/MissionLog.kt). No se guardan en Room.
+  val memPhase: String? = null,
+  val memSeed: Int? = null,
+  val memLevel: Int? = null,
+  val memItems: Int? = null,
+  val memLearned: Int? = null,
+  val memLearnedMask: Int? = null,
+  val memRecalled: Int? = null,
+  val memRecalledMask: Int? = null,
+  val memIntrusions: Int? = null,
+  val memOrderOk: Int? = null,
+  val memDelayS: Int? = null,
+  val memRetentionPct: Int? = null,
+  val memArchivedTotal: Int? = null
 )
 
 data class DailySessionState(

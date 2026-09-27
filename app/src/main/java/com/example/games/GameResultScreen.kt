@@ -498,10 +498,101 @@ fun GameResultScreen(
       }
     }
 
+    // Bitácora de Misión: memoria con demora (qué-dónde y orden), retención de lo aprendido y la colección.
+    if (result.memPhase != null) {
+      Spacer(Modifier.height(14.dp))
+      val items = result.memItems ?: 0
+      if (result.memPhase == "encode") {
+        val learned = result.memLearned ?: 0
+        Text("Transmisión guardada", color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = FredokaFamily)
+        Spacer(Modifier.height(6.dp))
+        FilledSlots(learned, items, Clay.Sky, Modifier.semantics { contentDescription = "Aprendiste $learned de $items" })
+        Text(
+          text = "Aprendiste $learned de $items en el primer repaso. El informe se abre al terminar tu sesión de hoy (o en 10 minutos). No hace falta repasar: la idea es ver cuánto guarda tu memoria por sí sola.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+      } else {
+        val recalled = result.memRecalled ?: 0
+        val delay = result.memDelayS?.let { com.example.data.MissionLog.delayLabel(it) } ?: ""
+        Text(
+          text = "Tu memoria $delay: $recalled de $items",
+          color = Clay.Sun,
+          fontWeight = FontWeight.Bold,
+          fontSize = 20.sp,
+          fontFamily = FredokaFamily,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        Spacer(Modifier.height(6.dp))
+        FilledSlots(recalled, items, Clay.Sun, Modifier.semantics { contentDescription = "Recordaste $recalled de $items en su lugar" })
+        Text(
+          text = "Hallazgos que recordaste en su planeta, sin ayuda.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+        result.memRetentionPct?.let { pct ->
+          Text(
+            text = "Guardaste el $pct% de lo que aprendiste",
+            color = Clay.Lime,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp)
+          )
+          Text(
+            text = "De lo que acertaste en el primer repaso, cuánto seguía ahí en el informe. Separa aprender de retener.",
+            color = TextSoft,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+        result.memOrderOk?.let { ok ->
+          Text(
+            text = "La ruta: $ok de $items en orden",
+            color = Clay.Cream,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp)
+          )
+        }
+        result.memIntrusions?.takeIf { it > 0 }?.let { n ->
+          Text(
+            text = (if (n == 1) "Elegiste 1 hallazgo que no estaba en la misión" else "Elegiste $n hallazgos que no estaban en la misión") +
+              ": la memoria a veces completa huecos con lo que parece probable. Es normal.",
+            color = TextSoft,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+          )
+        }
+        Text(
+          text = "Truco para la próxima: imagina cada hallazgo haciendo algo en su planeta. Una escena se recuerda mejor que un dato suelto.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+      }
+      result.memArchivedTotal?.takeIf { it > 0 }?.let { total ->
+        Text(
+          text = if (total == 1) "Tu bitácora: 1 hallazgo archivado" else "Tu bitácora: $total hallazgos archivados",
+          color = Clay.Sun,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 6.dp)
+        )
+      }
+    }
+
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
-      result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods
+      result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -547,14 +638,17 @@ fun GameResultScreen(
       icon = Icons.AutoMirrored.Filled.ArrowForward,
       modifier = Modifier.testTag("btn_result_continue")
     )
-    Spacer(Modifier.height(14.dp))
-    ClayButton(
-      text = "Jugar de nuevo",
-      onClick = onPlayAgain,
-      color = Clay.Cream,
-      icon = Icons.Filled.Refresh,
-      modifier = Modifier.testTag("btn_result_replay")
-    )
+    // La transmisión y el informe de la misión del día no se repiten (serían otra misión): sin "Jugar de nuevo".
+    if (result.memPhase.isNullOrEmpty()) {
+      Spacer(Modifier.height(14.dp))
+      ClayButton(
+        text = "Jugar de nuevo",
+        onClick = onPlayAgain,
+        color = Clay.Cream,
+        icon = Icons.Filled.Refresh,
+        modifier = Modifier.testTag("btn_result_replay")
+      )
+    }
   }
 }
 
@@ -745,6 +839,25 @@ private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier) {
         val top = c.y + r - 2f * r * fill
         clipRect(left = c.x - r, top = top, right = c.x + r, bottom = c.y + r) { drawCircle(Clay.Sun, r, c) }
       }
+      drawCircle(Clay.Ink, r, c, style = Stroke(border))
+    }
+  }
+}
+
+// ---------- Bitácora de Misión ----------
+
+/** Fila de discos de arcilla: [filled] encendidos (del color dado) de [total]. El número va en el texto de arriba. */
+@Composable
+private fun FilledSlots(filled: Int, total: Int, color: Color, modifier: Modifier = Modifier) {
+  val n = total.coerceIn(1, 8)
+  Canvas(modifier.size(width = 26.dp * n + 8.dp * (n - 1), height = 32.dp)) {
+    val r = 13.dp.toPx()
+    val gap = 8.dp.toPx()
+    val border = 2.5.dp.toPx()
+    for (i in 0 until n) {
+      val c = Offset(r + i * (2 * r + gap), size.height / 2f - 2.dp.toPx())
+      drawCircle(Clay.Ink, r, c + Offset(0f, 3.dp.toPx()))
+      drawCircle(if (i < filled) color else Color(0xFF1B2466), r, c)
       drawCircle(Clay.Ink, r, c, style = Stroke(border))
     }
   }

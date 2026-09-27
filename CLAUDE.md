@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 16 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 17 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -15,11 +15,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
   `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 16 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 17 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 27-sep · u`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · a`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -41,7 +41,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   (`GamesLibraryScreen`, planetas) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `LeagueEvents`, `NumberLine`, `Percentile`; y
+- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
@@ -275,6 +275,40 @@ las otras, riel de arcilla apagado (visible para planificar). Cápsulas con este
   cambios de sentido → rehecho así. Probado por Ricardo (27-sep): le gustó la estructura; pidió que la nave suene al viajar (ver Sonido) y más
   trabajo simultáneo (ver Ritmo). Versión "lento y lleno" sin probar en el teléfono.
 
+**Bitácora de Misión** (`Games/Bitacora/`, id `bitacora`, dominio MEMORIA; primer juego estrella de memoria, 28-sep,
+pedido de Ricardo: "muy innovadora, con enganche, llamativa, sonidos modernos, destellos"): memoria episódica (qué,
+dónde y en qué orden) con recuerdo DIFERIDO, como las pruebas de aprendizaje y recuerdo diferido (tipo RAVLT). Ninguna
+app de la competencia mide memoria con demora a lo largo de la sesión.
+- Partida: **transmisión** (una sonda recorre planetas del mapa, los de Tráfico Estelar con color + símbolo + nombre:
+  Coral, Sol, Cielo...; en cada parada aparece un hallazgo con destello, su nota y "Planeta Sol · una llave"; la
+  persona lo TOCA para guardarlo en la bitácora, fila de abajo; si no, se guarda solo a los 5 s) → **primer repaso**
+  (planeta por planeta, en otro orden, elegir el hallazgo en un cajón con los de la misión + señuelos; respuesta al
+  instante: se aprende) → **espera** → **informe** (lo mismo sin ayuda) → **la ruta** (tocar los planetas en el orden de
+  la sonda) → **revelación** (la sonda repite la ruta; ✓ lo recordado vuela a la bitácora, ✗ muestra lo que era).
+  Consejo del juego: imaginar el hallazgo EN su planeta como una escena (Bower, 1970).
+- Fases por configuración (`SequenceConfigDetails.memory_phase / memory_seed / memory_level / memory_elapsed_s`):
+  "" = completa (la espera es una **patrulla** de 45 s atrapando cometas, que ocupa la atención sin repasar);
+  "encode" = transmisión y repaso; "recall" = informe. La misión se rearma con la semilla (`MissionRng` xorshift propio:
+  igual en cualquier versión) y el nivel.
+- **Sesión diaria** (app, `data/MissionLog` + `MissionLogStore` en SharedPreferences `mission_log`): la transmisión va
+  ANTES del primer juego y el informe DESPUÉS del último (o pasados 10 min); un informe pendiente de otro día se hace
+  primero (memoria a un día). `NeuroVidaViewModel.launchMissionIfDue` en `startDailySession` y `continueDailyFlow`
+  ("Continuar" del resultado en la sesión siempre sigue el flujo). Bitácora no entra al camino de 3 (`BOOKEND_GAMES`).
+  Hoy muestra la línea de la Bitácora (`MissionLine`: transmisión / espera con minutos / informe listo / al día con la
+  colección). La transmisión sola NO se guarda en Room (no es partida completa): muestra su pantalla y sigue.
+- Reglas y pruebas: `BitacoraContract` / `BitacoraContractTests` (5). 10 niveles: paradas 3 → 8, planetas extra que la
+  sonda no visita (0, 1 desde el 3, 2 desde el 6), señuelos 2 → 5. DDA `stepUp` 0.5 por parada del informe.
+- Medidas: **tu memoria a los X minutos** (paradas recordadas en su planeta), **retención** (de lo aprendido en el
+  repaso, cuánto seguía en el informe: la app la calcula con la máscara guardada, `MissionLog.retentionPct`), **la
+  ruta** (paradas en su lugar), **hallazgos que no estaban** (intrusiones, dicho sin culpa) y **tu bitácora**
+  (colección acumulada). Telemetría `mem_*` → `GamePlayResult.mem*` → `GameResultScreen` (`FilledSlots`).
+- Arte: `BitacoraSprites` (16 hallazgos de silueta distinta y fácil de nombrar: llave, campana, pluma, concha, reloj de
+  arena, brújula, farol, corona, bellota, libro, copa, gema, hongo, ancla, estrella de mar, paraguas; y la sonda),
+  `GameWorld.Logbook`. Sonido `BitacoraSounds`: cristal y "destellos" (parciales muy agudos) con eco suave, en la
+  pentatónica de la app; cada parada con su nota (la misión suena como melodía). Vista previa:
+  `python3 tools/art-preview/bitacora.py <raw>` → `docs/previews/bitacora.png`; sonidos → `docs/previews/bitacora-sonidos.wav`.
+  Sin probar en el teléfono.
+
 ## Reglas que no se rompen
 
 - **Diseño**: "noche + arcilla": cielo nocturno animado; lo tocable es arcilla (borde tinta grueso `Ink` 0x1A1240,
@@ -306,8 +340,8 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 47 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 155 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 16 smoke tests.
+- Kotlin: 51 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Unity EditMode: 160 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 17 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

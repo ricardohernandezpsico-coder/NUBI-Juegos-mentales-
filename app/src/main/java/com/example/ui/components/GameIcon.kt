@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -234,6 +234,20 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawPath(hole, Ink.copy(alpha = 0.85f))
       drawPath(hole, Cream, style = Stroke(3f, join = StrokeJoin.Round))
       curvedArrow(Offset(30f, 33f), 30f, 190f, 95f, Clay.Sun)
+    }
+    "bitacora" -> {
+      // Bitácora abierta y, encima, un hallazgo que llega con destello (la estela de la sonda desde la derecha).
+      clay(poly(16f, 42f, 50f, 50f, 50f, 86f, 16f, 78f), Cream)
+      clay(poly(50f, 50f, 84f, 42f, 84f, 78f, 50f, 86f), Cream, gloss = true)
+      for (k in 0 until 3) {
+        drawLine(Ink.copy(alpha = 0.3f), Offset(23f, 54f + 8f * k), Offset(44f, 58f + 8f * k), 2.5f, StrokeCap.Round)
+        drawLine(Ink.copy(alpha = 0.3f), Offset(56f, 58f + 8f * k), Offset(77f, 54f + 8f * k), 2.5f, StrokeCap.Round)
+      }
+      drawCircle(Clay.Sky.copy(alpha = 0.55f), 3f, Offset(88f, 14f))
+      drawCircle(Clay.Sky.copy(alpha = 0.75f), 3.5f, Offset(78f, 18f))
+      drawCircle(Clay.Sky, 4f, Offset(67f, 22f))
+      clay(star(Offset(48f, 25f), 15f, 7f, 5, round = true), Clay.Sun, border = 4f)
+      sparkle(Offset(26f, 20f), 8f, Color.White)
     }
     "trafico" -> {
       // Estación de carga arriba; la ruta baja en curva hasta un desvío (disco con flecha) y se abre hacia dos planetas.

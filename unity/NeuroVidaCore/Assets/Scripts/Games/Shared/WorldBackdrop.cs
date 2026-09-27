@@ -168,6 +168,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.5f, 0.1f),
         };
 
+        /// <summary>Bitácora de Misión: cielo de exploración con constelaciones tenues y alguna estrella fugaz (destellos
+        /// lentos, lejos del mapa: decoran sin distraer).</summary>
+        public static GameWorld Logbook => new GameWorld
+        {
+            Name = "Bitácora", Stars = 60, Constellations = 2, MeteorEverySeconds = 9f,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaAPos = new Vector2(0.2f, 0.85f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.16f), NebulaBPos = new Vector2(0.85f, 0.2f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",
