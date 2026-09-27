@@ -4,6 +4,16 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Constelación de Palabras: decir palabras en voz alta (reconocimiento de voz de Android, ver bridge/SpeechBridge). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Desde Android 11 hay que declarar que la app busca el servicio de reconocimiento de voz; si no,
+         SpeechRecognizer.isRecognitionAvailable responde que no hay ninguno. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 
     <application
         android:name=".NeuroVidaApplication"

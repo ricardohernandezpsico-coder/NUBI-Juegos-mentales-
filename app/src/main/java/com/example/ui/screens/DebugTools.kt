@@ -7,6 +7,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -53,6 +57,10 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     // La misión del día de Bitácora, fuera de la sesión: la transmisión y, sin esperar los 10 minutos, el informe.
     DebugButton("[Debug] Bitácora: recibir transmisión", "btn_debug_mission_encode") { viewModel.startMissionTransmission() }
     DebugButton("[Debug] Bitácora: informe ya (sin esperar)", "btn_debug_mission_recall") { viewModel.startMissionReport() }
+    // Constelación de Palabras: antes del juego, ver si el teléfono entiende bien la voz (animales durante 60 s).
+    var showVoiceTest by remember { mutableStateOf(false) }
+    DebugButton("[Debug] Prueba de voz (Constelación de Palabras)", "btn_debug_voice_test") { showVoiceTest = true }
+    if (showVoiceTest) VoiceTestDialog(onDismiss = { showVoiceTest = false })
     DebugGames.forEach { g ->
       DebugButton("[Debug] Probar ${g.label}", "btn_debug_unity_${g.id}") {
         context.startActivity(
