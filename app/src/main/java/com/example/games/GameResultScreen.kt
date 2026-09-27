@@ -425,6 +425,56 @@ fun GameResultScreen(
       )
     }
 
+    // Tráfico Estelar: "tu anticipación" (control proactivo vs reactivo, Braver 2012) y cuántas cápsulas a la vez.
+    if (result.trafficLeadMs != null || result.trafficPeakPods != null) {
+      Spacer(Modifier.height(14.dp))
+      result.trafficLeadMs?.let { ms ->
+        Text(
+          text = "Tu anticipación: " + String.format(java.util.Locale("es"), "%.1f s", ms / 1000f),
+          color = Clay.Sky,
+          fontWeight = FontWeight.Bold,
+          fontSize = 18.sp,
+          fontFamily = FredokaFamily
+        )
+        Text(
+          text = "Cuánto antes de que llegue la cápsula preparas el desvío.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+      }
+      result.trafficProactivePct?.let { pct ->
+        Spacer(Modifier.height(8.dp))
+        PlanReactBar(
+          pct,
+          Modifier.padding(horizontal = 36.dp).fillMaxWidth().height(26.dp)
+            .semantics { contentDescription = "Planificas $pct por ciento, a último momento ${100 - pct} por ciento" }
+        )
+        Row(Modifier.padding(horizontal = 36.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+          Text("Planificas $pct%", color = Clay.Lime, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+          Text("A último momento ${100 - pct}%", color = Clay.Sun, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Text(
+          text = if (pct >= 50) "Te anticipas: eso deja holgura cuando el tráfico aumenta."
+          else "Reaccionas a tiempo, pero justo. Prueba mirar la cápsula apenas sale del portal.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+      }
+      result.trafficPeakPods?.let { n ->
+        Text(
+          text = "Manejaste hasta $n cápsulas a la vez",
+          color = Clay.Cream,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 2.dp)
+        )
+      }
+    }
+
     if (didLevelUp) {
       Spacer(Modifier.height(18.dp))
       ClayPill(
@@ -755,5 +805,24 @@ private fun RotationCurve(curve: List<Int?>, modifier: Modifier = Modifier) {
       val v = measurer.measure(String.format(java.util.Locale("es"), "%.1f s", ms / 1000f), small.copy(color = Clay.Cream))
       drawText(v, topLeft = Offset(cx - v.size.width / 2f, top - v.size.height - 2.dp.toPx()))
     }
+  }
+}
+
+// ---------- Tráfico Estelar: planificas / a último momento ----------
+
+/** Barra de arcilla partida en dos: lima (planificas) y sol (a último momento). Los % van en texto debajo. */
+@Composable
+private fun PlanReactBar(proactivePct: Int, modifier: Modifier = Modifier) {
+  Canvas(modifier) {
+    val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+    val drop = 3.dp.toPx()
+    val h = size.height - drop
+    drawRoundRect(Clay.Ink, Offset(0f, drop), androidx.compose.ui.geometry.Size(size.width, h), r)
+    drawRoundRect(Clay.Sun, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r)
+    val w = size.width * proactivePct.coerceIn(0, 100) / 100f
+    if (w > 0f) {
+      clipRect(right = w) { drawRoundRect(Clay.Lime, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r) }
+    }
+    drawRoundRect(Clay.Ink, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r, style = Stroke(2.5.dp.toPx()))
   }
 }

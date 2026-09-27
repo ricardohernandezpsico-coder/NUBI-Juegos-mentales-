@@ -85,6 +85,22 @@ internal static class Program
             Dump("dock_piece_sil_m", NeuroVida.Games.Acoplamiento.DockingSprites.PieceSprite(f, true, NeuroVida.Games.Acoplamiento.DockingSprites.PieceLayer.Silhouette, 288));
             Dump("dock_piece_socket", NeuroVida.Games.Acoplamiento.DockingSprites.PieceSprite(f, false, NeuroVida.Games.Acoplamiento.DockingSprites.PieceLayer.Socket, 288));
         }
+        {
+            for (int c = 0; c < 8; c++)
+            {
+                Dump("traffic_port_" + c, NeuroVida.Games.Trafico.TrafficSprites.Port(c));
+                Dump("traffic_pod_" + c, NeuroVida.Games.Trafico.TrafficSprites.Pod(c));
+            }
+            Dump("traffic_knob", NeuroVida.Games.Trafico.TrafficSprites.SwitchKnob());
+            // Redes de ejemplo (nodos: x y padre color) para la maqueta.
+            foreach (var (ports, seed) in new[] { (4, 3), (6, 11), (8, 5) })
+            {
+                var net = NeuroVida.Games.Trafico.TrafficContract.BuildNetwork(ports, new System.Random(seed));
+                var sb = new System.Text.StringBuilder();
+                for (int n = 0; n < net.Count; n++) sb.AppendLine(string.Join(" ", net.X[n].ToString(System.Globalization.CultureInfo.InvariantCulture), net.Y[n].ToString(System.Globalization.CultureInfo.InvariantCulture), net.Parent[n], net.PortColor[n]));
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"traffic_net_{ports}.txt"), sb.ToString());
+            }
+        }
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)
             {

@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 15 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 16 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -15,11 +15,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   rama de trabajo. En la nube NO hay Android SDK ni Unity: el Kotlin no se compila acá (revisarlo con cuidado;
   `kotlinc` sirve para lógica pura con stubs y para detectar errores de sintaxis).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 15 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 16 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 27-sep · o`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 27-sep · p`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -89,7 +89,8 @@ Torre de Lunas (Torre de Londres), Matriz Perdida (tipo Raven), Constelación de
 
 Segunda tanda (27-sep, pedido de Ricardo: "que generen enganche", paso a paso y probando cada uno): **Freno de
 Emergencia** (hecho; Ricardo: "funciona muy bien") → **Aterrizaje Lunar** (hecho; Ricardo: "todo ok") →
-**Acoplamiento** (hecho, primera versión). Después: Escuadrón (ANT: perfil alerta /
+**Acoplamiento** (hecho; Ricardo lo instaló y probó) → **Tráfico Estelar** (pedido de Ricardo, inspirado en la
+mecánica de trenes y desvíos que recordaba de Lumosity; hecho, primera versión). Después: Escuadrón (ANT: perfil alerta /
 orientación / control, reemplaza a Formación), Eco Estelar (n-back doble con notas), Torre de Lunas, Constelación.
 Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ricardo de Radar).
 
@@ -208,7 +209,29 @@ baja al puerto (clunk, puerto lima) y se suma a "tu estación" (fila de arriba, 
   `GamePlayResult.rotationSpeedDps / rotationCurveMs` → `GameResultScreen`: "Tu giro mental: N° por segundo" y cinco
   columnas uva con el tiempo encima y el ángulo debajo.
 - Arte: `DockingSprites`, `GameWorld.DockingBay` (cielo quieto: nada gira en el fondo). Vista previa:
-  `python3 tools/art-preview/acoplamiento.py <raw>` → `docs/previews/acoplamiento.png`. Sin probar en el teléfono.
+  `python3 tools/art-preview/acoplamiento.py <raw>` → `docs/previews/acoplamiento.png`. Probado por Ricardo (27-sep).
+
+**Tráfico Estelar** (`Games/Trafico/`, id `trafico`, dominio razonamiento): ruteo con desvíos (mecánica genérica;
+nombre, arte y medidas propios), atención dividida y planificación bajo presión de tiempo, en la línea de la tarea de
+control de tráfico aéreo de Kanfer y Ackerman (1989). Del portal (agujero de gusano uva que gira, arriba) salen
+cápsulas de colores por rutas de luz; tocando los desvíos (discos con flecha que gira hacia la salida activa; alcance
+de toque 100 u) cada una debe llegar al planeta-puerto de su color Y su símbolo (8 pares color + forma: corazón,
+estrella, rombo, triángulo, luna, cruz, cuadrado, aro). Tramos activos brillan en celeste; los otros quedan tenues.
+- Reglas y pruebas: `TrafficContract` + `TrafficNetwork` + `TrafficSim` (simulación pura: las cápsulas toman la salida
+  activa AL LLEGAR al desvío; mover un desvío después no cambia a la que ya pasó) / `TrafficContractTests` (6). La red
+  es un árbol: puertos repartidos en una "U" (lados y fondo), el grupo se parte al azar en dos, cada desvío entre el
+  portal y el centro de sus puertos; `Relax` separa desvíos pegados; se acepta solo si no hay tramos cruzados, nodos a
+  menos de 0,14 anchos (medido con la proporción real del campo) ni rutas rozando nodos ajenos (0,08). 12 niveles:
+  puertos 2 → 8, velocidad 0,16 → 0,33 alturas/s, una cápsula cada 3,4 → 1,4 s (Precisión: más lento y espaciado, 30
+  cápsulas). Oleadas de 10: sin errores = +200; entre oleadas, si cambia la cantidad de puertos, la red se rearma.
+  DDA `stepUp` 0.2 por cápsula entregada, sin tiempo de reacción. Reto 120 s.
+- Medida propia: **tu anticipación** (mediana de cuánto antes de que pase la cápsula se movió el desvío que la mandó
+  bien; solo desvíos movidos para ella) y **planificas / a último momento** (% con ≥ 1 s: control proactivo vs reactivo,
+  Braver 2012) + más cápsulas a la vez. Viajan en `traffic_lead_ms / traffic_proactive_pct / traffic_peak_pods` →
+  `GamePlayResult.trafficLeadMs / trafficProactivePct / trafficPeakPods` → `GameResultScreen`: barra partida lima/sol.
+- Arte: `TrafficSprites` (puertos, cápsulas, desvío), `GameWorld.TrafficHub`. Vista previa (redes reales de
+  `BuildNetwork` que vuelca ArtPreview): `python3 tools/art-preview/trafico.py <raw>` → `docs/previews/trafico.png`.
+  Sin probar en el teléfono.
 
 ## Reglas que no se rompen
 
@@ -237,7 +260,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 46 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 144 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 15 smoke tests.
+- Unity EditMode: 150 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 16 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

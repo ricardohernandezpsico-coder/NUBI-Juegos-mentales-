@@ -106,7 +106,11 @@ object NativeReceiver {
     val numline_bullseyes: Int = 0,
     // Solo Acoplamiento: giro mental (°/s, -1 = sin medida) y curva de giro (5 columnas, -1 = sin datos).
     val rotation_speed_dps: Int = -1,
-    val rotation_curve_ms: List<Int>? = null
+    val rotation_curve_ms: List<Int>? = null,
+    // Solo Tráfico Estelar: anticipación (ms, -1 = sin medida), % proactivo (-1) y más cápsulas a la vez.
+    val traffic_lead_ms: Int = -1,
+    val traffic_proactive_pct: Int = -1,
+    val traffic_peak_pods: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -234,7 +238,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -318,7 +322,10 @@ object NativeReceiver {
       numlineGiven = metrics.numline_given?.map { it.toFloat() }?.takeIf { it.isNotEmpty() },
       numlineBullseyes = metrics.numline_bullseyes.takeIf { metrics.numline_error_pct >= 0.0 },
       rotationSpeedDps = metrics.rotation_speed_dps.takeIf { it > 0 },
-      rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } }
+      rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } },
+      trafficLeadMs = metrics.traffic_lead_ms.takeIf { it >= 0 },
+      trafficProactivePct = metrics.traffic_proactive_pct.takeIf { it >= 0 },
+      trafficPeakPods = metrics.traffic_peak_pods.takeIf { it > 0 && telemetry.game_id == "trafico" }
     )
   }
 }

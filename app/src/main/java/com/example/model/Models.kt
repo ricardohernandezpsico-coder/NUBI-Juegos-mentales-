@@ -105,6 +105,14 @@ object GameRegistry {
       iconEmoji = "🧩"
     ),
     GameDefinition(
+      id = "trafico",
+      title = "Tráfico Estelar",
+      domain = DomainType.RAZONAMIENTO,
+      subtitle = "Planificación y atención dividida",
+      instruction = "Del portal salen cápsulas de colores. Toca los desvíos para que cada una llegue al planeta de su color y su símbolo. Anticípate: cada vez llegan más.",
+      iconEmoji = "🚦"
+    ),
+    GameDefinition(
       id = "anagramas",
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
@@ -210,7 +218,12 @@ data class GamePlayResult(
   // Solo Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (ms medios a 0/45/90/135/180°;
   // null = sin datos en esa columna). No se guardan en Room.
   val rotationSpeedDps: Int? = null,
-  val rotationCurveMs: List<Int?>? = null
+  val rotationCurveMs: List<Int?>? = null,
+  // Solo Tráfico Estelar: "tu anticipación" (mediana, ms), % de desvíos preparados con tiempo y más cápsulas a la
+  // vez. No se guardan en Room.
+  val trafficLeadMs: Int? = null,
+  val trafficProactivePct: Int? = null,
+  val trafficPeakPods: Int? = null
 )
 
 data class DailySessionState(

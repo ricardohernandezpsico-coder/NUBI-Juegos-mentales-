@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -234,6 +234,25 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawPath(hole, Ink.copy(alpha = 0.85f))
       drawPath(hole, Cream, style = Stroke(3f, join = StrokeJoin.Round))
       curvedArrow(Offset(30f, 33f), 30f, 190f, 95f, Clay.Sun)
+    }
+    "trafico" -> {
+      // Rutas de luz desde el portal: un desvío (disco con flecha) que manda la cápsula sol a su planeta sol.
+      drawLine(Ink, Offset(50f, 12f), Offset(50f, 40f), 9f, StrokeCap.Round)
+      drawLine(Ink, Offset(50f, 44f), Offset(22f, 78f), 9f, StrokeCap.Round)
+      drawLine(Ink, Offset(50f, 44f), Offset(78f, 78f), 9f, StrokeCap.Round)
+      drawLine(Clay.Sky, Offset(50f, 12f), Offset(50f, 40f), 4.5f, StrokeCap.Round)
+      drawLine(Cream.copy(alpha = 0.35f), Offset(50f, 44f), Offset(22f, 78f), 4.5f, StrokeCap.Round)
+      drawLine(Clay.Sky, Offset(50f, 44f), Offset(78f, 78f), 4.5f, StrokeCap.Round)
+      drawCircle(Cream, 9f, Offset(50f, 12f))
+      drawCircle(Ink, 4.5f, Offset(50f, 12f))
+      clay(circle(Offset(22f, 78f), 11f), Clay.Coral, border = 3.5f)
+      clay(circle(Offset(78f, 78f), 11f), Clay.Sun, border = 3.5f, gloss = true)
+      clay(circle(Offset(50f, 44f), 10f), Color(0xFF2A3590), border = 3.5f)
+      // Flecha del desvío hacia la derecha-abajo (la ruta activa).
+      drawLine(Cream, Offset(46f, 40f), Offset(54f, 48f), 3f, StrokeCap.Round)
+      drawLine(Cream, Offset(54f, 48f), Offset(54f, 42f), 3f, StrokeCap.Round)
+      drawLine(Cream, Offset(54f, 48f), Offset(48f, 48f), 3f, StrokeCap.Round)
+      clay(circle(Offset(50f, 27f), 6.5f), Clay.Sun, border = 3f, shadow = false)
     }
     "series" -> {
       // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).

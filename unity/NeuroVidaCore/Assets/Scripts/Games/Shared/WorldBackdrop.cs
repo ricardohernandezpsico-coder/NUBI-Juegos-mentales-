@@ -160,6 +160,14 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.10f), NebulaBPos = new Vector2(0.5f, 0.25f),
         };
 
+        /// <summary>Tráfico Estelar: centro de tráfico; cielo quieto con nebulosa uva arriba (de donde sale el portal).</summary>
+        public static GameWorld TrafficHub => new GameWorld
+        {
+            Name = "Centro de tráfico", Stars = 50,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaAPos = new Vector2(0.5f, 0.95f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.5f, 0.1f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

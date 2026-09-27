@@ -60,5 +60,11 @@ namespace NeuroVida.Contracts
         public int rotation_speed_dps = -1;
         /// <summary>Solo Acoplamiento: tiempo medio de los aciertos a 0°, 45°, 90°, 135° y 180° (-1 = sin datos).</summary>
         public int[] rotation_curve_ms;
+        /// <summary>Solo Tráfico Estelar: "tu anticipación" (mediana, ms, de cuánto antes se preparan los desvíos). -1 = sin medida.</summary>
+        public int traffic_lead_ms = -1;
+        /// <summary>Solo Tráfico Estelar: % de desvíos preparados con tiempo (≥ 1 s). -1 = sin medida.</summary>
+        public int traffic_proactive_pct = -1;
+        /// <summary>Solo Tráfico Estelar: más cápsulas en viaje a la vez.</summary>
+        public int traffic_peak_pods;
     }
 }
