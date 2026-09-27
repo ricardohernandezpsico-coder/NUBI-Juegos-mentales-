@@ -19,7 +19,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 27-sep · t`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 27-sep · u`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -127,8 +127,10 @@ bien = rescatado (vuela a la fila de abajo).
 - Medidas propias: **tu vistazo** (`GlanceMs`: media geométrica de las duraciones reales de los últimos 12 destellos,
   sin los 4 primeros = donde se asentó la escalera, ~80% de aciertos) y **tu radar** (aciertos de ubicación por
   dirección). Viajan en `StroopSessionMetrics.glance_ms / sector_hits / sector_trials` → `GamePlayResult.glanceMs /
-  sectorHits / sectorTrials` (no se guardan en Room) → `GameResultScreen`: "Tu vistazo: N ms" y un radar con una cuña
-  por dirección (largo = proporción rescatada) + dónde más y dónde menos (con 2+ destellos por dirección).
+  sectorHits / sectorTrials` (no se guardan en Room) → `GameResultScreen`: "Tu vistazo: N ms" ("aciertas unas 4 de cada
+  5 veces": la escalera apunta a ~80%) y un radar con una cuña por dirección (largo = proporción rescatada); solo nombra
+  dónde más y dónde menos con 4+ destellos en cada dirección y 40 puntos de diferencia ("en esta partida... si se
+  repite"): con menos es azar.
 - Arte: `RadarSprites` (radar, haz, interferencia, botones de dirección), `GameWorld.RadarStation` (cielo quieto).
   Vista previa: `python3 tools/art-preview/radar.py <raw>` → `docs/previews/radar.png`.
 - Probado por Ricardo (27-sep): "espectacular", le encantó sobre todo la información del final ("un área
@@ -146,9 +148,11 @@ elegido por error (`ClosestApproach` sobre las trayectorias muestreadas cada 0,1
   `stepUp` 0.5 (pocas rondas); acierto = todos los de la señal. Reto 120 s; Precisión 8 rondas. 60 cuadros por segundo.
 - Medida propia: **tu seguimiento** (`TrackedEstimate`: cuántos se siguieron de verdad descontando la suerte, modelo
   aciertos = m + (k − m)² / (n − m); promedio de las rondas) y la velocidad más alta superada completa. Viajan en
-  `StroopSessionMetrics.tracking_capacity / tracking_speed` → `GamePlayResult.trackingCapacity / trackingSpeed` →
-  `GameResultScreen`: "Tu seguimiento: 3,4 a la vez" con 5 discos que se llenan + velocidad + "la mayoría de los
-  adultos sigue alrededor de 4".
+  `StroopSessionMetrics.tracking_capacity / tracking_targets / tracking_speed` → `GamePlayResult.trackingCapacity /
+  trackingTargets / trackingSpeed` → `GameResultScreen`: "Tu seguimiento: 2,6 de 3 a la vez" (el "de N" = cuántos había
+  que seguir en promedio: es el techo de esa partida, no un límite personal) con 5 discos que se llenan + velocidad; la
+  referencia "a velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri,
+  2007)" solo aparece si había que seguir 3,5 o más.
 - Arte y vista previa: `GameWorld.MissionControl` (cielo quieto); `python3 tools/art-preview/satelites.py <raw>` →
   `docs/previews/satelites.png`. Sin probar en el teléfono: revisar tamaño de los satélites, ritmo (~12 s por ronda),
   que se entienda el "¿Aquí se cruzaron?".
@@ -166,7 +170,8 @@ en ~30% aparece la señal ¡ALTO! (octágono coral con texto + sirena) un instan
   más tarde llegó el alto) y empuja el medidor "Límite del freno" (marca sol = récord, aviso "¡Nuevo límite!"); no
   frenar = el cohete da un salto y vuelve (sin choques).
 - Medida propia: **tu freno** (SSRT por integración con reemplazo de omisiones; -1 con menos de 6 altos o
-  p(responder|alto) fuera de 0,15-0,85). Viaja en `brake_ms / stops_ok / stops_total / brake_best_ssd_ms` →
+  p(responder|alto) fuera de 0,25-0,75, el criterio del consenso de Verbruggen et al., 2019; si no hay estimación, el
+  final lo explica y pide lanzar sin esperar al ALTO). Viaja en `brake_ms / stops_ok / stops_total / brake_best_ssd_ms` →
   `GamePlayResult.brakeMs / stopsOk / stopsTotal / brakeBestSsdMs` → `GameResultScreen`: velocímetro de arcilla
   (450 ms lento → 150 ms rápido) + "Frenaste N de M altos · récord".
 - Arte: `BrakeSprites` (alto, plataforma, botón), `GameWorld.LaunchBase`. Vista previa:
@@ -183,10 +188,14 @@ tramo "a 3" (lima si ≤5%, coral si no). "¡DIANA LUNAR!" con ≤1,2% de error.
   del medio) → 0-1000 → fracciones → decimales/porcentajes → regla que no empieza en 0 → sumas → fracciones 0-2 →
   negativos (-50 a 50). Acierto = error ≤ 5% del largo. Bajada 6 → 3,5 s (Precisión 10 s). DDA `stepUp` 0.3, sin tiempo
   de reacción. Reto 120 s; Precisión 15 aterrizajes. Formato de números sin culturas del teléfono (coma decimal fija).
-- Medida propia: **tu precisión numérica** (error medio %) y **tu línea**: `numline_true / numline_given` (0..1 por
-  aterrizaje) → `GamePlayResult.numlineTrue / numlineGiven` → `GameResultScreen` dibuja la regla con cada blanco y dónde
-  se posó, y `data/NumberLine` (lógica pura con pruebas) lee el sesgo: pareja, agranda los chicos, achica los grandes o
-  comprime (el patrón logarítmico de Siegler).
+- Medida propia: **tu estimación** ("a X% del blanco": distancia media en % del largo de la regla; NO se llama
+  "precisión numérica": en adultos la tarea con regla acotada se resuelve como juicio de proporción con puntos de
+  referencia y se apoya en habilidades visoespaciales, Barth y Paladino 2011; Sullivan et al. 2011; Simms et al. 2016)
+  y **tu línea**: `numline_true / numline_given` (0..1 por aterrizaje) → `GamePlayResult.numlineTrue / numlineGiven` →
+  `GameResultScreen` dibuja la regla con cada blanco y dónde se posó, y `data/NumberLine.reading` (lógica pura con
+  pruebas) nombra el TRAMO de la regla (inicio / centro / final) donde más se aleja del blanco, con distancia SIN signo
+  (el error con signo cerca de los extremos sale sesgado por construcción), y da un truco de puntos de referencia.
+  Revisión del 27-sep por pedido de Ricardo ("¿de qué sirve saber que pongo los grandes a la izquierda?").
 - Arte: `LandingSprites` (módulo lunar, bandera), `GameWorld.LunarRange`. Vista previa:
   `python3 tools/art-preview/aterrizaje.py <raw>` → `docs/previews/aterrizaje.png`. Probado por Ricardo (27-sep): ok.
 
@@ -204,7 +213,8 @@ baja al puerto (clunk, puerto lima) y se suma a "tu estación" (fila de arriba, 
   una sola silueta; juntas tenues y remaches simétricos, que no delatan la orientación). La sombra dura va aparte
   (silueta en tinta, en un contenedor que no gira): cae siempre hacia abajo aunque la pieza gire.
 - Medida propia: **tu giro mental** (`RotationSpeed`: recta de mínimos cuadrados del tiempo contra el ángulo en los
-  aciertos; 1000 / pendiente = grados por segundo; -1 con menos de 8 aciertos o menos de 3 ángulos) y **tu curva de
+  aciertos; 1000 / pendiente = grados por segundo; -1 con menos de 8 aciertos, menos de 3 ángulos o menos de 70% de
+  aciertos en total: con mucho azar la curva sale plana y parecería un giro rapidísimo) y **tu curva de
   giro** (tiempo medio a 0/45/90/135/180°). Viajan en `rotation_speed_dps / rotation_curve_ms` →
   `GamePlayResult.rotationSpeedDps / rotationCurveMs` → `GameResultScreen`: "Tu giro mental: N° por segundo" y cinco
   columnas uva con el tiempo encima y el ángulo debajo.
@@ -275,6 +285,11 @@ las otras, riel de arcilla apagado (visible para planificar). Cápsulas con este
 - **Juegos Unity**: medir el tiempo con `GameClock.Time/DeltaTime` (no `Time.unscaled*`), para que la pausa funcione.
   El arte se hornea en sprites con `ClayRaster` (`Image.color` blanco); la sombra dura cae siempre hacia abajo.
 - **Textos**: español, cercanos, sin culpa ni promesas de salud ("no es un examen", nada de "fortalece neuronas").
+  **Medidas del final de los juegos estrella** (revisión 27-sep): nombrar lo que se mide de verdad (no un rasgo:
+  "tu estimación", no "tu precisión numérica"), decir cómo leerlo, no sacar conclusiones de pocos ensayos, dar un
+  consejo concreto cuando se pueda, y comparar con estudios solo si la condición es comparable. Al pie va la nota
+  común "Medida de esta partida... No es un diagnóstico". Justificación de cada medida, con referencias:
+  [`docs/medidas-juegos-estrella.md`](docs/medidas-juegos-estrella.md). Al crear un juego estrella nuevo, agregar ahí su medida.
   Percentiles y comparaciones se rotulan "estimación provisional" (referencia media 0.45, sd 0.20: supuesto, no dato).
 - **Licencias**: mecánicas genéricas, pero nombres, arte, textos y sonidos propios (no copiar a Lumosity & co.).
 - **Decisiones de Ricardo**: servidores, cuentas, Firebase, suscripciones y requisitos de tiendas se dejan para el
@@ -291,7 +306,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 46 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 47 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 155 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 16 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.

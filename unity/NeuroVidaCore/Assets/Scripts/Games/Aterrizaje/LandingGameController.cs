@@ -17,8 +17,8 @@ namespace NeuroVida.Games.Aterrizaje
     /// posarse aparece la bandera en el lugar exacto y se ve a cuánto quedó.
     /// <list type="bullet">
     /// <item>"¡Diana lunar!" cuando queda justo en el blanco: destellos y bono.</item>
-    /// <item>Medida propia: "tu precisión numérica" (error medio en % de la regla) y "tu línea" (cada objetivo y
-    /// dónde aterrizaste), que la app dibuja para mostrar si hay un sesgo (p. ej. agrandar los números chicos).</item>
+    /// <item>Medida propia: "tu estimación" (distancia media al blanco en % de la regla) y "tu línea" (cada objetivo y
+    /// dónde aterrizaste), que la app dibuja y lee por tramos de la regla (dónde más se aleja del blanco).</item>
     /// </list>
     /// Reto = 2 minutos (la nave baja más rápido al subir de nivel); Precisión = 15 aterrizajes, bajada lenta.
     /// </summary>
@@ -486,7 +486,7 @@ namespace NeuroVida.Games.Aterrizaje
             _exit.Show();
             _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Piloto de precisión!" : score >= 65 ? "¡Buenos aterrizajes!" : "Misión completada";
             _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_hits} de {_errors.Count} en el blanco · {_bullseyes} dianas";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = meanErr >= 0f ? $"Te desvías {meanErr:0.0}%".Replace('.', ',') : $"Mejor racha {_bestStreak}";
+            _resultRoot.Find("Extra").GetComponent<Text>().text = meanErr >= 0f ? $"A {meanErr:0.0}% del blanco".Replace('.', ',') : $"Mejor racha {_bestStreak}";
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
         }

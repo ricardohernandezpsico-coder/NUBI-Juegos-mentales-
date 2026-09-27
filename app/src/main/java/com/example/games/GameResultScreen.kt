@@ -242,7 +242,7 @@ fun GameResultScreen(
         fontFamily = FredokaFamily
       )
       Text(
-        text = "Cuánto baja tu precisión al pilotar y atrapar señales a la vez. Mientras más bajo, mejor.",
+        text = "Cuánto bajó tu puntería con las señales al pasar de solo mirarlas (piloto automático) a pilotar y mirarlas a la vez. Mientras más bajo, mejor repartes la atención. Con práctica suele bajar.",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -262,7 +262,7 @@ fun GameResultScreen(
         fontFamily = FredokaFamily
       )
       Text(
-        text = "El destello más breve con el que sigues acertando casi siempre. Mientras más bajo, más rápido captas.",
+        text = "El destello más breve con el que aciertas unas 4 de cada 5 veces (la nave del centro y dónde estaba el astronauta). Mientras menos milisegundos, más rápido captas.",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -290,8 +290,10 @@ fun GameResultScreen(
     result.trackingCapacity?.let { cap ->
       Spacer(Modifier.height(14.dp))
       val capText = String.format(java.util.Locale("es"), "%.1f", cap)
+      val targets = result.trackingTargets
+      val ofText = targets?.let { " de " + String.format(java.util.Locale("es"), if (it % 1f == 0f) "%.0f" else "%.1f", it) } ?: ""
       Text(
-        text = "Tu seguimiento: $capText a la vez",
+        text = "Tu seguimiento: $capText$ofText a la vez",
         color = Clay.Sun,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
@@ -309,7 +311,10 @@ fun GameResultScreen(
         )
       }
       Text(
-        text = "Cuántos satélites sigues de verdad al mismo tiempo, sin contar los que aciertas por suerte. En los estudios, la mayoría de los adultos sigue alrededor de 4.",
+        text = if (targets != null && targets < 3.5f)
+          "Cuántos seguiste de verdad de los que había que seguir, sin contar los que aciertas por suerte. El juego suma satélites y velocidad a medida que aciertas: así se ve hasta dónde llegas."
+        else
+          "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. A velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri, 2007).",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -342,8 +347,8 @@ fun GameResultScreen(
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
       )
       Text(
-        text = if (brake != null) "El tiempo que necesita tu mente para detener una acción que ya empezó. Mientras más bajo, mejor frenas."
-        else "Tu freno se mide con al menos 6 altos: en una partida más larga lo verás.",
+        text = if (brake != null) "Estimación de cuánto tardas en frenar una acción que ya ibas a hacer. Mientras más bajo, más rápido frenas. Con pocos altos por partida varía bastante: mira cómo va en varias."
+        else "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4. Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona.",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -351,12 +356,12 @@ fun GameResultScreen(
       )
     }
 
-    // Aterrizaje Lunar: "tu precisión numérica" y "tu línea" (cada blanco y dónde te posaste), con la lectura de sesgo.
+    // Aterrizaje Lunar: "tu estimación" y "tu línea" (cada blanco y dónde te posaste), con el tramo donde más se aleja.
     result.numlineErrorPct?.let { err ->
       Spacer(Modifier.height(14.dp))
       val errText = String.format(java.util.Locale("es"), "%.1f", err)
       Text(
-        text = "Tu precisión numérica: te desvías $errText%",
+        text = "Tu estimación: a $errText% del blanco",
         color = Clay.Sky,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
@@ -364,10 +369,17 @@ fun GameResultScreen(
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 24.dp)
       )
+      Text(
+        text = "En promedio, qué tan lejos del blanco te posaste (en % del largo de la regla). Ubicar un número en una regla junta dos cosas: saber cuánto vale y calcular a ojo qué parte de la regla le toca.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
       val trues = result.numlineTrue
       val givens = result.numlineGiven
       if (trues != null && givens != null) {
-        val bias = com.example.data.NumberLine.bias(trues, givens)
+        val bias = com.example.data.NumberLine.reading(trues, givens)
         Spacer(Modifier.height(8.dp))
         Text("Tu línea", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
         NumberLineStrip(
@@ -416,8 +428,8 @@ fun GameResultScreen(
         )
       }
       Text(
-        text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Shepard y Metzler, 1971). Mientras más plana tu curva, más rápido giras."
-        else "Con más aciertos en distintos ángulos se mide tu giro mental.",
+        text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. En Precisión, sin apuro de combustible, la medida es más fiel."
+        else "Tu giro mental se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
         color = TextSoft,
         fontSize = 13.sp,
         textAlign = TextAlign.Center,
@@ -440,7 +452,7 @@ fun GameResultScreen(
         Spacer(Modifier.height(6.dp))
         LoadSlots(n, Modifier.semantics { contentDescription = "Coordinaste $n cápsulas a la vez sin errores" })
         Text(
-          text = "Las que tuviste en viaje al mismo tiempo, sin ningún error entre ellas.",
+          text = "Las que tuviste en viaje al mismo tiempo sin ningún error entre ellas. Sube a medida que el juego te da más tráfico.",
           color = TextSoft,
           fontSize = 13.sp,
           textAlign = TextAlign.Center,
@@ -457,7 +469,7 @@ fun GameResultScreen(
           fontFamily = FredokaFamily
         )
         Text(
-          text = "Cuánto antes de que llegue la cápsula preparas el desvío.",
+          text = "Cuánto antes de que pase la cápsula dejas listo su desvío (valor típico de la partida).",
           color = TextSoft,
           fontSize = 13.sp,
           textAlign = TextAlign.Center,
@@ -484,6 +496,21 @@ fun GameResultScreen(
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
         )
       }
+    }
+
+    // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
+    val hasStarMeasure = listOf(
+      result.multitaskCost, result.glanceMs, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
+      result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods
+    ).any { it != null }
+    if (hasStarMeasure) {
+      Text(
+        text = "Medida de esta partida: cambia de un día a otro. Lo que vale es cómo evoluciona, no un resultado suelto. No es un diagnóstico.",
+        color = TextSoft.copy(alpha = 0.8f),
+        fontSize = 12.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 32.dp, vertical = 10.dp)
+      )
     }
 
     if (didLevelUp) {
@@ -652,12 +679,14 @@ private val RadarDirections = listOf(
 
 /** Dónde se rescató más y dónde menos (solo direcciones con al menos 2 destellos, para no sacar conclusiones de uno). */
 private fun radarSummary(hits: List<Int>, trials: List<Int>): String {
-  val rated = (0 until 8).filter { trials[it] >= 2 }.map { it to hits[it].toFloat() / trials[it] }
-  if (rated.size < 2) return "Cada cuña es una dirección: mientras más larga, más astronautas rescataste ahí."
+  // Con pocos destellos por dirección las diferencias suelen ser azar: solo se nombra una dirección con 4 o más
+  // destellos en cada una y una diferencia grande (40 puntos).
+  val rated = (0 until 8).filter { trials[it] >= 4 }.map { it to hits[it].toFloat() / trials[it] }
+  if (rated.size < 4) return "Cada cuña es una dirección: mientras más larga, más astronautas rescataste ahí. Con más destellos se ve si alguna dirección te cuesta más."
   val best = rated.maxBy { it.second }
   val worst = rated.minBy { it.second }
-  if (best.second - worst.second < 0.2f) return "Parejo en todas las direcciones. Cada cuña larga = muchos rescates."
-  return "Donde más rescataste: ${RadarDirections[best.first]}. Donde menos: ${RadarDirections[worst.first]}."
+  if (best.second - worst.second < 0.4f) return "Parejo en todas las direcciones. Cada cuña larga = muchos rescates."
+  return "En esta partida rescataste más ${RadarDirections[best.first]} y menos ${RadarDirections[worst.first]}. Si se repite en otras partidas, vale la pena mirar más hacia ese lado."
 }
 
 /**

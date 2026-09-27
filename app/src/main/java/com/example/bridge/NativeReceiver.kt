@@ -93,6 +93,7 @@ object NativeReceiver {
     val sector_trials: List<Int>? = null,
     // Solo Satélites: seguimiento (satélites a la vez) y velocidad superada (-1 = no aplica).
     val tracking_capacity: Double = -1.0,
+    val tracking_targets: Double = -1.0,
     val tracking_speed: Double = -1.0,
     // Solo Freno de Emergencia: tiempo de frenado (ms, -1 = sin estimación), altos frenados / totales, récord.
     val brake_ms: Int = -1,
@@ -312,6 +313,7 @@ object NativeReceiver {
       sectorHits = metrics.sector_hits?.takeIf { it.size == 8 },
       sectorTrials = metrics.sector_trials?.takeIf { it.size == 8 },
       trackingCapacity = metrics.tracking_capacity.takeIf { it >= 0.0 }?.toFloat(),
+      trackingTargets = metrics.tracking_targets.takeIf { it > 0.0 }?.toFloat(),
       trackingSpeed = metrics.tracking_speed.takeIf { it > 0.0 }?.toFloat(),
       brakeMs = metrics.brake_ms.takeIf { it > 0 },
       stopsOk = metrics.stops_ok.takeIf { metrics.stops_total > 0 },

@@ -65,6 +65,11 @@ namespace NeuroVida.Games.Freno.Tests
             var allStopped = new List<bool> { false, false, false, false, false, false };
             Assert.AreEqual(-1, BrakeContract.Ssrt(go, ssd, allStopped));
             Assert.AreEqual(-1, BrakeContract.Ssrt(null, ssd, responded));
+            // Consenso (Verbruggen et al., 2019): sin estimación si p(responder | alto) queda fuera de 0,25-0,75.
+            var oneOfSix = new List<bool> { true, false, false, false, false, false };   // 0,17
+            Assert.AreEqual(-1, BrakeContract.Ssrt(go, ssd, oneOfSix));
+            var twoOfSix = new List<bool> { true, false, true, false, false, false };    // 0,33
+            Assert.Greater(BrakeContract.Ssrt(go, ssd, twoOfSix), 0);
         }
 
         [Test]

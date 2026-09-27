@@ -71,8 +71,8 @@ namespace NeuroVida.Games.Freno
         /// Tiempo de frenado (SSRT, ms) por el método de integración con reemplazo de omisiones (Verbruggen et al.,
         /// 2019): se ordenan los tiempos de TODOS los lanzamientos de ir (las omisiones cuentan como el tiempo máximo),
         /// se toma el que está en la posición p(responder | alto) y se le resta el retraso medio del alto.
-        /// -1 si hay menos de 6 altos o si p(responder | alto) es muy extrema (&lt; 0,15 o &gt; 0,85): la estimación no
-        /// sería confiable.
+        /// -1 si hay menos de 6 altos o si p(responder | alto) queda fuera de 0,25-0,75: el consenso recomienda no
+        /// estimar el SSRT individual en ese caso (Verbruggen et al., 2019), porque la estimación deja de ser confiable.
         /// </summary>
         /// <param name="goRtsMs">Tiempos de los lanzamientos de ir (omisiones = tiempo máximo).</param>
         /// <param name="stopSsdsMs">Retraso del alto en cada ensayo con alto.</param>
@@ -90,7 +90,7 @@ namespace NeuroVida.Games.Freno
                 ssdSum += stopSsdsMs[i];
             }
             double p = (double)responded / stops;
-            if (p < 0.15 || p > 0.85) return -1;
+            if (p < 0.25 || p > 0.75) return -1;
             var sorted = new List<float>(goRtsMs);
             sorted.Sort();
             int n = (int)Math.Ceiling(p * sorted.Count);

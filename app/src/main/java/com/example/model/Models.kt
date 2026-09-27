@@ -202,6 +202,8 @@ data class GamePlayResult(
   // Solo Satélites: cuántos se siguen de verdad a la vez (descontando la suerte) y la velocidad más alta superada
   // completa (múltiplo de la del nivel 1). No se guardan en Room.
   val trackingCapacity: Float? = null,
+  /** Satélites: cuántos había que seguir por ronda, en promedio (techo de trackingCapacity en esa partida). */
+  val trackingTargets: Float? = null,
   val trackingSpeed: Float? = null,
   // Solo Freno de Emergencia: "tu freno" (tiempo de frenado, ms), altos frenados / totales y el alto más tardío
   // que se frenó (ms). No se guardan en Room.

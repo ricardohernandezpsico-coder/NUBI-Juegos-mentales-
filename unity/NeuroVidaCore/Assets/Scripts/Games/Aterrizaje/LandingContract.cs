@@ -195,7 +195,7 @@ namespace NeuroVida.Games.Aterrizaje
             return pts;
         }
 
-        /// <summary>"Tu precisión numérica": error medio en % del largo de la regla. -1 sin aterrizajes.</summary>
+        /// <summary>"Tu estimación": distancia media al blanco en % del largo de la regla. -1 sin aterrizajes.</summary>
         public static float MeanErrorPct(IReadOnlyList<float> errors)
         {
             if (errors == null || errors.Count == 0) return -1f;
