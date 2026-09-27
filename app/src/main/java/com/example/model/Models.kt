@@ -129,6 +129,14 @@ object GameRegistry {
       iconEmoji = "🧭"
     ),
     GameDefinition(
+      id = "constelacion",
+      title = "Constelación de Palabras",
+      domain = DomainType.LENGUAJE,
+      subtitle = "Fluidez verbal: tus palabras forman constelaciones",
+      instruction = "Toca el micrófono y di en voz alta todas las palabras que puedas en un minuto: animales, frutas, cosas de la casa o palabras con una letra. Las del mismo grupo se unen en constelaciones.",
+      iconEmoji = "✨"
+    ),
+    GameDefinition(
       id = "anagramas",
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
@@ -267,7 +275,15 @@ data class GamePlayResult(
   val homingAlong: List<Float>? = null,
   val homingLateral: List<Float>? = null,
   val homingBeacon: List<Boolean>? = null,
-  val homingPerfect: Int? = null
+  val homingPerfect: Int? = null,
+  // Solo Constelación de Palabras: las rondas (categoría, palabras, repetidas, no reconocidas, tamaño medio de las
+  // constelaciones, saltos, palabras por cuarto del minuto, constelaciones y palabras), cómo se jugó ("voz",
+  // "voz_telefono", "teclado") y la colección "tu cielo de palabras" (total y nuevas; la completa la app). La lectura
+  // está en data/Fluency.kt. No se guardan en Room.
+  val fluencyRounds: List<com.example.data.FluencyRound>? = null,
+  val fluencyInput: String? = null,
+  val wordSkyTotal: Int? = null,
+  val wordSkyNew: Int? = null
 )
 
 data class DailySessionState(

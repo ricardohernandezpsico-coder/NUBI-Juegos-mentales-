@@ -188,6 +188,40 @@ Loomis et al., 1993), pero con 6-8 viajes por partida no se nombra ese patrón.
 
 ---
 
+## Constelación de Palabras: "Tu cielo", "agrupas" y "saltas"
+
+**Qué mide.** Fluidez verbal: decir en un minuto todas las palabras de una categoría (Animales, Frutas y verduras,
+Cosas de la casa) o que empiecen con una letra (P, M o R, las de fluidez fonológica en español). Es una de las tareas
+más usadas en neuropsicología. Se puntúa como Troyer, Moscovitch y Winocur (1997), en sus dos componentes:
+- **Agrupar**: palabras seguidas del mismo grupo (la granja, el mar, los felinos; en las de letra, que empiezan igual o
+  riman). Se mide con el tamaño medio de las constelaciones, contado desde la segunda palabra (una suelta = 0).
+- **Saltar**: cuántas veces se pasa de un grupo a otro.
+
+Las dos suman palabras: agrupar aprovecha un grupo, saltar a tiempo evita quedarse buscando en uno agotado. Además se
+muestra **el minuto** (palabras en cada cuarto): lo esperable es que salgan más al principio.
+
+**Cómo se calcula.** La voz la reconoce Android (en el teléfono cuando se puede). Cada palabra se busca en una lista
+propia (≈300 animales, ≈160 frutas y verduras, ≈240 cosas de la casa) con grupos que se superponen, como en Troyer
+(el pato es de la granja, un ave y de río). Se entienden plurales, diminutivos, femeninos, variantes regionales (palta
+/ aguacate) y tipos ("tigre de bengala"). Las repetidas y lo que no está en la lista no suman ni castigan. Cada
+palabra lleva la hora en que apareció en los resultados parciales (el reconocedor junta varias en una frase).
+
+**Qué se dice y con qué mínimos.**
+- Por ronda: palabras, cuánto agrupas, saltos y las constelaciones más grandes.
+- El estilo ("saltas mucho y agrupas poco", "agrupas mucho", "agrupas y saltas") solo en la ronda de categoría y
+  desde 8 palabras, con un truco para lo que falta. En la prueba de Ricardo (28-sep), las rondas "pensando" dieron
+  constelaciones grandes (felinos, reptiles, el mar) y las rondas por abecedario casi solo palabras sueltas: la medida
+  capta la estrategia.
+- "Las palabras salieron rápido al principio" solo si el primer cuarto tiene el 40% o más.
+- Con teclado se avisa que salen menos palabras que hablando (compararse en el mismo modo).
+
+**Qué NO se dice.** No se compara con normas: por voz en un teléfono, con esta lista y dos rondas, la condición no es
+la de ningún estudio. No se nombran enfermedades.
+
+**Colección.** "Tu cielo de palabras": cuántas palabras distintas se han encontrado a lo largo de los días.
+
+---
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -224,5 +258,7 @@ Loomis et al., 1993), pero con 6-8 viajes por partida no se nombra ese patrón.
   Psychology: General*, 117, 34–50.
 - Sullivan, J. L., Juhasz, B. J., Slattery, T. J., y Barth, H. C. (2011). Adults' number-line estimation strategies:
   evidence from eye movements. *Psychonomic Bulletin & Review*, 18, 557–563.
+- Troyer, A. K., Moscovitch, M., y Winocur, G. (1997). Clustering and switching as two components of verbal fluency:
+  evidence from younger and older healthy adults. *Neuropsychology*, 11, 138–146.
 - Verbruggen, F., et al. (2019). A consensus guide to capturing the ability to inhibit actions and impulsive behaviors
   in the stop-signal task. *eLife*, 8, e46323.

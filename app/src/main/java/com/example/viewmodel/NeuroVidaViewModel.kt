@@ -83,6 +83,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   // ---------- Bitácora de Misión: la misión del día (transmisión al empezar la sesión, informe al terminarla) ----------
 
   private val missionStore by lazy { com.example.data.MissionLogStore(getApplication<Application>()) }
+  private val wordSkyStore by lazy { com.example.data.WordSkyStore(getApplication<Application>()) }
   private val _mission = MutableStateFlow(com.example.data.MissionState())
   val mission: StateFlow<com.example.data.MissionState> = _mission.asStateFlow()
 
@@ -431,7 +432,15 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       onBaselineResult(current, rawResult)
       return
     }
-    val result = if (rawResult.gameId == "bitacora" && rawResult.memPhase != null) applyMissionResult(rawResult) else rawResult
+    val result = when {
+      rawResult.gameId == "bitacora" && rawResult.memPhase != null -> applyMissionResult(rawResult)
+      // Constelación: las palabras de la partida entran a "tu cielo de palabras" (colección que crece día a día).
+      rawResult.gameId == "constelacion" && rawResult.fluencyRounds != null -> {
+        val (total, added) = wordSkyStore.add(rawResult.fluencyRounds)
+        rawResult.copy(wordSkyTotal = total, wordSkyNew = added)
+      }
+      else -> rawResult
+    }
     if (result.memPhase == "encode") {
       // La transmisión sola no es una partida completa: no suma a la liga ni al historial (el informe sí). Se muestra
       // su pantalla (cuánto se aprendió y cuándo llega el informe) y la sesión sigue.
@@ -803,6 +812,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       pausedGame = null
       GameSessionStore.clearAll()
       missionStore.clear()
+      wordSkyStore.clear()
       _mission.value = com.example.data.MissionState()
       _currentTab.value = AppTab.HOY
     }

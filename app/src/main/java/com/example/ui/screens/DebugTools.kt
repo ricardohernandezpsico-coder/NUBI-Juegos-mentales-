@@ -40,7 +40,8 @@ private val DebugGames = listOf(
   DebugGame("acoplamiento", "Acoplamiento (Reto 120 s)", level = 1, timed = true),
   DebugGame("trafico", "Tráfico Estelar (Reto 120 s)", level = 1, timed = true),
   DebugGame("bitacora", "Bitácora de Misión (completa, con patrulla)", level = 1, timed = false),
-  DebugGame("rumbo", "Rumbo a Casa (Reto 150 s)", level = 1, timed = true)
+  DebugGame("rumbo", "Rumbo a Casa (Reto 150 s)", level = 1, timed = true),
+  DebugGame("constelacion", "Constelación de Palabras (2 rondas de 1 min)", level = 1, timed = true)
 )
 
 /**

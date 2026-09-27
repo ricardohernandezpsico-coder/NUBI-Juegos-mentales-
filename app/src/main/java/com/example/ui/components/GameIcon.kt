@@ -75,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "constelacion",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -248,6 +248,20 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawCircle(Clay.Sky, 4f, Offset(67f, 22f))
       clay(star(Offset(48f, 25f), 15f, 7f, 5, round = true), Clay.Sun, border = 4f)
       sparkle(Offset(26f, 20f), 8f, Color.White)
+    }
+    "constelacion" -> {
+      // Una constelación de palabras: estrellas de arcilla unidas por líneas finas, y una estrella suelta.
+      val pts = listOf(Offset(20f, 72f), Offset(40f, 44f), Offset(66f, 54f), Offset(82f, 24f))
+      for (i in 0 until pts.size - 1) {
+        drawLine(Ink, pts[i], pts[i + 1], 7f, StrokeCap.Round)
+        drawLine(Clay.Sky, pts[i], pts[i + 1], 3.5f, StrokeCap.Round)
+      }
+      clay(star(pts[0], 13f, 6f, 4, round = true), Clay.Sky, border = 3.5f)
+      clay(star(pts[1], 15f, 7f, 4, round = true), Clay.Sun, border = 3.5f, gloss = true)
+      clay(star(pts[2], 12f, 5.5f, 4, round = true), Clay.Lime, border = 3.5f)
+      clay(star(pts[3], 13f, 6f, 4, round = true), Clay.Sky, border = 3.5f)
+      clay(star(Offset(24f, 22f), 9f, 4.2f, 4, round = true), Cream, border = 3f)
+      sparkle(Offset(80f, 82f), 7f, Color.White)
     }
     "rumbo" -> {
       // Tu base (casa), la ruta de ida en puntos lima hasta un cristal, y la flecha sol que vuelve a casa.

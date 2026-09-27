@@ -678,11 +678,107 @@ fun GameResultScreen(
       }
     }
 
+    // Constelación de Palabras: "tu cielo" por ronda (palabras, cuánto agrupas y cuánto saltas, constelaciones), el
+    // ritmo del minuto, un truco según el estilo y la colección "tu cielo de palabras".
+    result.fluencyRounds?.let { rounds ->
+      Spacer(Modifier.height(14.dp))
+      Text("Tu cielo", color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = FredokaFamily)
+      rounds.forEach { r ->
+        Text(
+          text = "${r.title}: ${r.valid} ${if (r.valid == 1) "palabra" else "palabras"}",
+          color = Clay.Cream,
+          fontSize = 15.sp,
+          fontWeight = FontWeight.SemiBold,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+        if (r.valid >= 2 && r.meanCluster >= 0f) {
+          Text(
+            text = "Agrupas " + String.format(java.util.Locale("es"), "%.1f", r.meanCluster) +
+              " por constelación · ${r.switches} ${if (r.switches == 1) "salto" else "saltos"}",
+            color = TextSoft,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp)
+          )
+        }
+        r.constellations.take(3).takeIf { it.isNotEmpty() }?.let { cs ->
+          Text(
+            text = "Constelaciones: " + cs.joinToString(", ") { "${it.first} (${it.second})" },
+            color = TextSoft,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp)
+          )
+        }
+      }
+      Text(
+        text = "Agrupar es decir seguidas palabras del mismo grupo (la granja, el mar); saltar es pasar a otro grupo cuando ese se agota. Las dos cosas suman palabras.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp)
+      )
+      val semantic = rounds.firstOrNull { !it.isLetter }
+      semantic?.let { r ->
+        com.example.data.Fluency.styleMessage(com.example.data.Fluency.style(r))?.let {
+          Text(it, color = Clay.Cream, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+        }
+        if (r.quarters.size == 4 && r.valid >= com.example.data.Fluency.MIN_WORDS) {
+          Spacer(Modifier.height(6.dp))
+          Text("Tu minuto", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = FredokaFamily)
+          QuarterBars(
+            r.quarters,
+            Modifier.fillMaxWidth().padding(horizontal = 56.dp).height(96.dp)
+              .semantics { contentDescription = "Palabras en cada cuarto del minuto: " + r.quarters.joinToString(", ") }
+          )
+          if (com.example.data.Fluency.fastStart(r)) {
+            Text(
+              text = "Como a casi todos, las palabras salieron rápido al principio y después hubo que buscarlas: es lo esperable.",
+              color = TextSoft,
+              fontSize = 13.sp,
+              textAlign = TextAlign.Center,
+              modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+            )
+          }
+        }
+      }
+      val repeats = rounds.sumOf { it.repeats }
+      if (repeats >= 3) {
+        Text(
+          text = "Repetiste $repeats palabras: pasa, la memoria vuelve a lo que ya encontró.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+      }
+      if (result.fluencyInput == "teclado") {
+        Text(
+          text = "Jugaste escribiendo: así salen menos palabras que hablando. Compárate contigo en el mismo modo.",
+          color = TextSoft,
+          fontSize = 13.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+      }
+      result.wordSkyTotal?.let { total ->
+        Text(
+          text = "Tu cielo de palabras: $total distintas" + (result.wordSkyNew?.takeIf { it > 0 }?.let { " · $it nuevas hoy" } ?: ""),
+          color = Clay.Sun,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(top = 6.dp, start = 28.dp, end = 28.dp)
+        )
+      }
+    }
+
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
-      result.homingErrorPct
+      result.homingErrorPct, result.fluencyRounds
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1086,6 +1182,41 @@ private fun HomingTarget(trips: List<com.example.data.HomingTrip>, modifier: Mod
       val y = (homeY + (1f - t.along) * unit).coerceIn(pad, size.height - pad)
       drawCircle(Clay.Ink, 6.dp.toPx(), Offset(x, y))
       drawCircle(Clay.Sun, 4.5.dp.toPx(), Offset(x, y))
+    }
+  }
+}
+
+// ---------- Constelación de Palabras: "tu minuto" ----------
+
+/**
+ * Cuatro columnas de arcilla celeste: palabras en cada cuarto del minuto (0-15, 15-30, 30-45, 45-60 s). El número va
+ * encima y el tramo debajo: se lee en texto, no solo por la altura.
+ */
+@Composable
+private fun QuarterBars(quarters: List<Int>, modifier: Modifier = Modifier) {
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  val labels = listOf("0-15 s", "15-30", "30-45", "45-60")
+  Canvas(modifier) {
+    val maxN = (quarters.maxOrNull() ?: 1).coerceAtLeast(1)
+    val slot = size.width / 4f
+    val barW = slot * 0.46f
+    val small = TextStyle(color = TextSoft, fontSize = 11.sp)
+    val labelH = 16.dp.toPx()
+    val valueH = 16.dp.toPx()
+    val chartH = size.height - labelH - valueH
+    for (i in 0 until 4) {
+      val cx = slot * (i + 0.5f)
+      val lab = measurer.measure(labels[i], small)
+      drawText(lab, topLeft = Offset(cx - lab.size.width / 2f, size.height - lab.size.height.toFloat()))
+      val n = quarters.getOrElse(i) { 0 }
+      val h = (chartH * n / maxN).coerceAtLeast(3.dp.toPx())
+      val top = valueH + chartH - h
+      drawRoundRect(Clay.Ink, Offset(cx - barW / 2f, top + 3.dp.toPx()), androidx.compose.ui.geometry.Size(barW, h),
+        androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()))
+      drawRoundRect(Clay.Sky, Offset(cx - barW / 2f, top), androidx.compose.ui.geometry.Size(barW, h),
+        androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()))
+      val v = measurer.measure(n.toString(), small.copy(color = Clay.Cream))
+      drawText(v, topLeft = Offset(cx - v.size.width / 2f, top - v.size.height - 2.dp.toPx()))
     }
   }
 }
