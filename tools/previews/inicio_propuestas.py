@@ -148,15 +148,20 @@ def check(d, cx, cy, s, col=INK):
 
 # ------------------------------------------------------------------ 1. Tu planeta
 
-def blob_planet(im, cx, cy, r):
-    """Planeta propio de arcilla con 6 zonas (una por dominio) que crecen al entrenar."""
+DEFAULT_GROWS = {'memoria': 1.0, 'atencion': 0.75, 'razonamiento': 0.55, 'lenguaje': 0.2, 'calculo': 0.6, 'velocidad': 0.85}
+
+
+def blob_planet(im, cx, cy, r, grows=None, spark=None):
+    """Planeta propio de arcilla con 6 zonas (una por dominio) que crecen al entrenar. [spark] = zona que acaba de
+    crecer (brilla con destellos)."""
+    grows = grows or DEFAULT_GROWS
     d = ImageDraw.Draw(im)
     glow(im, cx, cy, r * 1.5, SKY, 70)
     d = ImageDraw.Draw(im)
     d.ellipse([cx - r, cy - r + dp(8), cx + r, cy + r + dp(8)], fill=INK)
     d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(58, 70, 150), outline=INK, width=int(dp(4)))
     # zonas: casquetes de color en el borde, cada uno con sus "construcciones"
-    zones = [('memoria', -35, 1.0), ('atencion', 35, 0.75), ('razonamiento', 105, 0.55), ('lenguaje', 180, 0.2), ('calculo', 250, 0.6), ('velocidad', 0, 0.85)]
+    zones = [(k, ang, grows[k]) for k, ang in (('memoria', -35), ('atencion', 35), ('razonamiento', 105), ('lenguaje', 180), ('calculo', 250), ('velocidad', 0))]
     rnd = random.Random(4)
     for dom, ang, grow in zones:
         if dom == 'velocidad':
@@ -164,6 +169,8 @@ def blob_planet(im, cx, cy, r):
         else:
             a = math.radians(ang - 90); zx, zy = cx + math.cos(a) * r * 0.56, cy + math.sin(a) * r * 0.56
         zr = r * (0.2 + 0.13 * grow)
+        if dom == spark:
+            glow(im, zx, zy, zr * 1.9, SUN, 150); d = ImageDraw.Draw(im)
         pts = [(zx + math.cos(t) * zr * (1 + 0.12 * math.sin(3 * t + ang)), zy + math.sin(t) * zr * 0.8 * (1 + 0.12 * math.cos(2 * t + ang))) for t in [2 * math.pi * i / 36 for i in range(36)]]
         d.polygon([(x, y + dp(3)) for x, y in pts], fill=INK)
         d.polygon(pts, fill=DOM[dom], outline=INK, width=int(dp(2)))
