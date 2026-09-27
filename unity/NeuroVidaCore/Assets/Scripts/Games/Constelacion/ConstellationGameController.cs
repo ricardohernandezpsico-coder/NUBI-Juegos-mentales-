@@ -194,16 +194,14 @@ namespace NeuroVida.Games.Constelacion
             _endsAt = _roundStart + FluencyContract.RoundSeconds;
             _lastTickSecond = -1;
             Sfx(ConstellationSounds.Listen(), 0.45f);
-            if (!_keyboard)
-            {
-                SpeechClient.Start(offline: true);
-                _offline = SpeechClient.Offline;
-            }
+            if (!_keyboard) SpeechClient.Start(offline: true);
             else FocusInput();
             while (GameClock.Time < _endsAt) yield return null;
 
             // ¡Tiempo! Se espera la última frase y se confirma lo que quedó a medio decir.
             _phase = Phase.Closing;
+            // Se lee al final (el reconocedor arranca en el hilo de Android, no al instante).
+            if (!_keyboard) _offline = SpeechClient.Offline;
             if (!_keyboard) SpeechClient.Stop();
             Sfx(ConstellationSounds.Stop(), 0.4f);
             SetCaption("");
