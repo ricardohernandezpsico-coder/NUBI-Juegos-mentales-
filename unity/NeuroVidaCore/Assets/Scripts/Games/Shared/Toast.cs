@@ -91,11 +91,12 @@ namespace NeuroVida.Games.Shared
 
         public void Show(string title, string subtitle, Color accent, float holdSeconds = 1.2f)
         {
+            bool hasSubtitle = !string.IsNullOrEmpty(subtitle);
             _title.text = title;
             _subtitle.text = subtitle;
-            _subtitle.gameObject.SetActive(!string.IsNullOrEmpty(subtitle));
-            _title.alignment = string.IsNullOrEmpty(subtitle) ? TextAnchor.MiddleLeft : TextAnchor.LowerLeft;
-            _title.rectTransform.anchorMin = string.IsNullOrEmpty(subtitle) ? Vector2.zero : new Vector2(0f, 0.5f);
+            _subtitle.gameObject.SetActive(hasSubtitle);
+            _title.alignment = hasSubtitle ? TextAnchor.LowerLeft : TextAnchor.MiddleLeft;
+            _title.rectTransform.anchorMin = hasSubtitle ? new Vector2(0f, 0.5f) : Vector2.zero;
             _dot.color = accent;
             _bg.color = new Color(
                 Mathf.Lerp(0.06f, accent.r, 0.28f),
@@ -103,9 +104,45 @@ namespace NeuroVida.Games.Shared
                 Mathf.Lerp(0.16f, accent.b, 0.28f),
                 0.95f);
 
+            FitSize(hasSubtitle);
+
             _rect.gameObject.SetActive(true);
             if (_anim != null) _runner.StopCoroutine(_anim);
             _anim = _runner.StartCoroutine(Run(holdSeconds));
+        }
+
+        /// <summary>Ancho y alto del recuadro a la medida del texto de este aviso, no un tamaño fijo: con textos
+        /// cortos ("Con calma") queda compacto y con textos largos ("Imagina cada hallazgo EN su planeta, como
+        /// una escena") crece hasta un máximo cómodo (Ricardo, 28-sep: "las frases sobrepasan el recuadro"; antes
+        /// el recuadro medía siempre 300dp y el texto, en modo Overflow, se salía sin que nada lo envolviera ni
+        /// lo acortara). Si ni el máximo alcanza, el texto pasa a un segundo renglón en vez de salirse.</summary>
+        private void FitSize(bool hasSubtitle)
+        {
+            const float iconAndPad = 96f; // dp: 76 a la izquierda (punto) + 20 a la derecha
+            const float minWidthDp = 300f;
+            // Deja siempre un margen a cada lado del contenedor real (la zona seguridad del juego), no un ancho fijo:
+            // así el aviso nunca toca el borde ni se corta en pantallas angostas.
+            var parentRect = _rect.parent as RectTransform;
+            float parentWidthU = parentRect != null && parentRect.rect.width > 0f ? parentRect.rect.width : 900f * _u;
+            float maxWidthDp = Mathf.Max(minWidthDp, parentWidthU / _u - 64f);
+
+            _title.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _subtitle.horizontalOverflow = HorizontalWrapMode.Overflow;
+            float titleWDp = _title.preferredWidth / _u;
+            float subtitleWDp = hasSubtitle ? _subtitle.preferredWidth / _u : 0f;
+
+            bool titleWraps = titleWDp + iconAndPad > maxWidthDp;
+            bool subtitleWraps = hasSubtitle && subtitleWDp + iconAndPad > maxWidthDp;
+            float widthDp = Mathf.Clamp(Mathf.Max(titleWDp, subtitleWDp) + iconAndPad, minWidthDp, maxWidthDp);
+            _rect.sizeDelta = new Vector2(widthDp * _u, _rect.sizeDelta.y);
+
+            _title.horizontalOverflow = titleWraps ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+            _subtitle.horizontalOverflow = subtitleWraps ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+
+            // Una línea extra de alto por cada texto que se envolvió (mismo criterio que PhasePill.Set).
+            float baseH = 84f * _u;
+            float extra = (titleWraps ? 30f : 0f) * _u + (subtitleWraps ? 24f : 0f) * _u;
+            _rect.sizeDelta = new Vector2(widthDp * _u, baseH + extra);
         }
 
         private IEnumerator Run(float hold)
