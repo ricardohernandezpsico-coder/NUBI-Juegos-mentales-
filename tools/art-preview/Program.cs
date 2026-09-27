@@ -93,6 +93,8 @@ internal static class Program
             }
             Dump("traffic_knob", NeuroVida.Games.Trafico.TrafficSprites.SwitchKnob());
             Dump("traffic_station", NeuroVida.Games.Trafico.TrafficSprites.Station());
+            // Muestra de sonido de Tráfico Estelar (WAV): el motor de fondo con los efectos encima, como en una partida.
+            TrafficSoundDemo(Path.Combine(dir, "trafico-sonidos.wav"));
             // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (var (ports, seed, twist) in new[] { (4, 3, 0.2f), (6, 11, 0.55f), (8, 5, 1f), (6, 21, 0.55f) })
@@ -117,5 +119,51 @@ internal static class Program
                 f.WriteLine($"{t.NormalColor.r} {t.NormalColor.g} {t.NormalColor.b} {t.LightColor.r} {t.LightColor.g} {t.LightColor.b}");
             }
         Console.WriteLine("OK -> " + dir);
+    }
+
+    static void TrafficSoundDemo(string path)
+    {
+        const int rate = 44100;
+        float seconds = 9f;
+        var mix = new float[(int)(seconds * rate)];
+        // Motor: entra al salir la primera cápsula, crece con más cápsulas (volumen y tono) y se apaga al final.
+        var engine = NeuroVida.Games.Trafico.TrafficSounds.EngineLoop().data;
+        double pos = 0;
+        for (int i = 0; i < mix.Length; i++)
+        {
+            float t = i / (float)rate;
+            int flying = t < 0.5f ? 0 : t < 2.5f ? 1 : t < 4.5f ? 2 : t < 7f ? 4 : t < 8f ? 1 : 0;
+            float vol = flying > 0 ? 0.14f + 0.03f * Math.Min(flying - 1, 6) : 0f;
+            float pitch = 0.95f + 0.035f * Math.Max(flying - 1, 0);
+            pos = (pos + pitch) % engine.Length;
+            mix[i] += vol * engine[(int)pos];
+        }
+        void At(float t, UnityEngine.AudioClip c, float v)
+        {
+            int start = (int)(t * rate);
+            for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
+        }
+        At(0.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.35f);
+        At(1.2f, NeuroVida.Games.Trafico.TrafficSounds.Switch(true), 0.4f);
+        At(1.8f, NeuroVida.Games.Trafico.TrafficSounds.Clack(), 0.22f);
+        At(2.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.35f);
+        At(2.9f, NeuroVida.Games.Trafico.TrafficSounds.Clack(), 0.22f);
+        At(3.3f, NeuroVida.Games.Trafico.TrafficSounds.Coin(1), 0.5f);
+        At(3.8f, NeuroVida.Games.Trafico.TrafficSounds.Switch(false), 0.4f);
+        At(4.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.35f);
+        At(4.9f, NeuroVida.Games.Trafico.TrafficSounds.Coin(2), 0.5f);
+        At(5.4f, NeuroVida.Games.Trafico.TrafficSounds.Clack(), 0.22f);
+        At(5.8f, NeuroVida.Games.Trafico.TrafficSounds.Coin(3), 0.5f);
+        At(6.4f, NeuroVida.Games.Trafico.TrafficSounds.Miss(), 0.5f);
+        At(7.1f, NeuroVida.Games.Trafico.TrafficSounds.PowerUp(), 0.45f);
+        At(8.0f, NeuroVida.Games.Trafico.TrafficSounds.Fanfare(), 0.5f);
+        using (var w = new BinaryWriter(File.Create(path)))
+        {
+            int n = mix.Length;
+            w.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + n * 2); w.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));
+            w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
+            w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
+            foreach (float v in mix) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
+        }
     }
 }

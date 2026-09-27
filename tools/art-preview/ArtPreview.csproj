@@ -46,5 +46,6 @@
     <Compile Include="$(Src)/Acoplamiento/DockingContract.cs" />
     <Compile Include="$(Src)/Trafico/TrafficSprites.cs" />
     <Compile Include="$(Src)/Trafico/TrafficContract.cs" />
+    <Compile Include="$(Src)/Trafico/TrafficSounds.cs" />
   </ItemGroup>
 </Project>

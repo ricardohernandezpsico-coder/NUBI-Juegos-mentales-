@@ -20,6 +20,8 @@ public static class Mathf {
   public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
   public static float Pow(float a, float b) => (float)Math.Pow(a, b);
   public static float Exp(float a) => (float)Math.Exp(a);
+  public static float Log(float a) => (float)Math.Log(a);
+  public static int CeilToInt(float a) => (int)Math.Ceiling(a);
   public static float Sign(float v) => v >= 0f ? 1f : -1f;
   public static float Floor(float v) => (float)Math.Floor(v);
   public static float Repeat(float t, float l) => Clamp(t - Floor(t / l) * l, 0f, l);
@@ -38,4 +40,5 @@ public enum TextureFormat { RGBA32 } public enum TextureWrapMode { Clamp } publi
 public class Object {}
 public class Texture2D : Object { public int width; public Color32[] pixels; public Texture2D(int w,int h,TextureFormat f,bool m){width=w;} public TextureWrapMode wrapMode{get;set;} public FilterMode filterMode{get;set;} public void SetPixels32(Color32[] p){pixels=p;} public void Apply(){} }
 public class Sprite : Object { public Texture2D texture; public static Sprite Create(Texture2D t, Rect r, Vector2 p, float ppu) => new Sprite{texture=t}; }
+public class AudioClip : Object { public float[] data; public int frequency; public static AudioClip Create(string n, int len, int ch, int freq, bool stream) => new AudioClip{data=new float[len], frequency=freq}; public bool SetData(float[] d, int off){ Array.Copy(d,0,data,off,d.Length); return true; } }
 }

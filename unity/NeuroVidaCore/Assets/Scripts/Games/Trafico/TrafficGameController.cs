@@ -98,6 +98,8 @@ namespace NeuroVida.Games.Trafico
         // UI
         private RectTransform _safe, _play, _field, _fxRect, _station, _timerBg, _timerFill;
         private Image _beacon, _doorGlow;
+        private AudioSource _engine;
+        private float _lastClack;
         private readonly List<RectTransform> _flow = new List<RectTransform>();
         private Text _prompt;
         private readonly List<EdgeView> _edges = new List<EdgeView>();
@@ -150,6 +152,7 @@ namespace NeuroVida.Games.Trafico
 
         private void OnDisable()
         {
+            if (_engine != null) _engine.Stop();
             if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
         }
 
@@ -196,7 +199,8 @@ namespace NeuroVida.Games.Trafico
             {
                 _points += 200;
                 _toast.Show("¡Oleada perfecta!", "+200", NeuroStyle.Sun, 1.1f);
-                GameFeel.LevelUp();
+                Sfx(TrafficSounds.Fanfare(), 0.5f);
+                GameFeel.Haptic(GameFeel.HapticKind.Firm);
                 UpdateHud();
             }
             _waveSpawned = 0;
@@ -224,6 +228,7 @@ namespace NeuroVida.Games.Trafico
         private void Update()
         {
             UpdateClock();
+            UpdateEngine();
             if (_sim != null && _phase != Phase.Done && GameClock.DeltaTime > 0f)
             {
                 // Vida de la red también durante las instrucciones: luces que corren y la baliza de la antena.
@@ -248,7 +253,7 @@ namespace NeuroVida.Games.Trafico
                 _spawned++;
                 _waveSpawned++;
                 _nextSpawnAt = GameClock.Time + TrafficContract.SpawnInterval(level, Precision) * (0.85f + 0.3f * (float)_rng.NextDouble());
-                PlayTone(659f, 0.05f, 0.04f);
+                Sfx(TrafficSounds.Launch(), 0.35f);
                 StartCoroutine(StationLaunch());
                 _peakInFlight = Mathf.Max(_peakInFlight, _sim.InFlight);
             }
@@ -280,6 +285,49 @@ namespace NeuroVida.Games.Trafico
             _station.localScale = Vector3.one;
         }
 
+        // ------------------------------------------------------------------ sonido
+
+        private bool SoundAllowed => GameFeel.SoundOn && (_config == null || _config.config == null || _config.config.sound_enabled);
+
+        private void Sfx(AudioClip clip, float volume)
+        {
+            if (SoundAllowed) _audioSource.PlayOneShot(clip, volume);
+        }
+
+        /// <summary>
+        /// Motor del tráfico: un zumbido leve que suena mientras hay cápsulas viajando. Con más cápsulas sube un poco el
+        /// volumen y el tono (y con el nivel, la velocidad se oye más aguda); se corre a la izquierda o a la derecha según
+        /// por dónde van. Sin cápsulas, se apaga despacio.
+        /// </summary>
+        private void UpdateEngine()
+        {
+            if (_engine == null || _dda == null) return;
+            float dt = GameClock.DeltaTime;
+            if (dt <= 0f) return;
+            int flying = _sim != null && _phase != Phase.Done ? _sim.InFlight : 0;
+            float target = SoundAllowed && flying > 0 ? 0.14f + 0.03f * Mathf.Min(flying - 1, 6) : 0f;
+            _engine.volume = Mathf.MoveTowards(_engine.volume, target, dt * 0.5f);
+            float level01 = (_dda.PresentedLevel - 1f) / (TrafficContract.MaxLevel - 1f);
+            float pitch = 0.92f + 0.14f * level01 + 0.035f * Mathf.Min(Mathf.Max(flying - 1, 0), 6);
+            _engine.pitch = Mathf.MoveTowards(_engine.pitch, pitch, dt * 0.5f);
+            if (flying > 0)
+            {
+                float sum = 0f;
+                int n = 0;
+                foreach (var pod in _sim.Pods)
+                {
+                    if (pod.Done) continue;
+                    _sim.Position(pod, out float x, out _);
+                    sum += x;
+                    n++;
+                }
+                float pan = n > 0 ? Mathf.Clamp((sum / n - 0.5f) * 0.8f, -0.4f, 0.4f) : 0f;
+                _engine.panStereo = Mathf.MoveTowards(_engine.panStereo, pan, dt * 1.2f);
+            }
+            if (_engine.volume > 0.001f && !_engine.isPlaying) _engine.Play();
+            else if (_engine.volume <= 0.001f && target <= 0f && _engine.isPlaying) _engine.Stop();
+        }
+
         private void HandleTap()
         {
             if (!Input.GetMouseButtonDown(0)) return;
@@ -294,7 +342,7 @@ namespace NeuroVida.Games.Trafico
             if (best < 0) return;
             _sim.Toggle(best);
             GameFeel.Haptic(GameFeel.HapticKind.Light);
-            PlayTone(988f, 0.04f, 0.05f);
+            Sfx(TrafficSounds.Switch(_sim.SwitchState[best] == 1), 0.4f);
             StartCoroutine(PopRect(_knobs[best], 1.15f, 0.15f));
             RefreshEdges();
         }
@@ -304,6 +352,12 @@ namespace NeuroVida.Games.Trafico
             if (!e.Arrived)
             {
                 if (e.Correct && e.Lead >= 0f) _leads.Add(e.Lead);
+                // "Clac" de riel al pasar por el desvío (sin amontonar si pasan varias juntas).
+                if (GameClock.Time - _lastClack > 0.08f)
+                {
+                    _lastClack = GameClock.Time;
+                    Sfx(TrafficSounds.Clack(), 0.22f);
+                }
                 return;
             }
             _delivered++;
@@ -316,7 +370,8 @@ namespace NeuroVida.Games.Trafico
                 _bestStreak = Mathf.Max(_bestStreak, _streak);
                 int pts = TrafficContract.Points(true, _dda.PresentedLevel, _streak);
                 _points += pts;
-                GameFeel.Correct(_streak);
+                Sfx(TrafficSounds.Coin(_streak), 0.5f);
+                if (_streak % 5 == 0) GameFeel.Haptic(GameFeel.HapticKind.Light);
                 StartCoroutine(PopRect(port, 1.25f, 0.25f));
                 StartCoroutine(UiFx.RingBurst(_fxRect, port.anchoredPosition, TrafficSprites.Colors[e.Color], 120f, 320f, 0.4f));
                 StartCoroutine(FloatText(port.anchoredPosition + new Vector2(0f, 60f), "+" + pts, NeuroStyle.Sun));
@@ -325,7 +380,8 @@ namespace NeuroVida.Games.Trafico
             {
                 _streak = 0;
                 _waveErrors++;
-                GameFeel.Wrong();
+                Sfx(TrafficSounds.Miss(), 0.5f);
+                GameFeel.Haptic(GameFeel.HapticKind.Double);
                 StartCoroutine(UiFx.Shake(14f, 0.3f, port));
                 StartCoroutine(MarkAt(port.anchoredPosition, false));
                 StartCoroutine(Flash(BadColor, 0.08f, 0.2f));
@@ -334,7 +390,8 @@ namespace NeuroVida.Games.Trafico
             if (change == DdaChange.Up)
             {
                 _toast.Show("¡Más tráfico!", "Más rápido y más seguido", GoodColor, 0.9f);
-                GameFeel.LevelUp();
+                Sfx(TrafficSounds.PowerUp(), 0.45f);
+                GameFeel.Haptic(GameFeel.HapticKind.Firm);
             }
             else if (change == DdaChange.Down || _dda.Struggling)
                 _toast.Show("Con calma", "Mira el color y el símbolo", AmberColor, 0.9f);
@@ -671,6 +728,15 @@ namespace NeuroVida.Games.Trafico
                 es.AddComponent<UnityEngine.EventSystems.EventSystem>();
                 es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
             }
+
+            var engineGo = new GameObject("Engine");
+            engineGo.transform.SetParent(transform, false);
+            _engine = engineGo.AddComponent<AudioSource>();
+            _engine.playOnAwake = false;
+            _engine.loop = true;
+            _engine.spatialBlend = 0f;
+            _engine.volume = 0f;
+            _engine.clip = TrafficSounds.EngineLoop();
 
             var canvasGo = new GameObject("TrafficCanvas");
             canvasGo.transform.SetParent(transform, false);
