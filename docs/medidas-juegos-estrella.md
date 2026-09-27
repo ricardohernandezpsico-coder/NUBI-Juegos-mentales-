@@ -197,7 +197,10 @@ cosa nombrada está siempre que suena su palabra. Desde los colores, las frases 
 coral): una mini gramática.
 
 **Cómo se calcula.** Una palabra queda **descifrada** cuando se acierta dos veces seguidas SIN contar la primera vez que
-se oye (esa siempre es adivinar). Así, tocar al azar descifra poco: en las pruebas del contrato, un jugador simulado que
+se oye (esa siempre es adivinar). Desde la segunda vez el juego dice "¡Vas bien!" o "No era esa" sin decir cuál era, y en
+los niveles 1-4 muestra lo que había la vez anterior (desde el 5 hay que recordarlo): es aprendizaje entre situaciones
+con una ayuda para entender la tarea, no la versión sin respuesta de los estudios. La palabra de la guía de la primera
+vez (enseñada paso a paso) entra al diccionario pero no cuenta para las medidas. Así, tocar al azar descifra poco: en las pruebas del contrato, un jugador simulado que
 toca al azar descifra 20-40% de las palabras desde 3 cosas por escena, y uno que deduce (se queda con lo que se repite y
 descarta lo que ya tiene nombre) descifra todo en unas 3,2 escenas por palabra. Si una palabra no sale en 7 escenas,
 queda para otro día (no se insiste).

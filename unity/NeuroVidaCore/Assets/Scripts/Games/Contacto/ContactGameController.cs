@@ -46,6 +46,8 @@ namespace NeuroVida.Games.Contacto
             public RectTransform Rect;
             public Image Bg, Ring, Icon;
             public Text Mystery, Word, Note, Digit;
+            /// <summary>Dos puntos sobre el hueco: cuántos aciertos seguidos lleva la palabra (2 = descifrada).</summary>
+            public readonly Image[] Pips = new Image[2];
         }
 
         private System.Random _rng;
@@ -56,7 +58,15 @@ namespace NeuroVida.Games.Contacto
         private readonly List<int> _reviewWords = new List<int>();
         private readonly List<int> _reviewOk = new List<int>();
         private int _meTotal, _meOk, _practiceOk, _practiceTotal, _previousFrameRate;
-        private bool _done;
+        private bool _done, _hintAnnounced;
+        /// <summary>Lo último que se tocó para cada palabra de la lección ("tu idea", se ve tenue en el diccionario).</summary>
+        private readonly Dictionary<int, Thing> _guess = new Dictionary<int, Thing>();
+        /// <summary>Las cosas que había la última vez que sonó cada palabra (la pista "la vez anterior").</summary>
+        private readonly Dictionary<int, Thing[]> _lastSeen = new Dictionary<int, Thing[]>();
+
+        /// <summary>La pista "la vez anterior" acompaña los primeros niveles; desde el 5 hay que recordarla.</summary>
+        private const int HintMaxLevel = 4;
+        private bool HintOn => _dda.Level <= HintMaxLevel;
 
         // escena en curso
         private ContactScene _scene;
@@ -69,7 +79,11 @@ namespace NeuroVida.Games.Contacto
         // UI
         private RectTransform _safe, _play, _fx, _alien, _bubble, _thingsRoot, _dictRoot;
         private Image _alienImg, _alienGlow;
-        private Text _bubbleText, _caption, _sub, _dictLabel;
+        private Text _bubbleText, _caption, _sub, _dictLabel, _hintLabel;
+        private RectTransform _hintRoot;
+        private readonly List<Image> _hintIcons = new List<Image>();
+        private readonly List<Text> _hintCounts = new List<Text>();
+        private float _hintY;
         private readonly List<ThingView> _things = new List<ThingView>();
         private readonly List<SlotView> _slots = new List<SlotView>();
         private readonly List<Vector2> _thingPos = new List<Vector2>();
@@ -103,6 +117,9 @@ namespace NeuroVida.Games.Contacto
             _done = false;
             _waitTap = false;
             _lesson = null;
+            _hintAnnounced = false;
+            _guess.Clear();
+            _lastSeen.Clear();
 
             _previousFrameRate = Application.targetFrameRate;
             Application.targetFrameRate = 60;
@@ -172,14 +189,10 @@ namespace NeuroVida.Games.Contacto
             StartCoroutine(PopIn(_alien, 0.35f));
             Sfx(ContactSounds.Arrival(), 0.5f);
             bool first = _known.Count == 0;
-            _toast.Show("Primer contacto", first ? "Los nuri te nombran cosas en su idioma" : "Los nuri vuelven a saludarte", NeuroStyle.Lime, 2.2f);
-            SetCaption(first ? "Nadie te dirá qué significa cada palabra" : "", first ? "Descúbrelo tú, escena a escena" : "");
+            _toast.Show("Primer contacto", first ? "Aprende el idioma de los nuri" : "Los nuri vuelven a saludarte", NeuroStyle.Lime, 2.2f);
+            SetCaption(first ? "Los nuri nombran cosas en su idioma" : "Recuerda: busca la cosa que se repite",
+                first ? "Tú descubres qué significa cada palabra" : "");
             yield return StartCoroutine(Pause(2.5f));
-            if (first)
-            {
-                _toast.Show("Truco", "Fíjate qué cosa se repite cada vez que suena una palabra", NeuroStyle.Sun, 2.8f);
-                yield return StartCoroutine(Pause(3f));
-            }
         }
 
         /// <summary>Repaso de palabras de otros días, con respuesta al instante. Lo olvidado vuelve a la lección de hoy.</summary>
@@ -244,9 +257,16 @@ namespace NeuroVida.Games.Contacto
         {
             BuildDictionary();
             int n = _lesson.Targets.Count;
-            _toast.Show("Palabras nuevas", n == 1 ? "Una palabra por descifrar" : $"{n} palabras por descifrar", NeuroStyle.Sky, 1.8f);
-            SetCaption("", "");
-            yield return StartCoroutine(Pause(1.2f));
+            if (ContactContract.NeedsGuide(_lesson))
+            {
+                yield return StartCoroutine(Guide());
+            }
+            else
+            {
+                _toast.Show("Palabras nuevas", n == 1 ? "Una por descifrar" : $"{n} por descifrar", NeuroStyle.Sky, 1.8f);
+                SetCaption("", "");
+                yield return StartCoroutine(Pause(1.2f));
+            }
 
             int focus = -1;
             int max = ContactContract.MaxScenes(n);
@@ -258,12 +278,19 @@ namespace NeuroVida.Games.Contacto
                 bool chance = ContactContract.IsExclusionChance(_lesson, scene);
                 int heardBefore = _lesson.Progress[focus].Hearings;
                 UpdateProgressInfo();
-                SetCaption("", s < 2 ? "Toca lo que crees que nombró" : s < 4 ? "Toca al nuri para oírlo de nuevo" : "");
+                if (!HintOn && !_hintAnnounced && _lastSeen.Count > 0)
+                {
+                    _hintAnnounced = true;
+                    _toast.Show("Sin pista", "Ahora recuerda tú la vez anterior", NeuroStyle.Grape, 2.2f);
+                }
+                SetCaption($"¿Qué es {ContactContract.PhraseText(scene.Phrase)}?", s < 3 ? "Toca al nuri para oírlo otra vez" : "");
+                ShowHint(_lastSeen.TryGetValue(focus, out var prev) ? prev : null, HintOn);
                 HighlightSlots(scene.Phrase, true);
                 yield return StartCoroutine(ShowScene(scene));
                 yield return StartCoroutine(WaitTap());
                 int tap = _tapped;
                 HighlightSlots(scene.Phrase, false);
+                ShowHint(null, false);
 
                 if (chance)
                 {
@@ -277,15 +304,14 @@ namespace NeuroVida.Games.Contacto
                 }
                 var parkedBefore = ParkedSet();
                 var decoded = ContactContract.Answer(_lesson, scene, tap, s);
+                Remember(scene, tap);
                 if (decoded.Count > 0)
                 {
                     foreach (int w in decoded) yield return StartCoroutine(Celebrate(w, scene));
                 }
                 else
                 {
-                    Sfx(ContactSounds.Ack(), 0.5f);
-                    StartCoroutine(Nod());
-                    yield return StartCoroutine(Pause(0.45f));
+                    yield return StartCoroutine(Feedback(focus));
                 }
                 foreach (int w in _lesson.Targets)
                     if (_lesson.Progress[w].Parked && !parkedBefore.Contains(w)) ShowParked(w);
@@ -299,11 +325,149 @@ namespace NeuroVida.Games.Contacto
             {
                 Sfx(ContactSounds.Decoded(), 0.5f);
                 GameFeel.LevelUp();
-                _toast.Show("¡Hablas un poco más de nuri!", n == 1 ? "Palabra descifrada" : $"{n} palabras descifradas", NeuroStyle.Sun, 2f);
+                _toast.Show("¡Hablas más nuri!", n == 1 ? "Palabra descifrada" : $"{n} palabras descifradas", NeuroStyle.Sun, 2f);
             }
             SetCaption(d == n ? "¡Descifraste todas!" : d > 0 ? $"Descifraste {d} de {n}" : "Las palabras quedan para otro día",
                 d < n ? "Las que faltan vuelven la próxima vez" : "");
             yield return StartCoroutine(Pause(2.2f));
+        }
+
+        /// <summary>
+        /// Qué pasó con la palabra de la escena, dicho claro: la primera vez nadie lo sabe; desde la segunda, "¡Vas bien!"
+        /// (un punto de dos) o "No era esa" (sin decir cuál era: eso se deduce).
+        /// </summary>
+        private IEnumerator Feedback(int focus)
+        {
+            var p = _lesson.Progress[focus];
+            StartCoroutine(Nod());
+            if (p.Hearings <= 1)
+            {
+                Sfx(ContactSounds.Ack(), 0.5f);
+                SetCaption("Anotado", "La primera vez nadie lo sabe: fíjate en la próxima");
+            }
+            else if (p.Streak >= 1)
+            {
+                GameFeel.Correct(1);
+                int slot = _lesson.Targets.IndexOf(focus);
+                if (slot >= 0 && slot < _slots.Count) StartCoroutine(PopRect(_slots[slot].Rect, 1.25f, 0.22f));
+                SetCaption("¡Vas bien!", "Una vez más y queda descifrada");
+            }
+            else
+            {
+                Sfx(ContactSounds.Ack(), 0.5f);
+                SetCaption("No era esa", HintOn ? "Mira la pista: ¿qué cosa se repite?" : "Busca la cosa que se repite");
+            }
+            yield return StartCoroutine(Pause(1.1f));
+        }
+
+        /// <summary>Guarda lo que se tocó (tu idea) y lo que había (la pista de la próxima vez) de cada palabra de la frase.</summary>
+        private void Remember(ContactScene scene, int tap)
+        {
+            foreach (int w in scene.Phrase)
+            {
+                if (!_lesson.Progress.ContainsKey(w)) continue;
+                _lastSeen[w] = scene.Things;
+                _guess[w] = scene.Things[tap];
+                int slot = _lesson.Targets.IndexOf(w);
+                if (slot >= 0 && slot < _slots.Count && !_lesson.Progress[w].Decoded) UpdateSlot(slot);
+            }
+        }
+
+        /// <summary>
+        /// Guía de la primera vez (solo si no hay diccionario): tres escenas con la primera palabra, explicando qué mirar.
+        /// La palabra entra al diccionario pero no cuenta para las medidas (<see cref="ContactContract.MarkTaught"/>).
+        /// </summary>
+        private IEnumerator Guide()
+        {
+            int w = _lesson.Targets[0];
+            string word = ContactContract.Words[w];
+            var target = new Thing(ContactContract.ValueOf(w));
+            var pool = new List<int>();
+            for (int o = 0; o < ContactContract.ObjectCount; o++)
+                if (o != target.Obj && !_lesson.Targets.Contains(ContactContract.NounWord(o))) pool.Add(o);
+            for (int i = pool.Count - 1; i > 0; i--)
+            {
+                int j = _rng.Next(i + 1);
+                (pool[i], pool[j]) = (pool[j], pool[i]);
+            }
+            var s1 = GuideScene(target, 1, pool[0]);
+            var s2 = GuideScene(target, 0, pool[1], pool[2]);
+            var s3 = GuideScene(target, 2, pool[3], pool[4]);
+            foreach (var sc in new[] { s1, s2, s3 }) sc.Focus = w;
+            ContactSounds.Prepare(s1.Phrase);
+
+            _toast.Show("Cómo se juega", "Te muestro con una palabra", NeuroStyle.Sky, 2f);
+            yield return StartCoroutine(Pause(1.2f));
+
+            // 1) La primera vez: adivinar.
+            SetCaption($"El nuri dijo {word}. ¿Qué será?", "La primera vez nadie lo sabe: elige una");
+            ShowHint(null, false);
+            yield return StartCoroutine(ShowScene(s1));
+            yield return StartCoroutine(WaitTap());
+            _guess[w] = s1.Things[_tapped];
+            _lastSeen[w] = s1.Things;
+            UpdateSlot(0);
+            Sfx(ContactSounds.Ack(), 0.5f);
+            SetCaption("Anotado", "Ahora mira qué pasa la próxima vez");
+            yield return StartCoroutine(Pause(1.6f));
+            yield return StartCoroutine(ClearScene());
+
+            // 2) La segunda: lo que se repite.
+            SetCaption($"Otra vez {word}. ¿Qué cosa ya estaba antes?", "Arriba ves lo que había la vez anterior");
+            ShowHint(s1.Things, true);
+            yield return StartCoroutine(ShowScene(s2));
+            yield return StartCoroutine(GuideTap(s2));
+            _guess[w] = target;
+            _lastSeen[w] = s2.Things;
+            UpdateSlot(0);
+            SetPips(_slots[0], 1);
+            GameFeel.Correct(1);
+            ShowMark(_things[s2.Target], true);
+            SetCaption($"¡Eso! Estaba las dos veces: {word} debe ser eso", "Si aciertas dos veces seguidas, queda descifrada");
+            yield return StartCoroutine(Pause(2.4f));
+            ShowHint(null, false);
+            yield return StartCoroutine(ClearScene());
+
+            // 3) Otra vez: descifrada.
+            SetCaption($"¿Qué es {word}?", "Una vez más");
+            ShowHint(s2.Things, true);
+            yield return StartCoroutine(ShowScene(s3));
+            yield return StartCoroutine(GuideTap(s3));
+            ShowHint(null, false);
+            ContactContract.MarkTaught(_lesson, w);
+            yield return StartCoroutine(Celebrate(w, s3));
+            yield return StartCoroutine(ClearScene());
+            _toast.Show("¡Así se juega!", "Dos aciertos seguidos = descifrada", NeuroStyle.Lime, 2.4f);
+            SetCaption("Ahora, las demás palabras", "Nadie te dirá qué significan: dedúcelo");
+            yield return StartCoroutine(Pause(2.6f));
+        }
+
+        private ContactScene GuideScene(Thing target, int targetIndex, params int[] others)
+        {
+            var things = new List<Thing>();
+            foreach (int o in others) things.Add(new Thing(o));
+            targetIndex = Mathf.Clamp(targetIndex, 0, things.Count);
+            things.Insert(targetIndex, target);
+            return new ContactScene { Things = things.ToArray(), Target = targetIndex, Phrase = new[] { ContactContract.NounWord(target.Obj) } };
+        }
+
+        /// <summary>En la guía se espera la cosa correcta; si se toca otra, se muestra cuál se repite (brilla) y se vuelve a tocar.</summary>
+        private IEnumerator GuideTap(ContactScene scene)
+        {
+            while (true)
+            {
+                yield return StartCoroutine(WaitTap());
+                if (_tapped == scene.Target) yield break;
+                Sfx(ContactSounds.Ack(), 0.5f);
+                for (int i = 0; i < scene.Things.Length; i++) Undim(_things[i]);
+                _things[_tapped].Ring.gameObject.SetActive(false);
+                var t = _things[scene.Target];
+                t.Ring.gameObject.SetActive(true);
+                t.Ring.color = NeuroStyle.Lime;
+                StartCoroutine(PopRect(t.Rect, 1.2f, 0.3f));
+                SetCaption("Mira la que brilla: estaba la vez anterior", "Tócala");
+                _tapped = -1;
+            }
         }
 
         private HashSet<int> ParkedSet()
@@ -507,7 +671,7 @@ namespace NeuroVida.Games.Contacto
             ShowMark(from, true);
             StartCoroutine(UiFx.SparkBurst(_fx, LocalIn(_fx, from.Rect), NeuroStyle.Sun, 12, 140f, 26f));
             _toast.Show("¡Descifrada!", $"{ContactContract.Words[word]} = {ContactContract.Meanings[word]}", NeuroStyle.Lime, 1.8f);
-            SetCaption($"{ContactContract.Words[word]} es {ContactContract.Meanings[word]}", hearings <= ContactContract.MinHearings ? "¡A la primera deducción!" : "");
+            SetCaption($"{ContactContract.Words[word]} es {ContactContract.Meanings[word]}", hearings > 0 && hearings <= ContactContract.MinHearings ? "¡A la primera deducción!" : "");
             StartCoroutine(JumpAlien());
 
             if (slot >= 0 && slot < _slots.Count)
@@ -658,6 +822,44 @@ namespace NeuroVida.Games.Contacto
             v.Glow.color = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.3f);
         }
 
+        private static void Undim(ThingView v)
+        {
+            foreach (var c in v.Copies) if (c.gameObject.activeSelf) c.color = Color.white;
+            v.Glow.color = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.3f);
+        }
+
+        /// <summary>
+        /// La pista "la vez anterior" bajo el globo: las cosas que había la última vez que sonó la palabra (la que se
+        /// repite es la respuesta). Primera vez: lo dice. Apagada desde el nivel 5 (hay que recordarlo).
+        /// </summary>
+        private void ShowHint(Thing[] previous, bool on)
+        {
+            _hintRoot.gameObject.SetActive(on);
+            if (!on) return;
+            int n = previous == null ? 0 : Mathf.Min(previous.Length, _hintIcons.Count);
+            _hintLabel.text = n == 0 ? "Primera vez que suena: elige la que quieras" : "La vez anterior:";
+            float labelW = Mathf.Min(_hintLabel.preferredWidth, _play.rect.width - 2f * MarginU);
+            const float item = 112f;
+            float total = labelW + (n > 0 ? 18f + n * item : 0f);
+            float x = -total * 0.5f;
+            _hintLabel.rectTransform.sizeDelta = new Vector2(labelW + 4f, 60f);
+            _hintLabel.rectTransform.anchoredPosition = new Vector2(x + labelW * 0.5f, 0f);
+            x += labelW + 18f;
+            for (int i = 0; i < _hintIcons.Count; i++)
+            {
+                var img = _hintIcons[i];
+                bool show = i < n;
+                img.transform.parent.gameObject.SetActive(show);
+                if (!show) continue;
+                var t = previous[i];
+                img.sprite = ContactSprites.Object(t);
+                ((RectTransform)img.transform.parent).anchoredPosition = new Vector2(x + item * 0.5f, 0f);
+                _hintCounts[i].text = t.Count > 1 ? "×" + t.Count : "";
+                x += item;
+            }
+            StartCoroutine(PopIn(_hintRoot, 0.2f));
+        }
+
         private static void Dim(ThingView v, float alpha)
         {
             foreach (var c in v.Copies) if (c.gameObject.activeSelf) c.color = new Color(1f, 1f, 1f, alpha);
@@ -751,6 +953,7 @@ namespace NeuroVida.Games.Contacto
                 v.Mystery.gameObject.SetActive(true);
                 v.Note.text = "";
                 v.Ring.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.3f);
+                SetPips(v, 0);
                 StartCoroutine(PopInDelayed(v.Rect, 0.05f * i));
             }
             _dictLabel.rectTransform.anchoredPosition = new Vector2(0f, rows * rowH * 0.5f + 12f);
@@ -781,9 +984,40 @@ namespace NeuroVida.Games.Contacto
             SetSlotIcon(v.Icon, v.Digit, word, seen);
             v.Ring.color = NeuroStyle.Lime;
             v.Note.text = "";
+            SetPips(v, 2);
             StartCoroutine(PopRect(v.Rect, 1.3f, 0.25f));
             StartCoroutine(UiFx.SparkBurst(_fx, LocalIn(_fx, v.Rect), NeuroStyle.Sun, 8, 80f, 16f));
             UpdateProgressInfo();
+        }
+
+        /// <summary>Hueco de una palabra que falta: tu idea (lo último que tocaste, tenue, con el "?" encima) y los puntos.</summary>
+        private void UpdateSlot(int slot)
+        {
+            int w = _lesson.Targets[slot];
+            var p = _lesson.Progress[w];
+            var v = _slots[slot];
+            SetPips(v, Mathf.Clamp(p.Streak, 0, 2));
+            if (!_guess.TryGetValue(w, out var g)) return;
+            int shown;
+            switch (ContactContract.KindOf(w))
+            {
+                case WordKind.Color:
+                    if (g.Color < 0) return;
+                    shown = ContactContract.ColorWord(g.Color);
+                    break;
+                case WordKind.Count: shown = ContactContract.CountWord(g.Count); break;
+                default: shown = ContactContract.NounWord(g.Obj); break;
+            }
+            SetSlotIcon(v.Icon, v.Digit, shown, g);
+            v.Icon.color = NeuroStyle.WithAlpha(v.Icon.color, 0.35f);
+            v.Digit.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.4f);
+            v.Mystery.gameObject.SetActive(true);
+        }
+
+        private static void SetPips(SlotView v, int on)
+        {
+            for (int k = 0; k < v.Pips.Length; k++)
+                v.Pips[k].color = k < on ? NeuroStyle.Sun : NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.22f);
         }
 
         /// <summary>Qué muestra el diccionario: la cosa (sin color), el color (una gota de arcilla) o el número.</summary>
@@ -801,6 +1035,7 @@ namespace NeuroVida.Games.Contacto
                     if (digit != null)
                     {
                         digit.text = value.ToString();
+                        digit.color = NeuroStyle.Sun;
                         digit.gameObject.SetActive(true);
                         icon.gameObject.SetActive(false);
                     }
@@ -927,6 +1162,38 @@ namespace NeuroVida.Games.Contacto
             _bubbleText.horizontalOverflow = HorizontalWrapMode.Overflow;
             bubbleGo.SetActive(false);
 
+            // Pista "la vez anterior": rótulo suelto y las cosas en miniatura (sin recuadro).
+            var hintGo = new GameObject("Hint");
+            hintGo.transform.SetParent(_play, false);
+            _hintRoot = hintGo.AddComponent<RectTransform>();
+            _hintRoot.anchorMin = _hintRoot.anchorMax = new Vector2(0.5f, 0.5f);
+            _hintRoot.sizeDelta = new Vector2(900f, 110f);
+            _hintLabel = MakeText(_hintRoot, "Label", 34, TextAnchor.MiddleCenter, NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.85f), 0f, 0f);
+            _hintLabel.rectTransform.anchorMin = _hintLabel.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            _hintLabel.gameObject.SetActive(true);
+            for (int i = 0; i < 5; i++)
+            {
+                var slotGo = new GameObject("Mini");
+                slotGo.transform.SetParent(_hintRoot, false);
+                var sr = slotGo.AddComponent<RectTransform>();
+                sr.anchorMin = sr.anchorMax = new Vector2(0.5f, 0.5f);
+                sr.sizeDelta = new Vector2(104f, 104f);
+                var disc = NewImage(sr, "Disc", DiscSprite.Get());
+                Stretch(disc.rectTransform);
+                disc.color = NeuroStyle.WithAlpha(Deep, 0.7f);
+                disc.gameObject.SetActive(true);
+                var icon = NewImage(sr, "Icon", null);
+                icon.rectTransform.sizeDelta = new Vector2(88f, 88f);
+                icon.gameObject.SetActive(true);
+                var count = MakeText(sr, "Count", 26, TextAnchor.LowerRight, NeuroStyle.Sun, 0f, 0f);
+                Stretch(count.rectTransform);
+                NeuroStyle.ClayText(count, 2f, 3f);
+                slotGo.SetActive(false);
+                _hintIcons.Add(icon);
+                _hintCounts.Add(count);
+            }
+            hintGo.SetActive(false);
+
             _thingsRoot = Layer(_play, "Things");
             for (int i = 0; i < 5; i++) _things.Add(BuildThing(_thingsRoot));
 
@@ -1016,6 +1283,14 @@ namespace NeuroVida.Games.Contacto
             v.Ring.gameObject.SetActive(true);
             v.Icon = NewImage(r, "Icon", null);
             v.Icon.rectTransform.sizeDelta = new Vector2(SlotSize * 0.78f, SlotSize * 0.78f);
+            for (int k = 0; k < 2; k++)
+            {
+                var pip = NewImage(r, "Pip", DiscSprite.Get());
+                pip.rectTransform.sizeDelta = new Vector2(20f, 20f);
+                pip.rectTransform.anchoredPosition = new Vector2(k == 0 ? -14f : 14f, SlotSize * 0.5f + 16f);
+                pip.gameObject.SetActive(true);
+                v.Pips[k] = pip;
+            }
             v.Mystery = MakeText(r, "Mystery", 56, TextAnchor.MiddleCenter, NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.55f), 0f, 0f);
             Stretch(v.Mystery.rectTransform);
             v.Mystery.text = "?";
@@ -1101,7 +1376,9 @@ namespace NeuroVida.Games.Contacto
             _sub.rectTransform.sizeDelta = new Vector2(w - 2f * MarginU, 50f);
             _sub.rectTransform.anchoredPosition = new Vector2(0f, captionY - 34f);
 
-            float zoneTop = _bubbleY - 64f - 30f;
+            _hintY = _bubbleY - 64f - 76f;
+            _hintRoot.anchoredPosition = new Vector2(0f, _hintY);
+            float zoneTop = _hintY - 55f - 15f;
             float zoneBottom = captionY + 80f;
             _thingsY = (zoneTop + zoneBottom) * 0.5f;
         }

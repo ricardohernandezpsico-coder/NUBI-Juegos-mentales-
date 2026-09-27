@@ -19,7 +19,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · f`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · g`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -356,15 +356,23 @@ escena en escena, sin que nadie diga qué significan: aprendizaje entre situacio
 aprendizaje estadístico, Saffran et al., 1996). Nadie en la competencia lo tiene.
 - Escena: el nuri (arcilla lima, tres ojos, antenas) dice una frase (globo crema; la palabra que suena, en coral) y
   muestra 2-5 cosas sobre plataformas de luz; se toca la que se cree nombrada (se puede tocar mientras habla; tocar al
-  nuri repite). NO hay bien/mal en el momento: una palabra queda **descifrada** con 2 aciertos seguidos SIN contar la
-  primera vez que se oye (vuela al diccionario de abajo, "¡Descifrada! KI = amarillo"). Si en 7 escenas no sale, queda
-  "para otro día". Tope de escenas: 5 × palabras + 3.
+  nuri repite). Una palabra queda **descifrada** con 2 aciertos seguidos SIN contar la primera vez que se oye (vuela al
+  diccionario de abajo, "¡Descifrada! KI = amarillo"). Si en 7 escenas no sale, queda "para otro día". Tope de escenas:
+  5 × palabras + 3.
+- Claridad (28-sep, Ricardo lo probó: "la voz suena bien, se siente fluido, pero es poco entendible"; los avisos de
+  arriba se salían del recuadro → `Toast.FitSize` ahora cuenta los renglones reales, arregla todos los juegos):
+  **guía de la primera vez** (sin diccionario: 3 escenas con la primera palabra, "la primera vez nadie lo sabe" → "¿qué
+  cosa ya estaba antes?" → descifrada; entra al diccionario pero NO a las medidas, `MarkTaught`); **pista "La vez
+  anterior:"** bajo el globo (miniaturas de lo que había la última vez que sonó la palabra; niveles 1-4, desde el 5 se
+  apaga con aviso "Sin pista"); **pregunta** "¿Qué es ZOBA?" bajo las cosas; **respuesta** desde la 2ª vez: "¡Vas bien!
+  Una vez más y queda descifrada" o "No era esa" (sin decir cuál era); en el diccionario, **dos puntos** por palabra
+  (aciertos seguidos) y **tu idea** tenue con el "?" encima.
 - Idioma FIJO de 36 palabras (`ContactContract.Words`, números que NO se cambian: la app guarda el diccionario con
   ellos; mismas listas en `data/Contact.kt`): 12 cosas del cielo (`SymbolSprite`, pintadas del color de la frase con
   `SymbolSprite.Colored`; el satélite no, su color no se lee), 5 colores (coral, amarillo, celeste, lila, verde = la
   paleta), 16 hallazgos de la Bitácora (colores propios), números 1-3 (1-3 copias). Orden de aprendizaje en
   `Curriculum`; las frases combinan: "KITU RA NAS" = dos cohetes corales (mini gramática).
-- Reglas y pruebas: `ContactContract` / `ContactContractTests` (8, con un jugador simulado que deduce —descifra todo en
+- Reglas y pruebas: `ContactContract` / `ContactContractTests` (9, con un jugador simulado que deduce —descifra todo en
   ~3,2 escenas por palabra— y uno que toca al azar —20-40% desde 3 cosas por escena—). Lección = olvidadas primero y
   luego las siguientes sin saber (3 → 8 según nivel); cosas por escena 2 → 5; la mitad de las otras cosas son "casi
   iguales" (solo cambia el rasgo que se aprende); la mitad al azar ya tienen nombre (para poder descartar). DDA `stepUp`
@@ -383,7 +391,7 @@ aprendizaje estadístico, Saffran et al., 1996). Nadie en la competencia lo tien
 - Arte: `ContactSprites` (nuri boca abierta/cerrada, punta del globo), `GameWorld.FirstContact`. Ícono de la app: nuri
   lila (el lima no se ve sobre el planeta verde de Lenguaje). Vista previa: `python3 tools/art-preview/contacto.py <raw>`
   → `docs/previews/contacto.png` (escena real del contrato); voz y sonidos → `docs/previews/contacto-sonidos.wav`.
-  Sin probar en el teléfono: revisar si se entiende que no hay bien/mal hasta descifrar, la voz, y el ritmo.
+  Voz y fluidez aprobadas por Ricardo (28-sep); la versión con guía y pista, sin probar.
 
 ## Reglas que no se rompen
 
@@ -417,7 +425,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 60 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 175 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Unity EditMode: 176 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

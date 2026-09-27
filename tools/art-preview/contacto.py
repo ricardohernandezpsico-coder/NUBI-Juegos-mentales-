@@ -26,7 +26,7 @@ MEANING = {12: 'coral', 13: 'amarillo', 14: 'celeste'}
 
 # Disposición (unidades del canvas 1080 x 1920, centro = 0,0), igual que Layout().
 ALIEN_Y, BUBBLE_Y = 635, 420
-DICT_Y, CAPTION_Y, THINGS_Y = -750, -470, -32
+DICT_Y, CAPTION_Y, THINGS_Y, HINT_Y = -750, -470, -95, 280
 THING, SLOT = 210, 104
 
 
@@ -158,12 +158,12 @@ def draw_thing(im, raw, x, y, obj, color, count, chosen=False, dim=False, mark=N
 
 
 def dictionary(im, raw, slots):
-    """slots: lista de (palabra, estado, icono) con estado '?', 'lit' o 'ok'; icono = ('obj', obj) o ('color', c)."""
+    """slots: (palabra, estado, icono, puntos, idea): estado '?', 'lit' o 'ok'; icono/idea = ('obj', obj) o ('color', c)."""
     d = ImageDraw.Draw(im)
     n = len(slots)
     gap = SLOT + 34
     d.text((W / 2, sy(DICT_Y + 97)), 'diccionario nuri', font=font(15), fill=(255, 248, 236, 180), anchor='mm')
-    for i, (word, state, icon) in enumerate(slots):
+    for i, (word, state, icon, pips, guess) in enumerate(slots):
         x = (i - (n - 1) / 2) * gap
         cx, cy = sx(x), sy(DICT_Y - 10)
         r = SLOT * K / 2
@@ -171,16 +171,51 @@ def dictionary(im, raw, slots):
         d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=DEEP + (255,))
         ring = {'?': (255, 248, 236, 80), 'lit': SUN + (255,), 'ok': LIME + (255,)}[state]
         d.ellipse((cx - r, cy - r, cx + r, cy + r), outline=ring, width=3)
-        if state == 'ok' and icon:
-            if icon[0] == 'color':
+        shown = icon if state == 'ok' else guess
+        if shown:
+            layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
+            if shown[0] == 'color':
                 rr = r * 0.62
-                d.ellipse((cx - rr, cy - rr, cx + rr, cy + rr), fill=PALETTE[icon[1]] + (255,))
+                ImageDraw.Draw(layer).ellipse((cx - rr, cy - rr, cx + rr, cy + rr), fill=PALETTE[shown[1]] + (255,))
             else:
-                put(im, thing_sprite(raw, icon[1], -1), cx, cy, SLOT * K * 0.78)
-        else:
-            d.text((cx, cy), '?', font=font(28), fill=(255, 248, 236, 140), anchor='mm')
+                put(layer, thing_sprite(raw, shown[1], -1), cx, cy, SLOT * K * 0.78)
+            if state != 'ok':
+                a = layer.split()[3].point(lambda v: int(v * 0.35))
+                layer.putalpha(a)
+            im.alpha_composite(layer)
         d = ImageDraw.Draw(im)
+        if state != 'ok':
+            d.text((cx, cy), '?', font=font(28), fill=(255, 248, 236, 150), anchor='mm')
+        for k in range(2):
+            px, py, pr = cx + (-7 if k == 0 else 7), cy - r - 8, 5
+            d.ellipse((px - pr, py - pr, px + pr, py + pr), fill=SUN + (255,) if k < pips else (255, 248, 236, 56))
         d.text((cx, cy + r + 12), word, font=font(16), fill=CREAM + (255,), anchor='mm')
+
+
+def hint(im, raw, things, first=False):
+    """Pista bajo el globo: "La vez anterior:" + las cosas en miniatura (o "Primera vez que suena...")."""
+    d = ImageDraw.Draw(im)
+    f = font(17)
+    label = 'Primera vez que suena: elige la que quieras' if first else 'La vez anterior:'
+    lw = d.textlength(label, font=f)
+    item = 112 * K
+    total = lw + (0 if first else 9 + len(things) * item)
+    x = W / 2 - total / 2
+    y = sy(HINT_Y)
+    d.text((x, y), label, font=f, fill=(255, 248, 236, 220), anchor='lm')
+    x += lw + 9
+    if first:
+        return
+    for (obj, color, count) in things:
+        cx = x + item / 2
+        rr = 52 * K
+        d = ImageDraw.Draw(im)
+        d.ellipse((cx - rr, y - rr, cx + rr, y + rr), fill=DEEP + (180,))
+        put(im, thing_sprite(raw, obj, color), cx, y, 88 * K)
+        if count > 1:
+            d = ImageDraw.Draw(im)
+            d.text((cx + rr - 2, y + rr - 4), f'×{count}', font=font(13), fill=SUN + (255,), anchor='rb', stroke_width=2, stroke_fill=INK)
+        x += item
 
 
 def caption(im, main, sub):
@@ -192,14 +227,16 @@ def caption(im, main, sub):
 
 
 def frame_first(raw):
+    """Guía de la primera vez, paso 2: la pista muestra lo que había antes; el planeta se repite."""
     im = background(3)
-    hud(im, 2, 'Descifradas 0 de 3')
+    hud(im, 1, 'Descifradas 0 de 3')
     alien(im, raw, True)
-    bubble(im, raw, ['KITU'], 0)
-    for (x, y), obj in zip(thing_positions(3), [4, 1, 13]):
+    bubble(im, raw, ['ZOBA'], 0)
+    hint(im, raw, [(0, -1, 1), (4, -1, 1)])
+    for (x, y), obj in zip(thing_positions(3), [0, 13, 3]):
         draw_thing(im, raw, x, y, obj, -1, 1)
-    caption(im, '', 'Toca lo que crees que nombró')
-    dictionary(im, raw, [('ZOBA', '?', None), ('KITU', 'lit', None), ('FEDI', '?', None)])
+    caption(im, 'Otra vez ZOBA. ¿Qué cosa ya estaba antes?', 'Arriba ves lo que había la vez anterior')
+    dictionary(im, raw, [('ZOBA', 'lit', None, 0, ('obj', 4)), ('KITU', '?', None, 0, None), ('FEDI', '?', None, 0, None)])
     return im
 
 
@@ -219,31 +256,35 @@ def load_scene(raw):
 
 
 def frame_colors(raw):
+    """Lección de colores (escena REAL del contrato): pista, idea tenue y un punto de dos en KI."""
     phrase, target, things, slots = load_scene(raw)
     im = background(5)
-    hud(im, 5, 'Descifradas 1 de 5')
+    hud(im, 3, 'Descifradas 1 de 5')
     alien(im, raw, True)
     bubble(im, raw, phrase, 1)
+    others = [(t[0], (t[1] + 2) % 5 if t[1] >= 0 else -1, t[2]) for i, t in enumerate(things) if i != target]
+    hint(im, raw, [others[0], things[target], others[1]])
     for (x, y), (obj, color, count) in zip(thing_positions(len(things)), things):
         draw_thing(im, raw, x, y, obj, color, count)
-    caption(im, '', 'Toca al nuri para oírlo de nuevo')
-    dictionary(im, raw, [(w, 'ok' if wid == 12 else 'lit' if w in phrase else '?', ('color', 0) if wid == 12 else None)
-                         for wid, w in slots])
+    caption(im, '¿Qué es ' + ' '.join(phrase) + '?', 'Toca al nuri para oírlo otra vez')
+    dictionary(im, raw, [(w, 'ok' if wid == 12 else 'lit' if w in phrase else '?', ('color', 0) if wid == 12 else None,
+                          2 if wid == 12 else 1 if wid == 13 else 0, ('color', 1) if wid == 13 else None) for wid, w in slots])
     return im
 
 
-def frame_decoded(raw):
+def frame_feedback(raw):
+    """Después de tocar: "¡Vas bien!" (un punto) o "No era esa"; aquí, la palabra descifrada vuela al diccionario."""
     phrase, target, things, slots = load_scene(raw)
     im = background(7)
-    hud(im, 5, 'Descifradas 2 de 5')
+    hud(im, 3, 'Descifradas 2 de 5')
     alien(im, raw, False)
     bubble(im, raw, phrase, -1)
     for i, ((x, y), (obj, color, count)) in enumerate(zip(thing_positions(len(things)), things)):
         draw_thing(im, raw, x, y, obj, color, count, chosen=i == target, dim=i != target, mark='check' if i == target else None)
     toast(im, '¡Descifrada!', 'KI = amarillo', LIME)
     caption(im, 'KI es amarillo', '¡A la primera deducción!')
-    dictionary(im, raw, [(w, 'ok' if wid in (12, 13) else '?', ('color', wid - 12) if wid in (12, 13) else None)
-                         for wid, w in slots])
+    dictionary(im, raw, [(w, 'ok' if wid in (12, 13) else '?', ('color', wid - 12) if wid in (12, 13) else None,
+                          2 if wid in (12, 13) else 0, None) for wid, w in slots])
     return im
 
 
@@ -252,7 +293,7 @@ def main():
     ap.add_argument('raw')
     ap.add_argument('--out', default=ROOT + '/docs/previews')
     a = ap.parse_args()
-    panels = [frame_first(a.raw), frame_colors(a.raw), frame_decoded(a.raw)]
+    panels = [frame_first(a.raw), frame_colors(a.raw), frame_feedback(a.raw)]
     gap = 24
     sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
     for i, p in enumerate(panels):

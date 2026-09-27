@@ -131,6 +131,21 @@ namespace NeuroVida.Games.Contacto.Tests
         }
 
         [Test]
+        public void GuideWord_IsLearned_ButNotMeasured()
+        {
+            var lesson = ContactContract.BuildLesson(new int[0], new int[0], 1);
+            Assert.IsTrue(ContactContract.NeedsGuide(lesson));
+            int w = lesson.Targets[0];
+            ContactContract.MarkTaught(lesson, w);
+            Assert.IsTrue(lesson.Progress[w].Decoded);
+            Assert.IsTrue(lesson.Known.Contains(w));
+            Assert.AreEqual(1, lesson.DecodedCount);
+            Assert.AreEqual(-1f, ContactContract.MeanHearings(lesson));   // no entra a "escenas por palabra"
+            Assert.AreNotEqual(w, ContactContract.NextFocus(lesson, -1, new Random(2)));
+            Assert.IsFalse(ContactContract.NeedsGuide(ContactContract.BuildLesson(new[] { 0 }, new int[0], 1)));
+        }
+
+        [Test]
         public void Exclusion_CountsOnlyNewNouns_WithANamedAlternative()
         {
             var lesson = ContactContract.BuildLesson(new[] { 0 }, new int[0], 1);   // ZOBA (planeta) ya se sabe

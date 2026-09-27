@@ -46,7 +46,7 @@ namespace NeuroVida.Games.Contacto
         public int Hearings;
         public int Streak;
         public bool Decoded;
-        /// <summary>Veces que se oyó hasta quedar descifrada (-1 = todavía no).</summary>
+        /// <summary>Veces que se oyó hasta quedar descifrada (-1 = todavía no, o se enseñó en la guía de la primera vez).</summary>
         public int HearingsToDecode = -1;
         /// <summary>Número de escena en que se oyó por última vez (para repartir las palabras).</summary>
         public int LastScene = -1;
@@ -101,10 +101,10 @@ namespace NeuroVida.Games.Contacto
     /// aprenden a hablar (Yu y Smith, 2007; Smith y Yu, 2008; aprendizaje estadístico: Saffran, Aslin y Newport, 1996):
     /// cada escena es ambigua (varias cosas y una frase), pero la cosa nombrada está SIEMPRE cuando suena su palabra.
     /// <list type="bullet">
-    /// <item>En cada escena los nuri muestran 2-5 cosas y dicen una frase; la persona toca la que cree que nombraron. No
-    /// hay "bien" o "mal" en el momento: una palabra queda <b>descifrada</b> cuando se acierta dos veces seguidas sin
-    /// contar la primera vez que se oye (la primera vez siempre es adivinar). Así se deduce, como un detective, y la
-    /// medida no depende de la suerte de una vez.</item>
+    /// <item>En cada escena los nuri muestran 2-5 cosas y dicen una frase; la persona toca la que cree que nombraron. La
+    /// primera vez que suena una palabra nadie puede saberlo (no se dice nada); desde la segunda, el juego dice "¡Vas
+    /// bien!" o "No era esa" SIN decir cuál era (se sigue deduciendo). Una palabra queda <b>descifrada</b> cuando se
+    /// acierta dos veces seguidas sin contar la primera vez: la medida no depende de la suerte de una vez.</item>
     /// <item>Descartar lo que ya tiene nombre ayuda (exclusividad mutua, Markman y Wachtel, 1988): una palabra nueva
     /// suele nombrar una cosa sin nombre. El juego lo mide.</item>
     /// <item>El idioma crece por etapas: cosas del cielo, colores ("KITU RA" = cohete coral: una mini gramática), los
@@ -551,6 +551,22 @@ namespace NeuroVida.Games.Contacto
         /// <summary>¿Descartó? = no eligió una cosa que ya tenía nombre (evaluar ANTES de <see cref="Answer"/>).</summary>
         public static bool Excluded(ContactLesson lesson, ContactScene scene, int tapped) => !lesson.IsNamed(scene.Things[tapped].Obj);
 
+        /// <summary>
+        /// La palabra de la guía de la primera vez: se enseña paso a paso (con ayuda), así que entra al diccionario pero
+        /// NO cuenta para las medidas (escenas por palabra, descarte).
+        /// </summary>
+        public static void MarkTaught(ContactLesson lesson, int word)
+        {
+            if (!lesson.Progress.TryGetValue(word, out var p)) return;
+            p.Decoded = true;
+            p.HearingsToDecode = -1;
+            lesson.Known.Add(word);
+        }
+
+        /// <summary>¿Hay que mostrar la guía? Solo la primera vez de verdad: sin diccionario y empezando por una cosa.</summary>
+        public static bool NeedsGuide(ContactLesson lesson) =>
+            lesson.Known.Count == 0 && lesson.Targets.Count > 0 && KindOf(lesson.Targets[0]) == WordKind.Noun;
+
         /// <summary>Escenas por palabra: cuántas veces se oyó, en promedio, cada palabra descifrada hasta descifrarla. -1 = ninguna.</summary>
         public static float MeanHearings(ContactLesson lesson)
         {
@@ -558,7 +574,7 @@ namespace NeuroVida.Games.Contacto
             foreach (int w in lesson.Targets)
             {
                 var p = lesson.Progress[w];
-                if (!p.Decoded) continue;
+                if (!p.Decoded || p.HearingsToDecode <= 0) continue;
                 n++;
                 sum += p.HearingsToDecode;
             }

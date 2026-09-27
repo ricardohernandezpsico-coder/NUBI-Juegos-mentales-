@@ -95,8 +95,6 @@ namespace NeuroVida.Games.Shared
             _title.text = title;
             _subtitle.text = subtitle;
             _subtitle.gameObject.SetActive(hasSubtitle);
-            _title.alignment = hasSubtitle ? TextAnchor.LowerLeft : TextAnchor.MiddleLeft;
-            _title.rectTransform.anchorMin = hasSubtitle ? new Vector2(0f, 0.5f) : Vector2.zero;
             _dot.color = accent;
             _bg.color = new Color(
                 Mathf.Lerp(0.06f, accent.r, 0.28f),
@@ -112,37 +110,53 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>Ancho y alto del recuadro a la medida del texto de este aviso, no un tamaño fijo: con textos
-        /// cortos ("Con calma") queda compacto y con textos largos ("Imagina cada hallazgo EN su planeta, como
-        /// una escena") crece hasta un máximo cómodo (Ricardo, 28-sep: "las frases sobrepasan el recuadro"; antes
-        /// el recuadro medía siempre 300dp y el texto, en modo Overflow, se salía sin que nada lo envolviera ni
-        /// lo acortara). Si ni el máximo alcanza, el texto pasa a un segundo renglón en vez de salirse.</summary>
+        /// cortos ("Con calma") queda compacto y con textos largos crece hasta un máximo cómodo; si ni el máximo
+        /// alcanza, el texto pasa a los renglones que necesite y el recuadro crece con ellos (Ricardo, 28-sep: "las
+        /// frases sobrepasan el recuadro". Antes solo se sumaba un renglón: en el teléfono el máximo es angosto y un
+        /// texto largo ocupaba dos o tres, que quedaban fuera).</summary>
         private void FitSize(bool hasSubtitle)
         {
             const float iconAndPad = 96f; // dp: 76 a la izquierda (punto) + 20 a la derecha
             const float minWidthDp = 300f;
+            const float padDp = 16f, titleLineDp = 30f, subtitleLineDp = 22f;
             // Deja siempre un margen a cada lado del contenedor real (la zona seguridad del juego), no un ancho fijo:
             // así el aviso nunca toca el borde ni se corta en pantallas angostas.
             var parentRect = _rect.parent as RectTransform;
             float parentWidthU = parentRect != null && parentRect.rect.width > 0f ? parentRect.rect.width : 900f * _u;
-            float maxWidthDp = Mathf.Max(minWidthDp, parentWidthU / _u - 64f);
+            float maxWidthDp = Mathf.Max(minWidthDp, parentWidthU / _u - 32f);
 
             _title.horizontalOverflow = HorizontalWrapMode.Overflow;
             _subtitle.horizontalOverflow = HorizontalWrapMode.Overflow;
             float titleWDp = _title.preferredWidth / _u;
             float subtitleWDp = hasSubtitle ? _subtitle.preferredWidth / _u : 0f;
 
-            bool titleWraps = titleWDp + iconAndPad > maxWidthDp;
-            bool subtitleWraps = hasSubtitle && subtitleWDp + iconAndPad > maxWidthDp;
             float widthDp = Mathf.Clamp(Mathf.Max(titleWDp, subtitleWDp) + iconAndPad, minWidthDp, maxWidthDp);
-            _rect.sizeDelta = new Vector2(widthDp * _u, _rect.sizeDelta.y);
+            float textDp = widthDp - iconAndPad;
+            // Renglones: se cuentan con un 8% de holgura (el corte de palabras deja huecos al final de cada renglón).
+            int titleLines = Mathf.Max(1, Mathf.CeilToInt(titleWDp * 1.08f / textDp - 0.0001f));
+            int subtitleLines = hasSubtitle ? Mathf.Max(1, Mathf.CeilToInt(subtitleWDp * 1.08f / textDp - 0.0001f)) : 0;
+            _title.horizontalOverflow = titleLines > 1 ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+            _subtitle.horizontalOverflow = subtitleLines > 1 ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
 
-            _title.horizontalOverflow = titleWraps ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
-            _subtitle.horizontalOverflow = subtitleWraps ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+            float titleH = titleLines * titleLineDp, subtitleH = subtitleLines * subtitleLineDp;
+            float heightDp = Mathf.Max(84f, padDp * 2f + titleH + subtitleH);
+            _rect.sizeDelta = new Vector2(widthDp * _u, heightDp * _u);
 
-            // Una línea extra de alto por cada texto que se envolvió (mismo criterio que PhasePill.Set).
-            float baseH = 84f * _u;
-            float extra = (titleWraps ? 30f : 0f) * _u + (subtitleWraps ? 24f : 0f) * _u;
-            _rect.sizeDelta = new Vector2(widthDp * _u, baseH + extra);
+            // Cada texto en su franja (arriba el título, debajo el subtítulo), centrados en el alto del recuadro.
+            float top = (heightDp - titleH - subtitleH) * 0.5f;
+            Place(_title, top, titleH);
+            if (hasSubtitle) Place(_subtitle, top + titleH, subtitleH);
+            _title.alignment = TextAnchor.MiddleLeft;
+            _subtitle.alignment = TextAnchor.MiddleLeft;
+        }
+
+        private void Place(Text text, float topDp, float heightDp)
+        {
+            var r = text.rectTransform;
+            r.anchorMin = new Vector2(0f, 1f);
+            r.anchorMax = new Vector2(1f, 1f);
+            r.offsetMin = new Vector2(76f * _u, -(topDp + heightDp) * _u);
+            r.offsetMax = new Vector2(-20f * _u, -topDp * _u);
         }
 
         private IEnumerator Run(float hold)
