@@ -38,7 +38,10 @@ data class ActiveGameSession(
   // Partida en pausa que se retoma: se relanza Unity con este id de lanzamiento y la partida sigue donde quedó.
   val resumeLaunchId: String? = null,
   // Evaluación inicial "Tu punto de partida": paso 1..N (0 = partida normal). Ver data/Baseline.kt.
-  val assessmentStep: Int = 0
+  val assessmentStep: Int = 0,
+  // Identidad de esta sesión (no de la partida): la usa la UI para que el estado guardado de una sesión anterior
+  // (p. ej. "ya lancé Unity", que Android restaura al recrear la pantalla) no lo herede la siguiente.
+  val sessionToken: String = java.util.UUID.randomUUID().toString()
 )
 
 /**

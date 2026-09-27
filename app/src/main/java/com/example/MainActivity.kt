@@ -202,14 +202,17 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           Box(modifier = Modifier.fillMaxSize()) {
             // Los 9 juegos se juegan ahora en Unity (ver docs y UnityGameHost): se lanza la Activity de Unity con
             // esta sesión y el resultado vuelve por UnityResultBus al ViewModel.
-            com.example.ui.UnityGameHost(
-              session = session,
-              userId = userSettings.id.toString(),
-              ageBand = userSettings.ageBand ?: com.example.model.AgeBand.ADULT,
-              soundEnabled = userSettings.soundEnabled,
-              onLaunched = { id -> viewModel.onUnityLaunched(id) },
-              onHostResumed = { viewModel.onHostResumed() }
-            )
+            // key: cada sesión es su propio grupo de composición, así no hereda el estado guardado de la anterior.
+            androidx.compose.runtime.key(session.sessionToken) {
+              com.example.ui.UnityGameHost(
+                session = session,
+                userId = userSettings.id.toString(),
+                ageBand = userSettings.ageBand ?: com.example.model.AgeBand.ADULT,
+                soundEnabled = userSettings.soundEnabled,
+                onLaunched = { id -> viewModel.onUnityLaunched(id) },
+                onHostResumed = { viewModel.onHostResumed() }
+              )
+            }
           }
         }
 
