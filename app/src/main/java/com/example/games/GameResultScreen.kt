@@ -532,7 +532,7 @@ private fun RadarField(hits: List<Int>, trials: List<Int>, modifier: Modifier = 
  */
 @Composable
 private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier) {
-  Canvas(modifier.size(width = 5 * 34.dp + 4 * 10.dp, height = 40.dp)) {
+  Canvas(modifier.size(width = 34.dp * 5 + 10.dp * 4, height = 40.dp)) {
     val r = 17.dp.toPx()
     val gap = 10.dp.toPx()
     val border = 2.5.dp.toPx()
