@@ -130,6 +130,7 @@ namespace NeuroVida.Games.Contacto
             _hud.SetLevel(_dda.Level);
             _hud.SetInfo(_known.Count > 0 ? $"Diccionario {_known.Count}" : "¡Hola!");
 
+            StartCoroutine(Prewarm());
             yield return StartCoroutine(Intro());
             if (_reviewWords.Count > 0) yield return StartCoroutine(Review());
 
@@ -140,6 +141,30 @@ namespace NeuroVida.Games.Contacto
         }
 
         // ------------------------------------------------------------------ fases
+
+        /// <summary>
+        /// Hornea los dibujos que pueden aparecer (uno por cuadro, durante la presentación): en el teléfono cada ícono de
+        /// color tarda unas centésimas y, hecho al mostrar la escena, se notaría un tirón.
+        /// </summary>
+        private IEnumerator Prewarm()
+        {
+            var probe = ContactContract.BuildLesson(_known, null, _dda.Level);
+            for (int o = 0; o < ContactContract.ObjectCount; o++)
+            {
+                ContactSprites.Object(new Thing(o));
+                yield return null;
+            }
+            if (!probe.ColorOn) yield break;
+            for (int o = 0; o < ContactContract.SkyObjects; o++)
+            {
+                if (!ContactContract.Colorable(o)) continue;
+                for (int c = 0; c < ContactContract.ColorCount; c++)
+                {
+                    ContactSprites.Object(new Thing(o, c));
+                    yield return null;
+                }
+            }
+        }
 
         private IEnumerator Intro()
         {
@@ -543,7 +568,9 @@ namespace NeuroVida.Games.Contacto
             _resultRoot.Find("Detail").GetComponent<Text>().text = _lesson.Practice
                 ? $"Entendiste {d} de {n} frases"
                 : $"Descifraste {d} de {n} palabras";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = mean > 0f ? $"En {mean:0.#} escenas por palabra" : "";
+            _resultRoot.Find("Extra").GetComponent<Text>().text = mean > 0f
+                ? $"En {mean.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} escenas por palabra"
+                : "";
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
             SendTelemetry(score, d, n, mean);

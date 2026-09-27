@@ -129,6 +129,14 @@ object GameRegistry {
       iconEmoji = "🧭"
     ),
     GameDefinition(
+      id = "contacto",
+      title = "Primer Contacto",
+      domain = DomainType.LENGUAJE,
+      subtitle = "Aprender palabras nuevas: descifra el idioma nuri",
+      instruction = "Los nuri te muestran cosas y las nombran en su idioma. Nadie te dice qué significa cada palabra: toca lo que crees que nombraron y descúbrelo escena a escena.",
+      iconEmoji = "👽"
+    ),
+    GameDefinition(
       id = "anagramas",
       title = "Anagramas",
       domain = DomainType.LENGUAJE,
@@ -267,7 +275,22 @@ data class GamePlayResult(
   val homingAlong: List<Float>? = null,
   val homingLateral: List<Float>? = null,
   val homingBeacon: List<Boolean>? = null,
-  val homingPerfect: Int? = null
+  val homingPerfect: Int? = null,
+  // Solo Primer Contacto: palabras de la lección, las descifradas y cuántas veces se oyó cada una hasta descifrarla,
+  // el repaso de palabras de otros días (cuáles, si se recordaron y hace cuántos días se habían visto), escenas por
+  // palabra, el descarte (escenas en que se podía y en cuántas se hizo), si fue conversación, y el diccionario después
+  // de la partida (lo completa la app). La lectura está en data/Contact.kt. No se guardan en Room.
+  val contactLesson: List<Int>? = null,
+  val contactDecoded: List<Int>? = null,
+  val contactHearings: List<Int>? = null,
+  val contactReview: List<Int>? = null,
+  val contactReviewOk: List<Boolean>? = null,
+  val contactReviewMaxDays: Int? = null,
+  val contactMeanHearings: Float? = null,
+  val contactMeOk: Int? = null,
+  val contactMeTotal: Int? = null,
+  val contactPractice: Boolean = false,
+  val nuriKnown: Int? = null
 )
 
 data class DailySessionState(
