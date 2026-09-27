@@ -113,6 +113,14 @@ object GameRegistry {
       iconEmoji = "🧮"
     ),
     GameDefinition(
+      id = "piloto",
+      title = "Piloto Estelar",
+      domain = DomainType.ATENCION,
+      subtitle = "Multitarea y atención dividida",
+      instruction = "Guía la nave por la ruta de luces con un pulgar y, con el otro dedo, atrapa solo las señales de tu misión. Empieza en piloto automático.",
+      iconEmoji = "🚀"
+    ),
+    GameDefinition(
       id = "comparacion",
       title = "Comparación Instantánea",
       domain = DomainType.VELOCIDAD,
@@ -135,7 +143,9 @@ data class GamePlayResult(
   val level: Int,
   val timestamp: Long = System.currentTimeMillis(),
   // Rating final del DDA común (0..1) informado por los juegos Unity; null en los demás.
-  val endRating: Float? = null
+  val endRating: Float? = null,
+  // Solo Piloto Estelar: costo de multitarea en % de esta partida (se muestra en el resultado; no se guarda en Room).
+  val multitaskCost: Int? = null
 )
 
 data class DailySessionState(
@@ -268,7 +278,7 @@ enum class RankTier(val tierName: String, val minRating: Int, val icon: String, 
 
 /**
  * Lo que dejó guardar una partida ([com.example.data.NeuroVidaRepository.recordGameResult]): si subió de nivel y
- * los trofeos antes/después, del juego y de la liga general (promedio de los 9 juegos, sin jugar = 0).
+ * los trofeos antes/después, del juego y de la liga general (promedio de todos los juegos, sin jugar = 0).
  */
 data class RecordOutcome(
   val didLevelUp: Boolean,

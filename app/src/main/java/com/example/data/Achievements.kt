@@ -98,7 +98,7 @@ object Achievements {
       check = { it.maxGamesInOneDay >= 3 }, progress = { it.maxGamesInOneDay.coerceAtMost(3) to 3 }
     ),
     AchievementDef(
-      "explorador", "Explorador", "Juega los 9 juegos", AchievementGlyph.COMPASS, number = 9,
+      "explorador", "Explorador", "Juega 9 juegos distintos", AchievementGlyph.COMPASS, number = 9,
       check = { it.distinctGames >= 9 }, progress = { it.distinctGames.coerceAtMost(9) to 9 }
     ),
     AchievementDef(

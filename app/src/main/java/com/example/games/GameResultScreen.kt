@@ -226,6 +226,25 @@ fun GameResultScreen(
       Stat(if (result.timed) "Reto" else "Precisión", "modo")
     }
 
+    // Piloto Estelar: la medida propia del juego (NeuroRacer): cuánto baja la precisión al hacer dos cosas a la vez.
+    result.multitaskCost?.let { cost ->
+      Spacer(Modifier.height(14.dp))
+      Text(
+        text = "Costo de multitarea: $cost%",
+        color = if (cost <= 15) Clay.Lime else Clay.Sun,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = FredokaFamily
+      )
+      Text(
+        text = "Cuánto baja tu precisión al pilotar y atrapar señales a la vez. Mientras más bajo, mejor.",
+        color = TextSoft,
+        fontSize = 13.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+    }
+
     if (didLevelUp) {
       Spacer(Modifier.height(18.dp))
       ClayPill(

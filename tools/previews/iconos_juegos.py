@@ -1,4 +1,4 @@
-# Réplica aproximada (PIL) de ui/components/GameIcon.kt: los 9 íconos de juego sobre su planeta, para ver el
+# Réplica aproximada (PIL) de ui/components/GameIcon.kt: los íconos de juego sobre su planeta, para ver el
 # diseño sin compilar. Lienzo de cada ícono = 100x100 unidades, como en el código.
 import os, math
 from PIL import Image, ImageDraw, ImageFont
@@ -9,7 +9,7 @@ INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
        ('stroop','Tinta o Palabra','atencion'),('cambiochip','Cambio de Chip','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad')]
+       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -105,11 +105,31 @@ def draw(ic,gid):
         b=9; ic.clay(plus(28,28,34,b),CORAL); ic.clay(rrect(56,28-b/2,34,b,b/2),CREAM)
         ic.rot.append((45,28,72)); ic.clay(plus(28,72,34,b),SUN); ic.rot.pop()
         ic.clay(rrect(56,64-b/2,34,b,b/2),CREAM); ic.clay(rrect(56,80-b/2,34,b,b/2),CREAM)
+    elif gid=='piloto':
+        for k in range(6):
+            y=90-k*15; cx=50+9*math.sin(k*0.95); a=int(255*(0.95-k*0.12)); r=3.2
+            for x in (cx-25,cx+25):
+                q=ic.P(x,y); rr=r*ic.k; o=Image.new('RGBA',ic.im.size,(0,0,0,0)); ImageDraw.Draw(o).ellipse([q[0]-rr,q[1]-rr,q[0]+rr,q[1]+rr],fill=SKY+(a,)); ic.im.alpha_composite(o)
+        ic.d=ImageDraw.Draw(ic.im)
+        def tf(pts):
+            out=[]
+            for x,y in pts:
+                x,y=50+(x-50)*0.82,50+(y-50)*0.82
+                a=math.radians(-12); dx,dy=x-50,y-50; x,y=50+dx*math.cos(a)-dy*math.sin(a),50+dx*math.sin(a)+dy*math.cos(a)
+                out.append((x-4,y+6))
+            return out
+        ic.clay(tf([(44.4,66.8),(55.6,66.8),(50.0,79.4)]),SUN,border=3.5,shadow=False)
+        ic.clay(tf([(41.6,50.0),(31.8,64.0),(31.8,69.6),(41.6,64.0)]),CORAL,border=3.5,shadow=False)
+        ic.clay(tf([(58.4,50.0),(68.2,64.0),(68.2,69.6),(58.4,64.0)]),CORAL,border=3.5,shadow=False)
+        ic.clay(tf([(40.2,66.8),(40.2,41.6),(50.0,22.0),(59.8,41.6),(59.8,66.8)]),CREAM,border=3.5)
+        ic.clay(tf([(43.7,34.6),(50.0,22.0),(56.3,34.6)]),CORAL,border=3.5,shadow=False)
+        ic.clay(tf(circ(50,47.2,5.0)),SKY,border=2.5,shadow=False)
+        ic.clay(star(79,21,16,8,5),SUN,border=3.5)
     elif gid=='comparacion':
         ic.clay(circ(22,50,20),CREAM,gloss=True); ic.clay(circ(87,50,10),CREAM)
         ic.claystroke([[(58-7.8,37),(58+7.8,50),(58-7.8,63)]],SUN,7)
 
-CELL=600; W,H=CELL*3,int(CELL*3*1.12)
+CELL=600; ROWS=(len(GAMES)+2)//3; W,H=CELL*3,int(CELL*ROWS*1.12)
 im=Image.new('RGBA',(W,H),(8,14,58,255)); d=ImageDraw.Draw(im)
 for idx,(gid,name,dom) in enumerate(GAMES):
     cx=(idx%3)*CELL+CELL/2; cy=(idx//3)*CELL*1.12+CELL*0.47; R=CELL*0.36

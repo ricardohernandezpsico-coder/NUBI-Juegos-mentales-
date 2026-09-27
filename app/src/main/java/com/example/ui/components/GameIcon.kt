@@ -48,6 +48,7 @@ import kotlin.math.sin
  * - Anagramas: dos fichas de letras.
  * - Cálculo Sereno: + − × =.
  * - Comparación: círculo grande > círculo chico.
+ * - Piloto Estelar: la nave volando por una ruta de balizas que serpentea, con una señal que atrapar.
  * Se dibuja pensado para ir sobre el planeta del color del dominio, pero se lee también sobre fondo claro.
  * Id desconocido: cae al emoji de [com.example.model.GameDefinition.iconEmoji].
  */
@@ -74,6 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
+  "piloto",
   "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
 )
 
@@ -128,6 +130,31 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(Offset(50f, 47.2f), 5.0f), Clay.Sky, border = 2.5f, shadow = false)
       curvedArrow(Offset(50f, 50f), 44f, 200f, 70f, Clay.Sky)
       curvedArrow(Offset(50f, 50f), 44f, 20f, 70f, Clay.Sky)
+    }
+    "piloto" -> {
+      // Ruta de balizas que serpentea (dos bordes de puntos) hacia arriba.
+      for (k in 0..5) {
+        val y = 90f - k * 15f
+        val cx = 50f + 9f * sin(k * 0.95f)
+        val a = 0.95f - k * 0.12f
+        drawCircle(Clay.Sky.copy(alpha = a), 3.2f, Offset(cx - 25f, y))
+        drawCircle(Clay.Sky.copy(alpha = a), 3.2f, Offset(cx + 25f, y))
+      }
+      // La nave, algo inclinada (alabeo), como en el juego.
+      withTransform({
+        translate(-4f, 6f)
+        rotate(-12f, Offset(50f, 50f))
+        scale(0.82f, 0.82f, Offset(50f, 50f))
+      }) {
+        clay(poly(44.4f, 66.8f, 55.6f, 66.8f, 50.0f, 79.4f), Clay.Sun, border = 3.5f, shadow = false)
+        clay(poly(41.6f, 50.0f, 31.8f, 64.0f, 31.8f, 69.6f, 41.6f, 64.0f), Clay.Coral, border = 3.5f, shadow = false)
+        clay(poly(58.4f, 50.0f, 68.2f, 64.0f, 68.2f, 69.6f, 58.4f, 64.0f), Clay.Coral, border = 3.5f, shadow = false)
+        clay(poly(40.2f, 66.8f, 40.2f, 41.6f, 50.0f, 22.0f, 59.8f, 41.6f, 59.8f, 66.8f), Cream, border = 3.5f)
+        clay(poly(43.7f, 34.6f, 50.0f, 22.0f, 56.3f, 34.6f), Clay.Coral, border = 3.5f, shadow = false)
+        clay(circle(Offset(50f, 47.2f), 5.0f), Clay.Sky, border = 2.5f, shadow = false)
+      }
+      // La señal que hay que atrapar.
+      clay(star(Offset(79f, 21f), 16f, 8f, 5), Clay.Sun, border = 3.5f)
     }
     "series" -> {
       // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).

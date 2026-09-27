@@ -105,6 +105,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.14f),
         };
 
+        /// <summary>Piloto Estelar: las estrellas nacen arriba (hacia donde vuela la nave) y pasan a los costados;
+        /// el juego sube su velocidad (<c>StarfieldFx.Warp</c>) con la velocidad de vuelo.</summary>
+        public static GameWorld Hyperspace => new GameWorld
+        {
+            Name = "Hiperespacio", Stars = 90, VanishingPoint = new Vector2(0.5f, 0.96f),
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.20f), NebulaAPos = new Vector2(0.5f, 1.0f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.14f), NebulaBPos = new Vector2(0.5f, 0.0f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

@@ -27,7 +27,8 @@ private val DebugGames = listOf(
   DebugGame("rutatesoro", "Ruta del Tesoro (con reloj)", level = 1, timed = true),
   DebugGame("series", "Detective de Series (Reto 120 s)", level = 1, timed = true),
   DebugGame("calculo", "Cálculo Sereno (Reto 90 s)", level = 1, timed = true),
-  DebugGame("anagramas", "Anagramas (Reto 120 s)", level = 1, timed = true)
+  DebugGame("anagramas", "Anagramas (Reto 120 s)", level = 1, timed = true),
+  DebugGame("piloto", "Piloto Estelar (Reto 90 s)", level = 1, timed = true)
 )
 
 /**

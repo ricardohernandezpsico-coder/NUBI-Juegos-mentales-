@@ -57,6 +57,8 @@ internal static class Program
         Dump("slot", AnagramSprites.Slot());
         foreach (AnagramSprites.Icon ic in Enum.GetValues(typeof(AnagramSprites.Icon))) Dump("icon_" + ic, AnagramSprites.ActionIcon(ic));
         Dump("screw", NeonSignSprites.Screw());
+        Dump("mark_check", AnswerMarkSprite.Check());
+        Dump("mark_cross", AnswerMarkSprite.Cross());
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)
             {

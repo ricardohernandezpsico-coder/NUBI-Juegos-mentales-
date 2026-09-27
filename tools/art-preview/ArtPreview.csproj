@@ -37,5 +37,6 @@
     <Compile Include="$(Src)/Stroop/NeonSignSprites.cs" />
     <Compile Include="$(Src)/Comparacion/CountStarSprite.cs" />
     <Compile Include="$(Src)/Series/MagnifierSprite.cs" />
+    <Compile Include="$(Src)/Shared/AnswerMarkSprite.cs" />
   </ItemGroup>
 </Project>

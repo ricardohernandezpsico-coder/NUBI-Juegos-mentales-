@@ -84,7 +84,9 @@ object NativeReceiver {
     // DDA común (Unity): rating final normalizado 0..1 y nivel máximo alcanzado. Opcionales para
     // no romper versiones anteriores; hoy solo se registran (falta persistirlos entre sesiones).
     val end_rating: Double? = null,
-    val peak_level: Int = 0
+    val peak_level: Int = 0,
+    // Solo Piloto Estelar: costo de multitarea en % (-1 = no aplica / sin datos).
+    val multitask_cost: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -211,8 +213,8 @@ object NativeReceiver {
     return when (gameId) {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
-      // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo y Anagramas reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas" -> parseStroopResult(json)
+      // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         null
@@ -280,7 +282,8 @@ object NativeReceiver {
       totalTrials = metrics.total_trials,
       timed = metrics.timed,
       level = metrics.level,
-      endRating = metrics.end_rating?.toFloat()
+      endRating = metrics.end_rating?.toFloat(),
+      multitaskCost = metrics.multitask_cost.takeIf { it >= 0 }
     )
   }
 }

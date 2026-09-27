@@ -1,6 +1,6 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
-App de estimulación cognitiva para Android: 9 juegos cortos en 6 dominios (memoria, atención, razonamiento,
+App de estimulación cognitiva para Android: 10 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -19,7 +19,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 26-sep · i`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 27-sep · j`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -70,7 +70,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StroopTelemetry` (salida común de los 7 del DDA común; lleva `end_rating` y `peak_level`).
 - `Games/AdaptiveDifficulty.cs`: DDA común (up-down ponderado de Kaernbach hacia 80% de aciertos, 85% en mayores;
   ver `docs/DDA-comun.md`). Lo usan Tinta o Palabra (`Stroop/`), Comparación, Cambio de Chip, Ruta del Tesoro,
-  Series, Cálculo y Anagramas. **Secuencia** tiene su escalera fija de 16 niveles (`SequenceLevelConfig`, sube con 2
+  Series, Cálculo y Anagramas; **Piloto Estelar** usa DOS instancias (pilotaje y señales). **Secuencia** tiene su escalera fija de 16 niveles (`SequenceLevelConfig`, sube con 2
   aciertos seguidos, 3 vidas) y **Parejas** su motor propio (`VisualWorkingMemoryDDA`, escalera de 10 tableros).
 - Cada juego: `XContract.cs` (reglas puras con pruebas) + `XGameController.cs` (UI construida por código). Los 7 del
   DDA común heredan de `Shared/GameControllerBase` y usan `Shared/GameHud`.
@@ -79,6 +79,33 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
   `GameFeel` (sonidos sintetizados y vibración), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
   (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `LivesHud`, `PressScale`, sprites varios.
+
+## Juegos estrella (27-sep)
+
+Pedido de Ricardo: juegos que diferencien a la app, con respaldo científico y mucho enganche. Orden acordado:
+**Piloto Estelar** (hecho, primera versión) → **Radar** (velocidad de procesamiento / campo visual útil, ensayo ACTIVE)
+→ **Satélites** (seguimiento de múltiples objetos). Después, catálogo: Formación (flancos), Eco Estelar (N-back),
+Torre de Lunas (Torre de Londres), Matriz Perdida (tipo Raven), Constelación de Palabras (fluidez verbal).
+
+**Piloto Estelar** (`Games/Piloto/`, id `piloto`, dominio atención): multitarea al estilo NeuroRacer (Anguera et al.,
+Nature 2013) + señales periféricas breves (UFOV). La nave vuela por una ruta de balizas que serpentea: un pulgar la
+guía (tocar o arrastrar en la franja de abajo); el otro dedo atrapa solo las señales de la misión (forma + color,
+íconos de `SymbolSprite`) que aparecen un instante con un anillo que se vacía.
+- Reglas puras y pruebas: `PilotContract` / `PilotContractTests` (11). Ruta: `CenterAt` (dos senos), cada tramo guarda
+  su amplitud/ancho al crearse (un cambio de nivel no deforma lo visible). Señales go/no-go, 40% de misión; desde el
+  nivel 3 distractores de la misma forma y otro color; desde el 5, en la periferia.
+- Vuelo: 15 s de piloto automático (solo señales) → "¡A LOS MANDOS!" → las dos tareas. Reto 90 s; Precisión = más
+  lento, termina tras 24 señales. Dos `AdaptiveDifficulty` (pilotaje por ventanas de 1,5 s con ≥85% en ruta; señales
+  por señal). Hiperimpulso: racha ≥5 + 4 ventanas limpias = puntos x2 6 s y estrellas a hiperespacio.
+- **Costo de multitarea** = caída relativa de Pr (aciertos − falsas alarmas) entre piloto automático y a los mandos.
+  Viaja en `StroopSessionMetrics.multitask_cost` → `GamePlayResult.multitaskCost` (no se guarda en Room) → línea en
+  `GameResultScreen`. Pendiente: guardarlo por partida para mostrar su evolución.
+- Nuevos compartidos: `Shared/AnswerMarkSprite` (✓/✗ de arcilla, sirve para la marca pendiente en los otros juegos),
+  `GameWorld.Hyperspace`. App: `GameRegistry`, ícono en `GameIcon.kt`, botón Debug (Reto 90 s).
+- Vista previa: `python3 tools/art-preview/piloto.py <raw>` → `docs/previews/piloto-estelar.png`.
+- Sin probar en el teléfono. Revisar: que se entienda la misión, control con dos pulgares, legibilidad de las
+  señales rápidas, ritmo de la dificultad, que el piloto automático no aburra. Falta: respetar "quitar animaciones"
+  (la config de Unity no lo trae todavía), sonido propio del motor.
 
 ## Reglas que no se rompen
 
@@ -107,7 +134,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 43 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 94 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 9 smoke tests.
+- Unity EditMode: 105 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 10 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

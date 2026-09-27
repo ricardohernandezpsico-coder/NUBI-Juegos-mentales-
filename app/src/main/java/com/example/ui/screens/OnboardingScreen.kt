@@ -263,7 +263,7 @@ private fun WelcomePage(onNext: () -> Unit) {
     Spacer(Modifier.height(18.dp))
     Text("NeuroVida", color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 44.sp)
     Text(
-      text = "9 juegos cortos para entrenar memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
+      text = "${GameRegistry.allGames.size} juegos cortos para entrenar memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
       color = OnNightDim, fontFamily = FredokaFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 8.dp)
     )
@@ -273,7 +273,7 @@ private fun WelcomePage(onNext: () -> Unit) {
   }
 }
 
-/** Los 9 juegos como planetas de arcilla girando despacio alrededor de un sol. */
+/** Los juegos como planetas de arcilla girando despacio alrededor de un sol. */
 @Composable
 private fun GamesOrbit() {
   val context = LocalContext.current
