@@ -84,6 +84,8 @@ object NativeReceiver {
     // DDA común (Unity): rating final normalizado 0..1 y nivel máximo alcanzado. Opcionales para
     // no romper versiones anteriores; hoy solo se registran (falta persistirlos entre sesiones).
     val end_rating: Double? = null,
+    val mode_trials: Int = 0,
+    val mode_hits: Int = 0,
     val peak_level: Int = 0,
     // Solo Piloto Estelar: costo de multitarea en % (-1 = no aplica / sin datos).
     val multitask_cost: Int = -1,
@@ -356,6 +358,8 @@ object NativeReceiver {
       timed = metrics.timed,
       level = metrics.level,
       endRating = metrics.end_rating?.toFloat(),
+      modeTrials = metrics.mode_trials,
+      modeHits = metrics.mode_hits,
       multitaskCost = metrics.multitask_cost.takeIf { it >= 0 },
       glanceMs = metrics.glance_ms.takeIf { it > 0 },
       sectorHits = metrics.sector_hits?.takeIf { it.size == 8 },

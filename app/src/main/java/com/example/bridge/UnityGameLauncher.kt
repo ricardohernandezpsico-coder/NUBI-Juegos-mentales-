@@ -41,7 +41,11 @@ object UnityGameLauncher {
     val memory_phase: String = "",
     val memory_seed: Int = 0,
     val memory_level: Int = 0,
-    val memory_elapsed_s: Int = 0
+    val memory_elapsed_s: Int = 0,
+    // Cómo se eligió jugar (data/Skill.kt): techo (Suave) o piso (Desafío, Experto) sobre el rating 0..1; -1 = sin límite.
+    val play_mode: String = "",
+    val mode_floor: Float = -1f,
+    val mode_ceiling: Float = -1f
   )
 
   @JsonClass(generateAdapter = true)
@@ -72,8 +76,9 @@ object UnityGameLauncher {
     launchId: String? = null, // una partida en pausa se retoma con SU id (Unity no la reinicia)
     assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
     assessmentTotal: Int = 0,
-    memory: com.example.data.MemoryLaunch? = null // Bitácora de Misión: transmisión o informe de la misión del día
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, memory)
+    memory: com.example.data.MemoryLaunch? = null, // Bitácora de Misión: transmisión o informe de la misión del día
+    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, memory, mode)
 
   private fun buildIntent(
     context: Context,
@@ -87,10 +92,12 @@ object UnityGameLauncher {
     launchId: String? = null,
     assessmentStep: Int = 0,
     assessmentTotal: Int = 0,
-    memory: com.example.data.MemoryLaunch? = null
+    memory: com.example.data.MemoryLaunch? = null,
+    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
+    val bounds = if (assessment) com.example.data.ModeBounds() else com.example.data.Skill.bounds(gameId, savedRating, mode, ageBand)
     val config = InitConfigDto(
       user_id = userId,
       game_id = gameId, // mismo id de texto que GameRegistry (Models.kt), no un int
@@ -109,7 +116,10 @@ object UnityGameLauncher {
         memory_phase = memory?.phase ?: "",
         memory_seed = memory?.seed ?: 0,
         memory_level = memory?.level ?: 0,
-        memory_elapsed_s = memory?.elapsedS ?: 0
+        memory_elapsed_s = memory?.elapsedS ?: 0,
+        play_mode = if (assessment) "" else mode.name,
+        mode_floor = bounds.floor ?: -1f,
+        mode_ceiling = bounds.ceiling ?: -1f
       )
     )
     val json = adapter.toJson(config)

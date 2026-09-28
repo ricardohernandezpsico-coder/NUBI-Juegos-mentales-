@@ -163,3 +163,50 @@ object Skill {
     return (if (vals.isEmpty()) null else vals.average().toFloat()) to vals.size
   }
 }
+
+/**
+ * Lo que se recuerda del avance (SharedPreferences `skill`, solo se agrega): qué juegos ya se MIDIERON (una partida
+ * que cuenta: sin eso la carta dice "Sin medir aún", aunque exista un punto de partida estimado), en cuáles se abrió
+ * Experto (un Desafío superado) y cuándo se logró cada etapa (quedan con su fecha aunque el avance baje).
+ */
+data class SkillState(
+  val measured: Set<String> = emptySet(),
+  val expertOpen: Set<String> = emptySet(),
+  val stageDates: Map<String, Map<Int, Long>> = emptyMap()
+) {
+  /** Después de una partida: [counted] = contó para el avance; [progress] = el avance nuevo. */
+  fun after(gameId: String, counted: Boolean, passedChallenge: Boolean, progress: Float, now: Long): SkillState {
+    if (!counted) return this
+    val dates = stageDates[gameId].orEmpty().toMutableMap()
+    for (s in 1..Skill.stage(progress)) dates.putIfAbsent(s, now)
+    return copy(
+      measured = measured + gameId,
+      expertOpen = if (passedChallenge) expertOpen + gameId else expertOpen,
+      stageDates = stageDates + (gameId to dates)
+    )
+  }
+
+  fun encode(): String = buildList {
+    measured.forEach { add("m|$it") }
+    expertOpen.forEach { add("x|$it") }
+    stageDates.forEach { (g, m) -> m.forEach { (s, t) -> add("s|$g|$s|$t") } }
+  }.joinToString("\n")
+
+  companion object {
+    fun decode(text: String?): SkillState {
+      val m = mutableSetOf<String>(); val x = mutableSetOf<String>(); val d = mutableMapOf<String, MutableMap<Int, Long>>()
+      text.orEmpty().lines().forEach { line ->
+        val p = line.split('|')
+        when {
+          p.size == 2 && p[0] == "m" -> m += p[1]
+          p.size == 2 && p[0] == "x" -> x += p[1]
+          p.size == 4 && p[0] == "s" -> {
+            val s = p[2].toIntOrNull(); val t = p[3].toLongOrNull()
+            if (s != null && t != null) d.getOrPut(p[1]) { mutableMapOf() }[s] = t
+          }
+        }
+      }
+      return SkillState(m, x, d)
+    }
+  }
+}

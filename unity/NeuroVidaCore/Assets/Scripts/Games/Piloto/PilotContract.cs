@@ -184,6 +184,15 @@ namespace NeuroVida.Games.Piloto
         }
 
         /// <summary>Puntaje 0-100 del vuelo: señales (55%) y tiempo dentro de la ruta (45%).</summary>
+        /// <summary>De las dos tareas (pilotaje y señales), la de menor proporción de aciertos: un Desafío en Piloto se
+        /// supera solo si se superan las dos. Sin ensayos en una, cuenta la otra.</summary>
+        public static (int hits, int trials) WeakerOf(int hitsA, int trialsA, int hitsB, int trialsB)
+        {
+            if (trialsA <= 0) return (hitsB, trialsB);
+            if (trialsB <= 0) return (hitsA, trialsA);
+            return (float)hitsA / trialsA <= (float)hitsB / trialsB ? (hitsA, trialsA) : (hitsB, trialsB);
+        }
+
         public static int Score(float signalAccuracy, float inLaneFraction) =>
             Math.Max(0, Math.Min(100, (int)Math.Round((0.55f * Clamp01(signalAccuracy) + 0.45f * Clamp01(inLaneFraction)) * 100f)));
 

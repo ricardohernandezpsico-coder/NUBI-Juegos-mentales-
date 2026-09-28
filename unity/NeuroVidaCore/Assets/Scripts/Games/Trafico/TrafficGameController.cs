@@ -842,6 +842,8 @@ namespace NeuroVida.Games.Trafico
                     level = _config.config.level,
                     timed = _config.config.timed,
                     end_rating = _dda.RatingNormalized,
+                    mode_trials = _dda.ScoredTrials,
+                    mode_hits = _dda.ScoredCorrect,
                     peak_level = _dda.PeakLevel,
                     traffic_lead_ms = median >= 0f ? Mathf.RoundToInt(median * 1000f) : -1,
                     traffic_proactive_pct = share >= 0f ? Mathf.RoundToInt(share * 100f) : -1,

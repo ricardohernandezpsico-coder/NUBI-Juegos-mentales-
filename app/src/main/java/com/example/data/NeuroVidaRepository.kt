@@ -156,6 +156,26 @@ class NeuroVidaRepository(
   private val _starMeasures = MutableStateFlow(StarMeasures.decode(measurePrefs.getString("points", null)))
   val starMeasures: StateFlow<List<MeasurePoint>> = _starMeasures.asStateFlow()
 
+  // Avance (ver Skill.kt): juegos ya medidos, Experto abierto y fecha de cada etapa. SharedPreferences: solo se agrega.
+  private val skillPrefs = context.getSharedPreferences("skill", Context.MODE_PRIVATE)
+  private val _skill = MutableStateFlow(SkillState.decode(skillPrefs.getString("state", null)))
+  val skill: StateFlow<SkillState> = _skill.asStateFlow()
+
+  /**
+   * Una sola vez, al actualizar la app: los juegos que ya tenían partidas cuentan como medidos (antes de los modos
+   * todas las partidas eran "a tu medida").
+   */
+  suspend fun seedSkillIfNeeded() = withContext(Dispatchers.IO) {
+    if (skillPrefs.contains("state")) return@withContext
+    val played = gameResultDao.getAllResultsSync().map { it.gameId }.toSet()
+    saveSkill(_skill.value.copy(measured = _skill.value.measured + played))
+  }
+
+  private fun saveSkill(state: SkillState) {
+    _skill.value = state
+    skillPrefs.edit().putString("state", state.encode()).apply()
+  }
+
   // Logros conseguidos (id -> cuándo). Se derivan del historial y los trofeos (ver Achievements.kt); acá solo
   // se recuerda cuáles ya se celebraron.
   private val achievementPrefs = context.getSharedPreferences("achievements", Context.MODE_PRIVATE)
@@ -578,11 +598,23 @@ class NeuroVidaRepository(
     val newRating = (currentProgress.eloRating + eloDelta(result.score, currentProgress.eloRating))
       .coerceAtLeast(0)
 
+    // Avance (Skill.kt): solo lo mueven las partidas a tu medida y los Desafíos o Expertos superados.
+    val age = activeProfile?.ageBand?.let { n -> AgeBand.entries.firstOrNull { it.name == n } }
+    val modePassed = Skill.passed(result.gameId, result.playMode, age, result.modeHits, result.modeTrials)
+    val counted = result.endRating != null && Skill.counts(result.playMode, modePassed)
+    val newDdaRating = result.endRating?.let { Skill.nextRating(currentProgress.ddaRating, it, result.playMode, modePassed) }
+      ?: currentProgress.ddaRating
+    val expertUnlocked = modePassed && result.playMode == PlayMode.DESAFIO && result.gameId !in _skill.value.expertOpen
+    if (counted) {
+      saveSkill(_skill.value.after(result.gameId, true, modePassed && result.playMode == PlayMode.DESAFIO,
+        Skill.progress(result.gameId, newDdaRating, age), result.timestamp))
+    }
+
     val updatedProgress = currentProgress.copy(
       currentLevel = newLevel,
       masteryStreak = newMastery,
       eloRating = newRating,
-      ddaRating = result.endRating?.let { blendDdaRating(currentProgress.ddaRating, it) } ?: currentProgress.ddaRating,
+      ddaRating = newDdaRating,
       highestScore = maxOf(currentProgress.highestScore, result.score),
       totalGamesPlayed = currentProgress.totalGamesPlayed + 1,
       lastPlayedTimestamp = result.timestamp
@@ -635,10 +667,13 @@ class NeuroVidaRepository(
       gameRatingAfter = newRating,
       globalBefore = globalOf(ratingsBefore),
       globalAfter = globalOf(ratingsAfter),
-      newAchievements = unlockNewAchievements(computeAchievementStats(allResults, ratingsAfter), result.timestamp)
+      newAchievements = unlockNewAchievements(computeAchievementStats(allResults, ratingsAfter), result.timestamp),
+      modePassed = modePassed,
+      expertUnlocked = expertUnlocked
     )
     recordLeagueEvents(outcome, result.gameId, result.timestamp)
-    recordStarMeasures(result)
+    // Las marcas se comparan solo entre partidas a tu medida (docs/dificultad-y-avance.md).
+    if (result.playMode == PlayMode.A_TU_MEDIDA) recordStarMeasures(result)
     outcome
   }
 
@@ -712,6 +747,8 @@ class NeuroVidaRepository(
     _achievementUnlocks.value = emptyMap()
     measurePrefs.edit().clear().apply()
     _starMeasures.value = emptyList()
+    skillPrefs.edit().clear().putString("state", "").apply()
+    _skill.value = SkillState()
     profilePrefs.edit().clear().apply()
     _education.value = null
     _goals.value = emptySet()

@@ -154,6 +154,8 @@ namespace NeuroVida.Bridge
             NeuroVida.Games.Shared.GameFeel.HapticsOn = config.config.haptics_enabled;
             // Evaluación inicial ("Tu punto de partida"): subtítulo de la cuenta regresiva y calibración rápida.
             NeuroVida.Games.Shared.Assessment.Configure(config.config);
+            // Modo elegido antes de jugar (Suave / Desafío / Experto): techo o piso de todos los DDA de la partida.
+            NeuroVida.Games.AdaptiveDifficulty.ConfigureMode(config.config);
             switch (config.game_id)
             {
                 case SequenceGameController.GameId:

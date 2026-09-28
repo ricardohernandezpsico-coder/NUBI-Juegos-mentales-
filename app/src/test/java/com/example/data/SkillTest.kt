@@ -93,4 +93,19 @@ class SkillTest {
     assertEquals(listOf(PlayMode.A_TU_MEDIDA), Skill.modesFor("bitacora"))
     assertFalse(Skill.isOpen(PlayMode.SUAVE, "bitacora", emptySet()))
   }
+
+  @Test
+  fun `lo medido, experto abierto y la fecha de cada etapa se recuerdan`() {
+    var st = SkillState()
+    st = st.after("radar", counted = false, passedChallenge = false, progress = 0.9f, now = 10L)
+    assertEquals(SkillState(), st) // Suave o Desafío sin superar: nada
+    st = st.after("radar", counted = true, passedChallenge = false, progress = 0.45f, now = 20L)
+    assertEquals(setOf("radar"), st.measured)
+    assertEquals(mapOf(1 to 20L, 2 to 20L), st.stageDates["radar"])
+    st = st.after("radar", counted = true, passedChallenge = true, progress = 0.62f, now = 30L)
+    assertEquals(setOf("radar"), st.expertOpen)
+    assertEquals(mapOf(1 to 20L, 2 to 20L, 3 to 30L), st.stageDates["radar"]) // las fechas viejas no cambian
+    assertEquals(st, SkillState.decode(st.encode()))
+    assertEquals(SkillState(), SkillState.decode(null))
+  }
 }

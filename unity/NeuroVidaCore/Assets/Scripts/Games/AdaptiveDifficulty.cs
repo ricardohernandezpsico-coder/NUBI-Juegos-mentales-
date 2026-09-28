@@ -38,6 +38,19 @@ namespace NeuroVida.Games
         /// escala, así que los primeros ensayos dan pasos más grandes para llegar antes al nivel de la persona.
         /// La fija <c>GameEntryPoint</c> con la config de cada partida (false en las partidas normales).</summary>
         public static bool FastCalibration;
+
+        /// <summary>Modo elegido en la app (docs/dificultad-y-avance.md): Suave pone techo, Desafío y Experto piso,
+        /// sobre el rating normalizado (0..1; -1 = sin límite). Se aplica a TODOS los DDA que se creen en la partida
+        /// (Piloto y Correo tienen dos). Lo fija <c>GameEntryPoint</c> con cada config; la evaluación no usa modos.</summary>
+        public static float ModeFloor = -1f;
+        public static float ModeCeiling = -1f;
+
+        public static void ConfigureMode(SequenceConfigDetails config)
+        {
+            bool on = config != null && !config.assessment;
+            ModeFloor = on ? config.mode_floor : -1f;
+            ModeCeiling = on ? config.mode_ceiling : -1f;
+        }
         private const int FastProvisionalTrials = 10;
         private const float FastProvisionalBoost = 2.2f;
         private const float StruggleExtraDrop = 0.15f;
@@ -62,6 +75,13 @@ namespace NeuroVida.Games
         public int Trials { get; private set; }
         public int Correct { get; private set; }
         public int PeakLevel { get; private set; }
+        /// <summary>Ensayos y aciertos después del calentamiento (para decidir si un Desafío se superó).</summary>
+        public int ScoredTrials { get; private set; }
+        public int ScoredCorrect { get; private set; }
+        /// <summary>Límites del rating en esta partida (en niveles): el piso y el techo del modo, o la escalera entera.</summary>
+        public float MinRating => _minRating;
+        public float MaxRating => _maxRating;
+        private readonly float _minRating, _maxRating;
         /// <summary>true tras 2 o más errores seguidos (se apaga al acertar).</summary>
         public bool Struggling => _consecutiveErr >= 2;
 
@@ -89,6 +109,10 @@ namespace NeuroVida.Games
             _stepUp = stepUp * (ageBand == AgeBand.Senior ? 0.85f : ageBand == AgeBand.Under18 ? 1.1f : 1f);
             _weightReaction = profile.WeightReactionTime;
             _useReaction = useReaction;
+            _minRating = 1f;
+            _maxRating = MaxLevel + 0.99f;
+            if (ModeFloor >= 0f) _minRating = Math.Min(_maxRating, 1f + Math.Min(1f, ModeFloor) * MaxLevel);
+            if (ModeCeiling >= 0f) _maxRating = Math.Max(_minRating, 1f + Math.Min(1f, ModeCeiling) * MaxLevel);
             Rating = Clamp(startRating);
             PeakLevel = Level;
         }
@@ -121,6 +145,11 @@ namespace NeuroVida.Games
         {
             int before = Level;
             Trials++;
+            if (Trials > WarmupTrials)
+            {
+                ScoredTrials++;
+                if (correct) ScoredCorrect++;
+            }
             float z = UpdateReactionZ(reactionMs);
             float provisional = FastCalibration
                 ? (Trials <= FastProvisionalTrials ? FastProvisionalBoost : 1f)
@@ -153,7 +182,7 @@ namespace NeuroVida.Games
             return after > before ? DdaChange.Up : after < before ? DdaChange.Down : DdaChange.None;
         }
 
-        private float Clamp(float rating) => Math.Max(1f, Math.Min(MaxLevel + 0.99f, rating));
+        private float Clamp(float rating) => Math.Max(_minRating, Math.Min(_maxRating, rating));
 
         // Z-score del tiempo de reacción contra la historia del propio usuario (Welford en línea).
         private float UpdateReactionZ(float reactionMs)

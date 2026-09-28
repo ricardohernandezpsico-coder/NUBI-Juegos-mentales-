@@ -52,6 +52,12 @@ namespace NeuroVida.Contracts
         public bool assessment;
         public int assessment_step;
         public int assessment_total;
+        /// <summary>Cómo eligió jugar la persona (docs/dificultad-y-avance.md): "" o "A_TU_MEDIDA" = ajuste normal;
+        /// "SUAVE" = con techo; "DESAFIO" / "EXPERTO" = con piso. Los límites vienen calculados por la app sobre el
+        /// rating normalizado (0..1); -1 = sin límite. Ver <c>AdaptiveDifficulty.ConfigureMode</c>.</summary>
+        public string play_mode = "";
+        public float mode_floor = -1f;
+        public float mode_ceiling = -1f;
 
         /// <summary>Solo Bitácora de Misión: "" = partida completa (transmisión, patrulla e informe); "encode" = solo la
         /// transmisión (al empezar la sesión diaria); "recall" = solo el informe (al terminarla). Ver BitacoraContract.</summary>

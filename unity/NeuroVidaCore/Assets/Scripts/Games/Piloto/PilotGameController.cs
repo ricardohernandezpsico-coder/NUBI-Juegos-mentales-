@@ -796,6 +796,9 @@ namespace NeuroVida.Games.Piloto
                     level = _config.config.level,
                     timed = _config.config.timed,
                     end_rating = (_driveDda.RatingNormalized + _signalDda.RatingNormalized) * 0.5f,
+                    // Desafío superado en Piloto = las dos tareas: se informa la de menos aciertos (pilotaje o señales).
+                    mode_trials = PilotContract.WeakerOf(_driveDda.ScoredCorrect, _driveDda.ScoredTrials, _signalDda.ScoredCorrect, _signalDda.ScoredTrials).trials,
+                    mode_hits = PilotContract.WeakerOf(_driveDda.ScoredCorrect, _driveDda.ScoredTrials, _signalDda.ScoredCorrect, _signalDda.ScoredTrials).hits,
                     peak_level = Mathf.Max(_driveDda.PeakLevel, _signalDda.PeakLevel),
                     multitask_cost = cost
                 }

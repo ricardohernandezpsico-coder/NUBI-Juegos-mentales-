@@ -35,6 +35,8 @@ data class ActiveGameSession(
   val isDailyFlow: Boolean = false,
   // Progresión sin techo más allá de nivel 5 (Experto) — ver GameProgressEntity.masteryStreak.
   val intensity: Int = 0,
+  // Cómo eligió jugar la persona (data/Skill.kt). La sesión diaria y "Jugar" van siempre a tu medida.
+  val mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
   // Partida en pausa que se retoma: se relanza Unity con este id de lanzamiento y la partida sigue donde quedó.
   val resumeLaunchId: String? = null,
   // Evaluación inicial "Tu punto de partida": paso 1..N (0 = partida normal). Ver data/Baseline.kt.
@@ -321,6 +323,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   init {
     viewModelScope.launch { com.example.bridge.UnityResultBus.results.collect { onUnityResult(it.result, it.launchId) } }
+    viewModelScope.launch { repository.seedSkillIfNeeded() }
     viewModelScope.launch {
       userSettings.collect { settings ->
         if (settings.notificationsEnabled) {
@@ -398,12 +401,18 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     return gameIntensity.value[gameId] ?: 0
   }
 
-  fun launchGame(gameId: String, customLevel: Int? = null, customTimed: Boolean? = null, isDailyFlow: Boolean = false) {
+  fun launchGame(
+    gameId: String,
+    customLevel: Int? = null,
+    customTimed: Boolean? = null,
+    isDailyFlow: Boolean = false,
+    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
+  ) {
     // Si ese juego quedó en pausa ("Salir" del menú de pausa), se retoma en vez de empezar de cero. "Jugar de
     // nuevo" (customLevel) siempre es una partida nueva. Abrir otro juego descarta la pausa (Unity recarga).
     val paused = pausedGame
     pausedGame = null
-    if (paused != null && paused.first.gameDef.id == gameId && customLevel == null) {
+    if (paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode) {
       _activeGame.value = paused.first.copy(
         isDailyFlow = isDailyFlow || paused.first.isDailyFlow,
         resumeLaunchId = paused.second
@@ -415,7 +424,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     val lvl = customLevel ?: getEffectiveLevelForGame(gameId)
     val timed = customTimed ?: userSettings.value.defaultTimed
     val intensity = if (lvl >= 5) getEffectiveIntensityForGame(gameId) else 0
-    _activeGame.value = ActiveGameSession(def, lvl, timed, isDailyFlow, intensity)
+    _activeGame.value = ActiveGameSession(def, lvl, timed, isDailyFlow, intensity, mode = if (isDailyFlow) com.example.data.PlayMode.A_TU_MEDIDA else mode)
     _lastResult.value = null
   }
 
@@ -434,7 +443,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       onBaselineResult(current, rawResult)
       return
     }
-    val result = if (rawResult.gameId == "bitacora" && rawResult.memPhase != null) applyMissionResult(rawResult) else rawResult
+    val withMode = if (current != null) rawResult.copy(playMode = current.mode) else rawResult
+    val result = if (withMode.gameId == "bitacora" && withMode.memPhase != null) applyMissionResult(withMode) else withMode
     if (result.memPhase == "encode") {
       // La transmisión sola no es una partida completa: no suma a la liga ni al historial (el informe sí). Se muestra
       // su pantalla (cuánto se aprendió y cuándo llega el informe) y la sesión sigue.
@@ -460,7 +470,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   private fun sessionFrom(p: GameSessionStore.InFlight): ActiveGameSession? {
     val def = GameRegistry.getById(p.gameId) ?: return null
-    return ActiveGameSession(def, p.level, p.timed, p.daily, p.intensity, assessmentStep = p.assessmentStep)
+    return ActiveGameSession(def, p.level, p.timed, p.daily, p.intensity, assessmentStep = p.assessmentStep, mode = p.mode)
   }
 
   /** Resultado que llegó mientras la app estaba cerrada (ver [GameSessionStore]): se procesa como si fuera en vivo. */
@@ -497,7 +507,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
         level = pausePrefs.getInt("level", 1),
         timed = pausePrefs.getBoolean("timed", false),
         isDailyFlow = pausePrefs.getBoolean("daily", false),
-        intensity = pausePrefs.getInt("intensity", 0)
+        intensity = pausePrefs.getInt("intensity", 0),
+        mode = runCatching { com.example.data.PlayMode.valueOf(pausePrefs.getString("mode", null) ?: "") }
+          .getOrDefault(com.example.data.PlayMode.A_TU_MEDIDA)
       ) to launchId
     }
     set(value) {
@@ -512,6 +524,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
           .putBoolean("timed", session.timed)
           .putBoolean("daily", session.isDailyFlow)
           .putInt("intensity", session.intensity)
+          .putString("mode", session.mode.name)
       }
       e.apply()
       _pausedGameId.value = value?.first?.gameDef?.id
@@ -540,7 +553,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     awaitingUnityReturn = true
     _activeGame.value?.let {
       GameSessionStore.saveInFlight(
-        GameSessionStore.InFlight(launchId, it.gameDef.id, it.level, it.timed, it.isDailyFlow, it.intensity, it.assessmentStep)
+        GameSessionStore.InFlight(launchId, it.gameDef.id, it.level, it.timed, it.isDailyFlow, it.intensity, it.assessmentStep, it.mode)
       )
     }
   }

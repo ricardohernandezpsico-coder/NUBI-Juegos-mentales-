@@ -29,6 +29,10 @@ namespace NeuroVida.Contracts
         public float end_rating;
         /// <summary>Nivel más alto alcanzado en la partida.</summary>
         public int peak_level;
+        /// <summary>Ensayos y aciertos DESPUÉS del calentamiento del DDA: la app decide con ellos si un Desafío o un
+        /// Experto se superó (Skill.passed). 0 = no aplica.</summary>
+        public int mode_trials;
+        public int mode_hits;
         /// <summary>Solo Piloto Estelar: costo de multitarea en % (cuánto baja la precisión en señales al pilotar a la
         /// vez). -1 = no aplica o sin datos.</summary>
         public int multitask_cost = -1;

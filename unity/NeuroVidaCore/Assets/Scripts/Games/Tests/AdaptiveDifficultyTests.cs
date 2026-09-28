@@ -1,3 +1,4 @@
+using NeuroVida.Contracts;
 using NUnit.Framework;
 
 namespace NeuroVida.Games.Tests
@@ -213,6 +214,38 @@ namespace NeuroVida.Games.Tests
             var cfg = new NeuroVida.Contracts.SequenceConfigDetails { has_dda_rating = true, dda_rating = dda.RatingNormalized };
             // RatingNormalized = (rating-1)/max  ->  rating = 1 + n*max
             Assert.AreEqual(6.3f, AdaptiveDifficulty.StartRating(cfg, 9), 1e-3f);
+        }
+
+        [Test]
+        public void PlayMode_FloorAndCeiling_BoundTheRatingAndOnlyScoredTrialsCount()
+        {
+            try
+            {
+                // Desafío: piso en 0,5 de una escalera de 9 -> rating >= 5,5 aunque todo salga mal.
+                AdaptiveDifficulty.ConfigureMode(new SequenceConfigDetails { mode_floor = 0.5f });
+                var hard = Make(start: 2f);
+                Assert.AreEqual(5.5f, hard.Rating, 1e-4f); // parte en el piso
+                for (int i = 0; i < 30; i++) hard.Register(false);
+                Assert.AreEqual(5.5f, hard.Rating, 1e-4f);
+                Assert.AreEqual(28, hard.ScoredTrials); // sin los 2 de calentamiento
+                Assert.AreEqual(0, hard.ScoredCorrect);
+                for (int i = 0; i < 40; i++) hard.Register(true);
+                Assert.Greater(hard.Rating, 5.5f); // sobre el piso sube libre
+
+                // Suave: techo en 0,3 -> rating <= 3,7 aunque todo salga bien.
+                AdaptiveDifficulty.ConfigureMode(new SequenceConfigDetails { mode_ceiling = 0.3f });
+                var soft = Make(start: 6f);
+                for (int i = 0; i < 40; i++) soft.Register(true);
+                Assert.AreEqual(3.7f, soft.Rating, 1e-4f);
+
+                // La evaluación inicial nunca usa modos.
+                AdaptiveDifficulty.ConfigureMode(new SequenceConfigDetails { mode_floor = 0.9f, assessment = true });
+                Assert.AreEqual(2f, Make(start: 2f).Rating, 1e-4f);
+            }
+            finally
+            {
+                AdaptiveDifficulty.ConfigureMode(null);
+            }
         }
     }
 }

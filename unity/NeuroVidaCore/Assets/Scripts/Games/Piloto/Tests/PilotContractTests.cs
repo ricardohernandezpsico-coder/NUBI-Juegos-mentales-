@@ -136,5 +136,13 @@ namespace NeuroVida.Games.Piloto.Tests
             Assert.AreEqual(300, PilotContract.PointsForCatch(50, false));
             Assert.AreEqual(280, PilotContract.PointsForCatch(3, true));
         }
+
+        [Test]
+        public void WeakerOf_ReportsTheTaskWithFewerHits()
+        {
+            Assert.AreEqual((6, 10), PilotContract.WeakerOf(6, 10, 18, 20));
+            Assert.AreEqual((7, 10), PilotContract.WeakerOf(18, 20, 7, 10));
+            Assert.AreEqual((5, 6), PilotContract.WeakerOf(0, 0, 5, 6));
+        }
     }
 }

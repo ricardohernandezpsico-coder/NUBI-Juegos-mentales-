@@ -216,6 +216,11 @@ data class GamePlayResult(
   val timestamp: Long = System.currentTimeMillis(),
   // Rating final del DDA común (0..1) informado por los juegos Unity; null en los demás.
   val endRating: Float? = null,
+  // Cómo se eligió jugar (ver data/Skill.kt) y ensayos/aciertos después del calentamiento, para decidir si un
+  // Desafío o un Experto se superó. No se guardan en Room.
+  val playMode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
+  val modeTrials: Int = 0,
+  val modeHits: Int = 0,
   // Solo Piloto Estelar: costo de multitarea en % de esta partida (se muestra en el resultado; no se guarda en Room).
   val multitaskCost: Int? = null,
   // Solo Radar: "tu vistazo" en ms (duración de destello en la que se asentó la dificultad) y aciertos de ubicación
@@ -436,7 +441,11 @@ data class RecordOutcome(
   val globalBefore: Int,
   val globalAfter: Int,
   /** Logros conseguidos con esta partida (ids de [com.example.data.Achievements]), en orden de catálogo. */
-  val newAchievements: List<String> = emptyList()
+  val newAchievements: List<String> = emptyList(),
+  /** Desafío o Experto superado en esta partida (ver data/Skill.kt): el avance subió. */
+  val modePassed: Boolean = false,
+  /** Primer Desafío superado en ese juego: se abrió Experto. */
+  val expertUnlocked: Boolean = false
 ) {
   /** Ascenso de liga para celebrar: primero la liga general (más rara y más importante), si no la del juego. */
   fun promotion(gameId: String): LeaguePromotion? = globalPromotion() ?: gamePromotion(gameId)

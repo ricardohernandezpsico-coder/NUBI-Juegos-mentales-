@@ -28,7 +28,8 @@ object GameSessionStore {
     val timed: Boolean,
     val daily: Boolean,
     val intensity: Int,
-    val assessmentStep: Int
+    val assessmentStep: Int,
+    val mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
   )
 
   data class BaselineProgress(val done: Int, val measured: Map<String, Float>, val ageBand: String?)
@@ -46,6 +47,7 @@ object GameSessionStore {
       .putBoolean("daily", p.daily)
       .putInt("intensity", p.intensity)
       .putInt("assessmentStep", p.assessmentStep)
+      .putString("mode", p.mode.name)
       .apply()
   }
 
@@ -62,7 +64,8 @@ object GameSessionStore {
       timed = p.getBoolean("timed", false),
       daily = p.getBoolean("daily", false),
       intensity = p.getInt("intensity", 0),
-      assessmentStep = p.getInt("assessmentStep", 0)
+      assessmentStep = p.getInt("assessmentStep", 0),
+      mode = runCatching { com.example.data.PlayMode.valueOf(p.getString("mode", null) ?: "") }.getOrDefault(com.example.data.PlayMode.A_TU_MEDIDA)
     )
   }
 

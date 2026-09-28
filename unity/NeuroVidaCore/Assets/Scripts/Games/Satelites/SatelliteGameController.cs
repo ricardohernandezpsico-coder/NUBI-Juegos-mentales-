@@ -566,6 +566,8 @@ namespace NeuroVida.Games.Satelites
                     level = _config.config.level,
                     timed = _config.config.timed,
                     end_rating = _dda.RatingNormalized,
+                    mode_trials = _dda.ScoredTrials,
+                    mode_hits = _dda.ScoredCorrect,
                     peak_level = _dda.PeakLevel,
                     tracking_capacity = capacity,
                     tracking_targets = meanTargets,

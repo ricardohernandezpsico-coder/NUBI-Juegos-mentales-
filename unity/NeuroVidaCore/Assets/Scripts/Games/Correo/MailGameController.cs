@@ -1255,6 +1255,8 @@ namespace NeuroVida.Games.Correo
                     level = _config.config.level,
                     timed = _config.config.timed,
                     end_rating = _dda.RatingNormalized,
+                    mode_trials = _dda.ScoredTrials,
+                    mode_hits = _dda.ScoredCorrect,
                     peak_level = Mathf.Max(_dda.PeakLevel, _driveDda.PeakLevel),
                     mail_event_hits = _eventHits,
                     mail_event_total = _eventTotal,
