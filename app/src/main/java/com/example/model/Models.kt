@@ -16,12 +16,13 @@ enum class DomainType(
   VELOCIDAD("Velocidad", "Tiempo de reacción y discriminación visual", DomainVelocidad);
 }
 
+/** El nivel 1-5 de cada juego ES la etapa del avance (data/Skill.kt): mismos nombres en toda la app. */
 enum class LevelTier(val tierName: String, val levelNumber: Int) {
-  PRINCIPIANTE("Principiante", 1),
-  INICIADO("Iniciado", 2),
-  INTERMEDIO("Intermedio", 3),
-  AVANZADO("Avanzado", 4),
-  EXPERTO("Experto", 5);
+  PRINCIPIANTE("Inicio", 1),
+  INICIADO("Aprendiz", 2),
+  INTERMEDIO("Hábil", 3),
+  AVANZADO("Experto", 4),
+  EXPERTO("Maestro", 5);
 
   companion object {
     fun fromLevel(lvl: Int): LevelTier {

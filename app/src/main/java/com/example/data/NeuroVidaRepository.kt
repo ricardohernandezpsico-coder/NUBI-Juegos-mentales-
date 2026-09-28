@@ -565,7 +565,8 @@ class NeuroVidaRepository(
     val ratingsBefore = gameProgressDao.getAllProgressSync().associate { it.gameId to it.eloRating }
 
     val activeProfile = userProfileDao.getActiveProfileSync() ?: userProfileDao.getUserProfileSync()
-    val isAdaptive = activeProfile?.difficultyMode == "ADAPTIVE"
+    // El nivel 1-5 se ajusta siempre (el modo de dificultad de Ajustes se quitó el 28-sep).
+    val isAdaptive = true
 
     val playedLevel = result.level
     var newLevel = playedLevel
@@ -608,6 +609,19 @@ class NeuroVidaRepository(
     if (counted) {
       saveSkill(_skill.value.after(result.gameId, true, modePassed && result.playMode == PlayMode.DESAFIO,
         Skill.progress(result.gameId, newDdaRating, age), result.timestamp))
+    }
+
+    // Con rating del DDA, el nivel 1-5 ES la etapa del avance (Inicio…Maestro, data/Skill.kt): una sola escala.
+    // Sube solo si la partida contó; "¡Subes!" se celebra al pasar de etapa.
+    if (result.endRating != null && counted) {
+      val stageLevel = levelFromRating(Skill.progress(result.gameId, newDdaRating, age))
+      didLevelUp = stageLevel > currentProgress.currentLevel
+      newLevel = stageLevel
+      newMastery = currentProgress.masteryStreak
+    } else if (result.endRating != null) {
+      didLevelUp = false
+      newLevel = currentProgress.currentLevel
+      newMastery = currentProgress.masteryStreak
     }
 
     val updatedProgress = currentProgress.copy(

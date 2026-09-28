@@ -122,7 +122,7 @@ fun GameLoadingScreen(
         textAlign = TextAlign.Center
       )
       val details = if (assessmentStep > 0) listOf("Punto de partida · $assessmentStep de $assessmentTotal") else buildList {
-        if (level != null) add("Nivel $level · ${LevelTier.fromLevel(level).tierName}")
+        if (level != null) add("Etapa ${LevelTier.fromLevel(level).tierName}")
         if (timed != null) add(if (timed) "Reto" else "Precisión")
       }
       if (details.isNotEmpty()) {

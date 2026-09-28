@@ -281,18 +281,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
 
-  val gameLevelsForProgress: StateFlow<Map<String, Float?>> = combine(
-    repository.gameDdaRating, gameLevels, gameHistory
-  ) { dda, levels, hist ->
-    val played = hist.map { it.gameId }.toSet()
-    GameRegistry.allGames.associate { g ->
-      val r = dda[g.id] ?: -1f
-      g.id to when {
-        r >= 0f -> r
-        g.id in played -> ((levels[g.id] ?: 1) - 1) / 5f + 0.1f
-        else -> null
-      }
-    }
+  /** Avance de cada juego para Hoy, Liga y Perfil: el mismo de las cartas ([gameProgress]); null = sin medir aún. */
+  val gameLevelsForProgress: StateFlow<Map<String, Float?>> = gameProgress.map { p ->
+    GameRegistry.allGames.associate { g -> g.id to p[g.id] }
   }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
   private val _currentTab = MutableStateFlow(AppTab.HOY)
@@ -390,34 +381,13 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     }
   }
 
-  fun getEffectiveLevelForGame(gameId: String): Int {
-    val settings = userSettings.value
-    val gameDef = GameRegistry.getById(gameId) ?: return 1
-    return when (settings.difficultyMode) {
-      DifficultyMode.ADAPTIVE -> gameLevels.value[gameId] ?: 1
-      DifficultyMode.PRINCIPIANTE -> 1
-      DifficultyMode.INTERMEDIO -> 3
-      DifficultyMode.AVANZADO -> 5
-      DifficultyMode.CUSTOM -> {
-        when (gameDef.domain) {
-          DomainType.MEMORIA -> settings.difficultyMemoria
-          DomainType.ATENCION -> settings.difficultyAtencion
-          DomainType.RAZONAMIENTO -> settings.difficultyRazonamiento
-          DomainType.LENGUAJE -> settings.difficultyLenguaje
-          DomainType.CALCULO -> settings.difficultyCalculo
-          DomainType.VELOCIDAD -> settings.difficultyVelocidad
-        }.coerceIn(1, 5)
-      }
-    }
-  }
+  /**
+   * Nivel 1-5 con que se lanza un juego (solo pesa en los que todavía no tienen rating guardado: Unity continúa
+   * desde el rating). El modo de dificultad de Ajustes se quitó el 28-sep: ahora se elige el modo por juego.
+   */
+  fun getEffectiveLevelForGame(gameId: String): Int = gameLevels.value[gameId] ?: 1
 
-  // Solo el modo adaptativo acumula masteryStreak (juego real, historial real);
-  // los modos de dificultad fija (Principiante/Intermedio/Avanzado/Personalizada)
-  // no tienen ese concepto porque el usuario ya eligió congelar el nivel.
-  fun getEffectiveIntensityForGame(gameId: String): Int {
-    if (userSettings.value.difficultyMode != DifficultyMode.ADAPTIVE) return 0
-    return gameIntensity.value[gameId] ?: 0
-  }
+  fun getEffectiveIntensityForGame(gameId: String): Int = gameIntensity.value[gameId] ?: 0
 
   fun launchGame(
     gameId: String,

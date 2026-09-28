@@ -140,7 +140,7 @@ fun ProgressScreen(
 
     item {
       Column {
-        SpaceSectionTitle("Nivel por juego", hint = "Tu liga en cada juego y cómo va tu nivel")
+        SpaceSectionTitle("Tu avance por juego", hint = "Tu liga en cada juego y tu etapa")
         Spacer(Modifier.height(14.dp))
         GameLevelsList(levels = levels, ranks = gameRanks.associateBy { it.gameId })
       }

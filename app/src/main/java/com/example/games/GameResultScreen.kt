@@ -229,7 +229,7 @@ fun GameResultScreen(
     Row(verticalAlignment = Alignment.CenterVertically) {
       Stat("${result.correctAnswers}/${result.totalTrials}", "aciertos")
       Dot()
-      Stat("Nivel ${result.level}", LevelTier.fromLevel(result.level).tierName)
+      Stat(LevelTier.fromLevel(result.level).tierName, "etapa")
       Dot()
       Stat(if (result.timed) "Reto" else "Precisión", "modo")
     }
@@ -763,7 +763,7 @@ fun GameResultScreen(
     if (didLevelUp) {
       Spacer(Modifier.height(18.dp))
       ClayPill(
-        text = if (result.level >= 5) "¡Tu maestría sube!" else "¡Subes al nivel ${result.level + 1}!",
+        text = if (result.level >= 5) "¡Tu maestría sube!" else "¡Subiste de etapa!",
         color = Clay.Lime,
         modifier = Modifier.scale(levelPop.value)
       )

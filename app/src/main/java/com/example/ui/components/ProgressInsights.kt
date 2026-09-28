@@ -59,13 +59,8 @@ fun overallIndex(levels: GameLevels): Int? {
   return if (vals.isEmpty()) null else (vals.average() * 100).toInt().coerceIn(0, 100)
 }
 
-fun levelWord(v: Float): String = when {
-  v < 0.2f -> "Inicial"
-  v < 0.4f -> "En desarrollo"
-  v < 0.6f -> "Intermedio"
-  v < 0.8f -> "Avanzado"
-  else -> "Experto"
-}
+/** La etapa del avance (Inicio…Maestro, data/Skill.kt): los mismos nombres en toda la app. */
+fun levelWord(v: Float): String = com.example.data.Skill.stageName(v)
 
 @Composable
 fun DomainRadarCard(levels: GameLevels, modifier: Modifier = Modifier) {
