@@ -60,7 +60,17 @@ namespace NeuroVida.Games.Anagramas
             public int Index;
             /// <summary>Segundos que le quedan volviendo de la casilla a su burbuja (se desliza, no salta).</summary>
             public float ReturnT;
+            /// <summary>Color de la cara mientras espera en el banco (crema en las fichas; color propio en las burbujas).</summary>
+            public Color Face;
+            /// <summary>Resplandor detrás (capa aparte, debajo de todas las fichas) y su fase de pulso.</summary>
+            public Image Glow;
+            public float Phase;
+            public Color DecoColor;
         }
+
+        // Colores de la app para el resplandor (y la cara de las burbujas): puramente decorativos. En las casillas la
+        // ficha toma siempre los colores de estado (colocada / bien / mal), así el color nunca dice "acierto".
+        private static readonly Color[] DecoColors = { NeuroStyle.Sky, NeuroStyle.Grape, NeuroStyle.Coral, NeuroStyle.Lime, NeuroStyle.Sun };
 
         /// <summary>Toque que cuenta al PRESIONAR (un botón normal cuenta al soltar, y una burbuja puede haberse ido).</summary>
         private sealed class TapDown : MonoBehaviour, IPointerDownHandler
@@ -90,6 +100,8 @@ namespace NeuroVida.Games.Anagramas
         private BubbleField _bubbles;
         private bool _bubblesRunning, _bubblesAnnounced;
         private float _arenaLeft, _arenaTop;
+        private RectTransform _glowLayer;
+        private int _decoOffset;
 
         // UI
         private RectTransform _safe, _boardRect, _bannerRect, _timerBg, _timerFill, _fxRect, _actionsRoot;
@@ -129,11 +141,29 @@ namespace NeuroVida.Games.Anagramas
                     }
                     else l.Holder.anchoredPosition = l.Target;
                     l.Holder.localScale = Vector3.Lerp(l.Holder.localScale, Vector3.one, k);
+                    UpdateGlow(l, k);
                     continue;
                 }
                 l.Holder.anchoredPosition = Vector2.Lerp(l.Holder.anchoredPosition, l.Target, k);
-                l.Holder.localScale = Vector3.Lerp(l.Holder.localScale, Vector3.one * (l.InSlot ? _slotShrink : 1f), k);
+                // Ficha quieta que espera en el banco: respira apenas (cada una a su ritmo, no todas juntas).
+                float breath = !l.InSlot && !GameFeel.ReduceMotion
+                    ? 1f + 0.028f * Mathf.Sin(GameClock.Time * Mathf.PI * 2f / 2.6f + l.Phase) : 1f;
+                l.Holder.localScale = Vector3.Lerp(l.Holder.localScale, Vector3.one * (l.InSlot ? _slotShrink : breath), k);
+                UpdateGlow(l, k);
             }
+        }
+
+        /// <summary>El resplandor sigue a su ficha y late suave; se apaga cuando la ficha está en su casilla.</summary>
+        private void UpdateGlow(Letter l, float k)
+        {
+            if (l.Glow == null) return;
+            var gr = l.Glow.rectTransform;
+            gr.anchoredPosition = l.Holder.anchoredPosition;
+            float pulse = GameFeel.ReduceMotion ? 0.5f : 0.5f + 0.5f * Mathf.Sin(GameClock.Time * Mathf.PI * 2f / 2.2f + l.Phase);
+            float a = l.InSlot || !l.Rect.gameObject.activeInHierarchy ? 0f : (0.30f + 0.22f * pulse) * Mathf.Clamp01(l.Rect.localScale.x);
+            var c = l.DecoColor;
+            l.Glow.color = new Color(c.r, c.g, c.b, Mathf.Lerp(l.Glow.color.a, a, k));
+            gr.localScale = Vector3.one * (1f + 0.10f * pulse);
         }
 
         // ------------------------------------------------------------------ sesión
@@ -210,6 +240,7 @@ namespace NeuroVida.Games.Anagramas
             SetBanner("Ordena las letras", Accent, 0.30f);
 
             ClearLetters();
+            _decoOffset = _rng.Next(DecoColors.Length);
             LayoutWord(n);
             var scrambled = AnagramContract.Scramble(_word.Word, _rng);
             for (int i = 0; i < n; i++) _letters.Add(CreateLetter(scrambled[i], i));
@@ -233,6 +264,7 @@ namespace NeuroVida.Games.Anagramas
             PlayTone(587.33f, 0.14f, 0.09f);
             SetActionsInteractable(true);
             _acceptInput = true;
+            if (_bubbles == null && !GameFeel.ReduceMotion) StartCoroutine(Twinkles());
 
             float startedAt = GameClock.Time;
             while (_result == WordResult.Waiting)
@@ -332,7 +364,7 @@ namespace NeuroVida.Games.Anagramas
                     _bubbles.Reactivate(letter.Index, _rng);
                     letter.ReturnT = 0.35f;
                 }
-                letter.Image.color = TileCream;
+                letter.Image.color = letter.Face;
                 PlayTone(330f, 0.08f, 0.10f);
                 Retarget();
                 StartCoroutine(PopRect(letter.Rect, 1.12f, 0.18f));
@@ -416,6 +448,44 @@ namespace NeuroVida.Games.Anagramas
         }
 
         // ------------------------------------------------------------------ efectos
+
+        /// <summary>Niveles 1-4: cada tanto un destello recorre el borde de arriba de una ficha al azar (un guiño,
+        /// sin agregar dificultad). Nunca en el primer segundo y medio de la palabra.</summary>
+        private IEnumerator Twinkles()
+        {
+            float next = GameClock.Time + 1.5f + (float)_rng.NextDouble() * 2f;
+            while (_result == WordResult.Waiting)
+            {
+                if (GameClock.Time >= next)
+                {
+                    var free = _letters.FindAll(l => !l.InSlot && l.Rect != null);
+                    if (free.Count > 0) StartCoroutine(Twinkle(free[_rng.Next(free.Count)]));
+                    next = GameClock.Time + 3.5f + (float)_rng.NextDouble() * 3f;
+                }
+                yield return null;
+            }
+        }
+
+        private IEnumerator Twinkle(Letter l)
+        {
+            var img = new GameObject("Twinkle").AddComponent<Image>();
+            img.transform.SetParent(l.Rect, false);
+            img.sprite = SparkleSprite.Get();
+            img.raycastTarget = false;
+            img.color = new Color(1f, 1f, 1f, 0.95f);
+            var r = img.rectTransform;
+            float d = _tileSize;
+            const float dur = 0.75f;
+            for (float t = 0f; t < dur && r != null; t += GameClock.DeltaTime)
+            {
+                float u = t / dur;
+                r.anchoredPosition = new Vector2(Mathf.Lerp(-0.30f, 0.30f, u) * d, d * 0.26f);
+                r.sizeDelta = Vector2.one * (d * 0.46f * Mathf.Sin(u * Mathf.PI));
+                r.localEulerAngles = new Vector3(0f, 0f, u * 90f);
+                yield return null;
+            }
+            if (img != null) Destroy(img.gameObject);
+        }
 
         private IEnumerator JumpWave()
         {
@@ -544,6 +614,13 @@ namespace NeuroVida.Games.Anagramas
             _boardRect.pivot = new Vector2(0.5f, 1f);
             _boardRect.sizeDelta = new Vector2(10f, 10f);
             _boardRect.anchoredPosition = Vector2.zero;
+            // Resplandores de las fichas: primera capa del tablero, así quedan DETRÁS de casillas y fichas.
+            var glowGo = new GameObject("GlowLayer");
+            glowGo.transform.SetParent(_boardRect, false);
+            _glowLayer = glowGo.AddComponent<RectTransform>();
+            _glowLayer.anchorMin = _glowLayer.anchorMax = new Vector2(0.5f, 1f);
+            _glowLayer.pivot = new Vector2(0.5f, 1f);
+            _glowLayer.sizeDelta = Vector2.zero;
             BuildSlots();
 
             BuildActions();
@@ -765,7 +842,25 @@ namespace NeuroVida.Games.Anagramas
 
         private Letter CreateLetter(char c, int poolIndex)
         {
-            if (_bubbles != null) return CreateBubble(c, poolIndex);
+            var made = _bubbles != null ? CreateBubble(c, poolIndex) : CreateTile(c, poolIndex);
+            made.Phase = poolIndex * 1.7f;
+            var glow = new GameObject("Glow_" + poolIndex).AddComponent<Image>();
+            glow.transform.SetParent(_glowLayer, false);
+            glow.sprite = RadialGlowSprite.Get();
+            glow.raycastTarget = false;
+            glow.color = new Color(made.DecoColor.r, made.DecoColor.g, made.DecoColor.b, 0f);
+            float gs = _tileSize * (_bubbles != null ? 1.75f : 1.6f);
+            glow.rectTransform.anchorMin = glow.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+            glow.rectTransform.sizeDelta = new Vector2(gs, gs);
+            glow.rectTransform.anchoredPosition = made.Holder.anchoredPosition;
+            made.Glow = glow;
+            return made;
+        }
+
+        private Color DecoFor(int poolIndex) => DecoColors[(poolIndex + _decoOffset) % DecoColors.Length];
+
+        private Letter CreateTile(char c, int poolIndex)
+        {
             var holderGo = new GameObject("Letter_" + c + "_" + poolIndex);
             holderGo.transform.SetParent(_boardRect, false);
             var holder = holderGo.AddComponent<RectTransform>();
@@ -785,7 +880,7 @@ namespace NeuroVida.Games.Anagramas
             img.color = TileCream;
             img.alphaHitTestMinimumThreshold = 0.1f;
 
-            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex], Index = poolIndex };
+            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex], Index = poolIndex, Face = TileCream, DecoColor = DecoFor(poolIndex) };
             var button = go.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => OnLetterTapped(letter));
@@ -836,19 +931,23 @@ namespace NeuroVida.Games.Anagramas
             shadowImg.rectTransform.sizeDelta = new Vector2(d, d);
             shadowImg.rectTransform.anchoredPosition = new Vector2(0f, -d * 0.07f);
 
+            // Cara: el color propio de la burbuja, aclarado hacia crema para que la letra tinta se lea siempre (≥ 7:1).
+            var deco = DecoFor(poolIndex);
+            var face = Color.Lerp(deco, TileCream, 0.45f);
             var img = new GameObject("Bubble").AddComponent<Image>();
             img.transform.SetParent(go.transform, false);
             img.sprite = DiscSprite.Get();
-            img.color = TileCream;
+            img.color = face;
             img.rectTransform.sizeDelta = new Vector2(d, d);
 
+            // Brillo de arriba: grande y difuminado (un reflejo de luz, no un óvalo plano).
             var shine = new GameObject("Shine").AddComponent<Image>();
             shine.transform.SetParent(img.transform, false);
-            shine.sprite = DiscSprite.Get();
-            shine.color = new Color(1f, 1f, 1f, 0.55f);
+            shine.sprite = RadialGlowSprite.Get();
+            shine.color = new Color(1f, 1f, 1f, 0.75f);
             shine.raycastTarget = false;
-            shine.rectTransform.sizeDelta = new Vector2(d * 0.26f, d * 0.18f);
-            shine.rectTransform.anchoredPosition = new Vector2(-d * 0.2f, d * 0.24f);
+            shine.rectTransform.sizeDelta = new Vector2(d * 0.62f, d * 0.44f);
+            shine.rectTransform.anchoredPosition = new Vector2(-d * 0.14f, d * 0.2f);
 
             var ring = new GameObject("Rim").AddComponent<Image>();
             ring.transform.SetParent(img.transform, false);
@@ -857,7 +956,7 @@ namespace NeuroVida.Games.Anagramas
             ring.raycastTarget = false;
             ring.rectTransform.sizeDelta = new Vector2(d * 1.02f, d * 1.02f);
 
-            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex], Index = poolIndex };
+            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex], Index = poolIndex, Face = face, DecoColor = deco };
             go.AddComponent<TapDown>().OnDown = () => OnLetterTapped(letter);
             go.AddComponent<PressScale>();
 
@@ -880,7 +979,12 @@ namespace NeuroVida.Games.Anagramas
 
         private void ClearLetters()
         {
-            foreach (var l in _letters) if (l != null && l.Holder != null) Destroy(l.Holder.gameObject);
+            foreach (var l in _letters)
+            {
+                if (l == null) continue;
+                if (l.Holder != null) Destroy(l.Holder.gameObject);
+                if (l.Glow != null) Destroy(l.Glow.gameObject);
+            }
             _letters.Clear();
             _assembly.Clear();
         }

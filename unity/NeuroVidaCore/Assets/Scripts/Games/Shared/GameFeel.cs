@@ -24,6 +24,9 @@ namespace NeuroVida.Games.Shared
     {
         public static bool SoundOn = true;
         public static bool HapticsOn = true;
+        /// <summary>"Quitar animaciones" del teléfono (lo manda la app): sin adornos que se mueven solos
+        /// (respiración, pulsos, destellos). La mecánica del juego no cambia.</summary>
+        public static bool ReduceMotion;
 
         private const int Rate = 44100;
         // Pentatónica mayor desde do5: suena "bien" en cualquier orden, nunca desafina con la anterior.

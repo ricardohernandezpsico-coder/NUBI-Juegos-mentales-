@@ -43,6 +43,8 @@ object UnityGameLauncher {
     val memory_level: Int = 0,
     val memory_elapsed_s: Int = 0,
     // Cómo se eligió jugar (data/Skill.kt): techo (Suave) o piso (Desafío, Experto) sobre el rating 0..1; -1 = sin límite.
+    // "Quitar animaciones" del teléfono: Unity apaga los adornos que se mueven solos (respiración, destellos).
+    val reduce_motion: Boolean = false,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -117,6 +119,9 @@ object UnityGameLauncher {
         memory_seed = memory?.seed ?: 0,
         memory_level = memory?.level ?: 0,
         memory_elapsed_s = memory?.elapsedS ?: 0,
+        reduce_motion = android.provider.Settings.Global.getFloat(
+          context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+        ) == 0f,
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f

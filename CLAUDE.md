@@ -21,7 +21,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · m`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · n`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -485,7 +485,13 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   3 pruebas; choque elástico, separación mínima siempre, rapidez constante). Por edad (`BubbleField.SpecFor`):
   mayores 64 dp, 12 dp de separación, 42 dp/s; adultos 56 dp, 8 dp, 70 dp/s; menores 56 dp, 8 dp, 80 dp/s; nunca bajo
   48 dp (se achican si el área se llena). Entra de a poco: nivel 5 al 60% de la velocidad, 6 al 80%, 7 completo.
-  El toque cuenta al presionar (`TapDown`); una letra devuelta vuelve a un lugar libre. Niveles 1-4 sin cambios.
+  El toque cuenta al presionar (`TapDown`); una letra devuelta vuelve a un lugar libre. Adornos (28-sep, pedido de
+  Ricardo): resplandor de color detrás de cada letra (capa `_glowLayer`, debajo de todo; late suave), burbujas con cara
+  de color propio (celeste, uva, coral, lima, sol, aclarados hacia crema para que la letra se lea) y brillo grande y
+  difuminado; niveles 1-4 (mecánica igual): el mismo resplandor, fichas que respiran (cada una a su ritmo) y un destello
+  que recorre el borde de una ficha al azar cada 3,5-6,5 s. En las casillas la ficha toma los colores de estado, así el
+  color decorativo nunca dice "acierto". Con "quitar animaciones" del teléfono (`reduce_motion` en la config →
+  `GameFeel.ReduceMotion`) no hay respiración, pulso ni destellos. Lámina `docs/previews/anagramas-burbujas.png`.
   Sin probar en el teléfono.
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).

@@ -55,6 +55,8 @@ namespace NeuroVida.Contracts
         /// <summary>Cómo eligió jugar la persona (docs/dificultad-y-avance.md): "" o "A_TU_MEDIDA" = ajuste normal;
         /// "SUAVE" = con techo; "DESAFIO" / "EXPERTO" = con piso. Los límites vienen calculados por la app sobre el
         /// rating normalizado (0..1); -1 = sin límite. Ver <c>AdaptiveDifficulty.ConfigureMode</c>.</summary>
+        /// <summary>El teléfono tiene "quitar animaciones": sin adornos que se mueven solos (ver GameFeel.ReduceMotion).</summary>
+        public bool reduce_motion;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;
