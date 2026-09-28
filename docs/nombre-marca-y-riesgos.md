@@ -7,8 +7,9 @@ y revisar lo que decía una conversación con Gemini sobre BrainHQ y sus ejercic
 > información. Antes de publicar (sobre todo en Estados Unidos) conviene que un abogado de marcas y patentes revise
 > el nombre elegido y el juego Radar (ver más abajo).
 
-Maqueta: `python3 tools/previews/nombre_icono.py` → `docs/previews/nombre-icono.png` (y cada ícono suelto en
-`docs/previews/icono-<nombre>.png`).
+Maquetas: `python3 tools/previews/nombre_icono.py` → `docs/previews/nombre-icono.png` (y cada ícono suelto en
+`docs/previews/icono-<nombre>.png`); segunda ronda de nombres: `tools/previews/nombres_mas.py` →
+`docs/previews/nombres-mas.png`; retoque de Radar: `tools/previews/radar_retoque.py` → `docs/previews/radar-retoque.png`.
 
 ## 1. "NeuroVida" no sirve como nombre final
 
@@ -20,7 +21,7 @@ Maqueta: `python3 tools/previews/nombre_icono.py` → `docs/previews/nombre-icon
 Conclusión: cambiar el nombre antes de publicar. El `applicationId` técnico (`com.aistudio.neurovida.cgnv`) se
 cambia al final, junto con la firma y la tienda (cambiarlo = app nueva), como ya estaba acordado.
 
-## 2. Cinco nombres propuestos
+## 2. Nombres propuestos
 
 Criterios: palabra INVENTADA (las marcas inventadas son las más fáciles de registrar y proteger; las palabras
 comunes como "Órbita" o "Mente Clara" ya están tomadas o no se pueden registrar), en español, fácil de decir para
@@ -29,13 +30,32 @@ un adulto mayor, que calce con el mundo de la app (espacio, planeta, estrellas),
 | Nombre | Idea | Búsqueda rápida (28-sep) | Comentario |
 |---|---|---|---|
 | **Cosmente** | cosmos + mente; suena a "cósmicamente" | Sin apps ni marcas con ese nombre. Hay "CosMe" / "Cosmee" (cosmética). | **Recomendado.** Corto (8 letras, cabe entero bajo el ícono), se entiende en español y se pronuncia en inglés. Parecido lejano a marcas de cosmética: otra clase, pero un abogado debe mirarlo. |
-| **Luminautas** | navegantes de la luz; "¡Hola, luminauta!" | Sin app ni marca de software. "Luminauta" lo usan un estudio de diseño, una lámpara y cuentas de Instagram. | **Segundo.** El más social: le da nombre a la comunidad (la persona ES una luminauta). 10 letras: cabe. |
+| **Luminautas** | navegantes de la luz; "¡Hola, luminauta!" | Sin app ni marca de software. "Luminauta" lo usan un estudio de diseño, una lámpara y cuentas de Instagram. | El más social: le da nombre a la comunidad (la persona ES una luminauta). **Baja al 2.º grupo** (revisión del 28-sep): "Lumi-" suena a LUMOSITY / Lumos Labs, la marca más conocida del mismo rubro (juegos para la mente); un parecido así es lo primero que mira una oficina de marcas. |
 | **Astromente** | astro + mente | Sin resultados. | Claro, pero "astro" acerca a la astrología. |
 | **Mentaluna** | mente + luna | Sin resultados ("Luna Menta" es una joyería en Londres). | Suave y bonito; menos energía que los dos primeros. |
-| **Orbimente** | órbita + mente | Sin resultados. | Correcto, pero cuesta un poco decirlo. |
+| **Orbimente** | órbita + mente | Sin resultados. | Correcto, pero cuesta un poco decirlo. "Orbi" es una marca de Netgear (routers, clase 9): parecido parcial. |
 
-Descartados en la búsqueda: **Mentenautas** (ya existe un podcast de salud mental con ese nombre, mismo rubro),
-**Orbitea** (proyecto de software de viajes), **Órbita** / **Nova** / **Aurora** (palabras comunes, muy tomadas).
+### Segunda ronda (pedido de Ricardo: "dame más opciones")
+
+Lámina: `python3 tools/previews/nombres_mas.py` → `docs/previews/nombres-mas.png`.
+
+| Nombre | Idea | Búsqueda rápida (28-sep) | Comentario |
+|---|---|---|---|
+| **Planetea** | "planetear": hacer crecer tu planeta | Sin apps ni marcas con ese nombre. | **Muy bueno**: el nombre ES lo que se hace en la app (la pestaña Hoy es "Tu planeta"); corto y alegre. Ojo: se parece a "Planeta" (Grupo Planeta, editorial grande con marcas en libros y medios): que el abogado lo mire. |
+| **Lunamente** | luna + mente; suena a adverbio ("vivir lunamente") | Solo una cuenta de Instagram en portugués; ninguna app. | Suena mejor que Mentaluna (fluye como palabra del idioma). |
+| **Estrellamente** | estrella + mente ("brillar estrellamente") | Sin resultados. | Bonito pero largo (13 letras): en algunos teléfonos se corta bajo el ícono. |
+| **Pensastro** | pensar + astro ("¡piensa, astro!") | Sin resultados. | Juguetón, con humor; menos serio. |
+| **Pensaluna** | pensar + luna | Sin resultados. | Suave y fácil de decir. |
+
+**Orden sugerido con las dos rondas**: 1) **Cosmente**, 2) **Planetea**, 3) Lunamente, 4) Astromente,
+5) Estrellamente; después Pensastro, Pensaluna, Mentaluna, Orbimente y Luminautas.
+
+Descartados en la búsqueda (ya existen o chocan con el rubro): **Mentenautas** (podcast de salud mental),
+**Mentaluz** (empresa de salud mental en Chile), **Mentelar** (organización de educación y salud), **Mentaria**
+(proyecto "próximamente"), **Kosmi** (app de juegos y fiestas virtuales), **Galaxio** (juego de puzzle espacial),
+**Constela** (app de viajes y agencia en México), **Astrelia** (app de astrología), **Estelaria** (perfumes y
+autoayuda), **Orbelia** (sitio de bienestar), **Lunio** (varias apps), **Tripulia** (jerga en portugués),
+**Orbitea** (software de viajes), **Órbita** / **Nova** / **Aurora** (palabras comunes, muy tomadas).
 
 **Lo que falta antes de decidir en firme** (no se puede hacer bien desde aquí, las bases oficiales no responden a
 búsquedas automáticas):
@@ -79,21 +99,84 @@ cuadrado redondeado según el teléfono; abajo, en tamaño real en una pantalla 
   Memory Grid, Syllable Stacks, To-Do List Training, In the Know), la mayoría son auditivos o de lenguaje que no
   tenemos. Los que se parecen a juegos nuestros: **Double Decision ↔ Radar** y **Target Tracker ↔ Satélites**.
 
-## 5. Juegos y patentes: riesgo de cada uno
+## 5. Juegos y patentes: riesgo y retoques
 
 Las patentes valen **solo en el país donde se registraron** y por 20 años desde que se pidieron. Las de abajo son de
-EE. UU.: si la app se lanza primero en Chile o Latinoamérica, no aplican allá, salvo que la misma empresa haya
-registrado la patente también en esos países (hay que revisarlo; es lo que se llama "familia" de la patente).
+EE. UU. (algunas de Akili también de Japón): si la app se lanza primero en Chile o Latinoamérica, no aplican allá,
+salvo que la empresa haya registrado la misma patente en esos países (su "familia": hay que revisarlo).
 
-| Juego | Patente que se parece | Riesgo | Qué hacer |
+**Cómo se "roza el límite" sin pasarlo.** Una patente se infringe solo si el juego hace TODOS los pasos de un
+reclamo. Si un paso falta de verdad, el juego queda fuera. Ojo: en EE. UU. un cambio que es solo de apariencia (otro
+dibujo, otro nombre) puede contar igual ("doctrina de equivalentes"); el retoque tiene que cambiar lo que la persona
+HACE. Por eso los retoques de abajo cambian pasos, no dibujos.
+
+### Radar — riesgo ALTO hoy → retoque propuesto (maqueta: `docs/previews/radar-retoque.png`)
+
+US 8,348,671 (Posit Science, "entrenamiento de atención visual dividida", vence ~nov. 2031). Su reclamo 1 exige,
+todo junto: (a) una imagen en el centro y a la vez (b) una ubicación marcada en la periferia, por un tiempo, y se
+apagan; (c) mostrar dos o más imágenes candidatas y (d) exigir que se elija la del centro entre ellas; (e) SOLO si
+acertó, pedir la ubicación de la periferia; (f) ajustar el tiempo de exposición según las respuestas; (g) repetir.
+Radar hoy hace (a), (b), (c), (d), (f) y (g); lo único distinto es que pregunta la dirección siempre, no solo si
+acertó.
+
+**Retoque (3 cambios chicos, uno por paso del reclamo):**
+
+1. **Tu nave de rescate, antes.** Al empezar (y cada 5 rondas) se muestra la nave de la misión: "Si pasa por el
+   centro, dilo al final de la ronda".
+2. **Primero ¿dónde?**: después de la interferencia se pregunta SIEMPRE primero dónde estaba el astronauta.
+3. **Después "¿Pasó tu nave por el centro?" SÍ / NO.** Ya no se muestran naves para elegir: se responde con dos
+   botones de texto. En la mitad de las rondas pasa tu nave; en la otra mitad, otra (desde el nivel 5 del mismo
+   color, desde el 9 de silueta parecida: la misma dificultad de hoy).
+
+Con esto faltan los pasos (c) y (d) (no hay candidatas ni se elige entre imágenes) y el (e) (la ubicación no depende
+de acertar el centro, y va primero). **Se mantiene todo lo que importa**: el destello que se acorta con la escalera
+(lo central del entrenamiento de velocidad), las 8 direcciones y 3 anillos, los asteroides, la interferencia,
+"rescatado" cuando las dos respuestas están bien, **tu vistazo** y **tu radar**. Ciencia: sigue siendo atención
+dividida centro + periferia bajo un destello cada vez más breve; la tarea del centro pasa de "identificar" a
+"reconocer" (sí/no), con el mismo 50% de azar que hoy. Trabajo: `RadarContract` (ronda con o sin tu nave), el orden
+de preguntas en `RadarGameController`, pruebas, y cambiar la marca de verificación de Unity. Riesgo después:
+**bajo-medio**. Aun así, que un abogado lo mire antes de publicar en EE. UU. (Posit tiene más patentes de esa familia
+que no revisé).
+
+### Piloto Estelar — riesgo bajo; sin retoque, con reglas
+
+- US 9,940,844 (Universidad de California / Akili, el NeuroRacer, ~2032): todos sus reclamos exigen un sensor de
+  movimiento o de posición. Piloto se maneja con el dedo. **Regla: nunca manejar inclinando el teléfono.**
+- Revisé también otras patentes de Akili (hay decenas): **US 11,839,472** exige un "clasificador" que calcula un
+  perfil de respuesta impulsivo o conservador variando el plazo para responder; **US 11,507,178** exige caras que
+  expresan emociones y que cambian en tiempo real según el desempeño; **US 11,304,657** exige un sensor fisiológico
+  (pulso, EEG). Piloto no hace nada de eso. **Reglas para todos los juegos**: no calcular un "perfil impulsivo /
+  conservador"; no usar caras con emociones que reaccionen a cómo le va a la persona (por ejemplo, un astronauta que
+  sonríe o se entristece según los aciertos); no usar sensores del cuerpo.
+- El **costo de multitarea** (caída entre piloto automático y a los mandos) es una medida clásica de doble tarea
+  (décadas de laboratorio), pero Akili la describe en sus patentes: va a la lista del abogado.
+
+### Sistema de avance (no es un juego) — riesgo bajo-medio; con reglas
+
+US 10,559,221 (Akili, vence ~2036): evaluación inicial → "máximo rendimiento" de la persona → un rango personal →
+el rango se divide en "puertas" de avance → tareas de esa puerta → si la supera, la siguiente, siempre dentro del
+rango personal. Lo nuestro es distinto en lo esencial: el punto de partida solo fija el nivel de inicio; las etapas
+Inicio…Maestro son quintos de la escala COMÚN de cada juego (iguales para todos), no un rango personal partido; y la
+dificultad se mueve ensayo a ensayo (la escalera), no por puertas. **Reglas**: (1) las etapas quedan en la escala
+común; no calcular un "máximo personal" para partirlo en escalones; (2) el re-chequeo mensual del punto de partida
+(pendiente) va por calendario y no rearma rangos; (3) Desafío y Experto son modos que se eligen, no puertas
+obligatorias para avanzar. Como Desafío → Experto se parece un poco a una "puerta", va a la lista del abogado.
+
+### Los demás
+
+| Juego | Qué encontré | Riesgo | Regla |
 |---|---|---|---|
-| **Radar** | US 8,348,671 (Posit, "entrenamiento de atención visual dividida", vence ~nov. 2031). Su reclamo principal: blanco en el centro y otro en la periferia a la vez → se apagan → elegir el del centro entre opciones → si acertó, marcar dónde estaba el de la periferia → el tiempo de exposición se adapta. | **ALTO** | Es casi la misma secuencia. Antes de publicar en EE. UU.: revisión de un abogado de patentes ("libertad de operación"). Diferencias a mostrarle: en Radar SIEMPRE se pregunta la dirección (no solo si acertó el centro) y se cuentan las dos respuestas juntas; tema de rescate, arte y medida propios. Si el abogado lo ve riesgoso: rediseñar (por ejemplo, preguntar primero la dirección) o dejar Radar fuera en EE. UU. hasta 2031. |
-| **Piloto Estelar** | US 9,940,844 (Universidad de California / Akili, el NeuroRacer; ~2032). Todos sus reclamos exigen un sensor de movimiento o de posición (inclinar el teléfono, cámara, equipo de ejercicio). | Bajo-medio | Piloto se maneja con el dedo: queda fuera. **Nunca** agregar manejo inclinando el teléfono. |
-| **Parejas** | US 7,540,615 (Posit, ~2026-2028): exige mostrar las cartas UNA POR UNA en secuencia. | Bajo | Parejas muestra el tablero completo a la vez: mantenerlo así. |
-| **Radar (nombre)** | "UFOV®" es marca registrada (la patente original del UFOV, US 4,971,434, ya venció). | Bajo | No usar "UFOV" en la app ni en la tienda (en los documentos internos, como referencia científica, está bien). |
-| **Satélites** | No encontré patente aplicable; el seguimiento de múltiples objetos es un paradigma de laboratorio público (Pylyshyn y Storm, 1988). | Bajo | Mantener nombre, arte y medida propios; no usar "Target Tracker" ni "NeuroTracker". |
-| **Tráfico Estelar** | La patente de Lumos Labs encontrada (US 8,821,242) es de un juego tipo pinball; no encontré patente del juego de trenes. | Bajo | Ya tiene nombre, arte, sonidos y medidas propios. |
+| **Parejas** | US 7,540,615 (Posit, ~2026-2028): exige mostrar las cartas UNA POR UNA en secuencia. | Bajo | Mantener el tablero completo a la vez. |
+| **Satélites** | Las patentes de NeuroTracker (Faubert / CogniSens: US 9,566,029 y US 10,706,730) describen un ambiente 3D estereoscópico e inmersivo; el seguimiento de varios objetos en sí es un paradigma público (Pylyshyn y Storm, 1988). | Bajo | Satélites es plano: nada de 3D estereoscópico ni realidad virtual. |
+| **Tráfico Estelar** | La patente de Lumos Labs encontrada (US 8,821,242) es de un juego tipo pinball; no encontré patente del juego de trenes. | Bajo | Nombre, arte, sonidos y medidas propios (ya los tiene); nada de trenes ni estaciones de tren. |
 | Demás juegos | Stroop (1935), señal de alto (Logan, 1984), línea numérica (Siegler, 2003), rotación mental (Shepard, 1971), integración de trayecto, memoria episódica y prospectiva: tareas clásicas y públicas. | Bajo (no revisado a fondo) | Nada por ahora. |
+
+**Nombres que nunca se usan** (ni en la app, ni en la tienda, ni en publicidad): UFOV, Double Decision, Target
+Tracker, BrainHQ, NeuroRacer, EndeavorRx, NeuroTracker, Train of Thought, Lumosity, Peak, Elevate. En los documentos
+internos, como referencia científica, sí.
+
+**Lista para el abogado** (cuando llegue el momento de publicar): el nombre elegido; Radar con el retoque; el costo
+de multitarea de Piloto; el sistema de avance (Desafío → Experto) frente a US 10,559,221.
 
 ## 6. Publicidad y textos: la lección de Lumosity
 
@@ -131,6 +214,11 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 - US 9,940,844: https://patents.google.com/patent/US9940844B2/en
 - US 4,971,434 (UFOV original): https://patents.google.com/patent/US4971434/en · marca UFOV®: https://www.visualawareness.com/what-is-ufov/
 - US 8,821,242 (Lumos Labs): https://patents.google.com/patent/US8821242
+- US 11,839,472 (Akili): https://patents.google.com/patent/US11839472
+- US 11,507,178 (Akili): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/11507178
+- US 11,304,657 (Akili): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/11304657
+- US 10,559,221 (Akili): https://patents.google.com/patent/US10559221B2/en
+- Patentes de NeuroTracker (Faubert): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/9566029 · https://patents.google.com/patent/US10706730B2/en
 - Tetris contra Xio: https://en.wikipedia.org/wiki/Tetris_Holding,_LLC_v._Xio_Interactive,_Inc.
 - FTC y Lumosity (2016): https://www.ftc.gov/news-events/news/press-releases/2016/01/lumosity-pay-2-million-settle-ftc-deceptive-advertising-charges-its-brain-training-program
 - Podcast Mentenautas: https://podcasters.spotify.com/pod/show/mentenautas-podcast
