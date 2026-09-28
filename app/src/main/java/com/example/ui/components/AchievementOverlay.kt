@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.AchievementDef
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -134,7 +134,7 @@ fun AchievementOverlay(
     ) {
       Text(
         text = "¡LOGRO!",
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         letterSpacing = 3.sp,
@@ -188,13 +188,13 @@ fun AchievementOverlay(
         Text(
           text = def.title,
           style = TextStyle(
-            fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 36.sp, lineHeight = 40.sp,
+            fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 36.sp, lineHeight = 40.sp,
             color = light, textAlign = TextAlign.Center, shadow = Shadow(Clay.Ink, Offset(0f, 8f), 0f)
           )
         )
         Text(
           text = def.description,
-          fontFamily = FredokaFamily,
+          fontFamily = AppFamily,
           fontWeight = FontWeight.SemiBold,
           fontSize = 18.sp,
           color = Color.White,
@@ -203,7 +203,7 @@ fun AchievementOverlay(
         )
         Text(
           text = "$unlockedCount de $totalCount logros",
-          fontFamily = FredokaFamily,
+          fontFamily = AppFamily,
           fontSize = 15.sp,
           color = Color(0xFFB4BFEA),
           modifier = Modifier.padding(top = 10.dp)

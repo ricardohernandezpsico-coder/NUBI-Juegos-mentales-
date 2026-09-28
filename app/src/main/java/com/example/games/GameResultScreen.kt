@@ -66,7 +66,7 @@ import com.example.ui.components.pipCount
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.ui.theme.ClayPill
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -151,7 +151,7 @@ fun GameResultScreen(
     Text(
       text = gameDef?.title ?: "Partida terminada",
       color = Clay.Cream,
-      fontFamily = FredokaFamily,
+      fontFamily = AppFamily,
       fontWeight = FontWeight.Bold,
       fontSize = 26.sp,
       textAlign = TextAlign.Center
@@ -207,7 +207,7 @@ fun GameResultScreen(
         else -> "Sigue practicando"
       },
       color = Clay.Cream,
-      fontFamily = FredokaFamily,
+      fontFamily = AppFamily,
       fontWeight = FontWeight.Bold,
       fontSize = 28.sp,
       textAlign = TextAlign.Center
@@ -242,12 +242,12 @@ fun GameResultScreen(
         color = if (cost <= 15) Clay.Lime else Clay.Sun,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
-        fontFamily = FredokaFamily
+        fontFamily = AppFamily
       )
       Text(
         text = "Cuánto bajó tu puntería con las señales al pasar de solo mirarlas (piloto automático) a pilotar y mirarlas a la vez. Mientras más bajo, mejor repartes la atención. Con práctica suele bajar.",
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
       )
@@ -262,12 +262,12 @@ fun GameResultScreen(
         color = Clay.Sky,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
-        fontFamily = FredokaFamily
+        fontFamily = AppFamily
       )
       Text(
         text = "El destello más breve con el que aciertas unas 4 de cada 5 veces (la nave del centro y dónde estaba el astronauta). Mientras menos milisegundos, más rápido captas.",
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
       )
@@ -277,13 +277,13 @@ fun GameResultScreen(
     if (hits != null && trials != null && trials.sum() > 0) {
       Spacer(Modifier.height(12.dp))
       val summary = radarSummary(hits, trials)
-      Text("Tu radar", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+      Text("Tu radar", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
       Spacer(Modifier.height(6.dp))
       RadarField(hits, trials, Modifier.size(150.dp).semantics { contentDescription = "Tu radar. $summary" })
       Text(
         text = summary,
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
       )
@@ -300,7 +300,7 @@ fun GameResultScreen(
         color = Clay.Sun,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
-        fontFamily = FredokaFamily
+        fontFamily = AppFamily
       )
       Spacer(Modifier.height(6.dp))
       TrackingSlots(cap, Modifier.semantics { contentDescription = "Sigues $capText satélites a la vez" })
@@ -319,7 +319,7 @@ fun GameResultScreen(
         else
           "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. A velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri, 2007).",
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
       )
@@ -335,7 +335,7 @@ fun GameResultScreen(
           color = Clay.Coral,
           fontWeight = FontWeight.Bold,
           fontSize = 18.sp,
-          fontFamily = FredokaFamily
+          fontFamily = AppFamily
         )
         Spacer(Modifier.height(6.dp))
         BrakeGauge(brake, Modifier.semantics { contentDescription = "Tu freno: $brake milisegundos" })
@@ -353,7 +353,7 @@ fun GameResultScreen(
         text = if (brake != null) "Estimación de cuánto tardas en frenar una acción que ya ibas a hacer. Mientras más bajo, más rápido frenas. Con pocos altos por partida varía bastante: mira cómo va en varias."
         else "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4. Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona.",
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
       )
@@ -368,14 +368,14 @@ fun GameResultScreen(
         color = Clay.Sky,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 24.dp)
       )
       Text(
         text = "En promedio, qué tan lejos del blanco te posaste (en % del largo de la regla). Ubicar un número en una regla junta dos cosas: saber cuánto vale y calcular a ojo qué parte de la regla le toca.",
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
       )
@@ -384,7 +384,7 @@ fun GameResultScreen(
       if (trues != null && givens != null) {
         val bias = com.example.data.NumberLine.reading(trues, givens)
         Spacer(Modifier.height(8.dp))
-        Text("Tu línea", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+        Text("Tu línea", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
         NumberLineStrip(
           trues, givens,
           Modifier.fillMaxWidth().padding(horizontal = 28.dp).height(64.dp)
@@ -393,7 +393,7 @@ fun GameResultScreen(
         Text(
           text = com.example.data.NumberLine.message(bias),
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
         )
@@ -418,12 +418,12 @@ fun GameResultScreen(
           color = Clay.Grape,
           fontWeight = FontWeight.Bold,
           fontSize = 18.sp,
-          fontFamily = FredokaFamily
+          fontFamily = AppFamily
         )
       }
       result.rotationCurveMs?.let { curve ->
         Spacer(Modifier.height(8.dp))
-        Text("Tu curva de giro", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+        Text("Tu curva de giro", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
         RotationCurve(
           curve,
           Modifier.padding(horizontal = 40.dp).fillMaxWidth().height(110.dp)
@@ -434,7 +434,7 @@ fun GameResultScreen(
         text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. En Precisión, sin apuro de combustible, la medida es más fiel."
         else "Tu giro mental se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
       )
@@ -450,14 +450,14 @@ fun GameResultScreen(
           color = Clay.Sun,
           fontWeight = FontWeight.Bold,
           fontSize = 20.sp,
-          fontFamily = FredokaFamily
+          fontFamily = AppFamily
         )
         Spacer(Modifier.height(6.dp))
         LoadSlots(n, Modifier.semantics { contentDescription = "Coordinaste $n cápsulas a la vez sin errores" })
         Text(
           text = "Las que tuviste en viaje al mismo tiempo sin ningún error entre ellas. Sube a medida que el juego te da más tráfico.",
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
         )
@@ -469,12 +469,12 @@ fun GameResultScreen(
           color = Clay.Sky,
           fontWeight = FontWeight.Bold,
           fontSize = 18.sp,
-          fontFamily = FredokaFamily
+          fontFamily = AppFamily
         )
         Text(
           text = "Cuánto antes de que pase la cápsula dejas listo su desvío (valor típico de la partida).",
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
         )
@@ -487,14 +487,14 @@ fun GameResultScreen(
             .semantics { contentDescription = "Planificas $pct por ciento, a último momento ${100 - pct} por ciento" }
         )
         Row(Modifier.padding(horizontal = 36.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-          Text("Planificas $pct%", color = Clay.Lime, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-          Text("A último momento ${100 - pct}%", color = Clay.Sun, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+          Text("Planificas $pct%", color = Clay.Lime, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+          Text("A último momento ${100 - pct}%", color = Clay.Sun, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
         Text(
           text = if (pct >= 50) "Te anticipas: eso deja holgura cuando el tráfico aumenta."
           else "Reaccionas a tiempo, pero justo. Prueba mirar las próximas y preparar la ruta antes de que salgan.",
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
         )
@@ -507,13 +507,13 @@ fun GameResultScreen(
       val items = result.memItems ?: 0
       if (result.memPhase == "encode") {
         val learned = result.memLearned ?: 0
-        Text("Transmisión guardada", color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = FredokaFamily)
+        Text("Transmisión guardada", color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily)
         Spacer(Modifier.height(6.dp))
         FilledSlots(learned, items, Clay.Sky, Modifier.semantics { contentDescription = "Aprendiste $learned de $items" })
         Text(
           text = "Aprendiste $learned de $items en el primer repaso. El informe se abre al terminar tu sesión de hoy (o en 10 minutos). No hace falta repasar: la idea es ver cuánto guarda tu memoria por sí sola.",
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
         )
@@ -525,7 +525,7 @@ fun GameResultScreen(
           color = Clay.Sun,
           fontWeight = FontWeight.Bold,
           fontSize = 20.sp,
-          fontFamily = FredokaFamily,
+          fontFamily = AppFamily,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 24.dp)
         )
@@ -534,7 +534,7 @@ fun GameResultScreen(
         Text(
           text = "Hallazgos que recordaste en su planeta, sin ayuda.",
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
         )
@@ -549,7 +549,7 @@ fun GameResultScreen(
           Text(
             text = "De lo que acertaste en el primer repaso, cuánto seguía ahí en el informe. Separa aprender de retener.",
             color = TextSoft,
-            fontSize = 13.sp,
+            fontSize = 15.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
           )
@@ -568,7 +568,7 @@ fun GameResultScreen(
             text = (if (n == 1) "Elegiste 1 hallazgo que no estaba en la misión" else "Elegiste $n hallazgos que no estaban en la misión") +
               ": la memoria a veces completa huecos con lo que parece probable. Es normal.",
             color = TextSoft,
-            fontSize = 13.sp,
+            fontSize = 15.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
           )
@@ -576,7 +576,7 @@ fun GameResultScreen(
         Text(
           text = "Truco para la próxima: imagina cada hallazgo haciendo algo en su planeta. Una escena se recuerda mejor que un dato suelto.",
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
         )
@@ -601,14 +601,14 @@ fun GameResultScreen(
         color = Clay.Lime,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 24.dp)
       )
       Text(
         text = "En promedio, a qué distancia de tu base quedaste, en % de lo que había que volver. Volver sin mapa usa lo que registras al moverte: cuánto giras y cuánto avanzas.",
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
       )
@@ -620,7 +620,7 @@ fun GameResultScreen(
         val angle = com.example.data.Homing.meanAbsAngle(trips)
         val distance = com.example.data.Homing.distanceMessage(com.example.data.Homing.distance(trips))
         Spacer(Modifier.height(8.dp))
-        Text("Tus llegadas", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = FredokaFamily)
+        Text("Tus llegadas", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
         HomingTarget(
           trips,
           Modifier.fillMaxWidth().padding(horizontal = 56.dp).height(230.dp)
@@ -632,7 +632,7 @@ fun GameResultScreen(
         Text(
           text = "Cada punto es dónde quedaste. Encima de tu base es pasarte, debajo es quedarte corto y a los lados es desviar el rumbo.",
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
         )
@@ -657,13 +657,13 @@ fun GameResultScreen(
           )
         }
         com.example.data.Homing.sourceMessage(com.example.data.Homing.source(trips))?.let {
-          Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+          Text(it, color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
         }
         com.example.data.Homing.beaconAngles(trips)?.let { (withDeg, withoutDeg) ->
           Text(
             text = com.example.data.Homing.beaconMessage(withDeg, withoutDeg),
             color = TextSoft,
-            fontSize = 13.sp,
+            fontSize = 15.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
           )
@@ -691,14 +691,14 @@ fun GameResultScreen(
         color = Clay.Sun,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 24.dp)
       )
       Text(
         text = "Acordarte de hacer algo en el momento justo, sin que nada te avise del todo: como tomar un remedio o hacer una llamada.",
         color = TextSoft,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
       )
@@ -721,7 +721,7 @@ fun GameResultScreen(
         com.example.data.Mail.compareMessage(evHits, evTotal, raHits, raTotal)
       )
       notes.forEach {
-        Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+        Text(it, color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
       }
       val lane = result.mailLanePct
       val asteroids = result.mailAsteroids
@@ -730,12 +730,12 @@ fun GameResultScreen(
         Text(
           text = "Ruta: $lane% del vuelo" + (if (asteroids != null && asteroids > 0) " · esquivaste $dodged de $asteroids asteroides" else ""),
           color = TextSoft,
-          fontSize = 13.sp,
+          fontSize = 15.sp,
           modifier = Modifier.padding(top = 4.dp)
         )
       }
       com.example.data.Mail.shipMessage(result.mailHullIntactPct ?: -1, result.mailEmergencies ?: 0)?.let {
-        Text(it, color = TextSoft, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+        Text(it, color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
       }
     }
 
@@ -749,7 +749,7 @@ fun GameResultScreen(
       Text(
         text = "Medida de esta partida: cambia de un día a otro. Lo que vale es cómo evoluciona, no un resultado suelto. No es un diagnóstico.",
         color = TextSoft.copy(alpha = 0.8f),
-        fontSize = 12.sp,
+        fontSize = 14.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 32.dp, vertical = 10.dp)
       )
@@ -811,7 +811,7 @@ fun GameResultScreen(
 /** Número "de arcilla": relleno de color, contorno tinta grueso y sombra dura tinta (como en los juegos). */
 @Composable
 private fun ClayNumber(text: String, color: Color, fontSize: TextUnit) {
-  val base = TextStyle(fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = fontSize)
+  val base = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = fontSize)
   val stroke = Stroke(width = 16f, join = StrokeJoin.Round)
   Box {
     Text(text, style = base.copy(color = Clay.Ink, drawStyle = stroke), modifier = Modifier.offset(y = 6.dp))
@@ -875,7 +875,7 @@ private fun DrawScope.drawBurst(center: Offset, progress: Float, reach: Float) {
 @Composable
 private fun Stat(value: String, label: String) {
   Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 6.dp)) {
-    Text(value, color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = FredokaFamily)
+    Text(value, color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily)
     Text(label, color = TextSoft, fontSize = 14.sp)
   }
 }
@@ -1055,7 +1055,7 @@ private fun LoadSlots(load: Int, modifier: Modifier = Modifier) {
 @Composable
 private fun BrakeGauge(brakeMs: Int, modifier: Modifier = Modifier) {
   Row(modifier, verticalAlignment = Alignment.Bottom) {
-    Text("lento", color = TextSoft, fontSize = 12.sp, modifier = Modifier.padding(end = 6.dp))
+    Text("lento", color = TextSoft, fontSize = 14.sp, modifier = Modifier.padding(end = 6.dp))
     Canvas(Modifier.size(width = 150.dp, height = 84.dp)) {
       val stroke = 14.dp.toPx()
       val r = size.width / 2f - stroke
@@ -1073,7 +1073,7 @@ private fun BrakeGauge(brakeMs: Int, modifier: Modifier = Modifier) {
       drawCircle(Clay.Ink, 8.dp.toPx(), c)
       drawCircle(Clay.Sun, 5.dp.toPx(), c)
     }
-    Text("rápido", color = TextSoft, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp))
+    Text("rápido", color = TextSoft, fontSize = 14.sp, modifier = Modifier.padding(start = 6.dp))
   }
 }
 
@@ -1135,7 +1135,7 @@ private fun HomingTarget(trips: List<com.example.data.HomingTrip>, modifier: Mod
     drawCircle(Clay.Lime.copy(alpha = 0.6f), unit * 0.12f, home, style = Stroke(1.5.dp.toPx()))
     drawCircle(Clay.Ink, 5.dp.toPx(), Offset(cx, startY))
     drawCircle(Clay.Cream, 3.dp.toPx(), Offset(cx, startY))
-    val small = TextStyle(color = TextSoft, fontSize = 11.sp)
+    val small = TextStyle(color = TextSoft, fontSize = 13.sp)
     val startLab = measurer.measure("inicio de la vuelta", small)
     drawText(startLab, topLeft = Offset(cx + 10.dp.toPx(), startY - startLab.size.height / 2f))
     // Tu base: anillo crema con centro coral (como en el juego).
@@ -1173,7 +1173,7 @@ private fun RotationCurve(curve: List<Int?>, modifier: Modifier = Modifier) {
     val labelH = 18.dp.toPx()
     val valueH = 16.dp.toPx()
     val chartH = size.height - labelH - valueH
-    val small = TextStyle(color = TextSoft, fontSize = 11.sp)
+    val small = TextStyle(color = TextSoft, fontSize = 13.sp)
     for (i in 0 until 5) {
       val cx = slot * (i + 0.5f)
       val lab = measurer.measure(labels[i], small)

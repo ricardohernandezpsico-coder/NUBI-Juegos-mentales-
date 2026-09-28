@@ -31,7 +31,7 @@ import androidx.core.content.FileProvider
 import com.example.data.AchievementDef
 import com.example.model.RankTier
 import com.example.ui.theme.Clay
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -117,7 +117,7 @@ object ShareCard {
     }
 
     // Marca arriba
-    val brand = TextStyle(fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 64.sp, color = Color.White)
+    val brand = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 64.sp, color = Color.White)
     centered(measurer, "NeuroVida", brand, 130f)
     sparkle(Offset(w / 2f + 190f, 150f), 22f, Clay.Sun)
 
@@ -154,15 +154,15 @@ object ShareCard {
 
     // Titular, dónde y cifras
     val headline = TextStyle(
-      fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 116.sp, lineHeight = 124.sp,
+      fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 116.sp, lineHeight = 124.sp,
       color = accentLight, textAlign = TextAlign.Center, shadow = Shadow(Clay.Ink, Offset(0f, 10f), 0f)
     )
     var y = centered(measurer, content.headline, headline, 1070f)
-    val sub = TextStyle(fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 54.sp, color = Color.White, textAlign = TextAlign.Center)
+    val sub = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 54.sp, color = Color.White, textAlign = TextAlign.Center)
     y = centered(measurer, content.subtitle, sub, y + 18f)
 
-    val num = TextStyle(fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 92.sp, color = Clay.Sun, textAlign = TextAlign.Center)
-    val lbl = TextStyle(fontFamily = FredokaFamily, fontSize = 38.sp, color = Color(0xFFB4BFEA), textAlign = TextAlign.Center)
+    val num = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 92.sp, color = Clay.Sun, textAlign = TextAlign.Center)
+    val lbl = TextStyle(fontFamily = AppFamily, fontSize = 38.sp, color = Color(0xFFB4BFEA), textAlign = TextAlign.Center)
     val stats = content.stats.take(2)
     val statsTop = y + 110f
     val colW = w / stats.size.coerceAtLeast(1)
@@ -176,7 +176,7 @@ object ShareCard {
     if (stats.size == 2) drawCircle(Color(0xFFB4BFEA).copy(alpha = 0.6f), 7f, Offset(w / 2f, statsTop + 70f))
 
     // Pie
-    val foot = TextStyle(fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+    val foot = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
     centered(measurer, "Juega. Entrena. Sube de liga.", foot, h - 170f)
   }
 

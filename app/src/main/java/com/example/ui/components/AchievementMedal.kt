@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.Dp
 import com.example.data.AchievementDef
 import com.example.data.AchievementGlyph
 import com.example.ui.theme.Clay
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -83,7 +83,7 @@ fun DrawScope.drawAchievementMedal(def: AchievementDef, unlocked: Boolean, measu
 
   val n = def.number
   if (n != null && measurer != null) {
-    val style = TextStyle(fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = (w * 0.15f).toSp(), color = ink)
+    val style = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = (w * 0.15f).toSp(), color = ink)
     val layout = measurer.measure("$n", style)
     val pw = layout.size.width + w * 0.12f
     val ph = w * 0.2f

@@ -41,7 +41,7 @@ fun SpaceSectionTitle(text: String, modifier: Modifier = Modifier, hint: String?
         .background(Color.White.copy(alpha = 0.10f))
     )
     Text(text, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp))
-    if (hint != null) Text(hint, color = OnNightDim, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
+    if (hint != null) Text(hint, color = OnNightDim, fontSize = 15.sp, modifier = Modifier.padding(top = 2.dp))
   }
 }
 
@@ -82,7 +82,7 @@ fun LeagueHero(tier: RankTier, rating: Int, progress: Float, index: Int?, modifi
       }
       Text(
         "faltan ${(next.minRating - rating).coerceAtLeast(0)} para ${next.tierName}",
-        color = OnNightDim, fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp)
+        color = OnNightDim, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp)
       )
     }
   }
@@ -104,7 +104,7 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
             Text(
               text = if (v == null) "Sin medir" else "${levelWord(v)} · P${com.example.data.Percentile.of(v)}",
               color = if (v == null) OnNightDim else g.domain.color,
-              fontSize = 12.sp, fontWeight = FontWeight.Bold
+              fontSize = 14.sp, fontWeight = FontWeight.Bold
             )
           }
           Box(
@@ -127,14 +127,14 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
           }
           Text(
             rank?.label ?: "",
-            color = OnNightDim, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp)
+            color = OnNightDim, fontSize = 14.sp, modifier = Modifier.padding(top = 3.dp)
           )
         }
       }
     }
     Text(
       "Estimación interna según cómo se adapta la dificultad a ti; no es una medida clínica.",
-      color = OnNightDim, fontSize = 11.sp
+      color = OnNightDim, fontSize = 14.sp
     )
   }
 }

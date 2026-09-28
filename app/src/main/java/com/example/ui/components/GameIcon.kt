@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.example.model.GameRegistry
 import com.example.ui.theme.Clay
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -480,7 +480,7 @@ private fun DrawScope.chevron(c: Offset, r: Float, color: Color) {
 /** Letra en Fredoka tinta, centrada en [c] (en unidades del lienzo 100x100). */
 private fun DrawScope.letter(measurer: TextMeasurer, text: String, c: Offset) {
   // El lienzo está escalado: se pide la fuente en "unidades" (px antes de escalar).
-  val style = TextStyle(fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 34f.toSp(), color = Ink)
+  val style = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 34f.toSp(), color = Ink)
   val layout = measurer.measure(text, style)
   drawText(layout, topLeft = Offset(c.x - layout.size.width / 2f, c.y - layout.size.height / 2f))
 }

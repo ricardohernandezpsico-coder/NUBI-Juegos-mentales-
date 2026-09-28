@@ -86,7 +86,7 @@ import com.example.ui.components.GameIcon
 import com.example.ui.components.LeagueShield
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -261,10 +261,10 @@ private fun WelcomePage(onNext: () -> Unit) {
     Spacer(Modifier.weight(0.4f))
     GamesOrbit()
     Spacer(Modifier.height(18.dp))
-    Text("NeuroVida", color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 44.sp)
+    Text("NeuroVida", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 44.sp)
     Text(
       text = "${GameRegistry.allGames.size} juegos cortos para entrenar memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
-      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center,
+      color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 8.dp)
     )
     Spacer(Modifier.weight(0.6f))
@@ -330,17 +330,17 @@ private fun GamesOrbit() {
 private fun NamePage(name: String, onName: (String) -> Unit, onNext: () -> Unit) {
   Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
     Spacer(Modifier.weight(0.35f))
-    Text("¿Cómo te llamas?", color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp, textAlign = TextAlign.Center)
+    Text("¿Cómo te llamas?", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp, textAlign = TextAlign.Center)
     Text(
       "Para saludarte en tu camino. Es opcional.",
-      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, textAlign = TextAlign.Center,
+      color = OnNightDim, fontFamily = AppFamily, fontSize = 16.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 6.dp, bottom = 22.dp)
     )
     BasicTextField(
       value = name,
       onValueChange = onName,
       singleLine = true,
-      textStyle = TextStyle(fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, color = Clay.Ink, textAlign = TextAlign.Center),
+      textStyle = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, color = Clay.Ink, textAlign = TextAlign.Center),
       cursorBrush = SolidColor(Clay.Ink),
       keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
       keyboardActions = KeyboardActions(onNext = { onNext() }),
@@ -355,7 +355,7 @@ private fun NamePage(name: String, onName: (String) -> Unit, onNext: () -> Unit)
             .padding(horizontal = 18.dp, vertical = 16.dp),
           contentAlignment = Alignment.Center
         ) {
-          if (name.isEmpty()) Text("Tu nombre", color = Clay.InkSoft, fontFamily = FredokaFamily, fontSize = 24.sp)
+          if (name.isEmpty()) Text("Tu nombre", color = Clay.InkSoft, fontFamily = AppFamily, fontSize = 24.sp)
           inner()
         }
       }
@@ -379,9 +379,9 @@ private fun ChoicePage(
 ) {
   Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
     Spacer(Modifier.weight(0.3f))
-    Text(title, color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 32.sp, textAlign = TextAlign.Center)
+    Text(title, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 32.sp, textAlign = TextAlign.Center)
     Text(
-      hint, color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
+      hint, color = OnNightDim, fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 8.dp, bottom = 26.dp)
     )
     // Con pantallas chicas o letra grande las opciones se desplazan en vez de cortarse.
@@ -405,7 +405,7 @@ private fun ChoicePage(
 private fun HowItWorksPage(onNext: () -> Unit) {
   Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
     Spacer(Modifier.weight(0.45f))
-    Text("Así funciona", color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 32.sp)
+    Text("Así funciona", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 32.sp)
     Spacer(Modifier.height(26.dp))
     HowRow(
       art = { PathNodesArt() },
@@ -433,10 +433,10 @@ private fun HowItWorksPage(onNext: () -> Unit) {
 private fun GoalsPage(selected: Set<DomainType>, onToggle: (DomainType) -> Unit, onNext: () -> Unit) {
   Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
     Spacer(Modifier.weight(0.25f))
-    Text("¿Qué quieres entrenar?", color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, textAlign = TextAlign.Center)
+    Text("¿Qué quieres entrenar?", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, textAlign = TextAlign.Center)
     Text(
       "Elige hasta 3. Tu camino de cada día les dará prioridad.",
-      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
+      color = OnNightDim, fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 8.dp, bottom = 22.dp)
     )
     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
@@ -457,8 +457,8 @@ private fun GoalsPage(selected: Set<DomainType>, onToggle: (DomainType) -> Unit,
           Box(Modifier.size(18.dp).clip(CircleShape).background(d.color).border(2.dp, Clay.Ink, CircleShape))
           Spacer(Modifier.width(12.dp))
           Column(Modifier.weight(1f)) {
-            Text(d.displayName, color = if (on) Clay.Ink else Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text(d.description, color = if (on) Clay.InkSoft else OnNightDim, fontFamily = FredokaFamily, fontSize = 13.sp)
+            Text(d.displayName, color = if (on) Clay.Ink else Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(d.description, color = if (on) Clay.InkSoft else OnNightDim, fontFamily = AppFamily, fontSize = 15.sp)
           }
           // Marca de elegido (forma, no solo color).
           Box(
@@ -486,12 +486,12 @@ private fun StartingPointPage(onStart: () -> Unit, onLater: () -> Unit) {
     Spacer(Modifier.weight(0.35f))
     Text(
       "Encontremos tu punto de partida",
-      color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 34.sp,
+      color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 34.sp,
       textAlign = TextAlign.Center
     )
     Text(
       "3 juegos cortos, unos 5 minutos. No es un examen: con esto cada juego empieza a tu medida.",
-      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
+      color = OnNightDim, fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 10.dp, bottom = 30.dp)
     )
     Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
@@ -508,11 +508,11 @@ private fun StartingPointPage(onStart: () -> Unit, onLater: () -> Unit) {
           ) { GameIcon(step.gameId, size = 50.dp) }
           Text(
             "${i + 1}. ${step.domain.displayName}",
-            color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+            color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp,
             modifier = Modifier.padding(top = 8.dp)
           )
           Text(
-            game?.title ?: "", color = OnNightDim, fontFamily = FredokaFamily, fontSize = 12.sp, textAlign = TextAlign.Center
+            game?.title ?: "", color = OnNightDim, fontFamily = AppFamily, fontSize = 14.sp, textAlign = TextAlign.Center
           )
         }
       }
@@ -521,7 +521,7 @@ private fun StartingPointPage(onStart: () -> Unit, onLater: () -> Unit) {
     ClayButton(text = "Empezar", onClick = onStart, modifier = Modifier.testTag("btn_onboarding_baseline"))
     Text(
       "Hacerlo después",
-      color = OnNight, fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+      color = OnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
       modifier = Modifier
         .padding(top = 8.dp)
         .clip(RoundedCornerShape(12.dp))
@@ -539,8 +539,8 @@ private fun HowRow(art: @Composable () -> Unit, title: String, text: String) {
     Box(modifier = Modifier.width(72.dp), contentAlignment = Alignment.Center) { art() }
     Spacer(Modifier.width(14.dp))
     Column(Modifier.weight(1f)) {
-      Text(title, color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 19.sp)
-      Text(text, color = OnNightDim, fontFamily = FredokaFamily, fontSize = 15.sp, lineHeight = 20.sp)
+      Text(title, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+      Text(text, color = OnNightDim, fontFamily = AppFamily, fontSize = 15.sp, lineHeight = 20.sp)
     }
   }
 }

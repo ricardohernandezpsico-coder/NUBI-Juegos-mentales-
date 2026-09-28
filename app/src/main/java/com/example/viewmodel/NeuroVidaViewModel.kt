@@ -635,8 +635,39 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   fun closeGameOrResult() {
+    // Partida lanzada desde Juegos: al cerrar el resultado se vuelve a Juegos, al área y casilla de ese juego
+    // (también si Android cerró la app durante el juego y el ViewModel es nuevo).
+    val gameId = _lastResult.value?.first?.gameId ?: _activeGame.value?.gameDef?.id
+    if (gameId != null && focusPrefs.getBoolean("return", false) && _libraryFocus.value.gameId == gameId) {
+      _currentTab.value = AppTab.JUEGOS
+    }
+    focusPrefs.edit().putBoolean("return", false).apply()
     _activeGame.value = null
     _lastResult.value = null
+  }
+
+  // Dónde quedó la pestaña Juegos (área y casilla), en disco: al volver de un juego se abre en el mismo lugar.
+  data class LibraryFocus(val domain: DomainType? = null, val gameId: String? = null)
+
+  private val focusPrefs by lazy { getApplication<Application>().getSharedPreferences("library_focus", android.content.Context.MODE_PRIVATE) }
+  private val _libraryFocus = MutableStateFlow(
+    LibraryFocus(
+      focusPrefs.getString("domain", null)?.let { n -> DomainType.values().firstOrNull { it.name == n } },
+      focusPrefs.getString("gameId", null)
+    )
+  )
+  val libraryFocus: StateFlow<LibraryFocus> = _libraryFocus.asStateFlow()
+
+  fun setLibraryFocus(domain: DomainType, gameId: String?) {
+    _libraryFocus.value = LibraryFocus(domain, gameId)
+    focusPrefs.edit().putString("domain", domain.name).putString("gameId", gameId).apply()
+  }
+
+  /** "Jugar" en la ficha de Juegos: recuerda la casilla para volver a ella y lanza en el modo elegido. */
+  fun playFromLibrary(gameId: String, mode: com.example.data.PlayMode) {
+    GameRegistry.getById(gameId)?.let { setLibraryFocus(it.domain, gameId) }
+    focusPrefs.edit().putBoolean("return", true).apply()
+    launchGame(gameId, mode = mode)
   }
 
   fun createNewProfile(

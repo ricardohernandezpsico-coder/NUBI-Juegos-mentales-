@@ -6,6 +6,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.example.R
 
 /**
@@ -31,8 +32,36 @@ val FredokaFamily = FontFamily(
   fredoka(FontWeight.Black, 700)
 )
 
+/**
+ * Nunito (OFL), segunda fuente (28-sep, pedido de Ricardo): redonda como Fredoka pero más abierta y legible en tamaños
+ * chicos. Solo pesos normal y medio: el texto que va en negrita usa Fredoka.
+ */
+val NunitoFamily = FontFamily(
+  Font(R.font.nunito_regular, FontWeight.Light),
+  Font(R.font.nunito_regular, FontWeight.Normal),
+  Font(R.font.nunito_medium, FontWeight.Medium)
+)
+
+/**
+ * La familia de TODA la app: elige la fuente por el peso. Normal y medio = Nunito (subtítulos, comentarios, texto
+ * secundario); seminegrita y negrita = Fredoka (títulos, encabezados, botones, números). Así la regla se cumple en
+ * cada Text sin tocarlo uno por uno.
+ */
+@OptIn(ExperimentalTextApi::class)
+val AppFamily = FontFamily(
+  Font(R.font.nunito_regular, FontWeight.Light),
+  Font(R.font.nunito_regular, FontWeight.Normal),
+  Font(R.font.nunito_medium, FontWeight.Medium),
+  fredoka(FontWeight.SemiBold, 600),
+  fredoka(FontWeight.Bold, 700),
+  fredoka(FontWeight.ExtraBold, 700),
+  fredoka(FontWeight.Black, 700)
+)
+
 private val Base = Typography()
 
+// Títulos y encabezados: siempre Fredoka. Cuerpo y etiquetas: AppFamily (Nunito, o Fredoka si van en negrita), con
+// los tamaños chicos subidos para que se lean bien (mínimo 13-14 sp).
 val Typography = Typography(
   displayLarge = Base.displayLarge.copy(fontFamily = FredokaFamily),
   displayMedium = Base.displayMedium.copy(fontFamily = FredokaFamily),
@@ -43,10 +72,10 @@ val Typography = Typography(
   titleLarge = Base.titleLarge.copy(fontFamily = FredokaFamily),
   titleMedium = Base.titleMedium.copy(fontFamily = FredokaFamily),
   titleSmall = Base.titleSmall.copy(fontFamily = FredokaFamily),
-  bodyLarge = Base.bodyLarge.copy(fontFamily = FredokaFamily),
-  bodyMedium = Base.bodyMedium.copy(fontFamily = FredokaFamily),
-  bodySmall = Base.bodySmall.copy(fontFamily = FredokaFamily),
-  labelLarge = Base.labelLarge.copy(fontFamily = FredokaFamily),
-  labelMedium = Base.labelMedium.copy(fontFamily = FredokaFamily),
-  labelSmall = Base.labelSmall.copy(fontFamily = FredokaFamily)
+  bodyLarge = Base.bodyLarge.copy(fontFamily = AppFamily),
+  bodyMedium = Base.bodyMedium.copy(fontFamily = AppFamily, fontSize = 15.sp, lineHeight = 21.sp),
+  bodySmall = Base.bodySmall.copy(fontFamily = AppFamily, fontSize = 14.sp, lineHeight = 19.sp),
+  labelLarge = Base.labelLarge.copy(fontFamily = AppFamily),
+  labelMedium = Base.labelMedium.copy(fontFamily = AppFamily, fontSize = 14.sp, lineHeight = 18.sp),
+  labelSmall = Base.labelSmall.copy(fontFamily = AppFamily, fontSize = 13.sp, lineHeight = 17.sp)
 )

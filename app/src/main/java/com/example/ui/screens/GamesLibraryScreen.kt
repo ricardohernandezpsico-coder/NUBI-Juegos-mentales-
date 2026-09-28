@@ -6,8 +6,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,12 +17,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,10 +41,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.data.DiscoveryKind
 import com.example.data.PlayMode
 import com.example.data.Skill
@@ -63,23 +66,28 @@ import kotlin.math.abs
 private const val DAY_MS = 86_400_000L
 private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = Color(0xFFC7D0FF)
+private val TileClay = Color(0xFF28306E)
 private val CardCream = Color(0xFFFFF8EC)
-private val CardMuted = Color(0xFF5A5482) // sobre crema: 6:1
+private val CardMuted = Color(0xFF514B78) // sobre crema: 7:1
 private val CardTrack = Color(0xFFE2DAC8)
 private val ModeRow = Color(0xFFF6EEDE)
 private val ModeRowOn = Color(0xFFFFF0C8)
+
+// Tamaños pensados para adultos mayores (28-sep, pedido de Ricardo): ningún texto secundario bajo 14 sp.
+private val Small = 14.sp
+private val Body = 16.sp
 
 private fun dayIndex(ts: Long): Long = (ts + java.util.TimeZone.getDefault().getOffset(ts)) / DAY_MS
 
 /** Color del área oscurecido para texto sobre crema (contraste ≥ 4,5). */
 private fun onCream(domain: DomainType): Color = lerp(domain.color, Clay.Ink, 0.45f)
 
-/** Todo lo que muestra la carta de un juego (armado desde el ViewModel; separado para la foto de prueba). */
+/** Todo lo que muestran la casilla y la ficha de un juego (armado desde el ViewModel; separado para la foto de prueba). */
 data class GameCardData(
   val game: GameDefinition,
   val title: String,
-  val position: String,
   val lastPlayed: String,
+  val playedToday: Boolean,
   /** Tu avance 0..1 (null = sin medir aún). */
   val progress: Float?,
   /** Tu marca de juego estrella: nombre ("Tu brújula"), valor ("a 18% de casa"), etiqueta y últimas partidas. */
@@ -88,15 +96,16 @@ data class GameCardData(
   val measureTag: String? = null,
   val measureSeries: List<Float> = emptyList(),
   val lowerIsBetter: Boolean = false,
-  /** Constancia 0..5: partidas de este juego en los últimos 14 días (1 punto cada 2). */
-  val constancy: Int = 0
+  /** Partidas de este juego en los últimos 14 días. */
+  val playsLast14: Int = 0
 )
 
 /**
- * Pestaña Juegos (28-sep, Ricardo eligió "un área a la vez" + cartas: `docs/previews/juegos-dificultad-1.png`):
- * "¿Qué quieres trabajar hoy?" con el área en grande (flechas o deslizar sobre el nombre) y sus juegos como cartas
- * que se deslizan. Cada carta dice tu avance (leído a 8 de 10, con su etapa), tu marca y tu constancia; abajo el modo
- * ("A tu medida · cambiar", abre [ModeSheet]) y "Jugar". Razonamiento en `docs/dificultad-y-avance.md`.
+ * Pestaña Juegos (28-sep, 2.ª versión, pedido de Ricardo): "¿Qué quieres trabajar hoy?" con el área en grande
+ * (flechas o deslizar sobre el nombre) y DEBAJO TODOS SUS JUEGOS EN LISTA VERTICAL (casillas de arcilla: planeta con el
+ * anillo del avance, nombre, etapa y marca). Tocar una casilla abre la FICHA superpuesta ([GameSheet]): avance, marca,
+ * constancia, dificultad (Suave / A tu medida / Desafío / Experto) y Jugar. Al volver del juego se abre en la misma
+ * área y casilla (`NeuroVidaViewModel.libraryFocus`). Razonamiento de la dificultad: `docs/dificultad-y-avance.md`.
  */
 @Composable
 fun GamesLibraryScreen(
@@ -108,28 +117,27 @@ fun GamesLibraryScreen(
   val measures by viewModel.starMeasures.collectAsState()
   val progress by viewModel.gameProgress.collectAsState()
   val skill by viewModel.skill.collectAsState()
+  val focus by viewModel.libraryFocus.collectAsState()
   val lang = LocalAppLanguage.current
   val now = remember(history) { System.currentTimeMillis() }
-  val age = userSettings.ageBand
 
   val lastPlayed = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
-  // Se abre en el área (y el juego) que sugiere "Para ti" (zona quieta, juego sin probar, olvidado).
+  // Sin casilla recordada, abre en el área que sugiere "Para ti" (zona quieta, juego sin probar, olvidado).
   val suggestion = remember(history.isEmpty()) {
     val plays = history.mapNotNull { r -> GameRegistry.getById(r.gameId)?.let { com.example.data.PlanetPlay(it.domain.name, r.timestamp) } }
     val planet = com.example.data.Planet.build(plays, now, ::dayIndex)
-    val games = GameRegistry.allGames.filter { it.id != "bitacora" }.map { com.example.data.LibraryGame(it.id, it.domain.name, StarMeasures.defForGame(it.id) != null) }
+    val games = GameRegistry.allGames.filter { it.id != "bitacora" }
+      .map { com.example.data.LibraryGame(it.id, it.domain.name, StarMeasures.defForGame(it.id) != null) }
     com.example.data.Library.picks(planet, games, lastPlayed, now, ::dayIndex) { it }.firstOrNull()?.gameId
   }
   val domains = DomainType.values().toList()
-  var domainIndex by rememberSaveable {
-    mutableStateOf(domains.indexOf(suggestion?.let { GameRegistry.getById(it)?.domain } ?: DomainType.MEMORIA).coerceAtLeast(0))
-  }
-  val domain = domains[domainIndex]
+  val domain = focus.domain ?: suggestion?.let { GameRegistry.getById(it)?.domain } ?: DomainType.MEMORIA
   val games = remember(domain) {
     GameRegistry.allGames.filter { it.domain == domain }.sortedBy { StarMeasures.defForGame(it.id) == null }
   }
   val modes = remember { mutableStateMapOf<String, PlayMode>() }
   var sheetFor by remember { mutableStateOf<GameDefinition?>(null) }
+  fun go(step: Int) = viewModel.setLibraryFocus(domains[(domains.indexOf(domain) + step + domains.size) % domains.size], null)
 
   Column(modifier = modifier.fillMaxSize()) {
     val (areaProgress, explored) = Skill.area(games.map { it.id }, progress)
@@ -139,68 +147,64 @@ fun GamesLibraryScreen(
       progress = areaProgress,
       explored = explored,
       total = games.size,
-      onPrev = { domainIndex = (domainIndex + domains.size - 1) % domains.size },
-      onNext = { domainIndex = (domainIndex + 1) % domains.size }
+      onPrev = { go(-1) },
+      onNext = { go(1) }
     )
     key(domain) {
-      val start = games.indexOfFirst { it.id == suggestion }.coerceAtLeast(0)
-      val pager = rememberPagerState(initialPage = start) { games.size }
-      HorizontalPager(
-        state = pager,
-        contentPadding = PaddingValues(horizontal = 30.dp),
-        pageSpacing = 12.dp,
-        modifier = Modifier.weight(1f).testTag("game_cards")
-      ) { page ->
-        val g = games[page]
-        val data = cardData(g, getGameTitle(g.id, lang, g.title), "${page + 1} de ${games.size}", lastPlayed[g.id], now,
-          progress[g.id], measures, history.count { it.gameId == g.id && now - it.timestamp <= 14 * DAY_MS })
-        GameCard(
-          data = data,
-          mode = modes[g.id] ?: PlayMode.A_TU_MEDIDA,
-          onMode = { sheetFor = g },
-          onPlay = { viewModel.launchGame(g.id, mode = modes[g.id] ?: PlayMode.A_TU_MEDIDA) }
-        )
+      val start = games.indexOfFirst { it.id == focus.gameId }.coerceAtLeast(0)
+      val list = rememberLazyListState(initialFirstVisibleItemIndex = start)
+      LazyColumn(
+        state = list,
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.weight(1f).testTag("game_list")
+      ) {
+        itemsIndexed(games, key = { _, g -> g.id }) { _, g ->
+          val data = cardData(g, getGameTitle(g.id, lang, g.title), lastPlayed[g.id], now, progress[g.id], measures,
+            history.count { it.gameId == g.id && now - it.timestamp <= 14 * DAY_MS })
+          GameTile(data, highlighted = g.id == focus.gameId) {
+            viewModel.setLibraryFocus(domain, g.id)
+            sheetFor = g
+          }
+        }
       }
-      DeckDots(count = games.size, current = pager.currentPage)
     }
   }
 
   sheetFor?.let { g ->
-    ModeSheet(
-      game = g,
-      title = getGameTitle(g.id, lang, g.title),
-      progress = progress[g.id],
-      age = age,
+    val data = cardData(g, getGameTitle(g.id, lang, g.title), lastPlayed[g.id], now, progress[g.id], measures,
+      history.count { it.gameId == g.id && now - it.timestamp <= 14 * DAY_MS })
+    GameSheet(
+      data = data,
+      age = userSettings.ageBand,
       expertOpen = g.id in skill.expertOpen,
       selected = modes[g.id] ?: PlayMode.A_TU_MEDIDA,
       onDismiss = { sheetFor = null },
       onPlay = { m ->
         modes[g.id] = m
         sheetFor = null
-        viewModel.launchGame(g.id, mode = m)
+        viewModel.playFromLibrary(g.id, m)
       }
     )
   }
 }
 
-/** Arma la carta de un juego: cuándo se jugó, avance, marca con su etiqueta y constancia. */
+/** Arma los datos de un juego: cuándo se jugó, avance, marca con su etiqueta y constancia. */
 internal fun cardData(
   g: GameDefinition,
   title: String,
-  position: String,
   last: Long?,
   now: Long,
   progress: Float?,
   measures: List<com.example.data.MeasurePoint>,
   playsLast14: Int
 ): GameCardData {
-  val lastText = when {
-    last == null -> "Aún no lo juegas"
-    else -> when (val d = (dayIndex(now) - dayIndex(last)).toInt()) {
-      0 -> "Jugaste hoy"
-      1 -> "Jugaste ayer"
-      else -> "Jugaste hace $d días"
-    }
+  val daysAgo = last?.let { (dayIndex(now) - dayIndex(it)).toInt() }
+  val lastText = when (daysAgo) {
+    null -> "Aún no lo juegas"
+    0 -> "Jugaste hoy"
+    1 -> "Jugaste ayer"
+    else -> "Jugaste hace $daysAgo días"
   }
   val def = StarMeasures.defForGame(g.id)
   // Solo partidas comparables con la última (mismo reloj; nivel parecido si la marca depende del nivel).
@@ -209,8 +213,8 @@ internal fun cardData(
   return GameCardData(
     game = g,
     title = title,
-    position = position,
     lastPlayed = lastText,
+    playedToday = daysAgo == 0,
     progress = progress,
     measureTitle = def?.short?.replaceFirstChar { it.uppercase() },
     measureValue = series.lastOrNull()?.let { p -> def?.let { measureText(it, p.value) } },
@@ -222,8 +226,201 @@ internal fun cardData(
     },
     measureSeries = series.takeLast(StarMeasures.MAX_POINTS).map { it.value },
     lowerIsBetter = def?.lowerIsBetter ?: false,
-    constancy = ((playsLast14 + 1) / 2).coerceIn(0, 5)
+    playsLast14 = playsLast14
   )
+}
+
+/**
+ * Casilla de un juego en la lista (arcilla, tocable): planeta con el anillo de tu avance y ✓ si se jugó hoy; el nombre;
+ * debajo la etapa y el % (o "Sin medir aún"); a la derecha tu marca si es juego estrella. [highlighted] = la última
+ * que se abrió (al volver de jugar se ve dónde estabas).
+ */
+@Composable
+internal fun GameTile(data: GameCardData, highlighted: Boolean, onClick: () -> Unit) {
+  val g = data.game
+  val ring = com.example.ui.components.domainTextColor(g.domain.name)
+  ClayCard(
+    color = if (highlighted) Color(0xFF343D86) else TileClay,
+    radius = 22.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onClick,
+    modifier = Modifier.fillMaxWidth().testTag("tile_${g.id}")
+  ) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+      Box(
+        Modifier.size(66.dp).drawBehind {
+          val st = 4.dp.toPx()
+          drawCircle(Color.White.copy(alpha = 0.16f), size.minDimension / 2f - st / 2, style = Stroke(st))
+          data.progress?.let {
+            drawArc(ring, -90f, 360f * it.coerceIn(0.03f, 1f), false, Offset(st / 2, st / 2),
+              androidx.compose.ui.geometry.Size(size.width - st, size.height - st), style = Stroke(st, cap = StrokeCap.Round))
+          }
+        },
+        contentAlignment = Alignment.Center
+      ) { com.example.ui.components.MiniPlanet(g.id, 52.dp, done = data.playedToday) }
+      Spacer(Modifier.width(14.dp))
+      Column(Modifier.weight(1f)) {
+        Text(data.title, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(
+          if (data.progress != null) "${Skill.stageName(data.progress)} · ${Skill.percent(data.progress)}%" else "Sin medir aún",
+          color = if (data.progress != null) ring else OnNightDim, fontSize = Body, fontWeight = FontWeight.Medium,
+          modifier = Modifier.padding(top = 2.dp)
+        )
+      }
+      if (data.measureValue != null) {
+        Spacer(Modifier.width(8.dp))
+        Column(horizontalAlignment = Alignment.End, modifier = Modifier.widthIn(max = 120.dp)) {
+          Text(data.measureTitle ?: "", color = OnNightDim, fontSize = Small, textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis)
+          Text(data.measureValue, color = Clay.Sun, fontSize = Body, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, maxLines = 2)
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Ficha del juego (ventana superpuesta, crema): el juego, tu avance con su etapa, tu marca, tu constancia, cómo
+ * quieres jugar (4 modos con sus aciertos esperados; Experto se abre al superar un Desafío) y Jugar. Sin reloj.
+ */
+@Composable
+internal fun GameSheet(
+  data: GameCardData,
+  age: AgeBand?,
+  expertOpen: Boolean,
+  selected: PlayMode,
+  onDismiss: () -> Unit,
+  onPlay: (PlayMode) -> Unit
+) {
+  var choice by remember(data.game.id) { mutableStateOf(selected) }
+  Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Box(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+      GameSheetContent(data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice) }, onClose = onDismiss)
+    }
+  }
+}
+
+@Composable
+internal fun GameSheetContent(
+  data: GameCardData,
+  age: AgeBand?,
+  expertOpen: Boolean,
+  choice: PlayMode,
+  onChoose: (PlayMode) -> Unit,
+  onPlay: () -> Unit,
+  onClose: () -> Unit = {}
+) {
+  val g = data.game
+  ClayCard(color = CardCream, radius = 28.dp, contentPadding = 0.dp, modifier = Modifier.fillMaxWidth().testTag("game_sheet")) {
+    Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp)) {
+      // El juego
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        com.example.ui.components.MiniPlanet(g.id, 58.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+          Text(data.title, color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, lineHeight = 25.sp)
+          Text(g.subtitle, color = CardMuted, fontSize = Small, lineHeight = 18.sp)
+        }
+        Box(
+          Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClose).semantics { contentDescription = "Cerrar" },
+          contentAlignment = Alignment.Center
+        ) { Icon(Icons.Default.Close, contentDescription = null, tint = CardMuted, modifier = Modifier.size(26.dp)) }
+      }
+
+      // Tu avance
+      HorizontalLine()
+      if (data.progress != null) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Text("${Skill.percent(data.progress)}%", color = Clay.Ink, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+          Spacer(Modifier.width(14.dp))
+          Column {
+            Text(Skill.stageName(data.progress), color = onCream(g.domain), fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            val next = Skill.toNextStage(data.progress)
+            Text(
+              if (next != null) "a ${next.first} ${if (next.first == 1) "punto" else "puntos"} de ${next.second}" else "La etapa más alta",
+              color = CardMuted, fontSize = Small
+            )
+          }
+        }
+        StageLine(data.progress, g.domain)
+      } else {
+        Text("Sin medir aún", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text("Juega a tu medida una vez y verás dónde estás.", color = CardMuted, fontSize = Small)
+      }
+
+      // Tu marca y constancia, en pocas palabras
+      if (data.measureTitle != null && data.measureValue != null) {
+        HorizontalLine()
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Column(Modifier.weight(1f)) {
+            Text(data.measureTitle, color = CardMuted, fontSize = Small)
+            Text(data.measureValue, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            if (data.measureTag != null) Tag(data.measureTag, Clay.Lime, Modifier.padding(top = 4.dp))
+          }
+          if (data.measureSeries.size >= 2) {
+            Column(horizontalAlignment = Alignment.End) {
+              CreamSparkline(data.measureSeries, data.lowerIsBetter, g.domain.color, Modifier.size(width = 112.dp, height = 44.dp))
+              Text("mejor hacia arriba", color = CardMuted, fontSize = Small)
+            }
+          }
+        }
+      }
+      Text(
+        "${data.lastPlayed} · " + when (data.playsLast14) {
+          0 -> "sin partidas en 2 semanas"
+          1 -> "1 partida en 2 semanas"
+          else -> "${data.playsLast14} partidas en 2 semanas"
+        },
+        color = CardMuted, fontSize = Small, modifier = Modifier.padding(top = 10.dp)
+      )
+
+      // Cómo quieres jugar: 4 filas cortas; la explicación solo del elegido
+      HorizontalLine()
+      Text("¿Cómo quieres jugar?", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+      Skill.modesFor(g.id).forEach { m ->
+        val open = Skill.isOpen(m, g.id, if (expertOpen) setOf(g.id) else emptySet())
+        val on = m == choice
+        val shape = RoundedCornerShape(16.dp)
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+            .heightIn(min = 52.dp)
+            .clip(shape)
+            .background(if (on) ModeRowOn else ModeRow)
+            .border(if (on) 3.dp else 1.5.dp, Clay.Ink, shape)
+            .clickable(enabled = open) { onChoose(m) }
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .testTag("mode_${m.name}")
+        ) {
+          ModeBars(m.ordinal + 1, if (on) Clay.Sun else g.domain.color)
+          Spacer(Modifier.width(12.dp))
+          Text(m.label, color = if (open) Clay.Ink else CardMuted, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+          if (!open) {
+            Text("Supera un Desafío", color = CardMuted, fontSize = Small)
+            Spacer(Modifier.width(6.dp))
+            Icon(Icons.Default.Lock, contentDescription = "Bloqueado", tint = CardMuted, modifier = Modifier.size(20.dp))
+          } else {
+            Text("${Skill.hitsText(Skill.expectedHits(g.id, m, age))} aciertos", color = Clay.Ink, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            if (on) {
+              Spacer(Modifier.width(8.dp))
+              Box(
+                Modifier.size(24.dp).clip(CircleShape).background(Clay.Lime).border(2.dp, Clay.Ink, CircleShape),
+                contentAlignment = Alignment.Center
+              ) { Icon(Icons.Default.Check, contentDescription = "Elegido", tint = Clay.Ink, modifier = Modifier.size(16.dp)) }
+            }
+          }
+        }
+      }
+      Text(choice.what, color = CardMuted, fontSize = Small, lineHeight = 19.sp)
+
+      ClayCard(color = Clay.Sun, radius = 22.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onPlay, modifier = Modifier.fillMaxWidth().padding(top = 14.dp).testTag("sheet_play")) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().height(54.dp)) {
+          Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(24.dp))
+          Spacer(Modifier.width(6.dp))
+          Text(if (choice == PlayMode.A_TU_MEDIDA) "Jugar a tu medida" else "Jugar en ${choice.label}", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        }
+      }
+    }
+  }
 }
 
 /** La marca con su unidad: "84 ms", "a 18% de casa", "96° por segundo". */
@@ -282,10 +479,10 @@ internal fun AreaHeader(
         Spacer(Modifier.width(12.dp))
         Column {
           Text(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
-          if (progress != null) Text("${Skill.percent(progress)}% de avance", color = OnNightDim, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+          if (progress != null) Text("${Skill.percent(progress)}% de avance", color = OnNightDim, fontSize = 15.sp, fontWeight = FontWeight.Bold)
           Text(
             if (explored == total) (if (total == 1) "1 juego" else "$total juegos") else "$explored de $total juegos explorados",
-            color = OnNightDim, fontSize = 13.sp
+            color = OnNightDim, fontSize = 15.sp
           )
         }
       }
@@ -326,105 +523,6 @@ private fun ArrowButton(left: Boolean, onClick: () -> Unit) {
   }
 }
 
-/** La carta de un juego (arcilla crema): cuándo jugaste, el juego, tu avance, tu marca, tu constancia, modo y Jugar. */
-@Composable
-internal fun GameCard(data: GameCardData, mode: PlayMode, onMode: () -> Unit, onPlay: () -> Unit) {
-  val g = data.game
-  ClayCard(color = CardCream, radius = 28.dp, contentPadding = 0.dp, modifier = Modifier.fillMaxWidth().testTag("card_${g.id}")) {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 18.dp)) {
-      Row(Modifier.fillMaxWidth()) {
-        Text(data.lastPlayed, color = CardMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
-        Text(data.position, color = CardMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-      }
-      Box(
-        Modifier.fillMaxWidth().padding(top = 6.dp).height(100.dp).drawBehind {
-          drawCircle(Brush.radialGradient(listOf(g.domain.color.copy(alpha = 0.35f), Color.Transparent), center, 60.dp.toPx()), 60.dp.toPx())
-        },
-        contentAlignment = Alignment.Center
-      ) { com.example.ui.components.MiniPlanet(g.id, 84.dp) }
-      Text(data.title, color = Clay.Ink, fontSize = 23.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-      Text(g.subtitle, color = CardMuted, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 2.dp))
-
-      // Tu avance
-      Text("Tu avance", color = CardMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 16.dp))
-      if (data.progress != null) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Text("${Skill.percent(data.progress)}%", color = Clay.Ink, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-          Spacer(Modifier.width(14.dp))
-          Column {
-            Text(Skill.stageName(data.progress), color = onCream(g.domain), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            val next = Skill.toNextStage(data.progress)
-            Text(
-              if (next != null) "a ${next.first} ${if (next.first == 1) "punto" else "puntos"} de ${next.second}" else "La etapa más alta",
-              color = CardMuted, fontSize = 12.sp
-            )
-          }
-        }
-        StageLine(data.progress, g.domain)
-      } else {
-        Text("Sin medir aún", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
-        Text("Juega a tu medida una vez y verás dónde estás.", color = CardMuted, fontSize = 12.sp)
-      }
-
-      // Tu marca (juegos estrella)
-      if (data.measureTitle != null) {
-        HorizontalLine()
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Column(Modifier.weight(1f)) {
-            Text(data.measureTitle, color = CardMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Text(data.measureValue ?: "Juega para descubrirla", color = Clay.Ink, fontSize = if (data.measureValue != null) 17.sp else 13.sp, fontWeight = FontWeight.Bold)
-            if (data.measureTag != null) Tag(data.measureTag, Clay.Lime, Modifier.padding(top = 4.dp))
-          }
-          if (data.measureSeries.size >= 2) {
-            Column(horizontalAlignment = Alignment.End) {
-              CreamSparkline(data.measureSeries, data.lowerIsBetter, g.domain.color, Modifier.size(width = 110.dp, height = 40.dp))
-              Text("mejor hacia arriba", color = CardMuted, fontSize = 10.sp)
-            }
-          }
-        }
-      }
-
-      // Constancia
-      HorizontalLine()
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Tu constancia", color = Clay.Ink, fontSize = 13.sp, modifier = Modifier.weight(1f))
-        Row(Modifier.semantics { contentDescription = "Constancia ${data.constancy} de 5" }) {
-          repeat(5) { i ->
-            Box(
-              Modifier.padding(start = 4.dp).size(12.dp).clip(CircleShape)
-                .background(if (i < data.constancy) g.domain.color else CardTrack)
-                .border(if (i < data.constancy) 1.dp else 0.dp, Clay.Ink, CircleShape)
-            )
-          }
-        }
-      }
-      Text("partidas de las últimas 2 semanas", color = CardMuted, fontSize = 11.sp)
-
-      // Modo + Jugar
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-        ClayCard(color = Color(0xFFF0E6D4), radius = 20.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onMode, modifier = Modifier.weight(1f).testTag("mode_button")) {
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(48.dp).padding(horizontal = 12.dp)) {
-            ModeBars(mode.ordinal + 1, g.domain.color)
-            Spacer(Modifier.width(10.dp))
-            Column {
-              Text(mode.label, color = Clay.Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 15.sp)
-              Text("cambiar", color = CardMuted, fontSize = 11.sp, lineHeight = 13.sp)
-            }
-          }
-        }
-        Spacer(Modifier.width(10.dp))
-        ClayCard(color = Clay.Sun, radius = 20.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onPlay, modifier = Modifier.weight(1f).testTag("play_button")) {
-          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().height(48.dp)) {
-            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Jugar", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-          }
-        }
-      }
-    }
-  }
-}
-
 /** Las 5 etapas en una línea; la actual con su nombre fuerte y una marquita de "estás aquí". */
 @Composable
 private fun StageLine(progress: Float, domain: DomainType) {
@@ -449,7 +547,7 @@ private fun StageLine(progress: Float, domain: DomainType) {
         Text(
           s, textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
           color = if (i == current) onCream(domain) else CardMuted,
-          fontSize = if (i == current) 11.sp else 10.sp, fontWeight = if (i == current) FontWeight.Bold else FontWeight.Normal
+          fontSize = 14.sp, fontWeight = if (i == current) FontWeight.Bold else FontWeight.Normal
         )
       }
     }
@@ -464,7 +562,7 @@ private fun HorizontalLine() {
 @Composable
 private fun Tag(text: String, color: Color, modifier: Modifier = Modifier) {
   Text(
-    text, color = Clay.Ink, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+    text, color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold,
     modifier = modifier.clip(RoundedCornerShape(10.dp)).background(color).border(1.5.dp, Clay.Ink, RoundedCornerShape(10.dp))
       .padding(horizontal = 8.dp, vertical = 2.dp)
   )
@@ -501,120 +599,3 @@ private fun ModeBars(n: Int, color: Color, size: Dp = 24.dp) {
   }
 }
 
-/** En qué carta del área vas: rayitas (no círculos), la actual en sol. */
-@Composable
-private fun DeckDots(count: Int, current: Int) {
-  Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp)) {
-    repeat(count) { i ->
-      Box(
-        Modifier.padding(horizontal = 3.dp).size(width = 18.dp, height = 5.dp).clip(RoundedCornerShape(3.dp))
-          .background(if (i == current) Clay.Sun else Color(0xFF464E8C))
-      )
-    }
-  }
-}
-
-/**
- * "¿Cómo quieres jugar hoy?" (docs/dificultad-y-avance.md): los 4 modos con sus aciertos esperados según la edad;
- * Experto se abre al superar un Desafío en ese juego. El reloj no se elige aquí (queda en Ajustes).
- */
-@Composable
-internal fun ModeSheet(
-  game: GameDefinition,
-  title: String,
-  progress: Float?,
-  age: AgeBand?,
-  expertOpen: Boolean,
-  selected: PlayMode,
-  onDismiss: () -> Unit,
-  onPlay: (PlayMode) -> Unit
-) {
-  var choice by remember(game.id) { mutableStateOf(selected) }
-  Dialog(onDismissRequest = onDismiss) {
-    ModeSheetContent(game, title, progress, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice) })
-  }
-}
-
-@Composable
-internal fun ModeSheetContent(
-  game: GameDefinition,
-  title: String,
-  progress: Float?,
-  age: AgeBand?,
-  expertOpen: Boolean,
-  choice: PlayMode,
-  onChoose: (PlayMode) -> Unit,
-  onPlay: () -> Unit
-) {
-  ClayCard(color = CardCream, radius = 28.dp, contentPadding = 0.dp, modifier = Modifier.fillMaxWidth().testTag("mode_sheet")) {
-    Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        com.example.ui.components.MiniPlanet(game.id, 46.dp)
-        Spacer(Modifier.width(12.dp))
-        Column {
-          Text(title, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-          Text(
-            if (progress != null) "Tu nivel: ${Skill.stageName(progress)} · ${Skill.percent(progress)}%" else "Tu nivel: sin medir aún",
-            color = CardMuted, fontSize = 12.sp
-          )
-        }
-      }
-      Text("¿Cómo quieres jugar hoy?", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-      Skill.modesFor(game.id).forEach { m ->
-        val open = Skill.isOpen(m, game.id, if (expertOpen) setOf(game.id) else emptySet())
-        val on = m == choice
-        val shape = RoundedCornerShape(18.dp)
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 8.dp)
-            .drawBehind { drawRoundRect(Clay.Ink, Offset(0f, 3.dp.toPx()), size, CornerRadius(18.dp.toPx())) }
-            .clip(shape)
-            .background(if (on) ModeRowOn else ModeRow)
-            .border(if (on) 3.dp else 1.5.dp, Clay.Ink, shape)
-            .clickable(enabled = open) { onChoose(m) }
-            .padding(horizontal = 12.dp, vertical = 10.dp)
-            .testTag("mode_${m.name}")
-        ) {
-          ModeBars(m.ordinal + 1, if (on) Clay.Sun else game.domain.color)
-          Spacer(Modifier.width(12.dp))
-          Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Text(m.label, color = if (open) Clay.Ink else CardMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-              if (m == PlayMode.A_TU_MEDIDA) Tag("Recomendado", Clay.Lime, Modifier.padding(start = 8.dp))
-            }
-            Text(
-              if (open) m.what else "Se abre cuando superas un Desafío en este juego.",
-              color = CardMuted, fontSize = 12.sp, lineHeight = 15.sp
-            )
-          }
-          Spacer(Modifier.width(8.dp))
-          if (!open) {
-            Icon(Icons.Default.Lock, contentDescription = "Bloqueado", tint = CardMuted, modifier = Modifier.size(22.dp))
-          } else {
-            Column(horizontalAlignment = Alignment.End) {
-              Text(Skill.hitsText(Skill.expectedHits(game.id, m, age)), color = Clay.Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-              Text("aciertos", color = CardMuted, fontSize = 11.sp)
-              if (on) Box(
-                Modifier.padding(top = 4.dp).size(22.dp).clip(CircleShape).background(Clay.Lime).border(2.dp, Clay.Ink, CircleShape),
-                contentAlignment = Alignment.Center
-              ) { Icon(Icons.Default.Check, contentDescription = "Elegido", tint = Clay.Ink, modifier = Modifier.size(16.dp)) }
-            }
-          }
-        }
-      }
-      ClayCard(color = Clay.Sun, radius = 22.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onPlay, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("mode_play")) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().height(50.dp)) {
-          Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(22.dp))
-          Spacer(Modifier.width(6.dp))
-          Text(if (choice == PlayMode.A_TU_MEDIDA) "Jugar a tu medida" else "Jugar en ${choice.label}", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-        }
-      }
-      Text(
-        "Cada paso se ajusta a tu edad${age?.let { " (${it.label.lowercase()})" } ?: ""}. Suave, Desafío y Experto nunca bajan tu avance.",
-        color = CardMuted, fontSize = 11.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 10.dp)
-      )
-    }
-  }
-}

@@ -55,7 +55,7 @@ import com.example.model.LeaguePromotion
 import com.example.model.RankTier
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -153,7 +153,7 @@ fun LeaguePromotionOverlay(
     ) {
       Text(
         text = "¡ASCENSO!",
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         letterSpacing = 3.sp,
@@ -241,7 +241,7 @@ fun LeaguePromotionOverlay(
         Text(
           text = "Subiste a ${promotion.tier.tierName}",
           style = TextStyle(
-            fontFamily = FredokaFamily,
+            fontFamily = AppFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 38.sp,
             lineHeight = 42.sp,
@@ -252,7 +252,7 @@ fun LeaguePromotionOverlay(
         )
         Text(
           text = if (game != null) "en ${game.title}" else "Tu liga general",
-          fontFamily = FredokaFamily,
+          fontFamily = AppFamily,
           fontWeight = FontWeight.SemiBold,
           fontSize = 18.sp,
           color = Color.White,
@@ -265,7 +265,7 @@ fun LeaguePromotionOverlay(
             if (next != null) append("  ·  próxima: ${next.tierName} (${next.minRating})")
             else append("  ·  la liga más alta")
           },
-          fontFamily = FredokaFamily,
+          fontFamily = AppFamily,
           fontSize = 15.sp,
           color = Color(0xFFB4BFEA),
           textAlign = TextAlign.Center,

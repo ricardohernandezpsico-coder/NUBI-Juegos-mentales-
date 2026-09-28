@@ -403,7 +403,10 @@ Kvavilashvili, 2023). Nadie en la competencia la mide.
 ## Reglas que no se rompen
 
 - **Diseño**: "noche + arcilla": cielo nocturno animado; lo tocable es arcilla (borde tinta grueso `Ink` 0x1A1240,
-  sombra dura, colores Coral/Sun/Sky/Grape/Lime/Cream); tipografía Fredoka. Las pantallas principales NO usan
+  sombra dura, colores Coral/Sun/Sky/Grape/Lime/Cream). **Tipografía** (28-sep): `AppFamily` elige por peso: normal y
+  medio = Nunito (subtítulos, comentarios, texto secundario), seminegrita y negrita = Fredoka (títulos, botones,
+  números); los títulos de `Typography` son siempre Fredoka. Fuentes OFL en `res/font`. **Tamaños**: pensando en
+  adultos mayores, ningún texto bajo 14 sp (13 solo en la barra de pestañas y rótulos de gráficos). Las pantallas principales NO usan
   recuadros para informar (texto suelto, objetos, líneas finas); tarjetas solo en diálogos. Nada de emojis como
   íconos; acierto/error nunca solo por color (forma o texto); contraste ≥ 4.5:1; respetar "quitar animaciones",
   sonido y vibración apagados. Usar la skill `ui-ux-pro-max` (`.claude/skills/`) para decisiones de diseño.
@@ -431,7 +434,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 84 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 83 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 176 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
@@ -456,11 +459,13 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   datos, invitación tocable "Juega Radar para descubrir tu vistazo"). Tocar una zona abre su ventana (`ZoneDialog`):
   partidas por semana (4), cada juego del dominio con su última medida o cuándo se jugó, y "Jugar X" (el sin jugar o el
   más olvidado). Captura real (Roborazzi): `docs/previews/inicio-planeta-real.png`. Sin probar en el teléfono.
-- **Juegos = "¿Qué quieres trabajar hoy?" + cartas** (28-sep; Ricardo eligió "un área a la vez" + cartas,
-  `docs/previews/juegos-dificultad-1.png`; captura real `docs/previews/juegos-cartas-real.png`). Arriba el área en
-  grande con su avance (flechas o deslizar sobre el nombre; abre en el área que sugiere `data/Library.picks`); debajo
-  una carta por juego (`HorizontalPager`): cuándo jugaste, tu avance con etapa y "a N puntos de…", tu marca con su
-  etiqueta y últimas partidas, tu constancia, y abajo el modo ("A tu medida · cambiar" abre `ModeSheet`) y "Jugar".
+- **Juegos = "¿Qué quieres trabajar hoy?" + lista** (28-sep, 2.ª versión pedida por Ricardo; captura real
+  `docs/previews/juegos-lista-real.png`). Arriba el área en grande con su avance (flechas o deslizar sobre el nombre);
+  debajo TODOS sus juegos en lista vertical (`GameTile`: planeta con anillo del avance y ✓ si se jugó hoy, nombre,
+  etapa y %, marca a la derecha). Tocar una casilla abre la FICHA superpuesta (`GameSheet`): avance con etapa y línea,
+  marca con etiqueta y últimas partidas, cuándo jugaste y partidas en 2 semanas, "¿Cómo quieres jugar?" (4 filas con
+  aciertos esperados; la explicación solo del elegido) y Jugar. Al cerrar el resultado se vuelve a Juegos, a la misma
+  área y casilla (`libraryFocus` en SharedPreferences `library_focus`, sobrevive a que Android cierre la app).
   El resultado dice si un Desafío se superó (`modeNote`). Sin probar en el teléfono.
 - **Dificultad y avance** (28-sep, aprobado por Ricardo): [`docs/dificultad-y-avance.md`](docs/dificultad-y-avance.md) y
   `data/Skill.kt`. Una vara por juego: tu avance = nivel donde se aciertan 8 de 10 (el rating guardado se corrige por

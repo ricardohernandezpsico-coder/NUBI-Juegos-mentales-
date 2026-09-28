@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.example.model.GameDefinition
 import com.example.model.LevelTier
 import com.example.ui.theme.Clay
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -114,7 +114,7 @@ fun GameLoadingScreen(
       Spacer(Modifier.height(18.dp))
       Text(
         text = game.title,
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
         lineHeight = 36.sp,
@@ -128,7 +128,7 @@ fun GameLoadingScreen(
       if (details.isNotEmpty()) {
         Text(
           text = details.joinToString("  ·  "),
-          fontFamily = FredokaFamily,
+          fontFamily = AppFamily,
           fontWeight = FontWeight.SemiBold,
           fontSize = 16.sp,
           color = Clay.Sun,
@@ -140,15 +140,15 @@ fun GameLoadingScreen(
       Spacer(Modifier.height(34.dp))
       Text(
         text = "Cómo se juega",
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         letterSpacing = 1.5.sp,
         color = Color(0xFFB4BFEA)
       )
       Text(
         text = game.instruction,
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         fontSize = 18.sp,
         lineHeight = 26.sp,
         color = Color.White.copy(alpha = 0.92f),
@@ -170,7 +170,7 @@ fun GameLoadingScreen(
             pop()
           }
         },
-        fontFamily = FredokaFamily,
+        fontFamily = AppFamily,
         fontSize = 15.sp,
         color = Color.White.copy(alpha = 0.62f)
       )

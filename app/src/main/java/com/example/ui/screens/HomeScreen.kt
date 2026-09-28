@@ -153,7 +153,7 @@ fun HomeScreen(
       Text(
         text = "Desafíos ${weeklyChallenges.count { it.isComplete }}/${weeklyChallenges.size}",
         color = Clay.Sun,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier
           .clip(RoundedCornerShape(10.dp))
@@ -266,7 +266,7 @@ internal fun ZonesLine(planet: PlanetState, onZone: (String) -> Unit) {
   ) {
     if (planet.playedToday.isNotEmpty()) {
       Column {
-        Text("Hoy entrenaste", color = OnNightDim, fontSize = 12.sp)
+        Text("Hoy entrenaste", color = OnNightDim, fontSize = 14.sp)
         Text(
           planet.playedToday.mapNotNull { domainOf(it)?.displayName }.joinToString(" · "),
           color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold
@@ -277,12 +277,12 @@ internal fun ZonesLine(planet: PlanetState, onZone: (String) -> Unit) {
     val grew = planet.grewThisWeek
     val quiet = planet.quiet
     if (grew == null && quiet == null) {
-      Text("Cada partida hace crecer su zona del planeta", color = OnNightDim, fontSize = 13.sp)
+      Text("Cada partida hace crecer su zona del planeta", color = OnNightDim, fontSize = 15.sp)
       return@Row
     }
     if (grew != null) {
       Column(Modifier.clip(RoundedCornerShape(10.dp)).clickable { onZone(grew) }.padding(2.dp)) {
-        Text("Esta semana creció", color = OnNightDim, fontSize = 12.sp)
+        Text("Esta semana creció", color = OnNightDim, fontSize = 14.sp)
         Text(domainOf(grew)?.displayName ?: "", color = domainTextColor(grew), fontSize = 17.sp, fontWeight = FontWeight.Bold)
       }
     }
@@ -294,7 +294,7 @@ internal fun ZonesLine(planet: PlanetState, onZone: (String) -> Unit) {
       ) {
         Text(
           if (planet.quietDays < 0) "Aún sin explorar" else "Quieta hace ${planet.quietDays} días",
-          color = OnNightDim, fontSize = 12.sp
+          color = OnNightDim, fontSize = 14.sp
         )
         Text(domainOf(quiet)?.displayName ?: "", color = domainTextColor(quiet), fontSize = 17.sp, fontWeight = FontWeight.Bold)
       }
@@ -311,7 +311,7 @@ internal fun DiscoveryBlock(discovery: Discovery?, nudge: DiscoveryNudge, onPlay
   Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
     Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.14f)))
     Text(
-      "DESCUBRIMIENTO DEL DÍA", color = Clay.Sun, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+      "DESCUBRIMIENTO DEL DÍA", color = Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold,
       letterSpacing = 1.sp, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
     )
     if (discovery == null) {
@@ -336,7 +336,7 @@ internal fun DiscoveryBlock(discovery: Discovery?, nudge: DiscoveryNudge, onPlay
         Row(verticalAlignment = Alignment.CenterVertically) {
           MiniPlanet(def.gameId, 22.dp)
           Spacer(Modifier.width(8.dp))
-          Text(def.title, color = OnNightDim, fontSize = 13.sp)
+          Text(def.title, color = OnNightDim, fontSize = 15.sp)
         }
         Row(verticalAlignment = Alignment.Bottom) {
           Text(def.format(discovery.values.last()), color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold)
@@ -346,7 +346,7 @@ internal fun DiscoveryBlock(discovery: Discovery?, nudge: DiscoveryNudge, onPlay
             Spacer(Modifier.width(8.dp))
             Text(
               "Récord",
-              color = Clay.Ink, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+              color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold,
               modifier = Modifier
                 .padding(bottom = 9.dp)
                 .clip(RoundedCornerShape(50))
@@ -356,7 +356,7 @@ internal fun DiscoveryBlock(discovery: Discovery?, nudge: DiscoveryNudge, onPlay
             )
           }
         }
-        Text(discovery.caption, color = OnNightDim, fontSize = 13.sp)
+        Text(discovery.caption, color = OnNightDim, fontSize = 15.sp)
       }
       Spacer(Modifier.width(10.dp))
       Sparkline(discovery.values, def.lowerIsBetter, def::format)
@@ -368,7 +368,7 @@ internal fun DiscoveryBlock(discovery: Discovery?, nudge: DiscoveryNudge, onPlay
 @Composable
 private fun Sparkline(values: List<Float>, lowerIsBetter: Boolean, format: (Float) -> String) {
   Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(118.dp)) {
-    Text("tus últimas ${values.size} partidas", color = OnNightSoft, fontSize = 10.sp)
+    Text("últimas ${values.size}", color = OnNightSoft, fontSize = 14.sp)
     Canvas(Modifier.fillMaxWidth().height(46.dp).padding(vertical = 5.dp)) {
       val lo = values.minOrNull() ?: 0f
       val hi = values.maxOrNull() ?: 0f
@@ -389,9 +389,9 @@ private fun Sparkline(values: List<Float>, lowerIsBetter: Boolean, format: (Floa
       }
     }
     Row(Modifier.fillMaxWidth()) {
-      Text(format(values.first()), color = OnNightSoft, fontSize = 11.sp)
+      Text(format(values.first()), color = OnNightSoft, fontSize = 14.sp)
       Spacer(Modifier.weight(1f))
-      Text(format(values.last()), color = Clay.Sun, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+      Text(format(values.last()), color = Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
   }
 }
@@ -437,17 +437,17 @@ private fun ZoneDialog(
                 else -> (domainLevel?.let { "${levelWord(it)} · " } ?: "") +
                   "${if (plays == 1) "1 partida" else "$plays partidas"} · ${zone?.weekPlays ?: 0} esta semana"
               },
-              color = Clay.InkSoft, fontSize = 13.sp
+              color = Clay.InkSoft, fontSize = 15.sp
             )
           }
         }
         Spacer(Modifier.height(14.dp))
-        Text("Partidas por semana", color = Clay.InkSoft, fontSize = 12.sp)
+        Text("Partidas por semana", color = Clay.InkSoft, fontSize = 14.sp)
         WeekBars(weekly, domain.color)
         Row(Modifier.fillMaxWidth()) {
-          Text("hace 4 semanas", color = Clay.InkSoft, fontSize = 11.sp)
+          Text("hace 4 semanas", color = Clay.InkSoft, fontSize = 14.sp)
           Spacer(Modifier.weight(1f))
-          Text("esta semana", color = Clay.Ink, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+          Text("esta semana", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(10.dp))
         games.forEach { g ->
@@ -466,7 +466,7 @@ private fun ZoneDialog(
             Spacer(Modifier.width(12.dp))
             Column {
               Text(getGameTitle(g.id, lang, g.title), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-              Text(detail, color = Clay.InkSoft, fontSize = 12.sp)
+              Text(detail, color = Clay.InkSoft, fontSize = 14.sp)
             }
           }
         }
@@ -495,7 +495,7 @@ private fun WeekBars(counts: List<Int>, color: Color) {
   ) {
     counts.forEachIndexed { i, n ->
       Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("$n", color = Clay.Ink, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text("$n", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         val frac = if (n == 0) 0.06f else 0.15f + 0.85f * n / max
         Box(
           Modifier
@@ -537,7 +537,7 @@ private fun TodayAction(
       else -> Quad(null, null, onPlay, "")
     }
     if (def != null) {
-      Text(label.orEmpty(), color = OnNightDim, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+      Text(label.orEmpty(), color = OnNightDim, fontSize = 15.sp, modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
       ClayButton(
         text = getGameTitle(def.id, lang, def.title),
         onClick = action,
@@ -549,7 +549,7 @@ private fun TodayAction(
       Text(
         text = "¿Aún sin tu punto de partida? Encuéntralo en 5 minutos",
         color = Clay.Sun,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier
           .padding(top = 8.dp)
@@ -603,7 +603,7 @@ private fun MissionLine(
     Text(
       text = text,
       color = if (action != null) Clay.Sun else OnNightDim,
-      fontSize = 13.sp,
+      fontSize = 15.sp,
       fontWeight = if (action != null) FontWeight.SemiBold else FontWeight.Normal
     )
   }

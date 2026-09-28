@@ -149,7 +149,7 @@ private fun NavSlot(item: NavItem, selected: Boolean, onClick: () -> Unit, modif
     ) {
       Icon(if (selected) item.on else item.off, contentDescription = null, tint = if (selected) Blue else tint, modifier = Modifier.size(24.dp))
     }
-    Text(item.label, fontSize = 11.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, color = tint)
+    Text(item.label, fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, color = tint)
   }
 }
 

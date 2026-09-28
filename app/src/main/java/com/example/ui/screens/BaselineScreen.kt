@@ -61,7 +61,7 @@ import com.example.ui.components.GameIcon
 import com.example.ui.components.levelWord
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
-import com.example.ui.theme.FredokaFamily
+import com.example.ui.theme.AppFamily
 import com.example.viewmodel.BaselineRun
 import kotlin.math.PI
 import kotlin.math.cos
@@ -120,11 +120,11 @@ private fun ProgressView(done: Int, onContinue: () -> Unit, onLater: () -> Unit)
     Spacer(Modifier.weight(0.3f))
     Text(
       if (done == 0) "Tu punto de partida" else "¡Bien! Vas $done de ${steps.size}",
-      color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp, textAlign = TextAlign.Center
+      color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp, textAlign = TextAlign.Center
     )
     Text(
       "No es un examen: juega tranquilo, a tu ritmo.",
-      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, textAlign = TextAlign.Center,
+      color = OnNightDim, fontFamily = AppFamily, fontSize = 16.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 6.dp, bottom = 34.dp)
     )
     // Los 3 juegos como nodos del camino.
@@ -161,11 +161,11 @@ private fun ProgressView(done: Int, onContinue: () -> Unit, onLater: () -> Unit)
     Spacer(Modifier.height(30.dp))
     Text(
       "Siguiente: ${nextGame?.title ?: ""}",
-      color = Clay.Sun, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp, textAlign = TextAlign.Center
+      color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp, textAlign = TextAlign.Center
     )
     Text(
       "${next.measures}. Dura alrededor de un minuto.",
-      color = OnNight, fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
+      color = OnNight, fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 6.dp)
     )
     Spacer(Modifier.weight(0.7f))
@@ -176,7 +176,7 @@ private fun ProgressView(done: Int, onContinue: () -> Unit, onLater: () -> Unit)
     )
     Text(
       "Terminar después",
-      color = OnNight, fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+      color = OnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
       modifier = Modifier
         .padding(top = 8.dp)
         .clip(RoundedCornerShape(12.dp))
@@ -217,10 +217,10 @@ private fun MapView(baseline: Baseline, ageBand: AgeBand?, education: Education?
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Spacer(Modifier.height(18.dp))
-    Text("Tu mapa", color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 34.sp)
+    Text("Tu mapa", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 34.sp)
     Text(
       "Tu punto de partida. Cada juego empieza ahora a tu medida y se ajusta mientras juegas.",
-      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
+      color = OnNightDim, fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 6.dp, bottom = 8.dp)
     )
     DomainRadar(baseline, grow.value, Modifier.fillMaxWidth().aspectRatio(1.1f))
@@ -232,19 +232,19 @@ private fun MapView(baseline: Baseline, ageBand: AgeBand?, education: Education?
         Box(Modifier.size(16.dp).clip(CircleShape).background(step.domain.color).border(2.dp, Clay.Ink, CircleShape))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-          Text(step.domain.displayName, color = Color.White, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-          Text(levelWord(r), color = OnNightDim, fontFamily = FredokaFamily, fontSize = 14.sp)
+          Text(step.domain.displayName, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+          Text(levelWord(r), color = OnNightDim, fontFamily = AppFamily, fontSize = 14.sp)
         }
         Column(horizontalAlignment = Alignment.End) {
-          Text("P$pct", color = Clay.Sun, fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-          Text("frente a personas como tú", color = OnNightDim, fontFamily = FredokaFamily, fontSize = 12.sp)
+          Text("P$pct", color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+          Text("frente a personas como tú", color = OnNightDim, fontFamily = AppFamily, fontSize = 14.sp)
         }
       }
     }
     Text(
       "Razonamiento, lenguaje y cálculo se estiman hasta que los juegues. La comparación es una estimación " +
         "provisional: mejorará cuando haya más datos.",
-      color = OnNightDim, fontFamily = FredokaFamily, fontSize = 13.sp, lineHeight = 18.sp, textAlign = TextAlign.Center,
+      color = OnNightDim, fontFamily = AppFamily, fontSize = 15.sp, lineHeight = 18.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 10.dp, bottom = 22.dp)
     )
     ClayButton(text = "Empezar mi camino", onClick = onFinish, modifier = Modifier.testTag("btn_baseline_finish"))
@@ -313,8 +313,8 @@ private fun DomainRadar(baseline: Baseline, grow: Float, modifier: Modifier) {
       Text(
         d.displayName,
         color = if (d in baseline.measured) labelColor else OnNightDim,
-        fontFamily = FredokaFamily, fontWeight = if (d in baseline.measured) FontWeight.Bold else FontWeight.Normal,
-        fontSize = 13.sp,
+        fontFamily = AppFamily, fontWeight = if (d in baseline.measured) FontWeight.Bold else FontWeight.Normal,
+        fontSize = 15.sp,
         modifier = Modifier.align(Alignment.Center).offset(x = labelRadius * x * 1.08f, y = labelRadius * y)
       )
     }

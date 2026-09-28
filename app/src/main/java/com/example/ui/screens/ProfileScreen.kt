@@ -194,7 +194,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
                 Text(
                   text = def.title,
                   color = if (got) Color(0xFFEAF0FF) else Color(0xFFB4BFEA).copy(alpha = 0.7f),
-                  fontSize = 12.sp,
+                  fontSize = 14.sp,
                   fontWeight = FontWeight.SemiBold,
                   textAlign = TextAlign.Center,
                   maxLines = 2,
@@ -202,7 +202,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
                 )
                 if (!got) {
                   val (cur, goal) = def.progress(achStats)
-                  Text("$cur/$goal", color = Clay.Sun.copy(alpha = 0.8f), fontSize = 11.sp)
+                  Text("$cur/$goal", color = Clay.Sun.copy(alpha = 0.8f), fontSize = 14.sp)
                 }
               }
             }
@@ -281,6 +281,6 @@ private fun StatText(label: String, value: String, color: Color, modifier: Modif
       if (fire) Icon(Icons.Default.Whatshot, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
       Text(value, color = color, fontSize = 34.sp, fontWeight = FontWeight.Bold)
     }
-    Text(label, color = Color(0xFFB4BFEA), fontSize = 13.sp)
+    Text(label, color = Color(0xFFB4BFEA), fontSize = 15.sp)
   }
 }

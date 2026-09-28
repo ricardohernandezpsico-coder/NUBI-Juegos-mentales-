@@ -169,7 +169,7 @@ fun ProgressScreen(
                       Spacer(Modifier.width(8.dp))
                       Text(getDomainName(info.domain, currentLang), color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
-                    Text("${info.tier.tierName} · ${info.xpLabel}", color = info.domain.color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("${info.tier.tierName} · ${info.xpLabel}", color = info.domain.color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                   }
                   Box(
                     modifier = Modifier
@@ -212,7 +212,7 @@ fun ProgressScreen(
                     if (game != null) getGameTitle(game.id, currentLang, game.title) else "Juego",
                     color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold
                   )
-                  Text(dateFormatter.format(Date(item.timestamp)), color = OnNightDim, fontSize = 12.sp)
+                  Text(dateFormatter.format(Date(item.timestamp)), color = OnNightDim, fontSize = 14.sp)
                 }
                 Text("${item.score} pts", color = game?.domain?.color ?: TealPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
               }

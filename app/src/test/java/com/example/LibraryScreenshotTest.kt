@@ -16,8 +16,8 @@ import com.example.model.AgeBand
 import com.example.model.DomainType
 import com.example.model.GameRegistry
 import com.example.ui.screens.AreaHeader
-import com.example.ui.screens.GameCard
-import com.example.ui.screens.ModeSheetContent
+import com.example.ui.screens.GameTile
+import com.example.ui.screens.GameSheetContent
 import com.example.ui.screens.cardData
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
@@ -42,15 +42,19 @@ class LibraryScreenshotTest {
 
   @Test
   fun library() {
-    val rumbo = GameRegistry.getById("rumbo")!!
     val points = listOf(31f, 27f, 29f, 24f, 22f, 18f).mapIndexed { i, v -> MeasurePoint(now - (6 - i) * day, "homing", v) }
-    val data = cardData(rumbo, rumbo.title, "2 de 6", now - day, now, 0.45f, points, playsLast14 = 6)
+    val progress = mapOf("bitacora" to 0.62f, "rumbo" to 0.45f, "secuencia" to 0.75f, "parejas" to 0.40f, "rutatesoro" to 0.33f)
+    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
+      .sortedBy { com.example.data.StarMeasures.defForGame(it.id) == null }
     composeTestRule.setContent {
       NeuroVidaTheme {
         Column(Modifier.width(412.dp).background(Color(0xFF0A1040))) {
-          AreaHeader(DomainType.MEMORIA, "Memoria", 0.51f, explored = 4, total = 6, onPrev = {}, onNext = {})
-          Box(Modifier.padding(horizontal = 30.dp)) {
-            GameCard(data, PlayMode.A_TU_MEDIDA, onMode = {}, onPlay = {})
+          AreaHeader(DomainType.MEMORIA, "Memoria", 0.51f, explored = 5, total = 6, onPrev = {}, onNext = {})
+          Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+            games.forEach { g ->
+              val last = if (g.id == "correo") null else now - (if (g.id == "rumbo") 0 else 2) * day
+              GameTile(cardData(g, g.title, last, now, progress[g.id], if (g.id == "rumbo") points else emptyList(), 4), highlighted = g.id == "rumbo") {}
+            }
           }
         }
       }
@@ -59,29 +63,17 @@ class LibraryScreenshotTest {
   }
 
   @Test
-  fun libraryUnmeasured() {
-    val correo = GameRegistry.getById("correo")!!
-    val data = cardData(correo, correo.title, "3 de 6", null, now, null, emptyList(), playsLast14 = 0)
-    composeTestRule.setContent {
-      NeuroVidaTheme {
-        Box(Modifier.width(412.dp).background(Color(0xFF0A1040)).padding(horizontal = 30.dp, vertical = 12.dp)) {
-          GameCard(data, PlayMode.A_TU_MEDIDA, onMode = {}, onPlay = {})
-        }
-      }
-    }
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-sin-medir.png")
-  }
-
-  @Test
-  fun modes() {
+  fun sheet() {
     val rumbo = GameRegistry.getById("rumbo")!!
+    val points = listOf(31f, 27f, 29f, 24f, 22f, 18f).mapIndexed { i, v -> MeasurePoint(now - (6 - i) * day, "homing", v) }
+    val data = cardData(rumbo, rumbo.title, now - day, now, 0.45f, points, playsLast14 = 6)
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).background(Color(0xFF0A1040)).padding(16.dp)) {
-          ModeSheetContent(rumbo, rumbo.title, 0.45f, AgeBand.SENIOR, expertOpen = false, choice = PlayMode.DESAFIO, onChoose = {}, onPlay = {})
+        Box(Modifier.width(412.dp).background(Color(0xFF0A1040)).padding(14.dp)) {
+          GameSheetContent(data, AgeBand.SENIOR, expertOpen = false, choice = PlayMode.DESAFIO, onChoose = {}, onPlay = {})
         }
       }
     }
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-modos.png")
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-ficha.png")
   }
 }
