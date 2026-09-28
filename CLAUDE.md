@@ -493,6 +493,11 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   color decorativo nunca dice "acierto". Con "quitar animaciones" del teléfono (`reduce_motion` en la config →
   `GameFeel.ReduceMotion`) no hay respiración, pulso ni destellos. Lámina `docs/previews/anagramas-burbujas.png`.
   Sin probar en el teléfono.
+- **Nombre e ícono** (28-sep, pendiente de que Ricardo elija): "NeuroVida" ya es marca registrada en EE. UU. (clase 5)
+  y hay una app "NEUROVIDA PSICOLOGIA" en Google Play: hay que cambiarlo. Propuestas (Cosmente recomendado, Luminautas)
+  y riesgos de patentes por juego (Radar ALTO por US 8,348,671 de Posit: revisión de abogado antes de EE. UU.; Piloto
+  nunca con inclinación; Parejas siempre con el tablero a la vez; no usar "UFOV"): [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md),
+  lámina `docs/previews/nombre-icono.png` (`tools/previews/nombre_icono.py`).
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
