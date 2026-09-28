@@ -463,6 +463,10 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   ventana de inicio). Debajo una `LazyRow` por área (juegos estrella primero): anillo con el nivel (0..1), estrella sol
   si es juego estrella, ✓ si se jugó hoy, aro sol + "Nuevo" si no se probó, y bajo el nombre la marca corta
   (`MeasureDef.compact`: "212 ms", "a 18%") o el nivel. Sin probar en el teléfono.
+- **Dificultad y avance** (28-sep, propuesta en revisión, NO implementada): [`docs/dificultad-y-avance.md`](docs/dificultad-y-avance.md).
+  Una vara por juego (avance = nivel donde se acierta 8 de 10), la edad ajusta el entrenamiento y los modos Suave /
+  A tu medida / Desafío / Experto (definidos por aciertos esperados, con techo o piso sobre el DDA). Pestaña Juegos
+  elegida: "un área a la vez" + cartas (`docs/previews/juegos-dificultad-*.png`). Esperando el visto bueno de Ricardo.
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
