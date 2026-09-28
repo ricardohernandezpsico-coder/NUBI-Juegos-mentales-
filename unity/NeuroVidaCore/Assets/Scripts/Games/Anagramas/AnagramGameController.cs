@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / TilePalette / HarmonicTone
@@ -17,6 +18,8 @@ namespace NeuroVida.Games.Anagramas
     /// acierta, ola de fichas verdes; si falla, las fichas se reordenan solas mostrando la palabra
     /// correcta (se aprende). El cartel superior hace de pizarra (instrucción / pista). Reto = 120 s
     /// sin límite de palabras (el largo sube de a poco: 3 a 11 letras); Precisión = 6 palabras.
+    /// Niveles 5-7 (7 a 11 letras; 28-sep, idea de Ricardo): las letras del banco son BURBUJAS que rebotan sin parar
+    /// contra los bordes y entre ellas (<see cref="BubbleField"/>); el toque cuenta al presionar (el blanco se mueve).
     /// Reglas de <c>AnagramasGame.kt</c> (ver <see cref="AnagramContract"/>). Telemetría: reusa
     /// <see cref="StroopTelemetry"/>.
     /// </summary>
@@ -53,6 +56,17 @@ namespace NeuroVida.Games.Anagramas
             public char Char;
             public bool InSlot;
             public Vector2 Target;
+            /// <summary>Su burbuja en <see cref="_bubbles"/> (= su lugar en el banco).</summary>
+            public int Index;
+            /// <summary>Segundos que le quedan volviendo de la casilla a su burbuja (se desliza, no salta).</summary>
+            public float ReturnT;
+        }
+
+        /// <summary>Toque que cuenta al PRESIONAR (un botón normal cuenta al soltar, y una burbuja puede haberse ido).</summary>
+        private sealed class TapDown : MonoBehaviour, IPointerDownHandler
+        {
+            public System.Action OnDown;
+            public void OnPointerDown(PointerEventData eventData) => OnDown?.Invoke();
         }
 
         private System.Random _rng;
@@ -70,6 +84,12 @@ namespace NeuroVida.Games.Anagramas
         private float _roundEndsAt;
         private int _lastTickSecond = -1;
         private bool Endless => _config != null && _config.config.timed;
+
+        // Burbujas (niveles 5-7): física pura + dónde está su área dentro del tablero.
+        private AgeBand _age;
+        private BubbleField _bubbles;
+        private bool _bubblesRunning, _bubblesAnnounced;
+        private float _arenaLeft, _arenaTop;
 
         // UI
         private RectTransform _safe, _boardRect, _bannerRect, _timerBg, _timerFill, _fxRect, _actionsRoot;
@@ -94,9 +114,23 @@ namespace NeuroVida.Games.Anagramas
         private void Update()
         {
             float k = 1f - Mathf.Exp(-16f * GameClock.DeltaTime);
+            if (_bubbles != null && _bubblesRunning) _bubbles.Step(GameClock.DeltaTime);
             foreach (var l in _letters)
             {
                 if (l == null || l.Holder == null) continue;
+                if (_bubbles != null && !l.InSlot && _bubbles.Active[l.Index])
+                {
+                    // Burbuja: va donde la lleva la física (o se desliza hasta ella si vuelve de su casilla).
+                    l.Target = BubblePos(l.Index);
+                    if (l.ReturnT > 0f)
+                    {
+                        l.ReturnT -= GameClock.DeltaTime;
+                        l.Holder.anchoredPosition = Vector2.Lerp(l.Holder.anchoredPosition, l.Target, k);
+                    }
+                    else l.Holder.anchoredPosition = l.Target;
+                    l.Holder.localScale = Vector3.Lerp(l.Holder.localScale, Vector3.one, k);
+                    continue;
+                }
                 l.Holder.anchoredPosition = Vector2.Lerp(l.Holder.anchoredPosition, l.Target, k);
                 l.Holder.localScale = Vector3.Lerp(l.Holder.localScale, Vector3.one * (l.InSlot ? _slotShrink : 1f), k);
             }
@@ -115,6 +149,9 @@ namespace NeuroVida.Games.Anagramas
             _acceptInput = false;
             _lastTickSecond = -1;
             _used.Clear();
+            _age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
+            _bubbles = null;
+            _bubblesRunning = _bubblesAnnounced = false;
             // DDA común sobre la escalera de 7 niveles (largo de palabra). Pocas palabras por sesión => pasos más grandes.
             _dda = new AdaptiveDifficulty(AnagramContract.MaxLevel, DdaUserProfileConfig.ParseAgeBand(config.config.age_band),
                 AdaptiveDifficulty.StartRating(config.config, AnagramContract.MaxLevel),
@@ -179,6 +216,12 @@ namespace NeuroVida.Games.Anagramas
             for (int i = 0; i < n; i++) _slotRects[i].gameObject.SetActive(true);
             for (int i = n; i < MaxLetters; i++) _slotRects[i].gameObject.SetActive(false);
             for (int i = 0; i < n; i++) _slotImages[i].color = SlotColor(false);
+            _bubblesRunning = _bubbles != null;
+            if (_bubbles != null && !_bubblesAnnounced)
+            {
+                _bubblesAnnounced = true;
+                _toast.Show("¡Las letras flotan!", "Tócalas al pasar", Accent, 1.4f);
+            }
 
             // Casillas y fichas aparecen con rebote escalonado.
             for (int i = 0; i < n; i++)
@@ -198,6 +241,7 @@ namespace NeuroVida.Games.Anagramas
                 yield return null;
             }
             _acceptInput = false;
+            _bubblesRunning = false;
             SetActionsInteractable(false);
 
             if (_result == WordResult.TimeUp)
@@ -283,6 +327,11 @@ namespace NeuroVida.Games.Anagramas
                 // Devolver una ficha colocada: las siguientes se corren una casilla a la izquierda.
                 _assembly.RemoveAt(idx);
                 letter.InSlot = false;
+                if (_bubbles != null)
+                {
+                    _bubbles.Reactivate(letter.Index, _rng);
+                    letter.ReturnT = 0.35f;
+                }
                 letter.Image.color = TileCream;
                 PlayTone(330f, 0.08f, 0.10f);
                 Retarget();
@@ -293,6 +342,7 @@ namespace NeuroVida.Games.Anagramas
 
             _assembly.Add(letter);
             letter.InSlot = true;
+            _bubbles?.Deactivate(letter.Index);
             letter.Image.color = TilePlaced;
             PlayTone(392f * Mathf.Pow(2f, (_assembly.Count - 1) * 2f / 12f), 0.12f, 0.12f);
             Retarget();
@@ -715,6 +765,7 @@ namespace NeuroVida.Games.Anagramas
 
         private Letter CreateLetter(char c, int poolIndex)
         {
+            if (_bubbles != null) return CreateBubble(c, poolIndex);
             var holderGo = new GameObject("Letter_" + c + "_" + poolIndex);
             holderGo.transform.SetParent(_boardRect, false);
             var holder = holderGo.AddComponent<RectTransform>();
@@ -734,7 +785,7 @@ namespace NeuroVida.Games.Anagramas
             img.color = TileCream;
             img.alphaHitTestMinimumThreshold = 0.1f;
 
-            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex] };
+            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex], Index = poolIndex };
             var button = go.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => OnLetterTapped(letter));
@@ -754,6 +805,78 @@ namespace NeuroVida.Games.Anagramas
             rect.localScale = Vector3.zero;
             return letter;
         }
+
+        /// <summary>Una letra como burbuja de arcilla: sombra dura abajo, cara crema (se tiñe según el estado),
+        /// borde tinta y un brillo arriba. La letra nunca gira. El toque cuenta al presionar.</summary>
+        private Letter CreateBubble(char c, int poolIndex)
+        {
+            float d = _tileSize;
+            var holderGo = new GameObject("Bubble_" + c + "_" + poolIndex);
+            holderGo.transform.SetParent(_boardRect, false);
+            var holder = holderGo.AddComponent<RectTransform>();
+            holder.anchorMin = holder.anchorMax = new Vector2(0.5f, 1f);
+            holder.pivot = new Vector2(0.5f, 0.5f);
+            holder.sizeDelta = new Vector2(d, d);
+
+            // "Face" agrupa todo (aparece, se hunde al tocar y se achica en la casilla de una vez); dentro, la sombra
+            // dura primero (queda detrás) y encima la burbuja.
+            var go = new GameObject("Face");
+            go.transform.SetParent(holder, false);
+            var rect = go.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+
+            var shadowImg = new GameObject("Shadow").AddComponent<Image>();
+            shadowImg.transform.SetParent(go.transform, false);
+            shadowImg.sprite = DiscSprite.Get();
+            shadowImg.color = Ink;
+            shadowImg.raycastTarget = false;
+            shadowImg.rectTransform.sizeDelta = new Vector2(d, d);
+            shadowImg.rectTransform.anchoredPosition = new Vector2(0f, -d * 0.07f);
+
+            var img = new GameObject("Bubble").AddComponent<Image>();
+            img.transform.SetParent(go.transform, false);
+            img.sprite = DiscSprite.Get();
+            img.color = TileCream;
+            img.rectTransform.sizeDelta = new Vector2(d, d);
+
+            var shine = new GameObject("Shine").AddComponent<Image>();
+            shine.transform.SetParent(img.transform, false);
+            shine.sprite = DiscSprite.Get();
+            shine.color = new Color(1f, 1f, 1f, 0.55f);
+            shine.raycastTarget = false;
+            shine.rectTransform.sizeDelta = new Vector2(d * 0.26f, d * 0.18f);
+            shine.rectTransform.anchoredPosition = new Vector2(-d * 0.2f, d * 0.24f);
+
+            var ring = new GameObject("Rim").AddComponent<Image>();
+            ring.transform.SetParent(img.transform, false);
+            ring.sprite = RingSprite.Get();
+            ring.color = Ink;
+            ring.raycastTarget = false;
+            ring.rectTransform.sizeDelta = new Vector2(d * 1.02f, d * 1.02f);
+
+            var letter = new Letter { Holder = holder, Rect = rect, Image = img, Char = c, InSlot = false, Target = _poolPositions[poolIndex], Index = poolIndex };
+            go.AddComponent<TapDown>().OnDown = () => OnLetterTapped(letter);
+            go.AddComponent<PressScale>();
+
+            letter.Label = MakeText(img.transform, "Char", Mathf.RoundToInt(d * 0.56f), TextAnchor.MiddleCenter, Ink, 0f, 0f);
+            letter.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            letter.Label.verticalOverflow = VerticalWrapMode.Overflow;
+            var lr = letter.Label.rectTransform;
+            lr.anchorMin = new Vector2(0.1f, 0.1f);
+            lr.anchorMax = new Vector2(0.9f, 0.9f);
+            lr.offsetMin = lr.offsetMax = Vector2.zero;
+            letter.Label.text = c.ToString();
+
+            holder.anchoredPosition = letter.Target;
+            rect.localScale = Vector3.zero;
+            return letter;
+        }
+
+        /// <summary>Dónde está la burbuja i, en coordenadas del tablero.</summary>
+        private Vector2 BubblePos(int i) => new Vector2(_arenaLeft + _bubbles.X[i], -(_arenaTop + _bubbles.Y[i]));
 
         private void ClearLetters()
         {
@@ -807,6 +930,9 @@ namespace NeuroVida.Games.Anagramas
         /// (<see cref="_slotShrink"/>), asi que nunca se pisan aunque la palabra tenga 11 letras.</summary>
         private void LayoutWord(int n)
         {
+            var spec = BubbleField.SpecFor(_effLevel, _age);
+            if (spec.HasValue) { LayoutBubbles(n, spec.Value); return; }
+            _bubbles = null;
             float gapSlot = n <= 7 ? 14f : 8f;
             _slotSize = Mathf.Min(150f, (_contentW - (n - 1) * gapSlot) / n);
             int perRow = n <= 6 ? n : Mathf.CeilToInt(n / 2f);
@@ -841,6 +967,34 @@ namespace NeuroVida.Games.Anagramas
                 float y = poolTop + row * (_tileSize + gapTile);
                 _poolPositions[i] = new Vector2(x, -y);
             }
+        }
+
+        /// <summary>Niveles 5-7: casillas arriba (una fila) y, entre ellas y los botones, el área donde flotan las burbujas.</summary>
+        private void LayoutBubbles(int n, BubbleSpec spec)
+        {
+            float gapSlot = n <= 7 ? 14f : 8f;
+            _slotSize = Mathf.Min(150f, (_contentW - (n - 1) * gapSlot) / n);
+            float slotsY = _yAfterBanner + 20f + _slotSize / 2f;
+            _slotsCenterY = slotsY;
+            for (int i = 0; i < n; i++)
+            {
+                float x = (i - (n - 1) / 2f) * (_slotSize + gapSlot);
+                _slotPositions[i] = new Vector2(x, -slotsY);
+                var r = _slotRects[i];
+                r.sizeDelta = new Vector2(_slotSize, _slotSize);
+                r.anchoredPosition = _slotPositions[i];
+                r.localScale = Vector3.one;
+            }
+
+            _arenaLeft = -_contentW / 2f - MarginU * 0.5f;
+            _arenaTop = slotsY + _slotSize / 2f + 50f;
+            float arenaW = _contentW + MarginU;
+            float arenaH = Mathf.Max(300f, _actionsTopY - 30f - _arenaTop);
+            _bubbles = new BubbleField(n, arenaW, arenaH, spec.DiameterDp * UnitsPerDp / 2f, BubbleField.MinDiameterDp * UnitsPerDp / 2f,
+                spec.GapDp * UnitsPerDp, spec.SpeedDp * UnitsPerDp, _rng);
+            _tileSize = _bubbles.Radius * 2f;
+            _slotShrink = Mathf.Min(1f, _slotSize / _tileSize);
+            for (int i = 0; i < n; i++) _poolPositions[i] = BubblePos(i);
         }
 
         private Vector2 SlotsCenter() => new Vector2(0f, _safeH / 2f - _slotsCenterY);

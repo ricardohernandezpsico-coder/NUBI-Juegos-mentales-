@@ -21,7 +21,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · l`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · m`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -435,7 +435,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 83 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 176 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Unity EditMode: 179 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 
@@ -480,6 +480,13 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   (`StarMeasures.comparable`: mismo reloj y, en las marcas que dependen del nivel, a menos de un nivel).
   Pendiente: "fortalezas" por aspecto en los juegos estrella (hoy la carta muestra solo la constancia) y calibrar la
   pendiente `s` de cada juego con datos (sección 10 del documento).
+- **Anagramas con burbujas** (28-sep, idea de Ricardo): en los niveles 5-7 (7 a 11 letras) las letras del banco son
+  burbujas de arcilla que rebotan sin parar contra los bordes y entre ellas (`Anagramas/BubbleField`: física pura con
+  3 pruebas; choque elástico, separación mínima siempre, rapidez constante). Por edad (`BubbleField.SpecFor`):
+  mayores 64 dp, 12 dp de separación, 42 dp/s; adultos 56 dp, 8 dp, 70 dp/s; menores 56 dp, 8 dp, 80 dp/s; nunca bajo
+  48 dp (se achican si el área se llena). Entra de a poco: nivel 5 al 60% de la velocidad, 6 al 80%, 7 completo.
+  El toque cuenta al presionar (`TapDown`); una letra devuelta vuelve a un lugar libre. Niveles 1-4 sin cambios.
+  Sin probar en el teléfono.
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
