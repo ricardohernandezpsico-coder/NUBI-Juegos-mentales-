@@ -20,8 +20,13 @@ data class MeasureDef(
   val lowerIsBetter: Boolean,
   val decimals: Int = 0,
   /** Nombre corto para las invitaciones: "tu vistazo". */
-  val short: String = ""
+  val short: String = "",
+  /** Forma corta con unidad, para debajo de un planeta: "{v} ms", "a {v}". */
+  val compactPattern: String = "{v}"
 ) {
+  /** La medida en pocas letras y con su unidad (la biblioteca de juegos): "212 ms", "5 a la vez", "a 18%". */
+  fun compact(v: Float): String = compactPattern.replace("{v}", format(v))
+
   fun format(v: Float): String {
     val n = if (decimals == 0) v.roundToInt().toString() else String.format(Locale.ROOT, "%.${decimals}f", v).replace('.', ',')
     return n + suffix
@@ -60,16 +65,16 @@ object StarMeasures {
   private const val DAY_MS = 86_400_000L
 
   val defs = listOf(
-    MeasureDef("glance", "radar", "Tu vistazo en Radar", "", "ms", lowerIsBetter = true, short = "tu vistazo"),
-    MeasureDef("brake", "freno", "Tu freno en Freno de Emergencia", "", "ms", lowerIsBetter = true, short = "tu freno"),
-    MeasureDef("tracking", "satelites", "Tu seguimiento en Satélites", "", "a la vez", lowerIsBetter = false, decimals = 1, short = "tu seguimiento"),
-    MeasureDef("numline", "aterrizaje", "Tu estimación en Aterrizaje Lunar", "%", "del blanco", lowerIsBetter = true, decimals = 1, short = "tu estimación"),
-    MeasureDef("rotation", "acoplamiento", "Tu giro mental en Acoplamiento", "°", "por segundo", lowerIsBetter = false, short = "tu giro mental"),
-    MeasureDef("load", "trafico", "Tu carga en Tráfico Estelar", "", "cápsulas a la vez", lowerIsBetter = false, short = "tu carga"),
-    MeasureDef("multitask", "piloto", "Tu multitarea en Piloto Estelar", "%", "de costo", lowerIsBetter = true, short = "tu multitarea"),
-    MeasureDef("homing", "rumbo", "Tu brújula en Rumbo a Casa", "%", "de casa", lowerIsBetter = true, short = "tu brújula"),
-    MeasureDef("recall", "bitacora", "Tu memoria en la Bitácora", "%", "recordado", lowerIsBetter = false, short = "tu memoria"),
-    MeasureDef("pending", "correo", "Tu memoria para lo pendiente", "%", "de encargos", lowerIsBetter = false, short = "tu memoria para lo pendiente")
+    MeasureDef("glance", "radar", "Tu vistazo en Radar", "", "ms", lowerIsBetter = true, short = "tu vistazo", compactPattern = "{v} ms"),
+    MeasureDef("brake", "freno", "Tu freno en Freno de Emergencia", "", "ms", lowerIsBetter = true, short = "tu freno", compactPattern = "{v} ms"),
+    MeasureDef("tracking", "satelites", "Tu seguimiento en Satélites", "", "a la vez", lowerIsBetter = false, decimals = 1, short = "tu seguimiento", compactPattern = "{v} a la vez"),
+    MeasureDef("numline", "aterrizaje", "Tu estimación en Aterrizaje Lunar", "%", "del blanco", lowerIsBetter = true, decimals = 1, short = "tu estimación", compactPattern = "a {v}"),
+    MeasureDef("rotation", "acoplamiento", "Tu giro mental en Acoplamiento", "°", "por segundo", lowerIsBetter = false, short = "tu giro mental", compactPattern = "{v}/s"),
+    MeasureDef("load", "trafico", "Tu carga en Tráfico Estelar", "", "cápsulas a la vez", lowerIsBetter = false, short = "tu carga", compactPattern = "{v} a la vez"),
+    MeasureDef("multitask", "piloto", "Tu multitarea en Piloto Estelar", "%", "de costo", lowerIsBetter = true, short = "tu multitarea", compactPattern = "{v} costo"),
+    MeasureDef("homing", "rumbo", "Tu brújula en Rumbo a Casa", "%", "de casa", lowerIsBetter = true, short = "tu brújula", compactPattern = "a {v}"),
+    MeasureDef("recall", "bitacora", "Tu memoria en la Bitácora", "%", "recordado", lowerIsBetter = false, short = "tu memoria", compactPattern = "{v}"),
+    MeasureDef("pending", "correo", "Tu memoria para lo pendiente", "%", "de encargos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}")
   )
 
   val gameNames = mapOf(

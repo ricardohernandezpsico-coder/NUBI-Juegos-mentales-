@@ -40,11 +40,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
 - Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, "Tu planeta": ver abajo) · Juegos
-  (`GamesLibraryScreen`, planetas) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
+  (`GamesLibraryScreen`, "Para ti hoy" + filas por área: ver abajo) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
 - Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
-  `Planet`, `StarMeasures`; y
+  `Planet`, `StarMeasures`, `Library`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
@@ -431,7 +431,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 70 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 73 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 174 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
@@ -456,6 +456,13 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   datos, invitación tocable "Juega Radar para descubrir tu vistazo"). Tocar una zona abre su ventana (`ZoneDialog`):
   partidas por semana (4), cada juego del dominio con su última medida o cuándo se jugó, y "Jugar X" (el sin jugar o el
   más olvidado). Captura real (Roborazzi): `docs/previews/inicio-planeta-real.png`. Sin probar en el teléfono.
+- **Juegos = "Para ti hoy" + filas por área** (28-sep; Ricardo eligió la recomendación entre 6 estilos,
+  `docs/previews/juegos-propuestas.png` y `juegos-final.png`; captura real `docs/previews/juegos-real.png`). Arriba un solo
+  juego sugerido con su razón (`data/Library.picks`: la zona quieta o sin explorar de Tu planeta, después juegos estrella
+  sin probar, después los olvidados ≥ 2 días; "otro" pasa al siguiente; "Jugar" lanza directo; tocar el planeta abre la
+  ventana de inicio). Debajo una `LazyRow` por área (juegos estrella primero): anillo con el nivel (0..1), estrella sol
+  si es juego estrella, ✓ si se jugó hoy, aro sol + "Nuevo" si no se probó, y bajo el nombre la marca corta
+  (`MeasureDef.compact`: "212 ms", "a 18%") o el nivel. Sin probar en el teléfono.
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");

@@ -166,7 +166,6 @@ def recomendacion():
     d.rounded_rectangle([bx0, by0, bx0 + dp(140), by0 + dp(40)], radius=dp(16), fill=SUN, outline=INK, width=int(dp(3)))
     P.play_tri(d, bx0 + dp(24), by0 + dp(20), dp(12)); d.text((bx0 + dp(82), by0 + dp(20)), 'Jugar', font=F(17), fill=INK, anchor='mm')
     d.text((bx0 + dp(152), by0 + dp(20)), 'otro ›', font=F(13), fill=SUN, anchor='lm')
-    P.note(im, dp(146), y + dp(150), 'cambia cada día según tu planeta', 'la')
     y = dp(240)
     for dom, name in J.DOMS[:4]:
         games = BYDOM[dom]
@@ -185,7 +184,6 @@ def recomendacion():
             d.text((x, y + dp(128)), sub, font=F(11), fill=col, anchor='ma')
             x += dp(92)
         y += dp(150)
-    P.note(im, W - dp(16), dp(238), 'cada fila se desliza de lado', 'ra')
     P.navbar(im, 1); return im
 
 

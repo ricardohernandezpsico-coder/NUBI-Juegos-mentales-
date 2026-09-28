@@ -43,113 +43,112 @@ import com.example.ui.i18n.strings
 import com.example.ui.theme.*
 import com.example.viewmodel.NeuroVidaViewModel
 
+private const val DAY_MS = 86_400_000L
+private val OnNight = Color(0xFFEAF0FF)
+private val OnNightDim = Color(0xFFC7D0FF)
+private val OnNightSoft = Color(0xFF9AA3D6)
+
+private fun dayIndex(ts: Long): Long = (ts + java.util.TimeZone.getDefault().getOffset(ts)) / DAY_MS
+
+/**
+ * Pestaña Juegos (28-sep, Ricardo eligió "Para ti + áreas" entre 6 estilos; maqueta `docs/previews/juegos-final-1.png`):
+ * arriba "PARA TI HOY", un solo juego sugerido con su razón (ver [com.example.data.Library]; "otro" pasa al siguiente),
+ * y debajo una fila por área que se desliza de lado. Cada planeta lleva un anillo con su nivel, una estrella si es juego
+ * estrella, ✓ si se jugó hoy, y debajo tu marca, tu nivel o "Nuevo". Tocar un planeta abre su ventana de inicio.
+ */
 @Composable
 fun GamesLibraryScreen(
   viewModel: NeuroVidaViewModel,
   modifier: Modifier = Modifier
 ) {
   val gameLevels by viewModel.gameLevels.collectAsState()
-  val gameRanks by viewModel.gameRanks.collectAsState()
+  val levels by viewModel.gameLevelsForProgress.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
   val userSettings by viewModel.userSettings.collectAsState()
+  val measures by viewModel.starMeasures.collectAsState()
 
-  var selectedDomainFilter by remember { mutableStateOf<DomainType?>(null) }
   var gameToIntro by remember { mutableStateOf<GameDefinition?>(null) }
+  var pickIndex by remember { mutableStateOf(0) }
+  val now = remember(history) { System.currentTimeMillis() }
 
-  val filteredGames = remember(selectedDomainFilter) {
-    if (selectedDomainFilter == null) {
-      GameRegistry.allGames
-    } else {
-      GameRegistry.allGames.filter { it.domain == selectedDomainFilter }
+  val lastPlayed = remember(history) {
+    history.groupBy { it.gameId }.mapValues { (_, list) -> list.maxOf { it.timestamp } }
+  }
+  val picks = remember(history) {
+    val plays = history.mapNotNull { r -> GameRegistry.getById(r.gameId)?.let { com.example.data.PlanetPlay(it.domain.name, r.timestamp) } }
+    val planet = com.example.data.Planet.build(plays, now, ::dayIndex)
+    val games = GameRegistry.allGames
+      .filter { it.id !in LibraryBookends }
+      .map { com.example.data.LibraryGame(it.id, it.domain.name, com.example.data.StarMeasures.defForGame(it.id) != null) }
+    com.example.data.Library.picks(planet, games, lastPlayed, now, ::dayIndex) { key ->
+      DomainType.values().firstOrNull { it.name == key }?.displayName ?: key
     }
   }
+  val pick = picks.getOrNull(pickIndex % picks.size.coerceAtLeast(1))
 
   Box(modifier = modifier.fillMaxSize()) {
     val currentLang = LocalAppLanguage.current
     LazyColumn(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(horizontal = 16.dp),
-      contentPadding = PaddingValues(top = 12.dp, bottom = 28.dp),
-      verticalArrangement = Arrangement.spacedBy(6.dp)
+      modifier = Modifier.fillMaxSize(),
+      contentPadding = PaddingValues(top = 12.dp, bottom = 28.dp)
     ) {
       item {
-        Column(modifier = Modifier.padding(horizontal = 6.dp)) {
-          Text(
-            text = strings.gamesLibraryTitle,
-            color = Color(0xFFEAF0FF),
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-          )
-          Text(
-            text = "Elige un planeta y entrena",
-            color = Color(0xFFB4BFEA),
-            fontSize = 14.sp
-          )
-        }
+        Text(
+          text = strings.gamesLibraryTitle,
+          color = OnNight,
+          fontSize = 28.sp,
+          fontWeight = FontWeight.Bold,
+          modifier = Modifier.padding(horizontal = 20.dp)
+        )
       }
 
-      // Dominios como texto con punto de color (sin recuadros): toca uno para filtrar el mapa
-      item {
-        LazyRow(
-          horizontalArrangement = Arrangement.spacedBy(4.dp),
-          modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)
-        ) {
-          item {
-            DomainTab(
-              label = strings.filterAll,
-              color = Color.White,
-              selected = selectedDomainFilter == null,
-              onClick = { selectedDomainFilter = null },
-              tag = "filter_all"
-            )
-          }
-          items(DomainType.values()) { domain ->
-            val isSelected = selectedDomainFilter == domain
-            DomainTab(
-              label = getDomainName(domain, currentLang),
-              color = domain.color,
-              selected = isSelected,
-              onClick = { selectedDomainFilter = if (isSelected) null else domain },
-              tag = "filter_${domain.name.lowercase()}"
+      if (pick != null) {
+        item {
+          val def = GameRegistry.getById(pick.gameId)
+          if (def != null) {
+            ForYou(
+              game = def,
+              title = getGameTitle(def.id, currentLang, def.title),
+              reason = pick.reason,
+              hasMore = picks.size > 1,
+              onPlay = { viewModel.launchGame(def.id) },
+              onOther = { pickIndex += 1 },
+              onOpen = { gameToIntro = def }
             )
           }
         }
       }
 
-      // Mapa de planetas: filas de 3, con la columna central desplazada hacia abajo (constelacion)
-      val rows = filteredGames.chunked(3)
-      items(rows.size) { r ->
-        val rowGames = rows[r]
-        Row(
-          modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-          horizontalArrangement = Arrangement.SpaceEvenly,
-          verticalAlignment = Alignment.Top
+      items(DomainType.values().toList()) { domain ->
+        val games = GameRegistry.allGames
+          .filter { it.domain == domain }
+          .sortedBy { com.example.data.StarMeasures.defForGame(it.id) == null } // los juegos estrella primero
+        AreaRow(
+          domain = domain,
+          title = getDomainName(domain, currentLang),
+          count = games.size
         ) {
-          for (c in 0 until 3) {
-            val game = rowGames.getOrNull(c)
-            Box(
-              modifier = Modifier
-                .weight(1f)
-                .padding(top = if (c == 1) 44.dp else 0.dp),
-              contentAlignment = Alignment.TopCenter
-            ) {
-              if (game != null) {
-                val level = gameLevels[game.id] ?: 1
-                val rankInfo = gameRanks.find { it.gameId == game.id } ?: GameRankInfo(game.id, 0)
-                Planet(
-                  game = game,
-                  title = getGameTitle(game.id, currentLang, game.title),
-                  level = level,
-                  rank = rankInfo,
-                  best = history.filter { it.gameId == game.id }.maxOfOrNull { it.score },
-                  onClick = { gameToIntro = game }
-                )
-              }
+          items(games, key = { it.id }) { game ->
+            val played = lastPlayed[game.id]
+            val latest = com.example.data.StarMeasures.latest(measures, game.id)
+            val sub = when {
+              played == null -> "Nuevo" to Clay.Sun
+              latest != null -> latest.first.compact(latest.second) to Clay.Sun
+              else -> "nivel ${gameLevels[game.id] ?: 1}" to OnNightSoft
             }
+            LibraryPlanet(
+              game = game,
+              title = getGameTitle(game.id, currentLang, game.title),
+              level = levels[game.id],
+              star = com.example.data.StarMeasures.defForGame(game.id) != null,
+              playedToday = played != null && dayIndex(played) == dayIndex(now),
+              isNew = played == null,
+              sub = sub.first,
+              subColor = sub.second,
+              onClick = { gameToIntro = game }
+            )
           }
         }
-        Spacer(Modifier.height(if (rowGames.size == 3) 40.dp else 8.dp))
       }
     }
 
@@ -325,102 +324,191 @@ fun GamesLibraryScreen(
   }
 }
 
+private val LibraryBookends = setOf("bitacora")
+
+/** "PARA TI HOY": un juego grande con su razón, "Jugar" (arcilla sol) y "otro" (la siguiente sugerencia). */
 @Composable
-private fun DomainTab(label: String, color: Color, selected: Boolean, onClick: () -> Unit, tag: String) {
-  Row(
-    modifier = Modifier
-      .clip(RoundedCornerShape(14.dp))
-      .clickable(onClick = onClick)
-      .padding(horizontal = 10.dp, vertical = 8.dp)
-      .testTag(tag),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Box(
-      modifier = Modifier
-        .size(if (selected) 12.dp else 9.dp)
-        .clip(CircleShape)
-        .background(color)
-    )
-    Spacer(Modifier.width(6.dp))
-    Text(
-      text = label,
-      color = if (selected) Color.White else Color(0xFFB4BFEA),
-      fontSize = 14.sp,
-      fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+internal fun ForYou(
+  game: GameDefinition,
+  title: String,
+  reason: String,
+  hasMore: Boolean,
+  onPlay: () -> Unit,
+  onOther: () -> Unit,
+  onOpen: () -> Unit
+) {
+  Column(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 6.dp).testTag("for_you")) {
+    Text("PARA TI HOY", color = Clay.Sun, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+      Box(
+        modifier = Modifier
+          .size(116.dp)
+          .clip(CircleShape)
+          .clickable(onClick = onOpen)
+          .drawBehind {
+            drawCircle(
+              Brush.radialGradient(listOf(game.domain.color.copy(alpha = 0.45f), Color.Transparent), center, size.minDimension / 2f),
+              radius = size.minDimension / 2f
+            )
+          },
+        contentAlignment = Alignment.Center
+      ) {
+        com.example.ui.components.MiniPlanet(game.id, 92.dp)
+      }
+      Spacer(Modifier.width(14.dp))
+      Column(Modifier.weight(1f)) {
+        Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 26.sp)
+        Text(reason, color = OnNightDim, fontSize = 14.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+              .drawBehind {
+                drawRoundRect(
+                  Clay.Ink, topLeft = Offset(0f, 4.dp.toPx()), size = size,
+                  cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+                )
+              }
+              .clip(RoundedCornerShape(16.dp))
+              .background(Clay.Sun)
+              .border(3.dp, Clay.Ink, RoundedCornerShape(16.dp))
+              .clickable(onClick = onPlay)
+              .padding(horizontal = 18.dp, vertical = 9.dp)
+              .testTag("for_you_play")
+          ) {
+            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Jugar", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+          }
+          if (hasMore) {
+            Text(
+              "otro ›",
+              color = Clay.Sun,
+              fontSize = 14.sp,
+              fontWeight = FontWeight.Bold,
+              modifier = Modifier
+                .padding(start = 8.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .clickable(onClick = onOther)
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .testTag("for_you_other")
+            )
+          }
+        }
+      }
+    }
+  }
+}
+
+/** Una fila por área: el nombre con su punto de color y cuántos juegos tiene, y los planetas que se deslizan de lado. */
+@Composable
+internal fun AreaRow(
+  domain: DomainType,
+  title: String,
+  count: Int,
+  content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit
+) {
+  Column(modifier = Modifier.fillMaxWidth().padding(top = 14.dp).testTag("area_${domain.name.lowercase()}")) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 20.dp)) {
+      Box(Modifier.size(12.dp).clip(CircleShape).background(domain.color).border(2.dp, Clay.Ink, CircleShape))
+      Spacer(Modifier.width(8.dp))
+      Text(title, color = com.example.ui.components.domainTextColor(domain.name), fontSize = 19.sp, fontWeight = FontWeight.Bold)
+      Spacer(Modifier.width(10.dp))
+      Text(if (count == 1) "1 juego" else "$count juegos", color = OnNightSoft, fontSize = 13.sp)
+    }
+    LazyRow(
+      contentPadding = PaddingValues(horizontal = 12.dp),
+      horizontalArrangement = Arrangement.spacedBy(4.dp),
+      modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+      content = content
     )
   }
 }
 
-/** Un juego como "planeta": esfera de arcilla del color de su dominio con resplandor, nombre y nivel debajo. */
+/**
+ * Un juego en su fila: planetita con un anillo de su nivel (0..1, color del área), estrella sol si es juego estrella,
+ * ✓ si se jugó hoy; los sin probar, con aro sol. Debajo el nombre (2 líneas) y tu marca, tu nivel o "Nuevo".
+ */
 @Composable
-private fun Planet(
+internal fun LibraryPlanet(
   game: GameDefinition,
   title: String,
-  level: Int,
-  rank: GameRankInfo,
-  best: Int?,
+  level: Float?,
+  star: Boolean,
+  playedToday: Boolean,
+  isNew: Boolean,
+  sub: String,
+  subColor: Color,
   onClick: () -> Unit
 ) {
-  val ink = Clay.Ink
-  val size = 84.dp
+  val ringColor = com.example.ui.components.domainTextColor(game.domain.name)
   Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     modifier = Modifier
-      .clip(RoundedCornerShape(20.dp))
+      .width(88.dp)
+      .clip(RoundedCornerShape(18.dp))
       .clickable(onClick = onClick)
-      .padding(4.dp)
+      .padding(vertical = 4.dp)
       .testTag("game_card_${game.id}")
   ) {
     Box(
       modifier = Modifier
-        .size(size + 28.dp)
+        .size(74.dp)
         .drawBehind {
-          // Resplandor del dominio
-          drawCircle(
-            Brush.radialGradient(listOf(game.domain.color.copy(alpha = 0.38f), Color.Transparent), center, this.size.minDimension / 2f),
-            radius = this.size.minDimension / 2f
-          )
-          // Sombra dura de arcilla
-          drawCircle(ink, radius = size.toPx() / 2f, center = Offset(center.x, center.y + 4.dp.toPx()))
+          val stroke = 3.dp.toPx()
+          val inset = stroke / 2f
+          val arcSize = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
+          if (isNew) {
+            drawCircle(Clay.Sun, radius = size.minDimension / 2f - inset, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+          } else {
+            drawCircle(Color.White.copy(alpha = 0.16f), radius = size.minDimension / 2f - inset, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+            if (level != null && level > 0f) {
+              drawArc(
+                ringColor, -90f, 360f * level.coerceIn(0.03f, 1f), false, Offset(inset, inset), arcSize,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+              )
+            }
+          }
         },
       contentAlignment = Alignment.Center
     ) {
-      Box(
-        modifier = Modifier
-          .size(size)
-          .clip(CircleShape)
-          .background(game.domain.color)
-          .border(3.dp, ink, CircleShape),
-        contentAlignment = Alignment.Center
-      ) {
-        // Brillo superior
-        Box(
-          modifier = Modifier
-            .align(Alignment.TopCenter)
-            .padding(top = 7.dp)
-            .size(width = 38.dp, height = 12.dp)
-            .clip(RoundedCornerShape(50))
-            .background(Color.White.copy(alpha = 0.32f))
-        )
-        com.example.ui.components.GameIcon(game.id, size = 56.dp)
+      com.example.ui.components.MiniPlanet(game.id, 58.dp, done = playedToday)
+      if (star) {
+        StarBadge(Modifier.align(Alignment.TopStart).padding(top = 2.dp, start = 2.dp).size(18.dp))
       }
     }
     Text(
       text = title,
       color = Color.White,
-      fontSize = 14.sp,
+      fontSize = 12.sp,
       fontWeight = FontWeight.Bold,
       textAlign = androidx.compose.ui.text.style.TextAlign.Center,
       maxLines = 2,
       overflow = TextOverflow.Ellipsis,
-      lineHeight = 16.sp,
-      modifier = Modifier.padding(top = 2.dp).width(104.dp)
+      lineHeight = 14.sp,
+      modifier = Modifier.padding(top = 4.dp).heightIn(min = 28.dp)
     )
-    Text(
-      text = "Nivel $level · ${rank.tier.tierName}",
-      color = rank.tier.color,
-      fontSize = 11.sp,
-      fontWeight = FontWeight.SemiBold
-    )
+    Text(sub, color = subColor, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+  }
+}
+
+/** Estrella sol de arcilla: marca los juegos estrella (los que dan una medida tuya al final). */
+@Composable
+private fun StarBadge(modifier: Modifier) {
+  androidx.compose.foundation.Canvas(modifier) {
+    val c = center
+    val outer = size.minDimension / 2f
+    val path = androidx.compose.ui.graphics.Path().apply {
+      for (i in 0 until 10) {
+        val a = -Math.PI / 2 + i * Math.PI / 5
+        val r = if (i % 2 == 0) outer else outer * 0.45f
+        val x = c.x + (Math.cos(a) * r).toFloat()
+        val y = c.y + (Math.sin(a) * r).toFloat()
+        if (i == 0) moveTo(x, y) else lineTo(x, y)
+      }
+      close()
+    }
+    drawPath(path, Clay.Sun)
+    drawPath(path, Clay.Ink, style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx()))
   }
 }

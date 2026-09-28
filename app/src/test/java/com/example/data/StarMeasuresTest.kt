@@ -46,6 +46,9 @@ class StarMeasuresTest {
   fun `formato con coma decimal y guardado de ida y vuelta`() {
     assertEquals("3,8%", StarMeasures.def("numline")!!.format(3.8f))
     assertEquals("84", StarMeasures.def("glance")!!.format(84.4f))
+    assertEquals("84 ms", StarMeasures.def("glance")!!.compact(84.4f))
+    assertEquals("a 18%", StarMeasures.def("homing")!!.compact(18f))
+    assertEquals("96°/s", StarMeasures.def("rotation")!!.compact(96f))
     val pts = series("tracking", 2.5f, 2.75f, 3f)
     assertEquals(pts, StarMeasures.decode(StarMeasures.encode(pts)))
     assertEquals(0, StarMeasures.decode("x|glance|3\n1|nada|2\n").size)
