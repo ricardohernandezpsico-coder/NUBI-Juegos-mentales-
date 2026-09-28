@@ -1,6 +1,9 @@
 # Dificultad, edad y avance: la matriz de NeuroVida
 
-Propuesta del 28-sep para revisión de Ricardo (todavía **no implementada**). Nace de la pestaña Juegos: la carta
+Aprobada por Ricardo el 28-sep e **implementada** ese día (lógica en `app/.../data/Skill.kt`, Unity en
+`AdaptiveDifficulty.ConfigureMode`, pestaña Juegos con cartas). Decisiones: Experto se abre al superar un Desafío; el
+reloj se elige en Ajustes, no antes de jugar; sin modo de dificultad en Ajustes. Pendiente: las fortalezas por
+aspecto de la sección 8 (hoy la carta muestra la constancia) y la calibración de la sección 10. Documento original: Nace de la pestaña Juegos: la carta
 de cada juego muestra "tu avance" y, antes de jugar, se elige Suave / A tu medida / Desafío / Experto. Ricardo
 pidió revisar a fondo el razonamiento para que la dificultad, la edad y lo que se le muestra a la persona formen
 una sola matriz lógica. Este documento revisa lo que hay hoy, propone la regla común y deja escritos los supuestos.

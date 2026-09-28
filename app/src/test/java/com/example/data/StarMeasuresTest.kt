@@ -54,4 +54,24 @@ class StarMeasuresTest {
     assertEquals(0, StarMeasures.decode("x|glance|3\n1|nada|2\n").size)
     assertEquals(3f, StarMeasures.latest(pts, "satelites")!!.second)
   }
+
+  @Test
+  fun `la evolucion compara solo partidas parecidas`() {
+    val now = 500 * 86_400_000L
+    fun p(d: Long, key: String, v: Float, r: Float = -1f, t: Boolean? = null) = MeasurePoint(now - d * 86_400_000L, key, v, r, t)
+    // Rumbo depende del nivel (10 niveles: banda 0,1): solo las de rating parecido a la última.
+    val homing = listOf(p(5, "homing", 30f, 0.20f, false), p(4, "homing", 25f, 0.45f, false), p(3, "homing", 22f, 0.50f, true), p(1, "homing", 20f, 0.52f, false))
+    assertEquals(listOf(25f, 20f), StarMeasures.comparable(homing).map { it.value })
+    // Radar no depende del nivel: solo el reloj.
+    val glance = listOf(p(3, "glance", 120f, 0.1f, true), p(2, "glance", 110f, 0.9f, false), p(1, "glance", 100f, 0.5f, true))
+    assertEquals(listOf(120f, 100f), StarMeasures.comparable(glance).map { it.value })
+    // Partidas viejas sin dato: se comparan entre ellas mientras la última tampoco lo tenga.
+    val old = listOf(p(3, "homing", 30f), p(2, "homing", 28f))
+    assertEquals(2, StarMeasures.comparable(old).size)
+    assertEquals(1, StarMeasures.comparable(old + p(1, "homing", 20f, 0.4f, true)).size)
+    // Guardar y leer con el dato nuevo, y leer el formato antiguo.
+    val all = homing + old
+    assertEquals(all, StarMeasures.decode(StarMeasures.encode(all)))
+    assertEquals(listOf(MeasurePoint(7L, "glance", 84f)), StarMeasures.decode("7|glance|84.0"))
+  }
 }

@@ -431,7 +431,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 83 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 84 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 176 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
@@ -470,6 +470,11 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   a tu medida (bajada máx. 5 puntos) y un Desafío o Experto superado (`mode_trials/mode_hits` tras el calentamiento);
   las marcas solo a tu medida. Experto se abre al superar un Desafío. El reloj NO se elige antes de jugar (Ajustes).
   SharedPreferences `skill`: juegos medidos ("Sin medir aún" si no), Experto abierto, fecha de cada etapa.
+  El nivel 1-5 de cada juego ES la etapa (`LevelTier` con los mismos nombres); Ajustes ya no tiene modo de dificultad.
+  Cada marca (`MeasurePoint`) guarda rating y reloj; la evolución compara solo partidas parecidas
+  (`StarMeasures.comparable`: mismo reloj y, en las marcas que dependen del nivel, a menos de un nivel).
+  Pendiente: "fortalezas" por aspecto en los juegos estrella (hoy la carta muestra solo la constancia) y calibrar la
+  pendiente `s` de cada juego con datos (sección 10 del documento).
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");

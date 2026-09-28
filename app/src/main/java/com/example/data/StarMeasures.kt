@@ -4,8 +4,12 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-/** La medida propia de un juego estrella en una partida ([key] = [MeasureDef.key]). */
-data class MeasurePoint(val timestamp: Long, val key: String, val value: Float)
+/**
+ * La medida propia de un juego estrella en una partida ([key] = [MeasureDef.key]). [rating] = rating del juego al
+ * terminar (0..1; -1 = partida anterior al 28-sep, sin dato) y [timed] = con reloj (null = sin dato): la evolución
+ * compara solo partidas parecidas ([StarMeasures.comparable]).
+ */
+data class MeasurePoint(val timestamp: Long, val key: String, val value: Float, val rating: Float = -1f, val timed: Boolean? = null)
 
 /**
  * Cómo se muestra una medida: "Tu vistazo en Radar" · 84 ms. [suffix] va pegado al número ("18%") y [unit] después
@@ -22,7 +26,9 @@ data class MeasureDef(
   /** Nombre corto para las invitaciones: "tu vistazo". */
   val short: String = "",
   /** Forma corta con unidad, para debajo de un planeta: "{v} ms", "a {v}". */
-  val compactPattern: String = "{v}"
+  val compactPattern: String = "{v}",
+  /** La medida depende del nivel jugado (tipo de regla, tramos, paradas...): se compara solo a nivel parecido. */
+  val levelDependent: Boolean = false
 ) {
   /** La medida en pocas letras y con su unidad (la biblioteca de juegos): "212 ms", "5 a la vez", "a 18%". */
   fun compact(v: Float): String = compactPattern.replace("{v}", format(v))
@@ -67,14 +73,14 @@ object StarMeasures {
   val defs = listOf(
     MeasureDef("glance", "radar", "Tu vistazo en Radar", "", "ms", lowerIsBetter = true, short = "tu vistazo", compactPattern = "{v} ms"),
     MeasureDef("brake", "freno", "Tu freno en Freno de Emergencia", "", "ms", lowerIsBetter = true, short = "tu freno", compactPattern = "{v} ms"),
-    MeasureDef("tracking", "satelites", "Tu seguimiento en Satélites", "", "a la vez", lowerIsBetter = false, decimals = 1, short = "tu seguimiento", compactPattern = "{v} a la vez"),
-    MeasureDef("numline", "aterrizaje", "Tu estimación en Aterrizaje Lunar", "%", "del blanco", lowerIsBetter = true, decimals = 1, short = "tu estimación", compactPattern = "a {v}"),
-    MeasureDef("rotation", "acoplamiento", "Tu giro mental en Acoplamiento", "°", "por segundo", lowerIsBetter = false, short = "tu giro mental", compactPattern = "{v}/s"),
+    MeasureDef("tracking", "satelites", "Tu seguimiento en Satélites", "", "a la vez", lowerIsBetter = false, decimals = 1, short = "tu seguimiento", compactPattern = "{v} a la vez", levelDependent = true),
+    MeasureDef("numline", "aterrizaje", "Tu estimación en Aterrizaje Lunar", "%", "del blanco", lowerIsBetter = true, decimals = 1, short = "tu estimación", compactPattern = "a {v}", levelDependent = true),
+    MeasureDef("rotation", "acoplamiento", "Tu giro mental en Acoplamiento", "°", "por segundo", lowerIsBetter = false, short = "tu giro mental", compactPattern = "{v}/s", levelDependent = true),
     MeasureDef("load", "trafico", "Tu carga en Tráfico Estelar", "", "cápsulas a la vez", lowerIsBetter = false, short = "tu carga", compactPattern = "{v} a la vez"),
     MeasureDef("multitask", "piloto", "Tu multitarea en Piloto Estelar", "%", "de costo", lowerIsBetter = true, short = "tu multitarea", compactPattern = "{v} costo"),
-    MeasureDef("homing", "rumbo", "Tu brújula en Rumbo a Casa", "%", "de casa", lowerIsBetter = true, short = "tu brújula", compactPattern = "a {v}"),
-    MeasureDef("recall", "bitacora", "Tu memoria en la Bitácora", "%", "recordado", lowerIsBetter = false, short = "tu memoria", compactPattern = "{v}"),
-    MeasureDef("pending", "correo", "Tu memoria para lo pendiente", "%", "de encargos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}")
+    MeasureDef("homing", "rumbo", "Tu brújula en Rumbo a Casa", "%", "de casa", lowerIsBetter = true, short = "tu brújula", compactPattern = "a {v}", levelDependent = true),
+    MeasureDef("recall", "bitacora", "Tu memoria en la Bitácora", "%", "recordado", lowerIsBetter = false, short = "tu memoria", compactPattern = "{v}", levelDependent = true),
+    MeasureDef("pending", "correo", "Tu memoria para lo pendiente", "%", "de encargos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}", levelDependent = true)
   )
 
   val gameNames = mapOf(
@@ -95,7 +101,7 @@ object StarMeasures {
    */
   fun discover(points: List<MeasurePoint>, now: Long): Discovery? {
     val series = points.groupBy { it.key }
-      .mapNotNull { (k, list) -> def(k)?.let { it to list.sortedBy { p -> p.timestamp } } }
+      .mapNotNull { (k, list) -> def(k)?.let { it to comparable(list) } }
       .filter { it.second.size >= MIN_POINTS }
     if (series.isEmpty()) return null
     fun recent(list: List<MeasurePoint>) = list.takeLast(MAX_POINTS).map { it.value }
@@ -128,6 +134,24 @@ object StarMeasures {
     return if (best != null) DiscoveryNudge(def(best.key)!!, MIN_POINTS - best.value) else DiscoveryNudge(defs.first(), MIN_POINTS)
   }
 
+  /**
+   * Las partidas de UNA medida que se pueden comparar con la última, en orden: mismo reloj (si se sabe) y, si la
+   * medida depende del nivel, rating a menos de un nivel de la escalera del juego. Las partidas viejas sin dato se
+   * comparan solo mientras la última tampoco lo tenga (docs/dificultad-y-avance.md, sección 5).
+   */
+  fun comparable(points: List<MeasurePoint>): List<MeasurePoint> {
+    val sorted = points.sortedBy { it.timestamp }
+    val last = sorted.lastOrNull() ?: return sorted
+    val d = def(last.key)
+    val band = 1f / Skill.ladder(d?.gameId ?: "").levels + 1e-4f
+    return sorted.filter { p ->
+      val sameClock = last.timed == null || p.timed == null || p.timed == last.timed
+      val sameLevel = d?.levelDependent != true ||
+        (if (last.rating < 0f) p.rating < 0f else p.rating >= 0f && abs(p.rating - last.rating) <= band)
+      sameClock && sameLevel
+    }
+  }
+
   /** Última medida de un juego (para la ventana de cada zona). */
   fun latest(points: List<MeasurePoint>, gameId: String): Pair<MeasureDef, Float>? {
     val d = defForGame(gameId) ?: return null
@@ -135,14 +159,18 @@ object StarMeasures {
     return d to p.value
   }
 
-  fun encode(points: List<MeasurePoint>): String = points.joinToString("\n") { "${it.timestamp}|${it.key}|${it.value}" }
+  fun encode(points: List<MeasurePoint>): String = points.joinToString("\n") { p ->
+    "${p.timestamp}|${p.key}|${p.value}" + if (p.rating >= 0f || p.timed != null) "|${p.rating}|${p.timed?.let { if (it) 1 else 0 } ?: -1}" else ""
+  }
 
   fun decode(text: String?): List<MeasurePoint> = text.orEmpty().lines().mapNotNull { line ->
     val parts = line.split('|')
-    if (parts.size != 3) return@mapNotNull null
+    if (parts.size != 3 && parts.size != 5) return@mapNotNull null
     val ts = parts[0].toLongOrNull() ?: return@mapNotNull null
     val v = parts[2].toFloatOrNull() ?: return@mapNotNull null
     if (def(parts[1]) == null || v.isNaN()) return@mapNotNull null
-    MeasurePoint(ts, parts[1], v)
+    val rating = if (parts.size == 5) parts[3].toFloatOrNull() ?: -1f else -1f
+    val timed = if (parts.size == 5) when (parts[4]) { "1" -> true; "0" -> false; else -> null } else null
+    MeasurePoint(ts, parts[1], v, rating, timed)
   }
 }

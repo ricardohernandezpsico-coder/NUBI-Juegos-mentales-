@@ -203,7 +203,8 @@ internal fun cardData(
     }
   }
   val def = StarMeasures.defForGame(g.id)
-  val series = def?.let { d -> measures.filter { it.key == d.key }.sortedBy { it.timestamp } }.orEmpty()
+  // Solo partidas comparables con la última (mismo reloj; nivel parecido si la marca depende del nivel).
+  val series = def?.let { d -> StarMeasures.comparable(measures.filter { it.key == d.key }) }.orEmpty()
   val kind = if (def != null && series.size >= StarMeasures.MIN_POINTS) StarMeasures.discover(series, now)?.kind else null
   return GameCardData(
     game = g,
