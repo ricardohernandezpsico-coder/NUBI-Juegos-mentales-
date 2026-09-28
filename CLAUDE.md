@@ -40,16 +40,16 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
 - Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, "Tu planeta": ver abajo) · Juegos
-  (`GamesLibraryScreen`, "Para ti hoy" + filas por área: ver abajo) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
+  (`GamesLibraryScreen`, "¿Qué quieres trabajar hoy?" + cartas: ver abajo) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
 - Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
-  `Planet`, `StarMeasures`, `Library`; y
+  `Planet`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
   onboarding van en **SharedPreferences** para no migrar: `league_events`, `achievements`, `profile_extra`
-  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity, `star_measures` (la medida
+  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity, `skill` (avance: ver abajo), `star_measures` (la medida
   propia de cada partida de los juegos estrella, `StarMeasures.encode`), `mission_log`.
   Al cambiar el esquema de Room: entidad → subir versión → `Migration(N, N+1)` en SQL → compilar → comitear `schemas/<N+1>.json`.
 - Diseño "noche + arcilla" (`ui/theme/Clay.kt`, `Type.kt` con Fredoka, `ui/components/CosmosBackground.kt`).
@@ -431,7 +431,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 81 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 83 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 176 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
@@ -456,17 +456,20 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   datos, invitación tocable "Juega Radar para descubrir tu vistazo"). Tocar una zona abre su ventana (`ZoneDialog`):
   partidas por semana (4), cada juego del dominio con su última medida o cuándo se jugó, y "Jugar X" (el sin jugar o el
   más olvidado). Captura real (Roborazzi): `docs/previews/inicio-planeta-real.png`. Sin probar en el teléfono.
-- **Juegos = "Para ti hoy" + filas por área** (28-sep; Ricardo eligió la recomendación entre 6 estilos,
-  `docs/previews/juegos-propuestas.png` y `juegos-final.png`; captura real `docs/previews/juegos-real.png`). Arriba un solo
-  juego sugerido con su razón (`data/Library.picks`: la zona quieta o sin explorar de Tu planeta, después juegos estrella
-  sin probar, después los olvidados ≥ 2 días; "otro" pasa al siguiente; "Jugar" lanza directo; tocar el planeta abre la
-  ventana de inicio). Debajo una `LazyRow` por área (juegos estrella primero): anillo con el nivel (0..1), estrella sol
-  si es juego estrella, ✓ si se jugó hoy, aro sol + "Nuevo" si no se probó, y bajo el nombre la marca corta
-  (`MeasureDef.compact`: "212 ms", "a 18%") o el nivel. Sin probar en el teléfono.
-- **Dificultad y avance** (28-sep, propuesta en revisión, NO implementada): [`docs/dificultad-y-avance.md`](docs/dificultad-y-avance.md).
-  Una vara por juego (avance = nivel donde se acierta 8 de 10), la edad ajusta el entrenamiento y los modos Suave /
-  A tu medida / Desafío / Experto (definidos por aciertos esperados, con techo o piso sobre el DDA). Pestaña Juegos
-  elegida: "un área a la vez" + cartas (`docs/previews/juegos-dificultad-*.png`). Esperando el visto bueno de Ricardo.
+- **Juegos = "¿Qué quieres trabajar hoy?" + cartas** (28-sep; Ricardo eligió "un área a la vez" + cartas,
+  `docs/previews/juegos-dificultad-1.png`; captura real `docs/previews/juegos-cartas-real.png`). Arriba el área en
+  grande con su avance (flechas o deslizar sobre el nombre; abre en el área que sugiere `data/Library.picks`); debajo
+  una carta por juego (`HorizontalPager`): cuándo jugaste, tu avance con etapa y "a N puntos de…", tu marca con su
+  etiqueta y últimas partidas, tu constancia, y abajo el modo ("A tu medida · cambiar" abre `ModeSheet`) y "Jugar".
+  El resultado dice si un Desafío se superó (`modeNote`). Sin probar en el teléfono.
+- **Dificultad y avance** (28-sep, aprobado por Ricardo): [`docs/dificultad-y-avance.md`](docs/dificultad-y-avance.md) y
+  `data/Skill.kt`. Una vara por juego: tu avance = nivel donde se aciertan 8 de 10 (el rating guardado se corrige por
+  los aciertos que busca al entrenar: 85% mayores, 70% Ruta del Tesoro); etapas Inicio…Maestro = quintos. Modos
+  Suave / A tu medida / Desafío / Experto por aciertos esperados según la edad, hechos con techo o piso sobre el DDA
+  (`play_mode`, `mode_floor`, `mode_ceiling` → `AdaptiveDifficulty.ConfigureMode`). Solo mueven el avance las partidas
+  a tu medida (bajada máx. 5 puntos) y un Desafío o Experto superado (`mode_trials/mode_hits` tras el calentamiento);
+  las marcas solo a tu medida. Experto se abre al superar un Desafío. El reloj NO se elige antes de jugar (Ajustes).
+  SharedPreferences `skill`: juegos medidos ("Sin medir aún" si no), Experto abierto, fecha de cada etapa.
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");

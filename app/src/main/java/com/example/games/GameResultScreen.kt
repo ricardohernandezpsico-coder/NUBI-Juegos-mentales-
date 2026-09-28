@@ -96,7 +96,9 @@ fun GameResultScreen(
   onPlayAgain: () -> Unit,
   onContinue: () -> Unit,
   modifier: Modifier = Modifier,
-  rank: GameRankInfo? = null
+  rank: GameRankInfo? = null,
+  /** Qué pasó con el modo elegido (data/Skill.kt): "¡Desafío superado!…", o null a tu medida. */
+  modeNote: String? = null
 ) {
   val gameDef = GameRegistry.getById(result.gameId)
   val domainColor = gameDef?.domain?.color ?: Clay.Sky
@@ -751,6 +753,11 @@ fun GameResultScreen(
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = 32.dp, vertical = 10.dp)
       )
+    }
+
+    if (modeNote != null) {
+      Spacer(Modifier.height(14.dp))
+      ClayPill(text = modeNote, color = if (modeNote.startsWith("¡")) Clay.Lime else Clay.Cream, modifier = Modifier.testTag("mode_note"))
     }
 
     if (didLevelUp) {

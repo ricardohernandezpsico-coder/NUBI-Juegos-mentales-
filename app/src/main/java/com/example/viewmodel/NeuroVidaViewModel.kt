@@ -263,6 +263,24 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /** Nivel (0..1) por juego para Progreso: rating del DDA comun; en Secuencia/Parejas (motores propios) se
    *  aproxima con el nivel 1-5 si ya se jugaron; null = sin medir. */
+  /** Lo recordado del avance (juegos medidos, Experto abierto, fechas de etapas): ver data/Skill.kt. */
+  val skill = repository.skill
+
+  /**
+   * Tu avance (0..1, leído a 8 de 10: data/Skill.kt) de cada juego YA MEDIDO. Los que no están acá dicen
+   * "Sin medir aún" aunque tengan un punto de partida estimado. Parejas (motor propio, sin rating) usa su nivel 1-5.
+   */
+  val gameProgress: StateFlow<Map<String, Float>> = combine(repository.gameDdaRating, gameLevels, repository.skill, userSettings) { dda, levels, sk, settings ->
+    sk.measured.mapNotNull { id ->
+      val r = dda[id]?.takeIf { it >= 0f }
+      when {
+        r != null -> id to com.example.data.Skill.progress(id, r, settings.ageBand)
+        else -> levels[id]?.let { id to (((it - 1) / 5f) + 0.1f) }
+      }
+    }.toMap()
+  }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+
   val gameLevelsForProgress: StateFlow<Map<String, Float?>> = combine(
     repository.gameDdaRating, gameLevels, gameHistory
   ) { dda, levels, hist ->
@@ -458,6 +476,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     viewModelScope.launch {
       val outcome = repository.recordGameResult(result)
       if (current != null) {
+        _modeNote.value = modeNote(result.playMode, outcome)
         _promotion.value = outcome.promotion(result.gameId)
         _achievementQueue.value = _achievementQueue.value + outcome.newAchievements
         _lastResultDaily.value = current.isDailyFlow
@@ -466,6 +485,18 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
         triggerHapticFeedback(if (result.score >= 70) HapticType.SUCCESS else HapticType.LIGHT)
       }
     }
+  }
+
+  // Qué pasó con el modo elegido en la última partida (se muestra en el resultado).
+  private val _modeNote = MutableStateFlow<String?>(null)
+  val modeNote: StateFlow<String?> = _modeNote.asStateFlow()
+
+  private fun modeNote(mode: com.example.data.PlayMode, outcome: com.example.model.RecordOutcome): String? = when {
+    mode == com.example.data.PlayMode.A_TU_MEDIDA -> null
+    outcome.expertUnlocked -> "¡Desafío superado! Tu avance subió y se abrió Experto"
+    outcome.modePassed -> "¡${mode.label} superado! Tu avance subió"
+    mode == com.example.data.PlayMode.SUAVE -> "Partida suave: tu avance se mantiene"
+    else -> "${mode.label}: esta vez tu avance se mantiene"
   }
 
   private fun sessionFrom(p: GameSessionStore.InFlight): ActiveGameSession? {
