@@ -9,7 +9,8 @@ y revisar lo que decía una conversación con Gemini sobre BrainHQ y sus ejercic
 
 Maquetas: `python3 tools/previews/nombre_icono.py` → `docs/previews/nombre-icono.png` (y cada ícono suelto en
 `docs/previews/icono-<nombre>.png`); segunda ronda de nombres: `tools/previews/nombres_mas.py` →
-`docs/previews/nombres-mas.png`; retoque de Radar: `tools/previews/radar_retoque.py` → `docs/previews/radar-retoque.png`.
+`docs/previews/nombres-mas.png`; retoque de Radar (descartado): `tools/previews/radar_retoque.py` → `docs/previews/radar-retoque.png`;
+rediseño de Radar: `tools/previews/radar_rescate.py` → `docs/previews/radar-rescate.png`.
 
 ## 1. "NeuroVida" no sirve como nombre final
 
@@ -56,6 +57,23 @@ Descartados en la búsqueda (ya existen o chocan con el rubro): **Mentenautas** 
 **Constela** (app de viajes y agencia en México), **Astrelia** (app de astrología), **Estelaria** (perfumes y
 autoayuda), **Orbelia** (sitio de bienestar), **Lunio** (varias apps), **Tripulia** (jerga en portugués),
 **Orbitea** (software de viajes), **Órbita** / **Nova** / **Aurora** (palabras comunes, muy tomadas).
+
+### Tercera ronda (28-sep, Ricardo: "ningún nombre me convence")
+
+Las dos rondas anteriores eran casi todas "algo + mente" o "algo + luna": mismo molde. Esta vez probé otros moldes
+(palabra real cálida, palabra inventada suave, heredar "vida"), y la búsqueda rápida tumbó a la mayoría:
+
+- **Pasaron**: **Vivastro** (vivo + astro; hereda la "vida" de NeuroVida; sin resultados), **Avívate** (solo un
+  proyecto universitario; es un llamado a la acción, cercano), **Despegue** (sin app; palabra común, marca más débil).
+- **Aluna**: sin app, pero es un concepto sagrado del pueblo kogi (Colombia: el mundo del pensamiento). Usarlo como
+  marca sería apropiarse de algo ajeno: **no lo recomiendo**.
+- **Descartados**: Brío (BRIO es una marca sueca de juguetes), Asombro (agencia asombro.app), Vidastral (tarot),
+  Vivaluz (app de belleza), Vívido (varias apps), Nubelia (empresa de software), Tripulantes (choca con el juego de
+  mesa espacial "La Tripulación"), Lumbre (varias apps).
+
+**Antes de otra ronda conviene fijar la dirección** (preguntas para Ricardo): ¿palabra real del español o
+inventada?; ¿debe sonar a espacio, a vida/energía o a hábito diario?; ¿corta de 2 sílabas o puede ser más larga?;
+¿tiene que funcionar también en inglés?; ¿algún nombre de todas las rondas que "casi" le gustó y por qué no?
 
 **Lo que falta antes de decidir en firme** (no se puede hacer bien desde aquí, las bases oficiales no responden a
 búsquedas automáticas):
@@ -110,33 +128,58 @@ reclamo. Si un paso falta de verdad, el juego queda fuera. Ojo: en EE. UU. un ca
 dibujo, otro nombre) puede contar igual ("doctrina de equivalentes"); el retoque tiene que cambiar lo que la persona
 HACE. Por eso los retoques de abajo cambian pasos, no dibujos.
 
-### Radar — riesgo ALTO hoy → retoque propuesto (maqueta: `docs/previews/radar-retoque.png`)
+### Radar — riesgo ALTO hoy → rediseño "Rescate relámpago" (maqueta: `docs/previews/radar-rescate.png`)
 
 US 8,348,671 (Posit Science, "entrenamiento de atención visual dividida", vence ~nov. 2031). Su reclamo 1 exige,
 todo junto: (a) una imagen en el centro y a la vez (b) una ubicación marcada en la periferia, por un tiempo, y se
 apagan; (c) mostrar dos o más imágenes candidatas y (d) exigir que se elija la del centro entre ellas; (e) SOLO si
 acertó, pedir la ubicación de la periferia; (f) ajustar el tiempo de exposición según las respuestas; (g) repetir.
-Radar hoy hace (a), (b), (c), (d), (f) y (g); lo único distinto es que pregunta la dirección siempre, no solo si
-acertó.
+Radar hoy hace casi todo eso. El primer retoque (sí/no y "primero dónde") **no le convenció a Ricardo** (28-sep):
+pidió reestructurar el juego con evidencia, no parchearlo.
 
-**Retoque (3 cambios chicos, uno por paso del reclamo):**
+**Rediseño propuesto: "Rescate relámpago"** (informe total, o *whole report*: Sperling, 1960; teoría de la atención
+visual, TVA: Bundesen, 1990; revisión clínica de Habekost, 2015):
 
-1. **Tu nave de rescate, antes.** Al empezar (y cada 5 rondas) se muestra la nave de la misión: "Si pasa por el
-   centro, dilo al final de la ronda".
-2. **Primero ¿dónde?**: después de la interferencia se pregunta SIEMPRE primero dónde estaba el astronauta.
-3. **Después "¿Pasó tu nave por el centro?" SÍ / NO.** Ya no se muestran naves para elegir: se responde con dos
-   botones de texto. En la mitad de las rondas pasa tu nave; en la otra mitad, otra (desde el nivel 5 del mismo
-   color, desde el 9 de silueta parecida: la misma dificultad de hoy).
+1. **Atento**: el haz del radar gira; el destello llega en un momento imprevisible (1,5-4 s). Esa espera sin aviso
+   entrena la alerta propia, que en mayores aumentó la velocidad de procesamiento visual medida con TVA
+   (Penning et al., Psychological Science, 2021).
+2. **Destello**: VARIOS astronautas a la vez, repartidos por el radar (8 direcciones × 2 anillos = 16 lugares,
+   cerca y lejos del centro). No hay nave central que identificar.
+3. **Interferencia**, como hoy.
+4. **¿Dónde estaban?**: se tocan TODOS los lugares donde se vio un astronauta (baliza celeste; tocar de nuevo la
+   saca) y "¡Rescatar!". Nunca se elige entre imágenes: se reporta todo lo que se captó.
+5. **Revelación**: rescatados en lima con ✓ y vuelan a la fila; el que se escapó brilla con aro sol; una baliza de
+   más, con cruz. Nunca solo por color. "¡Rescate triple!" y rachas.
 
-Con esto faltan los pasos (c) y (d) (no hay candidatas ni se elige entre imágenes) y el (e) (la ubicación no depende
-de acertar el centro, y va primero). **Se mantiene todo lo que importa**: el destello que se acorta con la escalera
-(lo central del entrenamiento de velocidad), las 8 direcciones y 3 anillos, los asteroides, la interferencia,
-"rescatado" cuando las dos respuestas están bien, **tu vistazo** y **tu radar**. Ciencia: sigue siendo atención
-dividida centro + periferia bajo un destello cada vez más breve; la tarea del centro pasa de "identificar" a
-"reconocer" (sí/no), con el mismo 50% de azar que hoy. Trabajo: `RadarContract` (ronda con o sin tu nave), el orden
-de preguntas en `RadarGameController`, pruebas, y cambiar la marca de verificación de Unity. Riesgo después:
-**bajo-medio**. Aun así, que un abogado lo mire antes de publicar en EE. UU. (Posit tiene más patentes de esa familia
-que no revisé).
+**Dificultad**: el destello se acorta con la escalera (500 → 40 ms, como hoy: es lo central del entrenamiento de
+velocidad); cuántos astronautas sube por etapas (2 → 5); desde el nivel 5 aparecen **robots** parecidos que NO se
+rescatan (informe parcial: seleccionar lo importante e ignorar lo demás); los asteroides de hoy siguen como
+desorden visual. Una ronda cuenta como acierto si se rescatan todos (hasta 3) o todos menos uno (4 o más) con
+máximo una baliza de más. Cada 5 rondas, **"¡Lluvia de astronautas!"**: destello largo con 6, para medir cuántos se
+captan cuando el tiempo no es el límite.
+
+**El final** (lo que más le gustó a Ricardo de Radar, se mantiene y crece): **tu vistazo** (cuánto destello
+necesitas para rescatar casi todos, como hoy), **tu captura** ("3,4 de un vistazo": promedio de rescatados en las
+lluvias de astronautas; en TVA es la capacidad de la memoria visual de corto plazo, que en adultos ronda 3-4),
+**tu filtro** (robots tocados de los mostrados) y **tu radar** (por dirección y cerca / lejos del centro).
+
+**Por qué queda fuera de la patente**: no hay imagen central ni candidatas (faltan (a) como la define el reclamo,
+(c) y (d)), y la ubicación no depende de acertar nada (falta (e)); además se reportan varias ubicaciones a la vez.
+El informe total es un método de laboratorio de 1960, público. En la búsqueda rápida no encontré patentes sobre
+entrenar con informe total; igual va a la lista del abogado (Posit tiene más de 90 patentes).
+
+**Diseño** (skill ui-ux-pro-max): casillas de toque de al menos 48 dp y, en mayores, toda la celda del sector
+cuenta como toque; 8 dp entre casillas; una sola animación importante por momento (el destello), respeta "quitar
+animaciones" (el haz queda quieto) y el sonido apagado; texto de estado corto y fijo arriba.
+
+**Otras dos formas que evalué** (por si Ricardo prefiere otra):
+- **Alerta de rescate** (continua): el radar gira sin parar y aparecen SOS muy breves en lugares y momentos
+  imprevisibles; se toca su dirección antes de que se apaguen. Evidencia: Penning et al., 2021 (entrenar la alerta
+  propia aumentó la velocidad de procesamiento visual en mayores). A favor: movimiento continuo, se entiende al
+  instante. En contra: se parece a las señales de Piloto y a los lanzamientos de Freno.
+- **Cambio en el cielo** (detección de cambios): dos destellos de una constelación; una estrella cambió; tocarla.
+  Evidencia: Truong et al., Scientific Reports 2022 (entrenar detección de cambios mejoró la búsqueda visual). En
+  contra: es más memoria que velocidad y se acerca a Parejas.
 
 ### Piloto Estelar — riesgo bajo; sin retoque, con reglas
 
@@ -175,7 +218,7 @@ obligatorias para avanzar. Como Desafío → Experto se parece un poco a una "pu
 Tracker, BrainHQ, NeuroRacer, EndeavorRx, NeuroTracker, Train of Thought, Lumosity, Peak, Elevate. En los documentos
 internos, como referencia científica, sí.
 
-**Lista para el abogado** (cuando llegue el momento de publicar): el nombre elegido; Radar con el retoque; el costo
+**Lista para el abogado** (cuando llegue el momento de publicar): el nombre elegido; Radar rediseñado; el costo
 de multitarea de Piloto; el sistema de avance (Desafío → Experto) frente a US 10,559,221.
 
 ## 6. Publicidad y textos: la lección de Lumosity
@@ -218,6 +261,9 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 - US 11,507,178 (Akili): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/11507178
 - US 11,304,657 (Akili): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/11304657
 - US 10,559,221 (Akili): https://patents.google.com/patent/US10559221B2/en
+- Penning et al. (2021), entrenar la alerta aumenta la velocidad de procesamiento visual en mayores: https://pubmed.ncbi.nlm.nih.gov/33529541
+- Revisión de estudios clínicos con TVA (Habekost, 2015): https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4364300/
+- Truong et al. (2022), entrenamiento de detección de cambios: https://www.nature.com/articles/s41598-022-15649-x
 - Patentes de NeuroTracker (Faubert): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/9566029 · https://patents.google.com/patent/US10706730B2/en
 - Tetris contra Xio: https://en.wikipedia.org/wiki/Tetris_Holding,_LLC_v._Xio_Interactive,_Inc.
 - FTC y Lumosity (2016): https://www.ftc.gov/news-events/news/press-releases/2016/01/lumosity-pay-2-million-settle-ftc-deceptive-advertising-charges-its-brain-training-program

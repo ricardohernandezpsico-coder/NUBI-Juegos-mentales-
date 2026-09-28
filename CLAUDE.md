@@ -497,8 +497,9 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   y hay una app "NEUROVIDA PSICOLOGIA" en Google Play: hay que cambiarlo. Propuestas en dos rondas (Cosmente y Planetea
   arriba; Luminautas bajó por parecerse a Lumosity) y patentes: [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md),
   láminas `nombre-icono.png`, `nombres-mas.png`, `radar-retoque.png`. **Reglas por patentes** (no romper): Radar tiene
-  riesgo ALTO (US 8,348,671 de Posit) → retoque propuesto (nave de la misión antes, primero "¿dónde?", después "¿pasó
-  tu nave?" SÍ/NO), esperando el visto bueno de Ricardo; Piloto nunca con inclinación ni sensores del cuerpo; ningún
+  riesgo ALTO (US 8,348,671 de Posit); el retoque sí/no NO le convenció a Ricardo → rediseño propuesto "Rescate
+  relámpago" (varios astronautas en un destello, se tocan todos; informe total/TVA; lámina `radar-rescate.png`),
+  esperando su visto bueno; nombres: tercera ronda sin convencer, faltan preguntas de dirección a Ricardo; Piloto nunca con inclinación ni sensores del cuerpo; ningún
   juego calcula un perfil "impulsivo / conservador" ni usa caras con emociones que reaccionen al desempeño (Akili);
   Parejas siempre con el tablero a la vez; Satélites siempre plano (sin 3D estereoscópico); las etapas de avance
   quedan en la escala común (nada de "máximo personal" partido en puertas: US 10,559,221); no usar nombres ajenos
