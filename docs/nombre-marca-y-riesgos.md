@@ -118,6 +118,28 @@ busca la marca la encuentre primera. Los nombres con "Brain", "Neuro" o "Mind" c
 dueños de su búsqueda y cuesta que el boca a boca funcione ("¿cómo se escribe?"). Mejor: nombre corto, distinto y fácil de
 dictar + título con palabras clave en español, por ejemplo "Nombre: juegos para la mente".
 
+### Sexta ronda (29-sep): mercado GLOBAL, "Brain Games / Juegos mentales" al lado
+
+Ricardo: la app es para el mercado global; el nombre no necesita decir "neuro" si en la tienda lleva "juegos mentales"
+al lado. Probé palabras inventadas cortas, fáciles en varios idiomas, asociadas al mundo de la app (órbita, planeta,
+cometa, estrella, chispa, mente). Casi todas ya existen, varias en el mismo rubro:
+
+- **Mismo rubro (descartados)**: Brainet (app de entrenamiento cerebral con 40 juegos), MindOrbit (entrenamiento
+  cerebral espacial para niños), MindVolt y Mindzy (apps de entrenamiento cerebral), Orbini (app de aprendizaje con
+  rachas y XP), MindPlanet / MindPal (juegos mentales), Zenova (app para TDAH).
+- **Otro rubro, pero apps o software**: Orbiva (salud en el hogar, Hong Kong), Orbly (dictado y chat), Novami (software),
+  Stellio (reproductor de música), Glimo (varias apps de salud), Orbiko (oro y blockchain), Kometo (desarrollador de
+  apps), Planeko (app de astronomía y marca de herramientas), Astriko / Astrico (tarot), Cosmind (pedidos de comida),
+  Menzu (pizzería), Astromind (astrología).
+- **Casi libres**: **Thinkoo** (solo el dominio en venta; ojo: "thinkO" es un juego de lógica y una app de noticias),
+  **Brainling** ("cerebrito" en inglés; libre como app, pero muy cerca de Brainly, gigante de educación) y **Kinemind**
+  (solo dominios estacionados; en Bélgica y Francia "kiné" es el kinesiólogo: puede sonar a fisioterapia).
+
+**Lección de la ronda**: en 2026 casi toda palabra corta y bonita ya la usa alguien. La prueba real no es "cero
+resultados en Google" sino **que nadie tenga un nombre parecido en apps, juegos, educación o salud** (clases de Niza 9,
+28, 41, 44). Una salida que usan muchas marcas globales: nombrar la app por su **personaje** (la mascota de la app),
+que es más fácil de hacer única y de registrar.
+
 **Lo que falta antes de decidir en firme** (no se puede hacer bien desde aquí, las bases oficiales no responden a
 búsquedas automáticas):
 
