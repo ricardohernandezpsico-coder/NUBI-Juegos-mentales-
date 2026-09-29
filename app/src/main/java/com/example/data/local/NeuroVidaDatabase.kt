@@ -39,7 +39,8 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
     // un crash se detecta en QA antes de publicar; una pérdida de datos silenciosa la
     // descubre el usuario después. Solo en DEBUG se mantiene el fallback destructivo,
     // para no trabar la iteración local mientras se define un esquema nuevo.
-    private val MIGRATIONS = arrayOf<androidx.room.migration.Migration>(
+    // internal (no private) para que la prueba de migración (MigrationTest) use exactamente las mismas.
+    internal val MIGRATIONS = arrayOf<androidx.room.migration.Migration>(
       // Cuando se necesite cambiar el esquema: agregar acá un Migration(N, N+1) real
       // con el SQL de la migración, subir `version` arriba, y correr el build una vez
       // para que se genere `schemas/<version>.json` (ya versionado en git desde esta

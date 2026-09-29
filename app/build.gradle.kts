@@ -53,6 +53,10 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+  // Las pruebas de migración de la base de datos leen los esquemas exportados de Room (schemas/<versión>.json). Robolectric
+  // solo ve los assets de la app (no los de la carpeta de pruebas), así que van en la variante de depuración: pesan unos
+  // KB, y la versión de tienda (release) no los lleva.
+  sourceSets { getByName("debug").assets.srcDir("$projectDir/schemas") }
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
@@ -86,6 +90,7 @@ dependencies {
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
+  testImplementation(libs.androidx.room.testing)
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.robolectric)
