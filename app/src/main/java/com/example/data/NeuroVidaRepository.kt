@@ -176,6 +176,19 @@ class NeuroVidaRepository(
     skillPrefs.edit().putString("state", state.encode()).apply()
   }
 
+  // Historia del avance de cada juego (ver AreaProgress.kt): con ella Hoy muestra cuánto se movió cada área en la
+  // semana. SharedPreferences: solo se agrega (se guardan ~60 días).
+  private val progressPrefs = context.getSharedPreferences("progress_log", Context.MODE_PRIVATE)
+  private val _progressLog = MutableStateFlow(AreaProgress.decode(progressPrefs.getString("points", null)))
+  val progressLog: StateFlow<List<ProgressPoint>> = _progressLog.asStateFlow()
+
+  private fun logProgress(gameId: String, time: Long, progress: Float) {
+    val next = AreaProgress.append(_progressLog.value, ProgressPoint(gameId, time, progress))
+    if (next == _progressLog.value) return
+    _progressLog.value = next
+    progressPrefs.edit().putString("points", AreaProgress.encode(next)).apply()
+  }
+
   // Logros conseguidos (id -> cuándo). Se derivan del historial y los trofeos (ver Achievements.kt); acá solo
   // se recuerda cuáles ya se celebraron.
   private val achievementPrefs = context.getSharedPreferences("achievements", Context.MODE_PRIVATE)
@@ -635,6 +648,12 @@ class NeuroVidaRepository(
       lastPlayedTimestamp = result.timestamp
     )
     gameProgressDao.insertOrUpdate(updatedProgress)
+    // El avance que muestran las cartas (mismo cálculo que NeuroVidaViewModel.gameProgress), para la semana de Hoy.
+    if (result.endRating != null && counted) {
+      logProgress(result.gameId, result.timestamp, Skill.progress(result.gameId, newDdaRating, age))
+    } else if (result.endRating == null && result.gameId in _skill.value.measured) {
+      logProgress(result.gameId, result.timestamp, (newLevel - 1) / 5f + 0.1f)
+    }
     val ratingsAfter = ratingsBefore + (result.gameId to newRating)
     val globalOf = { m: Map<String, Int> -> GameRegistry.allGames.sumOf { m[it.id] ?: 0 } / GameRegistry.allGames.size }
 
@@ -764,6 +783,8 @@ class NeuroVidaRepository(
     _starMeasures.value = emptyList()
     skillPrefs.edit().clear().putString("state", "").apply()
     _skill.value = SkillState()
+    progressPrefs.edit().clear().apply()
+    _progressLog.value = emptyList()
     profilePrefs.edit().clear().apply()
     _education.value = null
     _goals.value = emptySet()

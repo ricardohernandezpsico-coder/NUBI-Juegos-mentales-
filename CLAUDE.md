@@ -42,18 +42,19 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
-- Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, "Tu planeta": ver abajo) · Juegos
+- Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, Nubi al centro con las 6 áreas: ver abajo) · Juegos
   (`GamesLibraryScreen`, "¿Qué quieres trabajar hoy?" + cartas: ver abajo) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
   9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
+- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
   `Planet`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
   onboarding van en **SharedPreferences** para no migrar: `league_events`, `achievements`, `profile_extra`
   (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity, `skill` (avance: ver abajo), `star_measures` (la medida
-  propia de cada partida de los juegos estrella, `StarMeasures.encode`), `mission_log`.
+  propia de cada partida de los juegos estrella, `StarMeasures.encode`), `mission_log`, `progress_log` (historia del
+  avance de cada juego, ~60 días, `AreaProgress`: el cambio de la semana de cada área en Hoy).
   Al cambiar el esquema de Room: entidad → subir versión → `Migration(N, N+1)` en SQL → compilar → comitear `schemas/<N+1>.json`.
 - Diseño "noche + arcilla" (`ui/theme/Clay.kt`, `Type.kt` con Fredoka, `ui/components/CosmosBackground.kt`).
 
@@ -436,7 +437,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 83 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 87 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 182 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
@@ -449,7 +450,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   grupo de composición (si no, `UnityGameHost` heredaba el `launched` guardado de la anterior al recrearse la pantalla).
 - Idea de Ricardo tras Radar (27-sep): la información del final de cada juego estrella es lo más valioso para el
   usuario. Desde el 28-sep la medida propia de cada partida se guarda (`star_measures`) y se muestra en Hoy.
-- **Hoy = "Tu planeta"** (28-sep; Ricardo eligió la mezcla de las propuestas 1 y 2 de `docs/previews/inicio-propuestas.png`;
+- **Hoy = "Tu planeta"** (REEMPLAZADO el 29-sep por Nubi al centro: ver el punto de Nubi; queda como historia. 28-sep; Ricardo eligió la mezcla de las propuestas 1 y 2 de `docs/previews/inicio-propuestas.png`;
   maqueta `docs/previews/inicio-planeta.png`, `tools/previews/inicio_planeta.py`). Reemplaza al camino de días en
   perspectiva. `ui/components/HomePlanet`: planeta de arcilla con una zona por dominio (Memoria cristales, Atención
   faros, Razonamiento torres, Lenguaje árboles, Cálculo domos, Velocidad antenas, al centro) que crece con cada partida
@@ -525,7 +526,15 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   DETALLE (vista C): "Etapa Intermedio · 52 de 100", barra con las 5 etapas nombradas, "Esta semana avanzó de 46 a 52",
   "Te faltan 8 para Avanzado", últimas 4 semanas, flechas para pasar de área y, en vez de "Jugar X", la pregunta
   "¿Le damos un empujón a tu memoria?" (Fredoka sol, mismo estilo que el botón) + botón "¡Sí, vamos!" + "Nubi eligió
-  Secuencia Lumínica: hace días que no la juegas". Pendiente: programarlo; después: ícono adaptativo (con monocromo) y Nubi en Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
+  Secuencia Lumínica: hace días que no la juegas". **Programado (29-sep)**: `ui/components/NubiHome.kt` (`NubiWithHalo`,
+  `AreaBar`, `NubiBubble`, `NubiHome`) + `HomeScreen.AreaDetail` + `data/AreaProgress` (avance del área = promedio de
+  sus juegos medidos; cambio = juego por juego contra hace 7 días, solo los ya medidos entonces; 4 pruebas). Las etapas
+  usan los nombres de `Skill.STAGES` (Inicio, Aprendiz, Hábil, Experto, Maestro). Se quitaron del inicio el planeta, la
+  línea de zonas y el descubrimiento del día (las medidas de cada juego están en el detalle del área). Nubi en la
+  bienvenida ("Hola, soy Nubi"). Ícono: `tools/previews/nubi_recursos.py` escribe en `res/` las capas del ícono
+  adaptativo (fondo vector de noche, Nubi, monocromo), los íconos para Android 7, el de notificación y
+  `drawable-nodpi/nubi_{hola,mira,celebra}.webp`. Capturas: `docs/previews/hoy-nubi-real.png`, `hoy-nubi-detalle-real.png`.
+  Sin probar en el teléfono; después: ícono adaptativo (con monocromo) y Nubi en Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
   aviso de Ajustes. Revisión de nombres y patentes: [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md).
   Antes de publicar: búsqueda oficial de marca (clases 9, 41) y el `applicationId` definitivo. **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre
   las que elegir: no volver a eso; US 8,348,671 de Posit); nombres: cuarta ronda (estilo Synapp: el vocabulario del

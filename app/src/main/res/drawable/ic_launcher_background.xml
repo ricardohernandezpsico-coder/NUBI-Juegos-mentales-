@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo del ícono de Nubi: la noche de la app (arriba más clara) con unas pocas estrellas lejos de Nubi. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
@@ -8,15 +9,15 @@
     <path android:pathData="M0,0h108v108h-108z">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:angle="315"
-                android:endColor="#042F2E"
-                android:startColor="#0D9488"
+                android:angle="270"
+                android:endColor="#0C0E34"
+                android:startColor="#282C82"
                 android:type="linear" />
         </aapt:attr>
     </path>
-    <!-- Subtle luminous decorative orb -->
-    <path
-        android:fillAlpha="0.25"
-        android:fillColor="#5EEAD4"
-        android:pathData="M54,54m-42,0a42,42 0,1 1,84 0a42,42 0,1 1,-84 0" />
+    <path android:fillColor="#CCFFFFFF" android:pathData="M27,28m-0.9,0a0.9,0.9 0,1 1,1.8 0a0.9,0.9 0,1 1,-1.8 0" />
+    <path android:fillColor="#AAFFFFFF" android:pathData="M80,25m-0.7,0a0.7,0.7 0,1 1,1.4 0a0.7,0.7 0,1 1,-1.4 0" />
+    <path android:fillColor="#CCFFFFFF" android:pathData="M84,78m-0.8,0a0.8,0.8 0,1 1,1.6 0a0.8,0.8 0,1 1,-1.6 0" />
+    <path android:fillColor="#99FFFFFF" android:pathData="M24,82m-0.6,0a0.6,0.6 0,1 1,1.2 0a0.6,0.6 0,1 1,-1.2 0" />
+    <path android:fillColor="#AAFFFFFF" android:pathData="M62,20m-0.6,0a0.6,0.6 0,1 1,1.2 0a0.6,0.6 0,1 1,-1.2 0" />
 </vector>

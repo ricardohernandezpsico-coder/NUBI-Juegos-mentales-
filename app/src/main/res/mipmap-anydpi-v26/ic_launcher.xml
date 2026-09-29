@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono de Nubi (29-sep): fondo de noche + Nubi + silueta para el ícono temático. Las imágenes salen de
+     tools/previews/nubi_recursos.py (mismo dibujo que tools/previews/nubi_suave.py). -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
-    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>

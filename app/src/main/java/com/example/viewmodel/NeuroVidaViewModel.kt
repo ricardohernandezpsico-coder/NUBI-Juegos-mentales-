@@ -266,6 +266,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** Lo recordado del avance (juegos medidos, Experto abierto, fechas de etapas): ver data/Skill.kt. */
   val skill = repository.skill
 
+  /** Historia del avance de cada juego (ver data/AreaProgress.kt): el cambio de la semana de cada área en Hoy. */
+  val progressLog = repository.progressLog
+
   /**
    * Tu avance (0..1, leído a 8 de 10: data/Skill.kt) de cada juego YA MEDIDO. Los que no están acá dicen
    * "Sin medir aún" aunque tengan un punto de partida estimado. Parejas (motor propio, sin rating) usa su nivel 1-5.

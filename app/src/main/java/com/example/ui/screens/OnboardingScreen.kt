@@ -83,6 +83,7 @@ import com.example.model.RankTier
 import com.example.ui.components.AchievementMedal
 import com.example.ui.components.CosmosBackground
 import com.example.ui.components.GameIcon
+import com.example.ui.components.NubiWithHalo
 import com.example.ui.components.LeagueShield
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
@@ -98,7 +99,7 @@ private const val Pages = 9
 
 /**
  * Primera experiencia (una sola vez, mientras `UserSettings.ageBand == null`): pasos cortos sobre el cielo de la
- * app, sin formularios largos ni recuadros. 1) Bienvenida: los 9 juegos orbitando. 2) Tu nombre (opcional).
+ * app, sin formularios largos ni recuadros. 1) Bienvenida: Nubi se presenta. 2) Tu nombre (opcional).
  * 3) Rango de edad. 4) Nivel educacional (con "prefiero no decir"; sirve para comparar, no cambia la dificultad).
  * 5) Metas: qué quiere entrenar (hasta 3; el camino diario las prioriza). 6) Cuántos días por semana.
  * 7) Recordatorio diario: hora o ninguno (aquí se pide el permiso de notificaciones de Android 13+).
@@ -259,70 +260,17 @@ fun OnboardingScreen(
 private fun WelcomePage(onNext: () -> Unit) {
   Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
     Spacer(Modifier.weight(0.4f))
-    GamesOrbit()
-    Spacer(Modifier.height(18.dp))
-    Text("Nubi", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 44.sp)
+    NubiWithHalo(size = 190.dp)
+    Spacer(Modifier.height(6.dp))
+    Text("Hola, soy Nubi", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 36.sp)
     Text(
-      text = "${GameRegistry.allGames.size} juegos cortos para entrenar memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
+      text = "Te acompaño en ${GameRegistry.allGames.size} juegos cortos para entrenar memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
       color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 8.dp)
     )
     Spacer(Modifier.weight(0.6f))
     ClayButton(text = "Empezar", onClick = onNext, modifier = Modifier.testTag("btn_onboarding_start"))
     Spacer(Modifier.height(20.dp))
-  }
-}
-
-/** Los juegos como planetas de arcilla girando despacio alrededor de un sol. */
-@Composable
-private fun GamesOrbit() {
-  val context = LocalContext.current
-  val reduceMotion = remember {
-    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-  }
-  val spin = if (reduceMotion) 0f else {
-    val t = rememberInfiniteTransition(label = "orbit")
-    val v by t.animateFloat(0f, 360f, infiniteRepeatable(tween(60000, easing = LinearEasing)), label = "orbitSpin")
-    v
-  }
-  val glow = if (reduceMotion) 0.5f else {
-    val t = rememberInfiniteTransition(label = "sunGlow")
-    val v by t.animateFloat(0f, 1f, infiniteRepeatable(tween(2200), RepeatMode.Reverse), label = "sunGlowV")
-    v
-  }
-  val games = GameRegistry.allGames
-  Box(modifier = Modifier.size(300.dp), contentAlignment = Alignment.Center) {
-    Canvas(Modifier.fillMaxSize()) {
-      val c = center
-      val r = size.minDimension * 0.4f
-      drawCircle(Color.White.copy(alpha = 0.10f), r, c, style = Stroke(2.dp.toPx()))
-      val sunR = size.minDimension * (0.2f + 0.02f * glow)
-      drawCircle(Brush.radialGradient(listOf(Clay.Sun.copy(alpha = 0.55f), Color.Transparent), c, sunR * 1.8f), sunR * 1.8f, c)
-      // Sol: destello de 4 puntas
-      val s = size.minDimension * 0.11f
-      val p = Path().apply {
-        moveTo(c.x, c.y - s)
-        quadraticBezierTo(c.x, c.y, c.x + s, c.y)
-        quadraticBezierTo(c.x, c.y, c.x, c.y + s)
-        quadraticBezierTo(c.x, c.y, c.x - s, c.y)
-        quadraticBezierTo(c.x, c.y, c.x, c.y - s)
-        close()
-      }
-      drawPath(p, Clay.Sun)
-    }
-    val radiusDp = 120f
-    games.forEachIndexed { i, g ->
-      val a = (spin + i * 360f / games.size) * PI.toFloat() / 180f
-      Box(
-        modifier = Modifier
-          .offset { IntOffset((cos(a) * radiusDp.dp.toPx()).roundToInt(), (sin(a) * radiusDp.dp.toPx()).roundToInt()) }
-          .size(52.dp)
-          .clip(CircleShape)
-          .background(g.domain.color)
-          .border(2.5.dp, Clay.Ink, CircleShape),
-        contentAlignment = Alignment.Center
-      ) { GameIcon(g.id, size = 34.dp) }
-    }
   }
 }
 
