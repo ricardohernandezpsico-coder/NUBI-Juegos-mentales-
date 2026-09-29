@@ -89,10 +89,17 @@ object NativeReceiver {
     val peak_level: Int = 0,
     // Solo Piloto Estelar: costo de multitarea en % (-1 = no aplica / sin datos).
     val multitask_cost: Int = -1,
-    // Solo Radar: vistazo en ms (-1 = no aplica) y aciertos/ensayos por dirección (8).
+    // Solo Radar: vistazo en ms (-1 = no aplica) y astronautas en esas rondas; rescatados/mostrados por dirección (8)
+    // y cerca/lejos (2); captura en las lluvias (-1 = sin medida); robots mostrados/tocados.
     val glance_ms: Int = -1,
+    val glance_load: Double = -1.0,
     val sector_hits: List<Int>? = null,
     val sector_trials: List<Int>? = null,
+    val ring_hits: List<Int>? = null,
+    val ring_trials: List<Int>? = null,
+    val capture: Double = -1.0,
+    val robots_shown: Int = 0,
+    val robots_touched: Int = 0,
     // Solo Satélites: seguimiento (satélites a la vez) y velocidad superada (-1 = no aplica).
     val tracking_capacity: Double = -1.0,
     val tracking_targets: Double = -1.0,
@@ -362,8 +369,14 @@ object NativeReceiver {
       modeHits = metrics.mode_hits,
       multitaskCost = metrics.multitask_cost.takeIf { it >= 0 },
       glanceMs = metrics.glance_ms.takeIf { it > 0 },
+      glanceLoad = metrics.glance_load.takeIf { it > 0.0 }?.toFloat(),
       sectorHits = metrics.sector_hits?.takeIf { it.size == 8 },
       sectorTrials = metrics.sector_trials?.takeIf { it.size == 8 },
+      ringHits = metrics.ring_hits?.takeIf { it.size == 2 },
+      ringTrials = metrics.ring_trials?.takeIf { it.size == 2 },
+      captureK = metrics.capture.takeIf { it >= 0.0 }?.toFloat(),
+      robotsShown = metrics.robots_shown.takeIf { it > 0 && telemetry.game_id == "radar" },
+      robotsTouched = metrics.robots_touched.takeIf { metrics.robots_shown > 0 && telemetry.game_id == "radar" },
       trackingCapacity = metrics.tracking_capacity.takeIf { it >= 0.0 }?.toFloat(),
       trackingTargets = metrics.tracking_targets.takeIf { it > 0.0 }?.toFloat(),
       trackingSpeed = metrics.tracking_speed.takeIf { it > 0.0 }?.toFloat(),

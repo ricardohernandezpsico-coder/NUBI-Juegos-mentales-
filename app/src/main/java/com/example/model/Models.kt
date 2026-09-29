@@ -182,7 +182,7 @@ object GameRegistry {
       title = "Radar",
       domain = DomainType.VELOCIDAD,
       subtitle = "Velocidad de procesamiento y visión periférica",
-      instruction = "Mira el centro del radar: un destello muestra una nave en el centro y un astronauta perdido. Di qué nave viste y toca dónde estaba el astronauta para rescatarlo.",
+      instruction = "Atento al radar: en un destello aparecen varios astronautas perdidos. Toca todos los lugares donde los viste y pulsa ¡Rescatar! Los robots no se rescatan.",
       iconEmoji = "📡"
     ),
     GameDefinition(
@@ -224,11 +224,19 @@ data class GamePlayResult(
   val modeHits: Int = 0,
   // Solo Piloto Estelar: costo de multitarea en % de esta partida (se muestra en el resultado; no se guarda en Room).
   val multitaskCost: Int? = null,
-  // Solo Radar: "tu vistazo" en ms (duración de destello en la que se asentó la dificultad) y aciertos de ubicación
-  // por dirección (8, 0 = arriba y en sentido horario) para dibujar "tu radar". No se guardan en Room.
+  // Solo Radar (Rescate relámpago): "tu vistazo" en ms (destello en el que se asentó la dificultad) y cuántos
+  // astronautas había en esas rondas; rescatados / mostrados por dirección (8, 0 = arriba y en sentido horario) y
+  // cerca / lejos del centro (2) para "tu radar"; "tu captura" (cuántos de un vistazo, en las lluvias) y robots
+  // mostrados / tocados ("tu filtro"). No se guardan en Room.
   val glanceMs: Int? = null,
+  val glanceLoad: Float? = null,
   val sectorHits: List<Int>? = null,
   val sectorTrials: List<Int>? = null,
+  val ringHits: List<Int>? = null,
+  val ringTrials: List<Int>? = null,
+  val captureK: Float? = null,
+  val robotsShown: Int? = null,
+  val robotsTouched: Int? = null,
   // Solo Satélites: cuántos se siguen de verdad a la vez (descontando la suerte) y la velocidad más alta superada
   // completa (múltiplo de la del nivel 1). No se guardan en Room.
   val trackingCapacity: Float? = null,

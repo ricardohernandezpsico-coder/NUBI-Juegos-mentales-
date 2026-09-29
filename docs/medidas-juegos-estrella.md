@@ -50,19 +50,37 @@ Código: `app/.../data/NumberLine.kt` (`reading`) con sus pruebas.
 
 ---
 
-## Radar: "Tu vistazo" y "Tu radar"
+## Radar (Rescate relámpago): "Tu vistazo", "Tu captura", "Tu filtro" y "Tu radar"
 
-**Qué mide.** La duración de destello más corta con la que se acierta de forma estable, en una tarea tipo campo visual
-útil (UFOV). El UFOV original usa una escalera hacia el 75% de aciertos, con duraciones de 17 a 500 ms. Nuestra
-escalera apunta a ~80%, por eso el texto dice "aciertas unas 4 de cada 5 veces". La duración se mide en cuadros reales
-de la pantalla.
+Rediseño del 29-sep (la versión con una nave en el centro se parecía demasiado a una patente: ver
+`docs/nombre-marca-y-riesgos.md`). La tarea es de **informe total** (Sperling, 1960) en la línea de la teoría de la
+atención visual (TVA: Bundesen, 1990; revisión clínica de Habekost, 2015): varios astronautas en un destello
+enmascarado, y se marcan todos los lugares donde se vieron (se sabe cuántos eran).
 
-**Qué NO se dice.** No se compara con las normas clínicas del UFOV: otro aparato, otro tamaño de pantalla y otra
-distancia a los ojos.
+**Tu vistazo.** La duración de destello más breve con la que se rescatan casi todos (todos hasta 3; todos menos uno con
+4 o más) de forma estable. La escalera apunta a ~80%, por eso el texto dice "unas 4 de cada 5 veces", y dice con
+cuántos astronautas a la vez se logró (la cantidad sube con el nivel). Media geométrica de las duraciones REALES de
+las últimas 12 rondas normales, sin las 4 primeras. No es la "velocidad de procesamiento C" de TVA (para estimarla hace
+falta ajustar un modelo con muchas duraciones fijas): es un umbral práctico.
 
-**Radar por dirección.** Con unos 3 destellos por dirección, las diferencias son azar. Ahora solo se nombra dónde se
-rescató más y dónde menos si hay **4 o más destellos en cada dirección** y **40 puntos de diferencia**. Aun así se dice
-"en esta partida" y "si se repite". Antes bastaban 2 destellos y 20 puntos.
+**Tu captura.** Promedio de las "lluvias de astronautas" (cada 5 rondas: 6 astronautas, 300 ms, fuera de la escalera):
+rescatados menos balizas de más (poner balizas al azar no suma). Con destellos largos y máscara, el informe total se
+acerca a la capacidad de la memoria visual de corto plazo (K en TVA), que en adultos ronda 3 a 4 elementos (Luck y
+Vogel, 1997; Cowan, 2001): por eso el texto da esa referencia general. Se muestra solo con 2 o más lluvias.
+
+**Tu filtro.** Robots tocados de los mostrados (desde el nivel 5: informe parcial, seleccionar lo relevante). Se
+nombra solo con 6 o más robots en la partida. Tocar un robot también puede ser una baliza al azar: por eso el texto no
+lo interpreta como "impulsividad" (además, no calculamos perfiles de ese tipo: ver la nota de patentes).
+
+**Tu radar.** Rescatados por dirección (cuñas) y cerca / lejos del centro. Se nombra dónde más y dónde menos solo con
+4 o más astronautas en cada dirección y 40 puntos de diferencia; cerca / lejos, con 6 o más en cada anillo y 25 puntos
+(el campo visual útil se achica hacia la periferia cuando la tarea apura). Siempre "en esta partida... si se repite".
+
+**Alerta.** El destello llega sin aviso (espera de 1,5 a 3,5 s): entrenar la alerta propia aumentó la velocidad de
+procesamiento visual medida con TVA en mayores (Penning et al., Psychological Science, 2021). No se mide aparte.
+
+**Qué NO se dice.** No se compara con normas clínicas (UFOV ni TVA): otro aparato, otra pantalla, otra distancia a los
+ojos. No se usa la evidencia del ensayo ACTIVE para prometer efectos.
 
 ---
 

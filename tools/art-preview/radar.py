@@ -1,6 +1,6 @@
-"""Maqueta de Radar (disposición según RadarGameController.Layout a medio canvas; arte exacto: radar, haz,
-interferencia, botones de dirección, íconos y marcas salen de los .raw que vuelca ArtPreview; las casillas usan
-RadarContract.Position).
+"""Maqueta de Radar / Rescate relámpago (disposición según RadarGameController.Layout a medio canvas; arte exacto:
+radar, haz, interferencia, robot, baliza, aros de lugar, cascos y marcas salen de los .raw que vuelca ArtPreview; los
+lugares usan RadarContract.Position: 8 direcciones x 2 anillos).
 
 Uso: python3 tools/art-preview/radar.py <raw> [--out docs/previews]  ->  radar.png
 """
@@ -14,19 +14,25 @@ from PIL import Image, ImageDraw, ImageFont
 from juegos import FB, INK, W, H, ROOT, load, night, put, glow, clay_text, hexc, tinted
 from piloto import clay_box, hud
 
-LIME, SUN, CORAL, CREAM = hexc(0x9BE564), hexc(0xFFC93C), hexc(0xFF6B4A), hexc(0xFFF8EC)
-RINGS = [0.42, 0.65, 0.87]
+LIME, SUN, CORAL, CREAM, SKY = hexc(0x9BE564), hexc(0xFFC93C), hexc(0xFF6B4A), hexc(0xFFF8EC), hexc(0x4CC9F0)
+RINGS = [0.46, 0.80]
 SCOPE = 500                 # lado del radar (medio canvas)
 CX, CY = W / 2, 166 + SCOPE / 2
 GLASS = SCOPE / 2 * 0.86 / 1.06
-ITEM = GLASS * 0.25
-CW = 0.22 * GLASS
+ITEM = GLASS * 0.26
+CW = 0.16 * GLASS
 
 
-def slot(direction, ring, seed):
-    a = direction * math.pi / 4
-    r = RINGS[ring]
-    j = random.Random(seed)
+def slot_center(s):
+    a = (s % 8) * math.pi / 4
+    r = RINGS[s // 8]
+    return CX + r * math.sin(a) * GLASS, CY - r * math.cos(a) * GLASS
+
+
+def slot(s, seed):
+    a = (s % 8) * math.pi / 4
+    r = RINGS[s // 8]
+    j = random.Random(s * 7919 + seed)
     jx, jy = (j.random() - 0.5) * 0.05, (j.random() - 0.5) * 0.05
     return CX + (r * math.sin(a) + jx) * GLASS, CY - (r * math.cos(a) + jy) * GLASS
 
@@ -62,89 +68,112 @@ def sweep(im, raw, angle):
     im.alpha_composite(s, (int(CX - s.width / 2), int(CY - s.height / 2)))
 
 
-def stimuli(im, raw, center, helmet_slot, asteroids, trial_seed):
-    rng = random.Random(trial_seed)
-    for s in asteroids:
-        x, y = slot(s % 8, s // 8, s + trial_seed)
-        a = load(f'{raw}/sym_Asteroid_{rng.randrange(3)}.raw').resize((int(ITEM * 0.92), int(ITEM * 0.92)), Image.LANCZOS)
-        a = a.rotate(rng.randrange(360), resample=Image.BICUBIC)
-        im.alpha_composite(a, (int(x - a.width / 2), int(y - a.height / 2)))
-    x, y = slot(helmet_slot[0], helmet_slot[1], helmet_slot[1] * 8 + helmet_slot[0] + trial_seed)
-    put(im, load(f'{raw}/sym_Helmet_1.raw'), x, y, ITEM)
-    put(im, load(f'{raw}/{center}.raw'), CX, CY, CW * 1.75)
-    return x, y
+def hint(im, text):
+    d = ImageDraw.Draw(im)
+    d.text((W / 2, CY + SCOPE / 2 + 26), text, font=ImageFont.truetype(FB, 19), fill=(255, 255, 255, 205), anchor='mm')
 
 
-def options(im, raw, a, b, chosen=None, ok=None):
-    size = 145
-    for i, name in enumerate((a, b)):
-        x = W / 2 + (-1 if i == 0 else 1) * (size / 2 + 20)
-        y = 756
-        layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
-        clay_box(layer, (x - size / 2, y - size / 2, x + size / 2, y + size / 2), 30, CREAM)
-        put(layer, load(f'{raw}/{name}.raw'), x, y, size * 0.76)
-        if chosen is not None and i != chosen:
-            layer.putalpha(layer.getchannel('A').point(lambda v: v * 35 // 100))
-        im.alpha_composite(layer)
-        if chosen == i:
-            put(im, load(f'{raw}/mark_{"check" if ok else "cross"}.raw'), x + size * 0.4, y - size * 0.4, 55)
+def rescue_button(im):
+    y = CY + SCOPE / 2 + 92
+    layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    clay_box(layer, (W / 2 - 140, y - 35, W / 2 + 140, y + 35), 30, SUN)
+    im.alpha_composite(layer)
+    ImageDraw.Draw(im).text((W / 2, y), '¡RESCATAR!', font=ImageFont.truetype(FB, 30), fill=INK, anchor='mm')
 
 
-def pads(im, raw, only=None, mark=None, wrong=False):
-    pad = load(f'{raw}/radar_pad.raw')
-    for dct in range(8):
-        if only is not None and dct != only:
+def fixation(im, raw):
+    d = ImageDraw.Draw(im)
+    r = CW * 0.45
+    d.ellipse((CX - r, CY - r, CX + r, CY + r), outline=SUN + (180,), width=3)
+
+
+def stimuli(im, raw, targets, robots, seed):
+    for s in targets:
+        x, y = slot(s, seed)
+        put(im, load(f'{raw}/sym_Helmet_1.raw'), x, y, ITEM)
+    for s in robots:
+        x, y = slot(s, seed)
+        put(im, load(f'{raw}/radar_robot.raw'), x, y, ITEM * 1.25)
+
+
+def slots(im, raw, beacons=(), skip=()):
+    ring = tinted(load(f'{raw}/radar_slot.raw'), CREAM)
+    ring.putalpha(ring.getchannel('A').point(lambda v: v // 2))
+    for s in range(16):
+        if s in skip:
             continue
-        a = dct * math.pi / 4
-        x, y = CX + RINGS[2] * math.sin(a) * GLASS, CY - RINGS[2] * math.cos(a) * GLASS
-        p = pad.resize((66, 66), Image.LANCZOS).rotate(-45 * dct, resample=Image.BICUBIC)
-        if wrong:
-            p = tinted(p, (255, 158, 143))
-        im.alpha_composite(p, (int(x - p.width / 2), int(y - p.height / 2)))
-        if mark:
-            put(im, load(f'{raw}/mark_{mark}.raw'), x + 24, y - 24, 36)
+        x, y = slot_center(s)
+        if s in beacons:
+            put(im, load(f'{raw}/radar_beacon.raw'), x, y, ITEM * 0.95)
+        else:
+            put(im, ring, x, y, ITEM * 1.2)
+
+
+TARGETS, ROBOTS, SEED = [9, 3, 13, 6], [0], 5
+
+
+def frame_wait(raw):
+    """Atento: el haz gira; el destello llega sin aviso."""
+    im = base(raw, 30, 6, 1480, 4, 'Atento al radar...')
+    sweep(im, raw, 60)
+    fixation(im, raw)
+    hint(im, 'El destello llega en cualquier momento.')
+    return im
 
 
 def frame_flash(raw):
-    """Nivel 7, el destello: cohete en el centro, astronauta en el anillo de afuera, 15 asteroides."""
-    im = base(raw, 31, 7, 1480, 4, 'Mira el centro')
-    asteroids = [r * 8 + d for r in (1, 2) for d in range(8) if not (r == 2 and d == 3)]
-    stimuli(im, raw, 'sym_Rocket_0', (3, 2), asteroids, 5)
+    """Nivel 6, el destello: 4 astronautas y un robot (desde el nivel 5)."""
+    im = base(raw, 31, 6, 1480, 4, 'Atento al radar...')
+    stimuli(im, raw, TARGETS, ROBOTS, SEED)
     return im
 
 
 def frame_mask(raw):
     """La interferencia que borra la imagen."""
-    im = base(raw, 32, 7, 1480, 4, 'Mira el centro')
+    im = base(raw, 32, 6, 1480, 4, 'Atento al radar...')
     m = load(f'{raw}/radar_mask_0.raw').resize((SCOPE, SCOPE), Image.LANCZOS).rotate(40, resample=Image.BICUBIC)
     im.alpha_composite(m, (int(CX - SCOPE / 2), int(CY - SCOPE / 2)))
     return im
 
 
 def frame_answer(raw):
-    """Paso 1 respondido (cohete ✓), paso 2: tocar la dirección del astronauta."""
-    im = base(raw, 33, 7, 1480, 4, '¿Dónde estaba el astronauta?')
-    sweep(im, raw, 60)
-    pads(im, raw)
-    d = ImageDraw.Draw(im)
-    options(im, raw, 'sym_Rocket_0', 'sym_Planet_2', chosen=0, ok=True)
+    """¿Dónde estaban los 4? Tres balizas puestas (una en un lugar vacío)."""
+    im = base(raw, 33, 6, 1480, 4, '¿Dónde estaban los 4?')
+    slots(im, raw, beacons={9, 3, 6, 10})
+    hint(im, '4 de 4 balizas · toca de nuevo para sacar')
+    rescue_button(im)
     return im
 
 
 def frame_feedback(raw):
-    """¡Rescatado!: la verdad a la vista con marcas ✓, puntos y el astronauta rumbo a la fila."""
-    im = base(raw, 34, 7, 1780, 5, '¡Rescatado! · racha 5', LIME, rescued=4)
+    """Revelación: 3 rescatados (✓), uno se escapó (aro sol), una baliza de más (✗) y el robot."""
+    im = base(raw, 34, 6, 1780, 5, 'Rescataste 3 de 4', SUN, rescued=6)
     sweep(im, raw, 200)
-    a = 3 * math.pi / 4
-    x, y = CX + RINGS[2] * math.sin(a) * GLASS, CY - RINGS[2] * math.cos(a) * GLASS
-    glow(im, x, y, 60, LIME, 140)
-    put(im, load(f'{raw}/sym_Helmet_1.raw'), x, y, ITEM)
-    pads(im, raw, only=3, mark='check')
-    put(im, load(f'{raw}/sym_Rocket_0.raw'), CX, CY, CW * 1.75)
-    put(im, load(f'{raw}/mark_check.raw'), CX + CW * 0.85, CY - CW * 0.85, CW * 0.9)
+    hits, missed, extra = [9, 3, 6], [13], [10]
+    for s in hits:
+        x, y = slot(s, SEED)
+        glow(im, x, y, 44, LIME, 140)
+        put(im, load(f'{raw}/sym_Helmet_1.raw'), x, y, ITEM)
+        cx, cy = slot_center(s)
+        put(im, load(f'{raw}/mark_check.raw'), cx + ITEM * 0.45, cy - ITEM * 0.45, ITEM * 0.6)
+    for s in missed:
+        x, y = slot(s, SEED)
+        ring = tinted(load(f'{raw}/radar_slot.raw'), SUN)
+        cx, cy = slot_center(s)
+        put(im, ring, cx, cy, ITEM * 1.45)
+        h = load(f'{raw}/sym_Helmet_1.raw')
+        h.putalpha(h.getchannel('A').point(lambda v: v * 6 // 10))
+        put(im, h, x, y, ITEM)
+    for s in extra:
+        cx, cy = slot_center(s)
+        put(im, load(f'{raw}/radar_beacon.raw'), cx, cy, ITEM * 0.95)
+        put(im, load(f'{raw}/mark_cross.raw'), cx + ITEM * 0.45, cy - ITEM * 0.45, ITEM * 0.6)
+    for s in ROBOTS:
+        x, y = slot(s, SEED)
+        put(im, load(f'{raw}/radar_robot.raw'), x, y, ITEM * 1.25)
     d = ImageDraw.Draw(im)
-    clay_text(d, (x, y - 70), '+240', 28, SUN)
-    options(im, raw, 'sym_Rocket_0', 'sym_Planet_2', chosen=0, ok=True)
+    clay_text(d, (CX, CY - GLASS - 4), '+168', 26, SUN)
+    hint(im, 'Uno se escapó (aro sol)')
     return im
 
 
@@ -153,7 +182,7 @@ def main():
     ap.add_argument('raw')
     ap.add_argument('--out', default=ROOT + '/docs/previews')
     a = ap.parse_args()
-    panels = [frame_flash(a.raw), frame_mask(a.raw), frame_answer(a.raw), frame_feedback(a.raw)]
+    panels = [frame_wait(a.raw), frame_flash(a.raw), frame_mask(a.raw), frame_answer(a.raw), frame_feedback(a.raw)]
     gap = 24
     sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
     for i, p in enumerate(panels):

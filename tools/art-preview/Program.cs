@@ -61,7 +61,9 @@ internal static class Program
         Dump("mark_cross", AnswerMarkSprite.Cross());
         Dump("radar_scope", NeuroVida.Games.Radar.RadarSprites.Scope());
         Dump("radar_sweep", NeuroVida.Games.Radar.RadarSprites.Sweep());
-        Dump("radar_pad", NeuroVida.Games.Radar.RadarSprites.Pad());
+        Dump("radar_robot", NeuroVida.Games.Radar.RadarSprites.Robot());
+        Dump("radar_beacon", NeuroVida.Games.Radar.RadarSprites.Beacon());
+        Dump("radar_slot", NeuroVida.Games.Radar.RadarSprites.Slot());
         for (int i = 0; i < 2; i++) Dump("radar_mask_" + i, NeuroVida.Games.Radar.RadarSprites.Mask(i));
         Dump("brake_stop", NeuroVida.Games.Freno.BrakeSprites.StopSign());
         Dump("brake_pad", NeuroVida.Games.Freno.BrakeSprites.LaunchPad());

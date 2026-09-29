@@ -38,10 +38,20 @@ namespace NeuroVida.Contracts
         public int multitask_cost = -1;
         /// <summary>Solo Radar: "tu vistazo" en ms (duración de destello en la que se asentó la escalera). -1 = no aplica.</summary>
         public int glance_ms = -1;
-        /// <summary>Solo Radar: aciertos de ubicación por dirección (8, 0 = arriba y en sentido horario).</summary>
+        /// <summary>Solo Radar: cuántos astronautas había en promedio en las rondas del vistazo. -1 = no aplica.</summary>
+        public float glance_load = -1f;
+        /// <summary>Solo Radar: astronautas rescatados por dirección (8, 0 = arriba y en sentido horario).</summary>
         public int[] sector_hits;
-        /// <summary>Solo Radar: ensayos por dirección (8).</summary>
+        /// <summary>Solo Radar: astronautas mostrados por dirección (8).</summary>
         public int[] sector_trials;
+        /// <summary>Solo Radar: rescatados / mostrados cerca del centro y lejos (2: anillo de adentro, de afuera).</summary>
+        public int[] ring_hits;
+        public int[] ring_trials;
+        /// <summary>Solo Radar: "tu captura", cuántos se captan de un vistazo en las lluvias de astronautas. -1 = sin medida.</summary>
+        public float capture = -1f;
+        /// <summary>Solo Radar: robots mostrados y robots tocados ("tu filtro").</summary>
+        public int robots_shown;
+        public int robots_touched;
         /// <summary>Solo Satélites: "tu seguimiento", cuántos se siguen de verdad a la vez (descontando la suerte). -1 = no aplica.</summary>
         public float tracking_capacity = -1f;
         /// <summary>Solo Satélites: cuántos había que seguir por ronda, en promedio (el techo de "tu seguimiento"). -1 = no aplica.</summary>

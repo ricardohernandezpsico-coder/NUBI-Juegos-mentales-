@@ -253,8 +253,7 @@ fun GameResultScreen(
       )
     }
 
-    // Radar: sus dos medidas propias. "Tu vistazo" (tarea UFOV: el destello más breve que se maneja) y el mapa de
-    // aciertos por dirección, que ninguna otra app muestra.
+    // Radar (Rescate relámpago): tu vistazo, tu captura, tu filtro y tu radar. Ver docs/medidas-juegos-estrella.md.
     result.glanceMs?.let { ms ->
       Spacer(Modifier.height(14.dp))
       Text(
@@ -264,8 +263,52 @@ fun GameResultScreen(
         fontSize = 18.sp,
         fontFamily = AppFamily
       )
+      val load = result.glanceLoad?.let { l ->
+        val n = String.format(java.util.Locale("es"), if (l % 1f == 0f) "%.0f" else "%.1f", l)
+        "con $n astronautas a la vez, "
+      } ?: ""
       Text(
-        text = "El destello más breve con el que aciertas unas 4 de cada 5 veces (la nave del centro y dónde estaba el astronauta). Mientras menos milisegundos, más rápido captas.",
+        text = "El destello más breve con el que, ${load}los rescatas casi todos unas 4 de cada 5 veces. Mientras menos milisegundos, más rápido captas.",
+        color = TextSoft,
+        fontSize = 15.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+    }
+    result.captureK?.let { k ->
+      Spacer(Modifier.height(12.dp))
+      val kText = String.format(java.util.Locale("es"), "%.1f", k)
+      Text(
+        text = "Tu captura: $kText de un vistazo",
+        color = Clay.Sun,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        fontFamily = AppFamily
+      )
+      Spacer(Modifier.height(6.dp))
+      TrackingSlots(k, slots = 6, modifier = Modifier.semantics { contentDescription = "Captas $kText astronautas de un vistazo" })
+      Text(
+        text = "Cuántos astronautas captas cuando el destello no apura (en las lluvias de astronautas), sin contar las balizas puestas al azar. Los adultos suelen captar entre 3 y 4 cosas de un vistazo.",
+        color = TextSoft,
+        fontSize = 15.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+      )
+    }
+    val robotsShown = result.robotsShown
+    if (robotsShown != null && robotsShown >= 6) {
+      val touched = result.robotsTouched ?: 0
+      Spacer(Modifier.height(12.dp))
+      Text(
+        text = "Tu filtro: tocaste $touched de $robotsShown robots",
+        color = Clay.Cream,
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        fontFamily = AppFamily
+      )
+      Text(
+        text = if (touched * 5 <= robotsShown) "Ignoras bien lo que no hay que rescatar, aunque se parezca."
+        else "A veces un robot se cuela como astronauta: fíjate en la forma (el robot es cuadrado, el casco es redondo).",
         color = TextSoft,
         fontSize = 15.sp,
         textAlign = TextAlign.Center,
@@ -276,7 +319,7 @@ fun GameResultScreen(
     val trials = result.sectorTrials
     if (hits != null && trials != null && trials.sum() > 0) {
       Spacer(Modifier.height(12.dp))
-      val summary = radarSummary(hits, trials)
+      val summary = radarSummary(hits, trials) + ringSummary(result.ringHits, result.ringTrials)
       Text("Tu radar", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
       Spacer(Modifier.height(6.dp))
       RadarField(hits, trials, Modifier.size(150.dp).semantics { contentDescription = "Tu radar. $summary" })
@@ -741,7 +784,7 @@ fun GameResultScreen(
 
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
-      result.multitaskCost, result.glanceMs, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
+      result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
       result.homingErrorPct, result.mailEventTotal
     ).any { it != null }
@@ -929,14 +972,29 @@ private val RadarDirections = listOf(
 
 /** Dónde se rescató más y dónde menos (solo direcciones con al menos 2 destellos, para no sacar conclusiones de uno). */
 private fun radarSummary(hits: List<Int>, trials: List<Int>): String {
-  // Con pocos destellos por dirección las diferencias suelen ser azar: solo se nombra una dirección con 4 o más
-  // destellos en cada una y una diferencia grande (40 puntos).
+  // Con pocos astronautas por dirección las diferencias suelen ser azar: solo se nombra una dirección con 4 o más
+  // en cada una y una diferencia grande (40 puntos).
   val rated = (0 until 8).filter { trials[it] >= 4 }.map { it to hits[it].toFloat() / trials[it] }
-  if (rated.size < 4) return "Cada cuña es una dirección: mientras más larga, más astronautas rescataste ahí. Con más destellos se ve si alguna dirección te cuesta más."
+  if (rated.size < 4) return "Cada cuña es una dirección: mientras más larga, más astronautas rescataste ahí. Con más partidas se ve si alguna dirección te cuesta más."
   val best = rated.maxBy { it.second }
   val worst = rated.minBy { it.second }
   if (best.second - worst.second < 0.4f) return "Parejo en todas las direcciones. Cada cuña larga = muchos rescates."
   return "En esta partida rescataste más ${RadarDirections[best.first]} y menos ${RadarDirections[worst.first]}. Si se repite en otras partidas, vale la pena mirar más hacia ese lado."
+}
+
+/**
+ * Cerca / lejos del centro: se nombra solo con 6 o más astronautas en cada anillo y 25 puntos de diferencia (el campo
+ * visual útil se achica hacia la periferia cuando la tarea apura).
+ */
+private fun ringSummary(hits: List<Int>?, trials: List<Int>?): String {
+  if (hits == null || trials == null || trials.size != 2 || trials.any { it < 6 }) return ""
+  val near = hits[0].toFloat() / trials[0]
+  val far = hits[1].toFloat() / trials[1]
+  return when {
+    near - far >= 0.25f -> " Te cuestan más los de lejos del centro: al esperar el destello, mira el centro pero abarca todo el radar."
+    far - near >= 0.25f -> " Te cuestan más los de cerca del centro: no te vayas solo al borde."
+    else -> " Cerca y lejos del centro, parecido."
+  }
 }
 
 /**
@@ -976,16 +1034,16 @@ private fun RadarField(hits: List<Int>, trials: List<Int>, modifier: Modifier = 
 // ---------- Satélites: "tu seguimiento" ----------
 
 /**
- * Cinco discos de arcilla: se llenan en sol hasta la capacidad de seguimiento (3,4 = tres llenos y el cuarto al 40%).
+ * Discos de arcilla (5; 6 en la captura de Radar): se llenan en sol hasta la capacidad (3,4 = tres llenos y el cuarto al 40%).
  * La cantidad se lee por cuántos están llenos, no por el color.
  */
 @Composable
-private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier) {
-  Canvas(modifier.size(width = 34.dp * 5 + 10.dp * 4, height = 40.dp)) {
+private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier, slots: Int = 5) {
+  Canvas(modifier.size(width = 34.dp * slots + 10.dp * (slots - 1), height = 40.dp)) {
     val r = 17.dp.toPx()
     val gap = 10.dp.toPx()
     val border = 2.5.dp.toPx()
-    for (i in 0 until 5) {
+    for (i in 0 until slots) {
       val c = Offset(r + i * (2 * r + gap), size.height / 2f - 2.dp.toPx())
       val fill = (capacity - i).coerceIn(0f, 1f)
       drawCircle(Clay.Ink, r, c + Offset(0f, 3.dp.toPx()))

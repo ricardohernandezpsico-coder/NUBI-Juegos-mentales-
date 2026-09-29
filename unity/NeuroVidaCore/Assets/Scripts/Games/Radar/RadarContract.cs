@@ -3,187 +3,160 @@ using System.Collections.Generic;
 
 namespace NeuroVida.Games.Radar
 {
-    /// <summary>Un ensayo de Radar: qué se ve en el centro, dónde está el astronauta y dónde los asteroides.</summary>
+    /// <summary>Una ronda de Radar: dónde aparecen los astronautas y los robots, y cuánto dura el destello.</summary>
     public sealed class RadarTrial
     {
-        /// <summary>Lo que aparece en la pantalla central (índices de <c>ShapeKind</c> de Parejas y su variante).</summary>
-        public int CenterShape, CenterVariant;
-        /// <summary>La otra opción que se ofrece al responder (el "parecido").</summary>
-        public int DecoyShape, DecoyVariant;
-        /// <summary>Dirección del astronauta: 0 = arriba y en sentido horario (1 = arriba a la derecha ... 7).</summary>
-        public int Direction;
-        /// <summary>Anillo del astronauta: 0 = cerca del centro, 2 = borde del radar.</summary>
-        public int Ring;
-        /// <summary>Casillas con asteroides (casilla = anillo * 8 + dirección). Nunca incluye la del astronauta.</summary>
-        public int[] Distractors;
+        /// <summary>Lugares con astronautas (lugar = anillo * 8 + dirección), sin repetir.</summary>
+        public int[] Targets;
+        /// <summary>Lugares con robots (se ven, pero no se rescatan). Nunca coinciden con un astronauta.</summary>
+        public int[] Robots;
         public int ExposureMs;
         public int Level;
+        /// <summary>"¡Lluvia de astronautas!": destello largo con muchos, para medir cuántos se captan de un vistazo.
+        /// No mueve la dificultad ni cuenta para "tu vistazo".</summary>
+        public bool Rain;
+    }
+
+    /// <summary>Cómo le fue a una respuesta (las balizas que puso la persona).</summary>
+    public struct RadarAnswer
+    {
+        /// <summary>Balizas sobre un astronauta.</summary>
+        public int Hits;
+        /// <summary>Balizas donde no había astronauta (vacío o robot).</summary>
+        public int Extras;
+        /// <summary>De esas, las que cayeron sobre un robot.</summary>
+        public int RobotsTouched;
     }
 
     /// <summary>
-    /// Reglas puras de "Radar": entrenamiento de VELOCIDAD DE PROCESAMIENTO y campo visual útil, con la estructura
-    /// de la tarea UFOV (Ball y Owsley) usada en el ensayo ACTIVE (Ball et al., JAMA 2002; Edwards et al., 2017):
-    /// en un destello breve aparece algo en el centro y algo en la periferia; luego una "interferencia" (máscara) borra
-    /// la imagen y hay que decir qué había en el centro y dónde estaba lo de afuera. La dificultad acorta el destello
-    /// (500 → 40 ms), agrega asteroides que distraen, aleja al astronauta del centro y hace más parecidas las dos
-    /// opciones del centro. Sin dependencias de UnityEngine: testeable con NUnit.
+    /// Reglas puras de "Radar" / Rescate relámpago (28-sep, rediseño aprobado por Ricardo): VELOCIDAD DE PROCESAMIENTO
+    /// VISUAL con informe total ("whole report": Sperling, 1960; teoría de la atención visual, TVA: Bundesen, 1990;
+    /// Habekost, 2015). En un destello breve aparecen VARIOS astronautas repartidos por el radar (8 direcciones x 2
+    /// anillos = 16 lugares, cerca y lejos del centro); una interferencia borra la imagen y se tocan todos los lugares
+    /// donde se vieron (se sabe cuántos eran). El destello llega en un momento imprevisible (alerta propia: Penning et
+    /// al., 2021). Desde el nivel 5 hay robots que no se rescatan (informe parcial: seleccionar lo importante).
+    /// No hay imagen central que identificar ni opciones entre las que elegir (ver docs/nombre-marca-y-riesgos.md).
+    /// Sin dependencias de UnityEngine: testeable con NUnit.
     /// </summary>
     public static class RadarContract
     {
         public const string GameId = "radar";
         public const int MaxLevel = 12;
         public const int Directions = 8;
-        public const int Rings = 3;
+        public const int Rings = 2;
+        public const int Slots = Directions * Rings;
 
-        /// <summary>Reto: 90 s de radar.</summary>
-        public const int RetoSeconds = 90;
-        /// <summary>Precisión (sin reloj): cantidad de ensayos.</summary>
+        /// <summary>Reto: 120 s de radar (cada ronda dura más que en la versión de un astronauta: ~8 s).</summary>
+        public const int RetoSeconds = 120;
+        /// <summary>Precisión (sin reloj): cantidad de destellos (incluidas las lluvias).</summary>
         public const int PrecisionTrials = 20;
 
-        /// <summary>Radio de cada anillo como fracción del radio del radar.</summary>
-        public static readonly float[] RingRadius = { 0.42f, 0.65f, 0.87f };
+        /// <summary>Radio de cada anillo como fracción del radio del radar (cerca / lejos del centro).</summary>
+        public static readonly float[] RingRadius = { 0.46f, 0.80f };
 
-        /// <summary>Radio de la pantalla central (fracción del radio del radar): tocar adentro no elige dirección.</summary>
-        public const float CenterWindow = 0.22f;
+        /// <summary>Radio de la mira del centro (fracción del radio del radar): tocar adentro no elige lugar.</summary>
+        public const float CenterWindow = 0.16f;
 
-        // Íconos de ShapeKind (Parejas).
-        private const int Planet = 0, Rocket = 1, Comet = 2, Star = 3, Moon = 4, Ufo = 5, Satellite = 6, Sun = 7, Telescope = 10;
-        /// <summary>El astronauta a rescatar (casco) y los asteroides que distraen.</summary>
-        public const int HelmetShape = 8, AsteroidShape = 9;
-
-        /// <summary>
-        /// Pares del centro por dificultad: (forma A, variante A, forma B, variante B). En cada ensayo se muestra uno y
-        /// el otro queda como opción al responder.
-        /// <list type="bullet">
-        /// <item>0 fácil: formas y colores muy distintos.</item>
-        /// <item>1 media: formas distintas del mismo color.</item>
-        /// <item>2 difícil: siluetas parecidas del mismo color (estrella/sol, planeta/platillo...).</item>
-        /// </list>
-        /// </summary>
-        public static readonly int[][][] CenterPairs =
-        {
-            new[]
-            {
-                new[] { Rocket, 0, Ufo, 0 },
-                new[] { Planet, 1, Star, 2 },
-                new[] { Moon, 0, Satellite, 1 },
-                new[] { Comet, 0, Sun, 0 },
-            },
-            new[]
-            {
-                new[] { Rocket, 0, Planet, 2 },
-                new[] { Star, 1, Comet, 0 },
-                new[] { Moon, 1, Ufo, 2 },
-                new[] { Sun, 1, Moon, 0 },
-            },
-            new[]
-            {
-                new[] { Star, 0, Sun, 1 },
-                new[] { Planet, 2, Ufo, 1 },
-                new[] { Comet, 0, Rocket, 1 },
-                new[] { Satellite, 0, Telescope, 0 },
-            },
-        };
+        /// <summary>Cada cuántas rondas llega una lluvia de astronautas, con cuántos y con qué destello.</summary>
+        public const int RainEvery = 5, RainTargets = 6, RainExposureMs = 300;
 
         // ------------------------------------------------------------------ dificultad
 
-        /// <summary>Duración del destello (ms): 500 en el nivel 1 → 40 en el 12, en pasos proporcionales (~20% menos
-        /// por nivel), como las escaleras de duración de la tarea UFOV.</summary>
+        /// <summary>Duración del destello (ms): 600 en el nivel 1 → 80 en el 12, en pasos proporcionales (~17% menos
+        /// por nivel). Más larga que en la versión de un solo astronauta: acá se captan varios a la vez.</summary>
         public static int ExposureMs(int level)
         {
             double k = (Clamp(level) - 1) / (double)(MaxLevel - 1);
-            return (int)Math.Round(500.0 * Math.Pow(40.0 / 500.0, k));
+            return (int)Math.Round(600.0 * Math.Pow(80.0 / 600.0, k));
         }
 
-        /// <summary>Asteroides que distraen: ninguno hasta el nivel 3; luego llenan el anillo del astronauta (7), dos
-        /// anillos (15) y todo el radar (23).</summary>
-        public static int DistractorCount(int level)
+        /// <summary>Astronautas por destello: 2 → 5.</summary>
+        public static int TargetCount(int level)
         {
             int l = Clamp(level);
-            return l <= 3 ? 0 : l <= 5 ? 7 : l <= 8 ? 15 : 23;
+            return l <= 2 ? 2 : l <= 5 ? 3 : l <= 8 ? 4 : 5;
         }
 
-        /// <summary>Dificultad de las dos opciones del centro (0 fácil, 1 media, 2 difícil).</summary>
-        public static int CenterTier(int level)
+        /// <summary>Robots que distraen: ninguno hasta el nivel 4, uno del 5 al 8, dos desde el 9.</summary>
+        public static int RobotCount(int level)
         {
             int l = Clamp(level);
             return l <= 4 ? 0 : l <= 8 ? 1 : 2;
         }
 
-        /// <summary>Anillos posibles para el astronauta: cerca al principio, cualquier distancia desde el nivel 6.</summary>
-        public static int MaxRing(int level)
-        {
-            int l = Clamp(level);
-            return l <= 2 ? 0 : l <= 5 ? 1 : 2;
-        }
+        /// <summary>¿La ronda número <paramref name="index"/> (0 = la primera) es una lluvia de astronautas?</summary>
+        public static bool IsRainTrial(int index) => index >= 0 && (index + 1) % RainEvery == 0;
 
         public static RadarTrial NextTrial(int level, Random rng)
         {
             level = Clamp(level);
-            var pairs = CenterPairs[CenterTier(level)];
-            var pair = pairs[rng.Next(pairs.Length)];
-            bool showA = rng.NextDouble() < 0.5;
-            var t = new RadarTrial
+            var picked = PickSlots(TargetCount(level) + RobotCount(level), rng);
+            int n = TargetCount(level);
+            return new RadarTrial
             {
-                CenterShape = showA ? pair[0] : pair[2],
-                CenterVariant = showA ? pair[1] : pair[3],
-                DecoyShape = showA ? pair[2] : pair[0],
-                DecoyVariant = showA ? pair[3] : pair[1],
-                Direction = rng.Next(Directions),
-                Ring = rng.Next(MaxRing(level) + 1),
+                Targets = picked.GetRange(0, n).ToArray(),
+                Robots = picked.GetRange(n, picked.Count - n).ToArray(),
                 ExposureMs = ExposureMs(level),
                 Level = level,
             };
-            t.Distractors = PickDistractors(DistractorCount(level), t.Ring, t.Direction, rng);
-            return t;
         }
 
-        /// <summary>Asteroides por anillos completos: primero el del astronauta, después uno vecino, después todos.</summary>
-        private static int[] PickDistractors(int count, int ring, int direction, Random rng)
+        public static RadarTrial RainTrial(int level, Random rng) => new RadarTrial
         {
-            if (count <= 0) return new int[0];
-            var rings = new List<int> { ring };
-            if (count > 7)
-            {
-                int neighbor = ring == 0 ? 1 : ring == 2 ? 1 : (rng.NextDouble() < 0.5 ? 0 : 2);
-                rings.Add(neighbor);
-            }
-            if (count > 15)
-                for (int r = 0; r < Rings; r++)
-                    if (!rings.Contains(r)) rings.Add(r);
+            Targets = PickSlots(RainTargets, rng).ToArray(),
+            Robots = new int[0],
+            ExposureMs = RainExposureMs,
+            Level = Clamp(level),
+            Rain = true,
+        };
 
-            var slots = new List<int>();
-            foreach (int r in rings)
-                for (int d = 0; d < Directions; d++)
-                    if (!(r == ring && d == direction)) slots.Add(r * Directions + d);
-            return slots.ToArray();
+        /// <summary>Lugares distintos al azar (los primeros serán los astronautas, el resto robots).</summary>
+        private static List<int> PickSlots(int count, Random rng)
+        {
+            var all = new List<int>();
+            for (int s = 0; s < Slots; s++) all.Add(s);
+            for (int i = all.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (all[i], all[j]) = (all[j], all[i]);
+            }
+            return all.GetRange(0, Math.Min(count, Slots));
         }
 
         // ------------------------------------------------------------------ geometría
 
-        /// <summary>Posición de una casilla en coordenadas del radar (radio 1, y hacia arriba).</summary>
-        public static void Position(int direction, int ring, out float x, out float y)
+        public static int SlotOf(int direction, int ring) => ring * Directions + direction;
+        public static int DirectionOf(int slot) => slot % Directions;
+        public static int RingOf(int slot) => slot / Directions;
+
+        /// <summary>Posición de un lugar en coordenadas del radar (radio 1, y hacia arriba).</summary>
+        public static void Position(int slot, out float x, out float y)
         {
-            double a = direction * Math.PI / 4.0;
-            float r = RingRadius[Math.Max(0, Math.Min(Rings - 1, ring))];
+            double a = DirectionOf(slot) * Math.PI / 4.0;
+            float r = RingRadius[Math.Max(0, Math.Min(Rings - 1, RingOf(slot)))];
             x = (float)(r * Math.Sin(a));
             y = (float)(r * Math.Cos(a));
         }
 
-        /// <summary>Dirección (0..7, 0 = arriba, sentido horario) más cercana a un toque en (x, y) respecto del centro.</summary>
-        public static int DirectionFromOffset(float x, float y)
-        {
-            double a = Math.Atan2(x, y); // 0 arriba, positivo hacia la derecha
-            int d = (int)Math.Round(a / (Math.PI / 4.0));
-            return ((d % Directions) + Directions) % Directions;
-        }
-
-        /// <summary>¿El toque (en radios del radar) cuenta como respuesta de dirección? Fuera de la pantalla central y
-        /// sin alejarse demasiado del radar.</summary>
-        public static bool IsDirectionTap(float x, float y)
+        /// <summary>El lugar más cercano a un toque en (x, y) (en radios del radar), o -1 si el toque cae en la mira del
+        /// centro o lejos del radar. Toda la zona alrededor de cada lugar cuenta: no hace falta acertarle al círculo.</summary>
+        public static int NearestSlot(float x, float y)
         {
             double r = Math.Sqrt(x * x + y * y);
-            return r >= CenterWindow && r <= 1.25;
+            if (r < CenterWindow || r > 1.2) return -1;
+            int best = -1;
+            double bestD = double.MaxValue;
+            for (int s = 0; s < Slots; s++)
+            {
+                Position(s, out float sx, out float sy);
+                double d = (sx - x) * (sx - x) + (sy - y) * (sy - y);
+                if (d < bestD)
+                {
+                    bestD = d;
+                    best = s;
+                }
+            }
+            return best;
         }
 
         private static readonly string[] DirectionNames =
@@ -191,24 +164,51 @@ namespace NeuroVida.Games.Radar
 
         public static string DirectionName(int direction) => DirectionNames[((direction % Directions) + Directions) % Directions];
 
-        // ------------------------------------------------------------------ puntaje y medidas
+        // ------------------------------------------------------------------ respuesta
 
-        /// <summary>Puntos del ensayo: completo (centro + dirección) con bono de nivel y racha; a medias, un poco.</summary>
-        public static int Points(bool center, bool location, int level, int streak)
+        /// <summary>Compara las balizas con lo que había. Las balizas repetidas cuentan una vez.</summary>
+        public static RadarAnswer Evaluate(RadarTrial trial, IEnumerable<int> beacons)
         {
-            if (center && location) return 100 + 10 * (Clamp(level) - 1) + 20 * Math.Min(Math.Max(streak - 1, 0), 10);
-            return center || location ? 25 : 0;
+            var targets = new HashSet<int>(trial.Targets);
+            var robots = new HashSet<int>(trial.Robots ?? new int[0]);
+            var a = new RadarAnswer();
+            foreach (int b in new HashSet<int>(beacons))
+            {
+                if (targets.Contains(b)) a.Hits++;
+                else
+                {
+                    a.Extras++;
+                    if (robots.Contains(b)) a.RobotsTouched++;
+                }
+            }
+            return a;
         }
 
-        /// <summary>Ensayos iniciales que no cuentan para <see cref="GlanceMs"/> (la escalera todavía está buscando).</summary>
+        /// <summary>Astronautas que hay que rescatar para que la ronda cuente como lograda: todos hasta 3; con 4 o más,
+        /// todos menos uno. Así la escalera apunta a "rescatar casi todos".</summary>
+        public static int Needed(int targets) => targets <= 3 ? targets : targets - 1;
+
+        public static bool Success(RadarTrial trial, RadarAnswer answer) => answer.Hits >= Needed(trial.Targets.Length);
+
+        /// <summary>Puntos: 40 por rescatado (con bono de nivel), más un bono si se logró la ronda, que crece con la racha.</summary>
+        public static int Points(int hits, bool success, int level, int streak)
+        {
+            int pts = hits * (40 + 4 * (Clamp(level) - 1));
+            if (success) pts += 60 + 20 * Math.Min(Math.Max(streak - 1, 0), 10);
+            return pts;
+        }
+
+        // ------------------------------------------------------------------ medidas
+
+        /// <summary>Rondas iniciales que no cuentan para <see cref="GlanceMs"/> (la escalera todavía está buscando).</summary>
         public const int GlanceSkip = 4;
-        /// <summary>Ensayos finales que se promedian.</summary>
+        /// <summary>Rondas finales que se promedian.</summary>
         public const int GlanceWindow = 12;
 
         /// <summary>
         /// "Tu vistazo" (ms): la duración de destello en la que la escalera se asentó, o sea, la más breve con la que
-        /// la persona acierta cerca de 8 de cada 10 (la escalera apunta ahí). Media geométrica de las duraciones reales
-        /// de los últimos ensayos, sin los primeros. -1 si hay muy pocos ensayos.
+        /// la persona rescata casi todos cerca de 8 de cada 10 veces. Media geométrica de las duraciones reales de las
+        /// últimas rondas normales (sin lluvias), sin las primeras. -1 si hay muy pocas.
         /// </summary>
         public static int GlanceMs(IReadOnlyList<float> exposuresMs)
         {
@@ -224,13 +224,40 @@ namespace NeuroVida.Games.Radar
             return (int)Math.Round(Math.Exp(logSum / n));
         }
 
-        /// <summary>Puntaje 0-100: aciertos completos (50%) y rapidez del vistazo (50%, escala logarítmica entre 500 y
-        /// 40 ms). Sin vistazo medido, solo los aciertos.</summary>
+        /// <summary>Cuántos astronautas había en promedio en las mismas rondas que usa <see cref="GlanceMs"/> (el
+        /// vistazo se lee "con N a la vez"). -1 si no hay vistazo.</summary>
+        public static float GlanceLoad(IReadOnlyList<int> targetCounts)
+        {
+            if (targetCounts == null || targetCounts.Count < GlanceSkip + 4) return -1f;
+            int from = Math.Max(GlanceSkip, targetCounts.Count - GlanceWindow);
+            float sum = 0f;
+            for (int i = from; i < targetCounts.Count; i++) sum += targetCounts[i];
+            return sum / (targetCounts.Count - from);
+        }
+
+        /// <summary>Puntaje de una lluvia: rescatados menos balizas de más (poner balizas al azar no suma).</summary>
+        public static int RainScore(RadarAnswer a) => Math.Max(0, a.Hits - a.Extras);
+
+        /// <summary>
+        /// "Tu captura": cuántos astronautas se captan de un vistazo cuando el tiempo no es el límite (promedio de las
+        /// lluvias: 6 astronautas, 300 ms). En TVA es la capacidad de la memoria visual de corto plazo, que en adultos
+        /// ronda 3 a 4 elementos. -1 con menos de 2 lluvias.
+        /// </summary>
+        public static float Capture(IReadOnlyList<int> rainScores)
+        {
+            if (rainScores == null || rainScores.Count < 2) return -1f;
+            float sum = 0f;
+            foreach (int s in rainScores) sum += s;
+            return sum / rainScores.Count;
+        }
+
+        /// <summary>Puntaje 0-100: rondas logradas (50%) y rapidez del vistazo (50%, escala logarítmica entre 600 y
+        /// 80 ms). Sin vistazo medido, solo las rondas logradas.</summary>
         public static int Score(float accuracy, int glanceMs)
         {
             float acc = Math.Max(0f, Math.Min(1f, accuracy));
             if (glanceMs <= 0) return (int)Math.Round(acc * 100f);
-            double speed = Math.Log(500.0 / Math.Max(1, glanceMs)) / Math.Log(500.0 / 40.0);
+            double speed = Math.Log(600.0 / Math.Max(1, glanceMs)) / Math.Log(600.0 / 80.0);
             speed = Math.Max(0.0, Math.Min(1.0, speed));
             return Math.Max(0, Math.Min(100, (int)Math.Round((0.5 * acc + 0.5 * speed) * 100.0)));
         }

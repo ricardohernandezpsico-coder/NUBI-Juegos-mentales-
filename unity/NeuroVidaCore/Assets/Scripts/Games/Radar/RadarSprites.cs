@@ -12,7 +12,10 @@ namespace NeuroVida.Games.Radar
     /// <item><see cref="Sweep"/>: el haz que barre (blanco con estela que se apaga; se tiñe con <c>Image.color</c>).</item>
     /// <item><see cref="Mask"/>: la "interferencia" que tapa el destello (máscara visual de la tarea UFOV): manchas y
     /// trazos de la paleta sobre el vidrio, opaca dentro del radar.</item>
-    /// <item><see cref="Pad"/>: botón de dirección (disco de arcilla con una flecha que apunta hacia arriba; se gira).</item>
+    /// <item><see cref="Robot"/>: robot de rescate apagado, el distractor de Rescate relámpago: casco CUADRADO gris con
+    /// visera recta y antena (el astronauta es redondo y crema: se distinguen por forma, no solo por color).</item>
+    /// <item><see cref="Beacon"/>: la baliza que se pone al tocar un lugar (disco celeste con luz crema).</item>
+    /// <item><see cref="Slot"/>: un lugar vacío donde se puede poner baliza (aro tenue).</item>
     /// </list>
     /// Las funciones <c>Render*</c> devuelven los píxeles (fila 0 = abajo) para poder previsualizarlos fuera de Unity.
     /// </summary>
@@ -30,12 +33,14 @@ namespace NeuroVida.Games.Radar
         public static readonly Color GlassCenter = Hex(0x17226A);
         public static readonly Color Bezel = Hex(0x2A3590);
 
-        private static Sprite _scope, _sweep, _pad;
+        private static Sprite _scope, _sweep, _robot, _beacon, _slot;
         private static readonly Sprite[] _masks = new Sprite[2];
 
         public static Sprite Scope() => _scope != null ? _scope : _scope = ToSprite(RenderScope(ScopePx), ScopePx, ScopePx);
         public static Sprite Sweep() => _sweep != null ? _sweep : _sweep = ToSprite(RenderSweep(256), 256, 256);
-        public static Sprite Pad() => _pad != null ? _pad : _pad = ToSprite(RenderPad(160), 160, 160);
+        public static Sprite Robot() => _robot != null ? _robot : _robot = ToSprite(RenderRobot(192), 192, 192);
+        public static Sprite Beacon() => _beacon != null ? _beacon : _beacon = ToSprite(RenderBeacon(160), 160, 160);
+        public static Sprite Slot() => _slot != null ? _slot : _slot = ToSprite(RenderSlot(160), 160, 160);
 
         public static Sprite Mask(int i)
         {
@@ -158,18 +163,57 @@ namespace NeuroVida.Games.Radar
             return pixels;
         }
 
-        private static float PadBody(float x, float y) => Circle(x, y, 0f, 0f, 0.74f);
+        // ------------------------------------------------------------------ piezas de Rescate relámpago
 
-        public static Color32[] RenderPad(int size) => RenderClay(size, 1.1f, 0.09f, 0.1f, 0.03f, PadBody, (ref Px p, float x, float y) =>
+        public static readonly Color RobotGray = Hex(0xB4BCD6);
+
+        private static float RobotBody(float x, float y) =>
+            Union(RoundBox(x, y, 0f, -0.1f, 0.72f, 0.6f, 0.24f), Circle(x, y, 0f, 0.8f, 0.12f));
+
+        public static Color32[] RenderRobot(int size) => RenderClay(size, 1.1f, 0.07f, 0.09f, 0.025f, RobotBody, (ref Px p, float x, float y) =>
         {
-            float disc = PadBody(x, y);
-            p.Over(Bezel, Cover(disc, 0.03f));
-            p.Over(new Color(1f, 1f, 1f, 0.3f), Cover(Ellipse(x, y, -0.26f, 0.42f, 0.2f, 0.07f), 0.03f) * Cover(disc + 0.03f, 0.03f));
-            // Flecha hacia afuera del radar (arriba en el sprite; el controlador la gira según la dirección).
-            // Flecha completa (asta + punta): se lee como flecha en cualquier giro (un "^" solo, girado 45°, parecía una esquina).
-            float arrow = Mathf.Min(Capsule(x, y, 0f, -0.34f, 0f, 0.26f, 0.085f),
-                Mathf.Min(Capsule(x, y, -0.25f, 0.03f, 0f, 0.3f, 0.085f), Capsule(x, y, 0.25f, 0.03f, 0f, 0.3f, 0.085f)));
-            p.Over(Cream, Cover(arrow, 0.03f));
+            const float aa = 0.025f;
+            float head = RoundBox(x, y, 0f, -0.1f, 0.72f, 0.6f, 0.24f);
+            p.Over(RobotGray, Cover(head, aa));
+            // Antena con luz coral (apagada: el robot "duerme").
+            p.Over(Ink, Cover(Capsule(x, y, 0f, 0.5f, 0f, 0.72f, 0.04f), aa));
+            p.Over(Coral, Cover(Circle(x, y, 0f, 0.8f, 0.12f) + 0.035f, aa));
+            // Visera recta (el astronauta la tiene redonda) con dos luces.
+            float visor = RoundBox(x, y, 0f, 0.04f, 0.5f, 0.22f, 0.06f);
+            p.Over(Ink, Cover(visor, aa));
+            p.Over(Hex(0x3A4486), Cover(visor + 0.04f, aa));
+            p.Over(Sky, Cover(Circle(x, y, -0.22f, 0.04f, 0.08f), aa));
+            p.Over(Sky, Cover(Circle(x, y, 0.22f, 0.04f, 0.08f), aa));
+            // Rejilla de la boca y brillo.
+            for (int i = -1; i <= 1; i++)
+                p.Over(Shade(RobotGray, 0.7f), Cover(Capsule(x, y, i * 0.18f, -0.46f, i * 0.18f, -0.32f, 0.035f), aa));
+            p.Over(new Color(1f, 1f, 1f, 0.35f), Cover(Ellipse(x, y, -0.4f, 0.36f, 0.14f, 0.06f), aa) * Cover(head + 0.04f, aa));
         });
+
+        private static float BeaconBody(float x, float y) => Circle(x, y, 0f, 0f, 0.7f);
+
+        public static Color32[] RenderBeacon(int size) => RenderClay(size, 1.1f, 0.09f, 0.1f, 0.03f, BeaconBody, (ref Px p, float x, float y) =>
+        {
+            float disc = BeaconBody(x, y);
+            p.Over(Sky, Cover(disc, 0.03f));
+            p.Over(new Color(1f, 1f, 1f, 0.3f), Cover(Ellipse(x, y, -0.24f, 0.36f, 0.18f, 0.07f), 0.03f) * Cover(disc + 0.03f, 0.03f));
+            p.Over(Ink, Cover(Circle(x, y, 0f, 0f, 0.27f), 0.03f));
+            p.Over(Cream, Cover(Circle(x, y, 0f, 0f, 0.21f), 0.03f));
+        });
+
+        /// <summary>Lugar vacío: aro tenue (blanco, se tiñe con <c>Image.color</c>), sin relleno.</summary>
+        public static Color32[] RenderSlot(int size)
+        {
+            var pixels = new Color32[size * size];
+            for (int py = 0; py < size; py++)
+                for (int px = 0; px < size; px++)
+                {
+                    float x = (px + 0.5f) / size * 2f - 1f, y = (py + 0.5f) / size * 2f - 1f;
+                    float r = Mathf.Sqrt(x * x + y * y);
+                    float a = Cover(Mathf.Abs(r - 0.78f) - 0.05f, 2.5f / size);
+                    pixels[py * size + px] = new Color32(255, 255, 255, (byte)(a * 255f));
+                }
+            return pixels;
+        }
     }
 }

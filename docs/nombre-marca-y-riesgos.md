@@ -75,6 +75,28 @@ Las dos rondas anteriores eran casi todas "algo + mente" o "algo + luna": mismo 
 inventada?; ¿debe sonar a espacio, a vida/energía o a hábito diario?; ¿corta de 2 sílabas o puede ser más larga?;
 ¿tiene que funcionar también en inglés?; ¿algún nombre de todas las rondas que "casi" le gustó y por qué no?
 
+### Cuarta ronda (29-sep, Ricardo: "algo asociado a lo mental, como Synapp")
+
+Despegue le recordó a despegar.com; Avívate y Vivastro le sonaron mal. Busqué 25 nombres con palabras del cerebro y la
+mente. **Ese vocabulario está casi todo tomado, y muchas veces por apps del mismo rubro**:
+
+- **Tomados**: Synapp (mensajería médica, app agrícola, ciberseguridad), Neuronia (app de juegos cerebrales), Axon
+  (varias apps de entrenamiento cerebral), Engrama (app de entrenamiento cognitivo), Mielina (cuenta brasileña de
+  estimulación cognitiva 50+, agencia en España; "Myelin" en inglés, apps de entrenamiento cerebral), Neurito (un
+  juego en tiendas), Sinaptia y Sinapsia (empresas de software), Sinapsa (educación), Synapto (pagos, IA), Synaptik
+  (salud), Dendra / Dendrite (productividad, neurología), Glia (varias apps), Mnemo / Mnema (muchas apps de memoria),
+  Cortexa (notas médicas, finanzas), Cerebrito (apps de juegos), Neuralia, Neuru / Neuri / Neura (apps de
+  entrenamiento cerebral), Sinapi (banca, educación).
+- **Sinastro** (sinapsis + astro): libre como app, pero suena igual que **Sinestro**, un villano de DC Comics.
+- **Libres, con reparos**: **Neuronita** (neurona pequeña; libre, pero muy cerca de Neuronia y NeuroNation, que son del
+  mismo rubro), **Plastia** (de plasticidad; libre, pero "-plastia" es la terminación de cirugías: rinoplastia),
+  **Axolito** (ajolote: el animal que regenera partes de su cerebro; solo aparece como personaje de un juego de
+  Roblox y un usuario de GitHub; es simpático y daría una mascota, pero se aleja del espacio).
+
+**Conclusión**: con palabras técnicas del cerebro (sinapsis, neurona, axón, córtex, mielina, engrama) ya no queda
+nada libre ni distintivo. Lo que sí se puede es inventar una palabra que *suene* a mente sin ser un término técnico,
+o mezclar una sílaba del cerebro con el mundo de la app.
+
 **Lo que falta antes de decidir en firme** (no se puede hacer bien desde aquí, las bases oficiales no responden a
 búsquedas automáticas):
 
@@ -128,7 +150,7 @@ reclamo. Si un paso falta de verdad, el juego queda fuera. Ojo: en EE. UU. un ca
 dibujo, otro nombre) puede contar igual ("doctrina de equivalentes"); el retoque tiene que cambiar lo que la persona
 HACE. Por eso los retoques de abajo cambian pasos, no dibujos.
 
-### Radar — riesgo ALTO hoy → rediseño "Rescate relámpago" (maqueta: `docs/previews/radar-rescate.png`)
+### Radar — riesgo ALTO → rediseño "Rescate relámpago" (aprobado por Ricardo e implementado el 29-sep) (maqueta: `docs/previews/radar-rescate.png`)
 
 US 8,348,671 (Posit Science, "entrenamiento de atención visual dividida", vence ~nov. 2031). Su reclamo 1 exige,
 todo junto: (a) una imagen en el centro y a la vez (b) una ubicación marcada en la periferia, por un tiempo, y se
@@ -267,4 +289,6 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 - Patentes de NeuroTracker (Faubert): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/9566029 · https://patents.google.com/patent/US10706730B2/en
 - Tetris contra Xio: https://en.wikipedia.org/wiki/Tetris_Holding,_LLC_v._Xio_Interactive,_Inc.
 - FTC y Lumosity (2016): https://www.ftc.gov/news-events/news/press-releases/2016/01/lumosity-pay-2-million-settle-ftc-deceptive-advertising-charges-its-brain-training-program
+- Synapp: https://apps.apple.com/us/app/synapp-messaging/id1591750660 · Neuronia: https://play.google.com/store/apps/details?id=com.virandigitallabs.neuronia · Engrama: https://apps.apple.com/pk/app/engrama/id6763983777
+- Mielina (estimulación cognitiva 50+): https://www.instagram.com/minhamielina/ · MyelinZ: https://myelinz.com/ · Neuri: https://neuri.app/
 - Podcast Mentenautas: https://podcasters.spotify.com/pod/show/mentenautas-podcast

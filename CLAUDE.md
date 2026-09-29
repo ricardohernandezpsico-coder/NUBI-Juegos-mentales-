@@ -21,7 +21,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · n`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 28-sep · o`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -118,27 +118,26 @@ guía (tocar o arrastrar en la franja de abajo); el otro dedo atrapa solo las se
   mandos y el cartel de la misión confunde un poco al principio, pero el piloto automático sirve de práctica: por
   ahora sin ajustes. Falta: respetar "quitar animaciones" (la config de Unity no lo trae), sonido propio del motor.
 
-**Radar** (`Games/Radar/`, id `radar`, dominio velocidad): tarea UFOV (Ball y Owsley; ensayo ACTIVE, Ball et al.,
-JAMA 2002; Edwards et al., 2017) con tema de rescate. Destello: una nave en la pantalla central + un astronauta (casco
-de `SymbolSprite`) en una de 8 direcciones y 3 anillos; interferencia (máscara) 350 ms; responder 1) qué nave pasó
-por el centro (2 opciones) y 2) tocar la dirección del astronauta (vale tocar cualquier parte del sector). Las dos
-bien = rescatado (vuela a la fila de abajo).
-- Reglas y pruebas: `RadarContract` / `RadarContractTests` (10). 12 niveles: destello 500 → 40 ms (~20% menos por
-  nivel); asteroides desde el 4 (7 → 15 → 23, por anillos completos); astronauta más lejos desde el 3 y el 6; pares del
-  centro fácil / mismo color / silueta parecida (5 y 9). DDA común con `stepUp` 0.3, sin tiempo de reacción.
-- El juego pide 60 cuadros por segundo mientras dura (`Application.targetFrameRate`; Android da 30) y mide la duración
-  REAL de cada destello. Una pausa en pleno destello lo anula y se repite. Reto 90 s; Precisión 20 destellos.
-- Medidas propias: **tu vistazo** (`GlanceMs`: media geométrica de las duraciones reales de los últimos 12 destellos,
-  sin los 4 primeros = donde se asentó la escalera, ~80% de aciertos) y **tu radar** (aciertos de ubicación por
-  dirección). Viajan en `StroopSessionMetrics.glance_ms / sector_hits / sector_trials` → `GamePlayResult.glanceMs /
-  sectorHits / sectorTrials` (no se guardan en Room) → `GameResultScreen`: "Tu vistazo: N ms" ("aciertas unas 4 de cada
-  5 veces": la escalera apunta a ~80%) y un radar con una cuña por dirección (largo = proporción rescatada); solo nombra
-  dónde más y dónde menos con 4+ destellos en cada dirección y 40 puntos de diferencia ("en esta partida... si se
-  repite"): con menos es azar.
-- Arte: `RadarSprites` (radar, haz, interferencia, botones de dirección), `GameWorld.RadarStation` (cielo quieto).
-  Vista previa: `python3 tools/art-preview/radar.py <raw>` → `docs/previews/radar.png`.
-- Probado por Ricardo (27-sep): "espectacular", le encantó sobre todo la información del final ("un área
-  increíblemente buena ... para entregar a los usuarios"; quiere explorarla más: ver pendientes).
+**Radar** (`Games/Radar/`, id `radar`, dominio velocidad) = **Rescate relámpago** (rediseño aprobado por Ricardo el
+29-sep; la versión con nave central tipo UFOV se parecía a la patente US 8,348,671 de Posit). Informe total (Sperling,
+1960; TVA: Bundesen, 1990): 1) atento, el haz gira y el destello llega sin aviso (1,5-3,5 s: alerta propia, Penning et
+al. 2021); 2) destello con VARIOS astronautas en 16 lugares (8 direcciones x 2 anillos, cerca/lejos del centro); desde
+el nivel 5, robots (casco CUADRADO gris, `RadarSprites.Robot`) que no se rescatan; 3) interferencia 350 ms; 4) "¿Dónde
+estaban los N?": tocar pone/saca balizas (`NearestSlot`: toda la zona cercana cuenta; máximo N) y "¡RESCATAR!";
+5) revelación: rescatado ✓ + resplandor lima (vuela a la fila), el que se escapó con aro sol, baliza de más con ✗.
+Cada 5 rondas "¡Lluvia de astronautas!" (6, 300 ms, fuera de la escalera).
+- Reglas y pruebas: `RadarContract` / `RadarContractTests` (13). 12 niveles: destello 600 → 80 ms, astronautas 2/3/4/5
+  (niveles 1-2/3-5/6-8/9-12), robots 0/1/2 (1-4/5-8/9-12). Ronda lograda = todos hasta 3, todos menos uno con 4+
+  (`Needed`). DDA común `stepUp` 0.3, sin tiempo de reacción. Reto 120 s; Precisión 20 destellos. 60 cuadros/s y
+  duración REAL del destello; una pausa en pleno destello lo anula.
+- Medidas: **tu vistazo** (`GlanceMs`, como antes, + `GlanceLoad`: con cuántos a la vez), **tu captura** (`Capture`:
+  promedio de las lluvias, rescatados − balizas de más; ≈ K de TVA, adultos 3-4), **tu filtro** (robots tocados de los
+  mostrados, se nombra con 6+) y **tu radar** (por dirección + cerca/lejos, `ringSummary`). Telemetría `glance_ms /
+  glance_load / sector_* / ring_* / capture / robots_shown / robots_touched` → `GamePlayResult` → `GameResultScreen`.
+  Justificación en `docs/medidas-juegos-estrella.md`.
+- Arte: `RadarSprites` (radar, haz, interferencia, robot, baliza, aro de lugar), `GameWorld.RadarStation`. Vista previa:
+  `python3 tools/art-preview/radar.py <raw>` → `docs/previews/radar.png`; maqueta del diseño `docs/previews/radar-rescate.png`.
+  Sin probar en el teléfono (la versión anterior: "espectacular", le encantó la información del final).
 
 **Satélites** (`Games/Satelites/`, id `satelites`, dominio atención): seguimiento de múltiples objetos (Pylyshyn y
 Storm, 1988; NeuroTracker: Faubert y Sidebottom, 2012). Satélites iguales (`SymbolSprite` Satellite 0 sobre un disco
@@ -435,7 +434,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 ## Pruebas
 
 - Kotlin: 83 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
-- Unity EditMode: 179 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Unity EditMode: 182 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 
@@ -496,10 +495,9 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 - **Nombre e ícono** (28-sep, pendiente de que Ricardo elija): "NeuroVida" ya es marca registrada en EE. UU. (clase 5)
   y hay una app "NEUROVIDA PSICOLOGIA" en Google Play: hay que cambiarlo. Propuestas en dos rondas (Cosmente y Planetea
   arriba; Luminautas bajó por parecerse a Lumosity) y patentes: [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md),
-  láminas `nombre-icono.png`, `nombres-mas.png`, `radar-retoque.png`. **Reglas por patentes** (no romper): Radar tiene
-  riesgo ALTO (US 8,348,671 de Posit); el retoque sí/no NO le convenció a Ricardo → rediseño propuesto "Rescate
-  relámpago" (varios astronautas en un destello, se tocan todos; informe total/TVA; lámina `radar-rescate.png`),
-  esperando su visto bueno; nombres: tercera ronda sin convencer, faltan preguntas de dirección a Ricardo; Piloto nunca con inclinación ni sensores del cuerpo; ningún
+  láminas `nombre-icono.png`, `nombres-mas.png`, `radar-retoque.png`. **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre
+  las que elegir: no volver a eso; US 8,348,671 de Posit); nombres: cuarta ronda (estilo Synapp: el vocabulario del
+  cerebro está casi todo tomado); Piloto nunca con inclinación ni sensores del cuerpo; ningún
   juego calcula un perfil "impulsivo / conservador" ni usa caras con emociones que reaccionen al desempeño (Akili);
   Parejas siempre con el tablero a la vez; Satélites siempre plano (sin 3D estereoscópico); las etapas de avance
   quedan en la escala común (nada de "máximo personal" partido en puertas: US 10,559,221); no usar nombres ajenos

@@ -12,16 +12,19 @@ using static NeuroVida.Games.Shared.UiKit;
 namespace NeuroVida.Games.Radar
 {
     /// <summary>
-    /// "Radar": juego estrella de velocidad de procesamiento (ver <see cref="RadarContract"/>). Eres quien opera el
-    /// radar de rescate: en un destello aparece una nave en la pantalla central y un astronauta perdido en algún lugar
-    /// del radar (desde el nivel 4, entre asteroides). Una interferencia borra la imagen y hay que responder:
+    /// "Radar" / Rescate relámpago: juego estrella de velocidad de procesamiento visual (ver <see cref="RadarContract"/>).
+    /// Eres quien opera el radar de rescate:
     /// <list type="number">
-    /// <item>¿Qué nave pasó por el centro? (dos opciones)</item>
-    /// <item>¿Dónde estaba el astronauta? (tocar su dirección en el radar)</item>
+    /// <item>Atento: el haz gira y el destello llega en un momento imprevisible.</item>
+    /// <item>Destello: varios astronautas a la vez, cerca y lejos del centro (desde el nivel 5, también robots).</item>
+    /// <item>Interferencia: borra la imagen.</item>
+    /// <item>¿Dónde estaban?: se pone una baliza en cada lugar donde se vio un astronauta (se sabe cuántos eran) y
+    /// "¡RESCATAR!".</item>
+    /// <item>Revelación: ✓ rescatado (vuela a la fila), aro sol = se escapó, ✗ = baliza de más.</item>
     /// </list>
-    /// Las dos bien = astronauta rescatado (vuela a la fila de rescatados). El destello se acorta con el DDA común.
-    /// Medidas propias: "tu vistazo" (ms en que se asentó la escalera) y el mapa de aciertos por dirección, que la app
-    /// dibuja como "tu radar". Reto = 90 s; Precisión = 20 destellos sin reloj.
+    /// Cada 5 rondas, "¡Lluvia de astronautas!" (6, destello largo) para medir "tu captura". El destello se acorta con
+    /// el DDA común. Medidas: tu vistazo, tu captura, tu filtro y tu radar (por dirección y cerca/lejos).
+    /// Reto = 120 s; Precisión = 20 destellos sin reloj.
     /// </summary>
     public class RadarGameController : GameControllerBase
     {
@@ -36,7 +39,7 @@ namespace NeuroVida.Games.Radar
         private static readonly Color AmberColor = NeuroStyle.Sun;
         private static readonly Color PhosphorColor = NeuroStyle.Lime;
 
-        private enum Phase { Idle, Watch, AnswerCenter, AnswerDirection, Feedback, Done }
+        private enum Phase { Idle, Watch, Answer, Feedback, Done }
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
@@ -45,43 +48,47 @@ namespace NeuroVida.Games.Radar
         private bool Precision => !Endless;
         private int _previousFrameRate;
 
-        // ensayo en curso
+        // ronda en curso
         private RadarTrial _trial;
-        private int _trialSeed; // corrimiento visual fijo del ensayo (el astronauta no se mueve al mostrar la respuesta)
-        private bool _optionAIsCenter;
-        private int _centerAnswer = -1; // 0 = opción izquierda, 1 = derecha
-        private int _directionAnswer = -1;
+        private int _trialSeed; // corrimiento visual fijo de la ronda (lo que se ve no se mueve al revelar)
+        private readonly HashSet<int> _beacons = new HashSet<int>();
+        private bool _submitted;
         private float _answerStart;
 
         // sesión
         private readonly List<float> _exposures = new List<float>();
+        private readonly List<int> _loads = new List<int>();
+        private readonly List<int> _rainScores = new List<int>();
         private readonly int[] _sectorHits = new int[RadarContract.Directions];
         private readonly int[] _sectorTrials = new int[RadarContract.Directions];
-        private int _trials, _full, _centerOk, _rescued;
+        private readonly int[] _ringHits = new int[RadarContract.Rings];
+        private readonly int[] _ringTrials = new int[RadarContract.Rings];
+        private int _trials, _normal, _success, _rescued, _robotsShown, _robotsTouched;
         private int _streak, _bestStreak, _points;
         private long _rtSum;
         private int _rtCount;
-        private float _startedAt, _endsAt;
+        private float _endsAt;
         private int _lastTickSecond = -1;
         private float _sweepAngle;
+        private bool _robotsExplained;
 
         // UI
-        private RectTransform _safe, _fxRect, _scopeRect, _stimRoot, _timerBg, _timerFill, _crewRow;
-        private Image _scope, _sweep, _mask, _centerIcon, _centerMark, _helmet, _helmetGlow, _fixation;
+        private RectTransform _safe, _fxRect, _scopeRect, _stimRoot, _timerBg, _timerFill, _crewRow, _rescueRect;
+        private Image _scope, _sweep, _mask, _fixation;
         private Text _prompt, _hint, _crewLabel;
-        private readonly List<Image> _asteroids = new List<Image>();
-        private readonly List<Image> _pads = new List<Image>();
-        private readonly List<Image> _padMarks = new List<Image>();
+        private Button _rescueButton;
+        private readonly List<Image> _astros = new List<Image>();
+        private readonly List<Image> _astroGlows = new List<Image>();
+        private readonly List<Image> _robots = new List<Image>();
+        private readonly List<Image> _slots = new List<Image>();
+        private readonly List<Image> _beaconImgs = new List<Image>();
+        private readonly List<Image> _marks = new List<Image>();
         private readonly List<Image> _crew = new List<Image>();
-        private readonly RectTransform[] _optionRect = new RectTransform[2];
-        private readonly Image[] _optionIcon = new Image[2];
-        private readonly Image[] _optionMark = new Image[2];
-        private readonly Button[] _optionButton = new Button[2];
         private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
-        private float _glassR, _scopeSize;
+        private float _glassR, _scopeSize, _itemSize;
 
         // ------------------------------------------------------------------ sesión
 
@@ -91,24 +98,28 @@ namespace NeuroVida.Games.Radar
             _rng = new System.Random();
             var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
             float start = AdaptiveDifficulty.StartRating(config.config, RadarContract.MaxLevel);
-            // Pocos ensayos por partida (~25): pasos más grandes. Sin tiempo de reacción: acá cuenta lo que se ve, no
+            // Pocas rondas por partida (~15-20): pasos más grandes. Sin tiempo de reacción: acá cuenta lo que se ve, no
             // lo rápido que se responde.
             _dda = new AdaptiveDifficulty(RadarContract.MaxLevel, age, start, stepUp: 0.3f, useReaction: false);
 
             // Los destellos son de decenas de milisegundos: a 30 cuadros por segundo (lo que Android da por defecto)
-            // el más breve duraría 33 ms como mínimo y los saltos serían gruesos. Se pide 60 mientras dura el juego.
+            // los saltos serían gruesos. Se pide 60 mientras dura el juego.
             _previousFrameRate = Application.targetFrameRate;
             Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _exposures.Clear();
+            _loads.Clear();
+            _rainScores.Clear();
             for (int d = 0; d < RadarContract.Directions; d++) _sectorHits[d] = _sectorTrials[d] = 0;
-            _trials = _full = _centerOk = _rescued = 0;
+            for (int r = 0; r < RadarContract.Rings; r++) _ringHits[r] = _ringTrials[r] = 0;
+            _trials = _normal = _success = _rescued = _robotsShown = _robotsTouched = 0;
             _streak = _bestStreak = _points = 0;
             _rtSum = 0;
             _rtCount = 0;
             _lastTickSecond = -1;
             _endsAt = 0f;
+            _robotsExplained = false;
 
             _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
@@ -140,15 +151,12 @@ namespace NeuroVida.Games.Radar
             Layout();
             UpdateHud();
 
-            // Primera vez: qué va a pasar, antes del primer destello (lento).
-            SetPrompt("Un destello: mira el centro", Color.white);
-            _hint.text = "Recuerda la nave del centro y dónde aparece el astronauta.";
-            _hint.gameObject.SetActive(true);
-            yield return StartCoroutine(Wait(2.4f));
-            _hint.gameObject.SetActive(false);
+            // Primera vez: qué va a pasar, antes del primer destello.
+            SetPrompt("Rescate relámpago", Color.white);
+            SetHint("Varios astronautas aparecen un instante: recuerda DÓNDE estaban.");
+            yield return StartCoroutine(Wait(2.6f));
 
-            _startedAt = GameClock.Time;
-            _endsAt = _startedAt + RadarContract.RetoSeconds;
+            _endsAt = GameClock.Time + RadarContract.RetoSeconds;
             while (!Finished())
                 yield return StartCoroutine(RunTrial());
             yield return StartCoroutine(FinishGame());
@@ -156,34 +164,45 @@ namespace NeuroVida.Games.Radar
 
         private bool Finished() => Precision ? _trials >= RadarContract.PrecisionTrials : GameClock.Time >= _endsAt;
 
-        // ------------------------------------------------------------------ un ensayo
+        // ------------------------------------------------------------------ una ronda
 
         private IEnumerator RunTrial()
         {
-            _trial = RadarContract.NextTrial(_dda.PresentedLevel, _rng);
+            bool rain = RadarContract.IsRainTrial(_trials);
+            _trial = rain ? RadarContract.RainTrial(_dda.PresentedLevel, _rng) : RadarContract.NextTrial(_dda.PresentedLevel, _rng);
             _trialSeed = _rng.Next(100000);
-            _centerAnswer = _directionAnswer = -1;
+            _beacons.Clear();
+            _submitted = false;
 
-            // 1. Preparados: la mira del centro late (dónde poner la vista).
+            // 1. Atento: el haz gira; el destello llega sin aviso (espera imprevisible = alerta propia).
             _phase = Phase.Watch;
             HideAnswers();
-            SetPrompt("Mira el centro", Color.white);
+            _sweep.gameObject.SetActive(true);
             _fixation.gameObject.SetActive(true);
-            float t = 0f;
-            float ready = 0.75f + 0.25f * (float)_rng.NextDouble(); // un poco variable: que no se pueda anticipar
-            while (t < ready)
+            if (rain)
             {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / ready);
-                _fixation.rectTransform.localScale = Vector3.one * (1.25f - 0.25f * UiFx.EaseOutCubic(k));
-                _fixation.color = NeuroStyle.WithAlpha(AmberColor, 0.5f + 0.5f * k);
-                yield return null;
+                SetPrompt("¡Lluvia de astronautas!", AmberColor);
+                SetHint($"Vienen {RadarContract.RainTargets} a la vez, con un destello más largo.");
+                GameFeel.LevelUp();
             }
-            _fixation.gameObject.SetActive(false);
+            else
+            {
+                SetPrompt("Atento al radar...", Color.white);
+                if (_trials < 2) SetHint("El destello llega en cualquier momento.");
+            }
+            if (!rain && !_robotsExplained && _trial.Robots.Length > 0)
+            {
+                _robotsExplained = true;
+                _toast.Show("¡Llegan robots!", "Los robots no se rescatan: toca solo astronautas", AmberColor, 1.6f);
+                yield return StartCoroutine(Wait(1.2f));
+            }
+            yield return StartCoroutine(Wait(1.5f + 2.0f * (float)_rng.NextDouble()));
+            _hint.gameObject.SetActive(false);
 
-            // 2. Destello: centro + astronauta (+ asteroides). El haz se apaga para no tapar nada.
+            // 2. Destello: astronautas (+ robots). El haz y la mira se apagan para no tapar nada.
             ShowStimuli(_trial);
             _sweep.gameObject.SetActive(false);
+            _fixation.gameObject.SetActive(false);
             PlayTone(1318f, 0.06f, 0.07f);
             float shownAt = Time.unscaledTime;
             float startClock = GameClock.Time;
@@ -210,159 +229,214 @@ namespace NeuroVida.Games.Radar
             if (paused || GameClock.Paused)
             {
                 // Una pausa en pleno destello lo invalida: se repite sin contar.
-                _sweep.gameObject.SetActive(true);
                 _toast.Show("Otra vez", "La pausa cortó el destello", AmberColor, 0.9f);
                 yield return StartCoroutine(Wait(0.6f));
                 yield break;
             }
 
-            // 4. ¿Qué pasó por el centro?
-            _phase = Phase.AnswerCenter;
-            _sweep.gameObject.SetActive(true);
-            _optionAIsCenter = _rng.NextDouble() < 0.5;
-            SetOption(0, _optionAIsCenter ? _trial.CenterShape : _trial.DecoyShape, _optionAIsCenter ? _trial.CenterVariant : _trial.DecoyVariant);
-            SetOption(1, _optionAIsCenter ? _trial.DecoyShape : _trial.CenterShape, _optionAIsCenter ? _trial.DecoyVariant : _trial.CenterVariant);
-            SetPrompt("¿Qué pasó por el centro?", Color.white);
-            ShowOptions();
+            // 4. ¿Dónde estaban? Balizas sobre los lugares (se sabe cuántos eran).
+            _phase = Phase.Answer;
+            int n = _trial.Targets.Length;
+            SetPrompt($"¿Dónde estaban los {n}?", Color.white);
+            ShowSlots();
+            UpdateBeaconHint();
+            _rescueRect.gameObject.SetActive(true);
+            StartCoroutine(PopIn(_rescueRect, 0.2f));
             _answerStart = GameClock.Time;
-            while (_centerAnswer < 0) yield return null;
+            while (!_submitted) yield return null;
             _rtSum += (long)((GameClock.Time - _answerStart) * 1000f);
             _rtCount++;
-            bool centerOk = (_centerAnswer == 0) == _optionAIsCenter;
 
-            // 5. ¿Dónde estaba el astronauta?
-            _phase = Phase.AnswerDirection;
-            SetPrompt("¿Dónde estaba el astronauta?", Color.white);
-            _hint.text = "Toca su dirección en el radar";
-            _hint.gameObject.SetActive(true);
-            for (int i = 0; i < _optionRect.Length; i++) _optionButton[i].interactable = false;
-            yield return StartCoroutine(ShowPads());
-            while (_directionAnswer < 0) yield return null;
-            _hint.gameObject.SetActive(false);
-            bool locationOk = _directionAnswer == _trial.Direction;
-
-            // 6. Resultado del ensayo.
+            // 5. Revelación.
             _phase = Phase.Feedback;
-            yield return StartCoroutine(Resolve(centerOk, locationOk, actualMs));
+            yield return StartCoroutine(Resolve(actualMs));
         }
 
-        private IEnumerator Resolve(bool centerOk, bool locationOk, float actualMs)
+        private IEnumerator Resolve(float actualMs)
         {
-            bool full = centerOk && locationOk;
+            _rescueRect.gameObject.SetActive(false);
+            _hint.gameObject.SetActive(false);
+            var answer = RadarContract.Evaluate(_trial, _beacons);
+            bool rain = _trial.Rain;
+            bool ok = RadarContract.Success(_trial, answer);
             _trials++;
-            _exposures.Add(actualMs);
-            _sectorTrials[_trial.Direction]++;
-            if (locationOk) _sectorHits[_trial.Direction]++;
-            if (centerOk) _centerOk++;
-            if (full) _full++;
-            _streak = full ? _streak + 1 : 0;
-            _bestStreak = Mathf.Max(_bestStreak, _streak);
-            int pts = RadarContract.Points(centerOk, locationOk, _trial.Level, _streak);
-            _points += pts;
-            _hud.SetStreak(_streak);
 
-            // Marcas: la opción elegida (✓/✗), la dirección tocada (✓/✗) y la verdad a la vista (nave en el centro,
-            // astronauta en su lugar).
-            int chosen = _centerAnswer;
-            int right = _optionAIsCenter ? 0 : 1;
-            _optionMark[chosen].sprite = centerOk ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
-            _optionMark[chosen].gameObject.SetActive(true);
-            if (!centerOk)
+            var targets = new HashSet<int>(_trial.Targets);
+            foreach (int s in _trial.Targets)
             {
-                // La correcta vuelve a verse entera y salta: así queda claro cuál era.
-                _optionRect[right].GetComponent<CanvasGroup>().alpha = 1f;
-                StartCoroutine(PopRect(_optionRect[right], 1.1f, 0.3f));
+                int d = RadarContract.DirectionOf(s), r = RadarContract.RingOf(s);
+                _sectorTrials[d]++;
+                _ringTrials[r]++;
+                if (_beacons.Contains(s))
+                {
+                    _sectorHits[d]++;
+                    _ringHits[r]++;
+                }
             }
 
-            for (int d = 0; d < _pads.Count; d++)
-                _pads[d].gameObject.SetActive(d == _directionAnswer);
-            var pm = _padMarks[_directionAnswer];
-            pm.sprite = locationOk ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
-            pm.gameObject.SetActive(true);
-            _pads[_directionAnswer].color = locationOk ? Color.white : new Color(1f, 0.62f, 0.56f, 1f);
-
-            _centerIcon.sprite = SymbolSprite.Get((ShapeKind)_trial.CenterShape, _trial.CenterVariant);
-            _centerIcon.color = NeuroStyle.WithAlpha(Color.white, 0.9f);
-            _centerIcon.gameObject.SetActive(true);
-            _centerMark.sprite = centerOk ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
-            _centerMark.gameObject.SetActive(true);
-            PlaceHelmet(_trial);
-            _helmet.gameObject.SetActive(true);
-            _helmetGlow.gameObject.SetActive(true);
-            _helmetGlow.color = NeuroStyle.WithAlpha(locationOk ? GoodColor : AmberColor, 0.55f);
-            StartCoroutine(UiFx.RingBurst(_stimRoot, _helmet.rectTransform.anchoredPosition, locationOk ? GoodColor : AmberColor, 90f, 260f, 0.5f));
-
-            var change = _dda.Register(full);
-            if (full)
+            if (rain) _rainScores.Add(RadarContract.RainScore(answer));
+            else
             {
-                GameFeel.Correct(_streak);
-                _rescued++;
-                SetPrompt(_streak >= 3 ? $"¡Rescatado! · racha {_streak}" : "¡Rescatado!", GoodColor);
-                StartCoroutine(FloatText(_helmet.rectTransform, "+" + pts, NeuroStyle.Sun));
-                StartCoroutine(UiFx.SparkBurst(_stimRoot, _helmet.rectTransform.anchoredPosition, NeuroStyle.Sun, 14, 200f, 36f, 0.5f));
+                _normal++;
+                _exposures.Add(actualMs);
+                _loads.Add(_trial.Targets.Length);
+                _robotsShown += _trial.Robots.Length;
+                _robotsTouched += answer.RobotsTouched;
+                if (ok) _success++;
+                _streak = ok ? _streak + 1 : 0;
+                _bestStreak = Mathf.Max(_bestStreak, _streak);
+                _hud.SetStreak(_streak);
+            }
+            int pts = RadarContract.Points(answer.Hits, ok && !rain, _trial.Level, _streak);
+            _points += pts;
+            _rescued += answer.Hits;
+
+            // Lo que había, a la vista: rescatados (✓ + resplandor lima), los que se escaparon (aro sol, un poco
+            // transparentes), balizas de más (✗) y los robots.
+            for (int i = 0; i < _slots.Count; i++) _slots[i].gameObject.SetActive(false);
+            int ai = 0;
+            foreach (int s in _trial.Targets)
+            {
+                var pos = SlotPosition(s);
+                var a = _astros[ai];
+                var g = _astroGlows[ai];
+                ai++;
+                a.rectTransform.anchoredPosition = pos;
+                g.rectTransform.anchoredPosition = pos;
+                bool hit = _beacons.Contains(s);
+                a.color = hit ? Color.white : NeuroStyle.WithAlpha(Color.white, 0.6f);
+                a.gameObject.SetActive(true);
+                g.color = NeuroStyle.WithAlpha(hit ? GoodColor : AmberColor, hit ? 0.55f : 0.4f);
+                g.gameObject.SetActive(true);
+                _beaconImgs[s].gameObject.SetActive(false);
+                if (hit) ShowMark(s, true);
+                else
+                {
+                    _slots[s].color = AmberColor;
+                    _slots[s].rectTransform.sizeDelta = Vector2.one * _itemSize * 1.45f;
+                    _slots[s].gameObject.SetActive(true);
+                }
+            }
+            for (int i = 0; i < _trial.Robots.Length; i++)
+            {
+                var r = _robots[i];
+                r.rectTransform.anchoredPosition = SlotPosition(_trial.Robots[i]);
+                r.color = NeuroStyle.WithAlpha(Color.white, 0.85f);
+                r.gameObject.SetActive(true);
+            }
+            foreach (int b in _beacons)
+                if (!targets.Contains(b)) ShowMark(b, false);
+
+            int n = _trial.Targets.Length;
+            var change = rain ? DdaChange.None : _dda.Register(ok);
+            if (answer.Hits > 0)
+            {
+                GameFeel.Correct(Mathf.Max(1, _streak));
+                SetPrompt(answer.Hits == n ? RescueWord(answer.Hits) : $"Rescataste {answer.Hits} de {n}", answer.Hits == n || ok ? GoodColor : AmberColor);
             }
             else
             {
                 GameFeel.Wrong();
-                SetPrompt(!centerOk && !locationOk ? "Se escapó esta vez" : !centerOk ? "La nave era otra" : "Estaba " + RadarContract.DirectionName(_trial.Direction), AmberColor);
-                if (pts > 0) StartCoroutine(FloatText(_helmet.rectTransform, "+" + pts, NeuroStyle.Sun));
+                SetPrompt("Se escaparon esta vez", AmberColor);
             }
+            if (answer.Hits < n && answer.Hits > 0) SetHint(answer.Hits == n - 1 ? "Uno se escapó (aro sol)" : $"{n - answer.Hits} se escaparon (aro sol)");
+            if (pts > 0) StartCoroutine(FloatText(_scopeRect, "+" + pts, NeuroStyle.Sun));
 
             if (change == DdaChange.Up)
             {
-                _toast.Show("Destello más breve", LevelNews(_dda.Level), GoodColor, 1.0f);
+                _toast.Show("¡Subes!", LevelNews(_dda.Level), GoodColor, 1.0f);
                 GameFeel.LevelUp();
             }
-            else if (change == DdaChange.Down || _dda.Struggling)
+            else if (change == DdaChange.Down || (!rain && _dda.Struggling))
                 _toast.Show("Con calma", "Destello más largo", AmberColor, 0.9f);
             UpdateHud();
 
-            yield return StartCoroutine(Wait(full ? 0.55f : 0.95f));
-            if (full) yield return StartCoroutine(FlyToCrew());
+            yield return StartCoroutine(Wait(answer.Hits == n ? 0.7f : 1.2f));
+            if (answer.Hits > 0) yield return StartCoroutine(FlyToCrew(answer.Hits));
             HideStimuli();
             HideAnswers();
         }
 
-        /// <summary>Qué trae el nivel nuevo (solo cuando cambia algo además del destello).</summary>
+        private static string RescueWord(int hits)
+        {
+            switch (hits)
+            {
+                case 2: return "¡Rescate doble!";
+                case 3: return "¡Rescate triple!";
+                case 4: return "¡Rescate cuádruple!";
+                case 5: return "¡Rescate quíntuple!";
+                case 6: return "¡Rescate total!";
+                default: return "¡Rescatado!";
+            }
+        }
+
+        /// <summary>Qué trae el nivel nuevo.</summary>
         private static string LevelNews(int level)
         {
-            if (RadarContract.DistractorCount(level) > RadarContract.DistractorCount(level - 1)) return "Llegan asteroides";
-            if (RadarContract.MaxRing(level) > RadarContract.MaxRing(level - 1)) return "El astronauta se aleja";
-            if (RadarContract.CenterTier(level) > RadarContract.CenterTier(level - 1)) return "Naves más parecidas";
-            return $"{RadarContract.ExposureMs(level)} ms";
+            if (RadarContract.TargetCount(level) > RadarContract.TargetCount(level - 1)) return "Un astronauta más";
+            if (RadarContract.RobotCount(level) > RadarContract.RobotCount(level - 1)) return "Llegan robots: no se rescatan";
+            return $"Destello de {RadarContract.ExposureMs(level)} ms";
         }
 
         // ------------------------------------------------------------------ entrada
 
-        private void OnOption(int index)
+        private void OnRescue()
         {
-            if (_phase != Phase.AnswerCenter || _centerAnswer >= 0) return;
-            _centerAnswer = index;
+            if (_phase != Phase.Answer || _submitted) return;
+            _submitted = true;
             GameFeel.Haptic(GameFeel.HapticKind.Light);
-            // La otra opción se apaga: queda a la vista lo que se eligió.
-            _optionRect[1 - index].GetComponent<CanvasGroup>().alpha = 0.35f;
         }
 
         private void Update()
         {
-            // Haz del radar: gira siempre (salvo en el destello, donde está apagado).
+            // Haz del radar: gira mientras se espera (quieto con "quitar animaciones").
             float dt = GameClock.DeltaTime;
-            if (_sweep != null && _sweep.gameObject.activeSelf && dt > 0f)
+            if (_sweep != null && _sweep.gameObject.activeSelf && dt > 0f && !GameFeel.ReduceMotion)
             {
                 _sweepAngle = Mathf.Repeat(_sweepAngle - 140f * dt, 360f);
                 _sweep.rectTransform.localRotation = Quaternion.Euler(0f, 0f, _sweepAngle);
             }
             UpdateClock();
 
-            if (_phase != Phase.AnswerDirection || _directionAnswer >= 0 || dt <= 0f) return;
-            // Tocar en cualquier parte del radar elige la dirección más cercana (no hace falta acertarle al botón).
+            if (_phase != Phase.Answer || _submitted || dt <= 0f) return;
+            // Tocar en cualquier parte del radar elige el lugar más cercano (no hace falta acertarle al aro).
             if (!Input.GetMouseButtonDown(0)) return;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_scopeRect, Input.mousePosition, null, out var local)) return;
-            float x = local.x / _glassR, y = local.y / _glassR;
-            if (!RadarContract.IsDirectionTap(x, y)) return;
-            _directionAnswer = RadarContract.DirectionFromOffset(x, y);
+            int slot = RadarContract.NearestSlot(local.x / _glassR, local.y / _glassR);
+            if (slot < 0) return;
+            ToggleBeacon(slot);
+        }
+
+        private void ToggleBeacon(int slot)
+        {
+            int n = _trial.Targets.Length;
+            if (_beacons.Remove(slot))
+            {
+                _beaconImgs[slot].gameObject.SetActive(false);
+                _slots[slot].gameObject.SetActive(true);
+                PlayTone(523f, 0.05f, 0.04f);
+            }
+            else if (_beacons.Count < n)
+            {
+                _beacons.Add(slot);
+                _slots[slot].gameObject.SetActive(false);
+                _beaconImgs[slot].gameObject.SetActive(true);
+                StartCoroutine(PopRect(_beaconImgs[slot].rectTransform, 1.2f, 0.18f));
+                PlayTone(784f, 0.05f, 0.05f);
+            }
+            else
+            {
+                SetHint($"Ya pusiste {n}: toca una baliza para sacarla");
+                return;
+            }
             GameFeel.Haptic(GameFeel.HapticKind.Light);
-            StartCoroutine(PopRect(_pads[_directionAnswer].rectTransform, 1.2f, 0.2f));
+            UpdateBeaconHint();
+        }
+
+        private void UpdateBeaconHint()
+        {
+            int n = _trial.Targets.Length;
+            SetHint(_beacons.Count == 0 ? "Toca los lugares donde viste astronautas" : $"{_beacons.Count} de {n} balizas · toca de nuevo para sacar");
         }
 
         private void UpdateClock()
@@ -382,50 +456,67 @@ namespace NeuroVida.Games.Radar
 
         private void ShowStimuli(RadarTrial t)
         {
-            _centerIcon.sprite = SymbolSprite.Get((ShapeKind)t.CenterShape, t.CenterVariant);
-            _centerIcon.color = Color.white;
-            _centerIcon.gameObject.SetActive(true);
-            PlaceHelmet(t);
-            _helmet.gameObject.SetActive(true);
-            for (int i = 0; i < _asteroids.Count; i++)
+            for (int i = 0; i < _astros.Count; i++)
             {
-                var a = _asteroids[i];
-                if (i >= t.Distractors.Length)
-                {
-                    a.gameObject.SetActive(false);
-                    continue;
-                }
-                int slot = t.Distractors[i];
-                a.rectTransform.anchoredPosition = SlotPosition(slot % RadarContract.Directions, slot / RadarContract.Directions, jitterSeed: slot + _trialSeed);
-                a.rectTransform.localRotation = Quaternion.Euler(0f, 0f, _rng.Next(360));
-                a.sprite = SymbolSprite.Get(ShapeKind.Asteroid, _rng.Next(3));
-                a.gameObject.SetActive(true);
+                bool on = i < t.Targets.Length;
+                _astros[i].gameObject.SetActive(on);
+                _astroGlows[i].gameObject.SetActive(false);
+                if (!on) continue;
+                _astros[i].color = Color.white;
+                _astros[i].rectTransform.anchoredPosition = SlotPosition(t.Targets[i]);
+            }
+            for (int i = 0; i < _robots.Count; i++)
+            {
+                bool on = i < t.Robots.Length;
+                _robots[i].gameObject.SetActive(on);
+                if (!on) continue;
+                _robots[i].color = Color.white;
+                _robots[i].rectTransform.anchoredPosition = SlotPosition(t.Robots[i]);
             }
         }
 
-        private void PlaceHelmet(RadarTrial t)
+        /// <summary>Centro de un lugar en el radar, con un pequeño corrimiento (fijo por ronda) para que no se vea como
+        /// una grilla.</summary>
+        private Vector2 SlotPosition(int slot)
         {
-            _helmet.rectTransform.anchoredPosition = SlotPosition(t.Direction, t.Ring, jitterSeed: t.Ring * RadarContract.Directions + t.Direction + _trialSeed);
-            _helmetGlow.rectTransform.anchoredPosition = _helmet.rectTransform.anchoredPosition;
-        }
-
-        /// <summary>Centro de una casilla en el radar, con un pequeño corrimiento (fijo por ensayo) para que no se vea
-        /// como una grilla.</summary>
-        private Vector2 SlotPosition(int direction, int ring, int jitterSeed)
-        {
-            RadarContract.Position(direction, ring, out float x, out float y);
-            var j = new System.Random(jitterSeed);
+            RadarContract.Position(slot, out float x, out float y);
+            var j = new System.Random(slot * 7919 + _trialSeed);
             float jx = ((float)j.NextDouble() - 0.5f) * 0.05f, jy = ((float)j.NextDouble() - 0.5f) * 0.05f;
             return new Vector2((x + jx) * _glassR, (y + jy) * _glassR);
         }
 
+        /// <summary>Centro exacto del lugar (las balizas y aros van ahí, sin corrimiento).</summary>
+        private Vector2 SlotCenter(int slot)
+        {
+            RadarContract.Position(slot, out float x, out float y);
+            return new Vector2(x * _glassR, y * _glassR);
+        }
+
+        private void ShowSlots()
+        {
+            for (int s = 0; s < _slots.Count; s++)
+            {
+                _slots[s].color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.5f);
+                _slots[s].rectTransform.sizeDelta = Vector2.one * _itemSize * 1.2f;
+                _slots[s].gameObject.SetActive(true);
+                _beaconImgs[s].gameObject.SetActive(false);
+                _marks[s].gameObject.SetActive(false);
+            }
+        }
+
+        private void ShowMark(int slot, bool good)
+        {
+            var m = _marks[slot];
+            m.sprite = good ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
+            m.gameObject.SetActive(true);
+            StartCoroutine(PopRect(m.rectTransform, 1.25f, 0.2f));
+        }
+
         private void HideStimuli()
         {
-            _centerIcon.gameObject.SetActive(false);
-            _centerMark.gameObject.SetActive(false);
-            _helmet.gameObject.SetActive(false);
-            _helmetGlow.gameObject.SetActive(false);
-            foreach (var a in _asteroids) a.gameObject.SetActive(false);
+            foreach (var a in _astros) a.gameObject.SetActive(false);
+            foreach (var g in _astroGlows) g.gameObject.SetActive(false);
+            foreach (var r in _robots) r.gameObject.SetActive(false);
         }
 
         private IEnumerator FadeMask(float seconds)
@@ -440,44 +531,12 @@ namespace NeuroVida.Games.Radar
             _mask.gameObject.SetActive(false);
         }
 
-        // ------------------------------------------------------------------ respuestas
-
-        private void SetOption(int i, int shape, int variant)
-        {
-            _optionIcon[i].sprite = SymbolSprite.Get((ShapeKind)shape, variant);
-            _optionMark[i].gameObject.SetActive(false);
-            _optionRect[i].GetComponent<CanvasGroup>().alpha = 1f;
-            _optionButton[i].interactable = true;
-        }
-
-        private void ShowOptions()
-        {
-            for (int i = 0; i < 2; i++)
-            {
-                _optionRect[i].gameObject.SetActive(true);
-                StartCoroutine(PopIn(_optionRect[i], 0.22f));
-            }
-        }
-
-        private IEnumerator ShowPads()
-        {
-            for (int d = 0; d < _pads.Count; d++)
-            {
-                var p = _pads[d];
-                p.color = Color.white;
-                _padMarks[d].gameObject.SetActive(false);
-                p.gameObject.SetActive(true);
-                StartCoroutine(PopIn(p.rectTransform, 0.18f));
-            }
-            yield return null;
-        }
-
         private void HideAnswers()
         {
-            for (int i = 0; i < 2; i++)
-                if (_optionRect[i] != null) _optionRect[i].gameObject.SetActive(false);
-            foreach (var p in _pads) p.gameObject.SetActive(false);
-            foreach (var m in _padMarks) m.gameObject.SetActive(false);
+            foreach (var s in _slots) s.gameObject.SetActive(false);
+            foreach (var b in _beaconImgs) b.gameObject.SetActive(false);
+            foreach (var m in _marks) m.gameObject.SetActive(false);
+            if (_rescueRect != null) _rescueRect.gameObject.SetActive(false);
             if (_hint != null) _hint.gameObject.SetActive(false);
         }
 
@@ -487,49 +546,73 @@ namespace NeuroVida.Games.Radar
             _prompt.color = color;
         }
 
+        private void SetHint(string text)
+        {
+            _hint.text = text;
+            _hint.gameObject.SetActive(true);
+        }
+
         // ------------------------------------------------------------------ efectos
 
-        /// <summary>El astronauta rescatado vuela a la fila de rescatados de abajo.</summary>
-        private IEnumerator FlyToCrew()
+        /// <summary>Los rescatados vuelan a la fila de abajo (con "quitar animaciones", la fila se actualiza sin vuelo).</summary>
+        private IEnumerator FlyToCrew(int count)
         {
-            int slot = Mathf.Min(_rescued, CrewIcons) - 1;
-            var target = _crew[Mathf.Max(0, slot)].rectTransform;
-            var from = LocalIn(_fxRect, _helmet.rectTransform);
-            var to = LocalIn(_fxRect, target);
-            _helmet.gameObject.SetActive(false);
-            _helmetGlow.gameObject.SetActive(false);
+            if (!GameFeel.ReduceMotion)
+            {
+                var flying = new List<(RectTransform r, Vector2 from, Vector2 to, float delay)>();
+                int k = 0;
+                for (int i = 0; i < _trial.Targets.Length; i++)
+                {
+                    if (!_beacons.Contains(_trial.Targets[i])) continue;
+                    var src = _astros[i].rectTransform;
+                    int slot = (_rescued - count + k) % CrewIcons;
+                    var go = new GameObject("Flying");
+                    go.transform.SetParent(_fxRect, false);
+                    var r = go.AddComponent<RectTransform>();
+                    r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
+                    r.sizeDelta = src.sizeDelta;
+                    var img = go.AddComponent<Image>();
+                    img.sprite = SymbolSprite.Get(ShapeKind.Helmet, 1);
+                    img.raycastTarget = false;
+                    flying.Add((r, LocalIn(_fxRect, src), LocalIn(_fxRect, _crew[slot].rectTransform), k * 0.08f));
+                    _astros[i].gameObject.SetActive(false);
+                    _astroGlows[i].gameObject.SetActive(false);
+                    k++;
+                }
+                float t = 0f;
+                const float seconds = 0.45f;
+                float end = seconds + (flying.Count - 1) * 0.08f;
+                while (t < end)
+                {
+                    t += GameClock.DeltaTime;
+                    foreach (var f in flying)
+                    {
+                        float e = UiFx.EaseOutCubic(Mathf.Clamp01((t - f.delay) / seconds));
+                        // Arco hacia arriba, como si los levantara el rayo de rescate.
+                        f.r.anchoredPosition = Vector2.Lerp(f.from, f.to, e) + new Vector2(0f, Mathf.Sin(e * Mathf.PI) * 120f);
+                        float s = Mathf.Lerp(_itemSize, 80f, e);
+                        f.r.sizeDelta = new Vector2(s, s);
+                    }
+                    yield return null;
+                }
+                foreach (var f in flying) Destroy(f.r.gameObject);
+            }
 
-            var go = new GameObject("Flying");
-            go.transform.SetParent(_fxRect, false);
-            var r = go.AddComponent<RectTransform>();
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            var img = go.AddComponent<Image>();
-            img.sprite = SymbolSprite.Get(ShapeKind.Helmet, 1);
-            img.raycastTarget = false;
-            float t = 0f;
-            const float seconds = 0.45f;
-            float fromSize = _helmet.rectTransform.sizeDelta.x, toSize = target.sizeDelta.x;
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
-                // Arco hacia arriba en el camino, como si lo levantara el rayo de rescate.
-                r.anchoredPosition = Vector2.Lerp(from, to, k) + new Vector2(0f, Mathf.Sin(k * Mathf.PI) * 120f);
-                float s = Mathf.Lerp(fromSize, toSize, k);
-                r.sizeDelta = new Vector2(s, s);
-                yield return null;
-            }
-            Destroy(go);
             _crewLabel.text = $"Rescatados: {_rescued}";
-            if (slot >= 0)
+            int before = _rescued - count;
+            if (before / CrewIcons != _rescued / CrewIcons)
             {
-                _crew[slot].gameObject.SetActive(true);
-                StartCoroutine(PopRect(_crew[slot].rectTransform, 1.3f, 0.25f));
-            }
-            if (_rescued % 10 == 0)
-            {
-                _toast.Show($"¡{_rescued} rescatados!", "Escuadrón completo", NeuroStyle.Sun, 1.0f);
+                _toast.Show($"¡{_rescued / CrewIcons * CrewIcons} rescatados!", "Escuadrón completo", NeuroStyle.Sun, 1.0f);
                 GameFeel.LevelUp();
+            }
+            int filled = _rescued % CrewIcons;
+            if (filled == 0 && _rescued > 0) filled = CrewIcons;
+            for (int i = 0; i < _crew.Count; i++)
+            {
+                bool on = i < filled;
+                bool fresh = on && !_crew[i].gameObject.activeSelf;
+                _crew[i].gameObject.SetActive(on);
+                if (fresh) StartCoroutine(PopRect(_crew[i].rectTransform, 1.3f, 0.25f));
             }
         }
 
@@ -543,12 +626,12 @@ namespace NeuroVida.Games.Radar
             t.text = text;
             var pos = LocalIn(_fxRect, anchor);
             float e = 0f;
-            const float seconds = 0.7f;
+            const float seconds = 0.8f;
             while (e < seconds)
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f + 80f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 40f * UiFx.EaseOutCubic(k));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }
@@ -572,9 +655,12 @@ namespace NeuroVida.Games.Radar
             _phase = Phase.Done;
             HideStimuli();
             HideAnswers();
+            _sweep.gameObject.SetActive(true);
 
-            float accuracy = _trials > 0 ? (float)_full / _trials : 0f;
+            float accuracy = _normal > 0 ? (float)_success / _normal : 0f;
             int glance = RadarContract.GlanceMs(_exposures);
+            float load = glance > 0 ? RadarContract.GlanceLoad(_loads) : -1f;
+            float capture = RadarContract.Capture(_rainScores);
             int score = RadarContract.Score(accuracy, glance);
             int avgMs = _rtCount > 0 ? (int)(_rtSum / _rtCount) : 0;
 
@@ -587,8 +673,8 @@ namespace NeuroVida.Games.Radar
                 game_id = _config.game_id,
                 session_metrics = new StroopSessionMetrics
                 {
-                    correct_trials = _full,
-                    total_trials = _trials,
+                    correct_trials = _success,
+                    total_trials = _normal,
                     calculated_score = score,
                     average_response_time_ms = avgMs,
                     level = _config.config.level,
@@ -598,8 +684,14 @@ namespace NeuroVida.Games.Radar
                     mode_hits = _dda.ScoredCorrect,
                     peak_level = _dda.PeakLevel,
                     glance_ms = glance,
+                    glance_load = load,
                     sector_hits = (int[])_sectorHits.Clone(),
-                    sector_trials = (int[])_sectorTrials.Clone()
+                    sector_trials = (int[])_sectorTrials.Clone(),
+                    ring_hits = (int[])_ringHits.Clone(),
+                    ring_trials = (int[])_ringTrials.Clone(),
+                    capture = capture,
+                    robots_shown = _robotsShown,
+                    robots_touched = _robotsTouched
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
@@ -610,7 +702,7 @@ namespace NeuroVida.Games.Radar
         {
             _exit.Show();
             _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Ojo de radar!" : score >= 65 ? "¡Buen turno!" : "Turno completado";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_rescued} rescatados de {_trials}";
+            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_rescued} astronautas rescatados";
             _resultRoot.Find("Extra").GetComponent<Text>().text = glance > 0 ? $"Tu vistazo: {glance} ms" : $"Mejor racha {_bestStreak}";
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
@@ -660,14 +752,14 @@ namespace NeuroVida.Games.Radar
             BestFit(_prompt, 40);
 
             BuildScope();
-            BuildOptions();
+            BuildRescueButton();
             BuildCrewRow();
 
             _hint = MakeText(_safe, "Hint", 42, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
             var hr = _hint.rectTransform;
             hr.anchorMin = hr.anchorMax = new Vector2(0.5f, 1f);
             hr.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(_hint, 28);
+            BestFit(_hint, 32);
             _hint.gameObject.SetActive(false);
 
             var fx = new GameObject("Fx");
@@ -701,81 +793,63 @@ namespace NeuroVida.Games.Radar
             _scope.sprite = RadarSprites.Scope();
             _scope.raycastTarget = false;
 
-            // Haz que barre (debajo de los estímulos).
+            // Haz que barre (debajo de todo lo demás).
             _sweep = NewImage(_scopeRect, "Sweep", RadarSprites.Sweep());
             _sweep.color = NeuroStyle.WithAlpha(PhosphorColor, 0.32f);
             _sweep.gameObject.SetActive(true);
 
             _stimRoot = Layer(_scopeRect, "Stimuli");
 
-            // Mira del centro: un anillo que se cierra antes del destello.
+            // Mira del centro: un aro quieto (sin aviso antes del destello).
             _fixation = NewImage(_stimRoot, "Fixation", RingSprite.Get());
+            _fixation.color = NeuroStyle.WithAlpha(AmberColor, 0.7f);
 
-            for (int i = 0; i < 23; i++) _asteroids.Add(NewImage(_stimRoot, "Asteroid", null));
-
-            _helmetGlow = NewImage(_stimRoot, "HelmetGlow", RadialGlowSprite.Get());
-            _helmet = NewImage(_stimRoot, "Helmet", SymbolSprite.Get(ShapeKind.Helmet, 1));
-            _helmet.preserveAspect = true;
-
-            _centerIcon = NewImage(_stimRoot, "CenterIcon", null);
-            _centerIcon.preserveAspect = true;
-            _centerMark = NewImage(_stimRoot, "CenterMark", null);
-
-            // Botones de dirección (visuales: tocar cualquier parte del sector también vale).
-            for (int d = 0; d < RadarContract.Directions; d++)
+            for (int s = 0; s < RadarContract.Slots; s++)
+                _slots.Add(NewImage(_stimRoot, "Slot" + s, RadarSprites.Slot()));
+            for (int i = 0; i < RadarContract.RainTargets; i++)
             {
-                var pad = NewImage(_stimRoot, "Pad" + d, RadarSprites.Pad());
-                pad.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -45f * d);
-                _pads.Add(pad);
-                var mark = NewImage(_stimRoot, "PadMark" + d, null);
-                _padMarks.Add(mark);
+                _astroGlows.Add(NewImage(_stimRoot, "AstroGlow" + i, RadialGlowSprite.Get()));
+                var a = NewImage(_stimRoot, "Astro" + i, SymbolSprite.Get(ShapeKind.Helmet, 1));
+                a.preserveAspect = true;
+                _astros.Add(a);
             }
+            for (int i = 0; i < 2; i++)
+            {
+                var r = NewImage(_stimRoot, "Robot" + i, RadarSprites.Robot());
+                r.preserveAspect = true;
+                _robots.Add(r);
+            }
+            for (int s = 0; s < RadarContract.Slots; s++)
+                _beaconImgs.Add(NewImage(_stimRoot, "Beacon" + s, RadarSprites.Beacon()));
+            for (int s = 0; s < RadarContract.Slots; s++)
+                _marks.Add(NewImage(_stimRoot, "Mark" + s, null));
 
             // Interferencia: cubre todo el vidrio.
             _mask = NewImage(_scopeRect, "Mask", RadarSprites.Mask(0));
             Stretch(_mask.rectTransform);
         }
 
-        private void BuildOptions()
+        private void BuildRescueButton()
         {
-            for (int i = 0; i < 2; i++)
-            {
-                int index = i;
-                var go = new GameObject("Option" + i);
-                go.transform.SetParent(_safe, false);
-                var r = go.AddComponent<RectTransform>();
-                r.anchorMin = r.anchorMax = new Vector2(0.5f, 1f);
-                r.pivot = new Vector2(0.5f, 0.5f);
-                go.AddComponent<CanvasGroup>();
-                var img = go.AddComponent<Image>();
-                img.sprite = RoundedRectSprite.Get(64);
-                img.type = Image.Type.Sliced;
-                img.color = ClayRaster.Cream;
-                NeuroStyle.ClayFrame(img, 5f, 12f);
-                var button = go.AddComponent<Button>();
-                button.transition = Selectable.Transition.None;
-                button.onClick.AddListener(() => OnOption(index));
-                go.AddComponent<PressScale>();
-
-                var icon = NewImage(r, "Icon", null);
-                icon.preserveAspect = true;
-                var ir = icon.rectTransform;
-                ir.anchorMin = new Vector2(0.12f, 0.12f);
-                ir.anchorMax = new Vector2(0.88f, 0.88f);
-                ir.offsetMin = ir.offsetMax = Vector2.zero;
-                icon.gameObject.SetActive(true);
-
-                var mark = NewImage(r, "Mark", null);
-                var mr = mark.rectTransform;
-                mr.anchorMin = mr.anchorMax = new Vector2(0.9f, 0.9f);
-                mr.sizeDelta = new Vector2(110f, 110f);
-
-                _optionRect[i] = r;
-                _optionIcon[i] = icon;
-                _optionMark[i] = mark;
-                _optionButton[i] = button;
-                go.SetActive(false);
-            }
+            var go = new GameObject("Rescue");
+            go.transform.SetParent(_safe, false);
+            _rescueRect = go.AddComponent<RectTransform>();
+            _rescueRect.anchorMin = _rescueRect.anchorMax = new Vector2(0.5f, 1f);
+            _rescueRect.pivot = new Vector2(0.5f, 0.5f);
+            var bg = go.AddComponent<Image>();
+            bg.sprite = RoundedRectSprite.Get(64);
+            bg.type = Image.Type.Sliced;
+            bg.color = AmberColor;
+            NeuroStyle.ClayFrame(bg, 5f, 10f);
+            _rescueButton = go.AddComponent<Button>();
+            _rescueButton.transition = Selectable.Transition.None;
+            _rescueButton.onClick.AddListener(OnRescue);
+            go.AddComponent<PressScale>();
+            var label = MakeText(_rescueRect, "Label", 60, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
+            Stretch(label.rectTransform);
+            label.text = "¡RESCATAR!";
+            label.raycastTarget = false;
+            go.SetActive(false);
         }
 
         private void BuildCrewRow()
@@ -914,44 +988,40 @@ namespace NeuroVida.Games.Radar
             _prompt.rectTransform.anchoredPosition = new Vector2(0f, -(y + promptH / 2f));
             y += promptH + 6f;
 
-            // Radar: lo más grande posible (más grande = más periferia), dejando lugar a las respuestas y la fila.
-            const float answersH = 330f, crewH = 210f;
-            _scopeSize = Mathf.Min(contentW + 40f, sh - y - answersH - crewH);
-            _scopeSize = Mathf.Max(_scopeSize, 560f);
+            // Radar: lo más grande posible (más grande = más periferia y lugares más fáciles de tocar), dejando lugar
+            // para la línea de ayuda, el botón y la fila de rescatados.
+            const float hintH = 90f, buttonH = 170f, crewH = 220f;
+            _scopeSize = Mathf.Min(contentW + 40f, sh - y - hintH - buttonH - crewH);
+            _scopeSize = Mathf.Max(_scopeSize, 620f);
             _scopeRect.sizeDelta = new Vector2(_scopeSize, _scopeSize);
             _scopeRect.anchoredPosition = new Vector2(0f, -(y + _scopeSize / 2f));
-            y += _scopeSize + 16f;
+            y += _scopeSize + 8f;
             _glassR = _scopeSize * 0.5f * RadarSprites.GlassFraction;
 
-            float optionSize = Mathf.Min(290f, answersH - 30f);
-            for (int i = 0; i < 2; i++)
-            {
-                _optionRect[i].sizeDelta = new Vector2(optionSize, optionSize);
-                _optionRect[i].anchoredPosition = new Vector2((i == 0 ? -1f : 1f) * (optionSize / 2f + 40f), -(y + answersH / 2f));
-            }
-            _hint.rectTransform.sizeDelta = new Vector2(contentW, 90f);
-            _hint.rectTransform.anchoredPosition = new Vector2(0f, -(y + answersH / 2f));
+            _hint.rectTransform.sizeDelta = new Vector2(contentW, hintH);
+            _hint.rectTransform.anchoredPosition = new Vector2(0f, -(y + hintH / 2f));
+            y += hintH;
+            _rescueRect.sizeDelta = new Vector2(Mathf.Min(560f, contentW), 140f);
+            _rescueRect.anchoredPosition = new Vector2(0f, -(y + buttonH / 2f));
 
-            // Tamaños en el radar (proporcionales al vidrio).
+            // Tamaños en el radar (proporcionales al vidrio). Los lugares de adentro están a ~0,35 radios entre sí:
+            // el aro visible es algo menor, pero tocar cerca ya elige el lugar (el más cercano).
+            _itemSize = _glassR * 0.26f;
             float cw = RadarContract.CenterWindow * _glassR;
             _sweep.rectTransform.sizeDelta = new Vector2(_glassR * 2f, _glassR * 2f);
-            _fixation.rectTransform.sizeDelta = new Vector2(cw * 1.1f, cw * 1.1f);
-            _centerIcon.rectTransform.sizeDelta = new Vector2(cw * 1.75f, cw * 1.75f);
-            _centerMark.rectTransform.sizeDelta = new Vector2(cw * 0.9f, cw * 0.9f);
-            _centerMark.rectTransform.anchoredPosition = new Vector2(cw * 0.85f, cw * 0.85f);
-            float item = _glassR * 0.25f;
-            foreach (var a in _asteroids) a.rectTransform.sizeDelta = new Vector2(item * 0.92f, item * 0.92f);
-            _helmet.rectTransform.sizeDelta = new Vector2(item, item);
-            _helmetGlow.rectTransform.sizeDelta = new Vector2(item * 2.4f, item * 2.4f);
-            float pad = Mathf.Max(item * 1.15f, 132f);
-            for (int d = 0; d < _pads.Count; d++)
+            _fixation.rectTransform.sizeDelta = new Vector2(cw * 0.9f, cw * 0.9f);
+            foreach (var a in _astros) a.rectTransform.sizeDelta = new Vector2(_itemSize, _itemSize);
+            foreach (var g in _astroGlows) g.rectTransform.sizeDelta = new Vector2(_itemSize * 2.3f, _itemSize * 2.3f);
+            foreach (var r in _robots) r.rectTransform.sizeDelta = new Vector2(_itemSize * 1.25f, _itemSize * 1.25f); // el dibujo del robot deja más margen
+            for (int s = 0; s < RadarContract.Slots; s++)
             {
-                RadarContract.Position(d, RadarContract.Rings - 1, out float px, out float py);
-                var p = new Vector2(px * _glassR, py * _glassR);
-                _pads[d].rectTransform.sizeDelta = new Vector2(pad, pad);
-                _pads[d].rectTransform.anchoredPosition = p;
-                _padMarks[d].rectTransform.sizeDelta = new Vector2(pad * 0.55f, pad * 0.55f);
-                _padMarks[d].rectTransform.anchoredPosition = p + new Vector2(pad * 0.36f, pad * 0.36f);
+                var c = SlotCenter(s);
+                _slots[s].rectTransform.anchoredPosition = c;
+                _slots[s].rectTransform.sizeDelta = new Vector2(_itemSize * 1.2f, _itemSize * 1.2f);
+                _beaconImgs[s].rectTransform.anchoredPosition = c;
+                _beaconImgs[s].rectTransform.sizeDelta = new Vector2(_itemSize * 0.95f, _itemSize * 0.95f);
+                _marks[s].rectTransform.anchoredPosition = c + new Vector2(_itemSize * 0.45f, _itemSize * 0.45f);
+                _marks[s].rectTransform.sizeDelta = new Vector2(_itemSize * 0.6f, _itemSize * 0.6f);
             }
             _mask.rectTransform.sizeDelta = Vector2.zero;
         }
