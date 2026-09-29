@@ -140,6 +140,20 @@ resultados en Google" sino **que nadie tenga un nombre parecido en apps, juegos,
 28, 41, 44). Una salida que usan muchas marcas globales: nombrar la app por su **personaje** (la mascota de la app),
 que es más fácil de hacer única y de registrar.
 
+### Séptima ronda (29-sep): nombre = personaje (Pulsi, Nubi, Kibo)
+
+A Ricardo le gustan **Pulsi, Nubi y Kibo** y propone construir el personaje y ajustarlo a la app. Bocetos:
+`python3 tools/previews/personajes.py` → `docs/previews/personajes.png` (y `personaje-<nombre>.png`).
+
+| Nombre | Qué encontré | A favor | En contra |
+|---|---|---|---|
+| **Nubi** | Varias apps "Nubi": tarjeta y beneficios (Nubi S.A., Argentina), nutrición infantil (Universidad de Parma), registro de comidas, eventos. Ninguna de juegos mentales. | "Nube" en español, "nubi" = nubes en italiano: se entiende en varios idiomas. Personaje suave (una nebulosa donde nacen estrellas), calza con "Tu planeta". | En inglés puede leerse cerca de "noob/newbie" (novato, burla en los videojuegos). Nombre bastante usado. |
+| **Pulsi** | Una app de radio "Pulsi" y una app para escuchar el latido del bebé ("Hear My Baby Heartbeat - Pulsi"); muchas "Puls". | Enérgico; púlsar = estrella que late con luz: calza con destellos, radar y rachas. | "Pulso" suena a corazón y salud (ya hay una app de latidos con ese nombre): puede leerse como app médica. |
+| **Kibo** | KIBO Commerce (software empresarial grande), KIBO (robot educativo para niños de 4-7 años, en 70 países), "Kibo: Cozy Self-Care" (app de autocuidado) y "Kibo" (lectura accesible). | El mejor significado: "esperanza" en japonés y el módulo japonés de la Estación Espacial Internacional. | El MÁS tomado, y justo en software, educación y bienestar: el más difícil de registrar como marca. |
+
+**Regla para el personaje** (patentes y tono): nunca se pone triste ni cambia de cara según cómo le va a la persona en un
+juego (US 11,507,178 de Akili exige caras que reaccionan al desempeño; además la app no usa culpa). Celebra y acompaña.
+
 **Lo que falta antes de decidir en firme** (no se puede hacer bien desde aquí, las bases oficiales no responden a
 búsquedas automáticas):
 
@@ -335,4 +349,5 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 - Synapp: https://apps.apple.com/us/app/synapp-messaging/id1591750660 · Neuronia: https://play.google.com/store/apps/details?id=com.virandigitallabs.neuronia · Engrama: https://apps.apple.com/pk/app/engrama/id6763983777
 - Mielina (estimulación cognitiva 50+): https://www.instagram.com/minhamielina/ · MyelinZ: https://myelinz.com/ · Neuri: https://neuri.app/
 - BRAIN STRIDE (marca registrada): https://trademarks.justia.com/886/09/brain-88609908.html · NeuroDash: https://play.google.com/store/apps/details?id=com.enpe5v3.neurodash · NeuroIGNITE: https://neuroignite.com/ · Synapta: https://www.synapta.co.uk/ · MindOrbit: https://play.google.com/store/apps/details?id=com.rimors.mindorbit · MindVolt: https://play.google.com/store/apps/details?id=com.nirala.mindvolt
+- Nubi: https://play.google.com/store/apps/details?id=com.tunubi.b2bwallet · https://play.google.com/store/apps/details?id=it.unipr.ailab.nubi · Pulsi: https://apps.apple.com/us/app/hear-my-baby-heartbeat-pulsi/id6763934623 · Kibo: https://kibocommerce.com/ · https://kinderlabrobotics.com/kibo/ · https://apps.apple.com/us/app/kibo-cozy-self-care/id6761014109 · JAXA Kibō: https://iss.jaxa.jp/en/kibo/about/
 - Podcast Mentenautas: https://podcasters.spotify.com/pod/show/mentenautas-podcast
