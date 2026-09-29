@@ -295,6 +295,7 @@ fun LeaguePromotionOverlay(
                 )
               } catch (e: Exception) {
                 // Si la imagen falla, se comparte al menos el texto.
+                com.example.diag.ErrorLog.record("COMPARTIR", "No se pudo armar la imagen del ascenso; se comparte solo el texto.", e)
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
                 context.startActivity(Intent.createChooser(send, "Compartir"))
               }

@@ -1,13 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Qué se respalda (Android 11 e inferior; en Android 12+ ver data_extraction_rules.xml, que dice lo mismo).
+  Solo el PROGRESO de la persona: la base de datos (partidas, avance por juego, perfil y ajustes) y las preferencias
+  que forman parte de ese avance. Con esto un teléfono nuevo o restaurado recupera la liga, los logros, el avance de
+  cada juego y la historia de la semana.
+  NO se respalda el estado pasajero: la partida en pausa (paused_game), la sesión en curso (game_session), la
+  bandeja de resultados de Unity (unity_results), dónde quedó Juegos (library_focus) ni las preferencias de Unity.
+  Restaurarlos en otro teléfono dejaría una partida "fantasma" a medias.
+  Si se agrega un archivo de preferencias nuevo que sea progreso, hay que sumarlo aquí Y en data_extraction_rules.xml
+  (hay una prueba, BackupRulesTest, que avisa si una preferencia no está en ninguna de las dos listas).
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <include domain="database" path="neurovida_database" />
+    <include domain="database" path="neurovida_database-wal" />
+    <include domain="sharedpref" path="skill.xml" />
+    <include domain="sharedpref" path="star_measures.xml" />
+    <include domain="sharedpref" path="progress_log.xml" />
+    <include domain="sharedpref" path="league_events.xml" />
+    <include domain="sharedpref" path="achievements.xml" />
+    <include domain="sharedpref" path="mission_log.xml" />
+    <include domain="sharedpref" path="profile_extra.xml" />
 </full-backup-content>

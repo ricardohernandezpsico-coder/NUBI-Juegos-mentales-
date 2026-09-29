@@ -74,7 +74,7 @@ object GameSessionStore {
   fun clearInFlight() {
     prefs.edit()
       .remove("launchId").remove("gameId").remove("level").remove("timed")
-      .remove("daily").remove("intensity").remove("assessmentStep")
+      .remove("daily").remove("intensity").remove("assessmentStep").remove("mode")
       .apply()
   }
 
@@ -117,6 +117,8 @@ object GameSessionStore {
       val measured = m.keys().asSequence().associateWith { m.getDouble(it).toFloat() }
       BaselineProgress(o.getInt("done"), measured, o.optString("age").ifEmpty { null })
     } catch (e: Exception) {
+      // La evaluación en curso quedó ilegible: se descarta (se vuelve a empezar), pero queda anotado.
+      com.example.diag.ErrorLog.record("DATOS", "No se pudo leer la evaluación inicial guardada; se descarta.", e)
       null
     }
   }

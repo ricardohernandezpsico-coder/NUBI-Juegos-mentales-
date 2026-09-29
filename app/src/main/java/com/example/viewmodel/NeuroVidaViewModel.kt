@@ -905,6 +905,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
           v.vibrate(40)
         }
       }
-    } catch (_: Exception) {}
+    } catch (e: Exception) {
+      // La vibración es un extra: si falla, la partida sigue igual, pero queda anotado.
+      com.example.diag.ErrorLog.record("VIBRACION", "No se pudo vibrar.", e)
+    }
   }
 }

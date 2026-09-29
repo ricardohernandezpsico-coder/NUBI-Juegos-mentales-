@@ -1,19 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Qué se respalda en Android 12+ (copia en la nube y traspaso de teléfono a teléfono). Es la misma lista que
+  backup_rules.xml (Android 11 e inferior): solo el progreso, no el estado pasajero. Explicación completa allá.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <include domain="database" path="neurovida_database" />
+        <include domain="database" path="neurovida_database-wal" />
+        <include domain="sharedpref" path="skill.xml" />
+        <include domain="sharedpref" path="star_measures.xml" />
+        <include domain="sharedpref" path="progress_log.xml" />
+        <include domain="sharedpref" path="league_events.xml" />
+        <include domain="sharedpref" path="achievements.xml" />
+        <include domain="sharedpref" path="mission_log.xml" />
+        <include domain="sharedpref" path="profile_extra.xml" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="database" path="neurovida_database" />
+        <include domain="database" path="neurovida_database-wal" />
+        <include domain="sharedpref" path="skill.xml" />
+        <include domain="sharedpref" path="star_measures.xml" />
+        <include domain="sharedpref" path="progress_log.xml" />
+        <include domain="sharedpref" path="league_events.xml" />
+        <include domain="sharedpref" path="achievements.xml" />
+        <include domain="sharedpref" path="mission_log.xml" />
+        <include domain="sharedpref" path="profile_extra.xml" />
     </device-transfer>
-    -->
 </data-extraction-rules>

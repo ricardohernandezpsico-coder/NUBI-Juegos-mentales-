@@ -17,6 +17,8 @@ class NeuroVidaApplication : Application() {
   override fun onCreate() {
     super.onCreate()
     instance = this
+    // Registro de errores en el teléfono (cierres y avisos que antes solo iban al logcat): ver diag/ErrorLog.
+    com.example.diag.ErrorLog.install(this)
     // Pantalla de carga sobre Unity mientras arranca en frío (solo actúa en el proceso `:unity`).
     com.example.bridge.UnityLoadingOverlay.install(this)
   }

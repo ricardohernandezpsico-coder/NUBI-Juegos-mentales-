@@ -850,6 +850,33 @@ fun SettingsScreen(
       Spacer(modifier = Modifier.height(12.dp))
     }
 
+    // Informe de errores, sin servidores ni cuentas: la persona lo comparte con quien le dio la app (ver diag/ErrorLog).
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+      OutlinedButton(
+        onClick = {
+          val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(android.content.Intent.EXTRA_SUBJECT, "Informe de errores de Nubi")
+            .putExtra(android.content.Intent.EXTRA_TEXT, com.example.diag.ErrorLog.report(context))
+          context.startActivity(
+            android.content.Intent.createChooser(send, "Enviar informe").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+          )
+        },
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("btn_send_error_report")
+      ) {
+        Text("Enviar informe de errores")
+      }
+      Text(
+        text = "Si algo falla, comparte este informe con quien te dio la app. No incluye tu nombre ni tus resultados.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+
     // Reset Data button
     OutlinedButton(
       onClick = { showResetDialog = true },

@@ -232,6 +232,7 @@ fun AchievementOverlay(
                 )
               } catch (e: Exception) {
                 android.util.Log.e("AchievementOverlay", "No se pudo compartir el logro", e)
+                com.example.diag.ErrorLog.record("COMPARTIR", "No se pudo compartir el logro.", e)
               }
             }
           }

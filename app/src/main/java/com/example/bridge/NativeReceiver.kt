@@ -4,6 +4,7 @@ import android.content.Intent
 import android.util.Log
 import com.example.MainActivity
 import com.example.NeuroVidaApplication
+import com.example.diag.ErrorLog
 import com.example.model.GamePlayResult
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -276,6 +277,7 @@ object NativeReceiver {
       peekAdapter.fromJson(json)?.game_id
     } catch (e: Exception) {
       Log.e(TAG, "JSON de telemetría inválido (sin game_id legible): $json", e)
+      ErrorLog.record("RESULTADO", "Una partida no se guardó: el resultado no traía juego legible. $json", e)
       null
     } ?: return null
 
@@ -286,6 +288,7 @@ object NativeReceiver {
       "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
+        ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
         null
       }
     }
@@ -296,6 +299,7 @@ object NativeReceiver {
       sequenceAdapter.fromJson(json)
     } catch (e: Exception) {
       Log.e(TAG, "JSON de telemetría de Secuencia Lumínica inválido: $json", e)
+      ErrorLog.record("RESULTADO", "Una partida de Secuencia Lumínica no se guardó: resultado ilegible. $json", e)
       null
     } ?: return null
 
@@ -320,6 +324,7 @@ object NativeReceiver {
       cardsAdapter.fromJson(json)
     } catch (e: Exception) {
       Log.e(TAG, "JSON de telemetría de Parejas Ocultas inválido: $json", e)
+      ErrorLog.record("RESULTADO", "Una partida de Parejas Ocultas no se guardó: resultado ilegible. $json", e)
       null
     } ?: return null
 
@@ -339,6 +344,7 @@ object NativeReceiver {
       stroopAdapter.fromJson(json)
     } catch (e: Exception) {
       Log.e(TAG, "JSON de telemetría de Tinta o Palabra inválido: $json", e)
+      ErrorLog.record("RESULTADO", "Una partida no se guardó: el resultado (juegos con la telemetría común) es ilegible. $json", e)
       null
     } ?: return null
 

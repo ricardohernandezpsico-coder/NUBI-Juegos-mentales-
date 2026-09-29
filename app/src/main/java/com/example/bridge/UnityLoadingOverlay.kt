@@ -55,6 +55,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
     } catch (e: Exception) {
       // Nunca debe impedir que el juego arranque.
       Log.e(TAG, "No se pudo mostrar la pantalla de carga", e)
+      com.example.diag.ErrorLog.record("PANTALLA", "No se pudo mostrar la pantalla de carga sobre Unity.", e)
     }
   }
 

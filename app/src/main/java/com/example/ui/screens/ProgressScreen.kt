@@ -159,6 +159,7 @@ fun ProgressScreen(
                   )
                 } catch (e: Exception) {
                   android.util.Log.e("ProgressScreen", "No se pudo compartir la liga", e)
+                  com.example.diag.ErrorLog.record("COMPARTIR", "No se pudo compartir la liga.", e)
                 }
               }
             }
