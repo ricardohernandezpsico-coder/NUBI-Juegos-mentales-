@@ -7,6 +7,10 @@
 #   - Ícono de notificación (drawable-*/ic_stat_neurovida.png): la silueta blanca de Nubi.
 #   - Nubi para las pantallas (drawable-nodpi/nubi_*.webp): saluda, mira (explica) y celebra. Lienzo cuadrado con
 #     Nubi al centro; el cuerpo mide 0,65 del ancho (NUBI_BODY_FRACTION en ui/components/NubiHome.kt).
+#   - Nubi científica (drawable-nodpi/nubi_cientifica.webp: bata, lentes y tablilla), la de la ventana de un área en
+#     Juegos (Ricardo la eligió el 29-sep, `docs/previews/juegos-nubi.png`).
+#   - Planetas de las 6 áreas (drawable-nodpi/area_*.webp: esfera de color con su ícono blanco; Atención = diana,
+#     elegida por Ricardo en `docs/previews/navegacion-nubi.png`). La esfera mide AREA_BODY_FRACTION del ancho.
 # Uso: python3 tools/previews/nubi_recursos.py
 import os, importlib.util
 from PIL import Image
@@ -54,6 +58,26 @@ def stat_icon():
     return out
 
 
+def extras():
+    spec = importlib.util.spec_from_file_location('nv', os.path.join(HERE, 'navegacion_nubi.py'))
+    NV = importlib.util.module_from_spec(spec); spec.loader.exec_module(NV)
+    JN = NV.JN
+    save(JN.nubi_sprite(JN.scientist, 720), 'drawable-nodpi/nubi_cientifica.webp', 720, 'WEBP', quality=92, method=6)
+    NV.use_att(NV.att_diana)
+    side = 540
+    from PIL import ImageDraw
+    for key in ['memoria', 'atencion', 'razonamiento', 'lenguaje', 'calculo', 'velocidad']:
+        # Solo la esfera con su ícono (esfera = 0,6 del ancho, AREA_BODY_FRACTION); el resplandor de la maqueta se
+        # desbordaba del lienzo y dejaba un cuadrado oscuro: en la app lo dibuja Compose.
+        lay = Image.new('RGBA', (side, side), (0, 0, 0, 0)); r = side * 0.3
+        JN.NH.orb(lay, side / 2, side / 2, r, key, 0, 0)
+        m = Image.new('L', (side, side), 0)
+        ImageDraw.Draw(m).ellipse([side / 2 - r - 3, side / 2 - r - 3, side / 2 + r + 3, side / 2 + r + 3], fill=255)
+        a = lay.getchannel('A'); from PIL import ImageChops
+        lay.putalpha(ImageChops.multiply(a, m))
+        save(lay, f'drawable-nodpi/area_{key}.webp', 360, 'WEBP', quality=92, method=6)
+
+
 def main():
     fg, mono, full = foreground(), NS.icon_mono(), NS.icon_round()
     for name, k in DENS:
@@ -65,6 +89,7 @@ def main():
         save(stat_icon(), f'drawable-{name}/ic_stat_neurovida.png', int(24 * k))
     for pose, file in [('hola', 'nubi_hola'), ('coach', 'nubi_mira'), ('celebra', 'nubi_celebra')]:
         save(sprite(pose), f'drawable-nodpi/{file}.webp', 720, 'WEBP', quality=92, method=6)
+    extras()
     print('listo:', RES)
 
 

@@ -56,39 +56,48 @@ import com.example.ui.theme.ClayButton
 import com.example.viewmodel.NeuroVidaViewModel
 
 /**
- * Perfil: quién eres (avatar, liga, racha, cifras clave) y la puerta a los ajustes. Los ajustes dejaron de ser
- * "la pestaña" y viven detrás del botón de este perfil, con su propia flecha de regreso.
+ * Cabecera de los paneles que se abren desde arriba a la derecha (perfil y opciones): flecha para volver y el título.
  */
 @Composable
-fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
-  var showSettings by remember { mutableStateOf(false) }
-
-  if (showSettings) {
-    BackHandler { showSettings = false }
-    Column(modifier = modifier.fillMaxSize()) {
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Box(
-          modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(Clay.Cream)
-            .border(Clay.Border, Clay.Ink, CircleShape)
-            .clickable { showSettings = false },
-          contentAlignment = Alignment.Center
-        ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver al perfil", tint = Clay.Ink) }
-        Spacer(Modifier.width(12.dp))
-        Text("Ajustes", color = Color(0xFFEAF0FF), fontSize = 22.sp, fontWeight = FontWeight.Bold)
-      }
-      SettingsScreen(viewModel = viewModel, modifier = Modifier.weight(1f))
-    }
-    return
+fun PanelHeader(title: String, onBack: () -> Unit) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = 12.dp, vertical = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Box(
+      modifier = Modifier
+        .size(44.dp)
+        .clip(CircleShape)
+        .background(Clay.Cream)
+        .border(Clay.Border, Clay.Ink, CircleShape)
+        .clickable(onClick = onBack)
+        .testTag("btn_panel_back"),
+      contentAlignment = Alignment.Center
+    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Clay.Ink) }
+    Spacer(Modifier.width(12.dp))
+    Text(title, color = Color(0xFFEAF0FF), fontSize = 22.sp, fontWeight = FontWeight.Bold)
   }
+}
 
+/** Las opciones (engranaje de arriba a la derecha), con su flecha de regreso. */
+@Composable
+fun SettingsPanel(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: Modifier = Modifier) {
+  BackHandler(onBack = onClose)
+  Column(modifier = modifier.fillMaxSize()) {
+    PanelHeader("Opciones", onClose)
+    SettingsScreen(viewModel = viewModel, modifier = Modifier.weight(1f))
+  }
+}
+
+/**
+ * Perfil (se abre con tu inicial, arriba a la derecha, desde el 29-sep): quién eres (escudo, nombre, liga), tres cifras
+ * y tus logros. Las áreas y el punto de partida pasaron a Avance; los ajustes, al engranaje.
+ */
+@Composable
+fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: Modifier = Modifier) {
+  BackHandler(onBack = onClose)
   val userSettings by viewModel.userSettings.collectAsState()
   val streak by viewModel.currentStreak.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
@@ -96,7 +105,6 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val unlocks by viewModel.achievementUnlocks.collectAsState()
   val achStats by viewModel.achievementStats.collectAsState()
-  val baseline by viewModel.baseline.collectAsState()
   var achievementDetail by remember { mutableStateOf<AchievementDef?>(null) }
 
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
@@ -106,11 +114,13 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
 
   val prog = if (tier == RankTier.MAESTRO) ((avg - tier.minRating) % 250) / 250f else (avg - tier.minRating) / 250f
 
+  Column(modifier.fillMaxSize()) {
+  PanelHeader("Tu perfil", onClose)
   LazyColumn(
-    modifier = modifier
-      .fillMaxSize()
+    modifier = Modifier
+      .weight(1f)
       .padding(horizontal = 22.dp),
-    contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
+    contentPadding = PaddingValues(top = 4.dp, bottom = 28.dp),
     verticalArrangement = Arrangement.spacedBy(22.dp)
   ) {
     // Tu escudo y tu nombre, sin recuadros
@@ -122,10 +132,13 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
             modifier = Modifier
               .size(54.dp)
               .clip(CircleShape)
-              .background(Clay.Grape)
+              .background(Clay.Sky)
               .border(Clay.Border, Clay.Ink, CircleShape),
             contentAlignment = Alignment.Center
-          ) { Text(userSettings.avatar, fontSize = 26.sp) }
+          ) {
+            // La misma inicial del botón de arriba a la derecha (sin emojis como íconos).
+            Text(userSettings.name.trim().firstOrNull()?.uppercase() ?: "", color = Clay.Ink, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+          }
         }
         Text(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
         Text(
@@ -144,31 +157,6 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
         StatText("Partidas", "${history.size}", Clay.Sky, Modifier.weight(1f))
         Box(Modifier.width(1.dp).height(44.dp).background(Color.White.copy(alpha = 0.14f)))
         StatText("Mejor", best?.toString() ?: "–", Clay.Lime, Modifier.weight(1f))
-      }
-    }
-
-    item {
-      Column {
-        SpaceSectionTitle("Tus dominios", hint = "Cómo vas en cada área")
-        Spacer(Modifier.height(12.dp))
-        DomainLegend(levels)
-      }
-    }
-
-    // Punto de partida: si se saltó, invitación a hacerlo; si ya se hizo, repetirlo (p. ej. tras un tiempo).
-    item {
-      Column {
-        SpaceSectionTitle(
-          "Tu punto de partida",
-          hint = if (baseline == null) "3 juegos cortos para que cada juego empiece a tu medida" else "Puedes repetirlo cuando quieras"
-        )
-        Spacer(Modifier.height(12.dp))
-        ClayButton(
-          text = if (baseline == null) "Encontrar mi punto de partida" else "Repetir la evaluación",
-          onClick = { viewModel.startBaseline() },
-          color = if (baseline == null) Clay.Sun else Clay.Cream,
-          modifier = Modifier.testTag("btn_profile_baseline")
-        )
       }
     }
 
@@ -212,14 +200,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) 
       }
     }
 
-    item {
-      ClayButton(
-        text = "Ajustes",
-        onClick = { showSettings = true },
-        color = Clay.Cream,
-        icon = Icons.Default.Settings
-      )
-    }
+  }
   }
 
   achievementDetail?.let { def ->

@@ -21,12 +21,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-enum class AppTab(val title: String, val iconName: String) {
-  HOY("Hoy", "Today"),
-  JUEGOS("Juegos", "SportsEsports"),
-  PROGRESO("Progreso", "Insights"),
-  AJUSTES("Ajustes", "Settings")
+/** Las 3 pestañas (29-sep): Hoy, Juegos y Avance (la liga vive dentro de Avance). */
+enum class AppTab(val title: String) {
+  HOY("Hoy"),
+  JUEGOS("Juegos"),
+  PROGRESO("Avance")
 }
+
+/** Lo que se abre con los botones de arriba a la derecha: tu perfil o las opciones (Ajustes). */
+enum class TopPanel { PERFIL, AJUSTES }
 
 data class ActiveGameSession(
   val gameDef: GameDefinition,
@@ -351,6 +354,11 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     }
   }
 
+  private val _topPanel = MutableStateFlow<TopPanel?>(null)
+  val topPanel: StateFlow<TopPanel?> = _topPanel.asStateFlow()
+
+  fun openTopPanel(panel: TopPanel?) { _topPanel.value = panel }
+
   fun setTab(tab: AppTab) {
     _currentTab.value = tab
     _activeGame.value = null
@@ -652,20 +660,29 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   // Dónde quedó la pestaña Juegos (área y casilla), en disco: al volver de un juego se abre en el mismo lugar.
-  data class LibraryFocus(val domain: DomainType? = null, val gameId: String? = null)
+  // [open] = la ventana del área está abierta (desde el 29-sep Juegos muestra las 6 áreas y cada una abre su ventana);
+  // al arrancar la app solo sigue abierta si se vuelve de un juego lanzado desde ella.
+  data class LibraryFocus(val domain: DomainType? = null, val gameId: String? = null, val open: Boolean = false)
 
   private val focusPrefs by lazy { getApplication<Application>().getSharedPreferences("library_focus", android.content.Context.MODE_PRIVATE) }
   private val _libraryFocus = MutableStateFlow(
     LibraryFocus(
       focusPrefs.getString("domain", null)?.let { n -> DomainType.values().firstOrNull { it.name == n } },
-      focusPrefs.getString("gameId", null)
+      focusPrefs.getString("gameId", null),
+      open = focusPrefs.getBoolean("return", false)
     )
   )
   val libraryFocus: StateFlow<LibraryFocus> = _libraryFocus.asStateFlow()
 
+  /** Abre (o deja abierta) la ventana de [domain] en Juegos, recordando la casilla [gameId]. */
   fun setLibraryFocus(domain: DomainType, gameId: String?) {
-    _libraryFocus.value = LibraryFocus(domain, gameId)
+    _libraryFocus.value = LibraryFocus(domain, gameId, open = true)
     focusPrefs.edit().putString("domain", domain.name).putString("gameId", gameId).apply()
+  }
+
+  /** La X (o Atrás) de la ventana de un área: vuelve a las 6 áreas. */
+  fun closeLibraryArea() {
+    _libraryFocus.value = _libraryFocus.value.copy(open = false)
   }
 
   /** "Jugar" en la ficha de Juegos: recuerda la casilla para volver a ella y lanza en el modo elegido. */

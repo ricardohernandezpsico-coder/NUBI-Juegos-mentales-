@@ -143,7 +143,11 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val baselineRun by viewModel.baselineRun.collectAsState()
   val education by viewModel.education.collectAsState()
   val sessionSummary by viewModel.sessionSummary.collectAsState()
+  val topPanel by viewModel.topPanel.collectAsState()
   val lang = com.example.ui.i18n.LocalAppLanguage.current
+  // Ventanas abiertas sobre una pestaña (la de un área, un detalle): mientras haya alguna, el dedo no cambia de
+  // pestaña y la barra de abajo se esconde (la ventana tapa toda la pantalla y se cierra con su X o con Atrás).
+  val swipeLock = remember { androidx.compose.runtime.mutableIntStateOf(0) }
   // Pestañas que se pasan deslizando con el dedo (29-sep, pedido de Ricardo), sincronizadas con la barra de abajo.
   val tabs = AppTab.entries
   val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = currentTab.ordinal) { tabs.size }
@@ -167,11 +171,12 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       containerColor = androidx.compose.ui.graphics.Color.Transparent,
       bottomBar = {
         // Show bottom bar only when not playing a game or looking at results
-        if (activeGame == null && lastResult == null && baselineRun == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null) {
+        if (activeGame == null && lastResult == null && baselineRun == null && promotion == null && achievementQueue.isEmpty() &&
+          sessionSummary == null && topPanel == null && swipeLock.intValue == 0
+        ) {
           com.example.ui.components.NeuroNavBar(
             current = currentTab,
-            onSelect = { viewModel.setTab(it) },
-            onTrain = { viewModel.startDailySession() }
+            onSelect = { viewModel.setTab(it) }
           )
         }
       }
@@ -191,22 +196,36 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       ) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
-        if (activeGame == null && lastResult == null && baselineRun == null && sessionSummary == null) {
+        if (activeGame == null && lastResult == null && baselineRun == null && sessionSummary == null && topPanel == null) {
           // Si la pestaña cambió mientras había un juego o el resumen encima, el pager vuelve a ella sin animar.
           LaunchedEffect(Unit) {
             if (pagerState.currentPage != currentTab.ordinal) pagerState.scrollToPage(currentTab.ordinal)
           }
-          androidx.compose.foundation.pager.HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-            when (tabs[page]) {
-              AppTab.HOY -> HomeScreen(
-                viewModel = viewModel,
-                onNavigateToGames = { viewModel.setTab(AppTab.JUEGOS) }
-              )
-              AppTab.JUEGOS -> GamesLibraryScreen(viewModel = viewModel)
-              AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
-              AppTab.AJUSTES -> com.example.ui.screens.ProfileScreen(viewModel = viewModel)
+          androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalTabSwipeLock provides swipeLock) {
+            androidx.compose.foundation.pager.HorizontalPager(
+              state = pagerState,
+              userScrollEnabled = swipeLock.intValue == 0,
+              modifier = Modifier.fillMaxSize()
+            ) { page ->
+              when (tabs[page]) {
+                AppTab.HOY -> HomeScreen(
+                  viewModel = viewModel,
+                  onNavigateToGames = { viewModel.setTab(AppTab.JUEGOS) }
+                )
+                AppTab.JUEGOS -> GamesLibraryScreen(viewModel = viewModel)
+                AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
+              }
             }
           }
+        }
+
+        // Perfil (tu inicial) y opciones (engranaje), abiertos desde arriba a la derecha de cualquier pestaña.
+        if (activeGame == null && lastResult == null && baselineRun == null && sessionSummary == null) when (topPanel) {
+          com.example.viewmodel.TopPanel.PERFIL ->
+            com.example.ui.screens.ProfileScreen(viewModel = viewModel, onClose = { viewModel.openTopPanel(null) })
+          com.example.viewmodel.TopPanel.AJUSTES ->
+            com.example.ui.screens.SettingsPanel(viewModel = viewModel, onClose = { viewModel.openTopPanel(null) })
+          null -> {}
         }
 
         // Resumen de la sesión del día recién terminada (sobre Hoy, una vez).

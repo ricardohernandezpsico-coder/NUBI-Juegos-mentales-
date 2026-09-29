@@ -15,8 +15,10 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`hoy-nubi-real.png`](hoy-nubi-real.png)
 - [`inicio-planeta-real.png`](inicio-planeta-real.png)
 - [`juegos-cartas-real.png`](juegos-cartas-real.png)
+- [`juegos-areas-real.png`](juegos-areas-real.png)
 - [`juegos-lista-real.png`](juegos-lista-real.png)
 - [`juegos-real.png`](juegos-real.png)
+- [`juegos-ventana-real.png`](juegos-ventana-real.png)
 - [`resumen-sesion-real.png`](resumen-sesion-real.png)
 
 ## Sonidos de los juegos

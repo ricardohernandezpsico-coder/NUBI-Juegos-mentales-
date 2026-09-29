@@ -42,12 +42,18 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
-- Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, Nubi al centro con las 6 áreas: ver abajo) · Juegos
-  (`GamesLibraryScreen`, "¿Qué quieres trabajar hoy?" + cartas: ver abajo) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
-  Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
-  9 pasos; bienvenida "Hola, soy Nubi": Nubi como compañía) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
+- 3 pestañas (29-sep, `docs/previews/navegacion-nubi.png`; `ui/components/NeuroNavBar`, SIN botón "play" central: el
+  desafío del día se empieza desde Hoy): Hoy (casa; `HomeScreen`, Nubi al centro con las 6 áreas: ver abajo) · Juegos
+  (player; `GamesLibraryScreen`: ver abajo) · Avance (cerebro dibujado, `BrainIcon`; `ProgressScreen`: tu liga con
+  compartir, tus 6 áreas con la barra de Hoy y su detalle, desafíos de la semana, avance por juego, punto de partida y
+  "Ver más detalles"). No se dice "Mi cerebro" (Ricardo: suena a Lumosity). Arriba a la derecha en las 3
+  (`TabTopBar` + `components/TopActions`): tu inicial en arcilla celeste = perfil (`ProfileScreen`: escudo, cifras,
+  logros) y engranaje = opciones (`SettingsPanel` → `SettingsScreen`); se abren como paneles (`viewModel.topPanel`).
+  Onboarding (`OnboardingScreen`, 9 pasos; bienvenida "Hola, soy Nubi": Nubi como compañía) mientras
+  `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
   Las pestañas se pasan deslizando con el dedo (`HorizontalPager` en `MainActivity`, sincronizado con
-  `viewModel.currentTab`; los gestos horizontales propios de una pantalla, como pasar de área, tienen prioridad).
+  `viewModel.currentTab`). Una ventana abierta sobre una pestaña (área en Juegos, detalle de un área en Hoy o Avance)
+  llama `LockTabSwipe()`: mientras esté, el dedo no cambia de pestaña y la barra de abajo se esconde.
 - Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`). Al "Continuar" del tercero,
   resumen (`data/SessionSummary` + `ui/screens/SessionSummaryScreen`): Nubi celebra, qué áreas se trabajaron, puntaje
   de cada juego, racha y la barra de avance de cada área con "Hoy avanzó de X a Y" (cambio desde el comienzo de la
@@ -442,7 +448,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 90 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 91 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 182 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
@@ -467,13 +473,17 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   datos, invitación tocable "Juega Radar para descubrir tu vistazo"). Tocar una zona abre su ventana (`ZoneDialog`):
   partidas por semana (4), cada juego del dominio con su última medida o cuándo se jugó, y "Jugar X" (el sin jugar o el
   más olvidado). Captura real (Roborazzi): `docs/previews/inicio-planeta-real.png`. Sin probar en el teléfono.
-- **Juegos = "¿Qué quieres trabajar hoy?" + lista** (28-sep, 2.ª versión pedida por Ricardo; captura real
-  `docs/previews/juegos-lista-real.png`). Arriba el área en grande con su avance (flechas o deslizar sobre el nombre);
-  debajo TODOS sus juegos en lista vertical (`GameTile`: planeta con anillo del avance y ✓ si se jugó hoy, nombre,
+- **Juegos = las 6 áreas + ventana del área** (29-sep, 3.ª versión: en la 2.ª se deslizaba para cambiar de área y
+  chocaba con el deslizar de pestañas; maqueta `docs/previews/juegos-nubi.png`, capturas `juegos-areas-real.png` y
+  `juegos-ventana-real.png`). `AreaGrid`: las 6 áreas en dos columnas (planeta `drawable-nodpi/area_*.webp` de
+  `nubi_recursos.py`, Atención = DIANA; nombre, `AreaBar` y "Hábil · 6 juegos"; sello sol ✓ = jugada hoy). Tocar una
+  abre `AreaWindow` (pantalla completa, `LockTabSwipe`, X arriba a la derecha o Atrás = `closeLibraryArea`): Nubi
+  CIENTÍFICA (`nubi_cientifica.webp`, elegida por Ricardo sobre la estudiante) pregunta "¿Con cuál entrenamos tu
+  memoria?" y debajo van TODOS sus juegos (`GameTile`: planeta con anillo del avance y ✓ si se jugó hoy, nombre,
   etapa y %, marca a la derecha). Tocar una casilla abre la FICHA superpuesta (`GameSheet`): avance con etapa y línea,
   marca con etiqueta y últimas partidas, cuándo jugaste y partidas en 2 semanas, "¿Cómo quieres jugar?" (4 filas con
   aciertos esperados; la explicación solo del elegido) y Jugar. Al cerrar el resultado se vuelve a Juegos, a la misma
-  área y casilla (`libraryFocus` en SharedPreferences `library_focus`, sobrevive a que Android cierre la app).
+  ventana y casilla (`libraryFocus` con `open`, en SharedPreferences `library_focus`, sobrevive a que Android cierre la app).
   El resultado dice si un Desafío se superó (`modeNote`). Sin probar en el teléfono.
 - **Dificultad y avance** (28-sep, aprobado por Ricardo): [`docs/dificultad-y-avance.md`](docs/dificultad-y-avance.md) y
   `data/Skill.kt`. Una vara por juego: tu avance = nivel donde se aciertan 8 de 10 (el rating guardado se corrige por

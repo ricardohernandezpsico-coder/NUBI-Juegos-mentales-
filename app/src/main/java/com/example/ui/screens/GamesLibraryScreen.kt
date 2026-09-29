@@ -1,10 +1,11 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -14,8 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
@@ -35,8 +34,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +46,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.data.AreaProgress
+import com.example.data.AreaStatus
 import com.example.data.DiscoveryKind
+import com.example.ui.components.AREA_ORDER
+import com.example.ui.components.AreaBar
+import com.example.ui.components.LockTabSwipe
+import com.example.ui.components.NubiBubble
+import com.example.ui.components.areaDescription
+import com.example.ui.components.areaPlanetRes
 import com.example.data.PlayMode
 import com.example.data.Skill
 import com.example.data.StarMeasures
@@ -101,11 +108,14 @@ data class GameCardData(
 )
 
 /**
- * Pestaña Juegos (28-sep, 2.ª versión, pedido de Ricardo): "¿Qué quieres trabajar hoy?" con el área en grande
- * (flechas o deslizar sobre el nombre) y DEBAJO TODOS SUS JUEGOS EN LISTA VERTICAL (casillas de arcilla: planeta con el
- * anillo del avance, nombre, etapa y marca). Tocar una casilla abre la FICHA superpuesta ([GameSheet]): avance, marca,
- * constancia, dificultad (Suave / A tu medida / Desafío / Experto) y Jugar. Al volver del juego se abre en la misma
- * área y casilla (`NeuroVidaViewModel.libraryFocus`). Razonamiento de la dificultad: `docs/dificultad-y-avance.md`.
+ * Pestaña Juegos (29-sep, 3.ª versión, pedido de Ricardo tras probar el deslizar entre pestañas: en Juegos también se
+ * deslizaba para cambiar de área y los dos gestos confundían). Arriba "Juegos" con tu perfil y opciones; debajo LAS 6
+ * ÁREAS A LA VEZ ([AreaGrid]: planeta con su ícono, nombre, la barra de avance de Hoy y la etapa; sello sol = jugada hoy).
+ * Tocar un área abre su VENTANA ([AreaWindow]): tapa toda la pantalla, las pestañas no se deslizan, X arriba a la
+ * derecha (o Atrás) y Nubi científica pregunta con cuál entrenar; debajo, sus juegos. Tocar una casilla abre la FICHA
+ * ([GameSheet]): avance, marca, constancia, dificultad y Jugar. Al volver de un juego se abre en la misma ventana y
+ * casilla (`NeuroVidaViewModel.libraryFocus`). Maquetas aprobadas: `docs/previews/juegos-nubi.png` y
+ * `navegacion-nubi.png`. Razonamiento de la dificultad: `docs/dificultad-y-avance.md`.
  */
 @Composable
 fun GamesLibraryScreen(
@@ -116,59 +126,63 @@ fun GamesLibraryScreen(
   val userSettings by viewModel.userSettings.collectAsState()
   val measures by viewModel.starMeasures.collectAsState()
   val progress by viewModel.gameProgress.collectAsState()
+  val progressLog by viewModel.progressLog.collectAsState()
   val skill by viewModel.skill.collectAsState()
   val focus by viewModel.libraryFocus.collectAsState()
   val lang = LocalAppLanguage.current
   val now = remember(history) { System.currentTimeMillis() }
 
   val lastPlayed = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
-  // Sin casilla recordada, abre en el área que sugiere "Para ti" (zona quieta, juego sin probar, olvidado).
-  val suggestion = remember(history.isEmpty()) {
-    val plays = history.mapNotNull { r -> GameRegistry.getById(r.gameId)?.let { com.example.data.PlanetPlay(it.domain.name, r.timestamp) } }
-    val planet = com.example.data.Planet.build(plays, now, ::dayIndex)
-    val games = GameRegistry.allGames.filter { it.id != "bitacora" }
-      .map { com.example.data.LibraryGame(it.id, it.domain.name, StarMeasures.defForGame(it.id) != null) }
-    com.example.data.Library.picks(planet, games, lastPlayed, now, ::dayIndex) { it }.firstOrNull()?.gameId
+  val statuses = remember(progress, progressLog, now) {
+    AREA_ORDER.map { key ->
+      AreaProgress.status(key, GameRegistry.allGames.filter { it.domain.name == key }.map { it.id }, progress, progressLog, now)
+    }
   }
-  val domains = DomainType.values().toList()
-  val domain = focus.domain ?: suggestion?.let { GameRegistry.getById(it)?.domain } ?: DomainType.MEMORIA
-  val games = remember(domain) {
-    GameRegistry.allGames.filter { it.domain == domain }.sortedBy { StarMeasures.defForGame(it.id) == null }
+  val playedToday = remember(history, now) {
+    history.filter { dayIndex(it.timestamp) == dayIndex(now) }.mapNotNull { GameRegistry.getById(it.gameId)?.domain?.name }.toSet()
   }
   val modes = remember { mutableStateMapOf<String, PlayMode>() }
   var sheetFor by remember { mutableStateOf<GameDefinition?>(null) }
-  fun go(step: Int) = viewModel.setLibraryFocus(domains[(domains.indexOf(domain) + step + domains.size) % domains.size], null)
+  val open = focus.domain?.takeIf { focus.open }
 
-  Column(modifier = modifier.fillMaxSize()) {
-    val (areaProgress, explored) = Skill.area(games.map { it.id }, progress)
-    AreaHeader(
-      domain = domain,
-      title = getDomainName(domain, lang),
-      progress = areaProgress,
-      explored = explored,
-      total = games.size,
-      onPrev = { go(-1) },
-      onNext = { go(1) }
-    )
-    key(domain) {
-      val start = games.indexOfFirst { it.id == focus.gameId }.coerceAtLeast(0)
-      val list = rememberLazyListState(initialFirstVisibleItemIndex = start)
-      LazyColumn(
-        state = list,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.weight(1f).testTag("game_list")
-      ) {
-        itemsIndexed(games, key = { _, g -> g.id }) { _, g ->
-          val data = cardData(g, getGameTitle(g.id, lang, g.title), lastPlayed[g.id], now, progress[g.id], measures,
-            history.count { it.gameId == g.id && now - it.timestamp <= 14 * DAY_MS })
-          GameTile(data, highlighted = g.id == focus.gameId) {
-            viewModel.setLibraryFocus(domain, g.id)
-            sheetFor = g
-          }
+  if (open == null) {
+    Column(modifier = modifier.fillMaxSize()) {
+      TabTopBar(viewModel) {
+        Column {
+          Text("Juegos", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+          Text("¿Qué quieres trabajar hoy?", color = OnNightDim, fontSize = 15.sp)
         }
       }
+      AreaGrid(
+        statuses = statuses,
+        playedToday = playedToday,
+        lang = lang,
+        onArea = { key -> DomainType.values().firstOrNull { it.name == key }?.let { viewModel.setLibraryFocus(it, null) } },
+        modifier = Modifier.weight(1f)
+      )
     }
+  } else {
+    LockTabSwipe()
+    BackHandler { viewModel.closeLibraryArea() }
+    val games = remember(open) {
+      GameRegistry.allGames.filter { it.domain == open }.sortedBy { StarMeasures.defForGame(it.id) == null }
+    }
+    AreaWindow(
+      domain = open,
+      title = getDomainName(open, lang),
+      status = statuses.firstOrNull { it.area == open.name },
+      cards = games.map { g ->
+        cardData(g, getGameTitle(g.id, lang, g.title), lastPlayed[g.id], now, progress[g.id], measures,
+          history.count { it.gameId == g.id && now - it.timestamp <= 14 * DAY_MS })
+      },
+      focusGameId = focus.gameId,
+      onClose = { viewModel.closeLibraryArea() },
+      onGame = { g ->
+        viewModel.setLibraryFocus(open, g.id)
+        sheetFor = g
+      },
+      modifier = modifier
+    )
   }
 
   sheetFor?.let { g ->
@@ -427,99 +441,147 @@ internal fun GameSheetContent(
 internal fun measureText(def: com.example.data.MeasureDef, v: Float): String =
   (if (def.compactPattern.startsWith("a ")) "a " else "") + "${def.format(v)} ${def.unit}".trim()
 
-/** "¿Qué quieres trabajar hoy?": el área en grande con su planeta y avance; flechas o deslizar para cambiarla. */
+/**
+ * Las 6 áreas a la vez, en dos columnas (aprobado por Ricardo, `docs/previews/juegos-nubi.png`): el planeta del área con
+ * su ícono (sello sol con ✓ = jugada hoy), el nombre, la misma barra de avance de Hoy y "Hábil · 6 juegos". Sin flechas
+ * ni deslizar: el único gesto hacia los costados de esta pantalla es cambiar de pestaña.
+ */
 @Composable
-internal fun AreaHeader(
-  domain: DomainType,
-  title: String,
-  progress: Float?,
-  explored: Int,
-  total: Int,
-  onPrev: () -> Unit,
-  onNext: () -> Unit
+internal fun AreaGrid(
+  statuses: List<AreaStatus>,
+  playedToday: Set<String>,
+  lang: com.example.model.AppLanguage,
+  onArea: (String) -> Unit,
+  modifier: Modifier = Modifier
 ) {
-  Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
-    Text(
-      "¿Qué quieres trabajar hoy?",
-      color = OnNight, fontSize = 24.sp, fontWeight = FontWeight.Bold,
-      modifier = Modifier.padding(horizontal = 20.dp)
-    )
-    var drag by remember { mutableStateOf(0f) }
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 12.dp, vertical = 10.dp)
-        .pointerInput(domain) {
-          detectHorizontalDragGestures(
-            onDragStart = { drag = 0f },
-            onDragEnd = { if (drag < -60f) onNext() else if (drag > 60f) onPrev(); drag = 0f },
-            onHorizontalDrag = { _, d -> drag += d }
-          )
-        }
-        .testTag("area_header")
-    ) {
-      ArrowButton(left = true, onClick = onPrev)
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f).padding(horizontal = 10.dp)) {
-        Box(
-          modifier = Modifier.size(56.dp).drawBehind {
-            drawCircle(Brush.radialGradient(listOf(domain.color.copy(alpha = 0.5f), Color.Transparent)), size.minDimension / 2f)
-            val stroke = 3.dp.toPx()
-            drawCircle(Color.White.copy(alpha = 0.18f), size.minDimension / 2f - stroke, style = Stroke(stroke))
-            if (progress != null) drawArc(
-              com.example.ui.components.domainTextColor(domain.name), -90f, 360f * progress.coerceIn(0.03f, 1f), false,
-              Offset(stroke, stroke), androidx.compose.ui.geometry.Size(size.width - 2 * stroke, size.height - 2 * stroke),
-              style = Stroke(stroke, cap = StrokeCap.Round)
+  Column(
+    modifier
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState())
+      .padding(horizontal = 12.dp, vertical = 8.dp)
+      .testTag("area_grid")
+  ) {
+    statuses.chunked(2).forEach { row ->
+      Row(Modifier.fillMaxWidth()) {
+        row.forEach { s ->
+          val domain = DomainType.values().first { it.name == s.area }
+          val name = getDomainName(domain, lang)
+          val count = GameRegistry.allGames.count { it.domain == domain }
+          Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(24.dp))
+              .clickable { onArea(s.area) }
+              .padding(vertical = 8.dp)
+              .semantics(mergeDescendants = true) { contentDescription = areaDescription(name, s) + ". Abrir sus juegos" }
+              .testTag("area_${s.area.lowercase()}")
+          ) {
+            Box(
+              Modifier.size(104.dp).drawBehind {
+                // resplandor suave del color del área detrás del planeta
+                drawCircle(Brush.radialGradient(listOf(domain.color.copy(alpha = 0.38f), Color.Transparent), center, size.minDimension / 2f))
+              },
+              contentAlignment = Alignment.Center
+            ) {
+              Image(painterResource(areaPlanetRes(s.area)), contentDescription = null, modifier = Modifier.fillMaxSize())
+              if (s.area in playedToday) TodaySeal(Modifier.align(Alignment.TopEnd).padding(top = 14.dp, end = 14.dp))
+            }
+            Text(name, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            AreaBar(s.value, s.change, modifier = Modifier.width(124.dp).padding(vertical = 8.dp), height = 7.dp)
+            Text(
+              (s.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (count == 1) "1 juego" else "$count juegos",
+              color = OnNightDim, fontSize = 14.sp
             )
-          },
-          contentAlignment = Alignment.Center
-        ) {
-          Box(Modifier.size(38.dp).clip(CircleShape).background(domain.color).border(3.dp, Clay.Ink, CircleShape))
+          }
         }
-        Spacer(Modifier.width(12.dp))
-        Column {
-          Text(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
-          if (progress != null) Text("${Skill.percent(progress)}% de avance", color = OnNightDim, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-          Text(
-            if (explored == total) (if (total == 1) "1 juego" else "$total juegos") else "$explored de $total juegos explorados",
-            color = OnNightDim, fontSize = 15.sp
-          )
-        }
-      }
-      ArrowButton(left = false, onClick = onNext)
-    }
-    // En cuál de las 6 áreas estás: rayitas de colores.
-    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
-      DomainType.values().forEach { d ->
-        Box(
-          Modifier
-            .padding(horizontal = 3.dp)
-            .size(width = if (d == domain) 26.dp else 16.dp, height = 5.dp)
-            .clip(RoundedCornerShape(3.dp))
-            .background(if (d == domain) d.color else d.color.copy(alpha = 0.35f))
-        )
       }
     }
   }
 }
 
+/** Sello sol con ✓: el área (o juego) ya se jugó hoy. La marca es una forma, no solo el color. */
 @Composable
-private fun ArrowButton(left: Boolean, onClick: () -> Unit) {
+private fun TodaySeal(modifier: Modifier = Modifier) {
   Box(
-    modifier = Modifier
-      .size(44.dp)
-      .drawBehind { drawCircle(Clay.Ink, size.minDimension / 2f, center.copy(y = center.y + 3.dp.toPx())) }
+    modifier
+      .size(24.dp)
+      .drawBehind { drawCircle(Clay.Ink, size.minDimension / 2f, center.copy(y = center.y + 2.dp.toPx())) }
       .clip(CircleShape)
-      .background(Color(0xFF28306E))
-      .border(2.dp, Clay.Ink, CircleShape)
-      .clickable(onClick = onClick)
-      .semantics { contentDescription = if (left) "Área anterior" else "Área siguiente" },
+      .background(Clay.Sun)
+      .border(2.dp, Clay.Ink, CircleShape),
     contentAlignment = Alignment.Center
-  ) {
-    Icon(
-      if (left) Icons.AutoMirrored.Filled.KeyboardArrowLeft else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-      contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp)
-    )
+  ) { Icon(Icons.Default.Check, contentDescription = "Jugada hoy", tint = Clay.Ink, modifier = Modifier.size(16.dp)) }
+}
+
+/**
+ * La ventana de un área (aprobada por Ricardo con Nubi científica, `docs/previews/juegos-nubi.png`): tapa toda la
+ * pantalla (la barra de pestañas se esconde y el dedo no cambia de pestaña), X arriba a la derecha, Nubi con bata y
+ * lentes pregunta con cuál entrenar y debajo van los juegos del área. [focusGameId] = la última casilla abierta.
+ */
+@Composable
+internal fun AreaWindow(
+  domain: DomainType,
+  title: String,
+  status: AreaStatus?,
+  cards: List<GameCardData>,
+  focusGameId: String?,
+  onClose: () -> Unit,
+  onGame: (GameDefinition) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Column(modifier.fillMaxSize().testTag("area_window")) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 6.dp)
+    ) {
+      Image(painterResource(areaPlanetRes(domain.name)), contentDescription = null, modifier = Modifier.size(64.dp))
+      Column(Modifier.weight(1f)) {
+        Text(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
+        Text(
+          (status?.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (cards.size == 1) "1 juego" else "${cards.size} juegos",
+          color = OnNightDim, fontSize = 15.sp
+        )
+      }
+      Box(
+        Modifier
+          .size(44.dp)
+          .drawBehind { drawCircle(Clay.Ink, size.minDimension / 2f, center.copy(y = center.y + 3.dp.toPx())) }
+          .clip(CircleShape)
+          .background(Clay.Cream)
+          .border(2.5.dp, Clay.Ink, CircleShape)
+          .clickable(onClick = onClose)
+          .semantics { contentDescription = "Cerrar $title" }
+          .testTag("btn_area_close"),
+        contentAlignment = Alignment.Center
+      ) { Icon(Icons.Default.Close, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(26.dp)) }
+    }
+    val start = cards.indexOfFirst { it.game.id == focusGameId }.let { if (it < 0) 0 else it + 1 }
+    val list = rememberLazyListState(initialFirstVisibleItemIndex = start)
+    LazyColumn(
+      state = list,
+      contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+      verticalArrangement = Arrangement.spacedBy(12.dp),
+      modifier = Modifier.weight(1f).testTag("game_list")
+    ) {
+      item(key = "nubi") {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+          Image(
+            painterResource(com.example.R.drawable.nubi_cientifica), contentDescription = "Nubi con bata de científica",
+            modifier = Modifier.size(150.dp)
+          )
+          NubiBubble(
+            title = "Nubi",
+            text = "¿Con cuál entrenamos ${AreaProgress.your(title)}?",
+            tailLeft = true,
+            modifier = Modifier.weight(1f)
+          )
+        }
+      }
+      itemsIndexed(cards, key = { _, c -> c.game.id }) { _, data ->
+        GameTile(data, highlighted = data.game.id == focusGameId) { onGame(data.game) }
+      }
+    }
   }
 }
 

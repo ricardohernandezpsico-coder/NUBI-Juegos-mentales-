@@ -184,24 +184,43 @@ fun areaDescription(name: String, s: AreaStatus): String {
   return "$name: ${Skill.stageName(s.value!!)}, $v de 100, $ch"
 }
 
-/** Globo de texto de Nubi (un diálogo de Nubi: el único recuadro de la pantalla), con la cola hacia abajo. */
+/**
+ * Globo de texto de Nubi (un diálogo de Nubi: el único recuadro de la pantalla), con la cola hacia abajo o, con
+ * [tailLeft], hacia la izquierda (Nubi al lado del globo, como en la ventana de un área de Juegos).
+ */
 @Composable
-fun NubiBubble(title: String, text: String, modifier: Modifier = Modifier) {
+fun NubiBubble(title: String, text: String, modifier: Modifier = Modifier, tailLeft: Boolean = false) {
   Column(
     modifier
       .drawBehind {
-        val h = size.height - 12.dp.toPx(); val r = CornerRadius(18.dp.toPx())
+        val tl = 12.dp.toPx()
+        val x0 = if (tailLeft) tl else 0f
+        val w = size.width - x0
+        val h = if (tailLeft) size.height - 3.dp.toPx() else size.height - 12.dp.toPx()
+        val r = CornerRadius(18.dp.toPx())
         val line = 2.dp.toPx()
-        drawRoundRect(BubbleLine, topLeft = Offset(0f, 3.dp.toPx()), size = Size(size.width, h), cornerRadius = r)
-        drawRoundRect(BubbleFill, size = Size(size.width, h), cornerRadius = r)
-        drawRoundRect(BubbleLine, size = Size(size.width, h), cornerRadius = r, style = Stroke(line))
-        val cx = size.width / 2f; val t = 9.dp.toPx()
-        val tail = Path().apply { moveTo(cx - t, h - line); lineTo(cx, h + 12.dp.toPx() - line); lineTo(cx + t, h - line); close() }
-        drawPath(tail, BubbleFill)
-        drawLine(BubbleLine, Offset(cx - t, h - line / 2f), Offset(cx, h + 12.dp.toPx() - line), line)
-        drawLine(BubbleLine, Offset(cx + t, h - line / 2f), Offset(cx, h + 12.dp.toPx() - line), line)
+        drawRoundRect(BubbleLine, topLeft = Offset(x0, 3.dp.toPx()), size = Size(w, h), cornerRadius = r)
+        drawRoundRect(BubbleFill, topLeft = Offset(x0, 0f), size = Size(w, h), cornerRadius = r)
+        drawRoundRect(BubbleLine, topLeft = Offset(x0, 0f), size = Size(w, h), cornerRadius = r, style = Stroke(line))
+        val t = 9.dp.toPx()
+        if (tailLeft) {
+          val cy = h * 0.5f
+          val tail = Path().apply { moveTo(x0 + line, cy - t); lineTo(x0 - tl + line, cy); lineTo(x0 + line, cy + t); close() }
+          drawPath(tail, BubbleFill)
+          drawLine(BubbleLine, Offset(x0 + line / 2f, cy - t), Offset(x0 - tl + line, cy), line)
+          drawLine(BubbleLine, Offset(x0 + line / 2f, cy + t), Offset(x0 - tl + line, cy), line)
+        } else {
+          val cx = size.width / 2f
+          val tail = Path().apply { moveTo(cx - t, h - line); lineTo(cx, h + 12.dp.toPx() - line); lineTo(cx + t, h - line); close() }
+          drawPath(tail, BubbleFill)
+          drawLine(BubbleLine, Offset(cx - t, h - line / 2f), Offset(cx, h + 12.dp.toPx() - line), line)
+          drawLine(BubbleLine, Offset(cx + t, h - line / 2f), Offset(cx, h + 12.dp.toPx() - line), line)
+        }
       }
-      .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp)
+      .padding(
+        start = if (tailLeft) 28.dp else 16.dp, end = 16.dp, top = 8.dp,
+        bottom = if (tailLeft) 14.dp else 20.dp
+      )
   ) {
     Text(title, color = BubbleLabel, fontSize = 14.sp)
     Text(text, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)

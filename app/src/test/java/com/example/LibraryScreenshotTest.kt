@@ -1,8 +1,10 @@
 package com.example
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
@@ -10,16 +12,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
+import com.example.data.AreaStatus
 import com.example.data.MeasurePoint
 import com.example.data.PlayMode
 import com.example.model.AgeBand
+import com.example.model.AppLanguage
 import com.example.model.DomainType
 import com.example.model.GameRegistry
-import com.example.ui.screens.AreaHeader
-import com.example.ui.screens.GameTile
+import com.example.ui.components.NeuroNavBar
+import com.example.ui.components.TopActions
+import com.example.ui.screens.AreaGrid
+import com.example.ui.screens.AreaWindow
 import com.example.ui.screens.GameSheetContent
 import com.example.ui.screens.cardData
 import com.example.ui.theme.NeuroVidaTheme
+import com.example.viewmodel.AppTab
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -29,7 +36,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** La pestaña Juegos (área a la vez + cartas) y la ventana de modos, con datos de ejemplo, para verlas sin teléfono. */
+/**
+ * La pestaña Juegos (las 6 áreas, la ventana de un área con Nubi científica y la ficha de un juego) y la barra de abajo,
+ * con datos de ejemplo, para verlas sin teléfono.
+ */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
@@ -39,6 +49,30 @@ class LibraryScreenshotTest {
 
   private val day = 86_400_000L
   private val now = 400 * day + 3_600_000L
+  private val statuses = listOf(
+    AreaStatus("MEMORIA", 0.52f, 0.06f, emptyList()),
+    AreaStatus("ATENCION", 0.47f, 0f, emptyList()),
+    AreaStatus("RAZONAMIENTO", 0.36f, 0f, emptyList()),
+    AreaStatus("LENGUAJE", 0.12f, -0.05f, emptyList()),
+    AreaStatus("CALCULO", 0.30f, 0f, emptyList()),
+    AreaStatus("VELOCIDAD", null, 0f, emptyList())
+  )
+
+  @Test
+  fun areas() {
+    composeTestRule.setContent {
+      NeuroVidaTheme {
+        Column(Modifier.width(412.dp).height(860.dp).background(Color(0xFF0A1040))) {
+          Box(Modifier.fillMaxWidth().padding(16.dp)) {
+            TopActions("Ricardo", {}, {}, Modifier.align(androidx.compose.ui.Alignment.CenterEnd))
+          }
+          AreaGrid(statuses, playedToday = setOf("MEMORIA"), lang = AppLanguage.SPANISH, onArea = {}, modifier = Modifier.weight(1f))
+          NeuroNavBar(current = AppTab.JUEGOS, onSelect = {})
+        }
+      }
+    }
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/juegos-areas.png")
+  }
 
   @Test
   fun library() {
@@ -46,16 +80,14 @@ class LibraryScreenshotTest {
     val progress = mapOf("bitacora" to 0.62f, "rumbo" to 0.45f, "secuencia" to 0.75f, "parejas" to 0.40f, "rutatesoro" to 0.33f)
     val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
       .sortedBy { com.example.data.StarMeasures.defForGame(it.id) == null }
+    val cards = games.map { g ->
+      val last = if (g.id == "correo") null else now - (if (g.id == "rumbo") 0 else 2) * day
+      cardData(g, g.title, last, now, progress[g.id], if (g.id == "rumbo") points else emptyList(), 4)
+    }
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Column(Modifier.width(412.dp).background(Color(0xFF0A1040))) {
-          AreaHeader(DomainType.MEMORIA, "Memoria", 0.51f, explored = 5, total = 6, onPrev = {}, onNext = {})
-          Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
-            games.forEach { g ->
-              val last = if (g.id == "correo") null else now - (if (g.id == "rumbo") 0 else 2) * day
-              GameTile(cardData(g, g.title, last, now, progress[g.id], if (g.id == "rumbo") points else emptyList(), 4), highlighted = g.id == "rumbo") {}
-            }
-          }
+        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF0A1040))) {
+          AreaWindow(DomainType.MEMORIA, "Memoria", statuses[0], cards, focusGameId = null, onClose = {}, onGame = {})
         }
       }
     }

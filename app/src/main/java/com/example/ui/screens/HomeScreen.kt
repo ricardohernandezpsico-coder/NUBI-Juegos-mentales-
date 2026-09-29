@@ -69,6 +69,7 @@ import com.example.ui.components.AreaBar
 import com.example.ui.components.AreaBarColor
 import com.example.ui.components.CosmosScroll
 import com.example.ui.components.LeagueShield
+import com.example.ui.components.LockTabSwipe
 import com.example.ui.components.MiniPlanet
 import com.example.ui.components.NubiBubble
 import com.example.ui.components.NubiHome
@@ -111,7 +112,6 @@ fun HomeScreen(
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val progress by viewModel.gameProgress.collectAsState()
   val progressLog by viewModel.progressLog.collectAsState()
-  val weeklyChallenges by viewModel.weeklyChallengeProgress.collectAsState()
   val pausedGameId by viewModel.pausedGameId.collectAsState()
   val baseline by viewModel.baseline.collectAsState()
   val mission by viewModel.mission.collectAsState()
@@ -128,7 +128,6 @@ fun HomeScreen(
   val missionStep = remember(mission, dailySession, clock) { viewModel.missionStep(clock) }
   val lang = LocalAppLanguage.current
 
-  var showChallenges by remember { mutableStateOf(false) }
   var openArea by rememberSaveable { mutableStateOf<String?>(null) }
 
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
@@ -143,6 +142,7 @@ fun HomeScreen(
   }
 
   openArea?.let { key ->
+    LockTabSwipe()
     BackHandler { openArea = null }
     AreaDetail(
       areaKey = key,
@@ -164,31 +164,17 @@ fun HomeScreen(
   }
 
   Column(modifier = modifier.fillMaxSize()) {
-    // Cabecera fija: liga, nivel y racha en una sola línea (sin recuadros)
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(start = 20.dp, end = 20.dp, top = 8.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
+    // Cabecera: liga y racha a la izquierda (sin recuadros); a la derecha tu perfil y las opciones. Los desafíos de
+    // la semana pasaron a Avance (29-sep: la cabecera no daba para todo).
+    TabTopBar(viewModel) {
       LeagueShield(tier = tier, size = 26.dp)
       Spacer(Modifier.width(8.dp))
       Text(tier.tierName, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
       Text("  ·  ", color = OnNightDim, fontSize = 15.sp)
-      Text(index?.let { "$it nivel" } ?: "sin nivel", color = OnNight, fontSize = 15.sp)
-      Text("  ·  ", color = OnNightDim, fontSize = 15.sp)
       Icon(Icons.Default.Whatshot, contentDescription = null, tint = Clay.Sun, modifier = Modifier.size(18.dp))
-      Text("$streak", color = Clay.Sun, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("streak_pill"))
-      Spacer(Modifier.weight(1f))
       Text(
-        text = "Desafíos ${weeklyChallenges.count { it.isComplete }}/${weeklyChallenges.size}",
-        color = Clay.Sun,
-        fontSize = 15.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier
-          .clip(RoundedCornerShape(10.dp))
-          .clickable { showChallenges = true }
-          .padding(6.dp)
+        if (streak == 1) "1 día" else "$streak días", color = Clay.Sun, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+        modifier = Modifier.testTag("streak_pill")
       )
     }
 
@@ -225,38 +211,6 @@ fun HomeScreen(
     )
   }
 
-  if (showChallenges) {
-    Dialog(onDismissRequest = { showChallenges = false }) {
-      ClayCard(modifier = Modifier.fillMaxWidth().padding(8.dp), color = Clay.Grape, radius = 28.dp, contentPadding = 20.dp) {
-        Text("Desafíos de la semana", color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
-        weeklyChallenges.forEach { wc ->
-          Column(modifier = Modifier.padding(vertical = 6.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-              Text(wc.def.title, color = Clay.Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-              Text(if (wc.isComplete) "Listo" else "${wc.progress}/${wc.def.target}", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            }
-            Box(
-              modifier = Modifier
-                .padding(top = 4.dp)
-                .fillMaxWidth()
-                .height(10.dp)
-                .clip(RoundedCornerShape(5.dp))
-                .background(Color.White.copy(alpha = 0.55f))
-                .border(2.dp, Clay.Ink, RoundedCornerShape(5.dp))
-            ) {
-              Box(
-                modifier = Modifier
-                  .fillMaxWidth((wc.progress.toFloat() / wc.def.target).coerceIn(0.04f, 1f))
-                  .height(10.dp)
-                  .background(if (wc.isComplete) Clay.Lime else Clay.Sun)
-              )
-            }
-          }
-        }
-      }
-    }
-  }
 }
 
 /** Lo que dice Nubi arriba del detalle de un área, en palabras. */

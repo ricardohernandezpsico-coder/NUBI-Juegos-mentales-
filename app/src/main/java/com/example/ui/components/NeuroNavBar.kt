@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -15,21 +14,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.SportsEsports
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,10 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -59,31 +50,26 @@ import com.example.viewmodel.AppTab
 private val BarColor = Color(0xFFFFFFFF)
 private val Ink = Color(0xFF1A1240)
 private val InkDim = Color(0xFF6B6790)
-private val Blue = Color(0xFFFF6B4A)
-private val Amber = Color(0xFFFFC93C)
+private val Accent = Color(0xFFFF6B4A)
 
-private data class NavItem(val tab: AppTab, val label: String, val on: ImageVector, val off: ImageVector)
+/** Un destino de la barra; sin ícono de Material = el cerebro dibujado ([BrainIcon]). */
+private data class NavItem(val tab: AppTab, val label: String, val on: ImageVector?, val off: ImageVector?)
 
-private val leftItems = listOf(
+// Aprobado por Ricardo (29-sep, `docs/previews/navegacion-nubi.png`): Hoy (casa), Juegos (un "player") y Avance (un
+// cerebro). Sin el botón "play" del centro: el desafío del día ya se empieza desde Hoy.
+private val items = listOf(
   NavItem(AppTab.HOY, "Hoy", Icons.Filled.Home, Icons.Outlined.Home),
-  NavItem(AppTab.JUEGOS, "Juegos", Icons.Filled.SportsEsports, Icons.Outlined.SportsEsports)
-)
-private val rightItems = listOf(
-  NavItem(AppTab.PROGRESO, "Liga", Icons.Filled.EmojiEvents, Icons.Outlined.EmojiEvents),
-  NavItem(AppTab.AJUSTES, "Perfil", Icons.Filled.Person, Icons.Outlined.Person)
+  NavItem(AppTab.JUEGOS, "Juegos", Icons.Filled.PlayCircle, Icons.Outlined.PlayCircle),
+  NavItem(AppTab.PROGRESO, "Avance", null, null)
 )
 
-/**
- * Barra inferior flotante de NeuroVida: 4 destinos (Hoy, Juegos, Liga, Perfil) y, al centro, el boton
- * "Entrenar" (inicia la sesion diaria) elevado, naranja y brillante. Pensada para no saturar: solo icono y
- * etiqueta corta; el seleccionado se resalta con una pastilla azul.
- */
+/** Barra inferior flotante de Nubi: 3 destinos con ícono y etiqueta corta; el elegido se resalta con una pastilla. */
 @Composable
-fun NeuroNavBar(current: AppTab, onSelect: (AppTab) -> Unit, onTrain: () -> Unit, modifier: Modifier = Modifier) {
+fun NeuroNavBar(current: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier = Modifier) {
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .height(96.dp)
+      .height(84.dp)
       .padding(horizontal = 14.dp)
       .testTag("bottom_nav_bar")
   ) {
@@ -101,30 +87,17 @@ fun NeuroNavBar(current: AppTab, onSelect: (AppTab) -> Unit, onTrain: () -> Unit
       border = BorderStroke(3.dp, Ink),
       shadowElevation = 0.dp
     ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        leftItems.forEach { NavSlot(it, current == it.tab, { onSelect(it.tab) }, Modifier.weight(1f)) }
-        // Hueco para el boton central
-        Box(modifier = Modifier.weight(1f))
-        rightItems.forEach { NavSlot(it, current == it.tab, { onSelect(it.tab) }, Modifier.weight(1f)) }
+      Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        items.forEach { NavSlot(it, current == it.tab, { onSelect(it.tab) }, Modifier.weight(1f)) }
       }
     }
-
-    TrainButton(
-      onClick = onTrain,
-      modifier = Modifier
-        .align(Alignment.TopCenter)
-        .offset(y = 2.dp)
-    )
   }
 }
 
 @Composable
 private fun NavSlot(item: NavItem, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
   val tint by animateColorAsState(if (selected) Ink else InkDim, label = "navTint")
-  val pill by animateColorAsState(if (selected) Blue.copy(alpha = 0.18f) else Color.Transparent, label = "navPill")
+  val pill by animateColorAsState(if (selected) Accent.copy(alpha = 0.18f) else Color.Transparent, label = "navPill")
   val scale by animateFloatAsState(
     if (selected) 1.08f else 1f,
     spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
@@ -143,41 +116,15 @@ private fun NavSlot(item: NavItem, selected: Boolean, onClick: () -> Unit, modif
       modifier = Modifier
         .clip(RoundedCornerShape(16.dp))
         .background(pill)
-        .padding(horizontal = 16.dp, vertical = 5.dp)
+        .padding(horizontal = 18.dp, vertical = 4.dp)
         .scale(scale),
       contentAlignment = Alignment.Center
     ) {
-      Icon(if (selected) item.on else item.off, contentDescription = null, tint = if (selected) Blue else tint, modifier = Modifier.size(24.dp))
+      val iconTint = if (selected) Accent else tint
+      val icon = if (selected) item.on else item.off
+      if (icon != null) Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(26.dp))
+      else BrainIcon(iconTint, 26.dp)
     }
     Text(item.label, fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, color = tint)
-  }
-}
-
-@Composable
-private fun TrainButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-  Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-    Box(
-      modifier = Modifier
-        .size(64.dp)
-        .drawBehind { drawCircle(Ink, radius = size.minDimension / 2, center = Offset(size.width / 2, size.height / 2 + 4.dp.toPx())) }
-        .clip(CircleShape)
-        .background(Amber)
-        .border(3.dp, Ink, CircleShape)
-        .clickable(onClick = onClick)
-        .semantics { role = Role.Button; contentDescription = "Entrenar: iniciar sesión diaria" }
-        .testTag("nav_train_button"),
-      contentAlignment = Alignment.Center
-    ) {
-      // Brillo superior
-      Box(
-        modifier = Modifier
-          .align(Alignment.TopCenter)
-          .padding(top = 5.dp)
-          .size(width = 34.dp, height = 12.dp)
-          .clip(RoundedCornerShape(50))
-          .background(Color.White.copy(alpha = 0.55f))
-      )
-      Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Ink, modifier = Modifier.size(34.dp))
-    }
   }
 }
