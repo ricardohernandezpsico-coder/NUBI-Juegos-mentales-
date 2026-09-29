@@ -78,7 +78,7 @@ def screen_a():
 
 
 def screen_c():
-    H = dp(720); im = NI.base_panel(65, H)
+    H = dp(806); im = NI.base_panel(65, H)
     key, name, v, dv = AREAS[0]
     d = ImageDraw.Draw(im)
     d.text((W - dp(20), dp(34)), '✕' if False else '', font=F(14), fill=WHITE)
@@ -120,7 +120,12 @@ def screen_c():
         x = W / 2 + (i - 2.5) * dp(16); r = dp(4 if i else 5); py = gy1 + dp(52)
         if i == 0: d.ellipse([x - r, py - r, x + r, py + r], fill=WHITE)
         else: ov(im, lambda dd, x=x, r=r, py=py: dd.ellipse([x - r, py - r, x + r, py + r], outline=(255, 255, 255, 120), width=int(dp(1.4))))
-    NI.button(im, dp(640), 'Jugar Memoria')
+    # invitación en vez de "Jugar Memoria": una pregunta de Nubi, el botón en primera persona y qué juego toca
+    d = ImageDraw.Draw(im)
+    d.text((W / 2, dp(656)), '¿Trabajamos tu memoria ahora?', font=F(17), fill=WHITE, anchor='mm')
+    NI.button(im, dp(680), 'Entrenar mi memoria')
+    d = ImageDraw.Draw(im)
+    d.text((W / 2, dp(760)), 'Nubi eligió Secuencia Lumínica: hace días que no la juegas', font=F(14, False), fill=DIM, anchor='mm')
     return im
 
 
@@ -139,9 +144,25 @@ def legend(im, y):
     return y + len(rows) * dp(58)
 
 
+def options(im, y):
+    """Otras formas de decirlo (en todas: pregunta + acción; nunca "Jugar Memoria")."""
+    d = ImageDraw.Draw(im)
+    d.text((dp(20), y), 'Otras formas de decirlo', font=F(18), fill=SUN); y += dp(36)
+    for i, (q, b) in enumerate([('¿Trabajamos tu memoria ahora?', 'Entrenar mi memoria'),
+                               ('¿Le damos un empujón a tu memoria?', 'Sí, vamos'),
+                               ('Tu memoria está cerca de Avanzado', 'Seguir con memoria')]):
+        yy = y + i * dp(92)
+        d = ImageDraw.Draw(im)
+        d.text((dp(24), yy), f'{i + 1}.  {q}', font=F(15), fill=WHITE)
+        x0, x1, h = dp(40), dp(300), dp(40)
+        d.rounded_rectangle([x0, yy + dp(28) + dp(4), x1, yy + dp(28) + h + dp(4)], radius=dp(16), fill=INK)
+        d.rounded_rectangle([x0, yy + dp(28), x1, yy + dp(28) + h], radius=dp(16), fill=SUN, outline=INK, width=int(dp(2.5)))
+        d.text(((x0 + x1) / 2, yy + dp(28) + h / 2), b, font=F(16), fill=INK, anchor='mm')
+
+
 def sheet():
     a, c = screen_a(), screen_c()
-    H = dp(84) + a.size[1] + dp(70) + c.size[1] + dp(40) + dp(300)
+    H = dp(84) + a.size[1] + dp(70) + c.size[1] + dp(40) + dp(300) + dp(330)
     im = Image.new('RGBA', (W, int(H)), (10, 10, 30, 255)); d = ImageDraw.Draw(im)
     d.text((dp(20), dp(26)), 'Hoy con Nubi · versión elegida', font=F(22), fill=SUN)
     d.text((dp(20), dp(58)), 'Sin números sueltos: el cambio se ve en la barra.', font=F(13, False), fill=DIM)
@@ -151,7 +172,8 @@ def sheet():
     d.text((W / 2, y + dp(18)), 'Al tocar Memoria se abre su detalle', font=F(16), fill=WHITE, anchor='mm')
     y += dp(54)
     AL.paste_round(im, c, 0, y, dp(24)); y += c.size[1] + dp(30)
-    legend(im, y)
+    y = legend(im, y) + dp(30)
+    options(im, y)
     out = os.path.join(P.OUT, 'nubi-hoy.png'); im.convert('RGB').save(out); print(out)
 
 
