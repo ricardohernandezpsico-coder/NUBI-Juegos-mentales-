@@ -358,7 +358,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   fun startDailySession() {
-    if (launchMissionIfDue()) return
     val session = dailySession.value
     val nextGameId = if (session.completedCount < session.gameIds.size) {
       session.gameIds[session.completedCount]
@@ -366,22 +365,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       session.gameIds.firstOrNull() ?: "calculo"
     }
     launchGame(nextGameId, isDailyFlow = true)
-  }
-
-  /**
-   * La misión de Bitácora dentro de la sesión diaria: un informe pendiente de otro día va primero; la transmisión de
-   * hoy, antes del primer juego; el informe de hoy, después del último. true si lanzó una fase de la misión.
-   */
-  private fun launchMissionIfDue(): Boolean {
-    val session = dailySession.value
-    val m = _mission.value
-    return when (missionStep()) {
-      com.example.data.MissionStep.INFORME ->
-        if (m.dateKey != session.dateKey || session.completedCount >= session.gameIds.size) { startMissionReport(isDailyFlow = true); true } else false
-      com.example.data.MissionStep.TRANSMISION ->
-        if (session.completedCount == 0) { startMissionTransmission(isDailyFlow = true); true } else false
-      else -> false
-    }
   }
 
   /**
@@ -624,18 +607,37 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     triggerHapticFeedback(if (score >= 70) HapticType.SUCCESS else HapticType.LIGHT)
   }
 
+  /**
+   * "Continuar" del resultado en la sesión diaria: el siguiente de los 3 juegos o, al terminar, el resumen de la
+   * sesión ([sessionSummary]). La Bitácora de Misión ya no se mete sola en la sesión (29-sep, Ricardo: el botón decía
+   * un juego y empezaba otro, y se jugaban 5): se hace desde su línea en Hoy.
+   */
   fun continueDailyFlow() {
     _lastResult.value = null
-    if (launchMissionIfDue()) return
     val session = dailySession.value
     if (session.completedCount < session.gameIds.size) {
       val nextId = session.gameIds[session.completedCount]
       launchGame(nextId, isDailyFlow = true)
     } else {
-      // Session fully finished, go home
       setTab(AppTab.HOY)
+      _sessionSummary.value = buildSessionSummary()
     }
   }
+
+  private val _sessionSummary = MutableStateFlow<com.example.data.SessionSummary?>(null)
+  /** El resumen de la sesión de hoy recién terminada (se muestra una vez, sobre Hoy). */
+  val sessionSummary: StateFlow<com.example.data.SessionSummary?> = _sessionSummary.asStateFlow()
+
+  fun dismissSessionSummary() { _sessionSummary.value = null }
+
+  private fun buildSessionSummary(): com.example.data.SessionSummary =
+    com.example.data.SessionSummary.build(
+      gameIds = dailySession.value.gameIds,
+      history = gameHistory.value,
+      progress = gameProgress.value,
+      points = repository.progressLog.value,
+      now = System.currentTimeMillis()
+    )
 
   fun closeGameOrResult() {
     // Partida lanzada desde Juegos: al cerrar el resultado se vuelve a Juegos, al área y casilla de ese juego

@@ -45,9 +45,15 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 - Pestañas (`ui/components/NeuroNavBar`): Hoy (`HomeScreen`, Nubi al centro con las 6 áreas: ver abajo) · Juegos
   (`GamesLibraryScreen`, "¿Qué quieres trabajar hoy?" + cartas: ver abajo) · Entrenar (botón central = sesión diaria) · Liga (`ProgressScreen`) ·
   Perfil (`ProfileScreen`, logros, punto de partida; abre `SettingsScreen`). Onboarding (`OnboardingScreen`,
-  9 pasos) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
+  9 pasos; bienvenida "Hola, soy Nubi": Nubi como compañía) mientras `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
+  Las pestañas se pasan deslizando con el dedo (`HorizontalPager` en `MainActivity`, sincronizado con
+  `viewModel.currentTab`; los gestos horizontales propios de una pantalla, como pasar de área, tienen prioridad).
+- Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`). Al "Continuar" del tercero,
+  resumen (`data/SessionSummary` + `ui/screens/SessionSummaryScreen`): Nubi celebra, qué áreas se trabajaron, puntaje
+  de cada juego, racha y la barra de avance de cada área con "Hoy avanzó de X a Y" (cambio desde el comienzo de la
+  sesión, `AreaProgress.status(since = ...)`). Captura `docs/previews/resumen-sesion-real.png`.
 - Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
-  `Planet`, `StarMeasures`, `Library`, `Skill`; y
+  `Planet`, `SessionSummary`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v11** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
@@ -297,12 +303,11 @@ app de la competencia mide memoria con demora a lo largo de la sesión.
   "" = completa (la espera es una **patrulla** de 45 s atrapando cometas, que ocupa la atención sin repasar);
   "encode" = transmisión y repaso; "recall" = informe. La misión se rearma con la semilla (`MissionRng` xorshift propio:
   igual en cualquier versión) y el nivel.
-- **Sesión diaria** (app, `data/MissionLog` + `MissionLogStore` en SharedPreferences `mission_log`): la transmisión va
-  ANTES del primer juego y el informe DESPUÉS del último (o pasados 10 min); un informe pendiente de otro día se hace
-  primero (memoria a un día). `NeuroVidaViewModel.launchMissionIfDue` en `startDailySession` y `continueDailyFlow`
-  ("Continuar" del resultado en la sesión siempre sigue el flujo). Bitácora no entra al camino de 3 (`BOOKEND_GAMES`).
-  Hoy muestra la línea de la Bitácora (`MissionLine`: transmisión / espera con minutos / informe listo / al día con la
-  colección). La transmisión sola NO se guarda en Room (no es partida completa): muestra su pantalla y sigue.
+- **Misión del día** (app, `data/MissionLog` + `MissionLogStore` en SharedPreferences `mission_log`). Desde el 29-sep
+  va APARTE de la sesión diaria (Ricardo: el botón decía un juego y abría otro, y jugó 5 en vez de 3): ya no se
+  intercala sola. Se abre tocando la línea de la Bitácora en Hoy (`MissionLine`: transmisión / espera con minutos /
+  informe listo / al día con la colección); el informe se abre al terminar la sesión o pasados 10 min, y uno pendiente
+  de otro día mide memoria a un día. Bitácora no entra al camino de 3 (`BOOKEND_GAMES`). La transmisión sola NO se guarda en Room (no es partida completa): muestra su pantalla y sigue.
 - Reglas y pruebas: `BitacoraContract` / `BitacoraContractTests` (5). 10 niveles: paradas 3 → 8, planetas extra que la
   sonda no visita (0, 1 desde el 3, 2 desde el 6), señuelos 2 → 5. DDA `stepUp` 0.5 por parada del informe.
 - Medidas: **tu memoria a los X minutos** (paradas recordadas en su planeta), **retención** (de lo aprendido en el
@@ -437,7 +442,7 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
 
 ## Pruebas
 
-- Kotlin: 87 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
+- Kotlin: 90 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`).
 - Unity EditMode: 182 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.

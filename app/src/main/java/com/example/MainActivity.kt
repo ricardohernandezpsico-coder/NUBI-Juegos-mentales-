@@ -7,10 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -146,6 +142,19 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val achievementUnlocks by viewModel.achievementUnlocks.collectAsState()
   val baselineRun by viewModel.baselineRun.collectAsState()
   val education by viewModel.education.collectAsState()
+  val sessionSummary by viewModel.sessionSummary.collectAsState()
+  val lang = com.example.ui.i18n.LocalAppLanguage.current
+  // Pestañas que se pasan deslizando con el dedo (29-sep, pedido de Ricardo), sincronizadas con la barra de abajo.
+  val tabs = AppTab.entries
+  val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = currentTab.ordinal) { tabs.size }
+  LaunchedEffect(currentTab) {
+    if (pagerState.currentPage != currentTab.ordinal) pagerState.animateScrollToPage(currentTab.ordinal)
+  }
+  LaunchedEffect(pagerState) {
+    androidx.compose.runtime.snapshotFlow { pagerState.settledPage }.collect { p ->
+      if (p != viewModel.currentTab.value.ordinal) viewModel.setTab(tabs[p])
+    }
+  }
   // Tras la primera celebración de una partida, las siguientes (más logros) aparecen enseguida.
   var celebratedOne by remember(lastResult) { mutableStateOf(false) }
 
@@ -158,7 +167,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       containerColor = androidx.compose.ui.graphics.Color.Transparent,
       bottomBar = {
         // Show bottom bar only when not playing a game or looking at results
-        if (activeGame == null && lastResult == null && baselineRun == null && promotion == null && achievementQueue.isEmpty()) {
+        if (activeGame == null && lastResult == null && baselineRun == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null) {
           com.example.ui.components.NeuroNavBar(
             current = currentTab,
             onSelect = { viewModel.setTab(it) },
@@ -182,20 +191,33 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       ) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
-        if (activeGame == null && lastResult == null && baselineRun == null) AnimatedContent(
-          targetState = currentTab,
-          transitionSpec = { fadeIn() togetherWith fadeOut() },
-          label = "TabTransition"
-        ) { tab ->
-          when (tab) {
-            AppTab.HOY -> HomeScreen(
-              viewModel = viewModel,
-              onNavigateToGames = { viewModel.setTab(AppTab.JUEGOS) }
-            )
-            AppTab.JUEGOS -> GamesLibraryScreen(viewModel = viewModel)
-            AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
-            AppTab.AJUSTES -> com.example.ui.screens.ProfileScreen(viewModel = viewModel)
+        if (activeGame == null && lastResult == null && baselineRun == null && sessionSummary == null) {
+          // Si la pestaña cambió mientras había un juego o el resumen encima, el pager vuelve a ella sin animar.
+          LaunchedEffect(Unit) {
+            if (pagerState.currentPage != currentTab.ordinal) pagerState.scrollToPage(currentTab.ordinal)
           }
+          androidx.compose.foundation.pager.HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            when (tabs[page]) {
+              AppTab.HOY -> HomeScreen(
+                viewModel = viewModel,
+                onNavigateToGames = { viewModel.setTab(AppTab.JUEGOS) }
+              )
+              AppTab.JUEGOS -> GamesLibraryScreen(viewModel = viewModel)
+              AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
+              AppTab.AJUSTES -> com.example.ui.screens.ProfileScreen(viewModel = viewModel)
+            }
+          }
+        }
+
+        // Resumen de la sesión del día recién terminada (sobre Hoy, una vez).
+        if (activeGame == null && lastResult == null) sessionSummary?.let { summary ->
+          androidx.activity.compose.BackHandler { viewModel.dismissSessionSummary() }
+          com.example.ui.screens.SessionSummaryScreen(
+            summary = summary,
+            streak = streak,
+            lang = lang,
+            onClose = { viewModel.dismissSessionSummary() }
+          )
         }
 
         // Active Game Screen Overlay

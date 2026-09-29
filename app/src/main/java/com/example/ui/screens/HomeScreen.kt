@@ -529,9 +529,8 @@ private fun MissionLine(
   onReport: () -> Unit
 ) {
   val (text, action) = when (step) {
-    com.example.data.MissionStep.TRANSMISION ->
-      if (completed == 0) "Bitácora: la transmisión del día llega al empezar tu sesión" to null
-      else "Bitácora: recibir la transmisión del día" to onTransmit
+    // La Bitácora es una misión aparte (ya no se mete sola en la sesión de 3 juegos): se toca desde acá.
+    com.example.data.MissionStep.TRANSMISION -> "Bitácora: recibir la transmisión del día" to onTransmit
     com.example.data.MissionStep.ESPERA ->
       (if (minutesLeft > 0) "Bitácora: el informe se abre al terminar tu sesión o en $minutesLeft min"
       else "Bitácora: el informe se abre al terminar tu sesión") to null

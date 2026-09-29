@@ -37,13 +37,17 @@ object AreaProgress {
 
   /**
    * [games] = los juegos del área; [current] = el avance de hoy de cada juego medido (lo que muestran las cartas).
+   * [since] = desde cuándo se mide el cambio (por omisión, hace 7 días; el resumen de la sesión usa su comienzo).
    * Si un juego medido no tiene historia anotada (se midió antes de que existiera el registro), se toma su avance de
    * hoy como el de siempre: no inventa cambios.
    */
-  fun status(area: String, games: List<String>, current: Map<String, Float>, points: List<ProgressPoint>, now: Long): AreaStatus {
+  fun status(
+    area: String, games: List<String>, current: Map<String, Float>, points: List<ProgressPoint>, now: Long,
+    since: Long = now - WEEK_MS
+  ): AreaStatus {
     val measured = games.filter { it in current }
     val value = if (measured.isEmpty()) null else measured.map { current.getValue(it) }.average().toFloat()
-    val then = now - WEEK_MS
+    val then = since
     val deltas = measured.mapNotNull { g ->
       val hist = points.any { it.gameId == g }
       val before = if (hist) at(points, g, then) else current.getValue(g)
@@ -78,14 +82,17 @@ object AreaProgress {
     }
   }
 
-  /** La línea del cambio en el detalle: "Esta semana avanzó de 46 a 52" / "bajó un poco, de 40 a 38" / igual. */
-  fun changeLine(s: AreaStatus): String {
+  /**
+   * La línea del cambio: "Esta semana avanzó de 46 a 52" / "bajó un poco, de 40 a 38" / "se mantuvo en 52". [period]
+   * = "Esta semana" en el detalle del área, "Hoy" en el resumen de la sesión.
+   */
+  fun changeLine(s: AreaStatus, period: String = "Esta semana"): String {
     val now = s.points ?: return "Aún sin medir: tu primera partida lo muestra"
     val before = s.pointsBefore ?: now
     return when {
-      s.change > 0f && before != now -> "Esta semana avanzó de $before a $now"
-      s.change < 0f && before != now -> "Esta semana bajó un poco, de $before a $now"
-      else -> "Esta semana se mantuvo en $now"
+      s.change > 0f && before != now -> "$period avanzó de $before a $now"
+      s.change < 0f && before != now -> "$period bajó un poco, de $before a $now"
+      else -> "$period se mantuvo en $now"
     }
   }
 

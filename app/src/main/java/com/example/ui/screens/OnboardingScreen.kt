@@ -57,6 +57,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -263,10 +267,16 @@ private fun WelcomePage(onNext: () -> Unit) {
     NubiWithHalo(size = 190.dp)
     Spacer(Modifier.height(6.dp))
     Text("Hola, soy Nubi", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 36.sp)
+    // Nubi se presenta como compañía (pedido de Ricardo, 29-sep): acompaña, guía, explica y celebra; nunca evalúa.
     Text(
-      text = "Te acompaño en ${GameRegistry.allGames.size} juegos cortos para entrenar memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
-      color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center,
+      text = "Voy a acompañarte en lo que quieras entrenar: te guío en cada juego, te explico lo que vas logrando y celebro contigo cada avance.",
+      color = OnNight, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 8.dp)
+    )
+    Text(
+      text = "${GameRegistry.allGames.size} juegos cortos de memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
+      color = OnNightDim, fontFamily = AppFamily, fontSize = 15.sp, lineHeight = 21.sp, textAlign = TextAlign.Center,
+      modifier = Modifier.padding(top = 10.dp)
     )
     Spacer(Modifier.weight(0.6f))
     ClayButton(text = "Empezar", onClick = onNext, modifier = Modifier.testTag("btn_onboarding_start"))
@@ -376,37 +386,49 @@ private fun HowItWorksPage(onNext: () -> Unit) {
   }
 }
 
-/** Metas: hasta 3 dominios que quiere entrenar (el camino diario los prioriza). Se puede seguir sin elegir. */
+/**
+ * Metas: hasta 3 dominios que quiere entrenar (el camino diario los prioriza). Se puede seguir sin elegir. Las filas
+ * son compactas para que las 6 quepan en casi cualquier teléfono; si no caben (pantalla chica o letra grande), la lista
+ * se desplaza y sus bordes se desvanecen, para que no parezca cortada (Ricardo, 29-sep).
+ */
 @Composable
 private fun GoalsPage(selected: Set<DomainType>, onToggle: (DomainType) -> Unit, onNext: () -> Unit) {
   Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-    Spacer(Modifier.weight(0.25f))
+    Spacer(Modifier.height(12.dp))
     Text("¿Qué quieres entrenar?", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, textAlign = TextAlign.Center)
     Text(
       "Elige hasta 3. Tu camino de cada día les dará prioridad.",
       color = OnNightDim, fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
-      modifier = Modifier.padding(top = 8.dp, bottom = 22.dp)
+      modifier = Modifier.padding(top = 6.dp, bottom = 14.dp)
     )
-    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+    val scroll = rememberScrollState()
+    Column(
+      Modifier
+        .weight(1f)
+        .fillMaxWidth()
+        .fadingEdges(top = scroll.canScrollBackward, bottom = scroll.canScrollForward)
+        .verticalScroll(scroll)
+        .padding(vertical = 4.dp)
+    ) {
       DomainType.values().forEach { d ->
         val on = d in selected
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 10.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .padding(bottom = 8.dp)
+            .clip(RoundedCornerShape(18.dp))
             .background(if (on) Clay.Cream else Color.White.copy(alpha = 0.06f))
-            .border(if (on) Clay.Border else 1.5.dp, if (on) Clay.Ink else Color.White.copy(alpha = 0.18f), RoundedCornerShape(20.dp))
+            .border(if (on) Clay.Border else 1.5.dp, if (on) Clay.Ink else Color.White.copy(alpha = 0.18f), RoundedCornerShape(18.dp))
             .clickable { onToggle(d) }
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 14.dp, vertical = 9.dp)
             .testTag("goal_${d.name.lowercase()}"),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          Box(Modifier.size(18.dp).clip(CircleShape).background(d.color).border(2.dp, Clay.Ink, CircleShape))
+          Box(Modifier.size(16.dp).clip(CircleShape).background(d.color).border(2.dp, Clay.Ink, CircleShape))
           Spacer(Modifier.width(12.dp))
           Column(Modifier.weight(1f)) {
-            Text(d.displayName, color = if (on) Clay.Ink else Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text(d.description, color = if (on) Clay.InkSoft else OnNightDim, fontFamily = AppFamily, fontSize = 15.sp)
+            Text(d.displayName, color = if (on) Clay.Ink else Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, lineHeight = 21.sp)
+            Text(d.description, color = if (on) Clay.InkSoft else OnNightDim, fontFamily = AppFamily, fontSize = 14.sp, lineHeight = 18.sp)
           }
           // Marca de elegido (forma, no solo color).
           Box(
@@ -418,11 +440,29 @@ private fun GoalsPage(selected: Set<DomainType>, onToggle: (DomainType) -> Unit,
         }
       }
     }
-    Spacer(Modifier.weight(0.75f))
+    Spacer(Modifier.height(12.dp))
     ClayButton(text = if (selected.isEmpty()) "Saltar" else "Siguiente", onClick = onNext, modifier = Modifier.testTag("btn_onboarding_goals_next"))
     Spacer(Modifier.height(20.dp))
   }
 }
+
+/** Desvanece el borde de arriba y/o de abajo de una lista que se desplaza (hay más contenido de ese lado). */
+private fun Modifier.fadingEdges(top: Boolean, bottom: Boolean, edge: androidx.compose.ui.unit.Dp = 36.dp): Modifier =
+  this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+      drawContent()
+      val h = edge.toPx()
+      if (top) drawRect(
+        Brush.verticalGradient(listOf(Color.Transparent, Color.Black), startY = 0f, endY = h),
+        size = androidx.compose.ui.geometry.Size(this.size.width, h), blendMode = BlendMode.DstIn
+      )
+      if (bottom) drawRect(
+        Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = this.size.height - h, endY = this.size.height),
+        topLeft = Offset(0f, this.size.height - h), size = androidx.compose.ui.geometry.Size(this.size.width, h),
+        blendMode = BlendMode.DstIn
+      )
+    }
 
 /**
  * Invitación a la evaluación inicial: los 3 juegos como planetas (qué mide cada uno), cuánto dura y que no es un
