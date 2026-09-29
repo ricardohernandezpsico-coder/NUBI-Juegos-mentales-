@@ -1,0 +1,149 @@
+# Vistas previas
+
+Imágenes de diseño y de arte de Nubi. Casi todas están **generadas desde el código** con los scripts de
+[`../../tools/`](../../tools) (`tools/art-preview` para el arte de los juegos y `tools/previews` para las pantallas
+de la app), no son capturas del teléfono. Las que terminan en `-real` sí son capturas reales de la app.
+
+Las que llevan números, "propuesta", "estilo" o "nebulosa" en el nombre son rondas de exploración: se guardan
+como historial de las decisiones de diseño. Si se cambia el arte de algo, hay que regenerar su lámina.
+
+## Capturas reales de la app
+
+- [`hoy-nubi-detalle-real.png`](hoy-nubi-detalle-real.png)
+- [`hoy-nubi-real.png`](hoy-nubi-real.png)
+- [`inicio-planeta-real.png`](inicio-planeta-real.png)
+- [`juegos-cartas-real.png`](juegos-cartas-real.png)
+- [`juegos-lista-real.png`](juegos-lista-real.png)
+- [`juegos-real.png`](juegos-real.png)
+
+## Sonidos de los juegos
+
+- [`bitacora-sonidos.wav`](bitacora-sonidos.wav)
+- [`correo-sonidos.wav`](correo-sonidos.wav)
+- [`rumbo-sonidos-llegadas.wav`](rumbo-sonidos-llegadas.wav)
+- [`rumbo-sonidos.wav`](rumbo-sonidos.wav)
+- [`trafico-sonidos.wav`](trafico-sonidos.wav)
+
+## Nubi: personaje, ícono y nombre
+
+- [`hoy-mundo-nubi.png`](hoy-mundo-nubi.png)
+- [`icono-astromente.png`](icono-astromente.png)
+- [`icono-cosmente.png`](icono-cosmente.png)
+- [`icono-estrellamente.png`](icono-estrellamente.png)
+- [`icono-luminautas.png`](icono-luminautas.png)
+- [`icono-mentaluna.png`](icono-mentaluna.png)
+- [`icono-nubi-a.png`](icono-nubi-a.png)
+- [`icono-nubi-b.png`](icono-nubi-b.png)
+- [`icono-nubi-c.png`](icono-nubi-c.png)
+- [`icono-nubi-d.png`](icono-nubi-d.png)
+- [`icono-nubi-suave.png`](icono-nubi-suave.png)
+- [`icono-nubi.png`](icono-nubi.png)
+- [`icono-orbimente.png`](icono-orbimente.png)
+- [`icono-planetea.png`](icono-planetea.png)
+- [`iconos-juegos.png`](iconos-juegos.png)
+- [`nombre-icono.png`](nombre-icono.png)
+- [`nombres-mas.png`](nombres-mas.png)
+- [`nubi-estilo-1.png`](nubi-estilo-1.png)
+- [`nubi-estilo-2.png`](nubi-estilo-2.png)
+- [`nubi-estilo-3.png`](nubi-estilo-3.png)
+- [`nubi-estilo-4.png`](nubi-estilo-4.png)
+- [`nubi-estilo-5.png`](nubi-estilo-5.png)
+- [`nubi-estilos.png`](nubi-estilos.png)
+- [`nubi-guia.png`](nubi-guia.png)
+- [`nubi-hoy.png`](nubi-hoy.png)
+- [`nubi-iconos.png`](nubi-iconos.png)
+- [`nubi-indicadores.png`](nubi-indicadores.png)
+- [`nubi-nebulosa-1.png`](nubi-nebulosa-1.png)
+- [`nubi-nebulosa-2.png`](nubi-nebulosa-2.png)
+- [`nubi-nebulosa-3.png`](nubi-nebulosa-3.png)
+- [`nubi-nebulosa-4.png`](nubi-nebulosa-4.png)
+- [`nubi-nebulosa-5.png`](nubi-nebulosa-5.png)
+- [`nubi-nebulosa-6.png`](nubi-nebulosa-6.png)
+- [`nubi-nebulosas.png`](nubi-nebulosas.png)
+- [`nubi-personaje.png`](nubi-personaje.png)
+- [`nubi-suave.png`](nubi-suave.png)
+- [`personaje-kibo.png`](personaje-kibo.png)
+- [`personaje-nubi.png`](personaje-nubi.png)
+- [`personaje-pulsi.png`](personaje-pulsi.png)
+- [`personajes.png`](personajes.png)
+
+## Hoy (inicio): propuestas y versiones
+
+- [`anillo-luz.png`](anillo-luz.png)
+- [`avance-sin-planeta.png`](avance-sin-planeta.png)
+- [`galaxia-hd.png`](galaxia-hd.png)
+- [`galaxia.png`](galaxia.png)
+- [`inicio-planeta-1.png`](inicio-planeta-1.png)
+- [`inicio-planeta-2.png`](inicio-planeta-2.png)
+- [`inicio-planeta-3.png`](inicio-planeta-3.png)
+- [`inicio-planeta.png`](inicio-planeta.png)
+- [`inicio-propuesta-1.png`](inicio-propuesta-1.png)
+- [`inicio-propuesta-2.png`](inicio-propuesta-2.png)
+- [`inicio-propuesta-3.png`](inicio-propuesta-3.png)
+- [`inicio-propuesta-4.png`](inicio-propuesta-4.png)
+- [`inicio-propuesta-5.png`](inicio-propuesta-5.png)
+- [`inicio-propuesta-6.png`](inicio-propuesta-6.png)
+- [`inicio-propuestas.png`](inicio-propuestas.png)
+- [`planeta-caminos.png`](planeta-caminos.png)
+
+## Juegos (pestaña): propuestas y versiones
+
+- [`juegos-areas-1.png`](juegos-areas-1.png)
+- [`juegos-areas-2.png`](juegos-areas-2.png)
+- [`juegos-areas-3.png`](juegos-areas-3.png)
+- [`juegos-areas-4.png`](juegos-areas-4.png)
+- [`juegos-areas-5.png`](juegos-areas-5.png)
+- [`juegos-areas.png`](juegos-areas.png)
+- [`juegos-cartas-1.png`](juegos-cartas-1.png)
+- [`juegos-cartas-2.png`](juegos-cartas-2.png)
+- [`juegos-cartas-3.png`](juegos-cartas-3.png)
+- [`juegos-cartas-4.png`](juegos-cartas-4.png)
+- [`juegos-cartas-5.png`](juegos-cartas-5.png)
+- [`juegos-cartas.png`](juegos-cartas.png)
+- [`juegos-dificultad-1.png`](juegos-dificultad-1.png)
+- [`juegos-dificultad-2.png`](juegos-dificultad-2.png)
+- [`juegos-dificultad-3.png`](juegos-dificultad-3.png)
+- [`juegos-dificultad.png`](juegos-dificultad.png)
+- [`juegos-final-1.png`](juegos-final-1.png)
+- [`juegos-final-2.png`](juegos-final-2.png)
+- [`juegos-final.png`](juegos-final.png)
+- [`juegos-propuesta-1.png`](juegos-propuesta-1.png)
+- [`juegos-propuesta-2.png`](juegos-propuesta-2.png)
+- [`juegos-propuesta-3.png`](juegos-propuesta-3.png)
+- [`juegos-propuesta-4.png`](juegos-propuesta-4.png)
+- [`juegos-propuesta-5.png`](juegos-propuesta-5.png)
+- [`juegos-propuesta-6.png`](juegos-propuesta-6.png)
+- [`juegos-propuestas.png`](juegos-propuestas.png)
+
+## Arte y pantallas de cada juego
+
+- [`acoplamiento.png`](acoplamiento.png)
+- [`anagramas-burbujas.png`](anagramas-burbujas.png)
+- [`arte-arcilla.png`](arte-arcilla.png)
+- [`arte-juegos-2.png`](arte-juegos-2.png)
+- [`arte-juegos.png`](arte-juegos.png)
+- [`aterrizaje.png`](aterrizaje.png)
+- [`bitacora.png`](bitacora.png)
+- [`correo-escudo.png`](correo-escudo.png)
+- [`correo-estelar.png`](correo-estelar.png)
+- [`fichas-arcilla.png`](fichas-arcilla.png)
+- [`freno.png`](freno.png)
+- [`piloto-estelar.png`](piloto-estelar.png)
+- [`radar-rescate.png`](radar-rescate.png)
+- [`radar-retoque.png`](radar-retoque.png)
+- [`radar.png`](radar.png)
+- [`rumbo.png`](rumbo.png)
+- [`satelites.png`](satelites.png)
+- [`simbolos-parejas.png`](simbolos-parejas.png)
+- [`trafico.png`](trafico.png)
+
+## Bienvenida, resultados, logros y compartir
+
+- [`cuenta-regresiva.png`](cuenta-regresiva.png)
+- [`marcador-y-cierre.png`](marcador-y-cierre.png)
+- [`medallas-logros.png`](medallas-logros.png)
+- [`onboarding.png`](onboarding.png)
+- [`pantalla-carga.png`](pantalla-carga.png)
+- [`pantalla-resultado.png`](pantalla-resultado.png)
+- [`punto-partida.png`](punto-partida.png)
+- [`tarjeta-compartir.png`](tarjeta-compartir.png)
