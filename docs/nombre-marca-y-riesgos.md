@@ -97,6 +97,27 @@ mente. **Ese vocabulario está casi todo tomado, y muchas veces por apps del mis
 nada libre ni distintivo. Lo que sí se puede es inventar una palabra que *suene* a mente sin ser un término técnico,
 o mezclar una sílaba del cerebro con el mundo de la app.
 
+### Quinta ronda (29-sep): los nombres de Ricardo
+
+| Nombre | Qué encontré | Veredicto |
+|---|---|---|
+| **BrainStride** | Marca REGISTRADA en EE. UU. (BRAIN STRIDE, n.º 88609908, Pentara Corporation, 2021) para coaching de salud cerebral (brainstride.com, prevención de demencia) + una app de trivia "Brain Stride". | Descartado: marca registrada del mismo rubro. |
+| **NeuroDash** | Ya hay al menos tres apps de entrenamiento con ese nombre (reacción y memoria, "QuickIQ Memory Game - NeuroDash"), una plataforma para TDAH y un proyecto hospitalario. | Descartado: mismo rubro, mismo nombre. |
+| **NeuroIgnite** | Suplemento para el cerebro (NeuroIGNITE, Havasu Nutrition; neuroignite.com), con un expediente de Truth in Advertising sobre sus promesas. | Descartado: marca de suplementos y mala asociación. |
+| **Synapta** | Empresa italiana de software (Synapta Srl), plataforma inglesa de apps móviles (synapta.co.uk) y una agencia digital. | Riesgo alto: software, mismo tipo de producto (clase 9/42). |
+| **MindKinetics** | No hay app con ese nombre; sí "Mental Kinetics LLC", "Kinetic Mind", BRAINKINETIK® (método de "kinética cerebral") y la editorial Human Kinetics. | Posible, con reparos: largo (12 letras), en inglés y difícil de decir y escribir para un adulto mayor hispanohablante; "kinetics" suena a movimiento físico. |
+
+Variantes probadas en el mismo estilo: MindOrbit (ya existe "MindOrbit: Brain Training Kids", ¡espacial y de entrenamiento!),
+MindVolt (app de entrenamiento cerebral y un suplemento), Astromind (apps de astrología), Kinetia (desarrollador de
+apps y consultora), Mentek (sin app, pero muy cerca de Mentiks, app de juegos mentales). **Kinemind** solo tiene dominios
+estacionados (kinemind.com, kinemind.be): es la versión corta de MindKinetics.
+
+**SEO / ASO (tiendas).** En apps lo que pesa es el buscador de Google Play y App Store, no Google web. El título (30
+caracteres) y la descripción corta (80) llevan las palabras clave; el nombre solo tiene que ser **único** para que quien
+busca la marca la encuentre primera. Los nombres con "Brain", "Neuro" o "Mind" compiten con miles de apps: nunca serán
+dueños de su búsqueda y cuesta que el boca a boca funcione ("¿cómo se escribe?"). Mejor: nombre corto, distinto y fácil de
+dictar + título con palabras clave en español, por ejemplo "Nombre: juegos para la mente".
+
 **Lo que falta antes de decidir en firme** (no se puede hacer bien desde aquí, las bases oficiales no responden a
 búsquedas automáticas):
 
@@ -291,4 +312,5 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 - FTC y Lumosity (2016): https://www.ftc.gov/news-events/news/press-releases/2016/01/lumosity-pay-2-million-settle-ftc-deceptive-advertising-charges-its-brain-training-program
 - Synapp: https://apps.apple.com/us/app/synapp-messaging/id1591750660 · Neuronia: https://play.google.com/store/apps/details?id=com.virandigitallabs.neuronia · Engrama: https://apps.apple.com/pk/app/engrama/id6763983777
 - Mielina (estimulación cognitiva 50+): https://www.instagram.com/minhamielina/ · MyelinZ: https://myelinz.com/ · Neuri: https://neuri.app/
+- BRAIN STRIDE (marca registrada): https://trademarks.justia.com/886/09/brain-88609908.html · NeuroDash: https://play.google.com/store/apps/details?id=com.enpe5v3.neurodash · NeuroIGNITE: https://neuroignite.com/ · Synapta: https://www.synapta.co.uk/ · MindOrbit: https://play.google.com/store/apps/details?id=com.rimors.mindorbit · MindVolt: https://play.google.com/store/apps/details?id=com.nirala.mindvolt
 - Podcast Mentenautas: https://podcasters.spotify.com/pod/show/mentenautas-podcast
