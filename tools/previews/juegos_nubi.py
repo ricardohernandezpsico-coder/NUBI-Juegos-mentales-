@@ -111,10 +111,10 @@ def nubi_sprite(fn, size):
 
 
 # ---------- A · las 6 áreas ----------
-def screen_a():
+def screen_a(title='¿Qué quieres trabajar hoy?', sub='Toca un área para ver sus juegos'):
     im = phone(41); d = ImageDraw.Draw(im)
-    d.text((dp(20), dp(36)), '¿Qué quieres trabajar hoy?', font=F(24), fill=WHITE, anchor='lm')
-    d.text((dp(20), dp(66)), 'Toca un área para ver sus juegos', font=F(15, False), fill=DIM, anchor='lm')
+    d.text((dp(20), dp(36)), title, font=F(24), fill=WHITE, anchor='lm')
+    d.text((dp(20), dp(66)), sub, font=F(15, False), fill=DIM, anchor='lm')
     cw, top, rh = (W - dp(40)) / 2, dp(96), dp(196)
     for i, (key, name, v, n, today) in enumerate(AREAS):
         col, row = i % 2, i // 2

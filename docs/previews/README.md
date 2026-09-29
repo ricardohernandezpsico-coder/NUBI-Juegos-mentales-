@@ -52,6 +52,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`nubi-estilo-4.png`](nubi-estilo-4.png)
 - [`nubi-estilo-5.png`](nubi-estilo-5.png)
 - [`nubi-estilos.png`](nubi-estilos.png)
+- [`navegacion-nubi.png`](navegacion-nubi.png)
 - [`nubi-guia.png`](nubi-guia.png)
 - [`nubi-hoy.png`](nubi-hoy.png)
 - [`nubi-iconos.png`](nubi-iconos.png)
