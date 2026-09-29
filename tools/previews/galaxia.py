@@ -190,7 +190,7 @@ def f_quiet(im, w, h):
 
 FRAMES = [(f_channels, 'Tamaño y brillo', 'Tamaño = lo logrado (nunca baja). Brillo = lo reciente: se apaga despacio sin jugar.'),
           (f_born, 'Nace una estrella', 'Al volver de un juego, sale de Nubi y llega a su cúmulo.'),
-          (f_rotate, 'Se gira con el dedo', 'Gira sola, muy lenta (quieta si quitas animaciones). El de adelante se ve más grande.'),
+          (f_rotate, 'Se gira con el dedo', 'Gira sola y muy lenta; quieta si el teléfono quita animaciones.'),
           (f_quiet, 'No se apaga del todo', 'Un área sin jugar queda tenue, con un texto amable. Una partida la enciende.')]
 
 
