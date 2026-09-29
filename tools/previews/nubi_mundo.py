@@ -41,7 +41,7 @@ def to_img(alpha, rgb):
 
 
 # ---------- fondo de nebulosas ----------
-def nebula_bg(w, h, seed=5):
+def nebula_bg(w, h, seed=5, stars=None):
     t = np.linspace(0, 1, h)[:, None, None]
     top, bot = np.array([14, 16, 60.]), np.array([6, 7, 26.])
     bg = np.repeat(top + (bot - top) * t, w, axis=1)
@@ -55,10 +55,11 @@ def nebula_bg(w, h, seed=5):
         bg = bg * (1 - m[..., None]) + np.array(rgb) * m[..., None]
     im = Image.fromarray(bg.clip(0, 255).astype(np.uint8)).convert('RGBA')
     d = ImageDraw.Draw(im); rnd = random.Random(seed)
-    for _ in range(220):
+    n_st = stars if stars is not None else 220
+    for _ in range(n_st):
         x, y, r = rnd.random() * w, rnd.random() * h, rnd.random() * 1.8 + 0.6
         d.ellipse([x - r, y - r, x + r, y + r], fill=(255, 255, 255, int(70 + rnd.random() * 170)))
-    for _ in range(10):
+    for _ in range(10 if stars is None else max(1, n_st // 25)):
         x, y = rnd.random() * w, rnd.random() * h
         d.polygon(N.sparkle(x, y, dp(3 + rnd.random() * 3)), fill=(255, 255, 255, 200))
     return im
