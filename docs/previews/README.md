@@ -110,6 +110,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`juegos-final-1.png`](juegos-final-1.png)
 - [`juegos-final-2.png`](juegos-final-2.png)
 - [`juegos-final.png`](juegos-final.png)
+- [`juegos-nubi.png`](juegos-nubi.png)
 - [`juegos-propuesta-1.png`](juegos-propuesta-1.png)
 - [`juegos-propuesta-2.png`](juegos-propuesta-2.png)
 - [`juegos-propuesta-3.png`](juegos-propuesta-3.png)
