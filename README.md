@@ -126,6 +126,20 @@ Para compilar y probar solo la app en un entorno sin Unity: `bash tools/nube-com
 
 Lista para recorrer la app completa en el teléfono antes de marcar una versión: [`docs/prueba-manual.md`](docs/prueba-manual.md).
 
+## Cuidado de los datos y calidad
+
+- **Tu progreso se respalda.** Las partidas, el avance de cada juego, la liga y los logros van en el respaldo automático
+  de Android, así que un teléfono nuevo los recupera. No se respalda lo pasajero (una partida en pausa, por ejemplo).
+- **Las actualizaciones no borran el progreso.** Hay pruebas de migración de la base de datos: si un cambio de versión no
+  trae su migración, el error aparece al probar y no en el teléfono de una persona.
+- **Si algo falla, queda anotado.** Los cierres inesperados y los resultados de un juego que no se pudieron leer se guardan
+  en el teléfono; en Ajustes, "Enviar informe de errores" los comparte como texto, sin nombre ni resultados.
+- **Cada subida se verifica sola.** En GitHub, la pestaña **Actions** muestra la ejecución "Verificar" de cada commit: dos
+  marcas verdes = el C# de los juegos y la app con sus pruebas compilan bien. No reemplaza a `verificar-todo.sh`, que
+  además corre las pruebas de Unity, el arranque de los 19 juegos y el export.
+- **Lo que falta mejorar** (medidas genéricas de los juegos, idiomas, versión de tienda...) está con pasos concretos en
+  [`docs/plan-mejoras-arquitectura.md`](docs/plan-mejoras-arquitectura.md).
+
 ## Versiones
 
 Las versiones marcadas están en las etiquetas de git: `v0.1-base` (primer punto base aprobado) y `v0.2` (con los

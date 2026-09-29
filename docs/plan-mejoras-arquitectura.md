@@ -75,7 +75,8 @@ controlador en reglas/flujo y dibujo, y una escena "galería" para ver los estad
 tocar cada juego, no en bloque.
 
 ## Cómo saber si la verificación automática funciona
-`.github/workflows/verificar.yml` se escribió sin poder ejecutarlo en GitHub. Después del primer push: pestaña **Actions**
-del repositorio. Si el paso de la plataforma de Android o el de Gradle falla, el informe queda como archivo
-`informe-pruebas-kotlin` en esa ejecución. Si molesta mientras se ajusta, se puede desactivar sin borrar nada
+`.github/workflows/verificar.yml`: pestaña **Actions** del repositorio. Funcionó a la primera (29-sep, los dos trabajos en
+verde). Ese mismo día se actualizaron las versiones de las acciones (avisaban de Node 20 obsoleto) y se fijó
+`ubuntu-24.04` en vez de `ubuntu-latest`, que pasa a Ubuntu 26 el 19-oct-2026 y podría no traer el mismo Android SDK.
+Si algo falla, el informe queda como archivo `informe-pruebas-kotlin` en esa ejecución. Si molesta mientras se ajusta, se puede desactivar sin borrar nada
 (Actions → Verificar → "…" → Disable workflow).

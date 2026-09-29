@@ -18,11 +18,11 @@ concurrency:
 jobs:
   csharp:
     name: C# de los juegos (sin Unity)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
       - name: Compilar los scripts de Unity
@@ -30,11 +30,11 @@ jobs:
 
   app:
     name: App Android y pruebas Kotlin
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -44,12 +44,12 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "platforms;android-36.1" "build-tools;36.1.0" > /dev/null
       - name: unityLibrary falso
         run: bash tools/unity-falso.sh
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Compilar y probar
         run: bash ./gradlew :app:testDebugUnitTest --console=plain
       - name: Guardar el informe de pruebas si algo falló
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: informe-pruebas-kotlin
           path: app/build/reports/tests/

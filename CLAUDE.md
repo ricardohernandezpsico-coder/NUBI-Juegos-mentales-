@@ -468,8 +468,8 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 - **Verificación automática** (`.github/workflows/verificar.yml`, `tools/unity-falso.sh`): en cada push y pull request
   GitHub compila el C# de los juegos sin Unity y compila la app con sus pruebas Kotlin (con un unityLibrary falso).
   Un ✗ rojo en el commit = algo no compila o una prueba falló. NO corre las pruebas de Unity, el arranque de los 19
-  juegos ni el export: eso sigue siendo `verificar-todo.sh` en el PC de Ricardo. Se escribió sin poder ejecutarlo en
-  GitHub: la primera vez, mirar la pestaña Actions y corregir lo que falle.
+  juegos ni el export: eso sigue siendo `verificar-todo.sh` en el PC de Ricardo. Ricardo confirmó que corre en verde
+  (pestaña Actions); usa `ubuntu-24.04` fijo (no `latest`) y acciones en su versión actual.
 - Lo que NO se hizo de la revisión de arquitectura (medidas genéricas, idiomas, dividir el ViewModel, datos en dos
   lugares, versión de tienda, controladores grandes de Unity) está con pasos concretos en
   [`docs/plan-mejoras-arquitectura.md`](docs/plan-mejoras-arquitectura.md).
