@@ -280,7 +280,7 @@ fun LeaguePromotionOverlay(
           color = Clay.Cream,
           onClick = {
             val where = if (game != null) " en ${game.title}" else ""
-            val text = "¡Subí a la liga ${promotion.tier.tierName}$where en NeuroVida!"
+            val text = "¡Subí a la liga ${promotion.tier.tierName}$where en Nubi!"
             scope.launch {
               try {
                 ShareCard.share(

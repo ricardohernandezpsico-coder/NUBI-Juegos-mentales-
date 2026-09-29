@@ -228,7 +228,7 @@ fun AchievementOverlay(
                       if (streak > 0) add("$streak" to if (streak == 1) "día de racha" else "días de racha")
                     }
                   ),
-                  "¡Conseguí el logro \"${def.title}\" en NeuroVida!"
+                  "¡Conseguí el logro \"${def.title}\" en Nubi!"
                 )
               } catch (e: Exception) {
                 android.util.Log.e("AchievementOverlay", "No se pudo compartir el logro", e)

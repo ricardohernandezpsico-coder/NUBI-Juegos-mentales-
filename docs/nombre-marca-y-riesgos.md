@@ -1,5 +1,7 @@
 # Nombre, ícono y riesgos legales (28-sep)
 
+> **Decisión (29-sep): Nubi** ("Nubi – Brain Games", mercado global). Hoja del personaje: `docs/previews/nubi-personaje.png`.
+
 Pedido de Ricardo: definir el nombre y el ícono de la app "considerando temas legales, marcas registradas, etc.",
 y revisar lo que decía una conversación con Gemini sobre BrainHQ y sus ejercicios.
 

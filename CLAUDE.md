@@ -1,5 +1,8 @@
 # NeuroVida — memoria del proyecto (al 26-sep)
 
+**Nombre público desde el 29-sep: Nubi** ("Nubi – Brain Games"; el personaje es una nebulosa pequeña de arcilla).
+En el código, paquetes, clases y el proyecto Unity siguen llamándose NeuroVida (no se ve: no renombrar).
+
 App de estimulación cognitiva para Android: 19 juegos cortos en 6 dominios (memoria, atención, razonamiento,
 lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
@@ -492,10 +495,15 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   color decorativo nunca dice "acierto". Con "quitar animaciones" del teléfono (`reduce_motion` en la config →
   `GameFeel.ReduceMotion`) no hay respiración, pulso ni destellos. Lámina `docs/previews/anagramas-burbujas.png`.
   Sin probar en el teléfono.
-- **Nombre e ícono** (28-sep, pendiente de que Ricardo elija): "NeuroVida" ya es marca registrada en EE. UU. (clase 5)
-  y hay una app "NEUROVIDA PSICOLOGIA" en Google Play: hay que cambiarlo. Propuestas en dos rondas (Cosmente y Planetea
-  arriba; Luminautas bajó por parecerse a Lumosity) y patentes: [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md),
-  láminas `nombre-icono.png`, `nombres-mas.png`, `radar-retoque.png`. **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre
+- **Nombre e ícono: Nubi** (elegido por Ricardo el 29-sep tras siete rondas; "NeuroVida" es marca registrada de otros en
+  EE. UU. y hay una app "NEUROVIDA PSICOLOGIA"). Mercado GLOBAL; en la tienda "Nubi – Brain Games". Personaje: Nubi, una
+  nebulosa pequeña de arcilla (lila/uva con nubes celeste y rosa y estrellitas crema), "la nube donde nacen las
+  estrellas": vive en tu planeta, cada partida hace nacer una estrella; poses saluda / celebra / piensa / descansa,
+  NUNCA triste ni reaccionando a cómo le va a la persona. Hoja del personaje: `docs/previews/nubi-personaje.png`
+  (`tools/previews/nubi_personaje.py`), pendiente de aprobación; después: ícono adaptativo (con monocromo) y Nubi en
+  Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
+  aviso de Ajustes. Revisión de nombres y patentes: [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md).
+  Antes de publicar: búsqueda oficial de marca (clases 9, 41) y el `applicationId` definitivo. **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre
   las que elegir: no volver a eso; US 8,348,671 de Posit); nombres: cuarta ronda (estilo Synapp: el vocabulario del
   cerebro está casi todo tomado); Piloto nunca con inclinación ni sensores del cuerpo; ningún
   juego calcula un perfil "impulsivo / conservador" ni usa caras con emociones que reaccionen al desempeño (Akili);

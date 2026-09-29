@@ -118,8 +118,8 @@ object ShareCard {
 
     // Marca arriba
     val brand = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 64.sp, color = Color.White)
-    centered(measurer, "NeuroVida", brand, 130f)
-    sparkle(Offset(w / 2f + 190f, 150f), 22f, Clay.Sun)
+    centered(measurer, "Nubi", brand, 130f)
+    sparkle(Offset(w / 2f + 110f, 150f), 22f, Clay.Sun)
 
     // Escudo sobre rayos del color de la liga
     val shieldW = 470f

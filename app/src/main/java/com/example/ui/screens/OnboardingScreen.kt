@@ -261,7 +261,7 @@ private fun WelcomePage(onNext: () -> Unit) {
     Spacer(Modifier.weight(0.4f))
     GamesOrbit()
     Spacer(Modifier.height(18.dp))
-    Text("NeuroVida", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 44.sp)
+    Text("Nubi", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 44.sp)
     Text(
       text = "${GameRegistry.allGames.size} juegos cortos para entrenar memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
       color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center,

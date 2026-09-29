@@ -116,7 +116,7 @@ fun ProgressScreen(
                       tier = tier,
                       stats = com.example.ui.components.ShareCard.Content.trophiesAndStreak(avg, streak)
                     ),
-                    "¡Estoy en la liga ${tier.tierName} de NeuroVida!"
+                    "¡Estoy en la liga ${tier.tierName} de Nubi!"
                   )
                 } catch (e: Exception) {
                   android.util.Log.e("ProgressScreen", "No se pudo compartir la liga", e)

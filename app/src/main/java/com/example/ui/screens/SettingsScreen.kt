@@ -836,7 +836,7 @@ fun SettingsScreen(
         Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-          text = "NeuroVida es una aplicación para el entretenimiento, agilidad y bienestar cognitivo. No constituye diagnóstico ni reemplazo de consejo médico o profesional.",
+          text = "Nubi es una aplicación de juegos para el entretenimiento, agilidad y bienestar cognitivo. No constituye diagnóstico ni reemplazo de consejo médico o profesional.",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           lineHeight = 16.sp
