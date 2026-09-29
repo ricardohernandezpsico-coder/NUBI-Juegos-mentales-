@@ -523,7 +523,9 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   EN LA BARRA, sin números (Ricardo: los "▲ +4" molestaban): tramo sol al final = lo avanzado esta semana; tramo lila
   punteado = lo que bajó. Nubi dice en palabras qué pasó (sin números sueltos: "¿4 qué?"). Tocar un área abre su
   DETALLE (vista C): "Etapa Intermedio · 52 de 100", barra con las 5 etapas nombradas, "Esta semana avanzó de 46 a 52",
-  "Te faltan 8 para Avanzado", últimas 4 semanas, flechas para pasar de área y "Jugar X". Pendiente: programarlo; después: ícono adaptativo (con monocromo) y Nubi en Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
+  "Te faltan 8 para Avanzado", últimas 4 semanas, flechas para pasar de área y, en vez de "Jugar X", la pregunta
+  "¿Le damos un empujón a tu memoria?" (Fredoka sol, mismo estilo que el botón) + botón "¡Sí, vamos!" + "Nubi eligió
+  Secuencia Lumínica: hace días que no la juegas". Pendiente: programarlo; después: ícono adaptativo (con monocromo) y Nubi en Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
   aviso de Ajustes. Revisión de nombres y patentes: [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md).
   Antes de publicar: búsqueda oficial de marca (clases 9, 41) y el `applicationId` definitivo. **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre
   las que elegir: no volver a eso; US 8,348,671 de Posit); nombres: cuarta ronda (estilo Synapp: el vocabulario del
