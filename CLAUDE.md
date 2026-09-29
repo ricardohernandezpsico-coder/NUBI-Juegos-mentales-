@@ -499,9 +499,17 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   EE. UU. y hay una app "NEUROVIDA PSICOLOGIA"). Mercado GLOBAL; en la tienda "Nubi – Brain Games". Personaje: Nubi, una
   nebulosa pequeña de arcilla (lila/uva con nubes celeste y rosa y estrellitas crema), "la nube donde nacen las
   estrellas": vive en tu planeta, cada partida hace nacer una estrella; poses saluda / celebra / piensa / descansa,
-  NUNCA triste ni reaccionando a cómo le va a la persona. Hoja del personaje: `docs/previews/nubi-personaje.png`
-  (`tools/previews/nubi_personaje.py`), pendiente de aprobación; después: ícono adaptativo (con monocromo) y Nubi en
-  Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
+  NUNCA triste ni reaccionando a cómo le va a la persona. Estilo elegido (29-sep, tras 4 vueltas descartadas: ícono
+  plano, 5 personajes planos, 6 nebulosas): **Nubi suave**, del tono de una lámina de referencia de Ricardo = nube de
+  algodón con volumen, contorno fino morado (no el borde tinta grueso), brillo alrededor, ojos grandes con dos brillos,
+  azul lavanda con toques celestes (`tools/previews/nubi_suave.py` → `docs/previews/nubi-suave.png`: momentos enfoque /
+  explorador con casco / celebra / tu semana, ícono redondo, con casco y monocromo). Nubi GUÍA (`nubi_guia.py` →
+  `nubi-guia.png`): científica con bata y lentes (explica la medida del final), maestra en pizarra (tutorial de primera
+  vez), exploradora con lupa (descubrimiento del día), idea (consejo). Hoy con el mundo de Nubi (`nubi_mundo.py` →
+  `hoy-mundo-nubi.png`): fondo de nebulosas de colores, planeta con paisajes por dominio (Valle de la Memoria, Picos
+  de la Atención, Mar del Razonamiento, Bosque del Lenguaje, Domos del Cálculo, Meseta de la Velocidad), los 3 juegos
+  del día como satélites, zona del día, gráfica "Tu semana" y mejoras del planeta que se ganan jugando. Maquetas
+  pendientes de aprobación; después: ícono adaptativo (con monocromo) y Nubi en Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
   aviso de Ajustes. Revisión de nombres y patentes: [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md).
   Antes de publicar: búsqueda oficial de marca (clases 9, 41) y el `applicationId` definitivo. **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre
   las que elegir: no volver a eso; US 8,348,671 de Posit); nombres: cuarta ronda (estilo Synapp: el vocabulario del
