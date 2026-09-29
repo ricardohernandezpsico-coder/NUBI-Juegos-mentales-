@@ -9,12 +9,15 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 
 ## Capturas reales de la app
 
+- [`bienvenida-metas-real.png`](bienvenida-metas-real.png)
+- [`bienvenida-real.png`](bienvenida-real.png)
 - [`hoy-nubi-detalle-real.png`](hoy-nubi-detalle-real.png)
 - [`hoy-nubi-real.png`](hoy-nubi-real.png)
 - [`inicio-planeta-real.png`](inicio-planeta-real.png)
 - [`juegos-cartas-real.png`](juegos-cartas-real.png)
 - [`juegos-lista-real.png`](juegos-lista-real.png)
 - [`juegos-real.png`](juegos-real.png)
+- [`resumen-sesion-real.png`](resumen-sesion-real.png)
 
 ## Sonidos de los juegos
 
