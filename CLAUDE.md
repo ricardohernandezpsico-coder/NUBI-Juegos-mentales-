@@ -515,7 +515,15 @@ se guardan directo. Para reproducirlo: Opciones de desarrollador → "No conserv
   skill dataviz: Lenguaje verde lima #4FAE2A, Cálculo celeste #1C9FCE, Atención #CF7A06) → y luego propuso **Tu
   galaxia** (`galaxia.py` → `galaxia.png`): galaxia ovalada que gira lento con Nubi al centro, un cúmulo por área,
   TAMAÑO = etapa (nunca baja) y BRILLO = partidas de los últimos 14 días (se apaga despacio, nunca del todo), se gira
-  con el dedo y el cúmulo tocado abre su ventana con estadísticas. Pendiente de aprobación; después: ícono adaptativo (con monocromo) y Nubi en Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
+  con el dedo y el cúmulo tocado abre su ventana con estadísticas. Descartada (con estrellas de luz, `galaxia_hd.py`,
+  tampoco: "no da a entender el concepto"); también los orbes alrededor de Nubi (`nubi_halo.py`: "pueden confundir").
+  **Elegido (29-sep): `nubi_hoy.py` → `nubi-hoy.png`** (de las 3 de `nubi_indicadores.py`): Hoy con Nubi grande al
+  centro y halo detrás (resplandor, dos aros finos, pocas chispas); tres áreas a cada lado con nombre, BARRA de avance
+  0-100 (un solo color lavanda; 4 marcas = 5 etapas; cada etapa = 20) y etapa en palabras. El cambio de la semana se ve
+  EN LA BARRA, sin números (Ricardo: los "▲ +4" molestaban): tramo sol al final = lo avanzado esta semana; tramo lila
+  punteado = lo que bajó. Nubi dice en palabras qué pasó (sin números sueltos: "¿4 qué?"). Tocar un área abre su
+  DETALLE (vista C): "Etapa Intermedio · 52 de 100", barra con las 5 etapas nombradas, "Esta semana avanzó de 46 a 52",
+  "Te faltan 8 para Avanzado", últimas 4 semanas, flechas para pasar de área y "Jugar X". Pendiente: programarlo; después: ícono adaptativo (con monocromo) y Nubi en Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
   aviso de Ajustes. Revisión de nombres y patentes: [`docs/nombre-marca-y-riesgos.md`](docs/nombre-marca-y-riesgos.md).
   Antes de publicar: búsqueda oficial de marca (clases 9, 41) y el `applicationId` definitivo. **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre
   las que elegir: no volver a eso; US 8,348,671 de Posit); nombres: cuarta ronda (estilo Synapp: el vocabulario del
