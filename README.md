@@ -114,7 +114,8 @@ Requisitos: Android SDK (android-36), JDK 21 (Temurin) y Unity 6000.0.84f1 con s
 bash tools/verificar-todo.sh --instalar
 ```
 
-Son más de 180 pruebas de Unity, una prueba de arranque por juego y unas 90 pruebas de Kotlin.
+Son más de 180 pruebas de Unity, una prueba de arranque por juego y más de 120 pruebas de Kotlin. En GitHub, cada subida
+de código compila el C# sin Unity y la app con sus pruebas Kotlin (pestaña Actions).
 
 Si solo cambió el código Kotlin: `./gradlew assembleDebug` y `./gradlew testDebugUnitTest`. Si cambió algo de Unity,
 hay que reexportar la librería (`NeuroVida > Exportar como librería Android` en el Editor) antes de compilar la app;

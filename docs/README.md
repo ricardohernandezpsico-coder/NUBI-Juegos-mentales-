@@ -18,6 +18,7 @@ Qué hay en esta carpeta y para qué sirve cada cosa. El estado actual del proye
 | [`prueba-manual.md`](prueba-manual.md) | Lista para recorrer la app completa en el teléfono antes de marcar una versión |
 | [`nombre-marca-y-riesgos.md`](nombre-marca-y-riesgos.md) | Revisión de nombres y de patentes: por qué Nubi y qué reglas no romper |
 | [`ideas-guardadas.md`](ideas-guardadas.md) | Ideas en espera, que no se implementan hasta que se pidan |
+| [`plan-mejoras-arquitectura.md`](plan-mejoras-arquitectura.md) | Revisión de la arquitectura: qué se hizo y qué falta, con pasos concretos |
 
 ## Historia
 
