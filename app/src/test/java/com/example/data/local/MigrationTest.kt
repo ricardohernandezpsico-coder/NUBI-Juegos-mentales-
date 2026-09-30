@@ -45,6 +45,23 @@ class MigrationTest {
   }
 
   @Test
+  fun `de la version 11 a la 12 Velocidad se une a Atencion y Calculo a Razonamiento`() {
+    helper.createDatabase("migracion12", 11).apply {
+      execSQL("INSERT INTO domain_mastery (domain, xp) VALUES ('ATENCION', 10)")
+      execSQL("INSERT INTO domain_mastery (domain, xp) VALUES ('VELOCIDAD', 5)")
+      execSQL("INSERT INTO domain_mastery (domain, xp) VALUES ('CALCULO', 7)")
+      execSQL("INSERT INTO domain_mastery (domain, xp) VALUES ('MEMORIA', 3)")
+      close()
+    }
+    val db = helper.runMigrationsAndValidate("migracion12", 12, true, *NeuroVidaDatabase.MIGRATIONS)
+    val xp = mutableMapOf<String, Int>()
+    db.query("SELECT domain, xp FROM domain_mastery").use { c -> while (c.moveToNext()) xp[c.getString(0)] = c.getInt(1) }
+    // Atención 10 + Velocidad 5; Razonamiento no existía, hereda el XP de Cálculo; Memoria no se toca.
+    assertEquals(mapOf("ATENCION" to 15, "RAZONAMIENTO" to 7, "MEMORIA" to 3), xp)
+    db.close()
+  }
+
+  @Test
   fun `cada version exportada tiene su migracion a la siguiente`() {
     val versions = File("schemas").walkTopDown().filter { it.extension == "json" }.map { it.nameWithoutExtension.toInt() }.toList().sorted()
     assertTrue("no encontré los esquemas exportados en app/schemas", versions.isNotEmpty())

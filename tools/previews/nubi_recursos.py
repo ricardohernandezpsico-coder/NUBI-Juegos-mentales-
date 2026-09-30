@@ -66,7 +66,7 @@ def extras():
     NV.use_att(NV.att_diana)
     side = 540
     from PIL import ImageDraw
-    for key in ['memoria', 'atencion', 'razonamiento', 'lenguaje', 'calculo', 'velocidad']:
+    for key in ['memoria', 'atencion', 'razonamiento', 'lenguaje']:
         # Solo la esfera con su ícono (esfera = 0,6 del ancho, AREA_BODY_FRACTION); el resplandor de la maqueta se
         # desbordaba del lienzo y dejaba un cuadrado oscuro: en la app lo dibuja Compose.
         lay = Image.new('RGBA', (side, side), (0, 0, 0, 0)); r = side * 0.3

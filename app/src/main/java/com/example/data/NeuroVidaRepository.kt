@@ -130,7 +130,7 @@ class NeuroVidaRepository(
   val domainMastery: StateFlow<Map<DomainType, Int>> = domainMasteryDao.getAll()
     .map { list ->
       val map = DomainType.values().associateWith { 0 }.toMutableMap()
-      list.forEach { e -> runCatching { DomainType.valueOf(e.domain) }.getOrNull()?.let { map[it] = e.xp } }
+      list.forEach { e -> DomainType.fromStored(e.domain)?.let { map[it] = (map[it] ?: 0) + e.xp } }
       map
     }
     .stateIn(

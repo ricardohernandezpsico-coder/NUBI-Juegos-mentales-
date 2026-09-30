@@ -660,14 +660,14 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   // Dónde quedó la pestaña Juegos (área y casilla), en disco: al volver de un juego se abre en el mismo lugar.
-  // [open] = la ventana del área está abierta (desde el 29-sep Juegos muestra las 6 áreas y cada una abre su ventana);
+  // [open] = la ventana del área está abierta (desde el 29-sep Juegos muestra las 4 áreas y cada una abre su ventana);
   // al arrancar la app solo sigue abierta si se vuelve de un juego lanzado desde ella.
   data class LibraryFocus(val domain: DomainType? = null, val gameId: String? = null, val open: Boolean = false)
 
   private val focusPrefs by lazy { getApplication<Application>().getSharedPreferences("library_focus", android.content.Context.MODE_PRIVATE) }
   private val _libraryFocus = MutableStateFlow(
     LibraryFocus(
-      focusPrefs.getString("domain", null)?.let { n -> DomainType.values().firstOrNull { it.name == n } },
+      focusPrefs.getString("domain", null)?.let { n -> DomainType.fromStored(n) },
       focusPrefs.getString("gameId", null),
       open = focusPrefs.getBoolean("return", false)
     )
@@ -680,7 +680,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     focusPrefs.edit().putString("domain", domain.name).putString("gameId", gameId).apply()
   }
 
-  /** La X (o Atrás) de la ventana de un área: vuelve a las 6 áreas. */
+  /** La X (o Atrás) de la ventana de un área: vuelve a las 4 áreas. */
   fun closeLibraryArea() {
     _libraryFocus.value = _libraryFocus.value.copy(open = false)
   }

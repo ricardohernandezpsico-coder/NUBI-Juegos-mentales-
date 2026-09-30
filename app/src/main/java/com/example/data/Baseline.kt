@@ -6,7 +6,7 @@ import com.example.model.GameRegistry
 
 /**
  * "Tu punto de partida": la evaluación inicial del onboarding (al estilo del Fit Test de Lumosity o la evaluación
- * de Peak/Elevate). Tres juegos cortos miden memoria, atención y velocidad; con eso cada uno de los 9 juegos
+ * de Peak/Elevate). Tres juegos cortos miden memoria y atención (foco y velocidad); con eso cada uno de los 9 juegos
  * empieza a la medida de la persona y el camino diario prioriza sus metas y su dominio más bajo.
  *
  * Criterios (ver CLAUDE.md, "Punto de partida"):
@@ -32,7 +32,7 @@ object BaselinePlan {
   val steps = listOf(
     Step("secuencia", DomainType.MEMORIA, timed = false, measures = "Memoria: repite secuencias de luces cada vez más largas"),
     Step("stroop", DomainType.ATENCION, timed = true, measures = "Atención: responde a la tinta o a la palabra, según la regla"),
-    Step("comparacion", DomainType.VELOCIDAD, timed = true, measures = "Velocidad: elige el mayor lo más rápido que puedas")
+    Step("comparacion", DomainType.ATENCION, timed = true, measures = "Atención: elige el mayor lo más rápido que puedas")
   )
 
   /** Nivel (1-5) con que arrancan los juegos de la evaluación: el medio de la escala, algo más suave en mayores. */
@@ -75,13 +75,15 @@ fun priorRating(age: AgeBand?, education: Education?): Float {
 fun levelFromRating(rating: Float): Int = (1 + (rating.coerceIn(0f, 1f) * 5f).toInt()).coerceIn(1, 5)
 
 /**
- * Arma el mapa con los ratings medidos por juego ([measuredByGame]: id -> 0..1). Los dominios que la evaluación
- * no mide (razonamiento, lenguaje, cálculo) toman el promedio de los medidos, marcados como estimados.
+ * Arma el mapa con los ratings medidos por juego ([measuredByGame]: id -> 0..1). Un área con varios pasos (Atención:
+ * Tinta o Palabra y Comparación) toma el PROMEDIO de sus pasos. Las áreas que la evaluación no mide (razonamiento,
+ * lenguaje) toman el promedio de los medidos, marcados como estimados.
  */
 fun buildBaseline(measuredByGame: Map<String, Float>, timestamp: Long = System.currentTimeMillis()): Baseline {
   val measured = BaselinePlan.steps
     .mapNotNull { s -> measuredByGame[s.gameId]?.let { s.domain to it.coerceIn(0f, 1f) } }
-    .toMap()
+    .groupBy({ it.first }, { it.second })
+    .mapValues { (_, v) -> v.average().toFloat() }
   val mean = if (measured.isEmpty()) Percentile.PROVISIONAL_MEAN else measured.values.average().toFloat()
   return Baseline(timestamp, measured, DomainType.values().associateWith { measured[it] ?: mean })
 }
@@ -106,7 +108,7 @@ fun rankDomainsForSession(goals: Set<DomainType>, domainLevel: Map<DomainType, F
 fun encodeGoals(goals: Set<DomainType>): String = goals.joinToString(",") { it.name }
 
 fun decodeGoals(raw: String?): Set<DomainType> =
-  raw.orEmpty().split(",").mapNotNull { n -> DomainType.values().firstOrNull { it.name == n.trim() } }.toSet()
+  raw.orEmpty().split(",").mapNotNull { n -> DomainType.fromStored(n) }.toSet()
 
 /** Una línea: `timestamp|MEMORIA=0.52,ATENCION=0.40|RAZONAMIENTO=0.46,...` (medidos | todos). */
 fun encodeBaseline(b: Baseline): String {
@@ -118,11 +120,12 @@ fun decodeBaseline(raw: String?): Baseline? {
   val parts = raw?.split("|") ?: return null
   if (parts.size != 3) return null
   val ts = parts[0].toLongOrNull() ?: return null
+  // Un mapa guardado con 6 áreas trae Velocidad y Cálculo: al convertirlas a Atención y Razonamiento se promedia.
   fun map(s: String): Map<DomainType, Float> = s.split(",").mapNotNull { kv ->
     val (k, v) = kv.split("=").takeIf { it.size == 2 } ?: return@mapNotNull null
-    val d = DomainType.values().firstOrNull { it.name == k } ?: return@mapNotNull null
+    val d = DomainType.fromStored(k) ?: return@mapNotNull null
     v.toFloatOrNull()?.let { d to it.coerceIn(0f, 1f) }
-  }.toMap()
+  }.groupBy({ it.first }, { it.second }).mapValues { (_, v) -> v.average().toFloat() }
   val domains = map(parts[2])
   if (domains.isEmpty()) return null
   return Baseline(ts, map(parts[1]), domains)

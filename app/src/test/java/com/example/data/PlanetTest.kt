@@ -27,7 +27,7 @@ class PlanetTest {
   @Test
   fun `lo que crecio esta semana, lo quieto y lo jugado hoy`() {
     val all = plays("MEMORIA", 0, 1, 2) + plays("ATENCION", 0, 3) + plays("LENGUAJE", 9) +
-      plays("RAZONAMIENTO", 1) + plays("CALCULO", 2) + plays("VELOCIDAD", 5)
+      plays("RAZONAMIENTO", 1)
     val s = Planet.build(all, now, dayOf)
     assertEquals("MEMORIA", s.grewThisWeek)
     assertEquals("LENGUAJE", s.quiet)

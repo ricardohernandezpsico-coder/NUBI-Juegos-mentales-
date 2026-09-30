@@ -102,8 +102,8 @@ object Achievements {
       check = { it.distinctGames >= 9 }, progress = { it.distinctGames.coerceAtMost(9) to 9 }
     ),
     AchievementDef(
-      "dominios", "Mente completa", "Juega en los 6 dominios", AchievementGlyph.HEXAGON, number = 6,
-      check = { it.distinctDomains >= 6 }, progress = { it.distinctDomains.coerceAtMost(6) to 6 }
+      "dominios", "Mente completa", "Juega en las 4 áreas", AchievementGlyph.HEXAGON, number = 4,
+      check = { it.distinctDomains >= 4 }, progress = { it.distinctDomains.coerceAtMost(4) to 4 }
     ),
     AchievementDef(
       "brillante", "Brillante", "Consigue 90 puntos o más en una partida", AchievementGlyph.STAR, number = 90,

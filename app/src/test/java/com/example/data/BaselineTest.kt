@@ -20,9 +20,12 @@ class BaselineTest {
   @Test
   fun `los dominios no medidos toman el promedio de los medidos`() {
     val b = buildBaseline(mapOf("secuencia" to 0.6f, "stroop" to 0.4f, "comparacion" to 0.5f), timestamp = 1L)
-    assertEquals(setOf(DomainType.MEMORIA, DomainType.ATENCION, DomainType.VELOCIDAD), b.measured.keys)
+    assertEquals(setOf(DomainType.MEMORIA, DomainType.ATENCION), b.measured.keys)
     assertEquals(0.6f, b.domains[DomainType.MEMORIA]!!, 1e-4f)
-    assertEquals(0.5f, b.domains[DomainType.CALCULO]!!, 1e-4f)
+    // Atención tiene dos pasos (stroop 0.4 y comparación 0.5): vale el promedio, 0.45.
+    assertEquals(0.45f, b.domains[DomainType.ATENCION]!!, 1e-4f)
+    // Razonamiento y Lenguaje no se miden: promedio de lo medido (0.6 y 0.45).
+    assertEquals(0.525f, b.domains[DomainType.RAZONAMIENTO]!!, 1e-4f)
     assertEquals(DomainType.values().size, b.domains.size)
   }
 
@@ -39,8 +42,9 @@ class BaselineTest {
     val seeds = seedRatings(b)
     assertEquals(GameRegistry.allGames.size, seeds.size)
     assertEquals(0.8f, seeds["parejas"]!!, 1e-4f)   // memoria
-    assertEquals(0.2f, seeds["cambiochip"]!!, 1e-4f) // atención
-    assertEquals(0.5f, seeds["series"]!!, 1e-4f)     // estimado = promedio
+    assertEquals(0.35f, seeds["cambiochip"]!!, 1e-4f) // atención = promedio de sus 2 pasos (stroop 0.2 y comparación 0.5)
+    assertEquals(0.35f, seeds["radar"]!!, 1e-4f)      // radar ahora también es Atención
+    assertEquals(0.575f, seeds["series"]!!, 1e-4f)    // estimado = promedio de lo medido (0.8 y 0.35)
   }
 
   @Test
@@ -61,10 +65,10 @@ class BaselineTest {
 
   @Test
   fun `el camino prioriza metas y luego lo mas bajo`() {
-    val levels = DomainType.values().associateWith { 0.5f } + (DomainType.CALCULO to 0.1f) + (DomainType.MEMORIA to 0.9f)
+    val levels = DomainType.values().associateWith { 0.5f } + (DomainType.RAZONAMIENTO to 0.1f) + (DomainType.MEMORIA to 0.9f)
     val order = rankDomainsForSession(setOf(DomainType.MEMORIA), levels)
     assertEquals(DomainType.MEMORIA, order[0])
-    assertEquals(DomainType.CALCULO, order[1])
+    assertEquals(DomainType.RAZONAMIENTO, order[1])
     assertEquals(DomainType.values().size, order.size)
   }
 
@@ -76,5 +80,31 @@ class BaselineTest {
     assertEquals(goals, decodeGoals(encodeGoals(goals)))
     assertNull(decodeBaseline("basura"))
     assertTrue(decodeGoals(null).isEmpty())
+  }
+
+  @Test
+  fun `un punto de partida guardado con 6 areas se lee con 4 y se promedia`() {
+    // Velocidad (0.8) pasa a Atención (0.4): 0.6. Cálculo (0.3) pasa a Razonamiento (0.5): 0.4.
+    val raw = "5|MEMORIA=0.5,ATENCION=0.4,VELOCIDAD=0.8|MEMORIA=0.5,ATENCION=0.4,VELOCIDAD=0.8,RAZONAMIENTO=0.5,CALCULO=0.3,LENGUAJE=0.45"
+    val b = decodeBaseline(raw)!!
+    assertEquals(0.6f, b.domains[DomainType.ATENCION]!!, 1e-4f)
+    assertEquals(0.4f, b.domains[DomainType.RAZONAMIENTO]!!, 1e-4f)
+    assertEquals(0.6f, b.measured[DomainType.ATENCION]!!, 1e-4f)
+    assertEquals(4, b.domains.size)
+  }
+
+  @Test
+  fun `las metas guardadas con areas viejas se leen con las nuevas`() {
+    assertEquals(setOf(DomainType.ATENCION, DomainType.RAZONAMIENTO, DomainType.MEMORIA), decodeGoals("VELOCIDAD,CALCULO,MEMORIA,INVENTADA"))
+  }
+
+  @Test
+  fun `los nombres guardados de las areas`() {
+    assertEquals(DomainType.ATENCION, DomainType.fromStored("VELOCIDAD"))
+    assertEquals(DomainType.RAZONAMIENTO, DomainType.fromStored("CALCULO"))
+    assertEquals(DomainType.LENGUAJE, DomainType.fromStored("LENGUAJE"))
+    assertNull(DomainType.fromStored("OTRA"))
+    assertNull(DomainType.fromStored(null))
+    assertEquals(4, DomainType.entries.size)
   }
 }

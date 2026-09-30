@@ -21,7 +21,7 @@ data class PlanetZone(
 )
 
 /**
- * El planeta de Hoy: las 6 zonas, la que más creció esta semana, y la que está quieta ([quietDays] días sin jugar, o
+ * El planeta de Hoy: las 4 zonas, la que más creció esta semana, y la que está quieta ([quietDays] días sin jugar, o
  * -1 = aún sin explorar), para la línea bajo el planeta.
  */
 data class PlanetState(
@@ -37,7 +37,7 @@ data class PlanetState(
  * con pruebas; [dayOf] da el día local de un instante (inyectado para probar sin zona horaria).
  */
 object Planet {
-  val DOMAINS = listOf("MEMORIA", "ATENCION", "RAZONAMIENTO", "LENGUAJE", "CALCULO", "VELOCIDAD")
+  val DOMAINS = listOf("MEMORIA", "ATENCION", "RAZONAMIENTO", "LENGUAJE")
 
   /** Partidas con las que una zona queda "llena" (después sigue sumando construcciones, no tamaño). */
   const val FULL_AT = 60

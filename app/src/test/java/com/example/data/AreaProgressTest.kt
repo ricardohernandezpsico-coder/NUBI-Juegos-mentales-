@@ -30,12 +30,12 @@ class AreaProgressTest {
     assertEquals(-0.02f, down.change, eps)
     assertEquals("Esta semana bajó un poco, de 40 a 38", AreaProgress.changeLine(down))
     // Sin historia anotada (medido antes del registro): no inventa cambios.
-    val old = AreaProgress.status("CALCULO", listOf("calculo"), mapOf("calculo" to 0.3f), emptyList(), now)
+    val old = AreaProgress.status("RAZONAMIENTO", listOf("calculo"), mapOf("calculo" to 0.3f), emptyList(), now)
     assertEquals(0f, old.change, eps)
     assertEquals("Esta semana se mantuvo en 30", AreaProgress.changeLine(old))
     assertEquals(listOf(0.3f, 0.3f, 0.3f, 0.3f), old.weeks)
     // Sin medir.
-    val none = AreaProgress.status("VELOCIDAD", listOf("radar"), emptyMap(), emptyList(), now)
+    val none = AreaProgress.status("ATENCION", listOf("radar"), emptyMap(), emptyList(), now)
     assertNull(none.value); assertNull(AreaProgress.toNextLine(none))
     assertEquals("Aún sin medir: tu primera partida lo muestra", AreaProgress.changeLine(none))
   }
@@ -44,12 +44,12 @@ class AreaProgressTest {
   fun `las cuatro semanas y la frase de Nubi`() {
     val pts = listOf(ProgressPoint("radar", now - 25 * day, 0.40f), ProgressPoint("radar", now - 12 * day, 0.46f),
       ProgressPoint("radar", now - 3 * day, 0.52f))
-    val s = AreaProgress.status("VELOCIDAD", listOf("radar"), mapOf("radar" to 0.52f), pts, now)
+    val s = AreaProgress.status("ATENCION", listOf("radar"), mapOf("radar" to 0.52f), pts, now)
     assertEquals(listOf(0.40f, 0.40f, 0.46f, 0.52f), s.weeks) // al final de cada semana: el último punto hasta ahí
-    val names = mapOf("VELOCIDAD" to "Velocidad", "MEMORIA" to "Memoria", "LENGUAJE" to "Lenguaje")
+    val names = mapOf("ATENCION" to "Atención", "MEMORIA" to "Memoria", "LENGUAJE" to "Lenguaje")
     val mem = AreaStatus("MEMORIA", 0.4f, 0.02f, emptyList())
     val len = AreaStatus("LENGUAJE", 0.2f, -0.02f, emptyList())
-    assertEquals("Velocidad y Memoria avanzaron", AreaProgress.nubiLine(listOf(mem, s, len), names))
+    assertEquals("Atención y Memoria avanzaron", AreaProgress.nubiLine(listOf(mem, s, len), names))
     assertEquals("Memoria avanzó esta semana", AreaProgress.nubiLine(listOf(mem, len), names))
     assertEquals("Tu avance se mantiene esta semana", AreaProgress.nubiLine(listOf(len), names))
     assertEquals("Juega y aquí verás tu avance", AreaProgress.nubiLine(listOf(AreaStatus("MEMORIA", null, 0f, emptyList())), names))

@@ -5,15 +5,26 @@ import com.example.ui.theme.*
 
 enum class DomainType(
   val displayName: String,
+  val tagline: String,
   val description: String,
   val color: Color
 ) {
-  MEMORIA("Memoria", "Retención visual, espacial y secuencial", DomainMemoria),
-  ATENCION("Atención", "Control inhibitorio y flexibilidad mental", DomainAtencion),
-  RAZONAMIENTO("Razonamiento", "Lógica inductiva y deducción de patrones", DomainRazonamiento),
-  LENGUAJE("Lenguaje", "Fluidez verbal, léxico y ortografía", DomainLenguaje),
-  CALCULO("Cálculo", "Agilidad numérica y resolución aritmética", DomainCalculo),
-  VELOCIDAD("Velocidad", "Tiempo de reacción y discriminación visual", DomainVelocidad);
+  MEMORIA("Memoria", "recordar y ubicar", "Retención visual, espacial y secuencial", DomainMemoria),
+  ATENCION("Atención", "foco y velocidad", "Foco, control y velocidad de procesamiento", DomainAtencion),
+  RAZONAMIENTO("Razonamiento", "lógica y números", "Lógica, espacio y números", DomainRazonamiento),
+  LENGUAJE("Lenguaje", "palabras y letras", "Fluidez verbal, léxico y ortografía", DomainLenguaje);
+
+  companion object {
+    /**
+     * Lee el nombre guardado de un área. Hasta el 29-sep había 6 áreas: Velocidad se unió a Atención y Cálculo a
+     * Razonamiento (30-sep); lo guardado con los nombres viejos se sigue entendiendo. Desconocido = null.
+     */
+    fun fromStored(name: String?): DomainType? = when (val n = name?.trim()) {
+      "VELOCIDAD" -> ATENCION
+      "CALCULO" -> RAZONAMIENTO
+      else -> entries.firstOrNull { it.name == n }
+    }
+  }
 }
 
 /** El nivel 1-5 de cada juego ES la etapa del avance (data/Skill.kt): mismos nombres en toda la app. */
@@ -147,7 +158,7 @@ object GameRegistry {
     GameDefinition(
       id = "calculo",
       title = "Cálculo Sereno",
-      domain = DomainType.CALCULO,
+      domain = DomainType.RAZONAMIENTO,
       subtitle = "Aritmética mental",
       instruction = "Resuelve cada cuenta y toca el resultado. En modo Reto, antes de que la burbuja llegue al agua.",
       iconEmoji = "🧮"
@@ -179,7 +190,7 @@ object GameRegistry {
     GameDefinition(
       id = "radar",
       title = "Radar",
-      domain = DomainType.VELOCIDAD,
+      domain = DomainType.ATENCION,
       subtitle = "Velocidad de procesamiento y visión periférica",
       instruction = "Atento al radar: en un destello aparecen varios astronautas perdidos. Toca todos los lugares donde los viste y pulsa ¡Rescatar! Los robots no se rescatan.",
       iconEmoji = "📡"
@@ -187,7 +198,7 @@ object GameRegistry {
     GameDefinition(
       id = "aterrizaje",
       title = "Aterrizaje Lunar",
-      domain = DomainType.CALCULO,
+      domain = DomainType.RAZONAMIENTO,
       subtitle = "Sentido numérico: estimar en la línea numérica",
       instruction = "Posa la nave justo en el número de la misión. La regla solo tiene marcados los extremos: arrastra para mover la nave y suelta para aterrizar.",
       iconEmoji = "🌙"
@@ -195,7 +206,7 @@ object GameRegistry {
     GameDefinition(
       id = "comparacion",
       title = "Comparación Instantánea",
-      domain = DomainType.VELOCIDAD,
+      domain = DomainType.ATENCION,
       subtitle = "Velocidad perceptiva",
       instruction = "Elige la tarjeta que vale más: la de más puntos, el número mayor o la cuenta con mayor resultado.",
       iconEmoji = "⚡"
