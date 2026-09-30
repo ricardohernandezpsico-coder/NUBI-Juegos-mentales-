@@ -127,7 +127,7 @@ fun SessionSummaryScreen(
   }
 }
 
-/** "memoria", "memoria y atención", "memoria, atención y velocidad". */
+/** "memoria", "memoria y atención", "memoria, atención y razonamiento". */
 private fun joinNames(names: List<String>): String = when (names.size) {
   0 -> "hoy"
   1 -> names[0]

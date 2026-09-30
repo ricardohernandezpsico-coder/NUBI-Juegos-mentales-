@@ -12,6 +12,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -123,7 +125,7 @@ private fun sparkle(c: Offset, r: Float): Path = Path().apply {
   close()
 }
 
-// ------------------------------------------------------------------ Hoy: Nubi al centro y sus 6 áreas
+// ------------------------------------------------------------------ Hoy: Nubi al centro y sus 4 áreas
 
 private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = Color(0xFFC7D0FF)
@@ -135,8 +137,8 @@ private val BubbleFill = Color(0xFFFCFAFF)
 private val BubbleLine = Color(0xFF4A3896)
 private val BubbleLabel = Color(0xFF605890)
 
-/** Orden de las áreas alrededor de Nubi: tres a la izquierda y tres a la derecha. */
-val AREA_ORDER = listOf("MEMORIA", "ATENCION", "RAZONAMIENTO", "LENGUAJE", "CALCULO", "VELOCIDAD")
+/** Orden de las áreas (30-sep, 4 áreas): en Hoy, índices pares a la izquierda y impares a la derecha. */
+val AREA_ORDER = listOf("MEMORIA", "ATENCION", "RAZONAMIENTO", "LENGUAJE")
 
 /**
  * Barra de avance de un área (0-100; 4 marcas finas = 5 etapas) con el cambio de la semana dibujado EN la barra, sin
@@ -228,8 +230,10 @@ fun NubiBubble(title: String, text: String, modifier: Modifier = Modifier, tailL
 }
 
 /**
- * El centro de Hoy: Nubi con su halo y tres áreas a cada lado (nombre, barra y etapa). Tocar un área abre su detalle.
- * [statuses] en el orden de [AREA_ORDER]; [names] = nombre visible de cada área.
+ * El centro de Hoy (30-sep, 4 áreas, maqueta `docs/previews/cuatro-areas.png` "Hoy · B final"): Nubi grande con su halo
+ * al centro; Memoria y Razonamiento a la izquierda, Atención y Lenguaje a la derecha (arriba y abajo), cada una con su
+ * planeta, nombre, subtítulo, barra y etapa. Nubi crece hasta llenar el alto que sobra entre las dos filas.
+ * [statuses] en el orden de [AREA_ORDER]; [names] = nombre visible de cada área. Tocar un área abre su detalle.
  */
 @Composable
 fun NubiHome(
@@ -241,19 +245,21 @@ fun NubiHome(
 ) {
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     NubiBubble("Nubi", line, Modifier.padding(horizontal = 24.dp).testTag("nubi_line"))
-    Box(Modifier.fillMaxWidth().weight(1f)) {
-      NubiWithHalo(size = 142.dp, modifier = Modifier.align(Alignment.Center))
+    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+      // Alto de un área (planeta + nombre + subtítulo + barra + etapa) y de Nubi: lo que sobra entre las dos filas.
+      val blockHeight = 164.dp
+      val nubiBody = ((maxHeight - blockHeight * 2 - 8.dp) / 1.35f).coerceIn(108.dp, 176.dp)
+      NubiWithHalo(size = nubiBody, modifier = Modifier.align(Alignment.Center))
       val byArea = statuses.associateBy { it.area }
-      listOf(AREA_ORDER.take(3) to true, AREA_ORDER.drop(3) to false).forEach { (areas, left) ->
+      listOf(true, false).forEach { left ->
         Column(
           Modifier
             .align(if (left) Alignment.CenterStart else Alignment.CenterEnd)
             .fillMaxHeight()
-            .width(124.dp)
-            .padding(vertical = 4.dp),
-          verticalArrangement = Arrangement.SpaceEvenly
+            .width(156.dp),
+          verticalArrangement = Arrangement.SpaceBetween
         ) {
-          areas.forEach { key ->
+          AREA_ORDER.filterIndexed { i, _ -> (i % 2 == 0) == left }.forEach { key ->
             val s = byArea[key] ?: AreaStatus(key, null, 0f, emptyList())
             AreaBlock(names[key] ?: key, s, alignStart = left, onClick = { onArea(key) })
           }
@@ -267,6 +273,7 @@ fun NubiHome(
 private fun AreaBlock(name: String, s: AreaStatus, alignStart: Boolean, onClick: () -> Unit) {
   val align = if (alignStart) Alignment.Start else Alignment.End
   val textAlign = if (alignStart) TextAlign.Start else TextAlign.End
+  val tagline = com.example.model.DomainType.fromStored(s.area)?.tagline.orEmpty()
   Column(
     horizontalAlignment = align,
     modifier = Modifier
@@ -274,14 +281,21 @@ private fun AreaBlock(name: String, s: AreaStatus, alignStart: Boolean, onClick:
       .clip(RoundedCornerShape(12.dp))
       .clickable(onClick = onClick)
       .semantics { contentDescription = areaDescription(name, s) }
-      .padding(start = if (alignStart) 8.dp else 0.dp, end = if (alignStart) 0.dp else 8.dp, top = 6.dp, bottom = 6.dp)
+      .padding(start = if (alignStart) 16.dp else 0.dp, end = if (alignStart) 0.dp else 16.dp, top = 4.dp, bottom = 4.dp)
       .testTag("area_${s.area}")
   ) {
-    Text(name, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = textAlign, maxLines = 1)
-    AreaBar(s.value, s.change, Modifier.padding(vertical = 6.dp))
+    // El planeta: su esfera mide AREA_BODY_FRACTION de la imagen; se corre para que el borde de la esfera quede
+    // alineado con el texto.
+    Image(
+      painterResource(areaPlanetRes(s.area)), contentDescription = null,
+      modifier = Modifier.size(58.dp).offset(x = if (alignStart) (-11).dp else 11.dp)
+    )
+    Text(name, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, textAlign = textAlign, maxLines = 1)
+    Text(tagline, color = OnNightDim, fontSize = 15.sp, textAlign = textAlign, maxLines = 1)
+    AreaBar(s.value, s.change, Modifier.padding(top = 6.dp, bottom = 6.dp), height = 9.dp)
     Text(
       s.value?.let { Skill.stageName(it) } ?: "Sin medir",
-      color = OnNightDim, fontSize = 14.sp, textAlign = textAlign, maxLines = 1
+      color = OnNightDim, fontSize = 15.sp, textAlign = textAlign, maxLines = 1
     )
   }
 }

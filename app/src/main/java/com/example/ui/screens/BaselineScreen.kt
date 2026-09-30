@@ -75,7 +75,7 @@ private val OnNightDim = Color(0xFFB4BFEA)
  * de la app (el fondo lo pinta MainActivity):
  * - Mientras se juega: los 3 juegos como nodos del camino (hecho = check lima, siguiente = late), qué mide el
  *   siguiente y "Jugar". "Terminar después" estima el punto de partida y deja la evaluación en Perfil.
- * - Al terminar: radar de los 6 dominios (medidos = punto de arcilla; estimados = punto hueco y línea punteada),
+ * - Al terminar: radar de las 4 áreas (medidos = punto de arcilla; estimados = punto hueco y línea punteada),
  *   nivel en palabras y posición frente a personas de su edad y estudios ("estimación provisional"), y "Empezar
  *   mi camino". Nada de "edad cognitiva" ni diagnósticos: es un punto de partida para jugar.
  */
@@ -242,7 +242,7 @@ private fun MapView(baseline: Baseline, ageBand: AgeBand?, education: Education?
       }
     }
     Text(
-      "Razonamiento, lenguaje y cálculo se estiman hasta que los juegues. La comparación es una estimación " +
+      "Razonamiento y lenguaje se estiman hasta que los juegues. La comparación es una estimación " +
         "provisional: mejorará cuando haya más datos.",
       color = OnNightDim, fontFamily = AppFamily, fontSize = 15.sp, lineHeight = 18.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 10.dp, bottom = 22.dp)
@@ -253,7 +253,7 @@ private fun MapView(baseline: Baseline, ageBand: AgeBand?, education: Education?
 }
 
 /**
- * Radar de los 6 dominios en arcilla: anillos finos, área sol translúcida con borde sol; los vértices medidos son
+ * Radar de las 4 áreas en arcilla: anillos finos, área sol translúcida con borde sol; los vértices medidos son
  * puntos de arcilla del color del dominio y los estimados, puntos huecos con línea punteada. [grow] anima el área.
  */
 @Composable

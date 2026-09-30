@@ -73,7 +73,7 @@ private val OnNightDim = Color(0xFFB4BFEA)
 
 /**
  * Avance (29-sep; antes la pestaña "Liga"; ícono: un cerebro, `docs/previews/navegacion-nubi.png`). Sin tarjetas, en
- * secciones sueltas: tu liga (escudo y compartir), tus 6 áreas con la barra de Hoy (tocar una abre su detalle), los
+ * secciones sueltas: tu liga (escudo y compartir), tus 4 áreas con la barra de Hoy (tocar una abre su detalle), los
  * desafíos de la semana, tu avance en cada juego y tu punto de partida. Lo secundario (tu posición, el mapa de áreas,
  * maestría, tendencia e historial) queda plegado detrás de "Ver más detalles" para no saturar.
  */
@@ -168,7 +168,7 @@ fun ProgressScreen(
       }
     }
 
-    // Tus 6 áreas con la misma barra de Hoy (cambio de la semana en la barra); tocar una abre su detalle.
+    // Tus 4 áreas con la misma barra de Hoy (cambio de la semana en la barra); tocar una abre su detalle.
     item {
       Column {
         SpaceSectionTitle("Tus áreas", hint = "Tu avance de 0 a 100 en cada una; toca una para ver el detalle")

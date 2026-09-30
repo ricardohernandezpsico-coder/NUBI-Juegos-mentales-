@@ -698,7 +698,7 @@ fun SettingsScreen(
         }
 
         Text(
-          text = "Recibe un aviso motivador cada día a la hora seleccionada para ejercitar memoria, cálculo y atención sin interrumpir tu rutina.",
+          text = "Recibe un aviso motivador cada día a la hora seleccionada para ejercitar memoria, atención y razonamiento sin interrumpir tu rutina.",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )

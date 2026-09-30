@@ -151,7 +151,5 @@ fun areaPlanetRes(area: String): Int = when (area) {
   "MEMORIA" -> R.drawable.area_memoria
   "ATENCION" -> R.drawable.area_atencion
   "RAZONAMIENTO" -> R.drawable.area_razonamiento
-  "LENGUAJE" -> R.drawable.area_lenguaje
-  "CALCULO" -> R.drawable.area_calculo
-  else -> R.drawable.area_velocidad
+  else -> R.drawable.area_lenguaje
 }

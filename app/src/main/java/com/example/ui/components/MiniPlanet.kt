@@ -28,7 +28,7 @@ import com.example.ui.theme.Clay
 // que usan otras pantallas.
 
 /** Nombre y color de un dominio a partir de su clave ([DomainType.name]). */
-fun domainOf(key: String): DomainType? = DomainType.values().firstOrNull { it.name == key }
+fun domainOf(key: String): DomainType? = DomainType.fromStored(key)
 
 /** Color del dominio aclarado para texto sobre el cielo (contraste ≥ 4.5:1 con la noche). */
 fun domainTextColor(key: String): Color = lerp(domainOf(key)?.color ?: Color.White, Color.White, 0.45f)

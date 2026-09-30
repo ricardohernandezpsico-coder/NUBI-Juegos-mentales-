@@ -68,13 +68,13 @@ private val spanishTranslations = Translations(
   trainAnotherRound = "Entrenar otra ronda",
   greetingFormat = { name -> "Hola, $name 👋" },
   gamesLibraryTitle = "Biblioteca de Juegos",
-  gamesLibrarySubtitle = "9 entrenamientos en 6 dominios cognitivos",
+  gamesLibrarySubtitle = "19 entrenamientos en 4 áreas",
   filterAll = "Todos",
   levelPrefix = "Nivel",
   scoreLabel = "Mejor",
   playButton = "Jugar",
   progressTitle = "Tu Progreso Cognitivo",
-  progressSubtitle = "Evolución integral en las 6 áreas cognitivas",
+  progressSubtitle = "Evolución en tus 4 áreas",
   domainMasteryTitle = "Maestría por Dominio",
   xpLabel = "XP sin límite",
   gameRankingsTitle = "Ranking por Juego",
@@ -101,13 +101,13 @@ private val englishTranslations = Translations(
   trainAnotherRound = "Train Another Round",
   greetingFormat = { name -> "Hello, $name 👋" },
   gamesLibraryTitle = "Games Library",
-  gamesLibrarySubtitle = "9 brain workouts across 6 cognitive domains",
+  gamesLibrarySubtitle = "19 brain workouts across 4 areas",
   filterAll = "All",
   levelPrefix = "Level",
   scoreLabel = "Best",
   playButton = "Play",
   progressTitle = "Your Cognitive Progress",
-  progressSubtitle = "Comprehensive growth across 6 brain areas",
+  progressSubtitle = "Comprehensive growth across 4 brain areas",
   domainMasteryTitle = "Domain Mastery",
   xpLabel = "Unlimited XP",
   gameRankingsTitle = "Game Rankings",
@@ -134,13 +134,13 @@ private val frenchTranslations = Translations(
   trainAnotherRound = "Nouvelle session",
   greetingFormat = { name -> "Bonjour, $name 👋" },
   gamesLibraryTitle = "Bibliothèque de Jeux",
-  gamesLibrarySubtitle = "9 entraînements dans 6 domaines cognitifs",
+  gamesLibrarySubtitle = "19 entraînements dans 4 domaines",
   filterAll = "Tous",
   levelPrefix = "Niveau",
   scoreLabel = "Meilleur",
   playButton = "Jouer",
   progressTitle = "Votre Progrès Cognitif",
-  progressSubtitle = "Évolution complète sur les 6 domaines",
+  progressSubtitle = "Évolution complète sur les 4 domaines",
   domainMasteryTitle = "Maîtrise par Domaine",
   xpLabel = "XP illimité",
   gameRankingsTitle = "Classement par Jeu",
@@ -167,13 +167,13 @@ private val germanTranslations = Translations(
   trainAnotherRound = "Weitere Runde",
   greetingFormat = { name -> "Hallo, $name 👋" },
   gamesLibraryTitle = "Spiele-Bibliothek",
-  gamesLibrarySubtitle = "9 Übungen in 6 kognitiven Bereichen",
+  gamesLibrarySubtitle = "19 Übungen in 4 Bereichen",
   filterAll = "Alle",
   levelPrefix = "Level",
   scoreLabel = "Rekord",
   playButton = "Spielen",
   progressTitle = "Kognitiver Fortschritt",
-  progressSubtitle = "Ganzheitliche Entwicklung über 6 Bereiche",
+  progressSubtitle = "Ganzheitliche Entwicklung über 4 Bereiche",
   domainMasteryTitle = "Bereichs-Meisterschaft",
   xpLabel = "Unbegrenzte XP",
   gameRankingsTitle = "Spiel-Rangliste",
@@ -200,13 +200,13 @@ private val portugueseTranslations = Translations(
   trainAnotherRound = "Mais Uma Rodada",
   greetingFormat = { name -> "Olá, $name 👋" },
   gamesLibraryTitle = "Biblioteca de Jogos",
-  gamesLibrarySubtitle = "9 treinos em 6 domínios cognitivos",
+  gamesLibrarySubtitle = "19 treinos em 4 áreas",
   filterAll = "Todos",
   levelPrefix = "Nível",
   scoreLabel = "Melhor",
   playButton = "Jogar",
   progressTitle = "Seu Progresso Cognitivo",
-  progressSubtitle = "Evolução integral nas 6 áreas cognitivas",
+  progressSubtitle = "Evolução integral nas 4 áreas",
   domainMasteryTitle = "Domínio Cognitivo",
   xpLabel = "XP sem limite",
   gameRankingsTitle = "Ranking por Jogo",
@@ -232,32 +232,24 @@ fun getDomainName(domain: DomainType, lang: AppLanguage): String = when (lang) {
     DomainType.ATENCION -> "Attention"
     DomainType.RAZONAMIENTO -> "Reasoning"
     DomainType.LENGUAJE -> "Language"
-    DomainType.CALCULO -> "Calculation"
-    DomainType.VELOCIDAD -> "Speed"
   }
   AppLanguage.FRENCH -> when (domain) {
     DomainType.MEMORIA -> "Mémoire"
     DomainType.ATENCION -> "Attention"
     DomainType.RAZONAMIENTO -> "Raisonnement"
     DomainType.LENGUAJE -> "Langage"
-    DomainType.CALCULO -> "Calcul"
-    DomainType.VELOCIDAD -> "Vitesse"
   }
   AppLanguage.GERMAN -> when (domain) {
     DomainType.MEMORIA -> "Gedächtnis"
     DomainType.ATENCION -> "Aufmerksamkeit"
     DomainType.RAZONAMIENTO -> "Logik"
     DomainType.LENGUAJE -> "Sprache"
-    DomainType.CALCULO -> "Rechnen"
-    DomainType.VELOCIDAD -> "Geschwindigkeit"
   }
   AppLanguage.PORTUGUESE -> when (domain) {
     DomainType.MEMORIA -> "Memória"
     DomainType.ATENCION -> "Atenção"
     DomainType.RAZONAMIENTO -> "Raciocínio"
     DomainType.LENGUAJE -> "Linguagem"
-    DomainType.CALCULO -> "Cálculo"
-    DomainType.VELOCIDAD -> "Velocidade"
   }
 }
 

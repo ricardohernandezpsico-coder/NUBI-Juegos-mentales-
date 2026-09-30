@@ -274,7 +274,7 @@ private fun WelcomePage(onNext: () -> Unit) {
       modifier = Modifier.padding(top = 8.dp)
     )
     Text(
-      text = "${GameRegistry.allGames.size} juegos cortos de memoria, atención, razonamiento, lenguaje, cálculo y velocidad.",
+      text = "${GameRegistry.allGames.size} juegos cortos de memoria, atención y velocidad, razonamiento y números, y lenguaje.",
       color = OnNightDim, fontFamily = AppFamily, fontSize = 15.sp, lineHeight = 21.sp, textAlign = TextAlign.Center,
       modifier = Modifier.padding(top = 10.dp)
     )
@@ -388,7 +388,7 @@ private fun HowItWorksPage(onNext: () -> Unit) {
 
 /**
  * Metas: hasta 3 dominios que quiere entrenar (el camino diario los prioriza). Se puede seguir sin elegir. Las filas
- * son compactas para que las 6 quepan en casi cualquier teléfono; si no caben (pantalla chica o letra grande), la lista
+ * son compactas para que las 4 quepan en casi cualquier teléfono; si no caben (pantalla chica o letra grande), la lista
  * se desplaza y sus bordes se desvanecen, para que no parezca cortada (Ricardo, 29-sep).
  */
 @Composable

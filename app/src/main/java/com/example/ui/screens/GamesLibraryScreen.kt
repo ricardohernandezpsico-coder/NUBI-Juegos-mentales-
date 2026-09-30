@@ -47,8 +47,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.AreaProgress
+import com.example.data.AreaSuggestion
 import com.example.data.AreaStatus
 import com.example.data.DiscoveryKind
+import com.example.ui.components.AREA_BODY_FRACTION
 import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.AreaBar
 import com.example.ui.components.LockTabSwipe
@@ -109,7 +111,7 @@ data class GameCardData(
 
 /**
  * Pestaña Juegos (29-sep, 3.ª versión, pedido de Ricardo tras probar el deslizar entre pestañas: en Juegos también se
- * deslizaba para cambiar de área y los dos gestos confundían). Arriba "Juegos" con tu perfil y opciones; debajo LAS 6
+ * deslizaba para cambiar de área y los dos gestos confundían). Arriba "Juegos" con tu perfil y opciones; debajo LAS 4
  * ÁREAS A LA VEZ ([AreaGrid]: planeta con su ícono, nombre, la barra de avance de Hoy y la etapa; sello sol = jugada hoy).
  * Tocar un área abre su VENTANA ([AreaWindow]): tapa toda la pantalla, las pestañas no se deslizan, X arriba a la
  * derecha (o Atrás) y Nubi científica pregunta con cuál entrenar; debajo, sus juegos. Tocar una casilla abre la FICHA
@@ -146,18 +148,18 @@ fun GamesLibraryScreen(
   val open = focus.domain?.takeIf { focus.open }
 
   if (open == null) {
+    val suggestion = remember(history, statuses, now, lang) {
+      suggestArea(history.map { it.gameId to it.timestamp }, statuses, now, lang)
+    }
     Column(modifier = modifier.fillMaxSize()) {
-      TabTopBar(viewModel) {
-        Column {
-          Text("Juegos", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-          Text("¿Qué quieres trabajar hoy?", color = OnNightDim, fontSize = 15.sp)
-        }
-      }
+      TabTopBar(viewModel) {}
+      SuggestionHeader(suggestion)
       AreaGrid(
         statuses = statuses,
         playedToday = playedToday,
+        suggested = suggestion.key,
         lang = lang,
-        onArea = { key -> DomainType.values().firstOrNull { it.name == key }?.let { viewModel.setLibraryFocus(it, null) } },
+        onArea = { key -> DomainType.fromStored(key)?.let { viewModel.setLibraryFocus(it, null) } },
         modifier = Modifier.weight(1f)
       )
     }
@@ -441,63 +443,137 @@ internal fun GameSheetContent(
 internal fun measureText(def: com.example.data.MeasureDef, v: Float): String =
   (if (def.compactPattern.startsWith("a ")) "a " else "") + "${def.format(v)} ${def.unit}".trim()
 
+/** El área que Nubi sugiere hoy: su clave, su nombre visible y el motivo ("Hace 4 días que no lo juegas"). */
+internal data class AreaSuggestionUi(val key: String, val name: String, val reason: String)
+
+/** Arma la sugerencia desde el historial ([plays] = juego + momento) y el avance de cada área. */
+internal fun suggestArea(plays: List<Pair<String, Long>>, statuses: List<AreaStatus>, now: Long, lang: com.example.model.AppLanguage): AreaSuggestionUi {
+  val names = AREA_ORDER.associateWith { key -> getDomainName(DomainType.fromStored(key) ?: DomainType.MEMORIA, lang) }
+  val lastByKey = AREA_ORDER.associateWith { key ->
+    plays.filter { (gameId, _) -> GameRegistry.getById(gameId)?.domain?.name == key }.maxOfOrNull { it.second }
+  }
+  val r = AreaSuggestion.pick(
+    areas = AREA_ORDER.map { names.getValue(it) },
+    lastPlayedByArea = AREA_ORDER.associate { names.getValue(it) to lastByKey[it] },
+    valueByArea = AREA_ORDER.associate { key -> names.getValue(key) to statuses.firstOrNull { it.area == key }?.value },
+    now = now,
+    dayOf = ::dayIndex
+  )
+  val key = names.entries.first { it.value == r.area }.key
+  return AreaSuggestionUi(key, r.area, r.reason)
+}
+
 /**
- * Las 6 áreas a la vez, en dos columnas (aprobado por Ricardo, `docs/previews/juegos-nubi.png`): el planeta del área con
- * su ícono (sello sol con ✓ = jugada hoy), el nombre, la misma barra de avance de Hoy y "Hábil · 6 juegos". Sin flechas
- * ni deslizar: el único gesto hacia los costados de esta pantalla es cambiar de pestaña.
+ * Encabezado "Nubi te sugiere" (30-sep, maqueta `docs/previews/cuatro-areas.png` Juegos · 2): Nubi científica a la
+ * izquierda, la pregunta y, debajo, qué área sugiere y por qué.
+ */
+@Composable
+internal fun SuggestionHeader(s: AreaSuggestionUi) {
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp).testTag("suggestion_header")
+  ) {
+    Image(
+      painterResource(com.example.R.drawable.nubi_cientifica), contentDescription = "Nubi con bata de científica",
+      modifier = Modifier.size(104.dp)
+    )
+    Column(Modifier.weight(1f)) {
+      Text("¿Qué entrenamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
+      Text(
+        "Te sugiero ${s.name}: ${s.reason.replaceFirstChar { it.lowercase() }}",
+        color = OnNightDim, fontSize = 15.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 2.dp).testTag("suggestion_text")
+      )
+    }
+  }
+}
+
+/**
+ * Las 4 áreas a la vez, en 2 x 2 que llena la pantalla hasta la barra de pestañas (aprobado por Ricardo,
+ * `docs/previews/cuatro-areas.png` Juegos · 2): el planeta del área (el sugerido, más grande, con un aro de luz y el
+ * rótulo "Sugerida"; sello sol con ✓ = jugada hoy), el nombre, su subtítulo, la barra de avance de Hoy y "Hábil · 7
+ * juegos". Sin flechas ni deslizar: el único gesto hacia los costados de esta pantalla es cambiar de pestaña. Si la letra
+ * del sistema es muy grande, la rejilla se desplaza.
  */
 @Composable
 internal fun AreaGrid(
   statuses: List<AreaStatus>,
   playedToday: Set<String>,
+  suggested: String?,
   lang: com.example.model.AppLanguage,
   onArea: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  Column(
-    modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
-      .padding(horizontal = 12.dp, vertical = 8.dp)
-      .testTag("area_grid")
-  ) {
-    statuses.chunked(2).forEach { row ->
-      Row(Modifier.fillMaxWidth()) {
-        row.forEach { s ->
-          val domain = DomainType.values().first { it.name == s.area }
-          val name = getDomainName(domain, lang)
-          val count = GameRegistry.allGames.count { it.domain == domain }
-          Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-              .weight(1f)
-              .clip(RoundedCornerShape(24.dp))
-              .clickable { onArea(s.area) }
-              .padding(vertical = 8.dp)
-              .semantics(mergeDescendants = true) { contentDescription = areaDescription(name, s) + ". Abrir sus juegos" }
-              .testTag("area_${s.area.lowercase()}")
-          ) {
-            Box(
-              Modifier.size(104.dp).drawBehind {
-                // resplandor suave del color del área detrás del planeta
-                drawCircle(Brush.radialGradient(listOf(domain.color.copy(alpha = 0.38f), Color.Transparent), center, size.minDimension / 2f))
-              },
-              contentAlignment = Alignment.Center
+  BoxWithConstraints(modifier.fillMaxWidth().testTag("area_grid")) {
+    val rowHeight = maxOf(maxHeight / 2, 262.dp)
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
+      statuses.chunked(2).forEach { row ->
+        Row(Modifier.fillMaxWidth().height(rowHeight)) {
+          row.forEach { s ->
+            val domain = DomainType.fromStored(s.area) ?: DomainType.MEMORIA
+            val name = getDomainName(domain, lang)
+            val count = GameRegistry.allGames.count { it.domain == domain }
+            val isSuggested = s.area == suggested
+            val planet = if (isSuggested) 140.dp else 104.dp
+            // La esfera mide AREA_BODY_FRACTION de la imagen: el aro se dibuja alrededor de la esfera, no de la imagen.
+            val ringRadius = planet * AREA_BODY_FRACTION / 2 + 12.dp
+            Column(
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.Center,
+              modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .clickable { onArea(s.area) }
+                .semantics(mergeDescendants = true) {
+                  contentDescription = areaDescription(name, s) + (if (isSuggested) ". Sugerida por Nubi" else "") + ". Abrir sus juegos"
+                }
+                .testTag("area_${s.area.lowercase()}")
             ) {
-              Image(painterResource(areaPlanetRes(s.area)), contentDescription = null, modifier = Modifier.fillMaxSize())
-              if (s.area in playedToday) TodaySeal(Modifier.align(Alignment.TopEnd).padding(top = 14.dp, end = 14.dp))
+              Box(
+                Modifier.size(150.dp).drawBehind {
+                  if (isSuggested) {
+                    val ring = ringRadius.toPx()
+                    drawCircle(Brush.radialGradient(listOf(Clay.Sun.copy(alpha = 0.14f), Color.Transparent), center, ring * 1.4f), ring * 1.4f, center)
+                    drawCircle(Clay.Sun, ring, center, style = Stroke(3.dp.toPx()))
+                  } else {
+                    // resplandor suave del color del área detrás del planeta
+                    drawCircle(Brush.radialGradient(listOf(domain.color.copy(alpha = 0.38f), Color.Transparent), center, size.minDimension / 2f))
+                  }
+                },
+                contentAlignment = Alignment.Center
+              ) {
+                Image(painterResource(areaPlanetRes(s.area)), contentDescription = null, modifier = Modifier.size(planet))
+                if (s.area in playedToday) {
+                  TodaySeal(Modifier.align(Alignment.Center).offset(x = planet * 0.22f, y = -planet * 0.22f))
+                }
+                if (isSuggested) SuggestedTag(Modifier.align(Alignment.Center).offset(y = -ringRadius))
+              }
+              Text(name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+              Text(domain.tagline, color = OnNightDim, fontSize = 15.sp, maxLines = 1)
+              AreaBar(s.value, s.change, modifier = Modifier.width(140.dp).padding(vertical = 8.dp), height = 9.dp)
+              Text(
+                (s.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (count == 1) "1 juego" else "$count juegos",
+                color = OnNightDim, fontSize = 15.sp, maxLines = 1
+              )
             }
-            Text(name, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            AreaBar(s.value, s.change, modifier = Modifier.width(124.dp).padding(vertical = 8.dp), height = 7.dp)
-            Text(
-              (s.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (count == 1) "1 juego" else "$count juegos",
-              color = OnNightDim, fontSize = 14.sp
-            )
           }
         }
       }
     }
   }
+}
+
+/** Rótulo "Sugerida" (píldora sol con letra tinta): un rótulo, no una tarjeta. */
+@Composable
+private fun SuggestedTag(modifier: Modifier = Modifier) {
+  Box(
+    modifier
+      .height(26.dp)
+      .clip(RoundedCornerShape(13.dp))
+      .background(Clay.Sun)
+      .padding(horizontal = 12.dp),
+    contentAlignment = Alignment.Center
+  ) { Text("Sugerida", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
 }
 
 /** Sello sol con ✓: el área (o juego) ya se jugó hoy. La marca es una forma, no solo el color. */
