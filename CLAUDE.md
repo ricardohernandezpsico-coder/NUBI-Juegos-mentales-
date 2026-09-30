@@ -476,6 +476,10 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 - Lo que NO se hizo de la revisión de arquitectura (medidas genéricas, idiomas, dividir el ViewModel, datos en dos
   lugares, versión de tienda, controladores grandes de Unity) está con pasos concretos en
   [`docs/plan-mejoras-arquitectura.md`](docs/plan-mejoras-arquitectura.md).
+- **Competencia** (29-sep): Ricardo guardó capturas de Lumosity, NeuroNation y Peak en `Proyectos/pantallazos …/`
+  (fuera del repo). Qué tomar, qué no copiar y el orden sugerido (registro de sueño y ánimo, tutorial por juego,
+  comentarios por juego, escudo de racha, atajos Reforzar/Rápido…) está en
+  [`docs/analisis-competencia.md`](docs/analisis-competencia.md). Nada de eso está implementado todavía.
 
 ## Pruebas
 
