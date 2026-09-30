@@ -76,6 +76,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 ## Hoy (inicio): propuestas y versiones
 
 - [`anillo-luz.png`](anillo-luz.png)
+- [`avance-nuevo.png`](avance-nuevo.png)
 - [`avance-sin-planeta.png`](avance-sin-planeta.png)
 - [`galaxia-hd.png`](galaxia-hd.png)
 - [`galaxia.png`](galaxia.png)

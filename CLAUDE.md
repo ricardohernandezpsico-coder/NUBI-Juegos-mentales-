@@ -29,6 +29,9 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
 - Estilo con Ricardo: en español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
+- Qué sigue (juegos que faltan para llegar a 5 por área, Avance, orden): [`docs/hoja-de-ruta.md`](docs/hoja-de-ruta.md).
+- Repositorios externos: si alguno de GitHub puede potenciar la app, COMENTARLO a Ricardo y él decide; nunca agregarlo
+  sin preguntar. Descartados: Zenject/Extenject y awesome-unity (razones en la hoja de ruta).
 
 ## Toolchain (PC Windows de Ricardo)
 
