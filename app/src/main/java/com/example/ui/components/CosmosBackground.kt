@@ -86,22 +86,22 @@ fun CosmosBackground(modifier: Modifier = Modifier) {
 
     drawRect(
       Brush.verticalGradient(
-        listOf(Color(0xFF04061C), Color(0xFF080E3A), Color(0xFF101A58)),
+        listOf(Color(0xFF02030F), Color(0xFF050823), Color(0xFF0A0F33)),
         startY = 0f, endY = h
       )
     )
     // Nebulosas: muy lejanas, se desplazan poco
     val nebulaShift = (scroll * 0.06f) % (h * 0.6f)
     drawCircle(
-      Brush.radialGradient(listOf(Color(0x444CC9F0), Color.Transparent), Offset(w * 0.9f, h * 0.10f - nebulaShift), w * 0.9f),
+      Brush.radialGradient(listOf(Color(0x284CC9F0), Color.Transparent), Offset(w * 0.9f, h * 0.10f - nebulaShift), w * 0.9f),
       radius = w * 0.9f, center = Offset(w * 0.9f, h * 0.10f - nebulaShift)
     )
     drawCircle(
-      Brush.radialGradient(listOf(Color(0x30B8A4FF), Color.Transparent), Offset(w * 0.1f, h * 0.55f - nebulaShift * 0.6f), w * 0.8f),
+      Brush.radialGradient(listOf(Color(0x1CB8A4FF), Color.Transparent), Offset(w * 0.1f, h * 0.55f - nebulaShift * 0.6f), w * 0.8f),
       radius = w * 0.8f, center = Offset(w * 0.1f, h * 0.55f - nebulaShift * 0.6f)
     )
     drawCircle(
-      Brush.radialGradient(listOf(Color(0x3DFF6B4A), Color.Transparent), Offset(w * 0.05f, h * 0.95f), w * 0.85f),
+      Brush.radialGradient(listOf(Color(0x24FF6B4A), Color.Transparent), Offset(w * 0.05f, h * 0.95f), w * 0.85f),
       radius = w * 0.85f, center = Offset(w * 0.05f, h * 0.95f)
     )
 

@@ -47,10 +47,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.viewmodel.AppTab
 
-private val BarColor = Color(0xFFFFFFFF)
+// "Fondo C" (30-sep, elegido por Ricardo en `docs/previews/fondo-oscuro.png`): barra en tinta sobre el cielo más oscuro,
+// así lo más brillante de la pantalla sigue siendo Nubi. Contraste: apagado 6,8:1 sobre la barra, elegido 11:1 sobre
+// la pastilla uva.
+private val BarColor = Color(0xFF14112E)
 private val Ink = Color(0xFF1A1240)
-private val InkDim = Color(0xFF6B6790)
-private val Accent = Color(0xFFFF6B4A)
+private val BarBorder = Color(0xFF3A2E78)
+private val Dim = Color(0xFFA098C8)
+private val Selected = Color(0xFFFFFFFF)
+private val Pill = Color(0xFF3C3078)
 
 /** Un destino de la barra; sin ícono de Material = el cerebro dibujado ([BrainIcon]). */
 private data class NavItem(val tab: AppTab, val label: String, val on: ImageVector?, val off: ImageVector?)
@@ -84,7 +89,7 @@ fun NeuroNavBar(current: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier 
         },
       shape = RoundedCornerShape(30.dp),
       color = BarColor,
-      border = BorderStroke(3.dp, Ink),
+      border = BorderStroke(2.dp, BarBorder),
       shadowElevation = 0.dp
     ) {
       Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -96,8 +101,8 @@ fun NeuroNavBar(current: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier 
 
 @Composable
 private fun NavSlot(item: NavItem, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-  val tint by animateColorAsState(if (selected) Ink else InkDim, label = "navTint")
-  val pill by animateColorAsState(if (selected) Accent.copy(alpha = 0.18f) else Color.Transparent, label = "navPill")
+  val tint by animateColorAsState(if (selected) Selected else Dim, label = "navTint")
+  val pill by animateColorAsState(if (selected) Pill else Color.Transparent, label = "navPill")
   val scale by animateFloatAsState(
     if (selected) 1.08f else 1f,
     spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
@@ -120,7 +125,7 @@ private fun NavSlot(item: NavItem, selected: Boolean, onClick: () -> Unit, modif
         .scale(scale),
       contentAlignment = Alignment.Center
     ) {
-      val iconTint = if (selected) Accent else tint
+      val iconTint = tint
       val icon = if (selected) item.on else item.off
       if (icon != null) Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(26.dp))
       else BrainIcon(iconTint, 26.dp)

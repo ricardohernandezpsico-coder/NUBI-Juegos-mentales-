@@ -22,10 +22,10 @@ namespace NeuroVida.Games.Shared
         public static readonly Color Lime = Hex(0x9BE564);
         public static readonly Color Cream = Hex(0xFFFFFF);
 
-        // Cielo nocturno (CosmosBackground.kt): abajo -> medio -> arriba
-        public static readonly Color NightBottom = Hex(0x04061C);
-        public static readonly Color NightMid = Hex(0x080E3A);
-        public static readonly Color NightTop = Hex(0x101A58);
+        // Cielo nocturno (CosmosBackground.kt, "fondo C" del 30-sep: más oscuro): abajo -> medio -> arriba
+        public static readonly Color NightBottom = Hex(0x02030F);
+        public static readonly Color NightMid = Hex(0x050823);
+        public static readonly Color NightTop = Hex(0x0A0F33);
         public static readonly Color StarWarm = Hex(0xFFC38A);
 
         /// <summary>Superficie de paneles sobre el cielo (azul noche opaco, como las superficies de la app).</summary>

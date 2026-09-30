@@ -52,7 +52,7 @@ class NubiHomeScreenshotTest {
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(520.dp).background(Color(0xFF0A1040))) {
+        Box(Modifier.width(412.dp).height(520.dp).background(Color(0xFF050823))) {
           NubiHome(statuses, names, AreaProgress.nubiLine(statuses, names), onArea = {})
         }
       }
@@ -66,7 +66,7 @@ class NubiHomeScreenshotTest {
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF0A1040))) {
+        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
           AreaDetail(
             areaKey = AREA_ORDER[0], statuses = statuses, names = names, history = emptyList(),
             measures = listOf(MeasurePoint(now - day, "homing", 18f)), now = now, lang = AppLanguage.SPANISH,

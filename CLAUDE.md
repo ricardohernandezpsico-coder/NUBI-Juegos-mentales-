@@ -24,7 +24,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 28-sep · o`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 30-sep · fondo C`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -419,7 +419,9 @@ Kvavilashvili, 2023). Nadie en la competencia la mide.
 
 ## Reglas que no se rompen
 
-- **Diseño**: "noche + arcilla": cielo nocturno animado; lo tocable es arcilla (borde tinta grueso `Ink` 0x1A1240,
+- **Diseño**: "noche + arcilla": cielo nocturno animado (**fondo C**, 30-sep, elegido por Ricardo en
+  `docs/previews/fondo-oscuro.png`: #02030F → #050823 → #0A0F33 en `CosmosBackground`, `nv_night`, `UnityLoadingOverlay` y
+  `NeuroStyle.Night*`; nebulosas de la app −40%; barra de pestañas en tinta #14112E con la elegida en pastilla uva); lo tocable es arcilla (borde tinta grueso `Ink` 0x1A1240,
   sombra dura, colores Coral/Sun/Sky/Grape/Lime/Cream). **Tipografía** (28-sep): `AppFamily` elige por peso: normal y
   medio = Nunito (subtítulos, comentarios, texto secundario), seminegrita y negrita = Fredoka (títulos, botones,
   números); los títulos de `Typography` son siempre Fredoka. Fuentes OFL en `res/font`. **Tamaños**: pensando en

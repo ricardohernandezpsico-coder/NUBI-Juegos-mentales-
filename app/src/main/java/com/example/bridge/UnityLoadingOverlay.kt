@@ -32,7 +32,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   private const val TAG = "UnityLoadingOverlay"
   private const val TIMEOUT_MS = 20_000L
   private const val FADE_MS = 280L
-  private const val NIGHT = 0xFF04061C.toInt() // = NeuroStyle.NightBottom / cielo de la app
+  private const val NIGHT = 0xFF02030F.toInt() // = NeuroStyle.NightBottom / cielo de la app
 
   /** Activity de Unity recién creada que todavía no tiene la capa (se agrega en su onStart). */
   private var pending: WeakReference<Activity>? = null

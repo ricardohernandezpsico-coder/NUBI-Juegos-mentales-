@@ -8,5 +8,5 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <!-- Cielo nocturno de la app (CosmosBackground / NeuroStyle.NightBottom): fondo de ventana al abrir. -->
-    <color name="nv_night">#FF04061C</color>
+    <color name="nv_night">#FF02030F</color>
 </resources>

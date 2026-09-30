@@ -48,7 +48,7 @@ class SessionSummaryScreenshotTest {
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF0A1040))) {
+        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
           SessionSummaryScreen(summary, streak = 4, lang = AppLanguage.SPANISH, onClose = {})
         }
       }
@@ -61,7 +61,7 @@ class SessionSummaryScreenshotTest {
   fun bienvenida_y_metas() {
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF0A1040))) {
+        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
           OnboardingScreen(onFinish = { _, _, _, _, _, _, _ -> })
         }
       }

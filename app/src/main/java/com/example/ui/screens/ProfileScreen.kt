@@ -222,7 +222,7 @@ private fun AchievementDetailDialog(def: AchievementDef, unlockedAt: Long?, stat
         Box(
           modifier = Modifier
             .clip(CircleShape)
-            .background(Color(0xFF101A58))
+            .background(Color(0xFF0A0F33))
             .padding(10.dp)
         ) { AchievementMedal(def = def, unlocked = unlockedAt != null, size = 110.dp) }
         Text(def.title, color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp))

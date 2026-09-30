@@ -62,7 +62,7 @@ class LibraryScreenshotTest {
   fun areas() {
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Column(Modifier.width(412.dp).height(860.dp).background(Color(0xFF0A1040))) {
+        Column(Modifier.width(412.dp).height(860.dp).background(Color(0xFF050823))) {
           Box(Modifier.fillMaxWidth().padding(16.dp)) {
             TopActions("Ricardo", {}, {}, Modifier.align(androidx.compose.ui.Alignment.CenterEnd))
           }
@@ -86,7 +86,7 @@ class LibraryScreenshotTest {
     }
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF0A1040))) {
+        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
           AreaWindow(DomainType.MEMORIA, "Memoria", statuses[0], cards, focusGameId = null, onClose = {}, onGame = {})
         }
       }
@@ -101,7 +101,7 @@ class LibraryScreenshotTest {
     val data = cardData(rumbo, rumbo.title, now - day, now, 0.45f, points, playsLast14 = 6)
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).background(Color(0xFF0A1040)).padding(14.dp)) {
+        Box(Modifier.width(412.dp).background(Color(0xFF050823)).padding(14.dp)) {
           GameSheetContent(data, AgeBand.SENIOR, expertOpen = false, choice = PlayMode.DESAFIO, onChoose = {}, onPlay = {})
         }
       }

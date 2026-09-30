@@ -138,7 +138,7 @@ fun LeaguePromotionOverlay(
     modifier = Modifier
       .fillMaxSize()
       .alpha(scrim.value)
-      .background(Color(0xF204061C))
+      .background(Color(0xF202030F))
       // Tapa la pantalla de resultado: sus botones no reciben toques mientras se celebra.
       .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
       .testTag("league_promotion"),

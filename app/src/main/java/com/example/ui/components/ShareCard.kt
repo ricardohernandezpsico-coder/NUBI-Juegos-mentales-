@@ -102,7 +102,7 @@ object ShareCard {
     val accentGlow = content.tier?.palette()?.glow ?: content.achievement?.medalColor() ?: Clay.Sky
 
     // Cielo nocturno de la app + nebulosas celeste y coral
-    drawRect(Brush.verticalGradient(listOf(Color(0xFF101A58), Color(0xFF080E3A), Color(0xFF04061C))))
+    drawRect(Brush.verticalGradient(listOf(Color(0xFF0A0F33), Color(0xFF050823), Color(0xFF02030F))))
     glow(Offset(w * 0.88f, h * 0.10f), 950f, Clay.Sky.copy(alpha = 0.30f))
     glow(Offset(w * 0.08f, h * 0.92f), 950f, Clay.Coral.copy(alpha = 0.26f))
     glow(Offset(w * 0.15f, h * 0.45f), 700f, Clay.Grape.copy(alpha = 0.16f))

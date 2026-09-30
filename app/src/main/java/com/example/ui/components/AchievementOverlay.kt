@@ -123,7 +123,7 @@ fun AchievementOverlay(
     modifier = Modifier
       .fillMaxSize()
       .alpha(scrim.value)
-      .background(Color(0xF204061C))
+      .background(Color(0xF202030F))
       .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
       .testTag("achievement_overlay"),
     contentAlignment = Alignment.Center
