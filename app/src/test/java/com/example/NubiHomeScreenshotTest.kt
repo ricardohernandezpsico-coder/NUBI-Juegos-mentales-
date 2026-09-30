@@ -40,11 +40,9 @@ class NubiHomeScreenshotTest {
   private val names = DomainType.values().associate { it.name to it.displayName }
   private val statuses = listOf(
     AreaStatus("MEMORIA", 0.52f, 0.06f, listOf(0.40f, 0.43f, 0.46f, 0.52f)),
-    AreaStatus("ATENCION", 0.47f, 0.03f, listOf(0.40f, 0.42f, 0.44f, 0.47f)),
-    AreaStatus("RAZONAMIENTO", 0.36f, 0f, listOf(0.36f, 0.36f, 0.36f, 0.36f)),
-    AreaStatus("LENGUAJE", 0.12f, -0.05f, listOf(0.17f, 0.17f, 0.17f, 0.12f)),
-    AreaStatus("CALCULO", 0.30f, 0.02f, listOf(0.26f, 0.27f, 0.28f, 0.30f)),
-    AreaStatus("VELOCIDAD", 0.64f, 0.08f, listOf(0.50f, 0.53f, 0.56f, 0.64f))
+    AreaStatus("ATENCION", 0.62f, 0.04f, listOf(0.50f, 0.56f, 0.58f, 0.62f)),
+    AreaStatus("RAZONAMIENTO", 0.43f, 0f, listOf(0.43f, 0.43f, 0.43f, 0.43f)),
+    AreaStatus("LENGUAJE", 0.12f, 0.03f, listOf(0.06f, 0.08f, 0.09f, 0.12f))
   )
 
   @Test
@@ -52,7 +50,7 @@ class NubiHomeScreenshotTest {
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(520.dp).background(Color(0xFF050823))) {
+        Box(Modifier.width(412.dp).height(680.dp).background(Color(0xFF050823))) {
           NubiHome(statuses, names, AreaProgress.nubiLine(statuses, names), onArea = {})
         }
       }

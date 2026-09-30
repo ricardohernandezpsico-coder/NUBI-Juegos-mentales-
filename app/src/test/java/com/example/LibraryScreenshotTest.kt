@@ -22,6 +22,8 @@ import com.example.model.GameRegistry
 import com.example.ui.components.NeuroNavBar
 import com.example.ui.components.TopActions
 import com.example.ui.screens.AreaGrid
+import com.example.ui.screens.SuggestionHeader
+import com.example.ui.screens.suggestArea
 import com.example.ui.screens.AreaWindow
 import com.example.ui.screens.GameSheetContent
 import com.example.ui.screens.cardData
@@ -37,7 +39,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * La pestaña Juegos (las 6 áreas, la ventana de un área con Nubi científica y la ficha de un juego) y la barra de abajo,
+ * La pestaña Juegos (las 4 áreas con "Nubi te sugiere", la ventana de un área con Nubi científica y la ficha de un juego) y la barra de abajo,
  * con datos de ejemplo, para verlas sin teléfono.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -51,22 +53,24 @@ class LibraryScreenshotTest {
   private val now = 400 * day + 3_600_000L
   private val statuses = listOf(
     AreaStatus("MEMORIA", 0.52f, 0.06f, emptyList()),
-    AreaStatus("ATENCION", 0.47f, 0f, emptyList()),
-    AreaStatus("RAZONAMIENTO", 0.36f, 0f, emptyList()),
-    AreaStatus("LENGUAJE", 0.12f, -0.05f, emptyList()),
-    AreaStatus("CALCULO", 0.30f, 0f, emptyList()),
-    AreaStatus("VELOCIDAD", null, 0f, emptyList())
+    AreaStatus("ATENCION", 0.62f, 0.04f, emptyList()),
+    AreaStatus("RAZONAMIENTO", 0.43f, 0f, emptyList()),
+    AreaStatus("LENGUAJE", 0.12f, 0.03f, emptyList())
   )
 
   @Test
   fun areas() {
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Column(Modifier.width(412.dp).height(860.dp).background(Color(0xFF050823))) {
+        Column(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
           Box(Modifier.fillMaxWidth().padding(16.dp)) {
             TopActions("Ricardo", {}, {}, Modifier.align(androidx.compose.ui.Alignment.CenterEnd))
           }
-          AreaGrid(statuses, playedToday = setOf("MEMORIA"), lang = AppLanguage.SPANISH, onArea = {}, modifier = Modifier.weight(1f))
+          // Razonamiento hace 4 días que no se juega: Nubi lo sugiere (las otras se jugaron ayer u hoy).
+          val plays = listOf("secuencia" to now, "stroop" to now - day, "calculo" to now - 4 * day, "anagramas" to now - day)
+          val suggestion = suggestArea(plays, statuses, now, AppLanguage.SPANISH)
+          SuggestionHeader(suggestion)
+          AreaGrid(statuses, playedToday = setOf("MEMORIA"), suggested = suggestion.key, lang = AppLanguage.SPANISH, onArea = {}, modifier = Modifier.weight(1f))
           NeuroNavBar(current = AppTab.JUEGOS, onSelect = {})
         }
       }

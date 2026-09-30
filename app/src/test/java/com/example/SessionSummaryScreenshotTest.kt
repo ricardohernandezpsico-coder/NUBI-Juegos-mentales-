@@ -38,10 +38,10 @@ class SessionSummaryScreenshotTest {
   @Test
   fun resumen_de_la_sesion() {
     val summary = SessionSummary(
-      games = listOf(SessionGame("radar", "VELOCIDAD", 82), SessionGame("stroop", "ATENCION", 74), SessionGame("parejas", "MEMORIA", 68)),
+      games = listOf(SessionGame("radar", "ATENCION", 82), SessionGame("calculo", "RAZONAMIENTO", 74), SessionGame("parejas", "MEMORIA", 68)),
       areas = listOf(
-        AreaStatus("VELOCIDAD", 0.52f, 0.06f, emptyList()),
-        AreaStatus("ATENCION", 0.40f, 0f, emptyList()),
+        AreaStatus("ATENCION", 0.52f, 0.06f, emptyList()),
+        AreaStatus("RAZONAMIENTO", 0.40f, 0f, emptyList()),
         AreaStatus("MEMORIA", null, 0f, emptyList())
       )
     )
