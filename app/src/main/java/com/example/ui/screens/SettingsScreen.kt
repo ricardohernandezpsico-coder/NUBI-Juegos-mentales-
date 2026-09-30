@@ -59,12 +59,6 @@ fun SettingsScreen(
 
   // Granular difficulty states
   var difficultyMode by remember(userSettings.difficultyMode) { mutableStateOf(userSettings.difficultyMode) }
-  var diffMemoria by remember(userSettings.difficultyMemoria) { mutableStateOf(userSettings.difficultyMemoria) }
-  var diffAtencion by remember(userSettings.difficultyAtencion) { mutableStateOf(userSettings.difficultyAtencion) }
-  var diffRazonamiento by remember(userSettings.difficultyRazonamiento) { mutableStateOf(userSettings.difficultyRazonamiento) }
-  var diffLenguaje by remember(userSettings.difficultyLenguaje) { mutableStateOf(userSettings.difficultyLenguaje) }
-  var diffCalculo by remember(userSettings.difficultyCalculo) { mutableStateOf(userSettings.difficultyCalculo) }
-  var diffVelocidad by remember(userSettings.difficultyVelocidad) { mutableStateOf(userSettings.difficultyVelocidad) }
   var cognitiveAssistance by remember(userSettings.cognitiveAssistance) { mutableStateOf(userSettings.cognitiveAssistance) }
   var timeScaleFactor by remember(userSettings.timeScaleFactor) { mutableStateOf(userSettings.timeScaleFactor) }
   // El tema es único (cosmos oscuro, ver Theme.kt): ya no hay selector; se reenvía el valor guardado tal cual.
@@ -1033,70 +1027,5 @@ fun SettingsScreen(
         }
       }
     )
-  }
-}
-
-@Composable
-private fun DifficultyDomainSlider(
-  title: String,
-  icon: String,
-  level: Int,
-  onLevelChange: (Int) -> Unit
-) {
-  val levelLabel = when (level) {
-    1 -> "Nivel 1 (Inicial)"
-    2 -> "Nivel 2 (Básico)"
-    3 -> "Nivel 3 (Medio)"
-    4 -> "Nivel 4 (Avanzado)"
-    else -> "Nivel 5 (Experto)"
-  }
-
-  Surface(
-    shape = RoundedCornerShape(14.dp),
-    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-    modifier = Modifier.fillMaxWidth()
-  ) {
-    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Text(text = icon, fontSize = 18.sp)
-          Spacer(modifier = Modifier.width(8.dp))
-          Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
-          )
-        }
-
-        Surface(
-          shape = RoundedCornerShape(6.dp),
-          color = TealPrimary.copy(alpha = 0.12f)
-        ) {
-          Text(
-            text = levelLabel,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = TealPrimary,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-          )
-        }
-      }
-
-      Slider(
-        value = level.toFloat(),
-        onValueChange = { onLevelChange(it.toInt()) },
-        valueRange = 1f..5f,
-        steps = 3,
-        colors = SliderDefaults.colors(
-          thumbColor = TealPrimary,
-          activeTrackColor = TealPrimary
-        ),
-        modifier = Modifier.testTag("slider_diff_${title.lowercase()}")
-      )
-    }
   }
 }

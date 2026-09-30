@@ -43,8 +43,7 @@ data class GameDefinition(
   val domain: DomainType,
   val subtitle: String,
   val instruction: String,
-  val iconEmoji: String,
-  val defaultRounds: Int = 10
+  val iconEmoji: String
 )
 
 object GameRegistry {

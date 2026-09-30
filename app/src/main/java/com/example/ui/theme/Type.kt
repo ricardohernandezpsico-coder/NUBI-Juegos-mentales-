@@ -33,16 +33,6 @@ val FredokaFamily = FontFamily(
 )
 
 /**
- * Nunito (OFL), segunda fuente (28-sep, pedido de Ricardo): redonda como Fredoka pero más abierta y legible en tamaños
- * chicos. Solo pesos normal y medio: el texto que va en negrita usa Fredoka.
- */
-val NunitoFamily = FontFamily(
-  Font(R.font.nunito_regular, FontWeight.Light),
-  Font(R.font.nunito_regular, FontWeight.Normal),
-  Font(R.font.nunito_medium, FontWeight.Medium)
-)
-
-/**
  * La familia de TODA la app: elige la fuente por el peso. Normal y medio = Nunito (subtítulos, comentarios, texto
  * secundario); seminegrita y negrita = Fredoka (títulos, encabezados, botones, números). Así la regla se cumple en
  * cada Text sin tocarlo uno por uno.

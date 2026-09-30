@@ -70,9 +70,6 @@ interface DomainMasteryDao {
   @Query("SELECT * FROM domain_mastery")
   fun getAll(): Flow<List<DomainMasteryEntity>>
 
-  @Query("SELECT * FROM domain_mastery")
-  suspend fun getAllSync(): List<DomainMasteryEntity>
-
   @Query("SELECT * FROM domain_mastery WHERE domain = :domain")
   suspend fun getForDomain(domain: String): DomainMasteryEntity?
 

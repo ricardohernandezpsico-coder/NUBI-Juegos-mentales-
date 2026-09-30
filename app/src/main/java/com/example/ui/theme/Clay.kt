@@ -142,37 +142,3 @@ fun ClayPill(text: String, modifier: Modifier = Modifier, color: Color = Clay.Su
     Text(text, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
   }
 }
-
-private val ClayLightScheme = androidx.compose.material3.lightColorScheme(
-  primary = Color(0xFF3D7BFF),
-  onPrimary = Color.White,
-  secondary = Clay.Coral,
-  background = Color.Transparent,
-  onBackground = Clay.Ink,
-  surface = Clay.Cream,
-  onSurface = Clay.Ink,
-  surfaceVariant = Color(0xFFEDEBF7),
-  onSurfaceVariant = Clay.InkSoft,
-  outline = Color(0xFFB9B5D6),
-  outlineVariant = Color(0xFFD9D6EE)
-)
-
-/**
- * Tarjeta de arcilla clara para contenido existente que usa los colores del tema (texto oscuro sobre crema):
- * envuelve el contenido en un esquema claro, asi los componentes previos se leen bien sin tocar sus colores.
- */
-@Composable
-fun ClayLightCard(
-  modifier: Modifier = Modifier,
-  color: Color = Clay.Cream,
-  onClick: (() -> Unit)? = null,
-  content: @Composable ColumnScope.() -> Unit
-) {
-  ClayCard(modifier = modifier, color = color, onClick = onClick, contentPadding = 0.dp) {
-    androidx.compose.material3.MaterialTheme(
-      colorScheme = ClayLightScheme,
-      typography = Typography,
-      content = { Column(content = content) }
-    )
-  }
-}
