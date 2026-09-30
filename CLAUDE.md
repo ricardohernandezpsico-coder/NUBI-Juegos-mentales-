@@ -3,8 +3,8 @@
 **Nombre público desde el 29-sep: Nubi** ("Nubi – Brain Games"; el personaje es una nebulosa pequeña de arcilla).
 En el código, paquetes, clases y el proyecto Unity siguen llamándose NeuroVida (no se ve: no renombrar).
 
-App de estimulación cognitiva para Android: 19 juegos cortos en 6 dominios (memoria, atención, razonamiento,
-lenguaje, cálculo, velocidad), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
+App de estimulación cognitiva para Android: 19 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
+de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
 Lumosity/Peak/Elevate en calidad y en motivación.
@@ -46,9 +46,9 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
 - 3 pestañas (29-sep, `docs/previews/navegacion-nubi.png`; `ui/components/NeuroNavBar`, SIN botón "play" central: el
-  desafío del día se empieza desde Hoy): Hoy (casa; `HomeScreen`, Nubi al centro con las 6 áreas: ver abajo) · Juegos
+  desafío del día se empieza desde Hoy): Hoy (casa; `HomeScreen`, Nubi al centro con las 4 áreas: ver abajo) · Juegos
   (player; `GamesLibraryScreen`: ver abajo) · Avance (cerebro dibujado, `BrainIcon`; `ProgressScreen`: tu liga con
-  compartir, tus 6 áreas con la barra de Hoy y su detalle, desafíos de la semana, avance por juego, punto de partida y
+  compartir, tus 4 áreas con la barra de Hoy y su detalle, desafíos de la semana, avance por juego, punto de partida y
   "Ver más detalles"). No se dice "Mi cerebro" (Ricardo: suena a Lumosity). Arriba a la derecha en las 3
   (`TabTopBar` + `components/TopActions`): tu inicial en arcilla celeste = perfil (`ProfileScreen`: escudo, cifras,
   logros) y engranaje = opciones (`SettingsPanel` → `SettingsScreen`); se abren como paneles (`viewModel.topPanel`).
@@ -485,7 +485,7 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 
 ## Pruebas
 
-- Kotlin: 125 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 136 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
@@ -513,6 +513,16 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   datos, invitación tocable "Juega Radar para descubrir tu vistazo"). Tocar una zona abre su ventana (`ZoneDialog`):
   partidas por semana (4), cada juego del dominio con su última medida o cuándo se jugó, y "Jugar X" (el sin jugar o el
   más olvidado). Captura real (Roborazzi): `docs/previews/inicio-planeta-real.png`. Sin probar en el teléfono.
+- **Juegos (30-sep, 4 áreas) = encabezado "Nubi te sugiere" + rejilla 2 × 2** (maqueta aprobada `docs/previews/cuatro-areas.png`,
+  Juegos · 2). Arriba Nubi científica + "¿Qué entrenamos hoy?" y "Te sugiero {Área}: {motivo}" (`data/AreaSuggestion`, lógica
+  pura: primero un área nunca jugada, si no la que lleva ≥ 2 días sin jugarse, si no la de menor avance; el motivo no repite
+  el nombre). `AreaGrid` llena el alto hasta la barra (planeta sugerido de 118 dp con aro de luz sol y rótulo "Sugerida"; los
+  otros de 88 dp), y cada área muestra nombre, `DomainType.tagline`, `AreaBar` y "Hábil · 7 juegos". Las áreas son 4 desde
+  el 30-sep: `DomainType` = MEMORIA, ATENCION, RAZONAMIENTO, LENGUAJE; Velocidad se unió a Atención y Cálculo a Razonamiento
+  (Radar y Comparación → Atención; Cálculo Sereno y Aterrizaje → Razonamiento). Lo guardado con nombres viejos se lee con
+  `DomainType.fromStored` (metas, punto de partida, foco de Juegos, XP de dominio) y Room v12 (`Migration(11, 12)`) suma el XP
+  de `domain_mastery`. En Hoy: 2 áreas por lado (izquierda Memoria y Razonamiento, derecha Atención y Lenguaje) con planeta,
+  nombre, subtítulo, barra y etapa; Nubi crece hasta llenar el centro. Lo siguiente es la 3.ª versión anterior, de historia:
 - **Juegos = las 6 áreas + ventana del área** (29-sep, 3.ª versión: en la 2.ª se deslizaba para cambiar de área y
   chocaba con el deslizar de pestañas; maqueta `docs/previews/juegos-nubi.png`, capturas `juegos-areas-real.png` y
   `juegos-ventana-real.png`). `AreaGrid`: las 6 áreas en dos columnas (planeta `drawable-nodpi/area_*.webp` de

@@ -4,7 +4,7 @@
 
 # Nubi
 
-**Entrenamiento cognitivo diario: 19 juegos cortos, 6 áreas y una dificultad que se ajusta a ti.**
+**Entrenamiento cognitivo diario: 19 juegos cortos, 4 áreas y una dificultad que se ajusta a ti.**
 
 App Android (Kotlin + Jetpack Compose) con los juegos en Unity embebido. En desarrollo activo, todavía sin publicar.
 
@@ -27,7 +27,7 @@ Todo se guarda en el teléfono; no hace falta cuenta ni conexión.
 
 <table>
 <tr>
-<td align="center" width="50%"><img src="docs/previews/hoy-nubi-real.png" width="100%" alt="Hoy: Nubi al centro con las 6 áreas" /><br/><b>Hoy</b>: Nubi al centro, con tu avance en cada una de las 6 áreas</td>
+<td align="center" width="50%"><img src="docs/previews/hoy-nubi-real.png" width="100%" alt="Hoy: Nubi al centro con las 4 áreas" /><br/><b>Hoy</b>: Nubi al centro, con tu avance en cada una de las 6 áreas</td>
 <td align="center" width="50%"><img src="docs/previews/juegos-lista-real.png" width="100%" alt="Juegos: lista por área y ficha del juego" /><br/><b>Juegos</b>: todos los de un área en lista y su ficha al tocar</td>
 </tr>
 </table>
@@ -39,7 +39,7 @@ desde el código (ver [`docs/previews/README.md`](docs/previews/README.md)).
 
 | Pestaña | Qué hay |
 |---|---|
-| **Hoy** | Nubi al centro y, alrededor, las 6 áreas con una barra de avance y su etapa (Inicio, Aprendiz, Hábil, Experto, Maestro). La barra muestra lo que avanzó esta semana. Al tocar un área se abre su detalle y Nubi propone el juego que más le conviene |
+| **Hoy** | Nubi al centro y, alrededor, las 4 áreas (Memoria, Atención, Razonamiento y Lenguaje) con una barra de avance y su etapa (Inicio, Aprendiz, Hábil, Experto, Maestro). La barra muestra lo que avanzó esta semana. Al tocar un área se abre su detalle y Nubi propone el juego que más le conviene |
 | **Juegos** | "¿Qué quieres trabajar hoy?": eliges un área y ves todos sus juegos en lista. Al tocar uno se abre su ficha: tu avance, tu última marca y cómo quieres jugar. Al terminar vuelves a la misma casilla |
 | **Entrenar** | El botón central: la sesión del día, 3 juegos seguidos |
 | **Liga** | Tu liga, tus trofeos y cómo vas en cada juego |
@@ -72,10 +72,10 @@ Los marcados con ★ son **juegos estrella**: además del puntaje, al final mues
 | Acoplamiento ★ | Razonamiento | Decidir si un módulo girado encaja en el puerto o es su reflejo |
 | Tráfico Estelar ★ | Razonamiento | Mover desvíos para que cada cápsula llegue al planeta que le corresponde |
 | Anagramas | Lenguaje | Ordenar letras para formar una palabra (en los niveles altos, las letras flotan en burbujas que rebotan) |
-| Cálculo Sereno | Cálculo | Resolver cuentas antes de que la burbuja toque el agua |
-| Aterrizaje Lunar ★ | Cálculo | Aterrizar el módulo justo en un número de una regla |
-| Radar ★ | Velocidad | Ver un destello y decir dónde estaban los astronautas |
-| Comparación Instantánea | Velocidad | Elegir el lado mayor lo más rápido posible |
+| Cálculo Sereno | Razonamiento | Resolver cuentas antes de que la burbuja toque el agua |
+| Aterrizaje Lunar ★ | Razonamiento | Aterrizar el módulo justo en un número de una regla |
+| Radar ★ | Atención | Ver un destello y decir dónde estaban los astronautas |
+| Comparación Instantánea | Atención | Elegir el lado mayor lo más rápido posible |
 
 Cada juego tiene modo **Reto** (contra reloj) y **Precisión** (sin reloj); se elige en Ajustes.
 

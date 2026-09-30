@@ -2,16 +2,14 @@
 
 Acordada con Ricardo el 29/30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena lo que viene.
 
-## 1. Juegos que faltan: mínimo 5 por área
+## 1. Juegos que faltan (4 áreas desde el 30-sep)
 
 | Área | Hoy | Faltan |
 |---|---|---|
 | Memoria | 6 (Parejas, Secuencia, Ruta del Tesoro, Bitácora, Rumbo a Casa, Correo Estelar) | – |
-| Atención | 5 (Tinta o Palabra, Cambio de Chip, Piloto, Freno, Satélites) | – |
-| Razonamiento | 3 (Detective de Series, Acoplamiento, Tráfico Estelar) | 2 |
-| Cálculo | 2 (Cálculo Sereno, Aterrizaje Lunar) | 3 |
-| Velocidad | 2 (Rescate relámpago, Comparación) | 3 |
-| Lenguaje | 1 (Anagramas) | 4 |
+| Atención y velocidad | 7 (Tinta o Palabra, Cambio de Chip, Piloto, Freno, Satélites, Rescate relámpago, Comparación) | – |
+| Razonamiento y números | 5 (Detective de Series, Acoplamiento, Tráfico Estelar, Cálculo Sereno, Aterrizaje Lunar) | – |
+| Lenguaje | 1 (Anagramas) | 2 (Lluvia de meteoros y La palabra intrusa) |
 
 Dos tipos de juego para llegar sin perder calidad: **estrella** (medida propia al final; 1-2 por área) y **base**
 (sobre `GameControllerBase` + DDA común, como Tinta o Palabra; ~un tercio del trabajo). Todos táctiles, sin voz y
