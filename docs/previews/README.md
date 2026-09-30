@@ -21,6 +21,19 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`juegos-ventana-real.png`](juegos-ventana-real.png)
 - [`resumen-sesion-real.png`](resumen-sesion-real.png)
 
+## Fondo de la app
+
+- [`fondo-oscuro.png`](fondo-oscuro.png): cuatro niveles de oscuridad (A actual, B, C, D). Ricardo eligió la **C** el 30-sep.
+- [`fondo-c-antes-despues.png`](fondo-c-antes-despues.png): Hoy y Juegos antes y con el fondo C (capturas reales).
+
+## Cuatro áreas (30-sep)
+
+- [`cuatro-areas.png`](cuatro-areas.png): maqueta de Nubi con 4 áreas sobre el fondo C. Hoy · B final (nombres cortos con
+  subtítulo y Nubi grande) y dos propuestas para Juegos: **1 "Lunas en órbita"** (una luna por juego; encendida = jugado
+  esta semana) y **2 "Nubi te sugiere"** (el área sugerida se destaca con un aro de luz). Script:
+  `tools/previews/cuatro_areas.py` (comprueba texto ≥ 14 sp y contraste ≥ 4,5:1). Pendiente de elegir; no está en la app.
+  La primera versión (Hoy A y B, Juegos 2 × 2 simple) queda en el historial de git.
+
 ## Sonidos de los juegos
 
 - [`bitacora-sonidos.wav`](bitacora-sonidos.wav)
