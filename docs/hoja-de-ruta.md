@@ -9,7 +9,7 @@ Acordada con Ricardo el 29/30-sep. Lo que manda es `CLAUDE.md` y el código; est
 | Memoria | 6 (Parejas, Secuencia, Ruta del Tesoro, Bitácora, Rumbo a Casa, Correo Estelar) | – |
 | Atención y velocidad | 7 (Tinta o Palabra, Cambio de Chip, Piloto, Freno, Satélites, Rescate relámpago, Comparación) | – |
 | Razonamiento y números | 5 (Detective de Series, Acoplamiento, Tráfico Estelar, Cálculo Sereno, Aterrizaje Lunar) | – |
-| Lenguaje | 1 (Anagramas) | 2 (Lluvia de meteoros y La palabra intrusa) |
+| Lenguaje | 2 (Anagramas, Lluvia de meteoros) | 1 (La palabra intrusa) |
 
 Dos tipos de juego para llegar sin perder calidad: **estrella** (medida propia al final; 1-2 por área) y **base**
 (sobre `GameControllerBase` + DDA común, como Tinta o Palabra; ~un tercio del trabajo). Todos táctiles, sin voz y
@@ -47,5 +47,5 @@ responda "¿qué descubrí de mí y cómo voy cambiando?". Maqueta: `docs/previe
 
 Regla de Ricardo (30-sep): si aparece un repositorio de GitHub que pueda potenciar la app, se le comenta y ÉL decide si
 se agrega. Descartados: Zenject / Extenject (inyección de dependencias: el original sin cambios desde 2021; obligaría a
-reescribir los 19 juegos, trae riesgos con IL2CPP en Android y los juegos ya están separados en reglas + pantalla) y
+reescribir los 20 juegos, trae riesgos con IL2CPP en Android y los juegos ya están separados en reglas + pantalla) y
 awesome-unity (es una lista de enlaces, archivada en enero de 2025; sirve solo para consultar).

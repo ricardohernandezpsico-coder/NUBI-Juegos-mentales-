@@ -3,7 +3,7 @@
 **Nombre público desde el 29-sep: Nubi** ("Nubi – Brain Games"; el personaje es una nebulosa pequeña de arcilla).
 En el código, paquetes, clases y el proyecto Unity siguen llamándose NeuroVida (no se ve: no renombrar).
 
-App de estimulación cognitiva para Android: 19 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
+App de estimulación cognitiva para Android: 20 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
 de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -20,7 +20,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   con `fotos` graba las capturas Roborazzi, p. ej. `HomePlanetScreenshotTest`, para ver pantallas sin teléfono).
   No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 19 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 20 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
@@ -220,6 +220,36 @@ tramo "a 3" (lima si ≤5%, coral si no). "¡DIANA LUNAR!" con ≤1,2% de error.
   Revisión del 27-sep por pedido de Ricardo ("¿de qué sirve saber que pongo los grandes a la izquierda?").
 - Arte: `LandingSprites` (módulo lunar, bandera), `GameWorld.LunarRange`. Vista previa:
   `python3 tools/art-preview/aterrizaje.py <raw>` → `docs/previews/aterrizaje.png`. Probado por Ricardo (27-sep): ok.
+
+**Lluvia de meteoros** (`Games/Meteoros/`, id `meteoros`, dominio lenguaje; 30-sep, diseño en
+`docs/diseno-lluvia-de-meteoros.md`, maqueta aprobada `docs/previews/meteoros.png`): decisión léxica "ir / no ir" (Meyer y
+Schvaneveldt, 1971; Perea, Rosa y Gómez, 2002). Caen meteoros de arcilla con relieve y cráteres; cada uno lleva una placa
+crema con una palabra (siempre horizontal; 26 sp, 30 en mayores). Se TOCAN las palabras que existen (estallan en estrellas
+que vuelan a la constelación de arriba, con ✓) y se DEJAN PASAR las inventadas (se deshacen en chispas al llegar a la
+atmósfera: acierto sin ruido); tocar una inventada la agrieta en polvo gris con ✗ y la palabra tachada ("esa no
+existía"); una palabra que se va queda anotada ("se fue: brújula"). El toque cuenta al PRESIONAR; zona = roca + 12 dp
+(mínimo 56 dp, 64 en mayores). Mundo `GameWorld.Observatory` (borde curvo de planeta + cúpula `ObservatorySprite`).
+- Reglas y pruebas: `MeteorContract` / `MeteorDirector` / `MeteorTally` / `MeteorLexicon` y `MeteorContractTests` (14).
+  12 niveles (bandas de palabras 1-1 → 5-6, señuelos obvios → una letra → traspuestas, 1 → 3 a la vez, caída 7 → 4 s,
+  largo 4-6 → 6-12). 50% palabras y 50% inventadas, nunca más de 3 inventadas seguidas; meteoro DORADO 1 de cada 12
+  (palabra de 2 bandas más rara, aro sol, × 2); LLUVIA DE ESTRELLAS cada 25 (6 palabras comunes y rápidas, × 2, fuera de la
+  escalera); racha ≥ 8 = estela encendida (× 1,5). DDA común `stepUp` 0.15, sin tiempo de reacción. Reto 120 s;
+  Precisión 40 meteoros, caída × 1,5 y máximo 2 a la vez; mayores caída × 1,25.
+- Léxico (`Resources/Lexico/meteoros_es.json`, lo escribe `python tools/lexico/meteoros.py`, determinista): 1.200 palabras
+  (200 por banda 1-6, SPALEX con el mínimo de España y Latinoamérica ∩ lemas del diccionario Hunspell de LibreOffice,
+  menos `tools/lexico/excluir.txt`) y ~1.500 inventadas (obvias, una letra cambiada, dos letras interiores traspuestas;
+  filtradas contra el diccionario y un modelo de trigramas de letras). Los datos ajenos viven en
+  `tools/lexico/fuentes/` (fuera de git). Muestra para revisar: `docs/lexico-muestra-meteoros.md`.
+- Medidas propias (telemetría `lex_*` → `GamePlayResult.lex*`; lectura pura en `data/Vocabulary.kt` con pruebas):
+  **tu vocabulario** (6 columnas de estrellas por banda: % reconocidas − % de inventadas tocadas), **tu reconocimiento**
+  (mediana de toque en comunes contra raras), **tu filtro** (inventadas tocadas por tipo; consejo solo si las
+  traspuestas engañan más y hay ≥ 5 de cada tipo) y **tu colección** (palabras raras acertadas, preferencias
+  `word_collection`, respaldada). Marca para la evolución (`StarMeasures` `vocab`): promedio ponderado del % reconocido
+  en las bandas 3-6. Detalle y referencias: `docs/medidas-juegos-estrella.md`. La pantalla final se desplaza.
+- Arte: `MeteorSprites` (roca con relieve en 4 formas y 5 colores, estrellas de la constelación), `ObservatorySprite`.
+  Vista previa de diseño: `python tools/art-preview/meteoros.py` → `docs/previews/meteoros.png`.
+- Pendiente: licencia de SPALEX para uso comercial (Ricardo pidió permiso a los autores; se avanzó como si lo dieran);
+  que Ricardo revise la muestra de palabras e inventadas; probarlo en el teléfono.
 
 **Acoplamiento** (`Games/Acoplamiento/`, id `acoplamiento`, dominio razonamiento): rotación mental (Shepard y Metzler,
 1971; Cooper y Shepard, 1973; meta-análisis de Uttal et al., 2013). Abajo el puerto de la estación con el hueco de una
@@ -472,7 +502,7 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   (solo para esta prueba; la versión de tienda no los lleva).
 - **Verificación automática** (`.github/workflows/verificar.yml`, `tools/unity-falso.sh`): en cada push y pull request
   GitHub compila el C# de los juegos sin Unity y compila la app con sus pruebas Kotlin (con un unityLibrary falso).
-  Un ✗ rojo en el commit = algo no compila o una prueba falló. NO corre las pruebas de Unity, el arranque de los 19
+  Un ✗ rojo en el commit = algo no compila o una prueba falló. NO corre las pruebas de Unity, el arranque de los 20
   juegos ni el export: eso sigue siendo `verificar-todo.sh` en el PC de Ricardo. Ricardo confirmó que corre en verde
   (pestaña Actions); usa `ubuntu-24.04` fijo (no `latest`) y acciones en su versión actual.
 - Lo que NO se hizo de la revisión de arquitectura (medidas genéricas, idiomas, dividir el ViewModel, datos en dos
@@ -485,11 +515,11 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 
 ## Pruebas
 
-- Kotlin: 136 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 146 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 182 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 19 smoke tests.
+- Unity EditMode: 196 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 20 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

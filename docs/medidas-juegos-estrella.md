@@ -243,6 +243,43 @@ arriba de la nave para ver venir los asteroides). No es una medida de memoria: e
 
 ---
 
+## Lluvia de meteoros: "Tu vocabulario", "Tu reconocimiento", "Tu filtro" y "Tu colección"
+
+**Qué es la tarea.** Decisión léxica "ir / no ir": caen meteoros con una palabra y se TOCAN solo las que existen; las
+inventadas se dejan pasar. Es una variante validada de la tarea clásica de decisión léxica (Meyer y Schvaneveldt, 1971):
+conserva el efecto de frecuencia y sale más rápida, más precisa y menos exigente que la de sí/no (Perea, Rosa y Gómez,
+2002). Por eso el juego no tiene botón "no es palabra".
+
+**De dónde sale cada medida.**
+- **Tu vocabulario.** Seis columnas de cinco estrellas, una por banda de palabras, de las más comunes a las más raras.
+  La banda sale de qué tan conocida es cada palabra (SPALEX: una recolección masiva en línea de qué palabras del español
+  conoce la gente, Aguasvivas et al., 2018; se usa el MÍNIMO entre España y Latinoamérica, así no entran regionalismos).
+  En cada banda: % de palabras reconocidas MENOS el % de inventadas tocadas en toda la partida, como en LexTALE
+  (aciertos menos falsas alarmas; Lemhöfer y Broersma, 2012; versión en español: Ferré y Brysbaert, 2017). Solo se
+  muestra una banda con al menos 6 palabras vistas; si no, un guion. La frase ("Reconoces casi todas hasta las poco
+  frecuentes; las raras, la mitad") agrupa las bandas en comunes, poco frecuentes y raras. No dice cuántas palabras
+  conoces ni compara con otras personas.
+- **Tu reconocimiento.** La mediana del tiempo de toque en palabras comunes (bandas 1-2) contra raras (bandas 5-6), con
+  al menos 5 toques de cada una. Es el **efecto de frecuencia**: es normal que las raras tarden más.
+- **Tu filtro.** Qué inventadas engañaron, por tipo: obvias (sílabas recombinadas), una letra cambiada y letras
+  cambiadas de lugar. Estas últimas ("chocloate") se leen como palabra, sobre todo si el cambio es en el INTERIOR de
+  la palabra y no al final (Perea y Lupker, 2003). El consejo ("mira el centro de la palabra") solo aparece si las
+  traspuestas engañan más que los otros dos tipos y hay al menos 5 vistas de cada tipo.
+- **Tu colección.** Las palabras raras (bandas 5-6) acertadas se guardan en el teléfono (`word_collection`).
+
+**Qué NO se dice.** Nada de "tu vocabulario es de X palabras", "edad del vocabulario" ni comparaciones con otras
+personas, hasta tener datos propios. Los meteoros de la Lluvia de estrellas (palabras comunes y rápidas) no entran en
+ninguna medida. La marca para ver la evolución (`vocab`) es el promedio, ponderado por palabras vistas, del % reconocido
+en las bandas 3 a 6 (lo que de verdad distingue un vocabulario amplio); "mejor" = más alto.
+
+**Pendiente.** Licencia de SPALEX para uso comercial: se pidió permiso a los autores; mientras tanto el léxico se arma
+con ella (`tools/lexico/meteoros.py`) y el plan B es una lista abierta de frecuencias.
+
+Código: `Games/Meteoros/MeteorContract.cs` (reglas y medidas, con pruebas), `app/.../data/Vocabulary.kt` (lectura, con
+pruebas) y `GameResultScreen`.
+
+---
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -272,6 +309,18 @@ arriba de la nave para ver venir los asteroides). No es una medida de memoria: e
   absence of vision. *Journal of Motor Behavior*, 22, 19–43.
 - Loomis, J. M., Klatzky, R. L., Golledge, R. G., et al. (1993). Nonvisual navigation by blind and sighted: assessment
   of path integration ability. *Journal of Experimental Psychology: General*, 122, 73–91.
+- Aguasvivas, J. A., Carreiras, M., Brysbaert, M., Mandera, P., Keuleers, E., y Duñabeitia, J. A. (2018). SPALEX: a
+  Spanish lexical decision database from a massive online data collection. *Frontiers in Psychology*, 9, 2156.
+- Ferré, P., y Brysbaert, M. (2017). Can Lextale-Esp discriminate between groups of highly proficient Catalan-Spanish
+  bilinguals with different language dominances? *Behavior Research Methods*, 49, 717–723.
+- Lemhöfer, K., y Broersma, M. (2012). Introducing LexTALE: a quick and valid lexical test for advanced learners of
+  English. *Behavior Research Methods*, 44, 325–343.
+- Meyer, D. E., y Schvaneveldt, R. W. (1971). Facilitation in recognizing pairs of words: evidence of a dependence
+  between retrieval operations. *Journal of Experimental Psychology*, 90, 227–234.
+- Perea, M., y Lupker, S. J. (2003). Transposed-letter confusability effects in masked form priming. *Memory & Cognition*,
+  31, 829–841.
+- Perea, M., Rosa, E., y Gómez, C. (2002). Is the go/no-go lexical decision task an alternative to the yes/no lexical
+  decision task? *Memory & Cognition*, 30, 34–45.
 - Roediger, H. L., y Karpicke, J. D. (2006). Test-enhanced learning: taking memory tests improves long-term
   retention. *Psychological Science*, 17, 249–255.
 - Rummel, J., y Kvavilashvili, L. (2023). Current theories of prospective memory and new directions for theory
