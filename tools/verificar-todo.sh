@@ -1,5 +1,5 @@
 #!/bin/bash
-# Verificacion completa de NeuroVida en el PC de Ricardo (Windows + Git Bash).
+# Verificacion completa de Nubi en el PC de Ricardo (Windows + Git Bash).
 # Uso (desde cualquier carpeta del repo):   bash tools/verificar-todo.sh [--instalar]
 #
 # Orden que hace, y que SIEMPRE hay que respetar: pruebas Unity -> arranque de los 9 juegos ->

@@ -1,4 +1,4 @@
-# DDA común de NeuroVida (dificultad adaptativa)
+# DDA común de Nubi (dificultad adaptativa)
 
 Estado: implementado en Unity el 24-sep-2026 (`Assets/Scripts/Games/AdaptiveDifficulty.cs`), conectado a
 Stroop, Comparación, Cambio de Chip, Ruta del Tesoro, Detective de Series, Cálculo Sereno y Anagramas.

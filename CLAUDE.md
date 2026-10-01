@@ -1,7 +1,15 @@
-# NeuroVida — memoria del proyecto (al 26-sep)
+# Nubi — memoria del proyecto (al 1-oct)
 
 **Nombre público desde el 29-sep: Nubi** ("Nubi – Brain Games"; el personaje es una nebulosa pequeña de arcilla).
-En el código, paquetes, clases y el proyecto Unity siguen llamándose NeuroVida (no se ve: no renombrar).
+
+> **Nombres internos.** La app se llama Nubi, pero por dentro todavía dice "NeuroVida" en cuatro lugares, y NO se cambia:
+> (1) la carpeta del proyecto `NeuroVida/` (de ella dependen las rutas de las herramientas y de la memoria de estas sesiones);
+> (2) el archivo de la base de datos `neurovida_database` y los nombres de las preferencias: renombrarlos haría perder el progreso
+> de quienes ya la usan; (3) los namespaces y asmdefs de Unity (`NeuroVida.*`, `NeuroVidaCore`) y clases Kotlin
+> (`NeuroVidaViewModel`, `NeuroVidaRepository`…): un refactor enorme sin ningún beneficio visible; (4) el `applicationId`
+> (`com.aistudio.neurovida.cgnv`): se define UNA sola vez antes de publicar (ver `docs/auditoria-30-sep.md`). La app no muestra
+> "NeuroVida" en ningún texto visible (se comprobó el 1-oct en `strings.xml` y en la interfaz). En los documentos, "Nubi" nombra
+> la app y "NeuroVida" solo aparece en rutas, identificadores o cuando se habla del nombre viejo.
 
 App de estimulación cognitiva para Android: 21 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
 de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
@@ -268,7 +276,7 @@ guarda en `unclear_sentences`, con respaldo, y lo suma al informe de errores de 
 - Frases (`Resources/Frases/disparate_es.json`, lo escribe `python tools/frases/disparate.py`, determinista): base de conocimiento
   propia (`conocimiento.py`: ~210 entidades con propiedades categóricas SIN excepciones, 20 grupos para los cuantificadores, 6
   escalas por niveles) y plantillas de los 6 tipos con su corrección. Las verdades usan verbos PROPIOS (nunca "crecen/respiran");
-  la frase con pausa lleva una explicativa siempre verdadera; disparates evidentes (cruzan categorías) y sutiles; tope de 50
+  la frase con pausa lleva una explicativa siempre verdadera y DESCRIPTIVA (qué tiene, dónde vive, cómo es) de otra familia que el predicado final, sin repetir verbo, "sirve para" ni palabras; disparates evidentes (cruzan categorías) y sutiles; tope de 50
   caracteres; abecedario ≤ 15% del tipo 6; id estable por frase (SHA-1). Muestra para revisar: `docs/frases-muestra-disparate.md`.
 - Efectos (docs, sección "Efectos y fluidez"): la frase sintoniza (estática → letras en ~200 ms; el reloj de respuesta arranca recién
   al quedar nítida), la siguiente se prepara mientras se lee (transición < 300 ms), señal que se vacía con temblor y estática en los
@@ -552,7 +560,7 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
 - Unity EditMode: 219 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 21 smoke tests.
-- Frases de ¿Verdad o disparate?: 31 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
+- Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

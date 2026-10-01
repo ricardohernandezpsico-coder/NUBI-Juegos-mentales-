@@ -1,4 +1,4 @@
-# Dificultad, edad y avance: la matriz de NeuroVida
+# Dificultad, edad y avance: la matriz de Nubi
 
 Aprobada por Ricardo el 28-sep e **implementada** ese día (lógica en `app/.../data/Skill.kt`, Unity en
 `AdaptiveDifficulty.ConfigureMode`, pestaña Juegos con cartas). Decisiones: Experto se abre al superar un Desafío; el
