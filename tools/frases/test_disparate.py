@@ -76,15 +76,26 @@ class CasosConocidos(unittest.TestCase):
         self.assertIn("El hielo no es caliente", todas(3, True))
         self.assertIn("El hielo no es frío", todas(3, False))
 
-    def test_tipo4(self):
-        self.assertIn("Los peces que viven en el agua tienen aletas", todas(4, True))
-        self.assertIn("Los peces que viven en el agua tienen plumas", todas(4, False))
-        self.assertIn("El hielo que flota en el agua es frío", todas(4, True))
+    def test_tipo4_frase_con_pausa(self):
+        self.assertIn("Los peces, que viven en el agua, tienen aletas", todas(4, True))
+        self.assertIn("Los peces, que viven en el agua, tienen plumas", todas(4, False))
+        self.assertIn("El hielo, que flota en el agua, es frío", todas(4, True))
+        self.assertEqual(todas(4, False)["Los peces, que viven en el agua, tienen plumas"]["r"], "Los peces, que viven en el agua, no tienen plumas")
+
+    def test_tipo1_sin_verbos_genericos_como_verdad(self):
+        for g in ("crecen", "respiran", "comen", "duermen"):
+            self.assertNotIn(f"Las abejas {g}", todas(1, True))
+        self.assertIn("Las abejas zumban", todas(1, True))
+        self.assertIn("La leche duerme", todas(1, False))     # en los disparates sí sirven
 
     def test_tipo5_cuantificadores(self):
         self.assertIn("Todos los peces nadan", todas(5, True))
         self.assertIn("Ningún pez ladra", todas(5, True))
         self.assertIn("Algunos animales vuelan", todas(5, True))
+        # sin cuantificadores discutibles
+        discutibles = ["Todos los instrumentos musicales se tocan con las manos", "Ningún mueble tiene ruedas", "Todos los árboles tienen flores"]
+        for d in discutibles:
+            self.assertNotIn(d, todas(5, True) | todas(5, False))
         self.assertIn("Todos los animales vuelan", todas(5, False))
         self.assertEqual(todas(5, False)["Todos los animales vuelan"]["r"], "Solo algunos animales vuelan")
         self.assertIn("Ningún animal vuela", todas(5, False))
@@ -168,6 +179,32 @@ class Semantica(unittest.TestCase):
             self.assertIn(f["r"], verdades)
 
 
+class Explicativas(unittest.TestCase):
+    def test_la_explicativa_es_siempre_verdad(self):
+        ents = {e.sujeto: e for e in D.cargar()}
+        n = 0
+        for _, f in CAND[4][0] + CAND[4][1]:
+            m = re.match(r"^(.+?), que (.+?), (.+)$", f["f"])
+            self.assertIsNotNone(m, f["f"])
+            sujeto = m[1][0].lower() + m[1][1:]
+            e = ents[sujeto]
+            propios = [e.pred(p) for p in e.si if p not in e.defecto]
+            self.assertIn(m[2], propios, f["f"])           # la explicativa sale de lo que SIEMPRE es o hace
+            self.assertNotIn(m[2], [e.pred(p) for p, _ in e.no], f["f"])
+            n += 1
+        self.assertGreater(n, 1000)
+
+    def test_solo_el_predicado_final_decide(self):
+        ents = {e.sujeto: e for e in D.cargar()}
+        for v, lista in ((True, CAND[4][0]), (False, CAND[4][1])):
+            for _, f in lista:
+                m = re.match(r"^(.+?), que (.+?), (.+)$", f["f"])
+                e = ents[m[1][0].lower() + m[1][1:]]
+                final = m[3]
+                verdad = final in [e.pred(p) for p in e.si if p not in e.defecto]
+                self.assertEqual(verdad, v, f["f"])
+
+
 class Seleccion(unittest.TestCase):
     def test_balance_y_cantidad_por_tipo(self):
         for t in range(1, 7):
@@ -195,9 +232,16 @@ class Seleccion(unittest.TestCase):
             clases = {f["c"] for f in SEL[t] if not f["v"]}
             self.assertEqual(clases, {"evidente", "sutil"}, f"tipo {t}")
 
+    def test_abecedario_es_poco_del_tipo_6(self):
+        letras = [f for f in SEL[6] if f["f"].startswith("La letra ")]
+        self.assertLessEqual(len(letras) / len(SEL[6]), 0.15)
+        self.assertGreater(len(letras), 0)
+        for fam in ("tamaño", "pesa", "dura", "rápid", "caliente", "mayor"):
+            self.assertTrue(any(fam in f["f"] or fam == "tamaño" for f in SEL[6]), fam)
+
     def test_dificultad_por_largo(self):
         # el tipo 1 son frases de 3 palabras; el resto, más largas en general
-        self.assertTrue(all(f["n"] == 3 or f["n"] == 4 for f in SEL[1]))
+        self.assertTrue(all(f["n"] in (3, 4) for f in SEL[1]))
 
     def test_nunca_mas_de_3_iguales_posible(self):
         # el juego mezcla; aquí solo se verifica que el orden guardado no sea una racha larga de lo mismo

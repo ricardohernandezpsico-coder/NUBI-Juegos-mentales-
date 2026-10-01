@@ -19,41 +19,41 @@ Formato de las entidades (una por línea, campos separados por "|"):
 # categoría | sujeto | siempre | nunca
 ENTIDADES = """
 animal|los peces|nadan;viven en el agua;tienen aletas|ladran;tienen plumas;tienen pelo;maúllan;dan leche
-animal|los gatos|maúllan;tienen bigotes;tienen cola;tienen cuatro patas|vuelan;ladran;ponen huevos;tienen plumas;tienen aletas;tienen alas
-animal|los perros|ladran;tienen cuatro patas;tienen cola|maúllan;vuelan;ponen huevos;tienen plumas;tienen aletas;tienen alas
-animal|las gallinas|ponen huevos;tienen plumas;tienen alas;tienen pico;cacarean|ladran;tienen pelo;dan leche;tienen dientes;tienen aletas
-animal|los patos|nadan;tienen plumas;tienen pico;tienen alas;ponen huevos|ladran;tienen pelo;dan leche;tienen dientes
-animal|las vacas|dan leche;mugen;tienen cuatro patas;comen hierba|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
-animal|los caballos|relinchan;tienen cuatro patas;tienen cola;comen hierba|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
-animal|las ovejas|balan;tienen lana;tienen cuatro patas;comen hierba|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|los gatos|maúllan;tienen bigotes;tienen cola;tienen cuatro patas;ronronean;trepan|vuelan;ladran;ponen huevos;tienen plumas;tienen aletas;tienen alas
+animal|los perros|ladran;tienen cuatro patas;tienen cola;aúllan;olfatean|maúllan;vuelan;ponen huevos;tienen plumas;tienen aletas;tienen alas
+animal|las gallinas|ponen huevos;tienen plumas;tienen alas;tienen pico;cacarean;picotean|ladran;tienen pelo;dan leche;tienen dientes;tienen aletas
+animal|los patos|nadan;tienen plumas;tienen pico;tienen alas;ponen huevos;graznan|ladran;tienen pelo;dan leche;tienen dientes
+animal|las vacas|dan leche;mugen;tienen cuatro patas;comen hierba;pastan|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|los caballos|relinchan;tienen cuatro patas;tienen cola;comen hierba;galopan|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|las ovejas|balan;tienen lana;tienen cuatro patas;comen hierba;pastan|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
 animal|los cerdos|gruñen;tienen cuatro patas|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
-animal|los conejos|saltan;tienen orejas largas;tienen cuatro patas|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
-animal|las ranas|saltan;croan;ponen huevos|vuelan;ladran;tienen plumas;tienen pelo;dan leche
-animal|las serpientes|se arrastran;tienen escamas|vuelan;ladran;tienen plumas;tienen alas;tienen cuatro patas
-animal|las abejas|vuelan;zumban;tienen alas;hacen miel;tienen seis patas|ladran;tienen plumas;dan leche;*tienen cuatro patas
+animal|los conejos|saltan;tienen orejas largas;tienen cuatro patas;roen|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|las ranas|saltan;croan;ponen huevos;nadan|vuelan;ladran;tienen plumas;tienen pelo;dan leche
+animal|las serpientes|se arrastran;tienen escamas;reptan;silban|vuelan;ladran;tienen plumas;tienen alas;tienen cuatro patas
+animal|las abejas|vuelan;zumban;tienen alas;hacen miel;tienen seis patas;pican|ladran;tienen plumas;dan leche;*tienen cuatro patas
 animal|las hormigas|tienen seis patas;viven en grupos|ladran;tienen plumas;dan leche;tienen aletas;*tienen ocho patas
-animal|las mariposas|vuelan;tienen alas;tienen seis patas|ladran;tienen plumas;dan leche;*tienen cuatro patas
+animal|las mariposas|vuelan;tienen alas;tienen seis patas;revolotean|ladran;tienen plumas;dan leche;*tienen cuatro patas
 animal|las moscas|vuelan;zumban;tienen alas;tienen seis patas|ladran;tienen plumas;dan leche;*tienen cuatro patas
-animal|los elefantes|tienen trompa;~grande|vuelan;ladran;tienen plumas;ponen huevos;tienen alas;~pequeño
-animal|los leones|rugen;tienen cuatro patas;tienen garras|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|los elefantes|tienen trompa;~grande;barritan|vuelan;ladran;tienen plumas;ponen huevos;tienen alas;~pequeño
+animal|los leones|rugen;tienen cuatro patas;tienen garras;cazan|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
 animal|las jirafas|tienen el cuello largo;tienen cuatro patas|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
 animal|los pingüinos|nadan;tienen plumas;ponen huevos;tienen alas|*vuelan;ladran;dan leche;tienen pelo;tienen cuatro patas;maúllan
-animal|los delfines|nadan;tienen aletas|vuelan;ladran;*ponen huevos;tienen plumas;tienen patas
+animal|los delfines|nadan;tienen aletas;saltan;silban|vuelan;ladran;*ponen huevos;tienen plumas;tienen patas
 animal|las ballenas|nadan;viven en el agua;tienen aletas;~enorme|vuelan;ladran;*ponen huevos;tienen plumas;tienen patas;~pequeño
-animal|los tiburones|nadan;tienen aletas;viven en el agua|vuelan;ladran;tienen plumas;tienen pelo
+animal|los tiburones|nadan;tienen aletas;viven en el agua;cazan|vuelan;ladran;tienen plumas;tienen pelo
 animal|las arañas|tienen ocho patas;tejen telarañas|vuelan;ladran;tienen plumas;*tienen seis patas;*tienen alas;dan leche
 animal|las tortugas|tienen caparazón;ponen huevos;~lento|vuelan;ladran;tienen plumas;tienen pelo;dan leche;~rápido
-animal|las águilas|vuelan;tienen plumas;tienen pico;tienen alas;ponen huevos|ladran;tienen pelo;dan leche;tienen aletas
+animal|las águilas|vuelan;tienen plumas;tienen pico;tienen alas;ponen huevos;cazan;planean|ladran;tienen pelo;dan leche;tienen aletas
 animal|los loros|tienen plumas;tienen pico;tienen alas|ladran;tienen pelo;dan leche;tienen aletas
 animal|los murciélagos|vuelan;tienen alas|*ponen huevos;*tienen plumas;tienen pico;ladran;tienen aletas
 animal|los ratones|tienen cola;tienen bigotes;roen|vuelan;ladran;tienen plumas;ponen huevos;tienen pico
 animal|las cebras|tienen rayas;tienen cuatro patas|vuelan;tienen plumas;ladran;ponen huevos
-animal|los cocodrilos|ponen huevos;tienen dientes;tienen cola|vuelan;tienen plumas;dan leche;ladran;tienen pelo
-animal|los pulpos|viven en el mar;tienen ocho brazos|vuelan;ladran;tienen plumas;tienen alas;dan leche
+animal|los cocodrilos|ponen huevos;tienen dientes;tienen cola;nadan|vuelan;tienen plumas;dan leche;ladran;tienen pelo
+animal|los pulpos|viven en el mar;tienen ocho brazos;nadan|vuelan;ladran;tienen plumas;tienen alas;dan leche
 animal|los caracoles|tienen concha;~lento|vuelan;ladran;tienen plumas;tienen alas;~rápido
-animal|las ardillas|trepan;tienen cola|ladran;tienen plumas;ponen huevos;tienen aletas
-animal|los búhos|vuelan;tienen plumas;tienen pico;tienen alas|ladran;tienen pelo;dan leche;tienen aletas
-animal|los pájaros|tienen plumas;tienen pico;tienen alas;ponen huevos|ladran;dan leche;tienen pelo;tienen aletas
+animal|las ardillas|trepan;tienen cola;saltan|ladran;tienen plumas;ponen huevos;tienen aletas
+animal|los búhos|vuelan;tienen plumas;tienen pico;tienen alas;ululan|ladran;tienen pelo;dan leche;tienen aletas
+animal|los pájaros|tienen plumas;tienen pico;tienen alas;ponen huevos;cantan|ladran;dan leche;tienen pelo;tienen aletas
 objeto|las sillas|sirven para sentarse|sirven para comer;vuelan
 objeto|las mesas|sirven para apoyar cosas|sirven para dormir
 objeto|las camas|sirven para dormir|sirven para cocinar
@@ -70,7 +70,7 @@ objeto|las botellas|sirven para guardar líquidos|sirven para escribir
 objeto|las llaves|abren;sirven para abrir puertas|*cortan
 objeto|las lámparas|alumbran;dan luz|se comen
 objeto|los espejos|reflejan|sirven para comer
-objeto|las pelotas|ruedan|se comen
+objeto|las pelotas|ruedan;rebotan|se comen
 objeto|los paraguas|protegen de la lluvia|sirven para escribir
 objeto|las escobas|barren;sirven para barrer|*escriben
 objeto|las tijeras|cortan|*escriben
@@ -79,9 +79,9 @@ objeto|los sombreros|se ponen en la cabeza|*se ponen en los pies
 objeto|las camisas|se usan para vestirse|se comen
 objeto|los calcetines|se ponen en los pies|*se ponen en la cabeza
 objeto|las almohadas|sirven para apoyar la cabeza|sirven para cortar
-objeto|las toallas|sirven para secarse|*sirven para mojarse
-objeto|los jabones|sirven para lavar|*sirven para ensuciar
-objeto|los peines|sirven para peinarse|sirven para escribir
+objeto|las toallas|sirven para secarse;secan|*sirven para mojarse
+objeto|los jabones|sirven para lavar;limpian|*sirven para ensuciar
+objeto|los peines|sirven para peinarse;peinan|sirven para escribir
 objeto|las mochilas|sirven para llevar cosas|vuelan
 objeto|las cajas|sirven para guardar cosas|nadan
 objeto|las alfombras|cubren el suelo|cubren el cielo
@@ -118,22 +118,22 @@ comida|las naranjas|crecen en los árboles|*crecen bajo la tierra
 comida|las uvas|crecen en racimos|*crecen bajo la tierra
 comida|el jugo|~líquido;se beben|*~sólido
 comida|las galletas|se hacen con harina|se hacen con piedra
-natural|el sol|brillan;calientan la tierra;~caliente;=una estrella/estrellas|*enfrían la tierra;*~frío;=un animal/animales;son de metal
+natural|el sol|brillan;calientan la tierra;~caliente;=una estrella/estrellas;alumbran|*enfrían la tierra;*~frío;=un animal/animales;son de metal
 natural|la luna|giran alrededor de la tierra;están en el cielo|=una fruta/frutas;~cuadrado
 natural|la nieve|~blanco;~frío;se derriten con el calor|*~caliente;*~negro;~verde
-natural|el fuego|queman;~caliente;dan calor|*~frío;mojan;*se encienden con agua
-natural|el hielo|~frío;se derriten con el calor;flotan en el agua|*~caliente;~blando
-natural|la lluvia|mojan;caen del cielo|suben desde el suelo;~seco
+natural|el fuego|queman;~caliente;dan calor;arden|*~frío;mojan;*se encienden con agua
+natural|el hielo|~frío;se derriten con el calor;flotan en el agua;enfrían|*~caliente;~blando
+natural|la lluvia|mojan;caen del cielo;caen|suben desde el suelo;~seco
 natural|las nubes|flotan en el cielo;están en el cielo|son de piedra;están bajo la tierra
 natural|los ríos|llevan agua|llevan fuego;ladran
 natural|el mar|~salado;tienen agua|*~dulce;~seco;son de piedra
-natural|los árboles|tienen raíces;crecen;tienen tronco|caminan;ladran;tienen ruedas;tienen patas
-natural|las flores|crecen;tienen pétalos|ladran;tienen ruedas;caminan
+natural|los árboles|tienen raíces;tienen tronco|caminan;ladran;tienen ruedas;tienen patas
+natural|las flores|tienen pétalos|ladran;tienen ruedas;caminan
 natural|las piedras|~duro|~blando;ríen;cantan;duermen;tienen hambre
 natural|las estrellas|brillan;están en el cielo|ladran;maúllan;caminan
-natural|el viento|mueven las hojas|~sólido;ladran
+natural|el viento|soplan;mueven las hojas|~sólido;ladran
 natural|el agua|mojan;se beben|~seco;arden
-natural|las plantas|crecen;tienen raíces|caminan;ladran;tienen patas
+natural|las plantas|tienen raíces|caminan;ladran;tienen patas
 cuerpo|las manos|tienen dedos;sirven para agarrar|sirven para ver;sirven para oír
 cuerpo|los ojos|sirven para ver|*sirven para oír;*sirven para oler
 cuerpo|las orejas|sirven para oír|*sirven para ver;*sirven para oler
@@ -143,6 +143,71 @@ cuerpo|los dientes|sirven para masticar|sirven para ver;sirven para oír
 cuerpo|los pies|sirven para caminar;tienen dedos|sirven para oír;sirven para ver
 cuerpo|los pulmones|sirven para respirar|sirven para ver;*laten
 cuerpo|el corazón|laten|*sirven para respirar;sirven para ver
+animal|los lobos|aúllan;cazan;tienen cuatro patas|vuelan;maúllan;ponen huevos;tienen plumas;tienen aletas
+animal|los gallos|cantan;tienen plumas;tienen pico;tienen alas|ladran;tienen pelo;dan leche;tienen dientes
+animal|las palomas|arrullan;vuelan;tienen plumas;tienen pico|ladran;tienen pelo;dan leche;tienen aletas
+animal|los cisnes|nadan;tienen plumas;tienen pico;tienen alas|ladran;tienen pelo;dan leche;tienen dientes
+animal|las gaviotas|vuelan;graznan;tienen plumas;tienen pico|ladran;tienen pelo;dan leche;tienen aletas
+animal|los mosquitos|pican;zumban;vuelan;tienen alas;tienen seis patas|ladran;tienen plumas;dan leche;*tienen cuatro patas
+animal|las libélulas|vuelan;tienen alas;tienen seis patas|ladran;tienen plumas;dan leche;*tienen ocho patas
+animal|los sapos|saltan;croan;ponen huevos|vuelan;ladran;tienen plumas;tienen pelo;dan leche
+animal|los canarios|cantan;vuelan;tienen plumas;tienen pico|ladran;tienen pelo;dan leche;tienen aletas
+animal|las avestruces|corren;tienen plumas;tienen pico;ponen huevos|*vuelan;ladran;dan leche;tienen pelo
+animal|las cabras|balan;tienen cuatro patas;comen hierba|vuelan;ponen huevos;tienen plumas;ladran
+animal|los monos|trepan;saltan;tienen manos|vuelan;ponen huevos;tienen plumas;ladran
+objeto|los timbres|suenan|ríen;hablan;lloran;duermen
+objeto|los teléfonos|suenan|ríen;lloran;duermen;comen
+objeto|los ventiladores|giran;mueven el aire|ríen;lloran;duermen;comen
+objeto|las ruedas|giran|ríen;hablan;lloran;duermen
+objeto|las esponjas|absorben|ríen;hablan;lloran;duermen
+objeto|los helicópteros|vuelan;tienen hélices|*nadan;ríen
+objeto|los cohetes|despegan;vuelan|*nadan;ríen
+objeto|los submarinos|navegan bajo el agua|*vuelan
+objeto|las linternas|alumbran;dan luz|ríen;hablan;duermen
+objeto|los faros|alumbran|ríen;hablan;duermen
+objeto|las bombillas|alumbran;dan luz|ríen;hablan;duermen
+objeto|las estufas|calientan|ríen;hablan;duermen
+objeto|los hornos|calientan;sirven para cocinar|ríen;hablan;duermen
+objeto|los congeladores|enfrían|ríen;hablan;duermen
+objeto|las hachas|cortan|ríen;hablan;duermen
+objeto|las sierras|cortan|ríen;hablan;duermen
+objeto|los bolígrafos|escriben|*cortan
+objeto|las tizas|escriben|*cortan
+objeto|los borradores|borran|*escriben
+objeto|los pinceles|pintan|*cortan
+objeto|las aspiradoras|aspiran|ríen;hablan;duermen
+cosa|los tambores|suenan|se comen
+cosa|las guitarras|suenan|se comen
+cosa|los pianos|suenan|se comen
+cosa|las trompetas|suenan|se comen
+cosa|las flautas|suenan|se comen
+cosa|los relojes|marcan la hora|se comen
+natural|las olas|se mueven|ríen;ladran
+natural|los truenos|suenan|ríen;ladran
+animal|las truchas|nadan;viven en el agua;tienen aletas|vuelan;ladran;tienen plumas;tienen pelo;dan leche
+animal|los salmones|nadan;viven en el agua;tienen aletas|vuelan;ladran;tienen plumas;tienen pelo;dan leche
+animal|las sardinas|nadan;viven en el agua;tienen aletas|vuelan;ladran;tienen plumas;tienen pelo;dan leche
+animal|los atunes|nadan;viven en el agua;tienen aletas|vuelan;ladran;tienen plumas;tienen pelo;dan leche
+animal|las anguilas|nadan;viven en el agua|vuelan;ladran;tienen plumas;tienen alas;tienen patas
+animal|las orcas|nadan;cazan;tienen aletas|vuelan;ladran;*ponen huevos;tienen plumas;tienen patas
+animal|las medusas|flotan;viven en el agua|vuelan;ladran;tienen plumas;tienen alas;tienen patas
+animal|los tigres|rugen;cazan;tienen cuatro patas|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|los leopardos|cazan;tienen cuatro patas|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|los osos|gruñen;tienen cuatro patas;tienen garras|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|los koalas|trepan;tienen cuatro patas|vuelan;ponen huevos;tienen plumas;ladran;tienen alas
+animal|los chimpancés|trepan;saltan;tienen manos|vuelan;ponen huevos;tienen plumas;ladran
+animal|los cuervos|graznan;vuelan;tienen plumas;tienen pico|ladran;tienen pelo;dan leche;tienen aletas
+animal|los gansos|graznan;nadan;tienen plumas;tienen pico|ladran;tienen pelo;dan leche;tienen dientes
+animal|las cigüeñas|vuelan;tienen plumas;tienen pico;tienen alas|ladran;tienen pelo;dan leche;tienen aletas
+animal|las lechuzas|vuelan;ululan;tienen plumas;tienen pico|ladran;tienen pelo;dan leche;tienen aletas
+animal|los grillos|chirrían;saltan;tienen seis patas|ladran;tienen plumas;dan leche;*tienen ocho patas
+animal|las cigarras|chirrían;vuelan;tienen alas;tienen seis patas|ladran;tienen plumas;dan leche;*tienen cuatro patas
+animal|los escarabajos|tienen seis patas|ladran;tienen plumas;dan leche;*tienen ocho patas
+animal|las avispas|vuelan;zumban;pican;tienen alas;tienen seis patas|ladran;tienen plumas;dan leche;*tienen cuatro patas
+animal|los zorros|corren;tienen cola;tienen cuatro patas|vuelan;ponen huevos;tienen plumas;maúllan
+animal|los hipopótamos|tienen cuatro patas;viven cerca del agua|vuelan;ponen huevos;tienen plumas;ladran
+animal|los camellos|tienen jorobas|vuelan;ponen huevos;tienen plumas;ladran
+animal|los canguros|saltan;tienen cola|vuelan;ponen huevos;tienen plumas;ladran
 """
 
 # Lo que SIEMPRE es cierto de todo animal (se suma a cada animal; frases cortas del tipo 1).
@@ -175,7 +240,7 @@ GRUPOS = [
     ("verdura", "verduras", "f", ["salen de una planta"], ["ladran", "=un animal/animales", "son de metal"],
      ["~verde", "~anaranjado", "crecen bajo la tierra", "se comen crudas"]),
     ("mueble", "muebles", "m", [], ["ladran", "=un animal/animales", "respiran"],
-     ["tienen patas", "tienen cajones", "son de madera", "tienen ruedas", "sirven para sentarse"]),
+     ["tienen patas", "tienen cajones", "son de madera", "sirven para sentarse"]),
     ("vehículo", "vehículos", "m", ["sirven para transportar"], ["ladran", "=un animal/animales", "comen hierba"],
      ["vuelan", "flotan", "tienen alas", "tienen ruedas", "tienen motor"]),
     ("herramienta", "herramientas", "f", [], ["ladran", "=un animal/animales"],
@@ -190,12 +255,12 @@ GRUPOS = [
      ["tienen alas", "tienen plumas", "tienen cola", "tienen aletas"],
      ["usan lentes", "saben nadar", "tienen hermanos", "tienen mascotas", "hablan más de un idioma"]),
     ("árbol", "árboles", "m", ["tienen raíces", "tienen tronco"], ["ladran", "caminan", "tienen ruedas", "vuelan"],
-     ["dan frutos", "pierden las hojas en otoño", "tienen flores"]),
+     ["pierden las hojas en otoño", "tienen espinas"]),
     ("flor", "flores", "f", ["salen de una planta"], ["ladran", "caminan", "=un animal/animales"], ["~rojo", "~amarillo", "~blanco", "tienen espinas"]),
     ("reptil", "reptiles", "m", [], ["dan leche", "tienen plumas", "tienen pelo"],
      ["tienen patas", "tienen caparazón", "viven en el agua", "se arrastran"]),
     ("instrumento musical", "instrumentos musicales", "m", ["suenan"], ["ladran", "=un animal/animales"],
-     ["tienen cuerdas", "se tocan con las manos", "se soplan", "tienen teclas"]),
+     ["tienen cuerdas", "se soplan", "tienen teclas"]),
 ]
 
 # Comparaciones y orden (tipo 6). Las escalas por NIVELES: solo se compara con una distancia de al menos 2 niveles

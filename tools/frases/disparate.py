@@ -29,7 +29,7 @@ OUT_MD = os.path.join(ROOT, "docs", "frases-muestra-disparate.md")
 EXCLUIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "excluir.txt")
 SEED = 20261001
 POR_CLASE_MAX = 200     # frases de verdad (y de disparate) por tipo, como máximo
-NOMBRES_TIPO = {1: "corta", 2: "con complemento", 3: "negación", 4: "con «que»", 5: "todos / algunos / ningún", 6: "comparación y orden"}
+NOMBRES_TIPO = {1: "corta", 2: "con complemento", 3: "negación", 4: "frase con pausa (, que …,)", 5: "todos / algunos / ningún", 6: "comparación y orden"}
 
 
 # ---------------------------------------------------------------- gramática
@@ -133,7 +133,7 @@ def tipo1(ents):
     V, D = [], []
     for e in ents:
         for p in e.si:
-            if es_corta(p):
+            if es_corta(p) and p not in e.defecto:      # las verdades usan verbos PROPIOS ("ladran"); "comen" o "crecen" suenan raros
                 V.append((e.sujeto, F(cap(f"{e.sujeto} {e.pred(p)}"), True, 1)))
         for p, sutil in e.no:
             if es_corta(p):
@@ -194,12 +194,13 @@ def distintas(a, b):
 
 
 def tipo4(ents):
+    """Frase con pausa: "Los delfines, que tienen aletas, nadan". La explicativa (entre comas) es SIEMPRE verdad (sale de lo que
+    la cosa siempre es o hace), así solo el predicado final decide la respuesta."""
     V, D = [], []
     for e in ents:
         propios = [p for p in e.si if p not in e.defecto]
-        verbos = [p for p in propios if not es_adj(p) and not p.startswith("=") and not p.startswith("son ")]
-        for a in verbos:
-            rel = f"{cap(e.sujeto)} que {e.pred(a)}"
+        for a in propios:
+            rel = f"{cap(e.sujeto)}, que {e.pred(a)},"
             for b in propios:
                 if b != a and distintas(a, b):
                     V.append((e.sujeto, F(f"{rel} {e.pred(b)}", True, 4)))
@@ -390,6 +391,25 @@ def escoger(lista, n, rng):
     return res
 
 
+# Reparto del tipo 6 por familia (el orden alfabético se siente escolar: poco)
+CUOTAS_T6 = {"tamaño": 0.20, "peso": 0.18, "duración": 0.18, "velocidad": 0.15, "temperatura": 0.06, "números": 0.14, "abecedario": 0.09}
+
+
+def escoger_cuotas(lista, n, rng, cuotas):
+    cubos = {}
+    for k, f in lista:
+        cubos.setdefault(k, []).append((k, f))
+    res = []
+    for k, w in cuotas.items():
+        q = min(round(n * w), len(cubos.get(k, [])))
+        res += escoger(cubos.get(k, []), q, rng)
+    ya = {f["f"] for f in res}
+    resto = [(k, f) for k, f in lista if f["f"] not in ya and k != "abecedario"]
+    if len(res) < n:
+        res += escoger(resto, n - len(res), rng)
+    return res[:n]
+
+
 def seleccion(cand=None):
     """{t: [frases]} con el mismo número de verdades y de disparates por tipo (hasta POR_CLASE_MAX de cada una)."""
     cand = cand or candidatos()
@@ -398,7 +418,10 @@ def seleccion(cand=None):
         V, D = cand[t]
         n = min(len(V), len(D), POR_CLASE_MAX)
         rng = random.Random(SEED * 10 + t)
-        frases = escoger(V, n, rng) + escoger(D, n, rng)
+        if t == 6:
+            frases = escoger_cuotas(V, n, rng, CUOTAS_T6) + escoger_cuotas(D, n, rng, CUOTAS_T6)
+        else:
+            frases = escoger(V, n, rng) + escoger(D, n, rng)
         rng.shuffle(frases)
         sel[t] = frases
     return sel
@@ -429,7 +452,7 @@ def escribir_muestra(sel):
         "que se muestra al errar. Salen al azar con semilla fija de `docs/frases-muestra-disparate.md` (generador:",
         "`python tools/frases/disparate.py`); las frases salen de una base propia en `tools/frases/conocimiento.py`.",
         "",
-        "Tipos: 1 corta · 2 con complemento o adjetivo · 3 negación · 4 con «que» · 5 todos / algunos / ningún · 6 comparación y orden.",
+        "Tipos: 1 corta · 2 con complemento o adjetivo · 3 negación · 4 frase con pausa («, que …,») · 5 todos / algunos / ningún · 6 comparación y orden.",
         "",
     ]
     n = 0
