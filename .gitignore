@@ -50,3 +50,6 @@ tools/unity-compile-check/bin/
 tools/unity-compile-check/obj/
 tools/art-preview/bin/
 tools/art-preview/obj/
+
+# Datos ajenos del léxico de Lluvia de meteoros (SPALEX, diccionarios): no se comitean
+tools/lexico/fuentes/
