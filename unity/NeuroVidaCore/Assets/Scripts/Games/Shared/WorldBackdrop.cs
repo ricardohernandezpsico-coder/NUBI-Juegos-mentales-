@@ -200,6 +200,16 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.16f), NebulaBPos = new Vector2(0.85f, 0.25f),
         };
 
+        /// <summary>¿Verdad o disparate?: una sala de radio en el espacio. Cielo de la app con estrellas un poco más vivas y una
+        /// superficie baja (la plataforma de los botones); la antena es del juego, no del fondo.</summary>
+        public static GameWorld Radio => new GameWorld
+        {
+            Name = "Sala de radio", SurfaceHeight = 0.10f, SurfaceColor = NeuroStyle.Hex(0x8A92D8), Stars = 80,
+            VanishingPoint = new Vector2(0.5f, 0.5f),
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.16f), NebulaAPos = new Vector2(0.2f, 0.78f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.18f), NebulaBPos = new Vector2(0.85f, 0.3f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

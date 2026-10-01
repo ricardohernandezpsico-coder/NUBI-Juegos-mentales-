@@ -146,5 +146,22 @@ namespace NeuroVida.Contracts
         public int lex_rt_rare_ms = -1;
         /// <summary>Solo Lluvia de meteoros: palabras raras acertadas, separadas por coma ("" = ninguna o no aplica).</summary>
         public string lex_rare_words = "";
+        /// <summary>Solo ¿Verdad o disparate?: palabras por minuto leyendo y decidiendo (mediana en los aciertos; -1 con menos
+        /// de 10 aciertos).</summary>
+        public int sv_wpm = -1;
+        /// <summary>Solo ¿Verdad o disparate?: por tipo de frase (6: corta, con complemento, negación, con pausa, todos/algunos/
+        /// ningún, comparación): tiempo medio de los aciertos en ms (-1 con menos de 4), aciertos y frases vistas.</summary>
+        public int[] sv_rt_type;
+        public int[] sv_hits_type;
+        public int[] sv_seen_type;
+        /// <summary>Solo ¿Verdad o disparate?: disparates evidentes y sutiles vistos y bien respondidos.</summary>
+        public int sv_evident_hits = -1;
+        public int sv_evident_seen = -1;
+        public int sv_subtle_hits = -1;
+        public int sv_subtle_seen = -1;
+        /// <summary>Solo ¿Verdad o disparate?: la mejor racha de la partida.</summary>
+        public int sv_best_streak = -1;
+        /// <summary>Solo ¿Verdad o disparate?: ids de las frases que se marcaron como "no está clara", separados por coma.</summary>
+        public string sv_unclear = "";
     }
 }

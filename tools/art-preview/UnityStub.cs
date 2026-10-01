@@ -40,7 +40,7 @@ public struct Color32 { public byte r,g,b,a; public Color32(byte r,byte g,byte b
 public struct Vector2 { public float x,y; public Vector2(float x,float y){this.x=x;this.y=y;} }
 public struct Vector4 { public float x,y,z,w; public Vector4(float x,float y,float z,float w){this.x=x;this.y=y;this.z=z;this.w=w;} }
 public struct Rect { public Rect(float x,float y,float w,float h){} }
-public enum TextureFormat { RGBA32 } public enum TextureWrapMode { Clamp } public enum FilterMode { Bilinear }
+public enum TextureFormat { RGBA32 } public enum TextureWrapMode { Clamp, Repeat } public enum FilterMode { Bilinear, Point }
 public class Object {}
 public class Texture2D : Object { public int width; public Color32[] pixels; public Texture2D(int w,int h,TextureFormat f,bool m){width=w;} public TextureWrapMode wrapMode{get;set;} public FilterMode filterMode{get;set;} public void SetPixels32(Color32[] p){pixels=p;} public void Apply(){} }
 public class Sprite : Object { public Texture2D texture; public static Sprite Create(Texture2D t, Rect r, Vector2 p, float ppu) => new Sprite{texture=t}; }

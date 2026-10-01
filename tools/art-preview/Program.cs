@@ -194,6 +194,9 @@ internal static class Program
         DumpRect("heat_trail", NeuroVida.Games.Meteoros.MeteorSprites.RenderHeatTrail(96, 288, true), 96, 288);
         DumpRect("heat_trail_plain", NeuroVida.Games.Meteoros.MeteorSprites.RenderHeatTrail(96, 288, false), 96, 288);
 
+        // ¿Verdad o disparate?: la antena y los íconos de los botones
+        DumpPx("disparate_antenna", NeuroVida.Games.Disparate.DisparateSprites.RenderAntenna(288), 288);
+        DumpPx("disparate_check", NeuroVida.Games.Disparate.DisparateSprites.RenderFlat(96, (x, y) => ClayRaster.Union(ClayRaster.Capsule(x, y, -0.55f, 0f, -0.18f, -0.4f, 0.17f), ClayRaster.Capsule(x, y, -0.18f, -0.4f, 0.6f, 0.46f, 0.17f)), new Color(0.1f, 0.07f, 0.25f, 1f)), 96);
     }
 
     static void TrafficSoundDemo(string path)
