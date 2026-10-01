@@ -3,7 +3,7 @@
 **Nombre público desde el 29-sep: Nubi** ("Nubi – Brain Games"; el personaje es una nebulosa pequeña de arcilla).
 En el código, paquetes, clases y el proyecto Unity siguen llamándose NeuroVida (no se ve: no renombrar).
 
-App de estimulación cognitiva para Android: 20 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
+App de estimulación cognitiva para Android: 21 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
 de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -20,11 +20,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   con `fotos` graba las capturas Roborazzi, p. ej. `HomePlanetScreenshotTest`, para ver pantallas sin teléfono).
   No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 20 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 21 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 1-oct · meteoros B`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 1-oct · disparate`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -250,6 +250,38 @@ existía"); una palabra que se va queda anotada ("se fue: brújula"). El toque c
   Vista previa de diseño: `python tools/art-preview/meteoros.py` → `docs/previews/meteoros.png`.
 - Pendiente: licencia de SPALEX para uso comercial (Ricardo pidió permiso a los autores; se avanzó como si lo dieran);
   que Ricardo revise la muestra de palabras e inventadas; probarlo en el teléfono.
+
+**¿Verdad o disparate?** (`Games/Disparate/`, id `disparate`, dominio lenguaje; 1-oct, diseño en
+`docs/diseno-verdad-o-disparate.md`, maqueta aprobada `docs/previews/disparate.png`): verificación de frases (Collins y
+Quillian, 1969; Wilson y Baddeley, 1988; frases generadas por programa, Crossland, Legge y Dakin, 2008). Desde una sala de radio
+llegan frases cortas en una placa crema (Atkinson Hyperlegible Bold, 24 sp, 28 en mayores, hasta 2 renglones, 3 en mayores): se
+decide VERDAD (lima, ✓) o DISPARATE (coral, onda rota) con los botones (cuentan al PRESIONAR) o deslizando la placa (derecha =
+verdad). Mantener presionada la placa ~0,8 s = "Esta frase no está clara" (no cuenta; el id viaja en `sv_unclear`, la app lo
+guarda en `unclear_sentences`, con respaldo, y lo suma al informe de errores de Ajustes; `python tools/frases/buscar.py <id>`).
+- Reglas y pruebas: `DisparateContract` / `DisparateDirector` / `DisparateTally` / `SentenceBank` y `DisparateContractTests`
+  (20). 12 niveles: el tipo de frase sube cada 2 niveles (1-2 cortas, 3-4 con complemento, 5-6 negación, 7-8 con pausa
+  «, que …,», 9-10 todos/algunos/ningún, 11-12 comparaciones); señal 9 → 5 s (mayores × 1,3). Reto 120 s; Precisión 30 frases
+  sin señal. 50% verdad / 50% disparate con NUNCA más de 3 respuestas iguales (se garantiza al sacar, no por el orden del
+  JSON); sin repetir frase y evitando las de las últimas 3 partidas (PlayerPrefs `disparate_recent`); Ráfaga cada 12
+  (5 frases de 3 palabras, 4 s, fuera de la escalera y de las medidas); 10 seguidas = "Transmisión perfecta" (× 1,5). DDA común
+  `stepUp` 0.15 sin tiempo de reacción. NINGÚN perfil de sesgo (verdad/disparate): regla de patentes (US 11,839,472).
+- Frases (`Resources/Frases/disparate_es.json`, lo escribe `python tools/frases/disparate.py`, determinista): base de conocimiento
+  propia (`conocimiento.py`: ~210 entidades con propiedades categóricas SIN excepciones, 20 grupos para los cuantificadores, 6
+  escalas por niveles) y plantillas de los 6 tipos con su corrección. Las verdades usan verbos PROPIOS (nunca "crecen/respiran");
+  la frase con pausa lleva una explicativa siempre verdadera; disparates evidentes (cruzan categorías) y sutiles; tope de 50
+  caracteres; abecedario ≤ 15% del tipo 6; id estable por frase (SHA-1). Muestra para revisar: `docs/frases-muestra-disparate.md`.
+- Efectos (docs, sección "Efectos y fluidez"): la frase sintoniza (estática → letras en ~200 ms; el reloj de respuesta arranca recién
+  al quedar nítida), la siguiente se prepara mientras se lee (transición < 300 ms), señal que se vacía con temblor y estática en los
+  bordes, acierto con onda de la antena + chispas + medidor de 5 barras, error con ✗ y la corrección en su lugar, señal perdida,
+  ráfaga con estrellas veloces y aurora a las 10 seguidas. Con "quitar animaciones": sin estática, temblor ni aurora.
+- Medidas propias (telemetría `sv_*` → `GamePlayResult.sv*`; lectura pura en `data/Reading.kt` con pruebas): **tu lectura con
+  comprensión** (palabras por minuto, mediana de palabras ÷ tiempo en los aciertos; -1 con < 10), **qué te frena** (tiempo medio por
+  tipo con ≥ 4 aciertos, la más lenta marcada con texto y un truco por tipo), **tu precisión** (total y disparates sutiles) y
+  **tu mejor racha**. Marca para la evolución (`StarMeasures` `wpm`): palabras por minuto. Detalle y referencias:
+  `docs/medidas-juegos-estrella.md`. Captura real: `docs/previews/disparate-final-real.png`.
+- Arte: `DisparateSprites` (antena de arcilla, íconos ✓ y onda rota, cinta de luz, estática), `DisparateSounds`,
+  `GameWorld.Radio`. Maqueta: `python tools/art-preview/disparate.py` → `docs/previews/disparate.png`.
+- Pendiente: que Ricardo lo pruebe en el teléfono (fluidez, deslizar, mantener) y revise la muestra de frases.
 
 **Acoplamiento** (`Games/Acoplamiento/`, id `acoplamiento`, dominio razonamiento): rotación mental (Shepard y Metzler,
 1971; Cooper y Shepard, 1973; meta-análisis de Uttal et al., 2013). Abajo el puerto de la estación con el hueco de una
@@ -502,7 +534,7 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   (solo para esta prueba; la versión de tienda no los lleva).
 - **Verificación automática** (`.github/workflows/verificar.yml`, `tools/unity-falso.sh`): en cada push y pull request
   GitHub compila el C# de los juegos sin Unity y compila la app con sus pruebas Kotlin (con un unityLibrary falso).
-  Un ✗ rojo en el commit = algo no compila o una prueba falló. NO corre las pruebas de Unity, el arranque de los 20
+  Un ✗ rojo en el commit = algo no compila o una prueba falló. NO corre las pruebas de Unity, el arranque de los 21
   juegos ni el export: eso sigue siendo `verificar-todo.sh` en el PC de Ricardo. Ricardo confirmó que corre en verde
   (pestaña Actions); usa `ubuntu-24.04` fijo (no `latest`) y acciones en su versión actual.
 - Lo que NO se hizo de la revisión de arquitectura (medidas genéricas, idiomas, dividir el ViewModel, datos en dos
@@ -515,11 +547,12 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 
 ## Pruebas
 
-- Kotlin: 150 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 165 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 199 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 20 smoke tests.
+- Unity EditMode: 219 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 21 smoke tests.
+- Frases de ¿Verdad o disparate?: 31 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 
