@@ -298,5 +298,39 @@ namespace NeuroVida.Games.Meteoros.Tests
             Assert.AreEqual(1, b);
             Assert.IsNotEmpty(w);
         }
+
+        [Test]
+        public void RockSize_PlaqueIsAboutAThirdOfRockHeight()
+        {
+            var (w, h) = MeteorContract.RockSize(300f, 117f);
+            Assert.AreEqual(117f / h, 1f / 3.2f, 0.001f);
+            Assert.Greater(w, 300f * 1.4f);
+        }
+
+        [Test]
+        public void FitWordDp_KeepsBaseWhenItFitsAndShrinksOnlyWhenNeeded()
+        {
+            // palabra corta: cabe a 26 dp
+            Assert.AreEqual(26, MeteorContract.FitWordDp(26, 300f, 1000f));
+            // palabra de 12 letras que no cabe a 26: baja, pero no de 22
+            int dp = MeteorContract.FitWordDp(26, 1000f, 1500f);
+            Assert.Less(dp, 26);
+            Assert.GreaterOrEqual(dp, MeteorContract.MinWordDp);
+            var fit = MeteorContract.RockSize(1000f * dp / 26f + MeteorContract.PlaquePadU, 0f).w;
+            Assert.LessOrEqual(fit, 1500f);
+            // no cabe ni a 22: se queda en 22 (nunca menos)
+            Assert.AreEqual(MeteorContract.MinWordDp, MeteorContract.FitWordDp(26, 3000f, 1000f));
+            // mayores: base 30
+            Assert.AreEqual(30, MeteorContract.FitWordDp(30, 300f, 1000f));
+        }
+
+        [Test]
+        public void Overlaps_DetectsBoxesAndHonorsGap()
+        {
+            Assert.IsTrue(MeteorContract.Overlaps(0, 0, 100, 150, 120, 100, 100, 150, 0));
+            Assert.IsFalse(MeteorContract.Overlaps(0, 0, 100, 150, 250, 0, 100, 150, 0));      // separados a lo ancho
+            Assert.IsFalse(MeteorContract.Overlaps(0, 0, 100, 150, 0, 400, 100, 150, 0));      // separados a lo alto
+            Assert.IsTrue(MeteorContract.Overlaps(0, 0, 100, 150, 210, 0, 100, 150, 20));      // el aire de sobra los junta
+        }
     }
 }

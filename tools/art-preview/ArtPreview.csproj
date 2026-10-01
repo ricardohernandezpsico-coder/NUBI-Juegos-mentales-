@@ -57,6 +57,5 @@
     <Compile Include="$(Src)/Correo/MailSprites.cs" />
     <Compile Include="$(Src)/Correo/MailSounds.cs" />
     <Compile Include="$(Src)/Meteoros/MeteorSprites.cs" />
-    <Compile Include="$(Src)/Meteoros/MeteorSpritesV2.cs" />
   </ItemGroup>
 </Project>

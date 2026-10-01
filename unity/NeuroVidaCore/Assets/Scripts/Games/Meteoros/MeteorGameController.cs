@@ -106,6 +106,8 @@ namespace NeuroVida.Games.Meteoros
             _lastTickSecond = -1;
             _hintDone = false;
             _wasShower = false;
+            _pending = null;
+            _shrunkWords.Clear();
 
             _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
@@ -127,6 +129,7 @@ namespace NeuroVida.Games.Meteoros
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
+            StartCoroutine(PrewarmSprites());
             yield return StartCoroutine(_countdown.Play("Lluvia de meteoros", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
@@ -150,19 +153,34 @@ namespace NeuroVida.Games.Meteoros
                 float gap = shower ? 0.45f : 1.1f;
                 if (more && _active.Count < cap && GameClock.Time - _lastSpawn >= gap)
                 {
-                    Spawn();
-                    _lastSpawn = GameClock.Time;
-                    if (!_wasShower && _director.InShower)
+                    bool placed = Spawn();
+                    _lastSpawn = placed ? GameClock.Time : GameClock.Time - gap + 0.15f; // sin lugar libre: se reintenta enseguida
+                    if (placed && !_wasShower && _director.InShower)
                     {
                         _toast.Show("¡Lluvia de estrellas!", "Toca sin pensar: son palabras comunes", AmberColor, 1.4f);
                         GameFeel.LevelUp();
                     }
-                    _wasShower = _director.InShower;
+                    if (placed) _wasShower = _director.InShower;
                 }
                 yield return null;
             }
             if (Endless) ClearMeteors(); // se acabó el tiempo: lo que quedaba en el cielo no cuenta
             yield return StartCoroutine(FinishGame());
+        }
+
+        /// <summary>Hornea las rocas, la estela y las estrellas de a una por cuadro mientras corre la cuenta regresiva
+        /// (así el primer meteoro no traba el juego).</summary>
+        private IEnumerator PrewarmSprites()
+        {
+            int step = 0;
+            MeteorSprites.StarLit();
+            yield return null;
+            MeteorSprites.StarDim();
+            yield return null;
+            MeteorSprites.HeatTrail(!GameFeel.ReduceMotion);
+            yield return null;
+            while (MeteorSprites.Prewarm(ref step)) yield return null;
+            MeteorSprites.Rock(0, RockTint.Dust);
         }
 
         private bool Finished()
@@ -173,10 +191,19 @@ namespace NeuroVida.Games.Meteoros
 
         // ------------------------------------------------------------------ meteoros
 
-        private void Spawn()
+        private MeteorSpec _pending;
+        private const float SeparationU = 28f;
+
+        /// <summary>Palabras que se achicaron para caber ("murciélago 24"), para anotarlas en las pruebas.</summary>
+        private readonly List<string> _shrunkWords = new List<string>();
+
+        /// <summary>Saca el próximo meteoro. Devuelve false si por ahora no hay lugar donde no se pise con otro (se reintenta en
+        /// unos cuadros; la palabra elegida queda pendiente).</summary>
+        private bool Spawn()
         {
             int level = _dda.PresentedLevel;
-            var spec = _director.Next(level, Precision, Senior);
+            if (_pending == null) _pending = _director.Next(level, Precision, Senior);
+            var spec = _pending;
             var m = new Meteor { Spec = spec, Spawned = GameClock.Time, Wobble = (float)_rng.NextDouble() * 6.28f, Shape = _rng.Next(MeteorSprites.ShapeCount) };
             m.Tint = spec.Golden ? RockTint.Gold : (RockTint)_rng.Next(3);
 
@@ -186,9 +213,10 @@ namespace NeuroVida.Games.Meteoros
             m.Root.anchorMin = m.Root.anchorMax = new Vector2(0.5f, 0.5f);
             m.Root.sizeDelta = Vector2.zero;
 
-            int fontPx = Mathf.RoundToInt(MeteorContract.WordSizeDp(Senior) * UnitsPerDp);
-            // estela (detrás de todo)
-            m.TrailImg = NewImage(m.Root, "Trail", RadialGlowSprite.Get());
+            int baseDp = MeteorContract.WordSizeDp(Senior);
+            int fontPx = baseDp * (int)UnitsPerDp;
+            // estela de calor (detrás de todo)
+            m.TrailImg = NewImage(m.Root, "Trail", MeteorSprites.HeatTrail(!GameFeel.ReduceMotion));
             m.TrailRect = m.TrailImg.rectTransform;
             m.TrailRect.pivot = new Vector2(0.5f, 0f);
             m.TrailImg.gameObject.SetActive(true);
@@ -221,61 +249,89 @@ namespace NeuroVida.Games.Meteoros
             pimg.raycastTarget = false;
             NeuroStyle.ClayFrame(pimg, 4f, 7f);
             m.Label = MakeText(m.Plaque, "Word", fontPx, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
+            m.Label.font = UiFonts.Word;
             m.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
             m.Label.verticalOverflow = VerticalWrapMode.Overflow;
             m.Label.text = spec.Word;
             Stretch(m.Label.rectTransform);
             float textW = m.Label.preferredWidth;
-            m.Plaque.sizeDelta = new Vector2(textW + 64f, fontPx * 1.5f);
+            // una palabra larga que no cabe a lo ancho achica su letra de a 1 dp (nunca bajo 22 dp); lo normal: 26 dp (30 en mayores)
+            int dp = MeteorContract.FitWordDp(baseDp, textW, _playW - 2f * MarginU);
+            if (dp != baseDp)
+            {
+                fontPx = dp * (int)UnitsPerDp;
+                m.Label.fontSize = fontPx;
+                textW = m.Label.preferredWidth;
+                _shrunkWords.Add(spec.Word + " " + dp);
+            }
+            m.Plaque.sizeDelta = new Vector2(textW + MeteorContract.PlaquePadU, fontPx * 1.5f);
 
-            float rockW = m.Plaque.sizeDelta.x + 100f;
-            float rockH = m.Plaque.sizeDelta.y + 130f;
-            m.Rock.sizeDelta = new Vector2(rockW, rockH);
+            // la roca es grande: la placa ocupa ~1/3 de su alto
+            var size = MeteorContract.RockSize(m.Plaque.sizeDelta.x, m.Plaque.sizeDelta.y);
+            float rockW = size.w, rockH = size.h;
+            m.Rock.sizeDelta = new Vector2(rockW, rockH) * MeteorSprites.ImageScale;
             m.Rx = rockW * 0.5f;
             m.Ry = rockH * 0.5f;
-            if (m.GlowImg != null) m.GlowImg.rectTransform.sizeDelta = new Vector2(rockW * 1.9f, rockH * 2.3f);
+            if (m.GlowImg != null) m.GlowImg.rectTransform.sizeDelta = new Vector2(rockW * 1.5f, rockH * 1.5f);
             if (m.AuraRect != null) m.AuraRect.sizeDelta = new Vector2(rockW + 70f, rockH + 70f);
             m.TrailBase = rockW * 0.55f;
 
-            // recorrido: arriba, en un lugar lejos de los demás, hasta un punto de la atmósfera (diagonal suave)
-            float half = _playW * 0.5f - MarginU - m.Rx;
-            half = Mathf.Max(40f, half);
-            float sx = PickSpawnX(half);
-            float tx = Mathf.Lerp(-half, half, (float)_rng.NextDouble());
-            // la diagonal no pasa de un tercio del recorrido hacia el lado: se ve como caída, no como vuelo
+            // recorrido: arriba, en un lugar donde no se pise con otro meteoro, hasta un punto de la atmósfera (diagonal suave)
+            float half = Mathf.Max(40f, _playW * 0.5f - MarginU - m.Rx);
             float dropH = (_spawnY + m.Ry) - _atmosphereY;
-            tx = Mathf.Clamp(tx, sx - dropH * 0.35f, sx + dropH * 0.35f);
-            tx = Mathf.Clamp(tx, -half, half);
+            bool placed = false;
+            float sx = 0f, tx = 0f;
+            for (int tries = 0; tries < 14 && !placed; tries++)
+            {
+                sx = Mathf.Lerp(-half, half, (float)_rng.NextDouble());
+                tx = Mathf.Lerp(-half, half, (float)_rng.NextDouble());
+                // la diagonal no pasa de un tercio del recorrido hacia el lado: se ve como caída, no como vuelo
+                tx = Mathf.Clamp(tx, sx - dropH * 0.35f, sx + dropH * 0.35f);
+                tx = Mathf.Clamp(tx, -half, half);
+                var v = new Vector2((tx - sx) / spec.FallSeconds, -dropH / spec.FallSeconds);
+                placed = !CollidesWithActive(m, new Vector2(sx, _spawnY + m.Ry), v);
+            }
+            if (!placed)
+            {
+                Destroy(m.Root.gameObject);
+                return false;
+            }
+            _pending = null;
             m.Pos = new Vector2(sx, _spawnY + m.Ry);
             m.Vel = new Vector2((tx - sx) / spec.FallSeconds, -dropH / spec.FallSeconds);
             m.Root.anchoredPosition = m.Pos;
             ApplyTrail(m);
             _active.Add(m);
             StartCoroutine(PopIn(m.Root, 0.2f));
+            return true;
         }
 
-        private float PickSpawnX(float half)
+        /// <summary>¿El recorrido de [m] (de [pos] con [vel]) pisaría la roca de otro meteoro en algún momento de la caída de
+        /// ambos? Se mira cada 0,2 s con la caja de las dos rocas más un poco de aire.</summary>
+        private bool CollidesWithActive(Meteor m, Vector2 pos, Vector2 vel)
         {
-            float best = 0f, bestScore = -1f;
-            for (int i = 0; i < 8; i++)
+            foreach (var o in _active)
             {
-                float x = Mathf.Lerp(-half, half, (float)_rng.NextDouble());
-                float nearest = 9999f;
-                foreach (var o in _active)
-                    if (o.Pos.y > _spawnY - 520f) nearest = Mathf.Min(nearest, Mathf.Abs(o.Pos.x - x));
-                if (nearest > bestScore) { bestScore = nearest; best = x; }
+                if (o.Done) continue;
+                float oLeft = Mathf.Max(0f, (o.Pos.y - _atmosphereY) / Mathf.Max(1f, -o.Vel.y));
+                float horizon = Mathf.Min(m.Spec.FallSeconds, oLeft + 0.4f);
+                for (float t = 0f; t <= horizon; t += 0.2f)
+                {
+                    var a = pos + vel * t;
+                    var b = o.Pos + o.Vel * t;
+                    if (MeteorContract.Overlaps(a.x, a.y, m.Rx, m.Ry, b.x, b.y, o.Rx, o.Ry, SeparationU)) return true;
+                }
             }
-            return best;
+            return false;
         }
 
-        /// <summary>Estela: larga y brillante con la racha encendida; corta y quieta con "quitar animaciones".</summary>
+        /// <summary>Estela de calor: más larga y ancha con la racha encendida; corta, sin chispas y quieta con "quitar animaciones".</summary>
         private void ApplyTrail(Meteor m)
         {
             bool glow = _streak >= MeteorContract.StreakGlow;
-            float len = (glow ? 560f : 340f) * (GameFeel.ReduceMotion ? 0.5f : 1f);
-            m.TrailRect.sizeDelta = new Vector2(m.TrailBase * (glow ? 1.2f : 0.9f), len);
-            var c = glow ? Color.Lerp(NeuroStyle.Sun, Color.white, 0.35f) : Color.Lerp(MeteorSprites.TintColor(m.Tint), Color.white, 0.2f);
-            m.TrailImg.color = NeuroStyle.WithAlpha(c, glow ? 0.8f : 0.38f);
+            float len = (glow ? 620f : 430f) * (GameFeel.ReduceMotion ? 0.5f : 1f);
+            m.TrailRect.sizeDelta = new Vector2(m.TrailBase * (glow ? 1.35f : 1f), len);
+            m.TrailImg.color = new Color(1f, 1f, 1f, glow ? 1f : 0.85f);
             Vector2 back = m.Vel.sqrMagnitude > 0.01f ? -m.Vel.normalized : Vector2.up;
             m.TrailRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(-back.x, back.y) * Mathf.Rad2Deg);
         }
@@ -520,7 +576,7 @@ namespace NeuroVida.Games.Meteoros
         {
             // la roca se vuelve polvo gris con grietas; la palabra queda tachada y sale un ✗
             m.RockImg.sprite = MeteorSprites.Rock(m.Shape, RockTint.Dust);
-            if (m.TrailImg != null) m.TrailImg.color = NeuroStyle.WithAlpha(MeteorSprites.TintColor(RockTint.Dust), 0.2f);
+            if (m.TrailImg != null) m.TrailImg.color = new Color(1f, 1f, 1f, 0f); // la roca se apagó: sin calor
             if (m.GlowImg != null) m.GlowImg.gameObject.SetActive(false);
             if (m.AuraImg != null) m.AuraImg.gameObject.SetActive(false);
             var strike = NewImage(m.Plaque, "Strike", null);
@@ -571,7 +627,7 @@ namespace NeuroVida.Games.Meteoros
         private IEnumerator MissedEffect(Meteor m)
         {
             // una palabra real se fue: se apaga y queda su nombre, pequeño
-            if (!m.Spec.Shower) StartCoroutine(FloatText(new Vector2(m.Pos.x, _atmosphereY + 90f), "se fue: " + m.Spec.Word, new Color(1f, 1f, 1f, 0.9f), 46, 1.6f));
+            if (!m.Spec.Shower) StartCoroutine(FloatText(new Vector2(m.Pos.x, _atmosphereY + 90f), "se fue: " + m.Spec.Word, new Color(1f, 1f, 1f, 0.9f), 46, 1.6f, UiFonts.Word));
             float t = 0f;
             const float seconds = 0.6f;
             while (t < seconds)
@@ -632,9 +688,10 @@ namespace NeuroVida.Games.Meteoros
             foreach (var g in m.Root.GetComponentsInChildren<Graphic>()) g.canvasRenderer.SetAlpha(a);
         }
 
-        private IEnumerator FloatText(Vector2 pos, string text, Color color, int size = 58, float seconds = 0.8f)
+        private IEnumerator FloatText(Vector2 pos, string text, Color color, int size = 58, float seconds = 0.8f, Font font = null)
         {
             var t = MakeText(_fxRect, "Float", size, TextAnchor.MiddleCenter, color, 0f, 0f);
+            if (font != null) t.font = font;
             NeuroStyle.ClayText(t, size >= 56 ? 4f : 3f, size >= 56 ? 6f : 4f);
             var r = t.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);

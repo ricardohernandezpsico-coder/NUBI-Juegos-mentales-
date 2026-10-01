@@ -116,6 +116,36 @@ namespace NeuroVida.Games.Meteoros
         /// <summary>Radio mínimo de la zona de toque, en dp (56 de diámetro; 64 en mayores): la roca ya es más grande.</summary>
         public static float MinTouchDp(bool senior) => senior ? 64f : 56f;
 
+        /// <summary>Letra mínima (dp) a la que se achica una palabra larga que no cabe a lo ancho (solo si es necesario).</summary>
+        public const int MinWordDp = 22;
+        public const float PlaquePadU = 64f;      // relleno horizontal de la placa (unidades, 3 por dp)
+        public const float RockWidthK = 1.45f, RockWidthPadU = 60f, RockHeightK = 3.2f;
+
+        /// <summary>Tamaño de la roca (unidades) para una placa: más ancha que la placa y de alto 3,2 placas, así la
+        /// placa ocupa ~1/3 de la roca y la roca se ve.</summary>
+        public static (float w, float h) RockSize(float plaqueW, float plaqueH) => (plaqueW * RockWidthK + RockWidthPadU, plaqueH * RockHeightK);
+
+        /// <summary>Letra (dp) con que cabe una palabra: [baseDp] si la roca entra en [maxRockW] (unidades); si no, la
+        /// letra baja de a 1 dp hasta que entre, sin pasar de <see cref="MinWordDp"/>. [textWAtBase] = ancho del texto a [baseDp].</summary>
+        public static int FitWordDp(int baseDp, float textWAtBase, float maxRockW)
+        {
+            for (int dp = baseDp; dp > MinWordDp; dp--)
+            {
+                float textW = textWAtBase * dp / baseDp;
+                if (RockSize(textW + PlaquePadU, 0f).w <= maxRockW) return dp;
+            }
+            return Math.Min(baseDp, MinWordDp);
+        }
+
+        /// <summary>¿Se pisan dos meteoros? Cajas de semiejes (rx, ry) centradas en (x, y), con [gap] de aire de sobra. Se usa
+        /// la caja de la roca y no solo la placa: nada tapa la placa de otro.</summary>
+        public static bool Overlaps(float ax, float ay, float arx, float ary, float bx, float by, float brx, float bry, float gap)
+        {
+            float dx = Math.Abs(ax - bx) - (arx + brx + gap);
+            float dy = Math.Abs(ay - by) - (ary + bry + gap);
+            return dx < 0f && dy < 0f;
+        }
+
         // ------------------------------------------------------------------ qué sale
 
         /// <summary>¿El próximo meteoro es una palabra real? 50% cada uno, y nunca más de <see cref="MaxDecoyRun"/> inventadas seguidas.</summary>

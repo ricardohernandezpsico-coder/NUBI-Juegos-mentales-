@@ -18,9 +18,21 @@ namespace NeuroVida.Games.Shared
     {
         private static Font _bold;
         private static Font _regular;
+        private static Font _word;
 
         public static Font Bold => _bold != null ? _bold : (_bold = Load("Fonts/Fredoka-Bold"));
         public static Font Regular => _regular != null ? _regular : (_regular = Load("Fonts/Fredoka-SemiBold"));
+
+        /// <summary>Atkinson Hyperlegible Bold (Braille Institute of America, SIL OFL 1.1; <c>Fonts/Atkinson-OFL.txt</c>): SOLO
+        /// para las palabras de Lluvia de meteoros, donde hay que distinguir "a" de "o" y "i" de "l" sin dudar. Sin el archivo,
+        /// cae a Fredoka Bold.</summary>
+        public static Font Word => _word != null ? _word : (_word = LoadOr("Fonts/AtkinsonHyperlegible-Bold", Bold));
+
+        private static Font LoadOr(string path, Font fallback)
+        {
+            var font = Resources.Load<Font>(path);
+            return font != null ? font : fallback;
+        }
 
         private static Font Load(string path)
         {

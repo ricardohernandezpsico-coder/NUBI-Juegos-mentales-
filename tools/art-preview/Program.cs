@@ -177,7 +177,7 @@ internal static class Program
             }
         Console.WriteLine("OK -> " + dir);
 
-        // Meteoros: la roca de HOY y las tres propuestas (A volumen, B brasa, C cristal); 4 formas x 3 colores.
+        // Meteoros (opción B, 1-oct): la roca de arcilla con brasa, 4 formas x 4 colores (lila, celeste, coral, sol) + la de polvo.
         void DumpPx(string name, Color32[] px, int side)
         {
             using var file = File.Create(Path.Combine(dir, name + ".raw"));
@@ -187,16 +187,12 @@ internal static class Program
         }
         for (int shape = 0; shape < 4; shape++)
         {
-            for (int tint = 0; tint < 3; tint++)
-            {
-                var rt = (NeuroVida.Games.Meteoros.RockTint)tint;
-                DumpPx($"rock_cur_{shape}_{tint}", NeuroVida.Games.Meteoros.MeteorSprites.RenderRock(192, shape, rt), 192);
-                foreach (NeuroVida.Games.Meteoros.RockStyle st in Enum.GetValues(typeof(NeuroVida.Games.Meteoros.RockStyle)))
-                    DumpPx($"rock_{st}_{shape}_{tint}", NeuroVida.Games.Meteoros.MeteorSpritesV2.Render(st, 192, shape, rt), 192);
-            }
-            DumpPx($"rock_cur_{shape}_dust", NeuroVida.Games.Meteoros.MeteorSprites.RenderRock(192, shape, NeuroVida.Games.Meteoros.RockTint.Dust), 192);
+            for (int tint = 0; tint < 4; tint++)
+                DumpPx($"rock_{shape}_{tint}", NeuroVida.Games.Meteoros.MeteorSprites.RenderRock(176, shape, (NeuroVida.Games.Meteoros.RockTint)tint), 176);
+            DumpPx($"rock_{shape}_dust", NeuroVida.Games.Meteoros.MeteorSprites.RenderRock(176, shape, NeuroVida.Games.Meteoros.RockTint.Dust), 176);
         }
-        DumpRect("heat_trail", NeuroVida.Games.Meteoros.MeteorSpritesV2.RenderHeatTrail(96, 288), 96, 288);
+        DumpRect("heat_trail", NeuroVida.Games.Meteoros.MeteorSprites.RenderHeatTrail(96, 288, true), 96, 288);
+        DumpRect("heat_trail_plain", NeuroVida.Games.Meteoros.MeteorSprites.RenderHeatTrail(96, 288, false), 96, 288);
 
     }
 
