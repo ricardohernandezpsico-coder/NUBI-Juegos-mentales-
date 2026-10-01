@@ -139,6 +139,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 ## Arte y pantallas de cada juego
 
 - [`acoplamiento.png`](acoplamiento.png)
+- [`meteoros.png`](meteoros.png): maqueta de **Lluvia de meteoros** (juego de Lenguaje en diseño): así se juega, más difícil, acierto y error, y las 4 medidas del final. Script: `tools/art-preview/meteoros.py`. Pendiente de aprobar.
 - [`anagramas-burbujas.png`](anagramas-burbujas.png)
 - [`arte-arcilla.png`](arte-arcilla.png)
 - [`arte-juegos-2.png`](arte-juegos-2.png)
