@@ -280,6 +280,35 @@ pruebas) y `GameResultScreen`.
 
 ---
 
+## ¿Verdad o disparate?: "Tu lectura con comprensión", "Qué te frena", "Tu precisión" y "Tu mejor racha"
+
+**Qué es la tarea.** Verificación de frases: llegan frases cortas y se decide si son verdad o un disparate. Es la tarea de Collins
+y Quillian (1969), usada en neuropsicología para evaluar la memoria semántica (Wilson y Baddeley, 1988, *Brain and Cognition*
+8:31-46; Clare et al., 1993, *Neuropsychologia* 31:1225-41). Las frases las genera un programa a partir de una base de
+conocimiento propia, sin un banco fijo que se memorice (Crossland, Legge y Dakin, 2008, *Behavioral and Brain Functions* 4:14).
+La dificultad viene de la FORMA de la frase (negación, cláusula entre comas, cuantificadores, comparaciones), no del conocimiento.
+
+**De dónde sale cada medida.**
+- **Tu lectura con comprensión.** Mediana, en las frases bien respondidas, de palabras ÷ tiempo de respuesta, en palabras por
+  minuto. El tiempo cuenta desde que la frase quedó completamente legible (después del efecto de llegada) hasta el toque. Se
+  rotula "leyendo y decidiendo" porque incluye la decisión: no es una velocidad de lectura pura. Solo con 10 o más aciertos; si
+  no, "juega un poco más para medir". Es la marca para ver su evolución (más alto = mejor), comparable solo entre partidas a ±1 nivel.
+- **Qué te frena.** Tiempo medio de los aciertos por tipo de frase (corta, con complemento, negación, con pausa, todos / algunos /
+  ningún, comparación), solo de los tipos con 4 o más aciertos. Las negaciones cuestan más (Clark y Chase, 1972; Carpenter y
+  Just, 1975). Se marca la más lenta con texto ("la más lenta") además del color y, si se separa 0,3 s o más de las frases
+  simples, se dice cuánto ("Las negaciones te toman 0,9 s más que las frases simples. Es normal.") con un truco por tipo:
+  negación "lee la frase sin el «no» y después dala vuelta"; pausa "fíjate solo en lo que va después de la segunda coma";
+  todos / algunos "busca un solo ejemplo que la rompa"; comparación "imagina las dos cosas una al lado de la otra".
+- **Tu precisión.** Aciertos sobre el total y sobre los disparates SUTILES (los que se parecen a algo cierto) por separado. NO se
+  calcula ningún perfil de sesgo (tender a decir verdad o disparate): regla de patentes (US 11,839,472).
+- **Tu mejor racha.** La transmisión más larga sin error.
+
+**Qué NO se dice.** Nada de "tu velocidad de lectura es de X" como rasgo, ni comparaciones con otras personas; las frases de
+Ráfaga (3 palabras, muy rápidas) no entran en ninguna medida. Una frase que la persona marca como poco clara no cuenta.
+
+Código: `Games/Disparate/DisparateContract.cs` y `DisparateDirector.cs` (reglas y medidas, con pruebas), `app/.../data/Reading.kt`
+(lectura, con pruebas), frases en `tools/frases/`.
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -337,3 +366,13 @@ pruebas) y `GameResultScreen`.
   evidence from eye movements. *Psychonomic Bulletin & Review*, 18, 557–563.
 - Verbruggen, F., et al. (2019). A consensus guide to capturing the ability to inhibit actions and impulsive behaviors
   in the stop-signal task. *eLife*, 8, e46323.
+- Carpenter, P. A., y Just, M. A. (1975). Sentence comprehension: a psycholinguistic processing model of verification.
+  *Psychological Review*, 82, 45–73.
+- Clare, L., et al. (1993). *Neuropsychologia*, 31, 1225–1241 (doi:10.1016/0028-3932(93)90070-g; título por completar).
+- Clark, H. H., y Chase, W. G. (1972). On the process of comparing sentences against pictures. *Cognitive Psychology*, 3, 472–517.
+- Collins, A. M., y Quillian, M. R. (1969). Retrieval time from semantic memory. *Journal of Verbal Learning and Verbal
+  Behavior*, 8, 240–247.
+- Crossland, M. D., Legge, G. E., y Dakin, S. C. (2008). The development of an automated sentence generator for the assessment of
+  reading speed. *Behavioral and Brain Functions*, 4, 14.
+- Wilson, B., y Baddeley, A. (1988). Semantic, episodic, and autobiographical memory in a postmeningitic amnesic patient.
+  *Brain and Cognition*, 8, 31–46.

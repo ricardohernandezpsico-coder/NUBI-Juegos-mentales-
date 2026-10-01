@@ -165,7 +165,19 @@ object NativeReceiver {
     val lex_fa_hits: List<Int>? = null,
     val lex_rt_common_ms: Int = -1,
     val lex_rt_rare_ms: Int = -1,
-    val lex_rare_words: String = ""
+    val lex_rare_words: String = "",
+    // Solo ¿Verdad o disparate?: palabras por minuto (-1 = sin medir), por tipo de frase (6) tiempo medio, aciertos y vistas,
+    // disparates evidentes y sutiles, mejor racha y ids de las frases marcadas "no está clara" (separados por coma).
+    val sv_wpm: Int = -1,
+    val sv_rt_type: List<Int>? = null,
+    val sv_hits_type: List<Int>? = null,
+    val sv_seen_type: List<Int>? = null,
+    val sv_evident_hits: Int = -1,
+    val sv_evident_seen: Int = -1,
+    val sv_subtle_hits: Int = -1,
+    val sv_subtle_seen: Int = -1,
+    val sv_best_streak: Int = -1,
+    val sv_unclear: String = ""
   )
 
   @JsonClass(generateAdapter = true)
@@ -294,7 +306,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo", "meteoros" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo", "meteoros", "disparate" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
@@ -447,7 +459,18 @@ object NativeReceiver {
       lexRtCommonMs = metrics.lex_rt_common_ms.takeIf { telemetry.game_id == "meteoros" && it > 0 },
       lexRtRareMs = metrics.lex_rt_rare_ms.takeIf { telemetry.game_id == "meteoros" && it > 0 },
       lexRareWords = metrics.lex_rare_words.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
-        .takeIf { telemetry.game_id == "meteoros" && it.isNotEmpty() }
+        .takeIf { telemetry.game_id == "meteoros" && it.isNotEmpty() },
+      svWpm = metrics.sv_wpm.takeIf { telemetry.game_id == "disparate" && it > 0 },
+      svRtType = metrics.sv_rt_type?.takeIf { telemetry.game_id == "disparate" && it.size == 6 },
+      svHitsType = metrics.sv_hits_type?.takeIf { telemetry.game_id == "disparate" && it.size == 6 },
+      svSeenType = metrics.sv_seen_type?.takeIf { telemetry.game_id == "disparate" && it.size == 6 },
+      svEvidentHits = metrics.sv_evident_hits.takeIf { telemetry.game_id == "disparate" && it >= 0 },
+      svEvidentSeen = metrics.sv_evident_seen.takeIf { telemetry.game_id == "disparate" && it >= 0 },
+      svSubtleHits = metrics.sv_subtle_hits.takeIf { telemetry.game_id == "disparate" && it >= 0 },
+      svSubtleSeen = metrics.sv_subtle_seen.takeIf { telemetry.game_id == "disparate" && it >= 0 },
+      svBestStreak = metrics.sv_best_streak.takeIf { telemetry.game_id == "disparate" && it >= 0 },
+      svUnclear = metrics.sv_unclear.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        .takeIf { telemetry.game_id == "disparate" && it.isNotEmpty() }
     )
   }
 }

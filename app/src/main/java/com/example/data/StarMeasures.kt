@@ -81,13 +81,14 @@ object StarMeasures {
     MeasureDef("homing", "rumbo", "Tu brújula en Rumbo a Casa", "%", "de casa", lowerIsBetter = true, short = "tu brújula", compactPattern = "a {v}", levelDependent = true),
     MeasureDef("recall", "bitacora", "Tu memoria en la Bitácora", "%", "recordado", lowerIsBetter = false, short = "tu memoria", compactPattern = "{v}", levelDependent = true),
     MeasureDef("vocab", "meteoros", "Tu vocabulario en Lluvia de meteoros", "%", "reconocido (palabras menos comunes)", lowerIsBetter = false, short = "tu vocabulario", compactPattern = "{v}", levelDependent = true),
+    MeasureDef("wpm", "disparate", "Tu lectura en ¿Verdad o disparate?", "", "palabras por minuto", lowerIsBetter = false, short = "tu lectura", compactPattern = "{v} ppm", levelDependent = true),
     MeasureDef("pending", "correo", "Tu memoria para lo pendiente", "%", "de encargos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}", levelDependent = true)
   )
 
   val gameNames = mapOf(
     "radar" to "Radar", "freno" to "Freno de Emergencia", "satelites" to "Satélites", "aterrizaje" to "Aterrizaje Lunar",
     "acoplamiento" to "Acoplamiento", "trafico" to "Tráfico Estelar", "piloto" to "Piloto Estelar", "rumbo" to "Rumbo a Casa",
-    "bitacora" to "Bitácora de Misión", "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros"
+    "bitacora" to "Bitácora de Misión", "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?"
   )
 
   fun def(key: String) = defs.firstOrNull { it.key == key }

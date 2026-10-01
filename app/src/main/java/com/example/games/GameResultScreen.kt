@@ -538,6 +538,66 @@ fun GameResultScreen(
       }
     }
 
+    // ¿Verdad o disparate? (pantalla final, maqueta docs/previews/disparate.png): "tu lectura con comprensión" (cifra grande de
+    // palabras por minuto), "qué te frena" (barras por tipo de frase, la más lenta marcada con TEXTO además del color), "tu
+    // precisión" y "tu mejor racha". Sin recuadros; nada de perfil de sesgo.
+    val svSeen = result.svSeenType
+    if (svSeen != null) {
+      val reading = com.example.data.Reading
+      val wpm = reading.wpm(result.svWpm)
+      val rows = reading.typeRows(result.svRtType)
+      Spacer(Modifier.height(14.dp))
+      Text("Tu lectura con comprensión", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      if (wpm != null) {
+        Column(
+          Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = reading.spoken(wpm) },
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          Text("$wpm", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 48.sp, fontFamily = AppFamily)
+          Text("palabras por minuto", color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+          Text("leyendo y decidiendo, en las frases que acertaste", color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
+      } else {
+        Text(
+          "Juega un poco más para medir tu lectura: hacen falta unas 10 respuestas bien.",
+          color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
+        )
+      }
+
+      if (rows.size >= 2) {
+        Spacer(Modifier.height(14.dp))
+        Text("Qué te frena", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 6.dp)) {
+          rows.forEach { row -> ReadingBar(row, reading.barFraction(row.ms, rows), Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
+        }
+        val slow = reading.slowText(rows)
+        val tip = reading.tip(rows)
+        when {
+          slow != null -> Text(
+            text = if (tip != null) "$slow $tip" else slow,
+            color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp)
+          )
+          reading.balanced(rows) -> Text(
+            "Todas las frases te toman parecido. ¡Buen ritmo!",
+            color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp)
+          )
+        }
+      }
+
+      reading.precisionLine(result.svHitsType, svSeen, result.svSubtleHits, result.svSubtleSeen)?.let { line ->
+        Spacer(Modifier.height(14.dp))
+        Text("Tu precisión", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Text(line, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
+      }
+      reading.streakLine(result.svBestStreak)?.let { line ->
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+          Text("Tu mejor racha", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
+          Text(line, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        }
+      }
+    }
+
     // Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (cuánto más tarda cuanto más girado).
     if (result.rotationSpeedDps != null || result.rotationCurveMs != null) {
       Spacer(Modifier.height(14.dp))
@@ -872,7 +932,7 @@ fun GameResultScreen(
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
-      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen
+      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1378,5 +1438,37 @@ private fun VocabBar(label: String, percent: Int, modifier: Modifier = Modifier)
       textAlign = TextAlign.End,
       modifier = Modifier.width(if (percent >= 0) 52.dp else 92.dp)
     )
+  }
+}
+
+
+// ---------- ¿Verdad o disparate?: "qué te frena" ----------
+
+/**
+ * Una fila de "qué te frena": el tipo de frase a la izquierda, una barra (más larga = más tiempo) y el tiempo medio a la
+ * derecha. La más lenta va en coral Y con el texto "la más lenta": se distingue sin depender del color.
+ */
+@Composable
+private fun ReadingBar(row: com.example.data.Reading.TypeRow, fraction: Float, modifier: Modifier = Modifier) {
+  val slowColor = if (row.slowest) Clay.Coral else Clay.Cream
+  Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+    Text(row.label, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(124.dp))
+    Canvas(Modifier.width(90.dp).height(11.dp)) {
+      val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+      drawRoundRect(Color(0x33FFFFFF), cornerRadius = r)
+      drawRoundRect(
+        if (row.slowest) Clay.Coral else Clay.Grape,
+        size = androidx.compose.ui.geometry.Size(maxOf(size.height, size.width * fraction), size.height),
+        cornerRadius = r
+      )
+    }
+    Spacer(Modifier.weight(1f))
+    Column(horizontalAlignment = Alignment.End) {
+      Text(
+        text = com.example.data.Reading.seconds(row.ms),
+        color = slowColor, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, softWrap = false
+      )
+      if (row.slowest) Text("la más lenta", color = Clay.Coral, fontSize = 14.sp, fontWeight = FontWeight.Bold, softWrap = false)
+    }
   }
 }

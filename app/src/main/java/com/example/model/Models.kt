@@ -164,6 +164,14 @@ object GameRegistry {
       iconEmoji = "☄️"
     ),
     GameDefinition(
+      id = "disparate",
+      title = "¿Verdad o disparate?",
+      domain = DomainType.LENGUAJE,
+      subtitle = "Lee y decide rápido",
+      instruction = "Llegan frases cortas desde la radio. Toca VERDAD si es cierta o DISPARATE si no tiene sentido; también puedes deslizar la frase. Si una frase no se entiende, mantenla presionada.",
+      iconEmoji = "📡"
+    ),
+    GameDefinition(
       id = "calculo",
       title = "Cálculo Sereno",
       domain = DomainType.RAZONAMIENTO,
@@ -336,7 +344,20 @@ data class GamePlayResult(
   val lexFaHits: List<Int>? = null,
   val lexRtCommonMs: Int? = null,
   val lexRtRareMs: Int? = null,
-  val lexRareWords: List<String>? = null
+  val lexRareWords: List<String>? = null,
+  // Solo ¿Verdad o disparate?: palabras por minuto leyendo y decidiendo, tiempo medio (ms), aciertos y frases vistas por tipo
+  // (6: corta, con complemento, negación, con pausa, todos/algunos/ningún, comparación), disparates evidentes y sutiles,
+  // mejor racha y ids de las frases marcadas como "no está clara". No se guardan en Room.
+  val svWpm: Int? = null,
+  val svRtType: List<Int>? = null,
+  val svHitsType: List<Int>? = null,
+  val svSeenType: List<Int>? = null,
+  val svEvidentHits: Int? = null,
+  val svEvidentSeen: Int? = null,
+  val svSubtleHits: Int? = null,
+  val svSubtleSeen: Int? = null,
+  val svBestStreak: Int? = null,
+  val svUnclear: List<String>? = null
 )
 
 data class DailySessionState(

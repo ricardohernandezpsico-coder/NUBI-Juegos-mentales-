@@ -161,6 +161,25 @@ class NeuroVidaRepository(
   private val _wordCollection = MutableStateFlow(wordPrefs.getString("words", "").orEmpty().split(",").filter { it.isNotBlank() })
   val wordCollection: StateFlow<List<String>> = _wordCollection.asStateFlow()
 
+  // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
+  // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
+  private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
+  private val _unclearSentences = MutableStateFlow(unclearPrefs.getString("ids", "").orEmpty().split(",").filter { it.isNotBlank() })
+  val unclearSentences: StateFlow<List<String>> = _unclearSentences.asStateFlow()
+
+  private fun recordUnclearSentences(result: GamePlayResult) {
+    val found = result.svUnclear.orEmpty()
+    if (found.isEmpty()) return
+    val all = (_unclearSentences.value + found).distinct().takeLast(300)
+    if (all == _unclearSentences.value) return
+    _unclearSentences.value = all
+    unclearPrefs.edit().putString("ids", all.joinToString(",")).apply()
+  }
+
+  /** Texto para el informe de errores: las frases marcadas como poco claras (vacío si no hay). */
+  fun unclearReport(): String =
+    if (_unclearSentences.value.isEmpty()) "" else "Frases marcadas como poco claras (ids): " + _unclearSentences.value.joinToString(", ")
+
   private fun recordWordCollection(result: GamePlayResult) {
     val found = result.lexRareWords.orEmpty()
     if (found.isEmpty()) return
@@ -330,6 +349,7 @@ class NeuroVidaRepository(
       "freno" -> "brake" to r.brakeMs?.toFloat()
       "satelites" -> "tracking" to r.trackingCapacity
       "aterrizaje" -> "numline" to r.numlineErrorPct
+      "disparate" -> "wpm" to Reading.mark(r.svWpm)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
       "trafico" -> "load" to r.trafficPeakPods?.toFloat()
@@ -725,6 +745,7 @@ class NeuroVidaRepository(
     if (result.playMode == PlayMode.A_TU_MEDIDA) recordStarMeasures(result)
     // La colección de palabras raras se llena en cualquier modo.
     recordWordCollection(result)
+    recordUnclearSentences(result)
     outcome
   }
 
@@ -800,6 +821,8 @@ class NeuroVidaRepository(
     _starMeasures.value = emptyList()
     wordPrefs.edit().clear().apply()
     _wordCollection.value = emptyList()
+    unclearPrefs.edit().clear().apply()
+    _unclearSentences.value = emptyList()
     skillPrefs.edit().clear().putString("state", "").apply()
     _skill.value = SkillState()
     progressPrefs.edit().clear().apply()

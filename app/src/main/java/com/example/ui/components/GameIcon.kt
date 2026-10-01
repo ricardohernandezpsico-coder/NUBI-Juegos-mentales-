@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -76,7 +77,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
-  "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion", "meteoros"
+  "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion", "meteoros", "disparate"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -220,6 +221,16 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(roundRect(34f, 50f, 48f, 19f, 6f), Cream, border = 3f, shadow = false)
       drawLine(Ink.copy(alpha = 0.55f), Offset(40f, 59.5f), Offset(76f, 59.5f), 3.2f, StrokeCap.Round)
       sparkle(Offset(86f, 14f), 11f, Clay.Sun)
+    }
+    "disparate" -> {
+      // Una antena de arcilla: base, mástil, plato con su borde celeste, luz sol en la punta y las ondas que salen.
+      drawArc(Clay.Sky.copy(alpha = 0.55f), 205f, 130f, false, Offset(24f, 2f), Size(52f, 52f), style = Stroke(5f, cap = StrokeCap.Round))
+      drawArc(Clay.Sky.copy(alpha = 0.3f), 210f, 120f, false, Offset(12f, -10f), Size(76f, 76f), style = Stroke(4.5f, cap = StrokeCap.Round))
+      clay(roundRect(16f, 78f, 68f, 12f, 6f), Clay.Grape)
+      clay(roundRect(44f, 44f, 12f, 36f, 4f), Cream, border = 3f, shadow = false)
+      clay(poly(22f, 30f, 78f, 30f, 68f, 50f, 32f, 50f), Cream)
+      clay(roundRect(28f, 26f, 44f, 9f, 4.5f), Clay.Sky, border = 2.5f, shadow = false)
+      clay(circle(Offset(50f, 16f), 6f), Clay.Sun, border = 2.5f, shadow = false)
     }
     "aterrizaje" -> {
       // Regla sobre la luna con sus extremos, la bandera en el blanco y el módulo lunar bajando con su haz.

@@ -87,12 +87,13 @@ object ErrorLog {
   }
 
   /** El texto que se comparte desde Ajustes: versión y teléfono arriba, y después lo registrado. */
-  fun report(context: Context): String {
+  fun report(context: Context, extra: String = ""): String {
     val info = runCatching { context.packageManager.getPackageInfo(context.packageName, 0) }.getOrNull()
     val version = info?.let { "${it.versionName} (${PackageInfoCompat.getLongVersionCode(it)})" } ?: "?"
     val header = "Nubi $version · Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.MANUFACTURER} ${Build.MODEL}"
     val body = readRecent()
-    return if (body.isBlank()) "$header\n\nNo hay errores registrados." else "$header\n\n$body"
+    val more = if (extra.isBlank()) "" else "\n\n$extra"
+    return (if (body.isBlank()) "$header\n\nNo hay errores registrados." else "$header\n\n$body") + more
   }
 
   /** Para que la primera línea de un archivo cortado no quede a medias. */

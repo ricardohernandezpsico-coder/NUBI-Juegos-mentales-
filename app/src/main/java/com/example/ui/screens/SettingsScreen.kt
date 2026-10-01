@@ -853,7 +853,7 @@ fun SettingsScreen(
           val send = android.content.Intent(android.content.Intent.ACTION_SEND)
             .setType("text/plain")
             .putExtra(android.content.Intent.EXTRA_SUBJECT, "Informe de errores de Nubi")
-            .putExtra(android.content.Intent.EXTRA_TEXT, com.example.diag.ErrorLog.report(context))
+            .putExtra(android.content.Intent.EXTRA_TEXT, com.example.diag.ErrorLog.report(context, viewModel.unclearReport()))
           context.startActivity(
             android.content.Intent.createChooser(send, "Enviar informe").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
           )

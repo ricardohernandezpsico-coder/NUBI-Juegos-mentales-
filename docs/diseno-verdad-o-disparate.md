@@ -52,7 +52,7 @@ disparate?": frase común, sin registro conocido; va a la lista del abogado como
 | 1-2 | sujeto + verbo (3 palabras) | Los peces nadan / Las piedras cantan | 9 s |
 | 3-4 | + complemento o adjetivo | El sol calienta la tierra / La nieve quema las manos | 8 s |
 | 5-6 | negación | Los gatos no vuelan / La sopa no se puede tomar | 7 s |
-| 7-8 | frase larga con "que" | El pan que sale del horno está caliente / El reloj que cuelga en la pared ladra | 6,5 s |
+| 7-8 | frase con pausa («, que …,») | El pan, que sale del horno, está caliente / El pan, que sale del horno, ladra | 6,5 s |
 | 9-10 | cuantificadores (todos/algunos/ningún) | Algunas frutas son rojas / Todos los peces tienen plumas | 6 s |
 | 11-12 | comparaciones y orden | Un minuto es más corto que una hora / Una semana es más larga que un año | 5 s |
 
@@ -66,7 +66,7 @@ disparate?": frase común, sin registro conocido; va a la lista del abogado como
 
 1. **Tu lectura con comprensión**: palabras por minuto en las frases bien respondidas (mediana de palabras ÷ tiempo de
    respuesta). Se rotula "leer y decidir" (incluye la decisión). Solo con ≥ 10 aciertos; si no, "juega más para medir".
-2. **Qué te frena**: tiempo medio por tipo de frase (cortas, negaciones, largas con "que", todos/algunos,
+2. **Qué te frena**: tiempo medio por tipo de frase (cortas, complemento, negaciones, con pausa, todos/algunos,
    comparaciones), mostrando solo las que tuvieron ≥ 4 aciertos. Frase: "Las negaciones te toman 0,9 s más que las
    frases simples. Es normal. Truco: lee la frase sin el 'no' y después dala vuelta". Un consejo por tipo.
 3. **Tu precisión**: aciertos sobre el total y por clase de disparate (evidentes / sutiles) — SIN perfil de sesgo.
@@ -97,8 +97,40 @@ Nota común al pie. Agregar a `docs/medidas-juegos-estrella.md`.
   campana al acertar, onda que se quiebra al errar. Pentatónica de `GameFeel`. Nada arcade.
 - Respeta "quitar animaciones" (ondas quietas), sonido y vibración apagados.
 
-## 8. Pendiente antes de programar
+## 8. Efectos y fluidez (1-oct, libertad de Ricardo: "que se vea muy fluido")
 
-1. Aprobar la maqueta (`docs/previews/disparate.png`).
-2. Aprobar la muestra de 100 frases (`docs/frases-muestra-disparate.md`).
-3. Elegir el nombre definitivo (¿"¿Verdad o disparate?" o uno con el tema espacial, p. ej. "Radio Estelar"?).
+Criterio: que todo se sienta continuo y vivo sin estorbar la lectura; 60 cuadros por segundo; la frase siguiente se prepara
+mientras se muestra la actual y la transición entre frases dura menos de 300 ms. Programado en
+`Games/Disparate/DisparateGameController.cs`; sonidos en `DisparateSounds.cs` (síntesis propia, nada arcade).
+
+- **Llegada**: una cinta de luz sale de la antena y recorre la pantalla hasta la placa; la frase "sintoniza": las letras pasan
+  de símbolos de estática a letras nítidas en ~200 ms (cada letra a su turno; las letras no se mueven). El reloj de respuesta
+  arranca recién cuando la frase está nítida. Sonido: barrido de ruido filtrado que sube.
+- **Señal**: la barra se vacía; en el último 25% la placa tiembla levemente y aparece estática en los BORDES de la placa
+  (cuatro tiras fuera de ella; nunca sobre las letras).
+- **Acierto**: la placa late, una onda sale del plato de la antena, chispas viajan hasta la antena y se enciende una barra del
+  medidor de señal (5 barras = racha, hasta 5); campana de la pentatónica que sube con la racha. Con racha ≥ 5 las ondas son
+  de color y con 10 seguidas ("Transmisión perfecta", × 1,5) la luz de la punta se enciende y una aurora suave cruza el cielo.
+- **Error**: chasquido de estática suave, la placa se sacude poco, ✗ y la corrección ("Las sillas no ríen") aparece en su lugar
+  con un fundido; se queda ~1,4 s (1,9 s en mayores). Nada agresivo.
+- **Señal perdida**: la frase se disuelve en estática y aparece "Se perdió la señal" (cuenta como no acertada, sin castigo extra).
+- **Deslizar la placa** (además de los botones): sigue al dedo con una leve inclinación; a la derecha aparece VERDAD (lima, ✓) y
+  a la izquierda DISPARATE (coral). Al soltar pasado ~22% del ancho responde; si no, vuelve con resorte.
+- **Esta frase no está clara**: mantener presionada la placa ~0,8 s → "Gracias, la revisaremos". No cuenta para nada; Unity manda
+  los ids (`sv_unclear`), la app los guarda en `unclear_sentences` (con respaldo) y los suma al "Enviar informe de errores" de
+  Ajustes; `python tools/frases/buscar.py <id>` encuentra la frase.
+- **Ráfaga**: estrellas del fondo en movimiento rápido (`StarfieldFx.Warp`), llegada más corta (140 ms) y 4 s de señal.
+- **Vibración corta** al responder (si está activada); la racha múltiplo de 5 sigue con la de `GameFeel`.
+- **Quitar animaciones**: sin estática animada, sin temblor, sin aurora, sin cinta ni inclinación y con fundidos simples.
+- **Arte**: antena de arcilla con volumen (plataforma y base lila, mástil crema con remaches y patas, plato con borde celeste, brazo
+  y luz sol en la punta; `ClayRaster`, sombra dura abajo) y `GameWorld.Radio` en `WorldBackdrop`. Íconos de los botones dibujados
+  (✓ y onda rota). Vista previa del sprite: `tools/art-preview` (`disparate_antenna`).
+- **Reglas de tamaño**: frase en Atkinson Hyperlegible Bold, 24 sp (28 en mayores), hasta 2 renglones (3 en mayores);
+  el generador no deja pasar frases de más de 50 caracteres. Botones de ~93 dp de alto (mínimo 64 dp), cuentan al PRESIONAR.
+
+## 9. Estado
+
+Programado y verificado el 1-oct (Unity: `DisparateContract`, `DisparateDirector`/`DisparateTally`, `SentenceBank`, controlador,
+sprites y sonidos; app: `Reading.kt`, final de partida, marca "tu lectura" en la evolución, ícono de la antena). Medidas y
+referencias en `docs/medidas-juegos-estrella.md`. Pendiente: que Ricardo lo pruebe en el teléfono (fluidez, deslizar, mantener).
+

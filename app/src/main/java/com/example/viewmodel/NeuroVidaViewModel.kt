@@ -258,6 +258,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** Medidas propias de los juegos estrella por partida (descubrimiento del día y zonas del planeta en Hoy). */
   val starMeasures = repository.starMeasures
 
+  /** Las frases de ¿Verdad o disparate? marcadas como poco claras, para el informe de errores de Ajustes. */
+  fun unclearReport(): String = repository.unclearReport()
+
   /** Logros conseguidos (id -> cuándo) y las cifras con que se calculan (para el avance "4/7" de los bloqueados). */
   val achievementUnlocks = repository.achievementUnlocks
   val achievementStats: StateFlow<com.example.data.AchievementStats> = combine(gameHistory, gameRanks) { hist, ranks ->
