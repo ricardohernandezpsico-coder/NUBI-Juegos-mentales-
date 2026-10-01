@@ -151,6 +151,10 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
   `tools/art-preview/meteoros_final.py`.
 - [`meteoros-final-real.png`](meteoros-final-real.png) y [`meteoros-final-real-2.png`](meteoros-final-real-2.png): la pantalla final de
   Lluvia de meteoros ya programada (mezcla de A y C: cifra grande + tres barras, reconocimiento, filtro y colección), captura real (Roborazzi).
+- [`cosecha.png`](cosecha.png): maqueta de **Cosecha de palabras** (juego de Lenguaje en diseño, 1-oct): así se juega (7 lunas en órbita, bandeja con
+  «CAS», planeta-huerto), palabra estrella (árbol dorado, × 3), momentos chicos (repetida, no válida, pista de Nubi) y la pantalla final (cifra
+  de palabras, cómo buscaste, tu ritmo, tu palabra estrella y «también podías»). Generada con `tools/art-preview/cosecha.py`; la ronda del
+  ejemplo es real (`iraoasc`, estrella ASOCIAR). Pendiente de aprobar. Las rondas salen de `tools/cosecha/` (muestra en `docs/cosecha-muestra.md`).
 - [`disparate-final-real.png`](disparate-final-real.png) y [`disparate-final-real-2.png`](disparate-final-real-2.png): la pantalla final de
   ¿Verdad o disparate? ya programada (cifra grande de palabras por minuto, qué te frena, precisión y racha), captura real (Roborazzi).
 - [`disparate.png`](disparate.png): maqueta de **¿Verdad o disparate?** (juego de Lenguaje en diseño, 1-oct): así se juega (nivel 2),

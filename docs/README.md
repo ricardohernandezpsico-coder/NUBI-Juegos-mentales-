@@ -21,6 +21,8 @@ Qué hay en esta carpeta y para qué sirve cada cosa. El estado actual del proye
 | [`plan-mejoras-arquitectura.md`](plan-mejoras-arquitectura.md) | Revisión de la arquitectura: qué se hizo y qué falta, con pasos concretos |
 | [`diseno-lluvia-de-meteoros.md`](diseno-lluvia-de-meteoros.md) | Diseño del próximo juego de Lenguaje (decisión léxica): reglas, dificultad, medidas, léxico y ciencia; maqueta en `previews/meteoros.png` |
 | [`diseno-verdad-o-disparate.md`](diseno-verdad-o-disparate.md) | Diseño del segundo juego estrella de Lenguaje (verificación de frases «¿verdad o disparate?»): reglas, dificultad por forma de la frase, medidas, generador de frases y ciencia; maqueta en `previews/disparate.png` |
+| [`diseno-cosecha-de-palabras.md`](diseno-cosecha-de-palabras.md) | Diseño (aprobado el 1-oct) del tercer juego estrella de Lenguaje, formar palabras con 7 letras en órbita: reglas, rondas, dificultad, medidas y ciencia; maqueta en `previews/cosecha.png` |
+| [`cosecha-muestra.md`](cosecha-muestra.md) | 10 rondas de Cosecha de palabras (letras, estrella y todas sus palabras comunes) del generador `tools/cosecha/` para que Ricardo marque las que sobren o falten |
 | [`frases-muestra-disparate.md`](frases-muestra-disparate.md) | 100 frases al azar del generador (`tools/frases/`) para que Ricardo marque las dudosas o raras |
 | [`analisis-competencia.md`](analisis-competencia.md) | Lumosity, NeuroNation y Peak vistos en capturas: qué tomar, qué no copiar y en qué orden |
 | [`auditoria-30-sep.md`](auditoria-30-sep.md) | Auditoría general: áreas (6 → 4), fondo más oscuro, ciencia, marcas y lista para Google Play |

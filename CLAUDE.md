@@ -2,14 +2,16 @@
 
 **Nombre público desde el 29-sep: Nubi** ("Nubi – Brain Games"; el personaje es una nebulosa pequeña de arcilla).
 
-> **Nombres internos.** La app se llama Nubi, pero por dentro todavía dice "NeuroVida" en cuatro lugares, y NO se cambia:
-> (1) la carpeta del proyecto `NeuroVida/` (de ella dependen las rutas de las herramientas y de la memoria de estas sesiones);
-> (2) el archivo de la base de datos `neurovida_database` y los nombres de las preferencias: renombrarlos haría perder el progreso
-> de quienes ya la usan; (3) los namespaces y asmdefs de Unity (`NeuroVida.*`, `NeuroVidaCore`) y clases Kotlin
-> (`NeuroVidaViewModel`, `NeuroVidaRepository`…): un refactor enorme sin ningún beneficio visible; (4) el `applicationId`
-> (`com.aistudio.neurovida.cgnv`): se define UNA sola vez antes de publicar (ver `docs/auditoria-30-sep.md`). La app no muestra
-> "NeuroVida" en ningún texto visible (se comprobó el 1-oct en `strings.xml` y en la interfaz). En los documentos, "Nubi" nombra
-> la app y "NeuroVida" solo aparece en rutas, identificadores o cuando se habla del nombre viejo.
+> **Nombres internos.** La app se llama Nubi, pero por dentro todavía dice "NeuroVida" en tres lugares, y NO se cambia:
+> (1) el archivo de la base de datos `neurovida_database` y los nombres de las preferencias: renombrarlos haría perder el
+> progreso de quienes ya la usan; (2) los namespaces y asmdefs de Unity (`NeuroVida.*`, `NeuroVidaCore`, la carpeta
+> `unity/NeuroVidaCore/`) y clases Kotlin (`NeuroVidaViewModel`, `NeuroVidaRepository`…): un refactor enorme sin ningún
+> beneficio visible; (3) el `applicationId` (`com.aistudio.neurovida.cgnv`): se define UNA sola vez antes de publicar (ver
+> `docs/auditoria-30-sep.md`). **La carpeta del proyecto ya se llama `Nubi/`** (renombrada desde `NeuroVida/` el 1-oct): la ruta
+> es `C:/Users/RURAL7/Desktop/Proyectos/Nubi`. La primera vez que Ricardo abra Unity tendrá que volver a agregar el proyecto
+> (`unity/NeuroVidaCore`) en Unity Hub y Unity reconstruirá su caché (`Library/`). La app no muestra "NeuroVida" en ningún texto
+> visible (se comprobó el 1-oct en `strings.xml` y en la interfaz). En los documentos, "Nubi" nombra la app y "NeuroVida" solo
+> aparece en identificadores o cuando se habla del nombre viejo.
 
 App de estimulación cognitiva para Android: 21 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
 de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
@@ -561,6 +563,8 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   el hilo principal publique el resultado).
 - Unity EditMode: 219 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 21 smoke tests.
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
+- Rondas de Cosecha de palabras: 16 pruebas en `tools/cosecha/test_rondas.py` (`python -m unittest test_rondas`, desde `tools/cosecha`; ~70 s;
+  con `COSECHA_REGENERAR=1` reconstruye todo desde las fuentes). Diseño aprobado en `docs/diseno-cosecha-de-palabras.md`; el juego aún no está programado.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 
