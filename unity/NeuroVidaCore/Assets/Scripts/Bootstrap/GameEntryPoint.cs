@@ -14,6 +14,7 @@ using NeuroVida.Games.Radar;
 using NeuroVida.Games.Satelites;
 using NeuroVida.Games.Freno;
 using NeuroVida.Games.Aterrizaje;
+using NeuroVida.Games.Meteoros;
 using NeuroVida.Games.Acoplamiento;
 using NeuroVida.Games.Trafico;
 using NeuroVida.Games.Bitacora;
@@ -53,6 +54,7 @@ namespace NeuroVida.Bridge
         [SerializeField] private SatelliteGameController satelliteGameController;
         [SerializeField] private BrakeGameController brakeGameController;
         [SerializeField] private LandingGameController landingGameController;
+        [SerializeField] private MeteorGameController meteorGameController;
         [SerializeField] private DockingGameController dockingGameController;
         [SerializeField] private TrafficGameController trafficGameController;
         [SerializeField] private BitacoraGameController bitacoraGameController;
@@ -352,6 +354,16 @@ namespace NeuroVida.Bridge
                     }
                     mailGameController.gameObject.SetActive(true);
                     mailGameController.StartSession(config);
+                    break;
+                case MeteorGameController.GameId:
+                    if (meteorGameController == null)
+                    {
+                        var go = new GameObject("MeteorGameController");
+                        go.transform.SetParent(transform, false);
+                        meteorGameController = go.AddComponent<MeteorGameController>();
+                    }
+                    meteorGameController.gameObject.SetActive(true);
+                    meteorGameController.StartSession(config);
                     break;
                 default:
                     Debug.LogError($"[GameEntryPoint] game_id {config.game_id} no tiene un controlador registrado todavía.");

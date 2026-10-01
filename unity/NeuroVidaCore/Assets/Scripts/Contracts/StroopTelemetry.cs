@@ -132,5 +132,19 @@ namespace NeuroVida.Contracts
         public int mail_hull_intact_pct = -1;
         /// <summary>Correo Estelar: reparaciones de emergencia (veces que se quedó sin escudo).</summary>
         public int mail_emergencies = -1;
+        /// <summary>Solo Lluvia de meteoros: palabras reales vistas y tocadas por banda de prevalencia (6: de la común a la
+        /// rara). Sin datos = listas vacías.</summary>
+        public int[] lex_band_seen;
+        public int[] lex_band_hits;
+        /// <summary>Solo Lluvia de meteoros: inventadas vistas y tocadas (falsas alarmas) por tipo (3: obvia, una letra
+        /// cambiada, letras traspuestas).</summary>
+        public int[] lex_fa_seen;
+        public int[] lex_fa_hits;
+        /// <summary>Solo Lluvia de meteoros: mediana del tiempo de toque (ms) en palabras comunes (bandas 1-2) y raras
+        /// (bandas 5-6). -1 = pocas muestras.</summary>
+        public int lex_rt_common_ms = -1;
+        public int lex_rt_rare_ms = -1;
+        /// <summary>Solo Lluvia de meteoros: palabras raras acertadas, separadas por coma ("" = ninguna o no aplica).</summary>
+        public string lex_rare_words = "";
     }
 }

@@ -36,6 +36,9 @@ namespace NeuroVida.Games.Shared
         public Vector3[] Asteroids = new Vector3[0];
 
         public int OrbitRings;
+
+        /// <summary>Cúpula de observatorio sobre el borde de la superficie (Lluvia de meteoros).</summary>
+        public bool HasDome;
         public Vector2 OrbitCenter = new Vector2(0.5f, 0.45f);
 
         /// <summary>Planetas de arcilla: posición normalizada (x, y) y diámetro (z); color en <see cref="PlanetColors"/>.</summary>
@@ -187,6 +190,16 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.14f), NebulaBPos = new Vector2(0.5f, 0.2f),
         };
 
+        /// <summary>Lluvia de meteoros: el borde curvo de un planeta abajo, con la cúpula de un observatorio, bajo el
+        /// cielo de la app. Los meteoros se apagan en la "atmósfera", justo encima.</summary>
+        public static GameWorld Observatory => new GameWorld
+        {
+            Name = "Observatorio", SurfaceHeight = 0.16f, SurfaceColor = NeuroStyle.Hex(0x9C94D6), HasDome = true, Stars = 70,
+            VanishingPoint = new Vector2(0.5f, 0.4f),
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaAPos = new Vector2(0.15f, 0.8f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.16f), NebulaBPos = new Vector2(0.85f, 0.25f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",
@@ -220,6 +233,7 @@ namespace NeuroVida.Games.Shared
                 AddMoon(bgRect, ambient, world.Moons[i], i < world.MoonTints.Length ? world.MoonTints[i] : NeuroStyle.Cream);
             for (int i = 0; i < world.Asteroids.Length; i++) AddAsteroid(bgRect, ambient, world.Asteroids[i], i);
             if (world.SurfaceHeight > 0f) AddSurface(bgRect, ambient, world); // tapa las estrellas de abajo
+            if (world.HasDome) AddDome(bgRect, world);
             if (world.OrbitRings > 0) AddOrbits(bgRect, ambient, world);
             for (int i = 0; i < world.Planets.Length; i++)
                 AddPlanet(bgRect, world.Planets[i], i < world.PlanetColors.Length ? world.PlanetColors[i] : NeuroStyle.Grape);
@@ -261,6 +275,16 @@ namespace NeuroVida.Games.Shared
             var surface = Layer(parent, "MoonSurface");
             surface.anchorMax = new Vector2(1f, world.SurfaceHeight + 0.02f); // la franja incluye un margen sobre el arco
             Img(surface, LunarSurfaceSprite.Get(world.SurfaceColor), Color.white);
+        }
+
+        private static void AddDome(RectTransform parent, GameWorld world)
+        {
+            // La cúpula apoya en el punto más alto del arco de la superficie (el sprite de la superficie dibuja su cima a
+            // 290/326 de la franja, que mide SurfaceHeight + 0,02 del alto).
+            float rimY = (world.SurfaceHeight + 0.02f) * (290f / 326f);
+            var dome = Node(parent, "Observatory", new Vector2(0.5f, rimY - 0.004f), new Vector2(330f, 330f));
+            dome.pivot = new Vector2(0.5f, ObservatorySprite.BaseFraction);
+            Img(dome, ObservatorySprite.Get(), Color.white);
         }
 
         private static void AddAsteroid(RectTransform parent, WorldAmbient ambient, Vector3 a, int i)
