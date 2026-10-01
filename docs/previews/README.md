@@ -140,6 +140,15 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 
 - [`acoplamiento.png`](acoplamiento.png)
 - [`meteoros.png`](meteoros.png): maqueta de **Lluvia de meteoros** (juego de Lenguaje en diseño): así se juega, más difícil, acierto y error, y las 4 medidas del final. Script: `tools/art-preview/meteoros.py`. Pendiente de aprobar.
+- [`meteoros-letra.png`](meteoros-letra.png): la letra de las palabras en 4 fuentes (Fredoka actual, Nunito Medium, Atkinson
+  Hyperlegible Bold y Lexend SemiBold) a tamaño real, con las palabras que muestran la confusión a/o. Script:
+  `tools/previews/meteoros_letra.py`. Recomendada: Atkinson Hyperlegible Bold.
+- [`meteoros-rocas.png`](meteoros-rocas.png): la roca de hoy y tres propuestas (A arcilla con volumen, B con brasa y estela
+  de calor, C cristal), con el arte real de los generadores (`MeteorSprites` y `MeteorSpritesV2`). Script:
+  `tools/art-preview/meteoros_rocas.py` (los .raw salen de `tools/art-preview`).
+- [`meteoros-final.png`](meteoros-final.png): tres propuestas para la sección "Tu vocabulario" de la pantalla final (A tres
+  grupos con barra, B escalera, C una cifra grande) y el resto de la pantalla más corto. Script:
+  `tools/art-preview/meteoros_final.py`.
 - [`anagramas-burbujas.png`](anagramas-burbujas.png)
 - [`arte-arcilla.png`](arte-arcilla.png)
 - [`arte-juegos-2.png`](arte-juegos-2.png)
