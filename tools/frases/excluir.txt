@@ -1,0 +1,12 @@
+# Filtros de "¿Verdad o disparate?": una frase (o su corrección) que calce con alguna de estas expresiones se descarta.
+# Una expresión por línea, sin distinguir mayúsculas. Los generadores ya evitan estos temas; esto es la red de seguridad.
+# muerte, violencia, enfermedad
+\b(muert\w*|morir\w*|mata\w*|matar\w*|sangre|herid\w*|enferm\w*|hospital\w*|cáncer|dolor\w*|suicid\w*|cadáver\w*|veneno\w*|venenos\w*)\b
+# violencia y armas
+\b(guerra\w*|arma|armas|bomba\w*|pistola\w*|disparo\w*|cárcel|ladrón\w*|policía\w*|soldado\w*)\b
+# religión y política
+\b(dios|diablo|iglesia\w*|religi\w*|biblia|santo|santa|rez\w*|política\w*|president\w*|gobierno|elecci\w*|partido)\b
+# cuerpo íntimo, sexo, drogas
+\b(sexo|sexual\w*|desnud\w*|pene|vagina|trasero|culo|pecho\w*|droga\w*|alcohol\w*|cerveza|vino|cigarr\w*|tabaco)\b
+# regionalismos dudosos
+\b(papa|papas|patata\w*|pasto|carozo|bolsa de plástico|auto|autos|coche|coches|carro|carros)\b
