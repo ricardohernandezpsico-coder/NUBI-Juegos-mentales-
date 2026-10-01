@@ -13,6 +13,7 @@ sillas ríen") o SUTIL (se parece a algo cierto: "los pingüinos vuelan"). Cada 
   python tools/frases/disparate.py            # escribe el JSON y la muestra
   python tools/frases/disparate.py --stats    # solo cuenta
 """
+import hashlib
 import itertools
 import json
 import os
@@ -28,6 +29,7 @@ OUT_JSON = os.path.join(ROOT, "unity", "NeuroVidaCore", "Assets", "Resources", "
 OUT_MD = os.path.join(ROOT, "docs", "frases-muestra-disparate.md")
 EXCLUIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "excluir.txt")
 SEED = 20261001
+MAX_CARACTERES = 50   # tope del largo de una frase: en el teléfono ocupa 2 renglones (3 en mayores)
 POR_CLASE_MAX = 200     # frases de verdad (y de disparate) por tipo, como máximo
 NOMBRES_TIPO = {1: "corta", 2: "con complemento", 3: "negación", 4: "frase con pausa (, que …,)", 5: "todos / algunos / ningún", 6: "comparación y orden"}
 
@@ -124,7 +126,8 @@ def cargar():
 
 
 def F(f, v, t, c="", r=""):
-    return {"f": f, "v": v, "t": t, "c": c, "n": len(f.split(" ")), "r": r}
+    # "i" = id estable de la frase (8 hex del SHA-1 del texto): no cambia si se regenera mientras la frase siga igual
+    return {"f": f, "v": v, "t": t, "c": c, "n": len(f.split(" ")), "r": r, "i": hashlib.sha1(f.encode("utf8")).hexdigest()[:8]}
 
 
 # ---------------------------------------------------------------- tipos 1 a 4
@@ -365,7 +368,7 @@ def _limpiar(lista, excl):
         txt = f["f"] + " " + f["r"]
         if any(p.search(txt) for p in excl):
             continue
-        if f["f"] in vistos:
+        if f["f"] in vistos or len(f["f"]) > MAX_CARACTERES or len(f["r"]) > MAX_CARACTERES + 12:
             continue
         vistos.add(f["f"])
         res.append((k, f))
@@ -436,9 +439,12 @@ def escribir_json(sel):
         "frases": frases,
     }
     os.makedirs(os.path.dirname(OUT_JSON), exist_ok=True)
-    with open(OUT_JSON, "w", encoding="utf8", newline="\n") as fh:
-        json.dump(doc, fh, ensure_ascii=False, indent=0, separators=(",", ":"))
-        fh.write("\n")
+    cab = {k: v for k, v in doc.items() if k != "frases"}
+    nl = chr(10)
+    with open(OUT_JSON, "w", encoding="utf8", newline=nl) as fh:
+        fh.write(json.dumps(cab, ensure_ascii=False, separators=(",", ":"))[:-1] + ',"frases":[' + nl)
+        fh.write(("," + nl).join(json.dumps(f, ensure_ascii=False, separators=(",", ":")) for f in frases))
+        fh.write(nl + "]}" + nl)
 
 
 def escribir_muestra(sel):

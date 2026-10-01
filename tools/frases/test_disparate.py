@@ -206,6 +206,11 @@ class Explicativas(unittest.TestCase):
 
 
 class Seleccion(unittest.TestCase):
+    def test_largo_maximo(self):
+        for t in range(1, 7):
+            for f in SEL[t]:
+                self.assertLessEqual(len(f["f"]), D.MAX_CARACTERES, f["f"])
+
     def test_balance_y_cantidad_por_tipo(self):
         for t in range(1, 7):
             v = sum(1 for f in SEL[t] if f["v"])
@@ -275,9 +280,17 @@ class Salida(unittest.TestCase):
         doc = json.load(open(D.OUT_JSON, encoding="utf8"))
         self.assertIsInstance(doc["frases"], list)
         for f in doc["frases"]:
-            self.assertEqual(set(f), {"f", "v", "t", "c", "n", "r"})
+            self.assertEqual(set(f), {"f", "v", "t", "c", "n", "r", "i"})
             self.assertIn(f["t"], range(1, 7))
         self.assertEqual(len(doc["frases"]), sum(len(SEL[t]) for t in range(1, 7)))
+
+    def test_los_ids_son_unicos_y_estables(self):
+        ids = [f["i"] for t in range(1, 7) for f in SEL[t]]
+        self.assertEqual(len(ids), len(set(ids)))
+        import hashlib
+        for t in range(1, 7):
+            for f in SEL[t]:
+                self.assertEqual(f["i"], hashlib.sha1(f["f"].encode("utf8")).hexdigest()[:8])
 
     def test_muestra_de_100_frases(self):
         txt = open(D.OUT_MD, encoding="utf8").read()

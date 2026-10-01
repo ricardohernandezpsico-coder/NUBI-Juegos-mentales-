@@ -77,23 +77,23 @@ Tipos: 1 corta · 2 con complemento o adjetivo · 3 negación · 4 frase con pau
 
 | # | Frase | Respuesta | Clase | Corrección |
 |---|---|---|---|---|
-| 52 | Las escobas, que barren, piensan | ✘ disparate | evidente | Las escobas, que barren, no piensan |
-| 53 | Las hachas, que cortan, duermen | ✘ disparate | evidente | Las hachas, que cortan, no duermen |
-| 54 | El agua, que se bebe, moja | ✔ verdad | — | — |
-| 55 | Los elefantes, que son grandes, conducen trenes | ✘ disparate | evidente | Los elefantes, que son grandes, no conducen trenes |
-| 56 | Los hipopótamos, que viven cerca del agua, escriben cartas | ✘ disparate | evidente | Los hipopótamos, que viven cerca del agua, no escriben cartas |
-| 57 | Los loros, que tienen alas, tienen pico | ✔ verdad | — | — |
-| 58 | Las gaviotas, que tienen pico, vuelan | ✔ verdad | — | — |
-| 59 | La boca, que sirve para comer, sirve para hablar | ✔ verdad | — | — |
-| 60 | Los murciélagos, que tienen alas, vuelan | ✔ verdad | — | — |
-| 61 | Los pies, que sirven para caminar, tienen dedos | ✔ verdad | — | — |
-| 62 | Los libros, que sirven para leer, tienen páginas | ✔ verdad | — | — |
-| 63 | Los libros, que tienen páginas, hablan | ✘ disparate | evidente | Los libros, que tienen páginas, no hablan |
-| 64 | Las olas, que se mueven, ríen | ✘ disparate | evidente | Las olas, que se mueven, no ríen |
-| 65 | Los camiones, que tienen ruedas, tienen motor | ✔ verdad | — | — |
-| 66 | Los atunes, que tienen aletas, viven en el agua | ✔ verdad | — | — |
-| 67 | Los vasos, que sirven para beber, sueñan | ✘ disparate | evidente | Los vasos, que sirven para beber, no sueñan |
-| 68 | Las truchas, que viven en el agua, dan leche | ✘ disparate | evidente | Las truchas, que viven en el agua, no dan leche |
+| 52 | Los pies, que sirven para caminar, sirven para ver | ✘ disparate | evidente | Los pies, que sirven para caminar, no sirven para ver |
+| 53 | Los libros, que sirven para leer, comen | ✘ disparate | evidente | Los libros, que sirven para leer, no comen |
+| 54 | Los limones, que crecen en los árboles, son ácidos | ✔ verdad | — | — |
+| 55 | Las sardinas, que nadan, tienen plumas | ✘ disparate | evidente | Las sardinas, que nadan, no tienen plumas |
+| 56 | Los barcos, que navegan, lloran | ✘ disparate | evidente | Los barcos, que navegan, no lloran |
+| 57 | Los cocodrilos, que ponen huevos, tienen dientes | ✔ verdad | — | — |
+| 58 | Los mosquitos, que tienen alas, vuelan | ✔ verdad | — | — |
+| 59 | Los huevos, que tienen cáscara, se rompen | ✔ verdad | — | — |
+| 60 | Las ovejas, que pastan, tienen lana | ✔ verdad | — | — |
+| 61 | Los cuervos, que tienen pico, graznan | ✔ verdad | — | — |
+| 62 | Los elefantes, que son grandes, barritan | ✔ verdad | — | — |
+| 63 | Los ratones, que roen, pilotan aviones | ✘ disparate | evidente | Los ratones, que roen, no pilotan aviones |
+| 64 | Las serpientes, que silban, firman documentos | ✘ disparate | evidente | Las serpientes, que silban, no firman documentos |
+| 65 | Los koalas, que tienen cuatro patas, trepan | ✔ verdad | — | — |
+| 66 | Los martillos, que sirven para clavar, golpean | ✔ verdad | — | — |
+| 67 | El queso, que se hace con leche, tiene hambre | ✘ disparate | evidente | El queso, que se hace con leche, no tiene hambre |
+| 68 | Los camellos, que tienen jorobas, escriben cartas | ✘ disparate | evidente | Los camellos, que tienen jorobas, no escriben cartas |
 
 ## Tipo 5 · todos / algunos / ningún
 
