@@ -251,13 +251,13 @@ conserva el efecto de frecuencia y sale más rápida, más precisa y menos exige
 2002). Por eso el juego no tiene botón "no es palabra".
 
 **De dónde sale cada medida.**
-- **Tu vocabulario.** Seis columnas de cinco estrellas, una por banda de palabras, de las más comunes a las más raras.
-  La banda sale de qué tan conocida es cada palabra (SPALEX: una recolección masiva en línea de qué palabras del español
+- **Tu vocabulario.** Una cifra grande ("N de cada 10" poco frecuentes reconocidas) y tres barras: comunes, intermedias y raras
+  (cada una junta dos bandas; antes eran seis columnas de estrellas, 1-oct). La banda sale de qué tan conocida es cada palabra (SPALEX: una recolección masiva en línea de qué palabras del español
   conoce la gente, Aguasvivas et al., 2018; se usa el MÍNIMO entre España y Latinoamérica, así no entran regionalismos).
-  En cada banda: % de palabras reconocidas MENOS el % de inventadas tocadas en toda la partida, como en LexTALE
+  En cada grupo: % de palabras reconocidas MENOS el % de inventadas tocadas en toda la partida, como en LexTALE
   (aciertos menos falsas alarmas; Lemhöfer y Broersma, 2012; versión en español: Ferré y Brysbaert, 2017). Solo se
-  muestra una banda con al menos 6 palabras vistas; si no, un guion. La frase ("Reconoces casi todas hasta las poco
-  frecuentes; las raras, la mitad") agrupa las bandas en comunes, poco frecuentes y raras. No dice cuántas palabras
+  muestra un grupo con al menos 6 palabras vistas; si no, "aún sin medir". La frase ("Reconoces casi todas las comunes, la
+  mayoría de las intermedias y menos de la mitad de las raras") usa rangos fijos de % y junta los grupos vecinos iguales. No dice cuántas palabras
   conoces ni compara con otras personas.
 - **Tu reconocimiento.** La mediana del tiempo de toque en palabras comunes (bandas 1-2) contra raras (bandas 5-6), con
   al menos 5 toques de cada una. Es el **efecto de frecuencia**: es normal que las raras tarden más.

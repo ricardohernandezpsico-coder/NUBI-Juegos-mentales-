@@ -35,8 +35,9 @@ arte y sonidos propios; no usar nombres de juegos ajenos.
 
 - **Escena**: el cielo de la app (fondo C) y abajo el borde curvo de un planeta con una cúpula-observatorio
   (`GameWorld` nuevo: "Observatorio"). Los meteoros entran desde arriba, en diagonal suave, con estela.
-- **El meteoro**: roca de arcilla con una placa crema donde va la palabra (Fredoka, ≥ 24 sp; 28 sp en mayores), en
-  minúsculas y con tildes. La placa es lo que se lee: siempre horizontal aunque la roca gire.
+- **El meteoro**: roca de arcilla con una placa crema donde va la palabra (**Atkinson Hyperlegible Bold**, elegida por Ricardo el 1-oct
+  porque la "a" y la "o" no se parecen; 26 dp, 30 en mayores; una palabra de 12 letras que no cabe a lo ancho baja de a 1 dp,
+  nunca de 22 dp; solo las palabras usan esta letra), en minúsculas y con tildes. La placa es lo que se lee: siempre horizontal aunque la roca gire.
 - **Tocar una palabra real** → la roca estalla en estrellas que vuelan a la **constelación** de arriba (contador de
   palabras rescatadas) + ✓ de arcilla. Nota musical de la pentatónica de `GameFeel` (la racha arma una melodía).
 - **Dejar pasar una inventada** → al llegar a la atmósfera se deshace en chispas suaves (sin castigo; cuenta como
@@ -45,6 +46,9 @@ arte y sonidos propios; no usar nombres de juegos ajenos.
   instante ("brúgala"). Nunca solo color: forma (✗, grietas) + texto.
 - **Dejar pasar una real** → se va con su nombre en pequeño ("se fue: brújula"). Sin culpa.
 - El toque cuenta al PRESIONAR. Zona de toque = toda la roca + 12 dp (mínimo 56 dp; 64 en mayores).
+- **Tamaño y separación (1-oct)**: la roca mide placa × 1,45 + 20 dp de ancho y 3,2 placas de alto (la placa ocupa ~1/3). Hasta 3
+  a la vez (niveles 9-12) sin pisarse: antes de soltar un meteoro se prueba su recorrido contra el de los que ya caen (cada 0,2 s,
+  caja de la roca + 28 u de aire); si no hay lugar, espera unos cuadros (`MeteorContract.Overlaps`, con pruebas).
 
 ## 4. Dificultad (DDA común, `AdaptiveDifficulty` + `GameControllerBase`, 12 niveles)
 
@@ -66,13 +70,16 @@ arte y sonidos propios; no usar nombres de juegos ajenos.
 
 ## 5. Medidas al final (juego estrella)
 
-1. **Tu vocabulario**: por banda (de común a rara), % de palabras reconocidas, corregido por inventadas tocadas en
-   esa misma partida (aciertos − falsas alarmas de su nivel, como Lextale). Se dibuja como 6 columnas de estrellas que
-   se encienden. Lectura: "Reconoces casi todas hasta las poco frecuentes; las raras, la mitad". Solo bandas con ≥ 6
-   palabras vistas; si no, "juega más para medir esta banda".
-2. **Tu reconocimiento**: mediana del tiempo de toque en palabras comunes contra raras ("comunes 0,7 s · raras 1,1 s").
-   Es el efecto de frecuencia: normal que las raras tarden más.
-3. **Tu filtro**: inventadas que engañaron, por tipo (obvias / una letra / letras cambiadas). Si las cambiadas
+1. **Tu vocabulario** (rehecho el 1-oct: las 6 columnas de estrellas "no se entendían"; mezcla de las propuestas A y C): una cifra
+   grande "N de cada 10 palabras poco frecuentes reconocidas" (bandas 3-6) y tres barras con %: comunes (bandas 1-2),
+   intermedias (3-4) y raras (5-6), corregidas por inventadas tocadas en la partida (aciertos − falsas alarmas, como Lextale).
+   Frase con rangos: casi todas ≥ 90, la mayoría 70-89, más de la mitad 55-69, la mitad 45-54, menos de la mitad 25-44,
+   pocas < 25 ("Reconoces casi todas las comunes, la mayoría de las intermedias y menos de la mitad de las raras"). Un grupo
+   con < 6 palabras vistas queda "aún sin medir".
+2. **Tu reconocimiento**: mediana del tiempo de toque en palabras comunes contra raras ("Las comunes, en 0,7 s. Las raras, en
+   1,1 s." + "Es normal: las raras tardan más"). Es el efecto de frecuencia.
+3. **Tu filtro**: "Te engañaron 5 de 21 palabras inventadas" + un renglón por tipo (obvias / una letra / letras cambiadas; en
+   coral solo el que más engañó). Si las cambiadas
    engañan más: "Las letras cambiadas de lugar engañan a casi todos: leemos la palabra entera. Truco: mira el centro
    de la palabra".
 4. **Tu colección**: las palabras raras acertadas se guardan (como la bitácora de Bitácora de Misión).
@@ -97,11 +104,13 @@ comparaciones con otras personas hasta tener datos propios. Agregar las medidas 
 
 ## 7. Arte y sonido
 
-- Roca de arcilla (`ClayRaster`, borde tinta, sombra dura abajo), 4 formas al azar; placa crema; estela con el color
-  del meteoro (lila, celeste, coral). Dorado = aro sol. Estrellas que vuelan a la constelación.
+- Roca de arcilla con volumen y **brasa** (opción B de `docs/previews/meteoros-rocas.png`, elegida por Ricardo el 1-oct): campo
+  de alturas con cráteres y grano, el borde que va por delante al rojo vivo, borde tinta, sombra dura abajo; 4 formas al azar en
+  lila, celeste o coral (`MeteorSprites`); placa crema; **estela de calor** con chispas (naranja → coral → lila). Dorado = roca
+  sol con aro. Estrellas que vuelan a la constelación. Las rocas se hornean de a una por cuadro durante la cuenta regresiva.
 - Sonidos sintetizados en la pentatónica de `GameFeel`: toque correcto = campana (nota según la racha), inventada
   bien dejada pasar = soplo suave, error = madera sorda, lluvia de estrellas = cascada de campanas. Nada arcade.
-- Respeta "quitar animaciones" (sin giro de la roca ni estela larga), sonido y vibración apagados.
+- Respeta "quitar animaciones" (sin giro de la roca, estela corta y SIN chispas; la brasa es estática), sonido y vibración apagados.
 
 ## 8. Pendiente antes de programar
 

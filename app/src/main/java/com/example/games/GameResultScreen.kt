@@ -452,83 +452,89 @@ fun GameResultScreen(
       }
     }
 
-    // Lluvia de meteoros: "tu vocabulario" (6 columnas de estrellas, de la banda común a la rara), "tu reconocimiento"
-    // (tiempo de toque en comunes y raras), "tu filtro" (qué inventadas engañaron, por tipo) y "tu colección".
+    // Lluvia de meteoros (pantalla final, 1-oct: mezcla de las propuestas A y C de docs/previews/meteoros-final.png): "tu
+    // vocabulario" = una cifra grande ("8 de cada 10") + tres barras (comunes, intermedias, raras) + una frase; "tu
+    // reconocimiento" en una línea; "tu filtro" con el total y tres renglones; "tu colección" en una línea.
     val lexSeen = result.lexBandSeen
     val lexHits = result.lexBandHits
     if (lexSeen != null && lexHits != null) {
-      val percents = com.example.data.Vocabulary.bandPercents(lexSeen, lexHits, result.lexFaSeen, result.lexFaHits)
-      val phrase = com.example.data.Vocabulary.phrase(percents)
+      val vocab = com.example.data.Vocabulary
+      val bands = vocab.bandPercents(lexSeen, lexHits, result.lexFaSeen, result.lexFaHits)
+      val groups = vocab.groupPercents(lexSeen, lexHits, result.lexFaSeen, result.lexFaHits)
+      val tenOf = vocab.outOfTen(vocab.mark(bands, lexSeen))
+      val phrase = vocab.phraseFor(groups)
       Spacer(Modifier.height(14.dp))
-      Text("Tu vocabulario", color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
-      VocabularyStars(
-        percents,
-        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)
-          .semantics { contentDescription = "Tu vocabulario: $phrase" }
-      )
-      Text(
-        text = phrase,
-        color = Clay.Cream,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
-      Text(
-        text = "Cada columna es un grupo de palabras, de las más comunes (izquierda) a las más raras (derecha): las estrellas encendidas son las que reconociste, descontando las inventadas que tocaste.",
-        color = TextSoft,
-        fontSize = 14.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
-
-      com.example.data.Vocabulary.recognitionLine(result.lexRtCommonMs, result.lexRtRareMs)?.let { line ->
-        Spacer(Modifier.height(12.dp))
-        Text("Tu reconocimiento: $line", color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 17.sp, fontFamily = AppFamily, textAlign = TextAlign.Center)
+      Text("Tu vocabulario", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = "Tu vocabulario. $phrase" },
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        if (tenOf != null) {
+          Text("$tenOf de cada 10", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 44.sp, fontFamily = AppFamily)
+          Text("palabras poco frecuentes reconocidas", color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+          Spacer(Modifier.height(8.dp))
+        }
+        vocab.GROUP_LABELS.forEachIndexed { i, label ->
+          VocabBar(label, groups[i], Modifier.fillMaxWidth().padding(vertical = 4.dp))
+        }
         Text(
-          text = "Es lo normal: las palabras raras tardan más en reconocerse que las comunes. Lo que importa es cómo cambia con la práctica.",
-          color = TextSoft,
-          fontSize = 14.sp,
+          text = phrase,
+          color = Clay.Cream,
+          fontSize = 15.sp,
           textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          modifier = Modifier.padding(top = 6.dp)
         )
+      }
+
+      vocab.recognitionSentence(result.lexRtCommonMs, result.lexRtRareMs)?.let { line ->
+        Spacer(Modifier.height(14.dp))
+        Text("Tu reconocimiento", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Text(line, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 16.dp))
+        Text("Es normal: las raras tardan más.", color = TextSoft, fontSize = 14.sp)
       }
 
       val faSeen = result.lexFaSeen
       val faHits = result.lexFaHits
-      if (faSeen != null && faHits != null && faSeen.sum() > 0) {
-        Spacer(Modifier.height(12.dp))
-        Text("Tu filtro", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
-        Text("Inventadas que tocaste, por tipo", color = TextSoft, fontSize = 14.sp)
-        com.example.data.Vocabulary.FILTER_LABELS.forEachIndexed { i, label ->
-          if (faSeen[i] > 0) FilterRow(label, faHits[i], faSeen[i], Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 3.dp))
+      vocab.filterHeadline(faSeen, faHits)?.let { headline ->
+        Spacer(Modifier.height(14.dp))
+        Text("Tu filtro", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Text(headline, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
+        val hot = vocab.filterHot(faSeen, faHits)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp, vertical = 4.dp)) {
+          vocab.FILTER_LABELS.forEachIndexed { i, label ->
+            val seen = faSeen?.getOrNull(i) ?: 0
+            if (seen > 0) {
+              Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, color = Clay.Cream, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                Text(
+                  "${faHits?.getOrNull(i) ?: 0} de $seen",
+                  color = if (i == hot) Clay.Coral else Clay.Cream,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 16.sp,
+                  fontFamily = AppFamily
+                )
+              }
+            }
+          }
         }
-        com.example.data.Vocabulary.filterAdvice(faSeen, faHits)?.let { advice ->
-          Text(
-            text = advice,
-            color = Clay.Cream,
-            fontSize = 15.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp)
-          )
+        vocab.filterAdvice(faSeen, faHits)?.let { advice ->
+          Text(advice, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
         }
       }
 
       result.lexRareWords?.takeIf { it.isNotEmpty() }?.let { words ->
-        Spacer(Modifier.height(10.dp))
-        Text(
-          text = "Tu colección: +${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
-          color = Clay.Sun,
-          fontWeight = FontWeight.Bold,
-          fontSize = 17.sp,
-          fontFamily = AppFamily
-        )
-        Text(
-          text = words.joinToString(" · "),
-          color = Clay.Cream,
-          fontSize = 15.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-        )
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+          Text("Tu colección", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
+          Text(
+            text = "+${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
+            color = Clay.Lime,
+            fontWeight = FontWeight.Bold,
+            fontSize = 17.sp,
+            fontFamily = AppFamily
+          )
+        }
+        Text(words.joinToString(" · "), color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
       }
     }
 
@@ -1352,82 +1358,25 @@ private fun PlanReactBar(proactivePct: Int, modifier: Modifier = Modifier) {
 // ---------- Lluvia de meteoros: "tu vocabulario" ----------
 
 /**
- * Seis columnas de estrellas de arcilla, una por banda de palabras (de la más común, a la izquierda, a la más rara, a la
- * derecha): cada una tiene cinco estrellas que se encienden de media en media según el % reconocido (descontadas las
- * inventadas tocadas). Debajo va el número: el valor no depende de la forma ni del color. Una banda con pocas palabras
- * vistas queda con estrellas apagadas y un guion.
+ * Una barra de "tu vocabulario": nombre del grupo a la izquierda, barra lila y el % a la derecha. El valor va siempre en
+ * número (no depende del color). Un grupo con pocas palabras vistas queda con la barra vacía y "aún sin medir".
  */
 @Composable
-private fun VocabularyStars(percents: List<Int>, modifier: Modifier = Modifier) {
-  Column(modifier) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-      percents.forEach { p ->
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          val lit = if (p >= 0) com.example.data.Vocabulary.litStars(p) else 0f
-          Canvas(Modifier.size(width = 30.dp, height = 112.dp)) {
-            val r = 11.dp.toPx()
-            val cx = size.width / 2f
-            for (k in 0 until 5) {
-              val cy = size.height - r - 1.dp.toPx() - k * (2 * r + 1.dp.toPx())
-              val frac = (lit - k).coerceIn(0f, 1f)
-              drawLitStar(Offset(cx, cy), r, frac)
-            }
-          }
-          Text(
-            text = if (p >= 0) "$p%" else "–",
-            color = if (p >= 0) Clay.Cream else TextSoft,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold
-          )
-        }
-      }
-    }
-    Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-      Text("común", color = TextSoft, fontSize = 14.sp)
-      Text("rara", color = TextSoft, fontSize = 14.sp)
-    }
-  }
-}
-
-/** Una estrella de arcilla: apagada (azul noche), o encendida (sol) de izquierda a derecha según [frac] (0,5 = media). */
-private fun DrawScope.drawLitStar(c: Offset, r: Float, frac: Float) {
-  val path = starPath(c.x, c.y, r, r * 0.46f, 5)
-  drawPath(path, Color(0xFF1B2466))
-  if (frac > 0f) {
-    clipRect(left = c.x - r, top = c.y - r, right = c.x - r + 2f * r * frac, bottom = c.y + r) {
-      drawPath(path, Clay.Sun)
-    }
-  }
-  drawPath(path, if (frac > 0f) Color(0xFFFFF0BE) else Color(0xFFBEB8E6), style = Stroke(1.6.dp.toPx(), join = StrokeJoin.Round))
-}
-
-/**
- * "Tu filtro": una línea por tipo de inventada con cuántas tocaste. Las que engañaron van con una cruz ✗ y las que
- * dejaste pasar con un punto: se distinguen por la forma, no solo por el color.
- */
-@Composable
-private fun FilterRow(label: String, tapped: Int, seen: Int, modifier: Modifier = Modifier) {
+private fun VocabBar(label: String, percent: Int, modifier: Modifier = Modifier) {
   Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-    Text(label, color = Clay.Cream, fontSize = 15.sp, modifier = Modifier.weight(1f))
-    val n = seen.coerceAtMost(10)
-    Canvas(Modifier.size(width = 12.dp * n, height = 16.dp)) {
-      val step = 12.dp.toPx()
-      for (j in 0 until n) {
-        val c = Offset(step * j + step / 2f, size.height / 2f)
-        if (j < tapped) {
-          val d = 3.6.dp.toPx()
-          drawLine(Clay.Coral, c + Offset(-d, -d), c + Offset(d, d), 2.2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-          drawLine(Clay.Coral, c + Offset(d, -d), c + Offset(-d, d), 2.2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        } else drawCircle(Color(0xFFBEB8E6), 2.4.dp.toPx(), c)
-      }
+    Text(label, color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(104.dp))
+    Canvas(Modifier.weight(1f).height(12.dp)) {
+      val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+      drawRoundRect(Color(0x33FFFFFF), cornerRadius = r)
+      if (percent >= 0) drawRoundRect(Clay.Grape, size = androidx.compose.ui.geometry.Size(maxOf(size.height, size.width * percent / 100f), size.height), cornerRadius = r)
     }
     Text(
-      "$tapped de $seen",
-      color = if (tapped * 2 >= seen && seen >= 5) Clay.Coral else Clay.Cream,
+      text = if (percent >= 0) "$percent%" else "aún sin medir",
+      color = if (percent >= 0) Clay.Cream else TextSoft,
       fontWeight = FontWeight.Bold,
-      fontSize = 15.sp,
+      fontSize = if (percent >= 0) 17.sp else 14.sp,
       textAlign = TextAlign.End,
-      modifier = Modifier.width(64.dp)
+      modifier = Modifier.width(if (percent >= 0) 52.dp else 92.dp)
     )
   }
 }

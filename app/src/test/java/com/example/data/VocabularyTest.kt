@@ -20,27 +20,36 @@ class VocabularyTest {
   }
 
   @Test
-  fun `las estrellas encendidas van de media en media`() {
-    assertEquals(5f, Vocabulary.litStars(100), 0f)
-    assertEquals(5f, Vocabulary.litStars(96), 0f)
-    assertEquals(4.5f, Vocabulary.litStars(90), 0f)
-    assertEquals(4f, Vocabulary.litStars(78), 0f)
-    assertEquals(3f, Vocabulary.litStars(55), 0f)
-    assertEquals(1.5f, Vocabulary.litStars(30), 0f)
-    assertEquals(0f, Vocabulary.litStars(0), 0f)
+  fun `los tres grupos juntan bandas, restan falsas alarmas y piden 6 palabras vistas`() {
+    // comunes 19/20, intermedias 15/20, raras 8/13 (5 de 10 + 3 de 3); sin inventadas tocadas
+    assertEquals(listOf(95, 75, 62), Vocabulary.groupPercents(seen, hits, listOf(10, 6, 4), listOf(0, 0, 0)))
+    // 20 inventadas, 2 tocadas: -10 puntos a cada grupo
+    assertEquals(listOf(85, 65, 52), Vocabulary.groupPercents(seen, hits, listOf(10, 6, 4), listOf(1, 1, 0)))
+    // un grupo con menos de 6 vistas queda sin medir
+    assertEquals(listOf(100, -1, -1), Vocabulary.groupPercents(listOf(3, 3, 2, 2, 1, 1), listOf(3, 3, 2, 2, 1, 1), null, null))
+    assertEquals(listOf(-1, -1, -1), Vocabulary.groupPercents(null, null, null, null))
   }
 
   @Test
-  fun `la frase de tu vocabulario dice hasta donde reconoces casi todas`() {
+  fun `la cifra grande sale de la marca de las bandas 3 a 6`() {
+    assertEquals(6, Vocabulary.outOfTen(63.25f))
+    assertEquals(8, Vocabulary.outOfTen(84f))
+    assertEquals(10, Vocabulary.outOfTen(100f))
+    assertEquals(0, Vocabulary.outOfTen(2f))
+    assertNull(Vocabulary.outOfTen(null))
+  }
+
+  @Test
+  fun `la frase de tu vocabulario usa rangos y junta grupos iguales`() {
     assertEquals(
-      "Reconoces casi todas hasta las poco frecuentes; las raras, la mitad.",
-      Vocabulary.phrase(listOf(100, 96, 90, 78, 55, 30))
+      "Reconoces casi todas las comunes, la mayoría de las intermedias y menos de la mitad de las raras.",
+      Vocabulary.phraseFor(listOf(98, 84, 43))
     )
-    assertEquals("Reconoces casi todas las palabras, hasta las raras.", Vocabulary.phrase(listOf(100, 100, 98, 95, 90, 88)))
-    assertEquals("Reconoces casi todas las que viste.", Vocabulary.phrase(listOf(100, 99, -1, -1, -1, -1)))
-    assertEquals("De las comunes reconoces la mitad.", Vocabulary.phrase(listOf(50, 45, -1, -1, -1, -1)))
-    assertEquals("Reconoces casi todas hasta las comunes; las poco frecuentes, pocas.", Vocabulary.phrase(listOf(95, 90, 25, 20, -1, -1)))
-    assertTrue(Vocabulary.phrase(List(6) { -1 }).startsWith("Juega un poco más"))
+    assertEquals("Reconoces casi todas las comunes e intermedias y la mitad de las raras.", Vocabulary.phraseFor(listOf(98, 93, 50)))
+    assertEquals("Reconoces casi todas las comunes, intermedias y raras.", Vocabulary.phraseFor(listOf(98, 95, 92)))
+    assertEquals("Reconoces más de la mitad de las comunes.", Vocabulary.phraseFor(listOf(60, -1, -1)))
+    assertEquals("Reconoces casi todas las comunes y pocas de las intermedias.", Vocabulary.phraseFor(listOf(95, 10, -1)))
+    assertTrue(Vocabulary.phraseFor(listOf(-1, -1, -1)).startsWith("Juega un poco más"))
   }
 
   @Test
@@ -56,9 +65,21 @@ class VocabularyTest {
 
   @Test
   fun `el tiempo de reconocimiento necesita las dos medianas`() {
-    assertEquals("comunes 0,7 s · raras 1,1 s", Vocabulary.recognitionLine(700, 1100))
-    assertNull(Vocabulary.recognitionLine(700, -1))
-    assertNull(Vocabulary.recognitionLine(null, 1100))
+    assertEquals("Las comunes, en 0,7 s. Las raras, en 1,1 s.", Vocabulary.recognitionSentence(700, 1100))
+    assertNull(Vocabulary.recognitionSentence(700, -1))
+    assertNull(Vocabulary.recognitionSentence(null, 1100))
+  }
+
+  @Test
+  fun `tu filtro cuenta las inventadas y marca solo el tipo que mas enganio`() {
+    assertEquals("Te engañaron 5 de 21 palabras inventadas:", Vocabulary.filterHeadline(listOf(7, 8, 6), listOf(0, 1, 4)))
+    assertEquals("No te engañó ninguna de 21 palabras inventadas:", Vocabulary.filterHeadline(listOf(7, 7, 7), listOf(0, 0, 0)))
+    assertNull(Vocabulary.filterHeadline(listOf(0, 0, 0), listOf(0, 0, 0)))
+    assertEquals(2, Vocabulary.filterHot(listOf(6, 8, 7), listOf(0, 1, 4)))
+    assertEquals(0, Vocabulary.filterHot(listOf(6, 8, 7), listOf(5, 1, 4)))
+    assertEquals(-1, Vocabulary.filterHot(listOf(6, 8, 7), listOf(1, 1, 1)))   // ninguno llega a la mitad
+    assertEquals(-1, Vocabulary.filterHot(listOf(3, 3, 3), listOf(3, 3, 3)))   // pocas vistas
+    assertEquals(-1, Vocabulary.filterHot(null, null))
   }
 
   @Test

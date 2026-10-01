@@ -24,7 +24,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 30-sep · fondo C`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 1-oct · meteoros B`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -223,14 +223,14 @@ tramo "a 3" (lima si ≤5%, coral si no). "¡DIANA LUNAR!" con ≤1,2% de error.
 
 **Lluvia de meteoros** (`Games/Meteoros/`, id `meteoros`, dominio lenguaje; 30-sep, diseño en
 `docs/diseno-lluvia-de-meteoros.md`, maqueta aprobada `docs/previews/meteoros.png`): decisión léxica "ir / no ir" (Meyer y
-Schvaneveldt, 1971; Perea, Rosa y Gómez, 2002). Caen meteoros de arcilla con relieve y cráteres; cada uno lleva una placa
-crema con una palabra (siempre horizontal; 26 sp, 30 en mayores). Se TOCAN las palabras que existen (estallan en estrellas
+Schvaneveldt, 1971; Perea, Rosa y Gómez, 2002). Caen meteoros de arcilla con relieve, cráteres y brasa en el borde delantero con estela de calor (opción B, 1-oct); cada uno lleva una placa
+crema con una palabra (siempre horizontal; letra Atkinson Hyperlegible Bold, 26 dp, 30 en mayores; una palabra que no cabe baja de a 1 dp, nunca de 22 dp). Se TOCAN las palabras que existen (estallan en estrellas
 que vuelan a la constelación de arriba, con ✓) y se DEJAN PASAR las inventadas (se deshacen en chispas al llegar a la
 atmósfera: acierto sin ruido); tocar una inventada la agrieta en polvo gris con ✗ y la palabra tachada ("esa no
 existía"); una palabra que se va queda anotada ("se fue: brújula"). El toque cuenta al PRESIONAR; zona = roca + 12 dp
 (mínimo 56 dp, 64 en mayores). Mundo `GameWorld.Observatory` (borde curvo de planeta + cúpula `ObservatorySprite`).
 - Reglas y pruebas: `MeteorContract` / `MeteorDirector` / `MeteorTally` / `MeteorLexicon` y `MeteorContractTests` (14).
-  12 niveles (bandas de palabras 1-1 → 5-6, señuelos obvios → una letra → traspuestas, 1 → 3 a la vez, caída 7 → 4 s,
+  12 niveles (bandas de palabras 1-1 → 5-6, señuelos obvios → una letra → traspuestas, 1 → 3 a la vez sin pisarse (`MeteorContract.Overlaps`: se prueba el recorrido contra los que ya caen), caída 7 → 4 s,
   largo 4-6 → 6-12). 50% palabras y 50% inventadas, nunca más de 3 inventadas seguidas; meteoro DORADO 1 de cada 12
   (palabra de 2 bandas más rara, aro sol, × 2); LLUVIA DE ESTRELLAS cada 25 (6 palabras comunes y rápidas, × 2, fuera de la
   escalera); racha ≥ 8 = estela encendida (× 1,5). DDA común `stepUp` 0.15, sin tiempo de reacción. Reto 120 s;
@@ -241,12 +241,12 @@ existía"); una palabra que se va queda anotada ("se fue: brújula"). El toque c
   filtradas contra el diccionario y un modelo de trigramas de letras). Los datos ajenos viven en
   `tools/lexico/fuentes/` (fuera de git). Muestra para revisar: `docs/lexico-muestra-meteoros.md`.
 - Medidas propias (telemetría `lex_*` → `GamePlayResult.lex*`; lectura pura en `data/Vocabulary.kt` con pruebas):
-  **tu vocabulario** (6 columnas de estrellas por banda: % reconocidas − % de inventadas tocadas), **tu reconocimiento**
+  **tu vocabulario** (cifra grande "N de cada 10" + 3 barras comunes / intermedias / raras: % reconocidas − % de inventadas tocadas; 1-oct, mezcla de las propuestas A y C), **tu reconocimiento**
   (mediana de toque en comunes contra raras), **tu filtro** (inventadas tocadas por tipo; consejo solo si las
   traspuestas engañan más y hay ≥ 5 de cada tipo) y **tu colección** (palabras raras acertadas, preferencias
   `word_collection`, respaldada). Marca para la evolución (`StarMeasures` `vocab`): promedio ponderado del % reconocido
   en las bandas 3-6. Detalle y referencias: `docs/medidas-juegos-estrella.md`. La pantalla final se desplaza.
-- Arte: `MeteorSprites` (roca con relieve en 4 formas y 5 colores, estrellas de la constelación), `ObservatorySprite`.
+- Arte: `MeteorSprites` (roca con relieve y brasa en 4 formas y 5 colores, `HeatTrail` con o sin chispas, estrellas de la constelación; las rocas se hornean durante la cuenta regresiva), `ObservatorySprite`. Letra de las palabras: `UiFonts.Word` (Atkinson, SIL OFL, créditos en Ajustes → Licencias).
   Vista previa de diseño: `python tools/art-preview/meteoros.py` → `docs/previews/meteoros.png`.
 - Pendiente: licencia de SPALEX para uso comercial (Ricardo pidió permiso a los autores; se avanzó como si lo dieran);
   que Ricardo revise la muestra de palabras e inventadas; probarlo en el teléfono.
@@ -515,11 +515,11 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 
 ## Pruebas
 
-- Kotlin: 146 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 150 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 196 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 20 smoke tests.
+- Unity EditMode: 199 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 20 smoke tests.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
 

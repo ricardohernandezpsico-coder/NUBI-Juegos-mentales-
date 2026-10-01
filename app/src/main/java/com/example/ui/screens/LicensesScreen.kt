@@ -25,7 +25,7 @@ private val Body = Color(0xFFC7D0FF)
  * "Licencias y créditos" (Ajustes, 1-oct): lo que hay que citar de lo que no es nuestro. Texto suelto con títulos, sin
  * recuadros; los enlaces van como texto (no abren el navegador). Letra de 14 sp o más.
  * - SPALEX (datos de las palabras de Lluvia de meteoros): CC BY 4.0, con su atribución y el cambio que se le hizo.
- * - Tipografías (Fredoka y Nunito): SIL Open Font License 1.1.
+ * - Tipografías (Fredoka, Nunito y Atkinson Hyperlegible): SIL Open Font License 1.1.
  * - Unity (el motor de los juegos).
  */
 @Composable
@@ -62,8 +62,8 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     Para("Cambios: se usaron para ordenar las palabras en bandas de dificultad en Lluvia de meteoros.")
 
     Section("Tipografías")
-    Para("Fredoka, de Milena Brandão y Hafontia, y Nunito, de Vernon Adams y Jacques Le Bailly.")
-    Para("Las dos bajo la licencia SIL Open Font License 1.1 (openfontlicense.org).")
+    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros.")
+    Para("Las tres bajo la licencia SIL Open Font License 1.1 (openfontlicense.org).")
 
     Section("Hecho con Unity")
     Para("Los juegos de Nubi están hechos con Unity, de Unity Technologies (unity.com).")

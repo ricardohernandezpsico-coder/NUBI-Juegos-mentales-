@@ -37,37 +37,56 @@ object Vocabulary {
     }
   }
 
-  /** Estrellas encendidas (0 a 5, de media en media) para un porcentaje: 100 → 5, 90 → 4,5, 55 → 3 (redondeado a la media). */
-  fun litStars(percent: Int): Float = ((percent.coerceIn(0, 100) / 20f) * 2f).roundToInt() / 2f
+  val GROUP_LABELS = listOf("Comunes", "Intermedias", "Raras")
+  private val groupNames = listOf("comunes", "intermedias", "raras")
+  private val groupBands = listOf(listOf(0, 1), listOf(2, 3), listOf(4, 5))
 
-  private val categories = listOf("comunes" to listOf(0, 1), "poco frecuentes" to listOf(2, 3), "raras" to listOf(4, 5))
+  /**
+   * "Tu vocabulario" en tres grupos: comunes (bandas 1-2), intermedias (3-4) y raras (5-6). % reconocido del grupo MENOS el %
+   * de inventadas tocadas en la partida. -1 si el grupo tiene menos de [MIN_BAND_SEEN] palabras vistas. Siempre 3 valores.
+   */
+  fun groupPercents(seen: List<Int>?, hits: List<Int>?, faSeen: List<Int>?, faHits: List<Int>?): List<Int> {
+    val decoys = faSeen.orEmpty().sum()
+    val tapped = faHits.orEmpty().sum()
+    val fa = if (decoys > 0) 100f * tapped / decoys else 0f
+    return groupBands.map { bands ->
+      val s = bands.sumOf { seen?.getOrNull(it) ?: 0 }
+      val h = bands.sumOf { hits?.getOrNull(it) ?: 0 }
+      if (s < MIN_BAND_SEEN) -1 else (100f * h / s - fa).coerceAtLeast(0f).roundToInt()
+    }
+  }
+
+  /** La cifra grande: "N de cada 10" palabras poco frecuentes (bandas 3-6) reconocidas, desde la marca [mark]. null sin marca. */
+  fun outOfTen(mark: Float?): Int? = mark?.let { (it / 10f).roundToInt().coerceIn(0, 10) }
 
   private fun qualifier(p: Int): String = when {
-    p >= 80 -> "casi todas"
-    p >= 60 -> "la mayoría"
-    p >= 35 -> "la mitad"
-    p >= 15 -> "pocas"
-    else -> "muy pocas"
+    p >= 90 -> "casi todas"
+    p >= 70 -> "la mayoría"
+    p >= 55 -> "más de la mitad"
+    p >= 45 -> "la mitad"
+    p >= 25 -> "menos de la mitad"
+    else -> "pocas"
   }
 
   /**
-   * La frase de "tu vocabulario": agrupa las bandas en comunes (1-2), poco frecuentes (3-4) y raras (5-6) y dice hasta
-   * dónde reconoces casi todas. Ej.: "Reconoces casi todas hasta las poco frecuentes; las raras, la mitad."
+   * La frase de "tu vocabulario" con los tres grupos; los vecinos con el mismo calificativo se juntan. Ej. con 98 / 84 / 43:
+   * "Reconoces casi todas las comunes, la mayoría de las intermedias y menos de la mitad de las raras."
    */
-  fun phrase(percents: List<Int>): String {
-    val cats = categories.mapNotNull { (name, bands) ->
-      val vals = bands.mapNotNull { percents.getOrNull(it)?.takeIf { v -> v >= 0 } }
-      if (vals.isEmpty()) null else name to vals.average().roundToInt()
+  fun phraseFor(groups: List<Int>): String {
+    val parts = mutableListOf<Pair<String, MutableList<String>>>()
+    groups.forEachIndexed { i, p ->
+      if (p < 0) return@forEachIndexed
+      val q = qualifier(p)
+      val last = parts.lastOrNull()
+      if (last != null && last.first == q) last.second.add(groupNames[i]) else parts.add(q to mutableListOf(groupNames[i]))
     }
-    if (cats.isEmpty()) return "Juega un poco más para medir tu vocabulario: hacen falta unas cuantas palabras de cada tipo."
-    val firstShort = cats.indexOfFirst { it.second < 80 }
-    return when {
-      firstShort < 0 ->
-        if (cats.last().first == "raras") "Reconoces casi todas las palabras, hasta las raras."
-        else "Reconoces casi todas las que viste."
-      firstShort == 0 -> "De las ${cats[0].first} reconoces ${qualifier(cats[0].second)}."
-      else -> "Reconoces casi todas hasta las ${cats[firstShort - 1].first}; las ${cats[firstShort].first}, ${qualifier(cats[firstShort].second)}."
+    if (parts.isEmpty()) return "Juega un poco más para medir tu vocabulario: hacen falta unas cuantas palabras de cada tipo."
+    val texts = parts.map { (q, names) ->
+      val list = if (names.size == 1) names[0] else names.dropLast(1).joinToString(", ") + (if (names.last().startsWith("i")) " e " else " y ") + names.last()
+      if (q == "casi todas") "casi todas las $list" else "$q de las $list"
     }
+    val joined = if (texts.size == 1) texts[0] else texts.dropLast(1).joinToString(", ") + " y " + texts.last()
+    return "Reconoces $joined."
   }
 
   /**
@@ -87,11 +106,33 @@ object Vocabulary {
     return if (weight > 0f) sum / weight else null
   }
 
-  /** "comunes 0,7 s · raras 1,1 s", o null si falta alguna de las dos medianas (-1 = pocas muestras). */
-  fun recognitionLine(commonMs: Int?, rareMs: Int?): String? {
+  /** "Las comunes, en 0,7 s. Las raras, en 1,1 s.", o null si falta alguna de las dos medianas (-1 = pocas muestras). */
+  fun recognitionSentence(commonMs: Int?, rareMs: Int?): String? {
     if (commonMs == null || rareMs == null || commonMs <= 0 || rareMs <= 0) return null
     fun s(ms: Int) = String.format(Locale("es"), "%.1f", ms / 1000f)
-    return "comunes ${s(commonMs)} s · raras ${s(rareMs)} s"
+    return "Las comunes, en ${s(commonMs)} s. Las raras, en ${s(rareMs)} s."
+  }
+
+  /** "Te engañaron 5 de 21 palabras inventadas:", o null si no se vio ninguna inventada. */
+  fun filterHeadline(faSeen: List<Int>?, faHits: List<Int>?): String? {
+    val seen = faSeen.orEmpty().sum()
+    if (seen <= 0) return null
+    val tapped = faHits.orEmpty().sum()
+    return if (tapped == 0) "No te engañó ninguna de $seen palabras inventadas:" else "Te engañaron $tapped de $seen palabras inventadas:"
+  }
+
+  /** Índice del tipo de inventada que más engañó (en rojo coral en la pantalla), o -1: solo si hay 5+ vistas y se tocó la mitad o más. */
+  fun filterHot(faSeen: List<Int>?, faHits: List<Int>?): Int {
+    var best = -1
+    var bestRate = 0f
+    for (i in 0 until 3) {
+      val s = faSeen?.getOrNull(i) ?: 0
+      val h = faHits?.getOrNull(i) ?: 0
+      if (s < MIN_DECOYS_FOR_ADVICE || h * 2 < s) continue
+      val r = h.toFloat() / s
+      if (r > bestRate) { bestRate = r; best = i }
+    }
+    return best
   }
 
   /**
