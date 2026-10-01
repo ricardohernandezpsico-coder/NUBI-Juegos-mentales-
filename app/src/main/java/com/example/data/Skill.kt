@@ -55,7 +55,7 @@ object Skill {
     "series" to Ladder(9), "calculo" to Ladder(9), "piloto" to Ladder(9),
     "rutatesoro" to Ladder(12, ownTarget = 0.70f),
     "radar" to Ladder(12), "freno" to Ladder(12), "aterrizaje" to Ladder(12), "acoplamiento" to Ladder(12),
-    "trafico" to Ladder(12), "satelites" to Ladder(12),
+    "trafico" to Ladder(12), "satelites" to Ladder(12), "meteoros" to Ladder(12),
     "bitacora" to Ladder(10), "rumbo" to Ladder(10), "correo" to Ladder(10), "parejas" to Ladder(10),
     "secuencia" to Ladder(16, ownTarget = 0.707f)
   )

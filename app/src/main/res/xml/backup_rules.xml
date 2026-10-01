@@ -15,6 +15,7 @@
     <include domain="database" path="neurovida_database-wal" />
     <include domain="sharedpref" path="skill.xml" />
     <include domain="sharedpref" path="star_measures.xml" />
+    <include domain="sharedpref" path="word_collection.xml" />
     <include domain="sharedpref" path="progress_log.xml" />
     <include domain="sharedpref" path="league_events.xml" />
     <include domain="sharedpref" path="achievements.xml" />

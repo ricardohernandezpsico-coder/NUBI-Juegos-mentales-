@@ -156,6 +156,14 @@ object GameRegistry {
       iconEmoji = "🔤"
     ),
     GameDefinition(
+      id = "meteoros",
+      title = "Lluvia de meteoros",
+      domain = DomainType.LENGUAJE,
+      subtitle = "Toca solo las palabras que existen",
+      instruction = "Caen meteoros con palabras. Toca las que existen y deja pasar las inventadas: no pierdes nada si dudas. Las palabras raras valen más.",
+      iconEmoji = "☄️"
+    ),
+    GameDefinition(
       id = "calculo",
       title = "Cálculo Sereno",
       domain = DomainType.RAZONAMIENTO,
@@ -318,7 +326,17 @@ data class GamePlayResult(
   val mailAsteroidHits: Int? = null,
   val mailAsteroids: Int? = null,
   val mailHullIntactPct: Int? = null,
-  val mailEmergencies: Int? = null
+  val mailEmergencies: Int? = null,
+  // Solo Lluvia de meteoros: palabras reales vistas y tocadas por banda (6, de la común a la rara), inventadas vistas y
+  // tocadas por tipo (3: obvia, una letra, letras traspuestas), mediana del tiempo de toque en comunes y raras (ms) y
+  // las palabras raras acertadas. No se guardan en Room.
+  val lexBandSeen: List<Int>? = null,
+  val lexBandHits: List<Int>? = null,
+  val lexFaSeen: List<Int>? = null,
+  val lexFaHits: List<Int>? = null,
+  val lexRtCommonMs: Int? = null,
+  val lexRtRareMs: Int? = null,
+  val lexRareWords: List<String>? = null
 )
 
 data class DailySessionState(

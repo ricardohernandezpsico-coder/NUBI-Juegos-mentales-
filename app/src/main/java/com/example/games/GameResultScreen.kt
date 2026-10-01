@@ -452,6 +452,86 @@ fun GameResultScreen(
       }
     }
 
+    // Lluvia de meteoros: "tu vocabulario" (6 columnas de estrellas, de la banda común a la rara), "tu reconocimiento"
+    // (tiempo de toque en comunes y raras), "tu filtro" (qué inventadas engañaron, por tipo) y "tu colección".
+    val lexSeen = result.lexBandSeen
+    val lexHits = result.lexBandHits
+    if (lexSeen != null && lexHits != null) {
+      val percents = com.example.data.Vocabulary.bandPercents(lexSeen, lexHits, result.lexFaSeen, result.lexFaHits)
+      val phrase = com.example.data.Vocabulary.phrase(percents)
+      Spacer(Modifier.height(14.dp))
+      Text("Tu vocabulario", color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
+      VocabularyStars(
+        percents,
+        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)
+          .semantics { contentDescription = "Tu vocabulario: $phrase" }
+      )
+      Text(
+        text = phrase,
+        color = Clay.Cream,
+        fontSize = 15.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+      Text(
+        text = "Cada columna es un grupo de palabras, de las más comunes (izquierda) a las más raras (derecha): las estrellas encendidas son las que reconociste, descontando las inventadas que tocaste.",
+        color = TextSoft,
+        fontSize = 14.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+
+      com.example.data.Vocabulary.recognitionLine(result.lexRtCommonMs, result.lexRtRareMs)?.let { line ->
+        Spacer(Modifier.height(12.dp))
+        Text("Tu reconocimiento: $line", color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 17.sp, fontFamily = AppFamily, textAlign = TextAlign.Center)
+        Text(
+          text = "Es lo normal: las palabras raras tardan más en reconocerse que las comunes. Lo que importa es cómo cambia con la práctica.",
+          color = TextSoft,
+          fontSize = 14.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+      }
+
+      val faSeen = result.lexFaSeen
+      val faHits = result.lexFaHits
+      if (faSeen != null && faHits != null && faSeen.sum() > 0) {
+        Spacer(Modifier.height(12.dp))
+        Text("Tu filtro", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
+        Text("Inventadas que tocaste, por tipo", color = TextSoft, fontSize = 14.sp)
+        com.example.data.Vocabulary.FILTER_LABELS.forEachIndexed { i, label ->
+          if (faSeen[i] > 0) FilterRow(label, faHits[i], faSeen[i], Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 3.dp))
+        }
+        com.example.data.Vocabulary.filterAdvice(faSeen, faHits)?.let { advice ->
+          Text(
+            text = advice,
+            color = Clay.Cream,
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp)
+          )
+        }
+      }
+
+      result.lexRareWords?.takeIf { it.isNotEmpty() }?.let { words ->
+        Spacer(Modifier.height(10.dp))
+        Text(
+          text = "Tu colección: +${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
+          color = Clay.Sun,
+          fontWeight = FontWeight.Bold,
+          fontSize = 17.sp,
+          fontFamily = AppFamily
+        )
+        Text(
+          text = words.joinToString(" · "),
+          color = Clay.Cream,
+          fontSize = 15.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        )
+      }
+    }
+
     // Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (cuánto más tarda cuanto más girado).
     if (result.rotationSpeedDps != null || result.rotationCurveMs != null) {
       Spacer(Modifier.height(14.dp))
@@ -786,7 +866,7 @@ fun GameResultScreen(
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
-      result.homingErrorPct, result.mailEventTotal
+      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1265,5 +1345,89 @@ private fun PlanReactBar(proactivePct: Int, modifier: Modifier = Modifier) {
       clipRect(right = w) { drawRoundRect(Clay.Lime, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r) }
     }
     drawRoundRect(Clay.Ink, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r, style = Stroke(2.5.dp.toPx()))
+  }
+}
+
+
+// ---------- Lluvia de meteoros: "tu vocabulario" ----------
+
+/**
+ * Seis columnas de estrellas de arcilla, una por banda de palabras (de la más común, a la izquierda, a la más rara, a la
+ * derecha): cada una tiene cinco estrellas que se encienden de media en media según el % reconocido (descontadas las
+ * inventadas tocadas). Debajo va el número: el valor no depende de la forma ni del color. Una banda con pocas palabras
+ * vistas queda con estrellas apagadas y un guion.
+ */
+@Composable
+private fun VocabularyStars(percents: List<Int>, modifier: Modifier = Modifier) {
+  Column(modifier) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+      percents.forEach { p ->
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          val lit = if (p >= 0) com.example.data.Vocabulary.litStars(p) else 0f
+          Canvas(Modifier.size(width = 30.dp, height = 112.dp)) {
+            val r = 11.dp.toPx()
+            val cx = size.width / 2f
+            for (k in 0 until 5) {
+              val cy = size.height - r - 1.dp.toPx() - k * (2 * r + 1.dp.toPx())
+              val frac = (lit - k).coerceIn(0f, 1f)
+              drawLitStar(Offset(cx, cy), r, frac)
+            }
+          }
+          Text(
+            text = if (p >= 0) "$p%" else "–",
+            color = if (p >= 0) Clay.Cream else TextSoft,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold
+          )
+        }
+      }
+    }
+    Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+      Text("común", color = TextSoft, fontSize = 14.sp)
+      Text("rara", color = TextSoft, fontSize = 14.sp)
+    }
+  }
+}
+
+/** Una estrella de arcilla: apagada (azul noche), o encendida (sol) de izquierda a derecha según [frac] (0,5 = media). */
+private fun DrawScope.drawLitStar(c: Offset, r: Float, frac: Float) {
+  val path = starPath(c.x, c.y, r, r * 0.46f, 5)
+  drawPath(path, Color(0xFF1B2466))
+  if (frac > 0f) {
+    clipRect(left = c.x - r, top = c.y - r, right = c.x - r + 2f * r * frac, bottom = c.y + r) {
+      drawPath(path, Clay.Sun)
+    }
+  }
+  drawPath(path, if (frac > 0f) Color(0xFFFFF0BE) else Color(0xFFBEB8E6), style = Stroke(1.6.dp.toPx(), join = StrokeJoin.Round))
+}
+
+/**
+ * "Tu filtro": una línea por tipo de inventada con cuántas tocaste. Las que engañaron van con una cruz ✗ y las que
+ * dejaste pasar con un punto: se distinguen por la forma, no solo por el color.
+ */
+@Composable
+private fun FilterRow(label: String, tapped: Int, seen: Int, modifier: Modifier = Modifier) {
+  Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+    Text(label, color = Clay.Cream, fontSize = 15.sp, modifier = Modifier.weight(1f))
+    val n = seen.coerceAtMost(10)
+    Canvas(Modifier.size(width = 12.dp * n, height = 16.dp)) {
+      val step = 12.dp.toPx()
+      for (j in 0 until n) {
+        val c = Offset(step * j + step / 2f, size.height / 2f)
+        if (j < tapped) {
+          val d = 3.6.dp.toPx()
+          drawLine(Clay.Coral, c + Offset(-d, -d), c + Offset(d, d), 2.2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+          drawLine(Clay.Coral, c + Offset(d, -d), c + Offset(-d, d), 2.2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        } else drawCircle(Color(0xFFBEB8E6), 2.4.dp.toPx(), c)
+      }
+    }
+    Text(
+      "$tapped de $seen",
+      color = if (tapped * 2 >= seen && seen >= 5) Clay.Coral else Clay.Cream,
+      fontWeight = FontWeight.Bold,
+      fontSize = 15.sp,
+      textAlign = TextAlign.End,
+      modifier = Modifier.width(64.dp)
+    )
   }
 }

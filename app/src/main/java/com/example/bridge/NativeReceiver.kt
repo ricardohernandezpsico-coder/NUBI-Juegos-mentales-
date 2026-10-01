@@ -156,7 +156,16 @@ object NativeReceiver {
     val mail_asteroid_hits: Int = -1,
     val mail_asteroids: Int = -1,
     val mail_hull_intact_pct: Int = -1,
-    val mail_emergencies: Int = -1
+    val mail_emergencies: Int = -1,
+    // Solo Lluvia de meteoros: palabras vistas/tocadas por banda (6), inventadas vistas/tocadas por tipo (3), medianas de
+    // reconocimiento en comunes y raras (ms, -1 = pocas muestras) y palabras raras acertadas (separadas por coma).
+    val lex_band_seen: List<Int>? = null,
+    val lex_band_hits: List<Int>? = null,
+    val lex_fa_seen: List<Int>? = null,
+    val lex_fa_hits: List<Int>? = null,
+    val lex_rt_common_ms: Int = -1,
+    val lex_rt_rare_ms: Int = -1,
+    val lex_rare_words: String = ""
   )
 
   @JsonClass(generateAdapter = true)
@@ -285,7 +294,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo", "meteoros" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
@@ -430,7 +439,15 @@ object NativeReceiver {
       mailAsteroidHits = metrics.mail_asteroid_hits.takeIf { mail && it >= 0 },
       mailAsteroids = metrics.mail_asteroids.takeIf { mail && it >= 0 },
       mailHullIntactPct = metrics.mail_hull_intact_pct.takeIf { mail && it >= 0 },
-      mailEmergencies = metrics.mail_emergencies.takeIf { mail && it >= 0 }
+      mailEmergencies = metrics.mail_emergencies.takeIf { mail && it >= 0 },
+      lexBandSeen = metrics.lex_band_seen?.takeIf { telemetry.game_id == "meteoros" && it.size == 6 },
+      lexBandHits = metrics.lex_band_hits?.takeIf { telemetry.game_id == "meteoros" && it.size == 6 },
+      lexFaSeen = metrics.lex_fa_seen?.takeIf { telemetry.game_id == "meteoros" && it.size == 3 },
+      lexFaHits = metrics.lex_fa_hits?.takeIf { telemetry.game_id == "meteoros" && it.size == 3 },
+      lexRtCommonMs = metrics.lex_rt_common_ms.takeIf { telemetry.game_id == "meteoros" && it > 0 },
+      lexRtRareMs = metrics.lex_rt_rare_ms.takeIf { telemetry.game_id == "meteoros" && it > 0 },
+      lexRareWords = metrics.lex_rare_words.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        .takeIf { telemetry.game_id == "meteoros" && it.isNotEmpty() }
     )
   }
 }

@@ -76,7 +76,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
-  "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion"
+  "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion", "meteoros"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -209,6 +209,17 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
         clay(poly(43.7f, 34.6f, 50.0f, 22.0f, 56.3f, 34.6f), Clay.Sky, border = 3.5f, shadow = false)
         clay(circle(Offset(50f, 47.2f), 5.0f), Clay.Sky, border = 2.5f, shadow = false)
       }
+    }
+    "meteoros" -> {
+      // Un meteoro de arcilla con su placa de palabra, la estela detrás y una estrella que se rescata.
+      drawLine(Clay.Sky.copy(alpha = 0.45f), Offset(14f, 12f), Offset(46f, 44f), 9f, StrokeCap.Round)
+      drawLine(Clay.Sky.copy(alpha = 0.25f), Offset(8f, 26f), Offset(38f, 54f), 6f, StrokeCap.Round)
+      clay(circle(Offset(58f, 58f), 30f), Clay.Grape, gloss = true)
+      clay(circle(Offset(76f, 72f), 5f), Color(0xFF8F7AE6), border = 2.5f, shadow = false)
+      clay(circle(Offset(40f, 76f), 4f), Color(0xFF8F7AE6), border = 2.5f, shadow = false)
+      clay(roundRect(34f, 50f, 48f, 19f, 6f), Cream, border = 3f, shadow = false)
+      drawLine(Ink.copy(alpha = 0.55f), Offset(40f, 59.5f), Offset(76f, 59.5f), 3.2f, StrokeCap.Round)
+      sparkle(Offset(86f, 14f), 11f, Clay.Sun)
     }
     "aterrizaje" -> {
       // Regla sobre la luna con sus extremos, la bandera en el blanco y el módulo lunar bajando con su haz.

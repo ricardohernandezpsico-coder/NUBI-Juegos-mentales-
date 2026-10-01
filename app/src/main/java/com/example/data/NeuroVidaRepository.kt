@@ -156,6 +156,20 @@ class NeuroVidaRepository(
   private val _starMeasures = MutableStateFlow(StarMeasures.decode(measurePrefs.getString("points", null)))
   val starMeasures: StateFlow<List<MeasurePoint>> = _starMeasures.asStateFlow()
 
+  // Colección de palabras raras acertadas en Lluvia de meteoros (en orden de hallazgo). SharedPreferences: solo se agrega.
+  private val wordPrefs = context.getSharedPreferences("word_collection", Context.MODE_PRIVATE)
+  private val _wordCollection = MutableStateFlow(wordPrefs.getString("words", "").orEmpty().split(",").filter { it.isNotBlank() })
+  val wordCollection: StateFlow<List<String>> = _wordCollection.asStateFlow()
+
+  private fun recordWordCollection(result: GamePlayResult) {
+    val found = result.lexRareWords.orEmpty()
+    if (found.isEmpty()) return
+    val all = (_wordCollection.value + found).distinct()
+    if (all.size == _wordCollection.value.size) return
+    _wordCollection.value = all
+    wordPrefs.edit().putString("words", all.joinToString(",")).apply()
+  }
+
   // Avance (ver Skill.kt): juegos ya medidos, Experto abierto y fecha de cada etapa. SharedPreferences: solo se agrega.
   private val skillPrefs = context.getSharedPreferences("skill", Context.MODE_PRIVATE)
   private val _skill = MutableStateFlow(SkillState.decode(skillPrefs.getString("state", null)))
@@ -316,6 +330,7 @@ class NeuroVidaRepository(
       "freno" -> "brake" to r.brakeMs?.toFloat()
       "satelites" -> "tracking" to r.trackingCapacity
       "aterrizaje" -> "numline" to r.numlineErrorPct
+      "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
       "trafico" -> "load" to r.trafficPeakPods?.toFloat()
       "piloto" -> "multitask" to r.multitaskCost?.toFloat()
@@ -708,6 +723,8 @@ class NeuroVidaRepository(
     recordLeagueEvents(outcome, result.gameId, result.timestamp)
     // Las marcas se comparan solo entre partidas a tu medida (docs/dificultad-y-avance.md).
     if (result.playMode == PlayMode.A_TU_MEDIDA) recordStarMeasures(result)
+    // La colección de palabras raras se llena en cualquier modo.
+    recordWordCollection(result)
     outcome
   }
 
@@ -781,6 +798,8 @@ class NeuroVidaRepository(
     _achievementUnlocks.value = emptyMap()
     measurePrefs.edit().clear().apply()
     _starMeasures.value = emptyList()
+    wordPrefs.edit().clear().apply()
+    _wordCollection.value = emptyList()
     skillPrefs.edit().clear().putString("state", "").apply()
     _skill.value = SkillState()
     progressPrefs.edit().clear().apply()
