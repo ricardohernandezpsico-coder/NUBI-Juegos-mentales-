@@ -133,8 +133,9 @@ resolvió el riesgo alto. Lo que agrego:
 - **Imágenes hechas con IA** (si se usan para la tienda): se pueden usar, pero en EE. UU. una imagen hecha solo por IA
   no queda protegida como obra propia (informe de la Oficina de Derechos de Autor de EE. UU., 2025). Para el personaje y
   el ícono, mejor el camino actual (dibujo propio por programa).
-- **Licencias de terceros**: las fuentes (Fredoka, Nunito: licencia OFL) y Unity piden incluir sus avisos. Falta una
-  pantalla "Licencias" en Ajustes (Peak la tiene: "Licencias de código abierto").
+- **Licencias de terceros**: las fuentes (Fredoka, Nunito: licencia OFL) y Unity piden incluir sus avisos. **HECHO el 1-oct**:
+  pantalla Ajustes → "Licencias y créditos" (SPALEX con su cita completa y CC BY 4.0, Fredoka y Nunito con SIL OFL 1.1, y
+  Unity). Si se elige una letra nueva para los meteoros, hay que sumarla ahí.
 - **Tráfico Estelar**: es el juego más cercano a uno emblemático de la competencia (el de trenes de Lumosity). La
   mecánica es libre y el arte, sonidos y medidas son propios; mantener la regla "nada de trenes ni estaciones de tren"
   y no mencionarlo nunca en la tienda.
@@ -218,6 +219,6 @@ resolvió el riesgo alto. Lo que agrego:
 3. Probar en el teléfono los 6 juegos y las pantallas pendientes.
 4. Tutorial de primera vez: plantilla común en Unity, primero en 2 juegos y luego en todos.
 5. Reorganizar áreas (si se elige B) + 2 juegos de Lenguaje.
-6. Ficha científica de los 19 + página "La ciencia de Nubi" + pantalla de licencias.
+6. Ficha científica de los 19 + página "La ciencia de Nubi" + pantalla de licencias (esta última ya hecha el 1-oct).
 7. Antes de publicar: marca (búsqueda + abogado), `applicationId`, público 13+/18+, política de privacidad, 16 KB,
    tamaño, versión de tienda con R8, prueba cerrada de 12 personas por 14 días.

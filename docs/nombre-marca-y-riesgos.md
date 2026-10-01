@@ -262,6 +262,12 @@ animaciones" (el haz queda quieto) y el sonido apagado; texto de estado corto y 
   Evidencia: Truong et al., Scientific Reports 2022 (entrenar detección de cambios mejoró la búsqueda visual). En
   contra: es más memoria que velocidad y se acerca a Parejas.
 
+### Licencias de terceros (1-oct)
+
+- **SPALEX** (palabras de Lluvia de meteoros): CC BY 4.0, uso comercial permitido con atribución (confirmado por el autor,
+  Prof. Duñabeitia, 1-oct; datos oficiales en FigShare). Atribución en Ajustes → "Licencias y créditos".
+- **Fredoka y Nunito**: SIL Open Font License 1.1 (aviso en la misma pantalla). **Unity**: aviso "Hecho con Unity".
+
 ### Piloto Estelar — riesgo bajo; sin retoque, con reglas
 
 - US 9,940,844 (Universidad de California / Akili, el NeuroRacer, ~2032): todos sus reclamos exigen un sensor de

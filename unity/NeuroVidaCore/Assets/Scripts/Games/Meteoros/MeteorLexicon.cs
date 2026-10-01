@@ -16,6 +16,8 @@ namespace NeuroVida.Games.Meteoros
         public int version;
         public string idioma;
         public string fuente;
+        public string licencia;
+        public string cambios;
         public LexWord[] palabras;
         public LexDecoy[] inventadas;
     }

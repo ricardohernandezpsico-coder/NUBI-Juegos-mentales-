@@ -105,9 +105,11 @@ comparaciones con otras personas hasta tener datos propios. Agregar las medidas 
 
 ## 8. Pendiente antes de programar
 
-1. **Licencia de SPALEX**: el artículo es de acceso abierto (CC BY), pero la página de los datos en OSF
-   (osf.io/m8r9s) no declara licencia, así que hay que **pedir permiso** a los autores para uso comercial (borrador
-   de correo en la conversación del 30-sep). Plan B: frecuencias de `wordfreq` (datos CC BY-SA 4.0): el archivo de
-   léxico derivado iría con esa licencia y atribución en la pantalla de licencias.
+1. ~~**Licencia de SPALEX**~~ **RESUELTA el 1-oct.** Respondió el autor, Prof. Jon Andoni Duñabeitia (Universidad Nebrija):
+   los datos completos están en FigShare (https://figshare.com/projects/SPALEX/29722) bajo **CC BY 4.0**, que permite
+   uso comercial respetando la atribución. Se verificó que son los mismos datos que los de OSF (44.853 palabras, mismas
+   columnas y valores); el léxico se genera ahora desde FigShare y el JSON declara `licencia` y `cambios`. La atribución
+   está en la app: **Ajustes → "Licencias y créditos"** (cita completa, licencia y el cambio hecho). Ya no hace falta el
+   plan B (`wordfreq`).
 2. Aprobar la maqueta (`docs/previews/meteoros.png`).
 3. Aprobar la muestra de palabras e inventadas.

@@ -42,7 +42,9 @@ import com.example.viewmodel.NeuroVidaViewModel
 @Composable
 fun SettingsScreen(
   viewModel: NeuroVidaViewModel,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  /** Abre "Licencias y créditos" (la pantalla la muestra el panel que contiene a Ajustes). */
+  onOpenLicenses: () -> Unit = {}
 ) {
   val userSettings by viewModel.userSettings.collectAsState()
   val allProfiles by viewModel.allProfiles.collectAsState()
@@ -868,6 +870,17 @@ fun SettingsScreen(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedButton(
+      onClick = onOpenLicenses,
+      shape = RoundedCornerShape(14.dp),
+      modifier = Modifier
+        .fillMaxWidth()
+        .testTag("btn_licenses")
+    ) {
+      Text("Licencias y créditos")
     }
     Spacer(modifier = Modifier.height(12.dp))
 

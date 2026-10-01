@@ -3,8 +3,11 @@
 Escribe unity/NeuroVidaCore/Assets/Resources/Lexico/meteoros_es.json y docs/lexico-muestra-meteoros.md.
 Determinista (semilla fija). Los datos ajenos se descargan a tools/lexico/fuentes/ (fuera de git) y NO van en la app:
 
-  fuentes/spalex.xlsx              SPALEX, prevalencia de cada palabra (Aguasvivas et al., 2018). Licencia: pendiente de
-                                   permiso de los autores para uso comercial (se avanza como si lo dieran).
+  fuentes/word_info.csv            SPALEX, prevalencia de cada palabra (Aguasvivas et al., 2018). Fuente OFICIAL: proyecto de
+                                   FigShare https://figshare.com/projects/SPALEX/29722 ("Word information"), licencia
+                                   CC BY 4.0 (uso comercial permitido con atribución; confirmado por el autor, Prof. Jon
+                                   Andoni Duñabeitia, 1-oct-2026). fuentes/spalex.xlsx es el espejo de OSF (osf.io/m8r9s):
+                                   son los mismos datos (se comprobó: 44.853 palabras, mismas columnas y valores).
   fuentes/es_ES.dic / es_ES.aff    Hunspell de LibreOffice (solo para FILTRAR al generar: "¿esto es palabra?").
 
 Uso:  python tools/lexico/meteoros.py            (necesita: pip install spylls openpyxl)
@@ -215,6 +218,24 @@ def ends_like_spanish(w):
 
 
 def load_spalex():
+    csv_path = os.path.join(SRC, "word_info.csv")
+    if os.path.exists(csv_path):
+        import csv
+        out = {}
+        with open(csv_path, encoding="utf8", errors="replace", newline="") as f:
+            for r in csv.DictReader(f):
+                w = (r.get("spelling") or "").strip().lower()
+                try:
+                    es, la = float(r["percent_nts"]), float(r["percent_ntl"])
+                except (TypeError, ValueError, KeyError):
+                    continue
+                try:
+                    zipf = float(r["zipf"])
+                except (TypeError, ValueError, KeyError):
+                    zipf = 0.0
+                if w:
+                    out[w] = (min(es, la), zipf)
+        return out
     import openpyxl
     wb = openpyxl.load_workbook(os.path.join(SRC, "spalex.xlsx"), read_only=True, data_only=True)
     ws = wb["Spalex"]
@@ -281,7 +302,7 @@ def band_of(p):
 
 def main():
     rnd = random.Random(SEED)
-    for need in ("spalex.xlsx", "es_ES.dic", "es_ES.aff"):
+    for need in ("es_ES.dic", "es_ES.aff"):
         if not os.path.exists(os.path.join(SRC, need)):
             sys.exit(f"Falta tools/lexico/fuentes/{need}: ver el encabezado de este archivo.")
     from spylls.hunspell import Dictionary
@@ -428,7 +449,9 @@ def main():
     data = {
         "version": 1,
         "idioma": "es",
-        "fuente": "SPALEX (Aguasvivas et al., 2018)",
+        "fuente": "SPALEX (Aguasvivas et al., 2018), https://figshare.com/projects/SPALEX/29722",
+        "licencia": "CC BY 4.0",
+        "cambios": "bandas 1-6 derivadas de la prevalencia (mínimo España/Latinoamérica) y filtradas",
         "palabras": [{"p": w, "b": b} for w, b in words],
         "inventadas": inv,
     }

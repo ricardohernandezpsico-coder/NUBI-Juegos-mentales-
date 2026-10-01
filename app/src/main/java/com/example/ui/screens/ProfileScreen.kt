@@ -84,10 +84,16 @@ fun PanelHeader(title: String, onBack: () -> Unit) {
 /** Las opciones (engranaje de arriba a la derecha), con su flecha de regreso. */
 @Composable
 fun SettingsPanel(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: Modifier = Modifier) {
+  var showLicenses by remember { mutableStateOf(false) }
+  if (showLicenses) {
+    // "Licencias y créditos" (1-oct): su propia cabecera; Atrás vuelve a Opciones.
+    LicensesScreen(onClose = { showLicenses = false }, modifier = modifier)
+    return
+  }
   BackHandler(onBack = onClose)
   Column(modifier = modifier.fillMaxSize()) {
     PanelHeader("Opciones", onClose)
-    SettingsScreen(viewModel = viewModel, modifier = Modifier.weight(1f))
+    SettingsScreen(viewModel = viewModel, modifier = Modifier.weight(1f), onOpenLicenses = { showLicenses = true })
   }
 }
 
