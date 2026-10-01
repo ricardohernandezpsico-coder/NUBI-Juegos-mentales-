@@ -192,8 +192,50 @@ def raices(p):
     return {w[:3] for w in re.split(r"[ ~=/]", p) if len(w) >= 4 and w not in PALABRAS_VACIAS}
 
 
+def familia(p):
+    """La construcción de una propiedad: 'tienen alas' -> 'tienen'; 'sirven para leer' -> 'sirven'; '~frío' -> 'ser'; 'nadan' -> 'nadan'."""
+    if p.startswith("~") or p.startswith("=") or p.startswith("son "):
+        return "ser"
+    w = p.split(" ")
+    return w[1] if w[0] == "se" and len(w) > 1 else w[0]
+
+
+# Propiedades que dicen casi lo mismo: no van juntas en una frase con pausa ("Las lámparas, que dan luz, alumbran")
+EQUIVALENTES = [
+    {"nadan", "viven en el agua", "viven en el mar", "flotan en el agua", "navegan bajo el agua", "flotan"},
+    {"dan luz", "alumbran", "brillan"},
+    {"queman", "~caliente", "dan calor", "calientan", "arden", "enfrían", "~frío"},
+    {"vuelan", "planean", "revolotean"},
+    {"se beben", "~líquido", "mojan"},
+    {"ruedan", "rebotan"},
+    {"tienen ruedas", "viajan"},
+    {"limpian", "sirven para lavar", "secan", "sirven para secarse", "mojan"},
+    {"reptan", "se arrastran", "silban"},
+    {"despegan", "vuelan", "navegan"},
+    {"giran", "mueven el aire", "soplan", "mueven las hojas"},
+    {"se abren", "se cierran"},
+    {"trepan", "saltan"},
+    {"cantan", "graznan", "cacarean", "arrullan", "ululan", "chirrían", "maúllan", "ladran", "relinchan", "mugen", "balan", "gruñen", "croan", "rugen", "barritan", "silban", "zumban", "aúllan", "suenan"},
+    {"cazan", "pican", "roen", "pastan", "picotean", "olfatean"},
+]
+
+
+# La explicativa (entre comas) DESCRIBE: qué tiene, dónde vive, cómo es, de qué está hecho, qué da o cubre. Los sonidos y las
+# acciones sueltas ("ladran", "cazan") quedan para el predicado final, así las dos mitades de la frase son de familias distintas.
+FAMILIAS_DESCRIPTIVAS = {"tienen", "ser", "viven", "están", "ponen", "hacen", "crecen", "llevan", "cubren", "dan", "protegen", "hace"}
+
+
+def descriptiva(p):
+    return familia(p) in FAMILIAS_DESCRIPTIVAS
+
+
+def redundantes(a, b):
+    return any(a in g and b in g for g in EQUIVALENTES)
+
+
 def distintas(a, b):
-    return not (raices(a) & raices(b))
+    """La explicativa y el predicado final no repiten verbo, construcción ('sirven para', 'tienen'…) ni ninguna palabra de contenido."""
+    return familia(a) != familia(b) and not (raices(a) & raices(b)) and not redundantes(a, b)
 
 
 def tipo4(ents):
@@ -202,7 +244,7 @@ def tipo4(ents):
     V, D = [], []
     for e in ents:
         propios = [p for p in e.si if p not in e.defecto]
-        for a in propios:
+        for a in [p for p in propios if descriptiva(p)]:
             rel = f"{cap(e.sujeto)}, que {e.pred(a)},"
             for b in propios:
                 if b != a and distintas(a, b):
@@ -424,7 +466,14 @@ def seleccion(cand=None):
         if t == 6:
             frases = escoger_cuotas(V, n, rng, CUOTAS_T6) + escoger_cuotas(D, n, rng, CUOTAS_T6)
         else:
-            frases = escoger(V, n, rng) + escoger(D, n, rng)
+            # al menos 25% de los disparates sutiles (si hay): son los que hacen pensar
+            sut = [(k, f) for k, f in D if f["c"] == "sutil"]
+            ev = [(k, f) for k, f in D if f["c"] != "sutil"]
+            q = min(len(sut), n // 4)
+            elegidos = escoger(sut, q, rng)
+            ya = {f["f"] for f in elegidos}
+            elegidos += escoger([(k, f) for k, f in D if f["f"] not in ya], n - q, rng)
+            frases = escoger(V, n, rng) + elegidos
         rng.shuffle(frases)
         sel[t] = frases
     return sel

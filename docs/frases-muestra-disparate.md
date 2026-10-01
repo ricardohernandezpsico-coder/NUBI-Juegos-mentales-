@@ -11,110 +11,110 @@ Tipos: 1 corta · 2 con complemento o adjetivo · 3 negación · 4 frase con pau
 
 | # | Frase | Respuesta | Clase | Corrección |
 |---|---|---|---|---|
-| 1 | Los perros ladran | ✔ verdad | — | — |
-| 2 | Las alfombras comen | ✘ disparate | evidente | Las alfombras no comen |
-| 3 | Los elefantes barritan | ✔ verdad | — | — |
-| 4 | Las libélulas vuelan | ✔ verdad | — | — |
-| 5 | Las mariposas ladran | ✘ disparate | evidente | Las mariposas no ladran |
-| 6 | Las mariposas vuelan | ✔ verdad | — | — |
-| 7 | Los barcos navegan | ✔ verdad | — | — |
-| 8 | Las libélulas ladran | ✘ disparate | evidente | Las libélulas no ladran |
-| 9 | Las gaviotas vuelan | ✔ verdad | — | — |
-| 10 | Las toallas piensan | ✘ disparate | evidente | Las toallas no piensan |
-| 11 | Los canarios ladran | ✘ disparate | evidente | Los canarios no ladran |
-| 12 | Las avestruces ladran | ✘ disparate | evidente | Las avestruces no ladran |
-| 13 | Las lámparas duermen | ✘ disparate | evidente | Las lámparas no duermen |
-| 14 | Las avispas vuelan | ✔ verdad | — | — |
-| 15 | Las campanas suenan | ✔ verdad | — | — |
-| 16 | Las águilas planean | ✔ verdad | — | — |
-| 17 | Las ranas vuelan | ✘ disparate | evidente | Las ranas no vuelan |
+| 1 | Las flautas suenan | ✔ verdad | — | — |
+| 2 | Los elefantes ladran | ✘ disparate | evidente | Los elefantes no ladran |
+| 3 | Los canarios vuelan | ✔ verdad | — | — |
+| 4 | Los pinceles pintan | ✔ verdad | — | — |
+| 5 | Los ventiladores comen | ✘ disparate | evidente | Los ventiladores no comen |
+| 6 | Los canguros saltan | ✔ verdad | — | — |
+| 7 | Las gallinas cacarean | ✔ verdad | — | — |
+| 8 | Los leopardos ladran | ✘ disparate | evidente | Los leopardos no ladran |
+| 9 | Los chimpancés saltan | ✔ verdad | — | — |
+| 10 | Las mesas lloran | ✘ disparate | evidente | Las mesas no lloran |
+| 11 | Las gaviotas ladran | ✘ disparate | evidente | Las gaviotas no ladran |
+| 12 | Los clavos hablan | ✘ disparate | evidente | Los clavos no hablan |
+| 13 | Las zanahorias duermen | ✘ disparate | evidente | Las zanahorias no duermen |
+| 14 | Los lobos aúllan | ✔ verdad | — | — |
+| 15 | Los canarios cantan | ✔ verdad | — | — |
+| 16 | Los helicópteros vuelan | ✔ verdad | — | — |
+| 17 | Los leones vuelan | ✘ disparate | evidente | Los leones no vuelan |
 
 ## Tipo 2 · con complemento
 
 | # | Frase | Respuesta | Clase | Corrección |
 |---|---|---|---|---|
-| 18 | Las avestruces tienen pico | ✔ verdad | — | — |
-| 19 | Las truchas viven en el agua | ✔ verdad | — | — |
-| 20 | Los loros tienen alas | ✔ verdad | — | — |
-| 21 | La nieve es blanca | ✔ verdad | — | — |
-| 22 | Los pingüinos tienen plumas | ✔ verdad | — | — |
-| 23 | Las escobas tienen sueño | ✘ disparate | evidente | Las escobas no tienen sueño |
-| 24 | Los leopardos pilotan aviones | ✘ disparate | evidente | Los leopardos no pilotan aviones |
-| 25 | Los paraguas sirven para escribir | ✘ disparate | evidente | Los paraguas no sirven para escribir |
-| 26 | Las cebras tienen cuatro patas | ✔ verdad | — | — |
-| 27 | Los pinceles tienen hambre | ✘ disparate | evidente | Los pinceles no tienen hambre |
-| 28 | Los canarios cocinan la cena | ✘ disparate | evidente | Los canarios no cocinan la cena |
-| 29 | La nariz sirve para oír | ✘ disparate | sutil | La nariz no sirve para oír |
-| 30 | Las escobas tienen hambre | ✘ disparate | evidente | Las escobas no tienen hambre |
-| 31 | Las arañas tienen ocho patas | ✔ verdad | — | — |
-| 32 | Las mariposas leen libros | ✘ disparate | evidente | Las mariposas no leen libros |
-| 33 | La miel es dulce | ✔ verdad | — | — |
-| 34 | Los peces tienen aletas | ✔ verdad | — | — |
+| 18 | La sal es salada | ✔ verdad | — | — |
+| 19 | Los ladrillos sirven para construir | ✔ verdad | — | — |
+| 20 | Los pulpos viven en el mar | ✔ verdad | — | — |
+| 21 | Las nubes flotan en el cielo | ✔ verdad | — | — |
+| 22 | Las cigüeñas tienen plumas | ✔ verdad | — | — |
+| 23 | Los cisnes trabajan en una oficina | ✘ disparate | evidente | Los cisnes no trabajan en una oficina |
+| 24 | Los aviones tienen hambre | ✘ disparate | evidente | Los aviones no tienen hambre |
+| 25 | La nariz sirve para ver | ✘ disparate | sutil | La nariz no sirve para ver |
+| 26 | Las vacas comen hierba | ✔ verdad | — | — |
+| 27 | Los murciélagos ponen huevos | ✘ disparate | sutil | Los murciélagos no ponen huevos |
+| 28 | Las palomas escriben cartas | ✘ disparate | evidente | Las palomas no escriben cartas |
+| 29 | La sopa tiene sueño | ✘ disparate | evidente | La sopa no tiene sueño |
+| 30 | Las orejas sirven para ver | ✘ disparate | sutil | Las orejas no sirven para ver |
+| 31 | La sopa se toma con cuchara | ✔ verdad | — | — |
+| 32 | Las sierras tienen hambre | ✘ disparate | evidente | Las sierras no tienen hambre |
+| 33 | Las anguilas viven en el agua | ✔ verdad | — | — |
+| 34 | El jugo se bebe | ✔ verdad | — | — |
 
 ## Tipo 3 · negación
 
 | # | Frase | Respuesta | Clase | Corrección |
 |---|---|---|---|---|
-| 35 | Los cocodrilos no ladran | ✔ verdad | — | — |
-| 36 | Los aviones no vuelan | ✘ disparate | sutil | Los aviones sí vuelan |
-| 37 | Los canarios no dan leche | ✔ verdad | — | — |
-| 38 | Las esponjas no lloran | ✔ verdad | — | — |
-| 39 | Las aspiradoras no aspiran | ✘ disparate | sutil | Las aspiradoras sí aspiran |
-| 40 | Las galletas no hablan | ✔ verdad | — | — |
-| 41 | Los gansos no comen | ✘ disparate | evidente | Los gansos sí comen |
-| 42 | Los escarabajos no cocinan la cena | ✔ verdad | — | — |
-| 43 | Los platos no sirven para dormir | ✔ verdad | — | — |
-| 44 | La luna no gira alrededor de la tierra | ✘ disparate | sutil | La luna sí gira alrededor de la tierra |
-| 45 | La lluvia no es seca | ✔ verdad | — | — |
-| 46 | Las flautas no suenan | ✘ disparate | sutil | Las flautas sí suenan |
-| 47 | Las camas no sirven para dormir | ✘ disparate | sutil | Las camas sí sirven para dormir |
-| 48 | Las arañas no cocinan la cena | ✔ verdad | — | — |
-| 49 | Las mariposas no respiran | ✘ disparate | evidente | Las mariposas sí respiran |
-| 50 | Los grillos no dan leche | ✔ verdad | — | — |
-| 51 | Los sombreros no se ponen en la cabeza | ✘ disparate | sutil | Los sombreros sí se ponen en la cabeza |
+| 35 | Los helicópteros no duermen | ✔ verdad | — | — |
+| 36 | Las ovejas no respiran | ✘ disparate | evidente | Las ovejas sí respiran |
+| 37 | Las serpientes no pagan cuentas | ✔ verdad | — | — |
+| 38 | Las cuerdas no tienen sueño | ✔ verdad | — | — |
+| 39 | Las bombillas no alumbran | ✘ disparate | sutil | Las bombillas sí alumbran |
+| 40 | Las tijeras no escriben | ✔ verdad | — | — |
+| 41 | Los delfines no tienen aletas | ✘ disparate | sutil | Los delfines sí tienen aletas |
+| 42 | Los vasos no ríen | ✔ verdad | — | — |
+| 43 | Los gallos no leen libros | ✔ verdad | — | — |
+| 44 | Los grillos no crecen | ✘ disparate | evidente | Los grillos sí crecen |
+| 45 | Los grillos no pilotan aviones | ✔ verdad | — | — |
+| 46 | Las mariposas no revolotean | ✘ disparate | sutil | Las mariposas sí revolotean |
+| 47 | Los zorros no tienen cola | ✘ disparate | sutil | Los zorros sí tienen cola |
+| 48 | La sal no es dulce | ✔ verdad | — | — |
+| 49 | Los pianos no suenan | ✘ disparate | sutil | Los pianos sí suenan |
+| 50 | Los barcos no tienen hambre | ✔ verdad | — | — |
+| 51 | Los ladrillos no sirven para construir | ✘ disparate | sutil | Los ladrillos sí sirven para construir |
 
 ## Tipo 4 · frase con pausa (, que …,)
 
 | # | Frase | Respuesta | Clase | Corrección |
 |---|---|---|---|---|
-| 52 | Los pies, que sirven para caminar, sirven para ver | ✘ disparate | evidente | Los pies, que sirven para caminar, no sirven para ver |
-| 53 | Los libros, que sirven para leer, comen | ✘ disparate | evidente | Los libros, que sirven para leer, no comen |
-| 54 | Los limones, que crecen en los árboles, son ácidos | ✔ verdad | — | — |
-| 55 | Las sardinas, que nadan, tienen plumas | ✘ disparate | evidente | Las sardinas, que nadan, no tienen plumas |
-| 56 | Los barcos, que navegan, lloran | ✘ disparate | evidente | Los barcos, que navegan, no lloran |
-| 57 | Los cocodrilos, que ponen huevos, tienen dientes | ✔ verdad | — | — |
-| 58 | Los mosquitos, que tienen alas, vuelan | ✔ verdad | — | — |
-| 59 | Los huevos, que tienen cáscara, se rompen | ✔ verdad | — | — |
-| 60 | Las ovejas, que pastan, tienen lana | ✔ verdad | — | — |
-| 61 | Los cuervos, que tienen pico, graznan | ✔ verdad | — | — |
-| 62 | Los elefantes, que son grandes, barritan | ✔ verdad | — | — |
-| 63 | Los ratones, que roen, pilotan aviones | ✘ disparate | evidente | Los ratones, que roen, no pilotan aviones |
-| 64 | Las serpientes, que silban, firman documentos | ✘ disparate | evidente | Las serpientes, que silban, no firman documentos |
-| 65 | Los koalas, que tienen cuatro patas, trepan | ✔ verdad | — | — |
-| 66 | Los martillos, que sirven para clavar, golpean | ✔ verdad | — | — |
-| 67 | El queso, que se hace con leche, tiene hambre | ✘ disparate | evidente | El queso, que se hace con leche, no tiene hambre |
-| 68 | Los camellos, que tienen jorobas, escriben cartas | ✘ disparate | evidente | Los camellos, que tienen jorobas, no escriben cartas |
+| 52 | Las cigüeñas, que tienen plumas, cocinan la cena | ✘ disparate | evidente | Las cigüeñas, que tienen plumas, no cocinan la cena |
+| 53 | Los gansos, que tienen plumas, ladran | ✘ disparate | evidente | Los gansos, que tienen plumas, no ladran |
+| 54 | Las águilas, que tienen alas, cazan | ✔ verdad | — | — |
+| 55 | Los trenes, que tienen vagones, ríen | ✘ disparate | evidente | Los trenes, que tienen vagones, no ríen |
+| 56 | Los paraguas, que protegen de la lluvia, lloran | ✘ disparate | evidente | Los paraguas, que protegen de la lluvia, no lloran |
+| 57 | Los chimpancés, que tienen manos, trepan | ✔ verdad | — | — |
+| 58 | Las ballenas, que son enormes, viven en el agua | ✔ verdad | — | — |
+| 59 | Los caballos, que tienen cola, galopan | ✔ verdad | — | — |
+| 60 | Los leones, que tienen garras, rugen | ✔ verdad | — | — |
+| 61 | Los gansos, que tienen plumas, graznan | ✔ verdad | — | — |
+| 62 | Los leones, que tienen garras, cazan | ✔ verdad | — | — |
+| 63 | Las ovejas, que tienen lana, pagan cuentas | ✘ disparate | evidente | Las ovejas, que tienen lana, no pagan cuentas |
+| 64 | Las uvas, que crecen en racimos, sueñan | ✘ disparate | evidente | Las uvas, que crecen en racimos, no sueñan |
+| 65 | Los peces, que viven en el agua, tienen aletas | ✔ verdad | — | — |
+| 66 | Los limones, que crecen en los árboles, son ácidos | ✔ verdad | — | — |
+| 67 | Las vacas, que tienen cuatro patas, vuelan | ✘ disparate | evidente | Las vacas, que tienen cuatro patas, no vuelan |
+| 68 | Los leopardos, que tienen cuatro patas, vuelan | ✘ disparate | evidente | Los leopardos, que tienen cuatro patas, no vuelan |
 
 ## Tipo 5 · todos / algunos / ningún
 
 | # | Frase | Respuesta | Clase | Corrección |
 |---|---|---|---|---|
-| 69 | Todos los triángulos tienen cinco lados | ✘ disparate | evidente | Ningún triángulo tiene cinco lados |
-| 70 | Todos los triángulos tienen cuatro lados | ✘ disparate | evidente | Ningún triángulo tiene cuatro lados |
-| 71 | Ningún planeta tiene anillos | ✘ disparate | sutil | Solo algunos planetas tienen anillos |
-| 72 | Ningún insecto tiene ocho patas | ✔ verdad | — | — |
-| 73 | Todas las herramientas tienen mango | ✘ disparate | sutil | Solo algunas herramientas tienen mango |
-| 74 | Ningún cuadrado tiene cuatro esquinas | ✘ disparate | evidente | Todos los cuadrados tienen cuatro esquinas |
-| 75 | Todos los muebles respiran | ✘ disparate | evidente | Ningún mueble respira |
-| 76 | Algunas personas saben nadar | ✔ verdad | — | — |
-| 77 | Algunas verduras son anaranjadas | ✔ verdad | — | — |
-| 78 | Algunas personas tienen mascotas | ✔ verdad | — | — |
-| 79 | Algunos mamíferos vuelan | ✔ verdad | — | — |
-| 80 | Ningún árbol tiene ruedas | ✔ verdad | — | — |
-| 81 | Ningún vehículo tiene alas | ✘ disparate | sutil | Solo algunos vehículos tienen alas |
-| 82 | Algunos pájaros dan leche | ✘ disparate | evidente | Ningún pájaro da leche |
-| 83 | Ninguna verdura es de metal | ✔ verdad | — | — |
-| 84 | Ningún pájaro tiene cuatro patas | ✔ verdad | — | — |
+| 69 | Todos los reptiles tienen pelo | ✘ disparate | evidente | Ningún reptil tiene pelo |
+| 70 | Todos los círculos tienen lados rectos | ✘ disparate | evidente | Ningún círculo tiene lados rectos |
+| 71 | Todos los árboles ladran | ✘ disparate | evidente | Ningún árbol ladra |
+| 72 | Algunos peces son rojos | ✔ verdad | — | — |
+| 73 | Todos los reptiles tienen caparazón | ✘ disparate | sutil | Solo algunos reptiles tienen caparazón |
+| 74 | Algunos reptiles tienen pelo | ✘ disparate | evidente | Ningún reptil tiene pelo |
+| 75 | Todas las flores son blancas | ✘ disparate | sutil | Solo algunas flores son blancas |
+| 76 | Algunos muebles sirven para sentarse | ✔ verdad | — | — |
+| 77 | Algunos animales tienen cola | ✔ verdad | — | — |
+| 78 | Ninguna persona tiene cola | ✔ verdad | — | — |
+| 79 | Ningún reptil da leche | ✔ verdad | — | — |
+| 80 | Algunas verduras son verdes | ✔ verdad | — | — |
+| 81 | Algunos peces tienen pelo | ✘ disparate | evidente | Ningún pez tiene pelo |
+| 82 | Ningún pájaro es azul | ✘ disparate | sutil | Solo algunos pájaros son azules |
+| 83 | Ningún vehículo ladra | ✔ verdad | — | — |
+| 84 | Algunos instrumentos musicales tienen cuerdas | ✔ verdad | — | — |
 
 ## Tipo 6 · comparación y orden
 

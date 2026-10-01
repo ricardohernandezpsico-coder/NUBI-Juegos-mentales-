@@ -79,7 +79,7 @@ class CasosConocidos(unittest.TestCase):
     def test_tipo4_frase_con_pausa(self):
         self.assertIn("Los peces, que viven en el agua, tienen aletas", todas(4, True))
         self.assertIn("Los peces, que viven en el agua, tienen plumas", todas(4, False))
-        self.assertIn("El hielo, que flota en el agua, es frío", todas(4, True))
+        self.assertIn("El hielo, que es frío, flota en el agua", todas(4, True))
         self.assertEqual(todas(4, False)["Los peces, que viven en el agua, tienen plumas"]["r"], "Los peces, que viven en el agua, no tienen plumas")
 
     def test_tipo1_sin_verbos_genericos_como_verdad(self):
@@ -193,6 +193,22 @@ class Explicativas(unittest.TestCase):
             self.assertNotIn(m[2], [e.pred(p) for p, _ in e.no], f["f"])
             n += 1
         self.assertGreater(n, 1000)
+
+    def test_la_explicativa_y_el_predicado_no_repiten_nada(self):
+        """Nada de "Los pies, que sirven para caminar, sirven para ver": ni verbo, ni construcción, ni palabra de contenido repetida."""
+        vacias = {"tienen", "tiene", "sirven", "sirve", "para", "viven", "vive", "hacen", "hace", "están", "está", "son", "como", "sobre", "bajo", "las", "los", "con", "del"}
+        for _, f in CAND[4][0] + CAND[4][1]:
+            m = re.match(r"^(.+?), que (.+?), (.+)$", f["f"])
+            a, b = m[2], m[3]
+            self.assertFalse(re.search(r"sirven? para", a) and re.search(r"sirven? para", b), f["f"])
+            self.assertNotEqual(a.split(" ")[0], b.split(" ")[0], f["f"])         # mismo verbo
+            ra = {w[:3] for w in a.split(" ") if len(w) >= 4 and w not in vacias}
+            rb = {w[:3] for w in b.split(" ") if len(w) >= 4 and w not in vacias}
+            self.assertFalse(ra & rb, f["f"])
+        # equivalentes que suenan a lo mismo
+        for malo in ("Las lámparas, que dan luz, alumbran", "Los jabones, que limpian, sirven para lavar", "Los barcos, que flotan, navegan",
+                     "Las serpientes, que reptan, se arrastran", "Los libros, que sirven para leer, tienen páginas"):
+            self.assertNotIn(malo, todas(4, True))
 
     def test_solo_el_predicado_final_decide(self):
         ents = {e.sujeto: e for e in D.cargar()}
