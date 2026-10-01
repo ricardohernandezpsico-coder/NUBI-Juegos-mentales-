@@ -119,55 +119,188 @@ def draw_tiles(img, items, used, hint, back):
         moon_tile(img, x, y, size, ch, TILES[i % len(TILES)], st, order)
 
 
-def planet(img, cx, cy, r, plants=(), tree=False, full=False):
-    """Planeta-huerto: esfera de arcilla con tierra y pasto arriba, y las plantas que brotan de las palabras sembradas."""
-    glow(img, cx, cy, r * 1.7, LEAF, 60, 0.5)
-    d = ImageDraw.Draw(img)
-    d.ellipse([(cx - r) * S, (cy - r + 5) * S, (cx + r) * S, (cy + r + 5) * S], fill=INK)
-    d.ellipse([(cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S], fill=SOIL, outline=INK, width=int(4 * S))
-    # pasto (casquete verde arriba, recortado por la esfera)
-    layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    ld = ImageDraw.Draw(layer)
-    ld.ellipse([(cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S], fill=LEAF + (255,))
-    ld.ellipse([(cx - r * 1.6) * S, (cy - r * 0.62) * S, (cx + r * 1.6) * S, (cy + r * 1.9) * S], fill=(0, 0, 0, 0))
-    mask = Image.new("L", img.size, 0)
-    ImageDraw.Draw(mask).ellipse([(cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S], fill=255)
-    layer.putalpha(Image.composite(layer.getchannel("A"), Image.new("L", img.size, 0), mask))
-    img.alpha_composite(layer)
-    ov(img, lambda dd: dd.ellipse([(cx - r + 7) * S, (cy - r + 7) * S, (cx + r - 7) * S, (cy + r - 7) * S], outline=(255, 255, 255, 70), width=int(4 * S)), blur=1.5)
-    d = ImageDraw.Draw(img)
-    d.ellipse([(cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S], outline=INK, width=int(4 * S))
-    for (px, ph, kind) in plants:
-        plant(img, cx + px, cy - math.sqrt(max(r * r - px * px, 1)) + 6, ph, kind)
-    if tree:
-        golden_tree(img, cx, cy - r + 8)
+EARTH = (158, 102, 66)        # tierra de arcilla, marrón cálido
+EARTH_D = (122, 76, 52)       # vetas
+EARTH_L = (190, 134, 90)      # relieve claro
+EARTH_SHADE = (70, 40, 44)    # lado en sombra
+GRASS = (112, 200, 84)
+SHROOM = (236, 96, 88)
+SUNFLOWER = (255, 196, 54)
+BUSH = (86, 176, 96)
 
 
-def plant(img, x, y, h, kind):
-    """Planta de arcilla. kind: brote / hoja / flor / tulipan."""
-    d = ImageDraw.Draw(img)
-    d.line([(x * S, (y + 3) * S), (x * S, (y - h + 3) * S)], fill=INK, width=int(8 * S))
-    d.line([(x * S, y * S), (x * S, (y - h) * S)], fill=LEAF_D, width=int(4.5 * S))
-    top = y - h
-    for sgn in (-1, 1):
-        lx = x + sgn * 11
-        ly = y - h * 0.5
-        d.ellipse([(lx - 11) * S, (ly - 6 + 3) * S, (lx + 11) * S, (ly + 6 + 3) * S], fill=INK)
-        d.ellipse([(lx - 11) * S, (ly - 6) * S, (lx + 11) * S, (ly + 6) * S], fill=LEAF, outline=INK, width=int(2.2 * S))
+def _earth_texture(r, seed=4):
+    """Textura de la tierra (vetas, manchas de relieve y cráteres) en una capa del tamaño del planeta."""
+    import random
+    rnd = random.Random(seed)
+    n = int(2 * r * S) + 8
+    layer = Image.new("RGBA", (n, n), EARTH + (255,))
+    d = ImageDraw.Draw(layer)
+    c = n / 2
+    for k in range(7):                                     # vetas onduladas
+        y = (0.12 + k * 0.125) * n
+        pts = []
+        for i in range(0, 41):
+            x = i / 40 * n
+            pts.append((x, y + math.sin(i / 40 * 6.28 * (1.2 + rnd.random() * 0.8) + k) * n * 0.03))
+        d.line(pts, fill=EARTH_D + (255,), width=int((5 + rnd.random() * 4) * S))
+    for k in range(9):                                     # manchas claras de relieve
+        x, y, rr = rnd.random() * n, rnd.random() * n, (8 + rnd.random() * 16) * S
+        d.ellipse([x - rr, y - rr * 0.6, x + rr, y + rr * 0.6], fill=EARTH_L + (255,))
+    for k in range(6):                                     # cráteres: borde claro arriba, sombra abajo
+        x, y, rr = (0.15 + rnd.random() * 0.7) * n, (0.25 + rnd.random() * 0.65) * n, (6 + rnd.random() * 8) * S
+        d.ellipse([x - rr, y - rr * 0.55 + 2 * S, x + rr, y + rr * 0.55 + 2 * S], fill=EARTH_L + (255,))
+        d.ellipse([x - rr, y - rr * 0.55, x + rr, y + rr * 0.55], fill=EARTH_D + (255,))
+    return layer
+
+
+def _plant_sprite(kind, h, golden=False):
+    """Planta de arcilla en su propia capa, con la base abajo al centro. kind: brote / flor / tulipan / arbusto / girasol / hongo."""
+    w = 110
+    sh = int(h) + 70
+    layer = Image.new("RGBA", (w * S, sh * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    bx, by = w / 2, sh - 4
+    top = by - h
+
+    def ell(x0, y0, x1, y1, fill, ow=2.2):
+        d.ellipse([x0 * S, (y0 + 2.5) * S, x1 * S, (y1 + 2.5) * S], fill=INK)
+        d.ellipse([x0 * S, y0 * S, x1 * S, y1 * S], fill=fill, outline=INK, width=int(ow * S))
+
+    def stem():
+        d.line([(bx * S, by * S), (bx * S, top * S)], fill=INK, width=int(8 * S))
+        d.line([(bx * S, by * S), (bx * S, top * S)], fill=LEAF_D, width=int(4.4 * S))
+
+    if kind == "arbusto":
+        r = 8 + h * 0.34
+        for dx, dy, rr in ((-r * 0.8, 0, r * 0.8), (r * 0.8, 0, r * 0.8), (0, -r * 0.55, r * 0.95)):
+            ell(bx + dx - rr, by - rr * 0.9 + dy, bx + dx + rr, by + rr * 0.9 + dy, BUSH)
+        for dx, dy in ((-r * 0.45, -r * 0.5), (r * 0.5, -r * 0.2), (0, -r * 0.95)):
+            d.ellipse([(bx + dx - 2.6) * S, (by + dy - 2.6) * S, (bx + dx + 2.6) * S, (by + dy + 2.6) * S], fill=GOLD if golden else CORAL, outline=INK, width=int(1.4 * S))
+        return layer
+    if kind == "hongo":
+        d.rounded_rectangle([(bx - 5) * S, (by - h * 0.55) * S, (bx + 5) * S, by * S], 4 * S, fill=PLACA, outline=INK, width=int(2.2 * S))
+        rw = 11 + h * 0.34
+        ell(bx - rw, by - h * 0.55 - rw * 0.75, bx + rw, by - h * 0.55 + rw * 0.35, SHROOM)
+        for dx, dy in ((-rw * 0.45, -rw * 0.3), (rw * 0.2, -rw * 0.5), (rw * 0.55, -rw * 0.12)):
+            d.ellipse([(bx + dx - 2.6) * S, (by - h * 0.55 + dy - 2.6) * S, (bx + dx + 2.6) * S, (by - h * 0.55 + dy + 2.6) * S], fill=PLACA)
+        return layer
+    stem()
+    for sgn in (-1, 1):                                    # dos hojas
+        lx, ly = bx + sgn * 10, by - h * 0.42
+        ell(lx - 10, ly - 5.5, lx + 10, ly + 5.5, GRASS)
     if kind == "brote":
         for sgn in (-1, 1):
-            d.ellipse([(x + sgn * 8 - 9) * S, (top - 7) * S, (x + sgn * 8 + 9) * S, (top + 6) * S], fill=LEAF, outline=INK, width=int(2.2 * S))
+            ell(bx + sgn * 8 - 8, top - 6, bx + sgn * 8 + 8, top + 6, GRASS)
     elif kind == "flor":
+        col = GOLD if golden else CORAL
         for k in range(6):
             a = math.radians(60 * k)
-            px, py = x + 9 * math.cos(a), top + 9 * math.sin(a)
-            d.ellipse([(px - 6.5) * S, (py - 6.5) * S, (px + 6.5) * S, (py + 6.5) * S], fill=CORAL, outline=INK, width=int(2 * S))
-        d.ellipse([(x - 6) * S, (top - 6) * S, (x + 6) * S, (top + 6) * S], fill=SUN, outline=INK, width=int(2.2 * S))
+            px, py = bx + 9.5 * math.cos(a), top + 9.5 * math.sin(a)
+            ell(px - 6.5, py - 6.5, px + 6.5, py + 6.5, col, 2)
+        ell(bx - 6, top - 6, bx + 6, top + 6, SUN if not golden else WHITE, 2.2)
     elif kind == "tulipan":
-        d.polygon([(x - 12) * S, (top - 12) * S, (x - 6) * S, (top - 1) * S, (x * S, (top - 12) * S)] if False else [((x - 12) * S, (top - 12) * S), ((x - 6) * S, (top - 2) * S), (x * S, (top - 13) * S), ((x + 6) * S, (top - 2) * S), ((x + 12) * S, (top - 12) * S), ((x + 11) * S, (top + 7) * S), ((x - 11) * S, (top + 7) * S)], fill=SKY, outline=INK, width=int(2.4 * S))
-    else:  # hoja grande
-        d.ellipse([(x - 11) * S, (top - 15) * S, (x + 11) * S, (top + 5) * S], fill=LEAF, outline=INK, width=int(2.4 * S))
-        d.line([(x * S, (top + 4) * S), (x * S, (top - 12) * S)], fill=LEAF_D, width=int(2 * S))
+        d.polygon([((bx - 12) * S, (top - 12) * S), ((bx - 6) * S, (top - 2) * S), (bx * S, (top - 13) * S), ((bx + 6) * S, (top - 2) * S),
+                   ((bx + 12) * S, (top - 12) * S), ((bx + 11) * S, (top + 7) * S), ((bx - 11) * S, (top + 7) * S)], fill=SKY, outline=INK, width=int(2.4 * S))
+    elif kind == "girasol":
+        for k in range(12):
+            a = math.radians(30 * k)
+            px, py = bx + 13 * math.cos(a), top + 13 * math.sin(a)
+            ell(px - 5.5, py - 5.5, px + 5.5, py + 5.5, SUNFLOWER, 1.8)
+        ell(bx - 9, top - 9, bx + 9, top + 9, (122, 78, 52), 2.2)
+    return layer
+
+
+def _paste_plant(img, x, y, h, kind, tilt=0.0, golden=False):
+    sp = _plant_sprite(kind, h, golden)
+    base = (sp.width / 2, sp.height - 4 * S)
+    if tilt:
+        sp = sp.rotate(-tilt, resample=Image.BICUBIC, center=base)
+    img.alpha_composite(sp, (int(x * S - base[0]), int(y * S - base[1])))
+
+
+def _plants_for(words, r):
+    """Posición, tipo y tamaño de cada planta según las palabras sembradas (largo -> tamaño; rara -> flor dorada).
+    Se reparten por la cara visible del planeta, de atrás hacia adelante, sin amontonarse."""
+    import random
+    rnd = random.Random(7)
+    out = []
+    kinds_by_len = {3: ("brote", "hongo"), 4: ("flor", "brote", "hongo"), 5: ("tulipan", "arbusto", "flor"),
+                    6: ("girasol", "arbusto", "tulipan"), 7: ("girasol", "arbusto")}
+    spots = []
+    tries = 0
+    while len(spots) < len(words) and tries < 4000:
+        tries += 1
+        ang = math.radians(rnd.uniform(-168, -12))
+        rad = rnd.uniform(0.18, 0.86) * r
+        px, py = rad * math.cos(ang), rad * math.sin(ang) + r * 0.34 * rnd.random()
+        if py > -r * 0.12 or math.hypot(px, py) > r * 0.9:
+            continue
+        mind = 15 if len(words) > 16 else 22
+        if all(math.hypot(px - qx, (py - qy) * 1.4) > mind for qx, qy in spots):
+            spots.append((px, py))
+    spots.sort(key=lambda p: p[1])                       # de atrás (arriba) hacia adelante
+    for i, (ln, rare) in enumerate(words):
+        if i >= len(spots):
+            break
+        kind = "flor" if rare else kinds_by_len.get(ln, ("brote",))[i % len(kinds_by_len.get(ln, ("brote",)))]
+        h = {3: 15, 4: 21, 5: 27, 6: 33, 7: 38}.get(ln, 20)
+        out.append((spots[i][0], spots[i][1], h, kind, rare, spots[i][0] / r * 24))
+    return out
+
+
+def planet(img, cx, cy, r, words=(), tree=False, green=0.15, sprouts=0):
+    """Planeta-huerto: esfera de tierra de arcilla (marrón cálido con vetas y relieve, borde tinta, sombra dura abajo, brillo de
+    atmósfera). Empieza con un poco de pasto ralo y 2-3 brotes; cada palabra suma una planta (más alta cuanto más larga;
+    flor dorada si es rara); la palabra estrella suma el árbol dorado. [words] = lista de (largo, es_rara)."""
+    # atmósfera suave
+    glow(img, cx, cy, r * 1.55, (150, 226, 190), 70, 0.5)
+    ov(img, lambda dd: dd.ellipse([(cx - r - 10) * S, (cy - r - 10) * S, (cx + r + 10) * S, (cy + r + 10) * S], outline=(170, 236, 210, 120), width=int(5 * S)), blur=2.5)
+    d = ImageDraw.Draw(img)
+    d.ellipse([(cx - r) * S, (cy - r + 6) * S, (cx + r) * S, (cy + r + 6) * S], fill=INK)     # sombra dura abajo
+    tex = _earth_texture(r)
+    n = tex.width
+    mask = Image.new("L", (n, n), 0)
+    ImageDraw.Draw(mask).ellipse([4, 4, n - 4, n - 4], fill=255)
+    # sombreado del lado oscuro (abajo a la derecha) y brillo arriba a la izquierda
+    sh = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(sh)
+    for i in range(18):
+        a = int(6 + i * 3.2)
+        off = i * 0.012 * n
+        sd.ellipse([n * 0.22 + off, n * 0.18 + off, n * 1.25, n * 1.25], fill=EARTH_SHADE + (a,))
+    tex.alpha_composite(sh)
+    # pasto: casquete verde arriba, más grande cuanto más huerto
+    cap = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    cd = ImageDraw.Draw(cap)
+    capy = n * (0.02 + 0.30 * green)
+    cd.ellipse([-n * 0.4, -n * 0.7, n * 1.4, capy + n * 0.1], fill=GRASS + (255,)) if green > 0.3 else None
+    if green > 0.3:
+        for i in range(12):                              # borde del pasto irregular
+            x = i / 11 * n
+            cd.ellipse([x - 16 * S, capy - 4 * S, x + 16 * S, capy + n * 0.1 + 8 * S * (i % 3)], fill=GRASS + (255,))
+    else:                                                # pasto ralo: matitas sueltas
+        import random
+        rr_ = random.Random(3)
+        for i in range(9):
+            tx, ty = (0.18 + rr_.random() * 0.64) * n, (0.05 + rr_.random() * 0.2) * n
+            for dx in (-5, 0, 5):
+                cd.line([(tx + dx * S, ty), (tx + dx * 1.4 * S, ty - (7 + rr_.random() * 4) * S)], fill=GRASS + (255,), width=int(2.6 * S))
+    tex.alpha_composite(cap)
+    planet_img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    planet_img.paste(tex, (0, 0), mask)
+    img.alpha_composite(planet_img, (int(cx * S - n / 2), int(cy * S - n / 2)))
+    d = ImageDraw.Draw(img)
+    d.ellipse([(cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S], outline=INK, width=int(4 * S))
+    ov(img, lambda dd: dd.arc([(cx - r + 8) * S, (cy - r + 8) * S, (cx + r - 8) * S, (cy + r - 8) * S], 200, 262, fill=(255, 236, 200, 190), width=int(4 * S)), blur=0.6)
+    # brotes iniciales (2-3) y plantas
+    spr = [(-r * 0.42, -r * 0.80), (r * 0.12, -r * 0.93), (r * 0.5, -r * 0.7)][:sprouts]
+    for (px, py) in spr:
+        _paste_plant(img, cx + px, cy + py, 13, "brote", tilt=px / r * 20)
+    for (px, py, h, kind, rare, tilt) in _plants_for(list(words), r):
+        _paste_plant(img, cx + px, cy + py, h, kind, tilt=tilt, golden=rare)
+    if tree:
+        golden_tree(img, cx, cy - r * 0.78)
 
 
 def golden_tree(img, x, y):
@@ -238,6 +371,7 @@ def harvest_words(img, y, words, label="Tu cosecha"):
 # ---------------------------------------------------------------- las 4 pantallas
 
 LETRAS = "IRAOASC"
+WORDS_13 = [(4, False), (5, False), (4, False), (3, False), (6, False), (4, False), (5, True), (3, False), (4, False), (5, False), (4, False), (6, False)]
 
 
 def screen_play():
@@ -247,11 +381,11 @@ def screen_play():
     caption(img, 118, "Toca letras en orden y siembra palabras", "Cada palabra brota como una planta en tu huerto")
     harvest_words(img, 196, ["casa", "sacar", "risa", "rosa"])
     tray(img, 346, "CAS")
-    cx, cy, rx, ry = W / 2, 580, 166, 96
+    cx, cy, rx, ry = W / 2, 580, 164, 96
     items = orbit(img, cx, cy, rx, ry, LETRAS, phase=-1.12)
     used = [6, 2, 5]          # C, A, S en el orden en que se tocaron
     draw_tiles(img, items, used, None, back=True)
-    planet(img, cx, cy + 4, 72, plants=[(-40, 26, "brote"), (-13, 34, "flor"), (14, 28, "tulipan"), (40, 22, "hoja")])
+    planet(img, cx, cy + 4, 76, words=[(4, False), (5, False), (4, False), (4, False)], sprouts=3, green=0.2)
     draw_tiles(img, items, used, None, back=False)
     action_buttons(img, 760)
     d = ImageDraw.Draw(img)
@@ -270,12 +404,12 @@ def screen_star():
     tray(img, 232, "ASOCIAR", state=GOLD, glow_col=GOLD)
     for k, (dx, dy, rr) in enumerate(((-146, 188, 12), (150, 196, 10), (-120, 276, 9), (128, 282, 13))):
         M.sparkle(img, W / 2 + dx, dy, rr, SUN if k % 2 == 0 else WHITE)
-    cx, cy, rx, ry = W / 2, 630, 166, 96
+    cx, cy, rx, ry = W / 2, 630, 164, 96
     d = ImageDraw.Draw(img)
     text(d, (W / 2, 350), "Brota un árbol dorado en tu huerto", "f", 18, WHITE, anchor="mm", stroke=2.5)
-    items = orbit(img, cx, cy, rx, ry, LETRAS, phase=-1.12)
+    items = orbit(img, cx, cy, rx, ry, LETRAS, phase=-2.05)
     draw_tiles(img, items, [], None, back=True)
-    planet(img, cx, cy + 4, 78, plants=[(-58, 24, "flor"), (-38, 30, "brote"), (38, 28, "hoja"), (58, 24, "tulipan"), (-20, 20, "hoja"), (22, 22, "flor")], tree=True)
+    planet(img, cx, cy + 4, 80, words=WORDS_13, tree=True, green=0.7)
     draw_tiles(img, items, [], None, back=False)
     d = ImageDraw.Draw(img)
     text(d, (W / 2, 800), "Cosecha lista en cuanto se acabe el tiempo", "n", 16, SOFT, anchor="mm")
@@ -391,6 +525,36 @@ def screen_result():
     return img
 
 
+
+PANEL_H = 470
+
+
+def strip_panel(title, sub, words, tree, green, sprouts, seed):
+    """Un cuadro de la tira "El huerto crece": el mismo planeta, solo, en uno de sus tres estados."""
+    ph = PANEL_H
+    img = sky(seed)
+    img = img.crop((0, 0, W * S, ph * S))
+    cx, cy, r = W / 2, 300, 100
+    planet(img, cx, cy, r, words=words, tree=tree, green=green, sprouts=sprouts)
+    d = ImageDraw.Draw(img)
+    text(d, (W / 2, PANEL_H - 56), title, "f", 20, WHITE, anchor="mm", stroke=2.5)
+    text(d, (W / 2, PANEL_H - 28), sub, "n", 15, SOFT, anchor="mm")
+    return img
+
+
+def growth_strip():
+    import random
+    rnd = random.Random(11)
+    w30 = [(rnd.choice((3, 3, 4, 4, 4, 5, 5, 6)), False) for _ in range(29)]
+    w30[5] = (6, True)
+    w30[17] = (5, True)
+    w12 = [(rnd.choice((3, 4, 4, 5, 5, 6)), False) for _ in range(12)]
+    w12[4] = (5, True)
+    return [strip_panel("Al empezar", "0 palabras: tierra, pasto ralo y 3 brotes", [], False, 0.15, 3, 31),
+            strip_panel("A mitad de la cosecha", "12 palabras: flores, arbustos, girasoles y hongos", w12, False, 0.55, 3, 32),
+            strip_panel("Al final", "30 palabras y la palabra estrella: árbol dorado", w30, True, 1.0, 3, 33)]
+
+
 # ---------------------------------------------------------------- reglas y hoja
 
 
@@ -409,6 +573,8 @@ def check_rules():
             low.append((s, round(c, 1)))
     assert not low, f"contraste bajo: {low}"
     worst = min(M.contrast(INK, t) for t in TILES)
+    edge = min(M.contrast(t, EARTH) for t in TILES)
+    assert edge >= 1.5, edge
     assert worst >= 4.5, worst
     return f"letra en tinta sobre las fichas, peor caso {worst:.1f}:1; sobre lima {M.contrast(INK, LIME):.1f}:1, sobre sol {M.contrast(INK, SUN):.1f}:1"
 
@@ -418,9 +584,10 @@ def main():
              ("2 · Palabra estrella", "usa las 7 letras: árbol dorado y puntos × 3", screen_star()),
              ("3 · Momentos chicos", "repetida, no válida y pista", screen_moments()),
              ("4 · Al final", "cómo buscaste, tu ritmo y también podías", screen_result())]
+    strip = growth_strip()
     report = check_rules()
-    pad, head = 28, 90
-    sheet = Image.new("RGB", (len(shots) * (W + pad) + pad, H + head + pad), (236, 234, 244))
+    pad, head, strip_h = 28, 90, PANEL_H + 90
+    sheet = Image.new("RGB", (len(shots) * (W + pad) + pad, H + head + strip_h + pad), (236, 234, 244))
     sd = ImageDraw.Draw(sheet)
     fh = ImageFont.truetype(M.FONT, 26)
     try:
@@ -434,6 +601,14 @@ def main():
         sd.text((x, 52), s, font=fs, fill=(90, 84, 120))
         ph = phone(im)
         sheet.paste(ph, (x, head), ph)
+    y0 = head + H + 28
+    sd.text((pad, y0), "5 · El huerto crece", font=fh, fill=INK)
+    sd.text((pad, y0 + 38), "el mismo planeta en tres momentos de una cosecha: tierra con pasto ralo, huerto a medias y huerto lleno con su árbol dorado", font=fs, fill=(90, 84, 120))
+    for i, im in enumerate(strip):
+        ph = im.resize((W, PANEL_H), Image.LANCZOS).convert("RGB")
+        mask = Image.new("L", (W, PANEL_H), 0)
+        ImageDraw.Draw(mask).rounded_rectangle([0, 0, W - 1, PANEL_H - 1], 30, fill=255)
+        sheet.paste(ph, (pad + i * (W + pad), y0 + 80), mask)
     sheet.save(OUT)
     print(OUT)
     print("Contrastes:", report)

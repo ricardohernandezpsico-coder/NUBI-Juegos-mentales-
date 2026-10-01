@@ -563,7 +563,7 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   el hilo principal publique el resultado).
 - Unity EditMode: 219 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 21 smoke tests.
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
-- Rondas de Cosecha de palabras: 16 pruebas en `tools/cosecha/test_rondas.py` (`python -m unittest test_rondas`, desde `tools/cosecha`; ~70 s;
+- Rondas de Cosecha de palabras: 17 pruebas en `tools/cosecha/test_rondas.py` (`python -m unittest test_rondas`, desde `tools/cosecha`; ~70 s;
   con `COSECHA_REGENERAR=1` reconstruye todo desde las fuentes). Diseño aprobado en `docs/diseno-cosecha-de-palabras.md`; el juego aún no está programado.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.

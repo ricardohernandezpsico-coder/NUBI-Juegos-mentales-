@@ -78,6 +78,8 @@ pegados). Una forma conjugada solo es «común» si el verbo es de uso corriente
 pretérito, el verbo es muy usado. Las no comunes se aceptan en silencio y no se muestran. Listas a mano en `rondas.py`: `NO_VALIDAS`
 (nombres propios y formas arcaicas), `EXTRA_OCULTAS` (vulgares) y `EXTRA_NO_COMUN`.
 
+**Palabras ocultas por pedido de Ricardo (1-oct)**: se aceptan si alguien las forma, pero no se muestran ni cuentan como comunes. Quedaron en `tools/lexico/excluir.txt` (bloque «Ampliación del 1-oct»): dobles sentidos (raja, pajas, pito, picos, nalgas, cojos, bicho, tieso, porra…), drogas (coca), tauromaquia (toreo, torear, torero, corrida…), términos médicos (óseo, anal, fecal, rectal, renal, vaginal, útero, cólico, erecta…) y caza y matar (caza, cazar, mata, matan, maté…). El generador conserva las rondas que siguen cumpliendo los mínimos (solo reemplaza las que no) y `--desde-cero` las vuelve a elegir todas.
+
 **Licencia del diccionario**: el Hunspell es_ES de LibreOffice se distribuye con GPL v3, LGPL v2.1/v3 o MPL 1.1 (a elección). Solo se usa
 al GENERAR (`tools/lexico/fuentes/`, fuera de git); a la app van listas de palabras sueltas por ronda, no el diccionario. Para quedar en
 orden basta una línea de crédito en Ajustes → Licencias y créditos («Palabras: SPALEX, CC BY 4.0; formas verbales y plurales con el
@@ -106,8 +108,22 @@ Nota común al pie. Sin comparación con otras personas. Agregar a `docs/medidas
 ## 8. Arte, sonido y efectos (fluidez, como ¿Verdad o disparate?)
 
 - Fichas-luna de arcilla con brillo; órbita con estela suave; bandeja de arcilla crema; semillas que caen con arco;
-  plantas de arcilla de 4-5 tipos que brotan con un rebote; el planeta se llena de verde y flores; árbol dorado para la
-  palabra estrella. Al final de cada cosecha, el huerto se ve completo un instante.
+  plantas de arcilla que brotan con un rebote; árbol dorado para la palabra estrella. Al final de cada cosecha, el huerto se
+  ve completo un instante.
+- **El huerto** (revisión del 1-oct, a pedido de Ricardo; lámina `docs/previews/cosecha.png`, cuadro 5 "El huerto crece"): un
+  planeta de TIERRA de arcilla, no un disco vacío: marrón cálido con vetas onduladas y manchas de relieve claro, algunos cráteres,
+  borde tinta grueso, sombra dura abajo, lado oscuro abajo a la derecha, un brillo suave de atmósfera verdosa y el reflejo de
+  arcilla arriba a la izquierda. Tres estados de la MISMA cosecha:
+  1. **Al empezar (0 palabras)**: solo tierra, pasto ralo (matitas sueltas) y 3 brotes chicos.
+  2. **A mitad (12 palabras)**: casquete de pasto en la mitad de arriba y una planta por palabra, repartidas por la cara visible
+     del planeta de atrás hacia adelante (flores, arbustos, girasoles, hongos, tulipanes y brotes).
+  3. **Al final (30 palabras)**: pasto completo, unas 30 plantas muy juntas y el **árbol dorado** de la palabra estrella con
+     destellos.
+  Cada palabra sembrada suma una planta: el TAMAÑO sigue el largo (3 letras = brote u hongo chico, 4 = flor, 5 = tulipán o
+  arbusto, 6 = girasol o arbusto grande) y la palabra rara (bandas 5-6) da una flor DORADA. Con 7 letras (palabra estrella) brota el
+  árbol dorado en el centro. Las 7 lunas y la órbita no cambian: las de atrás pasan detrás del planeta y las de adelante delante;
+  la letra va en tinta a 30 sp sobre fichas claras (≥ 12:1) y las fichas se separan del planeta por su borde tinta. Con "quitar
+  animaciones", las plantas aparecen sin rebote.
 - Sonidos de la pentatónica de `GameFeel`: cada letra tocada sube una nota (la palabra suena como melodía), sembrar =
   "plop" de tierra + campanita, brotar = cuerda suave, repetida/no válida = madera sorda suave. Nada arcade.
 - Respeta "quitar animaciones", sonido y vibración apagados.

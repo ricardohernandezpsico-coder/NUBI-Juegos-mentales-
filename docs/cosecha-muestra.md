@@ -10,12 +10,12 @@ Generada con `python tools/cosecha/rondas.py --muestra` (semilla fija).
 ## Nivel 1 · S T O E R O S
 
 - **Palabra estrella:** tesoros, sorteos
-- **Comunes: 29** (de 53 palabras válidas)
+- **Comunes: 25** (de 53 palabras válidas)
 
 - 7 letras (2): sorteos, tesoros
-- 6 letras (5): restos, sorteo, tesoro, toreos, torsos
-- 5 letras (9): estos, óseos, otros, resto, retos, rotos, toreo, toros, torso
-- 4 letras (9): esos, esto, oros, óseo, osos, otro, reto, toro, tres
+- 6 letras (4): restos, sorteo, tesoro, torsos
+- 5 letras (7): estos, otros, resto, retos, rotos, toros, torso
+- 4 letras (8): esos, esto, oros, osos, otro, reto, toro, tres
 - 3 letras (4): eso, oro, oso, ser
 
 ## Nivel 2 · L I C A O S G
@@ -64,11 +64,11 @@ Generada con `python tools/cosecha/rondas.py --muestra` (semilla fija).
 ## Nivel 6 · J T R A A E T
 
 - **Palabra estrella:** tarjeta
-- **Comunes: 15** (de 29 palabras válidas)
+- **Comunes: 14** (de 29 palabras válidas)
 
 - 7 letras (1): tarjeta
 - 5 letras (6): atrae, tarea, tarta, traje, trata, traté
-- 4 letras (8): área, arte, atar, raja, rata, reja, teja, trae
+- 4 letras (7): área, arte, atar, rata, reja, teja, trae
 
 ## Nivel 7 · I A N D S A S
 
@@ -102,12 +102,12 @@ Generada con `python tools/cosecha/rondas.py --muestra` (semilla fija).
 - 4 letras (8): alto, loro, olor, oral, otra, otro, rato, toro
 - 3 letras (5): aro, ora, oro, rol, tal
 
-## Nivel 10 · T I C A T C O
+## Nivel 10 · L U D B E A I
 
-- **Palabra estrella:** táctico
-- **Comunes: 12** (de 20 palabras válidas)
+- **Palabra estrella:** audible
+- **Comunes: 14** (de 27 palabras válidas)
 
-- 7 letras (1): táctico
-- 5 letras (2): ático, tacto
-- 4 letras (6): acto, cita, citó, coca, taco, toca
-- 3 letras (3): caí, tía, tío
+- 7 letras (1): audible
+- 5 letras (5): baile, balde, débil, ideal, leída
+- 4 letras (4): baúl, debí, dual, idea
+- 3 letras (4): del, día, ida, leí

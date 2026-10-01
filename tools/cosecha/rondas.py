@@ -287,7 +287,7 @@ def family(star):
     return star[:5]
 
 
-def pick_rounds(cands, words):
+def pick_rounds(cands, words, previous=None):
     """Elige N_ROUNDS rondas repartidas en LEVELS niveles, variadas: nada de la misma combinación reordenada ni de dos
     rondas que compartan 6 o 7 letras, ni dos con la estrella de la misma familia."""
     cands = sorted(cands, key=lambda c: c["diff"])
@@ -295,6 +295,17 @@ def pick_rounds(cands, words):
     per = N_ROUNDS // LEVELS
     chosen, level_of = [], {}
     used_fam, picked_sets = set(), []
+    # Estabilidad: una ronda ya elegida antes (previous: letras ordenadas -> nivel) se queda en su nivel mientras siga cumpliendo
+    # los mínimos; solo se reemplazan las que dejaron de cumplirlos. Así corregir una palabra no revuelve las 600.
+    kept_per_level = Counter()
+    for c in cands:
+        lv = (previous or {}).get(c["set"])
+        if lv and kept_per_level[lv] < per:
+            chosen.append(c)
+            level_of[c["set"]] = lv
+            used_fam.add(family(c["star"]))
+            picked_sets.append(ms(c["set"]))
+            kept_per_level[lv] += 1
 
     def too_close(c):
         lc = ms(c["set"])
@@ -305,7 +316,7 @@ def pick_rounds(cands, words):
 
     for lv in range(LEVELS):
         lo, hi = lv * n // LEVELS, (lv + 1) * n // LEVELS
-        got = 0
+        got = kept_per_level[lv + 1]
         # primero la franja propia del nivel; si faltan rondas (por la variedad), se amplía hacia los lados
         for widen in (0, n // LEVELS // 3, n // LEVELS // 2, n // LEVELS):
             band = cands[max(0, lo - widen):min(n, hi + widen)]
@@ -335,8 +346,7 @@ def shuffled_letters(sset, valid_keys, rnd):
     return "".join(letters)
 
 
-def build_json(chosen, level_of, words, hidden):
-    rnd = random.Random(SEED + 7)
+def build_json(chosen, level_of, words, hidden, letters_of=None):
     valid_keys = set(words)
     rondas = []
     for c in sorted(chosen, key=lambda c: (level_of[c["set"]], c["diff"], c["set"])):
@@ -355,7 +365,9 @@ def build_json(chosen, level_of, words, hidden):
                 e["estrella"] = True
             plist.append(e)
         rid = hashlib.sha1(c["set"].encode()).hexdigest()[:8]
-        rondas.append({"id": rid, "nivel": level_of[c["set"]], "letras": shuffled_letters(c["set"], valid_keys, rnd),
+        letras = (letters_of or {}).get(c["set"]) or shuffled_letters(
+            c["set"], valid_keys, random.Random(hashlib.sha1(f"{SEED}:letras:{c['set']}".encode()).hexdigest()))
+        rondas.append({"id": rid, "nivel": level_of[c["set"]], "letras": letras,
                        "palabras": plist})
     return {
         "version": 1,
@@ -381,16 +393,31 @@ def summary(data):
     print("palabras promedio por ronda:", round(sum(len(r["palabras"]) for r in rs) / len(rs), 1))
 
 
+def load_previous(path):
+    """Rondas del archivo anterior: letras ordenadas -> nivel, y las letras tal como se mostraban."""
+    if not os.path.exists(path):
+        return {}, {}
+    with open(path, encoding="utf8") as f:
+        old = json.load(f)
+    return ({"".join(sorted(r["letras"])): r["nivel"] for r in old["rondas"]},
+            {"".join(sorted(r["letras"])): r["letras"] for r in old["rondas"]})
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--muestra", action="store_true")
+    ap.add_argument("--desde-cero", action="store_true", help="ignora el archivo anterior y vuelve a elegir las 600 rondas")
     args = ap.parse_args()
+    previous, letters_of = load_previous(OUT_JSON) if not args.desde_cero else ({}, {})
     words = build_dictionary()
     print("diccionario válido:", len(words), "palabras")
     cands, hidden = make_rounds(words)
     print("combinaciones candidatas (>= 12 comunes y estrella común):", len(cands))
-    chosen, level_of = pick_rounds(cands, words)
-    data = build_json(chosen, level_of, words, hidden)
+    chosen, level_of = pick_rounds(cands, words, previous)
+    data = build_json(chosen, level_of, words, hidden, letters_of)
+    cambiadas = [c["set"] for c in chosen if c["set"] not in previous]
+    if previous:
+        print(f"rondas anteriores: {len(previous)}; reemplazadas: {len(cambiadas)}")
     os.makedirs(os.path.dirname(OUT_JSON), exist_ok=True)
     with open(OUT_JSON, "w", encoding="utf8", newline="\n") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))

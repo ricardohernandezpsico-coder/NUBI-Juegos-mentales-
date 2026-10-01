@@ -123,6 +123,20 @@ class RondasTest(unittest.TestCase):
                 self.assertTrue(w["p"] and 1 <= w["b"] <= 6)
 
 
+class OcultasTest(unittest.TestCase):
+    PALABRAS = ["raja", "rajas", "coca", "cocas", "toreo", "toreos", "torear", "óseo", "óseos", "ósea", "óseas", "caza", "cazar"]
+
+    def test_las_palabras_pedidas_nunca_son_comunes(self):
+        with open(JSON_PATH, encoding="utf8") as f:
+            data = json.load(f)
+        for r in data["rondas"]:
+            for w in r["palabras"]:
+                if w["p"] in self.PALABRAS:
+                    self.assertTrue(w.get("oculta") and not w.get("comun"), w)
+        for p in self.PALABRAS:
+            self.assertTrue(rondas.lex.excluded_word(p), p)
+
+
 class DeterminismoTest(unittest.TestCase):
     def test_misma_entrada_mismas_rondas(self):
         """Reconstruye un diccionario con las palabras del archivo y arma las rondas dos veces: tienen que salir iguales."""
@@ -148,8 +162,9 @@ class RegenerarTest(unittest.TestCase):
     def test_el_archivo_es_el_que_sale_de_las_fuentes(self):
         words = rondas.build_dictionary()
         cands, hidden = rondas.make_rounds(words)
-        chosen, level_of = rondas.pick_rounds(cands, words)
-        nuevo = rondas.build_json(chosen, level_of, words, hidden)
+        previous, letters = rondas.load_previous(JSON_PATH)      # el generador conserva las rondas que siguen cumpliendo
+        chosen, level_of = rondas.pick_rounds(cands, words, previous)
+        nuevo = rondas.build_json(chosen, level_of, words, hidden, letters)
         with open(JSON_PATH, encoding="utf8") as f:
             self.assertEqual(json.load(f), nuevo)
 
