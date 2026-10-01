@@ -54,10 +54,15 @@ def noacc(s):
 
 
 def load_exclusions():
-    exact, stems = set(), []
+    """exact = palabras exactas; stems = raíces prohibidas en cualquier palabra; pseudo_stems (líneas con "~") = raíces
+    prohibidas solo DENTRO de las inventadas."""
+    exact, stems, pseudo = set(), [], []
     for line in open(os.path.join(HERE, "excluir.txt"), encoding="utf8"):
         line = line.strip().lower()
         if not line or line.startswith("#"):
+            continue
+        if line.startswith("~"):
+            pseudo.append(line[1:])
             continue
         if line.startswith("*"):
             stem = line[1:]
@@ -67,10 +72,10 @@ def load_exclusions():
                 stems.append(stem)
         else:
             exact.add(line)
-    return exact, stems
+    return exact, stems, pseudo
 
 
-EXACT, STEMS = load_exclusions()
+EXACT, STEMS, PSEUDO_STEMS = load_exclusions()
 
 
 def excluded_word(w):
@@ -83,7 +88,7 @@ def excluded_word(w):
 def excluded_pseudo(w):
     """Una inventada no puede contener ninguna raíz ni una palabra de 5+ letras de la lista."""
     wn = noacc(w)
-    if any(s in w or noacc(s) in wn for s in STEMS):
+    if any(s in w or noacc(s) in wn for s in STEMS) or any(noacc(s) in wn for s in PSEUDO_STEMS):
         return True
     return any(len(e) >= 5 and (e in w or noacc(e) in wn) for e in EXACT)
 
@@ -256,6 +261,14 @@ def valid_word_shape(w):
     return w.endswith("mente") is False
 
 
+def load_manual_out():
+    """Palabras sacadas a mano tras revisar la lista final: tools/lexico/revision-manual.txt (una por línea)."""
+    path = os.path.join(HERE, "revision-manual.txt")
+    if not os.path.exists(path):
+        return set()
+    return {l.strip().lower() for l in open(path, encoding="utf8") if l.strip() and not l.startswith("#")}
+
+
 def band_of(p):
     for i, (lo, hi) in enumerate(CUTS):
         if lo <= p < hi:
@@ -289,16 +302,29 @@ def main():
             continue  # diminutivos y derivados raros
         cand.append((w, b, prev, zipf))
     by_band = {b: sorted([c for c in cand if c[1] == b]) for b in range(1, 7)}
+    import hashlib
+
+    def stable_key(w):
+        return hashlib.sha1(f"{SEED}:{w}".encode("utf8")).hexdigest()
+
+    manual = load_manual_out()
     words = []
     for b in range(1, 7):
-        pool = by_band[b]
-        pick = pool if len(pool) <= PER_BAND else rnd.sample(pool, PER_BAND)
+        # Selección ESTABLE: ordenar por un hash fijo y tomar las primeras. Si se saca una palabra a mano, entra la
+        # siguiente y las demás no cambian (así la revisión de las 1.200 se hace una sola vez).
+        pool = sorted((c for c in by_band[b] if c[0] not in manual), key=lambda c: stable_key(c[0]))
+        pick = pool[:PER_BAND]
         words += [(w, b) for w, _, _, _ in sorted(pick)]
     word_set = {w for w, _ in words}
-    banded_all = {w: b for w, b, _, _ in cand}  # fuentes posibles para las inventadas (todas las que pasaron el filtro)
+    # Fuentes de las inventadas: SOLO las palabras de la lista final (pasaron todos los filtros y la revisión a mano).
+    banded_all = {w: b for w, b in words}
+
+    # Diccionarios de otros idiomas, solo para descartar inventadas que sean palabra real en inglés, italiano o portugués.
+    others = [Dictionary.from_files(os.path.join(SRC, n)) for n in ("en_US", "it_IT", "pt_PT", "pt_BR")
+              if os.path.exists(os.path.join(SRC, n + ".dic"))]
 
     def is_real(w):
-        return w in spalex or w in lemmas or dic.lookup(w)
+        return w in spalex or w in lemmas or dic.lookup(w) or any(d.lookup(w) for d in others)
 
     # ---- inventadas
     from collections import Counter

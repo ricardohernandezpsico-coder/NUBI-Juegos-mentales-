@@ -53,3 +53,6 @@ tools/art-preview/obj/
 
 # Datos ajenos del léxico de Lluvia de meteoros (SPALEX, diccionarios): no se comitean
 tools/lexico/fuentes/
+
+# Fuentes de letra y diccionarios descargados solo para preparar maquetas y filtrar el léxico (OFL / LibreOffice): no se comitean
+tools/previews/fuentes-letra/
