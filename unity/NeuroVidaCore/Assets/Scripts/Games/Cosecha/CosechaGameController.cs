@@ -36,6 +36,8 @@ namespace NeuroVida.Games.Cosecha
         private const float MarginU = 60f;
         private const float OrbitSeconds = 40f;
         private const float ReadySeconds = 3f;
+        /// <summary>Diámetro de la ficha-luna en unidades (64 dp de toque mínimo = 192 u); las de atrás un poco menores.</summary>
+        private const float TileUnits = UnitsPerDp * CosechaContract.MinTouchDp * 1.04f;
 
         private static readonly Color GoodColor = NeuroStyle.Lime;
         private static readonly Color BadColor = NeuroStyle.Coral;
@@ -738,7 +740,7 @@ namespace NeuroVida.Games.Cosecha
                 float sin = Mathf.Sin(a);
                 t.Pos = new Vector2(_orbitCx + _rx * Mathf.Cos(a), _orbitCy + _ry * sin);
                 bool front = sin <= 0f;                                  // abajo = delante del planeta
-                t.Size = (UnitsPerDp * CosechaContract.MinTouchDp) * 3.15f * (front ? 1f : 0.9f);
+                t.Size = TileUnits * (front ? 1f : 0.9f);
                 t.Rect.anchoredPosition = t.Pos;
                 t.Rect.sizeDelta = new Vector2(t.Size, t.Size);
                 if (force || front != t.Front)
@@ -1001,7 +1003,7 @@ namespace NeuroVida.Games.Cosecha
         private void BuildButtons()
         {
             _btnSow = MakeButton("Sembrar", GoodColor, 78, CosechaSprites.SeedIcon());
-            _btnClear = MakeButton("Borrar", Color.white, 52, CosechaSprites.BackIcon());
+            _btnClear = MakeButton("Borrar", Color.white, 46, CosechaSprites.BackIcon());
             _btnSow.gameObject.SetActive(false);
             _btnClear.gameObject.SetActive(false);
         }
@@ -1171,9 +1173,9 @@ namespace NeuroVida.Games.Cosecha
             // abajo: los botones
             float btnH = 190f;
             float by = bottom + 70f + btnH * 0.5f;
-            float sowW = (w - 24f) * 0.72f, clrW = (w - 24f) - sowW;
+            float sowW = (w - 24f) * 0.62f, clrW = (w - 24f) - sowW;
             _btnSowSize = new Vector2(sowW, btnH);
-            _btnClearSize = new Vector2(clrW, btnH * 0.78f);
+            _btnClearSize = new Vector2(clrW, btnH * 0.82f);
             _btnSowCenter = new Vector2(-(w * 0.5f) + sowW * 0.5f, by);
             _btnClearCenter = new Vector2(w * 0.5f - clrW * 0.5f, by);
             _btnSow.sizeDelta = _btnSowSize;
@@ -1181,13 +1183,13 @@ namespace NeuroVida.Games.Cosecha
             _btnSow.anchoredPosition = _btnSowCenter;
             _btnClear.anchoredPosition = _btnClearCenter;
             LayoutButton(_btnSow, _btnSowSize, 120f, -34f);
-            LayoutButton(_btnClear, _btnClearSize, 84f, 0f);
+            LayoutButton(_btnClear, _btnClearSize, 70f, 0f, stacked: true);
 
             // en medio: el planeta y la órbita
             float trayBottom = _trayY - trayH * 0.5f - 60f;
             float buttonsTop = by + btnH * 0.5f + 20f;
             _orbitCy = (trayBottom + buttonsTop) * 0.5f;
-            float tile = UnitsPerDp * CosechaContract.MinTouchDp * 3.15f;
+            float tile = TileUnits;
             _ry = Mathf.Min(250f, (trayBottom - buttonsTop) * 0.5f - tile * 0.5f);
             _rx = w * 0.5f - tile * 0.5f;
             _orbitCx = 0f;
@@ -1208,13 +1210,21 @@ namespace NeuroVida.Games.Cosecha
             AnimateAmbient();
         }
 
-        private static void LayoutButton(RectTransform r, Vector2 size, float iconSize, float labelShift)
+        /// <summary>Ícono y rótulo del botón: en fila (Sembrar) o uno sobre el otro (Borrar, que es angosto).</summary>
+        private static void LayoutButton(RectTransform r, Vector2 size, float iconSize, float labelShift, bool stacked = false)
         {
             var icon = r.Find("Icon").GetComponent<RectTransform>();
             icon.sizeDelta = new Vector2(iconSize, iconSize);
-            icon.anchoredPosition = new Vector2(-size.x * 0.5f + iconSize * 0.5f + 40f, 0f);
             var label = r.Find("Label").GetComponent<RectTransform>();
             label.anchorMin = label.anchorMax = new Vector2(0.5f, 0.5f);
+            if (stacked)
+            {
+                icon.anchoredPosition = new Vector2(0f, size.y * 0.5f - iconSize * 0.5f - 22f);
+                label.sizeDelta = new Vector2(size.x - 20f, 60f);
+                label.anchoredPosition = new Vector2(0f, -size.y * 0.5f + 44f);
+                return;
+            }
+            icon.anchoredPosition = new Vector2(-size.x * 0.5f + iconSize * 0.5f + 40f, 0f);
             label.sizeDelta = new Vector2(size.x - iconSize - 60f, size.y);
             label.anchoredPosition = new Vector2(iconSize * 0.5f + labelShift * 0.0f, 0f);
         }
