@@ -151,6 +151,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
   `tools/art-preview/meteoros_final.py`.
 - [`meteoros-final-real.png`](meteoros-final-real.png) y [`meteoros-final-real-2.png`](meteoros-final-real-2.png): la pantalla final de
   Lluvia de meteoros ya programada (mezcla de A y C: cifra grande + tres barras, reconocimiento, filtro y colección), captura real (Roborazzi).
+- [`intrusa.png`](intrusa.png): maqueta de **La estrella intrusa** (juego de Lenguaje en diseño, 1-oct): así se juega (nivel 2, cinco estrellas-palabra en constelación), constelación lograda con el bonus «¿Qué las une?», una trampa (error con la regla y la línea punteada a la pareja que engaña) y la pantalla final con «Tu cielo» (una forma de estrellas por categoría). Generada con `tools/art-preview/intrusa.py`. Pendiente de aprobar. Los grupos salen de `tools/intrusa/` (muestra en `docs/intrusa-muestra.md`).
 - [`cosecha-final-real.png`](cosecha-final-real.png) y [`cosecha-final-real-2.png`](cosecha-final-real-2.png): la pantalla final de
   Cosecha de palabras ya programada (cifra grande de palabras, cómo buscaste, tu ritmo, palabra estrella y también podías), captura real (Roborazzi).
 - [`cosecha.png`](cosecha.png): maqueta de **Cosecha de palabras** (juego de Lenguaje en diseño, 1-oct): así se juega (7 lunas en órbita, bandeja con
