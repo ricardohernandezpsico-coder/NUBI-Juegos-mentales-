@@ -128,7 +128,8 @@ Nota común al pie. Sin comparación con otras personas. Agregar a `docs/medidas
   "plop" de tierra + campanita, brotar = cuerda suave, repetida/no válida = madera sorda suave. Nada arcade.
 - Respeta "quitar animaciones", sonido y vibración apagados.
 
-## 9. Pendiente antes de programar
+## 9. Estado
 
-1. Aprobar la maqueta `docs/previews/cosecha.png`.
-2. Aprobar la muestra de 10 rondas.
+Maqueta y muestra aprobadas por Ricardo (1-oct; "cola" y "pasta" se dejan visibles). Programado y verificado el 1-oct: Unity
+(`Games/Cosecha/`: contrato, sesión, medidas, banco, huerto, sprites, sonidos y controlador; 33 pruebas) y app (`Harvest.kt`, pantalla final,
+marca de evolución, ícono, créditos). Pendiente: que Ricardo lo pruebe en el teléfono (órbita, tamaño de las fichas, ritmo, sonidos, pista).

@@ -309,6 +309,38 @@ Ráfaga (3 palabras, muy rápidas) no entran en ninguna medida. Una frase que la
 Código: `Games/Disparate/DisparateContract.cs` y `DisparateDirector.cs` (reglas y medidas, con pruebas), `app/.../data/Reading.kt`
 (lectura, con pruebas), frases en `tools/frases/`.
 
+## Cosecha de palabras: "Tu cosecha", "Tu manera de buscar", "Tu ritmo" y "Tu palabra estrella"
+
+**Qué es la tarea.** Fluidez verbal con un juego de letras fijo: siete letras giran alrededor de un planeta y se forman todas las
+palabras posibles (3 letras o más) durante tres cosechas de 60 s. Pide PRODUCIR palabras desde la memoria bajo presión de tiempo, lo
+que más cuesta con la edad (los otros juegos de Lenguaje reconocen o comprenden). La fluidez verbal es de las pruebas más usadas en
+neuropsicología (Troyer, Moscovitch y Winocur, 1997).
+
+**Nota de honestidad (Troyer).** El análisis de agrupar y saltar se validó con fluidez por categoría ("animales") y por letra inicial
+("F"), NO con formar palabras con un juego de letras fijo. Por eso aquí se usa solo como DESCRIPCIÓN de cómo buscaste en esa partida
+("racimos" o "saltos"): sin normas, sin percentiles y sin comparar con estudios ni con otras personas. La pantalla lo dice ("cómo
+buscaste en esta partida").
+
+**De dónde sale cada medida.**
+- **Tu cosecha.** Palabras encontradas en las 3 cosechas (sin las ocultas, que se aceptan pero no se muestran ni cuentan) y, de las
+  comunes (bandas 1-3 de SPALEX), cuántas se encontraron de las disponibles: "de las comunes, 21 de 48". Es la marca para ver su
+  evolución: % de las comunes encontradas (más alto = mejor), comparable a ±1 nivel.
+- **Tu manera de buscar.** Entre las palabras que tuvieron una anterior en su cosecha, el % que salió en RACIMO (comparte las 2
+  primeras letras o la raíz con la anterior: casa → casas → caso) frente a SALTO (palabra nueva sin relación). Solo con 10 o más
+  palabras. Frase con consejo: muchos racimos (≥ 70%) → "exprimes bien cada idea; prueba también saltar a otra letra inicial"; muchos
+  saltos (≤ 30%) → "saltas rápido; cuando una funciona, busca sus parientes (plural, otra terminación)"; en medio, "combinas bien".
+- **Tu ritmo.** Palabras en los primeros 20 s contra los últimos 20 s de cada cosecha (promedio de las cosechas). En las pruebas de
+  fluidez la mayoría de las palabras salen al principio y después cuesta más: "arrancas fuerte y bajas al final: es lo normal" (con el
+  consejo de cambiar de idea), "mantienes el ritmo" o "te soltaste al final". Es descriptivo.
+- **Tu palabra estrella y también podías.** La palabra que usa las 7 letras (o la más larga si no hubo) y hasta 5 comunes que no se
+  encontraron, de las más usadas y cortas (aprendizaje, sin culpa).
+
+**Qué NO se dice.** Nada de "tu fluidez verbal es X" como rasgo, ni comparaciones con otras personas, ni diagnóstico. Las pistas que
+dio Nubi se anotan ("Pistas de Nubi: N").
+
+Código: `Games/Cosecha/CosechaContract.cs` y `CosechaSession.cs` (reglas y medidas, con pruebas), `app/.../data/Harvest.kt` (lectura,
+con pruebas), rondas en `tools/cosecha/`.
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -376,3 +408,5 @@ Código: `Games/Disparate/DisparateContract.cs` y `DisparateDirector.cs` (reglas
   reading speed. *Behavioral and Brain Functions*, 4, 14.
 - Wilson, B., y Baddeley, A. (1988). Semantic, episodic, and autobiographical memory in a postmeningitic amnesic patient.
   *Brain and Cognition*, 8, 31–46.
+- Troyer, A. K., Moscovitch, M., y Winocur, G. (1997). Clustering and switching as two components of verbal fluency: evidence from
+  younger and older healthy adults. *Neuropsychology*, 11, 138–146.
