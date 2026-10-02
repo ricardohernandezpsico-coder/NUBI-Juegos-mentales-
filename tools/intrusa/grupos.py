@@ -84,15 +84,12 @@ come hierba|rasgo|Comen hierba|comen hierba|come hierba
 vuela|rasgo|Vuelan|vuelan|vuela
 crece en árbol|rasgo|Crecen en los árboles|crecen en los árboles|crece en los árboles
 crece bajo la tierra|rasgo|Crecen bajo la tierra|crecen bajo la tierra|crece bajo la tierra
-cítrico|rasgo|Son cítricos|son cítricos|es cítrico
 lácteo|rasgo|Son lácteos|son lácteos|es lácteo
 dulce|rasgo|Son dulces|son dulces|es dulce
 alas|parte|Tienen alas|tienen alas|tiene alas
 plumas|parte|Tienen plumas|tienen plumas|tiene plumas
 aletas|parte|Tienen aletas|tienen aletas|tiene aletas
-escamas|parte|Tienen escamas|tienen escamas|tiene escamas
 garras|parte|Tienen garras|tienen garras|tiene garras
-hojas|parte|Tienen hojas|tienen hojas|tiene hojas
 pétalos|parte|Tienen pétalos|tienen pétalos|tiene pétalos
 cuerdas|parte|Tienen cuerdas|tienen cuerdas|tiene cuerdas
 ruedas|parte|Tienen ruedas|tienen ruedas|tiene ruedas
@@ -122,13 +119,8 @@ sirve para abrir|uso|Sirven para abrir|sirven para abrir|sirve para abrir
 sirve para guardar cosas|uso|Sirven para guardar cosas|sirven para guardar cosas|sirve para guardar cosas
 sirve para pintar|uso|Sirven para pintar|sirven para pintar|sirve para pintar
 sirve para transportar|uso|Sirven para transportar|sirven para transportar|sirve para transportar
-sirve para ver|uso|Sirven para ver|sirven para ver|sirve para ver
-sirve para agarrar|uso|Sirven para agarrar|sirven para agarrar|sirve para agarrar
-sirve para caminar|uso|Sirven para caminar|sirven para caminar|sirve para caminar
 sirve para respirar|uso|Sirven para respirar|sirven para respirar|sirve para respirar
 sirve para lavar|uso|Sirven para lavar|sirven para lavar|sirve para lavar
-sirve para regar|uso|Sirven para regar|sirven para regar|sirve para regar
-sirve para servir líquidos|uso|Sirven para servir líquidos|sirven para servir líquidos|sirve para servir líquidos
 se golpea|uso|Se golpean|se golpean|se golpea
 se sopla|uso|Se soplan|se soplan|se sopla
 """
@@ -165,13 +157,18 @@ COMPLEMENTO = {
     "se pone en los pies": {"se pone en la cabeza", "se pone en las manos", "se pone en el cuerpo", "se pone en el cuello"},
     "se pone en la cabeza": {"se pone en los pies", "se pone en las manos", "se pone en el cuerpo", "se pone en el cuello"},
 }
-# "Vecina": la intrusa es de una categoría hermana (misma familia, otra categoría fina).
-PADRE_TIPO = {"mamífero": "animal", "ave": "animal", "pez": "animal", "insecto": "animal", "reptil": "animal", "fruta": "comida",
-              "verdura": "comida", "bebida": "comida", "calzado": "prenda", "flor": "planta", "árbol": "planta", "astro": "natural",
-              "clima": "natural", "paisaje": "natural", "herramienta": "objeto", "utensilio de cocina": "objeto", "mueble": "objeto",
-              "prenda": "objeto", "vehículo": "objeto", "instrumento": "objeto", "material escolar": "objeto", "juguete": "objeto",
-              "aparato": "objeto"}
-FINAS_OBJETO = {"herramienta", "utensilio de cocina", "mueble", "prenda", "vehículo", "instrumento", "material escolar", "juguete", "aparato"}
+# "Vecina" (tipo 2): la intrusa es de una categoría HERMANA de la regla (4 mamíferos + 1 ave; frutas + 1 verdura), nunca de una lejana.
+# Una regla sin hermanas no se usa en este tipo. Prendas y calzado no se mezclan; las bebidas tampoco tienen hermana.
+HERMANAS = {
+    "mamífero": {"ave", "pez", "insecto", "reptil"}, "ave": {"mamífero", "pez", "insecto", "reptil"},
+    "pez": {"mamífero", "ave", "insecto", "reptil"}, "insecto": {"mamífero", "ave", "pez", "reptil"},
+    "reptil": {"mamífero", "ave", "pez", "insecto"},
+    "fruta": {"verdura"}, "verdura": {"fruta"},
+    "flor": {"árbol"}, "árbol": {"flor"},
+    "astro": {"clima", "paisaje"}, "clima": {"astro", "paisaje"}, "paisaje": {"astro", "clima"},
+    "herramienta": {"utensilio de cocina"}, "utensilio de cocina": {"herramienta"},
+    "mueble": {"aparato"}, "aparato": {"mueble"},
+}
 
 # De qué mundo puede venir la intrusa según la clase de regla (si la regla no está en COMPLEMENTO).
 SUPER_INTRUSA = {"lugar": {"objeto"}, "uso": {"objeto", "cuerpo"}}
@@ -358,12 +355,7 @@ def intrusa_valida(regla, w, super_m, tipo):
         return False
     comp = COMPLEMENTO.get(regla.clave)
     if tipo == 2 and regla.clase == "tipo":
-        padre = PADRE_TIPO.get(regla.clave)
-        if padre is None or padre not in p.tags:
-            return False
-        if padre == "objeto" and not (p.tags & (FINAS_OBJETO - {regla.clave})):
-            return False
-        return True
+        return bool(p.tags & HERMANAS.get(regla.clave, set()))
     if tipo in (2, 3, 4):
         if comp is not None:
             return bool(p.tags & comp)

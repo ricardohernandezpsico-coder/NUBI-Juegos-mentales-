@@ -1,0 +1,630 @@
+<title>La estrella intrusa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap" rel="stylesheet">
+<style>
+/* Layout: cabecera breve, selector de ronda, tres teléfonos jugables lado a lado (uno por fila en móvil) */
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0A0B26;
+  --cream:#FFF6E0; --plate:#1A1240; --gold:#FFD98A; --emerald:#34D399; --sky:#7FD8FF;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Atkinson Hyperlegible',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1140px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+h1{font:600 clamp(28px,4vw,40px)/1.1 var(--f-display);margin:0 0 8px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+.shared{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 28px;margin:0 0 26px;padding:0;list-style:none}
+.shared li{min-width:0;border-top:1px solid var(--line);padding-top:10px;font-size:15px;color:var(--dim)}
+.shared b{display:block;color:var(--ink);font:600 16px var(--f-display);margin-bottom:2px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 26px}
+.controls span{color:var(--dim);font-size:14px;margin-right:4px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+.chip:focus-visible,.btn:focus-visible,.bonus button:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.sound{margin-left:auto}
+.models{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px}
+.model{min-width:0;display:flex;flex-direction:column;gap:14px}
+.phone{position:relative;aspect-ratio:9/16;max-width:100%;border-radius:30px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:manipulation;cursor:pointer}
+.bonus,.err{position:absolute;left:6%;right:6%;bottom:4%;display:flex;flex-direction:column;gap:8px}
+.bonus p,.err p{margin:0 0 2px;text-align:center;font:600 18px/1.3 var(--f-display);color:#fff}
+.bonus button,.err button{min-height:48px;border-radius:16px;border:0;background:var(--cream);color:var(--plate);font:600 16px var(--f-display);cursor:pointer}
+.bonus button.ok{background:#BDF5DD;color:#063D2A}
+.bonus button.no{background:#FFD3C7;color:#5A1A0C}
+.err button{background:#FFC94A;color:#3A2600}
+.btimer{height:6px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+.btimer i{display:block;height:100%;width:100%;background:#4CC9F0}
+.tag{font:500 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.model h2{font:600 24px/1.15 var(--f-display);margin:2px 0 0}
+.model dl{margin:0;display:grid;gap:8px}
+.model dt{font:600 14px var(--f-display);color:var(--gold)}
+.model dd{margin:0;font-size:15px;color:var(--dim)}
+.btn{align-self:flex-start;font:600 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid #5B4FC0;border-radius:14px;padding:10px 18px;min-height:44px;cursor:pointer}
+.foot{margin-top:34px;color:var(--dim);font-size:14px;max-width:70ch}
+@media (max-width:980px){.models{grid-template-columns:1fr}.phone{width:100%;max-width:340px;margin-inline:auto}.model{max-width:520px;margin-inline:auto;width:100%}}
+</style>
+
+<div class="wrap">
+  <h1>La estrella intrusa · tres modelos</h1>
+  <p class="lead">Mismo motor de juego, tres maneras de verlo. En cada teléfono toca la palabra que no pertenece: la intrusa cae, respondes «¿Qué las une?» y una chispa traza la constelación de esa regla.</p>
+
+  <ul class="shared">
+    <li><b>La figura es la regla</b>Viven en el agua dibuja una ballena; Vuelan, un ave; Sirven para cortar, unas tijeras. Una figura por cada regla del banco.</li>
+    <li><b>Sin líneas antes de responder</b>Solo estrellas sueltas. Las estrellitas sin palabra ya están en el cielo y la chispa las descubre al pasar.</li>
+    <li><b>Primero «¿Qué las une?»</b>La pregunta va antes del dibujo, así la figura no regala la respuesta.</li>
+    <li><b>Sin símbolos</b>Nunca estrellas geométricas, cruces ni signos: solo objetos y animales dibujados con estrellas.</li>
+  </ul>
+
+  <div class="controls" role="group" aria-label="Ronda de ejemplo">
+    <span>Ronda de ejemplo:</span>
+    <button class="chip" data-fig="agua" aria-pressed="true">Viven en el agua</button>
+    <button class="chip" data-fig="vuelan" aria-pressed="false">Vuelan</button>
+    <button class="chip" data-fig="cortar" aria-pressed="false">Sirven para cortar</button>
+    <button class="chip sound" id="sound" aria-pressed="true">Sonido: sí</button>
+  </div>
+
+  <div class="models">
+    <section class="model" data-model="atlas">
+      <div class="phone"><canvas aria-label="Modelo 1, Atlas celeste. Toca la palabra intrusa."></canvas>
+        <div class="bonus" hidden><p>¿Qué las une?</p><div class="bopts" style="display:flex;flex-direction:column;gap:8px"></div><div class="btimer"><i></i></div></div>
+        <div class="err" hidden><p></p><button type="button">Seguir</button></div>
+      </div>
+      <div><div class="tag">Modelo 1</div><h2>Atlas celeste</h2></div>
+      <dl>
+        <dt>Cómo se ve</dt><dd>Cielo profundo con la Vía Láctea cruzando en diagonal. Estrellas cálidas, chispa dorada.</dd>
+        <dt>Al acertar</dt><dd>La chispa enciende cada estrella con una nota y, al cerrar la figura, aparece el grabado antiguo del objeto, como en los atlas de estrellas de 1690.</dd>
+        <dt>Tu colección</dt><dd>Tu atlas: una lámina por constelación, con su grabado, su regla y la fecha.</dd>
+      </dl>
+      <button class="btn" type="button">Repetir</button>
+    </section>
+
+    <section class="model" data-model="noche">
+      <div class="phone"><canvas aria-label="Modelo 2, Una noche entera. Toca la palabra intrusa."></canvas>
+        <div class="bonus" hidden><p>¿Qué las une?</p><div class="bopts" style="display:flex;flex-direction:column;gap:8px"></div><div class="btimer"><i></i></div></div>
+        <div class="err" hidden><p></p><button type="button">Seguir</button></div>
+      </div>
+      <div><div class="tag">Modelo 2</div><h2>Una noche entera</h2></div>
+      <dl>
+        <dt>Cómo se ve</dt><dd>Cielo con horizonte; el amanecer crece con el tiempo de la partida. Las constelaciones ya ganadas siguen en el cielo.</dd>
+        <dt>Al acertar</dt><dd>La chispa traza la figura y esta cobra vida un instante: la ballena mueve la cola y echa agua, el ave aletea, la tijera corta.</dd>
+        <dt>Tu colección</dt><dd>Al final la cámara se aleja y ves tu noche completa con todas las figuras de la partida.</dd>
+      </dl>
+      <button class="btn" type="button">Repetir</button>
+    </section>
+
+    <section class="model" data-model="aurora">
+      <div class="phone"><canvas aria-label="Modelo 3, Aurora. Toca la palabra intrusa."></canvas>
+        <div class="bonus" hidden><p>¿Qué las une?</p><div class="bopts" style="display:flex;flex-direction:column;gap:8px"></div><div class="btimer"><i></i></div></div>
+        <div class="err" hidden><p></p><button type="button">Seguir</button></div>
+      </div>
+      <div><div class="tag">Modelo 3</div><h2>Aurora</h2></div>
+      <dl>
+        <dt>Cómo se ve</dt><dd>Auroras suaves en verde, el color del área Lenguaje, que ondulan arriba del cielo.</dd>
+        <dt>Al acertar</dt><dd>La chispa traza la figura, esta se llena de luz verde con motas que suben y la aurora se intensifica.</dd>
+        <dt>Tu colección</dt><dd>Un planetario con tus figuras de luz, que se iluminan al tocarlas.</dd>
+      </dl>
+      <button class="btn" type="button">Repetir</button>
+    </section>
+  </div>
+
+  <p class="foot">Boceto interactivo para elegir presentación; no es el juego final. En el juego la figura se gira o refleja al azar y la intrusa ocupa un hueco distinto cada ronda, para que la posición no delate la respuesta. Con «quitar animaciones» activo, las líneas aparecen con un fundido corto y sin partículas.</p>
+</div>
+
+<script>
+const W = 360, H = 640;
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const BOX = { x: 40, y: 170, w: 280, h: 260 };
+let soundOn = true, actx = null;
+
+const FIGS = {
+  agua: {
+    name: 'La Ballena', rule: 'Viven en el agua',
+    words: ['delfín', 'pulpo', 'tiburón', 'medusa'], intr: 'loro',
+    err: 'Todos viven en el agua; el loro no.',
+    opts: ['Viven en el agua', 'Son peces', 'Tienen aletas'],
+    pts: [[0.06,0.52],[0.22,0.30],[0.50,0.24],[0.72,0.40],[0.84,0.50],[0.98,0.30],[0.98,0.72],[0.55,0.70],[0.24,0.66]],
+    word: [0, 2, 5, 7],
+    edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,4],[4,7],[7,8],[8,0]],
+    intrPos: [0.38, 0.47],
+    shapes: [{ smooth: true, pts: [[0.01,0.52],[0.09,0.33],[0.26,0.21],[0.50,0.16],[0.70,0.29],[0.84,0.43],[0.93,0.25],[1.03,0.22],[0.99,0.50],[1.03,0.80],[0.92,0.76],[0.84,0.58],[0.62,0.79],[0.36,0.77],[0.13,0.68]] }],
+    details: [{ eye: [0.16, 0.45] }, { line: [[0.04,0.58],[0.26,0.62]] }],
+    spout: [0.24, 0.24],
+    alive(p, s) { p[5][1] += 13 * s; p[6][1] += 13 * s; p[4][1] += 5 * s; }
+  },
+  vuelan: {
+    name: 'El Ave', rule: 'Vuelan',
+    words: ['águila', 'paloma', 'abeja', 'mariposa'], intr: 'pingüino',
+    err: 'Todos vuelan; el pingüino no.',
+    opts: ['Vuelan', 'Son aves', 'Tienen plumas'],
+    pts: [[0.04,0.50],[0.16,0.44],[0.36,0.52],[0.42,0.28],[0.62,0.04],[0.60,0.50],[0.84,0.56],[0.98,0.44],[0.98,0.70],[0.48,0.70],[0.66,0.92]],
+    word: [1, 4, 6, 10],
+    edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[6,8],[2,9],[9,10],[10,5]],
+    intrPos: [0.30, 0.90],
+    shapes: [{ smooth: true, pts: [[0.01,0.50],[0.14,0.38],[0.30,0.42],[0.40,0.22],[0.64,-0.01],[0.60,0.30],[0.66,0.46],[0.86,0.50],[1.01,0.40],[0.94,0.57],[1.01,0.74],[0.84,0.62],[0.68,0.60],[0.70,0.97],[0.46,0.74],[0.34,0.60],[0.16,0.56]] }],
+    details: [{ eye: [0.15, 0.46] }],
+    alive(p, s) { p[4][1] += 34 * s; p[3][1] += 14 * s; p[10][1] -= 22 * s; p[9][1] -= 8 * s; }
+  },
+  cortar: {
+    name: 'Las Tijeras', rule: 'Sirven para cortar',
+    words: ['cuchillo', 'tijera', 'serrucho', 'cortaúñas'], intr: 'cuchara',
+    err: 'Todos sirven para cortar; la cuchara no.',
+    opts: ['Sirven para cortar', 'Son de cocina', 'Se usan en el baño'],
+    pts: [[0.06,0.12],[0.22,0.02],[0.28,0.28],[0.06,0.88],[0.22,0.98],[0.28,0.72],[0.48,0.50],[0.98,0.66],[0.98,0.34]],
+    word: [1, 4, 7, 8],
+    edges: [[0,1],[1,2],[2,0],[2,6],[6,7],[3,4],[4,5],[5,3],[5,6],[6,8]],
+    intrPos: [0.70, 0.92],
+    shapes: [
+      { ell: [0.18, 0.15, 0.14, 0.15] },
+      { ell: [0.18, 0.85, 0.14, 0.15] },
+      { pts: [[0.29,0.25],[0.50,0.44],[1.0,0.67],[0.52,0.57]] },
+      { pts: [[0.29,0.75],[0.50,0.56],[1.0,0.33],[0.52,0.43]] }
+    ],
+    details: [{ dot: [0.48, 0.50] }],
+    alive(p, s) {
+      const c = p[6], a = 0.17 * Math.max(0, s);
+      const rot = (q, ang) => { const dx = q[0]-c[0], dy = q[1]-c[1]; q[0] = c[0] + dx*Math.cos(ang) - dy*Math.sin(ang); q[1] = c[1] + dx*Math.sin(ang) + dy*Math.cos(ang); };
+      [0,1,2,7].forEach(i => rot(p[i], -a)); [3,4,5,8].forEach(i => rot(p[i], a));
+    }
+  }
+};
+
+const MODELS = {
+  atlas:  { line: '255,217,138', spark: '#FFF8E6', nameFont: 'italic 500 32px Fraunces, Georgia, serif', nameColor: '#FFE3A3', star: '255,236,200' },
+  noche:  { line: '203,235,255', spark: '#FFFFFF', nameFont: '600 28px Fredoka, sans-serif', nameColor: '#FFFFFF', star: '225,240,255' },
+  aurora: { line: '166,247,218', spark: '#EFFFF8', nameFont: '600 28px Fredoka, sans-serif', nameColor: '#C9FBE8', star: '220,255,240' }
+};
+
+const PENTA = [392, 440, 523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98];
+
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const ease = t => t < 0 ? 0 : t > 1 ? 1 : 1 - Math.pow(1 - t, 3);
+const clamp01 = t => Math.max(0, Math.min(1, t));
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x+r, y); c.arcTo(x+w, y, x+w, y+h, r); c.arcTo(x+w, y+h, x, y+h, r); c.arcTo(x, y+h, x, y, r); c.arcTo(x, y, x+w, y, r); c.closePath(); }
+
+const glowCache = {};
+function glow(rgb) {
+  if (glowCache[rgb]) return glowCache[rgb];
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0, `rgba(${rgb},1)`); gr.addColorStop(0.25, `rgba(${rgb},0.45)`); gr.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = gr; g.fillRect(0,0,64,64);
+  return glowCache[rgb] = c;
+}
+
+function buildShape(target, shape, map) {
+  if (shape.ell) {
+    const [cx, cy, rx, ry] = shape.ell, c = map([cx, cy]);
+    target.moveTo(c[0] + rx*BOX.w*map.s, c[1]);
+    target.ellipse(c[0], c[1], rx*BOX.w*map.s, ry*BOX.h*map.s, 0, 0, Math.PI*2);
+    return;
+  }
+  const P = shape.pts.map(map), n = P.length;
+  target.moveTo(P[0][0], P[0][1]);
+  if (!shape.smooth) { for (let i = 1; i < n; i++) target.lineTo(P[i][0], P[i][1]); target.closePath(); return; }
+  for (let i = 0; i < n; i++) {
+    const p0 = P[(i-1+n)%n], p1 = P[i], p2 = P[(i+1)%n], p3 = P[(i+2)%n];
+    target.bezierCurveTo(p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6, p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6, p2[0], p2[1]);
+  }
+  target.closePath();
+}
+function shapeLen(shape, map) {
+  if (shape.ell) return Math.PI * 2 * ((shape.ell[2]*BOX.w + shape.ell[3]*BOX.h) / 2) * map.s;
+  const P = shape.pts.map(map); let L = 0;
+  for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i+1)%P.length]; L += Math.hypot(b[0]-a[0], b[1]-a[1]); }
+  return L * 1.15;
+}
+function makeMap(cx, cy, s) {
+  const f = p => [cx + (p[0]-0.5)*BOX.w*s, cy + (p[1]-0.5)*BOX.h*s];
+  f.s = s; return f;
+}
+const MAIN_MAP = makeMap(BOX.x + BOX.w/2, BOX.y + BOX.h/2, 1);
+
+function ac() {
+  if (!soundOn) return null;
+  try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) { return null; }
+  return actx;
+}
+function bell(freq, delay = 0, vol = 0.09, dur = 1.4) {
+  const a = ac(); if (!a) return;
+  const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  g.connect(a.destination);
+  [[1, 1], [2.01, 0.25], [3.98, 0.08]].forEach(([m, v]) => { const o = a.createOscillator(), og = a.createGain(); o.type = 'sine'; o.frequency.value = freq*m; og.gain.value = v; o.connect(og).connect(g); o.start(t); o.stop(t + dur); });
+}
+function whoosh() {
+  const a = ac(); if (!a) return;
+  const len = a.sampleRate * 0.7, b = a.createBuffer(1, len, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+  const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime;
+  s.buffer = b; f.type = 'bandpass'; f.Q.value = 3; f.frequency.setValueAtTime(2600, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.7);
+  g.gain.setValueAtTime(0.07, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+  s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+function soft(freq) { bell(freq, 0, 0.05, 0.6); }
+
+function makeBg(model) {
+  const S = 2, c = document.createElement('canvas'); c.width = W*S; c.height = H*S;
+  const g = c.getContext('2d'); g.scale(S, S);
+  const R = rng(model === 'atlas' ? 11 : model === 'noche' ? 23 : 37);
+  const sky = g.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#02030F'); sky.addColorStop(0.55, '#050823'); sky.addColorStop(1, '#0A0F33');
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  const neb = (x, y, r, rgb, a) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(0, 0, W, H); };
+  if (model === 'atlas') {
+    neb(70, 200, 220, '184,164,255', 0.10); neb(300, 470, 200, '255,107,74', 0.07);
+    g.save(); g.translate(W/2, H/2); g.rotate(-0.62);
+    const band = g.createLinearGradient(0, -90, 0, 90);
+    band.addColorStop(0, 'rgba(190,180,255,0)'); band.addColorStop(0.5, 'rgba(200,190,255,0.09)'); band.addColorStop(1, 'rgba(190,180,255,0)');
+    g.fillStyle = band; g.fillRect(-500, -90, 1000, 180);
+    for (let i = 0; i < 1500; i++) { const x = (R()-0.5)*900, y = ((R()+R()+R())/3 - 0.5) * 170; g.fillStyle = `rgba(235,230,255,${0.08 + R()*0.35})`; g.fillRect(x, y, 0.5 + R()*0.6, 0.5 + R()*0.6); }
+    g.restore();
+  } else if (model === 'noche') {
+    neb(290, 150, 200, '76,201,240', 0.09); neb(60, 380, 180, '184,164,255', 0.07);
+    const dawn = g.createLinearGradient(0, 470, 0, 640);
+    dawn.addColorStop(0, 'rgba(255,150,100,0)'); dawn.addColorStop(0.7, 'rgba(255,140,95,0.20)'); dawn.addColorStop(1, 'rgba(255,190,120,0.30)');
+    g.fillStyle = dawn; g.fillRect(0, 470, W, 170);
+  } else {
+    neb(180, 120, 260, '16,185,129', 0.08); neb(320, 500, 200, '76,201,240', 0.06);
+  }
+  for (let i = 0; i < 230; i++) {
+    const x = R()*W, y = R()*H, r = 0.3 + Math.pow(R(), 3) * 1.3, tint = R();
+    g.fillStyle = tint > 0.92 ? `rgba(255,214,190,${0.4 + R()*0.5})` : tint > 0.84 ? `rgba(190,215,255,${0.4 + R()*0.5})` : `rgba(255,255,255,${0.25 + R()*0.6})`;
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI*2); g.fill();
+  }
+  if (model === 'noche') {
+    g.fillStyle = '#03040D';
+    g.beginPath(); g.moveTo(0, 612);
+    for (let x = 0; x <= W; x += 10) g.lineTo(x, 606 - Math.sin(x/38)*7 - Math.sin(x/13)*2.5);
+    g.lineTo(W, H); g.lineTo(0, H); g.closePath(); g.fill();
+  }
+  const tw = []; for (let i = 0; i < 28; i++) tw.push([R()*W, R()*H, 0.6 + R()*1.1, R()*6.28, 0.6 + R()*1.4]);
+  return { img: c, tw };
+}
+
+const testCtx = document.createElement('canvas').getContext('2d');
+
+class Phone {
+  constructor(section) {
+    this.sec = section; this.m = section.dataset.model; this.M = MODELS[this.m];
+    this.cv = section.querySelector('canvas'); this.ctx = this.cv.getContext('2d');
+    this.bonus = section.querySelector('.bonus'); this.bopts = section.querySelector('.bopts'); this.bbar = section.querySelector('.btimer i');
+    this.errBox = section.querySelector('.err');
+    this.bg = makeBg(this.m); this.visible = true;
+    section.querySelector('.btn').addEventListener('click', () => this.reset());
+    this.errBox.querySelector('button').addEventListener('click', () => this.reset());
+    this.cv.addEventListener('pointerdown', e => this.tap(e));
+    new ResizeObserver(() => this.resize()).observe(this.cv);
+    new IntersectionObserver(es => { this.visible = es[0].isIntersecting; }).observe(this.cv);
+    this.setFig('agua');
+  }
+  resize() {
+    const r = this.cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+    this.cv.width = Math.round(r.width * d); this.cv.height = Math.round(r.height * d);
+    this.scale = this.cv.width / W;
+  }
+  setFig(k) { this.figKey = k; this.fig = FIGS[k]; this.reset(); }
+  reset() {
+    const f = this.fig;
+    this.state = 'idle'; this.t = performance.now(); this.parts = []; this.flares = [];
+    this.lit = new Array(f.edges.length).fill(0); this.ign = new Set(); this.noteI = 0; this.bonusOk = null; this.wrong = null;
+    this.base = f.pts.map(MAIN_MAP);
+    this.stars = f.word.map((pi, i) => ({ pi, word: f.words[i], intr: false }));
+    const ip = MAIN_MAP(f.intrPos);
+    this.stars.push({ pi: -1, x: ip[0], y: ip[1], word: f.intr, intr: true, above: false });
+    this.bonus.hidden = true; this.errBox.hidden = true;
+    this.edgeLen = f.edges.map(([a, b]) => Math.hypot(this.base[b][0]-this.base[a][0], this.base[b][1]-this.base[a][1]));
+    this.cum = [0]; this.edgeLen.forEach(L => this.cum.push(this.cum[this.cum.length-1] + L));
+  }
+  pts(now) {
+    const p = this.base.map(q => q.slice());
+    if (this.m === 'noche' && (this.state === 'reveal' || this.state === 'done') && !REDUCE) {
+      const t = (now - this.tReveal) / 1000;
+      if (t < 2.2) { const env = Math.sin(Math.PI * clamp01(t / 2.2)); this.fig.alive(p, Math.sin(t * Math.PI * 2 * 1.1) * env); }
+    }
+    return p;
+  }
+  starPos(s, p) { return s.intr ? [s.x, s.y] : p[s.pi]; }
+  plate(c, s, x, y) {
+    c.font = '700 17px "Atkinson Hyperlegible", sans-serif';
+    const w = c.measureText(s.word).width + 22, h = 30;
+    const above = !s.intr && this.fig.pts[s.pi][1] < 0.35;
+    const py = above ? y - 14 - h : y + 14;
+    const px = Math.max(8, Math.min(W - 8 - w, x - w/2));
+    return { x: px, y: py, w, h };
+  }
+  tap(e) {
+    if (this.state !== 'idle') return;
+    const r = this.cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+    const p = this.pts(performance.now());
+    let hit = null, best = 1e9;
+    for (const s of this.stars) {
+      const [sx, sy] = this.starPos(s, p), pl = this.plate(this.ctx, s, sx, sy);
+      const inPlate = x >= pl.x - 6 && x <= pl.x + pl.w + 6 && y >= pl.y - 6 && y <= pl.y + pl.h + 6;
+      const d = Math.hypot(x - sx, y - sy);
+      if ((inPlate || d < 34) && d < best) { best = d; hit = s; }
+    }
+    if (!hit) return;
+    ac();
+    if (hit.intr) {
+      this.state = 'fall'; this.tFall = performance.now();
+      const [sx] = this.starPos(hit, p); const dx = sx < W/2 ? -1 : 1;
+      this.fallDir = [dx * 0.86, 0.5]; whoosh();
+    } else {
+      this.state = 'error'; this.wrong = hit; soft(220);
+      this.errBox.querySelector('p').textContent = this.fig.err; this.errBox.hidden = false;
+    }
+  }
+  startBonus() {
+    this.state = 'bonus'; this.bonus.hidden = false; this.bopts.innerHTML = '';
+    const opts = this.fig.opts.slice().sort(() => Math.random() - 0.5);
+    opts.forEach(o => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = o;
+      b.addEventListener('click', () => this.answer(o, b)); this.bopts.appendChild(b);
+    });
+    this.tBonus = performance.now(); this.bonusDur = 6000;
+  }
+  answer(o, btn) {
+    if (this.state !== 'bonus') return;
+    this.state = 'bonusShown';
+    const ok = o === this.fig.rule; this.bonusOk = ok;
+    btn.classList.add(ok ? 'ok' : 'no');
+    if (!ok) [...this.bopts.children].forEach(b => { if (b.textContent === this.fig.rule) b.classList.add('ok'); });
+    ok ? [1046.5, 1318.5].forEach((f, i) => bell(f, i*0.08, 0.06, 0.9)) : soft(330);
+    setTimeout(() => this.startSpark(), 750);
+  }
+  startSpark() {
+    this.bonus.hidden = true; this.state = 'spark'; this.tSpark = performance.now();
+  }
+  ignite(i, now, p) {
+    if (this.ign.has(i)) return;
+    this.ign.add(i); this.flares.push({ x: p[i][0], y: p[i][1], t: now });
+    bell(PENTA[Math.min(PENTA.length - 1, this.noteI++)], 0, this.fig.word.includes(i) ? 0.09 : 0.05, 1.3);
+  }
+  emit(x, y, n, spread, life, up) {
+    if (REDUCE) return;
+    for (let i = 0; i < n; i++) this.parts.push({ x, y, vx: (Math.random()-0.5)*spread, vy: (Math.random()-0.5)*spread - (up || 0), t: performance.now(), life: life*(0.6 + Math.random()*0.6), r: 0.6 + Math.random()*1.4 });
+  }
+  frame(now) {
+    if (!this.visible || !this.scale) return;
+    const c = this.ctx, M = this.M, f = this.fig;
+    c.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+    c.drawImage(this.bg.img, 0, 0, W, H);
+    if (!REDUCE) for (const [x, y, r, ph, sp] of this.bg.tw) { const a = 0.25 + 0.55 * (0.5 + 0.5*Math.sin(now/1000*sp + ph)); c.globalAlpha = a; c.drawImage(glow('255,255,255'), x - r*4, y - r*4, r*8, r*8); }
+    c.globalAlpha = 1;
+
+    if (this.state === 'fall' && now - this.tFall > 900) this.startBonus();
+    if (this.state === 'bonus') {
+      const left = 1 - (now - this.tBonus) / this.bonusDur; this.bbar.style.width = Math.max(0, left*100) + '%';
+      if (left <= 0) { this.state = 'bonusShown'; this.bonusOk = false; [...this.bopts.children].forEach(b => { if (b.textContent === f.rule) b.classList.add('ok'); }); setTimeout(() => this.startSpark(), 650); }
+    }
+
+    const p = this.pts(now);
+    const total = this.cum[this.cum.length - 1];
+    let head = null;
+    if (this.state === 'spark') {
+      const speed = REDUCE ? 4000 : 430, dist = (now - this.tSpark) / 1000 * speed;
+      for (let i = 0; i < f.edges.length; i++) {
+        const [a, b] = f.edges[i];
+        if (dist >= this.cum[i]) this.ignite(a, now, p);
+        if (dist >= this.cum[i+1]) { if (!this.lit[i]) this.lit[i] = now; this.ignite(b, now, p); }
+        else if (dist >= this.cum[i] && !head) { const k = (dist - this.cum[i]) / this.edgeLen[i]; head = { i, k, x: p[a][0] + (p[b][0]-p[a][0])*k, y: p[a][1] + (p[b][1]-p[a][1])*k }; }
+      }
+      if (dist >= total) {
+        this.state = 'reveal'; this.tReveal = now;
+        [523.25, 659.25, 783.99, 1046.5].forEach((fr, i) => bell(fr, i*0.07, 0.06, 2.2));
+      }
+    }
+    const tR = (this.state === 'reveal' || this.state === 'done') ? now - this.tReveal : -1;
+    if (this.state === 'reveal' && tR > (this.m === 'noche' ? 3600 : 1900)) this.state = 'done';
+
+    let cam = 1;
+    if (this.m === 'noche' && tR > 2200) cam = 1 - 0.38 * (REDUCE ? 1 : ease((tR - 2200) / 1300));
+    c.save(); c.translate(W/2, H/2); c.scale(cam, cam); c.translate(-W/2, -H/2);
+
+    if (this.m === 'aurora') this.drawAurora(c, now, tR);
+    if (this.m === 'noche') this.drawOthers(c, cam);
+
+    if (tR >= 0) this.drawReveal(c, now, tR, p);
+
+    for (let i = 0; i < f.edges.length; i++) {
+      const [a, b] = f.edges[i];
+      if (this.lit[i]) { const al = REDUCE ? clamp01((now - this.lit[i]) / 300) : 0.4 + 0.6*clamp01((now - this.lit[i]) / 380); this.line(c, p[a], p[b], al, 1); }
+      else if (head && head.i === i) this.line(c, p[a], [head.x, head.y], 0.95, 1);
+    }
+
+    for (let i = 0; i < p.length; i++) {
+      if (f.word.includes(i)) continue;
+      const on = this.ign.has(i);
+      if (on) { c.globalAlpha = 0.75; c.drawImage(glow(M.star), p[i][0]-14, p[i][1]-14, 28, 28); c.globalAlpha = 1; c.fillStyle = '#FFFFFF'; c.beginPath(); c.arc(p[i][0], p[i][1], 2.4, 0, 7); c.fill(); }
+      else { c.fillStyle = 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(p[i][0], p[i][1], 1.25, 0, 7); c.fill(); }
+    }
+
+    const pulse = (this.state === 'bonus' || this.state === 'bonusShown') ? 0.25 * (0.5 + 0.5*Math.sin(now/260)) : 0;
+    for (const s of this.stars) {
+      let [x, y] = this.starPos(s, p);
+      if (s.intr && this.state !== 'idle' && this.state !== 'error') {
+        const k = clamp01((now - this.tFall) / 900); if (k >= 1) continue;
+        const d = (REDUCE ? 0 : 1) * Math.pow(k, 1.6) * 420;
+        x += this.fallDir[0]*d; y += this.fallDir[1]*d;
+        if (!REDUCE) {
+          const tl = c.createLinearGradient(x, y, x - this.fallDir[0]*120, y - this.fallDir[1]*120);
+          tl.addColorStop(0, `rgba(255,220,190,${0.8*(1-k)})`); tl.addColorStop(1, 'rgba(255,220,190,0)');
+          c.strokeStyle = tl; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, y); c.lineTo(x - this.fallDir[0]*120, y - this.fallDir[1]*120); c.stroke();
+          this.emit(x, y, 1, 20, 500);
+        }
+        c.globalAlpha = 1 - k;
+        c.drawImage(glow('255,225,200'), x - 20, y - 20, 40, 40); c.fillStyle = '#FFF4E8'; c.beginPath(); c.arc(x, y, 3.6, 0, 7); c.fill();
+        c.globalAlpha = 1; continue;
+      }
+      const tw = REDUCE ? 1 : 1 + 0.08*Math.sin(now/700 + x);
+      const g = (s.intr ? 0 : pulse) + (this.ign.has(s.pi) ? 0.35 : 0);
+      c.globalAlpha = 0.55 + g; c.drawImage(glow(M.star), x - 24*tw, y - 24*tw, 48*tw, 48*tw); c.globalAlpha = 1;
+      c.fillStyle = '#FFF8E8'; c.beginPath(); c.arc(x, y, 4.4, 0, 7); c.fill();
+      if (this.state === 'error') {
+        if (s === this.wrong) { c.strokeStyle = '#FF7A5C'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 15, 0, 7); c.stroke(); c.beginPath(); c.moveTo(x-5, y-5); c.lineTo(x+5, y+5); c.moveTo(x+5, y-5); c.lineTo(x-5, y+5); c.stroke(); }
+        if (s.intr) { c.strokeStyle = '#FFC94A'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 15 + 2*Math.sin(now/200), 0, 7); c.stroke(); }
+      }
+    }
+
+    if (head && !REDUCE) {
+      this.emit(head.x, head.y, 3, 60, 600);
+      c.globalCompositeOperation = 'lighter';
+      c.drawImage(glow(M.line), head.x - 22, head.y - 22, 44, 44);
+      c.globalCompositeOperation = 'source-over';
+      c.fillStyle = M.spark; c.beginPath(); c.arc(head.x, head.y, 2.8, 0, 7); c.fill();
+    }
+
+    c.globalCompositeOperation = 'lighter';
+    this.flares = this.flares.filter(fl => {
+      const k = (now - fl.t) / 650; if (k >= 1) return false;
+      c.strokeStyle = `rgba(${M.line},${0.7*(1-k)})`; c.lineWidth = 1.6; c.beginPath(); c.arc(fl.x, fl.y, 5 + 22*ease(k), 0, 7); c.stroke();
+      c.globalAlpha = 1 - k; c.drawImage(glow(M.star), fl.x - 26, fl.y - 26, 52, 52); c.globalAlpha = 1;
+      return true;
+    });
+    this.parts = this.parts.filter(q => {
+      const k = (now - q.t) / q.life; if (k >= 1) return false;
+      q.x += q.vx/60; q.y += q.vy/60;
+      c.fillStyle = `rgba(${M.line},${0.9*(1-k)})`; c.beginPath(); c.arc(q.x, q.y, q.r*(1-k*0.5), 0, 7); c.fill();
+      return true;
+    });
+    c.globalCompositeOperation = 'source-over';
+
+    const labelA = cam < 1 ? clamp01(1 - (1 - cam) / 0.2) : 1;
+    if (labelA > 0) {
+      c.globalAlpha = labelA;
+      for (const s of this.stars) {
+        let [x, y] = this.starPos(s, p);
+        if (s.intr && this.state !== 'idle' && this.state !== 'error') { const k = clamp01((now - this.tFall) / 250); if (k >= 1) continue; c.globalAlpha = labelA*(1-k); }
+        const pl = this.plate(c, s, x, y);
+        c.fillStyle = 'rgba(2,3,15,0.35)'; rr(c, pl.x, pl.y + 2, pl.w, pl.h, 10); c.fill();
+        c.fillStyle = s === this.wrong ? '#FFE1D8' : '#FFF6E0'; rr(c, pl.x, pl.y, pl.w, pl.h, 10); c.fill();
+        c.fillStyle = '#1A1240'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(s.word, pl.x + pl.w/2, pl.y + pl.h/2 + 1);
+        c.globalAlpha = labelA;
+      }
+      c.globalAlpha = 1;
+    }
+    c.restore();
+
+    this.drawHud(c);
+    c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+    if (this.state === 'idle') {
+      c.fillStyle = '#FFFFFF'; c.font = '600 20px Fredoka, sans-serif'; c.fillText('Una no pertenece. Tócala.', W/2, 566);
+      c.fillStyle = '#C8C2E8'; c.font = '400 15px "Atkinson Hyperlegible", sans-serif'; c.fillText('Mira las cinco y decide con calma', W/2, 592);
+    }
+    if (tR > 900 && !(this.m === 'noche' && tR > 2400)) {
+      const a = ease((tR - 900) / 600); c.globalAlpha = a;
+      c.fillStyle = M.nameColor; c.font = M.nameFont; c.fillText(f.name, W/2, 548);
+      c.fillStyle = '#D9D4F5'; c.font = '700 16px "Atkinson Hyperlegible", sans-serif'; c.fillText(f.rule, W/2, 576);
+      if (this.bonusOk) { c.fillStyle = '#FFC94A'; c.font = '600 14px Fredoka, sans-serif'; c.fillText('La nombraste tú · puntos ×2', W/2, 600); }
+      c.globalAlpha = 1;
+    }
+    if (this.m === 'noche' && tR > 2600) {
+      const a = ease((tR - 2600) / 700); c.globalAlpha = a;
+      c.fillStyle = '#FFFFFF'; c.font = '600 22px Fredoka, sans-serif'; c.fillText('Tu noche', W/2, 552);
+      c.fillStyle = '#D9D4F5'; c.font = '700 15px "Atkinson Hyperlegible", sans-serif'; c.fillText('3 constelaciones · amanece al terminar', W/2, 578);
+      c.globalAlpha = 1;
+    }
+  }
+  line(c, a, b, al, w) {
+    const rgb = this.M.line;
+    c.lineCap = 'round';
+    c.strokeStyle = `rgba(${rgb},${0.10*al})`; c.lineWidth = 9*w; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+    c.strokeStyle = `rgba(${rgb},${0.25*al})`; c.lineWidth = 4*w; c.stroke();
+    c.strokeStyle = `rgba(${rgb},${0.95*al})`; c.lineWidth = 1.5*w; c.stroke();
+  }
+  drawHud(c) {
+    c.textBaseline = 'middle'; c.textAlign = 'center'; c.font = '600 13px Fredoka, sans-serif';
+    let x = 18;
+    for (const [t, col] of [['Nivel 7', '#7FD8FF'], ['Racha 3', '#FFC94A'], ['620', '#FFFFFF']]) {
+      const w = c.measureText(t).width + 22;
+      c.fillStyle = 'rgba(20,17,46,0.85)'; rr(c, x, 26, w, 26, 13); c.fill();
+      c.strokeStyle = '#3A2E78'; c.lineWidth = 1; c.stroke();
+      c.fillStyle = col; c.fillText(t, x + w/2, 39.5); x += w + 8;
+    }
+    c.textAlign = 'right'; c.fillStyle = '#FFFFFF'; c.fillText('1:12', W - 20, 39.5);
+  }
+  drawReveal(c, now, tR, p) {
+    const f = this.fig;
+    if (this.m === 'atlas') {
+      const k = REDUCE ? 1 : ease(tR / 1500);
+      c.save();
+      c.strokeStyle = 'rgba(233,199,123,0.55)'; c.lineWidth = 1.2; c.lineJoin = 'round';
+      for (const sh of f.shapes) {
+        const L = shapeLen(sh, MAIN_MAP), big = 5000;
+        c.setLineDash([big, big]); c.lineDashOffset = big - k*L;
+        c.beginPath(); buildShape(c, sh, MAIN_MAP); c.stroke();
+      }
+      c.setLineDash([]);
+      const hk = clamp01((tR - 700) / 900);
+      if (hk > 0) {
+        c.beginPath(); for (const sh of f.shapes) buildShape(c, sh, MAIN_MAP); c.save(); c.clip();
+        c.strokeStyle = `rgba(233,199,123,${0.13*hk})`; c.lineWidth = 0.8;
+        for (let x = -300; x < 400; x += 6) { c.beginPath(); c.moveTo(x, 150); c.lineTo(x + 300, 460); c.stroke(); }
+        c.restore();
+        c.globalAlpha = hk; c.fillStyle = 'rgba(233,199,123,0.8)'; c.strokeStyle = 'rgba(233,199,123,0.6)';
+        for (const d of f.details) {
+          if (d.eye) { const q = MAIN_MAP(d.eye); c.beginPath(); c.arc(q[0], q[1], 2.6, 0, 7); c.fill(); }
+          if (d.dot) { const q = MAIN_MAP(d.dot); c.beginPath(); c.arc(q[0], q[1], 4, 0, 7); c.stroke(); }
+          if (d.line) { const a = MAIN_MAP(d.line[0]), b = MAIN_MAP(d.line[1]); c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo((a[0]+b[0])/2, b[1] + 6, b[0], b[1]); c.stroke(); }
+        }
+        c.globalAlpha = 1;
+      }
+      c.restore();
+    } else if (this.m === 'aurora') {
+      const k = REDUCE ? 0.24 : (tR < 900 ? 0.34*ease(tR / 900) : 0.34 - 0.1*ease((tR - 900) / 1200));
+      const path = new Path2D(); for (const sh of f.shapes) buildShape(path, sh, MAIN_MAP);
+      const gr = c.createLinearGradient(BOX.x, BOX.y, BOX.x + BOX.w, BOX.y + BOX.h);
+      gr.addColorStop(0, `rgba(16,185,129,${k})`); gr.addColorStop(1, `rgba(76,201,240,${k})`);
+      c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = gr; c.fill(path);
+      c.strokeStyle = `rgba(166,247,218,${k*1.4})`; c.lineWidth = 1.2; c.stroke(path); c.restore();
+      if (tR < 2600 && !REDUCE) for (let i = 0; i < 2; i++) {
+        const x = BOX.x + Math.random()*BOX.w, y = BOX.y + Math.random()*BOX.h;
+        if (testCtx.isPointInPath(path, x, y)) this.emit(x, y, 1, 10, 1400, 26);
+      }
+    } else if (this.m === 'noche' && f.spout && !REDUCE && tR < 2000 && Math.random() < 0.6) {
+      const q = p[1]; this.emit(q[0] + 4, q[1] - 6, 2, 30, 900, 70);
+    }
+  }
+  drawAurora(c, now, tR) {
+    const boost = tR >= 0 ? 0.06 * Math.max(0, 1 - Math.abs(tR - 900) / 1800) : 0;
+    const t = REDUCE ? 0 : now / 1000;
+    c.save(); c.globalCompositeOperation = 'lighter';
+    [['16,185,129', 70, 0], ['76,201,240', 110, 1.7], ['184,164,255', 150, 3.1]].forEach(([rgb, base, ph], i) => {
+      const gr = c.createLinearGradient(0, base - 40, 0, base + 120);
+      const a = 0.11 + boost - i*0.02;
+      gr.addColorStop(0, `rgba(${rgb},0)`); gr.addColorStop(0.35, `rgba(${rgb},${a})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+      c.fillStyle = gr; c.beginPath();
+      for (let x = -10; x <= W + 10; x += 10) { const y = base + Math.sin(x/70 + t*0.5 + ph)*18 + Math.sin(x/31 + t*0.9 + ph)*7; x === -10 ? c.moveTo(x, y - 30) : c.lineTo(x, y - 30); }
+      for (let x = W + 10; x >= -10; x -= 10) { const y = base + Math.sin(x/70 + t*0.5 + ph)*18 + Math.sin(x/31 + t*0.9 + ph)*7; c.lineTo(x, y + 120); }
+      c.closePath(); c.fill();
+    });
+    c.restore();
+  }
+  drawOthers(c, cam) {
+    const keys = Object.keys(FIGS).filter(k => k !== this.figKey);
+    const spots = [[-10, 70], [372, 596]];
+    keys.forEach((k, j) => {
+      const F = FIGS[k], map = makeMap(spots[j][0], spots[j][1], 0.6), P = F.pts.map(map);
+      const al = 0.35 + 0.4 * clamp01((1 - cam) / 0.38);
+      F.edges.forEach(([a, b]) => this.line(c, P[a], P[b], al * 0.75, 0.8));
+      P.forEach((q, i) => { const w = F.word.includes(i); c.globalAlpha = al; c.fillStyle = '#FFFFFF'; c.beginPath(); c.arc(q[0], q[1], w ? 2.6 : 1.6, 0, 7); c.fill(); });
+      c.globalAlpha = al * clamp01((1 - cam) / 0.3); c.fillStyle = '#D9D4F5'; c.font = '600 18px Fredoka, sans-serif'; c.textAlign = 'center';
+      c.fillText(F.name, spots[j][0], spots[j][1] + 0.6*BOX.h/2 + 30);
+      c.globalAlpha = 1;
+    });
+  }
+}
+
+const phones = [...document.querySelectorAll('.model')].map(s => new Phone(s));
+document.querySelectorAll('.chip[data-fig]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.chip[data-fig]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  phones.forEach(p => p.setFig(b.dataset.fig));
+}));
+const sb = document.getElementById('sound');
+sb.addEventListener('click', () => { soundOn = !soundOn; sb.setAttribute('aria-pressed', String(soundOn)); sb.textContent = 'Sonido: ' + (soundOn ? 'sí' : 'no'); });
+function loop(now) { phones.forEach(p => p.frame(now)); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>

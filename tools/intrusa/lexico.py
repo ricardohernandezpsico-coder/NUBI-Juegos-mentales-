@@ -21,7 +21,7 @@ IMPLICA = {
     "fruta": ["comida", "dulce o ácido"], "verdura": ["comida", "planta comestible"], "bebida": ["se bebe"],
     "comida": ["se come"],
     "herramienta": ["objeto"], "utensilio de cocina": ["objeto", "se usa en la cocina"], "mueble": ["objeto", "se usa en la casa"],
-    "prenda": ["objeto", "se viste"], "calzado": ["prenda", "se pone en los pies"], "vehículo": ["objeto", "sirve para transportar"],
+    "prenda": ["objeto", "se viste"], "calzado": ["objeto", "se viste", "se pone en los pies"], "vehículo": ["objeto", "sirve para transportar"],
     "instrumento": ["objeto", "suena"], "material escolar": ["objeto", "se usa en la escuela"], "juguete": ["objeto"],
     "aparato": ["objeto", "se usa en la casa"],
     "parte del cuerpo": ["cuerpo"], "oficio": ["persona"], "lugar": ["lugar"], "astro": ["natural", "está en el cielo", "brilla"], "clima": ["natural"],
@@ -156,10 +156,10 @@ pincel|m|herramienta,sirve para pintar,mango
 cuchillo|m|utensilio de cocina,sirve para cortar,metal,se usa en la mesa,mango
 cuchara|f|utensilio de cocina,sirve para comer,metal,se usa en la mesa,mango
 tenedor|m|utensilio de cocina,sirve para comer,metal,se usa en la mesa,puntas
-plato|m|utensilio de cocina,se usa en la mesa,sirve para servir la comida,redondo
-vaso|m|utensilio de cocina,sirve para beber,se usa en la mesa,vidrio
-taza|f|utensilio de cocina,sirve para beber,se usa en la mesa,asa
-jarra|f|utensilio de cocina,se usa en la mesa,asa,sirve para servir líquidos
+plato|m|objeto,se usa en la cocina,se usa en la mesa,sirve para servir la comida,redondo
+vaso|m|objeto,se usa en la cocina,sirve para beber,se usa en la mesa,vidrio
+taza|f|objeto,se usa en la cocina,sirve para beber,se usa en la mesa,asa
+jarra|f|objeto,se usa en la cocina,se usa en la mesa,asa,sirve para servir líquidos
 olla|f|utensilio de cocina,sirve para cocinar,va al fuego,metal,asa
 sartén|f|utensilio de cocina,sirve para cocinar,va al fuego,metal,mango,redondo
 tetera|f|utensilio de cocina,va al fuego,metal,asa,sirve para servir líquidos
@@ -206,8 +206,8 @@ vestido|m|prenda,tela,se pone en el cuerpo
 falda|f|prenda,tela,se pone en el cuerpo
 bufanda|f|prenda,tela,sirve para abrigarse,se pone en el cuello
 guante|m|prenda,tela,sirve para abrigarse,se pone en las manos
-sombrero|m|prenda,se pone en la cabeza
-gorro|m|prenda,tela,se pone en la cabeza,sirve para abrigarse
+sombrero|m|objeto,se viste,se pone en la cabeza
+gorro|m|objeto,se viste,tela,se pone en la cabeza,sirve para abrigarse
 calcetín|m|prenda,tela,se pone en los pies
 zapato|m|calzado,se pone en los pies,cuero
 bota|f|calzado,se pone en los pies,cuero
@@ -342,7 +342,7 @@ cantimplora|f|objeto,sirve para beber,sirve para guardar líquidos,metal
 termo|m|objeto,sirve para beber,sirve para guardar líquidos,metal
 biberón|m|objeto,sirve para beber,sirve para guardar líquidos
 cucharita|f|utensilio de cocina,sirve para comer,metal,se usa en la mesa,mango
-palillos|m|utensilio de cocina,sirve para comer,se usa en la mesa
+palillos|m|objeto,se usa en la cocina,sirve para comer,se usa en la mesa
 farol|m|objeto,sirve para alumbrar,da luz,metal
 faro|m|objeto,sirve para alumbrar,da luz
 antorcha|f|objeto,sirve para alumbrar,da luz,caliente,mango
@@ -382,9 +382,9 @@ canoa|f|vehículo,flota,va por el agua,navega,sin motor
 kayak|m|vehículo,flota,va por el agua,navega,sin motor
 dron|m|aparato,vuela,va por el aire,motor,hélices
 planeador|m|vehículo,vuela,va por el aire,alas,sin motor
-casco|m|prenda,se pone en la cabeza,duro
-gorra|f|prenda,se pone en la cabeza,tela
-boina|f|prenda,tela,se pone en la cabeza
+casco|m|objeto,se viste,se pone en la cabeza,duro
+gorra|f|objeto,se viste,se pone en la cabeza,tela
+boina|f|objeto,se viste,tela,se pone en la cabeza
 diadema|f|objeto,se pone en la cabeza
 zapatilla|f|calzado,se pone en los pies,tela
 pantufla|f|calzado,se pone en los pies,tela,blando
@@ -424,6 +424,11 @@ flor|f|flor,pétalos
 puerto|m|lugar,construido
 garaje|m|lugar,construido
 remo|m|objeto,madera,sirve para mover el bote
+roble|m|árbol,raíces,tronco,hojas
+olivo|m|árbol,raíces,tronco,hojas
+peluche|m|juguete,blando,tela
+trompo|m|juguete,madera,gira
+rompecabezas|m|juguete,piezas
 # ---- oficios
 médico|m|oficio
 bombero|m|oficio
