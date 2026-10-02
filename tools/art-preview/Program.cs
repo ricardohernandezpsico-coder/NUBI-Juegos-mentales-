@@ -195,6 +195,18 @@ internal static class Program
         DumpRect("heat_trail_plain", NeuroVida.Games.Meteoros.MeteorSprites.RenderHeatTrail(96, 288, false), 96, 288);
 
         // ¿Verdad o disparate?: la antena y los íconos de los botones
+        // Cosecha de palabras: el planeta-huerto, su pasto, las plantas, el árbol dorado y la ficha-luna
+        Dump("cosecha_planet", NeuroVida.Games.Cosecha.CosechaSprites.Planet());
+        Dump("cosecha_grass", NeuroVida.Games.Cosecha.CosechaSprites.GrassCap());
+        Dump("cosecha_tufts", NeuroVida.Games.Cosecha.CosechaSprites.Tufts());
+        Dump("cosecha_moon", NeuroVida.Games.Cosecha.CosechaSprites.Moon());
+        Dump("cosecha_seed", NeuroVida.Games.Cosecha.CosechaSprites.Seed());
+        Dump("cosecha_tree", NeuroVida.Games.Cosecha.CosechaSprites.GoldenTree());
+        Dump("cosecha_seedicon", NeuroVida.Games.Cosecha.CosechaSprites.SeedIcon());
+        Dump("cosecha_backicon", NeuroVida.Games.Cosecha.CosechaSprites.BackIcon());
+        foreach (NeuroVida.Games.Cosecha.PlantKind pk in Enum.GetValues(typeof(NeuroVida.Games.Cosecha.PlantKind)))
+            Dump("cosecha_plant_" + pk, NeuroVida.Games.Cosecha.CosechaSprites.Plant(pk));
+
         DumpPx("disparate_antenna", NeuroVida.Games.Disparate.DisparateSprites.RenderAntenna(288), 288);
         DumpPx("disparate_check", NeuroVida.Games.Disparate.DisparateSprites.RenderFlat(96, (x, y) => ClayRaster.Union(ClayRaster.Capsule(x, y, -0.55f, 0f, -0.18f, -0.4f, 0.17f), ClayRaster.Capsule(x, y, -0.18f, -0.4f, 0.6f, 0.46f, 0.17f)), new Color(0.1f, 0.07f, 0.25f, 1f)), 96);
     }

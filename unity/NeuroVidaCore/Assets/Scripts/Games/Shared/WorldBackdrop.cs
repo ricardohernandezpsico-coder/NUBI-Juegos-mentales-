@@ -210,6 +210,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.18f), NebulaBPos = new Vector2(0.85f, 0.3f),
         };
 
+        /// <summary>Cosecha de palabras: el cielo de la app con nebulosas más verdes (el huerto es el elemento propio y lo arma el juego).</summary>
+        public static GameWorld Huerto => new GameWorld
+        {
+            Name = "Huerto", SurfaceHeight = 0f, Stars = 70,
+            VanishingPoint = new Vector2(0.5f, 0.5f),
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.10f), NebulaAPos = new Vector2(0.5f, 0.38f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.9f, 0.85f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

@@ -163,5 +163,21 @@ namespace NeuroVida.Contracts
         public int sv_best_streak = -1;
         /// <summary>Solo ¿Verdad o disparate?: ids de las frases que se marcaron como "no está clara", separados por coma.</summary>
         public string sv_unclear = "";
+        /// <summary>Solo Cosecha de palabras: palabras encontradas en las 3 cosechas (sin las ocultas) y, de las comunes, cuántas se
+        /// encontraron y cuántas había.</summary>
+        public int harv_words = -1;
+        public int harv_common_found = -1;
+        public int harv_common_total = -1;
+        /// <summary>Solo Cosecha de palabras: % de palabras en racimo frente a salto (-1 con menos de 10 palabras).</summary>
+        public int harv_cluster_pct = -1;
+        /// <summary>Solo Cosecha de palabras: palabras en los primeros y en los últimos 20 s de cada cosecha (promedio de las cosechas).</summary>
+        public int harv_first20 = -1;
+        public int harv_last20 = -1;
+        /// <summary>Solo Cosecha de palabras: la palabra estrella encontrada ("" = ninguna), la más larga o rara y hasta 5 comunes que
+        /// faltaron (separadas por coma), y cuántas pistas se usaron.</summary>
+        public string harv_star = "";
+        public string harv_best = "";
+        public string harv_missed = "";
+        public int harv_hints = -1;
     }
 }

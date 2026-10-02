@@ -65,6 +65,9 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Mismo smoke test pero con ¿Verdad o disparate? como juego.</summary>
         public static void RunDisparate() => RunGame("disparate", 9f);
 
+        /// <summary>Mismo smoke test pero con Cosecha de palabras como juego.</summary>
+        public static void RunCosecha() => RunGame("cosecha", 9f);
+
         /// <summary>Mismo smoke test pero con Aterrizaje Lunar como juego.</summary>
         public static void RunAterrizaje() => RunGame("aterrizaje", 9f);
 
