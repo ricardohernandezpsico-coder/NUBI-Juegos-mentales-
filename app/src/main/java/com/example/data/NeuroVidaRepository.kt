@@ -350,6 +350,7 @@ class NeuroVidaRepository(
       "satelites" -> "tracking" to r.trackingCapacity
       "aterrizaje" -> "numline" to r.numlineErrorPct
       "disparate" -> "wpm" to Reading.mark(r.svWpm)
+      "cosecha" -> "harvest" to Harvest.mark(r.harvCommonFound, r.harvCommonTotal)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
       "trafico" -> "load" to r.trafficPeakPods?.toFloat()

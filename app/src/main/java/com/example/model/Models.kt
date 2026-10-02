@@ -132,6 +132,14 @@ object GameRegistry {
       iconEmoji = "📡"
     ),
     GameDefinition(
+      id = "cosecha",
+      title = "Cosecha de palabras",
+      domain = DomainType.LENGUAJE,
+      subtitle = "Forma palabras y haz crecer tu huerto",
+      instruction = "Siete letras giran alrededor de un planeta. Toca letras en orden para formar palabras de 3 letras o más y toca «Sembrar»: cada palabra brota como una planta. Si usas las 7 letras, nace un árbol dorado. Si te atascas, Nubi te da una pista.",
+      iconEmoji = "🌱"
+    ),
+    GameDefinition(
       id = "rumbo",
       title = "Rumbo a Casa",
       domain = DomainType.MEMORIA,
@@ -357,7 +365,20 @@ data class GamePlayResult(
   val svSubtleHits: Int? = null,
   val svSubtleSeen: Int? = null,
   val svBestStreak: Int? = null,
-  val svUnclear: List<String>? = null
+  val svUnclear: List<String>? = null,
+  // Solo Cosecha de palabras: palabras de las 3 cosechas (sin las ocultas), de las comunes cuántas se encontraron y cuántas había,
+  // % de palabras en racimo (sin dato con menos de 10), palabras en los primeros y en los últimos 20 s (promedio de las cosechas),
+  // la palabra estrella encontrada, la más larga o rara, hasta 5 comunes que faltaron y las pistas usadas. No se guardan en Room.
+  val harvWords: Int? = null,
+  val harvCommonFound: Int? = null,
+  val harvCommonTotal: Int? = null,
+  val harvClusterPct: Int? = null,
+  val harvFirst20: Int? = null,
+  val harvLast20: Int? = null,
+  val harvStar: String? = null,
+  val harvBest: String? = null,
+  val harvMissed: List<String>? = null,
+  val harvHints: Int? = null
 )
 
 data class DailySessionState(

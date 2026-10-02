@@ -61,8 +61,15 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     Para("Datos bajo licencia CC BY 4.0 (creativecommons.org/licenses/by/4.0). Fuente: figshare.com/projects/SPALEX/29722")
     Para("Cambios: se usaron para ordenar las palabras en bandas de dificultad en Lluvia de meteoros.")
 
+    Section("Palabras de Cosecha de palabras")
+    Para(
+      "Las palabras de cada ronda salen de SPALEX (arriba) y sus formas verbales y plurales se generaron con el diccionario " +
+        "Hunspell es_ES de LibreOffice (licencias MPL 1.1, LGPL y GPL, a elección; documentfoundation.org). En la app solo van " +
+        "listas de palabras sueltas, no el diccionario."
+    )
+
     Section("Tipografías")
-    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros.")
+    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros y las letras de Cosecha de palabras.")
     Para("Las tres bajo la licencia SIL Open Font License 1.1 (openfontlicense.org).")
 
     Section("Hecho con Unity")

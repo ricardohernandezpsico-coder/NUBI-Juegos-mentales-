@@ -538,6 +538,74 @@ fun GameResultScreen(
       }
     }
 
+    // Cosecha de palabras (pantalla final, maqueta docs/previews/cosecha.png, pantalla 4): "tu cosecha" (cifra grande de palabras y
+    // "de las comunes, N de M"), "tu manera de buscar" (barra partida racimos / saltos, con la frase-consejo y "cómo buscaste en esta
+    // partida"), "tu ritmo" (primeros contra últimos 20 s), tu palabra estrella y "también podías". Sin recuadros, nunca solo color.
+    val harvWords = com.example.data.Harvest.words(result.harvWords)
+    if (harvWords != null) {
+      val harv = com.example.data.Harvest
+      Spacer(Modifier.height(14.dp))
+      Text("Tu cosecha", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = harv.spoken(harvWords, result.harvCommonFound, result.harvCommonTotal) },
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Row(verticalAlignment = Alignment.Bottom) {
+          Text("$harvWords", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 56.sp, fontFamily = AppFamily)
+          Text(
+            harv.wordsLabel(harvWords), color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 8.dp, bottom = 10.dp)
+          )
+        }
+        harv.commonLine(result.harvCommonFound, result.harvCommonTotal)?.let {
+          Text(it, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        }
+      }
+
+      harv.clusterPct(result.harvClusterPct)?.let { pct ->
+        Spacer(Modifier.height(14.dp))
+        Text("Tu manera de buscar", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 34.dp, vertical = 6.dp)) {
+          HarvestSplitBar(pct, Modifier.fillMaxWidth().height(14.dp))
+          Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+            Text(harv.clusterLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(harv.jumpLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+          }
+        }
+        Text("cómo buscaste en esta partida", color = TextSoft, fontSize = 14.sp)
+        harv.searchLine(pct)?.let {
+          Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
+        }
+      }
+
+      val first = result.harvFirst20
+      val last = result.harvLast20
+      harv.rhythmLine(first, last)?.let { line ->
+        Spacer(Modifier.height(14.dp))
+        Text("Tu ritmo", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 6.dp)) {
+          HarvestRhythmRow("Primeros 20 s", first ?: 0, harv.barFraction(first ?: 0, last ?: 0), Clay.Grape, Modifier.fillMaxWidth().padding(vertical = 3.dp))
+          HarvestRhythmRow("Últimos 20 s", last ?: 0, harv.barFraction(last ?: 0, first ?: 0), Clay.Sky, Modifier.fillMaxWidth().padding(vertical = 3.dp))
+        }
+        Text(line, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
+        harv.rhythmTip(first, last)?.let {
+          Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
+        }
+      }
+
+      harv.starTitle(result.harvStar, result.harvBest)?.let { (title, word) ->
+        Spacer(Modifier.height(14.dp))
+        Text(title, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Text(word, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 34.sp, fontFamily = AppFamily, modifier = Modifier.padding(vertical = 2.dp))
+      }
+      harv.missedLine(result.harvMissed)?.let {
+        Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
+      }
+      result.harvHints?.takeIf { it > 0 }?.let {
+        Text("Pistas de Nubi: $it", color = TextSoft, fontSize = 14.sp)
+      }
+    }
+
     // ¿Verdad o disparate? (pantalla final, maqueta docs/previews/disparate.png): "tu lectura con comprensión" (cifra grande de
     // palabras por minuto), "qué te frena" (barras por tipo de frase, la más lenta marcada con TEXTO además del color), "tu
     // precisión" y "tu mejor racha". Sin recuadros; nada de perfil de sesgo.
@@ -932,7 +1000,7 @@ fun GameResultScreen(
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
-      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType
+      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1470,5 +1538,40 @@ private fun ReadingBar(row: com.example.data.Reading.TypeRow, fraction: Float, m
       )
       if (row.slowest) Text("la más lenta", color = Clay.Coral, fontSize = 14.sp, fontWeight = FontWeight.Bold, softWrap = false)
     }
+  }
+}
+
+
+// ---------- Cosecha de palabras: "tu manera de buscar" y "tu ritmo" ----------
+
+/**
+ * Barra partida de "tu manera de buscar": a la izquierda los racimos (lila), a la derecha los saltos (celeste), con una marca de
+ * tinta en el corte. Los porcentajes van siempre escritos debajo: el color solo acompaña.
+ */
+@Composable
+private fun HarvestSplitBar(clusterPct: Int, modifier: Modifier = Modifier) {
+  Canvas(modifier) {
+    val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+    drawRoundRect(Clay.Sky, cornerRadius = r)
+    val cut = size.width * clusterPct.coerceIn(0, 100) / 100f
+    if (cut > 0f) drawRoundRect(Clay.Grape, size = androidx.compose.ui.geometry.Size(maxOf(cut, size.height), size.height), cornerRadius = r)
+    if (clusterPct in 1..99) drawLine(Color(0xFF1A1240), Offset(cut, -2f), Offset(cut, size.height + 2f), 2.5f)
+  }
+}
+
+/** Una fila de "tu ritmo": el tramo a la izquierda, una barra y las palabras a la derecha (el número siempre escrito). */
+@Composable
+private fun HarvestRhythmRow(label: String, count: Int, fraction: Float, color: Color, modifier: Modifier = Modifier) {
+  Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+    Text(label, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(118.dp), softWrap = false)
+    Canvas(Modifier.weight(1f).height(11.dp)) {
+      val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+      drawRoundRect(Color(0x33FFFFFF), cornerRadius = r)
+      drawRoundRect(color, size = androidx.compose.ui.geometry.Size(maxOf(size.height, size.width * fraction), size.height), cornerRadius = r)
+    }
+    Text(
+      text = "$count ${com.example.data.Harvest.wordsLabel(count)}", color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+      textAlign = TextAlign.End, softWrap = false, modifier = Modifier.width(104.dp)
+    )
   }
 }
