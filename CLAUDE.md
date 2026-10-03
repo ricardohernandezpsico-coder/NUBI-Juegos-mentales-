@@ -347,13 +347,13 @@ repasar» y no suma lámina). Cada ronda la figura se refleja y gira ±12° y la
   (contorno circular con líneas por el centro), simetría de giro de orden ≥ 3, triángulo con línea central, estrellas de 4, 5 o 6 puntas, polígonos
   casi regulares, cruces/aspas — las tijeras se abren ~25° con dos pivotes —, letras y signos; `figuras_d.py` trae los rediseños del 2-oct) y 12 pruebas en `test_figuras.py`; escribe `Resources/Lexico/intrusa_figuras.json` (Unity, plano) y
   `app/src/main/assets/intrusa_figuras.json` (app).
-- Medidas (telemetría `intr_*` → `GamePlayResult.intr*`; lectura pura en `data/Atlas.kt` con pruebas): **tu red de significados** («9 de 14 rondas
-  bien» y una barra por categoría con ≥ 3 rondas, la más baja marcada con texto), **las trampas** (con ≥ 4: «resististe 5 de 8» ↔ «te engañaron 3 de 8»,
-  la misma cuenta), **¿qué las une?** y **tu atlas** SIN recuadro (hasta 3 miniaturas de láminas ganadas hoy, `ui/components/AtlasThumb.kt`, y
+- Medidas (telemetría `intr_*` → `GamePlayResult.intr*`; lectura pura en `data/Atlas.kt` con pruebas): **tu red de significados** (una barra por
+  categoría con ≥ 3 rondas, la más baja marcada con texto; sin cifra grande, cada dato una sola vez), **las trampas** (con ≥ 4: solo «te engañaron 3 de 8»;
+  lo resistido ya está en la barra, la misma cuenta), rapidez y nota al pie después de «tu atlas», **¿qué las une?** y **tu atlas** SIN recuadro (hasta 3 miniaturas de láminas ganadas hoy, `ui/components/AtlasThumb.kt`, y
   «14 láminas · 2 nuevas hoy · 1 por repasar»). Marca (`StarMeasures` `atlas`): % de aciertos. El atlas (SharedPreferences `atlas`, con respaldo:
   láminas con su día, ganadas con nombre propio, por repasar) lo llena `NeuroVidaRepository.recordAtlas`. Captura real: `docs/previews/intrusa-final-real.png`.
-- Tipografía: Fraunces Italic (SIL OFL) SOLO para el nombre de la figura (`UiFonts.Name`; cae a Fredoka SemiBold si falta
-  `Resources/Fonts/Fraunces-Italic.ttf`); ya está en Ajustes → Licencias. Pendiente de permiso de Ricardo: descargar el archivo.
+- Tipografía: Fraunces SemiBold Italic (SIL OFL) SOLO para el nombre de la figura (`UiFonts.Name`; cae a Fredoka SemiBold si falta
+  `Resources/Fonts/Fraunces-Italic.ttf`); ya está en Ajustes → Licencias (archivo y licencia en `Resources/Fonts/`, del repositorio oficial undercasetype/Fraunces).
 - Pendiente: que Ricardo lo pruebe en el teléfono (ritmo de cada ronda, que se reconozcan las figuras; dudosas en la hoja: El Calcetín, La Nariz,
   El Baúl).
 

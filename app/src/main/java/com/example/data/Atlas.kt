@@ -5,7 +5,7 @@ package com.example.data
  * bien gana su lámina (la figura de estrellas de esa regla, con su nombre). Unity manda en cada partida las láminas nuevas, las
  * reglas falladas (por repasar) y las repasadas; aquí se guardan y se convierten en lo que la persona lee. Lógica pura con pruebas.
  *
- * Las medidas de la partida salen de UNA sola fuente (aciertos y rondas por tipo): "Trampas: resististe 5 de 8" y "Las trampas te
+ * Las medidas de la partida salen de UNA sola fuente (aciertos y rondas por tipo): la barra "Trampas" (5 de 8) y "Las trampas te
  * engañaron 3 de 8" son la misma cuenta dicha de dos maneras, y nunca se muestran números que no cuadren.
  */
 data class AtlasState(
@@ -129,14 +129,7 @@ object Atlas {
     return if (seen <= 0) null else hits to seen
   }
 
-  /** "Trampas: resististe 5 de 8" (con al menos 4 trampas). */
-  fun trapResistLine(seenType: List<Int>?, hitsType: List<Int>?): String? {
-    val (hits, seen) = trapStats(seenType, hitsType) ?: return null
-    if (seen < MIN_TRAP_ROUNDS) return null
-    return "Trampas: resististe $hits de $seen"
-  }
-
-  /** "Las trampas te engañaron 3 de 8" (la misma cuenta, dicha al revés; solo si engañaron al menos una vez). */
+  /** "Las trampas te engañaron 3 de 8" (la misma cuenta que la barra «Trampas»; solo con 4 trampas o más y si engañaron al menos una vez). */
   fun trapFooledLine(seenType: List<Int>?, hitsType: List<Int>?): String? {
     val (hits, seen) = trapStats(seenType, hitsType) ?: return null
     if (seen < MIN_TRAP_ROUNDS) return null

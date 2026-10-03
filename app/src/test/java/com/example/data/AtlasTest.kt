@@ -85,23 +85,23 @@ class AtlasTest {
 
   @Test
   fun `las dos frases de trampas salen de la misma cuenta`() {
-    // 8 trampas, 5 resistidas: «resististe 5 de 8» y «te engañaron 3 de 8»
+    // 8 trampas, 5 resistidas: la barra «Trampas» dice 5 de 8 y la frase «te engañaron 3 de 8»: la misma cuenta
     val s = listOf(0, 0, 0, 0, 4, 4)
     val h = listOf(0, 0, 0, 0, 2, 3)
-    assertEquals("Trampas: resististe 5 de 8", Atlas.trapResistLine(s, h))
     assertEquals("Las trampas te engañaron 3 de 8", Atlas.trapFooledLine(s, h))
     assertTrue(Atlas.trapReading(s, h)!!.contains("TIPO"))
     // la fila de la barra dice lo mismo
-    assertEquals(8 to 5, Atlas.categoryRows(s, h).single { it.label == "Trampas" }.let { it.seen to it.hits })
+    val row = Atlas.categoryRows(s, h).single { it.label == "Trampas" }
+    assertEquals(8 to 5, row.seen to row.hits)
+    assertEquals("Las trampas te engañaron ${row.seen - row.hits} de ${row.seen}", Atlas.trapFooledLine(s, h))
   }
 
   @Test
   fun `con menos de 4 trampas no se habla de ellas, y si no engañaron no hay frase de engano`() {
-    assertNull(Atlas.trapResistLine(listOf(0, 0, 0, 0, 2, 1), listOf(0, 0, 0, 0, 1, 1)))
+    assertNull(Atlas.trapFooledLine(listOf(0, 0, 0, 0, 2, 1), listOf(0, 0, 0, 0, 1, 1)))
     assertNull(Atlas.trapReading(listOf(0, 0, 0, 0, 2, 1), listOf(0, 0, 0, 0, 1, 1)))
     val s = listOf(0, 0, 0, 0, 3, 2)
     val h = listOf(0, 0, 0, 0, 3, 2)
-    assertEquals("Trampas: resististe 5 de 5", Atlas.trapResistLine(s, h))
     assertNull(Atlas.trapFooledLine(s, h))
     assertTrue(Atlas.trapReading(s, h)!!.startsWith("Resististe todas"))
   }

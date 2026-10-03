@@ -53,7 +53,7 @@ una estrella de cinco puntas y las formas de «Tu atlas» parecían símbolos. E
   al cerrar, un acorde de cuatro notas y una vibración firme.
 - **El grabado**: contorno dorado #E9C77B (alfa 0,55, 1,2 dp) que se dibuja de 0 a 1500 ms (curva cúbica); de 700 a 1600 ms, sombreado
   de líneas diagonales cada 6 dp (alfa 0,13) recortado al contorno, más los detalles (ojo, aro, línea). Se rasteriza UNA vez por
-  ronda (texturas, no cuadros). El **nombre** va en Fraunces Italic 500 de 32 sp (#FFE3A3) con fundido desde los 900 ms; la **regla** en
+  ronda (texturas, no cuadros). El **nombre** va en Fraunces SemiBold Italic de 32 sp (#FFE3A3) con fundido desde los 900 ms; la **regla** en
   Atkinson Bold 16 sp (#D9D4F5); si se acertó el bonus: «La nombraste tú · puntos ×2» (#FFC94A). Un toque cierra la ronda.
 - **Error**: la estrella tocada con aro coral y una X dibujada (sin emoji), la intrusa con aro sol que late, la explicación («Todos
   viven en el agua; el loro no.») y, si era TRAMPA, una línea punteada entre la intrusa y su pareja con «va con perro, pero no es un
@@ -115,11 +115,11 @@ para no mover las frases de ¿Verdad o disparate?) y 222 parejas «va con» (`as
 ## 6. Medidas al final (juego estrella)
 
 Todas salen de UNA sola fuente (aciertos y rondas por tipo de grupo, 6 tipos) y se dicen solo con el mínimo de rondas:
-1. **Tu red de significados**: cifra grande («9 de 14 rondas bien») y una barra por categoría (tipo de cosa / para qué sirve /
+1. **Tu red de significados** (cada dato aparece UNA sola vez; el total de aciertos ya está en la fila «aciertos», así que no hay cifra grande): una barra por categoría (tipo de cosa / para qué sirve /
    dónde está o de qué es / trampas), cada una **solo con ≥ 3 rondas**; la más baja marcada con TEXTO («la más baja»), nunca solo con
    color, y solo si hay dos o más categorías y no todas empatan. Una nota común al pie.
-2. **Las trampas** (solo con ≥ 4 trampas): «Trampas: resististe 5 de 8» y «Las trampas te engañaron 3 de 8» son la misma cuenta; la
-   lectura: «Es normal: el cerebro une lo que suele ir junto. Truco: antes de tocar, pregúntate qué TIPO de cosa es cada una.»
+2. **Las trampas** (solo con ≥ 4 trampas): solo «Las trampas te engañaron 3 de 8» (lo resistido ya está en la barra «Trampas»: la misma
+   cuenta, sin repetirla) y la lectura: «Es normal: el cerebro une lo que suele ir junto. Truco: antes de tocar, pregúntate qué TIPO de cosa es cada una.»
 3. **¿Qué las une?**: «Nombraste 3 de 5» (si se jugó el bonus).
 4. **Tu atlas** (SIN recuadro): hasta 3 miniaturas de las láminas ganadas hoy (estrellas, líneas, grabado y nombre) y una línea
    «14 láminas · 2 nuevas hoy · 1 por repasar» (se omiten las partes que valen cero).
@@ -145,8 +145,7 @@ OTRO día, con un grupo distinto, cada 4 rondas; acertada, queda «dominada».
   Y las etiquetas: la palabra más larga del
   banco («rompecabezas», 116 dp a 17 sp) siempre cabe en pantalla y para CADA grupo real del banco existen ≥ 6 de las combinaciones
   reflejo × giro × hueco con algún reparto sin choques (el juego busca una al armar la ronda).
-- Estrellas de luz con núcleo crema y halo; placas crema; la chispa; el grabado; el nombre en Fraunces (SIL OFL, en Licencias; si el
-  archivo `Fonts/Fraunces-Italic.ttf` no está, cae a Fredoka SemiBold).
+- Estrellas de luz con núcleo crema y halo; placas crema; la chispa; el grabado; el nombre en Fraunces (Fraunces SemiBold Italic, SIL OFL, en Licencias; archivo `Fonts/Fraunces-Italic.ttf` + `Fraunces-OFL.txt`, bajado del repositorio oficial de los autores; si falta, cae a Fredoka SemiBold).
 - Sonido en la pentatónica de `GameFeel`: nota por estrella, acorde al cerrar, estrella fugaz = soplo brillante, error = cristal suave
   apagado, bonus = campanas, latido de las 4 estrellas. Nada arcade.
 - Guía UX (skill ui-ux-pro-max): toque ≥ 64 dp, texto ≥ 14 sp (placas 17 sp), contraste ≥ 4,5:1, nada solo por color (la X, el
@@ -158,4 +157,4 @@ Programado: banco (960 grupos, 77 reglas), 77 figuras y su hoja, juego en Unity 
 Sprites, Sounds, Controller; 26 pruebas puras + 5 del banco real), telemetría `intr_*`, lectura en la app (`Atlas.kt`, `FigureBank.kt`,
 `GameResultScreen` con «Tu atlas», `AtlasThumb`), prefs `atlas` con respaldo. Captura real del final: `docs/previews/intrusa-final-real.png`.
 Pendiente: que Ricardo lo pruebe en el teléfono (ritmo de cada ronda, cuántas láminas reconoce a la primera, las figuras dudosas de la
-hoja: El Calcetín, Los Pulmones, La Garra, La Margarita, El Baúl), el archivo de la tipografía Fraunces (descarga pendiente de permiso).
+hoja: El Calcetín, Los Pulmones, La Garra, La Margarita, El Baúl), el archivo de la tipografía Fraunces (ya incluido, tarea 16).

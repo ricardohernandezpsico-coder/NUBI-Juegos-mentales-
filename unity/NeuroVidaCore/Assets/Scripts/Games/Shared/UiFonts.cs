@@ -29,7 +29,7 @@ namespace NeuroVida.Games.Shared
         /// cae a Fredoka Bold.</summary>
         public static Font Word => _word != null ? _word : (_word = LoadOr("Fonts/AtkinsonHyperlegible-Bold", Bold));
 
-        /// <summary>Fraunces Italic Medium (SIL OFL 1.1; <c>Fonts/Fraunces-OFL.txt</c>): SOLO el nombre del grabado de La estrella intrusa
+        /// <summary>Fraunces SemiBold Italic (Fraunces72pt-SemiBoldItalic, Undercase Type, SIL OFL 1.1; <c>Fonts/Fraunces-OFL.txt</c>): SOLO el nombre del grabado de La estrella intrusa
         /// («La Manzana»). Sin el archivo, cae a Fredoka SemiBold.</summary>
         public static Font Name => _name != null ? _name : (_name = LoadOr("Fonts/Fraunces-Italic", Regular));
 
