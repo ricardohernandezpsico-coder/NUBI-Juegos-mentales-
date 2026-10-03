@@ -19,6 +19,7 @@ namespace NeuroVida.Games.Shared
         private static Font _bold;
         private static Font _regular;
         private static Font _word;
+        private static Font _name;
 
         public static Font Bold => _bold != null ? _bold : (_bold = Load("Fonts/Fredoka-Bold"));
         public static Font Regular => _regular != null ? _regular : (_regular = Load("Fonts/Fredoka-SemiBold"));
@@ -27,6 +28,10 @@ namespace NeuroVida.Games.Shared
         /// para las palabras de Lluvia de meteoros, donde hay que distinguir "a" de "o" y "i" de "l" sin dudar. Sin el archivo,
         /// cae a Fredoka Bold.</summary>
         public static Font Word => _word != null ? _word : (_word = LoadOr("Fonts/AtkinsonHyperlegible-Bold", Bold));
+
+        /// <summary>Fraunces Italic Medium (SIL OFL 1.1; <c>Fonts/Fraunces-OFL.txt</c>): SOLO el nombre del grabado de La estrella intrusa
+        /// («La Manzana»). Sin el archivo, cae a Fredoka SemiBold.</summary>
+        public static Font Name => _name != null ? _name : (_name = LoadOr("Fonts/Fraunces-Italic", Regular));
 
         private static Font LoadOr(string path, Font fallback)
         {

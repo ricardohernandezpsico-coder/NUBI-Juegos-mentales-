@@ -68,6 +68,9 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Mismo smoke test pero con Cosecha de palabras como juego.</summary>
         public static void RunCosecha() => RunGame("cosecha", 9f);
 
+        /// <summary>Mismo smoke test pero con La estrella intrusa como juego.</summary>
+        public static void RunIntrusa() => RunGame("intrusa", 9f);
+
         /// <summary>Mismo smoke test pero con Aterrizaje Lunar como juego.</summary>
         public static void RunAterrizaje() => RunGame("aterrizaje", 9f);
 

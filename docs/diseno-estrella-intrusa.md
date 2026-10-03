@@ -1,13 +1,18 @@
-# La estrella intrusa — diseño (1-oct, para aprobar con maqueta)
+# La estrella intrusa — diseño (Atlas celeste, 2-oct)
 
 Juego estrella de **Lenguaje** (id `intrusa`), el quinto del área (con él Lenguaje llega a 5). Aprobado por Ricardo el
-1-oct con vía libre para sumar mejoras. Complementa a los otros: Meteoros = reconocer palabras, Disparate = comprender
+1-oct con vía libre para sumar mejoras; presentación **Atlas celeste** elegida el 2-oct. Complementa a los otros: Meteoros = reconocer palabras, Disparate = comprender
 frases rápido, Cosecha = producir palabras; este = **organizar significados y resistir asociaciones engañosas**.
 
-## 1. La idea en una línea
+## 1. La idea en una línea (Atlas celeste, 2-oct)
 
-Cinco estrellas-palabra unidas por líneas tenues: **una no pertenece. Tócala**; se suelta como estrella fugaz y las
-otras cuatro se unen en una constelación con nombre ("Frutas", "Sirven para cortar") que se guarda en **Tu cielo**.
+Cinco estrellas-palabra sobre un cielo quieto: **una no pertenece. Tócala**; cae como estrella fugaz y una chispa traza la
+**figura de la regla** que unía a las otras cuatro («La Manzana», «El Pez», «Las Tijeras»…); la figura queda grabada en tu
+**atlas**. La constelación ES la regla: cada regla del banco tiene su propia figura emblemática, reconocible por una persona de
+70 años. **Antes de responder no hay ninguna línea** (solo las 5 estrellas con su palabra y unas estrellas menores muy tenues que
+son parte de la figura): así el dibujo no regala la respuesta. La maqueta de líneas todas-con-todas del 1-oct se descartó: formaba
+una estrella de cinco puntas y las formas de «Tu atlas» parecían símbolos. Elegido por Ricardo: el MODELO 1 «Atlas celeste» de
+`docs/previews/intrusa-boceto-modelos.html` (sección `data-model="atlas"`).
 
 ## 2. Ciencia (PubMed, 1-oct)
 
@@ -31,22 +36,33 @@ otras cuatro se unen en una constelación con nombre ("Frutas", "Sirven para cor
 
 ## 3. Cómo se juega
 
-- **Escena**: cielo fondo C con una nebulosa suave (`GameWorld.Observatorio` no: nuevo `GameWorld.CieloProfundo`);
-  5 estrellas-palabra en una disposición de constelación (pentágono irregular, distinta en cada ronda), palabra en placa
-  crema bajo cada estrella (Atkinson Hyperlegible Bold 24 sp, 28 mayores). Zona de toque = estrella + placa, ≥ 64 dp,
-  separación ≥ 12 dp. Líneas tenues entre todas, titilando muy suave (quietas con "quitar animaciones").
-- **Tocar la intrusa** (cuenta al PRESIONAR): la estrella se suelta como estrella fugaz con estela; las 4 restantes se
-  unen con líneas de luz que se dibujan una a una (~400 ms) y aparece el nombre del grupo. Campana de la pentatónica,
-  vibración corta.
-- **Error**: la estrella tocada titila coral con ✗; la verdadera intrusa se ilumina con aro sol y **la explicación
-  enseña la regla**: "Todas son animales; el hueso no." Si era una TRAMPA DE ASOCIACIÓN, además se dibuja una línea
-  punteada entre la trampa y su pareja con el rótulo "va con perro, pero no es un animal" (enseña la diferencia entre
-  "es del mismo tipo" y "suele ir junto"). Sin culpa, se lee con calma (2,5 s; 3,5 mayores; toque para seguir).
-- **Bonus "¿Qué las une?"** (opcional, desde el nivel 3): tras acertar, 3 opciones cortas ("Animales" / "Viven en la
-  casa" / "Tienen cuatro patas") durante 4 s; acertar = puntos × 2 y la constelación se guarda "con nombre propio"
-  (brilla más en Tu cielo). Ignorarlo no castiga. Mayores: 6 s.
-- **Ritmo**: Reto 120 s (cometa que cruza arriba = tiempo de la partida, sin reloj por ronda); Precisión 20 rondas sin
-  tiempo. Racha de 5 = "Cielo despejado" (× 1,5, el fondo se aclara un poco).
+- **Escena**: `GameWorld.CieloProfundo` = fondo C (#02030F → #050823 → #0A0F33) con ~230 estrellas fijas (~28 titilan), una banda de
+  Vía Láctea inclinada −35° (~1500 puntos gaussianos, velo rgba(200,190,255,0,09), una textura hecha una vez) y nebulosas lila y coral.
+  Cinco estrellas-palabra: 4 en las «anclas» de la figura y la intrusa en uno de sus 2-3 «huecos». Palabra en placa crema
+  (Atkinson Hyperlegible Bold 17 sp; arriba de la estrella si esta está en el 35% superior de la caja, si no abajo). Toque ≥ 64 dp,
+  incluida la placa. Las estrellas menores de la figura se dibujan desde el inicio como estrellas tenues (radio ~1,25 dp, alfa 0,5).
+- **Anti-pista**: en cada ronda la figura se refleja al azar y se gira ±12°, la intrusa ocupa uno de los huecos al azar y las 4
+  palabras se reparten al azar en las anclas (se busca una combinación sin placas encimadas: ver sección 7).
+- **Tocar la intrusa** (cuenta al PRESIONAR; vibración leve): cae como estrella fugaz con estela (900 ms). Desde el nivel 3 sigue
+  «¿Qué las une?» (3 opciones, 4 s; mayores 6 s) con las 4 estrellas latiendo suave; ignorarlo no castiga. En los niveles 1-2 no hay
+  bonus y la chispa sale ya (mientras cae). Después, la **chispa** traza la figura: ~430 dp/s sobre una pantalla de 360 de ancho
+  (trazado completo entre 1,2 y 2,2 s), recorre las aristas en el orden del archivo (si la siguiente no toca donde quedó,
+  reaparece en su origen); cabeza de halo dorado de 44 dp y núcleo #FFF8E6 de 2,8 dp de radio, 3 partículas por cuadro; la línea se
+  pinta en 3 pasadas (9 / 4 / 1,5 dp, alfa 0,10 / 0,25 / 0,95) y, al pasar, brilla de 0,4 a 1 en 380 ms. En cada estrella: destello
+  (anillo de 5 a 27 dp en 650 ms) y una nota de la pentatónica ascendente de `GameFeel` (más fuerte en las estrellas con palabra);
+  al cerrar, un acorde de cuatro notas y una vibración firme.
+- **El grabado**: contorno dorado #E9C77B (alfa 0,55, 1,2 dp) que se dibuja de 0 a 1500 ms (curva cúbica); de 700 a 1600 ms, sombreado
+  de líneas diagonales cada 6 dp (alfa 0,13) recortado al contorno, más los detalles (ojo, aro, línea). Se rasteriza UNA vez por
+  ronda (texturas, no cuadros). El **nombre** va en Fraunces Italic 500 de 32 sp (#FFE3A3) con fundido desde los 900 ms; la **regla** en
+  Atkinson Bold 16 sp (#D9D4F5); si se acertó el bonus: «La nombraste tú · puntos ×2» (#FFC94A). Un toque cierra la ronda.
+- **Error**: la estrella tocada con aro coral y una X dibujada (sin emoji), la intrusa con aro sol que late, la explicación («Todos
+  viven en el agua; el loro no.») y, si era TRAMPA, una línea punteada entre la intrusa y su pareja con «va con perro, pero no es un
+  animal». Con «Seguir» (≥ 64 dp) la intrusa cae y la figura se traza al doble de velocidad, sin bonus ni notas fuertes. La regla
+  queda **«por repasar»** y NO suma lámina.
+- **Ritmo**: Reto 120 s (una cometa cruza arriba = tiempo de la partida, sin reloj por ronda); Precisión 20 rondas sin tiempo.
+  Racha de 5 = «Cielo despejado» (× 1,5; el fondo se aclara un poco).
+- **«Quitar animaciones»**: las líneas aparecen con un fundido de 300 ms, sin partículas ni recorrido de caída, y el grabado de una vez.
+  Sonido y vibración apagados se respetan (vibración solo al acertar y al completar la figura).
 
 ## 4. Dificultad (DDA común, 12 niveles)
 
@@ -61,7 +77,7 @@ otras cuatro se unen en una constelación con nombre ("Frutas", "Sirven para cor
 
 - Mayores: la escalera sube más lento (85% de aciertos, como el DDA común) y empiezan con más tiempo en el bonus.
 - **Repaso espaciado (mejora propia)**: las reglas falladas vuelven en partidas de OTRO día con palabras distintas
-  ("Constelación por repasar", marcada con un aro lila); si se aciertan, quedan "dominadas" en Tu cielo. Así el juego
+  ("Constelación por repasar", marcada con un aro lila); si se aciertan, quedan "dominadas" en tu atlas. Así el juego
   enseña, no solo mide. (Se guarda en PlayerPrefs de Unity o en la app: la lista de reglas falladas con su fecha.)
 
 ## 5. Contenido: el banco de grupos (español; generado y revisado)
@@ -98,27 +114,48 @@ para no mover las frases de ¿Verdad o disparate?) y 222 parejas «va con» (`as
 
 ## 6. Medidas al final (juego estrella)
 
-1. **Tu red de significados** (cifra grande: aciertos de N) + barras por tipo de relación (tipo de cosa / uso /
-   material-lugar / trampas), cada una solo con ≥ 3 rondas; la más baja marcada con TEXTO.
-2. **Las trampas**: "Las trampas te engañaron 3 de 8" + lectura: "Es normal: el cerebro une lo que suele ir junto.
-   Truco: antes de tocar, pregúntate qué TIPO de cosa es cada una." Solo con ≥ 4 trampas vistas.
-3. **¿Qué las une?**: cuántos nombraste bien (si se jugó el bonus).
-4. **Tu cielo**: constelaciones nuevas en esta partida y total; "por repasar" que quedaron dominadas.
-Rapidez solo como dato secundario (mediana del tiempo en aciertos), sin perfil de sesgo. Nota común al pie.
+Todas salen de UNA sola fuente (aciertos y rondas por tipo de grupo, 6 tipos) y se dicen solo con el mínimo de rondas:
+1. **Tu red de significados**: cifra grande («9 de 14 rondas bien») y una barra por categoría (tipo de cosa / para qué sirve /
+   dónde está o de qué es / trampas), cada una **solo con ≥ 3 rondas**; la más baja marcada con TEXTO («la más baja»), nunca solo con
+   color, y solo si hay dos o más categorías y no todas empatan. Una nota común al pie.
+2. **Las trampas** (solo con ≥ 4 trampas): «Trampas: resististe 5 de 8» y «Las trampas te engañaron 3 de 8» son la misma cuenta; la
+   lectura: «Es normal: el cerebro une lo que suele ir junto. Truco: antes de tocar, pregúntate qué TIPO de cosa es cada una.»
+3. **¿Qué las une?**: «Nombraste 3 de 5» (si se jugó el bonus).
+4. **Tu atlas** (SIN recuadro): hasta 3 miniaturas de las láminas ganadas hoy (estrellas, líneas, grabado y nombre) y una línea
+   «14 láminas · 2 nuevas hoy · 1 por repasar» (se omiten las partes que valen cero).
+Rapidez solo como dato secundario (mediana al tocar en los aciertos), sin perfil de sesgo. Marca para la evolución (`StarMeasures`
+`atlas`): % de aciertos de la partida. Nota común al pie: «Medida de esta partida… No es un diagnóstico».
+**Atlas** (`data/Atlas.kt`, SharedPreferences `atlas`, con respaldo): láminas ganadas (regla → día), las ganadas con nombre propio y las
+reglas por repasar. El **repaso espaciado** sigue: Unity (PlayerPrefs `intrusa_review`) devuelve una regla fallada en una partida de
+OTRO día, con un grupo distinto, cada 4 rondas; acertada, queda «dominada».
 
-## 7. Arte, sonido y efectos
+## 7. Figuras, arte, sonido y efectos
 
-- Estrellas de luz con núcleo crema y halo del color del área (Lenguaje), placas crema, líneas de luz que se dibujan;
-  estrella fugaz con estela; constelación terminada con destello y el nombre en Fredoka. **Tu cielo** (en la pantalla
-  final y como colección): mapa del cielo oscuro donde cada constelación ganada es un dibujo de estrellas propio
-  (forma generada por la categoría, siempre la misma para esa categoría), agrupadas por tipo de relación.
-- Sonido en la pentatónica de `GameFeel`: cada línea que se dibuja suena una nota (la constelación suena como
-  acorde), estrella fugaz = soplo brillante, error = cristal suave apagado, bonus = campanas. Nada arcade.
-- Guía UX (skill ui-ux-pro-max, 1-oct): toque ≥ 48 dp (acá 64), separación ≥ 8 dp; vibración solo en confirmaciones
-  (acierto, constelación), no en cada toque; animación continua solo sutil (titileo), nunca decorativa invasiva; el error
-  siempre explica y deja seguir; respetar "quitar animaciones", sonido y vibración apagados.
+- **Figuras** (`tools/intrusa/figuras.py` + `figuras_a/b/c.py`, determinista): 77 dibujos propios, uno por regla, escritos a mano
+  como puntos + trazos (nada copiado de láminas históricas ni constelaciones reales ni del zodíaco). Escribe `intrusa_figuras.json`
+  para Unity (listas planas: JsonUtility no lee listas de listas) y `app/src/main/assets/intrusa_figuras.json` (anidado). Hoja de
+  revisión con todas: `docs/previews/intrusa-figuras.png`. Cada figura: `{regla, nombre, puntos, aristas (en orden de trazado), anclas
+  ×4, huecos ×2-3, contorno, detalles}`. El validador (y 7 pruebas) exige: 7-12 puntos, grafo conexo, anclas separadas ≥ 0,25,
+  ningún hueco a < 0,15 de línea o estrella, **sin polígonos casi regulares** (ciclos de 5-6 lados con lados y ángulos ±15%), sin
+  estrellas de 4, 5 o 6 puntas, sin cruces/aspas y, desde el anexo del 2-oct, **nada que se lea como símbolo**: ningún nodo con 4 aristas o más (ni
+  abanicos de 5+ rayos, ni el semicírculo con rayos), ninguna rueda (contorno circular con líneas que cruzan el centro), ninguna simetría de giro de
+  orden ≥ 3 y ningún triángulo con una línea central. Las figuras se leen por su silueta de perfil. Rediseñadas el 2-oct (marcadas con * en la hoja):
+  El Búho, La Mariposa, El Rábano, La Rosa (antes Margarita), La Pata con Garras (antes La Garra), La Paloma, Las Tijeras (abiertas ~25°, dos
+  pivotes), La Nariz (antes Los Pulmones), El Balde (antes El Grifo), El Calcetín, El Lobo, La Mano y otras 18 con nodos repartidos en cadenas.
+  Y las etiquetas: la palabra más larga del
+  banco («rompecabezas», 116 dp a 17 sp) siempre cabe en pantalla y para CADA grupo real del banco existen ≥ 6 de las combinaciones
+  reflejo × giro × hueco con algún reparto sin choques (el juego busca una al armar la ronda).
+- Estrellas de luz con núcleo crema y halo; placas crema; la chispa; el grabado; el nombre en Fraunces (SIL OFL, en Licencias; si el
+  archivo `Fonts/Fraunces-Italic.ttf` no está, cae a Fredoka SemiBold).
+- Sonido en la pentatónica de `GameFeel`: nota por estrella, acorde al cerrar, estrella fugaz = soplo brillante, error = cristal suave
+  apagado, bonus = campanas, latido de las 4 estrellas. Nada arcade.
+- Guía UX (skill ui-ux-pro-max): toque ≥ 64 dp, texto ≥ 14 sp (placas 17 sp), contraste ≥ 4,5:1, nada solo por color (la X, el
+  «la más baja»), sin emojis, vibración solo en confirmaciones.
 
-## 8. Pendiente antes de programar
+## 8. Estado (2-oct)
 
-1. Aprobar la maqueta `docs/previews/intrusa.png` (hecha el 1-oct).
-2. Aprobar la muestra de 60 grupos `docs/intrusa-muestra.md` (hecha el 1-oct).
+Programado: banco (960 grupos, 77 reglas), 77 figuras y su hoja, juego en Unity (`Games/Intrusa/`: Contract, Layout, Bank, Director/Tally,
+Sprites, Sounds, Controller; 26 pruebas puras + 5 del banco real), telemetría `intr_*`, lectura en la app (`Atlas.kt`, `FigureBank.kt`,
+`GameResultScreen` con «Tu atlas», `AtlasThumb`), prefs `atlas` con respaldo. Captura real del final: `docs/previews/intrusa-final-real.png`.
+Pendiente: que Ricardo lo pruebe en el teléfono (ritmo de cada ronda, cuántas láminas reconoce a la primera, las figuras dudosas de la
+hoja: El Calcetín, Los Pulmones, La Garra, La Margarita, El Baúl), el archivo de la tipografía Fraunces (descarga pendiente de permiso).

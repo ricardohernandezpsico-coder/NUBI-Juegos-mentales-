@@ -189,7 +189,19 @@ object NativeReceiver {
     val harv_star: String = "",
     val harv_best: String = "",
     val harv_missed: String = "",
-    val harv_hints: Int = -1
+    val harv_hints: Int = -1,
+    // Solo La estrella intrusa (-1 / "" = sin dato): rondas y aciertos por tipo de grupo, mediana al tocar, mejor racha, «¿Qué las une?»
+    // vistas y acertadas, y las claves de reglas (separadas por ';') de las láminas nuevas, falladas, repasadas y con nombre propio.
+    val intr_seen_type: List<Int>? = null,
+    val intr_hits_type: List<Int>? = null,
+    val intr_rt_ms: Int = -1,
+    val intr_best_streak: Int = -1,
+    val intr_bonus_seen: Int = -1,
+    val intr_bonus_hits: Int = -1,
+    val intr_new_plates: String = "",
+    val intr_review_new: String = "",
+    val intr_review_done: String = "",
+    val intr_named: String = ""
   )
 
   @JsonClass(generateAdapter = true)
@@ -318,7 +330,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo", "meteoros", "disparate", "cosecha" -> parseStroopResult(json)
+      "stroop", "comparacion", "cambiochip", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
@@ -493,7 +505,17 @@ object NativeReceiver {
       harvBest = metrics.harv_best.trim().takeIf { telemetry.game_id == "cosecha" && it.isNotEmpty() },
       harvMissed = metrics.harv_missed.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(5)
         .takeIf { telemetry.game_id == "cosecha" && it.isNotEmpty() },
-      harvHints = metrics.harv_hints.takeIf { telemetry.game_id == "cosecha" && it >= 0 }
+      harvHints = metrics.harv_hints.takeIf { telemetry.game_id == "cosecha" && it >= 0 },
+      intrSeenType = metrics.intr_seen_type?.takeIf { telemetry.game_id == "intrusa" && it.size == 6 },
+      intrHitsType = metrics.intr_hits_type?.takeIf { telemetry.game_id == "intrusa" && it.size == 6 },
+      intrRtMs = metrics.intr_rt_ms.takeIf { telemetry.game_id == "intrusa" && it > 0 },
+      intrBestStreak = metrics.intr_best_streak.takeIf { telemetry.game_id == "intrusa" && it >= 0 },
+      intrBonusSeen = metrics.intr_bonus_seen.takeIf { telemetry.game_id == "intrusa" && it >= 0 },
+      intrBonusHits = metrics.intr_bonus_hits.takeIf { telemetry.game_id == "intrusa" && it >= 0 },
+      intrNewPlates = com.example.data.Atlas.keys(metrics.intr_new_plates).takeIf { telemetry.game_id == "intrusa" },
+      intrReviewNew = com.example.data.Atlas.keys(metrics.intr_review_new).takeIf { telemetry.game_id == "intrusa" },
+      intrReviewDone = com.example.data.Atlas.keys(metrics.intr_review_done).takeIf { telemetry.game_id == "intrusa" },
+      intrNamed = com.example.data.Atlas.keys(metrics.intr_named).takeIf { telemetry.game_id == "intrusa" }
     )
   }
 }

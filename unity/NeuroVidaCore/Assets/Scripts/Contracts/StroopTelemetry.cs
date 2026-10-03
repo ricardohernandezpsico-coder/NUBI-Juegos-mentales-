@@ -179,5 +179,22 @@ namespace NeuroVida.Contracts
         public string harv_best = "";
         public string harv_missed = "";
         public int harv_hints = -1;
+
+        /// <summary>Solo La estrella intrusa: por tipo de grupo (6: amplia, vecina, uso, material/lugar/parte, trampa, regla + trampa) rondas
+        /// vistas y aciertos (se tocó la intrusa a la primera).</summary>
+        public int[] intr_seen_type;
+        public int[] intr_hits_type;
+        /// <summary>Solo La estrella intrusa: mediana del tiempo hasta el toque en los aciertos (ms, -1 con menos de 4) y la mejor racha.</summary>
+        public int intr_rt_ms = -1;
+        public int intr_best_streak = -1;
+        /// <summary>Solo La estrella intrusa: «¿Qué las une?» vistas y acertadas (-1 = no aplica).</summary>
+        public int intr_bonus_seen = -1;
+        public int intr_bonus_hits = -1;
+        /// <summary>Solo La estrella intrusa: claves de reglas separadas por ';': láminas nuevas del atlas ganadas en la partida, reglas
+        /// falladas (por repasar), reglas repasadas y dominadas, y láminas ganadas «con nombre propio» (acertó «¿Qué las une?»).</summary>
+        public string intr_new_plates = "";
+        public string intr_review_new = "";
+        public string intr_review_done = "";
+        public string intr_named = "";
     }
 }

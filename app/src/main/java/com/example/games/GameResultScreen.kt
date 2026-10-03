@@ -98,7 +98,9 @@ fun GameResultScreen(
   modifier: Modifier = Modifier,
   rank: GameRankInfo? = null,
   /** Qué pasó con el modo elegido (data/Skill.kt): "¡Desafío superado!…", o null a tu medida. */
-  modeNote: String? = null
+  modeNote: String? = null,
+  /** El atlas de La estrella intrusa (láminas ganadas y por repasar); solo lo usa ese juego. */
+  atlas: com.example.data.AtlasState? = null
 ) {
   val gameDef = GameRegistry.getById(result.gameId)
   val domainColor = gameDef?.domain?.color ?: Clay.Sky
@@ -606,6 +608,68 @@ fun GameResultScreen(
       }
     }
 
+    // La estrella intrusa (pantalla final, Atlas celeste): "tu red de significados" (aciertos de N rondas y una barra por categoría con
+    // al menos 3 rondas, la más baja marcada con TEXTO), "las trampas" (resististe / te engañaron: la misma cuenta), "¿qué las une?",
+    // la rapidez solo como dato secundario y "tu atlas" SIN recuadro: hasta 3 miniaturas de láminas ganadas hoy y una línea de cifras.
+    val intrSeen = result.intrSeenType
+    if (intrSeen != null) {
+      val atlasLogic = com.example.data.Atlas
+      val totals = atlasLogic.totals(intrSeen, result.intrHitsType)
+      Spacer(Modifier.height(14.dp))
+      Text("Tu red de significados", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      if (totals != null) {
+        Column(
+          Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = atlasLogic.spoken(intrSeen, result.intrHitsType) },
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          Text("${totals.first} de ${totals.second}", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
+          Text("rondas bien: tocaste la intrusa a la primera", color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
+      }
+      val rows = atlasLogic.categoryRows(intrSeen, result.intrHitsType)
+      if (rows.isNotEmpty()) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 8.dp)) {
+          rows.forEach { row -> AtlasBar(row, Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
+        }
+        if (rows.any { it.lowest }) {
+          Text("Cada tipo se mide con 3 rondas o más. Sirve para ver dónde practicar, no para compararte.", color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
+        }
+      }
+      atlasLogic.trapResistLine(intrSeen, result.intrHitsType)?.let { resist ->
+        Spacer(Modifier.height(12.dp))
+        Text("Las trampas", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Text(resist, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
+        atlasLogic.trapFooledLine(intrSeen, result.intrHitsType)?.let {
+          Text(it, color = Clay.Coral, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+        }
+        atlasLogic.trapReading(intrSeen, result.intrHitsType)?.let {
+          Text(it, color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+        }
+      }
+      atlasLogic.bonusLine(result.intrBonusSeen, result.intrBonusHits)?.let {
+        Spacer(Modifier.height(12.dp))
+        Text("¿Qué las une?", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Text(it, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+      }
+      atlasLogic.speedLine(result.intrRtMs)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+      }
+      // Tu atlas: las láminas de hoy (hasta 3) y las cifras, sin recuadro
+      val today = remember { java.time.LocalDate.now().toEpochDay().toInt() }
+      val figures = remember { com.example.data.FigureBank.load(context) }
+      val summary = atlas?.let { atlasLogic.summary(it, today) }
+      if (summary != null) {
+        Spacer(Modifier.height(14.dp))
+        Text("Tu atlas", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        val thumbs = atlas?.let { atlasLogic.todayPlates(it, today) }.orEmpty().mapNotNull { figures[it] }
+        if (thumbs.isNotEmpty()) {
+          Spacer(Modifier.height(6.dp))
+          com.example.ui.components.AtlasThumbRow(thumbs, Modifier.padding(horizontal = 16.dp))
+        }
+        Text(summary, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp))
+      }
+    }
+
     // ¿Verdad o disparate? (pantalla final, maqueta docs/previews/disparate.png): "tu lectura con comprensión" (cifra grande de
     // palabras por minuto), "qué te frena" (barras por tipo de frase, la más lenta marcada con TEXTO además del color), "tu
     // precisión" y "tu mejor racha". Sin recuadros; nada de perfil de sesgo.
@@ -1000,7 +1064,7 @@ fun GameResultScreen(
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
-      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords
+      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1573,5 +1637,33 @@ private fun HarvestRhythmRow(label: String, count: Int, fraction: Float, color: 
       text = "$count ${com.example.data.Harvest.wordsLabel(count)}", color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.Bold,
       textAlign = TextAlign.End, softWrap = false, modifier = Modifier.width(104.dp)
     )
+  }
+}
+
+// ---------- La estrella intrusa: "tu red de significados" ----------
+
+/**
+ * Una fila de "tu red de significados": la categoría a la izquierda, una barra de aciertos y "5 de 7" a la derecha. La más baja va en
+ * coral Y con el texto "la más baja": se distingue sin depender del color.
+ */
+@Composable
+private fun AtlasBar(row: com.example.data.Atlas.CategoryRow, modifier: Modifier = Modifier) {
+  val color = if (row.lowest) Clay.Coral else Clay.Cream
+  Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+    Text(row.label, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(124.dp))
+    Canvas(Modifier.width(90.dp).height(11.dp)) {
+      val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+      drawRoundRect(Color(0x33FFFFFF), cornerRadius = r)
+      drawRoundRect(
+        if (row.lowest) Clay.Coral else Clay.Grape,
+        size = androidx.compose.ui.geometry.Size(maxOf(size.height, size.width * row.percent / 100f), size.height),
+        cornerRadius = r
+      )
+    }
+    Spacer(Modifier.weight(1f))
+    Column(horizontalAlignment = Alignment.End) {
+      Text("${row.hits} de ${row.seen}", color = color, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, softWrap = false)
+      if (row.lowest) Text("la más baja", color = Clay.Coral, fontSize = 14.sp, fontWeight = FontWeight.Bold, softWrap = false)
+    }
   }
 }

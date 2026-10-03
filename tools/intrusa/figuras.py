@@ -5,6 +5,7 @@ estrellas de un objeto o animal emblemático que se traza con una chispa y se gr
   python tools/intrusa/figuras.py --hoja     además arma la hoja de revisión docs/previews/intrusa-figuras.png
 
 Formato de salida (un JSON, sirve a Unity y a la app; los puntos van en 0..1):
+  La copia de Unity usa listas planas (JsonUtility no lee listas de listas; ver plano()); la de la app, las listas anidadas.
   figuras: [ {regla, nombre, puntos:[[x,y]...], aristas:[[a,b]...] (en orden de trazado), anclas:[4 índices], huecos:[[x,y]...],
               contorno:[{suave:true, puntos:[[x,y]...]} | {elipse:[cx,cy,rx,ry]}], detalles:[{ojo:[x,y]} | {linea:[[x,y],[x,y]]} | {punto:[x,y]}]} ]
 Las figuras son dibujos propios: no se calcó ni copió ninguna lámina histórica ni ninguna constelación real.
@@ -23,6 +24,7 @@ sys.path.insert(0, HERE)
 from figuras_a import FIGURAS_A  # noqa: E402
 from figuras_b import FIGURAS_B  # noqa: E402
 from figuras_c import FIGURAS_C  # noqa: E402
+from figuras_d import FIGURAS_D  # noqa: E402
 
 OUT_UNITY = os.path.join(ROOT, "unity", "NeuroVidaCore", "Assets", "Resources", "Lexico", "intrusa_figuras.json")
 OUT_APP = os.path.join(ROOT, "app", "src", "main", "assets", "intrusa_figuras.json")
@@ -39,19 +41,21 @@ TEXT_TOP = 508                     # nada por debajo (aviso y nombre de la figur
 ROT = 12.0
 
 # Figuras compartidas entre dos reglas (solo si son casi iguales) y figuras con aspa a propósito: se listan para Ricardo.
+REDISENADAS = {f["k"] for f in FIGURAS_D}   # rediseñadas el 2-oct (anexo de la Tarea 15): se marcan con * en la hoja
 COMPARTIDAS = {}
-CON_ASPA = {"sirve para cortar"}   # las tijeras cruzan sus hojas
+CON_ASPA = set()   # sin excepciones: ni las tijeras llevan aspa (se abren ~25° y los dos pivotes son nodos distintos)
 DUDOSAS = {                        # clave de la regla -> por qué conviene mirarla
-    "se pone en los pies": "se parece a La Bota",
-    "sirve para respirar": "pulmones: ¿se lee?",
-    "garras": "¿pata o tridente?",
-    "pétalos": "margarita: ¿abanico?",
+    "se pone en los pies": "¿se distingue de La Bota?",
     "sirve para guardar cosas": "baúl: ¿se lee?",
+    "sirve para respirar": "nariz: ¿se lee?",
 }
 
 
 def todas():
-    return FIGURAS_A + FIGURAS_B + FIGURAS_C
+    """A + B + C, con los rediseños del 2-oct (figuras_d.py) en lugar de las figuras de la misma regla."""
+    nuevas = {f["k"]: f for f in FIGURAS_D}
+    base = [nuevas.pop(f["k"], f) for f in FIGURAS_A + FIGURAS_B + FIGURAS_C]
+    return base + list(nuevas.values())
 
 
 def resolver(figs, por_regla):
@@ -149,6 +153,23 @@ def construir(fig, regla_nombre=None):
         "contorno": contorno(fig),
         "detalles": detalles(fig),
     }
+
+
+def plano(d):
+    """La misma figura para Unity: JsonUtility no lee listas de listas, así que todo va en listas planas de números
+    (puntos [x0,y0,x1,y1...], aristas [a0,b0,a1,b1...], huecos [x,y...]); contorno = [{suave, puntos, elipse}], detalles = [{tipo, v}]."""
+    flat = lambda L: [v for p in L for v in p]
+    cont = [{"suave": "suave" in c, "puntos": flat(c.get("puntos", [])), "elipse": list(c.get("elipse", []))} for c in d["contorno"]]
+    det = []
+    for x in d["detalles"]:
+        if "ojo" in x:
+            det.append({"tipo": "ojo", "v": list(x["ojo"])})
+        elif "punto" in x:
+            det.append({"tipo": "punto", "v": list(x["punto"])})
+        else:
+            det.append({"tipo": "linea", "v": flat(x["linea"])})
+    return {"regla": d["regla"], "nombre": d["nombre"], "puntos": flat(d["puntos"]), "aristas": flat(d["aristas"]), "anclas": d["anclas"],
+            "huecos": flat(d["huecos"]), "contorno": cont, "detalles": det}
 
 
 # ------------------------------------------------------------------ geometría
@@ -304,6 +325,124 @@ def verificar_etiquetas(fig, palabras, espejo, giro, hueco):
     return None
 
 
+# ------------------------------------------------------------------ reglas anti-símbolo (anexo del 2-oct)
+# Ninguna figura puede leerse como un símbolo: nada de rayos que salen de un centro, ruedas, estrellas, abanicos ni simetría radial.
+MAX_GRADO = 3          # a) ningún nodo con 4 aristas o más (esto incluye cualquier abanico de 5 rayos o más: f)
+
+
+def grados(n, edges):
+    g = [0] * n
+    for a, b in edges:
+        g[a] += 1
+        g[b] += 1
+    return g
+
+
+def centroide(pts):
+    return (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts))
+
+
+def casco(pts):
+    """Casco convexo (cadena monótona) como lista de puntos."""
+    P = sorted(set((round(x, 6), round(y, 6)) for x, y in pts))
+    if len(P) <= 2:
+        return P
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lo, up = [], []
+    for p in P:
+        while len(lo) >= 2 and cross(lo[-2], lo[-1], p) <= 0:
+            lo.pop()
+        lo.append(p)
+    for p in reversed(P):
+        while len(up) >= 2 and cross(up[-2], up[-1], p) <= 0:
+            up.pop()
+        up.append(p)
+    return lo[:-1] + up[:-1]
+
+
+def esquinas(hull, tol=165.0):
+    """Vértices del casco con ángulo interior menor que [tol] (se descartan los casi colineales)."""
+    out = []
+    n = len(hull)
+    for i in range(n):
+        if angulo_interior(hull[i - 1], hull[i], hull[(i + 1) % n]) < tol:
+            out.append(hull[i])
+    return out
+
+
+def area(poly):
+    return abs(sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))) / 2
+
+
+def simetria_giro(pts, tol=0.045):
+    """El mayor orden k (3 a 6) tal que girar los puntos 360/k grados alrededor de su centro deja el conjunto igual; 0 si ninguno."""
+    cx, cy = centroide(pts)
+    for k in (6, 5, 4, 3):
+        ang = 2 * math.pi / k
+        c, s = math.cos(ang), math.sin(ang)
+        ok = True
+        for x, y in pts:
+            rx, ry = cx + (x - cx) * c - (y - cy) * s, cy + (x - cx) * s + (y - cy) * c
+            if min(math.hypot(rx - u, ry - v) for u, v in pts) > tol:
+                ok = False
+                break
+        if ok:
+            return k
+    return 0
+
+
+def rueda(fig, ed):
+    """b) Contorno circular o elíptico (elipse, o puntos casi equidistantes del centro) con líneas internas que cruzan por el centro."""
+    pts = fig["p"]
+    formas = []
+    if fig.get("o") and len(fig["o"]) >= 6:
+        cont = [pts[i] for i in fig["o"]]
+        cx, cy = centroide(cont)
+        r = [math.hypot(x - cx, y - cy) for x, y in cont]
+        m = sum(r) / len(r)
+        if m > 0.12 and all(abs(v - m) <= 0.22 * m for v in r):
+            formas.append((cx, cy, m))
+    for e in fig.get("e", []):
+        formas.append((e[0], e[1], (e[2] + e[3]) / 2))
+    for cx, cy, r in formas:
+        for a, b in ed:
+            A, B = pts[a], pts[b]
+            L2 = (B[0] - A[0]) ** 2 + (B[1] - A[1]) ** 2
+            if L2 == 0:
+                continue
+            t = ((cx - A[0]) * (B[0] - A[0]) + (cy - A[1]) * (B[1] - A[1])) / L2
+            if 0.12 < t < 0.88 and dist_segmento((cx, cy), A, B) < 0.045 and dist(A, B) > r * 1.5:
+                return True
+    return False
+
+
+def triangulo_con_linea(pts, ed):
+    """d) Casco de solo 3 esquinas (un triángulo) con alguna línea interna larga."""
+    hull = casco(pts)
+    if len(esquinas(hull)) != 3:
+        return False
+    return any(dist(pts[a], pts[b]) > 0.3 and a != b for a, b in ed if pts[a] not in hull or pts[b] not in hull or True) and len(ed) > 3
+
+
+def estrella_4(fig, pts):
+    """e) Rombo con picos: 4 esquinas en cruz cuyas diagonales se cortan por el medio, y un contorno muy hundido (menos del 55% del casco)."""
+    hull = casco(pts)
+    cor = esquinas(hull)
+    if len(cor) != 4:
+        return False
+    a, b, c, d = cor
+    m1 = ((a[0] + c[0]) / 2, (a[1] + c[1]) / 2)
+    m2 = ((b[0] + d[0]) / 2, (b[1] + d[1]) / 2)
+    if dist(m1, m2) > 0.12:
+        return False
+    contorno = [pts[i] for i in fig["o"]] if fig.get("o") and len(fig["o"]) >= 3 else None
+    if contorno is None or sum(1 for c_ in cor if any(dist(c_, q) < 1e-3 for q in contorno)) < 3:
+        return False
+    return area(contorno) < 0.55 * area(hull)
+
+
 def validar(fig, palabra_larga="rompecabezas", grupos=None):
     """Lista de problemas de una figura (vacía si está bien)."""
     err = []
@@ -336,6 +475,18 @@ def validar(fig, palabra_larga="rompecabezas", grupos=None):
             err.append(f"polígono casi regular {c}")
     if es_estrella(pts, ed):
         err.append("estrella de 5 o 6 puntas")
+    gr = grados(n, ed)
+    if max(gr) > MAX_GRADO:
+        err.append(f"nodo {gr.index(max(gr))} con {max(gr)} aristas (máximo {MAX_GRADO}: nada de rayos ni abanicos)")
+    if rueda(fig, ed):
+        err.append("contorno circular con líneas por el centro (rueda, símbolo)")
+    k = simetria_giro(pts)
+    if k:
+        err.append(f"simetría de giro de orden {k}")
+    if triangulo_con_linea(pts, ed):
+        err.append("triángulo con una línea interna")
+    if estrella_4(fig, pts):
+        err.append("estrella de 4 puntas (rombo con picos)")
     if hay_aspa(pts, ed) and fig["k"] not in CON_ASPA:
         err.append("cruz o aspa")
     if len(fig["o"]) < 3 and not fig.get("e"):
@@ -397,7 +548,7 @@ def hoja(figs):
     fn = ImageFont.truetype(os.path.join(ROOT, "app", "src", "main", "res", "font", "nunito_regular.ttf"), 13)
     fb = ImageFont.truetype(os.path.join(ROOT, "app", "src", "main", "res", "font", "fredoka.ttf"), 17)
     d.text((14, 14), "La estrella intrusa: figuras de las reglas (hoja de revisión)", font=fh, fill=(255, 227, 163))
-    d.text((14, 54), "Cada cuadro: estrellas de la figura, líneas de la chispa, grabado dorado, nombre y regla. Las marcadas con * se comparten o conviene mirarlas.", font=fn, fill=(217, 212, 245))
+    d.text((14, 54), "Cada cuadro: estrellas de la figura, líneas de la chispa, grabado dorado, nombre y regla. Las marcadas con * se rediseñaron el 2-oct o conviene mirarlas.", font=fn, fill=(217, 212, 245))
     import random
     for n, f in enumerate(figs):
         col, fila = n % cols, n // cols
@@ -433,10 +584,10 @@ def hoja(figs):
             if "linea" in det:
                 (x1, y1), (x2, y2) = det["linea"]
                 d.line([(bx + x1 * bw, by + y1 * bh), (bx + x2 * bw, by + y2 * bh)], fill=(233, 199, 123), width=1)
-        marca = "* " if f["regla"] in DUDOSAS or f["regla"] in COMPARTIDAS or f["regla"] in CON_ASPA else ""
+        marca = "* " if f["regla"] in DUDOSAS or f["regla"] in COMPARTIDAS or f["regla"] in CON_ASPA or f["regla"] in REDISENADAS else ""
         d.text((x0 + cw / 2, y0 + 168), marca + f["nombre"], font=fb, fill=(255, 227, 163), anchor="mm")
         d.text((x0 + cw / 2, y0 + 190), f["regla"], font=fn, fill=(217, 212, 245), anchor="mm")
-        nota = DUDOSAS.get(f["regla"]) or ("aspa a propósito (las hojas de las tijeras se cruzan)" if f["regla"] in CON_ASPA else None)
+        nota = DUDOSAS.get(f["regla"]) or ("rediseñada el 2-oct" if f["regla"] in REDISENADAS else None)
         if nota:
             d.text((x0 + cw / 2, y0 + 207), nota[:34], font=fn, fill=(255, 107, 74), anchor="mm")
     os.makedirs(os.path.dirname(OUT_HOJA), exist_ok=True)
@@ -459,6 +610,7 @@ def suavizar(P, pasos=10):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--hoja", action="store_true")
+    ap.add_argument("--check", action="store_true", help="solo valida: no escribe ningún archivo")
     args = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf8")
     figs = todas()
@@ -492,10 +644,15 @@ def main():
         print("nombres repetidos (compartidos):", rep)
     print(f"{malas} figuras con problemas")
     datos = {"version": 1, "figuras": [construir(f) for f in figs]}
-    for ruta in (OUT_UNITY, OUT_APP):
+    if args.check:
+        if args.hoja:
+            hoja(datos["figuras"])
+        return
+    datos_unity = {"version": 1, "figuras": [plano(d) for d in datos["figuras"]]}
+    for ruta, contenido in ((OUT_UNITY, datos_unity), (OUT_APP, datos)):
         os.makedirs(os.path.dirname(ruta), exist_ok=True)
         with open(ruta, "w", encoding="utf8", newline="\n") as fh:
-            json.dump(datos, fh, ensure_ascii=False, separators=(",", ":"))
+            json.dump(contenido, fh, ensure_ascii=False, separators=(",", ":"))
         print(ruta, os.path.getsize(ruta) // 1024, "KB")
     if args.hoja:
         hoja(datos["figuras"])

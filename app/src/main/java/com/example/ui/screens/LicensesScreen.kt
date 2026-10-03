@@ -69,8 +69,8 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     )
 
     Section("Tipografías")
-    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros y las letras de Cosecha de palabras.")
-    Para("Las tres bajo la licencia SIL Open Font License 1.1 (openfontlicense.org).")
+    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros y las letras de Cosecha de palabras; y Fraunces, de Undercase Type (Phaedra Charles y Flora Lucini), usada para el nombre de cada figura en La estrella intrusa.")
+    Para("Las cuatro bajo la licencia SIL Open Font License 1.1 (openfontlicense.org).")
 
     Section("Hecho con Unity")
     Para("Los juegos de Nubi están hechos con Unity, de Unity Technologies (unity.com).")

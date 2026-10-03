@@ -133,6 +133,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val activeGame by viewModel.activeGame.collectAsState()
   val lastResult by viewModel.lastResult.collectAsState()
   val modeNote by viewModel.modeNote.collectAsState()
+  val atlas by viewModel.atlas.collectAsState()
   val lastResultDaily by viewModel.lastResultDaily.collectAsState()
   val dailySession by viewModel.dailySession.collectAsState()
   val gameRanks by viewModel.gameRanks.collectAsState()
@@ -280,6 +281,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             dailyTotalCount = 3,
             rank = gameRanks.firstOrNull { it.gameId == result.gameId },
             modeNote = modeNote,
+            atlas = atlas,
             onPlayAgain = {
               viewModel.launchGame(result.gameId, customLevel = result.level, customTimed = result.timed, mode = result.playMode)
             },

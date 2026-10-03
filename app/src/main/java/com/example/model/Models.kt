@@ -140,6 +140,14 @@ object GameRegistry {
       iconEmoji = "🌱"
     ),
     GameDefinition(
+      id = "intrusa",
+      title = "La estrella intrusa",
+      domain = DomainType.LENGUAJE,
+      subtitle = "Cinco palabras, una no pertenece",
+      instruction = "Cinco estrellas con una palabra: cuatro comparten algo y una no. Toca la intrusa. Después, una chispa dibuja la figura de lo que las une y la guardas en tu atlas. Cuidado: a veces la intrusa va muy bien con una de las otras.",
+      iconEmoji = "⭐"
+    ),
+    GameDefinition(
       id = "rumbo",
       title = "Rumbo a Casa",
       domain = DomainType.MEMORIA,
@@ -378,7 +386,20 @@ data class GamePlayResult(
   val harvStar: String? = null,
   val harvBest: String? = null,
   val harvMissed: List<String>? = null,
-  val harvHints: Int? = null
+  val harvHints: Int? = null,
+  // Solo La estrella intrusa: rondas vistas y aciertos por tipo de grupo (6: amplia, vecina, uso, material/lugar/parte, trampa,
+  // regla + trampa), mediana al tocar (ms), mejor racha, «¿Qué las une?» vistas y acertadas, y las reglas (claves) de las láminas
+  // nuevas, las falladas, las repasadas y las ganadas con nombre propio. No se guardan en Room: el atlas va en Atlas.kt.
+  val intrSeenType: List<Int>? = null,
+  val intrHitsType: List<Int>? = null,
+  val intrRtMs: Int? = null,
+  val intrBestStreak: Int? = null,
+  val intrBonusSeen: Int? = null,
+  val intrBonusHits: Int? = null,
+  val intrNewPlates: List<String>? = null,
+  val intrReviewNew: List<String>? = null,
+  val intrReviewDone: List<String>? = null,
+  val intrNamed: List<String>? = null
 )
 
 data class DailySessionState(

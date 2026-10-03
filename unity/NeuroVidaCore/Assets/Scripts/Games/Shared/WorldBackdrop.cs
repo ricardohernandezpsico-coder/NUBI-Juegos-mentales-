@@ -45,6 +45,11 @@ namespace NeuroVida.Games.Shared
         public Vector3[] Planets = new Vector3[0];
         public Color[] PlanetColors = new Color[0];
 
+        /// <summary>Cielo QUIETO (estrellas fijas que titilan, sin perspectiva) con una banda de Vía Láctea diagonal: La estrella intrusa.</summary>
+        public bool StaticSky;
+        public int TwinkleStars;
+        public bool MilkyWay;
+
         public int Constellations;
         public float MeteorEverySeconds;
         public string FloatingGlyphs;
@@ -219,6 +224,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.9f, 0.85f),
         };
 
+        /// <summary>La estrella intrusa (Atlas celeste): el cielo de la app más profundo y quieto, con ~230 estrellas fijas (~28 titilan),
+        /// una banda de Vía Láctea inclinada −35° y nebulosas lila y coral. Nada se mueve que se parezca a una figura.</summary>
+        public static GameWorld CieloProfundo => new GameWorld
+        {
+            Name = "Cielo profundo", StaticSky = true, Stars = 230, TwinkleStars = 28, MilkyWay = true,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.16f), NebulaAPos = new Vector2(0.18f, 0.78f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.09f), NebulaBPos = new Vector2(0.88f, 0.22f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",
@@ -240,13 +254,18 @@ namespace NeuroVida.Games.Shared
             UiFx.AddBackgroundGlow(bgRect, world.NebulaAPos, 1600f, world.NebulaA);
             UiFx.AddBackgroundGlow(bgRect, world.NebulaBPos, 1500f, world.NebulaB);
 
-            var starsRect = Layer(bgRect, "Stars");
-            var stars = starsRect.gameObject.AddComponent<StarfieldFx>();
-            stars.VanishingPoint = world.VanishingPoint;
-            stars.Build(starsRect, world.Stars, 10f, world.Name.GetHashCode());
-
             var ambient = bgRect.gameObject.AddComponent<WorldAmbient>();
             ambient.Init(bgRect);
+
+            if (world.MilkyWay) AddMilkyWay(bgRect);
+            if (world.StaticSky) AddStaticSky(bgRect, ambient, world);
+            else
+            {
+                var starsRect = Layer(bgRect, "Stars");
+                var stars = starsRect.gameObject.AddComponent<StarfieldFx>();
+                stars.VanishingPoint = world.VanishingPoint;
+                stars.Build(starsRect, world.Stars, 10f, world.Name.GetHashCode());
+            }
 
             for (int i = 0; i < world.Moons.Length; i++)
                 AddMoon(bgRect, ambient, world.Moons[i], i < world.MoonTints.Length ? world.MoonTints[i] : NeuroStyle.Cream);
@@ -263,6 +282,67 @@ namespace NeuroVida.Games.Shared
         }
 
         // ---- piezas ----
+
+        private static Sprite _milkyWay;
+
+        /// <summary>Banda de Vía Láctea: ~1500 puntos gaussianos (velo rgba(200,190,255,0,09)) a lo largo de una franja, hecha UNA vez
+        /// y puesta inclinada −35°. Es una textura de 512×256: barata y sin animación.</summary>
+        private static void AddMilkyWay(RectTransform parent)
+        {
+            if (_milkyWay == null) _milkyWay = BakeMilkyWay();
+            var rect = Node(parent, "MilkyWay", new Vector2(0.5f, 0.56f), new Vector2(2300f, 1150f));
+            rect.localRotation = Quaternion.Euler(0f, 0f, -35f);
+            Img(rect, _milkyWay, Color.white);
+        }
+
+        private static Sprite BakeMilkyWay()
+        {
+            const int w = 512, h = 256;
+            var acc = new float[w * h];
+            var rng = new System.Random(2810);
+            for (int n = 0; n < 1500; n++)
+            {
+                // gaussiana de Box-Muller a lo ancho de la franja: más densa en el centro
+                double u1 = 1.0 - rng.NextDouble(), u2 = rng.NextDouble();
+                float gy = (float)(System.Math.Sqrt(-2.0 * System.Math.Log(u1)) * System.Math.Cos(2.0 * System.Math.PI * u2));
+                float cx = (float)(rng.NextDouble() * (w - 40) + 20);
+                float cy = h * 0.5f + gy * h * 0.13f;
+                float r = 1.5f + (float)rng.NextDouble() * 4.5f;
+                int x0 = Mathf.Max(0, (int)(cx - r - 1)), x1 = Mathf.Min(w - 1, (int)(cx + r + 1));
+                int y0 = Mathf.Max(0, (int)(cy - r - 1)), y1 = Mathf.Min(h - 1, (int)(cy + r + 1));
+                for (int y = y0; y <= y1; y++)
+                    for (int x = x0; x <= x1; x++)
+                    {
+                        float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / r;
+                        if (d < 1f) acc[y * w + x] += 0.09f * (1f - d * d);
+                    }
+            }
+            var px = new Color32[w * h];
+            for (int i = 0; i < px.Length; i++)
+            {
+                float a = Mathf.Clamp01(acc[i]);
+                px[i] = new Color32(200, 190, 255, (byte)(a * 255f));
+            }
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            tex.SetPixels32(px);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>Estrellas fijas (fondo C): cada una un disco chico; las primeras [TwinkleStars] titilan despacio.</summary>
+        private static void AddStaticSky(RectTransform parent, WorldAmbient ambient, GameWorld world)
+        {
+            var layer = Layer(parent, "StaticSky");
+            var rng = new System.Random(world.Name.GetHashCode());
+            for (int i = 0; i < world.Stars; i++)
+            {
+                float size = 3f + (float)rng.NextDouble() * 5f;
+                var star = Node(layer, "S", new Vector2((float)rng.NextDouble(), (float)rng.NextDouble()), new Vector2(size, size));
+                float a = 0.35f + (float)rng.NextDouble() * 0.55f;
+                var img = Img(star, DiscSprite.Get(), i % 6 == 0 ? NeuroStyle.WithAlpha(NeuroStyle.StarWarm, a) : new Color(1f, 1f, 1f, a));
+                if (i < world.TwinkleStars) ambient.Breathe(img, a, a * 0.55f, 0.8f + (float)rng.NextDouble() * 1.6f);
+            }
+        }
 
         private static void AddMoon(RectTransform parent, WorldAmbient ambient, Vector3 moon, Color tint)
         {

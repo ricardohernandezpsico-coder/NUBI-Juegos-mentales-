@@ -77,7 +77,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
-  "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion", "meteoros", "disparate", "cosecha"
+  "secuencia", "parejas", "rutatesoro", "stroop", "cambiochip", "series", "anagramas", "calculo", "comparacion", "meteoros", "disparate", "cosecha", "intrusa"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -241,6 +241,16 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(Offset(60f, 33f), 7.5f), Clay.Lime, border = 2.5f, shadow = false)
       clay(circle(Offset(13f, 60f), 8.5f), Cream)
       clay(circle(Offset(87f, 72f), 8.5f), Clay.Grape)
+    }
+    "intrusa" -> {
+      // Cuatro estrellas unidas por una línea de luz (sin cerrar) y una quinta que se suelta como estrella fugaz con su estela.
+      val pts = listOf(Offset(16f, 70f), Offset(32f, 40f), Offset(58f, 56f), Offset(50f, 86f))
+      for (i in 0 until pts.size - 1) drawLine(Cream.copy(alpha = 0.8f), pts[i], pts[i + 1], 3.2f, StrokeCap.Round)
+      pts.forEach { clay(star(it, 9.5f, 4.4f, 5, round = true), Clay.Sun, border = 3f, shadow = false) }
+      drawLine(Clay.Coral.copy(alpha = 0.3f), Offset(96f, 6f), Offset(70f, 26f), 7f, StrokeCap.Round)
+      drawLine(Clay.Coral.copy(alpha = 0.55f), Offset(90f, 10f), Offset(70f, 26f), 4.5f, StrokeCap.Round)
+      clay(star(Offset(66f, 30f), 11f, 5f, 5, round = true), Clay.Coral, border = 3.5f)
+      sparkle(Offset(80f, 70f), 7f, Color.White)
     }
     "aterrizaje" -> {
       // Regla sobre la luna con sus extremos, la bandera en el blanco y el módulo lunar bajando con su haz.

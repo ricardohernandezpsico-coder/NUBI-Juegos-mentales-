@@ -29,8 +29,8 @@ echo "=== 2/5: Pruebas EditMode (esperado: todas en verde; 174 al 28-sep) ==="
   -testResults "$RESULTS/v-2-tests.xml" -logFile "$RESULTS/v-2-tests.log" || true
 grep -o 'result="[A-Za-z]*" total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' "$RESULTS/v-2-tests.xml" | head -1
 
-echo "=== 3/5: Arranque de los 22 juegos (smoke) ==="
-for G in Run RunStroop RunComparacion RunCambioChip RunRutaTesoro RunSeries RunCalculo RunAnagramas RunParejas RunPiloto RunRadar RunSatelites RunFreno RunAterrizaje RunAcoplamiento RunTrafico RunBitacora RunRumbo RunCorreo RunMeteoros RunDisparate RunCosecha; do
+echo "=== 3/5: Arranque de los 23 juegos (smoke) ==="
+for G in Run RunStroop RunComparacion RunCambioChip RunRutaTesoro RunSeries RunCalculo RunAnagramas RunParejas RunPiloto RunRadar RunSatelites RunFreno RunAterrizaje RunAcoplamiento RunTrafico RunBitacora RunRumbo RunCorreo RunMeteoros RunDisparate RunCosecha RunIntrusa; do
   "$UNITY" -batchmode -nographics -projectPath "$PROJ" \
     -executeMethod NeuroVida.Bridge.EditorTools.HeadlessPlaymodeSmokeTest.$G -logFile "$RESULTS/v-3-$G.log" || true
   echo "$G: $(grep '\[SmokeTest\]' "$RESULTS/v-3-$G.log" | tail -1)"

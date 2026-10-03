@@ -17,6 +17,7 @@ using NeuroVida.Games.Aterrizaje;
 using NeuroVida.Games.Meteoros;
 using NeuroVida.Games.Disparate;
 using NeuroVida.Games.Cosecha;
+using NeuroVida.Games.Intrusa;
 using NeuroVida.Games.Acoplamiento;
 using NeuroVida.Games.Trafico;
 using NeuroVida.Games.Bitacora;
@@ -59,6 +60,7 @@ namespace NeuroVida.Bridge
         [SerializeField] private MeteorGameController meteorGameController;
         [SerializeField] private DisparateGameController disparateGameController;
         [SerializeField] private CosechaGameController cosechaGameController;
+        [SerializeField] private IntrusaGameController intrusaGameController;
         [SerializeField] private DockingGameController dockingGameController;
         [SerializeField] private TrafficGameController trafficGameController;
         [SerializeField] private BitacoraGameController bitacoraGameController;
@@ -388,6 +390,16 @@ namespace NeuroVida.Bridge
                     }
                     cosechaGameController.gameObject.SetActive(true);
                     cosechaGameController.StartSession(config);
+                    break;
+                case IntrusaGameController.GameId:
+                    if (intrusaGameController == null)
+                    {
+                        var go = new GameObject("IntrusaGameController");
+                        go.transform.SetParent(transform, false);
+                        intrusaGameController = go.AddComponent<IntrusaGameController>();
+                    }
+                    intrusaGameController.gameObject.SetActive(true);
+                    intrusaGameController.StartSession(config);
                     break;
                 default:
                     Debug.LogError($"[GameEntryPoint] game_id {config.game_id} no tiene un controlador registrado todavía.");

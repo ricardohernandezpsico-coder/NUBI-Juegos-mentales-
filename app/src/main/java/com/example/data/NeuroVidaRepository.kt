@@ -161,6 +161,34 @@ class NeuroVidaRepository(
   private val _wordCollection = MutableStateFlow(wordPrefs.getString("words", "").orEmpty().split(",").filter { it.isNotBlank() })
   val wordCollection: StateFlow<List<String>> = _wordCollection.asStateFlow()
 
+  // El atlas de La estrella intrusa: láminas ganadas (con el día), las ganadas con nombre propio y las reglas por repasar
+  // (ver Atlas.kt). SharedPreferences: va en el respaldo (es progreso de la persona).
+  private val atlasPrefs = context.getSharedPreferences("atlas", Context.MODE_PRIVATE)
+  private val _atlas = MutableStateFlow(
+    AtlasState(
+      Atlas.decodePlates(atlasPrefs.getString("plates", null)),
+      Atlas.decodeSet(atlasPrefs.getString("named", null)),
+      Atlas.decodeSet(atlasPrefs.getString("review", null))
+    )
+  )
+  val atlas: StateFlow<AtlasState> = _atlas.asStateFlow()
+
+  /** Suma al atlas lo que mandó una partida de La estrella intrusa (láminas nuevas, falladas, repasadas y con nombre propio). */
+  private fun recordAtlas(result: GamePlayResult) {
+    if (result.gameId != "intrusa" || result.intrSeenType == null) return
+    val today = java.time.LocalDate.now().toEpochDay().toInt()
+    val next = Atlas.record(
+      _atlas.value, result.intrNewPlates.orEmpty(), result.intrNamed.orEmpty(), result.intrReviewNew.orEmpty(), result.intrReviewDone.orEmpty(), today
+    )
+    if (next == _atlas.value) return
+    _atlas.value = next
+    atlasPrefs.edit()
+      .putString("plates", Atlas.encodePlates(next.plates))
+      .putString("named", Atlas.encodeSet(next.named))
+      .putString("review", Atlas.encodeSet(next.review))
+      .apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -351,6 +379,7 @@ class NeuroVidaRepository(
       "aterrizaje" -> "numline" to r.numlineErrorPct
       "disparate" -> "wpm" to Reading.mark(r.svWpm)
       "cosecha" -> "harvest" to Harvest.mark(r.harvCommonFound, r.harvCommonTotal)
+      "intrusa" -> "atlas" to Atlas.mark(r.intrSeenType, r.intrHitsType)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
       "trafico" -> "load" to r.trafficPeakPods?.toFloat()
@@ -747,6 +776,8 @@ class NeuroVidaRepository(
     // La colección de palabras raras se llena en cualquier modo.
     recordWordCollection(result)
     recordUnclearSentences(result)
+    // El atlas se llena en cualquier modo.
+    recordAtlas(result)
     outcome
   }
 
@@ -822,6 +853,8 @@ class NeuroVidaRepository(
     _starMeasures.value = emptyList()
     wordPrefs.edit().clear().apply()
     _wordCollection.value = emptyList()
+    atlasPrefs.edit().clear().apply()
+    _atlas.value = AtlasState()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()
     skillPrefs.edit().clear().putString("state", "").apply()

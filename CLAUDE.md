@@ -13,7 +13,7 @@
 > visible (se comprobó el 1-oct en `strings.xml` y en la interfaz). En los documentos, "Nubi" nombra la app y "NeuroVida" solo
 > aparece en identificadores o cuando se habla del nombre viejo.
 
-App de estimulación cognitiva para Android: 22 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
+App de estimulación cognitiva para Android: 23 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
 de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -30,11 +30,11 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   con `fotos` graba las capturas Roborazzi, p. ej. `HomePlanetScreenshotTest`, para ver pantallas sin teléfono).
   No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 22 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 23 juegos, REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Si algo falla, él pega las últimas 40 líneas de `unity/test-results/v-*.log`.
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 1-oct · cosecha`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 2-oct · intrusa`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -326,6 +326,37 @@ las pasa a la bandeja, tocar la última de la bandeja la devuelve, "Sembrar" (li
 - Créditos: Ajustes → Licencias y créditos cita SPALEX y el diccionario Hunspell es_ES (MPL 1.1 / LGPL / GPL, a elección).
 - Pendiente: que Ricardo lo pruebe en el teléfono (órbita, tamaño de las fichas, ritmo de las cosechas, sonidos, la pista).
 
+**La estrella intrusa** (`Games/Intrusa/`, id `intrusa`, dominio lenguaje; 2-oct, presentación **Atlas celeste** elegida por Ricardo, diseño en
+`docs/diseno-estrella-intrusa.md`, boceto `docs/previews/intrusa-boceto-modelos.html`, hoja de figuras `docs/previews/intrusa-figuras.png`): organizar
+significados y resistir asociaciones engañosas (Mirman, Landrigan y Britt, 2017; Geller et al., 2019). Cinco estrellas-palabra sobre un cielo quieto
+(`GameWorld.CieloProfundo`: fondo C, ~230 estrellas fijas, Vía Láctea a −35°): una no pertenece. NO hay líneas antes de responder. Al tocar la
+intrusa cae como estrella fugaz (900 ms); desde el nivel 3, «¿Qué las une?» (3 opciones, 4 s; mayores 6 s); después una chispa (~430 dp/s,
+1,2-2,2 s en total) traza la FIGURA de la regla (cada una de las 77 reglas tiene la suya: «La Manzana», «Las Tijeras»…) con una nota de la
+pentatónica por estrella y un acorde al cerrar, y se graba (contorno dorado, sombreado, nombre en Fraunces Italic, regla). Error: aro coral + X en la
+tocada, aro sol en la intrusa, explicación, línea punteada si era trampa y «Seguir» (la figura se traza al doble, sin bonus; la regla queda «por
+repasar» y no suma lámina). Cada ronda la figura se refleja y gira ±12° y la intrusa ocupa uno de sus 2-3 huecos.
+- Reglas y pruebas: `IntrusaContract` (niveles, puntaje, medidas, repaso espaciado y atlas en PlayerPrefs `intrusa_recent / intrusa_review /
+  intrusa_plates`) / `IntrusaLayout` (geometría lógica de 360 dp, la MISMA que valida `tools/intrusa/figuras.py`; busca una combinación sin placas
+  encimadas; recorrido de la chispa `IntrusaSpark`) / `IntrusaDirector` + `IntrusaTally` / `IntrusaBank` (JsonUtility: la copia de Unity de las
+  figuras va en listas planas) con `IntrusaContractTests` (26, NUnit puro) e `IntrusaBankTests` (el archivo real). 12 niveles: tipo de grupo por nivel
+  (1-2 amplia, 3-4 vecina, 5-6 uso, 7-8 material/lugar/parte, 9-10 trampa, 11-12 regla + trampa). DDA común `stepUp` 0.4 sin tiempo de reacción. Reto 120 s
+  (una cometa cruza arriba); Precisión 20 rondas. Racha de 5 = «Cielo despejado» (× 1,5). Puntos 100 + 10 por nivel; «¿Qué las une?» × 2.
+- Banco (`Resources/Lexico/intrusa_es.json`, `python tools/intrusa/grupos.py [--muestra]`, determinista): 77 reglas, 960 grupos (160 por tipo),
+  verificador de unicidad; muestra `docs/intrusa-muestra.md`; 20 pruebas en `tools/intrusa/test_grupos.py`. Figuras (`python tools/intrusa/figuras.py
+  [--hoja]`): `figuras_a/b/c.py` con los dibujos propios (se leen por su SILUETA; el validador prohíbe: nodos con 4 aristas o más y abanicos de 5+ rayos, ruedas
+  (contorno circular con líneas por el centro), simetría de giro de orden ≥ 3, triángulo con línea central, estrellas de 4, 5 o 6 puntas, polígonos
+  casi regulares, cruces/aspas — las tijeras se abren ~25° con dos pivotes —, letras y signos; `figuras_d.py` trae los rediseños del 2-oct) y 12 pruebas en `test_figuras.py`; escribe `Resources/Lexico/intrusa_figuras.json` (Unity, plano) y
+  `app/src/main/assets/intrusa_figuras.json` (app).
+- Medidas (telemetría `intr_*` → `GamePlayResult.intr*`; lectura pura en `data/Atlas.kt` con pruebas): **tu red de significados** («9 de 14 rondas
+  bien» y una barra por categoría con ≥ 3 rondas, la más baja marcada con texto), **las trampas** (con ≥ 4: «resististe 5 de 8» ↔ «te engañaron 3 de 8»,
+  la misma cuenta), **¿qué las une?** y **tu atlas** SIN recuadro (hasta 3 miniaturas de láminas ganadas hoy, `ui/components/AtlasThumb.kt`, y
+  «14 láminas · 2 nuevas hoy · 1 por repasar»). Marca (`StarMeasures` `atlas`): % de aciertos. El atlas (SharedPreferences `atlas`, con respaldo:
+  láminas con su día, ganadas con nombre propio, por repasar) lo llena `NeuroVidaRepository.recordAtlas`. Captura real: `docs/previews/intrusa-final-real.png`.
+- Tipografía: Fraunces Italic (SIL OFL) SOLO para el nombre de la figura (`UiFonts.Name`; cae a Fredoka SemiBold si falta
+  `Resources/Fonts/Fraunces-Italic.ttf`); ya está en Ajustes → Licencias. Pendiente de permiso de Ricardo: descargar el archivo.
+- Pendiente: que Ricardo lo pruebe en el teléfono (ritmo de cada ronda, que se reconozcan las figuras; dudosas en la hoja: El Calcetín, La Nariz,
+  El Baúl).
+
 **Acoplamiento** (`Games/Acoplamiento/`, id `acoplamiento`, dominio razonamiento): rotación mental (Shepard y Metzler,
 1971; Cooper y Shepard, 1973; meta-análisis de Uttal et al., 2013). Abajo el puerto de la estación con el hueco de una
 pieza (poliominó quiral al azar); arriba llega el módulo girado, que es la pieza o su reflejo. Botones grandes
@@ -590,11 +621,11 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 
 ## Pruebas
 
-- Kotlin: 180 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 197 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 252 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 22 smoke tests.
+- Unity EditMode: 283 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 23 smoke tests.
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
 - Rondas de Cosecha de palabras: 17 pruebas en `tools/cosecha/test_rondas.py` (`python -m unittest test_rondas`, desde `tools/cosecha`; ~70 s;
   con `COSECHA_REGENERAR=1` reconstruye todo desde las fuentes). Diseño aprobado en `docs/diseno-cosecha-de-palabras.md`; el juego aún no está programado.
