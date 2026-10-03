@@ -211,3 +211,5 @@ rapidez (`secuencia`, `rutatesoro`, `bitacora`, `rumbo`, `satelites`, `aterrizaj
      Mírala de nuevo» y se repite la MISMA muestra. Una sola vez por modo y por partida (la segunda cuenta como error). No aplica en la ronda guiada. Telemetría `ras_mode_confusions[4]`;
      la medida final no cambia.
 
+
+**Retoque 20d.** El ícono de «Al revés» era una flecha curva casi igual a la de «El cielo gira» (solo cambiaba el sentido): ahora es una flecha RECTA a la izquierda con un punto en el origen (←), espejo del → de «El rastro» (que también lleva su punto de origen); la única flecha curva es la del cielo que gira (↻) y «En marcha» sigue con ≫. Sale en la píldora del marcador, el cartel «Ahora:», el rótulo al responder y el «¡NUEVO!» (todos usan `RastroSprites.Icon`); la pantalla final de la app no muestra íconos de modo.

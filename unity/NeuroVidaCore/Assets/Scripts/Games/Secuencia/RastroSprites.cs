@@ -156,19 +156,26 @@ namespace NeuroVida.Games.Secuencia
         {
             switch (m)
             {
-                case RastroMode.Reves: return (x, y) => CircularArrow(x, y, ccw: true);
-                case RastroMode.Gira: return (x, y) => CircularArrow(-x, y, ccw: true); // espejo: ↻
+                case RastroMode.Reves: return LeftArrow;                                  // ← con un punto en el origen: espejo recto del → (no una flecha curva)
+                case RastroMode.Gira: return (x, y) => CircularArrow(-x, y, ccw: true); // ↻ la única flecha curva
                 case RastroMode.Marcha: return Chevrons;
                 default: return RightArrow;
             }
         }
 
-        private static float RightArrow(float x, float y)
+        // → y ← son espejo una de la otra, cada una con un punto en el origen (de dónde parte): en orden y al revés se distinguen de un vistazo; la única
+        // flecha curva es la del cielo que gira.
+        private static float RightArrow(float x, float y) => Arrow(x, y);
+        private static float LeftArrow(float x, float y) => Arrow(-x, y);
+
+        /// <summary>Flecha recta hacia +x con un punto en el origen (a la izquierda) y la punta a la derecha.</summary>
+        private static float Arrow(float x, float y)
         {
             const float r = 0.09f;
-            float d = Cap(x, y, -0.7f, 0f, 0.62f, 0f, r);
-            d = Mathf.Min(d, Cap(x, y, 0.68f, 0f, 0.18f, 0.5f, r));
-            return Mathf.Min(d, Cap(x, y, 0.68f, 0f, 0.18f, -0.5f, r));
+            float d = Cap(x, y, -0.5f, 0f, 0.62f, 0f, r);
+            d = Mathf.Min(d, Cap(x, y, 0.68f, 0f, 0.2f, 0.46f, r));
+            d = Mathf.Min(d, Cap(x, y, 0.68f, 0f, 0.2f, -0.46f, r));
+            return Mathf.Min(d, Circle(x, y, -0.68f, 0f, 0.13f));
         }
 
         private static float Chevrons(float x, float y)
