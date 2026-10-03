@@ -98,3 +98,22 @@ Con el sistema común (`GuidedTutorial`, `GameControllerBase.BuildTutorial`/`Gui
 desde la orilla TINTA y pide tocar su color; 2) una desde la orilla PALABRA; 3) dos rondas guiadas sin puntaje. El menú de
 pausa «Cómo se juega» lo repite. Versión corta (`Assessment`): no hace falta por ahora, porque el juego no está
 en el inicio.
+
+## 8. Ficha técnica (programado el 3-oct, tarea 23)
+
+- `Games/Stroop/StroopContract.cs`: reglas puras. `Names`/`Colors` (4 tintas), `Spec(level)` (reglas, % que chocan, llegada), `ArrivalSeconds(level, senior)` (mayores ×1,3), `Sequencer`
+  (genera las palabras: 3 de apertura de TINTA, tramos de 4-6 en el nivel 3, cambios al azar de ~40 % y ~50 % en los niveles 4 y 5; marca `Switched` y `Clash`),
+  `InterferenceMs`/`SwitchCostMs` (−1 con menos de 3 aciertos de cada tipo; nunca negativas), `Explain` («La tinta era azul» / «La palabra decía rojo»), `GuidedTrials` (la ronda guiada).
+  `BaseTimeForLevel` y `RuleFlipChance` se quitaron (el tiempo por palabra ya no existe: manda el reloj del Reto).
+- `StroopGameController.cs` (rehecho): cinta «Responde: …», dos orillas (haces de luz con gotas/libros y el nombre en vertical; la activa al 100 %, la otra al 35 %), tarjeta oscura
+  #141B36 con borde del color de su orilla y el ícono en la esquina, 4 botones 2 × 2 con la gota de color y el nombre. La tarjeta llega deslizándose (no se acepta respuesta hasta que
+  llega; el tiempo de respuesta se mide desde ahí) y sale hacia la orilla contraria al acertar. Al fallar: aro en el botón correcto, el texto en la píldora y 1,5 s de pausa que NO le gasta
+  tiempo al Reto. «Ahora: PALABRA» solo la primera vez por partida (tampoco gasta tiempo). `StroopSprites.cs`: gota, libro y haz de luz (se tiñen con `Image.color`).
+- Movimiento reducido (`Motion.Decorative`): sin deslizamiento, temblor, chispas ni golpe de la cinta; fundidos con los mismos tiempos (`Motion.Hold`).
+- Tutorial: `GuidedRound` (4 palabras que chocan: TINTA, PALABRA y las mismas dos sin aro; un error repite el paso y explica sin culpa; no suma puntos ni toca el DDA) y «Cómo se juega» en
+  la pausa (`HowToReady/Suspend/Resume`; el Reto no pierde tiempo). Durante la práctica los botones suben 270 u para dejar lugar a «Práctica: no cuenta» y «Saltar tutorial».
+  `UnityGameLauncher.TUTORIAL_GAMES` incluye `stroop`; el smoke tiene `TutorialStroop`. Sin versión corta.
+- Telemetría: `interference_ms` y `switch_cost_ms` en `StroopSessionMetrics` (lo leen `NativeReceiver` y `GamePlayResult.interferenceMs/switchCostMs`; solo para `stroop`).
+  App: `data/DosOrillas.kt` (texto de las medidas y consejo), bloques en `GameResultScreen`, consejo en `ResultAdvice` (para «¿qué te sirve más ver primero?»).
+  Todavía NO hay marca de evolución en Hoy (`StarMeasures`): queda para cuando Ricardo la pida.
+- Pruebas: `StroopContractTests` (paleta, niveles, generación, medidas, guion), `DosOrillasTest`, `StroopTelemetryTest`; smoke `TutorialStroop` y `Stroop`.

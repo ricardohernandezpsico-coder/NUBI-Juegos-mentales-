@@ -33,6 +33,12 @@ namespace NeuroVida.Contracts
         /// Experto se superó (Skill.passed). 0 = no aplica.</summary>
         public int mode_trials;
         public int mode_hits;
+        /// <summary>Solo Tinta o Palabra («Dos orillas»): «Cuánto te frenó la palabra», en ms: promedio de tiempo de los aciertos con palabra que CHOCA menos el de los que COINCIDEN
+        /// (interferencia de Stroop). -1 con menos de 3 aciertos de cada tipo o en otro juego.</summary>
+        public int interference_ms = -1;
+        /// <summary>Solo Tinta o Palabra: «Cambiar de orilla te costó», en ms: promedio de tiempo de los aciertos tras un cambio de orilla menos el de los que repiten orilla (costo de cambio).
+        /// -1 con menos de 3 aciertos de cada tipo (en los niveles 1 y 2 no hay cambios) o en otro juego.</summary>
+        public int switch_cost_ms = -1;
         /// <summary>Solo Piloto Estelar: costo de multitarea en % (cuánto baja la precisión en señales al pilotar a la
         /// vez). -1 = no aplica o sin datos.</summary>
         public int multitask_cost = -1;

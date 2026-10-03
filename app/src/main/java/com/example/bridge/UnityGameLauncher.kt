@@ -21,7 +21,7 @@ object UnityGameLauncher {
 
   /** Juegos con tutorial guiado (ronda guiada propia) y «Cómo se juega» en la pausa. Rastro de luz fue el primero; Freno, Aterrizaje y Meteoros se sumaron el 3-oct
    *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
-  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros")
+  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop")
 
   /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
   fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =

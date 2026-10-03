@@ -43,6 +43,8 @@ namespace NeuroVida.Bridge.EditorTools
         public static void RunTutorialFreno() => RunGame("freno", 12f, tutorial: true);
         public static void RunTutorialAterrizaje() => RunGame("aterrizaje", 12f, tutorial: true);
         public static void RunTutorialMeteoros() => RunGame("meteoros", 12f, tutorial: true);
+        /// <summary>Tinta o Palabra («Dos orillas») con su tutorial guiado (sin versión corta: no está en el inicio).</summary>
+        public static void RunTutorialStroop() => RunGame("stroop", 12f, tutorial: true);
 
         /// <summary>La versión corta del inicio («Tu punto de partida»: <c>assessment</c>) de Freno, Aterrizaje y Meteoros.</summary>
         public static void RunCortoFreno() => RunGame("freno", 10f, assessment: true);
@@ -121,7 +123,7 @@ namespace NeuroVida.Bridge.EditorTools
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
-            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), ("Comparacion", "comparacion", 9f), ("CambioChip", "cambiochip", 9f),
             ("RutaTesoro", "rutatesoro", 9f), ("Series", "series", 9f), ("Calculo", "calculo", 9f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),

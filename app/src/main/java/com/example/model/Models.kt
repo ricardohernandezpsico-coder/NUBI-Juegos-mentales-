@@ -88,8 +88,8 @@ object GameRegistry {
       id = "stroop",
       title = "Tinta o Palabra",
       domain = DomainType.ATENCION,
-      subtitle = "Efecto Stroop & Inhibición",
-      instruction = "Responde según la regla del cartel: el color de la TINTA o lo que dice la PALABRA. Atento: la regla cambia.",
+      subtitle = "Dos orillas, dos reglas",
+      instruction = "La palabra llega por una orilla. Si viene de la orilla de la TINTA, toca el color con que está escrita; si viene de la orilla de la PALABRA, toca lo que dice. A veces cambia de orilla.",
       iconEmoji = "🎨"
     ),
     GameDefinition(
@@ -286,6 +286,10 @@ data class GamePlayResult(
   /** Satélites: cuántos había que seguir por ronda, en promedio (techo de trackingCapacity en esa partida). */
   val trackingTargets: Float? = null,
   val trackingSpeed: Float? = null,
+  // Solo Tinta o Palabra («Dos orillas»): «Cuánto te frenó la palabra» (interferencia, ms) y «Cambiar de orilla te costó» (costo de cambio, ms);
+  // null = sin datos (menos de 3 aciertos de cada tipo). Lectura en data/DosOrillas.kt. No se guardan en Room.
+  val interferenceMs: Int? = null,
+  val switchCostMs: Int? = null,
   // Solo Freno de Emergencia: "tu freno" (tiempo de frenado, ms), altos frenados / totales y el alto más tardío
   // que se frenó (ms). No se guardan en Room.
   val brakeMs: Int? = null,

@@ -35,7 +35,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Modos para iterar sin verificar todo cada vez: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 3-oct · inicio 2`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 3-oct · dos orillas`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -112,7 +112,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
   `GameFeel` (sonidos sintetizados y vibración), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
   (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `LivesHud`, `PressScale`, sprites varios, y el **tutorial guiado común** (`GuidedTutorial` + `NubiTeacherSprite`;
-  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = Rastro de luz, Freno, Aterrizaje y Meteoros; «Cómo se juega» en la pausa; cómo sumar otro en `docs/diseno-rastro-de-luz.md`).
+  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = Rastro de luz, Freno, Aterrizaje, Meteoros y Tinta o Palabra; «Cómo se juega» en la pausa; cómo sumar otro en `docs/diseno-rastro-de-luz.md`).
 
 ## Juegos (índice)
 
@@ -128,7 +128,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 | Bitácora de Misión | `bitacora` | Memoria | `Games/Bitacora/` | [docs/juegos/bitacora.md](docs/juegos/bitacora.md) | `MissionLog.kt` |
 | Rumbo a Casa | `rumbo` | Memoria | `Games/Rumbo/` | [docs/juegos/rumbo.md](docs/juegos/rumbo.md) | `Homing.kt` |
 | Correo Estelar | `correo` | Memoria | `Games/Correo/` | [docs/juegos/correo.md](docs/juegos/correo.md) | `Mail.kt` |
-| Tinta o Palabra | `stroop` | Atención | `Games/Stroop/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
+| Tinta o Palabra («Dos orillas», 3-oct) | `stroop` | Atención | `Games/Stroop/` | [docs/diseno-tinta-o-palabra.md](docs/diseno-tinta-o-palabra.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `DosOrillas.kt` |
 | Cambio de Chip | `cambiochip` | Atención | `Games/CambioChip/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
 | Comparación Instantánea | `comparacion` | Atención | `Games/Comparacion/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
 | Piloto Estelar | `piloto` | Atención | `Games/Piloto/` | [docs/juegos/piloto.md](docs/juegos/piloto.md) | — |
@@ -202,11 +202,11 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 300 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 311 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 371 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados) + 30 arranques de smoke (los 23 juegos, los 4 tutoriales y las 3 versiones cortas: `--juegos Tutorial,TutorialFreno,CortoFreno…`).
+- Unity EditMode: 396 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados) + 30 arranques de smoke (los 23 juegos, los 4 tutoriales y las 3 versiones cortas: `--juegos Tutorial,TutorialFreno,CortoFreno…`).
 - Léxico de Lluvia de meteoros: 11 pruebas del filtro de nombres propios en `tools/lexico/test_propios.py` (`python -m unittest test_propios`, desde `tools/lexico`).
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
 - Rondas de Cosecha de palabras: 17 pruebas en `tools/cosecha/test_rondas.py` (`python -m unittest test_rondas`, desde `tools/cosecha`; ~70 s;

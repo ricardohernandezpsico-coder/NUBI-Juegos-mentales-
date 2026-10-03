@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using NeuroVida.Bridge;
 using NeuroVida.Contracts;
-using NeuroVida.Games.Parejas;   // SymbolSprite (gota de tinta del cartel de regla)
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
@@ -13,18 +12,12 @@ using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también exi
 namespace NeuroVida.Games.Stroop
 {
     /// <summary>
-    /// "Tinta o Palabra" (Stroop) en Unity: 12 ensayos; se muestra el NOMBRE de un color
-    /// escrito con la tinta de otro y el cartel superior dice qué hay que tocar (el color de
-    /// la tinta o lo que dice la palabra). Reglas 1:1 con <c>StroopGame.kt</c> (ver
-    /// <see cref="StroopContract"/>); lo nuevo es la interfaz y el ritmo:
-    /// <list type="bullet">
-    /// <item>Tarjeta central oscura donde la palabra brilla como neón; sale volando al acertar.</item>
-    /// <item>Cartel de regla que se VOLTEA cuando la regla cambia (el cambio se ve, no solo se lee).</item>
-    /// <item>Cinco botones grandes de arcilla con el color y su nombre; se hunden al tocarlos.</item>
-    /// <item>Racha (combo) con tono ascendente, puntos de avance y error que señala la respuesta correcta.</item>
-    /// <item>Barra de tiempo por ensayo (modo Reto) en vez de un número.</item>
-    /// </list>
-    /// La UI se arma por código (mismo criterio que Secuencia/Parejas); todo dentro del Safe Area.
+    /// «Tinta o Palabra» — modelo «Dos orillas» (aprobado el 3-oct; ficha: <c>docs/diseno-tinta-o-palabra.md</c>). Una palabra de color llega deslizándose desde una de dos orillas:
+    /// la de la TINTA (izquierda, violeta, gotas) o la de la PALABRA (derecha, turquesa, libros). La orilla manda: desde la TINTA se toca el color con que está escrita; desde la
+    /// PALABRA, lo que dice. Al acertar, la tarjeta sale hacia la orilla contraria; al fallar, Nubi explica sin culpa («La tinta era azul») y un aro marca el botón correcto.
+    /// Las orillas son HACES DE LUZ (compuertas de una estación): estética espacial, nada de papel. La regla se ve en tres señales a la vez (orilla, ícono y cinta fija),
+    /// que es lo que más baja el costo de cambiar de regla (Monsell, 2003). Reglas puras y medidas en <see cref="StroopContract"/>.
+    /// La UI se arma por código; todo dentro del Safe Area. Con «quitar animaciones»: fundido en vez de deslizamiento, sin temblor ni chispas, y los mismos tiempos.
     /// </summary>
     public class StroopGameController : GameControllerBase
     {
@@ -32,17 +25,20 @@ namespace NeuroVida.Games.Stroop
 
         private const float UnitsPerDp = 3f;
         private const float MarginU = 60f;
+        private const float ShoreW = 120f;
         private const float NoAnswer = -2f;
+        private const int TimeUp = -3;
+        /// <summary>Lugar que se reserva abajo durante la ronda guiada para «Práctica: no cuenta» y «Saltar tutorial» (los botones suben).</summary>
+        private const float GuidedReserveU = 270f;
 
-        private static readonly Color CardFill = new Color(0x1B / 255f, 0x27 / 255f, 0x40 / 255f);
-        private static readonly Color InkAccent = new Color(0x60 / 255f, 0xA5 / 255f, 0xFA / 255f);
-        private static readonly Color WordAccent = new Color(0x34 / 255f, 0xD3 / 255f, 0x99 / 255f);
+        private static readonly Color ButtonFill = new Color(0x23 / 255f, 0x2E / 255f, 0x54 / 255f);
         private static readonly Color GoodColor = new Color(0x22 / 255f, 0xC5 / 255f, 0x5E / 255f);
         private static readonly Color BadColor = new Color(0xEF / 255f, 0x44 / 255f, 0x44 / 255f);
         private static readonly Color AmberColor = new Color(0xF5 / 255f, 0x9E / 255f, 0x0B / 255f);
-        private static readonly Color DarkLabel = new Color(0x1F / 255f, 0x29 / 255f, 0x37 / 255f);
+        private static readonly Color HintColor = new Color(0xFF / 255f, 0xC9 / 255f, 0x3C / 255f);
 
         private System.Random _rng;
+        private StroopContract.Sequencer _seq;
 
         // Estado de partida
         private int _trialIndex;
@@ -55,37 +51,47 @@ namespace NeuroVida.Games.Stroop
         private float _answerAt;
         private bool _acceptInput;
         private bool _ended;
+        private bool _loopOn;
+        private bool _taughtWord;
         private StroopTrial _trial;
-        private StroopRule _shownRule = (StroopRule)(-1);
         private int _totalAnswered;
         private AdaptiveDifficulty _dda; // DDA común (ver docs/DDA-comun.md)
         private int _effLevel = 1;
         private int _points;
         private float _roundEndsAt;
         private int _lastTickSecond = -1;
-        private const int TimeUp = -3;
+        private readonly List<StroopResponse> _responses = new List<StroopResponse>();
+        private bool Senior => _config != null && _config.config != null && DdaUserProfileConfig.ParseAgeBand(_config.config.age_band) == AgeBand.Senior;
 
-        /// <summary>Modo Reto = ronda contra el reloj SIN límite de ensayos (estilo de los juegos
-        /// de velocidad de las apps de estimulación cognitiva): se responde todo lo posible en
-        /// <see cref="StroopContract.EndlessSeconds"/>. Modo Precisión (sin reloj) = 12 ensayos.</summary>
+        /// <summary>Modo Reto = ronda contra el reloj SIN límite de palabras: se responde todo lo posible en <see cref="StroopContract.EndlessSeconds"/>.
+        /// Modo Precisión (sin reloj) = <see cref="StroopContract.TotalTrials"/> palabras.</summary>
         private bool Endless => _config != null && _config.config.timed;
 
         // UI
         private RectTransform _safe;
-        private Text _wordText, _bannerText, _bannerSub, _bannerAw, _chipText;
-        private Image _bannerBg, _bannerDisc, _bannerDrop, _wordGlow, _cardBorder, _chipBg;
-        private Color _ruleAccent = Color.white;
-        private RectTransform _bannerRect, _timerBg, _timerFill, _cardRect, _fxRect;
+        private Text _wordText, _ribbonText;
+        private Image _ribbonBg, _ribbonIcon, _wordGlow, _cardBorder, _cardCorner, _cardCornerIcon;
+        private RectTransform _ribbonRect, _timerBg, _timerFill, _cardRect, _fxRect, _stageRect;
         private CanvasGroup _cardGroup;
+        private readonly CanvasGroup[] _shoreGroup = new CanvasGroup[2];
+        private readonly RectTransform[] _shoreRect = new RectTransform[2];
         private readonly List<RectTransform> _buttonRects = new List<RectTransform>();
         private readonly List<Image> _buttonImages = new List<Image>();
-        private readonly List<Color> _buttonColors = new List<Color>();
+        private readonly List<CanvasGroup> _buttonGroups = new List<CanvasGroup>();
+        private readonly List<Outline> _buttonRings = new List<Outline>();
         private ProgressDots _dots;
         private PhasePill _pill;
         private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
+        // «Ahora: PALABRA»
+        private RectTransform _ruleCardRoot;
+        private CanvasGroup _ruleCardGroup;
+        private float _bottomReserve;
+        private Vector2 _cardRestPos;
+        private float _cardW;
+        private Image _guidedRing;
 
         // ------------------------------------------------------------------ sesión
 
@@ -93,6 +99,7 @@ namespace NeuroVida.Games.Stroop
         {
             _config = config;
             _rng = new System.Random();
+            _seq = new StroopContract.Sequencer(_rng);
             _trialIndex = 0;
             _correct = 0;
             _streak = 0;
@@ -100,12 +107,16 @@ namespace NeuroVida.Games.Stroop
             _responseMsSum = 0;
             _responseCount = 0;
             _ended = false;
+            _loopOn = false;
+            _guided = false;
+            _taughtWord = false;
             _acceptInput = false;
-            _shownRule = (StroopRule)(-1);
             _totalAnswered = 0;
             _points = 0;
-            _dda = new AdaptiveDifficulty(5, DdaUserProfileConfig.ParseAgeBand(config.config.age_band),
-                AdaptiveDifficulty.StartRating(config.config, 5),
+            _responses.Clear();
+            _bottomReserve = 0f;
+            _dda = new AdaptiveDifficulty(StroopContract.MaxLevel, DdaUserProfileConfig.ParseAgeBand(config.config.age_band),
+                AdaptiveDifficulty.StartRating(config.config, StroopContract.MaxLevel),
                 stepUp: config.config.timed ? 0.12f : 0.2f, useReaction: config.config.timed);
             _effLevel = _dda.PresentedLevel;
             _lastTickSecond = -1;
@@ -113,11 +124,16 @@ namespace NeuroVida.Games.Stroop
             _dots.Reset();
             _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
-            _bannerRect.gameObject.SetActive(true);
+            _ribbonRect.gameObject.SetActive(true);
+            _stageRect.gameObject.SetActive(true);
             _pill.Rect.gameObject.SetActive(true);
             foreach (var r in _buttonRects) r.gameObject.SetActive(true);
             _cardRect.gameObject.SetActive(true);
+            _cardGroup.alpha = 0f;
+            _ruleCardRoot.gameObject.SetActive(false);
+            ClearRings();
             SetStreak(0);
+            ApplyRule(StroopRule.Ink, false);
             _timerBg.gameObject.SetActive(config.config.timed);
             _dots.Rect.gameObject.SetActive(!config.config.timed);
 
@@ -128,6 +144,18 @@ namespace NeuroVida.Games.Stroop
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre el cielo ya armado, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHudText();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+            }
+            _safe.gameObject.SetActive(false);
             yield return StartCoroutine(_countdown.Play("Tinta o Palabra", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null; // deja que el Canvas calcule el rect del Safe Area antes de medir
@@ -137,6 +165,13 @@ namespace NeuroVida.Games.Stroop
 
             _roundEndsAt = GameClock.Time + StroopContract.EndlessSeconds;
             _trialIndex = 0;
+            _loopOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
+
+        /// <summary>El bucle de la partida: una palabra tras otra hasta que se acaben (Precisión) o el tiempo (Reto). «Cómo se juega» lo retoma desde acá.</summary>
+        private IEnumerator MainLoop()
+        {
             while (Endless ? GameClock.Time < _roundEndsAt : _trialIndex < StroopContract.TotalTrials)
             {
                 yield return StartCoroutine(PresentTrial());
@@ -156,77 +191,80 @@ namespace NeuroVida.Games.Stroop
                 }
 
                 bool correct = _answerIndex == _trial.CorrectIndex;
+                float ms = (_answerAt - startedAt) * 1000f;
                 _totalAnswered++;
-                _responseMsSum += (long)((_answerAt - startedAt) * 1000f);
+                _responseMsSum += (long)ms;
                 _responseCount++;
-                var change = _dda.Register(correct, (_answerAt - startedAt) * 1000f);
+                _responses.Add(new StroopResponse(correct, ms, _trial.Clash, _trial.Switched));
+                var change = _dda.Register(correct, ms);
                 yield return StartCoroutine(ResolveTrial(correct));
                 if (change == DdaChange.Up)
                 {
-                    _toast.Show($"Nivel {_dda.Level}", _dda.Level >= 4 ? "Cambian las reglas" : "Más difícil", GoodColor, 1.0f);
+                    _toast.Show($"Nivel {_dda.Level}", _dda.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil", GoodColor, 1.0f);
                     GameFeel.LevelUp();
                 }
                 else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Ajustamos la dificultad", AmberColor, 1.0f);
                 _trialIndex++;
             }
 
+            _loopOn = false;
             yield return StartCoroutine(FinishGame());
         }
 
-        // ------------------------------------------------------------------ ensayo
+        // ------------------------------------------------------------------ palabra
 
         private IEnumerator PresentTrial()
         {
             _answerIndex = (int)NoAnswer;
             _effLevel = _dda.PresentedLevel;
-            _trial = StroopContract.GenerateTrial(_effLevel, _config.config.base_intensity, _rng);
-
-            _wordText.text = StroopContract.Names[_trial.WordIndex];
-            var ink = StroopContract.Colors[_trial.InkIndex];
-            _wordText.color = ink;
-            _wordGlow.color = new Color(ink.r, ink.g, ink.b, 0.20f);
-            _cardBorder.color = new Color(_ruleAccent.r, _ruleAccent.g, _ruleAccent.b, 0.95f);
-            ResetButtonColors();
+            _trial = _seq.Next(_effLevel);
             if (!Endless) _dots.MarkCurrent(_trialIndex);
             UpdateHudText();
             if (!Endless) SetTimerFraction(1f);
+            ClearRings();
+            ResetButtons();
 
-            bool changed = _shownRule != _trial.Rule;
-            if (_shownRule == (StroopRule)(-1))
+            // la primera vez que una palabra llega por la orilla de la PALABRA, una tarjeta lo explica (no le gasta tiempo al Reto)
+            if (_trial.Rule == StroopRule.Word && !_taughtWord)
             {
-                ApplyBannerVisuals(_trial.Rule);
+                _taughtWord = true;
+                yield return StartCoroutine(ShowRuleCard());
             }
-            else if (changed)
-            {
-                StartCoroutine(FlipBanner(_trial.Rule));
-                PlayTone(392f, 0.12f, 0.12f);
-            }
-            _shownRule = _trial.Rule;
+            yield return StartCoroutine(SlideIn(_trial, StroopContract.ArrivalSeconds(_effLevel, Senior), _trial.Switched));
+            _acceptInput = true;
+        }
 
-            _pill.Set(_trial.Rule == StroopRule.Ink ? "Elige el color de la tinta" : "Elige lo que dice la palabra",
-                _trial.Rule == StroopRule.Ink ? InkAccent : WordAccent);
-
-            // Entrada de la tarjeta: crece con rebote mientras aparece.
+        /// <summary>Pone la palabra en la tarjeta, enciende la orilla de la que llega y la hace llegar deslizándose desde ella (con «quitar animaciones»: aparece con un fundido, mismo tiempo).</summary>
+        private IEnumerator SlideIn(StroopTrial trial, float seconds, bool pop)
+        {
+            _wordText.text = StroopContract.Names[trial.WordIndex];
+            var ink = StroopContract.Colors[trial.InkIndex];
+            _wordText.color = ink;
+            _wordGlow.color = new Color(ink.r, ink.g, ink.b, 0.18f);
+            ApplyRule(trial.Rule, pop);
+            if (_shownCardSide != (trial.Rule == StroopRule.Ink ? -1 : 1)) _shownCardSide = trial.Rule == StroopRule.Ink ? -1 : 1;
+            float side = _shownCardSide;
+            float startX = side * (_stageRect.rect.width * 0.5f - ShoreW - 10f);
+            _cardRect.localScale = Vector3.one;
             float t = 0f;
-            const float seconds = 0.24f;
-            _cardRect.anchoredPosition = _cardRestPos;
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                _cardRect.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.78f, 1f, UiFx.EaseOutBack(k)) : 1f); // sin ReduceMotion: solo fundido (mismo tiempo)
-                _cardGroup.alpha = Mathf.Clamp01(k * 2.2f);
+                float e = UiFx.EaseOutCubic(k);
+                _cardRect.anchoredPosition = _cardRestPos + new Vector2(Motion.Decorative ? startX * (1f - e) : 0f, 0f);
+                _cardGroup.alpha = Mathf.Clamp01(k * 2.4f);
                 yield return null;
             }
-            _cardRect.localScale = Vector3.one;
+            _cardRect.anchoredPosition = _cardRestPos;
             _cardGroup.alpha = 1f;
-            _acceptInput = true;
         }
+
+        private int _shownCardSide;
 
         private IEnumerator ResolveTrial(bool correct)
         {
             if (!Endless) _dots.Mark(_trialIndex, correct);
-            Vector2 cardCenter = Vector2.zero;
             var ink = StroopContract.Colors[_trial.InkIndex];
 
             if (correct)
@@ -237,60 +275,63 @@ namespace NeuroVida.Games.Stroop
                 _points += 100 + 25 * Mathf.Min(_streak - 1, 8);
                 UpdateHudText();
                 SetStreak(_streak);
-                _pill.Set("¡Correcto!", GoodColor);
+                _pill.Set("¡Bien!", GoodColor);
                 GameFeel.Correct(_streak);
-                StartCoroutine(Flash(GoodColor, 0.10f, 0.28f));
-                StartCoroutine(UiFx.SparkBurst(_fxRect, LocalIn(_fxRect, _cardRect), ink, 16, 300f, 46f, 0.6f));
-                StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[_answerIndex]), Color.white, 120f, 420f, 0.45f));
+                StartCoroutine(Flash(GoodColor, 0.08f, 0.24f));
+                if (Motion.Decorative)
+                {
+                    StartCoroutine(UiFx.SparkBurst(_fxRect, LocalIn(_fxRect, _cardRect), ink, 14, 280f, 42f, 0.55f));
+                    StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[_answerIndex]), Color.white, 120f, 420f, 0.45f));
+                }
                 if (_streak == 4 || _streak == 8 || _streak == 12)
                     _toast.Show($"Racha de {_streak}", "Sigue así", GoodColor, 0.9f);
 
-                // La tarjeta sale volando hacia arriba mientras se desvanece.
-                float t = 0f;
-                float seconds = Endless ? 0.17f : 0.24f;
-                Vector2 from = _cardRestPos;
-                while (t < seconds)
-                {
-                    t += GameClock.DeltaTime;
-                    float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
-                    _cardRect.anchoredPosition = from + new Vector2(0f, Motion.Decorative ? 150f * k : 0f); // sin ReduceMotion: se desvanece en su lugar
-                    _cardRect.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.08f * k : 1f);
-                    _cardGroup.alpha = 1f - k;
-                    yield return null;
-                }
-                if (!Endless) yield return new WaitForSeconds(0.08f);
+                // la tarjeta sale hacia la orilla CONTRARIA a la de la que llegó
+                yield return StartCoroutine(SlideOut(Endless ? 0.17f : 0.24f, -_shownCardSide));
+                if (!Endless) yield return Motion.Hold(0.08f);
             }
             else
             {
                 _streak = 0;
                 SetStreak(0);
                 int correctIndex = _trial.CorrectIndex;
-                _pill.Set($"Era {StroopContract.Names[correctIndex]}", AmberColor);
+                _pill.Set(StroopContract.Explain(_trial), AmberColor);
                 GameFeel.Wrong();
-                _cardBorder.color = new Color(BadColor.r, BadColor.g, BadColor.b, 0.85f);
-                StartCoroutine(Flash(BadColor, 0.14f, 0.32f));
-                StartCoroutine(UiFx.Shake(24f, 0.4f, _cardRect));
-                DimButtonsExcept(correctIndex);
-                StartCoroutine(PopRect(_buttonRects[correctIndex], 1.14f, 0.3f));
-                StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[correctIndex]), Color.white, 140f, 460f, 0.55f));
-                yield return new WaitForSeconds(Endless ? 0.6f : 0.85f);
-
-                float t = 0f;
-                const float seconds = 0.16f;
-                while (t < seconds)
-                {
-                    t += GameClock.DeltaTime;
-                    _cardGroup.alpha = 1f - Mathf.Clamp01(t / seconds);
-                    yield return null;
-                }
+                _cardBorder.color = new Color(BadColor.r, BadColor.g, BadColor.b, 0.9f);
+                StartCoroutine(Flash(BadColor, 0.12f, 0.3f));
+                if (Motion.Decorative) StartCoroutine(UiFx.Shake(20f, 0.35f, _cardRect));
+                ShowRing(correctIndex);
+                if (Motion.Decorative) StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[correctIndex]), Color.white, 140f, 460f, 0.55f));
+                // una pausa para leer la explicación; no le gasta tiempo al Reto
+                yield return Motion.Hold(StroopContract.ErrorPauseSeconds);
+                if (Endless) _roundEndsAt += StroopContract.ErrorPauseSeconds;
+                yield return StartCoroutine(FadeCardOut());
             }
             _cardGroup.alpha = 0f;
+            ClearRings();
+        }
+
+        /// <summary>La tarjeta sale hacia <paramref name="toSide"/> (−1 izquierda, +1 derecha) mientras se desvanece; sin movimiento con «quitar animaciones».</summary>
+        private IEnumerator SlideOut(float seconds, int toSide)
+        {
+            float t = 0f;
+            float dist = toSide * (_stageRect.rect.width * 0.5f - ShoreW - 10f);
+            while (t < seconds)
+            {
+                t += GameClock.DeltaTime;
+                float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
+                _cardRect.anchoredPosition = _cardRestPos + new Vector2(Motion.Decorative ? dist * k : 0f, 0f);
+                _cardGroup.alpha = 1f - k;
+                yield return null;
+            }
+            _cardGroup.alpha = 0f;
+            _cardRect.anchoredPosition = _cardRestPos;
         }
 
         private IEnumerator FadeCardOut()
         {
             float t = 0f;
-            const float seconds = 0.15f;
+            const float seconds = 0.16f;
             float from = _cardGroup.alpha;
             while (t < seconds)
             {
@@ -315,6 +356,30 @@ namespace NeuroVida.Games.Stroop
             }
             return left <= 0f;
         }
+
+        // ------------------------------------------------------------------ «Ahora: PALABRA»
+
+        /// <summary>La tarjeta «Ahora: PALABRA — toca lo que DICE la palabra, no su color»: solo la primera vez en cada partida; dura unos segundos o hasta un toque.</summary>
+        private IEnumerator ShowRuleCard()
+        {
+            float began = GameClock.Time;
+            _acceptInput = false;
+            _ruleCardRoot.gameObject.SetActive(true);
+            PlayTone(392f, 0.14f, 0.1f);
+            yield return StartCoroutine(Motion.Fade(_ruleCardGroup, 0f, 1f, Motion.FadeSeconds));
+            float t = 0f;
+            while (t < 2.4f)
+            {
+                t += GameClock.DeltaTime;
+                if (t > 0.4f && GuidedTutorial.TryPress(out _)) break;     // un toque sigue
+                yield return null;
+            }
+            yield return StartCoroutine(Motion.Fade(_ruleCardGroup, 1f, 0f, Motion.FadeSeconds));
+            _ruleCardRoot.gameObject.SetActive(false);
+            if (Endless) _roundEndsAt += GameClock.Time - began;            // la tarjeta no le gasta tiempo al Reto
+        }
+
+        // ------------------------------------------------------------------ fin
 
         private IEnumerator FinishGame()
         {
@@ -341,7 +406,9 @@ namespace NeuroVida.Games.Stroop
                     end_rating = _dda.RatingNormalized,
                     mode_trials = _dda.ScoredTrials,
                     mode_hits = _dda.ScoredCorrect,
-                    peak_level = _dda.PeakLevel
+                    peak_level = _dda.PeakLevel,
+                    interference_ms = StroopContract.InterferenceMs(_responses),
+                    switch_cost_ms = StroopContract.SwitchCostMs(_responses)
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
@@ -358,9 +425,13 @@ namespace NeuroVida.Games.Stroop
             _answerIndex = index;
         }
 
-        // ------------------------------------------------------------------ construcción de UI
+        private void Update()
+        {
+            if (PollTutorialSkip()) return;                              // un toque en «Saltar tutorial» no es un toque a un botón
+            if (_guidedRing != null) GuidedTutorial.SpinHint(_guidedRing);
+        }
 
-        private Vector2 _cardRestPos;
+        // ------------------------------------------------------------------ construcción de UI
 
         protected override void BuildUi()
         {
@@ -394,13 +465,14 @@ namespace NeuroVida.Games.Stroop
             _safe = safeGo.AddComponent<RectTransform>();
             ApplySafeArea(_safe);
 
-            BuildHud();
+            _hud = new GameHud(_safe, "Tinta o Palabra", MarginU, this);
             _dots = new ProgressDots(_safe, this, UnitsPerDp, StroopContract.TotalTrials);
-            BuildBanner();
+            BuildRibbon();
             BuildTimer();
-            BuildCard();
-            _pill = new PhasePill(_safe, this, UnitsPerDp, 21);
+            BuildStage();
+            _pill = new PhasePill(_safe, this, UnitsPerDp, 22);
             BuildButtons();
+            BuildRuleCard();
 
             var fxGo = new GameObject("FxLayer");
             fxGo.transform.SetParent(_safe, false);
@@ -411,7 +483,9 @@ namespace NeuroVida.Games.Stroop
             _exit = new ExitButton(_safe, this, UnitsPerDp);
 
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(560f);
+            _toast.SetTopOffset(0f);
+            BuildTutorial(_safe, GameHud.Height + 10f, "Tinta o Palabra", "La palabra llega por una orilla: de la TINTA, toca su color; de la PALABRA, lo que dice.",
+                badgeAtBottom: true);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -423,110 +497,37 @@ namespace NeuroVida.Games.Stroop
             _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
         }
 
-        private void BuildHud()
+        /// <summary>La cinta fija «Responde: TINTA / PALABRA» con su ícono (gota / libro): la regla se lee sin mirar la orilla.</summary>
+        private void BuildRibbon()
         {
-            _hud = new GameHud(_safe, "Tinta o Palabra", MarginU, this);
-        }
-
-        private void BuildBanner()
-        {
-            var go = new GameObject("RuleBanner");
+            var go = new GameObject("RuleRibbon");
             go.transform.SetParent(_safe, false);
-            _bannerRect = go.AddComponent<RectTransform>();
-            _bannerRect.anchorMin = _bannerRect.anchorMax = new Vector2(0.5f, 1f);
-            _bannerRect.pivot = new Vector2(0.5f, 0.5f);
-            _bannerBg = go.AddComponent<Image>();
-            _bannerBg.sprite = RoundedRectSprite.Get(64);
-            _bannerBg.type = Image.Type.Sliced;
-            _bannerBg.raycastTarget = false;
-            NeuroStyle.ClayFrame(_bannerBg, 4f, 8f);
+            _ribbonRect = go.AddComponent<RectTransform>();
+            _ribbonRect.anchorMin = _ribbonRect.anchorMax = new Vector2(0.5f, 1f);
+            _ribbonRect.pivot = new Vector2(0.5f, 0.5f);
+            _ribbonBg = go.AddComponent<Image>();
+            _ribbonBg.sprite = RoundedRectSprite.Get(64);
+            _ribbonBg.type = Image.Type.Sliced;
+            _ribbonBg.raycastTarget = false;
+            NeuroStyle.ClayFrame(_ribbonBg, 4f, 8f);
 
-            var discGo = new GameObject("Icon");
-            discGo.transform.SetParent(go.transform, false);
-            var dr = discGo.AddComponent<RectTransform>();
-            dr.anchorMin = dr.anchorMax = new Vector2(0f, 0.5f);
-            dr.pivot = new Vector2(0.5f, 0.5f);
-            dr.sizeDelta = new Vector2(112f, 112f);
-            dr.anchoredPosition = new Vector2(74f, 0f);
-            _bannerDisc = discGo.AddComponent<Image>();
-            _bannerDisc.sprite = RuleBadgeSprite.Get(RuleBadgeSprite.Kind.Ink); // insignia de arcilla: gota / globo de texto
-            _bannerDisc.raycastTarget = false;
+            var iconGo = new GameObject("Icon");
+            iconGo.transform.SetParent(go.transform, false);
+            var ir = iconGo.AddComponent<RectTransform>();
+            ir.anchorMin = ir.anchorMax = new Vector2(0f, 0.5f);
+            ir.pivot = new Vector2(0.5f, 0.5f);
+            ir.sizeDelta = new Vector2(84f, 84f);
+            ir.anchoredPosition = new Vector2(66f, 0f);
+            _ribbonIcon = iconGo.AddComponent<Image>();
+            _ribbonIcon.raycastTarget = false;
 
-            var dropGo = new GameObject("Drop");
-            dropGo.transform.SetParent(discGo.transform, false);
-            var dropRect = dropGo.AddComponent<RectTransform>();
-            dropRect.anchorMin = new Vector2(0.14f, 0.12f);
-            dropRect.anchorMax = new Vector2(0.86f, 0.88f);
-            dropRect.offsetMin = dropRect.offsetMax = Vector2.zero;
-            _bannerDrop = dropGo.AddComponent<Image>();
-            _bannerDrop.sprite = SymbolSprite.Get(ShapeKind.Drop, 0);
-            _bannerDrop.raycastTarget = false;
-
-            _bannerAw = MakeText(discGo.transform, "Aa", 50, TextAnchor.MiddleCenter, Color.white, 2f, 0.3f);
-            Stretch(_bannerAw.rectTransform);
-            _bannerAw.text = "Aa";
-
-            _bannerText = MakeText(go.transform, "Keyword", 84, TextAnchor.MiddleLeft, Color.white, 3f, 0.4f);
-            var kr = _bannerText.rectTransform;
-            kr.anchorMin = new Vector2(0f, 0.36f);
-            kr.anchorMax = new Vector2(1f, 1f);
-            kr.offsetMin = new Vector2(150f, 0f);
-            kr.offsetMax = new Vector2(-30f, -4f);
-            BestFit(_bannerText, 50);
-
-            _bannerSub = MakeText(go.transform, "Explain", 40, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.88f), 2f, 0.3f);
-            var er = _bannerSub.rectTransform;
-            er.anchorMin = new Vector2(0f, 0f);
-            er.anchorMax = new Vector2(1f, 0.40f);
-            er.offsetMin = new Vector2(150f, 6f);
-            er.offsetMax = new Vector2(-30f, 0f);
-            BestFit(_bannerSub, 26);
-        }
-
-        private void ApplyBannerVisuals(StroopRule rule)
-        {
-            bool ink = rule == StroopRule.Ink;
-            var accent = ink ? InkAccent : WordAccent;
-            _bannerBg.color = Color.Lerp(new Color(0.09f, 0.13f, 0.24f, 1f), accent, 0.32f);
-            // La insignia (gota de tinta / globo de texto) distingue la regla por forma, no solo por color.
-            _bannerDisc.sprite = RuleBadgeSprite.Get(ink ? RuleBadgeSprite.Kind.Ink : RuleBadgeSprite.Kind.Word);
-            _bannerDisc.color = Color.white;
-            _bannerDrop.gameObject.SetActive(false);
-            _bannerAw.gameObject.SetActive(false);
-            _bannerAw.color = new Color(0.06f, 0.09f, 0.16f);
-            _bannerText.text = ink ? "TINTA" : "PALABRA";
-            _bannerSub.text = ink ? "Toca el color con que está escrita" : "Toca lo que dice, sin importar el color";
-            _ruleAccent = accent;
-            if (_chipBg != null)
-            {
-                _chipBg.color = accent;
-                _chipText.text = ink ? "TINTA" : "PALABRA";
-            }
-            if (_cardBorder != null) _cardBorder.color = new Color(accent.r, accent.g, accent.b, 0.95f);
-        }
-
-        private IEnumerator FlipBanner(StroopRule rule)
-        {
-            float t = 0f;
-            const float half = 0.11f;
-            while (t < half)
-            {
-                t += GameClock.DeltaTime;
-                _bannerRect.localScale = Motion.Decorative ? new Vector3(1f - Mathf.Clamp01(t / half), 1f, 1f) : Vector3.one; // sin ReduceMotion: sin giro (cambia en el mismo instante)
-                yield return null;
-            }
-            ApplyBannerVisuals(rule);
-            t = 0f;
-            const float back = 0.2f;
-            while (t < back)
-            {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / back);
-                _bannerRect.localScale = Motion.Decorative ? new Vector3(Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(k)), 1f, 1f) : Vector3.one;
-                yield return null;
-            }
-            _bannerRect.localScale = Vector3.one;
-            StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _bannerRect), rule == StroopRule.Ink ? InkAccent : WordAccent, 200f, 700f, 0.5f));
+            _ribbonText = MakeText(go.transform, "Text", 64, TextAnchor.MiddleLeft, Color.white, 3f, 0.4f);
+            var tr = _ribbonText.rectTransform;
+            tr.anchorMin = Vector2.zero;
+            tr.anchorMax = Vector2.one;
+            tr.offsetMin = new Vector2(130f, 4f);
+            tr.offsetMax = new Vector2(-30f, -4f);
+            BestFit(_ribbonText, 40);
         }
 
         private void BuildTimer()
@@ -564,28 +565,106 @@ namespace NeuroVida.Games.Stroop
                                         : Color.Lerp(BadColor, AmberColor, fraction * 2f);
         }
 
-        private void BuildCard()
+        /// <summary>El escenario: las dos orillas (haces de luz a los costados) y la tarjeta de la palabra en el centro.</summary>
+        private void BuildStage()
+        {
+            var stage = new GameObject("Stage");
+            stage.transform.SetParent(_safe, false);
+            _stageRect = stage.AddComponent<RectTransform>();
+            _stageRect.anchorMin = _stageRect.anchorMax = new Vector2(0.5f, 1f);
+            _stageRect.pivot = new Vector2(0.5f, 1f);
+
+            BuildShore(0, StroopRule.Ink);
+            BuildShore(1, StroopRule.Word);
+            BuildCard(stage.transform);
+        }
+
+        /// <summary>Una orilla: un haz de luz del color de la regla pegado al borde, una columna de gotas (TINTA) o libros (PALABRA) y el nombre en vertical.</summary>
+        private void BuildShore(int index, StroopRule rule)
+        {
+            bool ink = rule == StroopRule.Ink;
+            var color = ink ? StroopContract.InkShore : StroopContract.WordShore;
+            var go = new GameObject(ink ? "ShoreInk" : "ShoreWord");
+            go.transform.SetParent(_stageRect, false);
+            var rect = go.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(ink ? 0f : 1f, 0f);
+            rect.anchorMax = new Vector2(ink ? 0f : 1f, 1f);
+            rect.pivot = new Vector2(ink ? 0f : 1f, 0.5f);
+            rect.sizeDelta = new Vector2(ShoreW, 0f);
+            rect.anchoredPosition = Vector2.zero;
+            _shoreRect[index] = rect;
+            _shoreGroup[index] = go.AddComponent<CanvasGroup>();
+            _shoreGroup[index].blocksRaycasts = false;
+
+            var beamGo = new GameObject("Beam");
+            beamGo.transform.SetParent(go.transform, false);
+            var br = beamGo.AddComponent<RectTransform>();
+            Stretch(br);
+            var beam = beamGo.AddComponent<Image>();
+            beam.sprite = StroopSprites.Beam();
+            beam.color = new Color(color.r, color.g, color.b, 0.95f);
+            beam.raycastTarget = false;
+            if (!ink) br.localScale = new Vector3(-1f, 1f, 1f);   // la orilla de la derecha: el haz mira hacia adentro
+
+            // una línea fina de luz pegada al borde: la «compuerta»
+            var edgeGo = new GameObject("Edge");
+            edgeGo.transform.SetParent(go.transform, false);
+            var er = edgeGo.AddComponent<RectTransform>();
+            er.anchorMin = new Vector2(ink ? 0f : 1f, 0f);
+            er.anchorMax = new Vector2(ink ? 0f : 1f, 1f);
+            er.pivot = new Vector2(ink ? 0f : 1f, 0.5f);
+            er.sizeDelta = new Vector2(8f, 0f);
+            er.anchoredPosition = Vector2.zero;
+            var edge = edgeGo.AddComponent<Image>();
+            edge.color = Color.Lerp(color, Color.white, 0.55f);
+            edge.raycastTarget = false;
+
+            // columna de marcas: gotas o libros, siempre con la forma además del color
+            for (int k = 0; k < 4; k++)
+            {
+                var markGo = new GameObject("Mark");
+                markGo.transform.SetParent(go.transform, false);
+                var mr = markGo.AddComponent<RectTransform>();
+                mr.anchorMin = mr.anchorMax = new Vector2(ink ? 0.36f : 0.64f, 0.12f + k * 0.25f);
+                mr.pivot = new Vector2(0.5f, 0.5f);
+                mr.sizeDelta = new Vector2(54f, 54f);
+                var mark = markGo.AddComponent<Image>();
+                mark.sprite = ink ? StroopSprites.Drop() : StroopSprites.Book();
+                mark.color = new Color(1f, 1f, 1f, 0.6f);
+                mark.raycastTarget = false;
+            }
+
+            var label = MakeText(go.transform, "Name", 44, TextAnchor.MiddleCenter, Color.white, 2f, 0.4f);
+            var lr = label.rectTransform;
+            lr.anchorMin = lr.anchorMax = new Vector2(ink ? 0.84f : 0.16f, 0.5f);
+            lr.pivot = new Vector2(0.5f, 0.5f);
+            lr.sizeDelta = new Vector2(420f, 60f);
+            lr.localRotation = Quaternion.Euler(0f, 0f, ink ? 90f : -90f);
+            label.text = ink ? "TINTA" : "PALABRA";
+        }
+
+        private void BuildCard(Transform parent)
         {
             var root = new GameObject("Card");
-            root.transform.SetParent(_safe, false);
+            root.transform.SetParent(parent, false);
             _cardRect = root.AddComponent<RectTransform>();
             _cardRect.anchorMin = _cardRect.anchorMax = new Vector2(0.5f, 1f);
             _cardRect.pivot = new Vector2(0.5f, 0.5f);
             _cardGroup = root.AddComponent<CanvasGroup>();
             _cardGroup.blocksRaycasts = false;
 
-            // Resplandor del letrero sobre la pared (el volumen lo da el marco de arcilla, más abajo).
             var shadowGo = new GameObject("Shadow");
             shadowGo.transform.SetParent(root.transform, false);
             var sr = shadowGo.AddComponent<RectTransform>();
-            sr.anchorMin = new Vector2(-0.08f, -0.42f);
-            sr.anchorMax = new Vector2(1.08f, 0.96f);
+            sr.anchorMin = new Vector2(-0.06f, -0.3f);
+            sr.anchorMax = new Vector2(1.06f, 0.96f);
             sr.offsetMin = sr.offsetMax = Vector2.zero;
             var shImg = shadowGo.AddComponent<Image>();
             shImg.sprite = RadialGlowSprite.Get();
             shImg.color = new Color(0f, 0f, 0f, 0.35f);
             shImg.raycastTarget = false;
 
+            // borde del color de la orilla de la que llegó la tarjeta
             var borderGo = new GameObject("Border");
             borderGo.transform.SetParent(root.transform, false);
             Stretch(borderGo.AddComponent<RectTransform>());
@@ -593,7 +672,7 @@ namespace NeuroVida.Games.Stroop
             _cardBorder.sprite = RoundedRectSprite.Get(56);
             _cardBorder.type = Image.Type.Sliced;
             _cardBorder.raycastTarget = false;
-            NeuroStyle.ClayFrame(_cardBorder, 5f, 12f); // letrero de arcilla: borde tinta y sombra dura
+            NeuroStyle.ClayFrame(_cardBorder, 5f, 12f);
 
             var fillGo = new GameObject("Fill");
             fillGo.transform.SetParent(root.transform, false);
@@ -605,30 +684,15 @@ namespace NeuroVida.Games.Stroop
             var fillImg = fillGo.AddComponent<Image>();
             fillImg.sprite = RoundedRectSprite.Get(52);
             fillImg.type = Image.Type.Sliced;
-            fillImg.color = CardFill;
+            fillImg.color = StroopContract.CardFill;          // #141B36: sobre este fondo se midieron los contrastes de las 4 tintas
             fillImg.raycastTarget = false;
 
-            // Cuatro tornillos en las esquinas: la tarjeta es un letrero de neón montado en la pared.
-            for (int s = 0; s < 4; s++)
-            {
-                var screwGo = new GameObject("Screw");
-                screwGo.transform.SetParent(root.transform, false);
-                var scr = screwGo.AddComponent<RectTransform>();
-                var corner = new Vector2(s % 2, s / 2);
-                scr.anchorMin = scr.anchorMax = corner;
-                scr.sizeDelta = new Vector2(38f, 38f);
-                scr.anchoredPosition = new Vector2(corner.x > 0.5f ? -36f : 36f, corner.y > 0.5f ? -36f : 36f);
-                var screw = screwGo.AddComponent<Image>();
-                screw.sprite = NeonSignSprites.Screw();
-                screw.raycastTarget = false;
-            }
-
-            // Brillo de la palabra (neón) detrás del texto.
+            // brillo suave detrás de la palabra
             var glowGo = new GameObject("WordGlow");
             glowGo.transform.SetParent(root.transform, false);
             var gr = glowGo.AddComponent<RectTransform>();
-            gr.anchorMin = new Vector2(0.02f, -0.15f);
-            gr.anchorMax = new Vector2(0.98f, 1.15f);
+            gr.anchorMin = new Vector2(0.02f, -0.1f);
+            gr.anchorMax = new Vector2(0.98f, 1.1f);
             gr.offsetMin = gr.offsetMax = Vector2.zero;
             _wordGlow = glowGo.AddComponent<Image>();
             _wordGlow.sprite = RadialGlowSprite.Get();
@@ -636,27 +700,31 @@ namespace NeuroVida.Games.Stroop
 
             _wordText = MakeText(root.transform, "Word", 190, TextAnchor.MiddleCenter, Color.white, 4f, 0.5f);
             var wr = _wordText.rectTransform;
-            wr.offsetMin = new Vector2(30f, 10f);
-            wr.offsetMax = new Vector2(-30f, -10f);
+            wr.offsetMin = new Vector2(40f, 10f);
+            wr.offsetMax = new Vector2(-40f, -10f);
             BestFit(_wordText, 80);
             _wordText.horizontalOverflow = HorizontalWrapMode.Wrap;
 
-            // Etiqueta de la regla montada sobre el borde superior de la tarjeta: es donde
-            // mira el jugador, así que la regla se lee sin subir la vista al cartel.
-            var chipGo = new GameObject("RuleChip");
-            chipGo.transform.SetParent(root.transform, false);
-            var cr = chipGo.AddComponent<RectTransform>();
-            cr.anchorMin = cr.anchorMax = new Vector2(0.5f, 1f);
+            // esquina con el ícono de su orilla: gota (TINTA, arriba a la izquierda) o libro (PALABRA, arriba a la derecha)
+            var cornerGo = new GameObject("Corner");
+            cornerGo.transform.SetParent(root.transform, false);
+            var cr = cornerGo.AddComponent<RectTransform>();
+            cr.anchorMin = cr.anchorMax = new Vector2(0f, 1f);
             cr.pivot = new Vector2(0.5f, 0.5f);
-            cr.sizeDelta = new Vector2(330f, 84f);
-            cr.anchoredPosition = Vector2.zero;
-            _chipBg = chipGo.AddComponent<Image>();
-            _chipBg.sprite = RoundedRectSprite.Get(64);
-            _chipBg.type = Image.Type.Sliced;
-            _chipBg.raycastTarget = false;
-            NeuroStyle.ClayFrame(_chipBg, 4f, 7f);
-            _chipText = MakeText(chipGo.transform, "ChipText", 52, TextAnchor.MiddleCenter, new Color(0.06f, 0.09f, 0.16f), 0f, 0f);
-            BestFit(_chipText, 30);
+            cr.sizeDelta = new Vector2(86f, 86f);
+            cr.anchoredPosition = new Vector2(58f, -58f);
+            _cardCorner = cornerGo.AddComponent<Image>();
+            _cardCorner.sprite = RoundedRectSprite.Get(64);
+            _cardCorner.type = Image.Type.Sliced;
+            _cardCorner.raycastTarget = false;
+            var cornerIconGo = new GameObject("CornerIcon");
+            cornerIconGo.transform.SetParent(cornerGo.transform, false);
+            var cir = cornerIconGo.AddComponent<RectTransform>();
+            cir.anchorMin = new Vector2(0.14f, 0.14f);
+            cir.anchorMax = new Vector2(0.86f, 0.86f);
+            cir.offsetMin = cir.offsetMax = Vector2.zero;
+            _cardCornerIcon = cornerIconGo.AddComponent<Image>();
+            _cardCornerIcon.raycastTarget = false;
         }
 
         private void BuildButtons()
@@ -672,25 +740,99 @@ namespace NeuroVida.Games.Stroop
                 rect.pivot = new Vector2(0.5f, 0.5f);
                 var img = go.AddComponent<Image>();
                 img.sprite = TileSprites.Get();
-                img.color = color;
+                img.color = ButtonFill;
+                var group = go.AddComponent<CanvasGroup>();
+                var ring = go.AddComponent<Outline>();            // el aro que marca el botón correcto cuando se falla
+                ring.effectColor = HintColor;
+                ring.effectDistance = new Vector2(8f, 8f);
+                ring.enabled = false;
                 var button = go.AddComponent<Button>();
                 button.transition = Selectable.Transition.None;
                 button.onClick.AddListener(() => OnColorTapped(index));
                 go.AddComponent<PressScale>();
 
-                bool lightFill = (0.299f * color.r + 0.587f * color.g + 0.114f * color.b) > 0.62f;
-                var label = MakeText(go.transform, "Label", 52, TextAnchor.MiddleCenter, lightFill ? DarkLabel : Color.white, 2f, lightFill ? 0f : 0.4f);
+                // la gota del color y el nombre escrito: el color nunca va solo
+                var dropGo = new GameObject("Drop");
+                dropGo.transform.SetParent(go.transform, false);
+                var dr = dropGo.AddComponent<RectTransform>();
+                dr.anchorMin = dr.anchorMax = new Vector2(0.2f, 0.5f);
+                dr.pivot = new Vector2(0.5f, 0.5f);
+                dr.sizeDelta = new Vector2(110f, 110f);
+                var drop = dropGo.AddComponent<Image>();
+                drop.sprite = StroopSprites.Drop();
+                drop.color = color;
+                drop.raycastTarget = false;
+
+                var label = MakeText(go.transform, "Label", 52, TextAnchor.MiddleLeft, Color.white, 2f, 0.4f);
                 var lr = label.rectTransform;
-                lr.anchorMin = new Vector2(0.12f, 0.12f);
-                lr.anchorMax = new Vector2(0.88f, 0.88f);
+                lr.anchorMin = new Vector2(0.34f, 0.08f);
+                lr.anchorMax = new Vector2(0.97f, 0.92f);
                 lr.offsetMin = lr.offsetMax = Vector2.zero;
-                BestFit(label, 28);
+                BestFit(label, 30);
                 label.text = StroopContract.Names[i];
 
                 _buttonRects.Add(rect);
                 _buttonImages.Add(img);
-                _buttonColors.Add(color);
+                _buttonGroups.Add(group);
+                _buttonRings.Add(ring);
             }
+        }
+
+        /// <summary>La tarjeta «Ahora: PALABRA» (primera vez por partida).</summary>
+        private void BuildRuleCard()
+        {
+            var go = new GameObject("RuleCard");
+            go.transform.SetParent(_safe, false);
+            _ruleCardRoot = go.AddComponent<RectTransform>();
+            _ruleCardRoot.anchorMin = _ruleCardRoot.anchorMax = new Vector2(0.5f, 1f);
+            _ruleCardRoot.pivot = new Vector2(0.5f, 0.5f);
+            _ruleCardGroup = go.AddComponent<CanvasGroup>();
+            _ruleCardGroup.blocksRaycasts = false;
+            var bg = go.AddComponent<Image>();
+            bg.sprite = RoundedRectSprite.Get(64);
+            bg.type = Image.Type.Sliced;
+            bg.color = StroopContract.WordShore;
+            bg.raycastTarget = false;
+            NeuroStyle.ClayFrame(bg, 5f, 12f);
+            var fillGo = new GameObject("Fill");
+            fillGo.transform.SetParent(go.transform, false);
+            var fr = fillGo.AddComponent<RectTransform>();
+            Stretch(fr);
+            fr.offsetMin = new Vector2(9f, 9f);
+            fr.offsetMax = new Vector2(-9f, -9f);
+            var fill = fillGo.AddComponent<Image>();
+            fill.sprite = RoundedRectSprite.Get(56);
+            fill.type = Image.Type.Sliced;
+            fill.color = StroopContract.CardFill;
+            fill.raycastTarget = false;
+
+            var iconGo = new GameObject("Icon");
+            iconGo.transform.SetParent(go.transform, false);
+            var ir = iconGo.AddComponent<RectTransform>();
+            ir.anchorMin = ir.anchorMax = new Vector2(0.5f, 0.78f);
+            ir.pivot = new Vector2(0.5f, 0.5f);
+            ir.sizeDelta = new Vector2(120f, 120f);
+            var icon = iconGo.AddComponent<Image>();
+            icon.sprite = StroopSprites.Book();
+            icon.color = Color.Lerp(StroopContract.WordShore, Color.white, 0.55f);
+            icon.raycastTarget = false;
+
+            var title = MakeText(go.transform, "Title", 96, TextAnchor.MiddleCenter, Color.white, 3f, 0.4f);
+            var tr = title.rectTransform;
+            tr.anchorMin = new Vector2(0.04f, 0.38f);
+            tr.anchorMax = new Vector2(0.96f, 0.64f);
+            tr.offsetMin = tr.offsetMax = Vector2.zero;
+            BestFit(title, 50);
+            title.text = "Ahora: PALABRA";
+
+            var line = MakeText(go.transform, "Line", 48, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.9f), 2f, 0.3f);
+            var lr = line.rectTransform;
+            lr.anchorMin = new Vector2(0.06f, 0.06f);
+            lr.anchorMax = new Vector2(0.94f, 0.38f);
+            lr.offsetMin = lr.offsetMax = Vector2.zero;
+            BestFit(line, 28);
+            line.text = "Toca lo que DICE la palabra, no su color";
+            go.SetActive(false);
         }
 
         private void BuildResultPanel()
@@ -721,9 +863,10 @@ namespace NeuroVida.Games.Stroop
             _exit.Show();
             _acceptInput = false;
             foreach (var r in _buttonRects) r.gameObject.SetActive(false);
-            _cardRect.gameObject.SetActive(false);
-            _bannerRect.gameObject.SetActive(false);
+            _stageRect.gameObject.SetActive(false);
+            _ribbonRect.gameObject.SetActive(false);
             _timerBg.gameObject.SetActive(false);
+            _dots.Rect.gameObject.SetActive(false);
             _pill.Rect.gameObject.SetActive(false);
 
             string title = score >= 90 ? "¡Extraordinario!" : score >= 70 ? "¡Muy bien!" : score >= 50 ? "Buen trabajo" : "Sigue practicando";
@@ -734,7 +877,7 @@ namespace NeuroVida.Games.Stroop
                 : $"Mejor racha {_bestStreak}";
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
-            StartCoroutine(UiFx.SparkBurst(_fxRect, Vector2.zero, WordAccent, 24, 420f, 56f, 0.9f));
+            if (Motion.Decorative) StartCoroutine(UiFx.SparkBurst(_fxRect, Vector2.zero, StroopContract.WordShore, 24, 420f, 56f, 0.9f));
         }
 
         // ------------------------------------------------------------------ layout
@@ -748,53 +891,91 @@ namespace NeuroVida.Games.Stroop
 
             float y = 190f; // debajo del HUD
             _dots.Rect.anchoredPosition = new Vector2(0f, -y);
-            y += 70f;
+            y += 60f;
 
-            float bannerH = 156f;
-            _bannerRect.sizeDelta = new Vector2(contentW, bannerH);
-            _bannerRect.anchoredPosition = new Vector2(0f, -(y + bannerH / 2f));
-            y += bannerH + 22f;
+            float ribbonH = 104f;
+            _ribbonRect.sizeDelta = new Vector2(contentW * 0.82f, ribbonH);
+            _ribbonRect.anchoredPosition = new Vector2(0f, -(y + ribbonH / 2f));
+            y += ribbonH + 14f;
 
-            _timerBg.sizeDelta = new Vector2(contentW, 18f);
-            _timerBg.anchoredPosition = new Vector2(0f, -(y + 9f));
-            y += 18f + 58f; // deja lugar a la etiqueta de regla que sobresale de la tarjeta
+            _timerBg.sizeDelta = new Vector2(contentW, 16f);
+            _timerBg.anchoredPosition = new Vector2(0f, -(y + 8f));
+            y += 16f + 22f;
 
-            float cardH = Mathf.Clamp(sh * 0.27f, 320f, 520f);
-            _cardRect.sizeDelta = new Vector2(contentW, cardH);
-            _cardRestPos = new Vector2(0f, -(y + cardH / 2f));
+            // El espacio que queda se reparte entre el escenario (las dos orillas y la tarjeta), el hueco de la píldora y los botones 2 × 2, que quedan cerca del pulgar.
+            // Durante la ronda guiada los botones suben (_bottomReserve) para dejar lugar a «Práctica: no cuenta» y «Saltar tutorial».
+            float gap = 22f;
+            float avail = sh - y - _bottomReserve;
+            float cellW = (contentW - gap) / 2f;
+            float cellH = Mathf.Clamp((avail * 0.36f - gap) / 2f, 130f, 300f);
+            float block = cellH * 2f + gap;
+            const float pillZone = 120f, bottomMin = 50f;
+            float stageH = Mathf.Clamp(avail * 0.40f, 330f, 640f);
+            if (stageH + pillZone + block + bottomMin > avail) stageH = Mathf.Max(300f, avail - pillZone - block - bottomMin);
+            float extra = Mathf.Max(0f, avail - (stageH + pillZone + block + bottomMin));
+            float topPad = extra * 0.35f;
+            float pillGap = pillZone + extra * 0.45f;
+            float bottom = bottomMin + extra * 0.20f + _bottomReserve;
+            y += topPad;
+
+            float cardH = stageH - 50f;
+            _stageRect.sizeDelta = new Vector2(sw, stageH);
+            _stageRect.anchoredPosition = new Vector2(0f, -y);
+            _cardW = sw - 2f * (ShoreW + 24f);
+            _cardRect.sizeDelta = new Vector2(_cardW, cardH);
+            _cardRestPos = new Vector2(0f, -stageH / 2f);
             _cardRect.anchoredPosition = _cardRestPos;
-            y += cardH;
+            y += stageH;
+            _ruleCardRoot.sizeDelta = new Vector2(contentW * 0.92f, Mathf.Min(cardH + 60f, 440f));
+            _ruleCardRoot.anchoredPosition = new Vector2(0f, -(y - stageH / 2f));
 
-            // Botones: 3 arriba + 2 abajo, centrados en el espacio que queda bajo la tarjeta.
-            float remaining = sh - y;
-            float gap = 6f;
-            float cell = Mathf.Clamp(Mathf.Min((sw - 60f) / 3f, (remaining - 200f - gap) / 2f), 150f, 340f);
-            float block = cell * 2f + gap;
-            float bottom = Mathf.Max(24f, (remaining - block) * 0.28f);
-            float rowBottomY = bottom + cell / 2f;
-            float rowTopY = rowBottomY + cell + gap;
+            float rowBottomY = bottom + cellH / 2f;
+            float rowTopY = rowBottomY + cellH + gap;
             for (int i = 0; i < _buttonRects.Count; i++)
             {
                 var r = _buttonRects[i];
-                r.sizeDelta = new Vector2(cell, cell);
-                if (i < 3)
-                    r.anchoredPosition = new Vector2((i - 1) * (cell + gap), rowTopY);
-                else
-                    r.anchoredPosition = new Vector2((i - 3 - 0.5f) * (cell + gap), rowBottomY);
+                r.sizeDelta = new Vector2(cellW, cellH);
+                float x = (i % 2 == 0 ? -1f : 1f) * (cellW + gap) / 2f;
+                r.anchoredPosition = new Vector2(x, i < 2 ? rowTopY : rowBottomY);
             }
 
-            // Píldora de estado en el hueco entre la tarjeta y los botones (la píldora ancla al
-            // centro de su padre, por eso el y se mide desde el centro del Safe Area).
-            float gapH = Mathf.Max(0f, sh - y - block - bottom);
-            _pill.SetPosition(new Vector2(0f, sh / 2f - (y + gapH / 2f)));
+            // píldora de estado (y explicación del error) en el hueco entre la tarjeta y los botones; el y se mide desde el centro del Safe Area
+            _pill.SetPosition(new Vector2(0f, sh / 2f - (y + pillGap / 2f)));
             _toast.SetTopOffset(0f); // avisos arriba (zona del título), nunca sobre la tarjeta
+            _lastBlock = block;
+            _lastBottom = bottom;
         }
+
+        private float _lastBlock, _lastBottom;
 
         // ------------------------------------------------------------------ helpers de UI
 
+        /// <summary>Enciende la orilla de la que llega la palabra (la otra baja al 35 %), pone la cinta, el borde y el ícono de la esquina de la tarjeta. <paramref name="pop"/> = un
+        /// pequeño golpe en la cinta al cambiar de regla (sin animaciones, no hay).</summary>
+        private void ApplyRule(StroopRule rule, bool pop)
+        {
+            bool ink = rule == StroopRule.Ink;
+            var shore = ink ? StroopContract.InkShore : StroopContract.WordShore;
+            _shoreGroup[0].alpha = ink ? 1f : 0.35f;
+            _shoreGroup[1].alpha = ink ? 0.35f : 1f;
+            _ribbonBg.color = Color.Lerp(StroopContract.CardFill, shore, 0.55f);
+            _ribbonIcon.sprite = ink ? StroopSprites.Drop() : StroopSprites.Book();
+            _ribbonIcon.color = Color.Lerp(shore, Color.white, 0.7f);
+            _ribbonText.text = StroopContract.Ribbon(rule);
+            _cardBorder.color = new Color(shore.r, shore.g, shore.b, 0.98f);
+            _cardCorner.color = shore;
+            _cardCornerIcon.sprite = ink ? StroopSprites.Drop() : StroopSprites.Book();
+            _cardCornerIcon.color = Color.white;
+            var cr = _cardCorner.rectTransform;
+            cr.anchorMin = cr.anchorMax = new Vector2(ink ? 0f : 1f, 1f);
+            cr.anchoredPosition = new Vector2(ink ? 58f : -58f, -58f);
+            if (pop && Motion.Decorative) StartCoroutine(PopRect(_ribbonRect, 1.06f, 0.2f));
+            if (pop) PlayTone(ink ? 330f : 440f, 0.1f, 0.1f);
+        }
+
         private void UpdateHudText()
         {
-            // Marcador común (GameHud): nivel + puntos que cuentan (Reto) o avance "3 de 12" (Precisión).
+            // Marcador común (GameHud): nivel + puntos que cuentan (Reto) o avance "3 de 16" (Precisión).
             if (Endless)
             {
                 _hud.SetLevel(_effLevel);
@@ -803,7 +984,7 @@ namespace NeuroVida.Games.Stroop
             else
             {
                 _hud.SetLevel(_config.config.level);
-                _hud.SetInfo($"{_trialIndex + 1} de {StroopContract.TotalTrials}");
+                _hud.SetInfo($"{Mathf.Min(_trialIndex + 1, StroopContract.TotalTrials)} de {StroopContract.TotalTrials}");
             }
         }
 
@@ -812,21 +993,145 @@ namespace NeuroVida.Games.Stroop
             _hud.SetStreak(streak);
         }
 
-        private void ResetButtonColors()
+        private void ResetButtons()
         {
-            for (int i = 0; i < _buttonImages.Count; i++) _buttonImages[i].color = _buttonColors[i];
+            for (int i = 0; i < _buttonGroups.Count; i++) _buttonGroups[i].alpha = 1f;
         }
 
-        private void DimButtonsExcept(int keep)
+        /// <summary>El aro sobre el botón correcto y los demás apagados.</summary>
+        private void ShowRing(int keep)
         {
-            for (int i = 0; i < _buttonImages.Count; i++)
+            for (int i = 0; i < _buttonRings.Count; i++)
             {
-                if (i == keep) continue;
-                var c = _buttonColors[i];
-                _buttonImages[i].color = Color.Lerp(new Color(c.r, c.g, c.b, 1f), new Color(0.25f, 0.28f, 0.36f, 1f), 0.72f);
+                _buttonRings[i].enabled = i == keep;
+                _buttonGroups[i].alpha = i == keep ? 1f : 0.4f;
             }
+            if (Motion.Decorative) StartCoroutine(PopRect(_buttonRects[keep], 1.08f, 0.3f));
         }
 
-        // ------------------------------------------------------------------ audio
+        private void ClearRings()
+        {
+            for (int i = 0; i < _buttonRings.Count; i++) _buttonRings[i].enabled = false;
+            ResetButtons();
+        }
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        protected override bool HowToReady => _loopOn && !_ended;
+
+        protected override void HowToSuspend()
+        {
+            _acceptInput = false;
+            _answerIndex = (int)NoAnswer;
+            _cardGroup.alpha = 0f;
+            _toast.Hide();
+            ClearTransient();
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            _roundEndsAt = HowToClock.Shift(_roundEndsAt, spentSeconds);   // el tiempo que duró «Cómo se juega» no se le descuenta al Reto
+            ClearTransient();
+            StartCoroutine(MainLoop());                                    // la palabra que estaba en curso no contó: sigue otra con el mismo estado
+        }
+
+        /// <summary>Quita lo que quedó a medias (efectos, aros, la tarjeta «Ahora: PALABRA») sin tocar ninguna cuenta.</summary>
+        private void ClearTransient()
+        {
+            foreach (Transform c in _fxRect) Destroy(c.gameObject);
+            _ruleCardRoot.gameObject.SetActive(false);
+            _cardGroup.alpha = 0f;
+            ClearRings();
+        }
+
+        // ------------------------------------------------------------------ ronda guiada del tutorial (pieza común)
+
+        private bool _guided;
+
+        // <guided>
+        protected override IEnumerator GuidedRound(GuidedTutorial t)
+        {
+            t.BeginPractice();
+            _guided = true;
+            ClearTransient();
+            _acceptInput = false;
+            _answerIndex = (int)NoAnswer;
+            _bottomReserve = GuidedReserveU;
+            _timerBg.gameObject.SetActive(false);
+            _dots.Rect.gameObject.SetActive(false);
+            Layout();
+            t.PlaceControls(GameHud.Height + 10f, false, _lastBottom + _lastBlock + 24f, badgeAtBottom: true);
+            _pill.Rect.gameObject.SetActive(false);                      // durante la práctica habla Nubi (abajo de la tarjeta), no la píldora
+            ApplyRule(StroopRule.Ink, false);
+            yield return Motion.Hold(0.4f);
+
+            var script = new GuidedScript(StroopContract.GuidedTrials.Length);
+            while (!script.Finished)
+            {
+                if (t.Skipped) { script.Skip(); break; }
+                var trial = StroopContract.GuidedTrials[script.Index];
+                bool hinted = script.Index < StroopContract.GuidedHinted;
+                t.Say(script.Index == 0 ? "Llega por la orilla de la TINTA: toca el COLOR con que está escrita"
+                    : script.Index == 1 ? "Ahora llega por la orilla de la PALABRA: toca lo que DICE"
+                    : "Mira de qué orilla llega y elige tú");
+                _trial = trial;
+                _shownCardSide = trial.Rule == StroopRule.Ink ? -1 : 1;
+                ClearRings();
+                yield return StartCoroutine(SlideIn(trial, StroopContract.GuidedArrivalSeconds, true));
+                int correctIndex = trial.CorrectIndex;
+                if (hinted)
+                {
+                    // el aro sol punteado marca el botón que se toca
+                    _guidedRing = GuidedTutorial.CreateHintRing(_buttonRects[correctIndex], Mathf.Min(_buttonRects[correctIndex].sizeDelta.y * 1.15f, 260f));
+                    _guidedRing.gameObject.SetActive(true);
+                }
+                _acceptInput = true;
+                _answerIndex = (int)NoAnswer;
+                while (_answerIndex == (int)NoAnswer && !t.Skipped) yield return null;
+                _acceptInput = false;
+                if (_guidedRing != null) { Destroy(_guidedRing.gameObject); _guidedRing = null; }
+                if (t.Skipped) { script.Skip(); break; }
+
+                if (_answerIndex == correctIndex)
+                {
+                    GameFeel.Correct(1);
+                    t.Say("¡Bien! " + StroopContract.Explain(trial));
+                    script.Success();
+                    yield return StartCoroutine(SlideOut(0.28f, -_shownCardSide));
+                    yield return Motion.Hold(StroopContract.GuidedOkPauseSeconds);
+                }
+                else
+                {
+                    GameFeel.Wrong();
+                    t.Say(trial.Rule == StroopRule.Ink
+                        ? "Casi: desde esta orilla se toca el COLOR de la tinta. Mira otra vez"
+                        : "Casi: desde esta orilla se toca lo que DICE la palabra. Mira otra vez");
+                    ShowRing(correctIndex);
+                    script.Failure();
+                    yield return Motion.Hold(StroopContract.GuidedErrorPauseSeconds);
+                    yield return StartCoroutine(FadeCardOut());
+                    ClearRings();
+                }
+                yield return Motion.Hold(0.25f);
+            }
+            if (_guidedRing != null) { Destroy(_guidedRing.gameObject); _guidedRing = null; }
+            ClearRings();
+            _cardGroup.alpha = 0f;
+            if (!script.Skipped)
+            {
+                t.Say("¡Así se juega! Ahora sin ayuda");
+                PlayTone(523f, 0.4f, 0.08f);
+                yield return Motion.Hold(1.4f);
+            }
+            _guided = false;
+            _bottomReserve = 0f;
+            _pill.Rect.gameObject.SetActive(true);
+            _timerBg.gameObject.SetActive(Endless);
+            _dots.Rect.gameObject.SetActive(!Endless);
+            Layout();
+            ApplyRule(StroopRule.Ink, false);
+            t.EndPractice();
+        }
+        // </guided>
     }
 }

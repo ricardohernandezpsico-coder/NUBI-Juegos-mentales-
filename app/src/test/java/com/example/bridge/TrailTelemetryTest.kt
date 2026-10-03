@@ -107,14 +107,14 @@ class TrailTelemetryTest {
 
   @Test
   fun `los juegos sin tutorial guiado no lo piden aunque no tengan historial`() {
-    assertFalse(UnityGameLauncher.shouldShowTutorial("stroop", emptyList()))
+    assertFalse(UnityGameLauncher.shouldShowTutorial("cambiochip", emptyList()))
     assertFalse(UnityGameLauncher.shouldShowTutorial("intrusa", emptyList()))
-    assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros"), UnityGameLauncher.TUTORIAL_GAMES)
+    assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop"), UnityGameLauncher.TUTORIAL_GAMES)
   }
 
   @Test
-  fun `los cuatro juegos con tutorial lo piden solo a quien nunca los jugo`() {
-    for (id in listOf("secuencia", "freno", "aterrizaje", "meteoros")) {
+  fun `los cinco juegos con tutorial lo piden solo a quien nunca los jugo`() {
+    for (id in listOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop")) {
       assertTrue(id, UnityGameLauncher.shouldShowTutorial(id, emptyList()))
       assertTrue(id, UnityGameLauncher.shouldShowTutorial(id, listOf(played("parejas"))))
       assertFalse(id, UnityGameLauncher.shouldShowTutorial(id, listOf(played(id))))

@@ -59,7 +59,7 @@ Parámetros por juego:
 
 | Juego | Escalera | stepUp Reto / Precisión | Objetivo | Usa RT |
 |---|---|---|---|---|
-| Stroop | 5 | 0.12 / 0.20 | edad | Reto |
+| Stroop («Dos orillas», 3-oct: reglas, % que chocan y llegada por nivel en [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md) §5) | 5 | 0.12 / 0.20 | edad | Reto |
 | Cambio de Chip | 5 | 0.12 / 0.20 | edad | Reto |
 | Comparación | 7 | 0.15 / 0.25 | edad | Reto |
 | Detective de Series | 9 | 0.15 / 0.25 | edad | Reto |

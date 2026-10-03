@@ -369,6 +369,24 @@ patrón; ángulos libres; luceros que suenan) y no se dice que «ninguna app gir
 Código: `Games/Secuencia/RastroContract.cs`, `RastroSession.cs` (`RastroTally`) y `RastroBoard.cs` (reglas y medidas, con pruebas), `app/.../data/Trail.kt`
 (lectura, con pruebas), pantalla en `GameResultScreen`. Ficha técnica: `docs/diseno-rastro-de-luz.md`.
 
+## Tinta o Palabra («Dos orillas»): "Cuánto te frenó la palabra" y "Cambiar de orilla te costó"
+
+Ficha completa: [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md). Dos diferencias de tiempo EN ESTA PARTIDA, medidas sobre los aciertos:
+
+- **Interferencia («Cuánto te frenó la palabra»)**: tiempo medio de los aciertos con palabra que CHOCA con su tinta menos el de los que COINCIDEN (`interference_ms`; MacLeod, 1991; Stroop, 1935).
+  Hace falta tener al menos 3 aciertos de cada tipo; con menos, −1 («sin datos») y la app no muestra nada. Un resultado negativo se lleva a 0 («casi nada», menos de 0,05 s) para que −1
+  siga siendo solo «sin datos». Por eso en el juego una parte de las palabras (25–40 %) coincide con su tinta.
+- **Costo de cambio («Cambiar de orilla te costó»)**: tiempo medio de los aciertos justo después de un cambio de orilla menos el de los que repiten orilla (`switch_cost_ms`; Monsell, 2003).
+  Solo existe desde el nivel 3 (en los niveles 1 y 2 solo hay orilla de la TINTA) y también pide 3 aciertos de cada tipo. La regla se ve en tres señales a la vez (orilla, ícono y cinta)
+  justamente porque una señal clara de la regla reduce ese costo.
+- **Cómo leerlo**: es cuánto más tardaste en promedio en esta partida, no un rasgo tuyo ni un test clínico: cambia de un día a otro y con pocos aciertos es poco fiable. No se compara con
+  otras personas ni se habla de «control ejecutivo» o de la concentración en la vida diaria.
+- **Consejo** (solo con una diferencia de 0,3 s o más, para «¿qué te sirve más ver primero?»): «mira primero de qué orilla llega y recién después la palabra» (interferencia) y «cuando cambie
+  la orilla, dite por dentro "ahora, tinta" o "ahora, palabra" antes de tocar» (costo de cambio). Son sugerencias de estrategia, no promesas.
+- **Paleta**: 4 tintas para todos (ROJO C93C3C, AZUL 4A86E8, AMARILLO F2CC1D, BLANCO F4F4F4) verificadas con `tools/paleta_daltonismo.py` (diferencia ≥ 20 en visión típica, protanopía y
+  deuteranopía; Machado et al., 2009). Una sola paleta para todos; no depende de `color_vision`.
+- Telemetría en `StroopSessionMetrics`; lectura en `data/DosOrillas.kt` (con pruebas).
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -444,5 +462,9 @@ Código: `Games/Secuencia/RastroContract.cs`, `RastroSession.cs` (`RastroTally`)
   performance. *Journal of Experimental Psychology: Learning, Memory, and Cognition*, 31, 412–427. doi:10.1037/0278-7393.31.3.412
 - Broadway, J. M., y Engle, R. W. (2010). Validating running memory span: measurement of working memory capacity and links with fluid intelligence.
   *Behavior Research Methods*, 42, 563–570. doi:10.3758/BRM.42.2.563
+- MacLeod, C. M. (1991). Half a century of research on the Stroop effect: an integrative review. *Psychological Bulletin*, 109, 163–203. doi:10.1037/0033-2909.109.2.163
+- Monsell, S. (2003). Task switching. *Trends in Cognitive Sciences*, 7, 134–140. doi:10.1016/S1364-6613(03)00028-7
+- Stroop, J. R. (1935). Studies of interference in serial verbal reactions. *Journal of Experimental Psychology*, 18, 643–662. doi:10.1037/h0054651
+- Machado, G. M., Oliveira, M. M., y Fernandes, L. A. F. (2009). A physiologically-based model for simulation of color vision deficiency. *IEEE Transactions on Visualization and Computer Graphics*, 15, 1291–1298. doi:10.1109/TVCG.2009.113
 - Cowan, N. (2001). The magical number 4 in short-term memory: a reconsideration of mental storage capacity. *Behavioral and Brain Sciences*, 24, 87–114.
   doi:10.1017/s0140525x01003922

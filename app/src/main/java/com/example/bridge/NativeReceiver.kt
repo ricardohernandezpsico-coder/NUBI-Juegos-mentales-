@@ -123,6 +123,9 @@ object NativeReceiver {
     val tracking_capacity: Double = -1.0,
     val tracking_targets: Double = -1.0,
     val tracking_speed: Double = -1.0,
+    // Solo Tinta o Palabra: interferencia de la palabra y costo de cambiar de orilla (ms, -1 = sin datos suficientes).
+    val interference_ms: Int = -1,
+    val switch_cost_ms: Int = -1,
     // Solo Freno de Emergencia: tiempo de frenado (ms, -1 = sin estimación), altos frenados / totales, récord.
     val brake_ms: Int = -1,
     val stops_ok: Int = 0,
@@ -463,6 +466,8 @@ object NativeReceiver {
       trackingCapacity = metrics.tracking_capacity.takeIf { it >= 0.0 }?.toFloat(),
       trackingTargets = metrics.tracking_targets.takeIf { it > 0.0 }?.toFloat(),
       trackingSpeed = metrics.tracking_speed.takeIf { it > 0.0 }?.toFloat(),
+      interferenceMs = metrics.interference_ms.takeIf { it >= 0 && telemetry.game_id == "stroop" },
+      switchCostMs = metrics.switch_cost_ms.takeIf { it >= 0 && telemetry.game_id == "stroop" },
       brakeMs = metrics.brake_ms.takeIf { it > 0 },
       stopsOk = metrics.stops_ok.takeIf { metrics.stops_total > 0 },
       stopsTotal = metrics.stops_total.takeIf { it > 0 },

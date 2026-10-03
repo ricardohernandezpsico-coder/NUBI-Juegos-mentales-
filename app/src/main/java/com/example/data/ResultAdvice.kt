@@ -80,6 +80,10 @@ object ResultAdvice {
     if (result.homingErrorPct != null && along != null && lateral != null && beacon != null) {
       Homing.sourceMessage(Homing.source(Homing.trips(along, lateral, beacon)))?.let { out += tipOf(it) }
     }
+    // Tinta o Palabra: si la palabra o el cambio de orilla te frenaron mucho (≥ 0,3 s).
+    if (result.interferenceMs != null || result.switchCostMs != null) {
+      out += DosOrillas.tips(result.interferenceMs, result.switchCostMs).map { tipOf(it) }
+    }
     // Correo Estelar: el reloj, lugar contra hora y la nave.
     result.mailEventTotal?.let { evTotal ->
       val evHits = result.mailEventHits ?: 0

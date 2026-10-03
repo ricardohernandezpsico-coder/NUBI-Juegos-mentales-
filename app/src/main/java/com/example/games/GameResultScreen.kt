@@ -1095,12 +1095,41 @@ fun GameResultScreen(
       }
     }
 
+    // Tinta o Palabra («Dos orillas»): «cuánto te frenó la palabra» (cifra grande) y, desde el nivel 3 (hay cambios de orilla), «cambiar de orilla te costó».
+    // Ver docs/medidas-juegos-estrella.md. El consejo va aparte (ResultAdvice), antes o después según result_focus.
+    result.interferenceMs?.let { ms ->
+      Spacer(Modifier.height(14.dp))
+      Text(com.example.data.DosOrillas.INTERFERENCE_TITLE, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Text(
+        text = com.example.data.DosOrillas.cost(ms),
+        color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 40.sp, fontFamily = AppFamily,
+        modifier = Modifier.semantics { contentDescription = "${com.example.data.DosOrillas.INTERFERENCE_TITLE}: ${com.example.data.DosOrillas.cost(ms)}" }
+      )
+      Text(
+        text = com.example.data.DosOrillas.INTERFERENCE_LINE,
+        color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+    }
+    result.switchCostMs?.let { ms ->
+      Spacer(Modifier.height(14.dp))
+      Text(com.example.data.DosOrillas.SWITCH_TITLE, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Text(
+        text = com.example.data.DosOrillas.cost(ms),
+        color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 40.sp, fontFamily = AppFamily,
+        modifier = Modifier.semantics { contentDescription = "${com.example.data.DosOrillas.SWITCH_TITLE}: ${com.example.data.DosOrillas.cost(ms)}" }
+      )
+      Text(
+        text = com.example.data.DosOrillas.SWITCH_LINE,
+        color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+      )
+    }
+
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
       result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.rasRounds
+      result.rasRounds, result.interferenceMs, result.switchCostMs
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
