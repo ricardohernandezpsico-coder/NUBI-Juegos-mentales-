@@ -112,7 +112,7 @@ input.name{min-height:58px;border-radius:16px;border:2px solid #3A2E78;backgroun
     <ul class="rules">
       <li><strong>Jugar en menos de un minuto.</strong> Antes del primer juego solo van tu nombre (opcional) y tu edad, que ajusta el ritmo y el tamaño.</li>
       <li><strong>El tutorial vive dentro del juego.</strong> La primera ronda es guiada (Nubi muestra, la mano indica, si te equivocas explica y repites), con «Saltar tutorial» siempre a mano. Es el mismo tutorial que tendrá cada juego la primera vez que lo abras.</li>
-      <li><strong>Cada juego cierra con «puso a prueba tu…»</strong>: qué entrenó y tu primer dato, en palabras.</li>
+      <li><strong>Cada juego cierra con «Acabas de usar tu…»</strong>: qué entrenó y tu primer dato, en palabras.</li>
       <li><strong>Una pregunta por pantalla, un toque, con su porqué.</strong> Se quitan del inicio el nivel de estudios y «así funciona» (van a Perfil y aparecen al usarlos).</li>
       <li><strong>Honesto:</strong> sin promesas de mejora ni comparación con otras personas mientras no tengamos datos propios. «Tu punto de partida», no un puntaje cerebral.</li>
       <li><strong>Sin cuenta para empezar.</strong> Más adelante, al final, «Guarda tu avance con Google» (opcional).</li>
@@ -144,7 +144,7 @@ const FLOW = [
   { id:'nombre', t:'¿Cómo te llamo?', k:'q', s:'opcional' },
   { id:'edad', t:'Tu edad', k:'q', s:'ajusta ritmo y tamaño' },
   { id:'g0i', t:'Juego 1: Memoria', k:'g', s:'tutorial dentro' },
-  { id:'g0', t:'Se juega', k:'g' }, { id:'g0r', t:'«puso a prueba tu memoria»', k:'g' },
+  { id:'g0', t:'Se juega', k:'g' }, { id:'g0r', t:'«Acabas de usar tu memoria»', k:'g' },
   { id:'metas', t:'¿Qué quieres entrenar?', k:'q', s:'hasta 3' },
   { id:'dato', t:'Nubi: poco y seguido', k:'n' },
   { id:'g1i', t:'Juego 2: Atención', k:'g' }, { id:'g1r', t:'resultado', k:'g' },
@@ -193,7 +193,7 @@ function go(i){
   else if (id==='g0'){ sc.innerHTML=''; return corsi(); }
   else if (/^g\dr$/.test(id)){ const n=+id[1], g=GAMES[n];
     const line = n===0 ? (S.span ? 'Recordaste <em>'+S.span+' luces</em> seguidas en orden.' : 'Lo dejaste para después: lo estimamos por ahora.') : 'Tu primer dato quedó guardado: <em>'+['','te frenaste a tiempo 9 de 11 veces','aterrizaste a 6 de distancia en promedio','reconociste 17 de 20 palabras'][n]+'</em>.';
-    h = stepper(n+1)+'<img class="nubi" src="inicio-maqueta-img/nubi_cientifica.png" alt="Nubi científica"><p class="title">'+g.name+' puso a prueba tu '+g.short+'.</p><p class="say">'+line+'</p><p class="sub">'+['La memoria de trabajo sostiene información unos segundos mientras la usas: seguir una receta, recordar un número.','Frenar a tiempo una respuesta automática es parte del control de la atención.','Ubicar cantidades en una recta es la base del cálculo aproximado del día a día.','Reconocer palabras rápido apoya la lectura y la conversación.'][n]+'</p><div class="grow"></div>'+next; }
+    h = stepper(n+1)+'<img class="nubi" src="inicio-maqueta-img/nubi_cientifica.png" alt="Nubi científica"><p class="title">Acabas de usar tu '+g.short+'</p><p class="say">'+line+'</p><p class="sub">'+['La memoria de trabajo sostiene información unos segundos mientras la usas: seguir una receta, recordar un número.','Frenar a tiempo una respuesta automática es parte del control de la atención.','Ubicar cantidades en una recta es la base del cálculo aproximado del día a día.','Reconocer palabras rápido apoya la lectura y la conversación.'][n]+'</p><div class="grow"></div>'+next; }
   else if (id==='metas') h = '<p class="eyebrow">Para armar tu camino</p><p class="title">¿Qué te gustaría entrenar'+hi()+'?</p><p class="sub">Elige hasta 3. Tu camino de cada día les dará prioridad.</p>'+opts([['M','Memoria','recordar, retener'],['A','Atención','concentrarme, reaccionar'],['R','Razonamiento','lógica y números'],['L','Lenguaje','palabras y lectura']],S.goals,true)+'<div class="grow"></div><button class="btn" data-next '+(S.goals.size?'':'disabled')+'>Continuar</button>';
   else if (id==='dato') h = '<div class="grow"></div><img class="nubi big" src="inicio-maqueta-img/nubi_mira.png" alt="Nubi"><p class="eyebrow" style="text-align:center">¿Sabías que…?</p><p class="say" style="text-align:center">Practicar <em>poco y seguido</em> rinde más que mucho de una vez: es de lo más comprobado sobre cómo aprendemos.</p><div class="grow"></div>'+next;
   else if (id==='animo') h = '<p class="eyebrow">Para hablarte a tu manera</p><p class="title">¿Cómo prefieres que te anime?</p>'+opts([['c','Celebrando cada logro','«¡Mira cuánto avanzaste hoy!»'],['d','Diciéndome las cosas claras','«Hoy costó: mañana probamos más lento.»']],S.tone)+'<p class="sub">Cambia cómo te habla Nubi. Lo puedes cambiar en Ajustes.</p><div class="grow"></div><button class="btn" data-next '+(S.tone?'':'disabled')+'>Continuar</button>';

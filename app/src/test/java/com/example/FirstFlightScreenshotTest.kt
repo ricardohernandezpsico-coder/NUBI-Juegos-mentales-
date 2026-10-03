@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
-import com.example.data.CoachTone
+import com.example.data.ResultFocus
 import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.data.FlightStep
@@ -66,7 +66,7 @@ class FirstFlightScreenshotTest {
   )
 
   @Test
-  fun pregunta_de_animo() = shot("animo", FlightState(FlightMode.FULL, FlightStep.ANIMO, tone = CoachTone.CLARO))
+  fun pregunta_de_enfoque() = shot("animo", FlightState(FlightMode.FULL, FlightStep.ENFOQUE, focus = ResultFocus.CONSEJO))
 
   @Test
   fun antes_de_un_juego() = shot("juego", FlightState(FlightMode.FULL, FlightStep.JUEGO_2, measured = mapOf("secuencia" to 0.62f)))

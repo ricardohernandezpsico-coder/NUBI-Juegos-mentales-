@@ -14,7 +14,8 @@ Uso:  python tools/lexico/meteoros.py            (necesita: pip install spylls o
 
 Pasos: (1) palabras = SPALEX ∩ lemas del diccionario (4-12 letras, sin lo de excluir.txt), con la prevalencia MÍNIMA de
 España y Latinoamérica (así no entran regionalismos); (2) bandas 1-6 por prevalencia, ~200 por banda; (3) inventadas de
-tres tipos (obvia, letra cambiada, letras traspuestas), que el diccionario NO reconoce y que no están en SPALEX.
+tres tipos (obvia, letra cambiada, letras traspuestas), que el diccionario NO reconoce, que no están en SPALEX y que NO son un nombre
+propio (nombres de pila, apellidos, entradas con mayúscula de Hunspell, países, ciudades, marcas y personajes: ver propios.py, 3-oct).
 """
 import json
 import os
@@ -25,6 +26,8 @@ import unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, HERE)
+from propios import ProperNames  # noqa: E402  (filtro de nombres propios)
 SRC = os.path.join(HERE, "fuentes")
 OUT_JSON = os.path.join(ROOT, "unity", "NeuroVidaCore", "Assets", "Resources", "Lexico", "meteoros_es.json")
 OUT_MD = os.path.join(ROOT, "docs", "lexico-muestra-meteoros.md")
@@ -362,6 +365,8 @@ def main():
 
     inv = []
     seen = set()
+    proper = ProperNames.load()
+    dropped = {}  # inventadas que habrían entrado y se descartaron por ser un nombre propio: palabra -> (tipo, lista)
 
     def accept(p, tipo, de, b):
         if p in seen or is_real(p) or excluded_pseudo(p) or not (MIN_LEN <= len(p) <= MAX_LEN):
@@ -369,6 +374,10 @@ def main():
         if tipo != "traspuesta" and (not pronounceable(p) or rare_trigrams(p) > 0):
             return False
         if tipo == "traspuesta" and (rare_trigrams(p) > 1 or not ends_like_spanish(p) or re.search(r"[bcdfghjklmnñpqrstvxyz]{4,}", noacc(p))):
+            return False
+        if proper.is_proper(p):
+            # un nombre propio no es una «inventada»: quien lo toca acierta. Se cuenta solo lo que habría entrado.
+            dropped.setdefault(p, (tipo, proper.source_of(p)))
             return False
         seen.add(p)
         inv.append({"p": p, "t": tipo, "de": de, "b": b})
@@ -444,6 +453,20 @@ def main():
                     n_tra += 1
                     break
 
+    # ---- auditoría del filtro de nombres propios (no cambia el léxico): 150.000 inventadas «obvias» extra con otra semilla, para ver
+    # cuántas serían un nombre propio si no estuviera el filtro. Se informa en report_proper.
+    audit_rnd = random.Random(SEED + 7)
+    audit = {}
+    audit_total = 0
+    for _ in range(150000):
+        k = audit_rnd.choice((2, 2, 3, 3, 4))
+        p = "".join([audit_rnd.choice(syl_first)] + [audit_rnd.choice(syl_mid) for _ in range(k - 2)] + [audit_rnd.choice(syl_last)])
+        if is_real(p) or excluded_pseudo(p) or not (MIN_LEN <= len(p) <= MAX_LEN) or not pronounceable(p) or rare_trigrams(p) > 0:
+            continue
+        audit_total += 1
+        if proper.is_proper(p):
+            audit.setdefault(p, proper.source_of(p))
+
     # ---- salida
     os.makedirs(os.path.dirname(OUT_JSON), exist_ok=True)
     data = {
@@ -462,7 +485,24 @@ def main():
     print("palabras por banda:", {b: sum(1 for _, x in words if x == b) for b in range(1, 7)})
     print("inventadas por tipo:", {t: sum(1 for x in inv if x["t"] == t) for t in ("obvia", "letra", "traspuesta")})
     print("traspuestas por banda:", {b: sum(1 for x in inv if x["t"] == "traspuesta" and x["b"] == b) for b in range(1, 7)})
+    report_proper(proper, words, inv, dropped, audit, audit_total)
     write_sample(words, inv)
+
+
+def report_proper(proper, words, inv, dropped, audit, audit_total):
+    """Informe del filtro de nombres propios: cuántas inventadas se descartaron (con ejemplos) y qué palabras REALES del banco también son un nombre."""
+    print("filtro de nombres propios, listas:", proper.counts())
+    print(f"inventadas descartadas por ser nombre propio al construir: {len(dropped)}: {', '.join(sorted(dropped))}")
+    print(f"auditoría: de {audit_total} inventadas obvias distintas posibles, {len(audit)} eran un nombre propio ({100.0 * len(audit) / max(1, audit_total):.2f} %)")
+    pick = sorted(audit)[:: max(1, len(audit) // 30)][:30]
+    print("30 ejemplos de lo que el filtro descarta:", ", ".join(f"{w} ({audit[w]})" for w in pick))
+    both = sorted(w for w, _ in words if proper.is_proper(w))
+    print(f"palabras reales del banco que además son un nombre propio ({len(both)}):", ", ".join(both))
+    assert not any(proper.is_proper(x["p"]) for x in inv), "una inventada quedó siendo un nombre propio"
+    with open(os.path.join(HERE, "descartes-propios.txt"), "w", encoding="utf8", newline="\n") as f:
+        f.write("# Inventadas que habrían entrado al léxico y se descartaron por ser un nombre propio (tools/lexico/propios.py). Se regenera con meteoros.py.\n")
+        for w in sorted(dropped):
+            f.write(f"{w}\t{dropped[w][0]}\t{dropped[w][1]}\n")
 
 
 def write_sample(words, inv):

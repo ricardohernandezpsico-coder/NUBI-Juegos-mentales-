@@ -133,7 +133,55 @@ namespace NeuroVida.Games.Tests
         public void TheGuidedRound_IsTwoWordsAndOneInvented_InThatOrder()
         {
             CollectionAssert.AreEqual(new[] { true, true, false }, MeteorContract.GuidedPlan);
-            Assert.GreaterOrEqual(MeteorContract.GuidedFallSeconds, 8f, "cae despacio: hay tiempo de sobra para leer");
+            Assert.GreaterOrEqual(MeteorContract.GuidedFallSeconds, 4f, "cae despacio: hay tiempo de sobra para leer");
+            Assert.LessOrEqual(MeteorContract.GuidedFallSeconds, 6f, "pero no 11 s: la inventada se deja caer entera y era tiempo muerto");
+        }
+
+        [Test]
+        public void TheGuidedRound_FallsInSixSeconds_SevenAndAHalfForSeniors()
+        {
+            Assert.AreEqual(6f, MeteorContract.GuidedFall(false), 1e-4f);
+            Assert.AreEqual(7.5f, MeteorContract.GuidedFall(true), 1e-4f);
+        }
+
+        [Test]
+        public void TheGuidedRound_NextMeteorAppearsAtOnce_AfterAnError_ThereIsTimeToRead()
+        {
+            Assert.LessOrEqual(MeteorContract.GuidedGapSeconds, 0.4f, "apenas se resuelve uno aparece el siguiente");
+            Assert.GreaterOrEqual(MeteorContract.GuidedRetryGapSeconds, 1.5f, "tras un error se alcanza a leer el porqué");
+        }
+
+        [Test]
+        public void TheGuidedRound_IdleTimeDropsFromNineteenToEightSeconds()
+        {
+            // antes: 3 × 2,2 + 1,8 + 11 = 19,4 s sin hacer nada
+            Assert.AreEqual(8.4f, MeteorContract.GuidedIdleSeconds(false), 1e-3f);
+            Assert.AreEqual(9.9f, MeteorContract.GuidedIdleSeconds(true), 1e-3f);
+            Assert.Less(MeteorContract.GuidedIdleSeconds(false), 19.4f / 2f, "menos de la mitad que antes");
+            Assert.Less(MeteorContract.GuidedIdleSeconds(true), 19.4f * 0.55f, "también en mayores");
+        }
+
+        [Test]
+        public void TheShortVersion_FirstMeteorWithinHalfASecond_AndNeverFewerThanTwoOnScreen()
+        {
+            Assert.LessOrEqual(MeteorContract.AssessmentFirstSpawnSeconds, 0.5f);
+            Assert.AreEqual(2, MeteorContract.AssessmentMinOnScreen);
+            // con menos de 2 en pantalla el siguiente sale enseguida; con 2 o más, la pausa de siempre
+            Assert.AreEqual(MeteorContract.AssessmentRefillGapSeconds, MeteorContract.SpawnGap(false, true, 0), 1e-4f);
+            Assert.AreEqual(MeteorContract.AssessmentRefillGapSeconds, MeteorContract.SpawnGap(false, true, 1), 1e-4f);
+            Assert.Less(MeteorContract.AssessmentRefillGapSeconds, 0.5f);
+            Assert.AreEqual(MeteorContract.NormalGapSeconds, MeteorContract.SpawnGap(false, true, 2), 1e-4f);
+            Assert.AreEqual(MeteorContract.ShowerGapSeconds, MeteorContract.SpawnGap(true, true, 0), 1e-4f);
+        }
+
+        [Test]
+        public void TheNormalGame_KeepsItsSpawnGaps()
+        {
+            foreach (int active in new[] { 0, 1, 2, 3 })
+            {
+                Assert.AreEqual(1.1f, MeteorContract.SpawnGap(false, false, active), 1e-4f, "activos " + active);
+                Assert.AreEqual(0.45f, MeteorContract.SpawnGap(true, false, active), 1e-4f);
+            }
         }
 
         [Test]

@@ -15,18 +15,6 @@ import kotlin.math.roundToInt
  * («Hacer la evaluación» desde Avance: solo la parte de juegos, sin preguntas).
  */
 
-/** Cómo prefiere la persona que Nubi le hable (resultados y recordatorios). Se cambia en Ajustes. Sin culpa en ninguno de los dos. */
-enum class CoachTone(val label: String, val example: String) {
-  CELEBRAR("Celebrando cada logro", "«¡Mira cuánto avanzaste hoy!»"),
-  CLARO("Diciéndome las cosas claras", "«Hoy costó: mañana probamos más lento.»");
-
-  companion object {
-    /** Quien nunca eligió (o actualizó la app) recibe el tono de siempre de Nubi: celebrar. */
-    val DEFAULT = CELEBRAR
-    fun fromStored(name: String?): CoachTone? = entries.firstOrNull { it.name == name }
-  }
-}
-
 /** Si cuesta distinguir algunos colores. Por ahora solo se guarda (los juegos lo usarán después: paletas seguras). */
 enum class ColorVision(val label: String) {
   NORMAL("No, veo bien los colores"),
@@ -47,7 +35,7 @@ enum class FlightStep(val game: Int? = null) {
   JUEGO_1(0), TARJETA_1(0),
   METAS, DATO,
   JUEGO_2(1), TARJETA_2(1),
-  ANIMO, COLOR,
+  ENFOQUE, COLOR,
   JUEGO_3(2), TARJETA_3(2),
   DIAS,
   JUEGO_4(3), TARJETA_4(3),
@@ -69,7 +57,8 @@ data class FlightState(
   val name: String = "",
   val age: AgeBand? = null,
   val goals: Set<DomainType> = emptySet(),
-  val tone: CoachTone? = null,
+  /** Qué le sirve más ver primero al terminar un juego (`result_focus`). */
+  val focus: ResultFocus? = null,
   val color: ColorVision? = null,
   val days: Int? = null,
   /** Hora del aviso diario; [NO_REMINDER] = sin aviso; null = todavía no respondió. */
@@ -101,7 +90,7 @@ object FirstFlight {
   private val full = listOf(
     FlightStep.HOLA, FlightStep.NOMBRE, FlightStep.EDAD,
     FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.METAS, FlightStep.DATO,
-    FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.ANIMO, FlightStep.COLOR,
+    FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.ENFOQUE, FlightStep.COLOR,
     FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS,
     FlightStep.JUEGO_4, FlightStep.TARJETA_4, FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO
   )
@@ -180,7 +169,7 @@ object FirstFlight {
     else -> when (step) {
       FlightStep.HOLA -> 5
       FlightStep.NOMBRE -> 8
-      FlightStep.EDAD, FlightStep.ANIMO, FlightStep.COLOR, FlightStep.DIAS, FlightStep.METAS -> 6
+      FlightStep.EDAD, FlightStep.ENFOQUE, FlightStep.COLOR, FlightStep.DIAS, FlightStep.METAS -> 6
       FlightStep.DATO -> 5
       FlightStep.PUNTO -> 12
       FlightStep.AVISO -> 8
@@ -258,12 +247,12 @@ object FirstFlight {
   }
 }
 
-/** Los textos del recorrido que dependen del juego (tarjeta de entrada y tarjeta «puso a prueba tu…»). Aprobados en la maqueta. */
+/** Los textos del recorrido que dependen del juego (tarjeta de entrada y tarjeta «Acabas de usar tu…»). Aprobados en la maqueta. */
 object FlightCopy {
   class GameCopy(
     /** Una línea de cómo se juega (el tutorial está dentro del juego). */
     val how: String,
-    /** «Rastro de luz puso a prueba tu [short]». */
+    /** «Acabas de usar tu [short]». */
     val short: String,
     /** Para qué sirve esa capacidad en la vida diaria (una línea; sin promesas de salud). */
     val why: String
@@ -316,7 +305,7 @@ object FlightStore {
     put("name", s.name)
     s.age?.let { put("age", it.name) }
     put("goals", encodeGoals(s.goals))
-    s.tone?.let { put("tone", it.name) }
+    s.focus?.let { put("focus", it.name) }
     s.color?.let { put("color", it.name) }
     s.days?.let { put("days", it) }
     s.hour?.let { put("hour", it) }
@@ -343,7 +332,7 @@ object FlightStore {
         name = o.optString("name"),
         age = AgeBand.entries.firstOrNull { it.name == o.optString("age") },
         goals = decodeGoals(o.optString("goals")),
-        tone = CoachTone.fromStored(o.optString("tone")),
+        focus = ResultFocus.fromStored(o.optString("focus")),
         color = ColorVision.fromStored(o.optString("color")),
         days = if (o.has("days")) o.getInt("days") else null,
         hour = if (o.has("hour")) o.getInt("hour") else null,

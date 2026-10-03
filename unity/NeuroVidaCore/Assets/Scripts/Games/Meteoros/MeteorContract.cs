@@ -73,8 +73,45 @@ namespace NeuroVida.Games.Meteoros
         /// <summary>El guion de la ronda guiada: 2 palabras reales que se tocan y 1 inventada que se deja caer (true = palabra real). No cuenta para nada.</summary>
         public static readonly bool[] GuidedPlan = { true, true, false };
 
-        /// <summary>Segundos que tarda en caer cada meteoro de la ronda guiada (lento: más que el nivel 1).</summary>
-        public const float GuidedFallSeconds = 11f;
+        /// <summary>Segundos que tarda en caer cada meteoro de la ronda guiada. Antes 11 s (tiempo muerto: la inventada hay que dejarla caer entera); desde la prueba de Ricardo
+        /// (3-oct, «al inicio es bastante lenta y genera mucha pausa») 6 s, y 7,5 s en mayores. Cae de a UNO, sin otros que distraigan: alcanza de sobra para leer la palabra.</summary>
+        public const float GuidedFallSeconds = 6f;
+        public const float GuidedFallSecondsSenior = 7.5f;
+        public static float GuidedFall(bool senior) => senior ? GuidedFallSecondsSenior : GuidedFallSeconds;
+
+        /// <summary>Pausa entre un acierto y el siguiente meteoro guiado: apenas se resuelve uno aparece el otro (antes 2,2 s).</summary>
+        public const float GuidedGapSeconds = 0.4f;
+        /// <summary>Tras un error SÍ se espera más: se alcanza a leer por qué (sin culpa) antes de repetir el mismo paso.</summary>
+        public const float GuidedRetryGapSeconds = 1.8f;
+        /// <summary>El «¡Así se juega! Ahora sin ayuda» del cierre (antes 1,8 s).</summary>
+        public const float GuidedClosingSeconds = 1.2f;
+
+        /// <summary>Segundos de espera SIN que la persona haga nada en una ronda guiada sin errores: las pausas entre pasos, el cierre y la caída entera de la inventada
+        /// (que se deja caer). Antes: 3 × 2,2 + 1,8 + 11 = 19,4 s. Ahora: 3 × 0,4 + 1,2 + 6 = 8,4 s (9,9 s en mayores).</summary>
+        public static float GuidedIdleSeconds(bool senior)
+        {
+            int decoys = 0;
+            foreach (bool word in GuidedPlan) if (!word) decoys++;
+            return GuidedPlan.Length * GuidedGapSeconds + GuidedClosingSeconds + decoys * GuidedFall(senior);
+        }
+
+        /// <summary>El primer meteoro de la versión corta sale a más tardar a estos segundos de empezar la partida (después de la cuenta regresiva).</summary>
+        public const float AssessmentFirstSpawnSeconds = 0.5f;
+        /// <summary>La versión corta mantiene al menos estos meteoros en pantalla desde el inicio: si hay menos, el siguiente sale enseguida.</summary>
+        public const int AssessmentMinOnScreen = 2;
+        public const float AssessmentRefillGapSeconds = 0.25f;
+        /// <summary>Pausa común entre meteoros de la partida.</summary>
+        public const float NormalGapSeconds = 1.1f;
+        public const float ShowerGapSeconds = 0.45f;
+
+        /// <summary>Segundos mínimos desde el último meteoro lanzado hasta el siguiente. En la versión corta, con menos de 2 en pantalla el siguiente sale casi enseguida
+        /// (no hay pausas con el cielo vacío); la partida normal no cambia.</summary>
+        public static float SpawnGap(bool shower, bool assessment, int onScreen)
+        {
+            if (shower) return ShowerGapSeconds;
+            if (assessment && onScreen < AssessmentMinOnScreen) return AssessmentRefillGapSeconds;
+            return NormalGapSeconds;
+        }
 
         /// <summary>Precisión (sin reloj): meteoros por partida.</summary>
         public const int PrecisionMeteors = 40;

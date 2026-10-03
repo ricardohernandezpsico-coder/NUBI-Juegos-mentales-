@@ -48,7 +48,7 @@ fun SettingsScreen(
 ) {
   val userSettings by viewModel.userSettings.collectAsState()
   val allProfiles by viewModel.allProfiles.collectAsState()
-  val coachTone by viewModel.coachTone.collectAsState()
+  val resultFocus by viewModel.resultFocus.collectAsState()
   val colorVision by viewModel.colorVision.collectAsState()
 
   var nameInput by remember(userSettings.name) { mutableStateOf(userSettings.name) }
@@ -553,25 +553,25 @@ fun SettingsScreen(
 
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-        // Cómo te anima Nubi y si cuesta distinguir colores: las dos preguntas del inicio, editables acá.
+        // Qué te sirve más ver primero al terminar un juego y si cuesta distinguir colores: dos preguntas del inicio, editables acá.
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text(text = "Cómo te anima Nubi", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+          Text(text = "Al terminar cada juego, ¿qué te sirve más ver primero?", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            com.example.data.CoachTone.entries.forEach { tone ->
+            com.example.data.ResultFocus.entries.forEach { focus ->
               FilterChip(
-                selected = coachTone == tone,
-                onClick = { viewModel.setCoachTone(tone) },
-                label = { Text(text = tone.label) },
+                selected = resultFocus == focus,
+                onClick = { viewModel.setResultFocus(focus) },
+                label = { Text(text = focus.label) },
                 colors = FilterChipDefaults.filterChipColors(
                   selectedContainerColor = TealPrimary.copy(alpha = 0.15f),
                   selectedLabelColor = TealPrimary
                 ),
-                modifier = Modifier.testTag("chip_coach_tone_${tone.name.lowercase()}")
+                modifier = Modifier.testTag("chip_result_focus_${focus.name.lowercase()}")
               )
             }
           }
           Text(
-            text = "Cambia las frases de tus resultados y de los recordatorios.",
+            text = "Así ordeno lo que te muestro al final: no se oculta nada, solo cambia qué va primero.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
           )

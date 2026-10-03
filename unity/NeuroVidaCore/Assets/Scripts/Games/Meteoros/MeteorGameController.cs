@@ -174,7 +174,8 @@ namespace NeuroVida.Games.Meteoros
                 bool shower = _director.InShower;
                 bool more = Endless ? GameClock.Time < _endsAt : (_director.Spawned < MeteorContract.PrecisionMeteors || shower);
                 int cap = shower ? 4 : Assessment.Active ? MeteorContract.AssessmentConcurrent(level) : MeteorContract.Concurrent(level, Precision);
-                float gap = shower ? 0.45f : 1.1f;
+                // versión corta: nunca menos de 2 en pantalla (el siguiente sale enseguida); la partida normal usa las pausas de siempre
+                float gap = MeteorContract.SpawnGap(shower, Assessment.Active, _active.Count);
                 if (more && _active.Count < cap && GameClock.Time - _lastSpawn >= gap)
                 {
                     bool placed = Spawn();
@@ -1089,12 +1090,12 @@ namespace NeuroVida.Games.Meteoros
                 if (isWord)
                 {
                     _lexicon.PickWord(1, 1, 4, 6, _rng, out var w, out int band);
-                    spec = new MeteorSpec { Word = w, IsWord = true, Band = band, FallSeconds = MeteorContract.GuidedFallSeconds };
+                    spec = new MeteorSpec { Word = w, IsWord = true, Band = band, FallSeconds = MeteorContract.GuidedFall(Senior) };
                 }
                 else
                 {
                     _lexicon.PickDecoy(new[] { DecoyKind.Obvious }, 4, 6, _rng, out var d, out var kind, out int band);
-                    spec = new MeteorSpec { Word = d, IsWord = false, Band = band, Decoy = kind, FallSeconds = MeteorContract.GuidedFallSeconds };
+                    spec = new MeteorSpec { Word = d, IsWord = false, Band = band, Decoy = kind, FallSeconds = MeteorContract.GuidedFall(Senior) };
                 }
                 t.Say(isWord ? (words == 0 ? "Esta palabra existe: tócala" : "Otra que existe: tócala") : "Esta no existe: déjala caer");
                 _pending = spec;
@@ -1122,7 +1123,8 @@ namespace NeuroVida.Games.Meteoros
                     t.Say(_guidedOutcome == 3 ? "Casi: esa palabra existe. Tócala antes de que llegue abajo" : "Casi: esa no existe. Las inventadas se dejan caer");
                     script.Failure();
                 }
-                yield return StartCoroutine(Wait(2.2f));
+                // apenas se resuelve uno aparece el siguiente; solo tras un error se espera más (se alcanza a leer el porqué)
+                yield return StartCoroutine(Wait(_guidedOutcome == 1 || _guidedOutcome == 4 ? MeteorContract.GuidedGapSeconds : MeteorContract.GuidedRetryGapSeconds));
             }
             _guidedRing = null;
             ClearMeteors();
@@ -1131,7 +1133,7 @@ namespace NeuroVida.Games.Meteoros
             {
                 t.Say("¡Así se juega! Ahora sin ayuda");
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(Wait(1.8f));
+                yield return StartCoroutine(Wait(MeteorContract.GuidedClosingSeconds));
             }
             t.EndPractice();
             _guided = false;

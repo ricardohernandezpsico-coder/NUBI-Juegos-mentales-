@@ -306,7 +306,9 @@ Tracker, BrainHQ, NeuroRacer, EndeavorRx, NeuroTracker, Train of Thought, Lumosi
 internos, como referencia científica, sí.
 
 **Lista para el abogado** (cuando llegue el momento de publicar): el nombre elegido; Radar rediseñado; el costo
-de multitarea de Piloto; el sistema de avance (Desafío → Experto) frente a US 10,559,221.
+de multitarea de Piloto; el sistema de avance (Desafío → Experto) frente a US 10,559,221; y (3-oct) **el inicio completo («Primer vuelo con Nubi»)
+frente al de Lumosity**: orden de pasos, preguntas, tarjetas y barra de avance, antes de publicar (la pregunta del ánimo y la tarjeta «X puso a prueba tu Y» ya se cambiaron
+por otras propias: «¿qué te sirve más ver primero?» y «Acabas de usar tu…»).
 
 ## 6. Publicidad y textos: la lección de Lumosity
 

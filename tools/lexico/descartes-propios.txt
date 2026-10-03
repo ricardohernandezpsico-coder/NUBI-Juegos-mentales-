@@ -1,0 +1,2 @@
+# Inventadas que habrían entrado al léxico y se descartaron por ser un nombre propio (tools/lexico/propios.py). Se regenera con meteoros.py.
+aldo	obvia	nombre

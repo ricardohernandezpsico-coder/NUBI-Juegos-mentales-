@@ -14,6 +14,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,7 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.CoachTone
+import com.example.data.ResultFocus
 import com.example.model.GamePlayResult
 import com.example.model.GameRankInfo
 import com.example.model.GameRegistry
@@ -85,36 +86,24 @@ object ResultPhrases {
   val NO_SPEED_GAMES = setOf("secuencia", "rutatesoro", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa")
 
   /**
-   * [tone] (Ajustes → «Cómo te anima Nubi», `coach_tone`): dos variantes de cada frase, ninguna con culpa. CLARO dice las cosas como son
-   * (las frases de siempre); CELEBRAR las dice con calidez. Las reglas de arriba (sin «velocidad» ni «ritmo» donde el puntaje no la usa)
-   * valen en los dos tonos.
+   * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono: lo que cambia con la preferencia de la persona
+   * es el ORDEN del resultado, ver [com.example.data.ResultFocus]). Las reglas de arriba valen: sin «velocidad» ni «ritmo» donde el puntaje no la usa.
    */
-  fun feedback(gameId: String, score: Int, tone: CoachTone): String {
+  fun feedback(gameId: String, score: Int): String {
     val noSpeed = gameId in NO_SPEED_GAMES
-    return when (tone) {
-      CoachTone.CLARO -> when {
-        noSpeed -> when {
-          score >= 85 -> "Muy buena precisión."
-          score >= 60 -> "Buena precisión."
-          else -> "La dificultad se ajusta a tu ritmo en cada partida."
-        }
-        score >= 85 -> "Precisión y ritmo excelentes."
-        score >= 60 -> "Buen equilibrio entre precisión y velocidad."
-        else -> "La dificultad se ajusta a tu ritmo en cada partida."
-      }
-      CoachTone.CELEBRAR -> when {
-        noSpeed -> when {
-          score >= 85 -> "¡Qué precisión! Esta partida merece una celebración."
-          score >= 60 -> "¡Muy buena precisión! Sigue así."
-          else -> "¡Jugaste! La dificultad se ajusta para que sigas disfrutando."
-        }
-        score >= 85 -> "¡Excelente! Tu precisión y tu ritmo brillaron hoy."
-        score >= 60 -> "¡Muy bien! Buen equilibrio entre precisión y velocidad."
+    return when {
+      noSpeed -> when {
+        score >= 85 -> "¡Qué precisión! Esta partida merece una celebración."
+        score >= 60 -> "¡Muy buena precisión! Sigue así."
         else -> "¡Jugaste! La dificultad se ajusta para que sigas disfrutando."
       }
+      score >= 85 -> "¡Excelente! Tu precisión y tu ritmo brillaron hoy."
+      score >= 60 -> "¡Muy bien! Buen equilibrio entre precisión y velocidad."
+      else -> "¡Jugaste! La dificultad se ajusta para que sigas disfrutando."
     }
   }
 }
+
 
 private val TextSoft = Color(0xFFB4BFEA) // secundario sobre el cielo nocturno (contraste > 7:1)
 
@@ -142,8 +131,8 @@ fun GameResultScreen(
   modeNote: String? = null,
   /** El atlas de La estrella intrusa (láminas ganadas y por repasar); solo lo usa ese juego. */
   atlas: com.example.data.AtlasState? = null,
-  /** Cómo le habla Nubi (`coach_tone`): cambia las frases de veredicto. */
-  coachTone: CoachTone = CoachTone.DEFAULT
+  /** Qué te sirve más ver primero (`result_focus`): solo cambia el orden de lo que se muestra. */
+  resultFocus: ResultFocus = ResultFocus.DEFAULT
 ) {
   val gameDef = GameRegistry.getById(result.gameId)
   val domainColor = gameDef?.domain?.color ?: Clay.Sky
@@ -256,7 +245,7 @@ fun GameResultScreen(
       textAlign = TextAlign.Center
     )
     Text(
-      text = ResultPhrases.feedback(result.gameId, result.score, coachTone),
+      text = ResultPhrases.feedback(result.gameId, result.score),
       color = TextSoft,
       fontSize = 16.sp,
       textAlign = TextAlign.Center,
@@ -273,6 +262,8 @@ fun GameResultScreen(
       Stat(if (result.timed) "Reto" else "Precisión", "modo")
     }
 
+    // Las medidas de la partida (propias de cada juego): «Lo que avancé». Más abajo se decide si van antes o después del consejo.
+    val measures: @Composable ColumnScope.() -> Unit = {
     // Piloto Estelar: la medida propia del juego (NeuroRacer): cuánto baja la precisión al hacer dos cosas a la vez.
     result.multitaskCost?.let { cost ->
       Spacer(Modifier.height(14.dp))
@@ -470,10 +461,10 @@ fun GameResultScreen(
         NumberLineStrip(
           trues, givens,
           Modifier.fillMaxWidth().padding(horizontal = 28.dp).height(64.dp)
-            .semantics { contentDescription = "Tu línea: ${com.example.data.NumberLine.message(bias)}" }
+            .semantics { contentDescription = "Tu línea: ${com.example.data.ResultAdvice.body(com.example.data.NumberLine.message(bias))}" }
         )
         Text(
-          text = com.example.data.NumberLine.message(bias),
+          text = com.example.data.ResultAdvice.body(com.example.data.NumberLine.message(bias)),
           color = TextSoft,
           fontSize = 15.sp,
           textAlign = TextAlign.Center,
@@ -526,9 +517,6 @@ fun GameResultScreen(
         Spacer(Modifier.height(14.dp))
         Text("Tu filtro", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
         Text(headline, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-        vocab.filterAdvice(faSeen, faHits)?.let { advice ->
-          Text(advice, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-        }
       }
 
       result.lexRareWords?.takeIf { it.isNotEmpty() }?.let { words ->
@@ -639,7 +627,7 @@ fun GameResultScreen(
           Text(it, color = Clay.Coral, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
         }
         atlasLogic.trapReading(intrSeen, result.intrHitsType)?.let {
-          Text(it, color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+          Text(com.example.data.ResultAdvice.body(it), color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
         }
       }
       atlasLogic.bonusLine(result.intrBonusSeen, result.intrBonusHits)?.let {
@@ -708,7 +696,7 @@ fun GameResultScreen(
         Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 8.dp)) {
           rows.forEach { row -> TrailModeBar(row, Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
         }
-        trail.readingLines(rows).forEachIndexed { i, line ->
+        trail.readingLines(rows).take(1).forEachIndexed { i, line ->
           Text(
             line, color = if (i == 0) Clay.Cream else TextSoft, fontSize = if (i == 0) 15.sp else 14.sp, textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 28.dp, vertical = if (i == 0) 2.dp else 6.dp)
@@ -751,10 +739,9 @@ fun GameResultScreen(
           rows.forEach { row -> ReadingBar(row, reading.barFraction(row.ms, rows), Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
         }
         val slow = reading.slowText(rows)
-        val tip = reading.tip(rows)
         when {
           slow != null -> Text(
-            text = if (tip != null) "$slow $tip" else slow,
+            text = slow,
             color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp)
           )
           reading.balanced(rows) -> Text(
@@ -1026,7 +1013,7 @@ fun GameResultScreen(
           )
         }
         com.example.data.Homing.sourceMessage(com.example.data.Homing.source(trips))?.let {
-          Text(it, color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+          Text(com.example.data.ResultAdvice.body(it), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
         }
         com.example.data.Homing.beaconAngles(trips)?.let { (withDeg, withoutDeg) ->
           Text(
@@ -1090,7 +1077,7 @@ fun GameResultScreen(
         com.example.data.Mail.compareMessage(evHits, evTotal, raHits, raTotal)
       )
       notes.forEach {
-        Text(it, color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+        Text(com.example.data.ResultAdvice.body(it), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
       }
       val lane = result.mailLanePct
       val asteroids = result.mailAsteroids
@@ -1104,7 +1091,7 @@ fun GameResultScreen(
         )
       }
       com.example.data.Mail.shipMessage(result.mailHullIntactPct ?: -1, result.mailEmergencies ?: 0)?.let {
-        Text(it, color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+        Text(com.example.data.ResultAdvice.body(it), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
       }
     }
 
@@ -1124,7 +1111,10 @@ fun GameResultScreen(
         modifier = Modifier.padding(horizontal = 32.dp, vertical = 10.dp)
       )
     }
+    }  // fin de measures
 
+    // Lo que subió con la partida (la nota del modo y el cambio de etapa): va con «Lo que avancé».
+    val progressNotes: @Composable ColumnScope.() -> Unit = {
     if (modeNote != null) {
       Spacer(Modifier.height(14.dp))
       ClayPill(text = modeNote, color = if (modeNote.startsWith("¡")) Clay.Lime else Clay.Cream, modifier = Modifier.testTag("mode_note"))
@@ -1137,6 +1127,21 @@ fun GameResultScreen(
         color = Clay.Lime,
         modifier = Modifier.scale(levelPop.value)
       )
+    }
+    }  // fin de progressNotes
+
+    // «Al terminar cada juego, ¿qué te sirve más ver primero?» (`result_focus`, Ajustes): SOLO cambia el orden. «Lo que avancé» pone primero las
+    // medidas de la partida y lo que subió; «Un consejo para la próxima», el consejo concreto. Ningún dato se repite ni se oculta: el consejo sale
+    // de las medidas (no se muestra dos veces) y los juegos sin consejo propio se ven igual con las dos opciones.
+    val adviceTips = remember(result) { com.example.data.ResultAdvice.tips(result) }
+    if (resultFocus == ResultFocus.CONSEJO) {
+      AdviceBlock(adviceTips)
+      measures()
+      progressNotes()
+    } else {
+      measures()
+      progressNotes()
+      AdviceBlock(adviceTips)
     }
 
     if (rank != null) {
@@ -1744,5 +1749,16 @@ private fun TrailModeBar(row: com.example.data.Trail.ModeRow, modifier: Modifier
     }
     Spacer(Modifier.weight(1f))
     Text("${row.hits} de ${row.rounds}", color = color, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, softWrap = false)
+  }
+}
+
+/** «Un consejo para la próxima»: el consejo concreto de la partida (ver [com.example.data.ResultAdvice]); sin consejo, no hay bloque. */
+@Composable
+private fun ColumnScope.AdviceBlock(tips: List<String>) {
+  if (tips.isEmpty()) return
+  Spacer(Modifier.height(14.dp))
+  Text("Un consejo para la próxima", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.testTag("result_advice"))
+  tips.forEach { tip ->
+    Text(tip, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
   }
 }

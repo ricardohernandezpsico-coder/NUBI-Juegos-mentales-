@@ -10,7 +10,7 @@ Ricardo dio libertad para sumar ideas; las que agregué después de la maqueta e
 Se juega desde el primer minuto. Cada juego enseña mientras se juega (la primera ronda es guiada) y mide el punto de
 partida de su área; las pocas preguntas necesarias van entre juego y juego, de un toque y con su porqué. Unos 5 minutos.
 Inspirado en lo observable del inicio de Lumosity (capturas en `Proyectos/pantallazos Lomosity/`): jugar pronto, tutorial
-dentro del juego con «Saltar tutorial», tarjeta «X puso a prueba tu Y», preguntas intercaladas y barra de avance. Nada
+dentro del juego con «Saltar tutorial», tarjeta «Acabas de usar tu {capacidad}» (antes «X puso a prueba tu Y»: igual a la de Lumosity), preguntas intercaladas y barra de avance. Nada
 copiado: nombres, textos, arte y juegos propios.
 
 ## Recorrido
@@ -19,13 +19,13 @@ copiado: nombres, textos, arte y juegos propios.
 2. **¿Cómo te llamo?** (opcional).
 3. **Rango de edad**: ajusta ritmo y tamaño (no la dificultad).
 4. **Juego 1 · Memoria**: Secuencia Lumínica renovada (ver «Juegos del inicio»). Tarjeta de entrada con Nubi maestra →
-   ronda guiada → rondas que miden → tarjeta «Secuencia Lumínica puso a prueba tu memoria de trabajo» con el primer dato en
+   ronda guiada → rondas que miden → tarjeta «Acabas de usar tu memoria de trabajo» con el primer dato en
    palabras y una línea de para qué sirve esa capacidad en la vida diaria.
 5. **¿Qué te gustaría entrenar?** (hasta 3 áreas).
 6. **Nubi: un dato** («poco y seguido rinde más»: práctica distribuida; sin promesas de mejora).
 7. **Juego 2 · Atención**: Freno de Emergencia.
-8. **¿Cómo prefieres que te anime?** Celebrando cada logro / diciéndome las cosas claras: cambia el tono de los mensajes
-   de Nubi (resultados y recordatorios). Se cambia en Ajustes.
+8. **Al terminar cada juego, ¿qué te sirve más ver primero?** «Lo que avancé» / «Un consejo para la próxima» (3-oct, tarea 21c; antes
+   «¿Cómo prefieres que te anime?», demasiado parecida a la de Lumosity): cambia el ORDEN de la pantalla de resultado, no lo que se muestra. Se cambia en Ajustes.
 9. **(nuevo) ¿Te cuesta distinguir algunos colores?** Sí / No / No sé. Con «sí», los juegos que dependen del color usan su
    paleta segura y Tinta o Palabra se marca para revisar (ver «Accesibilidad»). Se cambia en Ajustes.
 10. **Juego 3 · Razonamiento**: Aterrizaje Lunar.
@@ -51,7 +51,7 @@ se explica cuando aparece por primera vez).
   - «Saltar tutorial» siempre visible durante la ronda guiada;
   - la ronda guiada NO cuenta: no suma puntos, no mueve dificultad, avance ni rachas, no se guarda como partida;
   - después de la primera vez, queda en pausa → «Cómo se juega».
-- **Cada juego cierra con «puso a prueba tu…»**: qué entrenó + el primer dato en palabras + una línea de para qué sirve.
+- **Cada juego cierra con «Acabas de usar tu…»**: qué entrenó + el primer dato en palabras + una línea de para qué sirve.
   Texto propio, basado en `docs/medidas-juegos-estrella.md`.
 - **Una pregunta por pantalla, un toque, con su porqué.**
 - **Honesto**: sin promesas de mejora, sin comparar con otras personas mientras no haya datos propios, sin «puntaje
@@ -105,8 +105,12 @@ Nueva preferencia = decidir su respaldo en `BackupRulesTest` (es progreso de con
 
 **Preferencias**
 - `first_flight` (nueva, `FlightStore`): el recorrido en curso como JSON. Estado PASAJERO: va a `transient` en `BackupRulesTest` (no al respaldo).
-- `coach_tone` y `color_vision`: dentro de `profile_extra`, que YA va al respaldo (son configuración de la persona). Valores por defecto: celebrar y «no sé».
-  Editables en Ajustes. `coach_tone` ya cambia las frases de veredicto (`ResultPhrases.feedback`) y el texto del recordatorio (`buildReminder`, 2 variantes, sin culpa);
+- `result_focus` (avance / consejo) y `color_vision`: dentro de `profile_extra`, que YA va al respaldo (son configuración de la persona). Valores por defecto: avance y «no sé».
+  Editables en Ajustes. `result_focus` reemplazó a `coach_tone` el 3-oct (tarea 21c): se MIGRA una sola vez (celebrar → avance, claro → consejo) y la clave vieja se borra
+  (`ResultFocus.migrate`, `NeuroVidaRepository.loadResultFocus`). Cambia el orden de `GameResultScreen`: el bloque «Un consejo para la próxima» (`data/ResultAdvice.kt`: el «Truco: …» de
+  cada medida, que ya no se repite dentro de ella) va antes o después de las medidas y de lo que subió; los juegos sin consejo propio (Freno, Satélites, Radar…) se ven igual con las dos
+  opciones. Con consejo hoy: Rastro de luz, Aterrizaje, Meteoros, ¿Verdad o disparate?, La estrella intrusa, Rumbo a Casa y Correo Estelar (Bitácora y Cosecha lo llevan dentro de su texto).
+  Nubi vuelve a UN solo tono, cálido y sin culpa, en veredictos (`ResultPhrases.feedback`) y recordatorios (`buildReminder`): se quitaron las variantes de tono.
   `color_vision` por ahora solo se guarda.
 - `education`: ya no se pregunta; se edita en Perfil (opcional) y conserva el valor de quien ya lo tenía.
 

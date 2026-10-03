@@ -20,59 +20,49 @@ class ReminderContentTest {
   @Test
   fun `sesion a medias dice cuanto falta`() {
     val m = buildReminder(input(playedToday = true, completed = 2))!!
-    assertEquals("Ricardo, ya casi", m.title)
-    assertTrue(m.text.startsWith("Te falta 1 juego"))
+    assertEquals("Ricardo, ¡ya casi!", m.title)
+    assertTrue(m.text.contains("Te falta 1 juego"))
   }
 
   @Test
   fun `racha en juego y medalla al llegar a un hito`() {
     val normal = buildReminder(input(streak = 4))!!
-    assertEquals("Ricardo, tu racha de 4 días te espera", normal.title)
+    assertEquals("Ricardo, ¡tu racha de 4 días sigue viva!", normal.title)
     assertTrue(normal.text.contains("5 días"))
     val milestone = buildReminder(input(streak = 6))!!
-    assertEquals("Hoy llegas a 7 días seguidos", milestone.title)
+    assertEquals("¡Hoy llegas a 7 días seguidos!", milestone.title)
   }
 
   @Test
   fun `vuelve sin reproches despues de varios dias`() {
     val m = buildReminder(input(gap = 5))!!
-    assertEquals("Ricardo, tu camino sigue aquí", m.title)
+    assertEquals("Ricardo, ¡qué bueno verte por aquí!", m.title)
+    val t = (m.title + " " + m.text).lowercase()
+    listOf("falt", "dejaste", "abandon", "perdiste", "no jugaste", "hace días").forEach { assertFalse(t, t.contains(it)) }
   }
 
   @Test
   fun `meta semanal aparece si falta y sin nombre no queda coma`() {
     val m = buildReminder(input(name = "", week = 1, goal = 4, day = 0))!!
-    assertEquals("Tu camino de hoy está listo", m.title)
+    assertEquals("¡Tu camino de hoy está listo!", m.title)
     assertTrue(m.text.contains("Llevas 1 de 4 días esta semana."))
     val done = buildReminder(input(week = 4, goal = 4, day = 0))!!
     assertFalse(done.text.contains("Llevas"))
   }
 
   @Test
-  fun `sin promesas de salud`() {
+  fun `hay un solo tono y no depende de ninguna preferencia`() {
+    // Nubi vuelve a un solo tono (el 3-oct se quitaron las variantes): el mismo mensaje para la misma situación.
+    assertEquals(buildReminder(input(streak = 4)), buildReminder(input(streak = 4)))
+  }
+
+  @Test
+  fun `sin promesas de salud ni culpa`() {
     val all = (0 until 6).mapNotNull { buildReminder(input(day = it)) } +
       listOfNotNull(buildReminder(input(streak = 3)), buildReminder(input(gap = 9)), buildReminder(input(playedToday = true, completed = 1)))
     all.forEach { m ->
       val t = (m.title + " " + m.text).lowercase()
-      listOf("neurona", "cerebro", "reserva cognitiva", "salud", "deterioro").forEach { assertFalse(t, t.contains(it)) }
+      listOf("neurona", "cerebro", "reserva cognitiva", "salud", "deterioro", "perdiste", "no jugaste").forEach { assertFalse(t, t.contains(it)) }
     }
-  }
-
-  @Test
-  fun `el tono celebrar cambia cada mensaje y ninguno lleva culpa ni promesas de salud`() {
-    fun celebrate(i: ReminderInput) = i.copy(tone = com.example.data.CoachTone.CELEBRAR)
-    val inputs = listOf(
-      input(playedToday = true, completed = 2), input(streak = 4), input(streak = 6), input(gap = 9),
-      input(day = 0), input(day = 1), input(day = 2)
-    )
-    for (i in inputs) {
-      val claro = buildReminder(i)!!
-      val celebrar = buildReminder(celebrate(i))!!
-      assertTrue("la variante celebrar debe ser distinta: ${claro.title}", claro != celebrar)
-      val t = (celebrar.title + " " + celebrar.text).lowercase()
-      listOf("neurona", "cerebro", "salud", "deterioro", "perdiste", "faltó a", "no jugaste", "abandon").forEach { assertFalse(t, t.contains(it)) }
-    }
-    assertEquals("Ricardo, ¡ya casi!", buildReminder(celebrate(input(playedToday = true, completed = 2)))!!.title)
-    assertNull(buildReminder(celebrate(input(playedToday = true, completed = 3))))
   }
 }

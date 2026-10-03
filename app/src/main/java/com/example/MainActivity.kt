@@ -139,7 +139,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val achievementQueue by viewModel.achievementQueue.collectAsState()
   val achievementUnlocks by viewModel.achievementUnlocks.collectAsState()
   val sessionSummary by viewModel.sessionSummary.collectAsState()
-  val coachTone by viewModel.coachTone.collectAsState()
+  val resultFocus by viewModel.resultFocus.collectAsState()
   val topPanel by viewModel.topPanel.collectAsState()
   val lang = com.example.ui.i18n.LocalAppLanguage.current
   // Ventanas abiertas sobre una pestaña (la de un área, un detalle): mientras haya alguna, el dedo no cambia de
@@ -266,7 +266,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             rank = gameRanks.firstOrNull { it.gameId == result.gameId },
             modeNote = modeNote,
             atlas = atlas,
-            coachTone = coachTone,
+            resultFocus = resultFocus,
             onPlayAgain = {
               viewModel.launchGame(result.gameId, customLevel = result.level, customTimed = result.timed, mode = result.playMode)
             },

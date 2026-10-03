@@ -163,7 +163,7 @@ existía"); una palabra que se va queda anotada ("se fue: brújula"). El toque c
 ## Tutorial guiado, «Cómo se juega» y versión corta del inicio (3-oct, tarea 21a)
 
 - **Tarjeta de Nubi**: «Lluvia de meteoros» · «Toca las palabras que existen. Las inventadas, déjalas caer.» · «Probar una ronda» / «Saltar tutorial».
-- **Ronda guiada** (`MeteorContract.GuidedPlan` = real, real, inventada; caen en 11 s, `GuidedFallSeconds`; palabras de banda 1 de 4 a 6 letras y una inventada obvia del
+- **Ronda guiada** (`MeteorContract.GuidedPlan` = real, real, inventada; caen en 6 s (7,5 s en mayores; antes 11 s), `GuidedFallSeconds`/`GuidedFall(senior)`; palabras de banda 1 de 4 a 6 letras y una inventada obvia del
   léxico; aro sol sobre la palabra real; entre `// <guided>` y `// </guided>`). Avisos de Nubi: «Esta palabra existe: tócala» · «Otra que existe: tócala» · «Esta no existe:
   déjala caer» · «¡Bien! Esa existe» · «¡Bien! Esa no existía: dejarla caer fue lo correcto» · errores sin culpa: «Casi: esa palabra existe. Tócala antes de que llegue
   abajo» / «Casi: esa no existe. Las inventadas se dejan caer» · «¡Así se juega! Ahora sin ayuda». No cuenta para nada ni se guarda (no pasa por `ResolveTap`/`ResolvePass`).
@@ -172,3 +172,31 @@ existía"); una palabra que se va queda anotada ("se fue: brújula"). El toque c
   reales y otras tantas inventadas. Arranque suave (`CreateEngine`: nivel 1 en mayores, 3 en el resto, sin tiempo de reacción). **Primer dato** (app, `data/FirstData.kt`):
   «Reconociste N de M palabras reales.» (suma de `lex_band_hits`/`lex_band_seen`, con ≥ 6 vistas).
 - Pruebas: `MeteorosTutorialTests` (plan, léxico de la ronda guiada, 60 s, ≥ 2 a la vez, arranque suave) y `GuidedTutorialTests`.
+
+## Ajustes tras la prueba de Ricardo (3-oct, tarea 21c)
+
+**Tiempos muertos del inicio** («al inicio es bastante lenta y genera mucha pausa»). Medido en el código (`MeteorContract`, con pruebas EditMode en `MeteorosTutorialTests`):
+
+| Qué | Antes | Ahora |
+|---|---|---|
+| Caída de cada meteoro de la ronda guiada | 11 s | 6 s (mayores 7,5 s) |
+| Pausa tras un acierto, antes del siguiente meteoro guiado | 2,2 s | 0,4 s (`GuidedGapSeconds`) |
+| Pausa tras un error (se alcanza a leer el porqué, sin culpa) | 2,2 s | 1,8 s (`GuidedRetryGapSeconds`) |
+| «¡Así se juega! Ahora sin ayuda» al cerrar | 1,8 s | 1,2 s (`GuidedClosingSeconds`) |
+| **Espera sin hacer nada en la ronda guiada sin errores** (3 pausas + cierre + la inventada cayendo entera) | **19,4 s** | **8,4 s** (9,9 s en mayores) (`GuidedIdleSeconds`) |
+| Versión corta: primer meteoro | al instante (0 s) | al instante (0 s, `AssessmentFirstSpawnSeconds` ≤ 0,5 s) |
+| Versión corta: meteoros en pantalla | 1 al empezar y, al resolverse uno, hasta 1,1 s con el cielo medio vacío | siempre ≥ 2: con menos de 2 el siguiente sale a los 0,25 s (`SpawnGap`) |
+
+La partida normal NO cambia (pausas de siempre: 1,1 s y 0,45 s en lluvia de estrellas; su primer meteoro ya salía al instante y no tiene el tiempo muerto del tutorial). La cuenta regresiva
+3-2-1 es común a todos los juegos y no se tocó.
+
+**Nombres propios entre las inventadas** («Mario» salió como inventada y se tocó: cualquiera lo haría). `tools/lexico/propios.py` (determinista, con `test_propios.py`): ninguna
+inventada puede coincidir —sin tildes ni mayúsculas, con la ñ como n y también en plural— con
+(a) nombres de pila frecuentes (`tools/lexico/propios/nombres-varones.txt`, `nombres-mujeres.txt`: 2.198 distintos), (b) apellidos (`apellidos.txt`: 1.197),
+(c) las entradas con mayúscula inicial de Hunspell es_ES (1.316: los nombres propios del diccionario que ya se usa al construir) y (d) países, capitales, ciudades, marcas y
+personajes muy conocidos (`lugares-y-marcas.txt`: ~1.000). **Fuente: las listas (a), (b) y (d) son PROPIAS, armadas a mano para esta herramienta; no se descargó nada** (no hay
+licencia que atribuir; si Ricardo quiere sumar una lista pública, como los nombres frecuentes del INE de España, hay que decidir su licencia y anotarla aquí y en Ajustes → Licencias).
+La (c) sale del mismo diccionario Hunspell que ya figura en los créditos. `meteoros.py` regenera `meteoros_es.json` y escribe `descartes-propios.txt`.
+Resultado: de 64.665 inventadas «obvias» posibles (auditoría con otra semilla), 60 (0,09 %) eran un nombre propio; en el léxico anterior había 2 (`mario`, `lara`).
+Además se sacaron del banco de palabras reales 9 que se ven como nombres (`nacho`, `puebla`, `pancho`, `amador`, `aquilino`, `escobar`, `olmedo`, `roque`, `rebeca`: `revision-manual.txt`);
+quedan 30 que son nombre Y palabra común (luna, justo, norma, margarita…): son reales y se tocan bien.

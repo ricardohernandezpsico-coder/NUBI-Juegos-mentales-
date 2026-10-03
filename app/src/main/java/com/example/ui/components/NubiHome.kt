@@ -64,7 +64,7 @@ const val NUBI_BODY_FRACTION = 0.65f
 
 enum class NubiPose(@DrawableRes val res: Int) {
   HOLA(R.drawable.nubi_hola), MIRA(R.drawable.nubi_mira), CELEBRA(R.drawable.nubi_celebra),
-  /** Nubi con su bata de científica: las tarjetas «puso a prueba tu…» del inicio. */
+  /** Nubi con su bata de científica: las tarjetas «Acabas de usar tu…» del inicio. */
   CIENTIFICA(R.drawable.nubi_cientifica)
 }
 

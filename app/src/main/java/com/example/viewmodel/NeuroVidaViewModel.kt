@@ -148,15 +148,15 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     return shown
   }
 
-  /** Punto de partida: educación (opcional, se edita en Perfil), metas, cómo le habla Nubi, visión de color y el mapa guardado (null = no hizo la evaluación). */
+  /** Punto de partida: educación (opcional, se edita en Perfil), metas, qué ver primero al terminar un juego, visión de color y el mapa guardado (null = no hizo la evaluación). */
   val education = repository.education
   val goals = repository.goals
   val baseline = repository.baseline
-  val coachTone = repository.coachTone
+  val resultFocus = repository.resultFocus
   val colorVision = repository.colorVision
 
   fun setEducation(education: com.example.data.Education?) = repository.saveEducation(education)
-  fun setCoachTone(tone: com.example.data.CoachTone) = repository.saveCoachTone(tone)
+  fun setResultFocus(focus: com.example.data.ResultFocus) = repository.saveResultFocus(focus)
   fun setColorVision(vision: com.example.data.ColorVision) = repository.saveColorVision(vision)
 
   // ---------- «Primer vuelo con Nubi»: el inicio nuevo (docs/diseno-inicio.md; lógica pura en data/FirstFlight.kt) ----------
@@ -216,9 +216,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     repository.saveGoals(goals)
   }
 
-  fun flightSetTone(tone: com.example.data.CoachTone) {
-    updateFlight { it.copy(tone = tone) }
-    repository.saveCoachTone(tone)
+  fun flightSetFocus(focus: com.example.data.ResultFocus) {
+    updateFlight { it.copy(focus = focus) }
+    repository.saveResultFocus(focus)
   }
 
   fun flightSetColorVision(vision: com.example.data.ColorVision) {

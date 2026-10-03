@@ -244,3 +244,14 @@ venida
 chabacano
 doliente
 minado
+
+# 3-oct (21c): palabras que tambien son un nombre propio y que quien juega puede tomar por tal (se ven como nombres: Nacho, Puebla, Pancho...)
+nacho
+puebla
+pancho
+amador
+aquilino
+escobar
+olmedo
+roque
+rebeca

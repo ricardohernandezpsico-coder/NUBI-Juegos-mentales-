@@ -86,7 +86,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BaselinePlan
-import com.example.data.CoachTone
+import com.example.data.ResultFocus
 import com.example.data.ColorVision
 import com.example.data.FirstFlight
 import com.example.data.FlightCopy
@@ -121,7 +121,7 @@ class FlightActions(
   val onName: (String) -> Unit,
   val onAge: (AgeBand) -> Unit,
   val onGoal: (DomainType) -> Unit,
-  val onTone: (CoachTone) -> Unit,
+  val onFocus: (ResultFocus) -> Unit,
   val onColor: (ColorVision) -> Unit,
   val onDays: (Int) -> Unit,
   val onHour: (Int) -> Unit,
@@ -253,14 +253,14 @@ private fun FlightPage(step: FlightStep, s: FlightState, todayGames: List<String
       canContinue = s.goals.isNotEmpty(),
       onContinue = a.onContinue
     )
-    FlightStep.ANIMO -> QuestionPage(
-      eyebrow = "Para hablarte a tu manera",
-      title = "¿Cómo prefieres que te anime?",
-      options = CoachTone.entries.map { Opt(it.name, it.label, it.example) },
-      selected = setOf(s.tone?.name),
-      onPick = { v -> CoachTone.fromStored(v)?.let(a.onTone) },
-      hint = "Cambia cómo te habla Nubi. Lo puedes cambiar en Ajustes.",
-      canContinue = s.tone != null,
+    FlightStep.ENFOQUE -> QuestionPage(
+      eyebrow = "Para ordenar tus resultados",
+      title = "Al terminar cada juego, ¿qué te sirve más ver primero?",
+      options = ResultFocus.entries.map { Opt(it.name, it.label) },
+      selected = setOf(s.focus?.name),
+      onPick = { v -> ResultFocus.fromStored(v)?.let(a.onFocus) },
+      hint = "Así ordeno lo que te muestro al final. Lo puedes cambiar en Ajustes.",
+      canContinue = s.focus != null,
       onContinue = a.onContinue
     )
     FlightStep.COLOR -> QuestionPage(
@@ -556,7 +556,7 @@ private fun GameIntroPage(index: Int, s: FlightState, a: FlightActions) {
   }
 }
 
-/** Después de cada juego: «X puso a prueba tu Y», el primer dato en palabras y para qué sirve. */
+/** Después de cada juego: «Acabas de usar tu {capacidad}», el primer dato en palabras y para qué sirve. */
 @Composable
 private fun GameCardPage(index: Int, s: FlightState, a: FlightActions) {
   val step = BaselinePlan.steps[index]
@@ -565,7 +565,7 @@ private fun GameCardPage(index: Int, s: FlightState, a: FlightActions) {
   PageFrame(footer = { MainButton("Continuar", onClick = a.onContinue) }) {
     GameStepper(s, now = null)
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiWithHalo(size = 130.dp, pose = NubiPose.CIENTIFICA) }
-    Title("${game?.title ?: step.gameId} puso a prueba tu ${copy.short}.", center = true, size = 26)
+    Title("Acabas de usar tu ${copy.short}", center = true, size = 26)
     Say(s.phrases[step.gameId] ?: FlightCopy.NO_DATA_LINE, center = true)
     Sub(copy.why, center = true)
   }
