@@ -15,6 +15,7 @@ namespace NeuroVida.Games.Shared
     {
         private readonly MonoBehaviour _runner;
         private readonly RectTransform _rect;
+        private readonly CanvasGroup _group;
         private readonly Image _bg;
         private readonly Image _dot;
         private readonly Text _text;
@@ -32,6 +33,9 @@ namespace NeuroVida.Games.Shared
             _rect.anchorMin = new Vector2(0.5f, 0.5f);
             _rect.anchorMax = new Vector2(0.5f, 0.5f);
             _rect.pivot = new Vector2(0.5f, 0.5f);
+            _group = go.AddComponent<CanvasGroup>();
+            _group.interactable = false;
+            _group.blocksRaycasts = false;
 
             _bg = go.AddComponent<Image>();
             _bg.sprite = RoundedRectSprite.Get(64);
@@ -108,6 +112,14 @@ namespace NeuroVida.Games.Shared
 
         private IEnumerator Pop()
         {
+            if (!Motion.Decorative)
+            {
+                // Sin rebote: el texto nuevo ya está puesto; solo entra con un fundido de opacidad.
+                _rect.localScale = Vector3.one;
+                yield return Motion.Fade(_group, 0.35f, 1f);
+                yield break;
+            }
+            _group.alpha = 1f;
             const float seconds = 0.22f;
             float elapsed = 0f;
             while (elapsed < seconds)

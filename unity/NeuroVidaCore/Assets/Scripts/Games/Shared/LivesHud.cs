@@ -83,6 +83,9 @@ namespace NeuroVida.Games.Shared
                     _hearts[i].sprite = full ? HeartSprite.GetFull() : HeartSprite.GetLost();
                     _hearts[i].rectTransform.localScale = Vector3.one;
                     _hearts[i].rectTransform.localRotation = Quaternion.identity;
+                    var c = _hearts[i].color;
+                    c.a = 1f;
+                    _hearts[i].color = c;
                 }
             }
             _initialized = true;
@@ -90,6 +93,15 @@ namespace NeuroVida.Games.Shared
 
         private static IEnumerator AnimateLost(Image heart)
         {
+            if (!Motion.Decorative)
+            {
+                // Sin salto ni tambaleo: el corazón se apaga (pasa a vacío) con un fundido.
+                yield return Motion.Fade(heart, 0.2f, 0.08f);
+                if (heart == null) yield break;
+                heart.sprite = HeartSprite.GetLost();
+                yield return Motion.Fade(heart, 1f, 0.12f);
+                yield break;
+            }
             var rect = heart.rectTransform;
             const float grow = 0.16f;
             const float settle = 0.34f;

@@ -1,6 +1,5 @@
 package com.example.games
 
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -60,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.example.model.GamePlayResult
 import com.example.model.GameRankInfo
 import com.example.model.GameRegistry
+import com.example.ui.components.rememberReduceMotion
 import com.example.model.LevelTier
 import com.example.ui.components.LeagueShield
 import com.example.ui.components.pipCount
@@ -111,9 +111,7 @@ fun GameResultScreen(
     else -> 0
   }
   val context = LocalContext.current
-  val reduceMotion = remember {
-    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-  }
+  val reduceMotion = rememberReduceMotion()
 
   BackHandler(onBack = onContinue)
 

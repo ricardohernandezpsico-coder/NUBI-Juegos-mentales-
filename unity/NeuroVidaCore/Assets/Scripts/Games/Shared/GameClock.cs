@@ -20,8 +20,15 @@ namespace NeuroVida.Games.Shared
         /// <summary>Segundos de juego (sin contar las pausas).</summary>
         public static float Time => (Paused ? s_pausedAt : UnityEngine.Time.unscaledTime) - s_pausedTotal;
 
+        /// <summary>SOLO PARA PRUEBAS EditMode (donde no hay cuadros reales): si es mayor que 0, es la duración de cada cuadro.
+        /// Dejarlo en 0 al terminar la prueba.</summary>
+        public static float SimulatedDeltaTime;
+
+        /// <summary>Duración del cuadro con el reloj REAL (no se detiene con la pausa): para cierres y fondos que siguen vivos.</summary>
+        public static float RealDeltaTime => SimulatedDeltaTime > 0f ? SimulatedDeltaTime : UnityEngine.Time.unscaledDeltaTime;
+
         /// <summary>Duración del cuadro en segundos de juego (0 en pausa).</summary>
-        public static float DeltaTime => Paused ? 0f : UnityEngine.Time.unscaledDeltaTime;
+        public static float DeltaTime => Paused ? 0f : (SimulatedDeltaTime > 0f ? SimulatedDeltaTime : UnityEngine.Time.unscaledDeltaTime);
 
         public static void Pause()
         {

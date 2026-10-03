@@ -148,8 +148,9 @@ namespace NeuroVida.Games.Shared
         {
             _infoChip.gameObject.SetActive(true);
             _targetPoints = points;
-            if (_shownPoints < 0 || points < _shownPoints)
+            if (_shownPoints < 0 || points < _shownPoints || !Motion.Decorative) // sin animaciones: el número final de una vez
             {
+                if (_countUp != null) { _runner.StopCoroutine(_countUp); _countUp = null; }
                 _shownPoints = points;
                 _infoText.text = FormatPoints(points);
                 LayoutChips();
@@ -212,8 +213,19 @@ namespace NeuroVida.Games.Shared
 
         private IEnumerator LevelUpGlow()
         {
-            _runner.StartCoroutine(PopRect(_levelChip, 1.25f, 0.32f));
+            _runner.StartCoroutine(PopRect(_levelChip, 1.25f, 0.32f)); // sin animaciones: no hace nada (ver UiKit.PopRect)
             var baseColor = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
+            if (!Motion.Decorative)
+            {
+                // Sin salto ni brillo que va y viene: el chip queda resaltado un momento (estático) y vuelve con un fundido.
+                _levelBg.color = Color.Lerp(baseColor, NeuroStyle.Sun, 0.85f);
+                _levelText.color = NeuroStyle.Ink;
+                float held = 0f;
+                while (held < 0.45f) { held += GameClock.DeltaTime; yield return null; }
+                _runner.StartCoroutine(Motion.ColorTo(_levelText, NeuroStyle.Sky));
+                yield return Motion.ColorTo(_levelBg, baseColor);
+                yield break;
+            }
             float t = 0f;
             const float seconds = 0.6f;
             while (t < seconds)

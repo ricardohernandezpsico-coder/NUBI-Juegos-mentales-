@@ -89,12 +89,32 @@ namespace NeuroVida.Games.Shared
         /// <summary>Anima el cierre completo (≈1,2 s) con el reloj real.</summary>
         public IEnumerator Play(MonoBehaviour runner)
         {
+            if (!Motion.Decorative)
+            {
+                // Sin rebote, chispas ni hiperespacio: el cielo, "¡Listo!" y el subtítulo aparecen con un fundido de opacidad.
+                // La duración total (≈1,2 s) queda igual: es el aviso de que viene el resultado.
+                var titleText = _title.GetComponent<Text>();
+                _title.localScale = Vector3.one;
+                float elapsed = 0f;
+                const float calmTotal = 1.2f;
+                while (elapsed < calmTotal)
+                {
+                    elapsed += GameClock.RealDeltaTime;
+                    _group.alpha = Mathf.Clamp01(elapsed / Motion.FadeSeconds);
+                    var tc = titleText.color;
+                    tc.a = Mathf.Clamp01((elapsed - 0.05f) / Motion.FadeSeconds);
+                    titleText.color = tc;
+                    _subGroup.alpha = Mathf.Clamp01((elapsed - 0.35f) / Motion.FadeSeconds);
+                    yield return null;
+                }
+                yield break;
+            }
             runner.StartCoroutine(UiFx.SparkBurst(_fx, Vector2.zero, NeuroStyle.Sun, 22, 520f, 60f, 0.9f));
             float t = 0f;
             const float total = 1.2f;
             while (t < total)
             {
-                t += Time.unscaledDeltaTime;
+                t += GameClock.RealDeltaTime;
                 // Cielo: entra rápido (0,22 s) para tapar el juego.
                 _group.alpha = Mathf.Clamp01(t / 0.22f);
                 // "¡Listo!": rebote de 0,4 s, empieza con el cielo.

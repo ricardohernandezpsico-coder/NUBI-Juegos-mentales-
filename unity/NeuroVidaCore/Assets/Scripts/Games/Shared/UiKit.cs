@@ -85,6 +85,11 @@ namespace NeuroVida.Games.Shared
 
         public static IEnumerator PopRect(RectTransform rect, float peak, float seconds)
         {
+            if (!Motion.Decorative) // "quitar animaciones": sin salto, el rect se queda en su tamaño
+            {
+                if (rect != null) rect.localScale = Vector3.one;
+                yield break;
+            }
             float t = 0f;
             while (t < seconds)
             {
@@ -100,6 +105,11 @@ namespace NeuroVida.Games.Shared
 
         public static IEnumerator PopIn(RectTransform rect, float seconds)
         {
+            if (!Motion.Decorative) // aparece ya a su tamaño final, sin crecer ni rebotar
+            {
+                if (rect != null) rect.localScale = Vector3.one;
+                yield break;
+            }
             float t = 0f;
             while (t < seconds)
             {

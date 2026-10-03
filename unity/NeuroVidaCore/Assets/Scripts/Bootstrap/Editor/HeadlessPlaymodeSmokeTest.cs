@@ -29,6 +29,10 @@ namespace NeuroVida.Bridge.EditorTools
         private static bool _previousDomainReloadDisabled;
         private static EnterPlayModeOptions _previousOptions;
 
+        /// <summary>Con la variable de entorno <c>NUBI_REDUCE_MOTION=1</c> el smoke corre con "quitar animaciones" activo
+        /// (la config del juego lleva <c>reduce_motion = true</c>, como cuando el teléfono tiene la escala de animación en 0).</summary>
+        private static bool ReduceMotionRequested => Environment.GetEnvironmentVariable("NUBI_REDUCE_MOTION") == "1";
+
         public static void Run() => RunGame(null, 6f);
 
         /// <summary>Mismo smoke test pero con "Tinta o Palabra" (Stroop) como juego.</summary>
@@ -175,6 +179,7 @@ namespace NeuroVida.Bridge.EditorTools
             _enteredPlayAt = 0;
             _listPlaying = true;
             EditorPlaytestBootstrap.GameIdOverride = _current.Id;
+            EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
             EditorApplication.EnterPlaymode();
         }
 
@@ -189,6 +194,7 @@ namespace NeuroVida.Bridge.EditorTools
 
                 _listPlaying = false;
                 EditorApplication.ExitPlaymode();
+                CheckReduceMotionArrived();
                 var ok = _errorCount == 0;
                 if (ok) _listOk++; else _listAnyFailed = true;
                 Debug.Log(ok
@@ -212,6 +218,7 @@ namespace NeuroVida.Bridge.EditorTools
         {
             RunSeconds = seconds;
             EditorPlaytestBootstrap.GameIdOverride = gameId;
+            EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
             EditorSceneManager.OpenScene(ScenePath);
 
             // Entrar a Play dispara por defecto un domain reload -- eso borra estado
@@ -229,6 +236,14 @@ namespace NeuroVida.Bridge.EditorTools
             EditorApplication.update += OnUpdate;
             _isRunning = true;
             EditorApplication.EnterPlaymode();
+        }
+
+        /// <summary>Con <c>NUBI_REDUCE_MOTION=1</c>, comprueba que la bandera llegó de verdad al juego (si no, el smoke no probaría nada).</summary>
+        private static void CheckReduceMotionArrived()
+        {
+            if (!ReduceMotionRequested || NeuroVida.Games.Shared.GameFeel.ReduceMotion) return;
+            _errorCount++;
+            Debug.Log("[SmokeTest] Error capturado: NUBI_REDUCE_MOTION=1 pero GameFeel.ReduceMotion quedó en false");
         }
 
         private static void RestoreDomainReloadSettings()
@@ -255,6 +270,7 @@ namespace NeuroVida.Bridge.EditorTools
             if (EditorApplication.timeSinceStartup - _enteredPlayAt < RunSeconds) return;
 
             _isRunning = false;
+            CheckReduceMotionArrived();
             EditorApplication.update -= OnUpdate;
             Application.logMessageReceived -= OnLog;
             EditorApplication.ExitPlaymode();

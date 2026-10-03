@@ -68,9 +68,15 @@ namespace NeuroVida.Games.Shared
             _audioSource.PlayOneShot(clip);
         }
 
-        /// <summary>Destello de pantalla completa que se desvanece (acierto/error).</summary>
+        /// <summary>Destello de pantalla completa que se desvanece (acierto/error). Con "quitar animaciones" es solo un
+        /// tinte suave (alfa ≤ 0,15) que se desvanece en ≤ 0,2 s: acierto y error se siguen viendo por su color y forma.</summary>
         protected IEnumerator Flash(Color color, float maxAlpha, float seconds)
         {
+            if (!Motion.Decorative)
+            {
+                maxAlpha = Mathf.Min(maxAlpha, 0.15f);
+                seconds = Mathf.Min(seconds, 0.2f);
+            }
             float t = 0f;
             while (t < seconds)
             {
@@ -86,6 +92,16 @@ namespace NeuroVida.Games.Shared
         protected IEnumerator AnimateResult(int score)
         {
             var scoreText = _resultRoot.Find("Score").GetComponent<Text>();
+            if (!Motion.Decorative)
+            {
+                // Sin rebote ni cuenta animada: el panel aparece con un fundido y el puntaje ya es el final.
+                _resultRoot.localScale = Vector3.one;
+                scoreText.text = score.ToString();
+                var group = _resultRoot.GetComponent<CanvasGroup>();
+                if (group == null) group = _resultRoot.gameObject.AddComponent<CanvasGroup>();
+                yield return Motion.Fade(group, 0f, 1f);
+                yield break;
+            }
             float t = 0f;
             const float seconds = 0.9f;
             while (t < seconds)

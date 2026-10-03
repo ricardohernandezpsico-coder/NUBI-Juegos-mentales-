@@ -62,13 +62,18 @@ fun CosmosBackground(modifier: Modifier = Modifier) {
       )
     }
   }
-  val transition = rememberInfiniteTransition(label = "cosmos")
-  val t by transition.animateFloat(
-    initialValue = 0f,
-    targetValue = (2 * PI).toFloat(),
-    animationSpec = infiniteRepeatable(tween(24000, easing = LinearEasing), RepeatMode.Restart),
-    label = "cosmosTime"
-  )
+  // "Quitar animaciones": cielo quieto (sin titileo, olas ni paralaje al deslizar); ver ReduceMotion.kt
+  val reduceMotion = rememberReduceMotion()
+  val t = if (reduceMotion) 0f else {
+    val transition = rememberInfiniteTransition(label = "cosmos")
+    val v by transition.animateFloat(
+      initialValue = 0f,
+      targetValue = (2 * PI).toFloat(),
+      animationSpec = infiniteRepeatable(tween(24000, easing = LinearEasing), RepeatMode.Restart),
+      label = "cosmosTime"
+    )
+    v
+  }
   // [ultimo desplazamiento, estela suavizada]
   val trail = remember { floatArrayOf(0f, 0f, 0f) }
 
@@ -76,7 +81,7 @@ fun CosmosBackground(modifier: Modifier = Modifier) {
     val w = size.width
     val h = size.height
     val time = t
-    val scroll = CosmosScroll.offset
+    val scroll = if (reduceMotion) 0f else CosmosScroll.offset
     // La primera lectura solo fija la posicion inicial (evita una estela falsa al abrir la pantalla)
     if (trail[2] == 0f) { trail[0] = scroll; trail[2] = 1f }
     val delta = scroll - trail[0]

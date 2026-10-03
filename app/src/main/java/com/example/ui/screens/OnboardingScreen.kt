@@ -87,6 +87,7 @@ import com.example.model.RankTier
 import com.example.ui.components.AchievementMedal
 import com.example.ui.components.CosmosBackground
 import com.example.ui.components.GameIcon
+import com.example.ui.components.rememberReduceMotion
 import com.example.ui.components.NubiWithHalo
 import com.example.ui.components.LeagueShield
 import com.example.ui.theme.Clay
@@ -195,11 +196,14 @@ fun OnboardingScreen(
         Spacer(Modifier.size(44.dp))
       }
 
+      val reduceMotion = rememberReduceMotion()
       AnimatedContent(
         targetState = page,
         transitionSpec = {
           val dir = if (forward) 1 else -1
-          (slideInHorizontally { it / 4 * dir } + fadeIn(tween(260))) togetherWith
+          // "Quitar animaciones": sin deslizamiento, solo fundido corto
+          if (reduceMotion) fadeIn(tween(160)) togetherWith fadeOut(tween(160))
+          else (slideInHorizontally { it / 4 * dir } + fadeIn(tween(260))) togetherWith
             (slideOutHorizontally { -it / 4 * dir } + fadeOut(tween(200)))
         },
         modifier = Modifier.weight(1f).fillMaxWidth(),

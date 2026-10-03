@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import android.provider.Settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -33,7 +32,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -72,10 +70,7 @@ fun GameLoadingScreen(
   assessmentStep: Int = 0,
   assessmentTotal: Int = 0
 ) {
-  val context = LocalContext.current
-  val reduceMotion = remember {
-    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-  }
+  val reduceMotion = rememberReduceMotion()
   val appear = remember { Animatable(if (reduceMotion || fadeInDelayMs <= 0L) 1f else 0f) }
   LaunchedEffect(Unit) {
     if (appear.value >= 1f) return@LaunchedEffect

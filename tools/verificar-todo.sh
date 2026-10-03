@@ -13,6 +13,8 @@
 #   --filtro-tests R   EditMode corre solo las pruebas cuyo nombre case con la regex R (se pasa a -testFilter de Unity).
 #   --solo-app         salta TODAS las etapas de Unity (escena, EditMode, smoke y export); corre Gradle e instala si va --instalar.
 #                      Avisa si hay cambios bajo unity/ posteriores al ultimo export, para no empaquetar una exportacion vieja sin saberlo.
+#   --sin-animaciones  smoke de los juegos pedidos (o los 23) con "quitar animaciones" ACTIVO (NUBI_REDUCE_MOTION=1: la config del juego lleva
+#                      reduce_motion=true). Corre solo escena piloto + smoke; no reexporta ni toca Gradle ni instala (el APK es el mismo).
 #   --instalar         al final instala el APK en el telefono (DEVICE, por defecto el de Ricardo).
 #
 # El smoke corre en UN solo proceso de Unity (HeadlessPlaymodeSmokeTest.RunList). Si encadenarlos falla en algun juego, ese juego se
@@ -26,17 +28,25 @@
 # Solo funciona en el PC de Ricardo: una sesion en la nube no tiene Unity ni el SDK.
 set -u
 
-INSTALAR=0; JUEGOS=""; FILTRO=""; SOLO_APP=0
+INSTALAR=0; JUEGOS=""; FILTRO=""; SOLO_APP=0; SIN_ANIM=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --instalar) INSTALAR=1 ;;
     --juegos) JUEGOS="${2:-}"; shift ;;
     --filtro-tests) FILTRO="${2:-}"; shift ;;
     --solo-app) SOLO_APP=1 ;;
+    --sin-animaciones) SIN_ANIM=1 ;;
     *) echo "Opcion desconocida: $1"; sed -n 2,3p "$0"; exit 2 ;;
   esac
   shift
 done
+
+  if [ "$SIN_ANIM" = 1 ]; then
+  [ "$SOLO_APP" = 1 ] && { echo "--sin-animaciones no se combina con --solo-app (no hay nada de Unity que correr)"; exit 2; }
+  export NUBI_REDUCE_MOTION=1   # lo lee HeadlessPlaymodeSmokeTest: la config de cada juego lleva reduce_motion=true
+else
+  unset NUBI_REDUCE_MOTION
+fi
 
 REPO="$(git rev-parse --show-toplevel)"
 UNITY="${UNITY:-/c/Program Files/Unity/Hub/Editor/6000.0.84f1/Editor/Unity.exe}"
@@ -46,6 +56,7 @@ EXPORT_DIR="$REPO/unity/AndroidExport"
 export JAVA_HOME="${JAVA_HOME:-/c/Users/RURAL7/AppData/Local/Temurin21/jdk-21.0.12.1+1}"
 export PATH="$JAVA_HOME/bin:$PATH:/c/Users/RURAL7/AppData/Local/Android/Sdk/platform-tools"
 DEVICE="${DEVICE:-ZY22LPRRWS}"   # telefono de Ricardo (adb devices)
+SMOKE_LBL="3 Smoke"; [ "$SIN_ANIM" = 1 ] && SMOKE_LBL="3 Smoke (sin animaciones)"
 mkdir -p "$RESULTS"
 T0=$SECONDS
 
@@ -64,6 +75,7 @@ if [ "$SOLO_APP" = 0 ]; then
   [ $? -eq 0 ] || fallo "1 Escena piloto" "no se pudo recrear" "$RESULTS/v-1-scene.log"
   linea "1 Escena piloto" "OK" "$((SECONDS - T))"
 
+  if [ "$SIN_ANIM" = 0 ]; then   # con --sin-animaciones solo se repite el smoke (EditMode, export y Gradle no cambian)
   T=$SECONDS
   ARGS=(-batchmode -nographics -projectPath "$PROJ" -runTests -testPlatform EditMode -testResults "$RESULTS/v-2-tests.xml" -logFile "$RESULTS/v-2-tests.log")
   [ -n "$FILTRO" ] && ARGS+=(-testFilter "$FILTRO")
@@ -76,6 +88,7 @@ if [ "$SOLO_APP" = 0 ]; then
     fallo "2 EditMode${FILTRO:+ (filtro)}" "${RES:-sin resultados}" "$RESULTS/v-2-tests.log"
   fi
   linea "2 EditMode${FILTRO:+ (filtro)}" "OK $TOTAL pruebas, 0 fallos" "$((SECONDS - T))"
+fi
 
   # --- smoke: UN solo Unity para todos los juegos pedidos (o los 23)
   T=$SECONDS
@@ -96,11 +109,15 @@ if [ "$SOLO_APP" = 0 ]; then
     done
     if [ -n "$MALOS" ]; then
       G1="$(echo $MALOS | cut -d' ' -f1)"
-      fallo "3 Smoke" "arranque fallido en:$MALOS" "$RESULTS/v-3-$G1.log"
+      fallo "$SMOKE_LBL" "arranque fallido en:$MALOS" "$RESULTS/v-3-$G1.log"
     fi
-    linea "3 Smoke" "OK (fallos del encadenado resueltos aislados: $(echo $FALLADOS | tr ' ' ','))" "$((SECONDS - T))"
+    linea "$SMOKE_LBL" "OK (fallos del encadenado resueltos aislados: $(echo $FALLADOS | tr ' ' ','))" "$((SECONDS - T))"
   else
-    linea "3 Smoke" "OK $NOK juegos" "$((SECONDS - T))"
+    linea "$SMOKE_LBL" "OK $NOK juegos" "$((SECONDS - T))"
+  fi
+
+  if [ "$SIN_ANIM" = 1 ]; then
+    echo "=== TODO OK, sin animaciones (total $((SECONDS - T0))s) ==="; exit 0
   fi
 
   T=$SECONDS

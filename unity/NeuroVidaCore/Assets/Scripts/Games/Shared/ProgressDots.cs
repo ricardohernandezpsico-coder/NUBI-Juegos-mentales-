@@ -66,7 +66,14 @@ namespace NeuroVida.Games.Shared
         public void Mark(int index, bool correct)
         {
             if (index < 0 || index >= _dots.Count) return;
-            _dots[index].color = correct ? Good : Bad;
+            var target = correct ? Good : Bad;
+            if (!Motion.Decorative)
+            {
+                // Sin "pop": el punto pasa a su color final con un fundido corto (verde/rojo no es lo único: ver juego).
+                _runner.StartCoroutine(Motion.ColorTo(_dots[index], target));
+                return;
+            }
+            _dots[index].color = target;
             _runner.StartCoroutine(Pop(_dots[index].rectTransform));
         }
 

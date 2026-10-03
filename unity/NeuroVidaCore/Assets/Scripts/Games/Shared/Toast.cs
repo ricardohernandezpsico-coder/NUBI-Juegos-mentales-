@@ -161,6 +161,17 @@ namespace NeuroVida.Games.Shared
 
         private IEnumerator Run(float hold)
         {
+            if (!Motion.Decorative)
+            {
+                // "Quitar animaciones": sin caída ni rebote; solo aparece y se va con un fundido de opacidad.
+                _rect.anchoredPosition = _basePosition;
+                yield return Motion.Fade(_group, 0f, 1f);
+                yield return new WaitForSecondsRealtime(hold);
+                yield return Motion.Fade(_group, 1f, 0f);
+                _rect.gameObject.SetActive(false);
+                yield break;
+            }
+
             const float inSeconds = 0.30f;
             const float outSeconds = 0.30f;
             float drop = 46f * _u;

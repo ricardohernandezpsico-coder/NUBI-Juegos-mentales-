@@ -147,7 +147,7 @@ namespace NeuroVida.Games.Shared
                 t += Time.unscaledDeltaTime; // reloj real: el de juego está congelado
                 float k = Mathf.Clamp01(t / seconds);
                 _group.alpha = k;
-                _panel.localScale = Vector3.one * Mathf.LerpUnclamped(0.85f, 1f, UiFx.EaseOutBack(k));
+                _panel.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.85f, 1f, UiFx.EaseOutBack(k)) : 1f); // sin animaciones: solo fundido
                 yield return null;
             }
             _group.alpha = 1f;

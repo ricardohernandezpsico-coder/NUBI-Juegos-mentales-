@@ -4,6 +4,7 @@
     "references": [
         "NeuroVida.Games",
         "NeuroVida.Contracts",
+        "UnityEngine.UI",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

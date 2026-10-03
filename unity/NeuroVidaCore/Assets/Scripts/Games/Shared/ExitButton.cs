@@ -99,6 +99,7 @@ namespace NeuroVida.Games.Shared
             while (t < delay) { t += GameClock.DeltaTime; yield return null; }
             t = 0f;
             const float seconds = 0.3f;
+            if (!Motion.Decorative) { _rect.localScale = Vector3.one; yield break; } // sin rebote: aparece ya a su tamaño
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;

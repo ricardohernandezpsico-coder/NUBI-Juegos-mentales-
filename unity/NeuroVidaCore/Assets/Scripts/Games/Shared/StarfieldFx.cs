@@ -9,6 +9,8 @@ namespace NeuroVida.Games.Shared
     /// viajara hacia ellas. <see cref="Warp"/> (0..1) controla la velocidad: en 0 derivan despacio y titilan; al
     /// subir se estiran en estelas radiales ("hiperespacio"), que es como la cuenta regresiva arranca el juego.
     /// Se agrega a un RectTransform que ocupa la pantalla; solo corre mientras su GameObject está activo.
+    /// Con "quitar animaciones" (<see cref="Motion.Decorative"/> = false) el cielo se dibuja UNA vez en su estado de
+    /// reposo (estrellas en su lugar de casa, sin estela, con su alfa base) y no se vuelve a actualizar.
     /// </summary>
     public sealed class StarfieldFx : MonoBehaviour
     {
@@ -27,7 +29,10 @@ namespace NeuroVida.Games.Shared
         private float[] _phase;
         private float[] _baseAlpha;
         private float[] _baseSize;
+        private float[] _homeDist;
+        private Vector2[] _homeDir;
         private System.Random _rng;
+        private Vector2 _restSize = new Vector2(-1f, -1f); // tamaño con el que se dibujó el reposo (-1 = no dibujado)
 
         public void Build(RectTransform area, int count, float starSize, int seed = 11)
         {
@@ -41,6 +46,8 @@ namespace NeuroVida.Games.Shared
             _phase = new float[count];
             _baseAlpha = new float[count];
             _baseSize = new float[count];
+            _homeDist = new float[count];
+            _homeDir = new Vector2[count];
             for (int i = 0; i < count; i++)
             {
                 var go = new GameObject("Star");
@@ -58,6 +65,8 @@ namespace NeuroVida.Games.Shared
                 _baseSize[i] = starSize * (0.45f + (float)_rng.NextDouble() * 0.75f);
                 _baseAlpha[i] = 0.45f + (float)_rng.NextDouble() * 0.55f;
                 Respawn(i, true);
+                _homeDist[i] = _dist[i];
+                _homeDir[i] = _dir[i];
             }
         }
 
@@ -70,10 +79,18 @@ namespace NeuroVida.Games.Shared
             _phase[i] = (float)_rng.NextDouble() * Mathf.PI * 2f;
         }
 
-        private void Update()
+        private void Update() => Step(Time.unscaledDeltaTime);
+
+        /// <summary>Un cuadro de <paramref name="dt"/> segundos (público para las pruebas EditMode, que no tienen cuadros).</summary>
+        public void Step(float dt)
         {
             if (_stars == null) return;
-            float dt = Time.unscaledDeltaTime;
+            if (!Motion.Decorative)
+            {
+                DrawRest();
+                return;
+            }
+            _restSize = new Vector2(-1f, -1f); // al volver el movimiento, el reposo se redibuja la próxima vez
             Vector2 size = _area.rect.size;
             Vector2 vp = new Vector2(VanishingPoint.x * size.x, VanishingPoint.y * size.y);
             float reach = size.magnitude * 0.6f;
@@ -102,6 +119,31 @@ namespace NeuroVida.Games.Shared
                 float fadeIn = Mathf.Clamp01(d / 0.12f);
                 var c = _images[i].color;
                 c.a = _baseAlpha[i] * twinkle * fadeIn;
+                _images[i].color = c;
+            }
+        }
+
+        /// <summary>Reposo: cada estrella en su lugar de casa, sin estela, sin titileo. Solo se dibuja otra vez si cambia el
+        /// tamaño del área (la primera vez el lienzo puede no estar medido todavía).</summary>
+        private void DrawRest()
+        {
+            Vector2 size = _area.rect.size;
+            if (size == _restSize) return;
+            _restSize = size;
+            Vector2 vp = new Vector2(VanishingPoint.x * size.x, VanishingPoint.y * size.y);
+            float reach = size.magnitude * 0.6f;
+            for (int i = 0; i < _stars.Length; i++)
+            {
+                _dist[i] = _homeDist[i];
+                _dir[i] = _homeDir[i];
+                float d = _homeDist[i];
+                float s = _baseSize[i] * (0.35f + d * 1.3f);
+                var rect = _stars[i];
+                rect.anchoredPosition = vp + _homeDir[i] * d * reach;
+                rect.sizeDelta = new Vector2(s, s);
+                rect.localRotation = Quaternion.identity;
+                var c = _images[i].color;
+                c.a = _baseAlpha[i] * Mathf.Clamp01(d / 0.12f);
                 _images[i].color = c;
             }
         }

@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -78,9 +77,7 @@ fun AchievementOverlay(
   val context = LocalContext.current
   val haptics = LocalHapticFeedback.current
   val scope = rememberCoroutineScope()
-  val reduceMotion = remember {
-    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-  }
+  val reduceMotion = rememberReduceMotion()
   var visible by remember(def.id) { mutableStateOf(reduceMotion || delayMs <= 0L) }
   LaunchedEffect(def.id) {
     if (!visible) {

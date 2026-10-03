@@ -534,10 +534,11 @@ namespace NeuroVida.Games.Shared
 
         private readonly List<(Image img, float baseA, float amp, float speed)> _breathers = new List<(Image, float, float, float)>();
         private readonly List<(RectTransform rect, Vector2 home, float amp, float speed)> _swayers = new List<(RectTransform, Vector2, float, float)>();
-        private readonly List<(RectTransform rect, float degPerSecond)> _spinners = new List<(RectTransform, float)>();
+        private readonly List<(RectTransform rect, float degPerSecond, Quaternion home)> _spinners = new List<(RectTransform, float, Quaternion)>();
         private readonly List<(RectTransform rect, float radius, float speed, float phase)> _orbiters = new List<(RectTransform, float, float, float)>();
         private readonly List<(RectTransform rect, Vector2 a, Vector2 b)> _lines = new List<(RectTransform, Vector2, Vector2)>();
         private Vector2 _linesLaidFor;
+        private Vector2 _restSize = new Vector2(-1f, -1f); // tamaño con el que se dibujó el reposo (-1 = no dibujado)
 
         private float _meteorEvery, _nextMeteor;
         private RectTransform[] _meteors;
@@ -548,6 +549,7 @@ namespace NeuroVida.Games.Shared
         private RectTransform[] _glyphs;
         private Vector2[] _glyphNorm;
         private float[] _glyphSpeed;
+        private Vector2[] _glyphHome;
 
         public void Init(RectTransform area) => _area = area;
 
@@ -557,7 +559,7 @@ namespace NeuroVida.Games.Shared
         public void Sway(RectTransform rect, float amplitude, float speed) =>
             _swayers.Add((rect, rect.anchoredPosition, amplitude, speed));
 
-        public void Spin(RectTransform rect, float degPerSecond) => _spinners.Add((rect, degPerSecond));
+        public void Spin(RectTransform rect, float degPerSecond) => _spinners.Add((rect, degPerSecond, rect.localRotation));
 
         public void Orbit(RectTransform rect, float radius, float speed, float phase) =>
             _orbiters.Add((rect, radius, speed, phase));
@@ -598,6 +600,7 @@ namespace NeuroVida.Games.Shared
             _glyphs = new RectTransform[count];
             _glyphNorm = new Vector2[count];
             _glyphSpeed = new float[count];
+            _glyphHome = new Vector2[count];
             for (int i = 0; i < count; i++)
             {
                 var go = new GameObject("Glyph");
@@ -616,15 +619,27 @@ namespace NeuroVida.Games.Shared
                 _glyphs[i] = rect;
                 _glyphNorm[i] = new Vector2((float)rng.NextDouble(), (float)rng.NextDouble());
                 _glyphSpeed[i] = 0.012f + (float)rng.NextDouble() * 0.02f;
+                _glyphHome[i] = _glyphNorm[i];
             }
         }
 
-        private void Update()
+        private void Update() => Step(Time.unscaledDeltaTime);
+
+        /// <summary>Un cuadro de <paramref name="dt"/> segundos (público para las pruebas EditMode, que no tienen cuadros).</summary>
+        public void Step(float dt)
         {
-            float dt = Time.unscaledDeltaTime;
             _time += dt;
             if (_area == null) return;
             Vector2 size = _area.rect.size;
+
+            if (_lines.Count > 0 && size != _linesLaidFor && size.x > 0f) LayoutLines(size); // es disposición, no movimiento
+
+            if (!Motion.Decorative)
+            {
+                DrawRest(size);
+                return;
+            }
+            _restSize = new Vector2(-1f, -1f);
 
             foreach (var b in _breathers)
             {
@@ -641,18 +656,6 @@ namespace NeuroVida.Games.Shared
                 o.rect.anchoredPosition = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * o.radius;
             }
 
-            if (_lines.Count > 0 && size != _linesLaidFor && size.x > 0f)
-            {
-                _linesLaidFor = size;
-                foreach (var l in _lines)
-                {
-                    var pa = Vector2.Scale(l.a, size);
-                    var pb = Vector2.Scale(l.b, size);
-                    l.rect.sizeDelta = new Vector2(Vector2.Distance(pa, pb), 3f);
-                    l.rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(pb.y - pa.y, pb.x - pa.x) * Mathf.Rad2Deg);
-                }
-            }
-
             if (_meteors != null) UpdateMeteors(dt, size);
 
             if (_glyphs != null)
@@ -663,6 +666,52 @@ namespace NeuroVida.Games.Shared
                     if (_glyphNorm[i].y > 1.1f) _glyphNorm[i].y = -0.1f;
                     float sway = Mathf.Sin(_time * 0.4f + i) * 0.015f;
                     _glyphs[i].anchoredPosition = new Vector2((_glyphNorm[i].x + sway) * size.x, _glyphNorm[i].y * size.y);
+                }
+            }
+        }
+
+        /// <summary>Disposición de las líneas de las constelaciones (largo y giro según el tamaño del área); no es movimiento.</summary>
+        private void LayoutLines(Vector2 size)
+        {
+            _linesLaidFor = size;
+            foreach (var l in _lines)
+            {
+                var pa = Vector2.Scale(l.a, size);
+                var pb = Vector2.Scale(l.b, size);
+                l.rect.sizeDelta = new Vector2(Vector2.Distance(pa, pb), 3f);
+                l.rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(pb.y - pa.y, pb.x - pa.x) * Mathf.Rad2Deg);
+            }
+        }
+
+        /// <summary>"Quitar animaciones": el fondo queda en su estado de reposo (alfa base, posiciones de casa, sin
+        /// estrellas fugaces) y no cambia más. Se dibuja una vez y solo se repite si cambia el tamaño del área.</summary>
+        private void DrawRest(Vector2 size)
+        {
+            if (size == _restSize) return;
+            _restSize = size;
+            foreach (var b in _breathers)
+            {
+                var c = b.img.color;
+                c.a = b.baseA;
+                b.img.color = c;
+            }
+            foreach (var s in _swayers) s.rect.anchoredPosition = s.home;
+            foreach (var sp in _spinners) sp.rect.localRotation = sp.home;
+            foreach (var o in _orbiters) o.rect.anchoredPosition = new Vector2(Mathf.Cos(o.phase), Mathf.Sin(o.phase)) * o.radius;
+            if (_meteors != null)
+            {
+                for (int i = 0; i < _meteors.Length; i++)
+                {
+                    _meteorAge[i] = 99f;
+                    _meteorImages[i].color = new Color(1f, 1f, 1f, 0f);
+                }
+            }
+            if (_glyphs != null)
+            {
+                for (int i = 0; i < _glyphs.Length; i++)
+                {
+                    _glyphNorm[i] = _glyphHome[i];
+                    _glyphs[i].anchoredPosition = new Vector2(_glyphHome[i].x * size.x, _glyphHome[i].y * size.y);
                 }
             }
         }

@@ -37,7 +37,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Muestra la marca de version bajo la cuenta regresiva. Antes dependia de <c>Debug.isDebugBuild</c>,
         /// pero la exportacion de Unity es de produccion y nunca se veia. Poner en false antes de publicar en la tienda.</summary>
         public const bool ShowStyleStamp = true;
-        public const string StyleStamp = "estilo 2-oct · intrusa";
+        public const string StyleStamp = "estilo 3-oct · movimiento";
 
         private static readonly Color[] StepColors = { NeuroStyle.Sky, NeuroStyle.Grape, NeuroStyle.Coral };
         private static readonly float[] StepWarp = { 0.07f, 0.15f, 0.27f };
@@ -179,14 +179,15 @@ namespace NeuroVida.Games.Shared
             _ringFill.fillAmount = 1f;
             _ringFill.color = StepColors[0];
             _ringTrack.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.14f);
-            _orbitStarImage.color = Color.white;
+            _orbitStarImage.color = Motion.Decorative ? Color.white : new Color(1f, 1f, 1f, 0f); // con "quitar animaciones" la estrella no aparece
             _orbitStar.anchoredPosition = new Vector2(0f, _orbitRadius);
             _ripple.color = new Color(1f, 1f, 1f, 0f);
             _burst.color = new Color(1f, 1f, 1f, 0f);
             _centerGlow.color = NeuroStyle.WithAlpha(StepColors[0], 0.30f);
             HideSparkles();
 
-            // Entrada: la pantalla aparece y la píldora del título baja suavemente.
+            // Entrada: la pantalla aparece y la píldora del título baja suavemente (con "quitar animaciones", solo el fundido).
+            bool calm = !Motion.Decorative;
             const float fadeIn = 0.22f;
             float elapsed = 0f;
             while (elapsed < fadeIn)
@@ -194,7 +195,7 @@ namespace NeuroVida.Games.Shared
                 elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / fadeIn);
                 _group.alpha = t;
-                _titleChipRect.anchoredPosition = _titleChipBase + new Vector2(0f, (1f - EaseOutCubic(t)) * 40f);
+                _titleChipRect.anchoredPosition = _titleChipBase + new Vector2(0f, calm ? 0f : (1f - EaseOutCubic(t)) * 40f);
                 SetAlpha(_subtitle, t);
                 yield return null;
             }
@@ -203,11 +204,11 @@ namespace NeuroVida.Games.Shared
 
             for (int s = 3; s >= 1; s--)
             {
-                var step = Tick(s.ToString(), 3 - s, s < 3);
+                var step = calm ? TickCalm(s.ToString(), 3 - s, s < 3) : Tick(s.ToString(), 3 - s, s < 3);
                 while (step.MoveNext()) yield return step.Current;
             }
 
-            var go = Go(onRevealStart);
+            var go = calm ? GoCalm(onRevealStart) : Go(onRevealStart);
             while (go.MoveNext()) yield return go.Current;
 
             _stars.Warp = 0f;
@@ -361,7 +362,7 @@ namespace NeuroVida.Games.Shared
                     rect.localRotation = Quaternion.Euler(0f, 0f, rect.localEulerAngles.z + spin[i] * dt);
                     rect.localScale = Vector3.one * Mathf.Lerp(1f, 0.45f, t);
                     var col = _sparkleImages[i].color;
-                    col.a = Mathf.Clamp01(1f - Mathf.Max(0f, t - 0.5f) / 0.5f) * (0.75f + 0.25f * Mathf.Sin(elapsed * 30f + i));
+                    col.a = Mathf.Clamp01(1f - Mathf.Max(0f, t - 0.5f) / 0.5f) * (0.75f + 0.25f * Mathf.Sin(elapsed * 12f + i));
                     _sparkleImages[i].color = col;
                 }
 
@@ -379,6 +380,88 @@ namespace NeuroVida.Games.Shared
             if (!revealed) onRevealStart?.Invoke();
             _group.alpha = 0f;
             HideSparkles();
+        }
+
+        /// <summary>Paso 3/2/1 con "quitar animaciones": el número nuevo entra con un fundido cruzado (el anterior se va
+        /// con otro), sin rebote, anillo que se vacía, estrella en órbita, onda, destellos, respiración ni estelas. El
+        /// anillo y el halo solo toman el color del paso. Dura lo mismo que el paso normal.</summary>
+        private IEnumerator TickCalm(string label, int stepIndex, bool hasPrevious)
+        {
+            Color col = StepColors[stepIndex];
+            Color fromGlow = _centerGlow.color;
+
+            _numberOut.text = hasPrevious ? _number.text : "";
+            _numberOut.color = _number.color;
+            _number.text = label;
+            _number.color = NeuroStyle.WithAlpha(col, 0f);
+            _number.rectTransform.localScale = Vector3.one;
+            _numberOut.rectTransform.localScale = Vector3.one;
+            _centerGlowRect.localScale = Vector3.one;
+            _ringFill.fillAmount = 1f;
+            _ringFill.color = col;
+            _orbitStarImage.color = new Color(1f, 1f, 1f, 0f);
+            _ripple.color = new Color(1f, 1f, 1f, 0f);
+            _burst.color = new Color(1f, 1f, 1f, 0f);
+            HideSparkles();
+
+            float elapsed = 0f;
+            while (elapsed < StepSeconds)
+            {
+                elapsed += GameClock.DeltaTime;
+                float k = Mathf.Clamp01(elapsed / Motion.FadeSeconds);
+                SetAlpha(_number, k);
+                SetAlpha(_numberOut, 1f - k);
+                _centerGlow.color = Color.Lerp(fromGlow, NeuroStyle.WithAlpha(col, 0.38f), k);
+                yield return null;
+            }
+            _numberOut.text = "";
+        }
+
+        /// <summary>"¡Ya!" con "quitar animaciones": el texto entra con un fundido cruzado, sin hiperespacio, destello, onda
+        /// ni lluvia de estrellas; la pantalla se desvanece y deja ver el juego en los mismos tiempos que la normal.</summary>
+        private IEnumerator GoCalm(Action onRevealStart)
+        {
+            Color fromGlow = _centerGlow.color;
+            _numberOut.text = _number.text;
+            _numberOut.color = _number.color;
+            _number.text = "¡Ya!";
+            _number.color = NeuroStyle.WithAlpha(GoColor, 0f);
+            _number.rectTransform.localScale = Vector3.one;
+            _numberOut.rectTransform.localScale = Vector3.one;
+            _subtitle.text = "";
+            _burst.color = new Color(1f, 1f, 1f, 0f);
+            _ripple.color = new Color(1f, 1f, 1f, 0f);
+            HideSparkles();
+
+            const float total = 1.0f;
+            const float revealAt = 0.62f;
+            bool revealed = false;
+            float elapsed = 0f;
+            while (elapsed < total)
+            {
+                elapsed += GameClock.DeltaTime;
+                float k = Mathf.Clamp01(elapsed / Motion.FadeSeconds);
+                SetAlpha(_number, k);
+                SetAlpha(_numberOut, 1f - k);
+                _centerGlow.color = Color.Lerp(fromGlow, NeuroStyle.WithAlpha(GoColor, 0.45f), k);
+                float ringA = 1f - k;
+                _ringFill.color = NeuroStyle.WithAlpha(_ringFill.color, ringA);
+                _ringTrack.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.14f * ringA);
+
+                if (!revealed && elapsed >= revealAt)
+                {
+                    revealed = true;
+                    onRevealStart?.Invoke();
+                }
+                if (elapsed >= revealAt)
+                {
+                    _group.alpha = 1f - Mathf.Clamp01((elapsed - revealAt) / (total - revealAt));
+                }
+                yield return null;
+            }
+            if (!revealed) onRevealStart?.Invoke();
+            _group.alpha = 0f;
+            _numberOut.text = "";
         }
 
         // ---- utilidades ----
@@ -505,6 +588,7 @@ namespace NeuroVida.Games.Shared
             _area = area;
             _bubbles = new RectTransform[count];
             _norm = new Vector2[count];
+            _homeNorm = new Vector2[count];
             _speed = new float[count];
             _phase = new float[count];
             var rng = new System.Random(21);
@@ -523,16 +607,35 @@ namespace NeuroVida.Games.Shared
                 img.color = new Color(1f, 1f, 1f, 0.07f + (float)rng.NextDouble() * 0.09f);
                 _bubbles[i] = rect;
                 _norm[i] = new Vector2((float)rng.NextDouble(), (float)rng.NextDouble());
+                _homeNorm[i] = _norm[i];
                 _speed[i] = 0.03f + (float)rng.NextDouble() * 0.05f;
                 _phase[i] = (float)rng.NextDouble() * Mathf.PI * 2f;
             }
         }
 
-        private void Update()
+        private Vector2 _restSize = new Vector2(-1f, -1f);
+        private Vector2[] _homeNorm;
+
+        private void Update() => Step(GameClock.DeltaTime);
+
+        /// <summary>Un cuadro de <paramref name="dt"/> segundos (público para las pruebas EditMode, que no tienen cuadros).
+        /// Con "quitar animaciones" las burbujas quedan quietas en su lugar de casa (se dibujan una vez).</summary>
+        public void Step(float dt)
         {
             if (_bubbles == null) return;
             var size = _area.rect.size;
-            float dt = GameClock.DeltaTime;
+            if (!Motion.Decorative)
+            {
+                if (size == _restSize) return;
+                _restSize = size;
+                for (int i = 0; i < _bubbles.Length; i++)
+                {
+                    _norm[i] = _homeNorm[i];
+                    _bubbles[i].anchoredPosition = new Vector2(_homeNorm[i].x * size.x, _homeNorm[i].y * size.y);
+                }
+                return;
+            }
+            _restSize = new Vector2(-1f, -1f);
             for (int i = 0; i < _bubbles.Length; i++)
             {
                 _norm[i].y += _speed[i] * dt;

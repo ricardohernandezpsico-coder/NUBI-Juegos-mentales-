@@ -1,7 +1,6 @@
 package com.example.ui.components
 
 import android.content.Intent
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -83,9 +82,7 @@ fun LeaguePromotionOverlay(
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val haptics = LocalHapticFeedback.current
-  val reduceMotion = remember {
-    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-  }
+  val reduceMotion = rememberReduceMotion()
   var visible by remember(promotion) { mutableStateOf(reduceMotion) }
   LaunchedEffect(promotion) {
     if (!reduceMotion) {

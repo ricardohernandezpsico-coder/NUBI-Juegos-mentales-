@@ -26,6 +26,9 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para el smoke test headless: fuerza otro juego sin tocar la escena.</summary>
         public static string GameIdOverride;
 
+        /// <summary>Solo para el smoke test headless: simula "quitar animaciones" del teléfono (<c>reduce_motion</c> de la config).</summary>
+        public static bool ReduceMotionOverride;
+
         private void Start()
         {
 #if UNITY_EDITOR
@@ -49,7 +52,8 @@ namespace NeuroVida.Bridge
                     base_intensity = baseIntensity,
                     timed = timed,
                     age_band = ageBand,
-                    sound_enabled = true
+                    sound_enabled = true,
+                    reduce_motion = ReduceMotionOverride
                 }
             };
 

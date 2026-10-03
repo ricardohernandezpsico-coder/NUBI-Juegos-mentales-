@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import android.provider.Settings
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -40,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -65,12 +63,6 @@ import kotlin.math.sin
 const val NUBI_BODY_FRACTION = 0.65f
 
 enum class NubiPose(@DrawableRes val res: Int) { HOLA(R.drawable.nubi_hola), MIRA(R.drawable.nubi_mira), CELEBRA(R.drawable.nubi_celebra) }
-
-@Composable
-fun rememberReduceMotion(): Boolean {
-  val context = LocalContext.current
-  return remember { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }
-}
 
 /**
  * Nubi con su halo detrás (aprobado por Ricardo, `docs/previews/nubi-hoy.png`): resplandor suave, dos aros finos y

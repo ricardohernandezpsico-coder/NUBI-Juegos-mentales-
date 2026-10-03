@@ -1,6 +1,5 @@
 package com.example.ui.screens
 
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
@@ -43,7 +42,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +56,7 @@ import com.example.model.AgeBand
 import com.example.model.DomainType
 import com.example.model.GameRegistry
 import com.example.ui.components.GameIcon
+import com.example.ui.components.rememberReduceMotion
 import com.example.ui.components.levelWord
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
@@ -93,12 +92,6 @@ fun BaselineScreen(
   if (result == null) ProgressView(run.done, onContinue, onLater) else MapView(result, ageBand, education, onFinish)
 }
 
-@Composable
-private fun reduceMotion(): Boolean {
-  val context = LocalContext.current
-  return remember { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }
-}
-
 // ------------------------------------------------------------------ entre juegos
 
 @Composable
@@ -106,7 +99,7 @@ private fun ProgressView(done: Int, onContinue: () -> Unit, onLater: () -> Unit)
   val steps = BaselinePlan.steps
   val next = steps.getOrNull(done) ?: return
   val nextGame = GameRegistry.getById(next.gameId)
-  val still = reduceMotion()
+  val still = rememberReduceMotion()
   val pulse = if (still) 1f else {
     val t = rememberInfiniteTransition(label = "nextPulse")
     val v by t.animateFloat(1f, 1.08f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "nextPulseV")
@@ -206,7 +199,7 @@ private fun CheckMark(modifier: Modifier) {
 
 @Composable
 private fun MapView(baseline: Baseline, ageBand: AgeBand?, education: Education?, onFinish: () -> Unit) {
-  val still = reduceMotion()
+  val still = rememberReduceMotion()
   val grow = remember { Animatable(if (still) 1f else 0f) }
   LaunchedEffect(Unit) { if (!still) grow.animateTo(1f, tween(900)) }
   // Referencia para comparar: la provisional ajustada por edad y estudios ("personas parecidas a ti").

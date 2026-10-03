@@ -41,6 +41,7 @@ namespace NeuroVida.Games.Shared
         /// relativa al centro de <paramref name="parent"/>) y se desvanecen.</summary>
         public static IEnumerator SparkBurst(RectTransform parent, Vector2 center, Color color, int count, float reach, float sparkSize, float seconds = 0.55f)
         {
+            if (!Motion.Decorative) yield break; // "quitar animaciones": ni se crean las chispas
             var rects = new RectTransform[count];
             var images = new Image[count];
             var angles = new float[count];
@@ -84,6 +85,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Onda circular que se expande desde <paramref name="center"/>.</summary>
         public static IEnumerator RingBurst(RectTransform parent, Vector2 center, Color color, float fromSize, float toSize, float seconds = 0.5f)
         {
+            if (!Motion.Decorative) yield break;
             var go = new GameObject("RingBurst");
             go.transform.SetParent(parent, false);
             var r = go.AddComponent<RectTransform>();
@@ -111,6 +113,7 @@ namespace NeuroVida.Games.Shared
         /// sus posiciones originales al terminar.</summary>
         public static IEnumerator Shake(float amplitude, float seconds, params RectTransform[] rects)
         {
+            if (!Motion.Decorative) yield break; // sin sacudida: las posiciones de origen no se tocan
             var origins = new Vector2[rects.Length];
             for (int i = 0; i < rects.Length; i++) origins[i] = rects[i].anchoredPosition;
 
