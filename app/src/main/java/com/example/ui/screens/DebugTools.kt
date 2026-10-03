@@ -20,6 +20,8 @@ private data class DebugGame(
   val id: String, val label: String, val level: Int, val timed: Boolean,
   /** Abre el juego con su tutorial guiado aunque ya se haya jugado (para ver el flujo de «primera vez» sin borrar nada). */
   val tutorial: Boolean = false,
+  /** Abre la versión corta del inicio («Tu punto de partida»: `assessment`), con su tutorial si [tutorial]: como la primera vez. */
+  val shortVersion: Boolean = false,
   val tag: String = id
 )
 
@@ -27,6 +29,12 @@ private val DebugGames = listOf(
   DebugGame("secuencia", "Rastro de luz (Reto 90 s)", level = 1, timed = true),
   DebugGame("secuencia", "Rastro de luz (Precisión, 14 rondas)", level = 1, timed = false, tag = "secuencia_precision"),
   DebugGame("secuencia", "Rastro de luz con tutorial (como la primera vez)", level = 1, timed = false, tutorial = true, tag = "secuencia_tutorial"),
+  DebugGame("freno", "Freno de Emergencia con tutorial", level = 1, timed = false, tutorial = true, tag = "freno_tutorial"),
+  DebugGame("freno", "Freno de Emergencia: tutorial + versión corta (como el inicio)", level = 1, timed = false, tutorial = true, shortVersion = true, tag = "freno_inicio"),
+  DebugGame("aterrizaje", "Aterrizaje Lunar con tutorial", level = 1, timed = false, tutorial = true, tag = "aterrizaje_tutorial"),
+  DebugGame("aterrizaje", "Aterrizaje Lunar: tutorial + versión corta (como el inicio)", level = 1, timed = false, tutorial = true, shortVersion = true, tag = "aterrizaje_inicio"),
+  DebugGame("meteoros", "Lluvia de meteoros con tutorial", level = 1, timed = false, tutorial = true, tag = "meteoros_tutorial"),
+  DebugGame("meteoros", "Lluvia de meteoros: tutorial + versión corta (como el inicio)", level = 1, timed = false, tutorial = true, shortVersion = true, tag = "meteoros_inicio"),
   DebugGame("parejas", "Parejas Ocultas", level = 1, timed = false),
   DebugGame("stroop", "Tinta o Palabra (Reto 60 s)", level = 4, timed = true), // desde el nivel 4 la regla cambia
   DebugGame("comparacion", "Comparación (Reto 60 s)", level = 2, timed = true),
@@ -76,7 +84,9 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
             baseIntensity = 0,
             timed = g.timed,
             ageBand = ageBand,
-            forceTutorial = g.tutorial
+            forceTutorial = g.tutorial,
+            assessmentStep = if (g.shortVersion) 1 else 0,
+            assessmentTotal = if (g.shortVersion) 4 else 0
           )
         )
       }

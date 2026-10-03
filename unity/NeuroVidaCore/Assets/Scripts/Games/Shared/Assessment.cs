@@ -25,6 +25,10 @@ namespace NeuroVida.Games.Shared
             AdaptiveDifficulty.FastCalibration = Active;
         }
 
+        /// <summary>Nivel donde parte la versión corta del inicio (con <see cref="Active"/>) en los juegos con escalera propia: suave en mayores (1) y un poco más arriba en
+        /// el resto (<paramref name="adultLevel"/>, por defecto 3). Con la calibración rápida, el rating final llega a la medida de la persona.</summary>
+        public static float SoftStartLevel(AgeBand age, float adultLevel = 3f) => age == AgeBand.Senior ? 1f : adultLevel;
+
         /// <summary>Subtítulo de la cuenta regresiva: el paso de la evaluación, o <paramref name="normal"/>.</summary>
         public static string Subtitle(string normal) =>
             !Active ? normal : Total > 0 ? $"Punto de partida · {Step} de {Total}" : "Punto de partida";

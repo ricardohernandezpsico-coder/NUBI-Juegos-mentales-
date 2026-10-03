@@ -97,6 +97,9 @@ namespace NeuroVida.Bridge
 
         private bool InProgress => _running && !NativeBridge.GameFinished;
 
+        /// <summary>El juego activo de esta escena (solo hay uno): su controlador común, para preguntarle si ofrece «Cómo se juega».</summary>
+        private NeuroVida.Games.Shared.GameControllerBase ActiveGame => GetComponentInChildren<NeuroVida.Games.Shared.GameControllerBase>(false);
+
         /// <summary>Botón Atrás de Android (llega como Escape). A mitad de partida PAUSA (menú Continuar /
         /// Reiniciar / Salir) en vez de abandonarla; con el menú abierto, Atrás = Continuar; con la partida
         /// terminada (o sin partida), vuelve a la app.</summary>
@@ -131,7 +134,9 @@ namespace NeuroVida.Bridge
                     transform,
                     onResume: null,
                     onRestart: LaunchIntentConfigReader.RestartCurrentGame,
-                    onExit: ExitPaused);
+                    onExit: ExitPaused,
+                    onHowTo: () => { var g = ActiveGame; if (g != null) g.ShowHowTo(); },
+                    canHowTo: () => { var g = ActiveGame; return g != null && g.CanShowHowTo; });
             }
             _pause.Show();
         }

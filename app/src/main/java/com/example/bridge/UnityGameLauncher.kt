@@ -19,8 +19,9 @@ object UnityGameLauncher {
    *  (Intent nuevo con REORDER_TO_FRONT) y la app sabe a qué partida pertenece el resultado que vuelve. */
   const val EXTRA_LAUNCH_ID = "neurovida_launch_id"
 
-  /** Juegos con tutorial guiado (ronda guiada propia): al primero que se suma otro, se agrega acá. Rastro de luz fue el primero (3-oct). */
-  val TUTORIAL_GAMES = setOf("secuencia")
+  /** Juegos con tutorial guiado (ronda guiada propia) y «Cómo se juega» en la pausa. Rastro de luz fue el primero; Freno, Aterrizaje y Meteoros se sumaron el 3-oct
+   *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
+  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros")
 
   /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
   fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =

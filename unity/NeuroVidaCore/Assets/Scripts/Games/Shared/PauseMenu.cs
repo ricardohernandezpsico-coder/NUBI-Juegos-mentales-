@@ -17,11 +17,15 @@ namespace NeuroVida.Games.Shared
     {
         private RectTransform _panel;
         private CanvasGroup _group;
-        private Action _onResume, _onRestart, _onExit;
+        private Action _onResume, _onRestart, _onExit, _onHowTo;
+        private Func<bool> _canHowTo;
+        private RectTransform _title, _subtitle, _btnContinue, _btnRestart, _btnHowTo, _btnExit;
 
         public bool IsShown => gameObject.activeSelf;
 
-        public static PauseMenu Create(Transform parent, Action onResume, Action onRestart, Action onExit)
+        /// <param name="onHowTo">«Cómo se juega»: la tarjeta de Nubi y la ronda guiada, y después se vuelve a la partida (el juego se encarga).</param>
+        /// <param name="canHowTo">¿Se ofrece «Cómo se juega» ahora? (el juego tiene tutorial y está en marcha). Se pregunta cada vez que se abre el menú.</param>
+        public static PauseMenu Create(Transform parent, Action onResume, Action onRestart, Action onExit, Action onHowTo = null, Func<bool> canHowTo = null)
         {
             var root = new GameObject("PauseMenu");
             root.transform.SetParent(parent, false);
@@ -39,6 +43,8 @@ namespace NeuroVida.Games.Shared
             menu._onResume = onResume;
             menu._onRestart = onRestart;
             menu._onExit = onExit;
+            menu._onHowTo = onHowTo;
+            menu._canHowTo = canHowTo;
             menu.Build(root.GetComponent<RectTransform>());
             root.SetActive(false);
             return menu;
@@ -67,34 +73,57 @@ namespace NeuroVida.Games.Shared
             NeuroStyle.ClayFrame(panelImg, 7f, 18f);
 
             var title = MakeText(_panel, "Title", 110, TextAnchor.MiddleCenter, NeuroStyle.Sun, 0f, 0f);
-            PlaceCentered(title.rectTransform, new Vector2(0f, 330f), new Vector2(760f, 150f));
+            _title = title.rectTransform;
             title.text = "Pausa";
             NeuroStyle.ClayText(title, 6f, 12f);
 
             var sub = MakeText(_panel, "Subtitle", 46, TextAnchor.MiddleCenter, NeuroStyle.Hex(0xB4BFEA), 0f, 0f);
-            PlaceCentered(sub.rectTransform, new Vector2(0f, 215f), new Vector2(760f, 70f));
+            _subtitle = sub.rectTransform;
             sub.text = "Tu partida te espera";
 
-            AddButton("Continuar", NeuroStyle.Sun, new Vector2(0f, 55f), () =>
+            _btnContinue = AddButton("Continuar", NeuroStyle.Sun, () =>
             {
                 Hide();
                 GameClock.Resume();
                 _onResume?.Invoke();
             });
-            AddButton("Reiniciar", NeuroStyle.Sky, new Vector2(0f, -135f), () =>
+            _btnRestart = AddButton("Reiniciar", NeuroStyle.Sky, () =>
             {
                 Hide();
                 _onRestart?.Invoke();
             });
-            AddButton("Salir", NeuroStyle.Cream, new Vector2(0f, -325f), () => _onExit?.Invoke());
+            // «Cómo se juega» (solo en los juegos con tutorial): el reloj lo retoma el juego, no el menú
+            _btnHowTo = AddButton("Cómo se juega", NeuroStyle.Grape, () =>
+            {
+                Hide();
+                _onHowTo?.Invoke();
+            });
+            _btnExit = AddButton("Salir", NeuroStyle.Cream, () => _onExit?.Invoke());
+            Relayout(false);
         }
 
-        private void AddButton(string label, Color fill, Vector2 pos, Action onClick)
+        /// <summary>Acomoda el panel con tres botones o con cuatro (si se ofrece «Cómo se juega»).</summary>
+        private void Relayout(bool withHowTo)
+        {
+            float h = withHowTo ? 1130f : 940f;
+            _panel.sizeDelta = new Vector2(820f, h);
+            float top = h * 0.5f;
+            PlaceCentered(_title, new Vector2(0f, top - 140f), new Vector2(760f, 150f));
+            PlaceCentered(_subtitle, new Vector2(0f, top - 255f), new Vector2(760f, 70f));
+            float y = top - 415f;
+            foreach (var btn in withHowTo ? new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit } : new[] { _btnContinue, _btnRestart, _btnExit })
+            {
+                PlaceCentered(btn, new Vector2(0f, y), new Vector2(640f, 150f)); // ~50 dp de alto: mayor que el mínimo de 48 dp
+                y -= 190f;
+            }
+            _btnHowTo.gameObject.SetActive(withHowTo);
+        }
+
+        private RectTransform AddButton(string label, Color fill, Action onClick)
         {
             var go = new GameObject("Btn_" + label);
             go.transform.SetParent(_panel, false);
             var rect = go.AddComponent<RectTransform>();
-            PlaceCentered(rect, pos, new Vector2(640f, 150f)); // ~50 dp de alto: mayor que el mínimo de 48 dp
             var img = go.AddComponent<Image>();
             img.sprite = RoundedRectSprite.Get(64);
             img.type = Image.Type.Sliced;
@@ -107,6 +136,8 @@ namespace NeuroVida.Games.Shared
 
             var text = MakeText(go.transform, "Label", 60, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             text.text = label;
+            BestFit(text, 48);
+            return rect;
         }
 
         private static void PlaceCentered(RectTransform rect, Vector2 pos, Vector2 size)
@@ -122,6 +153,7 @@ namespace NeuroVida.Games.Shared
         {
             GameClock.Pause();
             if (IsShown) return;
+            Relayout(_onHowTo != null && _canHowTo != null && _canHowTo());
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
             StartCoroutine(PopIn());

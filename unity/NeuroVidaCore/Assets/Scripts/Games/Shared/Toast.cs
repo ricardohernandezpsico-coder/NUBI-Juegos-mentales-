@@ -86,6 +86,14 @@ namespace NeuroVida.Games.Shared
             return text;
         }
 
+        /// <summary>Lo esconde de una vez (si el juego detiene todas sus corrutinas, como al abrir «Cómo se juega», el aviso no queda a medias).</summary>
+        public void Hide()
+        {
+            _anim = null;
+            _group.alpha = 0f;
+            _rect.gameObject.SetActive(false);
+        }
+
         /// <summary>Posición (respecto del borde superior del contenedor) donde aparece.</summary>
         public void SetTopOffset(float topOffsetU) => _basePosition = new Vector2(0f, -topOffsetU);
 

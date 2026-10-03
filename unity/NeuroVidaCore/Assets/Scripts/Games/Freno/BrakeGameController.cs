@@ -44,13 +44,14 @@ namespace NeuroVida.Games.Freno
         private sealed class Lane
         {
             public RectTransform Root, RocketRect;
-            public Image Pad, Rocket, Glow, Beacon, Button, Mark;
+            public Image Pad, Rocket, Glow, Beacon, Button, Mark, Hint;
         }
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
         private Phase _phase = Phase.Idle;
-        private bool Endless => _config != null && _config.config.timed;
+        // la versión corta del inicio (Assessment) es de lanzamientos fijos y sin reloj, aunque la config traiga timed
+        private bool Endless => _config != null && _config.config.timed && !Assessment.Active;
         private bool Precision => !Endless;
         private int _previousFrameRate;
 
@@ -88,10 +89,8 @@ namespace NeuroVida.Games.Freno
         {
             _config = config;
             _rng = new System.Random();
-            var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
-            float start = AdaptiveDifficulty.StartRating(config.config, BrakeContract.MaxLevel);
             // El DDA mueve la tarea de ir (plataformas y tiempo para lanzar); el alto tiene su propia escalera.
-            _dda = new AdaptiveDifficulty(BrakeContract.MaxLevel, age, start, stepUp: 0.15f, useReaction: config.config.timed);
+            _dda = BrakeContract.CreateEngine(config.config);
 
             // Tiempos de respuesta y retrasos del alto en decenas de ms: 60 cuadros por segundo (Android da 30).
             _previousFrameRate = Application.targetFrameRate;
@@ -115,6 +114,8 @@ namespace NeuroVida.Games.Freno
             _exit.Hide();
             _timerBg.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
+            _loopOn = false;
+            _tutorial.Hide();
             _stopRect.gameObject.SetActive(false);
             foreach (var s in _stars) s.gameObject.SetActive(false);
 
@@ -129,6 +130,21 @@ namespace NeuroVida.Games.Freno
 
         private IEnumerator GameLoop()
         {
+            bool tutorialPlayed = false;
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre la base ya armada, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                SetupLanes(2);
+                UpdateGauge(false);
+                UpdateHud();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                tutorialPlayed = !_tutorial.Skipped;
+            }
             _safe.gameObject.SetActive(false);
             yield return StartCoroutine(_countdown.Play("Freno de Emergencia", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
@@ -140,19 +156,31 @@ namespace NeuroVida.Games.Freno
             UpdateGauge(false);
             UpdateHud();
 
-            // Primera vez: las dos reglas, antes del primer lanzamiento.
-            SetPrompt("Lanza el cohete que se enciende", Color.white);
-            yield return StartCoroutine(Wait(1.6f));
-            SetPrompt("Si aparece ¡ALTO!, no toques", BadColor);
-            yield return StartCoroutine(ShowStopPreview());
+            // Primera vez sin tutorial (o si lo saltó): las dos reglas, antes del primer lanzamiento.
+            SetPrompt("", Color.white);
+            if (!tutorialPlayed)
+            {
+                SetPrompt("Lanza el cohete que se enciende", Color.white);
+                yield return StartCoroutine(Wait(1.6f));
+                SetPrompt("Si aparece ¡ALTO!, no toques", BadColor);
+                yield return StartCoroutine(ShowStopPreview());
+            }
 
             _endsAt = GameClock.Time + BrakeContract.RetoSeconds;
+            _loopOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
+
+        /// <summary>El bucle de la partida: un lanzamiento tras otro. «Cómo se juega» lo retoma desde acá.</summary>
+        private IEnumerator MainLoop()
+        {
             while (!Finished())
                 yield return StartCoroutine(RunTrial());
+            _loopOn = false;
             yield return StartCoroutine(FinishGame());
         }
 
-        private bool Finished() => Precision ? _trials >= BrakeContract.PrecisionTrials : GameClock.Time >= _endsAt;
+        private bool Finished() => Precision ? _trials >= BrakeContract.TotalTrials(Assessment.Active) : GameClock.Time >= _endsAt;
 
         /// <summary>Muestra la señal de alto un momento (sin alarma fuerte) para que se reconozca después.</summary>
         private IEnumerator ShowStopPreview()
@@ -178,7 +206,7 @@ namespace NeuroVida.Games.Freno
                 yield return StartCoroutine(Wait(0.4f));
             }
             int deadline = BrakeContract.DeadlineMs(level, Precision);
-            bool stop = BrakeContract.NextIsStop(_trials, _stopsInARow, _rng);
+            bool stop = Assessment.Active ? BrakeContract.AssessmentStop(_trials) : BrakeContract.NextIsStop(_trials, _stopsInARow, _rng);
             int lane = _rng.Next(pads);
 
             // 1. Espera variable (no se puede anticipar). Tocar antes = "¡Espera la luz!" y se repite.
@@ -363,6 +391,8 @@ namespace NeuroVida.Games.Freno
 
         private void Update()
         {
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un lanzamiento
+            GuidedTutorial.SpinHint(_hintOf(_tutorialLane));
             UpdateClock();
             if (GameClock.DeltaTime <= 0f) return;
             if (_phase != Phase.Foreperiod && _phase != Phase.Respond) return;
@@ -439,7 +469,7 @@ namespace NeuroVida.Games.Freno
 
         /// <summary>El cohete despega: acelera hacia arriba con llama, deja humo, sale de la pantalla y se convierte
         /// en una estrella del cielo; en su plataforma aparece uno nuevo.</summary>
-        private IEnumerator FlyAway(Lane L)
+        private IEnumerator FlyAway(Lane L, bool star = true)
         {
             var from = LocalIn(_fxRect, L.RocketRect);
             float size = L.RocketRect.sizeDelta.x;
@@ -448,7 +478,7 @@ namespace NeuroVida.Games.Freno
             {
                 // Sin despegue: el cohete se va y vuelve el nuevo tras el mismo tiempo (0,75 s), sin llama ni humo.
                 yield return Motion.Hold(0.75f);
-                AddSkyStar();
+                if (star) AddSkyStar();
                 L.Rocket.gameObject.SetActive(true);
                 yield return StartCoroutine(PopIn(L.RocketRect, 0.2f));
                 yield break;
@@ -482,7 +512,7 @@ namespace NeuroVida.Games.Freno
                 yield return null;
             }
             Destroy(go);
-            AddSkyStar();
+            if (star) AddSkyStar();
 
             // Cohete nuevo en la plataforma.
             L.Rocket.gameObject.SetActive(true);
@@ -767,6 +797,8 @@ namespace NeuroVida.Games.Freno
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetTopOffset(0f);
+            BuildTutorial(_safe, GameHud.Height + 150f, "Freno de Emergencia", "Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.",
+                skipAtTop: true, captionFromBottomU: 700f);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -812,9 +844,10 @@ namespace NeuroVida.Games.Freno
 
             var mark = NewImage(rr, "Mark", null);
             mark.rectTransform.anchorMin = mark.rectTransform.anchorMax = new Vector2(0.9f, 0.9f);
+            var hint = GuidedTutorial.CreateHintRing(root, 10f);     // el aro de ayuda de la ronda guiada: «toca aquí»
 
             go.SetActive(false);
-            return new Lane { Root = root, RocketRect = rr, Pad = pad, Rocket = rocket, Glow = glow, Beacon = beacon, Button = button, Mark = mark };
+            return new Lane { Root = root, RocketRect = rr, Pad = pad, Rocket = rocket, Glow = glow, Beacon = beacon, Button = button, Mark = mark, Hint = hint };
         }
 
         private void BuildStopSign()
@@ -1021,6 +1054,9 @@ namespace NeuroVida.Games.Freno
                 L.Button.rectTransform.sizeDelta = new Vector2(button, button);
                 L.Button.rectTransform.anchoredPosition = new Vector2(0f, buttonY);
                 L.Button.rectTransform.localScale = Vector3.one;
+                L.Hint.rectTransform.sizeDelta = new Vector2(button * 1.4f, button * 1.4f);
+                L.Hint.rectTransform.anchoredPosition = new Vector2(0f, buttonY);
+                L.Hint.gameObject.SetActive(false);
 
                 float padY = buttonY + button * 0.5f + 90f;
                 L.Pad.rectTransform.sizeDelta = new Vector2(Mathf.Min(300f, laneW * 0.98f), Mathf.Min(300f, laneW * 0.98f));
@@ -1047,8 +1083,169 @@ namespace NeuroVida.Games.Freno
         private void UpdateHud()
         {
             _hud.SetLevel(_dda.PresentedLevel);
+            int total = BrakeContract.TotalTrials(Assessment.Active);
             if (Endless) _hud.SetPoints(_points);
-            else _hud.SetInfo($"{Mathf.Min(_trials + 1, BrakeContract.PrecisionTrials)} de {BrakeContract.PrecisionTrials}");
+            else _hud.SetInfo($"{Mathf.Min(_trials + 1, total)} de {total}");
         }
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        private bool _loopOn;
+        private int _lanesBefore;
+
+        protected override bool HowToReady => _loopOn && _phase != Phase.Done;
+
+        protected override void HowToSuspend()
+        {
+            _lanesBefore = _lanesShown;
+            _phase = Phase.Idle;
+            _tapped = false;
+            SetPrompt("", Color.white);
+            _toast.Hide();
+            ClearTransient();
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            _endsAt = HowToClock.Shift(_endsAt, spentSeconds);       // el tiempo que duró «Cómo se juega» no se le descuenta al Reto
+            _phase = Phase.Idle;
+            ClearTransient();
+            SetupLanes(Mathf.Max(2, _lanesBefore));
+            UpdateGauge(false);
+            UpdateHud();
+            StartCoroutine(MainLoop());                              // el lanzamiento que estaba en curso no contó: sigue otro con el mismo estado
+        }
+
+        /// <summary>Quita lo que quedó a medias (efectos sueltos, la señal de alto, balizas encendidas) sin tocar ninguna cuenta.</summary>
+        private void ClearTransient()
+        {
+            foreach (Transform c in _fxRect) Destroy(c.gameObject);
+            _stopRect.gameObject.SetActive(false);
+            foreach (var L in _lanes)
+            {
+                L.Beacon.color = new Color(1f, 1f, 1f, 0.18f);
+                L.Glow.gameObject.SetActive(false);
+                L.Button.sprite = BrakeSprites.LaunchButton(false);
+                L.Button.rectTransform.localScale = Vector3.one;
+                L.Rocket.gameObject.SetActive(true);
+                L.RocketRect.localScale = Vector3.one;
+                L.Mark.gameObject.SetActive(false);
+                L.Hint.gameObject.SetActive(false);
+            }
+        }
+
+        // ------------------------------------------------------------------ ronda guiada del tutorial (pieza común)
+
+        private int _tutorialLane = -1;
+        private Image _hintOf(int lane) => lane >= 0 && lane < _lanes.Count ? _lanes[lane].Hint : null;
+
+        // <guided>
+        protected override IEnumerator GuidedRound(GuidedTutorial t)
+        {
+            t.BeginPractice();
+            _phase = Phase.Idle;
+            SetPrompt("", Color.white);
+            SetupLanes(2);
+            yield return StartCoroutine(Wait(0.5f));
+            var script = new GuidedScript(BrakeContract.GuidedPlan.Length);
+            bool stopExplained = false;
+            int goShown = 0;
+            while (!script.Finished)
+            {
+                if (t.Skipped) { script.Skip(); break; }
+                bool isStop = BrakeContract.GuidedPlan[script.Index] == BrakeContract.GuidedStep.Stop;
+                int lane = (script.Index + script.Failures) % 2;
+                var L = _lanes[lane];
+                if (isStop && !stopExplained)
+                {
+                    stopExplained = true;
+                    t.Say("Ahora la otra regla: si aparece el octágono ¡ALTO!, no toques");
+                    yield return StartCoroutine(ShowStopPreview());
+                }
+                t.Say(isStop ? "Se enciende otro cohete. Si aparece ¡ALTO!, no lo toques" : goShown == 0 ? "Toca el cohete que se enciende" : "Otra vez: toca el cohete que se enciende");
+                yield return StartCoroutine(Wait(0.9f));
+
+                SetLit(L, true);                      // el cohete se enciende y se queda encendido hasta que se toque (lento, sin apuro)
+                PlayTone(784f, 0.06f, 0.06f);
+                _tutorialLane = lane;
+                L.Hint.gameObject.SetActive(!isStop); // el aro marca el que se toca; el del ¡ALTO! no lleva aro
+                _tapped = false;
+                _tapLane = -1;
+                _phase = Phase.Respond;
+                float litAt = GameClock.Time;
+                bool stopShown = false;
+                float limit = isStop ? 3.2f : 60f;
+                while (!_tapped && !t.Skipped && GameClock.Time - litAt < limit)
+                {
+                    if (isStop && !stopShown && GameClock.Time - litAt >= 0.7f)
+                    {
+                        stopShown = true;
+                        ShowStop();
+                        t.Say("¡ALTO! Este no: déjalo quieto");
+                    }
+                    yield return null;
+                }
+                _phase = Phase.Idle;
+                L.Hint.gameObject.SetActive(false);
+                _tutorialLane = -1;
+                SetLit(L, false);
+                if (t.Skipped) { script.Skip(); break; }
+
+                if (!isStop)
+                {
+                    if (_tapped && _tapLane == lane)
+                    {
+                        PlayTone(196f, 0.25f, 0.05f);
+                        StartCoroutine(FlyAway(L, false));
+                        GameFeel.Haptic(GameFeel.HapticKind.Light);
+                        goShown++;
+                        script.Success();
+                        yield return StartCoroutine(Wait(1.0f));
+                    }
+                    else if (_tapped)
+                    {
+                        ShowMark(_lanes[_tapLane], false);
+                        t.Say("Casi: se toca el cohete que se enciende. Mira otra vez");
+                        script.Failure();
+                        yield return StartCoroutine(Wait(1.6f));
+                        HideMark(_lanes[_tapLane]);
+                    }
+                }
+                else if (!_tapped)
+                {
+                    PlayTone(147f, 0.3f, 0.05f);
+                    ShowMark(L, true);
+                    StartCoroutine(Steam(L));
+                    t.Say("¡Frenaste a tiempo!");
+                    script.Success();
+                    yield return StartCoroutine(Wait(1.3f));
+                    HideMark(L);
+                    yield return StartCoroutine(FadeStop(0.2f));
+                }
+                else
+                {
+                    if (!stopShown) ShowStop();         // tocó antes de que apareciera: igual se muestra, para que se entienda
+                    ShowMark(_tapLane >= 0 ? _lanes[_tapLane] : L, false);
+                    t.Say("Casi: con el ¡ALTO! el cohete se queda quieto. Probemos otra vez");
+                    script.Failure();
+                    yield return StartCoroutine(Hop(L));
+                    yield return StartCoroutine(Wait(1.5f));
+                    HideMark(_tapLane >= 0 ? _lanes[_tapLane] : L);
+                    yield return StartCoroutine(FadeStop(0.2f));
+                }
+                yield return StartCoroutine(Wait(0.35f));
+            }
+            _stopRect.gameObject.SetActive(false);
+            foreach (var l in _lanes) { l.Beacon.color = new Color(1f, 1f, 1f, 0.18f); l.Mark.gameObject.SetActive(false); l.Hint.gameObject.SetActive(false); }
+            if (!script.Skipped)
+            {
+                t.Say("¡Así se juega! Ahora sin ayuda");
+                PlayTone(523f, 0.4f, 0.08f);
+                yield return StartCoroutine(Wait(1.8f));
+            }
+            t.EndPractice();
+            SetPrompt("", Color.white);
+        }
+        // </guided>
     }
 }

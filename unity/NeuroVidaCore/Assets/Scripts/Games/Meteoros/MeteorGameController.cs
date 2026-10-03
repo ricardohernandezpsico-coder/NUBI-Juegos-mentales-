@@ -58,7 +58,9 @@ namespace NeuroVida.Games.Meteoros
         private MeteorDirector _director;
         private MeteorTally _tally;
         private Phase _phase = Phase.Idle;
-        private bool Endless => _config != null && _config.config.timed;
+        // la versión corta del inicio (Assessment) corre con reloj de 60 s, aunque la config traiga timed = false
+        private bool Endless => _config != null && (_config.config.timed || Assessment.Active);
+        private int RunSeconds => MeteorContract.RunSeconds(Assessment.Active);
         private bool Precision => !Endless;
         private bool Senior;
         private int _previousFrameRate;
@@ -89,9 +91,8 @@ namespace NeuroVida.Games.Meteoros
             _rng = new System.Random();
             var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
             Senior = age == AgeBand.Senior;
-            float start = AdaptiveDifficulty.StartRating(config.config, MeteorContract.MaxLevel);
             // ~60 decisiones en el Reto: pasos de tamaño común. Sin tiempo de reacción: cuenta acertar, no la prisa.
-            _dda = new AdaptiveDifficulty(MeteorContract.MaxLevel, age, start, stepUp: 0.15f, useReaction: false);
+            _dda = MeteorContract.CreateEngine(config.config);
             _lexicon = MeteorLexicon.Load();
             _director = new MeteorDirector(_lexicon, _rng);
             _tally = new MeteorTally();
@@ -117,6 +118,9 @@ namespace NeuroVida.Games.Meteoros
             _hint.gameObject.SetActive(false);
             SetPrompt("", Color.white);
             SetConstellation(0);
+            _loopOn = false;
+            _guided = false;
+            _tutorial.Hide();
 
             StopAllCoroutines();
             StartCoroutine(GameLoop());
@@ -129,8 +133,21 @@ namespace NeuroVida.Games.Meteoros
 
         private IEnumerator GameLoop()
         {
-            _safe.gameObject.SetActive(false);
             StartCoroutine(PrewarmSprites());
+            bool tutorialPlayed = false;
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre el cielo ya armado, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                tutorialPlayed = !_tutorial.Skipped;
+            }
+            _safe.gameObject.SetActive(false);
             yield return StartCoroutine(_countdown.Play("Lluvia de meteoros", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
@@ -139,18 +156,24 @@ namespace NeuroVida.Games.Meteoros
             Layout();
             UpdateHud();
 
-            _endsAt = GameClock.Time + MeteorContract.RetoSeconds;
+            _endsAt = GameClock.Time + RunSeconds;
             _lastSpawn = GameClock.Time - 2f;
             _phase = Phase.Playing;
-            _hint.gameObject.SetActive(true);
+            _hint.gameObject.SetActive(!tutorialPlayed);       // con el tutorial hecho, la regla ya se vio
             _hint.text = "Toca las palabras que existen\nLas inventadas, déjalas pasar";
+            _loopOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
 
+        /// <summary>El bucle de la partida: va soltando meteoros hasta que se acabe el tiempo (o los meteoros). «Cómo se juega» lo retoma desde acá.</summary>
+        private IEnumerator MainLoop()
+        {
             while (!Finished())
             {
                 int level = _dda.PresentedLevel;
                 bool shower = _director.InShower;
                 bool more = Endless ? GameClock.Time < _endsAt : (_director.Spawned < MeteorContract.PrecisionMeteors || shower);
-                int cap = shower ? 4 : MeteorContract.Concurrent(level, Precision);
+                int cap = shower ? 4 : Assessment.Active ? MeteorContract.AssessmentConcurrent(level) : MeteorContract.Concurrent(level, Precision);
                 float gap = shower ? 0.45f : 1.1f;
                 if (more && _active.Count < cap && GameClock.Time - _lastSpawn >= gap)
                 {
@@ -165,6 +188,7 @@ namespace NeuroVida.Games.Meteoros
                 }
                 yield return null;
             }
+            _loopOn = false;
             if (Endless) ClearMeteors(); // se acabó el tiempo: lo que quedaba en el cielo no cuenta
             yield return StartCoroutine(FinishGame());
         }
@@ -361,6 +385,8 @@ namespace NeuroVida.Games.Meteoros
 
         private void Update()
         {
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un toque a un meteoro
+            GuidedTutorial.SpinHint(_guidedRing);
             UpdateClock();
             if (_phase != Phase.Playing || GameClock.DeltaTime <= 0f) return;
             MoveMeteors();
@@ -397,7 +423,7 @@ namespace NeuroVida.Games.Meteoros
         {
             if (!Endless || _phase != Phase.Playing || _endsAt <= 0f) return;
             float left = _endsAt - GameClock.Time;
-            SetTimerFraction(Mathf.Clamp01(left / MeteorContract.RetoSeconds));
+            SetTimerFraction(Mathf.Clamp01(left / RunSeconds));
             int whole = Mathf.CeilToInt(left);
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
@@ -410,6 +436,7 @@ namespace NeuroVida.Games.Meteoros
 
         private void ResolveTap(Meteor m)
         {
+            if (_guided) { GuidedResolve(m, true); return; }   // la ronda guiada no cuenta: nada de lo de abajo
             m.Done = true;
             _active.Remove(m);
             var spec = m.Spec;
@@ -441,6 +468,7 @@ namespace NeuroVida.Games.Meteoros
 
         private void ResolvePass(Meteor m)
         {
+            if (_guided) { GuidedResolve(m, false); return; }
             m.Done = true;
             _active.Remove(m);
             var spec = m.Spec;
@@ -852,6 +880,8 @@ namespace NeuroVida.Games.Meteoros
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetTopOffset(0f);
+            BuildTutorial(_safe, GameHud.Height + 10f, "Lluvia de meteoros", "Toca las palabras que existen. Las inventadas, déjalas caer.",
+                captionFromBottomU: 430f, badgeAtBottom: true);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -997,5 +1027,166 @@ namespace NeuroVida.Games.Meteoros
             if (Endless) _hud.SetPoints(_points);
             else _hud.SetInfo($"{Mathf.Min(_resolved + 1, MeteorContract.PrecisionMeteors)} de {MeteorContract.PrecisionMeteors}");
         }
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        private bool _loopOn;
+
+        protected override bool HowToReady => _loopOn && _phase != Phase.Done;
+
+        protected override void HowToSuspend()
+        {
+            _phase = Phase.Idle;
+            _toast.Hide();
+            ClearTransient();
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            _endsAt = HowToClock.Shift(_endsAt, spentSeconds);       // el tiempo que duró «Cómo se juega» no se le descuenta al Reto
+            _lastSpawn = GameClock.Time - 1f;
+            ClearTransient();
+            _phase = Phase.Playing;
+            StartCoroutine(MainLoop());                              // los meteoros que estaban en el cielo no cuentan: sigue la lluvia con el mismo estado
+        }
+
+        /// <summary>Quita lo que quedó a medias (meteoros, efectos, avisos) sin tocar ninguna cuenta.</summary>
+        private void ClearTransient()
+        {
+            ClearMeteors();
+            foreach (Transform c in _fxRect) Destroy(c.gameObject);
+            _pending = null;
+            _hint.gameObject.SetActive(false);
+            SetPrompt("", Color.white);
+            SetConstellation(_rescued % _conStars.Count);
+        }
+
+        // ------------------------------------------------------------------ ronda guiada del tutorial (pieza común)
+
+        private bool _guided;
+        private int _guidedOutcome;          // 0 = esperando, 1 = tocó una palabra, 2 = tocó una inventada, 3 = se fue una palabra, 4 = pasó una inventada
+        private Image _guidedRing;
+
+        // <guided>
+        protected override IEnumerator GuidedRound(GuidedTutorial t)
+        {
+            t.BeginPractice();
+            _guided = true;
+            ClearMeteors();
+            _pending = null;
+            _hint.gameObject.SetActive(false);
+            SetPrompt("", Color.white);
+            // los avisos de Nubi van donde va el aviso del juego, bajo la constelación
+            t.PlaceControls(GameHud.Height + 10f, false, _playH * 0.5f + _prompt.rectTransform.anchoredPosition.y, badgeAtBottom: true);
+            _phase = Phase.Playing;
+            var script = new GuidedScript(MeteorContract.GuidedPlan.Length);
+            int words = 0;
+            while (!script.Finished)
+            {
+                if (t.Skipped) { script.Skip(); break; }
+                bool isWord = MeteorContract.GuidedPlan[script.Index];
+                MeteorSpec spec;
+                if (isWord)
+                {
+                    _lexicon.PickWord(1, 1, 4, 6, _rng, out var w, out int band);
+                    spec = new MeteorSpec { Word = w, IsWord = true, Band = band, FallSeconds = MeteorContract.GuidedFallSeconds };
+                }
+                else
+                {
+                    _lexicon.PickDecoy(new[] { DecoyKind.Obvious }, 4, 6, _rng, out var d, out var kind, out int band);
+                    spec = new MeteorSpec { Word = d, IsWord = false, Band = band, Decoy = kind, FallSeconds = MeteorContract.GuidedFallSeconds };
+                }
+                t.Say(isWord ? (words == 0 ? "Esta palabra existe: tócala" : "Otra que existe: tócala") : "Esta no existe: déjala caer");
+                _pending = spec;
+                int tries = 0;
+                while (!Spawn() && tries++ < 20) yield return null;
+                var meteor = _active.Count > 0 ? _active[_active.Count - 1] : null;
+                if (meteor != null && isWord)
+                {
+                    // el aro sol punteado marca la palabra que se toca
+                    _guidedRing = GuidedTutorial.CreateHintRing(meteor.Root, Mathf.Max(meteor.Rx, meteor.Ry) * 2.7f);
+                    _guidedRing.gameObject.SetActive(true);
+                }
+                _guidedOutcome = 0;
+                while (_guidedOutcome == 0 && !t.Skipped) yield return null;
+                _guidedRing = null;
+                if (t.Skipped) { script.Skip(); break; }
+                if (_guidedOutcome == 1 || _guidedOutcome == 4)
+                {
+                    t.Say(_guidedOutcome == 1 ? "¡Bien! Esa existe" : "¡Bien! Esa no existía: dejarla caer fue lo correcto");
+                    if (_guidedOutcome == 1) words++;
+                    script.Success();
+                }
+                else
+                {
+                    t.Say(_guidedOutcome == 3 ? "Casi: esa palabra existe. Tócala antes de que llegue abajo" : "Casi: esa no existe. Las inventadas se dejan caer");
+                    script.Failure();
+                }
+                yield return StartCoroutine(Wait(2.2f));
+            }
+            _guidedRing = null;
+            ClearMeteors();
+            foreach (Transform c in _fxRect) Destroy(c.gameObject);
+            if (!script.Skipped)
+            {
+                t.Say("¡Así se juega! Ahora sin ayuda");
+                PlayTone(523f, 0.4f, 0.08f);
+                yield return StartCoroutine(Wait(1.8f));
+            }
+            t.EndPractice();
+            _guided = false;
+            _phase = Phase.Idle;
+            _pending = null;
+        }
+
+        /// <summary>Un meteoro de la ronda guiada se resolvió (se tocó o llegó abajo): solo se ve el efecto y se avisa a la ronda; no hay puntos, rachas, constelación ni DDA.</summary>
+        private void GuidedResolve(Meteor m, bool tapped)
+        {
+            m.Done = true;
+            _active.Remove(m);
+            bool word = m.Spec.IsWord;
+            if (tapped && word)
+            {
+                GameFeel.Correct(1);
+                StartCoroutine(UiFx.SparkBurst(_fxRect, m.Pos, MeteorSprites.TintColor(m.Tint), 12, 220f, 36f, 0.6f));
+                StartCoroutine(MarkPop(m.Pos + new Vector2(m.Rx * 0.62f, m.Ry * 0.5f), true));
+                StartCoroutine(GuidedFade(m));
+                _guidedOutcome = 1;
+            }
+            else if (tapped)
+            {
+                GameFeel.Wrong();
+                StartCoroutine(CrackEffect(m));
+                _guidedOutcome = 2;
+            }
+            else if (word)
+            {
+                StartCoroutine(MissedEffect(m));
+                _guidedOutcome = 3;
+            }
+            else
+            {
+                PlayTone(330f, 0.12f, 0.03f);
+                StartCoroutine(DissolveEffect(m));
+                _guidedOutcome = 4;
+            }
+        }
+
+        private static IEnumerator Wait(float seconds) => Motion.Hold(seconds);
+
+        private IEnumerator GuidedFade(Meteor m)
+        {
+            float t = 0f;
+            const float seconds = 0.22f;
+            while (t < seconds)
+            {
+                t += GameClock.DeltaTime;
+                float k = Mathf.Clamp01(t / seconds);
+                SetAlpha(m, 1f - k);
+                yield return null;
+            }
+            Destroy(m.Root.gameObject);
+        }
+        // </guided>
     }
 }

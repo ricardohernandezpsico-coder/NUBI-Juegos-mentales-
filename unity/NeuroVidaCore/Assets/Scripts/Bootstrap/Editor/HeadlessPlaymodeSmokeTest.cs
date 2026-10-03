@@ -37,11 +37,17 @@ namespace NeuroVida.Bridge.EditorTools
         public static void Run() => RunGame(null, 10f);
 
         /// <summary>Rastro de luz con su tutorial guiado (<c>show_tutorial</c>): la tarjeta de Nubi maestra queda esperando un toque que el smoke no da.</summary>
-        public static void RunTutorial()
-        {
-            EditorPlaytestBootstrap.ShowTutorialOverride = true;
-            RunGame(null, 8f);
-        }
+        public static void RunTutorial() => RunGame(null, 12f, tutorial: true);
+
+        /// <summary>Los tutoriales guiados de los otros tres juegos del inicio (la tarjeta de Nubi sigue sola y se juega el principio de la ronda guiada).</summary>
+        public static void RunTutorialFreno() => RunGame("freno", 12f, tutorial: true);
+        public static void RunTutorialAterrizaje() => RunGame("aterrizaje", 12f, tutorial: true);
+        public static void RunTutorialMeteoros() => RunGame("meteoros", 12f, tutorial: true);
+
+        /// <summary>La versión corta del inicio («Tu punto de partida»: <c>assessment</c>) de Freno, Aterrizaje y Meteoros.</summary>
+        public static void RunCortoFreno() => RunGame("freno", 10f, assessment: true);
+        public static void RunCortoAterrizaje() => RunGame("aterrizaje", 10f, assessment: true);
+        public static void RunCortoMeteoros() => RunGame("meteoros", 10f, assessment: true);
 
         /// <summary>Mismo smoke test pero con "Tinta o Palabra" (Stroop) como juego.</summary>
         public static void RunStroop() => RunGame("stroop", 9f);
@@ -114,7 +120,9 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Nombre de cada juego (el sufijo de su método Run*) con su id y los segundos de partida del smoke.</summary>
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
-            ("Run", null, 10f), ("Tutorial", "secuencia", 8f), ("Stroop", "stroop", 9f), ("Comparacion", "comparacion", 9f), ("CambioChip", "cambiochip", 9f),
+            ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f),
+            ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), ("Comparacion", "comparacion", 9f), ("CambioChip", "cambiochip", 9f),
             ("RutaTesoro", "rutatesoro", 9f), ("Series", "series", 9f), ("Calculo", "calculo", 9f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
             ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f), ("Trafico", "trafico", 9f),
@@ -188,7 +196,11 @@ namespace NeuroVida.Bridge.EditorTools
             _listPlaying = true;
             EditorPlaytestBootstrap.GameIdOverride = _current.Id;
             EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
-            EditorPlaytestBootstrap.ShowTutorialOverride = _current.Name == "Tutorial";
+            // «Tutorial*» = con la tarjeta de Nubi (sigue sola en el Editor) y la ronda guiada; «Corto*» = la versión corta del inicio (assessment)
+            bool tutorial = _current.Name.StartsWith("Tutorial");
+            EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
+            EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
             EditorApplication.EnterPlaymode();
         }
 
@@ -223,10 +235,12 @@ namespace NeuroVida.Bridge.EditorTools
             EditorApplication.Exit(_listAnyFailed ? 1 : 0);
         }
 
-        private static void RunGame(string gameId, float seconds)
+        private static void RunGame(string gameId, float seconds, bool tutorial = false, bool assessment = false)
         {
             RunSeconds = seconds;
-            if (gameId != null) EditorPlaytestBootstrap.ShowTutorialOverride = false;
+            EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
+            EditorPlaytestBootstrap.AssessmentOverride = assessment;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
             EditorPlaytestBootstrap.GameIdOverride = gameId;
             EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
             EditorSceneManager.OpenScene(ScenePath);

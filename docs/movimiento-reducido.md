@@ -406,3 +406,9 @@ Criterio para el resto: ¿sin ese movimiento la persona puede hacer la tarea y e
 Las 102 filas DECORATIVAS con «Resp. = no» de la Fase A quedaron aplicadas (columna «Hecho» = ✓), salvo una por decisión: el polvo de estrellas de Rumbo pasó a ESENCIAL y no se tocó
 (la cámara de Rumbo, también esencial, tampoco). Además se aplicaron las dudas que pasaron a decorativas (Parejas giro, Acoplamiento `Straighten`/`Flip`, Satélites anillo, Piloto `Warp`).
 Decorativas sin respetar que quedan en los juegos: **0**.
+
+## Tutorial guiado y «Cómo se juega» (3-oct, tarea 21a)
+
+Rastro de luz, Freno de Emergencia, Aterrizaje Lunar y Lluvia de meteoros tienen tarjeta de Nubi + ronda guiada (`Games/Shared/GuidedTutorial`). Con «quitar animaciones»: la tarjeta entra y sale con fundido
+(`Motion.FadeSeconds`), el aro sol punteado queda QUIETO (sin girar, `GuidedTutorial.SpinHint` mira `Motion.Decorative`) y los avisos de Nubi y la franja de Aterrizaje aparecen de una vez.
+Las esperas del guion usan `Motion.Hold` (reloj de juego). Verificado con `--sin-animaciones` en los cuatro juegos.

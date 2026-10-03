@@ -158,3 +158,17 @@ existía"); una palabra que se va queda anotada ("se fue: brújula"). El toque c
   Vista previa de diseño: `python tools/art-preview/meteoros.py` → `docs/previews/meteoros.png`.
 - Pendiente: licencia de SPALEX para uso comercial (Ricardo pidió permiso a los autores; se avanzó como si lo dieran);
   que Ricardo revise la muestra de palabras e inventadas; probarlo en el teléfono.
+
+
+## Tutorial guiado, «Cómo se juega» y versión corta del inicio (3-oct, tarea 21a)
+
+- **Tarjeta de Nubi**: «Lluvia de meteoros» · «Toca las palabras que existen. Las inventadas, déjalas caer.» · «Probar una ronda» / «Saltar tutorial».
+- **Ronda guiada** (`MeteorContract.GuidedPlan` = real, real, inventada; caen en 11 s, `GuidedFallSeconds`; palabras de banda 1 de 4 a 6 letras y una inventada obvia del
+  léxico; aro sol sobre la palabra real; entre `// <guided>` y `// </guided>`). Avisos de Nubi: «Esta palabra existe: tócala» · «Otra que existe: tócala» · «Esta no existe:
+  déjala caer» · «¡Bien! Esa existe» · «¡Bien! Esa no existía: dejarla caer fue lo correcto» · errores sin culpa: «Casi: esa palabra existe. Tócala antes de que llegue
+  abajo» / «Casi: esa no existe. Las inventadas se dejan caer» · «¡Así se juega! Ahora sin ayuda». No cuenta para nada ni se guarda (no pasa por `ResolveTap`/`ResolvePass`).
+- **«Cómo se juega» desde la pausa**: limpia los meteoros en pantalla, tarjeta + ronda guiada y vuelve a la partida con el Reto corrido lo que duró.
+- **Versión corta**: `MeteorContract.AssessmentSeconds` = **60 s** (con reloj, como el Reto), al menos 2 meteoros a la vez (`AssessmentConcurrent`): unas 10 palabras
+  reales y otras tantas inventadas. Arranque suave (`CreateEngine`: nivel 1 en mayores, 3 en el resto, sin tiempo de reacción). **Primer dato** (app, `data/FirstData.kt`):
+  «Reconociste N de M palabras reales.» (suma de `lex_band_hits`/`lex_band_seen`, con ≥ 6 vistas).
+- Pruebas: `MeteorosTutorialTests` (plan, léxico de la ronda guiada, 60 s, ≥ 2 a la vez, arranque suave) y `GuidedTutorialTests`.

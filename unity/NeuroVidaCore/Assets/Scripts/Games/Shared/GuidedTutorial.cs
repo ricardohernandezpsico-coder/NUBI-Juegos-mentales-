@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,11 +23,17 @@ namespace NeuroVida.Games.Shared
     {
         private const float Dp = 3f;
 
-        private readonly RectTransform _intro, _startRect, _skipIntroRect, _practiceRoot, _skipRect;
+        private readonly RectTransform _intro, _startRect, _skipIntroRect, _practiceRoot, _skipRect, _badge;
         private readonly CanvasGroup _introGroup;
         private readonly Text _title, _line, _caption;
         private readonly Text _skipPracticeLabel;
         private readonly Image _nubi;
+
+#if UNITY_EDITOR
+        /// <summary>SOLO EN EL EDITOR (smoke test): la tarjeta de entrada sigue sola al segundo, como si se hubiera tocado «Probar una ronda». Así el arranque de
+        /// prueba llega hasta la ronda guiada de cada juego. En el teléfono no existe.</summary>
+        public static bool EditorAutoContinue;
+#endif
 
         /// <summary>true si la persona tocó «Saltar tutorial» (en la tarjeta o durante la ronda guiada).</summary>
         public bool Skipped { get; private set; }
@@ -80,6 +87,7 @@ namespace NeuroVida.Games.Shared
             var badge = Panel(_practiceRoot, "Badge", new Vector2(640f, 96f), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f);
             badge.anchorMin = badge.anchorMax = new Vector2(0.5f, 1f);
             badge.anchoredPosition = new Vector2(0f, -practiceTopU - 48f);
+            _badge = badge;
             var badgeText = Label(badge, "Label", 48, Vector2.zero, new Vector2(620f, 96f), NeuroStyle.Grape, TextAnchor.MiddleCenter);
             badgeText.text = "Práctica: no cuenta";
             BestFit(badgeText, 45);
@@ -99,6 +107,24 @@ namespace NeuroVida.Games.Shared
             _practiceRoot.gameObject.SetActive(false);
         }
 
+        /// <summary>Acomoda los controles de la ronda guiada para los juegos donde abajo se toca (Freno): «Saltar tutorial» bajo el rótulo, arriba, y el mensaje de Nubi
+        /// a <paramref name="captionFromBottomU"/> unidades del borde de abajo (-1 = donde está por defecto).</summary>
+        public void PlaceControls(float practiceTopU, bool skipAtTop, float captionFromBottomU, bool badgeAtBottom = false)
+        {
+            if (badgeAtBottom)
+            {
+                // «Práctica: no cuenta» arriba de «Saltar tutorial», abajo (juegos con el marcador y el cielo llenos)
+                _badge.anchorMin = _badge.anchorMax = new Vector2(0.5f, 0f);
+                _badge.anchoredPosition = new Vector2(0f, 36f + 132f + 14f + 48f);
+            }
+            if (skipAtTop)
+            {
+                _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(0.5f, 1f);
+                _skipRect.anchoredPosition = new Vector2(0f, -(practiceTopU + 96f + 14f + 66f));
+            }
+            if (captionFromBottomU >= 0f) _caption.rectTransform.anchoredPosition = new Vector2(0f, captionFromBottomU);
+        }
+
         // ------------------------------------------------------------------ tarjeta de entrada
 
         /// <summary>Muestra la tarjeta de entrada y espera: «Probar una ronda» sigue; «Saltar tutorial» deja <see cref="Skipped"/> en true.</summary>
@@ -116,6 +142,9 @@ namespace NeuroVida.Games.Shared
             while (wait)
             {
                 guard += GameClock.RealDeltaTime;
+#if UNITY_EDITOR
+                if (EditorAutoContinue && guard > 1f) break;
+#endif
                 if (guard > 0.25f && TryPress(out Vector2 pos))
                 {
                     if (Hit(_skipIntroRect, pos)) { Skipped = true; wait = false; }
@@ -184,6 +213,32 @@ namespace NeuroVida.Games.Shared
 
         private static bool Hit(RectTransform rect, Vector2 screenPos) => RectTransformUtility.RectangleContainsScreenPoint(rect, screenPos, null);
 
+        // ------------------------------------------------------------------ aro de ayuda
+
+        /// <summary>El aro sol punteado que marca «aquí» en la ronda guiada: creado e inactivo; el juego lo coloca, lo muestra con SetActive y lo hace girar con
+        /// <see cref="SpinHint"/>.</summary>
+        public static Image CreateHintRing(Transform parent, float sizeU)
+        {
+            var go = new GameObject("HintRing");
+            go.transform.SetParent(parent, false);
+            var r = go.AddComponent<RectTransform>();
+            r.anchorMin = r.anchorMax = r.pivot = new Vector2(0.5f, 0.5f);
+            r.sizeDelta = new Vector2(sizeU, sizeU);
+            var img = go.AddComponent<Image>();
+            img.sprite = RastroSprites.DashedRing();
+            img.color = NeuroStyle.Sun;
+            img.raycastTarget = false;
+            go.SetActive(false);
+            return img;
+        }
+
+        /// <summary>Hace girar despacio el aro de ayuda (quieto con «quitar animaciones»).</summary>
+        public static void SpinHint(Image ring)
+        {
+            if (ring == null || !ring.gameObject.activeSelf) return;
+            ring.rectTransform.localEulerAngles = new Vector3(0f, 0f, Motion.Decorative ? -GameClock.Time * 25f : 0f);
+        }
+
         // ------------------------------------------------------------------ construcción
 
         private static RectTransform Panel(RectTransform parent, string name, Vector2 size, Vector2 pos, Color color, float border, float depth)
@@ -220,4 +275,42 @@ namespace NeuroVida.Games.Shared
             return t;
         }
     }
+
+    /// <summary>
+    /// El guion de una ronda guiada (puro, con pruebas): qué paso toca, cuántos van, cuántos errores hubo y si se saltó. Un error repite el MISMO paso (con la
+    /// regla explicada, sin culpa); un acierto pasa al siguiente; «Saltar tutorial» termina de una vez y lleva a la partida. NO tiene puntos, rachas ni DDA: la
+    /// ronda guiada no cuenta.
+    /// </summary>
+    public sealed class GuidedScript
+    {
+        public int Count { get; }
+        public int Index { get; private set; }
+        public int Failures { get; private set; }
+        public bool Skipped { get; private set; }
+        public GuidedScript(int steps) { Count = steps; }
+
+        /// <summary>true si ya no queda nada por jugar (se acabaron los pasos o se saltó).</summary>
+        public bool Finished => Skipped || Index >= Count;
+        public void Success() { if (!Finished) Index++; }
+        public void Failure() { if (!Finished) Failures++; }
+        public void Skip() { Skipped = true; }
+    }
+
+    /// <summary>
+    /// El reloj de «Cómo se juega» desde la pausa (puro, con pruebas): el tutorial corre con el reloj de juego andando, y al terminar se sabe cuánto duró
+    /// (<see cref="Finish"/>) para correr hacia adelante cada ancla de tiempo del juego (el final del Reto, el inicio del reloj) con <see cref="Shift"/>: así el
+    /// tiempo que quedaba antes de abrir «Cómo se juega» es el mismo que queda después.
+    /// </summary>
+    public readonly struct HowToClock
+    {
+        private readonly float _startedAt;
+        public HowToClock(float gameTime) { _startedAt = gameTime; }
+
+        /// <summary>Segundos que duró el tutorial (nunca negativo).</summary>
+        public float Finish(float gameTime) => Math.Max(0f, gameTime - _startedAt);
+
+        /// <summary>Corre un ancla de tiempo (un instante del reloj de juego) hacia adelante lo que duró el tutorial.</summary>
+        public static float Shift(float anchor, float spentSeconds) => anchor + spentSeconds;
+    }
 }
+

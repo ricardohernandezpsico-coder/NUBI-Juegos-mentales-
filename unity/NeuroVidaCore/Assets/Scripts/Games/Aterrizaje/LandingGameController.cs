@@ -41,7 +41,8 @@ namespace NeuroVida.Games.Aterrizaje
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
         private Phase _phase = Phase.Idle;
-        private bool Endless => _config != null && _config.config.timed;
+        // la versión corta del inicio (Assessment) es de aterrizajes fijos y sin reloj, aunque la config traiga timed
+        private bool Endless => _config != null && _config.config.timed && !Assessment.Active;
         private bool Precision => !Endless;
         private int _previousFrameRate;
 
@@ -69,6 +70,7 @@ namespace NeuroVida.Games.Aterrizaje
         private GameHud _hud;
         private CountdownScreen _countdown;
         private float _playW, _playH, _rulerY, _rulerW, _skyTop;
+        private Image _zone;
 
         // ------------------------------------------------------------------ sesión
 
@@ -76,10 +78,8 @@ namespace NeuroVida.Games.Aterrizaje
         {
             _config = config;
             _rng = new System.Random();
-            var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
-            float start = AdaptiveDifficulty.StartRating(config.config, LandingContract.MaxLevel);
             // ~18 aterrizajes por partida: pasos medianos. Sin tiempo de reacción: cuenta la precisión.
-            _dda = new AdaptiveDifficulty(LandingContract.MaxLevel, age, start, stepUp: 0.3f, useReaction: false);
+            _dda = LandingContract.CreateEngine(config.config);
 
             // Vuelo continuo y fluido: 60 cuadros por segundo (Android da 30).
             _previousFrameRate = Application.targetFrameRate;
@@ -98,7 +98,10 @@ namespace NeuroVida.Games.Aterrizaje
             _exit.Hide();
             _timerBg.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
+            _loopOn = false;
+            _tutorial.Hide();
             HideReveal();
+            HideZone();
             _landerRect.gameObject.SetActive(false);
 
             StopAllCoroutines();
@@ -112,6 +115,17 @@ namespace NeuroVida.Games.Aterrizaje
 
         private IEnumerator GameLoop()
         {
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre la luna ya armada, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+            }
             _safe.gameObject.SetActive(false);
             yield return StartCoroutine(_countdown.Play("Aterrizaje Lunar", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
@@ -119,15 +133,24 @@ namespace NeuroVida.Games.Aterrizaje
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            SetPrompt("", Color.white);
             UpdateHud();
 
             _endsAt = GameClock.Time + LandingContract.RetoSeconds;
+            _loopOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
+
+        /// <summary>El bucle de la partida: un aterrizaje tras otro. «Cómo se juega» lo retoma desde acá.</summary>
+        private IEnumerator MainLoop()
+        {
             while (!Finished())
                 yield return StartCoroutine(RunTrial());
+            _loopOn = false;
             yield return StartCoroutine(FinishGame());
         }
 
-        private bool Finished() => Precision ? _errors.Count >= LandingContract.PrecisionTrials : GameClock.Time >= _endsAt;
+        private bool Finished() => Precision ? _errors.Count >= LandingContract.TotalTrials(Assessment.Active) : GameClock.Time >= _endsAt;
 
         // ------------------------------------------------------------------ un aterrizaje
 
@@ -141,7 +164,13 @@ namespace NeuroVida.Games.Aterrizaje
             _mission.text = _trial.Label;
             StartCoroutine(PopRect(_mission.rectTransform, 1.15f, 0.3f));
             SetPrompt("", Color.white);
+            yield return StartCoroutine(Fly(LandingContract.DescentSeconds(level, Precision && !Assessment.Active), !_hintShown));
+            yield return StartCoroutine(Reveal(level));
+        }
 
+        /// <summary>La nave aparece arriba, baja sola (el dedo la mueve a lo ancho; al soltar, cae rápido) y toca el suelo. Termina con la nave posada (<c>_landerX</c>).</summary>
+        private IEnumerator Fly(float descent, bool showHint)
+        {
             // La nave aparece arriba, en una posición al azar (no siempre en el centro: no regala el medio).
             _landerX = _landerTargetX = Mathf.Lerp(-_rulerW * 0.4f, _rulerW * 0.4f, (float)_rng.NextDouble());
             _landerY = _skyTop;
@@ -150,7 +179,7 @@ namespace NeuroVida.Games.Aterrizaje
             _lander.color = Color.white;
             PlaceLander();
             StartCoroutine(PopIn(_landerRect, 0.25f));
-            if (!_hintShown)
+            if (showHint)
             {
                 _hint.gameObject.SetActive(true);
                 _hint.text = "Arrastra para mover la nave · suelta para aterrizar";
@@ -158,10 +187,9 @@ namespace NeuroVida.Games.Aterrizaje
 
             // Vuelo: baja sola; el dedo la mueve a lo ancho; al soltar, cae rápido.
             _phase = Phase.Flying;
-            float descent = LandingContract.DescentSeconds(level, Precision);
             float slow = (_skyTop - GroundY()) / descent;
             float speed = 0f;
-            while (_landerY > GroundY())
+            while (_landerY > GroundY() && !GuidedSkipped)
             {
                 float dt = GameClock.DeltaTime;
                 float target = _released ? slow * 5f : slow;
@@ -181,14 +209,13 @@ namespace NeuroVida.Games.Aterrizaje
             _hint.gameObject.SetActive(false);
             _flame.color = new Color(1f, 1f, 1f, 0f);
             foreach (var d in _beam) d.gameObject.SetActive(false);
+            if (GuidedSkipped) yield break;              // «Saltar tutorial» en pleno vuelo: sin toque de suelo
 
             // Toque de suelo: polvo y un pequeño rebote.
             PlayTone(110f, 0.18f, 0.07f);
             GameFeel.Haptic(GameFeel.HapticKind.Light);
             for (int i = 0; i < 6; i++) StartCoroutine(Dust(new Vector2(_landerX, _rulerY + 10f), i));
             StartCoroutine(PopRect(_landerRect, 0.92f, 0.18f));
-
-            yield return StartCoroutine(Reveal(level));
         }
 
         private IEnumerator Reveal(int level)
@@ -267,6 +294,7 @@ namespace NeuroVida.Games.Aterrizaje
 
         private void Update()
         {
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no mueve la nave
             UpdateClock();
             if (_phase != Phase.Flying || GameClock.DeltaTime <= 0f) return;
             bool down = Input.touchCount > 0 || Input.GetMouseButton(0);
@@ -556,6 +584,10 @@ namespace NeuroVida.Games.Aterrizaje
                 _beam.Add(d);
             }
 
+            // la zona guía de la ronda guiada: una franja sol sobre el lugar justo (detrás de la nave)
+            _zone = NewImage(_play, "GuideZone", RoundedRectSprite.Get(24));
+            _zone.type = Image.Type.Sliced;
+            _zone.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.32f);
             BuildLander();
             BuildFlag(); // encima de la nave: el blanco siempre se ve, aunque la nave quede justo al lado
 
@@ -565,6 +597,7 @@ namespace NeuroVida.Games.Aterrizaje
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetTopOffset(0f);
+            BuildTutorial(_safe, GameHud.Height + 10f, "Aterrizaje Lunar", "Aterriza en el número que te piden. La regla solo marca sus dos extremos.");
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -803,7 +836,132 @@ namespace NeuroVida.Games.Aterrizaje
         {
             _hud.SetLevel(_dda.PresentedLevel);
             if (Endless) _hud.SetPoints(_points);
-            else _hud.SetInfo($"{Mathf.Min(_errors.Count + 1, LandingContract.PrecisionTrials)} de {LandingContract.PrecisionTrials}");
+            else
+            {
+                int total = LandingContract.TotalTrials(Assessment.Active);
+                _hud.SetInfo($"{Mathf.Min(_errors.Count + 1, total)} de {total}");
+            }
         }
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        private bool _loopOn;
+
+        protected override bool HowToReady => _loopOn && _phase != Phase.Done;
+
+        protected override void HowToSuspend()
+        {
+            _phase = Phase.Idle;
+            _toast.Hide();
+            ClearTransient();
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            _endsAt = HowToClock.Shift(_endsAt, spentSeconds);       // el tiempo que duró «Cómo se juega» no se le descuenta al Reto
+            _phase = Phase.Idle;
+            ClearTransient();
+            StartCoroutine(MainLoop());                              // el aterrizaje que estaba en curso no contó: sigue otro con el mismo estado
+        }
+
+        /// <summary>Quita lo que quedó a medias (nave, bandera, efectos, zona guía, el haz) sin tocar ninguna cuenta.</summary>
+        private void ClearTransient()
+        {
+            foreach (Transform c in _fxRect) Destroy(c.gameObject);
+            HideReveal();
+            HideZone();
+            _landerRect.gameObject.SetActive(false);
+            _hint.gameObject.SetActive(false);
+            foreach (var d in _beam) d.gameObject.SetActive(false);
+            _flame.color = new Color(1f, 1f, 1f, 0f);
+            _missionSmall.gameObject.SetActive(true);
+            SetPrompt("", Color.white);
+        }
+
+        /// <summary>Se tocó «Saltar tutorial» durante la ronda guiada (el vuelo y las esperas terminan de una vez).</summary>
+        private bool GuidedSkipped => _tutorial != null && _tutorial.Practicing && _tutorial.Skipped;
+
+        private void HideZone() { if (_zone != null) _zone.gameObject.SetActive(false); }
+
+        // ------------------------------------------------------------------ ronda guiada del tutorial (pieza común)
+
+        // <guided>
+        protected override IEnumerator GuidedRound(GuidedTutorial t)
+        {
+            t.BeginPractice();
+            _phase = Phase.Idle;
+            // los avisos de Nubi van donde va el resultado, bajo la misión; «Aterriza en» da lugar al rótulo «Práctica: no cuenta»
+            t.PlaceControls(GameHud.Height + 10f, false, _playH * 0.5f + _prompt.rectTransform.anchoredPosition.y);
+            _missionSmall.gameObject.SetActive(false);
+            HideReveal();
+            SetPrompt("", Color.white);
+            var script = new GuidedScript(LandingContract.GuidedZones.Length);
+            var trial = LandingContract.GuidedTrial(_rng);
+            while (!script.Finished)
+            {
+                if (t.Skipped) { script.Skip(); break; }
+                float zoneHalf = LandingContract.GuidedZones[script.Index];
+                _trial = trial;
+                SetRuler(trial);
+                _mission.text = trial.Label;
+                ShowZone(trial, zoneHalf);
+                t.Say(script.Index == 0 && script.Failures == 0
+                    ? $"La regla va de {trial.MinLabel} (izquierda) a {trial.MaxLabel} (derecha). Aterriza en el {trial.Label}"
+                    : script.Index == 0 ? $"Otra vez: aterriza en el {trial.Label}, dentro de la zona amarilla"
+                    : $"Ahora la zona es más chica. Aterriza en el {trial.Label}");
+                // baja despacio (14 s) para que dé tiempo a moverla
+                yield return StartCoroutine(Fly(14f, true));
+                if (t.Skipped) { script.Skip(); break; }
+
+                float given = Mathf.Clamp01(_landerX / _rulerW + 0.5f);
+                float err = LandingContract.Error(trial, LandingContract.ValueAt(trial, given));
+                float tx = (trial.TargetFraction - 0.5f) * _rulerW;
+                _flagRect.anchoredPosition = new Vector2(tx, _rulerY);
+                _flagRect.gameObject.SetActive(true);
+                _flagLabel.text = trial.Label;
+                yield return StartCoroutine(PlantFlag());
+                if (err <= zoneHalf)
+                {
+                    GameFeel.Correct(1);
+                    StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(_landerX, _rulerY + 60f), GoodColor, 12, 180f, 32f, 0.5f));
+                    t.Say($"¡Bien! Ese es el {trial.Label}");
+                    script.Success();
+                    trial = LandingContract.GuidedTrial(_rng, (int)trial.Target);
+                    yield return StartCoroutine(Wait(1.6f));
+                }
+                else
+                {
+                    GameFeel.Wrong();
+                    t.Say($"Casi: la zona amarilla es el lugar justo del {trial.Label}. Probemos otra vez");
+                    script.Failure();
+                    yield return StartCoroutine(Wait(2.0f));
+                }
+                HideZone();
+                yield return StartCoroutine(TakeOff());
+            }
+            HideZone();
+            HideReveal();
+            _landerRect.gameObject.SetActive(false);
+            _missionSmall.gameObject.SetActive(true);
+            if (!script.Skipped)
+            {
+                t.Say("¡Así se juega! Ahora sin ayuda");
+                PlayTone(523f, 0.4f, 0.08f);
+                yield return StartCoroutine(Wait(1.8f));
+            }
+            t.EndPractice();
+            _phase = Phase.Idle;
+            SetPrompt("", Color.white);
+        }
+
+        /// <summary>La franja guía sobre el lugar justo: de ± <paramref name="halfFraction"/> del largo de la regla a cada lado del número.</summary>
+        private void ShowZone(LandingTrial trial, float halfFraction)
+        {
+            float tx = (trial.TargetFraction - 0.5f) * _rulerW;
+            _zone.rectTransform.sizeDelta = new Vector2(_rulerW * halfFraction * 2f, 150f);
+            _zone.rectTransform.anchoredPosition = new Vector2(tx, _rulerY + 40f);
+            _zone.gameObject.SetActive(true);
+        }
+        // </guided>
     }
 }

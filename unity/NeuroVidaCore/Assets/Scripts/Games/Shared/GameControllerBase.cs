@@ -24,6 +24,8 @@ namespace NeuroVida.Games.Shared
         protected RectTransform _resultRoot;
         /// <summary>Tutorial guiado común (<see cref="GuidedTutorial"/>); null hasta que el juego llama a <see cref="BuildTutorial"/>.</summary>
         protected GuidedTutorial _tutorial;
+        private string _tutorialTitle = "", _tutorialGoal = "";
+        private bool _howToRunning;
 
         protected virtual void Awake()
         {
@@ -63,8 +65,19 @@ namespace NeuroVida.Games.Shared
         protected bool TutorialWanted => _tutorial != null && _config != null && _config.config != null && _config.config.show_tutorial;
 
         /// <summary>Crea el tutorial guiado sobre <paramref name="safe"/> (llamar al final de <see cref="BuildUi"/>, para que quede encima de todo).
-        /// <paramref name="practiceTopU"/> = unidades del lienzo desde arriba hasta debajo del marcador del juego.</summary>
-        protected void BuildTutorial(RectTransform safe, float practiceTopU) => _tutorial = new GuidedTutorial(safe, practiceTopU);
+        /// <paramref name="practiceTopU"/> = unidades del lienzo desde arriba hasta debajo del marcador del juego; <paramref name="title"/> y
+        /// <paramref name="goal"/> son el nombre del juego y su meta en una frase (≤ 2 líneas) para la tarjeta de entrada.</summary>
+        protected void BuildTutorial(RectTransform safe, float practiceTopU, string title, string goal, bool skipAtTop = false, float captionFromBottomU = -1f, bool badgeAtBottom = false)
+        {
+            _tutorial = new GuidedTutorial(safe, practiceTopU);
+            _tutorial.PlaceControls(practiceTopU, skipAtTop, captionFromBottomU, badgeAtBottom);
+            _tutorialTitle = title;
+            _tutorialGoal = goal;
+        }
+
+        /// <summary>Para el botón de «saltar»: llamar al principio de <c>Update</c> y salir si devuelve true (el toque era de «Saltar tutorial», no del juego).</summary>
+        protected bool PollTutorialSkip() =>
+            _tutorial != null && _tutorial.Practicing && GuidedTutorial.TryPress(out var pos) && _tutorial.TrySkip(pos);
 
         /// <summary>El gancho de «ronda guiada»: cada juego lo reemplaza con SU primera ronda (corta, con ayuda, sin puntos). Debe jugarse SIN pasar por
         /// el DDA, el puntaje ni el guardado, llamar a <see cref="GuidedTutorial.BeginPractice"/> y <see cref="GuidedTutorial.EndPractice"/>, y dejar de
@@ -73,12 +86,52 @@ namespace NeuroVida.Games.Shared
 
         /// <summary>Si corresponde, corre el tutorial: tarjeta de entrada con Nubi maestra → <see cref="GuidedRound"/> (salvo «Saltar tutorial»). Se usa
         /// con <c>yield return StartCoroutine(RunTutorialIfNeeded(...))</c> antes de la cuenta regresiva o de la primera ronda real.</summary>
-        protected IEnumerator RunTutorialIfNeeded(string gameTitle, string goal)
+        protected IEnumerator RunTutorialIfNeeded()
         {
             if (!TutorialWanted) yield break;
-            yield return StartCoroutine(_tutorial.Intro(gameTitle, goal));
+            yield return StartCoroutine(_tutorial.Intro(_tutorialTitle, _tutorialGoal));
             if (!_tutorial.Skipped) yield return StartCoroutine(GuidedRound(_tutorial));
             _tutorial.Hide();
+        }
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        /// <summary>El juego ya está en marcha y puede mostrar «Cómo se juega» (cada juego con tutorial lo reemplaza: ni en la cuenta regresiva ni ya terminado).</summary>
+        protected virtual bool HowToReady => false;
+
+        /// <summary>La pausa ofrece «Cómo se juega» si el juego tiene tutorial, está en marcha y no se está mostrando ya.</summary>
+        public bool CanShowHowTo => _tutorial != null && !_howToRunning && HowToReady;
+
+        /// <summary>Antes del tutorial: el juego deja quieto lo suyo (fase en reposo, nada a medio caer ni a medio contar). Se llama justo antes de
+        /// detener todas sus corrutinas, así que no hay nada que seguir esperando.</summary>
+        protected virtual void HowToSuspend() { }
+
+        /// <summary>Después del tutorial: el juego corre <paramref name="spentSeconds"/> más de reloj (lo que duró) y retoma su partida donde estaba;
+        /// lo que haga acá tiene que correr el reloj del Reto esa cantidad hacia adelante (para que el tiempo del tutorial no se le descuente) y volver a
+        /// arrancar su bucle principal sin contar nada de lo que se vio.</summary>
+        protected virtual void HowToResume(float spentSeconds) { }
+
+        /// <summary>«Cómo se juega» de la pausa: la tarjeta de Nubi y la ronda guiada, y después vuelve a la partida donde estaba. Nada de lo hecho ahí
+        /// cuenta, y el reloj del Reto no avanza mientras tanto (se corre hacia adelante lo que duró: <see cref="HowToClock"/>).</summary>
+        public void ShowHowTo()
+        {
+            if (!CanShowHowTo) return;
+            HowToSuspend();
+            StopAllCoroutines();                 // la partida queda quieta; se retoma desde su bucle principal al volver
+            _howToRunning = true;
+            StartCoroutine(HowToFlow());
+        }
+
+        private IEnumerator HowToFlow()
+        {
+            GameClock.Resume();                  // el tutorial se juega con el reloj andando (la pausa ya lo detuvo)
+            var clock = new HowToClock(GameClock.Time);
+            yield return StartCoroutine(_tutorial.Intro(_tutorialTitle, _tutorialGoal));
+            if (!_tutorial.Skipped) yield return StartCoroutine(GuidedRound(_tutorial));
+            _tutorial.Hide();
+            float spent = clock.Finish(GameClock.Time);
+            _howToRunning = false;
+            HowToResume(spent);
         }
 
         /// <summary>Tono armónico (cacheado por frecuencia y duración); respeta "sonido desactivado" de la app.</summary>

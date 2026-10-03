@@ -191,7 +191,7 @@ namespace NeuroVida.Games.Secuencia
                 Canvas.ForceUpdateCanvases();
                 Layout();
                 ResetHud(RastroMode.Rastro, RastroContract.GuidedLength);
-                yield return StartCoroutine(RunTutorialIfNeeded("Rastro de luz", "Mira el camino de la chispa y repítelo con el dedo"));
+                yield return StartCoroutine(RunTutorialIfNeeded());
             }
             _safe.gameObject.SetActive(false);
             yield return StartCoroutine(_countdown.Play("Rastro de luz", Assessment.Subtitle("Mira el camino y repítelo"), () => _safe.gameObject.SetActive(true)));
@@ -205,12 +205,46 @@ namespace NeuroVida.Games.Secuencia
 
             _clockStart = GameClock.Time;
             _clockOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
+
+        /// <summary>El bucle de la partida: una ronda tras otra hasta que se acaben las vidas, el tiempo o las rondas. «Cómo se juega» lo retoma desde acá.</summary>
+        private IEnumerator MainLoop()
+        {
             while (!_session.IsOver(Elapsed))
             {
                 var round = _session.NextRound();
                 yield return StartCoroutine(PlayRound(round));
             }
             yield return StartCoroutine(FinishGame());
+        }
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        private bool _clockWasOn;
+
+        protected override bool HowToReady => _clockOn && _phase != Phase.Done;
+
+        protected override void HowToSuspend()
+        {
+            _clockWasOn = _clockOn;
+            _clockOn = false;                       // el reloj del Reto no corre mientras se ve «Cómo se juega»
+            _phase = Phase.Idle;
+            _events.Clear();
+            _unlockRoot.gameObject.SetActive(false);
+            ClearRound();
+            ClearFx();
+            _hintOrb = -1;
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            _clockComp += spentSeconds;             // lo que duró no se le descuenta al Reto
+            _clockOn = _clockWasOn;
+            _phase = Phase.Idle;
+            ClearRound();
+            ResetHud(RastroMode.Rastro, 0);
+            StartCoroutine(MainLoop());             // la ronda que estaba en curso no contó: sigue otra con el mismo estado
         }
 
         /// <summary>Hornea sprites y sintetiza sonidos durante la tarjeta y la cuenta regresiva (así la primera ronda no traba).</summary>
@@ -494,6 +528,7 @@ namespace NeuroVida.Games.Secuencia
 
         // ------------------------------------------------------------------ ronda guiada del tutorial (pieza común)
 
+        // <guided>
         protected override IEnumerator GuidedRound(GuidedTutorial tutorial)
         {
             tutorial.BeginPractice();
@@ -509,7 +544,6 @@ namespace NeuroVida.Games.Secuencia
                 if (tutorial.Skipped) break;
                 if (res.Complete)
                 {
-                    _session.Complete(r, true);             // la ronda guiada no deja rastro en el DDA, el conteo ni las vidas
                     tutorial.Say("¡Así se juega! Ahora sin ayuda");
                     PlayClip(RastroSounds.Chord(), 1f);
                     _winAt = GameClock.Time;
@@ -518,7 +552,6 @@ namespace NeuroVida.Games.Secuencia
                     break;
                 }
                 // error: sin culpa, se explica y se repite el mismo camino
-                _session.Complete(r, false);
                 _orbs[res.Wrong].Aro.color = NeuroStyle.WithAlpha(Coral, 1f);
                 _orbs[res.Wrong].Aro.gameObject.SetActive(true);
                 _orbs[res.Wrong].X.color = Coral;
@@ -535,6 +568,7 @@ namespace NeuroVida.Games.Secuencia
             tutorial.EndPractice();
             _phase = Phase.Idle;
         }
+        // </guided>
 
         // ------------------------------------------------------------------ «¡NUEVO!»
 
@@ -961,7 +995,7 @@ namespace NeuroVida.Games.Secuencia
             BuildCue();
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
-            BuildTutorial(_safe, 112f * UnitsPerDp);
+            BuildTutorial(_safe, 112f * UnitsPerDp, "Rastro de luz", "Mira el camino de la chispa y repítelo con el dedo");
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

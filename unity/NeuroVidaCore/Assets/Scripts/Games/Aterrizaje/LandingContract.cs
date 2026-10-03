@@ -37,6 +37,40 @@ namespace NeuroVida.Games.Aterrizaje
         /// <summary>Precisión (sin reloj): cantidad de aterrizajes.</summary>
         public const int PrecisionTrials = 15;
 
+        /// <summary>Versión corta del inicio («Tu punto de partida», con <c>Assessment</c> activo): 8 aterrizajes fijos (≈ 70 s), sin reloj y con la bajada del nivel.</summary>
+        public const int AssessmentTrials = 8;
+
+        /// <summary>Aterrizajes de la partida sin reloj: 8 en la versión corta, 15 en Precisión.</summary>
+        public static int TotalTrials(bool assessment) => assessment ? AssessmentTrials : PrecisionTrials;
+
+        /// <summary>Paso del DDA (≈ 18 aterrizajes por partida: pasos medianos).</summary>
+        public const float StepUp = 0.3f;
+
+        /// <summary>El motor común. La versión corta parte suave (nivel 1 en mayores, 3 en el resto: regla de 0 a 100 con marca del medio). Sin tiempo de reacción: cuenta la precisión.</summary>
+        public static NeuroVida.Games.AdaptiveDifficulty CreateEngine(NeuroVida.Contracts.SequenceConfigDetails config)
+        {
+            var age = NeuroVida.Games.DdaUserProfileConfig.ParseAgeBand(config.age_band);
+            float start = config.assessment ? NeuroVida.Games.Shared.Assessment.SoftStartLevel(age) : NeuroVida.Games.AdaptiveDifficulty.StartRating(config, MaxLevel);
+            return new NeuroVida.Games.AdaptiveDifficulty(MaxLevel, age, start, StepUp, useReaction: false);
+        }
+
+        // ------------------------------------------------------------------ ronda guiada del tutorial
+
+        /// <summary>Las dos zonas guía de la ronda guiada, como fracción del largo de la regla a cada lado del lugar justo: ancha (±12 %) y luego más chica (±6 %).</summary>
+        public static readonly float[] GuidedZones = { 0.12f, 0.06f };
+
+        /// <summary>Un aterrizaje fácil para el tutorial: regla de 0 a 10 con la marca del medio, y un número entre el 2 y el 8 que no sea el 5 ni el <paramref name="avoid"/>.</summary>
+        public static LandingTrial GuidedTrial(Random rng, int avoid = -1)
+        {
+            int v;
+            do { v = 2 + rng.Next(7); } while (v == 5 || v == avoid);
+            return new LandingTrial
+            {
+                Level = 1, Min = 0, Max = 10, Target = v, Label = v.ToString(CultureInfo.InvariantCulture),
+                MinLabel = "0", MaxLabel = "10", MidTick = true
+            };
+        }
+
         /// <summary>Error (fracción del largo de la regla) que todavía cuenta como buen aterrizaje.</summary>
         public const float HitError = 0.05f;
         /// <summary>Error de una "diana": justo en el blanco.</summary>

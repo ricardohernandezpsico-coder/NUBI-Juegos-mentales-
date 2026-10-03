@@ -47,6 +47,35 @@ namespace NeuroVida.Games.Meteoros
 
         /// <summary>Reto: 2 minutos de lluvia.</summary>
         public const int RetoSeconds = 120;
+        /// <summary>Versión corta del inicio («Tu punto de partida», con <c>Assessment</c> activo): 60 s (el reloj corre como en el Reto), con 2 meteoros a la vez como mínimo.
+        /// Salen unas 10 palabras reales y otras tantas inventadas: alcanza para «reconociste N de M».</summary>
+        public const int AssessmentSeconds = 60;
+
+        /// <summary>Segundos de la partida con reloj: 60 en la versión corta, 120 en el Reto.</summary>
+        public static int RunSeconds(bool assessment) => assessment ? AssessmentSeconds : RetoSeconds;
+
+        /// <summary>Meteoros a la vez en la versión corta: al menos 2 (hay más palabras que decidir en 60 s).</summary>
+        public static int AssessmentConcurrent(int level) => Math.Max(2, Spec(level).Concurrent);
+
+        /// <summary>Paso del DDA (≈ 60 decisiones en el Reto: pasos de tamaño común).</summary>
+        public const float StepUp = 0.15f;
+
+        /// <summary>El motor común. La versión corta parte suave (nivel 1 en mayores, 3 en el resto: palabras de las bandas 1-2). Sin tiempo de reacción: cuenta acertar, no la prisa.</summary>
+        public static NeuroVida.Games.AdaptiveDifficulty CreateEngine(NeuroVida.Contracts.SequenceConfigDetails config)
+        {
+            var age = NeuroVida.Games.DdaUserProfileConfig.ParseAgeBand(config.age_band);
+            float start = config.assessment ? NeuroVida.Games.Shared.Assessment.SoftStartLevel(age) : NeuroVida.Games.AdaptiveDifficulty.StartRating(config, MaxLevel);
+            return new NeuroVida.Games.AdaptiveDifficulty(MaxLevel, age, start, StepUp, useReaction: false);
+        }
+
+        // ------------------------------------------------------------------ ronda guiada del tutorial
+
+        /// <summary>El guion de la ronda guiada: 2 palabras reales que se tocan y 1 inventada que se deja caer (true = palabra real). No cuenta para nada.</summary>
+        public static readonly bool[] GuidedPlan = { true, true, false };
+
+        /// <summary>Segundos que tarda en caer cada meteoro de la ronda guiada (lento: más que el nivel 1).</summary>
+        public const float GuidedFallSeconds = 11f;
+
         /// <summary>Precisión (sin reloj): meteoros por partida.</summary>
         public const int PrecisionMeteors = 40;
         /// <summary>Nunca más de tantas inventadas seguidas.</summary>

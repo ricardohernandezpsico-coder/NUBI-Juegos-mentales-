@@ -32,6 +32,9 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para el smoke test headless: arranca el juego con su tutorial guiado (<c>show_tutorial</c> de la config).</summary>
         public static bool ShowTutorialOverride;
 
+        /// <summary>Solo para el smoke test headless: arranca la versión corta del inicio («Tu punto de partida», <c>assessment</c> de la config).</summary>
+        public static bool AssessmentOverride;
+
         private void Start()
         {
 #if UNITY_EDITOR
@@ -57,7 +60,10 @@ namespace NeuroVida.Bridge
                     age_band = ageBand,
                     sound_enabled = true,
                     reduce_motion = ReduceMotionOverride,
-                    show_tutorial = ShowTutorialOverride
+                    show_tutorial = ShowTutorialOverride,
+                    assessment = AssessmentOverride,
+                    assessment_step = AssessmentOverride ? 1 : 0,
+                    assessment_total = AssessmentOverride ? 4 : 0
                 }
             };
 

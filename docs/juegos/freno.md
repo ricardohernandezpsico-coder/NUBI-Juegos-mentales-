@@ -22,3 +22,22 @@ en ~30% aparece la señal ¡ALTO! (octágono coral con texto + sirena) un instan
 - Arte: `BrakeSprites` (alto, plataforma, botón), `GameWorld.LaunchBase`. Vista previa:
   `python3 tools/art-preview/freno.py <raw>` → `docs/previews/freno.png`. Probado por Ricardo (27-sep): "me gustó,
   funciona muy bien".
+
+
+## Tutorial guiado, «Cómo se juega» y versión corta del inicio (3-oct, tarea 21a)
+
+Para el inicio nuevo (`docs/diseno-inicio.md`). La pieza común es `Games/Shared/GuidedTutorial` (ficha en `docs/diseno-rastro-de-luz.md`, § Tutorial).
+
+- **Tarjeta de Nubi**: «Freno de Emergencia» · «Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.» · «Probar una ronda» / «Saltar tutorial».
+- **Ronda guiada** (`BrakeContract.GuidedPlan`: 3 de ir y 1 con alto; entre `// <guided>` y `// </guided>` en `BrakeGameController`): cohetes lentos con un aro sol
+  punteado sobre el botón del carril; los pasos de ir esperan sin límite (60 s) y el del alto dura 3,2 s. Avisos de Nubi: «Toca el cohete que se enciende» ·
+  «Otra vez: toca el cohete que se enciende» · «Ahora la otra regla: si aparece el octágono ¡ALTO!, no toques» · «¡ALTO! Este no: déjalo quieto» · «¡Frenaste a
+  tiempo!» · errores sin culpa: «Casi: se toca el cohete que se enciende. Mira otra vez» / «Casi: con el ¡ALTO! el cohete se queda quieto. Probemos otra vez» ·
+  cierre «¡Así se juega! Ahora sin ayuda». Un error repite el MISMO paso. No suma puntos, no toca el DDA, las rachas ni el SSRT y no se guarda.
+- **«Cómo se juega» desde la pausa** (`PauseMenu`, cuarto botón): descarta el lanzamiento en curso, corre tarjeta + ronda guiada con el reloj andando y vuelve a la partida
+  (`HowToSuspend` → `HowToFlow` → `HowToResume`: las anclas de tiempo se corren lo que duró el tutorial; el Reto no pierde segundos).
+- **Versión corta** (`Assessment.Active`): `BrakeContract.AssessmentTrials` = **24 lanzamientos** (≈ 70 s, sin reloj), con 8 altos en posiciones fijas
+  (`AssessmentStop`: nunca en los 3 primeros, máximo 2 seguidos). Arranque suave (`CreateEngine`: nivel 1 en mayores, 3 en el resto, sin tiempo de reacción).
+  `end_rating` normal. **Primer dato** (se lee en la app, `data/FirstData.kt`): «Frenaste a tiempo N de M veces.» (con ≥ 4 altos), de `stops_ok`/`stops_total`.
+- Los cohetes llevan ¡ALTO! (octágono): no son «naves».
+- Pruebas: `FrenoTutorialTests` (plan, calendario de altos, arranque suave, rating normalizado), `GuidedTutorialTests` (guion, reloj, invariante de la ronda guiada).

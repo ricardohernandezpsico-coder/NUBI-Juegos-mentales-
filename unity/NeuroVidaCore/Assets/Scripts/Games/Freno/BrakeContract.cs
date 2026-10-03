@@ -28,6 +28,35 @@ namespace NeuroVida.Games.Freno
         /// <summary>Los primeros lanzamientos son siempre de ir (para aprender la tarea antes del primer alto).</summary>
         public const int WarmupGoTrials = 3;
 
+        /// <summary>Versión corta del inicio («Tu punto de partida», con <c>Assessment</c> activo): lanzamientos fijos (≈ 70 s), sin reloj. Hay 8 altos (33 %), así que sobra
+        /// para «frenaste a tiempo N de M» y alcanza el mínimo de 6 altos del tiempo de frenado.</summary>
+        public const int AssessmentTrials = 24;
+        private static readonly int[] AssessmentStops = { 4, 7, 9, 12, 14, 17, 19, 22 };
+
+        /// <summary>¿El lanzamiento número <paramref name="trialIndex"/> (desde 0) lleva alto en la versión corta? Posiciones fijas: nunca en los 3 primeros ni más de 2 seguidos.</summary>
+        public static bool AssessmentStop(int trialIndex) => Array.IndexOf(AssessmentStops, trialIndex) >= 0;
+
+        /// <summary>Lanzamientos de la partida sin reloj: 24 en la versión corta, 40 en Precisión.</summary>
+        public static int TotalTrials(bool assessment) => assessment ? AssessmentTrials : PrecisionTrials;
+
+        /// <summary>Paso del DDA de la tarea de ir.</summary>
+        public const float StepUp = 0.15f;
+
+        /// <summary>El motor común de la tarea de ir. La versión corta parte suave (nivel 1 en mayores, 3 en el resto), sin tiempo de reacción (no hay reloj).</summary>
+        public static NeuroVida.Games.AdaptiveDifficulty CreateEngine(NeuroVida.Contracts.SequenceConfigDetails config)
+        {
+            var age = NeuroVida.Games.DdaUserProfileConfig.ParseAgeBand(config.age_band);
+            float start = config.assessment ? NeuroVida.Games.Shared.Assessment.SoftStartLevel(age) : NeuroVida.Games.AdaptiveDifficulty.StartRating(config, MaxLevel);
+            return new NeuroVida.Games.AdaptiveDifficulty(MaxLevel, age, start, StepUp, useReaction: config.timed && !config.assessment);
+        }
+
+        // ------------------------------------------------------------------ ronda guiada del tutorial
+
+        public enum GuidedStep { Go, Stop }
+
+        /// <summary>El guion de la ronda guiada: 3 cohetes que SÍ se lanzan (lentos, con aro) y luego 1 con la señal ¡ALTO! que NO se toca. No cuenta para nada.</summary>
+        public static readonly GuidedStep[] GuidedPlan = { GuidedStep.Go, GuidedStep.Go, GuidedStep.Go, GuidedStep.Stop };
+
         public const int SsdStartMs = 250;
         public const int SsdStepMs = 50;
         public const int SsdMinMs = 50;

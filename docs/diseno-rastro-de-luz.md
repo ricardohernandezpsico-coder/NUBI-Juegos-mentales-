@@ -213,3 +213,17 @@ rapidez (`secuencia`, `rutatesoro`, `bitacora`, `rumbo`, `satelites`, `aterrizaj
 
 
 **Retoque 20d.** El ícono de «Al revés» era una flecha curva casi igual a la de «El cielo gira» (solo cambiaba el sentido): ahora es una flecha RECTA a la izquierda con un punto en el origen (←), espejo del → de «El rastro» (que también lleva su punto de origen); la única flecha curva es la del cielo que gira (↻) y «En marcha» sigue con ≫. Sale en la píldora del marcador, el cartel «Ahora:», el rótulo al responder y el «¡NUEVO!» (todos usan `RastroSprites.Icon`); la pantalla final de la app no muestra íconos de modo.
+
+
+**Pieza común de tutorial, ampliada el 3-oct (tarea 21a).** Freno, Aterrizaje y Lluvia de meteoros ya la usan (ver su ficha). Cómo sumar otro juego:
+
+1. En el controlador (hereda `GameControllerBase`): `RunTutorialIfNeeded()` antes de la cuenta regresiva (devuelve la corrutina; sale solo si la app mandó `show_tutorial`) y, en
+   `Awake`/construcción de la UI, `BuildTutorial(safe, practiceTopU, "Nombre del juego", "Meta en una frase (≤ 2 líneas, ≥ 18 sp)", skipAtTop, captionFromBottomU, badgeAtBottom)`: los tres
+   últimos mueven el botón «Saltar tutorial», el mensaje de Nubi y el rótulo «Práctica: no cuenta» para no tapar los botones de juego.
+2. Implementar `GuidedRound()` entre las marcas `// <guided>` y `// </guided>`: arma el guion con `GuidedScript` (pasos, errores que repiten el mismo paso, `Skip`), usa `CreateHintRing`
+   / `SpinHint` para el aro sol punteado y `Say(...)` para lo que dice Nubi. **No puede tocar** puntaje, DDA, rachas ni conteos: `GuidedTutorialTests` lee el código entre las marcas y
+   falla si aparece alguno (lista de símbolos por juego en esa prueba: sumar los del juego nuevo).
+3. «Cómo se juega» desde la pausa: sobrescribir `HowToReady` (¿ya hay partida?), `HowToSuspend()` (detener el bucle y limpiar lo que está en vuelo), `HowToResume(spent)` (correr cada ancla de
+   tiempo con `HowToClock.Shift` y reiniciar el bucle principal). El `PauseMenu` muestra el botón solo si `CanShowHowTo`.
+4. Kotlin: sumar el id a `UnityGameLauncher.TUTORIAL_GAMES`.
+5. Smoke: entradas `TutorialX` en `HeadlessPlaymodeSmokeTest` (el Editor sigue solo la tarjeta tras 1 s con `GuidedTutorial.EditorAutoContinue`, solo en el Editor).
