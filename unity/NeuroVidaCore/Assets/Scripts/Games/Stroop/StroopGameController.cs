@@ -31,11 +31,14 @@ namespace NeuroVida.Games.Stroop
         /// <summary>Lugar que se reserva abajo durante la ronda guiada para «Práctica: no cuenta» y «Saltar tutorial» (los botones suben).</summary>
         private const float GuidedReserveU = 270f;
 
-        private static readonly Color ButtonFill = new Color(0x23 / 255f, 0x2E / 255f, 0x54 / 255f);
+        /// <summary>Tinta de arcilla (<c>Ink</c> 1A1240): el nombre sobre AZUL, AMARILLO y BLANCO (contrastes 4,9 · 11,2 · 15,9 : 1); sobre ROJO va blanco puro (5,0 : 1).</summary>
+        private static readonly Color InkLabel = new Color(0x1A / 255f, 0x12 / 255f, 0x40 / 255f);
         private static readonly Color GoodColor = new Color(0x22 / 255f, 0xC5 / 255f, 0x5E / 255f);
         private static readonly Color BadColor = new Color(0xEF / 255f, 0x44 / 255f, 0x44 / 255f);
         private static readonly Color AmberColor = new Color(0xF5 / 255f, 0x9E / 255f, 0x0B / 255f);
-        private static readonly Color HintColor = new Color(0xFF / 255f, 0xC9 / 255f, 0x3C / 255f);
+        /// <summary>El aro por FUERA del botón correcto: celeste 7FD8FF con borde tinta, que se distingue alrededor de las cuatro tintas (también del botón blanco).</summary>
+        private static readonly Color RingColor = new Color(0x7F / 255f, 0xD8 / 255f, 0xFF / 255f);
+        private const float RingPad = 22f;
 
         private System.Random _rng;
         private StroopContract.Sequencer _seq;
@@ -78,7 +81,7 @@ namespace NeuroVida.Games.Stroop
         private readonly List<RectTransform> _buttonRects = new List<RectTransform>();
         private readonly List<Image> _buttonImages = new List<Image>();
         private readonly List<CanvasGroup> _buttonGroups = new List<CanvasGroup>();
-        private readonly List<Outline> _buttonRings = new List<Outline>();
+        private readonly List<RectTransform> _ringRects = new List<RectTransform>();
         private ProgressDots _dots;
         private PhasePill _pill;
         private Toast _toast;
@@ -91,7 +94,6 @@ namespace NeuroVida.Games.Stroop
         private float _bottomReserve;
         private Vector2 _cardRestPos;
         private float _cardW;
-        private Image _guidedRing;
 
         // ------------------------------------------------------------------ sesión
 
@@ -428,7 +430,6 @@ namespace NeuroVida.Games.Stroop
         private void Update()
         {
             if (PollTutorialSkip()) return;                              // un toque en «Saltar tutorial» no es un toque a un botón
-            if (_guidedRing != null) GuidedTutorial.SpinHint(_guidedRing);
         }
 
         // ------------------------------------------------------------------ construcción de UI
@@ -727,8 +728,28 @@ namespace NeuroVida.Games.Stroop
             _cardCornerIcon.raycastTarget = false;
         }
 
+        /// <summary>
+        /// Los 4 botones de respuesta (2 × 2): cada uno se rellena ENTERO con el color de su tinta, en arcilla (la ficha común de la app: borde tinta grueso y sombra dura hacia
+        /// abajo, y se hunde al tocarla) con el nombre centrado en Fredoka seminegrita. Detrás de cada uno va el aro (oculto) que marca el correcto al fallar y en la ronda guiada.
+        /// </summary>
         private void BuildButtons()
         {
+            for (int i = 0; i < StroopContract.Names.Length; i++)
+            {
+                var ringGo = new GameObject("Ring_" + StroopContract.Names[i]);
+                ringGo.transform.SetParent(_safe, false);
+                var ringRect = ringGo.AddComponent<RectTransform>();
+                ringRect.anchorMin = ringRect.anchorMax = new Vector2(0.5f, 0f);
+                ringRect.pivot = new Vector2(0.5f, 0.5f);
+                var ring = ringGo.AddComponent<Image>();
+                ring.sprite = RoundedRectSprite.Get(64);
+                ring.type = Image.Type.Sliced;
+                ring.color = RingColor;
+                ring.raycastTarget = false;
+                NeuroStyle.ClayFrame(ring, 4f, 5f);
+                ringGo.SetActive(false);
+                _ringRects.Add(ringRect);
+            }
             for (int i = 0; i < StroopContract.Names.Length; i++)
             {
                 int index = i;
@@ -739,42 +760,27 @@ namespace NeuroVida.Games.Stroop
                 rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
                 rect.pivot = new Vector2(0.5f, 0.5f);
                 var img = go.AddComponent<Image>();
-                img.sprite = TileSprites.Get();
-                img.color = ButtonFill;
+                img.sprite = TileSprites.Get();                    // ficha de arcilla en grises: el color de la tinta la tiñe entera
+                img.color = color;
                 var group = go.AddComponent<CanvasGroup>();
-                var ring = go.AddComponent<Outline>();            // el aro que marca el botón correcto cuando se falla
-                ring.effectColor = HintColor;
-                ring.effectDistance = new Vector2(8f, 8f);
-                ring.enabled = false;
                 var button = go.AddComponent<Button>();
                 button.transition = Selectable.Transition.None;
                 button.onClick.AddListener(() => OnColorTapped(index));
                 go.AddComponent<PressScale>();
 
-                // la gota del color y el nombre escrito: el color nunca va solo
-                var dropGo = new GameObject("Drop");
-                dropGo.transform.SetParent(go.transform, false);
-                var dr = dropGo.AddComponent<RectTransform>();
-                dr.anchorMin = dr.anchorMax = new Vector2(0.2f, 0.5f);
-                dr.pivot = new Vector2(0.5f, 0.5f);
-                dr.sizeDelta = new Vector2(110f, 110f);
-                var drop = dropGo.AddComponent<Image>();
-                drop.sprite = StroopSprites.Drop();
-                drop.color = color;
-                drop.raycastTarget = false;
-
-                var label = MakeText(go.transform, "Label", 52, TextAnchor.MiddleLeft, Color.white, 2f, 0.4f);
+                // el nombre, centrado sobre el color: blanco sobre ROJO, tinta oscura sobre las otras tres
+                var label = MakeText(go.transform, "Label", 72, TextAnchor.MiddleCenter, i == 0 ? Color.white : InkLabel, 0f, 0f);
+                label.font = UiFonts.Regular;                      // Fredoka seminegrita
                 var lr = label.rectTransform;
-                lr.anchorMin = new Vector2(0.34f, 0.08f);
-                lr.anchorMax = new Vector2(0.97f, 0.92f);
+                lr.anchorMin = new Vector2(0.1f, 0.14f);
+                lr.anchorMax = new Vector2(0.9f, 0.9f);
                 lr.offsetMin = lr.offsetMax = Vector2.zero;
-                BestFit(label, 30);
+                BestFit(label, 60);                                // 20 dp o más: «AMARILLO» cabe sin achicarse mucho
                 label.text = StroopContract.Names[i];
 
                 _buttonRects.Add(rect);
                 _buttonImages.Add(img);
                 _buttonGroups.Add(group);
-                _buttonRings.Add(ring);
             }
         }
 
@@ -937,6 +943,10 @@ namespace NeuroVida.Games.Stroop
                 r.sizeDelta = new Vector2(cellW, cellH);
                 float x = (i % 2 == 0 ? -1f : 1f) * (cellW + gap) / 2f;
                 r.anchoredPosition = new Vector2(x, i < 2 ? rowTopY : rowBottomY);
+                // el aro rodea la ficha de arcilla visible (que ocupa ~86 % de su espacio)
+                var ring = _ringRects[i];
+                ring.sizeDelta = new Vector2(cellW * 0.86f + 2f * RingPad, cellH * 0.86f + 2f * RingPad);
+                ring.anchoredPosition = r.anchoredPosition + new Vector2(0f, 4f);
             }
 
             // píldora de estado (y explicación del error) en el hueco entre la tarjeta y los botones; el y se mide desde el centro del Safe Area
@@ -998,20 +1008,20 @@ namespace NeuroVida.Games.Stroop
             for (int i = 0; i < _buttonGroups.Count; i++) _buttonGroups[i].alpha = 1f;
         }
 
-        /// <summary>El aro sobre el botón correcto y los demás apagados.</summary>
-        private void ShowRing(int keep)
+        /// <summary>El aro (por fuera del botón) sobre el correcto; con <paramref name="dimOthers"/> los demás se apagan (al fallar), y sin eso solo se marca (ronda guiada).</summary>
+        private void ShowRing(int keep, bool dimOthers = true)
         {
-            for (int i = 0; i < _buttonRings.Count; i++)
+            for (int i = 0; i < _ringRects.Count; i++)
             {
-                _buttonRings[i].enabled = i == keep;
-                _buttonGroups[i].alpha = i == keep ? 1f : 0.4f;
+                _ringRects[i].gameObject.SetActive(i == keep);
+                _buttonGroups[i].alpha = i == keep || !dimOthers ? 1f : 0.4f;
             }
-            if (Motion.Decorative) StartCoroutine(PopRect(_buttonRects[keep], 1.08f, 0.3f));
+            if (dimOthers && Motion.Decorative) StartCoroutine(PopRect(_buttonRects[keep], 1.08f, 0.3f));
         }
 
         private void ClearRings()
         {
-            for (int i = 0; i < _buttonRings.Count; i++) _buttonRings[i].enabled = false;
+            for (int i = 0; i < _ringRects.Count; i++) _ringRects[i].gameObject.SetActive(false);
             ResetButtons();
         }
 
@@ -1079,17 +1089,12 @@ namespace NeuroVida.Games.Stroop
                 ClearRings();
                 yield return StartCoroutine(SlideIn(trial, StroopContract.GuidedArrivalSeconds, true));
                 int correctIndex = trial.CorrectIndex;
-                if (hinted)
-                {
-                    // el aro sol punteado marca el botón que se toca
-                    _guidedRing = GuidedTutorial.CreateHintRing(_buttonRects[correctIndex], Mathf.Min(_buttonRects[correctIndex].sizeDelta.y * 1.15f, 260f));
-                    _guidedRing.gameObject.SetActive(true);
-                }
+                if (hinted) ShowRing(correctIndex, dimOthers: false);   // el mismo aro celeste por fuera del botón que se toca: se ve sobre las cuatro tintas
                 _acceptInput = true;
                 _answerIndex = (int)NoAnswer;
                 while (_answerIndex == (int)NoAnswer && !t.Skipped) yield return null;
                 _acceptInput = false;
-                if (_guidedRing != null) { Destroy(_guidedRing.gameObject); _guidedRing = null; }
+                ClearRings();
                 if (t.Skipped) { script.Skip(); break; }
 
                 if (_answerIndex == correctIndex)
@@ -1114,7 +1119,6 @@ namespace NeuroVida.Games.Stroop
                 }
                 yield return Motion.Hold(0.25f);
             }
-            if (_guidedRing != null) { Destroy(_guidedRing.gameObject); _guidedRing = null; }
             ClearRings();
             _cardGroup.alpha = 0f;
             if (!script.Skipped)

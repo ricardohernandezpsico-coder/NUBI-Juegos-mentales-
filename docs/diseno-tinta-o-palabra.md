@@ -47,8 +47,11 @@ Diferencia mínima entre pares: típica 29,8; protanopía 30,5; deuteranopía 28
 deuteranopía). Una sola paleta para todos: no hace falta usar `color_vision` en este juego. Cualquier juego futuro que
 pida distinguir colores debe pasar el mismo script.
 
-Los botones llevan la gota de color **y el nombre escrito**. Los colores de las orillas (violeta `#7C5CE0`, turquesa
-`#159A8C`) no son tintas de respuesta y siempre van con ícono y texto.
+**Botones (decisión del 3-oct, tras la prueba de Ricardo, opción A):** cada botón se rellena ENTERO con el color de su tinta, en arcilla (borde tinta `#1A1240` grueso y sombra dura hacia
+abajo, como lo tocable del resto de la app; se hunde al tocarlo), con el nombre centrado en Fredoka seminegrita (≥ 20 dp). Antes llevaban una gotita de color al lado del nombre y «se veían
+poco». El color del nombre va por botón, para que siempre se lea: **BLANCO `#FFFFFF` sobre ROJO** (5,0:1) y **tinta `#1A1240` sobre AZUL** (4,9:1), **AMARILLO** (11,2:1) y **BLANCO** (15,9:1).
+El nombre escrito sigue en todos (el color nunca va solo). El aro que marca el botón correcto (al fallar y en la ronda guiada) va por FUERA del botón, celeste `#7FD8FF` con borde tinta: se
+distingue alrededor de las cuatro tintas, también del botón blanco. Los colores de las orillas (violeta `#7C5CE0`, turquesa `#159A8C`) no son tintas de respuesta y siempre van con ícono y texto.
 
 ## 4. Cómo se juega
 
@@ -106,7 +109,7 @@ en el inicio.
   `InterferenceMs`/`SwitchCostMs` (−1 con menos de 3 aciertos de cada tipo; nunca negativas), `Explain` («La tinta era azul» / «La palabra decía rojo»), `GuidedTrials` (la ronda guiada).
   `BaseTimeForLevel` y `RuleFlipChance` se quitaron (el tiempo por palabra ya no existe: manda el reloj del Reto).
 - `StroopGameController.cs` (rehecho): cinta «Responde: …», dos orillas (haces de luz con gotas/libros y el nombre en vertical; la activa al 100 %, la otra al 35 %), tarjeta oscura
-  #141B36 con borde del color de su orilla y el ícono en la esquina, 4 botones 2 × 2 con la gota de color y el nombre. La tarjeta llega deslizándose (no se acepta respuesta hasta que
+  #141B36 con borde del color de su orilla y el ícono en la esquina, 4 botones 2 × 2 de arcilla teñidos enteros con su tinta y el nombre centrado (ver §3). La tarjeta llega deslizándose (no se acepta respuesta hasta que
   llega; el tiempo de respuesta se mide desde ahí) y sale hacia la orilla contraria al acertar. Al fallar: aro en el botón correcto, el texto en la píldora y 1,5 s de pausa que NO le gasta
   tiempo al Reto. «Ahora: PALABRA» solo la primera vez por partida (tampoco gasta tiempo). `StroopSprites.cs`: gota, libro y haz de luz (se tiñen con `Image.color`).
 - Movimiento reducido (`Motion.Decorative`): sin deslizamiento, temblor, chispas ni golpe de la cinta; fundidos con los mismos tiempos (`Motion.Hold`).
