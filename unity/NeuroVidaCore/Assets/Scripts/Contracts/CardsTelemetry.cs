@@ -31,5 +31,14 @@ namespace NeuroVida.Contracts
         /// lanzamiento en vez de recalcularlos.</summary>
         public int level;
         public bool timed;
+        /// <summary>Rating final del DDA común normalizado 0..1 (0 = lo más fácil de la escalera de 10 niveles): la
+        /// app lo guarda entre sesiones, igual que en los demás juegos (<see cref="StroopSessionMetrics.end_rating"/>).</summary>
+        public float end_rating;
+        /// <summary>Nivel más alto en que estuvo el motor en la partida.</summary>
+        public int peak_level;
+        /// <summary>Intentos (parejas probadas) y aciertos DESPUÉS del calentamiento, para decidir si un Desafío o
+        /// un Experto se superó (<c>Skill.passed</c>).</summary>
+        public int mode_trials;
+        public int mode_hits;
     }
 }

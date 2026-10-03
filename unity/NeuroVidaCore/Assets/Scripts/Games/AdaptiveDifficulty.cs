@@ -7,7 +7,7 @@ namespace NeuroVida.Games
 
     /// <summary>
     /// Motor de dificultad adaptativa COMÚN (DDA) para los juegos con escalera de niveles
-    /// (Stroop, Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo, Anagramas).
+    /// (todos los juegos: desde el 3-oct también Secuencia Lumínica y Parejas Ocultas, ver docs/DDA-comun.md §6).
     /// Detalle y referencias en <c>NeuroVida/docs/DDA-comun.md</c>.
     ///
     /// Idea central: un "rating" continuo sobre la escalera del juego (1 = lo más fácil,
@@ -18,7 +18,7 @@ namespace NeuroVida.Games
     /// Sobre eso se agregan:
     /// <list type="bullet">
     /// <item>Modulación por tiempo de reacción (Z-score contra la propia historia del usuario, como en
-    /// Parejas): un acierto rápido sube un poco más, uno lento un poco menos. El peso viene del perfil
+    /// <c>VisualWorkingMemoryDDA</c> de Parejas, ya borrado): un acierto rápido sube un poco más, uno lento un poco menos. El peso viene del perfil
     /// de edad (<see cref="DdaUserProfileConfig.WeightReactionTime"/>): menor en mayores (Salthouse, 1996).</item>
     /// <item>Calibración inicial: los primeros ensayos mueven el rating 1.5 veces más (rating "provisorio").</item>
     /// <item>Calentamiento: los primeros ensayos se presentan un nivel por debajo.</item>

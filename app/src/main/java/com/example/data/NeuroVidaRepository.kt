@@ -12,9 +12,6 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-/** Juegos con motor de dificultad propio (no usan el rating del DDA común guardado en `ddaRating`). */
-private val OWN_ENGINE_GAMES = setOf("secuencia", "parejas")
-
 /** Juegos que no entran al camino diario de 3: Bitácora de Misión va antes (transmisión) y después (informe). */
 internal val BOOKEND_GAMES = setOf("bitacora")
 
@@ -311,11 +308,10 @@ class NeuroVidaRepository(
     ratings.forEach { (id, r) ->
       val p = all[id] ?: GameProgressEntity(gameId = id, currentLevel = 1)
       val replace = overwrite(p)
-      val commonDda = id !in OWN_ENGINE_GAMES
       gameProgressDao.insertOrUpdate(
         p.copy(
           currentLevel = if (replace) levelFromRating(r) else p.currentLevel,
-          ddaRating = if (commonDda && (replace || p.ddaRating < 0f)) r.coerceIn(0f, 1f) else p.ddaRating
+          ddaRating = if (replace || p.ddaRating < 0f) r.coerceIn(0f, 1f) else p.ddaRating
         )
       )
     }

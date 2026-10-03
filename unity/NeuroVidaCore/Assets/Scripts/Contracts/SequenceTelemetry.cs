@@ -36,7 +36,13 @@ namespace NeuroVida.Contracts
         /// lado Kotlin, que hasta ahora no tenía cómo saberlos.</summary>
         public int level;
         public bool timed;
-        /// <summary>Nivel más alto alcanzado (1..16+): la app lo convierte en el rating 0..1 de memoria.</summary>
+        /// <summary>Nivel más alto alcanzado (1..16): se mantiene por compatibilidad; la app usa <see cref="end_rating"/>
+        /// y solo cae a este si falta (versiones viejas de Unity).</summary>
         public int peak_level;
+        /// <summary>Rating final del DDA común normalizado 0..1 (0 = lo más fácil de los 16 niveles). Lo guarda la app.</summary>
+        public float end_rating;
+        /// <summary>Secuencias y aciertos DESPUÉS del calentamiento, para decidir si un Desafío o un Experto se superó.</summary>
+        public int mode_trials;
+        public int mode_hits;
     }
 }

@@ -2,6 +2,7 @@
   <Project Path="NeuroVida.Games.csproj" />
   <Project Path="NeuroVida.Games.Acoplamiento.Tests.csproj" />
   <Project Path="NeuroVida.Games.Comparacion.Tests.csproj" />
+  <Project Path="NeuroVida.Games.Secuencia.Tests.csproj" />
   <Project Path="NeuroVida.Games.Aterrizaje.Tests.csproj" />
   <Project Path="NeuroVida.Games.Disparate.Tests.csproj" />
   <Project Path="NeuroVida.Games.Common.Tests.csproj" />
@@ -22,7 +23,6 @@
   <Project Path="NeuroVida.Games.Calculo.Tests.csproj" />
   <Project Path="NeuroVida.Games.Radar.Tests.csproj" />
   <Project Path="NeuroVida.Games.Piloto.Tests.csproj" />
-  <Project Path="NeuroVida.Games.Secuencia.Tests.csproj" />
   <Project Path="NeuroVida.Bridge.csproj" />
   <Project Path="NeuroVida.Games.RutaTesoro.Tests.csproj" />
   <Project Path="NeuroVida.Games.Meteoros.Tests.csproj" />

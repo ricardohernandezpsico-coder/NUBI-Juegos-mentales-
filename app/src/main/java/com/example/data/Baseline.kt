@@ -46,7 +46,7 @@ data class Baseline(
   val domains: Map<DomainType, Float>
 )
 
-/** Secuencia Lumínica informa el nivel más alto alcanzado (1..16+); se lleva a 0..1 como los demás juegos. */
+/** Respaldo para versiones viejas de Unity: Secuencia Lumínica sin `end_rating` informa el nivel más alto alcanzado (1..16); se lleva a 0..1. */
 fun ratingFromSequencePeak(peakLevel: Int): Float = ((peakLevel - 1) / 15f).coerceIn(0f, 1f)
 
 /**

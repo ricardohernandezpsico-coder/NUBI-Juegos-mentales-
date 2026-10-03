@@ -8,7 +8,7 @@ namespace NeuroVida.Games.Shared
     /// medida. La app la pide con <c>config.assessment</c>; acá queda el estado de la partida actual:
     /// - La cuenta regresiva dice "Punto de partida · 2 de 3" en vez de "Prepárate".
     /// - El DDA común calibra más rápido (<see cref="AdaptiveDifficulty.FastCalibration"/>).
-    /// - Secuencia Lumínica usa una escalera corta propia (ver <c>SequenceGameController</c>).
+    /// - Secuencia Lumínica también usa el DDA común (parte del medio de la escala, 3 vidas y 12 secuencias como máximo).
     /// Lo fija <c>GameEntryPoint</c> con cada config (las partidas normales lo dejan apagado).
     /// </summary>
     public static class Assessment

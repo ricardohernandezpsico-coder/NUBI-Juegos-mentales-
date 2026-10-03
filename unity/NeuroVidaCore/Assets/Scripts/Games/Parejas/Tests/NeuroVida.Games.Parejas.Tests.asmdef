@@ -3,6 +3,7 @@
     "rootNamespace": "NeuroVida.Games.Parejas.Tests",
     "references": [
         "NeuroVida.Games",
+        "NeuroVida.Contracts",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

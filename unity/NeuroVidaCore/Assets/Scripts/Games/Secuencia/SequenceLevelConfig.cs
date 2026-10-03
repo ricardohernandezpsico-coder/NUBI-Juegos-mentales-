@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NeuroVida.Contracts;
 using UnityEngine;
 
 namespace NeuroVida.Games.Secuencia
@@ -83,5 +84,46 @@ namespace NeuroVida.Games.Secuencia
             int sequenceLength = Mathf.Min(9 + stepsBeyond / 2, ExtrapolatedMaxSequenceLength);
             return new SequenceLevelConfig(levelIndex, 4, 4, sequenceLength, ExtrapolatedIsiFloorMs, hasAudioDistractor: true, hasVisualDistractor: true);
         }
+    }
+
+    /// <summary>
+    /// Conexión de Secuencia Lumínica con el DDA común (<see cref="AdaptiveDifficulty"/>, docs/DDA-comun.md §6):
+    /// los 16 niveles de <see cref="SequenceLevelDatabase"/> son la escalera (el motor elige el nivel de cada
+    /// secuencia; el nivel fija cuadrícula, largo, velocidad y distractores). Cada secuencia completa es UN ensayo:
+    /// acierto si la repite entera bien. NO se usa el tiempo de reacción: es una tarea de capacidad de memoria, no
+    /// de velocidad (como Anagramas o Ruta del Tesoro), y el tiempo entre toques depende del largo de la secuencia
+    /// y de recordar el primer toque más que de qué tan bien se sabe; el promedio entre toques sigue yendo al
+    /// puntaje y a <c>average_response_time_ms</c>. Las 3 vidas ya no tocan la dificultad: solo terminan la partida.
+    /// </summary>
+    public static class SequenceDifficulty
+    {
+        public const int MaxLevel = SequenceLevelDatabase.MaxDefinedLevel;
+
+        /// <summary>Paso de subida por secuencia acertada. Con objetivo 0,80 la bajada por error es 4 veces más,
+        /// justo el tope de 1 nivel por error (0,25 × 4 = 1,0): el equilibrio queda en el objetivo. Antes subía un
+        /// nivel cada 2 aciertos seguidos (0,5 por acierto, ≈71 %).</summary>
+        public const float StepUp = 0.25f;
+
+        public static AdaptiveDifficulty CreateEngine(SequenceConfigDetails config) =>
+            new AdaptiveDifficulty(MaxLevel, DdaUserProfileConfig.ParseAgeBand(config.age_band),
+                AdaptiveDifficulty.StartRating(config, MaxLevel), StepUp, useReaction: false);
+
+        /// <summary>Telemetría de salida: <c>end_rating</c> es el rating del motor común (0..1) que la app guarda;
+        /// <c>peak_level</c> se mantiene por compatibilidad.</summary>
+        public static SequenceSessionMetrics BuildMetrics(AdaptiveDifficulty dda, int correctRounds, int totalRounds, int score,
+            double averageResponseMs, SequenceConfigDetails config) => new SequenceSessionMetrics
+        {
+            correct_rounds = correctRounds,
+            total_rounds = totalRounds,
+            calculated_score = score,
+            average_response_time_ms = averageResponseMs,
+            final_span_length = SequenceLevelDatabase.Get(dda.PeakLevel).SequenceLength,
+            level = config.level,
+            timed = config.timed,
+            peak_level = dda.PeakLevel,
+            end_rating = dda.RatingNormalized,
+            mode_trials = dda.ScoredTrials,
+            mode_hits = dda.ScoredCorrect
+        };
     }
 }

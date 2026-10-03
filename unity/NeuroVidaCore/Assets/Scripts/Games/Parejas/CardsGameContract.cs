@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using NeuroVida.Contracts;
 
 namespace NeuroVida.Games.Parejas
 {
@@ -14,22 +16,29 @@ namespace NeuroVida.Games.Parejas
     }
 
     /// <summary>
-    /// Puerto 1:1 de las constantes de <c>com.example.games.parejas.CardsGameContract</c>
-    /// (Kotlin) -- Fase 2 del roadmap de migración. La cantidad de parejas por nivel es
-    /// una escalera FIJA (nunca depende de <see cref="VisualWorkingMemoryDDA"/>, que solo
-    /// afina vista previa/interferencia/distractores dentro de cada nivel) para que la
-    /// progresión "empieza fácil, termina difícil" quede garantizada -- Ricardo notó
-    /// jugando la versión Kotlin que el nivel 2 le había salido más fácil que el 1 cuando
-    /// la cantidad de parejas todavía salía de D(t).
+    /// La escalera de Parejas Ocultas y su conexión con el DDA común (<see cref="AdaptiveDifficulty"/>, ver
+    /// docs/DDA-comun.md §6). Niveles 1..<see cref="MaxLevel"/>: cada nivel fija la cantidad de parejas
+    /// (<see cref="PairCountForStage"/>), la grilla y el banco de símbolos (<see cref="InterferenceForLevel"/>).
+    /// El motor común decide en qué nivel se arma el SIGUIENTE tablero; dentro de un tablero el nivel no cambia.
+    /// La cantidad de parejas nunca se afina "a ojo": sube con la escalera, así el nivel 2 nunca es más fácil que
+    /// el 1 (Ricardo lo notó jugando la versión Kotlin, cuando todavía salía de D(t)).
     /// </summary>
     public static class CardsGameContract
     {
         /// <summary>Ritmo de referencia para el bono de velocidad: 4s por pareja.</summary>
         public const long ExpectedMsPerPair = 4000L;
 
-        /// <summary>Cuántos tableros sucesivos arma una partida antes de mostrar el
-        /// resultado final.</summary>
-        public const int TotalStages = 10;
+        /// <summary>Niveles de la escalera (el rating del DDA común va de 1 a este número).</summary>
+        public const int MaxLevel = 10;
+
+        /// <summary>Cuántos tableros arma una partida antes de mostrar el resultado final (cuentan también los
+        /// tableros cortados por 3 parejas erradas). Antes la partida terminaba al superar el nivel 10; con el
+        /// nivel decidido por el motor hace falta otro límite para que no sea infinita.</summary>
+        public const int BoardsPerSession = 10;
+
+        /// <summary>Paso de subida del DDA por pareja acertada (≈7 aciertos por nivel). Con objetivo 0,80 la bajada
+        /// por error es 4 veces más (0,60 niveles).</summary>
+        public const float StepUp = 0.15f;
 
         private static readonly int[] PairCountsByStage = { 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 };
 
@@ -41,12 +50,100 @@ namespace NeuroVida.Games.Parejas
             return PairCountsByStage[index];
         }
 
+        /// <summary>Banco de símbolos del nivel (0..3, ver <see cref="SymbolBank"/>): 1-3 → 0, 4-6 → 1, 7-9 → 2, 10 → 3.</summary>
+        public static int InterferenceForLevel(int level) => Math.Max(0, Math.Min(3, (level - 1) / 3));
+
+        /// <summary>Motor común de la partida: escalera 1..<see cref="MaxLevel"/>, parte del rating guardado o del
+        /// nivel elegido, usa el perfil de edad y respeta techo y piso del modo (ya fijados con
+        /// <see cref="AdaptiveDifficulty.ConfigureMode"/>). El tiempo de reacción (primera a segunda carta de cada
+        /// intento) solo pesa en Reto.</summary>
+        public static AdaptiveDifficulty CreateEngine(SequenceConfigDetails config) =>
+            new AdaptiveDifficulty(MaxLevel, DdaUserProfileConfig.ParseAgeBand(config.age_band),
+                AdaptiveDifficulty.StartRating(config, MaxLevel), StepUp, useReaction: config.timed);
+
         /// <summary>Sistema de "3 fallas": fallar <see cref="MismatchesToFailStage"/>
         /// parejas en el tablero actual corta ese tablero ahí mismo y cuenta como una
-        /// falla de nivel. 1ra falla -> baja un nivel; 2da -> repite ese mismo nivel ya
-        /// bajado; 3ra -> termina la partida.</summary>
+        /// falla de nivel. Tres fallas seguidas (sin completar un tablero entre medio) terminan la partida; qué nivel
+        /// sigue lo decide el motor común, no la falla.</summary>
         public const int MismatchesToFailStage = 3;
         public const int StageFailuresBeforeGameOver = 3;
+
+        /// <summary>Telemetría de salida: <c>end_rating</c> es el rating del motor común (0..1) que la app guarda.</summary>
+        public static CardsSessionMetrics BuildMetrics(AdaptiveDifficulty dda, int matchedPairs, int attempts, int score,
+            SequenceConfigDetails config) => new CardsSessionMetrics
+        {
+            matched_pairs = matchedPairs,
+            attempts = attempts,
+            calculated_score = score,
+            level = config.level,
+            timed = config.timed,
+            end_rating = dda.RatingNormalized,
+            peak_level = dda.PeakLevel,
+            mode_trials = dda.ScoredTrials,
+            mode_hits = dda.ScoredCorrect
+        };
+    }
+
+    /// <summary>Lo que fija el nivel del tablero (<see cref="Build"/>): grilla, símbolos y, con el rating continuo
+    /// del motor (0..1), la vista previa, los distractores de fondo y su opacidad. Son las mismas fórmulas del motor
+    /// anterior (<c>VisualWorkingMemoryDDA</c>, borrado): solo cambia de dónde sale el índice.</summary>
+    public readonly struct CardsBoardProfile
+    {
+        public readonly int Level;
+        public readonly int PairCount;
+        public readonly int GridColumns;
+        public readonly int GridRows;
+        public readonly int InterferenceLevel;
+        public readonly long PreviewExposureMs;
+        public readonly int DistractorCount;
+        public readonly float DistractorOpacity;
+
+        private const float PreviewMaxMs = 3000f;
+        private const int MaxDistractors = 6;
+        private const float MinDistractorAlpha = 0.03f;
+        private const float MaxDistractorAlpha = 0.12f;
+
+        private CardsBoardProfile(int level, int pairCount, int columns, int rows, int interference, long previewMs, int distractors, float opacity)
+        {
+            Level = level;
+            PairCount = pairCount;
+            GridColumns = columns;
+            GridRows = rows;
+            InterferenceLevel = interference;
+            PreviewExposureMs = previewMs;
+            DistractorCount = distractors;
+            DistractorOpacity = opacity;
+        }
+
+        /// <param name="level">Nivel del tablero (1..MaxLevel).</param>
+        /// <param name="fineIndex">Rating normalizado del motor (0..1), para lo que varía de forma continua.</param>
+        /// <param name="previewFloorMs">Vista previa mínima del perfil de edad.</param>
+        public static CardsBoardProfile Build(int level, float fineIndex, float previewFloorMs)
+        {
+            float d = fineIndex < 0f ? 0f : fineIndex > 1f ? 1f : fineIndex;
+            int pairs = CardsGameContract.PairCountForStage(level);
+            var (columns, rows) = GridDimensionsFor(pairs);
+            return new CardsBoardProfile(level, pairs, columns, rows, CardsGameContract.InterferenceForLevel(level),
+                (long)(PreviewMaxMs - d * (PreviewMaxMs - previewFloorMs)),
+                (int)(d * MaxDistractors),
+                MinDistractorAlpha + d * (MaxDistractorAlpha - MinDistractorAlpha));
+        }
+
+        private static int ColumnsFor(int pairCount)
+        {
+            if (pairCount <= 4) return 2;
+            if (pairCount <= 6) return 3;
+            if (pairCount <= 12) return 4;
+            if (pairCount <= 15) return 5;
+            return 6;
+        }
+
+        public static (int columns, int rows) GridDimensionsFor(int pairCount)
+        {
+            int columns = ColumnsFor(pairCount);
+            int rows = (int)Math.Ceiling((pairCount * 2) / (double)columns);
+            return (columns, rows);
+        }
     }
 
     /// <summary>Un símbolo de carta: ícono ilustrado + variante de color (ver

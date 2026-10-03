@@ -47,7 +47,11 @@ object NativeReceiver {
     val final_span_length: Int,
     val level: Int,
     val timed: Boolean,
-    // Nivel más alto alcanzado (1..16+); 0 en versiones viejas de Unity. Se guarda como rating 0..1 (memoria).
+    // DDA común (desde el 3-oct): rating final 0..1 y secuencias/aciertos después del calentamiento. `end_rating` falta
+    // en versiones viejas de Unity: entonces se usa el nivel más alto alcanzado (1..16), 0 si tampoco viene.
+    val end_rating: Double? = null,
+    val mode_trials: Int = 0,
+    val mode_hits: Int = 0,
     val peak_level: Int = 0
   )
 
@@ -64,7 +68,13 @@ object NativeReceiver {
     val attempts: Int,
     val calculated_score: Int,
     val level: Int,
-    val timed: Boolean
+    val timed: Boolean,
+    // DDA común (desde el 3-oct): rating final 0..1 de la escalera de 10 niveles, nivel más alto y ensayos/aciertos
+    // después del calentamiento. Opcionales: versiones viejas de Unity no los mandan (y entonces no hay rating).
+    val end_rating: Double? = null,
+    val peak_level: Int = 0,
+    val mode_trials: Int = 0,
+    val mode_hits: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -360,7 +370,11 @@ object NativeReceiver {
       // ActiveGameSession.level/.timed.
       timed = metrics.timed,
       level = metrics.level,
-      endRating = metrics.peak_level.takeIf { it > 0 }?.let { com.example.data.ratingFromSequencePeak(it) }
+      // El rating del motor común; solo si falta (Unity viejo) se deduce del nivel más alto alcanzado.
+      endRating = metrics.end_rating?.toFloat()
+        ?: metrics.peak_level.takeIf { it > 0 }?.let { com.example.data.ratingFromSequencePeak(it) },
+      modeTrials = metrics.mode_trials,
+      modeHits = metrics.mode_hits
     )
   }
 
@@ -380,7 +394,10 @@ object NativeReceiver {
       correctAnswers = metrics.matched_pairs,
       totalTrials = metrics.attempts,
       timed = metrics.timed,
-      level = metrics.level
+      level = metrics.level,
+      endRating = metrics.end_rating?.toFloat(),
+      modeTrials = metrics.mode_trials,
+      modeHits = metrics.mode_hits
     )
   }
 

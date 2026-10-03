@@ -17,11 +17,13 @@ namespace NeuroVida.Games.Secuencia
     ///
     /// Reglas de juego (las dio Ricardo en la cuarta/quinta pasada, no son interpretación
     /// propia):
-    ///   - Tabla fija de 16+ niveles (<see cref="SequenceLevelDatabase"/>) con cuadrícula,
+    ///   - Tabla fija de 16 niveles (<see cref="SequenceLevelDatabase"/>) con cuadrícula,
     ///     longitud de secuencia y velocidad (ISI) por peldaño.
-    ///   - Avance: 2 aciertos consecutivos en el nivel actual -> sube 1 nivel.
-    ///   - Cada error: pierde 1 corazón (visual, inmediato) Y el DDA ayuda ralentizando la
-    ///     siguiente secuencia (+200ms de ISI). El nivel NO baja por un error.
+    ///   - Dificultad: la decide el DDA común (<see cref="AdaptiveDifficulty"/>, desde el 3-oct:
+    ///     docs/DDA-comun.md §6). Cada secuencia completa es un ensayo (acierto = la repitió
+    ///     entera bien); el motor sube o baja el nivel de la tabla.
+    ///   - Cada error: pierde 1 corazón (visual, inmediato). Las vidas solo deciden cuándo
+    ///     termina la partida, NO la dificultad.
     ///   - Fin de partida: 3 vidas perdidas (3 errores totales).
     ///
     /// Rediseño de interfaz (23-sep, pedido de Ricardo: "que tenga la calidad de un juego
@@ -49,13 +51,11 @@ namespace NeuroVida.Games.Secuencia
         public const string GameId = "secuencia";
 
         private const int MaxLives = 3;
-        private const float IsiSlowdownMs = 200f; // regla anti-frustración
-        private const int SafetyMaxRounds = 60; // la escalera de niveles no tiene techo natural; esto evita una sesión infinita
+        private const int SafetyMaxRounds = 60; // con el motor adaptativo la partida podría no terminar nunca; esto evita una sesión infinita
 
-        // Evaluación inicial ("Tu punto de partida", ver Shared/Assessment): escalera corta tipo span de Corsi.
-        // Parte del nivel 3 (secuencia de 4), cada acierto sube un nivel (no dos seguidos), 3 vidas y como
-        // máximo 12 secuencias: en ~1-2 minutos se encuentra el techo de la persona (nivel más alto alcanzado).
-        private const int AssessmentStartLevel = 3;
+        // Evaluación inicial ("Tu punto de partida", ver Shared/Assessment): el motor común con calibración rápida
+        // (parte del medio de la escala y da pasos más grandes), 3 vidas y como máximo 12 secuencias: en ~1-2 minutos
+        // se acerca al nivel de la persona (el rating final es la medida).
         private const int AssessmentMaxRounds = 12;
 
         // ---- Constantes de layout ----
@@ -78,9 +78,7 @@ namespace NeuroVida.Games.Secuencia
         private int _roundsPlayed = 0;
         private int _lives;
         private int _currentLevelIndex;
-        private int _consecutiveCorrectAtLevel;
-        private bool _isiSlowed;
-        private int _peakLevelIndex;
+        private AdaptiveDifficulty _dda; // DDA común (ver docs/DDA-comun.md)
         private readonly List<double> _reactionTimesMs = new List<double>();
         private float _inputReadyAtTime;
         private List<int> _sequence = new List<int>();
@@ -153,26 +151,13 @@ namespace NeuroVida.Games.Secuencia
             _correctRounds = 0;
             _roundsPlayed = 0;
             _lives = MaxLives;
-            _consecutiveCorrectAtLevel = 0;
-            _isiSlowed = false;
-            _currentLevelIndex = SeedLevelIndex();
-            _peakLevelIndex = _currentLevelIndex;
+            _dda = SequenceDifficulty.CreateEngine(config.config);
+            _currentLevelIndex = _dda.PresentedLevel;
             _reactionTimesMs.Clear();
             _currentGridRows = -1; // fuerza reconstruir la grilla al tamaño inicial correcto
 
             StopAllCoroutines();
             StartCoroutine(BeginRound(_round, firstRound: true));
-        }
-
-        /// <summary>Punto de partida en la tabla de 16 niveles según nivel de la app +
-        /// maestría entre sesiones -- mismo espíritu que el viejo SeedSpan/SeedIsiMs
-        /// (Kotlin), pero mapeado a un índice de nivel en vez de un span continuo.</summary>
-        private int SeedLevelIndex()
-        {
-            if (Assessment.Active) return AssessmentStartLevel;
-            int fromAppLevel = Mathf.Clamp(_config.config.level, 1, 6);
-            int fromMastery = Mathf.Clamp(_config.config.base_intensity / 20, 0, 4);
-            return Mathf.Clamp(fromAppLevel + fromMastery, 1, SequenceLevelDatabase.MaxDefinedLevel);
         }
 
         // ---- Fases / colores por nivel ----
@@ -202,6 +187,7 @@ namespace NeuroVida.Games.Secuencia
         /// con las fichas saliendo/entrando si la grilla cambia de tamaño.</summary>
         private IEnumerator BeginRound(int roundNumber, bool firstRound)
         {
+            _currentLevelIndex = _dda.PresentedLevel; // el nivel de esta ronda lo decide el DDA común
             var level = SequenceLevelDatabase.Get(_currentLevelIndex);
 
             if (firstRound)
@@ -271,7 +257,7 @@ namespace NeuroVida.Games.Secuencia
             _phasePill.Set($"Observa la secuencia · {_sequence.Count} luces", PhaseBlue);
             yield return new WaitForSeconds(0.6f);
 
-            float isiMs = level.IsiMs + (_isiSlowed ? IsiSlowdownMs : 0f);
+            float isiMs = level.IsiMs;
             float litMs = isiMs * 0.6f;
             float gapMs = isiMs - litMs;
             for (int i = 0; i < _sequence.Count; i++)
@@ -339,19 +325,20 @@ namespace NeuroVida.Games.Secuencia
             }
         }
 
-        /// <summary>Aplica las reglas (avance / anti-frustración) y decide si la partida
-        /// sigue o termina. Todo el feedback ocurre sobre el tablero, sin pantallas completas.</summary>
+        /// <summary>Registra la secuencia en el DDA común (un ensayo; sin tiempo de reacción: ver
+        /// <see cref="SequenceDifficulty"/>), muestra el feedback y decide si la partida sigue o termina. Las vidas
+        /// solo cuentan para terminar. Todo el feedback ocurre sobre el tablero, sin pantallas completas.</summary>
         private IEnumerator FinishRound(bool wasCorrect, int roundNumber)
         {
             _roundsPlayed++;
             SetAudioDistractor(false); // se apaga entre rondas; PresentSequence lo prende de nuevo si el próximo nivel lo pide
             float hold;
+            var change = _dda.Register(wasCorrect);
+            int nextLevel = _dda.PresentedLevel; // el nivel que verá la persona en la próxima secuencia
 
             if (wasCorrect)
             {
                 _correctRounds++;
-                _consecutiveCorrectAtLevel++;
-                _isiSlowed = false;
                 UpdateHud();
                 PlaySuccessFeedback();
                 _phasePill.Set("¡Correcto!", PhaseGreen);
@@ -359,11 +346,9 @@ namespace NeuroVida.Games.Secuencia
                 StartCoroutine(UiFx.SparkBurst(_fxLayerRect, Vector2.zero, new Color(1f, 0.88f, 0.35f), 16, _boardContentWidth * 0.6f, 44f, 0.65f));
                 hold = 0.75f;
 
-                if (_consecutiveCorrectAtLevel >= (Assessment.Active ? 1 : 2))
+                if (change == DdaChange.Up && nextLevel > _currentLevelIndex)
                 {
-                    _consecutiveCorrectAtLevel = 0;
-                    _currentLevelIndex++;
-                    _peakLevelIndex = Mathf.Max(_peakLevelIndex, _currentLevelIndex);
+                    _currentLevelIndex = nextLevel;
                     yield return new WaitForSeconds(0.2f);
                     UpdateHud();
                     _toast.Show($"¡Nivel {_currentLevelIndex}!", PhaseNameFor(_currentLevelIndex), AccentFor(_currentLevelIndex), 1.3f);
@@ -373,16 +358,17 @@ namespace NeuroVida.Games.Secuencia
             }
             else
             {
-                // Cada error cuesta 1 corazón de inmediato Y el DDA ayuda ralentizando la
-                // siguiente secuencia (+200ms ISI); el nivel no baja.
-                _consecutiveCorrectAtLevel = 0;
-                _isiSlowed = true;
+                // Cada error cuesta 1 corazón de inmediato. Si el motor además baja el nivel, la próxima secuencia
+                // es más fácil y el aviso lo dice; si lo deja igual, solo avisa de la vida.
+                bool slower = nextLevel < _currentLevelIndex;
+                _currentLevelIndex = nextLevel;
                 _lives--;
                 PlayErrorFeedback();
                 UpdateHud();
                 _phasePill.Set("Fallaste la secuencia", PhaseRed);
                 StartCoroutine(UiFx.Shake(16f, 0.42f, _boardPanelRect, _gridContainerRect, _distractorLayerRect, _fxLayerRect));
-                _feedbackText.text = _lives > 0 ? "Perdiste una vida · vamos más despacio" : "Te quedaste sin vidas";
+                _feedbackText.text = _lives <= 0 ? "Te quedaste sin vidas"
+                    : slower ? "Perdiste una vida · vamos más despacio" : "Perdiste una vida";
                 if (_expectedTile >= 0) StartCoroutine(ShowCorrectTile(_expectedTile));
                 hold = 1.2f;
             }
@@ -414,11 +400,10 @@ namespace NeuroVida.Games.Secuencia
             _exit.Show();
             int roundsPlayed = Mathf.Max(1, _roundsPlayed);
             int baseScore = _correctRounds * 100 / roundsPlayed;
-            int difficultyBonus = Mathf.Clamp((_peakLevelIndex - 1) * 2, 0, 30);
+            int difficultyBonus = Mathf.Clamp((_dda.PeakLevel - 1) * 2, 0, 30);
             double avgReaction = _reactionTimesMs.Count > 0 ? _reactionTimesMs.Average() : 1500.0;
             int speedBonus = avgReaction < 500 ? 10 : avgReaction < 800 ? 5 : 0;
             int finalScore = Mathf.Clamp(baseScore + difficultyBonus + speedBonus, 0, 100);
-            var peakLevel = SequenceLevelDatabase.Get(_peakLevelIndex);
 
             _phasePill.Set(
                 gameOver ? $"Fin del juego · {finalScore} puntos" : $"¡Sesión completa! · {finalScore} puntos",
@@ -428,17 +413,7 @@ namespace NeuroVida.Games.Secuencia
             {
                 user_id = _config.user_id,
                 game_id = _config.game_id,
-                session_metrics = new SequenceSessionMetrics
-                {
-                    correct_rounds = _correctRounds,
-                    total_rounds = roundsPlayed,
-                    calculated_score = finalScore,
-                    average_response_time_ms = avgReaction,
-                    final_span_length = peakLevel.SequenceLength,
-                    level = _config.config.level,
-                    timed = _config.config.timed,
-                    peak_level = _peakLevelIndex
-                }
+                session_metrics = SequenceDifficulty.BuildMetrics(_dda, _correctRounds, roundsPlayed, finalScore, avgReaction, _config.config)
             };
 
             string json = JsonUtility.ToJson(telemetry);

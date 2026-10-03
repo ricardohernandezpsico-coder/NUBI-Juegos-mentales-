@@ -35,14 +35,14 @@ namespace NeuroVida.Games.Parejas.Tests
         {
             Assert.AreEqual(CardsGameContract.PairCountForStage(1), CardsGameContract.PairCountForStage(0));
             Assert.AreEqual(CardsGameContract.PairCountForStage(1), CardsGameContract.PairCountForStage(-5));
-            Assert.AreEqual(CardsGameContract.PairCountForStage(CardsGameContract.TotalStages), CardsGameContract.PairCountForStage(CardsGameContract.TotalStages + 1));
-            Assert.AreEqual(CardsGameContract.PairCountForStage(CardsGameContract.TotalStages), CardsGameContract.PairCountForStage(999));
+            Assert.AreEqual(CardsGameContract.PairCountForStage(CardsGameContract.MaxLevel), CardsGameContract.PairCountForStage(CardsGameContract.MaxLevel + 1));
+            Assert.AreEqual(CardsGameContract.PairCountForStage(CardsGameContract.MaxLevel), CardsGameContract.PairCountForStage(999));
         }
 
         [Test]
-        public void TotalStages_MatchesTheSizeOfThePairCountTable()
+        public void MaxLevel_MatchesTheSizeOfThePairCountTable()
         {
-            Assert.AreEqual(10, CardsGameContract.TotalStages);
+            Assert.AreEqual(10, CardsGameContract.MaxLevel);
         }
     }
 }

@@ -19,7 +19,7 @@ enum class PlayMode(val label: String, val what: String) {
 
 /**
  * La escalera de un juego: [levels] niveles (la misma para todas las edades), [ownTarget] = aciertos que busca el
- * juego si no usa el de la edad (Ruta del Tesoro 70%; Secuencia sube con 2 aciertos seguidos ≈ 71%) y [slope] =
+ * juego si no usa el de la edad (hoy solo Ruta del Tesoro, 70%) y [slope] =
  * cuánto caen los aciertos por nivel (logística). La pendiente es un SUPUESTO inicial: 1 por nivel en escaleras de
  * 9 a 16 niveles y 2 en las de 5 a 7, donde cada nivel es un salto mayor; se calibra con datos.
  */
@@ -44,7 +44,7 @@ object Skill {
   const val MIN_TRIALS = 12
   const val MIN_ROUNDS = 6
   /** Juegos de rondas largas: "superado" pide 6 rondas en vez de 12 ensayos. */
-  private val LONG_ROUNDS = setOf("rumbo", "satelites", "bitacora", "correo")
+  private val LONG_ROUNDS = setOf("rumbo", "satelites", "bitacora", "correo", "secuencia")
   /** Bitácora depende de la sesión diaria (transmisión e informe): solo se juega a tu medida. */
   private val ONLY_MEASURED = setOf("bitacora")
 
@@ -57,7 +57,7 @@ object Skill {
     "radar" to Ladder(12), "freno" to Ladder(12), "aterrizaje" to Ladder(12), "acoplamiento" to Ladder(12),
     "trafico" to Ladder(12), "satelites" to Ladder(12), "meteoros" to Ladder(12), "disparate" to Ladder(12), "cosecha" to Ladder(10), "intrusa" to Ladder(12),
     "bitacora" to Ladder(10), "rumbo" to Ladder(10), "correo" to Ladder(10), "parejas" to Ladder(10),
-    "secuencia" to Ladder(16, ownTarget = 0.707f)
+    "secuencia" to Ladder(16)
   )
 
   fun ladder(gameId: String): Ladder = ladders[gameId] ?: Ladder(10)

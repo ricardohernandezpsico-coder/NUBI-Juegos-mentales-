@@ -34,7 +34,7 @@ una sola matriz lógica. Este documento revisa lo que hay hoy, propone la regla 
 | 4 | Ruta del Tesoro busca 70% de aciertos (perder la ruta cuesta una vida). | Su rating está medido con otra vara: se corrige con la misma fórmula. |
 | 5 | En un juego adaptativo **los aciertos se mantienen cerca de 8 de 10 por diseño**. | El porcentaje de aciertos NO sirve para mostrar avance ni fortalezas: lo que avanza es el nivel. |
 | 6 | Varias marcas de los juegos estrella dependen del nivel jugado (Aterrizaje: tipo de regla; Rumbo: cantidad de tramos; Bitácora: paradas; Correo: encargos; en parte Acoplamiento y Satélites). | Si subes de nivel, la marca puede "empeorar" aunque mejores. La evolución de la marca debe compararse a nivel parecido. Las marcas tipo umbral (tu vistazo, tu freno, tu carga, costo de multitarea) no tienen este problema. |
-| 7 | Secuencia (16 niveles) y Parejas (10 tableros) tienen motores propios y su avance hoy sale del nivel 1-5 antiguo. | Hay que llevarlas a la misma regla (su escalera normalizada a 0..1). |
+| 7 | (Resuelto el 3-oct: ver DDA-comun.md §6.) Secuencia (16 niveles) y Parejas (10 niveles) tenían motores propios y su avance salía del nivel 1-5 antiguo. | Ya usan el DDA común: su escalera normalizada a 0..1, como los demás. |
 | 8 | Con reloj / sin reloj cambia el tiempo disponible en algunos juegos (Acoplamiento 12 s sin reloj, Aterrizaje 10 s). | El mismo nivel es más fácil sin reloj. Ver decisión 3. |
 
 ## 2. Principios
@@ -150,7 +150,7 @@ no haya dos escalas de nombres. La liga conserva sus metales (Bronce…Maestro),
 | DDA común, una escalera | Tinta o Palabra, Cambio de Chip, Comparación, Series, Cálculo, Anagramas, Radar, Freno, Aterrizaje, Acoplamiento, Tráfico, Satélites, Rumbo | Directo: piso o techo sobre el rating. |
 | DDA común, objetivo propio | Ruta del Tesoro (70%) | Igual, con la corrección de la sección 3. |
 | Dos escaleras | Piloto (pilotaje y señales), Correo (encargos y pilotaje) | El avance es el de la tarea que se mide: Piloto, el promedio de las dos (como hoy); Correo, la de encargos. El piso o techo se aplica a las dos. |
-| Motor propio | Secuencia (16 niveles), Parejas (10 tableros) | Se normaliza su escalera a 0..1 y se informa como las demás. Piso y techo: nivel de partida mínimo o máximo. |
+| (Ya no hay motores propios desde el 3-oct) | Secuencia (16 niveles), Parejas (10 niveles) | Pasaron al DDA común: directo, piso o techo sobre el rating, igual que los demás. |
 | Sesión diaria | Bitácora de Misión | Solo A tu medida (su espera y su informe dependen de la sesión). |
 
 ## 8. Fortalezas

@@ -13,10 +13,9 @@ namespace NeuroVida.Games.Parejas
 {
     /// <summary>
     /// Piloto de la Fase 2 del roadmap de migración (ver NeuroVida/CLAUDE.md): "Parejas
-    /// Ocultas" completo dentro de Unity, con el mismo motor DDA
-    /// (<see cref="VisualWorkingMemoryDDA"/>, ya portado y testeado 1:1 contra la versión
-    /// Kotlin) y la misma progresión de 10 niveles + sistema de "3 fallas"
-    /// (<see cref="CardsGameContract"/>) que <c>CardsGameContainer.kt</c>.
+    /// Ocultas" completo dentro de Unity, con el DDA común (<see cref="AdaptiveDifficulty"/>, desde el
+    /// 3-oct: docs/DDA-comun.md §6) sobre la escalera de 10 niveles + sistema de "3 fallas"
+    /// (<see cref="CardsGameContract"/>) de <c>CardsGameContainer.kt</c>.
     ///
     /// A diferencia de Secuencia Lumínica (que usa FlowMVI del lado Kotlin y coroutines +
     /// estado inmutable ahí), acá no hay un framework MVI que replicar -- el controlador
@@ -25,10 +24,10 @@ namespace NeuroVida.Games.Parejas
     ///
     /// Reglas portadas 1:1 desde <c>CardsGameContainer.kt</c> (ver comentarios en cada
     /// método para el porqué, ya documentado del lado Kotlin):
-    ///   - La cantidad de parejas por nivel es la escalera FIJA de <see cref="CardsGameContract"/>,
-    ///     nunca depende de D(t).
-    ///   - 3 parejas erradas en el tablero actual lo cortan ahí mismo: 1ra vez baja un
-    ///     nivel, 2da vez repite ese nivel ya bajado, 3ra vez termina la partida.
+    ///   - La cantidad de parejas por nivel es la escalera FIJA de <see cref="CardsGameContract"/>;
+    ///     el motor común decide en qué nivel se arma el siguiente tablero.
+    ///   - 3 parejas erradas en el tablero actual lo cortan ahí mismo; tres tableros cortados
+    ///     seguidos terminan la partida (el nivel que sigue lo decide el motor, no el corte).
     ///   - Un timeout en Modo Reto termina la partida directo SOLO si el perfil de edad
     ///     permite timeouts estrictos (adulto); si no, entra al mismo sistema de 3 fallas.
     ///   - Al completar un tablero, la partida NO corta ahí -- pasa de inmediato al
@@ -56,7 +55,7 @@ namespace NeuroVida.Games.Parejas
 
         private SequenceInitConfig _config; // contrato de entrada compartido, ver CardsTelemetry.cs
         private DdaUserProfileConfig _profile;
-        private VisualWorkingMemoryDDA _dda;
+        private AdaptiveDifficulty _dda; // DDA común (ver docs/DDA-comun.md)
         private System.Random _random = new System.Random();
 
         // --- Progresión multi-nivel dentro de la misma partida ---
@@ -154,12 +153,9 @@ namespace NeuroVida.Games.Parejas
         {
             _config = config;
             _profile = DdaUserProfileConfig.For(DdaUserProfileConfig.ParseAgeBand(config.config.age_band));
-            _dda = new VisualWorkingMemoryDDA(
-                weightAccuracy: _profile.WeightAccuracy,
-                weightReactionTime: _profile.WeightReactionTime,
-                previewFloorMs: _profile.MinPreviewExposureMs);
+            _dda = CardsGameContract.CreateEngine(config.config);
 
-            _stage = 1;
+            _stage = _dda.PresentedLevel;
             _cumulativeScore = 0;
             _cumulativeMatchedPairs = 0;
             _cumulativeAttempts = 0;
@@ -177,21 +173,17 @@ namespace NeuroVida.Games.Parejas
             StartCoroutine(RunTimer());
         }
 
-        /// <summary>Ancla D(t) al nivel elegido + maestría entre sesiones -- mismo
-        /// criterio que <c>seedDifficultyIndex</c> (Kotlin). No decide cuántas parejas
-        /// arrancan (siempre las del nivel 1, fijo y fácil vía <see cref="CardsGameContract.PairCountForStage"/>).</summary>
-        private float SeedDifficultyIndex()
-        {
-            float fromLevel = Mathf.Clamp01(Mathf.Clamp(_config.config.level - 1, 0, 4) / 4f) * 0.7f;
-            float fromMastery = Mathf.Clamp(_config.config.base_intensity / 30f, 0f, 0.3f);
-            return Mathf.Clamp01(fromLevel + fromMastery);
-        }
+        /// <summary>Perfil del tablero para el nivel que presenta el motor ahora (con el calentamiento de los dos
+        /// primeros intentos: un nivel por debajo) y su rating continuo.</summary>
+        private CardsBoardProfile NextBoardProfile() =>
+            CardsBoardProfile.Build(_dda.PresentedLevel, _dda.RatingNormalized, _profile.MinPreviewExposureMs);
 
         private IEnumerator StartFirstStage()
         {
-            yield return StartCoroutine(PlayCountdownScreen(1, CountdownReason.Start));
+            var profile = NextBoardProfile();
+            yield return StartCoroutine(PlayCountdownScreen(profile.Level, CountdownReason.Start));
             _mismatchesThisAttempt = 0;
-            BuildRound(_dda.InitialProfile(SeedDifficultyIndex(), CardsGameContract.PairCountForStage(1)), 1);
+            BuildRound(profile);
         }
 
         /// <summary>Transición entre niveles FLUIDA, sin pantalla completa: el tablero
@@ -199,11 +191,16 @@ namespace NeuroVida.Games.Parejas
         /// con el nivel nuevo y el tablero siguiente entra con rebote. Antes cada cambio de
         /// nivel repetía la pantalla completa "3-2-1" (Ricardo, 23-sep: "van apareciendo
         /// pantallazos entre los niveles, falta fluidez"); ahora el 3-2-1 solo abre la partida.</summary>
-        private IEnumerator TransitionToStage(int targetStage, CountdownReason reason)
+        private IEnumerator TransitionToNextBoard(bool completed)
         {
             _isTransitioning = true;
             _isTurnLocked = true;
-            _stage = targetStage;
+            // El nivel del siguiente tablero lo decide el motor común. El aviso dice "Bajamos de nivel" solo si el
+            // motor de verdad lo bajó; un tablero cortado que el motor deja en el mismo nivel se repite.
+            var nextProfile = NextBoardProfile();
+            var reason = completed ? CountdownReason.Advance
+                : nextProfile.Level < _stage ? CountdownReason.Demoted : CountdownReason.Retry;
+            _stage = nextProfile.Level;
 
             if (reason == CountdownReason.Advance)
             {
@@ -222,8 +219,8 @@ namespace NeuroVida.Games.Parejas
 
             _mismatchesThisAttempt = 0;
             _isTransitioning = false;
-            BuildRound(_dda.CurrentProfile(CardsGameContract.PairCountForStage(targetStage)), targetStage);
-            _toast.Show($"Nivel {targetStage}", SubtitleFor(reason), reason == CountdownReason.Advance ? PhaseGreen : PhaseAmber, 1.1f);
+            BuildRound(nextProfile);
+            _toast.Show($"Nivel {nextProfile.Level}", SubtitleFor(reason), reason == CountdownReason.Advance ? PhaseGreen : PhaseAmber, 1.1f);
         }
 
         /// <summary>Las cartas se encogen (con un giro leve) de forma escalonada -- cierra el
@@ -258,7 +255,7 @@ namespace NeuroVida.Games.Parejas
             }
         }
 
-        private void BuildRound(VisualWorkingMemoryDDA.DifficultyProfile profile, int stageNumber)
+        private void BuildRound(CardsBoardProfile profile)
         {
             var symbols = SymbolBank.Select(profile.PairCount, profile.InterferenceLevel, _random);
             _cards = BuildShuffledDeck(symbols);
@@ -270,8 +267,8 @@ namespace NeuroVida.Games.Parejas
             _previewExposureMs = profile.PreviewExposureMs;
             _memorizeMsLeft = profile.PreviewExposureMs;
             _isTurnLocked = false;
-            _stage = stageNumber;
-            _difficultyIndex = profile.DifficultyIndex;
+            _stage = profile.Level;
+            _difficultyIndex = _dda.RatingNormalized;
             _distractorCount = profile.DistractorCount;
             _distractorOpacity = profile.DistractorOpacity;
             _distractorSeed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
@@ -333,7 +330,6 @@ namespace NeuroVida.Games.Parejas
                 secondAccumulator += tickSeconds;
                 bool isFullSecond = secondAccumulator >= 1f;
                 bool timedOut = false;
-                int totalPairsAtTimeout = 0;
 
                 if (_isMemorizing)
                 {
@@ -355,7 +351,6 @@ namespace NeuroVida.Games.Parejas
                         if (newLeft <= 0)
                         {
                             timedOut = true;
-                            totalPairsAtTimeout = _totalPairs;
                             _timeLeftSeconds = 0;
                         }
                         else
@@ -372,7 +367,7 @@ namespace NeuroVida.Games.Parejas
                 {
                     // Se acabó el turno sin completar el intento -> error de OMISIÓN (no
                     // hubo RT real que promediar), mismo criterio que Secuencia.
-                    _dda.RegisterTrial(new VisualWorkingMemoryDDA.TrialResult(false, true, 0L), totalPairsAtTimeout);
+                    _dda.Register(false);
                     SettleCurrentBoard();
                     if (_profile.AllowStrictTimeouts)
                     {
@@ -418,7 +413,7 @@ namespace NeuroVida.Games.Parejas
             bool matched = a.PairKey == b.PairKey;
 
             long reactionMs = (long)System.Math.Max(0f, (GameClock.Time - _firstFlipTime) * 1000f);
-            var profile = _dda.RegisterTrial(new VisualWorkingMemoryDDA.TrialResult(matched, false, reactionMs), _totalPairs);
+            _dda.Register(matched, reactionMs); // cada pareja intentada es un ensayo del motor común
 
             _attempts++;
             _currentStreak = matched ? _currentStreak + 1 : 0;
@@ -446,14 +441,16 @@ namespace NeuroVida.Games.Parejas
             }
 
             _isTurnLocked = false;
-            _difficultyIndex = profile.DifficultyIndex;
-            _distractorCount = profile.DistractorCount;
-            _distractorOpacity = profile.DistractorOpacity;
+            // Lo que varía de forma continua (distractores de fondo) sigue el rating del motor, tablero en curso incluido.
+            var fine = CardsBoardProfile.Build(_stage, _dda.RatingNormalized, _profile.MinPreviewExposureMs);
+            _difficultyIndex = _dda.RatingNormalized;
+            _distractorCount = fine.DistractorCount;
+            _distractorOpacity = fine.DistractorOpacity;
             RegenerateDistractors(_distractorSeed, _distractorCount, _distractorOpacity);
 
             UpdateHud();
 
-            int tier = (int)(profile.DifficultyIndex * 10);
+            int tier = (int)(_dda.RatingNormalized * 10);
             if (tier > _lastReportedTier)
             {
                 _lastReportedTier = tier;
@@ -476,8 +473,8 @@ namespace NeuroVida.Games.Parejas
                 SettleCurrentBoard();
                 PlayTone(523.25f, 0.5f, 0.22f);
                 _stageFailures = 0; // tablero superado de verdad -> las fallas no se arrastran
-                if (_stage >= CardsGameContract.TotalStages) EndSession();
-                else yield return StartCoroutine(TransitionToStage(_stage + 1, CountdownReason.Advance));
+                if (_boardsPlayed >= CardsGameContract.BoardsPerSession) EndSession();
+                else yield return StartCoroutine(TransitionToNextBoard(completed: true));
             }
         }
 
@@ -506,20 +503,19 @@ namespace NeuroVida.Games.Parejas
             return 0;
         }
 
-        /// <summary>3 parejas erradas en el tablero actual -- 1ra vez baja un nivel, 2da
-        /// vez seguida repite ese mismo nivel (ya bajado), 3ra vez termina la partida.</summary>
+        /// <summary>Tablero cortado (3 parejas erradas o se acabó el tiempo): cuenta como una falla; la 3.ª seguida
+        /// termina la partida, igual que llegar al máximo de tableros. El nivel del siguiente tablero NO lo decide
+        /// la falla sino el motor común (<see cref="TransitionToNextBoard"/>).</summary>
         private IEnumerator HandleStageFailure()
         {
             _stageFailures++;
-            if (_stageFailures >= CardsGameContract.StageFailuresBeforeGameOver)
+            if (_stageFailures >= CardsGameContract.StageFailuresBeforeGameOver
+                || _boardsPlayed >= CardsGameContract.BoardsPerSession)
             {
                 EndSession();
                 yield break;
             }
-            if (_stageFailures == 1)
-                yield return StartCoroutine(TransitionToStage(Mathf.Max(_stage - 1, 1), CountdownReason.Demoted));
-            else
-                yield return StartCoroutine(TransitionToStage(_stage, CountdownReason.Retry));
+            yield return StartCoroutine(TransitionToNextBoard(completed: false));
         }
 
         private void EndSession()
@@ -533,14 +529,7 @@ namespace NeuroVida.Games.Parejas
             {
                 user_id = _config.user_id,
                 game_id = _config.game_id,
-                session_metrics = new CardsSessionMetrics
-                {
-                    matched_pairs = _cumulativeMatchedPairs,
-                    attempts = _cumulativeAttempts,
-                    calculated_score = averageScore,
-                    level = _config.config.level,
-                    timed = _config.config.timed
-                }
+                session_metrics = CardsGameContract.BuildMetrics(_dda, _cumulativeMatchedPairs, _cumulativeAttempts, averageScore, _config.config)
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
         }
@@ -726,7 +715,7 @@ namespace NeuroVida.Games.Parejas
 
         private void UpdateHud()
         {
-            _hudStageText.text = $"Nivel {_stage}/{CardsGameContract.TotalStages}";
+            _hudStageText.text = $"Nivel {_stage}/{CardsGameContract.MaxLevel}";
             _hudMatchedText.text = $"Parejas {_matchedPairs}/{_totalPairs}";
             _hudTimerText.text = _timeLeftSeconds.HasValue ? $"Tiempo {_timeLeftSeconds.Value} s" : $"Intentos {_attempts}";
             _livesHud.SetLives(CardsGameContract.StageFailuresBeforeGameOver - _stageFailures);
@@ -736,7 +725,7 @@ namespace NeuroVida.Games.Parejas
 
         /// <summary><paramref name="cardCount"/> es la cantidad REAL de cartas del mazo
         /// (2 * cantidad de parejas). <paramref name="cols"/>/<paramref name="rows"/> vienen
-        /// del perfil de dificultad (VisualWorkingMemoryDDA.GridDimensionsFor), que redondea
+        /// del perfil del tablero (CardsBoardProfile.GridDimensionsFor), que redondea
         /// filas hacia arriba -- así que cols*rows a veces excede a cardCount (p.ej. 9 parejas
         /// = 18 cartas, pero grilla 4x5 = 20 casillas). Antes se creaban cols*rows casillas
         /// siempre, y las que sobraban quedaban como cartas "fantasma" boca abajo sin symbol

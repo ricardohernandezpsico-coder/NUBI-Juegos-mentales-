@@ -1,8 +1,9 @@
 # DDA común de Nubi (dificultad adaptativa)
 
 Estado: implementado en Unity el 24-sep-2026 (`Assets/Scripts/Games/AdaptiveDifficulty.cs`), conectado a
-Stroop, Comparación, Cambio de Chip, Ruta del Tesoro, Detective de Series, Cálculo Sereno y Anagramas.
-Secuencia Lumínica y Parejas Ocultas conservan sus motores propios (ver §6).
+Stroop, Comparación, Cambio de Chip, Ruta del Tesoro, Detective de Series, Cálculo Sereno y Anagramas. El 3-oct
+se sumaron Secuencia Lumínica y Parejas Ocultas (ver §6): **los 23 juegos usan el motor común** (Piloto y Correo
+con dos instancias; Freno solo en la tarea de ir).
 
 > **Alcance y honestidad**: esto es un diseño de ingeniería inspirado en literatura psicométrica y de
 > entrenamiento cognitivo. **No está validado clínicamente**, no es una herramienta diagnóstica y sus
@@ -13,8 +14,9 @@ Secuencia Lumínica y Parejas Ocultas conservan sus motores propios (ver §6).
 
 ## 1. Qué problema resuelve
 
-Antes había tres lógicas distintas: `SequenceDDAEngine` (ventana de 3 ensayos), `VisualWorkingMemoryDDA`
-(controlador continuo hacia ~80% con Z-score de tiempo de reacción) y, en los otros 7 juegos, contadores
+Antes había tres lógicas distintas: `SequenceDDAEngine` (ventana de 3 ensayos, borrado el 26-sep),
+`VisualWorkingMemoryDDA` (controlador continuo hacia ~80% con Z-score de tiempo de reacción; borrado el 3-oct) y,
+en los otros 7 juegos, contadores
 improvisados ("cada N aciertos sube un nivel", "2 errores bajan uno"). Los contadores tienen tres defectos:
 no apuntan a una tasa de aciertos concreta, no usan la edad ni el tiempo de reacción, y producen saltos
 bruscos. Además el único dato entre sesiones era `masteryStreak` (un entero).
@@ -64,6 +66,8 @@ Parámetros por juego:
 | Cálculo Sereno | 9 | 0.15 / 0.25 | edad | Reto |
 | Anagramas | 7 | 0.35 | edad | no |
 | Ruta del Tesoro | 12 | 0.50 (por ruta) | 0.70 (perder la ruta cuesta una vida) | no |
+| Parejas Ocultas | 10 | 0.15 | edad | Reto |
+| Secuencia Lumínica | 16 | 0.25 | edad | no |
 
 ## 4. Verificación
 
@@ -75,20 +79,78 @@ tiempo de reacción y el bono anti-aburrimiento se prueban aisladamente.
 
 ## 5. Persistencia entre sesiones (hecho el 24-sep)
 
-`StroopSessionMetrics` (telemetría común de los 7 juegos) lleva `end_rating` (0..1) y `peak_level`.
+`StroopSessionMetrics` (telemetría común de los juegos por ensayos; Secuencia y Parejas tienen la suya con los
+mismos campos, ver §6) lleva `end_rating` (0..1) y `peak_level`.
 `NativeReceiver` los recoge y `recordGameResult` guarda el rating por juego en Room (columna `ddaRating`,
 esquema v11), suavizado 60% partida / 40% anterior (`blendDdaRating`) para que un mal día no tire el progreso.
 Al abrir un juego, `UnityGameLauncher` envía el rating guardado y `AdaptiveDifficulty.StartRating(config, max)`
 continúa desde ahí; sin dato, se usa el nivel elegido más la maestría (`masteryStreak`), como antes.
 Pendiente: mostrar el rating en la pantalla de Progreso.
 
-## 6. Lo que NO cambió
+## 6. Secuencia y Parejas en el motor común (3-oct)
 
-- Secuencia: escalera fija de 16 niveles (`SequenceLevelConfig`: sube con 2 aciertos seguidos, 3 vidas). El motor
-  anterior (`SequenceDDAEngine`, ventana de 3 ensayos) se borró el 26-sep.
-- `VisualWorkingMemoryDDA` (Parejas): controlador continuo D(t) hacia ~80% con Z-score. Es la misma familia
-  de ideas que el motor común; unificarlos es posible pero no urgente. Comparte los perfiles de
-  edad (`DdaUserProfileConfig`).
+Hasta el 2-oct tenían motor propio (Secuencia: escalera de 16 niveles que subía con 2 aciertos seguidos; Parejas:
+`VisualWorkingMemoryDDA`, un controlador continuo D(t)). Hoy los dos usan `AdaptiveDifficulty` como los demás:
+objetivo por edad (0,85 mayores, 0,80 resto), peso del tiempo por edad (`DdaUserProfileConfig`), calentamiento de 2
+ensayos, techo y piso de los modos Suave / Desafío / Experto (`ConfigureMode`), calibración rápida en la
+evaluación, rating guardado entre sesiones y `end_rating` en la telemetría. `VisualWorkingMemoryDDA` y sus pruebas
+se borraron. Lo que ve la persona (arte, mecánica, textos, regla «tablero completo a la vez») no cambió, salvo lo
+que se dice abajo.
+
+**Parejas Ocultas** (`CardsGameContract`): escalera de **10 niveles** (los mismos 10 tableros de siempre:
+2, 3, 4, 5, 6, 7, 8, 9, 10 y 12 parejas; `Skill.kt` ya decía 10).
+- Cada nivel fija las parejas, la grilla (`CardsBoardProfile.GridDimensionsFor`) y el banco de símbolos
+  (interferencia: niveles 1-3 → banco 0, 4-6 → 1, 7-9 → 2, 10 → 3).
+- Ensayo = cada pareja intentada: `Register(acierto, tiempoMs)`, con el tiempo entre la primera y la segunda carta
+  (solo pesa en Reto: sin reloj no se usa). Se acabó el tiempo = error (`Register(false)`).
+- El nivel del tablero se fija al armarlo con `PresentedLevel` (y el calentamiento): dentro de un tablero no cambia;
+  el siguiente toma el nivel que dejó el motor. Antes cada falla de nivel bajaba o repetía el nivel a mano; ahora
+  la falla (3 parejas erradas cortan el tablero) solo cuenta para las vidas y el aviso dice «Bajamos de nivel»
+  solo si el motor de verdad lo bajó (si no, «Repetimos el nivel»).
+- Lo que antes afinaba D(t) dentro del nivel (vista previa de 3 s a 0,5 s según la edad, distractores de fondo y su
+  opacidad) usa las mismas fórmulas con el rating continuo (`RatingNormalized`) como índice.
+- Fin de partida: 3 tableros cortados seguidos o **10 tableros jugados** (`BoardsPerSession`). Antes terminaba al
+  superar el nivel 10; como ahora el motor decide el nivel, hace falta ese límite para que no sea infinita.
+- Parte del rating guardado o, sin dato, del nivel elegido (antes siempre empezaba en el tablero de 2 parejas).
+- `stepUp` 0,15 por pareja (≈7 aciertos por nivel; la bajada por error es 0,60 con objetivo 0,80).
+
+**Secuencia Lumínica** (`SequenceDifficulty`): los **16 niveles** de `SequenceLevelDatabase` (cuadrícula, largo,
+velocidad y distractores de cada nivel) son la escalera.
+- Ensayo = cada secuencia completa (acierto si la repite entera bien). **Tiempo de reacción: no se usa**
+  (`useReaction: false`). Es una tarea de capacidad de memoria, no de velocidad; el tiempo entre toques depende del
+  largo de la secuencia y de recordar el primer toque, y premiar la rapidez empujaría a apurarse. El promedio entre
+  toques sigue yendo al puntaje (bono de velocidad) y a `average_response_time_ms`.
+- `stepUp` 0,25 por secuencia: con objetivo 0,80 la bajada por error es 1,0 nivel, justo el tope por error del
+  motor (`MaxDropPerError`); en mayores el tope hace que el equilibrio quede en ≈0,82 en vez de 0,85.
+- **Vidas**: se mantienen las 3 como forma de terminar la partida (es lo que ve la persona), pero ya NO deciden la
+  dificultad: se quitó el «+200 ms al ritmo de la siguiente secuencia» después de un error. El texto «Perdiste una
+  vida · vamos más despacio» solo sale si el nivel que verá la persona de verdad bajó; si no, dice «Perdiste una vida».
+  El aviso «¡Nivel N!» sale cuando el motor sube de nivel.
+- Evaluación inicial («Tu punto de partida»): ya no tiene escalera propia (antes partía del nivel 3 y cada acierto
+  subía un nivel). Usa el motor con calibración rápida, parte del medio de la escala y termina a las 3 vidas o a las
+  12 secuencias; su medida es `end_rating`, igual que Stroop y Comparación en la misma evaluación.
+- Telemetría: `SequenceTelemetry` agrega `end_rating`, `mode_trials` y `mode_hits`; `peak_level` se mantiene.
+  La app (`NativeReceiver.parseSequenceResult`) usa `end_rating` y solo cae a `ratingFromSequencePeak(peak_level)`
+  si falta (Unity viejo).
+
+**La app**: `OWN_ENGINE_GAMES` se borró (el repositorio siembra y retoma el rating de los dos como el de todos);
+`Skill.kt` quitó `ownTarget` de Secuencia (el objetivo es el de la edad; Ruta del Tesoro queda con 0,70) y la sumó
+a los juegos de rondas largas (un Desafío pide 6 rondas, no 12 ensayos). `parseCardsResult` lee `end_rating`,
+`peak_level` y los ensayos del modo.
+
+**Datos guardados de antes**: no hace falta convertir nada.
+- Secuencia ya guardaba `ddaRating` 0..1 sobre los 16 niveles (`(pico − 1) / 15`); el motor nuevo usa
+  `(rating − 1) / 16`: la misma escala, con diferencia de a lo más un nivel y medio en el extremo. Eso sí: el
+  valor viejo era el nivel MÁS ALTO alcanzado (por encima del nivel de 8 de 10) y el nuevo es el nivel de equilibrio,
+  así que la primera partida lo corrige hacia abajo (el suavizado es 60 % partida / 40 % anterior y el avance no
+  baja más de 5 puntos por partida, `Skill.MAX_DROP`).
+- Parejas nunca guardó rating (su telemetría no traía `end_rating`; `ddaRating` quedó en −1): la primera partida
+  nueva lo crea y, hasta entonces, parte del nivel elegido más la maestría.
+
+**Pruebas**: `CardsDifficultyTests` y `SequenceDifficultyTests` (EditMode): escalera y niveles, convergencia
+al objetivo con un usuario simulado, techo y piso de modo, partida desde un rating guardado, el error por tiempo
+agotado, la evaluación y `end_rating` en la telemetría. Kotlin: `MemoryTelemetryTest` (lectura con y sin
+`end_rating`) y `MemoryGamesRatingTest` (guardado, suavizado y retomado del rating de los dos juegos).
 
 ## 7. Siguientes pasos sugeridos
 
@@ -96,6 +158,5 @@ Pendiente: mostrar el rating en la pantalla de Progreso.
 2. Recoger datos reales (aciertos por nivel, tiempos) y calibrar `stepUp`, objetivos y ratio de calentamiento.
 3. Puntaje normativo por percentil y edad (necesita una muestra; es lo que hacen las apps líderes para
    comparar entre juegos).
-4. Migrar Secuencia y Parejas al motor común (o alinear sus objetivos).
-5. Considerar un modelo tipo Elo / teoría de respuesta al ítem por familia de ítem (no solo por nivel) si se
+4. Considerar un modelo tipo Elo / teoría de respuesta al ítem por familia de ítem (no solo por nivel) si se
    quiere elegir cada ítem según su dificultad real medida.
