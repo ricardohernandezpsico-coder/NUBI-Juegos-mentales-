@@ -339,6 +339,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** Fin del recorrido («Empezar mi camino» o «Listo»): vuelve a Hoy y celebra los logros que quedaron pendientes. */
   fun finishFlight() {
     setFlight(null)
+    // También se cierra el panel de arriba (Ajustes / Perfil): si el inicio se abrió desde ahí (Debug «Repetir el inicio»), si no seguiría tapando Hoy.
+    _topPanel.value = null
     setTab(AppTab.HOY)
     if (flightAchievements.isNotEmpty()) _achievementQueue.value = _achievementQueue.value + flightAchievements
     flightAchievements = emptyList()
@@ -933,6 +935,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       _promotion.value = null
       _achievementQueue.value = emptyList()
       flightAchievements = emptyList()
+      _topPanel.value = null
       setFlight(null)
       pausedGame = null
       GameSessionStore.clearAll()

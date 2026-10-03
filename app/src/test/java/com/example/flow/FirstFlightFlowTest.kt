@@ -16,7 +16,9 @@ import com.example.data.local.NeuroVidaDatabase
 import com.example.model.AgeBand
 import com.example.model.DomainType
 import com.example.model.GamePlayResult
+import com.example.viewmodel.AppTab
 import com.example.viewmodel.NeuroVidaViewModel
+import com.example.viewmodel.TopPanel
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -279,6 +281,47 @@ class FirstFlightFlowTest {
     vm.flightSkipGames()
     assertNull(vm.flight.value)
     assertNull(FlightStore.load(app))
+  }
+
+  @Test
+  fun `salir del inicio con Ajustes abierto cae en Hoy limpio, sin el panel tapando`() {
+    // «Terminar después» en la evaluación repetida, abierta con el panel de Ajustes (o Perfil) encima.
+    for (panel in TopPanel.entries) {
+      val vm = newViewModel()
+      vm.setTab(AppTab.PROGRESO)
+      vm.openTopPanel(panel)
+      vm.startBaseline()
+      vm.flightSkipGames()
+      assertNull(vm.flight.value)
+      assertEquals(AppTab.HOY, vm.currentTab.value)
+      assertNull("el panel $panel debía cerrarse", vm.topPanel.value)
+    }
+  }
+
+  @Test
+  fun `terminar normal con Ajustes abierto tambien cae en Hoy limpio`() {
+    val vm = newViewModel()
+    vm.openTopPanel(TopPanel.AJUSTES)
+    vm.startBaseline()
+    for (i in 0..3) {
+      play(vm, i)
+      vm.flightContinue()
+    }
+    vm.flightContinue() // «Listo» del punto de partida
+    TestSupport.awaitUntil(message = "La evaluación no terminó") { vm.flight.value == null }
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertNull(vm.topPanel.value)
+  }
+
+  @Test
+  fun `el inicio completo repetido desde Debug termina en Hoy con el panel cerrado`() {
+    val vm = newViewModel()
+    vm.openTopPanel(TopPanel.AJUSTES)
+    vm.debugRestartOnboarding()
+    vm.finishFlight() // cualquier salida del recorrido pasa por finishFlight
+    assertNull(vm.flight.value)
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertNull(vm.topPanel.value)
   }
 
   @Test
