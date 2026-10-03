@@ -8,6 +8,7 @@ using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingS
 using NeuroVida.Games.Shared;
 using NeuroVida.Games.Trafico;   // RailLine, TrafficSounds.EngineLoop
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Rumbo
 {
@@ -464,6 +465,14 @@ namespace NeuroVida.Games.Rumbo
 
         private IEnumerator PulseHome()
         {
+            if (!Motion.Decorative)
+            {
+                // Tinte fijo del hogar un momento (misma duración) y vuelve con fundido.
+                _baseGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.75f);
+                yield return Motion.Hold(0.9f);
+                _baseGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.35f);
+                yield break;
+            }
             float t = 0f;
             while (t < 0.9f)
             {
@@ -595,7 +604,7 @@ namespace NeuroVida.Games.Rumbo
                 if (g.gameObject.activeSelf)
                 {
                     g.color = NeuroStyle.WithAlpha(HomingSprites.CrystalColors[i % HomingSprites.CrystalColors.Length],
-                        a * (0.45f + 0.15f * Mathf.Sin(GameClock.Time * 4f + i)));
+                        a * (Motion.Decorative ? 0.45f + 0.15f * Mathf.Sin(GameClock.Time * 4f + i) : 0.45f)); // sin ReduceMotion: brillo fijo
                     g.rectTransform.anchoredPosition = c.anchoredPosition;
                 }
             }
@@ -626,7 +635,7 @@ namespace NeuroVida.Games.Rumbo
                 float rel = _trip.BeaconBearing - _heading;
                 HomingContract.Dir(rel, out float bx, out float by);
                 _beacon.anchoredPosition = _shipScreen + new Vector2(bx, by) * BeaconRadius;
-                _beaconGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.4f + 0.15f * Mathf.Sin(GameClock.Time * 2.2f));
+                _beaconGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, Motion.Decorative ? 0.4f + 0.15f * Mathf.Sin(GameClock.Time * 2.2f) : 0.4f);
             }
 
             // Señal del cristal en el borde de la vista.
@@ -636,12 +645,12 @@ namespace NeuroVida.Games.Rumbo
                 float rel = HomingContract.HeadingOf(cx - _px, cy - _py) - _heading;
                 HomingContract.Dir(rel, out float sx, out float sy);
                 _signal.anchoredPosition = _shipScreen + new Vector2(sx, sy) * SignalRadius;
-                float pulse = 1f + 0.08f * Mathf.Sin(GameClock.Time * 6f);
+                float pulse = Motion.Decorative ? 1f + 0.08f * Mathf.Sin(GameClock.Time * 6f) : 1f;
                 _signalRing.rectTransform.localScale = Vector3.one * pulse;
             }
 
             // Llama de la nave: encendida mientras avanza.
-            float flame = _moving ? 0.85f + 0.15f * Mathf.Sin(GameClock.Time * 40f) : 0f;
+            float flame = _moving ? (Motion.Decorative ? 0.85f + 0.15f * Mathf.Sin(GameClock.Time * 40f) : 0.85f) : 0f; // encendida mientras avanza; sin titileo con ReduceMotion
             _flame.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.75f * flame);
             _flame.rectTransform.sizeDelta = new Vector2(ShipSize * 0.45f, ShipSize * (0.5f + 0.4f * flame));
         }
@@ -832,7 +841,7 @@ namespace NeuroVida.Games.Rumbo
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 70f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

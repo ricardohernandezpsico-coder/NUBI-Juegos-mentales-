@@ -7,6 +7,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.CambioChip
 {
@@ -213,7 +214,7 @@ namespace NeuroVida.Games.CambioChip
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                _chipRect.localScale = Vector3.one * Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(k));
+                _chipRect.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(k)) : 1f); // sin ReduceMotion: solo fundido
                 _chipGroup.alpha = Mathf.Clamp01(k * 3f);
                 yield return null;
             }
@@ -232,14 +233,14 @@ namespace NeuroVida.Games.CambioChip
             for (int i = 0; i < 2; i++)
             {
                 float t = 0f;
-                const float seconds = 0.22f;
+                const float seconds = 0.34f; // antes 0,22 s (4,5 Hz con cambio grande de brillo): ahora ≈ 2,9 Hz y menos blanco (regla 5)
                 while (t < seconds)
                 {
                     t += GameClock.DeltaTime;
                     float k = Mathf.Clamp01(t / seconds);
-                    float pulse = Mathf.Sin(k * Mathf.PI);
-                    _arenaBorder.color = Color.Lerp(new Color(accent.r, accent.g, accent.b, 0.95f), Color.white, pulse * 0.85f);
-                    _arenaRect.localScale = Vector3.one * (1f + 0.03f * pulse);
+                    float pulse = Motion.Decorative ? Mathf.Sin(k * Mathf.PI) : 1f; // sin ReduceMotion: tinte fijo, sin latido ni escala
+                    _arenaBorder.color = Color.Lerp(new Color(accent.r, accent.g, accent.b, 0.95f), Color.white, pulse * 0.6f);
+                    _arenaRect.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.03f * pulse : 1f);
                     yield return null;
                 }
             }
@@ -278,8 +279,8 @@ namespace NeuroVida.Games.CambioChip
                 {
                     t += GameClock.DeltaTime;
                     float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
-                    _chipRect.anchoredPosition = from + dir * (_arenaSize * 0.35f * k);
-                    _chipRect.localScale = Vector3.one * (1f + 0.15f * k);
+                    _chipRect.anchoredPosition = from + dir * (Motion.Decorative ? _arenaSize * 0.35f * k : 0f); // sin ReduceMotion: se desvanece en su lugar
+                    _chipRect.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.15f * k : 1f);
                     _chipGroup.alpha = 1f - k;
                     yield return null;
                 }
@@ -424,7 +425,7 @@ namespace NeuroVida.Games.CambioChip
             while (t < half)
             {
                 t += GameClock.DeltaTime;
-                _bannerRect.localScale = new Vector3(1f - Mathf.Clamp01(t / half), 1f, 1f);
+                _bannerRect.localScale = Motion.Decorative ? new Vector3(1f - Mathf.Clamp01(t / half), 1f, 1f) : Vector3.one;
                 yield return null;
             }
             ApplyRuleVisuals(rule);
@@ -433,7 +434,7 @@ namespace NeuroVida.Games.CambioChip
             while (t < back)
             {
                 t += GameClock.DeltaTime;
-                _bannerRect.localScale = new Vector3(Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(t / back))), 1f, 1f);
+                _bannerRect.localScale = Motion.Decorative ? new Vector3(Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(t / back))), 1f, 1f) : Vector3.one;
                 yield return null;
             }
             _bannerRect.localScale = Vector3.one;

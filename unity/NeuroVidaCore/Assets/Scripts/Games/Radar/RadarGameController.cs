@@ -8,6 +8,7 @@ using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingS
 using NeuroVida.Games.Parejas;   // SymbolSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Radar
 {
@@ -631,7 +632,7 @@ namespace NeuroVida.Games.Radar
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 40f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 40f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

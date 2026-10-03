@@ -7,6 +7,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Comparacion
 {
@@ -181,7 +182,7 @@ namespace NeuroVida.Games.Comparacion
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                float e = UiFx.EaseOutBack(k);
+                float e = Motion.Decorative ? UiFx.EaseOutBack(k) : 1f; // sin ReduceMotion: las tarjetas aparecen en su lugar (solo fundido, mismo tiempo)
                 for (int i = 0; i < 2; i++)
                 {
                     var c = _cards[i];
@@ -335,7 +336,7 @@ namespace NeuroVida.Games.Comparacion
                 {
                     var c = _cards[i];
                     c.Group.alpha = 1f - k;
-                    c.Rect.localScale = Vector3.one * (i == grown ? 1f + 0.10f * k : 1f - 0.06f * k);
+                    c.Rect.localScale = Vector3.one * (!Motion.Decorative ? 1f : i == grown ? 1f + 0.10f * k : 1f - 0.06f * k);
                 }
                 yield return null;
             }

@@ -72,6 +72,7 @@ namespace NeuroVida.Games.Shared
         /// tinte suave (alfa ≤ 0,15) que se desvanece en ≤ 0,2 s: acierto y error se siguen viendo por su color y forma.</summary>
         protected IEnumerator Flash(Color color, float maxAlpha, float seconds)
         {
+            float fullSeconds = seconds;
             if (!Motion.Decorative)
             {
                 maxAlpha = Mathf.Min(maxAlpha, 0.15f);
@@ -85,6 +86,7 @@ namespace NeuroVida.Games.Shared
                 _flash.color = new Color(color.r, color.g, color.b, maxAlpha * (1f - k));
                 yield return null;
             }
+            if (fullSeconds > seconds) yield return Motion.Hold(fullSeconds - seconds); // misma duración total
             _flash.color = new Color(0f, 0f, 0f, 0f);
         }
 
@@ -100,6 +102,7 @@ namespace NeuroVida.Games.Shared
                 var group = _resultRoot.GetComponent<CanvasGroup>();
                 if (group == null) group = _resultRoot.gameObject.AddComponent<CanvasGroup>();
                 yield return Motion.Fade(group, 0f, 1f);
+                yield return Motion.Hold(0.9f - Motion.FadeSeconds); // misma duración total que la animación (0,9 s)
                 yield break;
             }
             float t = 0f;

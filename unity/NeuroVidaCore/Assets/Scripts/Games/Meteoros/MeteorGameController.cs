@@ -8,6 +8,7 @@ using NeuroVida.Games;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Meteoros
 {
@@ -512,7 +513,7 @@ namespace NeuroVida.Games.Meteoros
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                m.Root.localScale = Vector3.one * Mathf.Lerp(1f, 1.25f, k);
+                m.Root.localScale = Vector3.one * (Motion.Decorative ? Mathf.Lerp(1f, 1.25f, k) : 1f); // sin ReduceMotion: solo se apaga
                 SetAlpha(m, 1f - k);
                 yield return null;
             }
@@ -521,6 +522,13 @@ namespace NeuroVida.Games.Meteoros
 
         private IEnumerator StarFlight(Vector2 from, int i)
         {
+            if (!Motion.Decorative)
+            {
+                // Sin estrellitas que vuelan: la estrella de la constelación se enciende al mismo tiempo (0,6 s + retraso).
+                yield return Motion.Hold(0.6f + i * 0.07f);
+                if (i == 2) LightConstellation();
+                yield break;
+            }
             var img = NewImage(_fxRect, "FlyStar", MeteorSprites.StarLit());
             img.gameObject.SetActive(true);
             var r = img.rectTransform;
@@ -598,7 +606,7 @@ namespace NeuroVida.Games.Meteoros
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
                 float shake = k < 0.25f && !GameFeel.ReduceMotion ? Mathf.Sin(t * 70f) * 14f * (1f - k * 4f) : 0f;
-                m.Root.anchoredPosition = home + new Vector2(shake, -90f * UiFx.EaseOutCubic(k)) ;
+                m.Root.anchoredPosition = home + new Vector2(shake, Motion.Decorative ? -90f * UiFx.EaseOutCubic(k) : 0f); // sin ReduceMotion: se apaga en su lugar
                 SetAlpha(m, k < 0.6f ? 1f : 1f - (k - 0.6f) / 0.4f);
                 yield return null;
             }
@@ -616,8 +624,8 @@ namespace NeuroVida.Games.Meteoros
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                m.Root.localScale = Vector3.one * Mathf.Lerp(1f, 0.7f, k);
-                m.Root.anchoredPosition = m.Pos + new Vector2(0f, -40f * k);
+                m.Root.localScale = Vector3.one * (Motion.Decorative ? Mathf.Lerp(1f, 0.7f, k) : 1f); // sin ReduceMotion: se desvanece en su lugar
+                m.Root.anchoredPosition = m.Pos + new Vector2(0f, Motion.Decorative ? -40f * k : 0f);
                 SetAlpha(m, 1f - k);
                 yield return null;
             }
@@ -634,7 +642,7 @@ namespace NeuroVida.Games.Meteoros
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                m.Root.anchoredPosition = m.Pos + new Vector2(0f, -70f * k);
+                m.Root.anchoredPosition = m.Pos + new Vector2(0f, Motion.Decorative ? -70f * k : 0f);
                 SetAlpha(m, 1f - k);
                 yield return null;
             }
@@ -654,7 +662,7 @@ namespace NeuroVida.Games.Meteoros
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                r.localScale = Vector3.one * Mathf.LerpUnclamped(0.3f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 3f)));
+                r.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.3f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 3f))) : 1f); // la marca aparece quieta
                 img.color = new Color(1f, 1f, 1f, k < 0.7f ? 1f : 1f - (k - 0.7f) / 0.3f);
                 yield return null;
             }
@@ -663,6 +671,7 @@ namespace NeuroVida.Games.Meteoros
 
         private IEnumerator Dust(Vector2 at, int i)
         {
+            if (!Motion.Decorative) yield break; // sin ReduceMotion: sin polvo
             var img = NewImage(_fxRect, "Dust", DiscSprite.Get());
             img.gameObject.SetActive(true);
             var r = img.rectTransform;
@@ -703,7 +712,7 @@ namespace NeuroVida.Games.Meteoros
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 60f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 60f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

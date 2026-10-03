@@ -8,6 +8,7 @@ using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingS
 using NeuroVida.Games.Parejas;   // SymbolSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Satelites
 {
@@ -194,7 +195,7 @@ namespace NeuroVida.Games.Satelites
             while (t < SatelliteContract.CueSeconds)
             {
                 t += GameClock.DeltaTime;
-                float pulse = 0.5f + 0.5f * Mathf.Sin(t * Mathf.PI * 2f * 1.4f);
+                float pulse = Motion.Decorative ? 0.5f + 0.5f * Mathf.Sin(t * Mathf.PI * 2f * 1.4f) : 1f; // sin ReduceMotion: la señal queda fija (brillante), sin pulso
                 foreach (var s in _sats)
                 {
                     if (!s.Target) continue;
@@ -407,7 +408,7 @@ namespace NeuroVida.Games.Satelites
         /// <summary>Todos los satélites se balancean IGUAL (vida sin dar pistas de cuál es cuál).</summary>
         private void Wobble()
         {
-            float a = 7f * Mathf.Sin(GameClock.Time * 1.7f);
+            float a = Motion.Decorative ? 7f * Mathf.Sin(GameClock.Time * 1.7f) : 0f; // sin ReduceMotion: quietos
             foreach (var s in _sats) s.Body.rectTransform.localRotation = Quaternion.Euler(0f, 0f, a);
         }
 
@@ -518,7 +519,7 @@ namespace NeuroVida.Games.Satelites
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 60f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 60f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Shared;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Secuencia
 {
@@ -692,6 +693,7 @@ namespace NeuroVida.Games.Secuencia
 
         private static IEnumerator PopRect(RectTransform rect, float peak, float seconds)
         {
+            if (!Motion.Decorative) { if (rect != null) rect.localScale = Vector3.one; yield return Motion.Hold(seconds); yield break; }
             float elapsed = 0f;
             while (elapsed < seconds)
             {
@@ -884,6 +886,13 @@ namespace NeuroVida.Games.Secuencia
             float stagger = Mathf.Min(0.045f, 0.32f / count);
             const float popSeconds = 0.30f;
 
+            if (!Motion.Decorative)
+            {
+                // Sin rebote: las fichas aparecen a su tamaño; el reloj avanza lo mismo (regla 6).
+                foreach (var image in _tileImages.Values) image.rectTransform.localScale = Vector3.one;
+                yield return Motion.Hold(stagger * count + popSeconds);
+                yield break;
+            }
             foreach (var image in _tileImages.Values) image.rectTransform.localScale = Vector3.zero;
 
             float total = stagger * count + popSeconds;
@@ -906,6 +915,12 @@ namespace NeuroVida.Games.Secuencia
         {
             int count = _tileImages.Count;
             if (count == 0) yield break;
+            if (!Motion.Decorative)
+            {
+                yield return Motion.Hold(0.20f); // sin encogerse: desaparecen al final, misma duración
+                foreach (var image in _tileImages.Values) image.rectTransform.localScale = Vector3.zero;
+                yield break;
+            }
             const float seconds = 0.20f;
             float elapsed = 0f;
             while (elapsed < seconds)
@@ -938,7 +953,7 @@ namespace NeuroVida.Games.Secuencia
                     float t = Mathf.Clamp01((elapsed - i * stagger) / pulseSeconds);
                     float pulse = Mathf.Sin(t * Mathf.PI);
                     var info = TilePalette.Get(i);
-                    image.rectTransform.localScale = Vector3.one * (1f + 0.10f * pulse);
+                    image.rectTransform.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.10f * pulse : 1f); // sin ReduceMotion: solo el tinte
                     image.color = Color.Lerp(info.NormalColor, info.LightColor, pulse * 0.8f);
                     _tileGlows[i].color = new Color(info.LightColor.r, info.LightColor.g, info.LightColor.b, 0.55f * pulse);
                 }
@@ -990,7 +1005,7 @@ namespace NeuroVida.Games.Secuencia
             float fromGlow = glow.color.a;
             float toGlow = on ? 0.75f : 0f;
             float fromScale = rect.localScale.x;
-            float toScale = on ? 1.08f : 1f;
+            float toScale = on && Motion.Decorative ? 1.08f : 1f; // el color y el resplandor son la información; la escala, adorno
 
             float elapsed = 0f;
             while (elapsed < durationSeconds)
@@ -1022,7 +1037,7 @@ namespace NeuroVida.Games.Secuencia
                 elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / seconds);
                 image.color = Color.Lerp(red, info.NormalColor, UiFx.EaseOutCubic(t));
-                rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * Mathf.PI * 6f) * 8f * (1f - t));
+                if (Motion.Decorative) rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * Mathf.PI * 6f) * 8f * (1f - t)); // el rojo se queda; el tambaleo no
                 yield return null;
             }
             image.color = info.NormalColor;
@@ -1101,7 +1116,8 @@ namespace NeuroVida.Games.Secuencia
         private IEnumerator FlashFeedback(Color peakColor)
         {
             const float inSeconds = 0.08f;
-            const float outSeconds = 0.35f;
+            float outSeconds = 0.35f;
+            if (!Motion.Decorative) { peakColor.a = Mathf.Min(peakColor.a, 0.15f); outSeconds = 0.2f; } // regla 4: tinte suave
             float elapsed = 0f;
             while (elapsed < inSeconds)
             {

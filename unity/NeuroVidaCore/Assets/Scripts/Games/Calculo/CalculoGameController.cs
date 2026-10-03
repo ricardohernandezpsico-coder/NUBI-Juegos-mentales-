@@ -7,6 +7,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Calculo
 {
@@ -146,7 +147,7 @@ namespace NeuroVida.Games.Calculo
                     else
                     {
                         // Sin reloj: la burbuja flota suavemente en su sitio.
-                        _bubbleRect.anchoredPosition = new Vector2(0f, _bubbleRestY + Mathf.Sin(GameClock.Time * 1.6f) * 10f);
+                        _bubbleRect.anchoredPosition = new Vector2(0f, _bubbleRestY + (Motion.Decorative ? Mathf.Sin(GameClock.Time * 1.6f) * 10f : 0f)); // sin ReduceMotion: no flota
                     }
                     yield return null;
                 }
@@ -208,7 +209,7 @@ namespace NeuroVida.Games.Calculo
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                _bubbleRect.localScale = Vector3.one * Mathf.LerpUnclamped(0.5f, 1f, UiFx.EaseOutBack(k));
+                _bubbleRect.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.5f, 1f, UiFx.EaseOutBack(k)) : 1f); // sin ReduceMotion: solo fundido
                 _bubbleGroup.alpha = Mathf.Clamp01(k * 2.5f);
                 yield return null;
             }
@@ -259,6 +260,7 @@ namespace NeuroVida.Games.Calculo
                 _optionImages[chosen].color = GoodColor;
                 GameFeel.Correct(_streak);
                 StartCoroutine(Flash(GoodColor, 0.08f, 0.26f));
+                StartCoroutine(ResultMark.Show(_fxRect, _optionRects[chosen], true, 90f, 0.9f)); // ✓: acierto por forma, no solo por color
                 StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _optionRects[chosen]), Color.white, 120f, 420f, 0.45f));
 
                 if (change == DdaChange.Up)
@@ -287,6 +289,8 @@ namespace NeuroVida.Games.Calculo
                 GameFeel.Wrong();
                 StartCoroutine(Flash(BadColor, 0.12f, 0.3f));
                 StartCoroutine(UiFx.Shake(20f, 0.4f, _bubbleRect));
+                StartCoroutine(ResultMark.Show(_fxRect, _optionRects[chosen], false, 90f, 0.9f)); // ✗ en la elegida y ✓ en la correcta (forma, no solo color)
+                StartCoroutine(ResultMark.Show(_fxRect, _optionRects[answerIndex], true, 90f, 0.9f));
                 for (int i = 0; i < 4; i++)
                 {
                     if (i == answerIndex) continue;
@@ -313,8 +317,8 @@ namespace NeuroVida.Games.Calculo
             {
                 t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
-                _bubbleRect.anchoredPosition = new Vector2(0f, Mathf.Lerp(from.y, targetY, k));
-                _bubbleRect.localScale = Vector3.one * (1f - 0.25f * k);
+                _bubbleRect.anchoredPosition = new Vector2(0f, Motion.Decorative ? Mathf.Lerp(from.y, targetY, k) : from.y); // sin ReduceMotion: se desvanece en su lugar
+                _bubbleRect.localScale = Vector3.one * (Motion.Decorative ? 1f - 0.25f * k : 1f);
                 _bubbleGroup.alpha = 1f - Mathf.Clamp01((k - 0.35f) / 0.65f);
                 if (!rippled && k > 0.5f)
                 {
@@ -418,10 +422,10 @@ namespace NeuroVida.Games.Calculo
             while (true)
             {
                 float t = GameClock.Time;
-                if (_waveA != null) _waveA.anchoredPosition = new Vector2(Mathf.Sin(t * 0.5f) * 160f, _waveA.anchoredPosition.y);
-                if (_waveB != null) _waveB.anchoredPosition = new Vector2(Mathf.Sin(t * 0.37f + 2f) * -200f, _waveB.anchoredPosition.y);
-                if (_lilyA != null) _lilyA.anchoredPosition = new Vector2(0f, Mathf.Sin(t * 0.9f) * 5f);
-                if (_lilyB != null) _lilyB.anchoredPosition = new Vector2(0f, Mathf.Sin(t * 0.8f + 1.3f) * 5f);
+                if (_waveA != null) _waveA.anchoredPosition = new Vector2((Motion.Decorative ? Mathf.Sin(t * 0.5f) : 0f) * 160f, _waveA.anchoredPosition.y);
+                if (_waveB != null) _waveB.anchoredPosition = new Vector2((Motion.Decorative ? Mathf.Sin(t * 0.37f + 2f) : 0f) * -200f, _waveB.anchoredPosition.y);
+                if (_lilyA != null) _lilyA.anchoredPosition = new Vector2(0f, (Motion.Decorative ? Mathf.Sin(t * 0.9f) : 0f) * 5f);
+                if (_lilyB != null) _lilyB.anchoredPosition = new Vector2(0f, (Motion.Decorative ? Mathf.Sin(t * 0.8f + 1.3f) : 0f) * 5f);
                 yield return null;
             }
         }

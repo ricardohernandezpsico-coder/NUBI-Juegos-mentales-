@@ -7,6 +7,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Series
 {
@@ -232,10 +233,10 @@ namespace NeuroVida.Games.Series
             // Aro que late alrededor de la ficha "?" mientras no se responda.
             while (_answerIndex == NoAnswer && !_ended)
             {
-                float t = Mathf.PingPong(GameClock.Time * 1.6f, 1f);
+                float t = Motion.Decorative ? Mathf.PingPong(GameClock.Time * 1.6f, 1f) : 0.5f; // sin ReduceMotion: aro fijo
                 _lensRing.color = new Color(LensColor.r, LensColor.g, LensColor.b, 0.25f + 0.55f * t);
                 _lensRing.rectTransform.localScale = Vector3.one * (1.02f + 0.10f * t);
-                _magnifier.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -8f + 16f * t); // la lupa "busca"
+                _magnifier.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Motion.Decorative ? -8f + 16f * t : 0f); // la lupa "busca" (quieta con ReduceMotion) // la lupa "busca"
                 yield return null;
             }
             _lensRing.color = new Color(LensColor.r, LensColor.g, LensColor.b, 0f);
@@ -268,6 +269,7 @@ namespace NeuroVida.Games.Series
                 _optionImages[chosen].color = GoodColor;
                 SetBanner(_item.Rule, GoodColor, 0.45f);
                 GameFeel.Correct(_streak);
+                StartCoroutine(ResultMark.Show(_fxRect, _optionRects[chosen], true, 90f, 0.9f)); // ✓: acierto por forma, no solo por color
                 StartCoroutine(Flash(GoodColor, 0.10f, 0.28f));
                 StartCoroutine(UiFx.SparkBurst(_fxRect, LocalIn(_fxRect, answerToken.Rect), Color.white, 14, 260f, 42f, 0.55f));
                 StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _optionRects[chosen]), Color.white, 120f, 420f, 0.45f));
@@ -298,6 +300,8 @@ namespace NeuroVida.Games.Series
                 GameFeel.Wrong();
                 StartCoroutine(Flash(BadColor, 0.14f, 0.32f));
                 StartCoroutine(UiFx.Shake(20f, 0.4f, _optionRects[chosen]));
+                StartCoroutine(ResultMark.Show(_fxRect, _optionRects[chosen], false, 90f, 0.9f)); // ✗ en la elegida y ✓ en la correcta
+                StartCoroutine(ResultMark.Show(_fxRect, _optionRects[answerIndex], true, 90f, 0.9f));
                 for (int i = 0; i < 4; i++)
                     if (i != answerIndex && i != chosen)
                         _optionImages[i].color = Color.Lerp(OptionColors[i], new Color(0.25f, 0.27f, 0.36f), 0.7f);
@@ -325,6 +329,15 @@ namespace NeuroVida.Games.Series
 
         private IEnumerator RowOut(float seconds)
         {
+            if (!Motion.Decorative)
+            {
+                // Sin encogerse ni deslizar: la fila se va al final del mismo tiempo.
+                yield return Motion.Hold(seconds);
+                _rowRect.anchoredPosition = _rowRest + new Vector2(-220f, 0f);
+                foreach (var tok in _tokens) { tok.Rect.localScale = Vector3.zero; tok.Chip.localScale = Vector3.zero; }
+                for (int i = 0; i < 4; i++) _optionRects[i].localScale = Vector3.zero;
+                yield break;
+            }
             float t = 0f;
             var optionScales = new Vector3[4];
             while (t < seconds)

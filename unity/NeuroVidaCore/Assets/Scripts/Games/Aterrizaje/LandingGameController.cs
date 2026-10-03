@@ -7,6 +7,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Aterrizaje
 {
@@ -171,7 +172,7 @@ namespace NeuroVida.Games.Aterrizaje
                 PlaceLander();
                 // Retrocohetes: la llama crece cerca del suelo (frenando) y titila.
                 float near = 1f - Mathf.Clamp01((_landerY - GroundY()) / 500f);
-                float f = (0.45f + 0.55f * near) * (0.85f + 0.15f * Mathf.Sin(GameClock.Time * 50f));
+                float f = (0.45f + 0.55f * near) * (Motion.Decorative ? 0.85f + 0.15f * Mathf.Sin(GameClock.Time * 50f) : 1f); // la llama crece al frenar (informa); el titileo se apaga con ReduceMotion
                 _flame.rectTransform.sizeDelta = new Vector2(LanderSize * 0.5f * f, LanderSize * 0.9f * f);
                 _flame.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.55f + 0.35f * near);
                 yield return null;
@@ -317,7 +318,7 @@ namespace NeuroVida.Games.Aterrizaje
         {
             _landerRect.anchoredPosition = new Vector2(_landerX, _landerY);
             // Inclinación leve según hacia dónde se mueve.
-            float tilt = Mathf.Clamp((_landerTargetX - _landerX) * -0.05f, -10f, 10f);
+            float tilt = Motion.Decorative ? Mathf.Clamp((_landerTargetX - _landerX) * -0.05f, -10f, 10f) : 0f; // sin ReduceMotion: sin inclinación
             _lander.rectTransform.localRotation = Quaternion.Euler(0f, 0f, tilt);
             // Haz de aterrizaje: puntos desde la nave hasta la regla, justo donde se posaría.
             float top = _landerY - LanderSize * 0.4f, bottom = _rulerY + 16f;
@@ -347,6 +348,7 @@ namespace NeuroVida.Games.Aterrizaje
             var r = _flagRect;
             float t = 0f;
             const float seconds = 0.28f;
+            if (!Motion.Decorative) { r.localScale = Vector3.one; yield return Motion.Hold(seconds); yield break; } // sin rebote
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;
@@ -380,6 +382,7 @@ namespace NeuroVida.Games.Aterrizaje
 
         private IEnumerator Dust(Vector2 at, int i)
         {
+            if (!Motion.Decorative) yield break; // sin ReduceMotion: sin polvo
             var img = NewImage(_fxRect, "Dust", DiscSprite.Get());
             img.gameObject.SetActive(true);
             var r = img.rectTransform;
@@ -426,7 +429,7 @@ namespace NeuroVida.Games.Aterrizaje
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 70f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

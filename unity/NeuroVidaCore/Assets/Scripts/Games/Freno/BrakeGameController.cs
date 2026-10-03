@@ -8,6 +8,7 @@ using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingS
 using NeuroVida.Games.Parejas;   // SymbolSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Freno
 {
@@ -443,6 +444,15 @@ namespace NeuroVida.Games.Freno
             var from = LocalIn(_fxRect, L.RocketRect);
             float size = L.RocketRect.sizeDelta.x;
             L.Rocket.gameObject.SetActive(false);
+            if (!Motion.Decorative)
+            {
+                // Sin despegue: el cohete se va y vuelve el nuevo tras el mismo tiempo (0,75 s), sin llama ni humo.
+                yield return Motion.Hold(0.75f);
+                AddSkyStar();
+                L.Rocket.gameObject.SetActive(true);
+                yield return StartCoroutine(PopIn(L.RocketRect, 0.2f));
+                yield break;
+            }
 
             var go = new GameObject("Flying");
             go.transform.SetParent(_fxRect, false);
@@ -481,6 +491,7 @@ namespace NeuroVida.Games.Freno
 
         private IEnumerator Puff(Vector2 at, int i)
         {
+            if (!Motion.Decorative) yield break; // sin ReduceMotion: sin humo
             var img = NewImage(_fxRect, "Smoke", DiscSprite.Get());
             img.gameObject.SetActive(true);
             var r = img.rectTransform;
@@ -516,6 +527,7 @@ namespace NeuroVida.Games.Freno
             var basePos = r.anchoredPosition;
             float t = 0f;
             const float seconds = 0.45f;
+            if (!Motion.Decorative) { yield return Motion.Hold(seconds); yield break; } // sin salto ni vaivén: el cohete queda en su plataforma (misma duración)
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;
@@ -531,6 +543,15 @@ namespace NeuroVida.Games.Freno
         private IEnumerator PressButton(Lane L)
         {
             var r = L.Button.rectTransform;
+            if (!Motion.Decorative)
+            {
+                // Sin encogerse: el botón se oscurece un instante (como PressScale).
+                var c0 = L.Button.color;
+                L.Button.color = new Color(c0.r * 0.8f, c0.g * 0.8f, c0.b * 0.8f, c0.a);
+                yield return StartCoroutine(Wait(0.1f));
+                L.Button.color = c0;
+                yield break;
+            }
             r.localScale = Vector3.one * 0.9f;
             yield return StartCoroutine(Wait(0.1f));
             r.localScale = Vector3.one;
@@ -538,13 +559,24 @@ namespace NeuroVida.Games.Freno
 
         private IEnumerator Blink(Image img, Color color)
         {
+            if (!Motion.Decorative)
+            {
+                // Sin parpadeo: la baliza queda prendida el mismo tiempo (0,48 s) y vuelve a su reposo.
+                img.color = color;
+                yield return StartCoroutine(Wait(0.48f));
+                img.color = new Color(1f, 1f, 1f, 0.18f);
+                yield break;
+            }
+            // Regla 5: el brillo oscila solo entre 1 y ~0,6 (antes 1 ↔ 0,18 a 6 Hz).
+            var dim = Color.Lerp(color, new Color(1f, 1f, 1f, 0.18f), 0.4f);
             for (int i = 0; i < 3; i++)
             {
                 img.color = color;
                 yield return StartCoroutine(Wait(0.08f));
-                img.color = new Color(1f, 1f, 1f, 0.18f);
+                img.color = dim;
                 yield return StartCoroutine(Wait(0.08f));
             }
+            img.color = new Color(1f, 1f, 1f, 0.18f);
         }
 
         private void ShowMark(Lane L, bool ok)
@@ -606,7 +638,7 @@ namespace NeuroVida.Games.Freno
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 120f + 80f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 120f + 80f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

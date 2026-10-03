@@ -88,6 +88,7 @@ namespace NeuroVida.Games.Shared
             if (!Motion.Decorative) // "quitar animaciones": sin salto, el rect se queda en su tamaño
             {
                 if (rect != null) rect.localScale = Vector3.one;
+                yield return Motion.Hold(seconds); // misma duración (los flujos pueden esperarla)
                 yield break;
             }
             float t = 0f;
@@ -108,6 +109,7 @@ namespace NeuroVida.Games.Shared
             if (!Motion.Decorative) // aparece ya a su tamaño final, sin crecer ni rebotar
             {
                 if (rect != null) rect.localScale = Vector3.one;
+                yield return Motion.Hold(seconds);
                 yield break;
             }
             float t = 0f;

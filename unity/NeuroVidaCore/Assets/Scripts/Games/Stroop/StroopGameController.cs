@@ -8,6 +8,7 @@ using NeuroVida.Games.Parejas;   // SymbolSprite (gota de tinta del cartel de re
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / HarmonicTone
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Stroop
 {
@@ -213,7 +214,7 @@ namespace NeuroVida.Games.Stroop
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                _cardRect.localScale = Vector3.one * Mathf.LerpUnclamped(0.78f, 1f, UiFx.EaseOutBack(k));
+                _cardRect.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.78f, 1f, UiFx.EaseOutBack(k)) : 1f); // sin ReduceMotion: solo fundido (mismo tiempo)
                 _cardGroup.alpha = Mathf.Clamp01(k * 2.2f);
                 yield return null;
             }
@@ -252,8 +253,8 @@ namespace NeuroVida.Games.Stroop
                 {
                     t += GameClock.DeltaTime;
                     float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
-                    _cardRect.anchoredPosition = from + new Vector2(0f, 150f * k);
-                    _cardRect.localScale = Vector3.one * (1f + 0.08f * k);
+                    _cardRect.anchoredPosition = from + new Vector2(0f, Motion.Decorative ? 150f * k : 0f); // sin ReduceMotion: se desvanece en su lugar
+                    _cardRect.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.08f * k : 1f);
                     _cardGroup.alpha = 1f - k;
                     yield return null;
                 }
@@ -511,7 +512,7 @@ namespace NeuroVida.Games.Stroop
             while (t < half)
             {
                 t += GameClock.DeltaTime;
-                _bannerRect.localScale = new Vector3(1f - Mathf.Clamp01(t / half), 1f, 1f);
+                _bannerRect.localScale = Motion.Decorative ? new Vector3(1f - Mathf.Clamp01(t / half), 1f, 1f) : Vector3.one; // sin ReduceMotion: sin giro (cambia en el mismo instante)
                 yield return null;
             }
             ApplyBannerVisuals(rule);
@@ -521,7 +522,7 @@ namespace NeuroVida.Games.Stroop
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / back);
-                _bannerRect.localScale = new Vector3(Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(k)), 1f, 1f);
+                _bannerRect.localScale = Motion.Decorative ? new Vector3(Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(k)), 1f, 1f) : Vector3.one;
                 yield return null;
             }
             _bannerRect.localScale = Vector3.one;

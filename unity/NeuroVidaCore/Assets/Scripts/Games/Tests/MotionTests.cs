@@ -115,8 +115,7 @@ namespace NeuroVida.Games.Tests
         {
             var rect = NewArea();
             rect.localScale = Vector3.zero;
-            var e = Motion.ScaleTo(rect, 0.5f, 1f, 0.3f, UiFx.EaseOutBack);
-            Assert.IsFalse(e.MoveNext(), "no debe animar");
+            Run(Motion.ScaleTo(rect, 0.5f, 1f, 0.3f, UiFx.EaseOutBack), () => Assert.AreEqual(Vector3.one, rect.localScale));
             Assert.AreEqual(Vector3.one, rect.localScale);
         }
 
@@ -139,11 +138,52 @@ namespace NeuroVida.Games.Tests
         {
             var rect = NewArea();
             rect.localScale = Vector3.zero;
-            Assert.IsFalse(UiKit.PopRect(rect, 1.7f, 0.3f).MoveNext());
+            Run(UiKit.PopRect(rect, 1.7f, 0.3f), () => Assert.AreEqual(Vector3.one, rect.localScale));
             Assert.AreEqual(Vector3.one, rect.localScale);
 
             rect.localScale = Vector3.zero;
-            Assert.IsFalse(UiKit.PopIn(rect, 0.3f).MoveNext());
+            Run(UiKit.PopIn(rect, 0.3f), () => Assert.AreEqual(Vector3.one, rect.localScale));
+            Assert.AreEqual(Vector3.one, rect.localScale);
+        }
+
+        // ------------------------------------------------------------------ misma duración (regla 6)
+
+        [Test]
+        public void PopRect_PopIn_y_Shake_duran_lo_mismo_con_y_sin_ReduceMotion()
+        {
+            var rect = NewArea();
+            int Frames(Func<IEnumerator> make) { rect.localScale = Vector3.one; return Run(make()); }
+
+            GameFeel.ReduceMotion = true;
+            int popRectCalm = Frames(() => UiKit.PopRect(rect, 1.2f, 0.3f));
+            int popInCalm = Frames(() => UiKit.PopIn(rect, 0.25f));
+            int shakeCalm = Frames(() => UiFx.Shake(20f, 0.4f, rect));
+            GameFeel.ReduceMotion = false;
+            Assert.AreEqual(Frames(() => UiKit.PopRect(rect, 1.2f, 0.3f)), popRectCalm, "PopRect");
+            Assert.AreEqual(Frames(() => UiKit.PopIn(rect, 0.25f)), popInCalm, "PopIn");
+            Assert.AreEqual(Frames(() => UiFx.Shake(20f, 0.4f, rect)), shakeCalm, "Shake");
+            Assert.Greater(popRectCalm, 3);
+        }
+
+        [Test]
+        public void Las_rafagas_con_ReduceMotion_esperan_su_duracion_sin_crear_nada()
+        {
+            var parent = NewArea();
+            // Dt = 0,05: N cuadros = ceil(segundos / 0,05) (con un cuadro de margen por la suma de flotantes).
+            int spark = Run(UiFx.SparkBurst(parent, Vector2.zero, Color.white, 12, 180f, 30f, 0.55f));
+            int ring = Run(UiFx.RingBurst(parent, Vector2.zero, Color.white, 10f, 100f, 0.5f));
+            Assert.That(spark * Dt, Is.InRange(0.55f, 0.55f + 2 * Dt), "SparkBurst");
+            Assert.That(ring * Dt, Is.InRange(0.5f, 0.5f + 2 * Dt), "RingBurst");
+            Assert.AreEqual(0, parent.childCount);
+        }
+
+        [Test]
+        public void ScaleTo_con_ReduceMotion_espera_su_duracion_con_la_escala_final()
+        {
+            var rect = NewArea();
+            rect.localScale = Vector3.zero;
+            int frames = Run(Motion.ScaleTo(rect, 0.5f, 1f, 0.3f, UiFx.EaseOutBack));
+            Assert.That(frames * Dt, Is.InRange(0.3f, 0.3f + 2 * Dt));
             Assert.AreEqual(Vector3.one, rect.localScale);
         }
 
@@ -153,8 +193,8 @@ namespace NeuroVida.Games.Tests
         public void SparkBurst_y_RingBurst_no_crean_hijos()
         {
             var parent = NewArea();
-            Assert.IsFalse(UiFx.SparkBurst(parent, Vector2.zero, Color.white, 12, 180f, 30f).MoveNext());
-            Assert.IsFalse(UiFx.RingBurst(parent, Vector2.zero, Color.white, 10f, 100f).MoveNext());
+            Run(UiFx.SparkBurst(parent, Vector2.zero, Color.white, 12, 180f, 30f), () => Assert.AreEqual(0, parent.childCount));
+            Run(UiFx.RingBurst(parent, Vector2.zero, Color.white, 10f, 100f), () => Assert.AreEqual(0, parent.childCount));
             Assert.AreEqual(0, parent.childCount);
         }
 

@@ -20,6 +20,19 @@ namespace NeuroVida.Games.Shared
         /// <summary>true = se pueden dibujar adornos que se mueven solos; false = "quitar animaciones" activo.</summary>
         public static bool Decorative => !GameFeel.ReduceMotion;
 
+        /// <summary>Espera <paramref name="seconds"/> de juego (<see cref="GameClock"/>: respeta la pausa) sin mover nada. Con
+        /// «quitar animaciones» reemplaza a las corrutinas decorativas que un juego espera (<c>yield return StartCoroutine(PopIn…)</c>):
+        /// el reloj del juego avanza lo mismo y los tiempos de la tarea no cambian (regla 6).</summary>
+        public static IEnumerator Hold(float seconds)
+        {
+            float t = 0f;
+            while (t < seconds)
+            {
+                t += GameClock.DeltaTime;
+                yield return null;
+            }
+        }
+
         /// <summary>Lleva el alfa de <paramref name="graphic"/> hasta <paramref name="toAlpha"/> (reloj de juego).</summary>
         public static IEnumerator Fade(Graphic graphic, float toAlpha, float seconds = FadeSeconds)
         {
@@ -68,6 +81,7 @@ namespace NeuroVida.Games.Shared
             if (!Decorative)
             {
                 rect.localScale = Vector3.one * to;
+                yield return Hold(seconds); // misma duración que la animación: el reloj del juego avanza igual
                 yield break;
             }
             float t = 0f;

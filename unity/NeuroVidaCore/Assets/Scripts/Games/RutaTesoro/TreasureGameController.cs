@@ -7,6 +7,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite / TileSprites / TilePalette / HarmonicTone
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.RutaTesoro
 {
@@ -285,6 +286,7 @@ namespace NeuroVida.Games.RutaTesoro
             var r = tile.Gem.rectTransform;
             float t = 0f;
             const float seconds = 0.28f;
+            if (!Motion.Decorative) { r.localScale = Vector3.one; yield return Motion.Hold(seconds); tile.Gem.gameObject.SetActive(true); yield break; } // sin rebote
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;
@@ -306,7 +308,7 @@ namespace NeuroVida.Games.RutaTesoro
                 foreach (int i in order)
                 {
                     var tile = _tiles[i];
-                    tile.Gem.rectTransform.localScale = Vector3.one * (1f - k);
+                    tile.Gem.rectTransform.localScale = Vector3.one * (Motion.Decorative ? 1f - k : 1f); // sin ReduceMotion: no se encoge (el color sí cambia)
                     tile.Image.color = Color.Lerp(RevealColor, RockColor, k);
                 }
                 yield return null;
@@ -347,7 +349,7 @@ namespace NeuroVida.Games.RutaTesoro
                     int r = i / n, c = i % n;
                     float delay = (r + c) / (float)(2 * n) * total;
                     float k = Mathf.Clamp01((t - delay) / 0.25f);
-                    float bump = Mathf.Sin(k * Mathf.PI) * 0.10f;
+                    float bump = Motion.Decorative ? Mathf.Sin(k * Mathf.PI) * 0.10f : 0f; // sin ReduceMotion: sin ola de pulsos
                     _tiles[i].Rect.localScale = Vector3.one * (1f + bump);
                 }
                 yield return null;
@@ -360,6 +362,7 @@ namespace NeuroVida.Games.RutaTesoro
             int n = _gridN;
             float total = 0.45f;
             float t = 0f;
+            if (!Motion.Decorative) { yield return Motion.Hold(total + 0.3f); foreach (var tile in _tiles) tile.Rect.localScale = Vector3.one; yield break; } // sin rebote, misma duración
             foreach (var tile in _tiles) tile.Rect.localScale = Vector3.zero;
             while (t < total + 0.3f)
             {
@@ -380,6 +383,7 @@ namespace NeuroVida.Games.RutaTesoro
         {
             float t = 0f;
             const float seconds = 0.25f;
+            if (!Motion.Decorative) { yield return Motion.Hold(seconds); foreach (var tile in _tiles) tile.Rect.localScale = Vector3.zero; yield break; }
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;

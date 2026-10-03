@@ -7,6 +7,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Acoplamiento
 {
@@ -162,7 +163,7 @@ namespace NeuroVida.Games.Acoplamiento
             {
                 t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / arrive));
-                _holder.anchoredPosition = Vector2.LerpUnclamped(from, to, k);
+                _holder.anchoredPosition = Vector2.LerpUnclamped(from, to, Motion.Decorative ? k : 1f); // sin ReduceMotion: el módulo aparece en su lugar (mismo tiempo)
                 yield return null;
             }
             _holder.anchoredPosition = to;
@@ -179,7 +180,7 @@ namespace NeuroVida.Games.Acoplamiento
                 float left = 1f - (GameClock.Time - shownAt) / deadline;
                 SetFuel(left);
                 // Flota apenas (solo sube y baja: girar cambiaría el ángulo que hay que evaluar).
-                _holder.anchoredPosition = to + new Vector2(0f, 6f * Mathf.Sin((GameClock.Time - shownAt) * 3f));
+                _holder.anchoredPosition = to + new Vector2(0f, Motion.Decorative ? 6f * Mathf.Sin((GameClock.Time - shownAt) * 3f) : 0f); // sin ReduceMotion: no flota
                 yield return null;
             }
             _fuelBg.gameObject.SetActive(false);
@@ -302,11 +303,30 @@ namespace NeuroVida.Games.Acoplamiento
             }
         }
 
+        /// <summary>«Quitar animaciones»: fundido cruzado a un estado nuevo de la pieza (se apaga, cambia, se prende) en <paramref name="seconds"/>.</summary>
+        private IEnumerator CrossfadeState(float seconds, System.Action apply)
+        {
+            var body = _bodyRoot.GetComponent<CanvasGroup>() ?? _bodyRoot.gameObject.AddComponent<CanvasGroup>();
+            var shadow = _shadowRoot.GetComponent<CanvasGroup>() ?? _shadowRoot.gameObject.AddComponent<CanvasGroup>();
+            float half = seconds * 0.5f;
+            StartCoroutine(Motion.Fade(shadow, 1f, 0f, half));
+            yield return Motion.Fade(body, 1f, 0f, half);
+            apply();
+            StartCoroutine(Motion.Fade(shadow, 0f, 1f, half));
+            yield return Motion.Fade(body, 0f, 1f, half);
+        }
+
         private IEnumerator Straighten()
         {
             float a0 = _trial.AngleDeg;
             float t = 0f;
             float seconds = 0.2f + 0.3f * Mathf.Abs(a0) / 180f;
+            if (!Motion.Decorative)
+            {
+                // Sin giro: fundido cruzado a la pieza ya alineada, misma duración total.
+                yield return CrossfadeState(seconds, () => _bodyRoot.localRotation = _shadowRoot.localRotation = Quaternion.identity);
+                yield break;
+            }
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;
@@ -324,6 +344,12 @@ namespace NeuroVida.Games.Acoplamiento
             PlayTone(880f, 0.08f, 0.05f);
             float t = 0f;
             const float seconds = 0.4f;
+            if (!Motion.Decorative)
+            {
+                // Sin giro de espejo: fundido cruzado al reflejo ya dado vuelta, misma duración.
+                yield return CrossfadeState(seconds, () => _bodyRoot.localScale = _shadowRoot.localScale = new Vector3(-1f, 1f, 1f));
+                yield break;
+            }
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;
@@ -345,7 +371,7 @@ namespace NeuroVida.Games.Acoplamiento
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                _holder.anchoredPosition = Vector2.Lerp(from, to, k * k);
+                _holder.anchoredPosition = Vector2.Lerp(from, to, Motion.Decorative ? k * k : 1f); // sin ReduceMotion: aparece acoplado (mismo tiempo)
                 yield return null;
             }
             _holder.anchoredPosition = to;
@@ -372,7 +398,7 @@ namespace NeuroVida.Games.Acoplamiento
             while (t < seconds)
             {
                 t += GameClock.DeltaTime;
-                _holder.anchoredPosition = Vector2.Lerp(from, hit, Mathf.Clamp01(t / seconds));
+                _holder.anchoredPosition = Vector2.Lerp(from, Motion.Decorative ? hit : from, Mathf.Clamp01(t / seconds)); // sin ReduceMotion: sin choque (el rojo del puerto y el sonido sí)
                 yield return null;
             }
             PlayTone(110f, 0.12f, 0.07f);
@@ -383,7 +409,7 @@ namespace NeuroVida.Games.Acoplamiento
             while (t < 0.2f)
             {
                 t += GameClock.DeltaTime;
-                _holder.anchoredPosition = Vector2.Lerp(hit, from, Mathf.Clamp01(t / 0.2f));
+                _holder.anchoredPosition = Vector2.Lerp(Motion.Decorative ? hit : from, from, Mathf.Clamp01(t / 0.2f));
                 yield return null;
             }
         }
@@ -397,7 +423,7 @@ namespace NeuroVida.Games.Acoplamiento
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                _holder.anchoredPosition = from + new Vector2(_playW * 0.8f * k * k, 120f * k);
+                _holder.anchoredPosition = from + (Motion.Decorative ? new Vector2(_playW * 0.8f * k * k, 120f * k) : Vector2.zero); // sin ReduceMotion: se desvanece en su lugar
                 _body.color = new Color(1f, 1f, 1f, 1f - k);
                 _shadow.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, 1f - k);
                 yield return null;
@@ -487,7 +513,7 @@ namespace NeuroVida.Games.Acoplamiento
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 70f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

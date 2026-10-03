@@ -8,6 +8,7 @@ using NeuroVida.Games;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Cosecha
 {
@@ -318,7 +319,7 @@ namespace NeuroVida.Games.Cosecha
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / 0.4f);
                 _readyDim.color = new Color(0f, 0f, 0.05f, 0.35f * k);
-                _readyTitle.rectTransform.localScale = Vector3.one * Mathf.LerpUnclamped(0.7f, 1f, UiFx.EaseOutBack(k));
+                _readyTitle.rectTransform.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.7f, 1f, UiFx.EaseOutBack(k)) : 1f); // sin ReduceMotion: sin rebote
                 yield return null;
             }
             _readyDim.gameObject.SetActive(false);
@@ -681,7 +682,7 @@ namespace NeuroVida.Games.Cosecha
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 90f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 90f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

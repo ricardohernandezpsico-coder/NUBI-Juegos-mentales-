@@ -8,6 +8,7 @@ using NeuroVida.Games;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Intrusa
 {
@@ -378,7 +379,7 @@ namespace NeuroVida.Games.Intrusa
                 o.Bg.color = PlateColor;
                 o.Mark.gameObject.SetActive(false);
                 o.Rect.gameObject.SetActive(true);
-                o.Rect.localScale = Vector3.one * 0.9f;
+                o.Rect.localScale = Vector3.one * (Motion.Decorative ? 0.9f : 1f);
             }
             _optionsBar.gameObject.SetActive(true);
             _name.text = "";
@@ -390,7 +391,7 @@ namespace NeuroVida.Games.Intrusa
             {
                 t += GameClock.DeltaTime;
                 float pop = Mathf.Clamp01(t / 0.2f);
-                for (int i = 0; i < 3; i++) _options[i].Rect.localScale = Vector3.one * Mathf.Lerp(0.9f, 1f, UiFx.EaseOutBack(pop));
+                for (int i = 0; i < 3; i++) _options[i].Rect.localScale = Vector3.one * (Motion.Decorative ? Mathf.Lerp(0.9f, 1f, UiFx.EaseOutBack(pop)) : 1f); // sin ReduceMotion: aparecen quietas
                 SetBar(1f - t / window);
                 if (_press.HasValue)
                 {
@@ -1039,7 +1040,7 @@ namespace NeuroVida.Games.Intrusa
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 60f * _s * UiFx.EaseOutCubic(k) * 0.4f + 110f);
+                r.anchoredPosition = pos + new Vector2(0f, 60f * _s * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f) * 0.4f + 110f);
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

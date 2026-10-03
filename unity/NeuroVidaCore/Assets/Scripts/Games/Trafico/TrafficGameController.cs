@@ -7,6 +7,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Trafico
 {
@@ -311,7 +312,7 @@ namespace NeuroVida.Games.Trafico
             {
                 // Vida de la red también durante las instrucciones: luces que corren y la baliza de la antena.
                 UpdateFlow();
-                _beacon.color = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.35f + 0.3f * Mathf.Sin(GameClock.Time * 4f));
+                _beacon.color = NeuroStyle.WithAlpha(NeuroStyle.Coral, Motion.Decorative ? 0.35f + 0.3f * Mathf.Sin(GameClock.Time * 4f) : 0.5f); // sin ReduceMotion: baliza fija
             }
             if (_phase != Phase.Playing && _phase != Phase.Rebuild) return;
             float dt = GameClock.DeltaTime;
@@ -357,9 +358,9 @@ namespace NeuroVida.Games.Trafico
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.localScale = Vector3.one * (0.8f + 0.6f * k);
+                r.localScale = Vector3.one * (Motion.Decorative ? 0.8f + 0.6f * k : 1f); // sin ReduceMotion: el resplandor solo se apaga (sin crecer)
                 _doorGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.85f * (1f - k));
-                _station.localScale = Vector3.one * (1f + 0.05f * Mathf.Sin(k * Mathf.PI));
+                _station.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.05f * Mathf.Sin(k * Mathf.PI) : 1f);
                 yield return null;
             }
             _doorGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0f);
@@ -587,7 +588,7 @@ namespace NeuroVida.Games.Trafico
 
         private IEnumerator PopInDelayed(RectTransform r, float delay)
         {
-            r.localScale = Vector3.zero;
+            r.localScale = Motion.Decorative ? Vector3.zero : Vector3.one; // sin ReduceMotion: aparece quieto (la espera y el PopIn conservan su duración)
             yield return StartCoroutine(Wait(delay));
             yield return StartCoroutine(PopIn(r, 0.25f));
         }
@@ -708,7 +709,7 @@ namespace NeuroVida.Games.Trafico
                 if (pod.Urgent)
                 {
                     // Urgente: aro sol que late (no solo color: forma y movimiento propios) y un poco más grande.
-                    float beat = 0.5f + 0.5f * Mathf.Sin(GameClock.Time * 9f);
+                    float beat = Motion.Decorative ? 0.5f + 0.5f * Mathf.Sin(GameClock.Time * 9f) : 1f; // sin ReduceMotion: el aro urgente queda fijo (la forma sigue distinguiéndolo)
                     pv.Ring.rectTransform.localScale = Vector3.one * (1f + 0.12f * beat);
                     pv.Ring.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.75f + 0.25f * beat);
                     pv.Body.rectTransform.localScale = Vector3.one * 1.1f;
@@ -746,7 +747,7 @@ namespace NeuroVida.Games.Trafico
         private void UpdateQueue(float dt)
         {
             _queueShift = Mathf.MoveTowards(_queueShift, 0f, dt * 360f);
-            float beat = 0.5f + 0.5f * Mathf.Sin(GameClock.Time * 9f);
+            float beat = Motion.Decorative ? 0.5f + 0.5f * Mathf.Sin(GameClock.Time * 9f) : 1f; // sin ReduceMotion: el aro urgente queda fijo (la forma sigue distinguiéndolo)
             for (int i = 0; i < _queuePods.Count && i < _queueBase.Count; i++)
             {
                 var p = _queueBase[i] + new Vector2(_queueShift, 0f);
@@ -798,7 +799,7 @@ namespace NeuroVida.Games.Trafico
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 70f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

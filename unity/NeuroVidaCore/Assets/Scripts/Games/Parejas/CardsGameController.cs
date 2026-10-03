@@ -7,6 +7,7 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Shared;
 using NeuroVida.Games.Secuencia; // reusa RoundedRectSprite/RadialGlowSprite/RingSprite/HarmonicTone -- mismos criterios visuales/de audio, sin duplicar
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Parejas
 {
@@ -234,6 +235,13 @@ namespace NeuroVida.Games.Parejas
             float stagger = Mathf.Min(0.03f, 0.22f / count);
             const float duration = 0.22f;
             float total = stagger * count + duration;
+            if (!Motion.Decorative)
+            {
+                // Sin encogerse ni girar: el tablero se va al final del mismo tiempo (regla 6).
+                yield return Motion.Hold(total);
+                foreach (var image in _cardImages.Values) image.rectTransform.localScale = Vector3.zero;
+                yield break;
+            }
             float elapsed = 0f;
             while (elapsed < total)
             {
@@ -429,6 +437,9 @@ namespace NeuroVida.Games.Parejas
                 // no se puede tocar una carta que visualmente todavía está boca arriba).
                 StartCoroutine(AnimateWobble(a.Id));
                 StartCoroutine(AnimateWobble(b.Id));
+                // ✗ sobre las dos cartas: el error se ve por forma, no solo por el tinte rojo y el tambaleo
+                if (_cardImages.TryGetValue(a.Id, out var markA)) StartCoroutine(ResultMark.Show(_boardPanelRect, markA.rectTransform, false, 70f, 0.3f));
+                if (_cardImages.TryGetValue(b.Id, out var markB)) StartCoroutine(ResultMark.Show(_boardPanelRect, markB.rectTransform, false, 70f, 0.3f));
                 yield return new WaitForSeconds(0.30f);
                 SetCardFaceUp(a.Id, false);
                 SetCardFaceUp(b.Id, false);
@@ -884,6 +895,13 @@ namespace NeuroVida.Games.Parejas
             float stagger = Mathf.Min(0.035f, 0.30f / Mathf.Max(1, cardCount));
             const float popDuration = 0.28f;
 
+            if (!Motion.Decorative)
+            {
+                // Sin rebote: las cartas aparecen a su tamaño; la ventana de vista previa no cambia.
+                foreach (var image in _cardImages.Values) image.rectTransform.localScale = Vector3.one;
+                yield return Motion.Hold(stagger * cardCount + popDuration);
+                yield break;
+            }
             foreach (var rect in _cardImages.Values) rect.rectTransform.localScale = Vector3.zero;
 
             float elapsed = 0f;
@@ -907,6 +925,7 @@ namespace NeuroVida.Games.Parejas
         private IEnumerator AnimateMatchPop(int id)
         {
             if (!_cardImages.TryGetValue(id, out var image)) yield break;
+            if (!Motion.Decorative) { yield return Motion.Hold(0.45f); yield break; } // sin pulso ni chispas: la carta ya cambió de estado
             var rect = image.rectTransform;
 
             const int sparkCount = 6;
@@ -963,7 +982,7 @@ namespace NeuroVida.Games.Parejas
                 elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 float angle = Mathf.Sin(t * Mathf.PI * 6f) * 9f * (1f - t);
-                rect.localRotation = Quaternion.Euler(0f, 0f, angle);
+                if (Motion.Decorative) rect.localRotation = Quaternion.Euler(0f, 0f, angle); // el tinte rojo se queda; el tambaleo no
                 image.color = Color.Lerp(CardErrorTint, CardNeutralTint, t);
                 yield return null;
             }
@@ -1002,6 +1021,18 @@ namespace NeuroVida.Games.Parejas
             if (!_cardImages.TryGetValue(id, out var image)) yield break;
             var rect = image.rectTransform;
             var symbolImage = _cardSymbolImages[id];
+
+            if (!Motion.Decorative)
+            {
+                // Sin giro: fundido entre dorso y cara con LA MISMA duración (la exposición de la carta no cambia).
+                var group = image.GetComponent<CanvasGroup>();
+                if (group == null) group = image.gameObject.AddComponent<CanvasGroup>();
+                yield return Motion.Fade(group, 1f, 0f, FlipHalfSeconds);
+                image.sprite = CardSprites.Get(up ? CardSprites.Face.Front : CardSprites.Face.Back);
+                SetSymbolImage(symbolImage, symbol, up);
+                yield return Motion.Fade(group, 0f, 1f, FlipHalfSeconds);
+                yield break;
+            }
 
             float elapsed = 0f;
             while (elapsed < FlipHalfSeconds)

@@ -8,6 +8,7 @@ using NeuroVida.Games;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Disparate
 {
@@ -572,7 +573,7 @@ namespace NeuroVida.Games.Disparate
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
                 _plateGroup.alpha = 1f - k;
-                _plate.localScale = Vector3.one * Mathf.Lerp(1.04f, 1.1f, k);
+                _plate.localScale = Vector3.one * (Motion.Decorative ? Mathf.Lerp(1.04f, 1.1f, k) : 1f); // sin ReduceMotion: solo se desvanece
                 yield return null;
             }
             _plateGroup.alpha = 0f;
@@ -674,7 +675,7 @@ namespace NeuroVida.Games.Disparate
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                _plate.localScale = Vector3.one * (1f + 0.07f * Mathf.Sin(k * Mathf.PI));
+                _plate.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.07f * Mathf.Sin(k * Mathf.PI) : 1f); // sin ReduceMotion: sin latido
                 yield return null;
             }
         }
@@ -798,7 +799,7 @@ namespace NeuroVida.Games.Disparate
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 70f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }

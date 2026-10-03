@@ -11,6 +11,7 @@ using NeuroVida.Games.Piloto;     // PilotContract: la ruta (ancho, curvas, velo
 using NeuroVida.Games.Shared;
 using NeuroVida.Games.Trafico;    // TrafficSprites.Port: planetas de color con símbolo
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Correo
 {
@@ -454,8 +455,8 @@ namespace NeuroVida.Games.Correo
             _inLane = inLane;
 
             _shipRect.anchoredPosition = new Vector2((_shipX - 0.5f) * _playW, _shipY);
-            float wobble = GameClock.Time < _hitUntil ? 14f * Mathf.Sin(GameClock.Time * 40f) : 0f;
-            _shipRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Clamp(-_shipVx * 22f, -16f, 16f) + wobble);
+            float wobble = Motion.Decorative && GameClock.Time < _hitUntil ? 14f * Mathf.Sin(GameClock.Time * 40f) : 0f; // sin ReduceMotion: sin tambaleo ni inclinación (el tinte rojo del golpe sí)
+            _shipRect.localRotation = Quaternion.Euler(0f, 0f, (Motion.Decorative ? Mathf.Clamp(-_shipVx * 22f, -16f, 16f) : 0f) + wobble);
             _shipImage.color = inLane && GameClock.Time >= _hitUntil ? Color.white : new Color(1f, 0.78f, 0.74f, 1f);
             LayoutPath(center);
         }
@@ -569,7 +570,7 @@ namespace NeuroVida.Games.Correo
                 if (!e.Live) continue;
                 float y = YOf(e.D);
                 e.Rect.anchoredPosition = new Vector2(e.X, y);
-                e.Rect.localRotation = Quaternion.Euler(0f, 0f, 8f * Mathf.Sin(GameClock.Time * 3f + e.D * 0.01f));
+                e.Rect.localRotation = Quaternion.Euler(0f, 0f, Motion.Decorative ? 8f * Mathf.Sin(GameClock.Time * 3f + e.D * 0.01f) : 0f);
                 Vector2 ship = _shipRect.anchoredPosition;
                 if (Mathf.Abs(y - ship.y) < 70f && Mathf.Abs(e.X - ship.x) < 80f && !_shield.InEmergency(GameClock.Time))
                 {
@@ -617,7 +618,7 @@ namespace NeuroVida.Games.Correo
                 if (!p.Live) continue;
                 float y = YOf(p.D);
                 p.Rect.anchoredPosition = new Vector2(p.X, y);
-                p.Glow.color = NeuroStyle.WithAlpha(TrafficSprites.Colors[p.Data.Color], 0.25f + 0.08f * Mathf.Sin(now * 4f));
+                p.Glow.color = NeuroStyle.WithAlpha(TrafficSprites.Colors[p.Data.Color], Motion.Decorative ? 0.25f + 0.08f * Mathf.Sin(now * 4f) : 0.25f);
                 if (y < bottom)
                 {
                     if (p.Data.IsTarget && !p.Delivered)
@@ -694,13 +695,13 @@ namespace NeuroVida.Games.Correo
         private IEnumerator FlyPackage(PlanetView p)
         {
             var img = NewImage(_fxRect, "Package", MailSprites.Package());
-            img.gameObject.SetActive(true);
+            img.gameObject.SetActive(Motion.Decorative); // sin ReduceMotion: el paquete no vuela (aparece la marca en el planeta tras el mismo tiempo)
             var r = img.rectTransform;
             r.sizeDelta = new Vector2(90f, 90f);
             Vector2 from = _shipRect.anchoredPosition + new Vector2(0f, ShipSize * 0.3f);
             float t = 0f;
             const float seconds = 0.45f;
-            while (t < seconds && p.Live)
+            while (t < seconds && p.Live && Motion.Decorative)
             {
                 t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
@@ -710,6 +711,7 @@ namespace NeuroVida.Games.Correo
                 r.localScale = Vector3.one * Mathf.Lerp(1f, 0.6f, k);
                 yield return null;
             }
+            if (!Motion.Decorative) yield return Motion.Hold(seconds);
             Destroy(img.gameObject);
             if (!p.Live) yield break;
             p.Mark.sprite = AnswerMarkSprite.Check();
@@ -774,11 +776,19 @@ namespace NeuroVida.Games.Correo
                 }
                 _radioChecked++;
             }
-            if (_radioGlow != null) _radioGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.18f + 0.06f * Mathf.Sin(now * 3f));
+            if (_radioGlow != null) _radioGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Grape, Motion.Decorative ? 0.18f + 0.06f * Mathf.Sin(now * 3f) : 0.18f);
         }
 
         private IEnumerator BlinkRadio()
         {
+            if (!Motion.Decorative)
+            {
+                // Tinte fijo del aviso perdido durante el mismo tiempo (0,72 s), sin parpadeo.
+                _radioGlow.color = NeuroStyle.WithAlpha(BadColor, 0.6f);
+                yield return StartCoroutine(Wait(0.72f));
+                _radioGlow.color = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.2f);
+                yield break;
+            }
             for (int i = 0; i < 2; i++)
             {
                 _radioGlow.color = NeuroStyle.WithAlpha(BadColor, 0.6f);
@@ -821,9 +831,9 @@ namespace NeuroVida.Games.Correo
             float a = Mathf.MoveTowards(_vignetteL.color.a, target, dt * 3f);
             _vignetteL.color = _vignetteR.color = NeuroStyle.WithAlpha(BadColor, a);
             _shipGlow.color = _shield.InEmergency(now)
-                ? NeuroStyle.WithAlpha(AmberColor, 0.35f + 0.2f * Mathf.Sin(now * 12f))
-                : NeuroStyle.WithAlpha(LaneColor, 0.30f + 0.08f * Mathf.Sin(now * 5f));
-            if (now >= _trailEmitAt)
+                ? NeuroStyle.WithAlpha(AmberColor, Motion.Decorative ? 0.35f + 0.2f * Mathf.Sin(now * 12f) : 0.45f)
+                : NeuroStyle.WithAlpha(LaneColor, Motion.Decorative ? 0.30f + 0.08f * Mathf.Sin(now * 5f) : 0.30f);
+            if (now >= _trailEmitAt && Motion.Decorative) // sin ReduceMotion: sin estela de motor
             {
                 _trailEmitAt = now + 0.045f;
                 var img = _trail[_trailNext];
@@ -885,7 +895,7 @@ namespace NeuroVida.Games.Correo
                 if (!a.Live) continue;
                 float y = YOf(a.D);
                 a.Rect.anchoredPosition = new Vector2(a.X, y);
-                a.Rect.localRotation = Quaternion.Euler(0f, 0f, a.Rect.localEulerAngles.z + a.Spin * dt);
+                a.Rect.localRotation = Quaternion.Euler(0f, 0f, a.Rect.localEulerAngles.z + (Motion.Decorative ? a.Spin * dt : 0f));
                 bool touching = Mathf.Abs(y - ship.y) < AsteroidSize * 0.5f && Mathf.Abs(a.X - ship.x) < AsteroidSize * 0.55f;
                 if (!a.Hit && touching && _shield.InEmergency(now))
                 {
@@ -966,7 +976,7 @@ namespace NeuroVida.Games.Correo
             if (emergency)
             {
                 // Parpadea mientras se repara.
-                float k = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(now * 9f));
+                float k = Motion.Decorative ? 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(now * 5.5f)) : 0.7f; // ≤ 2 Hz en todos los modos (antes ≈ 2,9 Hz); sin ReduceMotion queda fija (semitransparente)
                 _shipImage.color = NeuroStyle.WithAlpha(_shipImage.color, k);
                 _damageImage.color = new Color(1f, 1f, 1f, k);
             }
@@ -1055,7 +1065,7 @@ namespace NeuroVida.Games.Correo
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f + 80f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 70f + 80f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }
@@ -1152,7 +1162,7 @@ namespace NeuroVida.Games.Correo
         {
             while (_phase == Phase.Brief || _phase == Phase.Idle)
             {
-                if (_goButton != null) _goButton.localScale = Vector3.one * (1f + 0.04f * Mathf.Sin(GameClock.Time * 4f));
+                if (_goButton != null) _goButton.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.04f * Mathf.Sin(GameClock.Time * 4f) : 1f);
                 yield return null;
             }
         }

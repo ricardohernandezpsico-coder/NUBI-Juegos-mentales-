@@ -9,6 +9,7 @@ using NeuroVida.Games.Parejas;   // SymbolSprite
 using NeuroVida.Games.CambioChip; // ChipShipSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Piloto
 {
@@ -209,9 +210,9 @@ namespace NeuroVida.Games.Piloto
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                _bigText.rectTransform.localScale = Vector3.one * Mathf.LerpUnclamped(0.6f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 3f)));
+                _bigText.rectTransform.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.6f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 3f))) : 1f); // sin ReduceMotion: sin rebote
                 _bigText.color = new Color(1f, 1f, 1f, k < 0.7f ? 1f : 1f - (k - 0.7f) / 0.3f);
-                float pulse = 0.10f + 0.12f * Mathf.Abs(Mathf.Sin(k * Mathf.PI * 3f));
+                float pulse = Motion.Decorative ? 0.10f + 0.12f * Mathf.Abs(Mathf.Sin(k * Mathf.PI * 3f)) : 0.16f; // sin ReduceMotion: tinte fijo
                 _controlImage.color = NeuroStyle.WithAlpha(AmberColor, pulse);
                 yield return null;
             }
@@ -306,7 +307,7 @@ namespace NeuroVida.Games.Piloto
 
             float center = CenterAtShip(out float half);
             if (_phase == Phase.Autopilot)
-                _shipTargetX = center + 0.04f * Mathf.Sin(GameClock.Time * 1.3f);
+                _shipTargetX = center + (Motion.Decorative ? 0.04f * Mathf.Sin(GameClock.Time * 1.3f) : 0f); // sin ReduceMotion: no se mece
 
             // La nave sigue al dedo con un resorte suave (rápida, sin teletransportarse).
             float before = _shipX;
@@ -360,7 +361,7 @@ namespace NeuroVida.Games.Piloto
 
             // Nave: posición, alabeo según la velocidad lateral, tinte si está fuera de la ruta.
             _shipRect.anchoredPosition = new Vector2((_shipX - 0.5f) * _playW, _shipY);
-            _shipRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Clamp(-_shipVx * 22f, -16f, 16f));
+            _shipRect.localRotation = Quaternion.Euler(0f, 0f, Motion.Decorative ? Mathf.Clamp(-_shipVx * 22f, -16f, 16f) : 0f); // sin ReduceMotion: sin alabeo
             _shipImage.color = inLane || _phase == Phase.Autopilot ? Color.white : new Color(1f, 0.78f, 0.74f, 1f);
 
             LayoutPath(center);
@@ -468,7 +469,7 @@ namespace NeuroVida.Games.Piloto
                 float life = Mathf.Clamp01((now - s.SpawnAt) / (s.ExpiresAt - s.SpawnAt));
                 s.Ring.fillAmount = 1f - life;
                 float pop = Mathf.Clamp01((now - s.SpawnAt) / 0.14f);
-                s.Rect.localScale = Vector3.one * Mathf.LerpUnclamped(0.4f, 1f, UiFx.EaseOutBack(pop));
+                s.Rect.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.4f, 1f, UiFx.EaseOutBack(pop)) : 1f); // aparece a su tamaño
                 if (now >= s.ExpiresAt) Expire(s);
             }
 
@@ -637,7 +638,7 @@ namespace NeuroVida.Games.Piloto
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / hold);
                 s.Group.alpha = 1f - k * k;
-                s.Rect.localScale = Vector3.one * Mathf.Lerp(1f, endScale, k);
+                s.Rect.localScale = Vector3.one * (Motion.Decorative ? Mathf.Lerp(1f, endScale, k) : 1f); // sin ReduceMotion: solo se desvanece
                 yield return null;
             }
             s.Rect.gameObject.SetActive(false);
@@ -665,7 +666,7 @@ namespace NeuroVida.Games.Piloto
             {
                 e += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 60f + 90f * UiFx.EaseOutCubic(k));
+                r.anchoredPosition = pos + new Vector2(0f, 60f + 90f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
                 t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
                 yield return null;
             }
@@ -704,8 +705,8 @@ namespace NeuroVida.Games.Piloto
             _vignetteL.color = _vignetteR.color = NeuroStyle.WithAlpha(BadColor, a);
 
             // Brillo bajo la nave que respira; estela de motor.
-            _shipGlow.color = NeuroStyle.WithAlpha(Boosted ? NeuroStyle.Sun : LaneColor, 0.30f + 0.08f * Mathf.Sin(now * 5f));
-            if (now >= _trailEmitAt)
+            _shipGlow.color = NeuroStyle.WithAlpha(Boosted ? NeuroStyle.Sun : LaneColor, Motion.Decorative ? 0.30f + 0.08f * Mathf.Sin(now * 5f) : 0.30f);
+            if (now >= _trailEmitAt && Motion.Decorative) // sin ReduceMotion: sin estela de motor
             {
                 _trailEmitAt = now + 0.045f;
                 var img = _trail[_trailNext];

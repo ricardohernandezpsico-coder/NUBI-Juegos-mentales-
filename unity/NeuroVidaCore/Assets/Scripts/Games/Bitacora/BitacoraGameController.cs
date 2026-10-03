@@ -9,6 +9,7 @@ using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingS
 using NeuroVida.Games.Shared;
 using NeuroVida.Games.Trafico;   // TrafficSprites.Port (planetas de colores con símbolo)
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Bitacora
 {
@@ -518,7 +519,7 @@ namespace NeuroVida.Games.Bitacora
         {
             UpdateComets();
             if (_findHint != null && _findHint.gameObject.activeSelf)
-                _findHint.rectTransform.localScale = Vector3.one * (1f + 0.08f * Mathf.Sin(GameClock.Time * 7f));
+                _findHint.rectTransform.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.08f * Mathf.Sin(GameClock.Time * 7f) : 1f); // sin ReduceMotion: no respira
             if (_done || _wait == Wait.None || GameClock.DeltaTime <= 0f) return;
             if (!Input.GetMouseButtonDown(0)) return;
             Vector2 screen = Input.mousePosition;
@@ -652,7 +653,7 @@ namespace NeuroVida.Games.Bitacora
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
                 img.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.85f * (1f - k));
-                dot.localScale = Vector3.one * (1f - 0.5f * k);
+                dot.localScale = Vector3.one * (Motion.Decorative ? 1f - 0.5f * k : 1f); // la estela se desvanece (opacidad); no se encoge
                 yield return null;
             }
             dot.gameObject.SetActive(false);
@@ -670,12 +671,13 @@ namespace NeuroVida.Games.Bitacora
             fly.gameObject.SetActive(true);
             var r = fly.rectTransform;
             r.sizeDelta = Vector2.one * FindOnPlanet;
+            fly.gameObject.SetActive(Motion.Decorative); // sin ReduceMotion: no vuela; aparece en el casillero tras el mismo tiempo
             Vector2 from = LocalIn(_fx, find.rectTransform);
             Vector2 to = LocalIn(_fx, _slotBgs[slot].rectTransform);
             find.gameObject.SetActive(false);
             float t = 0f;
             const float seconds = 0.5f;
-            while (t < seconds)
+            while (t < seconds && Motion.Decorative)
             {
                 t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
@@ -683,6 +685,7 @@ namespace NeuroVida.Games.Bitacora
                 r.localScale = Vector3.one * Mathf.Lerp(1f, SlotSize * 0.85f / FindOnPlanet, k);
                 yield return null;
             }
+            if (!Motion.Decorative) yield return Motion.Hold(seconds);
             Destroy(fly.gameObject);
             _slotFinds[slot].sprite = find.sprite;
             _slotFinds[slot].gameObject.SetActive(true);
@@ -705,17 +708,19 @@ namespace NeuroVida.Games.Bitacora
             fly.gameObject.SetActive(true);
             var r = fly.rectTransform;
             r.sizeDelta = Vector2.one * OptionSize * 0.8f;
+            fly.gameObject.SetActive(Motion.Decorative); // sin ReduceMotion: no vuela
             Vector2 from = LocalIn(_fx, opt.Rect);
             Vector2 to = LocalIn(_fx, v.Find.rectTransform);
             float t = 0f;
             const float seconds = 0.35f;
-            while (t < seconds)
+            while (t < seconds && Motion.Decorative)
             {
                 t += GameClock.DeltaTime;
                 float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
                 r.anchoredPosition = Vector2.Lerp(from, to, k);
                 yield return null;
             }
+            if (!Motion.Decorative) yield return Motion.Hold(seconds);
             Destroy(fly.gameObject);
             v.Find.rectTransform.localScale = Vector3.one;
             v.Find.gameObject.SetActive(true);
@@ -740,7 +745,7 @@ namespace NeuroVida.Games.Bitacora
 
         private IEnumerator PopInDelayed(RectTransform r, float delay)
         {
-            r.localScale = Vector3.zero;
+            r.localScale = Motion.Decorative ? Vector3.zero : Vector3.one; // sin ReduceMotion: aparece quieto (la espera y el PopIn conservan su duración)
             yield return StartCoroutine(Pause(delay));
             yield return StartCoroutine(PopIn(r, 0.28f));
         }

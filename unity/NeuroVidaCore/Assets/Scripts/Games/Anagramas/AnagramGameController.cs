@@ -8,6 +8,7 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / TileSprites / TilePalette / HarmonicTone
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
+using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
 namespace NeuroVida.Games.Anagramas
 {
@@ -514,8 +515,8 @@ namespace NeuroVida.Games.Anagramas
             {
                 t += GameClock.DeltaTime;
                 float k = Mathf.Clamp01(t / seconds);
-                foreach (var l in _letters) if (l.Rect != null) l.Rect.localScale = Vector3.one * (1f - k);
-                for (int i = 0; i < _word.Word.Length && i < _slotRects.Count; i++) _slotRects[i].localScale = Vector3.one * (1f - k);
+                foreach (var l in _letters) if (l.Rect != null) l.Rect.localScale = Vector3.one * (Motion.Decorative ? 1f - k : 1f); // sin ReduceMotion: no se encogen (desaparecen al final, mismo tiempo)
+                for (int i = 0; i < _word.Word.Length && i < _slotRects.Count; i++) _slotRects[i].localScale = Vector3.one * (Motion.Decorative ? 1f - k : 1f);
                 yield return null;
             }
             ClearLetters();
