@@ -58,7 +58,9 @@ object NativeReceiver {
     val ras_rounds: List<Int>? = null,
     val ras_hits: List<Int>? = null,
     val ras_modes_seen: Int = -1,
-    val ras_new_modes: Int = -1
+    val ras_new_modes: Int = -1,
+    // «Confusión de modo» tomada por familia (a lo más 1 por modo y partida): no cuenta como error. Solo se lee; la medida final no cambia.
+    val ras_mode_confusions: List<Int>? = null
   )
 
   @JsonClass(generateAdapter = true)
@@ -386,7 +388,8 @@ object NativeReceiver {
       rasRounds = metrics.ras_rounds?.takeIf { it.size == 4 },
       rasHits = metrics.ras_hits?.takeIf { it.size == 4 },
       rasModesSeen = metrics.ras_modes_seen.takeIf { it >= 0 },
-      rasNewModes = metrics.ras_new_modes.takeIf { it >= 0 }
+      rasNewModes = metrics.ras_new_modes.takeIf { it >= 0 },
+      rasModeConfusions = metrics.ras_mode_confusions?.takeIf { it.size == 4 }
     )
   }
 

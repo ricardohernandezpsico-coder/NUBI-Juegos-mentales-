@@ -3,6 +3,9 @@ using NeuroVida.Contracts;
 
 namespace NeuroVida.Games.Secuencia
 {
+    /// <summary>Qué cartel va antes de la muestra: el «¡NUEVO!» de por vida, el aviso de cambio de modo, o ninguno. Si coinciden, solo el «¡NUEVO!».</summary>
+    public enum RastroNotice { None, NewMode, ModeChanged }
+
     /// <summary>Una ronda de «Rastro de luz»: qué familia, qué recorre la chispa (<see cref="Shown"/>) y qué hay que repetir, en orden (<see cref="Target"/>).</summary>
     public sealed class RastroRound
     {
@@ -22,7 +25,10 @@ namespace NeuroVida.Games.Secuencia
         public bool Guided;
         /// <summary>Primera vez de por vida que la persona llega a este modo: la pantalla «¡NUEVO!» va antes de la muestra.</summary>
         public bool IsNewMode;
+        /// <summary>La familia es distinta a la de la ronda anterior de la partida (la primera ronda y la guiada no cambian de modo).</summary>
+        public bool ModeChanged;
         public int Crossings;
+        public RastroNotice Notice => IsNewMode ? RastroNotice.NewMode : ModeChanged ? RastroNotice.ModeChanged : RastroNotice.None;
 
         public int Asked => Target.Length;
     }
@@ -132,6 +138,9 @@ namespace NeuroVida.Games.Secuencia
         public readonly bool Timed;
         public int Lives { get; private set; } = RastroContract.Lives;
         public int Errors { get; private set; }
+        /// <summary>«Confusión de modo» tomada por familia en esta partida (a lo más 1 por modo): no cuenta como error ni toca las vidas ni el DDA.</summary>
+        public readonly int[] ModeConfusions = new int[RastroModes.Count];
+        private RastroMode? _lastMode;
         public int RoundsPlayed => Tally.TotalRounds;
         public int NewModes => Director.NewlyUnlocked;
 
@@ -154,7 +163,29 @@ namespace NeuroVida.Games.Secuencia
             var p = RastroLadder.Get(level);
             var round = Build(p, mode);
             round.IsNewMode = isNew;
+            round.ModeChanged = _lastMode.HasValue && _lastMode.Value != mode;
+            _lastMode = mode;
             return round;
+        }
+
+        /// <summary>
+        /// ¿El primer toque de la respuesta es el de OTRO modo (no un fallo de memoria)? Al revés: tocó el primer lucero mostrado en vez del último.
+        /// En marcha: tocó el primer lucero de toda la muestra en vez del primero de las últimas N. Siempre que no sea el lucero correcto
+        /// (si coincide con el primero de las últimas N, es un acierto). El rastro simple, el giro y la ronda guiada no tienen confusión de modo.
+        /// </summary>
+        public static bool IsModeConfusion(RastroRound round, int firstTap)
+        {
+            if (round.Guided || (round.Mode != RastroMode.Reves && round.Mode != RastroMode.Marcha)) return false;
+            return firstTap == round.Shown[0] && firstTap != round.Target[0];
+        }
+
+        /// <summary>Si el primer toque es una confusión de modo y todavía no se usó la segunda oportunidad de ese modo en la partida, la gasta y devuelve
+        /// true: la ronda NO cuenta (ni error, ni vida, ni DDA) y se repite la misma muestra. La segunda vez cuenta como error normal.</summary>
+        public bool TryModeConfusion(RastroRound round, int firstTap)
+        {
+            if (!IsModeConfusion(round, firstTap) || ModeConfusions[(int)round.Mode] > 0) return false;
+            ModeConfusions[(int)round.Mode]++;
+            return true;
         }
 
         /// <summary>La ronda guiada del tutorial: dos luces, el rastro simple, a la velocidad del nivel 2. No toca nada del estado de la partida.</summary>

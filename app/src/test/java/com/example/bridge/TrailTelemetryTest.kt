@@ -42,6 +42,17 @@ class TrailTelemetryTest {
   }
 
   @Test
+  fun `lee las confusiones de modo sin cambiar la medida`() {
+    val r = NativeReceiver.parse(
+      json(""","ras_best_len":[5,3,0,2],"ras_rounds":[5,3,3,1],"ras_hits":[5,2,1,1],"ras_modes_seen":15,"ras_new_modes":0,"ras_mode_confusions":[0,1,0,1]""")
+    )!!
+    assertEquals(listOf(0, 1, 0, 1), r.rasModeConfusions)
+    assertEquals(listOf(5, 3, 3, 1), r.rasRounds)
+    assertNull(NativeReceiver.parse(json(""","ras_mode_confusions":[1,2]"""))!!.rasModeConfusions)
+    assertNull(NativeReceiver.parse(json(""))!!.rasModeConfusions)
+  }
+
+  @Test
   fun `la medida final sale de la telemetria y marca el modo que mas costo`() {
     val r = NativeReceiver.parse(
       json(""","ras_best_len":[5,3,2,2],"ras_rounds":[5,3,4,3],"ras_hits":[5,3,1,2],"ras_modes_seen":15,"ras_new_modes":0""")

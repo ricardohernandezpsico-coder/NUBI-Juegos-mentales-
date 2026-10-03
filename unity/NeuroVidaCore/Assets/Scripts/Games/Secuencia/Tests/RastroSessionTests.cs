@@ -236,6 +236,128 @@ namespace NeuroVida.Games.Secuencia.Tests
             Assert.AreEqual(adult.Dda.RatingNormalized, m.end_rating, 1e-6f);
         }
 
+        // ------------------------------------------------------------------ aviso al cambiar de modo y confusión de modo (tarea 20c)
+
+        private static RastroRound Round(RastroMode mode, int[] shown, int[] target, bool guided = false) =>
+            new RastroRound { Mode = mode, Shown = shown, Target = target, Guided = guided, Level = 12, Params = RastroLadder.Get(12) };
+
+        [Test]
+        public void TheModeNotice_OnlyComesWhenTheModeChanges()
+        {
+            foreach (int mask in new[] { 0, AllModes })
+            {
+                var s = new RastroSession(Config(saved: 0.95f), new Random(40 + mask), mask);
+                RastroMode? prev = null;
+                int changed = 0, same = 0, news = 0;
+                for (int i = 0; i < 500; i++)
+                {
+                    var r = s.NextRound();
+                    if (!prev.HasValue) Assert.AreEqual(RastroNotice.None, r.Notice, "la primera ronda no cambia de modo");
+                    else if (r.IsNewMode) { Assert.AreEqual(RastroNotice.NewMode, r.Notice, "si coinciden, sale solo el «¡NUEVO!»"); news++; }
+                    else if (r.Mode != prev.Value) { Assert.AreEqual(RastroNotice.ModeChanged, r.Notice); changed++; }
+                    else { Assert.AreEqual(RastroNotice.None, r.Notice, "mismo modo que la ronda anterior: sin aviso"); same++; }
+                    Assert.AreEqual(r.Mode != prev.GetValueOrDefault(r.Mode) && prev.HasValue, r.ModeChanged);
+                    prev = r.Mode;
+                    s.Complete(r, true);
+                }
+                Assert.Greater(changed, 50);
+                Assert.Greater(same, 20, "el rastro simple se repite a veces: ahí no hay aviso");
+                Assert.AreEqual(mask == 0 ? 3 : 0, news);
+            }
+        }
+
+        [Test]
+        public void TheGuidedRound_NeverChangesModeAndDoesNotMoveTheLastMode()
+        {
+            var s = new RastroSession(Config(saved: 0.95f), new Random(44), AllModes);
+            var g = s.GuidedRound();
+            Assert.AreEqual(RastroNotice.None, g.Notice);
+            Assert.IsFalse(g.ModeChanged);
+            Assert.AreEqual(RastroNotice.None, s.NextRound().Notice, "la primera ronda real tampoco avisa");
+        }
+
+        [Test]
+        public void ModeConfusion_Reverse_FirstTapOnTheFirstShownOrbIsAConfusion()
+        {
+            var r = Round(RastroMode.Reves, new[] { 4, 1, 6 }, new[] { 6, 1, 4 });
+            Assert.IsTrue(RastroSession.IsModeConfusion(r, 4), "tocó el primero mostrado en vez del último");
+            Assert.IsFalse(RastroSession.IsModeConfusion(r, 6), "el lucero correcto no es confusión");
+            Assert.IsFalse(RastroSession.IsModeConfusion(r, 1), "otro lucero cualquiera es un fallo de memoria");
+            Assert.IsFalse(RastroSession.IsModeConfusion(r, 8));
+        }
+
+        [Test]
+        public void ModeConfusion_March_FirstTapOnTheFirstOrbOfTheWholeShowIsAConfusion()
+        {
+            var r = Round(RastroMode.Marcha, new[] { 2, 5, 7, 0, 3 }, new[] { 7, 0, 3 });
+            Assert.IsTrue(RastroSession.IsModeConfusion(r, 2), "tocó el primero de toda la muestra y no el primero de las últimas N");
+            Assert.IsFalse(RastroSession.IsModeConfusion(r, 7), "el primero de las últimas N es el correcto");
+            Assert.IsFalse(RastroSession.IsModeConfusion(r, 5), "un lucero del medio es un fallo de memoria");
+            // si el primero de las últimas N coincide con el primero de la muestra, NO es confusión
+            var same = Round(RastroMode.Marcha, new[] { 2, 5, 7 }, new[] { 2, 5, 7 });
+            Assert.IsFalse(RastroSession.IsModeConfusion(same, 2));
+        }
+
+        [Test]
+        public void ModeConfusion_NeverInTheSimpleTrailTheTurnOrTheGuidedRound()
+        {
+            var shown = new[] { 4, 1, 6 };
+            Assert.IsFalse(RastroSession.IsModeConfusion(Round(RastroMode.Rastro, shown, shown), 4));
+            Assert.IsFalse(RastroSession.IsModeConfusion(Round(RastroMode.Gira, shown, shown), 4));
+            Assert.IsFalse(RastroSession.IsModeConfusion(Round(RastroMode.Reves, shown, new[] { 6, 1, 4 }, guided: true), 4));
+        }
+
+        [Test]
+        public void ModeConfusion_OnlyOncePerModeAndGame_AndTheSecondTimeIsANormalError()
+        {
+            var s = new RastroSession(Config(), new Random(50), AllModes);
+            var rev = Round(RastroMode.Reves, new[] { 4, 1, 6 }, new[] { 6, 1, 4 });
+            var mar = Round(RastroMode.Marcha, new[] { 2, 5, 7, 0, 3 }, new[] { 7, 0, 3 });
+            Assert.IsTrue(s.TryModeConfusion(rev, 4), "la primera vez en al revés");
+            Assert.IsFalse(s.TryModeConfusion(rev, 4), "la segunda vez en al revés cuenta como error");
+            Assert.IsTrue(s.TryModeConfusion(mar, 2), "en marcha tiene la suya");
+            Assert.IsFalse(s.TryModeConfusion(mar, 2));
+            CollectionAssert.AreEqual(new[] { 0, 1, 0, 1 }, s.ModeConfusions);
+            // una partida nueva empieza de cero
+            Assert.IsTrue(new RastroSession(Config(), new Random(51), AllModes).TryModeConfusion(rev, 4));
+        }
+
+        [Test]
+        public void ModeConfusion_DoesNotTouchLivesTheDdaOrTheTally()
+        {
+            var s = new RastroSession(Config(saved: 0.6f), new Random(52), AllModes);
+            float rating = s.Dda.Rating;
+            var rev = Round(RastroMode.Reves, new[] { 4, 1, 6 }, new[] { 6, 1, 4 });
+            Assert.IsTrue(s.TryModeConfusion(rev, 4));
+            Assert.AreEqual(RastroContract.Lives, s.Lives);
+            Assert.AreEqual(0, s.Errors);
+            Assert.AreEqual(0, s.Dda.Trials);
+            Assert.AreEqual(rating, s.Dda.Rating, 1e-6f);
+            Assert.AreEqual(0, s.Tally.TotalRounds);
+            // y sale en la telemetría, sin cambiar la medida
+            var m = RastroContract.BuildMetrics(s, 0, Config());
+            CollectionAssert.AreEqual(new[] { 0, 1, 0, 0 }, m.ras_mode_confusions);
+            Assert.AreEqual(0, m.total_rounds);
+            var back = UnityEngine.JsonUtility.FromJson<SequenceTelemetry>(UnityEngine.JsonUtility.ToJson(new SequenceTelemetry { session_metrics = m }));
+            CollectionAssert.AreEqual(m.ras_mode_confusions, back.session_metrics.ras_mode_confusions);
+        }
+
+        [Test]
+        public void TheModeCueTexts_SayWhatToDoInEachMode()
+        {
+            StringAssert.Contains("AL REVÉS", RastroModes.CueText(RastroMode.Reves, 4));
+            StringAssert.Contains("empieza por la última", RastroModes.CueText(RastroMode.Reves, 4));
+            Assert.AreEqual("SOLO LAS ÚLTIMAS 3", RastroModes.CueText(RastroMode.Marcha, 3));
+            StringAssert.Contains("LOS LUCEROS SE MOVIERON", RastroModes.CueText(RastroMode.Gira, 5));
+            Assert.AreEqual("EN ORDEN", RastroModes.CueText(RastroMode.Rastro, 3));
+            Assert.AreEqual("AL REVÉS", RastroModes.NoticeTitle(RastroMode.Reves));
+            Assert.AreEqual("De la última a la primera", RastroModes.NoticeLine(RastroMode.Reves, 4));
+            Assert.AreEqual("Solo las últimas 4", RastroModes.NoticeLine(RastroMode.Marcha, 4));
+            Assert.AreEqual("El cielo va a girar", RastroModes.NoticeLine(RastroMode.Gira, 5));
+            Assert.AreEqual("En orden, como lo ves", RastroModes.NoticeLine(RastroMode.Rastro, 5));
+            Assert.AreEqual(1.5f, RastroContract.NoticeSeconds);
+        }
+
         [Test]
         public void Simulation_AfterAMixedGame_TheLadderStaysInsideItsLimits()
         {

@@ -9,6 +9,8 @@ import math
 import os
 import random
 
+import numpy as np
+
 from PIL import Image, ImageDraw, ImageFont
 
 import juegos as J
@@ -30,6 +32,15 @@ def sky(w, h, seed=7):
         t = y / (h - 1)
         a, b, k = (top, mid, t / 0.55) if t < 0.55 else (mid, bot, (t - 0.55) / 0.45)
         d.line([(0, y), (w, y)], fill=tuple(int(a[i] + (b[i] - a[i]) * min(1, k)) for i in range(3)) + (255,))
+    arr = np.asarray(im).astype(float)
+    yy, xx = np.mgrid[0:h, 0:w]
+    cx_u, cy_u = xx / w * 1080, (1 - yy / h) * 1920
+    for (ax, ay), size, col, a0 in [((0.17, 0.72), 1600, (184, 164, 255), 0.09), ((0.9, 0.18), 1500, (255, 107, 74), 0.05)]:
+        dd = np.sqrt((cx_u - ax * 1080) ** 2 + (cy_u - ay * 1920) ** 2) / (size / 2)
+        al = (a0 * np.clip(1 - dd, 0, 1) ** 2)[..., None]
+        arr[..., :3] = arr[..., :3] * (1 - al) + np.array(col) * al
+    im = Image.fromarray(arr.astype('uint8'))
+    d = ImageDraw.Draw(im)
     rng = random.Random(seed)
     for _ in range(240):
         x, y, r = rng.random() * w, rng.random() * h, 0.4 + rng.random() ** 3 * 1.4
@@ -55,7 +66,11 @@ def screen(raw, mode=0):
     """Una pantalla de 360 x 640 dp (a 2 px por dp) con el tablero, la chispa, su rastro y los marcadores."""
     w, h = 360 * S, 640 * S
     im = sky(w, h, 7 + mode)
-    glow(im, 180 * S, 352 * S, 150 * S, SKY_TINT[mode], 40)
+    vig = load(os.path.join(raw, 'rastro_vignette.raw')).resize((w, h), Image.BILINEAR)
+    r_, g_, b_, a_ = vig.split()
+    tint = Image.merge('RGBA', (Image.new('L', (w, h), SKY_TINT[mode][0]), Image.new('L', (w, h), SKY_TINT[mode][1]),
+                                Image.new('L', (w, h), SKY_TINT[mode][2]), a_.point(lambda v: int(v * 0.05))))
+    im.alpha_composite(tint)
     board = read_board(raw)
     disc = load(os.path.join(raw, 'rastro_disc.raw'))
     put(im, tinted(disc, (120, 110, 200)), 180 * S, 352 * S, 300 * S)
@@ -85,6 +100,23 @@ def screen(raw, mode=0):
         dash = load(os.path.join(raw, 'rastro_dashed.raw'))
         put(im, tinted(dash, SUN), x * S, y * S, 78 * S)
     d = ImageDraw.Draw(im)
+    if mode != 0:  # respondiendo: el rótulo del modo, arriba del tablero y del color del modo (el rastro simple, más discreto)
+        cue = ['EN ORDEN', 'AL REVÉS · empieza por la última', 'MISMO ORDEN, LOS LUCEROS SE MOVIERON', 'SOLO LAS ÚLTIMAS 3'][mode]
+        col = SKY_TINT[mode]
+        fcue = ImageFont.truetype(FB, 18 * S)
+        lines = [cue]
+        if d.textlength(cue, font=fcue) > 300 * S:
+            words, cur, lines = cue.split(), '', []
+            for wd in words:
+                t = (cur + ' ' + wd).strip()
+                if d.textlength(t, font=fcue) > 300 * S:
+                    lines.append(cur); cur = wd
+                else:
+                    cur = t
+            lines.append(cur)
+        put(im, tinted(load(os.path.join(raw, f'rastro_icon_{mode}.raw')), col), 36 * S, 141 * S, 28 * S)
+        for i, ln in enumerate(lines):
+            d.text((204 * S, (141 + (i - (len(lines) - 1) / 2) * 21) * S), ln, font=fcue, fill=col, anchor='mm')
     # marcador: modo + cuántas luces, vidas y contador
     names = ['El rastro', 'Al revés', 'El cielo gira', 'En marcha']
     counts = ['3 luces', '4 luces', '4 luces', 'Últimas 3 luces']
@@ -106,6 +138,22 @@ def screen(raw, mode=0):
     subs = ['El rastro', 'La correcta tiene el aro amarillo', 'El cielo gira', 'En marcha']
     d.text((180 * S, 562 * S), rules[mode], font=ImageFont.truetype(FB, 20 * S), fill=(255, 255, 255), anchor='mm')
     d.text((180 * S, 606 * S), subs[mode], font=ImageFont.truetype(FR, 16 * S), fill=(171, 165, 210), anchor='mm')
+    return im
+
+
+def notice(raw, mode=1):
+    """El aviso al cambiar de modo (~1,5 s): «Ahora: AL REVÉS», el ícono grande y una línea."""
+    w, h = 360 * S, 640 * S
+    im = screen(raw, 0)
+    ov = Image.new('RGBA', (w, h), (2, 3, 15, 210))
+    im.alpha_composite(ov)
+    glow(im, 180 * S, 330 * S, 110 * S, SKY_TINT[mode], 90)
+    d = ImageDraw.Draw(im)
+    put(im, load(os.path.join(raw, f'rastro_icon_{mode}.raw')), 180 * S, 290 * S, 120 * S)
+    d.text((180 * S, 190 * S), 'Ahora:', font=ImageFont.truetype(FB, 22 * S), fill=SUN, anchor='mm')
+    d.text((180 * S, 380 * S), ['EL RASTRO', 'AL REVÉS', 'EL CIELO GIRA', 'EN MARCHA'][mode], font=ImageFont.truetype(FB, 32 * S), fill=(255, 255, 255), anchor='mm')
+    d.text((180 * S, 424 * S), ['En orden, como lo ves', 'De la última a la primera', 'El cielo va a girar', 'Solo las últimas 3'][mode],
+           font=ImageFont.truetype(FR, 19 * S), fill=(217, 212, 245), anchor='mm')
     return im
 
 
@@ -143,7 +191,7 @@ def main():
     ap.add_argument('raw')
     ap.add_argument('--out', default=J.ROOT + '/docs/previews')
     a = ap.parse_args()
-    shots = [screen(a.raw, m) for m in range(4)]
+    shots = [screen(a.raw, m) for m in range(4)] + [notice(a.raw, 1)]
     gap = 24
     pw = parts(a.raw)
     width = max(pw.width, len(shots) * shots[0].width + (len(shots) + 1) * gap)

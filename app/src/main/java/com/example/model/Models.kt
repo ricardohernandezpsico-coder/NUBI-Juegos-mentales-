@@ -408,7 +408,9 @@ data class GamePlayResult(
   val rasRounds: List<Int>? = null,
   val rasHits: List<Int>? = null,
   val rasModesSeen: Int? = null,
-  val rasNewModes: Int? = null
+  val rasNewModes: Int? = null,
+  // «Confusión de modo» tomada por familia (a lo más 1 por modo y partida; no cuenta como error). Se lee, no se muestra.
+  val rasModeConfusions: List<Int>? = null
 )
 
 data class DailySessionState(

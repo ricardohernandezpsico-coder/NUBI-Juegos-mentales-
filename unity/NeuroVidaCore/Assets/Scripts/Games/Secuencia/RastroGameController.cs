@@ -36,7 +36,8 @@ namespace NeuroVida.Games.Secuencia
         {
             Rgb(255, 226, 122), Rgb(200, 170, 255), Rgb(160, 250, 210), Rgb(255, 190, 150)
         };
-        private static readonly Color RibbonColor = Rgb(255, 246, 224);
+        /// <summary>Alfa del tinte del modo en los bordes (viñeta): nunca más claro que el fondo de los demás juegos.</summary>
+        private const float TintAlpha = 0.05f;
         private static readonly Color Dim = Rgb(171, 165, 210);
         private static readonly Color Cream = Rgb(255, 246, 224);
         private static readonly Color Sun = Rgb(255, 201, 74);
@@ -86,6 +87,9 @@ namespace NeuroVida.Games.Secuencia
         private CanvasGroup _unlockGroup;
         private Image _unlockGlow, _unlockIcon;
         private Text _unlockNew, _unlockName, _unlockLine;
+        private RectTransform _cueRoot;
+        private Image _cueIcon;
+        private Text _cueText;
         private ExitButton _exit;
         private CountdownScreen _countdown;
 
@@ -123,7 +127,7 @@ namespace NeuroVida.Games.Secuencia
 
         private sealed class InputResult
         {
-            public bool Complete, Abandoned, Skipped;
+            public bool Complete, Abandoned, Skipped, Confusion;
             public int Wrong = -1, Expected = -1;
         }
 
@@ -160,7 +164,8 @@ namespace NeuroVida.Games.Secuencia
             _tutorial.Hide();
             ClearRound();
             ClearFx();
-            _tint.color = NeuroStyle.WithAlpha(SkyTint[0], 0.14f);
+            _tint.color = NeuroStyle.WithAlpha(SkyTint[0], TintAlpha);
+            _cueRoot.gameObject.SetActive(false);
 
             StopAllCoroutines();
             StartCoroutine(GameLoop());
@@ -225,6 +230,7 @@ namespace NeuroVida.Games.Secuencia
             RastroSounds.Wrong();
             RastroSounds.Air();
             RastroSounds.Unlock();
+            foreach (var m in RastroModes.All) { RastroSounds.ModeCue(m); yield return null; }
         }
 
         // ------------------------------------------------------------------ una ronda
@@ -232,13 +238,22 @@ namespace NeuroVida.Games.Secuencia
         private IEnumerator PlayRound(RastroRound r)
         {
             SetMode(r);
-            if (r.IsNewMode) yield return StartCoroutine(UnlockScreen(r.Mode));
-            yield return StartCoroutine(Show(r));
-            if (!TimeIsUp && r.Mode == RastroMode.Gira) yield return StartCoroutine(Turn(r));
-            var res = new InputResult();
-            if (!TimeIsUp) yield return StartCoroutine(InputPhase(r, res));
-            else res.Abandoned = true;
-            _events.Clear();
+            // el «¡NUEVO!» de por vida va primero; si coincide con un cambio de modo, sale solo el «¡NUEVO!»
+            if (r.Notice != RastroNotice.None) yield return StartCoroutine(ModeScreen(r));
+            InputResult res;
+            while (true)
+            {
+                yield return StartCoroutine(Show(r));
+                if (!TimeIsUp && r.Mode == RastroMode.Gira) yield return StartCoroutine(Turn(r));
+                res = new InputResult();
+                if (!TimeIsUp) yield return StartCoroutine(InputPhase(r, res));
+                else res.Abandoned = true;
+                _events.Clear();
+                if (!res.Confusion) break;
+                // «confusión de modo»: no cuenta (ni error, ni vida, ni DDA); Nubi lo explica y se repite la MISMA muestra
+                yield return StartCoroutine(ConfusionMessage(r));
+                ClearRound();
+            }
             if (res.Abandoned)
             {
                 // se acabó el tiempo a mitad de ronda: no cuenta
@@ -254,9 +269,19 @@ namespace NeuroVida.Games.Secuencia
             UpdateHud();
         }
 
+        private IEnumerator ConfusionMessage(RastroRound r)
+        {
+            _hintOrb = -1;
+            _cueRoot.gameObject.SetActive(false);
+            PlayClip(RastroSounds.ModeCue(r.Mode), 0.8f);
+            string what = r.Mode == RastroMode.Reves ? "Esta era al revés" : "Esta era en marcha: solo las últimas " + r.Asked;
+            Rule("Nubi: ¡Ojo! " + what + ". Mírala de nuevo", "Esta vez no cuenta");
+            yield return StartCoroutine(Motion.Hold(2.4f));
+        }
+
         private void SetMode(RastroRound r)
         {
-            StartCoroutine(Motion.ColorTo(_tint, NeuroStyle.WithAlpha(SkyTint[(int)r.Mode], 0.14f), Motion.Decorative ? 0.6f : Motion.FadeSeconds));
+            StartCoroutine(Motion.ColorTo(_tint, NeuroStyle.WithAlpha(SkyTint[(int)r.Mode], TintAlpha), Motion.Decorative ? 0.6f : Motion.FadeSeconds));
             _tintMode = r.Mode;
             ResetHud(r.Mode, r.Asked);
             _hintOrb = -1;
@@ -365,6 +390,7 @@ namespace NeuroVida.Games.Secuencia
             _events.Clear();
             Rule(RastroModes.RepeatRule(r.Mode, r.Asked), RastroModes.Name(r.Mode));
             if (r.Guided) { _tutorial.Say("Toca los luceros en el mismo orden"); _hintOrb = r.Target[0]; }
+            else ShowCue(r);
             float startedAt = GameClock.Time;
             float radius = _senior ? RastroBoard.HitRadiusSenior : RastroBoard.HitRadius;
             while (true)
@@ -386,6 +412,12 @@ namespace NeuroVida.Games.Secuencia
                     _input.Add(orb);
                     if (r.Target[k] != orb)
                     {
+                        if (k == 0 && _session.TryModeConfusion(r, orb))
+                        {
+                            res.Confusion = true;
+                            _phase = Phase.Idle;
+                            yield break;
+                        }
                         res.Wrong = orb;
                         res.Expected = r.Target[k];
                         _phase = Phase.Idle;
@@ -506,29 +538,34 @@ namespace NeuroVida.Games.Secuencia
 
         // ------------------------------------------------------------------ «¡NUEVO!»
 
-        private IEnumerator UnlockScreen(RastroMode mode)
+        /// <summary>El cartel antes de la muestra: «¡NUEVO!» la primera vez de por vida que se llega a un modo, o «Ahora: AL REVÉS» al cambiar de modo.</summary>
+        private IEnumerator ModeScreen(RastroRound r)
         {
-            try { PlayerPrefs.SetInt(UnlockKey, _session.Director.Unlocked); PlayerPrefs.Save(); } catch (System.Exception) { }
+            bool isNew = r.Notice == RastroNotice.NewMode;
+            var mode = r.Mode;
+            if (isNew) { try { PlayerPrefs.SetInt(UnlockKey, _session.Director.Unlocked); PlayerPrefs.Save(); } catch (System.Exception) { } }
             float began = GameClock.Time;
             Color sky = SkyTint[(int)mode];
             _unlockGlow.color = NeuroStyle.WithAlpha(sky, 0.5f);
             _unlockIcon.sprite = RastroSprites.Icon(mode);
-            _unlockName.text = RastroModes.Name(mode);
-            _unlockLine.text = RastroModes.UnlockLine(mode);
+            _unlockNew.text = isNew ? "¡NUEVO!" : "Ahora:";
+            _unlockName.text = isNew ? RastroModes.Name(mode) : RastroModes.NoticeTitle(mode);
+            _unlockLine.text = isNew ? RastroModes.UnlockLine(mode) : RastroModes.NoticeLine(mode, r.Asked);
             _unlockRoot.gameObject.SetActive(true);
-            PlayClip(RastroSounds.Unlock(), 1f);
-            GameFeel.Haptic(GameFeel.HapticKind.Firm);
-            yield return StartCoroutine(Motion.Fade(_unlockGroup, 0f, 1f, Motion.Decorative ? 0.4f : Motion.FadeSeconds));
+            PlayClip(isNew ? RastroSounds.Unlock() : RastroSounds.ModeCue(mode), 1f);
+            if (isNew) GameFeel.Haptic(GameFeel.HapticKind.Firm);
+            yield return StartCoroutine(Motion.Fade(_unlockGroup, 0f, 1f, Motion.Decorative && isNew ? 0.4f : Motion.FadeSeconds));
+            float seconds = isNew ? RastroContract.UnlockSeconds : RastroContract.NoticeSeconds;
             float t = 0f;
-            while (t < RastroContract.UnlockSeconds)
+            while (t < seconds)
             {
                 t += GameClock.DeltaTime;
-                if (t > 0.5f && GuidedTutorial.TryPress(out _)) break;     // un toque sigue
+                if (t > (isNew ? 0.5f : 0.3f) && GuidedTutorial.TryPress(out _)) break;     // un toque sigue
                 yield return null;
             }
             yield return StartCoroutine(Motion.Fade(_unlockGroup, 1f, 0f, Motion.FadeSeconds));
             _unlockRoot.gameObject.SetActive(false);
-            _clockComp += GameClock.Time - began;                          // la pantalla de aviso no le gasta tiempo al Reto
+            _clockComp += GameClock.Time - began;                          // el cartel no le gasta tiempo al Reto
         }
 
         // ------------------------------------------------------------------ fin
@@ -673,7 +710,7 @@ namespace NeuroVida.Games.Secuencia
             {
                 float a = 1f - (now - _ribbon[j].T) / 0.7f, aq = 1f - (now - _ribbon[j - 1].T) / 0.7f;
                 _ribbonMesh.Add(_ribbon[j - 1].Pos, _ribbon[j].Pos, (2f + 7f * aq) * _s, (2f + 7f * a) * _s,
-                    NeuroStyle.WithAlpha(RibbonColor, 0.7f * aq), NeuroStyle.WithAlpha(RibbonColor, 0.7f * a));
+                    NeuroStyle.WithAlpha(tc, 0.8f * aq), NeuroStyle.WithAlpha(tc, 0.8f * a));
             }
             _ribbonMesh.Commit();
 
@@ -809,6 +846,7 @@ namespace NeuroVida.Games.Secuencia
             if (_sparkHalo != null) { _sparkHalo.gameObject.SetActive(false); _sparkCore.gameObject.SetActive(false); }
             _winAt = -10f;
             _hintOrb = -1;
+            if (_cueRoot != null) _cueRoot.gameObject.SetActive(false);
             foreach (var o in _orbs)
             {
                 if (o == null) continue;
@@ -882,10 +920,14 @@ namespace NeuroVida.Games.Secuencia
             var bgRect = bg.AddComponent<RectTransform>();
             Stretch(bgRect);
             WorldBackdrop.Build(bgRect, GameWorld.CieloDeCristal);
-            // la nebulosa coral (la lila y la celeste las pone el mundo) y el tinte de cada modo, debajo del juego
-            UiFx.AddBackgroundGlow(bgRect, new Vector2(0.84f, 0.8f), 1300f, NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.06f));
-            _tint = Img(bgRect, "ModeTint", RadialGlowSprite.Get(), new Vector2(0.5f, 0.45f), 2200f);
-            _tint.color = NeuroStyle.WithAlpha(SkyTint[0], 0.14f);
+            // el fondo es el común (degradé + dos nebulosas más tenues que las de Cielo profundo); el tinte del modo va solo en los bordes (viñeta)
+            var tintGo = new GameObject("ModeTint");
+            tintGo.transform.SetParent(bgRect, false);
+            Stretch(tintGo.AddComponent<RectTransform>());
+            _tint = tintGo.AddComponent<Image>();
+            _tint.sprite = RastroSprites.Vignette();
+            _tint.raycastTarget = false;
+            _tint.color = NeuroStyle.WithAlpha(SkyTint[0], TintAlpha);
 
             var safeGo = new GameObject("SafeAreaContent");
             safeGo.transform.SetParent(canvasGo.transform, false);
@@ -916,6 +958,7 @@ namespace NeuroVida.Games.Secuencia
             BuildHud();
             BuildTexts();
             BuildUnlock();
+            BuildCue();
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             BuildTutorial(_safe, 112f * UnitsPerDp);
@@ -1083,6 +1126,36 @@ namespace NeuroVida.Games.Secuencia
             _unlockRoot.gameObject.SetActive(false);
         }
 
+        /// <summary>El rótulo del modo que se queda arriba del tablero mientras se responde: ícono dibujado + texto grande del color del modo.</summary>
+        private void BuildCue()
+        {
+            var go = new GameObject("ModeCue");
+            go.transform.SetParent(_safe, false);
+            _cueRoot = go.AddComponent<RectTransform>();
+            _cueRoot.anchorMin = _cueRoot.anchorMax = new Vector2(0.5f, 1f);
+            _cueRoot.pivot = new Vector2(0.5f, 1f);
+            var ig = new GameObject("Icon");
+            ig.transform.SetParent(_cueRoot, false);
+            var ir = ig.AddComponent<RectTransform>();
+            ir.anchorMin = ir.anchorMax = ir.pivot = new Vector2(0f, 0.5f);
+            _cueIcon = ig.AddComponent<Image>();
+            _cueIcon.raycastTarget = false;
+            _cueText = MakeText(_cueRoot, "Text", 54, TextAnchor.MiddleCenter, Color.white, 3f, 0.4f);
+            BestFit(_cueText, 54);                    // ≥ 18 sp: ajuste de línea (hasta 2 líneas); nunca se corta
+            go.SetActive(false);
+        }
+
+        /// <summary>Muestra el recordatorio del modo (empieza la respuesta): del color del modo; el rastro simple, más discreto.</summary>
+        private void ShowCue(RastroRound r)
+        {
+            Color c = r.Mode == RastroMode.Rastro ? Dim : SkyTint[(int)r.Mode];
+            _cueIcon.sprite = RastroSprites.Icon(r.Mode);
+            _cueIcon.color = c;
+            _cueText.color = c;
+            _cueText.text = RastroModes.CueText(r.Mode, r.Asked);
+            _cueRoot.gameObject.SetActive(true);
+        }
+
         private void BuildResultPanel()
         {
             var go = new GameObject("Result");
@@ -1185,8 +1258,6 @@ namespace NeuroVida.Games.Secuencia
             }
             _disc.rectTransform.anchoredPosition = LogicalToPlay(RastroBoard.Center);
             _disc.rectTransform.sizeDelta = Vector2.one * (2f * RastroBoard.DiscRadius * _s);
-            _tint.rectTransform.sizeDelta = Vector2.one * (700f * _s);
-            _tint.rectTransform.anchorMin = _tint.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             _sparkHalo.rectTransform.sizeDelta = Vector2.one * (52f * _s);
             _sparkCore.rectTransform.sizeDelta = Vector2.one * (9f * _s);
 
@@ -1197,6 +1268,12 @@ namespace NeuroVida.Games.Secuencia
             _sub.rectTransform.anchoredPosition = LogicalToPlay(new Vector2(180f, 606f));
             _rule.rectTransform.localScale = Vector3.one;
 
+            _cueRoot.sizeDelta = new Vector2(344f * _s, 50f * _s);
+            _cueRoot.anchoredPosition = new Vector2(0f, -116f * _s);
+            _cueIcon.rectTransform.sizeDelta = new Vector2(30f * _s, 30f * _s);
+            _cueIcon.rectTransform.anchoredPosition = new Vector2(4f * _s, 0f);
+            _cueText.rectTransform.offsetMin = new Vector2(40f * _s, 0f);
+            _cueText.rectTransform.offsetMax = new Vector2(-4f * _s, 0f);
             LayoutHud();
             LayoutPills();
             _unlockGlow.rectTransform.sizeDelta = Vector2.one * (260f * _s);

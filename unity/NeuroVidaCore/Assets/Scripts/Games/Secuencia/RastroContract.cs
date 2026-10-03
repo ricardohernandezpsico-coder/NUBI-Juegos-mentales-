@@ -51,6 +51,33 @@ namespace NeuroVida.Games.Secuencia
         /// <summary>La píldora de cuántas luces: «3 luces», «Últimas 3 luces».</summary>
         public static string CountLabel(RastroMode m, int asked) => (m == RastroMode.Marcha ? "Últimas " : "") + asked + " luces";
 
+        /// <summary>Título del aviso al cambiar de modo: «AL REVÉS» (el aviso dice «Ahora: AL REVÉS»).</summary>
+        public static string NoticeTitle(RastroMode m) => Name(m).ToUpperInvariant();
+
+        /// <summary>La línea del aviso al cambiar de modo.</summary>
+        public static string NoticeLine(RastroMode m, int asked)
+        {
+            switch (m)
+            {
+                case RastroMode.Reves: return "De la última a la primera";
+                case RastroMode.Marcha: return "Solo las últimas " + asked;
+                case RastroMode.Gira: return "El cielo va a girar";
+                default: return "En orden, como lo ves";
+            }
+        }
+
+        /// <summary>El rótulo que se queda arriba del tablero mientras se responde (recordatorio del modo; la instrucción de antes de la muestra se olvida).</summary>
+        public static string CueText(RastroMode m, int asked)
+        {
+            switch (m)
+            {
+                case RastroMode.Reves: return "AL REVÉS · empieza por la última";
+                case RastroMode.Marcha: return "SOLO LAS ÚLTIMAS " + asked;
+                case RastroMode.Gira: return "MISMO ORDEN, LOS LUCEROS SE MOVIERON";
+                default: return "EN ORDEN";
+            }
+        }
+
         /// <summary>La línea de la pantalla «¡NUEVO!» al llegar por primera vez a un modo.</summary>
         public static string UnlockLine(RastroMode m)
         {
@@ -161,6 +188,8 @@ namespace NeuroVida.Games.Secuencia
         public const int GuidedLength = 2;
         /// <summary>Segundos que dura la pantalla «¡NUEVO!» (o hasta un toque).</summary>
         public const float UnlockSeconds = 2.3f;
+        /// <summary>Segundos del aviso «Ahora: AL REVÉS» al cambiar de modo (o hasta un toque). No le gasta tiempo al Reto.</summary>
+        public const float NoticeSeconds = 1.5f;
 
         // Pasos de subida del motor común por edad. El motor multiplica por 0,85 en mayores y 1,1 en menores de 18, y baja
         // `paso · p / (1 − p)` por error con tope MaxDropPerError = 1: para que ese tope no se active (y el objetivo se cumpla),
@@ -219,7 +248,8 @@ namespace NeuroVida.Games.Secuencia
                 ras_rounds = (int[])t.Rounds.Clone(),
                 ras_hits = (int[])t.Hits.Clone(),
                 ras_modes_seen = t.ModesSeen,
-                ras_new_modes = s.NewModes
+                ras_new_modes = s.NewModes,
+                ras_mode_confusions = (int[])s.ModeConfusions.Clone()
             };
         }
     }

@@ -360,7 +360,8 @@ de memoria de trabajo y se relaciona con el razonamiento: Broadway y Engle, 2010
 
 **Qué NO se dice.** Ningún percentil ni comparación con otras personas o con estudios (la condición no es comparable: luces, giro y sonido propios). No se
 dice que mida «tu memoria» como rasgo ni que entrene nada. Con pocas rondas es una pista, no un resultado: la nota común del pie lo recuerda. El límite
-real de la memoria a corto plazo ronda los 4 elementos (Cowan, 2001), por eso la escalera no pasa de 8 luces. La ronda guiada del tutorial no cuenta.
+real de la memoria a corto plazo ronda los 4 elementos (Cowan, 2001), por eso la escalera no pasa de 8 luces. La ronda guiada del tutorial no cuenta. Tampoco cuenta la «confusión de modo» (primer toque de una ronda al revés o en marcha en el lucero del modo equivocado: se avisa y se repite la
+misma muestra, una vez por modo y partida): así el error de entender la consigna no se confunde con un fallo de memoria (`ras_mode_confusions`).
 
 **El ojo de la originalidad.** Lumosity tiene «Rotation Matrix» (una cuadrícula con un patrón que gira 90°). El nuestro es distinto (el orden de un camino, no un
 patrón; ángulos libres; luceros que suenan) y no se dice que «ninguna app gira». Lista del abogado: revisarlo antes de publicar.

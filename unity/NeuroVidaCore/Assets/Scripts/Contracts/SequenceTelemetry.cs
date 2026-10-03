@@ -56,5 +56,8 @@ namespace NeuroVida.Contracts
         /// desbloquearon por primera vez en esta partida (mismos bits).</summary>
         public int ras_modes_seen = -1;
         public int ras_new_modes = -1;
+        /// <summary>Veces que se tomó como «confusión de modo» (no cuenta como error) el primer toque de una ronda al revés o en marcha, por familia
+        /// (a lo más 1 por modo y partida). La medida final no cambia.</summary>
+        public int[] ras_mode_confusions;
     }
 }

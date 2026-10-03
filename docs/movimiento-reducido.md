@@ -121,6 +121,8 @@ Lo clasifiqué leyendo las líneas clave y el comentario de cada rutina, no cada
 | Vuelo de las chispas al contador | Premio de la ronda | DECORATIVA | El contador sube de una vez |
 | **El cielo gira** | El tablero gira 60° a 180° y se repite sobre los mismos luceros | ESENCIAL (es la tarea) | **Se queda**, lineal (sin aceleración) y de 1,5 s |
 | Pantalla «¡NUEVO!» | Aviso de un modo nuevo | DECORATIVA (comunica) | Aparece con un fundido corto; misma duración (2,3 s o un toque) |
+| Aviso «Ahora: AL REVÉS» (cambio de modo) | Cartel de ~1,5 s con ícono y sonido propio | DECORATIVA (comunica) | Fundido corto; misma duración (o un toque) |
+| Rótulo del modo al responder | Texto del color del modo arriba del tablero | Fijo, comunica | Sin cambios (no se mueve) |
 | Tutorial (`GuidedTutorial`) | Tarjeta de Nubi y ronda guiada | — | Solo fundidos; el aro de ayuda no gira |
 
 Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.

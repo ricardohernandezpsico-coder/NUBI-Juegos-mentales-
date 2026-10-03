@@ -15,11 +15,13 @@ namespace NeuroVida.Games.Secuencia
         private const int OrbPx = 192;
         private static readonly Sprite[] Orbs = new Sprite[RastroBoard.Orbs];
         private static readonly Sprite[] Icons = new Sprite[RastroModes.Count];
-        private static Sprite _disc, _cross, _dashed;
+        private static Sprite _disc, _cross, _dashed, _vignette;
 
         public static Sprite Orb(int i) => Orbs[i] != null ? Orbs[i] : Orbs[i] = ToSprite(OrbPixels(Hex(RastroBoard.Colors[i]), OrbPx), OrbPx, 100f);
         public static Sprite DottedDisc() => _disc != null ? _disc : _disc = ToSprite(DiscPixels(512), 512, 100f);
         public static Sprite DashedRing() => _dashed != null ? _dashed : _dashed = ToSprite(DashedRingPixels(128), 128, 100f);
+        /// <summary>Viñeta: transparente en el centro y teñida hacia los bordes (se estira a toda la pantalla y se tiñe con <c>Image.color</c>): el tinte del modo.</summary>
+        public static Sprite Vignette() => _vignette != null ? _vignette : _vignette = ToSprite(VignettePixels(128), 128, 100f);
         public static Sprite XMark() => _cross != null ? _cross : _cross = ToSprite(Bake(128, CrossSdf), 128, 100f);
         public static Sprite Icon(RastroMode m) => Icons[(int)m] != null ? Icons[(int)m] : Icons[(int)m] = ToSprite(Bake(256, IconSdf(m)), 256, 100f);
 
@@ -106,6 +108,21 @@ namespace NeuroVida.Games.Secuencia
                     pixels[py * size + px] = new Color32(255, 255, 255, (byte)(ring * inDash * 255f));
                 }
             }
+            return pixels;
+        }
+
+        /// <summary>Alfa 0 hasta el 45 % del radio y subiendo con el cuadrado hasta 1 en las esquinas (se estira, así que es una elipse).</summary>
+        public static Color32[] VignettePixels(int size)
+        {
+            var pixels = new Color32[size * size];
+            for (int py = 0; py < size; py++)
+                for (int px = 0; px < size; px++)
+                {
+                    float x = (px + 0.5f) / size * 2f - 1f, y = (py + 0.5f) / size * 2f - 1f;
+                    float d = Mathf.Sqrt(x * x + y * y) / 1.41421356f;
+                    float a = Mathf.Clamp01((d - 0.45f) / 0.55f);
+                    pixels[py * size + px] = new Color32(255, 255, 255, (byte)(a * a * 255f + 0.5f));
+                }
             return pixels;
         }
 

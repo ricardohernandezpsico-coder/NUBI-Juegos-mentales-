@@ -194,3 +194,20 @@ hasta 16 sp (`UiKit.BestFit`); el error dice «Esa no era» y debajo «La correc
 y velocidad», «Precisión y ritmo excelentes») hablaba de velocidad: `ResultPhrases.feedback` la reemplaza por «Buena / Muy buena precisión» en los juegos cuyo puntaje no se apoya en la
 rapidez (`secuencia`, `rutatesoro`, `bitacora`, `rumbo`, `satelites`, `aterrizaje`, `anagramas`, `intrusa`); en los demás no cambia. (3) La lectura final es solo la línea y el truco del modo
 «el que más te costó» (`Trail.readingLines`) y una oración sobre la memoria de trabajo.
+
+**Retoques del 3-oct (tarea 20c, Ricardo lo jugó en el teléfono).**
+1. **Fondo igual al resto.** Era más claro que el de los demás juegos (brillo medio ≈ 20,6 de 255 contra ≈ 13,9 de La estrella intrusa sin su Vía Láctea; ≈ 17,6 con ella). Causa: el tinte
+   radial del modo (alfa 0,14 en el CENTRO) más tres nebulosas. Ahora el fondo es el degradé común (`NeuroStyle.NightGradient`) con dos nebulosas más tenues que las de Cielo profundo
+   (lila 0,09 y coral 0,05; `GameWorld.CieloDeCristal`), sin la nebulosa coral extra del juego, y el tinte del modo es una **viñeta** (`RastroSprites.Vignette`: transparente en el centro,
+   alfa 0,05 en los bordes). Brillo medio estimado ≈ 13,1: igual o menor que Intrusa. (Estimado con la misma fórmula de los sprites del juego, no medido en el teléfono.)
+2. **Que el cambio de modo se entienda** (la instrucción de antes de la muestra se olvida al mirar la chispa):
+   - **A. Aviso al cambiar de modo** (`ModeScreen`): si la ronda trae un modo distinto al de la anterior (no la primera ronda ni la guiada), antes de la chispa sale ~1,5 s «Ahora: AL REVÉS» con el
+     ícono grande y una línea («De la última a la primera» / «Solo las últimas N» / «El cielo va a girar» / «En orden, como lo ves»), con un toque sigue y un sonido propio por modo
+     (`RastroSounds.ModeCue`). No gasta tiempo del Reto. Si coincide con el «¡NUEVO!» de por vida, sale solo el «¡NUEVO!» (`RastroRound.Notice`).
+   - **B. Recordatorio al responder:** un rótulo de 18 sp del color del modo, con el ícono dibujado, arriba del tablero durante toda la respuesta («AL REVÉS · empieza por la última»,
+     «SOLO LAS ÚLTIMAS N», «MISMO ORDEN, LOS LUCEROS SE MOVIERON», y «EN ORDEN», más discreto, en el rastro simple), con ajuste de línea. La cinta del dedo toma el color del modo.
+   - **C. Segunda oportunidad por confusión de modo** (`RastroSession.TryModeConfusion`): en «al revés», si el PRIMER toque es el primer lucero mostrado (y no el último); en «en marcha», si es
+     el primer lucero de toda la muestra (y no el primero de las últimas N; si coinciden, es un acierto). No cuenta como error, no quita vida ni entra al DDA; Nubi dice «¡Ojo! Esta era al revés.
+     Mírala de nuevo» y se repite la MISMA muestra. Una sola vez por modo y por partida (la segunda cuenta como error). No aplica en la ronda guiada. Telemetría `ras_mode_confusions[4]`;
+     la medida final no cambia.
+

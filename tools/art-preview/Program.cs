@@ -49,6 +49,7 @@ internal static class Program
         for (int i = 0; i < RastroBoard.Orbs; i++) Dump("rastro_orb_" + i, RastroSprites.Orb(i));
         Dump("rastro_disc", RastroSprites.DottedDisc());
         Dump("rastro_dashed", RastroSprites.DashedRing());
+        Dump("rastro_vignette", RastroSprites.Vignette());
         Dump("rastro_x", RastroSprites.XMark());
         foreach (RastroMode m in RastroModes.All) Dump("rastro_icon_" + (int)m, RastroSprites.Icon(m));
         Dump("nubi_maestra", NubiTeacherSprite.Get());

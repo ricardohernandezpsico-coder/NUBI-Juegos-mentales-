@@ -35,6 +35,19 @@ namespace NeuroVida.Games.Secuencia
         public static AudioClip Unlock() => Get("unlock", () => Make("unlock", 1.7f, t =>
             Bell(1046.5f, t, 0.05f, 1.4f) + Bell(1318.5f, t - 0.12f, 0.05f, 1.4f)));
 
+        /// <summary>El aviso de cada modo al cambiar (de la misma familia de campanas, cortos): el rastro una campana, al revés dos que bajan,
+        /// el cielo gira tres que suben y bajan (un arco) y en marcha tres que suben rápido.</summary>
+        public static AudioClip ModeCue(RastroMode mode)
+        {
+            switch (mode)
+            {
+                case RastroMode.Reves: return Get("cue1", () => Make("cue", 1.0f, t => Bell(880f, t, 0.06f, 0.7f) + Bell(659.25f, t - 0.11f, 0.06f, 0.8f)));
+                case RastroMode.Gira: return Get("cue2", () => Make("cue", 1.1f, t => Bell(659.25f, t, 0.06f, 0.6f) + Bell(880f, t - 0.12f, 0.06f, 0.6f) + Bell(659.25f, t - 0.24f, 0.06f, 0.8f)));
+                case RastroMode.Marcha: return Get("cue3", () => Make("cue", 1.0f, t => Bell(523.25f, t, 0.06f, 0.6f) + Bell(659.25f, t - 0.09f, 0.06f, 0.6f) + Bell(783.99f, t - 0.18f, 0.06f, 0.8f)));
+                default: return Get("cue0", () => Make("cue", 0.8f, t => Bell(659.25f, t, 0.06f, 0.7f)));
+            }
+        }
+
         /// <summary>El soplo de aire del cielo al girar: ruido que pasa por un filtro de banda que sube de 900 a 2400 Hz en medio segundo.</summary>
         public static AudioClip Air() => Get("air", () =>
         {
