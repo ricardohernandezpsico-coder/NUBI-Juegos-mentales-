@@ -56,3 +56,6 @@ tools/lexico/fuentes/
 
 # Fuentes de letra y diccionarios descargados solo para preparar maquetas y filtrar el léxico (OFL / LibreOffice): no se comitean
 tools/previews/fuentes-letra/
+
+# Salidas de las capturas Roborazzi (las que se guardan van copiadas a docs/previews/*-real.png)
+app/src/test/screenshots/
