@@ -96,4 +96,5 @@ Cinco niveles con `AdaptiveDifficulty`, igual que hoy (objetivo 0,80; 0,85 en ma
 
 Con el sistema común (`GuidedTutorial`, `GameControllerBase.BuildTutorial`/`GuidedRound`): 1) Nubi muestra una palabra
 desde la orilla TINTA y pide tocar su color; 2) una desde la orilla PALABRA; 3) dos rondas guiadas sin puntaje. El menú de
-pausa «Cómo se juega» lo repite. Versión corta (`Assessment`): 8 palabras, niveles 1-3.
+pausa «Cómo se juega» lo repite. Versión corta (`Assessment`): no hace falta por ahora, porque el juego no está
+en el inicio.
