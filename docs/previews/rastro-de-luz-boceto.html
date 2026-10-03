@@ -1,0 +1,318 @@
+<title>Rastro de luz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a la izquierda la idea y los modos; a la derecha el teléfono jugable; en móvil, teléfono arriba */
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sun:#FFC94A; --sky:#7FD8FF; --coral:#FF7A5C; --lime:#8EE07A; --grape:#B8A4FF;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:22px 0 10px}
+.modes{display:grid;gap:8px}
+.mode{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;min-height:56px}
+.mode[aria-pressed="true"]{border-color:#5B4FC0;background:var(--panel)}
+.mode .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font:700 20px var(--f-display);background:#1C1750;color:var(--sun)}
+.mode b{display:block;font:600 16px var(--f-display)}
+.mode span{color:var(--dim);font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Rastro de luz</h1>
+    <p class="lead">Secuencia Lumínica rehecha desde cero. Una chispa de luz vuela entre luceros de cristal; cada lucero suena con su propia nota, así que el camino se ve <b>y se escucha</b> como una melodía. Tú lo repites deslizando el dedo y tu trazo deja una cinta de luz. A medida que subes, Nubi desbloquea giros nuevos.</p>
+
+    <h2>Elige qué probar</h2>
+    <div class="modes" id="modes">
+      <button class="mode" data-mode="partida" aria-pressed="true"><span class="ic">★</span><span><b>Partida completa</b><span>Empieza simple y desbloquea cada giro con un aviso: así se juega de verdad.</span></span></button>
+      <button class="mode" data-mode="base" aria-pressed="false"><span class="ic">→</span><span><b>El rastro</b><span>Repite el camino de la chispa.</span></span></button>
+      <button class="mode" data-mode="reves" aria-pressed="false"><span class="ic">⟲</span><span><b>Al revés</b><span>De la última luz a la primera. El cielo se tiñe de violeta.</span></span></button>
+      <button class="mode" data-mode="gira" aria-pressed="false"><span class="ic">↻</span><span><b>El cielo gira</b><span>Después del camino, el cielo da un giro: repítelo sobre los mismos luceros.</span></span></button>
+      <button class="mode" data-mode="marcha" aria-pressed="false"><span class="ic">≫</span><span><b>En marcha</b><span>La chispa sigue y sigue: repite solo las últimas luces.</span></span></button>
+    </div>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+
+    <h2>Lo que lo hace distinto</h2>
+    <ul class="list">
+      <li><b>Se ve y se escucha.</b> Cada lucero tiene su nota de la escala pentatónica: el camino es una melodía, y recordar la melodía ayuda a recordar el camino.</li>
+      <li><b>La chispa vuela en curvas</b> y deja un rastro que se apaga como tinta en el agua. Tu dedo dibuja una cinta de luz que se engancha a cada lucero.</li>
+      <li><b>Al acertar,</b> el camino entero brilla y sus chispas suben a tu contador; al fallar, el lucero correcto se marca con un aro y Nubi explica, sin culpa.</li>
+      <li><b>Cuatro modos que se desbloquean</b>, cada uno con su color de cielo, su ícono y su texto (nunca solo el color).</li>
+      <li><b>Luceros redondos de cristal</b>, sin estrellas de puntas ni símbolos: nada que se pueda leer como signo.</li>
+      <li><b>Medida al final</b>: cuántas luces recuerdas en cada modo y cuál te cuesta más.</li>
+    </ul>
+    <p class="note">Boceto jugable para aprobar el estilo. En el juego real, la dificultad la lleva el motor común (largo del camino, velocidad, curvas y cruces), los mayores tienen más tiempo y luceros más grandes, y con «quitar animaciones» el giro sigue (es la tarea), pero sin partículas ni destellos.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="Rastro de luz: toca Jugar y luego repite el camino deslizando el dedo"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640, CX = 180, CY = 352;
+const PENTA = [392, 440, 523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66];
+const HUES = ['#7FD8FF','#B8A4FF','#FFC94A','#8EE07A','#FF9F7A','#9FF5D6','#F7A8E0','#FFE27A','#A9C7FF'];
+const MODES = {
+  base:  { name:'El rastro',     icon:'→', sky:'76,201,240',  trail:'255,226,122' },
+  reves: { name:'Al revés',      icon:'⟲', sky:'184,164,255', trail:'200,170,255' },
+  gira:  { name:'El cielo gira', icon:'↻', sky:'120,240,200', trail:'160,250,210' },
+  marcha:{ name:'En marcha',     icon:'≫', sky:'255,159,122', trail:'255,190,150' }
+};
+let soundOn = true, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, actx = null, pick = 'partida';
+
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.08, d=1.3, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.008); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.18],[5.4,.06]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function airy(){ const a = ac(); if (!a) return; const len=a.sampleRate*.5, b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=6; f.frequency.setValueAtTime(900,t); f.frequency.exponentialRampToValueAtTime(2400,t+.5); g.gain.value=.025; s.connect(f).connect(g).connect(a.destination); s.start(t); }
+
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.22,`rgba(${rgb},.5)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeIO = t => t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+/* ---------- fondo ---------- */
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(7);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#02030F'); sky.addColorStop(.55,'#050823'); sky.addColorStop(1,'#0A0F33'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,180,230,'184,164,255',.10); neb(320,520,220,'76,201,240',.09); neb(250,90,160,'255,107,74',.05);
+  for (let i=0;i<240;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.2; g.fillStyle=`rgba(255,255,255,${.2+R()*.6})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+const twinkles = (()=>{ const R=rng(3); return Array.from({length:30},()=>[R()*W,R()*H,.6+R()*1.2,R()*6.28,.5+R()*1.5]); })();
+
+/* ---------- luceros ---------- */
+const BASE = (()=>{ // 9 posiciones en anillo irregular + centro, dentro de un disco de radio 140
+  const pts=[]; const R=rng(21);
+  for (let i=0;i<8;i++){ const a=-Math.PI/2+i*Math.PI/4+(R()-.5)*.35, r=104+(R()-.5)*44; pts.push([CX+r*Math.cos(a), CY+r*Math.sin(a)]); }
+  pts.push([CX+(R()-.5)*18, CY+(R()-.5)*18]); return pts;
+})();
+
+/* ---------- juego ---------- */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv);
+
+const G = {
+  state:'title', mode:'base', angle:0, parts:[], blooms:[], trail:[], ribbon:[], fixed:[], banner:null, rule:'', sub:'', rnd:0,
+  lives:3, len:3, best:{}, seen:{}, hitFlash:{}, marks:{}, unlocked:['base'], flyers:[], score:0
+};
+function pos(i){ const [x,y]=BASE[i], a=G.angle*Math.PI/180, dx=x-CX, dy=y-CY; return [CX+dx*Math.cos(a)-dy*Math.sin(a), CY+dx*Math.sin(a)+dy*Math.cos(a)]; }
+function emit(x,y,n,spread,life,rgb,up=0){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-up,t:performance.now(),life:life*(.6+Math.random()*.7),r:.7+Math.random()*1.6,rgb}); }
+function bloom(i, rgb){ const [x,y]=pos(i); G.blooms.push({x,y,t:performance.now(),rgb}); }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+function newGame(){
+  G.lives=3; G.len=3; G.best={}; G.seen={}; G.rnd=0; G.score=0; G.angle=0; G.unlocked = pick==='partida' ? ['base'] : [pick];
+  nextRound();
+}
+function chooseMode(){
+  if (pick!=='partida') return pick;
+  const unlockAt = { reves:3, gira:5, marcha:7 };
+  for (const m of ['reves','gira','marcha']) if (G.rnd===unlockAt[m] && !G.unlocked.includes(m)){ G.unlocked.push(m); G.newMode=m; return m; }
+  if (G.rnd<3) return 'base';
+  return G.unlocked[Math.floor(Math.random()*G.unlocked.length)];
+}
+function makeSeq(n){ const s=[]; while(s.length<n){ const c=Math.floor(Math.random()*9); if (c!==s[s.length-1] && !(s.length>1 && c===s[s.length-2])) s.push(c); } return s; }
+async function nextRound(){
+  G.rnd++; G.newMode=null; G.mode = chooseMode(); G.need = G.mode==="marcha" ? Math.max(2, G.len-1) : G.len; G.fixed=[]; G.input=[]; G.marks={}; G.ribbon=[]; G.trail=[];
+  const M = MODES[G.mode];
+  if (G.newMode){
+    G.banner={ t:performance.now(), mode:G.mode }; bell(1046.5,.05,1.4); bell(1318.5,.05,1.4,.12);
+    await sleep(2300); G.banner=null;
+  }
+  let show, target, n = G.len;
+  if (G.mode==='marcha'){ n = Math.max(2, G.len-1); show = makeSeq(n + 1 + Math.floor(Math.random()*3)); target = show.slice(-n); }
+  else { show = makeSeq(n); target = G.mode==='reves' ? show.slice().reverse() : show.slice(); }
+  G.target = target; G.need = n;
+  G.rule = G.mode==='marcha' ? 'Mira… al final, las últimas '+n : G.mode==='reves' ? 'Mira el rastro: lo repetirás al revés' : 'Mira el rastro';
+  G.sub = M.name;
+  G.state='show'; await sleep(450);
+  await flySpark(show);
+  if (G.mode==='gira'){
+    G.rule='¡El cielo gira!'; G.state='turn'; airy();
+    const from=G.angle, to=from+(Math.random()<.5?-1:1)*(100+Math.random()*80), dur=reduce?1500:1400, t0=performance.now();
+    await new Promise(res=>{ const tick=now=>{ const k=Math.min(1,(now-t0)/dur); G.angle=from+(to-from)*(reduce?k:easeIO(k)); k<1?requestAnimationFrame(tick):res(); }; requestAnimationFrame(tick); });
+  }
+  G.rule = G.mode==='marcha' ? 'Repite las últimas '+n : G.mode==='reves' ? 'Al revés: de la última a la primera' : 'Repítelo con el dedo';
+  G.state='input';
+}
+async function flySpark(seq){
+  const speed = 300; // px/s
+  G.spark = null;
+  for (let k=0;k<seq.length;k++){
+    const i=seq[k];
+    if (k===0){ const [x,y]=pos(i); G.spark={x,y}; }
+    else {
+      const [x0,y0]=pos(seq[k-1]), [x1,y1]=pos(i), mx=(x0+x1)/2, my=(y0+y1)/2, dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy);
+      const bend=(k%2?1:-1)*L*.22, cx=mx-dy/L*bend, cy=my+dx/L*bend, dur=Math.max(260, L/speed*1000), t0=performance.now();
+      await new Promise(res=>{ const tick=now=>{ const t=Math.min(1,(now-t0)/dur), u=1-t;
+        const x=u*u*x0+2*u*t*cx+t*t*x1, y=u*u*y0+2*u*t*cy+t*t*y1; G.spark={x,y}; G.trail.push({x,y,t:now});
+        emit(x,y,2,30,500,MODES[G.mode].trail); t<1?requestAnimationFrame(tick):res(); }; requestAnimationFrame(tick); });
+    }
+    bell(PENTA[i]); bloom(i, hexRgb(HUES[i])); G.hitFlash[i]=performance.now(); emit(...pos(i),10,90,600,hexRgb(HUES[i]));
+    await sleep(G.mode==='marcha'?160:220);
+  }
+  await sleep(250); G.spark=null;
+}
+
+/* ---------- entrada ---------- */
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+function orbAt(x,y){ for (let i=0;i<9;i++){ const [ox,oy]=pos(i); if (Math.hypot(x-ox,y-oy)<34) return i; } return -1; }
+let dragging=false;
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e);
+  if (G.state==='title' || G.state==='end'){ if (y>540) { G.state='go'; newGame(); } return; }
+  if (G.state!=='input') return; dragging=true; cv.setPointerCapture(e.pointerId); G.ribbon.push({x,y,t:performance.now()}); const i=orbAt(x,y); if (i>=0) hit(i);
+});
+cv.addEventListener('pointermove', e=>{ if (!dragging || G.state!=='input') return; const [x,y]=toLocal(e); G.ribbon.push({x,y,t:performance.now()}); emit(x,y,1,20,380,MODES[G.mode].trail); const i=orbAt(x,y); if (i>=0 && i!==G.input[G.input.length-1]) hit(i); });
+window.addEventListener('pointerup', ()=>dragging=false);
+
+function hit(i){
+  const k=G.input.length, ok=G.target[k]===i; G.input.push(i);
+  if (ok){
+    bell(PENTA[i],.07,1); bloom(i,hexRgb(HUES[i])); G.hitFlash[i]=performance.now(); emit(...pos(i),12,110,650,hexRgb(HUES[i]));
+    if (k>0) G.fixed.push([G.input[k-1], i]);
+    if (G.input.length===G.need){ G.state='win'; dragging=false; win(); }
+  } else {
+    G.state='fail'; dragging=false; bell(196,.06,.6); G.marks[i]='no'; G.marks[G.target[k]]='yes'; G.lives--;
+    G.rule='Esa no era: la correcta tiene el aro amarillo'; G.sub='';
+    setTimeout(()=>{ if (G.lives<=0) end(); else nextRound(); }, 1800);
+  }
+}
+async function win(){
+  const m=G.mode; G.best[m]=Math.max(G.best[m]||0, G.need); G.seen[m]=true;
+  G.rule='¡Exacto!'; G.sub='la próxima, una luz más';
+  [523.25,659.25,783.99,1046.5].forEach((f,j)=>bell(f,.05,1.6,j*.07));
+  const now=performance.now(); G.fixed.forEach(([a,b],j)=>{ G.flyers.push({from:pos(b),t:now+j*60}); });
+  G.flyers.push({from:pos(G.input[0]),t:now});
+  G.winT=now; await sleep(1500); G.score+=G.need; G.len++; nextRound();
+}
+function end(){ G.state='end'; for (const m in MODES) if (G.best[m]===undefined && G.seen[m]) G.best[m]=G.need-1; }
+
+/* ---------- dibujo ---------- */
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  const M=MODES[G.mode];
+  // tinte del modo
+  const tint=c.createRadialGradient(CX,CY,20,CX,CY,320); tint.addColorStop(0,`rgba(${M.sky},.12)`); tint.addColorStop(1,`rgba(${M.sky},0)`); c.fillStyle=tint; c.fillRect(0,0,W,H);
+  if (!reduce) for (const [x,y,r,ph,sp] of twinkles){ c.globalAlpha=.25+.6*(.5+.5*Math.sin(now/1000*sp+ph)); c.drawImage(glow('255,255,255'),x-r*4,y-r*4,r*8,r*8); }
+  c.globalAlpha=1;
+  // disco del tablero
+  c.save(); c.translate(CX,CY); c.rotate(G.angle*Math.PI/180);
+  c.strokeStyle='rgba(120,110,200,.18)'; c.lineWidth=1.2; c.setLineDash([3,9]); c.beginPath(); c.arc(0,0,150,0,7); c.stroke(); c.setLineDash([]);
+  c.restore();
+  c.globalCompositeOperation='lighter';
+  // rastro de la chispa
+  const life = reduce ? 900 : (G.mode==='marcha' ? 900 : 1500);
+  G.trail = G.trail.filter(p=>now-p.t<life);
+  for (let j=1;j<G.trail.length;j++){ const p=G.trail[j], q=G.trail[j-1], a=1-(now-p.t)/life; c.strokeStyle=`rgba(${M.trail},${.85*a})`; c.lineWidth=1+5*a; c.lineCap='round'; c.beginPath(); c.moveTo(q.x,q.y); c.lineTo(p.x,p.y); c.stroke(); }
+  // cinta del dedo
+  G.ribbon = G.ribbon.filter(p=>now-p.t<700);
+  for (let j=1;j<G.ribbon.length;j++){ const p=G.ribbon[j], q=G.ribbon[j-1], a=1-(now-p.t)/700; c.strokeStyle=`rgba(255,246,224,${.7*a})`; c.lineWidth=2+7*a; c.lineCap='round'; c.beginPath(); c.moveTo(q.x,q.y); c.lineTo(p.x,p.y); c.stroke(); }
+  // tramos acertados
+  const winK = G.state==='win' ? Math.min(1,(now-G.winT)/500) : 0;
+  for (const [a,b] of G.fixed){ const [x0,y0]=pos(a), [x1,y1]=pos(b); c.strokeStyle=`rgba(${M.trail},${.55+.45*winK})`; c.lineWidth=3+3*winK; c.beginPath(); c.moveTo(x0,y0); c.lineTo(x1,y1); c.stroke(); }
+  c.globalCompositeOperation='source-over';
+  // luceros
+  for (let i=0;i<9;i++){
+    const [x,y]=pos(i), rgb=hexRgb(HUES[i]), f=G.hitFlash[i]?Math.max(0,1-(now-G.hitFlash[i])/700):0;
+    const breathe = reduce ? 1 : 1+.05*Math.sin(now/900+i);
+    c.globalAlpha=.35+.65*f; c.drawImage(glow(rgb),x-36*breathe-14*f,y-36*breathe-14*f,72*breathe+28*f,72*breathe+28*f); c.globalAlpha=1;
+    const gr=c.createRadialGradient(x-6,y-7,2,x,y,19); gr.addColorStop(0,'#FFFFFF'); gr.addColorStop(.35,HUES[i]); gr.addColorStop(1,`rgba(${rgb},.35)`);
+    c.fillStyle=gr; c.beginPath(); c.arc(x,y,18,0,7); c.fill();
+    c.strokeStyle='rgba(255,255,255,.55)'; c.lineWidth=1.5; c.stroke();
+    c.fillStyle='rgba(255,255,255,.75)'; c.beginPath(); c.ellipse(x-6,y-8,5,3,-.6,0,7); c.fill();
+    if (G.marks[i]==='yes'){ c.strokeStyle='#FFC94A'; c.lineWidth=4; c.beginPath(); c.arc(x,y,27+(reduce?0:2*Math.sin(now/180)),0,7); c.stroke(); }
+    if (G.marks[i]==='no'){ c.strokeStyle='#FF7A5C'; c.lineWidth=4; c.beginPath(); c.arc(x,y,27,0,7); c.stroke(); c.beginPath(); c.moveTo(x-7,y-7); c.lineTo(x+7,y+7); c.moveTo(x+7,y-7); c.lineTo(x-7,y+7); c.stroke(); }
+  }
+  c.globalCompositeOperation='lighter';
+  // chispa
+  if (G.spark){ const {x,y}=G.spark; c.drawImage(glow(M.trail),x-26,y-26,52,52); c.drawImage(glow('255,255,255'),x-9,y-9,18,18); }
+  // florecimientos
+  G.blooms = G.blooms.filter(b=>{ const k=(now-b.t)/650; if (k>=1) return false; c.strokeStyle=`rgba(${b.rgb},${.8*(1-k)})`; c.lineWidth=2; c.beginPath(); c.arc(b.x,b.y,20+30*ease(k),0,7); c.stroke(); return true; });
+  // partículas
+  G.parts = G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+  // chispas que vuelan al contador
+  G.flyers = G.flyers.filter(f=>{ const k=(now-f.t)/700; if (k<0) return true; if (k>=1) return false; const e=ease(k), x=f.from[0]+(300-f.from[0])*e, y=f.from[1]+(44-f.from[1])*e-Math.sin(k*Math.PI)*60; c.drawImage(glow(M.trail),x-12,y-12,24,24); return true; });
+  c.globalCompositeOperation='source-over';
+  drawHud(c, now); drawText(c, now);
+  if (G.banner) drawBanner(c, now);
+  requestAnimationFrame(frame);
+}
+function pill(c,x,y,t,col){ c.font='600 13px Fredoka, sans-serif'; const w=c.measureText(t).width+22; c.fillStyle='rgba(20,17,46,.85)'; c.beginPath(); c.roundRect(x,y,w,26,13); c.fill(); c.strokeStyle='#3A2E78'; c.lineWidth=1; c.stroke(); c.fillStyle=col; c.textAlign='left'; c.textBaseline='middle'; c.fillText(t,x+11,y+13.5); return w; }
+function drawHud(c){
+  if (G.state==='title') return;
+  const M=MODES[G.mode]; let x=16; x+=pill(c,x,30,M.icon+' '+M.name,'#FFC94A')+8; pill(c,x,30,(G.mode==='marcha'?'Últimas ':'')+G.need+' luces','#7FD8FF');
+  for (let i=0;i<3;i++){ c.fillStyle=i<G.lives?'#FFF6E0':'rgba(255,255,255,.18)'; c.beginPath(); c.arc(W-60+i*18,43,6,0,7); c.fill(); }
+  c.font='700 22px Fredoka, sans-serif'; c.textAlign='right'; c.fillStyle='#FFFFFF'; c.fillText(String(G.score),W-18,84);
+  c.font='600 12px Nunito, sans-serif'; c.fillStyle='#ABA5D2'; c.fillText('luces recordadas',W-18,102);
+}
+function drawText(c, now){
+  c.textAlign='center'; c.textBaseline='alphabetic';
+  if (G.state==='title'){
+    c.fillStyle='#FFFFFF'; c.font='700 38px Fredoka, sans-serif'; c.fillText('Rastro de luz',CX,96);
+    c.fillStyle='#D9D4F5'; c.font='600 17px Nunito, sans-serif'; c.fillText('Mira el camino de la chispa',CX,128); c.fillText('y repítelo deslizando el dedo',CX,150);
+    button(c,'Jugar'); return;
+  }
+  if (G.state==='end'){
+    c.fillStyle='rgba(2,3,15,.72)'; c.fillRect(0,0,W,H);
+    c.fillStyle='#FFFFFF'; c.font='700 30px Fredoka, sans-serif'; c.fillText('Tu rastro de hoy',CX,150);
+    let y=210; const rows=Object.keys(MODES).filter(m=>G.seen[m]||G.best[m]);
+    let low=null; rows.forEach(m=>{ if (low===null || (G.best[m]||0)<(G.best[low]||0)) low=m; });
+    rows.forEach(m=>{ c.font='600 18px Fredoka, sans-serif'; c.textAlign='left'; c.fillStyle='#EDEAFB'; c.fillText(MODES[m].icon+'  '+MODES[m].name,48,y);
+      c.textAlign='right'; c.fillStyle='#FFC94A'; c.fillText((G.best[m]||'—')+' luces',W-48,y);
+      if (rows.length>1 && m===low){ c.font='600 13px Nunito, sans-serif'; c.fillStyle='#FF9F7A'; c.fillText('el que más te costó',W-48,y+18); }
+      y+=48; });
+    c.textAlign='center'; c.font='600 14px Nunito, sans-serif'; c.fillStyle='#ABA5D2'; c.fillText('Medida de esta partida. No es un diagnóstico.',CX,y+14);
+    button(c,'Jugar de nuevo'); return;
+  }
+  c.fillStyle='#FFFFFF'; c.font='600 20px Fredoka, sans-serif'; c.fillText(G.rule,CX,566);
+  if (G.sub){ c.fillStyle='#ABA5D2'; c.font='600 14px Nunito, sans-serif'; c.fillText(G.sub,CX,590); }
+}
+function button(c,t){ c.fillStyle='#FFC94A'; c.beginPath(); c.roundRect(40,556,W-80,58,18); c.fill(); c.fillStyle='#3A2600'; c.font='700 20px Fredoka, sans-serif'; c.fillText(t,CX,593); }
+function drawBanner(c, now){
+  const k=Math.min(1,(now-G.banner.t)/400), M=MODES[G.banner.mode];
+  c.globalAlpha=reduce?1:ease(k); c.fillStyle='rgba(2,3,15,.78)'; c.fillRect(0,0,W,H);
+  c.drawImage(glow(M.sky),CX-120,170,240,240);
+  c.textAlign='center'; c.fillStyle='#FFC94A'; c.font='700 16px Fredoka, sans-serif'; c.fillText('¡NUEVO!',CX,230);
+  c.fillStyle='#FFFFFF'; c.font='700 64px Fredoka, sans-serif'; c.fillText(M.icon,CX,312);
+  c.font='700 30px Fredoka, sans-serif'; c.fillText(M.name,CX,368);
+  c.fillStyle='#D9D4F5'; c.font='600 16px Nunito, sans-serif';
+  c.fillText({reves:'De la última luz a la primera',gira:'El cielo da un giro: sigue a tus luceros',marcha:'Repite solo las últimas luces'}[G.banner.mode],CX,400);
+  c.globalAlpha=1;
+}
+requestAnimationFrame(frame);
+
+document.getElementById('modes').addEventListener('click', e=>{ const b=e.target.closest('.mode'); if (!b) return; pick=b.dataset.mode; document.querySelectorAll('.mode').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); G.state='title'; G.mode = pick==='partida'?'base':pick; G.angle=0; G.fixed=[]; G.marks={}; G.trail=[]; });
+document.getElementById('snd').addEventListener('click', e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',String(soundOn)); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+const rmb=document.getElementById('rm'); rmb.setAttribute('aria-pressed',String(reduce)); rmb.addEventListener('click',()=>{ reduce=!reduce; rmb.setAttribute('aria-pressed',String(reduce)); });
+</script>
