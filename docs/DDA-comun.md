@@ -2,7 +2,7 @@
 
 Estado: implementado en Unity el 24-sep-2026 (`Assets/Scripts/Games/AdaptiveDifficulty.cs`), conectado a
 Stroop, Comparación, Cambio de Chip, Ruta del Tesoro, Detective de Series, Cálculo Sereno y Anagramas. El 3-oct
-se sumaron Secuencia Lumínica y Parejas Ocultas (ver §6): **los 23 juegos usan el motor común** (Piloto y Correo
+se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (ver §6): **los 23 juegos usan el motor común** (Piloto y Correo
 con dos instancias; Freno solo en la tarea de ir).
 
 > **Alcance y honestidad**: esto es un diseño de ingeniería inspirado en literatura psicométrica y de
@@ -67,7 +67,7 @@ Parámetros por juego:
 | Anagramas | 7 | 0.35 | edad | no |
 | Ruta del Tesoro | 12 | 0.50 (por ruta) | 0.70 (perder la ruta cuesta una vida) | no |
 | Parejas Ocultas | 10 | 0.15 | edad | Reto |
-| Secuencia Lumínica | 16 | 0.25 | edad | no |
+| Rastro de luz (id `secuencia`) | 16 | 0.25 adultos · 0.17 mayores · 0.22 menores de 18 (ver §6) | edad | no |
 
 ## 4. Verificación
 
@@ -114,24 +114,23 @@ que se dice abajo.
 - Parte del rating guardado o, sin dato, del nivel elegido (antes siempre empezaba en el tablero de 2 parejas).
 - `stepUp` 0,15 por pareja (≈7 aciertos por nivel; la bajada por error es 0,60 con objetivo 0,80).
 
-**Secuencia Lumínica** (`SequenceDifficulty`): los **16 niveles** de `SequenceLevelDatabase` (cuadrícula, largo,
-velocidad y distractores de cada nivel) son la escalera.
-- Ensayo = cada secuencia completa (acierto si la repite entera bien). **Tiempo de reacción: no se usa**
-  (`useReaction: false`). Es una tarea de capacidad de memoria, no de velocidad; el tiempo entre toques depende del
-  largo de la secuencia y de recordar el primer toque, y premiar la rapidez empujaría a apurarse. El promedio entre
-  toques sigue yendo al puntaje (bono de velocidad) y a `average_response_time_ms`.
-- `stepUp` 0,25 por secuencia: con objetivo 0,80 la bajada por error es 1,0 nivel, justo el tope por error del
-  motor (`MaxDropPerError`); en mayores el tope hace que el equilibrio quede en ≈0,82 en vez de 0,85.
-- **Vidas**: se mantienen las 3 como forma de terminar la partida (es lo que ve la persona), pero ya NO deciden la
-  dificultad: se quitó el «+200 ms al ritmo de la siguiente secuencia» después de un error. El texto «Perdiste una
-  vida · vamos más despacio» solo sale si el nivel que verá la persona de verdad bajó; si no, dice «Perdiste una vida».
-  El aviso «¡Nivel N!» sale cuando el motor sube de nivel.
-- Evaluación inicial («Tu punto de partida»): ya no tiene escalera propia (antes partía del nivel 3 y cada acierto
-  subía un nivel). Usa el motor con calibración rápida, parte del medio de la escala y termina a las 3 vidas o a las
-  12 secuencias; su medida es `end_rating`, igual que Stroop y Comparación en la misma evaluación.
-- Telemetría: `SequenceTelemetry` agrega `end_rating`, `mode_trials` y `mode_hits`; `peak_level` se mantiene.
-  La app (`NativeReceiver.parseSequenceResult`) usa `end_rating` y solo cae a `ratingFromSequencePeak(peak_level)`
-  si falta (Unity viejo).
+**Rastro de luz** (id `secuencia`; antes Secuencia Lumínica; `RastroContract` + `RastroLadder`, rehecha el 3-oct, `docs/diseno-rastro-de-luz.md`):
+los **16 niveles** de `RastroLadder` son la escalera (qué familias hay, cuántas luces pide cada una, velocidad de la chispa, espera, giro y
+cruces; misma escala que la Secuencia anterior, así que el rating guardado de 0 a 1 conserva su sentido).
+- Ensayo = cada ronda completa (acierto si repite entero el camino). **Tiempo de reacción: no se usa** (`useReaction: false`): es capacidad de
+  memoria, no velocidad.
+- **`stepUp` por edad** (`RastroContract.StepUp`): adultos **0,25** (con objetivo 0,80 baja 1,0 por error, justo el tope `MaxDropPerError`),
+  mayores **0,17** y menores de 18 **0,22**. El motor multiplica el paso por 0,85 en mayores (y 1,1 en menores de 18) y baja `paso · p/(1−p)` por
+  error con tope 1,0: con 0,25 en mayores bajaba 1,0 por error (el tope se activaba) y el equilibrio quedaba en ≈0,82; con 0,17 baja 0,82
+  y converge a ≈0,85 (simulación con un usuario logístico: mayores 0,82 → 0,84 medido, adultos 0,79; la diferencia con el 0,85 teórico la
+  ponen el bono anti-aburrimiento y la bajada extra por dos errores seguidos, que son comunes a todos los juegos). La prueba
+  `StepUp_NeverHitsTheDropCap_SoTheTargetIsReached` fija que el tope no se active y `Simulation_Senior_ConvergesTowardTheTarget0_85` lo mide.
+- **Vidas**: 3, solo terminan la partida; no deciden la dificultad.
+- Arranque: el rating guardado; sin dato (primera vez) y en la **evaluación inicial**, nivel 2 (1 en mayores), solo el rastro simple, hasta
+  2 errores o ~75 s; la medida es `end_rating` (lo lee `data/Baseline.kt`).
+- La **ronda guiada del tutorial** (`RastroSession.GuidedRound`) no pasa por el motor: no es un ensayo, no mueve el rating ni las vidas ni la
+  telemetría (`TheGuidedRound_LeavesNoTraceInTheDdaTheTallyOrTheLives`).
+- Telemetría: `SequenceTelemetry` conserva `end_rating`, `peak_level`, `mode_trials` y `mode_hits` y agrega `ras_*` (ver la ficha técnica del documento).
 
 **La app**: `OWN_ENGINE_GAMES` se borró (el repositorio siembra y retoma el rating de los dos como el de todos);
 `Skill.kt` quitó `ownTarget` de Secuencia (el objetivo es el de la edad; Ruta del Tesoro queda con 0,70) y la sumó
@@ -147,7 +146,7 @@ a los juegos de rondas largas (un Desafío pide 6 rondas, no 12 ensayos). `parse
 - Parejas nunca guardó rating (su telemetría no traía `end_rating`; `ddaRating` quedó en −1): la primera partida
   nueva lo crea y, hasta entonces, parte del nivel elegido más la maestría.
 
-**Pruebas**: `CardsDifficultyTests` y `SequenceDifficultyTests` (EditMode): escalera y niveles, convergencia
+**Pruebas**: `CardsDifficultyTests` y `RastroLadderTests` / `RastroSessionTests` (EditMode): escalera y niveles, convergencia
 al objetivo con un usuario simulado, techo y piso de modo, partida desde un rating guardado, el error por tiempo
 agotado, la evaluación y `end_rating` en la telemetría. Kotlin: `MemoryTelemetryTest` (lectura con y sin
 `end_rating`) y `MemoryGamesRatingTest` (guardado, suavizado y retomado del rating de los dos juegos).

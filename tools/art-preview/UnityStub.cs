@@ -35,9 +35,17 @@ public struct Color { public float r,g,b,a;
   public Color(float r,float g,float b,float a=1f){this.r=r;this.g=g;this.b=b;this.a=a;}
   public static Color white => new Color(1,1,1,1);
   public static Color Lerp(Color x, Color y, float t){ t=Mathf.Clamp01(t); return new Color(x.r+(y.r-x.r)*t,x.g+(y.g-x.g)*t,x.b+(y.b-x.b)*t,x.a+(y.a-x.a)*t);} }
-public struct Color32 { public byte r,g,b,a; public Color32(byte r,byte g,byte b,byte a){this.r=r;this.g=g;this.b=b;this.a=a;}
+public struct Color32 { public byte r,g,b,a;
+  public static implicit operator Color(Color32 c) => new Color(c.r/255f,c.g/255f,c.b/255f,c.a/255f); public Color32(byte r,byte g,byte b,byte a){this.r=r;this.g=g;this.b=b;this.a=a;}
   public static implicit operator Color32(Color c) => new Color32((byte)(Mathf.Clamp01(c.r)*255f+0.5f),(byte)(Mathf.Clamp01(c.g)*255f+0.5f),(byte)(Mathf.Clamp01(c.b)*255f+0.5f),(byte)(Mathf.Clamp01(c.a)*255f+0.5f)); }
-public struct Vector2 { public float x,y; public Vector2(float x,float y){this.x=x;this.y=y;} }
+public struct Vector2 { public float x,y; public Vector2(float x,float y){this.x=x;this.y=y;}
+  public float sqrMagnitude => x*x+y*y; public float magnitude => Mathf.Sqrt(sqrMagnitude);
+  public static Vector2 operator +(Vector2 a, Vector2 b) => new Vector2(a.x+b.x,a.y+b.y);
+  public static Vector2 operator -(Vector2 a, Vector2 b) => new Vector2(a.x-b.x,a.y-b.y);
+  public static Vector2 operator *(Vector2 a, float k) => new Vector2(a.x*k,a.y*k);
+  public static Vector2 operator *(float k, Vector2 a) => new Vector2(a.x*k,a.y*k);
+  public static float Distance(Vector2 a, Vector2 b) => (a-b).magnitude;
+  public static float Dot(Vector2 a, Vector2 b) => a.x*b.x+a.y*b.y; }
 public struct Vector4 { public float x,y,z,w; public Vector4(float x,float y,float z,float w){this.x=x;this.y=y;this.z=z;this.w=w;} }
 public struct Rect { public Rect(float x,float y,float w,float h){} }
 public enum TextureFormat { RGBA32 } public enum TextureWrapMode { Clamp, Repeat } public enum FilterMode { Bilinear, Point }

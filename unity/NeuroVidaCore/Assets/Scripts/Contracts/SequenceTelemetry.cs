@@ -44,5 +44,17 @@ namespace NeuroVida.Contracts
         /// <summary>Secuencias y aciertos DESPUÉS del calentamiento, para decidir si un Desafío o un Experto se superó.</summary>
         public int mode_trials;
         public int mode_hits;
+
+        // ---- Solo Rastro de luz (id «secuencia», Games/Secuencia/Rastro*): cuatro familias en este orden: 0 el rastro, 1 al revés,
+        // 2 el cielo gira, 3 en marcha. Listas vacías / -1 = partida de una versión vieja (la app no las muestra).
+        /// <summary>Mejor largo repetido bien por familia (0 = ninguno). En «en marcha» cuenta las luces pedidas.</summary>
+        public int[] ras_best_len;
+        /// <summary>Rondas jugadas y aciertos por familia (la ronda guiada del tutorial no cuenta).</summary>
+        public int[] ras_rounds;
+        public int[] ras_hits;
+        /// <summary>Familias que aparecieron en la partida (bits: 1 rastro, 2 al revés, 4 gira, 8 en marcha) y las que se
+        /// desbloquearon por primera vez en esta partida (mismos bits).</summary>
+        public int ras_modes_seen = -1;
+        public int ras_new_modes = -1;
     }
 }

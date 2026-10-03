@@ -29,6 +29,9 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para el smoke test headless: simula "quitar animaciones" del teléfono (<c>reduce_motion</c> de la config).</summary>
         public static bool ReduceMotionOverride;
 
+        /// <summary>Solo para el smoke test headless: arranca el juego con su tutorial guiado (<c>show_tutorial</c> de la config).</summary>
+        public static bool ShowTutorialOverride;
+
         private void Start()
         {
 #if UNITY_EDITOR
@@ -45,7 +48,7 @@ namespace NeuroVida.Bridge
             var config = new SequenceInitConfig
             {
                 user_id = "editor_playtest",
-                game_id = string.IsNullOrEmpty(GameIdOverride) ? SequenceGameController.GameId : GameIdOverride,
+                game_id = string.IsNullOrEmpty(GameIdOverride) ? RastroGameController.GameId : GameIdOverride,
                 config = new SequenceConfigDetails
                 {
                     level = level,
@@ -53,7 +56,8 @@ namespace NeuroVida.Bridge
                     timed = timed,
                     age_band = ageBand,
                     sound_enabled = true,
-                    reduce_motion = ReduceMotionOverride
+                    reduce_motion = ReduceMotionOverride,
+                    show_tutorial = ShowTutorialOverride
                 }
             };
 

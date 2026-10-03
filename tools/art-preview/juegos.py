@@ -105,26 +105,6 @@ def ruta(raw):
     return im
 
 
-def secuencia(raw):
-    im = night(2)
-    d = ImageDraw.Draw(im)
-    title(d, 'Secuencia Lumínica')
-    pal = [tuple(float(v) for v in l.split()) for l in open(f'{raw}/palette.txt')]
-    tile = load(f'{raw}/tile.raw')
-    n, cell = 3, 150
-    x0, y0 = (W - n * cell) / 2, 300
-    lit = 4
-    for i in range(n * n):
-        cx, cy = x0 + (i % n + 0.5) * cell, y0 + (i // n + 0.5) * cell
-        c = pal[i]
-        rgb = tuple(int(v * 255) for v in (c[3:] if i == lit else c[:3]))
-        if i == lit:
-            glow(im, cx, cy, cell * 0.62, rgb, 150)
-        put(im, tinted(tile, rgb), cx, cy, cell)
-        put(im, load(f'{raw}/glyph_{i}.raw'), cx, cy - cell * 0.03, cell * 0.46)
-    return im
-
-
 def comparacion(raw):
     im = night(3)
     glow(im, 20, 900, 200, (0x4C, 0xC9, 0xF0), 50)
@@ -311,7 +291,7 @@ def main():
     ap.add_argument('raw')
     ap.add_argument('--out', default=ROOT + '/docs/previews')
     a = ap.parse_args()
-    panels = [ruta(a.raw), secuencia(a.raw), comparacion(a.raw), series(a.raw)]
+    panels = [ruta(a.raw), comparacion(a.raw), series(a.raw)]
     gap = 24
     sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
     for i, p in enumerate(panels):

@@ -3,8 +3,8 @@ using UnityEngine;
 namespace NeuroVida.Games.Secuencia
 {
     /// <summary>
-    /// Color/tono de cada ficha por ÍNDICE (la grilla puede tener 4, 6, 9, 12 o 16
-    /// fichas según el nivel, ver <see cref="SequenceLevelDatabase"/>).
+    /// Color/tono de cada ficha por ÍNDICE (hasta 16 fichas; hoy lo usa Ruta del Tesoro: Rastro de luz tiene sus propios
+    /// colores y notas, <see cref="RastroBoard"/>).
     ///
     /// Colores: paleta curada de 16 tonos vívidos y bien separados entre sí (las primeras
     /// cuatro fichas son azul / rojo / ámbar / verde, el clásico de los juegos de secuencia),

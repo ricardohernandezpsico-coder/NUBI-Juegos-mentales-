@@ -633,6 +633,56 @@ fun GameResultScreen(
       }
     }
 
+    // Rastro de luz (pantalla final, docs/diseno-rastro-de-luz.md §6): "tu rastro" (cifra grande: las luces más largas que repetiste bien en el
+    // rastro simple), "por modo" (al revés, el cielo gira y en marcha, cada uno con 3 rondas o más; el de menos aciertos marcado con TEXTO «el que
+    // más te costó» y un truco), y la lectura en palabras. Sin recuadros ni percentiles; cada dato aparece UNA vez.
+    val rasRounds = result.rasRounds
+    if (rasRounds != null) {
+      val trail = com.example.data.Trail
+      val best = trail.bestTrail(result.rasBestLen)
+      val rows = trail.modeRows(rasRounds, result.rasHits)
+      Spacer(Modifier.height(14.dp))
+      Text("Tu rastro", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = trail.spoken(result.rasBestLen) },
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        if (best != null) {
+          Row(verticalAlignment = Alignment.Bottom) {
+            Text("$best", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
+            Text(
+              if (best == 1) "luz" else "luces", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+              modifier = Modifier.padding(start = 8.dp, bottom = 10.dp)
+            )
+          }
+          Text("las más largas que repetiste bien en el rastro simple", color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
+        } else {
+          Text(trail.noTrailLine(rasRounds), color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center)
+        }
+      }
+      trail.unlockedLine(result.rasNewModes)?.let {
+        Text(it, color = Clay.Lime, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp))
+      }
+      if (rows.isNotEmpty()) {
+        Spacer(Modifier.height(14.dp))
+        Text("Por modo", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 8.dp)) {
+          rows.forEach { row -> TrailModeBar(row, Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
+        }
+        rows.forEach { row ->
+          trail.modeLine(row.mode)?.let {
+            Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+          }
+        }
+        rows.firstOrNull { it.lowest }?.let { low ->
+          trail.trick(low.mode)?.let {
+            Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp))
+          }
+        }
+      }
+      Text(trail.WORKING_MEMORY, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp))
+    }
+
     // ¿Verdad o disparate? (pantalla final, maqueta docs/previews/disparate.png): "tu lectura con comprensión" (cifra grande de
     // palabras por minuto), "qué te frena" (barras por tipo de frase, la más lenta marcada con TEXTO además del color), "tu
     // precisión" y "tu mejor racha". Sin recuadros; nada de perfil de sesgo.
@@ -1027,7 +1077,8 @@ fun GameResultScreen(
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
-      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType
+      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
+      result.rasRounds
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1630,5 +1681,33 @@ private fun AtlasBar(row: com.example.data.Atlas.CategoryRow, modifier: Modifier
       Text("${row.hits} de ${row.seen}", color = color, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, softWrap = false)
       if (row.lowest) Text("la más baja", color = Clay.Coral, fontSize = 14.sp, fontWeight = FontWeight.Bold, softWrap = false)
     }
+  }
+}
+
+// ---------- Rastro de luz: "por modo" ----------
+
+/**
+ * Una fila de "por modo": el modo a la izquierda, una barra de aciertos y "4 de 5" a la derecha. El de menos aciertos va en coral Y con el texto
+ * «el que más te costó»: se distingue sin depender del color.
+ */
+@Composable
+private fun TrailModeBar(row: com.example.data.Trail.ModeRow, modifier: Modifier = Modifier) {
+  val color = if (row.lowest) Clay.Coral else Clay.Cream
+  Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+    Column(Modifier.width(150.dp)) {
+      Text(row.label, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+      if (row.lowest) Text("el que más te costó", color = Clay.Coral, fontSize = 14.sp, fontWeight = FontWeight.Bold, softWrap = false)
+    }
+    Canvas(Modifier.width(70.dp).height(11.dp)) {
+      val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+      drawRoundRect(Color(0x33FFFFFF), cornerRadius = r)
+      drawRoundRect(
+        if (row.lowest) Clay.Coral else Clay.Grape,
+        size = androidx.compose.ui.geometry.Size(maxOf(size.height, size.width * row.percent / 100f), size.height),
+        cornerRadius = r
+      )
+    }
+    Spacer(Modifier.weight(1f))
+    Text("${row.hits} de ${row.rounds}", color = color, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, softWrap = false)
   }
 }

@@ -341,6 +341,34 @@ dio Nubi se anotan ("Pistas de Nubi: N").
 Código: `Games/Cosecha/CosechaContract.cs` y `CosechaSession.cs` (reglas y medidas, con pruebas), `app/.../data/Harvest.kt` (lectura,
 con pruebas), rondas en `tools/cosecha/`.
 
+## Rastro de luz: "Tu rastro" y "Por modo"
+
+**Qué es la tarea.** Amplitud visoespacial con luz y sonido: una chispa recorre luceros de cristal (cada uno con su nota) y la persona repite el
+orden con el dedo. Es la familia de las tareas de bloques de Corsi (orden de lugares: Kessels et al., 2000). Sobre ella hay tres variantes: **al revés**
+(reordenar en la cabeza), **el cielo gira** (recordar el orden de los luceros aunque el tablero cambie de lugar; variante propia, no validada) y
+**en marcha** (la chispa recorre más luces de las que se piden y solo se repiten las últimas N: memoria «en marcha» o *running span*, que mide capacidad
+de memoria de trabajo y se relaciona con el razonamiento: Broadway y Engle, 2010).
+
+**De dónde sale cada medida.**
+- **Tu rastro.** Las luces más largas que se repitieron BIEN en el rastro simple de la partida (el mayor largo de una ronda acertada). Es la marca para ver su
+  evolución (más alto = mejor, comparable a ±1 nivel porque el largo depende del nivel de la escalera). Si no salió ningún rastro simple completo, no hay cifra:
+  se dice con calma y con un consejo («toca una luz a la vez»), sin culpa.
+- **Por modo.** Para al revés, el cielo gira y en marcha: aciertos de rondas por modo, solo con **3 rondas o más** (con menos no se dice nada). El de menor
+  tasa se marca con el TEXTO «el que más te costó» (además del color coral) y solo si hay dos o más modos y no empatan todos. Bajo las filas, una línea por
+  modo (qué pide: «Al revés pide reordenar en la cabeza: suele costar un poco más») y UN truco concreto para el que más costó.
+- **Lectura.** «Tu rastro mide tu memoria de trabajo: lo que usas para sostener unas pocas cosas en la cabeza mientras las necesitas, como un número de
+  teléfono hasta marcarlo». Y, si hubo, «Desbloqueaste un modo nuevo: …» (un dato, una sola vez).
+
+**Qué NO se dice.** Ningún percentil ni comparación con otras personas o con estudios (la condición no es comparable: luces, giro y sonido propios). No se
+dice que mida «tu memoria» como rasgo ni que entrene nada. Con pocas rondas es una pista, no un resultado: la nota común del pie lo recuerda. El límite
+real de la memoria a corto plazo ronda los 4 elementos (Cowan, 2001), por eso la escalera no pasa de 8 luces. La ronda guiada del tutorial no cuenta.
+
+**El ojo de la originalidad.** Lumosity tiene «Rotation Matrix» (una cuadrícula con un patrón que gira 90°). El nuestro es distinto (el orden de un camino, no un
+patrón; ángulos libres; luceros que suenan) y no se dice que «ninguna app gira». Lista del abogado: revisarlo antes de publicar.
+
+Código: `Games/Secuencia/RastroContract.cs`, `RastroSession.cs` (`RastroTally`) y `RastroBoard.cs` (reglas y medidas, con pruebas), `app/.../data/Trail.kt`
+(lectura, con pruebas), pantalla en `GameResultScreen`. Ficha técnica: `docs/diseno-rastro-de-luz.md`.
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -410,3 +438,11 @@ con pruebas), rondas en `tools/cosecha/`.
   *Brain and Cognition*, 8, 31–46.
 - Troyer, A. K., Moscovitch, M., y Winocur, G. (1997). Clustering and switching as two components of verbal fluency: evidence from
   younger and older healthy adults. *Neuropsychology*, 11, 138–146.
+- Kessels, R. P. C., van Zandvoort, M. J. E., Postma, A., Kappelle, L. J., y de Haan, E. H. F. (2000). The Corsi Block-Tapping Task: standardization and
+  normative data. *Applied Neuropsychology*, 7, 252–258. doi:10.1207/S15324826AN0704_8
+- Parmentier, F. B. R., Elford, G., y Maybery, M. T. (2005). Transitional information in spatial serial memory: path characteristics affect recall
+  performance. *Journal of Experimental Psychology: Learning, Memory, and Cognition*, 31, 412–427. doi:10.1037/0278-7393.31.3.412
+- Broadway, J. M., y Engle, R. W. (2010). Validating running memory span: measurement of working memory capacity and links with fluid intelligence.
+  *Behavior Research Methods*, 42, 563–570. doi:10.3758/BRM.42.2.563
+- Cowan, N. (2001). The magical number 4 in short-term memory: a reconsideration of mental storage capacity. *Behavioral and Brain Sciences*, 24, 87–114.
+  doi:10.1017/s0140525x01003922

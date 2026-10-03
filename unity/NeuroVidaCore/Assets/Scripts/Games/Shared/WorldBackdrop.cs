@@ -233,6 +233,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.09f), NebulaBPos = new Vector2(0.88f, 0.22f),
         };
 
+        /// <summary>Rastro de luz (cielo de cristal): el fondo C quieto, ~240 estrellas fijas (~30 titilan) y nebulosas lila, celeste y coral muy tenues
+        /// (la coral y el tinte de cada modo los suma el juego). Nada que se mueva solo: la chispa y los luceros son la tarea.</summary>
+        public static GameWorld CieloDeCristal => new GameWorld
+        {
+            Name = "Cielo de cristal", StaticSky = true, Stars = 240, TwinkleStars = 30,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.14f), NebulaAPos = new Vector2(0.17f, 0.72f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.12f), NebulaBPos = new Vector2(0.9f, 0.18f),
+        };
+
         public static GameWorld SkyLetters => new GameWorld
         {
             Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",

@@ -19,6 +19,13 @@ object UnityGameLauncher {
    *  (Intent nuevo con REORDER_TO_FRONT) y la app sabe a qué partida pertenece el resultado que vuelve. */
   const val EXTRA_LAUNCH_ID = "neurovida_launch_id"
 
+  /** Juegos con tutorial guiado (ronda guiada propia): al primero que se suma otro, se agrega acá. Rastro de luz fue el primero (3-oct). */
+  val TUTORIAL_GAMES = setOf("secuencia")
+
+  /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
+  fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =
+    gameId in TUTORIAL_GAMES && history.none { it.gameId == gameId }
+
   @JsonClass(generateAdapter = true)
   data class ConfigDetailsDto(
     val level: Int,
@@ -45,6 +52,8 @@ object UnityGameLauncher {
     // Cómo se eligió jugar (data/Skill.kt): techo (Suave) o piso (Desafío, Experto) sobre el rating 0..1; -1 = sin límite.
     // "Quitar animaciones" del teléfono: Unity apaga los adornos que se mueven solos (respiración, destellos).
     val reduce_motion: Boolean = false,
+    // Tutorial guiado común (Games/Shared/GuidedTutorial.cs): la persona nunca jugó este juego. Hoy solo Rastro de luz lo usa.
+    val show_tutorial: Boolean = false,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -79,8 +88,9 @@ object UnityGameLauncher {
     assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
     assessmentTotal: Int = 0,
     memory: com.example.data.MemoryLaunch? = null, // Bitácora de Misión: transmisión o informe de la misión del día
-    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, memory, mode)
+    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
+    forceTutorial: Boolean = false // solo las herramientas de prueba: abre el tutorial aunque la persona ya haya jugado
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, memory, mode, forceTutorial)
 
   private fun buildIntent(
     context: Context,
@@ -95,7 +105,8 @@ object UnityGameLauncher {
     assessmentStep: Int = 0,
     assessmentTotal: Int = 0,
     memory: com.example.data.MemoryLaunch? = null,
-    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
+    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
+    forceTutorial: Boolean = false
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
@@ -122,6 +133,7 @@ object UnityGameLauncher {
         reduce_motion = android.provider.Settings.Global.getFloat(
           context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         ) == 0f,
+        show_tutorial = forceTutorial || shouldShowTutorial(gameId, com.example.NeuroVidaApplication.instance.repository.gameHistory.value),
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f

@@ -30,7 +30,7 @@ object BaselinePlan {
 
   /** Los 3 juegos de la evaluación, en orden (ver la elección en CLAUDE.md; se puede cambiar acá). */
   val steps = listOf(
-    Step("secuencia", DomainType.MEMORIA, timed = false, measures = "Memoria: repite secuencias de luces cada vez más largas"),
+    Step("secuencia", DomainType.MEMORIA, timed = false, measures = "Memoria: repite caminos de luz cada vez más largos"),
     Step("stroop", DomainType.ATENCION, timed = true, measures = "Atención: responde a la tinta o a la palabra, según la regla"),
     Step("comparacion", DomainType.ATENCION, timed = true, measures = "Atención: elige el mayor lo más rápido que puedas")
   )
@@ -46,7 +46,7 @@ data class Baseline(
   val domains: Map<DomainType, Float>
 )
 
-/** Respaldo para versiones viejas de Unity: Secuencia Lumínica sin `end_rating` informa el nivel más alto alcanzado (1..16); se lleva a 0..1. */
+/** Respaldo para versiones viejas de Unity: Secuencia (hoy Rastro de luz) sin `end_rating` informa el nivel más alto alcanzado (1..16); se lleva a 0..1. */
 fun ratingFromSequencePeak(peakLevel: Int): Float = ((peakLevel - 1) / 15f).coerceIn(0f, 1f)
 
 /**

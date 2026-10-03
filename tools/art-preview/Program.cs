@@ -45,7 +45,19 @@ internal static class Program
         for (int i = 0; i < 6; i++) Dump("treasure_" + i, TreasureSprites.ForIndex(i));
         Dump("heart_full", HeartSprite.GetFull());
         Dump("heart_lost", HeartSprite.GetLost());
-        for (int i = 0; i < TileGlyphSprite.Count; i++) Dump("glyph_" + i, TileGlyphSprite.Get(i));
+        // Rastro de luz: los 9 luceros de cristal, el disco y el aro punteados, la ✗, los 4 íconos de modo, Nubi maestra del tutorial y el tablero
+        for (int i = 0; i < RastroBoard.Orbs; i++) Dump("rastro_orb_" + i, RastroSprites.Orb(i));
+        Dump("rastro_disc", RastroSprites.DottedDisc());
+        Dump("rastro_dashed", RastroSprites.DashedRing());
+        Dump("rastro_x", RastroSprites.XMark());
+        foreach (RastroMode m in RastroModes.All) Dump("rastro_icon_" + (int)m, RastroSprites.Icon(m));
+        Dump("nubi_maestra", NubiTeacherSprite.Get());
+        using (var f = File.CreateText(Path.Combine(dir, "rastro_board.txt")))
+            for (int i = 0; i < RastroBoard.Orbs; i++)
+            {
+                var p = RastroBoard.Base(i);
+                f.WriteLine(string.Join(" ", new[] { p.x.ToString(System.Globalization.CultureInfo.InvariantCulture), p.y.ToString(System.Globalization.CultureInfo.InvariantCulture), RastroBoard.Colors[i].ToString() }));
+            }
         Dump("count_star", CountStarSprite.Get());
         Dump("magnifier", MagnifierSprite.Get());
         Dump("tile", TileSprites.Get());

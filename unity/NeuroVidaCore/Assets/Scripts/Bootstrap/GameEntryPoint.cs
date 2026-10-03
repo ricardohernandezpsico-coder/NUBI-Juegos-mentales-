@@ -43,7 +43,7 @@ namespace NeuroVida.Bridge
     /// </summary>
     public class GameEntryPoint : MonoBehaviour
     {
-        [SerializeField] private SequenceGameController sequenceGameController;
+        [SerializeField] private RastroGameController rastroGameController;
         [SerializeField] private CardsGameController cardsGameController;
         [SerializeField] private StroopGameController stroopGameController;
         [SerializeField] private ComparisonGameController comparisonGameController;
@@ -167,19 +167,16 @@ namespace NeuroVida.Bridge
             NeuroVida.Games.AdaptiveDifficulty.ConfigureMode(config.config);
             switch (config.game_id)
             {
-                case SequenceGameController.GameId:
-                    if (sequenceGameController == null)
+                case RastroGameController.GameId:
+                    if (rastroGameController == null)
                     {
-                        // Sin wiring en el Editor todavía: se crea el controlador por
-                        // código, mismo criterio que el resto de la UI de este piloto
-                        // (ver nota en SequenceGameController). Una vez migrado a
-                        // prefab, asignar la referencia en el Inspector evita esto.
-                        var go = new GameObject("SequenceGameController");
+                        // Sin wiring en el Editor: el controlador se crea por código, como el resto de los juegos.
+                        var go = new GameObject("RastroGameController");
                         go.transform.SetParent(transform, false);
-                        sequenceGameController = go.AddComponent<SequenceGameController>();
+                        rastroGameController = go.AddComponent<RastroGameController>();
                     }
-                    sequenceGameController.gameObject.SetActive(true);
-                    sequenceGameController.StartSession(config);
+                    rastroGameController.gameObject.SetActive(true);
+                    rastroGameController.StartSession(config);
                     break;
                 case CardsGameController.GameId:
                     if (cardsGameController == null)

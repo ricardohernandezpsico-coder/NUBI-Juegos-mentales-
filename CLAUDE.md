@@ -35,7 +35,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Modos para iterar sin verificar todo cada vez: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 3-oct · dda común`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 3-oct · rastro`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -93,25 +93,26 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   → `viewModel.onReturnedFromGame`. Respaldo: broadcast `ACTION_GAME_FINISHED` → `UnityResultReceiver`;
   `UnityResultInbox` evita guardar dos veces. Pausa: Atrás en Unity abre menú de pausa; "Salir" vuelve con
   `paused = true` y la partida se retoma con el mismo launch id.
-- Telemetría: `NativeReceiver` elige el adaptador por `game_id` (Secuencia, Parejas, y `StroopTelemetry` para los demás);
+- Telemetría: `NativeReceiver` elige el adaptador por `game_id` (Secuencia = Rastro de luz, Parejas, y `StroopTelemetry` para los demás);
   los tres traen `end_rating`. Llama a `repository.recordGameResult` (devuelve `RecordOutcome`: nivel, ascensos, logros).
 
 **Unity** (`unity/NeuroVidaCore/Assets/Scripts/`, asmdefs `Contracts ← Bridge ← Games ← Bootstrap`):
 - `Bootstrap/`: `GameEntryPoint` (config, orientación vertical, Atrás), `LaunchIntentConfigReader` (lee el Intent,
   arranca/reinicia partidas por launch id). `Bootstrap/Editor/`: exportar librería, escena piloto, smoke tests,
   `SymbolPreviewExporter`.
-- `Contracts/`: `SequenceInitConfig` (config de entrada de TODOS los juegos), `SequenceTelemetry`, `CardsTelemetry`,
+- `Contracts/`: `SequenceInitConfig` (config de entrada de TODOS los juegos; lleva `show_tutorial`), `SequenceTelemetry` (Rastro de luz, con `ras_*`), `CardsTelemetry`,
   `StroopTelemetry` (salida común de casi todos; lleva `end_rating` y `peak_level`; `SequenceTelemetry` y `CardsTelemetry` llevan los mismos campos).
 - `Games/AdaptiveDifficulty.cs`: DDA común (up-down ponderado de Kaernbach hacia 80% de aciertos, 85% en mayores;
   ver `docs/DDA-comun.md`). Lo usan Tinta o Palabra (`Stroop/`), Comparación, Cambio de Chip, Ruta del Tesoro,
-  Series, Cálculo, Anagramas, **Secuencia** (escalera de 16 niveles, `SequenceDifficulty`, sin tiempo de reacción; las 3 vidas solo terminan la partida) y **Parejas** (escalera de 10 niveles, `CardsGameContract`); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Radar** y **Satélites** una, sin tiempo de reacción; **Freno de Emergencia** una para la tarea de ir (el alto tiene su escalera propia). Desde el 3-oct los 23 juegos usan el motor común.
+  Series, Cálculo, Anagramas, **Rastro de luz** (id `secuencia`: escalera de 16 niveles, `RastroLadder`/`RastroContract`, sin tiempo de reacción; las 3 vidas solo terminan la partida) y **Parejas** (escalera de 10 niveles, `CardsGameContract`); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Radar** y **Satélites** una, sin tiempo de reacción; **Freno de Emergencia** una para la tarea de ir (el alto tiene su escalera propia). Desde el 3-oct los 23 juegos usan el motor común.
 - Cada juego: `XContract.cs` (reglas puras con pruebas) + `XGameController.cs` (UI construida por código). Los 7 del
   DDA común heredan de `Shared/GameControllerBase` y usan `Shared/GameHud`.
 - `Games/Shared/`: sello visual y piezas comunes — `NeuroStyle` (paleta de la app, `ClayText`, `ClayFrame`),
   `ClayRaster` (pincel SDF para todo el arte en arcilla), `WorldBackdrop` (cielo + un elemento propio por juego),
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
   `GameFeel` (sonidos sintetizados y vibración), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
-  (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `LivesHud`, `PressScale`, sprites varios.
+  (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `LivesHud`, `PressScale`, sprites varios, y el **tutorial guiado común** (`GuidedTutorial` + `NubiTeacherSprite`;
+  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: Rastro de luz es el primero, cómo sumar otro en `docs/diseno-rastro-de-luz.md`).
 
 ## Juegos (índice)
 
@@ -122,7 +123,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 | Juego | id | Área | Carpeta Unity | Documento (ficha técnica) | Lectura en la app (`data/`) |
 |---|---|---|---|---|---|
 | Parejas Ocultas | `parejas` | Memoria | `Games/Parejas/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
-| Secuencia Lumínica | `secuencia` | Memoria | `Games/Secuencia/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
+| Rastro de luz (antes Secuencia Lumínica) | `secuencia` | Memoria | `Games/Secuencia/` | [docs/diseno-rastro-de-luz.md](docs/diseno-rastro-de-luz.md) | `Trail.kt` |
 | Ruta del Tesoro | `rutatesoro` | Memoria | `Games/RutaTesoro/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
 | Bitácora de Misión | `bitacora` | Memoria | `Games/Bitacora/` | [docs/juegos/bitacora.md](docs/juegos/bitacora.md) | `MissionLog.kt` |
 | Rumbo a Casa | `rumbo` | Memoria | `Games/Rumbo/` | [docs/juegos/rumbo.md](docs/juegos/rumbo.md) | `Homing.kt` |
@@ -201,11 +202,11 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 211 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 232 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 283 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad) + 23 smoke tests.
+- Unity EditMode: 339 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz) + 24 arranques de smoke (los 23 juegos y el tutorial de Rastro de luz: `--juegos Tutorial`).
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
 - Rondas de Cosecha de palabras: 17 pruebas en `tools/cosecha/test_rondas.py` (`python -m unittest test_rondas`, desde `tools/cosecha`; ~70 s;
   con `COSECHA_REGENERAR=1` reconstruye todo desde las fuentes). Diseño aprobado en `docs/diseno-cosecha-de-palabras.md`.
@@ -221,7 +222,7 @@ Qué sigue de juegos y orden: [docs/hoja-de-ruta.md](docs/hoja-de-ruta.md).
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
-  re-chequeo mensual del punto de partida; tutorial de primera vez por juego; marca ✓/✗ de arcilla sobre la
+  re-chequeo mensual del punto de partida; tutorial guiado en los otros 22 juegos (la pieza común ya está); marca ✓/✗ de arcilla sobre la
   respuesta; calibrar el DDA y la referencia de percentiles con datos.
 - Para el final: i18n completo (hoy `ui/i18n/AppStrings` cubre solo algunos textos); `applicationId` propio
   (cambiarlo = app nueva); `metadata.json` de AI Studio; firma release y Play Store; servidores.

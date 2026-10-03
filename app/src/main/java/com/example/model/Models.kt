@@ -68,12 +68,13 @@ object GameRegistry {
       iconEmoji = "🃏"
     ),
     GameDefinition(
+      // El id «secuencia» se mantiene (avance, marcas e historial); el nombre visible es el del juego rehecho (3-oct).
       id = "secuencia",
-      title = "Secuencia Lumínica",
+      title = "Rastro de luz",
       domain = DomainType.MEMORIA,
-      subtitle = "Memoria secuencial a corto plazo",
-      instruction = "Mira el orden en que se encienden las fichas y repítelo tocándolas en el mismo orden.",
-      iconEmoji = "💡"
+      subtitle = "Memoria de trabajo visoespacial",
+      instruction = "Mira el camino que hace la chispa entre los luceros y repítelo con el dedo, en el mismo orden. Cada lucero suena con su nota.",
+      iconEmoji = "🔮"
     ),
     GameDefinition(
       id = "rutatesoro",
@@ -399,7 +400,15 @@ data class GamePlayResult(
   val intrNewPlates: List<String>? = null,
   val intrReviewNew: List<String>? = null,
   val intrReviewDone: List<String>? = null,
-  val intrNamed: List<String>? = null
+  val intrNamed: List<String>? = null,
+  // Solo Rastro de luz (id «secuencia»): por familia (4: el rastro, al revés, el cielo gira, en marcha) el mejor largo repetido bien (0 = ninguno),
+  // las rondas y los aciertos (la ronda guiada del tutorial no cuenta), qué familias aparecieron y cuáles se desbloquearon por primera vez en
+  // la partida (bits: 1 rastro, 2 al revés, 4 gira, 8 en marcha). La lectura está en data/Trail.kt. No se guardan en Room.
+  val rasBestLen: List<Int>? = null,
+  val rasRounds: List<Int>? = null,
+  val rasHits: List<Int>? = null,
+  val rasModesSeen: Int? = null,
+  val rasNewModes: Int? = null
 )
 
 data class DailySessionState(

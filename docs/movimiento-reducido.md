@@ -45,7 +45,7 @@ Con «quitar animaciones» activo:
 | `GameControllerBase.AnimateResult` | Panel con fundido de opacidad y puntaje final de una vez (sin rebote ni cuenta). |
 | `FinishCurtain` | «¡Listo!» y subtítulo con fundido, sin chispas, rebote ni hiperespacio; misma duración (≈1,2 s). |
 | `PressScale` | No escala; el botón se oscurece 20 % mientras está apretado y vuelve a su color al soltar (la ficha hundida sigue igual). |
-| `UiKit.PopRect`, `UiKit.PopIn` | Sin animación: la escala queda en 1. (Los usan casi todos los juegos: cubre muchos «pops» de golpe; Secuencia tiene un `PopRect` propio (cubierto aparte).) |
+| `UiKit.PopRect`, `UiKit.PopIn` | Sin animación: la escala queda en 1. (Los usan casi todos los juegos: cubre muchos «pops» de golpe.) |
 | `ExitButton`, `PauseMenu` | (Agregados: también eran comunes.) El botón aparece a su tamaño; el menú entra solo con fundido. |
 
 Además: `GameClock.SimulatedDeltaTime` y `GameClock.RealDeltaTime` (solo para que las pruebas EditMode puedan avanzar las corrutinas).
@@ -70,7 +70,7 @@ Además: `GameClock.SimulatedDeltaTime` y `GameClock.RealDeltaTime` (solo para q
 | `CambioChip/ChipGameController.cs:240` `PulseArenaBorder` (**hallazgo nuevo de la Fase B**) | El borde de la arena late 2 veces hacia blanco (mezcla 0,85) al cambiar de regla, 0,22 s cada pulso | 4,5 Hz | **Arreglado (todos los modos)**: pulsos de 0,34 s (≈ 2,9 Hz) y mezcla 0,6. Con ReduceMotion, tinte fijo sin latido ni escala. |
 
 Revisados y sin problema (≤ 2,2 Hz): `Cosecha:759` (2,2 Hz, solo con palabra rápida), `Correo:824`, `Trafico:711/749` (1,4 Hz), `Bitacora:521`, `Intrusa:1106`, el fondo y las estrellas (≤ 0,5 Hz).
-Los destellos de acierto/error de pantalla completa son de UN solo pulso por respuesta (alfa ≤ 0,14: un velo suave); no hacen falta cambios. Secuencia usa su propio destello (alfa 0,16): con ReduceMotion se limita a 0,15 y ≤ 0,2 s.
+Los destellos de acierto/error de pantalla completa son de UN solo pulso por respuesta (alfa ≤ 0,14: un velo suave); no hacen falta cambios.
 
 ## La app (Compose) — qué hice (A4)
 
@@ -101,25 +101,29 @@ Los destellos de acierto/error de pantalla completa son de UN solo pulso por res
 
 Columnas: **Clase** = ESENCIAL / DECORATIVA / DECORATIVA (comunica) / DUDA. **Resp.** = si hoy respeta ReduceMotion («sí (común)» = ya lo
 cubre un componente de la sección anterior). El **cambio** es el de la regla. Las líneas son de hoy (3-oct). Lo de `FloatText` (los «+puntos»
-que suben) es una función propia en cada juego. Secuencia tiene un `PopRect` propio y Bitácora y Tráfico un `PopInDelayed` propio: no se
+que suben) es una función propia en cada juego. Bitácora y Tráfico tienen un `PopInDelayed` propio: no se
 benefician de los componentes comunes en eso.
 
 Lo clasifiqué leyendo las líneas clave y el comentario de cada rutina, no cada corrutina completa: donde dudé, la fila dice DUDA.
 
 ### Memoria
 
-**Secuencia Lumínica** — `Secuencia/SequenceGameController.cs`
+**Rastro de luz** (antes Secuencia Lumínica) — `Secuencia/RastroGameController.cs` (rehecho el 3-oct; docs/diseno-rastro-de-luz.md §7)
 
-| Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
-|---|---|---|---|---|---|
-| 880 `AnimateTilesIn` | Las fichas entran con rebote elástico escalonado | DECORATIVA | no | Aparecen a escala 1 (fundido 160 ms) | ✓ |
-| 905 `AnimateTilesOut` | Las fichas se encogen en 0,2 s al cambiar la grilla | DECORATIVA | no | Cambio inmediato | ✓ |
-| 924 `CelebrateWave` | Ola de pulsos (escala +10 %, brillo) al acertar | DECORATIVA (comunica) | no | Sin escala; tinte de color 160 ms y vuelta | ✓ |
-| 693 `PopRect` (copia propia) | Pop de los puntos de avance | DECORATIVA | no | Usar `UiKit.PopRect` o solo el color | ✓ |
-| 980 `AnimateTileGlow` | La ficha se enciende (color + resplandor) y crece 1,08 | Color y resplandor ESENCIAL (es la secuencia); escala DECORATIVA | no | Mantener color y resplandor; quitar la escala | ✓ |
-| 1011 `FlashTileError` | Ficha en rojo y tambaleo ±8° | Rojo comunica; tambaleo DECORATIVA | no | Quitar la rotación; el rojo se queda | ✓ |
-| 1101 `FlashFeedback` | Destello de pantalla alfa 0,16 en 0,43 s (copia propia) | DECORATIVA (comunica) | no | Alfa ≤ 0,15 y ≤ 0,2 s | ✓ |
-| 358 / 383 / 967 | `SparkBurst`, `Shake`, `RingBurst` | DECORATIVA | sí (común) | — | — |
+| Qué | Qué hace | Clase | Con «quitar animaciones» |
+|---|---|---|---|
+| Vuelo de la chispa de lucero en lucero | Muestra el orden del camino | ESENCIAL (es la tarea) | Se queda; en línea recta en vez de curva; misma velocidad y misma espera en cada lucero (`Motion.Hold`) |
+| Curva del vuelo, partículas de la chispa y del dedo | Adorno | DECORATIVA | Sin curva ni partículas |
+| Rastro de la chispa | Estela que se angosta y se apaga en ~1,5 s | DECORATIVA (comunica el camino) | Tramos rectos entre luceros que aparecen con un fundido de 300 ms |
+| Cinta del dedo | Estela de luz que se apaga en 0,7 s | DECORATIVA | Sin cinta libre; quedan los tramos rectos acertados (fundido 300 ms) |
+| Florecimiento del lucero | Anillo que se expande 650 ms | DECORATIVA (comunica) | Aro fijo que se apaga (sin crecer) |
+| Respiración de los luceros y titileo | Adorno | DECORATIVA | Quietos |
+| Vuelo de las chispas al contador | Premio de la ronda | DECORATIVA | El contador sube de una vez |
+| **El cielo gira** | El tablero gira 60° a 180° y se repite sobre los mismos luceros | ESENCIAL (es la tarea) | **Se queda**, lineal (sin aceleración) y de 1,5 s |
+| Pantalla «¡NUEVO!» | Aviso de un modo nuevo | DECORATIVA (comunica) | Aparece con un fundido corto; misma duración (2,3 s o un toque) |
+| Tutorial (`GuidedTutorial`) | Tarjeta de Nubi y ronda guiada | — | Solo fundidos; el aro de ayuda no gira |
+
+Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 
 **Parejas Ocultas** — `Parejas/CardsGameController.cs`
 

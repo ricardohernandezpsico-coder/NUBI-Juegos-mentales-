@@ -16,10 +16,17 @@ import com.example.model.AgeBand
 import com.example.viewmodel.NeuroVidaViewModel
 
 /** Un juego de Unity lanzado suelto desde las herramientas de prueba (sin sesión: la partida solo se guarda). */
-private data class DebugGame(val id: String, val label: String, val level: Int, val timed: Boolean)
+private data class DebugGame(
+  val id: String, val label: String, val level: Int, val timed: Boolean,
+  /** Abre el juego con su tutorial guiado aunque ya se haya jugado (para ver el flujo de «primera vez» sin borrar nada). */
+  val tutorial: Boolean = false,
+  val tag: String = id
+)
 
 private val DebugGames = listOf(
-  DebugGame("secuencia", "Secuencia Lumínica", level = 1, timed = false),
+  DebugGame("secuencia", "Rastro de luz (Reto 90 s)", level = 1, timed = true),
+  DebugGame("secuencia", "Rastro de luz (Precisión, 14 rondas)", level = 1, timed = false, tag = "secuencia_precision"),
+  DebugGame("secuencia", "Rastro de luz con tutorial (como la primera vez)", level = 1, timed = false, tutorial = true, tag = "secuencia_tutorial"),
   DebugGame("parejas", "Parejas Ocultas", level = 1, timed = false),
   DebugGame("stroop", "Tinta o Palabra (Reto 60 s)", level = 4, timed = true), // desde el nivel 4 la regla cambia
   DebugGame("comparacion", "Comparación (Reto 60 s)", level = 2, timed = true),
@@ -59,7 +66,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     DebugButton("[Debug] Bitácora: recibir transmisión", "btn_debug_mission_encode") { viewModel.startMissionTransmission() }
     DebugButton("[Debug] Bitácora: informe ya (sin esperar)", "btn_debug_mission_recall") { viewModel.startMissionReport() }
     DebugGames.forEach { g ->
-      DebugButton("[Debug] Probar ${g.label}", "btn_debug_unity_${g.id}") {
+      DebugButton("[Debug] Probar ${g.label}", "btn_debug_unity_${g.tag}") {
         context.startActivity(
           UnityGameLauncher.buildGameIntent(
             context = context,
@@ -68,7 +75,8 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
             level = g.level,
             baseIntensity = 0,
             timed = g.timed,
-            ageBand = ageBand
+            ageBand = ageBand,
+            forceTutorial = g.tutorial
           )
         )
       }

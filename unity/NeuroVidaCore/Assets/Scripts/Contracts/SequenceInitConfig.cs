@@ -57,6 +57,9 @@ namespace NeuroVida.Contracts
         /// rating normalizado (0..1); -1 = sin límite. Ver <c>AdaptiveDifficulty.ConfigureMode</c>.</summary>
         /// <summary>El teléfono tiene "quitar animaciones": sin adornos que se mueven solos (ver GameFeel.ReduceMotion).</summary>
         public bool reduce_motion;
+        /// <summary>La persona nunca jugó este juego (la app lo sabe por el historial): el juego abre con su tutorial guiado
+        /// (<c>Games/Shared/GuidedTutorial</c>). Hoy lo usa Rastro de luz; los demás juegos lo ignoran.</summary>
+        public bool show_tutorial;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;

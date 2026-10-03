@@ -22,6 +22,8 @@ namespace NeuroVida.Games.Shared
         protected readonly Dictionary<float, AudioClip> _toneCache = new Dictionary<float, AudioClip>();
         protected Image _flash;
         protected RectTransform _resultRoot;
+        /// <summary>Tutorial guiado común (<see cref="GuidedTutorial"/>); null hasta que el juego llama a <see cref="BuildTutorial"/>.</summary>
+        protected GuidedTutorial _tutorial;
 
         protected virtual void Awake()
         {
@@ -54,6 +56,30 @@ namespace NeuroVida.Games.Shared
 
         /// <summary>Arma toda la UI del juego por código (llamado una sola vez, en <see cref="Awake"/>).</summary>
         protected abstract void BuildUi();
+
+        // ------------------------------------------------------------------ tutorial guiado (pieza común)
+
+        /// <summary>true si la app pidió el tutorial (la persona nunca jugó este juego: <c>show_tutorial</c> de la config).</summary>
+        protected bool TutorialWanted => _tutorial != null && _config != null && _config.config != null && _config.config.show_tutorial;
+
+        /// <summary>Crea el tutorial guiado sobre <paramref name="safe"/> (llamar al final de <see cref="BuildUi"/>, para que quede encima de todo).
+        /// <paramref name="practiceTopU"/> = unidades del lienzo desde arriba hasta debajo del marcador del juego.</summary>
+        protected void BuildTutorial(RectTransform safe, float practiceTopU) => _tutorial = new GuidedTutorial(safe, practiceTopU);
+
+        /// <summary>El gancho de «ronda guiada»: cada juego lo reemplaza con SU primera ronda (corta, con ayuda, sin puntos). Debe jugarse SIN pasar por
+        /// el DDA, el puntaje ni el guardado, llamar a <see cref="GuidedTutorial.BeginPractice"/> y <see cref="GuidedTutorial.EndPractice"/>, y dejar de
+        /// jugar en cuanto <see cref="GuidedTutorial.Skipped"/> sea true. Por defecto no hace nada.</summary>
+        protected virtual IEnumerator GuidedRound(GuidedTutorial tutorial) { yield break; }
+
+        /// <summary>Si corresponde, corre el tutorial: tarjeta de entrada con Nubi maestra → <see cref="GuidedRound"/> (salvo «Saltar tutorial»). Se usa
+        /// con <c>yield return StartCoroutine(RunTutorialIfNeeded(...))</c> antes de la cuenta regresiva o de la primera ronda real.</summary>
+        protected IEnumerator RunTutorialIfNeeded(string gameTitle, string goal)
+        {
+            if (!TutorialWanted) yield break;
+            yield return StartCoroutine(_tutorial.Intro(gameTitle, goal));
+            if (!_tutorial.Skipped) yield return StartCoroutine(GuidedRound(_tutorial));
+            _tutorial.Hide();
+        }
 
         /// <summary>Tono armónico (cacheado por frecuencia y duración); respeta "sonido desactivado" de la app.</summary>
         protected void PlayTone(float hz, float seconds, float volume)

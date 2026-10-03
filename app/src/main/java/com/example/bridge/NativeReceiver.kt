@@ -52,7 +52,13 @@ object NativeReceiver {
     val end_rating: Double? = null,
     val mode_trials: Int = 0,
     val mode_hits: Int = 0,
-    val peak_level: Int = 0
+    val peak_level: Int = 0,
+    // Solo Rastro de luz (ver SequenceTelemetry.cs): por familia (4) mejor largo, rondas y aciertos; familias vistas y desbloqueadas (bits). -1 = sin dato.
+    val ras_best_len: List<Int>? = null,
+    val ras_rounds: List<Int>? = null,
+    val ras_hits: List<Int>? = null,
+    val ras_modes_seen: Int = -1,
+    val ras_new_modes: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -374,7 +380,13 @@ object NativeReceiver {
       endRating = metrics.end_rating?.toFloat()
         ?: metrics.peak_level.takeIf { it > 0 }?.let { com.example.data.ratingFromSequencePeak(it) },
       modeTrials = metrics.mode_trials,
-      modeHits = metrics.mode_hits
+      modeHits = metrics.mode_hits,
+      // Rastro de luz: solo si traen las 4 familias completas (una versión vieja de Unity no manda nada de esto).
+      rasBestLen = metrics.ras_best_len?.takeIf { it.size == 4 },
+      rasRounds = metrics.ras_rounds?.takeIf { it.size == 4 },
+      rasHits = metrics.ras_hits?.takeIf { it.size == 4 },
+      rasModesSeen = metrics.ras_modes_seen.takeIf { it >= 0 },
+      rasNewModes = metrics.ras_new_modes.takeIf { it >= 0 }
     )
   }
 

@@ -124,3 +124,67 @@ Agregar la medida a `docs/medidas-juegos-estrella.md` y a `StarMeasures`.
 - «Quitar animaciones»: el giro SE QUEDA (es la tarea) pero lineal; sin partículas, sin respiración, sin vuelo de chispas
   al contador; el rastro y la cinta como tramos rectos con fundido de 300 ms; misma duración de las esperas
   (`Motion.Hold`).
+
+## Ficha técnica (hecho el 3-oct)
+
+**Dónde está.** Carpeta `unity/NeuroVidaCore/Assets/Scripts/Games/Secuencia/` (la carpeta y el id `secuencia` se mantienen para no perder avance, marcas
+ni historial). Nombre visible «Rastro de luz» (GameRegistry, ícono dibujado, Debug, evaluación inicial).
+
+| Archivo | Qué tiene |
+|---|---|
+| `RastroContract.cs` | Familias (`RastroMode`, `RastroModes`: nombres y textos), la escalera (`RastroLevel`, `RastroLadder`: 16 niveles), constantes, `StepUp` por edad, arranque, puntaje y `BuildMetrics` (telemetría). Sin escena. |
+| `RastroBoard.cs` | Los 9 luceros (posiciones de 360 × 640 dp, colores, notas), rotación del cielo, `OrbAt`, tramos despejados, cruces y la curva de la chispa; `RastroPaths` genera los caminos. Sin escena. |
+| `RastroSession.cs` | `RastroDirector` (qué modo sigue), `RastroTally`, `RastroRound` y `RastroSession` (motor común + vidas + cuándo termina + ronda guiada). Sin escena. |
+| `RastroGameController.cs` | Hereda `GameControllerBase`: dibuja (luceros, chispa, rastro, cinta, marcador, «¡NUEVO!»), lee el dedo y arma la ronda guiada (`GuidedRound`). |
+| `RastroSprites.cs`, `RastroSounds.cs`, `LightMesh.cs` | Arte horneado (lucero de cristal, disco punteado, aro punteado, ✗, 4 íconos de modo dibujados), sonido sintetizado, y la malla de UI de los tramos de luz. |
+| `Tests/` | `RastroLadderTests`, `RastroPathTests`, `RastroSessionTests` (+ las de edad que ya había). |
+
+Borrado: `SequenceGameController`, `SequenceLevelConfig`, `DistractorDrone` y `TileGlyphSprite` (las fichas con estrella, medialuna, etc.). Los sprites
+compartidos que vivían en esa carpeta (`RoundedRectSprite`, `RingSprite`, `RadialGlowSprite`, `HeartSprite`, `HarmonicTone`, `TileSprites`,
+`TilePalette`) se quedan donde están: los usan los demás juegos.
+
+**Mundo y arte.** `GameWorld.CieloDeCristal` (en `WorldBackdrop.cs`): fondo C, 240 estrellas fijas (30 titilan), nebulosas lila y celeste; la coral y el
+tinte de cada modo los pone el juego. El lucero de cristal es una textura de 192 px por color (9), no 9 figuras: `GradientT` reproduce el degradé de dos
+círculos del boceto. Rastro de la chispa, cinta del dedo y tramos acertados son **tres mallas de UI** (`LightMesh`: un dibujo por capa, no cien `Image`);
+partículas, florecimientos y chispas al contador, pools fijos (70, 10 y 12). `Application.targetFrameRate = 60`.
+
+**Decisiones y desviaciones del boceto (todas pequeñas y probadas).**
+- Cada lucero aparece **a lo más una vez por camino** (así nunca se repite el mismo lucero seguido) y cada tramo queda **despejado**: ningún tramo pasa a
+  menos de 42 dp del centro de un lucero que no es suyo (si no, al deslizar el dedo en línea recta se «engancharía» el del medio y contaría como error;
+  quedan ≥ 3 tramos posibles por lucero, y el anillo y el centro siempre se pueden recorrer). Los **cruces** entre tramos no vecinos no pasan del tope
+  del nivel (0 hasta el 9, 1 en el 10-11, 2 en el 12-14, sin tope en el 15-16) y el generador busca llegar a 1, 2 y 3.
+- Radio de enganche **36 dp** (38 en mayores), no 34: es la mitad de la zona de toque mínima de 72 dp; la separación entre luceros (79 dp) la respeta.
+- Marcador propio (el del boceto: modo + «N luces», 3 vidas, contador «luces recordadas»), no `GameHud`. Los textos del boceto, a 15-20 sp.
+- Rangos de «en marcha» que la tabla del §4 deja sin decir: nivel 11 de 4-6, 13 y 14 de 5-7, 16 de 7-9. «Libre» = giro de 45° a 180° para cualquier lado.
+  En marcha espera 0,75 × (como el boceto: 160 ms contra 220).
+- Mayores: chispa −15 %, luceros de 64 dp, enganche de 38 dp, y `stepUp` 0,17 (menores de 18: 0,22; adultos 0,25) para que el objetivo se cumpla sin chocar con
+  `MaxDropPerError` (ver `docs/DDA-comun.md` §6: mayores ≈ 0,82 → ≈ 0,84 medido).
+- **Primera vez** (sin rating guardado) y evaluación inicial: nivel 2 (1 en mayores). En la evaluación, solo el rastro simple, hasta 2 errores o ~75 s.
+- **«¡NUEVO!»**: la primera vez de por vida que el director elige un modo (en la ronda siguiente a que el nivel lo abre). Se guarda en `PlayerPrefs` de Unity
+  (`rastro_modes`, bits 1/2/4/8) y la pantalla (2,3 s o un toque) no le gasta tiempo al Reto. Nunca más de 2 rondas seguidas de un modo nuevo: el director
+  fuerza el rastro simple tras 2 rondas de modos nuevos, así que el rastro simple siempre está en la mezcla.
+- Una ronda sin terminar cuando se acaba el Reto no cuenta.
+
+**Telemetría** (`SequenceTelemetry`): conserva `end_rating`, `peak_level`, `mode_trials`, `mode_hits`, y agrega por familia (orden: rastro, al revés, gira,
+marcha): `ras_best_len[4]` (mejor largo repetido bien), `ras_rounds[4]`, `ras_hits[4]`, `ras_modes_seen` (bits) y `ras_new_modes` (bits desbloqueados en la
+partida). La ronda guiada no entra. `average_response_time_ms` = ms por luz en las rondas acertadas.
+
+**En la app.** `NativeReceiver.parseSequenceResult` lee los `ras_*` (solo con las 4 familias; una versión vieja de Unity no los manda) → `GamePlayResult.ras*`.
+`data/Trail.kt` es la lectura (tu rastro, modos con ≥ 3 rondas, «el que más te costó» con texto, una línea por modo y un truco para ese, `unlockedLine`);
+`StarMeasures` tiene la medida `trail` («Tu rastro», más es mejor, depende del nivel) y `GameResultScreen` la muestra sin recuadros y con cada dato una vez.
+Captura real: `docs/previews/rastro-final-real.png`. La medida y sus límites están en `docs/medidas-juegos-estrella.md`.
+
+**Tutorial guiado (pieza común, `Games/Shared/`).** `GuidedTutorial` (tarjeta de entrada con Nubi maestra —`NubiTeacherSprite`, dibujada con el pincel SDF
+siguiendo `pose_pizarra` de `tools/previews/nubi_guia.py`—, rótulo «Práctica: no cuenta», botón «Saltar tutorial», `Say` para lo que dice Nubi) y el gancho
+en `GameControllerBase`: `BuildTutorial`, `RunTutorialIfNeeded` y `GuidedRound`. **Cómo lo usa otro juego:** (1) llamar a `BuildTutorial(safe, topU)` al final de
+`BuildUi`; (2) reemplazar `GuidedRound(GuidedTutorial t)` con su primera ronda corta (`t.BeginPractice()`, jugarla SIN pasar por el DDA, el puntaje ni el guardado,
+`t.Say(...)`, parar si `t.Skipped`, `t.EndPractice()`); (3) en el `GameLoop`, antes de la cuenta regresiva, `yield return StartCoroutine(RunTutorialIfNeeded(titulo, meta))`;
+(4) en el controlador, pasar cada toque a `t.TrySkip(pos)`; (5) sumar el id a `UnityGameLauncher.TUTORIAL_GAMES` (la app manda `show_tutorial=true` si la
+persona no tiene partidas de ese juego en el historial). Para probar el flujo sin borrar nada: botón `[Debug] Probar Rastro de luz con tutorial`.
+
+**Pruebas.** EditMode (`Games/Secuencia/Tests`): escalera (16 niveles válidos, nunca más fácil, familias y largos del diseño, cruces por nivel), motor
+(objetivos, `stepUp` sin tope, simulación adulto y mayores, arranque, evaluación, techo y piso), caminos (largo, sin repetir, tramos despejados, cruces ≤ tope,
+anillo de respaldo), «en marcha» (exactamente las últimas N), al revés, giro (identidad de los luceros), director (≤ 2 seguidas de un modo nuevo, rastro simple
+siempre, «¡NUEVO!» una sola vez), ronda guiada sin rastro en el DDA, vidas y final de cada modo, telemetría. Kotlin: `TrailTest`, `TrailTelemetryTest`.
+Smoke: `Run` (la partida) y `Tutorial` (con la tarjeta de Nubi); `verificar-todo.sh --juegos Run,Tutorial --filtro-tests "Secuencia|Rastro|Tutorial"`.
+Marca de verificación: `estilo 3-oct · rastro`.

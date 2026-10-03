@@ -40,7 +40,7 @@ import kotlin.math.sin
  * sombra dura hacia abajo y un brillo), en vez de emojis: los emojis cambian según el fabricante del teléfono,
  * no combinan con el estilo y no dicen nada de la mecánica (ui-ux-pro-max: "no emoji as icons"). Cada ícono
  * sale de lo que se hace en el juego:
- * - Secuencia Lumínica: tablero de 4 fichas con una encendida.
+ * - Rastro de luz (id «secuencia»): tres luceros de cristal unidos por el rastro de la chispa.
  * - Parejas Ocultas: una carta boca abajo y otra dada vuelta.
  * - Ruta del Tesoro: cristales estelares sobre una roca lunar (los tesoros espaciales del juego).
  * - Tinta o Palabra: gota de tinta y tarjeta con palabra.
@@ -89,11 +89,20 @@ private val Cream = Color(0xFFFFFBF2)
 private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
   when (id) {
     "secuencia" -> {
-      val tiles = listOf(Offset(13f, 13f), Offset(53f, 13f), Offset(13f, 53f), Offset(53f, 53f))
-      tiles.forEachIndexed { i, o ->
-        clay(roundRect(o.x, o.y, 34f, 34f, 9f), if (i == 1) Clay.Sun else Cream, gloss = i == 1)
+      // Rastro de luz: tres luceros de cristal (redondos, sin puntas) unidos por el rastro de la chispa, que lleva su núcleo de luz.
+      val a = Offset(24f, 70f)
+      val b = Offset(50f, 30f)
+      val c = Offset(78f, 64f)
+      val trail = Path().apply {
+        moveTo(a.x, a.y)
+        quadraticBezierTo(22f, 38f, b.x, b.y)
+        quadraticBezierTo(82f, 24f, c.x, c.y)
       }
-      sparkle(Offset(84f, 12f), 11f, Color.White)
+      drawPath(trail, Cream.copy(alpha = 0.9f), style = Stroke(4f, cap = StrokeCap.Round))
+      clay(circle(a, 14f), Clay.Sky, gloss = true)
+      clay(circle(b, 14f), Clay.Grape, gloss = true)
+      clay(circle(c, 14f), Clay.Sun, gloss = true)
+      drawCircle(Color.White, 4.6f, Offset(71f, 33f))
     }
     "parejas" -> {
       rotate(-12f, Offset(36f, 52f)) {

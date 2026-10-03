@@ -376,6 +376,7 @@ class NeuroVidaRepository(
       "disparate" -> "wpm" to Reading.mark(r.svWpm)
       "cosecha" -> "harvest" to Harvest.mark(r.harvCommonFound, r.harvCommonTotal)
       "intrusa" -> "atlas" to Atlas.mark(r.intrSeenType, r.intrHitsType)
+      "secuencia" -> "trail" to Trail.mark(r.rasBestLen)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
       "trafico" -> "load" to r.trafficPeakPods?.toFloat()
