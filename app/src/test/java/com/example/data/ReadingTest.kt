@@ -77,11 +77,11 @@ class ReadingTest {
 
   @Test
   fun `la precision con y sin disparates sutiles`() {
-    assertEquals("27 de 30 · disparates sutiles 6 de 8", Reading.precisionLine(listOf(5, 5, 5, 4, 4, 4), listOf(5, 5, 5, 5, 5, 5), 6, 8))
-    assertEquals("27 de 30", Reading.precisionLine(listOf(5, 5, 5, 4, 4, 4), listOf(5, 5, 5, 5, 5, 5), 0, 0))
-    assertEquals("27 de 30", Reading.precisionLine(listOf(5, 5, 5, 4, 4, 4), listOf(5, 5, 5, 5, 5, 5), null, null))
-    assertNull(Reading.precisionLine(null, null, null, null))
-    assertNull(Reading.precisionLine(listOf(0), listOf(0), 0, 0))
+    assertEquals("6 de 8", Reading.subtleLine(6, 8))
+    assertEquals("8 de 8", Reading.subtleLine(9, 8))     // nunca mas que las vistas
+    assertNull(Reading.subtleLine(0, 0))
+    assertNull(Reading.subtleLine(null, null))
+    assertNull(Reading.subtleLine(3, null))
   }
 
   @Test

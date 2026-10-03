@@ -20,6 +20,10 @@ class HarvestTest {
     assertEquals("de las comunes, 21 de 48", Harvest.commonLine(21, 48))
     assertEquals("de las comunes, 48 de 48", Harvest.commonLine(60, 48))     // nunca más que las que había
     assertNull(Harvest.commonLine(5, 0))
+    assertEquals(21 to 48, Harvest.common(21, 48))
+    assertEquals(48 to 48, Harvest.common(60, 48))
+    assertNull(Harvest.common(null, 48))
+    assertNull(Harvest.common(5, 0))
     assertNull(Harvest.commonLine(null, 48))
   }
 
@@ -57,7 +61,7 @@ class HarvestTest {
     assertNull(Harvest.rhythm(0, 0))
     assertNull(Harvest.rhythm(null, 3))
     assertNull(Harvest.rhythm(-1, 3))
-    assertEquals("Arrancas fuerte y bajas al final: es lo normal.", Harvest.rhythmLine(13, 6))
+    assertEquals("Arrancas fuerte y bajas al final, es lo normal: si te atascas, cambia de idea.", Harvest.rhythmLine(13, 6))
     assertEquals("Mantienes el ritmo de principio a fin.", Harvest.rhythmLine(8, 7))
     assertEquals("Te soltaste al final: cada idea te llevó a la siguiente.", Harvest.rhythmLine(4, 9))
     assertNull(Harvest.rhythmLine(0, 0))
@@ -65,10 +69,6 @@ class HarvestTest {
 
   @Test
   fun `el consejo del ritmo solo aparece si se baja al final`() {
-    assertEquals("Si te atascas, cambia de idea: otra letra o otra terminación.", Harvest.rhythmTip(13, 6))
-    assertNull(Harvest.rhythmTip(8, 7))
-    assertNull(Harvest.rhythmTip(4, 9))
-    assertNull(Harvest.rhythmTip(null, null))
   }
 
   @Test

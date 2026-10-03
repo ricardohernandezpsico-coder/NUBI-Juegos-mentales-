@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -94,6 +96,117 @@ namespace NeuroVida.Bridge.EditorTools
 
         /// <summary>Mismo smoke test pero con Parejas Ocultas como juego.</summary>
         public static void RunParejas() => RunGame("parejas", 9f);
+
+        // ------------------------------------------------------------------ encadenado en UN solo proceso de Unity
+
+        /// <summary>Nombre de cada juego (el sufijo de su método Run*) con su id y los segundos de partida del smoke.</summary>
+        private static readonly (string Name, string Id, float Seconds)[] Catalog =
+        {
+            ("Run", null, 6f), ("Stroop", "stroop", 9f), ("Comparacion", "comparacion", 9f), ("CambioChip", "cambiochip", 9f),
+            ("RutaTesoro", "rutatesoro", 9f), ("Series", "series", 9f), ("Calculo", "calculo", 9f), ("Anagramas", "anagramas", 9f),
+            ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
+            ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f), ("Trafico", "trafico", 9f),
+            ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 9f), ("Meteoros", "meteoros", 9f),
+            ("Disparate", "disparate", 9f), ("Cosecha", "cosecha", 9f), ("Intrusa", "intrusa", 9f),
+        };
+
+        private static readonly Queue<(string Name, string Id, float Seconds)> _queue = new Queue<(string, string, float)>();
+        private static (string Name, string Id, float Seconds) _current;
+        private static int _listOk, _listTotal;
+        private static bool _listRunning, _listPlaying, _listAnyFailed;
+
+        /// <summary>
+        /// Smoke de VARIOS juegos en un solo proceso (abrir Unity 23 veces es lo que más tarda). La lista sale de la variable de entorno
+        /// NUBI_SMOKE_GAMES o del argumento <c>-smokeGames</c> (nombres separados por comas: Meteoros,Intrusa; vacía = los 23). Cada juego
+        /// entra a Play, corre su tiempo, sale, y entra el siguiente (sin domain reload, igual que el smoke de uno solo).
+        /// </summary>
+        public static void RunList()
+        {
+            var raw = Environment.GetEnvironmentVariable("NUBI_SMOKE_GAMES");
+            var args = Environment.GetCommandLineArgs();
+            for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-smokeGames") raw = args[i + 1];
+
+            _queue.Clear();
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                foreach (var g in Catalog) _queue.Enqueue(g);
+            }
+            else
+            {
+                foreach (var part in raw.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var name = part.Trim();
+                    var found = false;
+                    foreach (var g in Catalog)
+                    {
+                        if (!string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
+                        _queue.Enqueue(g);
+                        found = true;
+                        break;
+                    }
+                    if (!found)
+                    {
+                        Debug.Log($"[SmokeTest] FALLÓ -- juego desconocido en la lista: {name}");
+                        EditorApplication.Exit(2);
+                        return;
+                    }
+                }
+            }
+
+            _listTotal = _queue.Count;
+            _listOk = 0;
+            _listAnyFailed = false;
+            EditorSceneManager.OpenScene(ScenePath);
+            _previousDomainReloadDisabled = EditorSettings.enterPlayModeOptionsEnabled;
+            _previousOptions = EditorSettings.enterPlayModeOptions;
+            EditorSettings.enterPlayModeOptionsEnabled = true;
+            EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.DisableDomainReload;
+            Application.logMessageReceived += OnLog;
+            _listRunning = true;
+            _listPlaying = false;
+            EditorApplication.update += OnUpdateList;
+            StartNextInList();
+        }
+
+        private static void StartNextInList()
+        {
+            _current = _queue.Dequeue();
+            _errorCount = 0;
+            _enteredPlayAt = 0;
+            _listPlaying = true;
+            EditorPlaytestBootstrap.GameIdOverride = _current.Id;
+            EditorApplication.EnterPlaymode();
+        }
+
+        private static void OnUpdateList()
+        {
+            if (!_listRunning) return;
+            if (_listPlaying)
+            {
+                if (!EditorApplication.isPlaying) return; // todavía entrando a Play
+                if (_enteredPlayAt == 0) _enteredPlayAt = EditorApplication.timeSinceStartup;
+                if (EditorApplication.timeSinceStartup - _enteredPlayAt < _current.Seconds) return;
+
+                _listPlaying = false;
+                EditorApplication.ExitPlaymode();
+                var ok = _errorCount == 0;
+                if (ok) _listOk++; else _listAnyFailed = true;
+                Debug.Log(ok
+                    ? $"[SmokeTest] {_current.Name}: OK"
+                    : $"[SmokeTest] {_current.Name}: FALLÓ -- {_errorCount} error(es)/excepción(es) durante la partida.");
+                return;
+            }
+
+            if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode) return; // todavía saliendo de Play
+            if (_queue.Count > 0) { StartNextInList(); return; }
+
+            _listRunning = false;
+            EditorApplication.update -= OnUpdateList;
+            Application.logMessageReceived -= OnLog;
+            RestoreDomainReloadSettings();
+            Debug.Log($"[SmokeTest] RunList: {_listOk}/{_listTotal} " + (_listAnyFailed ? "FALLÓ" : "OK"));
+            EditorApplication.Exit(_listAnyFailed ? 1 : 0);
+        }
 
         private static void RunGame(string gameId, float seconds)
         {

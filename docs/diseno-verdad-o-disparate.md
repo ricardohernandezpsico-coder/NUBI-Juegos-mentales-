@@ -134,3 +134,40 @@ Programado y verificado el 1-oct (Unity: `DisparateContract`, `DisparateDirector
 sprites y sonidos; app: `Reading.kt`, final de partida, marca "tu lectura" en la evolución, ícono de la antena). Medidas y
 referencias en `docs/medidas-juegos-estrella.md`. Pendiente: que Ricardo lo pruebe en el teléfono (fluidez, deslizar, mantener).
 
+---
+
+## Ficha técnica (movida desde CLAUDE.md, 2-oct)
+
+> Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
+
+**¿Verdad o disparate?** (`Games/Disparate/`, id `disparate`, dominio lenguaje; 1-oct, diseño en
+`docs/diseno-verdad-o-disparate.md`, maqueta aprobada `docs/previews/disparate.png`): verificación de frases (Collins y
+Quillian, 1969; Wilson y Baddeley, 1988; frases generadas por programa, Crossland, Legge y Dakin, 2008). Desde una sala de radio
+llegan frases cortas en una placa crema (Atkinson Hyperlegible Bold, 24 sp, 28 en mayores, hasta 2 renglones, 3 en mayores): se
+decide VERDAD (lima, ✓) o DISPARATE (coral, onda rota) con los botones (cuentan al PRESIONAR) o deslizando la placa (derecha =
+verdad). Mantener presionada la placa ~0,8 s = "Esta frase no está clara" (no cuenta; el id viaja en `sv_unclear`, la app lo
+guarda en `unclear_sentences`, con respaldo, y lo suma al informe de errores de Ajustes; `python tools/frases/buscar.py <id>`).
+- Reglas y pruebas: `DisparateContract` / `DisparateDirector` / `DisparateTally` / `SentenceBank` y `DisparateContractTests`
+  (20). 12 niveles: el tipo de frase sube cada 2 niveles (1-2 cortas, 3-4 con complemento, 5-6 negación, 7-8 con pausa
+  «, que …,», 9-10 todos/algunos/ningún, 11-12 comparaciones); señal 9 → 5 s (mayores × 1,3). Reto 120 s; Precisión 30 frases
+  sin señal. 50% verdad / 50% disparate con NUNCA más de 3 respuestas iguales (se garantiza al sacar, no por el orden del
+  JSON); sin repetir frase y evitando las de las últimas 3 partidas (PlayerPrefs `disparate_recent`); Ráfaga cada 12
+  (5 frases de 3 palabras, 4 s, fuera de la escalera y de las medidas); 10 seguidas = "Transmisión perfecta" (× 1,5). DDA común
+  `stepUp` 0.15 sin tiempo de reacción. NINGÚN perfil de sesgo (verdad/disparate): regla de patentes (US 11,839,472).
+- Frases (`Resources/Frases/disparate_es.json`, lo escribe `python tools/frases/disparate.py`, determinista): base de conocimiento
+  propia (`conocimiento.py`: ~210 entidades con propiedades categóricas SIN excepciones, 20 grupos para los cuantificadores, 6
+  escalas por niveles) y plantillas de los 6 tipos con su corrección. Las verdades usan verbos PROPIOS (nunca "crecen/respiran");
+  la frase con pausa lleva una explicativa siempre verdadera y DESCRIPTIVA (qué tiene, dónde vive, cómo es) de otra familia que el predicado final, sin repetir verbo, "sirve para" ni palabras; disparates evidentes (cruzan categorías) y sutiles; tope de 50
+  caracteres; abecedario ≤ 15% del tipo 6; id estable por frase (SHA-1). Muestra para revisar: `docs/frases-muestra-disparate.md`.
+- Efectos (docs, sección "Efectos y fluidez"): la frase sintoniza (estática → letras en ~200 ms; el reloj de respuesta arranca recién
+  al quedar nítida), la siguiente se prepara mientras se lee (transición < 300 ms), señal que se vacía con temblor y estática en los
+  bordes, acierto con onda de la antena + chispas + medidor de 5 barras, error con ✗ y la corrección en su lugar, señal perdida,
+  ráfaga con estrellas veloces y aurora a las 10 seguidas. Con "quitar animaciones": sin estática, temblor ni aurora.
+- Medidas propias (telemetría `sv_*` → `GamePlayResult.sv*`; lectura pura en `data/Reading.kt` con pruebas): **tu lectura con
+  comprensión** (palabras por minuto, mediana de palabras ÷ tiempo en los aciertos; -1 con < 10), **qué te frena** (tiempo medio por
+  tipo con ≥ 4 aciertos, la más lenta marcada con texto y un truco por tipo), **tu precisión** (total y disparates sutiles) y
+  **tu mejor racha**. Marca para la evolución (`StarMeasures` `wpm`): palabras por minuto. Detalle y referencias:
+  `docs/medidas-juegos-estrella.md`. Captura real: `docs/previews/disparate-final-real.png`.
+- Arte: `DisparateSprites` (antena de arcilla, íconos ✓ y onda rota, cinta de luz, estática), `DisparateSounds`,
+  `GameWorld.Radio`. Maqueta: `python tools/art-preview/disparate.py` → `docs/previews/disparate.png`.
+- Pendiente: que Ricardo lo pruebe en el teléfono (fluidez, deslizar, mantener) y revise la muestra de frases.

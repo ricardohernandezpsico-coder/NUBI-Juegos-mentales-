@@ -463,7 +463,6 @@ fun GameResultScreen(
       val vocab = com.example.data.Vocabulary
       val bands = vocab.bandPercents(lexSeen, lexHits, result.lexFaSeen, result.lexFaHits)
       val groups = vocab.groupPercents(lexSeen, lexHits, result.lexFaSeen, result.lexFaHits)
-      val tenOf = vocab.outOfTen(vocab.mark(bands, lexSeen))
       val phrase = vocab.phraseFor(groups)
       Spacer(Modifier.height(14.dp))
       Text("Tu vocabulario", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
@@ -471,21 +470,10 @@ fun GameResultScreen(
         Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = "Tu vocabulario. $phrase" },
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        if (tenOf != null) {
-          Text("$tenOf de cada 10", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 44.sp, fontFamily = AppFamily)
-          Text("palabras poco frecuentes reconocidas", color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-          Spacer(Modifier.height(8.dp))
-        }
+        val lowGroup = vocab.lowestGroup(groups)
         vocab.GROUP_LABELS.forEachIndexed { i, label ->
-          VocabBar(label, groups[i], Modifier.fillMaxWidth().padding(vertical = 4.dp))
+          VocabBar(label, groups[i], i == lowGroup, Modifier.fillMaxWidth().padding(vertical = 4.dp))
         }
-        Text(
-          text = phrase,
-          color = Clay.Cream,
-          fontSize = 15.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(top = 6.dp)
-        )
       }
 
       vocab.recognitionSentence(result.lexRtCommonMs, result.lexRtRareMs)?.let { line ->
@@ -501,24 +489,6 @@ fun GameResultScreen(
         Spacer(Modifier.height(14.dp))
         Text("Tu filtro", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
         Text(headline, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-        val hot = vocab.filterHot(faSeen, faHits)
-        Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp, vertical = 4.dp)) {
-          vocab.FILTER_LABELS.forEachIndexed { i, label ->
-            val seen = faSeen?.getOrNull(i) ?: 0
-            if (seen > 0) {
-              Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(label, color = Clay.Cream, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                Text(
-                  "${faHits?.getOrNull(i) ?: 0} de $seen",
-                  color = if (i == hot) Clay.Coral else Clay.Cream,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 16.sp,
-                  fontFamily = AppFamily
-                )
-              }
-            }
-          }
-        }
         vocab.filterAdvice(faSeen, faHits)?.let { advice ->
           Text(advice, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
         }
@@ -552,15 +522,14 @@ fun GameResultScreen(
         Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = harv.spoken(harvWords, result.harvCommonFound, result.harvCommonTotal) },
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
+        // la cifra grande es lo propio de la cosecha (las palabras comunes que habia); el total de palabras ya esta en la fila "aciertos"
+        val common = harv.common(result.harvCommonFound, result.harvCommonTotal)
         Row(verticalAlignment = Alignment.Bottom) {
-          Text("$harvWords", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 56.sp, fontFamily = AppFamily)
+          Text(if (common != null) "${common.first} de ${common.second}" else "$harvWords", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
           Text(
-            harv.wordsLabel(harvWords), color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+            if (common != null) "palabras comunes" else harv.wordsLabel(harvWords), color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(start = 8.dp, bottom = 10.dp)
           )
-        }
-        harv.commonLine(result.harvCommonFound, result.harvCommonTotal)?.let {
-          Text(it, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         }
       }
 
@@ -574,7 +543,6 @@ fun GameResultScreen(
             Text(harv.jumpLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold)
           }
         }
-        Text("cómo buscaste en esta partida", color = TextSoft, fontSize = 14.sp)
         harv.searchLine(pct)?.let {
           Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
         }
@@ -590,9 +558,6 @@ fun GameResultScreen(
           HarvestRhythmRow("Últimos 20 s", last ?: 0, harv.barFraction(last ?: 0, first ?: 0), Clay.Sky, Modifier.fillMaxWidth().padding(vertical = 3.dp))
         }
         Text(line, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-        harv.rhythmTip(first, last)?.let {
-          Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-        }
       }
 
       harv.starTitle(result.harvStar, result.harvBest)?.let { (title, word) ->
@@ -716,9 +681,9 @@ fun GameResultScreen(
         }
       }
 
-      reading.precisionLine(result.svHitsType, svSeen, result.svSubtleHits, result.svSubtleSeen)?.let { line ->
+      reading.subtleLine(result.svSubtleHits, result.svSubtleSeen)?.let { line ->
         Spacer(Modifier.height(14.dp))
-        Text("Tu precisión", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Text("Disparates sutiles", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
         Text(line, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
       }
       reading.streakLine(result.svBestStreak)?.let { line ->
@@ -1554,7 +1519,7 @@ private fun PlanReactBar(proactivePct: Int, modifier: Modifier = Modifier) {
  * número (no depende del color). Un grupo con pocas palabras vistas queda con la barra vacía y "aún sin medir".
  */
 @Composable
-private fun VocabBar(label: String, percent: Int, modifier: Modifier = Modifier) {
+private fun VocabBar(label: String, percent: Int, lowest: Boolean, modifier: Modifier = Modifier) {
   Row(modifier, verticalAlignment = Alignment.CenterVertically) {
     Text(label, color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(104.dp))
     Canvas(Modifier.weight(1f).height(12.dp)) {
@@ -1562,14 +1527,16 @@ private fun VocabBar(label: String, percent: Int, modifier: Modifier = Modifier)
       drawRoundRect(Color(0x33FFFFFF), cornerRadius = r)
       if (percent >= 0) drawRoundRect(Clay.Grape, size = androidx.compose.ui.geometry.Size(maxOf(size.height, size.width * percent / 100f), size.height), cornerRadius = r)
     }
-    Text(
-      text = if (percent >= 0) "$percent%" else "aún sin medir",
-      color = if (percent >= 0) Clay.Cream else TextSoft,
-      fontWeight = FontWeight.Bold,
-      fontSize = if (percent >= 0) 17.sp else 14.sp,
-      textAlign = TextAlign.End,
-      modifier = Modifier.width(if (percent >= 0) 52.dp else 92.dp)
-    )
+    Column(Modifier.width(if (percent >= 0) 76.dp else 92.dp), horizontalAlignment = Alignment.End) {
+      Text(
+        text = if (percent >= 0) "$percent%" else "aún sin medir",
+        color = if (percent >= 0) Clay.Cream else TextSoft,
+        fontWeight = FontWeight.Bold,
+        fontSize = if (percent >= 0) 17.sp else 14.sp,
+        textAlign = TextAlign.End
+      )
+      if (lowest) Text("la más baja", color = Clay.Coral, fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.End)
+    }
   }
 }
 

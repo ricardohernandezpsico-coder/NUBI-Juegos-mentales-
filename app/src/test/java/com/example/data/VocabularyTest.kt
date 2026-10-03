@@ -32,11 +32,10 @@ class VocabularyTest {
 
   @Test
   fun `la cifra grande sale de la marca de las bandas 3 a 6`() {
-    assertEquals(6, Vocabulary.outOfTen(63.25f))
-    assertEquals(8, Vocabulary.outOfTen(84f))
-    assertEquals(10, Vocabulary.outOfTen(100f))
-    assertEquals(0, Vocabulary.outOfTen(2f))
-    assertNull(Vocabulary.outOfTen(null))
+    assertEquals(2, Vocabulary.lowestGroup(listOf(98, 84, 43)))
+    assertEquals(1, Vocabulary.lowestGroup(listOf(98, 40, -1)))
+    assertEquals(-1, Vocabulary.lowestGroup(listOf(80, 80, 80)))     // empate: no se marca ninguna
+    assertEquals(-1, Vocabulary.lowestGroup(listOf(50, -1, -1)))     // con un solo grupo medido no hay "la mas baja"
   }
 
   @Test
@@ -72,8 +71,8 @@ class VocabularyTest {
 
   @Test
   fun `tu filtro cuenta las inventadas y marca solo el tipo que mas enganio`() {
-    assertEquals("Te engañaron 5 de 21 palabras inventadas:", Vocabulary.filterHeadline(listOf(7, 8, 6), listOf(0, 1, 4)))
-    assertEquals("No te engañó ninguna de 21 palabras inventadas:", Vocabulary.filterHeadline(listOf(7, 7, 7), listOf(0, 0, 0)))
+    assertEquals("Te engañaron 5 de 21 palabras inventadas", Vocabulary.filterHeadline(listOf(7, 8, 6), listOf(0, 1, 4)))
+    assertEquals("No te engañó ninguna de 21 palabras inventadas", Vocabulary.filterHeadline(listOf(7, 7, 7), listOf(0, 0, 0)))
     assertNull(Vocabulary.filterHeadline(listOf(0, 0, 0), listOf(0, 0, 0)))
     assertEquals(2, Vocabulary.filterHot(listOf(6, 8, 7), listOf(0, 1, 4)))
     assertEquals(0, Vocabulary.filterHot(listOf(6, 8, 7), listOf(5, 1, 4)))

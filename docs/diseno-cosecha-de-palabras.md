@@ -133,3 +133,42 @@ Nota común al pie. Sin comparación con otras personas. Agregar a `docs/medidas
 Maqueta y muestra aprobadas por Ricardo (1-oct; "cola" y "pasta" se dejan visibles). Programado y verificado el 1-oct: Unity
 (`Games/Cosecha/`: contrato, sesión, medidas, banco, huerto, sprites, sonidos y controlador; 33 pruebas) y app (`Harvest.kt`, pantalla final,
 marca de evolución, ícono, créditos). Pendiente: que Ricardo lo pruebe en el teléfono (órbita, tamaño de las fichas, ritmo, sonidos, pista).
+
+---
+
+## Ficha técnica (movida desde CLAUDE.md, 2-oct)
+
+> Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
+
+**Cosecha de palabras** (`Games/Cosecha/`, id `cosecha`, dominio lenguaje; 1-oct, diseño aprobado en
+`docs/diseno-cosecha-de-palabras.md`, maqueta `docs/previews/cosecha.png`): fluidez verbal con 7 letras fijas (producir palabras bajo
+presión de tiempo; Troyer, Moscovitch y Winocur, 1997, solo como DESCRIPCIÓN de cómo se busca). Siete fichas-luna de arcilla (letra
+Atkinson Hyperlegible Bold 30 sp, 34 en mayores, toque mínimo 64 dp, cuenta al PRESIONAR) giran en una órbita elíptica (una vuelta
+cada ~40 s; quietas con "quitar animaciones") alrededor de un planeta de tierra; tocar letras en orden las enciende con su número y
+las pasa a la bandeja, tocar la última de la bandeja la devuelve, "Sembrar" (lima) siembra y "Borrar" vacía. 3 cosechas por partida
+(Reto 60 s, Precisión 90 s), cada una con letras y planeta nuevos; entre cosechas, 3 s de "¡Cosecha lista!".
+- Reglas y pruebas: `CosechaContract` / `CosechaSession` (la bandeja y lo sembrado) / `CosechaTally` (medidas) / `CosechaBank` /
+  `Garden` (`HuertoLayout.cs`: dónde brota cada planta) con `CosechaContractTests` (26, NUnit puro) y `CosechaBankTests` (7: el archivo
+  real exige 600 rondas, 12 comunes y una estrella común cada una). Validación SIN tildes (la ficha "a" vale para "á"; la ñ es su
+  letra) y la palabra se muestra con su tilde. Puntos por largo (3 → 10 … 7 → 100; rara × 1,5; estrella × 3). Palabras ocultas
+  (`oculta`): se aceptan (planta, puntos) pero no entran en la lista, en "también podías" ni en las medidas. Pista tras 15 s sin
+  sembrar (10 en mayores): ilumina la primera letra de la palabra común MÁS CORTA que falta. Cosecha lograda = ≥ 35% de las comunes
+  de la ronda; DDA común (`stepUp` 0.5, una decisión por cosecha, sin tiempo de reacción, mayores con rondas de más comunes).
+  Rondas: `PlayerPrefs cosecha_recent` evita las de las últimas 5 partidas.
+- Rondas (`Resources/Lexico/cosecha_es.json`, lo escribe `python tools/cosecha/rondas.py`, determinista y estable: conserva las que
+  siguen cumpliendo): 600 rondas en 10 niveles (60 por nivel; comunes disponibles ~37 → ~14), palabras de SPALEX (≥ 80%) con sus
+  formas generadas por Hunspell es_ES (plural, femenino, presente, pretérito, imperfecto, gerundio, participio). 17 pruebas en
+  `tools/cosecha/test_rondas.py`. Palabras ocultas por pedido de Ricardo: `tools/lexico/excluir.txt` (bloque «Ampliación del 1-oct»);
+  "cola" y "pasta" se dejaron visibles. Muestra: `docs/cosecha-muestra.md`.
+- El huerto (`CosechaSprites`, ver docs sección 8): planeta de tierra de arcilla con vetas, relieve y brillo de atmósfera, pasto ralo y
+  3 brotes al inicio, y una planta por palabra (brote, flor, tulipán, arbusto, girasol, hongo; tamaño según el largo; flor dorada si
+  es rara); la palabra estrella = árbol dorado con destello y "× 3". La semilla cae en arco y brota con rebote; las letras de la
+  bandeja vuelan hacia ella. Sonido (`CosechaSounds`): cada letra sube una nota de la pentatónica, sembrar = plop + campanita,
+  brotar = cuerda suave, repetida o no válida = madera sorda, 3 palabras en < 10 s = brillo de la órbita. `GameWorld.Huerto`.
+- Medidas propias (telemetría `harv_*` → `GamePlayResult.harv*`; lectura pura en `data/Harvest.kt` con pruebas): **tu cosecha**
+  (palabras y "de las comunes, N de M"), **tu manera de buscar** (% de racimos frente a saltos con ≥ 10 palabras: racimo = comparte
+  las 2 primeras letras o la raíz con la anterior; "cómo buscaste en esta partida", sin normas), **tu ritmo** (primeros contra
+  últimos 20 s, promedio de las cosechas), **tu palabra estrella** (o la más larga) y **también podías** (5 comunes). Marca para la
+  evolución (`StarMeasures` `harvest`): % de las comunes encontradas. Captura real: `docs/previews/cosecha-final-real.png`.
+- Créditos: Ajustes → Licencias y créditos cita SPALEX y el diccionario Hunspell es_ES (MPL 1.1 / LGPL / GPL, a elección).
+- Pendiente: que Ricardo lo pruebe en el teléfono (órbita, tamaño de las fichas, ritmo de las cosechas, sonidos, la pista).

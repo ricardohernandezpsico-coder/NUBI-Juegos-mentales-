@@ -56,8 +56,13 @@ object Vocabulary {
     }
   }
 
-  /** La cifra grande: "N de cada 10" palabras poco frecuentes (bandas 3-6) reconocidas, desde la marca [mark]. null sin marca. */
-  fun outOfTen(mark: Float?): Int? = mark?.let { (it / 10f).roundToInt().coerceIn(0, 10) }
+  /** Indice del grupo con menor % reconocido (se marca con TEXTO), solo con dos o mas grupos medidos que no empaten; si no, -1. */
+  fun lowestGroup(groups: List<Int>): Int {
+    val m = groups.withIndex().filter { it.value >= 0 }
+    if (m.size < 2) return -1
+    val low = m.minOf { it.value }
+    return if (m.maxOf { it.value } == low) -1 else m.first { it.value == low }.index
+  }
 
   private fun qualifier(p: Int): String = when {
     p >= 90 -> "casi todas"
@@ -118,7 +123,7 @@ object Vocabulary {
     val seen = faSeen.orEmpty().sum()
     if (seen <= 0) return null
     val tapped = faHits.orEmpty().sum()
-    return if (tapped == 0) "No te engañó ninguna de $seen palabras inventadas:" else "Te engañaron $tapped de $seen palabras inventadas:"
+    return if (tapped == 0) "No te engañó ninguna de $seen palabras inventadas" else "Te engañaron $tapped de $seen palabras inventadas"
   }
 
   /** Índice del tipo de inventada que más engañó (en rojo coral en la pantalla), o -1: solo si hay 5+ vistas y se tocó la mitad o más. */

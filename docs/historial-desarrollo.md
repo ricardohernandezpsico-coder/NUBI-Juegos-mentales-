@@ -183,7 +183,7 @@ Al cambiar esquema: 1) entidad, 2) subir version, 3) `Migration(N, N+1)` en SQL,
 
 ## DDA común (24-sep)
 - Motor único de dificultad adaptativa `Games/AdaptiveDifficulty.cs` (up-down ponderado de Kaernbach: sube δ por acierto, baja δ·p/(1−p) por error → converge a la tasa de aciertos objetivo; 0.80 en adultos, 0.85 en mayores; modulación por Z-score del tiempo de reacción con el peso del perfil de edad; calibración inicial ×1.5, calentamiento un nivel abajo, red anti-frustración y anti-aburrimiento). Conectado a Stroop, Comparación, Cambio de Chip, Ruta del Tesoro (objetivo 0.70), Series, Cálculo y Anagramas. Secuencia y Parejas conservan sus motores.
-- Diseño, fundamentos y referencias: [`docs/DDA-comun.md`](docs/DDA-comun.md). Tests: `Games/Tests/AdaptiveDifficultyTests.cs` (asmdef propio `NeuroVida.Games.Common.Tests`, 13 pruebas con simulaciones de un usuario logístico).
+- Diseño, fundamentos y referencias: [`docs/DDA-comun.md`](DDA-comun.md). Tests: `Games/Tests/AdaptiveDifficultyTests.cs` (asmdef propio `NeuroVida.Games.Common.Tests`, 13 pruebas con simulaciones de un usuario logístico).
 - La telemetría común (`StroopSessionMetrics`) ahora lleva `end_rating` (0..1) y `peak_level`; `NativeReceiver` los lee (opcionales) pero solo los registra en el log.
 - Se eliminó la lógica propia `_levelCorrect`/`_wrongRun` de cada controlador; `CorrectPerLevelUp` y `TreasureContract.NextStage` quedaron sin uso (candidatos a limpieza).
 - Pendiente: mostrar el rating en Progreso, calibrar con datos reales, puntaje normativo por percentil/edad, migrar o alinear Secuencia y Parejas.
@@ -436,3 +436,130 @@ Pedido de Ricardo tras probar la app ("la interfaz está casi al límite; mejora
   - Unity: sin `CorrectPerLevelUp` (4 juegos), `TreasureContract.NextStage` (+ su prueba: EditMode pasa a 107), `AdaptiveDifficulty.Fraction/Accuracy`, `CountdownScreen.IsActive`, `RebuildDotsIfNeeded` vacío.
 - Herramientas usadas (en el scratchpad de la sesión, no en el repo): buscadores de declaraciones sin referencias para Kotlin y C#. C# verificado con `tools/unity-compile-check`; Kotlin revisado a mano + `kotlinc` solo para sintaxis (sin SDK). **Falta compilar en el PC.**
 - Quedan: `metadata.json` (de AI Studio) y el `applicationId` `com.aistudio.neurovida.cgnv` (cambiarlo = app nueva; decidir antes de Play Store); i18n parcial (`AppStrings`, solo algunos textos).
+
+---
+
+## Estado y notas de diseño de la app (27 al 30-sep) — movido de CLAUDE.md el 2-oct
+
+> Esta sección era «Estado y pendientes» de `CLAUDE.md`. Lo vigente (pendientes e ideas en espera) quedó allá; el resto es historia.
+
+- 27-sep: prueba manual completa (`docs/prueba-manual.md`, incluida la sección H con "No conservar actividades")
+  aprobada por Ricardo en su teléfono. Es el punto base `v0.1-base`.
+- `ActiveGameSession.sessionToken` + `key(session.sessionToken)` en `MainActivity`: cada sesión de juego es su propio
+  grupo de composición (si no, `UnityGameHost` heredaba el `launched` guardado de la anterior al recrearse la pantalla).
+- Idea de Ricardo tras Radar (27-sep): la información del final de cada juego estrella es lo más valioso para el
+  usuario. Desde el 28-sep la medida propia de cada partida se guarda (`star_measures`) y se muestra en Hoy.
+- **Hoy = "Tu planeta"** (REEMPLAZADO el 29-sep por Nubi al centro: ver el punto de Nubi; queda como historia. 28-sep; Ricardo eligió la mezcla de las propuestas 1 y 2 de `docs/previews/inicio-propuestas.png`;
+  maqueta `docs/previews/inicio-planeta.png`, `tools/previews/inicio_planeta.py`). Reemplaza al camino de días en
+  perspectiva. `ui/components/HomePlanet`: planeta de arcilla con una zona por dominio (Memoria cristales, Atención
+  faros, Razonamiento torres, Lenguaje árboles, Cálculo domos, Velocidad antenas, al centro) que crece con cada partida
+  (`data/Planet`: crecimiento logarítmico, nunca baja; construcciones 1-5), gira despacio (quieto con "quitar
+  animaciones"), las 3 partidas del día orbitan y aterrizan con ✓ en su zona, las zonas jugadas hoy brillan y arriba
+  dice "¡Creció X!". Debajo: la línea "Esta semana creció / Quieta hace N días · Aún sin explorar" y el
+  **descubrimiento del día** (`data/StarMeasures.discover`: con 3+ partidas de un juego estrella, primero un récord de los
+  últimos 7 días, si no la mayor mejora ≥ 5%, si no "se mantiene"; gráfico de las últimas 6 con "mejor" hacia arriba; sin
+  datos, invitación tocable "Juega Radar para descubrir tu vistazo"). Tocar una zona abre su ventana (`ZoneDialog`):
+  partidas por semana (4), cada juego del dominio con su última medida o cuándo se jugó, y "Jugar X" (el sin jugar o el
+  más olvidado). Captura real (Roborazzi): `docs/previews/inicio-planeta-real.png`. Sin probar en el teléfono.
+- **Juegos (30-sep, 4 áreas) = encabezado "Nubi te sugiere" + rejilla 2 × 2** (maqueta aprobada `docs/previews/cuatro-areas.png`,
+  Juegos · 2). Arriba Nubi científica + "¿Qué entrenamos hoy?" y "Te sugiero {Área}: {motivo}" (`data/AreaSuggestion`, lógica
+  pura: primero un área nunca jugada, si no la que lleva ≥ 2 días sin jugarse, si no la de menor avance; el motivo no repite
+  el nombre). `AreaGrid` llena el alto hasta la barra (planeta sugerido de 118 dp con aro de luz sol y rótulo "Sugerida"; los
+  otros de 88 dp), y cada área muestra nombre, `DomainType.tagline`, `AreaBar` y "Hábil · 7 juegos". Las áreas son 4 desde
+  el 30-sep: `DomainType` = MEMORIA, ATENCION, RAZONAMIENTO, LENGUAJE; Velocidad se unió a Atención y Cálculo a Razonamiento
+  (Radar y Comparación → Atención; Cálculo Sereno y Aterrizaje → Razonamiento). Lo guardado con nombres viejos se lee con
+  `DomainType.fromStored` (metas, punto de partida, foco de Juegos, XP de dominio) y Room v12 (`Migration(11, 12)`) suma el XP
+  de `domain_mastery`. En Hoy: 2 áreas por lado (izquierda Memoria y Razonamiento, derecha Atención y Lenguaje) con planeta,
+  nombre, subtítulo, barra y etapa; Nubi crece hasta llenar el centro. Lo siguiente es la 3.ª versión anterior, de historia:
+- **Juegos = las 6 áreas + ventana del área** (29-sep, 3.ª versión: en la 2.ª se deslizaba para cambiar de área y
+  chocaba con el deslizar de pestañas; maqueta `docs/previews/juegos-nubi.png`, capturas `juegos-areas-real.png` y
+  `juegos-ventana-real.png`). `AreaGrid`: las 6 áreas en dos columnas (planeta `drawable-nodpi/area_*.webp` de
+  `nubi_recursos.py`, Atención = DIANA; nombre, `AreaBar` y "Hábil · 6 juegos"; sello sol ✓ = jugada hoy). Tocar una
+  abre `AreaWindow` (pantalla completa, `LockTabSwipe`, X arriba a la derecha o Atrás = `closeLibraryArea`): Nubi
+  CIENTÍFICA (`nubi_cientifica.webp`, elegida por Ricardo sobre la estudiante) pregunta "¿Con cuál entrenamos tu
+  memoria?" y debajo van TODOS sus juegos (`GameTile`: planeta con anillo del avance y ✓ si se jugó hoy, nombre,
+  etapa y %, marca a la derecha). Tocar una casilla abre la FICHA superpuesta (`GameSheet`): avance con etapa y línea,
+  marca con etiqueta y últimas partidas, cuándo jugaste y partidas en 2 semanas, "¿Cómo quieres jugar?" (4 filas con
+  aciertos esperados; la explicación solo del elegido) y Jugar. Al cerrar el resultado se vuelve a Juegos, a la misma
+  ventana y casilla (`libraryFocus` con `open`, en SharedPreferences `library_focus`, sobrevive a que Android cierre la app).
+  El resultado dice si un Desafío se superó (`modeNote`). Sin probar en el teléfono.
+- **Dificultad y avance** (28-sep, aprobado por Ricardo): [`docs/dificultad-y-avance.md`](dificultad-y-avance.md) y
+  `data/Skill.kt`. Una vara por juego: tu avance = nivel donde se aciertan 8 de 10 (el rating guardado se corrige por
+  los aciertos que busca al entrenar: 85% mayores, 70% Ruta del Tesoro); etapas Inicio…Maestro = quintos. Modos
+  Suave / A tu medida / Desafío / Experto por aciertos esperados según la edad, hechos con techo o piso sobre el DDA
+  (`play_mode`, `mode_floor`, `mode_ceiling` → `AdaptiveDifficulty.ConfigureMode`). Solo mueven el avance las partidas
+  a tu medida (bajada máx. 5 puntos) y un Desafío o Experto superado (`mode_trials/mode_hits` tras el calentamiento);
+  las marcas solo a tu medida. Experto se abre al superar un Desafío. El reloj NO se elige antes de jugar (Ajustes).
+  SharedPreferences `skill`: juegos medidos ("Sin medir aún" si no), Experto abierto, fecha de cada etapa.
+  El nivel 1-5 de cada juego ES la etapa (`LevelTier` con los mismos nombres); Ajustes ya no tiene modo de dificultad.
+  Cada marca (`MeasurePoint`) guarda rating y reloj; la evolución compara solo partidas parecidas
+  (`StarMeasures.comparable`: mismo reloj y, en las marcas que dependen del nivel, a menos de un nivel).
+  Pendiente: "fortalezas" por aspecto en los juegos estrella (hoy la carta muestra solo la constancia) y calibrar la
+  pendiente `s` de cada juego con datos (sección 10 del documento).
+- **Anagramas con burbujas** (28-sep, idea de Ricardo): en los niveles 5-7 (7 a 11 letras) las letras del banco son
+  burbujas de arcilla que rebotan sin parar contra los bordes y entre ellas (`Anagramas/BubbleField`: física pura con
+  3 pruebas; choque elástico, separación mínima siempre, rapidez constante). Por edad (`BubbleField.SpecFor`):
+  mayores 64 dp, 12 dp de separación, 42 dp/s; adultos 56 dp, 8 dp, 70 dp/s; menores 56 dp, 8 dp, 80 dp/s; nunca bajo
+  48 dp (se achican si el área se llena). Entra de a poco: nivel 5 al 60% de la velocidad, 6 al 80%, 7 completo.
+  El toque cuenta al presionar (`TapDown`); una letra devuelta vuelve a un lugar libre. Adornos (28-sep, pedido de
+  Ricardo): resplandor de color detrás de cada letra (capa `_glowLayer`, debajo de todo; late suave), burbujas con cara
+  de color propio (celeste, uva, coral, lima, sol, aclarados hacia crema para que la letra se lea) y brillo grande y
+  difuminado; niveles 1-4 (mecánica igual): el mismo resplandor, fichas que respiran (cada una a su ritmo) y un destello
+  que recorre el borde de una ficha al azar cada 3,5-6,5 s. En las casillas la ficha toma los colores de estado, así el
+  color decorativo nunca dice "acierto". Con "quitar animaciones" del teléfono (`reduce_motion` en la config →
+  `GameFeel.ReduceMotion`) no hay respiración, pulso ni destellos. Lámina `docs/previews/anagramas-burbujas.png`.
+  Sin probar en el teléfono.
+- **Nombre e ícono: Nubi** (elegido por Ricardo el 29-sep tras siete rondas; "NeuroVida" es marca registrada de otros en
+  EE. UU. y hay una app "NEUROVIDA PSICOLOGIA"). Mercado GLOBAL; en la tienda "Nubi – Brain Games". Personaje: Nubi, una
+  nebulosa pequeña de arcilla (lila/uva con nubes celeste y rosa y estrellitas crema), "la nube donde nacen las
+  estrellas": vive en tu planeta, cada partida hace nacer una estrella; poses saluda / celebra / piensa / descansa,
+  NUNCA triste ni reaccionando a cómo le va a la persona. Estilo elegido (29-sep, tras 4 vueltas descartadas: ícono
+  plano, 5 personajes planos, 6 nebulosas): **Nubi suave**, del tono de una lámina de referencia de Ricardo = nube de
+  algodón con volumen, contorno fino morado (no el borde tinta grueso), brillo alrededor, ojos grandes con dos brillos,
+  azul lavanda con toques celestes (`tools/previews/nubi_suave.py` → `docs/previews/nubi-suave.png`: momentos enfoque /
+  explorador con casco / celebra / tu semana, ícono redondo, con casco y monocromo). Nubi GUÍA (`nubi_guia.py` →
+  `nubi-guia.png`): científica con bata y lentes (explica la medida del final), maestra en pizarra (tutorial de primera
+  vez), exploradora con lupa (descubrimiento del día), idea (consejo). Hoy con el mundo de Nubi (`nubi_mundo.py` →
+  `hoy-mundo-nubi.png`): fondo de nebulosas de colores, planeta con paisajes por dominio (Valle de la Memoria, Picos
+  de la Atención, Mar del Razonamiento, Bosque del Lenguaje, Domos del Cálculo, Meseta de la Velocidad), los 3 juegos
+  del día como satélites, zona del día, gráfica "Tu semana" y mejoras del planeta que se ganan jugando. Ricardo
+  aprobó todo MENOS el planeta ("rompe el hilo conductor"; también se descartaron `planeta-caminos.png`) y los
+  satélites alrededor de Nubi. Avance sin planeta: `avance-sin-planeta.png` → eligió el anillo de luz
+  (`anillo_luz.py` → `anillo-luz.png`: formas, estados animados, colores de áreas revisados con el validador de la
+  skill dataviz: Lenguaje verde lima #4FAE2A, Cálculo celeste #1C9FCE, Atención #CF7A06) → y luego propuso **Tu
+  galaxia** (`galaxia.py` → `galaxia.png`): galaxia ovalada que gira lento con Nubi al centro, un cúmulo por área,
+  TAMAÑO = etapa (nunca baja) y BRILLO = partidas de los últimos 14 días (se apaga despacio, nunca del todo), se gira
+  con el dedo y el cúmulo tocado abre su ventana con estadísticas. Descartada (con estrellas de luz, `galaxia_hd.py`,
+  tampoco: "no da a entender el concepto"); también los orbes alrededor de Nubi (`nubi_halo.py`: "pueden confundir").
+  **Elegido (29-sep): `nubi_hoy.py` → `nubi-hoy.png`** (de las 3 de `nubi_indicadores.py`): Hoy con Nubi grande al
+  centro y halo detrás (resplandor, dos aros finos, pocas chispas); tres áreas a cada lado con nombre, BARRA de avance
+  0-100 (un solo color lavanda; 4 marcas = 5 etapas; cada etapa = 20) y etapa en palabras. El cambio de la semana se ve
+  EN LA BARRA, sin números (Ricardo: los "▲ +4" molestaban): tramo sol al final = lo avanzado esta semana; tramo lila
+  punteado = lo que bajó. Nubi dice en palabras qué pasó (sin números sueltos: "¿4 qué?"). Tocar un área abre su
+  DETALLE (vista C): "Etapa Intermedio · 52 de 100", barra con las 5 etapas nombradas, "Esta semana avanzó de 46 a 52",
+  "Te faltan 8 para Avanzado", últimas 4 semanas, flechas para pasar de área y, en vez de "Jugar X", la pregunta
+  "¿Le damos un empujón a tu memoria?" (Fredoka sol, mismo estilo que el botón) + botón "¡Sí, vamos!" + "Nubi eligió
+  Secuencia Lumínica: hace días que no la juegas". **Programado (29-sep)**: `ui/components/NubiHome.kt` (`NubiWithHalo`,
+  `AreaBar`, `NubiBubble`, `NubiHome`) + `HomeScreen.AreaDetail` + `data/AreaProgress` (avance del área = promedio de
+  sus juegos medidos; cambio = juego por juego contra hace 7 días, solo los ya medidos entonces; 4 pruebas). Las etapas
+  usan los nombres de `Skill.STAGES` (Inicio, Aprendiz, Hábil, Experto, Maestro). Se quitaron del inicio el planeta, la
+  línea de zonas y el descubrimiento del día (las medidas de cada juego están en el detalle del área). Nubi en la
+  bienvenida ("Hola, soy Nubi"). Ícono: `tools/previews/nubi_recursos.py` escribe en `res/` las capas del ícono
+  adaptativo (fondo vector de noche, Nubi, monocromo), los íconos para Android 7, el de notificación y
+  `drawable-nodpi/nubi_{hola,mira,celebra}.webp`. Capturas: `docs/previews/hoy-nubi-real.png`, `hoy-nubi-detalle-real.png`.
+  Sin probar en el teléfono; después: ícono adaptativo (con monocromo) y Nubi en Hoy, bienvenida, logros y recordatorios. Ya cambiado: `app_name`, bienvenida, textos para compartir, tarjeta de liga y
+  aviso de Ajustes. Revisión de nombres y patentes: [`docs/nombre-marca-y-riesgos.md`](nombre-marca-y-riesgos.md).
+  Antes de publicar: búsqueda oficial de marca (clases 9, 41) y el `applicationId` definitivo. **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre
+  las que elegir: no volver a eso; US 8,348,671 de Posit); nombres: cuarta ronda (estilo Synapp: el vocabulario del
+  cerebro está casi todo tomado); Piloto nunca con inclinación ni sensores del cuerpo; ningún
+  juego calcula un perfil "impulsivo / conservador" ni usa caras con emociones que reaccionen al desempeño (Akili);
+  Parejas siempre con el tablero a la vez; Satélites siempre plano (sin 3D estereoscópico); las etapas de avance
+  quedan en la escala común (nada de "máximo personal" partido en puertas: US 10,559,221); no usar nombres ajenos
+  (UFOV, Double Decision, NeuroTracker...).
+- Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
+  "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](ideas-guardadas.md).
+- Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
+  re-chequeo mensual del punto de partida; tutorial de primera vez por juego; marca ✓/✗ de arcilla sobre la
+  respuesta; alinear Secuencia y Parejas con el DDA común; calibrar el DDA y la referencia de percentiles con datos.
+- Para el final: i18n completo (hoy `ui/i18n/AppStrings` cubre solo algunos textos); `applicationId` propio
+  (cambiarlo = app nueva); `metadata.json` de AI Studio; firma release y Play Store; servidores.

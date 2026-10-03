@@ -24,6 +24,10 @@ object Harvest {
   /** "palabra" / "palabras" según la cifra. */
   fun wordsLabel(n: Int): String = if (n == 1) "palabra" else "palabras"
 
+  /** Las palabras comunes encontradas y las que habia, como par (nunca mas que las que habia); null si no hay comunes medidas. */
+  fun common(found: Int?, total: Int?): Pair<Int, Int>? =
+    if (found == null || total == null || total <= 0) null else found.coerceIn(0, total) to total
+
   /** "de las comunes, 21 de 48" (null si no hay comunes medidas). */
   fun commonLine(found: Int?, total: Int?): String? {
     if (found == null || total == null || total <= 0) return null
@@ -64,16 +68,13 @@ object Harvest {
     }
   }
 
+/** UNA frase corta con la lectura del ritmo y, si se baja al final, el consejo. */
   fun rhythmLine(first: Int?, last: Int?): String? = when (rhythm(first, last)) {
-    Rhythm.STRONG_START -> "Arrancas fuerte y bajas al final: es lo normal."
+    Rhythm.STRONG_START -> "Arrancas fuerte y bajas al final, es lo normal: si te atascas, cambia de idea."
     Rhythm.LATE_RISE -> "Te soltaste al final: cada idea te llevó a la siguiente."
     Rhythm.STEADY -> "Mantienes el ritmo de principio a fin."
     null -> null
   }
-
-  /** El consejo cuando se baja al final. */
-  fun rhythmTip(first: Int?, last: Int?): String? =
-    if (rhythm(first, last) == Rhythm.STRONG_START) "Si te atascas, cambia de idea: otra letra o otra terminación." else null
 
   /** Fracción (0 a 1) de la barra de [value] respecto del mayor de los dos (siempre algo visible si hay datos). */
   fun barFraction(value: Int, other: Int): Float {

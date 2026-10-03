@@ -84,13 +84,10 @@ object Reading {
     return slow.ms - fast < 300
   }
 
-  /** "27 de 30" y, si hubo disparates sutiles, "· disparates sutiles 6 de 8". */
-  fun precisionLine(hits: List<Int>?, seen: List<Int>?, subtleHits: Int?, subtleSeen: Int?): String? {
-    val s = seen.orEmpty().sum()
-    if (s <= 0) return null
-    val h = hits.orEmpty().sum().coerceAtMost(s)
-    val base = "$h de $s"
-    return if (subtleSeen != null && subtleSeen > 0 && subtleHits != null) "$base · disparates sutiles ${subtleHits.coerceAtMost(subtleSeen)} de $subtleSeen" else base
+  /** "6 de 8" de los disparates sutiles (lo unico propio de la precision: el total ya esta en la fila "aciertos"); null sin sutiles vistos. */
+  fun subtleLine(subtleHits: Int?, subtleSeen: Int?): String? {
+    if (subtleSeen == null || subtleSeen <= 0 || subtleHits == null) return null
+    return "${subtleHits.coerceIn(0, subtleSeen)} de $subtleSeen"
   }
 
   /** "14 seguidas" / "1 seguida". */
