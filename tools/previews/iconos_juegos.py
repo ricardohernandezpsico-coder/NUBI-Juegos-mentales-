@@ -8,7 +8,7 @@ FS=ROOT+'/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-SemiBold.ttf'
 INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(76,201,240); GRAPE=(184,164,255); WHITE=(255,255,255)
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
-       ('stroop','Tinta o Palabra','atencion'),('cambiochip','Cambio de Chip','atencion'),('series','Detective de Series','razonamiento'),
+       ('stroop','Tinta o Palabra','atencion'),('series','Detective de Series','razonamiento'),
        ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
@@ -79,19 +79,6 @@ def draw(ic,gid):
     elif gid=='stroop':
         ic.clay(rrect(34,50,54,34,9),CREAM); ic.stroke([(44,62),(78,62)],SKY,7); ic.stroke([(44,73),(66,73)],CORAL,7)
         ic.clay(drop(30,44,20),CORAL,gloss=True)
-    elif gid=='cambiochip':
-        ic.clay(rrect(24,24,52,52,12),CREAM)
-        ic.clay([(44.4,66.8),(55.6,66.8),(50.0,79.4)],SUN,border=3.5,shadow=False)
-        ic.clay([(41.6,50.0),(31.8,64.0),(31.8,69.6),(41.6,64.0)],CORAL,border=3.5,shadow=False)
-        ic.clay([(58.4,50.0),(68.2,64.0),(68.2,69.6),(58.4,64.0)],CORAL,border=3.5,shadow=False)
-        ic.clay([(40.2,66.8),(40.2,41.6),(50.0,22.0),(59.8,41.6),(59.8,66.8)],CREAM,border=3.5,shadow=False)
-        ic.clay([(43.7,34.6),(50.0,22.0),(56.3,34.6)],CORAL,border=3.5,shadow=False)
-        ic.clay(circ(50,47.2,5.0),SKY,border=2.5,shadow=False)
-        for st in (200,20):
-            arc=[(50+44*math.cos(math.radians(st+70*i/20)),50+44*math.sin(math.radians(st+70*i/20))) for i in range(21)]
-            e=math.radians(st+70); tip=(50+44*math.cos(e),50+44*math.sin(e)); t=(-math.sin(e),math.cos(e)); n=(math.cos(e),math.sin(e)); h=9
-            head=[(tip[0]-t[0]*h+n[0]*h,tip[1]-t[1]*h+n[1]*h),(tip[0]+t[0]*2,tip[1]+t[1]*2),(tip[0]-t[0]*h-n[0]*h,tip[1]-t[1]*h-n[1]*h)]
-            ic.claystroke([arc,head],SKY,6)
     elif gid=='series':
         ic.rot.append((45,40,40)); ic.clay(rrect(64,31.5,34,17,8.5),SUN); ic.rot.pop()
         ic.clay(circ(40,40,31),CREAM,gloss=True)

@@ -1,0 +1,165 @@
+package com.example.flow
+
+import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
+import com.example.TestSupport
+import com.example.data.SkillState
+import com.example.data.computeAchievementStats
+import com.example.data.local.DailySessionEntity
+import com.example.data.local.GameProgressEntity
+import com.example.data.local.NeuroVidaDatabase
+import com.example.data.local.toDomain
+import com.example.data.local.toEntity
+import com.example.model.AgeBand
+import com.example.model.GamePlayResult
+import com.example.model.GameRegistry
+import com.example.model.UserSettings
+import com.example.ui.screens.GamesLibraryScreen
+import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.ProgressScreen
+import com.example.ui.theme.NeuroVidaTheme
+import com.example.viewmodel.NeuroVidaViewModel
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/**
+ * Juego RETIRADO (`cambiochip`, 3-oct-2026): quien ya lo jugó conserva sus partidas y su progreso en la base de datos y en las preferencias (nada se borra ni se migra),
+ * pero no se muestra en ningún lado y no rompe nada. Prueba con datos viejos de verdad en Room y en `skill`: el ViewModel, las pantallas Hoy, Juegos y Avance, los logros y el camino de hoy.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
+class RetiredGameTest {
+  private lateinit var app: Application
+  private val old = "cambiochip"
+  private val day = 24L * 60 * 60 * 1000
+
+  @Before
+  fun setUp() {
+    app = ApplicationProvider.getApplicationContext()
+    TestSupport.resetDatabase()
+    // El ViewModel agenda el recordatorio con WorkManager; sin iniciarlo, esa excepción suelta hace fallar a la regla de Compose («uncaught exceptions before the test started»).
+    runCatching {
+      androidx.work.WorkManager.initialize(app, androidx.work.Configuration.Builder().setExecutor(java.util.concurrent.Executor { it.run() }).build())
+    }
+  }
+
+  @After
+  fun tearDown() {
+    TestSupport.resetDatabase()
+  }
+
+  private fun db() = NeuroVidaDatabase.getDatabase(app)
+
+  /** Un teléfono con lo que dejó Cambio de Chip: 3 partidas (la última ayer), su avance, su medida en `skill` y un camino de HOY que lo nombra. */
+  private fun seedOldData(todayWith: String = "$old,calculo,series", completed: Int = 0) = runBlocking {
+    val now = System.currentTimeMillis()
+    db().userProfileDao().insertOrUpdate(UserSettings(ageBand = AgeBand.ADULT, name = "Ana").toEntity())
+    db().gameProgressDao().insertAll(GameRegistry.allGames.map { GameProgressEntity(gameId = it.id, currentLevel = 1) })
+    db().gameProgressDao().insertOrUpdate(GameProgressEntity(gameId = old, currentLevel = 4, eloRating = 900, ddaRating = 0.7f, totalGamesPlayed = 3))
+    for (i in 0..2) {
+      db().gameResultDao().insert(
+        GamePlayResult(gameId = old, score = 80, correctAnswers = 10, totalTrials = 12, timed = true, level = 4, timestamp = now - (i + 1) * day, endRating = 0.7f).toEntity()
+      )
+    }
+    db().gameResultDao().insert(GamePlayResult(gameId = "calculo", score = 70, correctAnswers = 7, totalTrials = 10, timed = false, level = 2, timestamp = now - 5 * day).toEntity())
+    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    db().dailySessionDao().insertOrUpdate(DailySessionEntity(dateKey = today, gameIdsRaw = todayWith, completedCount = completed, scoresRaw = ""))
+    app.getSharedPreferences("skill", android.content.Context.MODE_PRIVATE).edit()
+      .putString("state", SkillState(measured = setOf(old, "calculo")).encode()).commit()
+  }
+
+  private fun newViewModel() = NeuroVidaViewModel(app)
+
+  @Test
+  fun `el registro tiene 22 juegos, Atencion 6, y el id retirado queda reservado`() {
+    assertEquals(22, GameRegistry.allGames.size)
+    assertNull(GameRegistry.getById(old))
+    assertFalse(GameRegistry.allGames.any { it.id == old })
+    assertEquals(6, GameRegistry.allGames.count { it.domain.name == "ATENCION" })
+    assertTrue(GameRegistry.isRetired(old))
+    assertFalse(GameRegistry.isRetired("stroop"))
+    assertEquals("ATENCION", GameRegistry.retiredDomains[old]!!.name)
+  }
+
+  @Test
+  fun `lo guardado de Cambio de Chip se conserva en la base y no se muestra en las listas del ViewModel`() {
+    seedOldData()
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "Las partidas viejas no se cargaron") { vm.gameHistory.value.isNotEmpty() }
+    // los datos siguen ahí: nada se borra
+    assertEquals(3, runBlocking { db().gameResultDao().getAllResultsSync().count { it.gameId == old } })
+    assertNotNull(runBlocking { db().gameProgressDao().getProgressForGameSync(old) })
+    // pero no aparece en lo que muestra la app
+    assertEquals(22, vm.gameRanks.value.size)
+    assertTrue(vm.gameRanks.value.none { it.gameId == old })
+    assertEquals(22, vm.gameLevelsForProgress.value.size)
+    assertFalse(vm.gameLevelsForProgress.value.containsKey(old))
+    // no se puede abrir
+    vm.launchGame(old)
+    assertNull(vm.activeGame.value)
+    vm.playFromLibrary(old, com.example.data.PlayMode.A_TU_MEDIDA)
+    assertNull(vm.activeGame.value)
+  }
+
+  @Test
+  fun `la racha y el total de partidas cuentan los dias jugados, los logros no cuentan el juego retirado`() {
+    seedOldData()
+    val history = runBlocking { db().gameResultDao().getAllResultsSync().map { it.toDomain() } }
+    val stats = computeAchievementStats(history, mapOf(old to 5000, "calculo" to 120))
+    // 4 partidas y 4 días seguidos? ayer, anteayer, hace 3 días (los de Cambio de Chip) y hace 5: la racha larga son los 3 de Cambio de Chip
+    assertEquals(4, stats.totalGames)
+    assertEquals(3, stats.bestStreak)
+    // «Explorador» (9 juegos distintos) y «Mente completa» solo cuentan juegos del registro: Cambio de Chip no suma
+    assertEquals(1, stats.distinctGames)
+    // la liga más alta tampoco sale de un juego retirado
+    assertEquals(120, stats.bestGameRating)
+  }
+
+  @Test
+  fun `un camino de hoy guardado con el juego retirado se cambia por otro de su area y conserva el avance`() {
+    seedOldData(todayWith = "calculo,$old,series", completed = 1)
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "El camino de hoy no se corrigió") { vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
+    val s = vm.dailySession.value
+    assertEquals(1, s.completedCount)
+    assertEquals("calculo", s.gameIds[0])
+    assertEquals("series", s.gameIds[2])
+    assertEquals("ATENCION", GameRegistry.getById(s.gameIds[1])!!.domain.name)
+    assertEquals(3, s.gameIds.toSet().size)
+    // y quedó corregido en la base
+    val saved = runBlocking { db().dailySessionDao().getDailySessionSync(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())) }!!
+    assertFalse(saved.gameIdsRaw.contains(old))
+  }
+
+  @Test
+  fun `la sesion de hoy se puede empezar con datos viejos de Cambio de Chip`() {
+    seedOldData()
+    val vm = newViewModel()
+    TestSupport.awaitUntil { vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
+    vm.startDailySession()
+    assertNotNull(vm.activeGame.value)
+    assertTrue(vm.activeGame.value!!.gameDef.id != old)
+  }
+}

@@ -6,7 +6,6 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.Parejas;   // SymbolSprite
-using NeuroVida.Games.CambioChip; // ChipShipSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
 using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
@@ -1038,7 +1037,7 @@ namespace NeuroVida.Games.Piloto
             bodyGo.transform.SetParent(shipGo.transform, false);
             Stretch(bodyGo.AddComponent<RectTransform>());
             _shipImage = bodyGo.AddComponent<Image>();
-            _shipImage.sprite = ChipShipSprite.Get(ChipDirection.Up);
+            _shipImage.sprite = PilotShipSprite.Get();
             _shipImage.raycastTarget = false;
 
             for (int i = 0; i < SignalPool; i++) _signals.Add(BuildSignal(i));

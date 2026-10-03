@@ -7,7 +7,7 @@ Acordada con Ricardo el 29/30-sep. Lo que manda es `CLAUDE.md` y el código; est
 | Área | Hoy | Faltan |
 |---|---|---|
 | Memoria | 6 (Parejas, Secuencia, Ruta del Tesoro, Bitácora, Rumbo a Casa, Correo Estelar) | – |
-| Atención y velocidad | 7 (Tinta o Palabra, Cambio de Chip, Piloto, Freno, Satélites, Rescate relámpago, Comparación) | – |
+| Atención y velocidad | 6 (Tinta o Palabra, Piloto, Freno, Satélites, Rescate relámpago, Comparación; Cambio de Chip se retiró el 3-oct) | – |
 | Razonamiento y números | 5 (Detective de Series, Acoplamiento, Tráfico Estelar, Cálculo Sereno, Aterrizaje Lunar) | – |
 | Lenguaje | 2 (Anagramas, Lluvia de meteoros) | 1 (La palabra intrusa) |
 

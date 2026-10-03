@@ -289,7 +289,6 @@ MonoBehaviour:
   cardsGameController: {fileID: 0}
   stroopGameController: {fileID: 0}
   comparisonGameController: {fileID: 0}
-  chipGameController: {fileID: 0}
   treasureGameController: {fileID: 0}
   seriesGameController: {fileID: 0}
   calculoGameController: {fileID: 0}

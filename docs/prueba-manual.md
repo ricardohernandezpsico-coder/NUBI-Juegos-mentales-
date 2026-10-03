@@ -30,10 +30,10 @@ Marca cada punto con ✓ o anota lo que viste. Si algo falla, basta con decir el
    del juego (planeta con luna), sin pantalla negra.
 9. Al completar la sesión, el día de hoy queda marcado en el camino y la racha sube.
 
-## D. Los 9 juegos (desde Juegos o desde los botones "[Debug]" de Ajustes)
+## D. Los 8 juegos (desde Juegos o desde los botones "[Debug]" de Ajustes)
 
-10. Secuencia Lumínica · 11. Parejas Ocultas · 12. Ruta del Tesoro · 13. Tinta o Palabra · 14. Cambio de Chip ·
-    15. Detective de Series · 16. Anagramas · 17. Cálculo Sereno · 18. Comparación.
+10. Secuencia Lumínica · 11. Parejas Ocultas · 12. Ruta del Tesoro · 13. Tinta o Palabra ·
+    14. Detective de Series · 15. Anagramas · 16. Cálculo Sereno · 17. Comparación. (Cambio de Chip se retiró el 3-oct.)
     En cada uno: se entiende qué hacer, el arte se ve bien, suena al acertar y al fallar, y termina con "¡Listo!".
 
 ## E. Pausa y salidas

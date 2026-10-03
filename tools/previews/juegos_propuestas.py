@@ -21,7 +21,7 @@ for k in BYDOM:  # los juegos estrella primero
     BYDOM[k].sort(key=lambda g: g not in STAR)
 MEASURE = {'radar': '84 ms', 'freno': '212 ms', 'satelites': '2,6 a la vez', 'aterrizaje': 'a 3,8%', 'acoplamiento': '96°/s',
            'trafico': '5 cápsulas', 'piloto': '12% costo', 'rumbo': 'a 18% de casa', 'bitacora': '5 de 6', 'correo': '8 de 9'}
-LEVEL = {'secuencia': 9, 'parejas': 5, 'rutatesoro': 4, 'stroop': 7, 'cambiochip': 6, 'series': 5, 'anagramas': 3,
+LEVEL = {'secuencia': 9, 'parejas': 5, 'rutatesoro': 4, 'stroop': 7, 'series': 5, 'anagramas': 3,
          'calculo': 6, 'comparacion': 8}
 NEVER = {'satelites', 'acoplamiento', 'correo'}
 
@@ -151,7 +151,7 @@ def s3():
     y = dp(112)
     last = {'bitacora': 'hoy', 'rumbo': 'ayer', 'correo': 'sin probar', 'secuencia': 'hace 3 días', 'parejas': 'hace 9 días',
             'rutatesoro': 'hace 5 días', 'piloto': 'ayer', 'freno': 'hoy', 'satelites': 'sin probar', 'stroop': 'hace 2 días',
-            'cambiochip': 'hace 12 días'}
+            }
     for dom, name in DOMS[:2]:
         d.text((dp(20), y), f'{name.upper()} · {len(BYDOM[dom])}', font=F(12), fill=light(dom))
         y += dp(24)

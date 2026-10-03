@@ -1,5 +1,7 @@
 # «Quitar animaciones» de verdad — regla, componentes comunes e inventario (fases A y B)
 
+> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 22 juegos que quedan.
+
 Tarea 18 (3-oct). Fase A: regla, componentes comunes e inventario. Fase B: la regla aplicada dentro de los 23 juegos (columna «Hecho» de las tablas).
 
 ## La regla

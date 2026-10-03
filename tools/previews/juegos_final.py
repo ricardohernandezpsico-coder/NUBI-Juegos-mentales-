@@ -14,7 +14,7 @@ SPARK = {'bitacora': [3, 4, 4, 5, 5], 'rumbo': [34, 30, 27, 24, 18], 'freno': [2
          'piloto': [22, 19, 17, 14, 12], 'radar': [132, 118, 104, 96, 84], 'trafico': [3, 3, 4, 4, 5]}
 LOWER = {'rumbo', 'freno', 'piloto', 'radar'}
 LAST = {'bitacora': 'hoy', 'rumbo': 'ayer', 'secuencia': 'hace 3 días', 'parejas': 'hace 9 días', 'rutatesoro': 'hace 5 días',
-        'piloto': 'ayer', 'freno': 'hoy', 'stroop': 'hace 2 días', 'cambiochip': 'hace 12 días'}
+        'piloto': 'ayer', 'freno': 'hoy', 'stroop': 'hace 2 días'}
 TODAY = {'bitacora', 'freno'}
 
 

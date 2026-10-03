@@ -66,9 +66,6 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Mismo smoke test pero con Ruta del Tesoro como juego.</summary>
         public static void RunRutaTesoro() => RunGame("rutatesoro", 9f);
 
-        /// <summary>Mismo smoke test pero con Cambio de Chip como juego.</summary>
-        public static void RunCambioChip() => RunGame("cambiochip", 9f);
-
         /// <summary>Mismo smoke test pero con Piloto Estelar como juego.</summary>
         public static void RunPiloto() => RunGame("piloto", 9f);
 
@@ -124,7 +121,7 @@ namespace NeuroVida.Bridge.EditorTools
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
             ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f),
-            ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), ("Comparacion", "comparacion", 9f), ("CambioChip", "cambiochip", 9f),
+            ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), ("Comparacion", "comparacion", 9f),
             ("RutaTesoro", "rutatesoro", 9f), ("Series", "series", 9f), ("Calculo", "calculo", 9f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
             ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f), ("Trafico", "trafico", 9f),

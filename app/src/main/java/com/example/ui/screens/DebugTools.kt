@@ -38,7 +38,6 @@ private val DebugGames = listOf(
   DebugGame("parejas", "Parejas Ocultas", level = 1, timed = false),
   DebugGame("stroop", "Tinta o Palabra (Reto 60 s)", level = 4, timed = true), // desde el nivel 4 la regla cambia
   DebugGame("comparacion", "Comparación (Reto 60 s)", level = 2, timed = true),
-  DebugGame("cambiochip", "Cambio de Chip (Reto 60 s)", level = 2, timed = true),
   DebugGame("rutatesoro", "Ruta del Tesoro (con reloj)", level = 1, timed = true),
   DebugGame("series", "Detective de Series (Reto 120 s)", level = 1, timed = true),
   DebugGame("calculo", "Cálculo Sereno (Reto 90 s)", level = 1, timed = true),

@@ -13,7 +13,6 @@
   <Project Path="NeuroVida.Bootstrap.csproj" />
   <Project Path="NeuroVida.Games.Parejas.Tests.csproj" />
   <Project Path="NeuroVida.Games.Intrusa.Tests.csproj" />
-  <Project Path="NeuroVida.Games.CambioChip.Tests.csproj" />
   <Project Path="NeuroVida.Games.Trafico.Tests.csproj" />
   <Project Path="NeuroVida.Bootstrap.Editor.csproj" />
   <Project Path="NeuroVida.Games.Freno.Tests.csproj" />

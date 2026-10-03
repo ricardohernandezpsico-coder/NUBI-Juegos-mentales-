@@ -4,7 +4,6 @@ using NeuroVida.Games.Secuencia;
 using NeuroVida.Games.Parejas;
 using NeuroVida.Games.Stroop;
 using NeuroVida.Games.Comparacion;
-using NeuroVida.Games.CambioChip;
 using NeuroVida.Games.RutaTesoro;
 using NeuroVida.Games.Series;
 using NeuroVida.Games.Calculo;
@@ -47,7 +46,6 @@ namespace NeuroVida.Bridge
         [SerializeField] private CardsGameController cardsGameController;
         [SerializeField] private StroopGameController stroopGameController;
         [SerializeField] private ComparisonGameController comparisonGameController;
-        [SerializeField] private ChipGameController chipGameController;
         [SerializeField] private TreasureGameController treasureGameController;
         [SerializeField] private SeriesGameController seriesGameController;
         [SerializeField] private CalculoGameController calculoGameController;
@@ -212,16 +210,6 @@ namespace NeuroVida.Bridge
                     }
                     comparisonGameController.gameObject.SetActive(true);
                     comparisonGameController.StartSession(config);
-                    break;
-                case ChipGameController.GameId:
-                    if (chipGameController == null)
-                    {
-                        var go = new GameObject("ChipGameController");
-                        go.transform.SetParent(transform, false);
-                        chipGameController = go.AddComponent<ChipGameController>();
-                    }
-                    chipGameController.gameObject.SetActive(true);
-                    chipGameController.StartSession(config);
                     break;
                 case TreasureGameController.GameId:
                     if (treasureGameController == null)

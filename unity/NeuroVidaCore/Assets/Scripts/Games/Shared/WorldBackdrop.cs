@@ -9,8 +9,7 @@ namespace NeuroVida.Games.Shared
     /// <summary>
     /// "Mundo" de fondo de un juego. Todos comparten el sello de la app: el mismo cielo nocturno
     /// (<see cref="NeuroStyle.NightGradient"/>), nebulosas y estrellas en perspectiva. Encima, cada juego tiene
-    /// UN elemento propio ligado a su mecánica (lunas gemelas en Parejas, superficie lunar en Ruta del Tesoro, órbitas en
-    /// Cambio de Chip...), para que jugar varios seguidos no se sienta repetitivo. Es decoración pura: todo va
+    /// UN elemento propio ligado a su mecánica (lunas gemelas en Parejas, superficie lunar en Ruta del Tesoro...), para que jugar varios seguidos no se sienta repetitivo. Es decoración pura: todo va
     /// detrás del contenido y nada recibe toques.
     /// </summary>
     public sealed class GameWorld
@@ -93,6 +92,7 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.20f), NebulaBPos = new Vector2(0.1f, 0.15f),
         };
 
+        // Sin uso desde que Cambio de Chip se retiró (3-oct-2026): queda como mundo disponible para otro juego.
         public static GameWorld Orbits => new GameWorld
         {
             Name = "Órbitas", OrbitRings = 4,

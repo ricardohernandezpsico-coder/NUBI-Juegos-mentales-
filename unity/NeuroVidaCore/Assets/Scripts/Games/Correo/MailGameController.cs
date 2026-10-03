@@ -5,7 +5,6 @@ using UnityEngine.UI;
 using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia;  // RoundedRectSprite / RadialGlowSprite / RingSprite
-using NeuroVida.Games.CambioChip; // ChipShipSprite (la nave de Piloto Estelar)
 using NeuroVida.Games.Parejas;    // SymbolSprite (asteroides)
 using NeuroVida.Games.Piloto;     // PilotContract: la ruta (ancho, curvas, velocidad)
 using NeuroVida.Games.Shared;
@@ -1433,7 +1432,7 @@ namespace NeuroVida.Games.Correo
             bodyGo.transform.SetParent(shipGo.transform, false);
             Stretch(bodyGo.AddComponent<RectTransform>());
             _shipImage = bodyGo.AddComponent<Image>();
-            _shipImage.sprite = ChipShipSprite.Get(ChipDirection.Up);
+            _shipImage.sprite = PilotShipSprite.Get();
             _shipImage.raycastTarget = false;
             // Grietas encima de la nave (mismo encuadre que su sprite).
             _damageImage = NewImage(shipGo.transform, "Damage", null);

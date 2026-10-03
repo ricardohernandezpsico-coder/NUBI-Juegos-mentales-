@@ -85,6 +85,8 @@ fun ProgressScreen(
   val domainMastery by viewModel.domainMasteryInfo.collectAsState()
   val gameRanks by viewModel.gameRanks.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
+  // Las partidas de juegos retirados (data/Models.kt, GameRegistry.retiredDomains) siguen guardadas pero no se muestran.
+  val shownHistory = remember(history) { history.filter { !GameRegistry.isRetired(it.gameId) } }
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val progress by viewModel.gameProgress.collectAsState()
   val progressLog by viewModel.progressLog.collectAsState()
@@ -303,13 +305,13 @@ fun ProgressScreen(
           }
 
           // Tendencia
-          ProgressTrendChart(history = history)
+          ProgressTrendChart(history = shownHistory)
 
           // Historial reciente como filas sueltas
           Column {
             SpaceSectionTitle("Historial reciente")
             Spacer(Modifier.height(10.dp))
-            history.take(8).forEach { item ->
+            shownHistory.take(8).forEach { item ->
               val game = GameRegistry.getById(item.gameId)
               Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),

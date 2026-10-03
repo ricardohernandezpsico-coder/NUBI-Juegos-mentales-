@@ -65,7 +65,6 @@ class BaselineTest {
     // Los demás, la de su área.
     assertEquals(0.8f, seeds["parejas"]!!, 1e-4f)      // memoria
     assertEquals(0.2f, seeds["radar"]!!, 1e-4f)        // atención
-    assertEquals(0.2f, seeds["cambiochip"]!!, 1e-4f)   // atención
     assertEquals(0.5f, seeds["series"]!!, 1e-4f)       // razonamiento
     assertEquals(0.7f, seeds["disparate"]!!, 1e-4f)    // lenguaje
   }

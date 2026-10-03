@@ -3,7 +3,7 @@ Comparación y Series, armadas con los .raw que vuelca ArtPreview.
 
 Uso: python3 tools/art-preview/juegos.py <raw> [--out docs/previews]
      ->  arte-juegos.png (Ruta del Tesoro, Secuencia, Comparación, Series)
-         arte-juegos-2.png (Tinta o Palabra, Cambio de Chip, Cálculo, Anagramas)
+         arte-juegos-2.png (Cálculo, Anagramas; Tinta o Palabra se rehízo el 3-oct y Cambio de Chip se retiró)
 """
 import argparse
 import os
@@ -167,66 +167,6 @@ def clay_rect(im, box, fill, r=28, border=5, drop=10):
     d.rounded_rectangle(box, r, fill=fill)
 
 
-def banner(im, raw, badge, word, sub, accent):
-    base = (0x17, 0x21, 0x3D)
-    col = tuple(int(base[i] + (accent[i] - base[i]) * 0.32) for i in range(3))
-    clay_rect(im, (30, 110, W - 30, 205), col, r=30, border=3, drop=6)
-    put(im, load(f'{raw}/badge_{badge}.raw'), 30 + 38, 157, 58)
-    d = ImageDraw.Draw(im)
-    d.text((110, 142), word, font=ImageFont.truetype(FB, 40), fill=(255, 255, 255), anchor='lm', stroke_width=1, stroke_fill=INK)
-    d.text((110, 182), sub, font=ImageFont.truetype(FB, 17), fill=(235, 238, 255), anchor='lm')
-
-
-def stroop(raw):
-    im = night(5)
-    glow(im, 80, 300, 180, (0xFF, 0x6B, 0x4A), 40)
-    glow(im, 470, 700, 180, (0xB8, 0xA4, 0xFF), 45)
-    d = ImageDraw.Draw(im)
-    title(d, 'Tinta o Palabra')
-    banner(im, raw, 'Ink', 'TINTA', 'Toca el color con que está escrita', (0x60, 0xA5, 0xFA))
-    accent = (0x60, 0xA5, 0xFA)
-    clay_rect(im, (40, 280, W - 40, 520), accent, r=30, border=3, drop=6)
-    ImageDraw.Draw(im).rounded_rectangle((45, 285, W - 45, 515), 26, fill=(0x1B, 0x27, 0x40))
-    for cx, cy in [(62, 302), (W - 62, 302), (62, 498), (W - 62, 498)]:
-        put(im, load(f'{raw}/screw.raw'), cx, cy, 20)
-    glow(im, W / 2, 400, 150, (0xEF, 0x44, 0x44), 90)
-    d = ImageDraw.Draw(im)
-    d.text((W / 2, 400), 'VERDE', font=ImageFont.truetype(FB, 92), fill=(0xFF, 0x6B, 0x6B), anchor='mm')
-    clay_rect(im, (W / 2 - 80, 262, W / 2 + 80, 300), accent, r=19, border=2, drop=4)
-    ImageDraw.Draw(im).text((W / 2, 281), 'TINTA', font=ImageFont.truetype(FB, 24), fill=INK, anchor='mm')
-    tile = load(f'{raw}/tile.raw')
-    cols = [((0xEF, 0x44, 0x44), 'ROJO'), ((0x3B, 0x82, 0xF6), 'AZUL'), ((0x22, 0xC5, 0x5E), 'VERDE'), ((0xF5, 0x9E, 0x0B), 'AMARILLO'), ((0xA8, 0x55, 0xF7), 'MORADO')]
-    for i, (c, n) in enumerate(cols):
-        cx = W / 2 + (i - 1) * 180 if i < 3 else W / 2 + (i - 3.5) * 180
-        cy = 640 if i < 3 else 790
-        put(im, tinted(tile, c), cx, cy, 160)
-        ImageDraw.Draw(im).text((cx, cy - 6), n, font=ImageFont.truetype(FB, 24 if len(n) > 5 else 30), fill=(255, 255, 255), anchor='mm', stroke_width=1, stroke_fill=INK)
-    return im
-
-
-def chip(raw):
-    im = night(6)
-    d = ImageDraw.Draw(im)
-    for rr, a in [(420, 30), (560, 22)]:
-        d.ellipse((W / 2 - rr / 2, 420 - rr / 2, W / 2 + rr / 2, 420 + rr / 2), outline=(255, 248, 236, a), width=2)
-    title(d, 'Cambio de Chip')
-    banner(im, raw, 'Direction', 'DIRECCIÓN', 'Toca hacia dónde apunta la nave', (0x38, 0xBD, 0xF8))
-    accent = (0x38, 0xBD, 0xF8)
-    clay_rect(im, (90, 260, W - 90, 620), accent, r=30, border=3, drop=6)
-    ImageDraw.Draw(im).rounded_rectangle((95, 265, W - 95, 615), 26, fill=(0x1B, 0x27, 0x40))
-    clay_rect(im, (W / 2 - 95, 242, W / 2 + 95, 280), accent, r=19, border=2, drop=4)
-    ImageDraw.Draw(im).text((W / 2, 261), 'DIRECCIÓN', font=ImageFont.truetype(FB, 22), fill=INK, anchor='mm')
-    tile = load(f'{raw}/tile.raw')
-    cx, cy = W / 2 + 105, 440
-    put(im, tinted(tile, (0xF8, 0xFA, 0xFC)), cx, cy, 130)
-    put(im, load(f'{raw}/ship_2.raw'), cx, cy - 4, 99)
-    pads = [((0x38, 0xBD, 0xF8), 0, W / 2, 700), ((0xF4, 0x72, 0xB6), 1, W / 2, 880), ((0xA3, 0xE6, 0x35), 2, W / 2 - 150, 790), ((0xFB, 0xBF, 0x24), 3, W / 2 + 150, 790)]
-    for c, dirn, px, py in pads:
-        put(im, tinted(tile, c), px, py, 140)
-        put(im, load(f'{raw}/arrow_{dirn}.raw'), px, py - 6, 72)
-    return im
-
-
 def calculo(raw):
     im = night(7)
     glow(im, 100, 180, 150, (0xFF, 0xF4, 0xD6), 70)
@@ -298,7 +238,7 @@ def main():
         sheet.alpha_composite(p, (gap + i * (W + gap), gap))
     os.makedirs(a.out, exist_ok=True)
     sheet.convert('RGB').save(os.path.join(a.out, 'arte-juegos.png'))
-    panels = [stroop(a.raw), chip(a.raw), calculo(a.raw), anagramas(a.raw)]
+    panels = [calculo(a.raw), anagramas(a.raw)]
     sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
     for i, p in enumerate(panels):
         sheet.alpha_composite(p, (gap + i * (W + gap), gap))

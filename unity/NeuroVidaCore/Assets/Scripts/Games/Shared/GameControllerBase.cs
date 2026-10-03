@@ -9,7 +9,7 @@ using static NeuroVida.Games.Shared.UiKit;
 namespace NeuroVida.Games.Shared
 {
     /// <summary>
-    /// Base de los 7 juegos del DDA común (Stroop, Comparación, Cambio de Chip, Ruta del Tesoro, Series, Cálculo,
+    /// Base de los juegos del DDA común (Stroop, Comparación, Ruta del Tesoro, Series, Cálculo,
     /// Anagramas): el estado y los comportamientos que cada controlador tenía copiados idénticos. Cada juego arma
     /// su propia UI en <see cref="BuildUi"/> (se llama una vez desde <see cref="Awake"/>) y debe asignar
     /// <see cref="_flash"/> (destello de pantalla completa) y <see cref="_resultRoot"/> (panel de resultado, con un

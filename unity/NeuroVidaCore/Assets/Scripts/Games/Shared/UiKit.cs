@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace NeuroVida.Games.Shared
 {
     /// <summary>
-    /// Utilidades de UI por código que los 7 juegos del DDA común (Stroop, Comparación, Cambio de Chip, Ruta del
+    /// Utilidades de UI por código que los juegos del DDA común (Stroop, Comparación, Ruta del
     /// Tesoro, Series, Cálculo, Anagramas) tenían copiadas idénticas en cada controlador. Se usan con
     /// <c>using static NeuroVida.Games.Shared.UiKit;</c>, así las llamadas siguen igual (<c>Stretch(rect)</c>,
     /// <c>StartCoroutine(PopRect(...))</c>). Cambiar algo acá (p. ej. la tipografía de <see cref="MakeText"/>) lo

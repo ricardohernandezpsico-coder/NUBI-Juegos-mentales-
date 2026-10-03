@@ -27,7 +27,7 @@ namespace NeuroVida.Games.Correo
         public static Sprite ShieldPip(bool full) => full
             ? (_shieldFull != null ? _shieldFull : _shieldFull = ToSprite(RenderShieldPip(112, true), 112, 112))
             : (_shieldEmpty != null ? _shieldEmpty : _shieldEmpty = ToSprite(RenderShieldPip(112, false), 112, 112));
-        /// <summary>Daño que se pone ENCIMA de la nave de Piloto (<c>ChipShipSprite</c>, mismo tamaño y encuadre):
+        /// <summary>Daño que se pone ENCIMA de la nave de Piloto (<c>PilotShipSprite</c>, mismo tamaño y encuadre):
         /// 1 = una grieta, 2 = dos grietas y una quemadura.</summary>
         public static Sprite ShipDamage(int damage)
         {
@@ -96,7 +96,7 @@ namespace NeuroVida.Games.Correo
                 p.Over(new Color(1f, 1f, 1f, 0.55f), Cover(Ellipse(x, y, -0.24f, 0.38f, 0.14f, 0.2f), Aa));
             });
 
-        // La silueta del casco de la nave de Piloto (ChipShipSprite, mirando arriba), para recortar las grietas.
+        // La silueta del casco de la nave de Piloto (PilotShipSprite, mirando arriba), para recortar las grietas.
         private static float ShipHull(float u, float v) =>
             Mathf.Max(Mathf.Max(Circle(u, v, -0.62f, -0.06f, 0.92f), Circle(u, v, 0.62f, -0.06f, 0.92f)), -0.58f - v);
 

@@ -15,3 +15,17 @@ convenció ("una persona que no lo entienda no lo vuelve a jugar"). Código en e
 Lección (tras Constelación y Primer Contacto): nada de juegos "pesados" de explicar; lo que funciona es lo de Piloto
 Estelar: movimiento continuo, se entiende al instante, enganche inmediato. Queda de esa etapa: `Toast.FitSize` cuenta
 los renglones reales (los avisos largos ya no se salen del recuadro, en todos los juegos).
+
+**Cambio de Chip (RETIRADO, 3-oct-2026)**, id `cambiochip` (Atención, «flexibilidad cognitiva»): una ficha con una nave de arcilla y la regla del cartel, «hacia dónde APUNTA la nave» (DIRECCIÓN)
+o «en qué borde ESTÁ» (POSICIÓN). Razones (Ricardo): (1) Tinta o Palabra «Dos orillas» ya entrena cambiar de regla (`docs/diseno-tinta-o-palabra.md`); (2) la mecánica se parece al
+juego de las hojas de Lumosity; (3) se probó una alternativa de regla escondida, tipo Wisconsin, en dos bocetos y a Ricardo le resultó frustrante y sin enganche: descartada. Atención
+pasó de 7 a 6 juegos y la app, de 23 a 22.
+- **El id `cambiochip` queda RESERVADO** (no se reutiliza para otro juego): `GameRegistry.retiredDomains`.
+- **Datos de quien ya lo jugó: NO se borran ni se migran.** Sus partidas y su progreso siguen en Room (`game_results`, `game_progress`) y en las preferencias (`skill`, `progress_log`); la app no
+  los muestra en ningún lado (todo lo que se ve sale de `GameRegistry.allGames` / `getById`, null para un id retirado; el historial reciente y la gráfica de Avance los filtran) y no rompen
+  nada. Cuentan: la racha y el total de partidas (son días y partidas jugadas). No cuentan: «Explorador» (9 juegos distintos del registro), las ligas de juego más alta (`bestGameRating` ignora
+  los retirados), la liga general (promedio de los 22) ni el avance del área Atención (sus 6 juegos). Un camino de hoy guardado antes del retiro que lo nombraba se corrige solo: ese lugar pasa a otro
+  juego de Atención (`NeuroVidaRepository.withoutRetiredGames`). Prueba: `flow/RetiredGameTest`.
+- **Código**: se borró `Games/CambioChip/` (controlador, contrato `ChipContract`, pruebas). La nave de arcilla (`ChipShipSprite`) la usaban Piloto y Correo: se mudó a `Games/Piloto/PilotShipSprite.cs`
+  (solo mirando arriba). `Shared/RuleBadgeSprite` y `Shared/ClayArrowSprite` solo las usaban Cambio de Chip (y Tinta o Palabra antes del rediseño): sin uso, se borraron. El código completo queda en el
+  historial de git (último commit con el juego: `4104ec5`/`fa8ae5a` y anteriores).

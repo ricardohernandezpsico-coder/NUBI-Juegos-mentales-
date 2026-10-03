@@ -51,7 +51,7 @@ object Skill {
   val STAGES = listOf("Inicio", "Aprendiz", "Hábil", "Experto", "Maestro")
 
   val ladders: Map<String, Ladder> = mapOf(
-    "stroop" to Ladder(5), "cambiochip" to Ladder(5), "comparacion" to Ladder(7), "anagramas" to Ladder(7),
+    "stroop" to Ladder(5), "comparacion" to Ladder(7), "anagramas" to Ladder(7),
     "series" to Ladder(9), "calculo" to Ladder(9), "piloto" to Ladder(9),
     "rutatesoro" to Ladder(12, ownTarget = 0.70f),
     "radar" to Ladder(12), "freno" to Ladder(12), "aterrizaje" to Ladder(12), "acoplamiento" to Ladder(12),

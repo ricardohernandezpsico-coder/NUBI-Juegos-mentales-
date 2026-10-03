@@ -531,8 +531,26 @@ class NeuroVidaRepository(
       dailySessionDao.insertOrUpdate(newEntity)
       _dailySession.value = newEntity.toDomain()
     } else {
-      _dailySession.value = session.toDomain()
+      _dailySession.value = withoutRetiredGames(session)
     }
+  }
+
+  /**
+   * Un camino de hoy guardado ANTES de retirar un juego (data/Models.kt, GameRegistry.retiredDomains) puede nombrarlo: cada juego retirado se cambia por otro de su
+   * misma área que no esté ya en el camino (los completados y sus puntajes quedan como están). Sin juegos retirados, devuelve la sesión tal cual.
+   */
+  private suspend fun withoutRetiredGames(entity: DailySessionEntity): DailySessionState {
+    val state = entity.toDomain()
+    if (state.gameIds.none { GameRegistry.isRetired(it) }) return state
+    val ids = state.gameIds.toMutableList()
+    for (i in ids.indices) {
+      val domain = GameRegistry.retiredDomains[ids[i]] ?: continue
+      val pool = GameRegistry.allGames.filter { it.domain == domain && it.id !in ids && it.id !in BOOKEND_GAMES }
+      ids[i] = (pool.randomOrNull() ?: GameRegistry.allGames.first { it.id !in ids && it.id !in BOOKEND_GAMES }).id
+    }
+    val fixed = entity.copy(gameIdsRaw = ids.joinToString(","))
+    dailySessionDao.insertOrUpdate(fixed)
+    return fixed.toDomain()
   }
 
   private fun observeDailySession() {

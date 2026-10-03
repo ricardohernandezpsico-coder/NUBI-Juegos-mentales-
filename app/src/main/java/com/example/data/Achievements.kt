@@ -65,7 +65,7 @@ fun computeAchievementStats(history: List<GamePlayResult>, ratings: Map<String, 
     distinctDomains = defs.map { it.domain }.toSet().size,
     bestScore = history.maxOfOrNull { it.score } ?: 0,
     timedGames = history.count { it.timed },
-    bestGameRating = ratings.values.maxOrNull() ?: 0,
+    bestGameRating = ratings.filterKeys { !GameRegistry.isRetired(it) }.values.maxOrNull() ?: 0,
     globalRating = GameRegistry.allGames.sumOf { ratings[it.id] ?: 0 } / GameRegistry.allGames.size
   )
 }
