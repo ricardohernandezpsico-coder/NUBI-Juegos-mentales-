@@ -80,14 +80,11 @@ class MainActivity : ComponentActivity() {
         LocalAppLanguage provides userSettings.language
       ) {
         NeuroVidaTheme(darkTheme = darkTheme) {
-          // Primera experiencia (ver OnboardingScreen): mientras no se resuelva `ageBand` no se monta la app
-          // normal. Al terminar se guarda todo junto y, si eligió "Empezar", arranca la evaluación "Tu punto de partida".
-          if (userSettings.ageBand == null) {
-            com.example.ui.screens.OnboardingScreen(
-              onFinish = { name, band, goal, hour, education, goals, baseline ->
-                viewModel.completeOnboarding(name, band, goal, hour, education, goals, baseline)
-              }
-            )
+          // Primera experiencia («Primer vuelo con Nubi», ver FirstFlightHost): mientras no se resuelva `ageBand`, o haya un
+          // recorrido en curso (el inicio retomado tras un cierre de Android, o «Hacer la evaluación»), no se monta la app normal.
+          val flight by viewModel.flight.collectAsState()
+          if (userSettings.ageBand == null || flight != null) {
+            com.example.ui.screens.FirstFlightHost(viewModel)
           } else {
             NeuroVidaApp(viewModel = viewModel)
           }
@@ -141,9 +138,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val streak by viewModel.currentStreak.collectAsState()
   val achievementQueue by viewModel.achievementQueue.collectAsState()
   val achievementUnlocks by viewModel.achievementUnlocks.collectAsState()
-  val baselineRun by viewModel.baselineRun.collectAsState()
-  val education by viewModel.education.collectAsState()
   val sessionSummary by viewModel.sessionSummary.collectAsState()
+  val coachTone by viewModel.coachTone.collectAsState()
   val topPanel by viewModel.topPanel.collectAsState()
   val lang = com.example.ui.i18n.LocalAppLanguage.current
   // Ventanas abiertas sobre una pestaña (la de un área, un detalle): mientras haya alguna, el dedo no cambia de
@@ -172,7 +168,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       containerColor = androidx.compose.ui.graphics.Color.Transparent,
       bottomBar = {
         // Show bottom bar only when not playing a game or looking at results
-        if (activeGame == null && lastResult == null && baselineRun == null && promotion == null && achievementQueue.isEmpty() &&
+        if (activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() &&
           sessionSummary == null && topPanel == null && swipeLock.intValue == 0
         ) {
           com.example.ui.components.NeuroNavBar(
@@ -197,7 +193,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       ) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
-        if (activeGame == null && lastResult == null && baselineRun == null && sessionSummary == null && topPanel == null) {
+        if (activeGame == null && lastResult == null && sessionSummary == null && topPanel == null) {
           // Si la pestaña cambió mientras había un juego o el resumen encima, el pager vuelve a ella sin animar.
           LaunchedEffect(Unit) {
             if (pagerState.currentPage != currentTab.ordinal) pagerState.scrollToPage(currentTab.ordinal)
@@ -221,7 +217,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
         }
 
         // Perfil (tu inicial) y opciones (engranaje), abiertos desde arriba a la derecha de cualquier pestaña.
-        if (activeGame == null && lastResult == null && baselineRun == null && sessionSummary == null) when (topPanel) {
+        if (activeGame == null && lastResult == null && sessionSummary == null) when (topPanel) {
           com.example.viewmodel.TopPanel.PERFIL ->
             com.example.ui.screens.ProfileScreen(viewModel = viewModel, onClose = { viewModel.openTopPanel(null) })
           com.example.viewmodel.TopPanel.AJUSTES ->
@@ -259,18 +255,6 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           }
         }
 
-        // Evaluación inicial "Tu punto de partida": entre juego y juego (y el mapa al final). Ver data/Baseline.kt.
-        if (activeGame == null) baselineRun?.let { run ->
-          com.example.ui.screens.BaselineScreen(
-            run = run,
-            ageBand = userSettings.ageBand,
-            education = education,
-            onContinue = { viewModel.continueBaseline() },
-            onLater = { viewModel.skipBaseline() },
-            onFinish = { viewModel.finishBaseline() }
-          )
-        }
-
         // Last Result Screen Overlay
         lastResult?.let { (result, didLevelUp) ->
           GameResultScreen(
@@ -282,6 +266,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             rank = gameRanks.firstOrNull { it.gameId == result.gameId },
             modeNote = modeNote,
             atlas = atlas,
+            coachTone = coachTone,
             onPlayAgain = {
               viewModel.launchGame(result.gameId, customLevel = result.level, customTimed = result.timed, mode = result.playMode)
             },

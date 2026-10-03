@@ -69,7 +69,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
     DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
     DebugButton("[Debug] Ver celebración de logro", "btn_debug_achievement") { viewModel.debugShowAchievement() }
-    DebugButton("[Debug] Ver el onboarding otra vez", "btn_debug_onboarding") { viewModel.debugRestartOnboarding() }
+    DebugButton("[Debug] Repetir el inicio (sin borrar datos)", "btn_debug_onboarding") { viewModel.debugRestartOnboarding() }
     // La misión del día de Bitácora, fuera de la sesión: la transmisión y, sin esperar los 10 minutos, el informe.
     DebugButton("[Debug] Bitácora: recibir transmisión", "btn_debug_mission_encode") { viewModel.startMissionTransmission() }
     DebugButton("[Debug] Bitácora: informe ya (sin esperar)", "btn_debug_mission_recall") { viewModel.startMissionReport() }

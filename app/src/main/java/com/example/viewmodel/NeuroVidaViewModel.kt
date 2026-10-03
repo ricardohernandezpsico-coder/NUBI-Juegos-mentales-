@@ -44,21 +44,13 @@ data class ActiveGameSession(
   val resumeLaunchId: String? = null,
   // Evaluación inicial "Tu punto de partida": paso 1..N (0 = partida normal). Ver data/Baseline.kt.
   val assessmentStep: Int = 0,
+  // Abre el juego con su tutorial guiado aunque la persona ya lo haya jugado (el inicio completo, `data/FirstFlight.kt`: el tutorial es parte del recorrido).
+  val tutorial: Boolean = false,
   // Bitácora de Misión: transmisión o informe de la misión del día (null = partida completa o cualquier otro juego).
   val memory: com.example.data.MemoryLaunch? = null,
   // Identidad de esta sesión (no de la partida): la usa la UI para que el estado guardado de una sesión anterior
   // (p. ej. "ya lancé Unity", que Android restaura al recrear la pantalla) no lo herede la siguiente.
   val sessionToken: String = java.util.UUID.randomUUID().toString()
-)
-
-/**
- * Estado de la evaluación inicial mientras se juega ([done] juegos terminados de BaselinePlan.steps, ratings
- * medidos por juego) y, al terminar, el mapa ([result]).
- */
-data class BaselineRun(
-  val done: Int = 0,
-  val measured: Map<String, Float> = emptyMap(),
-  val result: com.example.data.Baseline? = null
 )
 
 class NeuroVidaViewModel(application: Application) : AndroidViewModel(application) {
@@ -156,99 +148,212 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     return shown
   }
 
-  /** Punto de partida: educación, metas y el mapa guardado (null = no hizo la evaluación). */
+  /** Punto de partida: educación (opcional, se edita en Perfil), metas, cómo le habla Nubi, visión de color y el mapa guardado (null = no hizo la evaluación). */
   val education = repository.education
   val goals = repository.goals
   val baseline = repository.baseline
+  val coachTone = repository.coachTone
+  val colorVision = repository.colorVision
 
-  /** Evaluación en curso o su resultado por mostrar (null = no se está haciendo). */
-  private val _baselineRun = MutableStateFlow<BaselineRun?>(null)
-  val baselineRun: StateFlow<BaselineRun?> = _baselineRun.asStateFlow()
+  fun setEducation(education: com.example.data.Education?) = repository.saveEducation(education)
+  fun setCoachTone(tone: com.example.data.CoachTone) = repository.saveCoachTone(tone)
+  fun setColorVision(vision: com.example.data.ColorVision) = repository.saveColorVision(vision)
 
-  /** Logros conseguidos durante la evaluación: se celebran al cerrar el mapa, no entre juego y juego. */
-  private var baselineAchievements: List<String> = emptyList()
+  // ---------- «Primer vuelo con Nubi»: el inicio nuevo (docs/diseno-inicio.md; lógica pura en data/FirstFlight.kt) ----------
 
-  /** Rango de edad con que arranca la evaluación (al salir del onboarding los ajustes todavía no se recargaron). */
-  private var baselineAge: AgeBand? = null
+  /**
+   * El recorrido en curso (null = ninguno). Se lee de disco al crear el ViewModel: cada paso se guarda al completarse
+   * ([FlightStore]), así que si Android cierra la app (también en medio de un juego) vuelve en el paso siguiente.
+   * La PRIMERA vez (sin nada guardado todavía y `ageBand == null`) la pantalla muestra el principio del recorrido completo
+   * y esto sigue en null hasta la primera respuesta.
+   */
+  private val _flight = MutableStateFlow<com.example.data.FlightState?>(com.example.data.FlightStore.load(application))
+  val flight: StateFlow<com.example.data.FlightState?> = _flight.asStateFlow()
 
-  /** Cambia el estado de la evaluación y lo guarda en disco mientras está en curso (sobrevive a que Android cierre
-   *  la app durante un juego; ver [GameSessionStore]). Con el mapa ya calculado o sin evaluación, no queda nada guardado. */
-  private fun setBaselineRun(run: BaselineRun?) {
-    _baselineRun.value = run
-    GameSessionStore.saveBaseline(
-      if (run == null || run.result != null) null
-      else GameSessionStore.BaselineProgress(run.done, run.measured, baselineAge?.name)
-    )
+  /** Logros conseguidos durante los juegos del inicio: se celebran al terminar el recorrido, no entre juego y juego. */
+  private var flightAchievements: List<String> = emptyList()
+
+  /** El punto de partida se está guardando (evita que un doble toque en «Continuar» lo aplique dos veces). */
+  private var flightApplying = false
+
+  private fun setFlight(state: com.example.data.FlightState?) {
+    _flight.value = state
+    com.example.data.FlightStore.save(getApplication(), state)
   }
 
-  /** Empieza (o vuelve a empezar) la evaluación: 3 juegos cortos, uno tras otro. */
-  fun startBaseline(age: AgeBand? = null) {
-    baselineAge = age ?: userSettings.value.ageBand
-    setBaselineRun(BaselineRun())
-    baselineAchievements = emptyList()
+  private fun currentFlight(): com.example.data.FlightState = _flight.value ?: com.example.data.FlightState(com.example.data.FlightMode.FULL)
+
+  /** Cambia una respuesta (o lo que sea) del recorrido y lo guarda en disco. */
+  private fun updateFlight(block: (com.example.data.FlightState) -> com.example.data.FlightState) = setFlight(block(currentFlight()))
+
+  /** «Hacer la evaluación» (Avance, Hoy): solo la parte de juegos del recorrido, sin preguntas. */
+  fun startBaseline() {
+    if (_flight.value?.mode == com.example.data.FlightMode.FULL) return // el inicio completo ya incluye los 4 juegos
+    flightAchievements = emptyList()
     _lastResult.value = null
-    launchBaselineStep(0)
+    setFlight(com.example.data.FlightState(com.example.data.FlightMode.GAMES))
   }
 
-  /** Juega el siguiente juego de la evaluación (o repite el que quedó a medias). */
-  fun continueBaseline() {
-    val run = _baselineRun.value ?: return
-    if (run.result == null && run.done < com.example.data.BaselinePlan.steps.size) launchBaselineStep(run.done)
+  /** Solo depuración (Ajustes): repite el inicio completo SIN borrar partidas ni progreso. */
+  fun debugRestartOnboarding() {
+    flightAchievements = emptyList()
+    _lastResult.value = null
+    setFlight(com.example.data.FlightState(com.example.data.FlightMode.FULL))
   }
 
-  private fun launchBaselineStep(index: Int) {
-    val step = com.example.data.BaselinePlan.steps[index]
+  fun flightSetName(name: String) = updateFlight { it.copy(name = name.trim().take(24)) }
+
+  /** El rango de edad se guarda enseguida en el perfil (los juegos, el avance y el lanzador lo leen de ahí); lo demás, al final. */
+  fun flightSetAge(band: AgeBand) {
+    updateFlight { it.copy(age = band) }
+    viewModelScope.launch { repository.updateSettings(userSettings.value.copy(ageBand = band)) }
+  }
+
+  fun flightToggleGoal(domain: DomainType) {
+    val s = currentFlight()
+    val goals = if (domain in s.goals) s.goals - domain else if (s.goals.size < 3) s.goals + domain else s.goals
+    setFlight(s.copy(goals = goals))
+    repository.saveGoals(goals)
+  }
+
+  fun flightSetTone(tone: com.example.data.CoachTone) {
+    updateFlight { it.copy(tone = tone) }
+    repository.saveCoachTone(tone)
+  }
+
+  fun flightSetColorVision(vision: com.example.data.ColorVision) {
+    updateFlight { it.copy(color = vision) }
+    repository.saveColorVision(vision)
+  }
+
+  fun flightSetDays(days: Int) = updateFlight { it.copy(days = days) }
+
+  fun flightSetHour(hour: Int) = updateFlight { it.copy(hour = hour) }
+
+  /** «Continuar»: al paso que sigue. En «Tu punto de partida» antes se guarda el punto de partida; al pasar el último paso termina el recorrido. */
+  fun flightContinue() {
+    val s = currentFlight()
+    if (s.step == com.example.data.FlightStep.PUNTO) {
+      applyFlightResults(s)
+      return
+    }
+    val next = com.example.data.FirstFlight.next(s)
+    if (next == null) finishFlight() else setFlight(next)
+  }
+
+  /** «Atrás»: un paso (nunca a la mitad de un juego). */
+  fun flightBack() {
+    com.example.data.FirstFlight.back(currentFlight())?.let(::setFlight)
+  }
+
+  /**
+   * El aviso diario ya se resolvió ([hour] = la hora, o [com.example.data.FirstFlight.NO_REMINDER]; la pantalla pidió antes el permiso de
+   * notificaciones de Android 13+ y pasa NO_REMINDER si lo negaron). Se guarda en Ajustes y sigue «Tu camino de hoy».
+   */
+  fun flightConfirmReminder(hour: Int) {
+    val s = currentFlight()
+    val on = hour != com.example.data.FirstFlight.NO_REMINDER
+    viewModelScope.launch {
+      val current = userSettings.value
+      repository.updateSettings(
+        current.copy(
+          notificationsEnabled = on,
+          reminderHour = if (on) hour else current.reminderHour,
+          reminderMinute = if (on) 0 else current.reminderMinute
+        )
+      )
+      val answered = s.copy(hour = hour)
+      setFlight(com.example.data.FirstFlight.next(answered) ?: answered)
+    }
+  }
+
+  /**
+   * Juega el juego [index] (0..3) de [com.example.data.BaselinePlan.steps]. En el recorrido completo SIEMPRE con el tutorial guiado (es el
+   * tutorial del juego); en la evaluación repetida, solo si nunca se jugó. La versión corta se pide con `assessmentStep`.
+   */
+  fun flightPlay(index: Int) {
+    val s = currentFlight()
+    val step = com.example.data.BaselinePlan.steps.getOrNull(index) ?: return
     val def = GameRegistry.getById(step.gameId) ?: return
     pausedGame = null
     _activeGame.value = ActiveGameSession(
       gameDef = def,
-      level = com.example.data.BaselinePlan.startLevel(baselineAge ?: userSettings.value.ageBand),
+      level = com.example.data.BaselinePlan.startLevel(s.age ?: userSettings.value.ageBand),
       timed = step.timed,
-      assessmentStep = index + 1
+      assessmentStep = index + 1,
+      tutorial = s.mode == com.example.data.FlightMode.FULL
     )
+    _lastResult.value = null
   }
 
-  /** "Terminar después" a mitad de la evaluación: se estima el punto de partida y queda para hacerla desde Perfil. */
-  fun skipBaseline() {
-    setBaselineRun(null)
-    _activeGame.value = null
-    _currentTab.value = AppTab.HOY
+  /** «Terminar después» en un juego: lo jugado queda guardado y el resto se estima. En la evaluación repetida se cierra todo. */
+  fun flightSkipGames() {
+    val s = currentFlight()
+    if (s.mode == com.example.data.FlightMode.GAMES) {
+      viewModelScope.launch { repository.applyPriorIfNeeded(userSettings.value.ageBand, education.value) }
+      finishFlight()
+      return
+    }
+    val skipped = com.example.data.FirstFlight.skipRemainingGames(s)
+    setFlight(com.example.data.FirstFlight.next(skipped) ?: skipped)
+  }
+
+  /**
+   * «Tu punto de partida»: se guardan lo que faltaba del perfil (nombre y días por semana), el mapa y los ratings que siembra, y se
+   * vuelve a armar el camino de hoy con las metas y el mapa nuevos. Con los 4 juegos medidos se guarda el mapa; con menos (se dejó
+   * alguno para después) queda el punto de partida estimado y la evaluación se ofrece de nuevo en Avance.
+   */
+  private fun applyFlightResults(s: com.example.data.FlightState) {
+    if (flightApplying) return
+    flightApplying = true
     viewModelScope.launch {
-      repository.applyPriorIfNeeded(userSettings.value.ageBand, education.value)
-      flushBaselineAchievements()
+      try {
+        if (!s.applied) {
+          val age = s.age ?: userSettings.value.ageBand
+          if (s.mode == com.example.data.FlightMode.FULL) {
+            val current = userSettings.value
+            repository.updateSettings(
+              current.copy(
+                name = s.name.ifEmpty { current.name },
+                weeklyGoal = s.days ?: com.example.data.FirstFlight.DEFAULT_DAYS,
+                ageBand = age ?: AgeBand.ADULT
+              )
+            )
+          }
+          if (s.allMeasured) repository.applyBaseline(com.example.data.buildBaseline(s.measured))
+          else repository.applyPriorIfNeeded(age, education.value)
+          repository.refreshTodaySession()
+        }
+        val done = s.copy(applied = true)
+        if (done.mode == com.example.data.FlightMode.GAMES) {
+          finishFlight()
+        } else {
+          setFlight(com.example.data.FirstFlight.next(done) ?: done)
+        }
+      } finally {
+        flightApplying = false
+      }
     }
   }
 
-  /** Cierra el mapa ("Empezar mi camino"): vuelve a Hoy y celebra los logros que quedaron pendientes. */
-  fun finishBaseline() {
-    setBaselineRun(null)
+  /** Fin del recorrido («Empezar mi camino» o «Listo»): vuelve a Hoy y celebra los logros que quedaron pendientes. */
+  fun finishFlight() {
+    setFlight(null)
     setTab(AppTab.HOY)
-    flushBaselineAchievements()
+    if (flightAchievements.isNotEmpty()) _achievementQueue.value = _achievementQueue.value + flightAchievements
+    flightAchievements = emptyList()
   }
 
-  private fun flushBaselineAchievements() {
-    if (baselineAchievements.isNotEmpty()) _achievementQueue.value = _achievementQueue.value + baselineAchievements
-    baselineAchievements = emptyList()
-  }
-
-  private fun onBaselineResult(session: ActiveGameSession, result: GamePlayResult) {
+  /** Llegó el resultado de un juego del inicio: se guarda como cualquier partida (sin avanzar el camino de hoy), se anota su medida y su primer dato, y se pasa a su tarjeta. */
+  private fun onFlightResult(session: ActiveGameSession, result: GamePlayResult) {
     val rating = result.endRating ?: (result.score / 100f)
     _activeGame.value = null
     viewModelScope.launch {
       val outcome = repository.recordGameResult(result, countsForDailySession = false)
-      baselineAchievements = baselineAchievements + outcome.newAchievements
-      val run = _baselineRun.value ?: BaselineRun()
-      val measured = run.measured + (session.gameDef.id to rating)
-      val done = maxOf(run.done, session.assessmentStep)
-      if (done >= com.example.data.BaselinePlan.steps.size) {
-        val baseline = com.example.data.buildBaseline(measured)
-        repository.applyBaseline(baseline)
-        setBaselineRun(BaselineRun(done, measured, baseline))
-        triggerHapticFeedback(HapticType.SUCCESS)
-      } else {
-        setBaselineRun(BaselineRun(done, measured))
-        triggerHapticFeedback(HapticType.LIGHT)
-      }
+      flightAchievements = flightAchievements + outcome.newAchievements
+      val s = _flight.value ?: return@launch // sin recorrido (se perdió o fue un botón de prueba): la partida solo se guarda
+      setFlight(com.example.data.FirstFlight.withResult(s, session.gameDef.id, rating, com.example.data.FirstData.phrase(result)))
+      triggerHapticFeedback(HapticType.LIGHT)
     }
   }
 
@@ -426,7 +531,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     if (live != null || stored != null) GameSessionStore.clearInFlight()
     val current = live ?: stored
     if (current != null && current.assessmentStep > 0) {
-      onBaselineResult(current, rawResult)
+      onFlightResult(current, rawResult)
       return
     }
     val withMode = if (current != null) rawResult.copy(playMode = current.mode) else rawResult
@@ -531,13 +636,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   init {
     _mission.value = missionStore.load()
-    // Lo que quedó en disco si Android cerró la app durante un juego: la evaluación en curso y un resultado que
-    // llegó mientras tanto (se muestra ahora, con su pantalla de resultado y el flujo donde iba).
+    // Lo que quedó en disco si Android cerró la app durante un juego: el recorrido del inicio en curso (ya cargado en
+    // [_flight]) y un resultado que llegó mientras tanto (se muestra ahora, con su pantalla de resultado y el flujo donde iba).
     _pausedGameId.value = pausedGame?.first?.gameDef?.id
-    GameSessionStore.loadBaseline()?.let { saved ->
-      baselineAge = saved.ageBand?.let { n -> AgeBand.values().firstOrNull { it.name == n } }
-      _baselineRun.value = BaselineRun(saved.done, saved.measured)
-    }
     processPendingResult()
   }
 
@@ -809,56 +910,14 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   /**
-   * Fin del onboarding (primera vez): guarda nombre (si lo escribió), meta de días por semana, recordatorio
-   * ([reminderHour] null = sin recordatorios), rango de edad, nivel educacional y metas de una sola vez. Poner
-   * `ageBand` es lo que saca al usuario del onboarding (ver `MainActivity`). Con [playBaseline] arranca la
-   * evaluación "Tu punto de partida"; si no, se estima el punto de partida (ver data/Baseline.kt).
-   */
-  fun completeOnboarding(
-    name: String,
-    band: AgeBand,
-    weeklyGoal: Int,
-    reminderHour: Int?,
-    education: com.example.data.Education?,
-    goals: Set<DomainType>,
-    playBaseline: Boolean
-  ) {
-    _currentTab.value = AppTab.HOY
-    repository.saveProfileExtras(education, goals)
-    viewModelScope.launch {
-      val current = userSettings.value
-      repository.updateSettings(
-        current.copy(
-          name = name.trim().ifEmpty { current.name },
-          weeklyGoal = weeklyGoal,
-          notificationsEnabled = reminderHour != null,
-          reminderHour = reminderHour ?: current.reminderHour,
-          reminderMinute = if (reminderHour != null) 0 else current.reminderMinute,
-          ageBand = band
-        )
-      )
-      if (playBaseline) {
-        startBaseline(band)
-      } else {
-        // "Hacerlo después": punto de partida estimado; la evaluación queda disponible en Perfil.
-        repository.applyPriorIfNeeded(band, education)
-      }
-    }
-  }
-
-  /** Solo depuración (botón en Ajustes): vuelve a mostrar el onboarding (sin borrar partidas ni progreso). */
-  fun debugRestartOnboarding() {
-    viewModelScope.launch { repository.updateSettings(userSettings.value.copy(ageBand = null)) }
-  }
-
-  /**
    * "Jugar ahora" desde el recordatorio. Espera un momento a que carguen los ajustes (al abrir en frío todavía
    * valen los de fábrica) y solo arranca si ya pasó el onboarding y no hay otro juego en curso.
    */
   fun startDailySessionFromReminder() {
     viewModelScope.launch {
       kotlinx.coroutines.delay(700)
-      if (userSettings.value.ageBand != null && _activeGame.value == null && _lastResult.value == null) startDailySession()
+      // Con el inicio nuevo en curso no se salta a la sesión de hoy: primero termina su recorrido.
+      if (userSettings.value.ageBand != null && _flight.value == null && _activeGame.value == null && _lastResult.value == null) startDailySession()
     }
   }
 
@@ -873,7 +932,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       _lastResult.value = null
       _promotion.value = null
       _achievementQueue.value = emptyList()
-      setBaselineRun(null)
+      flightAchievements = emptyList()
+      setFlight(null)
       pausedGame = null
       GameSessionStore.clearAll()
       missionStore.clear()

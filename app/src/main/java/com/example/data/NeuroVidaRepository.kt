@@ -265,14 +265,33 @@ class NeuroVidaRepository(
   private val _baseline = MutableStateFlow(decodeBaseline(profilePrefs.getString("baseline", null)))
   val baseline: StateFlow<Baseline?> = _baseline.asStateFlow()
 
-  /** Datos del onboarding para el punto de partida (educación null = no respondió; metas vacías = sin preferencia). */
-  fun saveProfileExtras(education: Education?, goals: Set<DomainType>) {
+  // Preferencias del inicio nuevo (`docs/diseno-inicio.md`): cómo le habla Nubi y si cuesta distinguir colores. En el mismo archivo
+  // `profile_extra` (ya va al respaldo: es configuración de la persona, no estado pasajero). Sin dato = el valor por defecto de cada una.
+  private val _coachTone = MutableStateFlow(CoachTone.fromStored(profilePrefs.getString("coach_tone", null)) ?: CoachTone.DEFAULT)
+  val coachTone: StateFlow<CoachTone> = _coachTone.asStateFlow()
+  private val _colorVision = MutableStateFlow(ColorVision.fromStored(profilePrefs.getString("color_vision", null)) ?: ColorVision.DEFAULT)
+  val colorVision: StateFlow<ColorVision> = _colorVision.asStateFlow()
+
+  /** Nivel de estudios: ya no se pregunta en el inicio; queda en Perfil, opcional (null = no respondió). Conserva el valor de quien ya lo tenía. */
+  fun saveEducation(education: Education?) {
     _education.value = education
+    profilePrefs.edit().putString("education", education?.name).apply()
+  }
+
+  /** Metas elegidas (vacías = sin preferencia): el camino diario les da prioridad. */
+  fun saveGoals(goals: Set<DomainType>) {
     _goals.value = goals
-    profilePrefs.edit()
-      .putString("education", education?.name)
-      .putString("goals", encodeGoals(goals))
-      .apply()
+    profilePrefs.edit().putString("goals", encodeGoals(goals)).apply()
+  }
+
+  fun saveCoachTone(tone: CoachTone) {
+    _coachTone.value = tone
+    profilePrefs.edit().putString("coach_tone", tone.name).apply()
+  }
+
+  fun saveColorVision(vision: ColorVision) {
+    _colorVision.value = vision
+    profilePrefs.edit().putString("color_vision", vision.name).apply()
   }
 
   /**
@@ -862,6 +881,8 @@ class NeuroVidaRepository(
     _education.value = null
     _goals.value = emptySet()
     _baseline.value = null
+    _coachTone.value = CoachTone.DEFAULT
+    _colorVision.value = ColorVision.DEFAULT
     initializeDatabaseDefaults()
   }
 }

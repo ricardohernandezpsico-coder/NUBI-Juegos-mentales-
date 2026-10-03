@@ -4,7 +4,7 @@
   Solo el PROGRESO de la persona: la base de datos (partidas, avance por juego, perfil y ajustes) y las preferencias
   que forman parte de ese avance. Con esto un teléfono nuevo o restaurado recupera la liga, los logros, el avance de
   cada juego y la historia de la semana.
-  NO se respalda el estado pasajero: la partida en pausa (paused_game), la sesión en curso (game_session), la
+  NO se respalda el estado pasajero: la partida en pausa (paused_game), la sesión en curso (game_session), el inicio a medias (first_flight), la
   bandeja de resultados de Unity (unity_results), dónde quedó Juegos (library_focus) ni las preferencias de Unity.
   Restaurarlos en otro teléfono dejaría una partida "fantasma" a medias.
   Si se agrega un archivo de preferencias nuevo que sea progreso, hay que sumarlo aquí Y en data_extraction_rules.xml

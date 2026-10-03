@@ -54,32 +54,11 @@ class GameSessionStoreTest {
   }
 
   @Test
-  fun `la evaluacion en curso se recupera con lo medido`() {
-    GameSessionStore.saveBaseline(GameSessionStore.BaselineProgress(2, mapOf("radar" to 0.6f, "calculo" to 0.4f), "SENIOR"))
-    val back = GameSessionStore.loadBaseline()
-    assertNotNull(back)
-    assertEquals(2, back!!.done)
-    assertEquals(mapOf("radar" to 0.6f, "calculo" to 0.4f), back.measured)
-    assertEquals("SENIOR", back.ageBand)
-    GameSessionStore.saveBaseline(null)
-    assertNull(GameSessionStore.loadBaseline())
-  }
-
-  @Test
-  fun `una evaluacion guardada ilegible se descarta sin romper la app`() {
-    com.example.NeuroVidaApplication.instance.getSharedPreferences("game_session", android.content.Context.MODE_PRIVATE)
-      .edit().putString("baselineRun", "esto no es json").commit()
-    assertNull(GameSessionStore.loadBaseline())
-  }
-
-  @Test
   fun `borrar datos no deja nada`() {
     GameSessionStore.saveInFlight(flight())
     GameSessionStore.savePendingResult("L1", "{}")
-    GameSessionStore.saveBaseline(GameSessionStore.BaselineProgress(1, emptyMap(), null))
     GameSessionStore.clearAll()
     assertNull(GameSessionStore.inFlight("L1"))
     assertNull(GameSessionStore.takePendingResult())
-    assertNull(GameSessionStore.loadBaseline())
   }
 }

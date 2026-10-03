@@ -73,7 +73,8 @@ fun UnityGameHost(
         assessmentStep = session.assessmentStep,
         assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0,
         memory = session.memory,
-        mode = session.mode
+        mode = session.mode,
+        forceTutorial = session.tutorial
       )
     )
     onLaunched(launchId)

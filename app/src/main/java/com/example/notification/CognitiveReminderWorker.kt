@@ -52,7 +52,11 @@ class CognitiveReminderWorker(
         weeklyGoal = profile?.weeklyGoal ?: 4,
         nextGameTitle = nextTitle,
         daysSinceLastPlay = days.maxOrNull()?.let { (today - it).toInt() },
-        dayOfYear = cal.get(Calendar.DAY_OF_YEAR)
+        dayOfYear = cal.get(Calendar.DAY_OF_YEAR),
+        // `coach_tone` vive en profile_extra (junto a las metas): el aviso le habla como pidió (Ajustes → cómo te anima Nubi).
+        tone = com.example.data.CoachTone.fromStored(
+          context.getSharedPreferences("profile_extra", Context.MODE_PRIVATE).getString("coach_tone", null)
+        ) ?: com.example.data.CoachTone.DEFAULT
       )
     ) ?: return Result.success() // ya completó hoy: no se insiste
 

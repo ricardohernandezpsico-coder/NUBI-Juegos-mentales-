@@ -87,3 +87,41 @@ neutros, medida al final). El inicio nuevo se programa después de esas dos tare
 La pregunta 9 guarda una preferencia (`color_vision`: normal / dificultad / no sé). Con «dificultad»: paletas seguras
 para daltonismo donde existan y, en el futuro, la opción de ocultar juegos (idea de Peak/Lumosity, `docs/analisis-competencia.md` §9).
 Nueva preferencia = decidir su respaldo en `BackupRulesTest` (es progreso de configuración: va al respaldo).
+
+## Ficha técnica (programado el 3-oct, tarea 21b)
+
+**Archivos**
+- `data/FirstFlight.kt`: lógica pura. `FlightStep` (los 19 pasos), `FlightState` (dónde va, respuestas, medidas, frases, juegos dejados para después),
+  `FirstFlight` (`next`, `back`, `skipRemainingGames`, `withResult`, `minutesLeft`, `progress`, `startingPoint`), `FlightCopy` (textos por juego),
+  `CoachTone`, `ColorVision` y `FlightStore` (disco). Dos formas: `FlightMode.FULL` (la primera vez) y `FlightMode.GAMES` («Hacer la evaluación» desde Avance/Hoy:
+  solo los 4 juegos, sin preguntas, y al final «Listo»).
+- `data/Baseline.kt`: `BaselinePlan.steps` = 4 juegos, uno por área (Rastro de luz, Freno, Aterrizaje, Meteoros). `buildBaseline`/`seedRatings` siembran el rating
+  de cada uno y la estimación de su área para los demás juegos. `data/FirstData.kt`: primer dato de los 4 (Rastro: «Repetiste bien un rastro de N luces.»;
+  Aterrizaje: «En promedio, aterrizaste a un X % de distancia del lugar justo.», X sin decimales).
+- `ui/screens/FirstFlightScreen.kt` (pantallas), `FirstFlightHost.kt` (cielo + pantalla + `UnityGameHost` cuando toca jugar). `MainActivity` lo muestra mientras
+  `ageBand == null` **o hay un recorrido guardado** (`flight != null`). Borrados: `OnboardingScreen`, `BaselineScreen` y lo de la evaluación en `GameSessionStore`.
+- `NeuroVidaViewModel`: `flight`, `flightContinue/Back/Play/SkipGames/ConfirmReminder/Set*`, `startBaseline()` (evaluación repetida), `finishFlight()`.
+  `ActiveGameSession.tutorial` → `forceTutorial` del lanzador: el inicio completo SIEMPRE abre el tutorial guiado (con `assessment` = versión corta).
+
+**Preferencias**
+- `first_flight` (nueva, `FlightStore`): el recorrido en curso como JSON. Estado PASAJERO: va a `transient` en `BackupRulesTest` (no al respaldo).
+- `coach_tone` y `color_vision`: dentro de `profile_extra`, que YA va al respaldo (son configuración de la persona). Valores por defecto: celebrar y «no sé».
+  Editables en Ajustes. `coach_tone` ya cambia las frases de veredicto (`ResultPhrases.feedback`) y el texto del recordatorio (`buildReminder`, 2 variantes, sin culpa);
+  `color_vision` por ahora solo se guarda.
+- `education`: ya no se pregunta; se edita en Perfil (opcional) y conserva el valor de quien ya lo tenía.
+
+**Cómo se retoma**: cada cambio de `FlightState` se guarda con `commit()`. Un ViewModel nuevo lee `FlightStore` al crearse; si Android mató la app durante un juego,
+el resultado vuelve por la vía de siempre (`GameSessionStore` + `processPendingResult` → `onUnityResult` → `onFlightResult`) y lleva a la tarjeta de ese juego.
+Salir de Unity sin terminar deja el paso del juego para volver a tocar «Jugar». El rango de edad se guarda en el perfil al elegirlo (los juegos y el avance lo leen de
+ahí); el resto (nombre, días, metas…) en el perfil al pasar «Tu punto de partida». El recorrido termina (y se borra del disco) con «Empezar mi camino».
+
+**Reglas de navegación**: «Atrás» vuelve un paso y nunca cae en un paso de juego (para repetirlo se toca «Jugar»); un juego ya medido no se repite;
+«Terminar después» deja ESE juego y los que quedan para estimar (lo medido se conserva), el recorrido sigue por las preguntas que faltan y, si no se midieron
+los 4, queda el punto de partida estimado y la evaluación se ofrece de nuevo en Avance.
+
+**Pruebas**: `FirstFlightTest` (lógica), `flow/FirstFlightFlowTest` (recorrido completo, terminar después, muerte del proceso en una pregunta y en el juego 3, resultado
+pendiente, evaluación repetida), `BaselineTest`, `FirstDataTest`, `ResultPhrasesTest`, `ReminderContentTest`, `BackupRulesTest`. Capturas Roborazzi:
+`FirstFlightScreenshotTest` → `docs/previews/inicio-real-*.png`.
+
+**Probarlo**: Ajustes → herramientas de depuración → «[Debug] Repetir el inicio (sin borrar datos)». Para la muerte del proceso: Opciones de desarrollador →
+«No conservar actividades», o cerrar la app desde recientes en medio de un juego.

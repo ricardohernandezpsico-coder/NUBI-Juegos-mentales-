@@ -5,9 +5,10 @@ import com.example.model.DomainType
 import com.example.model.GameRegistry
 
 /**
- * "Tu punto de partida": la evaluación inicial del onboarding (al estilo del Fit Test de Lumosity o la evaluación
- * de Peak/Elevate). Tres juegos cortos miden memoria y atención (foco y velocidad); con eso cada uno de los 9 juegos
- * empieza a la medida de la persona y el camino diario prioriza sus metas y su dominio más bajo.
+ * "Tu punto de partida": la evaluación del inicio («Primer vuelo con Nubi», `docs/diseno-inicio.md`). Cuatro juegos cortos,
+ * UNO POR ÁREA (Rastro de luz, Freno de Emergencia, Aterrizaje Lunar y Lluvia de meteoros), miden las 4 áreas; el rating de
+ * cada uno siembra su propio juego y la estimación de su área para los demás juegos de esa área, y el camino diario
+ * prioriza las metas y el área más baja. «Hacer la evaluación» desde Avance repite solo esta parte (los 4 juegos).
  *
  * Criterios (ver CLAUDE.md, "Punto de partida"):
  * - La DIFICULTAD sale del desempeño medido. La edad y el nivel educacional solo se usan (a) para comparar con
@@ -28,12 +29,19 @@ enum class Education(val label: String) {
 object BaselinePlan {
   data class Step(val gameId: String, val domain: DomainType, val timed: Boolean, val measures: String)
 
-  /** Los 3 juegos de la evaluación, en orden (ver la elección en CLAUDE.md; se puede cambiar acá). */
+  /**
+   * Los 4 juegos de la evaluación, en orden: uno por área, los más pulidos y fáciles de entender en segundos (los 4 tienen
+   * tutorial guiado y versión corta). Se puede cambiar acá: la pantalla del inicio y Unity leen esta lista.
+   */
   val steps = listOf(
-    Step("secuencia", DomainType.MEMORIA, timed = false, measures = "Memoria: repite caminos de luz cada vez más largos"),
-    Step("stroop", DomainType.ATENCION, timed = true, measures = "Atención: responde a la tinta o a la palabra, según la regla"),
-    Step("comparacion", DomainType.ATENCION, timed = true, measures = "Atención: elige el mayor lo más rápido que puedas")
+    Step("secuencia", DomainType.MEMORIA, timed = false, measures = "Memoria: repite rastros de luz cada vez más largos"),
+    Step("freno", DomainType.ATENCION, timed = false, measures = "Atención: toca el cohete que se enciende y frena ante el ¡ALTO!"),
+    Step("aterrizaje", DomainType.RAZONAMIENTO, timed = false, measures = "Razonamiento: ubica números en una recta"),
+    Step("meteoros", DomainType.LENGUAJE, timed = false, measures = "Lenguaje: reconoce las palabras que existen")
   )
+
+  /** El juego de la evaluación de esa área. */
+  fun stepFor(domain: DomainType): Step = steps.first { it.domain == domain }
 
   /** Nivel (1-5) con que arrancan los juegos de la evaluación: el medio de la escala, algo más suave en mayores. */
   fun startLevel(age: AgeBand?): Int = if (age == AgeBand.SENIOR) 2 else 3
@@ -75,9 +83,9 @@ fun priorRating(age: AgeBand?, education: Education?): Float {
 fun levelFromRating(rating: Float): Int = (1 + (rating.coerceIn(0f, 1f) * 5f).toInt()).coerceIn(1, 5)
 
 /**
- * Arma el mapa con los ratings medidos por juego ([measuredByGame]: id -> 0..1). Un área con varios pasos (Atención:
- * Tinta o Palabra y Comparación) toma el PROMEDIO de sus pasos. Las áreas que la evaluación no mide (razonamiento,
- * lenguaje) toman el promedio de los medidos, marcados como estimados.
+ * Arma el mapa con los ratings medidos por juego ([measuredByGame]: id -> 0..1). Cada área tiene un solo juego en la
+ * evaluación; si una persona saltó alguno («Terminar después»), su área toma el promedio de las medidas, marcada como
+ * estimada ([Baseline.measured] solo trae las medidas). Si hubiera varios pasos en un área, vale el promedio.
  */
 fun buildBaseline(measuredByGame: Map<String, Float>, timestamp: Long = System.currentTimeMillis()): Baseline {
   val measured = BaselinePlan.steps
@@ -88,7 +96,10 @@ fun buildBaseline(measuredByGame: Map<String, Float>, timestamp: Long = System.c
   return Baseline(timestamp, measured, DomainType.values().associateWith { measured[it] ?: mean })
 }
 
-/** Rating inicial de cada uno de los 9 juegos: el de su dominio en el mapa. */
+/**
+ * Rating inicial de cada juego: el de su área en el mapa. Los 4 juegos de la evaluación toman SU propia medida (el
+ * área tiene un solo juego medido) y los demás juegos de esa área, la estimación del área.
+ */
 fun seedRatings(baseline: Baseline): Map<String, Float> =
   GameRegistry.allGames.associate { g -> g.id to (baseline.domains[g.domain] ?: Percentile.PROVISIONAL_MEAN) }
 

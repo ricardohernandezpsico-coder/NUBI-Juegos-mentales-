@@ -1159,7 +1159,7 @@ namespace NeuroVida.Games.Freno
                 if (isStop && !stopExplained)
                 {
                     stopExplained = true;
-                    t.Say("Ahora la otra regla: si aparece el octágono ¡ALTO!, no toques");
+                    t.Say("Ahora la otra regla: si aparece la señal ¡ALTO!, no toques");
                     yield return StartCoroutine(ShowStopPreview());
                 }
                 t.Say(isStop ? "Se enciende otro cohete. Si aparece ¡ALTO!, no lo toques" : goShown == 0 ? "Toca el cohete que se enciende" : "Otra vez: toca el cohete que se enciende");

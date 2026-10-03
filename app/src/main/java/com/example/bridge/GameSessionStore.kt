@@ -2,7 +2,6 @@ package com.example.bridge
 
 import android.content.Context
 import com.example.NeuroVidaApplication
-import org.json.JSONObject
 
 /**
  * Lo que la app necesita recordar de una partida mientras Unity está al frente, guardado en disco.
@@ -15,7 +14,7 @@ import org.json.JSONObject
  * - Partida en curso ([InFlight]): se anota al lanzar Unity con su id de lanzamiento y se borra al procesar el resultado.
  * - Resultado pendiente: si el resultado llega (broadcast de [NativeReceiver]) sin nadie escuchando, se guarda acá y
  *   la app lo procesa al volver a abrirse, en vez de guardarlo "a ciegas".
- * - Evaluación inicial en curso: cuántos juegos van y qué midieron.
+ * - El recorrido del inicio («Primer vuelo con Nubi») en curso NO vive acá sino en `data/FlightStore` (preferencias `first_flight`).
  * Solo se usa en el proceso principal.
  */
 object GameSessionStore {
@@ -31,8 +30,6 @@ object GameSessionStore {
     val assessmentStep: Int,
     val mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
   )
-
-  data class BaselineProgress(val done: Int, val measured: Map<String, Float>, val ageBand: String?)
 
   private val prefs get() = NeuroVidaApplication.instance.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -91,36 +88,6 @@ object GameSessionStore {
     val id = p.getString("pendingLaunchId", null)
     p.edit().remove("pendingJson").remove("pendingLaunchId").apply()
     return id to json
-  }
-
-  // ------------------------------------------------------------------ evaluación inicial en curso
-
-  fun saveBaseline(progress: BaselineProgress?) {
-    val e = prefs.edit()
-    if (progress == null) {
-      e.remove("baselineRun")
-    } else {
-      val measured = JSONObject().apply { progress.measured.forEach { (k, v) -> put(k, v.toDouble()) } }
-      e.putString(
-        "baselineRun",
-        JSONObject().put("done", progress.done).put("measured", measured).put("age", progress.ageBand ?: "").toString()
-      )
-    }
-    e.apply()
-  }
-
-  fun loadBaseline(): BaselineProgress? {
-    val raw = prefs.getString("baselineRun", null) ?: return null
-    return try {
-      val o = JSONObject(raw)
-      val m = o.getJSONObject("measured")
-      val measured = m.keys().asSequence().associateWith { m.getDouble(it).toFloat() }
-      BaselineProgress(o.getInt("done"), measured, o.optString("age").ifEmpty { null })
-    } catch (e: Exception) {
-      // La evaluación en curso quedó ilegible: se descarta (se vuelve a empezar), pero queda anotado.
-      com.example.diag.ErrorLog.record("DATOS", "No se pudo leer la evaluación inicial guardada; se descarta.", e)
-      null
-    }
   }
 
   /** "Borrar datos": nada de lo anterior sobrevive. */

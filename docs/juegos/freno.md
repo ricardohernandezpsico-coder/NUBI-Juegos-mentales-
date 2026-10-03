@@ -31,7 +31,7 @@ Para el inicio nuevo (`docs/diseno-inicio.md`). La pieza común es `Games/Shared
 - **Tarjeta de Nubi**: «Freno de Emergencia» · «Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.» · «Probar una ronda» / «Saltar tutorial».
 - **Ronda guiada** (`BrakeContract.GuidedPlan`: 3 de ir y 1 con alto; entre `// <guided>` y `// </guided>` en `BrakeGameController`): cohetes lentos con un aro sol
   punteado sobre el botón del carril; los pasos de ir esperan sin límite (60 s) y el del alto dura 3,2 s. Avisos de Nubi: «Toca el cohete que se enciende» ·
-  «Otra vez: toca el cohete que se enciende» · «Ahora la otra regla: si aparece el octágono ¡ALTO!, no toques» · «¡ALTO! Este no: déjalo quieto» · «¡Frenaste a
+  «Otra vez: toca el cohete que se enciende» · «Ahora la otra regla: si aparece la señal ¡ALTO!, no toques» · «¡ALTO! Este no: déjalo quieto» · «¡Frenaste a
   tiempo!» · errores sin culpa: «Casi: se toca el cohete que se enciende. Mira otra vez» / «Casi: con el ¡ALTO! el cohete se queda quieto. Probemos otra vez» ·
   cierre «¡Así se juega! Ahora sin ayuda». Un error repite el MISMO paso. No suma puntos, no toca el DDA, las rachas ni el SSRT y no se guarda.
 - **«Cómo se juega» desde la pausa** (`PauseMenu`, cuarto botón): descarta el lanzamiento en curso, corre tarjeta + ronda guiada con el reloj andando y vuelve a la partida

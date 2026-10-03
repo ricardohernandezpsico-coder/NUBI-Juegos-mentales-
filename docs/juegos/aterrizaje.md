@@ -33,6 +33,5 @@ tramo "a 3" (lima si ≤5%, coral si no). "¡DIANA LUNAR!" con ≤1,2% de error.
   «Casi: la zona amarilla es el lugar justo del N. Probemos otra vez» · «¡Así se juega! Ahora sin ayuda». No cuenta para nada ni se guarda.
 - **«Cómo se juega» desde la pausa**: descarta el aterrizaje en curso, tarjeta + ronda guiada, y vuelve a la partida con el reloj del Reto corrido lo que duró.
 - **Versión corta**: `LandingContract.AssessmentTrials` = **8 aterrizajes** (≈ 60 s, sin reloj, bajada de Reto/estándar, no la lenta de Precisión). Arranque suave
-  (`CreateEngine`: nivel 1 en mayores, 3 en el resto; paso 0,3). **Primer dato** (app, `data/FirstData.kt`): «Tus aterrizajes quedaron, en promedio, a X % del largo de la
-  regla del lugar justo.» (de `numline_error_pct`).
+  (`CreateEngine`: nivel 1 en mayores, 3 en el resto; paso 0,3). **Primer dato** (app, `data/FirstData.kt`): «En promedio, aterrizaste a un X % de distancia del lugar justo.» (de `numline_error_pct`, redondeado, sin decimales).
 - Pruebas: `AterrizajeTutorialTests` (aterrizaje guiado fácil y sin repetir, zonas decrecientes, 8 fijos, arranque suave) y `GuidedTutorialTests`.

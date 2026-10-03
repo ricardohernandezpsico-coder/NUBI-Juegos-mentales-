@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 
 /**
@@ -97,7 +98,9 @@ fun ClayButton(
   modifier: Modifier = Modifier,
   color: Color = Clay.Sun,
   textColor: Color = Clay.Ink,
-  icon: ImageVector? = null
+  icon: ImageVector? = null,
+  /** El inicio nuevo pide texto de 18 sp o más. */
+  fontSize: TextUnit = 17.sp
 ) {
   ClayCard(
     modifier = modifier.fillMaxWidth(),
@@ -118,7 +121,7 @@ fun ClayButton(
         Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(8.dp))
       }
-      Text(text, color = textColor, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+      Text(text, color = textColor, fontSize = fontSize, fontWeight = FontWeight.Bold)
     }
   }
 }

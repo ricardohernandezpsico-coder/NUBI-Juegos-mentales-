@@ -57,4 +57,22 @@ class ReminderContentTest {
       listOf("neurona", "cerebro", "reserva cognitiva", "salud", "deterioro").forEach { assertFalse(t, t.contains(it)) }
     }
   }
+
+  @Test
+  fun `el tono celebrar cambia cada mensaje y ninguno lleva culpa ni promesas de salud`() {
+    fun celebrate(i: ReminderInput) = i.copy(tone = com.example.data.CoachTone.CELEBRAR)
+    val inputs = listOf(
+      input(playedToday = true, completed = 2), input(streak = 4), input(streak = 6), input(gap = 9),
+      input(day = 0), input(day = 1), input(day = 2)
+    )
+    for (i in inputs) {
+      val claro = buildReminder(i)!!
+      val celebrar = buildReminder(celebrate(i))!!
+      assertTrue("la variante celebrar debe ser distinta: ${claro.title}", claro != celebrar)
+      val t = (celebrar.title + " " + celebrar.text).lowercase()
+      listOf("neurona", "cerebro", "salud", "deterioro", "perdiste", "faltó a", "no jugaste", "abandon").forEach { assertFalse(t, t.contains(it)) }
+    }
+    assertEquals("Ricardo, ¡ya casi!", buildReminder(celebrate(input(playedToday = true, completed = 2)))!!.title)
+    assertNull(buildReminder(celebrate(input(playedToday = true, completed = 3))))
+  }
 }

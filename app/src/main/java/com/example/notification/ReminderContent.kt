@@ -1,5 +1,7 @@
 package com.example.notification
 
+import com.example.data.CoachTone
+
 /** Lo que sabe el recordatorio sobre el día del usuario (se arma en [CognitiveReminderWorker]). */
 data class ReminderInput(
   val name: String,
@@ -16,7 +18,9 @@ data class ReminderInput(
   /** Días desde la última partida (null = nunca jugó). */
   val daysSinceLastPlay: Int?,
   /** Para variar el texto día a día sin azar (así se puede probar). */
-  val dayOfYear: Int
+  val dayOfYear: Int,
+  /** Cómo prefiere la persona que Nubi le hable (`coach_tone`, Ajustes): celebrando o con las cosas claras. */
+  val tone: CoachTone = CoachTone.CLARO
 )
 
 data class ReminderMessage(val title: String, val text: String)
@@ -27,9 +31,13 @@ private val StreakMilestones = listOf(3, 7, 14, 30, 50, 100, 200, 365)
  * Texto del recordatorio diario: personal, corto y sin culpa ni promesas de salud (nada de "cuida tu reserva
  * cognitiva"). Devuelve null si no hay que avisar (ya completó la sesión de hoy: no se insiste).
  * Prioridad: sesión a medias > racha en juego > volver después de varios días > meta semanal > invitación.
+ *
+ * Cada mensaje tiene dos variantes ([CoachTone]): CLARO (directa, las de siempre) y CELEBRAR (con calidez). Ninguna cuenta lo que
+ * «falló» la persona: volver después de varios días nunca lleva reproche, en ningún tono.
  */
 fun buildReminder(input: ReminderInput): ReminderMessage? {
   if (input.completedToday >= 3) return null
+  val celebrate = input.tone == CoachTone.CELEBRAR
   val name = input.name.trim().ifEmpty { null }
   val hi = name?.let { "$it, " } ?: ""
   val weekLine = if (input.weeklyGoal > 0 && input.daysThisWeek < input.weeklyGoal)
@@ -38,10 +46,14 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
   // 1) Empezó hoy y le falta poco
   if (input.playedToday && input.completedToday in 1..2) {
     val left = 3 - input.completedToday
-    return ReminderMessage(
+    val rest = "${if (left == 1) "falta 1 juego" else "faltan $left juegos"} para completar tu camino de hoy." +
+      (input.nextGameTitle?.let { " Sigue $it." } ?: "")
+    return if (celebrate) ReminderMessage(
+      title = "${hi}¡ya casi!".replaceFirstChar { it.uppercase() },
+      text = "¡Ya empezaste! Te $rest"
+    ) else ReminderMessage(
       title = "${hi}ya casi".replaceFirstChar { it.uppercase() },
-      text = "Te ${if (left == 1) "falta 1 juego" else "faltan $left juegos"} para completar tu camino de hoy." +
-        (input.nextGameTitle?.let { " Sigue $it." } ?: "")
+      text = "Te $rest"
     )
   }
   if (input.playedToday) return null // jugó hoy fuera de la sesión: no molestar
@@ -51,7 +63,10 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
   if (streak >= 2) {
     val next = streak + 1
     val milestone = next in StreakMilestones
-    return ReminderMessage(
+    return if (celebrate) ReminderMessage(
+      title = if (milestone) "¡Hoy llegas a $next días seguidos!" else "${hi}¡tu racha de $streak días sigue viva!".replaceFirstChar { it.uppercase() },
+      text = (if (milestone) "¡Juega hoy y consigues la medalla de $next días!" else "Juega hoy y sube a $next días. ¡Son unos 5 minutos!") + weekLine
+    ) else ReminderMessage(
       title = if (milestone) "Hoy llegas a $next días seguidos" else "${hi}tu racha de $streak días te espera".replaceFirstChar { it.uppercase() },
       text = (if (milestone) "Juega hoy y consigues la medalla de $next días." else "Juega hoy y sube a $next días. Son unos 5 minutos.") + weekLine
     )
@@ -60,7 +75,11 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
   // 3) Vuelve después de varios días (sin reproches)
   val gap = input.daysSinceLastPlay
   if (gap != null && gap >= 3) {
-    return ReminderMessage(
+    return if (celebrate) ReminderMessage(
+      title = "${hi}¡qué bueno verte por aquí!".replaceFirstChar { it.uppercase() },
+      text = "Tu camino te espera: 3 juegos cortos y vuelves a sumar trofeos." +
+        (input.nextGameTitle?.let { " Hoy empieza con $it." } ?: "")
+    ) else ReminderMessage(
       title = "${hi}tu camino sigue aquí".replaceFirstChar { it.uppercase() },
       text = "Retoma cuando quieras: 3 juegos cortos y vuelves a sumar trofeos." +
         (input.nextGameTitle?.let { " Hoy empieza con $it." } ?: "")
@@ -70,9 +89,15 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
   // 4) Invitación del día (varía según el día)
   val next = input.nextGameTitle
   val options = buildList {
-    add(ReminderMessage("${hi}tu camino de hoy está listo".replaceFirstChar { it.uppercase() }, "3 juegos, unos 5 minutos.$weekLine"))
-    if (next != null) add(ReminderMessage("Hoy toca $next", "¿Te animas? Es el primero de tu camino de hoy.$weekLine"))
-    add(ReminderMessage("Un rato corto hoy", "Cada partida suma trofeos para tu liga.$weekLine"))
+    if (celebrate) {
+      add(ReminderMessage("${hi}¡tu camino de hoy está listo!".replaceFirstChar { it.uppercase() }, "¡3 juegos, unos 5 minutos!$weekLine"))
+      if (next != null) add(ReminderMessage("¡Hoy toca $next!", "¿Te animas? Es el primero de tu camino de hoy.$weekLine"))
+      add(ReminderMessage("¡Un rato corto hoy!", "Cada partida suma trofeos para tu liga.$weekLine"))
+    } else {
+      add(ReminderMessage("${hi}tu camino de hoy está listo".replaceFirstChar { it.uppercase() }, "3 juegos, unos 5 minutos.$weekLine"))
+      if (next != null) add(ReminderMessage("Hoy toca $next", "¿Te animas? Es el primero de tu camino de hoy.$weekLine"))
+      add(ReminderMessage("Un rato corto hoy", "Cada partida suma trofeos para tu liga.$weekLine"))
+    }
   }
   return options[input.dayOfYear.mod(options.size)]
 }

@@ -62,7 +62,11 @@ import kotlin.math.sin
  */
 const val NUBI_BODY_FRACTION = 0.65f
 
-enum class NubiPose(@DrawableRes val res: Int) { HOLA(R.drawable.nubi_hola), MIRA(R.drawable.nubi_mira), CELEBRA(R.drawable.nubi_celebra) }
+enum class NubiPose(@DrawableRes val res: Int) {
+  HOLA(R.drawable.nubi_hola), MIRA(R.drawable.nubi_mira), CELEBRA(R.drawable.nubi_celebra),
+  /** Nubi con su bata de científica: las tarjetas «puso a prueba tu…» del inicio. */
+  CIENTIFICA(R.drawable.nubi_cientifica)
+}
 
 /**
  * Nubi con su halo detrás (aprobado por Ricardo, `docs/previews/nubi-hoy.png`): resplandor suave, dos aros finos y

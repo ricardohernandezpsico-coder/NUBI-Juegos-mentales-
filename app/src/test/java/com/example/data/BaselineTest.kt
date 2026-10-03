@@ -18,14 +18,30 @@ class BaselineTest {
   }
 
   @Test
-  fun `los dominios no medidos toman el promedio de los medidos`() {
-    val b = buildBaseline(mapOf("secuencia" to 0.6f, "stroop" to 0.4f, "comparacion" to 0.5f), timestamp = 1L)
-    assertEquals(setOf(DomainType.MEMORIA, DomainType.ATENCION), b.measured.keys)
+  fun `la evaluacion tiene 4 juegos, uno por area`() {
+    assertEquals(listOf("secuencia", "freno", "aterrizaje", "meteoros"), BaselinePlan.steps.map { it.gameId })
+    assertEquals(DomainType.entries.toSet(), BaselinePlan.steps.map { it.domain }.toSet())
+    assertEquals(4, BaselinePlan.steps.size)
+    BaselinePlan.steps.forEach { assertEquals(it.domain, GameRegistry.getById(it.gameId)!!.domain) }
+    assertEquals("freno", BaselinePlan.stepFor(DomainType.ATENCION).gameId)
+  }
+
+  @Test
+  fun `los 4 juegos miden sus 4 areas`() {
+    val b = buildBaseline(mapOf("secuencia" to 0.6f, "freno" to 0.4f, "aterrizaje" to 0.3f, "meteoros" to 0.8f), timestamp = 1L)
+    assertEquals(DomainType.entries.toSet(), b.measured.keys)
     assertEquals(0.6f, b.domains[DomainType.MEMORIA]!!, 1e-4f)
-    // Atención tiene dos pasos (stroop 0.4 y comparación 0.5): vale el promedio, 0.45.
-    assertEquals(0.45f, b.domains[DomainType.ATENCION]!!, 1e-4f)
-    // Razonamiento y Lenguaje no se miden: promedio de lo medido (0.6 y 0.45).
-    assertEquals(0.525f, b.domains[DomainType.RAZONAMIENTO]!!, 1e-4f)
+    assertEquals(0.4f, b.domains[DomainType.ATENCION]!!, 1e-4f)
+    assertEquals(0.3f, b.domains[DomainType.RAZONAMIENTO]!!, 1e-4f)
+    assertEquals(0.8f, b.domains[DomainType.LENGUAJE]!!, 1e-4f)
+  }
+
+  @Test
+  fun `un area sin medir toma el promedio de las medidas`() {
+    val b = buildBaseline(mapOf("secuencia" to 0.6f, "freno" to 0.4f), timestamp = 1L)
+    assertEquals(setOf(DomainType.MEMORIA, DomainType.ATENCION), b.measured.keys)
+    assertEquals(0.5f, b.domains[DomainType.RAZONAMIENTO]!!, 1e-4f)
+    assertEquals(0.5f, b.domains[DomainType.LENGUAJE]!!, 1e-4f)
     assertEquals(DomainType.values().size, b.domains.size)
   }
 
@@ -37,17 +53,23 @@ class BaselineTest {
   }
 
   @Test
-  fun `cada juego toma el rating de su dominio`() {
-    val b = buildBaseline(mapOf("secuencia" to 0.8f, "stroop" to 0.2f, "comparacion" to 0.5f), timestamp = 1L)
+  fun `cada juego de la evaluacion siembra su rating y los demas la estimacion de su area`() {
+    val b = buildBaseline(mapOf("secuencia" to 0.8f, "freno" to 0.2f, "aterrizaje" to 0.5f, "meteoros" to 0.7f), timestamp = 1L)
     val seeds = seedRatings(b)
     assertEquals(GameRegistry.allGames.size, seeds.size)
-    assertEquals(0.8f, seeds["parejas"]!!, 1e-4f)   // memoria
-    assertEquals(0.35f, seeds["cambiochip"]!!, 1e-4f) // atención = promedio de sus 2 pasos (stroop 0.2 y comparación 0.5)
-    assertEquals(0.35f, seeds["radar"]!!, 1e-4f)      // radar ahora también es Atención
-    assertEquals(0.575f, seeds["series"]!!, 1e-4f)    // estimado = promedio de lo medido (0.8 y 0.35)
+    // Los 4 juegos medidos toman SU medida.
+    assertEquals(0.8f, seeds["secuencia"]!!, 1e-4f)
+    assertEquals(0.2f, seeds["freno"]!!, 1e-4f)
+    assertEquals(0.5f, seeds["aterrizaje"]!!, 1e-4f)
+    assertEquals(0.7f, seeds["meteoros"]!!, 1e-4f)
+    // Los demás, la de su área.
+    assertEquals(0.8f, seeds["parejas"]!!, 1e-4f)      // memoria
+    assertEquals(0.2f, seeds["radar"]!!, 1e-4f)        // atención
+    assertEquals(0.2f, seeds["cambiochip"]!!, 1e-4f)   // atención
+    assertEquals(0.5f, seeds["series"]!!, 1e-4f)       // razonamiento
+    assertEquals(0.7f, seeds["disparate"]!!, 1e-4f)    // lenguaje
   }
 
-  @Test
   fun `el punto de partida estimado se mueve poco con edad y educacion`() {
     val base = priorRating(AgeBand.ADULT, Education.NO_DICE)
     assertEquals(Percentile.PROVISIONAL_MEAN, base, 1e-4f)
@@ -74,7 +96,7 @@ class BaselineTest {
 
   @Test
   fun `ida y vuelta del mapa y de las metas`() {
-    val b = buildBaseline(mapOf("secuencia" to 0.61f, "stroop" to 0.42f), timestamp = 1_700_000_000_000)
+    val b = buildBaseline(mapOf("secuencia" to 0.61f, "freno" to 0.42f), timestamp = 1_700_000_000_000)
     assertEquals(b, decodeBaseline(encodeBaseline(b)))
     val goals = setOf(DomainType.LENGUAJE, DomainType.ATENCION)
     assertEquals(goals, decodeGoals(encodeGoals(goals)))

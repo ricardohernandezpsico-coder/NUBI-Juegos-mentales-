@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -205,6 +206,35 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
         }
       }
     }
+    // Nivel de estudios: ya no se pregunta en el inicio; acá queda como dato opcional (solo ajusta el punto de partida
+    // estimado de quien no hace la evaluación; no cambia la dificultad). Conserva lo que ya se había respondido.
+    item {
+      val education by viewModel.education.collectAsState()
+      Column {
+        SpaceSectionTitle("Tu nivel de estudios", hint = "Opcional. No cambia la dificultad: eso lo decide cómo juegas.")
+        Spacer(Modifier.height(10.dp))
+        com.example.data.Education.entries.forEach { e ->
+          val on = education == e
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .heightIn(min = 52.dp)
+              .padding(bottom = 8.dp)
+              .clip(RoundedCornerShape(14.dp))
+              .background(if (on) Color(0xFF231C48) else Color(0xFF0E0C30))
+              .border(2.dp, if (on) Clay.Sun else Color(0xFF3A2E78), RoundedCornerShape(14.dp))
+              .clickable { viewModel.setEducation(if (on) null else e) }
+              .padding(horizontal = 14.dp, vertical = 10.dp)
+              .testTag("education_${e.name.lowercase()}"),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Text(e.label, color = Color(0xFFEAF0FF), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            if (on) Text("✓", color = Clay.Sun, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+          }
+        }
+      }
+    }
+
 
   }
   }

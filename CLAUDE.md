@@ -35,7 +35,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Modos para iterar sin verificar todo cada vez: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 3-oct · tutoriales`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 3-oct · inicio`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -63,8 +63,8 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   "Ver más detalles"). No se dice "Mi cerebro" (Ricardo: suena a Lumosity). Arriba a la derecha en las 3
   (`TabTopBar` + `components/TopActions`): tu inicial en arcilla celeste = perfil (`ProfileScreen`: escudo, cifras,
   logros) y engranaje = opciones (`SettingsPanel` → `SettingsScreen`); se abren como paneles (`viewModel.topPanel`).
-  Onboarding (`OnboardingScreen`, 9 pasos; bienvenida "Hola, soy Nubi": Nubi como compañía) mientras
-  `UserSettings.ageBand == null`. Evaluación y mapa inicial: `BaselineScreen`.
+  Inicio nuevo «Primer vuelo con Nubi» (`FirstFlightScreen` + `FirstFlightHost`, lógica en `data/FirstFlight.kt`, ficha en `docs/diseno-inicio.md`): 19 pasos con 4 juegos (uno por
+  área) y preguntas intercaladas, mientras `UserSettings.ageBand == null` o haya un recorrido guardado. Reemplaza al onboarding de 9 pantallas y a la evaluación aparte.
   Las pestañas se pasan deslizando con el dedo (`HorizontalPager` en `MainActivity`, sincronizado con
   `viewModel.currentTab`). Una ventana abierta sobre una pestaña (área en Juegos, detalle de un área en Hoy o Avance)
   llama `LockTabSwipe()`: mientras esté, el dedo no cambia de pestaña y la barra de abajo se esconde.
@@ -72,7 +72,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   resumen (`data/SessionSummary` + `ui/screens/SessionSummaryScreen`): Nubi celebra, qué áreas se trabajaron, puntaje
   de cada juego, racha y la barra de avance de cada área con "Hoy avanzó de X a Y" (cambio desde el comienzo de la
   sesión, `AreaProgress.status(since = ...)`). Captura `docs/previews/resumen-sesion-real.png`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
+- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
   `Planet`, `SessionSummary`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v12** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
@@ -191,7 +191,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
   resultado pendiente lo procesa el ViewModel al volver. Si se toca `NeuroVidaViewModel` o `GameSessionStore`, correr `flow/GameFlowTest`
   y `bridge/GameSessionStoreTest` antes de instalar (reproducir: Opciones de desarrollador → «No conservar actividades»).
 - Respaldo: solo el PROGRESO (base de datos y preferencias `skill`, `star_measures`, `progress_log`, `league_events`, `achievements`,
-  `mission_log`, `profile_extra`, `atlas`). **Si se agrega un archivo de preferencias nuevo**, `BackupRulesTest` falla hasta que se sume
+  `mission_log`, `profile_extra` — incluye `coach_tone` y `color_vision` —, `atlas`). Pasajero (NO se respalda): `paused_game`, `game_session`, `unity_results`, `library_focus`, `first_flight`. **Si se agrega un archivo de preferencias nuevo**, `BackupRulesTest` falla hasta que se sume
   a `res/xml/backup_rules.xml` y `data_extraction_rules.xml` o a `transient` de la prueba.
 - Room: al subir `version`: entidad → `Migration(N, N+1)` en `NeuroVidaDatabase.MIGRATIONS` → compilar (genera `schemas/<N+1>.json`) →
   correr pruebas (`MigrationTest`).
@@ -202,7 +202,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 247 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 285 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
@@ -211,7 +211,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 - Rondas de Cosecha de palabras: 17 pruebas en `tools/cosecha/test_rondas.py` (`python -m unittest test_rondas`, desde `tools/cosecha`; ~70 s;
   con `COSECHA_REGENERAR=1` reconstruye todo desde las fuentes). Diseño aprobado en `docs/diseno-cosecha-de-palabras.md`.
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
-  ver las celebraciones y repetir el onboarding. "Borrar datos" en Ajustes deja la app como recién instalada.
+  ver las celebraciones y repetir el inicio sin borrar datos. "Borrar datos" en Ajustes deja la app como recién instalada.
 
 ## Pendientes vigentes
 

@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.CoachTone
 import com.example.model.GamePlayResult
 import com.example.model.GameRankInfo
 import com.example.model.GameRegistry
@@ -83,15 +84,35 @@ object ResultPhrases {
   /** Juegos cuyo puntaje y medida NO usan rapidez: ni tiempo de reacción en el motor ni una medida en ms o por segundo. */
   val NO_SPEED_GAMES = setOf("secuencia", "rutatesoro", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa")
 
-  fun feedback(gameId: String, score: Int): String = when {
-    gameId in NO_SPEED_GAMES -> when {
-      score >= 85 -> "Muy buena precisión."
-      score >= 60 -> "Buena precisión."
-      else -> "La dificultad se ajusta a tu ritmo en cada partida."
+  /**
+   * [tone] (Ajustes → «Cómo te anima Nubi», `coach_tone`): dos variantes de cada frase, ninguna con culpa. CLARO dice las cosas como son
+   * (las frases de siempre); CELEBRAR las dice con calidez. Las reglas de arriba (sin «velocidad» ni «ritmo» donde el puntaje no la usa)
+   * valen en los dos tonos.
+   */
+  fun feedback(gameId: String, score: Int, tone: CoachTone): String {
+    val noSpeed = gameId in NO_SPEED_GAMES
+    return when (tone) {
+      CoachTone.CLARO -> when {
+        noSpeed -> when {
+          score >= 85 -> "Muy buena precisión."
+          score >= 60 -> "Buena precisión."
+          else -> "La dificultad se ajusta a tu ritmo en cada partida."
+        }
+        score >= 85 -> "Precisión y ritmo excelentes."
+        score >= 60 -> "Buen equilibrio entre precisión y velocidad."
+        else -> "La dificultad se ajusta a tu ritmo en cada partida."
+      }
+      CoachTone.CELEBRAR -> when {
+        noSpeed -> when {
+          score >= 85 -> "¡Qué precisión! Esta partida merece una celebración."
+          score >= 60 -> "¡Muy buena precisión! Sigue así."
+          else -> "¡Jugaste! La dificultad se ajusta para que sigas disfrutando."
+        }
+        score >= 85 -> "¡Excelente! Tu precisión y tu ritmo brillaron hoy."
+        score >= 60 -> "¡Muy bien! Buen equilibrio entre precisión y velocidad."
+        else -> "¡Jugaste! La dificultad se ajusta para que sigas disfrutando."
+      }
     }
-    score >= 85 -> "Precisión y ritmo excelentes."
-    score >= 60 -> "Buen equilibrio entre precisión y velocidad."
-    else -> "La dificultad se ajusta a tu ritmo en cada partida."
   }
 }
 
@@ -120,7 +141,9 @@ fun GameResultScreen(
   /** Qué pasó con el modo elegido (data/Skill.kt): "¡Desafío superado!…", o null a tu medida. */
   modeNote: String? = null,
   /** El atlas de La estrella intrusa (láminas ganadas y por repasar); solo lo usa ese juego. */
-  atlas: com.example.data.AtlasState? = null
+  atlas: com.example.data.AtlasState? = null,
+  /** Cómo le habla Nubi (`coach_tone`): cambia las frases de veredicto. */
+  coachTone: CoachTone = CoachTone.DEFAULT
 ) {
   val gameDef = GameRegistry.getById(result.gameId)
   val domainColor = gameDef?.domain?.color ?: Clay.Sky
@@ -233,7 +256,7 @@ fun GameResultScreen(
       textAlign = TextAlign.Center
     )
     Text(
-      text = ResultPhrases.feedback(result.gameId, result.score),
+      text = ResultPhrases.feedback(result.gameId, result.score, coachTone),
       color = TextSoft,
       fontSize = 16.sp,
       textAlign = TextAlign.Center,

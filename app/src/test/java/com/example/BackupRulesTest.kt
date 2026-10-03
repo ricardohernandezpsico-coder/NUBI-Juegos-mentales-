@@ -10,8 +10,9 @@ import org.junit.Test
  * de Android y no pueden dejar afuera una preferencia nueva sin que alguien lo decida. Ver backup_rules.xml.
  */
 class BackupRulesTest {
-  // Estado pasajero: se pierde a propósito al cambiar de teléfono (una partida "fantasma" a medias no sirve).
-  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus")
+  // Estado pasajero: se pierde a propósito al cambiar de teléfono (una partida o un recorrido del inicio «fantasma» a medias no sirven).
+  // `first_flight` = «Primer vuelo con Nubi» en curso (data/FirstFlight.kt). coach_tone y color_vision NO son pasajeros: viven en profile_extra, que sí se respalda.
+  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight")
 
   private fun xml(name: String) = File("src/main/res/xml/$name").readText()
 

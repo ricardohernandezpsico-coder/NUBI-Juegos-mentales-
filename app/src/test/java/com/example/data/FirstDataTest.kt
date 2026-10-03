@@ -27,10 +27,21 @@ class FirstDataTest {
   }
 
   @Test
-  fun `Aterrizaje dice la distancia media al lugar justo en porcentaje de la regla`() {
-    assertEquals("Tus aterrizajes quedaron, en promedio, a 4,2 % del largo de la regla del lugar justo.",
+  fun `Aterrizaje dice la distancia media al lugar justo, redondeada y sin decimales`() {
+    assertEquals("En promedio, aterrizaste a un 4 % de distancia del lugar justo.",
       FirstData.phrase(result("aterrizaje") { copy(numlineErrorPct = 4.2f) }))
-    assertEquals("Tus aterrizajes quedaron, en promedio, a 0,0 % del largo de la regla del lugar justo.", FirstData.landing(0f))
+    assertEquals("En promedio, aterrizaste a un 5 % de distancia del lugar justo.", FirstData.landing(4.5f))
+    assertEquals("En promedio, aterrizaste a un 0 % de distancia del lugar justo.", FirstData.landing(0f))
+    assertEquals("En promedio, aterrizaste a un 0 % de distancia del lugar justo.", FirstData.landing(0.4f))
+  }
+
+  @Test
+  fun `Rastro de luz dice el rastro mas largo repetido bien`() {
+    assertEquals("Repetiste bien un rastro de 5 luces.", FirstData.phrase(result("secuencia") { copy(rasBestLen = listOf(5, 0, 0, 0)) }))
+    assertEquals("Repetiste bien un rastro de 1 luz.", FirstData.trail(listOf(1, 0, 0, 0)))
+    // El mejor largo de los otros modos no cuenta: solo el rastro simple (familia 0).
+    assertNull(FirstData.phrase(result("secuencia") { copy(rasBestLen = listOf(0, 4, 3, 2)) }))
+    assertNull(FirstData.phrase(result("secuencia")))
   }
 
   @Test
@@ -54,6 +65,6 @@ class FirstDataTest {
   @Test
   fun `los demas juegos no tienen primer dato propio`() {
     assertNull(FirstData.phrase(result("stroop")))
-    assertNull(FirstData.phrase(result("secuencia")))
+    assertNull(FirstData.phrase(result("parejas")))
   }
 }
