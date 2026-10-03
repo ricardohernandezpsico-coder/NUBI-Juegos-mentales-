@@ -1,0 +1,275 @@
+<title>Primer vuelo con Nubi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: guion del recorrido a la izquierda (clicable), teléfono jugable a la derecha; en móvil, teléfono arriba */
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --night0:#02030F; --night1:#050823; --night2:#0A0F33;
+  --cream:#FFF6E0; --plate:#1A1240; --sun:#FFC94A; --sky:#7FD8FF; --coral:#FF7A5C; --lime:#8EE07A; --grape:#B8A4FF;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:40px;align-items:start}
+h1{font:600 clamp(28px,4vw,38px)/1.1 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 8px}
+.flow{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.flow li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 10px;border-radius:12px;cursor:pointer;border:1px solid transparent}
+.flow li:hover{background:#0A0926}
+.flow li[aria-current="step"]{background:var(--panel);border-color:#3A2E78}
+.flow .k{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:600 12px var(--f-display);background:#1C1750;color:var(--dim)}
+.flow li.game .k{background:var(--sun);color:#3A2600}
+.flow li.q .k{background:#2A2470;color:var(--sky)}
+.flow b{font:600 15px var(--f-display)}
+.flow small{color:var(--dim);font-size:13px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--dim);font-size:13px;margin:6px 0 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:6px}
+.rules{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.rules strong{color:var(--ink)}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+
+.phone{position:sticky;top:20px;width:100%;max-width:370px;aspect-ratio:9/19.3;border-radius:38px;overflow:hidden;border:1px solid var(--line);
+  background:radial-gradient(120% 60% at 20% 12%,rgba(184,164,255,.16),transparent 60%),radial-gradient(90% 50% at 90% 85%,rgba(76,201,240,.12),transparent 60%),linear-gradient(var(--night0),var(--night1) 55%,var(--night2));display:flex;flex-direction:column}
+.stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(1px 1px at 12% 18%,#fff8,transparent),radial-gradient(1px 1px at 78% 12%,#fff9,transparent),radial-gradient(1.5px 1.5px at 40% 32%,#fffa,transparent),radial-gradient(1px 1px at 88% 44%,#fff7,transparent),radial-gradient(1px 1px at 22% 62%,#fff8,transparent),radial-gradient(1.5px 1.5px at 64% 74%,#fff9,transparent),radial-gradient(1px 1px at 8% 88%,#fff7,transparent),radial-gradient(1px 1px at 52% 92%,#fff8,transparent)}
+.bar{position:relative;display:flex;align-items:center;gap:10px;padding:16px 18px 0}
+.bar .back{background:none;border:0;color:var(--dim);font:700 22px var(--f-display);width:36px;height:36px;cursor:pointer}
+.track{flex:1;height:8px;border-radius:4px;background:#221D55;overflow:hidden}
+.track i{display:block;height:100%;background:linear-gradient(90deg,var(--sun),#FFB070);border-radius:4px;transition:width .5s}
+.rm .track i{transition:none}
+.screen{position:relative;flex:1;display:flex;flex-direction:column;padding:12px 20px 20px;gap:12px;min-height:0}
+.eyebrow{font:600 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--sun);margin:0}
+.title{font:700 28px/1.12 var(--f-display);margin:0;text-wrap:balance}
+.say{font:600 19px/1.38 var(--f-display);margin:0;color:#fff}
+.say em{font-style:normal;color:var(--sun)}
+.sub{margin:0;color:var(--dim);font-size:15.5px}
+.nubi{width:170px;align-self:center}
+.nubi.big{width:210px}
+.grow{flex:1}
+.btn{min-height:56px;border:0;border-radius:18px;background:var(--sun);color:#3A2600;font:700 19px var(--f-display);cursor:pointer;box-shadow:0 4px 0 #1A1240;width:100%}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid #5B4FC0;box-shadow:none}
+.link{background:none;border:0;color:var(--dim);font:600 15px var(--f-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:44px}
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 14px;border-radius:16px;border:2px solid #3A2E78;background:#0E0C30;color:var(--ink);font:600 17px var(--f-display);text-align:left;cursor:pointer}
+.opt small{display:block;font:400 14px var(--f-body);color:var(--dim)}
+.opt[aria-pressed="true"]{border-color:var(--sun);background:#231C48}
+.opt .tick{margin-left:auto;width:26px;height:26px;border-radius:8px;border:2px solid #5B4FC0;display:grid;place-items:center;font:700 15px var(--f-body);color:transparent;flex:none}
+.opt[aria-pressed="true"] .tick{background:var(--sun);border-color:var(--sun);color:#3A2600}
+input.name{min-height:58px;border-radius:16px;border:2px solid #3A2E78;background:#0E0C30;color:#fff;font:600 22px var(--f-display);padding:0 16px;width:100%}
+.stepper{display:flex;gap:6px;align-items:center;justify-content:center;font:600 13px var(--f-display);color:var(--dim)}
+.stepper span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:2px solid #3A2E78}
+.stepper span.done{background:var(--lime);border-color:var(--lime);color:#0E3A06}
+.stepper span.now{border-color:var(--sun);color:var(--sun)}
+.stepper i{width:14px;height:2px;background:#3A2E78}
+
+/* juego de muestra: luces en orden */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:4px 6px;position:relative}
+.cell{aspect-ratio:1;border-radius:18px;border:3px solid #1A1240;background:#1E1A4E;box-shadow:0 4px 0 #1A1240;cursor:pointer;transition:background .12s,transform .12s}
+.cell.on{background:var(--sky);box-shadow:0 0 22px rgba(127,216,255,.7),0 4px 0 #1A1240}
+.cell.hint{outline:3px dashed var(--sun);outline-offset:3px}
+.cell.ok{background:var(--lime)}
+.cell.no{background:var(--coral)}
+.cell:active{transform:scale(.97)}
+.rm .cell{transition:none}
+.rm .cell:active{transform:none}
+.cap{min-height:56px;margin:0;font:600 18px/1.35 var(--f-display);color:#fff;text-align:center}
+.cap .m{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;margin-right:6px;font:700 15px var(--f-body);vertical-align:-3px}
+.cap .m.ok{background:var(--lime);color:#0E3A06}.cap .m.no{background:var(--coral);color:#4A1206}
+.skip{position:absolute;top:10px;right:18px}
+.tag{align-self:center;font:600 13px var(--f-display);color:#1A1240;background:#CFC7FF;border-radius:999px;padding:4px 12px}
+
+.areas{display:grid;gap:12px;margin:2px 0}
+.area{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 12px;align-items:center}
+.area b{font:600 16px var(--f-display)}
+.area .lvl{grid-column:2;font-size:14px;color:var(--dim);margin-top:-2px}
+.meter{height:12px;border-radius:6px;background:#221D55;position:relative;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;border-radius:6px;background:var(--grape)}
+.meter.top i{background:var(--sun)}
+.flame{display:flex;align-items:center;gap:12px;font:600 16px var(--f-display);color:#fff}
+.flame .f{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#3A1E10;border:3px solid #FF9A3C;color:#FFB45C;font:700 18px var(--f-display)}
+.plan{display:grid;gap:10px}
+.plan div{display:flex;gap:12px;align-items:center;font:600 17px var(--f-display)}
+.plan i{width:42px;height:42px;border-radius:14px;flex:none;border:3px solid #1A1240}
+.note{font-size:14px;color:var(--dim);margin-top:26px;max-width:64ch}
+@media (max-width:880px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Primer vuelo con Nubi</h1>
+    <p class="lead">Un inicio nuevo: en vez de 9 pantallas de preguntas y después una evaluación aparte, se juega desde el primer minuto. Cada juego enseña mientras se juega y mide tu punto de partida, y las pocas preguntas necesarias van entre juego y juego. Unos 5 minutos en total.</p>
+    <div class="legend"><span><i style="background:var(--sun)"></i>juego (enseña y mide)</span><span><i style="background:#2A2470;border:1px solid var(--sky)"></i>pregunta de un toque</span><span><i style="background:#1C1750"></i>Nubi</span></div>
+    <h2>El recorrido (toca un paso para verlo)</h2>
+    <ol class="flow" id="flow"></ol>
+
+    <h2>Reglas</h2>
+    <ul class="rules">
+      <li><strong>Jugar en menos de un minuto.</strong> Antes del primer juego solo van tu nombre (opcional) y tu edad, que ajusta el ritmo y el tamaño.</li>
+      <li><strong>El tutorial vive dentro del juego.</strong> La primera ronda es guiada (Nubi muestra, la mano indica, si te equivocas explica y repites), con «Saltar tutorial» siempre a mano. Es el mismo tutorial que tendrá cada juego la primera vez que lo abras.</li>
+      <li><strong>Cada juego cierra con «puso a prueba tu…»</strong>: qué entrenó y tu primer dato, en palabras.</li>
+      <li><strong>Una pregunta por pantalla, un toque, con su porqué.</strong> Se quitan del inicio el nivel de estudios y «así funciona» (van a Perfil y aparecen al usarlos).</li>
+      <li><strong>Honesto:</strong> sin promesas de mejora ni comparación con otras personas mientras no tengamos datos propios. «Tu punto de partida», no un puntaje cerebral.</li>
+      <li><strong>Sin cuenta para empezar.</strong> Más adelante, al final, «Guarda tu avance con Google» (opcional).</li>
+      <li><strong>Se puede dejar a medias</strong>: «Terminar después» guarda lo jugado y estima el resto.</li>
+    </ul>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+      <button class="chip" id="restart">Empezar de nuevo</button>
+    </div>
+    <p class="note">Maqueta para aprobar el formato. El juego de memoria se puede jugar de verdad aquí; los otros tres se simulan con un botón. Los juegos propuestos para el inicio (uno por área, los más pulidos y fáciles de entender) son una sugerencia a confirmar.</p>
+  </div>
+
+  <div class="phone" id="phone">
+    <div class="stars"></div>
+    <div class="bar"><button class="back" id="back" aria-label="Volver">‹</button><div class="track" aria-hidden="true"><i id="prog"></i></div></div>
+    <div class="screen" id="screen" aria-live="polite"></div>
+  </div>
+</div>
+
+<script>
+const GAMES = [
+  { area:'Memoria', name:'Secuencia Lumínica', short:'memoria de trabajo', how:'Mira qué luces se encienden y tócalas en el mismo orden.', real:true },
+  { area:'Atención', name:'Freno de Emergencia', short:'control de impulsos', how:'Toca rápido las naves amigas, pero frena ante la nave roja.' },
+  { area:'Razonamiento', name:'Aterrizaje Lunar', short:'sentido de los números', how:'Aterriza la nave en el lugar justo de la recta numérica.' },
+  { area:'Lenguaje', name:'Lluvia de meteoros', short:'vocabulario', how:'Toca solo los meteoros con palabras que existen.' }
+];
+const FLOW = [
+  { id:'hola', t:'Nubi se presenta', k:'n' },
+  { id:'nombre', t:'¿Cómo te llamo?', k:'q', s:'opcional' },
+  { id:'edad', t:'Tu edad', k:'q', s:'ajusta ritmo y tamaño' },
+  { id:'g0i', t:'Juego 1: Memoria', k:'g', s:'tutorial dentro' },
+  { id:'g0', t:'Se juega', k:'g' }, { id:'g0r', t:'«puso a prueba tu memoria»', k:'g' },
+  { id:'metas', t:'¿Qué quieres entrenar?', k:'q', s:'hasta 3' },
+  { id:'dato', t:'Nubi: poco y seguido', k:'n' },
+  { id:'g1i', t:'Juego 2: Atención', k:'g' }, { id:'g1r', t:'resultado', k:'g' },
+  { id:'animo', t:'¿Cómo te animo?', k:'q', s:'cambia el tono de Nubi' },
+  { id:'g2i', t:'Juego 3: Razonamiento', k:'g' }, { id:'g2r', t:'resultado', k:'g' },
+  { id:'dias', t:'¿Cuántos días por semana?', k:'q' },
+  { id:'g3i', t:'Juego 4: Lenguaje', k:'g' }, { id:'g3r', t:'resultado', k:'g' },
+  { id:'punto', t:'Tu punto de partida', k:'n', s:'4 áreas + racha día 1' },
+  { id:'aviso', t:'¿A qué hora te aviso?', k:'q' },
+  { id:'camino', t:'Tu camino de hoy', k:'n' }
+];
+const S = { i:0, name:'', age:null, goals:new Set(), tone:null, days:null, hour:null, span:null, sim:[null,null,null,null] };
+let reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sc = document.getElementById('screen'), flowEl = document.getElementById('flow');
+
+flowEl.innerHTML = FLOW.map((f,i)=>'<li data-i="'+i+'" class="'+(f.k==='g'?'game':f.k==='q'?'q':'')+'"><span class="k">'+(i+1)+'</span><span><b>'+f.t+'</b>'+(f.s?' <small>· '+f.s+'</small>':'')+'</span></li>').join('');
+flowEl.addEventListener('click', e=>{ const li=e.target.closest('li'); if(li) go(+li.dataset.i); });
+document.getElementById('back').addEventListener('click', ()=>go(Math.max(0,S.i-1)));
+document.getElementById('restart').addEventListener('click', ()=>{ Object.assign(S,{name:'',age:null,goals:new Set(),tone:null,days:null,hour:null,span:null,sim:[null,null,null,null]}); go(0); });
+const rmBtn = document.getElementById('rm');
+rmBtn.setAttribute('aria-pressed', String(reduce)); document.getElementById('phone').classList.toggle('rm', reduce);
+rmBtn.addEventListener('click', ()=>{ reduce=!reduce; rmBtn.setAttribute('aria-pressed',String(reduce)); document.getElementById('phone').classList.toggle('rm',reduce); go(S.i); });
+
+function stepper(n){
+  return '<div class="stepper" aria-label="Juego '+(n+1)+' de 4">'+GAMES.map((g,i)=>(i?'<i></i>':'')+'<span class="'+(i<n?'done':i===n?'now':'')+'">'+(i<n?'✓':i+1)+'</span>').join('')+'</div>';
+}
+function opts(list, sel, multi){
+  return '<div class="opts">'+list.map(([v,l,s])=>'<button class="opt" data-v="'+v+'" aria-pressed="'+(multi?sel.has(v):sel===v)+'">'+'<span>'+l+(s?'<small>'+s+'</small>':'')+'</span><span class="tick" aria-hidden="true">✓</span></button>').join('')+'</div>';
+}
+function hi(){ return S.name ? ', '+S.name : ''; }
+let timers = [];
+function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+
+function go(i){
+  clearTimers(); S.i = i;
+  document.getElementById('prog').style.width = Math.round((i+1)/FLOW.length*100)+'%';
+  [...flowEl.children].forEach((li,j)=>li.setAttribute('aria-current', j===i?'step':'false'));
+  const id = FLOW[i].id; const next = '<button class="btn" data-next>Continuar</button>';
+  let h = '';
+  if (id==='hola') h = '<div class="grow"></div><img class="nubi big" src="inicio-maqueta-img/nubi_hola.png" alt="Nubi saluda"><p class="title" style="text-align:center">Hola, soy Nubi</p><p class="say" style="text-align:center">Vamos a encontrar tu punto de partida <em>jugando</em>. Son unos 5 minutos.</p><div class="grow"></div><button class="btn" data-next>¡Vamos!</button>';
+  else if (id==='nombre') h = '<p class="eyebrow">Para saludarte</p><p class="title">¿Cómo te llamo?</p><input class="name" id="nm" placeholder="Tu nombre" value="'+S.name+'" maxlength="20" aria-label="Tu nombre"><p class="sub">Es opcional.</p><div class="grow"></div>'+next;
+  else if (id==='edad') h = '<p class="eyebrow">Para ajustar el ritmo</p><p class="title">¿En qué rango de edad estás?</p>'+opts([['18','18 a 29'],['30','30 a 49'],['50','50 a 64'],['65','65 a 74'],['75','75 o más']],S.age)+'<p class="sub">Cambia el ritmo y el tamaño de los juegos, no lo difícil: eso lo decide cómo juegas.</p><div class="grow"></div><button class="btn" data-next '+(S.age?'':'disabled')+'>Continuar</button>';
+  else if (/^g\di$/.test(id)){ const n=+id[1], g=GAMES[n];
+    h = stepper(n)+'<p class="eyebrow" style="text-align:center">'+g.area+'</p><p class="title" style="text-align:center">'+g.name+'</p><img class="nubi" src="inicio-maqueta-img/nubi_maestra.png" alt="Nubi maestra"><p class="say" style="text-align:center">'+g.how+'</p><div class="grow"></div>'+
+      (g.real ? '<button class="btn" data-next>Jugar</button>' : '<button class="btn" data-sim="'+n+'">Jugar (simulado en esta maqueta)</button>')+'<button class="link" data-skipgame="'+n+'">Terminar después</button>'; }
+  else if (id==='g0'){ sc.innerHTML=''; return corsi(); }
+  else if (/^g\dr$/.test(id)){ const n=+id[1], g=GAMES[n];
+    const line = n===0 ? (S.span ? 'Recordaste <em>'+S.span+' luces</em> seguidas en orden.' : 'Lo dejaste para después: lo estimamos por ahora.') : 'Tu primer dato quedó guardado: <em>'+['','te frenaste a tiempo 9 de 11 veces','aterrizaste a 6 de distancia en promedio','reconociste 17 de 20 palabras'][n]+'</em>.';
+    h = stepper(n+1)+'<img class="nubi" src="inicio-maqueta-img/nubi_cientifica.png" alt="Nubi científica"><p class="title">'+g.name+' puso a prueba tu '+g.short+'.</p><p class="say">'+line+'</p><p class="sub">'+['La memoria de trabajo sostiene información unos segundos mientras la usas: seguir una receta, recordar un número.','Frenar a tiempo una respuesta automática es parte del control de la atención.','Ubicar cantidades en una recta es la base del cálculo aproximado del día a día.','Reconocer palabras rápido apoya la lectura y la conversación.'][n]+'</p><div class="grow"></div>'+next; }
+  else if (id==='metas') h = '<p class="eyebrow">Para armar tu camino</p><p class="title">¿Qué te gustaría entrenar'+hi()+'?</p><p class="sub">Elige hasta 3. Tu camino de cada día les dará prioridad.</p>'+opts([['M','Memoria','recordar, retener'],['A','Atención','concentrarme, reaccionar'],['R','Razonamiento','lógica y números'],['L','Lenguaje','palabras y lectura']],S.goals,true)+'<div class="grow"></div><button class="btn" data-next '+(S.goals.size?'':'disabled')+'>Continuar</button>';
+  else if (id==='dato') h = '<div class="grow"></div><img class="nubi big" src="inicio-maqueta-img/nubi_mira.png" alt="Nubi"><p class="eyebrow" style="text-align:center">¿Sabías que…?</p><p class="say" style="text-align:center">Practicar <em>poco y seguido</em> rinde más que mucho de una vez: es de lo más comprobado sobre cómo aprendemos.</p><div class="grow"></div>'+next;
+  else if (id==='animo') h = '<p class="eyebrow">Para hablarte a tu manera</p><p class="title">¿Cómo prefieres que te anime?</p>'+opts([['c','Celebrando cada logro','«¡Mira cuánto avanzaste hoy!»'],['d','Diciéndome las cosas claras','«Hoy costó: mañana probamos más lento.»']],S.tone)+'<p class="sub">Cambia cómo te habla Nubi. Lo puedes cambiar en Ajustes.</p><div class="grow"></div><button class="btn" data-next '+(S.tone?'':'disabled')+'>Continuar</button>';
+  else if (id==='dias') h = '<p class="eyebrow">Para tu ritmo</p><p class="title">¿Cuántos días por semana quieres jugar?</p>'+opts([['3','3 días','suave'],['4','4 días','recomendado'],['5','5 días','intenso'],['7','Todos los días','sin pausa']],S.days)+'<p class="sub">Unos 5 minutos cada vez.</p><div class="grow"></div><button class="btn" data-next '+(S.days?'':'disabled')+'>Continuar</button>';
+  else if (id==='punto'){
+    const v = { Memoria: S.span ? Math.min(.95,.18+.14*(S.span-2)) : .45, Atención:.62, Razonamiento:.38, Lenguaje:.78 };
+    const st = x => ['Inicio','Aprendiz','Hábil','Experto','Maestro'][Math.min(4,Math.floor(x*5))];
+    const top = Object.keys(v).sort((a,b)=>v[b]-v[a])[0], low = Object.keys(v).sort((a,b)=>v[a]-v[b])[0];
+    h = '<p class="eyebrow">Listo'+hi()+'</p><p class="title">Tu punto de partida</p><div class="areas">'+Object.keys(v).map(a=>'<div class="area"><b>'+a+'</b><div class="meter '+(a===top?'top':'')+'"><i style="width:'+Math.round(v[a]*100)+'%"></i></div><span class="lvl">'+st(v[a])+(a===top?' · tu fuerte hoy':'')+(a===low?' · donde más vamos a jugar':'')+'</span></div>').join('')+'</div>'+
+      '<p class="sub">No es un examen: es desde dónde partimos. Se afina en cada partida.</p><div class="flame"><span class="f">1</span>¡Empezó tu racha! Vuelve mañana para el día 2.</div><div class="grow"></div>'+next; }
+  else if (id==='aviso') h = '<p class="eyebrow">Para no olvidarlo</p><p class="title">¿A qué hora te aviso?</p>'+opts([['9','Por la mañana','9:00'],['13','Al mediodía','13:00'],['19','Por la tarde','19:00'],['21','Por la noche','21:00'],['0','Sin aviso','']],S.hour)+'<p class="sub">Un aviso corto. Si ya jugaste ese día, no llega.</p><div class="grow"></div><button class="btn" data-next '+(S.hour?'':'disabled')+'>Continuar</button>';
+  else if (id==='camino'){
+    const pick = [...S.goals].length ? [...S.goals].map(x=>({M:'Memoria',A:'Atención',R:'Razonamiento',L:'Lenguaje'})[x]) : ['Razonamiento'];
+    h = '<img class="nubi" src="inicio-maqueta-img/nubi_celebra.png" alt="Nubi celebra"><p class="title">Tu camino de hoy</p><p class="sub">Elegido por tus metas'+(pick.includes('Razonamiento')?'':' y por lo que más conviene reforzar')+'.</p><div class="plan">'+
+      [['Rumbo a Casa','#7FD8FF',pick[0]||'Memoria'],['Tráfico Estelar','#FFC94A','Razonamiento'],['La estrella intrusa','#8EE07A','Lenguaje']].map(([n,c,a])=>'<div><i style="background:'+c+'"></i><span>'+n+'<br><small style="color:var(--dim);font:400 14px var(--f-body)">'+a+'</small></span></div>').join('')+
+      '</div><div class="grow"></div><button class="btn" data-end>Empezar mi camino</button>'; }
+  sc.innerHTML = h;
+  const nm = document.getElementById('nm'); if (nm) nm.addEventListener('input', e=>S.name=e.target.value.trim());
+}
+sc.addEventListener('click', e=>{
+  const b = e.target.closest('button'); if (!b) return;
+  const id = FLOW[S.i].id;
+  if (b.classList.contains('opt')){
+    const v = b.dataset.v;
+    if (id==='metas'){ if (S.goals.has(v)) S.goals.delete(v); else if (S.goals.size<3) S.goals.add(v); }
+    else S[{edad:'age',animo:'tone',dias:'days',aviso:'hour'}[id]] = v;
+    go(S.i); return;
+  }
+  if (b.hasAttribute('data-next')) go(S.i+1);
+  else if (b.dataset.sim){ const n=+b.dataset.sim; b.textContent='Jugando… (60 s en la app)'; b.disabled=true; timers.push(setTimeout(()=>go(S.i+1), reduce?300:900)); }
+  else if (b.dataset.skipgame!==undefined){ const n=+b.dataset.skipgame; go(FLOW.findIndex(f=>f.id==='g'+n+'r')); }
+  else if (b.hasAttribute('data-end')) sc.innerHTML='<div class="grow"></div><img class="nubi" src="inicio-maqueta-img/nubi_hola.png" alt="Nubi"><p class="title" style="text-align:center">(Aquí entra a Hoy)</p><div class="grow"></div><button class="btn ghost" id="again">Ver de nuevo</button>';
+  else if (b.id==='again') go(0);
+});
+
+/* ---- juego de muestra con el tutorial dentro ---- */
+function corsi(){
+  const st = { len:2, seq:[], pos:0, phase:'demo', errors:0, best:0, practice:true };
+  sc.innerHTML = stepper(0)+'<button class="link skip" id="sk">Saltar tutorial</button><span class="tag" id="tg">Práctica guiada · no cuenta</span><p class="cap" id="cap"></p><div class="grid" id="gr">'+Array.from({length:9},(_, i)=>'<button class="cell" data-c="'+i+'" aria-label="Casilla '+(i+1)+'"></button>').join('')+'</div><div class="grow"></div><p class="sub" id="ft" style="text-align:center"></p>';
+  const cells = [...sc.querySelectorAll('.cell')], cap = document.getElementById('cap'), tg = document.getElementById('tg'), ft = document.getElementById('ft');
+  const say = (t,m)=>{ cap.innerHTML = (m?'<span class="m '+m+'" aria-hidden="true">'+(m==='ok'?'✓':'✗')+'</span>':'')+t; };
+  const lock = on => cells.forEach(c=>c.disabled = on);
+  function newSeq(){ const s=[]; while(s.length<st.len){ const c=Math.floor(Math.random()*9); if(s[s.length-1]!==c) s.push(c);} return s; }
+  function show(then){
+    lock(true); cells.forEach(c=>c.className='cell'); let k=0;
+    const step=()=>{ if(k>=st.seq.length){ lock(false); then(); return; }
+      const c=cells[st.seq[k]]; c.classList.add('on');
+      timers.push(setTimeout(()=>{ c.classList.remove('on'); k++; timers.push(setTimeout(step, 260)); }, 620)); };
+    timers.push(setTimeout(step, 500));
+  }
+  function round(){
+    st.seq = newSeq(); st.pos = 0;
+    if (st.practice){ say('Mira bien: se encienden 2 luces…'); show(()=>{ say('Ahora tócalas en el mismo orden. Te marco la primera.'); cells[st.seq[0]].classList.add('hint'); }); }
+    else { say('Mira: '+st.len+' luces'); show(()=>say('Tu turno')); }
+    ft.textContent = st.practice ? '' : 'Ronda con '+st.len+' luces';
+  }
+  function startReal(){ st.practice=false; st.len=3; tg.textContent='Ahora va en serio'; document.getElementById('sk').style.visibility='hidden'; round(); }
+  document.getElementById('sk').addEventListener('click', startReal);
+  document.getElementById('gr').addEventListener('click', e=>{
+    const c = e.target.closest('.cell'); if (!c || c.disabled) return; const v=+c.dataset.c;
+    cells.forEach(x=>x.classList.remove('hint'));
+    if (v===st.seq[st.pos]){
+      c.classList.add('ok'); timers.push(setTimeout(()=>c.classList.remove('ok'), 220)); st.pos++;
+      if (st.practice && st.pos<st.seq.length) cells[st.seq[st.pos]].classList.add('hint');
+      if (st.pos>=st.seq.length){ lock(true);
+        if (st.practice){ say('¡Así se juega! Ahora sin ayuda y cada vez con una luz más.','ok'); timers.push(setTimeout(startReal, 1600)); }
+        else { st.best = st.len; say('¡Bien! '+st.len+' luces.','ok'); st.len++; if (st.len>7) return finish(); timers.push(setTimeout(round, 1100)); }
+      }
+    } else {
+      c.classList.add('no'); lock(true);
+      if (st.practice){ say('Casi: esa no era. Mira otra vez el orden.','no'); timers.push(setTimeout(round, 1500)); }
+      else { st.errors++; say(st.errors>=2 ? 'Ahí llegó tu límite de hoy. ¡Muy bien!' : 'Se cruzó una luz. Otra con '+st.len+'.','no'); timers.push(setTimeout(st.errors>=2?finish:round, 1400)); }
+    }
+  });
+  function finish(){ S.span = Math.max(2, st.best||2); go(S.i+1); }
+  round();
+}
+go(0);
+</script>
