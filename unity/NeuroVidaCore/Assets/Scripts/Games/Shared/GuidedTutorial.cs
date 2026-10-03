@@ -58,15 +58,17 @@ namespace NeuroVida.Games.Shared
             _nubi.raycastTarget = false;
 
             _title = Label(card, "Title", 72, new Vector2(0f, -70f), new Vector2(840f, 110f), NeuroStyle.Sun, TextAnchor.MiddleCenter);
+            BestFit(_title, 48);
             _line = Label(card, "Line", 54, new Vector2(0f, -240f), new Vector2(800f, 220f), Color.white, TextAnchor.MiddleCenter);
-            _line.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _line.verticalOverflow = VerticalWrapMode.Overflow;
+            BestFit(_line, 48);                      // ajuste de línea; si no cabe, achica hasta 16 sp: nunca se corta
 
             _startRect = Button(card, "Start", new Vector2(0f, -430f), new Vector2(720f, 150f), NeuroStyle.Sun, NeuroStyle.Ink, out var startLabel);
             _startRect.GetComponentInChildren<Text>().text = "Probar una ronda";
+            BestFit(_startRect.GetComponentInChildren<Text>(), 48);
             _skipIntroRect = Panel(card, "SkipIntro", new Vector2(640f, 150f), new Vector2(0f, -560f), new Color(0f, 0f, 0f, 0f), 0f, 0f);
             var skipText = Label(_skipIntroRect, "Label", 54, Vector2.zero, new Vector2(640f, 150f), new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
             skipText.text = "Saltar tutorial";
+            BestFit(skipText, 45);
             _intro.gameObject.SetActive(false);
 
             // ---- durante la ronda guiada: rótulo arriba, mensaje de Nubi y «Saltar tutorial» abajo
@@ -80,12 +82,12 @@ namespace NeuroVida.Games.Shared
             badge.anchoredPosition = new Vector2(0f, -practiceTopU - 48f);
             var badgeText = Label(badge, "Label", 48, Vector2.zero, new Vector2(620f, 96f), NeuroStyle.Grape, TextAnchor.MiddleCenter);
             badgeText.text = "Práctica: no cuenta";
+            BestFit(badgeText, 45);
 
             _caption = Label(_practiceRoot, "Caption", 60, Vector2.zero, new Vector2(960f, 200f), Color.white, TextAnchor.MiddleCenter);
             _caption.rectTransform.anchorMin = _caption.rectTransform.anchorMax = new Vector2(0.5f, 0f);
             _caption.rectTransform.anchoredPosition = new Vector2(0f, 330f);
-            _caption.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _caption.verticalOverflow = VerticalWrapMode.Overflow;
+            BestFit(_caption, 48);
             NeuroStyle.ClayText(_caption, 3f, 4f);
 
             _skipRect = Panel(_practiceRoot, "Skip", new Vector2(640f, 132f), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f);
@@ -93,6 +95,7 @@ namespace NeuroVida.Games.Shared
             _skipRect.anchoredPosition = new Vector2(0f, 12f * Dp + 66f);
             _skipPracticeLabel = Label(_skipRect, "Label", 54, Vector2.zero, new Vector2(620f, 132f), new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
             _skipPracticeLabel.text = "Saltar tutorial";
+            BestFit(_skipPracticeLabel, 45);
             _practiceRoot.gameObject.SetActive(false);
         }
 

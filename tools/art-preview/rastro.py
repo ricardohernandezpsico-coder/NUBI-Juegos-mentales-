@@ -102,9 +102,10 @@ def screen(raw, mode=0):
         d.ellipse((cx - 6 * S, 28 * S - 6 * S, cx + 6 * S, 28 * S + 6 * S), fill=(255, 246, 224, 255) if i < 3 - (mode == 1) else (255, 255, 255, 46))
     d.text(((360 - 16) * S, 70 * S), str(5 + mode), font=ImageFont.truetype(FB, 32 * S), fill=(255, 255, 255), anchor='rm')
     d.text(((360 - 16) * S, 100 * S), 'luces recordadas', font=ImageFont.truetype(FR, 14 * S), fill=(171, 165, 210), anchor='rm')
-    rules = ['Mira el rastro', 'Esa no era: la correcta tiene el aro amarillo', '¡El cielo gira!', 'Repite las últimas 3']
-    d.text((180 * S, 566 * S), rules[mode], font=ImageFont.truetype(FB, 20 * S), fill=(255, 255, 255), anchor='mm')
-    d.text((180 * S, 596 * S), names[mode], font=ImageFont.truetype(FR, 15 * S), fill=(171, 165, 210), anchor='mm')
+    rules = ['Mira el rastro', 'Esa no era', '¡El cielo gira!', 'Repite las últimas 3']
+    subs = ['El rastro', 'La correcta tiene el aro amarillo', 'El cielo gira', 'En marcha']
+    d.text((180 * S, 562 * S), rules[mode], font=ImageFont.truetype(FB, 20 * S), fill=(255, 255, 255), anchor='mm')
+    d.text((180 * S, 606 * S), subs[mode], font=ImageFont.truetype(FR, 16 * S), fill=(171, 165, 210), anchor='mm')
     return im
 
 

@@ -84,6 +84,23 @@ class TrailTest {
   }
 
   @Test
+  fun `la lectura es solo la del modo que mas costo, con su truco`() {
+    val rows = Trail.modeRows(rounds = listOf(6, 4, 4, 3), hits = listOf(5, 3, 1, 3))      // el cielo gira es el más bajo
+    val lines = Trail.readingLines(rows)
+    assertEquals(listOf(Trail.modeLine(2)!!, Trail.trick(2)!!), lines)
+    assertTrue(Trail.readingLines(Trail.modeRows(listOf(5, 4, 4, 4), listOf(5, 3, 3, 3))).isEmpty())   // empate: ninguno marcado, ninguna línea
+    assertTrue(Trail.readingLines(Trail.modeRows(listOf(5, 4, 0, 0), listOf(5, 2, 0, 0))).isEmpty())   // un solo modo
+    assertTrue(Trail.readingLines(emptyList()).isEmpty())
+  }
+
+  @Test
+  fun `el parrafo de memoria de trabajo es una sola oracion`() {
+    assertEquals(1, Trail.WORKING_MEMORY.count { it == '.' })
+    assertTrue(Trail.WORKING_MEMORY.endsWith("."))
+    assertTrue(Trail.WORKING_MEMORY.length < 100)
+  }
+
+  @Test
   fun `la lectura no promete salud ni compara con otras personas`() {
     val all = listOf(Trail.WORKING_MEMORY) + (1..3).flatMap { listOfNotNull(Trail.modeLine(it), Trail.trick(it)) }
     for (t in all) {

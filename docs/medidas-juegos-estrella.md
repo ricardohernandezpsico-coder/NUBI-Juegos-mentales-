@@ -354,10 +354,9 @@ de memoria de trabajo y se relaciona con el razonamiento: Broadway y Engle, 2010
   evolución (más alto = mejor, comparable a ±1 nivel porque el largo depende del nivel de la escalera). Si no salió ningún rastro simple completo, no hay cifra:
   se dice con calma y con un consejo («toca una luz a la vez»), sin culpa.
 - **Por modo.** Para al revés, el cielo gira y en marcha: aciertos de rondas por modo, solo con **3 rondas o más** (con menos no se dice nada). El de menor
-  tasa se marca con el TEXTO «el que más te costó» (además del color coral) y solo si hay dos o más modos y no empatan todos. Bajo las filas, una línea por
-  modo (qué pide: «Al revés pide reordenar en la cabeza: suele costar un poco más») y UN truco concreto para el que más costó.
-- **Lectura.** «Tu rastro mide tu memoria de trabajo: lo que usas para sostener unas pocas cosas en la cabeza mientras las necesitas, como un número de
-  teléfono hasta marcarlo». Y, si hubo, «Desbloqueaste un modo nuevo: …» (un dato, una sola vez).
+  tasa se marca con el TEXTO «el que más te costó» (además del color coral) y solo si hay dos o más modos y no empatan todos. Bajo las filas, SOLO la línea del
+  modo marcado (qué pide: «Al revés pide reordenar en la cabeza: suele costar un poco más») y su truco concreto; sin modo marcado, ninguna.
+- **Lectura.** «Tu rastro mide tu memoria de trabajo: lo que sostienes en la cabeza mientras lo usas» (una oración). Y, si hubo, «Desbloqueaste un modo nuevo: …» (un dato, una sola vez).
 
 **Qué NO se dice.** Ningún percentil ni comparación con otras personas o con estudios (la condición no es comparable: luces, giro y sonido propios). No se
 dice que mida «tu memoria» como rasgo ni que entrene nada. Con pocas rondas es una pista, no un resultado: la nota común del pie lo recuerda. El límite

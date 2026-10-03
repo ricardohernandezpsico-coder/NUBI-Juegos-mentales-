@@ -63,9 +63,8 @@ object Trail {
 
   // ------------------------------------------------------------------ lectura en palabras (Nubi científica)
 
-  /** Qué es la memoria de trabajo, para quien lo lee por primera vez. */
-  const val WORKING_MEMORY =
-    "Tu rastro mide tu memoria de trabajo: lo que usas para sostener unas pocas cosas en la cabeza mientras las necesitas, como un número de teléfono hasta marcarlo."
+  /** Qué mide el rastro, en una oración. */
+  const val WORKING_MEMORY = "Tu rastro mide tu memoria de trabajo: lo que sostienes en la cabeza mientras lo usas."
 
   /** Una línea por modo (el que tuvo rondas suficientes), sin números: qué pide ese modo. */
   fun modeLine(mode: Int): String? = when (mode) {
@@ -81,6 +80,15 @@ object Trail {
     2 -> "Truco: sigue a un lucero por su color mientras el cielo gira; el orden va con los luceros, no con el lugar."
     3 -> "Truco: no esperes el final: ve guardando solo las últimas luces y suelta las primeras."
     else -> null
+  }
+
+  /**
+   * La lectura de la pantalla final: SOLO el modo marcado como «el que más te costó», con su línea y su truco. Sin modo marcado, ninguna
+   * (cada dato una vez, sin muros de texto).
+   */
+  fun readingLines(rows: List<ModeRow>): List<String> {
+    val low = rows.firstOrNull { it.lowest } ?: return emptyList()
+    return listOfNotNull(modeLine(low.mode), trick(low.mode))
   }
 
   /** El mensaje de modos nuevos de la partida («Desbloqueaste: Al revés»); null si no hubo. [bits]: 1 rastro, 2 al revés, 4 gira, 8 en marcha. */

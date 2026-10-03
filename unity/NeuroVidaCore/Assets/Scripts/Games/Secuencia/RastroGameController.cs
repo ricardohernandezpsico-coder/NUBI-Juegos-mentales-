@@ -456,7 +456,7 @@ namespace NeuroVida.Games.Secuencia
             right.Aro.gameObject.SetActive(true);
             PlayClip(RastroSounds.Wrong(), 1f);
             GameFeel.Haptic(GameFeel.HapticKind.Double);
-            Rule("Esa no era: la correcta tiene el aro amarillo", "");
+            Rule("Esa no era", "La correcta tiene el aro amarillo");
             yield return StartCoroutine(Motion.Hold(1.8f));
         }
 
@@ -1045,11 +1045,10 @@ namespace NeuroVida.Games.Secuencia
         {
             _rule = MakeText(_play, "Rule", 60, TextAnchor.MiddleCenter, Color.white, 3f, 0.4f);
             NeuroStyle.ClayText(_rule, 3f, 4f);
-            _rule.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _rule.verticalOverflow = VerticalWrapMode.Overflow;
-            _sub = MakeText(_play, "Sub", 45, TextAnchor.MiddleCenter, Dim, 0f, 0f);
+            BestFit(_rule, 48);                       // se ajusta al ancho (ajuste de línea; si no cabe, achica hasta 16 sp): nunca se corta
+            _sub = MakeText(_play, "Sub", 48, TextAnchor.MiddleCenter, Dim, 0f, 0f);
             _sub.font = UiFonts.Regular;
-            _sub.horizontalOverflow = HorizontalWrapMode.Overflow;
+            BestFit(_sub, 45);
             foreach (var t in new[] { _rule, _sub })
             {
                 var r = t.rectTransform;
@@ -1076,9 +1075,11 @@ namespace NeuroVida.Games.Secuencia
             _unlockIcon.rectTransform.anchoredPosition = new Vector2(0f, 40f * UnitsPerDp);
             _unlockIcon.color = Color.white;
             _unlockName = TextAt(_unlockRoot, "Name", 96, Color.white, 0f, -50f);
+            BestFit(_unlockName, 60);
             _unlockLine = TextAt(_unlockRoot, "Line", 57, Rgb(217, 212, 245), 0f, -100f);
             _unlockLine.font = UiFonts.Regular;
-            _unlockLine.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _unlockLine.rectTransform.sizeDelta = new Vector2(900f, 150f);      // hasta 2 líneas
+            BestFit(_unlockLine, 48);
             _unlockRoot.gameObject.SetActive(false);
         }
 
@@ -1190,10 +1191,10 @@ namespace NeuroVida.Games.Secuencia
             _sparkCore.rectTransform.sizeDelta = Vector2.one * (9f * _s);
 
             // rótulos de abajo: instrucción (20 sp) y línea de apoyo (15 sp)
-            _rule.rectTransform.sizeDelta = new Vector2(330f * _s, 56f * _s);
-            _rule.rectTransform.anchoredPosition = LogicalToPlay(new Vector2(180f, 566f));
-            _sub.rectTransform.sizeDelta = new Vector2(330f * _s, 28f * _s);
-            _sub.rectTransform.anchoredPosition = LogicalToPlay(new Vector2(180f, 600f));
+            _rule.rectTransform.sizeDelta = new Vector2(340f * _s, 58f * _s);
+            _rule.rectTransform.anchoredPosition = LogicalToPlay(new Vector2(180f, 562f));
+            _sub.rectTransform.sizeDelta = new Vector2(340f * _s, 30f * _s);
+            _sub.rectTransform.anchoredPosition = LogicalToPlay(new Vector2(180f, 606f));
             _rule.rectTransform.localScale = Vector3.one;
 
             LayoutHud();

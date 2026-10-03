@@ -188,3 +188,9 @@ anillo de respaldo), «en marcha» (exactamente las últimas N), al revés, giro
 siempre, «¡NUEVO!» una sola vez), ronda guiada sin rastro en el DDA, vidas y final de cada modo, telemetría. Kotlin: `TrailTest`, `TrailTelemetryTest`.
 Smoke: `Run` (la partida) y `Tutorial` (con la tarjeta de Nubi); `verificar-todo.sh --juegos Run,Tutorial --filtro-tests "Secuencia|Rastro|Tutorial"`.
 Marca de verificación: `estilo 3-oct · rastro`.
+
+**Retoques del 3-oct (tarea 20b).** (1) Los textos nunca se cortan: el rótulo de abajo y su línea, «¡NUEVO!» y el tutorial usan ajuste de línea y, si no cabe, achican
+hasta 16 sp (`UiKit.BestFit`); el error dice «Esa no era» y debajo «La correcta tiene el aro amarillo». (2) La frase común de la pantalla final («Buen equilibrio entre precisión
+y velocidad», «Precisión y ritmo excelentes») hablaba de velocidad: `ResultPhrases.feedback` la reemplaza por «Buena / Muy buena precisión» en los juegos cuyo puntaje no se apoya en la
+rapidez (`secuencia`, `rutatesoro`, `bitacora`, `rumbo`, `satelites`, `aterrizaje`, `anagramas`, `intrusa`); en los demás no cambia. (3) La lectura final es solo la línea y el truco del modo
+«el que más te costó» (`Trail.readingLines`) y una oración sobre la memoria de trabajo.

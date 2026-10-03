@@ -75,6 +75,26 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
+/**
+ * La frase de debajo del título. «Precisión y ritmo / equilibrio entre precisión y velocidad» solo vale donde el puntaje se apoya en la
+ * rapidez; los juegos de memoria, estimación o razonamiento sin tiempo de reacción dicen solo «precisión» (Rastro de luz no mide velocidad).
+ */
+object ResultPhrases {
+  /** Juegos cuyo puntaje y medida NO usan rapidez: ni tiempo de reacción en el motor ni una medida en ms o por segundo. */
+  val NO_SPEED_GAMES = setOf("secuencia", "rutatesoro", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa")
+
+  fun feedback(gameId: String, score: Int): String = when {
+    gameId in NO_SPEED_GAMES -> when {
+      score >= 85 -> "Muy buena precisión."
+      score >= 60 -> "Buena precisión."
+      else -> "La dificultad se ajusta a tu ritmo en cada partida."
+    }
+    score >= 85 -> "Precisión y ritmo excelentes."
+    score >= 60 -> "Buen equilibrio entre precisión y velocidad."
+    else -> "La dificultad se ajusta a tu ritmo en cada partida."
+  }
+}
+
 private val TextSoft = Color(0xFFB4BFEA) // secundario sobre el cielo nocturno (contraste > 7:1)
 
 /**
@@ -213,11 +233,7 @@ fun GameResultScreen(
       textAlign = TextAlign.Center
     )
     Text(
-      text = when {
-        result.score >= 85 -> "Precisión y ritmo excelentes."
-        result.score >= 60 -> "Buen equilibrio entre precisión y velocidad."
-        else -> "La dificultad se ajusta a tu ritmo en cada partida."
-      },
+      text = ResultPhrases.feedback(result.gameId, result.score),
       color = TextSoft,
       fontSize = 16.sp,
       textAlign = TextAlign.Center,
@@ -669,15 +685,11 @@ fun GameResultScreen(
         Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 8.dp)) {
           rows.forEach { row -> TrailModeBar(row, Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
         }
-        rows.forEach { row ->
-          trail.modeLine(row.mode)?.let {
-            Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
-          }
-        }
-        rows.firstOrNull { it.lowest }?.let { low ->
-          trail.trick(low.mode)?.let {
-            Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp))
-          }
+        trail.readingLines(rows).forEachIndexed { i, line ->
+          Text(
+            line, color = if (i == 0) Clay.Cream else TextSoft, fontSize = if (i == 0) 15.sp else 14.sp, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = if (i == 0) 2.dp else 6.dp)
+          )
         }
       }
       Text(trail.WORKING_MEMORY, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp))
