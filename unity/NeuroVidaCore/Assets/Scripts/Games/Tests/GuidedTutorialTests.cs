@@ -150,7 +150,7 @@ namespace NeuroVida.Games.Tests
             foreach (var (file, usesCommonWait) in files)
             {
                 string region = GuidedRegion(file);
-                if (usesCommonWait) StringAssert.Contains("WaitForContinue", region, file + ": cada paso espera un toque (GuidedTutorial.WaitForContinue)");
+                if (usesCommonWait) Assert.IsTrue(region.Contains("WaitForContinue") || region.Contains("coach."), file + ": cada paso es un foco de Nubi entrenadora o espera un toque (GuidedTutorial.Coach / WaitForContinue)");
                 foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(region, @"(?:Hold|Wait)\(\s*(\d+(?:\.\d+)?)f?\s*\)"))
                     Assert.Less(float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), 1f, file + ": una pausa fija de " + m.Value + " avanza el tutorial sin que la persona toque");
             }

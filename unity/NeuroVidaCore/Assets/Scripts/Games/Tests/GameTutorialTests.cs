@@ -130,9 +130,9 @@ namespace NeuroVida.Games.Tests
     public class MeteorosTutorialTests
     {
         [Test]
-        public void TheGuidedRound_IsTwoWordsAndOneInvented_InThatOrder()
+        public void TheGuidedRound_IsOneWordAndOneInvented_InThatOrder()
         {
-            CollectionAssert.AreEqual(new[] { true, true, false }, MeteorContract.GuidedPlan);
+            CollectionAssert.AreEqual(new[] { true, false }, MeteorContract.GuidedPlan);
             Assert.GreaterOrEqual(MeteorContract.GuidedFallSeconds, 4f, "cae despacio: hay tiempo de sobra para leer");
             Assert.LessOrEqual(MeteorContract.GuidedFallSeconds, 6f, "pero no 11 s: la inventada se deja caer entera y era tiempo muerto");
         }
@@ -155,8 +155,8 @@ namespace NeuroVida.Games.Tests
         public void TheGuidedRound_IdleTimeDropsFromNineteenToEightSeconds()
         {
             // antes: 3 × 2,2 + 1,8 + 11 = 19,4 s sin hacer nada
-            Assert.AreEqual(8.4f, MeteorContract.GuidedIdleSeconds(false), 1e-3f);
-            Assert.AreEqual(9.9f, MeteorContract.GuidedIdleSeconds(true), 1e-3f);
+            Assert.AreEqual(8.0f, MeteorContract.GuidedIdleSeconds(false), 1e-3f);
+            Assert.AreEqual(9.5f, MeteorContract.GuidedIdleSeconds(true), 1e-3f);
             Assert.Less(MeteorContract.GuidedIdleSeconds(false), 19.4f / 2f, "menos de la mitad que antes");
             Assert.Less(MeteorContract.GuidedIdleSeconds(true), 19.4f * 0.55f, "también en mayores");
         }

@@ -71,7 +71,7 @@ namespace NeuroVida.Games.Meteoros
         // ------------------------------------------------------------------ ronda guiada del tutorial
 
         /// <summary>El guion de la ronda guiada: 2 palabras reales que se tocan y 1 inventada que se deja caer (true = palabra real). No cuenta para nada.</summary>
-        public static readonly bool[] GuidedPlan = { true, true, false };
+        public static readonly bool[] GuidedPlan = { true, false };
 
         /// <summary>Segundos que tarda en caer cada meteoro de la ronda guiada. Antes 11 s (tiempo muerto: la inventada hay que dejarla caer entera); desde la prueba de Ricardo
         /// (3-oct, «al inicio es bastante lenta y genera mucha pausa») 6 s, y 7,5 s en mayores. Cae de a UNO, sin otros que distraigan: alcanza de sobra para leer la palabra.</summary>

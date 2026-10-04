@@ -415,3 +415,15 @@ Decorativas sin respetar que quedan en los juegos: **0**.
 Rastro de luz, Freno de Emergencia, Aterrizaje Lunar y Lluvia de meteoros tienen tarjeta de Nubi + ronda guiada (`Games/Shared/GuidedTutorial`). Con «quitar animaciones»: la tarjeta entra y sale con fundido
 (`Motion.FadeSeconds`), el aro sol punteado queda QUIETO (sin girar, `GuidedTutorial.SpinHint` mira `Motion.Decorative`) y los avisos de Nubi y la franja de Aterrizaje aparecen de una vez.
 Las esperas del guion usan `Motion.Hold` (reloj de juego). Verificado con `--sin-animaciones` en los cuatro juegos.
+
+## Nubi entrenadora (`Games/Shared/NubiCoach.cs`, 4-oct)
+
+Ficha del componente de los tutoriales (ver `docs/diseno-rastro-de-luz.md`, punto 6).
+
+| Qué hace | Clase | Con «quitar animaciones» |
+|---|---|---|
+| El velo gris con hueco y el aro celeste | ESENCIAL (dice qué tocar) | Aparece con un fundido de 160 ms |
+| El aro que late | DECORATIVA | Quieto |
+| Nubi que entra deslizándose por el costado | DECORATIVA | Aparece con un fundido |
+| El globo que salta y el dedo que señala cuando insiste (a los 5 s) | DECORATIVA | El globo no salta y el dedo queda quieto |
+| El juego congelado mientras hay un foco de «tocar» (`GameClock`) | ESENCIAL | Igual |

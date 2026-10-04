@@ -35,6 +35,9 @@ namespace NeuroVida.Games.Shared
         public static bool EditorAutoContinue;
 #endif
 
+        /// <summary>«Nubi entrenadora»: el foco que ilumina SOLO lo que hay que tocar y la deja hablar en un globo (ver <see cref="NubiCoach"/>).</summary>
+        public NubiCoach Coach { get; }
+
         /// <summary>true si la persona tocó «Saltar tutorial» (en la tarjeta o durante la ronda guiada).</summary>
         public bool Skipped { get; private set; }
         /// <summary>true mientras la ronda guiada está en curso (el rótulo y el botón de saltar están a la vista).</summary>
@@ -77,6 +80,9 @@ namespace NeuroVida.Games.Shared
             skipText.text = "Saltar tutorial";
             BestFit(skipText, 45);
             _intro.gameObject.SetActive(false);
+
+            // ---- «Nubi entrenadora»: el foco (velo con hueco + Nubi y su globo). Va debajo del rótulo y de «Saltar tutorial», que siguen a la vista.
+            Coach = NubiCoach.Create(parent, p => Practicing && Hit(_skipRect, p), () => Skipped);
 
             // ---- durante la ronda guiada: rótulo arriba, mensaje de Nubi y «Saltar tutorial» abajo
             var pgo = new GameObject("TutorialPractice");
@@ -194,6 +200,7 @@ namespace NeuroVida.Games.Shared
         public void EndPractice()
         {
             Practicing = false;
+            Coach.Hide();
             _caption.text = "";
             _practiceRoot.gameObject.SetActive(false);
         }
@@ -211,6 +218,7 @@ namespace NeuroVida.Games.Shared
         public void Hide()
         {
             Practicing = false;
+            Coach.Hide();
             _intro.gameObject.SetActive(false);
             _practiceRoot.gameObject.SetActive(false);
         }

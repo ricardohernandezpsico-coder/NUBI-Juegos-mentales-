@@ -190,6 +190,12 @@ namespace NeuroVida.Games.Meteoros
                 yield return null;
             }
             _loopOn = false;
+            if (Assessment.Active)
+            {
+                // versión corta del inicio: el tiempo solo impide soltar OTRO meteoro; los que ya caen se resuelven (antes se cortaban a mitad y salía «¡Listo!»)
+                float limit = GameClock.Time + 14f;
+                while (_active.Count > 0 && GameClock.Time < limit) yield return null;
+            }
             if (Endless) ClearMeteors(); // se acabó el tiempo: lo que quedaba en el cielo no cuenta
             yield return StartCoroutine(FinishGame());
         }
@@ -396,9 +402,9 @@ namespace NeuroVida.Games.Meteoros
             for (int i = 0; i < Input.touchCount; i++)
             {
                 var t = Input.GetTouch(i);
-                if (t.phase == TouchPhase.Began) { pressed = true; pos = t.position; TryTap(pos); }
+                if (t.phase == TouchPhase.Began) { pressed = true; pos = t.position; if (!TapBlocked(pos)) TryTap(pos); }
             }
-            if (!pressed && Input.touchCount == 0 && Input.GetMouseButtonDown(0)) TryTap(Input.mousePosition);
+            if (!pressed && Input.touchCount == 0 && Input.GetMouseButtonDown(0) && !TapBlocked(Input.mousePosition)) TryTap(Input.mousePosition);
         }
 
         private void TryTap(Vector2 screenPos)
@@ -1071,11 +1077,12 @@ namespace NeuroVida.Games.Meteoros
             _pending = null;
             _hint.gameObject.SetActive(false);
             SetPrompt("", Color.white);
-            // los avisos de Nubi van donde va el aviso del juego, bajo la constelación
-            t.PlaceControls(GameHud.Height + 10f, false, _playH * 0.5f + _prompt.rectTransform.anchoredPosition.y, badgeAtBottom: true);
             _phase = Phase.Playing;
+            var coach = t.Coach;
             var script = new GuidedScript(MeteorContract.GuidedPlan.Length);
-            int words = 0;
+            // «Nubi entrenadora»: el primer meteoro (una palabra) se congela arriba con el foco y se toca; el segundo (inventado) cae solo y Nubi avisa DESPUÉS de responder.
+            // Si una palabra llega abajo sin tocarse, Nubi lo dice y la vuelve a soltar con el foco.
+            bool focusNext = true;
             while (!script.Finished)
             {
                 if (t.Skipped) { script.Skip(); break; }
@@ -1091,11 +1098,6 @@ namespace NeuroVida.Games.Meteoros
                     _lexicon.PickDecoy(new[] { DecoyKind.Obvious }, 4, 6, _rng, out var d, out var kind, out int band);
                     spec = new MeteorSpec { Word = d, IsWord = false, Band = band, Decoy = kind, FallSeconds = MeteorContract.GuidedFall(Senior) };
                 }
-                string instruction = isWord ? (words == 0 ? "Esta palabra existe: tócala" : "Otra que existe: tócala") : "Esta no existe: déjala caer";
-                // el meteoro NO cae solo: la persona lee y empieza ella; la explicación queda puesta mientras cae
-                yield return StartCoroutine(t.WaitForContinue(instruction, "Toca para empezar"));
-                if (t.Skipped) { script.Skip(); break; }
-                t.Say(instruction);
                 _pending = spec;
                 int tries = 0;
                 while (!Spawn() && tries++ < 20) yield return null;
@@ -1107,23 +1109,28 @@ namespace NeuroVida.Games.Meteoros
                     _guidedRing.gameObject.SetActive(true);
                 }
                 _guidedOutcome = 0;
+                if (isWord && meteor != null && focusNext)
+                {
+                    focusNext = false;
+                    yield return null;                                     // el meteoro termina de aparecer arriba
+                    var m = meteor;
+                    yield return StartCoroutine(coach.Touch(() => coach.AroundOf(m.Root, new Vector2(Mathf.Max(m.Rx * 2.6f, 340f), Mathf.Max(m.Ry * 2.6f, 260f))),
+                        "¿Existe esta palabra? Si existe, tócala"));
+                }
                 while (_guidedOutcome == 0 && !t.Skipped) yield return null;
                 _guidedRing = null;
                 if (t.Skipped) { script.Skip(); break; }
-                string result;
                 if (_guidedOutcome == 1 || _guidedOutcome == 4)
                 {
-                    result = _guidedOutcome == 1 ? "¡Bien! Esa existe" : "¡Bien! Esa no existía: dejarla caer fue lo correcto";
-                    if (_guidedOutcome == 1) words++;
                     script.Success();
+                    if (_guidedOutcome == 4) yield return StartCoroutine(coach.Notice("¡Bien! Esa no existía: dejarla caer fue lo correcto", 2.2f));
                 }
                 else
                 {
-                    result = _guidedOutcome == 3 ? "Casi: esa palabra existe. Tócala antes de que llegue abajo" : "Casi: esa no existe. Las inventadas se dejan caer";
                     script.Failure();
+                    focusNext = _guidedOutcome == 3;
+                    yield return StartCoroutine(coach.Notice(_guidedOutcome == 3 ? "Casi: esa palabra existe. Tócala antes de que llegue abajo" : "Casi: esa no existe. Las inventadas se dejan caer", 2.4f));
                 }
-                // la explicación del resultado queda puesta hasta que la persona toque (no se pasa solo al siguiente)
-                yield return StartCoroutine(t.WaitForContinue(result));
             }
             _guidedRing = null;
             ClearMeteors();
@@ -1131,13 +1138,14 @@ namespace NeuroVida.Games.Meteoros
             if (!script.Skipped)
             {
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(t.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
+                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
             }
             t.EndPractice();
             _guided = false;
             _phase = Phase.Idle;
             _pending = null;
         }
+        // </guided>
 
         /// <summary>Un meteoro de la ronda guiada se resolvió (se tocó o llegó abajo): solo se ve el efecto y se avisa a la ronda; no hay puntos, rachas, constelación ni DDA.</summary>
         private void GuidedResolve(Meteor m, bool tapped)
@@ -1187,6 +1195,8 @@ namespace NeuroVida.Games.Meteoros
             }
             Destroy(m.Root.gameObject);
         }
-        // </guided>
+
+        /// <summary>true si el foco de Nubi está abierto y el toque cae fuera de su hueco (no llega al juego).</summary>
+        private bool TapBlocked(Vector2 screenPos) => _tutorial != null && _tutorial.Coach.Blocks(screenPos);
     }
 }

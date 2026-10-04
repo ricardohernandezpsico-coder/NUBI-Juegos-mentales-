@@ -23,6 +23,9 @@ namespace NeuroVida.Games.Shared
 
         public bool IsShown => gameObject.activeSelf;
 
+        /// <summary>true mientras algún menú de pausa está abierto (el foco de Nubi entrenadora no debe tomar esos toques ni reanudar el juego).</summary>
+        public static bool Open { get; private set; }
+
         /// <summary>Los botones que se ven ahora (nombre y rect), para las pruebas que tocan el centro de cada uno.</summary>
         public System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, RectTransform>> VisibleButtons()
         {
@@ -162,6 +165,7 @@ namespace NeuroVida.Games.Shared
         public void Show()
         {
             GameClock.Pause();
+            Open = true;
             if (IsShown) return;
             Relayout(_onHowTo != null && _canHowTo != null && _canHowTo());
             gameObject.SetActive(true);
@@ -170,7 +174,11 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>Oculta el menú (no reanuda: eso lo decide quien llama).</summary>
-        public void Hide() => gameObject.SetActive(false);
+        public void Hide()
+        {
+            Open = false;
+            gameObject.SetActive(false);
+        }
 
         /// <summary>Atrás con el menú abierto = Continuar.</summary>
         public void ResumeFromBack()

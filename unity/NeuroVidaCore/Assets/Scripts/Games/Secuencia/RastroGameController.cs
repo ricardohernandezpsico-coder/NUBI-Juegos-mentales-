@@ -177,7 +177,8 @@ namespace NeuroVida.Games.Secuencia
         }
 
         private float Elapsed => _clockOn ? GameClock.Time - _clockStart - _clockComp : 0f;
-        private bool TimeIsUp => _clockOn && _session.IsOver(Elapsed);
+        // En la versión corta del inicio («Tu punto de partida») el tiempo NO corta una ronda empezada (se veía «¡Listo!» a mitad de un ejercicio): solo impide EMPEZAR otra (MainLoop).
+        private bool TimeIsUp => _clockOn && !_session.Assessment && _session.IsOver(Elapsed);
 
         private IEnumerator GameLoop()
         {
@@ -328,7 +329,6 @@ namespace NeuroVida.Games.Secuencia
             _phase = Phase.Show;
             ClearRound();
             Rule(RastroModes.WatchRule(r.Mode, r.Asked), RastroModes.Name(r.Mode));
-            if (r.Guided) _tutorial.Say("Mira el camino de la chispa");
             yield return StartCoroutine(Motion.Hold(0.45f));
 
             Color trail = TrailTint[(int)r.Mode];
@@ -423,7 +423,7 @@ namespace NeuroVida.Games.Secuencia
             _ribbon.Clear();
             _events.Clear();
             Rule(RastroModes.RepeatRule(r.Mode, r.Asked), RastroModes.Name(r.Mode));
-            if (r.Guided) { _tutorial.Say("Toca los luceros en el mismo orden"); _hintOrb = r.Target[0]; }
+            if (r.Guided) _hintOrb = r.Target[0];
             else ShowCue(r);
             float startedAt = GameClock.Time;
             float radius = _senior ? RastroBoard.HitRadiusSenior : RastroBoard.HitRadius;
@@ -532,17 +532,20 @@ namespace NeuroVida.Games.Secuencia
         protected override IEnumerator GuidedRound(GuidedTutorial tutorial)
         {
             tutorial.BeginPractice();
+            var coach = tutorial.Coach;
             var r = _session.GuidedRound();
             SetMode(r);
+            // «Nubi entrenadora»: 1) mirar cómo vuela la chispa, 2) tocar el primer lucero (el toque es el de verdad), 3) un aviso breve. Nada se queda esperando en silencio.
             while (!tutorial.Skipped)
             {
-                // la persona empieza ella: la chispa no sale sola
-                yield return StartCoroutine(tutorial.WaitForContinue("Mira la chispa: va a dibujar un camino.", "Toca cuando estés listo"));
-                if (tutorial.Skipped) break;
+                StartCoroutine(coach.Watch(BoardHole, "Mira el camino de la chispa", () => _phase != Phase.Show, 15f));
                 yield return StartCoroutine(Show(r));
                 if (tutorial.Skipped) break;
                 var res = new InputResult();
-                yield return StartCoroutine(InputPhase(r, res));
+                var input = StartCoroutine(InputPhase(r, res));
+                int first = r.Target[0];
+                yield return StartCoroutine(coach.Touch(() => OrbHole(first), "Ahora repítelo: toca o desliza por las mismas luces", circle: true));
+                yield return input;
                 _events.Clear();
                 if (tutorial.Skipped) break;
                 if (res.Complete)
@@ -550,7 +553,7 @@ namespace NeuroVida.Games.Secuencia
                     PlayClip(RastroSounds.Chord(), 1f);
                     _winAt = GameClock.Time;
                     _hintOrb = -1;
-                    yield return StartCoroutine(tutorial.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
+                    yield return StartCoroutine(coach.Notice("¡Eso! Cada ronda suma una luz"));
                     break;
                 }
                 // error: sin culpa, se explica y se repite el mismo camino
@@ -561,15 +564,34 @@ namespace NeuroVida.Games.Secuencia
                 _orbs[res.Expected].Aro.color = NeuroStyle.WithAlpha(Sun, 1f);
                 _orbs[res.Expected].Aro.gameObject.SetActive(true);
                 PlayClip(RastroSounds.Wrong(), 1f);
-                yield return StartCoroutine(tutorial.WaitForContinue("Casi: esa no era. Mira otra vez el camino"));
+                yield return StartCoroutine(coach.Notice("Casi: esa no era. Mira otra vez el camino", 2.4f));
                 ClearRound();
             }
             _hintOrb = -1;
             ClearRound();
+            if (!tutorial.Skipped) yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
             tutorial.EndPractice();
             _phase = Phase.Idle;
         }
         // </guided>
+
+        /// <summary>El tablero entero de luceros (para el foco de «mirar»).</summary>
+        private Rect BoardHole()
+        {
+            var coach = _tutorial.Coach;
+            Rect bounds = Rect.zero;
+            bool first = true;
+            for (int i = 0; i < RastroBoard.Orbs; i++)
+            {
+                var o = coach.AroundOf(_orbs[i].Root, new Vector2(260f, 260f));
+                if (first) { bounds = o; first = false; }
+                else bounds = Rect.MinMaxRect(Mathf.Min(bounds.xMin, o.xMin), Mathf.Min(bounds.yMin, o.yMin), Mathf.Max(bounds.xMax, o.xMax), Mathf.Max(bounds.yMax, o.yMax));
+            }
+            return bounds;
+        }
+
+        /// <summary>Un lucero (para el foco de «tocar»).</summary>
+        private Rect OrbHole(int orb) => _tutorial.Coach.AroundOf(_orbs[orb].Root, new Vector2(230f, 230f));
 
         // ------------------------------------------------------------------ «¡NUEVO!»
 
@@ -660,6 +682,7 @@ namespace NeuroVida.Games.Secuencia
             }
             if (!down && !held) return;
             if (down && _tutorial != null && _tutorial.TrySkip(pos)) return;       // «Saltar tutorial»
+            if (_tutorial != null && _tutorial.Coach.Blocks(pos)) return;          // el foco de Nubi: solo vale el toque dentro del hueco
             if (_phase != Phase.Input) return;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, pos, null, out var local)) return;
             _events.Enqueue(new PointerEvent(PlayToLogical(local)));

@@ -227,8 +227,10 @@ rapidez (`secuencia`, `rutatesoro`, `bitacora`, `rumbo`, `satelites`, `aterrizaj
    tiempo con `HowToClock.Shift` y reiniciar el bucle principal). El `PauseMenu` muestra el botón solo si `CanShowHowTo`.
 4. Kotlin: sumar el id a `UnityGameLauncher.TUTORIAL_GAMES`.
 5. Smoke: entradas `TutorialX` en `HeadlessPlaymodeSmokeTest` (el Editor sigue solo la tarjeta tras 1 s con `GuidedTutorial.EditorAutoContinue`, solo en el Editor).
-6. **Principio de diseño (Ricardo, 3-oct, tarea 28): aprender haciendo. Cada paso espera una acción de la persona y no hay nada automático.** Nubi no juega sola ni
-   avanza los pasos por tiempo: cada paso dice UNA cosa corta, el aro marca SOLO lo que hay que tocar y lo demás queda atenuado y sin responder; si se toca otra cosa no pasa
-   nada malo (la ficha rebota suave y el aro sigue donde estaba). Los textos o definiciones que hay que leer aparecen enteros, no escribiéndose solos. Para pasar de un paso
-   explicativo al siguiente, un toque en un botón o en la pantalla («Toca para seguir»). Si la persona se queda quieta unos segundos, recién ahí el aro ofrece la ayuda.
-   Referencia: `PuntaGameController.GuidedRound` (`WaitIntent`, `WaitTile`, `WaitTap`). Desde la tarea 29 (3-oct) lo cumplen los seis: los cinco anteriores usan la pieza común `GuidedTutorial.WaitForContinue(texto, invitación)` (la explicación queda puesta, con «Toca para empezar» / «Toca para seguir» debajo, hasta un toque en cualquier parte menos «Saltar tutorial»; en el Editor el smoke la pasa solo con `EditorAutoContinue`); lo que ES la tarea (la chispa, la nave que baja, los meteoros que caen, el cohete y el ¡ALTO!, la tarjeta que llega) sigue moviéndose igual. `GuidedTutorialTests` falla si el tutorial de algún juego avanza con una pausa fija de 1 s o más.
+6. **Principio de diseño (Ricardo, 4-oct): «Nubi entrenadora». 2-3 focos en el momento justo, el toque en el foco ES la acción, nada espera en silencio y el tutorial entero dura ≤ 45 s.**
+   Reemplaza al «aprender haciendo / toca para seguir» de las tareas 28-29 (que dejó los tutoriales lentos: «le quita dinamismo, la gente se iría»). Ahora el ritmo lo da el juego y Nubi
+   solo aparece en los momentos clave, como en otras apps: sale por un costado hablando, la pantalla queda gris y SOLO se ilumina lo que hay que tocar. Pieza común: `Games/Shared/NubiCoach.cs`
+   (se usa con `tutorial.Coach`), con tres formas: **Touch** (el juego se congela; el toque dentro del hueco es el toque real del juego y lo cierra; a los 5 s Nubi insiste con un salto del globo y un
+   dedo), **Watch** (foco sobre algo que se mueve, sin congelar; se cierra solo) y **Notice** (globo breve sin velo, ~1,8 s). Cada juego guía con 2-3 focos como máximo y termina con un aviso
+   «¡Listo! Ahora va en serio» y la partida empieza sin otra pantalla. Dentro del tutorial nadie pierde por tiempo (si no responde, Nubi insiste). Con «quitar animaciones»: sin deslizamiento, latido ni
+   salto, solo fundidos. `GuidedTutorialTests` falla si el tutorial de algún juego avanza con una pausa fija de 1 s o más. `WaitForContinue` (toque para seguir) queda disponible para casos puntuales.
