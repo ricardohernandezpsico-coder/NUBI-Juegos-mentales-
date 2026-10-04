@@ -77,6 +77,8 @@ object ResultAdvice {
     result.puntaSolo?.let { solo ->
       out += tipOf(Punta.message(solo, Punta.total(solo, result.puntaPista, result.puntaLetras, result.puntaVista)) ?: "")
     }
+    // Carga exacta: cuando alguna carga necesitó pista o quedó para otra vez.
+    result.cargaAlone?.let { alone -> out += tipOf(Carga.tip(alone, result.totalTrials, result.level) ?: "") }
     // Rumbo a Casa: de dónde sale lo que te aleja de casa.
     val along = result.homingAlong
     val lateral = result.homingLateral

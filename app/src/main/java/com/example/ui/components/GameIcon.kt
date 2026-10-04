@@ -46,7 +46,7 @@ import kotlin.math.sin
  * - Tinta o Palabra: gota de tinta y tarjeta con palabra.
  * - Detective de Series: lupa sobre una serie que crece.
  * - Anagramas: dos fichas de letras.
- * - Cálculo Sereno: + − × =.
+ * - Carga exacta (id «calculo»): un reactor de arcilla con su aro de luces y tres celdas de energía debajo.
  * - Piloto Estelar: la nave volando por una ruta de balizas que serpentea, con una señal que atrapar.
  * Se dibuja pensado para ir sobre el planeta del color del dominio, pero se lee también sobre fondo claro.
  * Id desconocido: cae al emoji de [com.example.model.GameDefinition.iconEmoji].
@@ -360,16 +360,17 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(c, 17f), Clay.Sun, gloss = true)
     }
     "calculo" -> {
-      val bar = 9f
-      // + (arriba izquierda)
-      clay(plus(Offset(28f, 28f), 34f, bar), Clay.Coral)
-      // − (arriba derecha)
-      clay(roundRect(56f, 28f - bar / 2f, 34f, bar, bar / 2f), Cream)
-      // × (abajo izquierda)
-      rotate(45f, Offset(28f, 72f)) { clay(plus(Offset(28f, 72f), 34f, bar), Clay.Sun) }
-      // = (abajo derecha)
-      clay(roundRect(56f, 64f - bar / 2f, 34f, bar, bar / 2f), Cream)
-      clay(roundRect(56f, 80f - bar / 2f, 34f, bar, bar / 2f), Cream)
+      // Carga exacta: el reactor (aro con luces y un núcleo dorado) y tres celdas de energía debajo.
+      val c = Offset(50f, 36f)
+      clay(circle(c, 29f), Clay.Grape, gloss = true)
+      for (i in 0 until 8) {
+        val a = i * (Math.PI / 4.0).toFloat()
+        drawCircle(Cream, 2.6f, Offset(c.x + cos(a) * 22.5f, c.y + sin(a) * 22.5f))
+      }
+      clay(circle(c, 15f), Clay.Sun, border = 3.5f, shadow = false)
+      clay(roundRect(9f, 68f, 24f, 24f, 7f), Clay.Sky)
+      clay(roundRect(38f, 68f, 24f, 24f, 7f), Clay.Coral)
+      clay(roundRect(67f, 68f, 24f, 24f, 7f), Cream)
     }
   }
 }

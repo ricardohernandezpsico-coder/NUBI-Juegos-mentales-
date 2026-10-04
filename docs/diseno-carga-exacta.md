@@ -5,6 +5,8 @@ Razonamiento.
 Boceto jugable aprobado: `docs/previews/carga-exacta-boceto.html` (https://claude.ai/artifact/PZ5Uz57sFwAwiczX1tdgcH).
 Ricardo (4-oct): «me gusta».
 
+**Estado: implementado el 4-oct (tarea 32).** Código en `Games/Calculo/` (`CalculoContract.cs`: reglas, generador, solucionador, tablero, medidas; `CargaLayout.cs`; `CargaSounds.cs`; `CalculoGameController.cs`), lectura en la app en `data/Carga.kt`. Diferencias con lo de abajo: (1) si pasan 60 s después de la pista sin lograr la carga, Nubi la deja para otra vez (cuenta como no lograda) para que nadie se quede trabado; (2) el tiempo medio es solo de las cargas logradas SIN pista (el de las que tuvieron pista incluiría la espera hasta la pista); (3) «Camino corto» = los pasos del camino más corto que encuentra el solucionador, sin pista.
+
 Por qué se reemplaza Cálculo Sereno:
 - su modo Reto, con cuentas en gotas que caen al agua, es casi igual a «Raindrops» de Lumosity;
 - era un examen de cuentas, y el área es Razonamiento. Esto es un acertijo: planificar y probar caminos con números.

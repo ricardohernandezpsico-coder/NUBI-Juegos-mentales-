@@ -3,7 +3,7 @@ Series, armadas con los .raw que vuelca ArtPreview.
 
 Uso: python3 tools/art-preview/juegos.py <raw> [--out docs/previews]
      ->  arte-juegos.png (Ruta del Tesoro, Secuencia, Series; Comparación se retiró el 4-oct)
-         arte-juegos-2.png (Cálculo; Anagramas se rehízo el 3-oct como «En la punta de la lengua», Tinta o Palabra también y Cambio de Chip se retiró)
+         (arte-juegos-2.png se borró el 4-oct: era el estanque de Cálculo Sereno, reemplazado por «Carga exacta», cuyo boceto está en carga-exacta-boceto.html)
 """
 import argparse
 import os
@@ -140,31 +140,6 @@ def clay_rect(im, box, fill, r=28, border=5, drop=10):
     d.rounded_rectangle(box, r, fill=fill)
 
 
-def calculo(raw):
-    im = night(7)
-    glow(im, 100, 180, 150, (0xFF, 0xF4, 0xD6), 70)
-    d = ImageDraw.Draw(im)
-    d.ellipse((60, 110, 150, 200), fill=(0xFF, 0xF4, 0xD6))
-    title(d, 'Cálculo Sereno')
-    clay_rect(im, (120, 250, W - 120, 360), (0xE0, 0xF2, 0xFE), r=50, border=4, drop=8)
-    d = ImageDraw.Draw(im)
-    d.ellipse((150, 262, 200, 280), fill=(255, 255, 255, 200))
-    d.text((W / 2, 305), '7 × 8', font=ImageFont.truetype(FB, 64), fill=(0x0B, 0x2A, 0x3F), anchor='mm')
-    water = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    ImageDraw.Draw(water).rounded_rectangle((30, 480, W - 30, 610), 28, fill=(26, 92, 158, 200), outline=INK, width=4)
-    im.alpha_composite(water)
-    ImageDraw.Draw(im).rounded_rectangle((45, 488, W - 45, 492), 2, fill=(205, 242, 255))
-    put(im, load(f'{raw}/lily_0.raw'), 0.13 * W, 470, 76)
-    put(im, load(f'{raw}/lily_1.raw'), 0.87 * W, 466, 90)
-    tile = load(f'{raw}/tile.raw')
-    opts = [('54', (0x7D, 0xD3, 0xFC)), ('56', (0xA7, 0xF3, 0xD0)), ('58', (0xFD, 0xE6, 0x8A)), ('48', (0xF9, 0xA8, 0xD4))]
-    for i, (t, c) in enumerate(opts):
-        cx, cy = 150 + (i % 2) * 240, 710 + (i // 2) * 170
-        put(im, tinted(tile, c), cx, cy, 170)
-        ImageDraw.Draw(im).text((cx, cy - 8), t, font=ImageFont.truetype(FB, 58), fill=(0x0B, 0x2A, 0x3F), anchor='mm')
-    return im
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('raw')
@@ -177,11 +152,6 @@ def main():
         sheet.alpha_composite(p, (gap + i * (W + gap), gap))
     os.makedirs(a.out, exist_ok=True)
     sheet.convert('RGB').save(os.path.join(a.out, 'arte-juegos.png'))
-    panels = [calculo(a.raw)]
-    sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
-    for i, p in enumerate(panels):
-        sheet.alpha_composite(p, (gap + i * (W + gap), gap))
-    sheet.convert('RGB').save(os.path.join(a.out, 'arte-juegos-2.png'))
     print('OK')
 
 

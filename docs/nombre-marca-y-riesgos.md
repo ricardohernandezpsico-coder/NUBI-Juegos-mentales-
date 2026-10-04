@@ -366,3 +366,12 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 
 Anagramas se reemplazó por **En la punta de la lengua** (id interno `anagramas`, que no cambia). Hay que sumarlo a la búsqueda oficial de marca (clases 9 y 41): es una expresión
 común del español («tener algo en la punta de la lengua»), así que conviene mirar si alguna app o juego de palabras ya la usa como nombre. «Anagramas» deja de aparecer en la app.
+
+## Nombre nuevo de Cálculo Sereno: «Carga exacta» (4-oct)
+
+Cálculo Sereno se reemplazó por **Carga exacta** (id interno `calculo`, que no cambia): el reactor de la nave pide una carga y se juntan celdas de energía de a dos con + − × ÷ hasta llegar. Se retiró
+el parecido que tenía con «Raindrops» de Lumosity: el Reto de Cálculo Sereno eran cuentas dentro de gotas que caen a un estanque (mecánica, nombre, burbuja y agua muy cercanos); ahora nada cae ni apura
+dentro de una carga y no hay agua. Hay que sumar «Carga exacta» a la búsqueda oficial de marca (clases 9 y 41): es una expresión común. La mecánica de «llegar a un número juntando otros con operaciones» es un
+juego clásico y público (la tradición de los acertijos de números); por eso NO se usan los nombres «24 Game», «Countdown» ni «Cifras y letras» (programa de televisión) en ninguna parte. Va a la lista del abogado
+junto con lo demás (comparar el aspecto y la jugada con los juegos de números de Lumosity y de Peak antes de publicar).
+

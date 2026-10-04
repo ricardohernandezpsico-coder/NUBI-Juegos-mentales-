@@ -420,6 +420,7 @@ class NeuroVidaRepository(
       "cosecha" -> "harvest" to Harvest.mark(r.harvCommonFound, r.harvCommonTotal)
       "intrusa" -> "atlas" to Atlas.mark(r.intrSeenType, r.intrHitsType)
       "anagramas" -> "punta" to Punta.mark(r.puntaSolo, Punta.total(r.puntaSolo, r.puntaPista, r.puntaLetras, r.puntaVista))
+      "calculo" -> "carga" to Carga.mark(r.cargaAlone, r.totalTrials)
       "secuencia" -> "trail" to Trail.mark(r.rasBestLen)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()

@@ -106,14 +106,6 @@ namespace NeuroVida.Games.Shared
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.12f),
         };
 
-        public static GameWorld MoonPond => new GameWorld
-        {
-            Name = "Estanque bajo la luna", Stars = 40, VanishingPoint = new Vector2(0.5f, 0.35f),
-            Moons = new[] { new Vector3(0.18f, 0.80f, 150f) }, MoonTints = new[] { NeuroStyle.Hex(0xFFF4D6) },
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.22f), NebulaAPos = new Vector2(0.85f, 0.85f),
-            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.14f),
-        };
-
         /// <summary>Piloto Estelar: las estrellas nacen arriba (hacia donde vuela la nave) y pasan a los costados;
         /// el juego sube su velocidad (<c>StarfieldFx.Warp</c>) con la velocidad de vuelo.</summary>
         public static GameWorld Hyperspace => new GameWorld

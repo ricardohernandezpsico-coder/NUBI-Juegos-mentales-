@@ -33,7 +33,7 @@ Marca cada punto con ✓ o anota lo que viste. Si algo falla, basta con decir el
 ## D. Los 8 juegos (desde Juegos o desde los botones "[Debug]" de Ajustes)
 
 10. Secuencia Lumínica · 11. Parejas Ocultas · 12. Ruta del Tesoro · 13. Tinta o Palabra ·
-    14. Detective de Series · 15. En la punta de la lengua · 16. Cálculo Sereno · (Cambio de Chip se retiró el 3-oct y Comparación el 4-oct.)
+    14. Detective de Series · 15. En la punta de la lengua · 16. Carga exacta · (Cambio de Chip se retiró el 3-oct y Comparación el 4-oct.)
     En cada uno: se entiende qué hacer, el arte se ve bien, suena al acertar y al fallar, y termina con "¡Listo!".
 
 ## E. Pausa y salidas

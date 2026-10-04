@@ -8,7 +8,7 @@ Acordada con Ricardo el 29/30-sep. Lo que manda es `CLAUDE.md` y el código; est
 |---|---|---|
 | Memoria | 6 (Parejas, Secuencia, Ruta del Tesoro, Bitácora, Rumbo a Casa, Correo Estelar) | – |
 | Atención y velocidad | 5 (Tinta o Palabra, Piloto, Freno, Satélites, Rescate relámpago; Cambio de Chip se retiró el 3-oct y Comparación Instantánea el 4-oct) | – |
-| Razonamiento y números | 5 (Detective de Series, Acoplamiento, Tráfico Estelar, Cálculo Sereno, Aterrizaje Lunar) | – |
+| Razonamiento y números | 5 (Detective de Series, Acoplamiento, Tráfico Estelar, Carga exacta —antes Cálculo Sereno—, Aterrizaje Lunar) | – |
 | Lenguaje | 2 (Anagramas, Lluvia de meteoros) | 1 (La palabra intrusa) |
 
 Dos tipos de juego para llegar sin perder calidad: **estrella** (medida propia al final; 1-2 por área) y **base**

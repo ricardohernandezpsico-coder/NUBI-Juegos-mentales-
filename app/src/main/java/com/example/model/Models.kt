@@ -182,11 +182,11 @@ object GameRegistry {
     ),
     GameDefinition(
       id = "calculo",
-      title = "Cálculo Sereno",
+      title = "Carga exacta",
       domain = DomainType.RAZONAMIENTO,
-      subtitle = "Aritmética mental",
-      instruction = "Resuelve cada cuenta y toca el resultado. En modo Reto, antes de que la burbuja llegue al agua.",
-      iconEmoji = "🧮"
+      subtitle = "Combina las celdas de energía",
+      instruction = "El reactor pide una carga exacta. Toca una celda, una operación y otra celda para juntarlas; sigue hasta que una celda valga la carga. Cualquier camino sirve, y puedes deshacer sin costo.",
+      iconEmoji = "🔋"
     ),
     GameDefinition(
       id = "piloto",
@@ -411,6 +411,12 @@ data class GamePlayResult(
   val puntaWords: List<com.example.data.PuntaEntry>? = null,
   val puntaBlue: List<String>? = null,
   val puntaCleared: List<String>? = null,
+  // Solo «Carga exacta» (id calculo): cargas logradas sin pista, logradas con la pista de Nubi, logradas por el camino más corto (sin pista) y tiempo medio (ms) de las
+  // logradas sin pista. Cargas jugadas = totalTrials. No se guardan en Room (la medida va a StarMeasures). La lectura está en data/Carga.kt.
+  val cargaAlone: Int? = null,
+  val cargaHinted: Int? = null,
+  val cargaShort: Int? = null,
+  val cargaMs: Int? = null,
   // Solo Rastro de luz (id «secuencia»): por familia (4: el rastro, al revés, el cielo gira, en marcha) el mejor largo repetido bien (0 = ninguno),
   // las rondas y los aciertos (la ronda guiada del tutorial no cuenta), qué familias aparecieron y cuáles se desbloquearon por primera vez en
   // la partida (bits: 1 rastro, 2 al revés, 4 gira, 8 en marcha). La lectura está en data/Trail.kt. No se guardan en Room.

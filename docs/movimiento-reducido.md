@@ -54,7 +54,7 @@ Además: `GameClock.SimulatedDeltaTime` y `GameClock.RealDeltaTime` (solo para q
 
 **Misma duración (Fase B, regla 6).** Con ReduceMotion, `PopIn`, `PopRect`, `Shake`, `SparkBurst`, `RingBurst` y `ScaleTo` dejan el estado final quieto y luego ESPERAN la misma duración con `Motion.Hold(seconds)` (reloj de juego: respeta la pausa). `Flash` espera su duración total aunque el tinte dure ≤ 0,2 s, y `AnimateResult` espera sus 0,9 s. Así un `yield return StartCoroutine(PopIn(...))` dura igual con y sin la opción, y el ritmo entre rondas, los tiempos de reacción y el DDA no cambian. En los juegos, cada corrutina que se reemplaza (entradas, salidas, giros de carta, `CrossfadeState` de Acoplamiento…) espera su tiempo original con `Motion.Hold` o conserva su bucle. Prueba: `PopRect_PopIn_y_Shake_duran_lo_mismo_con_y_sin_ReduceMotion`, `Las_rafagas_con_ReduceMotion_esperan_su_duracion…` y `ScaleTo_con_ReduceMotion_espera…`.
 
-**`ResultMark`** (nuevo, `Games/Shared/ResultMark.cs`): marca ✓/✗ de arcilla estática junto a una opción o carta. Se usa donde el acierto o el error dependían de color + sacudida/pop: Cálculo (✗ en la elegida y ✓ en la correcta), Series (igual) y Parejas (✗ en las dos cartas que no coinciden).
+**`ResultMark`** (nuevo, `Games/Shared/ResultMark.cs`): marca ✓/✗ de arcilla estática junto a una opción o carta. Se usa donde el acierto o el error dependían de color + sacudida/pop: Series (✗ en la elegida y ✓ en la correcta) y Parejas (✗ en las dos cartas que no coinciden).
 
 ## Parpadeos de más de 3 por segundo (regla 5)
 
@@ -280,15 +280,12 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | 337-343 `RowOut` | La fila se encoge | DECORATIVA | no | Inmediato | ✓ |
 | 212-223, 258-316, 499 | `PopIn`, `PopRect`, `Flash`, chispas, ondas, `Shake` | DECORATIVA | sí (común) | — | — |
 
-**Cálculo Sereno** — `Calculo/CalculoGameController.cs`
+**Carga exacta (id `calculo`, 4-oct; reemplaza a Cálculo Sereno, cuya tabla se borró)** — `Calculo/CalculoGameController.cs`
 
-| Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
-|---|---|---|---|---|---|
-| 149 | La burbuja flota ±10 px (`Sin(t·1,6)`) | DECORATIVA | no | Quieta | ✓ |
-| 421 | Las olas del agua se mecen | DECORATIVA | no | Quietas | ✓ |
-| 211 | La burbuja entra con rebote | DECORATIVA | no | Aparece quieta | ✓ |
-| 317 `SinkBubble` | La burbuja se hunde (y se encoge 25 %) | DECORATIVA (comunica) | no | Fundido en su lugar | ✓ |
-| 261-323 | `Flash`, ondas, `Shake`, `PopRect`, `PopIn`, chispas | DECORATIVA | sí (común) | — | — |
+Escrito ya con la regla: todo movimiento decorativo pasa por `Motion.Decorative`. Con «quitar animaciones»: las celdas aparecen con un fundido corto (sin rebote ni subida desde abajo), la
+celda elegida solo cambia de color (no sube ni crece, y no hay halo), al juntar dos celdas la primera se desvanece en su lugar (sin vuelo ni arco de luz) y la segunda cambia de número sin «pop» ni chispas,
+el aro de luces del reactor no gira y su resplandor se apaga. SE QUEDAN: el cambio de número, el reactor DORADO al lograr la carga (con el número en tinta), el color dorado de la operación elegida, el contorno
+dorado quieto de las dos celdas de la pista y los fundidos cortos de los mensajes. Las esperas de después de lograr la carga (1,7 s) son `Motion.Hold`: duran lo mismo con y sin la opción.
 
 **Acoplamiento** — `Acoplamiento/DockingGameController.cs`
 
@@ -393,7 +390,7 @@ Piloto `Warp` DECORATIVO (estrellas quietas; el aviso de tramo existente da los 
 dorso y cara con la misma duración; Cosecha, órbita decorativa (ya se detiene); Bitácora, cometas ESENCIALES; paralaje de la app quieto; «+puntos» quietos con fundido.
 
 Criterio para el resto: ¿sin ese movimiento la persona puede hacer la tarea y entender qué pasó? Si sí, decorativo. Casos dudosos que dejé conservadores (se quedan en movimiento):
-- **Cálculo, modo con reloj:** la burbuja que baja hacia el agua mientras corre el tiempo es el indicador del tiempo (se queda). Solo se quitó la flotación sin reloj, las olas y el hundimiento de después de responder.
+- **Carga exacta (antes Cálculo, modo con reloj):** ya no hay burbuja que caiga ni indicador animado de una carga: lo único con reloj es la barra de tiempo del Reto (un indicador de tiempo, se queda).
 - **En la punta de la lengua (antes Anagramas):** las fichas que se deslizan a su lugar (la acción de la persona). Las burbujas se borraron.
 - **Satélites:** las estelas de los satélites (ayudan a seguirlos; derivan del movimiento esencial).
 - **Tráfico:** el giro de los desvíos y el avance de las naves; el aro urgente queda fijo pero sigue distinguiéndose por forma.
@@ -402,7 +399,7 @@ Criterio para el resto: ¿sin ese movimiento la persona puede hacer la tarea y e
 - **Piloto/Correo/Rumbo/Aterrizaje/Freno:** el movimiento de la nave, las rutas, los asteroides, los obstáculos y el descenso.
 - **Acierto y error por forma o texto:** revisados los 23. Ya tenían texto (cartel, banner, aviso) o marca ✓/✗: Stroop, Comparación, Cambio de Chip, Secuencia, Ruta del Tesoro,
   Anagramas, Acoplamiento, Aterrizaje, Cosecha, Piloto, Radar, Satélites, Rumbo, Bitácora, Disparate, Freno, Tráfico, Correo, Meteoros, Intrusa. **Sí dependían de color + animación y
-  recibieron una marca ✓/✗ estática (`ResultMark`): Cálculo, Series y Parejas.**
+  recibieron una marca ✓/✗ estática (`ResultMark`): Series y Parejas (Cálculo Sereno también, hasta que se reemplazó por Carga exacta).**
 
 ## Resumen (Fase B)
 

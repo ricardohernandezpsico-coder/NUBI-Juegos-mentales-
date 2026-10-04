@@ -75,7 +75,7 @@ Los marcados con ★ son **juegos estrella**: además del puntaje, al final mues
 | ¿Verdad o disparate? ★ | Lenguaje | Leer frases cortas que llegan por radio y decidir rápido si son verdad o un disparate |
 | Cosecha de palabras ★ | Lenguaje | Formar palabras con 7 letras que giran alrededor de un planeta; cada palabra brota como una planta de tu huerto |
 | La estrella intrusa ★ | Lenguaje | Cinco palabras en estrellas, una no pertenece: tócala y una chispa dibuja la figura de lo que las une para tu atlas |
-| Cálculo Sereno | Razonamiento | Resolver cuentas antes de que la burbuja toque el agua |
+| Carga exacta | Razonamiento | Juntar celdas de energía de a dos (+ − × ÷) hasta llegar a la carga exacta del reactor |
 | Aterrizaje Lunar ★ | Razonamiento | Aterrizar el módulo justo en un número de una regla |
 | Radar ★ | Atención | Ver un destello y decir dónde estaban los astronautas |
 

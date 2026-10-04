@@ -9,7 +9,7 @@ INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
        ('stroop','Tinta o Palabra','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','En la punta de la lengua','lenguaje'),('calculo','Cálculo Sereno','calculo'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
+       ('anagramas','En la punta de la lengua','lenguaje'),('calculo','Carga exacta','calculo'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -93,9 +93,14 @@ def draw(ic,gid):
         ic.d=ImageDraw.Draw(ic.im)
         ic.clay(circ(cx,cy,17),SUN,gloss=True)
     elif gid=='calculo':
-        b=9; ic.clay(plus(28,28,34,b),CORAL); ic.clay(rrect(56,28-b/2,34,b,b/2),CREAM)
-        ic.rot.append((45,28,72)); ic.clay(plus(28,72,34,b),SUN); ic.rot.pop()
-        ic.clay(rrect(56,64-b/2,34,b,b/2),CREAM); ic.clay(rrect(56,80-b/2,34,b,b/2),CREAM)
+        # Carga exacta: el reactor (aro con 8 luces y un núcleo dorado) y tres celdas de energía debajo
+        cx,cy=50,36
+        ic.clay(circ(cx,cy,29),GRAPE,gloss=True)
+        for i in range(8):
+            ang=i*math.pi/4; x,y=ic.P(cx+22.5*math.cos(ang),cy+22.5*math.sin(ang)); rr=2.6*ic.k
+            ic.d.ellipse([x-rr,y-rr,x+rr,y+rr],fill=CREAM)
+        ic.clay(circ(cx,cy,15),SUN,border=3.5,shadow=False)
+        ic.clay(rrect(9,68,24,24,7),SKY); ic.clay(rrect(38,68,24,24,7),CORAL); ic.clay(rrect(67,68,24,24,7),CREAM)
     elif gid=='piloto':
         for k in range(6):
             y=90-k*15; cx=50+9*math.sin(k*0.95); a=int(255*(0.95-k*0.12)); r=3.2

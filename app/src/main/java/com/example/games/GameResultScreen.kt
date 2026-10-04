@@ -697,6 +697,35 @@ fun GameResultScreen(
       }
     }
 
+    // Carga exacta (pantalla final, docs/diseno-carga-exacta.md §6): «Tu reactor». «Lograste X de N sin pista» (las cargas sin la pista de Nubi), el desglose en una
+    // línea y, con 3 o más cargas sin pista, el tiempo medio por carga y cuántas fueron por el camino más corto. Cada dato aparece UNA vez; sin recuadros.
+    val cargaAlone = result.cargaAlone
+    if (cargaAlone != null) {
+      val carga = com.example.data.Carga
+      val cargaTotal = result.totalTrials
+      Spacer(Modifier.height(14.dp))
+      Text("Tu reactor", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = carga.spoken(cargaAlone, cargaTotal) }.testTag("carga_headline"),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Text("Lograste", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.Bottom) {
+          Text("${cargaAlone.coerceIn(0, maxOf(cargaTotal, 0))} de $cargaTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
+          Text("sin pista", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))
+        }
+        carga.breakdown(cargaAlone, result.cargaHinted, cargaTotal)?.let {
+          Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
+      }
+      carga.shortLine(result.cargaShort, cargaAlone)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("carga_short"))
+      }
+      carga.speedLine(result.cargaMs, cargaAlone)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("carga_speed"))
+      }
+    }
+
     // Rastro de luz (pantalla final, docs/diseno-rastro-de-luz.md §6): "tu rastro" (cifra grande: las luces más largas que repetiste bien en el
     // rastro simple), "por modo" (al revés, el cielo gira y en marcha, cada uno con 3 rondas o más; el de menos aciertos marcado con TEXTO «el que
     // más te costó» y un truco), y la lectura en palabras. Sin recuadros ni percentiles; cada dato aparece UNA vez.
@@ -1166,7 +1195,7 @@ fun GameResultScreen(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
       result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo
+      result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone
     ).any { it != null }
     if (hasStarMeasure) {
       Text(

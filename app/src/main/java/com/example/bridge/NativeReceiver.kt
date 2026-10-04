@@ -232,7 +232,12 @@ object NativeReceiver {
     val punta_ms: Int = -1,
     val punta_words: String = "",
     val punta_blue: String = "",
-    val punta_cleared: String = ""
+    val punta_cleared: String = "",
+    // Solo «Carga exacta» (-1 = sin dato): cargas logradas sin pista, con pista, por el camino más corto y tiempo medio (ms) de las logradas sin pista.
+    val carga_alone: Int = -1,
+    val carga_hinted: Int = -1,
+    val carga_short: Int = -1,
+    val carga_ms: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -360,7 +365,7 @@ object NativeReceiver {
     return when (gameId) {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
-      // Ruta del Tesoro, Series, Cálculo, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
+      // Ruta del Tesoro, Series, Carga exacta, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
       "stroop", "rutatesoro", "series", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
@@ -570,7 +575,11 @@ object NativeReceiver {
       puntaMs = metrics.punta_ms.takeIf { telemetry.game_id == "anagramas" && it > 0 },
       puntaWords = com.example.data.Punta.entries(metrics.punta_words).takeIf { telemetry.game_id == "anagramas" && it.isNotEmpty() },
       puntaBlue = com.example.data.Punta.words(metrics.punta_blue).takeIf { telemetry.game_id == "anagramas" },
-      puntaCleared = com.example.data.Punta.words(metrics.punta_cleared).takeIf { telemetry.game_id == "anagramas" }
+      puntaCleared = com.example.data.Punta.words(metrics.punta_cleared).takeIf { telemetry.game_id == "anagramas" },
+      cargaAlone = metrics.carga_alone.takeIf { telemetry.game_id == "calculo" && it >= 0 },
+      cargaHinted = metrics.carga_hinted.takeIf { telemetry.game_id == "calculo" && it >= 0 },
+      cargaShort = metrics.carga_short.takeIf { telemetry.game_id == "calculo" && it >= 0 },
+      cargaMs = metrics.carga_ms.takeIf { telemetry.game_id == "calculo" && it > 0 }
     )
   }
 }

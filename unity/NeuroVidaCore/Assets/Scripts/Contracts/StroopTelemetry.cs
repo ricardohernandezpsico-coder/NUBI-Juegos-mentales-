@@ -217,5 +217,13 @@ namespace NeuroVida.Contracts
         /// (dejan de esperar), separadas por «;».</summary>
         public string punta_blue = "";
         public string punta_cleared = "";
+
+        /// <summary>Solo «Carga exacta» (id <c>calculo</c>): cargas logradas SIN pista, logradas con pista de Nubi y logradas por un «camino corto» (los pasos del camino más corto,
+        /// sin pista). -1 = no aplica.</summary>
+        public int carga_alone = -1;
+        public int carga_hinted = -1;
+        public int carga_short = -1;
+        /// <summary>Solo «Carga exacta»: tiempo medio, en ms, de las cargas logradas sin pista. -1 = ninguna.</summary>
+        public int carga_ms = -1;
     }
 }

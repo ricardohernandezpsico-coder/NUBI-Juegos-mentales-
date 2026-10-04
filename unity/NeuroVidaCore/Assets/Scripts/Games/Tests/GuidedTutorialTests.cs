@@ -129,6 +129,8 @@ namespace NeuroVida.Games.Tests
                 "Register(", "ResolveTap(", "ResolvePass(", "RescueEffect(", "LightConstellation(");
             AssertDoesNotTouch("Games/Anagramas/PuntaGameController.cs", "_dda", "_points", "_streak", "_bestStreak", "_resolved", "_tally", "_credit", "_director",
                 "Register(", "LaunchFlyer(", "FillLucero(", "PlayerPrefs");
+            AssertDoesNotTouch("Games/Calculo/CalculoGameController.cs", "_dda", "_points", "_streak", "_bestStreak", "_resolved", "_tally", "_credit", "_director",
+                "Register(", "RecordLoad(", "PlayerPrefs");
         }
 
         private static void AssertDoesNotTouchNoScript(string relativePath, params string[] forbidden)
@@ -145,7 +147,7 @@ namespace NeuroVida.Games.Tests
             var files = new[]
             {
                 ("Games/Secuencia/RastroGameController.cs", true), ("Games/Freno/BrakeGameController.cs", true), ("Games/Aterrizaje/LandingGameController.cs", true),
-                ("Games/Meteoros/MeteorGameController.cs", true), ("Games/Stroop/StroopGameController.cs", true), ("Games/Anagramas/PuntaGameController.cs", false)
+                ("Games/Meteoros/MeteorGameController.cs", true), ("Games/Stroop/StroopGameController.cs", true), ("Games/Anagramas/PuntaGameController.cs", false), ("Games/Calculo/CalculoGameController.cs", true)
             };
             foreach (var (file, usesCommonWait) in files)
             {
@@ -160,7 +162,7 @@ namespace NeuroVida.Games.Tests
         public void TheGuidedRound_IsReachableFromThePause_ForEveryGameWithATutorial()
         {
             // cada juego con tutorial dice cuándo «Cómo se juega» está disponible y cómo retoma su partida
-            foreach (var file in new[] { "Games/Secuencia/RastroGameController.cs", "Games/Freno/BrakeGameController.cs", "Games/Aterrizaje/LandingGameController.cs", "Games/Meteoros/MeteorGameController.cs", "Games/Anagramas/PuntaGameController.cs" })
+            foreach (var file in new[] { "Games/Secuencia/RastroGameController.cs", "Games/Freno/BrakeGameController.cs", "Games/Aterrizaje/LandingGameController.cs", "Games/Meteoros/MeteorGameController.cs", "Games/Anagramas/PuntaGameController.cs", "Games/Calculo/CalculoGameController.cs" })
             {
                 string text = File.ReadAllText(Path.Combine(Application.dataPath, "Scripts", file));
                 StringAssert.Contains("override bool HowToReady", text, file);

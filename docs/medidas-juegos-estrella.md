@@ -406,6 +406,20 @@ Shafto y otros, 2007, *J Cogn Neurosci* 19:2060-70, doi:10.1162/jocn.2007.19.12.
 y se mandan a Unity (`punta_pending` de la config) para que vuelvan en otra partida (Precisión: hasta 2 y nunca la primera; Reto: una cada 4 palabras). Dejan de esperar
 cuando se encuentran solas o con 1-2 ayudas. Es para aprender, no un castigo.
 
+## Carga exacta (id `calculo`, reemplaza a Cálculo Sereno el 4-oct): "Lograste X de N sin pista" y "Tu reactor"
+
+**Qué mide, de verdad:** cuántas de las cargas de la partida lograste SIN la pista de Nubi (cualquier camino vale), con el desglose de las que salieron con pista o quedaron para otra vez,
+el tiempo medio de las que salieron sin pista y cuántas fueron por el «camino corto» (los pasos del camino más corto que encuentra el solucionador). No es «tu cálculo mental» ni «tu inteligencia»:
+es esta partida, con estas cargas y estas celdas. Se guarda como medida propia (`carga`, % de cargas sin pista) para ver su evolución, comparable solo entre partidas a tu medida y de nivel parecido.
+
+**Cómo se lee:** la cifra grande es «X de N». El tiempo y los caminos cortos solo se dicen con 3 cargas sin pista o más (con menos sería ruido). La pista cuenta como medio acierto para la dificultad
+(con pista el nivel no baja de golpe), y nada cae ni apura dentro de una carga: pensar con calma no se penaliza (el motor no usa tiempo de reacción). Si alguna carga necesitó pista, el consejo es
+concreto: desde el nivel 3, «mira primero si multiplicar dos celdas te deja cerca de la carga; después ajusta sumando o restando»; antes, «mira cuánto le falta a la celda más grande y busca otra que lo complete».
+Nunca se dice que el juego previene el deterioro ni que «mejora la inteligencia».
+
+**Por qué:** la tarea de llegar a un número juntando otros con operaciones aritméticas mezcla memoria de trabajo, planificación y fluidez con los números; que haya MUCHOS caminos (y que el
+tiempo no apure) permite medir la estrategia sin que la velocidad tape la comprensión. La medida no se compara con estudios: no hay una referencia con esta misma condición.
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
