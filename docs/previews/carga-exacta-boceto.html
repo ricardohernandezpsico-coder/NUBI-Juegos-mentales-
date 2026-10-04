@@ -1,0 +1,321 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Carga exacta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Carga exacta</h1>
+    <p class="lead">Reemplazaría a Cálculo Sereno. El reactor de la nave necesita una carga exacta, por ejemplo 24, y tienes unas celdas de energía con números. Las combinas de a dos (sumar, restar, multiplicar o dividir) hasta que una celda tenga justo lo que pide el reactor. No hay una sola respuesta: vale cualquier camino que llegue.</p>
+
+    <h2>Cómo se juega</h2>
+    <ul class="list">
+      <li><b>Toca una celda, toca una operación y toca otra celda:</b> se funden en una con el resultado.</li>
+      <li><b>«Deshacer»</b> vuelve un paso atrás y <b>«Empezar de nuevo»</b> devuelve las celdas originales. Equivocarse no cuesta nada.</li>
+      <li>Si pasan 25 segundos sin encontrarlo, <b>Nubi da una pista</b>: el primer paso de una solución.</li>
+      <li>Empieza con sumas de dos celdas y sube de a poco: restas, multiplicar, tres celdas y, al final, usar todas.</li>
+    </ul>
+
+    <h2>Por qué cambiarlo</h2>
+    <ul class="list">
+      <li><b>Se parecía mucho a Lumosity:</b> su juego de las gotas que caen al agua con una cuenta adentro es casi igual al modo Reto de Cálculo Sereno.</li>
+      <li><b>Era un examen de cuentas.</b> Esto es un acertijo: piensas, pruebas y planificas, que es razonar con números, y por eso va en Razonamiento.</li>
+      <li><b>Sin presión del reloj</b> en el modo normal: se disfruta y no angustia.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable con 8 cargas, de fácil a difícil. La idea de llegar a un número con otros es antigua y de dominio público (como el «24»). Nombre, arte y reglas son propios. En el juego real, la dificultad la lleva el motor común: cuántas celdas hay, qué operaciones entran, el tamaño de los números y si hay que usar todas.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="Carga exacta: combina las celdas hasta llegar a la carga del reactor"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+const OPS = ['+','−','×','÷'];
+const OP_F = { '+':(a,b)=>a+b, '−':(a,b)=>a-b, '×':(a,b)=>a*b, '÷':(a,b)=> b!==0 && a%b===0 ? a/b : null };
+// niveles: celdas, operaciones permitidas, celdas usadas en la solución, usar todas
+const LEVELS = [
+  { n:3, ops:['+'],           use:2, all:false, max:9 },
+  { n:3, ops:['+','−'],       use:2, all:false, max:12 },
+  { n:4, ops:['+','−'],       use:3, all:false, max:12 },
+  { n:4, ops:['+','−','×'],   use:2, all:false, max:9 },
+  { n:4, ops:['+','−','×'],   use:3, all:false, max:9 },
+  { n:4, ops:['+','−','×','÷'], use:3, all:false, max:10 },
+  { n:4, ops:['+','−','×','÷'], use:4, all:true,  max:10 },
+  { n:5, ops:['+','−','×','÷'], use:4, all:false, max:10 },
+];
+const G = { state:'menu', parts:[], toast:null, arcs:[] };
+const P = {};
+function emit(x,y,n,spread,life,rgb){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-20,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
+function toast(t,kind){ G.toast={t,kind,at:performance.now()}; }
+
+// ---------- genera una carga con solución garantizada (y guarda una solución para la pista)
+function makePuzzle(L){
+  for (let tries=0; tries<500; tries++){
+    const nums = Array.from({length:L.n}, ()=>1+Math.floor(Math.random()*L.max));
+    // combina 'use' celdas al azar con operaciones permitidas
+    let pool = nums.slice(0, L.use).map((v,i)=>({v, ids:[i]})), steps=[];
+    let ok = true;
+    while (pool.length>1){
+      const i=Math.floor(Math.random()*pool.length); let j=Math.floor(Math.random()*(pool.length-1)); if (j>=i) j++;
+      const op = L.ops[Math.floor(Math.random()*L.ops.length)];
+      let a=pool[i], b=pool[j]; if (op==='−' && a.v<b.v) [a,b]=[b,a]; if (op==='÷' && (b.v===0 || a.v%b.v!==0)) { if (b.v!==0 && b.v%a.v===0 && a.v!==0) [a,b]=[b,a]; else { ok=false; break; } }
+      const r = OP_F[op](a.v,b.v); if (r===null || r<=0 || r>120 || (op==='÷' && b.v===1) || (op==='×' && (a.v===1||b.v===1))){ ok=false; break; }
+      steps.push({ a:a.v, op, b:b.v, r });
+      pool = pool.filter((_,k)=>k!==i && k!==j).concat([{ v:r, ids:a.ids.concat(b.ids) }]);
+    }
+    if (!ok) continue;
+    const target = pool[0].v;
+    if (target<8 || target>99) continue;
+    if (nums.includes(target)) continue;                  // que no esté ya hecha
+    if (new Set(nums).size < nums.length - (L.n>=5?1:0)) continue;   // sin celdas repetidas (salvo una en las de 5)
+    if (L.use===2 && L.ops.length>1 && steps[0].op==='+' && Math.random()<.5) continue;  // variar
+    // mezcla el orden de las celdas
+    const order = nums.map((v,i)=>({v,k:Math.random()})).sort((x,y)=>x.k-y.k).map(o=>o.v);
+    return { nums:order, target, steps };
+  }
+  return { nums:[3,5,7], target:12, steps:[{a:5,op:'+',b:7,r:12}] };
+}
+
+// ---------- disposición
+const CELL_Y = 350, CELL_W = 62, CELL_H = 74;
+function layoutCells(){
+  const n=P.cells.length, gap=12, total=n*CELL_W+(n-1)*gap, x0=(W-total)/2;
+  P.cells.forEach((c,k)=>{ c.tx = x0 + k*(CELL_W+gap) + CELL_W/2; c.ty = CELL_Y; if (c.x===undefined){ c.x=c.tx; c.y=c.ty+40; } });
+}
+function newPuzzle(){
+  const L = LEVELS[Math.min(P.i, LEVELS.length-1)];
+  const pz = makePuzzle(L);
+  Object.assign(P, { L, target:pz.target, sol:pz.steps, cells: pz.nums.map((v,k)=>({ v, id:k, born:performance.now()+k*70 })), sel:null, op:null, hist:[], t0:performance.now(), hinted:false, solved:false, fill:0 });
+  P.orig = pz.nums.slice();
+  layoutCells(); G.state='play';
+}
+function startGame(){ Object.assign(P, { i:0, N:LEVELS.length, done:[], streak:0 }); newPuzzle(); }
+
+// ---------- jugadas
+function tapCell(c){
+  if (P.sel===null || P.sel===c){ P.sel = P.sel===c ? null : c; P.op=null; bell(PENTA[2],.035,.4); return; }
+  if (!P.op){ P.sel=c; bell(PENTA[2],.035,.4); return; }
+  const a=P.sel, b=c, r = OP_F[P.op](a.v,b.v);
+  if (r===null){ thud(); toast('Esa división no da exacta','bad'); P.op=null; return; }
+  if (r<0){ thud(); toast('No hay energía negativa: prueba al revés','bad'); P.op=null; return; }
+  // se guarda el estado para deshacer
+  P.hist.push(P.cells.map(x=>({...x})));
+  const now=performance.now();
+  G.arcs.push({ x0:a.x, y0:a.y, x1:b.x, y1:b.y, t:now });
+  bell(PENTA[Math.min(9,4+P.hist.length)],.05,.9); noise(.3,900,2600,.035,2);
+  P.cells = P.cells.filter(x=>x!==a).map(x=> x===b ? { ...x, v:r, pop:now, merged:true } : x);
+  emit(b.x,b.y,14,110,600,'255,201,74');
+  P.sel=null; P.op=null; layoutCells();
+  const hit = P.cells.find(x=>x.v===P.target);
+  if (hit && (!P.L.all || P.cells.length===1)) return win(hit);
+  if (hit && P.L.all) toast('¡Llegaste! Ahora usa también las demás','good');
+  if (P.cells.length===1 && !hit){ toast(`Quedó ${P.cells[0].v}: deshaz y prueba otro camino`,'bad'); thud(); }
+}
+function undo(){ if (!P.hist.length) return; P.cells=P.hist.pop(); P.sel=null; P.op=null; layoutCells(); noise(.2,1400,600,.03,2); }
+function reset(){ P.hist=[]; P.cells=P.orig.map((v,k)=>({v,id:k,born:performance.now()+k*40})); P.cells.forEach(c=>{c.x=undefined;}); P.sel=null; P.op=null; layoutCells(); noise(.3,1200,500,.03,2); }
+function win(cell){
+  P.solved=true; G.state='win'; P.winAt=performance.now(); P.winCell=cell; P.streak++;
+  const secs=(P.winAt-P.t0)/1000; P.done.push({ target:P.target, steps:P.hist.length, secs, hinted:P.hinted });
+  [0,1,2,3].forEach(k=>setTimeout(()=>bell(PENTA[4+k*2],.06,1.6),reduce?0:k*90));
+  setTimeout(()=>{ emit(W/2,150,40,220,900,'127,216,255'); emit(W/2,150,30,160,800,'255,201,74'); }, reduce?0:360);
+  toast(P.hinted ? '¡Carga exacta! (con pista)' : P.hist.length<=P.sol.length ? '¡Carga exacta! Camino corto' : '¡Carga exacta!', 'good');
+  setTimeout(()=>{ P.i++; if (P.i>=P.N) finish(); else newPuzzle(); }, 2100);
+}
+function hint(){
+  if (P.hinted) return; P.hinted=true; reset();
+  const s=P.sol[0]; P.hintStep=s; toast(`Pista de Nubi: prueba ${s.a} ${s.op} ${s.b}`,'hint'); chime();
+}
+function finish(){ G.state='end'; G.endT=performance.now(); bell(784,.06,1.4); bell(1046.5,.05,1.6,.15); }
+
+// ---------- dibujo
+function drawReactor(c, now){
+  const cx=W/2, cy=150, R=78, solvedK = G.state==='win' ? Math.min(1,(now-P.winAt)/(reduce?1:700)) : 0;
+  // anillos del reactor
+  if (!reduce) c.drawImage(glow(solvedK?'255,201,74':'127,216,255'), cx-R*2.2, cy-R*2.2, R*4.4, R*4.4);
+  c.fillStyle='rgba(0,0,0,.45)'; c.beginPath(); c.arc(cx,cy+6,R+12,0,7); c.fill();
+  c.fillStyle='#232B57'; c.beginPath(); c.arc(cx,cy,R+12,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=4; c.stroke();
+  const spin = reduce ? 0 : now/1600;
+  for (let k=0;k<12;k++){ const a=spin+k*Math.PI/6; c.fillStyle= solvedK ? `rgba(255,201,74,${.5+.5*solvedK})` : 'rgba(127,216,255,.35)'; c.beginPath(); c.arc(cx+Math.cos(a)*(R+3),cy+Math.sin(a)*(R+3),3.2,0,7); c.fill(); }
+  const core=c.createRadialGradient(cx,cy-10,4,cx,cy,R); core.addColorStop(0, solvedK?'#FFF3C4':'#1B2A5E'); core.addColorStop(1, solvedK?'#E9A93A':'#0D1435'); c.fillStyle=core; c.beginPath(); c.arc(cx,cy,R,0,7); c.fill();
+  // la carga que pide
+  c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle= solvedK ? '#1A1240' : '#ABA5D2'; c.font='600 14px Nunito'; c.fillText('carga exacta', cx, cy-30);
+  c.fillStyle= solvedK ? '#1A1240' : '#fff'; c.font=`700 ${52+solvedK*6}px Fredoka`; c.fillText(P.target, cx, cy+10);
+  if (P.L.all){ c.fillStyle= solvedK?'#1A1240':'#FFC94A'; c.font='700 12px Fredoka'; c.fillText('usa todas las celdas', cx, cy+46); }
+}
+function drawCell(c, cell, now){
+  if (now < cell.born) return;
+  const k = reduce?1:Math.min(1,(now-cell.born)/260), sp = reduce?1:.22;
+  cell.x += (cell.tx-cell.x)*sp; cell.y += (cell.ty-cell.y)*sp;
+  const pop = cell.pop && !reduce ? Math.max(0,1-(now-cell.pop)/400) : 0, sel = P.sel===cell, hintOn = P.hintStep && !P.hist.length && (cell.v===P.hintStep.a || cell.v===P.hintStep.b);
+  const s = (1+.18*pop)*(sel?1.08:1)*(reduce?1:easeBackSafe(k));
+  const isWin = G.state==='win' && P.winCell===cell;
+  c.save(); c.translate(cell.x, cell.y + (sel&&!reduce? -6:0)); c.scale(s,s); c.globalAlpha=k;
+  if ((sel||isWin) && !reduce) c.drawImage(glow(isWin?'255,201,74':'127,216,255'), -60,-60,120,120);
+  c.fillStyle='rgba(0,0,0,.45)'; rr(c,-CELL_W/2,-CELL_H/2+6,CELL_W,CELL_H,20); c.fill();
+  const g=c.createLinearGradient(0,-CELL_H/2,0,CELL_H/2); g.addColorStop(0, isWin?'#FFE08A':sel?'#BFE9FF':'#E9E5FF'); g.addColorStop(1, isWin?'#F2B53A':sel?'#7FD8FF':'#B9B2EE');
+  c.fillStyle=g; rr(c,-CELL_W/2,-CELL_H/2,CELL_W,CELL_H,20); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+  // ventanita de energía
+  c.fillStyle='rgba(26,18,64,.18)'; rr(c,-CELL_W/2+8,CELL_H/2-16,CELL_W-16,8,4); c.fill();
+  c.fillStyle='#1A1240'; c.font=`700 ${String(cell.v).length>2?24:30}px Fredoka`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(cell.v,0,-4);
+  if (hintOn && !reduce){ c.strokeStyle=`rgba(255,201,74,${.5+.5*Math.sin(now/200)})`; c.lineWidth=3; rr(c,-CELL_W/2-5,-CELL_H/2-5,CELL_W+10,CELL_H+10,24); c.stroke(); }
+  c.restore();
+}
+function easeBackSafe(t){ const c=1.5; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); }
+function opButtons(){ const ops=P.L.ops, w=64, gap=12, total=ops.length*w+(ops.length-1)*gap, x0=(W-total)/2; return ops.map((o,k)=>({ o, x:x0+k*(w+gap), y:450, w, h:58 })); }
+function toolButtons(){ return [{ id:'undo', x:24, y:548, w:150, h:52, label:'Deshacer' }, { id:'reset', x:186, y:548, w:150, h:52, label:'Empezar de nuevo' }]; }
+function drawButtons(c, now){
+  for (const b of opButtons()){
+    const on = P.op===b.o, can = P.sel!==null;
+    c.globalAlpha = can?1:.45;
+    c.fillStyle='rgba(0,0,0,.4)'; rr(c,b.x,b.y+5,b.w,b.h,18); c.fill();
+    c.fillStyle= on ? '#FFC94A' : '#2A3366'; rr(c,b.x,b.y,b.w,b.h,18); c.fill(); c.strokeStyle= on?'#1A1240':'rgba(255,255,255,.18)'; c.lineWidth=on?3:1.5; c.stroke();
+    c.fillStyle= on ? '#1A1240' : '#EDEAFB'; c.font='700 30px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(b.o, b.x+b.w/2, b.y+b.h/2+1);
+    c.globalAlpha=1;
+  }
+  for (const b of toolButtons()){
+    const can = b.id==='undo' ? P.hist.length>0 : P.hist.length>0;
+    c.globalAlpha = can?1:.45; c.fillStyle='#161D3C'; rr(c,b.x,b.y,b.w,b.h,18); c.fill(); c.strokeStyle='rgba(255,255,255,.14)'; c.lineWidth=1.5; c.stroke();
+    c.fillStyle='#EDEAFB'; c.font='600 16px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(b.label, b.x+b.w/2, b.y+b.h/2+1); c.globalAlpha=1;
+  }
+  // guía de lo que toca hacer
+  c.fillStyle='#6E6A9A'; c.font='600 14px Nunito'; c.textAlign='center';
+  c.fillText(P.sel===null ? 'Toca una celda' : !P.op ? 'Ahora toca una operación' : `${P.sel.v} ${P.op} … toca otra celda`, W/2, 422);
+}
+function drawArcs(c, now){
+  G.arcs = G.arcs.filter(a=>{ const k=(now-a.t)/450; if (k>=1) return false; if (reduce) return true;
+    c.strokeStyle=`rgba(255,201,74,${1-k})`; c.lineWidth=4*(1-k)+1; c.beginPath(); const mx=(a.x0+a.x1)/2, my=Math.min(a.y0,a.y1)-50; c.moveTo(a.x0,a.y0); c.quadraticCurveTo(mx,my,a.x1,a.y1); c.stroke(); return true; });
+}
+function drawTop(c){ for (let k=0;k<P.N;k++){ const d=P.done[k], x=W/2-(P.N-1)*11+k*22; c.fillStyle = d ? (d.hinted?'#D6DEF0':'#FFC94A') : k===P.i?'rgba(127,216,255,.8)':'rgba(255,255,255,.16)'; c.beginPath(); c.arc(x,32,d?5:4,0,7); c.fill(); } }
+function drawToast(c, now){ const t=G.toast; if(!t) return; const k=(now-t.at)/2200; if(k>=1){G.toast=null;return;}
+  c.globalAlpha=Math.min(1,k*8,(1-k)*4); c.fillStyle= t.kind==='good'?'#9FF5D6': t.kind==='hint'?'#FFC94A':'#FFD6A0'; c.font='700 17px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t.t, W/2, 268); c.globalAlpha=1; }
+function drawMenu(c, now){
+  const b = reduce?0:Math.sin(now/800)*4; c.textAlign='center'; c.textBaseline='middle';
+  c.drawImage(glow('255,201,74'), W/2-110, 170-110+b, 220, 220);
+  c.fillStyle='#232B57'; c.beginPath(); c.arc(W/2,170+b,62,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=4; c.stroke();
+  c.fillStyle='#fff'; c.font='700 44px Fredoka'; c.fillText('24', W/2, 174+b);
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('Carga exacta', W/2, 290);
+  c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.fillText('Combina las celdas de energía', W/2, 330); c.fillText('hasta llegar a la carga justa.', W/2, 352);
+  c.fillStyle='#7FD8FF'; rr(c,110,430,140,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.fillText('Jugar', W/2, 459);
+}
+function drawEnd(c, now){
+  const k = reduce?1:ease((now-G.endT)/500); c.fillStyle=`rgba(3,4,22,${.95*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='middle'; c.font='700 30px Fredoka'; c.fillText('¡Reactor cargado!',W/2,100);
+  const solos = P.done.filter(d=>!d.hinted).length, avg = P.done.reduce((s,d)=>s+d.secs,0)/Math.max(1,P.done.length);
+  const rows=[['Cargas logradas', `${P.done.length} de ${P.N}`], ['Sin pista', `${solos}`], ['Tiempo medio', `${Math.round(avg)} s por carga`]];
+  let y=170; for (const [l,v] of rows){ c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.textAlign='left'; c.fillText(l,32,y); c.fillStyle='#fff'; c.font='700 18px Fredoka'; c.textAlign='right'; c.fillText(v,W-32,y); y+=42; }
+  c.fillStyle='#6E6A9A'; c.font='600 13px Nunito'; c.textAlign='center'; c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y+6);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-110,180,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 19px Fredoka'; c.fillText('Jugar de nuevo',W/2,H-82);
+  c.restore();
+}
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  if (G.state==='menu') drawMenu(c, now);
+  else {
+    drawTop(c); drawReactor(c, now); drawArcs(c, now); P.cells.forEach(x=>drawCell(c,x,now)); drawButtons(c, now); drawToast(c, now);
+    if (G.state==='play' && !P.hinted && now-P.t0>25000) hint();
+    G.parts = G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; p.vy+=1; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+    if (G.state==='end') drawEnd(c, now);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e);
+  if (G.state==='menu'){ if (y>420&&y<500) startGame(); return; }
+  if (G.state==='end'){ if (performance.now()-G.endT>600 && y>H-120) G.state='menu'; return; }
+  if (G.state!=='play') return;
+  const cell = P.cells.find(c=>Math.abs(x-c.x)<CELL_W/2+4 && Math.abs(y-c.y)<CELL_H/2+4); if (cell) return tapCell(cell);
+  const ob = opButtons().find(b=>x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h); if (ob){ if (P.sel!==null){ P.op = P.op===ob.o ? null : ob.o; bell(PENTA[5],.04,.4); } else toast('Primero toca una celda','bad'); return; }
+  const tb = toolButtons().find(b=>x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h); if (tb){ tb.id==='undo' ? undo() : reset(); }
+});
+document.getElementById('snd').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',soundOn); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+document.getElementById('rm').addEventListener('click',e=>{ reduce=!reduce; e.currentTarget.setAttribute('aria-pressed',reduce); });
+</script>
