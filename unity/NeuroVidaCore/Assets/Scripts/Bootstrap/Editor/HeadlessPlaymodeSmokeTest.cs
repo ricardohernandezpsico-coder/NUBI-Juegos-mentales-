@@ -194,6 +194,7 @@ namespace NeuroVida.Bridge.EditorTools
             _current = _queue.Dequeue();
             _errorCount = 0;
             _enteredPlayAt = 0;
+            _pauseStage = 0;
             _listPlaying = true;
             EditorPlaytestBootstrap.GameIdOverride = _current.Id;
             EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
@@ -205,6 +206,84 @@ namespace NeuroVida.Bridge.EditorTools
             EditorApplication.EnterPlaymode();
         }
 
+        // ------------------------------------------------------------------ la pausa de cada juego responde
+
+        private static int _pauseStage;
+        private static double _pauseAt;
+
+        /// <summary>
+        /// Después de los segundos de partida, abre la pausa del juego y comprueba que SE PUEDE TOCAR: que haya un EventSystem y que, en el centro de cada botón («Continuar»,
+        /// «Reiniciar», «Cómo se juega» si está y «Salir»), lo primero que recibe el toque sea ese botón (así también se atrapa algo del juego que tape la pausa). Después toca
+        /// «Continuar» y comprueba que la pausa se cierra y el reloj de juego sigue. Devuelve true cuando terminó (cada llamada es un paso, una por cuadro).
+        /// </summary>
+        private static bool PauseCheckDone()
+        {
+            double now = EditorApplication.timeSinceStartup;
+            switch (_pauseStage)
+            {
+                case 0:
+                {
+                    var entry = UnityEngine.Object.FindObjectOfType<NeuroVida.Bridge.GameEntryPoint>();
+                    if (entry == null) { PauseFail("no hay GameEntryPoint para abrir la pausa"); _pauseStage = 9; return true; }
+                    var show = typeof(NeuroVida.Bridge.GameEntryPoint).GetMethod("ShowPause", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    show.Invoke(entry, null);
+                    _pauseAt = now;
+                    _pauseStage = 1;
+                    return false;
+                }
+                case 1:
+                {
+                    if (now - _pauseAt < 0.6) return false;
+                    var menu = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.PauseMenu>();
+                    if (menu == null || !menu.IsShown) { PauseFail("la pausa no quedó visible"); _pauseStage = 9; return true; }
+                    var es = UnityEngine.EventSystems.EventSystem.current;
+                    if (es == null) { PauseFail("no hay EventSystem: ningún botón de la pausa responde"); _pauseStage = 9; return true; }
+                    UnityEngine.GameObject continueButton = null;
+                    foreach (var kv in menu.VisibleButtons())
+                    {
+                        var screen = UnityEngine.RectTransformUtility.WorldToScreenPoint(null, kv.Value.TransformPoint(kv.Value.rect.center));
+                        // la ventana de juego del Editor es mucho más ancha que un teléfono: con cuatro botones el último puede quedar fuera de ella (en un teléfono entra de sobra)
+                        if (screen.x < 0f || screen.y < 0f || screen.x > UnityEngine.Screen.width || screen.y > UnityEngine.Screen.height)
+                        {
+                            Debug.Log("[SmokeTest] aviso: «" + kv.Key + "» queda fuera de la ventana del Editor (" + UnityEngine.Screen.width + "x" + UnityEngine.Screen.height + "): no se prueba");
+                            continue;
+                        }
+                        var data = new UnityEngine.EventSystems.PointerEventData(es) { position = screen };
+                        var hits = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+                        es.RaycastAll(data, hits);
+                        if (hits.Count == 0 || !hits[0].gameObject.transform.IsChildOf(kv.Value))
+                            PauseFail("el toque en el centro de «" + kv.Key + "» no llega al botón (primero recibe: " + (hits.Count == 0 ? "nada" : hits[0].gameObject.name) + ")");
+                        else if (kv.Key.Contains("Continuar")) continueButton = hits[0].gameObject;
+                    }
+                    if (continueButton != null)
+                    {
+                        var click = new UnityEngine.EventSystems.PointerEventData(es);
+                        UnityEngine.EventSystems.ExecuteEvents.ExecuteHierarchy(continueButton, click, UnityEngine.EventSystems.ExecuteEvents.pointerClickHandler);
+                    }
+                    _pauseAt = now;
+                    _pauseStage = 2;
+                    return false;
+                }
+                case 2:
+                {
+                    if (now - _pauseAt < 0.3) return false;
+                    var menu = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.PauseMenu>();
+                    if (menu != null && menu.IsShown) PauseFail("«Continuar» no cerró la pausa");
+                    if (NeuroVida.Games.Shared.GameClock.Paused) PauseFail("«Continuar» no reanudó el reloj de juego");
+                    _pauseStage = 9;
+                    return true;
+                }
+                default:
+                    return true;
+            }
+        }
+
+        private static void PauseFail(string what)
+        {
+            _errorCount++;
+            Debug.Log("[SmokeTest] Error capturado: pausa de " + (_current.Name ?? "este juego") + ": " + what);
+        }
+
         private static void OnUpdateList()
         {
             if (!_listRunning) return;
@@ -213,6 +292,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (!EditorApplication.isPlaying) return; // todavía entrando a Play
                 if (_enteredPlayAt == 0) _enteredPlayAt = EditorApplication.timeSinceStartup;
                 if (EditorApplication.timeSinceStartup - _enteredPlayAt < _current.Seconds) return;
+                if (!PauseCheckDone()) return;  // abre la pausa y comprueba que responde
 
                 _listPlaying = false;
                 EditorApplication.ExitPlaymode();
@@ -239,6 +319,8 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RunGame(string gameId, float seconds, bool tutorial = false, bool assessment = false)
         {
             RunSeconds = seconds;
+            _pauseStage = 0;
+            _current = (gameId ?? "juego", gameId, seconds);
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.AssessmentOverride = assessment;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
@@ -293,6 +375,7 @@ namespace NeuroVida.Bridge.EditorTools
 
             if (_enteredPlayAt == 0) _enteredPlayAt = EditorApplication.timeSinceStartup;
             if (EditorApplication.timeSinceStartup - _enteredPlayAt < RunSeconds) return;
+            if (!PauseCheckDone()) return;  // abre la pausa y comprueba que responde
 
             _isRunning = false;
             CheckReduceMotionArrived();

@@ -65,7 +65,7 @@ namespace NeuroVida.Games.Anagramas
 
         private enum Phase { Idle, Think, Build, Solved, Done }
 
-        private enum IntentKind { None, Have, Help, Clear, Tile }
+        private enum IntentKind { None, Have, Help, Clear, Tile, Next }
 
         private struct Intent
         {
@@ -119,6 +119,7 @@ namespace NeuroVida.Games.Anagramas
             public bool Visible, Primary;
             public IntentKind Kind;
             public float PressedAt = -10f;
+            public CanvasGroup Group;
         }
 
         // ------------------------------------------------------------------ estado
@@ -139,6 +140,10 @@ namespace NeuroVida.Games.Anagramas
         private int _lastTickSecond = -1;
         private int _streak, _bestStreak, _points, _resolved;
         private bool _loopOn, _guided;
+        // Tutorial «aprender haciendo»: en cada paso solo responde LO QUE SE PIDE (un botón, la tarjeta o una ficha) y lo demás queda atenuado
+        private bool _strict;
+        private IntentKind _allowKind = IntentKind.None;
+        private Tile _allowTile, _hintTile;
 
         // palabra en curso
         private PuntaWord _word;
@@ -212,6 +217,9 @@ namespace NeuroVida.Games.Anagramas
             _loopOn = _guided = false;
             _inputOn = false;
             _press = null;
+            _strict = false;
+            _allowKind = IntentKind.None;
+            _allowTile = _hintTile = null;
             _streak = _bestStreak = _points = _resolved = 0;
             _endsAt = 0f;
             _lastTickSecond = -1;
@@ -357,7 +365,7 @@ namespace NeuroVida.Games.Anagramas
             _slots = new Tile[n];
             ApplyMetrics(n);
             _cardAt = GameClock.Time;
-            _typedDoneAt = _cardAt + PuntaContract.TypeSeconds(word.Clue.Length, GameFeel.ReduceMotion);
+            _typedDoneAt = _cardAt + PuntaContract.TypeSeconds(word.Clue.Length, GameFeel.ReduceMotion || _guided);
             _typedCount = -1;
             _defText.text = "";
             _helpAt = 0f;
@@ -751,6 +759,9 @@ namespace NeuroVida.Games.Anagramas
         {
             _phase = Phase.Idle;
             _inputOn = false;
+            _strict = false;
+            _allowKind = IntentKind.None;
+            _allowTile = _hintTile = null;
             _toast.Hide();
             ClearWordVisuals();
         }
@@ -778,78 +789,131 @@ namespace NeuroVida.Games.Anagramas
             float captionY = _m.CardBottom + 25f + _guidedGap / 2f;
             t.PlaceControls(GameHud.Height + 10f, false, (_logicalH - captionY) * _s);
 
-            // PASO A — Nubi juega y tú miras: lee la definición, toca «¡La tengo!» y arma la palabra, letra por letra
+            // Aprender haciendo: Nubi NO juega sola. Cada paso espera que la persona toque lo que se le pide (el aro marca solo eso, lo demás queda atenuado y no
+            // responde) y nada avanza por tiempo. La definición aparece entera desde el principio para poder leerla.
+
+            // ---- PALABRA 1: sola
             var w1 = GuidedWord(1, 5);
             BeginWord(w1, 1);
-            _inputOn = false;
-            t.Say("Mira cómo juega Nubi: lee la definición…");
-            while (GameClock.Time < _typedDoneAt + 1.0f && !t.Skipped) yield return null;
+            _strict = true;
+            // 1) leer la definición
+            ConfigureButton(_buttons[0], "Ya la leí", new Rect(90f, _m.ButtonsTop, 180f, PuntaLayout.ButtonH), true, IntentKind.Next);
+            _buttons[1].Visible = false;
+            _buttons[1].Root.gameObject.SetActive(false);
+            t.Say("Esta es una definición. Léela con calma.");
+            _allowKind = IntentKind.Next;
+            PlaceHintOn(0);
+            yield return StartCoroutine(WaitIntent(t, IntentKind.Next));
+            // 2) «¡La tengo!»
             if (!t.Skipped)
             {
-                t.Say("…como la sabe, toca «¡La tengo!».");
+                SetButtonsFor(Phase.Think, false);
+                t.Say("La palabra es fácil: ¿la sabes? Toca «¡La tengo!».");
+                _allowKind = IntentKind.Have;
                 PlaceHintOn(0);
-                yield return Motion.Hold(1.8f);
+                yield return StartCoroutine(WaitIntent(t, IntentKind.Have));
                 HideHint();
-                PressFx(0);
+            }
+            // 3) las letras, en orden
+            if (!t.Skipped)
+            {
                 _haveAt = GameClock.Time;
                 ShowTiles(withExtra: true);
-                t.Say("Ahora arma la palabra: toca las letras en orden.");
-                yield return Motion.Hold(1.2f);
+                _allowKind = IntentKind.None;
+                yield return Motion.Hold(0.6f);                       // las fichas terminan de aparecer
                 for (int k = 0; k < w1.Tiles.Length && !t.Skipped; k++)
                 {
                     var tile = _tiles.Find(x => x.Char == w1.Tiles[k] && x.Slot < 0 && !x.Gone);
                     if (tile == null) continue;
-                    TapTile(tile);
-                    yield return Motion.Hold(0.7f);
+                    t.Say(k == 0 ? "Ahora toca las letras en orden. Empieza por la «" + w1.Tiles[k] + "»." : "Sigue con la «" + w1.Tiles[k] + "».");
+                    yield return StartCoroutine(WaitTile(t, tile));
                 }
             }
+            // 4) celebración y «lucero dorado»
             if (!t.Skipped)
             {
-                _validateAt = 0f;
-                t.Say("Lucero dorado: la encontró sola. Toca la pantalla para seguir.");
+                _allowTile = null;
+                HideHint();
+                yield return Motion.Hold(0.3f);
+                yield return StartCoroutine(Validate());
+                t.Say("¡Muy bien!");
                 yield return StartCoroutine(PlaySolved(PuntaTier.Solo, w1, 0, count: false));
+                t.Say("Cuando la encuentras sola, el lucero es dorado. Toca para seguir.");
                 yield return StartCoroutine(WaitTap(t));
                 script.Success();
             }
             else script.Skip();
 
-            // PASO B — tu turno: una palabra muy fácil; «¡La tengo!» si la sabes, «Una ayuda» si no te sale (sin obligar a usarla)
+            // ---- PALABRA 2: con ayuda
             if (!script.Finished)
             {
                 var w2 = GuidedWord(1, 5, w1.Word);
                 BeginWord(w2, 1);
-                t.Say("Tu turno. Si la sabes, toca «¡La tengo!»; si no te sale, toca «Una ayuda».");
+                _strict = true;
+                _allowKind = IntentKind.Help;
+                t.Say("Si una palabra no te sale, pide ayuda. Toca «Una ayuda».");
                 PlaceHintOn(1);
-                _inputOn = true;
-                bool toldAboutHelp = false;
-                while (_phase == Phase.Think && !t.Skipped)
-                {
-                    var intent = ReadIntent();
-                    if (intent.Kind == IntentKind.Have) { _haveAt = GameClock.Time; ShowTiles(withExtra: true); }
-                    else if (intent.Kind == IntentKind.Help)
-                    {
-                        DoHelp();
-                        if (!toldAboutHelp && _phase == Phase.Think)
-                        {
-                            toldAboutHelp = true;
-                            t.Say("Ahora sabes cuántas letras tiene. Cuando la tengas, toca «¡La tengo!».");
-                            PlaceHintOn(0);
-                        }
-                    }
-                    yield return null;
-                }
-                HideHint();
+                yield return StartCoroutine(WaitIntent(t, IntentKind.Help));
                 if (!t.Skipped)
                 {
-                    if (_phase == Phase.Build && _helps < 2) t.Say("Toca las letras en orden para armar la palabra.");
-                    yield return StartCoroutine(WordLoop(abortAtTimeUp: false));
+                    DoHelp();                                              // 5) cuántas letras tiene
+                    t.Say("Ahora sabes cuántas letras tiene. Toca otra vez «Una ayuda».");
+                    PlaceHintOn(1);
+                    yield return StartCoroutine(WaitIntent(t, IntentKind.Help));
                 }
+                if (!t.Skipped)
+                {
+                    DoHelp();                                              // 6) la primera letra
+                    t.Say("Con eso sale. Toca «¡La tengo!» y arma la palabra.");
+                    _allowKind = IntentKind.Have;
+                    PlaceHintOn(0);
+                    yield return StartCoroutine(WaitIntent(t, IntentKind.Have));
+                    HideHint();
+                }
+                if (!t.Skipped)
+                {
+                    // 7) armarla: libre; el aro solo aparece en la ficha que toca si se queda quieta 4 s
+                    _haveAt = GameClock.Time;
+                    ShowTiles(withExtra: true);
+                    _strict = false;
+                    _allowKind = IntentKind.None;
+                    float lastAct = GameClock.Time;
+                    while ((_phase == Phase.Build) && !t.Skipped)
+                    {
+                        if (_validateAt > 0f && GameClock.Time >= _validateAt)
+                        {
+                            _validateAt = 0f;
+                            if (AllFilled()) yield return StartCoroutine(Validate());
+                            lastAct = GameClock.Time;
+                        }
+                        else
+                        {
+                            var intent = ReadIntent();
+                            if (intent.Kind != IntentKind.None)
+                            {
+                                lastAct = GameClock.Time;
+                                HideHint();
+                                yield return StartCoroutine(Act(intent));
+                            }
+                        }
+                        if (GameClock.Time - lastAct > 4f && _hintTile == null && _phase == Phase.Build)
+                        {
+                            int k = FirstEmptySlot();
+                            var next = k < 0 ? null : _tiles.Find(x => x.Char == w2.Tiles[k] && x.Slot < 0 && !x.Gone);
+                            if (next != null) PlaceHintOnTile(next);
+                        }
+                        yield return null;
+                    }
+                    HideHint();
+                }
+                // 8) cierre
                 if (!t.Skipped && _phase == Phase.Solved)
                 {
-                    t.Say(_outcome == PuntaTier.Vista
-                        ? "No pasa nada: Nubi te la muestra y vuelve otro día. Toca la pantalla para seguir."
-                        : "¡Bien! El color del lucero cuenta cómo la encontraste: dorado sola, plateado con ayuda. Toca la pantalla para seguir.");
+                    t.Say("¡Muy bien!");
                     yield return StartCoroutine(PlaySolved(_outcome, w2, 0, count: false));
+                    t.Say(_outcome == PuntaTier.Vista
+                        ? "No pasa nada: Nubi te la muestra y la palabra vuelve otro día. Toca para terminar."
+                        : "Con ayuda, el lucero es plateado. Siempre hay salida: si no sale, Nubi te la muestra. Toca para terminar.");
                     yield return StartCoroutine(WaitTap(t));
                     script.Success();
                 }
@@ -857,6 +921,9 @@ namespace NeuroVida.Games.Anagramas
             }
             HideHint();
             _inputOn = false;
+            _strict = false;
+            _allowKind = IntentKind.None;
+            _allowTile = null;
             ClearWordVisuals();
             _guided = false;
             _reserve = _guidedGap = 0f;
@@ -866,6 +933,47 @@ namespace NeuroVida.Games.Anagramas
             t.EndPractice();
         }
         // </guided>
+
+        /// <summary>Espera EXACTAMENTE ese toque (un botón o, con <see cref="IntentKind.Next"/>, la tarjeta): lo demás está atenuado y no responde.</summary>
+        private IEnumerator WaitIntent(GuidedTutorial t, IntentKind kind)
+        {
+            _press = null;
+            _inputOn = true;
+            while (!t.Skipped)
+            {
+                var intent = ReadIntent();
+                if (intent.Kind == kind) break;
+                yield return null;
+            }
+            _inputOn = false;
+        }
+
+        /// <summary>Espera que se toque ESA ficha (el aro la marca y las demás quedan atenuadas). Si se toca otra, rebota suave y vuelve: el aro sigue en la correcta.</summary>
+        private IEnumerator WaitTile(GuidedTutorial t, Tile target)
+        {
+            _allowTile = target;
+            PlaceHintOnTile(target);
+            _press = null;
+            _inputOn = true;
+            while (!t.Skipped)
+            {
+                var intent = ReadIntent();
+                if (intent.Kind == IntentKind.Tile)
+                {
+                    if (intent.Tile == target)
+                    {
+                        TapTile(target);
+                        break;
+                    }
+                    PlayClip(PuntaSounds.Back(), 0.5f);
+                    yield return StartCoroutine(PopRect(intent.Tile.Root, 1.18f, 0.25f));   // rebota suave: no era esa
+                    _press = null;
+                }
+                yield return null;
+            }
+            _inputOn = false;
+            HideHint();
+        }
 
         /// <summary>Espera un toque en cualquier parte de la pantalla (el de «Saltar tutorial» lo atiende <see cref="GameControllerBase.PollTutorialSkip"/>): los pasos avanzan al ritmo de la persona.</summary>
         private IEnumerator WaitTap(GuidedTutorial t)
@@ -900,10 +1008,22 @@ namespace NeuroVida.Games.Anagramas
             var b = _buttons[button];
             _hintRing.rectTransform.sizeDelta = new Vector2((b.Rect.width + 14f) * _s, (b.Rect.height + 14f) * _s);
             _hintRing.rectTransform.anchoredPosition = P(b.Rect.center);
+            _hintTile = null;
             _hintRing.gameObject.SetActive(true);
         }
 
-        private void HideHint() { if (_hintRing != null) _hintRing.gameObject.SetActive(false); }
+        private void HideHint()
+        {
+            _hintTile = null;
+            if (_hintRing != null) _hintRing.gameObject.SetActive(false);
+        }
+
+        /// <summary>El aro marca una ficha (la sigue mientras se mueve).</summary>
+        private void PlaceHintOnTile(Tile tile)
+        {
+            _hintTile = tile;
+            _hintRing.gameObject.SetActive(true);
+        }
 
         // ------------------------------------------------------------------ entrada y animación por cuadro
 
@@ -953,6 +1073,7 @@ namespace NeuroVida.Games.Anagramas
             foreach (var b in _buttons)
             {
                 if (!b.Visible) continue;
+                if (_strict && b.Kind != _allowKind) continue;       // atenuado: no responde
                 var r = new Rect(b.Rect.x - 4f, b.Rect.y - 4f, b.Rect.width + 8f, b.Rect.height + 8f);
                 if (r.Contains(p))
                 {
@@ -960,7 +1081,11 @@ namespace NeuroVida.Games.Anagramas
                     return new Intent { Kind = b.Kind };
                 }
             }
+            // «Ya la leí» también se toca sobre la tarjeta
+            if (_strict && _allowKind == IntentKind.Next && p.y >= _m.CardTop && p.y <= _m.CardBottom && p.x >= PuntaLayout.SideMargin && p.x <= PuntaLayout.W - PuntaLayout.SideMargin)
+                return new Intent { Kind = IntentKind.Next };
             if (_phase != Phase.Build) return none;
+            if (_strict && _allowTile == null) return none;
             Tile best = null;
             float bestD = float.MaxValue;
             foreach (var t in _tiles)
@@ -1073,7 +1198,7 @@ namespace NeuroVida.Games.Anagramas
 
             // la definición se escribe sola; el resto del texto queda invisible para que las líneas no se corran al escribir
             string full = _word.Clue;
-            int shown = PuntaContract.TypedCount(now - _cardAt, full.Length, GameFeel.ReduceMotion);
+            int shown = PuntaContract.TypedCount(now - _cardAt, full.Length, GameFeel.ReduceMotion || _guided);  // en el tutorial el texto aparece entero: hay que poder leerlo
             if (shown != _typedCount)
             {
                 _typedCount = shown;
@@ -1159,7 +1284,8 @@ namespace NeuroVida.Games.Anagramas
             if (t.Gone) { t.Fade = Mathf.Min(1f, t.Fade + 0.06f); }
             t.Root.localScale = Vector3.one * Mathf.Max(0.0001f, t.ScaleNow);
             float alpha = Mathf.Clamp01((now - t.Born) / 0.25f) * (1f - t.Fade);
-            SetTileAlpha(t, Motion.Decorative ? alpha : (1f - t.Fade));
+            float dim = _strict && t.Slot < 0 && t != _allowTile ? 0.35f : 1f;     // tutorial: solo la ficha pedida se ve completa
+            SetTileAlpha(t, (Motion.Decorative ? alpha : (1f - t.Fade)) * dim);
             if (t.Lit && t.Glow != null)
             {
                 bool glow = Motion.Decorative;
@@ -1279,9 +1405,15 @@ namespace NeuroVida.Games.Anagramas
             {
                 for (int k = 0; k < 3; k++) _ladderDots[k].color = k < _helps ? Cyan : new Color(1f, 1f, 1f, 0.14f);
             }
+            if (_hintTile != null && _hintRing != null && _hintRing.gameObject.activeSelf)
+            {
+                _hintRing.rectTransform.sizeDelta = Vector2.one * (_m.TileD * 1.7f * _s);
+                _hintRing.rectTransform.anchoredPosition = P(_hintTile.Pos);
+            }
             foreach (var b in _buttons)
             {
                 if (!b.Visible) continue;
+                if (b.Group != null) b.Group.alpha = _strict && b.Kind != _allowKind ? 0.35f : 1f;
                 float pr = Mathf.Max(0f, 1f - (now - b.PressedAt) / 0.2f);
                 b.Root.anchoredPosition = P(b.Rect.center) + new Vector2(0f, -pr * 4f * _s);
             }
@@ -1674,6 +1806,8 @@ namespace NeuroVida.Games.Anagramas
                 go.transform.SetParent(_uiLayer, false);
                 b.Root = go.AddComponent<RectTransform>();
                 b.Root.anchorMin = b.Root.anchorMax = b.Root.pivot = new Vector2(0.5f, 0.5f);
+                b.Group = go.AddComponent<CanvasGroup>();
+                b.Group.blocksRaycasts = false;
                 b.Bg = go.AddComponent<Image>();
                 b.Bg.sprite = RoundedRectSprite.Get(48);
                 b.Bg.type = Image.Type.Sliced;

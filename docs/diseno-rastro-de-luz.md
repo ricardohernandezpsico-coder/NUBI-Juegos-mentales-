@@ -227,3 +227,8 @@ rapidez (`secuencia`, `rutatesoro`, `bitacora`, `rumbo`, `satelites`, `aterrizaj
    tiempo con `HowToClock.Shift` y reiniciar el bucle principal). El `PauseMenu` muestra el botón solo si `CanShowHowTo`.
 4. Kotlin: sumar el id a `UnityGameLauncher.TUTORIAL_GAMES`.
 5. Smoke: entradas `TutorialX` en `HeadlessPlaymodeSmokeTest` (el Editor sigue solo la tarjeta tras 1 s con `GuidedTutorial.EditorAutoContinue`, solo en el Editor).
+6. **Principio de diseño (Ricardo, 3-oct, tarea 28): aprender haciendo. Cada paso espera una acción de la persona y no hay nada automático.** Nubi no juega sola ni
+   avanza los pasos por tiempo: cada paso dice UNA cosa corta, el aro marca SOLO lo que hay que tocar y lo demás queda atenuado y sin responder; si se toca otra cosa no pasa
+   nada malo (la ficha rebota suave y el aro sigue donde estaba). Los textos o definiciones que hay que leer aparecen enteros, no escribiéndose solos. Para pasar de un paso
+   explicativo al siguiente, un toque en un botón o en la pantalla («Toca para seguir»). Si la persona se queda quieta unos segundos, recién ahí el aro ofrece la ayuda.
+   Referencia: `PuntaGameController.GuidedRound` (`WaitIntent`, `WaitTile`, `WaitTap`). Los otros cinco tutoriales todavía NO lo cumplen del todo (ver el listado de la tarea 28).

@@ -120,7 +120,11 @@ sale, una escalera de ayudas aclara la señal hasta que aparece. Nunca te quedas
 - **Las azules vuelven:** la app guarda las palabras que Nubi mostró (`punta_words`, respaldado, máx. 20) y las manda en `punta_pending` (nuevo campo opcional de `SequenceConfigDetails`);
   Precisión trae hasta 2 (nunca la primera), el Reto una cada 4 palabras. Salen de la lista al encontrarse solas o con 1-2 ayudas.
 - **Telemetría** (campos nuevos de `StroopSessionMetrics`): `punta_solo/pista/letras/vista`, `punta_ms` (tiempo medio hasta «¡La tengo!» de las solas), `punta_words`, `punta_blue`, `punta_cleared`.
-- **Tutorial guiado:** la primera palabra la juega Nubi (toca «¡La tengo!» y arma la palabra); en la segunda la persona pide dos ayudas y arma la palabra. «Cómo se juega» en la pausa.
+- **Tutorial guiado (rehecho el 3-oct, tareas 27 y 28: «aprender haciendo»):** Nubi NO juega sola y nada avanza por tiempo. La definición aparece entera. Cada paso espera un toque
+  de la persona, con el aro en SOLO lo que se toca y lo demás atenuado y sin responder: 1) «Esta es una definición. Léela con calma» (botón «Ya la leí» o la tarjeta); 2) «¿La sabes? Toca ¡La tengo!»;
+  3) las letras en orden, el aro en la ficha correcta de cada letra (otra ficha rebota suave); 4) celebración y «Cuando la encuentras sola, el lucero es dorado. Toca para seguir»; 5) segunda palabra:
+  «Si una palabra no te sale, pide ayuda. Toca Una ayuda»; 6) «Ahora sabes cuántas letras tiene. Toca otra vez Una ayuda» (muestra la primera letra); 7) «Toca ¡La tengo! y arma la palabra»
+  (el aro marca la ficha solo si se queda quieta 4 s); 8) «Con ayuda, el lucero es plateado. Siempre hay salida». El mensaje de Nubi va en un hueco propio entre la tarjeta y las casillas. «Cómo se juega» en la pausa.
 - **Movimiento reducido:** texto entero, sin ondas, nebulosa, flotación, temblor ni chispas; el lucero aparece directo en el cielo; el vuelo de la ficha a su casilla se queda (más corto).
 - **Se borró:** `BubbleField` (las burbujas), los sprites del hueco y los iconos de botones, `AnagramContract` (banco viejo de ~95 palabras) y el mundo `SkyLetters` de `WorldBackdrop`
   (letras flotando); solo los usaba Anagramas. `docs/previews/anagramas-burbujas.png` y su script también.

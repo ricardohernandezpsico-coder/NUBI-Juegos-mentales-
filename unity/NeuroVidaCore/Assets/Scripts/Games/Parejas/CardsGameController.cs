@@ -570,12 +570,7 @@ namespace NeuroVida.Games.Parejas
 
         private void BuildUi()
         {
-            if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
-            {
-                var eventSystemGo = new GameObject("EventSystem");
-                eventSystemGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
-                eventSystemGo.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-            }
+            NeuroVida.Games.Shared.EventSystemGuard.Ensure();
 
             var canvasGo = new GameObject("CardsCanvas");
             canvasGo.transform.SetParent(transform, false);

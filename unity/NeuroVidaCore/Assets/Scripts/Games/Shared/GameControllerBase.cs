@@ -30,6 +30,7 @@ namespace NeuroVida.Games.Shared
         protected virtual void Awake()
         {
             _audioSource = gameObject.AddComponent<AudioSource>();
+            EventSystemGuard.Ensure(); // los botones (pausa, «¡Listo!») no responden sin él
             BuildUi();
             StyleResultPanel();
             gameObject.SetActive(false);

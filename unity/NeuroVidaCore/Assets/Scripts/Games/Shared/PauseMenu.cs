@@ -23,10 +23,20 @@ namespace NeuroVida.Games.Shared
 
         public bool IsShown => gameObject.activeSelf;
 
+        /// <summary>Los botones que se ven ahora (nombre y rect), para las pruebas que tocan el centro de cada uno.</summary>
+        public System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, RectTransform>> VisibleButtons()
+        {
+            var list = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, RectTransform>>();
+            foreach (var b in new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit })
+                if (b != null && b.gameObject.activeInHierarchy) list.Add(new System.Collections.Generic.KeyValuePair<string, RectTransform>(b.name, b));
+            return list;
+        }
+
         /// <param name="onHowTo">«Cómo se juega»: la tarjeta de Nubi y la ronda guiada, y después se vuelve a la partida (el juego se encarga).</param>
         /// <param name="canHowTo">¿Se ofrece «Cómo se juega» ahora? (el juego tiene tutorial y está en marcha). Se pregunta cada vez que se abre el menú.</param>
         public static PauseMenu Create(Transform parent, Action onResume, Action onRestart, Action onExit, Action onHowTo = null, Func<bool> canHowTo = null)
         {
+            EventSystemGuard.Ensure(); // sin EventSystem ningún botón de la pausa responde
             var root = new GameObject("PauseMenu");
             root.transform.SetParent(parent, false);
             var canvas = root.AddComponent<Canvas>();

@@ -922,12 +922,6 @@ namespace NeuroVida.Games.Rumbo
 
         protected override void BuildUi()
         {
-            if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
-            {
-                var es = new GameObject("EventSystem");
-                es.AddComponent<UnityEngine.EventSystems.EventSystem>();
-                es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-            }
 
             var engineGo = new GameObject("Engine");
             engineGo.transform.SetParent(transform, false);
