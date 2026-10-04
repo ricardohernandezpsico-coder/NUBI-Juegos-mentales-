@@ -1075,9 +1075,13 @@ namespace NeuroVida.Games.Stroop
                 if (t.Skipped) { script.Skip(); break; }
                 var trial = StroopContract.GuidedTrials[script.Index];
                 bool hinted = script.Index < StroopContract.GuidedHinted;
-                t.Say(script.Index == 0 ? "Llega por la orilla de la TINTA: toca el COLOR con que está escrita"
+                string instruction = script.Index == 0 ? "Llega por la orilla de la TINTA: toca el COLOR con que está escrita"
                     : script.Index == 1 ? "Ahora llega por la orilla de la PALABRA: toca lo que DICE"
-                    : "Mira de qué orilla llega y elige tú");
+                    : "Mira de qué orilla llega y elige tú";
+                // la persona lee y empieza ella (nada avanza por tiempo); la explicación queda puesta mientras llega la tarjeta y se responde
+                yield return StartCoroutine(t.WaitForContinue(instruction, "Toca para empezar"));
+                if (t.Skipped) { script.Skip(); break; }
+                t.Say(instruction);
                 _trial = trial;
                 _shownCardSide = trial.Rule == StroopRule.Ink ? -1 : 1;
                 ClearRings();
@@ -1094,20 +1098,18 @@ namespace NeuroVida.Games.Stroop
                 if (_answerIndex == correctIndex)
                 {
                     GameFeel.Correct(1);
-                    t.Say("¡Bien! " + StroopContract.Explain(trial));
                     script.Success();
+                    yield return StartCoroutine(t.WaitForContinue("¡Bien! " + StroopContract.Explain(trial)));
                     yield return StartCoroutine(SlideOut(0.28f, -_shownCardSide));
-                    yield return Motion.Hold(StroopContract.GuidedOkPauseSeconds);
                 }
                 else
                 {
                     GameFeel.Wrong();
-                    t.Say(trial.Rule == StroopRule.Ink
-                        ? "Casi: desde esta orilla se toca el COLOR de la tinta. Mira otra vez"
-                        : "Casi: desde esta orilla se toca lo que DICE la palabra. Mira otra vez");
                     ShowRing(correctIndex);
                     script.Failure();
-                    yield return Motion.Hold(StroopContract.GuidedErrorPauseSeconds);
+                    yield return StartCoroutine(t.WaitForContinue(trial.Rule == StroopRule.Ink
+                        ? "Casi: desde esta orilla se toca el COLOR de la tinta. Mira otra vez"
+                        : "Casi: desde esta orilla se toca lo que DICE la palabra. Mira otra vez"));
                     yield return StartCoroutine(FadeCardOut());
                     ClearRings();
                 }
@@ -1117,9 +1119,8 @@ namespace NeuroVida.Games.Stroop
             _cardGroup.alpha = 0f;
             if (!script.Skipped)
             {
-                t.Say("¡Así se juega! Ahora sin ayuda");
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return Motion.Hold(1.4f);
+                yield return StartCoroutine(t.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
             }
             _guided = false;
             _bottomReserve = 0f;

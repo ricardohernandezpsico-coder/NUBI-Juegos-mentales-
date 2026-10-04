@@ -169,6 +169,28 @@ namespace NeuroVida.Games.Shared
         /// <summary>Lo que dice Nubi durante la práctica (arriba del botón de saltar). Vacío = nada.</summary>
         public void Say(string text) => _caption.text = text;
 
+        /// <summary>
+        /// «Aprender haciendo» (Ricardo, 3-oct): Nubi dice <paramref name="text"/> y se QUEDA puesto hasta que la persona toque la pantalla (en cualquier parte menos «Saltar tutorial»).
+        /// Nada avanza por tiempo. Debajo del texto va <paramref name="cue"/> («Toca para seguir», «Toca para empezar»…); al tocar, la explicación se queda sin la invitación.
+        /// Sin <paramref name="text"/> solo espera el toque (el que llama ya dijo lo suyo). Un toque que ya venía de antes no cuenta (0,3 s), ni uno mientras el juego está en pausa.
+        /// En el Editor, con <see cref="EditorAutoContinue"/> (el smoke), sigue solo a los 1,2 s: así los arranques de prueba llegan hasta el final de la ronda guiada.
+        /// </summary>
+        public IEnumerator WaitForContinue(string text = null, string cue = "Toca para seguir")
+        {
+            if (text != null) Say(text + "\n<color=#FFC93C>" + cue + "</color>");
+            float waited = 0f;
+            while (!Skipped)
+            {
+                waited += GameClock.RealDeltaTime;
+#if UNITY_EDITOR
+                if (EditorAutoContinue && waited > 1.2f) break;
+#endif
+                if (waited > 0.3f && !GameClock.Paused && TryPress(out Vector2 pos) && !Hit(_skipRect, pos)) break;
+                yield return null;
+            }
+            if (text != null) Say(text);
+        }
+
         public void EndPractice()
         {
             Practicing = false;

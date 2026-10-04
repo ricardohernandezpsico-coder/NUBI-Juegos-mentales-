@@ -1091,7 +1091,11 @@ namespace NeuroVida.Games.Meteoros
                     _lexicon.PickDecoy(new[] { DecoyKind.Obvious }, 4, 6, _rng, out var d, out var kind, out int band);
                     spec = new MeteorSpec { Word = d, IsWord = false, Band = band, Decoy = kind, FallSeconds = MeteorContract.GuidedFall(Senior) };
                 }
-                t.Say(isWord ? (words == 0 ? "Esta palabra existe: tócala" : "Otra que existe: tócala") : "Esta no existe: déjala caer");
+                string instruction = isWord ? (words == 0 ? "Esta palabra existe: tócala" : "Otra que existe: tócala") : "Esta no existe: déjala caer";
+                // el meteoro NO cae solo: la persona lee y empieza ella; la explicación queda puesta mientras cae
+                yield return StartCoroutine(t.WaitForContinue(instruction, "Toca para empezar"));
+                if (t.Skipped) { script.Skip(); break; }
+                t.Say(instruction);
                 _pending = spec;
                 int tries = 0;
                 while (!Spawn() && tries++ < 20) yield return null;
@@ -1106,28 +1110,28 @@ namespace NeuroVida.Games.Meteoros
                 while (_guidedOutcome == 0 && !t.Skipped) yield return null;
                 _guidedRing = null;
                 if (t.Skipped) { script.Skip(); break; }
+                string result;
                 if (_guidedOutcome == 1 || _guidedOutcome == 4)
                 {
-                    t.Say(_guidedOutcome == 1 ? "¡Bien! Esa existe" : "¡Bien! Esa no existía: dejarla caer fue lo correcto");
+                    result = _guidedOutcome == 1 ? "¡Bien! Esa existe" : "¡Bien! Esa no existía: dejarla caer fue lo correcto";
                     if (_guidedOutcome == 1) words++;
                     script.Success();
                 }
                 else
                 {
-                    t.Say(_guidedOutcome == 3 ? "Casi: esa palabra existe. Tócala antes de que llegue abajo" : "Casi: esa no existe. Las inventadas se dejan caer");
+                    result = _guidedOutcome == 3 ? "Casi: esa palabra existe. Tócala antes de que llegue abajo" : "Casi: esa no existe. Las inventadas se dejan caer";
                     script.Failure();
                 }
-                // apenas se resuelve uno aparece el siguiente; solo tras un error se espera más (se alcanza a leer el porqué)
-                yield return StartCoroutine(Wait(_guidedOutcome == 1 || _guidedOutcome == 4 ? MeteorContract.GuidedGapSeconds : MeteorContract.GuidedRetryGapSeconds));
+                // la explicación del resultado queda puesta hasta que la persona toque (no se pasa solo al siguiente)
+                yield return StartCoroutine(t.WaitForContinue(result));
             }
             _guidedRing = null;
             ClearMeteors();
             foreach (Transform c in _fxRect) Destroy(c.gameObject);
             if (!script.Skipped)
             {
-                t.Say("¡Así se juega! Ahora sin ayuda");
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(Wait(MeteorContract.GuidedClosingSeconds));
+                yield return StartCoroutine(t.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
             }
             t.EndPractice();
             _guided = false;

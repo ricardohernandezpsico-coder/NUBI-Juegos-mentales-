@@ -536,6 +536,9 @@ namespace NeuroVida.Games.Secuencia
             SetMode(r);
             while (!tutorial.Skipped)
             {
+                // la persona empieza ella: la chispa no sale sola
+                yield return StartCoroutine(tutorial.WaitForContinue("Mira la chispa: va a dibujar un camino.", "Toca cuando estés listo"));
+                if (tutorial.Skipped) break;
                 yield return StartCoroutine(Show(r));
                 if (tutorial.Skipped) break;
                 var res = new InputResult();
@@ -544,11 +547,10 @@ namespace NeuroVida.Games.Secuencia
                 if (tutorial.Skipped) break;
                 if (res.Complete)
                 {
-                    tutorial.Say("¡Así se juega! Ahora sin ayuda");
                     PlayClip(RastroSounds.Chord(), 1f);
                     _winAt = GameClock.Time;
                     _hintOrb = -1;
-                    yield return StartCoroutine(Motion.Hold(1.6f));
+                    yield return StartCoroutine(tutorial.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
                     break;
                 }
                 // error: sin culpa, se explica y se repite el mismo camino
@@ -559,8 +561,7 @@ namespace NeuroVida.Games.Secuencia
                 _orbs[res.Expected].Aro.color = NeuroStyle.WithAlpha(Sun, 1f);
                 _orbs[res.Expected].Aro.gameObject.SetActive(true);
                 PlayClip(RastroSounds.Wrong(), 1f);
-                tutorial.Say("Casi: esa no era. Mira otra vez el camino");
-                yield return StartCoroutine(Motion.Hold(1.9f));
+                yield return StartCoroutine(tutorial.WaitForContinue("Casi: esa no era. Mira otra vez el camino"));
                 ClearRound();
             }
             _hintOrb = -1;

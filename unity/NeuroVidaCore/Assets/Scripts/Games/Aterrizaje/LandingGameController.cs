@@ -899,10 +899,14 @@ namespace NeuroVida.Games.Aterrizaje
                 SetRuler(trial);
                 _mission.text = trial.Label;
                 ShowZone(trial, zoneHalf);
-                t.Say(script.Index == 0 && script.Failures == 0
+                string instruction = script.Index == 0 && script.Failures == 0
                     ? $"La regla va de {trial.MinLabel} (izquierda) a {trial.MaxLabel} (derecha). Aterriza en el {trial.Label}"
                     : script.Index == 0 ? $"Otra vez: aterriza en el {trial.Label}, dentro de la zona amarilla"
-                    : $"Ahora la zona es más chica. Aterriza en el {trial.Label}");
+                    : $"Ahora la zona es más chica. Aterriza en el {trial.Label}";
+                // la persona lee y empieza el descenso ella; la explicación queda puesta mientras baja
+                yield return StartCoroutine(t.WaitForContinue(instruction, "Toca para empezar"));
+                if (t.Skipped) { script.Skip(); break; }
+                t.Say(instruction);
                 // baja despacio (14 s) para que dé tiempo a moverla
                 yield return StartCoroutine(Fly(14f, true));
                 if (t.Skipped) { script.Skip(); break; }
@@ -918,17 +922,16 @@ namespace NeuroVida.Games.Aterrizaje
                 {
                     GameFeel.Correct(1);
                     StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(_landerX, _rulerY + 60f), GoodColor, 12, 180f, 32f, 0.5f));
-                    t.Say($"¡Bien! Ese es el {trial.Label}");
+                    string okText = $"¡Bien! Ese es el {trial.Label}";
                     script.Success();
                     trial = LandingContract.GuidedTrial(_rng, (int)trial.Target);
-                    yield return StartCoroutine(Wait(1.6f));
+                    yield return StartCoroutine(t.WaitForContinue(okText));
                 }
                 else
                 {
                     GameFeel.Wrong();
-                    t.Say($"Casi: la zona amarilla es el lugar justo del {trial.Label}. Probemos otra vez");
                     script.Failure();
-                    yield return StartCoroutine(Wait(2.0f));
+                    yield return StartCoroutine(t.WaitForContinue($"Casi: la zona amarilla es el lugar justo del {trial.Label}. Probemos otra vez"));
                 }
                 HideZone();
                 yield return StartCoroutine(TakeOff());
@@ -939,9 +942,8 @@ namespace NeuroVida.Games.Aterrizaje
             _missionSmall.gameObject.SetActive(true);
             if (!script.Skipped)
             {
-                t.Say("¡Así se juega! Ahora sin ayuda");
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(Wait(1.8f));
+                yield return StartCoroutine(t.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
             }
             t.EndPractice();
             _phase = Phase.Idle;

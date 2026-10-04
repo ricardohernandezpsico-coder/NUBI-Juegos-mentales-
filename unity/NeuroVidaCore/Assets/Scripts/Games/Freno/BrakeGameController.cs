@@ -1153,11 +1153,13 @@ namespace NeuroVida.Games.Freno
                 if (isStop && !stopExplained)
                 {
                     stopExplained = true;
-                    t.Say("Ahora la otra regla: si aparece la señal ¡ALTO!, no toques");
-                    yield return StartCoroutine(ShowStopPreview());
+                    yield return StartCoroutine(ShowStopPreviewHeld(t));
                 }
-                t.Say(isStop ? "Se enciende otro cohete. Si aparece ¡ALTO!, no lo toques" : goShown == 0 ? "Toca el cohete que se enciende" : "Otra vez: toca el cohete que se enciende");
-                yield return StartCoroutine(Wait(0.9f));
+                string instruction = isStop ? "Se enciende otro cohete. Si aparece ¡ALTO!, no lo toques" : goShown == 0 ? "Toca el cohete que se enciende" : "Otra vez: toca el cohete que se enciende";
+                // el cohete NO se enciende solo: la persona lee y despega ella; la explicación queda puesta durante el ensayo
+                yield return StartCoroutine(t.WaitForContinue(instruction, "Toca para despegar"));
+                if (t.Skipped) { script.Skip(); break; }
+                t.Say(instruction);
 
                 SetLit(L, true);                      // el cohete se enciende y se queda encendido hasta que se toque (lento, sin apuro)
                 PlayTone(784f, 0.06f, 0.06f);
@@ -1194,14 +1196,13 @@ namespace NeuroVida.Games.Freno
                         GameFeel.Haptic(GameFeel.HapticKind.Light);
                         goShown++;
                         script.Success();
-                        yield return StartCoroutine(Wait(1.0f));
+                        yield return StartCoroutine(t.WaitForContinue("¡Bien! Tocaste el cohete que se enciende."));
                     }
                     else if (_tapped)
                     {
                         ShowMark(_lanes[_tapLane], false);
-                        t.Say("Casi: se toca el cohete que se enciende. Mira otra vez");
                         script.Failure();
-                        yield return StartCoroutine(Wait(1.6f));
+                        yield return StartCoroutine(t.WaitForContinue("Casi: se toca el cohete que se enciende. Mira otra vez"));
                         HideMark(_lanes[_tapLane]);
                     }
                 }
@@ -1210,9 +1211,8 @@ namespace NeuroVida.Games.Freno
                     PlayTone(147f, 0.3f, 0.05f);
                     ShowMark(L, true);
                     StartCoroutine(Steam(L));
-                    t.Say("¡Frenaste a tiempo!");
                     script.Success();
-                    yield return StartCoroutine(Wait(1.3f));
+                    yield return StartCoroutine(t.WaitForContinue("¡Frenaste a tiempo! Con el ¡ALTO! no se toca."));
                     HideMark(L);
                     yield return StartCoroutine(FadeStop(0.2f));
                 }
@@ -1220,10 +1220,9 @@ namespace NeuroVida.Games.Freno
                 {
                     if (!stopShown) ShowStop();         // tocó antes de que apareciera: igual se muestra, para que se entienda
                     ShowMark(_tapLane >= 0 ? _lanes[_tapLane] : L, false);
-                    t.Say("Casi: con el ¡ALTO! el cohete se queda quieto. Probemos otra vez");
                     script.Failure();
                     yield return StartCoroutine(Hop(L));
-                    yield return StartCoroutine(Wait(1.5f));
+                    yield return StartCoroutine(t.WaitForContinue("Casi: con el ¡ALTO! el cohete se queda quieto. Probemos otra vez"));
                     HideMark(_tapLane >= 0 ? _lanes[_tapLane] : L);
                     yield return StartCoroutine(FadeStop(0.2f));
                 }
@@ -1233,13 +1232,23 @@ namespace NeuroVida.Games.Freno
             foreach (var l in _lanes) { l.Beacon.color = new Color(1f, 1f, 1f, 0.18f); l.Mark.gameObject.SetActive(false); l.Hint.gameObject.SetActive(false); }
             if (!script.Skipped)
             {
-                t.Say("¡Así se juega! Ahora sin ayuda");
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(Wait(1.8f));
+                yield return StartCoroutine(t.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
             }
             t.EndPractice();
             SetPrompt("", Color.white);
         }
         // </guided>
+
+        /// <summary>La señal ¡ALTO! se queda a la vista con su explicación hasta que la persona toque (en la partida se muestra un momento y se va).</summary>
+        private IEnumerator ShowStopPreviewHeld(GuidedTutorial t)
+        {
+            _stopRect.gameObject.SetActive(true);
+            _stopImage.color = Color.white;
+            _stopText.color = Color.white;
+            yield return StartCoroutine(PopIn(_stopRect, 0.25f));
+            yield return StartCoroutine(t.WaitForContinue("Esta es la señal ¡ALTO!: cuando aparezca, no toques el cohete."));
+            yield return StartCoroutine(FadeStop(0.25f));
+        }
     }
 }

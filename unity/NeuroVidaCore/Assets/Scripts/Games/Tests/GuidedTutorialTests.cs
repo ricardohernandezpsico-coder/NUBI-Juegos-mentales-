@@ -139,6 +139,24 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
+        public void TheGuidedRound_OfEveryGame_LearnsByDoing_EachStepWaitsForATouchAndNothingAdvancesByTimeAlone()
+        {
+            // «Aprender haciendo» (Ricardo, 3-oct): las explicaciones quedan puestas hasta un toque; ninguna pausa fija ≥ 1 s entre un paso y el siguiente.
+            var files = new[]
+            {
+                ("Games/Secuencia/RastroGameController.cs", true), ("Games/Freno/BrakeGameController.cs", true), ("Games/Aterrizaje/LandingGameController.cs", true),
+                ("Games/Meteoros/MeteorGameController.cs", true), ("Games/Stroop/StroopGameController.cs", true), ("Games/Anagramas/PuntaGameController.cs", false)
+            };
+            foreach (var (file, usesCommonWait) in files)
+            {
+                string region = GuidedRegion(file);
+                if (usesCommonWait) StringAssert.Contains("WaitForContinue", region, file + ": cada paso espera un toque (GuidedTutorial.WaitForContinue)");
+                foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(region, @"(?:Hold|Wait)\(\s*(\d+(?:\.\d+)?)f?\s*\)"))
+                    Assert.Less(float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), 1f, file + ": una pausa fija de " + m.Value + " avanza el tutorial sin que la persona toque");
+            }
+        }
+
+        [Test]
         public void TheGuidedRound_IsReachableFromThePause_ForEveryGameWithATutorial()
         {
             // cada juego con tutorial dice cuándo «Cómo se juega» está disponible y cómo retoma su partida
