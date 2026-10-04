@@ -1,6 +1,6 @@
 # «Quitar animaciones» de verdad — regla, componentes comunes e inventario (fases A y B)
 
-> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 21 juegos que quedan (Comparación Instantánea también se retiró, el 4-oct: tarea 31).
+> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 20 juegos que quedan (Comparación Instantánea y Detective de Series también se retiraron, el 4-oct: tareas 31 y 33).
 
 Tarea 18 (3-oct). Fase A: regla, componentes comunes e inventario. Fase B: la regla aplicada dentro de los 23 juegos (columna «Hecho» de las tablas).
 
@@ -272,7 +272,7 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 
 ### Razonamiento
 
-**Detective de Series** — `Series/SeriesGameController.cs`
+**Detective de Series (RETIRADO el 4-oct; su tabla queda como historia)** — `Series/SeriesGameController.cs`
 
 | Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
 |---|---|---|---|---|---|

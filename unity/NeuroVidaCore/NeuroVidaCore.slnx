@@ -6,7 +6,6 @@
   <Project Path="NeuroVida.Games.Disparate.Tests.csproj" />
   <Project Path="NeuroVida.Games.Common.Tests.csproj" />
   <Project Path="NeuroVida.Games.Satelites.Tests.csproj" />
-  <Project Path="NeuroVida.Games.Series.Tests.csproj" />
   <Project Path="NeuroVida.Games.Correo.Tests.csproj" />
   <Project Path="NeuroVida.Contracts.csproj" />
   <Project Path="NeuroVida.Bootstrap.csproj" />

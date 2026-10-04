@@ -1,0 +1,268 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Detective de Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Detective de Series</h1>
+    <p class="lead">Rehecho con figuras en vez de números. La sonda envía fotos de un planeta, una tras otra, y algo va cambiando de una foto a la siguiente: le aparece una luna más, su anillo gira, el satélite avanza en su órbita o cambia de color. Tú descubres el patrón y eliges cuál será la próxima foto.</p>
+
+    <h2>Cómo se juega</h2>
+    <ul class="list">
+      <li>Mira las <b>3 fotos</b> en orden y piensa qué cambia de una a otra.</li>
+      <li>Elige la <b>cuarta</b> entre 4 opciones. Las opciones equivocadas aciertan casi todo, menos un detalle.</li>
+      <li><b>Al responder, el patrón se explica solo:</b> entre las fotos aparecen etiquetas como «+1 luna» o «el anillo gira». Así se aprende a mirar.</li>
+      <li>Empieza con una sola cosa que cambia y sube a dos y a tres a la vez.</li>
+    </ul>
+
+    <h2>Por qué cambiarlo</h2>
+    <ul class="list">
+      <li><b>Repetía números:</b> con Carga exacta y Aterrizaje, Razonamiento ya tiene dos juegos de números. Las series de cuadrados, cubos o primos además intimidan y parecen examen.</li>
+      <li><b>Con figuras es para todos:</b> no hace falta saber matemáticas, solo mirar con atención. Es el razonamiento por patrones de las pruebas clásicas, con escenas propias.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable con 8 series, de fácil a difícil. Colores de las cuatro tintas aptas para daltonismo; además, ningún patrón depende solo del color, porque siempre cambia también otra cosa o el color se nombra en la etiqueta. Sin símbolos: planetas, anillos, lunas y un satélite.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="Detective de Series: descubre el patrón y elige la próxima foto"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+const PCOL = ['#C93C3C','#4A86E8','#F2CC1D','#F4F4F4'];
+const PCOL_N = ['rojo','azul','amarillo','blanco'];
+// atributos de cada foto: lunas (0-4), anillo (0-3 → 0°,45°,90°,135°), satélite (0-7 en la órbita), color (0-3)
+const RULES = {
+  luna:   { lab:'+1 luna',          apply:(f,k)=>({...f, moons: f.moons+k}) },
+  anillo: { lab:'el anillo gira',   apply:(f,k)=>({...f, ring:(f.ring+k)%4}) },
+  sat:    { lab:'el satélite avanza', apply:(f,k)=>({...f, sat:(f.sat+k)%8}) },
+  color:  { lab:'cambia de color',  apply:(f,k,i,alt)=>({...f, col: alt[(i+1)%alt.length]}) },
+};
+const LEVELS = [ ['luna'], ['sat'], ['anillo','luna'], ['sat','color'], ['anillo','sat'], ['luna','anillo','sat'], ['color','sat','anillo'], ['luna','sat','anillo'] ];
+const G = { state:'menu', parts:[], toast:null };
+const S = {};
+function emit(x,y,n,spread,life,rgb){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-20,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
+function toast(t,good){ G.toast={t,good,at:performance.now()}; }
+
+function makeSeries(rules){
+  const step = { luna:1, anillo:1, sat: Math.random()<.5?1:2, color:1 };
+  const alt = Math.random()<.5 ? [0,1] : [2,3];        // el color alterna entre dos
+  let f = { moons: rules.includes('luna') ? 0 : Math.floor(Math.random()*3), ring: Math.floor(Math.random()*4), sat: Math.floor(Math.random()*8), col: rules.includes('color') ? alt[0] : Math.floor(Math.random()*4) };
+  const frames=[f];
+  for (let i=0;i<3;i++){ let g={...frames[i]}; for (const r of rules) g = RULES[r].apply(g, step[r], i, alt); frames.push(g); }
+  const answer = frames[3];
+  // opciones: la correcta + 3 que fallan en UN detalle (la lógica de un error real)
+  const opts=[answer], key=o=>`${o.moons}|${o.ring}|${o.sat}|${o.col}`;
+  const tweaks = [ o=>({...o, moons:Math.max(0,o.moons + (o.moons>0?-1:1))}), o=>({...o, ring:(o.ring+1)%4}), o=>({...o, sat:(o.sat+1)%8}), o=>({...o, sat:(o.sat+7)%8}), o=>({...o, col:(o.col+1)%4}), o=>({...o, ring:(o.ring+2)%4}), o=>({...o, moons:o.moons+1}) ];
+  // primero, los errores en lo que SÍ cambia (son los tentadores)
+  const pri = tweaks.slice().sort(()=>Math.random()-.5).sort((a,b)=>0);
+  for (const t of pri){ if (opts.length>=4) break; const o=t(answer); if (o.moons>4) continue; if (!opts.some(x=>key(x)===key(o))) opts.push(o); }
+  opts.sort(()=>Math.random()-.5);
+  return { frames: frames.slice(0,3), answer, opts, rules, step, alt };
+}
+
+function drawPlanet(c, f, x, y, s, a=1){
+  c.save(); c.translate(x,y); c.scale(s,s); c.globalAlpha=a;
+  // órbita y satélite
+  c.strokeStyle='rgba(127,216,255,.28)'; c.lineWidth=1.4; c.setLineDash([3,4]); c.beginPath(); c.arc(0,0,34,0,7); c.stroke(); c.setLineDash([]);
+  const sa = -Math.PI/2 + f.sat*Math.PI/4; const sx=Math.cos(sa)*34, sy=Math.sin(sa)*34;
+  // anillo (detrás)
+  const ra = f.ring*Math.PI/4;
+  c.save(); c.rotate(ra); c.strokeStyle='rgba(255,236,200,.55)'; c.lineWidth=3.5; c.beginPath(); c.ellipse(0,0,25,7,0,Math.PI,2*Math.PI); c.stroke(); c.restore();
+  // planeta
+  const col=PCOL[f.col]; const g=c.createRadialGradient(-5,-6,2,0,0,16); g.addColorStop(0,'#fff'); g.addColorStop(.35,col); g.addColorStop(1,col);
+  c.fillStyle=g; c.beginPath(); c.arc(0,0,15,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.2; c.stroke();
+  // anillo (delante)
+  c.save(); c.rotate(ra); c.strokeStyle='rgba(255,236,200,.9)'; c.lineWidth=3.5; c.beginPath(); c.ellipse(0,0,25,7,0,0,Math.PI); c.stroke(); c.restore();
+  // lunas: en fila debajo
+  for (let m=0;m<f.moons;m++){ const mx=-(f.moons-1)*6+m*12; c.fillStyle='#D6DEF0'; c.beginPath(); c.arc(mx,25,4.4,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=1.2; c.stroke(); }
+  // satélite: cuerpito con dos paneles
+  c.save(); c.translate(sx,sy); c.fillStyle='#7FD8FF'; c.fillRect(-10,-3,6,6); c.fillRect(4,-3,6,6); c.fillStyle='#EDEAFB'; c.beginPath(); c.arc(0,0,4.4,0,7); c.fill(); c.restore();
+  c.restore();
+}
+
+const FY=176, SX = k => 52 + k*85;
+function frameBox(c,x,y,w,h,hl){ c.fillStyle='rgba(0,0,0,.4)'; rr(c,x-w/2,y-h/2+5,w,h,16); c.fill(); c.fillStyle='#141B3A'; rr(c,x-w/2,y-h/2,w,h,16); c.fill(); c.strokeStyle= hl||'rgba(255,255,255,.12)'; c.lineWidth=hl?3:1.5; c.stroke(); }
+function optPos(k){ return [W/2-82+(k%2)*164, 432+Math.floor(k/2)*134]; }
+
+function newGame(){ Object.assign(S, { i:0, N:LEVELS.length, hist:[], cur:null }); next(); }
+function next(){ if (S.i>=S.N) return finish(); S.cur = makeSeries(LEVELS[S.i]); S.cur.t0=performance.now(); S.cur.ans=null; S.i++; G.state='play'; noise(.4,500,1800,.035,2); }
+function answer(k){
+  const o=S.cur.opts[k], ok = o===S.cur.answer, now=performance.now();
+  S.cur.ans={ k, ok, t:now }; S.hist.push({ ok, n:S.cur.rules.length, secs:(now-S.cur.t0)/1000 }); G.state='reveal';
+  if (ok){ [0,1,2].forEach(j=>setTimeout(()=>bell(PENTA[4+j*2],.055,1.3), reduce?0:j*90)); toast('¡Bien visto, detective!', true); const [x,y]=optPos(k); emit(x,y,22,140,700,'255,201,74'); }
+  else { thud(); toast('Casi: mira lo que cambia en cada foto', false); }
+  setTimeout(next, ok ? 2600 : 3600);
+}
+function finish(){ G.state='end'; G.endT=performance.now(); bell(784,.06,1.4); bell(1046.5,.05,1.6,.15); }
+
+function drawPlay(c, now){
+  const cur=S.cur, k0 = reduce?1:Math.min(1,(now-cur.t0)/500);
+  // progreso
+  for (let k=0;k<S.N;k++){ const h=S.hist[k], x=W/2-(S.N-1)*11+k*22; c.fillStyle = h ? (h.ok?'#FFC94A':'#FFD6A0') : k===S.i-1?'rgba(127,216,255,.8)':'rgba(255,255,255,.16)'; c.beginPath(); c.arc(x,32,h?5:4,0,7); c.fill(); }
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(cur.rules.length===1 ? 'Una cosa cambia en cada foto' : `${cur.rules.length} cosas cambian a la vez`, W/2, 62);
+  // tira de fotos: 4 + la incógnita
+  c.fillStyle='rgba(127,216,255,.12)'; rr(c,6,104,W-12,150,22); c.fill();
+  for (let k=0;k<4;k++){
+    const x=SX(k), y=FY, a = reduce?1:Math.min(1,Math.max(0,(now-cur.t0-k*110)/300));
+    c.globalAlpha=a; frameBox(c,x,y,82,120, k===3 ? (cur.ans ? (cur.ans.ok?'#FFC94A':'#9FF5D6') : 'rgba(127,216,255,.6)') : null); c.globalAlpha=1;
+    if (k<3) drawPlanet(c, cur.frames[k], x, y-8, .96, a);
+    else if (cur.ans){ const kk = reduce?1:ease((now-cur.ans.t)/450); drawPlanet(c, cur.answer, x, y-8, .96*kk, kk); }
+    else { c.fillStyle= `rgba(127,216,255,${.5+.4*Math.sin(now/300)})`; c.font='700 38px Fredoka'; c.fillText('?', x, y); }
+    c.fillStyle='#6E6A9A'; c.font='700 13px Fredoka'; c.fillText(k+1, x, y+50);
+  }
+  // etiquetas del patrón al responder
+  if (cur.ans){
+    const kk = reduce?1:Math.min(1,(now-cur.ans.t-300)/400);
+    c.globalAlpha=Math.max(0,kk);
+    // etiquetas en fila, saltando de línea si no caben
+    c.font='700 14px Fredoka';
+    const labs = cur.rules.map(r=> r==='color' ? `alterna ${PCOL_N[cur.alt[0]]} y ${PCOL_N[cur.alt[1]]}` : r==='sat' && cur.step.sat===2 ? 'el satélite salta 2' : RULES[r].lab);
+    const rows=[[]]; let wsum=0; labs.forEach(l=>{ const w=c.measureText(l).width+24; if (wsum+w>W-24 && rows[rows.length-1].length){ rows.push([]); wsum=0; } rows[rows.length-1].push([l,w]); wsum+=w+8; });
+    rows.forEach((row,ri)=>{ const tot=row.reduce((s,[,w])=>s+w,0)+(row.length-1)*8; let x=W/2-tot/2; row.forEach(([l,w])=>{ c.fillStyle='#232B57'; rr(c,x,270+ri*30,w,24,12); c.fill(); c.fillStyle='#FFC94A'; c.fillText(l, x+w/2, 282+ri*30); x+=w+8; }); });
+    c.globalAlpha=1;
+    // flechitas entre fotos
+    if (!reduce) for (let k=0;k<3;k++){ const x=SX(k)+42; c.strokeStyle=`rgba(255,201,74,${.7*Math.max(0,kk)})`; c.lineWidth=2; c.beginPath(); c.moveTo(x-7,FY-70); c.quadraticCurveTo(x,FY-82,x+7,FY-70); c.stroke(); }
+  }
+  // opciones
+  c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.fillText(cur.ans ? '' : '¿Cuál es la próxima foto?', W/2, 362);
+  cur.opts.forEach((o,k)=>{
+    const [x,y]=optPos(k), isAns=o===cur.answer, chosen = cur.ans && cur.ans.k===k;
+    const a = reduce?1:Math.min(1,Math.max(0,(now-cur.t0-500-k*80)/300));
+    let hl=null; if (cur.ans){ if (isAns) hl='#FFC94A'; else if (chosen) hl='#FFB48C'; }
+    c.globalAlpha = a * (cur.ans && !isAns && !chosen ? .4 : 1);
+    if (cur.ans && isAns && !reduce){ c.globalAlpha*=.6; c.drawImage(glow('255,201,74'), x-100,y-78,200,156); c.globalAlpha = a; }
+    frameBox(c,x,y,150,124,hl); drawPlanet(c,o,x,y-6,1.3,1);
+    c.globalAlpha=1;
+  });
+  drawToast(c, now);
+}
+function drawToast(c, now){ const t=G.toast; if(!t) return; const k=(now-t.at)/2400; if(k>=1){G.toast=null;return;}
+  c.globalAlpha=Math.min(1,k*8,(1-k)*4); c.fillStyle=t.good?'#9FF5D6':'#FFD6A0'; c.font='700 18px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t.t, W/2, 348); c.globalAlpha=1; }
+function drawMenu(c, now){
+  const b = reduce?0:Math.sin(now/800)*4; c.textAlign='center'; c.textBaseline='middle';
+  for (let k=0;k<3;k++){ drawPlanet(c, { moons:k+1, ring:k%4, sat:k*2, col:1 }, 60+k*84, 180+b, 1); }
+  c.fillStyle='rgba(127,216,255,.8)'; c.font='700 40px Fredoka'; c.fillText('?', 60+3*84, 180+b);
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('Detective de Series', W/2, 300);
+  c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.fillText('¿Qué cambia de una foto a otra?', W/2, 340); c.fillText('Elige la que sigue.', W/2, 362);
+  c.fillStyle='#7FD8FF'; rr(c,110,430,140,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.fillText('Jugar', W/2, 459);
+}
+function drawEnd(c, now){
+  const k = reduce?1:ease((now-G.endT)/500); c.fillStyle=`rgba(3,4,22,${.95*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='middle'; c.font='700 30px Fredoka'; c.fillText('¡Caso cerrado!',W/2,100);
+  const ok=S.hist.filter(h=>h.ok), best = ok.length ? Math.max(...ok.map(h=>h.n)) : 0;
+  const rows=[['Series resueltas', `${ok.length} de ${S.hist.length}`], ['Lo más difícil que resolviste', best ? (best===1?'1 cambio a la vez':`${best} cambios a la vez`) : '—'], ['Tiempo medio', `${Math.round(S.hist.reduce((s,h)=>s+h.secs,0)/Math.max(1,S.hist.length))} s por serie`]];
+  let y=170; for (const [l,v] of rows){ c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.textAlign='left'; c.fillText(l,28,y); c.fillStyle='#fff'; c.font='700 17px Fredoka'; c.textAlign='right'; c.fillText(v,W-28,y); y+=42; }
+  c.fillStyle='#6E6A9A'; c.font='600 13px Nunito'; c.textAlign='center'; c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y+6);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-110,180,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 19px Fredoka'; c.fillText('Jugar de nuevo',W/2,H-82);
+  c.restore();
+}
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  if (G.state==='menu') drawMenu(c, now);
+  else {
+    if (S.cur) drawPlay(c, now);
+    G.parts = G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; p.vy+=1; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+    if (G.state==='end') drawEnd(c, now);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e);
+  if (G.state==='menu'){ if (y>420&&y<500) newGame(); return; }
+  if (G.state==='end'){ if (performance.now()-G.endT>600 && y>H-120) G.state='menu'; return; }
+  if (G.state!=='play') return;
+  for (let k=0;k<4;k++){ const [ox,oy]=optPos(k); if (Math.abs(x-ox)<75 && Math.abs(y-oy)<62) return answer(k); }
+});
+document.getElementById('snd').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',soundOn); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+document.getElementById('rm').addEventListener('click',e=>{ reduce=!reduce; e.currentTarget.setAttribute('aria-pressed',reduce); });
+</script>

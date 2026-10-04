@@ -41,3 +41,14 @@ Atención pasó de 6 a 5 juegos (Tinta o Palabra, Freno, Piloto, Satélites, Res
 - **Código**: se borró `Games/Comparacion/` (controlador, contrato `ComparisonContract`, `CountStarSprite` y pruebas); `CountStarSprite` solo lo usaba este juego y la vista previa `tools/art-preview`. El mundo de fondo
   `GameWorld.PlanetDuel` («Duelo de planetas») queda sin uso, disponible para otro juego, como `Orbits`. El código completo queda en el historial de git (último commit con el juego: `732e8e3` y anteriores).
 
+**Detective de Series (RETIRADO, 4-oct-2026)**, id `series` (Razonamiento, «lógica secuencial»): descubrir la regla de una serie de números (sumas, cuadrados, cubos, primos…) y elegir el que sigue. Razones (Ricardo):
+(1) las series de números intimidan y parecen un examen; (2) repetía números con Carga exacta y Aterrizaje Lunar; (3) la alternativa con figuras (planetas con lunas, anillo, satélite y color: una regla que se descubre mirando)
+no convenció; el boceto jugable queda guardado en `docs/previews/series-figuras-boceto.html` (idea DESCARTADA). Razonamiento pasó de 5 a 4 juegos (Carga exacta, Aterrizaje Lunar, Acoplamiento y Tráfico Estelar) y la app, de 21 a 20.
+Para volver a 5 después de publicar: la idea «Código secreto» de `docs/ideas-guardadas.md`.
+- **El id `series` queda RESERVADO** (no se reutiliza): `GameRegistry.retiredDomains` (igual que `cambiochip` y `comparacion`).
+- **Datos de quien ya lo jugó: NO se borran ni se migran**: las partidas y el progreso siguen en Room y en `skill` pero no se muestran ni cuentan para «Explorador», las ligas más altas, la liga general (promedio de los 20)
+  ni el área Razonamiento (sus 4 juegos); la racha y el total de partidas sí cuentan esos días, y un camino de hoy guardado que lo nombraba se corrige solo (`withoutRetiredGames`).
+  Pruebas: `flow/RetiredGameTest` (el id retirado, su área, racha y logros) además de las de Cambio de Chip y Comparación.
+- **Código**: se borró `Games/Series/` (controlador, contrato `SeriesContract`, `MagnifierSprite` —solo lo usaban este juego y la vista previa `tools/art-preview`— y pruebas). El mundo de fondo `GameWorld.MeteorShower`
+  («lluvia de meteoros a ritmo regular»; NO es el juego «Lluvia de meteoros») queda sin uso, disponible para otro juego. El código completo queda en el historial de git (último commit con el juego: `f523b23` y anteriores).
+

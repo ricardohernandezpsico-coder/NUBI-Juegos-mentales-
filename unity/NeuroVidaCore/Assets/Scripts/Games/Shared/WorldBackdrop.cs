@@ -100,6 +100,7 @@ namespace NeuroVida.Games.Shared
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.14f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.20f),
         };
 
+        // Sin uso desde que Detective de Series se retiró (4-oct-2026): queda como mundo disponible para otro juego (no es el juego «Lluvia de meteoros»).
         public static GameWorld MeteorShower => new GameWorld
         {
             Name = "Lluvia de meteoros", MeteorEverySeconds = 2.4f,

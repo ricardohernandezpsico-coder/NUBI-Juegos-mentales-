@@ -44,7 +44,6 @@ import kotlin.math.sin
  * - Parejas Ocultas: una carta boca abajo y otra dada vuelta.
  * - Ruta del Tesoro: cristales estelares sobre una roca lunar (los tesoros espaciales del juego).
  * - Tinta o Palabra: gota de tinta y tarjeta con palabra.
- * - Detective de Series: lupa sobre una serie que crece.
  * - Anagramas: dos fichas de letras.
  * - Carga exacta (id «calculo»): un reactor de arcilla con su aro de luces y tres celdas de energía debajo.
  * - Piloto Estelar: la nave volando por una ruta de balizas que serpentea, con una señal que atrapar.
@@ -75,7 +74,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
-  "secuencia", "parejas", "rutatesoro", "stroop", "series", "anagramas", "calculo", "meteoros", "disparate", "cosecha", "intrusa"
+  "secuencia", "parejas", "rutatesoro", "stroop", "anagramas", "calculo", "meteoros", "disparate", "cosecha", "intrusa"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -341,14 +340,6 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawLine(Cream, Offset(46f, 56f), Offset(54f, 64f), 3f, StrokeCap.Round)
       drawLine(Cream, Offset(54f, 64f), Offset(54f, 58f), 3f, StrokeCap.Round)
       drawLine(Cream, Offset(54f, 64f), Offset(48f, 64f), 3f, StrokeCap.Round)
-    }
-    "series" -> {
-      // Lupa de detective sobre una serie que crece (tres puntos cada vez más grandes).
-      rotate(45f, Offset(40f, 40f)) { clay(roundRect(64f, 31.5f, 34f, 17f, 8.5f), Clay.Sun) }
-      clay(circle(Offset(40f, 40f), 31f), Cream, gloss = true)
-      clay(circle(Offset(23f, 47f), 5f), Clay.Sky, border = 3.5f, shadow = false)
-      clay(circle(Offset(38f, 43f), 7f), Clay.Coral, border = 3.5f, shadow = false)
-      clay(circle(Offset(56f, 37f), 9.5f), Clay.Sun, border = 3.5f, shadow = false)
     }
     "anagramas" -> {
       // En la punta de la lengua: un lucero REDONDO (nunca una estrella con puntas) que emite ondas de señal, como la transmisión de Nubi.

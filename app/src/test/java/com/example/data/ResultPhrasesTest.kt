@@ -21,7 +21,7 @@ class ResultPhrasesTest {
 
   @Test
   fun `los juegos donde la rapidez cuenta conservan la frase de siempre`() {
-    for (id in listOf("stroop", "series", "calculo", "radar", "freno", "piloto", "trafico", "disparate", "meteoros", "cosecha", "correo", "acoplamiento", "parejas")) {
+    for (id in listOf("stroop", "calculo", "radar", "freno", "piloto", "trafico", "disparate", "meteoros", "cosecha", "correo", "acoplamiento", "parejas")) {
       assertEquals(id, "¡Muy bien! Buen equilibrio entre precisión y velocidad.", ResultPhrases.feedback(id, 70))
       assertEquals(id, "¡Excelente! Tu precisión y tu ritmo brillaron hoy.", ResultPhrases.feedback(id, 90))
       assertEquals(id, "¡Jugaste! La dificultad se ajusta para que sigas disfrutando.", ResultPhrases.feedback(id, 30))

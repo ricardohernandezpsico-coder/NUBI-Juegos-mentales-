@@ -4,7 +4,6 @@ using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Parejas;
 using NeuroVida.Games.RutaTesoro;
 using NeuroVida.Games.Secuencia;
-using NeuroVida.Games.Series;
 using NeuroVida.Games.Shared;
 using NeuroVida.Games.Stroop;
 using UnityEngine;
@@ -56,7 +55,6 @@ internal static class Program
                 var p = RastroBoard.Base(i);
                 f.WriteLine(string.Join(" ", new[] { p.x.ToString(System.Globalization.CultureInfo.InvariantCulture), p.y.ToString(System.Globalization.CultureInfo.InvariantCulture), RastroBoard.Colors[i].ToString() }));
             }
-        Dump("magnifier", MagnifierSprite.Get());
         Dump("tile", TileSprites.Get());
         DumpRect("surface", LunarSurfaceSprite.Render(ClayRaster.Hex(0x9C94D6)), LunarSurfaceSprite.Width, LunarSurfaceSprite.Height);
         Dump("ship_0", PilotShipSprite.Get());

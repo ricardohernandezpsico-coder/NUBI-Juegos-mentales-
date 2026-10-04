@@ -1,8 +1,8 @@
 """Maquetas de pantalla (aproximadas en la disposición, exactas en el arte) de Ruta del Tesoro, Secuencia,
-Series, armadas con los .raw que vuelca ArtPreview.
+(Series se retiró el 4-oct), armadas con los .raw que vuelca ArtPreview.
 
 Uso: python3 tools/art-preview/juegos.py <raw> [--out docs/previews]
-     ->  arte-juegos.png (Ruta del Tesoro, Secuencia, Series; Comparación se retiró el 4-oct)
+     ->  arte-juegos.png (Ruta del Tesoro; Comparación y Series se retiraron el 4-oct)
          (arte-juegos-2.png se borró el 4-oct: era el estanque de Cálculo Sereno, reemplazado por «Carga exacta», cuyo boceto está en carga-exacta-boceto.html)
 """
 import argparse
@@ -105,33 +105,6 @@ def ruta(raw):
     return im
 
 
-def series(raw):
-    im = night(4)
-    d = ImageDraw.Draw(im)
-    title(d, 'Detective de Series')
-    tile = load(f'{raw}/tile.raw')
-    terms = ['3', '6', '12', '24', '?']
-    step = (W - 40) / 5
-    size = step / 0.86 * 0.92
-    cy = 420
-    for i, t in enumerate(terms):
-        cx = 20 + (i + 0.5) * step
-        col = (0xFB, 0xBF, 0x24) if t == '?' else (0x5B, 0x6C, 0xF0)
-        if t == '?':
-            glow(im, cx, cy, size * 0.6, col, 120)
-        put(im, tinted(tile, col), cx, cy, size)
-        clay_text(ImageDraw.Draw(im), (cx, cy - 6), t, 40)
-        if t == '?':
-            mag = load(f'{raw}/magnifier.raw').rotate(-6, resample=Image.BICUBIC)
-            put(im, mag, cx + size * 0.34, cy - size * 0.38, size * 0.66)
-    opts = [('48', (0x3B, 0x82, 0xF6)), ('36', (0xEC, 0x48, 0x99)), ('30', (0x14, 0xB8, 0xA6)), ('44', (0xF9, 0x73, 0x16))]
-    for i, (t, col) in enumerate(opts):
-        cx, cy2 = 150 + (i % 2) * 240, 640 + (i // 2) * 200
-        put(im, tinted(tile, col), cx, cy2, 190)
-        clay_text(ImageDraw.Draw(im), (cx, cy2 - 8), t, 64)
-    return im
-
-
 def clay_rect(im, box, fill, r=28, border=5, drop=10):
     d = ImageDraw.Draw(im)
     x0, y0, x1, y1 = box
@@ -145,7 +118,7 @@ def main():
     ap.add_argument('raw')
     ap.add_argument('--out', default=ROOT + '/docs/previews')
     a = ap.parse_args()
-    panels = [ruta(a.raw), series(a.raw)]
+    panels = [ruta(a.raw)]
     gap = 24
     sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
     for i, p in enumerate(panels):

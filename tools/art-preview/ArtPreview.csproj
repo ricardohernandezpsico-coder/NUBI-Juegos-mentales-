@@ -29,7 +29,6 @@
     <Compile Include="$(Src)/Shared/LunarSurfaceSprite.cs" />
     <Compile Include="$(Src)/Piloto/PilotShipSprite.cs" />
     <Compile Include="$(Src)/Stroop/NeonSignSprites.cs" />
-    <Compile Include="$(Src)/Series/MagnifierSprite.cs" />
     <Compile Include="$(Src)/Shared/AnswerMarkSprite.cs" />
     <Compile Include="$(Src)/Radar/RadarContract.cs" />
     <Compile Include="$(Src)/Radar/RadarSprites.cs" />

@@ -93,14 +93,6 @@ object GameRegistry {
       iconEmoji = "🎨"
     ),
     GameDefinition(
-      id = "series",
-      title = "Detective de Series",
-      domain = DomainType.RAZONAMIENTO,
-      subtitle = "Lógica secuencial",
-      instruction = "Descubre la regla que siguen los números y elige el que continúa la serie.",
-      iconEmoji = "🔍"
-    ),
-    GameDefinition(
       id = "acoplamiento",
       title = "Acoplamiento",
       domain = DomainType.RAZONAMIENTO,
@@ -238,8 +230,10 @@ object GameRegistry {
    * que se ve sale de [allGames] o de [getById] (null para un id retirado). La racha y el total de partidas sí cuentan esos días jugados.
    *  - `cambiochip` (Cambio de Chip, Atención): retirado el 3-oct-2026 (docs/juegos/descartados.md).
    *  - `comparacion` (Comparación Instantánea, Atención): retirado el 4-oct-2026 (docs/juegos/descartados.md).
+   *  - `series` (Detective de Series, Razonamiento): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    */
-  val retiredDomains: Map<String, DomainType> = mapOf("cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION)
+  val retiredDomains: Map<String, DomainType> =
+    mapOf("cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION, "series" to DomainType.RAZONAMIENTO)
 
   fun isRetired(id: String): Boolean = id in retiredDomains
 }

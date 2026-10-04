@@ -13,7 +13,7 @@
 > visible (se comprobó el 1-oct en `strings.xml` y en la interfaz). En los documentos, "Nubi" nombra la app y "NeuroVida" solo
 > aparece en identificadores o cuando se habla del nombre viejo.
 
-App de estimulación cognitiva para Android: 21 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números] · Lenguaje;
+App de estimulación cognitiva para Android: 20 juegos cortos en 4 áreas (Memoria · Atención [foco y velocidad] · Razonamiento [lógica y números, 4 juegos tras retirar Detective de Series el 4-oct] · Lenguaje;
 de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -30,12 +30,12 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   con `fotos` graba las capturas Roborazzi, p. ej. `HomePlanetScreenshotTest`, para ver pantallas sin teléfono).
   No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 21 juegos (en UN solo Unity), REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los 20 juegos (en UN solo Unity), REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Salida corta (una línea por etapa); los logs completos van a `unity/test-results/v-*.log` y solo se leen si algo falla.
   Modos para iterar sin verificar todo cada vez: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 4-oct · carga exacta`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 4-oct · 20 juegos`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -104,7 +104,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StroopTelemetry` (salida común de casi todos; lleva `end_rating` y `peak_level`; `SequenceTelemetry` y `CardsTelemetry` llevan los mismos campos).
 - `Games/AdaptiveDifficulty.cs`: DDA común (up-down ponderado de Kaernbach hacia 80% de aciertos, 85% en mayores;
   ver `docs/DDA-comun.md`). Lo usan Tinta o Palabra (`Stroop/`), Ruta del Tesoro,
-  Series, «Carga exacta» (id `calculo`, antes Cálculo Sereno), «En la punta de la lengua» (id `anagramas`), **Rastro de luz** (id `secuencia`: escalera de 16 niveles, `RastroLadder`/`RastroContract`, sin tiempo de reacción; las 3 vidas solo terminan la partida) y **Parejas** (escalera de 10 niveles, `CardsGameContract`); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Radar** y **Satélites** una, sin tiempo de reacción; **Freno de Emergencia** una para la tarea de ir (el alto tiene su escalera propia). Desde el 3-oct los 23 juegos usan el motor común.
+  «Carga exacta» (id `calculo`, antes Cálculo Sereno), «En la punta de la lengua» (id `anagramas`), **Rastro de luz** (id `secuencia`: escalera de 16 niveles, `RastroLadder`/`RastroContract`, sin tiempo de reacción; las 3 vidas solo terminan la partida) y **Parejas** (escalera de 10 niveles, `CardsGameContract`); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Radar** y **Satélites** una, sin tiempo de reacción; **Freno de Emergencia** una para la tarea de ir (el alto tiene su escalera propia). Desde el 3-oct los 23 juegos usan el motor común.
 - Cada juego: `XContract.cs` (reglas puras con pruebas) + `XGameController.cs` (UI construida por código). Los 7 del
   DDA común heredan de `Shared/GameControllerBase` y usan `Shared/GameHud`.
 - `Games/Shared/`: sello visual y piezas comunes — `NeuroStyle` (paleta de la app, `ClayText`, `ClayFrame`),
@@ -133,7 +133,6 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 | Freno de Emergencia | `freno` | Atención | `Games/Freno/` | [docs/juegos/freno.md](docs/juegos/freno.md) | — |
 | Satélites | `satelites` | Atención | `Games/Satelites/` | [docs/juegos/satelites.md](docs/juegos/satelites.md) | — |
 | Radar | `radar` | Atención | `Games/Radar/` | [docs/juegos/radar.md](docs/juegos/radar.md) | — |
-| Detective de Series | `series` | Razonamiento | `Games/Series/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
 | Carga exacta (reemplaza a Cálculo Sereno el 4-oct; conserva el id) | `calculo` | Razonamiento | `Games/Calculo/` | [docs/diseno-carga-exacta.md](docs/diseno-carga-exacta.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `Carga.kt` |
 | Acoplamiento | `acoplamiento` | Razonamiento | `Games/Acoplamiento/` | [docs/juegos/acoplamiento.md](docs/juegos/acoplamiento.md) | — |
 | Tráfico Estelar | `trafico` | Razonamiento | `Games/Trafico/` | [docs/juegos/trafico.md](docs/juegos/trafico.md) | — |
@@ -200,11 +199,11 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 361 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 363 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 423 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados) + 31 arranques de smoke (los 21 juegos, los 6 tutoriales y las 3 versiones cortas: `--juegos Tutorial,TutorialFreno,CortoFreno…`).
+- Unity EditMode: 413 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados) + 31 arranques de smoke (los 20 juegos, los 6 tutoriales y las 3 versiones cortas: `--juegos Tutorial,TutorialFreno,CortoFreno…`).
 - Léxico de Lluvia de meteoros: 11 pruebas del filtro de nombres propios en `tools/lexico/test_propios.py` (`python -m unittest test_propios`, desde `tools/lexico`).
 - Banco de definiciones de «En la punta de la lengua» (reemplaza a Anagramas): 16 pruebas en `tools/punta/test_banco.py` (`python -m unittest test_banco`, desde `tools/punta`; ~1 s). Diseño: `docs/diseno-punta-de-la-lengua.md`.
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).

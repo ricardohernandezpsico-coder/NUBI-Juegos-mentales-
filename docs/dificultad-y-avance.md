@@ -147,7 +147,7 @@ no haya dos escalas de nombres. La liga conserva sus metales (Bronce…Maestro),
 
 | Tipo | Juegos | Cómo se aplica |
 |---|---|---|
-| DDA común, una escalera | Tinta o Palabra, Series, Carga exacta, Anagramas, Radar, Freno, Aterrizaje, Acoplamiento, Tráfico, Satélites, Rumbo | Directo: piso o techo sobre el rating. |
+| DDA común, una escalera | Tinta o Palabra, Carga exacta, Anagramas, Radar, Freno, Aterrizaje, Acoplamiento, Tráfico, Satélites, Rumbo | Directo: piso o techo sobre el rating. |
 | DDA común, objetivo propio | Ruta del Tesoro (70%) | Igual, con la corrección de la sección 3. |
 | Dos escaleras | Piloto (pilotaje y señales), Correo (encargos y pilotaje) | El avance es el de la tarea que se mide: Piloto, el promedio de las dos (como hoy); Correo, la de encargos. El piso o techo se aplica a las dos. |
 | (Ya no hay motores propios desde el 3-oct) | Secuencia (16 niveles), Parejas (10 niveles) | Pasaron al DDA común: directo, piso o techo sobre el rating, igual que los demás. |

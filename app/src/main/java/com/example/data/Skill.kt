@@ -52,7 +52,7 @@ object Skill {
 
   val ladders: Map<String, Ladder> = mapOf(
     "stroop" to Ladder(5), "anagramas" to Ladder(5), "calculo" to Ladder(5),
-    "series" to Ladder(9), "piloto" to Ladder(9),
+    "piloto" to Ladder(9),
     "rutatesoro" to Ladder(12, ownTarget = 0.70f),
     "radar" to Ladder(12), "freno" to Ladder(12), "aterrizaje" to Ladder(12), "acoplamiento" to Ladder(12),
     "trafico" to Ladder(12), "satelites" to Ladder(12), "meteoros" to Ladder(12), "disparate" to Ladder(12), "cosecha" to Ladder(10), "intrusa" to Ladder(12),

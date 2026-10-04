@@ -87,7 +87,7 @@ class PuntaPendingTest {
     runBlocking { repo.recordGameResult(game(blue = "búho;faro"), countsForDailySession = false) }
     assertEquals("búho;faro", Punta.encode(repo.puntaPending.value))
     assertTrue(UnityGameLauncher.shouldShowTutorial("anagramas", emptyList()))
-    assertFalse(UnityGameLauncher.shouldShowTutorial("series", emptyList()))
+    assertFalse(UnityGameLauncher.shouldShowTutorial("rutatesoro", emptyList()))
     assertTrue("anagramas" in UnityGameLauncher.TUTORIAL_GAMES)
   }
 

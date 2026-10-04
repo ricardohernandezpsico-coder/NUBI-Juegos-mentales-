@@ -82,7 +82,7 @@ class RetiredGameTest {
     return block()
   }
 
-  private fun seedOldData(todayWith: String = "$old,calculo,series", completed: Int = 0) = withFreshDb { seedOldDataOnce(todayWith, completed) }
+  private fun seedOldData(todayWith: String = "$old,calculo,acoplamiento", completed: Int = 0) = withFreshDb { seedOldDataOnce(todayWith, completed) }
 
   private fun seedOldDataOnce(todayWith: String, completed: Int) = runBlocking {
     val now = System.currentTimeMillis()
@@ -104,8 +104,8 @@ class RetiredGameTest {
   private fun newViewModel() = NeuroVidaViewModel(app)
 
   @Test
-  fun `el registro tiene 21 juegos, Atencion 5, y el id retirado queda reservado`() {
-    assertEquals(21, GameRegistry.allGames.size)
+  fun `el registro tiene 20 juegos, Atencion 5, y el id retirado queda reservado`() {
+    assertEquals(20, GameRegistry.allGames.size)
     assertNull(GameRegistry.getById(old))
     assertFalse(GameRegistry.allGames.any { it.id == old })
     assertEquals(5, GameRegistry.allGames.count { it.domain.name == "ATENCION" })
@@ -123,9 +123,9 @@ class RetiredGameTest {
     assertEquals(3, runBlocking { db().gameResultDao().getAllResultsSync().count { it.gameId == old } })
     assertNotNull(runBlocking { db().gameProgressDao().getProgressForGameSync(old) })
     // pero no aparece en lo que muestra la app
-    assertEquals(21, vm.gameRanks.value.size)
+    assertEquals(20, vm.gameRanks.value.size)
     assertTrue(vm.gameRanks.value.none { it.gameId == old })
-    assertEquals(21, vm.gameLevelsForProgress.value.size)
+    assertEquals(20, vm.gameLevelsForProgress.value.size)
     assertFalse(vm.gameLevelsForProgress.value.containsKey(old))
     // no se puede abrir
     vm.launchGame(old)
@@ -150,13 +150,13 @@ class RetiredGameTest {
 
   @Test
   fun `un camino de hoy guardado con el juego retirado se cambia por otro de su area y conserva el avance`() {
-    seedOldData(todayWith = "calculo,$old,series", completed = 1)
+    seedOldData(todayWith = "calculo,$old,acoplamiento", completed = 1)
     val vm = newViewModel()
     TestSupport.awaitUntil(message = "El camino de hoy no se corrigió") { vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
     val s = vm.dailySession.value
     assertEquals(1, s.completedCount)
     assertEquals("calculo", s.gameIds[0])
-    assertEquals("series", s.gameIds[2])
+    assertEquals("acoplamiento", s.gameIds[2])
     assertEquals("ATENCION", GameRegistry.getById(s.gameIds[1])!!.domain.name)
     assertEquals(3, s.gameIds.toSet().size)
     // y quedó corregido en la base
@@ -183,7 +183,7 @@ class RetiredGameTest {
     assertTrue(GameRegistry.isRetired("comparacion"))
     assertTrue(GameRegistry.isRetired("cambiochip"))
     assertEquals("ATENCION", GameRegistry.retiredDomains["comparacion"]!!.name)
-    assertEquals(21, GameRegistry.allGames.size)
+    assertEquals(20, GameRegistry.allGames.size)
     assertEquals(5, GameRegistry.allGames.count { it.domain.name == "ATENCION" })
   }
 
@@ -193,6 +193,32 @@ class RetiredGameTest {
     fun played(id: String, daysAgo: Int) = GamePlayResult(gameId = id, score = 80, correctAnswers = 10, totalTrials = 12, timed = true, level = 4, timestamp = now - daysAgo * day)
     val history = listOf(played("comparacion", 1), played("comparacion", 2), played("comparacion", 3), played("calculo", 5))
     val stats = computeAchievementStats(history, mapOf("comparacion" to 5000, "calculo" to 120))
+    assertEquals(4, stats.totalGames)
+    assertEquals(3, stats.bestStreak)
+    assertEquals(1, stats.distinctGames)
+    assertEquals(120, stats.bestGameRating)
+  }
+
+  // ---- Detective de Series (`series`, retirado el 4-oct-2026): lo mismo, sin base de datos (las pruebas con ViewModel y Room de arriba valen para cualquier id retirado).
+
+  @Test
+  fun `Detective de Series tambien queda retirado, su id reservado y Razonamiento con 4`() {
+    assertNull(GameRegistry.getById("series"))
+    assertFalse(GameRegistry.allGames.any { it.id == "series" })
+    assertTrue(GameRegistry.isRetired("series"))
+    assertTrue(GameRegistry.isRetired("comparacion"))
+    assertTrue(GameRegistry.isRetired("cambiochip"))
+    assertEquals("RAZONAMIENTO", GameRegistry.retiredDomains["series"]!!.name)
+    assertEquals(20, GameRegistry.allGames.size)
+    assertEquals(setOf("calculo", "acoplamiento", "trafico", "aterrizaje"), GameRegistry.allGames.filter { it.domain.name == "RAZONAMIENTO" }.map { it.id }.toSet())
+  }
+
+  @Test
+  fun `las partidas de Detective de Series cuentan para la racha y el total pero no para los logros de juegos`() {
+    val now = System.currentTimeMillis()
+    fun played(id: String, daysAgo: Int) = GamePlayResult(gameId = id, score = 80, correctAnswers = 10, totalTrials = 12, timed = true, level = 4, timestamp = now - daysAgo * day)
+    val history = listOf(played("series", 1), played("series", 2), played("series", 3), played("calculo", 5))
+    val stats = computeAchievementStats(history, mapOf("series" to 5000, "calculo" to 120))
     assertEquals(4, stats.totalGames)
     assertEquals(3, stats.bestStreak)
     assertEquals(1, stats.distinctGames)
