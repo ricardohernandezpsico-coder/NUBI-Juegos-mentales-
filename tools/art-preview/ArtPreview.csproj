@@ -2,7 +2,7 @@
   <!--
     Vista previa EXACTA del arte procedural de los juegos sin Unity: compila los generadores reales
     (ClayRaster, SymbolSprite, CardSprites, TreasureSprites, HeartSprite, RastroSprites, NubiTeacherSprite,
-    CountStarSprite, MagnifierSprite, TileSprites, LunarSurfaceSprite) contra un UnityEngine mínimo
+    MagnifierSprite, TileSprites, LunarSurfaceSprite) contra un UnityEngine mínimo
     (UnityStub.cs: Mathf, Color, Texture2D que guarda los píxeles...) y vuelca cada sprite a un .raw.
     Uso:  dotnet run (proyecto tools/art-preview), argumento: carpeta_raw
           luego: python3 tools/art-preview/compose.py carpeta_raw [opción antes]
@@ -30,7 +30,6 @@
     <Compile Include="$(Src)/Piloto/PilotShipSprite.cs" />
     <Compile Include="$(Src)/Calculo/PondSprites.cs" />
     <Compile Include="$(Src)/Stroop/NeonSignSprites.cs" />
-    <Compile Include="$(Src)/Comparacion/CountStarSprite.cs" />
     <Compile Include="$(Src)/Series/MagnifierSprite.cs" />
     <Compile Include="$(Src)/Shared/AnswerMarkSprite.cs" />
     <Compile Include="$(Src)/Radar/RadarContract.cs" />

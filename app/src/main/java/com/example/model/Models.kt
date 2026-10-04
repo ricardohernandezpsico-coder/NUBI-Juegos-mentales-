@@ -227,14 +227,6 @@ object GameRegistry {
       subtitle = "Sentido numérico: estimar en la línea numérica",
       instruction = "Posa la nave justo en el número de la misión. La regla solo tiene marcados los extremos: arrastra para mover la nave y suelta para aterrizar.",
       iconEmoji = "🌙"
-    ),
-    GameDefinition(
-      id = "comparacion",
-      title = "Comparación Instantánea",
-      domain = DomainType.ATENCION,
-      subtitle = "Velocidad perceptiva",
-      instruction = "Elige la tarjeta que vale más: la de más puntos, el número mayor o la cuenta con mayor resultado.",
-      iconEmoji = "⚡"
     )
   )
 
@@ -245,8 +237,9 @@ object GameRegistry {
    * en la base de datos y en las preferencias (NO se borra nada ni hay migración): simplemente no se muestran ni cuentan en ningún lado, porque todo lo
    * que se ve sale de [allGames] o de [getById] (null para un id retirado). La racha y el total de partidas sí cuentan esos días jugados.
    *  - `cambiochip` (Cambio de Chip, Atención): retirado el 3-oct-2026 (docs/juegos/descartados.md).
+   *  - `comparacion` (Comparación Instantánea, Atención): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    */
-  val retiredDomains: Map<String, DomainType> = mapOf("cambiochip" to DomainType.ATENCION)
+  val retiredDomains: Map<String, DomainType> = mapOf("cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION)
 
   fun isRetired(id: String): Boolean = id in retiredDomains
 }

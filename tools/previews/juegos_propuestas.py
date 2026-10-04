@@ -22,7 +22,7 @@ for k in BYDOM:  # los juegos estrella primero
 MEASURE = {'radar': '84 ms', 'freno': '212 ms', 'satelites': '2,6 a la vez', 'aterrizaje': 'a 3,8%', 'acoplamiento': '96°/s',
            'trafico': '5 cápsulas', 'piloto': '12% costo', 'rumbo': 'a 18% de casa', 'bitacora': '5 de 6', 'correo': '8 de 9'}
 LEVEL = {'secuencia': 9, 'parejas': 5, 'rutatesoro': 4, 'stroop': 7, 'series': 5, 'anagramas': 3,
-         'calculo': 6, 'comparacion': 8}
+         'calculo': 6}
 NEVER = {'satelites', 'acoplamiento', 'correo'}
 
 
@@ -123,7 +123,7 @@ def s2():
     y = dp(460)
     d.text((dp(20), y), 'Clásicos', font=F(19), fill=WHITE)
     d.text((dp(20), y + dp(24)), 'cortos, para calentar', font=F(12, False), fill=SOFT)
-    classic = ['secuencia', 'parejas', 'stroop', 'series', 'calculo', 'comparacion']
+    classic = ['secuencia', 'parejas', 'stroop', 'series', 'calculo']
     for i, g in enumerate(classic):
         cx = dp(70) + (i % 3) * dp(136); cy = y + dp(82) + (i // 3) * dp(118)
         planet(im, cx, cy, dp(28), g, lvl_ring=LEVEL[g] / 12)

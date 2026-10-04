@@ -83,6 +83,7 @@ namespace NeuroVida.Games.Shared
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.26f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.26f),
         };
 
+        // Sin uso desde que Comparación Instantánea se retiró (4-oct-2026): queda como mundo disponible para otro juego.
         public static GameWorld PlanetDuel => new GameWorld
         {
             Name = "Duelo de planetas",

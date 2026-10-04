@@ -1,0 +1,348 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>¿Dónde hay más?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.modes{display:grid;gap:8px}
+.mode{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;min-height:56px;font:inherit}
+.mode[aria-pressed="true"]{border-color:#5B4FC0;background:var(--panel)}
+.mode .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font:700 20px var(--f-display);background:#1C1750;color:var(--sun)}
+.mode b{display:block;font:600 16px var(--f-display)}
+.mode span{color:var(--dim);font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>¿Dónde hay más?</h1>
+    <p class="lead">Reemplazaría a Comparación Instantánea. Por un instante aparecen dos grupos de luces y eliges cuál tiene más. No alcanzas a contar: es a ojo, con ese «sentido del número» que todos tenemos. Al principio la diferencia es grande (6 contra 12) y se va afinando (9 contra 10).</p>
+
+    <h2>Elige un modelo</h2>
+    <div class="modes" id="modes">
+      <button class="mode" data-mode="lados" aria-pressed="true"><span class="ic">1</span><span><b>Lado a lado</b><span>Una nube de luces a cada lado de la ventanilla. Tocas el lado que tiene más.</span></span></button>
+      <button class="mode" data-mode="mezcla" aria-pressed="false"><span class="ic">2</span><span><b>Mezcladas</b><span>Luces azules redondas y amarillas en rombo, revueltas. ¿Qué color hay más? Más desafiante.</span></span></button>
+    </div>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+
+    <h2>Por qué cambiarlo</h2>
+    <ul class="list">
+      <li><b>Se parecía a Lumosity:</b> su juego de las dos pizarras pide elegir el número o la cuenta que vale más, como el Comparación de hoy.</li>
+      <li><b>Repetía a Cálculo Sereno y Aterrizaje:</b> hacer cuentas ya está en Razonamiento.</li>
+      <li><b>Es velocidad pura:</b> se responde en un segundo y se entiende sin explicación.</li>
+    </ul>
+
+    <h2>Lo que lo hace distinto</h2>
+    <ul class="list">
+      <li><b>Al responder, las luces vuelven</b> y se ve la cuenta («12 contra 9»): se aprende a confiar en el ojo.</li>
+      <li><b>Distractores que llegan por etapas</b>, cada 4 rondas y con aviso: luces de tamaños distintos (para que gane el número y no el área); después, asteroides grises que no se cuentan; al final, todo deriva un poco.</li><li><b>Al responder, la cuenta sube luz por luz</b> en los dos lados, con un sonido por luz, y se marca el lado con más.</li><li><b>Aro de tiempo</b> alrededor de la ventanilla mientras las luces están a la vista, y racha cuando aciertas seguido.</li>
+      <li><b>Medida clara al final:</b> «la diferencia más fina que distinguiste: 9 contra 10».</li>
+      <li><b>Colores aptos para daltonismo,</b> y en el modelo 2 también cambia la forma: redondas contra rombos.</li>
+    </ul>
+    <p class="note">Boceto jugable de 16 rondas. Base científica: el sentido aproximado del número (Halberda y otros, 2008 en <i>Nature</i> y 2012 en <i>PNAS</i>, que lo midieron a lo largo de la vida). En el juego real la dificultad la lleva el motor común: qué tan parecidas son las cantidades y cuánto duran a la vista. Los mayores tienen más tiempo.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="¿Dónde hay más?: mira las luces y elige el grupo con más"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+const BLUE = '#4A86E8', YEL = '#F2CC1D', BLUE_RGB='74,134,232', YEL_RGB='242,204,29', CYAN_RGB='127,216,255';
+// escalera de razones (menos : más) — de fácil a fina
+const RATIOS = [[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[9,10]];
+let MODE = 'lados';
+const G = { state:'menu', parts:[], toast:null };
+const S = {};
+const VX=W/2, VY=270, VR=150; // ventanilla
+function emit(x,y,n,spread,life,rgb){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-15,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
+function toast(t,good){ G.toast={t,good,at:performance.now()}; }
+
+function newGame(){ Object.assign(S, { i:0, N:16, step:0, run:0, streak:0, phase:0, hist:[], trial:null, show:900 }); G.state='ready'; nextTrial(); }
+// reparte puntos sin que se toquen dentro de una región
+function scatter(n, inRegion, rMin, rMax, avoid){
+  const pts=[]; let tries=0;
+  while (pts.length<n && tries<4000){ tries++;
+    const r = rMin + Math.random()*(rMax-rMin), x = VX + (Math.random()*2-1)*VR, y = VY + (Math.random()*2-1)*VR;
+    if (!inRegion(x,y,r)) continue;
+    if (pts.concat(avoid||[]).some(p=>Math.hypot(p.x-x,p.y-y) < p.r+r+5)) continue;
+    pts.push({x,y,r,ph:Math.random()*6.28});
+  }
+  return pts;
+}
+function nextTrial(){
+  if (S.i>=S.N) return finish();
+  const [a,b] = RATIOS[S.step], k = 2+Math.floor(Math.random()*2);   // 2-3 veces la razón
+  let lo=a*k, hi=b*k; while (hi>18){ lo=Math.round(lo*.75); hi=Math.round(hi*.75); if (lo===hi) hi++; }
+  if (lo<3){ lo+=2; hi+=2; }
+  const moreFirst = Math.random()<.5;               // ¿el grupo A (izquierda / azul) es el que tiene más?
+  const nA = moreFirst?hi:lo, nB = moreFirst?lo:hi;
+  // control de área: la mitad de las veces, el grupo con menos tiene luces más grandes
+  const ph = phaseOf(S.i);
+  const areaCtl = ph>=1 && Math.random()<.5, big=9, small=6.2;
+  const rA = areaCtl ? (nA<nB? big:small) : 7.5, rB = areaCtl ? (nB<nA? big:small) : 7.5;
+  const spreadK = ph>=1 ? .4 : .15;                      // desde la fase 1, tamaños variados dentro de cada grupo
+  let A, B, RA=[], RB=[];
+  if (MODE==='lados'){
+    const inL=(x,y,r)=>Math.hypot(x-VX,y-VY)<VR-r-10 && x<VX-14-r, inR=(x,y,r)=>Math.hypot(x-VX,y-VY)<VR-r-10 && x>VX+14+r;
+    A = scatter(nA, inL, rA*(1-spreadK), rA*(1+spreadK)); B = scatter(nB, inR, rB*(1-spreadK), rB*(1+spreadK));
+    if ((A.length!==nA || B.length!==nB) && (S.retry=(S.retry||0)+1)<30) return nextTrial(); S.retry=0;   // nunca un empate por falta de espacio
+    if (ph>=2){ RA = scatter(3+Math.floor(Math.random()*3), inL, 9, 13, A); RB = scatter(3+Math.floor(Math.random()*3), inR, 9, 13, B); }
+  } else {
+    const inC=(x,y,r)=>Math.hypot(x-VX,y-VY)<VR-r-8;
+    A = scatter(nA, inC, rA*.85, rA*1.15); B = scatter(nB, inC, rB*.85, rB*1.15, A);
+  }
+  for (const p of RA.concat(RB)) p.poly = Array.from({length:7},()=>.72+Math.random()*.4);
+  const drift = ph>=3 && !reduce;
+  for (const p of A.concat(B,RA,RB)){ const a=Math.random()*6.28, v=drift ? 14+Math.random()*10 : 0; p.vx=Math.cos(a)*v; p.vy=Math.sin(a)*v; }
+  const hues=['70,50,170','20,90,150','120,40,130','30,70,120'];
+  S.trial = { nA:A.length, nB:B.length, A, B, RA, RB, ratio:S.step, t0:0, answered:null, hue:hues[Math.floor(Math.random()*hues.length)] };
+  S.i++;
+  if (ph>S.phase){ S.phase=ph; G.state='intro'; S.introAt=performance.now(); chime(); return; }
+  G.state='ready'; S.readyAt=performance.now();
+  setTimeout(()=>{ if (G.state==='ready') flash(); }, reduce?700:900);
+}
+function phaseOf(i){ return Math.min(3, Math.floor(i/4)); }
+const PHASES = [null,
+  ['Ahora las luces cambian de tamaño.','Fíjate en cuántas hay, no en lo grandes.'],
+  ['Ahora aparecen asteroides grises.','No los cuentes: solo las luces.'],
+  ['Ahora todo se mueve un poco.','Sigue mirando las luces, sin contar.'] ];
+function startAfterIntro(){ G.state='ready'; S.readyAt=performance.now(); setTimeout(()=>{ if (G.state==='ready') flash(); }, reduce?500:700); }
+function flash(){ G.state='flash'; S.trial.t0=performance.now(); noise(.25,2400,1200,.03,3); setTimeout(()=>{ if (G.state==='flash'){ G.state='answer'; S.hideAt=performance.now(); } }, S.show); }
+function answer(sideA){
+  if (G.state!=='answer' && G.state!=='flash') return;
+  const tr=S.trial, ok = sideA ? tr.nA>tr.nB : tr.nB>tr.nA, now=performance.now();
+  tr.answered = { sideA, ok, rt: now-tr.t0 }; S.hist.push({ ok, step:tr.ratio, rt:now-tr.t0 }); G.state='reveal'; S.revealAt=now;
+  const most=Math.max(tr.nA,tr.nB), tick = reduce ? 0 : 55;
+  if (tick) for (let j=0;j<most;j++) setTimeout(()=>bell(PENTA[j%10]*(j>=10?2:1), .03, .35), 120+j*tick);
+  S.countDur = 120 + most*tick;
+  if (ok){ S.run++; S.streak++; setTimeout(()=>{ bell(1046.5,.05,1.2); toast(`¡Bien! ${Math.max(tr.nA,tr.nB)} contra ${Math.min(tr.nA,tr.nB)}`, true); }, S.countDur);
+    const win = sideA? tr.A : tr.B; win.forEach((p,j)=>setTimeout(()=>emit(p.x,p.y,2,40,500, sideA&&MODE==='mezcla'?BLUE_RGB: !sideA&&MODE==='mezcla'?YEL_RGB:CYAN_RGB), reduce?0:j*12));
+    if (S.run>=2){ S.step=Math.min(RATIOS.length-1,S.step+1); S.run=0; } }
+  else { S.run=0; S.streak=0; thud(); setTimeout(()=>toast(`Había más del otro: ${Math.max(tr.nA,tr.nB)} contra ${Math.min(tr.nA,tr.nB)}`, false), S.countDur); S.step=Math.max(0,S.step-1); }
+  setTimeout(nextTrial, S.countDur + (ok ? 1100 : 1700));
+}
+function finish(){
+  G.state='end'; G.endT=performance.now(); bell(784,.06,1.4); bell(1046.5,.05,1.6,.15);
+  // la razón más fina con al menos 2 aciertos
+  let best=-1; for (let s=RATIOS.length-1;s>=0;s--){ if (S.hist.filter(h=>h.step===s && h.ok).length>=2){ best=s; break; } }
+  if (best<0){ const any=S.hist.filter(h=>h.ok); if (any.length) best=Math.max(...any.map(h=>h.step)); }
+  const ok=S.hist.filter(h=>h.ok);
+  G.end = [['Aciertos', `${ok.length} de ${S.hist.length}`]];
+  if (best>=0){ const [a,b]=RATIOS[best], k = Math.max(1, Math.round(10/b)); G.end.push(['La diferencia más fina', `${b*k} contra ${a*k}`]); }
+  G.end.push(['Tu ritmo', `${(ok.reduce((s,h)=>s+h.rt,0)/Math.max(1,ok.length)/1000).toFixed(1).replace('.',',')} s`]);
+}
+
+// ---------- dibujo
+function drawLight(c, p, col, rgb, a, now, rhomb=false){
+  const tw = reduce ? 1 : .85+.15*Math.sin(now/260+p.ph);
+  c.globalAlpha=a; if (!reduce) c.drawImage(glow(rgb), p.x-p.r*3, p.y-p.r*3, p.r*6, p.r*6);
+  c.fillStyle=col; c.beginPath();
+  if (rhomb){ const r=p.r*1.25*tw; c.moveTo(p.x,p.y-r); c.lineTo(p.x+r*.85,p.y); c.lineTo(p.x,p.y+r); c.lineTo(p.x-r*.85,p.y); c.closePath(); }
+  else c.arc(p.x,p.y,p.r*tw,0,7);
+  c.fill(); c.fillStyle='rgba(255,255,255,.55)'; c.beginPath(); c.arc(p.x-p.r*.3,p.y-p.r*.35,p.r*.35,0,7); c.fill(); c.globalAlpha=1;
+}
+function drawRock(c,p,a){ c.globalAlpha=a; c.fillStyle='#737C9E'; c.strokeStyle='#2A2F45'; c.lineWidth=1.5; c.beginPath();
+  p.poly.forEach((k,j)=>{ const ang=j/p.poly.length*6.283, x=p.x+Math.cos(ang)*p.r*k, y=p.y+Math.sin(ang)*p.r*k; j?c.lineTo(x,y):c.moveTo(x,y); }); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle='rgba(0,0,0,.25)'; c.beginPath(); c.arc(p.x+p.r*.2,p.y+p.r*.15,p.r*.25,0,7); c.fill(); c.globalAlpha=1; }
+function check(c,x,y,s,col){ c.save(); c.strokeStyle=col; c.lineWidth=s*.18; c.lineCap='round'; c.lineJoin='round'; c.beginPath(); c.moveTo(x-s*.4,y); c.lineTo(x-s*.1,y+s*.3); c.lineTo(x+s*.45,y-s*.35); c.stroke(); c.restore(); }
+function ring(c,p,dim){ c.strokeStyle= dim ? 'rgba(171,165,210,.45)' : 'rgba(159,245,214,.9)'; c.lineWidth=2; c.beginPath(); c.arc(p.x,p.y,p.r+4,0,7); c.stroke(); }
+function drawViewport(c, now){
+  // ventanilla redonda con marco de arcilla
+  c.fillStyle='rgba(0,0,0,.45)'; c.beginPath(); c.arc(VX,VY+6,VR+14,0,7); c.fill();
+  c.fillStyle='#2A3366'; c.beginPath(); c.arc(VX,VY,VR+14,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=4; c.stroke();
+  for (let k=0;k<8;k++){ const a=k*Math.PI/4+Math.PI/8; c.fillStyle='#3B468A'; c.beginPath(); c.arc(VX+Math.cos(a)*(VR+7),VY+Math.sin(a)*(VR+7),3.5,0,7); c.fill(); }
+  c.save(); c.beginPath(); c.arc(VX,VY,VR,0,7); c.clip();
+  const sp=c.createRadialGradient(VX,VY,10,VX,VY,VR); sp.addColorStop(0,'#0B1236'); sp.addColorStop(1,'#050820'); c.fillStyle=sp; c.fillRect(VX-VR,VY-VR,VR*2,VR*2);
+  if (S.trial){ const hz=c.createRadialGradient(VX-40,VY-30,0,VX-40,VY-30,VR*1.3); hz.addColorStop(0,`rgba(${S.trial.hue},.35)`); hz.addColorStop(1,`rgba(${S.trial.hue},0)`); c.fillStyle=hz; c.fillRect(VX-VR,VY-VR,VR*2,VR*2); }
+  { const R=rng(9); for (let j=0;j<40;j++){ const x=VX-VR+((R()*VR*2 + (reduce?0:now/90*(0.3+R())))%(VR*2)), y=VY-VR+R()*VR*2; c.fillStyle=`rgba(255,255,255,${.12+R()*.25})`; c.fillRect(x,y,1.2,1.2); } }
+  if (MODE==='lados'){ c.strokeStyle='rgba(127,216,255,.22)'; c.setLineDash([6,8]); c.lineWidth=2; c.beginPath(); c.moveTo(VX,VY-VR); c.lineTo(VX,VY+VR); c.stroke(); c.setLineDash([]); }
+  const tr=S.trial;
+  if (tr){
+    let a=0;
+    if (G.state==='flash') a = reduce ? 1 : Math.min(1,(now-tr.t0)/90);
+    else if (G.state==='answer') a = reduce ? 0 : Math.max(0, 1-(now-S.hideAt)/160);
+    else if (G.state==='reveal') a = reduce ? 1 : Math.min(1,(now-S.revealAt)/220);
+    if (a>0){
+      const ans=tr.answered, dimA = G.state==='reveal' && ((tr.nA>tr.nB)?0:1), dimB = G.state==='reveal' && ((tr.nB>tr.nA)?0:1);
+      const colA = MODE==='mezcla'?BLUE:'#BFE9FF', rgbA = MODE==='mezcla'?BLUE_RGB:CYAN_RGB, colB = MODE==='mezcla'?YEL:'#BFE9FF', rgbB = MODE==='mezcla'?YEL_RGB:CYAN_RGB;
+      const el = G.state==='flash' ? (now-tr.t0)/1000 : S.show/1000;
+      const mv = p => Object.assign({}, p, { x:p.x+p.vx*el, y:p.y+p.vy*el });
+      (tr.RA||[]).concat(tr.RB||[]).forEach(p=>drawRock(c, mv(p), a*(G.state==='reveal'?.5:1)));
+      const cnt = G.state==='reveal' ? Math.floor((now-S.revealAt-120)/55)+1 : 0;
+      tr.A.forEach((p,j)=>{ const q=mv(p); drawLight(c,q,colA,rgbA,a*(dimA?.35:1),now,false); if (G.state==='reveal' && j<cnt && !reduce) ring(c,q,dimA); });
+      tr.B.forEach((p,j)=>{ const q=mv(p); drawLight(c,q,colB,rgbB,a*(dimB?.35:1),now,MODE==='mezcla'); if (G.state==='reveal' && j<cnt && !reduce) ring(c,q,dimB); });
+    }
+    // velo de nebulosa mientras se espera la respuesta
+    if (G.state==='answer' && !reduce){ for (let j=0;j<4;j++){ const x=VX+Math.sin(now/1500+j*1.6)*50, y=VY+Math.cos(now/1800+j)*40; c.globalAlpha=.18; c.drawImage(glow('140,120,255'),x-120,y-90,240,180); } c.globalAlpha=1; }
+    if (G.state==='ready'){ const k=(now-S.readyAt)/900; c.strokeStyle=`rgba(127,216,255,${.5*(1-Math.min(1,k))})`; c.lineWidth=2; c.beginPath(); c.arc(VX,VY,8+Math.min(1,k)*30,0,7); c.stroke(); c.fillStyle='rgba(127,216,255,.6)'; c.beginPath(); c.arc(VX,VY,4,0,7); c.fill(); }
+  }
+  c.restore();
+  if (G.state==='flash' && tr && !reduce){ const k=Math.min(1,(now-tr.t0)/S.show); c.strokeStyle='rgba(127,216,255,.85)'; c.lineWidth=4; c.lineCap='round'; c.beginPath(); c.arc(VX,VY,VR+22,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-k)); c.stroke(); }
+  if (G.state==='reveal' && tr && MODE==='lados'){
+    const cnt = reduce ? 99 : Math.max(0, Math.floor((now-S.revealAt-120)/55)+1), done = reduce || now-S.revealAt > S.countDur;
+    c.font='700 32px Fredoka'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillStyle= done && tr.nA>tr.nB ? '#9FF5D6' : '#EDEAFB'; c.fillText(Math.min(cnt,tr.nA), VX-VR/2, VY+VR+44);
+    c.fillStyle= done && tr.nB>tr.nA ? '#9FF5D6' : '#EDEAFB'; c.fillText(Math.min(cnt,tr.nB), VX+VR/2, VY+VR+44);
+    if (done){ const x = tr.nA>tr.nB ? VX-VR/2 : VX+VR/2; check(c, x+30, VY+VR+42, 18, '#9FF5D6'); } }
+}
+function btns(){
+  if (MODE==='lados') return [{ a:true, x:VX-VR-6, y:VY-VR, w:VR+6, h:VR*2 }, { a:false, x:VX, y:VY-VR, w:VR+6, h:VR*2 }];
+  return [{ a:true, x:24, y:520, w:150, h:72, label:'Azules' }, { a:false, x:186, y:520, w:150, h:72, label:'Amarillas' }];
+}
+function drawAnswerUI(c, now){
+  if (MODE==='lados'){
+    c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.textAlign='center'; c.textBaseline='middle';
+    if (G.state==='answer') c.fillText('Toca el lado que tenía más', W/2, 548);
+    return;
+  }
+  for (const b of btns()){
+    const col = b.a?BLUE:YEL, dark = b.a ? '#0E1A3A' : '#1A1240', on = G.state==='answer'||G.state==='flash';
+    c.globalAlpha = on?1:.5;
+    c.fillStyle='rgba(0,0,0,.4)'; rr(c,b.x,b.y+5,b.w,b.h,22); c.fill();
+    c.fillStyle=col; rr(c,b.x,b.y,b.w,b.h,22); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+    c.fillStyle=b.a?'#fff':'#fff'; c.beginPath(); if (b.a) c.arc(b.x+30,b.y+b.h/2,9,0,7); else { const x=b.x+30,y=b.y+b.h/2; c.moveTo(x,y-11); c.lineTo(x+9,y); c.lineTo(x,y+11); c.lineTo(x-9,y); c.closePath(); } c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2; c.stroke();
+    c.fillStyle=dark; c.font='700 20px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(b.label, b.x+50, b.y+b.h/2+1);
+    c.globalAlpha=1;
+  }
+}
+function drawIntro(c, now){
+  if (G.state!=='intro') return; const k = reduce?1:ease((now-S.introAt)/350), ab=PHASES[S.phase];
+  c.fillStyle=`rgba(2,3,15,${.7*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.translate(0,(1-k)*20);
+  c.fillStyle='#141B3A'; rr(c,26,200,W-52,200,26); c.fill(); c.strokeStyle='#7FD8FF'; c.lineWidth=2; c.stroke();
+  if (S.phase===2) drawRock(c,{x:W/2,y:252,r:16,poly:[.8,1,.85,1.1,.9,1,.8]},1); else drawLight(c,{x:W/2,y:252,r:S.phase===1?13:9,ph:0},'#BFE9FF',CYAN_RGB,1,now);
+  c.fillStyle='#fff'; c.font='700 18px Nunito'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(ab[0],W/2,300); c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.fillText(ab[1],W/2,326);
+  c.fillStyle='#7FD8FF'; c.font='700 15px Fredoka'; c.fillText('Toca para seguir',W/2,372); c.restore();
+}
+function drawTop(c){
+  if (S.streak>=3){ c.fillStyle='#FFC94A'; c.font='700 14px Fredoka'; c.textAlign='right'; c.textBaseline='middle'; c.fillText('racha ×'+S.streak, W-22, 64); }
+  for (let k=0;k<S.N;k++){ const h=S.hist[k], x=W/2-(S.N-1)*9+k*18; c.fillStyle = h ? (h.ok?'#9FF5D6':'#FFD6A0') : 'rgba(255,255,255,.16)'; c.beginPath(); c.arc(x,40,h?4:3,0,7); c.fill(); }
+  const lab=['muy distintos','muy distintos','distintos','distintos','parecidos','parecidos','casi iguales','casi iguales'][S.step]; c.fillStyle='#6E6A9A'; c.font='600 13px Nunito'; c.textAlign='center'; c.fillText('Ahora los grupos son '+lab, W/2, 64);
+}
+function drawToast(c, now){ const t=G.toast; if(!t) return; const k=(now-t.at)/1700; if(k>=1){G.toast=null;return;}
+  c.globalAlpha=Math.min(1,k*8,(1-k)*4); c.fillStyle=t.good?'#9FF5D6':'#FFD6A0'; c.font='700 18px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t.t, W/2, MODE==='lados'?600:490); c.globalAlpha=1; }
+function drawMenu(c, now){
+  const b = reduce?0:Math.sin(now/800)*4; c.textAlign='center'; c.textBaseline='middle';
+  const R=rng(5); for (let j=0;j<14;j++){ const left=j<9, x=W/2+(left?-1:1)*(18+R()*70), y=170+(R()*2-1)*60+b; drawLight(c,{x,y,r:6,ph:j},'#BFE9FF',CYAN_RGB,1,now); }
+  c.strokeStyle='rgba(127,216,255,.25)'; c.setLineDash([5,7]); c.beginPath(); c.moveTo(W/2,100); c.lineTo(W/2,240); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('¿Dónde hay más?', W/2, 300);
+  c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.fillText('Mira un instante. No cuentes:', W/2, 340); c.fillText('confía en tu ojo.', W/2, 362);
+  c.fillStyle='#7FD8FF'; rr(c,110,430,140,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.fillText('Jugar', W/2, 459);
+}
+function drawEnd(c, now){
+  const k = reduce?1:ease((now-G.endT)/500); c.fillStyle=`rgba(3,4,22,${.95*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='middle'; c.font='700 30px Fredoka'; c.fillText('¡Listo!',W/2,110);
+  let y=180; for (const [l,v] of G.end){ c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.textAlign='left'; c.fillText(l,32,y); c.fillStyle='#fff'; c.font='700 18px Fredoka'; c.textAlign='right'; c.fillText(v,W-32,y); y+=42; }
+  c.fillStyle='#6E6A9A'; c.font='600 13px Nunito'; c.textAlign='center'; c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y+6);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-110,180,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 19px Fredoka'; c.fillText('Jugar de nuevo',W/2,H-82);
+  c.restore();
+}
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  if (G.state==='menu') drawMenu(c, now);
+  else {
+    drawTop(c); drawViewport(c, now); drawAnswerUI(c, now); drawToast(c, now); drawIntro(c, now);
+    G.parts = G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+    if (G.state==='end') drawEnd(c, now);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e);
+  if (G.state==='menu'){ if (y>420&&y<500) newGame(); return; }
+  if (G.state==='end'){ if (performance.now()-G.endT>600 && y>H-120) G.state='menu'; return; }
+  if (G.state==='intro'){ if (performance.now()-S.introAt>500) startAfterIntro(); return; }
+  if (G.state!=='answer' && G.state!=='flash') return;
+  if (MODE==='lados'){ if (Math.hypot(x-VX,y-VY)<VR+14) answer(x<VX); return; }
+  const b=btns().find(b=>x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h); if (b) answer(b.a);
+});
+document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.mode').forEach(x=>x.setAttribute('aria-pressed', x===b)); MODE=b.dataset.mode; G.state='menu'; G.toast=null; }));
+document.getElementById('snd').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',soundOn); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+document.getElementById('rm').addEventListener('click',e=>{ reduce=!reduce; e.currentTarget.setAttribute('aria-pressed',reduce); });
+</script>
+
+</body></html>

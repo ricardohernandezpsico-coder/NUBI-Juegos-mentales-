@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Piloto;
-using NeuroVida.Games.Comparacion;
 using NeuroVida.Games.Parejas;
 using NeuroVida.Games.RutaTesoro;
 using NeuroVida.Games.Secuencia;
@@ -58,7 +57,6 @@ internal static class Program
                 var p = RastroBoard.Base(i);
                 f.WriteLine(string.Join(" ", new[] { p.x.ToString(System.Globalization.CultureInfo.InvariantCulture), p.y.ToString(System.Globalization.CultureInfo.InvariantCulture), RastroBoard.Colors[i].ToString() }));
             }
-        Dump("count_star", CountStarSprite.Get());
         Dump("magnifier", MagnifierSprite.Get());
         Dump("tile", TileSprites.Get());
         DumpRect("surface", LunarSurfaceSprite.Render(ClayRaster.Hex(0x9C94D6)), LunarSurfaceSprite.Width, LunarSurfaceSprite.Height);

@@ -1,8 +1,8 @@
 # DDA común de Nubi (dificultad adaptativa)
 
 Estado: implementado en Unity el 24-sep-2026 (`Assets/Scripts/Games/AdaptiveDifficulty.cs`), conectado a
-Stroop, Comparación, Ruta del Tesoro, Detective de Series, Cálculo Sereno y «En la punta de la lengua» (antes Anagramas; y Cambio de Chip, retirado el 3-oct: ver `docs/juegos/descartados.md`). El 3-oct
-se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (ver §6): **los 22 juegos usan el motor común** (Piloto y Correo
+Stroop, Ruta del Tesoro, Detective de Series, Cálculo Sereno y «En la punta de la lengua» (antes Anagramas; y Cambio de Chip y Comparación Instantánea, retirados el 3 y el 4-oct: ver `docs/juegos/descartados.md`). El 3-oct
+se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (ver §6): **los 21 juegos usan el motor común** (Piloto y Correo
 con dos instancias; Freno solo en la tarea de ir).
 
 > **Alcance y honestidad**: esto es un diseño de ingeniería inspirado en literatura psicométrica y de
@@ -60,7 +60,6 @@ Parámetros por juego:
 | Juego | Escalera | stepUp Reto / Precisión | Objetivo | Usa RT |
 |---|---|---|---|---|
 | Stroop («Dos orillas», 3-oct: reglas, % que chocan y llegada por nivel en [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md) §5) | 5 | 0.12 / 0.20 | edad | Reto |
-| Comparación | 7 | 0.15 / 0.25 | edad | Reto |
 | Detective de Series | 9 | 0.15 / 0.25 | edad | Reto |
 | Cálculo Sereno | 9 | 0.15 / 0.25 | edad | Reto |
 | En la punta de la lengua (id `anagramas`, 3-oct) | 5 | 0.40 | edad | no |

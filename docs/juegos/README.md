@@ -1,6 +1,6 @@
 # Juegos estrella — catálogo, orden y fichas
 
-> La tabla índice de los 22 juegos (id, área, carpeta, documento) está en `CLAUDE.md`. Aquí van las fichas técnicas de los juegos
+> La tabla índice de los 21 juegos (id, área, carpeta, documento) está en `CLAUDE.md`. Aquí van las fichas técnicas de los juegos
 > estrella que no tienen documento de diseño propio, y el texto de apertura de la antigua sección «Juegos estrella (27-sep)».
 
 Pedido de Ricardo: juegos que diferencien a la app, con respaldo científico y mucho enganche. Orden acordado:

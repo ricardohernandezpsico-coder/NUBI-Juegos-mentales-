@@ -47,7 +47,6 @@ import kotlin.math.sin
  * - Detective de Series: lupa sobre una serie que crece.
  * - Anagramas: dos fichas de letras.
  * - Cálculo Sereno: + − × =.
- * - Comparación: círculo grande > círculo chico.
  * - Piloto Estelar: la nave volando por una ruta de balizas que serpentea, con una señal que atrapar.
  * Se dibuja pensado para ir sobre el planeta del color del dominio, pero se lee también sobre fondo claro.
  * Id desconocido: cae al emoji de [com.example.model.GameDefinition.iconEmoji].
@@ -76,7 +75,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
-  "secuencia", "parejas", "rutatesoro", "stroop", "series", "anagramas", "calculo", "comparacion", "meteoros", "disparate", "cosecha", "intrusa"
+  "secuencia", "parejas", "rutatesoro", "stroop", "series", "anagramas", "calculo", "meteoros", "disparate", "cosecha", "intrusa"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -371,11 +370,6 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       // = (abajo derecha)
       clay(roundRect(56f, 64f - bar / 2f, 34f, bar, bar / 2f), Cream)
       clay(roundRect(56f, 80f - bar / 2f, 34f, bar, bar / 2f), Cream)
-    }
-    "comparacion" -> {
-      clay(circle(Offset(22f, 50f), 20f), Cream, gloss = true)
-      clay(circle(Offset(87f, 50f), 10f), Cream)
-      chevron(Offset(58f, 50f), 13f, Clay.Sun)
     }
   }
 }

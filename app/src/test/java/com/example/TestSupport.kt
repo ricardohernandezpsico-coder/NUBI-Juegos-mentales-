@@ -16,6 +16,19 @@ object TestSupport {
     field.isAccessible = true
     (field.get(null) as? NeuroVidaDatabase)?.let { runCatching { it.close() } }
     field.set(null, null)
+    resetWorkManager()
+  }
+
+  /**
+   * WorkManager también es un singleton con su propia base: la que inicializó una prueba queda atada a su carpeta temporal (que Robolectric borra) y la prueba siguiente que
+   * lo use da «unable to open database file». Se suelta junto con la base de datos de la app.
+   */
+  fun resetWorkManager() {
+    runCatching {
+      val impl = Class.forName("androidx.work.impl.WorkManagerImpl")
+      val setDelegate = impl.getMethod("setDelegate", impl)
+      setDelegate.invoke(null, null)
+    }
   }
 
   /**

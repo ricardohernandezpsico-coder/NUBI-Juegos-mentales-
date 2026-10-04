@@ -29,3 +29,15 @@ pasó de 7 a 6 juegos y la app, de 23 a 22.
 - **Código**: se borró `Games/CambioChip/` (controlador, contrato `ChipContract`, pruebas). La nave de arcilla (`ChipShipSprite`) la usaban Piloto y Correo: se mudó a `Games/Piloto/PilotShipSprite.cs`
   (solo mirando arriba). `Shared/RuleBadgeSprite` y `Shared/ClayArrowSprite` solo las usaban Cambio de Chip (y Tinta o Palabra antes del rediseño): sin uso, se borraron. El código completo queda en el
   historial de git (último commit con el juego: `4104ec5`/`fa8ae5a` y anteriores).
+
+**Comparación Instantánea (RETIRADA, 4-oct-2026)**, id `comparacion` (Atención, «velocidad perceptiva»): elegir la tarjeta que vale más (puntos, el número mayor o la cuenta de mayor resultado). Razones (Ricardo):
+(1) se parece al juego de las dos pizarras de Lumosity (elegir el número o la cuenta que vale más); (2) repite las cuentas de Cálculo Sereno y de Aterrizaje Lunar; (3) la alternativa que se probó, «¿Dónde hay más?»
+(sentido aproximado del número: por un instante aparecen dos grupos de luces y se elige cuál tiene más; boceto jugable guardado en `docs/previews/donde-hay-mas-boceto.html`, idea DESCARTADA), no convenció.
+Atención pasó de 6 a 5 juegos (Tinta o Palabra, Freno, Piloto, Satélites, Rescate relámpago) y la app, de 22 a 21.
+- **El id `comparacion` queda RESERVADO** (no se reutiliza): `GameRegistry.retiredDomains` (igual que `cambiochip`).
+- **Datos de quien ya lo jugó: NO se borran ni se migran** (mismo tratamiento que Cambio de Chip): las partidas y el progreso siguen en Room y en `skill` pero no se muestran ni cuentan para «Explorador», las ligas más altas,
+  la liga general (promedio de los 21) ni el área Atención (sus 5 juegos); la racha y el total de partidas sí cuentan esos días, y un camino de hoy guardado que lo nombraba se corrige solo (`withoutRetiredGames`).
+  Pruebas: `flow/RetiredComparacionTest` y `flow/RetiredComparacionScreensTest` (además de las de Cambio de Chip).
+- **Código**: se borró `Games/Comparacion/` (controlador, contrato `ComparisonContract`, `CountStarSprite` y pruebas); `CountStarSprite` solo lo usaba este juego y la vista previa `tools/art-preview`. El mundo de fondo
+  `GameWorld.PlanetDuel` («Duelo de planetas») queda sin uso, disponible para otro juego, como `Orbits`. El código completo queda en el historial de git (último commit con el juego: `732e8e3` y anteriores).
+

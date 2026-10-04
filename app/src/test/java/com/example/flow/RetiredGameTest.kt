@@ -52,12 +52,13 @@ import java.util.Locale
 @Config(sdk = [36])
 class RetiredGameTest {
   private lateinit var app: Application
-  private val old = "cambiochip"
+  private var old = "cambiochip"
   private val day = 24L * 60 * 60 * 1000
 
   @Before
   fun setUp() {
     app = ApplicationProvider.getApplicationContext()
+    old = "cambiochip"
     TestSupport.resetDatabase()
     // El ViewModel agenda el recordatorio con WorkManager; sin iniciarlo, esa excepción suelta hace fallar a la regla de Compose («uncaught exceptions before the test started»).
     runCatching {
@@ -73,7 +74,17 @@ class RetiredGameTest {
   private fun db() = NeuroVidaDatabase.getDatabase(app)
 
   /** Un teléfono con lo que dejó Cambio de Chip: 3 partidas (la última ayer), su avance, su medida en `skill` y un camino de HOY que lo nombra. */
-  private fun seedOldData(todayWith: String = "$old,calculo,series", completed: Int = 0) = runBlocking {
+  /** Una base que quedó atada a la prueba anterior (su ViewModel sigue vivo un momento y la reabre) da «unable to open database file»: se suelta y se reintenta. */
+  private fun <T> withFreshDb(block: () -> T): T {
+    repeat(3) {
+      try { return block() } catch (e: android.database.sqlite.SQLiteCantOpenDatabaseException) { TestSupport.resetDatabase(); Thread.sleep(250) }
+    }
+    return block()
+  }
+
+  private fun seedOldData(todayWith: String = "$old,calculo,series", completed: Int = 0) = withFreshDb { seedOldDataOnce(todayWith, completed) }
+
+  private fun seedOldDataOnce(todayWith: String, completed: Int) = runBlocking {
     val now = System.currentTimeMillis()
     db().userProfileDao().insertOrUpdate(UserSettings(ageBand = AgeBand.ADULT, name = "Ana").toEntity())
     db().gameProgressDao().insertAll(GameRegistry.allGames.map { GameProgressEntity(gameId = it.id, currentLevel = 1) })
@@ -93,11 +104,11 @@ class RetiredGameTest {
   private fun newViewModel() = NeuroVidaViewModel(app)
 
   @Test
-  fun `el registro tiene 22 juegos, Atencion 6, y el id retirado queda reservado`() {
-    assertEquals(22, GameRegistry.allGames.size)
+  fun `el registro tiene 21 juegos, Atencion 5, y el id retirado queda reservado`() {
+    assertEquals(21, GameRegistry.allGames.size)
     assertNull(GameRegistry.getById(old))
     assertFalse(GameRegistry.allGames.any { it.id == old })
-    assertEquals(6, GameRegistry.allGames.count { it.domain.name == "ATENCION" })
+    assertEquals(5, GameRegistry.allGames.count { it.domain.name == "ATENCION" })
     assertTrue(GameRegistry.isRetired(old))
     assertFalse(GameRegistry.isRetired("stroop"))
     assertEquals("ATENCION", GameRegistry.retiredDomains[old]!!.name)
@@ -112,9 +123,9 @@ class RetiredGameTest {
     assertEquals(3, runBlocking { db().gameResultDao().getAllResultsSync().count { it.gameId == old } })
     assertNotNull(runBlocking { db().gameProgressDao().getProgressForGameSync(old) })
     // pero no aparece en lo que muestra la app
-    assertEquals(22, vm.gameRanks.value.size)
+    assertEquals(21, vm.gameRanks.value.size)
     assertTrue(vm.gameRanks.value.none { it.gameId == old })
-    assertEquals(22, vm.gameLevelsForProgress.value.size)
+    assertEquals(21, vm.gameLevelsForProgress.value.size)
     assertFalse(vm.gameLevelsForProgress.value.containsKey(old))
     // no se puede abrir
     vm.launchGame(old)
@@ -126,7 +137,7 @@ class RetiredGameTest {
   @Test
   fun `la racha y el total de partidas cuentan los dias jugados, los logros no cuentan el juego retirado`() {
     seedOldData()
-    val history = runBlocking { db().gameResultDao().getAllResultsSync().map { it.toDomain() } }
+    val history = withFreshDb { runBlocking { db().gameResultDao().getAllResultsSync().map { it.toDomain() } } }
     val stats = computeAchievementStats(history, mapOf(old to 5000, "calculo" to 120))
     // 4 partidas y 4 días seguidos? ayer, anteayer, hace 3 días (los de Cambio de Chip) y hace 5: la racha larga son los 3 de Cambio de Chip
     assertEquals(4, stats.totalGames)
@@ -161,5 +172,30 @@ class RetiredGameTest {
     vm.startDailySession()
     assertNotNull(vm.activeGame.value)
     assertTrue(vm.activeGame.value!!.gameDef.id != old)
+  }
+
+  // ---- Comparación Instantánea (`comparacion`, retirada el 4-oct-2026): el mismo mecanismo; aquí solo lo que no necesita la base de datos (las pruebas de arriba, con un ViewModel
+  // y Room, ya cubren el camino de hoy y las listas para cualquier id retirado; las pantallas, en RetiredComparacionScreensTest).
+
+  @Test
+  fun `Comparacion Instantanea tambien queda retirada, su id reservado y el area Atencion con 5`() {
+    assertNull(GameRegistry.getById("comparacion"))
+    assertTrue(GameRegistry.isRetired("comparacion"))
+    assertTrue(GameRegistry.isRetired("cambiochip"))
+    assertEquals("ATENCION", GameRegistry.retiredDomains["comparacion"]!!.name)
+    assertEquals(21, GameRegistry.allGames.size)
+    assertEquals(5, GameRegistry.allGames.count { it.domain.name == "ATENCION" })
+  }
+
+  @Test
+  fun `las partidas de Comparacion Instantanea cuentan para la racha y el total pero no para los logros de juegos`() {
+    val now = System.currentTimeMillis()
+    fun played(id: String, daysAgo: Int) = GamePlayResult(gameId = id, score = 80, correctAnswers = 10, totalTrials = 12, timed = true, level = 4, timestamp = now - daysAgo * day)
+    val history = listOf(played("comparacion", 1), played("comparacion", 2), played("comparacion", 3), played("calculo", 5))
+    val stats = computeAchievementStats(history, mapOf("comparacion" to 5000, "calculo" to 120))
+    assertEquals(4, stats.totalGames)
+    assertEquals(3, stats.bestStreak)
+    assertEquals(1, stats.distinctGames)
+    assertEquals(120, stats.bestGameRating)
   }
 }

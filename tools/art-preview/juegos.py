@@ -1,8 +1,8 @@
 """Maquetas de pantalla (aproximadas en la disposición, exactas en el arte) de Ruta del Tesoro, Secuencia,
-Comparación y Series, armadas con los .raw que vuelca ArtPreview.
+Series, armadas con los .raw que vuelca ArtPreview.
 
 Uso: python3 tools/art-preview/juegos.py <raw> [--out docs/previews]
-     ->  arte-juegos.png (Ruta del Tesoro, Secuencia, Comparación, Series)
+     ->  arte-juegos.png (Ruta del Tesoro, Secuencia, Series; Comparación se retiró el 4-oct)
          arte-juegos-2.png (Cálculo; Anagramas se rehízo el 3-oct como «En la punta de la lengua», Tinta o Palabra también y Cambio de Chip se retiró)
 """
 import argparse
@@ -105,33 +105,6 @@ def ruta(raw):
     return im
 
 
-def comparacion(raw):
-    im = night(3)
-    glow(im, 20, 900, 200, (0x4C, 0xC9, 0xF0), 50)
-    glow(im, 520, 80, 200, (0xFF, 0x6B, 0x4A), 45)
-    d = ImageDraw.Draw(im)
-    title(d, 'Comparación')
-    tile = load(f'{raw}/tile.raw')
-    star = load(f'{raw}/count_star.raw')
-    cards = [((0x3B, 0x82, 0xF6), 7, 150), ((0xA8, 0x55, 0xF7), 5, 390)]
-    for col, count, cx in cards:
-        cy, size = 400, 250
-        put(im, tinted(tile, col), cx, cy, size)
-        dot = size * 0.86 * 0.19
-        step = dot * 1.32
-        cols = 4
-        rows = (count + cols - 1) // cols
-        for k in range(count):
-            r, c = k // cols, k % cols
-            in_row = min(cols, count - r * cols)
-            put(im, star, cx + (c - (in_row - 1) / 2) * step, cy - 8 - ((rows - 1) / 2 - r) * step, dot)
-    for col, text, cx in [((0x3B, 0x82, 0xF6), '37 - 11', 150), ((0xA8, 0x55, 0xF7), '24', 390)]:
-        cy, size = 700, 250
-        put(im, tinted(tile, col), cx, cy, size)
-        clay_text(ImageDraw.Draw(im), (cx, cy - 10), text, 56 if len(text) > 3 else 96)
-    return im
-
-
 def series(raw):
     im = night(4)
     d = ImageDraw.Draw(im)
@@ -197,7 +170,7 @@ def main():
     ap.add_argument('raw')
     ap.add_argument('--out', default=ROOT + '/docs/previews')
     a = ap.parse_args()
-    panels = [ruta(a.raw), comparacion(a.raw), series(a.raw)]
+    panels = [ruta(a.raw), series(a.raw)]
     gap = 24
     sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
     for i, p in enumerate(panels):

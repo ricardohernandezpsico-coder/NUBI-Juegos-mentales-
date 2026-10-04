@@ -45,7 +45,7 @@ class StroopTelemetryTest {
 
   @Test
   fun `otros juegos con la telemetria comun no traen estas medidas`() {
-    val r = NativeReceiver.parse(json("comparacion", ""","interference_ms":420,"switch_cost_ms":250"""))!!
+    val r = NativeReceiver.parse(json("series", ""","interference_ms":420,"switch_cost_ms":250"""))!!
     assertNull(r.interferenceMs)
     assertNull(r.switchCostMs)
   }

@@ -9,7 +9,7 @@ INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
        ('stroop','Tinta o Palabra','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','En la punta de la lengua','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
+       ('anagramas','En la punta de la lengua','lenguaje'),('calculo','Cálculo Sereno','calculo'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -212,9 +212,6 @@ def draw(ic,gid):
         ic.stroke([(31,47),(50,62),(69,47)],INK,3)
         ic.clay(circ(50,60,5),CORAL,border=2.5,shadow=False)
         ic.rot.pop()
-    elif gid=='comparacion':
-        ic.clay(circ(22,50,20),CREAM,gloss=True); ic.clay(circ(87,50,10),CREAM)
-        ic.claystroke([[(58-7.8,37),(58+7.8,50),(58-7.8,63)]],SUN,7)
 
 CELL=600; ROWS=(len(GAMES)+2)//3; W,H=CELL*3,int(CELL*ROWS*1.12)
 im=Image.new('RGBA',(W,H),(8,14,58,255)); d=ImageDraw.Draw(im)
