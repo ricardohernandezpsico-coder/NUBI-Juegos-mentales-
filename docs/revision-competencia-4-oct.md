@@ -21,8 +21,8 @@ Fuentes: [ficha de Lumosity](https://help.lumosity.com/hc/en-us/articles/3600502
   rombo, triángulo, **media luna**, **cruz**, cuadrado y aro. Esos puertos los reusan **Bitácora de Misión** y **Correo
   Estelar**.
 - **`SymbolSprite`** (la pieza común de símbolos) incluye `Star` (estrella de 5 puntas) y `Moon` (media luna). Los usan
-  las cartas de **Parejas** (`CardsGameContract`) y, según su lista de formas, quizá las señales de **Piloto**
-  (`PilotContract.Shapes`): hay que revisarlo.
+  las cartas de **Parejas** (`CardsGameContract`) y las señales de **Piloto** (`PilotContract.Shapes` incluye la 3 =
+  estrella y la 4 = media luna).
 - Propuesta: cambiarlos por formas neutras que sigan siendo fáciles de distinguir, por ejemplo hexágono, gota, ola,
   pentágono, anillo doble o semicírculo. Así se respeta la regla y se evita cualquier lectura religiosa o política (la
   media luna con estrella y la cruz, sobre todo).
