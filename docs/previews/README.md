@@ -163,7 +163,6 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`disparate.png`](disparate.png): maqueta de **¿Verdad o disparate?** (juego de Lenguaje en diseño, 1-oct): así se juega (nivel 2),
   más difícil (nivel 9, 2 renglones y racha encendida), acierto y error con la corrección, y las medidas del final. Script:
   `tools/art-preview/disparate.py`. Pendiente de aprobar. Las frases salen de `tools/frases/` (muestra en `docs/frases-muestra-disparate.md`).
-- [`anagramas-burbujas.png`](anagramas-burbujas.png)
 - [`arte-arcilla.png`](arte-arcilla.png)
 - [`arte-juegos-2.png`](arte-juegos-2.png)
 - [`arte-juegos.png`](arte-juegos.png)

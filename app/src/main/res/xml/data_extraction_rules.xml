@@ -11,6 +11,7 @@
         <include domain="sharedpref" path="star_measures.xml" />
         <include domain="sharedpref" path="word_collection.xml" />
         <include domain="sharedpref" path="atlas.xml" />
+        <include domain="sharedpref" path="punta_words.xml" />
         <include domain="sharedpref" path="unclear_sentences.xml" />
         <include domain="sharedpref" path="progress_log.xml" />
         <include domain="sharedpref" path="league_events.xml" />
@@ -25,6 +26,7 @@
         <include domain="sharedpref" path="star_measures.xml" />
         <include domain="sharedpref" path="word_collection.xml" />
         <include domain="sharedpref" path="atlas.xml" />
+        <include domain="sharedpref" path="punta_words.xml" />
         <include domain="sharedpref" path="unclear_sentences.xml" />
         <include domain="sharedpref" path="progress_log.xml" />
         <include domain="sharedpref" path="league_events.xml" />

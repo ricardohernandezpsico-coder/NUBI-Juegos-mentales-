@@ -387,6 +387,25 @@ Ficha completa: [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md). Dos dife
   deuteranopía; Machado et al., 2009). Una sola paleta para todos; no depende de `color_vision`.
 - Telemetría en `StroopSessionMetrics`; lectura en `data/DosOrillas.kt` (con pruebas).
 
+## En la punta de la lengua (id `anagramas`): "Encontraste X de N por tu cuenta" y "Tu cielo de palabras"
+
+**Qué mide, de verdad:** cuántas de las palabras de la partida encontraste SIN ayuda (luceros dorados), con el desglose de las que salieron con 1-2 ayudas, con las
+letras justas o mostradas por Nubi, y el tiempo medio hasta «¡La tengo!» de las que salieron solas. No es «tu vocabulario» ni «tu memoria»: es esta partida, con
+estas palabras y estas definiciones. Se guarda como medida propia (`punta`, % de palabras encontradas solas) para ver su evolución, comparable solo entre partidas
+a tu medida y de nivel parecido.
+
+**Cómo se lee:** la cifra grande es «X de N». La lista deja ver qué palabras costaron (el nombre del lucero va en texto, nunca solo color). El tiempo solo se dice con
+3 palabras solas o más (con menos sería ruido). Si alguna palabra necesitó ayuda o la mostró Nubi, el consejo es normalizar y dar el truco: «Si una no sale, piensa en
+cómo empieza o en otra parecida: suele destrabarla.» Nunca se dice que el juego previene el deterioro ni que «recupera la memoria».
+
+**Por qué:** el estado de «la tengo en la punta de la lengua» es normal, crece con la edad aunque el vocabulario se mantenga, y las pistas clásicas para destrabar la palabra
+son el largo y la primera letra (los dos primeros peldaños de la escalera): Brown, 1991, *Psychol Bull* 109:204-23, doi:10.1037/0033-2909.109.2.204 (PMID 2034750);
+Shafto y otros, 2007, *J Cogn Neurosci* 19:2060-70, doi:10.1162/jocn.2007.19.12.2060 (PMID 17892392).
+
+**Las azules vuelven:** las palabras que Nubi tuvo que mostrar se guardan en la app (preferencias `punta_words`, que SÍ van en el respaldo; hasta 20, las más viejas se sueltan)
+y se mandan a Unity (`punta_pending` de la config) para que vuelvan en otra partida (Precisión: hasta 2 y nunca la primera; Reto: una cada 4 palabras). Dejan de esperar
+cuando se encuentran solas o con 1-2 ayudas. Es para aprender, no un castigo.
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.

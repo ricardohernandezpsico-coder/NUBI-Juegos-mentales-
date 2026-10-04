@@ -242,12 +242,6 @@ namespace NeuroVida.Games.Shared
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.09f), NebulaAPos = new Vector2(0.17f, 0.72f),
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.05f), NebulaBPos = new Vector2(0.9f, 0.18f),
         };
-
-        public static GameWorld SkyLetters => new GameWorld
-        {
-            Name = "Letras del cielo", FloatingGlyphs = "AEMNORSLTUVIPCDGBÑ",
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.18f),
-        };
     }
 
     /// <summary>Arma el fondo de un <see cref="GameWorld"/> dentro de un RectTransform que ocupa la pantalla.</summary>

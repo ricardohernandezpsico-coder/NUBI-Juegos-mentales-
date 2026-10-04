@@ -186,6 +186,21 @@ class NeuroVidaRepository(
       .apply()
   }
 
+  // Las palabras azules de «En la punta de la lengua» (las que Nubi tuvo que mostrar): esperan volver en otra partida. Solo hasta Punta.MAX_PENDING.
+  // SharedPreferences: va en el respaldo (es progreso de la persona). La app las manda a Unity en cada partida (`punta_pending` de la config del juego).
+  private val puntaPrefs = context.getSharedPreferences("punta_words", Context.MODE_PRIVATE)
+  private val _puntaPending = MutableStateFlow(Punta.words(puntaPrefs.getString("pending", null)).takeLast(Punta.MAX_PENDING))
+  val puntaPending: StateFlow<List<String>> = _puntaPending.asStateFlow()
+
+  /** Suma las azules de una partida de «En la punta de la lengua» y quita las que hoy se encontraron solas o con 1-2 ayudas. */
+  private fun recordPunta(result: GamePlayResult) {
+    if (result.gameId != "anagramas" || result.puntaSolo == null) return
+    val next = Punta.mergePending(_puntaPending.value, result.puntaBlue.orEmpty(), result.puntaCleared.orEmpty())
+    if (next == _puntaPending.value) return
+    _puntaPending.value = next
+    puntaPrefs.edit().putString("pending", Punta.encode(next)).apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -404,6 +419,7 @@ class NeuroVidaRepository(
       "disparate" -> "wpm" to Reading.mark(r.svWpm)
       "cosecha" -> "harvest" to Harvest.mark(r.harvCommonFound, r.harvCommonTotal)
       "intrusa" -> "atlas" to Atlas.mark(r.intrSeenType, r.intrHitsType)
+      "anagramas" -> "punta" to Punta.mark(r.puntaSolo, Punta.total(r.puntaSolo, r.puntaPista, r.puntaLetras, r.puntaVista))
       "secuencia" -> "trail" to Trail.mark(r.rasBestLen)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
@@ -821,6 +837,8 @@ class NeuroVidaRepository(
     recordUnclearSentences(result)
     // El atlas se llena en cualquier modo.
     recordAtlas(result)
+    // Las palabras azules también, en cualquier modo.
+    recordPunta(result)
     outcome
   }
 
@@ -898,6 +916,8 @@ class NeuroVidaRepository(
     _wordCollection.value = emptyList()
     atlasPrefs.edit().clear().apply()
     _atlas.value = AtlasState()
+    puntaPrefs.edit().clear().apply()
+    _puntaPending.value = emptyList()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()
     skillPrefs.edit().clear().putString("state", "").apply()

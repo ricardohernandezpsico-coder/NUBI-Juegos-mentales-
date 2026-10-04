@@ -3,7 +3,7 @@ Comparación y Series, armadas con los .raw que vuelca ArtPreview.
 
 Uso: python3 tools/art-preview/juegos.py <raw> [--out docs/previews]
      ->  arte-juegos.png (Ruta del Tesoro, Secuencia, Comparación, Series)
-         arte-juegos-2.png (Cálculo, Anagramas; Tinta o Palabra se rehízo el 3-oct y Cambio de Chip se retiró)
+         arte-juegos-2.png (Cálculo; Anagramas se rehízo el 3-oct como «En la punta de la lengua», Tinta o Palabra también y Cambio de Chip se retiró)
 """
 import argparse
 import os
@@ -192,40 +192,6 @@ def calculo(raw):
     return im
 
 
-def anagramas(raw):
-    im = night(8)
-    d = ImageDraw.Draw(im)
-    rng = random.Random(9)
-    for ch in 'AEMNORSL':
-        d.text((rng.random() * W, 150 + rng.random() * 700), ch, font=ImageFont.truetype(FB, rng.randint(40, 80)), fill=(0xB8, 0xA4, 0xFF, 40))
-    title(d, 'Anagramas')
-    clay_rect(im, (30, 110, W - 30, 200), (0x5A, 0x2E, 0x6E), r=30, border=3, drop=6)
-    ImageDraw.Draw(im).text((W / 2, 155), 'Pista: se ve de noche', font=ImageFont.truetype(FB, 26), fill=(255, 255, 255), anchor='mm')
-    slot = load(f'{raw}/slot.raw')
-    tile = load(f'{raw}/tile.raw')
-    word, placed = 'LUNA', 2
-    n, size = 4, 100
-    x0 = (W - n * (size + 12)) / 2 + size / 2
-    for i in range(n):
-        cx = x0 + i * (size + 12)
-        put(im, slot, cx, 330, size)
-        if i < placed:
-            put(im, tinted(tile, (0xFF, 0xD1, 0x7A)), cx, 326, size / 0.86)
-            ImageDraw.Draw(im).text((cx, 320), word[i], font=ImageFont.truetype(FB, 58), fill=(0x2A, 0x17, 0x40), anchor='mm')
-    for i, ch in enumerate('NA'):
-        cx = W / 2 - 60 + i * 120
-        put(im, tinted(tile, (0xFD, 0xE9, 0xC8)), cx, 520, size / 0.86)
-        ImageDraw.Draw(im).text((cx, 514), ch, font=ImageFont.truetype(FB, 58), fill=(0x2A, 0x17, 0x40), anchor='mm')
-    acts = [('Borrar', (0x5C, 0x4D, 0x9E), 'Backspace'), ('Pista', (0xD9, 0x8C, 0x1A), 'Hint'), ('Pasar', (0xC7, 0x47, 0x80), 'Skip')]
-    bw = (W - 60 - 20) / 3
-    for i, (t, c, ic) in enumerate(acts):
-        x = 30 + i * (bw + 10)
-        clay_rect(im, (x, 860, x + bw, 925), c, r=24, border=3, drop=5)
-        put(im, load(f'{raw}/icon_{ic}.raw'), x + bw * 0.2, 892, 44)
-        ImageDraw.Draw(im).text((x + bw * 0.63, 892), t, font=ImageFont.truetype(FB, 26), fill=(255, 255, 255), anchor='mm', stroke_width=1, stroke_fill=INK)
-    return im
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('raw')
@@ -238,7 +204,7 @@ def main():
         sheet.alpha_composite(p, (gap + i * (W + gap), gap))
     os.makedirs(a.out, exist_ok=True)
     sheet.convert('RGB').save(os.path.join(a.out, 'arte-juegos.png'))
-    panels = [calculo(a.raw), anagramas(a.raw)]
+    panels = [calculo(a.raw)]
     sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
     for i, p in enumerate(panels):
         sheet.alpha_composite(p, (gap + i * (W + gap), gap))

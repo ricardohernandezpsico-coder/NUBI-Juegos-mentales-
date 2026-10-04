@@ -222,7 +222,17 @@ object NativeReceiver {
     val intr_new_plates: String = "",
     val intr_review_new: String = "",
     val intr_review_done: String = "",
-    val intr_named: String = ""
+    val intr_named: String = "",
+    // Solo «En la punta de la lengua» (-1 / "" = sin dato): palabras solas, con 1-2 ayudas, con las letras justas y mostradas por Nubi, tiempo medio hasta «¡La tengo!»
+    // de las solas (ms), cada palabra con su lucero («reloj:o;búho:a»), las que Nubi mostró y las azules pendientes que se encontraron (separadas por ';').
+    val punta_solo: Int = -1,
+    val punta_pista: Int = -1,
+    val punta_letras: Int = -1,
+    val punta_vista: Int = -1,
+    val punta_ms: Int = -1,
+    val punta_words: String = "",
+    val punta_blue: String = "",
+    val punta_cleared: String = ""
   )
 
   @JsonClass(generateAdapter = true)
@@ -552,7 +562,15 @@ object NativeReceiver {
       intrNewPlates = com.example.data.Atlas.keys(metrics.intr_new_plates).takeIf { telemetry.game_id == "intrusa" },
       intrReviewNew = com.example.data.Atlas.keys(metrics.intr_review_new).takeIf { telemetry.game_id == "intrusa" },
       intrReviewDone = com.example.data.Atlas.keys(metrics.intr_review_done).takeIf { telemetry.game_id == "intrusa" },
-      intrNamed = com.example.data.Atlas.keys(metrics.intr_named).takeIf { telemetry.game_id == "intrusa" }
+      intrNamed = com.example.data.Atlas.keys(metrics.intr_named).takeIf { telemetry.game_id == "intrusa" },
+      puntaSolo = metrics.punta_solo.takeIf { telemetry.game_id == "anagramas" && it >= 0 },
+      puntaPista = metrics.punta_pista.takeIf { telemetry.game_id == "anagramas" && it >= 0 },
+      puntaLetras = metrics.punta_letras.takeIf { telemetry.game_id == "anagramas" && it >= 0 },
+      puntaVista = metrics.punta_vista.takeIf { telemetry.game_id == "anagramas" && it >= 0 },
+      puntaMs = metrics.punta_ms.takeIf { telemetry.game_id == "anagramas" && it > 0 },
+      puntaWords = com.example.data.Punta.entries(metrics.punta_words).takeIf { telemetry.game_id == "anagramas" && it.isNotEmpty() },
+      puntaBlue = com.example.data.Punta.words(metrics.punta_blue).takeIf { telemetry.game_id == "anagramas" },
+      puntaCleared = com.example.data.Punta.words(metrics.punta_cleared).takeIf { telemetry.game_id == "anagramas" }
     )
   }
 }

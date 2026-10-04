@@ -9,7 +9,7 @@ Tarea 18 (3-oct). Fase A: regla, componentes comunes e inventario. Fase B: la re
 Con «quitar animaciones» activo:
 
 1. Se QUEDA el movimiento ESENCIAL: el que ES la tarea o la información. Ejemplos: los meteoros que caen, los satélites a seguir, la
-   nave que pilotas, las naves de Tráfico, las burbujas de Anagramas en los niveles 5-7 (son la dificultad), y la chispa que traza la
+   nave que pilotas, las naves de Tráfico, la ficha de En la punta de la lengua que vuela a su casilla, y la chispa que traza la
    constelación (se reemplaza por un fundido de 300 ms, como ya hace Intrusa).
 2. Se QUITA todo lo DECORATIVO: titileos, vaivenes, órbitas, estrellas fugaces de fondo, respiración y pulsos en reposo, chispas,
    ondas, sacudidas, tambaleos, rebotes de escala (`EaseOutBack`), cámaras que se mueven solas y conteos animados de números.
@@ -329,15 +329,16 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 
 ### Lenguaje
 
-**Anagramas** — `Anagramas/AnagramGameController.cs`
+**En la punta de la lengua (antes Anagramas)** — `Anagramas/PuntaGameController.cs` (rehecho el 3-oct: tabla nueva, no la de la Fase A)
 
-| Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
-|---|---|---|---|---|---|
-| 126-147 `Update` | Las fichas se deslizan al lugar que les toca | ESENCIAL (es la acción del jugador) | — | Se queda | — |
-| `BubbleField` (129, 133) | Las burbujas de los niveles 5-7 | ESENCIAL (dificultad) | — | Se queda | — |
-| 149-151, 162-166, 267 | Respiración de la ficha, latido del resplandor, destellos | DECORATIVA | sí | — | — |
-| 517-518 `FadeAll` | Las fichas y casillas se encogen al salir | DECORATIVA | no | Fundido | ✓ |
-| 260-261, 303-339, 370-495 | `PopIn`, `Flash`, chispas, ondas, `Shake`, `PopRect`, `JumpWave` | DECORATIVA | sí (común) | — | — |
+| Qué hace | Clase | Cambio |
+|---|---|---|
+| La ficha vuela a su casilla (resorte; forma corta con «quitar animaciones») | ESENCIAL (es la acción del jugador) | Se queda |
+| Los tiempos entre pasos (`Motion.Hold`) | ESENCIAL | Se quedan |
+| El texto de la definición que se escribe letra a letra | DECORATIVA | Aparece entero |
+| Ondas de la señal, nebulosa antes de las ayudas, flotación de las fichas, rebote al aparecer | DECORATIVA | Se quitan |
+| Temblor al fallar, chispas y resplandor de las letras que se encienden | DECORATIVA | Se quitan (la letra igual se enciende en su color) |
+| El lucero que vuela al cielo | DECORATIVA | Aparece directo en su lugar, con su campanita |
 
 **Lluvia de meteoros** — `Meteoros/MeteorGameController.cs`
 
@@ -393,7 +394,7 @@ dorso y cara con la misma duración; Cosecha, órbita decorativa (ya se detiene)
 
 Criterio para el resto: ¿sin ese movimiento la persona puede hacer la tarea y entender qué pasó? Si sí, decorativo. Casos dudosos que dejé conservadores (se quedan en movimiento):
 - **Cálculo, modo con reloj:** la burbuja que baja hacia el agua mientras corre el tiempo es el indicador del tiempo (se queda). Solo se quitó la flotación sin reloj, las olas y el hundimiento de después de responder.
-- **Anagramas:** las fichas que se deslizan a su lugar (la acción de la persona) y las burbujas de los niveles 5-7.
+- **En la punta de la lengua (antes Anagramas):** las fichas que se deslizan a su lugar (la acción de la persona). Las burbujas se borraron.
 - **Satélites:** las estelas de los satélites (ayudan a seguirlos; derivan del movimiento esencial).
 - **Tráfico:** el giro de los desvíos y el avance de las naves; el aro urgente queda fijo pero sigue distinguiéndose por forma.
 - **Bitácora:** los puntos de la estela de la sonda quedan (opacidad, sin encogerse): muestran la ruta recorrida.

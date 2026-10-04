@@ -352,14 +352,13 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(Offset(56f, 37f), 9.5f), Clay.Sun, border = 3.5f, shadow = false)
     }
     "anagramas" -> {
-      rotate(-10f, Offset(33f, 50f)) {
-        clay(roundRect(12f, 28f, 40f, 44f, 10f), Cream)
-        letter(measurer, "A", Offset(32f, 50f))
+      // En la punta de la lengua: un lucero REDONDO (nunca una estrella con puntas) que emite ondas de señal, como la transmisión de Nubi.
+      val c = Offset(38f, 62f)
+      val waves = listOf(Pair(30f, 0.95f), Pair(44f, 0.7f), Pair(58f, 0.45f))
+      for ((r, alpha) in waves) {
+        drawArc(Clay.Sky.copy(alpha = alpha), -88f, 70f, false, Offset(c.x - r, c.y - r), Size(2f * r, 2f * r), style = Stroke(6.5f, cap = StrokeCap.Round))
       }
-      rotate(9f, Offset(67f, 50f)) {
-        clay(roundRect(48f, 28f, 40f, 44f, 10f), Clay.Sun)
-        letter(measurer, "Z", Offset(68f, 50f))
-      }
+      clay(circle(c, 17f), Clay.Sun, gloss = true)
     }
     "calculo" -> {
       val bar = 9f

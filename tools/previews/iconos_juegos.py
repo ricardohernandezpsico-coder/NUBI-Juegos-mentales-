@@ -9,7 +9,7 @@ INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
 GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
        ('stroop','Tinta o Palabra','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','Anagramas','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
+       ('anagramas','En la punta de la lengua','lenguaje'),('calculo','Cálculo Sereno','calculo'),('comparacion','Comparación','velocidad'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -84,10 +84,14 @@ def draw(ic,gid):
         ic.clay(circ(40,40,31),CREAM,gloss=True)
         for x,y,r,c in [(23,47,5,SKY),(38,43,7,CORAL),(56,37,9.5,SUN)]: ic.clay(circ(x,y,r),c,border=3.5,shadow=False)
     elif gid=='anagramas':
-        f=ImageFont.truetype(FB,int(34*ic.k*0.95))
-        for rot,x,col,ch in [(-10,12,CREAM,'A'),(9,48,SUN,'Z')]:
-            ic.rot.append((rot,x+20,50)); ic.clay(rrect(x,28,40,44,10),col)
-            cx,cy=ic.P(x+20,50); ic.d.text((cx,cy),ch,font=f,fill=INK,anchor='mm'); ic.rot.pop()
+        # En la punta de la lengua: un lucero redondo (sin puntas) con tres ondas de señal
+        cx,cy=38,62
+        for r,al in [(30,242),(44,178),(58,115)]:
+            pts=[(cx+r*math.cos(math.radians(a)),cy+r*math.sin(math.radians(a))) for a in range(-88,-17,3)]
+            q=ic.poly(pts); o=Image.new('RGBA',ic.im.size,(0,0,0,0)); ImageDraw.Draw(o).line(q,fill=SKY+(al,),width=int(6.5*ic.k),joint='curve'); ic.im.alpha_composite(o)
+            for x,y in (q[0],q[-1]): rr=6.5*ic.k/2; ImageDraw.Draw(ic.im).ellipse([x-rr,y-rr,x+rr,y+rr],fill=SKY+(al,))
+        ic.d=ImageDraw.Draw(ic.im)
+        ic.clay(circ(cx,cy,17),SUN,gloss=True)
     elif gid=='calculo':
         b=9; ic.clay(plus(28,28,34,b),CORAL); ic.clay(rrect(56,28-b/2,34,b,b/2),CREAM)
         ic.rot.append((45,28,72)); ic.clay(plus(28,72,34,b),SUN); ic.rot.pop()

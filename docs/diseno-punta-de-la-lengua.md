@@ -107,3 +107,21 @@ sale, una escalera de ayudas aclara la señal hasta que aparece. Nunca te quedas
 - **Movimiento reducido:**
   - **Se quita lo decorativo:** el texto aparece completo, sin ondas ni flotación, sin temblor ni chispas.
   - **Se mantiene:** el vuelo de la ficha al hueco (es la tarea), hecho en su forma corta, y los tiempos (`Motion.Hold`).
+
+## 8. Cómo quedó (3-oct, tarea 26)
+
+- **Banco** (`tools/punta/`): 533 palabras con definición propia en 5 niveles (108 / 130 / 122 / 105 / 68) y 13 categorías; `datos/*.txt` → `banco.py` →
+  `Resources/Lexico/punta_banco.json`. El nivel sale de la frecuencia de uso (zipf de SPALEX) y del largo, no de la banda 1-6 (casi todas estas palabras tienen prevalencia > 93 %);
+  la banda se guarda igual. 16 pruebas en `test_banco.py`; muestra para revisar en `docs/previews/punta-muestra.md`.
+- **Juego** (`Games/Anagramas/`): `PuntaGameController` (UI y flujo), `PuntaContract` (reglas puras: colores del lucero, ayudas, puntos, DDA, directo de palabras, cuentas),
+  `PuntaLayout` (disposición en dp, estirada a cada altura de teléfono), `PuntaBank`, `PuntaSounds`. Tiempos y colores del boceto; fichas de 46 dp (≥ 48 dp de blanco al tocar).
+- **Qué cuenta para el DDA común:** sola o con 1-2 ayudas = acierto; con las letras justas = medio (una sí y otra no); mostrada por Nubi = error. Escalera de 5 niveles (`stepUp` 0,4).
+  Letras de más: 2, 2, 3, 3, 4 por nivel (mayores, una menos). El puntaje pesa 1 / 0,85 / 0,6 / 0 (no se ve en el juego: las ayudas solo cambian el color del lucero).
+- **Las azules vuelven:** la app guarda las palabras que Nubi mostró (`punta_words`, respaldado, máx. 20) y las manda en `punta_pending` (nuevo campo opcional de `SequenceConfigDetails`);
+  Precisión trae hasta 2 (nunca la primera), el Reto una cada 4 palabras. Salen de la lista al encontrarse solas o con 1-2 ayudas.
+- **Telemetría** (campos nuevos de `StroopSessionMetrics`): `punta_solo/pista/letras/vista`, `punta_ms` (tiempo medio hasta «¡La tengo!» de las solas), `punta_words`, `punta_blue`, `punta_cleared`.
+- **Tutorial guiado:** la primera palabra la juega Nubi (toca «¡La tengo!» y arma la palabra); en la segunda la persona pide dos ayudas y arma la palabra. «Cómo se juega» en la pausa.
+- **Movimiento reducido:** texto entero, sin ondas, nebulosa, flotación, temblor ni chispas; el lucero aparece directo en el cielo; el vuelo de la ficha a su casilla se queda (más corto).
+- **Se borró:** `BubbleField` (las burbujas), los sprites del hueco y los iconos de botones, `AnagramContract` (banco viejo de ~95 palabras) y el mundo `SkyLetters` de `WorldBackdrop`
+  (letras flotando); solo los usaba Anagramas. `docs/previews/anagramas-burbujas.png` y su script también.
+- **Piso para Desafío/Experto:** el juego ahora cuenta como «de rondas» (`Skill.LONG_ROUNDS`: 6 rondas), porque con 8 palabras nunca llegaba a las 12 que pide el resto.

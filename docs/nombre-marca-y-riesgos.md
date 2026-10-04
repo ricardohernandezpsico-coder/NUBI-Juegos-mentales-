@@ -361,3 +361,8 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 - BRAIN STRIDE (marca registrada): https://trademarks.justia.com/886/09/brain-88609908.html · NeuroDash: https://play.google.com/store/apps/details?id=com.enpe5v3.neurodash · NeuroIGNITE: https://neuroignite.com/ · Synapta: https://www.synapta.co.uk/ · MindOrbit: https://play.google.com/store/apps/details?id=com.rimors.mindorbit · MindVolt: https://play.google.com/store/apps/details?id=com.nirala.mindvolt
 - Nubi: https://play.google.com/store/apps/details?id=com.tunubi.b2bwallet · https://play.google.com/store/apps/details?id=it.unipr.ailab.nubi · Pulsi: https://apps.apple.com/us/app/hear-my-baby-heartbeat-pulsi/id6763934623 · Kibo: https://kibocommerce.com/ · https://kinderlabrobotics.com/kibo/ · https://apps.apple.com/us/app/kibo-cozy-self-care/id6761014109 · JAXA Kibō: https://iss.jaxa.jp/en/kibo/about/
 - Podcast Mentenautas: https://podcasters.spotify.com/pod/show/mentenautas-podcast
+
+## Nombre nuevo de Anagramas: «En la punta de la lengua» (3-oct)
+
+Anagramas se reemplazó por **En la punta de la lengua** (id interno `anagramas`, que no cambia). Hay que sumarlo a la búsqueda oficial de marca (clases 9 y 41): es una expresión
+común del español («tener algo en la punta de la lengua»), así que conviene mirar si alguna app o juego de palabras ya la usa como nombre. «Anagramas» deja de aparecer en la app.

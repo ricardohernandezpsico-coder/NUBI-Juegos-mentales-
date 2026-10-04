@@ -70,7 +70,7 @@ Los marcados con ★ son **juegos estrella**: además del puntaje, al final mues
 | Detective de Series | Razonamiento | Encontrar el número que sigue en una serie |
 | Acoplamiento ★ | Razonamiento | Decidir si un módulo girado encaja en el puerto o es su reflejo |
 | Tráfico Estelar ★ | Razonamiento | Mover desvíos para que cada cápsula llegue al planeta que le corresponde |
-| Anagramas | Lenguaje | Ordenar letras para formar una palabra (en los niveles altos, las letras flotan en burbujas que rebotan) |
+| En la punta de la lengua | Lenguaje | Encontrar la palabra que describe una definición y armarla con letras; una escalera de ayudas evita trabarse |
 | Lluvia de meteoros ★ | Lenguaje | Tocar las palabras que existen y dejar pasar las inventadas, mientras caen en meteoros |
 | ¿Verdad o disparate? ★ | Lenguaje | Leer frases cortas que llegan por radio y decidir rápido si son verdad o un disparate |
 | Cosecha de palabras ★ | Lenguaje | Formar palabras con 7 letras que giran alrededor de un planeta; cada palabra brota como una planta de tu huerto |

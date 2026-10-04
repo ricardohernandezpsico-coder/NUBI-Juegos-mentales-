@@ -49,7 +49,7 @@ namespace NeuroVida.Bridge
         [SerializeField] private TreasureGameController treasureGameController;
         [SerializeField] private SeriesGameController seriesGameController;
         [SerializeField] private CalculoGameController calculoGameController;
-        [SerializeField] private AnagramGameController anagramGameController;
+        [SerializeField] private PuntaGameController anagramGameController;
         [SerializeField] private PilotGameController pilotGameController;
         [SerializeField] private RadarGameController radarGameController;
         [SerializeField] private SatelliteGameController satelliteGameController;
@@ -241,12 +241,12 @@ namespace NeuroVida.Bridge
                     calculoGameController.gameObject.SetActive(true);
                     calculoGameController.StartSession(config);
                     break;
-                case AnagramGameController.GameId:
+                case PuntaGameController.GameId:
                     if (anagramGameController == null)
                     {
-                        var go = new GameObject("AnagramGameController");
+                        var go = new GameObject("PuntaGameController");
                         go.transform.SetParent(transform, false);
-                        anagramGameController = go.AddComponent<AnagramGameController>();
+                        anagramGameController = go.AddComponent<PuntaGameController>();
                     }
                     anagramGameController.gameObject.SetActive(true);
                     anagramGameController.StartSession(config);

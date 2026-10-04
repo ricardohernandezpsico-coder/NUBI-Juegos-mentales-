@@ -45,6 +45,8 @@ namespace NeuroVida.Bridge.EditorTools
         public static void RunTutorialMeteoros() => RunGame("meteoros", 12f, tutorial: true);
         /// <summary>Tinta o Palabra («Dos orillas») con su tutorial guiado (sin versión corta: no está en el inicio).</summary>
         public static void RunTutorialStroop() => RunGame("stroop", 12f, tutorial: true);
+        /// <summary>«En la punta de la lengua» (id anagramas) con su tutorial guiado: la tarjeta de Nubi y la primera palabra, donde Nubi toca «¡La tengo!» y arma la palabra.</summary>
+        public static void RunTutorialAnagramas() => RunGame("anagramas", 12f, tutorial: true);
 
         /// <summary>La versión corta del inicio («Tu punto de partida»: <c>assessment</c>) de Freno, Aterrizaje y Meteoros.</summary>
         public static void RunCortoFreno() => RunGame("freno", 10f, assessment: true);
@@ -54,7 +56,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Mismo smoke test pero con "Tinta o Palabra" (Stroop) como juego.</summary>
         public static void RunStroop() => RunGame("stroop", 9f);
 
-        /// <summary>Mismo smoke test pero con Anagramas como juego.</summary>
+        /// <summary>Mismo smoke test pero con «En la punta de la lengua» (id anagramas) como juego.</summary>
         public static void RunAnagramas() => RunGame("anagramas", 9f);
 
         /// <summary>Mismo smoke test pero con Cálculo Sereno como juego.</summary>
@@ -120,7 +122,7 @@ namespace NeuroVida.Bridge.EditorTools
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
-            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), ("Comparacion", "comparacion", 9f),
             ("RutaTesoro", "rutatesoro", 9f), ("Series", "series", 9f), ("Calculo", "calculo", 9f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),

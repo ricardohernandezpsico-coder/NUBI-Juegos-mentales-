@@ -73,6 +73,10 @@ object ResultAdvice {
     }
     // La estrella intrusa: cuando alguna trampa engañó.
     result.intrSeenType?.let { out += tipOf(Atlas.trapReading(it, result.intrHitsType) ?: "") }
+    // En la punta de la lengua: cuando alguna palabra necesitó ayuda o la mostró Nubi.
+    result.puntaSolo?.let { solo ->
+      out += tipOf(Punta.message(solo, Punta.total(solo, result.puntaPista, result.puntaLetras, result.puntaVista)) ?: "")
+    }
     // Rumbo a Casa: de dónde sale lo que te aleja de casa.
     val along = result.homingAlong
     val lateral = result.homingLateral

@@ -44,6 +44,15 @@ class ResultAdviceTest {
   }
 
   @Test
+  fun `En la punta de la lengua da su truco si alguna palabra necesito ayuda o la mostro Nubi`() {
+    val some = ResultAdvice.tips(result("anagramas") { copy(puntaSolo = 5, puntaPista = 2, puntaLetras = 0, puntaVista = 1) })
+    assertEquals(listOf("Si una no sale, piensa en cómo empieza o en otra parecida: suele destrabarla."), some)
+    // todas solas: nada que aconsejar; sin datos del juego, tampoco
+    assertTrue(ResultAdvice.tips(result("anagramas") { copy(puntaSolo = 8, puntaPista = 0, puntaLetras = 0, puntaVista = 0) }).isEmpty())
+    assertTrue(ResultAdvice.tips(result("anagramas")).isEmpty())
+  }
+
+  @Test
   fun `Aterrizaje da su truco solo con una lectura clara`() {
     // primer tercio mucho peor que el resto
     val trues = listOf(0.1f, 0.2f, 0.5f, 0.5f, 0.9f, 0.9f)

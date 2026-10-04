@@ -202,5 +202,20 @@ namespace NeuroVida.Contracts
         public string intr_review_new = "";
         public string intr_review_done = "";
         public string intr_named = "";
+
+        /// <summary>Solo «En la punta de la lengua»: palabras encontradas solas (lucero dorado), con 1-2 ayudas (plateado), con las letras justas (cobre) y mostradas por Nubi
+        /// (azul). -1 = no aplica.</summary>
+        public int punta_solo = -1;
+        public int punta_pista = -1;
+        public int punta_letras = -1;
+        public int punta_vista = -1;
+        /// <summary>Solo «En la punta de la lengua»: tiempo medio, en ms, desde que la definición terminó de escribirse hasta «¡La tengo!» en las que salieron solas. -1 = ninguna.</summary>
+        public int punta_ms = -1;
+        /// <summary>Solo «En la punta de la lengua»: cada palabra jugada con su lucero, en orden («reloj:o;búho:a»; o oro, p plata, c cobre, a azul).</summary>
+        public string punta_words = "";
+        /// <summary>Solo «En la punta de la lengua»: las palabras que Nubi mostró (vuelven otro día) y las azules pendientes que esta partida encontró sola o con 1-2 ayudas
+        /// (dejan de esperar), separadas por «;».</summary>
+        public string punta_blue = "";
+        public string punta_cleared = "";
     }
 }

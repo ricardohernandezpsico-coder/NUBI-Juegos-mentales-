@@ -29,7 +29,6 @@
     <Compile Include="$(Src)/Shared/LunarSurfaceSprite.cs" />
     <Compile Include="$(Src)/Piloto/PilotShipSprite.cs" />
     <Compile Include="$(Src)/Calculo/PondSprites.cs" />
-    <Compile Include="$(Src)/Anagramas/AnagramSprites.cs" />
     <Compile Include="$(Src)/Stroop/NeonSignSprites.cs" />
     <Compile Include="$(Src)/Comparacion/CountStarSprite.cs" />
     <Compile Include="$(Src)/Series/MagnifierSprite.cs" />

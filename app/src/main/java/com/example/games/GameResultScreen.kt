@@ -660,6 +660,43 @@ fun GameResultScreen(
       }
     }
 
+    // En la punta de la lengua (pantalla final, docs/diseno-punta-de-la-lengua.md §6): «Tu cielo de palabras». «Encontraste X de N por tu cuenta» (las palabras
+    // con lucero dorado), el desglose en una línea, la lista de palabras con su lucero (el nombre del lucero va en TEXTO: nunca solo color), las azules que vuelven y,
+    // con 3 o más solas, el tiempo hasta «¡La tengo!». Cada dato aparece UNA vez; sin recuadros.
+    val puntaSolo = result.puntaSolo
+    if (puntaSolo != null) {
+      val punta = com.example.data.Punta
+      val puntaTotal = punta.total(puntaSolo, result.puntaPista, result.puntaLetras, result.puntaVista)
+      Spacer(Modifier.height(14.dp))
+      Text("Tu cielo de palabras", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = punta.spoken(puntaSolo, puntaTotal) }.testTag("punta_headline"),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Text("Encontraste", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.Bottom) {
+          Text("${puntaSolo.coerceIn(0, maxOf(puntaTotal, 0))} de $puntaTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
+          Text("por tu cuenta", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))
+        }
+        punta.breakdown(puntaSolo, result.puntaPista, result.puntaLetras, result.puntaVista)?.let {
+          Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
+      }
+      val puntaEntries = result.puntaWords.orEmpty()
+      if (puntaEntries.isNotEmpty()) {
+        Spacer(Modifier.height(10.dp))
+        Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp).testTag("punta_words")) {
+          puntaEntries.forEach { PuntaWordRow(it, Modifier.fillMaxWidth().padding(vertical = 4.dp)) }
+        }
+      }
+      punta.blueNote(result.puntaVista)?.let {
+        Text(it, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp).testTag("punta_blue_note"))
+      }
+      punta.speedLine(result.puntaMs, puntaSolo)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
+      }
+    }
+
     // Rastro de luz (pantalla final, docs/diseno-rastro-de-luz.md §6): "tu rastro" (cifra grande: las luces más largas que repetiste bien en el
     // rastro simple), "por modo" (al revés, el cielo gira y en marcha, cada uno con 3 rondas o más; el de menos aciertos marcado con TEXTO «el que
     // más te costó» y un truco), y la lectura en palabras. Sin recuadros ni percentiles; cada dato aparece UNA vez.
@@ -1129,7 +1166,7 @@ fun GameResultScreen(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
       result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.rasRounds, result.interferenceMs, result.switchCostMs
+      result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1778,6 +1815,40 @@ private fun TrailModeBar(row: com.example.data.Trail.ModeRow, modifier: Modifier
     }
     Spacer(Modifier.weight(1f))
     Text("${row.hits} de ${row.rounds}", color = color, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, softWrap = false)
+  }
+}
+
+// ---------- En la punta de la lengua: la lista de palabras con su lucero ----------
+
+/** El color del lucero de cada palabra: dorado (sola), plateado (con pista), cobre (con las letras) y azul (te la mostró Nubi). */
+private fun puntaColor(tier: com.example.data.PuntaTier): Color = when (tier) {
+  com.example.data.PuntaTier.SOLO -> Color(0xFFFFC94A)
+  com.example.data.PuntaTier.PISTA -> Color(0xFFD6DEF0)
+  com.example.data.PuntaTier.LETRAS -> Color(0xFFE6965A)
+  com.example.data.PuntaTier.VISTA -> Color(0xFF7FAAFF)
+}
+
+/** Un lucero: una estrella REDONDA (nunca con puntas) con su resplandor y un brillo arriba a la izquierda. */
+@Composable
+private fun PuntaLucero(tier: com.example.data.PuntaTier, modifier: Modifier = Modifier) {
+  val color = puntaColor(tier)
+  Canvas(modifier.size(26.dp)) {
+    val c = Offset(size.width / 2f, size.height / 2f)
+    val r = size.minDimension * 0.27f
+    drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.55f), Color.Transparent), center = c, radius = size.minDimension / 2f), radius = size.minDimension / 2f, center = c)
+    drawCircle(color, radius = r, center = c)
+    drawCircle(Color.White.copy(alpha = 0.85f), radius = r * 0.32f, center = Offset(c.x - r * 0.33f, c.y - r * 0.36f))
+  }
+}
+
+/** Una fila de la lista: el lucero, la palabra y a la derecha cómo la encontraste, en texto. */
+@Composable
+private fun PuntaWordRow(entry: com.example.data.PuntaEntry, modifier: Modifier = Modifier) {
+  Row(modifier.semantics { contentDescription = "${entry.word}, ${entry.tier.label}" }, verticalAlignment = Alignment.CenterVertically) {
+    PuntaLucero(entry.tier)
+    Text(entry.word, color = Clay.Cream, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, modifier = Modifier.padding(start = 10.dp))
+    Spacer(Modifier.weight(1f))
+    Text(entry.tier.label, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.End, softWrap = false)
   }
 }
 

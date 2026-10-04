@@ -127,6 +127,8 @@ namespace NeuroVida.Games.Tests
                 "_trueFractions", "_givenFractions", "Register(", "(Reveal(", " Reveal(");
             AssertDoesNotTouch("Games/Meteoros/MeteorGameController.cs", "_dda", "_points", "_streak", "_bestStreak", "_rescued", "_resolved", "_tally", "_allMs",
                 "Register(", "ResolveTap(", "ResolvePass(", "RescueEffect(", "LightConstellation(");
+            AssertDoesNotTouch("Games/Anagramas/PuntaGameController.cs", "_dda", "_points", "_streak", "_bestStreak", "_resolved", "_tally", "_credit", "_director",
+                "Register(", "LaunchFlyer(", "FillLucero(", "PlayerPrefs");
         }
 
         private static void AssertDoesNotTouchNoScript(string relativePath, params string[] forbidden)
@@ -137,10 +139,10 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
-        public void TheGuidedRound_IsReachableFromThePause_ForTheFourGames()
+        public void TheGuidedRound_IsReachableFromThePause_ForEveryGameWithATutorial()
         {
             // cada juego con tutorial dice cuándo «Cómo se juega» está disponible y cómo retoma su partida
-            foreach (var file in new[] { "Games/Secuencia/RastroGameController.cs", "Games/Freno/BrakeGameController.cs", "Games/Aterrizaje/LandingGameController.cs", "Games/Meteoros/MeteorGameController.cs" })
+            foreach (var file in new[] { "Games/Secuencia/RastroGameController.cs", "Games/Freno/BrakeGameController.cs", "Games/Aterrizaje/LandingGameController.cs", "Games/Meteoros/MeteorGameController.cs", "Games/Anagramas/PuntaGameController.cs" })
             {
                 string text = File.ReadAllText(Path.Combine(Application.dataPath, "Scripts", file));
                 StringAssert.Contains("override bool HowToReady", text, file);

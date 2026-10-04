@@ -158,11 +158,11 @@ object GameRegistry {
     ),
     GameDefinition(
       id = "anagramas",
-      title = "Anagramas",
+      title = "En la punta de la lengua",
       domain = DomainType.LENGUAJE,
-      subtitle = "Léxico y procesamiento fonológico",
-      instruction = "Ordena las letras para formar la palabra escondida. Si te trabas, puedes pedir una pista.",
-      iconEmoji = "🔤"
+      subtitle = "Encuentra la palabra que ya sabes",
+      instruction = "Nubi capta la definición de una palabra. Búscala en tu memoria; si la tienes, ordénala con las letras. Si no sale, pide una ayuda: siempre hay una, y nunca te quedas trabado.",
+      iconEmoji = "💬"
     ),
     GameDefinition(
       id = "meteoros",
@@ -407,6 +407,17 @@ data class GamePlayResult(
   val intrReviewNew: List<String>? = null,
   val intrReviewDone: List<String>? = null,
   val intrNamed: List<String>? = null,
+  // Solo «En la punta de la lengua» (id anagramas): palabras encontradas solas, con 1-2 ayudas, con las letras justas y mostradas por Nubi, tiempo medio
+  // hasta «¡La tengo!» de las que salieron solas (ms), cada palabra con su lucero (data/Punta.kt), las que Nubi mostró (las azules, que vuelven) y las azules
+  // pendientes que esta partida encontró sola o con 1-2 ayudas. No se guardan en Room: las azules van en Punta.kt / prefs «punta_words».
+  val puntaSolo: Int? = null,
+  val puntaPista: Int? = null,
+  val puntaLetras: Int? = null,
+  val puntaVista: Int? = null,
+  val puntaMs: Int? = null,
+  val puntaWords: List<com.example.data.PuntaEntry>? = null,
+  val puntaBlue: List<String>? = null,
+  val puntaCleared: List<String>? = null,
   // Solo Rastro de luz (id «secuencia»): por familia (4: el rastro, al revés, el cielo gira, en marcha) el mejor largo repetido bien (0 = ninguno),
   // las rondas y los aciertos (la ronda guiada del tutorial no cuenta), qué familias aparecieron y cuáles se desbloquearon por primera vez en
   // la partida (bits: 1 rastro, 2 al revés, 4 gira, 8 en marcha). La lectura está en data/Trail.kt. No se guardan en Room.

@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using NeuroVida.Games.Anagramas;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Comparacion;
@@ -65,8 +64,6 @@ internal static class Program
         DumpRect("surface", LunarSurfaceSprite.Render(ClayRaster.Hex(0x9C94D6)), LunarSurfaceSprite.Width, LunarSurfaceSprite.Height);
         Dump("ship_0", PilotShipSprite.Get());
         for (int v = 0; v < 2; v++) Dump("lily_" + v, PondSprites.LilyPad(v));
-        Dump("slot", AnagramSprites.Slot());
-        foreach (AnagramSprites.Icon ic in Enum.GetValues(typeof(AnagramSprites.Icon))) Dump("icon_" + ic, AnagramSprites.ActionIcon(ic));
         Dump("screw", NeonSignSprites.Screw());
         Dump("mark_check", AnswerMarkSprite.Check());
         Dump("mark_cross", AnswerMarkSprite.Cross());
