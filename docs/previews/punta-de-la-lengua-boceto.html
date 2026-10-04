@@ -1,0 +1,371 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>En la punta de la lengua</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>En la punta de la lengua</h1>
+    <p class="lead">Reemplaza a Anagramas. Nubi capta una señal desde el espacio: la definición de una palabra. Tú la buscas en tu memoria. Si la tienes, la armas. Si no sale, la señal se va aclarando de a poco hasta que aparece. Nunca te quedas trabado.</p>
+
+    <h2>Cómo se juega</h2>
+    <ul class="list">
+      <li><b>«¡La tengo!»</b>: aparecen las letras, con algunas de más, y la armas tocándolas en orden.</li>
+      <li><b>«Una ayuda»</b> es una escalera de tres peldaños: primero cuántas letras tiene, después la primera letra, y al final solo sus letras, para ordenarlas.</li>
+      <li>Si te equivocas, las letras vuelven solas y puedes probar otra vez. A la segunda, Nubi te muestra la palabra, sin culpa.</li>
+      <li>Cada palabra encontrada se vuelve una estrella: <b>dorada</b> si la encontraste sola, <b>plateada</b> con pista, <b>cobre</b> con las letras, y <b>azul</b> si Nubi te la mostró. Las azules vuelven en otra partida para que las recuerdes.</li>
+    </ul>
+
+    <h2>Lo que lo hace distinto</h2>
+    <ul class="list">
+      <li><b>Entrena encontrar la palabra</b>, lo que más cuesta con los años, y no inventar palabras, que eso ya lo hace Cosecha.</li>
+      <li><b>Sin frustración:</b> las ayudas no restan, solo cambian el color de la estrella. Siempre hay salida.</li>
+      <li><b>Definiciones propias</b>, escritas para Nubi, nunca copiadas de un diccionario.</li>
+      <li><b>Luz y sonido:</b> la definición llega como una transmisión, cada letra suena con su nota, y al acertar la palabra se condensa en una estrella que vuela a tu cielo.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable con 8 palabras de muestra, de fácil a difícil. En el juego real habrá unas 400 definiciones por niveles, y el motor común elegirá la dificultad: lo común o raro de la palabra, su largo y cuántas letras de más trae.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="En la punta de la lengua: lee la definición y encuentra la palabra"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+// ---------- palabras de muestra (definiciones propias)
+const BANK = [
+  { w:'RELOJ',     show:'reloj',     d:'Lo miras para saber qué hora es.' },
+  { w:'FARO',      show:'faro',      d:'Torre junto al mar cuya luz guía a los barcos de noche.' },
+  { w:'BUHO',      show:'búho',      d:'Ave nocturna de ojos grandes que puede girar mucho la cabeza.' },
+  { w:'ALMOHADA',  show:'almohada',  d:'Donde apoyas la cabeza para dormir.' },
+  { w:'COLMENA',   show:'colmena',   d:'Casa donde viven las abejas y fabrican la miel.' },
+  { w:'BRUJULA',   show:'brújula',   d:'Instrumento con una aguja que siempre señala el norte.' },
+  { w:'ECLIPSE',   show:'eclipse',   d:'Cuando la Luna tapa al Sol y el día se oscurece un momento.' },
+  { w:'NOSTALGIA', show:'nostalgia', d:'Tristeza dulce que se siente al recordar tiempos pasados.' },
+];
+const TIERS = {
+  solo:  { rgb:'255,201,74',  col:'#FFC94A', n:'sola' },
+  pista: { rgb:'214,222,240', col:'#D6DEF0', n:'con pista' },
+  letras:{ rgb:'230,150,90',  col:'#E6965A', n:'con las letras' },
+  vista: { rgb:'127,170,255', col:'#7FAAFF', n:'te la mostró Nubi' },
+};
+
+const G = { state:'menu', i:0, parts:[], stars:[], res:[], flyers:[], toast:null };
+const P = {}; // palabra en curso
+function emit(x,y,n,spread,life,rgb,up=0){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-up,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
+function toast(text, good){ G.toast={text,good,t:performance.now()}; }
+
+// ---------- texto con saltos de línea
+function wrap(c, text, maxW){ const words=text.split(' '), lines=[]; let cur=''; for (const w of words){ const t=cur?cur+' '+w:w; if (c.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; } if (cur) lines.push(cur); return lines; }
+
+// ---------- disposición
+const SLOT_Y = 282, BANK_Y0 = 368;
+function slotPos(k, n){ const gap = n>8 ? 35 : 40; const x0 = W/2 - (n-1)*gap/2; return [x0+k*gap, SLOT_Y]; }
+function bankHome(k, n){ const perRow = Math.ceil(n/2), row = k<perRow?0:1, idx = row? k-perRow : k, cnt = row? n-perRow : perRow, gap = 54; return [W/2-(cnt-1)*gap/2+idx*gap, BANK_Y0+row*66]; }
+
+function startWord(){
+  const it = BANK[G.i];
+  Object.assign(P, { it, letters:[...it.w], help:0, built:false, tiles:[], slots:Array(it.w.length).fill(null), tries:0, t0:performance.now(), solved:null, revealT:0, shake:0, cleared:0 });
+  G.state='think';
+}
+// las letras aparecen: con «¡La tengo!» traen 3 de más; con la última ayuda, solo las suyas
+function showTiles(withExtra){
+  const word = P.letters.slice(), pool='AEIOSRNLTCDMPUBG'.split('');
+  const extra = []; if (withExtra) while (extra.length<3){ const l=pool[Math.floor(Math.random()*pool.length)]; if (!extra.includes(l)) extra.push(l); }
+  let all = word.concat(extra); for (let k=all.length-1;k>0;k--){ const j=Math.floor(Math.random()*(k+1)); [all[k],all[j]]=[all[j],all[k]]; }
+  const now=performance.now();
+  P.tiles = all.map((l,k)=>{ const [hx,hy]=bankHome(k,all.length); return { l, hx, hy, x:W/2, y:SLOT_Y, tx:hx, ty:hy, slot:-1, born:now+k*45, ph:Math.random()*6.28, gone:false }; });
+  // la primera letra dada por la ayuda queda fija
+  if (P.help>=2){ const t=P.tiles.find(t=>t.l===P.letters[0] && t.slot<0); placeTile(t, 0, true); }
+  P.built=true; G.state='build'; noise(.5,600,2200,.035,2);
+}
+function placeTile(t, k, locked=false){ const [x,y]=slotPos(k,P.letters.length); t.slot=k; t.tx=x; t.ty=y; t.locked=locked; P.slots[k]=t; }
+function tapTile(t){
+  const k = P.slots.indexOf(null); if (k<0) return;
+  placeTile(t,k); bell(PENTA[Math.min(9,k)], .055, 1.1);
+  if (P.slots.indexOf(null)<0) setTimeout(validate, 260);
+}
+function unplace(t){ if (t.locked) return; P.slots[t.slot]=null; t.slot=-1; t.tx=t.hx; t.ty=t.hy; noise(.18,1400,700,.03,2); }
+function clearAll(){ P.tiles.forEach(t=>{ if (t.slot>=0 && !t.locked) unplace(t); }); }
+
+function validate(){
+  const word = P.slots.map(t=>t.l).join('');
+  if (word===P.it.w) return solved();
+  P.tries++; thud(); P.shake=performance.now();
+  if (P.tries>=2){ setTimeout(()=>reveal(), 650); toast('Esta se escondió bien. Te la muestro.', false); }
+  else { toast('Casi. Las letras vuelven: prueba otro orden.', false); setTimeout(clearAll, 520); }
+}
+function tierNow(){ return P.help===0 ? 'solo' : P.help<=2 ? 'pista' : 'letras'; }
+function solved(tier){
+  tier = tier || tierNow(); P.solved=tier; G.state='solved'; P.revealT=performance.now();
+  // cada letra se enciende en orden con su nota, y la palabra se condensa en una estrella
+  P.letters.forEach((_,k)=>setTimeout(()=>{ const [x,y]=slotPos(k,P.letters.length); bell(PENTA[Math.min(9,k+1)],.06,1.4); emit(x,y,8,70,600,TIERS[tier].rgb,10); }, reduce?0:k*90));
+  const tail = reduce?300:P.letters.length*90+500;
+  if (tier!=='vista') setTimeout(()=>{ bell(1046.5,.05,1.8); bell(1318.5,.04,2,.08); bell(1567.98,.035,2.2,.16); }, tail-200);
+  toast(tier==='solo' ? '¡La encontraste sola!' : tier==='vista' ? `Era «${P.it.show}». Volverá otro día.` : '¡Estaba en la punta de la lengua!', tier!=='vista');
+  setTimeout(()=>{ G.flyers.push({ x0:W/2, y0:SLOT_Y, k:G.i, t:performance.now(), tier }); G.res.push({ w:P.it.show, tier }); }, tail);
+  setTimeout(()=>{ G.i++; if (G.i>=BANK.length) finish(); else startWord(); }, tail+1100);
+}
+function reveal(){
+  // las letras van solas a su lugar
+  if (!P.built) showTiles(false);
+  P.tiles.forEach(t=>{ if (t.slot>=0 && !t.locked){ P.slots[t.slot]=null; t.slot=-1; } });
+  const used=new Set(P.slots.filter(Boolean));
+  P.letters.forEach((l,k)=>{ if (P.slots[k]) return; const t=P.tiles.find(t=>t.l===l && !used.has(t)); used.add(t); placeTile(t,k); });
+  P.tiles.forEach(t=>{ if (t.slot<0) t.gone=true; });
+  solved('vista');
+}
+function help(){
+  if (G.state!=='think' && G.state!=='build') return;
+  if (P.help>=3){ reveal(); return; }
+  P.help++; P.cleared=performance.now(); noise(.7,300,1800,.045,1.5); bell(392,.04,1.6);
+  if (P.help===1) toast('Esta palabra tiene '+P.letters.length+' letras.', true);
+  if (P.help===2){ toast('Empieza con «'+P.letters[0]+'».', true); if (P.built){ const t=P.tiles.find(t=>t.slot===0); if (t && !t.locked) unplace(t); let f=P.tiles.find(t=>t.l===P.letters[0] && t.slot<0 && !t.gone) || P.tiles.find(t=>t.l===P.letters[0] && !t.gone && !t.locked); if (f.slot>=0) unplace(f); placeTile(f,0,true); } }
+  if (P.help===3){ toast('Solo sus letras: ordénalas.', true); if (P.built){ clearAll(); const need=P.letters.slice(); P.tiles.forEach(t=>{ const k=need.indexOf(t.l); if (k>=0 && !t.gone) need.splice(k,1); else if (t.slot<0) t.gone=true; }); } else showTiles(false); }
+}
+
+// ---------- botones
+function buttons(){
+  if (G.state==='think') return [{ id:'have', x:24, y:552, w:184, h:58, label:'¡La tengo!', primary:true }, { id:'help', x:220, y:552, w:116, h:58, label:'Una ayuda' }];
+  if (G.state==='build') return [{ id:'clear', x:24, y:552, w:100, h:58, label:'Borrar' }, { id:'help', x:136, y:552, w:200, h:58, label: P.help>=3 ? 'Ver la palabra' : 'Una ayuda' }];
+  return [];
+}
+function drawButtons(c, now){
+  for (const b of buttons()){
+    const pr = G.press && G.press.id===b.id ? Math.max(0,1-(now-G.press.t)/200) : 0;
+    c.fillStyle='rgba(0,0,0,.45)'; rr(c,b.x,b.y+5,b.w,b.h,22); c.fill();
+    c.fillStyle= b.primary ? '#7FD8FF' : '#232B57'; rr(c,b.x,b.y+pr*4,b.w,b.h,22); c.fill();
+    c.strokeStyle= b.primary ? '#1A1240' : 'rgba(255,255,255,.14)'; c.lineWidth=b.primary?3:1.5; c.stroke();
+    c.fillStyle= b.primary ? '#1A1240' : '#EDEAFB'; c.font='700 19px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(b.label, b.x+b.w/2, b.y+b.h/2+1+pr*4);
+  }
+}
+
+// ---------- dibujo
+function drawStarShape(c,x,y,r,col,glowRgb,a=1){ // estrella redonda: un lucero, sin puntas (regla anti-símbolos)
+  c.save(); c.globalAlpha=a; if (!reduce && glowRgb) c.drawImage(glow(glowRgb),x-r*3,y-r*3,r*6,r*6);
+  const gr=c.createRadialGradient(x-r*.3,y-r*.35,r*.1,x,y,r); gr.addColorStop(0,'#fff'); gr.addColorStop(.45,col); gr.addColorStop(1,col);
+  c.fillStyle=gr; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.restore();
+}
+function drawTop(c, now){
+  // tu cielo de palabras: 8 luceros arriba
+  for (let k=0;k<BANK.length;k++){
+    const x=W/2-(BANK.length-1)*17+k*34, y=32, r=G.res[k];
+    if (r) drawStarShape(c,x,y,7,TIERS[r.tier].col,TIERS[r.tier].rgb);
+    else { c.strokeStyle= k===G.i ? 'rgba(127,216,255,.8)' : 'rgba(255,255,255,.18)'; c.lineWidth=1.5; c.beginPath(); c.arc(x,y,6,0,7); c.stroke(); }
+  }
+}
+function drawCard(c, now){
+  // la transmisión: tarjeta con antena de ondas y la definición que se escribe sola
+  const y0=70, h=150, k = reduce?1:ease((now-P.t0)/420);
+  c.save(); c.globalAlpha=k; c.translate(0,(1-k)*12);
+  c.fillStyle='rgba(0,0,0,.4)'; rr(c,20,y0+6,W-40,h,24); c.fill();
+  c.fillStyle='#141B3A'; rr(c,20,y0,W-40,h,24); c.fill(); c.strokeStyle='rgba(127,216,255,.35)'; c.lineWidth=1.5; c.stroke();
+  // ondas de la señal (más nítidas con cada ayuda)
+  const clarity = .35 + P.help*.2;
+  for (let j=0;j<3;j++){ const ph = reduce?0:((now/900 + j/3)%1); c.strokeStyle=`rgba(127,216,255,${(1-ph)*clarity})`; c.lineWidth=2; c.beginPath(); c.arc(46,y0+30,6+ph*16,-Math.PI*.8,-Math.PI*.2); c.stroke(); }
+  c.fillStyle='#7FD8FF'; c.beginPath(); c.arc(46,y0+30,4,0,7); c.fill();
+  c.fillStyle='#ABA5D2'; c.font='600 13px Nunito'; c.textAlign='left'; c.textBaseline='middle'; c.fillText('Nubi capta una definición', 64, y0+31);
+  // texto que aparece letra a letra
+  c.font='700 19px Nunito'; const lines = wrap(c, P.it.d, W-80);
+  const total = P.it.d.length, shown = reduce ? total : Math.floor(Math.min(1,(now-P.t0-250)/(total*22))*total);
+  let left = shown; c.fillStyle='#fff';
+  lines.forEach((ln,j)=>{ const part = ln.slice(0, Math.max(0,left)); left -= ln.length+1; c.fillText(part, 40, y0+70+j*27); });
+  c.restore();
+}
+function drawSlots(c, now){
+  const n=P.letters.length, show = P.help>=1 || P.built;
+  if (!show) {
+    // antes de ayudas: una nebulosa que esconde la palabra
+    if (!reduce){ for (let j=0;j<5;j++){ const x=W/2+Math.sin(now/1300+j*1.7)*70, y=SLOT_Y+Math.cos(now/1700+j)*10; c.globalAlpha=.16; c.drawImage(glow('140,120,255'),x-60,y-40,120,80); } c.globalAlpha=1; }
+    c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('¿Cuál es la palabra?', W/2, SLOT_Y); return;
+  }
+  const appear = P.cleared && P.help===1 && !P.built ? (reduce?1:ease((now-P.cleared)/600)) : 1;
+  const sh = P.shake && !reduce ? Math.sin((now-P.shake)/30)*Math.max(0,1-(now-P.shake)/400)*6 : 0;
+  for (let k=0;k<n;k++){
+    const [x,y]=slotPos(k,n), ak = Math.min(1, Math.max(0, appear*n - k));
+    c.save(); c.globalAlpha=ak; c.translate(sh,0);
+    c.fillStyle='#0E1430'; c.beginPath(); c.arc(x,y,16,0,7); c.fill();
+    c.strokeStyle='rgba(127,216,255,.35)'; c.lineWidth=1.5; c.stroke();
+    c.restore();
+  }
+  // la primera letra dada por la ayuda, antes de armar
+  if (P.help>=2 && !P.built){ const [x,y]=slotPos(0,n); drawTile(c,{l:P.letters[0]},x,y,1,true); }
+}
+function drawTile(c, t, x, y, s=1, locked=false, lit=null){
+  c.save(); c.translate(x,y); c.scale(s,s);
+  if (lit && !reduce) c.drawImage(glow(lit),-34,-34,68,68);
+  c.fillStyle='rgba(0,0,0,.45)'; c.beginPath(); c.arc(0,3,21,0,7); c.fill();
+  const gr=c.createRadialGradient(-6,-8,2,0,0,21); gr.addColorStop(0, locked?'#FFF1C7':'#FFFFFF'); gr.addColorStop(1, locked?'#F2CF7A':'#DCD6F7');
+  c.fillStyle= lit ? `rgb(${lit})` : gr; c.beginPath(); c.arc(0,0,20,0,7); c.fill();
+  c.strokeStyle='#1A1240'; c.lineWidth=2.5; c.stroke();
+  c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t.l,0,1);
+  c.restore();
+}
+function drawTiles(c, now){
+  const sh = P.shake && !reduce ? Math.sin((now-P.shake)/30)*Math.max(0,1-(now-P.shake)/400)*6 : 0;
+  for (const t of P.tiles){
+    if (now < t.born) continue;
+    if (t.gone){ t.fade = (t.fade||0) + .06; if (t.fade>=1) continue; }
+    // resorte suave hacia su destino; las del banco flotan
+    const bob = (t.slot<0 && !reduce) ? Math.sin(now/800+t.ph)*3 : 0;
+    const k = reduce ? 1 : .2; t.x += (t.tx-t.x)*k; t.y += (t.ty+bob-t.y)*k;
+    let lit=null;
+    if (G.state==='solved' && t.slot>=0){ const d = now-P.revealT-t.slot*90; if (d>0 || reduce) lit = TIERS[P.solved].rgb; }
+    const a = t.gone ? 1-t.fade : Math.min(1,(now-t.born)/250);
+    c.globalAlpha=a; drawTile(c, t, t.x+(t.slot>=0?sh:0), t.y, 1, t.locked, lit); c.globalAlpha=1;
+  }
+}
+function drawHelpLadder(c){
+  c.textAlign='center'; c.textBaseline='middle'; c.fillStyle='#6E6A9A'; c.font='600 13px Nunito'; c.fillText('Ayudas', W/2-40, 516);
+  for (let k=0;k<3;k++){ const on=k<P.help; c.fillStyle= on?'#7FD8FF':'rgba(255,255,255,.14)'; c.beginPath(); c.arc(W/2+4+k*18,516,5,0,7); c.fill(); }
+}
+function drawToast(c, now){
+  const t=G.toast; if(!t) return; const k=(now-t.t)/2200; if(k>=1){G.toast=null;return;}
+  c.globalAlpha=Math.min(1,k*8,(1-k)*4); c.fillStyle=t.good?'#9FF5D6':'#FFD6A0'; c.font='700 17px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t.text, W/2, 244); c.globalAlpha=1;
+}
+function drawFlyers(c, now){
+  G.flyers = G.flyers.filter(f=>{ const k=(now-f.t)/(reduce?1:700); if (k>=1){ emit(W/2-(BANK.length-1)*17+f.k*34, 32, 14, 80, 700, TIERS[f.tier].rgb); return false; }
+    const e=ease(k), x1=W/2-(BANK.length-1)*17+f.k*34, y1=32, x=f.x0+(x1-f.x0)*e, y=f.y0+(y1-f.y0)*e-Math.sin(Math.PI*e)*40;
+    drawStarShape(c,x,y,10-3*e,TIERS[f.tier].col,TIERS[f.tier].rgb); return true; });
+}
+function drawMenu(c, now){
+  const b = reduce?0:Math.sin(now/800)*5; c.textAlign='center'; c.textBaseline='middle';
+  c.drawImage(glow('127,216,255'), W/2-120, 170-120+b, 240, 240);
+  for (let j=0;j<3;j++){ const ph = reduce?0:((now/1100 + j/3)%1); c.strokeStyle=`rgba(127,216,255,${(1-ph)*.7})`; c.lineWidth=3; c.beginPath(); c.arc(W/2,170+b,20+ph*60,0,7); c.stroke(); }
+  drawStarShape(c, W/2, 170+b, 16, '#FFC94A', '255,201,74');
+  c.fillStyle='#fff'; c.font='700 28px Fredoka'; c.fillText('En la punta', W/2, 300); c.fillText('de la lengua', W/2, 334);
+  c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.fillText('Lee la definición y encuentra', W/2, 378); c.fillText('la palabra. Siempre hay ayuda.', W/2, 400);
+  c.fillStyle='#7FD8FF'; rr(c,110,450,140,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.fillText('Jugar', W/2, 479);
+}
+function finish(){ G.state='end'; G.endT=performance.now(); bell(784,.06,1.4); bell(1046.5,.05,1.6,.15); bell(1318.5,.04,1.8,.3); }
+function drawEnd(c, now){
+  const k = reduce?1:ease((now-G.endT)/600); c.fillStyle=`rgba(3,4,22,${.95*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.textAlign='center'; c.textBaseline='middle';
+  const solo=G.res.filter(r=>r.tier==='solo').length;
+  c.fillStyle='#fff'; c.font='700 28px Fredoka'; c.fillText('Tu cielo de palabras', W/2, 70);
+  c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.fillText(`Encontraste ${solo} de ${G.res.length} por tu cuenta`, W/2, 104);
+  G.res.forEach((r,j)=>{ const y=150+j*40; drawStarShape(c, 60, y, 9, TIERS[r.tier].col, TIERS[r.tier].rgb);
+    c.textAlign='left'; c.fillStyle='#fff'; c.font='700 18px Fredoka'; c.fillText(r.w, 82, y); c.textAlign='right'; c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(TIERS[r.tier].n, W-40, y); });
+  c.textAlign='center'; c.fillStyle='#6E6A9A'; c.font='600 13px Nunito'; c.fillText('Las azules vuelven en otra partida.', W/2, 150+G.res.length*40+6);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-96,180,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 19px Fredoka'; c.fillText('Jugar de nuevo',W/2,H-68);
+  c.restore();
+}
+
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  if (G.state==='menu') drawMenu(c, now);
+  else {
+    drawTop(c, now);
+    if (G.state!=='end'){ drawCard(c, now); drawSlots(c, now); drawTiles(c, now); drawToast(c, now); if (G.state==='think'||G.state==='build') drawHelpLadder(c); drawButtons(c, now); }
+    drawFlyers(c, now);
+    G.parts = G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; p.vy+=.6; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+    if (G.state==='end') drawEnd(c, now);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e), now=performance.now();
+  if (G.state==='menu'){ if (y>440&&y<516){ G.i=0; G.res=[]; startWord(); } return; }
+  if (G.state==='end'){ if (now-G.endT>700 && y>H-110){ G.state='menu'; } return; }
+  const b = buttons().find(b=>x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h);
+  if (b){ G.press={id:b.id,t:now};
+    if (b.id==='have'){ bell(659.25,.05,.9); showTiles(P.help<3); }
+    if (b.id==='help') help();
+    if (b.id==='clear') clearAll();
+    return; }
+  if (G.state!=='build') return;
+  const t = P.tiles.filter(t=>!t.gone && now>=t.born).find(t=>Math.hypot(x-t.x,y-t.y)<26);
+  if (!t) return;
+  if (t.slot>=0) unplace(t); else tapTile(t);
+});
+document.getElementById('snd').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',soundOn); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+document.getElementById('rm').addEventListener('click',e=>{ reduce=!reduce; e.currentTarget.setAttribute('aria-pressed',reduce); });
+</script>
