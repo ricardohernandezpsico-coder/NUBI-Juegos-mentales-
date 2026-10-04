@@ -1,0 +1,80 @@
+# Animales. palabra | definición propia (≤ 90 caracteres, sin la palabra ni su raíz de 4 letras).
+## animal
+perro | El animal que mueve la cola y ladra cuando ve llegar a su dueño.
+gato | Animal doméstico de bigotes que ronronea y se limpia con la lengua.
+caballo | Animal de crines largas que se monta y galopa.
+vaca | Da leche y se ve pastando en el campo.
+oveja | Su lana sirve para hacer abrigos y dice «bee».
+cerdo | Animal de granja rosado, de hocico chato y cola enroscada.
+gallina | Ave de corral que pone huevos.
+pato | Ave de pico plano que nada en la laguna y hace «cuac».
+conejo | Animal de orejas largas que salta y come zanahorias.
+ratón | Roedor pequeño al que persigue el gato y le gusta el queso.
+burro | Animal de orejas largas, parecido al caballo pero más pequeño.
+cabra | Rumiante de cuernos curvos y barba que trepa por las rocas.
+loro | Ave de colores que repite palabras.
+paloma | Ave de plumas grises que arrulla en las plazas.
+gorrión | Pajarito pardo y confiado que salta entre las migas de las plazas.
+águila | Ave rapaz de vista muy aguda y grandes alas.
+búho | Ave nocturna de ojos enormes y plumas suaves que hace «uhu».
+cisne | Ave blanca de cuello largo y curvo que se desliza por el lago.
+gaviota | Ave blanca del mar que chilla sobre la playa.
+pingüino | Ave que no vuela, camina como con frac y nada en el hielo.
+colibrí | Pajarito diminuto que bate las alas tan rápido que se queda quieto ante la flor.
+flamenco | Ave rosada de patas muy largas que duerme sobre una sola.
+avestruz | El pájaro más grande: corre veloz, pero no puede volar.
+cigüeña | Ave de patas largas que, según el cuento, trae a los bebés.
+tucán | Ave tropical con un enorme pico de colores.
+pelícano | Ave marina con una bolsa grande bajo el pico para guardar peces.
+halcón | Ave rapaz veloz que se lanza en picada sobre su presa.
+murciélago | Mamífero que vuela de noche y duerme colgado cabeza abajo.
+elefante | El animal terrestre más grande: orejas enormes y una larga trompa.
+jirafa | Su cuello altísimo le permite comer las hojas de los árboles más altos.
+cebra | Parece un caballo pintado con rayas blancas y negras.
+león | Felino de melena que ruge y es el rey de la selva.
+tigre | Gran felino de rayas negras sobre pelaje anaranjado.
+mono | Trepa por los árboles, tiene cola larga y le gustan los plátanos.
+lobo | Parecido a un perro salvaje: vive en manada y aúlla a la luna.
+zorro | Animal astuto de cola espesa y hocico puntiagudo.
+ciervo | Animal esbelto del bosque cuyo macho luce astas ramificadas.
+ardilla | Roedor de cola esponjosa que trepa por los árboles guardando nueces.
+erizo | Pequeño animal cubierto de púas que se hace una bola.
+camello | Animal del desierto con una o dos jorobas.
+canguro | Salta con sus patas traseras y lleva a su cría en una bolsa.
+panda | Oso blanco y negro que se alimenta de bambú.
+foca | Animal marino de aletas y bigotes que descansa sobre el hielo.
+delfín | Mamífero marino muy simpático y juguetón que salta sobre las olas.
+ballena | El animal más grande del mar; echa agua por un orificio de la cabeza.
+tiburón | Pez de aleta triangular y muchos dientes afilados.
+pulpo | Animal marino de ocho brazos con ventosas.
+cangrejo | Camina de lado y tiene dos pinzas.
+medusa | Animal marino transparente, blando, con tentáculos que flota como un paraguas.
+tortuga | Animal lento que lleva su casa a cuestas, un caparazón.
+rana | Anfibio verde que salta y croa en las charcas.
+serpiente | Reptil sin patas que avanza arrastrándose y puede sisear.
+cocodrilo | Reptil de mandíbulas enormes que vive en los ríos cálidos.
+lagarto | Reptil de cuerpo alargado y cuatro patas que toma sol sobre las piedras.
+abeja | Insecto que zumba entre las flores y fabrica miel.
+mariposa | Insecto de grandes alas de colores que antes fue oruga.
+hormiga | Insecto diminuto y trabajador que carga migas en fila.
+araña | Teje una tela para atrapar a sus presas.
+caracol | Su casa en espiral va siempre sobre su espalda; avanza muy despacio.
+mosca | Insecto molesto que zumba y se posa sobre la comida.
+mosquito | Insecto diminuto que zumba de noche y deja ronchas en la piel.
+grillo | Insecto verde que canta en la noche frotando sus alas.
+libélula | Insecto de alas transparentes y cuerpo delgado que vuela cerca de los ríos.
+luciérnaga | Pequeño insecto que se enciende como una lucecita en la oscuridad.
+escarabajo | Insecto de caparazón duro y brillante.
+oruga | Gusanito que se alimenta de hojas hasta convertirse en mariposa.
+gusano | Animal blando, alargado y sin patas que se arrastra por la tierra húmeda.
+nutria | Mamífero de río que flota panza arriba y rompe conchas con una piedra.
+castor | Roedor de cola plana que construye diques con troncos.
+topo | Animal casi ciego que cava túneles bajo la tierra.
+jabalí | Cerdo salvaje de colmillos curvos que vive en los bosques.
+hipopótamo | Animal gigante y rechoncho que pasa el día metido en el agua del río.
+gorila | El mayor de los primates: fuerte, de pelo negro, vive en la selva africana.
+salmón | Pez rosado que remonta los ríos contra la corriente para desovar.
+atún | Pez grande del mar, muy común en las latas de conserva.
+polilla | Pequeña mariposa nocturna cuyas larvas hacen agujeros en la ropa.
+cordero | La cría de la oveja.
+potro | Caballo joven.

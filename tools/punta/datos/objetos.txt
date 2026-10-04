@@ -1,0 +1,107 @@
+# Objetos. Una palabra por línea:  palabra bien escrita | definición propia (≤ 90 caracteres, sin la palabra ni su raíz de 4 letras).
+# Las definiciones se escribieron para Nubi (no se copian ni se parafrasean de diccionarios). Ver docs/diseno-punta-de-la-lengua.md §4.
+## objeto
+reloj | Lo miras para saber qué hora es.
+mesa | Mueble con patas y una tabla plana donde se come o se escribe.
+silla | Mueble con respaldo en el que te sientas.
+cama | Mueble blando donde te acuestas para dormir.
+llave | Pieza de metal que abre una cerradura.
+vaso | Recipiente de vidrio, alto y sin asa, para beber agua.
+plato | Pieza redonda y poco honda donde se sirve la comida.
+libro | Hojas unidas con una tapa, para leer una historia.
+lápiz | Sirve para escribir o dibujar y se borra con una goma.
+papel | Hoja delgada y blanca donde se escribe o se dibuja.
+mapa | Dibujo plano de un lugar que ayuda a no perderse.
+rueda | Pieza redonda que gira y hace avanzar a una bicicleta.
+techo | Parte de arriba de una casa que la protege de la lluvia.
+pared | Muro que separa una habitación de otra.
+bolsa | Saco de tela o plástico para llevar las compras.
+cesta | Recipiente de mimbre con asa para llevar cosas.
+jarra | Recipiente con asa y pico para servir agua o limonada.
+taza | Recipiente con asa donde se toma una bebida caliente.
+globo | Bolsa de goma de colores que se infla y se ata en las fiestas.
+vela | Barra de cera con mecha que da luz al encenderla.
+jabón | Barra que se frota con agua para lavarse las manos.
+peine | Se pasa por el pelo para desenredarlo.
+gorro | Prenda que cubre la cabeza y da calor.
+botón | Pieza pequeña y redonda que cierra una camisa.
+campana | Objeto de metal con forma de copa invertida que suena al golpearlo.
+cohete | Nave larga y puntiaguda que sube al espacio echando fuego.
+bufanda | Tira de tela que rodea el cuello en invierno.
+paraguas | Se abre sobre tu cabeza cuando llueve.
+espejo | Superficie de cristal donde ves tu propia imagen.
+ventana | Abertura con cristal en una pared por donde entra la luz.
+escalera | Peldaños que sirven para subir de un piso a otro.
+cortina | Tela que cuelga de la ventana para tapar la luz.
+alfombra | Tejido grande que cubre el suelo de una habitación.
+almohada | Donde apoyas la cabeza para dormir.
+cuchara | Sirve para tomar la sopa.
+tenedor | Tiene puntas y sirve para pinchar la comida.
+botella | Recipiente de cuello largo y estrecho para guardar líquidos.
+maleta | La llenas de ropa antes de salir de viaje.
+candado | Cierre de metal en forma de U que se abre con una llave pequeña.
+martillo | Herramienta con cabeza de metal para clavar clavos.
+tornillo | Pieza de metal con rosca que se aprieta girándola con una herramienta.
+linterna | Aparato con pilas que da luz y se lleva en la mano.
+brújula | Instrumento con una aguja que siempre señala el norte.
+telescopio | Tubo con lentes que acerca las estrellas.
+calendario | Hojas con los días del año ordenados en meses.
+cámara | Aparato que guarda fotografías de lo que mira.
+teclado | Fila de botones con letras que se pulsan para escribir.
+pantalla | Superficie plana de un televisor donde aparecen las imágenes.
+escoba | Palo con cerdas que sirve para barrer el suelo.
+sombrero | Prenda con ala ancha que protege la cabeza del sol.
+guitarra | Instrumento de seis cuerdas que se toca con los dedos.
+tambor | Instrumento redondo que suena al golpearlo con palillos.
+piano | Instrumento con teclas blancas y negras.
+flauta | Instrumento de viento: un tubo al que se sopla.
+trompeta | Instrumento de metal que suena al soplar por una boquilla.
+violín | Instrumento pequeño de cuerdas que se toca con un arco.
+bicicleta | Tiene dos ruedas y avanza pedaleando.
+barco | Vehículo grande que flota y navega por el mar.
+tren | Vehículo largo que va sobre rieles.
+avión | Vehículo con alas que vuela llevando pasajeros.
+ancla | Pieza pesada de hierro que mantiene quieto a un barco.
+velero | Barco que se mueve gracias al viento.
+tractor | Vehículo fuerte que trabaja la tierra del campo.
+cuaderno | Hojas cosidas con tapa donde escribes tus apuntes.
+regla | Tira recta con números para medir y trazar líneas.
+pincel | Se moja en pintura para pintar con él.
+lupa | Lente que hace ver más grande lo pequeño.
+imán | Atrae el hierro sin tocarlo.
+maceta | Recipiente donde se planta una flor dentro de casa.
+cojín | Almohadón blando que se pone en el sofá.
+sofá | Asiento blando y largo para varias personas.
+lámpara | Aparato que ilumina una habitación al encenderlo.
+cerradura | La llave entra en ella para abrir la puerta.
+ladrillo | Bloque rojo de barro cocido con el que se levantan muros.
+semáforo | Tiene tres luces y ordena el paso de los vehículos.
+buzón | Caja donde se echan las cartas para que lleguen a su destino.
+puerta | Se abre y se cierra para entrar o salir de una habitación.
+corona | Aro de oro con joyas que se pone en la cabeza una reina.
+anillo | Aro pequeño que se lleva en un dedo.
+collar | Cadena de cuentas o joyas que se lleva en el cuello.
+moneda | Pieza redonda de metal que sirve para pagar.
+billete | Papel con un valor impreso que sirve para pagar.
+mochila | La llevas a la espalda con libros o ropa.
+pelota | Esfera que se lanza, se patea o se golpea para jugar.
+muñeca | Juguete con forma de niña.
+trofeo | Copa que se entrega al ganador de una competencia.
+pizarra | Superficie oscura donde el maestro escribe con tiza.
+tiza | Barrita blanca que escribe sobre la pizarra.
+carta | Escrito que se envía a alguien dentro de un sobre.
+cartel | Papel grande con letras e imágenes que se pega en la calle.
+bandera | Tela de colores que representa a un país.
+casco | Protege la cabeza al ir en moto o en bicicleta.
+cuerda | Hilo grueso y fuerte que sirve para atar o trepar.
+cadena | Anillos de metal enlazados entre sí.
+tapa | Cubre un recipiente para que no se salga lo de dentro.
+sartén | Recipiente plano con mango donde se fríen los alimentos.
+olla | Recipiente hondo con dos asas donde se hierve la comida.
+servilleta | Pedazo de tela o papel con el que te limpias la boca al comer.
+bandeja | Superficie plana con bordes para llevar vasos y platos.
+toalla | Tela gruesa con la que te secas al salir de la ducha.
+sábana | Tela fina que cubre el colchón de la cama.
+colchón | Parte blanda y gruesa de la cama donde se duerme.
+cajón | Compartimento que se desliza dentro de un mueble.
+estante | Tabla fija a la pared donde se colocan libros.

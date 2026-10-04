@@ -1,0 +1,63 @@
+# Cuerpo, ropa y casa. palabra | definición propia (≤ 90 caracteres, sin la palabra ni su raíz de 4 letras).
+## cuerpo
+mano | Termina el brazo y tiene cinco dedos.
+dedo | Cada una de las cinco partes alargadas de la mano.
+pierna | Sostiene el cuerpo y sirve para caminar y correr.
+brazo | Une el hombro con la mano.
+cabeza | La parte de arriba del cuerpo, donde están los ojos y el cerebro.
+cara | Parte delantera de la cabeza, donde están los ojos y la boca.
+nariz | Con ella respiras y distingues los olores.
+boca | Con ella hablas, comes y sonríes.
+diente | Pieza dura y blanca de la boca que sirve para morder.
+lengua | Músculo de la boca que distingue los sabores.
+oreja | Parte externa del oído, a cada lado de la cabeza.
+cuello | Une la cabeza con el tronco.
+hombro | Zona donde el brazo se une al cuerpo y donde apoyas una mochila.
+espalda | Parte de atrás del cuerpo, desde el cuello hasta la cintura.
+rodilla | Articulación que dobla la pierna a mitad de camino.
+codo | Articulación que dobla el brazo.
+barba | Pelo que crece en la cara de los hombres.
+corazón | Órgano que late y bombea la sangre.
+pulmón | Órgano que se llena de aire al respirar.
+estómago | Órgano donde llega la comida después de tragar.
+cerebro | Órgano de la cabeza con el que piensas y recuerdas.
+hueso | Pieza dura y blanca que forma el esqueleto.
+músculo | Tejido que se contrae para mover el cuerpo.
+sangre | Líquido rojo que circula por las venas.
+piel | Cubre todo el cuerpo y es lo que sientes al tocar.
+huella | Marca que deja el pie al pisar la arena.
+sonrisa | Gesto de la boca que muestra alegría.
+## ropa
+camisa | Prenda con cuello y botones que cubre el torso.
+pantalón | Prenda que cubre cada pierna por separado.
+falda | Prenda que cae desde la cintura sin separar las piernas.
+vestido | Prenda de una sola pieza que cubre desde los hombros hasta las rodillas.
+abrigo | Prenda gruesa que se pone encima para el frío.
+guante | Prenda que abriga cada mano, con un espacio para cada dedo.
+calcetín | Prenda de punto que cubre el pie dentro del zapato.
+zapato | Calzado de cuero que protege el pie al caminar.
+bota | Calzado que cubre el pie y parte de la pierna.
+sandalia | Calzado abierto y ligero para el verano.
+cinturón | Tira de cuero con hebilla que sujeta el pantalón.
+corbata | Tira de tela anudada al cuello con traje.
+bolsillo | Pequeño compartimento cosido a la ropa donde guardas las llaves.
+pijama | Ropa suave con la que te acuestas.
+## casa
+cocina | Habitación de la casa donde se prepara la comida.
+dormitorio | Habitación donde se pone la cama.
+baño | Habitación con ducha y lavabo.
+salón | La habitación más amplia de la casa, donde se recibe a las visitas.
+pasillo | Corredor estrecho que une las habitaciones.
+balcón | Plataforma que sobresale de la fachada, con una barandilla.
+terraza | Espacio al aire libre en lo alto de un edificio.
+chimenea | Hueco donde se enciende la leña y por donde sale el humo.
+escalón | Cada peldaño donde apoyas el pie al subir.
+sótano | Piso de una casa que está bajo el nivel de la calle.
+cerrojo | Barra de metal que asegura una puerta por dentro.
+ducha | Lluvia artificial con la que te bañas de pie.
+lavabo | Pila donde te aseas las manos y la cara.
+inodoro | Asiento del cuarto de baño.
+horno | Caja de la cocina que calienta y dora los alimentos.
+radio | Aparato que capta voces y música desde lejos.
+teléfono | Aparato con el que hablas con alguien que está lejos.
+televisor | Aparato con pantalla donde ves programas.

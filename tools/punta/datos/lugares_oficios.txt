@@ -1,0 +1,76 @@
+# Lugares y oficios. palabra | definición propia (≤ 90 caracteres, sin la palabra ni su raíz de 4 letras).
+## lugar
+casa | Edificio donde vive una familia.
+ciudad | Lugar grande con muchos edificios, calles y habitantes.
+pueblo | Población pequeña, con pocas calles y mucha tranquilidad.
+calle | Camino urbano entre dos filas de casas.
+plaza | Espacio abierto de la ciudad con bancos, árboles y gente paseando.
+parque | Zona verde de la ciudad con árboles, columpios y senderos para pasear.
+puente | Construcción que permite cruzar un río sin mojarse.
+camino | Franja de tierra por la que se va de un lugar a otro.
+carretera | Vía ancha por donde circulan los autos entre una ciudad y otra.
+aeropuerto | Lugar donde despegan y aterrizan los aviones.
+puerto | Lugar de la costa donde amarran los barcos.
+faro | Torre junto al mar con una luz que guía a los barcos de noche.
+castillo | Edificio medieval con torres y muros anchos donde vivía un rey.
+torre | Construcción muy alta y estrecha.
+muralla | Muro muy grueso que rodea una ciudad antigua para defenderla.
+escuela | Lugar donde los niños aprenden a leer y escribir.
+biblioteca | Lugar con miles de libros que se prestan gratis.
+museo | Lugar donde se exhiben objetos antiguos y obras de arte.
+teatro | Lugar con escenario y butacas donde se presentan obras.
+cine | Sala oscura con una pantalla enorme donde se proyectan películas.
+mercado | Lugar con puestos donde se compran frutas y verduras.
+tienda | Local donde se venden cosas al público.
+panadería | Tienda donde se vende el pan recién horneado.
+farmacia | Tienda donde se venden los medicamentos.
+hotel | Lugar con habitaciones donde se duerme cuando se viaja.
+granja | Terreno con animales domésticos y cultivos.
+establo | Lugar donde se guardan las vacas y los caballos.
+jaula | Cajón con barrotes donde se encierra a un pájaro.
+piscina | Estanque artificial donde se nada.
+estadio | Lugar enorme con gradas donde se juegan encuentros de fútbol.
+gimnasio | Lugar con aparatos donde se hace ejercicio.
+fábrica | Lugar con máquinas donde se hacen los productos en serie.
+taller | Lugar donde se arreglan o se fabrican cosas a mano.
+## oficio
+cocinero | Persona que prepara la comida en un restaurante.
+médico | Persona que revisa tu salud y te receta lo que necesitas.
+maestro | Persona que enseña en la escuela.
+panadero | Persona que hornea el pan.
+carpintero | Persona que trabaja la madera y hace muebles.
+albañil | Persona que levanta muros con ladrillos y cemento.
+pintor | Artista que da color a lienzos y muros con un pincel.
+cartero | Persona que reparte la correspondencia a domicilio.
+bombero | Persona que apaga incendios.
+policía | Persona que cuida el orden y la seguridad de la ciudad.
+piloto | Persona que dirige un avión.
+marinero | Persona que trabaja a bordo de un barco.
+pescador | Persona que sale al mar o al río con red o caña para sacar peces.
+granjero | Persona que cría animales de corral y cultiva la tierra.
+jardinero | Persona que cuida las flores y el césped de los parques.
+peluquero | Persona que corta el pelo.
+sastre | Persona que confecciona trajes a medida.
+zapatero | Persona que arregla el calzado.
+herrero | Persona que trabaja el hierro al fuego con un martillo.
+músico | Persona que toca un instrumento.
+bailarín | Persona que mueve el cuerpo con arte sobre un escenario.
+cantante | Artista que interpreta canciones con la voz ante un público.
+actor | Persona que interpreta personajes en el teatro o el cine.
+escritor | Persona que inventa novelas y poemas, y los firma.
+arquitecto | Persona que diseña edificios y casas.
+ingeniero | Persona que proyecta puentes, máquinas y carreteras.
+abogado | Persona que defiende a otros ante un juez.
+juez | Persona que decide quién tiene la razón en un juicio.
+astronauta | Persona que viaja al espacio en una nave.
+dentista | Persona que cuida y arregla los dientes.
+fotógrafo | Persona que capta imágenes con una cámara.
+payaso | Artista de nariz roja que hace reír en el circo.
+mago | Artista que hace trucos sorprendentes con las manos.
+## persona
+vecino | Persona que vive en la casa de al lado.
+abuelo | El padre de tu padre o de tu madre.
+nieto | El hijo de tu hijo.
+sobrino | El hijo de tu hermana o de tu hermano.
+hermano | Hijo de tus mismos padres.
+amigo | Persona con la que tienes confianza y cariño sin ser de tu familia.

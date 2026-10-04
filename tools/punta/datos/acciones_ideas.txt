@@ -1,0 +1,88 @@
+# Acciones, emociones e ideas. palabra | definición propia (≤ 90 caracteres, sin la palabra ni su raíz de 4 letras).
+## acción
+correr | Ir muy rápido apoyando un pie y otro en el suelo sin parar.
+saltar | Elevarse del suelo impulsándose con las piernas.
+caminar | Ir de un lugar a otro dando pasos.
+nadar | Moverse en el agua con brazos y piernas.
+volar | Moverse por el aire con alas.
+bailar | Mover el cuerpo al ritmo de la música.
+cantar | Emitir sonidos melodiosos con la voz.
+dormir | Cerrar los ojos y descansar por la noche.
+soñar | Ver imágenes en tu mente mientras duermes.
+despertar | Dejar de dormir y abrir los ojos.
+comer | Masticar y tragar los alimentos.
+beber | Tragar un líquido.
+cocinar | Preparar la comida al fuego.
+lavar | Quitar la suciedad con agua y jabón.
+barrer | Quitar el polvo del suelo con una escoba.
+escribir | Trazar letras sobre el papel para dejar un mensaje.
+leer | Mirar un texto y entender lo que dice.
+dibujar | Hacer figuras con un lápiz sobre una hoja.
+pintar | Cubrir una superficie de color con un pincel.
+construir | Levantar una casa o un puente poco a poco.
+lanzar | Arrojar una pelota con fuerza hacia lejos.
+atrapar | Coger al vuelo lo que alguien te lanza.
+buscar | Mirar con atención para hallar algo perdido.
+encontrar | Dar con lo que se buscaba.
+mirar | Dirigir los ojos hacia algo.
+escuchar | Poner atención para oír con cuidado.
+hablar | Decir palabras en voz alta.
+preguntar | Pedir una respuesta a alguien.
+responder | Dar la contestación a una pregunta.
+recordar | Traer a la mente algo que pasó.
+olvidar | Dejar de tener en la memoria algo que se sabía.
+aprender | Llegar a saber algo nuevo con el estudio o la práctica.
+enseñar | Transmitir lo que sabes a quien lo desconoce.
+pensar | Formar ideas en la mente.
+contar | Decir los números uno tras otro: uno, dos, tres...
+viajar | Ir de un lugar lejano a otro.
+regalar | Dar algo a alguien sin pedir nada a cambio.
+compartir | Repartir lo que tienes con otros.
+abrazar | Rodear a alguien con los brazos en señal de cariño.
+besar | Tocar con los labios a alguien en señal de cariño.
+sonreír | Curvar la boca en señal de alegría.
+reír | Soltar carcajadas porque algo te divierte.
+llorar | Derramar lágrimas.
+gritar | Hablar con voz muy fuerte.
+susurrar | Hablar muy bajito al oído de alguien.
+jugar | Divertirse con un juego.
+ganar | Quedar primero en una competencia.
+esperar | Quedarse en un sitio hasta que llegue alguien.
+## emoción
+alegría | Sentimiento que te hace reír y saltar de contento.
+tristeza | Sentimiento que te hace llorar.
+miedo | Sentimiento que te hace temblar ante algo que parece peligroso.
+enfado | Sentimiento que te pone rojo cuando algo te molesta mucho.
+sorpresa | Lo que sientes cuando pasa algo que no esperabas.
+vergüenza | Sentimiento que te pone colorado ante los demás.
+cariño | Afecto suave y cálido que se siente por quien se quiere.
+amistad | Relación de afecto y confianza entre dos personas sin lazos de sangre.
+paciencia | Capacidad de esperar con calma sin enfadarse.
+valentía | Fuerza para afrontar lo que da miedo.
+esperanza | Confianza en que algo bueno va a llegar.
+nostalgia | Tristeza dulce al recordar tiempos pasados.
+curiosidad | Ganas de saber y de explorar lo desconocido.
+ternura | Cariño suave que sientes ante un bebé.
+asombro | Impresión intensa ante algo maravilloso.
+orgullo | Satisfacción por algo que has logrado.
+## idea
+silencio | Ausencia de ruido.
+calma | Estado de quien no está nervioso ni agitado.
+gratitud | Sentimiento que te hace dar las gracias de corazón.
+sabiduría | Conocimiento profundo que da la experiencia de muchos años.
+memoria | Capacidad de recordar lo que has vivido.
+recuerdo | Imagen en la mente de algo que ya pasó.
+secreto | Lo que sabes y no debes contar a nadie.
+refrán | Frase corta y popular que encierra un consejo, como «a quien madruga...».
+adivinanza | Acertijo que se plantea en forma de verso y se resuelve pensando.
+cuento | Relato corto de hadas, magos o animales que se lee a los niños.
+canción | Letra y música que se cantan.
+poema | Escrito en verso que expresa sentimientos.
+melodía | Sucesión agradable de notas musicales.
+ritmo | El compás que marcas con el pie al escuchar una música.
+aventura | Viaje o suceso lleno de sorpresas y emoción.
+tesoro | Cofre de monedas y joyas escondido.
+misterio | Algo que no se explica y despierta curiosidad.
+fantasía | Mundo imaginado, con dragones y hadas, que no existe.
+destino | El lugar adonde se dirige un viaje.
+horizonte | Línea lejana donde parece que se unen el cielo y el mar.

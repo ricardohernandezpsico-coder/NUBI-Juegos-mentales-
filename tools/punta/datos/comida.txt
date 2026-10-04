@@ -1,0 +1,62 @@
+# Comida y bebida. palabra | definición propia (≤ 90 caracteres, sin la palabra ni su raíz de 4 letras).
+## comida
+leche | Líquido blanco que dan las vacas y se toma con cereales.
+queso | Alimento hecho con leche cuajada; los ratones lo adoran.
+arroz | Granos blancos que se hierven y acompañan muchos platos.
+sopa | Plato caliente de caldo con verduras o fideos.
+pasta | Masa de harina que se hierve y se sirve con salsa.
+galleta | Dulce pequeño, crujiente y plano que se moja en la leche.
+helado | Postre frío y cremoso que se toma con cucharita o en cono.
+chocolate | Dulce oscuro hecho de cacao.
+caramelo | Dulce duro que se chupa lentamente.
+miel | Líquido dulce y dorado que hacen las abejas.
+azúcar | Polvo blanco y dulce que se echa al café.
+aceite | Líquido graso y dorado que se usa para freír.
+vinagre | Líquido agrio que se echa a la ensalada.
+ensalada | Plato frío de lechuga, tomate y otras verduras aliñadas.
+manzana | Fruta redonda, roja o verde, que según el cuento envenenó a Blancanieves.
+pera | Fruta dulce y jugosa más ancha abajo que arriba.
+naranja | Fruta redonda y cítrica que da un jugo anaranjado.
+limón | Fruta cítrica, amarilla y muy ácida.
+plátano | Fruta alargada y amarilla que se pela antes de comer.
+sandía | Fruta enorme, verde por fuera y roja por dentro, con pepitas negras.
+melón | Fruta grande y redonda de pulpa dulce y cáscara rugosa.
+cereza | Fruta roja, pequeña y redonda, con un rabito largo.
+piña | Fruta tropical de corona de hojas puntiagudas y pulpa amarilla.
+coco | Fruta tropical de cáscara muy dura y agua dulce en su interior.
+mango | Fruta tropical, dulce, de hueso grande y pulpa amarilla.
+kiwi | Fruta de piel marrón y vellosa y pulpa verde con semillitas negras.
+aceituna | Fruto pequeño, verde o negro, del olivo.
+almendra | Fruto seco de cáscara dura, oval y de sabor suave.
+nuez | Fruto seco de cáscara dura y semilla arrugada con forma de cerebro.
+castaña | Fruto seco marrón que se asa en otoño.
+zanahoria | Verdura larga y anaranjada que comen los conejos.
+tomate | Fruto rojo y redondo que se usa en ensaladas y salsas.
+cebolla | Verdura de capas que hace llorar al cortarla.
+lechuga | Hoja verde y crujiente de la ensalada.
+pepino | Hortaliza verde y alargada que se come fresca en rodajas.
+calabaza | Hortaliza grande y redonda, anaranjada, de la que se hacen faroles en Halloween.
+espinaca | Verdura de hojas verde oscuro que hacía fuerte a Popeye.
+champiñón | Hongo blanco y comestible con forma de sombrilla.
+lenteja | Semilla pequeña, redonda y plana que se cocina en potaje.
+garbanzo | Legumbre redonda y de color crema con la que se prepara el hummus.
+maíz | Cereal de granos amarillos con el que se hacen las tortillas y las palomitas.
+trigo | Cereal del que se saca la harina para el pan.
+harina | Polvo blanco que resulta de moler el trigo.
+café | Bebida caliente, oscura y aromática que ayuda a despertar.
+agua | Líquido transparente que se bebe cuando se tiene sed.
+desayuno | La primera comida del día.
+almuerzo | La comida del mediodía.
+cena | La última comida del día, por la noche.
+merienda | Pequeña comida de la tarde, entre el almuerzo y la cena.
+postre | Lo dulce que se come al final de la comida.
+sándwich | Dos rebanadas de pan con algo en medio.
+pizza | Masa redonda cubierta de tomate y queso derretido.
+jamón | Carne de cerdo curada, en lonchas finas.
+salchicha | Embutido alargado y fino que se pone en un pan.
+mermelada | Fruta cocida con azúcar que se unta en las tostadas.
+tostada | Rebanada de pan dorada al fuego.
+yogur | Leche fermentada, cremosa y ligeramente ácida.
+cacao | Semilla de la que se obtiene el chocolate.
+pimienta | Polvo picante y oscuro que se echa a la comida.
+canela | Corteza de un árbol, aromática, que se usa en postres.

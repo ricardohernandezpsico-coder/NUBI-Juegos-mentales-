@@ -1,0 +1,78 @@
+# Naturaleza y plantas. palabra | definición propia (≤ 90 caracteres, sin la palabra ni su raíz de 4 letras).
+## naturaleza
+luna | Brilla en el cielo de noche y cambia de forma durante el mes.
+estrella | Puntito de luz que brilla en el cielo oscuro.
+nube | Masa blanca o gris que flota en el cielo y puede traer agua.
+lluvia | El agua que cae del cielo y moja el suelo.
+viento | El aire que se mueve y despeina.
+trueno | El estruendo que se oye después del relámpago.
+relámpago | Destello de luz que cruza el cielo durante una tormenta.
+tormenta | Cielo oscuro con truenos, rayos y mucha agua.
+niebla | Nube baja que no deja ver a lo lejos.
+rocío | Gotitas de agua que amanecen sobre la hierba.
+nieve | Copos blancos y fríos que caen en invierno.
+hielo | Agua congelada, dura y fría.
+fuego | Da luz y calor, pero quema.
+humo | Lo que sube de una fogata en forma de nube gris.
+ceniza | Polvo gris que queda después de quemarse algo.
+lago | Gran extensión de agua rodeada de tierra.
+océano | Inmensa masa de agua salada que separa los continentes.
+playa | Orilla del mar cubierta de arena donde se toma el sol.
+arena | Granitos finos y dorados que cubren la playa.
+isla | Trozo de tierra rodeado de agua por todas partes.
+montaña | Elevación enorme del terreno que se corona de nieve.
+colina | Elevación suave del terreno, mucho más baja que una montaña.
+cueva | Hueco grande y oscuro en el interior de una roca.
+volcán | Montaña que a veces lanza lava y humo por su cima.
+desierto | Lugar muy seco, con arena y casi sin lluvia.
+bosque | Terreno lleno de árboles.
+selva | Bosque muy espeso y húmedo de clima caluroso.
+campo | Terreno abierto fuera de la ciudad, con cultivos y animales.
+prado | Terreno cubierto de hierba verde donde pastan los animales.
+sendero | Camino estrecho que se forma al caminar por el campo.
+piedra | Trozo duro de roca que se encuentra en el suelo.
+roca | Material duro de las montañas.
+barro | Mezcla de tierra y agua que mancha los zapatos.
+tierra | Suelo donde crecen las plantas.
+cascada | Agua de un río que cae desde lo alto de una roca.
+manantial | Lugar donde el agua brota de la tierra.
+charco | Poca agua detenida en el suelo después de llover.
+árbol | Planta alta con tronco, ramas y hojas.
+rama | Parte del árbol que sale del tronco y sostiene las hojas.
+hoja | Parte verde y plana de las plantas que cae en otoño.
+raíz | Parte de la planta que se hunde en la tierra y absorbe agua.
+tronco | El tallo grueso de un árbol.
+flor | Parte de la planta con pétalos de colores que perfuma el jardín.
+rosa | Flor perfumada de tallo con espinas.
+margarita | Flor de pétalos blancos y centro amarillo.
+girasol | Flor grande y amarilla que siempre mira hacia la luz.
+tulipán | Flor en forma de copa que nace de un bulbo en primavera.
+semilla | Pequeño grano que, enterrado, puede dar una nueva planta.
+fruto | Lo que da una planta después de florecer y contiene las semillas.
+hierba | Plantita verde y baja que cubre el suelo.
+musgo | Plantita verde y suave que crece sobre las piedras húmedas.
+helecho | Planta de hojas largas y divididas que prefiere la sombra.
+cactus | Planta del desierto cubierta de espinas.
+bambú | Planta de tallos huecos y altos que come el oso panda.
+pino | Árbol de hojas en forma de aguja y piñas.
+roble | Árbol fuerte y longevo cuyo fruto es la bellota.
+palmera | Árbol de tronco alto y largo que termina en un penacho de hojas, típico de la playa.
+trébol | Plantita de tres hojas; con cuatro, dicen que trae suerte.
+jardín | Terreno junto a la casa donde se cultivan flores.
+huerto | Terreno pequeño donde se siembran hortalizas.
+cosecha | Recolección de lo que dio la tierra después de cultivarla.
+primavera | Estación en que florecen los campos.
+verano | La estación más calurosa del año.
+otoño | Estación en que las hojas de los árboles se ponen amarillas y caen.
+invierno | La estación más fría del año.
+amanecer | El momento en que sale el sol.
+atardecer | Las últimas horas del día, cuando el cielo se pone naranja.
+noche | Parte del día en que no hay sol y se ve la luna.
+planeta | Cuerpo redondo que gira alrededor de una estrella.
+galaxia | Inmenso conjunto de estrellas; nosotros vivimos en la Vía Láctea.
+eclipse | Cuando la luna se interpone y tapa al sol por unos minutos.
+colmena | Hogar de las abejas, donde guardan su miel.
+nido | Casita de pajitas que hacen las aves para sus huevos.
+huevo | Lo pone una gallina y tiene cáscara, clara y yema.
+espuma | Burbujas blancas que se forman sobre el agua o el jabón.
+burbuja | Esfera de jabón que flota y estalla al tocarla.
