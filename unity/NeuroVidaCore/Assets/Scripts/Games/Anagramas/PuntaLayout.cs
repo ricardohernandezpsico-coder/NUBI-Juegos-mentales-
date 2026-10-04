@@ -29,7 +29,8 @@ namespace NeuroVida.Games.Anagramas
             public int PerRow, Rows;
         }
 
-        public static Metrics Compute(float height, int tileCount)
+        /// <param name="extraGap">dp de aire que se suman entre la tarjeta y las casillas (el mensaje de Nubi en el tutorial va ahí y no tapa nada).</param>
+        public static Metrics Compute(float height, int tileCount, float extraGap = 0f)
         {
             var m = new Metrics();
             m.SkyY = HudDp + 18f;
@@ -46,7 +47,7 @@ namespace NeuroVida.Games.Anagramas
             m.TileD = Math.Min(46f, m.TileSpacing - 6f);
             m.RowGap = m.TileD + 14f;
 
-            float slotY = m.CardBottom + 66f;
+            float slotY = m.CardBottom + 66f + extraGap;
             float bankY = slotY + 80f;
             float bankBottom = bankY + (m.Rows - 1) * m.RowGap + m.TileD / 2f;
             float limit = m.LadderY - 16f;

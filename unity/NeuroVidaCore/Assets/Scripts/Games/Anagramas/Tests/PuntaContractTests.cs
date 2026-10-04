@@ -384,8 +384,43 @@ namespace NeuroVida.Games.Anagramas.Tests
         }
     }
 
+    public class PuntaVisibilityTests
+    {
+        [Test]
+        public void EveryPieceTheGameDraws_IsOnAndOpaque_TheTilesAboveAll()
+        {
+            // 3-oct: la cara, el borde, la sombra y el brillo de la ficha se creaban APAGADOS y de la ficha solo se veía la letra tinta sobre el cielo oscuro.
+            var go = new UnityEngine.GameObject("PuntaAudit");
+            try
+            {
+                var controller = go.AddComponent<PuntaGameController>();
+                // solo se arma la interfaz (Awake también estiliza el panel de resultado, y eso usa Destroy, que en modo edición no se puede)
+                var build = typeof(PuntaGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditVisibility();
+                Assert.IsEmpty(problems, "Piezas que no se verían: " + string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+    }
+
     public class PuntaLayoutTests
     {
+        [Test]
+        public void TheTutorialCaptionGap_LeavesRoomBetweenTheCardAndTheSlots_OnNormalPhones()
+        {
+            foreach (float h in new[] { 760f, 800f, 860f })
+            {
+                var plain = PuntaLayout.Compute(h - 40f, 9);
+                var gap = PuntaLayout.Compute(h - 40f, 9, 40f);
+                Assert.GreaterOrEqual(gap.SlotY - 16f - gap.CardBottom, 44f + 40f - 30f, "alto " + h + ": cabe el mensaje de Nubi entre la tarjeta y las casillas");
+                Assert.GreaterOrEqual(gap.SlotY, plain.SlotY, "alto " + h);
+                float bankBottom = gap.BankFirstY + (gap.Rows - 1) * gap.RowGap + gap.TileD / 2f;
+                Assert.LessOrEqual(bankBottom, gap.LadderY - 8f, "alto " + h);
+            }
+        }
+
         private static readonly float[] Heights = { 640f, 700f, 780f, 860f, 960f };
 
         [Test]

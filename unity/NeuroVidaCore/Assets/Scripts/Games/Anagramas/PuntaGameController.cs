@@ -30,6 +30,8 @@ namespace NeuroVida.Games.Anagramas
         private const float UnitsPerDp = 3f;
         private const float MarginU = 60f;
         private const float TutorialBottomReserve = 40f;
+        /// <summary>dp de aire entre la tarjeta y las casillas durante el tutorial: ahí va el mensaje de Nubi.</summary>
+        private const float TutorialCaptionGap = 40f;
 
         // ------------------------------------------------------------------ colores (los del boceto aprobado)
 
@@ -153,7 +155,7 @@ namespace NeuroVida.Games.Anagramas
         private Tile[] _slots = new Tile[0];
         private Tile _ghost;
         private PuntaLayout.Metrics _m;
-        private float _reserve;
+        private float _reserve, _guidedGap;
 
         // escala y disposición
         private float _s = 3f, _playW, _playH, _logicalH;
@@ -213,7 +215,7 @@ namespace NeuroVida.Games.Anagramas
             _streak = _bestStreak = _points = _resolved = 0;
             _endsAt = 0f;
             _lastTickSecond = -1;
-            _reserve = 0f;
+            _reserve = _guidedGap = 0f;
             _validateAt = 0f;
             ClearWordVisuals();
             ResetSky();
@@ -351,7 +353,7 @@ namespace NeuroVida.Games.Anagramas
             int n = word.Tiles.Length;
             _extra = PuntaContract.ExtraLetters(level, _senior);
             _maxTiles = n + _extra;
-            _m = PuntaLayout.Compute(_logicalH - _reserve, _maxTiles);
+            _m = PuntaLayout.Compute(_logicalH - _reserve, _maxTiles, _guidedGap);
             _slots = new Tile[n];
             ApplyMetrics(n);
             _cardAt = GameClock.Time;
@@ -518,12 +520,12 @@ namespace NeuroVida.Games.Anagramas
             _shakeAt = GameClock.Time;
             if (_tries >= 2)
             {
-                Say("Esta se escondió bien. Te la muestro.", false);
+                Tell("Esta se escondió bien. No pasa nada: Nubi te la muestra.", false);
                 yield return Motion.Hold(0.65f);
                 yield return StartCoroutine(Reveal());
                 yield break;
             }
-            Say("Casi. Las letras vuelven: prueba otro orden.", false);
+            Tell("Casi. Las letras vuelven: prueba otro orden.", false);
             yield return Motion.Hold(0.52f);
             ClearAll(true);
             _inputOn = true;
@@ -569,7 +571,7 @@ namespace NeuroVida.Games.Anagramas
             }
             else if (_helps == 2)
             {
-                Say("Empieza con «" + _word.Tiles[0] + "».", true);
+                Tell("Empieza con «" + _word.Tiles[0] + "».", true);
                 if (_built)
                 {
                     var current = _slots.Length > 0 ? _slots[0] : null;
@@ -586,7 +588,7 @@ namespace NeuroVida.Games.Anagramas
             }
             else
             {
-                Say("Solo sus letras: ordénalas.", true);
+                Tell("Solo sus letras: ordénalas.", true);
                 if (_built)
                 {
                     ClearAll(false);
@@ -769,96 +771,86 @@ namespace NeuroVida.Games.Anagramas
             t.BeginPractice();
             _guided = true;
             _reserve = TutorialBottomReserve;
+            _guidedGap = TutorialCaptionGap;
             SetSkyVisible(false);
             var script = new GuidedScript(2);
-            // el mensaje de Nubi va donde va el aviso de cada palabra, debajo de la tarjeta
-            t.PlaceControls(GameHud.Height + 10f, false, (_logicalH - _m.SayY) * _s);
+            // el mensaje de Nubi va en el aire que se deja entre la tarjeta y las casillas: no tapa la tarjeta, las fichas ni los botones, y queda puesto hasta el siguiente
+            float captionY = _m.CardBottom + 25f + _guidedGap / 2f;
+            t.PlaceControls(GameHud.Height + 10f, false, (_logicalH - captionY) * _s);
 
-            // 1) Nubi lo hace: lee la definición, toca «¡La tengo!» y arma la palabra
+            // PASO A — Nubi juega y tú miras: lee la definición, toca «¡La tengo!» y arma la palabra, letra por letra
             var w1 = GuidedWord(1, 5);
             BeginWord(w1, 1);
-            _word = w1;
             _inputOn = false;
-            t.Say("Nubi capta una definición. Si ya sabes cuál es la palabra, toca «¡La tengo!»");
-            while (GameClock.Time < _typedDoneAt + 0.9f && !t.Skipped) yield return null;
+            t.Say("Mira cómo juega Nubi: lee la definición…");
+            while (GameClock.Time < _typedDoneAt + 1.0f && !t.Skipped) yield return null;
             if (!t.Skipped)
             {
+                t.Say("…como la sabe, toca «¡La tengo!».");
                 PlaceHintOn(0);
-                yield return Motion.Hold(1.5f);
+                yield return Motion.Hold(1.8f);
                 HideHint();
                 PressFx(0);
                 _haveAt = GameClock.Time;
                 ShowTiles(withExtra: true);
-                t.Say("Ahora se tocan las letras en orden. Cada una suena con una nota.");
-                yield return Motion.Hold(0.8f);
+                t.Say("Ahora arma la palabra: toca las letras en orden.");
+                yield return Motion.Hold(1.2f);
                 for (int k = 0; k < w1.Tiles.Length && !t.Skipped; k++)
                 {
                     var tile = _tiles.Find(x => x.Char == w1.Tiles[k] && x.Slot < 0 && !x.Gone);
                     if (tile == null) continue;
                     TapTile(tile);
-                    yield return Motion.Hold(0.5f);
+                    yield return Motion.Hold(0.7f);
                 }
             }
             if (!t.Skipped)
             {
                 _validateAt = 0f;
-                t.Say("¡Así! Cuando la encuentras sola, la palabra se vuelve un lucero dorado.");
+                t.Say("Lucero dorado: la encontró sola. Toca la pantalla para seguir.");
                 yield return StartCoroutine(PlaySolved(PuntaTier.Solo, w1, 0, count: false));
+                yield return StartCoroutine(WaitTap(t));
                 script.Success();
             }
             else script.Skip();
 
-            // 2) Tú: pide una ayuda cuando no sale
+            // PASO B — tu turno: una palabra muy fácil; «¡La tengo!» si la sabes, «Una ayuda» si no te sale (sin obligar a usarla)
             if (!script.Finished)
             {
-                var w2 = GuidedWord(2, 6, w1.Word);
-                BeginWord(w2, 2);
-                _word = w2;
-                _guided = true;
-                t.Say("Y si la palabra no sale, no pasa nada: pide una ayuda.");
-                while (GameClock.Time < _typedDoneAt + 0.5f && !t.Skipped) yield return null;
+                var w2 = GuidedWord(1, 5, w1.Word);
+                BeginWord(w2, 1);
+                t.Say("Tu turno. Si la sabes, toca «¡La tengo!»; si no te sale, toca «Una ayuda».");
                 PlaceHintOn(1);
                 _inputOn = true;
-                // el primer toque que cuenta es «Una ayuda»
-                while (_helps < 1 && !t.Skipped)
+                bool toldAboutHelp = false;
+                while (_phase == Phase.Think && !t.Skipped)
                 {
                     var intent = ReadIntent();
-                    if (intent.Kind == IntentKind.Help) DoHelp();
+                    if (intent.Kind == IntentKind.Have) { _haveAt = GameClock.Time; ShowTiles(withExtra: true); }
+                    else if (intent.Kind == IntentKind.Help)
+                    {
+                        DoHelp();
+                        if (!toldAboutHelp && _phase == Phase.Think)
+                        {
+                            toldAboutHelp = true;
+                            t.Say("Ahora sabes cuántas letras tiene. Cuando la tengas, toca «¡La tengo!».");
+                            PlaceHintOn(0);
+                        }
+                    }
                     yield return null;
                 }
+                HideHint();
                 if (!t.Skipped)
                 {
-                    t.Say("Te dice cuántas letras tiene. Otra ayuda te da la primera letra.");
-                    while (_helps < 2 && !t.Skipped)
-                    {
-                        var intent = ReadIntent();
-                        if (intent.Kind == IntentKind.Help) DoHelp();
-                        yield return null;
-                    }
-                }
-                if (!t.Skipped)
-                {
-                    t.Say("Con eso suele salir. Toca «¡La tengo!» y arma la palabra.");
-                    PlaceHintOn(0);
-                    while (_phase == Phase.Think && !t.Skipped)
-                    {
-                        var intent = ReadIntent();
-                        if (intent.Kind == IntentKind.Have) { _haveAt = GameClock.Time; ShowTiles(withExtra: true); }
-                        else if (intent.Kind == IntentKind.Help) DoHelp();
-                        yield return null;
-                    }
-                    HideHint();
-                }
-                if (!t.Skipped)
-                {
-                    t.Say("Toca las letras en orden. La primera ya está puesta.");
+                    if (_phase == Phase.Build && _helps < 2) t.Say("Toca las letras en orden para armar la palabra.");
                     yield return StartCoroutine(WordLoop(abortAtTimeUp: false));
                 }
-                HideHint();
                 if (!t.Skipped && _phase == Phase.Solved)
                 {
-                    t.Say(_outcome == PuntaTier.Vista ? "No pasa nada: Nubi te la muestra y vuelve otro día." : "¡Muy bien! Con ayuda, el lucero es plateado. Siempre puedes pedir otra.");
+                    t.Say(_outcome == PuntaTier.Vista
+                        ? "No pasa nada: Nubi te la muestra y vuelve otro día. Toca la pantalla para seguir."
+                        : "¡Bien! El color del lucero cuenta cómo la encontraste: dorado sola, plateado con ayuda. Toca la pantalla para seguir.");
                     yield return StartCoroutine(PlaySolved(_outcome, w2, 0, count: false));
+                    yield return StartCoroutine(WaitTap(t));
                     script.Success();
                 }
                 else script.Skip();
@@ -867,13 +859,30 @@ namespace NeuroVida.Games.Anagramas
             _inputOn = false;
             ClearWordVisuals();
             _guided = false;
-            _reserve = 0f;
+            _reserve = _guidedGap = 0f;
             SetSkyVisible(true);
             _phase = Phase.Idle;
             _toast.Hide();
             t.EndPractice();
         }
         // </guided>
+
+        /// <summary>Espera un toque en cualquier parte de la pantalla (el de «Saltar tutorial» lo atiende <see cref="GameControllerBase.PollTutorialSkip"/>): los pasos avanzan al ritmo de la persona.</summary>
+        private IEnumerator WaitTap(GuidedTutorial t)
+        {
+            _press = null;
+            _inputOn = true;
+            float guard = 0f;
+            while (!t.Skipped)
+            {
+                guard += GameClock.RealDeltaTime;
+                if (_press.HasValue && guard > 0.3f) break;
+                if (guard <= 0.3f) _press = null;
+                yield return null;
+            }
+            _press = null;
+            _inputOn = false;
+        }
 
         /// <summary>Una palabra fácil para la ronda guiada: del nivel dado y de pocas letras.</summary>
         private PuntaWord GuidedWord(int level, int maxLetters, string not = null)
@@ -1179,16 +1188,20 @@ namespace NeuroVida.Games.Anagramas
             t.Glow.rectTransform.sizeDelta = new Vector2(d * 1.9f * _s, d * 1.9f * _s);
             t.Glow.gameObject.SetActive(false);
             t.Shadow = MakeImage(t.Root, "Shadow", DiscSprite.Get());
+            t.Shadow.gameObject.SetActive(true);
             t.Shadow.color = new Color(0f, 0f, 0f, 0.45f);
             t.Shadow.rectTransform.sizeDelta = new Vector2(d * 1.02f * _s, d * 1.02f * _s);
             t.Shadow.rectTransform.anchoredPosition = new Vector2(0f, -3f * _s);
             t.Face = MakeImage(t.Root, "Face", DiscSprite.Get());
+            t.Face.gameObject.SetActive(true);
             t.Face.rectTransform.sizeDelta = new Vector2(d * _s, d * _s);
             t.Shine = MakeImage(t.Root, "Shine", RadialGlowSprite.Get());
+            t.Shine.gameObject.SetActive(true);
             t.Shine.color = new Color(1f, 1f, 1f, 0.7f);
             t.Shine.rectTransform.sizeDelta = new Vector2(d * 0.62f * _s, d * 0.46f * _s);
             t.Shine.rectTransform.anchoredPosition = new Vector2(-d * 0.13f * _s, d * 0.2f * _s);
             t.Rim = MakeImage(t.Root, "Rim", RingSprite.Get());
+            t.Rim.gameObject.SetActive(true);
             t.Rim.color = NeuroStyle.Ink;
             t.Rim.rectTransform.sizeDelta = new Vector2(d * 1.02f * _s, d * 1.02f * _s);
             t.Label = MakeText(t.Root, "Char", Mathf.RoundToInt(d * 0.55f * _s), TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
@@ -1229,6 +1242,13 @@ namespace NeuroVida.Games.Anagramas
         }
 
         // ---- lo que se dice, la escalera y los botones
+
+        /// <summary>Un aviso del juego; en la ronda guiada lo dice Nubi (su mensaje queda puesto hasta el siguiente), fuera de ella sale bajo la tarjeta.</summary>
+        private void Tell(string text, bool good)
+        {
+            if (_guided && _tutorial != null && _tutorial.Practicing) _tutorial.Say(text);
+            else Say(text, good);
+        }
 
         private void Say(string text, bool good)
         {
@@ -1723,6 +1743,59 @@ namespace NeuroVida.Games.Anagramas
             r.pivot = new Vector2(0.5f, 0.5f);
             _fonts.Add(new KeyValuePair<Text, float>(t, dp));
             return t;
+        }
+
+        // ------------------------------------------------------------------ verificación de que lo dibujado se ve
+
+        /// <summary>Para las pruebas: arma una ficha, la ficha fija de la ayuda, los botones, un lucero, el que vuela y la escalera, y devuelve lo que NO se vería (pieza
+        /// apagada o sin opacidad). Una ficha con la cara apagada deja solo la letra tinta sobre el cielo oscuro: el juego queda injugable (3-oct).</summary>
+        public List<string> AuditVisibility()
+        {
+            var problems = new List<string>();
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            if (_bank == null) _bank = PuntaBank.Fallback();
+            _word = _bank.All[0];
+            _m = PuntaLayout.Compute(_logicalH, 8);
+            _slots = new Tile[_word.Tiles.Length];
+            if (_rng == null) _rng = new System.Random(1);
+            void Check(string what, Graphic g, bool needsAlpha = true)
+            {
+                if (g == null) { problems.Add(what + ": no existe"); return; }
+                if (!g.gameObject.activeInHierarchy) problems.Add(what + ": apagada");
+                else if (needsAlpha && g.color.a <= 0.01f) problems.Add(what + ": transparente");
+            }
+            var tile = MakeTile('A');
+            tile.Root.gameObject.SetActive(true);
+            Check("ficha.Face", tile.Face);
+            Check("ficha.Rim", tile.Rim);
+            Check("ficha.Shadow", tile.Shadow);
+            Check("ficha.Shine", tile.Shine);
+            Check("ficha.Label", tile.Label);
+            MakeGhost();
+            _ghost.Root.gameObject.SetActive(true);
+            Check("fija.Face", _ghost.Face);
+            Check("fija.Rim", _ghost.Rim);
+            SetButtonsFor(Phase.Think, false);
+            foreach (var b in _buttons)
+            {
+                if (!b.Root.gameObject.activeInHierarchy) problems.Add("botón " + b.Kind + ": apagado");
+                Check("botón " + b.Kind + ".fondo", b.Bg);
+                Check("botón " + b.Kind + ".texto", b.Label);
+            }
+            FillLucero(0, PuntaTier.Solo);
+            _luceros[0].Root.gameObject.SetActive(true);
+            Check("lucero.Core", _luceros[0].Core);
+            Check("lucero.Shine", _luceros[0].Shine);
+            SetLadderVisible(true);
+            foreach (var d in _ladderDots) Check("escalera.punto", d);
+            Check("escalera.rótulo", _ladderLabel);
+            _card.gameObject.SetActive(true);
+            foreach (var w in _waves) { w.gameObject.SetActive(true); Check("onda", w, false); }
+            Check("tarjeta.fondo", _cardFill.GetComponent<Image>());
+            Check("tarjeta.borde", _cardBorder.GetComponent<Image>());
+            Check("tarjeta.texto", _defText);
+            foreach (var f in _flyers) { f.Root.gameObject.SetActive(true); Check("volador.Core", f.Core); Check("volador.Glow", f.Glow); f.Root.gameObject.SetActive(false); }
+            return problems;   // nada se destruye aquí (en modo edición no se puede): quien llama destruye el objeto entero
         }
 
         // ------------------------------------------------------------------ disposición
