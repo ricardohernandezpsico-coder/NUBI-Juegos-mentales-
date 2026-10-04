@@ -52,3 +52,15 @@ Para volver a 5 después de publicar: la idea «Código secreto» de `docs/ideas
 - **Código**: se borró `Games/Series/` (controlador, contrato `SeriesContract`, `MagnifierSprite` —solo lo usaban este juego y la vista previa `tools/art-preview`— y pruebas). El mundo de fondo `GameWorld.MeteorShower`
   («lluvia de meteoros a ritmo regular»; NO es el juego «Lluvia de meteoros») queda sin uso, disponible para otro juego. El código completo queda en el historial de git (último commit con el juego: `f523b23` y anteriores).
 
+**Ruta del Tesoro (RETIRADA, 4-oct-2026)**, id `rutatesoro` (Memoria, «memoria visoespacial»): unas casillas se iluminan en una cuadrícula, se apagan, se tocan las recordadas y la cuadrícula crece. Razones (Ricardo):
+(1) esa mecánica es prácticamente «Memory Matrix» de Lumosity, el riesgo legal más alto que quedaba (ver `docs/nombre-marca-y-riesgos.md`); (2) repite lo que ya hacen Rastro de luz (posiciones) y Parejas Ocultas
+(dónde estaba algo en una grilla). No hay boceto alternativo. Memoria pasó de 6 a 5 juegos (Parejas, Rastro de luz, Bitácora, Rumbo a Casa y Correo Estelar) y la app, de 20 a 19.
+- **El id `rutatesoro` queda RESERVADO** (no se reutiliza): `GameRegistry.retiredDomains`.
+- **Datos de quien ya lo jugó: NO se borran ni se migran**: las partidas y el progreso siguen en Room y en `skill` pero no se muestran ni cuentan para «Explorador», las ligas más altas, la liga general (promedio de los 19)
+  ni el área Memoria (sus 5 juegos); la racha y el total de partidas sí cuentan esos días, y un camino de hoy guardado que lo nombraba se corrige solo (`withoutRetiredGames`).
+  Pruebas: `flow/RetiredGameTest` (el id retirado, su área, racha y logros) además de las de los otros retirados.
+- **No estaba** en «Primer vuelo» ni en el punto de partida (`BaselinePlan`: Rastro, Freno, Aterrizaje y Meteoros), así que el inicio no cambia.
+- **Código**: se borró `Games/RutaTesoro/` (controlador, contrato `TreasureContract`, `TreasureSprites` —cristales, meteoritos…; solo lo usaban este juego, `SymbolPreviewExporter` y la vista previa `tools/art-preview`— y pruebas),
+  la lámina `arte-juegos.png` y `tools/art-preview/juegos.py` (era lo único que quedaba de ella). El mundo de fondo `GameWorld.TreasureMoon` («Luna del tesoro») queda sin uso, disponible para otro juego.
+  `Skill.ownTarget` (objetivo propio de aciertos) queda sin ningún juego que lo use, pero disponible. El código completo queda en el historial de git (último commit con el juego: `4c395fb` y anteriores).
+

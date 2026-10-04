@@ -1,6 +1,6 @@
 # «Quitar animaciones» de verdad — regla, componentes comunes e inventario (fases A y B)
 
-> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 20 juegos que quedan (Comparación Instantánea y Detective de Series también se retiraron, el 4-oct: tareas 31 y 33).
+> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 19 juegos que quedan (Comparación Instantánea, Detective de Series y Ruta del Tesoro también se retiraron, el 4-oct: tareas 31, 33 y 34).
 
 Tarea 18 (3-oct). Fase A: regla, componentes comunes e inventario. Fase B: la regla aplicada dentro de los 23 juegos (columna «Hecho» de las tablas).
 
@@ -140,7 +140,7 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | 1011-1026 `AnimateFlip` | La carta gira (escala X 1→0→1) | DECORATIVA (la exposición sí es la tarea) | no | Fundido entre dorso y cara con LA MISMA duración (2 × `FlipHalfSeconds`): el tiempo que la carta se ve no cambia | ✓ |
 | 210-211 | `RingBurst`, `SparkBurst` | DECORATIVA | sí (común) | — | — |
 
-**Ruta del Tesoro** — `RutaTesoro/TreasureGameController.cs`
+**Ruta del Tesoro (RETIRADA el 4-oct; su tabla queda como historia)** — `RutaTesoro/TreasureGameController.cs`
 
 | Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
 |---|---|---|---|---|---|

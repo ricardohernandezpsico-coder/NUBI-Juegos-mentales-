@@ -6,7 +6,7 @@ Acordada con Ricardo el 29/30-sep. Lo que manda es `CLAUDE.md` y el código; est
 
 | Área | Hoy | Faltan |
 |---|---|---|
-| Memoria | 6 (Parejas, Secuencia, Ruta del Tesoro, Bitácora, Rumbo a Casa, Correo Estelar) | – |
+| Memoria | 5 (Parejas, Secuencia, Bitácora, Rumbo a Casa, Correo Estelar; Ruta del Tesoro se retiró el 4-oct) | – |
 | Atención y velocidad | 5 (Tinta o Palabra, Piloto, Freno, Satélites, Rescate relámpago; Cambio de Chip se retiró el 3-oct y Comparación Instantánea el 4-oct) | – |
 | Razonamiento y números | 4 (Acoplamiento, Tráfico Estelar, Carga exacta —antes Cálculo Sereno—, Aterrizaje Lunar; Detective de Series se retiró el 4-oct; idea para volver a 5: «Código secreto», en `docs/ideas-guardadas.md`) | – |
 | Lenguaje | 2 (Anagramas, Lluvia de meteoros) | 1 (La palabra intrusa) |

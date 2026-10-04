@@ -109,7 +109,6 @@ class MemoryGamesRatingTest {
   fun `Secuencia ya no tiene objetivo propio y sus modos piden rondas`() {
     assertEquals(0.80f, Skill.trainingTarget("secuencia", AgeBand.ADULT), 1e-6f)
     assertEquals(0.85f, Skill.trainingTarget("secuencia", AgeBand.SENIOR), 1e-6f)
-    assertEquals(0.70f, Skill.trainingTarget("rutatesoro", AgeBand.ADULT), 1e-6f) // Ruta del Tesoro queda como estaba
     assertTrue(Skill.passed("secuencia", PlayMode.DESAFIO, AgeBand.ADULT, hits = 5, trials = 6))
     assertFalse(Skill.passed("secuencia", PlayMode.DESAFIO, AgeBand.ADULT, hits = 4, trials = 6))
     assertTrue(Skill.passed("parejas", PlayMode.DESAFIO, AgeBand.ADULT, hits = 30, trials = 36))

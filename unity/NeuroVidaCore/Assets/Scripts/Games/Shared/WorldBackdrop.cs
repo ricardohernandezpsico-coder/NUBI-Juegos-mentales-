@@ -69,6 +69,7 @@ namespace NeuroVida.Games.Shared
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.26f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.16f),
         };
 
+        // Sin uso desde que Ruta del Tesoro se retiró (4-oct-2026): queda como mundo disponible para otro juego.
         public static GameWorld TreasureMoon => new GameWorld
         {
             Name = "Luna del tesoro", SurfaceHeight = 0.15f, Stars = 46, VanishingPoint = new Vector2(0.5f, 0.3f),

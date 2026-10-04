@@ -37,7 +37,6 @@ private val DebugGames = listOf(
   DebugGame("meteoros", "Lluvia de meteoros: tutorial + versión corta (como el inicio)", level = 1, timed = false, tutorial = true, shortVersion = true, tag = "meteoros_inicio"),
   DebugGame("parejas", "Parejas Ocultas", level = 1, timed = false),
   DebugGame("stroop", "Tinta o Palabra (Reto 60 s)", level = 4, timed = true), // desde el nivel 4 la regla cambia
-  DebugGame("rutatesoro", "Ruta del Tesoro (con reloj)", level = 1, timed = true),
   DebugGame("calculo", "Carga exacta (Reto 120 s)", level = 1, timed = true),
   DebugGame("calculo", "Carga exacta con tutorial", level = 1, timed = false, tutorial = true, tag = "calculo_tutorial"),
   DebugGame("anagramas", "En la punta de la lengua (Reto 120 s)", level = 1, timed = true),

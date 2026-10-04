@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Parejas;
-using NeuroVida.Games.RutaTesoro;
 using NeuroVida.Games.Secuencia;
 using NeuroVida.Games.Shared;
 using NeuroVida.Games.Stroop;
@@ -38,7 +37,6 @@ internal static class Program
                 Dump($"sym_{kind}_{v}", SymbolSprite.Get(kind, v));
         foreach (CardSprites.Face face in Enum.GetValues(typeof(CardSprites.Face)))
             Dump("card_" + face, CardSprites.Get(face));
-        for (int i = 0; i < 6; i++) Dump("treasure_" + i, TreasureSprites.ForIndex(i));
         Dump("heart_full", HeartSprite.GetFull());
         Dump("heart_lost", HeartSprite.GetLost());
         // Rastro de luz: los 9 luceros de cristal, el disco y el aro punteados, la ✗, los 4 íconos de modo, Nubi maestra del tutorial y el tablero

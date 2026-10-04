@@ -107,7 +107,7 @@ class TrailTelemetryTest {
 
   @Test
   fun `los juegos sin tutorial guiado no lo piden aunque no tengan historial`() {
-    assertFalse(UnityGameLauncher.shouldShowTutorial("rutatesoro", emptyList()))
+    assertFalse(UnityGameLauncher.shouldShowTutorial("radar", emptyList()))
     assertFalse(UnityGameLauncher.shouldShowTutorial("intrusa", emptyList()))
     assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo"), UnityGameLauncher.TUTORIAL_GAMES)
   }

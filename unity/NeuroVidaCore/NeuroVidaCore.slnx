@@ -21,7 +21,6 @@
   <Project Path="NeuroVida.Games.Radar.Tests.csproj" />
   <Project Path="NeuroVida.Games.Piloto.Tests.csproj" />
   <Project Path="NeuroVida.Bridge.csproj" />
-  <Project Path="NeuroVida.Games.RutaTesoro.Tests.csproj" />
   <Project Path="NeuroVida.Games.Meteoros.Tests.csproj" />
   <Project Path="NeuroVida.Games.Bitacora.Tests.csproj" />
   <Project Path="NeuroVida.Games.Rumbo.Tests.csproj" />

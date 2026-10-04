@@ -31,7 +31,7 @@ una sola matriz lógica. Este documento revisa lo que hay hoy, propone la regla 
 | 1 | Hay **cuatro "dificultades" distintas**: (a) el rating del DDA común (0..1 por juego, el que de verdad usa Unity); (b) un "nivel 1-5" antiguo que sube si el puntaje es ≥ 85 y baja si es ≤ 45, con nombres Principiante…Experto (`LevelTier`, se ve en la pantalla de carga y en Liga); (c) el modo de Ajustes (Auto-adaptativa / Principiante / Intermedio / Avanzado / Personalizada); (d) Suave / Equilibrado / Desafío en la ventana antes de jugar (±1 nivel). | (c) y (d) **no hacen nada** desde la segunda partida: si el juego tiene rating guardado, Unity lo usa e ignora el nivel. El (b) casi no se mueve en los juegos adaptativos, porque el puntaje de la partida es el porcentaje de aciertos, el DDA lo mantiene cerca de 80% y rara vez llega a 85. La persona ve un "Nivel 3 · Intermedio" que no dice dónde está. |
 | 2 | El punto de partida estimado (si se salta la evaluación) escribe un rating en **todos** los juegos, jugados o no. | Un juego nunca jugado mostraría "tu avance 35%". Hay que separar "desde dónde parte" de "lo que se midió". |
 | 3 | La edad cambia la tasa de aciertos buscada (80% o 85%). | El rating de una persona mayor queda ~⅓ de nivel más abajo que si se midiera a 80%: su "45%" no significaría lo mismo que el de un adulto. Es chico, pero hay que corregirlo para que la regla sea una sola. |
-| 4 | Ruta del Tesoro busca 70% de aciertos (perder la ruta cuesta una vida). | Su rating está medido con otra vara: se corrige con la misma fórmula. |
+| 4 | (Hasta el 4-oct) Ruta del Tesoro buscaba 70% de aciertos (perder la ruta costaba una vida). Retirada: hoy ningún juego tiene objetivo propio, pero la corrección sigue disponible (`ownTarget`). | Su rating está medido con otra vara: se corrige con la misma fórmula. |
 | 5 | En un juego adaptativo **los aciertos se mantienen cerca de 8 de 10 por diseño**. | El porcentaje de aciertos NO sirve para mostrar avance ni fortalezas: lo que avanza es el nivel. |
 | 6 | Varias marcas de los juegos estrella dependen del nivel jugado (Aterrizaje: tipo de regla; Rumbo: cantidad de tramos; Bitácora: paradas; Correo: encargos; en parte Acoplamiento y Satélites). | Si subes de nivel, la marca puede "empeorar" aunque mejores. La evolución de la marca debe compararse a nivel parecido. Las marcas tipo umbral (tu vistazo, tu freno, tu carga, costo de multitarea) no tienen este problema. |
 | 7 | (Resuelto el 3-oct: ver DDA-comun.md §6.) Secuencia (16 niveles) y Parejas (10 niveles) tenían motores propios y su avance salía del nivel 1-5 antiguo. | Ya usan el DDA común: su escalera normalizada a 0..1, como los demás. |
@@ -62,7 +62,7 @@ De ahí sale todo:
   sobre la escalera del juego.
   - Adulto (busca 80%): sin corrección.
   - Mayor (busca 85%): + 0,35 / s niveles.
-  - Ruta del Tesoro (busca 70%): − 0,54 / s niveles.
+  - Objetivo propio, p. ej. 70% (el último fue Ruta del Tesoro, retirada el 4-oct): − 0,54 / s niveles.
 - **Dónde parte cada modo** = `nivel(p_modo) = nivel(p_buscado) + (logit(p_buscado) − logit(p_modo)) / s`.
 
 `s` es la pendiente de cada juego. Valor inicial: 1 por nivel en las escaleras de 9 a 16 niveles y 2 en las de 5
@@ -148,7 +148,7 @@ no haya dos escalas de nombres. La liga conserva sus metales (Bronce…Maestro),
 | Tipo | Juegos | Cómo se aplica |
 |---|---|---|
 | DDA común, una escalera | Tinta o Palabra, Carga exacta, Anagramas, Radar, Freno, Aterrizaje, Acoplamiento, Tráfico, Satélites, Rumbo | Directo: piso o techo sobre el rating. |
-| DDA común, objetivo propio | Ruta del Tesoro (70%) | Igual, con la corrección de la sección 3. |
+| DDA común, objetivo propio | (ninguno hoy; el último fue Ruta del Tesoro, 70%) | Igual, con la corrección de la sección 3. |
 | Dos escaleras | Piloto (pilotaje y señales), Correo (encargos y pilotaje) | El avance es el de la tarea que se mide: Piloto, el promedio de las dos (como hoy); Correo, la de encargos. El piso o techo se aplica a las dos. |
 | (Ya no hay motores propios desde el 3-oct) | Secuencia (16 niveles), Parejas (10 niveles) | Pasaron al DDA común: directo, piso o techo sobre el rating, igual que los demás. |
 | Sesión diaria | Bitácora de Misión | Solo A tu medida (su espera y su informe dependen de la sesión). |

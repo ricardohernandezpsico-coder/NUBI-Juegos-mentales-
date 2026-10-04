@@ -22,7 +22,6 @@
     <Compile Include="$(Src)/Shared/ClayRaster.cs" />
     <Compile Include="$(Src)/Parejas/SymbolSprite.cs" />
     <Compile Include="$(Src)/Parejas/CardSprites.cs" />
-    <Compile Include="$(Src)/RutaTesoro/TreasureSprites.cs" />
     <Compile Include="$(Src)/Secuencia/HeartSprite.cs" />
     <Compile Include="$(Src)/Secuencia/TileSprites.cs" />
     <Compile Include="$(Src)/Secuencia/TilePalette.cs" />

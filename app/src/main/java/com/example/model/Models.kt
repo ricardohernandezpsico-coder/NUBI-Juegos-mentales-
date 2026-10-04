@@ -77,14 +77,6 @@ object GameRegistry {
       iconEmoji = "🔮"
     ),
     GameDefinition(
-      id = "rutatesoro",
-      title = "Ruta del Tesoro",
-      domain = DomainType.MEMORIA,
-      subtitle = "Memoria visoespacial",
-      instruction = "Memoriza dónde aparecen los tesoros en el mapa y encuéntralos todos cuando se escondan.",
-      iconEmoji = "💎"
-    ),
-    GameDefinition(
       id = "stroop",
       title = "Tinta o Palabra",
       domain = DomainType.ATENCION,
@@ -231,9 +223,11 @@ object GameRegistry {
    *  - `cambiochip` (Cambio de Chip, Atención): retirado el 3-oct-2026 (docs/juegos/descartados.md).
    *  - `comparacion` (Comparación Instantánea, Atención): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    *  - `series` (Detective de Series, Razonamiento): retirado el 4-oct-2026 (docs/juegos/descartados.md).
+   *  - `rutatesoro` (Ruta del Tesoro, Memoria): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    */
-  val retiredDomains: Map<String, DomainType> =
-    mapOf("cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION, "series" to DomainType.RAZONAMIENTO)
+  val retiredDomains: Map<String, DomainType> = mapOf(
+    "cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION, "series" to DomainType.RAZONAMIENTO, "rutatesoro" to DomainType.MEMORIA
+  )
 
   fun isRetired(id: String): Boolean = id in retiredDomains
 }

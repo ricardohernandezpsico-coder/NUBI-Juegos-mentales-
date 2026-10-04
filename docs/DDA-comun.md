@@ -1,8 +1,8 @@
 # DDA común de Nubi (dificultad adaptativa)
 
 Estado: implementado en Unity el 24-sep-2026 (`Assets/Scripts/Games/AdaptiveDifficulty.cs`), conectado a
-Stroop, Ruta del Tesoro, «Carga exacta» (antes Cálculo Sereno; id `calculo`) y «En la punta de la lengua» (antes Anagramas; y Cambio de Chip, Comparación Instantánea y Detective de Series, retirados el 3 y el 4-oct: ver `docs/juegos/descartados.md`). El 3-oct
-se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (ver §6): **los 20 juegos usan el motor común** (Piloto y Correo
+Stroop, «Carga exacta» (antes Cálculo Sereno; id `calculo`) y «En la punta de la lengua» (antes Anagramas; y Cambio de Chip, Comparación Instantánea, Detective de Series y Ruta del Tesoro, retirados el 3 y el 4-oct: ver `docs/juegos/descartados.md`). El 3-oct
+se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (ver §6): **los 19 juegos usan el motor común** (Piloto y Correo
 con dos instancias; Freno solo en la tarea de ir).
 
 > **Alcance y honestidad**: esto es un diseño de ingeniería inspirado en literatura psicométrica y de
@@ -62,7 +62,6 @@ Parámetros por juego:
 | Stroop («Dos orillas», 3-oct: reglas, % que chocan y llegada por nivel en [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md) §5) | 5 | 0.12 / 0.20 | edad | Reto |
 | Carga exacta (id `calculo`, 4-oct: [diseno-carga-exacta.md](diseno-carga-exacta.md) §5) | 5 | 0.40 | edad | no (con pista cuenta como medio acierto) |
 | En la punta de la lengua (id `anagramas`, 3-oct) | 5 | 0.40 | edad | no |
-| Ruta del Tesoro | 12 | 0.50 (por ruta) | 0.70 (perder la ruta cuesta una vida) | no |
 | Parejas Ocultas | 10 | 0.15 | edad | Reto |
 | Rastro de luz (id `secuencia`) | 16 | 0.25 adultos · 0.17 mayores · 0.22 menores de 18 (ver §6) | edad | no |
 
@@ -130,7 +129,7 @@ cruces; misma escala que la Secuencia anterior, así que el rating guardado de 0
 - Telemetría: `SequenceTelemetry` conserva `end_rating`, `peak_level`, `mode_trials` y `mode_hits` y agrega `ras_*` (ver la ficha técnica del documento).
 
 **La app**: `OWN_ENGINE_GAMES` se borró (el repositorio siembra y retoma el rating de los dos como el de todos);
-`Skill.kt` quitó `ownTarget` de Secuencia (el objetivo es el de la edad; Ruta del Tesoro queda con 0,70) y la sumó
+`Skill.kt` quitó `ownTarget` de Secuencia (el objetivo es el de la edad; Ruta del Tesoro quedaba con 0,70 hasta que se retiró el 4-oct: hoy ningún juego tiene objetivo propio) y la sumó
 a los juegos de rondas largas (un Desafío pide 6 rondas, no 12 ensayos). `parseCardsResult` lee `end_rating`,
 `peak_level` y los ensayos del modo.
 

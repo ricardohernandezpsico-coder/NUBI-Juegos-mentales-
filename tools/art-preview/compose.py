@@ -70,12 +70,6 @@ def panel(dst, raw, x0, y0, title, board_syms):
         card(dst, raw, f, sym, x0 + 10 + (i % 4) * c, y0 + 80 + (i // 4) * c, c)
 
     ty = y0 + 80 + 3 * c + 40
-    d.text((x0 + 330, ty), 'Ruta del Tesoro', font=ImageFont.truetype(FS, 30), fill=(200, 210, 255), anchor='mt')
-    for i in range(6):
-        tx = x0 + 20 + i * 105
-        d.rounded_rectangle((tx, ty + 50, tx + 94, ty + 144), 20, fill=(0x7D, 0xD3, 0xFC))
-        paste(dst, load(f'{raw}/treasure_{i}.raw'), tx + 7, ty + 57, 80)
-
     hy = ty + 180
     ov = Image.new('RGBA', dst.size, (0, 0, 0, 0))
     ImageDraw.Draw(ov).rounded_rectangle((x0 + 210, hy, x0 + 450, hy + 90), 45, fill=(0, 0, 0, 72))

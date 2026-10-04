@@ -19,7 +19,7 @@ enum class PlayMode(val label: String, val what: String) {
 
 /**
  * La escalera de un juego: [levels] niveles (la misma para todas las edades), [ownTarget] = aciertos que busca el
- * juego si no usa el de la edad (hoy solo Ruta del Tesoro, 70%) y [slope] =
+ * juego si no usa el de la edad (hoy ningún juego: el último fue Ruta del Tesoro, 70%, retirada el 4-oct) y [slope] =
  * cuánto caen los aciertos por nivel (logística). La pendiente es un SUPUESTO inicial: 1 por nivel en escaleras de
  * 9 a 16 niveles y 2 en las de 5 a 7, donde cada nivel es un salto mayor; se calibra con datos.
  */
@@ -31,7 +31,7 @@ data class ModeBounds(val floor: Float? = null, val ceiling: Float? = null)
 /**
  * Dificultad, edad y avance con una sola regla (lógica pura con pruebas):
  * - **Tu avance** (0..1) = el punto de la escalera donde se aciertan 8 de 10, igual para todas las edades. El DDA
- *   guarda el rating medido con los aciertos que busca al entrenar (85% en mayores, 70% en Ruta del Tesoro...); acá
+ *   guarda el rating medido con los aciertos que busca al entrenar (85% en mayores...); acá
  *   se lleva a 80% con `nivel(p) = θ − logit(p) / s`.
  * - **La edad** cambia los aciertos buscados y, con ellos, dónde parte cada modo.
  * - **Los modos** son "A tu medida" con techo (Suave) o piso (Desafío, Experto), calculados desde los aciertos
@@ -53,7 +53,6 @@ object Skill {
   val ladders: Map<String, Ladder> = mapOf(
     "stroop" to Ladder(5), "anagramas" to Ladder(5), "calculo" to Ladder(5),
     "piloto" to Ladder(9),
-    "rutatesoro" to Ladder(12, ownTarget = 0.70f),
     "radar" to Ladder(12), "freno" to Ladder(12), "aterrizaje" to Ladder(12), "acoplamiento" to Ladder(12),
     "trafico" to Ladder(12), "satelites" to Ladder(12), "meteoros" to Ladder(12), "disparate" to Ladder(12), "cosecha" to Ladder(10), "intrusa" to Ladder(12),
     "bitacora" to Ladder(10), "rumbo" to Ladder(10), "correo" to Ladder(10), "parejas" to Ladder(10),

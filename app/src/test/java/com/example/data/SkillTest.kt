@@ -17,9 +17,8 @@ class SkillTest {
     assertEquals(0.40f, Skill.progress("radar", 0.40f, AgeBand.UNDER_18), eps)
     // Mayor: busca 85%, su rating queda ~0,35 niveles más abajo; se devuelve (12 niveles).
     assertEquals(0.40f + 0.3483f / 12f, Skill.progress("radar", 0.40f, AgeBand.SENIOR), eps)
-    // Ruta del Tesoro busca 70%: su rating queda más arriba que el de 8 de 10.
-    assertEquals(0.40f - 0.5390f / 12f, Skill.progress("rutatesoro", 0.40f, AgeBand.ADULT), eps)
-    assertEquals(0f, Skill.progress("rutatesoro", 0.01f, AgeBand.ADULT), eps)
+    // Nunca baja de cero.
+    assertEquals(0f, Skill.progress("radar", -0.2f, AgeBand.ADULT), eps)
   }
 
   @Test
@@ -40,7 +39,6 @@ class SkillTest {
   fun `aciertos esperados y como se dicen`() {
     assertEquals(0.70f, Skill.expectedHits("radar", PlayMode.DESAFIO, AgeBand.ADULT), eps)
     assertEquals(0.85f, Skill.expectedHits("radar", PlayMode.A_TU_MEDIDA, AgeBand.SENIOR), eps)
-    assertEquals(0.5765f, Skill.expectedHits("rutatesoro", PlayMode.DESAFIO, AgeBand.ADULT), eps)
     assertEquals("8 de 10", Skill.hitsText(0.80f))
     assertEquals("8 a 9 de 10", Skill.hitsText(0.85f))
     assertEquals("9 de 10", Skill.hitsText(0.92f))

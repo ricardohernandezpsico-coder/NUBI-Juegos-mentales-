@@ -1,6 +1,5 @@
 using System.IO;
 using NeuroVida.Games.Parejas;
-using NeuroVida.Games.RutaTesoro;
 using NeuroVida.Games.Secuencia;
 using UnityEditor;
 using UnityEngine;
@@ -27,7 +26,6 @@ namespace NeuroVida.Bridge.EditorTools
             ExportCards(Path.Combine(outDir, "preview-cards.png"));
             ExportHearts(Path.Combine(outDir, "preview-hearts.png"));
             ExportTiles(Path.Combine(outDir, "preview-tiles.png"));
-            ExportTreasures(Path.Combine(outDir, "preview-treasures.png"));
             Debug.Log("[SymbolPreview] OK -> " + outDir);
         }
 
@@ -116,32 +114,6 @@ namespace NeuroVida.Bridge.EditorTools
                         }
                     }
                 }
-            }
-            Save(sheet, width, height, path);
-        }
-
-        private static void ExportTreasures(string path)
-        {
-            const int cell = 200;
-            int width = 6 * cell;
-            int height = cell;
-            var sheet = NewSheet(width, height, new Color32(0x08, 0x1B, 0x36, 255));
-            var tile = TileSprites.Get().texture.GetPixels32();
-            int ts = TileSprites.Get().texture.width;
-            var sand = new Color(0xF0 / 255f, 0xD9 / 255f, 0xA6 / 255f);
-            for (int i = 0; i < 6; i++)
-            {
-                for (int y = 0; y < cell; y++)
-                {
-                    for (int x = 0; x < cell; x++)
-                    {
-                        var src = tile[(y * ts / cell) * ts + (x * ts / cell)];
-                        var tinted = new Color32((byte)(src.r * sand.r), (byte)(src.g * sand.g), (byte)(src.b * sand.b), src.a);
-                        sheet[y * width + i * cell + x] = Over(tinted, sheet[y * width + i * cell + x]);
-                    }
-                }
-                int pad = cell / 6;
-                Blit(sheet, width, TreasureSprites.ForIndex(i).texture, i * cell + pad, pad + cell / 24, cell - pad * 2, cell - pad * 2);
             }
             Save(sheet, width, height, path);
         }

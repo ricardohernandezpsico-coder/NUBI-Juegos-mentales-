@@ -83,7 +83,7 @@ import kotlin.random.Random
  */
 object ResultPhrases {
   /** Juegos cuyo puntaje y medida NO usan rapidez: ni tiempo de reacción en el motor ni una medida en ms o por segundo. */
-  val NO_SPEED_GAMES = setOf("secuencia", "rutatesoro", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa")
+  val NO_SPEED_GAMES = setOf("secuencia", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa")
 
   /**
    * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono: lo que cambia con la preferencia de la persona

@@ -42,7 +42,6 @@ import kotlin.math.sin
  * sale de lo que se hace en el juego:
  * - Rastro de luz (id «secuencia»): tres luceros de cristal unidos por el rastro de la chispa.
  * - Parejas Ocultas: una carta boca abajo y otra dada vuelta.
- * - Ruta del Tesoro: cristales estelares sobre una roca lunar (los tesoros espaciales del juego).
  * - Tinta o Palabra: gota de tinta y tarjeta con palabra.
  * - Anagramas: dos fichas de letras.
  * - Carga exacta (id «calculo»): un reactor de arcilla con su aro de luces y tres celdas de energía debajo.
@@ -74,7 +73,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
-  "secuencia", "parejas", "rutatesoro", "stroop", "anagramas", "calculo", "meteoros", "disparate", "cosecha", "intrusa"
+  "secuencia", "parejas", "stroop", "anagramas", "calculo", "meteoros", "disparate", "cosecha", "intrusa"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -110,15 +109,6 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
         clay(roundRect(42f, 16f, 42f, 60f, 8f), Cream)
         clay(star(Offset(63f, 46f), 15f, 7f, 5), Clay.Coral, border = 4f, shadow = false)
       }
-    }
-    "rutatesoro" -> {
-      // Cristales estelares sobre una roca lunar (como los tesoros del juego).
-      clay(poly(20f, 76f, 16f, 50f, 24f, 38f, 36f, 50f, 38f, 78f), Clay.Coral)
-      clay(poly(62f, 78f, 63f, 52f, 74f, 40f, 86f, 52f, 80f, 76f), Clay.Sky)
-      clay(poly(38f, 80f, 38f, 34f, 50f, 12f, 62f, 34f, 62f, 80f), Clay.Grape, gloss = true)
-      drawLine(Ink.copy(alpha = 0.45f), Offset(50f, 16f), Offset(50f, 78f), 3f, StrokeCap.Round)
-      clay(Path().apply { addOval(Rect(12f, 70f, 88f, 92f)) }, Color(0xFF8E86C8))
-      sparkle(Offset(82f, 20f), 10f, Color.White)
     }
     "stroop" -> {
       clay(roundRect(34f, 50f, 54f, 34f, 9f), Cream)

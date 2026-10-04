@@ -45,7 +45,7 @@ class CargaTelemetryTest {
 
   @Test
   fun `otros juegos no traen los campos de este`() {
-    val r = NativeReceiver.parse(json(""""carga_alone":5,"carga_ms":9000""", game = "rutatesoro"))!!
+    val r = NativeReceiver.parse(json(""""carga_alone":5,"carga_ms":9000""", game = "radar"))!!
     assertNull(r.cargaAlone)
     assertNull(r.cargaMs)
   }
