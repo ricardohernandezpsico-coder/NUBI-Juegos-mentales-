@@ -397,6 +397,7 @@ namespace NeuroVida.Games.Freno
             if (GameClock.DeltaTime <= 0f) return;
             if (_phase != Phase.Foreperiod && _phase != Phase.Respond) return;
             if (!Input.GetMouseButtonDown(0) || _tapped) return;
+            if (_tutorial != null && _tutorial.Coach.Blocks(Input.mousePosition)) return;   // el foco de Nubi: solo vale el toque dentro del hueco
             // Toques al presionar (no al soltar): el tiempo de respuesta no carga la demora del dedo al levantarse.
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, Input.mousePosition, null, out var local)) return;
             if (local.y > _laneTop) return; // arriba (medidor, marcador): no es un lanzamiento
@@ -1140,28 +1141,19 @@ namespace NeuroVida.Games.Freno
             _phase = Phase.Idle;
             SetPrompt("", Color.white);
             SetupLanes(2);
-            yield return StartCoroutine(Wait(0.5f));
+            var coach = t.Coach;
+            yield return StartCoroutine(Wait(0.4f));
+            // «Nubi entrenadora»: 1) tocar el cohete que se enciende (el juego se congela y ese toque es el real), 2) el primer ¡ALTO! se ve con el foco un instante y
+            // se deja quieto, 3) un aviso breve al lograrlo. Nada se queda esperando en silencio.
             var script = new GuidedScript(BrakeContract.GuidedPlan.Length);
-            bool stopExplained = false;
-            int goShown = 0;
             while (!script.Finished)
             {
                 if (t.Skipped) { script.Skip(); break; }
                 bool isStop = BrakeContract.GuidedPlan[script.Index] == BrakeContract.GuidedStep.Stop;
                 int lane = (script.Index + script.Failures) % 2;
                 var L = _lanes[lane];
-                if (isStop && !stopExplained)
-                {
-                    stopExplained = true;
-                    yield return StartCoroutine(ShowStopPreviewHeld(t));
-                }
-                string instruction = isStop ? "Se enciende otro cohete. Si aparece ¡ALTO!, no lo toques" : goShown == 0 ? "Toca el cohete que se enciende" : "Otra vez: toca el cohete que se enciende";
-                // el cohete NO se enciende solo: la persona lee y despega ella; la explicación queda puesta durante el ensayo
-                yield return StartCoroutine(t.WaitForContinue(instruction, "Toca para despegar"));
-                if (t.Skipped) { script.Skip(); break; }
-                t.Say(instruction);
 
-                SetLit(L, true);                      // el cohete se enciende y se queda encendido hasta que se toque (lento, sin apuro)
+                SetLit(L, true);                      // el cohete se enciende y se queda encendido hasta que se toque
                 PlayTone(784f, 0.06f, 0.06f);
                 _tutorialLane = lane;
                 L.Hint.gameObject.SetActive(!isStop); // el aro marca el que se toca; el del ¡ALTO! no lleva aro
@@ -1170,14 +1162,15 @@ namespace NeuroVida.Games.Freno
                 _phase = Phase.Respond;
                 float litAt = GameClock.Time;
                 bool stopShown = false;
-                float limit = isStop ? 3.2f : 60f;
+                float limit = isStop ? 3.2f : 600f;
+                if (!isStop) StartCoroutine(coach.Touch(() => LaneHole(L), "Toca para despegar, ¡rápido!"));
                 while (!_tapped && !t.Skipped && GameClock.Time - litAt < limit)
                 {
                     if (isStop && !stopShown && GameClock.Time - litAt >= 0.7f)
                     {
                         stopShown = true;
                         ShowStop();
-                        t.Say("¡ALTO! Este no: déjalo quieto");
+                        StartCoroutine(coach.Watch(() => coach.RectOf(_stopRect), "¡ALTO! Cuando aparece, no toques nada", () => false, 1.6f));
                     }
                     yield return null;
                 }
@@ -1185,6 +1178,7 @@ namespace NeuroVida.Games.Freno
                 L.Hint.gameObject.SetActive(false);
                 _tutorialLane = -1;
                 SetLit(L, false);
+                coach.Hide();
                 if (t.Skipped) { script.Skip(); break; }
 
                 if (!isStop)
@@ -1194,15 +1188,14 @@ namespace NeuroVida.Games.Freno
                         PlayTone(196f, 0.25f, 0.05f);
                         StartCoroutine(FlyAway(L, false));
                         GameFeel.Haptic(GameFeel.HapticKind.Light);
-                        goShown++;
                         script.Success();
-                        yield return StartCoroutine(t.WaitForContinue("¡Bien! Tocaste el cohete que se enciende."));
+                        yield return StartCoroutine(Wait(0.6f));
                     }
                     else if (_tapped)
                     {
                         ShowMark(_lanes[_tapLane], false);
                         script.Failure();
-                        yield return StartCoroutine(t.WaitForContinue("Casi: se toca el cohete que se enciende. Mira otra vez"));
+                        yield return StartCoroutine(coach.Notice("Casi: se toca el cohete que se enciende", 2.2f));
                         HideMark(_lanes[_tapLane]);
                     }
                 }
@@ -1212,7 +1205,7 @@ namespace NeuroVida.Games.Freno
                     ShowMark(L, true);
                     StartCoroutine(Steam(L));
                     script.Success();
-                    yield return StartCoroutine(t.WaitForContinue("¡Frenaste a tiempo! Con el ¡ALTO! no se toca."));
+                    yield return StartCoroutine(coach.Notice("¡Frenaste a tiempo!", 1.8f));
                     HideMark(L);
                     yield return StartCoroutine(FadeStop(0.2f));
                 }
@@ -1222,33 +1215,33 @@ namespace NeuroVida.Games.Freno
                     ShowMark(_tapLane >= 0 ? _lanes[_tapLane] : L, false);
                     script.Failure();
                     yield return StartCoroutine(Hop(L));
-                    yield return StartCoroutine(t.WaitForContinue("Casi: con el ¡ALTO! el cohete se queda quieto. Probemos otra vez"));
+                    yield return StartCoroutine(coach.Notice("Casi: con el ¡ALTO! el cohete se queda quieto. Probemos otra vez", 2.4f));
                     HideMark(_tapLane >= 0 ? _lanes[_tapLane] : L);
                     yield return StartCoroutine(FadeStop(0.2f));
                 }
-                yield return StartCoroutine(Wait(0.35f));
+                yield return StartCoroutine(Wait(0.3f));
             }
             _stopRect.gameObject.SetActive(false);
             foreach (var l in _lanes) { l.Beacon.color = new Color(1f, 1f, 1f, 0.18f); l.Mark.gameObject.SetActive(false); l.Hint.gameObject.SetActive(false); }
             if (!script.Skipped)
             {
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(t.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
+                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
             }
             t.EndPractice();
             SetPrompt("", Color.white);
         }
         // </guided>
 
-        /// <summary>La señal ¡ALTO! se queda a la vista con su explicación hasta que la persona toque (en la partida se muestra un momento y se va).</summary>
-        private IEnumerator ShowStopPreviewHeld(GuidedTutorial t)
+        /// <summary>El cohete, su botón y su baliza (para el foco de «tocar»).</summary>
+        private Rect LaneHole(Lane L)
         {
-            _stopRect.gameObject.SetActive(true);
-            _stopImage.color = Color.white;
-            _stopText.color = Color.white;
-            yield return StartCoroutine(PopIn(_stopRect, 0.25f));
-            yield return StartCoroutine(t.WaitForContinue("Esta es la señal ¡ALTO!: cuando aparezca, no toques el cohete."));
-            yield return StartCoroutine(FadeStop(0.25f));
+            var coach = _tutorial.Coach;
+            var a = coach.RectOf(L.RocketRect);
+            var b = coach.RectOf(L.Button.rectTransform);
+            var c = coach.RectOf(L.Beacon.rectTransform);
+            return Rect.MinMaxRect(Mathf.Min(a.xMin, Mathf.Min(b.xMin, c.xMin)), Mathf.Min(a.yMin, Mathf.Min(b.yMin, c.yMin)),
+                Mathf.Max(a.xMax, Mathf.Max(b.xMax, c.xMax)), Mathf.Max(a.yMax, Mathf.Max(b.yMax, c.yMax)));
         }
     }
 }

@@ -205,7 +205,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 413 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados) + 31 arranques de smoke (los 22 juegos, los 5 tutoriales y las 3 versiones cortas: `--juegos Tutorial,TutorialFreno,CortoFreno…`).
+- Unity EditMode: 418 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados) + 31 arranques de smoke (los 22 juegos, los 5 tutoriales y las 3 versiones cortas: `--juegos Tutorial,TutorialFreno,CortoFreno…`).
 - Léxico de Lluvia de meteoros: 11 pruebas del filtro de nombres propios en `tools/lexico/test_propios.py` (`python -m unittest test_propios`, desde `tools/lexico`).
 - Banco de definiciones de «En la punta de la lengua» (reemplaza a Anagramas): 16 pruebas en `tools/punta/test_banco.py` (`python -m unittest test_banco`, desde `tools/punta`; ~1 s). Diseño: `docs/diseno-punta-de-la-lengua.md`.
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).

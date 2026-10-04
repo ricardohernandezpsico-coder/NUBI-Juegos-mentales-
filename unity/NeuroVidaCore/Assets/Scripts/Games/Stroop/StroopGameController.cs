@@ -1069,27 +1069,25 @@ namespace NeuroVida.Games.Stroop
             ApplyRule(StroopRule.Ink, false);
             yield return Motion.Hold(0.4f);
 
-            var script = new GuidedScript(StroopContract.GuidedTrials.Length);
+            var coach = t.Coach;
+            // «Nubi entrenadora»: dos palabras, la primera de la orilla de la TINTA y la primera de la orilla de la PALABRA. En cada una la tarjeta llega sola, se congela con el foco
+            // (la tarjeta, su orilla y los botones) y el toque en un botón es la respuesta de verdad. Después, un aviso breve.
+            var script = new GuidedScript(2);
             while (!script.Finished)
             {
                 if (t.Skipped) { script.Skip(); break; }
                 var trial = StroopContract.GuidedTrials[script.Index];
-                bool hinted = script.Index < StroopContract.GuidedHinted;
-                string instruction = script.Index == 0 ? "Llega por la orilla de la TINTA: toca el COLOR con que está escrita"
-                    : script.Index == 1 ? "Ahora llega por la orilla de la PALABRA: toca lo que DICE"
-                    : "Mira de qué orilla llega y elige tú";
-                // la persona lee y empieza ella (nada avanza por tiempo); la explicación queda puesta mientras llega la tarjeta y se responde
-                yield return StartCoroutine(t.WaitForContinue(instruction, "Toca para empezar"));
-                if (t.Skipped) { script.Skip(); break; }
-                t.Say(instruction);
                 _trial = trial;
                 _shownCardSide = trial.Rule == StroopRule.Ink ? -1 : 1;
                 ClearRings();
                 yield return StartCoroutine(SlideIn(trial, StroopContract.GuidedArrivalSeconds, true));
                 int correctIndex = trial.CorrectIndex;
-                if (hinted) ShowRing(correctIndex, dimOthers: false);   // el mismo aro celeste por fuera del botón que se toca: se ve sobre las cuatro tintas
+                ShowRing(correctIndex, dimOthers: false);               // el mismo aro celeste por fuera del botón que se toca
                 _acceptInput = true;
                 _answerIndex = (int)NoAnswer;
+                yield return StartCoroutine(coach.Touch(() => StageHole(), script.Index == 0 && script.Failures == 0
+                    ? "Llega por la orilla de la TINTA: toca el COLOR en que está escrita"
+                    : trial.Rule == StroopRule.Ink ? "Orilla de la TINTA: toca el COLOR en que está escrita" : "Ahora, por la orilla de la PALABRA: toca lo que DICE"));
                 while (_answerIndex == (int)NoAnswer && !t.Skipped) yield return null;
                 _acceptInput = false;
                 ClearRings();
@@ -1099,7 +1097,7 @@ namespace NeuroVida.Games.Stroop
                 {
                     GameFeel.Correct(1);
                     script.Success();
-                    yield return StartCoroutine(t.WaitForContinue("¡Bien! " + StroopContract.Explain(trial)));
+                    yield return StartCoroutine(coach.Notice("¡Bien! " + StroopContract.Explain(trial), 2.2f));
                     yield return StartCoroutine(SlideOut(0.28f, -_shownCardSide));
                 }
                 else
@@ -1107,9 +1105,9 @@ namespace NeuroVida.Games.Stroop
                     GameFeel.Wrong();
                     ShowRing(correctIndex);
                     script.Failure();
-                    yield return StartCoroutine(t.WaitForContinue(trial.Rule == StroopRule.Ink
-                        ? "Casi: desde esta orilla se toca el COLOR de la tinta. Mira otra vez"
-                        : "Casi: desde esta orilla se toca lo que DICE la palabra. Mira otra vez"));
+                    yield return StartCoroutine(coach.Notice(trial.Rule == StroopRule.Ink
+                        ? "Casi: desde esta orilla se toca el COLOR de la tinta"
+                        : "Casi: desde esta orilla se toca lo que DICE la palabra", 2.4f));
                     yield return StartCoroutine(FadeCardOut());
                     ClearRings();
                 }
@@ -1120,7 +1118,7 @@ namespace NeuroVida.Games.Stroop
             if (!script.Skipped)
             {
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(t.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
+                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
             }
             _guided = false;
             _bottomReserve = 0f;
@@ -1132,5 +1130,18 @@ namespace NeuroVida.Games.Stroop
             t.EndPractice();
         }
         // </guided>
+
+        /// <summary>La tarjeta con su orilla y los cuatro botones (para el foco de «tocar»).</summary>
+        private Rect StageHole()
+        {
+            var coach = _tutorial.Coach;
+            Rect r = coach.RectOf(_stageRect);
+            foreach (var b in _buttonRects)
+            {
+                var o = coach.RectOf(b);
+                r = Rect.MinMaxRect(Mathf.Min(r.xMin, o.xMin), Mathf.Min(r.yMin, o.yMin), Mathf.Max(r.xMax, o.xMax), Mathf.Max(r.yMax, o.yMax));
+            }
+            return r;
+        }
     }
 }

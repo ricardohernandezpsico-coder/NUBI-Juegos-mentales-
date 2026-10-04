@@ -29,9 +29,6 @@ namespace NeuroVida.Games.Anagramas
 
         private const float UnitsPerDp = 3f;
         private const float MarginU = 60f;
-        private const float TutorialBottomReserve = 40f;
-        /// <summary>dp de aire entre la tarjeta y las casillas durante el tutorial: ahí va el mensaje de Nubi.</summary>
-        private const float TutorialCaptionGap = 40f;
 
         // ------------------------------------------------------------------ colores (los del boceto aprobado)
 
@@ -781,149 +778,81 @@ namespace NeuroVida.Games.Anagramas
         {
             t.BeginPractice();
             _guided = true;
-            _reserve = TutorialBottomReserve;
-            _guidedGap = TutorialCaptionGap;
             SetSkyVisible(false);
-            var script = new GuidedScript(2);
-            // el mensaje de Nubi va en el aire que se deja entre la tarjeta y las casillas: no tapa la tarjeta, las fichas ni los botones, y queda puesto hasta el siguiente
-            float captionY = _m.CardBottom + 25f + _guidedGap / 2f;
-            t.PlaceControls(GameHud.Height + 10f, false, (_logicalH - captionY) * _s);
-
-            // Aprender haciendo: Nubi NO juega sola. Cada paso espera que la persona toque lo que se le pide (el aro marca solo eso, lo demás queda atenuado y no
-            // responde) y nada avanza por tiempo. La definición aparece entera desde el principio para poder leerla.
-
-            // ---- PALABRA 1: sola
+            var coach = t.Coach;
+            var script = new GuidedScript(2);                         // dos palabras; «Saltar tutorial» lo termina
+            // «Nubi entrenadora»: palabra 1: leer la definición, tocar «¡La tengo!» y tocar la primera ficha (el resto se arma solo, a tu ritmo); palabra 2: tocar «Una ayuda» una vez.
+            // Cada foco congela el juego y el toque en el hueco es el de verdad. La definición aparece entera: hay tiempo de leer.
             var w1 = GuidedWord(1, 5);
             BeginWord(w1, 1);
-            _strict = true;
-            // 1) leer la definición
-            ConfigureButton(_buttons[0], "Ya la leí", new Rect(90f, _m.ButtonsTop, 180f, PuntaLayout.ButtonH), true, IntentKind.Next);
-            _buttons[1].Visible = false;
-            _buttons[1].Root.gameObject.SetActive(false);
-            t.Say("Esta es una definición. Léela con calma.");
-            _allowKind = IntentKind.Next;
-            PlaceHintOn(0);
-            yield return StartCoroutine(WaitIntent(t, IntentKind.Next));
-            // 2) «¡La tengo!»
-            if (!t.Skipped)
+            _inputOn = false;
+            yield return StartCoroutine(coach.Touch(() => coach.RectOf(_cardFill), "Lee la definición y piensa la palabra. Toca la tarjeta cuando la tengas"));
+            bool ok = !t.Skipped;
+            if (ok)
             {
-                SetButtonsFor(Phase.Think, false);
-                t.Say("La palabra es fácil: ¿la sabes? Toca «¡La tengo!».");
-                _allowKind = IntentKind.Have;
-                PlaceHintOn(0);
-                yield return StartCoroutine(WaitIntent(t, IntentKind.Have));
-                HideHint();
+                _inputOn = true;
+                _press = null;
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[0].Root), "¿La sabes? Toca ¡La tengo!"));
+                ok = !t.Skipped;
             }
-            // 3) las letras, en orden
-            if (!t.Skipped)
+            if (ok)
             {
+                _inputOn = false;
                 _haveAt = GameClock.Time;
                 ShowTiles(withExtra: true);
-                _allowKind = IntentKind.None;
-                yield return Motion.Hold(0.6f);                       // las fichas terminan de aparecer
-                for (int k = 0; k < w1.Tiles.Length && !t.Skipped; k++)
+                yield return Motion.Hold(0.7f);                           // las fichas terminan de aparecer
+                var first = _tiles.Find(x => x.Char == w1.Tiles[0] && x.Slot < 0 && !x.Gone);
+                if (first != null)
                 {
-                    var tile = _tiles.Find(x => x.Char == w1.Tiles[k] && x.Slot < 0 && !x.Gone);
-                    if (tile == null) continue;
-                    t.Say(k == 0 ? "Ahora toca las letras en orden. Empieza por la «" + w1.Tiles[k] + "»." : "Sigue con la «" + w1.Tiles[k] + "».");
-                    yield return StartCoroutine(WaitTile(t, tile));
+                    yield return StartCoroutine(coach.Touch(() => coach.AroundOf(first.Root, Vector2.one * (_m.TileD * _s * 1.7f)), "Arma la palabra tocando las letras en orden", circle: true));
+                    ok = !t.Skipped;
+                    if (ok) TapTile(first);                                // el toque en el hueco ES el toque en la ficha
                 }
             }
-            // 4) celebración y «lucero dorado»
-            if (!t.Skipped)
+            if (ok)
             {
-                _allowTile = null;
-                HideHint();
-                yield return Motion.Hold(0.3f);
-                yield return StartCoroutine(Validate());
-                t.Say("¡Muy bien!");
-                yield return StartCoroutine(PlaySolved(PuntaTier.Solo, w1, 0, count: false));
-                t.Say("Cuando la encuentras sola, el lucero es dorado. Toca para seguir.");
-                yield return StartCoroutine(WaitTap(t));
-                script.Success();
+                _inputOn = true;
+                _press = null;
+                yield return StartCoroutine(WordLoop(abortAtTimeUp: false));   // el resto de las letras: a tu ritmo
+                ok = !t.Skipped && _phase == Phase.Solved;
             }
-            else script.Skip();
+            if (ok)
+            {
+                yield return StartCoroutine(PlaySolved(_outcome, w1, 0, count: false));
+                script.Success();
+                yield return StartCoroutine(coach.Notice(_outcome == PuntaTier.Solo ? "Lucero dorado: la encontraste sola" : _outcome == PuntaTier.Vista ? "No pasa nada: Nubi te la muestra y vuelve otro día" : "Plateado: la encontraste con ayuda", 2.2f));
+            }
 
-            // ---- PALABRA 2: con ayuda
-            if (!script.Finished)
+            // ---- palabra 2: pedir una ayuda
+            if (ok)
             {
                 var w2 = GuidedWord(1, 5, w1.Word);
                 BeginWord(w2, 1);
-                _strict = true;
-                _allowKind = IntentKind.Help;
-                t.Say("Si una palabra no te sale, pide ayuda. Toca «Una ayuda».");
-                PlaceHintOn(1);
-                yield return StartCoroutine(WaitIntent(t, IntentKind.Help));
-                if (!t.Skipped)
+                _inputOn = false;
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[1].Root), "Si una palabra no te sale, pide una ayuda"));
+                ok = !t.Skipped;
+                if (ok)
                 {
-                    DoHelp();                                              // 5) cuántas letras tiene
-                    t.Say("Ahora sabes cuántas letras tiene. Toca otra vez «Una ayuda».");
-                    PlaceHintOn(1);
-                    yield return StartCoroutine(WaitIntent(t, IntentKind.Help));
+                    DoHelp();
+                    _inputOn = true;
+                    _press = null;
+                    yield return StartCoroutine(WordLoop(abortAtTimeUp: false));
+                    ok = !t.Skipped && _phase == Phase.Solved;
                 }
-                if (!t.Skipped)
+                if (ok)
                 {
-                    DoHelp();                                              // 6) la primera letra
-                    t.Say("Con eso sale. Toca «¡La tengo!» y arma la palabra.");
-                    _allowKind = IntentKind.Have;
-                    PlaceHintOn(0);
-                    yield return StartCoroutine(WaitIntent(t, IntentKind.Have));
-                    HideHint();
-                }
-                if (!t.Skipped)
-                {
-                    // 7) armarla: libre; el aro solo aparece en la ficha que toca si se queda quieta 4 s
-                    _haveAt = GameClock.Time;
-                    ShowTiles(withExtra: true);
-                    _strict = false;
-                    _allowKind = IntentKind.None;
-                    float lastAct = GameClock.Time;
-                    while ((_phase == Phase.Build) && !t.Skipped)
-                    {
-                        if (_validateAt > 0f && GameClock.Time >= _validateAt)
-                        {
-                            _validateAt = 0f;
-                            if (AllFilled()) yield return StartCoroutine(Validate());
-                            lastAct = GameClock.Time;
-                        }
-                        else
-                        {
-                            var intent = ReadIntent();
-                            if (intent.Kind != IntentKind.None)
-                            {
-                                lastAct = GameClock.Time;
-                                HideHint();
-                                yield return StartCoroutine(Act(intent));
-                            }
-                        }
-                        if (GameClock.Time - lastAct > 4f && _hintTile == null && _phase == Phase.Build)
-                        {
-                            int k = FirstEmptySlot();
-                            var next = k < 0 ? null : _tiles.Find(x => x.Char == w2.Tiles[k] && x.Slot < 0 && !x.Gone);
-                            if (next != null) PlaceHintOnTile(next);
-                        }
-                        yield return null;
-                    }
-                    HideHint();
-                }
-                // 8) cierre
-                if (!t.Skipped && _phase == Phase.Solved)
-                {
-                    t.Say("¡Muy bien!");
                     yield return StartCoroutine(PlaySolved(_outcome, w2, 0, count: false));
-                    t.Say(_outcome == PuntaTier.Vista
-                        ? "No pasa nada: Nubi te la muestra y la palabra vuelve otro día. Toca para terminar."
-                        : "Con ayuda, el lucero es plateado. Siempre hay salida: si no sale, Nubi te la muestra. Toca para terminar.");
-                    yield return StartCoroutine(WaitTap(t));
                     script.Success();
+                    yield return StartCoroutine(coach.Notice(_outcome == PuntaTier.Vista ? "No pasa nada: Nubi te la muestra y vuelve otro día" : "Plateado: con ayuda también se encuentra", 2.2f));
                 }
-                else script.Skip();
             }
-            HideHint();
+            coach.Hide();
+            if (ok) yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
             _inputOn = false;
             _strict = false;
             _allowKind = IntentKind.None;
-            _allowTile = null;
+            _allowTile = _hintTile = null;
+            HideHint();
             ClearWordVisuals();
             _guided = false;
             _reserve = _guidedGap = 0f;
@@ -933,64 +862,6 @@ namespace NeuroVida.Games.Anagramas
             t.EndPractice();
         }
         // </guided>
-
-        /// <summary>Espera EXACTAMENTE ese toque (un botón o, con <see cref="IntentKind.Next"/>, la tarjeta): lo demás está atenuado y no responde.</summary>
-        private IEnumerator WaitIntent(GuidedTutorial t, IntentKind kind)
-        {
-            _press = null;
-            _inputOn = true;
-            while (!t.Skipped)
-            {
-                var intent = ReadIntent();
-                if (intent.Kind == kind) break;
-                yield return null;
-            }
-            _inputOn = false;
-        }
-
-        /// <summary>Espera que se toque ESA ficha (el aro la marca y las demás quedan atenuadas). Si se toca otra, rebota suave y vuelve: el aro sigue en la correcta.</summary>
-        private IEnumerator WaitTile(GuidedTutorial t, Tile target)
-        {
-            _allowTile = target;
-            PlaceHintOnTile(target);
-            _press = null;
-            _inputOn = true;
-            while (!t.Skipped)
-            {
-                var intent = ReadIntent();
-                if (intent.Kind == IntentKind.Tile)
-                {
-                    if (intent.Tile == target)
-                    {
-                        TapTile(target);
-                        break;
-                    }
-                    PlayClip(PuntaSounds.Back(), 0.5f);
-                    yield return StartCoroutine(PopRect(intent.Tile.Root, 1.18f, 0.25f));   // rebota suave: no era esa
-                    _press = null;
-                }
-                yield return null;
-            }
-            _inputOn = false;
-            HideHint();
-        }
-
-        /// <summary>Espera un toque en cualquier parte de la pantalla (el de «Saltar tutorial» lo atiende <see cref="GameControllerBase.PollTutorialSkip"/>): los pasos avanzan al ritmo de la persona.</summary>
-        private IEnumerator WaitTap(GuidedTutorial t)
-        {
-            _press = null;
-            _inputOn = true;
-            float guard = 0f;
-            while (!t.Skipped)
-            {
-                guard += GameClock.RealDeltaTime;
-                if (_press.HasValue && guard > 0.3f) break;
-                if (guard <= 0.3f) _press = null;
-                yield return null;
-            }
-            _press = null;
-            _inputOn = false;
-        }
 
         /// <summary>Una palabra fácil para la ronda guiada: del nivel dado y de pocas letras.</summary>
         private PuntaWord GuidedWord(int level, int maxLetters, string not = null)

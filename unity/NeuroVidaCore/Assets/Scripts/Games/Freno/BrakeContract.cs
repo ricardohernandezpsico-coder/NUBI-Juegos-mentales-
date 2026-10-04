@@ -55,7 +55,7 @@ namespace NeuroVida.Games.Freno
         public enum GuidedStep { Go, Stop }
 
         /// <summary>El guion de la ronda guiada: 3 cohetes que SÍ se lanzan (lentos, con aro) y luego 1 con la señal ¡ALTO! que NO se toca. No cuenta para nada.</summary>
-        public static readonly GuidedStep[] GuidedPlan = { GuidedStep.Go, GuidedStep.Go, GuidedStep.Go, GuidedStep.Stop };
+        public static readonly GuidedStep[] GuidedPlan = { GuidedStep.Go, GuidedStep.Stop };
 
         public const int SsdStartMs = 250;
         public const int SsdStepMs = 50;

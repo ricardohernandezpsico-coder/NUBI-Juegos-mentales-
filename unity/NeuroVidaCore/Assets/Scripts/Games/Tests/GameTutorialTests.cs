@@ -25,9 +25,9 @@ namespace NeuroVida.Games.Tests
     public class FrenoTutorialTests
     {
         [Test]
-        public void TheGuidedRound_IsThreeGoesAndOneStop_InThatOrder()
+        public void TheGuidedRound_IsOneGoAndOneStop_InThatOrder()
         {
-            CollectionAssert.AreEqual(new[] { BrakeContract.GuidedStep.Go, BrakeContract.GuidedStep.Go, BrakeContract.GuidedStep.Go, BrakeContract.GuidedStep.Stop },
+            CollectionAssert.AreEqual(new[] { BrakeContract.GuidedStep.Go, BrakeContract.GuidedStep.Stop },
                 BrakeContract.GuidedPlan);
         }
 

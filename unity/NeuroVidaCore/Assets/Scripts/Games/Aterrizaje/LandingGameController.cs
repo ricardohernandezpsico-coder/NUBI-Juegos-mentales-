@@ -884,31 +884,27 @@ namespace NeuroVida.Games.Aterrizaje
         {
             t.BeginPractice();
             _phase = Phase.Idle;
-            // los avisos de Nubi van donde va el resultado, bajo la misión; «Aterriza en» da lugar al rótulo «Práctica: no cuenta»
-            t.PlaceControls(GameHud.Height + 10f, false, _playH * 0.5f + _prompt.rectTransform.anchoredPosition.y);
             _missionSmall.gameObject.SetActive(false);
             HideReveal();
             SetPrompt("", Color.white);
-            var script = new GuidedScript(LandingContract.GuidedZones.Length);
+            var coach = t.Coach;
+            // «Nubi entrenadora»: un solo aterrizaje. Foco sobre la línea (el juego se congela; el toque ahí es el real: se arrastra la nave y se suelta), y un aviso al aterrizar.
+            var script = new GuidedScript(1);
             var trial = LandingContract.GuidedTrial(_rng);
             while (!script.Finished)
             {
                 if (t.Skipped) { script.Skip(); break; }
-                float zoneHalf = LandingContract.GuidedZones[script.Index];
+                float zoneHalf = LandingContract.GuidedZones[0];
                 _trial = trial;
                 SetRuler(trial);
                 _mission.text = trial.Label;
                 ShowZone(trial, zoneHalf);
-                string instruction = script.Index == 0 && script.Failures == 0
-                    ? $"La regla va de {trial.MinLabel} (izquierda) a {trial.MaxLabel} (derecha). Aterriza en el {trial.Label}"
-                    : script.Index == 0 ? $"Otra vez: aterriza en el {trial.Label}, dentro de la zona amarilla"
-                    : $"Ahora la zona es más chica. Aterriza en el {trial.Label}";
-                // la persona lee y empieza el descenso ella; la explicación queda puesta mientras baja
-                yield return StartCoroutine(t.WaitForContinue(instruction, "Toca para empezar"));
-                if (t.Skipped) { script.Skip(); break; }
-                t.Say(instruction);
                 // baja despacio (14 s) para que dé tiempo a moverla
-                yield return StartCoroutine(Fly(14f, true));
+                var fly = StartCoroutine(Fly(14f, false));
+                yield return null;                                         // la nave aparece arriba
+                yield return StartCoroutine(coach.Touch(() => LineHole(),
+                    script.Failures == 0 ? $"La línea va de {trial.MinLabel} a {trial.MaxLabel}. Arrastra la nave al {trial.Label} y suelta" : $"Otra vez: arrastra la nave al {trial.Label} y suelta"));
+                yield return fly;
                 if (t.Skipped) { script.Skip(); break; }
 
                 float given = Mathf.Clamp01(_landerX / _rulerW + 0.5f);
@@ -922,16 +918,14 @@ namespace NeuroVida.Games.Aterrizaje
                 {
                     GameFeel.Correct(1);
                     StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(_landerX, _rulerY + 60f), GoodColor, 12, 180f, 32f, 0.5f));
-                    string okText = $"¡Bien! Ese es el {trial.Label}";
                     script.Success();
-                    trial = LandingContract.GuidedTrial(_rng, (int)trial.Target);
-                    yield return StartCoroutine(t.WaitForContinue(okText));
+                    yield return StartCoroutine(coach.Notice("¡Bien! Mientras más cerca del número, mejor", 2.2f));
                 }
                 else
                 {
                     GameFeel.Wrong();
                     script.Failure();
-                    yield return StartCoroutine(t.WaitForContinue($"Casi: la zona amarilla es el lugar justo del {trial.Label}. Probemos otra vez"));
+                    yield return StartCoroutine(coach.Notice($"Casi: la zona amarilla es el lugar justo del {trial.Label}. Probemos otra vez", 2.6f));
                 }
                 HideZone();
                 yield return StartCoroutine(TakeOff());
@@ -943,7 +937,7 @@ namespace NeuroVida.Games.Aterrizaje
             if (!script.Skipped)
             {
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(t.WaitForContinue("¡Así se juega! Ahora sin ayuda", "Toca para empezar"));
+                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
             }
             t.EndPractice();
             _phase = Phase.Idle;
@@ -957,6 +951,12 @@ namespace NeuroVida.Games.Aterrizaje
             _zone.rectTransform.sizeDelta = new Vector2(_rulerW * halfFraction * 2f, 150f);
             _zone.rectTransform.anchoredPosition = new Vector2(tx, _rulerY + 40f);
             _zone.gameObject.SetActive(true);
+        }
+        /// <summary>La línea (regla) con aire arriba y abajo: ahí se arrastra la nave (para el foco de «tocar»).</summary>
+        private Rect LineHole()
+        {
+            var r = _tutorial.Coach.RectOf(_rulerRect);
+            return new Rect(r.xMin, r.center.y - 150f, r.width, 300f);
         }
         // </guided>
     }
