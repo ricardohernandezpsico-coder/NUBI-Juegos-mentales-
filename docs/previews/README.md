@@ -189,3 +189,8 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`pantalla-resultado.png`](pantalla-resultado.png)
 - [`punto-partida.png`](punto-partida.png)
 - [`tarjeta-compartir.png`](tarjeta-compartir.png)
+
+## tutoriales/ (5-oct)
+
+`docs/previews/tutoriales/<juego>-paso<N>.png`: una lámina por paso del tutorial con Nubi de 7 juegos (anagramas, aterrizaje, calculo, freno, meteoros, secuencia, stroop), en 20:9.
+NO son capturas (el smoke de Unity corre sin gráficos): se arman con los rectángulos reales que registra `NubiCoach` en cada paso (`python tools/coach-preview/tutoriales.py`). Ver `docs/tutoriales-con-nubi.md`.

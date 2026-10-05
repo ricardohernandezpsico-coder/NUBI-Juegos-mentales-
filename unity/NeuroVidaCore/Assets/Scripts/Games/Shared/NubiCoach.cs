@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RingSprite / RadialGlowSprite
@@ -9,7 +10,9 @@ namespace NeuroVida.Games.Shared
 {
     /// <summary>
     /// «Nubi entrenadora» (Ricardo, 4-oct): el tutorial de todos los juegos. La pantalla se oscurece con un velo gris y SOLO se ilumina lo que hay que tocar (un hueco redondeado, o
-    /// circular, con un aro celeste que late); Nubi entra deslizándose por un costado y habla en un globo claro de 1-2 líneas que nunca tapa el hueco. Tres formas:
+    /// circular, con un aro celeste que late) y las ZONAS PROTEGIDAS que cada paso declara (la pregunta, la consigna, el rótulo del que habla el texto, el contador): esas se ven
+    /// claras junto al hueco, sin la sombra. Nubi entra deslizándose por un costado y habla en un globo claro que CRECE con el texto (máximo 3 líneas; la letra no se achica) y
+    /// que, junto con Nubi, nunca tapa el hueco, ni las zonas protegidas, ni ningún texto del juego, ni el dedo que insiste (<see cref="CoachLayout"/> busca el lugar). Tres formas:
     /// <list type="bullet">
     /// <item><b><see cref="Touch"/></b>: el juego se CONGELA (<see cref="GameClock"/> en pausa) y el toque DENTRO del hueco es la acción real del juego: cierra el foco, el juego sigue y
     /// recibe ese mismo toque (por eso este componente corre antes que los controladores: <c>DefaultExecutionOrder(-100)</c>). Fuera del hueco no responde (los juegos preguntan
@@ -25,21 +28,22 @@ namespace NeuroVida.Games.Shared
     {
         private enum Kind { None, Touch, Watch, Notice }
 
-        private const float NubiSize = 300f;          // unidades del lienzo (100 dp)
-        private const float BubbleHeight = 200f;
-        private const float Margin = 30f;
-        private const float HudClear = 330f;          // lo que ocupan el marcador de arriba y el rótulo «Práctica: no cuenta»
-        private const float BottomClear = 190f;       // lo que ocupa «Saltar tutorial» abajo
         private const float InsistSeconds = 5f;
         private const float HolePad = 12f;
+        private const float KeepPad = 10f;            // lo que se agranda cada zona protegida al iluminarla
+        private const float HoleAvoid = 12f;          // margen alrededor del hueco que Nubi y el globo no pisan
+        private const float KeepAvoid = 4f;
+        private const float TextAvoid = 6f;
+        private const int MaxVeil = 24, MaxLit = 4;   // piezas del velo y zonas iluminadas (el hueco + 3 protegidas)
+        public const int MaxKeep = MaxLit - 1;
 
         private static readonly Color VeilColor = new Color(0.03f, 0.04f, 0.11f, 0.72f);
         private static readonly Color BubbleColor = new Color(1f, 0.965f, 0.9f, 1f);
 
         private RectTransform _root, _group, _bubble;
         private CanvasGroup _rootGroup, _groupGroup;
-        private readonly Image[] _strips = new Image[4];
-        private readonly Image[] _corners = new Image[4];
+        private readonly Image[] _veil = new Image[MaxVeil];
+        private readonly Image[] _corners = new Image[MaxLit * 4];
         private Image _frame, _ring, _nubi, _finger;
         private Text _text;
         private Func<Vector2, bool> _isSkip;
@@ -47,13 +51,32 @@ namespace NeuroVida.Games.Shared
 
         private Kind _kind = Kind.None;
         private Func<Rect> _target;
+        private Func<Rect>[] _keep;
         private Func<bool> _done;
         private bool _circle, _freeze, _frozen, _left;
-        private float _waited, _noticeSeconds, _maxSeconds, _shownAt, _lastInsist, _popAt = -10f;
+        private float _waited, _noticeSeconds, _maxSeconds, _shownAt, _lastInsist, _popAt = -10f, _lastGather = -10f, _lastReplace = -10f;
         private Rect _hole;
+        private readonly List<Rect> _lit = new List<Rect>();          // [0] = el hueco (si hay) y después las zonas protegidas, ya agrandadas
+        private readonly List<Rect> _hard = new List<Rect>();         // lo que nunca se tapa (hueco, zonas, dedo), con su margen
+        private readonly List<Rect> _soft = new List<Rect>();         // los textos del juego a la vista
+        private readonly List<Rect> _textRaw = new List<Rect>();      // los mismos, sin margen, sin los del tutorial
+        private readonly List<Rect> _controls = new List<Rect>();     // los textos de los controles del tutorial («Práctica: no cuenta», «Saltar tutorial»), sin margen
+        private readonly List<Text> _textBuf = new List<Text>();
+        private List<Rect> _veilRects = new List<Rect>();
+        private CoachPlacement _placement;
+        private CoachStepReport _report;
+        private bool _warned;
 
         /// <summary>true mientras hay un foco (Tocar, Mirar o un aviso) a la vista.</summary>
         public bool Active => _kind != Kind.None;
+
+        // ------------------------------------------------------------------ registro de pasos (pruebas y smoke)
+
+        /// <summary>true = cada paso que se cierra deja su <see cref="CoachStepReport"/> en <see cref="AuditSteps"/> (lo usa el smoke del Editor; en el teléfono no se llena).</summary>
+        public static bool AuditEnabled;
+        /// <summary>El juego que está corriendo, para rotular el registro.</summary>
+        public static string AuditGame = "";
+        public static readonly List<CoachStepReport> AuditSteps = new List<CoachStepReport>();
 
         public static NubiCoach Create(RectTransform parent, Func<Vector2, bool> isSkipPoint, Func<bool> aborted)
         {
@@ -75,11 +98,12 @@ namespace NeuroVida.Games.Shared
             _rootGroup = gameObject.AddComponent<CanvasGroup>();
             _rootGroup.blocksRaycasts = false;   // el velo decide por sí mismo quién bloquea
 
-            for (int i = 0; i < 4; i++) _strips[i] = Piece("Veil" + i, null);
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < MaxVeil; i++) _veil[i] = Piece("Veil" + i, null);
+            for (int i = 0; i < _corners.Length; i++)
             {
                 _corners[i] = Piece("Corner" + i, CoachSprites.Corner());
-                _corners[i].rectTransform.localEulerAngles = new Vector3(0f, 0f, i == 0 ? 0f : i == 1 ? -90f : i == 2 ? 180f : 90f);   // arriba-izq, arriba-der, abajo-der, abajo-izq
+                int c = i % 4;
+                _corners[i].rectTransform.localEulerAngles = new Vector3(0f, 0f, c == 0 ? 0f : c == 1 ? -90f : c == 2 ? 180f : 90f);   // arriba-izq, arriba-der, abajo-der, abajo-izq
             }
             _frame = Piece("Frame", CoachSprites.Frame());
             _frame.type = Image.Type.Sliced;
@@ -97,7 +121,7 @@ namespace NeuroVida.Games.Shared
             nubiGo.transform.SetParent(_group, false);
             var nr = nubiGo.AddComponent<RectTransform>();
             nr.anchorMin = nr.anchorMax = nr.pivot = new Vector2(0.5f, 0.5f);
-            nr.sizeDelta = new Vector2(NubiSize, NubiSize);
+            nr.sizeDelta = new Vector2(CoachLayout.NubiSizes[0], CoachLayout.NubiSizes[0]);
             _nubi = nubiGo.AddComponent<Image>();
             _nubi.raycastTarget = false;
             var bubbleGo = new GameObject("Bubble");
@@ -110,10 +134,13 @@ namespace NeuroVida.Games.Shared
             bi.color = BubbleColor;
             bi.raycastTarget = false;
             NeuroStyle.ClayFrame(bi, 5f, 9f);
-            _text = MakeText(_bubble, "Text", 54, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
-            _text.rectTransform.offsetMin = new Vector2(26f, 14f);
-            _text.rectTransform.offsetMax = new Vector2(-26f, -14f);
-            BestFit(_text, 45);
+            _text = MakeText(_bubble, "Text", CoachLayout.FontSize, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
+            _text.rectTransform.offsetMin = new Vector2(CoachLayout.PadX, CoachLayout.PadY);
+            _text.rectTransform.offsetMax = new Vector2(-CoachLayout.PadX, -CoachLayout.PadY);
+            // la letra del globo NUNCA se achica: el globo crece con las líneas (máximo 3); si un texto no cabe, se acorta el texto
+            _text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _text.verticalOverflow = VerticalWrapMode.Overflow;
+            _text.resizeTextForBestFit = false;
 
             _finger = Piece("Finger", DiscSprite.Get());
             _finger.color = BubbleColor;
@@ -161,6 +188,42 @@ namespace NeuroVida.Games.Shared
             return new Rect(c - size / 2f, size);
         }
 
+        /// <summary>Una zona protegida que sigue a <paramref name="rt"/> (la pregunta, la consigna, un rótulo): se ilumina junto al hueco y Nubi no la tapa.</summary>
+        public Func<Rect> Zone(RectTransform rt) => () => RectOf(rt);
+
+        /// <summary>Lo mismo con un rect propio (se pide cada cuadro, por si se mueve).</summary>
+        public Func<Rect> Zone(Func<Rect> rect) => rect;
+
+        /// <summary>Un rect que cubre a todos los <paramref name="rts"/> juntos (p. ej. el contador y su rótulo).</summary>
+        public Func<Rect> ZoneOf(params RectTransform[] rts) => () =>
+        {
+            Rect r = default;
+            bool first = true;
+            foreach (var rt in rts)
+            {
+                if (rt == null) continue;
+                var x = RectOf(rt);
+                r = first ? x : Rect.MinMaxRect(Mathf.Min(r.xMin, x.xMin), Mathf.Min(r.yMin, x.yMin), Mathf.Max(r.xMax, x.xMax), Mathf.Max(r.yMax, x.yMax));
+                first = false;
+            }
+            return r;
+        };
+
+        /// <summary>Una zona protegida que cubre justo las letras de estos textos (no toda su caja): el número del reactor y su rótulo, el número de la misión. Un texto vacío o apagado no cuenta.</summary>
+        public Func<Rect> ZoneOfTexts(params Text[] texts) => () =>
+        {
+            Rect r = default;
+            bool first = true;
+            foreach (var t in texts)
+            {
+                if (t == null || !t.gameObject.activeInHierarchy || string.IsNullOrWhiteSpace(t.text)) continue;
+                if (!TextRect(t, out var x)) x = RectOf(t.rectTransform);
+                r = first ? x : Rect.MinMaxRect(Mathf.Min(r.xMin, x.xMin), Mathf.Min(r.yMin, x.yMin), Mathf.Max(r.xMax, x.xMax), Mathf.Max(r.yMax, x.yMax));
+                first = false;
+            }
+            return r;
+        };
+
         private bool InsideHole(Vector2 screenPos)
         {
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_root, screenPos, null, out var local)) return false;
@@ -172,35 +235,37 @@ namespace NeuroVida.Games.Shared
 
         // ------------------------------------------------------------------ las tres formas
 
-        /// <summary>Foco de TOCAR: congela el juego (si <paramref name="freeze"/>) y espera el toque dentro del hueco; ese toque llega al juego. Devuelve cuando se cierra.</summary>
-        public IEnumerator Touch(Func<Rect> target, string text, bool circle = false, bool freeze = true)
+        /// <summary>Foco de TOCAR: congela el juego (si <paramref name="freeze"/>) y espera el toque dentro del hueco; ese toque llega al juego. Devuelve cuando se cierra.
+        /// <paramref name="keep"/>: las zonas que deben seguir a la vista y claras (hasta <see cref="MaxKeep"/>).</summary>
+        public IEnumerator Touch(Func<Rect> target, string text, bool circle = false, bool freeze = true, Func<Rect>[] keep = null)
         {
-            Begin(Kind.Touch, target, text, circle, freeze, null, 0f);
+            Begin(Kind.Touch, target, text, circle, freeze, null, 0f, keep);
             while (_kind != Kind.None) { if (_aborted != null && _aborted()) { Close(); break; } yield return null; }
         }
 
         /// <summary>Foco de MIRAR: sin congelar, sobre algo que se mueve; se cierra cuando <paramref name="done"/> da true (o a los <paramref name="maxSeconds"/>).</summary>
-        public IEnumerator Watch(Func<Rect> target, string text, Func<bool> done, float maxSeconds = 12f, bool circle = false)
+        public IEnumerator Watch(Func<Rect> target, string text, Func<bool> done, float maxSeconds = 12f, bool circle = false, Func<Rect>[] keep = null)
         {
-            Begin(Kind.Watch, target, text, circle, false, done, maxSeconds);
+            Begin(Kind.Watch, target, text, circle, false, done, maxSeconds, keep);
             while (_kind != Kind.None) { if (_aborted != null && _aborted()) { Close(); break; } yield return null; }
         }
 
-        /// <summary>Aviso breve: el globo de Nubi sin velo, que se va solo.</summary>
-        public IEnumerator Notice(string text, float seconds = 1.8f)
+        /// <summary>Aviso breve: el globo de Nubi sin velo, que se va solo. <paramref name="keep"/>: lo que el globo no debe tapar.</summary>
+        public IEnumerator Notice(string text, float seconds = 1.8f, Func<Rect>[] keep = null)
         {
-            Begin(Kind.Notice, null, text, false, false, null, seconds);
+            Begin(Kind.Notice, null, text, false, false, null, seconds, keep);
             while (_kind != Kind.None) { if (_aborted != null && _aborted()) { Close(); break; } yield return null; }
         }
 
         /// <summary>Cierra lo que haya (y reanuda el juego si estaba congelado).</summary>
         public void Hide() => Close();
 
-        private void Begin(Kind kind, Func<Rect> target, string text, bool circle, bool freeze, Func<bool> done, float seconds)
+        private void Begin(Kind kind, Func<Rect> target, string text, bool circle, bool freeze, Func<bool> done, float seconds, Func<Rect>[] keep)
         {
             Close();
             _kind = kind;
             _target = target;
+            _keep = keep;
             _circle = circle;
             _freeze = freeze;
             _done = done;
@@ -210,17 +275,23 @@ namespace NeuroVida.Games.Shared
             _shownAt = Time.unscaledTime;
             _lastInsist = 0f;
             _popAt = -10f;
+            _warned = false;
+            _lastGather = -10f;
+            _lastReplace = -10f;
+            _litShown.Clear();
             _text.text = text;
             if (_nubi.sprite == null) _nubi.sprite = NubiTeacherSprite.Get();
             _root.gameObject.SetActive(true);
             bool veil = kind != Kind.Notice;
-            foreach (var s in _strips) { s.gameObject.SetActive(veil); s.raycastTarget = kind == Kind.Touch; }
-            foreach (var c in _corners) c.gameObject.SetActive(veil);
+            foreach (var s in _veil) { s.gameObject.SetActive(false); s.raycastTarget = kind == Kind.Touch; }
             _frame.gameObject.SetActive(veil && !circle);
             _ring.gameObject.SetActive(veil && circle);
             _finger.gameObject.SetActive(false);
-            if (target != null) _hole = Inflate(target());
-            PlaceNubi();
+            if (AuditEnabled)
+                _report = new CoachStepReport { Game = AuditGame, Index = AuditSteps.Count, Kind = kind.ToString(), Text = text, FontSize = CoachLayout.FontSize, HasHole = target != null && kind != Kind.Notice, Circle = circle };
+            RefreshZones(true);
+            Replace(true);
+            if (_report != null) FillReport();
             if (kind == Kind.Touch && freeze && !PauseMenu.Open)
             {
                 GameClock.Pause();
@@ -232,6 +303,7 @@ namespace NeuroVida.Games.Shared
         private void Close()
         {
             if (_kind == Kind.None) { if (_frozen) Unfreeze(); return; }
+            Record();
             _kind = Kind.None;
             if (_root != null) _root.gameObject.SetActive(false);
             Unfreeze();
@@ -253,7 +325,8 @@ namespace NeuroVida.Games.Shared
             if (_kind == Kind.None) return;
             float dt = GameClock.RealDeltaTime;
             _waited += dt;
-            if (_target != null) _hole = Inflate(_target());
+            RefreshZones(false);
+            if (PlacementIsStale()) Replace(false);
             UpdateLayout(dt);
 
             switch (_kind)
@@ -294,14 +367,201 @@ namespace NeuroVida.Games.Shared
                 float d = Mathf.Max(o.width, o.height);
                 o = new Rect(o.center - new Vector2(d, d) / 2f, new Vector2(d, d));
             }
-            return Rect.MinMaxRect(Mathf.Max(o.xMin, pr.xMin), Mathf.Max(o.yMin, pr.yMin), Mathf.Min(o.xMax, pr.xMax), Mathf.Min(o.yMax, pr.yMax));
+            return Clip(o, pr);
         }
+
+        private static Rect Clip(Rect o, Rect pr) =>
+            Rect.MinMaxRect(Mathf.Max(o.xMin, pr.xMin), Mathf.Max(o.yMin, pr.yMin), Mathf.Min(o.xMax, pr.xMax), Mathf.Min(o.yMax, pr.yMax));
+
+        // ------------------------------------------------------------------ zonas
+
+        /// <summary>El rect del dedo que insiste (con su vaivén): arriba del hueco no hay nada que cuidar, pero Nubi y el globo no deben quedar sobre él.</summary>
+        private static Rect FingerRect(Rect hole) =>
+            new Rect(hole.center.x - 45f, hole.center.y - hole.height * 0.15f - 150f - 45f, 90f, 150f + 90f);
+
+        /// <summary>Vuelve a medir el hueco, las zonas protegidas y (cada medio segundo) los textos del juego a la vista.</summary>
+        private void RefreshZones(bool force)
+        {
+            var pr = _root.rect;
+            bool hasHole = _kind != Kind.Notice && _target != null;
+            _lit.Clear();
+            _hard.Clear();
+            if (hasHole)
+            {
+                _hole = Inflate(_target());
+                _lit.Add(_hole);
+                _hard.Add(CoachLayout.Grow(_hole, HoleAvoid));
+                if (_kind == Kind.Touch) _hard.Add(FingerRect(_hole));
+            }
+            if (_keep != null)
+            {
+                int n = 0;
+                foreach (var k in _keep)
+                {
+                    if (k == null) continue;
+                    var r = k();
+                    if (r.width < 1f || r.height < 1f) continue;
+                    if (++n > MaxKeep) { Debug.LogWarning("[Coach] más zonas protegidas de las que caben (" + MaxKeep + "): se ignora la sobrante"); break; }
+                    var lit = Clip(CoachLayout.Grow(r, KeepPad), pr);
+                    if (_kind != Kind.Notice) _lit.Add(lit);
+                    _hard.Add(CoachLayout.Grow(lit, KeepAvoid));
+                }
+            }
+            if (force || Time.unscaledTime - _lastGather >= 0.5f)
+            {
+                _lastGather = Time.unscaledTime;
+                GatherGameText();
+            }
+            if (_report != null) FillReport();
+        }
+
+        /// <summary>Los textos del juego que están a la vista (letras, rótulos, marcador): el globo y Nubi no los tapan. Se mide el texto de verdad dibujado.</summary>
+        private void GatherGameText()
+        {
+            _soft.Clear();
+            _textRaw.Clear();
+            _controls.Clear();
+            var scope = _root.parent as RectTransform;
+            if (scope == null) return;
+            scope.GetComponentsInChildren(false, _textBuf);
+            foreach (var t in _textBuf)
+            {
+                if (t == null || !t.enabled || t.transform.IsChildOf(_root) || string.IsNullOrWhiteSpace(t.text)) continue;
+                if (t.color.a * t.canvasRenderer.GetInheritedAlpha() < 0.08f) continue;
+                if (!TextRect(t, out var r)) continue;
+                bool control = false;     // los controles del tutorial (rótulo y «Saltar tutorial») viven bajo «TutorialPractice»
+                for (var p = t.transform.parent; p != null && p != scope; p = p.parent) if (p.name == "TutorialPractice") { control = true; break; }
+                if (control) _controls.Add(r); else _textRaw.Add(r);
+                var g = CoachLayout.Grow(r, TextAvoid);
+                bool inside = false;      // ya iluminado y protegido por el hueco o una zona
+                foreach (var h in _hard) if (h.Contains(g.min) && h.Contains(g.max)) { inside = true; break; }
+                if (!inside) _soft.Add(g);
+            }
+        }
+
+        /// <summary>El rectángulo que de verdad ocupan las letras de <paramref name="t"/> (en el espacio del foco).</summary>
+        private bool TextRect(Text t, out Rect rect)
+        {
+            rect = default;
+            var gen = t.cachedTextGenerator;
+            int n = gen.vertexCount;
+            if (n < 4) return false;
+            var verts = gen.verts;
+            float inv = 1f / Mathf.Max(0.0001f, t.pixelsPerUnit);
+            float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+            var tr = t.transform;
+            for (int i = 0; i < n; i++)
+            {
+                var p = (Vector2)_root.InverseTransformPoint(tr.TransformPoint((Vector3)(verts[i].position * inv)));
+                if (p.x < x0) x0 = p.x;
+                if (p.y < y0) y0 = p.y;
+                if (p.x > x1) x1 = p.x;
+                if (p.y > y1) y1 = p.y;
+            }
+            if (x1 <= x0 || y1 <= y0) return false;
+            rect = Rect.MinMaxRect(x0, y0, x1, y1);
+            return true;
+        }
+
+        // ------------------------------------------------------------------ dónde va Nubi
+
+        private Vector2 _groupPos;
+
+        private float PlacementOverlap(CoachPlacement p)
+        {
+            float o = 0f;
+            foreach (var h in _hard) o += 3f * (CoachLayout.Overlap(p.Nubi, h) + CoachLayout.Overlap(p.Bubble, h));
+            foreach (var s in _soft) o += CoachLayout.Overlap(p.Nubi, s) + CoachLayout.Overlap(p.Bubble, s);
+            return o;
+        }
+
+        /// <summary>Si algo se movió y ahora Nubi o el globo lo tapan, se busca otro lugar (como mucho cada 0,3 s: Nubi no baila).</summary>
+        private bool PlacementIsStale() =>
+            _placement != null && Time.unscaledTime - _lastReplace >= 0.3f && PlacementOverlap(_placement) > 0.5f;
+
+        /// <summary>Nubi y su globo van donde no tapen nada (ver <see cref="CoachLayout.Place"/>): el globo crece con el texto, máximo 3 líneas.</summary>
+        private void Replace(bool first)
+        {
+            _lastReplace = Time.unscaledTime;
+            bool hasHole = _kind != Kind.Notice && _target != null;
+            var p = CoachLayout.Place(_root.rect, hasHole ? _hole.center : (Vector2?)null, _hard, _soft, _text.text);
+            if (p == null) return;
+            if (!first && _placement != null && PlacementOverlap(_placement) <= p.Overlap + 1f) return;   // no hay nada mejor: Nubi se queda donde está
+            _placement = p;
+            _left = p.Left;
+            var u = Rect.MinMaxRect(Mathf.Min(p.Nubi.xMin, p.Bubble.xMin), Mathf.Min(p.Nubi.yMin, p.Bubble.yMin), Mathf.Max(p.Nubi.xMax, p.Bubble.xMax), Mathf.Max(p.Nubi.yMax, p.Bubble.yMax));
+            _groupPos = u.center;
+            _group.sizeDelta = u.size;
+            _nubi.rectTransform.sizeDelta = new Vector2(p.NubiSize, p.NubiSize);
+            _nubi.rectTransform.anchoredPosition = p.Nubi.center - u.center;
+            _nubi.rectTransform.localScale = new Vector3(_left ? 1f : -1f, 1f, 1f);
+            _bubble.sizeDelta = p.Bubble.size;
+            _bubble.anchoredPosition = p.Bubble.center - u.center;
+            _text.fontSize = CoachLayout.FontSize;
+            if (!p.Clean && !_warned)
+            {
+                _warned = true;
+                Debug.LogWarning("[Coach] sin lugar limpio para «" + _text.text + "»: " + (p.TooLong ? "no cabe en " + CoachLayout.MaxLines + " líneas; " : "") + "tapa " + Mathf.RoundToInt(p.Overlap) + " u²");
+            }
+        }
+
+        private void FillReport()
+        {
+            var r = _report;
+            r.Screen = _root.rect;
+            r.HasHole = _kind != Kind.Notice && _target != null;
+            r.Hole = r.HasHole ? _hole : default;
+            var keep = new List<Rect>();
+            for (int i = r.HasHole ? 1 : 0; i < _lit.Count; i++) keep.Add(_lit[i]);
+            if (_kind == Kind.Notice && _keep != null) foreach (var k in _keep) if (k != null) keep.Add(k());
+            r.Keep = keep.ToArray();
+            r.GameText = _soft.ToArray();
+            r.Finger = r.HasHole && _kind == Kind.Touch ? FingerRect(_hole) : default;
+            if (_placement != null)
+            {
+                r.Nubi = _placement.Nubi;
+                r.Bubble = _placement.Bubble;
+                r.Lines = _placement.Lines;
+                r.Overlap = PlacementOverlap(_placement);
+                r.TooLong = _placement.TooLong;
+                r.Clean = r.Overlap <= 0.5f && !r.TooLong;
+            }
+            r.ActualLines = _text.cachedTextGenerator.lineCount;
+            // los controles del tutorial («Saltar tutorial», el rótulo) tampoco deben quedar sobre el hueco, las zonas ni los textos del juego
+            float clash = 0f;
+            foreach (var c in _controls)
+            {
+                foreach (var l in _lit) clash += CoachLayout.Overlap(c, l);
+                foreach (var t in _textRaw) clash += CoachLayout.Overlap(c, t);
+            }
+            r.ControlClash = clash;
+        }
+
+        private void Record()
+        {
+            if (_report == null) return;
+            FillReport();
+            AuditSteps.Add(_report);
+            _report = null;
+        }
+
+        // ------------------------------------------------------------------ dibujo
 
         private static void Box(RectTransform rt, float x0, float y0, float x1, float y1)
         {
             rt.sizeDelta = new Vector2(Mathf.Max(0f, x1 - x0), Mathf.Max(0f, y1 - y0));
             rt.anchoredPosition = new Vector2((x0 + x1) / 2f, (y0 + y1) / 2f);
         }
+
+        private static bool Same(List<Rect> a, List<Rect> b)
+        {
+            if (a.Count != b.Count) return false;
+            for (int i = 0; i < a.Count; i++)
+                if (Mathf.Abs(a[i].xMin - b[i].xMin) > 0.5f || Mathf.Abs(a[i].yMin - b[i].yMin) > 0.5f || Mathf.Abs(a[i].xMax - b[i].xMax) > 0.5f || Mathf.Abs(a[i].yMax - b[i].yMax) > 0.5f) return false;
+            return true;
+        }
+
+        private readonly List<Rect> _litShown = new List<Rect>();
 
         private void UpdateLayout(float dt)
         {
@@ -313,39 +573,61 @@ namespace NeuroVida.Games.Shared
             if (_kind != Kind.Notice)
             {
                 var pr = _root.rect;
-                var h = _hole;
-                float r = _circle ? Mathf.Min(h.width, h.height) / 2f : Mathf.Min(54f, Mathf.Min(h.width, h.height) / 2f);
-                Box(_strips[0].rectTransform, pr.xMin, h.yMax, pr.xMax, pr.yMax);     // arriba
-                Box(_strips[1].rectTransform, pr.xMin, pr.yMin, pr.xMax, h.yMin);     // abajo
-                Box(_strips[2].rectTransform, pr.xMin, h.yMin, h.xMin, h.yMax);       // izquierda
-                Box(_strips[3].rectTransform, h.xMax, h.yMin, pr.xMax, h.yMax);       // derecha
-                // esquinas que redondean el hueco (un cuarto de círculo oscuro en cada una)
-                _corners[0].rectTransform.sizeDelta = _corners[1].rectTransform.sizeDelta = _corners[2].rectTransform.sizeDelta = _corners[3].rectTransform.sizeDelta = new Vector2(r, r);
-                _corners[0].rectTransform.anchoredPosition = new Vector2(h.xMin + r / 2f, h.yMax - r / 2f);
-                _corners[1].rectTransform.anchoredPosition = new Vector2(h.xMax - r / 2f, h.yMax - r / 2f);
-                _corners[2].rectTransform.anchoredPosition = new Vector2(h.xMax - r / 2f, h.yMin + r / 2f);
-                _corners[3].rectTransform.anchoredPosition = new Vector2(h.xMin + r / 2f, h.yMin + r / 2f);
+                // el velo: toda el área menos lo iluminado (el hueco y las zonas protegidas)
+                if (!Same(_lit, _litShown))
+                {
+                    _litShown.Clear();
+                    _litShown.AddRange(_lit);
+                    _veilRects = CoachLayout.Subtract(pr, _lit);
+                    for (int i = 0; i < _veil.Length; i++)
+                    {
+                        bool on = i < _veilRects.Count;
+                        _veil[i].gameObject.SetActive(on);
+                        if (on) Box(_veil[i].rectTransform, _veilRects[i].xMin, _veilRects[i].yMin, _veilRects[i].xMax, _veilRects[i].yMax);
+                    }
+                    if (_veilRects.Count > _veil.Length) Debug.LogWarning("[Coach] el velo necesita " + _veilRects.Count + " piezas y solo hay " + _veil.Length);
+                    // esquinas que redondean cada zona iluminada (un cuarto de círculo oscuro en cada una; se omite si cae sobre otra zona iluminada)
+                    for (int i = 0; i < MaxLit; i++)
+                    {
+                        bool has = i < _lit.Count;
+                        var h = has ? _lit[i] : default;
+                        float r = !has ? 0f : (i == 0 && _target != null) ? (_circle ? Mathf.Min(h.width, h.height) / 2f : Mathf.Min(54f, Mathf.Min(h.width, h.height) / 2f)) : Mathf.Min(24f, Mathf.Min(h.width, h.height) / 2f);
+                        for (int c = 0; c < 4; c++)
+                        {
+                            var img = _corners[i * 4 + c];
+                            Vector2 center = !has ? Vector2.zero : new Vector2(c == 0 || c == 3 ? h.xMin + r / 2f : h.xMax - r / 2f, c == 0 || c == 1 ? h.yMax - r / 2f : h.yMin + r / 2f);
+                            bool covered = false;
+                            if (has) for (int j = 0; j < _lit.Count && !covered; j++)
+                                    if (j != i && CoachLayout.Overlap(new Rect(center - new Vector2(r, r) / 2f, new Vector2(r, r)), _lit[j]) > 0.5f) covered = true;
+                            img.gameObject.SetActive(has && r > 1f && !covered);
+                            img.rectTransform.sizeDelta = new Vector2(r, r);
+                            img.rectTransform.anchoredPosition = center;
+                        }
+                    }
+                }
+                var hole = _hole;
+                float rr = _circle ? Mathf.Min(hole.width, hole.height) / 2f : Mathf.Min(54f, Mathf.Min(hole.width, hole.height) / 2f);
                 // aro celeste que late
                 float pulse = decorative ? 1f + 0.035f * Mathf.Sin(Time.unscaledTime * 5.2f) : 1f;
                 float a = decorative ? 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 5.2f) : 1f;
                 if (_circle)
                 {
-                    float d = Mathf.Max(h.width, h.height) / 0.96f;
+                    float d = Mathf.Max(hole.width, hole.height) / 0.96f;
                     _ring.rectTransform.sizeDelta = new Vector2(d, d) * pulse;
-                    _ring.rectTransform.anchoredPosition = h.center;
+                    _ring.rectTransform.anchoredPosition = hole.center;
                     _ring.color = NeuroStyle.WithAlpha(NeuroStyle.Sky, a);
                 }
                 else
                 {
-                    _frame.rectTransform.sizeDelta = new Vector2(h.width + 14f, h.height + 14f) * pulse;
-                    _frame.rectTransform.anchoredPosition = h.center;
-                    SetFrameScale(32f / Mathf.Max(8f, r));
+                    _frame.rectTransform.sizeDelta = new Vector2(hole.width + 14f, hole.height + 14f) * pulse;
+                    _frame.rectTransform.anchoredPosition = hole.center;
+                    SetFrameScale(32f / Mathf.Max(8f, rr));
                     _frame.color = NeuroStyle.WithAlpha(NeuroStyle.Sky, a);
                 }
                 if (_finger.gameObject.activeSelf)
                 {
                     float bob = decorative ? Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3.2f)) : 0.5f;
-                    _finger.rectTransform.anchoredPosition = h.center + new Vector2(0f, -h.height * 0.15f - 150f * (1f - bob));
+                    _finger.rectTransform.anchoredPosition = hole.center + new Vector2(0f, -hole.height * 0.15f - 150f * (1f - bob));
                 }
             }
 
@@ -363,51 +645,6 @@ namespace NeuroVida.Games.Shared
         private void SetFrameScale(float multiplier)
         {
             if (PixelsMultiplier != null) PixelsMultiplier.SetValue(_frame, multiplier);
-        }
-
-        // ------------------------------------------------------------------ dónde va Nubi
-
-        private Vector2 _groupPos;
-
-        /// <summary>Nubi y su globo van abajo, arriba o al medio, del lado más libre: nunca sobre el hueco.</summary>
-        private void PlaceNubi()
-        {
-            var pr = _root.rect;
-            float bubbleW = Mathf.Min(pr.width - NubiSize - 3f * Margin, 720f);
-            float groupW = NubiSize + bubbleW + 20f;
-            float groupH = Mathf.Max(NubiSize, BubbleHeight);
-            bool hasHole = _kind != Kind.Notice && _target != null;
-            _left = hasHole ? _hole.center.x > pr.center.x : false;       // Nubi del lado contrario al hueco
-
-            float cx = _left ? pr.xMin + Margin + groupW / 2f : pr.xMax - Margin - groupW / 2f;
-            float[] ys = { pr.yMin + BottomClear + groupH / 2f, pr.yMax - HudClear - groupH / 2f, pr.center.y };
-            int best = 0;
-            float bestOverlap = float.MaxValue;
-            for (int i = 0; i < ys.Length; i++)
-            {
-                var g = new Rect(cx - groupW / 2f, ys[i] - groupH / 2f, groupW, groupH);
-                float o = hasHole ? Overlap(g, Rect.MinMaxRect(_hole.xMin - 24f, _hole.yMin - 24f, _hole.xMax + 24f, _hole.yMax + 24f)) : 0f;
-                if (o < bestOverlap) { bestOverlap = o; best = i; }
-                if (o <= 0f) break;
-            }
-            _groupPos = new Vector2(cx, ys[best]);
-            _group.sizeDelta = new Vector2(groupW, groupH);
-            // adentro del grupo: Nubi en el borde y el globo hacia el centro de la pantalla
-            float nubiX = _left ? -groupW / 2f + NubiSize / 2f : groupW / 2f - NubiSize / 2f;
-            float bubbleX = _left ? groupW / 2f - bubbleW / 2f : -groupW / 2f + bubbleW / 2f;
-            _nubi.rectTransform.anchoredPosition = new Vector2(nubiX, 0f);
-            _nubi.rectTransform.localScale = new Vector3(_left ? 1f : -1f, 1f, 1f);
-            _bubble.sizeDelta = new Vector2(bubbleW, BubbleHeight);
-            _bubble.anchoredPosition = new Vector2(bubbleX, 0f);
-            _text.fontSize = 54;
-            _text.resizeTextMaxSize = 54;
-        }
-
-        private static float Overlap(Rect a, Rect b)
-        {
-            float w = Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin);
-            float h = Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin);
-            return w > 0f && h > 0f ? w * h : 0f;
         }
     }
 

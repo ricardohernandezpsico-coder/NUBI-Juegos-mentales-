@@ -1115,21 +1115,27 @@ namespace NeuroVida.Games.Meteoros
                     yield return null;                                     // el meteoro termina de aparecer arriba
                     var m = meteor;
                     yield return StartCoroutine(coach.Touch(() => coach.AroundOf(m.Root, new Vector2(Mathf.Max(m.Rx * 2.6f, 340f), Mathf.Max(m.Ry * 2.6f, 260f))),
-                        "¿Existe esta palabra? Si existe, tócala"));
+                        CoachTexts.Meteoros.Exists));
                 }
-                while (_guidedOutcome == 0 && !t.Skipped) yield return null;
+                float outcomeWait = 0f;
+                while (_guidedOutcome == 0 && !t.Skipped)
+                {
+                    outcomeWait += GameClock.RealDeltaTime;
+                    if (isWord && GuidedTutorial.AutoPlay(outcomeWait)) _guidedOutcome = 1;     // solo en el smoke del Editor
+                    yield return null;
+                }
                 _guidedRing = null;
                 if (t.Skipped) { script.Skip(); break; }
                 if (_guidedOutcome == 1 || _guidedOutcome == 4)
                 {
                     script.Success();
-                    if (_guidedOutcome == 4) yield return StartCoroutine(coach.Notice("¡Bien! Esa no existía: dejarla caer fue lo correcto", 2.2f));
+                    if (_guidedOutcome == 4) yield return StartCoroutine(coach.Notice(CoachTexts.Meteoros.LetItFall, 2.2f));
                 }
                 else
                 {
                     script.Failure();
                     focusNext = _guidedOutcome == 3;
-                    yield return StartCoroutine(coach.Notice(_guidedOutcome == 3 ? "Casi: esa palabra existe. Tócala antes de que llegue abajo" : "Casi: esa no existe. Las inventadas se dejan caer", 2.4f));
+                    yield return StartCoroutine(coach.Notice(_guidedOutcome == 3 ? CoachTexts.Meteoros.MissedWord : CoachTexts.Meteoros.MissedFake, 2.4f));
                 }
             }
             _guidedRing = null;
@@ -1138,7 +1144,7 @@ namespace NeuroVida.Games.Meteoros
             if (!script.Skipped)
             {
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             }
             t.EndPractice();
             _guided = false;

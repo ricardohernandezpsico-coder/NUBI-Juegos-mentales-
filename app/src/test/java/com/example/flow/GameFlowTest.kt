@@ -195,6 +195,62 @@ class GameFlowTest {
   }
 
   @Test
+  fun `entrar a Juegos despues de jugar desde Juegos muestra las 4 areas`() {
+    val vm = newViewModel()
+    vm.playFromLibrary("freno", PlayMode.DESAFIO)
+    vm.closeGameOrResult()
+    assertTrue(vm.libraryFocus.value.open) // la excepción: se vuelve al área
+    vm.setTab(AppTab.HOY)
+    assertFalse("al salir de Juegos el área se cierra", vm.libraryFocus.value.open)
+    vm.setTab(AppTab.JUEGOS) // barra, deslizar o «Ir a Juegos»
+    assertFalse("al volver deben verse las 4 áreas", vm.libraryFocus.value.open)
+    assertEquals("la casilla se recuerda aunque el área esté cerrada", "freno", vm.libraryFocus.value.gameId)
+  }
+
+  @Test
+  fun `tocar Juegos estando en Juegos con un area abierta la cierra`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.JUEGOS)
+    vm.setLibraryFocus(DomainType.ATENCION, null)
+    assertTrue(vm.libraryFocus.value.open)
+    vm.setTab(AppTab.JUEGOS)
+    assertFalse(vm.libraryFocus.value.open)
+    assertEquals(AppTab.JUEGOS, vm.currentTab.value)
+  }
+
+  @Test
+  fun `salir de Juegos con un area abierta la cierra y no se reabre al volver`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.JUEGOS)
+    vm.setLibraryFocus(DomainType.ATENCION, "freno")
+    vm.setTab(AppTab.PROGRESO)
+    assertFalse(vm.libraryFocus.value.open)
+    vm.setTab(AppTab.JUEGOS)
+    assertFalse(vm.libraryFocus.value.open)
+  }
+
+  @Test
+  fun `un juego de Hoy no devuelve a Juegos aunque antes se jugara desde Juegos`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.JUEGOS)
+    vm.playFromLibrary("freno", PlayMode.DESAFIO)
+    vm.setTab(AppTab.HOY) // salió sin cerrar el resultado
+    vm.launchGame("freno", isDailyFlow = true)
+    vm.closeGameOrResult()
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertFalse(vm.libraryFocus.value.open)
+  }
+
+  @Test
+  fun `tras cerrar Android la app a mitad de un juego de Juegos, tocar Juegos muestra las 4 areas`() {
+    newViewModel().playFromLibrary("freno", PlayMode.A_TU_MEDIDA)
+    val second = newViewModel()
+    assertTrue(second.libraryFocus.value.open)
+    second.setTab(AppTab.JUEGOS)
+    assertFalse(second.libraryFocus.value.open)
+  }
+
+  @Test
   fun `la casilla de Juegos tambien se recuerda si Android cierra la app`() {
     val first = newViewModel()
     first.playFromLibrary("freno", PlayMode.A_TU_MEDIDA)

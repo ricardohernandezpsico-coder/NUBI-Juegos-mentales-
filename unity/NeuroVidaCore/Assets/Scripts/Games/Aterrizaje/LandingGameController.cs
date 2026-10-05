@@ -891,6 +891,8 @@ namespace NeuroVida.Games.Aterrizaje
             // «Nubi entrenadora»: un solo aterrizaje. Foco sobre la línea (el juego se congela; el toque ahí es el real: se arrastra la nave y se suelta), y un aviso al aterrizar.
             var script = new GuidedScript(1);
             var trial = LandingContract.GuidedTrial(_rng);
+            // zona protegida: el número grande de la misión (a dónde hay que aterrizar) queda iluminado junto a la línea
+            var mission = new[] { coach.ZoneOfTexts(_mission) };
             while (!script.Finished)
             {
                 if (t.Skipped) { script.Skip(); break; }
@@ -901,9 +903,10 @@ namespace NeuroVida.Games.Aterrizaje
                 ShowZone(trial, zoneHalf);
                 // baja despacio (14 s) para que dé tiempo a moverla
                 var fly = StartCoroutine(Fly(14f, false));
+                AutoLand(trial, script.Failures);
                 yield return null;                                         // la nave aparece arriba
                 yield return StartCoroutine(coach.Touch(() => LineHole(),
-                    script.Failures == 0 ? $"La línea va de {trial.MinLabel} a {trial.MaxLabel}. Arrastra la nave al {trial.Label} y suelta" : $"Otra vez: arrastra la nave al {trial.Label} y suelta"));
+                    script.Failures == 0 ? CoachTexts.Aterrizaje.Drag(trial.Label) : CoachTexts.Aterrizaje.Again(trial.Label), keep: mission));
                 yield return fly;
                 if (t.Skipped) { script.Skip(); break; }
 
@@ -919,13 +922,13 @@ namespace NeuroVida.Games.Aterrizaje
                     GameFeel.Correct(1);
                     StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(_landerX, _rulerY + 60f), GoodColor, 12, 180f, 32f, 0.5f));
                     script.Success();
-                    yield return StartCoroutine(coach.Notice("¡Bien! Mientras más cerca del número, mejor", 2.2f));
+                    yield return StartCoroutine(coach.Notice(CoachTexts.Aterrizaje.Good, 2.2f, mission));
                 }
                 else
                 {
                     GameFeel.Wrong();
                     script.Failure();
-                    yield return StartCoroutine(coach.Notice($"Casi: la zona amarilla es el lugar justo del {trial.Label}. Probemos otra vez", 2.6f));
+                    yield return StartCoroutine(coach.Notice(CoachTexts.Aterrizaje.Close(trial.Label), 2.4f, mission));
                 }
                 HideZone();
                 yield return StartCoroutine(TakeOff());
@@ -937,7 +940,7 @@ namespace NeuroVida.Games.Aterrizaje
             if (!script.Skipped)
             {
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             }
             t.EndPractice();
             _phase = Phase.Idle;
@@ -959,5 +962,22 @@ namespace NeuroVida.Games.Aterrizaje
             return new Rect(r.xMin, r.center.y - 150f, r.width, 300f);
         }
         // </guided>
+
+        /// <summary>SOLO EN EL EDITOR (smoke): en el segundo intento la nave se lleva sola al número, para que el arranque de prueba pase también por el aviso de acierto. En el teléfono no hace nada.</summary>
+        private void AutoLand(LandingTrial trial, int failures)
+        {
+#if UNITY_EDITOR
+            if (GuidedTutorial.EditorAutoContinue && failures > 0) StartCoroutine(EditorAutoLand(trial));
+#endif
+        }
+
+#if UNITY_EDITOR
+        private IEnumerator EditorAutoLand(LandingTrial trial)
+        {
+            float waited = 0f;
+            while (waited < 2.5f) { waited += GameClock.RealDeltaTime; yield return null; }
+            _landerTargetX = (trial.TargetFraction - 0.5f) * _rulerW;
+        }
+#endif
     }
 }

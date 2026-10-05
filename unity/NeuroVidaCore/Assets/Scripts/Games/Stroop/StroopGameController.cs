@@ -1073,6 +1073,8 @@ namespace NeuroVida.Games.Stroop
             // «Nubi entrenadora»: dos palabras, la primera de la orilla de la TINTA y la primera de la orilla de la PALABRA. En cada una la tarjeta llega sola, se congela con el foco
             // (la tarjeta, su orilla y los botones) y el toque en un botón es la respuesta de verdad. Después, un aviso breve.
             var script = new GuidedScript(2);
+            // zonas protegidas: la cinta «Responde: TINTA / PALABRA» y la tarjeta con la palabra (de lo que habla Nubi) quedan iluminadas junto a los botones
+            var ribbon = new[] { coach.Zone(_ribbonRect), coach.Zone(_cardRect) };
             while (!script.Finished)
             {
                 if (t.Skipped) { script.Skip(); break; }
@@ -1085,10 +1087,15 @@ namespace NeuroVida.Games.Stroop
                 ShowRing(correctIndex, dimOthers: false);               // el mismo aro celeste por fuera del botón que se toca
                 _acceptInput = true;
                 _answerIndex = (int)NoAnswer;
-                yield return StartCoroutine(coach.Touch(() => StageHole(), script.Index == 0 && script.Failures == 0
-                    ? "Llega por la orilla de la TINTA: toca el COLOR en que está escrita"
-                    : trial.Rule == StroopRule.Ink ? "Orilla de la TINTA: toca el COLOR en que está escrita" : "Ahora, por la orilla de la PALABRA: toca lo que DICE"));
-                while (_answerIndex == (int)NoAnswer && !t.Skipped) yield return null;
+                yield return StartCoroutine(coach.Touch(() => StageHole(),
+                    trial.Rule == StroopRule.Ink ? CoachTexts.Stroop.InkRule : CoachTexts.Stroop.WordRule, keep: ribbon));
+                float answerWait = 0f;
+                while (_answerIndex == (int)NoAnswer && !t.Skipped)
+                {
+                    answerWait += GameClock.RealDeltaTime;
+                    if (GuidedTutorial.AutoPlay(answerWait)) _answerIndex = correctIndex;      // solo en el smoke del Editor
+                    yield return null;
+                }
                 _acceptInput = false;
                 ClearRings();
                 if (t.Skipped) { script.Skip(); break; }
@@ -1097,7 +1104,7 @@ namespace NeuroVida.Games.Stroop
                 {
                     GameFeel.Correct(1);
                     script.Success();
-                    yield return StartCoroutine(coach.Notice("¡Bien! " + StroopContract.Explain(trial), 2.2f));
+                    yield return StartCoroutine(coach.Notice(CoachTexts.Stroop.Good(StroopContract.Explain(trial)), 2.2f, ribbon));
                     yield return StartCoroutine(SlideOut(0.28f, -_shownCardSide));
                 }
                 else
@@ -1105,9 +1112,7 @@ namespace NeuroVida.Games.Stroop
                     GameFeel.Wrong();
                     ShowRing(correctIndex);
                     script.Failure();
-                    yield return StartCoroutine(coach.Notice(trial.Rule == StroopRule.Ink
-                        ? "Casi: desde esta orilla se toca el COLOR de la tinta"
-                        : "Casi: desde esta orilla se toca lo que DICE la palabra", 2.4f));
+                    yield return StartCoroutine(coach.Notice(trial.Rule == StroopRule.Ink ? CoachTexts.Stroop.MissedInk : CoachTexts.Stroop.MissedWord, 2.4f, ribbon));
                     yield return StartCoroutine(FadeCardOut());
                     ClearRings();
                 }
@@ -1118,7 +1123,7 @@ namespace NeuroVida.Games.Stroop
             if (!script.Skipped)
             {
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             }
             _guided = false;
             _bottomReserve = 0f;
@@ -1131,11 +1136,11 @@ namespace NeuroVida.Games.Stroop
         }
         // </guided>
 
-        /// <summary>La tarjeta con su orilla y los cuatro botones (para el foco de «tocar»).</summary>
+        /// <summary>Los cuatro botones de color (el foco de «tocar»: ahí está la respuesta). La tarjeta y la cinta van aparte, como zonas protegidas, para que quede dónde poner a Nubi.</summary>
         private Rect StageHole()
         {
             var coach = _tutorial.Coach;
-            Rect r = coach.RectOf(_stageRect);
+            Rect r = coach.RectOf(_buttonRects[0]);
             foreach (var b in _buttonRects)
             {
                 var o = coach.RectOf(b);

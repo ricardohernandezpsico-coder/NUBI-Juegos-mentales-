@@ -103,9 +103,17 @@ fi
     MALOS=""
     for G in $FALLADOS; do
       M="Run$G"; [ "$G" = "Run" ] && M="Run"
-      "$UNITY" -batchmode -nographics -projectPath "$PROJ" \
-        -executeMethod NeuroVida.Bridge.EditorTools.HeadlessPlaymodeSmokeTest.$M -logFile "$RESULTS/v-3-$G.log"
-      grep -q '\[SmokeTest\] OK' "$RESULTS/v-3-$G.log" || MALOS="$MALOS $G"
+      case "$G" in
+        Tutorial*)
+          # los tutoriales se repiten con la misma revision (las 3 formas de pantalla): si no, el reintento "sin revision" taparia un solape real
+          NUBI_SMOKE_GAMES="$G" "$UNITY" -batchmode -nographics -projectPath "$PROJ" \
+            -executeMethod NeuroVida.Bridge.EditorTools.HeadlessPlaymodeSmokeTest.RunList -logFile "$RESULTS/v-3-$G.log"
+          grep -q 'RunList: .* OK' "$RESULTS/v-3-$G.log" || MALOS="$MALOS $G" ;;
+        *)
+          "$UNITY" -batchmode -nographics -projectPath "$PROJ" \
+            -executeMethod NeuroVida.Bridge.EditorTools.HeadlessPlaymodeSmokeTest.$M -logFile "$RESULTS/v-3-$G.log"
+          grep -q '\[SmokeTest\] OK' "$RESULTS/v-3-$G.log" || MALOS="$MALOS $G" ;;
+      esac
     done
     if [ -n "$MALOS" ]; then
       G1="$(echo $MALOS | cut -d' ' -f1)"

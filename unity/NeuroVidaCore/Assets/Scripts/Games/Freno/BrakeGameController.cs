@@ -792,7 +792,7 @@ namespace NeuroVida.Games.Freno
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetTopOffset(0f);
-            BuildTutorial(_safe, GameHud.Height + 150f, "Freno de Emergencia", "Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.",
+            BuildTutorial(_safe, GameHud.Height + 125f, "Freno de Emergencia", "Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.",
                 skipAtTop: true, captionFromBottomU: 700f);
 
             var flashGo = new GameObject("Flash");
@@ -1163,14 +1163,15 @@ namespace NeuroVida.Games.Freno
                 float litAt = GameClock.Time;
                 bool stopShown = false;
                 float limit = isStop ? 3.2f : 600f;
-                if (!isStop) StartCoroutine(coach.Touch(() => LaneHole(L), "Toca para despegar, ¡rápido!"));
+                if (!isStop) StartCoroutine(coach.Touch(() => LaneHole(L), CoachTexts.Freno.Launch));
                 while (!_tapped && !t.Skipped && GameClock.Time - litAt < limit)
                 {
+                    if (!isStop && GuidedTutorial.AutoPlay(GameClock.Time - litAt)) { _tapped = true; _tapLane = lane; }   // solo en el smoke del Editor
                     if (isStop && !stopShown && GameClock.Time - litAt >= 0.7f)
                     {
                         stopShown = true;
                         ShowStop();
-                        StartCoroutine(coach.Watch(() => coach.RectOf(_stopRect), "¡ALTO! Cuando aparece, no toques nada", () => false, 1.6f));
+                        StartCoroutine(coach.Watch(() => coach.RectOf(_stopRect), CoachTexts.Freno.Stop, () => false, 1.6f));
                     }
                     yield return null;
                 }
@@ -1195,7 +1196,7 @@ namespace NeuroVida.Games.Freno
                     {
                         ShowMark(_lanes[_tapLane], false);
                         script.Failure();
-                        yield return StartCoroutine(coach.Notice("Casi: se toca el cohete que se enciende", 2.2f));
+                        yield return StartCoroutine(coach.Notice(CoachTexts.Freno.Missed, 2.2f));
                         HideMark(_lanes[_tapLane]);
                     }
                 }
@@ -1205,7 +1206,7 @@ namespace NeuroVida.Games.Freno
                     ShowMark(L, true);
                     StartCoroutine(Steam(L));
                     script.Success();
-                    yield return StartCoroutine(coach.Notice("¡Frenaste a tiempo!", 1.8f));
+                    yield return StartCoroutine(coach.Notice(CoachTexts.Freno.Braked, 1.8f));
                     HideMark(L);
                     yield return StartCoroutine(FadeStop(0.2f));
                 }
@@ -1215,7 +1216,7 @@ namespace NeuroVida.Games.Freno
                     ShowMark(_tapLane >= 0 ? _lanes[_tapLane] : L, false);
                     script.Failure();
                     yield return StartCoroutine(Hop(L));
-                    yield return StartCoroutine(coach.Notice("Casi: con el ¡ALTO! el cohete se queda quieto. Probemos otra vez", 2.4f));
+                    yield return StartCoroutine(coach.Notice(CoachTexts.Freno.Tapped, 2.4f));
                     HideMark(_tapLane >= 0 ? _lanes[_tapLane] : L);
                     yield return StartCoroutine(FadeStop(0.2f));
                 }
@@ -1226,7 +1227,7 @@ namespace NeuroVida.Games.Freno
             if (!script.Skipped)
             {
                 PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             }
             t.EndPractice();
             SetPrompt("", Color.white);

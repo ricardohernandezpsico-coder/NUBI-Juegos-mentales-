@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -429,6 +430,7 @@ namespace NeuroVida.Games.Secuencia
             float radius = _senior ? RastroBoard.HitRadiusSenior : RastroBoard.HitRadius;
             while (true)
             {
+                if (r.Guided && GuidedTutorial.AutoPlay(GameClock.Time - startedAt)) { res.Complete = true; _phase = Phase.Idle; yield break; }   // solo en el smoke del Editor
                 if (r.Guided ? _tutorial.Skipped : TimeIsUp)
                 {
                     res.Abandoned = !r.Guided;
@@ -535,16 +537,18 @@ namespace NeuroVida.Games.Secuencia
             var coach = tutorial.Coach;
             var r = _session.GuidedRound();
             SetMode(r);
+            // zona protegida: el contador «luces recordadas» (lo que suma cada ronda) queda iluminado junto al tablero
+            var counter = LightsZone(coach);
             // «Nubi entrenadora»: 1) mirar cómo vuela la chispa, 2) tocar el primer lucero (el toque es el de verdad), 3) un aviso breve. Nada se queda esperando en silencio.
             while (!tutorial.Skipped)
             {
-                StartCoroutine(coach.Watch(BoardHole, "Mira el camino de la chispa", () => _phase != Phase.Show, 15f));
+                StartCoroutine(coach.Watch(BoardHole, CoachTexts.Rastro.Watch, () => _phase != Phase.Show, 15f, keep: counter));
                 yield return StartCoroutine(Show(r));
                 if (tutorial.Skipped) break;
                 var res = new InputResult();
                 var input = StartCoroutine(InputPhase(r, res));
                 int first = r.Target[0];
-                yield return StartCoroutine(coach.Touch(() => OrbHole(first), "Ahora repítelo: toca o desliza por las mismas luces", circle: true));
+                yield return StartCoroutine(coach.Touch(() => OrbHole(first), CoachTexts.Rastro.Repeat, circle: true, keep: counter));
                 yield return input;
                 _events.Clear();
                 if (tutorial.Skipped) break;
@@ -553,7 +557,7 @@ namespace NeuroVida.Games.Secuencia
                     PlayClip(RastroSounds.Chord(), 1f);
                     _winAt = GameClock.Time;
                     _hintOrb = -1;
-                    yield return StartCoroutine(coach.Notice("¡Eso! Cada ronda suma una luz"));
+                    yield return StartCoroutine(coach.Notice(CoachTexts.Rastro.Good, 1.8f, counter));
                     break;
                 }
                 // error: sin culpa, se explica y se repite el mismo camino
@@ -564,16 +568,19 @@ namespace NeuroVida.Games.Secuencia
                 _orbs[res.Expected].Aro.color = NeuroStyle.WithAlpha(Sun, 1f);
                 _orbs[res.Expected].Aro.gameObject.SetActive(true);
                 PlayClip(RastroSounds.Wrong(), 1f);
-                yield return StartCoroutine(coach.Notice("Casi: esa no era. Mira otra vez el camino", 2.4f));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Rastro.Missed, 2.4f, counter));
                 ClearRound();
             }
             _hintOrb = -1;
             ClearRound();
-            if (!tutorial.Skipped) yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
+            if (!tutorial.Skipped) yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             tutorial.EndPractice();
             _phase = Phase.Idle;
         }
         // </guided>
+
+        /// <summary>El contador «luces recordadas» como zona protegida del tutorial.</summary>
+        private Func<Rect>[] LightsZone(NubiCoach coach) => new[] { coach.ZoneOfTexts(_counterNum, _counterLabel) };
 
         /// <summary>El tablero entero de luceros (para el foco de «mirar»).</summary>
         private Rect BoardHole()
@@ -583,7 +590,7 @@ namespace NeuroVida.Games.Secuencia
             bool first = true;
             for (int i = 0; i < RastroBoard.Orbs; i++)
             {
-                var o = coach.AroundOf(_orbs[i].Root, new Vector2(260f, 260f));
+                var o = coach.AroundOf(_orbs[i].Root, new Vector2(230f, 230f));
                 if (first) { bounds = o; first = false; }
                 else bounds = Rect.MinMaxRect(Mathf.Min(bounds.xMin, o.xMin), Mathf.Min(bounds.yMin, o.yMin), Mathf.Max(bounds.xMax, o.xMax), Mathf.Max(bounds.yMax, o.yMax));
             }

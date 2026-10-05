@@ -777,6 +777,7 @@ namespace NeuroVida.Games.Anagramas
         protected override IEnumerator GuidedRound(GuidedTutorial t)
         {
             t.BeginPractice();
+            t.PlaceControls(GameHud.Height + 10f, false, -1f, skipFromBottomU: _safe.rect.height * 0.19f);          // «Saltar tutorial» a esa altura: abajo están los botones del juego, arriba la tarjeta y entre medio las fichas
             _guided = true;
             SetSkyVisible(false);
             var coach = t.Coach;
@@ -786,13 +787,15 @@ namespace NeuroVida.Games.Anagramas
             var w1 = GuidedWord(1, 5);
             BeginWord(w1, 1);
             _inputOn = false;
-            yield return StartCoroutine(coach.Touch(() => coach.RectOf(_cardFill), "Lee la definición y piensa la palabra. Toca la tarjeta cuando la tengas"));
+            // zona protegida: la tarjeta con la definición queda iluminada mientras Nubi habla de ella
+            var card = new[] { coach.Zone(_cardFill) };
+            yield return StartCoroutine(coach.Touch(() => coach.RectOf(_cardFill), CoachTexts.Punta.ReadDefinition));
             bool ok = !t.Skipped;
             if (ok)
             {
                 _inputOn = true;
                 _press = null;
-                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[0].Root), "¿La sabes? Toca ¡La tengo!"));
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[0].Root), CoachTexts.Punta.Have, keep: card));
                 ok = !t.Skipped;
             }
             if (ok)
@@ -804,7 +807,7 @@ namespace NeuroVida.Games.Anagramas
                 var first = _tiles.Find(x => x.Char == w1.Tiles[0] && x.Slot < 0 && !x.Gone);
                 if (first != null)
                 {
-                    yield return StartCoroutine(coach.Touch(() => coach.AroundOf(first.Root, Vector2.one * (_m.TileD * _s * 1.7f)), "Arma la palabra tocando las letras en orden", circle: true));
+                    yield return StartCoroutine(coach.Touch(() => coach.AroundOf(first.Root, Vector2.one * (_m.TileD * _s * 1.7f)), CoachTexts.Punta.Letters, circle: true, keep: card));
                     ok = !t.Skipped;
                     if (ok) TapTile(first);                                // el toque en el hueco ES el toque en la ficha
                 }
@@ -813,6 +816,7 @@ namespace NeuroVida.Games.Anagramas
             {
                 _inputOn = true;
                 _press = null;
+                AutoPlayWord();
                 yield return StartCoroutine(WordLoop(abortAtTimeUp: false));   // el resto de las letras: a tu ritmo
                 ok = !t.Skipped && _phase == Phase.Solved;
             }
@@ -820,7 +824,7 @@ namespace NeuroVida.Games.Anagramas
             {
                 yield return StartCoroutine(PlaySolved(_outcome, w1, 0, count: false));
                 script.Success();
-                yield return StartCoroutine(coach.Notice(_outcome == PuntaTier.Solo ? "Lucero dorado: la encontraste sola" : _outcome == PuntaTier.Vista ? "No pasa nada: Nubi te la muestra y vuelve otro día" : "Plateado: la encontraste con ayuda", 2.2f));
+                yield return StartCoroutine(coach.Notice(_outcome == PuntaTier.Solo ? CoachTexts.Punta.FoundAlone : _outcome == PuntaTier.Vista ? CoachTexts.Punta.Shown : CoachTexts.Punta.FoundWithHelp, 2.2f));
             }
 
             // ---- palabra 2: pedir una ayuda
@@ -829,13 +833,14 @@ namespace NeuroVida.Games.Anagramas
                 var w2 = GuidedWord(1, 5, w1.Word);
                 BeginWord(w2, 1);
                 _inputOn = false;
-                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[1].Root), "Si una palabra no te sale, pide una ayuda"));
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[1].Root), CoachTexts.Punta.Help, keep: card));
                 ok = !t.Skipped;
                 if (ok)
                 {
                     DoHelp();
                     _inputOn = true;
                     _press = null;
+                    AutoPlayWord();
                     yield return StartCoroutine(WordLoop(abortAtTimeUp: false));
                     ok = !t.Skipped && _phase == Phase.Solved;
                 }
@@ -843,11 +848,11 @@ namespace NeuroVida.Games.Anagramas
                 {
                     yield return StartCoroutine(PlaySolved(_outcome, w2, 0, count: false));
                     script.Success();
-                    yield return StartCoroutine(coach.Notice(_outcome == PuntaTier.Vista ? "No pasa nada: Nubi te la muestra y vuelve otro día" : "Plateado: con ayuda también se encuentra", 2.2f));
+                    yield return StartCoroutine(coach.Notice(_outcome == PuntaTier.Vista ? CoachTexts.Punta.Shown : CoachTexts.Punta.HelpAlso, 2.2f));
                 }
             }
             coach.Hide();
-            if (ok) yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
+            if (ok) yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             _inputOn = false;
             _strict = false;
             _allowKind = IntentKind.None;
@@ -862,6 +867,36 @@ namespace NeuroVida.Games.Anagramas
             t.EndPractice();
         }
         // </guided>
+
+        /// <summary>SOLO EN EL EDITOR (smoke): arma la palabra sola, una ficha cada 0,35 s, para que el arranque de prueba llegue a los últimos pasos del tutorial. En el teléfono no hace nada.</summary>
+        private void AutoPlayWord()
+        {
+#if UNITY_EDITOR
+            if (GuidedTutorial.EditorAutoContinue) StartCoroutine(EditorAutoSolve());
+#endif
+        }
+
+#if UNITY_EDITOR
+        private IEnumerator EditorAutoSolve()
+        {
+            float t = 0f;
+            while (_phase == Phase.Think || _phase == Phase.Build)
+            {
+                t += GameClock.RealDeltaTime;
+                if (t > 0.35f && _phase == Phase.Build)
+                {
+                    t = 0f;
+                    int k = FirstEmptySlot();
+                    if (k >= 0)
+                    {
+                        var tile = _tiles.Find(x => x.Char == _word.Tiles[k] && x.Slot < 0 && !x.Gone);
+                        if (tile != null) TapTile(tile);
+                    }
+                }
+                yield return null;
+            }
+        }
+#endif
 
         /// <summary>Una palabra fácil para la ronda guiada: del nivel dado y de pocas letras.</summary>
         private PuntaWord GuidedWord(int level, int maxLetters, string not = null)

@@ -35,6 +35,17 @@ namespace NeuroVida.Games.Shared
         public static bool EditorAutoContinue;
 #endif
 
+        /// <summary>SOLO EN EL EDITOR (smoke): true cuando el juego lleva más de 2 s esperando la jugada de la persona en la ronda guiada; entonces el controlador la hace solo, para que el
+        /// arranque de prueba pase por todos los pasos del tutorial (y se pueda revisar cada uno). En el teléfono siempre da false.</summary>
+        public static bool AutoPlay(float waitedSeconds)
+        {
+#if UNITY_EDITOR
+            return EditorAutoContinue && waitedSeconds > 2f;
+#else
+            return false;
+#endif
+        }
+
         /// <summary>«Nubi entrenadora»: el foco que ilumina SOLO lo que hay que tocar y la deja hablar en un globo (ver <see cref="NubiCoach"/>).</summary>
         public NubiCoach Coach { get; }
 
@@ -115,7 +126,7 @@ namespace NeuroVida.Games.Shared
 
         /// <summary>Acomoda los controles de la ronda guiada para los juegos donde abajo se toca (Freno): «Saltar tutorial» bajo el rótulo, arriba, y el mensaje de Nubi
         /// a <paramref name="captionFromBottomU"/> unidades del borde de abajo (-1 = donde está por defecto).</summary>
-        public void PlaceControls(float practiceTopU, bool skipAtTop, float captionFromBottomU, bool badgeAtBottom = false)
+        public void PlaceControls(float practiceTopU, bool skipAtTop, float captionFromBottomU, bool badgeAtBottom = false, float skipFromBottomU = -1f)
         {
             if (badgeAtBottom)
             {
@@ -127,6 +138,12 @@ namespace NeuroVida.Games.Shared
             {
                 _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(0.5f, 1f);
                 _skipRect.anchoredPosition = new Vector2(0f, -(practiceTopU + 96f + 14f + 66f));
+            }
+            if (skipFromBottomU >= 0f)
+            {
+                // «Saltar tutorial» a media altura, en un hueco libre del juego (cuando ni arriba ni abajo hay lugar sin tapar nada)
+                _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(0.5f, 0f);
+                _skipRect.anchoredPosition = new Vector2(0f, skipFromBottomU);
             }
             if (captionFromBottomU >= 0f) _caption.rectTransform.anchoredPosition = new Vector2(0f, captionFromBottomU);
         }

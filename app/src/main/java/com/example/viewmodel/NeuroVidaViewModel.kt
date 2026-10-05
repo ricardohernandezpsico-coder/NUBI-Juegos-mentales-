@@ -470,7 +470,16 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   fun openTopPanel(panel: TopPanel?) { _topPanel.value = panel }
 
+  /**
+   * Cambia de pestaña (barra de abajo, deslizar, «Ir a Juegos» desde Hoy). Juegos siempre se muestra con las 4 áreas:
+   * al entrar, al tocarla estando en ella y al salir se cierra la ventana del área. La única forma de volver a un área
+   * abierta es cerrar el resultado de un juego lanzado desde Juegos ([closeGameOrResult], que no pasa por aquí).
+   */
   fun setTab(tab: AppTab) {
+    if (tab == AppTab.JUEGOS || _currentTab.value == AppTab.JUEGOS) {
+      _libraryFocus.value = _libraryFocus.value.copy(open = false)
+      focusPrefs.edit().putBoolean("return", false).apply()
+    }
     _currentTab.value = tab
     _activeGame.value = null
     _lastResult.value = null
@@ -503,6 +512,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   ) {
     // Si ese juego quedó en pausa ("Salir" del menú de pausa), se retoma en vez de empezar de cero. "Jugar de
     // nuevo" (customLevel) siempre es una partida nueva. Abrir otro juego descarta la pausa (Unity recarga).
+    // un juego de la sesión de Hoy nunca vuelve a Juegos, aunque quedara «volver» de una partida anterior lanzada desde Juegos
+    if (isDailyFlow) focusPrefs.edit().putBoolean("return", false).apply()
     val paused = pausedGame
     pausedGame = null
     if (paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode) {

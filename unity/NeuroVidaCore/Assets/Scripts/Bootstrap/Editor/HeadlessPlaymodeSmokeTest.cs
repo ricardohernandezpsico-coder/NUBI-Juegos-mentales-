@@ -130,7 +130,9 @@ namespace NeuroVida.Bridge.EditorTools
         };
 
         private static readonly Queue<(string Name, string Id, float Seconds)> _queue = new Queue<(string, string, float)>();
+        private static readonly Queue<int> _heights = new Queue<int>();       // alto de pantalla de cada corrida de _queue (0 = el de la ventana del Editor)
         private static (string Name, string Id, float Seconds) _current;
+        private static int _currentHeight;
         private static int _listOk, _listTotal;
         private static bool _listRunning, _listPlaying, _listAnyFailed;
 
@@ -146,9 +148,10 @@ namespace NeuroVida.Bridge.EditorTools
             for (var i = 0; i < args.Length - 1; i++) if (args[i] == "-smokeGames") raw = args[i + 1];
 
             _queue.Clear();
+            _heights.Clear();
             if (string.IsNullOrWhiteSpace(raw))
             {
-                foreach (var g in Catalog) _queue.Enqueue(g);
+                foreach (var g in Catalog) Enqueue(g);
             }
             else
             {
@@ -159,7 +162,7 @@ namespace NeuroVida.Bridge.EditorTools
                     foreach (var g in Catalog)
                     {
                         if (!string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
-                        _queue.Enqueue(g);
+                        Enqueue(g);
                         found = true;
                         break;
                     }
@@ -187,9 +190,38 @@ namespace NeuroVida.Bridge.EditorTools
             StartNextInList();
         }
 
+        /// <summary>Alto de las tres formas de pantalla (ancho 1080) con que se revisa el tutorial de cada juego: 20:9 (el teléfono de Ricardo), 18:9 y 16:9.</summary>
+        private static readonly int[] AuditHeights = { 2400, 2160, 1920 };
+
+        /// <summary>Los tutoriales guiados (menos Engranajes, que se rediseña) corren en las tres formas de pantalla: <see cref="NeuroVida.Games.Shared.NubiCoach"/> registra cada paso y se comprueba que Nubi y su globo no tapen nada.</summary>
+        private static void Enqueue((string Name, string Id, float Seconds) g)
+        {
+            if (g.Name.StartsWith("Tutorial") && g.Id != "engranajes")
+            {
+                var only = Environment.GetEnvironmentVariable("NUBI_COACH_HEIGHTS");      // p. ej. «2160,1920»: repite solo esas formas
+                foreach (var h in AuditHeights)
+                {
+                    if (!string.IsNullOrEmpty(only) && Array.IndexOf(only.Split(','), h.ToString()) < 0) continue;
+                    _queue.Enqueue((g.Name, g.Id, g.Seconds + CoachAuditExtraSeconds)); _heights.Enqueue(h);
+                }
+                return;
+            }
+            _queue.Enqueue(g);
+            _heights.Enqueue(0);
+        }
+
+        /// <summary>Más tiempo para que la ronda guiada llegue a sus últimos pasos (cada foco de «tocar» sigue solo a los 1,2 s en el Editor).</summary>
+        private const float CoachAuditExtraSeconds = 22f;
+
         private static void StartNextInList()
         {
             _current = _queue.Dequeue();
+            _currentHeight = _heights.Dequeue();
+            _screenLogged = false;
+            NeuroVida.Games.Shared.NubiCoach.AuditEnabled = _current.Name.StartsWith("Tutorial");
+            NeuroVida.Games.Shared.NubiCoach.AuditGame = _current.Id ?? "secuencia";
+            NeuroVida.Games.Shared.NubiCoach.AuditSteps.Clear();
+            _auditCanvases.Clear();
             _errorCount = 0;
             _enteredPlayAt = 0;
             _pauseStage = 0;
@@ -276,6 +308,65 @@ namespace NeuroVida.Bridge.EditorTools
             }
         }
 
+        private static bool CoachAuditReachedEnd()
+        {
+            foreach (var st in NeuroVida.Games.Shared.NubiCoach.AuditSteps) if (st.Text == NeuroVida.Games.Shared.CoachTexts.Ready) return true;
+            return false;
+        }
+
+        private static bool _screenLogged;
+        private static readonly HashSet<int> _auditCanvases = new HashSet<int>();
+
+        /// <summary>
+        /// La ventana del Editor sin gráficos mide 640x480 y no se puede cambiar: para revisar el tutorial en otras formas de pantalla, el lienzo de cada juego (de pantalla completa, con su
+        /// <c>CanvasScaler</c> de 1080 de ancho) se pasa a «espacio del mundo» con 1080 x <paramref name="height"/> unidades, que es justo el área que vería el juego en ese teléfono. Se hace en cuanto aparece,
+        /// antes de que el juego calcule su disposición.
+        /// </summary>
+        private static void ForceAuditCanvasSize(int height)
+        {
+            foreach (var canvas in UnityEngine.Object.FindObjectsOfType<Canvas>())
+            {
+                if (!canvas.isRootCanvas || canvas.renderMode != RenderMode.ScreenSpaceOverlay || canvas.GetComponent<UnityEngine.UI.CanvasScaler>() == null) continue;
+                if (!_auditCanvases.Add(canvas.GetInstanceID())) continue;
+                canvas.GetComponent<UnityEngine.UI.CanvasScaler>().enabled = false;
+                canvas.renderMode = RenderMode.WorldSpace;
+                var rt = (RectTransform)canvas.transform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(1080f, height);
+                rt.localScale = Vector3.one;
+                rt.position = Vector3.zero;
+            }
+        }
+
+        /// <summary>
+        /// Los pasos del tutorial que registró <see cref="NeuroVida.Games.Shared.NubiCoach"/>: cada uno debe tener a Nubi y su globo SIN tapar el hueco, las zonas protegidas ni ningún texto del juego, con el texto en
+        /// 3 líneas o menos y la letra en su tamaño. Deja el registro en <c>unity/test-results/coach-audit/&lt;juego&gt;-&lt;ancho&gt;x&lt;alto&gt;.json</c> (de ahí salen las láminas de revisión).
+        /// </summary>
+        private static void CheckCoachAudit()
+        {
+            if (!NeuroVida.Games.Shared.NubiCoach.AuditEnabled) return;
+            NeuroVida.Games.Shared.NubiCoach.AuditEnabled = false;
+            var steps = NeuroVida.Games.Shared.NubiCoach.AuditSteps;
+            var game = NeuroVida.Games.Shared.NubiCoach.AuditGame;
+            var dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "..", "test-results", "coach-audit"));
+            System.IO.Directory.CreateDirectory(dir);
+            var wrapper = new CoachAuditFile { Game = game, Width = Screen.width, Height = Screen.height, Steps = steps.ToArray() };
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"{game}-{_currentHeight}.json"), JsonUtility.ToJson(wrapper, true));
+            Debug.Log($"[SmokeTest] tutorial de {game} a {Screen.width}x{Screen.height}: {steps.Count} paso(s) registrados");
+            bool strict = game != "engranajes";          // Engranajes se rediseña: se registra pero no se exige
+            if (steps.Count == 0 && strict) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el tutorial de {game} no registró ningún paso"); }
+            foreach (var st in steps)
+            {
+                string where = $"{game} {_currentHeight}, paso {st.Index} ({st.Kind}) «{st.Text}»";
+                if (!st.Clean) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: Nubi o el globo tapan algo ({Mathf.RoundToInt(st.Overlap)} u²{(st.TooLong ? ", el texto no cabe en 3 líneas" : "")}): {where}"); }
+                if (st.ControlClash > 20f) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: «Saltar tutorial» o el rótulo de práctica quedan sobre algo del juego ({Mathf.RoundToInt(st.ControlClash)} u²): {where}"); }
+                if (st.ActualLines > NeuroVida.Games.Shared.CoachLayout.MaxLines) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el texto se dibuja en {st.ActualLines} líneas: {where}"); }
+            }
+        }
+
+        [Serializable]
+        private sealed class CoachAuditFile { public string Game; public int Width, Height; public NeuroVida.Games.Shared.CoachStepReport[] Steps; }
+
         private static void PauseFail(string what)
         {
             _errorCount++;
@@ -288,11 +379,17 @@ namespace NeuroVida.Bridge.EditorTools
             if (_listPlaying)
             {
                 if (!EditorApplication.isPlaying) return; // todavía entrando a Play
+                if (_currentHeight > 0) ForceAuditCanvasSize(_currentHeight);
+                if (!_screenLogged) { _screenLogged = true; Debug.Log($"[SmokeTest] pantalla {Screen.width}x{Screen.height}" + (_currentHeight > 0 ? $", lienzo de revisión 1080x{_currentHeight}" : "")); }
                 if (_enteredPlayAt == 0) _enteredPlayAt = EditorApplication.timeSinceStartup;
-                if (EditorApplication.timeSinceStartup - _enteredPlayAt < _current.Seconds) return;
-                if (!PauseCheckDone()) return;  // abre la pausa y comprueba que responde
+                double played = EditorApplication.timeSinceStartup - _enteredPlayAt;
+                // la revisión del tutorial espera a que la ronda guiada llegue a su último aviso («¡Listo! Ahora va en serio»), con tope de 100 s
+                if (NeuroVida.Games.Shared.NubiCoach.AuditEnabled) { if (played < 8 || (played < 100 && !CoachAuditReachedEnd())) return; }
+                else if (played < _current.Seconds) return;
+                if (_currentHeight == 0 && !PauseCheckDone()) return;  // abre la pausa y comprueba que responde (no en el lienzo de revisión: ahí no hay dónde tocar)
 
                 _listPlaying = false;
+                CheckCoachAudit();
                 EditorApplication.ExitPlaymode();
                 CheckReduceMotionArrived();
                 var ok = _errorCount == 0;

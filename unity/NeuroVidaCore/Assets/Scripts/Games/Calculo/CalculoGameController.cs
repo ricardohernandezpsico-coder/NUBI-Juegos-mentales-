@@ -654,31 +654,33 @@ namespace NeuroVida.Games.Calculo
             int idA = _board.Cells[ia].Id, idB = _board.Cells[ib].Id;
             yield return Motion.Hold(0.8f);                           // las celdas terminan de entrar
             bool ok = !t.Skipped;
+            // zona protegida: el número del reactor con su rótulo «carga exacta» (la meta de la que habla Nubi) queda iluminado
+            var reactor = new[] { coach.ZoneOfTexts(_reactorLabel, _targetText) };
             if (ok)
             {
-                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[idA].Root), "Toca una celda"));
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[idA].Root), CoachTexts.Calculo.Cell, keep: reactor));
                 ok = !t.Skipped;
                 if (ok) TapCell(idA);                                  // el toque en el hueco ES el toque en la celda
             }
             if (ok)
             {
-                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_opViews[0].Root), "Elige una operación"));
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_opViews[0].Root), CoachTexts.Calculo.Plus, keep: reactor));
                 ok = !t.Skipped;
                 if (ok) TapOp(CargaOp.Add);
             }
             if (ok)
             {
-                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[idB].Root), "Toca otra celda: se juntan"));
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[idB].Root), CoachTexts.Calculo.OtherCell, keep: reactor));
                 ok = !t.Skipped;
                 if (ok) TapCell(idB);
             }
             if (ok && _phase == Phase.Solved)
             {
                 Tell("¡Carga exacta!", true);
-                yield return StartCoroutine(coach.Notice("¡Carga exacta! Así se juega", 2.2f));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Calculo.Done, 2.2f, reactor));
             }
             coach.Hide();
-            if (ok) yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
+            if (ok) yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             _inputOn = false;
             _phase = Phase.Idle;
             ClearLoad();
