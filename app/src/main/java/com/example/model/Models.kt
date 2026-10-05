@@ -93,14 +93,6 @@ object GameRegistry {
       iconEmoji = "🧩"
     ),
     GameDefinition(
-      id = "trafico",
-      title = "Tráfico Estelar",
-      domain = DomainType.RAZONAMIENTO,
-      subtitle = "Planificación y atención dividida",
-      instruction = "Del portal salen cápsulas de colores. Toca los desvíos para que cada una llegue al planeta de su color y su símbolo. Anticípate: cada vez llegan más.",
-      iconEmoji = "🚦"
-    ),
-    GameDefinition(
       id = "bitacora",
       title = "Bitácora de Misión",
       domain = DomainType.MEMORIA,
@@ -224,9 +216,11 @@ object GameRegistry {
    *  - `comparacion` (Comparación Instantánea, Atención): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    *  - `series` (Detective de Series, Razonamiento): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    *  - `rutatesoro` (Ruta del Tesoro, Memoria): retirado el 4-oct-2026 (docs/juegos/descartados.md).
+   *  - `trafico` (Tráfico Estelar, Razonamiento): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    */
   val retiredDomains: Map<String, DomainType> = mapOf(
-    "cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION, "series" to DomainType.RAZONAMIENTO, "rutatesoro" to DomainType.MEMORIA
+    "cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION, "series" to DomainType.RAZONAMIENTO, "rutatesoro" to DomainType.MEMORIA,
+    "trafico" to DomainType.RAZONAMIENTO
   )
 
   fun isRetired(id: String): Boolean = id in retiredDomains
@@ -289,11 +283,6 @@ data class GamePlayResult(
   // null = sin datos en esa columna). No se guardan en Room.
   val rotationSpeedDps: Int? = null,
   val rotationCurveMs: List<Int?>? = null,
-  // Solo Tráfico Estelar: "tu anticipación" (mediana, ms), % de desvíos preparados con tiempo y más cápsulas a la
-  // vez. No se guardan en Room.
-  val trafficLeadMs: Int? = null,
-  val trafficProactivePct: Int? = null,
-  val trafficPeakPods: Int? = null,
   // Solo Bitácora de Misión: fase ("" completa, "encode" transmisión, "recall" informe), semilla y nivel de la misión,
   // paradas, aprendidas en el primer repaso (y cuáles, en bits), recordadas en el informe (y cuáles), hallazgos
   // elegidos que no estaban, paradas de la ruta en su lugar y segundos de demora. La app completa la retención y la

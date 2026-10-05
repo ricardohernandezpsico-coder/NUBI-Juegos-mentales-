@@ -6,7 +6,6 @@ using NeuroVida.Bridge;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.Shared;
-using NeuroVida.Games.Trafico;   // RailLine, TrafficSounds.EngineLoop
 using static NeuroVida.Games.Shared.UiKit;
 using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
@@ -930,7 +929,7 @@ namespace NeuroVida.Games.Rumbo
             _engine.loop = true;
             _engine.spatialBlend = 0f;
             _engine.volume = 0f;
-            _engine.clip = TrafficSounds.EngineLoop();
+            _engine.clip = ShipSounds.EngineLoop();
 
             var canvasGo = new GameObject("HomingCanvas");
             canvasGo.transform.SetParent(transform, false);

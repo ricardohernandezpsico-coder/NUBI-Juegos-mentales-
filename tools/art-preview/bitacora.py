@@ -1,5 +1,5 @@
 """Maqueta de Bitácora de Misión (disposición según BitacoraGameController.Layout a medio canvas). La misión es real:
-la genera BitacoraContract.Generate vía ArtPreview (bit_mission.txt); el arte sale de los .raw (planetas de Tráfico
+la genera BitacoraContract.Generate vía ArtPreview (bit_mission.txt); el arte sale de los .raw (planetas-puerto
 Estelar, hallazgos, sonda, marcas).
 
 Uso: python3 tools/art-preview/bitacora.py <raw> [--out docs/previews]  ->  bitacora.png
@@ -20,7 +20,7 @@ PLANET_COLORS = [0xFF6B4A, 0xFFC93C, 0x4CC9F0, 0x9BE564, 0xB8A4FF, 0xFF7BC0, 0x5
 PLANET_NAMES = ["Coral", "Sol", "Cielo", "Lima", "Uva", "Rosa", "Menta", "Naranja"]
 FIND_NAMES = ["una llave", "una campana", "una pluma", "una concha", "un reloj de arena", "una brújula", "un farol",
               "una corona", "una bellota", "un libro", "una copa", "una gema", "un hongo", "un ancla",
-              "una estrella de mar", "un paraguas"]
+              "una flor", "un paraguas"]
 
 # Layout (en px de la maqueta, medio canvas)
 MAP_X0, MAP_W = 43, 455
@@ -70,7 +70,7 @@ def draw_planets(im, raw, planets, active=None, dim=False):
         x, y = pos(p)
         if i == active:
             glow(im, x, y, 70, hexc(PLANET_COLORS[p[0]]), 150)
-        spr = load(f'{raw}/traffic_port_{p[0]}.raw')
+        spr = load(f'{raw}/port_{p[0]}.raw')
         if dim:
             spr.putalpha(spr.getchannel('A').point(lambda v: int(v * 0.35)))
         put(im, spr, x, y, PLANET)

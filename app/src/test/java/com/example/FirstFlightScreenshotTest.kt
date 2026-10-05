@@ -88,5 +88,5 @@ class FirstFlightScreenshotTest {
   fun aviso() = shot("aviso", FlightState(FlightMode.FULL, FlightStep.AVISO, hour = 19))
 
   @Test
-  fun camino_de_hoy() = shot("camino", FlightState(FlightMode.FULL, FlightStep.CAMINO), todayGames = listOf("rumbo", "trafico", "intrusa"))
+  fun camino_de_hoy() = shot("camino", FlightState(FlightMode.FULL, FlightStep.CAMINO), todayGames = listOf("rumbo", "calculo", "intrusa"))
 }

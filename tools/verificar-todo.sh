@@ -99,7 +99,7 @@ fi
   FALLADOS="$(grep -o '\[SmokeTest\] [A-Za-z]*: FALL' "$RESULTS/v-3-smoke.log" | sed 's/\[SmokeTest\] \([A-Za-z]*\): FALL/\1/')"
   if [ $RC -ne 0 ] || [ -n "$FALLADOS" ]; then
     # repetir aislados los que fallaron (o todos si el proceso encadenado murio sin dar detalle)
-    [ -z "$FALLADOS" ] && FALLADOS="$(echo "${JUEGOS:-Run,Stroop,Calculo,Anagramas,Parejas,Piloto,Radar,Satelites,Freno,Aterrizaje,Acoplamiento,Trafico,Bitacora,Rumbo,Correo,Meteoros,Disparate,Cosecha,Intrusa}" | tr ',' ' ')"
+    [ -z "$FALLADOS" ] && FALLADOS="$(echo "${JUEGOS:-Run,Stroop,Calculo,Anagramas,Parejas,Piloto,Radar,Satelites,Freno,Aterrizaje,Acoplamiento,Bitacora,Rumbo,Correo,Meteoros,Disparate,Cosecha,Intrusa}" | tr ',' ' ')"
     MALOS=""
     for G in $FALLADOS; do
       M="Run$G"; [ "$G" = "Run" ] && M="Run"

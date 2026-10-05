@@ -51,7 +51,6 @@ private val DebugGames = listOf(
   DebugGame("cosecha", "Cosecha de palabras (Reto 3 × 60 s)", level = 1, timed = true),
   DebugGame("intrusa", "La estrella intrusa (Reto 120 s)", level = 1, timed = true),
   DebugGame("acoplamiento", "Acoplamiento (Reto 120 s)", level = 1, timed = true),
-  DebugGame("trafico", "Tráfico Estelar (Reto 120 s)", level = 1, timed = true),
   DebugGame("bitacora", "Bitácora de Misión (completa, con patrulla)", level = 1, timed = false),
   DebugGame("rumbo", "Rumbo a Casa (Reto 150 s)", level = 1, timed = true),
   DebugGame("correo", "Correo Estelar (vuelo de 150 s)", level = 2, timed = true)

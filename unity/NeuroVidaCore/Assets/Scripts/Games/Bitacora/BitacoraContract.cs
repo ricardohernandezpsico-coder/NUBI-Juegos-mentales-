@@ -238,14 +238,14 @@ namespace NeuroVida.Games.Bitacora
 
         // ------------------------------------------------------------------ textos
 
-        /// <summary>Nombres de los planetas (mismo orden de colores que Tráfico Estelar: coral, sol, cielo, lima, uva, rosa, menta, naranja).</summary>
+        /// <summary>Nombres de los planetas (mismo orden de colores que los planetas-puerto (Shared/PortSprites): coral, sol, cielo, lima, uva, rosa, menta, naranja).</summary>
         public static readonly string[] PlanetNames = { "Coral", "Sol", "Cielo", "Lima", "Uva", "Rosa", "Menta", "Naranja" };
 
         /// <summary>Hallazgos, con artículo (se leen en la transmisión: "Planeta Coral · una campana").</summary>
         public static readonly string[] FindNames =
         {
             "una llave", "una campana", "una pluma", "una concha", "un reloj de arena", "una brújula", "un farol",
-            "una corona", "una bellota", "un libro", "una copa", "una gema", "un hongo", "un ancla", "una estrella de mar",
+            "una corona", "una bellota", "un libro", "una copa", "una gema", "un hongo", "un ancla", "una flor",
             "un paraguas",
         };
 

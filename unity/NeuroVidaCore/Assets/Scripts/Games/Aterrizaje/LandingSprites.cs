@@ -76,7 +76,7 @@ namespace NeuroVida.Games.Aterrizaje
             p.Over(Cream, Cover(Pole(x, y), 0.025f));
             float pen = Pennant(x, y);
             p.Over(Coral, Cover(pen, 0.025f));
-            p.Over(Cream, Cover(Star(x, y, 0.06f, 0.48f, 5, 0.14f, 3f, 0.02f), 0.025f) * Cover(pen, 0.025f));
+            p.Over(Cream, Cover(Circle(x, y, 0.06f, 0.48f, 0.1f), 0.025f) * Cover(pen, 0.025f));
         });
     }
 }

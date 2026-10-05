@@ -16,10 +16,10 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 FB = ROOT + '/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-Bold.ttf'
 FS = ROOT + '/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-SemiBold.ttf'
 
-NEW_KINDS = ['Planet', 'Rocket', 'Comet', 'Star', 'Moon', 'Ufo', 'Satellite', 'Sun', 'Helmet', 'Asteroid',
-             'Telescope', 'Crystal', 'Constellation', 'Drop']
-NEW_NAMES = ['Planeta', 'Cohete', 'Cometa', 'Estrella', 'Luna', 'Platillo', 'Satélite', 'Sol', 'Casco',
-             'Asteroide', 'Telescopio', 'Cristal', 'Constelación', 'Gota (Stroop)']
+NEW_KINDS = ['Planet', 'Rocket', 'Comet', 'Galaxy', 'FullMoon', 'Ufo', 'Satellite', 'Sun', 'Helmet', 'Asteroid',
+             'Telescope', 'Crystal', 'Constellation', 'Drop', 'Hexagon']
+NEW_NAMES = ['Planeta', 'Cohete', 'Cometa', 'Galaxia', 'Luna llena', 'Platillo', 'Satélite', 'Sol', 'Casco',
+             'Asteroide', 'Telescopio', 'Cristal', 'Constelación', 'Gota (Stroop; señal de Piloto)', 'Hexágono (señal de Piloto)']
 
 
 def load(path):

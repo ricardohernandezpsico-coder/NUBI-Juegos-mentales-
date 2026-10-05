@@ -62,7 +62,7 @@ namespace NeuroVida.Games.Intrusa
             return _line;
         }
 
-        /// <summary>Destello de cuatro puntas para las estrellas-palabra (más fino que SparkleSprite: casi una cruz de luz).</summary>
+        /// <summary>Brillo redondo y fino para las estrellas-palabra (4-oct: ya no es una cruz de luz de cuatro puntas).</summary>
         public static Sprite Flare()
         {
             if (_flare != null) return _flare;
@@ -72,10 +72,10 @@ namespace NeuroVida.Games.Intrusa
                 for (int x = 0; x < n; x++)
                 {
                     float fx = ((x + 0.5f) / n * 2f - 1f), fy = ((y + 0.5f) / n * 2f - 1f);
-                    float ax = Mathf.Abs(fx), ay = Mathf.Abs(fy);
-                    float cross = Mathf.Max(Mathf.Exp(-ax * 22f) * Mathf.Clamp01(1f - ay), Mathf.Exp(-ay * 22f) * Mathf.Clamp01(1f - ax));
-                    float core = Mathf.Exp(-(fx * fx + fy * fy) * 40f);
-                    float a = Mathf.Clamp01(cross * 0.85f + core);
+                    float r = Mathf.Sqrt(fx * fx + fy * fy);
+                    float core = Mathf.Exp(-r * r * 30f);
+                    float halo = 0.4f * Mathf.Pow(Mathf.Clamp01(1f - r), 2.6f);
+                    float a = Mathf.Clamp01(core + halo);
                     px[y * n + x] = new Color32(255, 255, 255, (byte)(a * 255f));
                 }
             var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };

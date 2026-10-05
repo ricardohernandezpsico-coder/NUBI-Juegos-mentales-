@@ -3,9 +3,8 @@ using UnityEngine;
 namespace NeuroVida.Games.Shared
 {
     /// <summary>
-    /// Destello de estrella de 4 puntas (blanco, se tiñe con <c>Image.color</c>): núcleo brillante, dos rayos
-    /// en cruz que se afinan hacia la punta y un halo tenue. Es el "brillo" del sello nocturno de NeuroVida
-    /// (cuenta regresiva, celebraciones, aciertos).
+    /// Destello REDONDO (blanco, se tiñe con <c>Image.color</c>): un núcleo brillante con un halo suave que se apaga hacia el borde. Es el "brillo" del sello nocturno
+    /// de Nubi (cuenta regresiva, celebraciones, aciertos). Hasta el 4-oct era una estrella de 4 puntas; la regla de Ricardo es nada de estrellas con puntas.
     /// </summary>
     public static class SparkleSprite
     {
@@ -23,19 +22,10 @@ namespace NeuroVida.Games.Shared
                 {
                     float dx = ((x + 0.5f) / size - 0.5f) * 2f; // -1..1
                     float dy = ((y + 0.5f) / size - 0.5f) * 2f;
-                    float ax = Mathf.Abs(dx), ay = Mathf.Abs(dy);
                     float r = Mathf.Sqrt(dx * dx + dy * dy);
-
-                    // Rayos: finos cerca del centro del eje, se afinan (y apagan) hacia la punta.
-                    float taperH = Mathf.Pow(Mathf.Clamp01(1f - ax), 1.6f);
-                    float taperV = Mathf.Pow(Mathf.Clamp01(1f - ay), 1.6f);
-                    float rayH = taperH * Mathf.Exp(-ay * 30f / Mathf.Max(0.15f, taperH));
-                    float rayV = taperV * Mathf.Exp(-ax * 30f / Mathf.Max(0.15f, taperV));
-
-                    float core = Mathf.Exp(-r * r * 60f);
-                    float halo = 0.22f * Mathf.Pow(Mathf.Clamp01(1f - r), 3f);
-
-                    float a = Mathf.Clamp01(core + 0.95f * (rayH + rayV) + halo);
+                    float core = Mathf.Exp(-r * r * 38f);
+                    float halo = 0.55f * Mathf.Pow(Mathf.Clamp01(1f - r), 2.4f);
+                    float a = Mathf.Clamp01(core + halo);
                     pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
                 }
             }

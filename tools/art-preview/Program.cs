@@ -90,11 +90,8 @@ internal static class Program
         {
             for (int c = 0; c < 8; c++)
             {
-                Dump("traffic_port_" + c, NeuroVida.Games.Trafico.TrafficSprites.Port(c));
-                Dump("traffic_pod_" + c, NeuroVida.Games.Trafico.TrafficSprites.Pod(c));
+                Dump("port_" + c, NeuroVida.Games.Shared.PortSprites.Port(c));
             }
-            Dump("traffic_knob", NeuroVida.Games.Trafico.TrafficSprites.SwitchKnob());
-            Dump("traffic_station", NeuroVida.Games.Trafico.TrafficSprites.Station());
             for (int f = 0; f < NeuroVida.Games.Bitacora.BitacoraContract.FindCount; f++)
                 Dump("bit_find_" + f, NeuroVida.Games.Bitacora.BitacoraSprites.Find(f));
             Dump("bit_probe", NeuroVida.Games.Bitacora.BitacoraSprites.Probe());
@@ -109,8 +106,6 @@ internal static class Program
                 sb.AppendLine("D " + string.Join(" ", m.Drawer));
                 System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "bit_mission.txt"), sb.ToString());
             }
-            // Muestra de sonido de Tráfico Estelar (WAV): el motor de fondo con los efectos encima, como en una partida.
-            TrafficSoundDemo(Path.Combine(dir, "trafico-sonidos.wav"));
             BitacoraSoundDemo(Path.Combine(dir, "bitacora-sonidos.wav"));
             // Rumbo a Casa: sprites, un viaje real del contrato (con una vuelta de ejemplo) y la muestra de sonido.
             Dump("homing_ship", NeuroVida.Games.Rumbo.HomingSprites.Ship());
@@ -152,22 +147,6 @@ internal static class Program
             Dump("mail_damage1", NeuroVida.Games.Correo.MailSprites.ShipDamage(1));
             Dump("mail_damage2", NeuroVida.Games.Correo.MailSprites.ShipDamage(2));
             CorreoSoundDemo(Path.Combine(dir, "correo-sonidos.wav"));
-            // Redes de ejemplo para la maqueta: nodos ("N x y padre color") y recorridos ("P nodo x y x y ...").
-            var inv = System.Globalization.CultureInfo.InvariantCulture;
-            foreach (var (ports, seed, twist) in new[] { (4, 3, 0.2f), (6, 11, 0.55f), (8, 5, 1f), (6, 21, 0.55f) })
-            {
-                var net = NeuroVida.Games.Trafico.TrafficContract.BuildNetwork(ports, new System.Random(seed), 825f / 500f, twist);
-                var sb = new System.Text.StringBuilder();
-                for (int n = 0; n < net.Count; n++)
-                    sb.AppendLine(string.Join(" ", "N", net.X[n].ToString(inv), net.Y[n].ToString(inv), net.Parent[n], net.PortColor[n]));
-                for (int n = 1; n < net.Count; n++)
-                {
-                    sb.Append("P ").Append(n);
-                    for (int i = 0; i < net.PathX[n].Length; i++) sb.Append(' ').Append(net.PathX[n][i].ToString(inv)).Append(' ').Append(net.PathY[n][i].ToString(inv));
-                    sb.AppendLine();
-                }
-                System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"traffic_net_{ports}_{seed}.txt"), sb.ToString());
-            }
         }
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)
@@ -211,70 +190,6 @@ internal static class Program
         DumpPx("disparate_check", NeuroVida.Games.Disparate.DisparateSprites.RenderFlat(96, (x, y) => ClayRaster.Union(ClayRaster.Capsule(x, y, -0.55f, 0f, -0.18f, -0.4f, 0.17f), ClayRaster.Capsule(x, y, -0.18f, -0.4f, 0.6f, 0.46f, 0.17f)), new Color(0.1f, 0.07f, 0.25f, 1f)), 96);
     }
 
-    static void TrafficSoundDemo(string path)
-    {
-        const int rate = 44100;
-        float seconds = 9.5f;
-        var mix = new float[(int)(seconds * rate)];
-        // Vuelo: entra al salir la primera cápsula, crece con más cápsulas (volumen) y se apaga al final.
-        var engine = NeuroVida.Games.Trafico.TrafficSounds.EngineLoop().data;
-        double pos = 0;
-        for (int i = 0; i < mix.Length; i++)
-        {
-            float t = i / (float)rate;
-            int flying = t < 0.5f ? 0 : t < 2.5f ? 1 : t < 4.5f ? 2 : t < 7f ? 4 : t < 8f ? 1 : 0;
-            float vol = flying > 0 ? 0.12f + 0.025f * Math.Min(flying - 1, 6) : 0f;
-            float pitch = 1f; // el juego no cambia el tono del vuelo (queda afinado con campanas y marimba)
-            pos = (pos + pitch) % engine.Length;
-            mix[i] += vol * engine[(int)pos];
-        }
-        void At(float t, UnityEngine.AudioClip c, float v)
-        {
-            int start = (int)(t * rate);
-            for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
-        }
-        // Réplicas de los sonidos comunes de la app (GameFeel: "pling" de la racha, error suave, subir de nivel), que el
-        // juego toca junto con los propios; acá solo para escuchar el conjunto.
-        float[] penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880f, 1046.5f, 1174.66f, 1318.51f };
-        float Env(float x, float at, float tau) => x < 0 ? 0 : (x < at ? x / at : 1f) * (float)Math.Exp(-Math.Max(0, x - at) / tau);
-        float Sn(float hz, float x) => (float)Math.Sin(2 * Math.PI * hz * x);
-        void Synth(float t0, float seconds, Func<float, float> f, float v)
-        {
-            int start = (int)(t0 * rate);
-            for (int k = 0; k < seconds * rate && start + k < mix.Length; k++) mix[start + k] += v * f(k / (float)rate);
-        }
-        void Pling(float t0, int streak) { float hz = penta[Math.Min(streak - 1, 7)]; Synth(t0, 0.26f, x => 0.8f * Sn(hz, x) * Env(x, 0.004f, 0.11f) + 0.22f * Sn(hz * 4, x) * Env(x, 0.002f, 0.025f), 0.55f); }
-        void Wrong(float t0) => Synth(t0, 0.34f, x => { float hz = x < 0.11f ? 220f : 185f; float l = x < 0.11f ? x : x - 0.11f; return 0.7f * Env(l, 0.006f, 0.09f) * (x < 0.11f ? 0.75f : 1f) * (Sn(hz, x) + 0.18f * Sn(hz * 3, x)); }, 0.5f);
-        void LevelUp(float t0) { float[] n = { 523.25f, 659.25f, 783.99f, 1046.5f }; Synth(t0, 0.5f, x => { float s2 = 0; for (int i = 0; i < 4; i++) { float st = i * 0.065f; if (x < st) break; s2 += 0.42f * Sn(n[i], x) * Env(x - st, 0.004f, 0.14f) + 0.1f * Sn(n[i] * 4, x) * Env(x - st, 0.002f, 0.03f); } return s2; }, 0.5f); }
-
-        At(0.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.3f);
-        At(1.2f, NeuroVida.Games.Trafico.TrafficSounds.Switch(true), 0.4f);
-        At(1.8f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(2), 0.2f);
-        At(2.5f, NeuroVida.Games.Trafico.TrafficSounds.Launch(), 0.3f);
-        At(2.9f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(4), 0.2f);
-        Pling(3.3f, 1); At(3.3f, NeuroVida.Games.Trafico.TrafficSounds.Landing(2), 0.3f);
-        At(3.8f, NeuroVida.Games.Trafico.TrafficSounds.Switch(false), 0.4f);
-        At(4.2f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(0), 0.2f);
-        At(4.5f, NeuroVida.Games.Trafico.TrafficSounds.UrgentLaunch(), 0.4f);
-        Pling(4.9f, 2); At(4.9f, NeuroVida.Games.Trafico.TrafficSounds.Landing(4), 0.3f);
-        At(5.4f, NeuroVida.Games.Trafico.TrafficSounds.PassChime(5), 0.2f);
-        Pling(5.8f, 3); At(5.8f, NeuroVida.Games.Trafico.TrafficSounds.Landing(0), 0.3f);
-        Wrong(6.4f);
-        LevelUp(7.1f);
-        At(8.0f, NeuroVida.Games.Trafico.TrafficSounds.Cascade(), 0.5f);
-        using (var w = new BinaryWriter(File.Create(path)))
-        {
-            int n = mix.Length;
-            w.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + n * 2); w.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));
-            w.Write(16); w.Write((short)1); w.Write((short)1); w.Write(rate); w.Write(rate * 2); w.Write((short)2); w.Write((short)16);
-            w.Write(System.Text.Encoding.ASCII.GetBytes("data")); w.Write(n * 2);
-            foreach (float v in mix) w.Write((short)(Math.Max(-1f, Math.Min(1f, v)) * 32000));
-        }
-    }
-
-    /// <summary>Muestra de Correo Estelar: sobres que se recogen, una entrega, un planeta equivocado, mirar el reloj,
-    /// el aviso por radio a tiempo y a destiempo, un planeta que se fue sin su paquete, y el escudo (choque que rompe un
-    /// segmento, reparación de emergencia, segmento reparado).</summary>
     static void CorreoSoundDemo(string path)
     {
         const int rate = 44100;
@@ -315,7 +230,7 @@ internal static class Program
             for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
         }
         // Vuelo (el colchón de nave de la app) solo mientras la nave avanza.
-        var engine = NeuroVida.Games.Trafico.TrafficSounds.EngineLoop().data;
+        var engine = NeuroVida.Games.Shared.ShipSounds.EngineLoop().data;
         (float a, float b)[] flying = { (1.0f, 2.8f), (4.3f, 6.0f), (7.5f, 9.2f), (11.2f, 13.2f) };
         for (int i = 0; i < mix.Length; i++)
         {

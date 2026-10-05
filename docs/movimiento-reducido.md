@@ -1,6 +1,6 @@
 # «Quitar animaciones» de verdad — regla, componentes comunes e inventario (fases A y B)
 
-> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 19 juegos que quedan (Comparación Instantánea, Detective de Series y Ruta del Tesoro también se retiraron, el 4-oct: tareas 31, 33 y 34).
+> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 18 juegos que quedan (Comparación Instantánea, Detective de Series, Ruta del Tesoro y Tráfico Estelar también se retiraron, el 4-oct: tareas 31, 33, 34 y 35).
 
 Tarea 18 (3-oct). Fase A: regla, componentes comunes e inventario. Fase B: la regla aplicada dentro de los 23 juegos (columna «Hecho» de las tablas).
 
@@ -300,7 +300,7 @@ dorado quieto de las dos celdas de la pista y los fundidos cortos de los mensaje
 | 490 `FloatText` | «+puntos» suben | DECORATIVA (comunica) | no | Quietos con fundido | ✓ |
 | 355-361, 414, 436 | `Shake`, chispas, ondas, `PopIn`, `PopRect` | DECORATIVA | sí (común) | — | — |
 
-**Tráfico Estelar** — `Trafico/TrafficGameController.cs`
+**Tráfico Estelar (RETIRADO el 4-oct; su tabla queda como historia)** — `Trafico/TrafficGameController.cs`
 
 | Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
 |---|---|---|---|---|---|

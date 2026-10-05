@@ -862,67 +862,6 @@ fun GameResultScreen(
       )
     }
 
-    // Tráfico Estelar: "tu carga" (cuántas cápsulas coordinaste a la vez sin errores) y "tu anticipación" (control
-    // proactivo vs reactivo, Braver 2012).
-    if (result.trafficLeadMs != null || result.trafficPeakPods != null) {
-      Spacer(Modifier.height(14.dp))
-      result.trafficPeakPods?.let { n ->
-        Text(
-          text = if (n == 1) "Tu carga: 1 cápsula a la vez" else "Tu carga: $n cápsulas a la vez",
-          color = Clay.Sun,
-          fontWeight = FontWeight.Bold,
-          fontSize = 20.sp,
-          fontFamily = AppFamily
-        )
-        Spacer(Modifier.height(6.dp))
-        LoadSlots(n, Modifier.semantics { contentDescription = "Coordinaste $n cápsulas a la vez sin errores" })
-        Text(
-          text = "Las que tuviste en viaje al mismo tiempo sin ningún error entre ellas. Sube a medida que el juego te da más tráfico.",
-          color = TextSoft,
-          fontSize = 15.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-        )
-        Spacer(Modifier.height(8.dp))
-      }
-      result.trafficLeadMs?.let { ms ->
-        Text(
-          text = "Tu anticipación: " + String.format(java.util.Locale("es"), "%.1f s", ms / 1000f),
-          color = Clay.Sky,
-          fontWeight = FontWeight.Bold,
-          fontSize = 18.sp,
-          fontFamily = AppFamily
-        )
-        Text(
-          text = "Cuánto antes de que pase la cápsula dejas listo su desvío (valor típico de la partida).",
-          color = TextSoft,
-          fontSize = 15.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-        )
-      }
-      result.trafficProactivePct?.let { pct ->
-        Spacer(Modifier.height(8.dp))
-        PlanReactBar(
-          pct,
-          Modifier.padding(horizontal = 36.dp).fillMaxWidth().height(26.dp)
-            .semantics { contentDescription = "Planificas $pct por ciento, a último momento ${100 - pct} por ciento" }
-        )
-        Row(Modifier.padding(horizontal = 36.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-          Text("Planificas $pct%", color = Clay.Lime, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-          Text("A último momento ${100 - pct}%", color = Clay.Sun, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        }
-        Text(
-          text = if (pct >= 50) "Te anticipas: eso deja holgura cuando el tráfico aumenta."
-          else "Reaccionas a tiempo, pero justo. Prueba mirar las próximas y preparar la ruta antes de que salgan.",
-          color = TextSoft,
-          fontSize = 15.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-        )
-      }
-    }
-
     // Bitácora de Misión: memoria con demora (qué-dónde y orden), retención de lo aprendido y la colección.
     if (result.memPhase != null) {
       Spacer(Modifier.height(14.dp))
@@ -1193,7 +1132,7 @@ fun GameResultScreen(
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
-      result.rotationSpeedDps, result.rotationCurveMs, result.trafficLeadMs, result.trafficPeakPods, result.memRecalled,
+      result.rotationSpeedDps, result.rotationCurveMs, result.memRecalled,
       result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
       result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone
     ).any { it != null }
@@ -1504,33 +1443,6 @@ private fun FilledSlots(filled: Int, total: Int, color: Color, modifier: Modifie
   }
 }
 
-// ---------- Tráfico Estelar: "tu carga" ----------
-
-/** Colores de las cápsulas del juego (mismo orden que TrafficSprites.Colors en Unity). */
-private val PodColors = listOf(
-  Color(0xFFFF6B4A), Color(0xFFFFC93C), Color(0xFF4CC9F0), Color(0xFF9BE564),
-  Color(0xFFB8A4FF), Color(0xFFFF7BC0), Color(0xFF5FD68A), Color(0xFFFF8A3D)
-)
-
-/**
- * Ocho cápsulas de arcilla en fila: se encienden (cada una con su color) tantas como las que coordinaste a la vez; las
- * demás quedan apagadas. El número va en el texto de arriba: no depende del color.
- */
-@Composable
-private fun LoadSlots(load: Int, modifier: Modifier = Modifier) {
-  Canvas(modifier.size(width = 26.dp * 8 + 8.dp * 7, height = 32.dp)) {
-    val r = 13.dp.toPx()
-    val gap = 8.dp.toPx()
-    val border = 2.5.dp.toPx()
-    for (i in 0 until 8) {
-      val c = Offset(r + i * (2 * r + gap), size.height / 2f - 2.dp.toPx())
-      drawCircle(Clay.Ink, r, c + Offset(0f, 3.dp.toPx()))
-      drawCircle(if (i < load) PodColors[i] else Color(0xFF1B2466), r, c)
-      drawCircle(Clay.Ink, r, c, style = Stroke(border))
-    }
-  }
-}
-
 // ---------- Freno de Emergencia: "tu freno" ----------
 
 /**
@@ -1675,26 +1587,6 @@ private fun RotationCurve(curve: List<Int?>, modifier: Modifier = Modifier) {
     }
   }
 }
-
-// ---------- Tráfico Estelar: planificas / a último momento ----------
-
-/** Barra de arcilla partida en dos: lima (planificas) y sol (a último momento). Los % van en texto debajo. */
-@Composable
-private fun PlanReactBar(proactivePct: Int, modifier: Modifier = Modifier) {
-  Canvas(modifier) {
-    val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
-    val drop = 3.dp.toPx()
-    val h = size.height - drop
-    drawRoundRect(Clay.Ink, Offset(0f, drop), androidx.compose.ui.geometry.Size(size.width, h), r)
-    drawRoundRect(Clay.Sun, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r)
-    val w = size.width * proactivePct.coerceIn(0, 100) / 100f
-    if (w > 0f) {
-      clipRect(right = w) { drawRoundRect(Clay.Lime, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r) }
-    }
-    drawRoundRect(Clay.Ink, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, h), r, style = Stroke(2.5.dp.toPx()))
-  }
-}
-
 
 // ---------- Lluvia de meteoros: "tu vocabulario" ----------
 

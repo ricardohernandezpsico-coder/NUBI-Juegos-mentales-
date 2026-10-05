@@ -97,14 +97,14 @@ namespace NeuroVida.Games.Parejas
                 Mathf.Min(Circle(x, y, 0.38f, 0.50f, 0.022f), Circle(x, y, -0.36f, -0.38f, 0.022f)));
             p.Over(WithAlpha(Cream, 0.8f), Cover(dots, Aa));
 
-            // Destello central de arcilla: sombra dura, borde tinta y relleno crema; uno chico al lado.
+            // Lucero central de arcilla (redondo): sombra dura, borde tinta y relleno crema; uno chico al lado.
             float cy = FaceY + 0.02f;
-            float big = Star(x, y, 0f, cy, 4, 0.40f, 2.35f, 0.03f);
-            float bigShadow = Star(x, y + 0.05f, 0f, cy, 4, 0.40f, 2.35f, 0.03f);
+            float big = Circle(x, y, 0f, cy, 0.27f);
+            float bigShadow = Circle(x, y + 0.05f, 0f, cy, 0.27f);
             p.Over(Ink, Cover(bigShadow - 0.05f, Aa));
             p.Over(Ink, Cover(big - 0.05f, Aa));
             p.Over(Cream, Cover(big, Aa));
-            float small = Star(x, y, 0.36f, cy + 0.30f, 4, 0.15f, 2.35f, 0.01f);
+            float small = Circle(x, y, 0.36f, cy + 0.30f, 0.1f);
             p.Over(Ink, Cover(small - 0.04f, Aa));
             p.Over(Sun, Cover(small, Aa));
         }

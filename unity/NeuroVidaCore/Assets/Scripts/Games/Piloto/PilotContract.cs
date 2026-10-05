@@ -61,8 +61,8 @@ namespace NeuroVida.Games.Piloto
         public const float TargetChance = 0.4f;
 
         /// <summary>Íconos que se usan como señales (índices de <c>ShapeKind</c> de Parejas: se eligen los que se
-        /// distinguen bien por silueta aun en un vistazo): estrella, cometa, planeta, luna, cohete, platillo.</summary>
-        public static readonly int[] Shapes = { 3, 2, 0, 4, 1, 5 };
+        /// distinguen bien por silueta aun en un vistazo): hexágono, cometa, planeta, gota, cohete, platillo (4-oct: sin estrella ni media luna; 14 = <c>ShapeKind.Hexagon</c>, 13 = <c>ShapeKind.Drop</c>).</summary>
+        public static readonly int[] Shapes = { 14, 2, 0, 13, 1, 5 };
 
         // ------------------------------------------------------------------ pilotaje
 

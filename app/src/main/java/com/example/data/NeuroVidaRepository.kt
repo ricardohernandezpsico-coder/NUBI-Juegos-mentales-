@@ -424,7 +424,6 @@ class NeuroVidaRepository(
       "secuencia" -> "trail" to Trail.mark(r.rasBestLen)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
-      "trafico" -> "load" to r.trafficPeakPods?.toFloat()
       "piloto" -> "multitask" to r.multitaskCost?.toFloat()
       "rumbo" -> "homing" to r.homingErrorPct
       "bitacora" -> "recall" to (if (r.memPhase == "encode") null else pct(r.memRecalled, r.memItems))

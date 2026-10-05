@@ -11,15 +11,16 @@ namespace NeuroVida.Games.Parejas
     /// ponerles nombre ayuda a recordarlos, y con siluetas bien distintas entre sí (redonda, alargada, en
     /// diagonal, con puntas...). Cada ícono tiene <see cref="SymbolSprite.VariantCount"/> variantes de color; la
     /// 3 es siempre un tono análogo de la 0, para los niveles de máxima interferencia.
-    /// <see cref="Drop"/> no va en las cartas: es la gota de tinta del cartel de Tinta o Palabra.
+    /// <see cref="Drop"/> no va en las cartas: es la gota de tinta del cartel de Tinta o Palabra; <see cref="Hexagon"/> es solo una señal de Piloto.
+    /// Regla de Ricardo (4-oct): nada de estrella con puntas, media luna ni cruz (la galaxia espiral y la luna llena con cráteres reemplazan a la estrella y la media luna).
     /// </summary>
     public enum ShapeKind
     {
         Planet,
         Rocket,
         Comet,
-        Star,
-        Moon,
+        Galaxy,
+        FullMoon,
         Ufo,
         Satellite,
         Sun,
@@ -28,7 +29,8 @@ namespace NeuroVida.Games.Parejas
         Telescope,
         Crystal,
         Constellation,
-        Drop
+        Drop,
+        Hexagon
     }
 
     /// <summary>
@@ -142,8 +144,8 @@ namespace NeuroVida.Games.Parejas
             /* Planet        */ new[] { Grape, Lime, Coral, Orchid },
             /* Rocket        */ new[] { Coral, Sky, Lime, Orange },
             /* Comet         */ new[] { Sky, Sun, Pink, Blue },
-            /* Star          */ new[] { Sun, Sky, Pink, Amber },
-            /* Moon          */ new[] { Hex(0xFFE38A), Grape, Sky, Sun },
+            /* Galaxy        */ new[] { Sun, Sky, Pink, Amber },
+            /* FullMoon      */ new[] { Hex(0xFFE38A), Grape, Sky, Sun },
             /* Ufo           */ new[] { Lime, Coral, Grape, Mint },
             /* Satellite     */ new[] { Sun, Coral, Lime, Amber },
             /* Sun           */ new[] { Orange, Sun, Coral, Hex(0xFFA64D) },
@@ -153,6 +155,7 @@ namespace NeuroVida.Games.Parejas
             /* Crystal       */ new[] { Sky, Pink, Lime, Blue },
             /* Constellation */ new[] { Sun, Sky, Pink, Amber },
             /* Drop          */ new[] { Blue, Mint, Grape, Sky },
+            /* Hexagon       */ new[] { Sky, Pink, Lime, Blue },
         };
 
         /// <summary>
@@ -165,8 +168,8 @@ namespace NeuroVida.Games.Parejas
             /* Planet        */ new[] { 1.049f, 0.000f, 0.042f },
             /* Rocket        */ new[] { 1.340f, 0.234f, 0.170f },
             /* Comet         */ new[] { 1.400f, 0.133f, 0.171f },
-            /* Star          */ new[] { 1.080f, 0.000f, 0.000f },
-            /* Moon          */ new[] { 1.159f, 0.192f, 0.042f },
+            /* Galaxy        */ new[] { 0.940f, 0.000f, 0.000f },
+            /* FullMoon      */ new[] { 1.060f, 0.000f, 0.000f },
             /* Ufo           */ new[] { 1.133f, 0.000f, -0.019f },
             /* Satellite     */ new[] { 1.062f, 0.000f, 0.037f },
             /* Sun           */ new[] { 1.036f, 0.000f, 0.042f },
@@ -176,6 +179,7 @@ namespace NeuroVida.Games.Parejas
             /* Crystal       */ new[] { 1.133f, 0.000f, 0.089f },
             /* Constellation */ new[] { 1.167f, -0.005f, 0.014f },
             /* Drop          */ new[] { 1.184f, 0.000f, 0.131f },
+            /* Hexagon       */ new[] { 1.100f, 0.000f, 0.000f },
         };
 
         private static void Draw(ref Pen p, ShapeKind kind, Color main, float x, float y)
@@ -189,8 +193,8 @@ namespace NeuroVida.Games.Parejas
                 case ShapeKind.Planet: DrawPlanet(ref p, x, y, main); break;
                 case ShapeKind.Rocket: DrawRocket(ref p, x, y, main); break;
                 case ShapeKind.Comet: DrawComet(ref p, x, y, main); break;
-                case ShapeKind.Star: DrawStar(ref p, x, y, main); break;
-                case ShapeKind.Moon: DrawMoon(ref p, x, y, main); break;
+                case ShapeKind.Galaxy: DrawGalaxy(ref p, x, y, main); break;
+                case ShapeKind.FullMoon: DrawFullMoon(ref p, x, y, main); break;
                 case ShapeKind.Ufo: DrawUfo(ref p, x, y, main); break;
                 case ShapeKind.Satellite: DrawSatellite(ref p, x, y, main); break;
                 case ShapeKind.Sun: DrawSun(ref p, x, y, main); break;
@@ -199,6 +203,7 @@ namespace NeuroVida.Games.Parejas
                 case ShapeKind.Telescope: DrawTelescope(ref p, x, y, main); break;
                 case ShapeKind.Crystal: DrawCrystal(ref p, x, y, main); break;
                 case ShapeKind.Constellation: DrawConstellation(ref p, x, y, main); break;
+                case ShapeKind.Hexagon: DrawHexagon(ref p, x, y, main); break;
                 default: DrawDrop(ref p, x, y, main); break;
             }
         }
@@ -258,27 +263,62 @@ namespace NeuroVida.Games.Parejas
             p.Gloss(x, y, hx - 0.10f, hy + 0.13f, 0.12f, 0.07f, head);
         }
 
-        private static void DrawStar(ref Pen p, float x, float y, Color main)
+        /// <summary>Un brazo de la galaxia: una espiral abierta hecha de trazos cortos que se afinan hacia afuera.</summary>
+        private static float SpiralArm(float x, float y, float rot, float thick)
         {
-            float body = Star(x, y, 0f, -0.04f, 5, 0.94f, 3.0f, 0.11f);
-            p.Part(body, main);
-            p.Fill(Star(x, y, 0f, -0.04f, 5, 0.46f, 3.0f, 0.06f), Tint(main, 0.3f));
-            p.Gloss(x, y, -0.20f, 0.20f, 0.11f, 0.07f, body);
+            const int n = 30;
+            float d = 1e9f, px = 0f, py = 0f;
+            for (int i = 0; i <= n; i++)
+            {
+                float t = i / (float)n;
+                float r = 0.14f + 0.78f * t;
+                float a = rot + 2.4f * t * Mathf.PI;
+                float qx = r * Mathf.Cos(a), qy = r * Mathf.Sin(a);
+                if (i > 0) d = Mathf.Min(d, Capsule(x, y, px, py, qx, qy, thick * (1f - 0.55f * t)));
+                px = qx;
+                py = qy;
+            }
+            return d;
         }
 
-        /// <summary>Luna creciente con cráteres.</summary>
-        private static void DrawMoon(ref Pen p, float x, float y, Color main)
+        /// <summary>Galaxia espiral: dos brazos que giran alrededor de un núcleo luminoso (reemplaza a la estrella de 5 puntas).</summary>
+        private static void DrawGalaxy(ref Pen p, float x, float y, Color main)
         {
-            // Media luna exacta con las puntas redondeadas (radio 0.05): sin puntas filosas ni bordes estirados.
-            Rotate(x + 0.06f, y, 0f, 0f, -0.405f, out float mx, out float my);
-            float body = Crescent(mx, my, 0.457f, 0.75f, 0.71f) - 0.05f;
+            float arms = Mathf.Min(SpiralArm(x, y, 0f, 0.17f), SpiralArm(x, y, Mathf.PI, 0.17f));
+            float body = Mathf.Min(arms, Circle(x, y, 0f, 0f, 0.27f));
+            p.Part(body, main);
+            p.Fill(Mathf.Min(SpiralArm(x, y, 0f, 0.08f), SpiralArm(x, y, Mathf.PI, 0.08f)), Tint(main, 0.35f));
+            p.Fill(Circle(x, y, 0f, 0f, 0.19f), Tint(Sun, 0.35f));
+            p.Gloss(x, y, -0.07f, 0.08f, 0.07f, 0.04f, Circle(x, y, 0f, 0f, 0.19f));
+        }
+
+        /// <summary>Luna llena con cráteres (reemplaza a la media luna).</summary>
+        private static void DrawFullMoon(ref Pen p, float x, float y, Color main)
+        {
+            float body = Circle(x, y, 0f, 0f, 0.80f);
             p.Part(body, main);
             Color crater = Shade(main, 0.84f);
-            p.Fill(Circle(x, y, -0.46f, 0.02f, 0.12f), crater);
-            p.Fill(Circle(x, y, -0.22f, -0.46f, 0.08f), crater);
-            p.Fill(Circle(x, y, -0.36f, 0.46f, 0.065f), crater);
-            p.Gloss(x, y, -0.60f, -0.10f, 0.06f, 0.18f, body);
+            p.Fill(Circle(x, y, -0.28f, 0.22f, 0.17f), crater);
+            p.Fill(Circle(x, y, 0.34f, 0.30f, 0.10f), crater);
+            p.Fill(Circle(x, y, 0.05f, -0.30f, 0.18f), crater);
+            p.Fill(Circle(x, y, -0.42f, -0.30f, 0.09f), crater);
+            p.Fill(Circle(x, y, 0.44f, -0.20f, 0.07f), crater);
+            p.Gloss(x, y, -0.40f, 0.50f, 0.16f, 0.08f, body);
         }
+
+        /// <summary>Hexágono de arcilla (una señal de Piloto), con las esquinas redondeadas.</summary>
+        private static void DrawHexagon(ref Pen p, float x, float y, Color main)
+        {
+            float body = Polygon(x, y, HexPoints(0.80f)) - 0.07f;
+            p.Part(body, main);
+            p.Fill(Polygon(x, y, HexPoints(0.46f)) - 0.04f, Tint(main, 0.3f));
+            p.Gloss(x, y, -0.30f, 0.46f, 0.14f, 0.08f, body);
+        }
+
+        private static float[] HexPoints(float r) => new[]
+        {
+            0f, r, 0.866f * r, 0.5f * r, 0.866f * r, -0.5f * r, 0f, -r, -0.866f * r, -0.5f * r, -0.866f * r, 0.5f * r
+        };
 
         /// <summary>Platillo volador: cúpula, disco con luces y panza.</summary>
         private static void DrawUfo(ref Pen p, float x, float y, Color main)
@@ -404,10 +444,10 @@ namespace NeuroVida.Games.Parejas
             p.Fill(Polygon(x, y, CrystalPavilionL), Tint(main, 0.2f));
             p.Fill(Polygon(x, y, CrystalPavilionR), Shade(main, 0.8f));
             p.Fill(Intersect(Mathf.Abs(y - 0.30f) - 0.014f, body + 0.01f), WithAlpha(Ink, 0.45f));
-            p.Fill(Star(x, y, -0.26f, 0.54f, 4, 0.15f, 2.6f, 0.01f), Color.white);
+            p.Fill(Circle(x, y, -0.26f, 0.54f, 0.07f), Color.white);                 // brillo redondo (nada de destellos con puntas)
         }
 
-        /// <summary>Constelación: tres estrellas unidas por trazos.</summary>
+        /// <summary>Constelación: tres luceros redondos unidos por trazos.</summary>
         private static void DrawConstellation(ref Pen p, float x, float y, Color main)
         {
             const float ax = -0.56f, ay = -0.44f, bx = -0.10f, by = 0.42f, cx = 0.58f, cy = -0.10f;
@@ -420,7 +460,7 @@ namespace NeuroVida.Games.Parejas
 
         private static void StarPart(ref Pen p, float x, float y, float cx, float cy, float r, Color main)
         {
-            float s = Star(x, y, cx, cy, 5, r, 3.0f, 0.06f);
+            float s = Circle(x, y, cx, cy, r * 0.78f);
             p.Part(s, main, ThinLine * 1.2f);
             p.Gloss(x, y, cx - r * 0.2f, cy + r * 0.24f, r * 0.14f, r * 0.09f, s);
         }

@@ -7,7 +7,6 @@ using NeuroVida.Contracts;
 using NeuroVida.Games.Parejas;   // SymbolSprite (cometas de la patrulla)
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
 using NeuroVida.Games.Shared;
-using NeuroVida.Games.Trafico;   // TrafficSprites.Port (planetas de colores con símbolo)
 using static NeuroVida.Games.Shared.UiKit;
 using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
@@ -171,10 +170,10 @@ namespace NeuroVida.Games.Bitacora
                 v.Rect.gameObject.SetActive(on);
                 if (!on) continue;
                 v.Rect.anchoredPosition = MapPos(_m.PlanetX[p], _m.PlanetY[p]);
-                v.Body.sprite = TrafficSprites.Port(_m.PlanetColors[p]);
+                v.Body.sprite = PortSprites.Port(_m.PlanetColors[p]);
                 v.Body.color = Color.white;
                 v.Label.text = BitacoraContract.PlanetNames[_m.PlanetColors[p]];
-                v.Glow.color = NeuroStyle.WithAlpha(TrafficSprites.Colors[_m.PlanetColors[p]], 0f);
+                v.Glow.color = NeuroStyle.WithAlpha(PortSprites.Colors[_m.PlanetColors[p]], 0f);
                 v.Find.gameObject.SetActive(false);
                 v.Mark.gameObject.SetActive(false);
                 v.Ring.gameObject.SetActive(false);
@@ -216,7 +215,7 @@ namespace NeuroVida.Games.Bitacora
 
                 // Llega: el planeta se enciende y el hallazgo aparece con un destello y su nota.
                 SetGlow(v, 0.55f);
-                StartCoroutine(UiFx.RingBurst(_fx, LocalIn(_fx, v.Rect), TrafficSprites.Colors[_m.PlanetColors[p]], 110f, 300f, 0.45f));
+                StartCoroutine(UiFx.RingBurst(_fx, LocalIn(_fx, v.Rect), PortSprites.Colors[_m.PlanetColors[p]], 110f, 300f, 0.45f));
                 v.Find.sprite = BitacoraSprites.Find(_m.Finds[i]);
                 v.Find.color = Color.white;
                 v.Find.rectTransform.anchoredPosition = new Vector2(0f, PlanetSize * 0.62f);
@@ -777,7 +776,7 @@ namespace NeuroVida.Games.Bitacora
         private string PlanetName(int mapPlanet)
         {
             int c = _m.PlanetColors[mapPlanet];
-            var col = TrafficSprites.Colors[c];
+            var col = PortSprites.Colors[c];
             return $"<color=#{ColorUtility.ToHtmlStringRGB(col)}>{BitacoraContract.PlanetNames[c]}</color>";
         }
 

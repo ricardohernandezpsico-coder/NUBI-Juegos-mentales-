@@ -72,7 +72,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "trafico", "bitacora", "rumbo", "correo",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "bitacora", "rumbo", "correo",
   "secuencia", "parejas", "stroop", "anagramas", "calculo", "meteoros", "disparate", "cosecha", "intrusa"
 )
 
@@ -107,7 +107,7 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       }
       rotate(10f, Offset(64f, 48f)) {
         clay(roundRect(42f, 16f, 42f, 60f, 8f), Cream)
-        clay(star(Offset(63f, 46f), 15f, 7f, 5), Clay.Coral, border = 4f, shadow = false)
+        clay(circle(Offset(63f, 46f), 13f), Clay.Coral, border = 4f, shadow = false)
       }
     }
     "stroop" -> {
@@ -139,7 +139,7 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
         clay(circle(Offset(50f, 47.2f), 5.0f), Clay.Sky, border = 2.5f, shadow = false)
       }
       // La señal que hay que atrapar.
-      clay(star(Offset(79f, 21f), 16f, 8f, 5), Clay.Sun, border = 3.5f)
+      clay(hexagon(Offset(79f, 21f), 15f), Clay.Sun, border = 3.5f)
     }
     "radar" -> {
       // Pantalla de radar de arcilla: aro, vidrio, anillos, el haz que barre y el astronauta (punto sol).
@@ -227,13 +227,13 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(Offset(87f, 72f), 8.5f), Clay.Grape)
     }
     "intrusa" -> {
-      // Cuatro estrellas unidas por una línea de luz (sin cerrar) y una quinta que se suelta como estrella fugaz con su estela.
+      // Cuatro luceros redondos unidos por una línea de luz (sin cerrar) y un quinto que se suelta como lucero fugaz con su estela.
       val pts = listOf(Offset(16f, 70f), Offset(32f, 40f), Offset(58f, 56f), Offset(50f, 86f))
       for (i in 0 until pts.size - 1) drawLine(Cream.copy(alpha = 0.8f), pts[i], pts[i + 1], 3.2f, StrokeCap.Round)
-      pts.forEach { clay(star(it, 9.5f, 4.4f, 5, round = true), Clay.Sun, border = 3f, shadow = false) }
+      pts.forEach { clay(circle(it, 8f), Clay.Sun, border = 3f, shadow = false) }
       drawLine(Clay.Coral.copy(alpha = 0.3f), Offset(96f, 6f), Offset(70f, 26f), 7f, StrokeCap.Round)
       drawLine(Clay.Coral.copy(alpha = 0.55f), Offset(90f, 10f), Offset(70f, 26f), 4.5f, StrokeCap.Round)
-      clay(star(Offset(66f, 30f), 11f, 5f, 5, round = true), Clay.Coral, border = 3.5f)
+      clay(circle(Offset(66f, 30f), 9.5f), Clay.Coral, border = 3.5f)
       sparkle(Offset(80f, 70f), 7f, Color.White)
     }
     "aterrizaje" -> {
@@ -272,7 +272,7 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawCircle(Clay.Sky.copy(alpha = 0.55f), 3f, Offset(88f, 14f))
       drawCircle(Clay.Sky.copy(alpha = 0.75f), 3.5f, Offset(78f, 18f))
       drawCircle(Clay.Sky, 4f, Offset(67f, 22f))
-      clay(star(Offset(48f, 25f), 15f, 7f, 5, round = true), Clay.Sun, border = 4f)
+      clay(circle(Offset(48f, 25f), 12f), Clay.Sun, border = 4f)
       sparkle(Offset(26f, 20f), 8f, Color.White)
     }
     "rumbo" -> {
@@ -310,26 +310,6 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
         drawPath(Path().apply { moveTo(31f, 47f); lineTo(50f, 62f); lineTo(69f, 47f) }, Ink, style = Stroke(3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
         clay(circle(Offset(50f, 60f), 5f), Clay.Coral, border = 2.5f, shadow = false)
       }
-    }
-    "trafico" -> {
-      // Estación de carga arriba; la ruta baja en curva hasta un desvío (disco con flecha) y se abre hacia dos planetas.
-      val trunk = Path().apply { moveTo(50f, 34f); cubicTo(50f, 44f, 26f, 40f, 30f, 50f); cubicTo(33f, 57f, 50f, 52f, 50f, 60f) }
-      val left = Path().apply { moveTo(50f, 60f); cubicTo(42f, 68f, 20f, 66f, 18f, 82f) }
-      val right = Path().apply { moveTo(50f, 60f); cubicTo(58f, 68f, 80f, 66f, 82f, 82f) }
-      for (route in listOf(trunk, left, right)) drawPath(route, Ink, style = Stroke(10f, cap = StrokeCap.Round))
-      drawPath(trunk, Clay.Sky, style = Stroke(5f, cap = StrokeCap.Round))
-      drawPath(left, Color(0xFF4B4F9A), style = Stroke(5f, cap = StrokeCap.Round))
-      drawPath(right, Clay.Sky, style = Stroke(5f, cap = StrokeCap.Round))
-      clay(Path().apply { addArc(Rect(30f, 6f, 70f, 46f), 180f, 180f); close() }, Cream, gloss = true)
-      clay(roundRect(20f, 24f, 60f, 12f, 6f), Color(0xFF2A3590))
-      clay(roundRect(43f, 25f, 14f, 15f, 5f), Clay.Sun, border = 3f, shadow = false)
-      clay(circle(Offset(18f, 82f), 12f), Clay.Coral, border = 3.5f)
-      clay(circle(Offset(82f, 82f), 12f), Clay.Sun, border = 3.5f, gloss = true)
-      clay(circle(Offset(50f, 60f), 10f), Color(0xFF2A3590), border = 3.5f)
-      // Flecha del desvío hacia la derecha-abajo (la ruta activa).
-      drawLine(Cream, Offset(46f, 56f), Offset(54f, 64f), 3f, StrokeCap.Round)
-      drawLine(Cream, Offset(54f, 64f), Offset(54f, 58f), 3f, StrokeCap.Round)
-      drawLine(Cream, Offset(54f, 64f), Offset(48f, 64f), 3f, StrokeCap.Round)
     }
     "anagramas" -> {
       // En la punta de la lengua: un lucero REDONDO (nunca una estrella con puntas) que emite ondas de señal, como la transmisión de Nubi.
@@ -413,28 +393,15 @@ private fun plus(c: Offset, len: Float, bar: Float) = Path().apply {
   addRoundRect(RoundRect(c.x - bar / 2f, c.y - len / 2f, c.x + bar / 2f, c.y + len / 2f, CornerRadius(bar / 2f)))
 }
 
-/** Estrella de [points] puntas; con [round] las puntas quedan romas (estrella de mar). */
-private fun star(c: Offset, outer: Float, inner: Float, points: Int, round: Boolean = false) = Path().apply {
-  val n = points * 2
-  val pts = (0 until n).map { i ->
-    val a = (-90f + i * 360f / n) * PI.toFloat() / 180f
-    val r = if (i % 2 == 0) outer else inner
-    Offset(c.x + cos(a) * r, c.y + sin(a) * r)
+/** Hexágono regular de radio [r] (con la punta hacia arriba). */
+private fun hexagon(c: Offset, r: Float) = Path().apply {
+  for (i in 0 until 6) {
+    val a = (-90f + i * 60f) * PI.toFloat() / 180f
+    val x = c.x + cos(a) * r
+    val y = c.y + sin(a) * r
+    if (i == 0) moveTo(x, y) else lineTo(x, y)
   }
-  if (!round) {
-    moveTo(pts[0].x, pts[0].y); pts.drop(1).forEach { lineTo(it.x, it.y) }; close()
-  } else {
-    // Curvas que pasan cerca de cada punta: brazos gorditos.
-    val mid = { a: Offset, b: Offset -> Offset((a.x + b.x) / 2f, (a.y + b.y) / 2f) }
-    val start = mid(pts[n - 1], pts[0])
-    moveTo(start.x, start.y)
-    for (i in 0 until n) {
-      val p = pts[i]
-      val next = mid(p, pts[(i + 1) % n])
-      quadraticBezierTo(p.x, p.y, next.x, next.y)
-    }
-    close()
-  }
+  close()
 }
 
 /** Gota con la punta hacia arriba; [c] = centro de la parte redonda. */
@@ -447,17 +414,10 @@ private fun inkDrop(c: Offset, r: Float) = Path().apply {
   close()
 }
 
-/** Destello de 4 puntas (sin borde): el "brillo" de lo encendido. */
+/** Brillo REDONDO (sin borde): el "brillo" de lo encendido, un núcleo con su halo (4-oct: ya no es un destello de 4 puntas). */
 private fun DrawScope.sparkle(c: Offset, r: Float, color: Color) {
-  val p = Path().apply {
-    moveTo(c.x, c.y - r)
-    quadraticBezierTo(c.x, c.y, c.x + r, c.y)
-    quadraticBezierTo(c.x, c.y, c.x, c.y + r)
-    quadraticBezierTo(c.x, c.y, c.x - r, c.y)
-    quadraticBezierTo(c.x, c.y, c.x, c.y - r)
-    close()
-  }
-  drawPath(p, color)
+  drawCircle(color.copy(alpha = color.alpha * 0.35f), r, c)
+  drawCircle(color, r * 0.5f, c)
 }
 
 /** Trazo grueso "de arcilla": sombra tinta, borde tinta y el color encima. */

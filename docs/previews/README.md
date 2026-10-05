@@ -40,7 +40,6 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`correo-sonidos.wav`](correo-sonidos.wav)
 - [`rumbo-sonidos-llegadas.wav`](rumbo-sonidos-llegadas.wav)
 - [`rumbo-sonidos.wav`](rumbo-sonidos.wav)
-- [`trafico-sonidos.wav`](trafico-sonidos.wav)
 
 ## Nubi: personaje, ícono y nombre
 
@@ -177,7 +176,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`rumbo.png`](rumbo.png)
 - [`satelites.png`](satelites.png)
 - [`simbolos-parejas.png`](simbolos-parejas.png)
-- [`trafico.png`](trafico.png)
+- [`simbolos-neutros.png`](simbolos-neutros.png): los símbolos neutros del 4-oct (puertos, cartas de Parejas, señales de Piloto). Script: `tools/art-preview/simbolos_neutros.py`.
 
 ## Bienvenida, resultados, logros y compartir
 

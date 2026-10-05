@@ -190,12 +190,12 @@ namespace NeuroVida.Games.Parejas
             {
                 new SymbolDef(ShapeKind.Planet, 0),
                 new SymbolDef(ShapeKind.Rocket, 0),
-                new SymbolDef(ShapeKind.Star, 0),
+                new SymbolDef(ShapeKind.Galaxy, 0),
                 new SymbolDef(ShapeKind.Comet, 0),
                 new SymbolDef(ShapeKind.Ufo, 0),
                 new SymbolDef(ShapeKind.Crystal, 1),
                 new SymbolDef(ShapeKind.Helmet, 0),
-                new SymbolDef(ShapeKind.Moon, 2),
+                new SymbolDef(ShapeKind.FullMoon, 2),
             },
             // Tier 1: más objetos, algunos repiten forma con otro color.
             new[]
@@ -205,7 +205,7 @@ namespace NeuroVida.Games.Parejas
                 new SymbolDef(ShapeKind.Asteroid, 0),
                 new SymbolDef(ShapeKind.Telescope, 1),
                 new SymbolDef(ShapeKind.Constellation, 0),
-                new SymbolDef(ShapeKind.Moon, 1),
+                new SymbolDef(ShapeKind.FullMoon, 1),
                 new SymbolDef(ShapeKind.Planet, 1),
                 new SymbolDef(ShapeKind.Rocket, 1),
                 new SymbolDef(ShapeKind.Comet, 1),
@@ -226,8 +226,8 @@ namespace NeuroVida.Games.Parejas
             // Tier 3 (máxima interferencia): pares del mismo objeto en tonos análogos.
             new[]
             {
-                new SymbolDef(ShapeKind.Star, 0),
-                new SymbolDef(ShapeKind.Star, 3),
+                new SymbolDef(ShapeKind.Galaxy, 0),
+                new SymbolDef(ShapeKind.Galaxy, 3),
                 new SymbolDef(ShapeKind.Planet, 0),
                 new SymbolDef(ShapeKind.Planet, 3),
                 new SymbolDef(ShapeKind.Comet, 0),

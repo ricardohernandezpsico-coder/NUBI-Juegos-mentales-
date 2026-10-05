@@ -248,7 +248,7 @@ namespace NeuroVida.Games.Meteoros
 
         // ------------------------------------------------------------------ estrella de la constelación
 
-        private static float StarSdf(float x, float y) => Star(x, y, 0f, 0f, 5, 0.68f, 2.8f, 0.12f);
+        private static float StarSdf(float x, float y) => Circle(x, y, 0f, 0f, 0.56f);   // lucero REDONDO (nada de estrella con puntas)
 
         public static Color32[] RenderStar(int size, bool lit) => RenderClay(size, 1.12f, lit ? 0.06f : 0.05f, lit ? 0.07f : 0.0f, 0.04f, StarSdf, (ref Px p, float x, float y) =>
         {

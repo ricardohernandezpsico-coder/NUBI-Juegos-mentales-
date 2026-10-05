@@ -163,6 +163,7 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.10f), NebulaBPos = new Vector2(0.5f, 0.25f),
         };
 
+        // Sin uso desde que Tráfico Estelar se retiró (4-oct-2026): queda como mundo disponible para otro juego.
         /// <summary>Tráfico Estelar: centro de tráfico; cielo quieto con nebulosa uva arriba (de donde sale el portal).</summary>
         public static GameWorld TrafficHub => new GameWorld
         {

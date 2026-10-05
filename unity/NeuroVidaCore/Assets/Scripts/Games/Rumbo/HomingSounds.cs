@@ -18,7 +18,7 @@ namespace NeuroVida.Games.Rumbo
     /// <item><see cref="MapReveal"/>: la vista desde arriba (el aire sube y brilla).</item>
     /// <item><see cref="FuelOut"/>: se acabó el combustible de la vuelta (dos notas que bajan).</item>
     /// </list>
-    /// El vuelo usa el colchón de <see cref="Trafico.TrafficSounds.EngineLoop"/> (mismo sonido de nave en toda la app).
+    /// El vuelo usa el colchón de <see cref="Shared.ShipSounds.EngineLoop"/> (mismo sonido de nave en toda la app).
     /// </summary>
     public static class HomingSounds
     {

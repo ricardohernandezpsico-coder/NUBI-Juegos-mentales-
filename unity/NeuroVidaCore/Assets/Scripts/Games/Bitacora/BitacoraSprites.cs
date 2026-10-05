@@ -60,9 +60,21 @@ namespace NeuroVida.Games.Bitacora
                 case 11: return Gem(x, y);
                 case 12: return Mathf.Min(MushroomCap(x, y), RoundBox(x, y, 0f, -0.38f, 0.22f, 0.38f, 0.14f));
                 case 13: return Anchor(x, y);
-                case 14: return Star(x, y, 0f, -0.04f, 5, 0.86f, 2.4f, 0.12f);
+                case 14: return Flower(x, y);
                 default: return Umbrella(x, y);
             }
+        }
+
+        /// <summary>Flor de seis pétalos redondos (reemplaza a la estrella de mar, que era una estrella de 5 puntas).</summary>
+        private static float Flower(float x, float y)
+        {
+            float d = Circle(x, y, 0f, 0f, 0.3f);
+            for (int i = 0; i < 6; i++)
+            {
+                float a = i * Mathf.PI / 3f + Mathf.PI / 6f;
+                d = Mathf.Min(d, Circle(x, y, 0.5f * Mathf.Cos(a), 0.5f * Mathf.Sin(a), 0.32f));
+            }
+            return d;
         }
 
         private static float Key(float x, float y) =>
@@ -291,15 +303,10 @@ namespace NeuroVida.Games.Bitacora
                     Fill(ref p, Grape, body);
                     Fill(ref p, Tint(Grape, 0.3f), Mathf.Max(body, -(x + 0.02f)) + 0.03f);
                     break;
-                case 14: // estrella de mar
-                    Fill(ref p, Orange, body);
-                    for (int i = 0; i < 5; i++)
-                    {
-                        float a = Mathf.PI / 2f + i * 2f * Mathf.PI / 5f;
-                        for (int k = 1; k <= 2; k++)
-                            Fill(ref p, Tint(Orange, 0.55f), Circle(x, y, 0.24f * k * Mathf.Cos(a), -0.04f + 0.24f * k * Mathf.Sin(a), 0.055f));
-                    }
-                    Fill(ref p, Tint(Orange, 0.55f), Circle(x, y, 0f, -0.04f, 0.07f));
+                case 14: // flor
+                    Fill(ref p, Pink, body);
+                    Fill(ref p, Tint(Pink, 0.5f), Mathf.Max(body, Circle(x, y, 0f, 0f, 0.4f) * -1f) + 0.02f);
+                    Fill(ref p, Sun, Circle(x, y, 0f, 0f, 0.2f));
                     break;
                 default: // paraguas
                 {

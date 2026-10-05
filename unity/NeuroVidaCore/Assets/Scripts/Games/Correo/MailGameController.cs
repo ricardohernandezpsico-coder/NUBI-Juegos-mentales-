@@ -8,7 +8,6 @@ using NeuroVida.Games.Secuencia;  // RoundedRectSprite / RadialGlowSprite / Ring
 using NeuroVida.Games.Parejas;    // SymbolSprite (asteroides)
 using NeuroVida.Games.Piloto;     // PilotContract: la ruta (ancho, curvas, velocidad)
 using NeuroVida.Games.Shared;
-using NeuroVida.Games.Trafico;    // TrafficSprites.Port: planetas de color con símbolo
 using static NeuroVida.Games.Shared.UiKit;
 using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
 
@@ -270,7 +269,7 @@ namespace NeuroVida.Games.Correo
         {
             for (int c = 0; c < MailContract.PlanetColors; c++)
             {
-                TrafficSprites.Port(c);
+                PortSprites.Port(c);
                 yield return null;
             }
             MailSprites.Package();
@@ -617,7 +616,7 @@ namespace NeuroVida.Games.Correo
                 if (!p.Live) continue;
                 float y = YOf(p.D);
                 p.Rect.anchoredPosition = new Vector2(p.X, y);
-                p.Glow.color = NeuroStyle.WithAlpha(TrafficSprites.Colors[p.Data.Color], Motion.Decorative ? 0.25f + 0.08f * Mathf.Sin(now * 4f) : 0.25f);
+                p.Glow.color = NeuroStyle.WithAlpha(PortSprites.Colors[p.Data.Color], Motion.Decorative ? 0.25f + 0.08f * Mathf.Sin(now * 4f) : 0.25f);
                 if (y < bottom)
                 {
                     if (p.Data.IsTarget && !p.Delivered)
@@ -647,7 +646,7 @@ namespace NeuroVida.Games.Correo
             float x = c - 0.5f + data.Side * (half + 0.17f);
             if (Mathf.Abs(x) > edge) x = c - 0.5f - data.Side * (half + 0.17f);
             p.X = Mathf.Clamp(x, -edge, edge) * _playW;
-            p.Body.sprite = TrafficSprites.Port(data.Color);
+            p.Body.sprite = PortSprites.Port(data.Color);
             p.Body.color = Color.white;
             p.Mark.gameObject.SetActive(false);
             p.Rect.localScale = Vector3.one;
@@ -718,7 +717,7 @@ namespace NeuroVida.Games.Correo
             StartCoroutine(PopIn(p.Mark.rectTransform, 0.2f));
             StartCoroutine(PopRect(p.Rect, 1.2f, 0.25f));
             StartCoroutine(UiFx.SparkBurst(_fxRect, p.Rect.anchoredPosition, NeuroStyle.Sun, 12, 140f, 24f));
-            StartCoroutine(UiFx.RingBurst(_fxRect, p.Rect.anchoredPosition, TrafficSprites.Colors[p.Data.Color], 120f, 360f, 0.5f));
+            StartCoroutine(UiFx.RingBurst(_fxRect, p.Rect.anchoredPosition, PortSprites.Colors[p.Data.Color], 120f, 360f, 0.5f));
             StartCoroutine(FloatText(p.Rect.anchoredPosition, "¡Entregado!", GoodColor));
         }
 
@@ -1090,7 +1089,7 @@ namespace NeuroVida.Games.Correo
         // ------------------------------------------------------------------ hoja de ruta
 
         private string ColorWord(int color) =>
-            $"<color=#{ColorUtility.ToHtmlStringRGB(TrafficSprites.Colors[color])}>{MailContract.ColorNames[color]}</color>";
+            $"<color=#{ColorUtility.ToHtmlStringRGB(PortSprites.Colors[color])}>{MailContract.ColorNames[color]}</color>";
 
         /// <summary>La hoja de ruta: los encargos con su dibujo (sin recuadros), un truco y el botón "¡A volar!".</summary>
         private void BuildBrief()
@@ -1111,7 +1110,7 @@ namespace NeuroVida.Games.Correo
             float iconX = -w * 0.5f + 150f;
             for (int i = 0; i < _targets.Length; i++)
             {
-                var planet = NewImage(_briefRoot, "Planet", TrafficSprites.Port(_targets[i]));
+                var planet = NewImage(_briefRoot, "Planet", PortSprites.Port(_targets[i]));
                 planet.rectTransform.sizeDelta = new Vector2(150f, 150f);
                 planet.rectTransform.anchoredPosition = new Vector2(iconX + (_targets.Length > 1 ? (i == 0 ? -40f : 40f) : 0f), y + (i == 0 ? 0f : -30f));
                 planet.gameObject.SetActive(true);

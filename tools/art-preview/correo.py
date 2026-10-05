@@ -1,5 +1,5 @@
 """Maqueta de Correo Estelar (propuesta, antes de programar): el vuelo de Piloto Estelar con ENCARGOS que hay que
-recordar en el momento justo (memoria prospectiva). Arte de los .raw de ArtPreview (nave, planetas-puerto de Tráfico,
+recordar en el momento justo (memoria prospectiva). Arte de los .raw de ArtPreview (nave, planetas-puerto,
 marcas); el sobre, la radio y el reloj tapado se dibujan acá.
 
 Tres momentos: la hoja de ruta (los encargos), el vuelo con un planeta coral que pasa (¡tócalo!) y la entrega con el
@@ -96,7 +96,7 @@ def frame_brief(raw):
     d.text((W / 2, 232), 'Recuerda tus encargos mientras vuelas', font=font(18), fill=(230, 232, 250), anchor='mm')
     # Encargo por lugar.
     glow(im, 110, 350, 60, CORAL, 70)
-    put(im, load(f'{raw}/traffic_port_0.raw'), 110, 350, 100)
+    put(im, load(f'{raw}/port_0.raw'), 110, 350, 100)
     package(im, 150, 385, 0.8)
     d = ImageDraw.Draw(im)
     d.text((185, 332), 'Cuando pases un', font=font(22), fill=(255, 255, 255), anchor='lm')
@@ -130,8 +130,8 @@ def frame_flight(raw):
     for (x, y) in ((0.47, 560), (0.52, 430), (0.5, 300)):
         envelope(im, x * W, y)
     glow(im, 470, 330, 70, CORAL, 55)
-    put(im, load(f'{raw}/traffic_port_0.raw'), 470, 330, 96)
-    put(im, load(f'{raw}/traffic_port_2.raw'), 70, 480, 86)
+    put(im, load(f'{raw}/port_0.raw'), 470, 330, 96)
+    put(im, load(f'{raw}/port_2.raw'), 70, 480, 86)
     ship(im, raw, c * W + 4, 703, -6)
     d = ImageDraw.Draw(im)
     clay_text(d, (W / 2 - 60, 640), '+10', 24, SUN)
@@ -151,7 +151,7 @@ def frame_deliver(raw):
     c = lane(im, 4150, 703, 0.14, 0.24, False)
     envelope(im, 0.5 * W, 420)
     glow(im, 440, 440, 90, CORAL, 90)
-    put(im, load(f'{raw}/traffic_port_0.raw'), 440, 440, 100)
+    put(im, load(f'{raw}/port_0.raw'), 440, 440, 100)
     put(im, load(f'{raw}/mark_check.raw'), 478, 400, 40)
     ship(im, raw, c * W, 703, 4)
     # Estela del paquete desde la nave hasta el planeta.

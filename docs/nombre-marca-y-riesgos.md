@@ -298,7 +298,7 @@ obligatorias para avanzar. Como Desafío → Experto se parece un poco a una "pu
 |---|---|---|---|
 | **Parejas** | US 7,540,615 (Posit, ~2026-2028): exige mostrar las cartas UNA POR UNA en secuencia. | Bajo | Mantener el tablero completo a la vez. |
 | **Satélites** | Las patentes de NeuroTracker (Faubert / CogniSens: US 9,566,029 y US 10,706,730) describen un ambiente 3D estereoscópico e inmersivo; el seguimiento de varios objetos en sí es un paradigma público (Pylyshyn y Storm, 1988). | Bajo | Satélites es plano: nada de 3D estereoscópico ni realidad virtual. |
-| **Tráfico Estelar** | La patente de Lumos Labs encontrada (US 8,821,242) es de un juego tipo pinball; no encontré patente del juego de trenes. | Bajo | Nombre, arte, sonidos y medidas propios (ya los tiene); nada de trenes ni estaciones de tren. |
+| **Tráfico Estelar** (RETIRADO el 4-oct-2026: era prácticamente «Train of Thought», ver `docs/juegos/descartados.md`) | La patente de Lumos Labs encontrada (US 8,821,242) es de un juego tipo pinball; no encontré patente del juego de trenes. | Bajo | Nombre, arte, sonidos y medidas propios (ya los tiene); nada de trenes ni estaciones de tren. |
 | Demás juegos | Stroop (1935), señal de alto (Logan, 1984), línea numérica (Siegler, 2003), rotación mental (Shepard, 1971), integración de trayecto, memoria episódica y prospectiva: tareas clásicas y públicas. | Bajo (no revisado a fondo) | Nada por ahora. |
 
 **Nombres que nunca se usan** (ni en la app, ni en la tienda, ni en publicidad): UFOV, Double Decision, Target

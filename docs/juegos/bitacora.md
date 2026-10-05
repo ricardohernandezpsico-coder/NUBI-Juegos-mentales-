@@ -6,7 +6,7 @@
 pedido de Ricardo: "muy innovadora, con enganche, llamativa, sonidos modernos, destellos"): memoria episódica (qué,
 dónde y en qué orden) con recuerdo DIFERIDO, como las pruebas de aprendizaje y recuerdo diferido (tipo RAVLT). Ninguna
 app de la competencia mide memoria con demora a lo largo de la sesión.
-- Partida: **transmisión** (una sonda recorre planetas del mapa, los de Tráfico Estelar con color + símbolo + nombre:
+- Partida: **transmisión** (una sonda recorre planetas del mapa, los planetas-puerto (`Shared/PortSprites`, antes de Tráfico Estelar) con color + símbolo + nombre:
   Coral, Sol, Cielo...; en cada parada aparece un hallazgo con destello, su nota y "Planeta Sol · una llave"; la
   persona lo TOCA para guardarlo en la bitácora, fila de abajo; si no, se guarda solo a los 5 s) → **primer repaso**
   (planeta por planeta, en otro orden, elegir el hallazgo en un cajón con los de la misión + señuelos; respuesta al

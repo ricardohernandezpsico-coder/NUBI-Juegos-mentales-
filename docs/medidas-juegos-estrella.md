@@ -147,7 +147,7 @@ mostró el estudio de NeuroRacer con la tarea entrenada.
 
 ---
 
-## Tráfico Estelar: "Tu carga" y "Tu anticipación"
+## Tráfico Estelar (RETIRADO el 4-oct-2026; queda como historia): "Tu carga" y "Tu anticipación"
 
 **Qué mide.**
 - "Tu carga": cuántas cápsulas hubo en viaje a la vez sin ningún error entre ellas. Es descriptivo y depende del

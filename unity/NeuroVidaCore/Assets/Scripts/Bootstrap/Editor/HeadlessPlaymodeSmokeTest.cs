@@ -95,8 +95,6 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Mismo smoke test pero con Acoplamiento como juego.</summary>
         public static void RunAcoplamiento() => RunGame("acoplamiento", 9f);
 
-        /// <summary>Mismo smoke test pero con Tráfico Estelar como juego.</summary>
-        public static void RunTrafico() => RunGame("trafico", 9f);
 
         /// <summary>Mismo smoke test pero con Bitácora de Misión como juego.</summary>
         public static void RunBitacora() => RunGame("bitacora", 9f);
@@ -120,7 +118,7 @@ namespace NeuroVida.Bridge.EditorTools
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
             ("Calculo", "calculo", 9f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
-            ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f), ("Trafico", "trafico", 9f),
+            ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f),
             ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 9f), ("Meteoros", "meteoros", 9f),
             ("Disparate", "disparate", 9f), ("Cosecha", "cosecha", 9f), ("Intrusa", "intrusa", 9f),
         };

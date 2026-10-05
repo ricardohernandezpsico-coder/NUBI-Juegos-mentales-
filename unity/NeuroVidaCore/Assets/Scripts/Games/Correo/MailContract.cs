@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace NeuroVida.Games.Correo
 {
-    /// <summary>Un planeta que pasa junto a la ruta: su color (0..7, los de Tráfico Estelar), si es de un encargo y si es
+    /// <summary>Un planeta que pasa junto a la ruta: su color (0..7, los planetas-puerto de Shared/PortSprites), si es de un encargo y si es
     /// un "parecido" (color cercano al de un encargo, para confundir).</summary>
     public readonly struct MailPlanet
     {
@@ -144,7 +144,7 @@ namespace NeuroVida.Games.Correo
         /// </summary>
         private static readonly int[] LureOf = { 7, 7, 6, 6, 5, 0, 3, 0 };
 
-        /// <summary>Nombres de los colores (mismo orden que <c>TrafficSprites.Colors</c>).</summary>
+        /// <summary>Nombres de los colores (mismo orden que <c>PortSprites.Colors</c>).</summary>
         public static readonly string[] ColorNames = { "coral", "amarillo", "celeste", "verde", "lila", "rosado", "menta", "naranjo" };
 
         /// <summary>Colores que sirven para encargos (bien distintos entre sí): coral, celeste, amarillo, lila.</summary>

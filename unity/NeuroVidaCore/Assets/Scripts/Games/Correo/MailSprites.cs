@@ -7,7 +7,7 @@ namespace NeuroVida.Games.Correo
     /// <summary>
     /// Arte de "Correo Estelar" con el pincel de arcilla común (<see cref="ClayRaster"/>): el sobre que se recoge en la
     /// ruta, el paquete que se entrega, el botón de la radio y el reloj (tapado o destapado). Los planetas son los
-    /// planetas-puerto de Tráfico Estelar (color + símbolo) y la nave, la de Piloto Estelar. Colores horneados:
+    /// planetas-puerto (Shared/PortSprites) (color + símbolo) y la nave, la de Piloto Estelar. Colores horneados:
     /// <c>Image.color</c> en blanco.
     /// </summary>
     public static class MailSprites

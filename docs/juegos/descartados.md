@@ -64,3 +64,16 @@ Para volver a 5 después de publicar: la idea «Código secreto» de `docs/ideas
   la lámina `arte-juegos.png` y `tools/art-preview/juegos.py` (era lo único que quedaba de ella). El mundo de fondo `GameWorld.TreasureMoon` («Luna del tesoro») queda sin uso, disponible para otro juego.
   `Skill.ownTarget` (objetivo propio de aciertos) queda sin ningún juego que lo use, pero disponible. El código completo queda en el historial de git (último commit con el juego: `4c395fb` y anteriores).
 
+**Tráfico Estelar (RETIRADO, 4-oct-2026)**, id `trafico` (Razonamiento, «planificación y atención dividida»): cápsulas de colores salen de una compuerta y se tocan los desvíos para que lleguen al planeta de su color y símbolo.
+Razón (Ricardo, tras la revisión `docs/revision-competencia-4-oct.md`): es prácticamente «Train of Thought», el juego más popular de Lumosity (allá, trenes de colores salen de un túnel y se tocan los cambios de vía para que lleguen a la
+estación de su color): la misma mecánica con otro arte. Razonamiento pasó de 4 a 3 juegos (Carga exacta, Aterrizaje Lunar y Acoplamiento) hasta que llegue «Código secreto» (`docs/ideas-guardadas.md`), y la app, de 19 a 18.
+- **El id `trafico` queda RESERVADO** (no se reutiliza): `GameRegistry.retiredDomains`.
+- **Datos de quien ya lo jugó: NO se borran ni se migran**: las partidas y el progreso siguen en Room y en `skill` (y su medida «tu carga» en `star_measures`) pero no se muestran ni cuentan para «Explorador», las ligas más altas,
+  la liga general (promedio de los 18) ni el área Razonamiento (sus 3 juegos); la racha y el total de partidas sí cuentan esos días, y un camino de hoy guardado que lo nombraba se corrige solo (`withoutRetiredGames`).
+  Pruebas: `flow/RetiredGameTest` (el id retirado, su área, racha y logros) además de las de los otros retirados.
+- **Lo que otros juegos usaban se MOVIÓ a `Games/Shared/` antes de borrar `Games/Trafico/`**: `PortSprites` (los planetas-puerto de colores con símbolo y su paleta de 8 colores; los usan Bitácora de Misión y Correo Estelar), `RailLine` (la cinta
+  de ruta de Rumbo a Casa) y `ShipSounds.EngineLoop` (el colchón de nave del vuelo de Rumbo). Bitácora y Correo se ven igual salvo los glifos nuevos (ver abajo).
+- **Código**: se borró `Games/Trafico/` (controlador, `TrafficContract`, `TrafficSprites` —cápsulas, desvío y estación, solo de este juego—, `TrafficSounds` y pruebas), la lámina y la ficha del juego, `tools/art-preview/trafico.py`, los
+  campos `traffic_*` de la telemetría y la pantalla final «Tu carga» / «Tu anticipación» de la app. `GameWorld.TrafficHub` queda sin uso, disponible para otro juego. El código completo queda en el historial de git (último commit con el
+  juego: `16070f0` y anteriores).
+

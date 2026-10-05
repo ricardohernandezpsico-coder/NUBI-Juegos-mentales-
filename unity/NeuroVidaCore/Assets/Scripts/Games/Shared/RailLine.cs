@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace NeuroVida.Games.Trafico
+namespace NeuroVida.Games.Shared
 {
     /// <summary>
     /// Una ruta curva dibujada como una cinta (malla propia de la UI) que sigue una lista de puntos. La sección de la cinta

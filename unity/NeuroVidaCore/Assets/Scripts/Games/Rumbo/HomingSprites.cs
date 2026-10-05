@@ -128,7 +128,7 @@ namespace NeuroVida.Games.Rumbo
 
         // ------------------------------------------------------------------ faro
 
-        private static float BeaconBody(float x, float y) => Mathf.Min(Star(x, y, 0f, 0f, 4, 0.9f, 2.4f, 0.06f), Circle(x, y, 0f, 0f, 0.36f));
+        private static float BeaconBody(float x, float y) => Mathf.Min(Circle(x, y, 0f, 0f, 0.6f), Mathf.Abs(Circle(x, y, 0f, 0f, 0.88f)) - 0.07f);   // lucero redondo con su aro (antes, estrella de 4 puntas)
 
         public static Color32[] RenderBeacon(int size) => RenderClay(size, 1.1f, 0.05f, 0.06f, Aa, BeaconBody, (ref Px p, float x, float y) =>
         {

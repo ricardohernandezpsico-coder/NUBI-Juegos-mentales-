@@ -15,7 +15,6 @@ using NeuroVida.Games.Disparate;
 using NeuroVida.Games.Cosecha;
 using NeuroVida.Games.Intrusa;
 using NeuroVida.Games.Acoplamiento;
-using NeuroVida.Games.Trafico;
 using NeuroVida.Games.Bitacora;
 using NeuroVida.Games.Rumbo;
 using NeuroVida.Games.Correo;
@@ -54,7 +53,6 @@ namespace NeuroVida.Bridge
         [SerializeField] private CosechaGameController cosechaGameController;
         [SerializeField] private IntrusaGameController intrusaGameController;
         [SerializeField] private DockingGameController dockingGameController;
-        [SerializeField] private TrafficGameController trafficGameController;
         [SerializeField] private BitacoraGameController bitacoraGameController;
         [SerializeField] private HomingGameController homingGameController;
         [SerializeField] private MailGameController mailGameController;
@@ -274,16 +272,6 @@ namespace NeuroVida.Bridge
                     }
                     dockingGameController.gameObject.SetActive(true);
                     dockingGameController.StartSession(config);
-                    break;
-                case TrafficGameController.GameId:
-                    if (trafficGameController == null)
-                    {
-                        var go = new GameObject("TrafficGameController");
-                        go.transform.SetParent(transform, false);
-                        trafficGameController = go.AddComponent<TrafficGameController>();
-                    }
-                    trafficGameController.gameObject.SetActive(true);
-                    trafficGameController.StartSession(config);
                     break;
                 case BitacoraGameController.GameId:
                     if (bitacoraGameController == null)
