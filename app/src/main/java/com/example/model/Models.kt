@@ -168,8 +168,8 @@ object GameRegistry {
       id = "engranajes",
       title = "Engranajes",
       domain = DomainType.RAZONAMIENTO,
-      subtitle = "Lleva la fuerza a las piezas del cohete",
-      instruction = "Mira la máquina: el motor gira y cada engranaje que toca gira al revés del anterior. Decide qué hará la pieza que brilla en el cohete. Cada acierto enciende una luz; con diez, tu cohete despega.",
+      subtitle = "Arregla la máquina del cohete",
+      instruction = "La máquina del cohete viene mal armada: cada pieza tiene un cartel con lo que debe hacer. Con una llave (un cambio) toca el motor o una correa para cambiar su giro, y después toca Arrancar. Cada máquina arreglada enciende una luz; con diez, tu cohete despega.",
       iconEmoji = "⚙️"
     ),
     GameDefinition(

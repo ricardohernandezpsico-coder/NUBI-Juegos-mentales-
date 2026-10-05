@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
 using UnityEngine;
@@ -20,14 +21,14 @@ namespace NeuroVida.Games.Engranajes.Tests
                 var m = EngranajesLayout.Compute(h);
                 string where = "alto " + h;
                 Assert.GreaterOrEqual(m.StripTop, EngranajesLayout.HudDp, where + ": la cabecera va bajo el marcador");
-                Assert.Greater(m.QuestionTop, m.StripTop + EngranajesLayout.StripH - 0.01f, where + ": la pregunta va bajo la cabecera");
+                Assert.Greater(m.QuestionTop, m.StripTop + EngranajesLayout.StripH - 0.01f, where + ": la consigna va bajo la cabecera");
                 float sceneTop = m.SceneCenterLogicalY - EngranajesLayout.SceneHeight * m.SceneScale / 2f;
                 float sceneBottom = m.SceneCenterLogicalY + EngranajesLayout.SceneHeight * m.SceneScale / 2f;
-                Assert.GreaterOrEqual(sceneTop, m.QuestionTop + EngranajesLayout.QuestionH, where + ": la escena va bajo la pregunta");
-                Assert.LessOrEqual(sceneBottom, m.ButtonsTop, where + ": los botones van bajo la escena");
-                Assert.LessOrEqual(m.ButtonsTop + m.ButtonH, m.SayTop, where + ": el aviso va bajo los botones");
+                Assert.GreaterOrEqual(sceneTop, m.QuestionTop + EngranajesLayout.QuestionH, where + ": la escena va bajo la consigna");
+                Assert.LessOrEqual(sceneBottom, m.ButtonsTop, where + ": la cuenta de cambios y «Arrancar» van bajo la escena");
+                Assert.LessOrEqual(m.ButtonsTop + m.ButtonH, m.SayTop, where + ": el aviso va bajo la barra de abajo");
                 Assert.LessOrEqual(m.SayTop + m.SayH, h + 0.01f, where + ": el aviso cabe en la pantalla");
-                Assert.GreaterOrEqual(m.ButtonH, 52f, where + ": los botones miden al menos 52 dp");
+                Assert.GreaterOrEqual(m.ButtonH, 52f, where + ": la barra de abajo mide al menos 52 dp");
                 Assert.GreaterOrEqual(m.SceneScale, EngranajesLayout.MinScale - 0.001f, where + ": la escena no se achica de más");
                 Assert.LessOrEqual(m.SceneScale, EngranajesLayout.MaxScale + 0.001f, where + ": la escena no se agranda");
             }
@@ -47,41 +48,55 @@ namespace NeuroVida.Games.Engranajes.Tests
         }
 
         [Test]
-        public void ThreeButtons_FitSideBySide_AndTwoAreWider()
+        public void TheCounterAndTheStartButton_FitSideBySide_AndTheStartButtonIsTheBigOne()
         {
-            var m = EngranajesLayout.Compute(740f);
-            for (int n = 2; n <= 3; n++)
+            foreach (float h in Heights)
             {
-                for (int k = 0; k < n; k++)
-                {
-                    var r = EngranajesLayout.ButtonRect(m, k, n);
-                    Assert.GreaterOrEqual(r.x, 0f);
-                    Assert.LessOrEqual(r.xMax, EngranajesLayout.W);
-                    Assert.GreaterOrEqual(r.width, 95f, n + " botones: cada uno ≥ 95 dp");
-                    if (k > 0) Assert.Greater(r.x, EngranajesLayout.ButtonRect(m, k - 1, n).xMax, "no se pisan");
-                }
+                var m = EngranajesLayout.Compute(h);
+                var counter = EngranajesLayout.CounterRect(m);
+                var start = EngranajesLayout.StartRect(m);
+                string where = "alto " + h;
+                Assert.GreaterOrEqual(counter.x, 0f, where);
+                Assert.LessOrEqual(start.xMax, EngranajesLayout.W, where);
+                Assert.Greater(start.x, counter.xMax, where + ": no se pisan");
+                Assert.GreaterOrEqual(counter.width, 100f, where);
+                Assert.GreaterOrEqual(start.width, 200f, where + ": «Arrancar» es el botón grande");
+                Assert.GreaterOrEqual(start.height, 52f, where);
             }
-            Assert.Greater(EngranajesLayout.ButtonRect(m, 0, 2).width, EngranajesLayout.ButtonRect(m, 0, 3).width);
         }
 
         [Test]
-        public void TheQuestion_BreaksNearTheMiddle_WithoutALoneWord()
+        public void ATapOnTheScreen_CanBeTurnedBackIntoASceneSpotAndBack()
         {
-            string one = EngranajesLayout.BreakQuestion("¿Cómo girará la antena?", out bool two);
-            Assert.IsFalse(two);
-            Assert.AreEqual("¿Cómo girará la antena?", one);
-            string longQ = EngranajesLayout.BreakQuestion("¿La turbina gira más rápido o más lento que el motor?", out two);
-            Assert.IsTrue(two);
-            var lines = longQ.Split('\n');
-            Assert.AreEqual(2, lines.Length);
-            Assert.Less(Math.Abs(lines[0].Length - lines[1].Length), 12, "las dos líneas quedan parejas: " + longQ);
-            foreach (var line in lines) Assert.Greater(line.Split(' ').Length, 2, "no queda una palabra suelta: " + line);
-            // todas las preguntas del juego caben en una o dos líneas de ≤ 36 caracteres
-            var rng = new System.Random(5);
-            for (int level = 1; level <= 12; level++)
+            foreach (float h in Heights)
             {
-                var q = EngranajesLayout.BreakQuestion(EngranajesContract.QuestionText(EngranajesContract.Generate(level, rng)), out two);
-                foreach (var line in q.Split('\n')) Assert.LessOrEqual(line.Length, 36, "nivel " + level + ": " + line);
+                var m = EngranajesLayout.Compute(h);
+                foreach (var p in new[] { new Vector2(40f, 150f), new Vector2(240f, 300f), new Vector2(306f, 442f) })
+                {
+                    var logical = EngranajesLayout.SceneToLogical(m, p.x, p.y);
+                    var back = EngranajesLayout.LogicalToScene(m, logical.x, logical.y);
+                    Assert.AreEqual(p.x, back.x, 1e-3f, "alto " + h);
+                    Assert.AreEqual(p.y, back.y, 1e-3f, "alto " + h);
+                }
+            }
+        }
+
+        [Test]
+        public void TheIntroCards_FitInTheScreen_EvenIfEachLineBreaksInTwoAt14dpOrMore()
+        {
+            // la tarjeta «NUEVO» tiene el ancho de la pantalla menos márgenes; con letra de 16 dp (48 px del lienzo) cada línea ocupa a lo más dos
+            float widthPx = (EngranajesLayout.W - 36f - 28f) * 3f;
+            foreach (Intro intro in Enum.GetValues(typeof(Intro)))
+            {
+                if (intro == Intro.None) continue;
+                int lines = 0;
+                foreach (var line in EngranajesContract.IntroText(intro))
+                {
+                    var measure = NeuroVida.Games.Shared.CoachText.Measure(line, widthPx, 48);
+                    Assert.LessOrEqual(measure.Lines, 2, intro + ": «" + line + "» ocupa " + measure.Lines + " líneas");
+                    lines += measure.Lines;
+                }
+                Assert.LessOrEqual(lines, 6, intro + ": la tarjeta no crece de más");
             }
         }
     }
@@ -168,8 +183,14 @@ namespace NeuroVida.Games.Engranajes.Tests
         {
             var bake = EngranajesSprites.Prewarm();
             while (bake.MoveNext()) { }
-            foreach (var sprite in new[] { EngranajesSprites.Room(), EngranajesSprites.Hull(), EngranajesSprites.Dish(), EngranajesSprites.Fan(), EngranajesSprites.Door(), EngranajesSprites.CargoFrame(),
-                EngranajesSprites.CargoPlate(), EngranajesSprites.CargoBox(), EngranajesSprites.Hub(), EngranajesSprites.TargetRing(), EngranajesSprites.DashedRing() })
+            var sprites = new List<Sprite>
+            {
+                EngranajesSprites.Room(), EngranajesSprites.Hull(), EngranajesSprites.Dish(), EngranajesSprites.Fan(), EngranajesSprites.Door(), EngranajesSprites.CargoFrame(),
+                EngranajesSprites.CargoPlate(), EngranajesSprites.CargoBox(), EngranajesSprites.Hub(), EngranajesSprites.Pulley(), EngranajesSprites.Rack(), EngranajesSprites.Wrench(),
+                EngranajesSprites.Check(), EngranajesSprites.MiniArrow(true), EngranajesSprites.MiniArrow(false)
+            };
+            foreach (var w in EngranajesSprites.BeltWidths) sprites.Add(EngranajesSprites.BeltCap(w));
+            foreach (var sprite in sprites)
             {
                 Assert.IsNotNull(sprite);
                 float filled = 0f;
@@ -177,16 +198,16 @@ namespace NeuroVida.Games.Engranajes.Tests
                 foreach (var c in px) if (c.a > 20) filled++;
                 Assert.Greater(filled / px.Length, 0.01f, "el sprite " + sprite.name + " no puede estar vacío");
             }
-            foreach (ButtonIcon ic in Enum.GetValues(typeof(ButtonIcon)))
+            foreach (EngranajesSprites.Glyph g in Enum.GetValues(typeof(EngranajesSprites.Glyph)))
             {
-                var icon = EngranajesSprites.Icon(ic);
+                var icon = EngranajesSprites.GlyphSprite(g);
                 int filled = 0;
                 foreach (var c in icon.texture.GetPixels32()) if (c.a > 128) filled++;
-                Assert.Greater(filled, 150, "el ícono " + ic + " se dibuja");
+                Assert.Greater(filled, 150, "el ícono " + g + " se dibuja");
             }
             // la flecha en un sentido y en el otro son espejos
-            var cw = EngranajesSprites.Arrow(40f, 3.5f, true);
-            var ccw = EngranajesSprites.Arrow(40f, 3.5f, false);
+            var cw = EngranajesSprites.Arrow(41f, 4f, true);
+            var ccw = EngranajesSprites.Arrow(41f, 4f, false);
             int mirrored = 0, samples = 0;
             for (float x = -30f; x <= 30f; x += 1.5f)
                 for (float y = 0f; y <= 44f; y += 1.5f)
@@ -206,7 +227,7 @@ namespace NeuroVida.Games.Engranajes.Tests
             var clips = new[]
             {
                 EngranajesSounds.Step(0), EngranajesSounds.Step(5), EngranajesSounds.Step(9), EngranajesSounds.MotorStart(), EngranajesSounds.Antenna(), EngranajesSounds.Turbine(),
-                EngranajesSounds.Rack(), EngranajesSounds.Thud(), EngranajesSounds.Jam(), EngranajesSounds.Place(), EngranajesSounds.Press(), EngranajesSounds.Chime(),
+                EngranajesSounds.Rack(), EngranajesSounds.Thud(), EngranajesSounds.Clank(), EngranajesSounds.Press(), EngranajesSounds.Chime(),
                 EngranajesSounds.Success(), EngranajesSounds.Light(0), EngranajesSounds.Light(9), EngranajesSounds.Launch(), EngranajesSounds.Finale()
             };
             foreach (var clip in clips)
@@ -222,6 +243,7 @@ namespace NeuroVida.Games.Engranajes.Tests
             // cada pieza del cohete suena distinto
             Assert.AreNotSame(EngranajesSounds.Antenna(), EngranajesSounds.Turbine());
             Assert.AreNotSame(EngranajesSounds.Turbine(), EngranajesSounds.Rack());
+            Assert.AreNotSame(EngranajesSounds.Clank(), EngranajesSounds.Thud(), "el clic de un cambio y el golpe del cartel que falla son dos sonidos");
             Assert.Greater(EngranajesSounds.Launch().length, 3f);
         }
     }

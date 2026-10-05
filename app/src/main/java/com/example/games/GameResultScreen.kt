@@ -726,7 +726,7 @@ fun GameResultScreen(
       }
     }
 
-    // Engranajes (pantalla final, docs/diseno-engranajes.md §7): «Tu cohete». «Acertaste X de N máquinas», la etapa más alta (de 5), qué pasó con el cohete (despegó, o
+    // Engranajes (pantalla final, docs/diseno-engranajes.md §9): «Tu cohete». «Arreglaste X de N máquinas», la etapa más alta (de 5), qué pasó con el cohete (despegó, o
     // cuántas luces faltan y que espera en el hangar), los cohetes en órbita y, con 3 o más máquinas, el ritmo. Cada dato aparece UNA vez; sin recuadros.
     val engrEtapa = result.engrEtapa
     if (engrEtapa != null) {
@@ -738,7 +738,7 @@ fun GameResultScreen(
         Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = eng.spoken(result.correctAnswers, engTotal) }.testTag("engranajes_headline"),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        Text("Acertaste", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Text("Arreglaste", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         Row(verticalAlignment = Alignment.Bottom) {
           Text("${result.correctAnswers.coerceIn(0, maxOf(engTotal, 0))} de $engTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
           Text("máquinas", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))

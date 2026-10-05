@@ -61,7 +61,7 @@ Parámetros por juego:
 |---|---|---|---|---|
 | Stroop («Dos orillas», 3-oct: reglas, % que chocan y llegada por nivel en [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md) §5) | 5 | 0.12 / 0.20 | edad | Reto |
 | Carga exacta (id `calculo`, 4-oct: [diseno-carga-exacta.md](diseno-carga-exacta.md) §5) | 5 | 0.40 | edad | no (con pista cuenta como medio acierto) |
-| Engranajes (id `engranajes`, 5-oct: [diseno-engranajes.md](diseno-engranajes.md) §4) | 12 (las 12 etapas) | 0.50 (dos aciertos seguidos suben una etapa) | edad | no (mirar con calma no se penaliza) |
+| Engranajes: Taller de reparación (id `engranajes`, 5-oct: [diseno-engranajes.md](diseno-engranajes.md) §4) | 12 (las 12 etapas) | 0.50 (dos aciertos seguidos suben una etapa) | edad | no (mirar con calma no se penaliza) |
 | En la punta de la lengua (id `anagramas`, 3-oct) | 5 | 0.40 | edad | no |
 | Parejas Ocultas | 10 | 0.15 | edad | Reto |
 | Rastro de luz (id `secuencia`) | 16 | 0.25 adultos · 0.17 mayores · 0.22 menores de 18 (ver §6) | edad | no |

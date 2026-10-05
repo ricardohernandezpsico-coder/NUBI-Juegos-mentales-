@@ -6,156 +6,143 @@ using Motion = NeuroVida.Games.Shared.Motion;
 
 namespace NeuroVida.Games.Engranajes
 {
-    /// <summary>La máquina en pantalla y su animación por cuadro: armar y limpiar, el giro (todo junto: los dientes encajan siempre), el pulso de luz, las piezas del cohete, las flechas de
-    /// sentido y del truco de Nubi, las luces de la cabecera, el despegue y las chispas.</summary>
+    /// <summary>La máquina en pantalla y su animación por cuadro: armar y limpiar, el giro (todo junto: los dientes encajan siempre), las correas que se cruzan, los carteles con su veredicto, el pulso
+    /// de luz, las piezas del cohete, lo que se marca al equivocarse, las luces de la cabecera, el despegue y las chispas.</summary>
     public sealed partial class EngranajesGameController
     {
         private readonly GearDef _introGearA = new GearDef { N = EngranajesContract.BigTeeth, Pitch = EngranajesContract.BigPitch, Tip = EngranajesContract.BigTip };
         private readonly GearDef _introGearB = new GearDef { X = 50f, N = EngranajesContract.SmallTeeth, Pitch = EngranajesContract.SmallPitch, Tip = EngranajesContract.SmallTip };
-        private Station _labelTarget = Station.Antena;
         private bool _sayHasSub = true;
 
-        // posición de cada pieza y de su rótulo, en coordenadas del boceto
+        // posición de cada pieza y de su cartel, en coordenadas del boceto
         private static Vector2 PartPosition(Station s)
         {
             switch (s)
             {
-                case Station.Antena: return new Vector2(306f, 98f);
+                case Station.Antena: return new Vector2(306f, 110f);
                 case Station.Compuerta: return new Vector2(312f, 250f);
                 case Station.Carga: return new Vector2(312f, 316f);
                 default: return new Vector2(306f, 442f);
             }
         }
 
-        private static Vector2 LabelPosition(Station s)
+        /// <summary>La altura del cartel de cada pieza (boceto). Su borde izquierdo queda justo donde terminan los dientes de los engranajes de la columna del cohete (273).</summary>
+        private static float CartelY(Station s)
         {
             switch (s)
             {
-                case Station.Antena: return new Vector2(306f, 126f);
-                case Station.Compuerta: return new Vector2(304f, 281f);
-                case Station.Carga: return new Vector2(304f, 360f);
-                default: return new Vector2(306f, 404f);
+                case Station.Antena: return 142f;
+                case Station.Compuerta: return 294f;
+                case Station.Carga: return 360f;
+                default: return 398f;
             }
+        }
+
+        /// <summary>El centro de un cartel de ancho <paramref name="w"/>: pegado a los engranajes y sin pasarse del borde derecho de la pantalla (3 dp de margen) aunque la escena esté achicada.</summary>
+        private float CartelX(float w)
+        {
+            float k = _lay.SceneScale <= 0f ? 1f : _lay.SceneScale;
+            float maxEdge = 180f + (EngranajesLayout.W - 3f - (EngranajesLayout.W / 2f + EngranajesLayout.SceneShiftX)) / k;
+            return Mathf.Min(273f + w / 2f, maxEdge - w / 2f);
         }
 
         // ------------------------------------------------------------------ armar y limpiar
 
-        /// <summary>Pone una máquina en pantalla (sin contar nada): los engranajes, las correas, los ejes a las piezas, los rótulos, la pregunta y los botones.</summary>
+        /// <summary>Pone una máquina en pantalla (sin contar nada): los engranajes, las correas con sus poleas, las barras, los ejes a las piezas, los carteles, la consigna y la cuenta de cambios.</summary>
         private void ShowMachine(Machine m)
         {
             ClearMachine();
             _mach = m;
-            _placed = Piece.None;
             _sol = null;
+            _results = null;
+            _changes.Clear();
+            _startRequested = false;
             _runAt = float.MaxValue;
-            _trickAt = -10f;
-            _answered = Answer.None;
+            _verdictAt = float.MaxValue;
+            _showFixAt = -10f;
             _okAnswer = false;
-            _jamRun = false;
-            _pressIndex = -1;
-            if (m.Q == Question.Build) EngranajesContract.Phase(m, Piece.Gear, _rng);   // el hueco, aunque no se ve, ya engrana con sus dos vecinos: así los de después también encajan
+            _motorFlipAt = 0f;
+            _beltFlipAt.Clear();
             _machineLayer.gameObject.SetActive(true);
             _lineCount = 0;
 
-            // ejes de cada engranaje de pieza al cohete (primero, para que queden debajo)
+            // ejes de la antena y de la turbina hasta su pieza (primero, para que queden debajo)
             foreach (var kv in m.Stations)
             {
+                if (kv.Key != Station.Antena && kv.Key != Station.Turbina) continue;
                 var g = m.Gears[kv.Value];
                 var p = PartPosition(kv.Key);
                 var from = new Vector2(g.X, g.Y);
-                if (kv.Key == Station.Antena || kv.Key == Station.Turbina)
-                {
-                    var bend = new Vector2(p.x, g.Y);
-                    AddShaftSegment(from, bend, ShaftDark, 6f);
-                    AddShaftSegment(bend, p, ShaftDark, 6f);
-                    AddShaftSegment(from, bend, ShaftLight, 2.5f);
-                    AddShaftSegment(bend, p, ShaftLight, 2.5f);
-                }
-                else
-                {
-                    var end = new Vector2(p.x - 14f, g.Y);
-                    AddShaftSegment(from, end, ShaftDark, 6f);
-                    AddShaftSegment(from, end, ShaftLight, 2.5f);
-                }
-            }
-            // correas
-            int pill = 0;
-            foreach (var l in m.Links)
-            {
-                if (l.Type != LinkType.Straight && l.Type != LinkType.Crossed) continue;
-                var a = m.Gears[l.A];
-                var b = m.Gears[l.B];
-                AddBelt(a, b, l.Type == LinkType.Crossed, null);
-                if (pill < _beltPills.Length) PlaceBeltPill(_beltPills[pill++], a, b, l.Type == LinkType.Crossed);
-            }
-            if (m.Slot != null)
-            {
-                // la correa cruzada del hueco (se ve cuando se elige) y el hueco punteado con su «?»
-                AddBelt(m.Gears[m.Slot.From], m.Gears[m.Slot.To], true, _slotBelt);
-                foreach (var lv in _slotBelt) lv.Img.gameObject.SetActive(false);
-                float tip = m.Slot.Gear.Tip;
-                _slotRing.rectTransform.anchoredPosition = B(m.Slot.Gear.X, m.Slot.Gear.Y);
-                _slotRing.rectTransform.sizeDelta = Vector2.one * (tip * 2.1f * Su);
-                _slotRing.gameObject.SetActive(true);
-                _slotMark.rectTransform.anchoredPosition = B(m.Slot.Gear.X, m.Slot.Gear.Y + 1f);
-                _slotMark.gameObject.SetActive(true);
-                PlaceGear(_slotGear, m.Slot.Gear, EngranajesSprites.Palette.Main);
-                _slotGear.Root.gameObject.SetActive(false);
+                var bend = new Vector2(p.x, g.Y);
+                AddShaftSegment(from, bend, ShaftDark, 6f);
+                AddShaftSegment(bend, p, ShaftDark, 6f);
+                AddShaftSegment(from, bend, ShaftLight, 2.5f);
+                AddShaftSegment(bend, p, ShaftLight, 2.5f);
             }
             // engranajes
-            for (int i = 0; i < m.Gears.Count && i < GearPool; i++)
+            for (int i = 0; i < m.Gears.Count && i < GearPool; i++) PlaceGear(_gears[i], m.Gears[i], EngranajesSprites.PaletteOf(m.Gears[i], i));
+            // barras dentadas, a la derecha del engranaje de la compuerta y del de la carga
+            _rackOff.Clear();
+            for (int r = 0; r < _racks.Length; r++)
             {
-                var g = m.Gears[i];
-                if (g.Removed) continue;
-                PlaceGear(_gears[i], g, EngranajesSprites.PaletteOf(g, i));
+                var st = r == 0 ? Station.Compuerta : Station.Carga;
+                bool on = m.Stations.TryGetValue(st, out int gi);
+                _racks[r].gameObject.SetActive(on);
+                if (!on) continue;
+                var g = m.Gears[gi];
+                _racks[r].rectTransform.sizeDelta = new Vector2(20f * Su, 84f * Su);
+                _racks[r].rectTransform.anchoredPosition = B(g.X + g.Pitch + 7.5f, g.Y);
+            }
+            // correas: las poleas en los ejes de los extremos; las tiras se dibujan cada cuadro (se cruzan al tocarlas)
+            _beltLinks.Clear();
+            for (int i = 0; i < m.Links.Count; i++) if (m.Links[i].Type == LinkType.Belt && _beltLinks.Count < BeltPool) _beltLinks.Add(i);
+            for (int b = 0; b < BeltPool; b++)
+            {
+                bool on = b < _beltLinks.Count;
+                var bv = _belts[b];
+                foreach (var l in bv.Lines) l.Img.gameObject.SetActive(on);
+                foreach (var c in bv.Caps) c.gameObject.SetActive(on);
+                foreach (var pu in bv.Pulleys) pu.gameObject.SetActive(on);
+                if (!on) continue;
+                var link = m.Links[_beltLinks[b]];
+                bv.Pulleys[0].rectTransform.anchoredPosition = B(m.Gears[link.A].X, m.Gears[link.A].Y);
+                bv.Pulleys[1].rectTransform.anchoredPosition = B(m.Gears[link.B].X, m.Gears[link.B].Y);
             }
             // el motor y su flecha
             var g0 = m.Gears[0];
-            float r = g0.Tip + 10f;
-            _motorArrow.sprite = EngranajesSprites.Arrow(r, 4f, m.MotorDir > 0);
+            float rr = g0.Tip + 8f;
             _motorArrowRect.anchoredPosition = B(g0.X, g0.Y);
-            _motorArrowRect.sizeDelta = Vector2.one * (2f * (r + 14f) * Su);
+            _motorArrowRect.sizeDelta = Vector2.one * (2f * (rr + 14f) * Su);
             _motorArrowRect.localEulerAngles = Vector3.zero;
+            _motorArrowDir = 0;                                        // fuerza a poner el sprite en el primer cuadro
             _motorArrow.gameObject.SetActive(true);
-            _motorPill.Root.anchoredPosition = B(g0.X, g0.Y + g0.Tip * 0.55f);
+            _motorPill.Root.anchoredPosition = B(g0.X, g0.Y + 16f);
             _motorPill.Root.gameObject.SetActive(true);
-            _motorPill.Root.sizeDelta = new Vector2(62f * Su, 22f * Su);
-            SetRadius(_motorPill.Bg, 11f * Su);
-            // rótulos y piezas
-            _labelTarget = m.TargetStation;
+            _motorPill.Root.sizeDelta = new Vector2(62f * Su, 24f * Su);
+            SetRadius(_motorPill.Bg, 12f * Su);
+            _motorPulse.rectTransform.anchoredPosition = B(g0.X, g0.Y + 16f);
+            _motorPulse.rectTransform.sizeDelta = new Vector2(72f * Su, 34f * Su);
+            SetRadius(_motorPulse, 17f * Su);
+            // piezas y carteles: solo las piezas activas llevan cartel; las demás se ven atenuadas
             for (int s = 0; s < 4; s++)
             {
                 var st = (Station)s;
-                bool active = m.Stations.ContainsKey(st), target = st == m.TargetStation;
-                var pv = _stationPills[s];
-                pv.Label.text = EngranajesContract.StationLabel(st);
-                float dp = target ? 16f : 14f;
-                float w = pv.Label.text.Length * 0.6f * dp + 16f;
-                pv.Root.sizeDelta = new Vector2(w * Su, 22f * Su);
-                SetRadius(pv.Bg, 11f * Su);
-                pv.Bg.color = target ? Gold : PillIdle;
-                pv.Label.color = target || active ? NeuroStyle.Ink : NeuroStyle.WithAlpha(NeuroStyle.Ink, 0.5f);
-                pv.Root.anchoredPosition = B(LabelPosition(st).x, LabelPosition(st).y);
-                pv.Root.gameObject.SetActive(true);
+                bool active = m.Stations.ContainsKey(st);
                 _partGroups[s].alpha = active ? 1f : 0.45f;
+                var cv = _cartels[s];
+                cv.Root.gameObject.SetActive(active);
+                if (active) SetUpCartel(cv, st, m.Mission[st]);
             }
-            ApplyLabelFonts();
             ResetParts();
-            // pregunta y botones
-            string q = EngranajesLayout.BreakQuestion(EngranajesContract.QuestionText(m), out bool two);
-            _questionText.text = q;
-            _questionDp = two ? 16f : 18f;
-            ApplyQuestionFont();
+            // consigna y cuenta de cambios
+            var consigna = EngranajesContract.Consigna(m.Stage);
+            _consigna1.text = consigna[0];
+            _consigna2.text = consigna[1];
             _questionBar.gameObject.SetActive(true);
-            var defs = EngranajesContract.Buttons(m);
-            _buttonCount = defs.Length;
-            for (int i = 0; i < defs.Length; i++)
-            {
-                _buttons[i].Def = defs[i];
-                _buttons[i].Label.text = defs[i].Label;
-                _buttons[i].Icon.sprite = EngranajesSprites.Icon(defs[i].Icon);
-            }
-            LayoutButtons();
+            _counterText.text = m.Stage.Keys == 1 ? "1 cambio" : "2 cambios";
+            _counterRoot.gameObject.SetActive(true);
+            _start.Root.gameObject.SetActive(true);
+            LayoutBottom();
             _appearAt = GameClock.Time;
         }
 
@@ -163,32 +150,33 @@ namespace NeuroVida.Games.Engranajes
         {
             _mach = null;
             _sol = null;
-            _placed = Piece.None;
+            _results = null;
+            _changes.Clear();
             _runAt = float.MaxValue;
-            _trickAt = -10f;
-            _answered = Answer.None;
-            _jamRun = false;
-            _buttonCount = 0;
-            _pressIndex = -1;
+            _verdictAt = float.MaxValue;
+            _showFixAt = -10f;
+            _okAnswer = false;
+            _startRequested = false;
             if (_machineLayer == null) return;
             foreach (var g in _gears) g.Root.gameObject.SetActive(false);
-            _slotGear.Root.gameObject.SetActive(false);
             foreach (var l in _lines) l.Img.gameObject.SetActive(false);
-            foreach (var l in _slotBelt) l.Img.gameObject.SetActive(false);
-            foreach (var p in _beltPills) p.Root.gameObject.SetActive(false);
-            foreach (var p in _stationPills) p.Root.gameObject.SetActive(false);
+            foreach (var r in _racks) r.gameObject.SetActive(false);
+            foreach (var bv in _belts)
+            {
+                foreach (var l in bv.Lines) l.Img.gameObject.SetActive(false);
+                foreach (var c in bv.Caps) c.gameObject.SetActive(false);
+                foreach (var pu in bv.Pulleys) pu.gameObject.SetActive(false);
+            }
+            foreach (var c in _cartels) c.Root.gameObject.SetActive(false);
             _motorPill.Root.gameObject.SetActive(false);
+            _motorPulse.gameObject.SetActive(false);
             foreach (var p in _pulses) p.gameObject.SetActive(false);
-            foreach (var d in _dashes) d.gameObject.SetActive(false);
-            foreach (var a in _arrows) a.gameObject.SetActive(false);
             _motorArrow.gameObject.SetActive(false);
-            _slotRing.gameObject.SetActive(false);
-            _slotMark.gameObject.SetActive(false);
-            _targetRing.gameObject.SetActive(false);
             _questionBar.gameObject.SetActive(false);
+            _counterRoot.gameObject.SetActive(false);
+            _start.Root.gameObject.SetActive(false);
             for (int s = 0; s < 4; s++) if (_partGroups[s] != null) _partGroups[s].alpha = 0.45f;
             ResetParts();
-            foreach (var b in _buttons) b.Root.gameObject.SetActive(false);
             _machineLayer.gameObject.SetActive(false);
         }
 
@@ -252,47 +240,128 @@ namespace NeuroVida.Games.Engranajes
             SetLine(NextLine(), a, b, w, c);
         }
 
-        /// <summary>Una correa entre dos engranajes: dos tiras (arriba y abajo) en oscuro y en claro; cruzada = las tiras se cruzan. Con <paramref name="slotLines"/> usa esas líneas (la del hueco).</summary>
-        private void AddBelt(GearDef a, GearDef b, bool crossed, LineView[] slotLines)
+        // ------------------------------------------------------------------ correas
+
+        /// <summary>El estado visible de una correa (0 = recta, 1 = cruzada), animado al tocarla (0,32 s; con «quitar animaciones», al instante).</summary>
+        private float BeltK(int link, float now)
         {
-            float ang = Mathf.Atan2(b.Y - a.Y, b.X - a.X), n = ang + Mathf.PI / 2f;
-            float ra = a.Pitch - 1f, rb = b.Pitch - 1f;
+            int target = BeltCrossed(link) ? 1 : 0;
+            if (!_beltFlipAt.TryGetValue(link, out float at) || at <= 0f) return target;
+            float k = Motion.Decorative ? Ease((now - at) / 0.32f) : 1f;
+            return target == 1 ? k : 1f - k;
+        }
+
+        private bool BeltCrossed(int link) => _mach.Links[link].Crossed != _changes.Contains(link);
+
+        private static float Ease(float t) => t < 0f ? 0f : t > 1f ? 1f : 1f - Mathf.Pow(1f - t, 3f);
+
+        /// <summary>Una correa: una tira recta a cada lado de las poleas y una media vuelta alrededor de cada una; recta = óvalo, cruzada = un ocho. <paramref name="k"/> va de 0 (recta) a 1 (cruzada).
+        /// <paramref name="hot"/> = brillo dorado (la pista o la solución), <paramref name="gold"/> = ya está cambiada (la banda clara pasa a dorado).</summary>
+        private void DrawBelt(BeltView bv, GearDef a, GearDef b, float k, float hot, bool gold)
+        {
+            float ang = Mathf.Atan2(b.Y - a.Y, b.X - a.X), n = ang + Mathf.PI / 2f, r = EngranajesContract.PulleyRadius;
             var nv = new Vector2(Mathf.Cos(n), Mathf.Sin(n));
-            for (int layer = 0; layer < 2; layer++)
-                for (int k = 0; k < 2; k++)
+            var pa = new Vector2(a.X, a.Y);
+            var pb = new Vector2(b.X, b.Y);
+            for (int layer = 0; layer < 3; layer++)
+            {
+                float w = EngranajesSprites.BeltWidths[layer];
+                Color col = layer == 0 ? new Color(Gold.r, Gold.g, Gold.b, hot) : layer == 1 ? BeltDark : (gold ? Gold : BeltLight);
+                bool show = layer != 0 || hot > 0.01f;
+                for (int s = 0; s < 2; s++)
                 {
-                    float sgn = k == 0 ? 1f : -1f;
-                    var p0 = new Vector2(a.X, a.Y) + nv * ra * sgn;
-                    var p1 = new Vector2(b.X, b.Y) + nv * rb * (crossed ? -sgn : sgn);
-                    var lv = slotLines != null ? slotLines[layer * 2 + k] : NextLine();
-                    SetLine(lv, p0, p1, layer == 0 ? 8f : 4f, layer == 0 ? BeltDark : BeltLight);
+                    float sgn = s == 0 ? 1f : -1f;
+                    float sb = sgn * (1f - 2f * k);
+                    var lv = bv.Lines[layer * 2 + s];
+                    var cap = bv.Caps[layer * 2 + s];
+                    lv.Img.gameObject.SetActive(show);
+                    cap.gameObject.SetActive(show);
+                    if (!show) continue;
+                    SetLine(lv, pa + nv * r * sgn, pb + nv * r * sb, w, col);
+                    // la media vuelta de cada extremo (los dos lados de una capa comparten una: el índice 0 va en A y el 1 en B)
+                    var center = s == 0 ? pa : pb;
+                    cap.rectTransform.anchoredPosition = B(center.x, center.y);
+                    cap.rectTransform.localEulerAngles = new Vector3(0f, 0f, -ang * Mathf.Rad2Deg + (s == 0 ? 0f : 180f));
+                    cap.color = col;
                 }
+            }
         }
 
-        private void PlaceBeltPill(PillView pv, GearDef a, GearDef b, bool crossed)
+        // ------------------------------------------------------------------ carteles
+
+        /// <summary>El contenido de un cartel: el nombre y, abajo, el ícono con la palabra de lo que debe hacer. Las medidas dependen del texto (se recalculan en <see cref="Layout"/>).</summary>
+        private void SetUpCartel(CartelView c, Station st, Act act)
         {
-            float mx = (a.X + b.X) / 2f, my = (a.Y + b.Y) / 2f;
-            bool vertical = Mathf.Abs(a.X - b.X) < 2f;
-            float lx = vertical ? (mx + 50f < 240f ? mx + 50f : mx - 50f) : mx;
-            float ly = vertical ? my : my - 30f;
-            pv.Label.text = crossed ? "cruzada" : "recta";
-            pv.Root.anchoredPosition = B(lx, ly);
-            pv.Root.gameObject.SetActive(true);
+            c.Name.text = EngranajesContract.StationLabel(st);
+            c.Word.text = EngranajesContract.MissionWord(act);
+            c.Icon.sprite = st == Station.Antena || st == Station.Turbina
+                ? EngranajesSprites.MiniArrow(act == Act.Cw)
+                : EngranajesSprites.GlyphSprite(act == Act.Up || act == Act.Open ? EngranajesSprites.Glyph.Up : EngranajesSprites.Glyph.Down);
+            c.Icon.rectTransform.sizeDelta = Vector2.one * ((st == Station.Antena || st == Station.Turbina ? 22f : 26f) * Su);
+            LayoutCartel(c, st);
         }
 
-        private void ApplyLabelFonts()
+        /// <summary>Mide el texto de un cartel y lo acomoda: ancho (96 en el boceto; crece si el texto de 14 dp no cabe con la escena achicada) sin salirse de la escena por la derecha.</summary>
+        private void LayoutCartel(CartelView c, Station st)
         {
             float k = _lay.SceneScale <= 0f ? 1f : _lay.SceneScale;
-            for (int s = 0; s < 4; s++) _stationPills[s].Label.fontSize = Mathf.RoundToInt((s == (int)_labelTarget ? 16f : 14f) * Su / k);
+            float nameW = c.Name.preferredWidth / Su;
+            float wordW = c.Word.preferredWidth / Su;
+            float iconW = 18f;
+            float need = Mathf.Max(nameW + 24f, wordW + iconW) + 16f;       // el nombre deja lugar al ✓ de la derecha
+            float w = Mathf.Max(CartelW, need);
+            c.Root.anchoredPosition = B(CartelX(w), CartelY(st));
+            c.Root.sizeDelta = new Vector2(w * Su, CartelH * Su);
+            SetChildScene(c.Rim.rectTransform, 0f, 0f, w + 3f, CartelH + 3f);
+            SetChildScene(c.Bg.rectTransform, 0f, 0f, w, CartelH);
+            SetRadius(c.Rim, 13f * Su);
+            SetRadius(c.Bg, 12f * Su);
+            SetChildScene(c.Name.rectTransform, 0f, -9f, w, 16f / k);
+            float group = wordW + iconW;
+            float ix = -group / 2f + 6f;                                                  // la flechita o el triángulo, a la izquierda del grupo
+            c.Word.rectTransform.sizeDelta = new Vector2((wordW + 4f) * Su, 16f / k * Su);
+            c.Word.rectTransform.anchoredPosition = new Vector2((ix + 10f + (wordW + 4f) / 2f) * Su, -9.5f * Su);
+            c.Icon.rectTransform.anchoredPosition = new Vector2(ix * Su, -9.5f * Su);
+            c.Check.rectTransform.anchoredPosition = new Vector2((w / 2f - 11f) * Su, 10f * Su);
         }
+
+        /// <summary>Coloca una pieza respecto del centro de su padre en unidades de la escena (dp del boceto; y hacia abajo).</summary>
+        private static void SetChildScene(RectTransform r, float dx, float dy, float w, float h)
+        {
+            r.sizeDelta = new Vector2(w * Su, h * Su);
+            r.anchoredPosition = new Vector2(dx * Su, -dy * Su);
+        }
+
+        private void AnimateCartels(float now, bool deco)
+        {
+            if (_mach == null) return;
+            for (int s = 0; s < 4; s++)
+            {
+                var c = _cartels[s];
+                if (!c.Root.gameObject.activeSelf) continue;
+                var st = (Station)s;
+                int idx = System.Array.IndexOf(_mach.Targets, st);
+                bool done = _phase == Phase.Reveal && _results != null && idx >= 0 && now >= _verdictAt + idx * 0.12f;
+                bool ok = done && _results[idx].Ok, bad = done && !_results[idx].Ok;
+                float shake = bad && deco ? Mathf.Sin((now - _verdictAt) * 33f) * Mathf.Max(0f, 1f - (now - _verdictAt) / 0.7f) * 4f : 0f;
+                var rt = c.Root;
+                float w = rt.sizeDelta.x / Su;
+                rt.anchoredPosition = B(CartelX(w) + shake, CartelY(st));
+                c.Bg.color = ok ? CartelOkFill : bad ? CartelBadFill : CartelFill;
+                c.Rim.color = ok ? Mint : bad ? Coral : Gold;
+                var col = ok ? Mint : bad ? CartelBadText : Gold;
+                c.Word.color = col;
+                c.Icon.color = col;
+                c.Check.gameObject.SetActive(ok);
+            }
+        }
+
+        // ------------------------------------------------------------------ giro y cascada
 
         private void CaptureAngles()
         {
-            for (int i = 0; i < _mach.Gears.Count && i < _baseA.Length - 2; i++) _baseA[i] = _mach.Gears[i].A;
-            _slotBaseA = _mach.Slot != null ? _mach.Slot.Gear.A : 0f;
+            for (int i = 0; i < _mach.Gears.Count && i < _baseA.Length; i++) _baseA[i] = _mach.Gears[i].A;
         }
-
-        // ------------------------------------------------------------------ animación por cuadro
 
         /// <summary>∫ de la rampa de aceleración: el giro arranca suave y llega a su velocidad en <see cref="Accel"/> s.</summary>
         private static float Ramp(float t)
@@ -300,6 +369,8 @@ namespace NeuroVida.Games.Engranajes
             if (t <= 0f) return 0f;
             return t < Accel ? t * t / (2f * Accel) : Accel / 2f + (t - Accel);
         }
+
+        private bool IsFixing => _showFixAt > 0f && _phase == Phase.Reveal && !_okAnswer;
 
         private void AnimateScene(float now, float dt)
         {
@@ -322,65 +393,76 @@ namespace NeuroVida.Games.Engranajes
             float run = running ? now - _runAt : 0f;
             float step = EngranajesContract.StepSeconds(_senior);
 
-            // giro: todo junto, cada engranaje a su velocidad (los dientes encajan siempre); el motor de la trampa solo forcejea
+            // giro: todo junto, cada engranaje a su velocidad (los dientes encajan siempre)
             if (running && deco)
             {
-                if (_jamRun)
-                {
-                    m.Gears[0].A = _baseA[0] + 0.096f * Mathf.Sin(25f * run);
-                }
-                else
-                {
-                    float R = Ramp(run);
-                    for (int i = 0; i < m.Gears.Count && i < GearPool; i++)
-                        if (!m.Gears[i].Removed && _sol.Depth[i] >= 0) m.Gears[i].A = _baseA[i] + Spin * _sol.Speed[i] * R;
-                    if (_placed == Piece.Gear && m.Slot != null)
-                    {
-                        var from = m.Gears[m.Slot.From];
-                        m.Slot.Gear.A = _slotBaseA + Spin * (-_sol.Speed[m.Slot.From] * from.Pitch / m.Slot.Gear.Pitch) * R;
-                    }
-                }
+                float R = Ramp(run);
+                for (int i = 0; i < m.Gears.Count && i < GearPool; i++)
+                    if (_sol.Depth[i] >= 0) m.Gears[i].A = _baseA[i] + Spin * _sol.Speed[i] * R;
             }
+            var fixHot = new HashSet<int>();
+            bool fixing = IsFixing;
+            if (fixing) foreach (int id in _changes) fixHot.UnionWith(EngranajesContract.Downstream(m, id));
             for (int i = 0; i < m.Gears.Count && i < GearPool; i++)
             {
                 var g = m.Gears[i];
-                if (g.Removed) continue;
                 var v = _gears[i];
                 ApplyAngle(v, g.A);
-                // el destello cuando la fuerza llega a ese engranaje (la cascada: un paso cada 0,15 s)
+                // el destello cuando la fuerza llega a ese engranaje (la cascada: un paso cada 0,15 s); al equivocarse, en celeste lo que movió tu cambio
                 float glow = 0f;
-                if (running && deco && !_jamRun && _sol.Depth[i] >= 0)
+                Color glowColor = new Color(1f, 214f / 255f, 120f / 255f);
+                if (running && deco && _sol.Depth[i] >= 0)
                 {
                     float k = (run - _sol.Depth[i] * step) / 0.5f;
                     if (k > 0f && k < 1f) glow = Mathf.Sin(k * Mathf.PI) * 0.55f;
                 }
-                v.Glow.color = new Color(1f, 214f / 255f, 120f / 255f, glow);
+                if (fixing && fixHot.Contains(i)) { glow = 0.5f; glowColor = Cyan; }
+                v.Glow.color = new Color(glowColor.r, glowColor.g, glowColor.b, glow);
+                v.Glow.rectTransform.sizeDelta = Vector2.one * ((fixing && fixHot.Contains(i) ? g.Tip * 2f + 24f : g.Tip * 3f) * Su);
             }
-            // el hueco de «Arma tú»: el aro punteado que late con su «?», o el engranaje / la correa elegidos
-            bool placedShown = _placed != Piece.None && (!deco || now >= _runAt - 0.15f);
-            if (m.Slot != null)
-            {
-                bool open = _placed == Piece.None;
-                _slotRing.gameObject.SetActive(open);
-                _slotMark.gameObject.SetActive(open);
-                if (open) _slotRing.color = new Color(Gold.r, Gold.g, Gold.b, 0.6f + (deco ? 0.3f * Mathf.Sin(now * 3.85f) : 0.3f));
-                _slotGear.Root.gameObject.SetActive(_placed == Piece.Gear && placedShown);
-                if (_slotGear.Root.gameObject.activeSelf) ApplyAngle(_slotGear, m.Slot.Gear.A);
-                foreach (var lv in _slotBelt) lv.Img.gameObject.SetActive(_placed == Piece.Crossed && placedShown);
-            }
-            // flecha del motor: sigue su sentido (con «quitar animaciones» queda quieta)
-            _motorArrowRect.localEulerAngles = new Vector3(0f, 0f, deco ? -now * 0.9f * m.MotorDir * Mathf.Rad2Deg : 0f);
-            _targetRing.gameObject.SetActive(_phase == Phase.Play);
-            if (_phase == Phase.Play)
-            {
-                var tp = PartPosition(m.TargetStation);
-                _targetRing.rectTransform.anchoredPosition = B(tp.x, tp.y);
-                _targetRing.color = new Color(Gold.r, Gold.g, Gold.b, deco ? 0.5f + 0.4f * Mathf.Sin(now * 3.57f) : 0.9f);
-            }
+
+            AnimateMotor(m, now, deco, fixing);
+            AnimateBelts(m, now, deco, fixing);
             AnimateParts(m, running, run, step, deco);
             AnimatePulses(m, running, run, step, deco);
-            AnimateTrap(m, running);
-            AnimateArrows(m, running, now, deco);
+            AnimateCartels(now, deco);
+        }
+
+        /// <summary>El motor: su flecha de giro (se da vuelta al tocarlo con un giro de 0,3 s y queda dorada) y el rótulo «MOTOR» (que late en la pista y en la solución).</summary>
+        private void AnimateMotor(Machine m, float now, bool deco, bool fixing)
+        {
+            var g0 = m.Gears[0];
+            bool changed = _changes.Contains(EngranajesContract.MotorId);
+            int md = m.MotorDir * (changed ? -1 : 1);
+            float fk = _motorFlipAt > 0f && deco ? Mathf.Min(1f, (now - _motorFlipAt) / 0.3f) : 1f;
+            int shown = fk < 0.5f ? -md : md;                       // a mitad del giro la flecha cambia de sentido
+            if (shown != _motorArrowDir)
+            {
+                _motorArrowDir = shown;
+                _motorArrow.sprite = EngranajesSprites.Arrow(g0.Tip + 8f, 4f, shown > 0);
+            }
+            _motorArrowRect.localScale = new Vector3(fk < 0.5f ? 1f - 2f * fk : 2f * fk - 1f, 1f, 1f);
+            _motorArrow.color = changed ? Gold : Cyan;
+            _motorPill.Bg.color = changed ? Gold : ButtonFill;
+            _motorPill.Label.color = changed ? NeuroStyle.Ink : ButtonText;
+            float pulse = 0f;
+            if (fixing && System.Array.IndexOf(m.Solution, EngranajesContract.MotorId) >= 0) pulse = 0.55f + 0.45f * Mathf.Sin((now - _showFixAt) * 5.9f);
+            else if (_phase == Phase.Play && deco && m.Stage.Hint == Hint.Motor && now - _hintAt < 2.6f) pulse = 0.35f + 0.3f * Mathf.Sin(now * 4.5f);
+            _motorPulse.gameObject.SetActive(pulse > 0.01f);
+            _motorPulse.color = new Color(Gold.r, Gold.g, Gold.b, pulse);
+        }
+
+        private void AnimateBelts(Machine m, float now, bool deco, bool fixing)
+        {
+            float idle = _phase == Phase.Play && deco && m.Stage.Hint != Hint.Motor && now - _hintAt < 2.6f ? 0.25f + 0.2f * Mathf.Sin(now * 4.5f) : 0f;
+            for (int b = 0; b < _beltLinks.Count; b++)
+            {
+                int li = _beltLinks[b];
+                var link = m.Links[li];
+                float hot = idle;
+                if (fixing && System.Array.IndexOf(m.Solution, li) >= 0) hot = 0.55f + 0.45f * Mathf.Sin((now - _showFixAt) * 5.9f);
+                DrawBelt(_belts[b], m.Gears[link.A], m.Gears[link.B], BeltK(li, now), hot, _changes.Contains(li));
+            }
         }
 
         private void AnimateParts(Machine m, bool running, float run, float step, bool deco)
@@ -391,7 +473,7 @@ namespace NeuroVida.Games.Engranajes
             if (m.Stations.TryGetValue(Station.Turbina, out int it))
             {
                 _fan.rectTransform.localEulerAngles = new Vector3(0f, 0f, -m.Gears[it].A * Mathf.Rad2Deg);
-                if (running && deco && !_jamRun && _sol.Depth[it] >= 0)
+                if (running && deco && _sol.Depth[it] >= 0)
                     flame = Mathf.Clamp01((run - _sol.Depth[it] * step) / Accel) * Mathf.Min(1f, Mathf.Abs(_sol.Speed[it]));       // la llama llega con la fuerza
             }
             _turbineFlame.gameObject.SetActive(flame > 0.01f);
@@ -402,13 +484,22 @@ namespace NeuroVida.Games.Engranajes
             {
                 if (!m.Stations.TryGetValue(st, out int gi)) continue;
                 float off = 0f;
-                if (running && !_jamRun && _sol.Depth[gi] >= 0)
+                if (running && _sol.Depth[gi] >= 0)
                 {
                     var g = m.Gears[gi];
                     float t = Mathf.Max(0f, run - _sol.Depth[gi] * step);
                     off = deco ? Spin * _sol.Speed[gi] * g.Pitch * Mathf.Max(0f, t - 0.15f) * 0.9f : (_sol.Dir[gi] > 0 ? 16f : -40f);
                 }
                 _rackOff[st] = off;
+            }
+            // las barras dentadas acompañan a su pieza
+            for (int r = 0; r < _racks.Length; r++)
+            {
+                var st = r == 0 ? Station.Compuerta : Station.Carga;
+                if (!m.Stations.TryGetValue(st, out int gi)) continue;
+                var g = m.Gears[gi];
+                float off = Mathf.Clamp(_rackOff.TryGetValue(st, out float ro) ? ro : 0f, -40f, 18f);
+                _racks[r].rectTransform.anchoredPosition = B(g.X + g.Pitch + 7.5f, g.Y + off);
             }
             float gate = Mathf.Clamp(_rackOff.TryGetValue(Station.Compuerta, out float go) ? go : 0f, -44f, 10f);
             _doorRt.anchoredPosition = new Vector2(4f * Su, (6f - gate) * Su);
@@ -422,11 +513,10 @@ namespace NeuroVida.Games.Engranajes
         private void AnimatePulses(Machine m, bool running, float run, float step, bool deco)
         {
             int used = 0;
-            if (running && deco && !_jamRun)
+            if (running && deco)
             {
                 foreach (var l in m.Links)
                 {
-                    if (l.Type == LinkType.Gap && _placed == Piece.None) continue;
                     int da = _sol.Depth[l.A], db = _sol.Depth[l.B];
                     if (da < 0 || db < 0 || used >= _pulses.Length) continue;
                     int i = da < db ? l.A : l.B, j = da < db ? l.B : l.A;
@@ -442,69 +532,6 @@ namespace NeuroVida.Games.Engranajes
                 }
             }
             for (int i = used; i < _pulses.Length; i++) _pulses[i].gameObject.SetActive(false);
-        }
-
-        /// <summary>La trampa: un triángulo punteado coral entre los tres engranajes que se tocan.</summary>
-        private void AnimateTrap(Machine m, bool running)
-        {
-            int used = 0;
-            if (running && _jamRun && m.JamTri != null)
-            {
-                var pts = new[] { m.Gears[m.JamTri[0]], m.Gears[m.JamTri[1]], m.Gears[m.JamTri[2]] };
-                for (int e = 0; e < 3; e++)
-                {
-                    var a = new Vector2(pts[e].X, pts[e].Y);
-                    var b = new Vector2(pts[(e + 1) % 3].X, pts[(e + 1) % 3].Y);
-                    float len = Vector2.Distance(a, b);
-                    var dir = (b - a) / len;
-                    for (float d = 0f; d < len - 2f && used < _dashes.Length; d += 11f)
-                    {
-                        var p0 = a + dir * d;
-                        var p1 = a + dir * Mathf.Min(len, d + 6f);
-                        var img = _dashes[used++];
-                        var mid = (p0 + p1) * 0.5f;
-                        img.rectTransform.anchoredPosition = B(mid.x, mid.y);
-                        img.rectTransform.sizeDelta = new Vector2((Vector2.Distance(p0, p1) + 3f) * Su, 3f * Su);
-                        img.rectTransform.localEulerAngles = new Vector3(0f, 0f, -Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
-                        img.gameObject.SetActive(true);
-                    }
-                }
-            }
-            for (int i = used; i < _dashes.Length; i++) _dashes[i].gameObject.SetActive(false);
-        }
-
-        /// <summary>Flechas de sentido sobre los engranajes: las del truco de Nubi al fallar (por el camino del motor a la pieza, una tras otra) y, con «quitar animaciones», las de todos los que giran.</summary>
-        private void AnimateArrows(Machine m, bool running, float now, bool deco)
-        {
-            bool trick = _trickAt >= 0f && !_okAnswer && !_jamRun && _sol != null;
-            for (int i = 0; i < _arrows.Length; i++)
-            {
-                var img = _arrows[i];
-                bool show = false;
-                float alpha = 1f;
-                Color color = Mint;
-                int pathIndex = trick ? _trickPath.IndexOf(i) : -1;
-                if (trick && pathIndex >= 0)
-                {
-                    float k = deco ? Mathf.Clamp01((now - _trickAt - pathIndex * 0.17f) / 0.25f) : 1f;
-                    show = k > 0f;
-                    alpha = k;
-                    color = pathIndex % 2 == 1 ? Gold : Mint;
-                }
-                else if (!deco && running && !_jamRun && i < m.Gears.Count && !m.Gears[i].Removed && _sol.Depth[i] >= 0 && !trick)
-                {
-                    show = true;
-                    color = Cyan;
-                }
-                if (!show || i >= m.Gears.Count) { img.gameObject.SetActive(false); continue; }
-                var g = m.Gears[i];
-                float r = g.Tip + 7f;
-                img.sprite = EngranajesSprites.Arrow(r, 3.5f, _sol.Speed[i] >= 0f);
-                img.rectTransform.anchoredPosition = B(g.X, g.Y);
-                img.rectTransform.sizeDelta = Vector2.one * (2f * (r + 14f) * Su);
-                img.color = new Color(color.r, color.g, color.b, alpha);
-                img.gameObject.SetActive(true);
-            }
         }
 
         private void AnimateRocket(float now)
@@ -550,31 +577,39 @@ namespace NeuroVida.Games.Engranajes
             _orbitText.text = _shownOrbit > 0 ? $"{_shownOrbit} {(_shownOrbit == 1 ? "cohete" : "cohetes")} en órbita" : "";
         }
 
-        private void AnimateButtons(float now)
+        /// <summary>Abajo: las llaves de la cuenta de cambios (se llenan de dorado al usarlas) y «Arrancar» (se hunde al tocarlo).</summary>
+        private void AnimateBottom(float now)
         {
-            for (int i = 0; i < _buttonCount; i++)
+            if (_mach == null) return;
+            bool can = _phase == Phase.Play;
+            _counterGroup.alpha = can ? 1f : 0.5f;
+            for (int k = 0; k < 2; k++)
             {
-                var b = _buttons[i];
-                bool chosen = _answered != Answer.None && b.Def.Value == _answered;
-                bool can = _phase == Phase.Play;
-                b.Group.alpha = can || chosen ? 1f : 0.45f;
-                float pr = _pressIndex == i ? Mathf.Max(0f, 1f - (now - _pressAt) / 0.2f) : 0f;
-                var text = chosen ? NeuroStyle.Ink : ButtonText;
-                b.Bg.color = chosen ? (_okAnswer ? Gold : WrongFill) : ButtonFill;
-                b.Rim.color = chosen ? NeuroStyle.Ink : new Color(1f, 1f, 1f, 0.16f);
-                b.Label.color = text;
-                b.Icon.color = text;
-                var top = new Vector2(0f, -pr * 4f * _s);
-                b.Bg.rectTransform.anchoredPosition = top;
-                b.Rim.rectTransform.anchoredPosition = top;
-                b.Icon.rectTransform.anchoredPosition = new Vector2(0f, (b.Rect.height * 0.5f - b.Rect.height * 0.36f) * _s) + top;
-                b.Label.rectTransform.anchoredPosition = new Vector2(0f, -(b.Rect.height * 0.5f - 24f) * _s) + top;
+                bool shown = k < _mach.Stage.Keys;
+                _wrenchBg[k].gameObject.SetActive(shown);
+                _wrenches[k].gameObject.SetActive(shown);
+                if (!shown) continue;
+                bool used = k < _changes.Count;
+                _wrenchBg[k].color = used ? new Color(Gold.r, Gold.g, Gold.b, 0.18f) : new Color(1f, 1f, 1f, 0.06f);
+                _wrenches[k].color = used ? Gold : new Color(110f / 255f, 106f / 255f, 154f / 255f);
             }
+            var b = _start;
+            b.Group.alpha = can ? 1f : 0.45f;
+            float pr = _startPressAt > 0f ? Mathf.Max(0f, 1f - (now - _startPressAt) / 0.2f) : 0f;
+            b.Bg.color = Cyan;
+            b.Rim.color = NeuroStyle.Ink;
+            b.Label.color = NeuroStyle.Ink;
+            b.Icon.color = NeuroStyle.Ink;
+            var top = new Vector2(0f, -pr * 4f * _s);
+            b.Bg.rectTransform.anchoredPosition = top;
+            b.Rim.rectTransform.anchoredPosition = top;
+            b.Icon.rectTransform.anchoredPosition = new Vector2((-b.Rect.width / 2f + 63f) * _s, 0f) + top;
+            b.Label.rectTransform.anchoredPosition = new Vector2((-b.Rect.width / 2f + 88f + (b.Rect.width - 96f) / 2f) * _s, 0f) + top;
         }
 
         // ------------------------------------------------------------------ aviso, luz que vuela, chispas, tarjeta «NUEVO»
 
-        /// <summary>Lo que dice el aviso de abajo: <paramref name="good"/> = verde, si no ámbar; <paramref name="sub"/> (el truco de Nubi) va en dorado debajo.</summary>
+        /// <summary>Lo que dice el aviso de abajo: <paramref name="good"/> = verde, si no ámbar; <paramref name="sub"/> (la pista) va en dorado debajo.</summary>
         private void Tell(string title, string sub, bool good)
         {
             _sayTitleFull = title ?? "";
@@ -690,22 +725,50 @@ namespace NeuroVida.Games.Engranajes
             float t = deco ? now * 1.667f : 0f;
             _introGearA.A = t;
             _introGearB.A = EngranajesContract.MeshPhase(_introGearA, _introGearB);
-            _introA.Root.gameObject.SetActive(true);
-            _introB.Root.gameObject.SetActive(true);
             ApplyAngle(_introA, _introGearA.A);
             ApplyAngle(_introB, _introGearB.A);
             _introTap.color = deco ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.7f + 0.3f * Mathf.Sin(now * 4f)) : Cyan;
         }
 
-        private void AnimateLaunch(float now)
+        // ------------------------------------------------------------------ qué se tocó
+
+        /// <summary>Qué interruptor cae bajo un toque en <paramref name="p"/> (coordenadas de la escena, del boceto): el motor (su engranaje, a 12 de la punta, o su rótulo) o una correa (a
+        /// <see cref="EngranajesContract.BeltTouch"/> o menos de su línea). Con varios cerca, el más cercano. <see cref="int.MinValue"/> si no tocó ninguno.</summary>
+        private int HitSwitch(Vector2 p)
         {
-            // el texto del despegue lo muestra su capa; nada más que animar acá (el cohete sube en AnimateRocket)
+            var m = _mach;
+            if (m == null) return int.MinValue;
+            int best = int.MinValue;
+            float bestRaw = float.MaxValue;
+            void Consider(int id, float raw)
+            {
+                if (raw < bestRaw) { bestRaw = raw; best = id; }
+            }
+            var g0 = m.Gears[0];
+            float dm = Vector2.Distance(p, new Vector2(g0.X, g0.Y));
+            var chip = new Rect(g0.X - 31f, g0.Y + 16f - 12f, 62f, 24f);
+            if (dm - g0.Tip - 12f <= 0f || chip.Contains(p)) Consider(EngranajesContract.MotorId, dm);
+            for (int b = 0; b < _beltLinks.Count; b++)
+            {
+                var l = m.Links[_beltLinks[b]];
+                float d = SegmentDistance(p, new Vector2(m.Gears[l.A].X, m.Gears[l.A].Y), new Vector2(m.Gears[l.B].X, m.Gears[l.B].Y));
+                if (d <= EngranajesContract.BeltTouch) Consider(_beltLinks[b], d);
+            }
+            return best;
+        }
+
+        private static float SegmentDistance(Vector2 p, Vector2 a, Vector2 b)
+        {
+            var v = b - a;
+            float t = Mathf.Clamp01(Vector2.Dot(p - a, v) / Mathf.Max(0.0001f, Vector2.Dot(v, v)));
+            return Vector2.Distance(p, a + v * t);
         }
 
         // ------------------------------------------------------------------ verificación de que lo dibujado se ve
 
         /// <summary>Para las pruebas: arma una máquina de cada nivel y devuelve lo que NO se vería (pieza apagada, sin imagen o sin opacidad): la sala, el cohete, los engranajes con su cubo y su
-        /// sombra, las piezas del cohete, los rótulos y los botones con su ícono. Una pieza horneada sin sprite se dibuja como un cuadrado blanco (lo que pasó con las fichas de Punta el 3-oct).</summary>
+        /// sombra, las poleas y las tiras de las correas, las barras, los carteles, el motor, la consigna, la cuenta de cambios y «Arrancar». Una pieza horneada sin sprite se dibuja como un cuadrado blanco
+        /// (lo que pasó con las fichas de Punta el 3-oct).</summary>
         public List<string> AuditVisibility()
         {
             var problems = new List<string>();
@@ -743,26 +806,39 @@ namespace NeuroVida.Games.Engranajes
                     string tag = "nivel " + level + ".";
                     for (int i = 0; i < m.Gears.Count; i++)
                     {
-                        if (m.Gears[i].Removed) continue;
                         var v = _gears[i];
                         Check(tag + "engranaje " + i + ".cuerpo", v.Body, true);
                         Check(tag + "engranaje " + i + ".sombra", v.Shadow, true);
                         Check(tag + "engranaje " + i + ".cubo", v.Hub, true);
                         Check(tag + "engranaje " + i + ".soporte", v.Support, true);
                     }
-                    Check(tag + "flecha del motor", _motorArrow, true);
-                    foreach (var kv in m.Stations) Check(tag + "rótulo " + kv.Key, _stationPills[(int)kv.Key].Bg, true);
+                    Check(tag + "flecha del motor", _motorArrow, false);
                     Check(tag + "MOTOR", _motorPill.Bg, true);
-                    Check(tag + "pregunta", _questionBg, true);
-                    Check(tag + "pregunta.texto", _questionText, false);
-                    for (int i = 0; i < _buttonCount; i++)
+                    Check(tag + "consigna", _questionBg, true);
+                    Check(tag + "consigna.línea 1", _consigna1, false);
+                    Check(tag + "consigna.línea 2", _consigna2, false);
+                    Check(tag + "cuenta de cambios", _counterBg, true);
+                    Check(tag + "cuenta de cambios.texto", _counterText, false);
+                    Check(tag + "Arrancar.fondo", _start.Bg, true);
+                    Check(tag + "Arrancar.borde", _start.Rim, true);
+                    Check(tag + "Arrancar.ícono", _start.Icon, true);
+                    Check(tag + "Arrancar.texto", _start.Label, false);
+                    for (int b = 0; b < _beltLinks.Count; b++)
                     {
-                        Check(tag + "botón " + i + ".fondo", _buttons[i].Bg, true);
-                        Check(tag + "botón " + i + ".borde", _buttons[i].Rim, true);
-                        Check(tag + "botón " + i + ".ícono", _buttons[i].Icon, true);
-                        Check(tag + "botón " + i + ".texto", _buttons[i].Label, false);
+                        var bv = _belts[b];
+                        foreach (var pu in bv.Pulleys) Check(tag + "correa " + b + ".polea", pu, true);
+                        for (int i = 2; i < 6; i++) { Check(tag + "correa " + b + ".tira " + i, bv.Lines[i].Img, true, false); Check(tag + "correa " + b + ".media vuelta " + i, bv.Caps[i], true, false); }
                     }
-                    if (m.Slot != null) { Check(tag + "hueco.aro", _slotRing, true); Check(tag + "hueco.signo", _slotMark, false); }
+                    foreach (var kv in m.Stations)
+                    {
+                        var cv = _cartels[(int)kv.Key];
+                        Check(tag + "cartel " + kv.Key, cv.Bg, true);
+                        Check(tag + "cartel " + kv.Key + ".borde", cv.Rim, true);
+                        Check(tag + "cartel " + kv.Key + ".nombre", cv.Name, false);
+                        Check(tag + "cartel " + kv.Key + ".palabra", cv.Word, false);
+                        Check(tag + "cartel " + kv.Key + ".ícono", cv.Icon, true);
+                        if (kv.Key == Station.Compuerta || kv.Key == Station.Carga) Check(tag + "barra de " + kv.Key, _racks[kv.Key == Station.Compuerta ? 0 : 1], true);
+                    }
                 }
             if (shown < 2) problems.Add("no se revisaron las dos máquinas de muestra");
             foreach (var sp in _sparks) if (sp.Img == null) problems.Add("chispas: no existe");

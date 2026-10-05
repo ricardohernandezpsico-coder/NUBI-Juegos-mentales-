@@ -85,7 +85,8 @@ object StarMeasures {
     MeasureDef("atlas", "intrusa", "Tu red de significados en La estrella intrusa", "%", "de aciertos", lowerIsBetter = false, short = "tu red de significados", compactPattern = "{v}", levelDependent = true),
     MeasureDef("punta", "anagramas", "Tus palabras por tu cuenta en En la punta de la lengua", "%", "de las palabras, sin ayuda", lowerIsBetter = false, short = "las palabras que encuentras por tu cuenta", compactPattern = "{v}", levelDependent = true),
     MeasureDef("carga", "calculo", "Tus cargas sin pista en Carga exacta", "%", "de las cargas, sin pista", lowerIsBetter = false, short = "las cargas que logras sin pista", compactPattern = "{v}", levelDependent = true),
-    MeasureDef("engranajes", "engranajes", "Tus máquinas acertadas en Engranajes", "%", "de las máquinas, acertadas", lowerIsBetter = false, short = "las máquinas que aciertas", compactPattern = "{v}", levelDependent = true),
+    // Clave `taller` (no `engranajes`): el juego se rehízo el 5-oct y su medida mide otra cosa; los puntos viejos (clave `engranajes`) quedan guardados pero ya no se leen.
+    MeasureDef("taller", "engranajes", "Tus máquinas arregladas en Engranajes", "%", "de las máquinas, arregladas", lowerIsBetter = false, short = "las máquinas que arreglas", compactPattern = "{v}", levelDependent = true),
     MeasureDef("trail", "secuencia", "Tu rastro en Rastro de luz", "", "luces seguidas", lowerIsBetter = false, short = "tu rastro", compactPattern = "{v} luces", levelDependent = true),
     MeasureDef("pending", "correo", "Tu memoria para lo pendiente", "%", "de encargos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}", levelDependent = true)
   )

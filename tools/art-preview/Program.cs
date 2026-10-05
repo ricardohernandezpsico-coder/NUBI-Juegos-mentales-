@@ -32,8 +32,9 @@ internal static class Program
             foreach (var c in sprite.texture.pixels) { w.Write(c.r); w.Write(c.g); w.Write(c.b); w.Write(c.a); }
         }
 
-        // Engranajes: todos los sprites (rectangulares: -ancho, alto) y unas máquinas de muestra para componer la lámina (engranajes.py)
+        // Engranajes «Taller de reparación»: todos los sprites (rectangulares: -ancho, alto) y las máquinas de muestra (etapas 3, 7 y 10) para componer la lámina (engranajes.py)
         {
+            var E = typeof(NeuroVida.Games.Engranajes.EngranajesContract);
             void DumpTex(string name, Sprite sp)
             {
                 int tw = sp.texture.width, th = sp.texture.pixels.Length / tw;
@@ -43,10 +44,7 @@ internal static class Program
             {
                 DumpTex("eng_sil_" + sz, NeuroVida.Games.Engranajes.EngranajesSprites.Silhouette(sz));
                 foreach (NeuroVida.Games.Engranajes.EngranajesSprites.Palette pal in Enum.GetValues(typeof(NeuroVida.Games.Engranajes.EngranajesSprites.Palette)))
-                {
-                    if ((sz == NeuroVida.Games.Engranajes.EngranajesSprites.GearSize.Jam) != (pal == NeuroVida.Games.Engranajes.EngranajesSprites.Palette.Jam)) continue;
                     DumpTex("eng_gear_" + sz + "_" + pal, NeuroVida.Games.Engranajes.EngranajesSprites.Gear(sz, pal));
-                }
             }
             DumpTex("eng_room", NeuroVida.Games.Engranajes.EngranajesSprites.Room());
             DumpTex("eng_hull", NeuroVida.Games.Engranajes.EngranajesSprites.Hull());
@@ -57,39 +55,61 @@ internal static class Program
             DumpTex("eng_cplate", NeuroVida.Games.Engranajes.EngranajesSprites.CargoPlate());
             DumpTex("eng_cbox", NeuroVida.Games.Engranajes.EngranajesSprites.CargoBox());
             DumpTex("eng_hub", NeuroVida.Games.Engranajes.EngranajesSprites.Hub());
-            DumpTex("eng_tring", NeuroVida.Games.Engranajes.EngranajesSprites.TargetRing());
-            DumpTex("eng_dring", NeuroVida.Games.Engranajes.EngranajesSprites.DashedRing());
-            foreach (NeuroVida.Games.Engranajes.ButtonIcon ic in Enum.GetValues(typeof(NeuroVida.Games.Engranajes.ButtonIcon)))
-                DumpTex("eng_icon_" + ic, NeuroVida.Games.Engranajes.EngranajesSprites.Icon(ic));
-            foreach (var (r, lw) in new[] { (43f, 4f), (33f, 4f), (40f, 3.5f), (30f, 3.5f) })
+            DumpTex("eng_pulley", NeuroVida.Games.Engranajes.EngranajesSprites.Pulley());
+            DumpTex("eng_rack", NeuroVida.Games.Engranajes.EngranajesSprites.Rack());
+            DumpTex("eng_wrench", NeuroVida.Games.Engranajes.EngranajesSprites.Wrench());
+            DumpTex("eng_check", NeuroVida.Games.Engranajes.EngranajesSprites.Check());
+            DumpTex("eng_mini_cw", NeuroVida.Games.Engranajes.EngranajesSprites.MiniArrow(true));
+            DumpTex("eng_mini_ccw", NeuroVida.Games.Engranajes.EngranajesSprites.MiniArrow(false));
+            foreach (var w in NeuroVida.Games.Engranajes.EngranajesSprites.BeltWidths)
+                DumpTex("eng_cap_" + w.ToString(System.Globalization.CultureInfo.InvariantCulture), NeuroVida.Games.Engranajes.EngranajesSprites.BeltCap(w));
+            foreach (NeuroVida.Games.Engranajes.EngranajesSprites.Glyph g in Enum.GetValues(typeof(NeuroVida.Games.Engranajes.EngranajesSprites.Glyph)))
+                DumpTex("eng_glyph_" + g, NeuroVida.Games.Engranajes.EngranajesSprites.GlyphSprite(g));
+            foreach (var r in new[] { NeuroVida.Games.Engranajes.EngranajesContract.BigTip + 8f, NeuroVida.Games.Engranajes.EngranajesContract.SmallTip + 8f })
             {
-                DumpTex("eng_arrow_" + r + "_cw", NeuroVida.Games.Engranajes.EngranajesSprites.Arrow(r, lw, true));
-                DumpTex("eng_arrow_" + r + "_ccw", NeuroVida.Games.Engranajes.EngranajesSprites.Arrow(r, lw, false));
+                DumpTex("eng_arrow_" + (int)r + "_cw", NeuroVida.Games.Engranajes.EngranajesSprites.Arrow(r, 4f, true));
+                DumpTex("eng_arrow_" + (int)r + "_ccw", NeuroVida.Games.Engranajes.EngranajesSprites.Arrow(r, 4f, false));
             }
             var inv = System.Globalization.CultureInfo.InvariantCulture;
-            foreach (var (name, level, seed, piece) in new[] { ("l3", 3, 11, 0), ("l5", 5, 7, 0), ("l8", 8, 4, 0), ("l9", 9, 5, 0), ("l10", 10, 3, 1), ("l12", 12, 9, 2) })
+            // (nombre, nivel, semilla, qué se hace: 0 = nada, 1 = un cambio equivocado, 2 = la solución guardada)
+            foreach (var (name, level, seed, action) in new[] { ("l3", 3, 11, 0), ("l7", 7, 6, 1), ("l10", 10, 3, 2) })
             {
                 var rng = new Random(seed);
                 var m = NeuroVida.Games.Engranajes.EngranajesContract.Generate(level, rng);
-                var pc = piece == 1 ? NeuroVida.Games.Engranajes.Piece.Gear : piece == 2 ? NeuroVida.Games.Engranajes.Piece.Crossed : NeuroVida.Games.Engranajes.Piece.None;
-                if (m.Q == NeuroVida.Games.Engranajes.Question.Build) NeuroVida.Games.Engranajes.EngranajesContract.Phase(m, NeuroVida.Games.Engranajes.Piece.Gear, rng);
-                var sol = NeuroVida.Games.Engranajes.EngranajesContract.Solve(m, pc);
+                var changes = new System.Collections.Generic.List<int>();
+                if (action == 2) changes.AddRange(m.Solution);
+                else if (action == 1)
+                {
+                    foreach (var sw in m.Switches)
+                    {
+                        if (Array.IndexOf(m.Solution, sw.Id) >= 0) continue;
+                        changes.Add(sw.Id);
+                        break;
+                    }
+                }
+                var sol = NeuroVida.Games.Engranajes.EngranajesContract.Solve(m, changes);
+                var res = NeuroVida.Games.Engranajes.EngranajesContract.Results(m, changes);
                 using var f = File.CreateText(Path.Combine(dir, "eng_machine_" + name + ".txt"));
-                f.WriteLine("meta " + level + " " + m.Q + " " + (int)m.TargetStation + " " + m.MotorDir + " " + m.Truth + " " + m.Target + " " + (m.Jam ? 1 : 0) + " " + (int)pc);
-                f.WriteLine("question " + NeuroVida.Games.Engranajes.EngranajesContract.QuestionText(m));
-                var bt = NeuroVida.Games.Engranajes.EngranajesContract.Buttons(m);
-                foreach (var b in bt) f.WriteLine("button " + (int)b.Value + "|" + b.Label + "|" + b.Icon);
+                f.WriteLine("meta " + level + " " + m.MotorDir + " " + m.W + " " + m.MinK + " " + m.Stage.Keys + " " + (int)m.Stage.Hint);
+                f.WriteLine("targets " + string.Join(" ", Array.ConvertAll(m.Targets, t => ((int)t).ToString())));
+                foreach (var t in m.Targets) f.WriteLine("mission " + (int)t + " " + (int)m.Mission[t]);
+                foreach (var r in res) f.WriteLine("result " + (int)r.Station + " " + (int)r.Got + " " + (r.Ok ? 1 : 0));
+                f.WriteLine("changes " + string.Join(" ", changes));
+                f.WriteLine("solution " + string.Join(" ", m.Solution));
                 for (int i = 0; i < m.Gears.Count; i++)
                 {
                     var g = m.Gears[i];
-                    f.WriteLine(string.Join(" ", "gear", i, g.X.ToString(inv), g.Y.ToString(inv), g.Tip.ToString(inv), g.N, g.A.ToString(inv), (int)g.Role, g.Removed ? 1 : 0, g.HasStation ? (int)g.Station : -1, g.Pitch.ToString(inv), sol.Depth[i], sol.Speed[i].ToString(inv)));
+                    f.WriteLine(string.Join(" ", "gear", i, g.X.ToString(inv), g.Y.ToString(inv), g.Tip.ToString(inv), g.N, g.A.ToString(inv), (int)g.Role, g.HasStation ? (int)g.Station : -1, g.Pitch.ToString(inv), sol.Depth[i], sol.Speed[i].ToString(inv)));
                 }
-                foreach (var l in m.Links) f.WriteLine("link " + l.A + " " + l.B + " " + l.Type);
-                if (m.Slot != null) f.WriteLine(string.Join(" ", "slot", m.Slot.Gear.X.ToString(inv), m.Slot.Gear.Y.ToString(inv), m.Slot.Gear.Tip.ToString(inv), m.Slot.Gear.N, m.Slot.Gear.A.ToString(inv), m.Slot.From, m.Slot.To));
-                if (m.JamTri != null) f.WriteLine("jam " + string.Join(" ", m.JamTri));
-                f.WriteLine("explain " + NeuroVida.Games.Engranajes.EngranajesContract.Explain(m));
-                f.WriteLine("trick " + NeuroVida.Games.Engranajes.EngranajesContract.Trick(m));
-                f.WriteLine("path " + string.Join(" ", NeuroVida.Games.Engranajes.EngranajesContract.PathTo(m, m.Target, pc != NeuroVida.Games.Engranajes.Piece.None)));
+                for (int i = 0; i < m.Links.Count; i++) f.WriteLine("link " + i + " " + m.Links[i].A + " " + m.Links[i].B + " " + m.Links[i].Type + " " + (m.Links[i].Crossed ? 1 : 0));
+                var hot = new System.Collections.Generic.HashSet<int>();
+                foreach (int id in changes) hot.UnionWith(NeuroVida.Games.Engranajes.EngranajesContract.Downstream(m, id));
+                f.WriteLine("downstream " + string.Join(" ", hot));
+                f.WriteLine("fail " + NeuroVida.Games.Engranajes.EngranajesContract.FailText(res));
+                f.WriteLine("hint " + NeuroVida.Games.Engranajes.EngranajesContract.HintText(m, res, changes));
+                f.WriteLine("ok " + NeuroVida.Games.Engranajes.EngranajesContract.SuccessText(m, changes, 1));
+                var cons = NeuroVida.Games.Engranajes.EngranajesContract.Consigna(m.Stage);
+                f.WriteLine("consigna " + cons[0] + "|" + cons[1]);
             }
         }
         foreach (ShapeKind kind in Enum.GetValues(typeof(ShapeKind)))

@@ -287,12 +287,13 @@ celda elegida solo cambia de color (no sube ni crece, y no hay halo), al juntar 
 el aro de luces del reactor no gira y su resplandor se apaga. SE QUEDAN: el cambio de número, el reactor DORADO al lograr la carga (con el número en tinta), el color dorado de la operación elegida, el contorno
 dorado quieto de las dos celdas de la pista y los fundidos cortos de los mensajes. Las esperas de después de lograr la carga (1,7 s) son `Motion.Hold`: duran lo mismo con y sin la opción.
 
-**Engranajes (id `engranajes`, 5-oct)** — `Engranajes/EngranajesGameController*.cs`
+**Engranajes: Taller de reparación (id `engranajes`, 5-oct)** — `Engranajes/EngranajesGameController*.cs`
 
 Escrito ya con la regla: todo movimiento decorativo pasa por `Motion.Decorative`. Con «quitar animaciones»: los engranajes NO giran, no hay pulso de luz, destello de cada engranaje, chispas, llama de la turbina,
-aro que late de la pieza preguntada, flecha del motor que orbita, luz que vuela a la cabecera, temblor ni humo del despegue. SE QUEDAN: la flecha de sentido sobre CADA engranaje que gira (fija, es el
-resultado), la barra de la compuerta y el elevador en su posición final (arriba o abajo), la trampa con su triángulo punteado, el aro de la pieza preguntada quieto, las ventanillas encendidas, el aviso con su texto y
-los mismos tiempos (la cascada, la espera de después y el despegue duran lo mismo: son esperas por reloj, `GameClock`, no animaciones). La tarjeta «NUEVO» y los avisos aparecen con un fundido corto; el
+aceleración, temblor del cartel que falló, latidos de la pista (el motor o la correa que late en las primeras máquinas, y el dorado de la solución), luz que vuela a la cabecera ni humo del despegue. SE QUEDAN: la flecha del
+motor y la correa cambian de estado AL INSTANTE al tocarlas (sin el giro de 0,3 s ni los 0,32 s de la correa que se cruza), la barra de la compuerta y el elevador en su posición final (arriba o abajo), los carteles con
+su veredicto (verde con ✓ o coral), lo que se marca al equivocarse (el brillo celeste de lo que movió tu cambio y el dorado de lo que había que tocar, quietos), las ventanillas encendidas, el aviso con su texto y los mismos
+tiempos (la cascada, la espera de después —1,9 s si acertó y 4,8 s si no— y el despegue duran lo mismo: son esperas por reloj, `GameClock`, no animaciones). La tarjeta «NUEVO» y los avisos aparecen con un fundido corto; el
 despegue, sin vuelo: el cohete simplemente ya no está y el texto «¡Despegue!» queda 1,2 s.
 
 **Acoplamiento** — `Acoplamiento/DockingGameController.cs`

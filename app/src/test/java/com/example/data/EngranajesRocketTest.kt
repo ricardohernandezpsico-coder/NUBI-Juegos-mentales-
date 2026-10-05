@@ -86,7 +86,7 @@ class EngranajesRocketTest {
   @Test
   fun `la medida de la partida se guarda en las medidas del juego`() = runBlocking {
     repo.recordGameResult(game(lights = 2, orbit = 0), countsForDailySession = false)
-    val p = repo.starMeasures.value.lastOrNull { it.key == "engranajes" }
+    val p = repo.starMeasures.value.lastOrNull { it.key == "taller" }
     assertNotNull(p)
     assertEquals(70f, p!!.value, 1e-3f)      // 7 de 10 máquinas
   }

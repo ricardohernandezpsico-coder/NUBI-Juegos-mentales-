@@ -367,13 +367,14 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 Anagramas se reemplazó por **En la punta de la lengua** (id interno `anagramas`, que no cambia). Hay que sumarlo a la búsqueda oficial de marca (clases 9 y 41): es una expresión
 común del español («tener algo en la punta de la lengua»), así que conviene mirar si alguna app o juego de palabras ya la usa como nombre. «Anagramas» deja de aparecer en la app.
 
-## Juego nuevo: «Engranajes» (5-oct)
+## Juego nuevo: «Engranajes» (5-oct; rehecho como «Taller de reparación» el mismo día)
 
-Juego nuevo de Razonamiento (id `engranajes`; ocupa el lugar de Tráfico Estelar, con otro id: `trafico` queda reservado). Un motor, una cadena de engranajes y un cohete con cuatro piezas (antena, compuerta, carga y turbina):
-se decide qué hará la pieza que brilla. **Nombre NUEVO a revisar:** «Engranajes» es una palabra común (clases 9 y 41 de la búsqueda oficial de marca: hay que mirar si alguna app o juego de lógica ya lo usa como nombre; por eso
-la app muestra «Engranajes» solo como título del juego, no como marca). Los acertijos de «¿hacia dónde gira el engranaje?» son clásicos y de uso libre (rompecabezas de poleas y engranajes de los libros de física y de los
-concursos de lógica). No encontramos un juego de engranajes en Lumosity, Peak ni Elevate (búsqueda del 4-oct). Nombre, arte, escena del cohete y sonidos propios. Va a la lista del abogado como juego nuevo (comparar el aspecto
-y la jugada con los juegos de lógica mecánica de otras apps antes de publicar).
+Juego nuevo de Razonamiento (id `engranajes`; ocupa el lugar de Tráfico Estelar, con otro id: `trafico` queda reservado). Un motor, una cadena de engranajes y correas, y un cohete con cuatro piezas (antena, compuerta, carga
+y turbina), cada una con un cartel de lo que debe hacer: la máquina viene mal armada y se arregla con uno o dos cambios (tocar el motor o una correa). **Nombre NUEVO a revisar:** «Engranajes» es una palabra común (clases 9 y 41 de
+la búsqueda oficial de marca: hay que mirar si alguna app o juego de lógica ya lo usa como nombre; por eso la app muestra «Engranajes» solo como título del juego, no como marca). Los acertijos de giro de engranajes son clásicos y
+de uso libre (rompecabezas de poleas y engranajes de los libros de física y de los concursos de lógica). Los puzles de engranajes existen como género en las tiendas de apps, pero no encontramos uno en Lumosity, Peak ni
+Elevate (búsqueda del 4-oct). Lo propio es arreglar con un número fijo de cambios y la idea de «aguas abajo» de una bifurcación, junto con el cohete, los carteles, el arte y los sonidos. Nombre, arte, escena del cohete y
+sonidos propios. Va a la lista del abogado como juego nuevo (comparar el aspecto y la jugada con los juegos de lógica mecánica de otras apps antes de publicar).
 
 ## Nombre nuevo de Cálculo Sereno: «Carga exacta» (4-oct)
 

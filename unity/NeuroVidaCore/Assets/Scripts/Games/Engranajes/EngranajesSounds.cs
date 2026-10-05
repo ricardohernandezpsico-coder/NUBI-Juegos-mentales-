@@ -7,8 +7,8 @@ namespace NeuroVida.Games.Engranajes
     /// <summary>
     /// Sonido PROPIO de «Engranajes», sintetizado por código como el del boceto aprobado: la identidad de la app (campanas en la pentatónica de do) para lo que celebra, y para la
     /// máquina sonidos de taller: el clic de los dientes y una nota que sube con cada paso de la cascada, el zumbido del motor al arrancar, y UN sonido por pieza del cohete
-    /// (la antena silba y tintinea, la turbina ruge, la compuerta y el elevador zumban con su motor eléctrico y paran con un golpe). Lo imposible o lo que falla es un golpe
-    /// grave y blando (sin chicharra); la trampa es el motor forcejeando y un golpe seco. Despegue: un rugido que sube y cinco campanas. Nada suena fuerte: todo ≤ 0,5.
+    /// (la antena silba y tintinea, la turbina ruge, la compuerta y el elevador zumban con su motor eléctrico y paran con un golpe). Al hacer un cambio suena un «clank» de llave; un
+    /// cartel que no cumplió es un golpe grave y blando (sin chicharra). Despegue: un rugido que sube y cinco campanas. Nada suena fuerte: todo ≤ 0,5.
     /// </summary>
     public static class EngranajesSounds
     {
@@ -61,21 +61,15 @@ namespace NeuroVida.Games.Engranajes
             return 0.3f * Mathf.Sin(2f * Mathf.PI * hz * t) * Mathf.Exp(-t / 0.09f);
         }));
 
-        /// <summary>La trampa: el motor forcejea (se mete y se sale) y, al final, un golpe seco con un soplo grave.</summary>
-        public static AudioClip Jam() => Get("jam", () => Make("jam", 1.0f, t =>
+        /// <summary>El «clank» de un cambio (tocar el motor o una correa, o deshacerlo): un golpe metálico corto que baja y una campanita aguda (la del boceto: ruido 2400→900 Hz y un la sostenido).</summary>
+        public static AudioClip Clank() => Get("clank", () => Make("clank", 0.45f, t =>
         {
-            float strain = t < 0.45f ? 0.14f * Mathf.Sin(2f * Mathf.PI * 95f * t) * (0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * 22f * t)) * Mathf.Min(1f, t / 0.05f) * Mathf.Clamp01((0.45f - t) / 0.08f) : 0f;
-            float hz = 220f * Mathf.Pow(110f / 220f, Mathf.Clamp01((t - 0.46f) / 0.25f));
-            float thud = t >= 0.46f ? 0.32f * Mathf.Sin(2f * Mathf.PI * hz * (t - 0.46f)) * Mathf.Exp(-(t - 0.46f) / 0.1f) : 0f;
-            float puff = t >= 0.46f ? 0.12f * Noise(t, 300f * Mathf.Pow(120f / 300f, Mathf.Clamp01((t - 0.46f) / 0.5f))) * Mathf.Exp(-(t - 0.46f) / 0.25f) : 0f;
-            return strain + thud + puff;
+            float k = Mathf.Clamp01(t / 0.09f);
+            float hit = t < 0.09f ? 0.2f * Noise(t, 2400f * Mathf.Pow(900f / 2400f, k)) * Mathf.Sin(k * Mathf.PI) : 0f;
+            return hit + 0.1f * Bell(1174.66f, t, 0.12f);
         }));
 
-        /// <summary>El «clic» al poner la pieza del hueco: un soplo corto que baja.</summary>
-        public static AudioClip Place() => Get("place", () => Make("place", 0.35f, t =>
-            0.15f * Noise(t, 1800f * Mathf.Pow(600f / 1800f, Mathf.Clamp01(t / 0.3f))) * Mathf.Sin(Mathf.Clamp01(t / 0.3f) * Mathf.PI)));
-
-        /// <summary>Se toca un botón: una campanita suave (la nota 3 de la escala).</summary>
+        /// <summary>Se toca «Arrancar»: una campanita suave (la nota 3 de la escala).</summary>
         public static AudioClip Press() => Get("press", () => Make("press", 0.4f, t => 0.2f * Bell(Penta[2], t, 0.08f)));
 
         /// <summary>«NUEVO»: dos campanas (mi y la).</summary>
@@ -178,11 +172,11 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Para las pruebas y el calentamiento: sintetiza todos los clips (cada uno una sola vez).</summary>
         public static System.Collections.IEnumerator Prewarm()
         {
-            Press(); MotorStart(); Thud(); Place();
+            Press(); MotorStart(); Thud(); Clank();
             yield return null;
             for (int d = 0; d <= 9; d++) Step(d);
             yield return null;
-            Antenna(); Turbine(); Rack(); Jam();
+            Antenna(); Turbine(); Rack();
             yield return null;
             Chime(); Success(); Finale();
             for (int k = 0; k < 10; k++) Light(k);

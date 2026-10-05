@@ -176,7 +176,9 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`rumbo.png`](rumbo.png)
 - [`satelites.png`](satelites.png)
 - [`simbolos-parejas.png`](simbolos-parejas.png)
-- [`engranajes.png`](engranajes.png): «Engranajes» (5-oct): seis pantallas compuestas con los sprites REALES y máquinas del generador real (réplica, no captura). Script: `tools/art-preview/engranajes.py`.
+- [`engranajes.png`](engranajes.png): «Engranajes: Taller de reparación» (5-oct): tres pantallas (etapas 3, 7 y 10) compuestas con los sprites REALES y máquinas del generador real: la máquina recién armada con sus carteles, un cambio
+  equivocado (carteles verde y coral, en celeste lo que movió el cambio y en dorado lo que había que tocar) y dos cambios con todo en verde (réplica, no captura). Script: `tools/art-preview/engranajes.py`.
+- [`engranajes-taller-boceto.html`](engranajes-taller-boceto.html): el boceto jugable aprobado del Taller (con `?etapa=N` se entra a cada etapa).
 - [`simbolos-neutros.png`](simbolos-neutros.png): los símbolos neutros del 4-oct (puertos, cartas de Parejas, señales de Piloto). Script: `tools/art-preview/simbolos_neutros.py`.
 
 ## Bienvenida, resultados, logros y compartir

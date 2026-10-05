@@ -5,7 +5,7 @@ namespace NeuroVida.Games.Shared
     /// <summary>
     /// Lo que dice Nubi en el tutorial de cada juego, en un solo lugar (revisado el 5-oct: Ricardo probó el tutorial y no quedaba claro). Reglas: UNA idea por globo; primero el verbo de lo que hay que hacer
     /// («Toca…», «Mira…»); nada que dependa de algo que todavía no se vio; y el texto nombra lo que está iluminado con LA MISMA palabra que se lee en pantalla. Cada texto cabe en 3 líneas de letra
-    /// grande (<see cref="CoachLayout.MaxLines"/>): una prueba lo comprueba con la lista de <see cref="All"/>. Engranajes no está aquí: se rediseña.
+    /// grande (<see cref="CoachLayout.MaxLines"/>): una prueba lo comprueba con la lista de <see cref="All"/>. Engranajes (rediseñado el 5-oct como «Taller de reparación») entra con sus tres focos.
     /// </summary>
     public static class CoachTexts
     {
@@ -81,6 +81,14 @@ namespace NeuroVida.Games.Shared
             public const string MissedWord = "Casi: con PALABRA se toca lo que DICE";
         }
 
+        /// <summary>Engranajes: Taller de reparación (pantalla: los carteles de las piezas del cohete, el motor con su flecha y el botón «Arrancar»).</summary>
+        public static class Engranajes
+        {
+            public const string Cartel = "El cartel dice qué debe hacer la antena";
+            public const string Motor = "Toca el motor para cambiar su giro";
+            public const string Start = "Toca Arrancar y mira la antena";
+        }
+
         /// <summary>Todos los textos (con el peor caso de los que cambian según la jugada) para comprobar que caben en el globo.</summary>
         public static IEnumerable<(string Game, string Step, string Text)> All()
         {
@@ -123,6 +131,10 @@ namespace NeuroVida.Games.Shared
             yield return ("secuencia", "repite", Rastro.Repeat);
             yield return ("secuencia", "bien", Rastro.Good);
             yield return ("secuencia", "casi", Rastro.Missed);
+
+            yield return ("engranajes", "cartel", Engranajes.Cartel);
+            yield return ("engranajes", "motor", Engranajes.Motor);
+            yield return ("engranajes", "arrancar", Engranajes.Start);
 
             yield return ("stroop", "tinta", Stroop.InkRule);
             yield return ("stroop", "palabra", Stroop.WordRule);

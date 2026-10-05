@@ -420,20 +420,24 @@ Nunca se dice que el juego previene el deterioro ni que «mejora la inteligencia
 **Por qué:** la tarea de llegar a un número juntando otros con operaciones aritméticas mezcla memoria de trabajo, planificación y fluidez con los números; que haya MUCHOS caminos (y que el
 tiempo no apure) permite medir la estrategia sin que la velocidad tape la comprensión. La medida no se compara con estudios: no hay una referencia con esta misma condición.
 
-## Engranajes (id `engranajes`, nuevo el 5-oct): "Acertaste X de N máquinas" y "Tu cohete"
+## Engranajes: Taller de reparación (id `engranajes`, nuevo el 5-oct y rehecho ese mismo día): "Arreglaste X de N máquinas" y "Tu cohete"
 
-**Qué mide, de verdad:** cuántas de las máquinas de la partida acertaste (miras una cadena de engranajes y decides qué hará la pieza del cohete que brilla: cómo gira, si la carga sube o baja, si la compuerta se abre o se cierra,
-si gira más rápido o más lento que el motor, si se traba, o qué pieza falta), la etapa más alta que jugaste (de 5 grupos: giro, ramas y correas, movimiento, velocidad y trampas y armar) y el ritmo (segundos por máquina).
-No es «tu razonamiento mecánico» ni «tu inteligencia»: es esta partida, con estas máquinas. Se guarda como medida propia (`engranajes`, % de máquinas acertadas) para ver su evolución, comparable solo entre partidas a tu medida
-y de etapa parecida (el nivel sube cuando aciertas: por eso la medida depende del nivel).
+**Qué mide, de verdad:** cuántas de las máquinas de la partida arreglaste. La máquina del cohete viene mal armada: cada pieza (antena, compuerta, carga, turbina) tiene un cartel con lo que debe hacer
+y, con una o dos llaves (cambios: tocar el motor o una correa), hay que lograr que todas cumplan antes de arrancar. Mide también la etapa más alta que jugaste (de 5 grupos: motor y correas, ramas, carga y
+compuerta, tres piezas y dos llaves) y el ritmo (segundos por máquina). No es «tu razonamiento mecánico» ni «tu inteligencia»: es esta partida, con estas máquinas. Se guarda como medida propia
+(`taller`, % de máquinas arregladas) para ver su evolución, comparable solo entre partidas a tu medida y de etapa parecida (el nivel sube cuando aciertas: por eso la medida depende del nivel).
 
-**Cómo se lee:** la cifra grande es «X de N». La etapa más alta dice hasta dónde llegaste en el camino (giro → ramas y correas → movimiento → velocidad → trampas y armar). Las luces del cohete (10 por cohete) y los cohetes en órbita
-son tu progreso: se guardan entre partidas y no cuentan como medida. El ritmo solo se dice con 3 máquinas o más. Nada cae ni apura dentro de una máquina: mirar con calma no se penaliza (el motor no usa tiempo de reacción, y a las
-personas mayores la cascada les da más tiempo para mirar). Si alguna máquina falló, el consejo es concreto: «Sigue el camino desde el motor diciendo "al revés, al derecho…" en cada engranaje» (cada engranaje que toca gira al
-revés del anterior). Nunca se dice que el juego previene el deterioro ni que «mejora la inteligencia».
+**Qué pasó con el historial viejo (5-oct):** la primera versión del juego (miras la máquina y eliges qué hará la pieza que brilla, con 2 respuestas posibles) medía otra cosa: acertar a ciegas daba 50 %. Su historial (clave
+`engranajes`) NO se mezcla con el nuevo ni se muestra: la medida cambió de clave (`taller`), así que la serie del taller parte de cero y los puntos viejos quedan guardados pero sin leerse (no se borra nada). Era
+lo más simple y lo más honesto: no hay forma de comparar los dos porcentajes.
 
-**Por qué:** seguir el movimiento de una cadena de piezas mecánicas (qué gira hacia dónde, qué tan rápido y qué se traba) es una tarea clásica de razonamiento mecánico y de simulación mental; que todo esté a la vista (sin regla
-escondida) evita la frustración y permite medir la estrategia de seguir el camino. La medida no se compara con estudios: no hay una referencia con esta misma condición.
+**Cómo se lee:** la cifra grande es «X de N». La etapa más alta dice hasta dónde llegaste en el camino (motor y correas → ramas → carga y compuerta → tres piezas → dos llaves). Las luces del cohete (10 por cohete) y los
+cohetes en órbita son tu progreso: se guardan entre partidas y no cuentan como medida. El ritmo solo se dice con 3 máquinas o más. Nada cae ni apura dentro de una máquina: mirar con calma no se penaliza (el motor no usa tiempo
+de reacción, y a las personas mayores la cascada les da más tiempo para mirar). Si alguna máquina falló, el consejo es concreto: «Antes de cambiar algo, mira qué piezas quedan después: lo que tocas antes de una rama mueve
+todo lo que sigue». Nunca se dice que el juego previene el deterioro ni que «mejora la inteligencia».
+
+**Por qué:** planificar, prever consecuencias antes de actuar y seguir varias cadenas a la vez (un cambio antes de una bifurcación mueve todas las piezas que siguen; uno dentro de una rama, solo esa) es razonamiento sobre causa y
+efecto y simulación mental; que todo esté a la vista (sin regla escondida) evita la frustración. Se juzga el resultado, no el camino. La medida no se compara con estudios: no hay una referencia con esta misma condición.
 
 ## Referencias
 

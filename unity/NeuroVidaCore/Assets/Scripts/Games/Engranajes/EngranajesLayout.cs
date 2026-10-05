@@ -5,9 +5,9 @@ namespace NeuroVida.Games.Engranajes
 {
     /// <summary>
     /// Disposición de «Engranajes» en dp lógicos (360 de ancho; y desde arriba del área de juego, que incluye el marcador). Es la del boceto aprobado
-    /// (docs/previews/engranajes-boceto.html: cabecera con las luces del cohete, pregunta, sala de máquinas con el cohete a la derecha y botones abajo)
+    /// (docs/previews/engranajes-taller-boceto.html: cabecera con las luces del cohete, consigna, sala de máquinas con el cohete a la derecha y, abajo, la cuenta de cambios y «Arrancar»)
     /// adaptada a la altura de cada teléfono: la escena (sala + cohete, de 384 dp de alto en el boceto) se ACHICA, entera y pareja, si la pantalla es baja, y si sobra aire
-    /// se reparte en los espacios y en la altura de los botones. Pura, con pruebas. Ningún texto baja de 14 dp y los botones miden ≥ 52 dp.
+    /// se reparte en los espacios y en la altura de la barra de abajo. Pura, con pruebas. Ningún texto baja de 14 dp y la barra de abajo mide ≥ 52 dp.
     /// </summary>
     public static class EngranajesLayout
     {
@@ -22,7 +22,7 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>La escena (8..361 de ancho) se corre 4,5 dp a la izquierda para quedar con el mismo margen a cada lado.</summary>
         public const float SceneShiftX = -4.5f;
 
-        public const float StripH = 42f, QuestionH = 48f, ButtonGap = 10f, MinScale = 0.55f;
+        public const float StripH = 42f, QuestionH = 48f, MinScale = 0.55f;
         /// <summary>La escena nunca pasa de 0,96: así la flecha del motor (que sale de la sala por la izquierda) y la aleta del cohete quedan ~10 dp adentro de la pantalla y no se cortan.</summary>
         public const float MaxScale = 0.96f;
 
@@ -73,30 +73,18 @@ namespace NeuroVida.Games.Engranajes
         public static Vector2 SceneToLogical(Metrics m, float bx, float by) =>
             new Vector2(W / 2f + SceneShiftX + (bx - W / 2f) * m.SceneScale, m.SceneCenterLogicalY + (by - SceneCenterY) * m.SceneScale);
 
-        /// <summary>Casilla del botón <paramref name="k"/> de <paramref name="n"/> (dp lógicos).</summary>
-        public static Rect ButtonRect(Metrics m, int k, int n)
-        {
-            n = Math.Max(1, n);
-            float w = (W - 2f * SideMargin - ButtonGap * (n - 1)) / n;
-            return new Rect(SideMargin + k * (w + ButtonGap), m.ButtonsTop, w, m.ButtonH);
-        }
+        /// <summary>De un punto en dp lógicos a un punto de la escena (coordenadas del boceto): lo contrario de <see cref="SceneToLogical"/> (para saber qué se tocó).</summary>
+        public static Vector2 LogicalToScene(Metrics m, float lx, float ly) =>
+            new Vector2(W / 2f + (lx - (W / 2f + SceneShiftX)) / m.SceneScale, SceneCenterY + (ly - m.SceneCenterLogicalY) / m.SceneScale);
 
-        /// <summary>La pregunta va en una línea (18 dp) si es corta y, si no, en dos (16 dp) cortadas cerca del medio, sin dejar una palabra suelta.</summary>
-        public static string BreakQuestion(string text, out bool twoLines)
+        /// <summary>La casilla de la cuenta de cambios («1 cambio» con su llave), abajo a la izquierda (dp lógicos).</summary>
+        public static Rect CounterRect(Metrics m) => new Rect(SideMargin, m.ButtonsTop, 104f, m.ButtonH);
+
+        /// <summary>El botón grande «Arrancar», abajo a la derecha (dp lógicos).</summary>
+        public static Rect StartRect(Metrics m)
         {
-            twoLines = false;
-            if (text == null) return "";
-            if (text.Length <= 32) return text;
-            var words = text.Split(' ');
-            int best = 1, bestDiff = int.MaxValue;
-            for (int i = 1; i < words.Length; i++)
-            {
-                int a = string.Join(" ", words, 0, i).Length, b = string.Join(" ", words, i, words.Length - i).Length;
-                int d = Math.Abs(a - b);
-                if (d < bestDiff) { bestDiff = d; best = i; }
-            }
-            twoLines = true;
-            return string.Join(" ", words, 0, best) + "\n" + string.Join(" ", words, best, words.Length - best);
+            float x = SideMargin + 104f + 12f;
+            return new Rect(x, m.ButtonsTop, W - SideMargin - x, m.ButtonH);
         }
     }
 }

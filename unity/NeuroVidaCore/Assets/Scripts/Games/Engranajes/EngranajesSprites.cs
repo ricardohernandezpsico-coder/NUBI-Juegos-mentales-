@@ -10,14 +10,16 @@ namespace NeuroVida.Games.Engranajes
     /// Todo el arte de «Engranajes», horneado con el pincel de arcilla (<see cref="ClayRaster"/>) en dp (1 dp = 1 unidad del boceto; y hacia arriba dentro de cada sprite).
     /// Engranajes de dientes que ENCAJAN (el diente de uno entra en el hueco del vecino: la misma geometría que <see cref="EngranajesContract.MeshPhase"/>), con relleno
     /// degradé, borde tinta, aro interior y rayos; el cohete (casco, aletas y tobera), la placa de la sala, el radar, la turbina, el portón y el elevador, las flechas de giro
-    /// y los íconos de los botones. Los sprites que giran se hornean con el diente 0 apuntando a la derecha; los que se tiñen (flechas, íconos) van en blanco.
+    /// las poleas y los extremos de las correas, las barras dentadas, la llave inglesa de la cuenta de cambios, el ✓ de los carteles y los íconos. Los sprites que giran se hornean con el diente 0 apuntando a la derecha; los que se tiñen (flechas, íconos) van en blanco.
     /// Cada uno se hornea una sola vez (se guarda en un diccionario) y <see cref="Prewarm"/> los hornea de a uno por cuadro durante la cuenta regresiva.
     /// </summary>
     public static class EngranajesSprites
     {
         public const float Ppd = 3.5f;                 // píxeles de textura por dp
-        public enum GearSize { Big, Small, Jam }
-        public enum Palette { Motor, Main, Station, Jam }
+        public enum GearSize { Big, Small }
+        public enum Palette { Motor, Main, Station }
+        /// <summary>Íconos sueltos (blancos: se tiñen): triángulo hacia arriba o abajo (carteles de la carga y la compuerta) y el «play» de «Arrancar».</summary>
+        public enum Glyph { Up, Down, Play }
 
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
         private static readonly Dictionary<GearSize, float[]> GearPts = new Dictionary<GearSize, float[]>();
@@ -28,20 +30,18 @@ namespace NeuroVida.Games.Engranajes
         {
             new[] { Hex(0xCFEFFF), Hex(0x5FA3E0) },   // motor
             new[] { Hex(0xF1EDFF), Hex(0xA49BE0) },   // camino y ramas
-            new[] { Hex(0xFFF1C2), Hex(0xE2B24A) },   // piezas del cohete (engranaje dorado)
-            new[] { Hex(0xFFD6C8), Hex(0xE07E62) }    // trampa
+            new[] { Hex(0xFFF1C2), Hex(0xE2B24A) }    // piezas del cohete (engranaje dorado)
         };
 
-        public static float TipOf(GearSize s) => s == GearSize.Big ? EngranajesContract.BigTip : s == GearSize.Small ? EngranajesContract.SmallTip : EngranajesContract.JamTip;
-        public static int TeethOf(GearSize s) => s == GearSize.Big ? EngranajesContract.BigTeeth : s == GearSize.Small ? EngranajesContract.SmallTeeth : EngranajesContract.JamTeeth;
+        public static float TipOf(GearSize s) => s == GearSize.Big ? EngranajesContract.BigTip : EngranajesContract.SmallTip;
+        public static int TeethOf(GearSize s) => s == GearSize.Big ? EngranajesContract.BigTeeth : EngranajesContract.SmallTeeth;
 
-        public static GearSize SizeOf(GearDef g) => g.N >= EngranajesContract.BigTeeth ? GearSize.Big : g.N >= EngranajesContract.SmallTeeth ? GearSize.Small : GearSize.Jam;
+        public static GearSize SizeOf(GearDef g) => g.N >= EngranajesContract.BigTeeth ? GearSize.Big : GearSize.Small;
 
         public static Palette PaletteOf(GearDef g, int index)
         {
             if (index == 0 && g.Role == GearRole.Motor) return Palette.Motor;
             if (g.Role == GearRole.Station) return Palette.Station;
-            if (g.Role == GearRole.Jam) return Palette.Jam;
             return Palette.Main;
         }
 
@@ -199,20 +199,20 @@ namespace NeuroVida.Games.Engranajes
         private static float[] HullBody()
         {
             if (_hullBody != null) return _hullBody;
-            // casco: pared izquierda, curva de la nariz (dos cuadráticas), pared derecha; en coordenadas del boceto → locales (y hacia arriba)
+            // casco: pared izquierda, curva de la nariz (dos cuadráticas; la punta en 104: el cohete baja un poco para que el radar no pise la consigna), pared derecha; en coordenadas del boceto → locales (y hacia arriba)
             var pts = new List<float>();
             void Add(float bx, float by) { pts.Add(bx - HullX); pts.Add(HullY - by); }
-            Add(262f, 428f); Add(262f, 142f);
+            Add(262f, 428f); Add(262f, 150f);
             const int steps = 14;
             for (int i = 1; i <= steps; i++)
             {
                 float t = i / (float)steps, u = 1f - t;
-                Add(u * u * 262f + 2f * u * t * 262f + t * t * 306f, u * u * 142f + 2f * u * t * 110f + t * t * 92f);
+                Add(u * u * 262f + 2f * u * t * 262f + t * t * 306f, u * u * 150f + 2f * u * t * 122f + t * t * 104f);
             }
             for (int i = 1; i <= steps; i++)
             {
                 float t = i / (float)steps, u = 1f - t;
-                Add(u * u * 306f + 2f * u * t * 350f + t * t * 350f, u * u * 92f + 2f * u * t * 110f + t * t * 142f);
+                Add(u * u * 306f + 2f * u * t * 350f + t * t * 350f, u * u * 104f + 2f * u * t * 122f + t * t * 150f);
             }
             Add(350f, 428f);
             _hullBody = pts.ToArray();
@@ -296,98 +296,124 @@ namespace NeuroVida.Games.Engranajes
             Outlined(ref p, d, 1f, Hex(0x7FD8FF), Ink, Aa);
         });
 
-        /// <summary>El aro fino que late alrededor de la pieza preguntada (radio 26, grosor 3; blanco: se tiñe de dorado).</summary>
-        public static Sprite TargetRing() => Bake("tring", 64f, 64f, Ppd, (ref Px p, float x, float y) =>
-            p.Over(Color.white, Cover(Mathf.Abs(Mathf.Sqrt(x * x + y * y) - 26f) - 1.5f, Aa)));
-
-        /// <summary>Aro punteado de radio unidad (el hueco de «Arma tú»): 22 rayitas; se escala al tamaño del hueco. Blanco.</summary>
-        public static Sprite DashedRing() => Bake("dring", 2.4f, 2.4f, 90f, (ref Px p, float x, float y) =>
+        /// <summary>Una polea (14 de radio) en el eje del engranaje de cada extremo de una correa: disco oscuro, disco violeta y un agujero de eje.</summary>
+        public static Sprite Pulley() => Bake("pulley", 40f, 40f, Ppd, (ref Px p, float x, float y) =>
         {
+            float aa = Aa;
             float r = Mathf.Sqrt(x * x + y * y);
-            float frac = (Mathf.Atan2(y, x) / (2f * Mathf.PI) + 1f) * 22f;
-            bool on = frac - Mathf.Floor(frac) < 0.5f;
-            if (on) p.Over(Color.white, Cover(Mathf.Abs(r - 1f) - 0.04f, 1f / 90f));
+            p.Over(Hex(0x2A2350), Cover(r - (EngranajesContract.PulleyRadius + 3f), aa));
+            p.Over(Hex(0x4A4390), Cover(r - (EngranajesContract.PulleyRadius - 2f), aa));
+            p.Over(Ink, Cover(r - 4f, aa));
         });
 
-        // ------------------------------------------------------------------ flechas e íconos (blancos: se tiñen con Image.color)
-
-        private const float ArcStart = -Mathf.PI * 0.85f, ArcEnd = -Mathf.PI * 0.15f;
-
-        private static float ArcStroke(float cx, float cy, float r, float lw)
+        /// <summary>La media vuelta de la correa alrededor de una polea (radio de la línea central 14, grosor <paramref name="width"/>): la mitad de la izquierda, con puntas redondas. Blanca: se tiñe
+        /// (oscuro, claro o dorado según la capa). Se gira para que mire hacia afuera de la correa.</summary>
+        public static Sprite BeltCap(float width)
         {
-            // cx, cy en coordenadas de lienzo (y hacia abajo); el arco va de ArcStart a ArcEnd (por arriba)
-            float ang = Mathf.Atan2(cy, cx), rad = Mathf.Sqrt(cx * cx + cy * cy);
-            float d = Mathf.Abs(rad - r) - lw / 2f;
-            if (ang < ArcStart || ang > ArcEnd)
+            float box = 2f * (EngranajesContract.PulleyRadius + width / 2f + 2f);
+            return Bake("cap" + width.ToString("0.#"), box, box, Ppd, (ref Px p, float x, float y) =>
             {
-                float d0 = Circle(cx, cy, Mathf.Cos(ArcStart) * r, Mathf.Sin(ArcStart) * r, lw / 2f), d1 = Circle(cx, cy, Mathf.Cos(ArcEnd) * r, Mathf.Sin(ArcEnd) * r, lw / 2f);
-                return Mathf.Min(d0, d1);
-            }
-            return Mathf.Min(d, Mathf.Min(Circle(cx, cy, Mathf.Cos(ArcStart) * r, Mathf.Sin(ArcStart) * r, lw / 2f), Circle(cx, cy, Mathf.Cos(ArcEnd) * r, Mathf.Sin(ArcEnd) * r, lw / 2f)));
-        }
-
-        private static float[] ArrowHead(float r)
-        {
-            // la punta está en el extremo final del arco (a1); como el boceto: punta a 9 y base a 8 con ±2,4 rad
-            float tx = Mathf.Cos(ArcEnd) * r, ty = Mathf.Sin(ArcEnd) * r, tan = ArcEnd + Mathf.PI / 2f;
-            return new[]
-            {
-                tx + Mathf.Cos(tan) * 9f, ty + Mathf.Sin(tan) * 9f,
-                tx + Mathf.Cos(tan + 2.4f) * 8f, ty + Mathf.Sin(tan + 2.4f) * 8f,
-                tx + Mathf.Cos(tan - 2.4f) * 8f, ty + Mathf.Sin(tan - 2.4f) * 8f
-            };
-        }
-
-        /// <summary>Flecha de giro (arco con punta) de radio <paramref name="radius"/> y grosor <paramref name="lineWidth"/>, centrada en el engranaje. <paramref name="clockwise"/> = como el reloj.</summary>
-        public static Sprite Arrow(float radius, float lineWidth, bool clockwise)
-        {
-            float box = 2f * (radius + 14f);
-            var head = ArrowHead(radius);
-            return Bake("arrow" + radius.ToString("0.#") + "_" + lineWidth.ToString("0.#") + (clockwise ? "c" : "a"), box, box, Ppd, (ref Px p, float x, float y) =>
-            {
-                float cx = clockwise ? x : -x, cy = -y;
-                float d = Mathf.Min(ArcStroke(cx, cy, radius, lineWidth), Polygon(cx, cy, head));
+                float r = EngranajesContract.PulleyRadius;
+                float d = Mathf.Abs(Mathf.Sqrt(x * x + y * y) - r) - width / 2f;
+                if (x > 0f) d = Mathf.Min(Circle(x, y, 0f, r, width / 2f), Circle(x, y, 0f, -r, width / 2f));       // en la mitad de la derecha solo quedan las puntas redondas
                 p.Over(Color.white, Cover(d, Aa));
             });
         }
 
-        public static Sprite Icon(ButtonIcon icon)
+        /// <summary>La barra dentada de la carga y de la compuerta (20 × 84 dp, centrada en la barra de 9 × 80): violeta con borde tinta y diez dientes tinta a la izquierda.</summary>
+        public static Sprite Rack() => Bake("rack", 20f, 84f, Ppd, (ref Px p, float x, float y) =>
+        {
+            float aa = Aa;
+            float d = RoundBox(x, y, 0f, 0f, 4.5f, 40f, 3f);
+            Outlined(ref p, d, 1f, Hex(0x8E83D8), Ink, aa);
+            float teeth = 1000f;
+            for (float ty = -36f; ty < 40f; ty += 8f) teeth = Mathf.Min(teeth, RoundBox(x, y, -5.5f, -(ty + 2f), 2f, 2f, 0f));
+            p.Over(Ink, Cover(teeth, aa));
+        });
+
+        /// <summary>La llave inglesa de la cuenta de cambios (30 × 30): mango y boca abierta, girada 45°. Blanca: se tiñe de dorado al usarla.</summary>
+        public static Sprite Wrench() => Bake("wrench", 30f, 30f, Ppd, (ref Px p, float x, float y) =>
+        {
+            const float s = 15f, c = 0.70710678f;
+            // lienzo con y hacia abajo y la figura girada 45° en el sentido del reloj: se deshace el giro para medir contra el mango y la boca
+            float cx = x, cy = -y;
+            float ux = cx * c + cy * c, uy = -cx * c + cy * c;
+            float handle = Capsule(ux, -uy, 0f, s * 0.2f, 0f, -s * 0.9f, s * 0.15f);
+            float hy = uy + s * 0.45f;
+            float ring = Mathf.Abs(Mathf.Sqrt(ux * ux + hy * hy) - s * 0.32f) - s * 0.12f;
+            float toward = Mathf.Atan2(hy, ux) + Mathf.PI / 2f;                     // el ángulo respecto de «arriba» (la boca de la llave)
+            float gap = Mathf.Abs(Mathf.Atan2(Mathf.Sin(toward), Mathf.Cos(toward)));
+            if (gap < 0.75f) ring = 1f;
+            p.Over(Color.white, Cover(Mathf.Min(handle, ring), Aa));
+        });
+
+        /// <summary>El ✓ de un cartel que cumplió (14 × 14). Blanco: se tiñe de menta.</summary>
+        public static Sprite Check() => Bake("check", 14f, 14f, Ppd, (ref Px p, float x, float y) =>
+            p.Over(Color.white, Cover(Mathf.Min(Capsule(x, y, -5f, 0.5f, -1.5f, -4.5f, 1.5f), Capsule(x, y, -1.5f, -4.5f, 5.5f, 4.5f, 1.5f)), Aa)));
+
+        /// <summary>Íconos sueltos: triángulo arriba / abajo y «play» (blancos).</summary>
+        public static Sprite GlyphSprite(Glyph g)
         {
             const float box = 56f;
-            switch (icon)
+            switch (g)
             {
-                case ButtonIcon.Cw: return Bake("icon_cw", box, box, Ppd, (ref Px p, float x, float y) =>
-                    p.Over(Color.white, Cover(Mathf.Min(ArcStroke(x, -y - 10f, 17f, 4f), Polygon(x, -y - 10f, ArrowHead(17f))), Aa)));
-                case ButtonIcon.Ccw: return Bake("icon_ccw", box, box, Ppd, (ref Px p, float x, float y) =>
-                    p.Over(Color.white, Cover(Mathf.Min(ArcStroke(-x, -y - 10f, 17f, 4f), Polygon(-x, -y - 10f, ArrowHead(17f))), Aa)));
-                case ButtonIcon.X: return Bake("icon_x", box, box, Ppd, (ref Px p, float x, float y) =>
-                    p.Over(Color.white, Cover(Mathf.Min(Capsule(x, y, -11f, -11f, 11f, 11f, 2f), Capsule(x, y, -11f, 11f, 11f, -11f, 2f)), Aa)));
-                case ButtonIcon.Up: return Bake("icon_up", box, box, Ppd, (ref Px p, float x, float y) =>
+                case Glyph.Up: return Bake("glyph_up", box, box, Ppd, (ref Px p, float x, float y) =>
                     p.Over(Color.white, Cover(Polygon(x, y, new[] { 0f, 14f, 12f, -6f, -12f, -6f }), Aa)));
-                case ButtonIcon.Down: return Bake("icon_down", box, box, Ppd, (ref Px p, float x, float y) =>
+                case Glyph.Down: return Bake("glyph_down", box, box, Ppd, (ref Px p, float x, float y) =>
                     p.Over(Color.white, Cover(Polygon(x, y, new[] { 0f, -14f, -12f, 6f, 12f, 6f }), Aa)));
-                case ButtonIcon.Fast: return Bake("icon_fast", box, box, Ppd, (ref Px p, float x, float y) =>
-                {
-                    // dos triángulos que apuntan a la derecha (centrados en la casilla)
-                    float t1 = Polygon(x, y, new[] { 2f, 0f, -18f, 12f, -18f, -12f });
-                    float t2 = Polygon(x, y, new[] { 18f, 0f, -2f, 12f, -2f, -12f });
-                    p.Over(Color.white, Cover(Mathf.Min(t1, t2), Aa));
-                });
-                case ButtonIcon.Slow: return Bake("icon_slow", box, box, Ppd, (ref Px p, float x, float y) =>
-                {
-                    float ring = Mathf.Abs(Mathf.Sqrt(x * x + y * y) - 12f) - 2f;
-                    float hands = Mathf.Min(Capsule(x, y, 0f, 0f, 0f, 8f, 2f), Capsule(x, y, 0f, 0f, 6f, -3f, 2f));
-                    p.Over(Color.white, Cover(Mathf.Min(ring, hands), Aa));
-                });
-                case ButtonIcon.Gear: return Bake("icon_gear", box, box, Ppd, (ref Px p, float x, float y) =>
-                    p.Over(Color.white, Cover(Subtract(Polygon(x, y, MiniGear(16f, 10)), Circle(x, y, 0f, 0f, 5f)), Aa)));
-                default: return Bake("icon_belt", box, box, Ppd, (ref Px p, float x, float y) =>
-                {
-                    float c1 = Mathf.Abs(Circle(x, y, -13f, 0f, 7f)) - 2f, c2 = Mathf.Abs(Circle(x, y, 13f, 0f, 7f)) - 2f;
-                    float l = Mathf.Min(Capsule(x, y, -13f, 7f, 13f, -7f, 2f), Capsule(x, y, -13f, -7f, 13f, 7f, 2f));
-                    p.Over(Color.white, Cover(Mathf.Min(Mathf.Min(c1, c2), l), Aa));
-                });
+                default: return Bake("glyph_play", box, box, Ppd, (ref Px p, float x, float y) =>
+                    p.Over(Color.white, Cover(Polygon(x, y, new[] { -9f, 14f, -9f, -14f, 13f, 0f }), Aa)));
             }
+        }
+
+        // ------------------------------------------------------------------ flechas e íconos (blancos: se tiñen con Image.color)
+
+        private const float ArcStart = -Mathf.PI * 0.775f, ArcEnd = -Mathf.PI * 0.225f;
+
+        private static float ArcStroke(float cx, float cy, float r, float lw, float a0, float a1)
+        {
+            // cx, cy en coordenadas de lienzo (y hacia abajo); el arco va de a0 a a1 (por arriba)
+            float ang = Mathf.Atan2(cy, cx), rad = Mathf.Sqrt(cx * cx + cy * cy);
+            float d0 = Circle(cx, cy, Mathf.Cos(a0) * r, Mathf.Sin(a0) * r, lw / 2f), d1 = Circle(cx, cy, Mathf.Cos(a1) * r, Mathf.Sin(a1) * r, lw / 2f);
+            if (ang < a0 || ang > a1) return Mathf.Min(d0, d1);
+            return Mathf.Min(Mathf.Abs(rad - r) - lw / 2f, Mathf.Min(d0, d1));
+        }
+
+        private static float[] ArrowHead(float r, float a1, float size)
+        {
+            // la punta está en el extremo final del arco (a1); como el boceto: punta a 1,5 veces el tamaño y base a 1,35 con ±2,4 rad
+            float tx = Mathf.Cos(a1) * r, ty = Mathf.Sin(a1) * r, tan = a1 + Mathf.PI / 2f;
+            return new[]
+            {
+                tx + Mathf.Cos(tan) * size * 1.5f, ty + Mathf.Sin(tan) * size * 1.5f,
+                tx + Mathf.Cos(tan + 2.4f) * size * 1.35f, ty + Mathf.Sin(tan + 2.4f) * size * 1.35f,
+                tx + Mathf.Cos(tan - 2.4f) * size * 1.35f, ty + Mathf.Sin(tan - 2.4f) * size * 1.35f
+            };
+        }
+
+        /// <summary>Flecha de giro del motor (arco con punta) de radio <paramref name="radius"/> y grosor <paramref name="lineWidth"/>, centrada en el engranaje. <paramref name="clockwise"/> = como el reloj.</summary>
+        public static Sprite Arrow(float radius, float lineWidth, bool clockwise)
+        {
+            float box = 2f * (radius + 14f);
+            var head = ArrowHead(radius, ArcEnd, 6f);
+            return Bake("arrow" + radius.ToString("0.#") + "_" + lineWidth.ToString("0.#") + (clockwise ? "c" : "a"), box, box, Ppd, (ref Px p, float x, float y) =>
+            {
+                float cx = clockwise ? x : -x, cy = -y;
+                float d = Mathf.Min(ArcStroke(cx, cy, radius, lineWidth, ArcStart, ArcEnd), Polygon(cx, cy, head));
+                p.Over(Color.white, Cover(d, Aa));
+            });
+        }
+
+        /// <summary>La flechita de giro de un cartel (radio 6,5, casi una vuelta entera: 1,3 π). Blanca: se tiñe.</summary>
+        public static Sprite MiniArrow(bool clockwise)
+        {
+            const float r = 6.5f, a0 = -Mathf.PI * 1.15f, a1 = Mathf.PI * 0.15f;
+            var head = ArrowHead(r, a1, 4f);
+            return Bake("miniarrow" + (clockwise ? "c" : "a"), 22f, 22f, Ppd, (ref Px p, float x, float y) =>
+            {
+                float cx = clockwise ? x : -x, cy = -y;
+                p.Over(Color.white, Cover(Mathf.Min(ArcStroke(cx, cy, r, 2.6f, a0, a1), Polygon(cx, cy, head)), Aa));
+            });
         }
 
         private static float[] MiniGear(float tip, int n)
@@ -412,31 +438,36 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Hornea todo lo de la partida, de a una pieza por cuadro (para que la cuenta regresiva no se trabe). Lo que ya está horneado no se repite.</summary>
         public static System.Collections.IEnumerator Prewarm()
         {
-            foreach (GearSize s in Enum.GetValues(typeof(GearSize)))
+            foreach (GearSize sz in Enum.GetValues(typeof(GearSize)))
             {
-                Silhouette(s);
+                Silhouette(sz);
                 yield return null;
                 foreach (Palette pal in Enum.GetValues(typeof(Palette)))
                 {
-                    if (s == GearSize.Jam && pal != Palette.Jam) continue;     // la trampa solo es coral
-                    if (s != GearSize.Jam && pal == Palette.Jam) continue;
-                    Gear(s, pal);
+                    Gear(sz, pal);
                     yield return null;
                 }
             }
             Hub(); yield return null;
             Room(); yield return null;
             Hull(); yield return null;
-            Dish(); Fan(); Door(); TargetRing(); DashedRing(); yield return null;
+            Dish(); Fan(); Door(); yield return null;
             CargoFrame(); CargoPlate(); CargoBox(); yield return null;
-            foreach (ButtonIcon ic in Enum.GetValues(typeof(ButtonIcon))) { Icon(ic); }
+            Pulley(); Rack(); Wrench(); Check(); yield return null;
+            foreach (var w in BeltWidths) BeltCap(w);
             yield return null;
-            foreach (var (r, lw) in new[] { (43f, 4f), (33f, 4f), (40f, 3.5f), (30f, 3.5f) })
+            foreach (Glyph g in Enum.GetValues(typeof(Glyph))) GlyphSprite(g);
+            MiniArrow(true); MiniArrow(false);
+            yield return null;
+            foreach (var r in new[] { EngranajesContract.BigTip + 8f, EngranajesContract.SmallTip + 8f })
             {
-                Arrow(r, lw, true);
-                Arrow(r, lw, false);
+                Arrow(r, 4f, true);
+                Arrow(r, 4f, false);
             }
         }
+
+        /// <summary>Los tres grosores de la correa: el brillo dorado (16), el borde oscuro (8) y la banda clara (4,5).</summary>
+        public static readonly float[] BeltWidths = { 16f, 8f, 4.5f };
 
         /// <summary>Para las pruebas: cuántos sprites hay horneados.</summary>
         public static int BakedCount => Cache.Count;

@@ -7,18 +7,18 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** «Engranajes» (docs/diseno-engranajes.md §7): la lectura de la pantalla final y el cohete que se guarda. */
+/** «Engranajes: Taller de reparación» (docs/diseno-engranajes.md §9): la lectura de la pantalla final y el cohete que se guarda. */
 class EngranajesTest {
   @Test
-  fun `la cabecera dice cuantas maquinas acertaste y no inventa sin maquinas`() {
-    assertEquals("Acertaste 7 de 10 máquinas", Engranajes.headline(7, 10))
-    assertEquals("Acertaste 10 de 10 máquinas", Engranajes.headline(12, 10))   // nunca más que las jugadas
+  fun `la cabecera dice cuantas maquinas arreglaste y no inventa sin maquinas`() {
+    assertEquals("Arreglaste 7 de 10 máquinas", Engranajes.headline(7, 10))
+    assertEquals("Arreglaste 10 de 10 máquinas", Engranajes.headline(12, 10))   // nunca más que las jugadas
     assertNull(Engranajes.headline(null, 10))
     assertNull(Engranajes.headline(3, 0))
   }
 
   @Test
-  fun `la marca es el porcentaje de maquinas acertadas`() {
+  fun `la marca es el porcentaje de maquinas arregladas`() {
     assertEquals(70f, Engranajes.mark(7, 10)!!, 1e-4f)
     assertEquals(100f, Engranajes.mark(12, 10)!!, 1e-4f)
     assertNull(Engranajes.mark(null, 10))
@@ -27,9 +27,11 @@ class EngranajesTest {
 
   @Test
   fun `la etapa mas alta se nombra con sus cinco grupos`() {
-    assertEquals("Etapa más alta: 1 de 5 (giro)", Engranajes.etapaLine(1))
-    assertEquals("Etapa más alta: 3 de 5 (movimiento)", Engranajes.etapaLine(3))
-    assertEquals("Etapa más alta: 5 de 5 (trampas y armar)", Engranajes.etapaLine(5))
+    assertEquals("Etapa más alta: 1 de 5 (motor y correas)", Engranajes.etapaLine(1))
+    assertEquals("Etapa más alta: 2 de 5 (ramas)", Engranajes.etapaLine(2))
+    assertEquals("Etapa más alta: 3 de 5 (carga y compuerta)", Engranajes.etapaLine(3))
+    assertEquals("Etapa más alta: 4 de 5 (tres piezas)", Engranajes.etapaLine(4))
+    assertEquals("Etapa más alta: 5 de 5 (dos llaves)", Engranajes.etapaLine(5))
     assertNull(Engranajes.etapaLine(0))
     assertNull(Engranajes.etapaLine(6))
     assertNull(Engranajes.etapaLine(null))
@@ -63,8 +65,8 @@ class EngranajesTest {
     assertNull(Engranajes.paceLine(0, 10))
     assertNull(Engranajes.paceLine(999_999, 10))
     val tip = Engranajes.tip(7, 10)!!
-    assertTrue(tip.startsWith("Truco: sigue el camino desde el motor"))
-    assertTrue(tip.contains("al revés, al derecho"))
+    assertTrue(tip.startsWith("Truco: antes de cambiar algo, mira qué piezas quedan después"))
+    assertTrue(tip.contains("lo que tocas antes de una rama mueve todo lo que sigue"))
     assertNull(Engranajes.tip(10, 10))
     assertNull(Engranajes.tip(null, 10))
   }
@@ -86,8 +88,21 @@ class EngranajesTest {
   fun `el consejo entra en los de la pantalla final`() {
     val r = com.example.model.GamePlayResult(gameId = "engranajes", score = 70, correctAnswers = 7, totalTrials = 10, timed = false, level = 1, engrEtapa = 3)
     val tips = ResultAdvice.tips(r)
-    assertTrue(tips.any { it.contains("al revés, al derecho") })
+    assertTrue(tips.any { it.startsWith("Antes de cambiar algo, mira qué piezas quedan después") && it.contains("lo que tocas antes de una rama mueve todo lo que sigue") })
     val perfect = r.copy(correctAnswers = 10, score = 100)
-    assertTrue(ResultAdvice.tips(perfect).none { it.contains("al revés, al derecho") })
+    assertTrue(ResultAdvice.tips(perfect).none { it.contains("lo que tocas antes de una rama") })
+  }
+
+  @Test
+  fun `la medida del taller es nueva y el historial viejo de Engranajes no se lee ni se mezcla`() {
+    assertEquals("taller", StarMeasures.defForGame("engranajes")!!.key)
+    assertNull("la clave vieja ya no es una medida", StarMeasures.def("engranajes"))
+    val now = 10L * 86_400_000L
+    val old = (0 until 4).map { MeasurePoint(now - (4 - it) * 1000L, "engranajes", 50f + it) }
+    assertNull("sin puntos del taller no se dice nada aunque haya historial viejo", StarMeasures.discover(old, now))
+    assertNull(StarMeasures.latest(old, "engranajes"))
+    val fresh = (0 until 3).map { MeasurePoint(now - (3 - it) * 1000L, "taller", 60f + it * 10f) }
+    assertNotNull(StarMeasures.discover(old + fresh, now))
+    assertEquals(80f, StarMeasures.latest(old + fresh, "engranajes")!!.second, 1e-4f)
   }
 }

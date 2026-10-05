@@ -25,6 +25,7 @@ achicándose si no cabía. Esto es el arreglo de sistema (no un parche por juego
 | Aterrizaje lunar (`aterrizaje`) | el número grande de la misión (a dónde aterrizar) |
 | Dos orillas (`stroop`) | la cinta «Responde: TINTA / PALABRA» y la tarjeta con la palabra; el hueco son solo los 4 botones de color (antes era todo el escenario y no dejaba dónde poner a Nubi) |
 | En la punta de la lengua (`anagramas`) | la tarjeta de la definición (pasos «¡La tengo!», letras y «Una ayuda»; en el primero ES el hueco) |
+| Engranajes (`engranajes`) | la antena (que se ve en los tres pasos) y, en el último, el cartel de la antena |
 | Freno de emergencia (`freno`) y Lluvia de meteoros (`meteoros`) | ninguna declarada: el hueco es lo único de lo que habla el texto; lo demás lo respeta la detección automática |
 
 ## Textos (todos en `CoachTexts.cs`)
@@ -39,6 +40,6 @@ lee en pantalla. La prueba `CoachLayoutTests` comprueba que cada texto cabe en 3
 - **Smoke** (`HeadlessPlaymodeSmokeTest`): cada tutorial corre en las TRES formas de pantalla (el lienzo de cada juego pasa a 1080×2400, 1080×2160 y 1080×1920) hasta su último aviso; `NubiCoach`
   registra cada paso (`AuditEnabled`) y el smoke falla si Nubi o el globo tapan algo o si el texto se dibuja en más de 3 líneas. Deja un JSON por juego y forma en
   `unity/test-results/coach-audit/`. En el Editor, las jugadas que espera el tutorial se hacen solas a los 2 s (`GuidedTutorial.AutoPlay`) para que el arranque pase por todos los pasos.
-  Engranajes (que se rediseña) se registra pero no se exige.
+  Engranajes entra desde el rediseño «Taller de reparación» (5-oct): su tutorial de 3 focos se revisa igual que los demás.
 - **Láminas** (`python tools/coach-preview/tutoriales.py [alto]` → `docs/previews/tutoriales/<juego>-paso<N>.png`): NO son capturas (el smoke corre sin gráficos); son los rectángulos reales de
   cada paso: el hueco y las zonas iluminadas, los textos del juego (gris), Nubi y el globo con su texto en la misma letra.

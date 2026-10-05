@@ -9,11 +9,12 @@ using Motion = NeuroVida.Games.Shared.Motion;
 
 namespace NeuroVida.Games.Engranajes
 {
-    /// <summary>La interfaz de «Engranajes»: se arma una vez por código (marcador, cabecera con las luces del cohete, pregunta, sala de máquinas con el cohete, botones, aviso, tarjeta «NUEVO» y
-    /// despegue) y se coloca en <see cref="Layout"/> según la pantalla. Todo lo de la escena (sala + cohete) vive en unidades del boceto (3 por dp) bajo <c>_sceneRoot</c>, que se escala entero.</summary>
+    /// <summary>La interfaz de «Engranajes: Taller de reparación»: se arma una vez por código (marcador, cabecera con las luces del cohete, consigna, sala de máquinas con el cohete y sus carteles, la
+    /// cuenta de cambios, «Arrancar», aviso, tarjeta «NUEVO» y despegue) y se coloca en <see cref="Layout"/> según la pantalla. Todo lo de la escena (sala + cohete) vive en unidades del boceto (3 por dp)
+    /// bajo <c>_sceneRoot</c>, que se escala entero.</summary>
     public sealed partial class EngranajesGameController
     {
-        private const int GearPool = 40, LinePool = 64, PulsePool = 24, SparkPool = 70, DashPool = 64, PillPool = 4, ArrowPool = GearPool;
+        private const int GearPool = 40, LinePool = 16, PulsePool = 24, SparkPool = 70, BeltPool = 4;
 
         // colores del boceto aprobado
         private static readonly Color Cyan = new Color(127f / 255f, 216f / 255f, 255f / 255f);
@@ -22,17 +23,19 @@ namespace NeuroVida.Games.Engranajes
         private static readonly Color Lavender = new Color(171f / 255f, 165f / 255f, 210f / 255f);
         private static readonly Color Mint = new Color(159f / 255f, 245f / 255f, 214f / 255f);
         private static readonly Color WarnText = new Color(255f / 255f, 214f / 255f, 160f / 255f);
-        private static readonly Color WrongFill = new Color(255f / 255f, 180f / 255f, 140f / 255f);
         private static readonly Color ButtonFill = new Color(35f / 255f, 43f / 255f, 87f / 255f);
         private static readonly Color ButtonText = new Color(237f / 255f, 234f / 255f, 251f / 255f);
         private static readonly Color LightOff = new Color(1f, 1f, 1f, 0.16f);
         private static readonly Color WindowOff = new Color(58f / 255f, 65f / 255f, 112f / 255f);
-        private static readonly Color PillIdle = new Color(244f / 255f, 241f / 255f, 255f / 255f, 0.88f);
-        private static readonly Color BeltDark = new Color(42f / 255f, 35f / 255f, 80f / 255f);
-        private static readonly Color BeltLight = new Color(142f / 255f, 131f / 255f, 216f / 255f);
+        private static readonly Color BeltDark = new Color(26f / 255f, 18f / 255f, 64f / 255f);
+        private static readonly Color BeltLight = new Color(201f / 255f, 193f / 255f, 1f);
         private static readonly Color ShaftDark = new Color(59f / 255f, 52f / 255f, 112f / 255f);
         private static readonly Color ShaftLight = new Color(107f / 255f, 95f / 255f, 184f / 255f);
         private static readonly Color Coral = new Color(255f / 255f, 140f / 255f, 107f / 255f);
+        private static readonly Color CartelFill = new Color(28f / 255f, 35f / 255f, 80f / 255f);
+        private static readonly Color CartelOkFill = new Color(15f / 255f, 59f / 255f, 51f / 255f);
+        private static readonly Color CartelBadFill = new Color(74f / 255f, 30f / 255f, 34f / 255f);
+        private static readonly Color CartelBadText = new Color(255f / 255f, 180f / 255f, 140f / 255f);
 
         private sealed class GearView
         {
@@ -50,6 +53,22 @@ namespace NeuroVida.Games.Engranajes
             public Text Label;
         }
 
+        /// <summary>Una correa: una polea en el eje de cada extremo, tres capas (brillo dorado, borde oscuro y banda clara) de dos tiras rectas y dos medias vueltas alrededor de las poleas.</summary>
+        private sealed class BeltView
+        {
+            public readonly Image[] Pulleys = new Image[2];
+            public readonly LineView[] Lines = new LineView[6];
+            public readonly Image[] Caps = new Image[6];
+        }
+
+        /// <summary>El cartel de una pieza del cohete: el nombre arriba y, abajo, el ícono con lo que debe hacer.</summary>
+        private sealed class CartelView
+        {
+            public RectTransform Root;
+            public Image Rim, Bg, Icon, Check;
+            public Text Name, Word;
+        }
+
         private sealed class ButtonView
         {
             public RectTransform Root;
@@ -57,19 +76,18 @@ namespace NeuroVida.Games.Engranajes
             public Image Shadow, Rim, Bg, Icon;
             public Text Label;
             public Rect Rect;          // lógico (dp)
-            public ButtonDef Def;
         }
 
         private sealed class Spark { public Image Img; public Vector2 Pos, Vel; public float Age, Life, Size; public bool Alive; public Color Color; }
 
         // ------------------------------------------------------------------ piezas
 
-        private RectTransform _safe, _play, _stripLayer, _sceneRoot, _rocketRoot, _machineLayer, _uiLayer, _fxLayer, _introLayer, _launchLayer, _questionBar;
+        private RectTransform _safe, _play, _stripLayer, _sceneRoot, _rocketRoot, _machineLayer, _uiLayer, _fxLayer, _introLayer, _launchLayer, _questionBar, _counterRoot;
         private RectTransform _timerTrack, _timerHead, _motorArrowRect;
-        private Image _timerFill, _questionBg;
-        private CanvasGroup _machineGroup, _questionGroup, _sayGroup, _introGroup;
-        private Text _rocketTitle, _orbitText, _questionText, _sayTitle, _saySub, _introTitle, _introLine1, _introLine2, _launchTitle, _launchLine1, _launchLine2, _slotMark;
-        private Image _room, _hull, _slotRing, _targetRing, _motorArrow, _sayBg, _sayRim, _dim, _flyerGlow, _flyerDot, _flame, _gateGlow, _stripGlow;
+        private Image _timerFill, _questionBg, _counterBg;
+        private CanvasGroup _machineGroup, _questionGroup, _sayGroup, _introGroup, _counterGroup;
+        private Text _rocketTitle, _orbitText, _consigna1, _consigna2, _counterText, _sayTitle, _saySub, _introTitle, _introBody, _launchTitle, _launchLine1, _launchLine2;
+        private Image _room, _hull, _motorArrow, _motorPulse, _sayBg, _sayRim, _dim, _flyerGlow, _flyerDot, _flame, _gateGlow, _stripGlow;
         private Image _introCard, _introRim;
         private readonly Image[] _windows = new Image[EngranajesContract.RocketLights];
         private readonly Image[] _windowGlows = new Image[EngranajesContract.RocketLights];
@@ -79,23 +97,20 @@ namespace NeuroVida.Games.Engranajes
         private Image _dish, _fan, _door, _cargoFrame, _cargoBox, _cargoPlate, _turbineFlame;
         private RectTransform _doorRt, _cargoLiftRt;
         private readonly GearView[] _gears = new GearView[GearPool];
-        private GearView _slotGear;
         private readonly LineView[] _lines = new LineView[LinePool];
         private int _lineCount;
-        private readonly LineView[] _slotBelt = new LineView[4];
-        private readonly PillView[] _beltPills = new PillView[PillPool];
-        private readonly PillView[] _stationPills = new PillView[4];
+        private readonly BeltView[] _belts = new BeltView[BeltPool];
+        private readonly Image[] _racks = new Image[2];                       // [0] = compuerta, [1] = carga
+        private readonly CartelView[] _cartels = new CartelView[4];
         private PillView _motorPill;
+        private readonly Image[] _wrenchBg = new Image[2];
+        private readonly Image[] _wrenches = new Image[2];
         private readonly Image[] _pulses = new Image[PulsePool];
-        private readonly Image[] _dashes = new Image[DashPool];
-        private readonly Image[] _arrows = new Image[ArrowPool];
-        private readonly ButtonView[] _buttons = new ButtonView[3];
-        private int _buttonCount;
+        private ButtonView _start;
         private readonly List<Spark> _sparks = new List<Spark>();
         private GearView _introA, _introB;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Text, float>> _sceneFonts = new List<KeyValuePair<Text, float>>();
-        private float _questionDp = 18f;
         private int _launchNumber;
 
         // lo que dice el aviso de abajo
@@ -143,16 +158,16 @@ namespace NeuroVida.Games.Engranajes
             Stretch(_play);
 
             _stripLayer = Layer(_play, "Strip");
-            _questionBar = Layer(_play, "Question");
+            _questionBar = Layer(_play, "Consigna");
             _sceneRoot = Layer(_play, "Scene");
             _uiLayer = Layer(_play, "Ui");
             _fxLayer = Layer(_play, "Fx");
             _launchLayer = Layer(_play, "Launch");
             _introLayer = Layer(_play, "Intro");
             BuildStrip();
-            BuildQuestion();
+            BuildConsigna();
             BuildScene();
-            BuildButtons();
+            BuildBottom();
             BuildSay();
             BuildFx();
             BuildLaunch();
@@ -217,17 +232,17 @@ namespace NeuroVida.Games.Engranajes
             _rocketTitle.text = "Cohete n.º 1";
         }
 
-        private void BuildQuestion()
+        /// <summary>La consigna de arriba, en dos líneas: «Que cada pieza cumpla su cartel» y lo que se puede hacer en la etapa.</summary>
+        private void BuildConsigna()
         {
             _questionBg = MakeImage(_questionBar, "Bg", RoundedRectSprite.Get(48));
             _questionBg.type = Image.Type.Sliced;
             _questionBg.color = new Color(20f / 255f, 27f / 255f, 58f / 255f);
             _questionGroup = _questionBar.gameObject.AddComponent<CanvasGroup>();
             _questionGroup.blocksRaycasts = false;
-            _questionText = MakeLabel(_questionBar, "Text", 18f, UiFonts.Bold, ButtonText, TextAnchor.MiddleCenter);
-            _fonts.RemoveAt(_fonts.Count - 1);                      // el tamaño lo fija ApplyQuestion (18 dp en una línea, 16 en dos)
-            _questionText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _questionText.verticalOverflow = VerticalWrapMode.Overflow;
+            _consigna1 = MakeLabel(_questionBar, "Line1", 17f, UiFonts.Bold, ButtonText, TextAnchor.MiddleCenter);
+            _consigna2 = MakeLabel(_questionBar, "Line2", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            foreach (var t in new[] { _consigna1, _consigna2 }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _questionBar.gameObject.SetActive(false);
         }
 
@@ -276,20 +291,18 @@ namespace NeuroVida.Games.Engranajes
             sr.sizeDelta = Vector2.zero;
             _room = SceneImage(sr, "Room", null, 129f, 288f, 242f, 348f);
 
-            // el cohete (todo junto: despega entero)
+            // el cohete (todo junto: despega entero); la punta en 104
             _rocketRoot = SceneNode(sr, "Rocket", 180f, 280f);
             _rocketRoot.anchoredPosition = Vector2.zero;
             _hull = SceneImage(_rocketRoot, "Hull", null, 306f, 267f, 116f, 358f);
             for (int k = 0; k < _windows.Length; k++)
             {
-                float y = 154f + k * ((428f - 142f - 90f) / (EngranajesContract.RocketLights - 1));
+                float y = 162f + k * ((428f - 150f - 90f) / (EngranajesContract.RocketLights - 1));
                 _windowGlows[k] = SceneImage(_rocketRoot, "WindowGlow" + k, RadialGlowSprite.Get(), 338f, y, 20f, 20f);
                 _windowGlows[k].color = new Color(1f, 201f / 255f, 74f / 255f, 0.6f);
                 _windows[k] = SceneImage(_rocketRoot, "Window" + k, DiscSprite.Get(), 338f, y, 8.4f, 8.4f);
             }
             BuildParts();
-            _targetRing = SceneImage(_rocketRoot, "TargetRing", null, 306f, 98f, 64f, 64f, false);
-            _targetRing.color = Gold;
             _flame = SceneImage(_rocketRoot, "Flame", RadialGlowSprite.Get(), 306f, 452f, 72f, 90f, false);
             _flame.color = new Color(1f, 180f / 255f, 90f / 255f, 0.95f);
 
@@ -305,19 +318,11 @@ namespace NeuroVida.Games.Engranajes
                 var img = MakeImage(_machineLayer, "Line" + i, null, false);
                 _lines[i] = new LineView { Rt = img.rectTransform, Img = img };
             }
-            for (int i = 0; i < _slotBelt.Length; i++)
-            {
-                var img = MakeImage(_machineLayer, "SlotBelt" + i, null, false);
-                _slotBelt[i] = new LineView { Rt = img.rectTransform, Img = img };
-            }
             for (int i = 0; i < GearPool; i++) _gears[i] = BuildGear(_machineLayer, "Gear" + i);
-            _slotGear = BuildGear(_machineLayer, "SlotGear");
-            _slotRing = MakeImage(_machineLayer, "SlotRing", null, false);
-            _slotRing.color = Gold;
-            _slotMark = MakeSceneLabel(_machineLayer, "SlotMark", 22f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _slotMark.text = "?";
-            _slotMark.gameObject.SetActive(false);
-            for (int i = 0; i < PillPool; i++) _beltPills[i] = BuildPill(_machineLayer, "BeltPill" + i, 72f, 22f, new Color(35f / 255f, 43f / 255f, 87f / 255f), ButtonText, 14f);
+            for (int i = 0; i < _racks.Length; i++) _racks[i] = MakeImage(_machineLayer, "Rack" + i, null, false);
+            for (int i = 0; i < BeltPool; i++) _belts[i] = BuildBelt(_machineLayer, "Belt" + i);
+            _motorPulse = MakeImage(_machineLayer, "MotorPulse", RoundedRectSprite.Get(24), false);
+            _motorPulse.color = new Color(Gold.r, Gold.g, Gold.b, 0f);
             _motorArrow = MakeImage(_machineLayer, "MotorArrow", null, false);
             _motorArrow.color = Cyan;
             _motorArrowRect = _motorArrow.rectTransform;
@@ -326,28 +331,17 @@ namespace NeuroVida.Games.Engranajes
                 _pulses[i] = SceneImage(_machineLayer, "Pulse" + i, RadialGlowSprite.Get(), 0f, 0f, 32f, 32f, false);
                 _pulses[i].color = new Color(1f, 214f / 255f, 120f / 255f, 1f);
             }
-            for (int i = 0; i < DashPool; i++)
-            {
-                var d = MakeImage(_machineLayer, "Dash" + i, null, false);
-                d.color = Coral;
-                _dashes[i] = d;
-            }
-            for (int i = 0; i < _stationPills.Length; i++) _stationPills[i] = BuildPill(_machineLayer, "Label" + (Station)i, 80f, 22f, PillIdle, NeuroStyle.Ink, 14f);
-            _motorPill = BuildPill(_machineLayer, "MotorLabel", 60f, 22f, new Color(22f / 255f, 58f / 255f, 92f / 255f), new Color(191f / 255f, 233f / 255f, 1f), 14f);
+            _motorPill = BuildPill(_machineLayer, "MotorLabel", 62f, 24f, ButtonFill, ButtonText, 14f);
             _motorPill.Label.text = "MOTOR";
-            for (int i = 0; i < ArrowPool; i++)
-            {
-                var a = MakeImage(_machineLayer, "Arrow" + i, null, false);
-                _arrows[i] = a;
-            }
+            for (int s = 0; s < _cartels.Length; s++) _cartels[s] = BuildCartel(_machineLayer, "Cartel" + (Station)s);
             _machineLayer.gameObject.SetActive(false);
             _sceneRoot.gameObject.SetActive(false);        // hasta que se horneen los sprites
         }
 
         private void BuildParts()
         {
-            // antena: mástil y radar (gira con su engranaje)
-            var ant = SceneNode(_rocketRoot, "Antena", 306f, 98f);
+            // antena: mástil y radar (gira con su engranaje); con el cohete más abajo (punta en 104) el radar queda en 110
+            var ant = SceneNode(_rocketRoot, "Antena", 306f, 110f);
             _partRoots[(int)Station.Antena] = ant;
             _partGroups[(int)Station.Antena] = ant.gameObject.AddComponent<CanvasGroup>();
             var mast = SceneImage(ant, "Mast", RoundedRectSprite.Get(8), 0f, 0f, 6f, 14f);
@@ -423,6 +417,23 @@ namespace NeuroVida.Games.Engranajes
             return v;
         }
 
+        private BeltView BuildBelt(Transform parent, string name)
+        {
+            var bv = new BeltView();
+            // primero las capas de las tiras y las medias vueltas (brillo, borde, banda), después las poleas encima
+            for (int layer = 0; layer < 3; layer++)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    var line = MakeImage(parent, name + "_line" + layer + k, null, false);
+                    bv.Lines[layer * 2 + k] = new LineView { Rt = line.rectTransform, Img = line };
+                    bv.Caps[layer * 2 + k] = MakeImage(parent, name + "_cap" + layer + k, null, false);
+                }
+            }
+            for (int k = 0; k < 2; k++) bv.Pulleys[k] = MakeImage(parent, name + "_pulley" + k, null, false);
+            return bv;
+        }
+
         private PillView BuildPill(Transform parent, string name, float wDp, float hDp, Color fill, Color text, float fontDp)
         {
             var p = new PillView();
@@ -444,31 +455,69 @@ namespace NeuroVida.Games.Engranajes
             return p;
         }
 
-        // ------------------------------------------------------------------ botones, aviso, efectos, despegue y tarjeta «NUEVO»
-
-        private void BuildButtons()
+        /// <summary>El cartel (96 × 38 dp): píldora oscura de borde dorado con el nombre y, abajo, el ícono y la palabra; al arrancar se tiñe de menta con ✓ o de coral.</summary>
+        private CartelView BuildCartel(Transform parent, string name)
         {
-            for (int i = 0; i < _buttons.Length; i++)
+            var c = new CartelView();
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            c.Root = go.AddComponent<RectTransform>();
+            c.Root.anchorMin = c.Root.anchorMax = c.Root.pivot = new Vector2(0.5f, 0.5f);
+            c.Root.sizeDelta = new Vector2(CartelW * Su, CartelH * Su);
+            c.Rim = MakeImage(c.Root, "Rim", RoundedRectSprite.Get(24));
+            c.Bg = MakeImage(c.Root, "Bg", RoundedRectSprite.Get(24));
+            c.Name = MakeSceneLabel(c.Root, "Name", 14f, UiFonts.Bold, ButtonText, TextAnchor.MiddleCenter);
+            c.Word = MakeSceneLabel(c.Root, "Word", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
+            c.Icon = MakeImage(c.Root, "Icon", null);
+            c.Check = MakeImage(c.Root, "Check", null);
+            c.Check.color = Mint;
+            foreach (var t in new[] { c.Name, c.Word }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
+            go.SetActive(false);
+            return c;
+        }
+
+        private const float CartelW = 96f, CartelH = 38f;
+
+        // ------------------------------------------------------------------ abajo: la cuenta de cambios y «Arrancar»; aviso, efectos, despegue y tarjeta «NUEVO»
+
+        private void BuildBottom()
+        {
+            var cg = new GameObject("Counter");
+            cg.transform.SetParent(_uiLayer, false);
+            _counterRoot = cg.AddComponent<RectTransform>();
+            _counterRoot.anchorMin = _counterRoot.anchorMax = _counterRoot.pivot = new Vector2(0.5f, 0.5f);
+            _counterGroup = cg.AddComponent<CanvasGroup>();
+            _counterGroup.blocksRaycasts = false;
+            _counterBg = MakeImage(_counterRoot, "Bg", RoundedRectSprite.Get(24));
+            _counterBg.color = new Color(20f / 255f, 27f / 255f, 58f / 255f);
+            _counterText = MakeLabel(_counterRoot, "Text", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _counterText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _counterText.verticalOverflow = VerticalWrapMode.Overflow;
+            for (int k = 0; k < 2; k++)
             {
-                var b = new ButtonView();
-                var go = new GameObject("Button" + i);
-                go.transform.SetParent(_uiLayer, false);
-                b.Root = go.AddComponent<RectTransform>();
-                b.Root.anchorMin = b.Root.anchorMax = b.Root.pivot = new Vector2(0.5f, 0.5f);
-                b.Group = go.AddComponent<CanvasGroup>();
-                b.Group.blocksRaycasts = false;
-                b.Shadow = MakeImage(b.Root, "Shadow", RoundedRectSprite.Get(24));
-                b.Shadow.color = new Color(0f, 0f, 0f, 0.45f);
-                b.Rim = MakeImage(b.Root, "Rim", RoundedRectSprite.Get(24));
-                b.Bg = MakeImage(b.Root, "Bg", RoundedRectSprite.Get(24));
-                b.Icon = MakeImage(b.Root, "Icon", null);
-                b.Label = MakeLabel(b.Root, "Label", 17f, UiFonts.Bold, ButtonText, TextAnchor.MiddleCenter);
-                _fonts.RemoveAt(_fonts.Count - 1);                  // el tamaño lo fija LayoutButtons (15 o 17 dp según el ancho)
-                b.Label.horizontalOverflow = HorizontalWrapMode.Wrap;
-                b.Label.verticalOverflow = VerticalWrapMode.Overflow;
-                go.SetActive(false);
-                _buttons[i] = b;
+                _wrenchBg[k] = MakeImage(_counterRoot, "WrenchBg" + k, DiscSprite.Get());
+                _wrenches[k] = MakeImage(_counterRoot, "Wrench" + k, null);
             }
+            cg.SetActive(false);
+
+            var b = new ButtonView();
+            var go = new GameObject("Start");
+            go.transform.SetParent(_uiLayer, false);
+            b.Root = go.AddComponent<RectTransform>();
+            b.Root.anchorMin = b.Root.anchorMax = b.Root.pivot = new Vector2(0.5f, 0.5f);
+            b.Group = go.AddComponent<CanvasGroup>();
+            b.Group.blocksRaycasts = false;
+            b.Shadow = MakeImage(b.Root, "Shadow", RoundedRectSprite.Get(24));
+            b.Shadow.color = new Color(0f, 0f, 0f, 0.45f);
+            b.Rim = MakeImage(b.Root, "Rim", RoundedRectSprite.Get(24));
+            b.Bg = MakeImage(b.Root, "Bg", RoundedRectSprite.Get(24));
+            b.Icon = MakeImage(b.Root, "Icon", null);
+            b.Label = MakeLabel(b.Root, "Label", 22f, UiFonts.Bold, NeuroStyle.Ink, TextAnchor.MiddleLeft);
+            b.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            b.Label.verticalOverflow = VerticalWrapMode.Overflow;
+            b.Label.text = "Arrancar";
+            go.SetActive(false);
+            _start = b;
         }
 
         private void BuildSay()
@@ -525,12 +574,15 @@ namespace NeuroVida.Games.Engranajes
             _introCard = MakeImage(_introLayer, "Card", RoundedRectSprite.Get(24));
             _introCard.color = new Color(20f / 255f, 27f / 255f, 58f / 255f);
             _introTitle = MakeLabel(_introLayer, "Title", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _introLine1 = MakeLabel(_introLayer, "Line1", 17f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-            _introLine2 = MakeLabel(_introLayer, "Line2", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _introBody = MakeLabel(_introLayer, "Body", 16f, UiFonts.Bold, Color.white, TextAnchor.UpperCenter);
             var tap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, Cyan, TextAnchor.MiddleCenter);
             tap.text = "Toca para seguir";
             _introTap = tap;
-            foreach (var t in new[] { _introTitle, _introLine1, _introLine2, tap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
+            foreach (var t in new[] { _introTitle, tap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
+            _introBody.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _introBody.verticalOverflow = VerticalWrapMode.Overflow;
+            _introBody.supportRichText = true;
+            _introBody.lineSpacing = 1.15f;
             _introA = BuildGear(_introLayer, "IntroGearA");
             _introB = BuildGear(_introLayer, "IntroGearB");
             _introGroup = _introLayer.gameObject.AddComponent<CanvasGroup>();
@@ -624,13 +676,31 @@ namespace NeuroVida.Games.Engranajes
             _cargoFrame.sprite = EngranajesSprites.CargoFrame();
             _cargoPlate.sprite = EngranajesSprites.CargoPlate();
             _cargoBox.sprite = EngranajesSprites.CargoBox();
-            _targetRing.sprite = EngranajesSprites.TargetRing();
-            _slotRing.sprite = EngranajesSprites.DashedRing();
             for (int i = 0; i < _lines.Length; i++) { _lines[i].Img.sprite = RoundedRectSprite.Get(24); SetRadius(_lines[i].Img, 3f); }
-            for (int i = 0; i < _slotBelt.Length; i++) { _slotBelt[i].Img.sprite = RoundedRectSprite.Get(24); SetRadius(_slotBelt[i].Img, 3f); }
-            for (int i = 0; i < _dashes.Length; i++) { _dashes[i].sprite = RoundedRectSprite.Get(24); SetRadius(_dashes[i], 1.5f); }
+            foreach (var r in _racks) r.sprite = EngranajesSprites.Rack();
+            foreach (var bv in _belts)
+            {
+                for (int i = 0; i < 6; i++)
+                {
+                    float w = EngranajesSprites.BeltWidths[i / 2];
+                    bv.Lines[i].Img.sprite = RoundedRectSprite.Get(24);
+                    SetRadius(bv.Lines[i].Img, w * Su / 2f);
+                    bv.Caps[i].sprite = EngranajesSprites.BeltCap(w);
+                    bv.Caps[i].rectTransform.sizeDelta = Vector2.one * (2f * (EngranajesContract.PulleyRadius + w / 2f + 2f) * Su);
+                }
+                foreach (var pu in bv.Pulleys) { pu.sprite = EngranajesSprites.Pulley(); pu.rectTransform.sizeDelta = Vector2.one * (40f * Su); }
+            }
+            foreach (var c in _cartels)
+            {
+                c.Rim.sprite = c.Bg.sprite = RoundedRectSprite.Get(24);
+                SetRadius(c.Rim, 13f * Su);
+                SetRadius(c.Bg, 12f * Su);
+                c.Check.sprite = EngranajesSprites.Check();
+                c.Check.rectTransform.sizeDelta = Vector2.one * (14f * Su);
+            }
+            for (int k = 0; k < 2; k++) _wrenches[k].sprite = EngranajesSprites.Wrench();
+            _start.Icon.sprite = EngranajesSprites.GlyphSprite(EngranajesSprites.Glyph.Play);
             foreach (var g in _gears) PrepareGearSprites(g);
-            PrepareGearSprites(_slotGear);
             PrepareGearSprites(_introA);
             PrepareGearSprites(_introB);
             _sceneRoot.gameObject.SetActive(true);
@@ -673,7 +743,6 @@ namespace NeuroVida.Games.Engranajes
             _sceneRoot.localScale = Vector3.one * (_s / Su * k);
             _sceneRoot.anchoredPosition = P(EngranajesLayout.W / 2f + EngranajesLayout.SceneShiftX, _lay.SceneCenterLogicalY);
             foreach (var kv in _sceneFonts) kv.Key.fontSize = Mathf.RoundToInt(kv.Value * Su / k);
-            ApplyLabelFonts();
 
             // cabecera: «Cohete n.º N», las 10 luces (x = 150 + 19 k) y los cohetes en órbita
             float row1 = _lay.StripTop + 14f, row2 = _lay.StripTop + 34f;
@@ -682,33 +751,51 @@ namespace NeuroVida.Games.Engranajes
             for (int i = 0; i < _lights.Length; i++) SetRect(_lights[i].rectTransform, 150f + i * 19f, row1, 12f, 12f);
             SetRect(_stripGlow.rectTransform, 150f, row1, 36f, 36f);
 
-            // pregunta
-            SetRect(_questionBg.rectTransform, EngranajesLayout.W / 2f, _lay.QuestionTop + EngranajesLayout.QuestionH / 2f, EngranajesLayout.W - 16f, EngranajesLayout.QuestionH);
+            // consigna: dos líneas
+            float qy = _lay.QuestionTop + EngranajesLayout.QuestionH / 2f;
+            SetRect(_questionBg.rectTransform, EngranajesLayout.W / 2f, qy, EngranajesLayout.W - 16f, EngranajesLayout.QuestionH);
             SetRadius(_questionBg, 14f * _s);
-            SetRect(_questionText.rectTransform, EngranajesLayout.W / 2f, _lay.QuestionTop + EngranajesLayout.QuestionH / 2f + 1f, EngranajesLayout.W - 36f, EngranajesLayout.QuestionH);
-            ApplyQuestionFont();
+            SetRect(_consigna1.rectTransform, EngranajesLayout.W / 2f, qy - 10f, EngranajesLayout.W - 36f, 22f);
+            SetRect(_consigna2.rectTransform, EngranajesLayout.W / 2f, qy + 11f, EngranajesLayout.W - 36f, 20f);
 
-            LayoutButtons();
+            LayoutBottom();
             LayoutSay();
-
-            // tarjeta «NUEVO»
-            float cy = _logicalH * 0.48f, cw = EngranajesLayout.W - 44f, ch = 206f;
-            SetRect(_introRim.rectTransform, EngranajesLayout.W / 2f, cy, cw + 4f, ch + 4f);
-            SetRect(_introCard.rectTransform, EngranajesLayout.W / 2f, cy, cw, ch);
-            SetRadius(_introRim, 28f * _s);
-            SetRadius(_introCard, 26f * _s);
-            SetRect(_introTitle.rectTransform, EngranajesLayout.W / 2f, cy - 74f, 200f, 24f);
-            SetRect(_introLine1.rectTransform, EngranajesLayout.W / 2f, cy + 30f, cw - 20f, 26f);
-            SetRect(_introLine2.rectTransform, EngranajesLayout.W / 2f, cy + 52f, cw - 20f, 24f);
-            SetRect(_introTap.rectTransform, EngranajesLayout.W / 2f, cy + 86f, 200f, 24f);
-            LayoutIntroGear(_introA, EngranajesLayout.W / 2f - 24f, cy - 22f, EngranajesSprites.GearSize.Big, EngranajesSprites.Palette.Main);
-            LayoutIntroGear(_introB, EngranajesLayout.W / 2f + 26f, cy - 22f, EngranajesSprites.GearSize.Small, EngranajesSprites.Palette.Station);
 
             // despegue: el texto va sobre la sala vacía (a la izquierda del cohete)
             var lp = L(130f, 170f);
             SetRect(_launchTitle.rectTransform, lp.x, lp.y, 240f, 40f);
             SetRect(_launchLine1.rectTransform, lp.x, L(130f, 204f).y, 240f, 24f);
             SetRect(_launchLine2.rectTransform, lp.x, L(130f, 226f).y, 240f, 24f);
+        }
+
+        /// <summary>La tarjeta «NUEVO»: el título, los dos engranajes que engranan, el texto (cada línea puede partirse en dos si no cabe en 14 dp o más) y «Toca para seguir». Crece con el texto.</summary>
+        private void LayoutIntro(string[] lines)
+        {
+            float cw = EngranajesLayout.W - 36f, cx = EngranajesLayout.W / 2f;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (i == 0) sb.Append(lines[i]);
+                else sb.Append(i == 1 ? "\n<color=#D6D1F2>" : "\n").Append(lines[i]);
+            }
+            if (lines.Length > 1) sb.Append("</color>");
+            _introBody.text = sb.ToString();
+            _introBody.rectTransform.sizeDelta = new Vector2((cw - 28f) * _s, 400f * _s);
+            float bodyH = _introBody.preferredHeight / _s;
+            float ch = 128f + bodyH + 40f;
+            float top = Mathf.Min(_logicalH * 0.5f - ch / 2f, _logicalH - ch - 12f);
+            top = Mathf.Max(top, 12f);
+            SetRect(_introRim.rectTransform, cx, top + ch / 2f, cw + 4f, ch + 4f);
+            SetRect(_introCard.rectTransform, cx, top + ch / 2f, cw, ch);
+            SetRadius(_introRim, 28f * _s);
+            SetRadius(_introCard, 26f * _s);
+            SetRect(_introTitle.rectTransform, cx, top + 26f, 200f, 24f);
+            SetRect(_introBody.rectTransform, cx, top + 120f + bodyH / 2f, cw - 28f, bodyH + 4f);
+            SetRect(_introTap.rectTransform, cx, top + ch - 24f, 200f, 24f);
+            LayoutIntroGear(_introA, cx - 24f, top + 76f, EngranajesSprites.GearSize.Big, EngranajesSprites.Palette.Main);
+            LayoutIntroGear(_introB, cx + 26f, top + 76f, EngranajesSprites.GearSize.Small, EngranajesSprites.Palette.Station);
+            _introA.Root.gameObject.SetActive(true);
+            _introB.Root.gameObject.SetActive(true);
         }
 
         private void LayoutIntroGear(GearView v, float lx, float ly, EngranajesSprites.GearSize size, EngranajesSprites.Palette palette)
@@ -734,29 +821,35 @@ namespace NeuroVida.Games.Engranajes
             v.Glow.rectTransform.sizeDelta = Vector2.one * (tip * 3f * u);
         }
 
-        private void LayoutButtons()
+        /// <summary>Abajo: la cuenta de cambios (con sus llaves) a la izquierda y el botón «Arrancar» a la derecha.</summary>
+        private void LayoutBottom()
         {
-            for (int i = 0; i < _buttons.Length; i++)
+            var c = EngranajesLayout.CounterRect(_lay);
+            SetRect(_counterRoot, c.center.x, c.center.y, c.width, c.height);
+            SetChild(_counterBg.rectTransform, 0f, 0f, c.width, c.height);
+            SetRadius(_counterBg, 20f * _s);
+            SetChild(_counterText.rectTransform, 0f, -c.height * 0.5f + 20f, c.width - 8f, 20f);
+            for (int k = 0; k < 2; k++)
             {
-                var b = _buttons[i];
-                if (i >= _buttonCount) { b.Root.gameObject.SetActive(false); continue; }
-                b.Root.gameObject.SetActive(true);
-                var rect = EngranajesLayout.ButtonRect(_lay, i, _buttonCount);
-                b.Rect = rect;
-                float w = rect.width, h = rect.height;
-                SetRect(b.Root, rect.center.x, rect.center.y, w, h);
-                SetChild(b.Shadow.rectTransform, 0f, 6f, w, h);
-                SetChild(b.Rim.rectTransform, 0f, 0f, w + 3f, h + 3f);
-                SetChild(b.Bg.rectTransform, 0f, 0f, w, h);
-                SetRadius(b.Shadow, 22f * _s);
-                SetRadius(b.Rim, 23.5f * _s);
-                SetRadius(b.Bg, 22f * _s);
-                SetChild(b.Icon.rectTransform, 0f, -h * 0.5f + h * 0.36f, 56f, 56f);
-                var l = b.Label;
-                l.fontSize = Mathf.RoundToInt((w < 110f ? 15f : 17f) * _s);
-                l.rectTransform.sizeDelta = new Vector2((w - 8f) * _s, 40f * _s);
-                l.rectTransform.anchoredPosition = new Vector2(0f, -(h * 0.5f - 24f) * _s);
+                float dx = _mach != null && _mach.Stage.Keys == 2 ? (k == 0 ? -18f : 18f) : 0f;
+                SetChild(_wrenchBg[k].rectTransform, dx, -c.height * 0.5f + 54f, 32f, 32f);
+                SetChild(_wrenches[k].rectTransform, dx, -c.height * 0.5f + 54f, 30f, 30f);
             }
+
+            var b = _start;
+            var rect = EngranajesLayout.StartRect(_lay);
+            b.Rect = rect;
+            float w = rect.width, h = rect.height;
+            SetRect(b.Root, rect.center.x, rect.center.y, w, h);
+            SetChild(b.Shadow.rectTransform, 0f, 6f, w, h);
+            SetChild(b.Rim.rectTransform, 0f, 0f, w + 3f, h + 3f);
+            SetChild(b.Bg.rectTransform, 0f, 0f, w, h);
+            SetRadius(b.Shadow, 24f * _s);
+            SetRadius(b.Rim, 25.5f * _s);
+            SetRadius(b.Bg, 24f * _s);
+            SetChild(b.Icon.rectTransform, -w / 2f + 63f, 0f, 28f, 28f);
+            b.Label.rectTransform.sizeDelta = new Vector2((w - 88f - 8f) * _s, 40f * _s);
+            b.Label.rectTransform.anchoredPosition = new Vector2((-w / 2f + 88f + (w - 96f) / 2f) * _s, 0f);
         }
 
         private void LayoutSay()
@@ -777,7 +870,5 @@ namespace NeuroVida.Games.Engranajes
             r.sizeDelta = new Vector2(w * _s, h * _s);
             r.anchoredPosition = new Vector2(dx * _s, -dy * _s);
         }
-
-        private void ApplyQuestionFont() => _questionText.fontSize = Mathf.RoundToInt(_questionDp * _s);
     }
 }

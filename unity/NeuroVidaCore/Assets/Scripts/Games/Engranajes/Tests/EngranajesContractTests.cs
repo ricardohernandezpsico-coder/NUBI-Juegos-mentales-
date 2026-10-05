@@ -5,11 +5,11 @@ using NeuroVida.Games.Engranajes;
 
 namespace NeuroVida.Games.Engranajes.Tests
 {
-    /// <summary>«Engranajes» (docs/diseno-engranajes.md): cientos de máquinas por etapa sin contactos no deseados, con todas las ramas terminando en una pieza, con la física y las respuestas
-    /// correctas y balanceadas, y el cohete que se guarda.</summary>
+    /// <summary>«Engranajes: Taller de reparación» (docs/diseno-engranajes.md): miles de máquinas por etapa sin contactos no deseados, sin callejones, con la regla de oro, las correas y los
+    /// interruptores que dice la etapa, la solución guardada que funciona, el mínimo de cambios que coincide con la etapa, la física, los textos y el cohete que se guarda.</summary>
     public class EngranajesContractTests
     {
-        private const int PerLevel = 300;
+        private const int PerLevel = 500;
 
         private static Random Rng(int seed) => new Random(seed);
 
@@ -19,26 +19,43 @@ namespace NeuroVida.Games.Engranajes.Tests
             for (int k = 0; k < count; k++) yield return EngranajesContract.Generate(level, rng);
         }
 
-        private static Piece PieceOf(Machine m) => m.Truth == Answer.Gear ? Piece.Gear : m.Truth == Answer.Crossed ? Piece.Crossed : Piece.None;
+        private static int PopCount(int v) { int n = 0; while (v != 0) { v &= v - 1; n++; } return n; }
+
+        private static List<int> Ids(Machine m, params int[] ids) => new List<int>(ids);
 
         // ------------------------------------------------------------------ etapas
 
         [Test]
-        public void ThereAreTwelveStages_WithTheIntroductionsInOrder_AndFiveEtapas()
+        public void ThereAreTwelveStages_WithTheIntroductionsInOrder_AndFiveGroups()
         {
             Assert.AreEqual(12, EngranajesContract.Stages.Length);
             Assert.AreEqual(12, EngranajesContract.MaxLevel);
             var intros = new List<Intro>();
             foreach (var st in EngranajesContract.Stages) if (st.Intro != Intro.None) intros.Add(st.Intro);
-            CollectionAssert.AreEqual(new[] { Intro.Ramas, Intro.Correas, Intro.Carga, Intro.Compuerta, Intro.Velocidad, Intro.Traba, Intro.Arma }, intros);
-            foreach (var i in intros) Assert.AreEqual(2, EngranajesContract.IntroText(i).Length, i + ": dos líneas");
+            CollectionAssert.AreEqual(new[] { Intro.Taller, Intro.Correas, Intro.Ramas, Intro.Barras, Intro.Bien, Intro.Dos }, intros);
+            foreach (var i in intros) Assert.That(EngranajesContract.IntroText(i).Length, Is.InRange(2, 3), i + ": dos o tres líneas");
             int[] etapas = { 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5 };
-            for (int l = 1; l <= 12; l++) Assert.AreEqual(etapas[l - 1], EngranajesContract.Etapa(l), "etapa del nivel " + l);
-            Assert.AreEqual(Question.Dir, EngranajesContract.StageFor(1).Q);
-            Assert.AreEqual(Question.Jam, EngranajesContract.StageFor(9).Q);
-            Assert.AreEqual(Question.Build, EngranajesContract.StageFor(10).Q);
-            Assert.AreEqual(Question.Build, EngranajesContract.StageFor(12).Q);
-            Assert.AreEqual(1, EngranajesContract.StageFor(0).Targets.Length > 0 ? 1 : 0, "los niveles se acotan");
+            for (int l = 1; l <= 12; l++) Assert.AreEqual(etapas[l - 1], EngranajesContract.Etapa(l), "grupo de etapa del nivel " + l);
+            int[] pieces = { 1, 1, 2, 2, 2, 2, 3, 3, 2, 3, 3, 3 };
+            int[] belts = { 0, 1, 2, 2, 2, 2, 3, 3, 2, 3, 3, 4 };
+            int[] keys = { 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2 };
+            for (int l = 1; l <= 12; l++)
+            {
+                var st = EngranajesContract.StageFor(l);
+                Assert.AreEqual(pieces[l - 1], st.Pieces, "piezas del nivel " + l);
+                Assert.AreEqual(belts[l - 1], st.Belts, "correas del nivel " + l);
+                Assert.AreEqual(keys[l - 1], st.Keys, "llaves del nivel " + l);
+            }
+            Assert.AreEqual(Fail.All, EngranajesContract.StageFor(1).Fail);
+            Assert.AreEqual(Fail.One, EngranajesContract.StageFor(3).Fail);
+            Assert.AreEqual(Fail.Two, EngranajesContract.StageFor(9).Fail);
+            Assert.AreEqual(Fail.Two, EngranajesContract.StageFor(12).Fail);
+            Assert.AreEqual(0.25f, EngranajesContract.StageFor(6).Ok);
+            Assert.AreEqual(0.20f, EngranajesContract.StageFor(8).Ok);
+            Assert.AreEqual(0.15f, EngranajesContract.StageFor(11).Ok);
+            Assert.IsNotNull(EngranajesContract.StageFor(0), "los niveles se acotan");
+            Assert.AreEqual(10, EngranajesContract.PrecisionMachines);
+            Assert.AreEqual(120, EngranajesContract.RetoSeconds);
         }
 
         // ------------------------------------------------------------------ cuadrícula
@@ -76,51 +93,7 @@ namespace NeuroVida.Games.Engranajes.Tests
             Assert.IsFalse(EngranajesContract.IsBig(4, EngranajesContract.StationRow(Station.Turbina)), "la turbina es chica");
         }
 
-        // ------------------------------------------------------------------ caminos
-
-        [Test]
-        public void Route_EachNewCellOnlyTouchesThePreviousOne_AndEntersTheRocketColumnFromTheLeft()
-        {
-            var rng = Rng(5);
-            for (int k = 0; k < 400; k++)
-            {
-                int fromRow = rng.Next(EngranajesContract.Rows);
-                int toRow = EngranajesContract.StationRow(EngranajesContract.AllStations[rng.Next(4)]);
-                var occ = new Dictionary<int, int>();
-                var p = EngranajesContract.BestRoute(occ, 0, fromRow, 4, toRow, 14, rng);
-                if (p == null) continue;
-                var seen = new List<int[]> { new[] { 0, fromRow } };
-                foreach (var c in p)
-                {
-                    var prev = seen[seen.Count - 1];
-                    Assert.AreEqual(1, Math.Abs(c[0] - prev[0]) + Math.Abs(c[1] - prev[1]), "paso de a una casilla");
-                    foreach (var o in seen.GetRange(0, seen.Count - 1))
-                        Assert.Greater(Math.Abs(c[0] - o[0]) + Math.Abs(c[1] - o[1]), 1, "la casilla " + c[0] + "," + c[1] + " toca a una que no es la anterior");
-                    Assert.IsTrue(c[0] <= 3 || (c[0] == 4 && c[1] == toRow), "solo el último paso entra a la columna del cohete");
-                    seen.Add(c);
-                }
-                var last = p[p.Count - 1];
-                Assert.AreEqual(4, last[0]);
-                Assert.AreEqual(toRow, last[1]);
-                Assert.AreEqual(3, p[p.Count - 2][0], "a la columna del cohete se entra desde la izquierda");
-            }
-        }
-
-        [Test]
-        public void BestRoute_NeverHasMoreTurnsThanTheStraightLineNeeds_PlusTwo()
-        {
-            var rng = Rng(9);
-            for (int row = 0; row < EngranajesContract.Rows; row++)
-                foreach (var s in EngranajesContract.AllStations)
-                {
-                    var p = EngranajesContract.BestRoute(new Dictionary<int, int>(), 0, row, 4, EngranajesContract.StationRow(s), 14, rng);
-                    Assert.IsNotNull(p, "fila " + row + " → " + s);
-                    // sin obstáculos basta una vuelta (derecho y una subida o bajada)
-                    Assert.LessOrEqual(EngranajesContract.Turns(0, row, p), 3, "fila " + row + " → " + s + ": demasiadas vueltas");
-                }
-        }
-
-        // ------------------------------------------------------------------ las máquinas
+        // ------------------------------------------------------------------ la máquina: árbol limpio
 
         [Test]
         public void EveryMachine_AtEveryLevel_HasNoUnwantedContacts_AndEveryGearIsReachable()
@@ -128,285 +101,339 @@ namespace NeuroVida.Games.Engranajes.Tests
             for (int level = 1; level <= 12; level++)
                 foreach (var m in Machines(level, PerLevel, 1))
                 {
-                    string where = "nivel " + level;
-                    Assert.IsEmpty(EngranajesContract.UnwantedContacts(m, Piece.None), where + ": contactos no deseados");
-                    var sol = EngranajesContract.Solve(m, m.Q == Question.Build ? PieceOf(m) : Piece.None);
-                    for (int i = 0; i < m.Gears.Count; i++)
-                        if (!m.Gears[i].Removed) Assert.GreaterOrEqual(sol.Depth[i], 0, where + ": el engranaje " + i + " no recibe fuerza del motor");
-                    if (m.Q == Question.Build) Assert.IsEmpty(EngranajesContract.UnwantedContacts(m, Piece.Gear), where + ": contactos con el engranaje del hueco");
+                    var bad = EngranajesContract.UnwantedContacts(m);
+                    Assert.IsEmpty(bad, "nivel " + level + ": " + string.Join(", ", bad));
+                    var sol = EngranajesContract.Solve(m, null);
+                    for (int i = 0; i < m.Gears.Count; i++) Assert.GreaterOrEqual(sol.Depth[i], 0, "nivel " + level + ": el engranaje " + i + " no recibe la fuerza del motor");
                 }
         }
 
         [Test]
-        public void EveryBranch_EndsInAnotherPieceOfTheRocket_AndNothingEndsInNothing()
+        public void NoDeadEnds_EveryLeafIsAPiece_AndThePiecesAreExactlyTheStageOnes()
         {
             for (int level = 1; level <= 12; level++)
-            {
-                var st = EngranajesContract.StageFor(level);
                 foreach (var m in Machines(level, PerLevel, 2))
                 {
-                    string where = "nivel " + level;
                     var degree = new int[m.Gears.Count];
                     foreach (var l in m.Links) { degree[l.A]++; degree[l.B]++; }
-                    var ends = new List<Station>();
                     for (int i = 1; i < m.Gears.Count; i++)
+                        if (degree[i] == 1) Assert.IsTrue(m.Gears[i].HasStation, "nivel " + level + ": el engranaje " + i + " no lleva a ninguna pieza (callejón)");
+                    Assert.AreEqual(GearRole.Motor, m.Gears[0].Role);
+                    Assert.AreEqual(m.Stage.Pieces, m.Targets.Length, "nivel " + level);
+                    Assert.AreEqual(m.Targets.Length, m.Stations.Count);
+                    foreach (var t in m.Targets)
                     {
-                        if (m.Gears[i].Removed) continue;
-                        if (degree[i] == 1)
-                        {
-                            Assert.IsTrue(m.Gears[i].HasStation, where + ": el engranaje " + i + " es una rama que termina en la nada");
-                            Assert.AreEqual(GearRole.Station, m.Gears[i].Role);
-                            ends.Add(m.Gears[i].Station);
-                        }
-                        else Assert.GreaterOrEqual(degree[i], 2, where + ": engranaje suelto " + i);
+                        Assert.IsTrue(m.Stations.ContainsKey(t), "nivel " + level + ": " + t);
+                        var g = m.Gears[m.Stations[t]];
+                        Assert.AreEqual(GearRole.Station, g.Role);
+                        Assert.AreEqual(4, g.Col, "la pieza va en la columna del cohete");
+                        Assert.AreEqual(EngranajesContract.StationRow(t), g.Row);
                     }
-                    Assert.AreEqual(1 + st.Branches, ends.Count, where + ": una pieza por cada camino");
-                    CollectionAssert.AllItemsAreUnique(ends, where + ": cada pieza la mueve un solo camino");
-                    Assert.Contains(m.TargetStation, ends, where + ": la pieza preguntada recibe fuerza");
-                    Assert.IsFalse(ends.Contains(Station.Compuerta) && ends.Contains(Station.Carga), where + ": compuerta y carga nunca van activas a la vez");
-                    Assert.Contains(m.TargetStation, st.Targets, where + ": la pieza preguntada es de esta etapa");
-                    foreach (var kv in m.Stations) Assert.AreEqual(kv.Key, m.Gears[kv.Value].Station);
-                    Assert.AreEqual(ends.Count, m.Stations.Count);
+                    Assert.IsFalse(m.Stations.ContainsKey(Station.Compuerta) && m.Stations.ContainsKey(Station.Carga), "compuerta y carga nunca van juntas (sus filas son vecinas)");
+                    if (m.Stage.Pool == Pool.Turn)
+                    {
+                        if (m.Stage.Pieces == 1) CollectionAssert.IsSubsetOf(m.Targets, new[] { Station.Antena, Station.Turbina });
+                        else CollectionAssert.AreEquivalent(new[] { Station.Antena, Station.Turbina }, m.Targets);
+                    }
+                    if (m.Stage.Pool == Pool.Rack) Assert.IsTrue(m.Stations.ContainsKey(Station.Compuerta) || m.Stations.ContainsKey(Station.Carga), "nivel " + level + ": una pieza con barra");
                 }
-            }
         }
 
         [Test]
-        public void EveryStage_HasExactlyTheBranchesBeltsGapAndTrapItAsksFor()
+        public void GoldenRule_RemovingAnyGear_ChangesTheResultOfSomePieceOrDisconnectsIt()
         {
             for (int level = 1; level <= 12; level++)
-            {
-                var st = EngranajesContract.StageFor(level);
-                int jams = 0;
-                foreach (var m in Machines(level, PerLevel, 3))
+                foreach (var m in Machines(level, 120, 3))
                 {
-                    int belts = 0, gaps = 0;
+                    var baseline = EngranajesContract.Results(m, null);
+                    for (int gone = 0; gone < m.Gears.Count; gone++)
+                    {
+                        // la máquina sin ese engranaje: se vuelve a seguir la fuerza desde el motor (si falta el motor, nada se mueve)
+                        bool changed = false;
+                        if (gone == 0) changed = true;
+                        else
+                        {
+                            var reach = new HashSet<int> { 0 };
+                            var queue = new Queue<int>(new[] { 0 });
+                            while (queue.Count > 0)
+                            {
+                                int i = queue.Dequeue();
+                                foreach (var l in m.Links)
+                                {
+                                    int j = l.A == i ? l.B : l.B == i ? l.A : -1;
+                                    if (j < 0 || j == gone || reach.Contains(j)) continue;
+                                    reach.Add(j);
+                                    queue.Enqueue(j);
+                                }
+                            }
+                            foreach (var t in m.Targets) if (!reach.Contains(m.Stations[t])) changed = true;
+                        }
+                        Assert.IsTrue(changed, "nivel " + level + ": quitar el engranaje " + gone + " no cambia nada (decoración)");
+                    }
+                    Assert.AreEqual(m.Targets.Length, baseline.Length);
+                }
+        }
+
+        // ------------------------------------------------------------------ correas e interruptores
+
+        [Test]
+        public void EveryStage_HasExactlyTheBeltsAndSwitchesItAsksFor_EachBeltMovingADifferentGroup()
+        {
+            for (int level = 1; level <= 12; level++)
+                foreach (var m in Machines(level, PerLevel, 4))
+                {
+                    int belts = 0;
+                    var masks = new HashSet<int>();
                     foreach (var l in m.Links)
                     {
-                        if (l.Type == LinkType.Straight || l.Type == LinkType.Crossed) belts++;
-                        if (l.Type == LinkType.Gap) gaps++;
+                        if (l.Type != LinkType.Belt) continue;
+                        belts++;
+                        var a = m.Gears[l.A];
+                        var b = m.Gears[l.B];
+                        double d = Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+                        Assert.AreEqual(2 * EngranajesContract.GridStep, d, 1e-3, "una correa une dos engranajes a dos casillas, en línea recta");
+                        Assert.IsTrue(a.Col == b.Col || a.Row == b.Row);
                     }
-                    Assert.AreEqual(st.Belts, belts, "nivel " + level + ": correas");
-                    Assert.AreEqual(st.Q == Question.Build ? 1 : 0, gaps, "nivel " + level + ": huecos");
-                    Assert.AreEqual(st.Q == Question.Build, m.Slot != null);
-                    if (m.Jam) { jams++; Assert.AreEqual(Question.Jam, st.Q, "solo el nivel 9 lleva trampa"); }
-                    int removed = 0;
-                    foreach (var g in m.Gears) if (g.Removed) removed++;
-                    Assert.AreEqual(st.Belts + (st.Q == Question.Build ? 1 : 0), removed, "nivel " + level + ": engranajes quitados");
+                    Assert.AreEqual(m.Stage.Belts, belts, "nivel " + level + ": correas");
+                    Assert.AreEqual(1 + belts, m.Switches.Count, "el motor y cada correa");
+                    Assert.AreEqual(EngranajesContract.MotorId, m.Switches[0].Id);
+                    Assert.AreEqual(m.FullMask, m.Switches[0].Mask, "el motor mueve todas las piezas");
+                    for (int i = 1; i < m.Switches.Count; i++)
+                    {
+                        Assert.AreEqual(LinkType.Belt, m.Links[m.Switches[i].Id].Type);
+                        Assert.AreNotEqual(0, m.Switches[i].Mask, "una correa siempre mueve alguna pieza");
+                        masks.Add(m.Switches[i].Mask);
+                    }
+                    if (m.Stage.Pieces > 1) Assert.AreEqual(belts, masks.Count, "nivel " + level + ": cada correa mueve un grupo distinto de piezas");
                 }
-                if (st.Q == Question.Jam) Assert.Greater(jams, PerLevel / 5, "la trampa aparece (~45 %)");
-            }
         }
 
         [Test]
-        public void TheFarStages_PutTheMotorFarFromThePiece_AndTheOthersNear()
+        public void TheSwitchMasks_AreWhatThePhysicsReallyChanges()
         {
             for (int level = 1; level <= 12; level++)
-            {
-                var st = EngranajesContract.StageFor(level);
-                foreach (var m in Machines(level, 100, 4))
+                foreach (var m in Machines(level, 150, 5))
                 {
-                    int dist = Math.Abs(m.Gears[0].Row - EngranajesContract.StationRow(m.TargetStation));
-                    if (st.Far) Assert.GreaterOrEqual(dist, 2, "nivel " + level);
-                    else Assert.LessOrEqual(dist, 2, "nivel " + level);
+                    var none = EngranajesContract.Results(m, null);
+                    foreach (var sw in m.Switches)
+                    {
+                        var res = EngranajesContract.Results(m, new List<int> { sw.Id });
+                        int flipped = 0;
+                        for (int k = 0; k < m.Targets.Length; k++) if (res[k].Got != none[k].Got) flipped |= 1 << k;
+                        Assert.AreEqual(sw.Mask, flipped, "nivel " + level + ": el interruptor " + sw.Id + " mueve otras piezas de las que dice");
+                    }
                 }
-            }
         }
+
+        // ------------------------------------------------------------------ el problema: qué falla, solución y mínimo
 
         [Test]
-        public void TheTrap_IsASmallGearTouchingTwoNeighboursOfThePath_FormingATriangle()
-        {
-            int found = 0;
-            foreach (var m in Machines(9, 400, 5))
-            {
-                if (!m.Jam) continue;
-                found++;
-                Assert.AreEqual(3, m.JamTri.Length);
-                var j = m.Gears[m.JamTri[2]];
-                Assert.AreEqual(GearRole.Jam, j.Role);
-                Assert.Less(j.Tip, EngranajesContract.SmallTip);
-                var a = m.Gears[m.JamTri[0]];
-                var b = m.Gears[m.JamTri[1]];
-                Assert.AreEqual(a.Pitch + b.Pitch, Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y)), 1e-3, "los dos vecinos ya engranan entre sí");
-                Assert.AreEqual(a.Pitch + j.Pitch, Math.Sqrt((a.X - j.X) * (a.X - j.X) + (a.Y - j.Y) * (a.Y - j.Y)), 1e-2);
-                Assert.AreEqual(b.Pitch + j.Pitch, Math.Sqrt((b.X - j.X) * (b.X - j.X) + (b.Y - j.Y) * (b.Y - j.Y)), 1e-2);
-                Assert.AreEqual(Answer.Stuck, m.Truth);
-            }
-            Assert.Greater(found, 100, "hay trampas");
-        }
-
-        // ------------------------------------------------------------------ física
-
-        private static Machine Chain(params GearDef[] gears)
-        {
-            var m = new Machine { Q = Question.Dir };
-            foreach (var g in gears) m.Gears.Add(g);
-            m.MotorDir = 1;
-            return m;
-        }
-
-        private static GearDef G(float pitch, float x = 0f) => new GearDef { Pitch = pitch, Tip = pitch + 3f, N = (int)(pitch / 2f), X = x };
-
-        [Test]
-        public void Solve_TouchingGearsTurnOppositeWays_AndTheSpeedFollowsTheSize()
-        {
-            var m = Chain(G(30), G(20), G(30), G(20));
-            m.Links.Add(new Link(0, 1, LinkType.Mesh));
-            m.Links.Add(new Link(1, 2, LinkType.Mesh));
-            m.Links.Add(new Link(2, 3, LinkType.Mesh));
-            var s = EngranajesContract.Solve(m, Piece.None);
-            CollectionAssert.AreEqual(new[] { 1, -1, 1, -1 }, s.Dir);
-            CollectionAssert.AreEqual(new[] { 0, 1, 2, 3 }, s.Depth);
-            Assert.AreEqual(1.5f, Math.Abs(s.Speed[1]), 1e-4f, "uno chico gira más rápido (30/20)");
-            Assert.AreEqual(1f, Math.Abs(s.Speed[2]), 1e-4f, "el intermedio no cambia la razón entre el motor y la pieza");
-            Assert.AreEqual(1.5f, Math.Abs(s.Speed[3]), 1e-4f);
-        }
-
-        [Test]
-        public void Solve_AStraightBeltKeepsTheDirection_AndACrossedBeltReversesIt()
-        {
-            var straight = Chain(G(20), G(20));
-            straight.Links.Add(new Link(0, 1, LinkType.Straight));
-            Assert.AreEqual(1, EngranajesContract.Solve(straight, Piece.None).Dir[1]);
-            var crossed = Chain(G(20), G(20));
-            crossed.Links.Add(new Link(0, 1, LinkType.Crossed));
-            Assert.AreEqual(-1, EngranajesContract.Solve(crossed, Piece.None).Dir[1]);
-        }
-
-        [Test]
-        public void Solve_TheGap_DoesNotCarryForceUntilAPieceIsPlaced()
-        {
-            var m = Chain(G(20), G(20));
-            m.Links.Add(new Link(0, 1, LinkType.Gap));
-            Assert.AreEqual(-1, EngranajesContract.Solve(m, Piece.None).Depth[1], "sin pieza no pasa nada");
-            var withGear = EngranajesContract.Solve(m, Piece.Gear);
-            Assert.AreEqual(1, withGear.Dir[1], "con un engranaje en medio: dos contactos, mismo sentido");
-            Assert.AreEqual(2, withGear.Depth[1], "y dos pasos de cascada");
-            var withBelt = EngranajesContract.Solve(m, Piece.Crossed);
-            Assert.AreEqual(-1, withBelt.Dir[1]);
-            Assert.AreEqual(1, withBelt.Depth[1]);
-        }
-
-        [Test]
-        public void Effect_BarToTheRight_ClockwiseLowersTheLoadAndClosesTheGate()
-        {
-            var m = Chain(G(30), G(20));
-            m.Links.Add(new Link(0, 1, LinkType.Mesh));
-            m.Target = 1;
-            m.TargetStation = Station.Carga;
-            m.MotorDir = -1;                       // el motor al revés → el engranaje de la pieza gira como el reloj
-            Assert.AreEqual(Answer.Down, EngranajesContract.Effect(m, EngranajesContract.Solve(m, Piece.None)));
-            m.MotorDir = 1;
-            Assert.AreEqual(Answer.Up, EngranajesContract.Effect(m, EngranajesContract.Solve(m, Piece.None)));
-            m.TargetStation = Station.Compuerta;
-            Assert.AreEqual(Answer.Open, EngranajesContract.Effect(m, EngranajesContract.Solve(m, Piece.None)));
-            m.MotorDir = -1;
-            Assert.AreEqual(Answer.Close, EngranajesContract.Effect(m, EngranajesContract.Solve(m, Piece.None)));
-            m.Jam = true;
-            Assert.AreEqual(Answer.Stuck, EngranajesContract.Effect(m, EngranajesContract.Solve(m, Piece.None)), "con traba nada se mueve");
-        }
-
-        // ------------------------------------------------------------------ respuestas
-
-        [Test]
-        public void TheCorrectAnswer_MatchesThePhysics_AndIsOneOfTheButtons()
+        public void TheStoredSolution_Works_AndUsesTheMinimumNumberOfChanges()
         {
             for (int level = 1; level <= 12; level++)
                 foreach (var m in Machines(level, PerLevel, 6))
                 {
-                    var buttons = EngranajesContract.Buttons(m);
-                    bool has = false;
-                    foreach (var b in buttons) if (b.Value == m.Truth) has = true;
-                    Assert.IsTrue(has, "nivel " + level + ": la respuesta correcta (" + m.Truth + ") no es un botón");
-                    Assert.AreEqual(m.Q == Question.Jam ? 3 : 2, buttons.Length);
-                    Assert.IsNotEmpty(EngranajesContract.QuestionText(m));
-                    Assert.IsNotEmpty(EngranajesContract.Explain(m));
-                    var s = EngranajesContract.Solve(m, Piece.None);
-                    switch (m.Q)
+                    Assert.AreEqual(m.MinK, m.Solution.Length, "nivel " + level + ": la solución guardada usa el mínimo");
+                    Assert.LessOrEqual(m.Solution.Length, m.Stage.Keys, "nivel " + level + ": cabe en las llaves");
+                    Assert.IsTrue(EngranajesContract.AllOk(EngranajesContract.Results(m, m.Solution)), "nivel " + level + ": la solución guardada no arregla la máquina");
+                }
+        }
+
+        [Test]
+        public void DoingNothing_Fails_ExceptWhenTheMachineWasAlreadyRight()
+        {
+            for (int level = 1; level <= 12; level++)
+                foreach (var m in Machines(level, PerLevel, 7))
+                {
+                    bool ok = EngranajesContract.AllOk(EngranajesContract.Results(m, null));
+                    Assert.AreEqual(m.W == 0, ok, "nivel " + level + ": «sin cambios» solo sirve si no falla nada");
+                    if (m.W == 0) Assert.AreEqual(0, m.Solution.Length);
+                }
+        }
+
+        [Test]
+        public void TheResultIsJudged_NotThePath_AnyCombinationThatLeavesEveryPieceRightCounts()
+        {
+            for (int level = 1; level <= 12; level++)
+                foreach (var m in Machines(level, 80, 8))
+                {
+                    var all = new List<List<int>> { new List<int>() };
+                    foreach (var s in m.Switches) all.Add(new List<int> { s.Id });
+                    if (m.Stage.Keys == 2)
+                        for (int a = 0; a < m.Switches.Count; a++)
+                            for (int b = a + 1; b < m.Switches.Count; b++) all.Add(new List<int> { m.Switches[a].Id, m.Switches[b].Id });
+                    foreach (var changes in all)
                     {
-                        case Question.Dir:
-                            Assert.AreEqual(s.Dir[m.Target] > 0 ? Answer.Cw : Answer.Ccw, m.Truth);
-                            break;
-                        case Question.Jam:
-                            Assert.AreEqual(m.Jam ? Answer.Stuck : (s.Dir[m.Target] > 0 ? Answer.Cw : Answer.Ccw), m.Truth);
-                            break;
-                        case Question.Rack:
-                            Assert.AreEqual(EngranajesContract.Effect(m, s), m.Truth);
-                            Assert.IsTrue(m.TargetStation == Station.Carga || m.TargetStation == Station.Compuerta);
-                            break;
-                        case Question.Speed:
-                            float ratio = Math.Abs(s.Speed[m.Target]);
-                            Assert.IsFalse(ratio > 0.8f && ratio < 1.25f, "la velocidad se parece demasiado a la del motor");
-                            Assert.AreEqual(ratio > 1f ? Answer.Fast : Answer.Slow, m.Truth);
-                            break;
+                        int xor = 0;
+                        foreach (int id in changes) foreach (var s in m.Switches) if (s.Id == id) xor ^= s.Mask;
+                        bool right = EngranajesContract.AllOk(EngranajesContract.Results(m, changes));
+                        Assert.AreEqual(xor == m.W, right, "nivel " + level + ": el resultado debe depender solo de qué piezas cambian de sentido");
                     }
                 }
         }
 
         [Test]
-        public void InBuildStages_TheTwoPiecesAlwaysGiveDifferentResults_AndTheTruthIsTheOneThatGetsTheGoal()
+        public void TheMinimumChangesMatchTheStage_AndTheFailingGroupIsTheOneItAsksFor()
         {
-            for (int level = 10; level <= 12; level++)
+            for (int level = 1; level <= 12; level++)
             {
-                if (EngranajesContract.StageFor(level).Q != Question.Build) continue;
-                foreach (var m in Machines(level, PerLevel, 7))
+                var st = EngranajesContract.StageFor(level);
+                foreach (var m in Machines(level, PerLevel, 9))
                 {
-                    var eG = EngranajesContract.Effect(m, EngranajesContract.Solve(m, Piece.Gear));
-                    var eC = EngranajesContract.Effect(m, EngranajesContract.Solve(m, Piece.Crossed));
-                    Assert.AreNotEqual(eG, eC, "nivel " + level + ": las dos piezas dan lo mismo");
-                    Assert.AreEqual(m.TargetStation == Station.Carga ? Answer.Up : Answer.Open, m.Goal);
-                    Assert.AreEqual(m.Truth == Answer.Gear ? eG : eC, m.Goal, "la respuesta correcta logra lo que pide Nubi");
-                    Assert.AreNotEqual(m.Truth == Answer.Gear ? eC : eG, m.Goal, "la otra no lo logra");
+                    Assert.LessOrEqual(m.MinK, st.Keys, "nivel " + level);
+                    if (m.W == 0) continue;
+                    switch (st.Fail)
+                    {
+                        case Fail.All:
+                            Assert.AreEqual(m.FullMask, m.W, "nivel " + level + ": fallan todas");
+                            Assert.AreEqual(1, m.MinK);
+                            break;
+                        case Fail.One:
+                            Assert.AreEqual(1, PopCount(m.W), "nivel " + level + ": falla una sola pieza");
+                            Assert.AreEqual(1, m.MinK);
+                            break;
+                        case Fail.Two:
+                            Assert.AreEqual(2, m.MinK, "nivel " + level + ": hacen falta justo dos cambios");
+                            break;
+                    }
                 }
             }
         }
 
         [Test]
-        public void TheAnswers_AreBalanced()
+        public void WithOneKey_TheSinglePieceStages_AreNeverFixedByTheMotor()
         {
-            // sentido 50/50 (el motor gira al azar), sube/baja, abre/cierra y rápido/lento según la pieza
-            foreach (int level in new[] { 1, 3, 5, 6, 7, 8, 9, 10, 11, 12 })
+            foreach (int level in new[] { 3 })
+                foreach (var m in Machines(level, 1000, 10))
+                {
+                    Assert.AreEqual(1, PopCount(m.W));
+                    Assert.IsFalse(EngranajesContract.AllOk(EngranajesContract.Results(m, Ids(m, EngranajesContract.MotorId))), "el motor mueve todas las piezas: no arregla una sola");
+                    CollectionAssert.DoesNotContain(m.Solution, EngranajesContract.MotorId);
+                }
+        }
+
+        [Test]
+        public void EveryStage_KeepsItsAlreadyRightPercentage_AndTheAllFailGroupIsRare()
+        {
+            for (int level = 1; level <= 12; level++)
             {
-                var counts = new Dictionary<Answer, int>();
-                const int n = 600;
-                foreach (var m in Machines(level, n, 8))
+                var st = EngranajesContract.StageFor(level);
+                int n = 1500, already = 0, all = 0;
+                foreach (var m in Machines(level, n, 11))
                 {
-                    counts.TryGetValue(m.Truth, out int c);
-                    counts[m.Truth] = c + 1;
+                    if (m.W == 0) already++;
+                    else if (m.W == m.FullMask) all++;
                 }
-                foreach (var kv in counts)
-                {
-                    if (kv.Key == Answer.Stuck) continue;   // la traba va aparte (~45 % del nivel 9)
-                    var st = EngranajesContract.StageFor(level);
-                    double share = kv.Value / (double)n;
-                    double expected = st.Q == Question.Rack && st.Targets.Length == 2 ? 0.25 : 0.5;   // carga Y compuerta: cuatro respuestas, a un cuarto cada una
-                    if (st.Q == Question.Jam) expected = (1 - counts.GetValueOrDefault(Answer.Stuck) / (double)n) / 2;
-                    Assert.AreEqual(expected, share, 0.08, "nivel " + level + ": " + kv.Key + " = " + kv.Value + " de " + n);
-                }
+                double frac = already / (double)n;
+                if (st.Ok <= 0f) Assert.AreEqual(0, already, "nivel " + level + ": no hay máquinas «ya bien»");
+                else Assert.AreEqual(st.Ok, frac, 0.04, "nivel " + level + ": «ya está bien» " + frac);
+                if (st.Fail == Fail.Any) Assert.LessOrEqual(all / (double)(n - already), 0.30, "nivel " + level + ": «todas fallan» sale a lo más ~20 %");
             }
         }
 
         [Test]
-        public void TheTrapStage_AsksForStuck_AboutAThirdToHalfOfTheTime()
+        public void ForcingThePiece_GivesTheAntennaInStageOne_ForTheTutorial()
         {
-            int stuck = 0, n = 600;
-            foreach (var m in Machines(9, n, 9)) if (m.Truth == Answer.Stuck) stuck++;
-            Assert.AreEqual(0.45, stuck / (double)n, 0.08);
+            var rng = Rng(12);
+            for (int i = 0; i < 60; i++)
+            {
+                var m = EngranajesContract.Generate(1, rng, Station.Antena);
+                CollectionAssert.AreEqual(new[] { Station.Antena }, m.Targets);
+                Assert.AreEqual(m.FullMask, m.W, "la antena viene fallando y se arregla con el motor");
+                Assert.AreEqual(EngranajesContract.MotorId, m.Solution[0]);
+            }
         }
 
         [Test]
-        public void TheSpeedStages_AskAboutBothFastAndSlow_AndAntennaIsSlowWhenTheMotorIsSmallAndViceVersa()
+        public void TheMachines_AreVaried_NotAlwaysTheSame()
         {
-            int fast = 0, slow = 0;
-            foreach (var m in Machines(7, 400, 10))
+            for (int level = 1; level <= 12; level++)
             {
-                float motor = m.Gears[0].Pitch, target = m.Gears[m.Target].Pitch;
-                Assert.AreNotEqual(motor, target, "un motor del mismo tamaño no da velocidad distinta");
-                if (m.Truth == Answer.Fast) { fast++; Assert.Less(target, motor); }
-                else { slow++; Assert.Greater(target, motor); }
+                var seen = new HashSet<string>();
+                foreach (var m in Machines(level, 200, 13))
+                {
+                    var sb = new System.Text.StringBuilder();
+                    foreach (var g in m.Gears) sb.Append(g.Col).Append(',').Append(g.Row).Append(';');
+                    foreach (var l in m.Links) if (l.Type == LinkType.Belt) sb.Append('b').Append(l.A).Append('-').Append(l.B).Append(l.Crossed ? "x" : "=");
+                    sb.Append(m.W);
+                    seen.Add(sb.ToString());
+                }
+                Assert.GreaterOrEqual(seen.Count, level == 1 ? 8 : 15, "nivel " + level + ": pocas máquinas distintas");
             }
-            Assert.Greater(fast, 120);
-            Assert.Greater(slow, 120);
+        }
+
+        // ------------------------------------------------------------------ física
+
+        [Test]
+        public void Solve_TouchingGearsTurnOppositeWays_AndTheSpeedFollowsTheSize()
+        {
+            foreach (var m in Machines(2, 100, 14))
+            {
+                var s = EngranajesContract.Solve(m, null);
+                foreach (var l in m.Links)
+                {
+                    if (l.Type == LinkType.Mesh) Assert.AreEqual(-s.Dir[l.A], s.Dir[l.B], "dos engranajes que se tocan giran al revés");
+                    float ra = Math.Abs(s.Speed[l.A]) * m.Gears[l.A].Pitch, rb = Math.Abs(s.Speed[l.B]) * m.Gears[l.B].Pitch;
+                    Assert.AreEqual(ra, rb, 1e-3f, "la velocidad en el punto de contacto es la misma");
+                }
+                Assert.AreEqual(m.MotorDir, s.Dir[0]);
+            }
+        }
+
+        [Test]
+        public void Solve_AStraightBeltKeepsTheDirection_ACrossedBeltReversesIt_AndTouchingItFlipsIt()
+        {
+            int checkedBelts = 0;
+            foreach (var m in Machines(4, 200, 15))
+                for (int li = 0; li < m.Links.Count; li++)
+                {
+                    var l = m.Links[li];
+                    if (l.Type != LinkType.Belt) continue;
+                    var s = EngranajesContract.Solve(m, null);
+                    Assert.AreEqual(l.Crossed ? -s.Dir[l.A] : s.Dir[l.A], s.Dir[l.B], "recta: mismo giro; cruzada: contrario");
+                    var s2 = EngranajesContract.Solve(m, new List<int> { li });
+                    Assert.AreEqual(l.Crossed ? s2.Dir[l.A] : -s2.Dir[l.A], s2.Dir[l.B], "tocarla la invierte");
+                    checkedBelts++;
+                }
+            Assert.Greater(checkedBelts, 100);
+        }
+
+        [Test]
+        public void Solve_TouchingTheMotorReversesEverything()
+        {
+            foreach (var m in Machines(7, 100, 16))
+            {
+                var a = EngranajesContract.Solve(m, null);
+                var b = EngranajesContract.Solve(m, Ids(m, EngranajesContract.MotorId));
+                for (int i = 0; i < m.Gears.Count; i++) Assert.AreEqual(-a.Dir[i], b.Dir[i]);
+            }
+        }
+
+        [Test]
+        public void Behave_BarToTheRight_ClockwiseLowersTheLoadAndClosesTheGate()
+        {
+            Assert.AreEqual(Act.Down, EngranajesContract.Behave(Station.Carga, 1));
+            Assert.AreEqual(Act.Up, EngranajesContract.Behave(Station.Carga, -1));
+            Assert.AreEqual(Act.Close, EngranajesContract.Behave(Station.Compuerta, 1));
+            Assert.AreEqual(Act.Open, EngranajesContract.Behave(Station.Compuerta, -1));
+            Assert.AreEqual(Act.Cw, EngranajesContract.Behave(Station.Antena, 1));
+            Assert.AreEqual(Act.Ccw, EngranajesContract.Behave(Station.Turbina, -1));
+            CollectionAssert.AreEqual(new[] { "reloj", "al revés", "sube", "baja", "se abre", "se cierra" },
+                new[] { EngranajesContract.MissionWord(Act.Cw), EngranajesContract.MissionWord(Act.Ccw), EngranajesContract.MissionWord(Act.Up), EngranajesContract.MissionWord(Act.Down), EngranajesContract.MissionWord(Act.Open), EngranajesContract.MissionWord(Act.Close) });
+        }
+
+        [Test]
+        public void TheCartels_AreBuiltFromWhatEachPieceDoesToday_WithTheFailingOnesInverted()
+        {
+            foreach (var m in Machines(8, 300, 17))
+            {
+                var none = EngranajesContract.Results(m, null);
+                for (int k = 0; k < m.Targets.Length; k++)
+                {
+                    bool inW = ((m.W >> k) & 1) == 1;
+                    Assert.AreEqual(!inW, none[k].Ok, "una pieza de W incumple su cartel y las demás cumplen");
+                }
+            }
         }
 
         // ------------------------------------------------------------------ dientes que encajan
@@ -415,34 +442,9 @@ namespace NeuroVida.Games.Engranajes.Tests
         public void TheTeethMesh_EveryToothFacesTheGapOfItsNeighbour()
         {
             for (int level = 1; level <= 12; level++)
-                foreach (var m in Machines(level, 100, 11))
-                {
-                    if (m.Q == Question.Build) EngranajesContract.Phase(m, PieceOf(m), Rng(1));
+                foreach (var m in Machines(level, 100, 18))
                     foreach (var l in m.Links)
-                    {
-                        if (l.Type != LinkType.Mesh) continue;
-                        if (m.Gears[l.A].Role == GearRole.Jam || m.Gears[l.B].Role == GearRole.Jam) continue;   // el triángulo de la trampa no puede encajar con los dos (por eso se traba)
-                        AssertMeshed(m.Gears[l.A], m.Gears[l.B], "nivel " + level);
-                    }
-                    if (m.Jam)
-                    {
-                        // …pero con uno de sus dos vecinos sí encaja (se ve el diente en el hueco)
-                        int ji = m.JamTri[2];
-                        bool one = false;
-                        foreach (var l in m.Links)
-                        {
-                            if (l.B != ji && l.A != ji) continue;
-                            var o = m.Gears[l.A == ji ? l.B : l.A];
-                            try { AssertMeshed(o, m.Gears[ji], "x"); one = true; } catch (AssertionException) { }
-                        }
-                        Assert.IsTrue(one, "nivel " + level + ": el engranaje de la trampa no encaja con ninguno");
-                    }
-                    if (m.Q == Question.Build && PieceOf(m) == Piece.Gear)
-                    {
-                        AssertMeshed(m.Gears[m.Slot.From], m.Slot.Gear, "nivel " + level + " (hueco, entrada)");
-                        AssertMeshed(m.Slot.Gear, m.Gears[m.Slot.To], "nivel " + level + " (hueco, salida)");
-                    }
-                }
+                        if (l.Type == LinkType.Mesh) AssertMeshed(m.Gears[l.A], m.Gears[l.B], "nivel " + level);
         }
 
         private static void AssertMeshed(GearDef a, GearDef b, string where)
@@ -458,35 +460,90 @@ namespace NeuroVida.Games.Engranajes.Tests
             Assert.Less(diff, 1e-3, where + ": los dientes no encajan");
         }
 
-        // ------------------------------------------------------------------ truco, textos, puntaje
+        // ------------------------------------------------------------------ qué se marca al equivocarse
 
         [Test]
-        public void TheTrick_FollowsThePathFromTheMotorToThePiece()
+        public void Downstream_OfTheMotorIsEverything_AndOfABeltOnlyWhatFollowsIt()
         {
-            foreach (var m in Machines(4, 100, 12))
+            foreach (var m in Machines(7, 100, 19))
             {
-                var path = EngranajesContract.PathTo(m, m.Target, false);
-                Assert.AreEqual(0, path[0], "empieza en el motor");
-                Assert.AreEqual(m.Target, path[path.Count - 1], "termina en la pieza");
-                for (int i = 1; i < path.Count; i++)
-                    Assert.IsTrue(m.Links.Exists(l => (l.A == path[i - 1] && l.B == path[i]) || (l.B == path[i - 1] && l.A == path[i])), "cada paso es una unión");
-                Assert.AreEqual("Truco: cada engranaje que toca gira al revés", EngranajesContract.Trick(m));
+                Assert.AreEqual(m.Gears.Count, EngranajesContract.Downstream(m, EngranajesContract.MotorId).Count, "el motor mueve todo");
+                foreach (var sw in m.Switches)
+                {
+                    if (sw.Id == EngranajesContract.MotorId) continue;
+                    var set = EngranajesContract.Downstream(m, sw.Id);
+                    Assert.Less(set.Count, m.Gears.Count, "una correa no mueve todo");
+                    int mask = 0;
+                    foreach (int i in set) if (m.Gears[i].HasStation) mask |= 1 << Array.IndexOf(m.Targets, m.Gears[i].Station);
+                    Assert.AreEqual(sw.Mask, mask, "las piezas que están aguas abajo son las de su máscara");
+                }
             }
-            var speed = EngranajesContract.Generate(7, Rng(1));
-            StringAssert.Contains("tamaño", EngranajesContract.Trick(speed));
+        }
+
+        // ------------------------------------------------------------------ textos
+
+        [Test]
+        public void TheFailureAndHintTexts_AreTheOnesOfTheDoc()
+        {
+            var rng = Rng(20);
+            bool sawAlso = false, sawNone = false, sawTrick = false;
+            for (int level = 1; level <= 12; level++)
+                for (int k = 0; k < 200; k++)
+                {
+                    var m = EngranajesContract.Generate(level, rng);
+                    // cambios al azar: lo suficiente para ver las tres pistas
+                    var changes = new List<int>();
+                    int n = rng.Next(0, m.Stage.Keys + 1);
+                    for (int j = 0; j < n; j++) { int id = m.Switches[rng.Next(m.Switches.Count)].Id; if (!changes.Contains(id)) changes.Add(id); }
+                    var res = EngranajesContract.Results(m, changes);
+                    if (EngranajesContract.AllOk(res))
+                    {
+                        Assert.AreEqual("", EngranajesContract.FailText(res));
+                        continue;
+                    }
+                    string fail = EngranajesContract.FailText(res), hint = EngranajesContract.HintText(m, res, changes);
+                    Assert.That(fail, Does.StartWith("La ").Or.StartWith("Fallaron "), fail);
+                    Assert.LessOrEqual(fail.Length, 48, fail);
+                    Assert.LessOrEqual(hint.Length, 46, hint);
+                    if (hint.StartsWith("Tu cambio también movió ")) sawAlso = true;
+                    else if (hint == "Brilla en dorado lo que había que cambiar") { sawNone = true; Assert.AreEqual(0, changes.Count); }
+                    else { sawTrick = true; Assert.AreEqual("Truco: cada engranaje que toca gira al revés", hint); }
+                }
+            Assert.IsTrue(sawAlso && sawNone && sawTrick, "salieron las tres pistas");
+            var one = new[] { new PartResult(Station.Turbina, Act.Ccw, false) };
+            Assert.AreEqual("La turbina giró al revés de su cartel", EngranajesContract.FailText(one));
+            Assert.AreEqual("La carga subió en vez de bajar", EngranajesContract.FailText(new[] { new PartResult(Station.Carga, Act.Up, false) }));
+            Assert.AreEqual("La carga bajó en vez de subir", EngranajesContract.FailText(new[] { new PartResult(Station.Carga, Act.Down, false) }));
+            Assert.AreEqual("La compuerta se cerró en vez de abrirse", EngranajesContract.FailText(new[] { new PartResult(Station.Compuerta, Act.Close, false) }));
+            Assert.AreEqual("La compuerta se abrió en vez de cerrarse", EngranajesContract.FailText(new[] { new PartResult(Station.Compuerta, Act.Open, false) }));
+            Assert.AreEqual("Fallaron la antena y la turbina", EngranajesContract.FailText(new[] { new PartResult(Station.Antena, Act.Cw, false), new PartResult(Station.Turbina, Act.Ccw, false) }));
+            Assert.AreEqual("Fallaron la antena, la carga y la turbina", EngranajesContract.FailText(new[] { new PartResult(Station.Antena, Act.Cw, false), new PartResult(Station.Carga, Act.Up, false), new PartResult(Station.Turbina, Act.Ccw, false) }));
         }
 
         [Test]
-        public void TheQuestionsAndExplanations_AreShortAndReadable()
+        public void TheSuccessText_RotatesAmongThree_AndHasItsOwnForAMachineThatWasAlreadyRight()
         {
-            for (int level = 1; level <= 12; level++)
-                foreach (var m in Machines(level, 40, 13))
-                {
-                    Assert.LessOrEqual(EngranajesContract.QuestionText(m).Length, 60, "pregunta del nivel " + level);
-                    Assert.LessOrEqual(EngranajesContract.Explain(m).Length, 60, "explicación del nivel " + level);
-                    foreach (var b in EngranajesContract.Buttons(m)) Assert.LessOrEqual(b.Label.Length, 16, b.Label);
-                }
+            var rng = Rng(21);
+            Machine ready = null;
+            while (ready == null) { var c = EngranajesContract.Generate(6, rng); if (c.W == 0) ready = c; }
+            Assert.AreEqual("¡Bien visto! Ya estaba lista", EngranajesContract.SuccessText(ready, new List<int>(), 0));
+            var broken = EngranajesContract.Generate(1, rng);
+            var seen = new HashSet<string>();
+            for (int i = 0; i < 6; i++) seen.Add(EngranajesContract.SuccessText(broken, broken.Solution, i));
+            CollectionAssert.AreEquivalent(new[] { "¡Cohete listo!", "¡Arreglado!", "¡Todo en orden!" }, seen);
         }
+
+        [Test]
+        public void TheConsigna_HasTwoLines_AndTheSecondDependsOnTheStage()
+        {
+            CollectionAssert.AreEqual(new[] { "Que cada pieza cumpla su cartel", "Toca el motor para cambiar su giro" }, EngranajesContract.Consigna(EngranajesContract.StageFor(1)));
+            Assert.AreEqual("Un cambio: el motor o una correa", EngranajesContract.Consigna(EngranajesContract.StageFor(2))[1]);
+            Assert.AreEqual("Un cambio, o ninguno si ya está bien", EngranajesContract.Consigna(EngranajesContract.StageFor(6))[1]);
+            Assert.AreEqual("Hasta dos cambios", EngranajesContract.Consigna(EngranajesContract.StageFor(9))[1]);
+            for (int l = 1; l <= 12; l++) foreach (var line in EngranajesContract.Consigna(EngranajesContract.StageFor(l))) Assert.LessOrEqual(line.Length, 36, line);
+        }
+
+        // ------------------------------------------------------------------ puntaje y cohete
 
         [Test]
         public void Score_PrecisionIsOutOfTenMachines_RetoOutOfTheReferencePace()
@@ -498,8 +555,6 @@ namespace NeuroVida.Games.Engranajes.Tests
             Assert.AreEqual(56, EngranajesContract.Score(5, true));
             Assert.Greater(EngranajesContract.StepSeconds(true), EngranajesContract.StepSeconds(false), "mayores: cascada algo más lenta");
         }
-
-        // ------------------------------------------------------------------ el cohete
 
         [Test]
         public void TheRocket_GainsALightPerHit_AndLaunchesOnlyWhenItIsComplete()
@@ -549,30 +604,6 @@ namespace NeuroVida.Games.Engranajes.Tests
             Assert.AreEqual(5, t.PeakEtapa);
             Assert.AreEqual(10000, t.MeanMs);
             Assert.AreEqual(1, t.Launches);
-        }
-
-        /// <summary>Sin ramas el camino es simple y pocas formas caben (y en velocidad el motor debe ser de otro tamaño que la pieza); con ramas hay muchas.</summary>
-        private static int MinVariety(int level)
-        {
-            var st = EngranajesContract.StageFor(level);
-            if (st.Branches > 0) return 9;
-            return st.Q == Question.Speed ? 2 : 5;
-        }
-
-        [Test]
-        public void TheMachines_AreVaried_NotAlwaysTheSame()
-        {
-            for (int level = 1; level <= 12; level++)
-            {
-                var seen = new HashSet<string>();
-                foreach (var m in Machines(level, 100, 14))
-                {
-                    var sb = new System.Text.StringBuilder();
-                    foreach (var g in m.Gears) sb.Append(g.Col).Append(',').Append(g.Row).Append(g.Removed ? "x" : "").Append(';');
-                    seen.Add(sb.ToString());
-                }
-                Assert.GreaterOrEqual(seen.Count, MinVariety(level), "nivel " + level + ": pocas máquinas distintas");
-            }
         }
     }
 }

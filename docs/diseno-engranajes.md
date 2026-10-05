@@ -276,3 +276,19 @@ Después: «¡Listo! Ahora va en serio».
 - Lo propio es arreglar con un número fijo de cambios y la idea de «aguas abajo» de una bifurcación, junto con el cohete,
   los carteles, el arte y los sonidos.
 - Va a la lista del abogado como juego nuevo.
+
+## 14. Estado de la implementación (5-oct) y desvíos del boceto
+
+Hecho y verificado: contrato puro (`EngranajesContract`, puerto fiel de la lógica del boceto) con sus pruebas, interfaz, sonidos (se sumó el «clank» de cada cambio; el golpe sordo del cartel que falla es el de siempre), tutorial de 3
+focos con zonas protegidas, pantalla final, medida y consejo, movimiento reducido. La lámina con el arte real está en `docs/previews/engranajes.png` (réplica, no captura).
+
+Desvíos del boceto, a propósito:
+
+- **Cartel más ancho y pegado a los engranajes.** El boceto lo centra en 314 con 82 de ancho y letra de 13 px; aquí la letra de la escena nunca baja de 14 dp, así que el cartel mide 96 (más si el texto lo pide, y deja lugar al ✓)
+  y su borde izquierdo queda donde terminan los dientes de los engranajes de la columna del cohete (273), sin pisarlos y sin pasarse del borde derecho de la pantalla aunque la escena se achique.
+- **Tarjetas «NUEVO» con letra de 16 dp.** Con ese tamaño algunas líneas del doc no caben en una sola; cada línea puede partirse en dos y la tarjeta crece con el texto (la prueba comprueba que no pase de 6 líneas).
+- **Dificultad:** se usa `AdaptiveDifficulty` común (objetivo 0,80; pasos de 0,5: dos aciertos seguidos suben una etapa), no la regla simple «2 aciertos suben / 2 errores bajan» del boceto jugable.
+- **En el tutorial no sale el aviso de abajo** («¡Cohete listo!»…): habla Nubi, y el aviso quedaba bajo «Saltar tutorial».
+- **Tarjetas «NUEVO» con clave nueva** (`engr_intros2`): las de la versión anterior eran otras, así que quien ya las vio verá estas una vez.
+- **Medida con clave nueva** (`taller`): el historial de la versión anterior no se mezcla (ver `docs/medidas-juegos-estrella.md`).
+- **La flecha del motor no gira antes de «Arrancar»** (como el boceto: queda quieta y solo se da vuelta al tocarla); con «quitar animaciones» el cambio es instantáneo.

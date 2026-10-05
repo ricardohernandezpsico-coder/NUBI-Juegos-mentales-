@@ -69,7 +69,7 @@ namespace NeuroVida.Bridge.EditorTools
         public static void RunCalculo() => RunGame("calculo", 9f);
 
         /// <summary>Mismo smoke test pero con «Engranajes» (id engranajes) como juego.</summary>
-        public static void RunEngranajes() => RunGame("engranajes", 9f);
+        public static void RunEngranajes() => RunGame("engranajes", 24f);
 
         /// <summary>Mismo smoke test pero con Piloto Estelar como juego.</summary>
         public static void RunPiloto() => RunGame("piloto", 9f);
@@ -122,7 +122,7 @@ namespace NeuroVida.Bridge.EditorTools
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
             ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
-            ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 9f), ("Anagramas", "anagramas", 9f),
+            ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 24f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
             ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f),
             ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 9f), ("Meteoros", "meteoros", 9f),
@@ -193,10 +193,10 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Alto de las tres formas de pantalla (ancho 1080) con que se revisa el tutorial de cada juego: 20:9 (el teléfono de Ricardo), 18:9 y 16:9.</summary>
         private static readonly int[] AuditHeights = { 2400, 2160, 1920 };
 
-        /// <summary>Los tutoriales guiados (menos Engranajes, que se rediseña) corren en las tres formas de pantalla: <see cref="NeuroVida.Games.Shared.NubiCoach"/> registra cada paso y se comprueba que Nubi y su globo no tapen nada.</summary>
+        /// <summary>Los tutoriales guiados corren en las tres formas de pantalla: <see cref="NeuroVida.Games.Shared.NubiCoach"/> registra cada paso y se comprueba que Nubi y su globo no tapen nada.</summary>
         private static void Enqueue((string Name, string Id, float Seconds) g)
         {
-            if (g.Name.StartsWith("Tutorial") && g.Id != "engranajes")
+            if (g.Name.StartsWith("Tutorial"))
             {
                 var only = Environment.GetEnvironmentVariable("NUBI_COACH_HEIGHTS");      // p. ej. «2160,1920»: repite solo esas formas
                 foreach (var h in AuditHeights)
@@ -233,6 +233,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "Engranajes";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
 
@@ -353,7 +354,7 @@ namespace NeuroVida.Bridge.EditorTools
             var wrapper = new CoachAuditFile { Game = game, Width = Screen.width, Height = Screen.height, Steps = steps.ToArray() };
             System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"{game}-{_currentHeight}.json"), JsonUtility.ToJson(wrapper, true));
             Debug.Log($"[SmokeTest] tutorial de {game} a {Screen.width}x{Screen.height}: {steps.Count} paso(s) registrados");
-            bool strict = game != "engranajes";          // Engranajes se rediseña: se registra pero no se exige
+            bool strict = true;
             if (steps.Count == 0 && strict) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el tutorial de {game} no registró ningún paso"); }
             foreach (var st in steps)
             {
@@ -419,6 +420,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.AssessmentOverride = assessment;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = gameId == "engranajes" && !tutorial;
             EditorPlaytestBootstrap.GameIdOverride = gameId;
             EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
             EditorSceneManager.OpenScene(ScenePath);

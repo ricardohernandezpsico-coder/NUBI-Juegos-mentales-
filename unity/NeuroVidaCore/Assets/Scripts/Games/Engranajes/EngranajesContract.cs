@@ -6,29 +6,24 @@ namespace NeuroVida.Games.Engranajes
     /// <summary>Las cuatro piezas del cohete que se mueven con engranajes (de arriba a abajo en la columna del cohete).</summary>
     public enum Station { Antena, Compuerta, Carga, Turbina }
 
-    public enum Question { Dir, Rack, Speed, Jam, Build }
+    public enum GearRole { Motor, Main, Station }
 
-    /// <summary>Todas las respuestas posibles de un botón.</summary>
-    public enum Answer { None, Cw, Ccw, Stuck, Up, Down, Open, Close, Fast, Slow, Gear, Crossed }
+    /// <summary>Mesh = dientes que se tocan (giran al revés). Belt = correa entre dos engranajes lejanos (recta: mismo giro; cruzada: giro contrario).</summary>
+    public enum LinkType { Mesh, Belt }
 
-    public enum GearRole { Motor, Main, Branch, Station, Jam }
+    /// <summary>Lo que debe hacer una pieza (su cartel) o lo que hace: girar como el reloj o al revés (antena, turbina), subir o bajar (carga), abrirse o cerrarse (compuerta).</summary>
+    public enum Act { Cw, Ccw, Up, Down, Open, Close }
 
-    public enum LinkType { Mesh, Straight, Crossed, Gap }
+    public enum Intro { None, Taller, Correas, Ramas, Barras, Bien, Dos }
 
-    /// <summary>Lo que se pone en el hueco de «Arma tú».</summary>
-    public enum Piece { None, Gear, Crossed }
+    /// <summary>Qué piezas lleva la etapa: solo antena y turbina (giro), una con barra dentada, o las cuatro posibles.</summary>
+    public enum Pool { Turn, Rack, All }
 
-    public enum Intro { None, Ramas, Correas, Carga, Compuerta, Velocidad, Traba, Arma }
+    /// <summary>Qué falla en la máquina: todas las piezas (se arregla con el motor), una sola, cualquier grupo que se arregle con las llaves, o un grupo que pide justo dos cambios.</summary>
+    public enum Fail { All, One, Any, Two }
 
-    public enum ButtonIcon { Cw, Ccw, X, Up, Down, Fast, Slow, Gear, Belt }
-
-    public readonly struct ButtonDef
-    {
-        public readonly Answer Value;
-        public readonly string Label;
-        public readonly ButtonIcon Icon;
-        public ButtonDef(Answer value, string label, ButtonIcon icon) { Value = value; Label = label; Icon = icon; }
-    }
+    /// <summary>Qué late en las primeras máquinas de la etapa para decir qué se puede tocar.</summary>
+    public enum Hint { Motor, Belt, Ok, Two }
 
     public sealed class GearDef
     {
@@ -39,7 +34,6 @@ namespace NeuroVida.Games.Engranajes
         public GearRole Role;
         public bool HasStation;
         public Station Station;
-        public bool Removed;
         /// <summary>Ángulo (radianes) de un diente: las fases de los vecinos se calculan para que cada diente quede frente al hueco del otro.</summary>
         public float A;
         public bool PhaseSet;
@@ -49,47 +43,52 @@ namespace NeuroVida.Games.Engranajes
     {
         public readonly int A, B;
         public readonly LinkType Type;
-        public Link(int a, int b, LinkType type) { A = a; B = b; Type = type; }
+        /// <summary>Solo para correas: true si viene cruzada (invierte el giro).</summary>
+        public readonly bool Crossed;
+        public Link(int a, int b, LinkType type, bool crossed = false) { A = a; B = b; Type = type; Crossed = crossed; }
     }
 
-    /// <summary>El hueco de «Arma tú»: el engranaje que va ahí si se elige «Engranaje» (entre <see cref="From"/> y <see cref="To"/>).</summary>
-    public sealed class Slot
+    /// <summary>Un interruptor: el motor (<see cref="EngranajesContract.MotorId"/>) o una correa (el índice de su unión). <see cref="Mask"/> = qué piezas (bit k = <c>Targets[k]</c>) cambian de sentido si se toca.</summary>
+    public readonly struct Switch
     {
-        public GearDef Gear;
-        public int From, To;
+        public readonly int Id;
+        public readonly int Mask;
+        public Switch(int id, int mask) { Id = id; Mask = mask; }
     }
 
     public sealed class StageDef
     {
-        public Question Q;
-        public Station[] Targets;
-        public int Branches, Belts;
-        public bool Far;
+        public int Pieces, Belts, Keys;
+        public Pool Pool;
+        public Fail Fail;
+        /// <summary>Probabilidad de que la máquina ya esté bien (no hay que cambiar nada).</summary>
+        public float Ok;
+        public Hint Hint;
         public Intro Intro;
     }
 
-    /// <summary>Una máquina de la partida: los engranajes (en una cuadrícula de 4 × 6 y la columna del cohete), cómo se unen, y la respuesta correcta.</summary>
+    /// <summary>Una máquina de la partida: los engranajes (en una cuadrícula de 4 × 6 y la columna del cohete), cómo se unen, qué falla y la solución mínima.</summary>
     public sealed class Machine
     {
         public List<GearDef> Gears = new List<GearDef>();
         public List<Link> Links = new List<Link>();
-        /// <summary>Índices del camino principal: el motor y cada engranaje hasta la pieza preguntada.</summary>
-        public List<int> Main = new List<int>();
-        public int Target;
-        public Station TargetStation;
-        public Slot Slot;
-        public bool Jam;
-        public int[] JamTri;
-        public Question Q;
+        public Station[] Targets;
         public StageDef Stage;
         public int Level;
         /// <summary>1 = el motor gira como el reloj, -1 = al revés.</summary>
         public int MotorDir;
         public Dictionary<Station, int> Stations = new Dictionary<Station, int>();
-        /// <summary>«Arma tú»: lo que hay que lograr (<see cref="Answer.Up"/> o <see cref="Answer.Open"/>).</summary>
-        public Answer Goal;
-        public Answer Truth;
+        public List<Switch> Switches = new List<Switch>();
+        /// <summary>Las piezas que vienen fallando (bits sobre <see cref="Targets"/>); 0 = la máquina ya está bien.</summary>
+        public int W;
+        /// <summary>El mínimo de cambios (interruptores) que arregla la máquina.</summary>
+        public int MinK;
+        /// <summary>El cartel de cada pieza: lo que debe hacer.</summary>
+        public Dictionary<Station, Act> Mission = new Dictionary<Station, Act>();
+        /// <summary>Una solución mínima (ids de interruptor), para mostrarla si se equivoca.</summary>
+        public int[] Solution = new int[0];
         public int Count => Gears.Count;
+        public int FullMask => (1 << Targets.Length) - 1;
     }
 
     /// <summary>El resultado de hacer arrancar la máquina: sentido, velocidad y profundidad (pasos desde el motor) de cada engranaje.</summary>
@@ -100,10 +99,19 @@ namespace NeuroVida.Games.Engranajes
         public int[] Depth;
     }
 
+    /// <summary>Lo que hizo una pieza al arrancar y si cumplió su cartel.</summary>
+    public readonly struct PartResult
+    {
+        public readonly Station Station;
+        public readonly Act Got;
+        public readonly bool Ok;
+        public PartResult(Station station, Act got, bool ok) { Station = station; Got = got; Ok = ok; }
+    }
+
     /// <summary>
-    /// Reglas puras de «Engranajes» (docs/diseno-engranajes.md; puerto fiel del boceto docs/previews/engranajes-boceto.html): la cuadrícula de la sala de máquinas,
-    /// los caminos limpios del motor a cada pieza del cohete, las ramas (siempre terminan en otra pieza), las correas y el hueco, la trampa en triángulo, la física
-    /// (sentido y velocidad de cada engranaje), el efecto en cada pieza y las 12 etapas.
+    /// Reglas puras de «Engranajes: Taller de reparación» (docs/diseno-engranajes.md; puerto fiel de la lógica del boceto docs/previews/engranajes-taller-boceto.html): la cuadrícula de la sala de
+    /// máquinas, el árbol limpio del motor a las piezas, las correas, los interruptores (el motor y cada correa, cada uno con las piezas que mueve), el problema (qué piezas fallan y el mínimo de
+    /// cambios que lo arregla), la física, el resultado de cada pieza y las 12 etapas. Se juzga el RESULTADO, no el camino.
     /// </summary>
     public static class EngranajesContract
     {
@@ -114,6 +122,8 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Máquinas «de ritmo completo» en 120 s (una cada ~13 s): con ellas el Reto vale 100.</summary>
         public const float RetoReferenceMachines = 9f;
         public const int RocketLights = 10;
+        /// <summary>El id del interruptor del motor (los de las correas son el índice de su unión).</summary>
+        public const int MotorId = -1;
 
         // ---- la cuadrícula (unidades del boceto; la pantalla las escala)
         public const float GridX0 = 40f, GridY0 = 150f, GridStep = 50f;
@@ -122,8 +132,10 @@ namespace NeuroVida.Games.Engranajes
         public const float BigTip = 33f, BigPitch = 30f, SmallTip = 23f, SmallPitch = 20f;
         public const int BigTeeth = 15, SmallTeeth = 10;
         public const float ToothDepth = 6f;
-        public const float JamPitch = 12f, JamTip = 15f;
-        public const int JamTeeth = 6;
+        /// <summary>El radio de la polea que va en el eje de cada extremo de una correa.</summary>
+        public const float PulleyRadius = 14f;
+        /// <summary>Cuánto se aleja del trazo de la correa un toque y aún cuenta (unidades del boceto).</summary>
+        public const float BeltTouch = 26f;
 
         public static readonly Station[] AllStations = { Station.Antena, Station.Compuerta, Station.Carga, Station.Turbina };
 
@@ -166,7 +178,7 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Centro de una casilla (la columna 4 es la del cohete, donde van los engranajes de las piezas).</summary>
         public static void CellXY(int col, int row, out float x, out float y)
         {
-            x = col < 4 ? GridX0 + col * GridStep : GridX0 + 4 * GridStep;
+            x = GridX0 + col * GridStep;
             y = GridY0 + row * GridStep;
         }
 
@@ -174,62 +186,86 @@ namespace NeuroVida.Games.Engranajes
 
         public static readonly StageDef[] Stages =
         {
-            Stage(Question.Dir, new[] { Station.Antena, Station.Turbina }, 0, 0, false, Intro.None),
-            Stage(Question.Dir, new[] { Station.Antena, Station.Turbina }, 0, 0, true, Intro.None),
-            Stage(Question.Dir, new[] { Station.Antena, Station.Turbina }, 1, 0, false, Intro.Ramas),
-            Stage(Question.Dir, new[] { Station.Antena, Station.Turbina }, 1, 1, false, Intro.Correas),
-            Stage(Question.Rack, new[] { Station.Carga }, 0, 0, false, Intro.Carga),
-            Stage(Question.Rack, new[] { Station.Compuerta }, 1, 0, false, Intro.Compuerta),
-            Stage(Question.Speed, new[] { Station.Antena, Station.Turbina }, 0, 0, false, Intro.Velocidad),
-            Stage(Question.Speed, new[] { Station.Antena, Station.Turbina }, 1, 1, false, Intro.None),
-            Stage(Question.Jam, new[] { Station.Antena, Station.Turbina }, 1, 0, false, Intro.Traba),
-            Stage(Question.Build, new[] { Station.Carga }, 0, 0, false, Intro.Arma),
-            Stage(Question.Rack, new[] { Station.Carga, Station.Compuerta }, 2, 1, true, Intro.None),
-            Stage(Question.Build, new[] { Station.Compuerta }, 1, 1, true, Intro.None),
+            Stage(1, Pool.Turn, 0, 1, Fail.All, 0f, Hint.Motor, Intro.Taller),
+            Stage(1, Pool.Turn, 1, 1, Fail.All, 0f, Hint.Belt, Intro.Correas),
+            Stage(2, Pool.Turn, 2, 1, Fail.One, 0f, Hint.Belt, Intro.Ramas),
+            Stage(2, Pool.Turn, 2, 1, Fail.Any, 0f, Hint.Belt, Intro.None),
+            Stage(2, Pool.Rack, 2, 1, Fail.Any, 0f, Hint.Belt, Intro.Barras),
+            Stage(2, Pool.Rack, 2, 1, Fail.Any, 0.25f, Hint.Ok, Intro.Bien),
+            Stage(3, Pool.All, 3, 1, Fail.Any, 0f, Hint.Belt, Intro.None),
+            Stage(3, Pool.All, 3, 1, Fail.Any, 0.20f, Hint.Ok, Intro.None),
+            Stage(2, Pool.All, 2, 2, Fail.Two, 0f, Hint.Two, Intro.Dos),
+            Stage(3, Pool.All, 3, 2, Fail.Two, 0f, Hint.Two, Intro.None),
+            Stage(3, Pool.All, 3, 2, Fail.Any, 0.15f, Hint.Two, Intro.None),
+            Stage(3, Pool.All, 4, 2, Fail.Two, 0f, Hint.Two, Intro.None),
         };
 
-        private static StageDef Stage(Question q, Station[] targets, int branches, int belts, bool far, Intro intro) =>
-            new StageDef { Q = q, Targets = targets, Branches = branches, Belts = belts, Far = far, Intro = intro };
+        private static StageDef Stage(int pieces, Pool pool, int belts, int keys, Fail fail, float ok, Hint hint, Intro intro) =>
+            new StageDef { Pieces = pieces, Pool = pool, Belts = belts, Keys = keys, Fail = fail, Ok = ok, Hint = hint, Intro = intro };
 
         private static readonly int[] EtapaOf = { 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5 };
 
         public static StageDef StageFor(int level) => Stages[Math.Max(1, Math.Min(MaxLevel, level)) - 1];
 
-        /// <summary>Las 5 etapas de la medida final: giro, ramas y correas, movimiento (carga y compuerta), velocidad, trampas y armar.</summary>
+        /// <summary>Los 5 grupos de etapa de la pantalla final: motor y correas, ramas, carga y compuerta, tres piezas y dos llaves.</summary>
         public static int Etapa(int level) => EtapaOf[Math.Max(1, Math.Min(MaxLevel, level)) - 1];
 
+        /// <summary>El texto de cada tarjeta «NUEVO» (una vez por instalación).</summary>
         public static string[] IntroText(Intro intro)
         {
             switch (intro)
             {
-                case Intro.Ramas: return new[] { "Ahora la fuerza se reparte en ramas.", "Cada rama mueve otra pieza del cohete." };
-                case Intro.Correas: return new[] { "Correa recta: mismo sentido.", "Correa cruzada: sentido contrario." };
-                case Intro.Carga: return new[] { "El elevador sube o baja la carga", "según hacia dónde gire su engranaje." };
-                case Intro.Compuerta: return new[] { "La compuerta se abre si sube", "y se cierra si baja." };
-                case Intro.Velocidad: return new[] { "Un engranaje chico gira más rápido", "que uno grande." };
-                case Intro.Traba: return new[] { "Ojo: tres engranajes que se tocan", "en triángulo se traban." };
-                case Intro.Arma: return new[] { "¡Ahora armas tú! Falta una pieza:", "elige la que logra lo que pide Nubi." };
+                case Intro.Taller: return new[] { "La máquina del cohete viene mal armada.", "Cada pieza tiene un cartel con lo que debe hacer.", "Toca el motor para cambiar su giro y arranca." };
+                case Intro.Correas: return new[] { "Toca una correa para cruzarla o descruzarla.", "Recta: mismo giro.", "Cruzada (en X): giro contrario." };
+                case Intro.Ramas: return new[] { "Ahora la fuerza se reparte en ramas.", "Un cambio antes de la rama cambia todo;", "uno dentro de la rama, solo esa pieza." };
+                case Intro.Barras: return new[] { "Carga y compuerta van con una barra dentada.", "Si su engranaje gira como el reloj, la barra baja:", "la carga baja y la compuerta se cierra." };
+                case Intro.Bien: return new[] { "A veces la máquina ya está bien.", "Si todo cumple su cartel, no cambies nada:", "solo arranca." };
+                case Intro.Dos: return new[] { "Ahora tienes dos llaves.", "Puedes hacer hasta dos cambios." };
                 default: return new string[0];
+            }
+        }
+
+        /// <summary>La consigna de arriba: primera línea fija y segunda según lo que se puede hacer en la etapa.</summary>
+        public static string[] Consigna(StageDef st)
+        {
+            string second;
+            switch (st.Hint)
+            {
+                case Hint.Motor: second = "Toca el motor para cambiar su giro"; break;
+                case Hint.Belt: second = "Un cambio: el motor o una correa"; break;
+                case Hint.Ok: second = "Un cambio, o ninguno si ya está bien"; break;
+                default: second = "Hasta dos cambios"; break;
+            }
+            return new[] { "Que cada pieza cumpla su cartel", second };
+        }
+
+        // ------------------------------------------------------------------ lo que hace cada pieza
+
+        /// <summary>Lo que hace una pieza según el giro de su engranaje (barra dentada a la derecha del engranaje: si gira como el reloj, la barra baja).</summary>
+        public static Act Behave(Station s, int dir)
+        {
+            if (s == Station.Carga) return dir > 0 ? Act.Down : Act.Up;
+            if (s == Station.Compuerta) return dir > 0 ? Act.Close : Act.Open;
+            return dir > 0 ? Act.Cw : Act.Ccw;
+        }
+
+        /// <summary>La palabra del cartel: reloj / al revés / sube / baja / se abre / se cierra.</summary>
+        public static string MissionWord(Act a)
+        {
+            switch (a)
+            {
+                case Act.Cw: return "reloj";
+                case Act.Ccw: return "al revés";
+                case Act.Up: return "sube";
+                case Act.Down: return "baja";
+                case Act.Open: return "se abre";
+                default: return "se cierra";
             }
         }
 
         // ------------------------------------------------------------------ generación
 
-        private static readonly int[][] N4 = { new[] { 1, 0 }, new[] { 0, 1 }, new[] { 0, -1 }, new[] { -1, 0 } };
-
-        private static int Key(int c, int r) => (c + 8) * 100 + (r + 8);
-
-        /// <summary>Una máquina del nivel <paramref name="level"/> (1..12); siempre devuelve una (reintenta hasta lograrla).</summary>
-        public static Machine Generate(int level, Random rng)
-        {
-            var st = StageFor(level);
-            for (int k = 0; k < 24; k++)
-            {
-                var m = TryGenerate(st, rng);
-                if (m != null) { m.Level = level; return m; }
-            }
-            throw new InvalidOperationException("No se pudo armar una máquina del nivel " + level);
-        }
+        private static T Pick<T>(IList<T> list, Random rng) => list[rng.Next(list.Count)];
 
         private static void Shuffle<T>(IList<T> list, Random rng)
         {
@@ -240,323 +276,250 @@ namespace NeuroVida.Games.Engranajes
             }
         }
 
-        private struct Move { public int A, B, D; public bool Same; public double Rnd; }
+        /// <summary>Las piezas de la etapa (el orden fija el bit de cada una en las máscaras). Con <paramref name="only"/> y una sola pieza, esa (para el tutorial).</summary>
+        private static Station[] PickTargets(StageDef st, Random rng, Station? only)
+        {
+            var rack = Pick(new[] { Station.Compuerta, Station.Carga }, rng);
+            if (st.Pieces == 1) return new[] { only ?? Pick(new[] { Station.Antena, Station.Turbina }, rng) };
+            if (st.Pool == Pool.Turn) return new[] { Station.Antena, Station.Turbina };
+            if (st.Pool == Pool.Rack) return new[] { Pick(new[] { Station.Antena, Station.Turbina }, rng), rack };
+            if (st.Pieces == 3) return new[] { Station.Antena, rack, Station.Turbina };
+            switch (rng.Next(3))
+            {
+                case 0: return new[] { Station.Antena, Station.Turbina };
+                case 1: return new[] { Station.Antena, rack };
+                default: return new[] { rack, Station.Turbina };
+            }
+        }
+
+        /// <summary>Una máquina del nivel <paramref name="level"/> (1..12); siempre devuelve una (reintenta hasta lograrla). <paramref name="only"/> fija la pieza de las etapas de una sola.</summary>
+        public static Machine Generate(int level, Random rng, Station? only = null)
+        {
+            var st = StageFor(level);
+            for (int k = 0; k < 24; k++)
+            {
+                var m = TryGenerate(st, rng, only);
+                if (m != null) { m.Level = Math.Max(1, Math.Min(MaxLevel, level)); return m; }
+            }
+            throw new InvalidOperationException("No se pudo armar una máquina del nivel " + level);
+        }
 
         /// <summary>
-        /// Camino ordenado de <paramref name="from"/> a <paramref name="to"/>: prefiere seguir derecho mientras se acerca y dobla hacia el destino. Cada casilla nueva solo
-        /// puede tocar a la anterior (nunca a otra ya ocupada ni a otra del mismo camino), y a la columna del cohete se entra solo desde la izquierda. Devuelve las casillas sin la
-        /// de salida, o null.
+        /// El árbol limpio: el motor en la columna 0 de la fila <paramref name="r0"/>, un tronco hasta la columna <paramref name="j"/>, desde ahí una vertical por la columna j hacia arriba y hacia abajo
+        /// y, en la fila de cada pieza, un tramo a la derecha hasta la columna 4 (donde está su engranaje). Todo engranaje está en el camino del motor a alguna pieza.
         /// </summary>
-        public static List<int[]> Route(Dictionary<int, int> occ, int fromC, int fromR, int toC, int toR, int maxLen, Random rng)
+        private static void Build(Machine m, Station[] targets, int j, int r0)
         {
-            int tk = Key(toC, toR);
-            var path = new HashSet<int> { Key(fromC, fromR) };
-            var list = new List<int[]>();
-            List<int[]> best = null;
-
-            bool Ok(int c, int r, int prevKey)
+            int Put(int c, int r, GearRole role)
             {
-                int k = Key(c, r);
-                if (k != tk && (c < 0 || c > 3 || r < 0 || r >= Rows)) return false;
-                if (k == tk && c != 4) return false;
-                if (occ.ContainsKey(k) || path.Contains(k)) return false;
-                foreach (var d in N4)
+                CellXY(c, r, out float x, out float y);
+                bool big = IsBig(c, r);
+                m.Gears.Add(new GearDef
                 {
-                    int n = Key(c + d[0], r + d[1]);
-                    if (!(n == prevKey || (!occ.ContainsKey(n) && !path.Contains(n)))) return false;
-                }
-                return true;
-            }
-
-            void Dfs(int c, int r, int[] dir)
-            {
-                if (best != null) return;
-                if (c == toC && r == toR) { best = new List<int[]>(list); return; }
-                if (list.Count > maxLen) return;
-                var moves = new List<Move>(4);
-                foreach (var d in N4)
-                    moves.Add(new Move
-                    {
-                        A = d[0], B = d[1],
-                        D = Math.Abs(toC - (c + d[0])) + Math.Abs(toR - (r + d[1])),
-                        Same = dir != null && d[0] == dir[0] && d[1] == dir[1],
-                        Rnd = rng.NextDouble()
-                    });
-                moves.Sort((m1, m2) =>
-                {
-                    int c1 = m1.D.CompareTo(m2.D);
-                    if (c1 != 0) return c1;
-                    c1 = (m2.Same ? 1 : 0).CompareTo(m1.Same ? 1 : 0);
-                    return c1 != 0 ? c1 : m1.Rnd.CompareTo(m2.Rnd);
+                    X = x, Y = y, Col = c, Row = r, Role = role,
+                    Tip = big ? BigTip : SmallTip, Pitch = big ? BigPitch : SmallPitch, N = big ? BigTeeth : SmallTeeth
                 });
-                foreach (var m in moves)
-                {
-                    int nc = c + m.A, nr = r + m.B;
-                    if (!Ok(nc, nr, Key(c, r))) continue;
-                    if (nc == 4 && m.A != 1) continue;           // al destino (la columna del cohete) solo se entra desde la izquierda
-                    path.Add(Key(nc, nr));
-                    list.Add(new[] { nc, nr });
-                    Dfs(nc, nr, new[] { m.A, m.B });
-                    if (best != null) return;
-                    list.RemoveAt(list.Count - 1);
-                    path.Remove(Key(nc, nr));
-                }
+                return m.Gears.Count - 1;
             }
 
-            Dfs(fromC, fromR, null);
-            return best;
-        }
+            void Join(int a, int b) => m.Links.Add(new Link(a, b, LinkType.Mesh));
 
-        public static int Turns(int fromC, int fromR, List<int[]> p)
-        {
-            int t = 0, cc = fromC, cr = fromR;
-            int[] prev = null;
-            foreach (var c in p)
+            int prev = Put(0, r0, GearRole.Motor);
+            for (int c = 1; c <= j; c++)
             {
-                var d = new[] { c[0] - cc, c[1] - cr };
-                if (prev != null && (d[0] != prev[0] || d[1] != prev[1])) t++;
-                prev = d;
-                cc = c[0];
-                cr = c[1];
+                int g = Put(c, r0, GearRole.Main);
+                Join(prev, g);
+                prev = g;
             }
-            return t;
-        }
+            int junction = prev;
 
-        /// <summary>El mejor de 8 caminos: el de menos dobleces (puntaje: dobleces × 3 + largo).</summary>
-        public static List<int[]> BestRoute(Dictionary<int, int> occ, int fromC, int fromR, int toC, int toR, int maxLen, Random rng)
-        {
-            List<int[]> best = null;
-            int score = int.MaxValue;
-            for (int k = 0; k < 8; k++)
+            void Run(int from, int row, Station name)
             {
-                var p = Route(occ, fromC, fromR, toC, toR, maxLen, rng);
-                if (p == null) continue;
-                int sc = Turns(fromC, fromR, p) * 3 + p.Count;
-                if (sc < score) { score = sc; best = p; }
+                int p = from;
+                for (int c = j + 1; c <= 4; c++)
+                {
+                    int g = Put(c, row, c == 4 ? GearRole.Station : GearRole.Main);
+                    Join(p, g);
+                    p = g;
+                }
+                m.Gears[p].HasStation = true;
+                m.Gears[p].Station = name;
             }
-            return best;
+
+            foreach (int side in new[] { -1, 1 })
+            {
+                var ts = new List<Station>();
+                foreach (var t in targets) if (Math.Sign(StationRow(t) - r0) == side) ts.Add(t);
+                ts.Sort((a, b) => Math.Abs(StationRow(a) - r0).CompareTo(Math.Abs(StationRow(b) - r0)));
+                int p = junction, r = r0;
+                foreach (var t in ts)
+                {
+                    while (r != StationRow(t))
+                    {
+                        r += side;
+                        int g = Put(j, r, GearRole.Main);
+                        Join(p, g);
+                        p = g;
+                    }
+                    Run(p, r, t);
+                }
+            }
+            foreach (var t in targets) if (StationRow(t) == r0) Run(junction, r0, t);
         }
 
-        private static Machine TryGenerate(StageDef st, Random rng)
+        /// <summary>Qué piezas mueve cada engranaje «aguas abajo» (máscara de bits sobre <c>m.Targets</c>), y de qué engranaje cuelga cada uno (-1 = el motor).</summary>
+        public static void SubtreeMasks(Machine m, out int[] mask, out int[] par)
         {
-            for (int tries = 0; tries < 400; tries++)
+            int n = m.Gears.Count;
+            par = new int[n];
+            for (int i = 0; i < n; i++) par[i] = -2;
+            par[0] = -1;
+            var order = new List<int> { 0 };
+            for (int k = 0; k < order.Count; k++)
             {
-                var occ = new Dictionary<int, int>();
-                var m = new Machine { Stage = st, Q = st.Q };
+                int i = order[k];
+                foreach (var l in m.Links)
+                {
+                    int o = l.A == i ? l.B : l.B == i ? l.A : -1;
+                    if (o < 0 || par[o] != -2) continue;
+                    par[o] = i;
+                    order.Add(o);
+                }
+            }
+            mask = new int[n];
+            for (int k = order.Count - 1; k >= 0; k--)
+            {
+                int i = order[k];
+                var g = m.Gears[i];
+                if (g.HasStation) mask[i] |= 1 << Array.IndexOf(m.Targets, g.Station);
+                if (par[i] >= 0) mask[par[i]] |= mask[i];
+            }
+        }
 
-                int Put(int c, int r, GearRole role)
-                {
-                    CellXY(c, r, out float x, out float y);
-                    bool big = IsBig(c, r);
-                    m.Gears.Add(new GearDef
-                    {
-                        X = x, Y = y, Col = c, Row = r, Role = role,
-                        Tip = big ? BigTip : SmallTip, Pitch = big ? BigPitch : SmallPitch, N = big ? BigTeeth : SmallTeeth
-                    });
-                    occ[Key(c, r)] = m.Gears.Count - 1;
-                    return m.Gears.Count - 1;
-                }
+        private static Machine TryGenerate(StageDef st, Random rng, Station? only)
+        {
+            for (int tries = 0; tries < 600; tries++)
+            {
+                var targets = PickTargets(st, rng, only);
+                int j = st.Pieces == 1 && st.Belts == 0 ? 1 + rng.Next(3) : 1 + rng.Next(2);
+                int r0 = rng.Next(Rows);
+                var m = new Machine { Stage = st, Targets = targets, MotorDir = rng.NextDouble() < 0.5 ? 1 : -1 };
+                Build(m, targets, j, r0);
 
-                var tName = st.Targets[rng.Next(st.Targets.Length)];
-                int tRow = StationRow(tName);
-                int rm = rng.Next(Rows);
-                if (!st.Far && Math.Abs(rm - tRow) > 2) continue;
-                if (st.Far && Math.Abs(rm - tRow) < 2) continue;
-                int motor = Put(0, rm, GearRole.Motor);
-                var p = BestRoute(occ, 0, rm, 4, tRow, 14, rng);
-                if (p == null) continue;
-                m.Main.Add(motor);
-                foreach (var cell in p)
+                // correas: en un tramo recto de tres, el del medio se quita y los extremos quedan unidos por una correa
+                var cand = new List<int[]>();
+                for (int i = 0; i < m.Gears.Count; i++)
                 {
-                    int gi = Put(cell[0], cell[1], cell[0] == 4 ? GearRole.Station : GearRole.Main);
-                    m.Links.Add(new Link(m.Main[m.Main.Count - 1], gi, LinkType.Mesh));
-                    m.Main.Add(gi);
+                    var g = m.Gears[i];
+                    if (g.Role != GearRole.Main) continue;
+                    var ns = new List<int>();
+                    foreach (var l in m.Links) if (l.A == i || l.B == i) ns.Add(l.A == i ? l.B : l.A);
+                    if (ns.Count != 2) continue;
+                    var a = m.Gears[ns[0]];
+                    var c = m.Gears[ns[1]];
+                    if ((a.Col == c.Col && a.Col == g.Col) || (a.Row == c.Row && a.Row == g.Row)) cand.Add(new[] { i, ns[0], ns[1] });
                 }
-                m.Target = m.Main[m.Main.Count - 1];
-                m.TargetStation = tName;
-                m.Gears[m.Target].HasStation = true;
-                m.Gears[m.Target].Station = tName;
-
-                // ramas: desde un engranaje del camino hacia OTRA pieza del cohete (compuerta y carga son vecinas: nunca van activas a la vez)
-                var others = new List<Station>();
-                foreach (var s in AllStations)
-                    if (s != tName && !((s == Station.Compuerta || s == Station.Carga) && (tName == Station.Compuerta || tName == Station.Carga))) others.Add(s);
-                bool bOk = true;
-                var branchEnds = new List<Station>();
-                for (int b = 0; b < st.Branches && bOk; b++)
+                SubtreeMasks(m, out var mask0, out _);
+                var used = new HashSet<int>();
+                var seen = new HashSet<int>();
+                var chosen = new List<int[]>();
+                Shuffle(cand, rng);
+                foreach (var t in cand)
                 {
-                    var pool = new List<Station>();
-                    foreach (var s in others)
-                    {
-                        if (branchEnds.Contains(s) || occ.ContainsKey(Key(4, StationRow(s)))) continue;
-                        bool free = true;
-                        foreach (var d in N4)
-                            if (d[0] != -1 && occ.ContainsKey(Key(4 + d[0], StationRow(s) + d[1]))) { free = false; break; }
-                        if (free) pool.Add(s);
-                    }
-                    if (pool.Count == 0) { bOk = false; break; }
-                    var sName = pool[rng.Next(pool.Count)];
-                    int sRow = StationRow(sName);
-                    bool done = false;
-                    var juncs = m.Main.GetRange(1, Math.Max(0, m.Main.Count - 2));
-                    Shuffle(juncs, rng);
-                    foreach (int j in juncs)
-                    {
-                        var g = m.Gears[j];
-                        var dirs = new List<int[]>(N4);
-                        Shuffle(dirs, rng);
-                        foreach (var d in dirs)
-                        {
-                            int sc = g.Col + d[0], sr = g.Row + d[1];
-                            if (sc < 0 || sc > 3 || sr < 0 || sr >= Rows) continue;
-                            if (occ.ContainsKey(Key(sc, sr))) continue;
-                            bool clear = true;
-                            foreach (var x in N4)
-                            {
-                                int n = Key(sc + x[0], sr + x[1]);
-                                if (n != Key(g.Col, g.Row) && occ.ContainsKey(n)) { clear = false; break; }
-                            }
-                            if (!clear) continue;
-                            occ[Key(sc, sr)] = -1;
-                            var q = BestRoute(occ, sc, sr, 4, sRow, 9, rng);
-                            occ.Remove(Key(sc, sr));
-                            if (q == null) continue;
-                            int prev = j;
-                            int first = Put(sc, sr, GearRole.Branch);
-                            m.Links.Add(new Link(prev, first, LinkType.Mesh));
-                            prev = first;
-                            foreach (var cell in q)
-                            {
-                                int gi = Put(cell[0], cell[1], cell[0] == 4 ? GearRole.Station : GearRole.Branch);
-                                m.Links.Add(new Link(prev, gi, LinkType.Mesh));
-                                prev = gi;
-                            }
-                            m.Gears[prev].HasStation = true;
-                            m.Gears[prev].Station = sName;
-                            branchEnds.Add(sName);
-                            done = true;
-                            break;
-                        }
-                        if (done) break;
-                    }
-                    if (!done) bOk = false;
+                    if (chosen.Count >= st.Belts) break;
+                    if (used.Contains(t[0]) || used.Contains(t[1]) || used.Contains(t[2])) continue;
+                    if (seen.Contains(mask0[t[2]]) && st.Pieces > 1) continue;      // cada correa mueve un grupo distinto de piezas: así es una decisión distinta
+                    chosen.Add(t);
+                    used.Add(t[0]); used.Add(t[1]); used.Add(t[2]);
+                    seen.Add(mask0[t[2]]);
                 }
-                if (!bOk) continue;
-
-                // correas y hueco: en un tramo recto de tres del camino principal se quita el del medio
-                var triples = new List<int>();
-                for (int k = 1; k < m.Main.Count - 2; k++)
+                if (chosen.Count < st.Belts) continue;
+                var removed = new HashSet<int>();
+                var beltLinks = new List<Link>();
+                foreach (var t in chosen)
                 {
-                    var A = m.Gears[m.Main[k - 1]];
-                    var B = m.Gears[m.Main[k]];
-                    var C = m.Gears[m.Main[k + 1]];
-                    if ((A.Col == B.Col && B.Col == C.Col) || (A.Row == B.Row && B.Row == C.Row))
-                    {
-                        int deg = 0;
-                        foreach (var l in m.Links) if (l.A == m.Main[k] || l.B == m.Main[k]) deg++;
-                        if (deg == 2 && B.Role == GearRole.Main) triples.Add(k);
-                    }
+                    removed.Add(t[0]);
+                    beltLinks.Add(new Link(t[1], t[2], LinkType.Belt, rng.NextDouble() < 0.5));
                 }
-                int wantBelt = st.Belts + (st.Q == Question.Build ? 1 : 0);
-                if (triples.Count < wantBelt) continue;
-                Shuffle(triples, rng);
-                // los tramos elegidos no pueden ser vecinos (se perdería el engranaje que une dos correas)
-                var chosen = new List<int>();
-                foreach (int k0 in triples)
+                // compactar: sacar los engranajes quitados y renumerar
+                var remap = new int[m.Gears.Count];
+                var kept = new List<GearDef>();
+                for (int i = 0; i < m.Gears.Count; i++)
                 {
-                    bool near = false;
-                    foreach (int c0 in chosen) if (Math.Abs(k0 - c0) < 2) { near = true; break; }
-                    if (near) continue;
-                    chosen.Add(k0);
-                    if (chosen.Count == wantBelt) break;
+                    if (removed.Contains(i)) { remap[i] = -1; continue; }
+                    remap[i] = kept.Count;
+                    kept.Add(m.Gears[i]);
                 }
-                if (chosen.Count < wantBelt) continue;
-                for (int t = 0; t < wantBelt; t++)
-                {
-                    int k = chosen[t];
-                    int mid = m.Main[k], a = m.Main[k - 1], c = m.Main[k + 1];
-                    var g = m.Gears[mid];
-                    g.Removed = true;
-                    occ.Remove(Key(g.Col, g.Row));
-                    for (int i = m.Links.Count - 1; i >= 0; i--) if (m.Links[i].A == mid || m.Links[i].B == mid) m.Links.RemoveAt(i);
-                    bool isGap = st.Q == Question.Build && t == 0;
-                    m.Links.Add(new Link(a, c, isGap ? LinkType.Gap : (rng.NextDouble() < 0.5 ? LinkType.Straight : LinkType.Crossed)));
-                    if (isGap)
-                        m.Slot = new Slot
-                        {
-                            Gear = new GearDef { X = g.X, Y = g.Y, Col = g.Col, Row = g.Row, Tip = g.Tip, Pitch = g.Pitch, N = g.N, Role = GearRole.Main },
-                            From = a, To = c
-                        };
-                }
-
-                // trampa: un engranaje chico fuera de la cuadrícula que toca a dos vecinos del camino, formando un triángulo
-                if (st.Q == Question.Jam && rng.NextDouble() < 0.45)
-                {
-                    var cand = new List<Link>();
-                    // el triángulo no incluye a la pieza preguntada: ella sigue siendo el final del camino
-                    foreach (var l in m.Links)
-                        if (l.Type == LinkType.Mesh && m.Main.Contains(l.A) && m.Main.Contains(l.B) && l.B != m.Target && !m.Gears[l.A].Removed && !m.Gears[l.B].Removed) cand.Add(l);
-                    Shuffle(cand, rng);
-                    bool placed = false;
-                    foreach (var l in cand)
-                    {
-                        var A = m.Gears[l.A];
-                        var B = m.Gears[l.B];
-                        float pr = JamPitch, dA = A.Pitch + pr, dB = B.Pitch + pr;
-                        float dAB = (float)Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
-                        float a = (dA * dA - dB * dB + dAB * dAB) / (2f * dAB), h2 = dA * dA - a * a;
-                        if (h2 <= 0f) continue;
-                        float h = (float)Math.Sqrt(h2), mx = A.X + a * (B.X - A.X) / dAB, my = A.Y + a * (B.Y - A.Y) / dAB;
-                        foreach (int sg in new[] { 1, -1 })
-                        {
-                            float x = mx + sg * h * (B.Y - A.Y) / dAB, y = my - sg * h * (B.X - A.X) / dAB;
-                            if (x < 16f || x > 240f || y < 120f || y > 440f) continue;
-                            bool clear = true;
-                            for (int i = 0; i < m.Gears.Count; i++)
-                            {
-                                var o = m.Gears[i];
-                                if (o.Removed || i == l.A || i == l.B) continue;
-                                if (Math.Sqrt((o.X - x) * (o.X - x) + (o.Y - y) * (o.Y - y)) <= o.Tip + pr + 3f + 4f) { clear = false; break; }
-                            }
-                            if (!clear) continue;
-                            m.Gears.Add(new GearDef { X = x, Y = y, Tip = JamTip, Pitch = pr, N = JamTeeth, Role = GearRole.Jam, Col = -1, Row = -1 });
-                            int ji = m.Gears.Count - 1;
-                            m.Links.Add(new Link(l.A, ji, LinkType.Mesh));
-                            m.Links.Add(new Link(l.B, ji, LinkType.Mesh));
-                            m.Jam = true;
-                            m.JamTri = new[] { l.A, l.B, ji };
-                            placed = true;
-                            break;
-                        }
-                        if (placed) break;
-                    }
-                    if (!placed) continue;
-                }
-
-                m.MotorDir = rng.NextDouble() < 0.5 ? 1 : -1;
+                var links = new List<Link>();
+                foreach (var l in m.Links)
+                    if (remap[l.A] >= 0 && remap[l.B] >= 0) links.Add(new Link(remap[l.A], remap[l.B], l.Type, l.Crossed));
+                foreach (var l in beltLinks) links.Add(new Link(remap[l.A], remap[l.B], LinkType.Belt, l.Crossed));
+                m.Gears = kept;
+                m.Links = links;
                 for (int i = 0; i < m.Gears.Count; i++) if (m.Gears[i].HasStation) m.Stations[m.Gears[i].Station] = i;
-                if (st.Q == Question.Build)
+
+                // interruptores: el motor (todas las piezas) y cada correa (las piezas que siguen después de ella)
+                SubtreeMasks(m, out var mask, out var par);
+                m.Switches.Add(new Switch(MotorId, m.FullMask));
+                for (int i = 0; i < m.Links.Count; i++)
                 {
-                    var want = tName == Station.Carga ? Answer.Up : Answer.Open;
-                    var eG = Effect(m, Solve(m, Piece.Gear));
-                    var eC = Effect(m, Solve(m, Piece.Crossed));
-                    if (eG == eC) continue;
-                    m.Goal = want;
-                    m.Truth = eG == want ? Answer.Gear : Answer.Crossed;
+                    var l = m.Links[i];
+                    if (l.Type != LinkType.Belt) continue;
+                    int down = par[l.B] == l.A ? l.B : l.A;
+                    m.Switches.Add(new Switch(i, mask[down]));
                 }
+
+                // qué grupos de piezas se arreglan, y con cuántos cambios como mínimo
+                var minK = new Dictionary<int, int> { { 0, 0 } };
+                var order = new List<int> { 0 };
+                foreach (var s in m.Switches) if (!minK.ContainsKey(s.Mask)) { minK[s.Mask] = 1; order.Add(s.Mask); }
+                for (int a = 0; a < m.Switches.Count; a++)
+                    for (int b = a + 1; b < m.Switches.Count; b++)
+                    {
+                        int x = m.Switches[a].Mask ^ m.Switches[b].Mask;
+                        if (!minK.ContainsKey(x)) { minK[x] = 2; order.Add(x); }
+                    }
+
+                int w;
+                if (st.Ok > 0f && rng.NextDouble() < st.Ok) w = 0;
                 else
                 {
-                    var s = Solve(m, Piece.None);
-                    if (st.Q == Question.Speed)
+                    var opts = new List<int>();
+                    foreach (int mk in order) if (mk != 0 && minK[mk] <= st.Keys) opts.Add(mk);
+                    var pool = new List<int>();
+                    int full = m.FullMask;
+                    switch (st.Fail)
                     {
-                        float ratio = Math.Abs(s.Speed[m.Target]);
-                        if (ratio > 0.8f && ratio < 1.25f) continue;
-                        m.Truth = ratio > 1f ? Answer.Fast : Answer.Slow;
+                        case Fail.All: foreach (int o in opts) if (o == full) pool.Add(o); break;
+                        case Fail.One: foreach (int o in opts) if ((o & (o - 1)) == 0) pool.Add(o); break;
+                        case Fail.Two: foreach (int o in opts) if (minK[o] == 2) pool.Add(o); break;
+                        default:
+                            foreach (int o in opts) if (o != full) pool.Add(o);
+                            if (pool.Count == 0 || rng.NextDouble() < 0.2) pool = opts;       // «todas fallan» (se arregla con el motor) sale a lo más ~20 %
+                            break;
                     }
-                    else if (st.Q == Question.Rack) m.Truth = Effect(m, s);
-                    else m.Truth = m.Jam ? Answer.Stuck : (s.Dir[m.Target] > 0 ? Answer.Cw : Answer.Ccw);
+                    if (pool.Count == 0) continue;
+                    w = Pick(pool, rng);
                 }
-                Phase(m, Piece.None, rng);
+                m.W = w;
+                m.MinK = minK[w];
+
+                var s0 = Solve(m, null);
+                for (int k = 0; k < targets.Length; k++)
+                {
+                    int d = s0.Dir[m.Stations[targets[k]]];
+                    m.Mission[targets[k]] = Behave(targets[k], ((w >> k) & 1) == 1 ? -d : d);
+                }
+                // una solución mínima, para mostrarla si se equivoca
+                if (w != 0)
+                {
+                    foreach (var s in m.Switches) if (s.Mask == w) { m.Solution = new[] { s.Id }; break; }
+                    if (m.Solution.Length == 0)
+                        for (int a = 0; a < m.Switches.Count && m.Solution.Length == 0; a++)
+                            for (int b = a + 1; b < m.Switches.Count; b++)
+                                if ((m.Switches[a].Mask ^ m.Switches[b].Mask) == w) { m.Solution = new[] { m.Switches[a].Id, m.Switches[b].Id }; break; }
+                }
+                Phase(m, rng);
                 return m;
             }
             return null;
@@ -574,8 +537,8 @@ namespace NeuroVida.Games.Engranajes
             return (float)(th + Math.PI - fj * pj);
         }
 
-        /// <summary>Fases iniciales: desde el motor, cada engranaje unido por dientes queda encajado con el anterior. Con <paramref name="piece"/> también el hueco de «Arma tú».</summary>
-        public static void Phase(Machine m, Piece piece, Random rng)
+        /// <summary>Fases iniciales: desde el motor, cada engranaje unido por dientes queda encajado con el anterior (los de una correa no engranan: ángulo al azar).</summary>
+        public static void Phase(Machine m, Random rng)
         {
             var g0 = m.Gears[0];
             if (!g0.PhaseSet) { g0.A = (float)(rng.NextDouble() * 6.28); g0.PhaseSet = true; }
@@ -590,167 +553,138 @@ namespace NeuroVida.Games.Engranajes
                 {
                     int j = l.A == i ? l.B : l.B == i ? l.A : -1;
                     if (j < 0 || seen.Contains(j)) continue;
-                    if (l.Type == LinkType.Gap && piece == Piece.None) continue;
                     var gj = m.Gears[j];
                     seen.Add(j);
                     queue.Enqueue(j);
-                    if (l.Type == LinkType.Mesh) { gj.A = MeshPhase(gi, gj); gj.PhaseSet = true; }
-                    else if (l.Type == LinkType.Gap && piece == Piece.Gear)
-                    {
-                        var s = m.Slot.Gear;
-                        s.A = MeshPhase(gi, s);
-                        s.PhaseSet = true;
-                        gj.A = MeshPhase(s, gj);
-                        gj.PhaseSet = true;
-                    }
-                    else if (!gj.PhaseSet) { gj.A = (float)(rng.NextDouble() * 6.28); gj.PhaseSet = true; }
+                    gj.A = l.Type == LinkType.Mesh ? MeshPhase(gi, gj) : (float)(rng.NextDouble() * 6.28);
+                    gj.PhaseSet = true;
                 }
             }
-            foreach (var g in m.Gears) if (!g.PhaseSet) { g.A = (float)(rng.NextDouble() * 6.28); g.PhaseSet = true; }
         }
 
         // ------------------------------------------------------------------ física
 
         /// <summary>
-        /// Sentido y velocidad de cada engranaje (el motor gira ±1): dos engranajes que se tocan giran en sentido contrario; una correa recta conserva el sentido y una
-        /// cruzada lo invierte; un engranaje intermedio no cambia la razón entre el motor y la pieza (la velocidad va según el tamaño: chico = más rápido).
+        /// Sentido y velocidad de cada engranaje con los <paramref name="changes"/> aplicados (ids de interruptor; null = ninguno): dos engranajes que se tocan giran en sentido contrario; una correa
+        /// recta conserva el sentido y una cruzada lo invierte (y tocarla la invierte); tocar el motor invierte su giro. La velocidad va según el tamaño (chico = más rápido).
         /// </summary>
-        public static Solution Solve(Machine m, Piece piece)
+        public static Solution Solve(Machine m, ICollection<int> changes)
         {
             int n = m.Gears.Count;
             var sol = new Solution { Dir = new int[n], Speed = new float[n], Depth = new int[n] };
             for (int i = 0; i < n; i++) sol.Depth[i] = -1;
-            sol.Dir[0] = m.MotorDir;
-            sol.Speed[0] = m.MotorDir;
+            int md = m.MotorDir * (changes != null && changes.Contains(MotorId) ? -1 : 1);
+            sol.Dir[0] = md;
+            sol.Speed[0] = md;
             sol.Depth[0] = 0;
             var queue = new Queue<int>();
             queue.Enqueue(0);
             while (queue.Count > 0)
             {
                 int i = queue.Dequeue();
-                foreach (var l in m.Links)
+                for (int li = 0; li < m.Links.Count; li++)
                 {
+                    var l = m.Links[li];
                     int j = l.A == i ? l.B : l.B == i ? l.A : -1;
                     if (j < 0 || sol.Depth[j] >= 0) continue;
-                    var t = l.Type;
-                    bool two = false, flip;
-                    if (t == LinkType.Gap)
-                    {
-                        if (piece == Piece.None) continue;
-                        if (piece == Piece.Gear) { flip = false; two = true; }
-                        else flip = true;
-                    }
-                    else flip = t == LinkType.Mesh || t == LinkType.Crossed;
-                    float pi = m.Gears[i].Pitch, pj = m.Gears[j].Pitch;
+                    bool flip = l.Type == LinkType.Mesh || (l.Crossed != (changes != null && changes.Contains(li)));
                     sol.Dir[j] = flip ? -sol.Dir[i] : sol.Dir[i];
-                    sol.Speed[j] = sol.Speed[i] * pi / pj * (flip ? -1f : 1f);
-                    sol.Depth[j] = sol.Depth[i] + (two ? 2 : 1);
+                    sol.Speed[j] = Math.Abs(sol.Speed[i]) * m.Gears[i].Pitch / m.Gears[j].Pitch * sol.Dir[j];
+                    sol.Depth[j] = sol.Depth[i] + 1;
                     queue.Enqueue(j);
                 }
             }
             return sol;
         }
 
-        /// <summary>Lo que hace la pieza preguntada. La barra dentada está a la derecha del engranaje: si este gira como el reloj, la barra baja (carga baja, compuerta se cierra).</summary>
-        public static Answer Effect(Machine m, Solution s)
+        /// <summary>Lo que hizo cada pieza con esos cambios, y si cumplió su cartel.</summary>
+        public static PartResult[] Results(Machine m, ICollection<int> changes)
         {
-            int d = m.Jam ? 0 : s.Dir[m.Target];
-            if (m.TargetStation == Station.Carga) return d == 0 ? Answer.Stuck : (d > 0 ? Answer.Down : Answer.Up);
-            if (m.TargetStation == Station.Compuerta) return d == 0 ? Answer.Stuck : (d > 0 ? Answer.Close : Answer.Open);
-            return d == 0 ? Answer.Stuck : (d > 0 ? Answer.Cw : Answer.Ccw);
+            var s = Solve(m, changes);
+            var res = new PartResult[m.Targets.Length];
+            for (int k = 0; k < res.Length; k++)
+            {
+                var t = m.Targets[k];
+                var got = Behave(t, s.Dir[m.Stations[t]]);
+                res[k] = new PartResult(t, got, got == m.Mission[t]);
+            }
+            return res;
         }
 
-        /// <summary>El camino de engranajes del motor a <paramref name="target"/> (para el truco de Nubi). Con <paramref name="placed"/> también pasa por el hueco.</summary>
-        public static List<int> PathTo(Machine m, int target, bool placed)
+        public static bool AllOk(PartResult[] results)
         {
-            var par = new int[m.Gears.Count];
-            for (int i = 0; i < par.Length; i++) par[i] = -2;
-            par[0] = -1;
-            var queue = new Queue<int>();
-            queue.Enqueue(0);
-            while (queue.Count > 0)
+            foreach (var r in results) if (!r.Ok) return false;
+            return true;
+        }
+
+        /// <summary>Lo que mueve un cambio: el engranaje que cuelga de él y todo lo que sigue después (para marcarlo en celeste al equivocarse).</summary>
+        public static HashSet<int> Downstream(Machine m, int switchId)
+        {
+            SubtreeMasks(m, out _, out var par);
+            int root = 0;
+            if (switchId != MotorId)
             {
-                int i = queue.Dequeue();
-                foreach (var l in m.Links)
+                var l = m.Links[switchId];
+                root = par[l.B] == l.A ? l.B : l.A;
+            }
+            var res = new HashSet<int>();
+            var stack = new Stack<int>();
+            stack.Push(root);
+            while (stack.Count > 0)
+            {
+                int i = stack.Pop();
+                res.Add(i);
+                for (int j = 0; j < m.Gears.Count; j++) if (par[j] == i) stack.Push(j);
+            }
+            return res;
+        }
+
+        // ------------------------------------------------------------------ al arrancar: qué dice el aviso
+
+        /// <summary>Lo que falló, en una frase («La turbina giró al revés de su cartel»).</summary>
+        public static string FailText(PartResult[] results)
+        {
+            var fails = new List<PartResult>();
+            foreach (var r in results) if (!r.Ok) fails.Add(r);
+            if (fails.Count == 0) return "";
+            if (fails.Count == 1)
+            {
+                var f = fails[0];
+                switch (f.Station)
                 {
-                    int j = l.A == i ? l.B : l.B == i ? l.A : -1;
-                    if (j < 0 || par[j] != -2) continue;
-                    if (l.Type == LinkType.Gap && !placed) continue;
-                    par[j] = i;
-                    queue.Enqueue(j);
+                    case Station.Carga: return f.Got == Act.Up ? "La carga subió en vez de bajar" : "La carga bajó en vez de subir";
+                    case Station.Compuerta: return f.Got == Act.Open ? "La compuerta se abrió en vez de cerrarse" : "La compuerta se cerró en vez de abrirse";
+                    case Station.Antena: return "La antena giró al revés de su cartel";
+                    default: return "La turbina giró al revés de su cartel";
                 }
             }
-            var path = new List<int>();
-            for (int i = target; i >= 0; i = par[i]) path.Insert(0, i);
-            return path;
+            var names = new List<string>();
+            foreach (var f in fails) names.Add(StationName(f.Station));
+            string last = names[names.Count - 1];
+            names.RemoveAt(names.Count - 1);
+            return "Fallaron " + string.Join(", ", names) + " y " + last;
         }
 
-        // ------------------------------------------------------------------ pregunta, botones y explicación
-
-        public static string QuestionText(Machine m)
+        /// <summary>La pista de la segunda línea del aviso de error.</summary>
+        public static string HintText(Machine m, PartResult[] results, ICollection<int> changes)
         {
-            switch (m.Q)
-            {
-                case Question.Dir:
-                case Question.Jam: return "¿Cómo girará " + StationName(m.TargetStation) + "?";
-                case Question.Rack: return m.TargetStation == Station.Carga ? "¿La carga sube o baja?" : "¿La compuerta se abre o se cierra?";
-                case Question.Speed: return "¿" + (m.TargetStation == Station.Antena ? "La antena" : "La turbina") + " gira más rápido o más lento que el motor?";
-                default: return m.Goal == Answer.Up ? "¿Qué pieza hace SUBIR la carga?" : "¿Qué pieza ABRE la compuerta?";
-            }
-        }
-
-        public static ButtonDef[] Buttons(Machine m)
-        {
-            switch (m.Q)
-            {
-                case Question.Dir:
-                    return new[] { new ButtonDef(Answer.Cw, "Como el reloj", ButtonIcon.Cw), new ButtonDef(Answer.Ccw, "Al revés", ButtonIcon.Ccw) };
-                case Question.Jam:
-                    return new[] { new ButtonDef(Answer.Cw, "Como el reloj", ButtonIcon.Cw), new ButtonDef(Answer.Ccw, "Al revés", ButtonIcon.Ccw), new ButtonDef(Answer.Stuck, "Se traba", ButtonIcon.X) };
-                case Question.Rack:
-                    return m.TargetStation == Station.Carga
-                        ? new[] { new ButtonDef(Answer.Up, "Sube", ButtonIcon.Up), new ButtonDef(Answer.Down, "Baja", ButtonIcon.Down) }
-                        : new[] { new ButtonDef(Answer.Open, "Se abre", ButtonIcon.Up), new ButtonDef(Answer.Close, "Se cierra", ButtonIcon.Down) };
-                case Question.Speed:
-                    return new[] { new ButtonDef(Answer.Fast, "Más rápido", ButtonIcon.Fast), new ButtonDef(Answer.Slow, "Más lento", ButtonIcon.Slow) };
-                default:
-                    return new[] { new ButtonDef(Answer.Gear, "Engranaje", ButtonIcon.Gear), new ButtonDef(Answer.Crossed, "Correa cruzada", ButtonIcon.Belt) };
-            }
-        }
-
-        public static string Explain(Machine m)
-        {
-            if (m.Jam && m.Truth == Answer.Stuck) return "Se traba: tres engranajes en triángulo";
-            switch (m.Q)
-            {
-                case Question.Speed:
-                    return m.Truth == Answer.Fast ? "Más rápido: su engranaje es más chico que el del motor" : "Más lento: su engranaje es más grande que el del motor";
-                case Question.Build:
-                    return m.Truth == Answer.Gear ? "Con un engranaje en medio, gira igual que el de antes" : "La correa cruzada invierte el giro";
-                case Question.Rack:
-                    switch (m.Truth)
-                    {
-                        case Answer.Up: return "La carga sube";
-                        case Answer.Down: return "La carga baja";
-                        case Answer.Open: return "La compuerta se abre";
-                        default: return "La compuerta se cierra";
-                    }
-                default:
-                    return (m.Truth == Answer.Cw ? "Gira como el reloj: " : "Gira al revés del reloj: ") + StationName(m.TargetStation);
-            }
-        }
-
-        /// <summary>El truco de Nubi al fallar (vacío si hay traba: ahí no hay giro que seguir).</summary>
-        public static string Trick(Machine m)
-        {
-            if (m.Q == Question.Speed) return "Truco: compara el tamaño del motor con el de la pieza";
-            if (m.Jam) return "";
+            if (changes == null || changes.Count == 0) return "Brilla en dorado lo que había que cambiar";
+            var before = Results(m, null);
+            for (int k = 0; k < results.Length; k++)
+                if (!results[k].Ok && before[k].Ok) return "Tu cambio también movió " + StationName(results[k].Station);
             return "Truco: cada engranaje que toca gira al revés";
+        }
+
+        /// <summary>El aviso al acertar (rota entre tres; si ya estaba bien y no se tocó nada, uno propio).</summary>
+        public static string SuccessText(Machine m, ICollection<int> changes, int count)
+        {
+            if (m.W == 0 && (changes == null || changes.Count == 0)) return "¡Bien visto! Ya estaba lista";
+            return new[] { "¡Cohete listo!", "¡Arreglado!", "¡Todo en orden!" }[Math.Abs(count) % 3];
         }
 
         // ------------------------------------------------------------------ puntaje
 
-        /// <summary>Puntaje 0-100: máquinas acertadas sobre las 10 de Precisión; en el Reto, sobre el ritmo de referencia.</summary>
+        /// <summary>Puntaje 0-100: máquinas arregladas sobre las 10 de Precisión; en el Reto, sobre el ritmo de referencia.</summary>
         public static int Score(int correct, bool endless)
         {
             float denom = endless ? RetoReferenceMachines : PrecisionMachines;
@@ -762,40 +696,31 @@ namespace NeuroVida.Games.Engranajes
 
         // ------------------------------------------------------------------ chequeos de coherencia (los usan las pruebas)
 
-        /// <summary>Pares de engranajes que se tocan sin estar unidos: dos engranajes quedan «tocándose» si sus dientes se pisan (distancia menor que la suma de las puntas).
-        /// Los unidos por dientes (mesh) y los de la trampa se esperan; todo otro par debe estar a más distancia que la suma de las puntas.</summary>
-        public static List<string> UnwantedContacts(Machine m, Piece piece)
+        /// <summary>Pares de engranajes que se tocan sin estar unidos por dientes (sus puntas se pisan), o unidos por dientes pero no a distancia de paso. Una correa une engranajes lejanos: no cuenta como contacto.</summary>
+        public static List<string> UnwantedContacts(Machine m)
         {
             var bad = new List<string>();
-            var all = new List<GearDef>();
-            var index = new List<int>();
-            for (int i = 0; i < m.Gears.Count; i++) if (!m.Gears[i].Removed) { all.Add(m.Gears[i]); index.Add(i); }
-            bool slotGear = m.Slot != null && piece == Piece.Gear;
-            if (slotGear) { all.Add(m.Slot.Gear); index.Add(-1); }
-            for (int a = 0; a < all.Count; a++)
-                for (int b = a + 1; b < all.Count; b++)
+            for (int a = 0; a < m.Gears.Count; a++)
+                for (int b = a + 1; b < m.Gears.Count; b++)
                 {
-                    double d = Math.Sqrt((all[a].X - all[b].X) * (all[a].X - all[b].X) + (all[a].Y - all[b].Y) * (all[a].Y - all[b].Y));
+                    var ga = m.Gears[a];
+                    var gb = m.Gears[b];
+                    double d = Math.Sqrt((ga.X - gb.X) * (ga.X - gb.X) + (ga.Y - gb.Y) * (ga.Y - gb.Y));
                     bool meshed = false;
-                    int ia = index[a], ib = index[b];
                     foreach (var l in m.Links)
-                        if (l.Type == LinkType.Mesh && ((l.A == ia && l.B == ib) || (l.A == ib && l.B == ia))) meshed = true;
-                    if (slotGear)
-                    {
-                        if ((ia == -1 && (ib == m.Slot.From || ib == m.Slot.To)) || (ib == -1 && (ia == m.Slot.From || ia == m.Slot.To))) meshed = true;
-                    }
+                        if (l.Type == LinkType.Mesh && ((l.A == a && l.B == b) || (l.A == b && l.B == a))) meshed = true;
                     if (meshed)
                     {
-                        if (Math.Abs(d - (all[a].Pitch + all[b].Pitch)) > 0.01) bad.Add("unidos pero no a distancia de paso: " + ia + "-" + ib);
+                        if (Math.Abs(d - (ga.Pitch + gb.Pitch)) > 0.01) bad.Add("unidos pero no a distancia de paso: " + a + "-" + b);
                     }
-                    else if (d < all[a].Tip + all[b].Tip) bad.Add("se tocan sin estar unidos: " + ia + "-" + ib);
+                    else if (d < ga.Tip + gb.Tip) bad.Add("se tocan sin estar unidos: " + a + "-" + b);
                 }
             return bad;
         }
     }
 
     /// <summary>
-    /// El cohete que se guarda (docs/diseno-engranajes.md §6): 10 luces por cohete que sobreviven entre partidas; al juntarse las 10 el cohete despega en ese momento y empieza uno
+    /// El cohete que se guarda (docs/diseno-engranajes.md §8): 10 luces por cohete que sobreviven entre partidas; al juntarse las 10 el cohete despega en ese momento y empieza uno
     /// nuevo. Nunca despega incompleto.
     /// </summary>
     public readonly struct RocketState
@@ -824,7 +749,7 @@ namespace NeuroVida.Games.Engranajes
         public int RocketNumber => Orbit + 1;
     }
 
-    /// <summary>La medida de la partida (docs/diseno-engranajes.md §7): máquinas acertadas, etapa más alta, ritmo y los cohetes que despegaron.</summary>
+    /// <summary>La medida de la partida (docs/diseno-engranajes.md §9): máquinas arregladas, etapa más alta, ritmo y los cohetes que despegaron.</summary>
     public sealed class EngranajesTally
     {
         public int Total { get; private set; }

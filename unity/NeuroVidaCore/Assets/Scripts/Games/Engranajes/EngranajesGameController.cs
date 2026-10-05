@@ -11,13 +11,14 @@ using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también exi
 namespace NeuroVida.Games.Engranajes
 {
     /// <summary>
-    /// «Engranajes» (Razonamiento; ver <see cref="EngranajesContract"/> y docs/diseno-engranajes.md; el boceto aprobado es docs/previews/engranajes-boceto.html).
-    /// A la izquierda la sala de máquinas con el motor; a la derecha el cohete con sus cuatro piezas (antena, compuerta, carga y turbina). Una cadena de engranajes lleva la fuerza
-    /// del motor a cada pieza; se mira la máquina y se decide qué hará la que brilla cuando arranque. Al responder la máquina arranca: todo gira junto (los dientes ENCAJAN y nunca se pisan),
-    /// un pulso de luz recorre cada unión con su clic y su nota, y cada pieza reacciona con su sonido. Al fallar, Nubi explica y marca el camino con flechas.
+    /// «Engranajes: Taller de reparación» (Razonamiento; ver <see cref="EngranajesContract"/> y docs/diseno-engranajes.md; el boceto aprobado es docs/previews/engranajes-taller-boceto.html).
+    /// A la izquierda la sala de máquinas con el motor; a la derecha el cohete con sus piezas (antena, compuerta, carga y turbina), cada una con un CARTEL de lo que debe hacer. La máquina viene
+    /// mal armada: con una llave (o dos, en las etapas altas) la persona hace cambios tocando el motor (su flecha se da vuelta) o una correa (se cruza o se descruza), y después toca «Arrancar».
+    /// La fuerza recorre la máquina (todo gira junto: los dientes ENCAJAN y nunca se pisan; un pulso de luz recorre cada unión con su clic y su nota) y cada cartel se pone verde si la pieza
+    /// cumplió o coral si no. Al fallar se marca en celeste lo que movió tu cambio y en dorado lo que había que tocar. Se juzga el RESULTADO, no el camino.
     /// Cada acierto enciende una de las 10 luces del cohete (que se guardan entre partidas: <c>engr_lights</c>/<c>engr_orbit</c> de la config y la telemetría) y con la décima el cohete despega ahí mismo.
-    /// Precisión = 10 máquinas; Reto = 120 s (las tarjetas «NUEVO» y el despegue no gastan tiempo). Con «quitar animaciones»: sin giro, pulso, chispas, llamas ni temblor; quedan las flechas
-    /// de sentido en cada engranaje, la barra arriba o abajo y los mismos tiempos.
+    /// Precisión = 10 máquinas; Reto = 120 s (las tarjetas «NUEVO» y el despegue no gastan tiempo). Con «quitar animaciones»: sin giro, pulso, chispas, llamas, temblor ni latidos; la flecha y la correa
+    /// cambian al instante, la barra queda arriba o abajo, los carteles con su veredicto y los mismos tiempos.
     /// </summary>
     public sealed partial class EngranajesGameController : GameControllerBase
     {
@@ -40,21 +41,22 @@ namespace NeuroVida.Games.Engranajes
         private int _shownLights, _shownOrbit;
         private Machine _mach;
         private Solution _sol;
-        private Piece _placed = Piece.None;
+        private PartResult[] _results;
+        private readonly List<int> _changes = new List<int>();                // los cambios hechos (ids de interruptor), el más antiguo primero
+        private readonly List<int> _beltLinks = new List<int>();              // las uniones que son correa, en el orden de sus vistas
+        private readonly Dictionary<int, float> _beltFlipAt = new Dictionary<int, float>();
         private Phase _phase = Phase.Idle;
         private bool Endless => _config != null && _config.config.timed;
         private bool Precision => !Endless;
-        private bool _senior, _loopOn, _guided, _inputOn, _baked, _okAnswer, _jamRun;
+        private bool _senior, _loopOn, _guided, _inputOn, _baked, _okAnswer, _startRequested;
         private int _streak, _bestStreak, _points, _resolved, _okCount;
-        private float _endsAt, _t0, _runAt = float.MaxValue, _trickAt = -10f, _introAt, _launchAt, _lastLightAt = -10f, _pressAt = -10f;
-        private int _lastTickSecond = -1, _pressIndex = -1;
-        private Answer _pending = Answer.None, _answered = Answer.None;
+        private float _endsAt, _t0, _runAt = float.MaxValue, _verdictAt = float.MaxValue, _showFixAt = -10f, _motorFlipAt, _hintAt, _startPressAt = -10f;
+        private float _introAt, _launchAt, _lastLightAt = -10f;
+        private int _lastTickSecond = -1, _motorArrowDir;
         private bool _introTapped;
-        private float[] _baseA = new float[GearPool + 2];
-        private float _slotBaseA;
+        private readonly float[] _baseA = new float[GearPool];
         private Vector2? _press;
         private readonly Dictionary<Station, float> _rackOff = new Dictionary<Station, float>();
-        private System.Collections.Generic.List<int> _trickPath = new List<int>();
 
         // escala y disposición
         private float _s = 3f, _playW = 1080f, _playH = 1920f, _logicalH = 640f;
@@ -86,8 +88,7 @@ namespace NeuroVida.Games.Engranajes
             _streak = _bestStreak = _points = _resolved = _okCount = 0;
             _endsAt = 0f;
             _lastTickSecond = -1;
-            _pending = _answered = Answer.None;
-            _trickAt = -10f;
+            _startRequested = false;
             ClearMachine();
 
             _resultRoot.gameObject.SetActive(false);
@@ -119,7 +120,7 @@ namespace NeuroVida.Games.Engranajes
                 ClearMachine();
             }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Engranajes", Assessment.Subtitle("Lleva la fuerza a las piezas"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("Engranajes", Assessment.Subtitle("Arregla la máquina del cohete"), () => _safe.gameObject.SetActive(true)));
             while (!_baked) yield return null;
             _safe.gameObject.SetActive(true);
             yield return null;
@@ -161,7 +162,7 @@ namespace NeuroVida.Games.Engranajes
             while (sounds.MoveNext()) yield return null;
         }
 
-        /// <summary>Una máquina: se arma, se mira, se responde, arranca y se cuenta. Si se acaba el tiempo del Reto mientras se mira, no cuenta (ni a favor ni en contra).</summary>
+        /// <summary>Una máquina: se arma, se mira, se hacen los cambios, se arranca y se cuenta. Si se acaba el tiempo del Reto mientras se mira, no cuenta (ni a favor ni en contra).</summary>
         private IEnumerator PlayMachine()
         {
             var m = EngranajesContract.Generate(_dda.PresentedLevel, _rng);
@@ -177,11 +178,15 @@ namespace NeuroVida.Games.Engranajes
             _phase = Phase.Play;
             _inputOn = true;
             _press = null;
-            _pending = Answer.None;
+            _startRequested = false;
             _t0 = GameClock.Time;
+            _hintAt = _t0;
             PlayClip(EngranajesSounds.MotorStart(), 0.6f);
-            while (_pending == Answer.None)
+            float waitedPlay = 0f;
+            while (!_startRequested)
             {
+                waitedPlay += GameClock.RealDeltaTime;
+                if (GuidedTutorial.AutoPlayGame(waitedPlay)) AutoPlayMachine(m);          // solo en el smoke del Editor
                 if (Endless && GameClock.Time >= _endsAt)
                 {
                     _inputOn = false;
@@ -192,15 +197,16 @@ namespace NeuroVida.Games.Engranajes
                 yield return null;
             }
             _inputOn = false;
-            var chosen = _pending;
+            var changes = new List<int>(_changes);
+            bool ok = EngranajesContract.AllOk(EngranajesContract.Results(m, changes));
             int ms = Mathf.RoundToInt((GameClock.Time - _t0) * 1000f);
-            bool launched = RecordMachine(m, chosen == m.Truth, ms);
-            yield return StartCoroutine(RevealRoutine(m, chosen, true));
+            bool launched = RecordMachine(m, ok, ms);
+            yield return StartCoroutine(RevealRoutine(m, changes, true));
             if (launched) yield return StartCoroutine(LaunchRoutine());
             _phase = Phase.Idle;
         }
 
-        /// <summary>Anota una máquina de la partida: cuentas, DDA, racha y puntos; si acertó suma una luz al cohete. Devuelve true si con esa luz el cohete se completó (despega).</summary>
+        /// <summary>Anota una máquina de la partida: cuentas, DDA, racha y puntos; si se arregló suma una luz al cohete. Devuelve true si con esa luz el cohete se completó (despega).</summary>
         private bool RecordMachine(Machine m, bool ok, int ms)
         {
             _tally.Record(ok, ms, m.Level);
@@ -265,10 +271,10 @@ namespace NeuroVida.Games.Engranajes
             _uiLayer.gameObject.SetActive(false);
             _questionBar.gameObject.SetActive(false);
             _resultRoot.Find("Title").GetComponent<Text>().text = "¡Buen trabajo!";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_tally.Correct} de {_tally.Total} máquinas · etapa {_tally.PeakEtapa} de 5";
+            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_tally.Correct} de {_tally.Total} máquinas arregladas · etapa {_tally.PeakEtapa} de 5";
             string rocket = _rocket.Lights > 0
                 ? $"Faltan {EngranajesContract.RocketLights - _rocket.Lights} luces: tu cohete espera en el hangar"
-                : _tally.Launches > 0 ? "¡Tu cohete va a la órbita!" : "Cada acierto enciende una luz del cohete";
+                : _tally.Launches > 0 ? "¡Tu cohete va a la órbita!" : "Cada máquina arreglada enciende una luz del cohete";
             _resultRoot.Find("Extra").GetComponent<Text>().text = rocket;
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
@@ -283,15 +289,18 @@ namespace NeuroVida.Games.Engranajes
 
         // ------------------------------------------------------------------ tarjetas «NUEVO» (una sola vez por instalación: se guardan en las preferencias de Unity)
 
+        // La clave es nueva con el rediseño «Taller de reparación»: las tarjetas de la versión anterior eran otras (y sus bits no valen para estas)
+        private const string IntroKey = "engr_intros2";
+
         private static bool IntroSeen(Intro intro)
         {
-            try { return (PlayerPrefs.GetInt("engr_intros", 0) & (1 << (int)intro)) != 0; }
+            try { return (PlayerPrefs.GetInt(IntroKey, 0) & (1 << (int)intro)) != 0; }
             catch (System.Exception) { return false; }
         }
 
         private static void MarkIntroSeen(Intro intro)
         {
-            try { PlayerPrefs.SetInt("engr_intros", PlayerPrefs.GetInt("engr_intros", 0) | (1 << (int)intro)); PlayerPrefs.Save(); }
+            try { PlayerPrefs.SetInt(IntroKey, PlayerPrefs.GetInt(IntroKey, 0) | (1 << (int)intro)); PlayerPrefs.Save(); }
             catch (System.Exception) { }
         }
 
@@ -299,83 +308,91 @@ namespace NeuroVida.Games.Engranajes
         {
             _phase = Phase.Intro;
             _introTapped = false;
-            var text = EngranajesContract.IntroText(intro);
             _introTitle.text = "NUEVO";
-            _introLine1.text = text.Length > 0 ? text[0] : "";
-            _introLine2.text = text.Length > 1 ? text[1] : "";
             _introLayer.gameObject.SetActive(true);
+            LayoutIntro(EngranajesContract.IntroText(intro));
             _introAt = GameClock.Time;
             PlayClip(EngranajesSounds.Chime(), 0.7f);
             _inputOn = true;
             _press = null;
-            while (!_introTapped) yield return null;
+            float waitedIntro = 0f;
+            while (!_introTapped)
+            {
+                waitedIntro += GameClock.RealDeltaTime;
+                if (GuidedTutorial.AutoPlayGame(waitedIntro)) _introTapped = true;          // solo en el smoke del Editor
+                yield return null;
+            }
             _inputOn = false;
             _introLayer.gameObject.SetActive(false);
         }
 
-        // ------------------------------------------------------------------ al responder: arranca la máquina
+        // ------------------------------------------------------------------ al arrancar
 
-        /// <summary>La máquina arranca con la respuesta elegida: se ve y se oye por qué (el pulso recorre cada unión, cada pieza hace lo suyo) y se anuncia el resultado. Con <paramref name="count"/> un
-        /// acierto suma su luz al cohete (la ronda guiada del tutorial no cuenta).</summary>
-        private IEnumerator RevealRoutine(Machine m, Answer v, bool count)
+        /// <summary>
+        /// La máquina arranca con los <paramref name="changes"/> hechos: se ve y se oye cómo (el pulso recorre cada unión, cada pieza hace lo suyo), cada cartel se pone verde o coral y se anuncia
+        /// el resultado. Con <paramref name="count"/> un acierto suma su luz al cohete (la ronda guiada del tutorial no cuenta). La siguiente máquina llega 1,9 s después del veredicto si se acertó y
+        /// 4,8 s si no (lo que se marca al equivocarse necesita tiempo para mirarse).
+        /// </summary>
+        private IEnumerator RevealRoutine(Machine m, List<int> changes, bool count)
         {
             _phase = Phase.Reveal;
-            _answered = v;
-            bool ok = v == m.Truth;
+            _results = EngranajesContract.Results(m, changes);
+            bool ok = EngranajesContract.AllOk(_results);
             _okAnswer = ok;
-            _jamRun = m.Jam;
-            var piece = Piece.None;
-            float delay = 0f;
-            if (m.Q == Question.Build)
-            {
-                piece = v == Answer.Gear ? Piece.Gear : Piece.Crossed;
-                _placed = piece;
-                if (piece == Piece.Gear) EngranajesContract.Phase(m, Piece.Gear, _rng);   // los dientes del engranaje nuevo encajan con sus dos vecinos
-                PlayClip(EngranajesSounds.Place(), 0.8f);
-                delay = Motion.Decorative ? 0.45f : 0f;
-            }
-            _sol = EngranajesContract.Solve(m, piece);
+            _sol = EngranajesContract.Solve(m, changes);
             CaptureAngles();
             float step = EngranajesContract.StepSeconds(_senior);
             int maxD = 0;
             for (int i = 0; i < _sol.Depth.Length; i++) maxD = Mathf.Max(maxD, _sol.Depth[i]);
-            float arrive = delay + maxD * step + 0.2f;
-            float hold = ok ? 2.3f : 3.8f;
+            float arrive = 0.12f + maxD * step + 0.25f;
+            float hold = ok ? 1.9f : 4.8f;
             if (_senior) hold *= 1.25f;
             float t0 = GameClock.Time;
-            _runAt = t0 + delay;
+            _runAt = t0 + 0.12f;
+            _verdictAt = t0 + arrive;
             int nextStep = 0;
-            bool jamSounded = false, partSounded = false, resultShown = false;
+            var soundedPart = new bool[m.Targets.Length];
+            bool resultShown = false;
             while (true)
             {
                 float t = GameClock.Time - t0;
-                while (nextStep <= maxD && t >= delay + nextStep * step)
+                while (nextStep <= maxD && t >= 0.12f + nextStep * step)
                 {
-                    if (!m.Jam || nextStep == 0) PlayClip(EngranajesSounds.Step(nextStep), 0.9f);
+                    PlayClip(EngranajesSounds.Step(nextStep), 0.9f);
                     nextStep++;
                 }
-                if (m.Jam && !jamSounded && t >= delay) { jamSounded = true; PlayClip(EngranajesSounds.Jam(), 0.9f); }
-                if (!m.Jam && !partSounded && t >= arrive) { partSounded = true; PlayPartSound(m.TargetStation); }
-                if (!resultShown && t >= arrive + 0.5f)
+                for (int k = 0; k < soundedPart.Length; k++)
+                {
+                    if (soundedPart[k] || t < arrive + k * 0.12f) continue;
+                    soundedPart[k] = true;
+                    PlayPartSound(m.Targets[k]);
+                    if (!_results[k].Ok) PlayClip(EngranajesSounds.Thud(), 0.8f);
+                }
+                if (!resultShown && t >= arrive + 0.6f)
                 {
                     resultShown = true;
                     if (ok)
                     {
                         PlayClip(EngranajesSounds.Success(), 0.8f);
-                        Tell(new[] { "¡Exacto!", "¡Eso es!", "¡Muy bien visto!" }[_okCount % 3], null, true);
-                        var at = PartPosition(m.TargetStation);
-                        Emit(L(at.x, at.y), 26, 150f, 0.8f, Gold, 20f);
-                        if (count) StartFlyer(L(at.x, at.y));
+                        if (!_guided) Tell(EngranajesContract.SuccessText(m, changes, _okCount), null, true);      // en el tutorial habla Nubi
+                        foreach (var target in m.Targets)
+                        {
+                            var at = PartPosition(target);
+                            Emit(L(at.x, at.y), 18, 140f, 0.8f, Gold, 20f);
+                        }
+                        if (count)
+                        {
+                            var first = PartPosition(m.Targets[0]);
+                            StartFlyer(L(first.x, first.y));
+                        }
                     }
                     else
                     {
-                        PlayClip(EngranajesSounds.Thud(), 0.8f);
-                        Tell(EngranajesContract.Explain(m), EngranajesContract.Trick(m), false);
-                        _trickAt = GameClock.Time;
-                        _trickPath = EngranajesContract.PathTo(m, m.Target, piece != Piece.None);
+                        if (!_guided) Tell(EngranajesContract.FailText(_results), EngranajesContract.HintText(m, _results, changes), false);
+                        _showFixAt = GameClock.Time;
                     }
                 }
-                if (t >= arrive + hold) break;
+                if (t >= arrive + 0.6f + hold) break;
                 yield return null;
             }
         }
@@ -414,7 +431,7 @@ namespace NeuroVida.Games.Engranajes
 
         /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo).</summary>
         private void SetUpTutorial() =>
-            BuildTutorial(_safe, GameHud.Height + 10f, "Engranajes", "Mira la máquina y decide qué hará la pieza del cohete cuando arranque el motor.", badgeAtBottom: true);
+            BuildTutorial(_safe, GameHud.Height + 10f, "Engranajes", "Arregla la máquina: toca el motor o una correa para cambiar su giro y después toca Arrancar.", badgeAtBottom: true);
 
         // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
 
@@ -445,39 +462,39 @@ namespace NeuroVida.Games.Engranajes
             _guided = true;
             while (!_baked) yield return null;                         // el arte se hornea mientras Nubi se presenta
             var coach = t.Coach;
-            // «Nubi entrenadora»: una máquina fácil (el motor, una cadena corta y una pieza) con tres focos. Cada foco congela el juego; el toque en el hueco es el de verdad:
-            // 1) mirar la flecha del motor, 2) mirar la pieza de la pregunta, 3) tocar la respuesta correcta (y se ve por qué).
+            // «Nubi entrenadora»: una máquina de la etapa 1 en la que la antena viene fallando, con tres focos. Los dos de «tocar» congelan el juego y el toque en el hueco es el de verdad:
+            // 1) mirar el cartel de la antena (la antena queda iluminada), 2) tocar el motor (el cambio real), 3) tocar «Arrancar» (arranca de verdad y el cartel se pone verde).
             var script = new GuidedScript(1);                          // una máquina; «Saltar tutorial» la termina
-            var easy = EngranajesContract.Generate(1, _rng);
+            var easy = EngranajesContract.Generate(1, _rng, Station.Antena);
             ShowMachine(easy);
             _phase = Phase.Play;
             _inputOn = false;
             yield return Motion.Hold(0.6f);
             bool ok = !t.Skipped;
+            var antena = new[] { coach.Zone(() => coach.AroundOf(_partRoots[(int)Station.Antena], new Vector2(SceneUnits(60f), SceneUnits(34f)))) };
             if (ok)
             {
-                yield return StartCoroutine(coach.Touch(() => coach.AroundOf(_motorArrowRect, Vector2.one * SceneUnits(100f)), "El motor gira así", circle: true));
+                yield return StartCoroutine(coach.Watch(() => coach.RectOf(_cartels[(int)Station.Antena].Root), CoachTexts.Engranajes.Cartel, () => false, 3f, keep: antena));
                 ok = !t.Skipped;
             }
             if (ok)
             {
-                yield return StartCoroutine(coach.Touch(() => coach.AroundOf(_partRoots[(int)easy.TargetStation], Vector2.one * SceneUnits(78f)), "Esta es la pieza de la pregunta", circle: true));
+                yield return StartCoroutine(coach.Touch(() => coach.AroundOf(_motorArrowRect, Vector2.one * SceneUnits(100f)), CoachTexts.Engranajes.Motor, circle: true, keep: antena));
                 ok = !t.Skipped;
-            }
-            int right = IndexOfButton(easy.Truth);
-            if (ok)
-            {
-                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[right].Root), "Cada engranaje que toca gira al revés"));
-                ok = !t.Skipped;
+                if (ok) ToggleSwitch(EngranajesContract.MotorId);      // el toque en el hueco ES el cambio
             }
             if (ok)
             {
-                _pressIndex = right;
-                _pressAt = GameClock.Time;
-                yield return StartCoroutine(RevealRoutine(easy, easy.Truth, false));
-                coach.Hide();
-                yield return StartCoroutine(coach.Notice("¡Eso es! Así se juega", 1.8f));
-                yield return StartCoroutine(coach.Notice("¡Listo! Ahora va en serio", 1.5f));
+                var cartel = new[] { coach.Zone(() => coach.RectOf(_cartels[(int)Station.Antena].Root)) };
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_start.Root), CoachTexts.Engranajes.Start, keep: cartel));
+                ok = !t.Skipped;
+                if (ok)
+                {
+                    PressStart();                                      // el toque en el hueco ES «Arrancar»
+                    coach.Hide();
+                    yield return StartCoroutine(RevealRoutine(easy, new List<int>(_changes), false));
+                    yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
+                }
             }
             coach.Hide();
             _inputOn = false;
@@ -498,12 +515,11 @@ namespace NeuroVida.Games.Engranajes
             UpdateClock();
             AnimateScene(now, dt);
             AnimateStrip(now);
-            AnimateButtons(now);
+            AnimateBottom(now);
             AnimateSay(now);
             AnimateFlyer(now);
             AnimateSparks(dt);
             AnimateIntro(now);
-            AnimateLaunch(now);
             if (_inputOn && dt > 0f)
             {
                 ReadPress();
@@ -543,15 +559,58 @@ namespace NeuroVida.Games.Engranajes
                 return;
             }
             if (_phase != Phase.Play || _mach == null) return;
-            for (int i = 0; i < _buttonCount; i++)
+            if (_start.Rect.Contains(p))
             {
-                if (!_buttons[i].Rect.Contains(p)) continue;
-                _pressIndex = i;
-                _pressAt = GameClock.Time;
-                PlayClip(EngranajesSounds.Press(), 0.6f);
-                _pending = _buttons[i].Def.Value;
+                PressStart();
                 return;
             }
+            var scene = EngranajesLayout.LogicalToScene(_lay, p.x, p.y);
+            int id = HitSwitch(scene);
+            if (id != int.MinValue) ToggleSwitch(id);
+        }
+
+        /// <summary>SOLO EN EL EDITOR (smoke): juega la máquina sola; las pares con la solución guardada y las impares sin tocar nada (así pasa también por el error y su aviso). En el teléfono no hace nada.</summary>
+        private void AutoPlayMachine(Machine m)
+        {
+#if UNITY_EDITOR
+            bool solve = _resolved % 2 == 0;
+            if (solve) foreach (int id in m.Solution) if (!_changes.Contains(id)) ToggleSwitch(id);
+            Debug.Log($"[SmokeTest] Engranajes: máquina {_resolved + 1} (nivel {m.Level}), {(solve ? "con la solución guardada" : "sin tocar nada")}");
+            PressStart();
+#endif
+        }
+
+        /// <summary>«Arrancar»: está siempre activo (a veces la máquina ya está bien).</summary>
+        private void PressStart()
+        {
+            _startPressAt = GameClock.Time;
+            PlayClip(EngranajesSounds.Press(), 0.6f);
+            _startRequested = true;
+        }
+
+        /// <summary>Hace (o deshace) un cambio. Tocar algo ya cambiado lo deshace; con todas las llaves usadas, tocar otro interruptor MUEVE la llave: se deshace el cambio más antiguo, sin error.</summary>
+        private void ToggleSwitch(int id)
+        {
+            float now = GameClock.Time;
+            if (_changes.Contains(id)) _changes.Remove(id);
+            else
+            {
+                if (_changes.Count >= _mach.Stage.Keys)
+                {
+                    int old = _changes[0];
+                    _changes.RemoveAt(0);
+                    FlipSwitch(old, now);
+                }
+                _changes.Add(id);
+            }
+            FlipSwitch(id, now);
+            PlayClip(EngranajesSounds.Clank(), 0.7f);
+        }
+
+        private void FlipSwitch(int id, float now)
+        {
+            if (id == EngranajesContract.MotorId) _motorFlipAt = now;
+            else _beltFlipAt[id] = now;
         }
 
         private void UpdateClock()
@@ -567,12 +626,6 @@ namespace NeuroVida.Games.Engranajes
                 _lastTickSecond = whole;
                 GameFeel.Tick();
             }
-        }
-
-        private int IndexOfButton(Answer a)
-        {
-            for (int i = 0; i < _buttonCount; i++) if (_buttons[i].Def.Value == a) return i;
-            return 0;
         }
 
         private float SceneUnits(float dp) => dp * _s * (_lay.SceneScale <= 0f ? 1f : _lay.SceneScale);

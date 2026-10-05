@@ -33,7 +33,20 @@ namespace NeuroVida.Games.Shared
         /// <summary>SOLO EN EL EDITOR (smoke test): la tarjeta de entrada sigue sola al segundo, como si se hubiera tocado «Probar una ronda». Así el arranque de
         /// prueba llega hasta la ronda guiada de cada juego. En el teléfono no existe.</summary>
         public static bool EditorAutoContinue;
+        /// <summary>SOLO EN EL EDITOR (smoke de «Engranajes»): la partida real (sin tutorial) se juega sola, para que el arranque de prueba pase por todo el recorrido de una máquina (armar, cambiar,
+        /// arrancar, veredicto, luz del cohete). En el teléfono no existe.</summary>
+        public static bool EditorAutoPlayGame;
 #endif
+
+        /// <summary>SOLO EN EL EDITOR (smoke de «Engranajes»): true cuando la partida real lleva más de 1,5 s esperando la jugada y el arranque de prueba pide jugarla sola. En el teléfono siempre da false.</summary>
+        public static bool AutoPlayGame(float waitedSeconds)
+        {
+#if UNITY_EDITOR
+            return EditorAutoPlayGame && waitedSeconds > 1.5f;
+#else
+            return false;
+#endif
+        }
 
         /// <summary>SOLO EN EL EDITOR (smoke): true cuando el juego lleva más de 2 s esperando la jugada de la persona en la ronda guiada; entonces el controlador la hace solo, para que el
         /// arranque de prueba pase por todos los pasos del tutorial (y se pueda revisar cada uno). En el teléfono siempre da false.</summary>
