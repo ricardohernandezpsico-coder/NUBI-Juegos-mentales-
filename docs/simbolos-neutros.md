@@ -19,7 +19,9 @@ hexágono, una gota o una ola están bien. Lámina para ver el resultado: [`docs
 | `SparkleSprite` (el «brillo» de cuenta regresiva, celebraciones, racha y cielo) y el brillo de La estrella intrusa | destello de 4 puntas | brillo redondo (núcleo con halo) |
 | Íconos de la app (`GameIcon.kt`): Parejas, Piloto, La estrella intrusa, Aterrizaje y el «brillo» (`sparkle`) | estrellas de 5 y 4 puntas | lucero redondo / hexágono / brillo redondo |
 
-## Lo que NO se cambió (pendiente de decisión)
+## Premios y calificaciones (tarea 36, aprobado por Ricardo el 4-oct)
 
-Son estrellas de 5 o 4 puntas que funcionan como **premio o calificación**, no como símbolo de un objeto: las estrellas ganadas de la pantalla de resultado (`ResultStar`), la estrella del escudo de liga (`LeagueShield`), el destello de 4 puntas de
-la celebración de ascenso de liga (`LeaguePromotionOverlay`) y la «primera estrella» del inicio (`FirstStar`). Si Ricardo quiere que también sean redondas, es otra tarea.
+También pasaron a **luceros redondos**, para que toda la app hable el mismo lenguaje: las estrellas ganadas de la pantalla de resultado (`ResultStar`) y su lluvia de destellos; el emblema y los puntos de división del escudo de liga (`LeagueShield`);
+los destellos de las celebraciones de ascenso de liga y de logros (`drawGlint`, antes `drawFourPointStar`); el brillo de Nubi en Hoy (`NubiHome`) y de la tarjeta para compartir (`ShareCard`); y la «primera estrella» del Primer vuelo, que ahora es
+**«tu primer lucero»** en el texto, la descripción para lectores de pantalla y el dibujo. «Juego estrella» (los juegos con medida propia) y «La estrella intrusa» (nombre de un juego) NO son símbolos y se quedan igual.
+La réplica `tools/previews/iconos_juegos.py` se actualizó con los íconos nuevos de Parejas, Piloto y Aterrizaje (el de La estrella intrusa no está en esa réplica) y se quitaron de su lámina los juegos retirados; lámina: `docs/previews/iconos-juegos.png`.

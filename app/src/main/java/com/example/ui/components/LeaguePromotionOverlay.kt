@@ -192,7 +192,7 @@ fun LeaguePromotionOverlay(
               val d = reach * speed * (1f - (1f - b) * (1f - b))
               val p = Offset(c.x + cos(ang) * d, c.y + sin(ang) * d)
               val r = s.dp.toPx() * (1f - b * 0.5f)
-              drawFourPointStar(p, r, sparkColors[i % sparkColors.size].copy(alpha = 1f - b))
+              drawGlint(p, r, sparkColors[i % sparkColors.size].copy(alpha = 1f - b))
             }
           }
           if (flash.value > 0f) {
@@ -304,14 +304,8 @@ fun LeaguePromotionOverlay(
   }
 }
 
-internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawFourPointStar(c: Offset, r: Float, color: Color) {
-  val p = Path().apply {
-    moveTo(c.x, c.y - r)
-    quadraticBezierTo(c.x, c.y, c.x + r, c.y)
-    quadraticBezierTo(c.x, c.y, c.x, c.y + r)
-    quadraticBezierTo(c.x, c.y, c.x - r, c.y)
-    quadraticBezierTo(c.x, c.y, c.x, c.y - r)
-    close()
-  }
-  drawPath(p, color)
+/** Destello REDONDO de las celebraciones (4-oct: antes era una estrella de 4 puntas): un núcleo con su halo. */
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlint(c: Offset, r: Float, color: Color) {
+  drawCircle(color.copy(alpha = color.alpha * 0.35f), r, c)
+  drawCircle(color, r * 0.5f, c)
 }

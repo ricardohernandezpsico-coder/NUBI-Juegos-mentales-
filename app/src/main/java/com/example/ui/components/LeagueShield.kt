@@ -65,21 +65,15 @@ private fun shieldPath(w: Float, h: Float, inset: Float): Path {
   }
 }
 
-private fun DrawScope.drawStar(center: Offset, radius: Float, color: Color) {
-  val path = Path()
-  for (i in 0 until 10) {
-    val rr = if (i % 2 == 0) radius else radius * 0.45f
-    val a = -Math.PI / 2 + i * Math.PI / 5
-    val p = Offset(center.x + (rr * cos(a)).toFloat(), center.y + (rr * sin(a)).toFloat())
-    if (i == 0) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y)
-  }
-  path.close()
-  drawPath(path, color)
+/** Un lucero REDONDO (4-oct: antes era una estrella de 5 puntas): un disco con un halo suave. */
+private fun DrawScope.drawLucero(center: Offset, radius: Float, color: Color) {
+  drawCircle(color.copy(alpha = color.alpha * 0.25f), radius * 1.25f, center)
+  drawCircle(color, radius * 0.82f, center)
 }
 
 /**
  * Escudo de liga dibujado por codigo (arte propio): borde metalico, cara con degradado, bisel, brillo y
- * estrellas segun la division (Maestro lleva corona de 3 estrellas). [pips] = estrellas a mostrar (1..5).
+ * luceros segun la division (Maestro lleva corona de 3 luceros). [pips] = luceros a mostrar (1..5).
  */
 @Composable
 fun LeagueShield(tier: RankTier, modifier: Modifier = Modifier, size: Dp = 72.dp, pips: Int = 0, glow: Boolean = false) {
@@ -124,18 +118,18 @@ fun DrawScope.drawLeagueShield(tier: RankTier, pips: Int = 0, glow: Boolean = fa
     },
     Color.White.copy(alpha = 0.35f)
   )
-  // Emblema: estrella central grande
+  // Emblema: lucero central grande
   val c = Offset(w / 2, h * 0.47f)
-  drawStar(Offset(c.x, c.y + w * 0.012f), w * 0.20f, pal.dark.copy(alpha = 0.55f))
-  drawStar(c, w * 0.20f, Color.White.copy(alpha = 0.92f))
-  // Divisiones: pequenas estrellas bajo el emblema
+  drawLucero(Offset(c.x, c.y + w * 0.012f), w * 0.20f, pal.dark.copy(alpha = 0.55f))
+  drawLucero(c, w * 0.20f, Color.White.copy(alpha = 0.92f))
+  // Divisiones: pequenos luceros bajo el emblema
   val n = pips.coerceIn(0, 5)
   if (n > 0) {
     val gap = w * 0.13f
     val startX = w / 2 - gap * (n - 1) / 2f
-    for (i in 0 until n) drawStar(Offset(startX + i * gap, h * 0.72f), w * 0.05f, Color.White.copy(alpha = 0.95f))
+    for (i in 0 until n) drawLucero(Offset(startX + i * gap, h * 0.72f), w * 0.05f, Color.White.copy(alpha = 0.95f))
   }
 }
 
-/** Division 1..5 -> estrellas encendidas (5 = recien ascendido, 1 = a punto de ascender, como en el ladder). */
+/** Division 1..5 -> luceros encendidos (5 = recien ascendido, 1 = a punto de ascender, como en el ladder). */
 fun GameRankInfo.pipCount(): Int = if (tier == RankTier.MAESTRO) 3 else (6 - (division ?: 5)).coerceIn(1, 5)

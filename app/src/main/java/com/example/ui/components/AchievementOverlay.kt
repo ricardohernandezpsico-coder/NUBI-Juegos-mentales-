@@ -157,7 +157,7 @@ fun AchievementOverlay(
           if (b > 0f && b < 1f) {
             sparks.forEachIndexed { i, (ang, speed, s) ->
               val d = reach * speed * (1f - (1f - b) * (1f - b))
-              drawFourPointStar(
+              drawGlint(
                 Offset(c.x + cos(ang) * d, c.y + sin(ang) * d),
                 s.dp.toPx() * (1f - b * 0.5f),
                 sparkColors[i % sparkColors.size].copy(alpha = 1f - b)

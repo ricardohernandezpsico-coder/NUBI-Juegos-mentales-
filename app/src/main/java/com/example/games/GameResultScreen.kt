@@ -112,8 +112,8 @@ private val TextSoft = Color(0xFFB4BFEA) // secundario sobre el cielo nocturno (
  * nocturno de la app (`CosmosBackground`, visible porque el fondo del tema es transparente), sin tarjetas: la
  * información es texto suelto y objetos, lo tocable es arcilla.
  *
- * Un solo protagonista animado: el puntaje cuenta hasta su valor, luego aparecen las estrellas con rebote y, si
- * te fue bien (2-3 estrellas), una lluvia de destellos. Con "quitar animaciones" del sistema todo aparece quieto.
+ * Un solo protagonista animado: el puntaje cuenta hasta su valor, luego aparecen los luceros con rebote y, si
+ * te fue bien (2-3 luceros), una lluvia de destellos. Con "quitar animaciones" del sistema todo aparece quieto.
  * Atrás = Continuar (comportamiento predecible). Sin promesas de salud en los textos.
  */
 @Composable
@@ -196,7 +196,7 @@ fun GameResultScreen(
       }
     }
 
-    // Protagonista: halo del dominio, destellos, estrellas y el puntaje gigante de arcilla.
+    // Protagonista: halo del dominio, destellos, luceros y el puntaje gigante de arcilla.
     Box(
       modifier = Modifier
         .fillMaxWidth()
@@ -1229,37 +1229,28 @@ private fun ClayNumber(text: String, color: Color, fontSize: TextUnit) {
   }
 }
 
-/** Estrella de 5 puntas de arcilla: sol con borde tinta si se ganó, contorno tenue si no. */
+/** Lucero REDONDO de arcilla (la «estrella» ganada, 4-oct: nada de estrellas con puntas): sol con borde tinta si se ganó, contorno tenue si no. */
 @Composable
 private fun ResultStar(earned: Boolean, modifier: Modifier = Modifier) {
   Canvas(modifier) {
-    val path = starPath(size.width / 2f, size.height / 2f, size.minDimension * 0.48f, size.minDimension * 0.21f, 5)
+    val center = Offset(size.width / 2f, size.height / 2f)
+    val r = size.minDimension * 0.40f
     if (earned) {
-      drawPath(path, Clay.Ink, style = Stroke(width = size.minDimension * 0.12f, join = StrokeJoin.Round))
-      drawPath(path, Clay.Sun)
+      drawCircle(Clay.Sun.copy(alpha = 0.28f), radius = r * 1.22f, center = center)
+      drawCircle(Clay.Ink, radius = r + size.minDimension * 0.06f, center = center)
+      drawCircle(Clay.Sun, radius = r, center = center)
       // Brillo arriba a la izquierda.
-      drawCircle(Color.White.copy(alpha = 0.55f), radius = size.minDimension * 0.07f, center = Offset(size.width * 0.40f, size.height * 0.36f))
+      drawCircle(Color.White.copy(alpha = 0.55f), radius = size.minDimension * 0.08f, center = Offset(size.width * 0.38f, size.height * 0.36f))
     } else {
-      drawPath(path, Color.White.copy(alpha = 0.10f))
-      drawPath(path, Color.White.copy(alpha = 0.30f), style = Stroke(width = size.minDimension * 0.05f, join = StrokeJoin.Round))
+      drawCircle(Color.White.copy(alpha = 0.10f), radius = r, center = center)
+      drawCircle(Color.White.copy(alpha = 0.30f), radius = r, center = center, style = Stroke(width = size.minDimension * 0.05f))
     }
   }
 }
 
-private fun starPath(cx: Float, cy: Float, outer: Float, inner: Float, points: Int): Path = Path().apply {
-  for (i in 0 until points * 2) {
-    val r = if (i % 2 == 0) outer else inner
-    val a = -PI / 2 + i * PI / points
-    val x = cx + (r * cos(a)).toFloat()
-    val y = cy + (r * sin(a)).toFloat()
-    if (i == 0) moveTo(x, y) else lineTo(x, y)
-  }
-  close()
-}
-
 private val BurstColors = listOf(Clay.Sun, Clay.Coral, Clay.Sky, Clay.Grape, Clay.Lime, Color.White)
 
-/** Lluvia de destellos de 4 puntas que salen del centro y se apagan (celebración de 2-3 estrellas). */
+/** Lluvia de destellos REDONDOS que salen del centro y se apagan (celebración de 2-3 luceros). */
 private fun DrawScope.drawBurst(center: Offset, progress: Float, reach: Float) {
   val rnd = Random(7)
   val fade = 1f - progress
@@ -1270,14 +1261,8 @@ private fun DrawScope.drawBurst(center: Offset, progress: Float, reach: Float) {
     val p = Offset(center.x + cos(angle) * d, center.y + sin(angle) * d)
     val s = (10f + rnd.nextFloat() * 16f) * (1f - progress * 0.5f)
     val color = BurstColors[i % BurstColors.size].copy(alpha = fade)
-    val sparkle = Path().apply {
-      moveTo(p.x, p.y - s); lineTo(p.x + s * 0.22f, p.y - s * 0.22f)
-      lineTo(p.x + s, p.y); lineTo(p.x + s * 0.22f, p.y + s * 0.22f)
-      lineTo(p.x, p.y + s); lineTo(p.x - s * 0.22f, p.y + s * 0.22f)
-      lineTo(p.x - s, p.y); lineTo(p.x - s * 0.22f, p.y - s * 0.22f)
-      close()
-    }
-    drawPath(sparkle, color)
+    drawCircle(color.copy(alpha = color.alpha * 0.35f), s * 0.9f, p)
+    drawCircle(color, s * 0.45f, p)
   }
 }
 

@@ -193,14 +193,7 @@ object ShareCard {
   }
 
   private fun DrawScope.sparkle(c: Offset, r: Float, color: Color) {
-    val p = Path().apply {
-      moveTo(c.x, c.y - r)
-      quadraticBezierTo(c.x, c.y, c.x + r, c.y)
-      quadraticBezierTo(c.x, c.y, c.x, c.y + r)
-      quadraticBezierTo(c.x, c.y, c.x - r, c.y)
-      quadraticBezierTo(c.x, c.y, c.x, c.y - r)
-      close()
-    }
-    drawPath(p, color)
+    drawCircle(color.copy(alpha = color.alpha * 0.35f), r, c)
+    drawCircle(color, r * 0.5f, c)
   }
 }

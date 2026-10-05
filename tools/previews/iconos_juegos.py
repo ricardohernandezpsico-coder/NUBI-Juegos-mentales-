@@ -7,9 +7,9 @@ FB=ROOT+'/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-Bold.ttf'
 FS=ROOT+'/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-SemiBold.ttf'
 INK=(26,18,64); CREAM=(255,251,242); SUN=(255,201,60); CORAL=(255,107,74); SKY=(76,201,240); GRAPE=(184,164,255); WHITE=(255,255,255)
 DOM={'memoria':(59,130,246),'atencion':(245,158,11),'razonamiento':(139,92,246),'lenguaje':(16,185,129),'calculo':(13,148,136),'velocidad':(244,63,94)}
-GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),('rutatesoro','Ruta del Tesoro','memoria'),
-       ('stroop','Tinta o Palabra','atencion'),('series','Detective de Series','razonamiento'),
-       ('anagramas','En la punta de la lengua','lenguaje'),('calculo','Carga exacta','calculo'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('trafico','Tráfico Estelar','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
+GAMES=[('secuencia','Secuencia Lumínica','memoria'),('parejas','Parejas Ocultas','memoria'),
+       ('stroop','Tinta o Palabra','atencion'),
+       ('anagramas','En la punta de la lengua','lenguaje'),('calculo','Carga exacta','calculo'),('piloto','Piloto Estelar','atencion'),('radar','Radar','velocidad'),('satelites','Satélites','atencion'),('freno','Freno de Emergencia','atencion'),('aterrizaje','Aterrizaje Lunar','calculo'),('acoplamiento','Acoplamiento','razonamiento'),('bitacora','Bitácora de Misión','memoria'),('rumbo','Rumbo a Casa','memoria'),('correo','Correo Estelar','memoria')]
 S=6  # px por unidad dentro del ícono (ícono de 600 px, se reduce al final)
 
 class Icon:
@@ -58,8 +58,12 @@ def drop(cx,cy,r):
     out+=cub((cx,cy+r),(cx-r*.56,cy+r),(cx-r,cy+r*.56),(cx-r,cy)); out+=cub((cx-r,cy),(cx-r,cy-r*.55),(cx-r*.35,cy-r*1.2),p0)
     return out
 def sparkle(ic,cx,cy,r,col):
-    c=(cx,cy); pts=[(cx,cy-r)]+quad((cx,cy-r),c,(cx+r,cy))+quad((cx+r,cy),c,(cx,cy+r))+quad((cx,cy+r),c,(cx-r,cy))+quad((cx-r,cy),c,(cx,cy-r))
-    ic.d.polygon(ic.poly(pts),fill=col)
+    # brillo REDONDO (4-oct: antes un destello de 4 puntas): un halo suave y un núcleo
+    ov=Image.new('RGBA',ic.im.size,(0,0,0,0)); od=ImageDraw.Draw(ov)
+    x,y=ic.P(cx,cy); rr=r*ic.k; halo=tuple(col[:3])+(90,)
+    od.ellipse([x-rr,y-rr,x+rr,y+rr],fill=halo); od.ellipse([x-rr/2,y-rr/2,x+rr/2,y+rr/2],fill=tuple(col[:3])+(255,))
+    ic.im.alpha_composite(ov); ic.d=ImageDraw.Draw(ic.im)
+def hexagon(cx,cy,r): return [(cx+r*math.cos(math.radians(-90+60*i)),cy+r*math.sin(math.radians(-90+60*i))) for i in range(6)]
 def plus(cx,cy,l,b): return [rrect(cx-l/2,cy-b/2,l,b,b/2),rrect(cx-b/2,cy-l/2,b,l,b/2)]
 
 def draw(ic,gid):
@@ -68,7 +72,7 @@ def draw(ic,gid):
         sparkle(ic,84,12,11,WHITE)
     elif gid=='parejas':
         ic.rot.append((-12,36,52)); ic.clay(rrect(14,20,42,60,8),GRAPE); ic.clay([(35,36),(45,50),(35,64),(25,50)],CREAM,border=3.5,shadow=False); ic.rot.pop()
-        ic.rot.append((10,64,48)); ic.clay(rrect(42,16,42,60,8),CREAM); ic.clay(star(63,46,15,7,5),CORAL,border=4,shadow=False); ic.rot.pop()
+        ic.rot.append((10,64,48)); ic.clay(rrect(42,16,42,60,8),CREAM); ic.clay(circ(63,46,13),CORAL,border=4,shadow=False); ic.rot.pop()
     elif gid=='rutatesoro':
         ic.clay([(20,76),(16,50),(24,38),(36,50),(38,78)],CORAL)
         ic.clay([(62,78),(63,52),(74,40),(86,52),(80,76)],SKY)
@@ -120,7 +124,7 @@ def draw(ic,gid):
         ic.clay(tf([(40.2,66.8),(40.2,41.6),(50.0,22.0),(59.8,41.6),(59.8,66.8)]),CREAM,border=3.5)
         ic.clay(tf([(43.7,34.6),(50.0,22.0),(56.3,34.6)]),CORAL,border=3.5,shadow=False)
         ic.clay(tf(circ(50,47.2,5.0)),SKY,border=2.5,shadow=False)
-        ic.clay(star(79,21,16,8,5),SUN,border=3.5)
+        ic.clay(hexagon(79,21,15),SUN,border=3.5)
     elif gid=='radar':
         LIME=(155,229,100)
         ic.clay(circ(50,50,40),(42,53,144),gloss=True)
@@ -194,7 +198,7 @@ def draw(ic,gid):
             ic.stroke([(23,54+8*k),(44,58+8*k)],(70,64,110),2.5); ic.stroke([(56,58+8*k),(77,54+8*k)],(70,64,110),2.5)
         for (x,y,r) in [(88,14,3),(78,18,3.5),(67,22,4)]:
             q=ic.P(x,y); rr=r*ic.k; ic.d.ellipse([q[0]-rr,q[1]-rr,q[0]+rr,q[1]+rr],fill=SKY)
-        ic.clay(star(48,25,15,7,5,True),SUN,border=4)
+        ic.clay(circ(48,25,12),SUN,border=4)
         sparkle(ic,26,20,8,WHITE)
     elif gid=='rumbo':
         LIME=(155,229,100)

@@ -573,7 +573,7 @@ private fun GameCardPage(index: Int, s: FlightState, a: FlightActions) {
 
 /**
  * «Tu punto de partida»: las 4 áreas con su etapa en palabras, «tu fuerte hoy» y «donde más vamos a jugar» (en TEXTO, no solo color), y,
- * la primera vez, la primera estrella de Nubi y el día 1 de la racha. «No es un examen».
+ * la primera vez, el primer lucero de Nubi y el día 1 de la racha. «No es un examen».
  */
 @Composable
 private fun StartingPointPage(s: FlightState, hi: String, a: FlightActions) {
@@ -598,7 +598,7 @@ private fun StartingPointPage(s: FlightState, hi: String, a: FlightActions) {
           Text("¡Empezó tu racha! Vuelve mañana para el día 2.", color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 24.sp, modifier = Modifier.weight(1f))
         }
       } else {
-        Sub("Cada partida hace nacer una estrella en el cielo de Nubi. Tu primera te espera en Hoy.")
+        Sub("Cada partida hace nacer un lucero en el cielo de Nubi. Tu primera te espera en Hoy.")
       }
     }
   }
@@ -625,7 +625,7 @@ private fun AreaLine(r: FirstFlight.AreaRow) {
 }
 
 /**
- * «Nace tu primera estrella»: Nubi celebra y la primera estrella aparece en su cielo (un rebote corto). Con «quitar animaciones» solo
+ * «Nace tu primer lucero»: Nubi celebra y el primer lucero aparece en su cielo (un rebote corto). Con «quitar animaciones» solo
  * se funde y queda quieta.
  */
 @Composable
@@ -649,27 +649,18 @@ private fun FirstStar() {
           .size(64.dp)
           .scale(grow.value.coerceAtLeast(0.01f))
           .alpha(fade.value)
-          .semantics { contentDescription = "Tu primera estrella" }
+          .semantics { contentDescription = "Tu primer lucero" }
       ) {
         val c = center
-        val outer = size.minDimension * 0.46f
-        val inner = outer * 0.46f
-        val star = Path().apply {
-          for (i in 0 until 10) {
-            val r = if (i % 2 == 0) outer else inner
-            val ang = -PI / 2 + i * PI / 5
-            val p = Offset(c.x + (r * cos(ang)).toFloat(), c.y + (r * sin(ang)).toFloat())
-            if (i == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y)
-          }
-          close()
-        }
-        drawPath(star, Clay.Ink, style = Stroke(10f, join = StrokeJoin.Round))
-        drawPath(star, Clay.Sun)
-        drawPath(star, Clay.Ink, style = Stroke(5f, join = StrokeJoin.Round))
+        val r = size.minDimension * 0.34f
+        drawCircle(Clay.Sun.copy(alpha = 0.28f), r * 1.35f, c)
+        drawCircle(Clay.Ink, r + 5f, c)
+        drawCircle(Clay.Sun, r, c)
+        drawCircle(Color.White.copy(alpha = 0.55f), r * 0.22f, Offset(c.x - r * 0.35f, c.y - r * 0.38f))
       }
     }
-    Text("¡Nace tu primera estrella!", color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center)
-    Text("Cada partida hace nacer una estrella en el cielo de Nubi.", color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 24.sp, textAlign = TextAlign.Center)
+    Text("¡Nace tu primer lucero!", color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center)
+    Text("Cada partida hace nacer un lucero en el cielo de Nubi.", color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 24.sp, textAlign = TextAlign.Center)
   }
 }
 

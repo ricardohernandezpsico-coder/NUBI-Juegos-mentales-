@@ -111,14 +111,9 @@ private fun DrawScope.drawHalo(breath: Float) {
   }
 }
 
-/** Destello de 4 puntas con lados curvos. */
+/** Destello REDONDO (4-oct: antes era de 4 puntas): un disco chico. */
 private fun sparkle(c: Offset, r: Float): Path = Path().apply {
-  moveTo(c.x, c.y - r)
-  quadraticTo(c.x, c.y, c.x + r, c.y)
-  quadraticTo(c.x, c.y, c.x, c.y + r)
-  quadraticTo(c.x, c.y, c.x - r, c.y)
-  quadraticTo(c.x, c.y, c.x, c.y - r)
-  close()
+  addOval(androidx.compose.ui.geometry.Rect(c.x - r * 0.6f, c.y - r * 0.6f, c.x + r * 0.6f, c.y + r * 0.6f))
 }
 
 // ------------------------------------------------------------------ Hoy: Nubi al centro y sus 4 áreas
