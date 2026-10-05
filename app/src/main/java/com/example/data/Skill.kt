@@ -44,14 +44,14 @@ object Skill {
   const val MIN_TRIALS = 12
   const val MIN_ROUNDS = 6
   /** Juegos de rondas largas: "superado" pide 6 rondas en vez de 12 ensayos. */
-  private val LONG_ROUNDS = setOf("rumbo", "satelites", "bitacora", "correo", "secuencia", "anagramas", "calculo")
+  private val LONG_ROUNDS = setOf("rumbo", "satelites", "bitacora", "correo", "secuencia", "anagramas", "calculo", "engranajes")
   /** Bitácora depende de la sesión diaria (transmisión e informe): solo se juega a tu medida. */
   private val ONLY_MEASURED = setOf("bitacora")
 
   val STAGES = listOf("Inicio", "Aprendiz", "Hábil", "Experto", "Maestro")
 
   val ladders: Map<String, Ladder> = mapOf(
-    "stroop" to Ladder(5), "anagramas" to Ladder(5), "calculo" to Ladder(5),
+    "stroop" to Ladder(5), "anagramas" to Ladder(5), "calculo" to Ladder(5), "engranajes" to Ladder(12),
     "piloto" to Ladder(9),
     "radar" to Ladder(12), "freno" to Ladder(12), "aterrizaje" to Ladder(12), "acoplamiento" to Ladder(12),
     "satelites" to Ladder(12), "meteoros" to Ladder(12), "disparate" to Ladder(12), "cosecha" to Ladder(10), "intrusa" to Ladder(12),

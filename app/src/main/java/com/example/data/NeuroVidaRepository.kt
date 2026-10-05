@@ -201,6 +201,23 @@ class NeuroVidaRepository(
     puntaPrefs.edit().putString("pending", Punta.encode(next)).apply()
   }
 
+  // El cohete de «Engranajes»: las luces encendidas (0..9) y los cohetes que ya despegaron. Es progreso de la persona: SharedPreferences que VA en el respaldo
+  // (`engranajes_rocket`). La app lo manda a Unity en cada partida (`engr_lights`, `engr_orbit`) y Unity devuelve los nuevos al terminar.
+  private val rocketPrefs = context.getSharedPreferences("engranajes_rocket", Context.MODE_PRIVATE)
+  private val _engranajesRocket = MutableStateFlow(Engranajes.rocket(rocketPrefs.getInt("lights", 0), rocketPrefs.getInt("orbit", 0)))
+  val engranajesRocket: StateFlow<Engranajes.Rocket> = _engranajesRocket.asStateFlow()
+
+  /** Guarda el cohete con que terminó una partida de Engranajes (en cualquier modo: las luces ganadas no se pierden). */
+  private fun recordEngranajes(result: GamePlayResult) {
+    if (result.gameId != "engranajes") return
+    val lights = result.engrLights ?: return
+    val orbit = result.engrOrbit ?: return
+    val next = Engranajes.rocket(lights, orbit)
+    if (next == _engranajesRocket.value) return
+    _engranajesRocket.value = next
+    rocketPrefs.edit().putInt("lights", next.lights).putInt("orbit", next.orbit).apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -421,6 +438,7 @@ class NeuroVidaRepository(
       "intrusa" -> "atlas" to Atlas.mark(r.intrSeenType, r.intrHitsType)
       "anagramas" -> "punta" to Punta.mark(r.puntaSolo, Punta.total(r.puntaSolo, r.puntaPista, r.puntaLetras, r.puntaVista))
       "calculo" -> "carga" to Carga.mark(r.cargaAlone, r.totalTrials)
+      "engranajes" -> "engranajes" to (if (r.engrEtapa != null) Engranajes.mark(r.correctAnswers, r.totalTrials) else null)
       "secuencia" -> "trail" to Trail.mark(r.rasBestLen)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
@@ -839,6 +857,8 @@ class NeuroVidaRepository(
     recordAtlas(result)
     // Las palabras azules también, en cualquier modo.
     recordPunta(result)
+    // El cohete de Engranajes también, en cualquier modo.
+    recordEngranajes(result)
     outcome
   }
 
@@ -918,6 +938,8 @@ class NeuroVidaRepository(
     _atlas.value = AtlasState()
     puntaPrefs.edit().clear().apply()
     _puntaPending.value = emptyList()
+    rocketPrefs.edit().clear().apply()
+    _engranajesRocket.value = Engranajes.rocket(0, 0)
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()
     skillPrefs.edit().clear().putString("state", "").apply()

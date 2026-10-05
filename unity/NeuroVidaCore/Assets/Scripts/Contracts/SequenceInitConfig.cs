@@ -63,6 +63,10 @@ namespace NeuroVida.Contracts
         /// <summary>Solo «En la punta de la lengua» (id <c>anagramas</c>): las palabras que Nubi tuvo que mostrar en partidas anteriores («las azules»), separadas por «;»
         /// y bien escritas («búho;faro»). La app las guarda (son progreso: van en el respaldo) y las manda aquí para que vuelvan en otra partida.</summary>
         public string punta_pending = "";
+        /// <summary>Solo «Engranajes» (id <c>engranajes</c>): las luces del cohete que la persona lleva (0..9) y los cohetes que ya despegaron. La app los guarda (son progreso: van en el respaldo),
+        /// los manda aquí y Unity devuelve los nuevos al terminar (<c>engr_lights</c>, <c>engr_orbit</c> en la telemetría).</summary>
+        public int engr_lights;
+        public int engr_orbit;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;

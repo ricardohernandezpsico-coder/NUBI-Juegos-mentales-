@@ -367,6 +367,14 @@ Cambio chico y verificable (sin tocar el `applicationId`, que queda para el fina
 Anagramas se reemplazó por **En la punta de la lengua** (id interno `anagramas`, que no cambia). Hay que sumarlo a la búsqueda oficial de marca (clases 9 y 41): es una expresión
 común del español («tener algo en la punta de la lengua»), así que conviene mirar si alguna app o juego de palabras ya la usa como nombre. «Anagramas» deja de aparecer en la app.
 
+## Juego nuevo: «Engranajes» (5-oct)
+
+Juego nuevo de Razonamiento (id `engranajes`; ocupa el lugar de Tráfico Estelar, con otro id: `trafico` queda reservado). Un motor, una cadena de engranajes y un cohete con cuatro piezas (antena, compuerta, carga y turbina):
+se decide qué hará la pieza que brilla. **Nombre NUEVO a revisar:** «Engranajes» es una palabra común (clases 9 y 41 de la búsqueda oficial de marca: hay que mirar si alguna app o juego de lógica ya lo usa como nombre; por eso
+la app muestra «Engranajes» solo como título del juego, no como marca). Los acertijos de «¿hacia dónde gira el engranaje?» son clásicos y de uso libre (rompecabezas de poleas y engranajes de los libros de física y de los
+concursos de lógica). No encontramos un juego de engranajes en Lumosity, Peak ni Elevate (búsqueda del 4-oct). Nombre, arte, escena del cohete y sonidos propios. Va a la lista del abogado como juego nuevo (comparar el aspecto
+y la jugada con los juegos de lógica mecánica de otras apps antes de publicar).
+
 ## Nombre nuevo de Cálculo Sereno: «Carga exacta» (4-oct)
 
 Cálculo Sereno se reemplazó por **Carga exacta** (id interno `calculo`, que no cambia): el reactor de la nave pide una carga y se juntan celdas de energía de a dos con + − × ÷ hasta llegar. Se retiró

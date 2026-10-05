@@ -50,7 +50,7 @@ public struct Vector4 { public float x,y,z,w; public Vector4(float x,float y,flo
 public struct Rect { public Rect(float x,float y,float w,float h){} }
 public enum TextureFormat { RGBA32 } public enum TextureWrapMode { Clamp, Repeat } public enum FilterMode { Bilinear, Point }
 public class Object {}
-public class Texture2D : Object { public int width; public Color32[] pixels; public Texture2D(int w,int h,TextureFormat f,bool m){width=w;} public TextureWrapMode wrapMode{get;set;} public FilterMode filterMode{get;set;} public void SetPixels32(Color32[] p){pixels=p;} public void Apply(){} }
+public class Texture2D : Object { public int width, height; public Color32[] pixels; public Texture2D(int w,int h,TextureFormat f,bool m){width=w; height=h;} public TextureWrapMode wrapMode{get;set;} public FilterMode filterMode{get;set;} public void SetPixels32(Color32[] p){pixels=p;} public void Apply(){} }
 public class Sprite : Object { public Texture2D texture; public static Sprite Create(Texture2D t, Rect r, Vector2 p, float ppu) => new Sprite{texture=t}; }
 public class AudioClip : Object { public float[] data; public int frequency; public static AudioClip Create(string n, int len, int ch, int freq, bool stream) => new AudioClip{data=new float[len], frequency=freq}; public bool SetData(float[] d, int off){ Array.Copy(d,0,data,off,d.Length); return true; } public int samples => data.Length; public bool GetData(float[] d, int off){ Array.Copy(data,off,d,0,d.Length); return true; } }
 }

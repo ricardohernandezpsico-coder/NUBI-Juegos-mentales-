@@ -30,7 +30,7 @@ class ResultPhrasesTest {
 
   @Test
   fun `la lista de juegos sin rapidez es la que se reporta`() {
-    assertEquals(setOf("secuencia", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa"), ResultPhrases.NO_SPEED_GAMES)
+    assertEquals(setOf("secuencia", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes"), ResultPhrases.NO_SPEED_GAMES)
     assertTrue(ResultPhrases.feedback("intrusa", 10).contains("ajusta"))
   }
 

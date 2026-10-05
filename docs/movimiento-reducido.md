@@ -1,6 +1,6 @@
 # «Quitar animaciones» de verdad — regla, componentes comunes e inventario (fases A y B)
 
-> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 18 juegos que quedan (Comparación Instantánea, Detective de Series, Ruta del Tesoro y Tráfico Estelar también se retiraron, el 4-oct: tareas 31, 33, 34 y 35).
+> **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 19 juegos que quedan (Engranajes, el 5-oct, nació con la regla) (Comparación Instantánea, Detective de Series, Ruta del Tesoro y Tráfico Estelar también se retiraron, el 4-oct: tareas 31, 33, 34 y 35).
 
 Tarea 18 (3-oct). Fase A: regla, componentes comunes e inventario. Fase B: la regla aplicada dentro de los 23 juegos (columna «Hecho» de las tablas).
 
@@ -286,6 +286,14 @@ Escrito ya con la regla: todo movimiento decorativo pasa por `Motion.Decorative`
 celda elegida solo cambia de color (no sube ni crece, y no hay halo), al juntar dos celdas la primera se desvanece en su lugar (sin vuelo ni arco de luz) y la segunda cambia de número sin «pop» ni chispas,
 el aro de luces del reactor no gira y su resplandor se apaga. SE QUEDAN: el cambio de número, el reactor DORADO al lograr la carga (con el número en tinta), el color dorado de la operación elegida, el contorno
 dorado quieto de las dos celdas de la pista y los fundidos cortos de los mensajes. Las esperas de después de lograr la carga (1,7 s) son `Motion.Hold`: duran lo mismo con y sin la opción.
+
+**Engranajes (id `engranajes`, 5-oct)** — `Engranajes/EngranajesGameController*.cs`
+
+Escrito ya con la regla: todo movimiento decorativo pasa por `Motion.Decorative`. Con «quitar animaciones»: los engranajes NO giran, no hay pulso de luz, destello de cada engranaje, chispas, llama de la turbina,
+aro que late de la pieza preguntada, flecha del motor que orbita, luz que vuela a la cabecera, temblor ni humo del despegue. SE QUEDAN: la flecha de sentido sobre CADA engranaje que gira (fija, es el
+resultado), la barra de la compuerta y el elevador en su posición final (arriba o abajo), la trampa con su triángulo punteado, el aro de la pieza preguntada quieto, las ventanillas encendidas, el aviso con su texto y
+los mismos tiempos (la cascada, la espera de después y el despegue duran lo mismo: son esperas por reloj, `GameClock`, no animaciones). La tarjeta «NUEVO» y los avisos aparecen con un fundido corto; el
+despegue, sin vuelo: el cohete simplemente ya no está y el texto «¡Despegue!» queda 1,2 s.
 
 **Acoplamiento** — `Acoplamiento/DockingGameController.cs`
 

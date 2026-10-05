@@ -233,7 +233,13 @@ object NativeReceiver {
     val carga_alone: Int = -1,
     val carga_hinted: Int = -1,
     val carga_short: Int = -1,
-    val carga_ms: Int = -1
+    val carga_ms: Int = -1,
+    // Solo «Engranajes» (-1 = sin dato): etapa más alta (1..5), luces del cohete (0..9), cohetes en órbita, despegues de la partida y tiempo medio por máquina (ms).
+    val engr_etapa: Int = -1,
+    val engr_lights: Int = -1,
+    val engr_orbit: Int = -1,
+    val engr_launches: Int = -1,
+    val engr_ms: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -362,7 +368,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Carga exacta, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "calculo", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "bitacora", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
+      "stroop", "calculo", "engranajes", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "bitacora", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
@@ -572,7 +578,12 @@ object NativeReceiver {
       cargaAlone = metrics.carga_alone.takeIf { telemetry.game_id == "calculo" && it >= 0 },
       cargaHinted = metrics.carga_hinted.takeIf { telemetry.game_id == "calculo" && it >= 0 },
       cargaShort = metrics.carga_short.takeIf { telemetry.game_id == "calculo" && it >= 0 },
-      cargaMs = metrics.carga_ms.takeIf { telemetry.game_id == "calculo" && it > 0 }
+      cargaMs = metrics.carga_ms.takeIf { telemetry.game_id == "calculo" && it > 0 },
+      engrEtapa = metrics.engr_etapa.takeIf { telemetry.game_id == "engranajes" && it >= 1 },
+      engrLights = metrics.engr_lights.takeIf { telemetry.game_id == "engranajes" && it >= 0 },
+      engrOrbit = metrics.engr_orbit.takeIf { telemetry.game_id == "engranajes" && it >= 0 },
+      engrLaunches = metrics.engr_launches.takeIf { telemetry.game_id == "engranajes" && it >= 0 },
+      engrMs = metrics.engr_ms.takeIf { telemetry.game_id == "engranajes" && it > 0 }
     )
   }
 }

@@ -51,6 +51,9 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>«Carga exacta» (id calculo) con su tutorial guiado: la tarjeta de Nubi y la carga fácil (3 celdas, solo sumas) con tres focos: celda, «+» y otra celda.</summary>
         public static void RunTutorialCalculo() => RunGame("calculo", 12f, tutorial: true);
 
+        /// <summary>«Engranajes» (id engranajes) con su tutorial guiado: la tarjeta de Nubi y una máquina fácil con tres focos (la flecha del motor, la pieza de la pregunta y el botón correcto).</summary>
+        public static void RunTutorialEngranajes() => RunGame("engranajes", 12f, tutorial: true);
+
         /// <summary>La versión corta del inicio («Tu punto de partida»: <c>assessment</c>) de Freno, Aterrizaje y Meteoros.</summary>
         public static void RunCortoFreno() => RunGame("freno", 10f, assessment: true);
         public static void RunCortoAterrizaje() => RunGame("aterrizaje", 10f, assessment: true);
@@ -64,6 +67,9 @@ namespace NeuroVida.Bridge.EditorTools
 
         /// <summary>Mismo smoke test pero con «Carga exacta» (id calculo) como juego.</summary>
         public static void RunCalculo() => RunGame("calculo", 9f);
+
+        /// <summary>Mismo smoke test pero con «Engranajes» (id engranajes) como juego.</summary>
+        public static void RunEngranajes() => RunGame("engranajes", 9f);
 
         /// <summary>Mismo smoke test pero con Piloto Estelar como juego.</summary>
         public static void RunPiloto() => RunGame("piloto", 9f);
@@ -114,9 +120,9 @@ namespace NeuroVida.Bridge.EditorTools
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
-            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
-            ("Calculo", "calculo", 9f), ("Anagramas", "anagramas", 9f),
+            ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 9f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
             ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f),
             ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 9f), ("Meteoros", "meteoros", 9f),

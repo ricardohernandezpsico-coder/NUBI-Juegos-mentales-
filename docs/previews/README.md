@@ -176,6 +176,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`rumbo.png`](rumbo.png)
 - [`satelites.png`](satelites.png)
 - [`simbolos-parejas.png`](simbolos-parejas.png)
+- [`engranajes.png`](engranajes.png): «Engranajes» (5-oct): seis pantallas compuestas con los sprites REALES y máquinas del generador real (réplica, no captura). Script: `tools/art-preview/engranajes.py`.
 - [`simbolos-neutros.png`](simbolos-neutros.png): los símbolos neutros del 4-oct (puertos, cartas de Parejas, señales de Piloto). Script: `tools/art-preview/simbolos_neutros.py`.
 
 ## Bienvenida, resultados, logros y compartir

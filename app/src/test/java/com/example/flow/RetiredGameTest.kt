@@ -104,8 +104,8 @@ class RetiredGameTest {
   private fun newViewModel() = NeuroVidaViewModel(app)
 
   @Test
-  fun `el registro tiene 18 juegos, Atencion 5, y el id retirado queda reservado`() {
-    assertEquals(18, GameRegistry.allGames.size)
+  fun `el registro tiene 19 juegos, Atencion 5, y el id retirado queda reservado`() {
+    assertEquals(19, GameRegistry.allGames.size)
     assertNull(GameRegistry.getById(old))
     assertFalse(GameRegistry.allGames.any { it.id == old })
     assertEquals(5, GameRegistry.allGames.count { it.domain.name == "ATENCION" })
@@ -123,9 +123,9 @@ class RetiredGameTest {
     assertEquals(3, runBlocking { db().gameResultDao().getAllResultsSync().count { it.gameId == old } })
     assertNotNull(runBlocking { db().gameProgressDao().getProgressForGameSync(old) })
     // pero no aparece en lo que muestra la app
-    assertEquals(18, vm.gameRanks.value.size)
+    assertEquals(19, vm.gameRanks.value.size)
     assertTrue(vm.gameRanks.value.none { it.gameId == old })
-    assertEquals(18, vm.gameLevelsForProgress.value.size)
+    assertEquals(19, vm.gameLevelsForProgress.value.size)
     assertFalse(vm.gameLevelsForProgress.value.containsKey(old))
     // no se puede abrir
     vm.launchGame(old)
@@ -183,7 +183,7 @@ class RetiredGameTest {
     assertTrue(GameRegistry.isRetired("comparacion"))
     assertTrue(GameRegistry.isRetired("cambiochip"))
     assertEquals("ATENCION", GameRegistry.retiredDomains["comparacion"]!!.name)
-    assertEquals(18, GameRegistry.allGames.size)
+    assertEquals(19, GameRegistry.allGames.size)
     assertEquals(5, GameRegistry.allGames.count { it.domain.name == "ATENCION" })
   }
 
@@ -202,15 +202,15 @@ class RetiredGameTest {
   // ---- Detective de Series (`series`, retirado el 4-oct-2026): lo mismo, sin base de datos (las pruebas con ViewModel y Room de arriba valen para cualquier id retirado).
 
   @Test
-  fun `Detective de Series tambien queda retirado, su id reservado y Razonamiento con 3 (tras retirar Tráfico Estelar)`() {
+  fun `Detective de Series tambien queda retirado, su id reservado y Razonamiento con 4 (con Engranajes)`() {
     assertNull(GameRegistry.getById("series"))
     assertFalse(GameRegistry.allGames.any { it.id == "series" })
     assertTrue(GameRegistry.isRetired("series"))
     assertTrue(GameRegistry.isRetired("comparacion"))
     assertTrue(GameRegistry.isRetired("cambiochip"))
     assertEquals("RAZONAMIENTO", GameRegistry.retiredDomains["series"]!!.name)
-    assertEquals(18, GameRegistry.allGames.size)
-    assertEquals(setOf("calculo", "acoplamiento", "aterrizaje"), GameRegistry.allGames.filter { it.domain.name == "RAZONAMIENTO" }.map { it.id }.toSet())
+    assertEquals(19, GameRegistry.allGames.size)
+    assertEquals(setOf("calculo", "acoplamiento", "aterrizaje", "engranajes"), GameRegistry.allGames.filter { it.domain.name == "RAZONAMIENTO" }.map { it.id }.toSet())
   }
 
   @Test
@@ -234,7 +234,7 @@ class RetiredGameTest {
     assertTrue(GameRegistry.isRetired("rutatesoro"))
     assertTrue(GameRegistry.isRetired("series"))
     assertEquals("MEMORIA", GameRegistry.retiredDomains["rutatesoro"]!!.name)
-    assertEquals(18, GameRegistry.allGames.size)
+    assertEquals(19, GameRegistry.allGames.size)
     assertEquals(setOf("parejas", "secuencia", "bitacora", "rumbo", "correo"), GameRegistry.allGames.filter { it.domain.name == "MEMORIA" }.map { it.id }.toSet())
   }
 
@@ -253,14 +253,15 @@ class RetiredGameTest {
   // ---- Tráfico Estelar (`trafico`, retirado el 4-oct-2026): lo mismo, sin base de datos.
 
   @Test
-  fun `Trafico Estelar tambien queda retirado, su id reservado y Razonamiento con 3`() {
+  fun `Trafico Estelar tambien queda retirado, su id reservado y Razonamiento con 4 (Engranajes tiene otro id)`() {
     assertNull(GameRegistry.getById("trafico"))
     assertFalse(GameRegistry.allGames.any { it.id == "trafico" })
     assertTrue(GameRegistry.isRetired("trafico"))
     assertTrue(GameRegistry.isRetired("rutatesoro"))
     assertEquals("RAZONAMIENTO", GameRegistry.retiredDomains["trafico"]!!.name)
-    assertEquals(18, GameRegistry.allGames.size)
-    assertEquals(setOf("calculo", "acoplamiento", "aterrizaje"), GameRegistry.allGames.filter { it.domain.name == "RAZONAMIENTO" }.map { it.id }.toSet())
+    assertFalse("Engranajes NO reutiliza el id retirado", GameRegistry.isRetired("engranajes"))
+    assertEquals(19, GameRegistry.allGames.size)
+    assertEquals(setOf("calculo", "acoplamiento", "aterrizaje", "engranajes"), GameRegistry.allGames.filter { it.domain.name == "RAZONAMIENTO" }.map { it.id }.toSet())
   }
 
   @Test

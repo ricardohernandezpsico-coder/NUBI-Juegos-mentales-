@@ -69,6 +69,14 @@ class BackupRulesTest {
   }
 
   @Test
+  fun `el cohete de Engranajes se respalda (luces y cohetes en orbita son progreso)`() {
+    // Si no, un teléfono nuevo perdería las luces encendidas y los cohetes que ya despegaron.
+    for (text in listOf(xml("backup_rules.xml"), cloudSection(xml("data_extraction_rules.xml")), transferSection(xml("data_extraction_rules.xml")))) {
+      assertTrue(includes(text, "sharedpref").contains("engranajes_rocket.xml"))
+    }
+  }
+
+  @Test
   fun `lo pasajero no se respalda`() {
     val backedUp = includes(xml("backup_rules.xml"), "sharedpref").map { it.removeSuffix(".xml") }.toSet()
     assertTrue(backedUp.intersect(transient).isEmpty())

@@ -83,7 +83,7 @@ import kotlin.random.Random
  */
 object ResultPhrases {
   /** Juegos cuyo puntaje y medida NO usan rapidez: ni tiempo de reacción en el motor ni una medida en ms o por segundo. */
-  val NO_SPEED_GAMES = setOf("secuencia", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa")
+  val NO_SPEED_GAMES = setOf("secuencia", "bitacora", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes")
 
   /**
    * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono: lo que cambia con la preferencia de la persona
@@ -726,6 +726,41 @@ fun GameResultScreen(
       }
     }
 
+    // Engranajes (pantalla final, docs/diseno-engranajes.md §7): «Tu cohete». «Acertaste X de N máquinas», la etapa más alta (de 5), qué pasó con el cohete (despegó, o
+    // cuántas luces faltan y que espera en el hangar), los cohetes en órbita y, con 3 o más máquinas, el ritmo. Cada dato aparece UNA vez; sin recuadros.
+    val engrEtapa = result.engrEtapa
+    if (engrEtapa != null) {
+      val eng = com.example.data.Engranajes
+      val engTotal = result.totalTrials
+      Spacer(Modifier.height(14.dp))
+      Text("Tu cohete", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = eng.spoken(result.correctAnswers, engTotal) }.testTag("engranajes_headline"),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Text("Acertaste", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.Bottom) {
+          Text("${result.correctAnswers.coerceIn(0, maxOf(engTotal, 0))} de $engTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
+          Text("máquinas", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))
+        }
+      }
+      eng.etapaLine(engrEtapa)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_etapa"))
+      }
+      eng.launchLine(result.engrLaunches, result.engrOrbit)?.let {
+        Text(it, color = Clay.Sun, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_launch"))
+      }
+      eng.hangarLine(result.engrLights)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_hangar"))
+      }
+      eng.orbitLine(result.engrOrbit)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_orbit"))
+      }
+      eng.paceLine(result.engrMs, engTotal)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_pace"))
+      }
+    }
+
     // Rastro de luz (pantalla final, docs/diseno-rastro-de-luz.md §6): "tu rastro" (cifra grande: las luces más largas que repetiste bien en el
     // rastro simple), "por modo" (al revés, el cielo gira y en marcha, cada uno con 3 rondas o más; el de menos aciertos marcado con TEXTO «el que
     // más te costó» y un truco), y la lectura en palabras. Sin recuadros ni percentiles; cada dato aparece UNA vez.
@@ -1134,7 +1169,7 @@ fun GameResultScreen(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs, result.memRecalled,
       result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone
+      result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa
     ).any { it != null }
     if (hasStarMeasure) {
       Text(

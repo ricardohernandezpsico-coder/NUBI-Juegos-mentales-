@@ -16,6 +16,21 @@ en 19.
 - **Antecedentes:** antes se descartaron dos juegos de deducción con información oculta (regla escondida y código secreto)
   por frustrantes. Este tiene todo a la vista.
 
+## Estado (5-oct): hecho, a probar en el teléfono
+
+Implementado en `Games/Engranajes/` (contrato puro y 37 pruebas de Unity entre contrato, disposición, arte y vista; controlador en tres archivos; sonidos y arte propios) y en la app (`data/Engranajes.kt`, registro, ícono,
+medida, pantalla final, cohete guardado en preferencias `engranajes_rocket` que van en el respaldo). Lámina de la pantalla compuesta con los sprites reales: [`docs/previews/engranajes.png`](previews/engranajes.png)
+(`tools/art-preview/engranajes.py`). **Diferencias con el boceto** (todas a propósito):
+
+- El motor NO gira antes de responder (en el boceto sí, y sus dientes atravesaban los del vecino quieto): gira su flecha alrededor, y las piezas se ven quietas hasta que arranca.
+- Al arrancar, todos los engranajes giran JUNTOS con una aceleración suave (así los dientes encajan siempre; en el boceto cada uno arrancaba a su turno y por un momento se pisaban). La «cascada» se ve en el pulso de luz,
+  el destello de cada engranaje al llegarle la fuerza, el clic y la nota de cada paso (cada 0,15 s; 0,21 s en mayores) y la reacción de cada pieza (la llama de la turbina y las barras llegan con la fuerza).
+- El hueco de «Arma tú» ya viene con las fases de los dientes calculadas (en el boceto los engranajes de después del hueco tenían los dientes sueltos hasta elegir la pieza).
+- La escena (sala + cohete) se achica pareja en pantallas bajas y nunca pasa de 0,96 para que la flecha del motor y la aleta no se corten; los textos de la escena no bajan de 14 dp aunque se achique.
+- El aviso de abajo admite dos líneas y el truco (en el boceto un texto largo se cortaba).
+- Las tarjetas «NUEVO» se muestran UNA vez por instalación (preferencias de Unity), no en cada partida; «Cómo se juega» de la pausa repite el tutorial.
+- Con «quitar animaciones» el aro de la pieza preguntada queda quieto (en el boceto desaparecía y la pregunta solo se distinguía por el color).
+
 ## 1. La idea
 
 A la izquierda, la **sala de máquinas** con el motor. A la derecha, **el cohete** con cuatro piezas rotuladas: Antena (punta),

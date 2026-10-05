@@ -165,6 +165,14 @@ object GameRegistry {
       iconEmoji = "🔋"
     ),
     GameDefinition(
+      id = "engranajes",
+      title = "Engranajes",
+      domain = DomainType.RAZONAMIENTO,
+      subtitle = "Lleva la fuerza a las piezas del cohete",
+      instruction = "Mira la máquina: el motor gira y cada engranaje que toca gira al revés del anterior. Decide qué hará la pieza que brilla en el cohete. Cada acierto enciende una luz; con diez, tu cohete despega.",
+      iconEmoji = "⚙️"
+    ),
+    GameDefinition(
       id = "piloto",
       title = "Piloto Estelar",
       domain = DomainType.ATENCION,
@@ -394,6 +402,14 @@ data class GamePlayResult(
   val cargaHinted: Int? = null,
   val cargaShort: Int? = null,
   val cargaMs: Int? = null,
+  // Solo «Engranajes» (id engranajes): la etapa más alta jugada (1..5), las luces del cohete con que termina la partida (0..9), los cohetes en órbita, cuántos despegaron en la
+  // partida y el tiempo medio por máquina (ms). Máquinas jugadas = totalTrials, acertadas = correctAnswers. Las luces y los cohetes son progreso: se guardan en prefs
+  // «engranajes_rocket» (y van en el respaldo); la medida va a StarMeasures. La lectura está en data/Engranajes.kt.
+  val engrEtapa: Int? = null,
+  val engrLights: Int? = null,
+  val engrOrbit: Int? = null,
+  val engrLaunches: Int? = null,
+  val engrMs: Int? = null,
   // Solo Rastro de luz (id «secuencia»): por familia (4: el rastro, al revés, el cielo gira, en marcha) el mejor largo repetido bien (0 = ninguno),
   // las rondas y los aciertos (la ronda guiada del tutorial no cuenta), qué familias aparecieron y cuáles se desbloquearon por primera vez en
   // la partida (bits: 1 rastro, 2 al revés, 4 gira, 8 en marcha). La lectura está en data/Trail.kt. No se guardan en Room.

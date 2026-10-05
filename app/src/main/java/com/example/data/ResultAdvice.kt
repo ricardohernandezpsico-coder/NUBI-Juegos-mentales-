@@ -79,6 +79,8 @@ object ResultAdvice {
     }
     // Carga exacta: cuando alguna carga necesitó pista o quedó para otra vez.
     result.cargaAlone?.let { alone -> out += tipOf(Carga.tip(alone, result.totalTrials, result.level) ?: "") }
+    // Engranajes: cuando alguna máquina falló, el truco de seguir el camino desde el motor.
+    if (result.engrEtapa != null) out += tipOf(Engranajes.tip(result.correctAnswers, result.totalTrials) ?: "")
     // Rumbo a Casa: de dónde sale lo que te aleja de casa.
     val along = result.homingAlong
     val lateral = result.homingLateral

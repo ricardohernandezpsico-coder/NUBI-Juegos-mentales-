@@ -420,6 +420,21 @@ Nunca se dice que el juego previene el deterioro ni que «mejora la inteligencia
 **Por qué:** la tarea de llegar a un número juntando otros con operaciones aritméticas mezcla memoria de trabajo, planificación y fluidez con los números; que haya MUCHOS caminos (y que el
 tiempo no apure) permite medir la estrategia sin que la velocidad tape la comprensión. La medida no se compara con estudios: no hay una referencia con esta misma condición.
 
+## Engranajes (id `engranajes`, nuevo el 5-oct): "Acertaste X de N máquinas" y "Tu cohete"
+
+**Qué mide, de verdad:** cuántas de las máquinas de la partida acertaste (miras una cadena de engranajes y decides qué hará la pieza del cohete que brilla: cómo gira, si la carga sube o baja, si la compuerta se abre o se cierra,
+si gira más rápido o más lento que el motor, si se traba, o qué pieza falta), la etapa más alta que jugaste (de 5 grupos: giro, ramas y correas, movimiento, velocidad y trampas y armar) y el ritmo (segundos por máquina).
+No es «tu razonamiento mecánico» ni «tu inteligencia»: es esta partida, con estas máquinas. Se guarda como medida propia (`engranajes`, % de máquinas acertadas) para ver su evolución, comparable solo entre partidas a tu medida
+y de etapa parecida (el nivel sube cuando aciertas: por eso la medida depende del nivel).
+
+**Cómo se lee:** la cifra grande es «X de N». La etapa más alta dice hasta dónde llegaste en el camino (giro → ramas y correas → movimiento → velocidad → trampas y armar). Las luces del cohete (10 por cohete) y los cohetes en órbita
+son tu progreso: se guardan entre partidas y no cuentan como medida. El ritmo solo se dice con 3 máquinas o más. Nada cae ni apura dentro de una máquina: mirar con calma no se penaliza (el motor no usa tiempo de reacción, y a las
+personas mayores la cascada les da más tiempo para mirar). Si alguna máquina falló, el consejo es concreto: «Sigue el camino desde el motor diciendo "al revés, al derecho…" en cada engranaje» (cada engranaje que toca gira al
+revés del anterior). Nunca se dice que el juego previene el deterioro ni que «mejora la inteligencia».
+
+**Por qué:** seguir el movimiento de una cadena de piezas mecánicas (qué gira hacia dónde, qué tan rápido y qué se traba) es una tarea clásica de razonamiento mecánico y de simulación mental; que todo esté a la vista (sin regla
+escondida) evita la frustración y permite medir la estrategia de seguir el camino. La medida no se compara con estudios: no hay una referencia con esta misma condición.
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.

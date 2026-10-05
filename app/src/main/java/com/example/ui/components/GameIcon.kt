@@ -45,6 +45,7 @@ import kotlin.math.sin
  * - Tinta o Palabra: gota de tinta y tarjeta con palabra.
  * - Anagramas: dos fichas de letras.
  * - Carga exacta (id «calculo»): un reactor de arcilla con su aro de luces y tres celdas de energía debajo.
+ * - Engranajes: dos engranajes de arcilla que encajan (grande lila, chico sol) y la punta REDONDEADA de un cohete que asoma arriba a la derecha (nada de estrellas con puntas).
  * - Piloto Estelar: la nave volando por una ruta de balizas que serpentea, con una señal que atrapar.
  * Se dibuja pensado para ir sobre el planeta del color del dominio, pero se lee también sobre fondo claro.
  * Id desconocido: cae al emoji de [com.example.model.GameDefinition.iconEmoji].
@@ -73,7 +74,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "bitacora", "rumbo", "correo",
-  "secuencia", "parejas", "stroop", "anagramas", "calculo", "meteoros", "disparate", "cosecha", "intrusa"
+  "secuencia", "parejas", "stroop", "anagramas", "calculo", "engranajes", "meteoros", "disparate", "cosecha", "intrusa"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -320,6 +321,23 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       }
       clay(circle(c, 17f), Clay.Sun, gloss = true)
     }
+    "engranajes" -> {
+      // Engranajes: la punta redondeada de un cohete (cuerpo crema, ventanilla celeste) arriba a la derecha y, delante, dos engranajes que encajan: el grande lila y el chico sol.
+      val nose = Path().apply {
+        moveTo(58f, 48f)
+        cubicTo(58f, 28f, 66f, 14f, 74f, 8f)
+        cubicTo(82f, 14f, 90f, 28f, 90f, 48f)
+        close()
+      }
+      clay(nose, Cream)
+      clay(circle(Offset(74f, 32f), 6f), Clay.Sky, border = 3.5f, shadow = false)
+      val big = Offset(36f, 62f)
+      val small = Offset(70f, 74f)
+      clay(gearPath(big, 27f, 19f, 10, 20f), Clay.Grape, gloss = true)
+      clay(circle(big, 7f), Cream, border = 3.5f, shadow = false)
+      clay(gearPath(small, 18f, 11f, 7, 20f), Clay.Sun, gloss = true)
+      clay(circle(small, 4.5f), Cream, border = 3f, shadow = false)
+    }
     "calculo" -> {
       // Carga exacta: el reactor (aro con luces y un núcleo dorado) y tres celdas de energía debajo.
       val c = Offset(50f, 36f)
@@ -379,6 +397,23 @@ private fun poly(vararg xy: Float) = Path().apply {
   moveTo(xy[0], xy[1])
   var i = 2
   while (i < xy.size) { lineTo(xy[i], xy[i + 1]); i += 2 }
+  close()
+}
+
+/** Engranaje de [n] dientes de punta [tip] y raíz [root], con el primer diente a [startDeg] grados (0 = derecha, sentido horario). Los dientes son trapecios redondos: no hay puntas. */
+private fun gearPath(c: Offset, tip: Float, root: Float, n: Int, startDeg: Float) = Path().apply {
+  val pitch = (2.0 * PI / n).toFloat()
+  val a0 = startDeg * PI.toFloat() / 180f
+  var first = true
+  for (k in 0 until n) {
+    val t = a0 + k * pitch
+    for ((da, r) in listOf(-0.32f to root, -0.17f to tip, 0.17f to tip, 0.32f to root)) {
+      val a = t + da * pitch
+      val x = c.x + cos(a) * r
+      val y = c.y + sin(a) * r
+      if (first) { moveTo(x, y); first = false } else lineTo(x, y)
+    }
+  }
   close()
 }
 

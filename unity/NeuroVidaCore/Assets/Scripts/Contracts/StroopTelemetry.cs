@@ -219,5 +219,13 @@ namespace NeuroVida.Contracts
         public int carga_short = -1;
         /// <summary>Solo «Carga exacta»: tiempo medio, en ms, de las cargas logradas sin pista. -1 = ninguna.</summary>
         public int carga_ms = -1;
+
+        /// <summary>Solo «Engranajes» (id <c>engranajes</c>): la etapa más alta que se jugó (1..5: giro, ramas y correas, movimiento, velocidad, trampas y armar), las luces del cohete con que
+        /// termina la partida (0..9), los cohetes en órbita, cuántos despegaron en esta partida y el tiempo medio por máquina en ms. -1 = no aplica.</summary>
+        public int engr_etapa = -1;
+        public int engr_lights = -1;
+        public int engr_orbit = -1;
+        public int engr_launches = -1;
+        public int engr_ms = -1;
     }
 }
