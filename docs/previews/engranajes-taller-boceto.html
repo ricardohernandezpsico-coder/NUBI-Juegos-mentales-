@@ -1,0 +1,704 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Engranajes · Taller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Engranajes · Taller de reparación</h1>
+    <p class="lead">La máquina que mueve las piezas del cohete viene mal armada. Cada pieza lleva un cartel con lo que debe hacer. Tú tienes una llave: un solo cambio, tocando el motor (cambia su giro) o una correa (la cruza o la descruza). Después arrancas y ves si el cohete queda listo.</p>
+
+    <h2>La idea que lo hace distinto</h2>
+    <ul class="list">
+      <li><b>Las ramas son el problema, no un adorno.</b> Un cambio antes de una bifurcación cambia todas las piezas que siguen; uno después, solo esa rama. Si falla una sola pieza y tocas el motor, la arreglas pero rompes las otras.</li>
+      <li><b>Todo engranaje cuenta:</b> cada uno está en el camino del motor a una pieza. Si quitas cualquiera, cambia el resultado.</li>
+      <li><b>Respondes tocando la máquina:</b> la correa se cruza frente a ti, la flecha del motor se da vuelta. Puedes deshacer antes de arrancar.</li>
+      <li><b>Sube de a poco:</b> motor → correas → ramas → carga y compuerta → «ya está bien, solo arranca» → tres piezas → dos llaves.</li>
+      <li><b>Si te equivocas,</b> ves qué piezas movió tu cambio y dónde estaba el arreglo.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable: 10 máquinas por partida. La dificultad se adapta (2 aciertos seguidos suben de etapa; 2 errores seguidos bajan una). El cohete junta 10 luces, se guardan entre partidas y despega solo cuando está completo. Cada máquina se arma al azar dentro de las reglas de su etapa.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="Engranajes, taller de reparación: haz que cada pieza del cohete cumpla su cartel con un solo cambio"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+// ============================================================ el taller: la máquina
+// Árbol limpio: el motor a la izquierda, un tronco, y desde la bifurcación una rama por pieza del cohete.
+// Todo engranaje está en el camino del motor a alguna pieza: si lo quitas, cambia el resultado.
+const GR = { x0:40, y0:150, d:50, rows:6 };
+const BIG = { tip:33, pitch:30, n:15 }, SMALL = { tip:23, pitch:20, n:10 };
+const cellXY = (c,r) => ({ x: GR.x0+c*GR.d, y: GR.y0+r*GR.d });
+const sizeOf = (c,r) => (c+r)%2===0 ? BIG : SMALL;
+const STATIONS = {
+  antena:    { row:0, label:'Antena' },
+  compuerta: { row:2, label:'Compuerta' },
+  carga:     { row:3, label:'Carga' },
+  turbina:   { row:5, label:'Turbina' },
+};
+const K = (c,r)=>c+','+r;
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+// w: qué piezas vienen fallando. all = todas; one = una sola; any = cualquier grupo que se arregle con las llaves;
+// two = hacen falta justo 2 cambios. ok = probabilidad de que la máquina ya esté bien (no hay que cambiar nada).
+const STAGES = [
+  { n:1, pool:'turn', belts:0, keys:1, w:'all', hint:'motor', intro:'taller' },
+  { n:1, pool:'turn', belts:1, keys:1, w:'all', hint:'belt',  intro:'correas' },
+  { n:2, pool:'turn', belts:2, keys:1, w:'one', hint:'belt',  intro:'ramas' },
+  { n:2, pool:'turn', belts:2, keys:1, w:'any', hint:'belt' },
+  { n:2, pool:'rack', belts:2, keys:1, w:'any', hint:'belt',  intro:'barras' },
+  { n:2, pool:'rack', belts:2, keys:1, w:'any', ok:.25, hint:'ok', intro:'bien' },
+  { n:3, pool:'all',  belts:3, keys:1, w:'any', hint:'belt' },
+  { n:3, pool:'all',  belts:3, keys:1, w:'any', ok:.2, hint:'ok' },
+  { n:2, pool:'all',  belts:2, keys:2, w:'two', hint:'two', intro:'dos' },
+  { n:3, pool:'all',  belts:3, keys:2, w:'two', hint:'two' },
+  { n:3, pool:'all',  belts:3, keys:2, w:'any', ok:.15, hint:'two' },
+  { n:3, pool:'all',  belts:4, keys:2, w:'two', hint:'two' },
+];
+
+function pickTargets(st){
+  const rack = pick(['compuerta','carga']);
+  if (st.n===1) return [pick(['antena','turbina'])];
+  if (st.pool==='turn') return ['antena','turbina'];
+  if (st.pool==='rack') return [pick(['antena','turbina']), rack];
+  if (st.n===3) return ['antena', rack, 'turbina'];
+  return pick([['antena','turbina'], ['antena',rack], [rack,'turbina']]);
+}
+
+// lo que hace cada pieza según el giro de su engranaje (barra dentada a la derecha: como el reloj, la barra baja)
+function behave(name, dir){
+  if (name==='carga') return dir>0 ? 'down' : 'up';
+  if (name==='compuerta') return dir>0 ? 'close' : 'open';
+  return dir;
+}
+
+function build(targets, j, r0){
+  const gears=[], links=[], cells=new Map();
+  const put=(c,r,role)=>{ const p=cellXY(c,r), sz=sizeOf(c,r); gears.push({ x:p.x, y:p.y, c, r, tip:sz.tip, pitch:sz.pitch, n:sz.n, role }); cells.set(K(c,r), gears.length-1); return gears.length-1; };
+  const link=(a,b)=>links.push({ a, b, type:'mesh' });
+  let prev=put(0,r0,'motor');
+  for (let c=1;c<=j;c++){ const g=put(c,r0,'main'); link(prev,g); prev=g; }
+  const J=prev;
+  const run=(from,row,name)=>{ let p=from; for (let c=j+1;c<=4;c++){ const g=put(c,row, c===4?'station':'main'); link(p,g); p=g; } gears[p].station=name; };
+  for (const side of [-1,1]){
+    const ts=targets.filter(t=>Math.sign(STATIONS[t].row-r0)===side).sort((a,b)=>Math.abs(STATIONS[a].row-r0)-Math.abs(STATIONS[b].row-r0));
+    let p=J, r=r0;
+    for (const t of ts){ while (r!==STATIONS[t].row){ r+=side; const g=put(j,r,'main'); link(p,g); p=g; } run(p,r,t); }
+  }
+  const atR0=targets.find(t=>STATIONS[t].row===r0); if (atR0) run(J,r0,atR0);
+  return { gears, links, cells };
+}
+
+// abajo de cada engranaje: qué piezas mueve (máscara de bits sobre m.targets)
+function subtreeMasks(m){
+  const n=m.gears.length, par=Array(n).fill(-2), order=[0]; par[0]=-1;
+  for (let k=0;k<order.length;k++){ const i=order[k]; for (const l of m.links){ const o = l.a===i ? l.b : l.b===i ? l.a : -1; if (o<0 || par[o]!==-2) continue; par[o]=i; order.push(o); } }
+  const mask=Array(n).fill(0);
+  for (let k=order.length-1;k>=0;k--){ const i=order[k], g=m.gears[i]; if (g.station) mask[i] |= 1<<m.targets.indexOf(g.station); if (par[i]>=0) mask[par[i]] |= mask[i]; }
+  return { mask, par };
+}
+
+function gen(st){
+  for (let tries=0; tries<600; tries++){
+    const targets=pickTargets(st);
+    const j = st.n===1 && st.belts===0 ? pick([1,2,3]) : pick([1,2]);
+    const r0 = Math.floor(Math.random()*GR.rows);
+    // con una sola pieza, que el camino doble al menos una vez o sea largo
+    const { gears, links, cells } = build(targets, j, r0);
+    const m = { gears, links, targets, st, motorDir: Math.random()<.5?1:-1 };
+    // correas: en un tramo recto de tres, el del medio se quita y los extremos quedan unidos por una correa
+    const nb=i=>m.links.filter(l=>l.a===i||l.b===i).map(l=>l.a===i?l.b:l.a);
+    const cand=[];
+    gears.forEach((g,i)=>{ if (g.role!=='main') return; const ns=nb(i); if (ns.length!==2) return; const [A,C]=ns.map(x=>gears[x]);
+      if ((A.c===C.c && A.c===g.c) || (A.r===C.r && A.r===g.r)) cand.push({ b:i, a:ns[0], c:ns[1] }); });
+    const used=new Set(), chosen=[];
+    let { mask } = subtreeMasks(m);
+    // distintas piezas aguas abajo primero, para que cada correa sea una decisión distinta
+    const seenMask=new Set();
+    for (const t of shuffle(cand).sort((p,q)=> (seenMask.has(mask[p.c])?1:0)-(seenMask.has(mask[q.c])?1:0))){
+      if (chosen.length>=st.belts) break;
+      if ([t.a,t.b,t.c].some(x=>used.has(x))) continue;
+      if (seenMask.has(mask[t.c]) && st.n>1) continue;
+      chosen.push(t); [t.a,t.b,t.c].forEach(x=>used.add(x)); seenMask.add(mask[t.c]);
+    }
+    if (chosen.length<st.belts) continue;
+    for (const t of chosen){
+      gears[t.b].removed=true;
+      for (let i=links.length-1;i>=0;i--) if (links[i].a===t.b||links[i].b===t.b) links.splice(i,1);
+      links.push({ a:t.a, b:t.c, type:'belt', crossed: Math.random()<.5 });
+    }
+    // compactar: sacar los quitados
+    const keep=gears.map((g,i)=>g.removed?-1:i).filter(i=>i>=0), re=new Map(keep.map((o,k)=>[o,k]));
+    m.gears=keep.map(i=>gears[i]); m.links=links.map(l=>({ ...l, a:re.get(l.a), b:re.get(l.b) }));
+    m.stations={}; m.gears.forEach((g,i)=>{ if (g.station) m.stations[g.station]=i; });
+    ({ mask } = subtreeMasks(m));
+    // interruptores: el motor (todas las piezas) y cada correa (las piezas que siguen)
+    m.switches=[{ id:'motor', mask:(1<<targets.length)-1 }];
+    m.links.forEach((l,i)=>{ if (l.type!=='belt') return; const down = subtreeMasks(m).par[l.b]===l.a ? l.b : l.a; m.switches.push({ id:i, mask:mask[down] }); });
+    // qué grupos de piezas se arreglan y con cuántos cambios como mínimo
+    const full=(1<<targets.length)-1, minK=new Map([[0,0]]);
+    m.switches.forEach(s=>{ if (!minK.has(s.mask)) minK.set(s.mask,1); });
+    m.switches.forEach((s,a)=>m.switches.forEach((t,b)=>{ if (b<=a) return; const x=s.mask^t.mask; if (!minK.has(x)) minK.set(x,2); }));
+    let W=null;
+    if (st.ok && Math.random()<st.ok) W=0;
+    else {
+      const opts=[...minK.entries()].filter(([w,k])=> w!==0 && k<=st.keys);
+      let pool;
+      if (st.w==='all') pool=opts.filter(([w])=>w===full);
+      else if (st.w==='one') pool=opts.filter(([w])=>w && !(w&(w-1)));
+      else if (st.w==='two') pool=opts.filter(([,k])=>k===2);
+      else { pool=opts.filter(([w])=>w!==full); if (!pool.length || Math.random()<.2) pool=opts; }
+      if (!pool.length) continue;
+      W=pick(pool)[0];
+    }
+    m.W=W; m.minK=minK.get(W);
+    const s0=solve(m,new Set());
+    m.mission={}; targets.forEach((t,k)=>{ const d=s0.dir[m.stations[t]]; m.mission[t]=behave(t, (W>>k)&1 ? -d : d); });
+    // una solución mínima, para mostrarla si se equivoca
+    m.solution=[];
+    if (W){ const one=m.switches.find(s=>s.mask===W); if (one) m.solution=[one.id];
+      else outer: for (const s of m.switches) for (const t of m.switches) if (s!==t && (s.mask^t.mask)===W){ m.solution=[s.id,t.id]; break outer; } }
+    return m;
+  }
+  return null;
+}
+
+// sentido y velocidad de cada engranaje con los cambios aplicados
+function solve(m, changes){
+  const n=m.gears.length, dir=Array(n).fill(0), speed=Array(n).fill(0), depth=Array(n).fill(-1);
+  const md = m.motorDir*(changes.has('motor')?-1:1);
+  dir[0]=md; speed[0]=md; depth[0]=0; const q=[0];
+  while (q.length){ const i=q.shift();
+    m.links.forEach((l,li)=>{ const j = l.a===i ? l.b : l.b===i ? l.a : -1; if (j<0 || depth[j]>=0) return;
+      const inv = l.type==='mesh' ? true : (l.crossed !== changes.has(li));
+      dir[j] = inv ? -dir[i] : dir[i];
+      speed[j] = Math.abs(speed[i])*m.gears[i].pitch/m.gears[j].pitch*dir[j];
+      depth[j]=depth[i]+1; q.push(j); }); }
+  return { dir, speed, depth };
+}
+function results(m, changes){
+  const s=solve(m,changes), out={};
+  for (const t of m.targets){ const got=behave(t, s.dir[m.stations[t]]); out[t]={ got, ok: got===m.mission[t] }; }
+  return out;
+}
+
+const ROCKET = { x0:262, x1:350, cx:306, top:104, body:150, bottom:428 };
+const INTROS = {
+  taller:  ['La máquina del cohete viene mal armada.', 'Cada pieza tiene un cartel con lo que debe hacer.', 'Toca el motor para cambiar su giro y arranca.'],
+  correas: ['Toca una correa para cruzarla o descruzarla.', 'Recta: mismo giro.', 'Cruzada (en X): giro contrario.'],
+  ramas:   ['Ahora la fuerza se reparte en ramas.', 'Un cambio antes de la rama cambia todo;', 'uno dentro de la rama, solo esa pieza.'],
+  barras:  ['Carga y compuerta van con una barra dentada.', 'Si su engranaje gira como el reloj, la barra baja:', 'la carga baja y la compuerta se cierra.'],
+  bien:    ['A veces la máquina ya está bien.', 'Si todo cumple su cartel, no cambies nada:', 'solo arranca.'],
+  dos:     ['Ahora tienes dos llaves.', 'Puedes hacer hasta dos cambios.'],
+};
+const NAME = { antena:'la antena', compuerta:'la compuerta', carga:'la carga', turbina:'la turbina' };
+const G = { state:'menu', parts:[], toast:null, flyers:[] };
+const S = {};
+function emit(x,y,n,spread,life,rgb,up=20){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-up,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
+function toast(t,good,sub,ms=3600){ G.toast={t,good,sub,at:performance.now(),ms}; }
+
+// fases de los dientes: cada diente frente al hueco del vecino
+function phase(m){
+  m.gears[0].a=Math.random()*6.28; const seen=new Set([0]), q=[0];
+  while (q.length){ const i=q.shift(), gi=m.gears[i];
+    for (const l of m.links){ const j = l.a===i ? l.b : l.b===i ? l.a : -1; if (j<0 || seen.has(j)) continue; seen.add(j); q.push(j);
+      m.gears[j].a = l.type==='mesh' ? meshPhase(gi, m.gears[j]) : Math.random()*6.28; } }
+}
+function meshPhase(gi, gj){
+  const th=Math.atan2(gj.y-gi.y, gj.x-gi.x), pi_=2*Math.PI/gi.n, pj=2*Math.PI/gj.n;
+  const fi=(((th-gi.a)/pi_)%1+1)%1, fj=((0.5-fi)%1+1)%1;
+  return th+Math.PI - fj*pj;
+}
+
+// ============================================================ partida
+const ROCKET_N=10, MACHINES=10;
+const SAVE={ rocket:0, launched:0 };
+try { Object.assign(SAVE, JSON.parse(localStorage.getItem('nubi_engranajes4')||'{}')); } catch(e){}
+function save(){ try { localStorage.setItem('nubi_engranajes4', JSON.stringify(SAVE)); } catch(e){} }
+const ETAPA = i => [1,1,2,2,3,3,4,4,5,5,5,5][i];
+const STEP=150;
+const LV0 = Math.max(0, Math.min(11, (+new URLSearchParams(location.search).get('etapa')||1)-1));   // para revisar: ?etapa=N
+function startGame(){ Object.assign(S, { count:0, lv:LV0, maxLv:LV0, run:0, errs:0, hist:[] }); next(); }
+function next(){
+  if (S.count>=MACHINES) return finish();
+  const st=STAGES[S.lv]; const m=gen(st); phase(m);
+  m.belts={}; m.links.forEach((l,i)=>{ if (l.type==='belt') m.belts[i]={ k: l.crossed?1:0 }; });
+  S.m=m; S.count++; S.changes=[]; S.res=null; S.sol=null; S.t0=performance.now(); S.motorFlipAt=0; S.motorShown=m.motorDir;
+  if (st.intro && !S['seen_'+st.intro]){ S['seen_'+st.intro]=true; S.intro=st.intro; G.state='intro'; S.introAt=performance.now(); chime(); return; }
+  G.state='play'; motorHum();
+}
+function hint(){
+  const h=S.m.st.hint;
+  if (h==='motor') return 'Toca el motor para cambiar su giro';
+  if (h==='belt') return 'Un cambio: el motor o una correa';
+  if (h==='ok') return 'Un cambio, o ninguno si ya está bien';
+  return 'Hasta dos cambios';
+}
+const isChanged = id => S.changes.includes(id);
+function toggle(id){
+  if (G.state!=='play') return;
+  const now=performance.now();
+  if (isChanged(id)) S.changes=S.changes.filter(x=>x!==id);
+  else { if (S.changes.length>=S.m.st.keys){ const old=S.changes.shift(); animSwitch(old,now); } S.changes.push(id); }
+  animSwitch(id,now); clank();
+}
+function animSwitch(id,now){ if (id==='motor'){ S.motorFlipAt=now; } else S.m.belts[id].at=now; }
+function start(){
+  const m=S.m, now=performance.now(), ch=new Set(S.changes);
+  S.sol=solve(m,ch); S.res=results(m,ch); S.runAt=now+120; G.state='reveal';
+  const ok=Object.values(S.res).every(r=>r.ok);
+  S.hist.push({ ok, n:m.gears.length, secs:(now-S.t0)/1000 });
+  const maxD=Math.max(...S.sol.depth);
+  for (let d=0; d<=maxD; d++) setTimeout(()=>{ clack(); bell(PENTA[Math.min(9,d+1)],.03,.4); }, 120+(reduce?0:d*STEP));
+  const arrive = 120 + (reduce?0:maxD*STEP) + 250;
+  setTimeout(()=>{ m.targets.forEach((t,k)=>setTimeout(()=>{ partSound(t); if (!S.res[t].ok) thud(); }, k*120)); }, arrive);
+  S.verdictAt = now + arrive + 600;
+  setTimeout(()=>{
+    if (ok){ SAVE.rocket=Math.min(ROCKET_N,SAVE.rocket+1); save(); bell(1046.5,.06,1.3); bell(1318.5,.05,1.5,.08); bell(1567.98,.04,1.6,.16);
+      toast(m.W===0 && !S.changes.length ? '¡Bien visto! Ya estaba lista' : ['¡Cohete listo!','¡Arreglado!','¡Todo en orden!'][SAVE.rocket%3], true);
+      for (const t of m.targets){ const pp=partPos(t); emit(pp.x,pp.y,18,140,800,'255,201,74'); }
+      const pp=partPos(m.targets[0]); G.flyers.push({ x0:pp.x, y0:pp.y, k:SAVE.rocket-1, t:performance.now() }); }
+    else { const [a,b]=explain(m); toast(a,false,b,4600); S.showFix=performance.now(); }
+  }, arrive+600);
+  if (ok){ S.run++; S.errs=0; if (S.run>=2){ S.lv=Math.min(STAGES.length-1,S.lv+1); S.run=0; } }
+  else { S.run=0; S.errs++; if (S.errs>=2){ S.lv=Math.max(0,S.lv-1); S.errs=0; } }
+  S.maxLv=Math.max(S.maxLv,S.lv);
+  setTimeout(()=>{ if (SAVE.rocket>=ROCKET_N) launch(); else next(); }, arrive + 600 + (ok?1900:4800));
+}
+function failText(t, got){
+  if (t==='carga') return got==='up' ? 'La carga subió en vez de bajar' : 'La carga bajó en vez de subir';
+  if (t==='compuerta') return got==='open' ? 'La compuerta se abrió en vez de cerrarse' : 'La compuerta se cerró en vez de abrirse';
+  return (t==='antena'?'La antena':'La turbina')+' giró al revés de su cartel';
+}
+function explain(m){
+  const fails=m.targets.filter(t=>!S.res[t].ok);
+  const a = fails.length===1 ? failText(fails[0], S.res[fails[0]].got) : `Fallaron ${fails.map(t=>NAME[t]).join(' y ')}`;
+  // ¿el cambio rompió una pieza que ya estaba bien?
+  const before=results(m,new Set()), broke=fails.filter(t=>before[t].ok);
+  let b;
+  if (!S.changes.length) b='Brilla en dorado lo que había que cambiar';
+  else if (broke.length) b=`Tu cambio también movió ${NAME[broke[0]]}`;
+  else b='Truco: cada engranaje que toca gira al revés';
+  return [a,b];
+}
+function launch(){ G.state='launch'; G.launchAt=performance.now(); noise(2.6,90,420,.09,1.1); [0,1,2,3,4].forEach(k=>setTimeout(()=>bell(PENTA[2+(k*1.5|0)],.06,1.6),reduce?0:1000+k*140));
+  setTimeout(()=>{ SAVE.rocket=0; SAVE.launched++; save(); next(); }, reduce?1200:3600); }
+function finish(){ G.state='end'; G.endT=performance.now(); bell(784,.06,1.4); bell(1046.5,.05,1.6,.15); }
+
+// ============================================================ sonido propio
+function clack(){ noise(.05,3200,1800,.045,7); }
+function clank(){ noise(.09,2400,900,.06,4); bell(1174.66,.025,.35); }
+function motorHum(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='triangle'; o.frequency.setValueAtTime(70,t); o.frequency.linearRampToValueAtTime(95,t+.4); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.035,t+.1); g.gain.exponentialRampToValueAtTime(.0001,t+.6); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.62); }
+function partSound(t){
+  if (t==='antena'){ noise(.8,600,2600,.04,3); bell(1567.98,.03,.9,.3); }
+  if (t==='turbina'){ noise(1.1,180,900,.07,1.2); }
+  if (t==='compuerta' || t==='carga'){ const a=ac(); if(a){ const tt=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sawtooth'; o.frequency.setValueAtTime(90,tt); o.frequency.linearRampToValueAtTime(140,tt+.7); g.gain.setValueAtTime(.025,tt); g.gain.exponentialRampToValueAtTime(.0001,tt+.8); const f=a.createBiquadFilter(); f.type='lowpass'; f.frequency.value=600; o.connect(f).connect(g).connect(a.destination); o.start(tt); o.stop(tt+.82); } setTimeout(()=>noise(.12,500,200,.06,2),800); }
+}
+
+// ============================================================ dibujo
+function gearPath(c, tip, n){
+  const root=tip-6, p=2*Math.PI/n; c.beginPath();
+  for (let k=0;k<n;k++){ const t=k*p;
+    c.lineTo(Math.cos(t-.32*p)*root, Math.sin(t-.32*p)*root); c.lineTo(Math.cos(t-.17*p)*tip, Math.sin(t-.17*p)*tip);
+    c.lineTo(Math.cos(t+.17*p)*tip, Math.sin(t+.17*p)*tip); c.lineTo(Math.cos(t+.32*p)*root, Math.sin(t+.32*p)*root); }
+  c.closePath();
+}
+function drawGear(c, g, kind){
+  c.save(); c.translate(g.x,g.y);
+  c.fillStyle='#0B1030'; c.beginPath(); c.arc(0,0,g.tip*.5,0,7); c.fill();
+  c.save(); c.rotate(g.a);
+  c.fillStyle='rgba(0,0,0,.45)'; c.translate(0,4); gearPath(c,g.tip,g.n); c.fill(); c.translate(0,-4);
+  const gr=c.createRadialGradient(-g.tip*.35,-g.tip*.35,2,0,0,g.tip);
+  const pal = kind==='motor' ? ['#CFEFFF','#5FA3E0'] : kind==='station' ? ['#FFF1C2','#E2B24A'] : ['#F1EDFF','#A49BE0'];
+  gr.addColorStop(0,pal[0]); gr.addColorStop(1,pal[1]); c.fillStyle=gr; gearPath(c,g.tip,g.n); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.4; c.stroke();
+  c.strokeStyle='rgba(26,18,64,.28)'; c.lineWidth=2; c.beginPath(); c.arc(0,0,(g.tip-6)*.72,0,7); c.stroke();
+  c.lineWidth=3.2; for (let j=0;j<(g.n>=15?5:3);j++){ const a=j*2*Math.PI/(g.n>=15?5:3); c.beginPath(); c.moveTo(Math.cos(a)*g.tip*.2,Math.sin(a)*g.tip*.2); c.lineTo(Math.cos(a)*(g.tip-6)*.72,Math.sin(a)*(g.tip-6)*.72); c.stroke(); }
+  c.restore();
+  c.fillStyle='#1A1240'; c.beginPath(); c.arc(0,0,g.tip*.18,0,7); c.fill(); c.fillStyle='rgba(255,255,255,.5)'; c.beginPath(); c.arc(-g.tip*.05,-g.tip*.06,g.tip*.06,0,7); c.fill();
+  c.restore();
+}
+function drawArrow(c, x, y, r, dir, col, lw=4, span=Math.PI*.7){
+  c.save(); c.translate(x,y); c.strokeStyle=col; c.fillStyle=col; c.lineWidth=lw; c.lineCap='round';
+  const a0=-Math.PI/2-span/2, a1=-Math.PI/2+span/2; c.beginPath(); if (dir>0) c.arc(0,0,r,a0,a1); else c.arc(0,0,r,a1,a0,true); c.stroke();
+  const ae= dir>0 ? a1 : a0, tx=Math.cos(ae)*r, ty=Math.sin(ae)*r, tan= ae+(dir>0?Math.PI/2:-Math.PI/2), s=Math.max(6,lw*2.2);
+  c.beginPath(); c.moveTo(tx+Math.cos(tan)*s,ty+Math.sin(tan)*s); c.lineTo(tx+Math.cos(tan+2.4)*s*.9,ty+Math.sin(tan+2.4)*s*.9); c.lineTo(tx+Math.cos(tan-2.4)*s*.9,ty+Math.sin(tan-2.4)*s*.9); c.closePath(); c.fill(); c.restore();
+}
+function tri(c,x,y,dy,s,col){ c.fillStyle=col; c.beginPath(); c.moveTo(x,y+dy*s); c.lineTo(x-s*.9,y-dy*s*.6); c.lineTo(x+s*.9,y-dy*s*.6); c.closePath(); c.fill(); }
+function wrench(c,x,y,s,col,filled){
+  c.save(); c.translate(x,y); c.rotate(Math.PI/4); c.strokeStyle=col; c.fillStyle=col; c.lineCap='round';
+  c.lineWidth=s*.3; c.beginPath(); c.moveTo(0,-s*.2); c.lineTo(0,s*.9); c.stroke();
+  c.lineCap='butt'; c.lineWidth=s*.24; c.beginPath(); c.arc(0,-s*.45,s*.32,-Math.PI/2+.75,-Math.PI/2-.75+2*Math.PI); c.stroke();
+  c.restore();
+}
+// el estado visible de una correa (0 = recta, 1 = cruzada), animado al tocarla
+function beltK(i, now){
+  const b=S.m.belts[i], l=S.m.links[i], target = (l.crossed !== isChanged(i)) ? 1 : 0;
+  if (!b.at) return target; const k=reduce?1:ease((now-b.at)/320); return target ? k : 1-k;
+}
+function beltCrossed(i){ return S.m.links[i].crossed !== isChanged(i); }
+// correa: una polea en el eje de cada engranaje y la correa que las abraza (recta = óvalo, cruzada = un ocho)
+const PULLEY=14;
+function drawBelt(c, A, B, k, hot, gold){
+  const ang=Math.atan2(B.y-A.y,B.x-A.x), n=ang+Math.PI/2, r=PULLEY;
+  for (const P of [A,B]){ c.fillStyle='#2A2350'; c.beginPath(); c.arc(P.x,P.y,r+3,0,7); c.fill(); c.fillStyle='#4A4390'; c.beginPath(); c.arc(P.x,P.y,r-2,0,7); c.fill(); c.fillStyle='#1A1240'; c.beginPath(); c.arc(P.x,P.y,4,0,7); c.fill(); }
+  const loop=(w,col)=>{ c.strokeStyle=col; c.lineWidth=w; c.lineCap='round';
+    for (const s of [1,-1]){ const sb=s*(1-2*k); c.beginPath(); c.moveTo(A.x+Math.cos(n)*r*s, A.y+Math.sin(n)*r*s); c.lineTo(B.x+Math.cos(n)*r*sb, B.y+Math.sin(n)*r*sb); c.stroke(); }
+    c.beginPath(); c.arc(A.x,A.y,r,n,n+Math.PI); c.stroke(); c.beginPath(); c.arc(B.x,B.y,r,n+Math.PI,n+2*Math.PI); c.stroke(); };
+  if (hot){ c.globalAlpha=hot; loop(16,'#FFC94A'); c.globalAlpha=1; }
+  loop(8,'#1A1240'); loop(4.5, gold?'#FFC94A':'#C9C1FF');
+}
+function beltChipPos(A,B,m,taken){
+  const mx=(A.x+B.x)/2, my=(A.y+B.y)/2, vertical = Math.abs(A.x-B.x)<2, w=66, h=24;
+  const cands=[]; for (const d of [44,50,58]) for (const s of [-1,1]) cands.push(vertical ? [mx+s*d, my] : [mx, my+s*d]);
+  const cost=([x,y])=>{ let o=0; const x0=x-w/2, x1=x+w/2, y0=y-h/2, y1=y+h/2;
+    if (x0<12 || x1>248 || y0<118 || y1>458) o+=1e4;
+    for (const g of m.gears){ const dx=Math.max(x0-g.x,0,g.x-x1), dy=Math.max(y0-g.y,0,g.y-y1); o+=Math.max(0,g.tip+2-Math.hypot(dx,dy))*10; }
+    for (const t of taken) if (Math.abs(t[0]-x)<w+6 && Math.abs(t[1]-y)<h+6) o+=500;
+    return o + Math.hypot(x-mx,y-my)*.01; };
+  return cands.sort((p,q)=>cost(p)-cost(q))[0];
+}
+function drawChip(c, x, y, text, on, pulse, tool=false){
+  c.font='700 13px Fredoka'; const w=Math.max(60,c.measureText(text).width+(tool?38:18));
+  if (pulse>0){ c.strokeStyle=`rgba(255,201,74,${pulse})`; c.lineWidth=3; rr(c,x-w/2-5,y-16,w+10,32,16); c.stroke(); }
+  c.fillStyle= on ? '#FFC94A' : '#232B57'; rr(c,x-w/2,y-12,w,24,12); c.fill(); c.strokeStyle= on ? '#1A1240' : 'rgba(142,131,216,.7)'; c.lineWidth=1.5; c.stroke();
+  if (tool) wrench(c, x-w/2+14, y, 11, on?'#1A1240':'#ABA5D2', on);
+  c.fillStyle= on ? '#1A1240' : '#EDEAFB'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(text, x+(tool?9:0), y+1);
+  return { x:x-w/2, y:y-16, w, h:32 };
+}
+function partPos(name){
+  if (name==='antena') return { x:ROCKET.cx, y:ROCKET.top+6 };
+  if (name==='compuerta') return { x:ROCKET.cx+6, y:cellXY(4,2).y };
+  if (name==='carga') return { x:ROCKET.cx+6, y:cellXY(4,3).y+16 };
+  return { x:ROCKET.cx, y:ROCKET.bottom+14 };
+}
+function drawRocket(c, now, m, lift=0){
+  const R=ROCKET; c.save(); c.translate(0,-lift);
+  const body=c.createLinearGradient(R.x0,0,R.x1,0); body.addColorStop(0,'#D9D4F7'); body.addColorStop(.45,'#F4F1FF'); body.addColorStop(1,'#B7AFE6');
+  c.fillStyle=body; c.beginPath(); c.moveTo(R.x0,R.body); c.quadraticCurveTo(R.x0,R.top+18,R.cx,R.top); c.quadraticCurveTo(R.x1,R.top+18,R.x1,R.body); c.lineTo(R.x1,R.bottom); c.lineTo(R.x0,R.bottom); c.closePath(); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+  c.fillStyle='#C93C3C'; c.strokeStyle='#1A1240'; c.lineWidth=2.5;
+  c.beginPath(); c.moveTo(R.x0,R.bottom-60); c.lineTo(R.x0-10,R.bottom+12); c.lineTo(R.x0,R.bottom); c.closePath(); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(R.x1,R.bottom-60); c.lineTo(R.x1+10,R.bottom+12); c.lineTo(R.x1,R.bottom); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle='#4A5080'; rr(c,R.cx-18,R.bottom,36,10,3); c.fill(); c.stroke();
+  for (let k=0;k<ROCKET_N;k++){ const y=R.body+12+k*((R.bottom-R.body-90)/(ROCKET_N-1)), x=R.x1-12, on=k<SAVE.rocket;
+    c.fillStyle= on ? '#FFC94A' : '#3A4170'; c.beginPath(); c.arc(x,y,4.2,0,7); c.fill(); if (on && !reduce){ c.globalAlpha=.6; c.drawImage(glow('255,201,74'),x-10,y-10,20,20); c.globalAlpha=1; } }
+  const active = m ? m.stations : {};
+  const spin = n => (m && S.sol && G.state==='reveal' && active[n]!==undefined) ? S.sol.speed[active[n]] : 0;
+  { const p=partPos('antena'), on=active.antena!==undefined, g = on ? m.gears[active.antena] : null;
+    c.save(); c.translate(p.x,p.y); c.globalAlpha = on ? 1 : .4;
+    c.fillStyle='#4A5080'; rr(c,-3,0,6,14,2); c.fill();
+    c.rotate(g ? g.a : 0); c.fillStyle='#BFE9FF'; c.strokeStyle='#1A1240'; c.lineWidth=2.4; c.beginPath(); c.ellipse(0,0,20,7,0,0,7); c.fill(); c.stroke(); c.fillStyle='#FF8C6B'; c.beginPath(); c.arc(18,0,3.5,0,7); c.fill();
+    c.restore(); }
+  { const on=active.compuerta!==undefined, gy=cellXY(4,2).y, off = on && S.rackOffs ? (S.rackOffs.compuerta||0) : 0;
+    c.globalAlpha = on ? 1 : .4;
+    c.fillStyle='#1E2550'; rr(c,R.cx-10,gy-30,40,48,6); c.fill();
+    if (on && off<-6){ c.globalAlpha=Math.min(1,-off/40); c.drawImage(glow('255,201,74'),R.cx-20,gy-40,60,70); c.globalAlpha=1; }
+    c.save(); c.translate(0,Math.max(-44,Math.min(10,off)));
+    c.fillStyle='#8C86B8'; rr(c,R.cx-10,gy-30,40,48,6); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.4; c.stroke();
+    c.strokeStyle='rgba(26,18,64,.35)'; c.lineWidth=2; for (let t=-20;t<14;t+=9){ c.beginPath(); c.moveTo(R.cx-4,gy+t); c.lineTo(R.cx+24,gy+t); c.stroke(); }
+    c.restore(); c.globalAlpha=1; }
+  { const on=active.carga!==undefined, gy=cellXY(4,3).y+18, off = on && S.rackOffs ? (S.rackOffs.carga||0) : 0;
+    c.globalAlpha = on ? 1 : .4;
+    c.strokeStyle='#6B5FB8'; c.lineWidth=2; rr(c,R.cx-12,gy-34,44,64,6); c.stroke();
+    c.save(); c.translate(0,Math.max(-26,Math.min(18,off)));
+    c.fillStyle='#E9C46A'; rr(c,R.cx-8,gy+4,36,6,2); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2; c.stroke();
+    c.fillStyle='#7FD8FF'; rr(c,R.cx-4,gy-16,28,20,4); c.fill(); c.stroke();
+    c.restore(); c.globalAlpha=1; }
+  { const p=partPos('turbina'), on=active.turbina!==undefined, g = on ? m.gears[active.turbina] : null, sp = spin('turbina');
+    c.save(); c.translate(p.x,p.y); c.globalAlpha = on ? 1 : .4;
+    if (sp && !reduce && now>S.runAt){ c.globalAlpha=Math.min(1,Math.abs(sp)); c.drawImage(glow('255,140,107'),-24,0,48,46); c.globalAlpha=1; }
+    c.rotate(g ? g.a : 0); c.fillStyle='#FFC94A'; c.strokeStyle='#1A1240'; c.lineWidth=2;
+    for (let j=0;j<4;j++){ c.save(); c.rotate(j*Math.PI/2); c.beginPath(); c.ellipse(0,-7,4.5,8,0.4,0,7); c.fill(); c.stroke(); c.restore(); }
+    c.fillStyle='#1A1240'; c.beginPath(); c.arc(0,0,3,0,7); c.fill();
+    c.restore(); }
+  c.restore();
+}
+// barra dentada a la derecha del engranaje de la carga y de la compuerta
+function drawRacks(c, m){
+  for (const name of ['compuerta','carga']){ const gi=m.stations[name]; if (gi===undefined) continue; const g=m.gears[gi], off=(S.rackOffs&&S.rackOffs[name])||0, x=g.x+g.pitch+3;
+    c.save(); c.translate(0,Math.max(-40,Math.min(18,off)));
+    c.fillStyle='#8E83D8'; rr(c,x,g.y-40,9,80,3); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2; c.stroke();
+    c.fillStyle='#1A1240'; for (let y=g.y-36;y<g.y+40;y+=8){ c.fillRect(x-3,y,4,4); }
+    c.restore(); }
+}
+// ejes de la antena y la turbina hasta su pieza
+function drawShafts(c, m){
+  for (const name of ['antena','turbina']){ const i=m.stations[name]; if (i===undefined) continue; const g=m.gears[i], p=partPos(name);
+    for (const [w,col] of [[6,'#3B3470'],[2.5,'#6B5FB8']]){ c.strokeStyle=col; c.lineWidth=w; c.lineCap='round'; c.beginPath(); c.moveTo(g.x,g.y); c.lineTo(p.x,g.y); c.lineTo(p.x,p.y); c.stroke(); } }
+}
+// carteles: lo que debe hacer cada pieza; al arrancar, si cumplió
+const PILL = { antena:ROCKET.top+38, compuerta:cellXY(4,2).y+44, carga:cellXY(4,3).y+60, turbina:ROCKET.bottom-30 };
+function missionWord(t, v){
+  if (t==='carga') return v==='up' ? 'sube' : 'baja';
+  if (t==='compuerta') return v==='open' ? 'se abre' : 'se cierra';
+  return v>0 ? 'reloj' : 'al revés';
+}
+function drawPills(c, now, m){
+  for (const t of m.targets){ const y=PILL[t], x=314, w=82, h=40, v=m.mission[t];
+    const done = G.state==='reveal' && S.res && now >= S.verdictAt - 600 + m.targets.indexOf(t)*120;
+    const ok = done && S.res[t].ok, bad = done && !S.res[t].ok;
+    const shake = bad && !reduce ? Math.sin((now-S.verdictAt)/30)*Math.max(0,1-(now-S.verdictAt+600)/700)*4 : 0;
+    c.save(); c.translate(shake,0);
+    c.fillStyle= ok ? '#0F3B33' : bad ? '#4A1E22' : '#1C2350'; rr(c,x-w/2,y-h/2,w,h,12); c.fill();
+    c.strokeStyle= ok ? '#9FF5D6' : bad ? '#FF8C6B' : '#FFC94A'; c.lineWidth=2.2; c.stroke();
+    c.fillStyle='#EDEAFB'; c.font='700 13px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(STATIONS[t].label, x, y-9);
+    const col = ok ? '#9FF5D6' : bad ? '#FFB48C' : '#FFC94A';
+    c.font='700 12px Nunito'; const word=missionWord(t,v), tw=c.measureText(word).width, ix=x-(tw+18)/2+6;
+    if (t==='antena'||t==='turbina') drawArrow(c, ix, y+10, 6.5, v, col, 2.6, Math.PI*1.3); else tri(c, ix, y+10, (v==='up'||v==='open')?-1:1, 5, col);
+    c.fillStyle=col; c.textAlign='left'; c.fillText(word, ix+10, y+10);
+    if (ok){ c.strokeStyle='#9FF5D6'; c.lineWidth=3; c.beginPath(); c.moveTo(x+w/2-15,y-12); c.lineTo(x+w/2-11,y-7); c.lineTo(x+w/2-4,y-16); c.stroke(); }
+    c.restore(); }
+}
+function drawRoom(c){
+  const x0=8, y0=114, x1=250, y1=462;
+  const gr=c.createLinearGradient(0,y0,0,y1); gr.addColorStop(0,'#161D40'); gr.addColorStop(1,'#0F1531');
+  c.fillStyle=gr; rr(c,x0,y0,x1-x0,y1-y0,18); c.fill(); c.strokeStyle='#2C3566'; c.lineWidth=1.5; c.stroke();
+  for (const [x,y] of [[x0+12,y0+12],[x1-12,y0+12],[x0+12,y1-12],[x1-12,y1-12]]){ c.fillStyle='#2C3566'; c.beginPath(); c.arc(x,y,4,0,7); c.fill(); }
+  c.strokeStyle='rgba(127,216,255,.05)'; c.lineWidth=1; for (let x=x0+25;x<x1;x+=25){ c.beginPath(); c.moveTo(x,y0+4); c.lineTo(x,y1-4); c.stroke(); }
+}
+// lo que mueve un cambio: todo lo que sigue después de él
+function downstreamGears(m, id){
+  const { par } = subtreeMasks(m), out=new Set();
+  let root;
+  if (id==='motor') root=0; else { const l=m.links[id]; root = par[l.b]===l.a ? l.b : l.a; }
+  const st=[root]; while (st.length){ const i=st.pop(); out.add(i); m.gears.forEach((_,j)=>{ if (par[j]===i) st.push(j); }); }
+  return out;
+}
+function drawScene(c, now){
+  const m=S.m; if (!m) return;
+  // consigna
+  c.fillStyle='#141B3A'; rr(c,8,56,W-16,44,14); c.fill();
+  c.fillStyle='#EDEAFB'; c.textAlign='center'; c.textBaseline='middle'; c.font='700 17px Nunito'; c.fillText('Que cada pieza cumpla su cartel', W/2, 70);
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(hint(), W/2, 89);
+  drawRoom(c);
+  const run = G.state==='reveal' && now>=S.runAt, sol=S.sol, dt=1/60;
+  m.gears.forEach((g,i)=>{ let w=0;
+    if (run){ const t=(now-S.runAt-sol.depth[i]*STEP)/1000; if (t>0) w = 2.4*sol.speed[i]*Math.min(1,t/.3); }
+    if (!reduce) g.a += w*dt; });
+  S.rackOffs = {};
+  for (const name of ['compuerta','carga']){ const gi=m.stations[name]; if (gi===undefined) continue;
+    if (run){ const g=m.gears[gi], t=Math.max(0,(now-S.runAt-sol.depth[gi]*STEP)/1000);
+      S.rackOffs[name] = reduce ? (sol.dir[gi]>0 ? 16 : -40) : 2.4*sol.speed[gi]*g.pitch*Math.max(0,t-.15)*.9; } }
+  drawRocket(c, now, m);
+  drawShafts(c, m);
+  // al equivocarse: lo que movió tu cambio (en dorado) y dónde estaba el arreglo
+  const fixing = S.showFix && G.state==='reveal';
+  const hotG = new Set(); if (fixing) for (const id of S.changes) for (const i of downstreamGears(m,id)) hotG.add(i);
+  const fixPulse = id => fixing && m.solution.includes(id) ? .55+.45*Math.sin((now-S.showFix)/170) : 0;
+  const idlePulse = G.state==='play' && !reduce && now-S.t0<2600 ? .25+.2*Math.sin(now/220) : 0;
+  S.hits=[];
+
+  if (fixing) for (const i of hotG){ const g=m.gears[i]; c.globalAlpha=.5; c.drawImage(glow('127,216,255'),g.x-g.tip-12,g.y-g.tip-12,2*g.tip+24,2*g.tip+24); c.globalAlpha=1; }
+  m.gears.forEach((g,i)=>drawGear(c,g, i===0?'motor': g.role==='station'?'station':'main'));
+  drawRacks(c, m);
+  m.links.forEach((l,i)=>{ if (l.type!=='belt') return; const A=m.gears[l.a], B=m.gears[l.b];
+    const hot = Math.max(fixPulse(i), m.st.hint!=='motor' ? idlePulse : 0);
+    drawBelt(c, A, B, beltK(i,now), hot, isChanged(i)); S.hits.push({ id:i, x:0, y:0, w:0, h:0, A, B }); });
+  // pulso de luz
+  if (run && !reduce){ const el=now-S.runAt; for (const l of m.links){ const da=sol.depth[l.a], db=sol.depth[l.b]; const [i,j] = da<db ? [l.a,l.b] : [l.b,l.a]; const k=(el - Math.min(da,db)*STEP)/STEP; if (k<0||k>1.4) continue; const A=m.gears[i], B=m.gears[j], e=Math.min(1,k); const x=A.x+(B.x-A.x)*e, y=A.y+(B.y-A.y)*e; c.globalAlpha=Math.max(0,1-(k-1)/.4); c.drawImage(glow('255,214,120'),x-16,y-16,32,32); c.globalAlpha=1; } }
+  // motor: flecha que se da vuelta al tocarlo
+  const g0=m.gears[0], md=m.motorDir*(isChanged('motor')?-1:1);
+  const fk = S.motorFlipAt && !reduce ? Math.min(1,(now-S.motorFlipAt)/300) : 1;
+  const arrowCol = isChanged('motor') ? '#FFC94A' : '#7FD8FF';
+  c.save(); c.translate(g0.x,g0.y); c.scale(fk<.5 ? 1-2*fk : 2*fk-1, 1); c.translate(-g0.x,-g0.y);
+  drawArrow(c,g0.x,g0.y,g0.tip+8, fk<.5 ? -md : md, arrowCol, 4, Math.PI*.55); c.restore();
+  const mp=Math.max(fixPulse('motor'), m.st.hint==='motor' && G.state==='play' && !reduce ? .35+.3*Math.sin(now/220) : 0);
+  const mr = drawChip(c, g0.x, g0.y+16, 'MOTOR', isChanged('motor'), mp, false);
+  S.hits.push({ id:'motor', ...mr, motor:g0 });
+  drawPills(c, now, m);
+}
+function drawBottom(c, now){
+  const m=S.m; if (!m) return; const can=G.state==='play';
+  // cambios disponibles
+  c.globalAlpha = can ? 1 : .5;
+  c.fillStyle='#141B3A'; rr(c,14,478,104,84,20); c.fill();
+  c.fillStyle='#ABA5D2'; c.font='600 13px Nunito'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(m.st.keys===1?'1 cambio':'2 cambios', 66, 498);
+  for (let k=0;k<m.st.keys;k++){ const x=66+(m.st.keys===1?0:(k?18:-18)), used=k<S.changes.length;
+    c.fillStyle= used ? 'rgba(255,201,74,.18)' : 'rgba(255,255,255,.06)'; c.beginPath(); c.arc(x,532,16,0,7); c.fill();
+    wrench(c,x,532,15, used?'#FFC94A':'#6E6A9A', used); }
+  c.globalAlpha=1;
+  // arrancar
+  const b={ x:130, y:478, w:216, h:84 }, pr = G.press ? Math.max(0,1-(now-G.press)/200) : 0;
+  c.globalAlpha = can ? 1 : .45;
+  c.fillStyle='rgba(0,0,0,.45)'; rr(c,b.x,b.y+6,b.w,b.h,24); c.fill();
+  c.fillStyle='#7FD8FF'; rr(c,b.x,b.y+pr*4,b.w,b.h,24); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+  c.fillStyle='#1A1240'; c.beginPath(); c.moveTo(b.x+52,b.y+28+pr*4); c.lineTo(b.x+52,b.y+56+pr*4); c.lineTo(b.x+74,b.y+42+pr*4); c.closePath(); c.fill();
+  c.font='700 22px Fredoka'; c.textAlign='left'; c.fillText('Arrancar', b.x+88, b.y+43+pr*4);
+  c.globalAlpha=1; S.startBtn=b;
+}
+function drawHeader(c, now){
+  c.fillStyle='#EDEAFB'; c.font='700 17px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(`Cohete n.º ${SAVE.launched+1}`, 14, 28);
+  for (let k=0;k<ROCKET_N;k++){ const x=150+k*19, on=k<SAVE.rocket; c.fillStyle= on?'#FFC94A':'rgba(255,255,255,.16)'; c.beginPath(); c.arc(x,28,6,0,7); c.fill(); if (on && k===SAVE.rocket-1 && !reduce){ const a=Math.max(0,1-(now-(S.lastPartAt||0))/600); if (a>0){ c.globalAlpha=a; c.drawImage(glow('255,201,74'),x-18,10,36,36); c.globalAlpha=1; } } }
+  if (SAVE.launched){ c.fillStyle='#ABA5D2'; c.font='600 13px Nunito'; c.textAlign='left'; c.fillText(`${SAVE.launched} ${SAVE.launched===1?'cohete':'cohetes'} en órbita`, 14, 48); }
+}
+function drawToast(c, now){ const t=G.toast; if(!t) return; const k=(now-t.at)/t.ms; if(k>=1){G.toast=null;return;}
+  c.globalAlpha=Math.min(1,k*8,(1-k)*4); c.fillStyle='rgba(8,10,34,.96)'; rr(c,10,572,W-20,t.sub?58:40,14); c.fill(); c.strokeStyle= t.good?'rgba(159,245,214,.5)':'rgba(255,214,160,.5)'; c.lineWidth=1.5; c.stroke();
+  c.fillStyle=t.good?'#9FF5D6':'#FFD6A0'; c.font=`700 ${fitFont(c,t.t,W-40,16)}px Fredoka`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t.t, W/2, 592);
+  if (t.sub){ c.fillStyle='#FFC94A'; c.font='600 14px Nunito'; let s=14; while (c.measureText(t.sub).width>W-36 && s>12){ s--; c.font=`600 ${s}px Nunito`; } c.fillText(t.sub, W/2, 615); } c.globalAlpha=1; }
+function drawFlyers(c, now){ G.flyers=G.flyers.filter(f=>{ const k=(now-f.t)/(reduce?1:700); const x1=150+f.k*19, y1=28; if (k>=1){ S.lastPartAt=now; emit(x1,y1,14,90,600,'255,201,74'); return false; } const e=ease(k), x=f.x0+(x1-f.x0)*e, y=f.y0+(y1-f.y0)*e-Math.sin(Math.PI*e)*50; if (!reduce) c.drawImage(glow('255,201,74'),x-22,y-22,44,44); c.fillStyle='#FFE08A'; c.beginPath(); c.arc(x,y,6,0,7); c.fill(); return true; }); }
+function drawIntro(c, now){
+  if (G.state!=='intro') return; const k=reduce?1:ease((now-S.introAt)/350), lines=INTROS[S.intro];
+  c.fillStyle=`rgba(2,3,15,${.74*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.translate(0,(1-k)*18);
+  const h=170+lines.length*24; c.fillStyle='#141B3A'; rr(c,18,190,W-36,h,26); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=2; c.stroke();
+  c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('NUEVO', W/2, 216);
+  const t=reduce?0:now/600, A={x:W/2-24,y:266,tip:BIG.tip,pitch:BIG.pitch,n:BIG.n,a:t}, B={x:W/2+26,y:266,tip:SMALL.tip,pitch:SMALL.pitch,n:SMALL.n};
+  B.a = meshPhase(A,B); drawGear(c,A,'main'); drawGear(c,B,'station');
+  lines.forEach((ln,i)=>{ c.fillStyle= i===0 ? '#fff' : '#D6D1F2'; let s=16; do { c.font=`${i===0?700:600} ${s}px Nunito`; } while (c.measureText(ln).width>W-56 && --s>13); c.fillText(ln, W/2, 322+i*24); });
+  c.fillStyle='#7FD8FF'; c.font='700 15px Fredoka'; c.fillText('Toca para seguir', W/2, 190+h-24); c.restore();
+}
+function drawLaunch(c, now){
+  const t=reduce?1:Math.min(1,(now-G.launchAt)/3200), lift = Math.max(0,(t-.25)/.75)**2*620, shake = !reduce && t<.25 ? Math.sin(now/25)*2 : 0;
+  drawRoom(c);
+  c.save(); c.translate(shake,0); drawRocket(c, now, null, lift); c.restore();
+  if (!reduce){ for (let j=0;j<4;j++) emit(ROCKET.cx+(Math.random()-.5)*20+shake, ROCKET.bottom+16-lift, 2, 70, 800, j%2?'255,201,74':'255,140,107', -40); c.globalAlpha=.95; c.drawImage(glow('255,180,90'),ROCKET.cx-36,ROCKET.bottom+4-lift,72,80+Math.random()*20); c.globalAlpha=1; }
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('¡Despegue!', W/2-50, 170);
+  c.font='600 16px Nunito'; c.fillStyle='#ABA5D2'; c.fillText(`Tu cohete n.º ${SAVE.launched+1}`, W/2-50, 204); c.fillText('va a la órbita', W/2-50, 226);
+}
+function drawEnd(c, now){
+  const k=reduce?1:ease((now-G.endT)/500); c.fillStyle=`rgba(3,4,22,${.95*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='middle'; c.font='700 30px Fredoka'; c.fillText('¡Buen trabajo!', W/2, 96);
+  const ok=S.hist.filter(h=>h.ok);
+  const rows=[['Máquinas arregladas', `${ok.length} de ${S.hist.length}`], ['Etapa más alta', `${ETAPA(S.maxLv)} de 5`], ['Luces del cohete', `${SAVE.rocket} de ${ROCKET_N}`], ['Cohetes en órbita', `${SAVE.launched}`], ['Tu ritmo', `${(S.hist.reduce((s,h)=>s+h.secs,0)/Math.max(1,S.hist.length)).toFixed(1).replace('.',',')} s por máquina`]];
+  let y=150; for (const [l,v] of rows){ c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.textAlign='left'; c.fillText(l,28,y); c.fillStyle='#fff'; c.font='700 18px Fredoka'; c.textAlign='right'; c.fillText(v,W-28,y); y+=42; }
+  c.textAlign='center'; if (SAVE.rocket>0){ c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.fillText(`Faltan ${ROCKET_N-SAVE.rocket} luces: tu cohete espera en el hangar`, W/2, y+8); y+=30; }
+  c.fillStyle='#6E6A9A'; c.font='600 13px Nunito'; c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y+10);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-110,180,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 19px Fredoka'; c.fillText('Jugar de nuevo',W/2,H-82);
+  c.restore();
+}
+function drawMenu(c, now){
+  c.textAlign='center'; c.textBaseline='middle';
+  drawRoom(c); const t=reduce?0:now/700;
+  const A={x:70,y:330,tip:BIG.tip,pitch:BIG.pitch,n:BIG.n,a:t}, B={x:120,y:330,tip:SMALL.tip,pitch:SMALL.pitch,n:SMALL.n}, C={x:170,y:330,tip:BIG.tip,pitch:BIG.pitch,n:BIG.n}, D={x:220,y:330,tip:SMALL.tip,pitch:SMALL.pitch,n:SMALL.n};
+  B.a=meshPhase(A,B); C.a=meshPhase(B,C); D.a=meshPhase(C,D);
+  drawGear(c,A,'motor'); drawGear(c,B,'main'); drawGear(c,C,'main'); drawGear(c,D,'station');
+  drawRocket(c, now, null);
+  c.fillStyle='rgba(3,4,22,.7)'; rr(c,18,126,226,150,20); c.fill();
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('Engranajes', 131, 160);
+  c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.fillText('Taller de reparación', 131, 188);
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('Arregla la máquina para que', 131, 220); c.fillText('el cohete quede listo.', 131, 240);
+  c.fillStyle='#7FD8FF'; rr(c,60,500,140,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.fillText('Jugar', 130, 529);
+}
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  if (G.state==='menu') drawMenu(c, now);
+  else {
+    drawHeader(c, now);
+    if (G.state==='launch') drawLaunch(c, now);
+    else if (G.state!=='end'){ drawScene(c, now); drawBottom(c, now); drawToast(c, now); }
+    drawFlyers(c, now);
+    G.parts=G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; p.vy+=1; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+    drawIntro(c, now);
+    if (G.state==='end') drawEnd(c, now);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+function segDist(px,py,A,B){ const vx=B.x-A.x, vy=B.y-A.y, t=Math.max(0,Math.min(1,((px-A.x)*vx+(py-A.y)*vy)/(vx*vx+vy*vy))); return Math.hypot(px-(A.x+vx*t), py-(A.y+vy*t)); }
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e), now=performance.now();
+  if (G.state==='menu'){ if (x<240 && y>490&&y<566) startGame(); return; }
+  if (G.state==='intro'){ if (now-S.introAt>500){ G.state='play'; S.t0=now; motorHum(); } return; }
+  if (G.state==='end'){ if (now-G.endT>600 && y>H-120) G.state='menu'; return; }
+  if (G.state!=='play') return;
+  const b=S.startBtn; if (b && x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){ G.press=now; start(); return; }
+  // el más cercano: chip, cuerpo del motor o la correa misma
+  let best=null, bd=1e9;
+  for (const h of S.hits||[]){
+    let d = (x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h) ? 0 : 1e9;
+    if (h.motor) d=Math.min(d, Math.max(0, Math.hypot(x-h.motor.x,y-h.motor.y)-h.motor.tip-12));
+    if (h.A) d=Math.min(d, Math.max(0, segDist(x,y,h.A,h.B)-26));
+    if (d<bd){ bd=d; best=h; } }
+  if (best && bd===0) toggle(best.id);
+});
+document.getElementById('snd').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',soundOn); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+document.getElementById('rm').addEventListener('click',e=>{ reduce=!reduce; e.currentTarget.setAttribute('aria-pressed',reduce); });
+</script>
