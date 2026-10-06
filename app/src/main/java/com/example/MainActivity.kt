@@ -271,8 +271,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               viewModel.launchGame(result.gameId, customLevel = result.level, customTimed = result.timed, mode = result.playMode)
             },
             onContinue = {
-              // En la sesión diaria, "Continuar" sigue el flujo: siguiente juego o, al terminar, el informe de la
-              // Bitácora de Misión si quedó pendiente (continueDailyFlow vuelve a Hoy cuando no queda nada).
+              // En la sesión diaria, "Continuar" sigue el flujo: el siguiente juego o, al terminar, el resumen
+              // de la sesión en Hoy (continueDailyFlow).
               if (lastResultDaily) {
                 viewModel.continueDailyFlow()
               } else {

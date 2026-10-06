@@ -84,12 +84,11 @@ class SkillTest {
   }
 
   @Test
-  fun `experto se abre al superar un desafio y la bitacora solo a tu medida`() {
+  fun `experto se abre al superar un desafio`() {
     assertFalse(Skill.isOpen(PlayMode.EXPERTO, "radar", emptySet()))
     assertTrue(Skill.isOpen(PlayMode.EXPERTO, "radar", setOf("radar")))
     assertTrue(Skill.isOpen(PlayMode.DESAFIO, "radar", emptySet()))
-    assertEquals(listOf(PlayMode.A_TU_MEDIDA), Skill.modesFor("bitacora"))
-    assertFalse(Skill.isOpen(PlayMode.SUAVE, "bitacora", emptySet()))
+    assertTrue(Skill.isOpen(PlayMode.SUAVE, "radar", emptySet()))
   }
 
   @Test

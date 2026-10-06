@@ -13,7 +13,7 @@
 > visible (se comprobó el 1-oct en `strings.xml` y en la interfaz). En los documentos, "Nubi" nombra la app y "NeuroVida" solo
 > aparece en identificadores o cuando se habla del nombre viejo.
 
-App de estimulación cognitiva para Android: 19 juegos cortos en 4 áreas (Memoria [5 tras retirar Ruta del Tesoro el 4-oct] · Atención [foco y velocidad] · Razonamiento [lógica y números, 4 juegos: Engranajes (5-oct) ocupa el lugar de los retirados Detective de Series y Tráfico Estelar] · Lenguaje;
+App de estimulación cognitiva para Android: 18 juegos cortos en 4 áreas (Memoria [4 tras retirar Ruta del Tesoro el 4-oct y Bitácora de Misión el 5-oct; viene un reemplazo] · Atención [foco y velocidad] · Razonamiento [lógica y números, 4 juegos: Engranajes (5-oct) ocupa el lugar de los retirados Detective de Series y Tráfico Estelar] · Lenguaje;
 de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -30,7 +30,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   con `fotos` graba las capturas Roborazzi, p. ej. `HomePlanetScreenshotTest`, para ver pantallas sin teléfono).
   No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
-  escena piloto, pruebas EditMode, smoke de los 19 juegos (en UN solo Unity), REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
+  escena piloto, pruebas EditMode, smoke de los juegos de Unity (en UN solo Unity; Bitácora, retirada de la app, sigue en Unity y en el smoke), REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
   Salida corta (una línea por etapa); los logs completos van a `unity/test-results/v-*.log` y solo se leen si algo falla.
   Modos para iterar sin verificar todo cada vez: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
@@ -72,14 +72,14 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   resumen (`data/SessionSummary` + `ui/screens/SessionSummaryScreen`): Nubi celebra, qué áreas se trabajaron, puntaje
   de cada juego, racha y la barra de avance de cada área con "Hoy avanzó de X a Y" (cambio desde el comienzo de la
   sesión, `AreaProgress.status(since = ...)`). Captura `docs/previews/resumen-sesion-real.png`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `MissionLog`, `NumberLine`, `Percentile`,
+- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `NumberLine`, `Percentile`,
   `Planet`, `SessionSummary`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v12** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
   onboarding van en **SharedPreferences** para no migrar: `league_events`, `achievements`, `profile_extra`
   (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity, `skill` (avance: ver abajo), `star_measures` (la medida
-  propia de cada partida de los juegos estrella, `StarMeasures.encode`), `mission_log`, `progress_log` (historia del
+  propia de cada partida de los juegos estrella, `StarMeasures.encode`), `mission_log` (de Bitácora, retirada: ya no se lee, sigue en el respaldo), `progress_log` (historia del
   avance de cada juego, ~60 días, `AreaProgress`: el cambio de la semana de cada área en Hoy).
   Al cambiar el esquema de Room: entidad → subir versión → `Migration(N, N+1)` en SQL → compilar → comitear `schemas/<N+1>.json`.
 - Diseño "noche + arcilla" (`ui/theme/Clay.kt`, `Type.kt` con Fredoka, `ui/components/CosmosBackground.kt`).
@@ -124,7 +124,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 |---|---|---|---|---|---|
 | Parejas Ocultas | `parejas` | Memoria | `Games/Parejas/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
 | Rastro de luz (antes Secuencia Lumínica) | `secuencia` | Memoria | `Games/Secuencia/` | [docs/diseno-rastro-de-luz.md](docs/diseno-rastro-de-luz.md) | `Trail.kt` |
-| Bitácora de Misión | `bitacora` | Memoria | `Games/Bitacora/` | [docs/juegos/bitacora.md](docs/juegos/bitacora.md) | `MissionLog.kt` |
+| ~~Bitácora de Misión~~ **RETIRADA el 5-oct-2026** (Ricardo: «no me convence»; la app ya no la lanza, el código de Unity se queda, el historial se conserva; ver `docs/juegos/descartados.md`) | `bitacora` | (Memoria) | `Games/Bitacora/` | [docs/juegos/bitacora.md](docs/juegos/bitacora.md) | — |
 | Rumbo a Casa | `rumbo` | Memoria | `Games/Rumbo/` | [docs/juegos/rumbo.md](docs/juegos/rumbo.md) | `Homing.kt` |
 | Correo Estelar | `correo` | Memoria | `Games/Correo/` | [docs/juegos/correo.md](docs/juegos/correo.md) | `Mail.kt` |
 | Tinta o Palabra («Dos orillas», 3-oct) | `stroop` | Atención | `Games/Stroop/` | [docs/diseno-tinta-o-palabra.md](docs/diseno-tinta-o-palabra.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `DosOrillas.kt` |
@@ -199,11 +199,11 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 393 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 395 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 453 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados, colocación de Nubi `CoachLayoutTests`) + 46 arranques de smoke (los 19 juegos, las 3 versiones cortas y los tutoriales: los de 8 juegos corren en 3 formas de pantalla —20:9, 18:9, 16:9— y fallan si Nubi, su globo o «Saltar tutorial» tapan algo; ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`).
+- Unity EditMode: 453 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados, colocación de Nubi `CoachLayoutTests`) + 46 arranques de smoke (los 19 juegos de Unity, las 3 versiones cortas y los tutoriales: los de 8 juegos corren en 3 formas de pantalla —20:9, 18:9, 16:9— y fallan si Nubi, su globo o «Saltar tutorial» tapan algo; ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`).
 - Léxico de Lluvia de meteoros: 11 pruebas del filtro de nombres propios en `tools/lexico/test_propios.py` (`python -m unittest test_propios`, desde `tools/lexico`).
 - Banco de definiciones de «En la punta de la lengua» (reemplaza a Anagramas): 16 pruebas en `tools/punta/test_banco.py` (`python -m unittest test_banco`, desde `tools/punta`; ~1 s). Diseño: `docs/diseno-punta-de-la-lengua.md`.
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).

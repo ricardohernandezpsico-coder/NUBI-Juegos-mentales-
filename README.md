@@ -4,7 +4,7 @@
 
 # Nubi
 
-**Entrenamiento cognitivo diario: 19 juegos cortos, 4 áreas y una dificultad que se ajusta a ti.**
+**Entrenamiento cognitivo diario: 18 juegos cortos, 4 áreas y una dificultad que se ajusta a ti.**
 
 App Android (Kotlin + Jetpack Compose) con los juegos en Unity embebido. En desarrollo activo, todavía sin publicar.
 
@@ -49,7 +49,7 @@ Cada juego se puede jugar en cuatro modos: **Suave**, **A tu medida**, **Desafí
 Desafío). Solo las partidas a tu medida y los desafíos superados mueven tu avance. Cómo se calcula:
 [`docs/dificultad-y-avance.md`](docs/dificultad-y-avance.md).
 
-## Los 19 juegos
+## Los 18 juegos
 
 Los marcados con ★ son **juegos estrella**: además del puntaje, al final muestran una medida propia de esa partida
 (por ejemplo "tu freno", "tu seguimiento" o "tu brújula interna"), con su respaldo en
@@ -59,7 +59,6 @@ Los marcados con ★ son **juegos estrella**: además del puntaje, al final mues
 |---|---|---|
 | Secuencia Lumínica | Memoria | Repetir secuencias de fichas que se encienden, cada vez más largas |
 | Parejas Ocultas | Memoria | Memorizar un tablero de cartas y encontrar las parejas |
-| Bitácora de Misión ★ | Memoria | Guardar qué, dónde y en qué orden, y volver a recordarlo pasado un rato |
 | Rumbo a Casa ★ | Memoria | Volver a la base sin verla, sabiendo solo el camino que hiciste |
 | Correo Estelar ★ | Memoria | Acordarte de entregar un encargo o avisar por radio en el momento justo, mientras vuelas |
 | Tinta o Palabra | Atención | Responder al color de la tinta o a la palabra, según la regla del momento |
@@ -85,7 +84,7 @@ app/                     App Android (Kotlin + Compose)
   src/main/java/com/example/
     MainActivity.kt, viewmodel/, data/ (Room + lógica pura), ui/ (pantallas y componentes), bridge/ (puente con Unity)
   schemas/               Esquemas de Room (migraciones)
-unity/NeuroVidaCore/     Proyecto Unity con los 19 juegos (Assets/Scripts)
+unity/NeuroVidaCore/     Proyecto Unity con los juegos (Assets/Scripts; Bitácora de Misión, retirada de la app, sigue ahí)
 unity/AndroidExport/     Librería Android exportada desde Unity (fuera de git; se regenera)
 tools/                   Verificación completa, chequeo de C# sin Unity y vistas previas del arte
 docs/                    Documentación (ver docs/README.md) y vistas previas
@@ -109,7 +108,7 @@ Detalle técnico y reglas del proyecto: [`CLAUDE.md`](CLAUDE.md).
 Requisitos: Android SDK (android-36), JDK 21 (Temurin) y Unity 6000.0.84f1 con soporte Android.
 
 ```bash
-# Todo en uno: pruebas de Unity, arranque de los 19 juegos, exportar Unity, compilar la app, pruebas Kotlin e instalar
+# Todo en uno: pruebas de Unity, arranque de los juegos de Unity, exportar Unity, compilar la app, pruebas Kotlin e instalar
 bash tools/verificar-todo.sh --instalar
 ```
 
@@ -135,7 +134,7 @@ Lista para recorrer la app completa en el teléfono antes de marcar una versión
   en el teléfono; en Ajustes, "Enviar informe de errores" los comparte como texto, sin nombre ni resultados.
 - **Cada subida se verifica sola.** En GitHub, la pestaña **Actions** muestra la ejecución "Verificar" de cada commit: dos
   marcas verdes = el C# de los juegos y la app con sus pruebas compilan bien. No reemplaza a `verificar-todo.sh`, que
-  además corre las pruebas de Unity, el arranque de los 19 juegos y el export.
+  además corre las pruebas de Unity, el arranque de los juegos de Unity y el export.
 - **Lo que falta mejorar** (medidas genéricas de los juegos, idiomas, versión de tienda...) está con pasos concretos en
   [`docs/plan-mejoras-arquitectura.md`](docs/plan-mejoras-arquitectura.md).
 

@@ -12,8 +12,6 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-/** Juegos que no entran al camino diario de 3: Bitácora de Misión va antes (transmisión) y después (informe). */
-internal val BOOKEND_GAMES = setOf("bitacora")
 
 class NeuroVidaRepository(
   context: Context,
@@ -204,6 +202,8 @@ class NeuroVidaRepository(
   // El cohete de «Engranajes»: las luces encendidas (0..9) y los cohetes que ya despegaron. Es progreso de la persona: SharedPreferences que VA en el respaldo
   // (`engranajes_rocket`). La app lo manda a Unity en cada partida (`engr_lights`, `engr_orbit`) y Unity devuelve los nuevos al terminar.
   private val rocketPrefs = context.getSharedPreferences("engranajes_rocket", Context.MODE_PRIVATE)
+  // La misión del día de Bitácora de Misión (juego retirado el 5-oct): ya no se lee, pero sigue en el respaldo y «Borrar datos» la limpia.
+  private val retiredMissionPrefs = context.getSharedPreferences("mission_log", Context.MODE_PRIVATE)
   private val _engranajesRocket = MutableStateFlow(Engranajes.rocket(rocketPrefs.getInt("lights", 0), rocketPrefs.getInt("orbit", 0)))
   val engranajesRocket: StateFlow<Engranajes.Rocket> = _engranajesRocket.asStateFlow()
 
@@ -444,7 +444,6 @@ class NeuroVidaRepository(
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
       "piloto" -> "multitask" to r.multitaskCost?.toFloat()
       "rumbo" -> "homing" to r.homingErrorPct
-      "bitacora" -> "recall" to (if (r.memPhase == "encode") null else pct(r.memRecalled, r.memItems))
       "correo" -> "pending" to pct(
         (r.mailEventHits ?: 0) + (r.mailRadioHits ?: 0),
         if (r.mailEventTotal == null) null else r.mailEventTotal + (r.mailRadioTotal ?: 0)
@@ -579,8 +578,8 @@ class NeuroVidaRepository(
     val ids = state.gameIds.toMutableList()
     for (i in ids.indices) {
       val domain = GameRegistry.retiredDomains[ids[i]] ?: continue
-      val pool = GameRegistry.allGames.filter { it.domain == domain && it.id !in ids && it.id !in BOOKEND_GAMES }
-      ids[i] = (pool.randomOrNull() ?: GameRegistry.allGames.first { it.id !in ids && it.id !in BOOKEND_GAMES }).id
+      val pool = GameRegistry.allGames.filter { it.domain == domain && it.id !in ids }
+      ids[i] = (pool.randomOrNull() ?: GameRegistry.allGames.first { it.id !in ids }).id
     }
     val fixed = entity.copy(gameIdsRaw = ids.joinToString(","))
     dailySessionDao.insertOrUpdate(fixed)
@@ -694,8 +693,7 @@ class NeuroVidaRepository(
 
     val selected = mutableListOf<String>()
     sortedDomains.take(3).forEach { domain ->
-      // Bitácora de Misión no entra al camino: va antes y después (transmisión al empezar, informe al terminar).
-      val gameInDomain = GameRegistry.allGames.filter { it.domain == domain && it.id !in BOOKEND_GAMES }.randomOrNull()
+      val gameInDomain = GameRegistry.allGames.filter { it.domain == domain }.randomOrNull()
       if (gameInDomain != null) {
         selected.add(gameInDomain.id)
       }
@@ -703,7 +701,7 @@ class NeuroVidaRepository(
 
     while (selected.size < 3) {
       val candidate = GameRegistry.allGames.random().id
-      if (!selected.contains(candidate) && candidate !in BOOKEND_GAMES) selected.add(candidate)
+      if (!selected.contains(candidate)) selected.add(candidate)
     }
     return selected
   }
@@ -940,6 +938,7 @@ class NeuroVidaRepository(
     _puntaPending.value = emptyList()
     rocketPrefs.edit().clear().apply()
     _engranajesRocket.value = Engranajes.rocket(0, 0)
+    retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()
     skillPrefs.edit().clear().putString("state", "").apply()

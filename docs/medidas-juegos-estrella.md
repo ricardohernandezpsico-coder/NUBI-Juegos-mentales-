@@ -159,7 +159,7 @@ mostró el estudio de NeuroRacer con la tarea entrenada.
 
 ---
 
-## Bitácora de Misión: "Tu memoria a los X minutos", "retención", "la ruta"
+## Bitácora de Misión: "Tu memoria a los X minutos", "retención", "la ruta" (RETIRADA el 5-oct-2026: la app ya no la tiene ni lee su medida `recall`; se conserva como historia)
 
 **Qué mide.** Memoria episódica con recuerdo diferido: qué hallazgo había en cada planeta (asociación qué–dónde,
 recordada con la pista del lugar) y en qué orden pasó la sonda (el "cuándo"). La demora es real: en la sesión diaria,

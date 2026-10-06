@@ -93,14 +93,6 @@ object GameRegistry {
       iconEmoji = "🧩"
     ),
     GameDefinition(
-      id = "bitacora",
-      title = "Bitácora de Misión",
-      domain = DomainType.MEMORIA,
-      subtitle = "Memoria de lo vivido: qué, dónde y en qué orden",
-      instruction = "Llega una transmisión: una sonda deja hallazgos en planetas. Guárdalos en la bitácora y, más tarde, informa qué había en cada planeta y en qué orden pasó.",
-      iconEmoji = "📡"
-    ),
-    GameDefinition(
       id = "cosecha",
       title = "Cosecha de palabras",
       domain = DomainType.LENGUAJE,
@@ -225,10 +217,12 @@ object GameRegistry {
    *  - `series` (Detective de Series, Razonamiento): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    *  - `rutatesoro` (Ruta del Tesoro, Memoria): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    *  - `trafico` (Tráfico Estelar, Razonamiento): retirado el 4-oct-2026 (docs/juegos/descartados.md).
+   *  - `bitacora` (Bitácora de Misión, Memoria): retirado el 5-oct-2026 (docs/juegos/descartados.md). Su misión del día vivía en las preferencias `mission_log` (siguen en el respaldo; ya no se leen) y
+   *    sus medidas guardadas (clave `recall`) quedan sin leerse.
    */
   val retiredDomains: Map<String, DomainType> = mapOf(
     "cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION, "series" to DomainType.RAZONAMIENTO, "rutatesoro" to DomainType.MEMORIA,
-    "trafico" to DomainType.RAZONAMIENTO
+    "trafico" to DomainType.RAZONAMIENTO, "bitacora" to DomainType.MEMORIA
   )
 
   fun isRetired(id: String): Boolean = id in retiredDomains
@@ -291,23 +285,6 @@ data class GamePlayResult(
   // null = sin datos en esa columna). No se guardan en Room.
   val rotationSpeedDps: Int? = null,
   val rotationCurveMs: List<Int?>? = null,
-  // Solo Bitácora de Misión: fase ("" completa, "encode" transmisión, "recall" informe), semilla y nivel de la misión,
-  // paradas, aprendidas en el primer repaso (y cuáles, en bits), recordadas en el informe (y cuáles), hallazgos
-  // elegidos que no estaban, paradas de la ruta en su lugar y segundos de demora. La app completa la retención y la
-  // colección (ver data/MissionLog.kt). No se guardan en Room.
-  val memPhase: String? = null,
-  val memSeed: Int? = null,
-  val memLevel: Int? = null,
-  val memItems: Int? = null,
-  val memLearned: Int? = null,
-  val memLearnedMask: Int? = null,
-  val memRecalled: Int? = null,
-  val memRecalledMask: Int? = null,
-  val memIntrusions: Int? = null,
-  val memOrderOk: Int? = null,
-  val memDelayS: Int? = null,
-  val memRetentionPct: Int? = null,
-  val memArchivedTotal: Int? = null,
   // Solo Rumbo a Casa: "tu brújula interna" (a qué distancia de casa quedaste, en % de la distancia que había), dónde
   // quedó cada vuelta en el marco de la vuelta justa (en fracciones de esa distancia: la base en along = 1,
   // lateral = 0; lateral + = a la derecha), si el viaje tenía faro y llegadas perfectas. La lectura está en

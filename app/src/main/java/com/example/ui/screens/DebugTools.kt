@@ -53,7 +53,6 @@ private val DebugGames = listOf(
   DebugGame("cosecha", "Cosecha de palabras (Reto 3 × 60 s)", level = 1, timed = true),
   DebugGame("intrusa", "La estrella intrusa (Reto 120 s)", level = 1, timed = true),
   DebugGame("acoplamiento", "Acoplamiento (Reto 120 s)", level = 1, timed = true),
-  DebugGame("bitacora", "Bitácora de Misión (completa, con patrulla)", level = 1, timed = false),
   DebugGame("rumbo", "Rumbo a Casa (Reto 150 s)", level = 1, timed = true),
   DebugGame("correo", "Correo Estelar (vuelo de 150 s)", level = 2, timed = true)
 )
@@ -69,9 +68,6 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
     DebugButton("[Debug] Ver celebración de logro", "btn_debug_achievement") { viewModel.debugShowAchievement() }
     DebugButton("[Debug] Repetir el inicio (sin borrar datos)", "btn_debug_onboarding") { viewModel.debugRestartOnboarding() }
-    // La misión del día de Bitácora, fuera de la sesión: la transmisión y, sin esperar los 10 minutos, el informe.
-    DebugButton("[Debug] Bitácora: recibir transmisión", "btn_debug_mission_encode") { viewModel.startMissionTransmission() }
-    DebugButton("[Debug] Bitácora: informe ya (sin esperar)", "btn_debug_mission_recall") { viewModel.startMissionReport() }
     DebugGames.forEach { g ->
       DebugButton("[Debug] Probar ${g.label}", "btn_debug_unity_${g.tag}") {
         context.startActivity(

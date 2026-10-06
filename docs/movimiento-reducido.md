@@ -150,7 +150,7 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | 372 `WaveIn` / 387 `WaveOut` | Las fichas entran y salen con escala | DECORATIVA | no | Inmediato | ✓ |
 | 202-204, 249-263 | Chispas, ondas, sacudida, destellos | DECORATIVA | sí (común) | — | — |
 
-**Bitácora de Misión** — `Bitacora/BitacoraGameController.cs`
+**Bitácora de Misión** (retirada de la app el 5-oct; el código de Unity sigue) — `Bitacora/BitacoraGameController.cs`
 
 | Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
 |---|---|---|---|---|---|

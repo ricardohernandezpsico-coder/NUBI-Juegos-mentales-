@@ -77,3 +77,15 @@ estación de su color): la misma mecánica con otro arte. Razonamiento pasó de 
   campos `traffic_*` de la telemetría y la pantalla final «Tu carga» / «Tu anticipación» de la app. `GameWorld.TrafficHub` queda sin uso, disponible para otro juego. El código completo queda en el historial de git (último commit con el
   juego: `16070f0` y anteriores).
 
+**Bitácora de Misión (RETIRADA, 5-oct-2026)**, id `bitacora` (Memoria, «memoria episódica con recuerdo diferido»): una transmisión de la sonda con hallazgos en planetas y, más tarde, un informe de qué había en cada planeta y en qué
+orden. Razón, en palabras de Ricardo: «lo he jugado por lo menos unas 20 veces y no me convence; se lo pasé a mi hermana y a un familiar y tampoco les gustó. No lo quiero tener en mi aplicación». Memoria pasó de 5 a 4 juegos (Parejas Ocultas,
+Rastro de luz, Rumbo a Casa y Correo Estelar) y la app, de 19 a 18, hasta que llegue un juego de Memoria que lo reemplace (con id nuevo, en otra tarea).
+- **El id `bitacora` queda RESERVADO** (no se reutiliza): `GameRegistry.retiredDomains`.
+- **Datos de quien ya lo jugó: NO se borran ni se migran**: las partidas y el progreso siguen en Room y en `skill`, su medida «tu memoria» (clave `recall`) sigue en `star_measures` sin leerse, y la misión del día y la colección
+  («hallazgos archivados») siguen en las preferencias `mission_log`, que SIGUEN en el respaldo (`backup_rules.xml`, `data_extraction_rules.xml`; «Borrar datos» las limpia). No se muestra ni cuenta para «Explorador», las ligas más altas, la liga
+  general (promedio de los 18) ni el área Memoria (sus 4 juegos); la racha y el total de partidas sí cuentan esos días, y un camino de hoy guardado que lo nombraba se corrige solo (`withoutRetiredGames`).
+  Pruebas: `flow/RetiredBitacoraTest` (registro, historial y misión conservados, camino de hoy, Hoy/Juegos/Avance sin su nombre ni la línea de la misión) además de `flow/RetiredGameTest`.
+- **Lo que se quitó de la app**: la línea de la «Misión del día» de Hoy (`MissionLine`) y todo lo que programaba la transmisión y el informe diferido (`MissionLog`, `MissionLogStore`, `MemoryLaunch`, las funciones del ViewModel, `BOOKEND_GAMES`, los botones
+  [Debug] de la misión, el aviso de «informe listo», abrir el informe al terminar la sesión), el ícono, su pantalla final («Transmisión guardada», «Tu memoria a los X minutos», «Tu bitácora…») y los campos `mem_*` de la telemetría (DTO, resultado y
+  puente: `memory_*` de la config de lanzamiento). `Skill.modesFor` ya no hace falta (era para este juego). No tenía recordatorios ni notificaciones propios, no estaba en «Primer vuelo» ni en el punto de partida.
+- **Unity NO se tocó**: `Games/Bitacora/` (controlador, contrato, sprites, sonidos y pruebas) y sus campos de configuración y telemetría se quedan, igual que el arranque de prueba del smoke; la app ya no puede lanzarlo.

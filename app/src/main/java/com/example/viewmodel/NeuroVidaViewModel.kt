@@ -46,8 +46,6 @@ data class ActiveGameSession(
   val assessmentStep: Int = 0,
   // Abre el juego con su tutorial guiado aunque la persona ya lo haya jugado (el inicio completo, `data/FirstFlight.kt`: el tutorial es parte del recorrido).
   val tutorial: Boolean = false,
-  // Bitácora de Misión: transmisión o informe de la misión del día (null = partida completa o cualquier otro juego).
-  val memory: com.example.data.MemoryLaunch? = null,
   // Identidad de esta sesión (no de la partida): la usa la UI para que el estado guardado de una sesión anterior
   // (p. ej. "ya lancé Unity", que Android restaura al recrear la pantalla) no lo herede la siguiente.
   val sessionToken: String = java.util.UUID.randomUUID().toString()
@@ -76,77 +74,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     GameRegistry.allGames.map { g -> GameRankInfo(gameId = g.id, rating = ratingMap[g.id] ?: 0) }
   }.stateIn(viewModelScope, SharingStarted.Eagerly, GameRegistry.allGames.map { GameRankInfo(it.id, 0) })
   val dailySession = repository.dailySession
-
-  // ---------- Bitácora de Misión: la misión del día (transmisión al empezar la sesión, informe al terminarla) ----------
-
-  private val missionStore by lazy { com.example.data.MissionLogStore(getApplication<Application>()) }
-  private val _mission = MutableStateFlow(com.example.data.MissionState())
-  val mission: StateFlow<com.example.data.MissionState> = _mission.asStateFlow()
-
-  /** En qué punto está la misión de hoy (lo lee Hoy y el flujo de la sesión diaria). */
-  fun missionStep(now: Long = System.currentTimeMillis()): com.example.data.MissionStep {
-    val session = dailySession.value
-    return com.example.data.MissionLog.step(_mission.value, session.dateKey, now, session.completedCount >= session.gameIds.size)
-  }
-
-  /** Recibe la transmisión del día (Unity arma la misión con esta semilla y el nivel que corresponda). */
-  fun startMissionTransmission(isDailyFlow: Boolean = false) {
-    val seed = kotlin.random.Random.nextInt(1, Int.MAX_VALUE)
-    launchMemory(com.example.data.MemoryLaunch(phase = "encode", seed = seed), isDailyFlow)
-  }
-
-  /** Abre el informe de la misión pendiente (misma semilla y nivel; Unity sabe cuánto tiempo pasó). */
-  fun startMissionReport(isDailyFlow: Boolean = false) {
-    val m = _mission.value
-    if (m.encodedAt == 0L || m.reported) return
-    val elapsed = ((System.currentTimeMillis() - m.encodedAt) / 1000L).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
-    launchMemory(com.example.data.MemoryLaunch(phase = "recall", seed = m.seed, level = m.level, elapsedS = elapsed), isDailyFlow)
-  }
-
-  private fun launchMemory(memory: com.example.data.MemoryLaunch, isDailyFlow: Boolean) {
-    val def = GameRegistry.getById("bitacora") ?: return
-    pausedGame = null
-    _activeGame.value = ActiveGameSession(def, getEffectiveLevelForGame(def.id), false, isDailyFlow, memory = memory)
-    _lastResult.value = null
-  }
-
-  /**
-   * Resultado de Bitácora de Misión: actualiza la misión del día y la colección, y completa la retención (que
-   * necesita lo aprendido en la transmisión, guardado acá). Devuelve el resultado completo para mostrar.
-   */
-  private fun applyMissionResult(result: GamePlayResult): GamePlayResult {
-    val now = System.currentTimeMillis()
-    val m = _mission.value
-    val updated: com.example.data.MissionState
-    val shown: GamePlayResult
-    when (result.memPhase) {
-      "encode" -> {
-        updated = com.example.data.MissionLog.onEncoded(
-          m, dailySession.value.dateKey, now, result.memSeed ?: 0, result.memLevel ?: 1, result.memItems ?: 0, result.memLearnedMask ?: 0
-        )
-        shown = result.copy(memArchivedTotal = updated.archivedTotal)
-      }
-      "recall" -> {
-        val recalled = result.memRecalled ?: 0
-        updated = com.example.data.MissionLog.onReported(m, recalled)
-        shown = result.copy(
-          memRetentionPct = com.example.data.MissionLog.retentionPct(m.learnedMask, result.memRecalledMask ?: 0),
-          memArchivedTotal = updated.archivedTotal
-        )
-      }
-      else -> {
-        val recalled = result.memRecalled ?: 0
-        updated = com.example.data.MissionLog.onFullGame(m, recalled)
-        shown = result.copy(
-          memRetentionPct = com.example.data.MissionLog.retentionPct(result.memLearnedMask ?: 0, result.memRecalledMask ?: 0),
-          memArchivedTotal = updated.archivedTotal
-        )
-      }
-    }
-    _mission.value = updated
-    missionStore.save(updated)
-    return shown
-  }
 
   /** Punto de partida: educación (opcional, se edita en Perfil), metas, qué ver primero al terminar un juego, visión de color y el mapa guardado (null = no hizo la evaluación). */
   val education = repository.education
@@ -548,17 +475,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       return
     }
     val withMode = if (current != null) rawResult.copy(playMode = current.mode) else rawResult
-    val result = if (withMode.gameId == "bitacora" && withMode.memPhase != null) applyMissionResult(withMode) else withMode
-    if (result.memPhase == "encode") {
-      // La transmisión sola no es una partida completa: no suma a la liga ni al historial (el informe sí). Se muestra
-      // su pantalla (cuánto se aprendió y cuándo llega el informe) y la sesión sigue.
-      if (current != null) {
-        _lastResultDaily.value = current.isDailyFlow
-        _lastResult.value = Pair(result, false)
-        _activeGame.value = null
-      }
-      return
-    }
+    val result = withMode
     viewModelScope.launch {
       val outcome = repository.recordGameResult(result)
       if (current != null) {
@@ -648,7 +565,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
   init {
-    _mission.value = missionStore.load()
     // Lo que quedó en disco si Android cerró la app durante un juego: el recorrido del inicio en curso (ya cargado en
     // [_flight]) y un resultado que llegó mientras tanto (se muestra ahora, con su pantalla de resultado y el flujo donde iba).
     _pausedGameId.value = pausedGame?.first?.gameDef?.id
@@ -735,8 +651,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /**
    * "Continuar" del resultado en la sesión diaria: el siguiente de los 3 juegos o, al terminar, el resumen de la
-   * sesión ([sessionSummary]). La Bitácora de Misión ya no se mete sola en la sesión (29-sep, Ricardo: el botón decía
-   * un juego y empezaba otro, y se jugaban 5): se hace desde su línea en Hoy.
+   * sesión ([sessionSummary]).
    */
   fun continueDailyFlow() {
     _lastResult.value = null
@@ -950,8 +865,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       setFlight(null)
       pausedGame = null
       GameSessionStore.clearAll()
-      missionStore.clear()
-      _mission.value = com.example.data.MissionState()
       _currentTab.value = AppTab.HOY
     }
   }

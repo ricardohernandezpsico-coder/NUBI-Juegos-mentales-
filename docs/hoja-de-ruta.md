@@ -1,15 +1,17 @@
-# Hoja de ruta (30-sep)
+# Hoja de ruta (30-sep; tabla de áreas al día el 5-oct)
 
 Acordada con Ricardo el 29/30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena lo que viene.
 
 ## 1. Juegos que faltan (4 áreas desde el 30-sep)
 
-| Área | Hoy | Faltan |
+Hoy la app tiene **18 juegos** (es lo que dice `GameRegistry`; los retirados están en `docs/juegos/descartados.md`):
+
+| Área | Hoy | Falta |
 |---|---|---|
-| Memoria | 5 (Parejas, Secuencia, Bitácora, Rumbo a Casa, Correo Estelar; Ruta del Tesoro se retiró el 4-oct) | – |
-| Atención y velocidad | 5 (Tinta o Palabra, Piloto, Freno, Satélites, Rescate relámpago; Cambio de Chip se retiró el 3-oct y Comparación Instantánea el 4-oct) | – |
-| Razonamiento y números | 4 (Acoplamiento, Carga exacta —antes Cálculo Sereno—, Aterrizaje Lunar y **Engranajes**, nuevo el 5-oct, que ocupa el lugar de Tráfico Estelar; Detective de Series y Tráfico Estelar se retiraron el 4-oct; idea para llegar a 5: «Código secreto», en `docs/ideas-guardadas.md`) | – |
-| Lenguaje | 2 (Anagramas, Lluvia de meteoros) | 1 (La palabra intrusa) |
+| Memoria | 4 (Parejas Ocultas, Rastro de luz —antes Secuencia Lumínica—, Rumbo a Casa y Correo Estelar). Retirados: Ruta del Tesoro (4-oct) y **Bitácora de Misión (5-oct)** | 1: un juego de Memoria que reemplace a Bitácora (id nuevo, en otra tarea) |
+| Atención y velocidad | 5 (Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Radar —«Rescate relámpago»—). Retirados: Cambio de Chip (3-oct) y Comparación Instantánea (4-oct) | – |
+| Razonamiento y números | 4 (Acoplamiento, Carga exacta —antes Cálculo Sereno—, Aterrizaje Lunar y Engranajes: «Taller de reparación», 5-oct). Retirados: Detective de Series y Tráfico Estelar (4-oct); idea para llegar a 5: «Código secreto», en `docs/ideas-guardadas.md` | – |
+| Lenguaje | 5 (En la punta de la lengua —antes Anagramas—, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras y La estrella intrusa) | – |
 
 Dos tipos de juego para llegar sin perder calidad: **estrella** (medida propia al final; 1-2 por área) y **base**
 (sobre `GameControllerBase` + DDA común, como Tinta o Palabra; ~un tercio del trabajo). Todos táctiles, sin voz y
@@ -40,8 +42,8 @@ responda "¿qué descubrí de mí y cómo voy cambiando?". Maqueta: `docs/previe
 2. Plantilla propia de "juego base" (acelera los 12 juegos).
 3. Lenguaje: 2 juegos. Luego Cálculo y Velocidad (3 cada una) y Razonamiento (2).
 4. Cambiar los juegos de la evaluación inicial cuando haya más juegos estrella.
-5. Ricardo prueba en el teléfono los estrella pendientes (Rescate relámpago, Satélites, Bitácora, Rumbo, Correo,
-   Tráfico "lento y lleno").
+5. Ricardo prueba en el teléfono los estrella pendientes (Rescate relámpago, Satélites, Rumbo, Correo). Bitácora de
+   Misión y Tráfico Estelar ya se retiraron.
 
 ## Repositorios externos
 

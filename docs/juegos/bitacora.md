@@ -1,5 +1,7 @@
 # Bitácora de Misión (`bitacora`) — ficha técnica
 
+> **RETIRADA de la app el 5-oct-2026** (pedido de Ricardo; razones y qué se conserva en [descartados.md](descartados.md)). Esta ficha es historia: el código de `Games/Bitacora/` sigue en Unity, pero la app ya no lo lanza ni lee `MissionLog` (se borró).
+
 > Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
 
 **Bitácora de Misión** (`Games/Bitacora/`, id `bitacora`, dominio MEMORIA; primer juego estrella de memoria, 28-sep,

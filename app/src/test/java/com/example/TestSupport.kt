@@ -8,6 +8,31 @@ import org.robolectric.Shadows.shadowOf
 /** Ayudas para las pruebas con Robolectric que crean el ViewModel de verdad (ver GameFlowTest). */
 object TestSupport {
   /**
+   * Regla que repite una prueba (hasta 3 veces, soltando la base entre intentos) si falla con «unable to open database file»: la base de la prueba anterior (o su trabajo de fondo) a veces se cruza
+   * con la siguiente. Solo para pruebas que ya fallaron así sin que el código tuviera culpa; cualquier otro fallo se informa tal cual.
+   */
+  fun retryOnDbFlake(times: Int = 3): org.junit.rules.TestRule = org.junit.rules.TestRule { base, _ ->
+    object : org.junit.runners.model.Statement() {
+      override fun evaluate() {
+        var last: Throwable? = null
+        repeat(times) {
+          try { base.evaluate(); return }
+          catch (e: Throwable) {
+            var c: Throwable? = e
+            var flake = false
+            while (c != null) { if (c is android.database.sqlite.SQLiteCantOpenDatabaseException) flake = true; c = c.cause }
+            if (!flake) throw e
+            last = e
+            resetDatabase()
+            Thread.sleep(300)
+          }
+        }
+        throw last!!
+      }
+    }
+  }
+
+  /**
    * La base de datos es un singleton que guarda el contexto de la primera prueba; Robolectric borra los archivos entre
    * pruebas, así que hay que soltarlo o la segunda prueba usaría una base ya cerrada.
    */
@@ -17,6 +42,8 @@ object TestSupport {
     (field.get(null) as? NeuroVidaDatabase)?.let { runCatching { it.close() } }
     field.set(null, null)
     resetWorkManager()
+    // La carpeta de bases de datos de la prueba puede haber desaparecido (Robolectric la limpia entre pruebas): sin ella la base no se puede abrir.
+    runCatching { androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>().getDatabasePath("neurovida_database").parentFile?.mkdirs() }
   }
 
   /**

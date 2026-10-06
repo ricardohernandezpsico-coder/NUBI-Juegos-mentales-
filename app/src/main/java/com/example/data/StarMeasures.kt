@@ -78,7 +78,6 @@ object StarMeasures {
     MeasureDef("rotation", "acoplamiento", "Tu giro mental en Acoplamiento", "°", "por segundo", lowerIsBetter = false, short = "tu giro mental", compactPattern = "{v}/s", levelDependent = true),
     MeasureDef("multitask", "piloto", "Tu multitarea en Piloto Estelar", "%", "de costo", lowerIsBetter = true, short = "tu multitarea", compactPattern = "{v} costo"),
     MeasureDef("homing", "rumbo", "Tu brújula en Rumbo a Casa", "%", "de casa", lowerIsBetter = true, short = "tu brújula", compactPattern = "a {v}", levelDependent = true),
-    MeasureDef("recall", "bitacora", "Tu memoria en la Bitácora", "%", "recordado", lowerIsBetter = false, short = "tu memoria", compactPattern = "{v}", levelDependent = true),
     MeasureDef("vocab", "meteoros", "Tu vocabulario en Lluvia de meteoros", "%", "reconocido (palabras menos comunes)", lowerIsBetter = false, short = "tu vocabulario", compactPattern = "{v}", levelDependent = true),
     MeasureDef("wpm", "disparate", "Tu lectura en ¿Verdad o disparate?", "", "palabras por minuto", lowerIsBetter = false, short = "tu lectura", compactPattern = "{v} ppm", levelDependent = true),
     MeasureDef("harvest", "cosecha", "Tu cosecha en Cosecha de palabras", "%", "de las comunes", lowerIsBetter = false, short = "tu cosecha", compactPattern = "{v}", levelDependent = true),
@@ -94,7 +93,7 @@ object StarMeasures {
   val gameNames = mapOf(
     "radar" to "Radar", "freno" to "Freno de Emergencia", "satelites" to "Satélites", "aterrizaje" to "Aterrizaje Lunar",
     "acoplamiento" to "Acoplamiento", "piloto" to "Piloto Estelar", "rumbo" to "Rumbo a Casa",
-    "bitacora" to "Bitácora de Misión", "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?", "cosecha" to "Cosecha de palabras", "intrusa" to "La estrella intrusa", "secuencia" to "Rastro de luz", "anagramas" to "En la punta de la lengua", "calculo" to "Carga exacta", "engranajes" to "Engranajes"
+    "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?", "cosecha" to "Cosecha de palabras", "intrusa" to "La estrella intrusa", "secuencia" to "Rastro de luz", "anagramas" to "En la punta de la lengua", "calculo" to "Carga exacta", "engranajes" to "Engranajes"
   )
 
   fun def(key: String) = defs.firstOrNull { it.key == key }

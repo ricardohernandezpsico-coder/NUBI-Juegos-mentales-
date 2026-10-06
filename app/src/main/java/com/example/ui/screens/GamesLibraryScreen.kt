@@ -390,7 +390,7 @@ internal fun GameSheetContent(
       // Cómo quieres jugar: 4 filas cortas; la explicación solo del elegido
       HorizontalLine()
       Text("¿Cómo quieres jugar?", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-      Skill.modesFor(g.id).forEach { m ->
+      PlayMode.entries.forEach { m ->
         val open = Skill.isOpen(m, g.id, if (expertOpen) setOf(g.id) else emptySet())
         val on = m == choice
         val shape = RoundedCornerShape(16.dp)

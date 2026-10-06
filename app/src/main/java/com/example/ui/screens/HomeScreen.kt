@@ -97,7 +97,7 @@ private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)
  * Inicio ("Hoy") con NUBI al centro (29-sep, aprobado por Ricardo; maqueta `docs/previews/nubi-hoy.png`): Nubi con su
  * halo, su frase de la semana en palabras y tres áreas a cada lado con su barra de avance (0-100) y el cambio de la
  * semana dibujado en la barra (ver [AreaProgress]). Tocar un área abre su detalle ([AreaDetail]). Debajo, la acción
- * de hoy (sesión, partida en pausa, Bitácora, punto de partida).
+ * de hoy (sesión, partida en pausa, punto de partida).
  */
 @Composable
 fun HomeScreen(
@@ -114,9 +114,8 @@ fun HomeScreen(
   val progressLog by viewModel.progressLog.collectAsState()
   val pausedGameId by viewModel.pausedGameId.collectAsState()
   val baseline by viewModel.baseline.collectAsState()
-  val mission by viewModel.mission.collectAsState()
   val measures by viewModel.starMeasures.collectAsState()
-  // Reloj de la línea de la Bitácora ("el informe se abre en N min") y de la semana de cada área: cada 30 s.
+  // Reloj de la semana de cada área: cada 30 s.
   var clock by remember { mutableStateOf(System.currentTimeMillis()) }
   LaunchedEffect(Unit) {
     CosmosScroll.offset = 0f
@@ -125,7 +124,6 @@ fun HomeScreen(
       clock = System.currentTimeMillis()
     }
   }
-  val missionStep = remember(mission, dailySession, clock) { viewModel.missionStep(clock) }
   val lang = LocalAppLanguage.current
 
   var openArea by rememberSaveable { mutableStateOf<String?>(null) }
@@ -198,12 +196,6 @@ fun HomeScreen(
       nextGameId = dailySession.gameIds.getOrNull(dailySession.completedCount)?.takeIf { dailySession.completedCount < 3 },
       completed = dailySession.completedCount,
       hasBaseline = baseline != null,
-      missionStep = missionStep,
-      missionMinutesLeft = com.example.data.MissionLog.minutesLeft(mission, clock),
-      missionFromOtherDay = mission.dateKey.isNotEmpty() && mission.dateKey != dailySession.dateKey,
-      archivedTotal = mission.archivedTotal,
-      onTransmit = { viewModel.startMissionTransmission() },
-      onReport = { viewModel.startMissionReport() },
       lang = lang,
       onResume = { viewModel.resumePausedGame() },
       onPlay = { viewModel.startDailySession() },
@@ -422,12 +414,6 @@ private fun TodayAction(
   nextGameId: String?,
   completed: Int,
   hasBaseline: Boolean,
-  missionStep: com.example.data.MissionStep,
-  missionMinutesLeft: Int,
-  missionFromOtherDay: Boolean,
-  archivedTotal: Int,
-  onTransmit: () -> Unit,
-  onReport: () -> Unit,
   lang: com.example.model.AppLanguage,
   onResume: () -> Unit,
   onPlay: () -> Unit,
@@ -436,7 +422,6 @@ private fun TodayAction(
   val paused = pausedGameId?.let { GameRegistry.getById(it) }
   val next = nextGameId?.let { GameRegistry.getById(it) }
   Column(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 8.dp)) {
-    MissionLine(missionStep, missionMinutesLeft, missionFromOtherDay, archivedTotal, completed, onTransmit, onReport)
     val (label, def, action, tag) = when {
       paused != null -> Quad("Tienes una partida en pausa", paused, onResume, "btn_resume_paused")
       next != null -> Quad(if (completed == 0) "Tu sesión de hoy · 3 juegos" else "Tu sesión de hoy · juego ${completed + 1} de 3", next, onPlay, "btn_home_play")
@@ -465,52 +450,6 @@ private fun TodayAction(
           .testTag("btn_home_baseline")
       )
     }
-  }
-}
-
-/**
- * Línea de la Bitácora de Misión en Hoy (texto suelto con su ícono, sin recuadro): dice en qué punto va la misión del
- * día y, cuando hay algo que hacer fuera del flujo de la sesión, se puede tocar.
- */
-@Composable
-private fun MissionLine(
-  step: com.example.data.MissionStep,
-  minutesLeft: Int,
-  fromOtherDay: Boolean,
-  archivedTotal: Int,
-  completed: Int,
-  onTransmit: () -> Unit,
-  onReport: () -> Unit
-) {
-  val (text, action) = when (step) {
-    // La Bitácora es una misión aparte (ya no se mete sola en la sesión de 3 juegos): se toca desde acá.
-    com.example.data.MissionStep.TRANSMISION -> "Bitácora: recibir la transmisión del día" to onTransmit
-    com.example.data.MissionStep.ESPERA ->
-      (if (minutesLeft > 0) "Bitácora: el informe se abre al terminar tu sesión o en $minutesLeft min"
-      else "Bitácora: el informe se abre al terminar tu sesión") to null
-    com.example.data.MissionStep.INFORME ->
-      (if (fromOtherDay) "Bitácora: tienes un informe pendiente" else "Bitácora: tu informe está listo") to onReport
-    com.example.data.MissionStep.AL_DIA ->
-      (if (archivedTotal == 1) "Bitácora al día · 1 hallazgo archivado" else "Bitácora al día · $archivedTotal hallazgos archivados") to null
-  }
-  Row(
-    verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(bottom = 8.dp)
-      .clip(RoundedCornerShape(10.dp))
-      .then(if (action != null) Modifier.clickable(onClick = action) else Modifier)
-      .padding(horizontal = 4.dp, vertical = 4.dp)
-      .testTag("mission_line")
-  ) {
-    com.example.ui.components.GameIcon("bitacora", 30.dp)
-    Spacer(Modifier.width(10.dp))
-    Text(
-      text = text,
-      color = if (action != null) Clay.Sun else OnNightDim,
-      fontSize = 15.sp,
-      fontWeight = if (action != null) FontWeight.SemiBold else FontWeight.Normal
-    )
   }
 }
 

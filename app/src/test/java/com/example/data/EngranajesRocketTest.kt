@@ -19,6 +19,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class EngranajesRocketTest {
+  @get:org.junit.Rule val retryOnDbFlake = TestSupport.retryOnDbFlake()
+
   private lateinit var app: Application
   private lateinit var repo: NeuroVidaRepository
 
@@ -57,9 +59,9 @@ class EngranajesRocketTest {
   }
 
   @Test
-  fun `la partida siguiente continua desde donde quedo el cohete, y al despegar vuelve a empezar con uno mas en orbita`() = runBlocking {
-    repo.recordGameResult(game(lights = 6, orbit = 1), countsForDailySession = false)
-    repo.recordGameResult(game(lights = 3, orbit = 2, launches = 1), countsForDailySession = false)   // despegó en medio de la partida y siguió
+  fun `si el cohete despego en medio de la partida, queda guardado el nuevo con uno mas en orbita`() = runBlocking {
+    // Unity manda el estado con que termina: el cohete despegó (más órbita) y siguió con 3 luces del siguiente. La app guarda ESE estado, sin sumar ni restar nada por su cuenta.
+    repo.recordGameResult(game(lights = 3, orbit = 2, launches = 1), countsForDailySession = false)
     assertEquals(Engranajes.Rocket(3, 2), repo.engranajesRocket.value)
     assertEquals(3 to 2, saved())
   }

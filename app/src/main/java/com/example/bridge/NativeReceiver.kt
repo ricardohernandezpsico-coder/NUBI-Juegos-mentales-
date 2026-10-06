@@ -139,17 +139,6 @@ object NativeReceiver {
     // Solo Acoplamiento: giro mental (°/s, -1 = sin medida) y curva de giro (5 columnas, -1 = sin datos).
     val rotation_speed_dps: Int = -1,
     val rotation_curve_ms: List<Int>? = null,
-    val mem_phase: String = "",
-    val mem_seed: Int = -1,
-    val mem_level: Int = -1,
-    val mem_items: Int = -1,
-    val mem_learned: Int = -1,
-    val mem_learned_mask: Int = -1,
-    val mem_recalled: Int = -1,
-    val mem_recalled_mask: Int = -1,
-    val mem_intrusions: Int = -1,
-    val mem_order_ok: Int = -1,
-    val mem_delay_s: Int = -1,
     // Solo Rumbo a Casa: a qué distancia de casa quedó (% de la distancia que había, -1 = no aplica), dónde quedó cada
     // vuelta (a lo largo y a lo ancho de la vuelta justa, en fracciones de esa distancia), faro (1/0) y perfectas.
     val homing_error_pct: Double = -1.0,
@@ -368,7 +357,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Carga exacta, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "calculo", "engranajes", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "bitacora", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
+      "stroop", "calculo", "engranajes", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
@@ -495,17 +484,6 @@ object NativeReceiver {
       numlineBullseyes = metrics.numline_bullseyes.takeIf { metrics.numline_error_pct >= 0.0 },
       rotationSpeedDps = metrics.rotation_speed_dps.takeIf { it > 0 },
       rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } },
-      memPhase = metrics.mem_phase.takeIf { telemetry.game_id == "bitacora" },
-      memSeed = metrics.mem_seed.takeIf { it >= 0 && telemetry.game_id == "bitacora" },
-      memLevel = metrics.mem_level.takeIf { it > 0 },
-      memItems = metrics.mem_items.takeIf { it > 0 },
-      memLearned = metrics.mem_learned.takeIf { it >= 0 },
-      memLearnedMask = metrics.mem_learned_mask.takeIf { it >= 0 },
-      memRecalled = metrics.mem_recalled.takeIf { it >= 0 },
-      memRecalledMask = metrics.mem_recalled_mask.takeIf { it >= 0 },
-      memIntrusions = metrics.mem_intrusions.takeIf { it >= 0 },
-      memOrderOk = metrics.mem_order_ok.takeIf { it >= 0 },
-      memDelayS = metrics.mem_delay_s.takeIf { it >= 0 },
       homingErrorPct = metrics.homing_error_pct.takeIf { it >= 0.0 }?.toFloat(),
       homingAlong = homing?.let { h -> h.map { it.first } },
       homingLateral = homing?.let { h -> h.map { it.second } },

@@ -81,7 +81,7 @@ class EngranajesTest {
     assertNotNull(StarMeasures.defForGame("engranajes"))
     assertEquals("Engranajes", StarMeasures.gameNames["engranajes"])
     assertEquals(setOf("calculo", "acoplamiento", "aterrizaje", "engranajes"), GameRegistry.allGames.filter { it.domain.name == "RAZONAMIENTO" }.map { it.id }.toSet())
-    assertEquals(19, GameRegistry.allGames.size)
+    assertEquals(18, GameRegistry.allGames.size)
   }
 
   @Test

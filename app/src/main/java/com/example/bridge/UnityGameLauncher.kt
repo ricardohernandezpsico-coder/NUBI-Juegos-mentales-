@@ -45,11 +45,6 @@ object UnityGameLauncher {
     val assessment: Boolean = false,
     val assessment_step: Int = 0,
     val assessment_total: Int = 0,
-    // Solo Bitácora de Misión (ver data/MissionLog.kt): fase, semilla, nivel de la misión y segundos desde la transmisión.
-    val memory_phase: String = "",
-    val memory_seed: Int = 0,
-    val memory_level: Int = 0,
-    val memory_elapsed_s: Int = 0,
     // Cómo se eligió jugar (data/Skill.kt): techo (Suave) o piso (Desafío, Experto) sobre el rating 0..1; -1 = sin límite.
     // "Quitar animaciones" del teléfono: Unity apaga los adornos que se mueven solos (respiración, destellos).
     val reduce_motion: Boolean = false,
@@ -93,10 +88,9 @@ object UnityGameLauncher {
     launchId: String? = null, // una partida en pausa se retoma con SU id (Unity no la reinicia)
     assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
     assessmentTotal: Int = 0,
-    memory: com.example.data.MemoryLaunch? = null, // Bitácora de Misión: transmisión o informe de la misión del día
     mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
     forceTutorial: Boolean = false // solo las herramientas de prueba: abre el tutorial aunque la persona ya haya jugado
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, memory, mode, forceTutorial)
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial)
 
   private fun buildIntent(
     context: Context,
@@ -110,7 +104,6 @@ object UnityGameLauncher {
     launchId: String? = null,
     assessmentStep: Int = 0,
     assessmentTotal: Int = 0,
-    memory: com.example.data.MemoryLaunch? = null,
     mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
     forceTutorial: Boolean = false
   ): Intent {
@@ -132,10 +125,6 @@ object UnityGameLauncher {
         assessment = assessment,
         assessment_step = assessmentStep,
         assessment_total = assessmentTotal,
-        memory_phase = memory?.phase ?: "",
-        memory_seed = memory?.seed ?: 0,
-        memory_level = memory?.level ?: 0,
-        memory_elapsed_s = memory?.elapsedS ?: 0,
         reduce_motion = android.provider.Settings.Global.getFloat(
           context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         ) == 0f,
