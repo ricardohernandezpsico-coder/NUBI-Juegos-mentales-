@@ -31,7 +31,7 @@ h2{font:600 19px var(--f-display);margin:24px 0 10px}
 <div class="wrap">
   <div>
     <h1>Bodega de carga</h1>
-    <p class="lead">El robot de la nave guarda objetos en las escotillas de una bodega redonda. Mira bien dónde queda cada uno: después llegan los pedidos y tienes que abrir la escotilla correcta.</p>
+    <p class="lead">La carga entra a la nave por la esclusa dorada y el robot la guarda en las escotillas de una bodega redonda. Mira bien dónde queda cada cosa: después llegan los pedidos, abres la escotilla correcta y el objeto sale por la esclusa.</p>
 
     <h2>Lo que lo hace distinto</h2>
     <ul class="list">
@@ -130,9 +130,9 @@ const STAGES = [
 ];
 const GRUPO = i => [1,1,2,2,3,3,3,4,4,5,5,5][i];
 const INTROS = {
-  bodega: ['El robot guarda objetos en las escotillas.', 'Mira bien dónde queda cada uno:', 'después te los van a pedir.'],
+  bodega: ['La carga entra por la esclusa dorada.', 'El robot la guarda en las escotillas:', 'mira bien dónde queda cada cosa.'],
   mueve:  ['Ahora el robot cambia una caja de lugar.', 'Síguela con la vista:', 'el objeto va adentro.'],
-  gira:   ['¡La bodega gira!', 'La ventanilla gira con ella:', 'úsala para orientarte.'],
+  gira:   ['¡La bodega gira!', 'La esclusa gira con ella:', 'úsala para orientarte.'],
 };
 const OBJ = [
   ['llave','la llave'], ['campana','la campana'], ['farol','el farol'], ['manzana','la manzana'], ['hongo','el hongo'], ['taza','la taza'],
@@ -161,7 +161,7 @@ function makeRound(st){
   const places=shuffle([...S.hatch.keys()]).slice(0,st.objs);
   S.load=objs.map((o,i)=>({ obj:o, h:places[i] }));
   S.load.forEach(l=>S.hatch[l.h].obj=l.obj);
-  S.asks=shuffle(objs.slice()); S.askI=0; S.landAt={}; S.crate=null; S.found=[]; S.errs=0; S.card=null; S.moving=null; S.beam=null;
+  S.asks=shuffle(objs.slice()); S.askI=0; S.landAt={}; S.crate=null; S.fly=null; S.airAt=0; S.outAt=0; S.found=[]; S.errs=0; S.card=null; S.moving=null; S.beam=null;
 }
 
 // ============================================================ partida
@@ -178,12 +178,17 @@ async function play(){
   await wait(500);
   // el robot guarda cada objeto: haz de luz, se abre, aparece con su nota, se cierra
   for (const l of S.load){
-    const h=S.hatch[l.h], n=nearHatch(l.h); R.tx=n.x; R.ty=n.y; R.ta=n.a; await wait(380);
-    S.beam={ h:l.h, at:performance.now() }; R.sq=.12; beamSound(); await wait(200);
-    h.target=1; doorOpen(); await wait(180);
-    h.show=performance.now(); S.card={ kind:'store', obj:l.obj }; bell(h.note,.06,1.1); emit(posOf(h.pos).x,posOf(h.pos).y,10,60,500,'255,214,120');
-    await wait(1000*slow());
-    h.target=0; doorClose(); S.beamOff=performance.now(); S.beam=null; S.card={ kind:'watch' }; await wait(200);
+    const h=S.hatch[l.h], A=posOf(0);
+    // llega por la esclusa
+    S.card={ kind:'store', obj:l.obj }; S.airAt=performance.now(); arrive(); R.ta=Math.atan2(A.y-C.y,A.x-C.x);
+    S.fly={ obj:l.obj, to:l.h, at:performance.now()+330, dur:750*slow() }; await wait(330);
+    // el robot lo toma con su haz y lo lleva por dentro del anillo hasta su escotilla
+    S.beam={ pt:flyPos, at:performance.now() }; R.sq=.12; beamSound();
+    await wait(330*slow()); h.target=1; doorOpen(); await wait(420*slow());
+    S.fly=null; robotHome(); h.show=performance.now(); bell(h.note,.06,1.1); emit(posOf(h.pos).x,posOf(h.pos).y,10,60,500,'255,214,120');
+    S.beamOff=performance.now(); S.beam=null;
+    await wait(950*slow());
+    h.target=0; doorClose(); S.card={ kind:'watch' }; await wait(200);
   }
   robotHome(); S.card={ kind:'watch' }; await wait(350);
   // el robot cambia cajas de lugar (con la escotilla cerrada: hay que acordarse qué había)
@@ -248,7 +253,7 @@ async function tapHatch(i){
     const first=S.first; S.total++; if (first){ S.firstTry++; S.streak++; S.bestStreak=Math.max(S.bestStreak,S.streak); bell(PENTA[Math.min(9,2+S.streak)]*2,.03,.8,.12); }
     S.found.push({ obj:o, first }); h.obj=null;
     const p=posOf(h.pos); emit(p.x,p.y,first?22:10,first?150:80,700,first?'255,201,74':'200,200,255');
-    G.flyers.push({ obj:o, x0:p.x, y0:p.y, k:S.found.length-1, t:performance.now(), first });
+    const ax=posOf(0); G.flyers.push({ obj:o, x0:p.x, y0:p.y, ax:ax.x, ay:ax.y, k:S.found.length-1, t:performance.now(), first, out:false });
     S.hist.push({ ok:first, secs:(now-S.t0)/1000 });
     await wait(650); h.target=0; doorClose(); S.askI++; await wait(300); ask();
   } else {
@@ -279,6 +284,7 @@ function doorOpen(){ noise(.16,2600,900,.045,3); }
 function doorClose(){ noise(.1,700,250,.06,2); }
 function clank(){ noise(.09,2400,900,.06,4); bell(1174.66,.02,.3); }
 function whoosh(){ noise(.9,300,1500,.05,1.2); }
+function arrive(){ noise(.5,1800,500,.04,1.6); bell(1567.98,.025,.5); }
 function ping(){ bell(1318.5,.03,.5); }
 function beamSound(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(420,t); o.frequency.exponentialRampToValueAtTime(880,t+.25); g.gain.setValueAtTime(.03,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
 function hum(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='triangle'; o.frequency.setValueAtTime(65,t); o.frequency.linearRampToValueAtTime(90,t+.5); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.03,t+.1); g.gain.exponentialRampToValueAtTime(.0001,t+.8); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.82); }
@@ -315,9 +321,27 @@ function drawHull(c, now){
   const N=S.slots+1; for (let k=0;k<N;k++){ const a=-Math.PI/2+(k+.5)*2*Math.PI/N+S.rot; c.fillStyle='#2C3566'; c.beginPath(); c.arc(C.x+Math.cos(a)*(RING+37),C.y+Math.sin(a)*(RING+37),3.2,0,7); c.fill(); }
   c.restore();
 }
+// posición del objeto que viaja de la esclusa a su escotilla, por dentro del anillo
+function flyPos(now){
+  const f=S.fly; if (!f) return S.lastPt||null; const k=reduce?1:Math.max(0,Math.min(1,(now-f.at)/f.dur)), e=easeIO(k);
+  const a0=posOf(0).a, a1=posOf(S.hatch[f.to].pos).a; let d=((a1-a0+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+  const ang=a0+d*e, r=RING-34*Math.sin(Math.PI*e); S.lastPt={ x:C.x+Math.cos(ang)*r, y:C.y+Math.sin(ang)*r, k }; return S.lastPt;
+}
+function drawFly(c, now){
+  if (!S.fly) return; const p=flyPos(now); if (now<S.fly.at){ // asoma en la esclusa
+    const a=posOf(0), k=Math.min(1,(now-S.airAt)/330); drawObj(c,S.fly.obj,a.x,a.y,34*easeBack(k)); return; }
+  R.ta=Math.atan2(p.y-C.y,p.x-C.x); R.tx=C.x+(p.x-C.x)*.2; R.ty=C.y+(p.y-C.y)*.2;   // el robot lo sigue con la mirada y se acerca un poco
+  if (!reduce){ c.globalAlpha=.7; c.drawImage(glow('255,214,120'),p.x-26,p.y-26,52,52); c.globalAlpha=1; }
+  c.save(); c.translate(p.x,p.y); c.rotate(Math.sin(Math.PI*p.k)*.35); drawObj(c,S.fly.obj,0,0,34); c.restore();
+}
 function drawWindow(c, now){
   const p=posOf(0); c.save(); c.translate(p.x,p.y);
+  // destello cuando entra o sale carga
+  const fl = Math.max(S.airAt?1-(now-S.airAt)/600:0, S.outAt?1-(now-S.outAt)/600:0);
+  if (fl>0 && !reduce){ c.globalAlpha=fl; c.drawImage(glow('255,214,120'),-HR-26,-HR-26,2*HR+52,2*HR+52); c.globalAlpha=1; }
   c.fillStyle='#2A2350'; c.beginPath(); c.arc(0,0,HR+6,0,7); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=3; c.stroke();
+  // marcas de esclusa alrededor del aro
+  c.save(); c.rotate(S.rot); c.strokeStyle='rgba(255,201,74,.75)'; c.lineWidth=3; c.setLineDash([7,6]); c.beginPath(); c.arc(0,0,HR+10,0,7); c.stroke(); c.setLineDash([]); c.restore();
   c.save(); c.beginPath(); c.arc(0,0,HR,0,7); c.clip();
   const sky=c.createLinearGradient(0,-HR,0,HR); sky.addColorStop(0,'#06123A'); sky.addColorStop(1,'#1A2D6A'); c.fillStyle=sky; c.fillRect(-HR,-HR,2*HR,2*HR);
   c.fillStyle='#7FD8FF'; c.beginPath(); c.arc(8,8,13,0,7); c.fill(); c.fillStyle='rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(8,8,16,3.5,-.4,0,7); c.fill();
@@ -364,13 +388,13 @@ function drawRobot(c, now){
   // el robot en el centro: mira hacia la escotilla en la que trabaja
   const ang=R.ang, bob = reduce ? 0 : Math.sin(now/520)*2.2+Math.sin(now/1370)*1.2;
   // haz de luz: crece con suavidad, late, lleva chispas, y se apaga sin cortarse
-  const beamDraw=(h,k,a)=>{ const p=posOf(S.hatch[h].pos), x=R.x+(p.x-R.x)*k, y=R.y+(p.y-R.y)*k, w=1+.15*Math.sin(now/60);
+  const beamDraw=(b,k,a)=>{ const p=b.pt ? b.pt(now) : posOf(S.hatch[b.h].pos); if (!p) return; const x=R.x+(p.x-R.x)*k, y=R.y+(p.y-R.y)*k, w=1+.15*Math.sin(now/60);
     c.globalAlpha=a; c.strokeStyle='rgba(127,216,255,.22)'; c.lineWidth=16*w; c.lineCap='round'; c.beginPath(); c.moveTo(R.x,R.y); c.lineTo(x,y); c.stroke();
     c.strokeStyle='rgba(191,233,255,.85)'; c.lineWidth=3; c.beginPath(); c.moveTo(R.x,R.y); c.lineTo(x,y); c.stroke();
     if (!reduce) for (let j=0;j<3;j++){ const f=((now/420)+j/3)%1*k; c.fillStyle='#fff'; c.beginPath(); c.arc(R.x+(p.x-R.x)*f,R.y+(p.y-R.y)*f,2,0,7); c.fill(); }
     c.globalAlpha=1; };
-  if (S.beam){ beamDraw(S.beam.h, reduce?1:ease((now-S.beam.at)/260), 1); S.lastBeamH=S.beam.h; }
-  else if (S.beamOff && S.lastBeamH!==undefined && now-S.beamOff<220 && !reduce) beamDraw(S.lastBeamH, 1, 1-(now-S.beamOff)/220);
+  if (S.beam){ beamDraw(S.beam, reduce?1:ease((now-S.beam.at)/260), 1); S.lastBeam=S.beam.pt ? { pt:()=>S.lastPt } : S.beam; }
+  else if (S.beamOff && S.lastBeam && now-S.beamOff<220 && !reduce) beamDraw(S.lastBeam, 1, 1-(now-S.beamOff)/220);
   // la caja que lleva colgando
   if (S.crate && S.crate.mode==='carry'){ const cx=R.x+Math.sin(R.sw)*34, cy=R.y+Math.cos(R.sw)*34+4; c.strokeStyle='rgba(191,233,255,.6)'; c.lineWidth=2; c.beginPath(); c.moveTo(R.x,R.y+18); c.lineTo(cx,cy-12); c.stroke(); drawCrate(c,cx,cy,R.sw*.8,1); }
   const lean = Math.max(-.22,Math.min(.22,R.vx*.0028)), sq=R.sq, md=now-R.moodAt;
@@ -422,7 +446,7 @@ function drawCard(c, now){
     const k = cd.kind==='ask' ? Math.min(1,easeBack((now-cd.at)/320)) : 1;
     c.fillStyle='#232B57'; c.beginPath(); c.arc(50,93,26,0,7); c.fill();
     drawObj(c, cd.obj, 50, 93, 40*(reduce?1:k));
-    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(cd.kind==='ask' ? 'Pedido' : 'El robot guarda', 88, 78);
+    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(cd.kind==='ask' ? 'Pedido' : 'Llega a la bodega', 88, 78);
     c.fillStyle='#fff'; const t = cd.kind==='ask' ? `¿Dónde está ${OBJ[cd.obj][1]}?` : OBJ[cd.obj][1][0].toUpperCase()+OBJ[cd.obj][1].slice(1);
     c.font=`700 ${fitFont(c,t,W-110,20)}px Fredoka`; c.fillText(t, 88, 102);
   } else {
@@ -430,7 +454,7 @@ function drawCard(c, now){
     if (cd.kind==='done'){ c.textAlign='center'; c.fillStyle= cd.perfect ? '#9FF5D6' : '#FFD6A0'; c.font='700 20px Fredoka'; c.fillText(cd.perfect ? '¡Pedido perfecto!' : '¡Pedido completo!', W/2, 82);
       c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(`${cd.first} de ${cd.n} al primer intento` + (cd.perfect && S.record ? ' · ¡nuevo récord!' : ''), W/2, 106); return; }
     c.textAlign='center'; c.fillStyle='#EDEAFB'; c.font='700 18px Fredoka'; c.fillText(t, W/2, 84);
-    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(cd.kind==='spin' ? 'Fíjate dónde queda la ventanilla' : cd.kind==='move' ? 'Síguela con la vista' : `${S.st.objs} objetos`, W/2, 106);
+    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(cd.kind==='spin' ? 'Fíjate dónde queda la esclusa' : cd.kind==='move' ? 'Síguela con la vista' : `${S.st.objs} objetos`, W/2, 106);
   }
 }
 function drawTray(c, now){
@@ -443,9 +467,13 @@ function drawTray(c, now){
     if (landed){ const la=S.landAt&&S.landAt[i]?now-S.landAt[i]:999, b=la<380&&!reduce?1+.22*Math.sin(Math.PI*la/380)*(1-la/380):1; drawObj(c,f.obj,x,y,26*b); if (f.first){ c.strokeStyle='#9FF5D6'; c.lineWidth=2.6; c.beginPath(); c.moveTo(x+9,y-15); c.lineTo(x+12,y-11); c.lineTo(x+18,y-19); c.stroke(); } } }
 }
 function drawFlyers(c, now){
-  G.flyers=G.flyers.filter(f=>{ const k=(now-f.t)/(reduce?1:600); const n=S.st.objs, gap=8, size=38, x1=W/2-(n*size+(n-1)*gap)/2+f.k*(size+gap)+size/2, y1=546;
+  G.flyers=G.flyers.filter(f=>{ const k=(now-f.t)/(reduce?1:950); const n=S.st.objs, gap=8, size=38, x1=W/2-(n*size+(n-1)*gap)/2+f.k*(size+gap)+size/2, y1=546;
     if (k>=1){ emit(x1,y1,f.first?14:6,80,500,f.first?'159,245,214':'200,200,255'); S.landAt=S.landAt||{}; S.landAt[f.k]=now; return false; }
-    const e=ease(k), x=f.x0+(x1-f.x0)*e, y=f.y0+(y1-f.y0)*e-Math.sin(Math.PI*e)*40;
+    // primero hasta la esclusa (por dentro del anillo), luego sale y baja al carro
+    let x, y, e;
+    if (k<.5){ e=easeIO(k/.5); const mx=(f.x0+f.ax)/2+(C.x-(f.x0+f.ax)/2)*.45, my=(f.y0+f.ay)/2+(C.y-(f.y0+f.ay)/2)*.45;
+      x=(1-e)*(1-e)*f.x0+2*(1-e)*e*mx+e*e*f.ax; y=(1-e)*(1-e)*f.y0+2*(1-e)*e*my+e*e*f.ay; }
+    else { if (!f.out){ f.out=true; S.outAt=now; whoosh(); } e=ease((k-.5)/.5); x=f.ax+(x1-f.ax)*e; y=f.ay+(y1-f.ay)*e-Math.sin(Math.PI*e)*40; }
     if (!reduce){ c.globalAlpha=.7; c.drawImage(glow(f.first?'255,201,74':'200,200,255'),x-24,y-24,48,48); c.globalAlpha=1; }
     c.save(); c.translate(x,y); c.rotate(Math.sin(Math.PI*e)*.5); drawObj(c,f.obj,0,0,36-8*e); c.restore(); return true; });
 }
@@ -505,7 +533,7 @@ function frame(now){
     drawHeader(c, now); drawCard(c, now);
     drawHull(c, now); drawWindow(c, now);
     S.hatch.forEach((h,i)=>drawHatch(c,h,i,now));
-    drawCrateFlight(c, now); drawRobot(c, now);
+    drawCrateFlight(c, now); drawRobot(c, now); drawFly(c, now);
     drawTray(c, now); drawFlyers(c, now); drawToast(c, now);
   }
   G.parts=G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; p.vy+=1; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });

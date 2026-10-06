@@ -5,7 +5,11 @@ unas 20 veces y no me convence; a mi hermana y a un familiar tampoco les gustó�
 a 19.
 
 - **Boceto aprobado:** `docs/previews/bodega-de-carga-boceto.html` (https://claude.ai/artifact/C6ERowzeHeR8zJzFtwLbfN,
-  versión 3: «movimiento con flow» y sin caras que reaccionen). Con `?etapa=N` se entra directo a una etapa.
+  versión 4: «movimiento con flow», sin caras que reaccionen y con la **esclusa de carga**). Con `?etapa=N` se entra
+  directo a una etapa.
+- **Ricardo, sobre el círculo dorado** (la antigua ventanilla): «si es algo estético no le encuentro ningún sentido». Se le
+  dieron dos opciones y eligió la A: convertirlo en la **esclusa de carga**, por donde entra y sale todo («vamos con la
+  A»).
 - **Ricardo, sobre la versión 1:** «me gustó bastante la idea, cómo se ve, la velocidad es bien adecuada… el movimiento
   del robot está demasiado robotizado, con movimientos muy rígidos; igual cuando las monedas dan vueltas [las puertas].
   Hay que darle un flow, que la dinámica sea más suave pero con el mismo estilo. Todo lo demás aprobado».
@@ -18,19 +22,32 @@ a 19.
 
 ## 1. La idea
 
-La bodega de la nave es un **módulo redondo**: escotillas alrededor, una **ventanilla** con un planeta (borde dorado) y un
-**robot** en el centro.
+La bodega de la nave es un **módulo redondo**: escotillas alrededor, la **esclusa de carga** y un **robot** en el centro.
 
-1. **El robot guarda:** el robot se desliza hacia una escotilla y le lanza un haz de luz. La escotilla se abre, el objeto
-   aparece (rebota un poco y flota) mientras arriba se lee su nombre, suena **la nota propia de esa escotilla** y la
-   escotilla se cierra.
+La esclusa ocupa la posición 0 del anillo: un vidrio al espacio con un planeta, borde dorado y un aro de sello punteado
+(**no** rayitas radiales, que parecían un sol). Es la puerta de entrada y salida de la bodega y tiene tres funciones:
+
+- **Entra la carga:** cada objeto llega desde el espacio por la esclusa, con un destello y un sonido de entrada.
+- **Sale el pedido:** cada objeto encontrado sale de la nave por la esclusa antes de caer al carro de reparto.
+- **Es la referencia** cuando la bodega gira, porque gira con ella.
+
+Nada en pantalla es decorativo.
+
+1. **Llega la carga y el robot la guarda:**
+   - El objeto asoma en la esclusa (rebota al aparecer) y la tarjeta dice «Llega a la bodega / La llave».
+   - El robot lo toma con su haz y lo lleva **por dentro del anillo**, en arco y por el camino más corto, hasta su
+     escotilla (0,75 s). El robot lo sigue con la mirada y se acerca un poco.
+   - La escotilla se abre antes de que llegue. El objeto entra, rebota y flota mientras suena **la nota propia de esa
+     escotilla**, y la escotilla se cierra.
+   - Ver el recorrido de la esclusa a la escotilla también ayuda a recordar el lugar.
 2. **El robot cambia cajas de lugar** (etapa 5 en adelante): vuela a una escotilla, saca la caja **cerrada** con su haz,
    la lleva colgando (se mece) por el anillo y la deja en otra escotilla vacía. Hay que recordar qué había adentro.
 3. **La bodega gira** (etapa 8 en adelante): toma un pequeño impulso hacia atrás, gira 2 o 3 posiciones y se asienta
-   suave. La ventanilla gira con ella y sirve de referencia. El robot la sigue con la mirada.
+   suave. La esclusa gira con ella y sirve de referencia. El robot la sigue con la mirada.
 4. **Los pedidos:** «¿Dónde está el farol?», con el objeto dibujado en la tarjeta de arriba. Se toca la escotilla:
-   - **Correcta:** se abre, suena su nota, y el objeto vuela girando al **carro de reparto** de abajo, donde aterriza con
-     un rebote.
+   - **Correcta:** se abre y suena su nota. El objeto viaja por dentro del anillo hasta la **esclusa**, que destella con
+     un soplido (sale de la nave), y de ahí baja en arco al **carro de reparto**, donde aterriza con un rebote (0,95 s en
+     total).
    - **Equivocada:** se abre igual y **muestra qué había ahí** (otro objeto, o «vacía»), tiembla y suena un golpe suave.
      Después la correcta brilla en dorado y se abre sola. **Siempre se aprende dónde estaba.**
    - **El robot no reacciona al desempeño:** no pone caras felices ni tristes ni niega con la cabeza. Es la regla de
@@ -61,7 +78,7 @@ algo se mueve y obliga a reorientarse cuando la bodega gira.
   [DOI](https://doi.org/10.1111/jnp.12330)). De ahí salen dos decisiones: empezar fácil, y que tras un error se abra la
   correcta.
 - **Un punto de referencia facilita reorientarse** después de un giro (Janzen et al., 2020,
-  [DOI](https://doi.org/10.3389/fnhum.2020.00121)). De ahí sale la ventanilla.
+  [DOI](https://doi.org/10.3389/fnhum.2020.00121)). De ahí sale que la esclusa gire con la bodega.
 - **La práctica de memoria mejora la memoria en mayores, con efecto moderado:**
   - el entrenamiento con estrategias da g ≈ 0,41, y se mantiene (g ≈ 0,42) meses después (Chen et al., 2022,
     [DOI](https://doi.org/10.1037/pag0000712); Verhaeghen et al., 1992,
@@ -97,6 +114,13 @@ algo se mueve y obliga a reorientarse cuando la bodega gira.
 - **Mayores:** tiempos ×1,35 (`slow()` en el boceto), para mirar cada objeto y seguir la caja.
 - **Giro:** de 2 o 3 posiciones, en cualquier sentido. Nunca de 4 o más.
 - **Escotilla destino de la caja:** siempre una vacía.
+- **Textos de las tarjetas «NUEVO»** (una vez por instalación):
+
+  | Tarjeta | Texto |
+  |---|---|
+  | bodega | «La carga entra por la esclusa dorada.» / «El robot la guarda en las escotillas:» / «mira bien dónde queda cada cosa.» |
+  | mueve | «Ahora el robot cambia una caja de lugar.» / «Síguela con la vista:» / «el objeto va adentro.» |
+  | gira | «¡La bodega gira!» / «La esclusa gira con ella:» / «úsala para orientarte.» |
 
 **Grupos de etapa para la pantalla final (5):**
 
@@ -116,12 +140,12 @@ algo se mueve y obliga a reorientarse cuando la bodega gira.
   - «Mira dónde guarda cada cosa» / «N objetos»;
   - «El robot guarda» / el nombre del objeto, con su dibujo;
   - «El robot cambia una caja de lugar» / «Síguela con la vista»;
-  - «¡La bodega gira!» / «Fíjate dónde queda la ventanilla»;
+  - «¡La bodega gira!» / «Fíjate dónde queda la esclusa»;
   - «Pedido» / «¿Dónde está el farol?», con borde dorado;
   - «¡Pedido perfecto!» o «¡Pedido completo!» / «N de M al primer intento · ¡nuevo récord!».
 - **La bodega:**
   - anillo de radio 125 u con centro en (180, 335), escotillas de radio 27 y marco de 5;
-  - posición 0 = la ventanilla;
+  - posición 0 = la esclusa de carga;
   - remaches del anillo que giran con la bodega.
 - **Carro de reparto**, abajo: un círculo por objeto del pedido.
   - Al llegar un objeto aterriza con un rebote.
