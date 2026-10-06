@@ -26,7 +26,7 @@ achicándose si no cabía. Esto es el arreglo de sistema (no un parche por juego
 | Dos orillas (`stroop`) | la cinta «Responde: TINTA / PALABRA» y la tarjeta con la palabra; el hueco son solo los 4 botones de color (antes era todo el escenario y no dejaba dónde poner a Nubi) |
 | En la punta de la lengua (`anagramas`) | la tarjeta de la definición (pasos «¡La tengo!», letras y «Una ayuda»; en el primero ES el hueco) |
 | Engranajes (`engranajes`) | la antena (que se ve en los tres pasos) y, en el último, el cartel de la antena |
-| Bodega de carga (`bodega`) | la tarjeta de arriba (en los pasos de mirar y de tocar la escotilla pedida); el hueco es el área de la bodega (sin el borde del casco: así queda lugar para Nubi) y, al tocar, la escotilla pedida. Durante el tutorial el carro no lleva textos |
+| Bodega de carga (`bodega`) | la tarjeta de arriba (en todos los pasos); el hueco es el área de la bodega (sin el borde del casco: así queda lugar para Nubi) en los pasos de explicar, mirar y «así quedó la carga», y al tocar, la escotilla pedida. Durante el tutorial el carro no lleva textos. Orden: explicar → mirar → hacer (6-oct) |
 | Freno de emergencia (`freno`) y Lluvia de meteoros (`meteoros`) | ninguna declarada: el hueco es lo único de lo que habla el texto; lo demás lo respeta la detección automática |
 
 ## Textos (todos en `CoachTexts.cs`)

@@ -235,8 +235,8 @@ namespace NeuroVida.Games.Bodega
 
         public static string StreakLine(int streak) => "Racha ×" + streak;
 
-        /// <summary>El aviso de abajo al terminar un pedido imperfecto: con un solo error «Casi perfecto», con más «Pedido completo».</summary>
-        public static string ToastTitle(int errors) => errors == 1 ? "Casi perfecto" : "Pedido completo";
+        /// <summary>El aviso de abajo al terminar un pedido con errores: dice cuántos fueron en ESE pedido (sin adjetivos que se contradigan con la tarjeta: la tarjeta ya dice «Pedido completo»).</summary>
+        public static string ToastTitle(int errors) => errors == 1 ? "1 error en este pedido" : errors + " errores en este pedido";
 
         private static readonly string[] Tips =
         {

@@ -37,7 +37,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Muestra la marca de version bajo la cuenta regresiva. Antes dependia de <c>Debug.isDebugBuild</c>,
         /// pero la exportacion de Unity es de produccion y nunca se veia. Poner en false antes de publicar en la tienda.</summary>
         public const bool ShowStyleStamp = true;
-        public const string StyleStamp = "estilo 5-oct · bodega";
+        public const string StyleStamp = "estilo 6-oct · bodega 2";
 
         private static readonly Color[] StepColors = { NeuroStyle.Sky, NeuroStyle.Grape, NeuroStyle.Coral };
         private static readonly float[] StepWarp = { 0.07f, 0.15f, 0.27f };
@@ -137,7 +137,14 @@ namespace NeuroVida.Games.Shared
             _title.color = NeuroStyle.Ink;
             _title.GetComponent<Shadow>().enabled = false; // texto tinta sobre crema: sin sombra
 
-            _subtitle = NewText("Subtitle", _root, new Vector2(0f, -262f * _u), new Vector2(960f, 90f * _u), 26, TextAnchor.MiddleCenter, clay: false);
+            _subtitle = NewText("Subtitle", _root, new Vector2(0f, -262f * _u), new Vector2(960f, 100f * _u), 26, TextAnchor.MiddleCenter, clay: false);
+            // el subtítulo ocupa el ancho de la pantalla menos un margen y, si no cabe en una línea, pasa a una segunda (antes se salía por los lados y se veía cortado)
+            _subtitle.horizontalOverflow = HorizontalWrapMode.Wrap;
+            var subRect = _subtitle.rectTransform;
+            subRect.anchorMin = new Vector2(0f, 0.5f);
+            subRect.anchorMax = new Vector2(1f, 0.5f);
+            subRect.sizeDelta = new Vector2(-2f * 28f * _u, 100f * _u);
+            subRect.anchoredPosition = new Vector2(0f, -262f * _u);
 
             if (ShowStyleStamp)
             {

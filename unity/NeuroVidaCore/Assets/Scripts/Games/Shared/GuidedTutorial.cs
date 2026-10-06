@@ -36,6 +36,10 @@ namespace NeuroVida.Games.Shared
         /// <summary>SOLO EN EL EDITOR (smoke de «Engranajes»): la partida real (sin tutorial) se juega sola, para que el arranque de prueba pase por todo el recorrido de una máquina (armar, cambiar,
         /// arrancar, veredicto, luz del cohete). En el teléfono no existe.</summary>
         public static bool EditorAutoPlayGame;
+        /// <summary>SOLO EN EL EDITOR (smoke): un toque «de verdad» en <see cref="EditorPressPos"/> (píxeles de pantalla) que ven TODOS los que leen toques durante el cuadro <see cref="EditorPressFrame"/>,
+        /// como un dedo. Sirve para comprobar que lo que un paso del tutorial ilumina se puede tocar. En el teléfono no existe.</summary>
+        public static Vector2 EditorPressPos;
+        public static int EditorPressFrame = -1;
 #endif
 
         /// <summary>SOLO EN EL EDITOR (smoke de «Engranajes»): true cuando la partida real lleva más de 1,5 s esperando la jugada y el arranque de prueba pide jugarla sola. En el teléfono siempre da false.</summary>
@@ -259,6 +263,9 @@ namespace NeuroVida.Games.Shared
         public static bool TryPress(out Vector2 pos)
         {
             pos = Vector2.zero;
+#if UNITY_EDITOR
+            if (EditorPressFrame == Time.frameCount) { pos = EditorPressPos; return true; }
+#endif
             if (Input.touchCount > 0)
             {
                 var t = Input.GetTouch(0);

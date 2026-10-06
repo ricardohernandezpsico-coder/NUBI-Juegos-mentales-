@@ -369,6 +369,22 @@ namespace NeuroVida.Games.Bodega.Tests
         }
 
         [Test]
+        public void TheErrorsAreCountedPerOrder_ThePerfectVerdictIsNeverCarriedOverFromAnEarlierOrder()
+        {
+            // Ricardo (6-oct): «completé uno perfecto y decía casi perfecto»: el contador de errores se quedaba con los de los pedidos anteriores
+            string main = Read("BodegaGameController.cs");
+            int a = main.IndexOf("private IEnumerator PlayOrder()"), b = main.IndexOf("private IEnumerator StorePhase", a);
+            Assert.Greater(a, 0);
+            Assert.Greater(b, a);
+            string body = main.Substring(a, b - a);
+            int reset = body.IndexOf("_errs = 0;"), end = body.IndexOf("EndOrder(order)");
+            Assert.Greater(reset, 0, "cada pedido empieza con 0 errores");
+            Assert.Greater(end, reset, "y se reinicia ANTES de que termine el pedido");
+            int ask = body.IndexOf("AskPhase(order)");
+            Assert.Greater(ask, reset, "y antes de los pedidos de objetos, que es donde se cuentan los errores");
+        }
+
+        [Test]
         public void TheGuidedRound_NeverTouchesTheScoreTheDdaTheRecordOrTheCounts()
         {
             string main = Read("BodegaGameController.cs");

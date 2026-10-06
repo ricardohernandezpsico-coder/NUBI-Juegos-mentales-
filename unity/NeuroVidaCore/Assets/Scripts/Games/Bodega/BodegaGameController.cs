@@ -156,6 +156,7 @@ namespace NeuroVida.Games.Bodega
         {
             var order = BodegaContract.Generate(_dda.PresentedLevel, _rng);
             SetUpOrder(order);
+            _errs = 0;                       // los errores se cuentan POR PEDIDO: «perfecto» es un pedido sin errores, aunque antes hubiera habido otros
             UpdateHud();
             foreach (var intro in BodegaContract.IntrosFor(order.Level))
             {
@@ -607,8 +608,10 @@ namespace NeuroVida.Games.Bodega
             _guided = true;
             while (!_baked) yield return null;                         // el arte se hornea mientras Nubi se presenta
             var coach = t.Coach;
-            // «Nubi entrenadora»: un pedido de la etapa 1 (2 objetos). 1) la carga entra por la esclusa y el robot la guarda (la bodega entera es el hueco; la tarjeta queda protegida);
-            // 2) toque de verdad en la escotilla pedida; 3) un error de muestra: se abre la que tocaron, y la correcta brilla y se abre sola.
+            // «Nubi entrenadora», en tres tiempos (Ricardo, 6-oct: «primero que diga qué hay que hacer con el fondo oscuro, luego se mueva y se ilumine, y recién ahí pida elegir»):
+            // 1) EXPLICAR: la bodega quieta e iluminada y Nubi grande con una sola frase; un toque en la bodega empieza; 2) MIRAR: la carga entra por la esclusa y el robot la guarda, con una frase
+            // CORTA (la larga se leía mientras la carga pasaba y nadie veía adónde iba) y, al terminar, todas las escotillas se abren un momento: así queda a la vista dónde quedó cada cosa;
+            // 3) HACER: toque de verdad en la escotilla pedida y un error de muestra (se abre la que tocaron y la correcta brilla y se abre sola).
             var script = new GuidedScript(1);                          // un pedido; «Saltar tutorial» lo termina
             var easy = BodegaContract.Generate(1, _rng);
             SetUpOrder(easy);
@@ -617,19 +620,37 @@ namespace NeuroVida.Games.Bodega
             yield return Motion.Hold(0.4f);
             bool ok = !t.Skipped;
             var card = new[] { coach.Zone(() => coach.RectOf(_cardBg.rectTransform)) };
+            System.Func<Rect> wholeHold = () => coach.AroundOf(_hull.rectTransform, Vector2.one * BoardUnits(316f));
             Coroutine store = null, demo = null;
+            if (ok)
+            {
+                yield return StartCoroutine(coach.Touch(wholeHold, CoachTexts.Bodega.Begin, keep: card));
+                ok = !t.Skipped;
+            }
             if (ok)
             {
                 _storeDone = false;
                 store = StartCoroutine(StorePhase(easy));
-                yield return StartCoroutine(coach.Watch(() => coach.AroundOf(_hull.rectTransform, Vector2.one * BoardUnits(316f)), CoachTexts.Bodega.Watch, () => _storeDone, 16f, keep: card));
+                yield return StartCoroutine(coach.Watch(wholeHold, CoachTexts.Bodega.Watch, () => _storeDone, 16f, keep: card));
                 ok = !t.Skipped;
+            }
+            if (ok)
+            {
+                float showUntil = GameClock.Time + 2.6f;
+                OpenAllHatches(easy, true);
+                yield return StartCoroutine(coach.Watch(wholeHold, CoachTexts.Bodega.Reveal, () => GameClock.Time >= showUntil, 6f, keep: card));
+                OpenAllHatches(easy, false);
+                ok = !t.Skipped;
+                if (ok) yield return Motion.Hold(0.6f);
             }
             if (ok)
             {
                 BeginAsk(easy.Asks[0]);
                 _inputOn = false;
                 int target = easy.HatchOf(easy.Asks[0]);
+#if UNITY_EDITOR
+                StartCoroutine(ProbeHatchTap(coach, target));
+#endif
                 yield return StartCoroutine(coach.Touch(() => coach.AroundOf(_hv[target].Frame.rectTransform, Vector2.one * BoardUnits(76f)), CoachTexts.Bodega.Ask(BodegaContract.ObjectWithArticle[easy.Asks[0]]), circle: true, keep: card));
                 ok = !t.Skipped;
                 if (ok)
@@ -663,6 +684,39 @@ namespace NeuroVida.Games.Bodega
             t.EndPractice();
         }
         // </guided>
+
+        /// <summary>Solo para el tutorial: abre (o cierra) todas las escotillas que guardan algo, para que se vea dónde quedó cada cosa.</summary>
+        private void OpenAllHatches(Order o, bool open)
+        {
+            float now = GameClock.Time;
+            for (int k = 0; k < o.Hatches; k++)
+            {
+                var h = _hv[k];
+                if (open && h.Obj_ < 0) continue;
+                h.Target = open ? 1f : 0f;
+                if (open) h.ShowAt = now;
+            }
+            PlayClip(open ? BodegaSounds.Open() : BodegaSounds.Close(), 0.6f);
+        }
+
+#if UNITY_EDITOR
+        /// <summary>SOLO EN EL EDITOR (smoke del tutorial): da un toque «de verdad» en el centro de la escotilla pedida, donde la persona tocaría, y comprueba que el paso se cierra. Si el hueco iluminado no
+        /// coincidiera con la escotilla dibujada, el tutorial se «pegaría» sin dejar tocar lo que pide (Ricardo, 6-oct); así se vería antes de llegar al teléfono.</summary>
+        private IEnumerator ProbeHatchTap(NubiCoach coach, int hatch)
+        {
+            if (!GuidedTutorial.EditorAutoContinue) yield break;
+            float w = 0f;
+            while (!coach.Active && w < 3f) { w += GameClock.RealDeltaTime; yield return null; }
+            w = 0f;
+            while (coach.Active && w < 0.7f) { w += GameClock.RealDeltaTime; yield return null; }
+            if (!coach.Active) yield break;
+            GuidedTutorial.EditorPressPos = RectTransformUtility.WorldToScreenPoint(null, _hv[hatch].Frame.rectTransform.position);
+            GuidedTutorial.EditorPressFrame = Time.frameCount + 1;
+            for (int i = 0; i < 4; i++) yield return null;
+            if (coach.Active) Debug.LogError("[SmokeTest] Bodega: un toque en el centro de la escotilla pedida NO cerró el paso del tutorial (el hueco no coincide con la escotilla)");
+            else Debug.Log("[SmokeTest] Bodega: un toque en el centro de la escotilla pedida cerró el paso del tutorial");
+        }
+#endif
 
         /// <summary>Una escotilla que NO tiene el objeto pedido (para mostrar el error de muestra): la primera con otra cosa, o si no una vacía.</summary>
         private static int WrongHatchFor(Order o, int right)

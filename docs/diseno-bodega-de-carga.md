@@ -221,17 +221,17 @@ boceto: `spring(x, v, objetivo, dt, frecuencia, amortiguación)`, integrado cada
 - **Nota común:** «Medida de esta partida… No es un diagnóstico».
 - Se agrega su justificación a `docs/medidas-juegos-estrella.md`, con las referencias de la sección 2.
 
-## 8. Tutorial (NubiCoach, ≤ 30 s, se aprende haciendo)
+## 8. Tutorial (NubiCoach, se aprende haciendo)
 
-Sobre un pedido de la etapa 1 (2 objetos), con el sistema de zonas `keep`:
+Sobre un pedido de la etapa 1 (2 objetos), con el sistema de zonas `keep`. Reordenado el 6-oct tras probarlo Ricardo en el teléfono: primero se explica, después se mira y recién ahí se pide elegir.
 
-1. **Notice.** El hueco es la bodega mientras el robot guarda; la zona protegida es la tarjeta. Nubi dice: «Mira dónde
-   guarda cada cosa».
-2. **Touch.** El hueco es la escotilla correcta; la zona protegida es la tarjeta del pedido. Nubi dice: «¿Dónde está la
-   llave? Toca su escotilla». Es un toque real.
-3. **Notice.** Nubi dice: «Si fallas, se abre la correcta: así aprendes dónde estaba» (acortado: el globo admite 62 caracteres).
+1. **Touch (explicar).** La bodega queda quieta e iluminada y la tarjeta protegida. Nubi dice: «Toca la bodega: te enseño cómo guarda la carga el robot». Un toque dentro de la bodega empieza.
+2. **Watch (mirar).** La carga entra por la esclusa y el robot la guarda. Nubi dice solo: «Fíjate en qué escotilla guarda cada cosa» (la frase larga de antes se leía mientras la carga pasaba y no se alcanzaba a ver adónde iba).
+3. **Watch (así quedó).** Al terminar, todas las escotillas con carga se abren ~2,6 s para que se vea dónde quedó cada cosa; Nubi dice «Así quedó la carga. Ahora cierro las escotillas». Solo en el tutorial: en el juego nunca se muestra todo a la vez.
+4. **Touch (hacer).** El hueco es la escotilla correcta; la zona protegida es la tarjeta del pedido. Nubi dice: «¿Dónde está la llave? Toca su escotilla». Es un toque real.
+5. **Watch (error de muestra).** Se abre la que «tocaron» y la correcta brilla y se abre sola; Nubi dice: «Si fallas, se abre la correcta: así aprendes dónde estaba» (acortado: el globo admite 62 caracteres).
 
-Después: «¡Listo! Ahora va en serio».
+Después: «¡Listo! Ahora va en serio». En el smoke del Editor, el paso 4 recibe un toque «de verdad» en el centro de la escotilla pedida (`ProbeHatchTap`) y falla si no se cierra: así un hueco que no coincida con la escotilla se detecta antes del teléfono.
 
 ## 9. Originalidad y riesgos
 
@@ -261,3 +261,11 @@ Desvíos del boceto y por qué:
 - **Pantallas bajas:** la bodega nunca ocupa todo el alto: siempre queda un respiro de 36 dp (escala ≤ 0,95 en 16:9), que usan Nubi y su globo en el tutorial.
 - **Tutorial:** el hueco del paso 1 es la zona de las escotillas (316 dp, sin el borde del casco), la tarjeta queda protegida y no hay textos del carro; el paso 3 muestra solo un error de muestra (se abre la equivocada y la correcta brilla y se abre) mientras Nubi lo explica.
 - **Telemetría:** al terminar, Unity manda en `StroopSessionMetrics`: `correct_trials` = objetos al primer intento, `total_trials` = objetos encontrados, `bod_group`, `bod_best_streak`, `bod_biggest`, `bod_best` (el récord), `bod_ms` y `bod_new` (1 si se superó el récord); la app manda `bod_best` en cada partida.
+
+### Cambios del 6-oct (primera prueba en el teléfono)
+
+- **Errores por pedido:** el contador de errores no se reiniciaba entre pedidos: después del primer error todos los pedidos salían «con errores» (el aviso decía «Casi perfecto» a un pedido perfecto) y además no contaban como perfectos para «tu bodega más grande» ni para el récord. Ahora se reinicia al empezar cada pedido (`PlayOrder`), con una prueba que lo vigila.
+- **Aviso al terminar un pedido con errores:** ya no usa adjetivos que se contradigan con la tarjeta («Casi perfecto» junto a «Pedido completo»): dice cuántos errores hubo en ESE pedido («1 error en este pedido»).
+- **Cuenta regresiva:** el subtítulo («Recuerda dónde guarda cada cosa el robot») era una sola línea más ancha que la pantalla y se veía cortado. Ahora ocupa el ancho de la pantalla menos 28 dp de margen y pasa a una segunda línea si no cabe (pieza común `CountdownScreen`: vale para todos los juegos).
+- **Tutorial:** reordenado en explicar → mirar → hacer (sección 8).
+

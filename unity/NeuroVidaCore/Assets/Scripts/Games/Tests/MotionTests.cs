@@ -305,6 +305,22 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
+        public void Countdown_el_subtitulo_largo_ocupa_el_ancho_de_la_pantalla_con_margen_y_pasa_a_otra_linea()
+        {
+            // el subtítulo de «Bodega de carga» se veía cortado: era una sola línea más ancha que la pantalla
+            var parent = NewArea("Pantalla", 1080f, 2400f);
+            new CountdownScreen(parent, 3f);
+            var sub = parent.Find("CountdownScreen/Subtitle").GetComponent<Text>();
+            Assert.AreEqual(HorizontalWrapMode.Wrap, sub.horizontalOverflow, "sin ajuste de línea se sale de la pantalla");
+            float w = sub.rectTransform.rect.width;
+            Assert.LessOrEqual(w, 1080f - 2f * 28f * 3f + 0.5f, "con un margen de 28 dp a cada lado");
+            Assert.Greater(w, 700f, "y no queda angosto");
+            var small = NewArea("Chica", 720f, 1280f);       // otra pantalla: el ancho sigue a la pantalla, no a una cifra fija
+            new CountdownScreen(small, 2f);
+            Assert.AreEqual(720f - 2f * 28f * 2f, small.Find("CountdownScreen/Subtitle").GetComponent<Text>().rectTransform.rect.width, 0.5f);
+        }
+
+        [Test]
         public void FinishCurtain_con_ReduceMotion_termina_sin_chispas_ni_rebote()
         {
             var parent = NewArea();

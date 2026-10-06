@@ -92,7 +92,9 @@ namespace NeuroVida.Games.Shared
         /// <summary>Bodega de carga (pantalla: la bodega con su esclusa y las escotillas, y la tarjeta de arriba).</summary>
         public static class Bodega
         {
-            public const string Watch = "La carga entra por la esclusa: mira dónde la guarda el robot";
+            public const string Begin = "Toca la bodega: te enseño cómo guarda la carga el robot";
+            public const string Watch = "Fíjate en qué escotilla guarda cada cosa";
+            public const string Reveal = "Así quedó la carga. Ahora cierro las escotillas";
             public static string Ask(string objectWithArticle) => "¿Dónde está " + objectWithArticle + "? Toca su escotilla";
             public const string Wrong = "Si fallas, se abre la correcta: así aprendes dónde estaba";
         }
@@ -144,7 +146,9 @@ namespace NeuroVida.Games.Shared
             yield return ("engranajes", "motor", Engranajes.Motor);
             yield return ("engranajes", "arrancar", Engranajes.Start);
 
+            yield return ("bodega", "empezar", Bodega.Begin);
             yield return ("bodega", "esclusa", Bodega.Watch);
+            yield return ("bodega", "así quedó", Bodega.Reveal);
             foreach (var name in new[] { "la llave", "la campana", "el farol", "la manzana", "el hongo", "la taza", "el paraguas", "el libro", "la gema", "el reloj de arena", "la pluma", "la bellota" })
                 yield return ("bodega", "toca " + name, Bodega.Ask(name));
             yield return ("bodega", "error", Bodega.Wrong);
