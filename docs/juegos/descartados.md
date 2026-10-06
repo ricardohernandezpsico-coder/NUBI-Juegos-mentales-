@@ -79,7 +79,7 @@ estación de su color): la misma mecánica con otro arte. Razonamiento pasó de 
 
 **Bitácora de Misión (RETIRADA, 5-oct-2026)**, id `bitacora` (Memoria, «memoria episódica con recuerdo diferido»): una transmisión de la sonda con hallazgos en planetas y, más tarde, un informe de qué había en cada planeta y en qué
 orden. Razón, en palabras de Ricardo: «lo he jugado por lo menos unas 20 veces y no me convence; se lo pasé a mi hermana y a un familiar y tampoco les gustó. No lo quiero tener en mi aplicación». Memoria pasó de 5 a 4 juegos (Parejas Ocultas,
-Rastro de luz, Rumbo a Casa y Correo Estelar) y la app, de 19 a 18, hasta que llegue un juego de Memoria que lo reemplace (con id nuevo, en otra tarea).
+Rastro de luz, Rumbo a Casa y Correo Estelar) y la app, de 19 a 18 hasta que llegó su reemplazo el mismo día: **Bodega de carga** (`bodega`, id nuevo; ver `docs/diseno-bodega-de-carga.md`), con lo que Memoria volvió a 5 y la app a 19.
 - **El id `bitacora` queda RESERVADO** (no se reutiliza): `GameRegistry.retiredDomains`.
 - **Datos de quien ya lo jugó: NO se borran ni se migran**: las partidas y el progreso siguen en Room y en `skill`, su medida «tu memoria» (clave `recall`) sigue en `star_measures` sin leerse, y la misión del día y la colección
   («hallazgos archivados») siguen en las preferencias `mission_log`, que SIGUEN en el respaldo (`backup_rules.xml`, `data_extraction_rules.xml`; «Borrar datos» las limpia). No se muestra ni cuenta para «Explorador», las ligas más altas, la liga

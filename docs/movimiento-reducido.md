@@ -296,6 +296,15 @@ su veredicto (verde con ✓ o coral), lo que se marca al equivocarse (el brillo 
 tiempos (la cascada, la espera de después —1,9 s si acertó y 4,8 s si no— y el despegue duran lo mismo: son esperas por reloj, `GameClock`, no animaciones). La tarjeta «NUEVO» y los avisos aparecen con un fundido corto; el
 despegue, sin vuelo: el cohete simplemente ya no está y el texto «¡Despegue!» queda 1,2 s.
 
+**Bodega de carga (id `bodega`, 5-oct)** — `Bodega/BodegaGameController*.cs`, `BodegaMotion.cs`
+
+Escrito ya con la regla: todo movimiento decorativo pasa por `Motion.Decorative`. El «flow» (resortes amortiguados con el `dt` real) es movimiento decorativo: con «quitar animaciones» NO hay resortes, flotación del
+robot, inclinación, antena con retraso, caja que se mece, chispas del haz, destello de la esclusa, brillo de la junta de las puertas, temblor de la escotilla equivocada, rebote del objeto al aparecer, sombra que respira
+ni arco de luz: todo llega a su lugar AL INSTANTE (el robot, las puertas, la carga que va de la esclusa a su escotilla, la caja que cambia de lugar y el objeto que sale hacia el carro). SE QUEDAN: las escotillas
+se abren y se cierran (el cambio de estado se ve), la caja se ve en su escotilla nueva, la bodega aparece YA girada al terminar el giro, el objeto se ve en su escotilla y en el carro, la escotilla correcta queda con su
+brillo dorado quieto (la pista del error) y «vacía» se lee igual. Los tiempos de mirar NO cambian: guardar (0,33 + 0,33 + 0,42 + 0,95 s por objeto), cada caja (≈ 4 s), el giro (1,5 s) y las pausas del error
+(0,75 + 0,25 + 0,7 s) son `Motion.Hold`, esperas por reloj (`GameClock`), no animaciones: sin esos tiempos la tarea cambiaría (los mayores los llevan ×1,35 aparte).
+
 **Acoplamiento** — `Acoplamiento/DockingGameController.cs`
 
 | Línea | Qué hace | Clase | Resp. | Cambio | Hecho |

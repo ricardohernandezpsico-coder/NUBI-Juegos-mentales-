@@ -227,5 +227,16 @@ namespace NeuroVida.Contracts
         public int engr_orbit = -1;
         public int engr_launches = -1;
         public int engr_ms = -1;
+
+        /// <summary>Solo «Bodega de carga» (id <c>bodega</c>; los objetos encontrados al primer intento van en <c>correct_trials</c> y los encontrados en <c>total_trials</c>): el grupo de etapa más alto
+        /// (1..5: pocos objetos, más escotillas, cajas que se mueven, la bodega gira, todo junto), la racha más larga, el pedido más grande sin errores de esta partida, el récord (el mayor de todos,
+        /// que la app guarda) y el tiempo medio por objeto en ms. -1 = no aplica.</summary>
+        public int bod_group = -1;
+        public int bod_best_streak = -1;
+        public int bod_biggest = -1;
+        public int bod_best = -1;
+        public int bod_ms = -1;
+        /// <summary>1 si en esta partida se superó el récord (pedido perfecto más grande que el guardado), 0 si no; -1 = no aplica.</summary>
+        public int bod_new = -1;
     }
 }

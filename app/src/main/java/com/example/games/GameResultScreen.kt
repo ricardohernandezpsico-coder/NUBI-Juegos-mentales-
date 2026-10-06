@@ -83,7 +83,7 @@ import kotlin.random.Random
  */
 object ResultPhrases {
   /** Juegos cuyo puntaje y medida NO usan rapidez: ni tiempo de reacción en el motor ni una medida en ms o por segundo. */
-  val NO_SPEED_GAMES = setOf("secuencia", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes")
+  val NO_SPEED_GAMES = setOf("secuencia", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes", "bodega")
 
   /**
    * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono: lo que cambia con la preferencia de la persona
@@ -758,6 +758,41 @@ fun GameResultScreen(
       }
       eng.paceLine(result.engrMs, engTotal)?.let {
         Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_pace"))
+      }
+    }
+
+    // Bodega de carga (pantalla final, docs/diseno-bodega-de-carga.md §7): «Tu bodega». «Encontraste X de N objetos al primer intento», la etapa más alta (de 5), la racha más larga, tu bodega
+    // más grande de hoy (el pedido más grande sin errores), tu récord (con «¡Nuevo récord!» si lo superaste) y, con 3 o más objetos, el ritmo. Cada dato aparece UNA vez; sin recuadros.
+    val bodGroup = result.bodGroup
+    if (bodGroup != null) {
+      val bod = com.example.data.Bodega
+      val bodTotal = result.totalTrials
+      Spacer(Modifier.height(14.dp))
+      Text("Tu bodega", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = bod.spoken(result.correctAnswers, bodTotal) }.testTag("bodega_headline"),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Text("Al primer intento", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.Bottom) {
+          Text("${result.correctAnswers.coerceIn(0, maxOf(bodTotal, 0))} de $bodTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
+          Text("objetos", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))
+        }
+      }
+      bod.groupLine(bodGroup)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_group"))
+      }
+      bod.streakLine(result.bodBestStreak, bodTotal)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_streak"))
+      }
+      bod.biggestLine(result.bodBiggest)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_biggest"))
+      }
+      bod.recordLine(result.bodBest, result.bodNewRecord)?.let {
+        Text(it, color = if (result.bodNewRecord == true) Clay.Sun else TextSoft, fontSize = if (result.bodNewRecord == true) 15.sp else 14.sp, fontWeight = if (result.bodNewRecord == true) FontWeight.SemiBold else FontWeight.Normal, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_record"))
+      }
+      bod.paceLine(result.bodMs, bodTotal)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_pace"))
       }
     }
 

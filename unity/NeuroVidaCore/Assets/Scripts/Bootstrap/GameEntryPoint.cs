@@ -19,6 +19,7 @@ using NeuroVida.Games.Bitacora;
 using NeuroVida.Games.Rumbo;
 using NeuroVida.Games.Correo;
 using NeuroVida.Games.Engranajes;
+using NeuroVida.Games.Bodega;
 
 namespace NeuroVida.Bridge
 {
@@ -58,6 +59,7 @@ namespace NeuroVida.Bridge
         [SerializeField] private HomingGameController homingGameController;
         [SerializeField] private MailGameController mailGameController;
         [SerializeField] private EngranajesGameController engranajesGameController;
+        [SerializeField] private BodegaGameController bodegaGameController;
 
         /// <summary>Los 9 juegos arman su interfaz una sola vez para 1080x1920 vertical: al girar el teléfono se
         /// desarmaban. Se fija la orientación antes de cargar la escena, además de Player Settings (Portrait) y del
@@ -214,6 +216,16 @@ namespace NeuroVida.Bridge
                     }
                     engranajesGameController.gameObject.SetActive(true);
                     engranajesGameController.StartSession(config);
+                    break;
+                case BodegaGameController.GameId:
+                    if (bodegaGameController == null)
+                    {
+                        var go = new GameObject("BodegaGameController");
+                        go.transform.SetParent(transform, false);
+                        bodegaGameController = go.AddComponent<BodegaGameController>();
+                    }
+                    bodegaGameController.gameObject.SetActive(true);
+                    bodegaGameController.StartSession(config);
                     break;
                 case PuntaGameController.GameId:
                     if (anagramGameController == null)

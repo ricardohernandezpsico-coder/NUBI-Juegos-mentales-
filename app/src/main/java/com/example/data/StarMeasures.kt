@@ -86,6 +86,7 @@ object StarMeasures {
     MeasureDef("carga", "calculo", "Tus cargas sin pista en Carga exacta", "%", "de las cargas, sin pista", lowerIsBetter = false, short = "las cargas que logras sin pista", compactPattern = "{v}", levelDependent = true),
     // Clave `taller` (no `engranajes`): el juego se rehízo el 5-oct y su medida mide otra cosa; los puntos viejos (clave `engranajes`) quedan guardados pero ya no se leen.
     MeasureDef("taller", "engranajes", "Tus máquinas arregladas en Engranajes", "%", "de las máquinas, arregladas", lowerIsBetter = false, short = "las máquinas que arreglas", compactPattern = "{v}", levelDependent = true),
+    MeasureDef("bodega", "bodega", "Tus objetos al primer intento en Bodega de carga", "%", "de los objetos, al primer intento", lowerIsBetter = false, short = "los objetos que encuentras al primer intento", compactPattern = "{v}", levelDependent = true),
     MeasureDef("trail", "secuencia", "Tu rastro en Rastro de luz", "", "luces seguidas", lowerIsBetter = false, short = "tu rastro", compactPattern = "{v} luces", levelDependent = true),
     MeasureDef("pending", "correo", "Tu memoria para lo pendiente", "%", "de encargos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}", levelDependent = true)
   )
@@ -93,7 +94,7 @@ object StarMeasures {
   val gameNames = mapOf(
     "radar" to "Radar", "freno" to "Freno de Emergencia", "satelites" to "Satélites", "aterrizaje" to "Aterrizaje Lunar",
     "acoplamiento" to "Acoplamiento", "piloto" to "Piloto Estelar", "rumbo" to "Rumbo a Casa",
-    "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?", "cosecha" to "Cosecha de palabras", "intrusa" to "La estrella intrusa", "secuencia" to "Rastro de luz", "anagramas" to "En la punta de la lengua", "calculo" to "Carga exacta", "engranajes" to "Engranajes"
+    "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?", "cosecha" to "Cosecha de palabras", "intrusa" to "La estrella intrusa", "secuencia" to "Rastro de luz", "anagramas" to "En la punta de la lengua", "calculo" to "Carga exacta", "engranajes" to "Engranajes", "bodega" to "Bodega de carga"
   )
 
   fun def(key: String) = defs.firstOrNull { it.key == key }

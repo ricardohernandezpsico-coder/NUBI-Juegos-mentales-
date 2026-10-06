@@ -4,7 +4,7 @@
 
 # Nubi
 
-**Entrenamiento cognitivo diario: 18 juegos cortos, 4 áreas y una dificultad que se ajusta a ti.**
+**entrenamiento cognitivo diario: 19 juegos cortos, 4 áreas y una dificultad que se ajusta a ti.**
 
 App Android (Kotlin + Jetpack Compose) con los juegos en Unity embebido. En desarrollo activo, todavía sin publicar.
 
@@ -49,7 +49,7 @@ Cada juego se puede jugar en cuatro modos: **Suave**, **A tu medida**, **Desafí
 Desafío). Solo las partidas a tu medida y los desafíos superados mueven tu avance. Cómo se calcula:
 [`docs/dificultad-y-avance.md`](docs/dificultad-y-avance.md).
 
-## Los 18 juegos
+## Los 19 juegos
 
 Los marcados con ★ son **juegos estrella**: además del puntaje, al final muestran una medida propia de esa partida
 (por ejemplo "tu freno", "tu seguimiento" o "tu brújula interna"), con su respaldo en
@@ -61,6 +61,7 @@ Los marcados con ★ son **juegos estrella**: además del puntaje, al final mues
 | Parejas Ocultas | Memoria | Memorizar un tablero de cartas y encontrar las parejas |
 | Rumbo a Casa ★ | Memoria | Volver a la base sin verla, sabiendo solo el camino que hiciste |
 | Correo Estelar ★ | Memoria | Acordarte de entregar un encargo o avisar por radio en el momento justo, mientras vuelas |
+| Bodega de carga ★ | Memoria | Recordar dónde guardó cada cosa el robot en una bodega redonda: la carga entra por la esclusa, a veces cambia una caja de lugar y a veces la bodega gira |
 | Tinta o Palabra | Atención | Responder al color de la tinta o a la palabra, según la regla del momento |
 | Piloto Estelar ★ | Atención | Guiar una nave con un pulgar y atrapar señales con el otro |
 | Freno de Emergencia ★ | Atención | Lanzar cohetes rápido, pero frenar a tiempo cuando aparece el ¡ALTO! |

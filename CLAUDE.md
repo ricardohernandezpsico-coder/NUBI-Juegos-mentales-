@@ -13,7 +13,7 @@
 > visible (se comprobó el 1-oct en `strings.xml` y en la interfaz). En los documentos, "Nubi" nombra la app y "NeuroVida" solo
 > aparece en identificadores o cuando se habla del nombre viejo.
 
-App de estimulación cognitiva para Android: 18 juegos cortos en 4 áreas (Memoria [4 tras retirar Ruta del Tesoro el 4-oct y Bitácora de Misión el 5-oct; viene un reemplazo] · Atención [foco y velocidad] · Razonamiento [lógica y números, 4 juegos: Engranajes (5-oct) ocupa el lugar de los retirados Detective de Series y Tráfico Estelar] · Lenguaje;
+App de estimulación cognitiva para Android: 19 juegos cortos en 4 áreas (Memoria [5: Ruta del Tesoro y Bitácora de Misión se retiraron el 4 y el 5-oct, y Bodega de carga ocupa el lugar de Bitácora desde el 5-oct] · Atención [foco y velocidad] · Razonamiento [lógica y números, 4 juegos: Engranajes (5-oct) ocupa el lugar de los retirados Detective de Series y Tráfico Estelar] · Lenguaje;
 de 6 a 4 el 30-sep, Room v12), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
 Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
@@ -35,7 +35,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Modos para iterar sin verificar todo cada vez: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 5-oct · taller`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 5-oct · bodega`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
   UnityEngine mínimo y vuelca PNG; `compose.py` y `juegos.py` arman láminas) y `tools/previews/*.py` (réplicas PIL
   de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina.
@@ -112,7 +112,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
   `GameFeel` (sonidos sintetizados y vibración), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
   (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `LivesHud`, `PressScale`, sprites varios, y el **tutorial guiado común** (`GuidedTutorial` + `NubiTeacherSprite`;
-  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = Rastro de luz, Freno, Aterrizaje, Meteoros, Tinta o Palabra, En la punta de la lengua, Carga exacta y Engranajes; «Cómo se juega» en la pausa; cómo sumar otro en `docs/diseno-rastro-de-luz.md`). Nubi y su globo se colocan sin tapar el hueco, las zonas protegidas que declara cada paso ni ningún texto del juego (`CoachLayout`, textos en `CoachTexts`; `docs/tutoriales-con-nubi.md`).
+  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = Rastro de luz, Freno, Aterrizaje, Meteoros, Tinta o Palabra, En la punta de la lengua, Carga exacta, Engranajes y Bodega de carga; «Cómo se juega» en la pausa; cómo sumar otro en `docs/diseno-rastro-de-luz.md`). Nubi y su globo se colocan sin tapar el hueco, las zonas protegidas que declara cada paso ni ningún texto del juego (`CoachLayout`, textos en `CoachTexts`; `docs/tutoriales-con-nubi.md`).
 
 ## Juegos (índice)
 
@@ -124,6 +124,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 |---|---|---|---|---|---|
 | Parejas Ocultas | `parejas` | Memoria | `Games/Parejas/` | — (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | — |
 | Rastro de luz (antes Secuencia Lumínica) | `secuencia` | Memoria | `Games/Secuencia/` | [docs/diseno-rastro-de-luz.md](docs/diseno-rastro-de-luz.md) | `Trail.kt` |
+| Bodega de carga (nuevo, 5-oct; ocupa el lugar de Bitácora de Misión con otro id; la esclusa de carga entra y saca todo) | `bodega` | Memoria | `Games/Bodega/` | [docs/diseno-bodega-de-carga.md](docs/diseno-bodega-de-carga.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `Bodega.kt` |
 | ~~Bitácora de Misión~~ **RETIRADA el 5-oct-2026** (Ricardo: «no me convence»; la app ya no la lanza, el código de Unity se queda, el historial se conserva; ver `docs/juegos/descartados.md`) | `bitacora` | (Memoria) | `Games/Bitacora/` | [docs/juegos/bitacora.md](docs/juegos/bitacora.md) | — |
 | Rumbo a Casa | `rumbo` | Memoria | `Games/Rumbo/` | [docs/juegos/rumbo.md](docs/juegos/rumbo.md) | `Homing.kt` |
 | Correo Estelar | `correo` | Memoria | `Games/Correo/` | [docs/juegos/correo.md](docs/juegos/correo.md) | `Mail.kt` |
@@ -188,7 +189,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
   resultado pendiente lo procesa el ViewModel al volver. Si se toca `NeuroVidaViewModel` o `GameSessionStore`, correr `flow/GameFlowTest`
   y `bridge/GameSessionStoreTest` antes de instalar (reproducir: Opciones de desarrollador → «No conservar actividades»).
 - Respaldo: solo el PROGRESO (base de datos y preferencias `skill`, `star_measures`, `progress_log`, `league_events`, `achievements`,
-  `mission_log`, `profile_extra` — incluye `result_focus` y `color_vision` —, `atlas`, `punta_words` —las palabras azules de En la punta de la lengua—, `engranajes_rocket` —las luces y los cohetes en órbita de Engranajes—). Pasajero (NO se respalda): `paused_game`, `game_session`, `unity_results`, `library_focus`, `first_flight`. **Si se agrega un archivo de preferencias nuevo**, `BackupRulesTest` falla hasta que se sume
+  `mission_log`, `profile_extra` — incluye `result_focus` y `color_vision` —, `atlas`, `punta_words` —las palabras azules de En la punta de la lengua—, `engranajes_rocket` —las luces y los cohetes en órbita de Engranajes—, `bodega_record` —el récord de Bodega de carga: la bodega más grande sin errores—). Pasajero (NO se respalda): `paused_game`, `game_session`, `unity_results`, `library_focus`, `first_flight`. **Si se agrega un archivo de preferencias nuevo**, `BackupRulesTest` falla hasta que se sume
   a `res/xml/backup_rules.xml` y `data_extraction_rules.xml` o a `transient` de la prueba.
 - Room: al subir `version`: entidad → `Migration(N, N+1)` en `NeuroVidaDatabase.MIGRATIONS` → compilar (genera `schemas/<N+1>.json`) →
   correr pruebas (`MigrationTest`).
@@ -199,11 +200,11 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 395 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 414 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel usan `TestSupport` (suelta el singleton de la base entre pruebas y espera a que
   el hilo principal publique el resultado).
-- Unity EditMode: 453 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados, colocación de Nubi `CoachLayoutTests`) + 46 arranques de smoke (los 19 juegos de Unity, las 3 versiones cortas y los tutoriales: los de 8 juegos corren en 3 formas de pantalla —20:9, 18:9, 16:9— y fallan si Nubi, su globo o «Saltar tutorial» tapan algo; ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`).
+- Unity EditMode: 486 (contratos de cada juego, `AdaptiveDifficultyTests`, Parejas, perfil por edad, Rastro de luz, tutoriales guiados, colocación de Nubi `CoachLayoutTests`) + 50 arranques de smoke (los 20 juegos de Unity, las 3 versiones cortas y los tutoriales: los de 8 juegos corren en 3 formas de pantalla —20:9, 18:9, 16:9— y fallan si Nubi, su globo o «Saltar tutorial» tapan algo; ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`).
 - Léxico de Lluvia de meteoros: 11 pruebas del filtro de nombres propios en `tools/lexico/test_propios.py` (`python -m unittest test_propios`, desde `tools/lexico`).
 - Banco de definiciones de «En la punta de la lengua» (reemplaza a Anagramas): 16 pruebas en `tools/punta/test_banco.py` (`python -m unittest test_banco`, desde `tools/punta`; ~1 s). Diseño: `docs/diseno-punta-de-la-lengua.md`.
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).

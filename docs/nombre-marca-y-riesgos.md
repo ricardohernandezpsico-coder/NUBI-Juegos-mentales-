@@ -376,6 +376,16 @@ de uso libre (rompecabezas de poleas y engranajes de los libros de física y de 
 Elevate (búsqueda del 4-oct). Lo propio es arreglar con un número fijo de cambios y la idea de «aguas abajo» de una bifurcación, junto con el cohete, los carteles, el arte y los sonidos. Nombre, arte, escena del cohete y
 sonidos propios. Va a la lista del abogado como juego nuevo (comparar el aspecto y la jugada con los juegos de lógica mecánica de otras apps antes de publicar).
 
+## Juego nuevo: «Bodega de carga» (5-oct)
+
+Juego nuevo de Memoria (id `bodega`; ocupa el lugar de Bitácora de Misión, con otro id: `bitacora` queda reservado). El robot de la nave guarda objetos en las escotillas de una bodega redonda; la carga entra por la
+esclusa; después piden los objetos y se toca la escotilla que lo tiene. **Nombre NUEVO a revisar:** «Bodega de carga» es una expresión común del español; sumarla a la búsqueda oficial de marca (clases 9 y 41).
+**Parecidos revisados:** «Memory Matrix» de Lumosity (recordar qué casillas de una cuadrícula se encienden: acá no hay cuadrícula, hay objetos distintos en un anillo que gira), «Memory Serves» (llevar la cuenta de
+maletas: otra tarea) y «Tidal Treasures» (detectar el objeto nuevo: otra tarea; fue la propuesta C, descartada). **El test PAL de CANTAB** (Cambridge Cognition) usa el mismo paradigma clásico de ubicación de objetos,
+de uso libre en la investigación; el nombre, el arte, los sonidos, la bodega que gira, la caja que cambia de lugar, la esclusa de carga y la nota de cada escotilla son propios. **Va a la lista del abogado** (comparar el aspecto y la
+jugada con los juegos de memoria de otras apps y, por separado, el nombre «PAL» y el de la batería CANTAB, que NO se usan en la app). Regla de patentes: el robot NO reacciona al desempeño (nada de caras felices o tristes,
+saltos ni negar con la cabeza: Akili). Símbolos neutros: sin estrellas con puntas, medias lunas ni cruces; la estrella de mar, la copa y el ancla de Bitácora no se reusaron.
+
 ## Nombre nuevo de Cálculo Sereno: «Carga exacta» (4-oct)
 
 Cálculo Sereno se reemplazó por **Carga exacta** (id interno `calculo`, que no cambia): el reactor de la nave pide una carga y se juntan celdas de energía de a dos con + − × ÷ hasta llegar. Se retiró

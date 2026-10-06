@@ -439,6 +439,31 @@ todo lo que sigue». Nunca se dice que el juego previene el deterioro ni que «m
 **Por qué:** planificar, prever consecuencias antes de actuar y seguir varias cadenas a la vez (un cambio antes de una bifurcación mueve todas las piezas que siguen; uno dentro de una rama, solo esa) es razonamiento sobre causa y
 efecto y simulación mental; que todo esté a la vista (sin regla escondida) evita la frustración. Se juzga el resultado, no el camino. La medida no se compara con estudios: no hay una referencia con esta misma condición.
 
+## Bodega de carga (id `bodega`, nuevo el 5-oct; ocupa el lugar de Bitácora de Misión): "Encontraste X de N objetos al primer intento" y "Tu bodega"
+
+**Qué mide, de verdad:** cuántos de los objetos que te pidieron encontraste **al primer intento**, es decir, sin tocar antes otra escotilla. La carga entra por la esclusa y el robot la guarda en las escotillas de una
+bodega redonda; a veces cambia una caja de lugar y a veces la bodega gira; después piden los objetos uno por uno. Es memoria de ubicación (saber qué cosa quedó dónde), el paradigma clásico de la tarea de aprendizaje
+asociado objeto-lugar de la batería CANTAB (test PAL: se abren cajas y después hay que recordar dónde estaba cada figura). No es «tu memoria» en general ni un diagnóstico: es esta partida, con estos objetos. Se guarda
+como medida propia (`bodega`, % de objetos al primer intento) para ver su evolución, comparable solo entre partidas a tu medida y de etapa parecida (el nivel sube cuando aciertas: por eso la medida depende del nivel).
+Acompañan: la etapa más alta (de 5 grupos: pocos objetos, más escotillas, cajas que se mueven, la bodega gira y todo junto), tu racha más larga al primer intento, **tu bodega más grande hoy** (el pedido más grande
+sin errores) y **tu récord** (la bodega más grande de siempre; se guarda en `bodega_record`, que va en el respaldo, y solo sube con pedidos perfectos). El ritmo (segundos por objeto) solo se dice con 3 objetos o más.
+
+**Cómo se lee:** la cifra grande es «X de N». Nada cae ni apura dentro de un pedido: mirar con calma no se penaliza (no usa tiempo de reacción) y a las personas mayores los tiempos de mirar (guardar, cajas, giro) les
+duran ×1,35. Si algún objeto no salió a la primera, el consejo es concreto: «Imagina cada objeto dentro de su escotilla y dile su nombre en voz baja». Nunca se dice que el juego previene el deterioro ni se nombran
+enfermedades; al pie va la nota común «No es un diagnóstico».
+
+**Por qué (PubMed, revisado el 5-oct):**
+- El test PAL de CANTAB usa el mismo paradigma; separó Alzheimer de controles con sensibilidad 92 % y especificidad 86 % y se correlacionó con el MoCA (r = 0,8) (Hicks et al., 2020). Funciona en línea y sin
+  supervisión con 14.528 personas (Ashford et al., 2024); la queja subjetiva de memoria predijo cuánto bajaba el rendimiento en la tarea (Kang et al., 2025); su baja con la edad se relaciona con el volumen del lóbulo
+  temporal medial (Wearn et al., 2021). Hay normas por edad para el aprendizaje de ubicaciones, de 50 a 89 años (St-Hilaire et al., 2025). **Eso respalda la medida, no se le dice a la persona.**
+- Aprender sin errores ayuda a los mayores: en una cómoda virtual con objetos cotidianos recordaron mejor cuando no se equivocaban al aprender (Scheper et al., 2020) y en Alzheimer inicial pasó lo mismo (Scheper et
+  al., 2023). De ahí salen dos decisiones: empezar fácil y que, tras un error, la escotilla equivocada muestre qué había y la correcta brille y se abra sola.
+- Un punto de referencia facilita reorientarse después de un giro (Janzen et al., 2020): la esclusa gira con la bodega y sirve de referencia.
+- La práctica de memoria mejora la memoria en mayores con efecto moderado: el entrenamiento con estrategias da g ≈ 0,41 y se mantiene (g ≈ 0,42) meses después (Chen et al., 2022; Verhaeghen et al., 1992), y entrenar
+  memoria de trabajo en personas de 75 a 85 años transfirió a tareas cotidianas y a la representación espacial (Borella et al., 2019). Decir el nombre en voz baja e imaginar el objeto en su lugar son estrategias de
+  codificación (Bower, 1970).
+- La medida no se compara con estudios: no hay una referencia con esta misma condición (objetos propios, esclusa, cajas y giro).
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -519,4 +544,14 @@ efecto y simulación mental; que todo esté a la vista (sin regla escondida) evi
 - Stroop, J. R. (1935). Studies of interference in serial verbal reactions. *Journal of Experimental Psychology*, 18, 643–662. doi:10.1037/h0054651
 - Machado, G. M., Oliveira, M. M., y Fernandes, L. A. F. (2009). A physiologically-based model for simulation of color vision deficiency. *IEEE Transactions on Visualization and Computer Graphics*, 15, 1291–1298. doi:10.1109/TVCG.2009.113
 - Cowan, N. (2001). The magical number 4 in short-term memory: a reconsideration of mental storage capacity. *Behavioral and Brain Sciences*, 24, 87–114.
-  doi:10.1017/s0140525x01003922
+- Para Bodega de carga (los títulos completos se ven en cada DOI; aquí solo autor, año y para qué se usa):
+  - Hicks et al. (2020), test PAL de CANTAB y Alzheimer (sensibilidad, especificidad, MoCA): https://doi.org/10.1017/S1041610220003841
+  - Ashford et al. (2024), el mismo paradigma en línea y sin supervisión, 14.528 personas: https://doi.org/10.14283/jpad.2023.117
+  - Kang et al. (2025), queja subjetiva de memoria y cambio en la tarea, 16.683 personas: https://doi.org/10.1186/s13195-024-01641-2
+  - Wearn et al. (2021), la tarea con la edad y el volumen del lóbulo temporal medial: https://doi.org/10.1016/j.neuroimage.2021.118214
+  - St-Hilaire et al. (2025), normas por edad (50 a 89 años) del aprendizaje de ubicaciones m-LLT: https://doi.org/10.1093/arclin/acaf009
+  - Scheper et al. (2020), aprender sin errores en adultos mayores con una cómoda virtual: https://doi.org/10.1007/s40520-020-01603-2
+  - Scheper et al. (2023), lo mismo en Alzheimer inicial: https://doi.org/10.1111/jnp.12330
+  - Janzen et al. (2020), un punto de referencia ayuda a reorientarse: https://doi.org/10.3389/fnhum.2020.00121
+  - Chen et al. (2022), entrenamiento con estrategias, g ≈ 0,41 (https://doi.org/10.1037/pag0000712), y Verhaeghen et al. (1992), g ≈ 0,42 meses después (https://doi.org/10.1037//0882-7974.7.2.242)
+  - Borella et al. (2019), memoria de trabajo en personas de 75 a 85 años: https://doi.org/10.1016/j.jagp.2019.01.210

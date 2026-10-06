@@ -21,7 +21,7 @@ object UnityGameLauncher {
 
   /** Juegos con tutorial guiado (ronda guiada propia) y «Cómo se juega» en la pausa. Rastro de luz fue el primero; Freno, Aterrizaje y Meteoros se sumaron el 3-oct
    *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
-  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes")
+  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega")
 
   /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
   fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =
@@ -55,6 +55,8 @@ object UnityGameLauncher {
     // Solo «Engranajes»: las luces del cohete que la persona lleva (0..9) y los cohetes que ya despegaron (son progreso: la app los guarda y Unity devuelve los nuevos).
     val engr_lights: Int = 0,
     val engr_orbit: Int = 0,
+    // Solo «Bodega de carga»: el récord de la persona (la bodega más grande que recordó sin errores, en objetos): es progreso, la app lo guarda y Unity devuelve el nuevo.
+    val bod_best: Int = 0,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -132,6 +134,7 @@ object UnityGameLauncher {
         punta_pending = if (gameId == "anagramas") com.example.data.Punta.encode(com.example.NeuroVidaApplication.instance.repository.puntaPending.value) else "",
         engr_lights = if (gameId == "engranajes") com.example.NeuroVidaApplication.instance.repository.engranajesRocket.value.lights else 0,
         engr_orbit = if (gameId == "engranajes") com.example.NeuroVidaApplication.instance.repository.engranajesRocket.value.orbit else 0,
+        bod_best = if (gameId == "bodega") com.example.NeuroVidaApplication.instance.repository.bodegaRecord.value else 0,
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f

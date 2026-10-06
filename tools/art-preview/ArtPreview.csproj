@@ -22,6 +22,9 @@
     <Compile Include="$(Src)/Shared/ClayRaster.cs" />
     <Compile Include="$(Src)/Engranajes/EngranajesContract.cs" />
     <Compile Include="$(Src)/Engranajes/EngranajesSprites.cs" />
+    <Compile Include="$(Src)/Bodega/BodegaContract.cs" />
+    <Compile Include="$(Src)/Bodega/BodegaLayout.cs" />
+    <Compile Include="$(Src)/Bodega/BodegaSprites.cs" />
     <Compile Include="$(Src)/Parejas/SymbolSprite.cs" />
     <Compile Include="$(Src)/Parejas/CardSprites.cs" />
     <Compile Include="$(Src)/Secuencia/HeartSprite.cs" />

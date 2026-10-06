@@ -74,7 +74,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "rumbo", "correo",
-  "secuencia", "parejas", "stroop", "anagramas", "calculo", "engranajes", "meteoros", "disparate", "cosecha", "intrusa"
+  "secuencia", "parejas", "stroop", "anagramas", "calculo", "engranajes", "bodega", "meteoros", "disparate", "cosecha", "intrusa"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -323,6 +323,19 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(circle(big, 7f), Cream, border = 3.5f, shadow = false)
       clay(gearPath(small, 18f, 11f, 7, 20f), Clay.Sun, gloss = true)
       clay(circle(small, 4.5f), Cream, border = 3f, shadow = false)
+    }
+    "bodega" -> {
+      // Bodega de carga: el módulo redondo (lila) con su esclusa dorada arriba, cinco escotillas crema alrededor y el robot en el centro (un disco crema con su visor).
+      val c = Offset(50f, 50f)
+      clay(circle(c, 41f), Clay.Grape, gloss = true)
+      for (i in 0 until 6) {
+        val a = (-Math.PI / 2.0 + i * Math.PI / 3.0).toFloat()
+        val p = Offset(c.x + cos(a) * 28f, c.y + sin(a) * 28f)
+        if (i == 0) clay(circle(p, 9f), Clay.Sun, border = 3.5f, shadow = false)
+        else clay(circle(p, 7.5f), Cream, border = 3.5f, shadow = false)
+      }
+      clay(circle(c, 12f), Cream, border = 3.5f, shadow = false)
+      drawCircle(Clay.Sky, 4.2f, c)
     }
     "calculo" -> {
       // Carga exacta: el reactor (aro con luces y un núcleo dorado) y tres celdas de energía debajo.

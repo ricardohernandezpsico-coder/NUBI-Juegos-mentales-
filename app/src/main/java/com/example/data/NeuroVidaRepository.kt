@@ -218,6 +218,21 @@ class NeuroVidaRepository(
     rocketPrefs.edit().putInt("lights", next.lights).putInt("orbit", next.orbit).apply()
   }
 
+  // El récord de «Bodega de carga»: la bodega más grande (en objetos) que la persona recordó sin errores. Es progreso: SharedPreferences que VA en el respaldo (`bodega_record`). La app lo manda a Unity en
+  // cada partida (`bod_best`) y Unity devuelve el nuevo al terminar; solo sube con pedidos perfectos (lo asegura Unity) y aquí nunca baja.
+  private val bodegaPrefs = context.getSharedPreferences("bodega_record", Context.MODE_PRIVATE)
+  private val _bodegaRecord = MutableStateFlow(Bodega.mergeRecord(bodegaPrefs.getInt("best", 0), null))
+  val bodegaRecord: StateFlow<Int> = _bodegaRecord.asStateFlow()
+
+  /** Guarda el récord con que terminó una partida de Bodega de carga (en cualquier modo). */
+  private fun recordBodega(result: GamePlayResult) {
+    if (result.gameId != "bodega") return
+    val next = Bodega.mergeRecord(_bodegaRecord.value, result.bodBest)
+    if (next == _bodegaRecord.value) return
+    _bodegaRecord.value = next
+    bodegaPrefs.edit().putInt("best", next).apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -439,6 +454,7 @@ class NeuroVidaRepository(
       "anagramas" -> "punta" to Punta.mark(r.puntaSolo, Punta.total(r.puntaSolo, r.puntaPista, r.puntaLetras, r.puntaVista))
       "calculo" -> "carga" to Carga.mark(r.cargaAlone, r.totalTrials)
       "engranajes" -> "taller" to (if (r.engrEtapa != null) Engranajes.mark(r.correctAnswers, r.totalTrials) else null)
+      "bodega" -> "bodega" to (if (r.bodGroup != null) Bodega.mark(r.correctAnswers, r.totalTrials) else null)
       "secuencia" -> "trail" to Trail.mark(r.rasBestLen)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
@@ -857,6 +873,8 @@ class NeuroVidaRepository(
     recordPunta(result)
     // El cohete de Engranajes también, en cualquier modo.
     recordEngranajes(result)
+    // El récord de Bodega de carga también, en cualquier modo.
+    recordBodega(result)
     outcome
   }
 
@@ -938,6 +956,8 @@ class NeuroVidaRepository(
     _puntaPending.value = emptyList()
     rocketPrefs.edit().clear().apply()
     _engranajesRocket.value = Engranajes.rocket(0, 0)
+    bodegaPrefs.edit().clear().apply()
+    _bodegaRecord.value = 0
     retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()

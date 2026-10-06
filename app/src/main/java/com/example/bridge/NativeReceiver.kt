@@ -228,7 +228,14 @@ object NativeReceiver {
     val engr_lights: Int = -1,
     val engr_orbit: Int = -1,
     val engr_launches: Int = -1,
-    val engr_ms: Int = -1
+    val engr_ms: Int = -1,
+    // Solo «Bodega de carga» (-1 = sin dato): grupo de etapa más alto (1..5), racha más larga, pedido más grande sin errores de la partida, récord de siempre y tiempo medio por objeto (ms).
+    val bod_group: Int = -1,
+    val bod_best_streak: Int = -1,
+    val bod_biggest: Int = -1,
+    val bod_best: Int = -1,
+    val bod_ms: Int = -1,
+    val bod_new: Int = -1
   )
 
   @JsonClass(generateAdapter = true)
@@ -357,7 +364,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Carga exacta, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "calculo", "engranajes", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
+      "stroop", "calculo", "engranajes", "bodega", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
@@ -561,7 +568,13 @@ object NativeReceiver {
       engrLights = metrics.engr_lights.takeIf { telemetry.game_id == "engranajes" && it >= 0 },
       engrOrbit = metrics.engr_orbit.takeIf { telemetry.game_id == "engranajes" && it >= 0 },
       engrLaunches = metrics.engr_launches.takeIf { telemetry.game_id == "engranajes" && it >= 0 },
-      engrMs = metrics.engr_ms.takeIf { telemetry.game_id == "engranajes" && it > 0 }
+      engrMs = metrics.engr_ms.takeIf { telemetry.game_id == "engranajes" && it > 0 },
+      bodGroup = metrics.bod_group.takeIf { telemetry.game_id == "bodega" && it >= 1 },
+      bodBestStreak = metrics.bod_best_streak.takeIf { telemetry.game_id == "bodega" && it >= 0 },
+      bodBiggest = metrics.bod_biggest.takeIf { telemetry.game_id == "bodega" && it >= 0 },
+      bodBest = metrics.bod_best.takeIf { telemetry.game_id == "bodega" && it >= 0 },
+      bodMs = metrics.bod_ms.takeIf { telemetry.game_id == "bodega" && it > 0 },
+      bodNewRecord = metrics.bod_new.takeIf { telemetry.game_id == "bodega" && it >= 0 }?.let { it == 1 }
     )
   }
 }

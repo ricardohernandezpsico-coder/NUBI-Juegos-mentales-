@@ -77,6 +77,14 @@ object GameRegistry {
       iconEmoji = "🔮"
     ),
     GameDefinition(
+      id = "bodega",
+      title = "Bodega de carga",
+      domain = DomainType.MEMORIA,
+      subtitle = "Recuerda dónde guardó cada cosa el robot",
+      instruction = "La carga entra por la esclusa y el robot la guarda en las escotillas de una bodega redonda. Mira bien dónde queda cada cosa: después te las piden una por una y tocas la escotilla que la tiene. A veces el robot cambia una caja de lugar y a veces la bodega gira.",
+      iconEmoji = "📦"
+    ),
+    GameDefinition(
       id = "stroop",
       title = "Tinta o Palabra",
       domain = DomainType.ATENCION,
@@ -387,6 +395,15 @@ data class GamePlayResult(
   val engrOrbit: Int? = null,
   val engrLaunches: Int? = null,
   val engrMs: Int? = null,
+  // Solo «Bodega de carga» (id bodega): el grupo de etapa más alto jugado (1..5), la racha más larga, el pedido más grande sin errores de la partida, el récord (la bodega más grande de siempre, que se guarda)
+  // y el tiempo medio por objeto (ms). Objetos al primer intento = correctAnswers, objetos encontrados = totalTrials. El récord va en prefs «bodega_record» (y en el respaldo); la medida va a StarMeasures.
+  // La lectura está en data/Bodega.kt.
+  val bodGroup: Int? = null,
+  val bodBestStreak: Int? = null,
+  val bodBiggest: Int? = null,
+  val bodBest: Int? = null,
+  val bodMs: Int? = null,
+  val bodNewRecord: Boolean? = null,
   // Solo Rastro de luz (id «secuencia»): por familia (4: el rastro, al revés, el cielo gira, en marcha) el mejor largo repetido bien (0 = ninguno),
   // las rondas y los aciertos (la ronda guiada del tutorial no cuenta), qué familias aparecieron y cuáles se desbloquearon por primera vez en
   // la partida (bits: 1 rastro, 2 al revés, 4 gira, 8 en marcha). La lectura está en data/Trail.kt. No se guardan en Room.

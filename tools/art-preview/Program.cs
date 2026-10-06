@@ -32,6 +32,27 @@ internal static class Program
             foreach (var c in sprite.texture.pixels) { w.Write(c.r); w.Write(c.g); w.Write(c.b); w.Write(c.a); }
         }
 
+        // Bodega de carga: todos los sprites reales (rectangulares: -ancho, alto) para componer la lámina (bodega.py)
+        {
+            void DumpTexB(string name, Sprite sp)
+            {
+                int tw = sp.texture.width, th = sp.texture.pixels.Length / tw;
+                DumpRect(name, sp.texture.pixels, tw, th);
+            }
+            var B = typeof(NeuroVida.Games.Bodega.BodegaSprites);
+            DumpTexB("bod_hull", NeuroVida.Games.Bodega.BodegaSprites.Hull());
+            DumpTexB("bod_airlock", NeuroVida.Games.Bodega.BodegaSprites.Airlock());
+            DumpTexB("bod_seal", NeuroVida.Games.Bodega.BodegaSprites.SealRing());
+            DumpTexB("bod_hframe", NeuroVida.Games.Bodega.BodegaSprites.HatchFrame());
+            for (int k = 0; k < 3; k++) DumpTexB("bod_hin" + k, NeuroVida.Games.Bodega.BodegaSprites.HatchInterior(k));
+            DumpTexB("bod_hrim", NeuroVida.Games.Bodega.BodegaSprites.HatchRim());
+            DumpTexB("bod_door", NeuroVida.Games.Bodega.BodegaSprites.DoorLeaf());
+            DumpTexB("bod_robot", NeuroVida.Games.Bodega.BodegaSprites.RobotBody());
+            DumpTexB("bod_crate", NeuroVida.Games.Bodega.BodegaSprites.Crate());
+            DumpTexB("bod_check", NeuroVida.Games.Bodega.BodegaSprites.Check());
+            for (int i = 0; i < NeuroVida.Games.Bodega.BodegaContract.ObjectCount; i++) DumpTexB("bod_obj_" + i, NeuroVida.Games.Bodega.BodegaSprites.Object(i));
+        }
+
         // Engranajes «Taller de reparación»: todos los sprites (rectangulares: -ancho, alto) y las máquinas de muestra (etapas 3, 7 y 10) para componer la lámina (engranajes.py)
         {
             var E = typeof(NeuroVida.Games.Engranajes.EngranajesContract);

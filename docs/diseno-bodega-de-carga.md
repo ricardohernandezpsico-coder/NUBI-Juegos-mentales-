@@ -229,7 +229,7 @@ Sobre un pedido de la etapa 1 (2 objetos), con el sistema de zonas `keep`:
    guarda cada cosa».
 2. **Touch.** El hueco es la escotilla correcta; la zona protegida es la tarjeta del pedido. Nubi dice: «¿Dónde está la
    llave? Toca su escotilla». Es un toque real.
-3. **Notice.** Nubi dice: «Si te equivocas, se abre la correcta: así aprendes dónde estaba».
+3. **Notice.** Nubi dice: «Si fallas, se abre la correcta: así aprendes dónde estaba» (acortado: el globo admite 62 caracteres).
 
 Después: «¡Listo! Ahora va en serio».
 
@@ -243,3 +243,21 @@ Después: «¡Listo! Ahora va en serio».
   libre en la investigación. Nombre, arte, sonidos, la bodega que gira, la caja que se mueve y la nota de cada escotilla
   son propios. **Va a la lista del abogado.**
 - **Símbolos neutros:** sin estrellas con puntas, medias lunas ni cruces.
+
+## 10. Cómo quedó hecho (5-oct) y en qué se aparta del boceto
+
+Código: `unity/.../Games/Bodega/` (`BodegaContract` reglas puras, `BodegaMotion` resortes, `BodegaLayout`, `BodegaSprites` con `ClayRaster`, `BodegaSounds`, `BodegaGameController` en tres archivos y sus pruebas en `Tests/`);
+app: `data/Bodega.kt`, el récord en las preferencias `bodega_record` (van al respaldo), la medida `bodega` en `StarMeasures`, la pantalla final «Tu bodega», el ícono y los botones [Debug]. Lámina con el arte real:
+`docs/previews/bodega.png` (`tools/art-preview/bodega.py`; réplica de la composición, no una captura).
+
+Desvíos del boceto y por qué:
+
+- **Racha:** se usa la píldora común del marcador (`GameHud`, número y «racha»), no la píldora dorada «Racha ×N» del boceto: es la que ya conoce la persona en los demás juegos. «Récord: N objetos» va a la derecha de «Carro de reparto».
+- **DDA:** `AdaptiveDifficulty` registra cada OBJETO (al primer intento sí/no) con paso 0,2: con 5 objetos un pedido perfecto sube una etapa, uno con un error se queda y uno con dos o más baja una (lo que dice la sección 3, sin una regla aparte).
+- **Tarjetas «NUEVO»:** salen según lo que trae la etapa (bodega siempre; «mueve» y «gira» cuando la etapa tiene cajas o giro), no según el número de etapa: quien empieza en la 8 igual ve las tres.
+- **Reto:** si se acaba el tiempo a mitad de un pedido, ese pedido no cuenta (ni a favor ni en contra); lo ya encontrado sí suma a la medida.
+- **Antena y robot:** el cuerpo, el visor y los ojos son discos de arcilla (el visor se corre para «mirar»); la antena es un tallo recto que gira con su resorte (el boceto la curvaba un poco).
+- **Escotilla:** las dos hojas de la puerta van recortadas con una máscara redonda y un aro de tinta encima (así no se ve el borde de la máscara).
+- **Pantallas bajas:** la bodega nunca ocupa todo el alto: siempre queda un respiro de 36 dp (escala ≤ 0,95 en 16:9), que usan Nubi y su globo en el tutorial.
+- **Tutorial:** el hueco del paso 1 es la zona de las escotillas (316 dp, sin el borde del casco), la tarjeta queda protegida y no hay textos del carro; el paso 3 muestra solo un error de muestra (se abre la equivocada y la correcta brilla y se abre) mientras Nubi lo explica.
+- **Telemetría:** al terminar, Unity manda en `StroopSessionMetrics`: `correct_trials` = objetos al primer intento, `total_trials` = objetos encontrados, `bod_group`, `bod_best_streak`, `bod_biggest`, `bod_best` (el récord), `bod_ms` y `bod_new` (1 si se superó el récord); la app manda `bod_best` en cada partida.
