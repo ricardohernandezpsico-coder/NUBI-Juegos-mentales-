@@ -1,0 +1,528 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bodega de carga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Bodega de carga</h1>
+    <p class="lead">El robot de la nave guarda objetos en las escotillas de una bodega redonda. Mira bien dónde queda cada uno: después llegan los pedidos y tienes que abrir la escotilla correcta.</p>
+
+    <h2>Lo que lo hace distinto</h2>
+    <ul class="list">
+      <li><b>Cada escotilla tiene su nota.</b> Al guardar, la bodega suena como una melodía; al abrir la correcta vuelve a sonar su nota. Recuerdas con la vista y con el oído.</li>
+      <li><b>Empieza sin errores:</b> pocas cosas y preguntas al tiro. Si te equivocas, la escotilla abierta te muestra qué había ahí y luego se abre la correcta: siempre aprendes dónde estaba.</li>
+      <li><b>El robot cambia una caja de lugar</b> frente a ti (etapa 5): sigue la caja y actualiza tu recuerdo.</li>
+      <li><b>La bodega gira</b> (etapa 8). La ventanilla gira con ella: úsala como referencia.</li>
+      <li><b>Racha:</b> cada objeto encontrado al primer intento sube el tono del destello.</li>
+      <li><b>Tu bodega más grande:</b> el récord de objetos recordados sin errores se guarda entre partidas.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable: 6 pedidos por partida y 12 etapas. Un pedido perfecto sube una etapa; dos o más errores bajan una. Para revisar una etapa: <code>?etapa=N</code>.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="Bodega de carga: recuerda en qué escotilla guardó el robot cada objeto"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+// ============================================================ la bodega
+const C = { x:180, y:335 }, RING = 125, HR = 27;          // centro, radio del anillo, radio de cada escotilla
+const STAGES = [
+  { slots:6,  objs:2 , intro:'bodega' },
+  { slots:6,  objs:3 },
+  { slots:8,  objs:3 },
+  { slots:8,  objs:4 },
+  { slots:8,  objs:4, moves:1, intro:'mueve' },
+  { slots:8,  objs:5 },
+  { slots:10, objs:5, moves:1 },
+  { slots:8,  objs:4, rot:true, intro:'gira' },
+  { slots:10, objs:5, rot:true },
+  { slots:10, objs:5, moves:1, rot:true },
+  { slots:10, objs:6, moves:1, rot:true },
+  { slots:10, objs:7, moves:2, rot:true },
+];
+const GRUPO = i => [1,1,2,2,3,3,3,4,4,5,5,5][i];
+const INTROS = {
+  bodega: ['El robot guarda objetos en las escotillas.', 'Mira bien dónde queda cada uno:', 'después te los van a pedir.'],
+  mueve:  ['Ahora el robot cambia una caja de lugar.', 'Síguela con la vista:', 'el objeto va adentro.'],
+  gira:   ['¡La bodega gira!', 'La ventanilla gira con ella:', 'úsala para orientarte.'],
+};
+const OBJ = [
+  ['llave','la llave'], ['campana','la campana'], ['farol','el farol'], ['manzana','la manzana'], ['hongo','el hongo'], ['taza','la taza'],
+  ['paraguas','el paraguas'], ['libro','el libro'], ['gema','la gema'], ['reloj','el reloj de arena'], ['pluma','la pluma'], ['bellota','la bellota'],
+];
+const TIPS = ['Truco: imagina el objeto dentro de su escotilla', 'Truco: dile su nombre en voz baja al guardarlo', 'Truco: escucha la nota de cada escotilla'];
+const G = { state:'menu', parts:[], toast:null, flyers:[] };
+const S = {};
+const SAVE = { best:0, bestStreak:0 };
+try { Object.assign(SAVE, JSON.parse(localStorage.getItem('nubi_bodega')||'{}')); } catch(e){}
+function save(){ try { localStorage.setItem('nubi_bodega', JSON.stringify(SAVE)); } catch(e){} }
+const LV0 = Math.max(0, Math.min(11, (+new URLSearchParams(location.search).get('etapa')||1)-1));
+const ROUNDS = 6;
+const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const wait = ms => new Promise(r=>setTimeout(r, reduce ? Math.min(ms, 260) : ms));
+function emit(x,y,n,spread,life,rgb,up=20){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-up,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
+function toast(t,good,sub,ms=3000){ G.toast={t,good,sub,at:performance.now(),ms}; }
+
+// posiciones: N = escotillas + 1 ventanilla (la posición 0). El anillo entero gira con S.rot.
+function posOf(k){ const N=S.slots+1, a=-Math.PI/2 + k*2*Math.PI/N + S.rot; return { x:C.x+Math.cos(a)*RING, y:C.y+Math.sin(a)*RING, a }; }
+// cada escotilla: su contenido, su nota y cómo se ve (apertura 0..1)
+function makeRound(st){
+  S.slots=st.slots; S.rot=0; S.hatch=[];
+  for (let k=1;k<=st.slots;k++) S.hatch.push({ pos:k, obj:null, open:0, target:0, note:PENTA[(k-1)%10]*(k>10?2:1), glow:0, shake:0, pressAt:0 });
+  const objs=shuffle([...OBJ.keys()]).slice(0,st.objs);
+  const places=shuffle([...S.hatch.keys()]).slice(0,st.objs);
+  S.load=objs.map((o,i)=>({ obj:o, h:places[i] }));
+  S.load.forEach(l=>S.hatch[l.h].obj=l.obj);
+  S.asks=shuffle(objs.slice()); S.askI=0; S.landAt={}; S.crate=null; S.found=[]; S.errs=0; S.card=null; S.moving=null; S.beam=null;
+}
+
+// ============================================================ partida
+function startGame(){ Object.assign(S, { round:0, lv:LV0, maxLv:LV0, streak:0, bestStreak:0, hist:[], firstTry:0, total:0, roundBest:0 }); nextRound(); }
+async function nextRound(){
+  if (S.round>=ROUNDS) return finish();
+  S.round++; const st=STAGES[S.lv]; S.st=st; makeRound(st);
+  if (st.intro && !S['seen_'+st.intro]){ S['seen_'+st.intro]=true; S.intro=st.intro; G.state='intro'; S.introAt=performance.now(); chime(); return; }
+  play();
+}
+const slow = () => 1;   // en mayores: 1.35 (más tiempo para mirar)
+async function play(){
+  const st=S.st; G.state='load'; S.card={ kind:'watch' }; hum();
+  await wait(500);
+  // el robot guarda cada objeto: haz de luz, se abre, aparece con su nota, se cierra
+  for (const l of S.load){
+    const h=S.hatch[l.h], n=nearHatch(l.h); R.tx=n.x; R.ty=n.y; R.ta=n.a; await wait(380);
+    S.beam={ h:l.h, at:performance.now() }; R.sq=.12; beamSound(); await wait(200);
+    h.target=1; doorOpen(); await wait(180);
+    h.show=performance.now(); S.card={ kind:'store', obj:l.obj }; bell(h.note,.06,1.1); emit(posOf(h.pos).x,posOf(h.pos).y,10,60,500,'255,214,120');
+    await wait(1000*slow());
+    h.target=0; doorClose(); S.beamOff=performance.now(); S.beam=null; S.card={ kind:'watch' }; await wait(200);
+  }
+  robotHome(); S.card={ kind:'watch' }; await wait(350);
+  // el robot cambia cajas de lugar (con la escotilla cerrada: hay que acordarse qué había)
+  for (let m=0;m<(st.moves||0);m++){
+    const full=S.hatch.map((h,i)=>h.obj!==null?i:-1).filter(i=>i>=0), empty=S.hatch.map((h,i)=>h.obj===null?i:-1).filter(i=>i>=0);
+    const a=full[Math.floor(Math.random()*full.length)], b=empty[Math.floor(Math.random()*empty.length)];
+    S.card={ kind:'move' }; await wait(400);
+    const A=nearHatch(a,58), B=nearHatch(b,58); R.tx=A.x; R.ty=A.y; R.ta=A.a; await wait(650);
+    S.beam={ h:a, at:performance.now() }; beamSound(); R.sq=.12; S.hatch[a].glow=performance.now(); await wait(220);
+    const o=S.hatch[a].obj; S.hatch[a].obj=null; S.crate={ mode:'pull', h:a, at:performance.now(), dur:450 }; clank(); await wait(450);
+    S.crate={ mode:'carry' }; S.beamOff=performance.now(); S.beam=null; whoosh();
+    // vuelo por el anillo, por el camino más corto; el resorte del robot le da la estela suave
+    let d=B.a-A.a; d=((d+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI; const t0=performance.now(), dur=reduce?1:1300*slow(), rr_=RING-58;
+    await new Promise(res=>{ const step=()=>{ const e=Math.min(1,(performance.now()-t0)/dur), ang=A.a+d*easeIO(e); R.tx=C.x+Math.cos(ang)*rr_; R.ty=C.y+Math.sin(ang)*rr_; R.ta=ang+Math.sign(d)*Math.PI/2; if (e<1) requestAnimationFrame(step); else res(); }; step(); });
+    R.ta=B.a; await wait(450);
+    S.beam={ h:b, at:performance.now() }; beamSound(); S.crate={ mode:'push', h:b, at:performance.now(), dur:420 }; await wait(420);
+    S.hatch[b].obj=o; S.crate=null; S.hatch[b].glow=performance.now(); clank(); S.beamOff=performance.now(); S.beam=null; await wait(300);
+    robotHome(); await wait(500);
+  }
+  // la bodega gira
+  if (st.rot){
+    S.card={ kind:'spin' }; await wait(600);
+    const N=S.slots+1, k=[2,3,-2,-3][Math.floor(Math.random()*4)], from=S.rot, to=from+k*2*Math.PI/N, t0=performance.now(), dur=reduce?1:1500*slow();
+    spinSound(dur);
+    await new Promise(res=>{ const step=()=>{ const e=Math.min(1,(performance.now()-t0)/dur); S.rot=from+(to-from)*easeSpin(e); R.ta=posOf(0).a; if (e<1) requestAnimationFrame(step); else res(); }; step(); });
+    await wait(250); robotHome();
+    await wait(350);
+  }
+  ask();
+}
+const easeIO = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+// giro de la bodega con un pequeño impulso hacia atrás y un asentarse suave al final
+const easeSpin = t => { if (t<.12) return -0.035*Math.sin(Math.PI*t/.12); const u=(t-.12)/.88, c1=1.15, c3=c1+1; return 1+c3*Math.pow(u-1,3)+c1*Math.pow(u-1,2); };
+// ============================================================ movimiento con flow: todo sigue a su objetivo con un resorte
+const R = { x:C.x, y:C.y, vx:0, vy:0, tx:C.x, ty:C.y, ang:Math.PI/2, va:0, ta:Math.PI/2, ant:0, vant:0, sw:0, vsw:0, sq:0, mood:null, moodAt:0 };
+function spring(x, v, target, dt, freq, zeta){ const w=2*Math.PI*freq; v += (w*w*(target-x) - 2*zeta*w*v)*dt; return [x+v*dt, v]; }
+function nearHatch(i, inset=52){ const p=posOf(S.hatch[i].pos), a=Math.atan2(p.y-C.y,p.x-C.x); return { x:C.x+Math.cos(a)*(RING-inset), y:C.y+Math.sin(a)*(RING-inset), a }; }
+function robotHome(){ R.tx=C.x; R.ty=C.y; R.ta=Math.PI/2; }
+function stepMotion(dt){
+  if (reduce){ R.x=R.tx; R.y=R.ty; R.ang=R.ta; R.vx=R.vy=R.va=0; R.ant=R.sw=0; }
+  else {
+    [R.x,R.vx]=spring(R.x,R.vx,R.tx,dt,1.5,.8); [R.y,R.vy]=spring(R.y,R.vy,R.ty,dt,1.5,.8);
+    const d=((R.ta-R.ang+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI; [R.ang,R.va]=spring(R.ang,R.va,R.ang+d,dt,2.2,.75);
+    [R.ant,R.vant]=spring(R.ant,R.vant,-R.vx*.006-R.va*.06,dt,3.2,.3);       // la antena se queda atrás y rebota
+    [R.sw,R.vsw]=spring(R.sw,R.vsw,-R.vx*.008,dt,1.3,.22);                  // la caja colgando se mece
+    R.sq*=Math.pow(.02,dt);
+  }
+  if (S.hatch && G.state!=='menu') for (const h of S.hatch){
+    if (reduce){ h.open=h.target; h.vo=0; }
+    else [h.open,h.vo]=spring(h.open,h.vo||0,h.target,dt,2.6,h.target>h.open?.55:.85);
+    if (h.target===0 && h.open<.01){ h.open=0; h.vo=0; h.show=0; } }
+}
+function ask(){
+  if (S.askI>=S.asks.length) return endRound();
+  const o=S.asks[S.askI]; S.card={ kind:'ask', obj:o, at:performance.now() }; S.first=true; S.t0=performance.now(); G.state='ask'; ping();
+}
+async function tapHatch(i){
+  if (G.state!=='ask') return; const h=S.hatch[i], o=S.asks[S.askI], now=performance.now(); h.pressAt=now;
+  G.state='busy';
+  if (h.obj===o){
+    h.target=1; doorOpen(); await wait(160); bell(h.note,.07,1.2);
+    const first=S.first; S.total++; if (first){ S.firstTry++; S.streak++; S.bestStreak=Math.max(S.bestStreak,S.streak); bell(PENTA[Math.min(9,2+S.streak)]*2,.03,.8,.12); }
+    S.found.push({ obj:o, first }); h.obj=null;
+    const p=posOf(h.pos); emit(p.x,p.y,first?22:10,first?150:80,700,first?'255,201,74':'200,200,255');
+    G.flyers.push({ obj:o, x0:p.x, y0:p.y, k:S.found.length-1, t:performance.now(), first });
+    S.hist.push({ ok:first, secs:(now-S.t0)/1000 });
+    await wait(650); h.target=0; doorClose(); S.askI++; await wait(300); ask();
+  } else {
+    // abrir la equivocada muestra qué había ahí; luego se abre la correcta: siempre se aprende dónde estaba
+    S.first=false; S.errs++; S.streak=0;
+    h.target=1; h.shake=performance.now(); doorOpen(); await wait(160); thud();
+    const right=S.hatch.findIndex(x=>x.obj===o);
+    await wait(750); h.target=0; doorClose(); await wait(250);
+    S.hatch[right].glow=performance.now(); S.hint=right; ping(); await wait(700);
+    S.hint=null; G.state='ask'; await tapHatch(right);
+  }
+}
+async function endRound(){
+  G.state='done'; const st=S.st, perfect=S.errs===0, n=st.objs;
+  if (perfect){ if (n>SAVE.best){ SAVE.best=n; save(); S.record=true; } else S.record=false; S.roundBest=Math.max(S.roundBest,n);
+    [0,1,2,3].forEach(k=>bell(PENTA[3+k*2>9?9:3+k*2],.05,1.2,k*.09)); S.lv=Math.min(STAGES.length-1,S.lv+1); }
+  else if (S.errs>=2) S.lv=Math.max(0,S.lv-1);
+  S.maxLv=Math.max(S.maxLv,S.lv);
+  if (S.bestStreak>SAVE.bestStreak){ SAVE.bestStreak=S.bestStreak; save(); }
+  S.card={ kind:'done', perfect, n, first:S.found.filter(f=>f.first).length, at:performance.now() };
+  if (!perfect) toast(S.errs===1?'Casi perfecto':'Pedido completo', true, TIPS[(S.round+S.errs)%TIPS.length], 2800);
+  await wait(perfect?2000:3000); nextRound();
+}
+function finish(){ G.state='end'; G.endT=performance.now(); bell(784,.06,1.4); bell(1046.5,.05,1.6,.15); }
+
+// ============================================================ sonido propio
+function doorOpen(){ noise(.16,2600,900,.045,3); }
+function doorClose(){ noise(.1,700,250,.06,2); }
+function clank(){ noise(.09,2400,900,.06,4); bell(1174.66,.02,.3); }
+function whoosh(){ noise(.9,300,1500,.05,1.2); }
+function ping(){ bell(1318.5,.03,.5); }
+function beamSound(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(420,t); o.frequency.exponentialRampToValueAtTime(880,t+.25); g.gain.setValueAtTime(.03,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function hum(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='triangle'; o.frequency.setValueAtTime(65,t); o.frequency.linearRampToValueAtTime(90,t+.5); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.03,t+.1); g.gain.exponentialRampToValueAtTime(.0001,t+.8); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.82); }
+function spinSound(dur){ const n=Math.max(1,Math.round(dur/110)); for (let i=0;i<n;i++) setTimeout(()=>noise(.04,3000,1800,.035,8), i*110); hum(); }
+
+// ============================================================ objetos (siluetas propias, fáciles de nombrar)
+function drawObj(c, id, x, y, s, a=1){
+  c.save(); c.translate(x,y); c.scale(s/40,s/40); c.globalAlpha*=a; c.lineJoin='round'; c.lineCap='round';
+  const ink='#1A1240', st=()=>{ c.strokeStyle=ink; c.lineWidth=2.6; c.stroke(); }, fill=(col)=>{ c.fillStyle=col; c.fill(); st(); };
+  const name=OBJ[id][0];
+  if (name==='llave'){ c.beginPath(); c.arc(-9,0,8,0,7); fill('#FFC94A'); c.beginPath(); c.arc(-9,0,3,0,7); c.fillStyle=ink; c.fill(); c.beginPath(); c.rect(-1,-2.5,20,5); fill('#FFC94A'); c.beginPath(); c.rect(12,2,3,6); c.rect(16,2,3,4); fill('#FFC94A'); }
+  if (name==='campana'){ c.beginPath(); c.moveTo(-14,10); c.quadraticCurveTo(-12,-14,0,-14); c.quadraticCurveTo(12,-14,14,10); c.closePath(); fill('#FFD46B'); c.beginPath(); c.arc(0,13,4,0,7); fill('#E8A33A'); c.beginPath(); c.arc(0,-16,3,0,7); fill('#E8A33A'); }
+  if (name==='farol'){ c.beginPath(); c.rect(-9,-9,18,20); fill('#FFB45C'); c.fillStyle='rgba(255,255,220,.85)'; c.fillRect(-5,-5,10,12); c.beginPath(); c.moveTo(-11,-9); c.lineTo(0,-16); c.lineTo(11,-9); c.closePath(); fill('#8E5B3A'); c.beginPath(); c.arc(0,-18,4,Math.PI,0); st(); c.beginPath(); c.rect(-11,11,22,4); fill('#8E5B3A'); }
+  if (name==='manzana'){ c.beginPath(); c.moveTo(0,-8); c.bezierCurveTo(-18,-16,-18,14,-4,15); c.quadraticCurveTo(0,13,4,15); c.bezierCurveTo(18,14,18,-16,0,-8); c.closePath(); fill('#E2524A'); c.beginPath(); c.moveTo(0,-8); c.lineTo(1,-15); st(); c.beginPath(); c.ellipse(6,-14,5,2.5,-.5,0,7); fill('#6CC46B'); }
+  if (name==='hongo'){ c.beginPath(); c.rect(-5,0,10,14); fill('#F6EBD2'); c.beginPath(); c.moveTo(-16,2); c.quadraticCurveTo(-16,-15,0,-15); c.quadraticCurveTo(16,-15,16,2); c.closePath(); fill('#D94B4B'); c.fillStyle='#fff'; for (const [dx,dy,r] of [[-7,-6,2.6],[4,-9,2.2],[8,-2,2]]){ c.beginPath(); c.arc(dx,dy,r,0,7); c.fill(); } }
+  if (name==='taza'){ c.beginPath(); c.moveTo(-12,-6); c.lineTo(10,-6); c.lineTo(8,12); c.lineTo(-10,12); c.closePath(); fill('#7FD8FF'); c.beginPath(); c.arc(12,2,5,-Math.PI/2,Math.PI/2); st(); c.strokeStyle='rgba(255,255,255,.7)'; c.lineWidth=2; for (const dx of [-4,2]){ c.beginPath(); c.moveTo(dx,-10); c.quadraticCurveTo(dx+3,-14,dx,-18); c.stroke(); } }
+  if (name==='paraguas'){ c.beginPath(); c.moveTo(-17,0); c.quadraticCurveTo(-16,-16,0,-16); c.quadraticCurveTo(16,-16,17,0); c.quadraticCurveTo(11,-4,6,0); c.quadraticCurveTo(0,-4,-6,0); c.quadraticCurveTo(-11,-4,-17,0); c.closePath(); fill('#A98BF0'); c.beginPath(); c.moveTo(0,-2); c.lineTo(0,12); c.quadraticCurveTo(0,17,-5,15); st(); }
+  if (name==='libro'){ c.beginPath(); c.rect(-13,-15,24,30); fill('#5CC48A'); c.beginPath(); c.rect(-13,-15,5,30); fill('#3E9A66'); c.fillStyle='#F6EBD2'; c.fillRect(-4,-8,11,3); }
+  if (name==='gema'){ c.beginPath(); c.moveTo(-14,-5); c.lineTo(-7,-13); c.lineTo(7,-13); c.lineTo(14,-5); c.lineTo(0,15); c.closePath(); fill('#5FE1E8'); c.beginPath(); c.moveTo(-14,-5); c.lineTo(14,-5); c.moveTo(-5,-5); c.lineTo(0,15); c.lineTo(5,-5); c.strokeStyle='rgba(26,18,64,.5)'; c.lineWidth=1.6; c.stroke(); }
+  if (name==='reloj'){ c.beginPath(); c.rect(-12,-17,24,4); c.rect(-12,13,24,4); fill('#8E5B3A'); c.beginPath(); c.moveTo(-9,-13); c.lineTo(9,-13); c.lineTo(1,0); c.lineTo(9,13); c.lineTo(-9,13); c.lineTo(-1,0); c.closePath(); fill('rgba(220,240,255,.9)'); c.beginPath(); c.moveTo(-6,13); c.lineTo(6,13); c.lineTo(0,6); c.closePath(); c.fillStyle='#F2C25E'; c.fill(); }
+  if (name==='pluma'){ c.rotate(-.6); c.beginPath(); c.moveTo(0,-18); c.quadraticCurveTo(11,-4,2,14); c.lineTo(-2,14); c.quadraticCurveTo(-11,-4,0,-18); c.closePath(); fill('#FF8C6B'); c.beginPath(); c.moveTo(0,-14); c.lineTo(0,19); st(); }
+  if (name==='bellota'){ c.beginPath(); c.ellipse(0,5,9,11,0,0,7); fill('#C98A4B'); c.beginPath(); c.moveTo(-12,-1); c.quadraticCurveTo(-12,-12,0,-12); c.quadraticCurveTo(12,-12,12,-1); c.closePath(); fill('#7A5230'); c.beginPath(); c.moveTo(0,-12); c.lineTo(2,-17); st(); }
+  c.restore();
+}
+
+// ============================================================ dibujo
+function drawHull(c, now){
+  // anillo de la bodega: un módulo redondo de la nave
+  c.save();
+  const g=c.createRadialGradient(C.x,C.y,40,C.x,C.y,RING+46); g.addColorStop(0,'#1B2350'); g.addColorStop(.7,'#141B42'); g.addColorStop(1,'#0C1130');
+  c.fillStyle=g; c.beginPath(); c.arc(C.x,C.y,RING+44,0,7); c.fill(); c.strokeStyle='#2C3566'; c.lineWidth=2; c.stroke();
+  c.strokeStyle='rgba(127,216,255,.08)'; c.lineWidth=1; for (const r of [RING-42]){ c.beginPath(); c.arc(C.x,C.y,r,0,7); c.stroke(); }
+  // remaches que giran con la bodega
+  const N=S.slots+1; for (let k=0;k<N;k++){ const a=-Math.PI/2+(k+.5)*2*Math.PI/N+S.rot; c.fillStyle='#2C3566'; c.beginPath(); c.arc(C.x+Math.cos(a)*(RING+37),C.y+Math.sin(a)*(RING+37),3.2,0,7); c.fill(); }
+  c.restore();
+}
+function drawWindow(c, now){
+  const p=posOf(0); c.save(); c.translate(p.x,p.y);
+  c.fillStyle='#2A2350'; c.beginPath(); c.arc(0,0,HR+6,0,7); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=3; c.stroke();
+  c.save(); c.beginPath(); c.arc(0,0,HR,0,7); c.clip();
+  const sky=c.createLinearGradient(0,-HR,0,HR); sky.addColorStop(0,'#06123A'); sky.addColorStop(1,'#1A2D6A'); c.fillStyle=sky; c.fillRect(-HR,-HR,2*HR,2*HR);
+  c.fillStyle='#7FD8FF'; c.beginPath(); c.arc(8,8,13,0,7); c.fill(); c.fillStyle='rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(8,8,16,3.5,-.4,0,7); c.fill();
+  c.fillStyle='#fff'; for (const [x,y,r] of [[-12,-10,1.4],[-4,-16,1],[-16,4,1.1],[14,-12,.9]]){ c.beginPath(); c.arc(x,y,r,0,7); c.fill(); }
+  c.restore();
+  c.fillStyle='rgba(255,255,255,.18)'; c.beginPath(); c.arc(-8,-8,8,0,7); c.fill();
+  c.restore();
+}
+function drawHatch(c, h, i, now){
+  const p=posOf(h.pos), k=h.open; c.save();
+  let sx=0; if (h.shake && now-h.shake<420 && !reduce) sx=Math.sin((now-h.shake)/28)*4*(1-(now-h.shake)/420);
+  const pr = h.pressAt && now-h.pressAt<180 ? 1-.06*(1-(now-h.pressAt)/180) : 1;
+  c.translate(p.x+sx,p.y); c.scale(pr,pr);
+  // brillo (pista o caja recién movida)
+  if (h.glow && now-h.glow<900){ const a=1-(now-h.glow)/900; c.globalAlpha=a; c.drawImage(glow('255,201,74'),-HR-22,-HR-22,2*HR+44,2*HR+44); c.globalAlpha=1; }
+  if (S.hint===i && !reduce){ c.globalAlpha=.6+.4*Math.sin(now/120); c.drawImage(glow('255,201,74'),-HR-24,-HR-24,2*HR+48,2*HR+48); c.globalAlpha=1; }
+  // marco
+  c.fillStyle='#232B57'; c.beginPath(); c.arc(0,0,HR+5,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+  // interior (luz cálida si hay algo)
+  if (k>0){
+    const ig=c.createRadialGradient(0,0,2,0,0,HR); ig.addColorStop(0, h.obj!==null||h.show ? '#5A4A7A' : '#151933'); ig.addColorStop(1,'#0B0E24');
+    c.fillStyle=ig; c.beginPath(); c.arc(0,0,HR,0,7); c.fill();
+    if (h.obj!==null){ const s = h.show ? Math.min(1.08,easeBack((now-h.show)/420)) : 1, fl = h.show && !reduce ? Math.sin((now-h.show)/260)*1.5 : 0; drawObj(c,h.obj,0,fl,40*s*Math.max(.01,Math.min(1,k))); }
+    else if (k>.6 && h.shake && now-h.shake<1500){ c.fillStyle='rgba(171,165,210,.75)'; c.font='600 12px Nunito'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('vacía',0,1); }
+  }
+  // puerta: se abre girando sobre su eje (se angosta)
+  if (k<1.12){ c.save(); c.rotate(p.a); c.beginPath(); c.arc(0,0,HR,0,7); c.clip();
+    const off=Math.max(0,k)*HR*1.04;
+    for (const s of [-1,1]){ c.save(); c.translate(0,s*off);
+      const dg=c.createLinearGradient(-HR,-HR,HR,HR); dg.addColorStop(0,'#ECE8FF'); dg.addColorStop(1,'#9C92DA');
+      c.fillStyle=dg; c.beginPath(); if (s<0) c.arc(0,0,HR-1,Math.PI,2*Math.PI); else c.arc(0,0,HR-1,0,Math.PI); c.closePath(); c.fill();
+      c.strokeStyle='#1A1240'; c.lineWidth=2.2; c.stroke();
+      c.strokeStyle='rgba(26,18,64,.3)'; c.lineWidth=2; c.beginPath(); if (s<0) c.arc(0,0,HR-8,Math.PI+.25,2*Math.PI-.25); else c.arc(0,0,HR-8,.25,Math.PI-.25); c.stroke();
+      c.fillStyle='#1A1240'; c.beginPath(); c.arc(0, s<0?-6:6, 2.6, 0, 7); c.fill();
+      c.restore(); }
+    // la junta brilla un instante al empezar a abrirse
+    if (k>.02 && k<.35){ c.globalAlpha=1-k/.35; c.fillStyle='#FFE7A8'; c.fillRect(-HR,-1.5,2*HR,3); c.globalAlpha=1; }
+    c.restore(); }
+  // luz de la escotilla: cálida si guarda algo que ya viste se apaga; aquí solo un piloto neutro
+  c.fillStyle= h.obj!==null && G.state==='load' ? 'rgba(255,214,120,.0)' : 'rgba(127,216,255,.0)';
+  c.restore();
+}
+function drawRobot(c, now){
+  // el robot en el centro: mira hacia la escotilla en la que trabaja
+  const ang=R.ang, bob = reduce ? 0 : Math.sin(now/520)*2.2+Math.sin(now/1370)*1.2;
+  // haz de luz: crece con suavidad, late, lleva chispas, y se apaga sin cortarse
+  const beamDraw=(h,k,a)=>{ const p=posOf(S.hatch[h].pos), x=R.x+(p.x-R.x)*k, y=R.y+(p.y-R.y)*k, w=1+.15*Math.sin(now/60);
+    c.globalAlpha=a; c.strokeStyle='rgba(127,216,255,.22)'; c.lineWidth=16*w; c.lineCap='round'; c.beginPath(); c.moveTo(R.x,R.y); c.lineTo(x,y); c.stroke();
+    c.strokeStyle='rgba(191,233,255,.85)'; c.lineWidth=3; c.beginPath(); c.moveTo(R.x,R.y); c.lineTo(x,y); c.stroke();
+    if (!reduce) for (let j=0;j<3;j++){ const f=((now/420)+j/3)%1*k; c.fillStyle='#fff'; c.beginPath(); c.arc(R.x+(p.x-R.x)*f,R.y+(p.y-R.y)*f,2,0,7); c.fill(); }
+    c.globalAlpha=1; };
+  if (S.beam){ beamDraw(S.beam.h, reduce?1:ease((now-S.beam.at)/260), 1); S.lastBeamH=S.beam.h; }
+  else if (S.beamOff && S.lastBeamH!==undefined && now-S.beamOff<220 && !reduce) beamDraw(S.lastBeamH, 1, 1-(now-S.beamOff)/220);
+  // la caja que lleva colgando
+  if (S.crate && S.crate.mode==='carry'){ const cx=R.x+Math.sin(R.sw)*34, cy=R.y+Math.cos(R.sw)*34+4; c.strokeStyle='rgba(191,233,255,.6)'; c.lineWidth=2; c.beginPath(); c.moveTo(R.x,R.y+18); c.lineTo(cx,cy-12); c.stroke(); drawCrate(c,cx,cy,R.sw*.8,1); }
+  const lean = Math.max(-.22,Math.min(.22,R.vx*.0028)), sq=R.sq, md=now-R.moodAt;
+  let tilt=0; if (R.mood==='no' && md<700 && !reduce) tilt=Math.sin(md/55)*.18*(1-md/700);
+  c.fillStyle='rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(R.x,R.y+32,22-bob,5,0,0,7); c.fill();
+  c.save(); c.translate(R.x,R.y+bob); c.rotate(lean+tilt); c.scale(1+sq,1-sq);
+  const bg=c.createRadialGradient(-10,-12,3,0,0,30); bg.addColorStop(0,'#F4F1FF'); bg.addColorStop(1,'#A99FEA'); c.fillStyle=bg; c.beginPath(); c.arc(0,0,26,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+  // visor que mira
+  // el visor mira hacia donde trabaja (se corre hacia ese lado: parece girar en 3D)
+  const look=ang-lean, lx=Math.cos(look)*9, ly=Math.sin(look)*7;
+  c.fillStyle='#163A5C'; c.beginPath(); c.ellipse(lx*.6,ly*.6-2,15-Math.abs(lx)*.25,9,0,0,7); c.fill();
+  const happy = R.mood==='feliz' && md<900;
+  c.fillStyle='#7FD8FF'; const blink = !reduce && (now%3600)<110 ? .15 : 1;
+  if (happy){ c.strokeStyle='#7FD8FF'; c.lineWidth=2.6; for (const ex of [-5,5]){ c.beginPath(); c.arc(lx*.6+ex,ly*.6,3.2,Math.PI*1.1,Math.PI*1.9); c.stroke(); } }
+  else { c.beginPath(); c.ellipse(lx*.6-5,ly*.6-2,3,3.2*blink,0,0,7); c.ellipse(lx*.6+5,ly*.6-2,3,3.2*blink,0,0,7); c.fill(); }
+  // antena con retraso: se queda atrás al moverse y rebota
+  c.save(); c.translate(0,-24); c.rotate(R.ant); c.strokeStyle='#1A1240'; c.lineWidth=2.2; c.beginPath(); c.moveTo(0,0); c.quadraticCurveTo(R.ant*-8,-5,0,-9); c.stroke();
+  c.fillStyle='#FFC94A'; c.beginPath(); c.arc(0,-11,4,0,7); c.fill(); if (!reduce){ c.globalAlpha=.5+.5*Math.sin(now/300); c.drawImage(glow('255,201,74'),-9,-20,18,18); c.globalAlpha=1; } c.restore();
+  c.restore();
+}
+function drawCrate(c,x,y,rot,s){
+  c.save(); c.translate(x,y); c.rotate(rot); c.scale(s,s);
+  if (!reduce){ c.globalAlpha=.55; c.drawImage(glow('255,214,120'),-26,-26,52,52); c.globalAlpha=1; }
+  c.fillStyle='#C9A26B'; c.beginPath(); c.roundRect(-15,-12,30,24,5); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.6; c.stroke();
+  c.strokeStyle='rgba(26,18,64,.45)'; c.lineWidth=2; c.beginPath(); c.moveTo(-15,-2); c.lineTo(15,-2); c.moveTo(0,-12); c.lineTo(0,12); c.stroke(); c.restore();
+}
+function drawCrateFlight(c, now){
+  const cr=S.crate; if (!cr || cr.mode==='carry') return; const k=reduce?1:Math.min(1,(now-cr.at)/cr.dur), e=easeIO(k);
+  const p=posOf(S.hatch[cr.h].pos), cx=R.x, cy=R.y+38;
+  if (cr.mode==='pull') drawCrate(c, p.x+(cx-p.x)*e, p.y+(cy-p.y)*e, 0, .5+.5*easeBack(k));
+  else drawCrate(c, cx+(p.x-cx)*e, cy+(p.y-cy)*e, 0, 1-.6*e);
+}
+function drawMoving(c, now){
+  const m=S.moving; if (!m) return; const k=reduce?1:Math.min(1,(now-m.at)/m.dur), e=easeIO(k);
+  const a=posOf(S.hatch[m.from].pos), b=posOf(S.hatch[m.to].pos);
+  // la caja va al robot y del robot a su nueva escotilla
+  const x = (1-e)*(1-e)*a.x + 2*(1-e)*e*C.x + e*e*b.x, y = (1-e)*(1-e)*a.y + 2*(1-e)*e*(C.y-10) + e*e*b.y;
+  if (!reduce){ c.globalAlpha=.6; c.drawImage(glow('255,214,120'),x-28,y-28,56,56); c.globalAlpha=1; }
+  c.save(); c.translate(x,y); c.rotate(Math.sin(k*Math.PI)*.25);
+  c.fillStyle='#C9A26B'; c.beginPath(); c.roundRect(-16,-13,32,26,5); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.6; c.stroke();
+  c.strokeStyle='rgba(26,18,64,.45)'; c.lineWidth=2; c.beginPath(); c.moveTo(-16,-3); c.lineTo(16,-3); c.moveTo(0,-13); c.lineTo(0,13); c.stroke();
+  c.restore();
+}
+function drawCard(c, now){
+  const cd=S.card; if (!cd) return;
+  c.fillStyle='#141B3A'; rr(c,10,58,W-20,70,18); c.fill(); c.strokeStyle= cd.kind==='ask' ? 'rgba(255,201,74,.7)' : 'rgba(142,131,216,.35)'; c.lineWidth=2; c.stroke();
+  c.textAlign='left'; c.textBaseline='middle';
+  if (cd.kind==='ask' || cd.kind==='store'){
+    const k = cd.kind==='ask' ? Math.min(1,easeBack((now-cd.at)/320)) : 1;
+    c.fillStyle='#232B57'; c.beginPath(); c.arc(50,93,26,0,7); c.fill();
+    drawObj(c, cd.obj, 50, 93, 40*(reduce?1:k));
+    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(cd.kind==='ask' ? 'Pedido' : 'El robot guarda', 88, 78);
+    c.fillStyle='#fff'; const t = cd.kind==='ask' ? `¿Dónde está ${OBJ[cd.obj][1]}?` : OBJ[cd.obj][1][0].toUpperCase()+OBJ[cd.obj][1].slice(1);
+    c.font=`700 ${fitFont(c,t,W-110,20)}px Fredoka`; c.fillText(t, 88, 102);
+  } else {
+    const t = { watch:'Mira dónde guarda cada cosa', move:'El robot cambia una caja de lugar', spin:'¡La bodega gira!' }[cd.kind];
+    if (cd.kind==='done'){ c.textAlign='center'; c.fillStyle= cd.perfect ? '#9FF5D6' : '#FFD6A0'; c.font='700 20px Fredoka'; c.fillText(cd.perfect ? '¡Pedido perfecto!' : '¡Pedido completo!', W/2, 82);
+      c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(`${cd.first} de ${cd.n} al primer intento` + (cd.perfect && S.record ? ' · ¡nuevo récord!' : ''), W/2, 106); return; }
+    c.textAlign='center'; c.fillStyle='#EDEAFB'; c.font='700 18px Fredoka'; c.fillText(t, W/2, 84);
+    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(cd.kind==='spin' ? 'Fíjate dónde queda la ventanilla' : cd.kind==='move' ? 'Síguela con la vista' : `${S.st.objs} objetos`, W/2, 106);
+  }
+}
+function drawTray(c, now){
+  // el carro de reparto: los objetos del pedido, que se llenan al encontrarlos
+  const n=S.st.objs, gap=8, size=38, w=n*size+(n-1)*gap, x0=W/2-w/2, y=546;
+  c.fillStyle='#ABA5D2'; c.font='600 13px Nunito'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('Carro de reparto', W/2, 518);
+  for (let i=0;i<n;i++){ const x=x0+i*(size+gap)+size/2, f=S.found[i], landed = f && !G.flyers.some(fl=>fl.k===i);
+    c.fillStyle='#141B3A'; c.beginPath(); c.arc(x,y,size/2,0,7); c.fill();
+    c.strokeStyle= landed ? (f.first ? '#9FF5D6' : 'rgba(171,165,210,.6)') : 'rgba(255,255,255,.12)'; c.lineWidth= landed && f.first ? 3 : 2; c.stroke();
+    if (landed){ const la=S.landAt&&S.landAt[i]?now-S.landAt[i]:999, b=la<380&&!reduce?1+.22*Math.sin(Math.PI*la/380)*(1-la/380):1; drawObj(c,f.obj,x,y,26*b); if (f.first){ c.strokeStyle='#9FF5D6'; c.lineWidth=2.6; c.beginPath(); c.moveTo(x+9,y-15); c.lineTo(x+12,y-11); c.lineTo(x+18,y-19); c.stroke(); } } }
+}
+function drawFlyers(c, now){
+  G.flyers=G.flyers.filter(f=>{ const k=(now-f.t)/(reduce?1:600); const n=S.st.objs, gap=8, size=38, x1=W/2-(n*size+(n-1)*gap)/2+f.k*(size+gap)+size/2, y1=546;
+    if (k>=1){ emit(x1,y1,f.first?14:6,80,500,f.first?'159,245,214':'200,200,255'); S.landAt=S.landAt||{}; S.landAt[f.k]=now; return false; }
+    const e=ease(k), x=f.x0+(x1-f.x0)*e, y=f.y0+(y1-f.y0)*e-Math.sin(Math.PI*e)*40;
+    if (!reduce){ c.globalAlpha=.7; c.drawImage(glow(f.first?'255,201,74':'200,200,255'),x-24,y-24,48,48); c.globalAlpha=1; }
+    c.save(); c.translate(x,y); c.rotate(Math.sin(Math.PI*e)*.5); drawObj(c,f.obj,0,0,36-8*e); c.restore(); return true; });
+}
+function drawHeader(c, now){
+  c.fillStyle='#EDEAFB'; c.font='700 17px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(`Pedido ${S.round} de ${ROUNDS}`, 14, 28);
+  if (S.streak>=2){ const t=`Racha ×${S.streak}`; c.font='700 15px Fredoka'; const w=c.measureText(t).width+24, x=W-14-w;
+    if (!reduce){ c.globalAlpha=.35+.15*Math.sin(now/300); c.drawImage(glow('255,201,74'),x-10,8,w+20,40); c.globalAlpha=1; }
+    c.fillStyle='#FFC94A'; rr(c,x,16,w,26,13); c.fill(); c.fillStyle='#1A1240'; c.textAlign='center'; c.fillText(t,x+w/2,30); }
+  else if (SAVE.best){ c.fillStyle='#ABA5D2'; c.font='600 13px Nunito'; c.textAlign='right'; c.fillText(`Récord: ${SAVE.best} objetos`, W-14, 28); }
+}
+function drawToast(c, now){ const t=G.toast; if(!t) return; const k=(now-t.at)/t.ms; if(k>=1){G.toast=null;return;}
+  c.globalAlpha=Math.min(1,k*8,(1-k)*4); c.fillStyle='rgba(8,10,34,.96)'; rr(c,10,574,W-20,t.sub?58:40,14); c.fill(); c.strokeStyle= t.good?'rgba(159,245,214,.5)':'rgba(255,214,160,.5)'; c.lineWidth=1.5; c.stroke();
+  c.fillStyle=t.good?'#9FF5D6':'#FFD6A0'; c.font='700 16px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t.t, W/2, 594);
+  if (t.sub){ c.fillStyle='#FFC94A'; c.font='600 14px Nunito'; let s=14; while (c.measureText(t.sub).width>W-36 && s>12){ s--; c.font=`600 ${s}px Nunito`; } c.fillText(t.sub, W/2, 617); } c.globalAlpha=1; }
+function drawIntro(c, now){
+  if (G.state!=='intro') return; const k=reduce?1:ease((now-S.introAt)/350), lines=INTROS[S.intro];
+  c.fillStyle=`rgba(2,3,15,${.78*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.translate(0,(1-k)*18);
+  const h=170+lines.length*24; c.fillStyle='#141B3A'; rr(c,18,190,W-36,h,26); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=2; c.stroke();
+  c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(S.intro==='bodega'?'BODEGA DE CARGA':'NUEVO', W/2, 216);
+  // ilustración: una escotilla que se abre y se cierra con un objeto
+  const t=reduce?1:(Math.sin(now/600)+1)/2; c.fillStyle='#232B57'; c.beginPath(); c.arc(W/2,268,HR+5,0,7); c.fill();
+  c.fillStyle='#5A4A7A'; c.beginPath(); c.arc(W/2,268,HR,0,7); c.fill(); drawObj(c, S.intro==='gira'?8:S.intro==='mueve'?7:1, W/2,268,38*t+2);
+  c.save(); c.translate(W/2,268); c.scale(1-t,1); c.fillStyle='#C9C1FF'; c.beginPath(); c.arc(0,0,HR-1,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.4; c.stroke(); c.restore();
+  lines.forEach((ln,i)=>{ c.fillStyle= i===0 ? '#fff' : '#D6D1F2'; let s=16; do { c.font=`${i===0?700:600} ${s}px Nunito`; } while (c.measureText(ln).width>W-56 && --s>13); c.fillText(ln, W/2, 322+i*24); });
+  c.fillStyle='#7FD8FF'; c.font='700 15px Fredoka'; c.fillText('Toca para seguir', W/2, 190+h-24); c.restore();
+}
+function drawEnd(c, now){
+  const k=reduce?1:ease((now-G.endT)/500); c.fillStyle=`rgba(3,4,22,${.95*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.fillStyle='#fff'; c.textAlign='center'; c.textBaseline='middle'; c.font='700 30px Fredoka'; c.fillText('¡Buen trabajo!', W/2, 96);
+  const pct=Math.round(100*S.firstTry/Math.max(1,S.total));
+  const rows=[['Encontrados al primer intento', `${S.firstTry} de ${S.total}`], ['Tu racha más larga', `${S.bestStreak}`], ['Tu bodega más grande hoy', S.roundBest?`${S.roundBest} objetos`:'—'], ['Etapa más alta', `${GRUPO(S.maxLv)} de 5`], ['Tu récord', SAVE.best?`${SAVE.best} objetos`:'—']];
+  let y=150; for (const [l,v] of rows){ c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.textAlign='left'; c.fillText(l,28,y); c.fillStyle='#fff'; c.font='700 18px Fredoka'; c.textAlign='right'; c.fillText(v,W-28,y); y+=42; }
+  c.textAlign='center'; c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.fillText(`${pct} % al primer intento`, W/2, y+8);
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('Truco: imagina cada objeto dentro de su escotilla', W/2, y+40);
+  c.fillStyle='#6E6A9A'; c.font='600 13px Nunito'; c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y+70);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-110,180,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 19px Fredoka'; c.fillText('Jugar de nuevo',W/2,H-82);
+  c.restore();
+}
+function drawMenu(c, now){
+  c.textAlign='center'; c.textBaseline='middle';
+  if (!S.slots){ S.slots=8; S.rot=0; S.hatch=[]; for (let k=1;k<=8;k++) S.hatch.push({ pos:k, obj:[0,null,3,null,5,null,9,null][k-1], open:0, target:0 }); }
+  S.rot = reduce ? 0 : now/9000;
+  S.hatch.forEach((h,i)=>{ h.open = h.obj!==null ? (Math.sin(now/700+i)+1)/2*.9 : 0; });
+  drawHull(c,now); drawWindow(c,now); S.hatch.forEach((h,i)=>drawHatch(c,h,i,now)); drawRobot(c,now);
+  c.fillStyle='rgba(3,4,22,.75)'; rr(c,40,66,280,96,20); c.fill();
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('Bodega de carga', W/2, 100);
+  c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.fillText('Recuerda dónde guardó cada cosa el robot', W/2, 134);
+  c.fillStyle='#7FD8FF'; rr(c,110,530,140,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.fillText('Jugar', W/2, 559);
+}
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  // las puertas se mueven suave hacia su objetivo
+  const dt=Math.min(.05,(now-(G.last||now))/1000); G.last=now; stepMotion(dt);
+  if (G.state==='menu') drawMenu(c, now);
+  else if (G.state!=='end'){
+    drawHeader(c, now); drawCard(c, now);
+    drawHull(c, now); drawWindow(c, now);
+    S.hatch.forEach((h,i)=>drawHatch(c,h,i,now));
+    drawCrateFlight(c, now); drawRobot(c, now);
+    drawTray(c, now); drawFlyers(c, now); drawToast(c, now);
+  }
+  G.parts=G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; p.vy+=1; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+  drawIntro(c, now);
+  if (G.state==='end') drawEnd(c, now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e), now=performance.now();
+  if (G.state==='menu'){ if (y>520&&y<596 && x>100&&x<260){ S.slots=0; startGame(); } return; }
+  if (G.state==='intro'){ if (now-S.introAt>500) play(); return; }
+  if (G.state==='end'){ if (now-G.endT>600 && y>H-120){ G.state='menu'; S.slots=0; } return; }
+  if (G.state!=='ask') return;
+  let best=-1, bd=1e9; S.hatch.forEach((h,i)=>{ const p=posOf(h.pos), d=Math.hypot(x-p.x,y-p.y); if (d<bd){ bd=d; best=i; } });
+  if (best>=0 && bd<=HR+10) tapHatch(best);
+});
+document.getElementById('snd').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',soundOn); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+document.getElementById('rm').addEventListener('click',e=>{ reduce=!reduce; e.currentTarget.setAttribute('aria-pressed',reduce); });
+</script>
