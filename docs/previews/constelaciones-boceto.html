@@ -43,14 +43,16 @@ h2{font:600 19px var(--f-display);margin:24px 0 10px}
       <li><b>Si se te escapa, brilla dónde estaba</b> (sin darse vuelta): siempre aprendes.</li>
       <li><b>La racha solo cuenta parejas de memoria.</b> Explorar cartas nuevas nunca la corta.</li>
       <li><b>Luces repartidas como estrellas</b>, no en filas: recuerdas el lugar, no «fila 2, columna 3».</li>
-      <li><b>Gemelos</b> (etapa 5): objetos casi iguales con un detalle claro distinto. Solo se unen los idénticos.</li>
-      <li><b>Tríos</b> (etapa 8): hay que juntar tres iguales.</li>
+      <li><b>Gemelos</b> (etapa 7): objetos casi iguales con un detalle claro distinto. Solo se unen los idénticos.</li>
+      <li><b>Tríos</b> (etapa 10): hay que juntar tres iguales.</li>
+      <li><b>Parejas y tríos juntos</b> (etapa 13): si dos iguales quedan abiertas, falta la tercera.</li>
+      <li><b>Cielo grande</b> (etapa 16): hasta 24 luces, con gemelos, parejas y tríos.</li>
     </ul>
     <div class="row">
       <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
       <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
     </div>
-    <p class="note">Boceto jugable: 6 cielos por partida y 12 etapas. Con 0 o 1 parejas olvidadas sube una etapa; con 3 o más baja una. Si tocas otra luz mientras dos siguen abiertas, se cierran al tiro. Para revisar una etapa: <code>?etapa=N</code>.</p>
+    <p class="note">Boceto jugable: 6 cielos por partida y 18 etapas en 6 grupos. Con 0 o 1 parejas olvidadas sube una etapa; con 3 o más baja una. Si tocas otra luz mientras dos siguen abiertas, se cierran al tiro. Para revisar una etapa: <code>?etapa=N</code>.</p>
   </div>
 
   <div class="phone"><canvas id="cv" aria-label="Constelaciones: encuentra las parejas de objetos escondidos en las luces del cielo"></canvas></div>
@@ -118,24 +120,38 @@ function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.le
 
 // ============================================================ etapas
 const STAGES = [
+  // 1. parejas
   { g:3,  size:2, intro:'cielo' },
   { g:4,  size:2 },
   { g:5,  size:2 },
+  // 2. cielo más lleno
   { g:6,  size:2 },
+  { g:7,  size:2 },
+  { g:8,  size:2 },
+  // 3. gemelos
   { g:6,  size:2, twins:1, intro:'gemelos' },
   { g:7,  size:2, twins:1 },
   { g:8,  size:2, twins:2 },
+  // 4. tríos
   { g:4,  size:3, intro:'trios' },
   { g:5,  size:3 },
-  { g:9,  size:2, twins:2 },
   { g:5,  size:3, twins:1 },
-  { g:10, size:2, twins:3 },
+  // 5. parejas y tríos juntos
+  { g:6,  size:2, trios:2, intro:'mezcla' },
+  { g:7,  size:2, trios:2, twins:1 },
+  { g:8,  size:2, trios:3, twins:1 },
+  // 6. cielo grande
+  { g:10, size:2, twins:2, intro:'grande' },
+  { g:11, size:2, twins:3 },
+  { g:11, size:2, trios:2, twins:3 },
 ];
-const GRUPO = i => [1,1,2,2,3,3,3,4,4,5,5,5][i];
+const GRUPOS = 6, GRUPO = i => Math.floor(i/3)+1;
 const INTROS = {
   cielo:   { tag:'CONSTELACIONES', lines:['Cada luz esconde un objeto.', 'Da vuelta dos: si son iguales,', 'quedan unidas con luz.'] },
   gemelos: { tag:'NUEVO', lines:['¡Llegan gemelos parecidos!', 'Mira bien el detalle:', 'solo se unen los idénticos.'] },
   trios:   { tag:'NUEVO', lines:['Ahora son tríos.', 'Da vuelta tres iguales', 'para unirlos.'] },
+  mezcla:  { tag:'NUEVO', lines:['Parejas y tríos juntos.', 'Si dos iguales quedan abiertas,', 'busca la tercera.'] },
+  grande:  { tag:'NUEVO', lines:['¡Cielo grande!', 'Más luces que nunca:', 'recórrelo por partes.'] },
 };
 const OBJ = ['planeta','cohete','cometa','ovni','cristal','casco','luna','satélite','telescopio','asteroide','antena','brújula'];
 const TWIN = [0,1,3,5];               // los que tienen gemelo: planeta (sin anillo), cohete (con llama), ovni (con patas), casco (con antena)
@@ -148,7 +164,7 @@ const SAVE = { bestStreak:0 };
 try { Object.assign(SAVE, JSON.parse(localStorage.getItem('nubi_constelaciones')||'{}')); } catch(e){}
 function save(){ try { localStorage.setItem('nubi_constelaciones', JSON.stringify(SAVE)); } catch(e){} }
 const DEBUG = new URLSearchParams(location.search).has('debug');
-const LV0 = Math.max(0, Math.min(11, (+new URLSearchParams(location.search).get('etapa')||1)-1));
+const LV0 = Math.max(0, Math.min(STAGES.length-1, (+new URLSearchParams(location.search).get('etapa')||1)-1));
 const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 const slow = () => 1;   // en mayores: 1.35
 function emit(x,y,n,spread,life,rgb,up=20){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-up,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
@@ -177,7 +193,9 @@ function makeBoard(st){
   twinKinds.forEach(k=>{ groups.push({kind:k,v:0}); groups.push({kind:k,v:1}); });
   const rest=shuffle([...OBJ.keys()].filter(k=>!twinKinds.includes(k)));
   while (groups.length<st.g) groups.push({ kind:rest.pop(), v:0 });
-  const cards=[]; groups.forEach((gr,gi)=>{ for (let r=0;r<st.size;r++) cards.push({ kind:gr.kind, v:gr.v, key:gr.kind+':'+gr.v, note:PENTA[gi%10]*(gi>=10?2:1), state:'down', f:0, vf:0, ft:0, seen:false, ring:null }); });
+  groups.forEach(gr=>gr.size=st.size);
+  groups.filter(gr=>!twinKinds.includes(gr.kind)).slice(0,st.trios||0).forEach(gr=>gr.size=3);   // en la mezcla, algunos vienen de a tres
+  const cards=[]; groups.forEach((gr,gi)=>{ for (let r=0;r<gr.size;r++) cards.push({ kind:gr.kind, v:gr.v, key:gr.kind+':'+gr.v, size:gr.size, note:PENTA[gi%10]*(gi>=10?2:1), state:'down', f:0, vf:0, ft:0, seen:false, ring:null }); });
   shuffle(cards); const { P, R }=layout(cards.length);
   cards.forEach((c,i)=>{ c.x=P[i].x; c.y=P[i].y; c.appearAt=performance.now()+120+i*45; });
   Object.assign(S, { cards, R, links:[], face:[], types:[], pending:null, lock:0, opps:[], misses:0, size:st.size, st });
@@ -209,7 +227,8 @@ function tap(card){
   if (card.key===S.face[0].key){
     S.types.push(hit?'mem':'new'); S.face.push(card);
     if (hit){ S.hits++; S.streak++; S.bestStreak=Math.max(S.bestStreak,S.streak); }
-    if (S.face.length===S.size) complete(); else bell(card.note*1.5,.03,.6,.08);
+    if (S.face.length===card.size) complete();
+    else { bell(card.note*1.5,.03,.6,.08); if (S.face.length===2) float((S.face[0].x+card.x)/2,(S.face[0].y+card.y)/2-10,'¡Falta la tercera!','#FFE7A8'); }
   } else {
     // no son iguales: quedan abiertas un momento (o hasta el próximo toque)
     if (opp){ S.misses++; S.streak=0; const kin=S.kin; setTimeout(()=>{ kin.forEach(k=>{ if (k.state==='down') k.hintAt=performance.now(); }); }, 380); S.msg={ t:'Se te escapó: brilla dónde estaba', at:now }; }
@@ -391,7 +410,11 @@ function drawCard(c, card, now){
   c.restore();
 }
 // las líneas van sobre todas las luces y nacen en el borde de las suyas: si cruzan otra luz, se ve que pasan de largo
-function drawSky(c, now){ S.cards.forEach(cd=>drawCard(c,cd,now)); drawLinks(c,now); }
+function drawSky(c, now){ S.cards.forEach(cd=>drawCard(c,cd,now)); drawLinks(c,now);
+  // trío a medias: un hilo tenue une las dos abiertas mientras falta la tercera
+  if (S.face && S.face.length>=2){ c.save(); c.strokeStyle='rgba(255,231,168,.75)'; c.lineWidth=2.5; c.setLineDash([3,6]); c.lineCap='round';
+    for (let i=1;i<S.face.length;i++){ const a=S.face[i-1], b=S.face[i], d=Math.hypot(b.x-a.x,b.y-a.y)||1, ux=(b.x-a.x)/d, uy=(b.y-a.y)/d, o=S.R+6;
+      c.beginPath(); c.moveTo(a.x+ux*o,a.y+uy*o); c.lineTo(b.x-ux*o,b.y-uy*o); c.stroke(); } c.restore(); } }
 function drawBanner(c, now){
   const st=S.st; c.fillStyle='#141B3A'; rr(c,10,58,W-20,60,18); c.fill(); c.strokeStyle='rgba(142,131,216,.35)'; c.lineWidth=2; c.stroke();
   c.textAlign='center'; c.textBaseline='middle';
@@ -400,9 +423,12 @@ function drawBanner(c, now){
     c.fillStyle='#EDEAFB'; c.font='600 14px Nunito';
     c.fillText(r.opps ? `${r.hits} de ${r.opps} de memoria` + (S.newRecord?' · ¡racha récord!':'') : 'Todas a la primera vista: ¡qué suerte!', W/2, 100); return; }
   if (S.msg && now-S.msg.at<1800){ c.fillStyle='#FFE7A8'; c.font='700 17px Fredoka'; c.fillText(S.msg.t, W/2, 80); c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('Ya la habías visto: la próxima vez, directo', W/2, 101); return; }
-  const kind = st.size===3 ? 'tríos' : 'parejas', left=S.cards.filter(c=>c.state!=='done').length/st.size;
-  c.fillStyle='#EDEAFB'; c.font='700 18px Fredoka'; c.fillText(st.twins ? 'Ojo con los gemelos' : st.size===3 ? 'Busca tres iguales' : 'Busca las parejas', W/2, 80);
-  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(st.twins ? `Solo se unen los idénticos · faltan ${left} ${kind}` : `Faltan ${left} ${kind}`, W/2, 101);
+  const open=S.cards.filter(c=>c.state!=='done'), p=open.filter(c=>c.size===2).length/2, t=open.filter(c=>c.size===3).length/3;
+  const faltan = [p ? `${p} ${p===1?'pareja':'parejas'}` : '', t ? `${t} ${t===1?'trío':'tríos'}` : ''].filter(Boolean).join(' y ');
+  const mix=!!st.trios, title = st.twins ? (mix ? 'Gemelos, parejas y tríos' : 'Ojo con los gemelos') : mix ? 'Parejas y tríos' : st.size===3 ? 'Busca tres iguales' : 'Busca las parejas';
+  const sub = st.twins && !mix ? `Solo se unen los idénticos · faltan ${faltan}` : `Faltan ${faltan}`;
+  c.fillStyle='#EDEAFB'; c.font='700 18px Fredoka'; c.fillText(title, W/2, 80);
+  c.fillStyle='#ABA5D2'; let fs=14; c.font='600 14px Nunito'; c.fillText(sub, W/2, 101);
 }
 function drawMemoryRow(c, now){
   // cada vez que la pareja ya estaba vista: punto dorado si fuiste directo, aro si se te escapó
@@ -432,12 +458,16 @@ function drawIntro(c, now){
   if (G.state!=='intro') return; const k=reduce?1:ease((now-S.introAt)/350), it=INTROS[S.intro], lines=it.lines;
   c.fillStyle=`rgba(2,3,15,${.8*k})`; c.fillRect(0,0,W,H);
   c.save(); c.globalAlpha=k; c.translate(0,(1-k)*18);
-  const extra=S.intro==='gemelos'?18:0, top=160, h=236+lines.length*24+extra; c.fillStyle='#141B3A'; rr(c,18,top,W-36,h,26); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=2; c.stroke();
+  const extra=S.intro==='gemelos'||S.intro==='mezcla'?18:0, top=160, h=236+lines.length*24+extra; c.fillStyle='#141B3A'; rr(c,18,top,W-36,h,26); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=2; c.stroke();
   c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(it.tag, W/2, top+26);
   // ilustración de la regla
   const R=30, cy=top+92, mini=(x,kind,v,mem)=>{ const g=c.createRadialGradient(x-10,cy-12,2,x,cy,R); g.addColorStop(0,'#fff'); g.addColorStop(1,'#C6BDF5'); c.fillStyle=g; c.beginPath(); c.arc(x,cy,R,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); drawObj(c,kind,v,x,cy,R*1.32); if (mem!==undefined){ c.strokeStyle=mem?'#FFC94A':'#7FD8FF'; c.lineWidth=3.5; if(!mem) c.setLineDash([5,5]); c.beginPath(); c.arc(x,cy,R+5,0,7); c.stroke(); c.setLineDash([]); } };
   if (S.intro==='cielo'){ c.strokeStyle='#FFC94A'; c.lineWidth=4; c.beginPath(); c.moveTo(W/2-60,cy); c.lineTo(W/2+60,cy); c.stroke(); mini(W/2-60,1,0,true); mini(W/2+60,1,0,true); }
-  if (S.intro==='gemelos'){ mini(W/2-60,0,0); mini(W/2+60,0,1); c.fillStyle='#FFE7A8'; c.font='700 26px Fredoka'; c.fillText('≠', W/2, cy); c.fillStyle='#ABA5D2'; c.font='600 13px Nunito'; c.fillText('con anillo', W/2-60, cy+46); c.fillText('sin anillo', W/2+60, cy+46); }
+  if (S.intro==='gemelos'){ mini(W/2-60,0,0); mini(W/2+60,0,1); c.fillStyle='#FFE7A8'; c.font='700 26px Fredoka'; c.fillText('≠', W/2, cy); c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('con anillo', W/2-60, cy+46); c.fillText('sin anillo', W/2+60, cy+46); }
+  if (S.intro==='mezcla'){ const r=20, m2=(x,kind,mem)=>{ const g=c.createRadialGradient(x-8,cy-9,2,x,cy,r); g.addColorStop(0,'#fff'); g.addColorStop(1,'#C6BDF5'); c.fillStyle=g; c.beginPath(); c.arc(x,cy,r,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.6; c.stroke(); drawObj(c,kind,0,x,cy,r*1.32); c.strokeStyle='#FFC94A'; c.lineWidth=3; if (!mem){ c.setLineDash([4,5]); c.strokeStyle='#FFE7A8'; } c.beginPath(); c.arc(x,cy,r+4,0,7); c.stroke(); c.setLineDash([]); };
+    c.strokeStyle='#FFC94A'; c.lineWidth=3.5; c.beginPath(); c.moveTo(54,cy); c.lineTo(112,cy); c.moveTo(186,cy); c.lineTo(244,cy); c.stroke(); m2(54,5,true); m2(112,5,true); m2(186,7,true); m2(244,7,true); m2(302,7,false);
+    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('pareja', 83, cy+42); c.fillText('trío: falta una', 244, cy+42); }
+  if (S.intro==='grande'){ for (let i=0;i<18;i++){ const x=W/2-110+(i%6)*44+((i/6|0)%2)*14, y=cy-34+(i/6|0)*34; const g=c.createRadialGradient(x-4,y-4,1,x,y,14); g.addColorStop(0,'#3A3F86'); g.addColorStop(1,'#171B4A'); c.fillStyle=g; c.beginPath(); c.arc(x,y,14,0,7); c.fill(); c.fillStyle='#E4E8FF'; c.beginPath(); c.arc(x,y,1.8,0,7); c.fill(); } }
   if (S.intro==='trios'){ c.strokeStyle='#FFC94A'; c.lineWidth=4; c.beginPath(); c.moveTo(W/2-80,cy+6); c.lineTo(W/2,cy-6); c.lineTo(W/2+80,cy+6); c.stroke(); mini(W/2-80,6,0,true); c.save(); c.translate(0,-12); mini(W/2,6,0,true); c.restore(); mini(W/2+80,6,0,true); }
   const ly=top+160+extra; lines.forEach((ln,i)=>{ c.fillStyle= i===0 ? '#fff' : '#D6D1F2'; let s=17; do { c.font=`${i===0?700:600} ${s}px Nunito`; } while (c.measureText(ln).width>W-60 && --s>14); c.fillText(ln, W/2, ly+i*26); });
   if (S.intro==='cielo'){ c.fillStyle='#FFC94A'; c.font='700 14px Nunito'; c.fillText('Línea dorada: la recordaste', W/2, ly+lines.length*26+6); }
@@ -453,7 +483,7 @@ function drawEnd(c, now){
   c.fillStyle='#FFC94A'; c.font='700 44px Fredoka'; c.fillText(pct===null?'—':`${pct} %`, W/2, 180);
   c.fillStyle='#D6D1F2'; c.font='600 14px Nunito'; c.fillText(S.oppsTotal ? `${S.hits} de ${S.oppsTotal} veces fuiste directo` : 'No hubo parejas vistas que recordar', W/2, 216);
   c.fillText(S.oppsTotal ? 'a una pareja que ya habías visto' : '', W/2, 234);
-  const rows=[['Parejas de memoria', `${S.memPairs} de ${S.pairs}`], ['Racha de memoria más larga', `${S.bestStreak}`], ['Etapa más alta', `${GRUPO(S.maxLv)} de 5`], ['Tu mejor racha', SAVE.bestStreak?`${SAVE.bestStreak}`:'—']];
+  const rows=[['Parejas de memoria', `${S.memPairs} de ${S.pairs}`], ['Racha de memoria más larga', `${S.bestStreak}`], ['Etapa más alta', `${GRUPO(S.maxLv)} de ${GRUPOS}`], ['Tu mejor racha', SAVE.bestStreak?`${SAVE.bestStreak}`:'—']];
   let y=282; for (const [l,v] of rows){ c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.textAlign='left'; c.fillText(l,28,y); c.fillStyle='#fff'; c.font='700 18px Fredoka'; c.textAlign='right'; c.fillText(v,W-28,y); y+=40; }
   c.textAlign='center'; c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(TIPS[S.board%TIPS.length], W/2, y+4);
   c.fillStyle='#8F8AC0'; c.font='600 14px Nunito'; c.fillText('Lo encontrado por suerte no cuenta.', W/2, y+32); c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y+52);

@@ -1,4 +1,4 @@
-# Constelaciones: renovación de Parejas Ocultas (propuesta A, elegida por Ricardo el 7-oct)
+# Constelaciones: renovación de Parejas Ocultas (propuesta A, aprobada por Ricardo el 7-oct)
 
 Renovación a fondo de **Parejas Ocultas** (id `parejas`, área Memoria). Se mantiene el id, el historial y el lugar en la
 app; cambia el juego, el nombre que se muestra y la medida del final.
@@ -10,6 +10,11 @@ app; cambia el juego, el nombre que se muestra y la medida del final.
 - **Lo que rechazó:** el álbum «Mi cielo» para coleccionar constelaciones: «no le encuentro sentido». Se reemplazó por
   algo con función: **el color de cada línea dice cómo encontraste la pareja** (sección 1).
 - **Pedido de Ricardo:** usar las skills de UI/UX a fondo. Las reglas que se aplicaron están en la sección 6.
+- **Aprobación del boceto (7-oct):** «lo apruebo, déjalo como Constelaciones. Me parece bien la partida, pero haría que
+  vaya aumentando en complejidad con más etapas y constelaciones». Por eso:
+  - el nombre que se muestra pasa a ser **Constelaciones** (el id sigue siendo `parejas`);
+  - la escalera pasa de 12 a **18 etapas en 6 grupos**: se suman «parejas y tríos juntos» y el «cielo grande» de hasta
+    24 luces (versión 2 del boceto).
 
 ## Por qué se renueva
 
@@ -72,7 +77,7 @@ iluminan una por una y queda a la vista **qué parte del cielo armaste con tu me
 - **Gemelos:** el gemelo es otra pareja (otra clave). Solo se unen los idénticos.
 - **Tríos:** se unen con dos líneas, A-B y B-C. El tipo de cada línea es el de su luz de llegada.
 
-## 4. Etapas (12 niveles del DDA común)
+## 4. Etapas (18 niveles del DDA común, en 6 grupos)
 
 | Etapa | Grupos | Tipo | Gemelos | Luces | Novedad (tarjeta NUEVO) |
 |---|---|---|---|---|---|
@@ -80,27 +85,47 @@ iluminan una por una y queda a la vista **qué parte del cielo armaste con tu me
 | 2 | 4 | parejas | – | 8 | |
 | 3 | 5 | parejas | – | 10 | |
 | 4 | 6 | parejas | – | 12 | |
-| 5 | 6 | parejas | 1 | 12 | **NUEVO**: «¡Llegan gemelos parecidos! / Mira bien el detalle: / solo se unen los idénticos.» (planeta con anillo ≠ sin anillo) |
-| 6 | 7 | parejas | 1 | 14 | |
-| 7 | 8 | parejas | 2 | 16 | |
-| 8 | 4 | tríos | – | 12 | **NUEVO**: «Ahora son tríos. / Da vuelta tres iguales / para unirlos.» |
-| 9 | 5 | tríos | – | 15 | |
-| 10 | 9 | parejas | 2 | 18 | |
-| 11 | 5 | tríos | 1 | 15 | |
-| 12 | 10 | parejas | 3 | 20 | |
+| 5 | 7 | parejas | – | 14 | |
+| 6 | 8 | parejas | – | 16 | |
+| 7 | 6 | parejas | 1 | 12 | **NUEVO**: «¡Llegan gemelos parecidos! / Mira bien el detalle: / solo se unen los idénticos.» (planeta con anillo ≠ sin anillo) |
+| 8 | 7 | parejas | 1 | 14 | |
+| 9 | 8 | parejas | 2 | 16 | |
+| 10 | 4 | tríos | – | 12 | **NUEVO**: «Ahora son tríos. / Da vuelta tres iguales / para unirlos.» |
+| 11 | 5 | tríos | – | 15 | |
+| 12 | 5 | tríos | 1 | 15 | |
+| 13 | 6 (2 tríos) | mezcla | – | 14 | **NUEVO**: «Parejas y tríos juntos. / Si dos iguales quedan abiertas, / busca la tercera.» (dibujo: una pareja y un trío al que le falta una) |
+| 14 | 7 (2 tríos) | mezcla | 1 | 16 | |
+| 15 | 8 (3 tríos) | mezcla | 1 | 19 | |
+| 16 | 10 | parejas | 2 | 20 | **NUEVO**: «¡Cielo grande! / Más luces que nunca: / recórrelo por partes.» |
+| 17 | 11 | parejas | 3 | 22 | |
+| 18 | 11 (2 tríos) | mezcla | 3 | 24 | |
 
+- **Mezcla:**
+  - los tríos se eligen entre los grupos que no son gemelos;
+  - un grupo se completa cuando se abren todos sus miembros: una pareja con 2 luces, un trío con 3;
+  - al abrir 2 iguales de un trío, aparece «¡Falta la tercera!» y un hilo tenue punteado las une mientras sigue el turno;
+  - la tarjeta de arriba dice «Faltan N parejas y M tríos».
+- **Títulos de la tarjeta:**
+  - «Busca las parejas»;
+  - «Busca tres iguales»;
+  - «Ojo con los gemelos / Solo se unen los idénticos · faltan…»;
+  - «Parejas y tríos»;
+  - «Gemelos, parejas y tríos».
 - **Gemelos:** cuentan dentro de los grupos. Ejemplo: 1 gemelo = planeta con anillo + planeta sin anillo, es decir, 2 de
   los grupos.
-- **Grupo para la pantalla final:** etapas 1-2 → 1, 3-4 → 2, 5-7 → 3, 8-9 → 4, 10-12 → 5.
+- **Grupo para la pantalla final:** 3 etapas por grupo, 6 grupos («Etapa más alta: N de 6»).
 - **Partida:** 6 cielos. Un cielo con 0-1 «se te escapó» sube una etapa; con 3 o más baja una.
-  - En la app esto lo hace el **motor común** (`AdaptiveDifficulty`, `MaxLevel` 12). Cada oportunidad de memoria es un
-    ensayo: acierto = correcto, «se te escapó» = error.
+  - En la app esto lo hace el **motor común** (`AdaptiveDifficulty`). Cada oportunidad de memoria es un
+    ensayo: acierto = correcto, «se te escapó» = error. `MaxLevel` 18.
   - Los cielos sin oportunidades no mueven el rating.
-- **Simulación** (1.500 partidas con un jugador que olvida una parte de lo visto; `scratchpad/constelaciones/sim.js`):
+- **Simulación** (3.750 partidas con un jugador que olvida una parte de lo visto, empezando en las etapas 1, 7, 10, 13 y 16):
   - Ninguna partida se trabó.
   - La memoria de lugar sigue al jugador: 100 % con memoria perfecta, 84 % si olvida el 30 % y 54 % si olvida el 80 %.
   - La etapa máxima sube con la memoria.
-  - Una partida dura unos 47 turnos (unos 3 minutos).
+  - Una partida dura unos 50 turnos (unos 3 minutos) en las primeras etapas y unos 100 turnos (unos 6 minutos) en el
+    cielo grande.
+  - Ojo: si a Ricardo le parece larga arriba, la opción es bajar a 4 cielos desde la etapa 16.
+  - El reparto con 24 luces sigue sin violaciones: 300 pruebas, radio 28, 56 dp de toque.
 
 ## 5. Pantalla (360×640 dp de referencia)
 
@@ -113,7 +138,7 @@ iluminan una por una y queda a la vista **qué parte del cielo armaste con tu me
   - **reparto:** muestreo del mejor candidato (40 intentos por luz) y luego empuje hasta respetar la distancia mínima;
   - **radio:** `R = clamp(√(área/n)·0.34, 28, 38)`; distancia mínima entre centros `2R + 12`, es decir, toque de 56 dp o
     más con 12 de aire;
-  - **verificado:** 300 repartos por tamaño, de 6 a 20 luces, sin una sola violación.
+  - **verificado:** 300 repartos por tamaño, de 6 a 24 luces, sin una sola violación.
   - **Toque:** la luz más cercana dentro de `R + 10`.
 - **Luz dormida:** esfera de arcilla oscura con un núcleo tibio. Sin animación continua; todas se ven iguales.
 - **Luz abierta:** disco claro con el objeto a `1,32·R`.
@@ -193,7 +218,7 @@ iluminan una por una y queda a la vista **qué parte del cielo armaste con tu me
 4. **Notice** sobre la línea dorada: «Línea dorada: la encontraste de memoria.»
 5. **Notice** sobre «De memoria» abajo: «Aquí se cuenta cuántas veces fuiste directo.»
 
-Luego, un cielo de 3 parejas que no cuenta. Las zonas protegidas (`keep:`) son la tarjeta de arriba y la fila de abajo.
+Luego, un cielo de 3 parejas que no cuenta. Las tarjetas NUEVO de gemelos, tríos, mezcla y cielo grande explican cada novedad cuando llega. Las zonas protegidas (`keep:`) son la tarjeta de arriba y la fila de abajo.
 
 ## 9. Originalidad y riesgos
 
