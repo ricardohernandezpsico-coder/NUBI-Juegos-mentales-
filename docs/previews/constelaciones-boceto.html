@@ -1,0 +1,509 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Constelaciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.key{display:inline-block;width:28px;height:0;vertical-align:middle;margin-right:6px;border-top:4px solid var(--sun)}
+.key.new{border-top:3px dashed var(--sky)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Constelaciones</h1>
+    <p class="lead">Cada luz del cielo esconde un objeto. Da vuelta dos: si son iguales, quedan unidas por una línea de luz. Al terminar, el cielo muestra cuáles encontraste de memoria y cuáles a la primera vista.</p>
+
+    <h2>Lo que lo hace distinto</h2>
+    <ul class="list">
+      <li><span class="key"></span><b>Línea dorada: de memoria.</b> Fuiste directo a una pareja que ya habías visto.</li>
+      <li><span class="key new"></span><b>Línea celeste: a la primera vista.</b> Las dos eran nuevas: eso es suerte, no memoria.</li>
+      <li><b>Mide memoria, no suerte.</b> Abajo se marca cada vez que la pareja ya estaba vista: punto lleno si fuiste directo, aro vacío si se te escapó. Ninguna app lo separa así.</li>
+      <li><b>Si se te escapa, brilla dónde estaba</b> (sin darse vuelta): siempre aprendes.</li>
+      <li><b>La racha solo cuenta parejas de memoria.</b> Explorar cartas nuevas nunca la corta.</li>
+      <li><b>Luces repartidas como estrellas</b>, no en filas: recuerdas el lugar, no «fila 2, columna 3».</li>
+      <li><b>Gemelos</b> (etapa 5): objetos casi iguales con un detalle claro distinto. Solo se unen los idénticos.</li>
+      <li><b>Tríos</b> (etapa 8): hay que juntar tres iguales.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable: 6 cielos por partida y 12 etapas. Con 0 o 1 parejas olvidadas sube una etapa; con 3 o más baja una. Si tocas otra luz mientras dos siguen abiertas, se cierran al tiro. Para revisar una etapa: <code>?etapa=N</code>.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="Constelaciones: encuentra las parejas de objetos escondidos en las luces del cielo"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+// ============================================================ etapas
+const STAGES = [
+  { g:3,  size:2, intro:'cielo' },
+  { g:4,  size:2 },
+  { g:5,  size:2 },
+  { g:6,  size:2 },
+  { g:6,  size:2, twins:1, intro:'gemelos' },
+  { g:7,  size:2, twins:1 },
+  { g:8,  size:2, twins:2 },
+  { g:4,  size:3, intro:'trios' },
+  { g:5,  size:3 },
+  { g:9,  size:2, twins:2 },
+  { g:5,  size:3, twins:1 },
+  { g:10, size:2, twins:3 },
+];
+const GRUPO = i => [1,1,2,2,3,3,3,4,4,5,5,5][i];
+const INTROS = {
+  cielo:   { tag:'CONSTELACIONES', lines:['Cada luz esconde un objeto.', 'Da vuelta dos: si son iguales,', 'quedan unidas con luz.'] },
+  gemelos: { tag:'NUEVO', lines:['¡Llegan gemelos parecidos!', 'Mira bien el detalle:', 'solo se unen los idénticos.'] },
+  trios:   { tag:'NUEVO', lines:['Ahora son tríos.', 'Da vuelta tres iguales', 'para unirlos.'] },
+};
+const OBJ = ['planeta','cohete','cometa','ovni','cristal','casco','luna','satélite','telescopio','asteroide','antena','brújula'];
+const TWIN = [0,1,3,5];               // los que tienen gemelo: planeta (sin anillo), cohete (con llama), ovni (con patas), casco (con antena)
+const TIPS = ['Truco: da vuelta primero una luz nueva', 'Truco: di su nombre en voz baja al verla', 'Truco: fíjate en qué parte del cielo está'];
+const BOARDS = 6;
+const B = { x0:14, x1:346, y0:130, y1:526 };   // zona del cielo
+const G = { state:'menu', parts:[], floats:[] };
+const S = {};
+const SAVE = { bestStreak:0 };
+try { Object.assign(SAVE, JSON.parse(localStorage.getItem('nubi_constelaciones')||'{}')); } catch(e){}
+function save(){ try { localStorage.setItem('nubi_constelaciones', JSON.stringify(SAVE)); } catch(e){} }
+const DEBUG = new URLSearchParams(location.search).has('debug');
+const LV0 = Math.max(0, Math.min(11, (+new URLSearchParams(location.search).get('etapa')||1)-1));
+const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const slow = () => 1;   // en mayores: 1.35
+function emit(x,y,n,spread,life,rgb,up=20){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-up,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
+function float(x,y,text,col){ G.floats.push({ x, y, text, col, at:performance.now() }); }
+function spring(x, v, target, dt, freq, zeta){ const w=2*Math.PI*freq; v += (w*w*(target-x) - 2*zeta*w*v)*dt; return [x+v*dt, v]; }
+const easeIO = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+
+// ============================================================ el cielo: luces repartidas como estrellas, nunca encimadas
+function layout(n){
+  const area=(B.x1-B.x0)*(B.y1-B.y0), R=Math.max(28, Math.min(38, Math.sqrt(area/n)*.34)), dmin=2*R+12;
+  const lo={ x:B.x0+R, y:B.y0+R }, hi={ x:B.x1-R, y:B.y1-R }, P=[];
+  // muestreo del mejor candidato: cada luz va lo más lejos posible de las demás
+  for (let i=0;i<n;i++){ let best=null, bd=-1;
+    for (let k=0;k<40;k++){ const p={ x:lo.x+Math.random()*(hi.x-lo.x), y:lo.y+Math.random()*(hi.y-lo.y) }; let d=1e9; for (const q of P) d=Math.min(d,Math.hypot(p.x-q.x,p.y-q.y)); if (d>bd){ bd=d; best=p; } }
+    P.push(best); }
+  // y se empujan entre sí hasta respetar la distancia mínima (48 dp de toque + 12 de aire)
+  for (let it=0; it<500; it++){ let moved=false;
+    for (let i=0;i<n;i++) for (let j=i+1;j<n;j++){ const a=P[i], b=P[j]; let dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy);
+      if (d<dmin){ if (d<.01){ dx=Math.random()-.5; dy=Math.random()-.5; d=Math.hypot(dx,dy); } const m=(dmin-d)/2+.5; a.x-=dx/d*m; a.y-=dy/d*m; b.x+=dx/d*m; b.y+=dy/d*m; moved=true; } }
+    for (const p of P){ p.x=Math.max(lo.x,Math.min(hi.x,p.x)); p.y=Math.max(lo.y,Math.min(hi.y,p.y)); }
+    if (!moved) break; }
+  return { P, R };
+}
+function makeBoard(st){
+  const twinKinds=shuffle(TWIN.slice()).slice(0,st.twins||0), groups=[];
+  twinKinds.forEach(k=>{ groups.push({kind:k,v:0}); groups.push({kind:k,v:1}); });
+  const rest=shuffle([...OBJ.keys()].filter(k=>!twinKinds.includes(k)));
+  while (groups.length<st.g) groups.push({ kind:rest.pop(), v:0 });
+  const cards=[]; groups.forEach((gr,gi)=>{ for (let r=0;r<st.size;r++) cards.push({ kind:gr.kind, v:gr.v, key:gr.kind+':'+gr.v, note:PENTA[gi%10]*(gi>=10?2:1), state:'down', f:0, vf:0, ft:0, seen:false, ring:null }); });
+  shuffle(cards); const { P, R }=layout(cards.length);
+  cards.forEach((c,i)=>{ c.x=P[i].x; c.y=P[i].y; c.appearAt=performance.now()+120+i*45; });
+  Object.assign(S, { cards, R, links:[], face:[], types:[], pending:null, lock:0, opps:[], misses:0, size:st.size, st });
+}
+
+// ============================================================ partida
+function startGame(){ Object.assign(S, { board:0, lv:LV0, maxLv:LV0, streak:0, bestStreak:0, hits:0, oppsTotal:0, pairs:0, memPairs:0 }); nextBoard(); }
+function nextBoard(){
+  if (S.board>=BOARDS) return finish();
+  S.board++; const st=STAGES[S.lv]; makeBoard(st); S.msg=null;
+  if (st.intro && !S['seen_'+st.intro]){ S['seen_'+st.intro]=true; S.intro=st.intro; G.state='intro'; S.introAt=performance.now(); chime(); return; }
+  begin();
+}
+function begin(){ G.state='play'; const t=performance.now(); S.cards.forEach((c,i)=>c.appearAt=t+80+i*45); hum(); }
+
+function closePending(){
+  const p=S.pending; if (!p) return; clearTimeout(p.timer); S.pending=null;
+  p.cards.forEach(c=>{ if (c.state==='up'){ c.state='down'; c.ft=0; } }); flipDown();
+}
+function tap(card){
+  const now=performance.now(); if (G.state!=='play' || card.state!=='down' || now<card.appearAt+150) return;   // nada bloquea: cada luz se puede tocar apenas aparece
+  closePending(); card.pressAt=now;
+  // ¿había oportunidad de memoria? = la pareja de la primera luz abierta ya se había visto y sigue escondida
+  let opp=false, hit=false;
+  if (S.face.length){ const kin=S.cards.filter(k=>k.key===S.face[0].key && k.state==='down' && k.seen); opp=kin.length>0; hit=kin.includes(card); S.kin=kin; }
+  card.state='up'; card.ft=1; card.seen=true; bell(card.note,.035,.7); flipUp();
+  if (!S.face.length){ S.face=[card]; S.types=[]; return; }
+  if (opp){ S.opps.push(hit); S.oppsTotal++; }
+  if (card.key===S.face[0].key){
+    S.types.push(hit?'mem':'new'); S.face.push(card);
+    if (hit){ S.hits++; S.streak++; S.bestStreak=Math.max(S.bestStreak,S.streak); }
+    if (S.face.length===S.size) complete(); else bell(card.note*1.5,.03,.6,.08);
+  } else {
+    // no son iguales: quedan abiertas un momento (o hasta el próximo toque)
+    if (opp){ S.misses++; S.streak=0; const kin=S.kin; setTimeout(()=>{ kin.forEach(k=>{ if (k.state==='down') k.hintAt=performance.now(); }); }, 380); S.msg={ t:'Se te escapó: brilla dónde estaba', at:now }; }
+    soft(); const cards=[...S.face, card]; S.face=[];
+    S.pending={ cards, timer:setTimeout(()=>{ if (S.pending && S.pending.cards===cards) closePending(); }, (reduce?700:850)*slow()) };
+  }
+}
+function complete(){
+  const now=performance.now(), f=S.face, types=S.types, mem=types.includes('mem');
+  f.forEach(c=>{ c.state='done'; c.ring = mem ? 'mem' : 'new'; c.doneAt=now; });
+  for (let i=1;i<f.length;i++) S.links.push({ a:f[i-1], b:f[i], type:types[i-1], at:now+(i-1)*200, ...route(f[i-1],f[i]) });
+  S.pairs++; if (mem) S.memPairs++;
+  const mx=f.reduce((s,c)=>s+c.x,0)/f.length, my=f.reduce((s,c)=>s+c.y,0)/f.length;
+  if (mem){ float(mx,my-10,'¡De memoria!','#FFC94A'); emit(mx,my,22,140,700,'255,201,74'); bell(f[0].note,.06,1.2); bell(f[0].note*1.5,.045,1.2,.08); bell(PENTA[Math.min(9,2+S.streak)]*2,.03,.9,.18); }
+  else { float(mx,my-10,f.length===3?'¡Trío!':'¡Encontrada!','#BFE9FF'); emit(mx,my,10,80,500,'191,233,255'); bell(f[0].note,.05,1.1); bell(f[0].note*1.25,.035,1,.08); }
+  S.face=[]; S.types=[];
+  if (S.cards.every(c=>c.state==='done')) setTimeout(endBoard, 650);
+}
+function endBoard(){
+  G.state='boardEnd'; const now=performance.now(), opps=S.opps.length, hits=S.opps.filter(x=>x).length;
+  S.endAt=now; S.boardRes={ opps, hits, misses:S.misses };
+  if (S.misses<=1) S.lv=Math.min(STAGES.length-1,S.lv+1); else if (S.misses>=3) S.lv=Math.max(0,S.lv-1);
+  S.maxLv=Math.max(S.maxLv,S.lv);
+  if (S.bestStreak>SAVE.bestStreak){ SAVE.bestStreak=S.bestStreak; save(); S.newRecord=true; }
+  [0,1,2,3].forEach(k=>bell(PENTA[Math.min(9,3+k*2)],.045,1.3,k*.1));
+  S.links.forEach((l,i)=>l.glowAt=now+300+i*90);
+  setTimeout(()=>{ G.state='leaving'; S.leaveAt=performance.now(); setTimeout(nextBoard, reduce?50:420); }, (reduce?1800:2600)*slow());
+}
+function finish(){ G.state='end'; G.endT=performance.now(); bell(784,.06,1.4); bell(1046.5,.05,1.6,.15); }
+
+// ============================================================ sonido propio
+function flipUp(){ noise(.09,2200,3400,.03,3); }
+function flipDown(){ noise(.07,1600,900,.025,3); }
+function soft(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(330,t); o.frequency.exponentialRampToValueAtTime(247,t+.22); g.gain.setValueAtTime(.05,t); g.gain.exponentialRampToValueAtTime(.0001,t+.28); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.3); }
+function hum(){ const a=ac(); if(!a) return; const t=a.currentTime; [196,293.66].forEach((f,i)=>{ const o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.018,t+.4); g.gain.exponentialRampToValueAtTime(.0001,t+1.6); o.connect(g).connect(a.destination); o.start(t+i*.12); o.stop(t+1.7); }); }
+
+// ============================================================ objetos del espacio (siluetas propias, fáciles de nombrar)
+function drawObj(c, kind, v, x, y, s){
+  c.save(); c.translate(x,y); c.scale(s/40,s/40); c.lineJoin='round'; c.lineCap='round';
+  const ink='#1A1240', st=(w=2.6)=>{ c.strokeStyle=ink; c.lineWidth=w; c.stroke(); }, fill=col=>{ c.fillStyle=col; c.fill(); st(); };
+  const name=OBJ[kind];
+  if (name==='planeta'){
+    const ring=(a0,a1)=>{ c.beginPath(); c.ellipse(0,1,21,6.5,-.35,a0,a1); c.strokeStyle=ink; c.lineWidth=7; c.stroke(); c.strokeStyle='#FFD46B'; c.lineWidth=3.6; c.stroke(); };
+    if (v===0) ring(Math.PI,2*Math.PI);
+    c.beginPath(); c.arc(0,0,13,0,7); fill('#FF9F6B'); c.save(); c.beginPath(); c.arc(0,0,11.7,0,7); c.clip(); c.fillStyle='#E9764A'; c.fillRect(-14,-4,28,4); c.fillRect(-14,5,28,2.5); c.restore();
+    if (v===0) ring(0,Math.PI);
+  }
+  if (name==='cohete'){
+    if (v===1){ c.translate(0,-3); c.beginPath(); c.moveTo(-8,10); c.quadraticCurveTo(-6,22,0,30); c.quadraticCurveTo(6,22,8,10); c.closePath(); fill('#FF8A3D'); c.beginPath(); c.moveTo(-4,10); c.quadraticCurveTo(-3,18,0,23); c.quadraticCurveTo(3,18,4,10); c.closePath(); c.fillStyle='#FFE27A'; c.fill(); }
+    c.beginPath(); c.moveTo(-8,3); c.lineTo(-15,13); c.lineTo(-8,11); c.closePath(); fill('#E2524A'); c.beginPath(); c.moveTo(8,3); c.lineTo(15,13); c.lineTo(8,11); c.closePath(); fill('#E2524A');
+    c.beginPath(); c.moveTo(0,-19); c.quadraticCurveTo(9,-10,8,-2); c.lineTo(8,11); c.lineTo(-8,11); c.lineTo(-8,-2); c.quadraticCurveTo(-9,-10,0,-19); c.closePath(); fill('#EDEAFB');
+    c.beginPath(); c.moveTo(0,-19); c.quadraticCurveTo(6.5,-13,7,-9); c.lineTo(-7,-9); c.quadraticCurveTo(-6.5,-13,0,-19); c.closePath(); fill('#E2524A');
+    c.beginPath(); c.arc(0,0,4.2,0,7); fill('#7FD8FF');
+  }
+  if (name==='cometa'){
+    for (const [dy,w,col] of [[-5,5,'rgba(127,216,255,.55)'],[0,6,'rgba(191,233,255,.8)'],[5,5,'rgba(127,216,255,.55)']]){ c.beginPath(); c.moveTo(4,-4+dy*.2); c.quadraticCurveTo(-6,4+dy,-18,14+dy*.6); c.strokeStyle=col; c.lineWidth=w; c.stroke(); }
+    c.beginPath(); c.arc(7,-7,8,0,7); fill('#BFE9FF'); c.fillStyle='rgba(255,255,255,.8)'; c.beginPath(); c.arc(5,-9,2.4,0,7); c.fill();
+  }
+  if (name==='ovni'){
+    if (v===1){ c.strokeStyle=ink; c.lineWidth=3; c.beginPath(); c.moveTo(-9,4); c.lineTo(-13,15); c.moveTo(-17,15); c.lineTo(-9,15); c.moveTo(9,4); c.lineTo(13,15); c.moveTo(9,15); c.lineTo(17,15); c.stroke(); }
+    c.beginPath(); c.arc(0,-3,9,Math.PI,2*Math.PI); c.closePath(); fill('#9FF5D6');
+    c.beginPath(); c.ellipse(0,1,19,6.5,0,0,7); fill('#A99FEA');
+    c.fillStyle='#FFC94A'; for (const dx of [-10,0,10]){ c.beginPath(); c.arc(dx,2,2.2,0,7); c.fill(); }
+  }
+  if (name==='cristal'){
+    c.beginPath(); c.moveTo(0,-18); c.lineTo(10,-8); c.lineTo(10,8); c.lineTo(0,18); c.lineTo(-10,8); c.lineTo(-10,-8); c.closePath(); fill('#C084FC');
+    c.beginPath(); c.moveTo(0,-18); c.lineTo(0,18); c.moveTo(-10,-8); c.lineTo(0,-2); c.lineTo(10,-8); c.strokeStyle='rgba(255,255,255,.5)'; c.lineWidth=1.8; c.stroke();
+  }
+  if (name==='casco'){
+    if (v===1){ c.beginPath(); c.moveTo(6,-12); c.lineTo(10,-21); st(2.6); c.beginPath(); c.arc(10,-22,3.6,0,7); fill('#FFC94A'); }
+    c.beginPath(); c.rect(-11,11,22,6); fill('#A99FEA');
+    c.beginPath(); c.arc(0,0,14.5,0,7); fill('#F4F1FF');
+    c.beginPath(); c.roundRect(-10,-7,20,13,6); fill('#163A5C'); c.strokeStyle='#7FD8FF'; c.lineWidth=2; c.beginPath(); c.arc(-3,-1,5,Math.PI*1.1,Math.PI*1.5); c.stroke();
+  }
+  if (name==='luna'){
+    c.beginPath(); c.arc(0,0,15,0,7); fill('#E9E4C9');
+    for (const [dx,dy,r] of [[-5,-5,4],[6,3,3.2],[-2,8,2.4],[7,-8,2]]){ c.beginPath(); c.arc(dx,dy,r,0,7); c.fillStyle='#CFC7A3'; c.fill(); c.strokeStyle='rgba(26,18,64,.35)'; c.lineWidth=1.4; c.stroke(); }
+  }
+  if (name==='satélite'){
+    c.strokeStyle=ink; c.lineWidth=2.4; c.beginPath(); c.moveTo(-8,0); c.lineTo(8,0); c.stroke();
+    for (const sx of [-1,1]){ c.beginPath(); c.rect(sx<0?-21:8,-6,13,12); fill('#5B8DEF'); c.strokeStyle='rgba(255,255,255,.45)'; c.lineWidth=1.2; c.beginPath(); c.moveTo(sx<0?-14.5:14.5,-6); c.lineTo(sx<0?-14.5:14.5,6); c.moveTo(sx<0?-21:8,0); c.lineTo(sx<0?-8:21,0); c.stroke(); }
+    c.beginPath(); c.roundRect(-6,-8,12,16,3); fill('#FFC94A'); c.beginPath(); c.moveTo(0,-8); c.lineTo(0,-14); st(2); c.beginPath(); c.arc(0,-15,2.4,0,7); fill('#E2524A');
+  }
+  if (name==='telescopio'){
+    c.strokeStyle=ink; c.lineWidth=2.6; c.beginPath(); c.moveTo(0,3); c.lineTo(-9,18); c.moveTo(0,3); c.lineTo(0,18); c.moveTo(0,3); c.lineTo(9,18); c.stroke();
+    c.save(); c.rotate(-.55); c.beginPath(); c.roundRect(-16,-5.5,27,11,3); fill('#7FB2FF'); c.beginPath(); c.rect(10,-7,5,14); fill('#3E5BA9'); c.beginPath(); c.rect(-19,-3.5,4,7); fill('#3E5BA9'); c.restore();
+  }
+  if (name==='asteroide'){
+    c.beginPath(); const pts=[[0,-15],[9,-11],[15,-2],[12,9],[3,15],[-8,13],[-15,4],[-13,-8]]; pts.forEach(([px,py],i)=>i?c.lineTo(px,py):c.moveTo(px,py)); c.closePath(); fill('#A08C7A');
+    for (const [dx,dy,r] of [[-4,-4,3.4],[6,4,2.6],[-5,7,2]]){ c.beginPath(); c.arc(dx,dy,r,0,7); c.fillStyle='#7E6B5B'; c.fill(); }
+  }
+  if (name==='antena'){
+    c.beginPath(); c.rect(-9,14,18,4); fill('#ABA5D2'); c.beginPath(); c.moveTo(0,14); c.lineTo(0,4); st(3);
+    c.save(); c.translate(0,0); c.rotate(-.55); c.beginPath(); c.ellipse(0,0,15,7.5,0,0,Math.PI); c.closePath(); fill('#DCD8F0'); c.beginPath(); c.moveTo(0,4); c.lineTo(0,-11); st(2); c.beginPath(); c.arc(0,-12,2.6,0,7); fill('#E2524A'); c.restore();
+  }
+  if (name==='brújula'){
+    c.beginPath(); c.arc(0,0,15,0,7); fill('#F6EBD2'); c.beginPath(); c.arc(0,0,11,0,7); c.strokeStyle='rgba(26,18,64,.3)'; c.lineWidth=1.4; c.stroke();
+    c.beginPath(); c.moveTo(0,-11); c.lineTo(4,0); c.lineTo(-4,0); c.closePath(); c.fillStyle='#E2524A'; c.fill();
+    c.beginPath(); c.moveTo(0,11); c.lineTo(4,0); c.lineTo(-4,0); c.closePath(); c.fillStyle='#6E6A9A'; c.fill();
+    c.beginPath(); c.arc(0,0,2.2,0,7); c.fillStyle=ink; c.fill();
+  }
+  c.restore();
+}
+
+// ============================================================ dibujo
+function stepMotion(dt){
+  if (!S.cards) return;
+  for (const c of S.cards){
+    if (reduce){ c.f=c.ft; c.vf=0; continue; }
+    // abrir con un poco de rebote; cerrar más rápido y sin rebote (la salida dura menos que la entrada)
+    [c.f,c.vf]=spring(c.f,c.vf,c.ft,dt, c.ft>c.f?2.6:3.6, c.ft>c.f?.72:.95);
+  }
+}
+// la línea se curva un poco para esquivar luces y otras líneas cuando puede; si no puede, pasa por encima (ver drawSky)
+function route(a, b){
+  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1, nx=-dy/len, ny=dx/len, mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+  let best=null, bp=1e9;
+  const others=S.links.map(l=>Array.from({length:13},(_,i)=>qpt(l,i/12)));
+  for (const off of len<4*S.R ? [0] : [0,25,-25,50,-50]){
+    const cx=mx+nx*off*2, cy=my+ny*off*2; let pen=0;
+    for (let i=1;i<24;i++){ const t=i/24, x=(1-t)*(1-t)*a.x+2*(1-t)*t*cx+t*t*b.x, y=(1-t)*(1-t)*a.y+2*(1-t)*t*cy+t*t*b.y;
+      if (x<B.x0||x>B.x1||y<B.y0||y>B.y1) pen+=2;
+      for (const o of S.cards) if (o!==a && o!==b){ const d=Math.hypot(x-o.x,y-o.y); if (d<S.R+8) pen+=1+(S.R+8-d)/8; }
+      // tampoco corre pegada a otra línea (se confundirían)
+      for (const pts of others) for (const [px,py] of pts) if (Math.hypot(x-px,y-py)<16) pen+=.35; }
+    pen+=Math.abs(off)/160; if (pen<bp){ bp=pen; best={ cx, cy }; } }
+  return best;
+}
+const qpt = (l,t) => { const a=l.a, b=l.b, cx=l.cx??(a.x+b.x)/2, cy=l.cy??(a.y+b.y)/2; return [(1-t)*(1-t)*a.x+2*(1-t)*t*cx+t*t*b.x, (1-t)*(1-t)*a.y+2*(1-t)*t*cy+t*t*b.y]; };
+function drawLinks(c, now){
+  for (const l of S.links){
+    const k = reduce ? 1 : Math.max(0,Math.min(1,(now-l.at)/380)); if (k<=0) continue; const e=ease(k);
+    if (l.t0===undefined){ const out=(t,p)=>{ const [x,y]=qpt(l,t); return Math.hypot(x-p.x,y-p.y)>S.R+5; }; l.t0=0; l.t1=1; for (let i=0;i<=100;i++) if (out(i/100,l.a)){ l.t0=i/100; break; } for (let i=100;i>=0;i--) if (out(i/100,l.b)){ l.t1=i/100; break; } }
+    const t0=l.t0, t1=l.t0+(l.t1-l.t0)*e;
+    const path=()=>{ c.beginPath(); for (let i=0;i<=28;i++){ const [x,y]=qpt(l,t0+(t1-t0)*i/28); i?c.lineTo(x,y):c.moveTo(x,y); } };
+    const [bx,by]=qpt(l,t1);
+    const lg = l.glowAt && now>l.glowAt ? Math.max(0,1-(now-l.glowAt)/900) : 0;
+    c.save(); c.lineCap='round'; c.lineJoin='round';
+    if (l.type==='mem'){
+      c.strokeStyle=`rgba(255,201,74,${.22+.35*lg})`; c.lineWidth=12+8*lg; path(); c.stroke();
+      c.strokeStyle='rgba(11,10,38,.75)'; c.lineWidth=7.5; path(); c.stroke();   // borde oscuro: se lee nítida sobre una luz dormida
+      c.strokeStyle='#FFC94A'; c.lineWidth=4; path(); c.stroke();
+    } else {
+      c.strokeStyle=`rgba(127,216,255,${.12+.25*lg})`; c.lineWidth=9+6*lg; path(); c.stroke();
+      c.strokeStyle='rgba(11,10,38,.7)'; c.lineWidth=6.5; c.setLineDash([7,7]); path(); c.stroke();
+      c.strokeStyle='rgba(191,233,255,.9)'; c.lineWidth=3; c.setLineDash([7,7]); path(); c.stroke(); c.setLineDash([]);
+    }
+    // la chispa que viaja mientras se traza
+    if (k<1 && !reduce){ c.drawImage(glow(l.type==='mem'?'255,214,120':'191,233,255'),bx-14,by-14,28,28); }
+    c.restore();
+  }
+}
+function drawCard(c, card, now){
+  const R=S.R, ap = reduce ? 1 : Math.max(0,Math.min(1,(now-card.appearAt)/380)); if (ap<=0) return;
+  let sc = reduce ? 1 : easeBack(ap);
+  if (G.state==='leaving' && !reduce){ const k=Math.min(1,(now-S.leaveAt)/360); sc*=1-ease(k); if (sc<=.01) return; }
+  if (card.pressAt && now-card.pressAt<140) sc*=1-.06*(1-(now-card.pressAt)/140);
+  const f=card.f, sx=Math.max(.02,Math.abs(Math.cos(Math.PI*Math.min(1,Math.max(0,f))))), up=f>.5, lift=1+.07*Math.sin(Math.PI*Math.min(1,Math.max(0,f)));
+  c.save(); c.translate(card.x,card.y); c.scale(sc,sc);
+  // brillo de pista: aquí estaba la pareja que se te escapó (no se da vuelta)
+  if (card.hintAt && now-card.hintAt<1100){ const k=(now-card.hintAt)/1100, a=reduce ? (k<.8?1:0) : Math.sin(Math.PI*k);
+    c.globalAlpha=a; c.drawImage(glow('255,231,168'),-R-26,-R-26,2*R+52,2*R+52); c.strokeStyle='#FFE7A8'; c.lineWidth=3; c.beginPath(); c.arc(0,0,R+7,0,7); c.stroke(); c.globalAlpha=1; }
+  // aro de pareja hecha: dorado continuo (de memoria) o celeste punteado (a la primera vista)
+  if (card.state==='done'){ c.lineWidth=3.5; if (card.ring==='mem'){ c.strokeStyle='#FFC94A'; } else { c.strokeStyle='#7FD8FF'; c.setLineDash([5,5]); } c.beginPath(); c.arc(0,0,R+5,0,7); c.stroke(); c.setLineDash([]); }
+  c.scale(sx*lift,lift);
+  if (!up){
+    // luz dormida: esfera de arcilla oscura con un núcleo tibio
+    const g=c.createRadialGradient(-R*.35,-R*.4,2,0,0,R); g.addColorStop(0,'#3A3F86'); g.addColorStop(1,'#171B4A');
+    c.fillStyle=g; c.beginPath(); c.arc(0,0,R,0,7); c.fill(); c.strokeStyle='#0B0A26'; c.lineWidth=3; c.stroke();
+    c.strokeStyle='rgba(159,180,255,.28)'; c.lineWidth=1.5; c.beginPath(); c.arc(0,0,R-5,Math.PI*1.1,Math.PI*1.6); c.stroke();
+    c.globalAlpha=.85; c.drawImage(glow('170,190,255'),-11,-11,22,22); c.globalAlpha=1; c.fillStyle='#E4E8FF'; c.beginPath(); c.arc(0,0,2.6,0,7); c.fill();
+  } else {
+    const g=c.createRadialGradient(-R*.35,-R*.4,2,0,0,R); g.addColorStop(0,'#FFFFFF'); g.addColorStop(1,'#C6BDF5');
+    c.globalAlpha = card.state==='done' ? .92 : 1;
+    c.fillStyle=g; c.beginPath(); c.arc(0,0,R,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+    drawObj(c, card.kind, card.v, 0, 0, R*1.32);
+    c.globalAlpha=1;
+  }
+  c.restore();
+}
+// las líneas van sobre todas las luces y nacen en el borde de las suyas: si cruzan otra luz, se ve que pasan de largo
+function drawSky(c, now){ S.cards.forEach(cd=>drawCard(c,cd,now)); drawLinks(c,now); }
+function drawBanner(c, now){
+  const st=S.st; c.fillStyle='#141B3A'; rr(c,10,58,W-20,60,18); c.fill(); c.strokeStyle='rgba(142,131,216,.35)'; c.lineWidth=2; c.stroke();
+  c.textAlign='center'; c.textBaseline='middle';
+  if (G.state==='boardEnd' || G.state==='leaving'){
+    const r=S.boardRes; c.fillStyle='#9FF5D6'; c.font='700 19px Fredoka'; c.fillText('¡Constelación completa!', W/2, 78);
+    c.fillStyle='#EDEAFB'; c.font='600 14px Nunito';
+    c.fillText(r.opps ? `${r.hits} de ${r.opps} de memoria` + (S.newRecord?' · ¡racha récord!':'') : 'Todas a la primera vista: ¡qué suerte!', W/2, 100); return; }
+  if (S.msg && now-S.msg.at<1800){ c.fillStyle='#FFE7A8'; c.font='700 17px Fredoka'; c.fillText(S.msg.t, W/2, 80); c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('Ya la habías visto: la próxima vez, directo', W/2, 101); return; }
+  const kind = st.size===3 ? 'tríos' : 'parejas', left=S.cards.filter(c=>c.state!=='done').length/st.size;
+  c.fillStyle='#EDEAFB'; c.font='700 18px Fredoka'; c.fillText(st.twins ? 'Ojo con los gemelos' : st.size===3 ? 'Busca tres iguales' : 'Busca las parejas', W/2, 80);
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(st.twins ? `Solo se unen los idénticos · faltan ${left} ${kind}` : `Faltan ${left} ${kind}`, W/2, 101);
+}
+function drawMemoryRow(c, now){
+  // cada vez que la pareja ya estaba vista: punto dorado si fuiste directo, aro si se te escapó
+  const y=566; c.textBaseline='middle';
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.textAlign='left'; c.fillText('De memoria', 16, 546);
+  const n=S.opps.length, hits=S.opps.filter(x=>x).length;
+  c.textAlign='right'; c.fillStyle= n ? '#EDEAFB' : '#6E6A9A'; c.font='700 15px Fredoka'; c.fillText(n ? `${hits} de ${n}` : 'aún nada que recordar', W-16, 546);
+  const per=15, gap=22, x0=16+8;
+  if (!n){ c.strokeStyle='rgba(255,255,255,.12)'; c.lineWidth=2; c.setLineDash([3,5]); c.beginPath(); c.moveTo(16,y); c.lineTo(W-16,y); c.stroke(); c.setLineDash([]); }
+  S.opps.forEach((h,i)=>{ const x=x0+(i%per)*gap, yy=y+Math.floor(i/per)*20;
+    if (h){ c.fillStyle='#FFC94A'; c.beginPath(); c.arc(x,yy,7,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=1.5; c.stroke(); }
+    else { c.strokeStyle='#ABA5D2'; c.lineWidth=2; c.beginPath(); c.arc(x,yy,6,0,7); c.stroke(); } });
+}
+function drawHeader(c, now){
+  c.fillStyle='#EDEAFB'; c.font='700 17px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(`Cielo ${S.board} de ${BOARDS}`, 14, 28);
+  if (S.streak>=2){ const t=`Racha de memoria ×${S.streak}`; c.font='700 14px Fredoka'; const w=c.measureText(t).width+24, x=W-14-w;
+    if (!reduce){ c.globalAlpha=.4; c.drawImage(glow('255,201,74'),x-10,8,w+20,40); c.globalAlpha=1; }
+    c.fillStyle='#FFC94A'; rr(c,x,15,w,28,14); c.fill(); c.fillStyle='#1A1240'; c.textAlign='center'; c.fillText(t,x+w/2,29.5); }
+  else if (SAVE.bestStreak){ c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.textAlign='right'; c.fillText(`Mejor racha: ${SAVE.bestStreak}`, W-14, 28); }
+}
+function drawFloats(c, now){
+  G.floats=G.floats.filter(f=>{ const k=(now-f.at)/1000; if (k>=1) return false; const a=Math.min(1,k*6,(1-k)*3), y=f.y-(reduce?0:22*ease(k));
+    c.globalAlpha=a; c.font='700 16px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; const w=c.measureText(f.text).width+20;
+    c.fillStyle='rgba(8,10,34,.88)'; rr(c,f.x-w/2,y-14,w,28,14); c.fill(); c.fillStyle=f.col; c.fillText(f.text,f.x,y+1); c.globalAlpha=1; return true; });
+}
+function drawIntro(c, now){
+  if (G.state!=='intro') return; const k=reduce?1:ease((now-S.introAt)/350), it=INTROS[S.intro], lines=it.lines;
+  c.fillStyle=`rgba(2,3,15,${.8*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.translate(0,(1-k)*18);
+  const extra=S.intro==='gemelos'?18:0, top=160, h=236+lines.length*24+extra; c.fillStyle='#141B3A'; rr(c,18,top,W-36,h,26); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=2; c.stroke();
+  c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(it.tag, W/2, top+26);
+  // ilustración de la regla
+  const R=30, cy=top+92, mini=(x,kind,v,mem)=>{ const g=c.createRadialGradient(x-10,cy-12,2,x,cy,R); g.addColorStop(0,'#fff'); g.addColorStop(1,'#C6BDF5'); c.fillStyle=g; c.beginPath(); c.arc(x,cy,R,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); drawObj(c,kind,v,x,cy,R*1.32); if (mem!==undefined){ c.strokeStyle=mem?'#FFC94A':'#7FD8FF'; c.lineWidth=3.5; if(!mem) c.setLineDash([5,5]); c.beginPath(); c.arc(x,cy,R+5,0,7); c.stroke(); c.setLineDash([]); } };
+  if (S.intro==='cielo'){ c.strokeStyle='#FFC94A'; c.lineWidth=4; c.beginPath(); c.moveTo(W/2-60,cy); c.lineTo(W/2+60,cy); c.stroke(); mini(W/2-60,1,0,true); mini(W/2+60,1,0,true); }
+  if (S.intro==='gemelos'){ mini(W/2-60,0,0); mini(W/2+60,0,1); c.fillStyle='#FFE7A8'; c.font='700 26px Fredoka'; c.fillText('≠', W/2, cy); c.fillStyle='#ABA5D2'; c.font='600 13px Nunito'; c.fillText('con anillo', W/2-60, cy+46); c.fillText('sin anillo', W/2+60, cy+46); }
+  if (S.intro==='trios'){ c.strokeStyle='#FFC94A'; c.lineWidth=4; c.beginPath(); c.moveTo(W/2-80,cy+6); c.lineTo(W/2,cy-6); c.lineTo(W/2+80,cy+6); c.stroke(); mini(W/2-80,6,0,true); c.save(); c.translate(0,-12); mini(W/2,6,0,true); c.restore(); mini(W/2+80,6,0,true); }
+  const ly=top+160+extra; lines.forEach((ln,i)=>{ c.fillStyle= i===0 ? '#fff' : '#D6D1F2'; let s=17; do { c.font=`${i===0?700:600} ${s}px Nunito`; } while (c.measureText(ln).width>W-60 && --s>14); c.fillText(ln, W/2, ly+i*26); });
+  if (S.intro==='cielo'){ c.fillStyle='#FFC94A'; c.font='700 14px Nunito'; c.fillText('Línea dorada: la recordaste', W/2, ly+lines.length*26+6); }
+  c.fillStyle='#7FD8FF'; c.font='700 16px Fredoka'; c.fillText('Toca para empezar', W/2, top+h-26); c.restore();
+}
+function drawEnd(c, now){
+  const k=reduce?1:ease((now-G.endT)/500); c.fillStyle=`rgba(3,4,22,${.95*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('¡Buen trabajo!', W/2, 78);
+  const pct=S.oppsTotal ? Math.round(100*S.hits/S.oppsTotal) : null;
+  c.fillStyle='#141B3A'; rr(c,20,112,W-40,132,22); c.fill(); c.strokeStyle='rgba(255,201,74,.6)'; c.lineWidth=2; c.stroke();
+  c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.fillText('Memoria de lugar', W/2, 138);
+  c.fillStyle='#FFC94A'; c.font='700 44px Fredoka'; c.fillText(pct===null?'—':`${pct} %`, W/2, 180);
+  c.fillStyle='#D6D1F2'; c.font='600 14px Nunito'; c.fillText(S.oppsTotal ? `${S.hits} de ${S.oppsTotal} veces fuiste directo` : 'No hubo parejas vistas que recordar', W/2, 216);
+  c.fillText(S.oppsTotal ? 'a una pareja que ya habías visto' : '', W/2, 234);
+  const rows=[['Parejas de memoria', `${S.memPairs} de ${S.pairs}`], ['Racha de memoria más larga', `${S.bestStreak}`], ['Etapa más alta', `${GRUPO(S.maxLv)} de 5`], ['Tu mejor racha', SAVE.bestStreak?`${SAVE.bestStreak}`:'—']];
+  let y=282; for (const [l,v] of rows){ c.fillStyle='#ABA5D2'; c.font='600 16px Nunito'; c.textAlign='left'; c.fillText(l,28,y); c.fillStyle='#fff'; c.font='700 18px Fredoka'; c.textAlign='right'; c.fillText(v,W-28,y); y+=40; }
+  c.textAlign='center'; c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(TIPS[S.board%TIPS.length], W/2, y+4);
+  c.fillStyle='#8F8AC0'; c.font='600 14px Nunito'; c.fillText('Lo encontrado por suerte no cuenta.', W/2, y+32); c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y+52);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-96,180,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 19px Fredoka'; c.fillText('Jugar de nuevo',W/2,H-68);
+  c.restore();
+}
+// menú: un cielo de muestra con dos parejas unidas
+const DEMO = [ {x:70,y:250,k:1,d:'mem'}, {x:250,y:215,k:1,d:'mem'}, {x:150,y:330,k:6,d:'new'}, {x:290,y:360,k:6,d:'new'}, {x:60,y:420,k:0}, {x:200,y:450,k:3}, {x:310,y:500,k:9}, {x:120,y:520,k:5} ];
+function drawMenu(c, now){
+  c.textAlign='center'; c.textBaseline='middle';
+  if (!S.demo){ S.demo=true; S.R=32; S.links=[]; S.cards=DEMO.map(d=>({ x:d.x, y:d.y, kind:d.k, v:0, f:d.d?1:0, ft:d.d?1:0, vf:0, state:d.d?'done':'down', ring:d.d||null, appearAt:0 }));
+    S.links=[{a:S.cards[0],b:S.cards[1],type:'mem',at:0},{a:S.cards[2],b:S.cards[3],type:'new',at:0}]; }
+  drawSky(c,now);
+  c.fillStyle='rgba(3,4,22,.78)'; rr(c,30,66,300,100,20); c.fill();
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('Constelaciones', W/2, 100);
+  c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.fillText('Encuentra las parejas y únelas con luz', W/2, 136);
+  c.fillStyle='#7FD8FF'; rr(c,110,566,140,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.fillText('Jugar', W/2, 595);
+}
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  const dt=Math.min(.05,(now-(G.last||now))/1000); G.last=now; stepMotion(dt);
+  if (DEBUG && location.search.includes('objetos')){ // galería para revisar los dibujos y los gemelos
+    const items=[...OBJ.keys()].map(k=>[k,0]).concat(TWIN.map(k=>[k,1]));
+    items.forEach(([k,v],i)=>{ const x=50+(i%4)*87, y=70+Math.floor(i/4)*120, R=36, g=c.createRadialGradient(x-12,y-14,2,x,y,R); g.addColorStop(0,'#fff'); g.addColorStop(1,'#C6BDF5'); c.fillStyle=g; c.beginPath(); c.arc(x,y,R,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); drawObj(c,k,v,x,y,R*1.32); c.fillStyle='#ABA5D2'; c.font='600 13px Nunito'; c.textAlign='center'; c.fillText(OBJ[k]+(v?' 2':''),x,y+50); });
+    return; }
+  if (G.state==='menu') drawMenu(c, now);
+  else if (G.state!=='end'){
+    drawHeader(c, now); drawBanner(c, now);
+    drawSky(c, now);
+    drawMemoryRow(c, now); drawFloats(c, now);
+  }
+  G.parts=G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; p.vy+=1; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+  drawIntro(c, now);
+  if (G.state==='end') drawEnd(c, now);
+  if (DEBUG && S.cards){ const r=cv.getBoundingClientRect(); cv.dataset.state=G.state; cv.dataset.cards=JSON.stringify(S.cards.map(cd=>({ x:Math.round(r.left+cd.x/W*r.width), y:Math.round(r.top+cd.y/H*r.height), key:cd.key, s:cd.state, seen:cd.seen }))); cv.dataset.stats=JSON.stringify({ lv:S.lv, opps:S.opps, hits:S.hits, oppsTotal:S.oppsTotal, streak:S.streak }); }
+}
+const loop = now => { frame(now); requestAnimationFrame(loop); };
+requestAnimationFrame(loop);
+if (DEBUG) setInterval(()=>{ if (document.hidden || performance.now()-(G.last||0)>200) frame(performance.now()); }, 60);
+if (DEBUG && location.search.includes('fin')){ startGame(); Object.assign(S,{ hits:17, oppsTotal:22, memPairs:15, pairs:31, bestStreak:6, maxLv:6 }); finish(); }
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e), now=performance.now();
+  if (G.state==='menu'){ if (y>556&&y<632 && x>100&&x<260){ S.demo=false; startGame(); } return; }
+  if (G.state==='intro'){ if (now-S.introAt>500) begin(); return; }
+  if (G.state==='end'){ if (now-G.endT>600 && y>H-110){ G.state='menu'; S.demo=false; } return; }
+  if (G.state!=='play') return;
+  // la luz más cercana al dedo, con margen de toque generoso (radio + 10)
+  let best=null, bd=1e9; for (const cd of S.cards){ const d=Math.hypot(x-cd.x,y-cd.y); if (d<bd){ bd=d; best=cd; } }
+  if (best && bd<=S.R+10) tap(best);
+});
+document.getElementById('snd').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',soundOn); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+document.getElementById('rm').addEventListener('click',e=>{ reduce=!reduce; e.currentTarget.setAttribute('aria-pressed',reduce); });
+</script>
