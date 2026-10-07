@@ -132,6 +132,26 @@ namespace NeuroVida.Bridge
 #endif
         }
 
+        /// <summary>
+        /// Anota una línea en el registro de errores del teléfono (<c>diag/ErrorLog</c>; sale en Ajustes → «Enviar informe de errores»). Es para diagnosticar cosas que solo pasan en el teléfono
+        /// (hoy, los toques del tutorial). Nunca lanza. En el Editor solo loguea.
+        /// </summary>
+        public static void LogDiagnostic(string tag, string message)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                using (var jc = new AndroidJavaClass(AndroidReceiverClass))
+                {
+                    jc.CallStatic("logDiagnostic", tag, message);
+                }
+            }
+            catch (System.Exception) { }
+#else
+            Debug.Log("[Diag] " + tag + ": " + message);
+#endif
+        }
+
         /// <summary>Se llama al terminar la partida, con el JSON de
         /// <see cref="NeuroVida.Contracts.SequenceTelemetry"/> ya serializado.</summary>
         public static void ForwardTelemetryToPlatform(string jsonTelemetry)

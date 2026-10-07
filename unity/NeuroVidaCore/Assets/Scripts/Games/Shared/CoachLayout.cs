@@ -17,7 +17,27 @@ namespace NeuroVida.Games.Shared
     /// </summary>
     public static class CoachText
     {
+        /// <summary>Escalas de lienzo con las que se mide: el teléfono dibuja el texto a 54 × la escala del lienzo (≈0,65 en una pantalla de 720 px de ancho, 1 en una de 1080 y 1,3 en una de 1440) y
+        /// la fuente redondea cada letra a píxeles enteros, así que el mismo texto puede partirse en otra línea según la pantalla. Se queda con lo peor (más líneas, más alto) para que el globo
+        /// nunca quede más chico que el texto (Ricardo, 6-oct: la segunda línea se salía del globo en su teléfono).</summary>
+        public static readonly float[] Scales = { 0.65f, 0.8f, 1f, 1.25f };
+
         public static TextMeasure Measure(string text, float width, int fontSize = CoachLayout.FontSize)
+        {
+            if (string.IsNullOrEmpty(text)) return new TextMeasure(0, 0f);
+            int lines = 0;
+            float height = 0f;
+            foreach (float scale in Scales)
+            {
+                var m = MeasureAt(text, width, fontSize, scale);
+                if (m.Lines > lines) lines = m.Lines;
+                if (m.Height > height) height = m.Height;
+            }
+            return new TextMeasure(lines, height);
+        }
+
+        /// <summary>Una sola medida, a una escala de lienzo dada (la altura vuelve en unidades del lienzo).</summary>
+        public static TextMeasure MeasureAt(string text, float width, int fontSize, float scale)
         {
             if (string.IsNullOrEmpty(text)) return new TextMeasure(0, 0f);
             var gen = new TextGenerator();
@@ -30,7 +50,7 @@ namespace NeuroVida.Games.Shared
                 richText = true,
                 textAnchor = TextAnchor.MiddleCenter,
                 alignByGeometry = false,
-                scaleFactor = 1f,
+                scaleFactor = scale,
                 color = Color.white,
                 resizeTextForBestFit = false,
                 updateBounds = false,
@@ -41,7 +61,7 @@ namespace NeuroVida.Games.Shared
                 generateOutOfBounds = false,
             };
             if (!gen.Populate(text, settings)) gen.Populate(text, settings);     // la primera vez la fuente puede estar armando su atlas
-            return new TextMeasure(gen.lineCount, gen.GetPreferredHeight(text, settings));
+            return new TextMeasure(gen.lineCount, gen.GetPreferredHeight(text, settings) / Mathf.Max(0.01f, scale));
         }
     }
 
@@ -70,7 +90,7 @@ namespace NeuroVida.Games.Shared
         public const int MaxLines = 3;
         public const float Margin = 30f;
         public const float HudClear = 330f;       // lo que ocupan el marcador de arriba y el rótulo «Práctica: no cuenta»
-        public const float BottomClear = 190f;    // lo que ocupa «Saltar tutorial» abajo
+        public const float BottomClear = 120f;    // margen de abajo para Nubi y el globo (los controles del tutorial son obstáculos aparte: NubiCoach.ControlSkip y ControlBadge)
         public const float PadX = 26f, PadY = 14f;
         public const float MinBubbleHeight = 112f;
         public const float Gap = 20f;
@@ -101,7 +121,8 @@ namespace NeuroVida.Games.Shared
         /// <param name="holeCenter">El centro del hueco (para poner a Nubi del lado contrario) o null si no hay hueco (aviso).</param>
         /// <param name="hard">Lo que NUNCA se debe tapar: el hueco, las zonas protegidas y el dedo (ya con su margen).</param>
         /// <param name="soft">Los textos del juego a la vista (con su margen): tampoco se tapan.</param>
-        public static CoachPlacement Place(Rect screen, Vector2? holeCenter, IList<Rect> hard, IList<Rect> soft, string text, Func<string, float, TextMeasure> measure = null)
+        /// <param name="prefer">Lo que conviene no tapar pero no es un error taparlo (el dedo de ayuda, que solo aparece pasados 5 s y se acomoda del lado donde hay lugar): pesa poco en el costo y no cuenta como solape.</param>
+        public static CoachPlacement Place(Rect screen, Vector2? holeCenter, IList<Rect> hard, IList<Rect> soft, string text, Func<string, float, TextMeasure> measure = null, IList<Rect> prefer = null)
         {
             measure = measure ?? ((s, w) => CoachText.Measure(s, w));
             CoachPlacement best = null;
@@ -133,6 +154,7 @@ namespace NeuroVida.Games.Shared
                             var br = new Rect(bx, cy - bh / 2f, bw, bh);
                             float ov = Total(nr, hard, 3f) + Total(br, hard, 3f) + Total(nr, soft, 1f) + Total(br, soft, 1f);
                             float cost = ov > 0f ? 1e6f + ov : 0f;
+                            if (prefer != null) cost += (Total(nr, prefer, 1f) + Total(br, prefer, 1f)) * 0.02f;
                             if (tooLong) cost += 5e5f;
                             cost += m.Lines * 18f + (wMax - bw) * 0.12f + (nubi < 300f ? (nubi < 240f ? (nubi < 180f ? 140f : 90f) : 40f) : 0f);
                             // lo esperado: abajo mejor que arriba, arriba mejor que al medio; Nubi del lado contrario al hueco
@@ -223,6 +245,7 @@ namespace NeuroVida.Games.Shared
         public float Overlap;
         public bool TooLong;
         public bool Clean;
+        public Rect[] Controls = new Rect[0];     // «Saltar tutorial» y «Práctica: no cuenta» (los que estaban a la vista en este paso)
         public float ControlClash;     // área que los controles del tutorial («Saltar tutorial», el rótulo) pisan de lo iluminado o de los textos del juego
     }
 }

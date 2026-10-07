@@ -14,6 +14,7 @@ namespace NeuroVida.Games.Tests
         {
             GameClock.Reset();
             _go = new UnityEngine.GameObject("CoachParent", typeof(UnityEngine.RectTransform));
+            _go.GetComponent<UnityEngine.RectTransform>().sizeDelta = new UnityEngine.Vector2(1000f, 2000f);
             _coach = NubiCoach.Create(_go.GetComponent<UnityEngine.RectTransform>(), p => false, () => false);
         }
 
@@ -22,6 +23,10 @@ namespace NeuroVida.Games.Tests
         {
             _coach.Hide();
             GameClock.Reset();
+            GameClock.SimulatedDeltaTime = 0f;
+            GuidedTutorial.EditorPressFrame = -1;
+            NubiCoach.AuditEnabled = false;
+            NubiCoach.AuditSteps.Clear();
             UnityEngine.Object.DestroyImmediate(_go);
         }
 
@@ -81,6 +86,95 @@ namespace NeuroVida.Games.Tests
             var frame = CoachSprites.Frame();
             Assert.IsNotNull(frame);
             Assert.Greater(frame.border.x, 0f, "el marco se estira con cortes");
+        }
+
+        // ------------------------------------------------------------------ red de seguridad: ningún paso de Tocar deja a nadie atrapado (tarea 42, 6-oct)
+
+        private static void TickOf(NubiCoach coach) =>
+            typeof(NubiCoach).GetMethod("Update", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(coach, null);
+
+        private void PressAt(float x, float y)
+        {
+            GuidedTutorial.EditorPressPos = new UnityEngine.Vector2(x, y);
+            GuidedTutorial.EditorPressFrame = UnityEngine.Time.frameCount;
+            TickOf(_coach);
+        }
+
+        private void OpenTouchStep()
+        {
+            GameClock.SimulatedDeltaTime = 0.2f;                  // cada cuadro suma 0,2 s de espera (el toque vale pasados 0,15 s)
+            _coach.Touch(SomeHole, "Toca aquí").MoveNext();
+            TickOf(_coach);
+        }
+
+        [Test]
+        public void ATouchInsideTheHole_ClosesTheStep_AndTheGameReceivesIt()
+        {
+            OpenTouchStep();
+            PressAt(0f, 0f);
+            Assert.IsFalse(_coach.Active);
+            Assert.IsFalse(_coach.Blocks(new UnityEngine.Vector2(0f, 0f)), "el juego recibe ese toque");
+        }
+
+        [Test]
+        public void ATouchNearTheHoleEdge_Within40dp_CountsAsTheRequestedTouch()
+        {
+            OpenTouchStep();
+            PressAt(200f, 0f);                                    // el hueco llega a x = 112 (con su margen): 88 unidades fuera, menos de 120 (40 dp)
+            Assert.IsFalse(_coach.Active);
+            Assert.IsFalse(_coach.Blocks(new UnityEngine.Vector2(200f, 0f)), "un toque casi encima del hueco también llega al juego");
+        }
+
+        [Test]
+        public void TheFirstTouchFarFromTheHole_IsIgnored_AndTheSecondAdvancesWithoutReachingTheGame()
+        {
+            OpenTouchStep();
+            PressAt(450f, 800f);
+            Assert.IsTrue(_coach.Active, "un toque lejos del hueco, una sola vez, no avanza");
+            PressAt(-400f, -700f);
+            Assert.IsFalse(_coach.Active, "el segundo toque fuera avanza: nadie queda atrapado");
+            Assert.IsTrue(_coach.Blocks(new UnityEngine.Vector2(-400f, -700f)), "ese toque no llega al juego (no pidió nada de eso)");
+        }
+
+        [Test]
+        public void After10Seconds_AnyTouchAdvancesTheStep()
+        {
+            GameClock.SimulatedDeltaTime = 11f;
+            _coach.Touch(SomeHole, "Toca aquí").MoveNext();
+            TickOf(_coach);                                       // pasan 11 s sin un toque válido
+            PressAt(450f, 800f);
+            Assert.IsFalse(_coach.Active);
+        }
+
+        [Test]
+        public void TheSkipButtonTouch_NeverAdvancesTheStep()
+        {
+            var go = new UnityEngine.GameObject("CoachParent2", typeof(UnityEngine.RectTransform));
+            go.GetComponent<UnityEngine.RectTransform>().sizeDelta = new UnityEngine.Vector2(1000f, 2000f);
+            var coach = NubiCoach.Create(go.GetComponent<UnityEngine.RectTransform>(), p => true, () => false);       // todo toque cae en «Saltar tutorial»
+            GameClock.SimulatedDeltaTime = 0.2f;
+            coach.Touch(SomeHole, "Toca aquí").MoveNext();
+            TickOf(coach);
+            GuidedTutorial.EditorPressPos = UnityEngine.Vector2.zero;
+            GuidedTutorial.EditorPressFrame = UnityEngine.Time.frameCount;
+            TickOf(coach);
+            Assert.IsTrue(coach.Active, "los toques en «Saltar tutorial» los maneja el juego, no avanzan el foco");
+            coach.Hide();
+            UnityEngine.Object.DestroyImmediate(go);
+        }
+
+        [Test]
+        public void TheHelpFinger_RestsOutsideTheHole_NeverOnItsContent()
+        {
+            NubiCoach.AuditEnabled = true;
+            NubiCoach.AuditSteps.Clear();
+            var tall = new UnityEngine.Rect(-400f, -300f, 800f, 600f);          // una tarjeta grande con texto adentro
+            _coach.Touch(() => tall, "Toca la tarjeta").MoveNext();
+            _coach.Hide();
+            var st = NubiCoach.AuditSteps[NubiCoach.AuditSteps.Count - 1];
+            Assert.IsTrue(st.HasHole);
+            Assert.AreEqual(0f, CoachLayout.Overlap(st.Finger, st.Hole), 0.5f, "el dedo no pisa el hueco (antes caía en el centro y tapaba las letras)");
+            Assert.Greater(st.Finger.height, 100f);
         }
     }
 }

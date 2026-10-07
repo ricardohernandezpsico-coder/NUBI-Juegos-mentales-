@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using NeuroVida.Bridge;
 using NeuroVida.Games.Secuencia; // RoundedRectSprite / RingSprite / RadialGlowSprite
 using static NeuroVida.Games.Shared.UiKit;
 
@@ -58,6 +59,7 @@ namespace NeuroVida.Games.Shared
         private Rect _hole;
         private readonly List<Rect> _lit = new List<Rect>();          // [0] = el hueco (si hay) y después las zonas protegidas, ya agrandadas
         private readonly List<Rect> _hard = new List<Rect>();         // lo que nunca se tapa (hueco, zonas, dedo), con su margen
+        private readonly List<Rect> _prefer = new List<Rect>();       // lo que conviene no tapar sin que sea un error (el dedo de ayuda)
         private readonly List<Rect> _soft = new List<Rect>();         // los textos del juego a la vista
         private readonly List<Rect> _textRaw = new List<Rect>();      // los mismos, sin margen, sin los del tutorial
         private readonly List<Rect> _controls = new List<Rect>();     // los textos de los controles del tutorial («Práctica: no cuenta», «Saltar tutorial»), sin margen
@@ -66,6 +68,24 @@ namespace NeuroVida.Games.Shared
         private CoachPlacement _placement;
         private CoachStepReport _report;
         private bool _warned;
+        private int _misses, _swallowFrame = -1;
+        private Vector2 _lastTouchLocal;
+        private bool _hasTouch;
+        private readonly TextGenerator _measureGen = new TextGenerator();
+
+        /// <summary>Los controles del tutorial («Saltar tutorial» y «Práctica: no cuenta»): Nubi y su globo no los tapan (los pone <see cref="GuidedTutorial"/>; cada juego los coloca donde le queda mejor).</summary>
+        public RectTransform ControlSkip, ControlBadge;
+
+        // red de seguridad: ningún paso de Tocar puede dejar a alguien sin poder avanzar
+        private const float NearSlack = 120f;         // 40 dp: un toque a menos de esto del borde del hueco cuenta como el toque pedido
+        private const float StuckSeconds = 10f;       // a los 10 s sin un toque válido, el siguiente toque en cualquier parte avanza
+        private const int MissesToAdvance = 2;        // el segundo toque fuera del hueco avanza
+
+        /// <summary>SOLO DEPURACIÓN: dibuja encima los rectángulos del foco (hueco, zonas, globo, Nubi, dedo, «Saltar tutorial») y el último toque, para poder mandar una captura de lo que pasa en el teléfono.</summary>
+        public static bool DebugOverlay;
+        private RectTransform _dbgRoot;
+        private readonly List<Image> _dbgBoxes = new List<Image>();
+        private Text _dbgText;
 
         /// <summary>true mientras hay un foco (Tocar, Mirar o un aviso) a la vista.</summary>
         public bool Active => _kind != Kind.None;
@@ -231,7 +251,7 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>true si un toque en <paramref name="screenPos"/> NO debe llegar al juego: hay un foco de Tocar y el toque cae fuera del hueco (y no es «Saltar tutorial»).</summary>
-        public bool Blocks(Vector2 screenPos) => _kind == Kind.Touch && !InsideHole(screenPos) && !(_isSkip != null && _isSkip(screenPos));
+        public bool Blocks(Vector2 screenPos) => Time.frameCount == _swallowFrame || (_kind == Kind.Touch && !InsideHole(screenPos) && !(_isSkip != null && _isSkip(screenPos)));
 
         // ------------------------------------------------------------------ las tres formas
 
@@ -278,6 +298,8 @@ namespace NeuroVida.Games.Shared
             _warned = false;
             _lastGather = -10f;
             _lastReplace = -10f;
+            _misses = 0;
+            _hasTouch = false;
             _litShown.Clear();
             _text.text = text;
             if (_nubi.sprite == null) _nubi.sprite = NubiTeacherSprite.Get();
@@ -292,6 +314,7 @@ namespace NeuroVida.Games.Shared
             RefreshZones(true);
             Replace(true);
             if (_report != null) FillReport();
+            if (kind == Kind.Touch) LogStep(text);
             if (kind == Kind.Touch && freeze && !PauseMenu.Open)
             {
                 GameClock.Pause();
@@ -334,10 +357,10 @@ namespace NeuroVida.Games.Shared
                 case Kind.Touch:
                     // si la pausa del menú se cerró mientras el foco seguía abierto, el juego se vuelve a congelar
                     if (_freeze && _frozen && !GameClock.Paused && !PauseMenu.Open) GameClock.Pause();
-                    if (!PauseMenu.Open && GuidedTutorial.TryPress(out Vector2 pos) && _waited > 0.15f && !(_isSkip != null && _isSkip(pos)) && InsideHole(pos))
+                    if (!PauseMenu.Open && GuidedTutorial.TryPress(out Vector2 pos) && _waited > 0.15f && !(_isSkip != null && _isSkip(pos)))
                     {
-                        Close();     // el juego recibe este mismo toque (este componente corre antes que él)
-                        return;
+                        HandleTouch(pos);
+                        if (_kind == Kind.None) return;
                     }
 #if UNITY_EDITOR
                     if (GuidedTutorial.EditorAutoContinue && _waited > 1.2f) { Close(); return; }
@@ -358,6 +381,54 @@ namespace NeuroVida.Games.Shared
             }
         }
 
+        /// <summary>Distancia (unidades del lienzo) de un punto al rectángulo del hueco: 0 si está adentro.</summary>
+        private float DistanceToHole(Vector2 local)
+        {
+            float dx = Mathf.Max(Mathf.Max(_hole.xMin - local.x, 0f), local.x - _hole.xMax);
+            float dy = Mathf.Max(Mathf.Max(_hole.yMin - local.y, 0f), local.y - _hole.yMax);
+            return Mathf.Sqrt(dx * dx + dy * dy);
+        }
+
+        /// <summary>Un toque en un paso de Tocar. Adentro del hueco (o a menos de 40 dp de su borde) es el toque pedido: cierra el paso y el juego lo recibe. Si no, no se acepta, PERO nadie queda
+        /// atrapado: el segundo toque fuera, o cualquier toque pasados 10 s, avanza el paso (ese toque no llega al juego, para que no haga algo que nadie pidió). Cada toque queda en el registro.</summary>
+        private void HandleTouch(Vector2 screenPos)
+        {
+            bool mapped = RectTransformUtility.ScreenPointToLocalPointInRectangle(_root, screenPos, null, out var local);
+            _lastTouchLocal = local;
+            _hasTouch = true;
+            float dist = mapped ? DistanceToHole(local) : float.MaxValue;
+            bool accept = false, pass = true;
+            string why;
+            if (mapped && dist <= 0f) { accept = true; why = "dentro del hueco"; }
+            else
+            {
+                _misses++;
+                if (mapped && dist <= NearSlack) { accept = true; why = "cerca del borde del hueco"; }
+                else if (_misses >= MissesToAdvance) { accept = true; pass = false; why = "segundo toque fuera: avanza"; }
+                else if (_waited >= StuckSeconds) { accept = true; pass = false; why = "pasaron 10 s: avanza"; }
+                else why = "fuera del hueco: no se acepta";
+            }
+            LogTouch(screenPos, local, mapped, dist, accept, why);
+            if (!accept) return;
+            if (!pass) _swallowFrame = Time.frameCount;
+            Close();     // el juego recibe este mismo toque (este componente corre antes que él), salvo el que avanzó por la red de seguridad
+        }
+
+        private static string N(float v) => Mathf.RoundToInt(v).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>Al empezar un paso de Tocar: pantalla, zona segura, escala del lienzo y hueco, en el registro de errores del teléfono (Ajustes → «Enviar informe de errores»).</summary>
+        private void LogStep(string text)
+        {
+            var canvas = _root.GetComponentInParent<Canvas>();
+            var sa = Screen.safeArea;
+            NativeBridge.LogDiagnostic("TUTORIAL", $"{AuditGame} paso «{(text.Length > 40 ? text.Substring(0, 40) : text)}»: pantalla {Screen.width}x{Screen.height}, zona segura {N(sa.x)},{N(sa.y)} {N(sa.width)}x{N(sa.height)}, escala {(canvas != null ? canvas.scaleFactor : 0f):0.00}, raíz {N(_root.rect.width)}x{N(_root.rect.height)}, hueco {N(_hole.xMin)},{N(_hole.yMin)} {N(_hole.width)}x{N(_hole.height)}");
+        }
+
+        private void LogTouch(Vector2 screenPos, Vector2 local, bool mapped, float dist, bool accept, string why)
+        {
+            NativeBridge.LogDiagnostic("TUTORIAL", $"{AuditGame} toque en pantalla {N(screenPos.x)},{N(screenPos.y)} → lienzo {(mapped ? N(local.x) + "," + N(local.y) : "sin convertir")}; hueco {N(_hole.xMin)},{N(_hole.yMin)} {N(_hole.width)}x{N(_hole.height)}; distancia {(mapped ? N(dist) : "?")}; {(accept ? "ACEPTADO" : "no aceptado")} ({why}); toques fuera {_misses}; espera {_waited:0.0} s");
+        }
+
         private Rect Inflate(Rect r)
         {
             var pr = _root.rect;
@@ -375,9 +446,39 @@ namespace NeuroVida.Games.Shared
 
         // ------------------------------------------------------------------ zonas
 
-        /// <summary>El rect del dedo que insiste (con su vaivén): arriba del hueco no hay nada que cuidar, pero Nubi y el globo no deben quedar sobre él.</summary>
-        private static Rect FingerRect(Rect hole) =>
-            new Rect(hole.center.x - 45f, hole.center.y - hole.height * 0.15f - 150f - 45f, 90f, 150f + 90f);
+        private const float FingerTravel = 150f, FingerR = 45f, FingerTouch = -45f;       // el dedo reposa justo FUERA del borde del hueco (el disco mide 78) y se aleja hasta 150
+
+        /// <summary>El dedo que insiste va SIEMPRE fuera del hueco, pegado a su borde (antes caía en el centro y tapaba las letras de la tarjeta): abajo si cabe y no tapa un texto del juego, si no arriba.</summary>
+        private bool FingerGoesBelow(Rect hole)
+        {
+            var screen = _root.rect;
+            var below = FingerRectAt(hole, true);
+            var above = FingerRectAt(hole, false);
+            bool fitsBelow = below.yMin >= screen.yMin, fitsAbove = above.yMax <= screen.yMax;
+            float overBelow = 0f, overAbove = 0f;
+            foreach (var t in _textRaw) { overBelow += CoachLayout.Overlap(below, t); overAbove += CoachLayout.Overlap(above, t); }
+            if (_placement != null)
+            {
+                // y, donde hay lugar, del lado donde no queda sobre Nubi ni el globo
+                overBelow += CoachLayout.Overlap(below, _placement.Nubi) + CoachLayout.Overlap(below, _placement.Bubble);
+                overAbove += CoachLayout.Overlap(above, _placement.Nubi) + CoachLayout.Overlap(above, _placement.Bubble);
+            }
+            if (fitsBelow != fitsAbove) return fitsBelow;
+            return overBelow <= overAbove;
+        }
+
+        /// <summary>Todo lo que el dedo recorre con su vaivén (para que Nubi y el globo no queden sobre él).</summary>
+        private static Rect FingerRectAt(Rect hole, bool below) => below
+            ? new Rect(hole.center.x - FingerR, hole.yMin + FingerTouch - FingerTravel - FingerR, 2f * FingerR, FingerTravel + 2f * FingerR)
+            : new Rect(hole.center.x - FingerR, hole.yMax - FingerTouch - FingerR, 2f * FingerR, FingerTravel + 2f * FingerR);
+
+        private Rect FingerRect(Rect hole) => FingerRectAt(hole, FingerGoesBelow(hole));
+
+        private Vector2 FingerCenter(Rect hole, float bob)
+        {
+            float away = FingerTravel * (1f - bob);
+            return FingerGoesBelow(hole) ? new Vector2(hole.center.x, hole.yMin + FingerTouch - away) : new Vector2(hole.center.x, hole.yMax - FingerTouch + away);
+        }
 
         /// <summary>Vuelve a medir el hueco, las zonas protegidas y (cada medio segundo) los textos del juego a la vista.</summary>
         private void RefreshZones(bool force)
@@ -386,12 +487,13 @@ namespace NeuroVida.Games.Shared
             bool hasHole = _kind != Kind.Notice && _target != null;
             _lit.Clear();
             _hard.Clear();
+            _prefer.Clear();
             if (hasHole)
             {
                 _hole = Inflate(_target());
                 _lit.Add(_hole);
                 _hard.Add(CoachLayout.Grow(_hole, HoleAvoid));
-                if (_kind == Kind.Touch) _hard.Add(FingerRect(_hole));
+                if (_kind == Kind.Touch) _prefer.Add(FingerRect(_hole));
             }
             if (_keep != null)
             {
@@ -407,6 +509,9 @@ namespace NeuroVida.Games.Shared
                     _hard.Add(CoachLayout.Grow(lit, KeepAvoid));
                 }
             }
+            // «Saltar tutorial» y «Práctica: no cuenta» van donde le queda mejor a cada juego (arriba, abajo o a media altura): Nubi y el globo tampoco los tapan
+            foreach (var c in new[] { ControlSkip, ControlBadge })
+                if (c != null && c.gameObject.activeInHierarchy) _hard.Add(CoachLayout.Grow(RectOf(c), 8f));
             if (force || Time.unscaledTime - _lastGather >= 0.5f)
             {
                 _lastGather = Time.unscaledTime;
@@ -477,16 +582,16 @@ namespace NeuroVida.Games.Shared
 
         /// <summary>Si algo se movió y ahora Nubi o el globo lo tapan, se busca otro lugar (como mucho cada 0,3 s: Nubi no baila).</summary>
         private bool PlacementIsStale() =>
-            _placement != null && Time.unscaledTime - _lastReplace >= 0.3f && PlacementOverlap(_placement) > 0.5f;
+            _placement != null && Time.unscaledTime - _lastReplace >= 0.3f && (PlacementOverlap(_placement) > 0.5f || _text.cachedTextGenerator.lineCount > _placement.Lines);
 
         /// <summary>Nubi y su globo van donde no tapen nada (ver <see cref="CoachLayout.Place"/>): el globo crece con el texto, máximo 3 líneas.</summary>
         private void Replace(bool first)
         {
             _lastReplace = Time.unscaledTime;
             bool hasHole = _kind != Kind.Notice && _target != null;
-            var p = CoachLayout.Place(_root.rect, hasHole ? _hole.center : (Vector2?)null, _hard, _soft, _text.text);
+            var p = CoachLayout.Place(_root.rect, hasHole ? _hole.center : (Vector2?)null, _hard, _soft, _text.text, MeasureLive, _prefer);
             if (p == null) return;
-            if (!first && _placement != null && PlacementOverlap(_placement) <= p.Overlap + 1f) return;   // no hay nada mejor: Nubi se queda donde está
+            if (!first && _placement != null && PlacementOverlap(_placement) <= p.Overlap + 1f && _text.cachedTextGenerator.lineCount <= _placement.Lines) return;   // no hay nada mejor: Nubi se queda donde está
             _placement = p;
             _left = p.Left;
             var u = Rect.MinMaxRect(Mathf.Min(p.Nubi.xMin, p.Bubble.xMin), Mathf.Min(p.Nubi.yMin, p.Bubble.yMin), Mathf.Max(p.Nubi.xMax, p.Bubble.xMax), Mathf.Max(p.Nubi.yMax, p.Bubble.yMax));
@@ -503,6 +608,22 @@ namespace NeuroVida.Games.Shared
                 _warned = true;
                 Debug.LogWarning("[Coach] sin lugar limpio para «" + _text.text + "»: " + (p.TooLong ? "no cabe en " + CoachLayout.MaxLines + " líneas; " : "") + "tapa " + Mathf.RoundToInt(p.Overlap) + " u²");
             }
+        }
+
+        /// <summary>Mide el texto con el MISMO <c>Text</c> que lo dibuja (su escala de lienzo y su fuente en este teléfono) y se queda con lo peor entre eso y la medida de fábrica
+        /// (<see cref="CoachText.Measure"/>, que ya cubre varias escalas): así el globo nunca se calcula más chico que lo que de verdad ocupa el texto.</summary>
+        private TextMeasure MeasureLive(string text, float width)
+        {
+            var offline = CoachText.Measure(text, width);
+            if (_text == null || !_text.isActiveAndEnabled || string.IsNullOrEmpty(text)) return offline;
+            var settings = _text.GetGenerationSettings(new Vector2(Mathf.Max(1f, width), 0f));
+            settings.horizontalOverflow = HorizontalWrapMode.Wrap;
+            settings.verticalOverflow = VerticalWrapMode.Overflow;
+            if (!_measureGen.Populate(text, settings)) _measureGen.Populate(text, settings);
+            float ppu = Mathf.Max(0.01f, _text.pixelsPerUnit);
+            int lines = _measureGen.lineCount;
+            float h = _measureGen.GetPreferredHeight(text, settings) / ppu;
+            return new TextMeasure(Mathf.Max(lines, offline.Lines), Mathf.Max(h, offline.Height));
         }
 
         private void FillReport()
@@ -535,6 +656,9 @@ namespace NeuroVida.Games.Shared
                 foreach (var t in _textRaw) clash += CoachLayout.Overlap(c, t);
             }
             r.ControlClash = clash;
+            var ctl = new List<Rect>();
+            foreach (var c in new[] { ControlSkip, ControlBadge }) if (c != null && c.gameObject.activeInHierarchy) ctl.Add(RectOf(c));
+            r.Controls = ctl.ToArray();
         }
 
         private void Record()
@@ -627,7 +751,7 @@ namespace NeuroVida.Games.Shared
                 if (_finger.gameObject.activeSelf)
                 {
                     float bob = decorative ? Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3.2f)) : 0.5f;
-                    _finger.rectTransform.anchoredPosition = hole.center + new Vector2(0f, -hole.height * 0.15f - 150f * (1f - bob));
+                    _finger.rectTransform.anchoredPosition = FingerCenter(hole, bob);
                 }
             }
 
@@ -637,6 +761,65 @@ namespace NeuroVida.Games.Shared
             _group.anchoredPosition = _groupPos + new Vector2((_left ? -1f : 1f) * slide * 520f, 0f);
             float pop = decorative ? Mathf.Lerp(1.1f, 1f, UiFx.EaseOutCubic(Mathf.Clamp01((Time.unscaledTime - _popAt) / 0.3f))) : 1f;
             _bubble.localScale = Vector3.one * (Time.unscaledTime - _popAt < 0.3f ? pop : 1f);
+            if (DebugOverlay) DrawDebug();
+            else if (_dbgRoot != null && _dbgRoot.gameObject.activeSelf) _dbgRoot.gameObject.SetActive(false);
+        }
+
+        // ------------------------------------------------------------------ vista de diagnóstico (solo depuración)
+
+        private void Dbg(int i, Rect r, Color c)
+        {
+            while (_dbgBoxes.Count <= i)
+            {
+                var go = new GameObject("Box" + _dbgBoxes.Count, typeof(RectTransform));
+                go.transform.SetParent(_dbgRoot, false);
+                var rt = (RectTransform)go.transform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                var im = go.AddComponent<Image>();
+                im.raycastTarget = false;
+                _dbgBoxes.Add(im);
+            }
+            var img = _dbgBoxes[i];
+            bool on = r.width > 1f && r.height > 1f;
+            img.gameObject.SetActive(on);
+            if (!on) return;
+            img.color = c;
+            Box(img.rectTransform, r.xMin, r.yMin, r.xMax, r.yMax);
+        }
+
+        /// <summary>Dibuja encima, en colores: el hueco (rojo), las zonas iluminadas (amarillo), el globo (verde), Nubi (azul), el dedo (magenta), «Saltar tutorial» y el rótulo (blanco) y el último toque (celeste).
+        /// Arriba va la pantalla, la escala del lienzo y el área del foco. Con una captura de esto se ve por qué un toque no entra.</summary>
+        private void DrawDebug()
+        {
+            if (_dbgRoot == null)
+            {
+                var go = new GameObject("DebugOverlay", typeof(RectTransform));
+                go.transform.SetParent(_root, false);
+                _dbgRoot = (RectTransform)go.transform;
+                Stretch(_dbgRoot);
+                _dbgText = MakeText(_dbgRoot, "Info", 30, TextAnchor.UpperLeft, Color.white, 0f, 0f);
+                _dbgText.rectTransform.offsetMin = new Vector2(20f, 20f);
+                _dbgText.rectTransform.offsetMax = new Vector2(-20f, -20f);
+                _dbgText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            }
+            _dbgRoot.gameObject.SetActive(true);
+            _dbgRoot.SetAsLastSibling();
+            int n = 0;
+            if (_kind != Kind.Notice && _target != null) Dbg(n++, _hole, new Color(1f, 0.1f, 0.1f, 0.30f));
+            for (int i = _kind != Kind.Notice && _target != null ? 1 : 0; i < _lit.Count; i++) Dbg(n++, _lit[i], new Color(1f, 0.9f, 0.1f, 0.25f));
+            if (_placement != null)
+            {
+                Dbg(n++, _placement.Bubble, new Color(0.1f, 1f, 0.2f, 0.25f));
+                Dbg(n++, _placement.Nubi, new Color(0.2f, 0.4f, 1f, 0.25f));
+            }
+            if (_kind == Kind.Touch && _finger.gameObject.activeSelf) Dbg(n++, FingerRect(_hole), new Color(1f, 0.1f, 1f, 0.25f));
+            if (ControlSkip != null && ControlSkip.gameObject.activeInHierarchy) Dbg(n++, RectOf(ControlSkip), new Color(1f, 1f, 1f, 0.30f));
+            if (ControlBadge != null && ControlBadge.gameObject.activeInHierarchy) Dbg(n++, RectOf(ControlBadge), new Color(1f, 1f, 1f, 0.30f));
+            if (_hasTouch) Dbg(n++, new Rect(_lastTouchLocal - new Vector2(24f, 24f), new Vector2(48f, 48f)), new Color(0f, 1f, 1f, 0.9f));
+            for (int i = n; i < _dbgBoxes.Count; i++) _dbgBoxes[i].gameObject.SetActive(false);
+            var canvas = _root.GetComponentInParent<Canvas>();
+            var sa = Screen.safeArea;
+            _dbgText.text = $"{Screen.width}x{Screen.height} · escala {(canvas != null ? canvas.scaleFactor : 0f):0.00} · foco {N(_root.rect.width)}x{N(_root.rect.height)} · zona segura {N(sa.x)},{N(sa.y)} {N(sa.width)}x{N(sa.height)} · paso {_kind} · toques fuera {_misses} · {_waited:0.0} s";
         }
 
         private static readonly System.Reflection.PropertyInfo PixelsMultiplier = typeof(Image).GetProperty("pixelsPerUnitMultiplier");

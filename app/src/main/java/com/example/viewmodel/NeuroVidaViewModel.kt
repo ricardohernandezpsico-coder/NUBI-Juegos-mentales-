@@ -443,7 +443,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     if (isDailyFlow) focusPrefs.edit().putBoolean("return", false).apply()
     val paused = pausedGame
     pausedGame = null
-    if (paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode) {
+    if (paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode && (customTimed == null || paused.first.timed == customTimed)) {
       _activeGame.value = paused.first.copy(
         isDailyFlow = isDailyFlow || paused.first.isDailyFlow,
         resumeLaunchId = paused.second
@@ -453,7 +453,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     }
     val def = GameRegistry.getById(gameId) ?: return
     val lvl = customLevel ?: getEffectiveLevelForGame(gameId)
-    val timed = customTimed ?: userSettings.value.defaultTimed
+    // El camino diario de Hoy va siempre sin reloj; en Juegos vale la elección de la ficha de cada juego (data/RetoChoice.kt).
+    val timed = if (isDailyFlow) false else customTimed ?: repository.retoFor(gameId)
     val intensity = if (lvl >= 5) getEffectiveIntensityForGame(gameId) else 0
     _activeGame.value = ActiveGameSession(def, lvl, timed, isDailyFlow, intensity, mode = if (isDailyFlow) com.example.data.PlayMode.A_TU_MEDIDA else mode)
     _lastResult.value = null
@@ -719,11 +720,17 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   /** "Jugar" en la ficha de Juegos: recuerda la casilla para volver a ella y lanza en el modo elegido. */
-  fun playFromLibrary(gameId: String, mode: com.example.data.PlayMode) {
+  fun playFromLibrary(gameId: String, mode: com.example.data.PlayMode, timed: Boolean? = null) {
     GameRegistry.getById(gameId)?.let { setLibraryFocus(it.domain, gameId) }
     focusPrefs.edit().putBoolean("return", true).apply()
-    launchGame(gameId, mode = mode)
+    if (timed != null) repository.setReto(gameId, timed)       // se recuerda por juego
+    launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
   }
+
+  /** La elección «Sin reloj / Contra el reloj» que vale hoy para [gameId] (la ficha de Juegos la muestra elegida). */
+  fun retoFor(gameId: String): Boolean = repository.retoFor(gameId)
+
+  val retoChoices: StateFlow<Map<String, Boolean>> get() = repository.retoChoices
 
   fun createNewProfile(
     name: String,

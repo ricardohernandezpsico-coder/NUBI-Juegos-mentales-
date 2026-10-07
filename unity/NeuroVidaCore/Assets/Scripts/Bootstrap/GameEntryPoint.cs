@@ -160,6 +160,7 @@ namespace NeuroVida.Bridge
             NeuroVida.Games.Shared.GameFeel.SoundOn = config.config.sound_enabled;
             NeuroVida.Games.Shared.GameFeel.HapticsOn = config.config.haptics_enabled;
             NeuroVida.Games.Shared.GameFeel.ReduceMotion = config.config.reduce_motion;
+            NeuroVida.Games.Shared.NubiCoach.DebugOverlay = config.config.debug_overlay;       // solo desde los botones [Debug] de la app: dibuja los rectángulos del tutorial
             // Evaluación inicial ("Tu punto de partida"): subtítulo de la cuenta regresiva y calibración rápida.
             NeuroVida.Games.Shared.Assessment.Configure(config.config);
             // Modo elegido antes de jugar (Suave / Desafío / Experto): techo o piso de todos los DDA de la partida.

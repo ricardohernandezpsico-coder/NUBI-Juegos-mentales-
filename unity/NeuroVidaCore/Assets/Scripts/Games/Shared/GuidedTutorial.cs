@@ -138,6 +138,8 @@ namespace NeuroVida.Games.Shared
             _skipPracticeLabel = Label(_skipRect, "Label", 54, Vector2.zero, new Vector2(620f, 132f), new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
             _skipPracticeLabel.text = "Saltar tutorial";
             BestFit(_skipPracticeLabel, 45);
+            Coach.ControlSkip = _skipRect;       // Nubi y su globo no los tapan, estén donde estén
+            Coach.ControlBadge = _badge;
             _practiceRoot.gameObject.SetActive(false);
         }
 
@@ -268,10 +270,15 @@ namespace NeuroVida.Games.Shared
 #endif
             if (Input.touchCount > 0)
             {
-                var t = Input.GetTouch(0);
-                if (t.phase != TouchPhase.Began) return false;
-                pos = t.position;
-                return true;
+                // cualquier dedo que acaba de apoyarse (un dedo o la palma que ya estaban en la pantalla no esconden el toque nuevo)
+                for (int i = 0; i < Input.touchCount; i++)
+                {
+                    var t = Input.GetTouch(i);
+                    if (t.phase != TouchPhase.Began) continue;
+                    pos = t.position;
+                    return true;
+                }
+                return false;
             }
             if (!Input.GetMouseButtonDown(0)) return false;
             pos = Input.mousePosition;

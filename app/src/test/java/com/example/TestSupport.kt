@@ -70,4 +70,19 @@ object TestSupport {
       Thread.sleep(20)
     }
   }
+
+  /**
+   * Suelta los ViewModel de una prueba (cancela lo que siguen haciendo en segundo plano) y deja correr el hilo principal, ANTES de soltar la base. Sin esto, un ViewModel que todavía consulta la base
+   * cuando termina la prueba recibe «unable to open database file» (los archivos ya no están) y el error le llega a la prueba como si fuera suyo: pasaba sobre todo cuando todo corre rápido.
+   */
+  fun release(vararg viewModels: androidx.lifecycle.ViewModel) {
+    for (vm in viewModels) {
+      runCatching {
+        val clear = androidx.lifecycle.ViewModel::class.java.getDeclaredMethod("clear")
+        clear.isAccessible = true
+        clear.invoke(vm)
+      }
+    }
+    runCatching { shadowOf(Looper.getMainLooper()).idle() }
+  }
 }

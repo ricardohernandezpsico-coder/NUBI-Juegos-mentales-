@@ -473,43 +473,8 @@ fun SettingsScreen(
           fontWeight = FontWeight.Bold
         )
 
-        // Default mode toggle
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Column(modifier = Modifier.weight(1f)) {
-            Text(
-              text = "Modo contra el reloj (Reto)",
-              style = MaterialTheme.typography.bodyMedium,
-              fontWeight = FontWeight.SemiBold
-            )
-            Text(
-              text = if (defaultTimed) "Partidas con temporizador" else "Modo Precisión (sin reloj, sin prisa)",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-          }
-          Switch(
-            checked = defaultTimed,
-            onCheckedChange = {
-              defaultTimed = it
-              viewModel.updateSettings(
-                name = nameInput,
-                weeklyGoal = weeklyGoal,
-                defaultTimed = it,
-                sound = soundEnabled,
-                haptics = hapticsEnabled,
-                notificationsEnabled = notificationsEnabled,
-                reminderHour = reminderHour,
-                reminderMinute = reminderMinute
-              )
-            },
-            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = TealPrimary),
-            modifier = Modifier.testTag("switch_mode_timed")
-          )
-        }
+        // (6-oct) El interruptor «Modo contra el reloj (Reto)» se quitó: «Sin reloj / Contra el reloj» se elige por juego en su ficha de Juegos, junto a la dificultad (data/RetoChoice.kt).
+        // Su último valor quedó como elección inicial de cada juego y sigue guardado en `defaultTimed`.
 
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 

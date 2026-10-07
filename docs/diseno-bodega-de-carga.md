@@ -225,11 +225,11 @@ boceto: `spring(x, v, objetivo, dt, frecuencia, amortiguación)`, integrado cada
 
 Sobre un pedido de la etapa 1 (2 objetos), con el sistema de zonas `keep`. Reordenado el 6-oct tras probarlo Ricardo en el teléfono: primero se explica, después se mira y recién ahí se pide elegir.
 
-1. **Touch (explicar).** La bodega queda quieta e iluminada y la tarjeta protegida. Nubi dice: «Toca la bodega: te enseño cómo guarda la carga el robot». Un toque dentro de la bodega empieza.
+1. **Touch (explicar).** La bodega queda quieta e iluminada y la tarjeta protegida. Nubi dice: «El robot guarda la carga. Toca la bodega y mira». Un toque dentro de la bodega empieza.
 2. **Watch (mirar).** La carga entra por la esclusa y el robot la guarda. Nubi dice solo: «Fíjate en qué escotilla guarda cada cosa» (la frase larga de antes se leía mientras la carga pasaba y no se alcanzaba a ver adónde iba).
 3. **Watch (así quedó).** Al terminar, todas las escotillas con carga se abren ~2,6 s para que se vea dónde quedó cada cosa; Nubi dice «Así quedó la carga. Ahora cierro las escotillas». Solo en el tutorial: en el juego nunca se muestra todo a la vez.
 4. **Touch (hacer).** El hueco es la escotilla correcta; la zona protegida es la tarjeta del pedido. Nubi dice: «¿Dónde está la llave? Toca su escotilla». Es un toque real.
-5. **Watch (error de muestra).** Se abre la que «tocaron» y la correcta brilla y se abre sola; Nubi dice: «Si fallas, se abre la correcta: así aprendes dónde estaba» (acortado: el globo admite 62 caracteres).
+5. **Watch (error de muestra).** Se abre la que «tocaron» y la correcta brilla y se abre sola; Nubi dice: «Si fallas, se abre la correcta y aprendes» (corto: en pantallas bajas el globo solo cabe en 2 líneas).
 
 Después: «¡Listo! Ahora va en serio». En el smoke del Editor, el paso 4 recibe un toque «de verdad» en el centro de la escotilla pedida (`ProbeHatchTap`) y falla si no se cierra: así un hueco que no coincida con la escotilla se detecta antes del teléfono.
 

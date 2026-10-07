@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.TimerOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -195,11 +197,12 @@ fun GamesLibraryScreen(
       age = userSettings.ageBand,
       expertOpen = g.id in skill.expertOpen,
       selected = modes[g.id] ?: PlayMode.A_TU_MEDIDA,
+      timed = viewModel.retoFor(g.id),        // la elección de ese juego (o el ajuste viejo de Ajustes, si todavía no eligió); se lee al abrir la ficha
       onDismiss = { sheetFor = null },
-      onPlay = { m ->
+      onPlay = { m, timed ->
         modes[g.id] = m
         sheetFor = null
-        viewModel.playFromLibrary(g.id, m)
+        viewModel.playFromLibrary(g.id, m, timed)
       }
     )
   }
@@ -294,7 +297,7 @@ internal fun GameTile(data: GameCardData, highlighted: Boolean, onClick: () -> U
 
 /**
  * Ficha del juego (ventana superpuesta, crema): el juego, tu avance con su etapa, tu marca, tu constancia, cómo
- * quieres jugar (4 modos con sus aciertos esperados; Experto se abre al superar un Desafío) y Jugar. Sin reloj.
+ * quieres jugar (4 modos con sus aciertos esperados; Experto se abre al superar un Desafío), «Sin reloj / Contra el reloj» (se recuerda por juego: data/RetoChoice.kt) y Jugar.
  */
 @Composable
 internal fun GameSheet(
@@ -302,13 +305,15 @@ internal fun GameSheet(
   age: AgeBand?,
   expertOpen: Boolean,
   selected: PlayMode,
+  timed: Boolean,
   onDismiss: () -> Unit,
-  onPlay: (PlayMode) -> Unit
+  onPlay: (PlayMode, Boolean) -> Unit
 ) {
   var choice by remember(data.game.id) { mutableStateOf(selected) }
+  var withClock by remember(data.game.id) { mutableStateOf(timed) }
   Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
     Box(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
-      GameSheetContent(data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice) }, onClose = onDismiss)
+      GameSheetContent(data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice, withClock) }, onClose = onDismiss, timed = withClock, onChooseTimed = { withClock = it })
     }
   }
 }
@@ -321,7 +326,9 @@ internal fun GameSheetContent(
   choice: PlayMode,
   onChoose: (PlayMode) -> Unit,
   onPlay: () -> Unit,
-  onClose: () -> Unit = {}
+  onClose: () -> Unit = {},
+  timed: Boolean = false,
+  onChooseTimed: (Boolean) -> Unit = {}
 ) {
   val g = data.game
   ClayCard(color = CardCream, radius = 28.dp, contentPadding = 0.dp, modifier = Modifier.fillMaxWidth().testTag("game_sheet")) {
@@ -427,6 +434,41 @@ internal fun GameSheetContent(
         }
       }
       Text(choice.what, color = CardMuted, fontSize = Small, lineHeight = 19.sp)
+
+      // ¿Con o sin reloj? Se recuerda por juego; el camino diario de Hoy va siempre sin reloj.
+      if (com.example.data.RetoChoice.supports(g.id)) {
+        HorizontalLine()
+        Text("¿Con reloj?", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+        listOf(false to com.example.data.RetoChoice.UNTIMED_LABEL, true to com.example.data.RetoChoice.timedLabel(g.id)).forEach { (value, label) ->
+          val on = timed == value
+          val shape = RoundedCornerShape(16.dp)
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(bottom = 8.dp)
+              .heightIn(min = 52.dp)
+              .clip(shape)
+              .background(if (on) ModeRowOn else ModeRow)
+              .border(if (on) 3.dp else 1.5.dp, Clay.Ink, shape)
+              .clickable { onChooseTimed(value) }
+              .semantics { contentDescription = label + if (on) ", elegido" else "" }
+              .padding(horizontal = 12.dp, vertical = 8.dp)
+              .testTag(if (value) "reto_con" else "reto_sin")
+          ) {
+            Icon(if (value) Icons.Filled.Timer else Icons.Filled.TimerOff, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(26.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(label, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            if (on) {
+              Box(
+                Modifier.size(24.dp).clip(CircleShape).background(Clay.Lime).border(2.dp, Clay.Ink, CircleShape),
+                contentAlignment = Alignment.Center
+              ) { Icon(Icons.Default.Check, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(16.dp)) }
+            }
+          }
+        }
+        Text(com.example.data.RetoChoice.help(timed), color = CardMuted, fontSize = Small, lineHeight = 19.sp)
+      }
 
       ClayCard(color = Clay.Sun, radius = 22.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onPlay, modifier = Modifier.fillMaxWidth().padding(top = 14.dp).testTag("sheet_play")) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().height(54.dp)) {

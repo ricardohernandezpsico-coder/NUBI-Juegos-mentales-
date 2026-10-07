@@ -155,7 +155,18 @@ fi
 
 T=$SECONDS
 cd "$REPO"
-./gradlew.bat testDebugUnitTest assembleDebug --console=plain > "$RESULTS/v-5-gradle.log" 2>&1 || fallo "5 Gradle" "compilacion o pruebas Kotlin" "$RESULTS/v-5-gradle.log"
+GRADLE_OK=0
+for INTENTO in 1 2 3; do
+  if ./gradlew.bat testDebugUnitTest assembleDebug --console=plain > "$RESULTS/v-5-gradle.log" 2>&1; then GRADLE_OK=1; break; fi
+  # RetiredBitacoraTest (pantallas + base de datos + WorkManager) a veces falla sola con «unable to open database file» cuando todo corre rápido: una carrera entre WorkManager y la base de la prueba,
+  # que no es un error del código (se vio también sin ningún cambio). Si es LO ÚNICO que falló, se repite (hasta 3 veces); cualquier otro fallo se informa tal cual.
+  if grep -aq "SQLiteCantOpenDatabaseException" "$RESULTS/v-5-gradle.log" && [ "$(grep -a " > .* FAILED$" "$RESULTS/v-5-gradle.log" | grep -avc "^RetiredBitacoraTest >")" = 0 ] && ! grep -aq "^e: " "$RESULTS/v-5-gradle.log" && [ "$INTENTO" -lt 3 ]; then
+    echo "*** AVISO: RetiredBitacoraTest falló por la base de datos de la prueba (conocido); se repite (intento $((INTENTO + 1)) de 3)"
+    continue
+  fi
+  break
+done
+[ "$GRADLE_OK" = 1 ] || fallo "5 Gradle" "compilacion o pruebas Kotlin" "$RESULTS/v-5-gradle.log"
 KT="$(cat app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null | grep -o '<testsuite [^>]*' | sed -n 's/.* tests="\([0-9]*\)".* failures="\([0-9]*\)".*/\1 \2/p' | awk '{t+=$1; f+=$2} END {print t+0" "f+0}')"
 linea "5 Gradle" "OK ${KT% *} pruebas Kotlin, ${KT#* } fallos, APK compilado" "$((SECONDS - T))"
 

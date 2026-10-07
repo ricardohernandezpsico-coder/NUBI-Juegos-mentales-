@@ -303,6 +303,19 @@ class NeuroVidaRepository(
   // "Tu punto de partida" (ver Baseline.kt): nivel educacional, metas y el mapa de la evaluación inicial. En
   // SharedPreferences (como ligas y logros) para no migrar Room por datos que solo se escriben en el onboarding.
   private val profilePrefs = context.getSharedPreferences("profile_extra", Context.MODE_PRIVATE)
+
+  // «Sin reloj / Contra el reloj» por juego (ficha de Juegos, 6-oct): claves `reto_<juego>` en `profile_extra` (van en el respaldo). Ver data/RetoChoice.kt.
+  private val _retoChoices = MutableStateFlow(RetoChoice.decode(profilePrefs.all))
+  val retoChoices: StateFlow<Map<String, Boolean>> = _retoChoices.asStateFlow()
+
+  /** La elección que vale para [gameId]: la guardada o, si no hay, el ajuste viejo de Ajustes («Modo contra el reloj»), que pasó a ser la elección inicial de cada juego. */
+  fun retoFor(gameId: String): Boolean = RetoChoice.resolve(gameId, _retoChoices.value[gameId], userSettings.value.defaultTimed)
+
+  fun setReto(gameId: String, timed: Boolean) {
+    if (!RetoChoice.supports(gameId)) return
+    _retoChoices.value = _retoChoices.value + (gameId to timed)
+    profilePrefs.edit().putBoolean(RetoChoice.key(gameId), timed).apply()
+  }
   private val _education = MutableStateFlow(
     profilePrefs.getString("education", null)?.let { n -> Education.values().firstOrNull { it.name == n } }
   )
@@ -966,6 +979,7 @@ class NeuroVidaRepository(
     progressPrefs.edit().clear().apply()
     _progressLog.value = emptyList()
     profilePrefs.edit().clear().apply()
+    _retoChoices.value = emptyMap()
     _education.value = null
     _goals.value = emptySet()
     _baseline.value = null

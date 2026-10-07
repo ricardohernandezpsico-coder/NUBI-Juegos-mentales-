@@ -50,6 +50,8 @@ object UnityGameLauncher {
     val reduce_motion: Boolean = false,
     // Tutorial guiado común (Games/Shared/GuidedTutorial.cs): la persona nunca jugó este juego. Hoy solo Rastro de luz lo usa.
     val show_tutorial: Boolean = false,
+    // SOLO depuración (botones [Debug]): Unity dibuja encima del tutorial los rectángulos del foco y el último toque, para mandar una captura de lo que pasa en el teléfono.
+    val debug_overlay: Boolean = false,
     // Solo «En la punta de la lengua» (anagramas): las palabras que Nubi mostró en partidas anteriores («las azules»), separadas por «;». Vuelven en otra partida.
     val punta_pending: String = "",
     // Solo «Engranajes»: las luces del cohete que la persona lleva (0..9) y los cohetes que ya despegaron (son progreso: la app los guarda y Unity devuelve los nuevos).
@@ -91,8 +93,9 @@ object UnityGameLauncher {
     assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
     assessmentTotal: Int = 0,
     mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
-    forceTutorial: Boolean = false // solo las herramientas de prueba: abre el tutorial aunque la persona ya haya jugado
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial)
+    forceTutorial: Boolean = false, // solo las herramientas de prueba: abre el tutorial aunque la persona ya haya jugado
+    debugOverlay: Boolean = false   // solo las herramientas de prueba: Unity dibuja los rectángulos del tutorial y el último toque
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay)
 
   private fun buildIntent(
     context: Context,
@@ -107,7 +110,8 @@ object UnityGameLauncher {
     assessmentStep: Int = 0,
     assessmentTotal: Int = 0,
     mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
-    forceTutorial: Boolean = false
+    forceTutorial: Boolean = false,
+    debugOverlay: Boolean = false
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
@@ -131,6 +135,7 @@ object UnityGameLauncher {
           context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         ) == 0f,
         show_tutorial = forceTutorial || shouldShowTutorial(gameId, com.example.NeuroVidaApplication.instance.repository.gameHistory.value),
+        debug_overlay = debugOverlay,
         punta_pending = if (gameId == "anagramas") com.example.data.Punta.encode(com.example.NeuroVidaApplication.instance.repository.puntaPending.value) else "",
         engr_lights = if (gameId == "engranajes") com.example.NeuroVidaApplication.instance.repository.engranajesRocket.value.lights else 0,
         engr_orbit = if (gameId == "engranajes") com.example.NeuroVidaApplication.instance.repository.engranajesRocket.value.orbit else 0,

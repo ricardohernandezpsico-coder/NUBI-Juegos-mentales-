@@ -65,13 +65,23 @@ class RetiredBitacoraTest {
   fun setUp() {
     app = ApplicationProvider.getApplicationContext()
     TestSupport.resetDatabase()
+    // WorkManager abre su propia base en segundo plano apenas se inicializa; si la carpeta de bases de datos de la prueba todavía no existe (pasa cuando todo corre rápido), falla con
+    // «unable to open database file» y la prueba lo hereda («WM.task-1: The file system on the device is in a bad state»). Se crea antes.
+    app.getDatabasePath("neurovida_database").parentFile?.mkdirs()
+    app.noBackupFilesDir?.mkdirs()           // WorkManager guarda su base ahí
     runCatching {
       androidx.work.WorkManager.initialize(app, androidx.work.Configuration.Builder().setExecutor(java.util.concurrent.Executor { it.run() }).build())
     }
   }
 
+  private val viewModels = mutableListOf<NeuroVidaViewModel>()
+
+  private fun newViewModel(): NeuroVidaViewModel = NeuroVidaViewModel(app).also { viewModels.add(it) }
+
   @After
   fun tearDown() {
+    TestSupport.release(*viewModels.toTypedArray())      // antes de soltar la base: ver TestSupport.release
+    viewModels.clear()
     TestSupport.resetDatabase()
   }
 
@@ -134,7 +144,7 @@ class RetiredBitacoraTest {
   @Test
   fun `el historial y la mision se conservan, no se muestran y la medida vieja no se lee`() {
     seedOldData()
-    val vm = NeuroVidaViewModel(app)
+    val vm = newViewModel()
     TestSupport.awaitUntil(message = "Las partidas viejas no se cargaron") { vm.gameHistory.value.isNotEmpty() }
     // los datos siguen ahí: nada se borra
     assertEquals(3, runBlocking { db().gameResultDao().getAllResultsSync().count { it.gameId == old } })
@@ -158,7 +168,7 @@ class RetiredBitacoraTest {
   @Test
   fun `un camino de hoy guardado con Bitacora se cambia por otro juego de Memoria y conserva el avance`() {
     seedOldData()
-    val vm = NeuroVidaViewModel(app)
+    val vm = newViewModel()
     TestSupport.awaitUntil(message = "El camino de hoy no se corrigió") { vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
     val s = vm.dailySession.value
     assertEquals(1, s.completedCount)
@@ -173,7 +183,7 @@ class RetiredBitacoraTest {
   @Test
   fun `los caminos nuevos nunca traen Bitacora y la sesion de hoy se puede empezar`() {
     seedOldData()
-    val vm = NeuroVidaViewModel(app)
+    val vm = newViewModel()
     TestSupport.awaitUntil { vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
     vm.startDailySession()
     assertNotNull(vm.activeGame.value)
@@ -183,7 +193,7 @@ class RetiredBitacoraTest {
   @Test
   fun `Hoy, Juegos y Avance se abren sin errores, no nombran Bitacora y Hoy ya no tiene la linea de la mision`() {
     seedOldData()
-    val vm = NeuroVidaViewModel(app)
+    val vm = newViewModel()
     TestSupport.awaitUntil { vm.gameHistory.value.isNotEmpty() && vm.dailySession.value.gameIds.none { it == old } }
     composeTestRule.mainClock.autoAdvance = false
     val screen = androidx.compose.runtime.mutableIntStateOf(0)

@@ -44,3 +44,17 @@ lee en pantalla. La prueba `CoachLayoutTests` comprueba que cada texto cabe en 3
   Engranajes entra desde el rediseño «Taller de reparación» (5-oct): su tutorial de 3 focos se revisa igual que los demás.
 - **Láminas** (`python tools/coach-preview/tutoriales.py [alto]` → `docs/previews/tutoriales/<juego>-paso<N>.png`): NO son capturas (el smoke corre sin gráficos); son los rectángulos reales de
   cada paso: el hueco y las zonas iluminadas, los textos del juego (gris), Nubi y el globo con su texto en la misma letra.
+
+## Red de seguridad y diagnóstico (6-oct, tarea 42)
+
+Ricardo probó los tutoriales de Bodega y de «En la punta de la lengua» en su teléfono y se «pegaban»: el toque en lo iluminado no avanzaba, el dedo de ayuda tapaba una palabra de la tarjeta, la segunda línea del globo se salía y «Saltar tutorial» quedaba encima del globo. En el smoke nada de eso se veía. Qué se hizo:
+
+- **Nadie queda atrapado** (`NubiCoach.HandleTouch`): en un paso de Tocar, un toque dentro del hueco o a menos de 40 dp de su borde es el toque pedido (cierra el paso y el juego lo recibe). Un toque más lejos no avanza la primera vez, pero el SEGUNDO toque fuera, o cualquier toque pasados 10 s, avanza el paso; ese toque no llega al juego (`Blocks` lo frena ese cuadro) para que no haga algo que nadie pidió. «Saltar tutorial» sigue siendo del juego. Pruebas en `NubiCoachTests`.
+- **Cada toque queda anotado** en el registro de errores del teléfono (`diag/ErrorLog`, etiqueta `TUTORIAL`, vía `NativeBridge.LogDiagnostic` → `NativeReceiver.logDiagnostic`): al empezar cada paso de Tocar (pantalla, zona segura, escala del lienzo, tamaño del foco y hueco) y con cada toque (posición en pantalla, punto convertido al lienzo, hueco, distancia, si se aceptó y por qué). Sale en Ajustes → «Enviar informe de errores».
+- **Vista de diagnóstico** (solo botones [Debug] de Ajustes → «Rectángulos del tutorial»): dibuja encima el hueco (rojo), las zonas iluminadas (amarillo), el globo (verde), Nubi (azul), el dedo (magenta), «Saltar tutorial» y el rótulo (blanco) y el último toque (celeste), con la pantalla y la escala arriba. Una captura de eso muestra por qué un toque no entra.
+- **El globo se mide con el texto real**: `NubiCoach.MeasureLive` usa el mismo `Text` que lo dibuja (su escala de lienzo en ese teléfono) y se queda con lo peor entre eso y la medida de fábrica (`CoachText.Measure`, ahora a 4 escalas: 0,65 · 0,8 · 1 · 1,25, porque la fuente redondea a píxeles enteros y el mismo texto puede partirse distinto según la pantalla). Si el texto dibujado tiene más líneas que las calculadas, se vuelve a colocar. El smoke falla si `ActualLines > Lines`.
+- **«Saltar tutorial» y «Práctica: no cuenta» son obstáculos duros** para Nubi y el globo, estén donde estén (Punta pone «Saltar» a media altura y el cálculo solo contaba con que estaba abajo).
+- **El dedo de ayuda reposa FUERA del hueco**, pegado a su borde (abajo si cabe y no tapa un texto del juego; si no, arriba), nunca sobre las letras.
+- **`GuidedTutorial.TryPress` mira todos los dedos**: un dedo o la palma ya apoyados ya no esconden el toque nuevo (antes solo se miraba el primer dedo).
+
+Lo que NO se pudo confirmar sin el teléfono: por qué un toque dentro del hueco no avanzaba en el teléfono de Ricardo. Si vuelve a pasar: «Enviar informe de errores» (las líneas `TUTORIAL` dicen dónde cayó el toque y dónde estaba el hueco) y, con el botón [Debug] «Rectángulos del tutorial: SÍ», una captura.

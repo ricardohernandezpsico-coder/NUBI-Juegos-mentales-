@@ -282,6 +282,13 @@ object NativeReceiver {
   fun onGameShown() = UnityLoadingOverlay.hideFromAnyThread()
 
   /**
+   * Desde Unity (proceso `:unity`): anota una línea de diagnóstico en el registro de errores del teléfono (Ajustes → «Enviar informe de errores»).
+   * Sirve para ver lo que solo pasa en el teléfono real (hoy, los toques del tutorial). Nunca lanza.
+   */
+  @JvmStatic
+  fun logDiagnostic(tag: String, message: String) = ErrorLog.record(tag, message)
+
+  /**
    * Punto de entrada desde Unity al terminar la partida (proceso `:unity`). El resultado se guarda para
    * entregarlo junto con la vuelta a la app ([returnToApp]) y además viaja por un broadcast explícito al proceso
    * principal ([UnityResultReceiver] -> [handleFinished]), para no perderlo si el usuario nunca vuelve (Inicio,

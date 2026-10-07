@@ -17,7 +17,7 @@ namespace NeuroVida.Games.Shared
         {
             public const string ReadDefinition = "Lee la definición y toca la tarjeta";
             public const string Have = "Si ya sabes la palabra, toca ¡La tengo!";
-            public const string Letters = "Toca las letras para armar la palabra";
+            public const string Letters = "Toca las letras en orden";
             public const string Help = "Si no te sale, toca Una ayuda";
             public const string FoundAlone = "¡Lucero dorado! La encontraste sola";
             public const string Shown = "No pasa nada: Nubi te la muestra y vuelve otro día";
@@ -92,11 +92,11 @@ namespace NeuroVida.Games.Shared
         /// <summary>Bodega de carga (pantalla: la bodega con su esclusa y las escotillas, y la tarjeta de arriba).</summary>
         public static class Bodega
         {
-            public const string Begin = "Toca la bodega: te enseño cómo guarda la carga el robot";
+            public const string Begin = "El robot guarda la carga. Toca la bodega y mira";
             public const string Watch = "Fíjate en qué escotilla guarda cada cosa";
             public const string Reveal = "Así quedó la carga. Ahora cierro las escotillas";
             public static string Ask(string objectWithArticle) => "¿Dónde está " + objectWithArticle + "? Toca su escotilla";
-            public const string Wrong = "Si fallas, se abre la correcta: así aprendes dónde estaba";
+            public const string Wrong = "Si fallas, se abre la correcta y aprendes";
         }
 
         /// <summary>Todos los textos (con el peor caso de los que cambian según la jugada) para comprobar que caben en el globo.</summary>

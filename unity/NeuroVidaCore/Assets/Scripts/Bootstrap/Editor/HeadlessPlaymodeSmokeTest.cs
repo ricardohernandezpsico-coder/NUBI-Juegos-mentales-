@@ -368,6 +368,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (!st.Clean) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: Nubi o el globo tapan algo ({Mathf.RoundToInt(st.Overlap)} u²{(st.TooLong ? ", el texto no cabe en 3 líneas" : "")}): {where}"); }
                 if (st.ControlClash > 20f) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: «Saltar tutorial» o el rótulo de práctica quedan sobre algo del juego ({Mathf.RoundToInt(st.ControlClash)} u²): {where}"); }
                 if (st.ActualLines > NeuroVida.Games.Shared.CoachLayout.MaxLines) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el texto se dibuja en {st.ActualLines} líneas: {where}"); }
+                if (st.ActualLines > st.Lines) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el globo se calculó para {st.Lines} línea(s) y el texto se dibuja en {st.ActualLines} (se saldría del globo): {where}"); }
             }
         }
 

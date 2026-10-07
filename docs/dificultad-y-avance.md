@@ -2,7 +2,7 @@
 
 Aprobada por Ricardo el 28-sep e **implementada** ese día (lógica en `app/.../data/Skill.kt`, Unity en
 `AdaptiveDifficulty.ConfigureMode`, pestaña Juegos con cartas). Decisiones: Experto se abre al superar un Desafío; el
-reloj se elige en Ajustes, no antes de jugar; sin modo de dificultad en Ajustes. Pendiente: las fortalezas por
+reloj se elegía en Ajustes (**cambió el 6-oct: ahora «Sin reloj / Contra el reloj» se elige por juego en la ficha de Juegos, junto a la dificultad, y se recuerda por juego; el interruptor de Ajustes se quitó y su último valor es la elección inicial de cada juego; el camino diario de Hoy va siempre sin reloj; ver `data/RetoChoice.kt`**); sin modo de dificultad en Ajustes. Pendiente: las fortalezas por
 aspecto de la sección 8 (hoy la carta muestra la constancia) y la calibración de la sección 10. Documento original: Nace de la pestaña Juegos: la carta
 de cada juego muestra "tu avance" y, antes de jugar, se elige Suave / A tu medida / Desafío / Experto. Ricardo
 pidió revisar a fondo el razonamiento para que la dificultad, la edad y lo que se le muestra a la persona formen

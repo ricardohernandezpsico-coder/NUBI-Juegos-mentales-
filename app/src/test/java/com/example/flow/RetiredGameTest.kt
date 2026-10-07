@@ -61,6 +61,8 @@ class RetiredGameTest {
     old = "cambiochip"
     TestSupport.resetDatabase()
     // El ViewModel agenda el recordatorio con WorkManager; sin iniciarlo, esa excepción suelta hace fallar a la regla de Compose («uncaught exceptions before the test started»).
+    app.getDatabasePath("neurovida_database").parentFile?.mkdirs()
+    app.noBackupFilesDir?.mkdirs()           // WorkManager guarda su base ahí (si la carpeta no existe todavía, falla con «unable to open database file»)
     runCatching {
       androidx.work.WorkManager.initialize(app, androidx.work.Configuration.Builder().setExecutor(java.util.concurrent.Executor { it.run() }).build())
     }

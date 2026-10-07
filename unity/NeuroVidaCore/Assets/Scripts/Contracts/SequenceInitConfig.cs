@@ -60,6 +60,8 @@ namespace NeuroVida.Contracts
         /// <summary>La persona nunca jugó este juego (la app lo sabe por el historial): el juego abre con su tutorial guiado
         /// (<c>Games/Shared/GuidedTutorial</c>). Hoy lo usa Rastro de luz; los demás juegos lo ignoran.</summary>
         public bool show_tutorial;
+        /// <summary>SOLO depuración (botones [Debug] de la app): dibuja encima del tutorial los rectángulos del foco y el último toque (<c>NubiCoach.DebugOverlay</c>), para mandar una captura de lo que pasa en el teléfono.</summary>
+        public bool debug_overlay;
         /// <summary>Solo «En la punta de la lengua» (id <c>anagramas</c>): las palabras que Nubi tuvo que mostrar en partidas anteriores («las azules»), separadas por «;»
         /// y bien escritas («búho;faro»). La app las guarda (son progreso: van en el respaldo) y las manda aquí para que vuelvan en otra partida.</summary>
         public string punta_pending = "";
