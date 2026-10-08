@@ -5,7 +5,7 @@ Uso:  python tools/art-preview/constelaciones.py <raw> [--out docs/previews]
       (<raw> = la carpeta que vuelca ArtPreview: `dotnet run --project tools/art-preview -- <raw>`; con solo el runtime 10 de .NET: DOTNET_ROLL_FORWARD=LatestMajor)
 Genera docs/previews/constelaciones.png:
   arriba, los 12 objetos y, abajo de ellos, los 4 gemelos junto a su original (el detalle que los distingue es grande y de forma: anillo, llama, patas, antena);
-  abajo, tres cielos (etapas 7, 13 y 18) a mitad de partida: luces dormidas, una pareja o trío abierto, y las ya unidas con su aro y su línea (dorada continua = de memoria; celeste punteada = a la primera vista).
+  abajo, tres cielos (etapas 7, 13 y 18) casi completos y ya calmados («cielo sereno», 8-oct): las luces unidas son estrellas chicas (0,58) con su aro y su objeto, y su línea es un trazo fino (dorada continua = de memoria; celeste punteada = a la primera vista); lo que falta queda como lo más grande del cielo.
 No es una captura del juego: son los sprites reales en las posiciones que calcula el código; el volteo con resorte no se ve en una imagen quieta.
 """
 import argparse
@@ -108,18 +108,37 @@ def polyline(img, pts, color, width, dash=None):
     img.alpha_composite(layer)
 
 
-def draw_links(img, links, ox, oy):
-    for (ax, ay, bx, by, cx, cy, t0, t1, typ) in links:
+SHRINK = 0.58
+
+
+def trim(a, b, c, ra, rb):
+    """El tramo visible de la línea con el radio ACTUAL de cada luz (ConstelacionLayout.TrimRange)."""
+    t0, t1 = 0.0, 1.0
+    for i in range(61):
+        p = qpt(a, b, c, i / 60)
+        if math.hypot(p[0] - a[0], p[1] - a[1]) > ra:
+            t0 = i / 60
+            break
+    for i in range(60, -1, -1):
+        p = qpt(a, b, c, i / 60)
+        if math.hypot(p[0] - b[0], p[1] - b[1]) > rb:
+            t1 = i / 60
+            break
+    return t0, t1
+
+
+def draw_links(img, links, ox, oy, r):
+    """Las líneas en reposo («cielo sereno»): doradas, núcleo de 2 dp al 60 % y borde oscuro de 3,5 dp al 35 %, sin halo; celestes, punteadas de 1,8 dp al 60 % (trazos de 4 y 6) y borde de 3,2 dp."""
+    for (ax, ay, bx, by, cx, cy, _t0, _t1, typ) in links:
         a, b, c = (ax + ox, ay + oy), (bx + ox, by + oy), (cx + ox, cy + oy)
+        t0, t1 = trim(a, b, c, r * SHRINK + 5, r * SHRINK + 5)
         pts = [qpt(a, b, c, t0 + (t1 - t0) * i / 40) for i in range(41)]
         if typ == 1:     # de memoria
-            polyline(img, pts, (255, 201, 74, 70), 12)
-            polyline(img, pts, (11, 10, 38, 190), 7.5)
-            polyline(img, pts, (255, 201, 74, 255), 4)
+            polyline(img, pts, (11, 10, 38, int(255 * 0.35)), 3.5)
+            polyline(img, pts, (255, 201, 74, int(255 * 0.6)), 2)
         else:
-            polyline(img, pts, (127, 216, 255, 40), 9)
-            polyline(img, pts, (11, 10, 38, 178), 6.5, dash=(7, 7))
-            polyline(img, pts, (191, 233, 255, 230), 3, dash=(7, 7))
+            polyline(img, pts, (11, 10, 38, int(255 * 0.3)), 3.2, dash=(4, 6))
+            polyline(img, pts, (191, 233, 255, int(255 * 0.6)), 1.8, dash=(4, 6))
 
 
 def sky_panel(raw, stage, title, w=360, h=720):
@@ -139,21 +158,27 @@ def sky_panel(raw, stage, title, w=360, h=720):
     # arriba: el marcador y la tarjeta
     d.text((14 * S, 24 * S), 'Cielo 3 de 6', font=font(17), fill=TEXT)
     d.rounded_rectangle([10 * S, 58 * S, (w - 10) * S, 118 * S], radius=18 * S, fill=(20, 27, 58, 255), outline=(142, 131, 216, 90), width=2)
-    d.text((w / 2 * S, 80 * S), title[0], font=font(18), fill=TEXT, anchor='mm')
-    d.text((w / 2 * S, 101 * S), title[1], font=font(14, False), fill=LAV, anchor='mm')
     dormant, opn = load(raw, 'con_dormant'), load(raw, 'con_open')
     ringm, ringn = load(raw, 'con_ringmem'), load(raw, 'con_ringnew')
     k = r / BAKE_R
     draw_ring = lambda l: (ringm if l['ring'] == 1 else ringn)
     for l in lights:
         cx, cy = l['x'] + ox, l['y'] + oy
+        sc = SHRINK if l['state'] == 2 else 1.0        # la luz unida es una estrella chica (aro y objeto incluidos)
         if l['state'] == 2:
-            paste_center(img, draw_ring(l), cx, cy, RING_BOX * k)
-        paste_center(img, opn if l['state'] else dormant, cx, cy, DORMANT_BOX * k)
+            paste_center(img, draw_ring(l), cx, cy, RING_BOX * k * sc)
+        paste_center(img, opn if l['state'] else dormant, cx, cy, DORMANT_BOX * k * sc)
         if l['state']:
             ob = load(raw, f"con_obj_{l['kind']}_{l['var']}")
-            paste_center(img, ob, cx, cy, OBJ_BOX * (r * 1.32 / 40.0))
-    draw_links(img, links, ox, oy)
+            paste_center(img, ob, cx, cy, OBJ_BOX * (r * 1.32 / 40.0) * sc)
+    draw_links(img, links, ox, oy, r)
+    pending = sum(1.0 / max(1, l['size']) for l in lights if l['state'] == 0)
+    n = int(round(pending))
+    if title[1] is None:
+        title = (title[0], 'Falta 1 constelación' if n == 1 else f'Faltan {n} constelaciones')
+    d = ImageDraw.Draw(img)
+    d.text((w / 2 * S, 80 * S), title[0], font=font(18), fill=TEXT, anchor='mm')
+    d.text((w / 2 * S, 101 * S), title[1], font=font(14, False), fill=LAV, anchor='mm')
     d = ImageDraw.Draw(img)
     # la fila de abajo
     ry = oy + sh + 16
@@ -206,9 +231,9 @@ def main():
     W = 360
     g = gallery(a.raw, W)
     panels = [
-        sky_panel(a.raw, 7, ('Ojo con los gemelos', 'Solo se unen los idénticos · faltan 3 parejas')),
-        sky_panel(a.raw, 13, ('Parejas y tríos', 'Faltan 3 parejas y 1 trío')),
-        sky_panel(a.raw, 18, ('Gemelos, parejas y tríos', 'Faltan 5 parejas y 1 trío')),
+        sky_panel(a.raw, 7, ('Ojo con los gemelos', None)),
+        sky_panel(a.raw, 13, ('Parejas y tríos', None)),
+        sky_panel(a.raw, 18, ('Gemelos, parejas y tríos', None)),
     ]
     gap = 24 * S
     total_w = max(g.width, 3 * panels[0].width + 2 * gap)

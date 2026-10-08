@@ -41,6 +41,7 @@ namespace NeuroVida.Games.Parejas
             public Image Spark;
             public ConLink Link;
             public bool Settled, WasGlowing;
+            public float LastB = -1f, LastRa = -1f, LastRb = -1f;
         }
 
         private sealed class FloatView

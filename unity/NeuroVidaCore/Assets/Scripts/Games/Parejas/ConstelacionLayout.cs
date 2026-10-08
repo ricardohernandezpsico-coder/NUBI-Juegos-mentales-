@@ -122,7 +122,7 @@ namespace NeuroVida.Games.Parejas
         /// La curva de la línea entre <paramref name="a"/> y <paramref name="b"/>: se curva un poco (desvío máximo de ±50 dp) para esquivar otras luces y otras líneas cuando puede; las parejas cercanas (distancia
         /// menor que 4R) van rectas. Si no puede esquivar, pasa por encima (las líneas se dibujan sobre todas las luces). <paramref name="lights"/> son todas las luces del cielo, <paramref name="links"/> las líneas ya trazadas.
         /// </summary>
-        public static (float cx, float cy) Route(ConPt a, ConPt b, float r, float w, float h, IList<ConPt> lights, IList<ConLinkGeo> links)
+        public static (float cx, float cy) Route(ConPt a, ConPt b, float r, float w, float h, IList<ConPt> lights, IList<ConLinkGeo> links, IList<bool> small = null, float shrink = 1f)
         {
             float dx = b.X - a.X, dy = b.Y - a.Y, len = (float)Math.Sqrt(dx * dx + dy * dy);
             if (len < 0.0001f) len = 1f;
@@ -144,11 +144,14 @@ namespace NeuroVida.Games.Parejas
                     float t = i / 24f, u = 1f - t;
                     float x = u * u * a.X + 2f * u * t * cx + t * t * b.X, y = u * u * a.Y + 2f * u * t * cy + t * t * b.Y;
                     if (x < 0f || x > w || y < 0f || y > h) pen += 2f;
-                    foreach (var o in lights)
+                    for (int li = 0; li < lights.Count; li++)
                     {
+                        var o = lights[li];
                         if ((o.X == a.X && o.Y == a.Y) || (o.X == b.X && o.Y == b.Y)) continue;
                         float d = (float)Math.Sqrt((x - o.X) * (x - o.X) + (y - o.Y) * (y - o.Y));
-                        if (d < r + 8f) pen += 1f + (r + 8f - d) / 8f;
+                        // una luz ya unida es una estrella chica (radio · shrink): hay más lugar para pasar entre las estrellas
+                        float ro = (small != null && li < small.Count && small[li] ? r * shrink : r) + 8f;
+                        if (d < ro) pen += 1f + (ro - d) / 8f;
                     }
                     // tampoco corre pegada a otra línea (se confundirían)
                     foreach (var pts in others)
@@ -170,6 +173,18 @@ namespace NeuroVida.Games.Parejas
                 if (ConPt.Dist(l.At(i / 100f), l.A) > r + 5f) { l.T0 = i / 100f; break; }
             for (int i = 100; i >= 0; i--)
                 if (ConPt.Dist(l.At(i / 100f), l.B) > r + 5f) { l.T1 = i / 100f; break; }
+        }
+
+        /// <summary>El tramo visible de una línea cuando cada luz tiene su radio ACTUAL (la unida se encoge): nace donde sale del borde de la primera (<paramref name="ra"/>, ya con el aire) y muere donde entra en el
+        /// borde de la segunda (<paramref name="rb"/>). Se calcula en cada cuadro mientras las luces se encogen.</summary>
+        public static void TrimRange(ConLinkGeo l, float ra, float rb, out float t0, out float t1)
+        {
+            t0 = 0f;
+            t1 = 1f;
+            for (int i = 0; i <= 60; i++)
+                if (ConPt.Dist(l.At(i / 60f), l.A) > ra) { t0 = i / 60f; break; }
+            for (int i = 60; i >= 0; i--)
+                if (ConPt.Dist(l.At(i / 60f), l.B) > rb) { t1 = i / 60f; break; }
         }
 
         // ------------------------------------------------------------------ la disposición en la pantalla

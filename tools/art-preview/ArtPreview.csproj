@@ -29,6 +29,7 @@
     <Compile Include="$(Src)/Parejas/ConstelacionContract.cs" />
     <Compile Include="$(Src)/Parejas/ConstelacionLayout.cs" />
     <Compile Include="$(Src)/Parejas/ConstelacionSky.cs" />
+    <Compile Include="$(Src)/Parejas/ConstelacionMotion.cs" />
     <Compile Include="$(Src)/Parejas/ConstelacionSprites.cs" />
     <Compile Include="$(Src)/../Contracts/CardsTelemetry.cs" />
     <Compile Include="$(Src)/Secuencia/TileSprites.cs" />

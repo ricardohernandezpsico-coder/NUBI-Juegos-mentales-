@@ -75,6 +75,7 @@ namespace NeuroVida.Games.Parejas
             {
                 l.Link = null;
                 l.Settled = false;
+                l.LastB = l.LastRa = l.LastRb = -1f;
                 l.Glow.gameObject.SetActive(false);
                 l.Border.gameObject.SetActive(false);
                 l.Core.gameObject.SetActive(false);
@@ -91,6 +92,7 @@ namespace NeuroVida.Games.Parejas
             if (free == null) free = _links[0];
             free.Link = link;
             free.Settled = false;
+            free.LastB = free.LastRa = free.LastRb = -1f;
         }
 
         // ------------------------------------------------------------------ cada cuadro: las luces y las líneas
@@ -110,6 +112,8 @@ namespace NeuroVida.Games.Parejas
                 float sc = deco ? ConstelacionMotion.EaseBack(ap) : 1f;
                 if (leaving && deco) sc *= 1f - ConstelacionMotion.EaseOut((now - _leaveAt) / ConstelacionMotion.LeaveSeconds);
                 if (v.PressAt > 0f && now - v.PressAt < ConstelacionMotion.PressSeconds && deco) sc *= 1f - (1f - ConstelacionMotion.PressScale) * (1f - (now - v.PressAt) / ConstelacionMotion.PressSeconds);
+                // la luz unida se encoge a estrella chica (aro y objeto incluidos): lo que falta queda como lo más grande del cielo
+                sc *= ConstelacionMotion.DoneScale(l.State == ConState.Done, nowMs - l.DoneAtMs, !deco);
                 bool visible = ap > 0f && sc > 0.01f && _phase != Phase.Done;
                 if (v.Root.gameObject.activeSelf != visible) v.Root.gameObject.SetActive(visible);
                 if (!visible) continue;
@@ -158,7 +162,8 @@ namespace NeuroVida.Games.Parejas
             return pts;
         }
 
-        /// <summary>Una línea: se traza en 380 ms desacelerando (con una chispa en la punta), con borde oscuro y sobre todas las luces; al terminar el cielo se ilumina una por una.</summary>
+        /// <summary>Una línea: se traza en 380 ms desacelerando (con una chispa en la punta), con borde oscuro y sobre todas las luces. Después se calma: a los 900 ms pasa en 500 ms a un trazo fino (el cielo no se
+        /// satura y la atención va a lo que falta); al completar el cielo todas vuelven a brillar. Su recorte sigue el borde ACTUAL de cada luz (que se encoge).</summary>
         private void UpdateLink(LinkView v, float nowMs, bool deco, float skyH)
         {
             var l = v.Link;
@@ -170,22 +175,33 @@ namespace NeuroVida.Games.Parejas
             }
             float lg = 0f;
             if (_linkGlowAt.TryGetValue(l, out var g) && nowMs > g) lg = Mathf.Max(0f, 1f - (nowMs - g) / (ConstelacionMotion.GlowSeconds * 1000f));
-            if (k >= 1f && v.Settled && lg <= 0f && !v.WasGlowing) return;
+            bool ending = _phase == Phase.BoardEnd || _phase == Phase.Leaving;
+            float b = ConstelacionMotion.LinkBrightness(nowMs - l.AtMs, ending ? nowMs - _boardDoneAt * 1000f : -1f, !deco);
+            float R = _sky.Placement.R;
+            float ra = R * ConstelacionMotion.DoneScale(l.A.State == ConState.Done, nowMs - l.A.DoneAtMs, !deco) + 5f;
+            float rb = R * ConstelacionMotion.DoneScale(l.B.State == ConState.Done, nowMs - l.B.DoneAtMs, !deco) + 5f;
+            if (k >= 1f && v.Settled && lg <= 0f && !v.WasGlowing && Mathf.Approximately(b, v.LastB) && Mathf.Approximately(ra, v.LastRa) && Mathf.Approximately(rb, v.LastRb)) return;
             v.WasGlowing = lg > 0f;
-            float e = ConstelacionMotion.EaseOut(k), t0 = l.Geo.T0, t1 = t0 + (l.Geo.T1 - t0) * e;
+            v.LastB = b; v.LastRa = ra; v.LastRb = rb;
+            ConstelacionLayout.TrimRange(l.Geo, ra, rb, out float lt0, out float lt1);
+            float e = ConstelacionMotion.EaseOut(k), t0 = lt0, t1 = t0 + (lt1 - t0) * e;
             var pts = TracePoints(l.Geo, t0, t1, skyH);
-            v.Glow.gameObject.SetActive(true); v.Border.gameObject.SetActive(true); v.Core.gameObject.SetActive(true);
+            v.Glow.gameObject.SetActive(b > 0f); v.Border.gameObject.SetActive(true); v.Core.gameObject.SetActive(true);
+            var ink = new Color(11f / 255f, 10f / 255f, 38f / 255f);
             if (l.Type == ConLine.Memory)
             {
-                v.Glow.Set(pts, (12f + 8f * lg) * Su, new Color(1f, 201f / 255f, 74f / 255f, 0.22f + 0.35f * lg));
-                v.Border.Set(pts, 7.5f * Su, new Color(11f / 255f, 10f / 255f, 38f / 255f, 0.75f));      // borde oscuro: se lee nítida sobre una luz dormida
-                v.Core.Set(pts, 4f * Su, Gold);
+                // dorada: núcleo de 2 dp al 60 % y borde oscuro de 3,5 dp al 35 % en reposo (sin halo); brillante: 4 dp, 7,5 dp y halo
+                v.Glow.Set(pts, (12f + 8f * lg) * Su, new Color(1f, 201f / 255f, 74f / 255f, (0.22f + 0.35f * lg) * b));
+                v.Border.Set(pts, (3.5f + 4f * b) * Su, new Color(ink.r, ink.g, ink.b, 0.75f * b + 0.35f * (1f - b)));      // borde oscuro: se lee nítida sobre una luz dormida
+                v.Core.Set(pts, (2f + 2f * b) * Su, new Color(Gold.r, Gold.g, Gold.b, 0.6f + 0.4f * b));
             }
             else
             {
-                v.Glow.Set(pts, (9f + 6f * lg) * Su, new Color(Cyan.r, Cyan.g, Cyan.b, 0.12f + 0.25f * lg));
-                v.Border.Set(pts, 6.5f * Su, new Color(11f / 255f, 10f / 255f, 38f / 255f, 0.7f), 7f * Su, 7f * Su);
-                v.Core.Set(pts, 3f * Su, new Color(CyanSoft.r, CyanSoft.g, CyanSoft.b, 0.9f), 7f * Su, 7f * Su);
+                // celeste: punteada de 1,8 dp al 60 % (trazos de 4 y 6) y borde de 3,2 dp en reposo; brillante: 3 dp, 6,5 dp, trazos de 7 y 7
+                float on = (4f + 3f * b) * Su, off = (6f + b) * Su;
+                v.Glow.Set(pts, (9f + 6f * lg) * Su, new Color(Cyan.r, Cyan.g, Cyan.b, (0.12f + 0.25f * lg) * b));
+                v.Border.Set(pts, (3.2f + 3.3f * b) * Su, new Color(ink.r, ink.g, ink.b, 0.7f * b + 0.3f * (1f - b)), on, off);
+                v.Core.Set(pts, (1.8f + 1.2f * b) * Su, new Color(CyanSoft.r, CyanSoft.g, CyanSoft.b, 0.6f + 0.3f * b), on, off);
             }
             // la chispa que viaja mientras se traza
             bool spark = k < 1f && deco;

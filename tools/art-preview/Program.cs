@@ -71,10 +71,10 @@ internal static class Program
                 var rng = new Random(100 + stage);
                 float h = stage == 18 ? 520f : 396f;
                 var sky = ConstelacionSky.Create(ConstelacionContract.Stage(stage), rng, ConstelacionLayout.SkyW, h);
-                // un robot que explora y recuerda hasta dejar la mitad del cielo unida y una pareja a medias abierta
+                // un robot que explora y recuerda hasta dejar casi todo el cielo unido (faltan 2 constelaciones): así se ve el «cielo sereno» (estrellas chicas y líneas finas)
                 float now = 3000f;
                 int guard = 0;
-                while (sky.GroupsFound < sky.Stage.Groups / 2 && guard++ < 500)
+                while (sky.GroupsFound < sky.Stage.Groups - 2 && guard++ < 500)
                 {
                     now += 200f;
                     var down = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(sky.Lights, l => l.State == ConState.Down));

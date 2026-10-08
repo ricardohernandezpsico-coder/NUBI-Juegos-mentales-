@@ -20,6 +20,8 @@ namespace NeuroVida.Games.Parejas
         public ConLine Ring;
         /// <summary>Cuándo aparece la luz (ms del reloj de juego): se puede tocar 150 ms después.</summary>
         public float AppearAtMs;
+        /// <summary>Cuándo quedó unida (ms del reloj de juego): desde ahí se encoge a estrella chica (<see cref="ConstelacionMotion.DoneScale"/>).</summary>
+        public float DoneAtMs;
     }
 
     /// <summary>Una línea entre dos luces ya unidas: su tipo, su curva y cuándo empieza a trazarse (la segunda línea de un trío sale 200 ms después).</summary>
@@ -244,13 +246,15 @@ namespace NeuroVida.Games.Parejas
             foreach (var c in f)
             {
                 c.State = ConState.Done;
+                c.DoneAtMs = nowMs;
                 c.Ring = mem ? ConLine.Memory : ConLine.New;
             }
             var lightPoints = Lights.Select(l => l.Pos).ToList();
+            var small = Lights.Select(l => l.State == ConState.Done).ToList();       // las unidas son estrellas chicas: la línea nueva las esquiva con su radio chico
             for (int i = 1; i < f.Count; i++)
             {
                 var geo = new ConLinkGeo { A = f[i - 1].Pos, B = f[i].Pos };
-                var (cx, cy) = ConstelacionLayout.Route(geo.A, geo.B, Placement.R, Placement.Width, Placement.Height, lightPoints, Links.Select(l => l.Geo).ToList());
+                var (cx, cy) = ConstelacionLayout.Route(geo.A, geo.B, Placement.R, Placement.Width, Placement.Height, lightPoints, Links.Select(l => l.Geo).ToList(), small, ConstelacionMotion.Shrink);
                 geo.Cx = cx;
                 geo.Cy = cy;
                 ConstelacionLayout.Trim(geo, Placement.R);

@@ -279,3 +279,10 @@ llenaban el cielo y tapaban lo que faltaba. Solución (boceto versión 3, `docs/
 - **Al completar el cielo, todas las líneas vuelven a brillar** (400 ms), mientras las luces siguen chicas: es el momento
   de «¡Constelación completa!», y se lee como un mapa del cielo.
 - **Quitar animaciones:** el cambio es directo, sin transición, a los 900 ms.
+
+**Cómo quedó hecho (8-oct):**
+- Funciones puras en `ConstelacionMotion`: `DoneScale` (escala según el tiempo), `LinkBrightness` (brillo según el estado) y las constantes `Shrink` 0,58, `HoldMs` 900, `CalmMs` 500, `EndGlowMs` 400. `ConstelacionLayout.TrimRange` recorta cada línea con el radio ACTUAL de cada luz (+5) y
+  `Route` acepta qué luces están unidas y el factor chico para esquivarlas. `ConLight.DoneAtMs` guarda cuándo quedó unida.
+- Una diferencia con el boceto: al completar el cielo el brillo de cada línea es el MÁXIMO entre el reposo y el brillo final (en el boceto baja a 0 y sube), para que una línea que aún no terminó de calmarse no parpadee.
+- La lámina `docs/previews/constelaciones.png` muestra tres cielos casi completos ya calmados (estrellas chicas, líneas finas, lo que falta como lo más grande). Sello: «estilo 8-oct · cielo sereno».
+

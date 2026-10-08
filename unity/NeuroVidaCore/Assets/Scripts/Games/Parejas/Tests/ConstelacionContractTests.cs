@@ -483,6 +483,106 @@ namespace NeuroVida.Games.Parejas.Tests
             Assert.Less(geo.T0, geo.T1);
         }
 
+        // ------------------------------------------------------------------ cielo sereno (§12)
+
+        [Test]
+        public void ALitStarKeepsItsSizeForNineHundredMs_ThenShrinksToPointFiveEightInFiveHundred()
+        {
+            Assert.AreEqual(0.58f, ConstelacionMotion.Shrink);
+            Assert.AreEqual(1f, ConstelacionMotion.DoneScale(false, 5000f, false), "una luz que no está unida no se encoge");
+            Assert.AreEqual(1f, ConstelacionMotion.DoneScale(true, 0f, false), 1e-5f);
+            Assert.AreEqual(1f, ConstelacionMotion.DoneScale(true, 900f, false), 1e-5f, "mantiene su tamaño 900 ms");
+            float mid = ConstelacionMotion.DoneScale(true, 1150f, false);
+            Assert.Greater(mid, 0.58f);
+            Assert.Less(mid, 1f);
+            Assert.AreEqual(0.58f, ConstelacionMotion.DoneScale(true, 1400f, false), 1e-5f, "llega a 0,58 a los 500 ms de bajar");
+            Assert.AreEqual(0.58f, ConstelacionMotion.DoneScale(true, 60000f, false), 1e-5f);
+            float prev = 1f;
+            for (float t = 900f; t <= 1400f; t += 25f)
+            {
+                float v = ConstelacionMotion.DoneScale(true, t, false);
+                Assert.LessOrEqual(v, prev + 1e-6f, "solo baja");
+                prev = v;
+            }
+        }
+
+        [Test]
+        public void WithReducedMotionTheShrinkIsDirectAtNineHundredMs()
+        {
+            Assert.AreEqual(1f, ConstelacionMotion.DoneScale(true, 899f, true));
+            Assert.AreEqual(1f, ConstelacionMotion.DoneScale(true, 900f, true));
+            Assert.AreEqual(0.58f, ConstelacionMotion.DoneScale(true, 901f, true), "sin transición");
+            Assert.AreEqual(1f, ConstelacionMotion.DoneScale(false, 901f, true));
+        }
+
+        [Test]
+        public void ALineIsBrightWhileDrawnAndForNineHundredMs_ThenCalmsDownInFiveHundred()
+        {
+            Assert.AreEqual(1f, ConstelacionMotion.LinkBrightness(0f, -1f, false), 1e-5f);
+            Assert.AreEqual(1f, ConstelacionMotion.LinkBrightness(380f + 900f, -1f, false), 1e-5f, "brillante los 900 ms después de trazarse");
+            float mid = ConstelacionMotion.LinkBrightness(380f + 900f + 250f, -1f, false);
+            Assert.Greater(mid, 0f);
+            Assert.Less(mid, 1f);
+            Assert.AreEqual(0f, ConstelacionMotion.LinkBrightness(380f + 900f + 500f, -1f, false), 1e-5f, "en reposo: trazo fino y tenue");
+            Assert.AreEqual(0f, ConstelacionMotion.LinkBrightness(60000f, -1f, false), 1e-5f);
+        }
+
+        [Test]
+        public void WhenTheSkyIsCompleteEveryLineShinesAgainInFourHundredMs_WhileTheLightsStayStars()
+        {
+            Assert.AreEqual(0f, ConstelacionMotion.LinkBrightness(60000f, 0f, false), 1e-5f, "arranca desde el reposo");
+            float mid = ConstelacionMotion.LinkBrightness(60000f, 150f, false);
+            Assert.Greater(mid, 0f);
+            Assert.Less(mid, 1f);
+            Assert.AreEqual(1f, ConstelacionMotion.LinkBrightness(60000f, 400f, false), 1e-5f);
+            // las luces siguen chicas: la escala no depende del final del cielo
+            Assert.AreEqual(0.58f, ConstelacionMotion.DoneScale(true, 60000f, false), 1e-5f);
+            // una línea que aún no terminó de calmarse no baja antes de subir (sin parpadeo)
+            float own = ConstelacionMotion.LinkBrightness(380f + 900f + 100f, -1f, false);
+            Assert.GreaterOrEqual(ConstelacionMotion.LinkBrightness(380f + 900f + 100f, 0f, false), own - 1e-5f);
+        }
+
+        [Test]
+        public void WithReducedMotionTheLineCalmsDirectlyAndShinesDirectlyAtTheEnd()
+        {
+            Assert.AreEqual(1f, ConstelacionMotion.LinkBrightness(899f, -1f, true));
+            Assert.AreEqual(0f, ConstelacionMotion.LinkBrightness(900f, -1f, true), "sin transición");
+            Assert.AreEqual(1f, ConstelacionMotion.LinkBrightness(60000f, 0f, true), "al completar el cielo, de una vez");
+        }
+
+        [Test]
+        public void TheTrimFollowsTheCurrentEdgeOfEachLight_SoAShrunkenStarLeavesMoreLine()
+        {
+            var geo = new ConLinkGeo { A = new ConPt(40f, 100f), B = new ConPt(240f, 140f), Cx = 140f, Cy = 80f };
+            float r = 30f;
+            ConstelacionLayout.TrimRange(geo, r + 5f, r + 5f, out float full0, out float full1);
+            ConstelacionLayout.TrimRange(geo, r * 0.58f + 5f, r * 0.58f + 5f, out float small0, out float small1);
+            Assert.Less(small0, full0, "con la luz chica la línea nace más cerca de ella");
+            Assert.Greater(small1, full1, "y muere más cerca de la otra");
+            Assert.Greater(ConPt.Dist(geo.At(small0), geo.A), r * 0.58f + 4f);
+            Assert.Greater(ConPt.Dist(geo.At(small1), geo.B), r * 0.58f + 4f);
+            // cada extremo con su radio
+            ConstelacionLayout.TrimRange(geo, r + 5f, r * 0.58f + 5f, out float a0, out float b1);
+            Assert.AreEqual(full0, a0, 1e-5f);
+            Assert.AreEqual(small1, b1, 1e-5f);
+        }
+
+        [Test]
+        public void ANewLineDodgesLitStarsWithTheirSmallRadius_SoItCanPassBetweenThem()
+        {
+            float r = 28f;
+            var a = new ConPt(50f, 100f);
+            var b = new ConPt(250f, 100f);
+            var star = new ConPt(150f, 130f);         // a 30 dp de la recta: dentro del radio completo + 8 (36), fuera del chico (16,2 + 8)
+            var lights = new List<ConPt> { a, b, star };
+            var none = new List<ConLinkGeo>();
+            var (_, cyFull) = ConstelacionLayout.Route(a, b, r, 300f, 200f, lights, none);
+            Assert.Greater(Math.Abs(cyFull - 100f), 1f, "con una luz de radio completo cerca, la línea se curva para esquivarla");
+            var (cxSmall, cySmall) = ConstelacionLayout.Route(a, b, r, 300f, 200f, lights, none, new List<bool> { false, false, true }, ConstelacionMotion.Shrink);
+            Assert.AreEqual(150f, cxSmall, 0.01f);
+            Assert.AreEqual(100f, cySmall, 0.01f, "con la luz ya encogida hay lugar para pasar recta");
+        }
+
         // ------------------------------------------------------------------ motor común, medida y textos
 
         [Test]

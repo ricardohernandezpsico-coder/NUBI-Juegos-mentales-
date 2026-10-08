@@ -140,6 +140,7 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | Rótulos flotantes («¡De memoria!», «¡Falta la tercera!») | Suben mientras se desvanecen | DECORATIVA (comunica) | Sin subir, solo fundido |
 | Chispas | Salen de la pareja encontrada | DECORATIVA | No se emiten |
 | Tarjeta «NUEVO» | Fundido de 0,35 s; «toca para seguir» parpadea | DECORATIVA (comunica) | Aparece de una vez y sin parpadeo |
+| La luz unida se encoge a estrella chica (0,58) y su línea pasa a trazo fino | A los 900 ms, en 500 ms | DECORATIVA | Cambio directo a los 900 ms, sin transición; al completar el cielo las líneas vuelven a brillar de una vez |
 | Pausa entre cielos | 2,6 s | — | 1,8 s (sin animación que esperar) |
 
 **Ruta del Tesoro (RETIRADA el 4-oct; su tabla queda como historia)** — `RutaTesoro/TreasureGameController.cs`

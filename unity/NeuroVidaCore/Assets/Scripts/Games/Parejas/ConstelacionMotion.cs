@@ -21,6 +21,32 @@ namespace NeuroVida.Games.Parejas
         /// <summary>Al terminar el cielo las luces se encogen en 360 ms.</summary>
         public const float LeaveSeconds = 0.36f;
 
+        /// <summary>«Cielo sereno» (docs/diseno-constelaciones.md §12): la luz unida mantiene su tamaño 900 ms y baja a 0,58 en 500 ms (estrella chica); su línea pasa en ese mismo tiempo a un trazo fino. Al completar el cielo las
+        /// líneas vuelven a brillar en 400 ms.</summary>
+        public const float Shrink = 0.58f, HoldMs = 900f, CalmMs = 500f, EndGlowMs = 400f;
+        /// <summary>Lo que tarda en trazarse una línea (ms): el reposo se cuenta desde que termina de trazarse.</summary>
+        public const float TraceMs = 380f;
+
+        /// <summary>La escala de una luz según su estado y el tiempo desde que quedó unida (ms): 1 mientras no está unida y durante <see cref="HoldMs"/>; después baja a <see cref="Shrink"/> en <see cref="CalmMs"/>
+        /// (con «quitar animaciones» el cambio es directo, sin transición, pasados <see cref="HoldMs"/>).</summary>
+        public static float DoneScale(bool done, float sinceDoneMs, bool reduced)
+        {
+            if (!done) return 1f;
+            if (reduced) return sinceDoneMs > HoldMs ? Shrink : 1f;
+            return 1f - (1f - Shrink) * EaseOut((sinceDoneMs - HoldMs) / CalmMs);
+        }
+
+        /// <summary>El brillo de una línea (0 = en reposo: trazo fino y tenue; 1 = recién trazada o cielo completo: brillante). <paramref name="sinceLinkMs"/> cuenta desde que la línea empezó a trazarse;
+        /// <paramref name="sinceEndMs"/> desde que se completó el cielo (negativo = el cielo sigue en juego). Al completar el cielo todas vuelven a brillar en <see cref="EndGlowMs"/> sin bajar antes (el máximo
+        /// con el brillo propio evita un parpadeo si el reposo aún no terminó).</summary>
+        public static float LinkBrightness(float sinceLinkMs, float sinceEndMs, bool reduced)
+        {
+            float own = reduced ? (sinceLinkMs < HoldMs ? 1f : 0f) : 1f - EaseOut((sinceLinkMs - TraceMs - HoldMs) / CalmMs);
+            if (sinceEndMs < 0f) return own;
+            float end = reduced ? 1f : EaseOut(sinceEndMs / EndGlowMs);
+            return Math.Max(own, end);
+        }
+
         public static float ClampDt(float dt) => dt < 0f ? 0f : Math.Min(MaxDt, dt);
 
         public static void Spring(ref float x, ref float v, float target, float dt, float freq, float zeta)
