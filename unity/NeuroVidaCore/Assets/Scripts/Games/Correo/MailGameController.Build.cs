@@ -78,6 +78,7 @@ namespace NeuroVida.Games.Correo
         }
 
         // las capas, de atrás hacia adelante
+        private RectTransform _lettersLayer;       // las cartas de la cinta: UN contenedor propio dentro de la capa de la estación, DESPUÉS de la cinta y su marco (SetSiblingIndex ordena entre hermanos: si las cartas fueran hijas directas de la capa, el orden las mandaba debajo de la banda de la cinta)
         private RectTransform _safe, _play, _showBackLayer, _stageLayer, _flyLayer, _showFrontLayer, _bannerLayer, _peekLayer, _floatLayer, _sparkLayer, _briefLayer, _recapLayer, _introLayer, _endLayer;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Image, float>> _radii = new List<KeyValuePair<Image, float>>();
@@ -245,8 +246,9 @@ namespace NeuroVida.Games.Correo
             _frameGlow.color = new Color(Gold.r, Gold.g, Gold.b, 0f);
             _frame = MakeImage(s, "Frame", null);
             _frame.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.5f);
-            // las cartas (se mueven cada cuadro: ver Scene)
-            for (int i = 0; i < _lv.Length; i++) _lv[i] = BuildLetter(s, i);
+            // las cartas (se mueven cada cuadro: ver Scene) van en su propio contenedor, que se dibuja encima de la cinta, los rieles, los rodillos y el marco
+            _lettersLayer = Layer(s, "Letters");
+            for (int i = 0; i < _lv.Length; i++) _lv[i] = BuildLetter(_lettersLayer, i);
             _shine = MakeImage(s, "Shine", RadialGlowSprite.Get());
             _shine.color = new Color(1f, 236f / 255f, 170f / 255f, 0f);
             _comboPill = Pill(s, "ComboPill", Gold, out _comboText);

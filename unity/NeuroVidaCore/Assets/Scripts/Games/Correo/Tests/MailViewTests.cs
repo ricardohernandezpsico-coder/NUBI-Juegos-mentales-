@@ -363,6 +363,83 @@ namespace NeuroVida.Games.Correo.Tests
             finally { UnityEngine.Object.DestroyImmediate(go); }
         }
 
+        private static MailGameController BuildController(GameObject go)
+        {
+            var controller = go.AddComponent<MailGameController>();
+            var build = typeof(MailGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            build.Invoke(controller, null);
+            go.SetActive(true);
+            return controller;
+        }
+
+        [Test]
+        public void TheLettersOnTheBelt_AreDrawnAboveTheBeltBand_AndTheFrontOneAboveTheOnesBehindIt()
+        {
+            var go = new GameObject("MailAudit");
+            try
+            {
+                var problems = BuildController(go).AuditLayering();
+                Assert.IsEmpty(problems, "Cartas mal ordenadas: " + string.Join(" | ", problems));
+                // las cartas viven en su propio contenedor, que viene DESPUÉS de la cinta y del marco dentro de la capa de la estación
+                var letters = go.transform.Find("MailCanvas/SafeAreaContent/Play/Stage/Letters");
+                var band = go.transform.Find("MailCanvas/SafeAreaContent/Play/Stage/Belt");
+                var frame = go.transform.Find("MailCanvas/SafeAreaContent/Play/Stage/Frame");
+                Assert.IsNotNull(letters, "falta el contenedor de las cartas");
+                Assert.IsNotNull(band);
+                Assert.IsNotNull(frame);
+                Assert.AreSame(band.parent, letters.parent, "el contenedor y la cinta son hermanos");
+                Assert.Greater(letters.GetSiblingIndex(), band.GetSiblingIndex(), "el contenedor de las cartas va después de la banda de la cinta");
+                Assert.Greater(letters.GetSiblingIndex(), frame.GetSiblingIndex(), "y después del marco");
+                Assert.IsNull(letters.GetComponent<UnityEngine.UI.Graphic>(), "el contenedor no dibuja ni recibe toques");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void TheDrawOrderHelper_CatchesTheOldBug_ALetterThatIsADirectChildOfTheLayerAndGoesToIndexZeroLiesUnderTheBand()
+        {
+            var layer = new GameObject("Layer").transform;
+            try
+            {
+                var band = new GameObject("Belt").transform; band.SetParent(layer, false);
+                var rail = new GameObject("Rail").transform; rail.SetParent(layer, false);
+                var letter = new GameObject("Letter").transform; letter.SetParent(layer, false);
+                Assert.IsTrue(MailHierarchy.DrawnAfter(letter, band), "recién creada, después de la banda");
+                letter.SetSiblingIndex(0);                                     // lo que hacía SetSiblingIndex(belt.Count - 1 - i)
+                Assert.IsFalse(MailHierarchy.DrawnAfter(letter, band), "con el índice 0 queda debajo de la banda");
+                // dentro de un contenedor propio que viene después de la banda, el índice 0 ya no importa
+                var box = new GameObject("Letters").transform; box.SetParent(layer, false);
+                letter.SetParent(box, false);
+                letter.SetSiblingIndex(0);
+                Assert.IsTrue(MailHierarchy.DrawnAfter(letter, band), "en su contenedor, la carta sigue encima de la banda");
+                Assert.IsTrue(MailHierarchy.DrawnAfter(letter, layer), "un descendiente se dibuja después de su ancestro");
+                Assert.IsFalse(MailHierarchy.DrawnAfter(band, letter));
+                Assert.IsFalse(MailHierarchy.DrawnAfter(band, band));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(layer.gameObject); }
+        }
+
+        [Test]
+        public void EveryLabelThatIsAChildOfAButtonOrAPill_HasItsCenterInsideTheParent()
+        {
+            var go = new GameObject("MailAudit");
+            try
+            {
+                var problems = BuildController(go).AuditChildPlacement();
+                Assert.IsEmpty(problems, "Textos fuera de su botón o píldora: " + string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void NoChildOfAButtonOrAPill_IsPositionedWithSetRect_WhichUsesLayerCoordinates()
+        {
+            // SetRect(rect, cx, cy, …) pone el rect en coordenadas de la CAPA; un hijo de un botón o de una píldora se posiciona con SetChild (desplazamiento desde el centro del padre)
+            string scene = Read("MailGameController.Scene.cs");
+            foreach (var child in new[] { "_briefBtnLabel", "_recapBtnLabel", "_comboText", "_waitText" })
+                StringAssert.DoesNotContain("SetRect(" + child + ".", scene, child + " es hijo de su botón o píldora: va con SetChild");
+        }
+
         [Test]
         public void TheController_UsesOnlyTheGameClock_SoThePauseStopsEverything()
         {

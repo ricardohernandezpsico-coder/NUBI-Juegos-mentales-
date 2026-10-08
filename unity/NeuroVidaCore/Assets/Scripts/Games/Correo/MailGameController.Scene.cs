@@ -67,7 +67,7 @@ namespace NeuroVida.Games.Correo
                 v.InUse = v.Flying = v.Falling = false;
                 v.L = null;
                 v.Root.gameObject.SetActive(false);
-                if (v.Root.parent != _stageLayer) v.Root.SetParent(_stageLayer, false);
+                if (v.Root.parent != _lettersLayer) v.Root.SetParent(_lettersLayer, false);
             }
             _lvOf.Clear();
         }
@@ -87,7 +87,7 @@ namespace NeuroVida.Games.Correo
             v.Y = _lay.BeltY;
             v.Bounce = -100f;
             v.Scale = 1f;
-            v.Root.SetParent(_stageLayer, false);
+            v.Root.SetParent(_lettersLayer, false);
             v.Img.sprite = MailSprites.Letter(l.Planet, l.Cue);
             v.Img.color = Color.white;
             v.Img.rectTransform.sizeDelta = new Vector2(MailSprites.LetterBoxW * _s, MailSprites.LetterBoxH * _s);
@@ -373,7 +373,7 @@ namespace NeuroVida.Games.Correo
                 float w = _comboText.preferredWidth / _s + 22f;
                 _comboPill.gameObject.SetActive(true);
                 SetRect(_comboPill.rectTransform, MailLayout.BeltXA, m.BeltY - 84f + 13f, w, 26f);
-                SetRect(_comboText.rectTransform, MailLayout.BeltXA, m.BeltY - 84f + 13.5f, w + 20f, 26f);
+                SetChild(_comboText.rectTransform, 0f, 0.5f, w + 20f, 26f);                 // hijo de la píldora: se posiciona por desplazamiento, no con SetRect
             }
             else _comboPill.gameObject.SetActive(false);
             int waiting = belt.Count - MailContract.BeltCapacity;
@@ -383,7 +383,7 @@ namespace NeuroVida.Games.Correo
                 float w = _waitText.preferredWidth / _s + 18f;
                 _waitPill.gameObject.SetActive(true);
                 SetRect(_waitPill.rectTransform, MailLayout.W - w / 2f - 8f, m.BeltY - 62f + 12f, w, 24f);
-                SetRect(_waitText.rectTransform, MailLayout.W - w / 2f - 8f, m.BeltY - 62f + 12.5f, w + 20f, 24f);
+                SetChild(_waitText.rectTransform, 0f, 0.5f, w + 20f, 24f);
             }
             else _waitPill.gameObject.SetActive(false);
         }
@@ -746,7 +746,7 @@ namespace NeuroVida.Games.Correo
             SetRect(_briefNote2.rectTransform, cx, y2 + 38f, 340f, 22f);
             SetRect(_briefBtn.rectTransform, cx, h - 72f, 180f, 58f);
             SetRect(_briefBtnRim.rectTransform, cx, h - 72f, 183f, 61f);
-            SetRect(_briefBtnLabel.rectTransform, cx, h - 72f, 180f, 40f);
+            SetChild(_briefBtnLabel.rectTransform, 0f, 0f, 180f, 40f);                 // hijo del botón
         }
 
         // ------------------------------------------------------------------ el resumen del día
@@ -811,7 +811,7 @@ namespace NeuroVida.Games.Correo
             SetRect(_recapUp.rectTransform, cx, h - 132f, 320f, 22f);
             SetRect(_recapBtn.rectTransform, cx, h - 72f, 180f, 58f);
             SetRect(_recapBtnRim.rectTransform, cx, h - 72f, 183f, 61f);
-            SetRect(_recapBtnLabel.rectTransform, cx, h - 72f, 180f, 40f);
+            SetChild(_recapBtnLabel.rectTransform, 0f, 0f, 180f, 40f);
         }
 
         // ------------------------------------------------------------------ la pantalla final (docs §7)
@@ -1014,6 +1014,79 @@ namespace NeuroVida.Games.Correo
             ClearBelt();
             foreach (var kv in _fonts) if (kv.Value < 14f) problems.Add("un texto de " + kv.Value + " dp (el mínimo es 14)");
             _day = null;
+            return problems;
+        }
+
+        /// <summary>Para las pruebas: con cartas en la cinta, cada una se dibuja DESPUÉS (encima) de la banda de la cinta, los rieles, los rodillos y el marco, y la de adelante después de las de atrás. Devuelve lo que no cumple
+        /// (el error del 8-oct: las cartas eran hijas de la capa de la estación y el orden de hermanos las mandaba debajo de la banda).</summary>
+        public List<string> AuditLayering()
+        {
+            var problems = new List<string>();
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _lay = MailLayout.Compute(_logicalH);
+            if (_rng == null) _rng = new System.Random(1);
+            var bake = MailSprites.Prewarm();
+            while (bake.MoveNext()) { }
+            AssignSprites();
+            MailMoment? routine = null;
+            _day = MailDay.Create(5, 1, ref routine, _rng);
+            _day.Belt.Clear();
+            for (int i = 0; i < 5; i++) _day.Belt.Add(new MailLetter { Planet = i % 4, Cue = i == 1 ? MailCue.Gold : MailCue.None });
+            _stageLayer.gameObject.SetActive(true);
+            ClearBelt();
+            AnimateBelt(0f, 0.016f);
+            var under = new List<Transform> { _beltBand.transform, _railTop.transform, _railBottom.transform, _frameGlow.transform, _frame.transform };
+            foreach (var r in _rollers) if (r != null) under.Add(r.transform);
+            LetterView front = null, behind = null;
+            for (int i = 0; i < _day.Belt.Count; i++)
+            {
+                if (!_lvOf.TryGetValue(_day.Belt[i], out var v)) { problems.Add("la carta " + i + " de la cinta no tiene vista"); continue; }
+                if (!v.Root.gameObject.activeInHierarchy) problems.Add("la carta " + i + " de la cinta está apagada");
+                foreach (var u in under)
+                    if (!MailHierarchy.DrawnAfter(v.Root, u)) problems.Add("la carta " + i + " se dibuja DEBAJO de «" + u.name + "»");
+                if (i == 0) front = v;
+                if (i == 1) behind = v;
+            }
+            if (front != null && behind != null && !MailHierarchy.DrawnAfter(front.Root, behind.Root)) problems.Add("la carta de adelante se dibuja detrás de la que le sigue");
+            ClearBelt();
+            _day = null;
+            return problems;
+        }
+
+        /// <summary>Para las pruebas: con la estación, la hoja, el resumen y la pantalla final armados, todo texto que es HIJO de un botón o de una píldora (un <see cref="Image"/>) tiene su centro dentro del rect del padre
+        /// (el error del 8-oct: se posicionaban con <c>SetRect</c>, que usa coordenadas de la capa, y quedaban fuera del botón). Devuelve lo que no cumple.</summary>
+        public List<string> AuditChildPlacement()
+        {
+            var problems = new List<string>();
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _lay = MailLayout.Compute(_logicalH);
+            if (_rng == null) _rng = new System.Random(1);
+            MailMoment? routine = null;
+            _run = new MailRun(5, 0, _rng);
+            _day = _run.NextDay();
+            LayoutStage();
+            BindBrief();
+            _recap = _day.Summarize();
+            BindRecap();
+            _run.Complete(_day, _recap);
+            BindEnd();
+            // las píldoras de la racha y de las cartas que esperan se muestran con cartas y racha
+            _day.Combo = 12;
+            for (int i = 0; i < 6; i++) _day.Belt.Add(new MailLetter { Planet = i % 4 });
+            AnimateBelt(0f, 0.016f);
+            foreach (var t in _play.GetComponentsInChildren<Text>(true))
+            {
+                var parent = t.transform.parent as RectTransform;
+                if (parent == null || parent.GetComponent<Image>() == null) continue;
+                if (string.IsNullOrEmpty(t.text)) continue;
+                var half = parent.sizeDelta / 2f;
+                if (half.x <= 0f || half.y <= 0f) continue;                  // un padre que aún no tiene tamaño (se mide al mostrarse)
+                var c = t.rectTransform.anchoredPosition;
+                if (Mathf.Abs(c.x) > half.x + 1f || Mathf.Abs(c.y) > half.y + 1f)
+                    problems.Add("«" + t.text + "» (" + t.name + ") queda fuera de «" + parent.name + "»: su centro está a (" + Mathf.RoundToInt(c.x) + ", " + Mathf.RoundToInt(c.y) + ") y el padre mide " + Mathf.RoundToInt(parent.sizeDelta.x) + "×" + Mathf.RoundToInt(parent.sizeDelta.y));
+            }
+            ClearBelt();
+            _day = null; _run = null; _recap = null;
             return problems;
         }
 
