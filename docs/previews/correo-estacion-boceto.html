@@ -1,0 +1,565 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Correo Estelar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Correo Estelar</h1>
+    <p class="lead">Trabajas en la estación de correo de la nave. Las cartas llegan por la cinta y tocas el buzón de su sello. Mientras tanto, tienes los encargos del día, y nadie te los va a recordar.</p>
+
+    <h2>Lo que lo hace distinto</h2>
+    <ul class="list">
+      <li><b>Encargos por evento:</b> «si llega una carta con sello dorado, guárdala en la caja fuerte».</li>
+      <li><b>Encargos por hora:</b> «al mediodía, enciende el faro». La hora está en el reloj tapado: tócalo para mirarla.</li>
+      <li><b>Días cortos con resultado al tiro:</b> un día dura 50 s y al final ves qué encargos cumpliste.</li>
+      <li><b>Lo de todos los días</b> (etapa 3): un encargo que se repite cada día y que ya no se vuelve a anotar.</li>
+      <li><b>Encargos cancelados</b> (etapa 4): la radio avisa que ya no hace falta, y hay que acordarse de NO hacerlo.</li>
+      <li><b>Cartas con lazo</b> (etapa 5): una señal que no está en el sello, más fácil de pasar por alto.</li>
+      <li><b>Racha de clasificación:</b> cada carta bien puesta sube la nota; con ×10 la cinta se enciende.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable: 4 días por partida y 10 etapas. Un día con todos los encargos cumplidos y buena clasificación sube una etapa; con menos de la mitad de los encargos baja una. Para revisar una etapa: <code>?etapa=N</code>.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="Correo Estelar: clasifica las cartas y cumple los encargos del día"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+// ============================================================ etapas
+// boxes: buzones · every: s entre cartas · gold/lazo: cartas señal por día · times: encargos por hora · routine: el de hora se repite cada día
+// cancel: la radio cancela un encargo a media jornada · win: ancho de la ventana de la hora (fracción del día)
+const STAGES = [
+  { boxes:2, every:2.6, gold:2, intro:'estacion' },
+  { boxes:3, every:2.4, gold:2, times:['mediodia'], intro:'hora' },
+  { boxes:3, every:2.3, gold:2, times:['mediodia'], routine:true, intro:'rutina' },
+  { boxes:3, every:2.1, gold:2, times:['tarde'], routine:true, cancel:true, intro:'cancela' },
+  { boxes:4, every:2.1, lazo:2, times:['mediodia'], routine:true, intro:'lazo' },
+  { boxes:4, every:2.0, gold:1, lazo:2, times:['tarde'], routine:true, cancel:true },
+  { boxes:4, every:1.9, lazo:2, times:['manana','tarde'], routine:true, win:.10 },
+  { boxes:4, every:1.8, gold:1, lazo:2, times:['manana','tarde'], routine:true, cancel:true, win:.10 },
+  { boxes:4, every:1.7, lazo:3, times:['mediodia','noche'], routine:true, cancel:true, win:.09 },
+  { boxes:4, every:1.6, gold:1, lazo:3, times:['manana','tarde','noche'], routine:true, cancel:true, win:.08 },
+];
+const GRUPO = i => [1,1,2,2,3,3,4,4,5,5][i];
+const DAY = 50, DAYS = 4;
+const MOMENT = { manana:{ c:.26, name:'a media mañana' }, mediodia:{ c:.5, name:'al mediodía' }, tarde:{ c:.7, name:'a media tarde' }, noche:{ c:.88, name:'al anochecer' } };
+// planetas-buzón: color y figura propios (sin estrellas de puntas, cruces ni medias lunas)
+const PLANETS = [
+  { name:'Coralia', col:'#FF8A6B', dark:'#C9533A', shape:'circle', note:523.25 },
+  { name:'Celesta', col:'#7FD8FF', dark:'#3E9BC4', shape:'tri', note:659.25 },
+  { name:'Lima',    col:'#A6E36B', dark:'#6AA63A', shape:'square', note:783.99 },
+  { name:'Uva',     col:'#B79BFF', dark:'#7B5FD6', shape:'drop', note:1046.5 },
+];
+const INTROS = {
+  estacion: { tag:'CORREO ESTELAR', lines:['Toca el buzón del sello de cada carta.', 'Y cumple los encargos del día:', 'nadie te los va a recordar.'] },
+  hora:     { tag:'NUEVO', lines:['Encargos con hora.', 'El reloj va tapado:', 'tócalo para mirar la hora.'] },
+  rutina:   { tag:'NUEVO', lines:['Lo de todos los días.', 'Un encargo que se repite cada día', 'y que ya no se vuelve a anotar.'] },
+  cancela:  { tag:'NUEVO', lines:['A veces la radio cancela un encargo.', 'Si lo cancela,', 'acuérdate de NO hacerlo.'] },
+  lazo:     { tag:'NUEVO', lines:['Ahora la señal es un lazo,', 'no el sello.', 'Mira la carta entera.'] },
+};
+const TIPS = ['Truco: repite «cuando vea un lazo, caja fuerte»', 'Truco: mira el reloj cuando se acerque la hora', 'Truco: imagínate haciendo el encargo'];
+const G = { state:'menu', parts:[], floats:[] };
+const S = {};
+const SAVE = { bestDay:0 };
+try { Object.assign(SAVE, JSON.parse(localStorage.getItem('nubi_correo2')||'{}')); } catch(e){}
+function save(){ try { localStorage.setItem('nubi_correo2', JSON.stringify(SAVE)); } catch(e){} }
+const QS = new URLSearchParams(location.search), DEBUG = QS.has('debug');
+const LV0 = Math.max(0, Math.min(STAGES.length-1, (+QS.get('etapa')||1)-1));
+const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+function spring(x, v, target, dt, freq, zeta){ const w=2*Math.PI*freq; v += (w*w*(target-x) - 2*zeta*w*v)*dt; return [x+v*dt, v]; }
+const easeIO = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+function emit(x,y,n,spread,life,rgb,up=20){ if (reduce) return; for(let i=0;i<n;i++) G.parts.push({x,y,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*spread-up,t:performance.now(),life:life*(.6+Math.random()*.7),r:.8+Math.random()*1.8,rgb}); }
+function float(x,y,text,col,big){ G.floats.push({ x, y, text, col, big, at:performance.now() }); }
+
+// ============================================================ geometría
+const BELT = { y:250, x0:-40, xA:150 };               // la carta activa espera en xA
+const BOX = { y0:326, h:112 };
+const BTN = { y0:468, h:88 };
+const CLOCK = { x:316, y:44, r:28 };
+function boxRect(i, n){ const gap=10, w=n===2?150:n===3?102:78, tot=n*w+(n-1)*gap, x=W/2-tot/2+i*(w+gap); return { x, y:BOX.y0, w, h:BOX.h, cx:x+w/2 }; }
+const SAFE = { x:16, y:BTN.y0, w:158, h:BTN.h }, BEACON = { x:186, y:BTN.y0, w:158, h:BTN.h };
+const inRect = (x,y,r) => x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h;
+
+// ============================================================ partida y días
+function startGame(){ Object.assign(S, { lv:LV0, maxLv:LV0, day:0, routine:null, hist:[], best:0, flash:{}, right:0, late:0, combo:0, belt:[] }); nextDay(); }
+function nextDay(){
+  if (S.day>=DAYS) return finish();
+  S.day++; const st=STAGES[S.lv]; S.st=st;
+  // encargos de hoy
+  const todos=[];
+  if (st.gold) todos.push({ kind:'gold', target:'safe', n:st.gold });
+  if (st.lazo) todos.push({ kind:'lazo', target:'safe', n:st.lazo });
+  const times=(st.times||[]).slice();
+  // lo de todos los días: el primer encargo de hora se fija el día 1 y se repite
+  if (st.routine && times.length){ if (!S.routine) S.routine={ m:times[0] }; else if (!times.includes(S.routine.m)) times[0]=S.routine.m; }   // lo de todos los días sigue igual aunque cambie la etapa
+  times.forEach(m=>todos.push({ kind:'time', m, target:'beacon', routine: st.routine && S.routine && S.routine.m===m }));
+  S.todos=todos;
+  // un encargo cancelado: uno de hora que NO sea el de todos los días (si no hay, el de hora)
+  S.cancel=null; if (st.cancel && S.day>=2 && Math.random()<.6){   // desde el día 2 y no todos los días: primero hay que haber practicado el encargo
+    const cands=todos.filter(t=>t.kind==='time'); if (cands.length){ const t=cands.find(c=>!c.routine)||cands[0]; S.cancel={ todo:t, at:Math.max(.12, MOMENT[t.m].c-.3) }; } }
+  if (st.intro && !S['seen_'+st.intro]){ S['seen_'+st.intro]=true; S.intro=st.intro; G.state='intro'; S.introAt=performance.now(); chime(); return; }
+  brief();
+}
+function brief(){ G.state='brief'; S.briefAt=performance.now(); bell(784,.04,.8); }
+function planDay(){
+  const st=S.st, n=Math.ceil(DAY/st.every)+2, letters=[];
+  for (let i=0;i<n;i++) letters.push({ p:Math.floor(Math.random()*st.boxes), gold:false, lazo:false });
+  // cartas señal: repartidas, nunca en los primeros 6 s ni dos seguidas
+  const put=(key,count)=>{ let tries=0; while (count>0 && tries++<200){ const i=3+Math.floor(Math.random()*(n-6)); if (letters[i].gold||letters[i].lazo||letters[i-1].gold||letters[i-1].lazo||letters[i+1].gold||letters[i+1].lazo) continue; letters[i][key]=true; count--; } };
+  put('gold', st.gold||0); put('lazo', st.lazo||0);
+  return letters;
+}
+function beginDay(){
+  const st=S.st, now=performance.now();
+  Object.assign(S, { plan:planDay(), next:0, belt:[], t0:now, dayT:0, spawnT:0, sorted:0, right:0, wrongBox:0, late:0, combo:0, bestCombo:0,
+    cueHits:0, cueMiss:0, safeFalse:0, peeks:[], peekAt:0, beacon:[], radio:null, ended:false, cancelled:false, cancelPressed:false, flash:{} });
+  S.todos.forEach(t=>{ t.done=false; t.state=null; t.early=0; if (t.kind==='time'){ const w=(st.win||.12)/2; t.w0=MOMENT[t.m].c-w; t.w1=MOMENT[t.m].c+w; } });
+  G.state='play'; hum(); spawn();
+}
+function spawn(){
+  const L=S.plan[S.next++]; if (!L) return;
+  L.x=W+60; L.vx=0; L.y=BELT.y; L.at=performance.now(); S.belt.push(L);
+  if (S.belt.length>3){ // la cinta se llenó: la más antigua cae a «atrasadas»
+    const old=S.belt.shift(); S.late++; S.combo=0; old.fall=performance.now(); S.falling=old; thud();
+    if (old.gold||old.lazo){ S.cueMiss++; noteCueMiss(old); } }
+}
+function noteCueMiss(L){ const t=S.todos.find(x=>x.kind===(L.gold?'gold':'lazo')); if (t) t.miss=(t.miss||0)+1; S.flash.safe=performance.now(); float(SAFE.x+SAFE.w/2, SAFE.y-14, L.gold?'Era con sello dorado: iba a la caja fuerte':'Tenía lazo: iba a la caja fuerte', '#FFE7A8'); soft(); }
+function dayFrac(){ return Math.min(1, S.dayT/DAY); }
+function step(dt){
+  if (G.state!=='play') return;
+  S.dayT+=dt; S.spawnT+=dt;
+  if (S.spawnT>=S.st.every){ S.spawnT-=S.st.every; spawn(); }
+  const f=dayFrac();
+  // la radio cancela un encargo
+  if (S.cancel && !S.cancelled && f>=S.cancel.at){ S.cancelled=true; S.cancel.todo.cancelled=true; S.radio={ at:performance.now(), t:`Radio: hoy NO hace falta encender el faro ${MOMENT[S.cancel.todo.m].name}` }; radioSound(); }
+  // ventana de hora que se cierra sin aviso
+  for (const t of S.todos) if (t.kind==='time' && !t.done && !t.cancelled && f>t.w1 && !t.state){ t.state='miss'; S.flash.beacon=performance.now(); float(BEACON.x+BEACON.w/2, BEACON.y-14, `Se pasó la hora: ${MOMENT[t.m].name}`, '#FFE7A8'); soft(); }
+  if (S.dayT>=DAY && !S.ended){ S.ended=true; endDay(); }
+}
+// ------------------------------------------------------------ toques
+function tapBox(i){
+  const L=S.belt[0]; if (!L || Math.abs(L.x-BELT.xA)>40) return;   // solo la carta que espera
+  const now=performance.now(), r=boxRect(i,S.st.boxes); S.belt.shift(); S.sorted++;
+  L.fly={ from:[L.x,L.y], to:[r.cx, r.y+30], at:now, dur:reduce?1:380, into:'box', i };
+  S.flying=(S.flying||[]).concat([L]);
+  if (L.gold||L.lazo){ S.cueMiss++; noteCueMiss(L); }
+  if (L.p===i){ S.right++; S.combo++; S.bestCombo=Math.max(S.bestCombo,S.combo); bell(PLANETS[i].note,.05,.6); if (S.combo>=3) bell(PENTA[Math.min(9,S.combo%10)]*2,.025,.4,.06);
+    S.boxPulse=S.boxPulse||{}; S.boxPulse[i]=now; if (S.combo%10===0){ float(BELT.xA,BELT.y-70,`¡Racha ×${S.combo}!`,'#FFC94A',true); chime(); } }
+  else { S.wrongBox++; S.combo=0; S.boxShake=S.boxShake||{}; S.boxShake[i]=now; thud(); float(r.cx, r.y-10, 'Otro buzón', '#FFB4A0'); }
+}
+function tapSafe(){
+  const L=S.belt[0], now=performance.now(); S.safePress=now;
+  if (!L || Math.abs(L.x-BELT.xA)>40){ S.flash.safeNo=now; soft(); return; }
+  S.belt.shift();
+  if (L.gold||L.lazo){ S.cueHits++; const t=S.todos.find(x=>x.kind===(L.gold?'gold':'lazo')); if (t) t.hit=(t.hit||0)+1;
+    L.fly={ from:[L.x,L.y], to:[SAFE.x+SAFE.w/2, SAFE.y+30], at:now, dur:reduce?1:420, into:'safe' }; S.flying=(S.flying||[]).concat([L]);
+    float(SAFE.x+SAFE.w/2, SAFE.y-16, '¡Encargo cumplido!', '#FFC94A', true); fanfare(); emit(SAFE.x+SAFE.w/2,SAFE.y+20,24,160,800,'255,201,74'); S.flash.safeOk=now; }
+  else { S.safeFalse++; S.combo=0; L.bounce=now; S.belt.unshift(L); float(SAFE.x+SAFE.w/2, SAFE.y-14, 'Esa carta no va a la caja fuerte', '#FFB4A0'); thud(); }
+}
+function tapBeacon(){
+  const now=performance.now(), f=dayFrac(); S.beaconPress=now;
+  const open=S.todos.filter(t=>t.kind==='time' && !t.done && !t.state);
+  const cancelled=S.todos.find(t=>t.kind==='time' && t.cancelled && f>=t.w0-.04 && f<=t.w1+.04);
+  const inWin=open.find(t=>!t.cancelled && f>=t.w0 && f<=t.w1);
+  if (inWin){ inWin.done=true; inWin.state='hit'; S.beaconOn=now; float(BEACON.x+BEACON.w/2, BEACON.y-16, '¡Faro encendido a tiempo!', '#FFC94A', true); fanfare(); emit(BEACON.x+BEACON.w/2,BEACON.y+20,24,160,800,'255,214,120'); return; }
+  if (cancelled){ cancelled.state='commission'; S.cancelPressed=true; S.flash.beaconNo=now; float(BEACON.x+BEACON.w/2, BEACON.y-14, '¡Estaba cancelado!', '#FFB4A0'); thud(); return; }
+  const soon=open.find(t=>!t.cancelled && f<t.w0);
+  S.flash.beaconNo=now; soft();
+  if (soon){ soon.early++; float(BEACON.x+BEACON.w/2, BEACON.y-14, 'Aún no es la hora', '#FFE7A8'); }
+  else float(BEACON.x+BEACON.w/2, BEACON.y-14, 'Ahora no toca el faro', '#FFE7A8');
+}
+function tapClock(){ const now=performance.now(); if (now-S.peekAt<1600) return; S.peekAt=now; S.peeks.push(dayFrac()); tick(); }
+// ------------------------------------------------------------ fin del día
+function endDay(){
+  G.state='recap'; S.recapAt=performance.now(); S.belt=[]; S.flying=[];
+  const items=[];
+  for (const t of S.todos){
+    if (t.kind==='gold'||t.kind==='lazo'){ const ok=(t.hit||0), all=(t.hit||0)+(t.miss||0); items.push({ t, ok:all>0 && ok===all, txt: (t.kind==='gold'?'Sello dorado → caja fuerte':'Carta con lazo → caja fuerte'), det:`${ok} de ${all}` }); }
+    else if (t.cancelled) items.push({ t, ok:t.state!=='commission', txt:`Faro ${MOMENT[t.m].name} (cancelado)`, det: t.state==='commission'?'lo hiciste igual':'no lo hiciste: bien' });
+    else items.push({ t, ok:t.state==='hit', txt:`Faro ${MOMENT[t.m].name}`+(t.routine?' · de todos los días':''), det: t.state==='hit'?'a tiempo':'se pasó la hora' });
+  }
+  const pmOk=items.filter(i=>i.ok).length, pmAll=items.length, acc=S.sorted? S.right/S.sorted : 1;
+  // el reloj: cuántas miradas cayeron en el 30 % del día antes de cada hora
+  const timeTodos=S.todos.filter(t=>t.kind==='time');
+  const goodPeeks=S.peeks.filter(p=>timeTodos.some(t=>p>=t.w0-.3 && p<=t.w1)).length;
+  S.recap={ items, pmOk, pmAll, acc, goodPeeks, peeks:S.peeks.length };
+  S.hist.push({ pmOk, pmAll, acc, right:S.right, bestCombo:S.bestCombo, events:S.todos.filter(t=>t.kind!=='time').reduce((s,t)=>s+(t.hit||0)+(t.miss||0),0), eventsOk:S.todos.filter(t=>t.kind!=='time').reduce((s,t)=>s+(t.hit||0),0), timesAll:timeTodos.filter(t=>!t.cancelled).length, timesOk:timeTodos.filter(t=>t.state==='hit').length, commission:timeTodos.filter(t=>t.state==='commission').length, cancels:timeTodos.filter(t=>t.cancelled).length, peeks:S.peeks.length, goodPeeks, safeFalse:S.safeFalse });
+  if (pmOk===pmAll && acc>=.85){ S.lv=Math.min(STAGES.length-1,S.lv+1); S.up=true; } else { S.up=false; if (pmOk/pmAll<.5) S.lv=Math.max(0,S.lv-1); }
+  S.maxLv=Math.max(S.maxLv,S.lv);
+  if (pmOk===pmAll && S.right>SAVE.bestDay){ SAVE.bestDay=S.right; save(); S.record=true; } else S.record=false;
+  [0,1,2].forEach(k=>bell(PENTA[2+k*2],.045,1.1,k*.11));
+}
+function finish(){ G.state='end'; G.endT=performance.now(); bell(784,.06,1.4); bell(1046.5,.05,1.6,.15); }
+
+// ============================================================ sonido propio
+function hum(){ const a=ac(); if(!a) return; const t=a.currentTime; [196,293.66].forEach((f,i)=>{ const o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.018,t+.3); g.gain.exponentialRampToValueAtTime(.0001,t+1.4); o.connect(g).connect(a.destination); o.start(t+i*.1); o.stop(t+1.5); }); }
+function soft(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(392,t); o.frequency.exponentialRampToValueAtTime(330,t+.2); g.gain.setValueAtTime(.04,t); g.gain.exponentialRampToValueAtTime(.0001,t+.26); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.28); }
+function tick(){ noise(.05,3200,2400,.04,6); bell(1318.5,.02,.25,.05); }
+function fanfare(){ bell(783.99,.06,1.1); bell(987.77,.05,1.1,.08); bell(1174.66,.05,1.3,.16); }
+function radioSound(){ bell(880,.04,.25); bell(1174.66,.04,.25,.14); noise(.35,1500,900,.025,4); }
+function whoosh(){ noise(.25,600,1600,.03,1.4); }
+
+// ============================================================ dibujo de piezas
+function drawSymbol(c, shape, x, y, s, col){
+  c.save(); c.translate(x,y); c.fillStyle=col; c.beginPath();
+  if (shape==='circle') c.arc(0,0,s*.5,0,7);
+  if (shape==='tri'){ c.moveTo(0,-s*.55); c.lineTo(s*.52,s*.4); c.lineTo(-s*.52,s*.4); c.closePath(); }
+  if (shape==='square') c.roundRect(-s*.42,-s*.42,s*.84,s*.84,s*.16);
+  if (shape==='drop'){ c.moveTo(0,-s*.6); c.bezierCurveTo(s*.35,-s*.15,s*.5,s*.1,s*.5,s*.22); c.arc(0,s*.22,s*.5,0,Math.PI,false); c.bezierCurveTo(-s*.5,s*.1,-s*.35,-s*.15,0,-s*.6); }
+  c.fill(); c.restore();
+}
+function drawLetter(c, L, x, y, k=1){
+  const P=PLANETS[L.p], w=112*k, h=76*k; c.save(); c.translate(x,y);
+  if (L.bounce && performance.now()-L.bounce<400 && !reduce) c.translate(Math.sin((performance.now()-L.bounce)/30)*5*(1-(performance.now()-L.bounce)/400),0);
+  c.fillStyle='rgba(0,0,0,.35)'; rr(c,-w/2+3,-h/2+5,w,h,10*k); c.fill();
+  c.fillStyle='#F6EFDC'; rr(c,-w/2,-h/2,w,h,10*k); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3*k; c.stroke();
+  c.strokeStyle='rgba(26,18,64,.25)'; c.lineWidth=2*k; c.beginPath(); c.moveTo(-w/2+6*k,-h/2+6*k); c.lineTo(0,4*k); c.lineTo(w/2-6*k,-h/2+6*k); c.stroke();
+  // lazo: cinta que cruza la carta de arriba abajo, con moño (señal que no está en el sello)
+  if (L.lazo){ c.fillStyle='#E2524A'; c.fillRect(-w*.18-5*k,-h/2,10*k,h); c.strokeStyle='#1A1240'; c.lineWidth=2*k; c.strokeRect(-w*.18-5*k,-h/2,10*k,h);
+    c.save(); c.translate(-w*.18,-h*.05); c.fillStyle='#E2524A'; for (const s of [-1,1]){ c.beginPath(); c.ellipse(s*9*k,0,9*k,6*k,s*.4,0,7); c.fill(); c.stroke(); } c.beginPath(); c.arc(0,0,4*k,0,7); c.fill(); c.stroke(); c.restore(); }
+  // sello: color y figura del planeta; dorado si es carta señal
+  const sx=w/2-22*k, sy=-h/2+22*k, ss=30*k;
+  c.fillStyle= L.gold ? '#FFC94A' : '#FFFFFF'; rr(c,sx-ss/2,sy-ss/2,ss,ss,5*k); c.fill(); c.strokeStyle= L.gold ? '#B07A12' : '#1A1240'; c.lineWidth=(L.gold?3:2)*k; c.stroke();
+  if (L.gold && !reduce){ c.globalAlpha=.6+.4*Math.sin(performance.now()/160); c.drawImage(glow('255,214,120'),sx-ss,sy-ss,ss*2,ss*2); c.globalAlpha=1; }
+  drawSymbol(c, P.shape, sx, sy, 17*k, P.dark);
+  // líneas de dirección
+  c.strokeStyle='rgba(26,18,64,.35)'; c.lineWidth=3*k; c.lineCap='round'; for (const [dy,ww] of [[10,42],[20,32]]){ c.beginPath(); c.moveTo(-w/2+14*k+(L.lazo?24*k:0),dy*k); c.lineTo(-w/2+14*k+(L.lazo?24*k:0)+ww*k,dy*k); c.stroke(); }
+  c.restore();
+}
+function drawBox(c, i, now){
+  const n=S.st.boxes, r=boxRect(i,n), P=PLANETS[i];
+  let sx=0; const sh=S.boxShake&&S.boxShake[i]; if (sh && now-sh<380 && !reduce) sx=Math.sin((now-sh)/26)*4*(1-(now-sh)/380);
+  const pu=S.boxPulse&&S.boxPulse[i], pk = pu && now-pu<260 ? Math.sin(Math.PI*(now-pu)/260) : 0;
+  c.save(); c.translate(sx,0);
+  if (pk>0){ c.globalAlpha=pk*.8; c.drawImage(glow(hexRgb(P.col)), r.x-20, r.y-20, r.w+40, r.h+40); c.globalAlpha=1; }
+  c.fillStyle='rgba(0,0,0,.35)'; rr(c,r.x+3,r.y+6,r.w,r.h,18); c.fill();
+  const g=c.createLinearGradient(0,r.y,0,r.y+r.h); g.addColorStop(0,'#2B3170'); g.addColorStop(1,'#1A1F4F'); c.fillStyle=g; rr(c,r.x,r.y,r.w,r.h,18); c.fill(); c.strokeStyle='#0B0A26'; c.lineWidth=3; c.stroke();
+  // la boca del buzón
+  c.fillStyle='#0B0A26'; rr(c,r.x+12,r.y+12,r.w-24,12,6); c.fill();
+  // el planeta con su figura
+  const R=Math.min(28, r.w*.3), cy=r.y+60+pk*-3;
+  const pg=c.createRadialGradient(r.cx-R*.35,cy-R*.4,2,r.cx,cy,R); pg.addColorStop(0,'#fff'); pg.addColorStop(.25,P.col); pg.addColorStop(1,P.dark);
+  c.fillStyle=pg; c.beginPath(); c.arc(r.cx,cy,R,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+  drawSymbol(c, P.shape, r.cx, cy, R*.9, '#FFFFFF');
+  c.fillStyle='#D6D1F2'; c.font='600 14px Nunito'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(P.name, r.cx, r.y+r.h-14);
+  c.restore();
+}
+function drawSafe(c, now){
+  const r=SAFE, press=S.safePress && now-S.safePress<140 ? .96 : 1;
+  c.save(); c.translate(r.x+r.w/2, r.y+r.h/2); c.scale(press,press); c.translate(-(r.x+r.w/2), -(r.y+r.h/2));
+  const ok=S.flash.safeOk && now-S.flash.safeOk<900, warn=S.flash.safe && now-S.flash.safe<1500;
+  if ((ok||warn) && !reduce){ c.globalAlpha=ok?.9:.6+.4*Math.sin(now/90); c.drawImage(glow('255,201,74'),r.x-24,r.y-24,r.w+48,r.h+48); c.globalAlpha=1; }
+  c.fillStyle='rgba(0,0,0,.35)'; rr(c,r.x+3,r.y+6,r.w,r.h,20); c.fill();
+  c.fillStyle='#3A3352'; rr(c,r.x,r.y,r.w,r.h,20); c.fill(); c.strokeStyle='#0B0A26'; c.lineWidth=3; c.stroke();
+  // puerta de la caja fuerte con su rueda
+  c.fillStyle='#5A5280'; rr(c,r.x+10,r.y+10,62,r.h-20,12); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.5; c.stroke();
+  const wx=r.x+41, wy=r.y+r.h/2, spin=ok&&!reduce ? (now-S.flash.safeOk)/200 : 0;
+  // dial con marcas y una manija (figura neutra)
+  c.save(); c.translate(wx,wy-8); c.rotate(spin); c.fillStyle='#2A2350'; c.beginPath(); c.arc(0,0,13,0,7); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=2.5; c.stroke();
+  c.fillStyle='#FFC94A'; for (let k=0;k<8;k++){ const a=k*Math.PI/4; c.beginPath(); c.arc(Math.cos(a)*9,Math.sin(a)*9,1.4,0,7); c.fill(); } c.beginPath(); c.arc(0,0,3.5,0,7); c.fill(); c.restore();
+  c.fillStyle='#FFC94A'; rr(c,wx-14,wy+12,28,7,3.5); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2; c.stroke();
+  c.fillStyle='#EDEAFB'; c.font='700 17px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText('Caja', r.x+82, r.y+r.h/2-11); c.fillText('fuerte', r.x+82, r.y+r.h/2+11);
+  c.restore();
+}
+function drawBeacon(c, now){
+  const r=BEACON, press=S.beaconPress && now-S.beaconPress<140 ? .96 : 1, on=S.beaconOn && now-S.beaconOn<2200;
+  c.save(); c.translate(r.x+r.w/2, r.y+r.h/2); c.scale(press,press); c.translate(-(r.x+r.w/2), -(r.y+r.h/2));
+  const warn=S.flash.beacon && now-S.flash.beacon<1500;
+  if (warn && !reduce){ c.globalAlpha=.5+.4*Math.sin(now/90); c.drawImage(glow('255,201,74'),r.x-24,r.y-24,r.w+48,r.h+48); c.globalAlpha=1; }
+  c.fillStyle='rgba(0,0,0,.35)'; rr(c,r.x+3,r.y+6,r.w,r.h,20); c.fill();
+  c.fillStyle='#3A3352'; rr(c,r.x,r.y,r.w,r.h,20); c.fill(); c.strokeStyle='#0B0A26'; c.lineWidth=3; c.stroke();
+  // el faro: torre con cúpula; encendido lanza dos haces
+  const fx=r.x+40, fy=r.y+r.h/2+4;
+  if (on){ const k=(now-S.beaconOn)/2200, a=reduce?.7:Math.sin(Math.PI*Math.min(1,k*1.2))*.8, sw=reduce?0:Math.sin(now/180)*.5;
+    c.save(); c.translate(fx,fy-20); c.rotate(sw); c.globalAlpha=a; const bg=c.createLinearGradient(0,0,120,0); bg.addColorStop(0,'rgba(255,231,168,.9)'); bg.addColorStop(1,'rgba(255,231,168,0)');
+    c.fillStyle=bg; c.beginPath(); c.moveTo(0,0); c.lineTo(130,-26); c.lineTo(130,26); c.closePath(); c.fill(); c.rotate(Math.PI); c.beginPath(); c.moveTo(0,0); c.lineTo(130,-26); c.lineTo(130,26); c.closePath(); c.fill(); c.restore(); c.globalAlpha=1; }
+  c.fillStyle='#EDEAFB'; c.beginPath(); c.moveTo(fx-12,fy+26); c.lineTo(fx-8,fy-12); c.lineTo(fx+8,fy-12); c.lineTo(fx+12,fy+26); c.closePath(); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.5; c.stroke();
+  c.fillStyle='#E2524A'; c.fillRect(fx-10,fy+2,20,7); c.fillRect(fx-9,fy-8,18,5);
+  c.fillStyle= on ? '#FFE27A' : '#6E6A9A'; c.beginPath(); c.arc(fx,fy-20,9,0,7); c.fill(); c.stroke();
+  if (on && !reduce){ c.drawImage(glow('255,226,122'),fx-26,fy-46,52,52); }
+  c.fillStyle='#EDEAFB'; c.font='700 17px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText('Faro', r.x+70, r.y+r.h/2);
+  c.restore();
+}
+function drawClock(c, now){
+  // el reloj del día va tapado: se destapa 1,6 s al tocarlo
+  const open = S.peekAt && now-S.peekAt<1600, k = open ? Math.min(1,(now-S.peekAt)/160, (1600-(now-S.peekAt))/160) : 0, { x, y, r } = CLOCK;
+  c.save();
+  c.fillStyle='rgba(0,0,0,.35)'; c.beginPath(); c.arc(x+2,y+4,r,0,7); c.fill();
+  c.fillStyle='#2B3170'; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle='#0B0A26'; c.lineWidth=3; c.stroke();
+  if (k<1){ c.fillStyle='#B79BFF'; c.globalAlpha=1-k; c.beginPath(); c.arc(x,y,r-4,0,7); c.fill(); c.fillStyle='#1A1240'; c.font='700 24px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('?', x, y+1); c.globalAlpha=1; }
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.textAlign='center'; c.fillText('reloj', x, y+r+14);
+  c.restore();
+  if (k>0){ // panel grande: la barra del día con sus cuatro momentos y el lucero que avanza
+    c.save(); c.globalAlpha=k; const x0=44, x1=W-44, by=112, f=dayFrac();
+    c.fillStyle='rgba(8,10,34,.95)'; rr(c,20,66,W-40,94,20); c.fill(); c.strokeStyle='rgba(183,155,255,.6)'; c.lineWidth=2; c.stroke();
+    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('Hora del día', W/2, 84);
+    c.lineCap='round'; c.strokeStyle='#2B3170'; c.lineWidth=12; c.beginPath(); c.moveTo(x0,by); c.lineTo(x1,by); c.stroke();
+    const grad=c.createLinearGradient(x0,0,x1,0); grad.addColorStop(0,'#7FD8FF'); grad.addColorStop(.5,'#FFE27A'); grad.addColorStop(.75,'#FF9F6B'); grad.addColorStop(1,'#7B5FD6');
+    c.strokeStyle=grad; c.beginPath(); c.moveTo(x0,by); c.lineTo(x0+(x1-x0)*Math.max(.01,f),by); c.stroke();
+    for (const [key,m] of Object.entries(MOMENT)){ const tx=x0+(x1-x0)*m.c;
+      c.strokeStyle='rgba(237,234,251,.5)'; c.lineWidth=2; c.beginPath(); c.moveTo(tx,by+9); c.lineTo(tx,by+14); c.stroke();
+      c.fillStyle='#EDEAFB'; c.font='600 14px Nunito'; c.fillText({manana:'mañana',mediodia:'mediodía',tarde:'tarde',noche:'noche'}[key], tx, by+28); }
+    const lx=x0+(x1-x0)*f; c.drawImage(glow('255,226,122'),lx-16,by-16,32,32); c.fillStyle='#FFF4C2'; c.beginPath(); c.arc(lx,by,8,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2; c.stroke();
+    c.restore(); }
+}
+function drawBelt(c, now){
+  // cinta con rodillos que giran
+  c.fillStyle='#141B3A'; rr(c,-10,BELT.y-50,W+20,100,0); c.fill();
+  c.fillStyle='#232B57'; c.fillRect(0,BELT.y+40,W,8); c.fillRect(0,BELT.y-48,W,6);
+  const off = reduce ? 0 : (now/12)%28; c.fillStyle='rgba(127,216,255,.12)'; for (let x=-28+off; x<W; x+=28) c.fillRect(x,BELT.y+42,14,4);
+  // marca del punto de clasificación
+  const lit = S.combo>=10 && !reduce; c.strokeStyle= lit ? '#FFC94A' : 'rgba(127,216,255,.5)'; c.lineWidth=3; c.setLineDash([8,8]); rr(c,BELT.xA-66,BELT.y-46,132,92,16); c.stroke(); c.setLineDash([]);
+  if (lit){ c.globalAlpha=.35+.15*Math.sin(now/120); c.drawImage(glow('255,201,74'),BELT.xA-90,BELT.y-70,180,140); c.globalAlpha=1; }
+}
+function stepBelt(dt){
+  // cada carta avanza con un resorte hacia su lugar en la fila
+  S.belt.forEach((L,i)=>{ const tx = i===0 ? BELT.xA : BELT.xA+110+(i-1)*70; if (reduce){ L.x=tx; L.vx=0; } else [L.x,L.vx]=spring(L.x,L.vx,tx,dt,2.2,.82); });
+}
+function drawFlying(c, now){
+  S.flying=(S.flying||[]).filter(L=>{ const f=L.fly, k=Math.min(1,(now-f.at)/f.dur), e=easeIO(k);
+    const x=f.from[0]+(f.to[0]-f.from[0])*e, y=f.from[1]+(f.to[1]-f.from[1])*e-Math.sin(Math.PI*e)*50;
+    if (k>=1){ if (f.into==='box') emit(f.to[0],f.to[1],8,70,450,hexRgb(PLANETS[f.i].col)); return false; }
+    c.save(); c.translate(x,y); c.rotate(Math.sin(Math.PI*e)*.4); drawLetter(c,L,0,0,1-.6*e); c.restore(); return true; });
+  if (S.falling){ const k=(now-S.falling.fall)/600; if (k>=1) S.falling=null; else { c.save(); c.globalAlpha=1-k; drawLetter(c,S.falling,BELT.xA-40-k*30,BELT.y+k*k*160,.9-.3*k); c.restore(); } }
+}
+function drawHeader(c, now){
+  c.fillStyle='#EDEAFB'; c.font='700 18px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(`Día ${S.day} de ${DAYS}`, 16, 28);
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(`Cartas: ${S.right||0}` + (S.late?` · atrasadas: ${S.late}`:''), 16, 52);
+  if (S.combo>=3){ const t=`Racha ×${S.combo}`; c.font='700 15px Fredoka'; const w=c.measureText(t).width+22, x=BELT.xA-w/2, y=BELT.y-84;
+    c.fillStyle='#FFC94A'; rr(c,x,y,w,26,13); c.fill(); c.fillStyle='#1A1240'; c.textAlign='center'; c.fillText(t,BELT.xA,y+13.5); }
+  // aviso de la radio
+  if (S.radio && now-S.radio.at<3200){ const k=Math.min(1,(now-S.radio.at)/200,(3200-(now-S.radio.at))/300);
+    c.save(); c.globalAlpha=k; c.fillStyle='rgba(8,10,34,.96)'; rr(c,14,94,W-28,58,16); c.fill(); c.strokeStyle='#B79BFF'; c.lineWidth=2; c.stroke();
+    c.fillStyle='#B79BFF'; c.font='700 15px Fredoka'; c.textAlign='center'; c.fillText('RADIO', W/2, 112);
+    c.fillStyle='#EDEAFB'; let s=15; do { c.font=`700 ${s}px Nunito`; } while (c.measureText(S.radio.t.replace('Radio: ','')).width>W-48 && --s>12); c.fillText(S.radio.t.replace('Radio: ',''), W/2, 134); c.restore(); }
+}
+function drawFloats(c, now){
+  G.floats=G.floats.filter(f=>{ const k=(now-f.at)/(f.big?1400:1100); if (k>=1) return false; const a=Math.min(1,k*6,(1-k)*3), y=f.y-(reduce?0:18*ease(k));
+    c.globalAlpha=a; let s=f.big?17:15; do { c.font=`700 ${s}px Fredoka`; } while (c.measureText(f.text).width>W-40 && --s>13);
+    c.textAlign='center'; c.textBaseline='middle'; const w=c.measureText(f.text).width+22, x=Math.max(w/2+8,Math.min(W-w/2-8,f.x));
+    c.fillStyle='rgba(8,10,34,.92)'; rr(c,x-w/2,y-15,w,30,15); c.fill(); c.fillStyle=f.col; c.fillText(f.text,x,y+1); c.globalAlpha=1; return true; });
+}
+// ------------------------------------------------------------ pantallas
+function todoLine(t){
+  if (t.kind==='gold') return { icon:'gold', a:'Si llega una carta con sello dorado,', b:'guárdala en la caja fuerte' };
+  if (t.kind==='lazo') return { icon:'lazo', a:'Si llega una carta con lazo,', b:'guárdala en la caja fuerte' };
+  return { icon:'faro', a:`${MOMENT[t.m].name[0].toUpperCase()+MOMENT[t.m].name.slice(1)},`, b:'enciende el faro' };
+}
+function miniIcon(c, kind, x, y){
+  if (kind==='gold') drawLetter(c,{ p:0, gold:true },x,y,.42);
+  if (kind==='lazo') drawLetter(c,{ p:1, lazo:true },x,y,.42);
+  if (kind==='faro'){ c.save(); c.fillStyle='#EDEAFB'; c.beginPath(); c.moveTo(x-9,y+16); c.lineTo(x-6,y-8); c.lineTo(x+6,y-8); c.lineTo(x+9,y+16); c.closePath(); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2; c.stroke(); c.fillStyle='#E2524A'; c.fillRect(x-7,y+2,14,5); c.fillStyle='#FFE27A'; c.beginPath(); c.arc(x,y-14,7,0,7); c.fill(); c.stroke(); c.restore(); }
+}
+function drawBrief(c, now){
+  const k=reduce?1:ease((now-S.briefAt)/350); c.fillStyle=`rgba(2,3,15,${.94*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.translate(0,(1-k)*16); c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.fillText(`DÍA ${S.day} DE ${DAYS}`, W/2, 74);
+  c.fillStyle='#fff'; c.font='700 28px Fredoka'; c.fillText('Encargos de hoy', W/2, 106);
+  const shown=S.todos.filter(t=>!(t.routine && S.day>1));
+  const per = shown.length>3 ? 66 : 88, bh=per-12;
+  let y=158; for (const t of shown){ const l=todoLine(t);
+    c.fillStyle='#141B3A'; rr(c,18,y-bh/2+4,W-36,bh,18); c.fill(); c.strokeStyle='rgba(142,131,216,.35)'; c.lineWidth=2; c.stroke();
+    miniIcon(c,l.icon,56,y+4);
+    c.textAlign='left'; c.fillStyle='#D6D1F2'; c.font='600 15px Nunito'; c.fillText(l.a, 96, y-6); c.fillStyle='#fff'; c.font='700 17px Nunito'; c.fillText(l.b, 96, y+16);
+    if (t.routine){ const tx='TODOS LOS DÍAS'; c.font='700 13px Fredoka'; const tw=c.measureText(tx).width+14, top=y-bh/2+4; c.fillStyle='#B79BFF'; rr(c,W-30-tw,top-9,tw,18,9); c.fill(); c.fillStyle='#1A1240'; c.textAlign='center'; c.fillText(tx, W-30-tw/2, top+.5); }
+    c.textAlign='center'; y+=per; }
+  if (S.todos.some(t=>t.routine) && S.day>1){ c.fillStyle='#141B3A'; rr(c,18,y-34,W-36,62,18); c.fill(); c.strokeStyle='rgba(183,155,255,.6)'; c.lineWidth=2; c.stroke();
+    c.fillStyle='#B79BFF'; c.font='700 16px Nunito'; c.fillText('Y lo de todos los días', W/2, y-12); c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('(ya no se anota: acuérdate tú)', W/2, y+10); y+=78; }
+  c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('Durante el día no los verás.', W/2, y+2); c.fillText('Dilo en voz baja: «cuando vea…, haré…»', W/2, y+24);
+  c.fillStyle='#A6E36B'; rr(c,90,H-104,180,58,29); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 20px Fredoka'; c.fillText('Empezar el día', W/2, H-75);
+  c.restore();
+}
+function check(c,x,y,ok){
+  c.save(); c.lineWidth=3.5; c.lineCap='round'; c.lineJoin='round';
+  if (ok){ c.fillStyle='#9FF5D6'; c.beginPath(); c.arc(x,y,13,0,7); c.fill(); c.strokeStyle='#1A1240'; c.beginPath(); c.moveTo(x-6,y); c.lineTo(x-1.5,y+5); c.lineTo(x+7,y-5); c.stroke(); }
+  else { c.strokeStyle='#FFB4A0'; c.lineWidth=3; c.beginPath(); c.arc(x,y,12,0,7); c.stroke(); c.beginPath(); c.moveTo(x-6,y); c.lineTo(x+6,y); c.stroke(); }
+  c.restore();
+}
+function drawRecap(c, now){
+  const k=reduce?1:ease((now-S.recapAt)/400), R=S.recap; c.fillStyle=`rgba(2,3,15,${.94*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.fillText(`FIN DEL DÍA ${S.day}`, W/2, 70);
+  c.fillStyle='#fff'; c.font='700 26px Fredoka'; c.fillText(R.pmOk===R.pmAll ? '¡Todos los encargos!' : `Encargos: ${R.pmOk} de ${R.pmAll}`, W/2, 102);
+  let y=150; R.items.forEach((it,i)=>{ const ak=reduce?1:ease((now-S.recapAt-250-i*180)/300); c.globalAlpha=k*ak;
+    c.fillStyle='#141B3A'; rr(c,18,y-26,W-36,56,16); c.fill(); check(c,46,y+2,it.ok);
+    c.textAlign='left'; c.fillStyle='#EDEAFB'; let s=16; do { c.font=`700 ${s}px Nunito`; } while (c.measureText(it.txt).width>W-104 && --s>13); c.fillText(it.txt, 70, y-6);
+    c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(it.det, 70, y+14); c.textAlign='center'; y+=66; });
+  c.globalAlpha=k;
+  c.fillStyle='#D6D1F2'; c.font='600 15px Nunito';
+  c.fillText(`Cartas bien puestas: ${S.right} de ${S.sorted+S.late} · racha mayor ×${S.bestCombo}`, W/2, y+6);
+  if (S.todos.some(t=>t.kind==='time')) c.fillText(`Reloj: lo miraste ${R.peeks} ${R.peeks===1?'vez':'veces'}, ${R.goodPeeks} cerca de la hora`, W/2, y+30);
+  if (S.record){ c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.fillText('¡Nuevo récord de cartas en un día perfecto!', W/2, y+56); }
+  c.fillStyle= S.up ? '#9FF5D6' : '#ABA5D2'; c.font='700 15px Fredoka'; c.fillText(S.up ? 'Mañana: un poco más difícil' : 'Mañana: mismo ritmo', W/2, H-140);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-104,180,58,29); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 20px Fredoka'; c.fillText(S.day>=DAYS?'Ver resultado':'Siguiente día', W/2, H-75);
+  c.restore();
+}
+function drawIntro(c, now){
+  if (G.state!=='intro') return; const k=reduce?1:ease((now-S.introAt)/350), it=INTROS[S.intro];
+  c.fillStyle=`rgba(2,3,15,${.84*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.translate(0,(1-k)*18); const top=150, h=330;
+  c.fillStyle='#141B3A'; rr(c,18,top,W-36,h,26); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=2; c.stroke();
+  c.fillStyle='#FFC94A'; c.font='700 15px Fredoka'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(it.tag, W/2, top+26);
+  const cy=top+96;
+  if (S.intro==='estacion'){ drawLetter(c,{p:0},W/2-62,cy,.62); drawLetter(c,{p:1,gold:true},W/2+62,cy,.62); c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText('a su buzón', W/2-62, cy+40); c.fillText('a la caja fuerte', W/2+62, cy+40); }
+  if (S.intro==='hora'){ c.fillStyle='#B79BFF'; c.beginPath(); c.arc(W/2-50,cy,26,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 22px Fredoka'; c.fillText('?', W/2-50, cy+1); miniIcon(c,'faro',W/2+50,cy); }
+  if (S.intro==='rutina'){ c.fillStyle='#B79BFF'; c.font='700 15px Nunito'; c.fillText('TODOS LOS DÍAS', W/2, cy-16); miniIcon(c,'faro',W/2,cy+16); }
+  if (S.intro==='cancela'){ c.fillStyle='rgba(8,10,34,.96)'; rr(c,40,cy-26,W-80,52,14); c.fill(); c.strokeStyle='#B79BFF'; c.lineWidth=2; c.stroke(); c.fillStyle='#B79BFF'; c.font='700 14px Fredoka'; c.fillText('RADIO', W/2, cy-10); c.fillStyle='#EDEAFB'; c.font='700 14px Nunito'; c.fillText('hoy NO hace falta el faro', W/2, cy+10); }
+  if (S.intro==='lazo'){ drawLetter(c,{p:2,lazo:true},W/2,cy,.7); }
+  it.lines.forEach((ln,i)=>{ c.fillStyle= i===0 ? '#fff' : '#D6D1F2'; let s=17; do { c.font=`${i===0?700:600} ${s}px Nunito`; } while (c.measureText(ln).width>W-64 && --s>14); c.fillText(ln, W/2, top+176+i*26); });
+  c.fillStyle='#7FD8FF'; c.font='700 16px Fredoka'; c.fillText('Toca para seguir', W/2, top+h-28); c.restore();
+}
+function drawEnd(c, now){
+  const k=reduce?1:ease((now-G.endT)/500); c.fillStyle=`rgba(3,4,22,${.95*k})`; c.fillRect(0,0,W,H);
+  c.save(); c.globalAlpha=k; c.textAlign='center'; c.textBaseline='middle';
+  const sum=(f)=>S.hist.reduce((s,h)=>s+f(h),0), ev=sum(h=>h.events), evOk=sum(h=>h.eventsOk), tm=sum(h=>h.timesAll), tmOk=sum(h=>h.timesOk), canc=sum(h=>h.cancels), comm=sum(h=>h.commission), pe=sum(h=>h.peeks), gp=sum(h=>h.goodPeeks);
+  const all=ev+tm+canc, ok=evOk+tmOk+(canc-comm), pct=all?Math.round(100*ok/all):null;
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('¡Turno terminado!', W/2, 70);
+  c.fillStyle='#141B3A'; rr(c,20,100,W-40,118,22); c.fill(); c.strokeStyle='rgba(255,201,74,.6)'; c.lineWidth=2; c.stroke();
+  c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.fillText('Tu memoria para lo pendiente', W/2, 124);
+  c.fillStyle='#FFC94A'; c.font='700 42px Fredoka'; c.fillText(pct===null?'—':`${pct} %`, W/2, 164);
+  c.fillStyle='#D6D1F2'; c.font='600 14px Nunito'; c.fillText(`${ok} de ${all} encargos cumplidos`, W/2, 198);
+  const rows=[['Por evento (cartas señal)', ev?`${evOk} de ${ev}`:'—'], ['Por hora (faro)', tm?`${tmOk} de ${tm}`:'—'], ['Cancelados que no hiciste', canc?`${canc-comm} de ${canc}`:'—'], ['Miradas al reloj cerca de la hora', pe?`${gp} de ${pe}`:'—'], ['Cartas bien puestas', `${sum(h=>h.right)}`], ['Etapa más alta', `${GRUPO(S.maxLv)} de 5`]];
+  let y=250; for (const [l,v] of rows){ c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.textAlign='left'; c.fillText(l,26,y); c.fillStyle='#fff'; c.font='700 17px Fredoka'; c.textAlign='right'; c.fillText(v,W-26,y); y+=36; }
+  c.textAlign='center'; c.fillStyle='#ABA5D2'; c.font='600 14px Nunito'; c.fillText(TIPS[(S.day+ev)%TIPS.length], W/2, y+4);
+  c.fillStyle='#8F8AC0'; c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y+28);
+  c.fillStyle='#7FD8FF'; rr(c,90,H-96,180,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 19px Fredoka'; c.fillText('Jugar de nuevo',W/2,H-68);
+  c.restore();
+}
+function drawMenu(c, now){
+  c.textAlign='center'; c.textBaseline='middle';
+  S.st=S.st||{ boxes:3 }; S.belt=S.belt||[]; S.flash=S.flash||{};
+  drawBelt(c,now); const t=reduce?0:now/1000; drawLetter(c,{p:1},BELT.xA,BELT.y+Math.sin(t*2)*3,1); drawLetter(c,{p:0,gold:true},BELT.xA+120,BELT.y,.7); drawLetter(c,{p:2,lazo:true},BELT.xA+196,BELT.y,.7);
+  for (let i=0;i<3;i++) drawBox(c,i,now); drawSafe(c,now); drawBeacon(c,now);
+  c.fillStyle='rgba(3,4,22,.8)'; rr(c,30,60,300,100,20); c.fill();
+  c.fillStyle='#fff'; c.font='700 30px Fredoka'; c.fillText('Correo Estelar', W/2, 94);
+  c.fillStyle='#ABA5D2'; c.font='600 15px Nunito'; c.fillText('Clasifica las cartas y cumple tus encargos', W/2, 130);
+  c.fillStyle='#7FD8FF'; rr(c,110,572,140,56,28); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke(); c.fillStyle='#1A1240'; c.font='700 21px Fredoka'; c.fillText('Jugar', W/2, 601);
+}
+function frame(now){
+  const c=ctx; c.setTransform(scale,0,0,scale,0,0); c.drawImage(BG,0,0,W,H);
+  const dt=Math.min(.05,(now-(G.last||now))/1000); G.last=now;
+  if (G.state==='menu'){ drawMenu(c, now); }
+  else if (G.state!=='end'){
+    step(dt); if (S.belt) stepBelt(dt);
+    drawHeader(c, now); drawClock(c, now);
+    drawBelt(c, now);
+    for (let i=S.belt.length-1;i>=0;i--){ const L=S.belt[i]; drawLetter(c,L,L.x,L.y,i===0?1:.7); }
+    for (let i=0;i<S.st.boxes;i++) drawBox(c,i,now);
+    drawSafe(c, now); drawBeacon(c, now); drawFlying(c, now);
+    if (G.state==='play'){ c.fillStyle='#8F8AC0'; c.font='600 14px Nunito'; c.textAlign='center'; c.fillText('Toca el buzón del sello', W/2, H-46); }
+    drawFloats(c, now);
+    if (G.state==='brief') drawBrief(c, now);
+    if (G.state==='recap') drawRecap(c, now);
+  }
+  G.parts=G.parts.filter(p=>{ const k=(now-p.t)/p.life; if (k>=1) return false; p.x+=p.vx/60; p.y+=p.vy/60; p.vy+=1; c.fillStyle=`rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x,p.y,p.r*(1-k*.5),0,7); c.fill(); return true; });
+  drawIntro(c, now);
+  if (G.state==='end') drawEnd(c, now);
+  if (DEBUG){ cv.dataset.state=G.state; cv.dataset.stats=JSON.stringify({ lv:S.lv, day:S.day, f:S.dayT?+(S.dayT/DAY).toFixed(2):0, belt:(S.belt||[]).map(L=>[L.p,L.gold?1:0,L.lazo?1:0]), right:S.right, late:S.late, todos:(S.todos||[]).map(t=>({k:t.kind,m:t.m,st:t.state,c:!!t.cancelled,h:t.hit||0,mi:t.miss||0})) }); }
+}
+const loop = now => { frame(now); requestAnimationFrame(loop); };
+requestAnimationFrame(loop);
+if (DEBUG) setInterval(()=>{ if (document.hidden || performance.now()-(G.last||0)>200) frame(performance.now()); }, 60);
+cv.addEventListener('pointerdown', e=>{
+  ac(); const [x,y]=toLocal(e), now=performance.now();
+  if (G.state==='menu'){ if (y>562&&y<638 && x>100&&x<260){ S.belt=[]; startGame(); } return; }
+  if (G.state==='intro'){ if (now-S.introAt>500) brief(); return; }
+  if (G.state==='brief'){ if (now-S.briefAt>600 && y>H-114 && y<H-36) beginDay(); return; }
+  if (G.state==='recap'){ if (now-S.recapAt>900 && y>H-114 && y<H-36) nextDay(); return; }
+  if (G.state==='end'){ if (now-G.endT>600 && y>H-110){ G.state='menu'; S.st=null; S.belt=[]; } return; }
+  if (G.state!=='play') return;
+  if (Math.hypot(x-CLOCK.x,y-CLOCK.y)<=CLOCK.r+10) return tapClock();
+  if (inRect(x,y,SAFE)) return tapSafe();
+  if (inRect(x,y,BEACON)) return tapBeacon();
+  for (let i=0;i<S.st.boxes;i++) if (inRect(x,y,boxRect(i,S.st.boxes))) return tapBox(i);
+});
+document.getElementById('snd').addEventListener('click',e=>{ soundOn=!soundOn; e.currentTarget.setAttribute('aria-pressed',soundOn); e.currentTarget.textContent='Sonido: '+(soundOn?'sí':'no'); });
+document.getElementById('rm').addEventListener('click',e=>{ reduce=!reduce; e.currentTarget.setAttribute('aria-pressed',reduce); });
+</script>
