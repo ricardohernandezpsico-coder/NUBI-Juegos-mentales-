@@ -61,11 +61,12 @@ object GameRegistry {
   val allGames = listOf(
     GameDefinition(
       id = "parejas",
-      title = "Parejas Ocultas",
+      // «Constelaciones» (7-oct): el juego renovado de Parejas Ocultas; el id «parejas» se mantiene (avance, marcas e historial).
+      title = "Constelaciones",
       domain = DomainType.MEMORIA,
-      subtitle = "Memoria de trabajo visual",
-      instruction = "Memoriza dónde está cada figura antes de que las cartas se den vuelta y encuentra todas las parejas.",
-      iconEmoji = "🃏"
+      subtitle = "Memoria de lugar",
+      instruction = "Toca una luz para ver qué esconde y busca su pareja: las que son iguales se unen con una línea. Si te acuerdas de dónde estaba, ve directo a ella.",
+      iconEmoji = "🌌"
     ),
     GameDefinition(
       // El id «secuencia» se mantiene (avance, marcas e historial); el nombre visible es el del juego rehecho (3-oct).
@@ -404,6 +405,16 @@ data class GamePlayResult(
   val bodBest: Int? = null,
   val bodMs: Int? = null,
   val bodNewRecord: Boolean? = null,
+  // Solo «Constelaciones» (id parejas): aciertos de memoria (= correctAnswers) y oportunidades (= totalTrials), parejas/tríos encontrados y cuántos de memoria, la racha de memoria más larga, los toques que no servían, los turnos,
+  // el grupo de etapa más alto (1..6), el récord (mejor racha, que se guarda) y si esta partida lo superó. El récord va en prefs «constelaciones_record» (y en el respaldo); la medida va a StarMeasures. Lectura en data/Constelaciones.kt.
+  val conGroups: Int? = null,
+  val conMemGroups: Int? = null,
+  val conBestStreak: Int? = null,
+  val conUseless: Int? = null,
+  val conTurns: Int? = null,
+  val conGroup: Int? = null,
+  val conBest: Int? = null,
+  val conNewRecord: Boolean? = null,
   // Solo Rastro de luz (id «secuencia»): por familia (4: el rastro, al revés, el cielo gira, en marcha) el mejor largo repetido bien (0 = ninguno),
   // las rondas y los aciertos (la ronda guiada del tutorial no cuenta), qué familias aparecieron y cuáles se desbloquearon por primera vez en
   // la partida (bits: 1 rastro, 2 al revés, 4 gira, 8 en marcha). La lectura está en data/Trail.kt. No se guardan en Room.

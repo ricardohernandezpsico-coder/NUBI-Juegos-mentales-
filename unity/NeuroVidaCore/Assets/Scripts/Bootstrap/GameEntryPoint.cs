@@ -35,13 +35,13 @@ namespace NeuroVida.Bridge
     /// <paramref name="json"/> siempre se parsea como <see cref="SequenceInitConfig"/> --
     /// el contrato de entrada (user_id/game_id/config con level/base_intensity/timed/
     /// age_band/sound_enabled) es genérico entre juegos a propósito desde el día 1 del
-    /// roadmap (ver NeuroVida/CLAUDE.md), así que "Parejas Ocultas" (Fase 2) lo reusa tal
+    /// roadmap (ver NeuroVida/CLAUDE.md), así que "Constelaciones" (id parejas; Fase 2) lo reusa tal
     /// cual en vez de tener su propia clase de config duplicada.
     /// </summary>
     public class GameEntryPoint : MonoBehaviour
     {
         [SerializeField] private RastroGameController rastroGameController;
-        [SerializeField] private CardsGameController cardsGameController;
+        [SerializeField] private ConstelacionGameController constelacionGameController;
         [SerializeField] private StroopGameController stroopGameController;
         [SerializeField] private CalculoGameController calculoGameController;
         [SerializeField] private PuntaGameController anagramGameController;
@@ -178,15 +178,15 @@ namespace NeuroVida.Bridge
                     rastroGameController.gameObject.SetActive(true);
                     rastroGameController.StartSession(config);
                     break;
-                case CardsGameController.GameId:
-                    if (cardsGameController == null)
+                case ConstelacionGameController.GameId:
+                    if (constelacionGameController == null)
                     {
-                        var go = new GameObject("CardsGameController");
+                        var go = new GameObject("ConstelacionGameController");
                         go.transform.SetParent(transform, false);
-                        cardsGameController = go.AddComponent<CardsGameController>();
+                        constelacionGameController = go.AddComponent<ConstelacionGameController>();
                     }
-                    cardsGameController.gameObject.SetActive(true);
-                    cardsGameController.StartSession(config);
+                    constelacionGameController.gameObject.SetActive(true);
+                    constelacionGameController.StartSession(config);
                     break;
                 case StroopGameController.GameId:
                     if (stroopGameController == null)

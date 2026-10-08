@@ -2,7 +2,7 @@
 
 Estado: implementado en Unity el 24-sep-2026 (`Assets/Scripts/Games/AdaptiveDifficulty.cs`), conectado a
 Stroop, «Carga exacta» (antes Cálculo Sereno; id `calculo`) y «En la punta de la lengua» (antes Anagramas; y Cambio de Chip, Comparación Instantánea, Detective de Series, Ruta del Tesoro y Tráfico Estelar, retirados el 3 y el 4-oct: ver `docs/juegos/descartados.md`). El 3-oct
-se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (ver §6): **los 19 juegos usan el motor común** (Piloto y Correo
+se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (hoy «Constelaciones», ver §6): **los 19 juegos usan el motor común** (Piloto y Correo
 con dos instancias; Freno solo en la tarea de ir).
 
 > **Alcance y honestidad**: esto es un diseño de ingeniería inspirado en literatura psicométrica y de
@@ -63,7 +63,7 @@ Parámetros por juego:
 | Carga exacta (id `calculo`, 4-oct: [diseno-carga-exacta.md](diseno-carga-exacta.md) §5) | 5 | 0.40 | edad | no (con pista cuenta como medio acierto) |
 | Engranajes: Taller de reparación (id `engranajes`, 5-oct: [diseno-engranajes.md](diseno-engranajes.md) §4) | 12 (las 12 etapas) | 0.50 (dos aciertos seguidos suben una etapa) | edad | no (mirar con calma no se penaliza) |
 | En la punta de la lengua (id `anagramas`, 3-oct) | 5 | 0.40 | edad | no |
-| Parejas Ocultas | 10 | 0.15 | edad | Reto |
+| Constelaciones (id `parejas`, 7-oct: [diseno-constelaciones.md](diseno-constelaciones.md) §4) | 18 (6 grupos de 3 etapas) | 0.20 | edad | no (mirar con calma no se penaliza) |
 | Rastro de luz (id `secuencia`) | 16 | 0.25 adultos · 0.17 mayores · 0.22 menores de 18 (ver §6) | edad | no |
 
 ## 4. Verificación
@@ -94,22 +94,15 @@ evaluación, rating guardado entre sesiones y `end_rating` en la telemetría. `V
 se borraron. Lo que ve la persona (arte, mecánica, textos, regla «tablero completo a la vez») no cambió, salvo lo
 que se dice abajo.
 
-**Parejas Ocultas** (`CardsGameContract`): escalera de **10 niveles** (los mismos 10 tableros de siempre:
-2, 3, 4, 5, 6, 7, 8, 9, 10 y 12 parejas; `Skill.kt` ya decía 10).
-- Cada nivel fija las parejas, la grilla (`CardsBoardProfile.GridDimensionsFor`) y el banco de símbolos
-  (interferencia: niveles 1-3 → banco 0, 4-6 → 1, 7-9 → 2, 10 → 3).
-- Ensayo = cada pareja intentada: `Register(acierto, tiempoMs)`, con el tiempo entre la primera y la segunda carta
-  (solo pesa en Reto: sin reloj no se usa). Se acabó el tiempo = error (`Register(false)`).
-- El nivel del tablero se fija al armarlo con `PresentedLevel` (y el calentamiento): dentro de un tablero no cambia;
-  el siguiente toma el nivel que dejó el motor. Antes cada falla de nivel bajaba o repetía el nivel a mano; ahora
-  la falla (3 parejas erradas cortan el tablero) solo cuenta para las vidas y el aviso dice «Bajamos de nivel»
-  solo si el motor de verdad lo bajó (si no, «Repetimos el nivel»).
-- Lo que antes afinaba D(t) dentro del nivel (vista previa de 3 s a 0,5 s según la edad, distractores de fondo y su
-  opacidad) usa las mismas fórmulas con el rating continuo (`RatingNormalized`) como índice.
-- Fin de partida: 3 tableros cortados seguidos o **10 tableros jugados** (`BoardsPerSession`). Antes terminaba al
-  superar el nivel 10; como ahora el motor decide el nivel, hace falta ese límite para que no sea infinita.
-- Parte del rating guardado o, sin dato, del nivel elegido (antes siempre empezaba en el tablero de 2 parejas).
-- `stepUp` 0,15 por pareja (≈7 aciertos por nivel; la bajada por error es 0,60 con objetivo 0,80).
+**Constelaciones** (id `parejas`; antes Parejas Ocultas, `CardsGameContract`; renovada el 7-oct, `ConstelacionContract`, `docs/diseno-constelaciones.md` §4): escalera de **18 etapas** en 6 grupos de 3
+(parejas, cielo más lleno, gemelos, tríos, parejas y tríos juntos, cielo grande).
+- **Ensayo = cada oportunidad de memoria**: el momento en que ya viste una compañera de la luz que acabas de abrir y tienes que ir directo a ella. Acierto = vas directo; error = «se te escapó». Lo encontrado
+  por suerte (luz nueva) NO es un ensayo. Un cielo sin oportunidades no mueve el rating. **Tiempo de reacción: no se usa** (`useReaction: false`).
+- `stepUp` 0,20. Cada partida son 6 cielos; el nivel de cada uno se fija al armarlo (`PresentedLevel` y calentamiento) y el siguiente toma el que dejó el motor.
+- Parte del rating guardado o, sin dato, del nivel elegido; las herramientas de prueba pueden empezar en una etapa (`con_stage`).
+- El rating guardado de quienes jugaban la escalera vieja de 10 niveles se llevó a la nueva en la migración de Room 12 → 13 (× 40/81: nivel viejo L ↔ etapa 1 + (L − 1) · 8/9;
+  `Constelaciones.translateOldRating`).
+- Reto: el reloj de la ficha («¿Con reloj?»), 180 s en total.
 
 **Rastro de luz** (id `secuencia`; antes Secuencia Lumínica; `RastroContract` + `RastroLadder`, rehecha el 3-oct, `docs/diseno-rastro-de-luz.md`):
 los **16 niveles** de `RastroLadder` son la escalera (qué familias hay, cuántas luces pide cada una, velocidad de la chispa, espera, giro y

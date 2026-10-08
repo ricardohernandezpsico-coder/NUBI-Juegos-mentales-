@@ -479,7 +479,7 @@ fun SettingsScreen(
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
         // Rango de edad (piloto de perfiles por edad, 20-sep): chips, mismo patrón visual
-        // que el selector de idioma. Cambia el DDA/tamaño de cartas en Parejas Ocultas
+        // que el selector de idioma. Cambia el DDA en Constelaciones
         // únicamente por ahora -- el onboarding prometió "podés cambiarlo cuando
         // quieras desde Ajustes", esto cumple esa promesa.
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -510,7 +510,7 @@ fun SettingsScreen(
             }
           }
           Text(
-            text = "Por ahora ajusta la dificultad y el tamaño de las cartas en Parejas Ocultas.",
+            text = "Por ahora ajusta la dificultad de Constelaciones.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
           )

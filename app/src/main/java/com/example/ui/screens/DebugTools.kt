@@ -26,7 +26,9 @@ private data class DebugGame(
   val tutorial: Boolean = false,
   /** Abre la versión corta del inicio («Tu punto de partida»: `assessment`), con su tutorial si [tutorial]: como la primera vez. */
   val shortVersion: Boolean = false,
-  val tag: String = id
+  val tag: String = id,
+  /** Solo Constelaciones: la etapa (1..18) con que empieza el primer cielo, para ver cada grupo sin jugar hasta él. */
+  val conStage: Int = 0
 )
 
 private val DebugGames = listOf(
@@ -39,7 +41,12 @@ private val DebugGames = listOf(
   DebugGame("aterrizaje", "Aterrizaje Lunar: tutorial + versión corta (como el inicio)", level = 1, timed = false, tutorial = true, shortVersion = true, tag = "aterrizaje_inicio"),
   DebugGame("meteoros", "Lluvia de meteoros con tutorial", level = 1, timed = false, tutorial = true, tag = "meteoros_tutorial"),
   DebugGame("meteoros", "Lluvia de meteoros: tutorial + versión corta (como el inicio)", level = 1, timed = false, tutorial = true, shortVersion = true, tag = "meteoros_inicio"),
-  DebugGame("parejas", "Parejas Ocultas", level = 1, timed = false),
+  DebugGame("parejas", "Constelaciones (Reto 180 s)", level = 1, timed = true),
+  DebugGame("parejas", "Constelaciones con tutorial", level = 1, timed = false, tutorial = true, tag = "parejas_tutorial"),
+  DebugGame("parejas", "Constelaciones etapa 7 (gemelos)", level = 1, timed = false, tag = "parejas_etapa7", conStage = 7),
+  DebugGame("parejas", "Constelaciones etapa 10 (tríos)", level = 1, timed = false, tag = "parejas_etapa10", conStage = 10),
+  DebugGame("parejas", "Constelaciones etapa 13 (parejas y tríos)", level = 1, timed = false, tag = "parejas_etapa13", conStage = 13),
+  DebugGame("parejas", "Constelaciones etapa 16 (cielo grande)", level = 1, timed = false, tag = "parejas_etapa16", conStage = 16),
   DebugGame("stroop", "Tinta o Palabra (Reto 60 s)", level = 4, timed = true), // desde el nivel 4 la regla cambia
   DebugGame("calculo", "Carga exacta (Reto 120 s)", level = 1, timed = true),
   DebugGame("calculo", "Carga exacta con tutorial", level = 1, timed = false, tutorial = true, tag = "calculo_tutorial"),
@@ -90,6 +97,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
             ageBand = ageBand,
             forceTutorial = g.tutorial,
             debugOverlay = tutorialOverlay,
+            conStage = g.conStage,
             assessmentStep = if (g.shortVersion) 1 else 0,
             assessmentTotal = if (g.shortVersion) 4 else 0
           )

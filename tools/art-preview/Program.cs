@@ -53,6 +53,50 @@ internal static class Program
             for (int i = 0; i < NeuroVida.Games.Bodega.BodegaContract.ObjectCount; i++) DumpTexB("bod_obj_" + i, NeuroVida.Games.Bodega.BodegaSprites.Object(i));
         }
 
+        // Constelaciones (id parejas): los 12 objetos y los 4 gemelos, las luces y los aros (cuadrados) y un cielo de muestra jugado por un robot con memoria perfecta (constelaciones.py)
+        {
+            void DumpCon(string name, Sprite sp) => DumpRect(name, sp.texture.pixels, sp.texture.width, sp.texture.pixels.Length / sp.texture.width);
+            for (int k = 0; k < ConstelacionContract.ObjectKinds; k++)
+            {
+                DumpCon($"con_obj_{k}_0", ConstelacionSprites.Object(k, 0));
+                if (ConstelacionContract.HasTwin(k)) DumpCon($"con_obj_{k}_1", ConstelacionSprites.Object(k, 1));
+            }
+            DumpCon("con_dormant", ConstelacionSprites.Dormant());
+            DumpCon("con_open", ConstelacionSprites.Open());
+            DumpCon("con_ringmem", ConstelacionSprites.RingMemory());
+            DumpCon("con_ringnew", ConstelacionSprites.RingNew());
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            foreach (int stage in new[] { 7, 13, 18 })
+            {
+                var rng = new Random(100 + stage);
+                float h = stage == 18 ? 520f : 396f;
+                var sky = ConstelacionSky.Create(ConstelacionContract.Stage(stage), rng, ConstelacionLayout.SkyW, h);
+                // un robot que explora y recuerda hasta dejar la mitad del cielo unida y una pareja a medias abierta
+                float now = 3000f;
+                int guard = 0;
+                while (sky.GroupsFound < sky.Stage.Groups / 2 && guard++ < 500)
+                {
+                    now += 200f;
+                    var down = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(sky.Lights, l => l.State == ConState.Down));
+                    ConLight pick;
+                    if (sky.Face.Count == 0) { var fresh = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(down, l => !l.Seen)); pick = fresh.Count > 0 ? fresh[rng.Next(fresh.Count)] : down[0]; }
+                    else
+                    {
+                        var kin = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(down, l => l.Key == sky.Face[0].Key && l.Seen));
+                        if (kin.Count > 0) pick = kin[0];
+                        else { var fresh = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(down, l => !l.Seen)); pick = fresh.Count > 0 ? fresh[rng.Next(fresh.Count)] : down[0]; }
+                    }
+                    sky.Tap(pick.Id, now);
+                }
+                using var f = new StreamWriter(Path.Combine(dir, $"con_sky_{stage}.txt"));
+                f.WriteLine($"sky {ConstelacionLayout.SkyW.ToString(inv)} {h.ToString(inv)} {sky.Placement.R.ToString(inv)} {stage}");
+                foreach (var l in sky.Lights)
+                    f.WriteLine(string.Join(" ", "light", l.Id, l.Pos.X.ToString(inv), l.Pos.Y.ToString(inv), l.Kind, l.Variant, (int)l.State, (int)l.Ring, l.Seen ? 1 : 0, l.Size));
+                foreach (var k in sky.Links)
+                    f.WriteLine(string.Join(" ", "link", k.Geo.A.X.ToString(inv), k.Geo.A.Y.ToString(inv), k.Geo.B.X.ToString(inv), k.Geo.B.Y.ToString(inv), k.Geo.Cx.ToString(inv), k.Geo.Cy.ToString(inv), k.Geo.T0.ToString(inv), k.Geo.T1.ToString(inv), (int)k.Type));
+            }
+        }
+
         // Engranajes «Taller de reparación»: todos los sprites (rectangulares: -ancho, alto) y las máquinas de muestra (etapas 3, 7 y 10) para componer la lámina (engranajes.py)
         {
             var E = typeof(NeuroVida.Games.Engranajes.EngranajesContract);
@@ -136,10 +180,6 @@ internal static class Program
         foreach (ShapeKind kind in Enum.GetValues(typeof(ShapeKind)))
             for (int v = 0; v < SymbolSprite.VariantCount; v++)
                 Dump($"sym_{kind}_{v}", SymbolSprite.Get(kind, v));
-        foreach (CardSprites.Face face in Enum.GetValues(typeof(CardSprites.Face)))
-            Dump("card_" + face, CardSprites.Get(face));
-        Dump("heart_full", HeartSprite.GetFull());
-        Dump("heart_lost", HeartSprite.GetLost());
         // Rastro de luz: los 9 luceros de cristal, el disco y el aro punteados, la ✗, los 4 íconos de modo, Nubi maestra del tutorial y el tablero
         for (int i = 0; i < RastroBoard.Orbs; i++) Dump("rastro_orb_" + i, RastroSprites.Orb(i));
         Dump("rastro_disc", RastroSprites.DottedDisc());

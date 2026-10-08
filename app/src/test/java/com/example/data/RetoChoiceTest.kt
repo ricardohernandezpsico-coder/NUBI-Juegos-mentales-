@@ -30,10 +30,10 @@ class RetoChoiceTest {
   fun `todos los juegos tienen Reto y cada uno dice su duracion`() {
     for (g in GameRegistry.allGames) {
       assertTrue("${g.id} debería tener Reto (o estar en WITHOUT_RETO)", RetoChoice.supports(g.id))
-      if (g.id != "parejas") assertNotNull("${g.id} no tiene duración de Reto", RetoChoice.seconds(g.id))
+      assertNotNull("${g.id} no tiene duración de Reto", RetoChoice.seconds(g.id))
     }
-    assertNull("Parejas Ocultas no tiene duración fija", RetoChoice.seconds("parejas"))
-    assertEquals("Contra el reloj", RetoChoice.timedLabel("parejas"))
+    assertEquals("Constelaciones dura 3 min", 180, RetoChoice.seconds("parejas"))
+    assertEquals("Contra el reloj (3 min)", RetoChoice.timedLabel("parejas"))
   }
 
   @Test

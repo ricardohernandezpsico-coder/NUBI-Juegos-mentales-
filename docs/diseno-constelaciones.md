@@ -211,7 +211,7 @@ iluminan una por una y queda a la vista **qué parte del cielo armaste con tu me
 
 ## 8. Tutorial (NubiCoach, se aprende haciendo)
 
-1. **Touch** en una luz: «Toca una luz para ver qué esconde.»
+1. **Touch** en una luz: «Toca una luz para ver qué esconde»
 2. **Touch** en otra (forzada nueva y distinta): «Toca otra. Si no son iguales, se cierran.»
 3. **Touch** en una luz nueva cuya compañera es la del paso 1 (forzado): «Esta ya la viste. ¿Dónde estaba su pareja?»
    El hueco cubre todas las dormidas y acepta solo la compañera; la red de seguridad de la tarea 42 sigue vigente.
@@ -239,3 +239,24 @@ Luego, un cielo de 3 parejas que no cuenta. Las tarjetas NUEVO de gemelos, trío
 - La grilla.
 - `SymbolBank` y sus tiers, con el sol y la constelación de puntas.
 - El bono de velocidad por pareja. En Reto se mantiene el reloj de la ficha («¿Con reloj?»).
+
+## 11. Cómo quedó hecho (7-oct, tras implementarlo)
+
+Todo lo anterior se implementó. Estas son las diferencias con el boceto y lo que el documento no fijaba, con el motivo:
+
+- **La racha se ve en el indicador común del HUD** (la píldora de racha de `GameHud`), no en una píldora dorada propia «Racha de memoria ×N». Motivo: una sola pieza de racha en toda la app; la racha de memoria sí
+  tiene su propia fila en la pantalla final. *Duda abierta:* si Ricardo prefiere la píldora dorada, es un cambio chico en `UpdateHud`.
+- **Reto = 180 s en total** (6 cielos), porque §3 solo dice «el reloj de la ficha» y no da la duración. Quedó en `RetoChoice` (`parejas` → 180) y en `ConstelacionContract.RetoSeconds`.
+- **Un cielo sin oportunidades puntúa 100** (`Score`) y no se guarda como medida; así un cielo resuelto «por suerte» no castiga el puntaje de la partida.
+- **El rating guardado de la escalera vieja (10 niveles) se llevó a la nueva** con una migración de Room 12 → 13 (`ddaRating × 40/81` solo para `parejas`): sin ella, un 0,9 de antes (12 parejas) habría caído en el
+  cielo grande. Efecto visible: la barra de «avance» de Parejas de quienes ya jugaban baja una vez (el mismo nivel real vale ahora menos de la escalera); no se pierde ninguna partida.
+- **Tutorial:** se practica en un cielo compacto de 3 parejas que no cuenta; mientras dura se reservan 96 dp abajo para los controles (la fila «De memoria» y «Saltar tutorial»), y el cielo de práctica tiene la altura de
+  referencia fija. Mantiene la red de seguridad de la Tarea 42 (si el foco no avanza, el toque llega igual) y el registro `TUTORIAL`.
+- **Herramientas de prueba:** `con_stage` fuerza la etapa solo del PRIMER cielo (los siguientes los decide el motor); botones «Constelaciones etapa 7 / 10 / 13 / 16» y «Constelaciones con tutorial».
+- **Reglas que se mantienen:** el cielo completo siempre a la vez; ninguna cara reacciona al desempeño; nada depende solo del color (la línea dorada es continua y la celeste punteada, y llevan rótulo); toques de 56 dp;
+  textos de 14 dp o más; `GameClock` y `Motion` en todo el controlador.
+- **Código retirado:** `CardsGameController`, `CardsGameContract`, `CardSprites`, `LivesHud` y `HeartSprite`, la vista previa, los distractores, las 3 fallas, la grilla, `SymbolBank` y sus tiers, el bono de velocidad, y
+  `tools/art-preview/compose.py` (reemplazado por `constelaciones.py`). `SymbolSprite` se queda (lo usan otros juegos).
+- **Pruebas:** `ConstelacionContractTests` (etapas, colocación de 300 cielos de 6 a 24 luces sin violaciones, oportunidad/acierto/error, racha, trío, ruta de las líneas, medidas y telemetría),
+  `ConstelacionViewTests` (movimiento, arte, sonido, visibilidad, reglas de código) y, en la app, `ConstelacionesTest`, `ConstelacionesTelemetryTest`, `ConstelacionesRecordTest` y la migración en `MigrationTest`.
+  El smoke corre `Parejas` y `TutorialParejas` (en 3 formas de pantalla).

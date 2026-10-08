@@ -134,6 +134,7 @@ namespace NeuroVida.Games.Tests
             AssertDoesNotTouch("Games/Engranajes/EngranajesGameController.cs", "_dda", "_points", "_streak", "_bestStreak", "_resolved", "_tally", "_rocket", "_okCount",
                 "Register(", "RecordMachine(", "StartFlyer(", "PlayerPrefs", "IntroSeen(", "MarkIntroSeen(");
             AssertDoesNotTouch("Games/Bodega/BodegaGameController.cs", "_dda", "_points", "_tally", "_ordersDone", "_errs", "_bestRecord", "Register(", "RecordFound(", "RecordMiss(", "PlayerPrefs", "IntroSeen(", "MarkIntroSeen(");
+            AssertDoesNotTouch("Games/Parejas/ConstelacionGameController.Guided.cs", "_dda", "_tally", "_streak", "_bestStreak", "_bestRecord", "Register(", "PlayerPrefs", "IntroSeen(", "MarkIntroSeen(", "FinishGame(", "EndBoard(");
         }
 
         private static void AssertDoesNotTouchNoScript(string relativePath, params string[] forbidden)
@@ -150,7 +151,7 @@ namespace NeuroVida.Games.Tests
             var files = new[]
             {
                 ("Games/Secuencia/RastroGameController.cs", true), ("Games/Freno/BrakeGameController.cs", true), ("Games/Aterrizaje/LandingGameController.cs", true),
-                ("Games/Meteoros/MeteorGameController.cs", true), ("Games/Stroop/StroopGameController.cs", true), ("Games/Anagramas/PuntaGameController.cs", false), ("Games/Calculo/CalculoGameController.cs", true), ("Games/Engranajes/EngranajesGameController.cs", true), ("Games/Bodega/BodegaGameController.cs", true)
+                ("Games/Meteoros/MeteorGameController.cs", true), ("Games/Stroop/StroopGameController.cs", true), ("Games/Anagramas/PuntaGameController.cs", false), ("Games/Calculo/CalculoGameController.cs", true), ("Games/Engranajes/EngranajesGameController.cs", true), ("Games/Bodega/BodegaGameController.cs", true), ("Games/Parejas/ConstelacionGameController.Guided.cs", true)
             };
             foreach (var (file, usesCommonWait) in files)
             {
@@ -165,7 +166,7 @@ namespace NeuroVida.Games.Tests
         public void TheGuidedRound_IsReachableFromThePause_ForEveryGameWithATutorial()
         {
             // cada juego con tutorial dice cuándo «Cómo se juega» está disponible y cómo retoma su partida
-            foreach (var file in new[] { "Games/Secuencia/RastroGameController.cs", "Games/Freno/BrakeGameController.cs", "Games/Aterrizaje/LandingGameController.cs", "Games/Meteoros/MeteorGameController.cs", "Games/Anagramas/PuntaGameController.cs", "Games/Calculo/CalculoGameController.cs", "Games/Engranajes/EngranajesGameController.cs", "Games/Bodega/BodegaGameController.cs" })
+            foreach (var file in new[] { "Games/Secuencia/RastroGameController.cs", "Games/Freno/BrakeGameController.cs", "Games/Aterrizaje/LandingGameController.cs", "Games/Meteoros/MeteorGameController.cs", "Games/Anagramas/PuntaGameController.cs", "Games/Calculo/CalculoGameController.cs", "Games/Engranajes/EngranajesGameController.cs", "Games/Bodega/BodegaGameController.cs", "Games/Parejas/ConstelacionGameController.cs" })
             {
                 string text = File.ReadAllText(Path.Combine(Application.dataPath, "Scripts", file));
                 StringAssert.Contains("override bool HowToReady", text, file);

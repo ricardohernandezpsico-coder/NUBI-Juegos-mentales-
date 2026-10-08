@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
     Vista previa EXACTA del arte procedural de los juegos sin Unity: compila los generadores reales
-    (ClayRaster, SymbolSprite, CardSprites, TreasureSprites, HeartSprite, RastroSprites, NubiTeacherSprite,
+    (ClayRaster, SymbolSprite, ConstelacionSprites, BodegaSprites, RastroSprites, NubiTeacherSprite,
     MagnifierSprite, TileSprites, LunarSurfaceSprite) contra un UnityEngine mínimo
     (UnityStub.cs: Mathf, Color, Texture2D que guarda los píxeles...) y vuelca cada sprite a un .raw.
     Uso:  dotnet run (proyecto tools/art-preview), argumento: carpeta_raw
-          luego: python3 tools/art-preview/compose.py carpeta_raw [opción antes]
+          luego: py -3 tools/art-preview/<juego>.py carpeta_raw (p. ej. constelaciones.py, bodega.py)
     Si un generador nuevo usa otra API de Unity, agregarla al stub.
   -->
   <PropertyGroup>
@@ -26,8 +26,11 @@
     <Compile Include="$(Src)/Bodega/BodegaLayout.cs" />
     <Compile Include="$(Src)/Bodega/BodegaSprites.cs" />
     <Compile Include="$(Src)/Parejas/SymbolSprite.cs" />
-    <Compile Include="$(Src)/Parejas/CardSprites.cs" />
-    <Compile Include="$(Src)/Secuencia/HeartSprite.cs" />
+    <Compile Include="$(Src)/Parejas/ConstelacionContract.cs" />
+    <Compile Include="$(Src)/Parejas/ConstelacionLayout.cs" />
+    <Compile Include="$(Src)/Parejas/ConstelacionSky.cs" />
+    <Compile Include="$(Src)/Parejas/ConstelacionSprites.cs" />
+    <Compile Include="$(Src)/../Contracts/CardsTelemetry.cs" />
     <Compile Include="$(Src)/Secuencia/TileSprites.cs" />
     <Compile Include="$(Src)/Secuencia/TilePalette.cs" />
     <Compile Include="$(Src)/Shared/LunarSurfaceSprite.cs" />

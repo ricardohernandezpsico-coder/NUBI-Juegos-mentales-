@@ -464,6 +464,28 @@ enfermedades; al pie va la nota común «No es un diagnóstico».
   codificación (Bower, 1970).
 - La medida no se compara con estudios: no hay una referencia con esta misma condición (objetos propios, esclusa, cajas y giro).
 
+## Constelaciones (id `parejas`; antes Parejas Ocultas, rehecho el 7-oct): "Tu memoria de lugar"
+
+**Qué mide, de verdad:** de las veces que, al abrir una luz, **ya habías visto a su compañera** (una oportunidad de memoria), cuántas fuiste **directo a ella**. Es memoria de lugar: saber dónde quedó cada objeto en un cielo que
+tienes siempre a la vista. Lo que se encuentra por suerte (la luz era nueva y la compañera apareció a la primera vista) **no cuenta**: ni como acierto ni como error. Por eso la medida separa memoria de azar, que es lo que
+el simple «cuántas parejas hiciste» no hace. Se guarda como medida propia (`place`, % de oportunidades en que fuiste directo) y también por separado los aciertos y las oportunidades. Una partida sin oportunidades
+(el cielo se resolvió sin tener que recordar) muestra «—» y **no se guarda**: no es una mala partida, es una sin datos. Comparable solo entre partidas a tu medida y de etapa parecida (el nivel sube cuando aciertas: la
+medida depende del nivel; la escalera tiene 18 etapas en 6 grupos: parejas, cielo más lleno, gemelos, tríos, parejas y tríos juntos, cielo grande).
+Acompañan: **parejas de memoria** (los grupos con al menos una línea dorada sobre los encontrados), **tu racha de memoria más larga** y **tu mejor racha** (el récord; se guarda en `constelaciones_record`, que va en el
+respaldo, y solo sube). Los datos de telemetría (vueltas inútiles, turnos) se leen pero no se muestran como juicio.
+
+**Cómo se lee:** la cifra grande es el %, y debajo «X de Y veces fuiste directo a una pareja que ya habías visto». Los gemelos (objetos casi iguales, con un rasgo grande de forma) piden distinguir lo visto de algo muy
+parecido. Nada apura ni castiga dentro de un cielo (no usa tiempo de reacción; a las personas mayores los tiempos de mirar les duran ×1,35). El consejo, cuando alguna vez se te escapó una compañera ya vista, es concreto:
+«Truco: da vuelta primero una luz nueva» (abrir primero una luz nueva rinde más información que repetir una que ya conoces). Ninguna cara reacciona a cómo juegas. Nunca se dice que el juego previene el deterioro ni
+se nombran enfermedades; al pie va la nota común «No es un diagnóstico» y «Lo encontrado por suerte no cuenta».
+
+**Por qué (PubMed, revisado el 7-oct; detalle en `docs/diseno-constelaciones.md` §2):**
+- El juego de parejas como prueba: de una partida se sacan indicadores distintos (cuánta información se recoge, cuánta se pierde y errores de lugar) (Schumann-Hengsteler, 1996). De ahí la separación entre memoria y azar.
+- Con la edad cae más la memoria de las **uniones** (objeto-lugar, parejas de objetos) que la de los objetos sueltos: metaanálisis de 90 estudios, unas 6.400 personas (Old y Naveh-Benjamin, 2008). Es lo que se mide.
+- Distinguir lo visto de algo muy parecido (gemelos) depende del hipocampo y también cae con la edad (Stark y Stark, 2017; Stark et al., 2015). En mayores parte de la dificultad es de la vista (Davidson et al., 2019):
+  por eso el rasgo que distingue a los gemelos es **grande y de forma** (anillo, llama, patas, antena), nunca un tono parecido ni un detalle diminuto.
+- La medida no se compara con estudios: no hay una referencia con esta misma condición (cielo siempre a la vista, objetos propios, líneas de memoria).
+
 ## Referencias
 
 - Alvarez, G. A., y Franconeri, S. L. (2007). How many objects can you track? *Journal of Vision*, 7(13):14.
@@ -555,3 +577,8 @@ enfermedades; al pie va la nota común «No es un diagnóstico».
   - Janzen et al. (2020), un punto de referencia ayuda a reorientarse: https://doi.org/10.3389/fnhum.2020.00121
   - Chen et al. (2022), entrenamiento con estrategias, g ≈ 0,41 (https://doi.org/10.1037/pag0000712), y Verhaeghen et al. (1992), g ≈ 0,42 meses después (https://doi.org/10.1037//0882-7974.7.2.242)
   - Borella et al. (2019), memoria de trabajo en personas de 75 a 85 años: https://doi.org/10.1016/j.jagp.2019.01.210
+  - Schumann-Hengsteler, R. (1996). El juego de parejas («Concentration») como tarea de memoria visual y de lugar. *Journal of Genetic Psychology*: https://doi.org/10.1080/00221325.1996.9914847
+  - Old, S. R., y Naveh-Benjamin, M. (2008). Differential effects of age on item and associative measures of memory: a meta-analysis. *Psychology and Aging*, 23(1), 104–118: https://doi.org/10.1037/0882-7974.23.1.104
+  - Stark, S. M., y Stark, C. E. L. (2017). Age-related deficits in the mnemonic similarity task for objects and scenes. *Behavioural Brain Research*, 333, 109–117: https://doi.org/10.1016/j.bbr.2017.06.049
+  - Stark, S. M., et al. (2015). Distinguir lo visto de algo muy parecido depende del hipocampo. *Behavioral Neuroscience*: https://doi.org/10.1037/bne0000055
+  - Davidson, et al. (2019). Parte de la dificultad con objetos parecidos, en mayores, es de la vista. *Journals of Gerontology B*: https://doi.org/10.1093/geronb/gby130

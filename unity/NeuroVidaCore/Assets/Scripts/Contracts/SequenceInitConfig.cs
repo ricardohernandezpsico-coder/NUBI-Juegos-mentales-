@@ -72,6 +72,10 @@ namespace NeuroVida.Contracts
         /// <summary>Solo «Bodega de carga» (id <c>bodega</c>): el récord de la persona, la bodega más grande (en objetos) que recordó sin errores. La app lo guarda (es progreso: va en el respaldo), lo manda
         /// aquí y Unity devuelve el nuevo al terminar (<c>bod_best</c> en la telemetría).</summary>
         public int bod_best;
+        /// <summary>Solo «Constelaciones» (id <c>parejas</c>): el récord «mejor racha» (la racha de memoria más larga de siempre; es progreso: la app lo guarda, lo manda aquí y Unity devuelve el nuevo en <c>con_best</c>) y, solo desde los
+        /// botones [Debug] de la app, la etapa (1..18) con que empieza la partida (0 = la de siempre).</summary>
+        public int con_best;
+        public int con_stage;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;

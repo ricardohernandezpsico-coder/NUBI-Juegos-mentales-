@@ -27,6 +27,7 @@ achicándose si no cabía. Esto es el arreglo de sistema (no un parche por juego
 | En la punta de la lengua (`anagramas`) | la tarjeta de la definición (pasos «¡La tengo!», letras y «Una ayuda»; en el primero ES el hueco) |
 | Engranajes (`engranajes`) | la antena (que se ve en los tres pasos) y, en el último, el cartel de la antena |
 | Bodega de carga (`bodega`) | la tarjeta de arriba (en todos los pasos); el hueco es el área de la bodega (sin el borde del casco: así queda lugar para Nubi) en los pasos de explicar, mirar y «así quedó la carga», y al tocar, la escotilla pedida. Durante el tutorial el carro no lleva textos. Orden: explicar → mirar → hacer (6-oct) |
+| Constelaciones (`parejas`, 7-oct) | la tarjeta de arriba (en los pasos de tocar) y la fila «De memoria» de abajo (la ve el último paso). Se practica en un cielo compacto de 3 parejas que no cuenta; el hueco es la luz pedida (un círculo un poco mayor que ella) o, en el paso de la pareja, todas las luces dormidas (solo vale la compañera). Con el tutorial se reservan 96 dp abajo para los controles. 5 pasos: tocar una luz → tocar otra (no son iguales: se cierran) → «Esta ya la viste» → línea dorada → fila «De memoria» |
 | Freno de emergencia (`freno`) y Lluvia de meteoros (`meteoros`) | ninguna declarada: el hueco es lo único de lo que habla el texto; lo demás lo respeta la detección automática |
 
 ## Textos (todos en `CoachTexts.cs`)

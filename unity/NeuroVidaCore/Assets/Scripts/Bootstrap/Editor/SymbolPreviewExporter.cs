@@ -8,12 +8,12 @@ namespace NeuroVida.Bridge.EditorTools
 {
     /// <summary>
     /// Herramienta de desarrollo: vuelca a PNG las hojas de contacto de los íconos y las
-    /// cartas de Parejas Ocultas (generados por código, sin assets) para poder revisarlos
-    /// a ojo sin instalar la app en el dispositivo. No forma parte del build.
+    /// fichas (generados por código, sin assets) para poder revisarlos a ojo sin instalar la
+    /// app en el dispositivo. No forma parte del build.
     ///
     /// Unity.exe -batchmode -nographics -quit -projectPath &lt;path&gt;
     ///   -executeMethod NeuroVida.Bridge.EditorTools.SymbolPreviewExporter.Export
-    /// Salida: unity/test-results/preview-symbols.png y preview-cards.png
+    /// Salida: unity/test-results/preview-symbols.png y preview-tiles.png
     /// </summary>
     public static class SymbolPreviewExporter
     {
@@ -23,8 +23,6 @@ namespace NeuroVida.Bridge.EditorTools
             Directory.CreateDirectory(outDir);
 
             ExportSymbols(Path.Combine(outDir, "preview-symbols.png"));
-            ExportCards(Path.Combine(outDir, "preview-cards.png"));
-            ExportHearts(Path.Combine(outDir, "preview-hearts.png"));
             ExportTiles(Path.Combine(outDir, "preview-tiles.png"));
             Debug.Log("[SymbolPreview] OK -> " + outDir);
         }
@@ -48,43 +46,6 @@ namespace NeuroVida.Bridge.EditorTools
                 }
             }
             Save(sheet, width, height, path);
-        }
-
-        private static void ExportCards(string path)
-        {
-            const int cell = 256;
-            var faces = new[] { CardSprites.Face.Back, CardSprites.Face.Front, CardSprites.Face.Matched };
-            int width = (faces.Length + 2) * cell;
-            var sheet = NewSheet(width, cell, new Color32(0x0F, 0x17, 0x2A, 255));
-
-            for (int i = 0; i < faces.Length; i++)
-            {
-                Blit(sheet, width, CardSprites.Get(faces[i]).texture, i * cell, 0, cell, cell);
-            }
-
-            // Cartas con un ícono encima (frente y pareja resuelta), como se ven en el juego.
-            int iconX = (int)(cell * 0.10f);
-            int iconY = (int)(cell * 0.16f);
-            int iconW = (int)(cell * 0.80f);
-            int iconH = (int)(cell * 0.76f);
-            Blit(sheet, width, CardSprites.Get(CardSprites.Face.Front).texture, 3 * cell, 0, cell, cell);
-            Blit(sheet, width, SymbolSprite.Get(ShapeKind.Planet, 0).texture, 3 * cell + iconX, iconY, iconW, iconH);
-            Blit(sheet, width, CardSprites.Get(CardSprites.Face.Matched).texture, 4 * cell, 0, cell, cell);
-            Blit(sheet, width, SymbolSprite.Get(ShapeKind.Rocket, 0).texture, 4 * cell + iconX, iconY, iconW, iconH);
-
-            Save(sheet, width, cell, path);
-        }
-
-        private static void ExportHearts(string path)
-        {
-            const int cell = 128;
-            int width = 3 * cell;
-            var sheet = NewSheet(width, cell, new Color32(0x0F, 0x17, 0x2A, 255));
-            Blit(sheet, width, HeartSprite.GetFull().texture, 0, 0, cell, cell);
-            Blit(sheet, width, HeartSprite.GetLost().texture, cell, 0, cell, cell);
-            Blit(sheet, width, HeartSprite.GetFull().texture, 2 * cell, 0, cell / 2, cell / 2);
-            Blit(sheet, width, HeartSprite.GetLost().texture, 2 * cell + cell / 2, 0, cell / 2, cell / 2);
-            Save(sheet, width, cell, path);
         }
 
         private static void ExportTiles(string path)

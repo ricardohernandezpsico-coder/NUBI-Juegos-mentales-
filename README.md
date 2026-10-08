@@ -58,7 +58,7 @@ Los marcados con ★ son **juegos estrella**: además del puntaje, al final mues
 | Juego | Área | Qué hace |
 |---|---|---|
 | Secuencia Lumínica | Memoria | Repetir secuencias de fichas que se encienden, cada vez más largas |
-| Parejas Ocultas | Memoria | Memorizar un tablero de cartas y encontrar las parejas |
+| Constelaciones ★ | Memoria | Abrir luces de un cielo nocturno y encontrar sus parejas (y tríos) de memoria: la línea dorada marca las que fuiste directo a buscar |
 | Rumbo a Casa ★ | Memoria | Volver a la base sin verla, sabiendo solo el camino que hiciste |
 | Correo Estelar ★ | Memoria | Acordarte de entregar un encargo o avisar por radio en el momento justo, mientras vuelas |
 | Bodega de carga ★ | Memoria | Recordar dónde guardó cada cosa el robot en una bodega redonda: la carga entra por la esclusa, a veces cambia una caja de lugar y a veces la bodega gira |

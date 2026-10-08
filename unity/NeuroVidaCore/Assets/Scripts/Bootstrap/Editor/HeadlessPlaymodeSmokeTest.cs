@@ -54,6 +54,9 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>«Engranajes» (id engranajes) con su tutorial guiado: la tarjeta de Nubi y una máquina fácil con tres focos (la flecha del motor, la pieza de la pregunta y el botón correcto).</summary>
         public static void RunTutorialEngranajes() => RunGame("engranajes", 12f, tutorial: true);
 
+        /// <summary>«Constelaciones» (id parejas) con su tutorial guiado: la tarjeta de Nubi, una luz, otra distinta, la pareja de la primera (el hueco cubre todas las dormidas), la línea dorada y la fila «De memoria».</summary>
+        public static void RunTutorialParejas() => RunGame("parejas", 12f, tutorial: true);
+
         /// <summary>«Bodega de carga» (id bodega) con su tutorial guiado: la tarjeta de Nubi, la carga que entra por la esclusa y el robot la guarda, el toque en la escotilla pedida y un error de muestra.</summary>
         public static void RunTutorialBodega() => RunGame("bodega", 12f, tutorial: true);
 
@@ -117,8 +120,8 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Mismo smoke test pero con Correo Estelar como juego.</summary>
         public static void RunCorreo() => RunGame("correo", 9f);
 
-        /// <summary>Mismo smoke test pero con Parejas Ocultas como juego.</summary>
-        public static void RunParejas() => RunGame("parejas", 9f);
+        /// <summary>Mismo smoke test pero con «Constelaciones» (id parejas) como juego (se juega sola: explora, recuerda y de vez en cuando se le escapa una compañera).</summary>
+        public static void RunParejas() => RunGame("parejas", 30f);
 
         // ------------------------------------------------------------------ encadenado en UN solo proceso de Unity
 
@@ -126,10 +129,10 @@ namespace NeuroVida.Bridge.EditorTools
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
-            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
             ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 24f), ("Bodega", "bodega", 30f), ("Anagramas", "anagramas", 9f),
-            ("Parejas", "parejas", 9f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
+            ("Parejas", "parejas", 30f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
             ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f),
             ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 9f), ("Meteoros", "meteoros", 9f),
             ("Disparate", "disparate", 9f), ("Cosecha", "cosecha", 9f), ("Intrusa", "intrusa", 9f),
@@ -239,7 +242,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "Engranajes" || _current.Name == "Bodega";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
 
@@ -427,7 +430,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.AssessmentOverride = assessment;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = (gameId == "engranajes" || gameId == "bodega") && !tutorial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = (gameId == "engranajes" || gameId == "bodega" || gameId == "parejas") && !tutorial;
             EditorPlaytestBootstrap.GameIdOverride = gameId;
             EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
             EditorSceneManager.OpenScene(ScenePath);

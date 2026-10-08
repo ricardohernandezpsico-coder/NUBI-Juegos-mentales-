@@ -15,7 +15,7 @@ import com.example.BuildConfig
     DomainMasteryEntity::class,
     ClaimedWeeklyChallengeEntity::class
   ],
-  version = 12,
+  version = 13,
   exportSchema = true
 )
 abstract class NeuroVidaDatabase : RoomDatabase() {
@@ -60,6 +60,13 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
             db.execSQL("UPDATE domain_mastery SET xp = xp + (SELECT xp FROM domain_mastery WHERE domain='$old') WHERE domain='$new' AND EXISTS (SELECT 1 FROM domain_mastery WHERE domain='$old')")
             db.execSQL("DELETE FROM domain_mastery WHERE domain='$old'")
           }
+        }
+      },
+      // 12 -> 13 (7-oct): Parejas Ocultas se renovó como «Constelaciones» y su escalera pasó de 10 a 18 etapas. El rating guardado (0..1) de quienes ya jugaban se lleva a la escala nueva para que partan en una etapa
+      // equivalente (ratio 40/81; la cuenta está en data/Constelaciones.translateOldRating). Sin dato (-1) no se toca. El esquema no cambia.
+      object : androidx.room.migration.Migration(12, 13) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+          db.execSQL("UPDATE game_progress SET ddaRating = ddaRating * 40.0 / 81.0 WHERE gameId = 'parejas' AND ddaRating >= 0")
         }
       }
     )

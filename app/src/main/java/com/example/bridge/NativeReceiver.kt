@@ -82,7 +82,19 @@ object NativeReceiver {
     val end_rating: Double? = null,
     val peak_level: Int = 0,
     val mode_trials: Int = 0,
-    val mode_hits: Int = 0
+    val mode_hits: Int = 0,
+    // «Constelaciones» (id parejas desde el 7-oct): aciertos de memoria y oportunidades, grupos encontrados y de memoria, racha, vueltas inútiles,
+    // turnos, grupo de etapa más alto, récord (mejor racha) y si esta partida lo superó. -1 = una versión vieja de Unity no los manda (Parejas Ocultas).
+    val con_hits: Int = -1,
+    val con_opps: Int = -1,
+    val con_groups: Int = -1,
+    val con_mem_groups: Int = -1,
+    val con_best_streak: Int = -1,
+    val con_useless: Int = -1,
+    val con_turns: Int = -1,
+    val con_group: Int = -1,
+    val con_best: Int = -1,
+    val con_new: Int = 0
   )
 
   @JsonClass(generateAdapter = true)
@@ -420,22 +432,32 @@ object NativeReceiver {
     val telemetry = try {
       cardsAdapter.fromJson(json)
     } catch (e: Exception) {
-      Log.e(TAG, "JSON de telemetría de Parejas Ocultas inválido: $json", e)
-      ErrorLog.record("RESULTADO", "Una partida de Parejas Ocultas no se guardó: resultado ilegible. $json", e)
+      Log.e(TAG, "JSON de telemetría de Constelaciones inválido: $json", e)
+      ErrorLog.record("RESULTADO", "Una partida de Constelaciones no se guardó: resultado ilegible. $json", e)
       null
     } ?: return null
 
     val metrics = telemetry.session_metrics
+    // Constelaciones manda sus aciertos de memoria y oportunidades; una versión vieja (Parejas Ocultas) solo parejas e intentos.
+    val renewed = metrics.con_hits >= 0 && metrics.con_opps >= 0
     return GamePlayResult(
       gameId = telemetry.game_id,
       score = metrics.calculated_score.coerceIn(0, 100),
-      correctAnswers = metrics.matched_pairs,
-      totalTrials = metrics.attempts,
+      correctAnswers = if (renewed) metrics.con_hits else metrics.matched_pairs,
+      totalTrials = if (renewed) metrics.con_opps else metrics.attempts,
       timed = metrics.timed,
       level = metrics.level,
       endRating = metrics.end_rating?.toFloat(),
       modeTrials = metrics.mode_trials,
-      modeHits = metrics.mode_hits
+      modeHits = metrics.mode_hits,
+      conGroups = metrics.con_groups.takeIf { renewed && it >= 0 },
+      conMemGroups = metrics.con_mem_groups.takeIf { renewed && it >= 0 },
+      conBestStreak = metrics.con_best_streak.takeIf { renewed && it >= 0 },
+      conUseless = metrics.con_useless.takeIf { renewed && it >= 0 },
+      conTurns = metrics.con_turns.takeIf { renewed && it >= 0 },
+      conGroup = metrics.con_group.takeIf { renewed && it >= 1 },
+      conBest = metrics.con_best.takeIf { renewed && it >= 0 },
+      conNewRecord = metrics.con_best.takeIf { renewed && it >= 0 }?.let { metrics.con_new == 1 }
     )
   }
 

@@ -179,7 +179,8 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`engranajes.png`](engranajes.png): «Engranajes: Taller de reparación» (5-oct): tres pantallas (etapas 3, 7 y 10) compuestas con los sprites REALES y máquinas del generador real: la máquina recién armada con sus carteles, un cambio
   equivocado (carteles verde y coral, en celeste lo que movió el cambio y en dorado lo que había que tocar) y dos cambios con todo en verde (réplica, no captura). Script: `tools/art-preview/engranajes.py`.
 - [`engranajes-taller-boceto.html`](engranajes-taller-boceto.html): el boceto jugable aprobado del Taller (con `?etapa=N` se entra a cada etapa).
-- [`simbolos-neutros.png`](simbolos-neutros.png): los símbolos neutros del 4-oct (puertos, cartas de Parejas, señales de Piloto). Script: `tools/art-preview/simbolos_neutros.py`.
+- [`constelaciones.png`](constelaciones.png): «Constelaciones» (7-oct): los 12 objetos y los 4 gemelos del arte real, las luces dormidas y abiertas, la línea dorada y la celeste punteada, y el aro de memoria / de luz nueva. Script: `tools/art-preview/constelaciones.py`.
+- [`simbolos-neutros.png`](simbolos-neutros.png): los símbolos neutros del 4-oct (puertos, cartas de Parejas Ocultas —ya retiradas—, señales de Piloto). Script: `tools/art-preview/simbolos_neutros.py`.
 
 ## Bienvenida, resultados, logros y compartir
 
@@ -194,5 +195,5 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 
 ## tutoriales/ (5-oct)
 
-`docs/previews/tutoriales/<juego>-paso<N>.png`: una lámina por paso del tutorial con Nubi de 7 juegos (anagramas, aterrizaje, calculo, freno, meteoros, secuencia, stroop), en 20:9.
+`docs/previews/tutoriales/<juego>-paso<N>.png`: una lámina por paso del tutorial con Nubi de 8 juegos (anagramas, aterrizaje, calculo, freno, meteoros, parejas, secuencia, stroop), en 20:9.
 NO son capturas (el smoke de Unity corre sin gráficos): se arman con los rectángulos reales que registra `NubiCoach` en cada paso (`python tools/coach-preview/tutoriales.py`). Ver `docs/tutoriales-con-nubi.md`.

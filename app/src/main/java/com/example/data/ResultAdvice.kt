@@ -83,6 +83,8 @@ object ResultAdvice {
     if (result.engrEtapa != null) out += tipOf(Engranajes.tip(result.correctAnswers, result.totalTrials) ?: "")
     // Bodega de carga: cuando algún objeto no se encontró al primer intento, imaginarlo dentro de su escotilla.
     if (result.bodGroup != null) out += tipOf(Bodega.tip(result.correctAnswers, result.totalTrials) ?: "")
+    // Constelaciones: cuando alguna vez se te escapó una compañera ya vista, dar vuelta primero una luz nueva.
+    if (result.conGroup != null) out += tipOf(Constelaciones.tip(result.correctAnswers, result.totalTrials) ?: "")
     // Rumbo a Casa: de dónde sale lo que te aleja de casa.
     val along = result.homingAlong
     val lateral = result.homingLateral

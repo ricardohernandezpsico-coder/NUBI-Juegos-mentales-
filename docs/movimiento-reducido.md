@@ -42,7 +42,6 @@ Con «quitar animaciones» activo:
 | `PhasePill` | El texto nuevo entra con fundido (0,35 → 1 en 160 ms), sin rebote. |
 | `ProgressDots` | El punto pasa a verde/rojo con fundido de color, sin pop. |
 | `GameHud` | `CountUp`: número final de una vez. `LevelUpGlow`: el chip queda resaltado (estático) 0,45 s y vuelve con fundido. Racha: sin pop (y sin chispas, por `UiFx`). |
-| `LivesHud` | El corazón se apaga con fundido (alfa 1 → 0,2, cambia al corazón vacío, 0,2 → 1), sin salto ni tambaleo. |
 | `GameControllerBase.Flash` | Tinte con alfa ≤ 0,15 y fundido ≤ 0,2 s. |
 | `GameControllerBase.AnimateResult` | Panel con fundido de opacidad y puntaje final de una vez (sin rebote ni cuenta). |
 | `FinishCurtain` | «¡Listo!» y subtítulo con fundido, sin chispas, rebote ni hiperespacio; misma duración (≈1,2 s). |
@@ -129,16 +128,19 @@ Lo clasifiqué leyendo las líneas clave y el comentario de cada rutina, no cada
 
 Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 
-**Parejas Ocultas** — `Parejas/CardsGameController.cs`
+**Constelaciones** (antes Parejas Ocultas, rehecha el 7-oct) — `Parejas/ConstelacionGameController*.cs` y `ConstelacionMotion.cs`
 
-| Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
-|---|---|---|---|---|---|
-| 220-247 `AnimateBoardOut` | El tablero se encoge y gira 25° al cambiar de etapa | DECORATIVA | no | Cambio inmediato | ✓ |
-| 887-902 `AnimateDealIn` (`EaseOutBack` propio, 561) | Las cartas se reparten con rebote | DECORATIVA | no | Aparecen a escala 1 | ✓ |
-| 936 `AnimateMatchPop` | Pulso +16 % al emparejar | DECORATIVA (comunica) | no | Sin pulso; la carta ya cambia de estado | ✓ |
-| 965 `AnimateWobble` | Tambaleo ±9° al fallar | DECORATIVA (comunica) | no | Sin giro; las cartas se voltean igual | ✓ |
-| 1011-1026 `AnimateFlip` | La carta gira (escala X 1→0→1) | DECORATIVA (la exposición sí es la tarea) | no | Fundido entre dorso y cara con LA MISMA duración (2 × `FlipHalfSeconds`): el tiempo que la carta se ve no cambia | ✓ |
-| 210-211 | `RingBurst`, `SparkBurst` | DECORATIVA | sí (común) | — | — |
+| Qué | Qué hace | Clase | Cambio con «quitar animaciones» |
+|---|---|---|---|
+| Las luces aparecen (escalonadas, 45 ms) | Crecen con un pequeño rebote | DECORATIVA | Aparecen de una vez, en el mismo orden y tiempo |
+| El volteo de la luz | Resortes: abrir 2,6/0,72 (con rebote), cerrar 3,6/0,95 | DECORATIVA (comunica) | Cambio inmediato dormida ↔ abierta; **el tiempo que la luz queda abierta no cambia** (850 ms o hasta tocar otra) |
+| Pulso al tocar | La luz se encoge un poco al presionarla | DECORATIVA | Sin pulso |
+| Las luces se van al terminar el cielo | Se encogen | DECORATIVA | Desaparecen de una vez (espera mínima) |
+| Líneas doradas / celestes | Se trazan; el brillo de 1,1 s tras 380 ms | DECORATIVA (comunica) | La línea ya está trazada; el brillo y el hilo punteado se muestran igual |
+| Rótulos flotantes («¡De memoria!», «¡Falta la tercera!») | Suben mientras se desvanecen | DECORATIVA (comunica) | Sin subir, solo fundido |
+| Chispas | Salen de la pareja encontrada | DECORATIVA | No se emiten |
+| Tarjeta «NUEVO» | Fundido de 0,35 s; «toca para seguir» parpadea | DECORATIVA (comunica) | Aparece de una vez y sin parpadeo |
+| Pausa entre cielos | 2,6 s | — | 1,8 s (sin animación que esperar) |
 
 **Ruta del Tesoro (RETIRADA el 4-oct; su tabla queda como historia)** — `RutaTesoro/TreasureGameController.cs`
 

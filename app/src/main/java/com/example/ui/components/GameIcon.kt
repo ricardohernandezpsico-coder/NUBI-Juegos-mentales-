@@ -41,7 +41,7 @@ import kotlin.math.sin
  * no combinan con el estilo y no dicen nada de la mecánica (ui-ux-pro-max: "no emoji as icons"). Cada ícono
  * sale de lo que se hace en el juego:
  * - Rastro de luz (id «secuencia»): tres luceros de cristal unidos por el rastro de la chispa.
- * - Parejas Ocultas: una carta boca abajo y otra dada vuelta.
+ * - Constelaciones (id parejas): dos luces encendidas unidas por una línea dorada y dos dormidas.
  * - Tinta o Palabra: gota de tinta y tarjeta con palabra.
  * - Anagramas: dos fichas de letras.
  * - Carga exacta (id «calculo»): un reactor de arcilla con su aro de luces y tres celdas de energía debajo.
@@ -102,14 +102,16 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawCircle(Color.White, 4.6f, Offset(71f, 33f))
     }
     "parejas" -> {
-      rotate(-12f, Offset(36f, 52f)) {
-        clay(roundRect(14f, 20f, 42f, 60f, 8f), Clay.Grape)
-        clay(diamond(Offset(35f, 50f), 10f, 14f), Cream, border = 3.5f, shadow = false)
-      }
-      rotate(10f, Offset(64f, 48f)) {
-        clay(roundRect(42f, 16f, 42f, 60f, 8f), Cream)
-        clay(circle(Offset(63f, 46f), 13f), Clay.Coral, border = 4f, shadow = false)
-      }
+      // Dos luces encendidas (una pareja encontrada de memoria) unidas por una línea dorada, y dos dormidas.
+      val a = Offset(28f, 66f)
+      val b = Offset(70f, 30f)
+      drawLine(Clay.Sun, a, b, 5f, StrokeCap.Round)
+      clay(circle(Offset(72f, 72f), 12f), Clay.Grape)
+      clay(circle(Offset(26f, 28f), 12f), Clay.Grape)
+      clay(circle(a, 14f), Clay.Sky, gloss = true)
+      clay(circle(b, 14f), Clay.Sky, gloss = true)
+      drawCircle(Color.White, 4.2f, Offset(a.x - 4f, a.y - 4f))
+      drawCircle(Color.White, 4.2f, Offset(b.x - 4f, b.y - 4f))
     }
     "stroop" -> {
       clay(roundRect(34f, 50f, 54f, 34f, 9f), Cream)

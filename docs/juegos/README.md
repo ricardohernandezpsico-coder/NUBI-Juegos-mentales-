@@ -29,6 +29,7 @@ Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ri
 - [Acoplamiento](acoplamiento.md)
 - [Engranajes](../diseno-engranajes.md)
 - [Bodega de carga](../diseno-bodega-de-carga.md)
+- [Constelaciones](../diseno-constelaciones.md) (antes Parejas Ocultas; renovado el 7-oct, conserva el id `parejas`)
 - [Bitácora de Misión](bitacora.md) (retirada el 5-oct: ver `descartados.md`)
 - [Rumbo a Casa](rumbo.md)
 - [Correo Estelar](correo.md)

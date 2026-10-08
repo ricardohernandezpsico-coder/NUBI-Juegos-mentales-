@@ -99,6 +99,16 @@ namespace NeuroVida.Games.Shared
             public const string Wrong = "Si fallas, se abre la correcta y aprendes";
         }
 
+        /// <summary>Constelaciones (pantalla: el cielo de luces, la tarjeta de arriba y la fila «De memoria» de abajo).</summary>
+        public static class Constelaciones
+        {
+            public const string First = "Toca una luz para ver qué esconde";
+            public const string Second = "Toca otra. Si no son iguales, se cierran";
+            public const string Partner = "Esta ya la viste. ¿Dónde estaba su pareja?";
+            public const string GoldLine = "Línea dorada: la encontraste de memoria";
+            public const string Row = "Aquí se cuenta cuántas veces fuiste directo";
+        }
+
         /// <summary>Todos los textos (con el peor caso de los que cambian según la jugada) para comprobar que caben en el globo.</summary>
         public static IEnumerable<(string Game, string Step, string Text)> All()
         {
@@ -146,6 +156,11 @@ namespace NeuroVida.Games.Shared
             yield return ("engranajes", "motor", Engranajes.Motor);
             yield return ("engranajes", "arrancar", Engranajes.Start);
 
+            yield return ("parejas", "primera luz", Constelaciones.First);
+            yield return ("parejas", "otra luz", Constelaciones.Second);
+            yield return ("parejas", "su pareja", Constelaciones.Partner);
+            yield return ("parejas", "línea dorada", Constelaciones.GoldLine);
+            yield return ("parejas", "de memoria", Constelaciones.Row);
             yield return ("bodega", "empezar", Bodega.Begin);
             yield return ("bodega", "esclusa", Bodega.Watch);
             yield return ("bodega", "así quedó", Bodega.Reveal);

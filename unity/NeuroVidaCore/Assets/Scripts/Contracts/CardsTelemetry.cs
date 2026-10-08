@@ -40,5 +40,23 @@ namespace NeuroVida.Contracts
         /// un Experto se superó (<c>Skill.passed</c>).</summary>
         public int mode_trials;
         public int mode_hits;
+
+        // ---- «Constelaciones» (id parejas desde el 7-oct; docs/diseno-constelaciones.md §7). -1 = sin dato (una versión vieja de Unity no manda nada de esto).
+        /// <summary>Aciertos de memoria y oportunidades de toda la partida: «Memoria de lugar» = con_hits / con_opps.</summary>
+        public int con_hits = -1;
+        public int con_opps = -1;
+        /// <summary>Grupos encontrados y los que tienen al menos una línea dorada (de memoria).</summary>
+        public int con_groups = -1;
+        public int con_mem_groups = -1;
+        /// <summary>Racha de memoria más larga de la partida.</summary>
+        public int con_best_streak = -1;
+        /// <summary>Vueltas inútiles (una luz ya vista que no era compañera, sin oportunidad) y turnos.</summary>
+        public int con_useless = -1;
+        public int con_turns = -1;
+        /// <summary>Grupo de etapas más alto alcanzado (1..6).</summary>
+        public int con_group = -1;
+        /// <summary>El récord «mejor racha» (el guardado o el de esta partida, el mayor) y 1 si esta partida lo superó.</summary>
+        public int con_best = -1;
+        public int con_new;
     }
 }

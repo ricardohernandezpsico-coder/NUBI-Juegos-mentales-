@@ -264,10 +264,10 @@ fun getGameTitle(gameId: String, lang: AppLanguage, defaultTitle: String): Strin
       else -> defaultTitle
     }
     "mem_parejas" -> when (lang) {
-      AppLanguage.ENGLISH -> "Card Pairs"
-      AppLanguage.FRENCH -> "Paires de Cartes"
-      AppLanguage.GERMAN -> "Kartenpaare"
-      AppLanguage.PORTUGUESE -> "Pares de Cartas"
+      AppLanguage.ENGLISH -> "Constellations"
+      AppLanguage.FRENCH -> "Constellations"
+      AppLanguage.GERMAN -> "Sternbilder"
+      AppLanguage.PORTUGUESE -> "Constelações"
       else -> defaultTitle
     }
     "atn_stroop" -> when (lang) {

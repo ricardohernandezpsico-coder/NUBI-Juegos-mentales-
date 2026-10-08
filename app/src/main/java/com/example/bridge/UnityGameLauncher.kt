@@ -21,7 +21,7 @@ object UnityGameLauncher {
 
   /** Juegos con tutorial guiado (ronda guiada propia) y «Cómo se juega» en la pausa. Rastro de luz fue el primero; Freno, Aterrizaje y Meteoros se sumaron el 3-oct
    *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
-  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega")
+  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas")
 
   /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
   fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =
@@ -59,6 +59,10 @@ object UnityGameLauncher {
     val engr_orbit: Int = 0,
     // Solo «Bodega de carga»: el récord de la persona (la bodega más grande que recordó sin errores, en objetos): es progreso, la app lo guarda y Unity devuelve el nuevo.
     val bod_best: Int = 0,
+    // Solo «Constelaciones» (id parejas): el récord de la persona (su racha de memoria más larga; progreso: la app lo guarda y Unity devuelve el nuevo) y, solo en las herramientas de prueba, la etapa (1..18) con que
+    // empieza el primer cielo (0 = la que corresponde).
+    val con_best: Int = 0,
+    val con_stage: Int = 0,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -94,8 +98,9 @@ object UnityGameLauncher {
     assessmentTotal: Int = 0,
     mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
     forceTutorial: Boolean = false, // solo las herramientas de prueba: abre el tutorial aunque la persona ya haya jugado
-    debugOverlay: Boolean = false   // solo las herramientas de prueba: Unity dibuja los rectángulos del tutorial y el último toque
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay)
+    debugOverlay: Boolean = false,  // solo las herramientas de prueba: Unity dibuja los rectángulos del tutorial y el último toque
+    conStage: Int = 0               // solo las herramientas de prueba: Constelaciones empieza en esta etapa (0 = normal)
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage)
 
   private fun buildIntent(
     context: Context,
@@ -111,7 +116,8 @@ object UnityGameLauncher {
     assessmentTotal: Int = 0,
     mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
     forceTutorial: Boolean = false,
-    debugOverlay: Boolean = false
+    debugOverlay: Boolean = false,
+    conStage: Int = 0
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
@@ -140,6 +146,8 @@ object UnityGameLauncher {
         engr_lights = if (gameId == "engranajes") com.example.NeuroVidaApplication.instance.repository.engranajesRocket.value.lights else 0,
         engr_orbit = if (gameId == "engranajes") com.example.NeuroVidaApplication.instance.repository.engranajesRocket.value.orbit else 0,
         bod_best = if (gameId == "bodega") com.example.NeuroVidaApplication.instance.repository.bodegaRecord.value else 0,
+        con_best = if (gameId == "parejas") com.example.NeuroVidaApplication.instance.repository.constelacionesRecord.value else 0,
+        con_stage = if (gameId == "parejas") conStage.coerceIn(0, 18) else 0,
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f

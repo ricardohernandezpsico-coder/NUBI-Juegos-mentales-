@@ -233,6 +233,21 @@ class NeuroVidaRepository(
     bodegaPrefs.edit().putInt("best", next).apply()
   }
 
+  // El récord de «Constelaciones»: la racha de memoria más larga (parejas encontradas de memoria seguidas) de siempre. Es progreso: SharedPreferences que VA en el respaldo (`constelaciones_record`). La app lo manda a Unity
+  // en cada partida (`con_best`) y Unity devuelve el mayor al terminar; aquí nunca baja.
+  private val constelacionesPrefs = context.getSharedPreferences("constelaciones_record", Context.MODE_PRIVATE)
+  private val _constelacionesRecord = MutableStateFlow(Constelaciones.mergeRecord(constelacionesPrefs.getInt("best", 0), null))
+  val constelacionesRecord: StateFlow<Int> = _constelacionesRecord.asStateFlow()
+
+  /** Guarda el récord con que terminó una partida de Constelaciones (en cualquier modo). */
+  private fun recordConstelaciones(result: GamePlayResult) {
+    if (result.gameId != "parejas") return
+    val next = Constelaciones.mergeRecord(_constelacionesRecord.value, result.conBest)
+    if (next == _constelacionesRecord.value) return
+    _constelacionesRecord.value = next
+    constelacionesPrefs.edit().putInt("best", next).apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -468,6 +483,7 @@ class NeuroVidaRepository(
       "calculo" -> "carga" to Carga.mark(r.cargaAlone, r.totalTrials)
       "engranajes" -> "taller" to (if (r.engrEtapa != null) Engranajes.mark(r.correctAnswers, r.totalTrials) else null)
       "bodega" -> "bodega" to (if (r.bodGroup != null) Bodega.mark(r.correctAnswers, r.totalTrials) else null)
+      "parejas" -> "place" to (if (r.conGroups != null) Constelaciones.mark(r.correctAnswers, r.totalTrials) else null)
       "secuencia" -> "trail" to Trail.mark(r.rasBestLen)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
@@ -888,6 +904,8 @@ class NeuroVidaRepository(
     recordEngranajes(result)
     // El récord de Bodega de carga también, en cualquier modo.
     recordBodega(result)
+    // El récord de Constelaciones también, en cualquier modo.
+    recordConstelaciones(result)
     outcome
   }
 
@@ -971,6 +989,8 @@ class NeuroVidaRepository(
     _engranajesRocket.value = Engranajes.rocket(0, 0)
     bodegaPrefs.edit().clear().apply()
     _bodegaRecord.value = 0
+    constelacionesPrefs.edit().clear().apply()
+    _constelacionesRecord.value = 0
     retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()

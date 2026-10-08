@@ -62,6 +62,31 @@ class MigrationTest {
   }
 
   @Test
+  fun `de la version 12 a la 13 el rating de Parejas pasa a la escalera nueva de 18 etapas y los demas juegos no se tocan`() {
+    helper.createDatabase("migracion13", 12).apply {
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('parejas', 3, 80, 9, 1700000000000, 1, 1100, 0.9)")
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('secuencia', 3, 80, 9, 1700000000000, 1, 1100, 0.9)")
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('rumbo', 1, 0, 0, 0, 0, 0, -1)")
+      close()
+    }
+    val db = helper.runMigrationsAndValidate("migracion13", 13, true, *NeuroVidaDatabase.MIGRATIONS)
+    val rating = mutableMapOf<String, Double>()
+    db.query("SELECT gameId, ddaRating, totalGamesPlayed FROM game_progress").use { c ->
+      while (c.moveToNext()) rating[c.getString(0)] = c.getDouble(1)
+    }
+    // 0,9 de la escalera de 10 (nivel 10) = etapa 9 de la de 18 (8/18); el mismo número que calcula la app (Constelaciones.translateOldRating).
+    assertEquals(com.example.data.Constelaciones.translateOldRating(0.9f).toDouble(), rating["parejas"]!!, 1e-4)
+    assertEquals(8.0 / 18.0, rating["parejas"]!!, 1e-3)
+    assertEquals(0.9, rating["secuencia"]!!, 1e-6)
+    assertEquals(-1.0, rating["rumbo"]!!, 0.0)
+    db.query("SELECT totalGamesPlayed FROM game_progress WHERE gameId = 'parejas'").use { c ->
+      assertTrue(c.moveToFirst())
+      assertEquals(9, c.getInt(0))
+    }
+    db.close()
+  }
+
+  @Test
   fun `cada version exportada tiene su migracion a la siguiente`() {
     val versions = File("schemas").walkTopDown().filter { it.extension == "json" }.map { it.nameWithoutExtension.toInt() }.toList().sorted()
     assertTrue("no encontré los esquemas exportados en app/schemas", versions.isNotEmpty())

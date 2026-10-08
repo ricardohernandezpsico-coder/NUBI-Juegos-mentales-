@@ -83,7 +83,7 @@ import kotlin.random.Random
  */
 object ResultPhrases {
   /** Juegos cuyo puntaje y medida NO usan rapidez: ni tiempo de reacción en el motor ni una medida en ms o por segundo. */
-  val NO_SPEED_GAMES = setOf("secuencia", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes", "bodega")
+  val NO_SPEED_GAMES = setOf("secuencia", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes", "bodega", "parejas")
 
   /**
    * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono: lo que cambia con la preferencia de la persona
@@ -796,6 +796,38 @@ fun GameResultScreen(
       }
     }
 
+    // Constelaciones (pantalla final, docs/diseno-constelaciones.md §5): «Tu memoria de lugar». «X de Y veces fuiste directo a una pareja que ya habías visto» con el % en grande, las parejas de memoria,
+    // la racha de memoria más larga, la etapa más alta (de 6), tu mejor racha (con «¡Nueva mejor racha!» si la superaste) y la nota de que lo encontrado por suerte no cuenta. Sin oportunidades no hay % («—»). Sin recuadros.
+    val conGroup = result.conGroup
+    if (conGroup != null) {
+      val con = com.example.data.Constelaciones
+      val conOpps = result.totalTrials
+      Spacer(Modifier.height(14.dp))
+      Text("Tu memoria de lugar", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = con.spoken(result.correctAnswers, conOpps) }.testTag("constelaciones_headline"),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Row(verticalAlignment = Alignment.Bottom) {
+          Text(con.percent(result.correctAnswers, conOpps)?.let { "$it %" } ?: "—", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
+        }
+        Text(con.detailLine(result.correctAnswers, conOpps), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
+      }
+      con.memoryGroupsLine(result.conMemGroups, result.conGroups)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_groups"))
+      }
+      con.streakLine(result.conBestStreak)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_streak"))
+      }
+      con.groupLine(conGroup)?.let {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_group"))
+      }
+      con.recordLine(result.conBest, result.conNewRecord)?.let {
+        Text(it, color = if (result.conNewRecord == true) Clay.Sun else TextSoft, fontSize = if (result.conNewRecord == true) 15.sp else 14.sp, fontWeight = if (result.conNewRecord == true) FontWeight.SemiBold else FontWeight.Normal, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_record"))
+      }
+      Text(con.LUCK_NOTE, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_luck"))
+    }
+
     // Rastro de luz (pantalla final, docs/diseno-rastro-de-luz.md §6): "tu rastro" (cifra grande: las luces más largas que repetiste bien en el
     // rastro simple), "por modo" (al revés, el cielo gira y en marcha, cada uno con 3 rondas o más; el de menos aciertos marcado con TEXTO «el que
     // más te costó» y un truco), y la lectura en palabras. Sin recuadros ni percentiles; cada dato aparece UNA vez.
@@ -1113,7 +1145,7 @@ fun GameResultScreen(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs,
       result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa
+      result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa, result.conGroup
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
