@@ -351,30 +351,43 @@ function route(a, b){
     const cx=mx+nx*off*2, cy=my+ny*off*2; let pen=0;
     for (let i=1;i<24;i++){ const t=i/24, x=(1-t)*(1-t)*a.x+2*(1-t)*t*cx+t*t*b.x, y=(1-t)*(1-t)*a.y+2*(1-t)*t*cy+t*t*b.y;
       if (x<B.x0||x>B.x1||y<B.y0||y>B.y1) pen+=2;
-      for (const o of S.cards) if (o!==a && o!==b){ const d=Math.hypot(x-o.x,y-o.y); if (d<S.R+8) pen+=1+(S.R+8-d)/8; }
+      for (const o of S.cards) if (o!==a && o!==b){ const r=(o.state==='done'?S.R*SHRINK:S.R)+8, d=Math.hypot(x-o.x,y-o.y); if (d<r) pen+=1+(r-d)/8; }
       // tampoco corre pegada a otra línea (se confundirían)
       for (const pts of others) for (const [px,py] of pts) if (Math.hypot(x-px,y-py)<16) pen+=.35; }
     pen+=Math.abs(off)/160; if (pen<bp){ bp=pen; best={ cx, cy }; } }
   return best;
 }
 const qpt = (l,t) => { const a=l.a, b=l.b, cx=l.cx??(a.x+b.x)/2, cy=l.cy??(a.y+b.y)/2; return [(1-t)*(1-t)*a.x+2*(1-t)*t*cx+t*t*b.x, (1-t)*(1-t)*a.y+2*(1-t)*t*cy+t*t*b.y]; };
+// una vez unidas, las luces se encogen a estrella chica y su línea se vuelve un trazo fino (como en una carta del cielo):
+// el cielo no se satura y la atención va a las luces que faltan. Al completar el cielo, las líneas vuelven a brillar.
+const SHRINK=.58, HOLD=900, CALM=500;
+const doneScale = (card, now) => card.state!=='done' ? 1 : reduce ? (now-card.doneAt>HOLD?SHRINK:1) : 1-(1-SHRINK)*ease((now-card.doneAt-HOLD)/CALM);
+function brightOf(l, now){
+  if (G.state==='boardEnd' || G.state==='leaving') return reduce ? 1 : ease((now-S.endAt)/400);
+  if (reduce) return now-l.at<HOLD ? 1 : 0;
+  return 1-ease((now-l.at-380-HOLD)/CALM);
+}
 function drawLinks(c, now){
   for (const l of S.links){
     const k = reduce ? 1 : Math.max(0,Math.min(1,(now-l.at)/380)); if (k<=0) continue; const e=ease(k);
-    if (l.t0===undefined){ const out=(t,p)=>{ const [x,y]=qpt(l,t); return Math.hypot(x-p.x,y-p.y)>S.R+5; }; l.t0=0; l.t1=1; for (let i=0;i<=100;i++) if (out(i/100,l.a)){ l.t0=i/100; break; } for (let i=100;i>=0;i--) if (out(i/100,l.b)){ l.t1=i/100; break; } }
-    const t0=l.t0, t1=l.t0+(l.t1-l.t0)*e;
+    // recorte al borde actual de cada luz (que se encoge)
+    const ra=S.R*doneScale(l.a,now)+5, rb=S.R*doneScale(l.b,now)+5, out=(t,p,r)=>{ const [x,y]=qpt(l,t); return Math.hypot(x-p.x,y-p.y)>r; };
+    let lt0=0, lt1=1; for (let i=0;i<=60;i++) if (out(i/60,l.a,ra)){ lt0=i/60; break; } for (let i=60;i>=0;i--) if (out(i/60,l.b,rb)){ lt1=i/60; break; }
+    const t0=lt0, t1=lt0+(lt1-lt0)*e, b=brightOf(l,now);
     const path=()=>{ c.beginPath(); for (let i=0;i<=28;i++){ const [x,y]=qpt(l,t0+(t1-t0)*i/28); i?c.lineTo(x,y):c.moveTo(x,y); } };
     const [bx,by]=qpt(l,t1);
     const lg = l.glowAt && now>l.glowAt ? Math.max(0,1-(now-l.glowAt)/900) : 0;
     c.save(); c.lineCap='round'; c.lineJoin='round';
+    // b = 1: recién trazada o cielo completo (brillante); b = 0: en reposo (trazo fino y tenue)
     if (l.type==='mem'){
-      c.strokeStyle=`rgba(255,201,74,${.22+.35*lg})`; c.lineWidth=12+8*lg; path(); c.stroke();
-      c.strokeStyle='rgba(11,10,38,.75)'; c.lineWidth=7.5; path(); c.stroke();   // borde oscuro: se lee nítida sobre una luz dormida
-      c.strokeStyle='#FFC94A'; c.lineWidth=4; path(); c.stroke();
+      if (b>0){ c.strokeStyle=`rgba(255,201,74,${(.22+.35*lg)*b})`; c.lineWidth=12+8*lg; path(); c.stroke(); }
+      c.strokeStyle=`rgba(11,10,38,${.75*b+.35*(1-b)})`; c.lineWidth=3.5+4*b; path(); c.stroke();   // borde oscuro: se lee nítida sobre una luz dormida
+      c.strokeStyle=`rgba(255,201,74,${.6+.4*b})`; c.lineWidth=2+2*b; path(); c.stroke();
     } else {
-      c.strokeStyle=`rgba(127,216,255,${.12+.25*lg})`; c.lineWidth=9+6*lg; path(); c.stroke();
-      c.strokeStyle='rgba(11,10,38,.7)'; c.lineWidth=6.5; c.setLineDash([7,7]); path(); c.stroke();
-      c.strokeStyle='rgba(191,233,255,.9)'; c.lineWidth=3; c.setLineDash([7,7]); path(); c.stroke(); c.setLineDash([]);
+      const d=[4+3*b, 6+b];
+      if (b>0){ c.strokeStyle=`rgba(127,216,255,${(.12+.25*lg)*b})`; c.lineWidth=9+6*lg; path(); c.stroke(); }
+      c.strokeStyle=`rgba(11,10,38,${.7*b+.3*(1-b)})`; c.lineWidth=3.2+3.3*b; c.setLineDash(d); path(); c.stroke();
+      c.strokeStyle=`rgba(191,233,255,${.6+.3*b})`; c.lineWidth=1.8+1.2*b; c.setLineDash(d); path(); c.stroke(); c.setLineDash([]);
     }
     // la chispa que viaja mientras se traza
     if (k<1 && !reduce){ c.drawImage(glow(l.type==='mem'?'255,214,120':'191,233,255'),bx-14,by-14,28,28); }
@@ -386,6 +399,7 @@ function drawCard(c, card, now){
   let sc = reduce ? 1 : easeBack(ap);
   if (G.state==='leaving' && !reduce){ const k=Math.min(1,(now-S.leaveAt)/360); sc*=1-ease(k); if (sc<=.01) return; }
   if (card.pressAt && now-card.pressAt<140) sc*=1-.06*(1-(now-card.pressAt)/140);
+  sc*=doneScale(card, now);
   const f=card.f, sx=Math.max(.02,Math.abs(Math.cos(Math.PI*Math.min(1,Math.max(0,f))))), up=f>.5, lift=1+.07*Math.sin(Math.PI*Math.min(1,Math.max(0,f)));
   c.save(); c.translate(card.x,card.y); c.scale(sc,sc);
   // brillo de pista: aquí estaba la pareja que se te escapó (no se da vuelta)

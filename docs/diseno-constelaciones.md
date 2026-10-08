@@ -260,3 +260,22 @@ Todo lo anterior se implementó. Estas son las diferencias con el boceto y lo qu
 - **Pruebas:** `ConstelacionContractTests` (etapas, colocación de 300 cielos de 6 a 24 luces sin violaciones, oportunidad/acierto/error, racha, trío, ruta de las líneas, medidas y telemetría),
   `ConstelacionViewTests` (movimiento, arte, sonido, visibilidad, reglas de código) y, en la app, `ConstelacionesTest`, `ConstelacionesTelemetryTest`, `ConstelacionesRecordTest` y la migración en `MigrationTest`.
   El smoke corre `Parejas` y `TutorialParejas` (en 3 formas de pantalla).
+
+## 12. Cielo sin saturar (8-oct, primera prueba de Ricardo en el teléfono)
+
+Ricardo, con una captura de la etapa 6: «está funcionando muy bien, me gusta bastante… lo único que me perturba un poco es
+que algunas líneas se superponen y se ve un poco saturado». Con 8 parejas unidas, las líneas gruesas y las luces grandes
+llenaban el cielo y tapaban lo que faltaba. Solución (boceto versión 3, `docs/previews/constelaciones-boceto.html`):
+
+- **La luz unida se encoge a estrella chica.**
+  - Mantiene su tamaño 900 ms después de unirse y luego baja a 0,58 en 500 ms, con su aro y su objeto.
+  - Las luces dormidas que faltan quedan como lo más grande del cielo: la atención va sola a lo pendiente.
+- **La línea se calma.** Se traza brillante como antes y, a los 900 ms, pasa a un trazo fino en 500 ms:
+  - dorada: 2 dp al 60 %, con borde oscuro de 3,5 dp;
+  - celeste punteada: 1,8 dp al 60 %, con trazos de 4 y 6.
+  - Siguen distinguiéndose por forma, continua o punteada.
+- **El recorte de cada línea sigue el borde actual de su luz**, que se encoge. La ruta de una línea nueva esquiva las
+  estrellas chicas con su radio chico.
+- **Al completar el cielo, todas las líneas vuelven a brillar** (400 ms), mientras las luces siguen chicas: es el momento
+  de «¡Constelación completa!», y se lee como un mapa del cielo.
+- **Quitar animaciones:** el cambio es directo, sin transición, a los 900 ms.
