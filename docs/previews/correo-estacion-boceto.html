@@ -41,7 +41,9 @@ h2{font:600 19px var(--f-display);margin:24px 0 10px}
       <li><b>Lo de todos los días</b> (etapa 3): un encargo que se repite cada día y que ya no se vuelve a anotar.</li>
       <li><b>Encargos cancelados</b> (etapa 4): la radio avisa que ya no hace falta, y hay que acordarse de NO hacerlo.</li>
       <li><b>Cartas con lazo</b> (etapa 5): una señal que no está en el sello, más fácil de pasar por alto.</li>
-      <li><b>Racha de clasificación:</b> cada carta bien puesta sube la nota; con ×10 la cinta se enciende.</li>
+      <li><b>El faro guía la nave del correo:</b> encendido a tiempo, su luz barre el cielo, la estación se ilumina y llega la nave con un saco dorado.</li>
+      <li><b>«¡Llega un saco!»:</b> una o dos veces al día llegan 5 cartas seguidas. Cambia el ritmo: calma, apuro, calma.</li>
+      <li><b>Racha de clasificación en escalones:</b> ×10 la cinta se enciende, ×20 «¡Imparable!», ×30 «¡Maestro del correo!» con fuegos de colores.</li>
     </ul>
     <div class="row">
       <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
@@ -140,7 +142,7 @@ const PLANETS = [
 ];
 const INTROS = {
   estacion: { tag:'CORREO ESTELAR', lines:['Toca el buzón del sello de cada carta.', 'Y cumple los encargos del día:', 'nadie te los va a recordar.'] },
-  hora:     { tag:'NUEVO', lines:['Encargos con hora.', 'El reloj va tapado:', 'tócalo para mirar la hora.'] },
+  hora:     { tag:'NUEVO', lines:['Encargos con hora.', 'El faro guía la nave del correo:', 'enciéndelo a la hora justa.', 'El reloj va tapado: tócalo para mirarla.'] },
   rutina:   { tag:'NUEVO', lines:['Lo de todos los días.', 'Un encargo que se repite cada día', 'y que ya no se vuelve a anotar.'] },
   cancela:  { tag:'NUEVO', lines:['A veces la radio cancela un encargo.', 'Si lo cancela,', 'acuérdate de NO hacerlo.'] },
   lazo:     { tag:'NUEVO', lines:['Ahora la señal es un lazo,', 'no el sello.', 'Mira la carta entera.'] },
@@ -200,24 +202,35 @@ function planDay(){
 function beginDay(){
   const st=S.st, now=performance.now();
   Object.assign(S, { plan:planDay(), next:0, belt:[], t0:now, dayT:0, spawnT:0, sorted:0, right:0, wrongBox:0, late:0, combo:0, bestCombo:0,
-    cueHits:0, cueMiss:0, safeFalse:0, peeks:[], peekAt:0, beacon:[], radio:null, ended:false, cancelled:false, cancelPressed:false, flash:{} });
+    cueHits:0, cueMiss:0, grace:3, safeFalse:0, peeks:[], peekAt:0, beacon:[], radio:null, ended:false, cancelled:false, cancelPressed:false, flash:{} });
   S.todos.forEach(t=>{ t.done=false; t.state=null; t.early=0; if (t.kind==='time'){ const w=(st.win||.12)/2; t.w0=MOMENT[t.m].c-w; t.w1=MOMENT[t.m].c+w; } });
+  // ráfagas del día: un saco trae 5 cartas seguidas (cambia el ritmo: calma, apuro, calma)
+  const nR = st.rush ?? (S.lv>=4 ? 2 : 1), wins=S.todos.filter(t=>t.kind==='time'), rush=[];
+  for (let tries=0; rush.length<nR && tries<200; tries++){ const f=.16+Math.random()*.66;
+    if (rush.some(r=>Math.abs(r.at-f)<.2)) continue;
+    if (S.lv<5 && wins.some(t=>f>t.w0-.08 && f<t.w1+.04)) continue;   // al principio, el apuro no tapa la hora de un encargo
+    rush.push({ at:f, left:5, t:0 }); }
+  S.rushes=rush.sort((a,b)=>a.at-b.at); S.rush=null;
   G.state='play'; hum(); spawn();
+  if (DEBUG && QS.has('show')) S.show={ at:now, sackDone:true };   // para revisar el momento del faro congelado
 }
-function spawn(){
-  const L=S.plan[S.next++]; if (!L) return;
+function spawn(extra){
+  const L=extra || S.plan[S.next++]; if (!L) return;
   L.x=W+60; L.vx=0; L.y=BELT.y; L.at=performance.now(); S.belt.push(L);
-  if (S.belt.length>3){ // la cinta se llenó: la más antigua cae a «atrasadas»
+  if (S.belt.length>(S.rush?7:Math.max(3,S.grace||3))){   // después de un saco, la fila se va vaciando sin castigo // la cinta se llenó: la más antigua cae a «atrasadas»
     const old=S.belt.shift(); S.late++; S.combo=0; old.fall=performance.now(); S.falling=old; thud();
     if (old.gold||old.lazo){ S.cueMiss++; noteCueMiss(old); } }
 }
 function noteCueMiss(L){ const t=S.todos.find(x=>x.kind===(L.gold?'gold':'lazo')); if (t) t.miss=(t.miss||0)+1; S.flash.safe=performance.now(); float(SAFE.x+SAFE.w/2, SAFE.y-14, L.gold?'Era con sello dorado: iba a la caja fuerte':'Tenía lazo: iba a la caja fuerte', '#FFE7A8'); soft(); }
+function shrinkGrace(){ if (S.grace) S.grace=Math.max(3,Math.min(S.grace,S.belt.length+1)); }
 function dayFrac(){ return Math.min(1, S.dayT/DAY); }
 function step(dt){
   if (G.state!=='play') return;
   S.dayT+=dt; S.spawnT+=dt;
-  if (S.spawnT>=S.st.every){ S.spawnT-=S.st.every; spawn(); }
   const f=dayFrac();
+  if (!S.rush && S.rushes.length && f>=S.rushes[0].at){ S.rush=S.rushes.shift(); S.rush.t=.6; S.rushAt=performance.now(); sackSound(); }
+  if (S.rush){ S.rush.t+=dt; if (S.rush.t>=.85){ S.rush.t-=.85; spawn({ p:Math.floor(Math.random()*S.st.boxes), gold:false, lazo:false, rush:true }); if (--S.rush.left<=0){ S.rush=null; S.spawnT=0; S.grace=S.belt.length+1; } } }
+  else if (S.spawnT>=S.st.every){ S.spawnT-=S.st.every; spawn(); }
   // la radio cancela un encargo
   if (S.cancel && !S.cancelled && f>=S.cancel.at){ S.cancelled=true; S.cancel.todo.cancelled=true; S.radio={ at:performance.now(), t:`Radio: hoy NO hace falta encender el faro ${MOMENT[S.cancel.todo.m].name}` }; radioSound(); }
   // ventana de hora que se cierra sin aviso
@@ -227,18 +240,21 @@ function step(dt){
 // ------------------------------------------------------------ toques
 function tapBox(i){
   const L=S.belt[0]; if (!L || Math.abs(L.x-BELT.xA)>40) return;   // solo la carta que espera
-  const now=performance.now(), r=boxRect(i,S.st.boxes); S.belt.shift(); S.sorted++;
+  const now=performance.now(), r=boxRect(i,S.st.boxes); S.belt.shift(); S.sorted++; shrinkGrace();
   L.fly={ from:[L.x,L.y], to:[r.cx, r.y+30], at:now, dur:reduce?1:380, into:'box', i };
   S.flying=(S.flying||[]).concat([L]);
   if (L.gold||L.lazo){ S.cueMiss++; noteCueMiss(L); }
   if (L.p===i){ S.right++; S.combo++; S.bestCombo=Math.max(S.bestCombo,S.combo); bell(PLANETS[i].note,.05,.6); if (S.combo>=3) bell(PENTA[Math.min(9,S.combo%10)]*2,.025,.4,.06);
-    S.boxPulse=S.boxPulse||{}; S.boxPulse[i]=now; if (S.combo%10===0){ float(BELT.xA,BELT.y-70,`¡Racha ×${S.combo}!`,'#FFC94A',true); chime(); } }
+    S.boxPulse=S.boxPulse||{}; S.boxPulse[i]=now;
+    if (S.combo%10===0){ const tier=S.combo/10; S.comboFx={ at:now, tier };
+      float(BELT.xA,BELT.y-70, tier===1?`¡Racha ×${S.combo}!`:tier===2?`¡Imparable! ×${S.combo}`:`¡Maestro del correo! ×${S.combo}`,'#FFC94A',true);
+      chime(); if (tier>=2) bell(1567.98,.04,1,.12); if (tier>=3){ for (let k=0;k<4;k++) emit(40+Math.random()*280,90+Math.random()*120,18,170,900,['255,201,74','127,216,255','183,155,255','166,227,107'][k]); bell(2093,.03,1.2,.2); } } }
   else { S.wrongBox++; S.combo=0; S.boxShake=S.boxShake||{}; S.boxShake[i]=now; thud(); float(r.cx, r.y-10, 'Otro buzón', '#FFB4A0'); }
 }
 function tapSafe(){
   const L=S.belt[0], now=performance.now(); S.safePress=now;
   if (!L || Math.abs(L.x-BELT.xA)>40){ S.flash.safeNo=now; soft(); return; }
-  S.belt.shift();
+  S.belt.shift(); shrinkGrace();
   if (L.gold||L.lazo){ S.cueHits++; const t=S.todos.find(x=>x.kind===(L.gold?'gold':'lazo')); if (t) t.hit=(t.hit||0)+1;
     L.fly={ from:[L.x,L.y], to:[SAFE.x+SAFE.w/2, SAFE.y+30], at:now, dur:reduce?1:420, into:'safe' }; S.flying=(S.flying||[]).concat([L]);
     float(SAFE.x+SAFE.w/2, SAFE.y-16, '¡Encargo cumplido!', '#FFC94A', true); fanfare(); emit(SAFE.x+SAFE.w/2,SAFE.y+20,24,160,800,'255,201,74'); S.flash.safeOk=now; }
@@ -249,7 +265,9 @@ function tapBeacon(){
   const open=S.todos.filter(t=>t.kind==='time' && !t.done && !t.state);
   const cancelled=S.todos.find(t=>t.kind==='time' && t.cancelled && f>=t.w0-.04 && f<=t.w1+.04);
   const inWin=open.find(t=>!t.cancelled && f>=t.w0 && f<=t.w1);
-  if (inWin){ inWin.done=true; inWin.state='hit'; S.beaconOn=now; float(BEACON.x+BEACON.w/2, BEACON.y-16, '¡Faro encendido a tiempo!', '#FFC94A', true); fanfare(); emit(BEACON.x+BEACON.w/2,BEACON.y+20,24,160,800,'255,214,120'); return; }
+  if (inWin){ inWin.done=true; inWin.state='hit'; S.beaconOn=now; S.show={ at:now, sackDone:false }; float(BEACON.x+BEACON.w/2, BEACON.y-16, '¡Faro encendido a tiempo!', '#FFC94A', true); fanfare(); hornSound(); emit(BEACON.x+BEACON.w/2,BEACON.y+20,24,160,800,'255,214,120');
+    if (!reduce) for (let k=0;k<26;k++) G.parts.push({ x:Math.random()*W, y:60+Math.random()*170, vx:0, vy:-6, t:now+Math.random()*900, life:900+Math.random()*700, r:.8+Math.random()*1.6, rgb:'255,240,190' });
+    return; }
   if (cancelled){ cancelled.state='commission'; S.cancelPressed=true; S.flash.beaconNo=now; float(BEACON.x+BEACON.w/2, BEACON.y-14, '¡Estaba cancelado!', '#FFB4A0'); thud(); return; }
   const soon=open.find(t=>!t.cancelled && f<t.w0);
   S.flash.beaconNo=now; soft();
@@ -264,7 +282,7 @@ function endDay(){
   for (const t of S.todos){
     if (t.kind==='gold'||t.kind==='lazo'){ const ok=(t.hit||0), all=(t.hit||0)+(t.miss||0); items.push({ t, ok:all>0 && ok===all, txt: (t.kind==='gold'?'Sello dorado → caja fuerte':'Carta con lazo → caja fuerte'), det:`${ok} de ${all}` }); }
     else if (t.cancelled) items.push({ t, ok:t.state!=='commission', txt:`Faro ${MOMENT[t.m].name} (cancelado)`, det: t.state==='commission'?'lo hiciste igual':'no lo hiciste: bien' });
-    else items.push({ t, ok:t.state==='hit', txt:`Faro ${MOMENT[t.m].name}`+(t.routine?' · de todos los días':''), det: t.state==='hit'?'a tiempo':'se pasó la hora' });
+    else items.push({ t, ok:t.state==='hit', txt:`Faro ${MOMENT[t.m].name}`+(t.routine?' · de todos los días':''), det: t.state==='hit'?'a tiempo: la nave del correo llegó':'se pasó la hora: la nave no llegó' });
   }
   const pmOk=items.filter(i=>i.ok).length, pmAll=items.length, acc=S.sorted? S.right/S.sorted : 1;
   // el reloj: cuántas miradas cayeron en el 30 % del día antes de cada hora
@@ -285,6 +303,8 @@ function soft(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createO
 function tick(){ noise(.05,3200,2400,.04,6); bell(1318.5,.02,.25,.05); }
 function fanfare(){ bell(783.99,.06,1.1); bell(987.77,.05,1.1,.08); bell(1174.66,.05,1.3,.16); }
 function radioSound(){ bell(880,.04,.25); bell(1174.66,.04,.25,.14); noise(.35,1500,900,.025,4); }
+function hornSound(){ const a=ac(); if(!a) return; const t=a.currentTime; [146.83,220,293.66].forEach((f,i)=>{ const o=a.createOscillator(), g=a.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.03-i*.006,t+.35); g.gain.exponentialRampToValueAtTime(.0001,t+1.9); o.connect(g).connect(a.destination); o.start(t+i*.05); o.stop(t+2); }); }
+function sackSound(){ noise(.45,400,1400,.05,1.2); thud(); bell(659.25,.035,.4,.15); bell(880,.035,.4,.25); }
 function whoosh(){ noise(.25,600,1600,.03,1.4); }
 
 // ============================================================ dibujo de piezas
@@ -349,8 +369,72 @@ function drawSafe(c, now){
   c.fillStyle='#EDEAFB'; c.font='700 17px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText('Caja', r.x+82, r.y+r.h/2-11); c.fillText('fuerte', r.x+82, r.y+r.h/2+11);
   c.restore();
 }
+// ------------------------------------------------------------ el faro encendido: luz sobre toda la estación y llega la nave del correo
+const SHOW=3400;
+function showT(now){ const sh=S.show; if (!sh) return null; const t= DEBUG && QS.has('show') ? +QS.get('show') : (now-sh.at)/1000; if (t*1000>SHOW){ S.show=null; return null; } return t; }
+// la luz va DETRÁS de la estación: ilumina el cielo y los espacios, y los botones siempre se leen
+function drawShowBack(c, now){
+  const t=showT(now); if (t===null) return; const sh=S.show;
+  const env=Math.max(0,Math.min(1,t/.25,(SHOW/1000-t)/.8)), lx=BEACON.x+40, ly=BEACON.y+BEACON.h/2-16;
+  c.save();
+  // la estación se baña en luz tibia que nace del faro
+  // «screen» aclara sin ensuciar los colores (un velo normal sobre el fondo oscuro se ve café)
+  c.globalCompositeOperation='screen';
+  const wash=c.createRadialGradient(lx,ly,10,lx,ly,620); wash.addColorStop(0,`rgba(255,226,150,${.6*env})`); wash.addColorStop(.4,`rgba(255,205,120,${.26*env})`); wash.addColorStop(1,'rgba(255,205,120,0)');
+  c.fillStyle=wash; c.fillRect(0,0,W,H);
+  c.globalCompositeOperation='lighter';
+  // el haz barre el cielo de lado a lado
+  const ang = reduce ? -Math.PI/2 : -Math.PI/2 + Math.sin(t*2.2)*1.05, len=780, half=.15;
+  // halo ancho y tenue alrededor del haz
+  const hg=c.createLinearGradient(lx,ly,lx+Math.cos(ang)*len,ly+Math.sin(ang)*len); hg.addColorStop(0,`rgba(255,236,170,${.35*env})`); hg.addColorStop(1,'rgba(255,236,170,0)');
+  c.fillStyle=hg; c.beginPath(); c.moveTo(lx,ly); c.lineTo(lx+Math.cos(ang-.34)*len, ly+Math.sin(ang-.34)*len); c.lineTo(lx+Math.cos(ang+.34)*len, ly+Math.sin(ang+.34)*len); c.closePath(); c.fill();
+  const bg=c.createLinearGradient(lx,ly,lx+Math.cos(ang)*len,ly+Math.sin(ang)*len); bg.addColorStop(0,`rgba(255,244,200,${.85*env})`); bg.addColorStop(.6,`rgba(255,230,160,${.25*env})`); bg.addColorStop(1,'rgba(255,230,160,0)');
+  c.fillStyle=bg; c.beginPath(); c.moveTo(lx,ly); c.lineTo(lx+Math.cos(ang-half)*len, ly+Math.sin(ang-half)*len); c.lineTo(lx+Math.cos(ang+half)*len, ly+Math.sin(ang+half)*len); c.closePath(); c.fill();
+  c.globalCompositeOperation='source-over'; c.restore();
+}
+// delante: el destello de la lámpara, la nave y el saco
+function drawShowFront(c, now){
+  const t=showT(now); if (t===null) return; const sh=S.show;
+  const env=Math.max(0,Math.min(1,t/.25,(SHOW/1000-t)/.8)), lx=BEACON.x+40, ly=BEACON.y+BEACON.h/2-16;
+  c.save(); c.globalCompositeOperation='lighter'; c.globalAlpha=env*.9; c.drawImage(glow('255,236,170'),lx-46,ly-46,92,92); c.drawImage(glow('255,255,235'),lx-18,ly-18,36,36); c.globalAlpha=1; c.globalCompositeOperation='source-over';
+  // la nave del correo sigue la luz, deja un saco dorado en la cinta y se va
+  let sx, sy;
+  if (reduce){ sx=W/2; sy=150; }
+  else if (t<.5){ sx=-80; sy=120; }
+  else if (t<1.7){ const e=ease((t-.5)/1.2); sx=-60+(W/2+60)*e; sy=120+30*e-Math.sin(Math.PI*e)*30; }
+  else if (t<2.4){ sx=W/2; sy=150+Math.sin((t-1.7)*6)*2; }
+  else { const e=(t-2.4)/1.0; sx=W/2+(W/2+90)*e*e; sy=150-60*e*e; }
+  drawMailShip(c, sx, sy, t);
+  if (t>1.8){ const e=Math.min(1,(t-1.8)/.4); if (e<1){ drawSack(c, W/2, 172+(BELT.y-30-172)*e*e); }
+    else if (!sh.sackDone){ sh.sackDone=true; emit(W/2,BELT.y-30,30,190,900,'255,201,74'); bell(1318.5,.04,.8); float(W/2,BELT.y-96,'¡La nave del correo llegó!','#FFC94A',true); } }
+  c.restore();
+}
+function drawMailShip(c, x, y, t){
+  c.save(); c.translate(x,y); c.rotate(reduce?0:Math.sin(t*3)*.05);
+  // propulsor: llama corta que titila
+  const fl = reduce ? 1 : .8+.3*Math.sin(t*40);
+  c.fillStyle='#FF9F6B'; c.beginPath(); c.moveTo(-36,-6); c.quadraticCurveTo(-52*fl,0,-36,6); c.closePath(); c.fill();
+  c.fillStyle='#FFE27A'; c.beginPath(); c.moveTo(-36,-3); c.quadraticCurveTo(-45*fl,0,-36,3); c.closePath(); c.fill();
+  if (!reduce){ c.globalAlpha=.8; c.drawImage(glow('255,180,110'),-66,-16,32,32); c.globalAlpha=1; }
+  c.fillStyle='#ECE8FF'; c.beginPath(); c.moveTo(-38,4); c.quadraticCurveTo(-36,-16,0,-16); c.quadraticCurveTo(30,-16,40,0); c.quadraticCurveTo(30,14,0,14); c.quadraticCurveTo(-36,14,-38,4); c.closePath(); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=3; c.stroke();
+  c.fillStyle='#7FD8FF'; c.beginPath(); c.arc(20,-3,6,0,7); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2; c.stroke();
+  // emblema: un sobre
+  c.fillStyle='#FFC94A'; rr(c,-18,-8,22,15,3); c.fill(); c.stroke(); c.beginPath(); c.moveTo(-18,-8); c.lineTo(-7,0); c.lineTo(4,-8); c.stroke();
+  c.restore();
+}
+function drawSack(c, x, y){
+  c.save(); c.translate(x,y); if (!reduce){ c.globalAlpha=.7; c.drawImage(glow('255,201,74'),-30,-30,60,60); c.globalAlpha=1; }
+  c.fillStyle='#E8B85A'; c.beginPath(); c.moveTo(-14,-6); c.quadraticCurveTo(-18,16,0,16); c.quadraticCurveTo(18,16,14,-6); c.closePath(); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.5; c.stroke();
+  c.fillStyle='#C98A2E'; c.fillRect(-9,-10,18,5); c.strokeRect(-9,-10,18,5); c.restore();
+}
+function drawRush(c, now){
+  if (!S.rushAt || now-S.rushAt>1700) return; const k=Math.min(1,(now-S.rushAt)/180,(1700-(now-S.rushAt))/300);
+  c.save(); c.globalAlpha=k; c.fillStyle='rgba(8,10,34,.95)'; rr(c,14,94,W-28,58,16); c.fill(); c.strokeStyle='#FFC94A'; c.lineWidth=2; c.stroke();
+  drawSack(c, 48, 123); c.fillStyle='#FFC94A'; c.font='700 19px Fredoka'; c.textAlign='left'; c.textBaseline='middle'; c.fillText('¡Llega un saco!', 76, 114);
+  c.fillStyle='#D6D1F2'; c.font='600 14px Nunito'; c.fillText('5 cartas seguidas: ¡rápido!', 76, 136); c.restore();
+}
 function drawBeacon(c, now){
-  const r=BEACON, press=S.beaconPress && now-S.beaconPress<140 ? .96 : 1, on=S.beaconOn && now-S.beaconOn<2200;
+  const r=BEACON, press=S.beaconPress && now-S.beaconPress<140 ? .96 : 1, on=S.beaconOn && now-S.beaconOn<SHOW;
   c.save(); c.translate(r.x+r.w/2, r.y+r.h/2); c.scale(press,press); c.translate(-(r.x+r.w/2), -(r.y+r.h/2));
   const warn=S.flash.beacon && now-S.flash.beacon<1500;
   if (warn && !reduce){ c.globalAlpha=.5+.4*Math.sin(now/90); c.drawImage(glow('255,201,74'),r.x-24,r.y-24,r.w+48,r.h+48); c.globalAlpha=1; }
@@ -358,7 +442,7 @@ function drawBeacon(c, now){
   c.fillStyle='#3A3352'; rr(c,r.x,r.y,r.w,r.h,20); c.fill(); c.strokeStyle='#0B0A26'; c.lineWidth=3; c.stroke();
   // el faro: torre con cúpula; encendido lanza dos haces
   const fx=r.x+40, fy=r.y+r.h/2+4;
-  if (on){ const k=(now-S.beaconOn)/2200, a=reduce?.7:Math.sin(Math.PI*Math.min(1,k*1.2))*.8, sw=reduce?0:Math.sin(now/180)*.5;
+  if (on){ const k=(now-S.beaconOn)/SHOW, a=reduce?.7:Math.sin(Math.PI*Math.min(1,k*1.2))*.8, sw=reduce?0:Math.sin(now/180)*.5;
     c.save(); c.translate(fx,fy-20); c.rotate(sw); c.globalAlpha=a; const bg=c.createLinearGradient(0,0,120,0); bg.addColorStop(0,'rgba(255,231,168,.9)'); bg.addColorStop(1,'rgba(255,231,168,0)');
     c.fillStyle=bg; c.beginPath(); c.moveTo(0,0); c.lineTo(130,-26); c.lineTo(130,26); c.closePath(); c.fill(); c.rotate(Math.PI); c.beginPath(); c.moveTo(0,0); c.lineTo(130,-26); c.lineTo(130,26); c.closePath(); c.fill(); c.restore(); c.globalAlpha=1; }
   c.fillStyle='#EDEAFB'; c.beginPath(); c.moveTo(fx-12,fy+26); c.lineTo(fx-8,fy-12); c.lineTo(fx+8,fy-12); c.lineTo(fx+12,fy+26); c.closePath(); c.fill(); c.strokeStyle='#1A1240'; c.lineWidth=2.5; c.stroke();
@@ -398,6 +482,11 @@ function drawBelt(c, now){
   // marca del punto de clasificación
   const lit = S.combo>=10 && !reduce; c.strokeStyle= lit ? '#FFC94A' : 'rgba(127,216,255,.5)'; c.lineWidth=3; c.setLineDash([8,8]); rr(c,BELT.xA-66,BELT.y-46,132,92,16); c.stroke(); c.setLineDash([]);
   if (lit){ c.globalAlpha=.35+.15*Math.sin(now/120); c.drawImage(glow('255,201,74'),BELT.xA-90,BELT.y-70,180,140); c.globalAlpha=1; }
+}
+function drawBeltExtras(c, now){
+  const fx=S.comboFx; if (fx && fx.tier>=2 && now-fx.at<1000 && !reduce){ const k=(now-fx.at)/1000, x=-60+(W+120)*k;
+    const g=c.createLinearGradient(x-60,0,x+60,0); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(.5,'rgba(255,236,170,.45)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(x-60,BELT.y-50,120,100); }
+  const waiting=S.belt.length-3; if (waiting>0){ const t=`+${waiting}`; c.font='700 15px Fredoka'; const w=c.measureText(t).width+18; c.fillStyle='#FFC94A'; rr(c,W-w-8,BELT.y-62,w,24,12); c.fill(); c.fillStyle='#1A1240'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(t,W-8-w/2,BELT.y-49.5); }
 }
 function stepBelt(dt){
   // cada carta avanza con un resorte hacia su lugar en la fila
@@ -529,11 +618,13 @@ function frame(now){
   if (G.state==='menu'){ drawMenu(c, now); }
   else if (G.state!=='end'){
     step(dt); if (S.belt) stepBelt(dt);
+    drawShowBack(c, now);
     drawHeader(c, now); drawClock(c, now);
     drawBelt(c, now);
     for (let i=S.belt.length-1;i>=0;i--){ const L=S.belt[i]; drawLetter(c,L,L.x,L.y,i===0?1:.7); }
+    drawBeltExtras(c, now);
     for (let i=0;i<S.st.boxes;i++) drawBox(c,i,now);
-    drawSafe(c, now); drawBeacon(c, now); drawFlying(c, now);
+    drawSafe(c, now); drawBeacon(c, now); drawFlying(c, now); drawShowFront(c, now); drawRush(c, now);
     if (G.state==='play'){ c.fillStyle='#8F8AC0'; c.font='600 14px Nunito'; c.textAlign='center'; c.fillText('Toca el buzón del sello', W/2, H-46); }
     drawFloats(c, now);
     if (G.state==='brief') drawBrief(c, now);

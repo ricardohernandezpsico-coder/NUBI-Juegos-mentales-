@@ -182,3 +182,40 @@ Luego, un día corto de práctica de 30 s que no cuenta.
 - Los «parecidos» de color.
 - Las DOS dificultades: queda UNA, la de los encargos, y la cinta acompaña con la etapa.
 - La lámina `correo-escudo.png` queda como historia.
+
+## 11. Aprobación y enganche (8-oct, versión 2 del boceto)
+
+Ricardo jugó un día completo: «sí engancha, pero a ratos algo monótono. Fácil de entender, y para diferentes edades, ya
+que los botones son grandes. Lo apruebo, pero añadiría algún efecto cuando el faro funcione, que esté más iluminado».
+Se agregó:
+
+- **El faro guía la nave del correo** (le da sentido al faro). Al encenderlo a tiempo, durante 3,4 s:
+  - **Detrás de la estación** (`drawShowBack`):
+    - un baño de luz tibia que nace del faro (degradado radial de 620 dp, modo «screen» para aclarar sin ensuciar);
+    - un **haz** que barre el cielo de lado a lado (ángulo `-π/2 + sin(t·2,2)·1,05`, medio ancho 0,15, con halo de 0,34).
+    - Va detrás para que los buzones y botones **siempre se lean**: probado, encima los tapaba mientras se seguía
+      jugando.
+  - **Delante** (`drawShowFront`):
+    - el destello de la lámpara;
+    - la **nave del correo** (arcilla clara, ventanilla, sobre dorado de emblema y propulsor que titila) entra desde la
+      izquierda siguiendo la luz (0,5-1,7 s) y se detiene sobre la cinta;
+    - deja caer un **saco dorado** que estalla en chispas («¡La nave del correo llegó!») y se va por la derecha.
+  - Sonido: fanfarria y una **bocina grave** de tres notas (146, 220 y 293 Hz).
+  - Destellos en el cielo.
+  - Quitar animaciones: luz fija hacia arriba y la nave quieta sobre la cinta, sin vuelo ni chispas.
+  - En el resumen: «a tiempo: la nave del correo llegó» o «se pasó la hora: la nave no llegó».
+  - La nave aparece SOLO después de encender el faro. Nunca antes, porque sería una pista de la hora.
+  - Tarjeta NUEVO de la hora: «Encargos con hora. / El faro guía la nave del correo: / enciéndelo a la hora justa. / El
+    reloj va tapado: tócalo para mirarla.».
+- **«¡Llega un saco!»** (contra la monotonía; cambia el ritmo: calma, apuro, calma):
+  - 1 vez al día (2 desde la etapa 5); llegan 5 cartas seguidas, cada 0,85 s;
+  - aviso arriba con el saco dibujado («5 cartas seguidas: ¡rápido!») y sonido de saco;
+  - mientras dura, la cinta aguanta hasta 7 cartas, y después se vacía sin castigo (`grace`);
+  - una píldora «+N» muestra las que esperan fuera de la pantalla;
+  - en las etapas 1-5 el saco no cae cerca de la hora de un encargo.
+- **Racha en escalones:**
+  - ×10, la cinta se enciende;
+  - ×20, «¡Imparable!» con un brillo que recorre la cinta;
+  - ×30 o más, «¡Maestro del correo!» con fuegos de cuatro colores.
+- **Simulación otra vez:** 0 partidas trabadas. Con memoria perfecta, 100 % (98-99 % en etapas altas, por el ritmo del
+  jugador simulado).
