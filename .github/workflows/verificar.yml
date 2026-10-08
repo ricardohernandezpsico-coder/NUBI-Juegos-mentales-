@@ -64,6 +64,20 @@ jobs:
           grep -a " > .* FAILED$" gradle-ci.log | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Prueba fallida::${l:0:900}"; done
           grep -a -A2 " > .* FAILED$" gradle-ci.log | grep -av " FAILED$" | grep -av "^--" | sort -u | head -15 | while IFS= read -r l; do echo "::error title=Motivo::${l:0:900}"; done
           grep -a -B2 -A12 "What went wrong" gradle-ci.log | head -40 | while IFS= read -r l; do echo "::warning title=Gradle::${l:0:500}"; done
+          # La traza de cada prueba que falló (primeras líneas de su informe XML: ahí aparecen las excepciones «Suppressed»), también como anotación.
+          python3 - <<'PY'
+          import glob, html, re
+          n = 0
+          for f in sorted(glob.glob("app/build/test-results/testDebugUnitTest/*.xml")):
+              s = open(f, encoding="utf-8", errors="replace").read()
+              for m in re.finditer(r'<testcase name="([^"]+)" classname="([^"]+)"[^>]*>\s*<failure message="[^"]*"[^>]*>(.*?)</failure>', s, re.S):
+                  lines = [l.strip() for l in html.unescape(m.group(3)).strip().splitlines() if l.strip()]
+                  text = " | ".join(lines[:30])[:1500].replace("%", "%25")
+                  print("::error title=Traza de %s::%s" % (m.group(2).split(".")[-1], text))
+                  n += 1
+                  if n >= 4:
+                      raise SystemExit
+          PY
       - name: Guardar el informe de pruebas si algo falló
         if: failure()
         uses: actions/upload-artifact@v6
