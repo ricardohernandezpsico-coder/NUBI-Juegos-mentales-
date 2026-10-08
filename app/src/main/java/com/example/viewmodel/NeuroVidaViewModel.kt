@@ -56,7 +56,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   private val repository = (application as? com.example.NeuroVidaApplication)?.repository ?: NeuroVidaRepository(application)
 
   val userSettings = repository.userSettings
-  val allProfiles = repository.allProfiles
   val gameHistory = repository.gameHistory
   val gameLevels = repository.gameLevels
   val gameIntensity = repository.gameIntensity
@@ -731,33 +730,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   fun retoFor(gameId: String): Boolean = repository.retoFor(gameId)
 
   val retoChoices: StateFlow<Map<String, Boolean>> get() = repository.retoChoices
-
-  fun createNewProfile(
-    name: String,
-    avatar: String = "🧠",
-    difficultyMode: DifficultyMode = DifficultyMode.ADAPTIVE,
-    weeklyGoal: Int = 4,
-    cognitiveAssistance: Boolean = true
-  ) {
-    viewModelScope.launch {
-      repository.createProfile(name, avatar, difficultyMode, weeklyGoal, cognitiveAssistance)
-      triggerHapticFeedback(HapticType.SUCCESS)
-    }
-  }
-
-  fun switchProfile(profileId: Long) {
-    viewModelScope.launch {
-      repository.switchActiveProfile(profileId)
-      triggerHapticFeedback(HapticType.LIGHT)
-    }
-  }
-
-  fun deleteProfile(profileId: Long) {
-    viewModelScope.launch {
-      repository.deleteProfile(profileId)
-      triggerHapticFeedback(HapticType.MEDIUM)
-    }
-  }
 
   fun updateDifficultyPreferences(
     mode: DifficultyMode,

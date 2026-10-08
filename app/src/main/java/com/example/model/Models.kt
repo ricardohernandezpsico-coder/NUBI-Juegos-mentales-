@@ -443,8 +443,8 @@ enum class DifficultyMode(val label: String, val description: String) {
   ADAPTIVE("Auto-adaptativa", "Ajuste dinámico según tu desempeño en cada sesión"),
   PRINCIPIANTE("Principiante", "Nivel 1 con tiempos generosos y estímulos claros"),
   INTERMEDIO("Intermedio", "Nivel 3 equilibrado para mantener agilidad mental"),
-  AVANZADO("Avanzado", "Nivel 5 con máxima exigencia cognitiva y velocidad"),
-  CUSTOM("Personalizada", "Nivel asignado a medida por cada dominio cognitivo")
+  AVANZADO("Avanzado", "Nivel 5 con máxima exigencia y velocidad"),
+  CUSTOM("Personalizada", "Nivel asignado a medida por cada área")
 }
 
 enum class ThemeMode(val label: String) {
@@ -521,10 +521,10 @@ data class WeeklyChallengeDef(
 
 object WeeklyChallengeRegistry {
   val all = listOf(
-    WeeklyChallengeDef("dominios3", "Entrenamiento variado", "Jugá en 3 dominios cognitivos distintos esta semana", "🧭", 3),
-    WeeklyChallengeDef("reto2", "Modo Reto", "Completá 2 partidas en modo Reto esta semana", "⚡", 2),
-    WeeklyChallengeDef("precision3", "Racha de precisión", "Conseguí 85 puntos o más en 3 partidas esta semana", "🎯", 3),
-    WeeklyChallengeDef("dias4", "Constancia", "Entrená en 4 días distintos esta semana", "📅", 4)
+    WeeklyChallengeDef("dominios3", "Variedad", "Juega en 3 áreas distintas esta semana", "🧭", 3),
+    WeeklyChallengeDef("reto2", "Modo Reto", "Completa 2 partidas en modo Reto esta semana", "⚡", 2),
+    WeeklyChallengeDef("precision3", "Racha de precisión", "Consigue 85 puntos o más en 3 partidas esta semana", "🎯", 3),
+    WeeklyChallengeDef("dias4", "Constancia", "Juega 4 días distintos esta semana", "📅", 4)
   )
   const val XP_REWARD_PER_DOMAIN = 10
 }

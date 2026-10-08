@@ -47,7 +47,6 @@ fun SettingsScreen(
   onOpenLicenses: () -> Unit = {}
 ) {
   val userSettings by viewModel.userSettings.collectAsState()
-  val allProfiles by viewModel.allProfiles.collectAsState()
   val resultFocus by viewModel.resultFocus.collectAsState()
   val colorVision by viewModel.colorVision.collectAsState()
 
@@ -70,9 +69,6 @@ fun SettingsScreen(
   var appLanguage by remember(userSettings.language) { mutableStateOf(userSettings.language) }
   var ageBand by remember(userSettings.ageBand) { mutableStateOf(userSettings.ageBand ?: AgeBand.ADULT) }
 
-  var showNewProfileDialog by remember { mutableStateOf(false) }
-  var profileToDelete by remember { mutableStateOf<UserSettings?>(null) }
-
   val context = LocalContext.current
   val notificationPermissionLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.RequestPermission()
@@ -89,7 +85,7 @@ fun SettingsScreen(
         reminderHour = reminderHour,
         reminderMinute = reminderMinute
       )
-      Toast.makeText(context, "Recordatorios diarios activados con WorkManager", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "Recordatorio diario activado", Toast.LENGTH_SHORT).show()
     } else {
       notificationsEnabled = false
       viewModel.updateSettings(
@@ -198,139 +194,28 @@ fun SettingsScreen(
       }
     }
 
-    // 1. User Profiles Management Card (Room Local Database)
+    // 1. Tu perfil: el nombre y el avatar propios (8-oct: se quitó la gestión de varios perfiles; la tabla user_profile se queda, sin migración)
     Card(
       modifier = Modifier.fillMaxWidth(),
       shape = RoundedCornerShape(22.dp),
       colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
       Column(modifier = Modifier.padding(20.dp)) {
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.SpaceBetween,
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Person, contentDescription = null, tint = TealPrimary)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-              text = "Perfiles de Usuario",
-              style = MaterialTheme.typography.titleMedium,
-              fontWeight = FontWeight.Bold
-            )
-          }
-
-          Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = TealPrimary.copy(alpha = 0.12f)
-          ) {
-            Text(
-              text = "${allProfiles.size} ${if (allProfiles.size == 1) "perfil" else "perfiles"} en Room",
-              style = MaterialTheme.typography.labelSmall,
-              color = TealPrimary,
-              fontWeight = FontWeight.SemiBold,
-              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-            )
-          }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Icon(Icons.Default.Person, contentDescription = null, tint = TealPrimary)
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(
+            text = "Tu perfil",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+          )
         }
-
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-          text = "Gestiona múltiples usuarios o familiares en este dispositivo con preferencias independientes.",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Profile switcher list
-        LazyRow(
-          horizontalArrangement = Arrangement.spacedBy(10.dp),
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          items(allProfiles) { profile ->
-            val isActive = profile.isActive || profile.id == userSettings.id
-            Surface(
-              shape = RoundedCornerShape(16.dp),
-              color = if (isActive) TealPrimary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-              border = if (isActive) BorderStroke(2.dp, TealPrimary) else BorderStroke(1.dp, Color.Transparent),
-              modifier = Modifier
-                .clickable {
-                  if (!isActive) {
-                    viewModel.switchProfile(profile.id)
-                    Toast.makeText(context, "Cambiado a perfil: ${profile.name.ifBlank { "Sin nombre" }}", Toast.LENGTH_SHORT).show()
-                  }
-                }
-                .testTag("profile_chip_${profile.id}")
-            ) {
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-              ) {
-                Text(text = profile.avatar, fontSize = 20.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                  Text(
-                    text = profile.name.ifBlank { "Sin nombre" },
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isActive) TealPrimary else MaterialTheme.colorScheme.onSurface
-                  )
-                  Text(
-                    text = if (isActive) "Activo" else profile.difficultyMode.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isActive) TealPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                  )
-                }
-
-                if (!isActive && allProfiles.size > 1) {
-                  Spacer(modifier = Modifier.width(4.dp))
-                  IconButton(
-                    onClick = { profileToDelete = profile },
-                    modifier = Modifier.size(24.dp)
-                  ) {
-                    Icon(
-                      imageVector = Icons.Default.Delete,
-                      contentDescription = "Eliminar perfil",
-                      tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                      modifier = Modifier.size(16.dp)
-                    )
-                  }
-                }
-              }
-            }
-          }
-
-          item {
-            OutlinedButton(
-              onClick = { showNewProfileDialog = true },
-              shape = RoundedCornerShape(16.dp),
-              colors = ButtonDefaults.outlinedButtonColors(contentColor = TealPrimary),
-              border = BorderStroke(1.dp, TealPrimary.copy(alpha = 0.5f)),
-              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-              modifier = Modifier.testTag("btn_add_profile")
-            ) {
-              Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-              Spacer(modifier = Modifier.width(6.dp))
-              Text("Nuevo Perfil", style = MaterialTheme.typography.labelMedium)
-            }
-          }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Edit active profile name & avatar
-        Text(
-          text = "Editar Perfil Activo",
-          style = MaterialTheme.typography.titleSmall,
-          fontWeight = FontWeight.Bold
-        )
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // Nombre y avatar propios
         Text(
-          text = "Avatar del perfil:",
+          text = "Tu avatar:",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -360,7 +245,7 @@ fun SettingsScreen(
         OutlinedTextField(
           value = nameInput,
           onValueChange = { nameInput = it },
-          label = { Text("Nombre del perfil") },
+          label = { Text("Tu nombre") },
           singleLine = true,
           modifier = Modifier
             .fillMaxWidth()
@@ -388,7 +273,7 @@ fun SettingsScreen(
               reminderMinute = reminderMinute,
               difficultyMode = difficultyMode
             )
-            Toast.makeText(context, "Perfil guardado en Room", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Perfil guardado", Toast.LENGTH_SHORT).show()
           },
           shape = RoundedCornerShape(12.dp),
           colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
@@ -398,12 +283,12 @@ fun SettingsScreen(
         ) {
           Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(16.dp))
           Spacer(modifier = Modifier.width(6.dp))
-          Text("Guardar Perfil")
+          Text("Guardar")
         }
       }
     }
 
-    // 2. Weekly Training Goal Card
+    // 2. Meta semanal de juego
     Card(
       modifier = Modifier.fillMaxWidth(),
       shape = RoundedCornerShape(22.dp),
@@ -411,7 +296,7 @@ fun SettingsScreen(
     ) {
       Column(modifier = Modifier.padding(20.dp)) {
         Text(
-          text = "Meta Semanal de Entrenamiento",
+          text = "Meta semanal de juego",
           style = MaterialTheme.typography.titleMedium,
           fontWeight = FontWeight.Bold
         )
@@ -665,12 +550,12 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Column {
               Text(
-                text = "Recordatorios Diarios",
+                text = "Recordatorio diario",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
               )
               Text(
-                text = "Programados con Android WorkManager",
+                text = "Un aviso al día",
                 style = MaterialTheme.typography.labelSmall,
                 color = TealPrimary
               )
@@ -695,7 +580,7 @@ fun SettingsScreen(
                     reminderHour = reminderHour,
                     reminderMinute = reminderMinute
                   )
-                  Toast.makeText(context, "Recordatorios diarios programados", Toast.LENGTH_SHORT).show()
+                  Toast.makeText(context, "Recordatorio diario activado", Toast.LENGTH_SHORT).show()
                 }
               } else {
                 notificationsEnabled = false
@@ -709,7 +594,7 @@ fun SettingsScreen(
                   reminderHour = reminderHour,
                   reminderMinute = reminderMinute
                 )
-                Toast.makeText(context, "Recordatorios desactivados", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Recordatorio desactivado", Toast.LENGTH_SHORT).show()
               }
             },
             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = TealPrimary),
@@ -718,7 +603,7 @@ fun SettingsScreen(
         }
 
         Text(
-          text = "Recibe un aviso motivador cada día a la hora seleccionada para ejercitar memoria, atención y razonamiento sin interrumpir tu rutina.",
+          text = "Un aviso cada día, a la hora que elijas, para acordarte de jugar. Puedes apagarlo cuando quieras.",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -728,7 +613,7 @@ fun SettingsScreen(
 
           // Schedule time selector
           Text(
-            text = "Horario preferido de entrenamiento",
+            text = "Hora del recordatorio",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
           )
@@ -794,7 +679,7 @@ fun SettingsScreen(
           OutlinedButton(
             onClick = {
               viewModel.triggerTestNotification()
-              Toast.makeText(context, "¡Notificación de prueba enviada!", Toast.LENGTH_SHORT).show()
+              Toast.makeText(context, "Aviso de prueba enviado", Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier
               .fillMaxWidth()
@@ -803,7 +688,7 @@ fun SettingsScreen(
           ) {
             Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Probar notificación ahora (WorkManager)")
+            Text("Probar el aviso ahora")
           }
         }
       }
@@ -823,13 +708,13 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.width(12.dp))
         Column {
           Text(
-            text = "100% Privado y Seguro",
+            text = "Tu progreso es tuyo",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = TealPrimary
           )
           Text(
-            text = "Tus puntuaciones y progreso se almacenan únicamente en tu dispositivo. Sin anuncios ni suscripciones.",
+            text = "Sin cuenta, sin internet y sin anuncios. Tu progreso se guarda en tu teléfono y en la copia de seguridad de Android, si la tienes activada.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
           )
@@ -850,7 +735,7 @@ fun SettingsScreen(
         Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-          text = "Nubi es una aplicación de juegos para el entretenimiento, agilidad y bienestar cognitivo. No constituye diagnóstico ni reemplazo de consejo médico o profesional.",
+          text = "Nubi es un juego para mantener la mente activa. No es una herramienta de salud: no diagnostica ni trata nada, y no promete resultados. Si te preocupa tu memoria, habla con un profesional.",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           lineHeight = 16.sp
@@ -884,7 +769,7 @@ fun SettingsScreen(
         Text("Enviar informe de errores")
       }
       Text(
-        text = "Si algo falla, comparte este informe con quien te dio la app. No incluye tu nombre ni tus resultados.",
+        text = "Si algo falla, comparte este informe con quien te dio la app. No incluye tu nombre; si una partida no se pudo guardar, incluye los datos de esa partida para encontrar el error.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )
@@ -940,123 +825,5 @@ fun SettingsScreen(
     )
   }
 
-  // Dialog: Create New Profile
-  if (showNewProfileDialog) {
-    var newName by remember { mutableStateOf("") }
-    var newAvatar by remember { mutableStateOf("🧠") }
-    val avatarChoices = listOf("🧠", "👵", "👴", "🌟", "🎯", "🦉", "🌿", "💡", "⚡")
 
-    AlertDialog(
-      onDismissRequest = { showNewProfileDialog = false },
-      title = {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Icon(Icons.Default.Person, contentDescription = null, tint = TealPrimary)
-          Spacer(modifier = Modifier.width(8.dp))
-          Text("Nuevo Perfil de Usuario")
-        }
-      },
-      text = {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-          Text(
-            text = "Crea un perfil con su propia configuración de dificultad y progreso en Room.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
-
-          OutlinedTextField(
-            value = newName,
-            onValueChange = { newName = it },
-            label = { Text("Nombre (ej. Carmen, Papá, Sofía)") },
-            singleLine = true,
-            modifier = Modifier
-              .fillMaxWidth()
-              .testTag("input_new_profile_name"),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = TealPrimary,
-              focusedLabelColor = TealPrimary
-            )
-          )
-
-          Text(
-            text = "Selecciona un avatar:",
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.SemiBold
-          )
-
-          LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            items(avatarChoices) { av ->
-              val isChosen = newAvatar == av
-              Surface(
-                shape = CircleShape,
-                color = if (isChosen) TealPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                border = if (isChosen) BorderStroke(2.dp, TealPrimary) else BorderStroke(1.dp, Color.Transparent),
-                modifier = Modifier
-                  .size(38.dp)
-                  .clickable { newAvatar = av }
-              ) {
-                Box(contentAlignment = Alignment.Center) {
-                  Text(text = av, fontSize = 18.sp)
-                }
-              }
-            }
-          }
-        }
-      },
-      confirmButton = {
-        Button(
-          onClick = {
-            if (newName.isNotBlank()) {
-              viewModel.createNewProfile(
-                name = newName.trim(),
-                avatar = newAvatar
-              )
-              showNewProfileDialog = false
-              Toast.makeText(context, "Perfil '${newName.trim()}' creado en Room", Toast.LENGTH_SHORT).show()
-            }
-          },
-          enabled = newName.isNotBlank(),
-          colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
-          shape = RoundedCornerShape(10.dp),
-          modifier = Modifier.testTag("btn_confirm_new_profile")
-        ) {
-          Text("Crear y Activar")
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = { showNewProfileDialog = false }) {
-          Text("Cancelar")
-        }
-      }
-    )
-  }
-
-  // Dialog: Confirm Delete Profile
-  profileToDelete?.let { profile ->
-    AlertDialog(
-      onDismissRequest = { profileToDelete = null },
-      title = { Text("¿Eliminar perfil?") },
-      text = {
-        Text("Se eliminarán las preferencias y la configuración de dificultad de '${profile.name.ifBlank { "Sin nombre" }}' guardadas en Room.")
-      },
-      confirmButton = {
-        Button(
-          onClick = {
-            viewModel.deleteProfile(profile.id)
-            profileToDelete = null
-            Toast.makeText(context, "Perfil eliminado", Toast.LENGTH_SHORT).show()
-          },
-          colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-          shape = RoundedCornerShape(10.dp)
-        ) {
-          Text("Eliminar")
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = { profileToDelete = null }) {
-          Text("Cancelar")
-        }
-      }
-    )
-  }
 }

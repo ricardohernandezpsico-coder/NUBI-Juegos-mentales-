@@ -55,15 +55,3 @@ les causa rechazo ver todo en colores con los que no se sienten representadas.
 1. Rangos + insignias + estrellas (primero una lámina para aprobar).
 2. Tu astronauta (lámina → onboarding, Perfil, color de acento).
 3. Desbloqueables (parches y compañeros por logros y rangos).
-
-## «Código secreto» (4-oct): un juego de deducción para volver a dejar Razonamiento en 5
-
-**Para después de publicar.** Origen: al retirar Detective de Series (4-oct) Razonamiento quedó en 4 juegos; esta idea lo devolvería a 5.
-
-- **Qué es:** deducción tipo «toros y vacas»: la cerradura de la nave esconde un código de 3-4 luces de colores y se prueban combinaciones.
-- **Pistas:** después de cada intento, cuántas luces están bien y en su lugar, y cuántas están bien pero en otro lugar. Con eso se descarta y se llega al código.
-- **Colores:** las 4 tintas aptas para daltonismo (las de Tinta o Palabra: rojo, azul, amarillo y blanco; paleta verificada con `tools/paleta_daltonismo.py`); el lugar y la forma también cuentan, nunca solo el color.
-- **Sin reloj y graduable:** pensar con calma no se penaliza; se gradúa con el largo del código (3 o 4), cuántos colores entran y si se repiten.
-- **Nombre:** NO usar «Mastermind», que es una marca registrada; nombre propio, arte, textos y sonidos propios.
-- **Sin implementar** hasta que Ricardo lo pida.
-

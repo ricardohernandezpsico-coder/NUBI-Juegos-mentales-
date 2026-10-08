@@ -239,7 +239,7 @@ private fun FlightPage(step: FlightStep, s: FlightState, todayGames: List<String
     )
     FlightStep.METAS -> QuestionPage(
       eyebrow = "Para armar tu camino",
-      title = "¿Qué te gustaría entrenar$hi?",
+      title = "¿Qué te gustaría jugar más$hi?",
       options = listOf(
         Opt(DomainType.MEMORIA.name, "Memoria", "recordar, retener"),
         Opt(DomainType.ATENCION.name, "Atención", "concentrarme, reaccionar"),

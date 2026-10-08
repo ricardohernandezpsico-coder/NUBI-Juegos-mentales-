@@ -44,7 +44,7 @@ Atención pasó de 6 a 5 juegos (Tinta o Palabra, Freno, Piloto, Satélites, Res
 **Detective de Series (RETIRADO, 4-oct-2026)**, id `series` (Razonamiento, «lógica secuencial»): descubrir la regla de una serie de números (sumas, cuadrados, cubos, primos…) y elegir el que sigue. Razones (Ricardo):
 (1) las series de números intimidan y parecen un examen; (2) repetía números con Carga exacta y Aterrizaje Lunar; (3) la alternativa con figuras (planetas con lunas, anillo, satélite y color: una regla que se descubre mirando)
 no convenció; el boceto jugable queda guardado en `docs/previews/series-figuras-boceto.html` (idea DESCARTADA). Razonamiento pasó de 5 a 4 juegos (Carga exacta, Aterrizaje Lunar, Acoplamiento y Tráfico Estelar) y la app, de 21 a 20.
-Para volver a 5 después de publicar: la idea «Código secreto» de `docs/ideas-guardadas.md`.
+La idea «Código secreto» (juego de deducción) se guardó el 4-oct para volver a 5 y se DESCARTÓ el 8-oct: es un juego de deducción con información oculta, contra la regla de Ricardo.
 - **El id `series` queda RESERVADO** (no se reutiliza): `GameRegistry.retiredDomains` (igual que `cambiochip` y `comparacion`).
 - **Datos de quien ya lo jugó: NO se borran ni se migran**: las partidas y el progreso siguen en Room y en `skill` pero no se muestran ni cuentan para «Explorador», las ligas más altas, la liga general (promedio de los 20)
   ni el área Razonamiento (sus 4 juegos); la racha y el total de partidas sí cuentan esos días, y un camino de hoy guardado que lo nombraba se corrige solo (`withoutRetiredGames`).

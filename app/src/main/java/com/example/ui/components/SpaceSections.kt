@@ -102,7 +102,7 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
           Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(g.title, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             Text(
-              text = if (v == null) "Sin medir" else "${levelWord(v)} · P${com.example.data.Percentile.of(v)}",
+              text = if (v == null) "Sin medir" else levelWord(v),
               color = if (v == null) OnNightDim else g.domain.color,
               fontSize = 14.sp, fontWeight = FontWeight.Bold
             )

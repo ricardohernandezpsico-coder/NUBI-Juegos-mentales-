@@ -142,7 +142,7 @@ object Atlas {
     val (hits, seen) = trapStats(seenType, hitsType) ?: return null
     if (seen < MIN_TRAP_ROUNDS) return null
     return if (seen - hits > 0)
-      "Es normal: el cerebro une lo que suele ir junto. Truco: antes de tocar, pregúntate qué TIPO de cosa es cada una."
+      "Es normal: solemos unir lo que suele ir junto. Truco: antes de tocar, pregúntate qué TIPO de cosa es cada una."
     else "Resististe todas: separas bien lo que va junto de lo que es del mismo tipo."
   }
 

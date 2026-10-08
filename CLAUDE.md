@@ -2,48 +2,29 @@
 
 **Nombre público desde el 29-sep: Nubi** ("Nubi – Brain Games"; el personaje es una nebulosa pequeña de arcilla).
 
-> **Nombres internos.** La app se llama Nubi, pero por dentro todavía dice "NeuroVida" en tres lugares, y NO se cambia:
-> (1) el archivo de la base de datos `neurovida_database` y los nombres de las preferencias: renombrarlos haría perder el
-> progreso de quienes ya la usan; (2) los namespaces y asmdefs de Unity (`NeuroVida.*`, `NeuroVidaCore`, la carpeta
-> `unity/NeuroVidaCore/`) y clases Kotlin (`NeuroVidaViewModel`, `NeuroVidaRepository`…): un refactor enorme sin ningún
-> beneficio visible; (3) el `applicationId` (`com.aistudio.neurovida.cgnv`): se define UNA sola vez antes de publicar (ver
-> `docs/auditoria-30-sep.md`). **La carpeta del proyecto ya se llama `Nubi/`** (renombrada desde `NeuroVida/` el 1-oct): la ruta
-> es `C:/Users/RURAL7/Desktop/Proyectos/Nubi`. La primera vez que Ricardo abra Unity tendrá que volver a agregar el proyecto
-> (`unity/NeuroVidaCore`) en Unity Hub y Unity reconstruirá su caché (`Library/`). La app no muestra "NeuroVida" en ningún texto
-> visible (se comprobó el 1-oct en `strings.xml` y en la interfaz). En los documentos, "Nubi" nombra la app y "NeuroVida" solo
-> aparece en identificadores o cuando se habla del nombre viejo.
+> **Nombres internos.** La app es Nubi, pero por dentro todavía dice "NeuroVida" y NO se cambia: el archivo de la base `neurovida_database` y los nombres de las preferencias (renombrarlos perdería el progreso), los namespaces y asmdefs de Unity
+> (`NeuroVida.*`, `unity/NeuroVidaCore/`) y clases Kotlin (`NeuroVidaViewModel`…), y el `applicationId` (`com.aistudio.neurovida.cgnv`, se define UNA vez antes de publicar: `docs/auditoria-30-sep.md`). La carpeta es `C:/Users/RURAL7/Desktop/Proyectos/Nubi`
+> (renombrada el 1-oct; Unity Hub necesita agregar el proyecto `unity/NeuroVidaCore` de nuevo). La app no muestra "NeuroVida" en ningún texto visible; en los documentos, "NeuroVida" solo aparece en identificadores o para el nombre viejo.
 
-App de estimulación cognitiva para Android: 19 juegos cortos en 4 áreas (Memoria [5: Ruta del Tesoro y Bitácora de Misión se retiraron el 4 y el 5-oct, y Bodega de carga ocupa el lugar de Bitácora desde el 5-oct] · Atención [foco y velocidad] · Razonamiento [lógica y números, 4 juegos: Engranajes (5-oct) ocupa el lugar de los retirados Detective de Series y Tráfico Estelar] · Lenguaje;
-de 6 a 4 el 30-sep, Room v14), dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
-racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en
-Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a
-Lumosity/Peak/Elevate en calidad y en motivación.
+App Android de juegos mentales cortos para mantener la mente activa: 19 juegos en 4 áreas (Memoria, Atención, Razonamiento y Lenguaje; de 6 a 4 áreas el 30-sep; juegos retirados en `docs/juegos/descartados.md`), Room v14, dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
+racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a Lumosity/Peak/Elevate en calidad y en motivación.
 
 El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de Ricardo) está en
 [`docs/historial-desarrollo.md`](docs/historial-desarrollo.md). Es historia: lo que manda es este archivo y el código.
 
 ## Cómo trabajamos (nube ↔ PC)
 
-- Las sesiones en la nube editan, verifican C# con `dotnet build tools/unity-compile-check -v q` y hacen push a la
-  rama de trabajo. En la nube no hay Unity, pero **la app Kotlin SÍ se compila y prueba**: `bash tools/nube-compilar-app.sh`
-  (instala el SDK la primera vez, pone un unityLibrary FALSO en `unity/AndroidExport/` y corre `:app:testDebugUnitTest`;
-  con `fotos` graba las capturas Roborazzi, p. ej. `HomePlanetScreenshotTest`, para ver pantallas sin teléfono).
-  No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
+- Las sesiones en la nube editan, verifican C# con `dotnet build tools/unity-compile-check -v q` y hacen push a la rama de trabajo; **la app Kotlin SÍ se compila y prueba allá**: `bash tools/nube-compilar-app.sh` (unityLibrary FALSO; con `fotos` graba capturas Roborazzi). No correrlo en el PC de Ricardo (allá `unity/AndroidExport/` es el export real).
 - En el PC de Ricardo (Git Bash, carpeta del repo): `git pull && bash tools/verificar-todo.sh --instalar` →
   escena piloto, pruebas EditMode, smoke de los juegos de Unity (en UN solo Unity; Bitácora, retirada de la app, sigue en Unity y en el smoke), REEXPORTAR Unity, Gradle con pruebas Kotlin, instalar.
-  Salida corta (una línea por etapa); los logs completos van a `unity/test-results/v-*.log` y solo se leen si algo falla.
-  Modos para iterar sin verificar todo cada vez: ver «Cómo trabajar una tarea de un juego».
+  Salida corta; los logs completos van a `unity/test-results/v-*.log`. Modos para iterar: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
   (hoy `estilo 8-oct · estación de correo`). **Cambiarla con cada cambio visible de Unity.**
-- Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un
-  UnityEngine mínimo y vuelca PNG; `constelaciones.py`, `bodega.py`, `correo.py`, etc. arman las láminas de piezas de cada juego) y `tools/previews/*.py` (réplicas PIL
-  de pantallas Compose). Resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina. **Capturas REALES** (el juego de verdad, no una composición): `bash tools/verificar-todo.sh --capturas Correo`
-  (paso opcional y aparte: Unity SIN `-nographics`, necesita tarjeta de video, no corre en el CI; un guion lleva el juego por sus momentos y `tools/capturas/hoja.py` arma `docs/previews/correo-estacion.png`; hoy solo Correo tiene guion, los demás juegos se suman de a uno al tocarlos).
-- Estilo con Ricardo: en español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
+- Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un UnityEngine mínimo y vuelca PNG; `constelaciones.py`, `bodega.py`, `correo.py`… arman las láminas de piezas) y `tools/previews/*.py` (réplicas PIL de pantallas Compose); resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina. **Capturas REALES** (el juego de verdad, no una composición): `bash tools/verificar-todo.sh --capturas Correo` (opcional; necesita tarjeta de video; detalle en `docs/respaldo-y-diagnostico.md`; hoy solo Correo).
+- Estilo con Ricardo: español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
 - Qué sigue (juegos que faltan para llegar a 5 por área, Avance, orden): [`docs/hoja-de-ruta.md`](docs/hoja-de-ruta.md).
-- Repositorios externos: si alguno de GitHub puede potenciar la app, COMENTARLO a Ricardo y él decide; nunca agregarlo
-  sin preguntar. Descartados: Zenject/Extenject y awesome-unity (razones en la hoja de ruta).
+- Repositorios externos: si alguno de GitHub puede potenciar la app, COMENTARLO a Ricardo y él decide; nunca agregarlo sin preguntar (descartados y razones: hoja de ruta).
 
 ## Toolchain (PC Windows de Ricardo)
 
@@ -64,24 +45,17 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   "Ver más detalles"). No se dice "Mi cerebro" (Ricardo: suena a Lumosity). Arriba a la derecha en las 3
   (`TabTopBar` + `components/TopActions`): tu inicial en arcilla celeste = perfil (`ProfileScreen`: escudo, cifras,
   logros) y engranaje = opciones (`SettingsPanel` → `SettingsScreen`); se abren como paneles (`viewModel.topPanel`).
-  Inicio nuevo «Primer vuelo con Nubi» (`FirstFlightScreen` + `FirstFlightHost`, lógica en `data/FirstFlight.kt`, ficha en `docs/diseno-inicio.md`): 19 pasos con 4 juegos (uno por
-  área) y preguntas intercaladas, mientras `UserSettings.ageBand == null` o haya un recorrido guardado. Reemplaza al onboarding de 9 pantallas y a la evaluación aparte.
+  Inicio «Primer vuelo con Nubi» (`FirstFlightScreen` + `FirstFlightHost`, `data/FirstFlight.kt`, `docs/diseno-inicio.md`): 19 pasos con 4 juegos (uno por área) y preguntas intercaladas, mientras `UserSettings.ageBand == null` o haya un recorrido guardado.
   Las pestañas se pasan deslizando con el dedo (`HorizontalPager` en `MainActivity`, sincronizado con
   `viewModel.currentTab`). Una ventana abierta sobre una pestaña (área en Juegos, detalle de un área en Hoy o Avance)
   llama `LockTabSwipe()`: mientras esté, el dedo no cambia de pestaña y la barra de abajo se esconde.
-- Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`). Al "Continuar" del tercero,
-  resumen (`data/SessionSummary` + `ui/screens/SessionSummaryScreen`): Nubi celebra, qué áreas se trabajaron, puntaje
-  de cada juego, racha y la barra de avance de cada área con "Hoy avanzó de X a Y" (cambio desde el comienzo de la
-  sesión, `AreaProgress.status(since = ...)`). Captura `docs/previews/resumen-sesion-real.png`.
-- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `NumberLine`, `Percentile`, `RetoChoice`,
+- Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`); al terminar, el resumen (`data/SessionSummary` + `SessionSummaryScreen`): áreas trabajadas, puntaje de cada juego, racha y «Hoy avanzó de X a Y» por área.
+- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `NumberLine`, `RetoChoice`,
   `Planet`, `SessionSummary`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v14** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
-  juego con `ddaRating`, sesión diaria, perfiles, maestría, desafíos). Datos que solo se agregan o salen del
-  onboarding van en **SharedPreferences** para no migrar: `league_events`, `achievements`, `profile_extra`
-  (educación, metas, mapa, `prior_at`), `paused_game`, bandeja de resultados de Unity, `skill` (avance: ver abajo), `star_measures` (la medida
-  propia de cada partida de los juegos estrella, `StarMeasures.encode`), `mission_log` (de Bitácora, retirada: ya no se lee, sigue en el respaldo), `progress_log` (historia del
-  avance de cada juego, ~60 días, `AreaProgress`: el cambio de la semana de cada área en Hoy).
+  juego con `ddaRating`, sesión diaria, perfil —uno solo: desde el 8-oct no se crean ni cambian perfiles; la tabla `user_profile` y su DAO se quedan—, maestría, desafíos). Datos que solo se agregan o salen del
+  onboarding van en **SharedPreferences** para no migrar (`league_events`, `achievements`, `profile_extra`, `skill`, `star_measures`, `progress_log`, `mission_log` —de Bitácora, retirada—, `paused_game`, bandeja de resultados de Unity…).
   Al cambiar el esquema de Room: entidad → subir versión → `Migration(N, N+1)` en SQL → compilar → comitear `schemas/<N+1>.json`.
 - Diseño "noche + arcilla" (`ui/theme/Clay.kt`, `Type.kt` con Fredoka, `ui/components/CosmosBackground.kt`).
 
@@ -105,7 +79,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StroopTelemetry` (salida común de casi todos; lleva `end_rating` y `peak_level`; `SequenceTelemetry` y `CardsTelemetry` llevan los mismos campos).
 - `Games/AdaptiveDifficulty.cs`: DDA común (up-down ponderado de Kaernbach hacia 80% de aciertos, 85% en mayores;
   ver `docs/DDA-comun.md`). Lo usan Tinta o Palabra (`Stroop/`),
-  «Carga exacta» (id `calculo`, antes Cálculo Sereno), «Engranajes: Taller de reparación» (id `engranajes`, 12 niveles = 12 etapas; se arregla la máquina con 1 o 2 cambios), «En la punta de la lengua» (id `anagramas`), **Rastro de luz** (id `secuencia`: escalera de 16 niveles, `RastroLadder`/`RastroContract`, sin tiempo de reacción; las 3 vidas solo terminan la partida) y **Constelaciones** (id `parejas`: escalera de 18 etapas en 6 grupos, `ConstelacionContract`; cada oportunidad de memoria es un ensayo), **Correo Estelar** (id `correo`: escalera de 10 etapas, `MailContract`; cada encargo es un ensayo) y **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Radar** y **Satélites** una, sin tiempo de reacción; **Freno de Emergencia** una para la tarea de ir (el alto tiene su escalera propia). Desde el 3-oct los 23 juegos usan el motor común.
+  «Carga exacta», «Engranajes», «En la punta de la lengua», **Rastro de luz** (escalera de 16 niveles), **Constelaciones** (18 etapas en 6 grupos) y **Correo Estelar** (10 etapas; cada encargo es un ensayo); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Radar**, **Satélites** y **Freno de Emergencia** (solo la tarea de ir) una. Desde el 3-oct los 23 juegos usan el motor común. Fundamento: Levitt 1971 y Kaernbach 1991; el 80/85 % es decisión de diseño (`docs/DDA-comun.md`).
 - Cada juego: `XContract.cs` (reglas puras con pruebas) + `XGameController.cs` (UI construida por código). Los 7 del
   DDA común heredan de `Shared/GameControllerBase` y usan `Shared/GameHud`.
 - `Games/Shared/`: sello visual y piezas comunes — `NeuroStyle` (paleta de la app, `ClayText`, `ClayFrame`),
@@ -113,7 +87,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
   `GameFeel` (sonidos sintetizados y vibración), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
   (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `PressScale`, sprites varios, y el **tutorial guiado común** (`GuidedTutorial` + `NubiTeacherSprite`;
-  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = Rastro de luz, Freno, Aterrizaje, Meteoros, Tinta o Palabra, En la punta de la lengua, Carga exacta, Engranajes, Bodega de carga, Constelaciones y Correo Estelar; «Cómo se juega» en la pausa; cómo sumar otro en `docs/diseno-rastro-de-luz.md`). Nubi y su globo se colocan sin tapar el hueco, las zonas protegidas que declara cada paso ni ningún texto del juego (`CoachLayout`, textos en `CoachTexts`; `docs/tutoriales-con-nubi.md`).
+  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = Rastro de luz, Freno, Aterrizaje, Meteoros, Tinta o Palabra, En la punta de la lengua, Carga exacta, Engranajes, Bodega de carga, Constelaciones y Correo Estelar; «Cómo se juega» en la pausa; cómo sumar otro: `docs/diseno-rastro-de-luz.md`; colocación de Nubi: `docs/tutoriales-con-nubi.md`).
 
 ## Juegos (índice)
 
@@ -123,22 +97,22 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 | Juego | id | Área | Carpeta Unity | Documento (ficha técnica) | Lectura en la app (`data/`) |
 |---|---|---|---|---|---|
-| Constelaciones (antes Parejas Ocultas; renovado el 7-oct, conserva el id) | `parejas` | Memoria | `Games/Parejas/` | [docs/diseno-constelaciones.md](docs/diseno-constelaciones.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `Constelaciones.kt` |
+| Constelaciones (antes Parejas Ocultas; renovado el 7-oct, conserva el id) | `parejas` | Memoria | `Games/Parejas/` | [docs/diseno-constelaciones.md](docs/diseno-constelaciones.md) | `Constelaciones.kt` |
 | Rastro de luz (antes Secuencia Lumínica) | `secuencia` | Memoria | `Games/Secuencia/` | [docs/diseno-rastro-de-luz.md](docs/diseno-rastro-de-luz.md) | `Trail.kt` |
-| Bodega de carga (nuevo, 5-oct; ocupa el lugar de Bitácora de Misión con otro id; la esclusa de carga entra y saca todo) | `bodega` | Memoria | `Games/Bodega/` | [docs/diseno-bodega-de-carga.md](docs/diseno-bodega-de-carga.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `Bodega.kt` |
-| ~~Bitácora de Misión~~ **RETIRADA el 5-oct-2026** (Ricardo: «no me convence»; la app ya no la lanza, el código de Unity se queda, el historial se conserva; ver `docs/juegos/descartados.md`) | `bitacora` | (Memoria) | `Games/Bitacora/` | [docs/juegos/bitacora.md](docs/juegos/bitacora.md) | — |
+| Bodega de carga (nuevo, 5-oct; ocupa el lugar de Bitácora de Misión con otro id) | `bodega` | Memoria | `Games/Bodega/` | [docs/diseno-bodega-de-carga.md](docs/diseno-bodega-de-carga.md) | `Bodega.kt` |
+| ~~Bitácora de Misión~~ **RETIRADA el 5-oct-2026** (la app ya no la lanza; el código de Unity y el historial se conservan; ver `docs/juegos/descartados.md`) | `bitacora` | (Memoria) | `Games/Bitacora/` | [docs/juegos/bitacora.md](docs/juegos/bitacora.md) | — |
 | Rumbo a Casa | `rumbo` | Memoria | `Games/Rumbo/` | [docs/juegos/rumbo.md](docs/juegos/rumbo.md) | `Homing.kt` |
-| Correo Estelar — «La estación de correo» (antes un vuelo con la ruta de Piloto; renovado el 8-oct, conserva el id) | `correo` | Memoria | `Games/Correo/` | [docs/diseno-correo-estacion.md](docs/diseno-correo-estacion.md) (medida: [docs/medidas-juegos-estrella.md](docs/medidas-juegos-estrella.md); DDA común: [docs/DDA-comun.md](docs/DDA-comun.md); la ficha del vuelo viejo, solo historia: [docs/juegos/correo.md](docs/juegos/correo.md)) | `Mail.kt` |
-| Tinta o Palabra («Dos orillas», 3-oct) | `stroop` | Atención | `Games/Stroop/` | [docs/diseno-tinta-o-palabra.md](docs/diseno-tinta-o-palabra.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `DosOrillas.kt` |
+| Correo Estelar — «La estación de correo» (renovado el 8-oct, conserva el id) | `correo` | Memoria | `Games/Correo/` | [docs/diseno-correo-estacion.md](docs/diseno-correo-estacion.md) (medida: [docs/medidas-juegos-estrella.md](docs/medidas-juegos-estrella.md); el vuelo viejo, solo historia: [docs/juegos/correo.md](docs/juegos/correo.md)) | `Mail.kt` |
+| Tinta o Palabra («Dos orillas», 3-oct) | `stroop` | Atención | `Games/Stroop/` | [docs/diseno-tinta-o-palabra.md](docs/diseno-tinta-o-palabra.md) | `DosOrillas.kt` |
 | Piloto Estelar | `piloto` | Atención | `Games/Piloto/` | [docs/juegos/piloto.md](docs/juegos/piloto.md) | — |
 | Freno de Emergencia | `freno` | Atención | `Games/Freno/` | [docs/juegos/freno.md](docs/juegos/freno.md) | — |
 | Satélites | `satelites` | Atención | `Games/Satelites/` | [docs/juegos/satelites.md](docs/juegos/satelites.md) | — |
 | Radar | `radar` | Atención | `Games/Radar/` | [docs/juegos/radar.md](docs/juegos/radar.md) | — |
-| Carga exacta (reemplaza a Cálculo Sereno el 4-oct; conserva el id) | `calculo` | Razonamiento | `Games/Calculo/` | [docs/diseno-carga-exacta.md](docs/diseno-carga-exacta.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `Carga.kt` |
-| Engranajes: Taller de reparación (nuevo, 5-oct, rehecho ese día; ocupa el lugar de Tráfico Estelar con otro id) | `engranajes` | Razonamiento | `Games/Engranajes/` | [docs/diseno-engranajes.md](docs/diseno-engranajes.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `Engranajes.kt` |
+| Carga exacta (reemplaza a Cálculo Sereno el 4-oct; conserva el id) | `calculo` | Razonamiento | `Games/Calculo/` | [docs/diseno-carga-exacta.md](docs/diseno-carga-exacta.md) | `Carga.kt` |
+| Engranajes: Taller de reparación (nuevo, 5-oct; ocupa el lugar de Tráfico Estelar con otro id) | `engranajes` | Razonamiento | `Games/Engranajes/` | [docs/diseno-engranajes.md](docs/diseno-engranajes.md) | `Engranajes.kt` |
 | Acoplamiento | `acoplamiento` | Razonamiento | `Games/Acoplamiento/` | [docs/juegos/acoplamiento.md](docs/juegos/acoplamiento.md) | — |
 | Aterrizaje Lunar | `aterrizaje` | Razonamiento | `Games/Aterrizaje/` | [docs/juegos/aterrizaje.md](docs/juegos/aterrizaje.md) | `NumberLine.kt` |
-| En la punta de la lengua (reemplaza a Anagramas el 3-oct; conserva el id) | `anagramas` | Lenguaje | `Games/Anagramas/` | [docs/diseno-punta-de-la-lengua.md](docs/diseno-punta-de-la-lengua.md) (DDA común: [docs/DDA-comun.md](docs/DDA-comun.md)) | `Punta.kt` |
+| En la punta de la lengua (reemplaza a Anagramas el 3-oct; conserva el id) | `anagramas` | Lenguaje | `Games/Anagramas/` | [docs/diseno-punta-de-la-lengua.md](docs/diseno-punta-de-la-lengua.md) | `Punta.kt` |
 | Lluvia de meteoros | `meteoros` | Lenguaje | `Games/Meteoros/` | [docs/diseno-lluvia-de-meteoros.md](docs/diseno-lluvia-de-meteoros.md) | `Vocabulary.kt` |
 | ¿Verdad o disparate? | `disparate` | Lenguaje | `Games/Disparate/` | [docs/diseno-verdad-o-disparate.md](docs/diseno-verdad-o-disparate.md) | `Reading.kt` |
 | Cosecha de palabras | `cosecha` | Lenguaje | `Games/Cosecha/` | [docs/diseno-cosecha-de-palabras.md](docs/diseno-cosecha-de-palabras.md) | `Harvest.kt` |
@@ -146,10 +120,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Cómo trabajar una tarea de un juego
 
-- Lee SOLO la carpeta del juego (`unity/NeuroVidaCore/Assets/Scripts/Games/<Carpeta>/`), su documento (tabla de arriba) y los puntos
-  de contacto: la columna «Lectura en la app» y los comunes de todo juego (`model/Models.kt` → `GameRegistry`, `bridge/NativeReceiver.kt`
-  y su DTO, `Bootstrap/GameEntryPoint.cs`, `Contracts/StroopTelemetry.cs` o la telemetría propia, `games/GameResultScreen.kt`,
-  `data/StarMeasures.kt`, `data/Skill.kt`, `HeadlessPlaymodeSmokeTest.cs`).
+- Lee SOLO la carpeta del juego (`unity/NeuroVidaCore/Assets/Scripts/Games/<Carpeta>/`), su documento (tabla de arriba) y los puntos de contacto: la columna «Lectura en la app» y los comunes (`GameRegistry` en `model/Models.kt`, `bridge/NativeReceiver.kt`, `Bootstrap/GameEntryPoint.cs`, `Contracts/StroopTelemetry.cs` o la telemetría propia, `games/GameResultScreen.kt`, `data/StarMeasures.kt`, `data/Skill.kt`, `HeadlessPlaymodeSmokeTest.cs`).
 - NO leas `docs/historial-desarrollo.md` ni los documentos o carpetas de otros juegos salvo que la tarea lo pida.
 - Mientras iteras: `bash tools/verificar-todo.sh --juegos <Juego> --filtro-tests <Juego>` (smoke solo de ese juego en un Unity y
   EditMode solo de sus pruebas). Si el cambio es solo de Kotlin: `--solo-app` (avisa si `unity/` cambió desde el último export).
@@ -159,39 +130,24 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Reglas que no se rompen
 
-- **Diseño**: "noche + arcilla": cielo nocturno animado (**fondo C**, 30-sep, elegido por Ricardo en
-  `docs/previews/fondo-oscuro.png`: #02030F → #050823 → #0A0F33 en `CosmosBackground`, `nv_night`, `UnityLoadingOverlay` y
-  `NeuroStyle.Night*`; nebulosas de la app −40%; barra de pestañas en tinta #14112E con la elegida en pastilla uva); lo tocable es arcilla (borde tinta grueso `Ink` 0x1A1240,
-  sombra dura, colores Coral/Sun/Sky/Grape/Lime/Cream). **Tipografía** (28-sep): `AppFamily` elige por peso: normal y
-  medio = Nunito (subtítulos, comentarios, texto secundario), seminegrita y negrita = Fredoka (títulos, botones,
-  números); los títulos de `Typography` son siempre Fredoka. Fuentes OFL en `res/font`. **Tamaños**: pensando en
-  adultos mayores, ningún texto bajo 14 sp (13 solo en la barra de pestañas y rótulos de gráficos). Las pantallas principales NO usan
-  recuadros para informar (texto suelto, objetos, líneas finas); tarjetas solo en diálogos. Nada de emojis como
-  íconos; acierto/error nunca solo por color (forma o texto); contraste ≥ 4.5:1; respetar "quitar animaciones",
-  sonido y vibración apagados. Usar la skill `ui-ux-pro-max` (`.claude/skills/`) para decisiones de diseño.
+- **Diseño**: "noche + arcilla": cielo nocturno animado (**fondo C**, `docs/previews/fondo-oscuro.png`; colores en `CosmosBackground` y `NeuroStyle.Night*`); lo tocable es arcilla (borde tinta grueso `Ink`, sombra dura, colores Coral/Sun/Sky/Grape/Lime/Cream). **Tipografía**: `AppFamily` elige por peso: normal y medio = Nunito, seminegrita y negrita = Fredoka (títulos, botones, números); fuentes OFL en `res/font`. **Tamaños**: ningún texto bajo 14 sp (13 solo en la barra de pestañas y rótulos de gráficos). Las pantallas principales NO usan recuadros para informar (texto suelto, objetos, líneas finas); tarjetas solo en diálogos. Nada de emojis como íconos; acierto/error nunca solo por color (forma o texto); contraste ≥ 4.5:1; respetar "quitar animaciones", sonido y vibración apagados. Usar la skill `ui-ux-pro-max` (`.claude/skills/`) para decisiones de diseño.
 - **Juegos Unity**: medir el tiempo con `GameClock.Time/DeltaTime` (no `Time.unscaled*`), para que la pausa funcione.
   El arte se hornea en sprites con `ClayRaster` (`Image.color` blanco); la sombra dura cae siempre hacia abajo.
 - **Símbolos** (4-oct): nada de estrella con puntas, media luna ni cruz en juegos ni íconos (luceros redondos, hexágono, gota, ola): ver [docs/simbolos-neutros.md](docs/simbolos-neutros.md). Los planetas-puerto de colores viven en `Games/Shared/PortSprites` (antes en Tráfico Estelar).
 - **Textos**: español, cercanos, sin culpa ni promesas de salud ("no es un examen", nada de "fortalece neuronas").
-  **Medidas del final de los juegos estrella** (revisión 27-sep): nombrar lo que se mide de verdad (no un rasgo:
-  "tu estimación", no "tu precisión numérica"), decir cómo leerlo, no sacar conclusiones de pocos ensayos, dar un
-  consejo concreto cuando se pueda, y comparar con estudios solo si la condición es comparable. Al pie va la nota
-  común "Medida de esta partida... No es un diagnóstico". Justificación de cada medida, con referencias:
-  [`docs/medidas-juegos-estrella.md`](docs/medidas-juegos-estrella.md). Al crear un juego estrella nuevo, agregar ahí su medida.
-  Percentiles y comparaciones se rotulan "estimación provisional" (referencia media 0.45, sd 0.20: supuesto, no dato).
-- **Licencias**: mecánicas genéricas, pero nombres, arte, textos y sonidos propios (no copiar a Lumosity & co.).
+  **Medidas del final de los juegos estrella**: nombrar lo que se mide de verdad (no un rasgo), decir cómo leerlo, no sacar conclusiones de pocos ensayos, dar un consejo concreto cuando se pueda y comparar con estudios solo si la condición es comparable. Al pie va la nota común "Medida de esta partida... No es un diagnóstico". Justificación y referencias de cada medida: [`docs/medidas-juegos-estrella.md`](docs/medidas-juegos-estrella.md); al crear un juego estrella nuevo, agregar ahí su medida.
+  No se muestran percentiles ni comparaciones con una referencia supuesta (8-oct). Vocabulario visible: juego, partida, camino, tu avance, áreas, mente activa; nada de «cognitivo», «entrenamiento», «cerebro» ni promesas de salud.
+- **Licencias**: mecánicas genéricas, pero nombres, arte, textos y sonidos propios (no copiar a Lumosity & co.). Las tipografías (OFL 1.1) llevan su aviso y el texto completo de la licencia en «Licencias y créditos» (`res/raw/ofl.txt`).
 - **Decisiones de Ricardo**: servidores, cuentas, Firebase, suscripciones y requisitos de tiendas se dejan para el
   FINAL. La app debe ser masiva, social y motivadora (ligas, logros, compartir), no clínica.
-- **Reglas por patentes** (no romper): Radar rehecho como "Rescate relámpago" (sin nave central ni opciones entre las que elegir: no volver a eso; US 8,348,671 de Posit); nombres: cuarta ronda (estilo Synapp: el vocabulario del cerebro está casi todo tomado); Piloto nunca con inclinación ni sensores del cuerpo; ningún juego calcula un perfil "impulsivo / conservador" ni usa caras con emociones que reaccionen al desempeño (Akili); Parejas siempre con el tablero a la vez; Satélites siempre plano (sin 3D estereoscópico); las etapas de avance quedan en la escala común (nada de "máximo personal" partido en puertas: US 10,559,221); no usar nombres ajenos (UFOV, Double Decision, NeuroTracker...). (Detalle de nombres y patentes: [docs/nombre-marca-y-riesgos.md](docs/nombre-marca-y-riesgos.md).)
+- **Reglas por patentes** (no romper): Radar es «Rescate relámpago» (sin nave central ni opciones entre las que elegir: US 8,348,671 de Posit); Piloto nunca con inclinación ni sensores del cuerpo; ningún juego calcula un perfil «impulsivo / conservador» ni usa caras con emociones que reaccionen al desempeño (Akili); Parejas siempre con el tablero a la vez; Satélites siempre plano; las etapas de avance en la escala común (US 10,559,221); nombres propios, sin los ajenos (UFOV, Double Decision, NeuroTracker…). Detalle: [docs/nombre-marca-y-riesgos.md](docs/nombre-marca-y-riesgos.md).
 
 ## Cuando Android cierra la app, respaldo y verificación automática (resumen; detalle en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md))
 
 - Con Unity al frente Android puede cerrar el proceso de la app: lo que el flujo necesita vive en disco (`bridge/GameSessionStore`) y el
   resultado pendiente lo procesa el ViewModel al volver. Si se toca `NeuroVidaViewModel` o `GameSessionStore`, correr `flow/GameFlowTest`
   y `bridge/GameSessionStoreTest` antes de instalar (reproducir: Opciones de desarrollador → «No conservar actividades»).
-- Respaldo: solo el PROGRESO (base de datos y preferencias `skill`, `star_measures`, `progress_log`, `league_events`, `achievements`,
-  `mission_log`, `profile_extra` — incluye `result_focus` y `color_vision` —, `atlas`, `punta_words` —las palabras azules de En la punta de la lengua—, `engranajes_rocket` —las luces y los cohetes en órbita de Engranajes—, `bodega_record` —el récord de Bodega de carga: la bodega más grande sin errores—, `constelaciones_record` —el récord de Constelaciones: la racha de memoria más larga—, `correo_record` —el récord de La estación de correo: las cartas bien puestas en un día perfecto—). Pasajero (NO se respalda): `paused_game`, `game_session`, `unity_results`, `library_focus`, `first_flight`. **Si se agrega un archivo de preferencias nuevo**, `BackupRulesTest` falla hasta que se sume
-  a `res/xml/backup_rules.xml` y `data_extraction_rules.xml` o a `transient` de la prueba.
+- Respaldo: solo el PROGRESO (la base de datos y las preferencias `skill`, `star_measures`, `progress_log`, `league_events`, `achievements`, `mission_log`, `profile_extra`, `atlas`, `punta_words`, `engranajes_rocket` y los récords `bodega_record`, `constelaciones_record` y `correo_record`). Pasajero (NO se respalda): `paused_game`, `game_session`, `unity_results`, `library_focus`, `first_flight`. **Si se agrega un archivo de preferencias nuevo**, `BackupRulesTest` falla hasta que se sume a `res/xml/backup_rules.xml` y `data_extraction_rules.xml` o a `transient` de la prueba.
 - Room: al subir `version`: entidad → `Migration(N, N+1)` en `NeuroVidaDatabase.MIGRATIONS` → compilar (genera `schemas/<N+1>.json`) →
   correr pruebas (`MigrationTest`).
 - Errores en el teléfono: `diag/ErrorLog` (`files/errores.txt`; Ajustes → «Enviar informe de errores»). GitHub Actions
@@ -201,33 +157,26 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 464 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 465 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y en `@After`:
   deja una base de Room EN MEMORIA (nunca el archivo `neurovida_database`), cancela el trabajo de fondo del repositorio anterior y apaga los recordatorios de
   WorkManager (`CognitiveReminderWorker.disabledForTests`); `NoDiskDatabaseGuardTest` falla si una prueba nueva no lo hace. Detalle en
   [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
-- Unity EditMode: 587 (contratos de cada juego, `AdaptiveDifficultyTests`, Constelaciones, La estación de correo, perfil por edad, Rastro de luz, tutoriales guiados, colocación de Nubi `CoachLayoutTests`) + 67 arranques de smoke (los 20 juegos de Unity, las 3 versiones cortas y los tutoriales: los de 10 juegos corren en 3 formas de pantalla —20:9, 18:9, 16:9— y fallan si Nubi, su globo o «Saltar tutorial» tapan algo; ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`; más las corridas «Pantalla…» en forma de teléfono de los juegos que no tienen tutorial —los que sí lo tienen ya corren en teléfono— y dos para Correo, y todas con la **guardia de textos**: todo texto visible cae dentro de la pantalla y, si es hijo de un botón o una píldora, dentro de él; hace FALLAR el smoke en cualquier juego (las únicas excepciones, rótulos que cuelgan a propósito de su imagen, están en `TextGuardExceptions` de `HeadlessPlaymodeSmokeTest.cs`); cada arranque deja su duración en el log: `[SmokeTest] tiempo …`).
-- Léxico de Lluvia de meteoros: 11 pruebas del filtro de nombres propios en `tools/lexico/test_propios.py` (`python -m unittest test_propios`, desde `tools/lexico`).
-- Banco de definiciones de «En la punta de la lengua» (reemplaza a Anagramas): 16 pruebas en `tools/punta/test_banco.py` (`python -m unittest test_banco`, desde `tools/punta`; ~1 s). Diseño: `docs/diseno-punta-de-la-lengua.md`.
-- Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).
-- Rondas de Cosecha de palabras: 17 pruebas en `tools/cosecha/test_rondas.py` (`python -m unittest test_rondas`, desde `tools/cosecha`; ~70 s;
-  con `COSECHA_REGENERAR=1` reconstruye todo desde las fuentes). Diseño aprobado en `docs/diseno-cosecha-de-palabras.md`.
+- Unity EditMode: 587 (contratos de cada juego, `AdaptiveDifficultyTests`, Constelaciones, La estación de correo, perfil por edad, Rastro de luz, tutoriales guiados, `CoachLayoutTests`) + 67 arranques de smoke (los juegos, las versiones cortas, los tutoriales en 3 formas de pantalla y las corridas «Pantalla…» en forma de teléfono, todos con la **guardia de textos**: un texto fuera de lugar hace fallar el smoke en cualquier juego; detalle y excepciones en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md)).
+- Datos de los juegos de Lenguaje (Python, `python -m unittest <módulo>` desde su carpeta): `tools/lexico` (11 pruebas, nombres propios de Lluvia de meteoros), `tools/punta` (16, banco de definiciones), `tools/frases` (32, ¿Verdad o disparate?) y `tools/cosecha` (17; ~70 s; `COSECHA_REGENERAR=1` reconstruye desde las fuentes).
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el inicio sin borrar datos. "Borrar datos" en Ajustes deja la app como recién instalada.
 
 ## Pendientes vigentes
 
-El estado y las decisiones de diseño de la app (Hoy = Nubi, Juegos en 4 áreas, dificultad y avance, Anagramas —hoy «En la punta de la lengua»—, nombre e ícono)
-están en [docs/historial-desarrollo.md](docs/historial-desarrollo.md) § «Estado y notas de diseño de la app». Dificultad y avance: [docs/dificultad-y-avance.md](docs/dificultad-y-avance.md).
+El estado y las decisiones de diseño de la app están en [docs/historial-desarrollo.md](docs/historial-desarrollo.md) § «Estado y notas de diseño de la app». Dificultad y avance: [docs/dificultad-y-avance.md](docs/dificultad-y-avance.md).
 Qué sigue de juegos y orden: [docs/hoja-de-ruta.md](docs/hoja-de-ruta.md).
 
 - Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
   "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
 - Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
   re-chequeo mensual del punto de partida; tutorial guiado en los otros 19 juegos (la pieza común ya está); marca ✓/✗ de arcilla sobre la
-  respuesta; calibrar el DDA y la referencia de percentiles con datos.
-- Para el final: i18n completo (hoy `ui/i18n/AppStrings` cubre solo algunos textos); `applicationId` propio
-  (cambiarlo = app nueva); `metadata.json` de AI Studio; firma release y Play Store; servidores.
-- Antes de publicar: búsqueda oficial de marca (clases 9, 41) y el `applicationId` definitivo ([docs/nombre-marca-y-riesgos.md](docs/nombre-marca-y-riesgos.md)).
+  respuesta; calibrar el DDA con datos.
+- Para el final: i18n completo (hoy `ui/i18n/AppStrings` cubre solo algunos textos); `applicationId` propio (cambiarlo = app nueva); firma release y Play Store; servidores; y antes de publicar, la búsqueda oficial de marca (clases 9, 41; [docs/nombre-marca-y-riesgos.md](docs/nombre-marca-y-riesgos.md)).
 - Pendiente de licencia: SPALEX (léxico de Lluvia de meteoros), ver [docs/diseno-lluvia-de-meteoros.md](docs/diseno-lluvia-de-meteoros.md).

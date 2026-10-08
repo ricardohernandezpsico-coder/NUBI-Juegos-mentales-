@@ -9,6 +9,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import org.junit.Assert.assertTrue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.unit.dp
 import com.example.ui.screens.LicensesScreen
@@ -40,5 +44,21 @@ class LicensesScreenshotTest {
     }
     composeTestRule.onNodeWithTag("licenses_content").assertIsDisplayed()
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/licencias.png")
+  }
+
+  /** El texto completo de la SIL OFL, desplegado (se lee de res/raw/ofl.txt). */
+  @Test
+  fun licenciaCompletaDeLasTipografias() {
+    composeTestRule.setContent {
+      NeuroVidaTheme {
+        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
+          LicensesScreen(onClose = {})
+        }
+      }
+    }
+    composeTestRule.onNodeWithTag("btn_ofl_text").performScrollTo().performClick()
+    composeTestRule.onNodeWithTag("ofl_text").assertExists()
+    composeTestRule.onNodeWithTag("ofl_text").assertTextContains("SIL OPEN FONT LICENSE", substring = true)
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/licencias-ofl.png")
   }
 }

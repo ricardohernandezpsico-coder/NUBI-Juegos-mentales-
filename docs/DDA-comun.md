@@ -25,12 +25,12 @@ bruscos. Además el único dato entre sesiones era `masteryStreak` (un entero).
 
 | Idea | Fuente | Cómo se usa |
 |---|---|---|
-| El aprendizaje óptimo ocurre con ~85% de aciertos (error ~15%) | Wilson, Shenhav, Straccia & Cohen (2019), *The Eighty Five Percent Rule for optimal learning*, Nature Communications 10:4646 | Objetivo de aciertos: 0.85 en adultos mayores, 0.80 en el resto (algo más conservador que el 85% teórico para mantener motivación) |
-| Métodos adaptativos "up-down" convergen a un porcentaje de aciertos | Levitt (1971), *Transformed up-down methods in psychoacoustics*, JASA 49:467 | Base del control por escalones |
-| Up-down **ponderado**: paso de bajada = paso de subida × p/(1−p) converge a la tasa p | Kaernbach (1991), *Simple adaptive testing with the weighted up-down method*, Perception & Psychophysics 49:227 | Regla central: sube δ por acierto, baja δ·p/(1−p) por error (con p=0.8: cuatro veces) |
+| **Fundamento del método.** Los métodos adaptativos "up-down" convergen a un porcentaje de aciertos | Levitt (1971), *Transformed up-down methods in psychoacoustics*, JASA 49:467 | Base del control por escalones |
+| **Fundamento del método.** Up-down **ponderado**: paso de bajada = paso de subida × p/(1−p) converge a la tasa p | Kaernbach (1991), *Simple adaptive testing with the weighted up-down method*, Perception & Psychophysics 49:227 | Regla central: sube δ por acierto, baja δ·p/(1−p) por error (con p=0.8: cuatro veces) |
+| **Decisión de diseño** (no es un dato): apuntar a 80 % de aciertos (85 % en adultos mayores) para sostener la motivación | Antecedente teórico, no fundamento: Wilson, Shenhav, Straccia & Cohen (2019), *The Eighty Five Percent Rule for optimal learning*, Nature Communications 10:4646 (es una simulación con redes neuronales artificiales, sin personas) | Objetivo de aciertos: 0.85 en adultos mayores, 0.80 en el resto; se calibrará con datos reales de uso |
 | Estado de "flow": desafío ajustado a la habilidad | Csikszentmihalyi (1990), *Flow* | Ni aburrimiento (bono cada 6 aciertos seguidos) ni frustración (red anti-frustración) |
 | Zona de desarrollo próximo | Vygotsky (1978) | Justifica presentar siempre un nivel apenas por encima de lo dominado |
-| Aprendizaje sin error reduce frustración en personas con memoria comprometida o mayores | Baddeley & Wilson (1994), *Neuropsychologia* 32:53 | Objetivo de aciertos más alto y subida más lenta en `Senior`; al fallar se muestra la respuesta correcta |
+| **Decisión de diseño** (no es un dato): en `Senior`, objetivo de aciertos más alto y subida más lenta; al fallar se muestra la respuesta correcta | Inspirada en el aprendizaje sin error, estudiado en pacientes amnésicos (Baddeley & Wilson, 1994, *Neuropsychologia* 32:53), NO en adultos mayores sanos: no se usa como fundamento | Menos frustración al fallar |
 | Dificultades deseables: algo de error favorece el aprendizaje | Bjork (1994) | Por eso el objetivo no es 100% de aciertos |
 | Carga cognitiva | Sweller (1988) | Escalera gradual: cada nivel introduce pocas familias nuevas a la vez |
 | Enlentecimiento del procesamiento con la edad | Salthouse (1996), *Psychological Review* 103:403 | El tiempo de reacción pesa menos en `Senior` (0.15) que en `Adult` (0.35) y `Under18` (0.40) |

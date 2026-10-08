@@ -49,7 +49,7 @@ class BaselineTest {
   fun `sin mediciones queda la referencia`() {
     val b = buildBaseline(emptyMap(), timestamp = 1L)
     assertTrue(b.measured.isEmpty())
-    assertEquals(Percentile.PROVISIONAL_MEAN, b.domains[DomainType.MEMORIA]!!, 1e-4f)
+    assertEquals(Baseline.DEFAULT_LEVEL, b.domains[DomainType.MEMORIA]!!, 1e-4f)
   }
 
   @Test
@@ -71,7 +71,7 @@ class BaselineTest {
 
   fun `el punto de partida estimado se mueve poco con edad y educacion`() {
     val base = priorRating(AgeBand.ADULT, Education.NO_DICE)
-    assertEquals(Percentile.PROVISIONAL_MEAN, base, 1e-4f)
+    assertEquals(Baseline.DEFAULT_LEVEL, base, 1e-4f)
     assertTrue(priorRating(AgeBand.SENIOR, Education.BASICA) < base)
     assertTrue(priorRating(AgeBand.ADULT, Education.POSTGRADO) > base)
     assertTrue(priorRating(AgeBand.ADULT, Education.POSTGRADO) - base <= 0.05f + 1e-4f)

@@ -149,13 +149,13 @@ fun ProgressTrendChart(
       ) {
         Column(modifier = Modifier.weight(1f)) {
           Text(
-            text = "Curva de Rendimiento",
+            text = "Tu avance en el tiempo",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
           )
           Text(
-            text = "Evolución histórica de tus sesiones cognitivas",
+            text = "Cómo fueron tus partidas",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
           )
@@ -684,7 +684,7 @@ private fun EmptyChartState(
         text = if (selectedDomain != null) {
           "Juega más partidas de ${selectedDomain.displayName} para trazar su curva de aprendizaje individual."
         } else {
-          "Completa tu entrenamiento de hoy para ver reflejada tu evolución en tiempo real sobre la base de datos Room."
+          "Juega tu camino de hoy para ver aquí tu avance."
         },
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

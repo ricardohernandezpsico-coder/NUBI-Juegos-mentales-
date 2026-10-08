@@ -51,8 +51,6 @@ import com.example.ui.components.LockTabSwipe
 import com.example.ui.components.areaDescription
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
-import com.example.ui.components.BellCurveCard
-import com.example.ui.components.DomainRadarCard
 import com.example.ui.components.GameLevelsList
 import com.example.ui.components.LeagueHero
 import com.example.ui.components.ProgressTrendChart
@@ -262,12 +260,6 @@ fun ProgressScreen(
     item {
       AnimatedVisibility(visible = showMore) {
         Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
-          BellCurveCard(
-            levels = levels,
-            scoresWithTime = history.map { it.score to it.timestamp },
-            accent = TealPrimary
-          )
-          DomainRadarCard(levels = levels)
           // Maestría por dominio (XP que solo crece)
           Column {
             SpaceSectionTitle("Maestría por dominio", hint = "Cada partida suma experiencia a su dominio")

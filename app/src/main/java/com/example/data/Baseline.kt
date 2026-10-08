@@ -52,18 +52,23 @@ data class Baseline(
   val timestamp: Long,
   val measured: Map<DomainType, Float>,
   val domains: Map<DomainType, Float>
-)
+) {
+  companion object {
+    /** Rating 0..1 de partida cuando no hay ninguna medida (interno: es solo el punto desde donde el DDA empieza a corregir; NO se muestra ni se compara con nadie). */
+    const val DEFAULT_LEVEL = 0.45f
+  }
+}
 
 /** Respaldo para versiones viejas de Unity: Secuencia (hoy Rastro de luz) sin `end_rating` informa el nivel más alto alcanzado (1..16); se lleva a 0..1. */
 fun ratingFromSequencePeak(peakLevel: Int): Float = ((peakLevel - 1) / 15f).coerceIn(0f, 1f)
 
 /**
- * Punto de partida ESTIMADO cuando se salta la evaluación: la referencia provisional ajustada levemente por edad
+ * Punto de partida ESTIMADO cuando se salta la evaluación: el nivel de partida ajustado levemente por edad
  * y nivel educacional (efectos conocidos en las normas de pruebas cognitivas; valores chicos a propósito, porque
  * el DDA corrige enseguida y es preferible empezar algo fácil que frustrar).
  */
 fun priorRating(age: AgeBand?, education: Education?): Float {
-  var r = Percentile.PROVISIONAL_MEAN
+  var r = Baseline.DEFAULT_LEVEL
   r += when (age) {
     AgeBand.SENIOR -> -0.10f
     AgeBand.UNDER_18 -> -0.05f
@@ -92,7 +97,7 @@ fun buildBaseline(measuredByGame: Map<String, Float>, timestamp: Long = System.c
     .mapNotNull { s -> measuredByGame[s.gameId]?.let { s.domain to it.coerceIn(0f, 1f) } }
     .groupBy({ it.first }, { it.second })
     .mapValues { (_, v) -> v.average().toFloat() }
-  val mean = if (measured.isEmpty()) Percentile.PROVISIONAL_MEAN else measured.values.average().toFloat()
+  val mean = if (measured.isEmpty()) Baseline.DEFAULT_LEVEL else measured.values.average().toFloat()
   return Baseline(timestamp, measured, DomainType.values().associateWith { measured[it] ?: mean })
 }
 
@@ -101,7 +106,7 @@ fun buildBaseline(measuredByGame: Map<String, Float>, timestamp: Long = System.c
  * área tiene un solo juego medido) y los demás juegos de esa área, la estimación del área.
  */
 fun seedRatings(baseline: Baseline): Map<String, Float> =
-  GameRegistry.allGames.associate { g -> g.id to (baseline.domains[g.domain] ?: Percentile.PROVISIONAL_MEAN) }
+  GameRegistry.allGames.associate { g -> g.id to (baseline.domains[g.domain] ?: Baseline.DEFAULT_LEVEL) }
 
 /**
  * Orden de dominios para el camino de hoy: primero las metas elegidas (la más baja primero), después el resto de

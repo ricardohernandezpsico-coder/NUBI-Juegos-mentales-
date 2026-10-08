@@ -53,3 +53,11 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   (fuera del repo). Qué tomar, qué no copiar y el orden sugerido (registro de sueño y ánimo, tutorial por juego,
   comentarios por juego, escudo de racha, atajos Reforzar/Rápido…) está en
   [`docs/analisis-competencia.md`](analisis-competencia.md). Nada de eso está implementado todavía.
+
+## El smoke y la guardia de textos (detalle que antes vivía en CLAUDE.md)
+
+- Los tutoriales de 10 juegos corren en 3 formas de pantalla (20:9, 18:9, 16:9) y fallan si Nubi, su globo o «Saltar tutorial» tapan algo (ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`). Los juegos que no tienen tutorial corren además una
+  corrida «Pantalla…» en forma de teléfono (lienzo de 1080×2400), y Correo dos (20:9 y 16:9).
+- **Guardia de textos** (todas esas corridas): todo texto visible cae dentro de la pantalla y, si es hijo de un botón o una píldora, dentro de él; mide lo que se DIBUJA (no el rect entero) y solo informa un texto que queda fuera en dos revisiones seguidas. Hace FALLAR el smoke en cualquier juego;
+  las únicas excepciones (rótulos que cuelgan a propósito de su imagen) están en `TextGuardExceptions` de `HeadlessPlaymodeSmokeTest.cs`. Cada arranque deja su duración en el log (`[SmokeTest] tiempo …`).
+- **Capturas reales** (opcional): `bash tools/verificar-todo.sh --capturas Correo` (Unity sin `-nographics`, necesita tarjeta de video; no corre en el CI); un guion lleva el juego por sus momentos y `tools/capturas/hoja.py` arma la hoja de contacto. Hoy solo Correo tiene guion.

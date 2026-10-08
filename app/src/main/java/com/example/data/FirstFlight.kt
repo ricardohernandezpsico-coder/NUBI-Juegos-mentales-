@@ -226,7 +226,7 @@ object FirstFlight {
     val baseline = buildBaseline(s.measured, timestamp = 0L)
     val progress = DomainType.entries.associateWith { d ->
       val step = BaselinePlan.stepFor(d)
-      Skill.progress(step.gameId, baseline.domains[d] ?: Percentile.PROVISIONAL_MEAN, age)
+      Skill.progress(step.gameId, baseline.domains[d] ?: Baseline.DEFAULT_LEVEL, age)
     }
     val measured = DomainType.entries.filter { BaselinePlan.stepFor(it).gameId in s.measured }
     val strong = if (measured.size >= 2) measured.maxByOrNull { progress.getValue(it) } else null

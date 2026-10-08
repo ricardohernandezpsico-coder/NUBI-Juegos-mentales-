@@ -10,7 +10,7 @@ Hoy la app tiene **19 juegos** (es lo que dice `GameRegistry`; los retirados est
 |---|---|---|
 | Memoria | 5 (Constelaciones —antes Parejas Ocultas, renovado el 7-oct—, Rastro de luz —antes Secuencia Lumínica—, **Bodega de carga** —nuevo el 5-oct, ocupa el lugar de Bitácora—, Rumbo a Casa y Correo Estelar —renovado el 8-oct como «La estación de correo»—). Retirados: Ruta del Tesoro (4-oct) y Bitácora de Misión (5-oct) | – |
 | Atención y velocidad | 5 (Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Radar —«Rescate relámpago»—). Retirados: Cambio de Chip (3-oct) y Comparación Instantánea (4-oct) | – |
-| Razonamiento y números | 4 (Acoplamiento, Carga exacta —antes Cálculo Sereno—, Aterrizaje Lunar y Engranajes: «Taller de reparación», 5-oct). Retirados: Detective de Series y Tráfico Estelar (4-oct); idea para llegar a 5: «Código secreto», en `docs/ideas-guardadas.md` | – |
+| Razonamiento y números | 4 (Acoplamiento, Carga exacta —antes Cálculo Sereno—, Aterrizaje Lunar y Engranajes: «Taller de reparación», 5-oct). Retirados: Detective de Series y Tráfico Estelar (4-oct); la idea «Código secreto» para llegar a 5 se descartó el 8-oct (ver `docs/juegos/descartados.md`) | – |
 | Lenguaje | 5 (En la punta de la lengua —antes Anagramas—, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras y La estrella intrusa) | – |
 
 Dos tipos de juego para llegar sin perder calidad: **estrella** (medida propia al final; 1-2 por área) y **base**

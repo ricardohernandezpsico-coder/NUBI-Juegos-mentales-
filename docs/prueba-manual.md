@@ -17,8 +17,7 @@ Marca cada punto con ✓ o anota lo que viste. Si algo falla, basta con decir el
 3. "Empezar" → se juegan 3 juegos seguidos. Cada uno dice "Punto de partida · n de 3" en la carga y en la cuenta
    regresiva.
 4. Entre juego y juego se ve el avance, con el que sigue y qué mide.
-5. Al terminar: "Tu mapa" con 3 dominios medidos (puntos llenos) y 3 estimados (puntos huecos), percentiles y el
-   aviso de estimación provisional. "Empezar mi camino" lleva a Hoy.
+5. Al terminar: "Tu mapa" con 3 dominios medidos (puntos llenos) y 3 estimados (puntos huecos), sin percentiles. "Empezar mi camino" lleva a Hoy.
 6. La sesión de hoy incluye juegos de tus metas. En Juegos, los niveles ya no están todos en 1.
 
 ## C. Camino diario y partidas

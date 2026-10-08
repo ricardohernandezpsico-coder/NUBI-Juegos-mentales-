@@ -40,9 +40,8 @@ una sola matriz lógica. Este documento revisa lo que hay hoy, propone la regla 
 ## 2. Principios
 
 1. **Una vara por juego, igual para todos.** La escalera es la tarea; el avance es tu lugar en ella a 8 de cada 10.
-2. **La edad ajusta el entrenamiento, no la vara.** Es lo que la literatura respalda: aprendizaje con pocos
-   errores en mayores (Baddeley y Wilson, 1994), enlentecimiento del procesamiento con la edad (Salthouse, 1996),
-   aprendizaje óptimo con ~85% de aciertos (Wilson et al., 2019).
+2. **La edad ajusta el juego, no la vara.** El método de ajuste es el up-down ponderado (Levitt, 1971; Kaernbach, 1991); el enlentecimiento del procesamiento con la edad (Salthouse, 1996) justifica pesar menos el tiempo de
+   reacción en mayores. Apuntar a 80-85 % de aciertos y mostrar la respuesta al fallar son decisiones de diseño para sostener la motivación (ver `docs/DDA-comun.md`), no datos de la literatura.
 3. **Solo se compara lo comparable.** El avance y las marcas cambian con partidas jugadas en condiciones parecidas
    (regla que ya usamos en las medidas del final: `docs/medidas-juegos-estrella.md`).
 4. **Pocos números, cada uno con un solo significado** y dicho en palabras simples.
@@ -210,14 +209,14 @@ para poder revisarlas.
 ## Referencias
 
 - Baddeley, A. y Wilson, B. A. (1994). When implicit learning fails: amnesia and the problem of error elimination.
-  *Neuropsychologia*, 32, 53-68.
+  *Neuropsychologia*, 32, 53-68 (estudiado en pacientes amnésicos, no en mayores sanos: antecedente, no fundamento).
 - Kaernbach, C. (1991). Simple adaptive testing with the weighted up-down method. *Perception & Psychophysics*,
   49, 227-229.
 - Levitt, H. (1971). Transformed up-down methods in psychoacoustics. *JASA*, 49, 467-477.
 - Salthouse, T. A. (1996). The processing-speed theory of adult age differences in cognition. *Psychological
   Review*, 103, 403-428.
 - Wilson, R. C., Shenhav, A., Straccia, M. y Cohen, J. D. (2019). The eighty five percent rule for optimal
-  learning. *Nature Communications*, 10, 4646.
+  learning. *Nature Communications*, 10, 4646 (simulación con redes neuronales, sin personas: antecedente teórico del 80-85 %, no fundamento).
 - Ryan, R. M. y Deci, E. L. (2000). Self-determination theory and the facilitation of intrinsic motivation.
   *American Psychologist*, 55, 68-78 (elegir cómo jugar sostiene la motivación).
 - Detalle del DDA común: [`docs/DDA-comun.md`](DDA-comun.md). Medidas de los juegos estrella:

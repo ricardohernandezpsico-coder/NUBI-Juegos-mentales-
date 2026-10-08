@@ -42,15 +42,7 @@ class NeuroVidaRepository(
     dateFormat.format(Date(timestamp))
   }
 
-  // 1. Reactive User Profiles & Settings Flows from Room
-  val allProfiles: StateFlow<List<UserSettings>> = userProfileDao.getAllProfiles()
-    .map { list -> list.map { it.toDomain() } }
-    .stateIn(
-      scope = repositoryScope,
-      started = SharingStarted.Eagerly,
-      initialValue = emptyList()
-    )
-
+  // 1. Reactive Settings Flow from Room (el perfil activo; desde el 8-oct ya no se crean, cambian ni borran perfiles: la tabla user_profile y su DAO se quedan)
   val userSettings: StateFlow<UserSettings> = userProfileDao.getActiveProfile()
     .map { entity -> entity?.toDomain() ?: userProfileDao.getUserProfileSync()?.toDomain() ?: UserSettings() }
     .stateIn(
@@ -665,44 +657,6 @@ class NeuroVidaRepository(
     userProfileDao.insertOrUpdate(newSettings.toEntity())
   }
 
-  suspend fun createProfile(
-    name: String,
-    avatar: String = "🧠",
-    difficultyMode: DifficultyMode = DifficultyMode.ADAPTIVE,
-    weeklyGoal: Int = 4,
-    cognitiveAssistance: Boolean = true
-  ): Long = withContext(Dispatchers.IO) {
-    val newEntity = UserProfileEntity(
-      id = 0L,
-      name = name.ifBlank { "Nuevo Perfil" },
-      avatar = avatar.ifBlank { "🧠" },
-      isActive = true,
-      weeklyGoal = weeklyGoal,
-      difficultyMode = difficultyMode.name,
-      cognitiveAssistance = cognitiveAssistance
-    )
-    val newId = userProfileDao.insertOrUpdate(newEntity)
-    userProfileDao.setActiveProfile(newId)
-    newId
-  }
-
-  suspend fun switchActiveProfile(profileId: Long) = withContext(Dispatchers.IO) {
-    userProfileDao.setActiveProfile(profileId)
-  }
-
-  suspend fun deleteProfile(profileId: Long) = withContext(Dispatchers.IO) {
-    val all = userProfileDao.getAllProfilesSync()
-    if (all.size > 1) {
-      userProfileDao.deleteProfileById(profileId)
-      val active = userProfileDao.getActiveProfileSync()
-      if (active == null) {
-        val remaining = userProfileDao.getAllProfilesSync().firstOrNull()
-        if (remaining != null) {
-          userProfileDao.setActiveProfile(remaining.id)
-        }
-      }
-    }
-  }
 
   suspend fun updateDifficultyPreferences(
     profileId: Long,
