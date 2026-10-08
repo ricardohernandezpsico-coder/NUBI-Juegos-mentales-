@@ -190,8 +190,10 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | La caja fuerte brilla al guardar (el dial gira) | Brillo con giro del dial | DECORATIVA (comunica) | Brillo fijo |
 | El faro: la luz barre, la nave del correo entra y deja el saco dorado | ~3,4 s de luz que gira y destellos que suben | DECORATIVA (comunica) | Luz fija hacia arriba, la nave quieta sobre la cinta, sin vuelo ni chispas; mismo texto y misma duración |
 | «¡Llega un saco!», avisos de la radio | Fundido de entrada y salida | DECORATIVA (comunica) | Aparecen y se van de una vez, con la misma duración |
-| Rótulos flotantes («¡Encargo cumplido!», «Otro buzón») | Suben ~18 dp mientras se desvanecen | DECORATIVA (comunica) | Sin subir, solo fundido |
+| Rótulos flotantes («Otro buzón», «¡Racha ×10!») | Suben ~18 dp mientras se desvanecen | DECORATIVA (comunica) | Sin subir, solo fundido |
+| Avisos sobre la caja fuerte y el faro («¡Encargo cumplido!», «¡Faro encendido a tiempo!»…) | Salen en el hueco entre los buzones y los botones y solo se desvanecen (no suben, para no tapar los botones) | DECORATIVA (comunica) | Igual: solo fundido |
 | Chispas y destellos | Salen del lugar del acierto | DECORATIVA | No se emiten |
+| Resplandor del sello dorado | Late (~1 Hz) alrededor del sello | DECORATIVA (refuerza la señal; la forma dentada y el tamaño ya la distinguen) | Resplandor fijo, sin latido |
 | Pantallas de hoja, resumen y final; tarjeta NUEVO | Fundido de 0,35 a 0,5 s | DECORATIVA (comunica) | Aparecen de una vez |
 | El tiempo del día, los 1,6 s del reloj, la ventana de la hora | — | ESENCIAL (es la tarea) | No cambian |
 

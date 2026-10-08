@@ -241,10 +241,20 @@ Todo lo anterior se implementó. Estas son las diferencias con el boceto y lo qu
 - **Datos que llegan a la app:** telemetría nueva `mail_*` (`mail_ev_hits/total`, `mail_time_hits/total`, `mail_cancels`, `mail_commissions`, `mail_early`, `mail_peeks`, `mail_peeks_good`, `mail_right`, `mail_sorted`, `mail_best_combo`,
   `mail_days_perfect`, `mail_group`, `mail_best`, `mail_new`); la medida se guarda con la clave nueva `estacion` en `star_measures` (los puntos viejos `pending` quedan guardados pero no se leen) y el récord en las preferencias `correo_record`
   (que van en `backup_rules.xml` y en las dos secciones de `data_extraction_rules.xml`; lo vigila `BackupRulesTest`). Se quitaron de `GameResultScreen` el texto de asteroides y escudo.
-- **Reglas que se mantienen:** ninguna cara reacciona al desempeño; nada depende solo del color (el sello dorado y el lazo tienen forma y rótulo, los buzones tienen su forma propia además del color); la nave aparece SOLO después de encender el faro;
+- **Reglas que se mantienen:** ninguna cara reacciona al desempeño; nada depende solo del color (el lazo es una cinta con moño; el sello dorado, desde la Tarea 47, tiene forma y tamaño propios —ver más abajo—; los buzones tienen su forma propia además del color); la nave aparece SOLO después de encender el faro;
   toques de 56 dp o más y textos de 14 dp o más; la caja fuerte y el faro siempre visibles; sin tablero, dado ni pedidos (§8).
 - **Lámina:** `docs/previews/correo-estacion.png` (script `tools/art-preview/correo.py`, arte real horneado) y `correo-sonidos.wav`; sello visible «estilo 8-oct · estación de correo».
 - **Código retirado:** el vuelo (`PilotContract` ya no se usa aquí), `ShipShield`, los asteroides, los planetas-puerto, la radio cada 30 s, los parecidos de color, las dos dificultades y las láminas del vuelo (`correo-escudo.png` y
   `correo-estelar.png` quedan solo como historia).
 - **Dudas abiertas para Ricardo:** (1) el factor 0,5 de la migración; (2) si quiere que Correo tenga Reto; (3) el tutorial: ¿explica bastante el reloj tapado?; (4) la frase del consejo «imagínate haciendo el encargo» (viene de la intención de
   implementación, pero no es un truco que él haya revisado).
+- **Tarea 47 (8-oct, tras revisar el primer commit):**
+  1. **Sello dorado por forma y tamaño, no solo por color.** Era el mismo cuadrado que el normal con relleno dorado (en grises, ~1,6:1 contra el papel; error heredado del boceto). Ahora es ~1,2 veces más grande (36 dp contra 30) y con el borde dentado de un sello
+     postal (cinco mordidas por lado, el borde café todo hacia adentro para que las mordidas dejen ver el papel). Es un cuadrado con dientes, no rayos: nada que parezca sol ni estrella. Se corrió 2 dp hacia adentro para no pegarse al borde del papel; su resplandor
+     ahora queda FIJO con «quitar animaciones» en vez de apagarse. Lo vigilan `MailArtTests` (tamaño, mordidas, lectura en grises y que no se salga del papel). El ícono de la hoja y la tarjeta «estación» usan el mismo sprite y se actualizan solos.
+  2. **El consejo de las cartas señal nombra la señal que se escapó.** Telemetría nueva `mail_gold_missed` / `mail_lazo_missed` (desglose de las cartas señal perdidas); `Mail.tip` dice «cuando vea un sello dorado, caja fuerte» o «…un lazo…», la que más veces se escapó
+     (empate: el sello dorado); sin desglose (una versión vieja de Unity), «una carta con señal». Las etapas 1 a 4 no traen lazo, así que ya no reciben un consejo sobre algo que no vieron.
+  3. **Consejo de la hora más concreto** (Ricardo puede vetarlo; son constantes `Mail.TIP_*`): «Truco: imagínate tocando el faro cuando llegue la hora.».
+  4. **Avisos sobre la caja fuerte y el faro.** Antes subían 18 dp y su borde de abajo quedaba a 1 dp del botón: pisaban el borde de los buzones. Ahora (`AddFloatAbove`) miden 28 dp, su borde de abajo queda 2 dp sobre el botón y no suben, así que caben en el hueco de 30 dp
+     entre los buzones y los botones (`MailLayout.AboveH` / `AboveGap`, con prueba). Un aviso de dos líneas sí se extiende hacia arriba sobre los buzones, nunca sobre un botón.
+  5. **Lámina:** `glow()` de `correo.py` calcula el alfa por distancia y cae a 0 en el radio (el degradado de PIL llegaba solo a ~10 % en el borde y dejaba un corte duro y halos cuadrados). Lámina regenerada (`correo-estacion.png`).

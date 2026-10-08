@@ -510,6 +510,36 @@ namespace NeuroVida.Games.Correo.Tests
             Assert.AreEqual(MailContract.DetMiss, r.Items.Single(i => i.Todo == m2).Detail);
             Assert.AreEqual(3, r.Stat.Events, "las cartas con señal resueltas: 1 dorada y 2 lazos");
             Assert.AreEqual(2, r.Stat.EventsOk);
+            Assert.AreEqual(0, r.Stat.GoldMissed, "el sello dorado se guardó");
+            Assert.AreEqual(1, r.Stat.LazoMissed, "se escapó un lazo");
+        }
+
+        [Test]
+        public void TheMissedCues_AreCountedPerType_AndEachStageOnlyBringsItsOwnCue()
+        {
+            // etapa 2: solo sello dorado → lo que se escapa es un sello dorado, nunca un lazo
+            var d2 = NewDay(2);
+            d2.RushPlan.Clear();
+            Assert.IsFalse(d2.Todos.Any(t => !t.IsTime && t.Cue == MailCue.Lazo), "las etapas 1 a 4 no traen lazo");
+            d2.Belt.Add(new MailLetter { Planet = 0, Cue = MailCue.Gold });
+            Assert.IsTrue(d2.TapBox(0, true).CueMissed);
+            var r2 = d2.Summarize();
+            Assert.AreEqual(1, r2.Stat.GoldMissed);
+            Assert.AreEqual(0, r2.Stat.LazoMissed);
+            // etapa 5: solo lazo → lo que se escapa es un lazo
+            var d5 = NewDay(5);
+            d5.RushPlan.Clear();
+            Assert.IsFalse(d5.Todos.Any(t => !t.IsTime && t.Cue == MailCue.Gold), "la etapa 5 solo trae lazo");
+            d5.Belt.Add(new MailLetter { Planet = 1, Cue = MailCue.Lazo });
+            Assert.IsTrue(d5.TapBox(1, true).CueMissed);
+            var r5 = d5.Summarize();
+            Assert.AreEqual(0, r5.Stat.GoldMissed);
+            Assert.AreEqual(1, r5.Stat.LazoMissed);
+            // y se suman en la partida
+            var tally = new MailTally();
+            tally.Add(r2.Stat); tally.Add(r5.Stat);
+            Assert.AreEqual(1, tally.GoldMissed);
+            Assert.AreEqual(1, tally.LazoMissed);
         }
 
         [Test]
@@ -720,7 +750,7 @@ namespace NeuroVida.Games.Correo.Tests
             var dda = MailContract.CreateEngine(cfg);
             dda.Register(true); dda.Register(true); dda.Register(false);
             var t = new MailTally();
-            t.Add(new MailDayStat { Events = 4, EventsOk = 3, TimesAll = 2, TimesOk = 1, Cancels = 1, Commissions = 1, Early = 2, Peeks = 3, GoodPeeks = 2, Right = 20, Sorted = 22, BestCombo = 9, Perfect = false });
+            t.Add(new MailDayStat { Events = 4, EventsOk = 3, GoldMissed = 0, LazoMissed = 1, TimesAll = 2, TimesOk = 1, Cancels = 1, Commissions = 1, Early = 2, Peeks = 3, GoodPeeks = 2, Right = 20, Sorted = 22, BestCombo = 9, Perfect = false });
             var m = MailContract.BuildMetrics(dda, t, 20, true, 6, cfg);
             Assert.AreEqual(3, m.mail_ev_hits); Assert.AreEqual(4, m.mail_ev_total);
             Assert.AreEqual(1, m.mail_time_hits); Assert.AreEqual(2, m.mail_time_total);
@@ -729,6 +759,7 @@ namespace NeuroVida.Games.Correo.Tests
             Assert.AreEqual(3, m.mail_peeks); Assert.AreEqual(2, m.mail_peeks_good);
             Assert.AreEqual(20, m.mail_right); Assert.AreEqual(22, m.mail_sorted); Assert.AreEqual(9, m.mail_best_combo);
             Assert.AreEqual(0, m.mail_days_perfect);
+            Assert.AreEqual(0, m.mail_gold_missed); Assert.AreEqual(1, m.mail_lazo_missed);
             Assert.AreEqual(3, m.mail_group, "la etapa 6 es del grupo 3");
             Assert.AreEqual(20, m.mail_best); Assert.AreEqual(1, m.mail_new);
             Assert.AreEqual(m.correct_trials, 4 + 0, "aciertos de la medida: 3 de eventos + 1 hora + 0 cancelado hecho = 4");
@@ -744,6 +775,7 @@ namespace NeuroVida.Games.Correo.Tests
             var blank = new StroopSessionMetrics();
             Assert.AreEqual(-1, blank.mail_ev_total);
             Assert.AreEqual(-1, blank.mail_group);
+            Assert.AreEqual(-1, blank.mail_gold_missed); Assert.AreEqual(-1, blank.mail_lazo_missed);
         }
 
         // ------------------------------------------------------------------ textos (§5, §7 y §11)

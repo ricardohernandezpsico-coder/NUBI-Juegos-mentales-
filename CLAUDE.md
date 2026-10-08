@@ -200,13 +200,13 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 461 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 463 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y en `@After`:
   deja una base de Room EN MEMORIA (nunca el archivo `neurovida_database`), cancela el trabajo de fondo del repositorio anterior y apaga los recordatorios de
   WorkManager (`CognitiveReminderWorker.disabledForTests`); `NoDiskDatabaseGuardTest` falla si una prueba nueva no lo hace. Detalle en
   [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
-- Unity EditMode: 576 (contratos de cada juego, `AdaptiveDifficultyTests`, Constelaciones, La estación de correo, perfil por edad, Rastro de luz, tutoriales guiados, colocación de Nubi `CoachLayoutTests`) + 54 arranques de smoke (los 20 juegos de Unity, las 3 versiones cortas y los tutoriales: los de 10 juegos corren en 3 formas de pantalla —20:9, 18:9, 16:9— y fallan si Nubi, su globo o «Saltar tutorial» tapan algo; ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`).
+- Unity EditMode: 580 (contratos de cada juego, `AdaptiveDifficultyTests`, Constelaciones, La estación de correo, perfil por edad, Rastro de luz, tutoriales guiados, colocación de Nubi `CoachLayoutTests`) + 54 arranques de smoke (los 20 juegos de Unity, las 3 versiones cortas y los tutoriales: los de 10 juegos corren en 3 formas de pantalla —20:9, 18:9, 16:9— y fallan si Nubi, su globo o «Saltar tutorial» tapan algo; ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`).
 - Léxico de Lluvia de meteoros: 11 pruebas del filtro de nombres propios en `tools/lexico/test_propios.py` (`python -m unittest test_propios`, desde `tools/lexico`).
 - Banco de definiciones de «En la punta de la lengua» (reemplaza a Anagramas): 16 pruebas en `tools/punta/test_banco.py` (`python -m unittest test_banco`, desde `tools/punta`; ~1 s). Diseño: `docs/diseno-punta-de-la-lengua.md`.
 - Frases de ¿Verdad o disparate?: 32 pruebas en `tools/frases/test_disparate.py` (`python -m unittest test_disparate`).

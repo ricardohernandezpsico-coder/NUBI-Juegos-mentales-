@@ -97,7 +97,7 @@ object ResultAdvice {
       out += DosOrillas.tips(result.interferenceMs, result.switchCostMs).map { tipOf(it) }
     }
     // La estación de correo: un truco de intención de implementación según lo que más se escapó (la radio, la hora o las cartas señal).
-    if (result.mailGroup != null) out += tipOf(Mail.tip(result.mailEvHits, result.mailEvTotal, result.mailTimeHits, result.mailTimeTotal, result.mailCommissions, result.mailPeeks, result.mailPeeksGood) ?: "")
+    if (result.mailGroup != null) out += tipOf(Mail.tip(result.mailEvHits, result.mailEvTotal, result.mailTimeHits, result.mailTimeTotal, result.mailCommissions, result.mailPeeks, result.mailPeeksGood, result.mailGoldMissed, result.mailLazoMissed) ?: "")
     return out.filterNotNull()
   }
 }

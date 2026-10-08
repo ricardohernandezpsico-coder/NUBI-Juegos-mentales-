@@ -127,6 +127,9 @@ namespace NeuroVida.Contracts
         public int mail_sorted = -1;
         public int mail_best_combo = -1;
         public int mail_days_perfect = -1;
+        // Cartas señal que se escaparon, por tipo (sello dorado / lazo): el consejo nombra la que de verdad se perdió (docs §12).
+        public int mail_gold_missed = -1;
+        public int mail_lazo_missed = -1;
         /// <summary>Grupo de etapas más alto (1..5), el récord «cartas en un día perfecto» (el guardado o el de esta partida, el mayor) y 1 si esta partida lo superó.</summary>
         public int mail_group = -1;
         public int mail_best = -1;

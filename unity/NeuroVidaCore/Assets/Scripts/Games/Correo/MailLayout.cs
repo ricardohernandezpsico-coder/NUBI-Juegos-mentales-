@@ -15,6 +15,8 @@ namespace NeuroVida.Games.Correo
         public const float BoxH = 112f, BtnH = 88f, BtnW = 158f, ClockR = 28f;
         /// <summary>De la altura mínima de la pantalla (incluye el marcador) en que todo cabe sin apretarse.</summary>
         public const float MinHeight = 592f;
+        /// <summary>Un aviso que flota encima de la caja fuerte o del faro mide 28 dp de alto y queda 2 dp sobre el botón: cabe en el hueco de 30 dp entre los buzones y los botones y no tapa ninguno.</summary>
+        public const float AboveH = 28f, AboveGap = 2f;
 
         public struct Rect2
         {

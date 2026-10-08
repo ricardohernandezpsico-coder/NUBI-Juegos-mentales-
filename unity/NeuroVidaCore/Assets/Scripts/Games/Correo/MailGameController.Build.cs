@@ -63,7 +63,7 @@ namespace NeuroVida.Games.Correo
             public RectTransform Root;
             public Image Bg;
             public Text Text;
-            public float At = -10f, Dur = 1.1f;
+            public float At = -10f, Dur = 1.1f, Rise = 18f;
             public Vector2 Pos;
             public Color Color;
         }

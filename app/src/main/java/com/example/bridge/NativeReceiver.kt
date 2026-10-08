@@ -172,6 +172,9 @@ object NativeReceiver {
     val mail_sorted: Int = -1,
     val mail_best_combo: Int = -1,
     val mail_days_perfect: Int = -1,
+    // Cartas señal que se escaparon, por tipo (sello dorado / lazo): el consejo nombra la que de verdad se perdió.
+    val mail_gold_missed: Int = -1,
+    val mail_lazo_missed: Int = -1,
     val mail_group: Int = -1,
     val mail_best: Int = -1,
     val mail_new: Int = 0,
@@ -538,6 +541,8 @@ object NativeReceiver {
       mailSorted = metrics.mail_sorted.takeIf { mail && it >= 0 },
       mailBestCombo = metrics.mail_best_combo.takeIf { mail && it >= 0 },
       mailDaysPerfect = metrics.mail_days_perfect.takeIf { mail && it >= 0 },
+      mailGoldMissed = metrics.mail_gold_missed.takeIf { mail && it >= 0 },
+      mailLazoMissed = metrics.mail_lazo_missed.takeIf { mail && it >= 0 },
       mailGroup = metrics.mail_group.takeIf { mail },
       mailBest = metrics.mail_best.takeIf { mail && it >= 0 },
       mailNewRecord = metrics.mail_best.takeIf { mail && it >= 0 }?.let { metrics.mail_new == 1 },

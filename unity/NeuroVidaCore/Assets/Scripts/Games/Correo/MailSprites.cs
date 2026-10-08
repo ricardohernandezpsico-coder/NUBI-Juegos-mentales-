@@ -152,6 +152,38 @@ namespace NeuroVida.Games.Correo
             return Bake("letter" + planet + "_" + (int)cue, LetterBoxW, LetterBoxH, LetterPpd, (ref Px p, float x, float y) => PaintLetter(ref p, planet, cue, x, y, 1f / LetterPpd));
         }
 
+        // ------------------------------------------------------------------ el sello (docs §12: el dorado se distingue por FORMA y TAMAÑO, no solo por color)
+
+        /// <summary>El sello normal mide 30 dp (liso); el dorado ~1,2 veces más (36 dp) y con el borde dentado de un sello postal. Un cuadrado con dientes, NO rayos: nada que parezca sol o estrella.</summary>
+        public const float SealSize = 30f, GoldSealScale = 1.2f;
+        /// <summary>Las perforaciones del sello dorado: mordidas de medio círculo (radio y paso en dp), cinco por lado, a todo el borde.</summary>
+        public const float PerfRadius = 1.9f, PerfPitch = 5.5f;
+        public const int PerfPerSide = 5;
+
+        /// <summary>La mitad del lado del sello (15 dp el normal, 18 el dorado).</summary>
+        public static float SealHalf(bool gold) => SealSize * (gold ? GoldSealScale : 1f) / 2f;
+        /// <summary>El centro del sello en la carta (dp, y hacia abajo, origen en el centro de la carta): el dorado se corre un poco hacia adentro para no pegarse al borde del papel.</summary>
+        public static float SealCx(bool gold) => gold ? 32f : 34f;
+        public static float SealCy(bool gold) => gold ? -14f : -16f;
+
+        /// <summary>La distancia con signo al sello (negativa adentro): liso y de esquinas redondas el normal; el dorado, más grande y con una mordida a cada <see cref="PerfPitch"/> en sus cuatro lados.</summary>
+        public static float SealShape(bool gold, float x, float y, float cx, float cy)
+        {
+            float half = SealHalf(gold);
+            float d = RoundBox(x, y, cx, cy, half, half, 5f);
+            if (!gold) return d;
+            float bite = float.MaxValue;
+            float lx = x - cx, ly = y - cy;
+            float maxOff = PerfPitch * (PerfPerSide / 2);
+            float ax = Mathf.Clamp(Mathf.Round(lx / PerfPitch) * PerfPitch, -maxOff, maxOff);
+            float ay = Mathf.Clamp(Mathf.Round(ly / PerfPitch) * PerfPitch, -maxOff, maxOff);
+            bite = Mathf.Min(bite, Circle(lx, ly, ax, -half, PerfRadius));     // arriba
+            bite = Mathf.Min(bite, Circle(lx, ly, ax, half, PerfRadius));      // abajo
+            bite = Mathf.Min(bite, Circle(lx, ly, -half, ay, PerfRadius));     // izquierda
+            bite = Mathf.Min(bite, Circle(lx, ly, half, ay, PerfRadius));      // derecha
+            return Mathf.Max(d, -bite);
+        }
+
         private static readonly float[] FoldLine = { -50f, -32f, 0f, 4f, 50f, -32f };
 
         private static void PaintLetter(ref Px p, int planet, MailCue cue, float x, float y, float aa)
@@ -174,12 +206,12 @@ namespace NeuroVida.Games.Correo
                 }
                 Fill(ref p, Circle(x, y, bx, -h * 0.05f, 4f), Red, aa, 1f);
             }
-            float sx = w / 2f - 22f, sy = -h / 2f + 22f, ss = 30f;
             bool gold = cue == MailCue.Gold;
-            float seal = RoundBox(x, y, sx, sy, ss / 2f, ss / 2f, 5f);
-            if (gold) { p.Over(Hex(0xB07A12), Cover(seal - 1.5f, aa)); p.Over(Gold, Cover(seal + 1.5f, aa)); }
+            float sx = SealCx(gold), sy = SealCy(gold), half = SealHalf(gold);
+            float seal = SealShape(gold, x, y, sx, sy);
+            if (gold) { p.Over(Hex(0xB07A12), Cover(seal, aa)); p.Over(Gold, Cover(seal + 2.5f, aa)); }                // el borde café va todo hacia adentro: las mordidas dejan ver el papel
             else { p.Over(InkC, Cover(seal - 1f, aa)); p.Over(Color.white, Cover(seal + 1f, aa)); }
-            p.Over(PlanetDark[planet], Cover(Symbol(planet, x, y, sx, sy, 17f), aa));
+            p.Over(PlanetDark[planet], Cover(Symbol(planet, x, y, sx, sy, 17f * half / SealHalf(false)), aa));
             // líneas de dirección
             float x0 = -w / 2f + 14f + (cue == MailCue.Lazo ? 24f : 0f);
             var ink35 = new Color(26f / 255f, 18f / 255f, 64f / 255f, 0.35f);

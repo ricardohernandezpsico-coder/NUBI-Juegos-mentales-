@@ -91,8 +91,8 @@ namespace NeuroVida.Games.Correo
             v.Img.sprite = MailSprites.Letter(l.Planet, l.Cue);
             v.Img.color = Color.white;
             v.Img.rectTransform.sizeDelta = new Vector2(MailSprites.LetterBoxW * _s, MailSprites.LetterBoxH * _s);
-            v.Glow.rectTransform.sizeDelta = new Vector2(60f * _s, 60f * _s);
-            v.Glow.rectTransform.anchoredPosition = new Vector2(34f * _s, 16f * _s);
+            v.Glow.rectTransform.sizeDelta = new Vector2(66f * _s, 66f * _s);
+            v.Glow.rectTransform.anchoredPosition = new Vector2(MailSprites.SealCx(true) * _s, -MailSprites.SealCy(true) * _s);
             v.Glow.gameObject.SetActive(l.Cue == MailCue.Gold);
             v.Root.gameObject.SetActive(true);
             _lvOf[l] = v;
@@ -171,7 +171,7 @@ namespace NeuroVida.Games.Correo
         private void CueMissedFx(MailLetter l)
         {
             _safeWarnAt = Now;
-            AddFloat(_lay.Safe.Cx, _lay.Safe.Y - 14f, l.Cue == MailCue.Gold ? MailContract.FloatGoldMissed : MailContract.FloatLazoMissed, GoldSoft);
+            AddFloatAbove(_lay.Safe, l.Cue == MailCue.Gold ? MailContract.FloatGoldMissed : MailContract.FloatLazoMissed, GoldSoft);
             PlayClip(MailSounds.Soft(), 0.5f);
         }
 
@@ -198,14 +198,14 @@ namespace NeuroVida.Games.Correo
             {
                 case MailTap.SafeCue:
                     StartFlight(Detach(res.Letter), s.Cx, s.Y + 30f, MailMotion.FlySafeSeconds, 2, -1);
-                    AddFloat(s.Cx, s.Y - 16f, MailContract.FloatCueDone, Gold, true);
+                    AddFloatAbove(s, MailContract.FloatCueDone, Gold, true);
                     PlayClip(MailSounds.Fanfare(), 0.8f);
                     Emit(new Vector2(s.Cx, s.Y + 20f), 24, 160f, 0.8f, Gold, 20f);
                     _safeOkAt = Now;
                     break;
                 case MailTap.SafeWrongLetter:
                     if (_lvOf.TryGetValue(res.Letter, out var v)) v.Bounce = Now;
-                    AddFloat(s.Cx, s.Y - 14f, MailContract.FloatNotSafe, Salmon);
+                    AddFloatAbove(s, MailContract.FloatNotSafe, Salmon);
                     PlayClip(MailSounds.Thud(), 0.6f);
                     break;
                 default:
@@ -226,7 +226,7 @@ namespace NeuroVida.Games.Correo
                     _beaconOnAt = Now;
                     _showAt = Now;
                     _sackDone = false;
-                    AddFloat(b.Cx, b.Y - 16f, MailContract.FloatBeaconOn, Gold, true);
+                    AddFloatAbove(b, MailContract.FloatBeaconOn, Gold, true);
                     PlayClip(MailSounds.Fanfare(), 0.8f);
                     PlayClip(MailSounds.Horn(), 0.6f);
                     Emit(new Vector2(b.Cx, b.Y + 20f), 24, 160f, 0.8f, new Color(1f, 214f / 255f, 120f / 255f), 20f);
@@ -236,15 +236,15 @@ namespace NeuroVida.Games.Correo
                             EmitDelayed(new Vector2((float)_rng.NextDouble() * MailLayout.W, 60f + (float)_rng.NextDouble() * (_lay.BeltY - 130f)), new Color(1f, 240f / 255f, 190f / 255f), (float)_rng.NextDouble() * 0.9f, 0.9f + (float)_rng.NextDouble() * 0.7f);
                     break;
                 case MailTap.BeaconCommission:
-                    AddFloat(b.Cx, b.Y - 14f, MailContract.FloatCancelled, Salmon);
+                    AddFloatAbove(b, MailContract.FloatCancelled, Salmon);
                     PlayClip(MailSounds.Thud(), 0.6f);
                     break;
                 case MailTap.BeaconEarly:
-                    AddFloat(b.Cx, b.Y - 14f, MailContract.FloatTooEarly, GoldSoft);
+                    AddFloatAbove(b, MailContract.FloatTooEarly, GoldSoft);
                     PlayClip(MailSounds.Soft(), 0.5f);
                     break;
                 default:
-                    AddFloat(b.Cx, b.Y - 14f, MailContract.FloatNotNow, GoldSoft);
+                    AddFloatAbove(b, MailContract.FloatNotNow, GoldSoft);
                     PlayClip(MailSounds.Soft(), 0.5f);
                     break;
             }
@@ -283,7 +283,7 @@ namespace NeuroVida.Games.Correo
                         break;
                     case MailEventKind.WindowClosed:
                         _beaconWarnAt = Now;
-                        AddFloat(_lay.Beacon.Cx, _lay.Beacon.Y - 14f, MailContract.FloatLateWindow(e.Todo.Moment), GoldSoft);
+                        AddFloatAbove(_lay.Beacon, MailContract.FloatLateWindow(e.Todo.Moment), GoldSoft);
                         PlayClip(MailSounds.Soft(), 0.5f);
                         break;
                 }
@@ -359,8 +359,9 @@ namespace NeuroVida.Games.Correo
                 v.Root.localScale = Vector3.one * k;
                 v.Root.localRotation = Quaternion.identity;
                 v.Root.SetSiblingIndex(belt.Count - 1 - i);            // la carta de adelante se dibuja encima de las de atrás
-                bool gold = l.Cue == MailCue.Gold && deco;
-                v.Glow.color = new Color(1f, 214f / 255f, 120f / 255f, gold ? 0.6f + 0.4f * Mathf.Sin(now / 0.16f) : 0f);
+                bool gold = l.Cue == MailCue.Gold;
+                // el resplandor del sello dorado late; con «quitar animaciones» queda fijo (la señal no depende de que algo se mueva)
+                v.Glow.color = new Color(1f, 214f / 255f, 120f / 255f, gold ? (deco ? 0.6f + 0.4f * Mathf.Sin(now / 0.16f) : 0.7f) : 0f);
             }
             // si una carta ya no está en la cinta (la guardó un efecto) y no vuela ni cae, se suelta
             foreach (var v in _lv)
@@ -552,7 +553,10 @@ namespace NeuroVida.Games.Correo
 
         // ------------------------------------------------------------------ etiquetas que flotan y partículas
 
-        private void AddFloat(float x, float y, string text, Color color, bool big = false)
+        /// <summary>Un aviso que flota ENCIMA de un botón (caja fuerte o faro): su borde de abajo queda 2 dp sobre el botón y no sube, así cabe en el hueco de 30 dp entre los buzones y los botones y nunca tapa un botón (docs §12).</summary>
+        private void AddFloatAbove(MailLayout.Rect2 button, string text, Color color, bool big = false) => AddFloat(button.Cx, button.Y - MailLayout.AboveGap, text, color, big, true);
+
+        private void AddFloat(float x, float y, string text, Color color, bool big = false, bool above = false)
         {
             FloatView f = null;
             float oldest = float.MaxValue;
@@ -568,7 +572,7 @@ namespace NeuroVida.Games.Correo
             f.Text.horizontalOverflow = HorizontalWrapMode.Overflow;
             f.Text.fontSize = Mathf.RoundToInt(dp * _s);
             while (f.Text.preferredWidth / _s > maxW && dp > 14f) { dp -= 1f; f.Text.fontSize = Mathf.RoundToInt(dp * _s); }
-            float w = f.Text.preferredWidth / _s, h = 30f;
+            float w = f.Text.preferredWidth / _s, h = above ? MailLayout.AboveH : 30f;
             if (w > maxW)
             {
                 f.Text.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -577,7 +581,8 @@ namespace NeuroVida.Games.Correo
             }
             float bw = w + 22f;
             x = Mathf.Clamp(x, bw / 2f + 8f, MailLayout.W - bw / 2f - 8f);
-            f.Pos = new Vector2(x, y);
+            f.Pos = new Vector2(x, above ? y - h / 2f : y);          // «above»: y es el borde de abajo del aviso
+            f.Rise = above ? 0f : 18f;
             f.Bg.rectTransform.sizeDelta = new Vector2(bw * _s, h * _s);
             f.Text.rectTransform.sizeDelta = new Vector2(bw * _s, h * _s);
             SetRadius(f.Bg, Mathf.Min(h, 30f) * 0.5f * _s);
@@ -592,7 +597,7 @@ namespace NeuroVida.Games.Correo
                 float k = (now - f.At) / f.Dur;
                 if (k >= 1f || k < 0f) { f.Root.gameObject.SetActive(false); continue; }
                 float a = Mathf.Min(1f, Mathf.Min(k * 6f, (1f - k) * 3f));
-                float y = f.Pos.y - (Motion.Decorative ? 18f * MailMotion.EaseOut(k) : 0f);
+                float y = f.Pos.y - (Motion.Decorative ? f.Rise * MailMotion.EaseOut(k) : 0f);
                 f.Root.anchoredPosition = P(f.Pos.x, y);
                 var bg = f.Bg.color; bg.a = 0.92f * a; f.Bg.color = bg;
                 f.Text.color = new Color(f.Color.r, f.Color.g, f.Color.b, a);

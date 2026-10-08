@@ -67,13 +67,39 @@ class MailTest {
     // una hora que se escapó sin mirar el reloj: mirar el reloj; mirándolo bien: imaginarse haciéndolo
     assertTrue(Mail.tip(4, 4, 1, 2, 0, 0, 0)!!.contains("mira el reloj"))
     assertTrue(Mail.tip(4, 4, 1, 2, 0, 3, 1)!!.contains("mira el reloj"))
-    assertTrue(Mail.tip(4, 4, 1, 2, 0, 3, 3)!!.contains("imagínate"))
-    // las cartas señal que se escaparon
-    assertTrue(Mail.tip(2, 4, 2, 2, 0, 1, 1)!!.contains("lazo"))
+    assertEquals(Mail.TIP_IMAGINE_BEACON, Mail.tip(4, 4, 1, 2, 0, 3, 3))
+    // las cartas señal que se escaparon: sin el desglose (una versión vieja de Unity), el truco habla de «una carta con señal»
+    assertEquals(Mail.TIP_CUE_GENERIC, Mail.tip(2, 4, 2, 2, 0, 1, 1))
     // todo bien o sin encargos: ningún consejo
     assertNull(Mail.tip(4, 4, 2, 2, 0, 1, 1))
     assertNull(Mail.tip(0, 0, 0, 0, 0, 0, 0))
     assertNull(Mail.tip(null, null, null, null, null, null, null))
+  }
+
+  @Test
+  fun `el truco de las cartas senal nombra la senal que de verdad se escapo`() {
+    // etapa 2: solo trae sello dorado → el truco habla del sello dorado y nunca de un lazo que el jugador no vio
+    val etapa2 = Mail.tip(1, 2, 0, 0, 0, 0, 0, goldMissed = 1, lazoMissed = 0)!!
+    assertEquals(Mail.TIP_GOLD, etapa2)
+    assertTrue(etapa2.contains("sello dorado"))
+    assertFalse(etapa2.contains("lazo"))
+    // etapa 5: solo trae lazo → el truco habla del lazo
+    val etapa5 = Mail.tip(0, 2, 0, 0, 0, 0, 0, goldMissed = 0, lazoMissed = 2)!!
+    assertEquals(Mail.TIP_LAZO, etapa5)
+    assertTrue(etapa5.contains("lazo"))
+    assertFalse(etapa5.contains("sello dorado"))
+    // si se escaparon las dos, la que más veces
+    assertEquals(Mail.TIP_LAZO, Mail.tip(1, 5, 0, 0, 0, 0, 0, goldMissed = 1, lazoMissed = 3))
+    assertEquals(Mail.TIP_GOLD, Mail.tip(1, 5, 0, 0, 0, 0, 0, goldMissed = 3, lazoMissed = 1))
+    assertEquals("empate: el sello dorado, la primera señal que se aprende", Mail.TIP_GOLD, Mail.tip(1, 5, 0, 0, 0, 0, 0, goldMissed = 2, lazoMissed = 2))
+  }
+
+  @Test
+  fun `el truco de la hora nombra la accion concreta`() {
+    assertEquals("Truco: imagínate tocando el faro cuando llegue la hora.", Mail.TIP_IMAGINE_BEACON)
+    // miró bien el reloj pero no encendió el faro a tiempo
+    assertEquals(Mail.TIP_IMAGINE_BEACON, Mail.tip(4, 4, 1, 2, 0, 3, 3))
+    assertFalse(Mail.TIP_IMAGINE_BEACON.contains("encargo"))
   }
 
   @Test

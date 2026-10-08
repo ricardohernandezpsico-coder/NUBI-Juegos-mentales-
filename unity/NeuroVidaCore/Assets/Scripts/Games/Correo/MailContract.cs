@@ -229,6 +229,8 @@ namespace NeuroVida.Games.Correo
                 mail_sorted = t.Sorted,
                 mail_best_combo = t.BestCombo,
                 mail_days_perfect = t.PerfectDays,
+                mail_gold_missed = t.GoldMissed,
+                mail_lazo_missed = t.LazoMissed,
                 mail_group = GroupOf(maxLevelReached),
                 mail_best = bestRecord,
                 mail_new = newRecord ? 1 : 0,
@@ -333,6 +335,8 @@ namespace NeuroVida.Games.Correo
         public int Events, EventsOk, Times, TimesOk, Cancels, Commissions, Early;
         public int Peeks, GoodPeeks;
         public int Right, Sorted, Late, BestCombo;
+        /// <summary>Cartas señal que se escaparon, por tipo (sello dorado / lazo).</summary>
+        public int GoldMissed, LazoMissed;
 
         /// <summary>Encargos medidos y cumplidos: por evento, por hora y los cancelados (los que NO se hicieron cuentan como cumplidos).</summary>
         public int MeasureAll => Events + Times + Cancels;
@@ -347,6 +351,7 @@ namespace NeuroVida.Games.Correo
             Cancels += d.Cancels; Commissions += d.Commissions;
             Early += d.Early;
             Peeks += d.Peeks; GoodPeeks += d.GoodPeeks;
+            GoldMissed += d.GoldMissed; LazoMissed += d.LazoMissed;
             Right += d.Right; Sorted += d.Sorted; Late += d.Late;
             BestCombo = Math.Max(BestCombo, d.BestCombo);
         }

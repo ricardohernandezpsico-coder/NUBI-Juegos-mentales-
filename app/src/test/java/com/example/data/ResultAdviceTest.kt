@@ -93,6 +93,11 @@ class ResultAdviceTest {
     assertEquals(listOf("Mira el reloj cuando se acerque la hora."), lost)
     val ok = ResultAdvice.tips(result("correo") { copy(mailGroup = 2, mailEvHits = 4, mailEvTotal = 4, mailTimeHits = 2, mailTimeTotal = 2, mailCommissions = 0, mailPeeks = 1, mailPeeksGood = 1) })
     assertTrue(ok.isEmpty())
+    // las cartas señal: el truco nombra la señal que se escapó (etapa 2: sello dorado; etapa 5: lazo)
+    val gold = ResultAdvice.tips(result("correo") { copy(mailGroup = 1, mailEvHits = 1, mailEvTotal = 2, mailTimeHits = 0, mailTimeTotal = 0, mailCommissions = 0, mailGoldMissed = 1, mailLazoMissed = 0) })
+    assertEquals(listOf("Repite «cuando vea un sello dorado, caja fuerte»."), gold)
+    val lazo = ResultAdvice.tips(result("correo") { copy(mailGroup = 3, mailEvHits = 0, mailEvTotal = 2, mailTimeHits = 0, mailTimeTotal = 0, mailCommissions = 0, mailGoldMissed = 0, mailLazoMissed = 2) })
+    assertEquals(listOf("Repite «cuando vea un lazo, caja fuerte»."), lazo)
     // una partida de otro juego, o de la versión vieja sin etapas, no tiene truco de la estación
     assertTrue(ResultAdvice.tips(result("correo")).isEmpty())
   }

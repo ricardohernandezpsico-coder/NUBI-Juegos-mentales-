@@ -80,6 +80,8 @@ namespace NeuroVida.Games.Correo
         public int PmOk, PmAll, Right, Sorted, Late, BestCombo;
         public float Accuracy;
         public int Events, EventsOk, TimesAll, TimesOk, Cancels, Commissions, Early, Peeks, GoodPeeks, SafeFalse;
+        /// <summary>Las cartas señal que se escaparon, por tipo (para que el consejo nombre la señal que de verdad se perdió: docs §12).</summary>
+        public int GoldMissed, LazoMissed;
         public bool Perfect;
     }
 
@@ -445,6 +447,7 @@ namespace NeuroVida.Games.Correo
                     int all = t.Hits + t.Misses;
                     s.Events += all;
                     s.EventsOk += t.Hits;
+                    if (t.Cue == MailCue.Gold) s.GoldMissed += t.Misses; else s.LazoMissed += t.Misses;
                     if (all == 0) continue;
                     r.Items.Add(new MailRecapItem { Todo = t, Ok = t.Hits == all, Text = t.Cue == MailCue.Gold ? MailContract.ItemGold : MailContract.ItemLazo, Detail = MailContract.DetCount(t.Hits, all) });
                     continue;

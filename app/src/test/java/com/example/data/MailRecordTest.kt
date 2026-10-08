@@ -46,7 +46,7 @@ class MailRecordTest {
   }
 
   private fun game(best: Int, ok: Int = 8, all: Int = 11, game: String = "correo") = NativeReceiver.parse(
-    """{"user_id":"u1","game_id":"$game","session_metrics":{"correct_trials":$ok,"total_trials":$all,"calculated_score":70,"average_response_time_ms":0,"level":3,"timed":false,"end_rating":0.5,"peak_level":5,"mail_ev_hits":4,"mail_ev_total":5,"mail_time_hits":2,"mail_time_total":4,"mail_cancels":2,"mail_commissions":1,"mail_early":1,"mail_peeks":3,"mail_peeks_good":2,"mail_right":40,"mail_sorted":44,"mail_best_combo":9,"mail_days_perfect":1,"mail_group":3,"mail_best":$best,"mail_new":1}}"""
+    """{"user_id":"u1","game_id":"$game","session_metrics":{"correct_trials":$ok,"total_trials":$all,"calculated_score":70,"average_response_time_ms":0,"level":3,"timed":false,"end_rating":0.5,"peak_level":5,"mail_ev_hits":4,"mail_ev_total":5,"mail_time_hits":2,"mail_time_total":4,"mail_cancels":2,"mail_commissions":1,"mail_early":1,"mail_peeks":3,"mail_peeks_good":2,"mail_right":40,"mail_sorted":44,"mail_best_combo":9,"mail_days_perfect":1,"mail_gold_missed":1,"mail_lazo_missed":0,"mail_group":3,"mail_best":$best,"mail_new":1}}"""
   )!!
 
   private fun saved() = app.getSharedPreferences("correo_record", android.content.Context.MODE_PRIVATE).getInt("best", -1)
@@ -67,6 +67,8 @@ class MailRecordTest {
     assertEquals(44, r.mailSorted)
     assertEquals(9, r.mailBestCombo)
     assertEquals(1, r.mailDaysPerfect)
+    assertEquals(1, r.mailGoldMissed)
+    assertEquals(0, r.mailLazoMissed)
     assertEquals(3, r.mailGroup)
     assertEquals(24, r.mailBest)
     assertEquals(true, r.mailNewRecord)
@@ -82,6 +84,8 @@ class MailRecordTest {
       """{"user_id":"u1","game_id":"correo","session_metrics":{"correct_trials":7,"total_trials":10,"calculated_score":70,"average_response_time_ms":0,"level":3,"timed":true,"mail_commissions":2,"mail_peeks":5}}"""
     )!!
     assertNull("sin el grupo de etapas no es la estación nueva", old.mailGroup)
+    assertNull(old.mailGoldMissed)
+    assertNull(old.mailLazoMissed)
   }
 
   // Cada prueba hace UNA sola llamada a recordGameResult (varias seguidas dejan trabajo de fondo que a veces rompe la base de la prueba siguiente). Que el récord nunca baja lo prueba `MailTest.mergeRecord`.

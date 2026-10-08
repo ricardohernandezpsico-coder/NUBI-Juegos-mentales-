@@ -58,6 +58,18 @@ namespace NeuroVida.Games.Correo.Tests
         }
 
         [Test]
+        public void TheFloatingNoticeAboveTheButtons_FitsInTheGapAndNeverCoversAButton()
+        {
+            foreach (float h in Heights)
+            {
+                var m = MailLayout.Compute(h);
+                float gap = m.BtnY0 - (m.BoxY0 + MailLayout.BoxH);
+                Assert.GreaterOrEqual(gap, MailLayout.AboveH + MailLayout.AboveGap, "el aviso de una línea cabe entre los buzones y los botones (alto " + h + ")");
+                Assert.Greater(MailLayout.AboveGap, 0f, "su borde de abajo queda sobre el botón: nunca lo pisa");
+            }
+        }
+
+        [Test]
         public void TheBeltSlots_FrontLetterWaitsAt150_TheRestFollowBehind()
         {
             Assert.AreEqual(150f, MailLayout.SlotX(0));
@@ -184,6 +196,84 @@ namespace NeuroVida.Games.Correo.Tests
                     Assert.IsTrue(seen.Add(string.Join(",", s.texture.GetPixels32().Where((p, i) => i % 211 == 0).Select(p => p.r + ":" + p.g + ":" + p.b + ":" + p.a))), "dos cartas distintas no se ven iguales (" + pl + "/" + cue + ")");
                 }
             Assert.AreSame(MailSprites.Letter(2, MailCue.Lazo), MailSprites.Letter(2, MailCue.Lazo), "se hornean una sola vez");
+        }
+
+        // ------------------------------------------------------------------ el sello dorado se distingue por forma y tamaño (docs §12)
+
+        private static float Luma(Color32 c) => (0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b) / 255f;
+
+        /// <summary>El pixel de una carta en el punto (x, y) en dp (origen en el centro de la carta, y hacia abajo).</summary>
+        private static Color32 LetterPixel(Sprite s, float x, float y)
+        {
+            var tex = s.texture;
+            int ix = Mathf.Clamp(Mathf.RoundToInt((x / MailSprites.LetterBoxW + 0.5f) * tex.width - 0.5f), 0, tex.width - 1);
+            int iy = Mathf.Clamp(Mathf.RoundToInt((-y / MailSprites.LetterBoxH + 0.5f) * tex.height - 0.5f), 0, tex.height - 1);
+            return tex.GetPixels32()[iy * tex.width + ix];
+        }
+
+        [Test]
+        public void TheGoldSeal_IsBiggerThanTheNormalOne_AndHasAPerforatedPostalEdge()
+        {
+            Assert.GreaterOrEqual(MailSprites.SealHalf(true) / MailSprites.SealHalf(false), 1.15f, "el dorado es ~1,2 veces más grande");
+            float cx = MailSprites.SealCx(true), cy = MailSprites.SealCy(true), half = MailSprites.SealHalf(true);
+            // a lo largo del borde de arriba del dorado hay mordidas: puntos vacíos entre puntos llenos
+            int bites = 0, teeth = 0;
+            bool wasInside = false;
+            for (float dx = -12f; dx <= 12f; dx += 0.25f)
+            {
+                bool inside = MailSprites.SealShape(true, cx + dx, cy - half + 0.4f, cx, cy) < 0f;   // un poco adentro del borde
+                if (inside) teeth++;
+                if (wasInside && !inside) bites++;
+                wasInside = inside;
+            }
+            Assert.GreaterOrEqual(bites, MailSprites.PerfPerSide - 1, "cinco mordidas por lado (se cuentan al menos cuatro)");
+            Assert.Greater(teeth, 10, "y entre una y otra queda papel dorado: son dientes, no un borde roto");
+            // el normal es liso: ningún punto del mismo tramo queda vacío
+            float ncx = MailSprites.SealCx(false), ncy = MailSprites.SealCy(false), nh = MailSprites.SealHalf(false);
+            for (float dx = -9f; dx <= 9f; dx += 0.25f)
+                Assert.Less(MailSprites.SealShape(false, ncx + dx, ncy - nh + 0.4f, ncx, ncy), 0f, "el sello normal es liso (dx " + dx + ")");
+            // las mordidas de los otros lados
+            Assert.Greater(MailSprites.SealShape(true, cx - half + 0.4f, cy, cx, cy), 0f, "mordida a la izquierda, a media altura");
+            Assert.Greater(MailSprites.SealShape(true, cx + half - 0.4f, cy, cx, cy), 0f, "mordida a la derecha, a media altura");
+            Assert.Greater(MailSprites.SealShape(true, cx, cy + half - 0.4f, cx, cy), 0f, "mordida abajo, al medio");
+            Assert.Less(MailSprites.SealShape(true, cx + MailSprites.PerfPitch / 2f, cy - half + 0.4f, cx, cy), 0f, "y un diente entre dos mordidas");
+        }
+
+        [Test]
+        public void TheGoldSeal_ReadsDifferentInGrayscale_AndStaysInsideThePaper()
+        {
+            var normal = MailSprites.Letter(0, MailCue.None);
+            var gold = MailSprites.Letter(0, MailCue.Gold);
+            float paperL = Luma(LetterPixel(normal, -30f, -20f));
+            // el sello dorado sigue dentro del papel de la carta (112×76) y no pisa las líneas de dirección
+            float cx = MailSprites.SealCx(true), cy = MailSprites.SealCy(true), half = MailSprites.SealHalf(true);
+            Assert.LessOrEqual(cx + half, 56f - 4f, "no se sale del papel por la derecha");
+            Assert.GreaterOrEqual(cy - half, -38f + 4f, "ni por arriba");
+            Assert.Less(cy + half, 10f - 2f, "y no pisa las líneas de dirección");
+            // en escala de grises: (a) el interior dorado se aparta del papel; (b) el diente es oscuro y la mordida deja ver el papel
+            Assert.Greater(Mathf.Abs(Luma(LetterPixel(gold, cx - 8f, cy + 10f)) - paperL), 0.08f, "el dorado no es del tono del papel");
+            Color32 tooth = LetterPixel(gold, cx + MailSprites.PerfPitch / 2f, cy - half + 0.1f);
+            Color32 bite = LetterPixel(gold, cx, cy - half);
+            Assert.Greater(paperL - Luma(tooth), 0.3f, "el diente del borde es oscuro (borde café)");
+            Assert.Less(Mathf.Abs(Luma(bite) - paperL), 0.06f, "la mordida deja ver el papel");
+            // (c) la mancha del sello (lo que se aparta del papel en la zona del sello) es bastante mayor que la del normal
+            int bg = Blob(gold, paperL), bn = Blob(normal, paperL);
+            Assert.Greater(bg, bn * 1.25f, "en grises la mancha del sello dorado es más grande que la del normal (" + bg + " contra " + bn + ")");
+        }
+
+        private static int Blob(Sprite s, float paperL)
+        {
+            var px = s.texture.GetPixels32();
+            int n = 0, w = s.texture.width;
+            for (int iy = 0; iy < s.texture.height; iy++)
+                for (int ix = 0; ix < w; ix++)
+                {
+                    float x = (ix + 0.5f) / w * MailSprites.LetterBoxW - MailSprites.LetterBoxW / 2f;
+                    float y = -((iy + 0.5f) / s.texture.height * MailSprites.LetterBoxH - MailSprites.LetterBoxH / 2f);
+                    if (x < 10f || x > 56f || y < -38f || y > 8f) continue;
+                    if (Mathf.Abs(Luma(px[iy * w + ix]) - paperL) > 0.08f) n++;
+                }
+            return n;
         }
 
         [Test]

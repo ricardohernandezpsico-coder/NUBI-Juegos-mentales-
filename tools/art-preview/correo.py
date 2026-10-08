@@ -11,6 +11,7 @@ import math
 import os
 import struct
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -67,12 +68,14 @@ def night(w, h):
 
 
 def glow(img, cx, cy, radius, rgb, alpha):
-    """Un resplandor radial (el baño de luz tibia, el destello de la lámpara)."""
+    """Un resplandor radial (el baño de luz tibia, el destello de la lámpara). El alfa se calcula por DISTANCIA al centro y cae a 0 justo en el radio (como el RadialGlowSprite del juego): sin corte duro ni halo cuadrado en el borde."""
     size = int(radius * 2 * S)
-    g = Image.radial_gradient('L').resize((size, size), Image.BICUBIC)
-    a = g.point(lambda v: int(max(0, 255 - v * 1.0) * alpha * (1 - v / 255.0) ** 0.5))
+    yy, xx = np.mgrid[0:size, 0:size]
+    t = np.clip(np.hypot(xx - (size - 1) / 2.0, yy - (size - 1) / 2.0) / (size / 2.0), 0.0, 1.0)
+    edge = (1 - 0.71) ** 1.5                       # el perfil de siempre, desplazado para que llegue a 0 en el borde
+    a = np.clip(((1 - 0.71 * t) ** 1.5 - edge) / (1 - edge), 0.0, 1.0) * alpha
     layer = Image.new('RGBA', (size, size), rgb + (255,))
-    layer.putalpha(a)
+    layer.putalpha(Image.fromarray((a * 255).astype(np.uint8), 'L'))
     img.alpha_composite(layer, (int(cx * S - size / 2), int(cy * S - size / 2)))
 
 
@@ -186,8 +189,9 @@ def station_panel(raw, w=360, h=600, show=True):
         put(img, load(raw, 'mail_ship'), sx, sy, 100, rot=-0.05)
         glow(img, 180, belt_y - 52, 30, GOLD, 0.7)
         put(img, load(raw, 'mail_sack'), 180, belt_y - 52, 40)
-        rr(img, 56, 440, 248, 30, 15, (8, 10, 34, 235))
-        text(img, (180, 455), '¡Faro encendido a tiempo!', 15, GOLD)
+        # el aviso flota en el hueco de 30 dp entre los buzones y los botones: 28 dp de alto con su borde de abajo 2 dp sobre el faro (no sube, no tapa nada)
+        rr(img, 56, 438, 248, 28, 14, (8, 10, 34, 235))
+        text(img, (180, 452), '¡Faro encendido a tiempo!', 15, GOLD)
     return img
 
 

@@ -71,20 +71,41 @@ object Mail {
     return if (isNew == true) "¡Nuevo récord! $best cartas en un día perfecto" else "Tu mejor día perfecto: $best cartas"
   }
 
+  // Los trucos del consejo, fáciles de cambiar (Ricardo puede vetar cualquiera). Cada uno nombra la ACCIÓN concreta: la intención de implementación funciona cuando dice qué se hará y ante qué señal.
+  const val TIP_CANCELLED = "Truco: cuando la radio cancele algo, dilo en voz baja: «hoy no lo hago»."
+  const val TIP_LOOK_AT_CLOCK = "Truco: mira el reloj cuando se acerque la hora."
+  const val TIP_IMAGINE_BEACON = "Truco: imagínate tocando el faro cuando llegue la hora."
+  const val TIP_GOLD = "Truco: repite «cuando vea un sello dorado, caja fuerte»."
+  const val TIP_LAZO = "Truco: repite «cuando vea un lazo, caja fuerte»."
+  /** Cuando no se sabe cuál de las dos señales se escapó (una versión vieja de Unity no manda el desglose). */
+  const val TIP_CUE_GENERIC = "Truco: repite «cuando vea una carta con señal, caja fuerte»."
+
   /**
    * El consejo (con la marca «Truco: » que lee [ResultAdvice]): un truco de intención de implementación («cuando vea X, haré Y», lo que más transfiere a la vida diaria: Henry et al., 2021), según lo que más se escapó.
-   * Primero lo cancelado que se hizo igual, luego las horas (con el reloj: mirarlo cuando se acerca la hora, Peper y Ball, 2023), después las cartas señal. null si todo salió bien o no hubo encargos.
+   * Primero lo cancelado que se hizo igual, luego las horas (con el reloj: mirarlo cuando se acerca la hora, Peper y Ball, 2023), después las cartas señal: el truco nombra la señal que de verdad se escapó (el sello dorado en las
+   * etapas 1 a 4, que no traen lazo; el lazo en la 5; si se escaparon las dos, la que más veces). null si todo salió bien o no hubo encargos.
    */
-  fun tip(evHits: Int?, evTotal: Int?, timeHits: Int?, timeTotal: Int?, commissions: Int?, peeks: Int?, goodPeeks: Int?): String? {
-    if ((commissions ?: 0) > 0) return "Truco: cuando la radio cancele algo, dilo en voz baja: «hoy no lo hago»."
+  fun tip(
+    evHits: Int?, evTotal: Int?, timeHits: Int?, timeTotal: Int?, commissions: Int?, peeks: Int?, goodPeeks: Int?,
+    goldMissed: Int? = null, lazoMissed: Int? = null
+  ): String? {
+    if ((commissions ?: 0) > 0) return TIP_CANCELLED
     val timeMissed = (timeTotal ?: 0) > 0 && (timeHits ?: 0) < (timeTotal ?: 0)
     if (timeMissed) {
       val p = peeks ?: 0
       val g = goodPeeks ?: 0
-      return if (p == 0 || g * 2 < p) "Truco: mira el reloj cuando se acerque la hora." else "Truco: imagínate haciendo el encargo."
+      return if (p == 0 || g * 2 < p) TIP_LOOK_AT_CLOCK else TIP_IMAGINE_BEACON
     }
     val evMissed = (evTotal ?: 0) > 0 && (evHits ?: 0) < (evTotal ?: 0)
-    if (evMissed) return "Truco: repite «cuando vea un lazo, caja fuerte»."
+    if (evMissed) {
+      val gold = (goldMissed ?: 0).coerceAtLeast(0)
+      val lazo = (lazoMissed ?: 0).coerceAtLeast(0)
+      return when {
+        gold == 0 && lazo == 0 -> TIP_CUE_GENERIC
+        lazo > gold -> TIP_LAZO
+        else -> TIP_GOLD
+      }
+    }
     return null
   }
 

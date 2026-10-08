@@ -320,6 +320,9 @@ data class GamePlayResult(
   val mailSorted: Int? = null,
   val mailBestCombo: Int? = null,
   val mailDaysPerfect: Int? = null,
+  /** La Estación de correo: cartas señal que se escaparon, por tipo (sello dorado / lazo). */
+  val mailGoldMissed: Int? = null,
+  val mailLazoMissed: Int? = null,
   val mailGroup: Int? = null,
   val mailBest: Int? = null,
   val mailNewRecord: Boolean? = null,
