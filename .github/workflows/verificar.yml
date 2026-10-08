@@ -46,7 +46,15 @@ jobs:
         run: bash tools/unity-falso.sh
       - uses: gradle/actions/setup-gradle@v5
       - name: Compilar y probar
-        run: bash ./gradlew :app:testDebugUnitTest --console=plain
+        # KSP a veces cae con «ApplicationManager.getApplication() is null» cuando el compilador de Kotlin corre dentro del proceso de Gradle
+        # (kotlin.compiler.execution.strategy=in-process, que gradle.properties usa por el PC de Ricardo). Aquí se usa el demonio de Kotlin y, si aun así
+        # falla, se repite una vez: un fallo real de compilación o de una prueba vuelve a fallar y se informa igual.
+        run: |
+          for intento in 1 2; do
+            bash ./gradlew :app:testDebugUnitTest --console=plain -Pkotlin.compiler.execution.strategy=daemon && exit 0
+            echo "::warning::Gradle falló (intento $intento de 2)"
+          done
+          exit 1
       - name: Guardar el informe de pruebas si algo falló
         if: failure()
         uses: actions/upload-artifact@v6
