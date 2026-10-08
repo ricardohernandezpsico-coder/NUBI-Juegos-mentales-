@@ -172,10 +172,18 @@ def sky_panel(raw, stage, title, w=360, h=720):
             ob = load(raw, f"con_obj_{l['kind']}_{l['var']}")
             paste_center(img, ob, cx, cy, OBJ_BOX * (r * 1.32 / 40.0) * sc)
     draw_links(img, links, ox, oy, r)
-    pending = sum(1.0 / max(1, l['size']) for l in lights if l['state'] == 0)
-    n = int(round(pending))
+    # el mismo texto que ConstelacionContract.CardSub (concordancia incluida): lo que falta = luces dormidas / tamaño del grupo
+    pairs = sum(1 for l in lights if l['state'] == 0 and l['size'] == 2) // 2
+    trios = sum(1 for l in lights if l['state'] == 0 and l['size'] == 3) // 3
+    parts = []
+    if pairs > 0:
+        parts.append(f"{pairs} pareja" + ('' if pairs == 1 else 's'))
+    if trios > 0:
+        parts.append(f"{trios} trío" + ('' if trios == 1 else 's'))
+    left = ' y '.join(parts)
+    verb = 'falta ' if pairs + trios == 1 else 'faltan '
     if title[1] is None:
-        title = (title[0], 'Falta 1 constelación' if n == 1 else f'Faltan {n} constelaciones')
+        title = (title[0], 'Solo se unen los idénticos · ' + verb + left if stage == 7 else verb.capitalize() + left)
     d = ImageDraw.Draw(img)
     d.text((w / 2 * S, 80 * S), title[0], font=font(18), fill=TEXT, anchor='mm')
     d.text((w / 2 * S, 101 * S), title[1], font=font(14, False), fill=LAV, anchor='mm')

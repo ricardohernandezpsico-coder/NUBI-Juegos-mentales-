@@ -678,7 +678,11 @@ namespace NeuroVida.Games.Parejas.Tests
             var st1 = ConstelacionContract.Stage(1);
             Assert.AreEqual("Busca las parejas", ConstelacionContract.CardTitle(st1));
             Assert.AreEqual("Faltan 3 parejas", ConstelacionContract.CardSub(st1, 3, 0));
-            Assert.AreEqual("Faltan 1 pareja", ConstelacionContract.CardSub(st1, 1, 0));
+            Assert.AreEqual("Falta 1 pareja", ConstelacionContract.CardSub(st1, 1, 0), "un solo grupo: singular");
+            Assert.AreEqual("Falta 1 trío", ConstelacionContract.CardSub(ConstelacionContract.Stage(10), 0, 1));
+            Assert.AreEqual("Faltan 1 pareja y 1 trío", ConstelacionContract.CardSub(ConstelacionContract.Stage(13), 1, 1), "con «y» siempre es plural");
+            Assert.AreEqual("Solo se unen los idénticos · falta 1 pareja", ConstelacionContract.CardSub(ConstelacionContract.Stage(7), 1, 0));
+            Assert.AreEqual("Faltan 2 tríos", ConstelacionContract.CardSub(ConstelacionContract.Stage(10), 0, 2));
             Assert.AreEqual("Busca tres iguales", ConstelacionContract.CardTitle(ConstelacionContract.Stage(10)));
             Assert.AreEqual("Faltan 2 tríos", ConstelacionContract.CardSub(ConstelacionContract.Stage(10), 0, 2));
             Assert.AreEqual("Ojo con los gemelos", ConstelacionContract.CardTitle(ConstelacionContract.Stage(7)));

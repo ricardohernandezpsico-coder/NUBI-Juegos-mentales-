@@ -209,7 +209,9 @@ namespace NeuroVida.Games.Parejas
         public static string CardSub(ConStage st, int pairsLeft, int triosLeft)
         {
             string left = Missing(pairsLeft, triosLeft);
-            return st.HasTwins && !st.Mixed ? "Solo se unen los idénticos · faltan " + left : "Faltan " + left;
+            // concordancia: «Falta 1 pareja», «Falta 1 trío»; con más de uno (o con «y») es plural: «Faltan 1 pareja y 1 trío»
+            string verb = pairsLeft + triosLeft == 1 ? "falta " : "faltan ";
+            return st.HasTwins && !st.Mixed ? "Solo se unen los idénticos · " + verb + left : char.ToUpperInvariant(verb[0]) + verb.Substring(1) + left;
         }
 
         private static readonly string[] Tips =
