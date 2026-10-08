@@ -8,7 +8,7 @@ Hoy la app tiene **19 juegos** (es lo que dice `GameRegistry`; los retirados est
 
 | Área | Hoy | Falta |
 |---|---|---|
-| Memoria | 5 (Constelaciones —antes Parejas Ocultas, renovado el 7-oct—, Rastro de luz —antes Secuencia Lumínica—, **Bodega de carga** —nuevo el 5-oct, ocupa el lugar de Bitácora—, Rumbo a Casa y Correo Estelar). Retirados: Ruta del Tesoro (4-oct) y Bitácora de Misión (5-oct) | – |
+| Memoria | 5 (Constelaciones —antes Parejas Ocultas, renovado el 7-oct—, Rastro de luz —antes Secuencia Lumínica—, **Bodega de carga** —nuevo el 5-oct, ocupa el lugar de Bitácora—, Rumbo a Casa y Correo Estelar —renovado el 8-oct como «La estación de correo»—). Retirados: Ruta del Tesoro (4-oct) y Bitácora de Misión (5-oct) | – |
 | Atención y velocidad | 5 (Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Radar —«Rescate relámpago»—). Retirados: Cambio de Chip (3-oct) y Comparación Instantánea (4-oct) | – |
 | Razonamiento y números | 4 (Acoplamiento, Carga exacta —antes Cálculo Sereno—, Aterrizaje Lunar y Engranajes: «Taller de reparación», 5-oct). Retirados: Detective de Series y Tráfico Estelar (4-oct); idea para llegar a 5: «Código secreto», en `docs/ideas-guardadas.md` | – |
 | Lenguaje | 5 (En la punta de la lengua —antes Anagramas—, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras y La estrella intrusa) | – |
@@ -42,7 +42,7 @@ responda "¿qué descubrí de mí y cómo voy cambiando?". Maqueta: `docs/previe
 2. Plantilla propia de "juego base" (acelera los 12 juegos).
 3. Lenguaje: 2 juegos. Luego Cálculo y Velocidad (3 cada una) y Razonamiento (2).
 4. Cambiar los juegos de la evaluación inicial cuando haya más juegos estrella.
-5. Ricardo prueba en el teléfono los estrella pendientes (Rescate relámpago, Satélites, Rumbo, Correo). Bitácora de
+5. Ricardo prueba en el teléfono los estrella pendientes (Rescate relámpago, Satélites, Rumbo y «La estación de correo», 8-oct: botones «Correo con tutorial» y «Correo etapa 2 / 4 / 5 / 8» en las herramientas de prueba). Bitácora de
    Misión y Tráfico Estelar ya se retiraron.
 
 ## Repositorios externos

@@ -277,16 +277,26 @@ internal static class Program
                 System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "homing_trips.txt"), sb.ToString());
             }
             RumboSoundDemo(Path.Combine(dir, "rumbo-sonidos.wav"));
-            // Correo Estelar: sobre, paquete, radio y reloj (tapado y destapado).
-            Dump("mail_envelope", NeuroVida.Games.Correo.MailSprites.Envelope());
-            Dump("mail_package", NeuroVida.Games.Correo.MailSprites.Package());
-            Dump("mail_radio", NeuroVida.Games.Correo.MailSprites.Radio());
-            Dump("mail_clock", NeuroVida.Games.Correo.MailSprites.ClockFace());
-            Dump("mail_clock_cover", NeuroVida.Games.Correo.MailSprites.ClockCover());
-            Dump("mail_shield_full", NeuroVida.Games.Correo.MailSprites.ShieldPip(true));
-            Dump("mail_shield_empty", NeuroVida.Games.Correo.MailSprites.ShieldPip(false));
-            Dump("mail_damage1", NeuroVida.Games.Correo.MailSprites.ShipDamage(1));
-            Dump("mail_damage2", NeuroVida.Games.Correo.MailSprites.ShipDamage(2));
+            // «La estación de correo»: las 12 cartas, los 4 planetas-buzón, el dial, el faro, la nave, el saco, el marco y las marcas (rectangulares: -ancho, alto) para componer la lámina (correo.py)
+            {
+                void DumpMail(string name, Sprite sp) => DumpRect(name, sp.texture.pixels, sp.texture.width, sp.texture.pixels.Length / sp.texture.width);
+                for (int pl = 0; pl < 4; pl++)
+                {
+                    DumpMail("mail_planet_" + pl, NeuroVida.Games.Correo.MailSprites.Planet(pl));
+                    for (int cue = 0; cue < 3; cue++) DumpMail("mail_letter_" + pl + "_" + cue, NeuroVida.Games.Correo.MailSprites.Letter(pl, (NeuroVida.Games.Correo.MailCue)cue));
+                }
+                DumpMail("mail_dial", NeuroVida.Games.Correo.MailSprites.Dial());
+                DumpMail("mail_tower", NeuroVida.Games.Correo.MailSprites.Tower());
+                DumpMail("mail_lamp_off", NeuroVida.Games.Correo.MailSprites.Lamp(false));
+                DumpMail("mail_lamp_on", NeuroVida.Games.Correo.MailSprites.Lamp(true));
+                DumpMail("mail_ship", NeuroVida.Games.Correo.MailSprites.Ship());
+                DumpMail("mail_flame", NeuroVida.Games.Correo.MailSprites.Flame());
+                DumpMail("mail_sack", NeuroVida.Games.Correo.MailSprites.Sack());
+                DumpMail("mail_frame", NeuroVida.Games.Correo.MailSprites.DashFrame());
+                DumpMail("mail_check_ok", NeuroVida.Games.Correo.MailSprites.CheckOk());
+                DumpMail("mail_check_no", NeuroVida.Games.Correo.MailSprites.CheckNo());
+                DumpMail("mail_daybar", NeuroVida.Games.Correo.MailSprites.DayBar());
+            }
             CorreoSoundDemo(Path.Combine(dir, "correo-sonidos.wav"));
         }
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
@@ -334,24 +344,23 @@ internal static class Program
     static void CorreoSoundDemo(string path)
     {
         const int rate = 44100;
-        var mix = new float[(int)(12.5f * rate)];
+        var mix = new float[(int)(14f * rate)];
         void At(float t, UnityEngine.AudioClip c, float v)
         {
             int start = (int)(t * rate);
             for (int k = 0; k < c.data.Length && start + k < mix.Length; k++) mix[start + k] += v * c.data[k];
         }
-        for (int i = 0; i < 4; i++) At(0.2f + 0.45f * i, NeuroVida.Games.Correo.MailSounds.Pickup(), 0.3f);
-        At(1.95f, NeuroVida.Games.Correo.MailSounds.Bump(), 0.55f);
-        At(2.2f, NeuroVida.Games.Correo.MailSounds.Deliver(), 0.55f);
-        At(3.6f, NeuroVida.Games.Correo.MailSounds.WrongPlanet(), 0.5f);
-        At(4.5f, NeuroVida.Games.Correo.MailSounds.Peek(), 0.45f);
-        At(5.3f, NeuroVida.Games.Correo.MailSounds.RadioOk(), 0.55f);
-        At(6.4f, NeuroVida.Games.Correo.MailSounds.RadioOff(), 0.45f);
-        At(7.2f, NeuroVida.Games.Correo.MailSounds.Missed(), 0.45f);
-        At(8.4f, NeuroVida.Games.Correo.MailSounds.Bump(), 0.55f);
-        At(8.4f, NeuroVida.Games.Correo.MailSounds.ShieldCrack(), 0.4f);
-        At(8.6f, NeuroVida.Games.Correo.MailSounds.Emergency(), 0.5f);
-        At(10.6f, NeuroVida.Games.Correo.MailSounds.Repair(), 0.4f);
+        for (int i = 0; i < 4; i++) At(0.2f + 0.45f * i, NeuroVida.Games.Correo.MailSounds.BoxNote(i), 0.6f);
+        At(2.2f, NeuroVida.Games.Correo.MailSounds.Thud(), 0.55f);
+        At(3.0f, NeuroVida.Games.Correo.MailSounds.Fanfare(), 0.55f);
+        At(4.6f, NeuroVida.Games.Correo.MailSounds.Soft(), 0.5f);
+        At(5.4f, NeuroVida.Games.Correo.MailSounds.Tick(), 0.5f);
+        At(6.2f, NeuroVida.Games.Correo.MailSounds.Radio(), 0.55f);
+        At(7.2f, NeuroVida.Games.Correo.MailSounds.Sack(), 0.55f);
+        At(8.4f, NeuroVida.Games.Correo.MailSounds.Horn(), 0.5f);
+        At(8.4f, NeuroVida.Games.Correo.MailSounds.Fanfare(), 0.4f);
+        At(10.8f, NeuroVida.Games.Correo.MailSounds.Tier(3), 0.55f);
+        At(12.2f, NeuroVida.Games.Correo.MailSounds.DayEnd(), 0.55f);
         using var file = File.Create(path);
         var w = new BinaryWriter(file);
         int n = mix.Length;

@@ -83,7 +83,7 @@ import kotlin.random.Random
  */
 object ResultPhrases {
   /** Juegos cuyo puntaje y medida NO usan rapidez: ni tiempo de reacción en el motor ni una medida en ms o por segundo. */
-  val NO_SPEED_GAMES = setOf("secuencia", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes", "bodega", "parejas")
+  val NO_SPEED_GAMES = setOf("secuencia", "rumbo", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes", "bodega", "parejas", "correo")
 
   /**
    * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono: lo que cambia con la preferencia de la persona
@@ -1052,62 +1052,51 @@ fun GameResultScreen(
       }
     }
 
-    // Correo Estelar: "tu memoria para lo pendiente", por lugar (planetas) y por hora (radio), y cómo se usó el reloj.
-    result.mailEventTotal?.let { evTotal ->
+    // La estación de correo (pantalla final, docs/diseno-correo-estacion.md §7): «Tu memoria para lo pendiente» con el % en grande, los encargos cumplidos (por evento y por hora, con discos), los cancelados que no hiciste, las miradas al reloj
+    // cerca de la hora, las cartas bien puestas, la etapa más alta y el récord. Cada dato aparece UNA vez; sin recuadros; sin encargos no hay % («—»).
+    val mailGroup = result.mailGroup
+    if (mailGroup != null) {
+      val mail = com.example.data.Mail
+      val ok = result.correctAnswers
+      val all = result.totalTrials
       Spacer(Modifier.height(14.dp))
-      val evHits = result.mailEventHits ?: 0
-      val raTotal = result.mailRadioTotal ?: 0
-      val raHits = result.mailRadioHits ?: 0
-      Text(
-        text = "Tu memoria para lo pendiente: ${evHits + raHits} de ${evTotal + raTotal} encargos",
-        color = Clay.Sun,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        fontFamily = AppFamily,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 24.dp)
-      )
+      Text("Tu memoria para lo pendiente", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = mail.spoken(ok, all) }.testTag("correo_headline"),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Text(mail.percent(ok, all)?.let { "$it %" } ?: "—", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
+        Text(mail.detailLine(ok, all), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center)
+      }
       Text(
         text = "Acordarte de hacer algo en el momento justo, sin que nada te avise del todo: como tomar un remedio o hacer una llamada.",
         color = TextSoft,
         fontSize = 15.sp,
         textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
       )
-      Spacer(Modifier.height(6.dp))
-      Text("Por lugar (planetas): $evHits de $evTotal", color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-      FilledSlots(evHits, evTotal, Clay.Coral, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por lugar: $evHits de $evTotal" })
-      if (raTotal > 0) {
-        Text(
-          "Por hora (radio): $raHits de $raTotal",
-          color = Clay.Cream,
-          fontSize = 15.sp,
-          fontWeight = FontWeight.SemiBold,
-          modifier = Modifier.padding(top = 8.dp)
-        )
-        FilledSlots(raHits, raTotal, Clay.Grape, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por hora: $raHits de $raTotal" })
+      val evHits = result.mailEvHits ?: 0
+      val evTotal = result.mailEvTotal ?: 0
+      val timeHits = result.mailTimeHits ?: 0
+      val timeTotal = result.mailTimeTotal ?: 0
+      mail.eventLine(evHits, evTotal)?.let {
+        Text(it, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp).testTag("correo_event"))
+        FilledSlots(evHits, evTotal, Clay.Coral, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por evento: $evHits de $evTotal" })
       }
-      val notes = listOfNotNull(
-        com.example.data.Mail.commissionMessage(result.mailCommissions ?: 0, result.mailLureCommissions ?: 0),
-        com.example.data.Mail.clockMessage(result.mailClockChecks ?: -1, result.mailClockLate ?: 0, raTotal),
-        com.example.data.Mail.compareMessage(evHits, evTotal, raHits, raTotal)
-      )
-      notes.forEach {
-        Text(com.example.data.ResultAdvice.body(it), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+      mail.timeLine(timeHits, timeTotal)?.let {
+        Text(it, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp).testTag("correo_time"))
+        FilledSlots(timeHits, timeTotal, Clay.Grape, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por hora: $timeHits de $timeTotal" })
       }
-      val lane = result.mailLanePct
-      val asteroids = result.mailAsteroids
-      val dodged = asteroids?.let { it - (result.mailAsteroidHits ?: 0) }
-      if (lane != null && lane >= 0) {
-        Text(
-          text = "Ruta: $lane% del vuelo" + (if (asteroids != null && asteroids > 0) " · esquivaste $dodged de $asteroids asteroides" else ""),
-          color = TextSoft,
-          fontSize = 15.sp,
-          modifier = Modifier.padding(top = 4.dp)
-        )
+      listOfNotNull(
+        mail.cancelLine(result.mailCancels, result.mailCommissions),
+        mail.clockLine(result.mailPeeksGood, result.mailPeeks),
+        mail.cardsLine(result.mailRight),
+        mail.groupLine(mailGroup)
+      ).forEach {
+        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
       }
-      com.example.data.Mail.shipMessage(result.mailHullIntactPct ?: -1, result.mailEmergencies ?: 0)?.let {
-        Text(com.example.data.ResultAdvice.body(it), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
+      mail.recordLine(result.mailBest, result.mailNewRecord)?.let {
+        Text(it, color = if (result.mailNewRecord == true) Clay.Sun else TextSoft, fontSize = if (result.mailNewRecord == true) 15.sp else 14.sp, fontWeight = if (result.mailNewRecord == true) FontWeight.SemiBold else FontWeight.Normal, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("correo_record"))
       }
     }
 
@@ -1144,7 +1133,7 @@ fun GameResultScreen(
     val hasStarMeasure = listOf(
       result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs,
-      result.homingErrorPct, result.mailEventTotal, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
+      result.homingErrorPct, result.mailGroup, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
       result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa, result.conGroup
     ).any { it != null }
     if (hasStarMeasure) {
@@ -1419,7 +1408,7 @@ private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier, slots:
   }
 }
 
-// ---------- Correo Estelar: filas de discos ----------
+// ---------- La estación de correo: filas de discos ----------
 
 /** Fila de discos de arcilla: [filled] encendidos (del color dado) de [total]. El número va en el texto de arriba. */
 @Composable

@@ -1,5 +1,9 @@
 # Correo Estelar (`correo`) — ficha técnica
 
+> **RENOVADO el 8-oct-2026 como «La estación de correo».** La ficha vigente (cómo funciona, etapas, reglas, medidas, tutorial y cómo quedó hecho) es [`docs/diseno-correo-estacion.md`](../diseno-correo-estacion.md); la medida está en
+> [`docs/medidas-juegos-estrella.md`](../medidas-juegos-estrella.md) (§ «Correo Estelar»). Lo de abajo describe el VUELO anterior (28-sep) y se conserva solo como historia: ya no existe en el código (ni el pilotaje, ni los planetas
+> a los costados de la ruta, ni los asteroides, ni el escudo, ni la radio cada 30 s).
+
 > Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
 
 **Correo Estelar** (`Games/Correo/`, id `correo`, dominio MEMORIA; 28-sep, elegido por Ricardo entre 4 propuestas con el

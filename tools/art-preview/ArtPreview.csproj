@@ -32,6 +32,7 @@
     <Compile Include="$(Src)/Parejas/ConstelacionMotion.cs" />
     <Compile Include="$(Src)/Parejas/ConstelacionSprites.cs" />
     <Compile Include="$(Src)/../Contracts/CardsTelemetry.cs" />
+    <Compile Include="$(Src)/../Contracts/StroopTelemetry.cs" />
     <Compile Include="$(Src)/Secuencia/TileSprites.cs" />
     <Compile Include="$(Src)/Secuencia/TilePalette.cs" />
     <Compile Include="$(Src)/Shared/LunarSurfaceSprite.cs" />
@@ -53,6 +54,7 @@
     <Compile Include="$(Src)/Rumbo/HomingSprites.cs" />
     <Compile Include="$(Src)/Rumbo/HomingSounds.cs" />
     <Compile Include="$(Src)/Correo/MailContract.cs" />
+    <Compile Include="$(Src)/Correo/MailDay.cs" />
     <Compile Include="$(Src)/Correo/MailSprites.cs" />
     <Compile Include="$(Src)/Correo/MailSounds.cs" />
     <Compile Include="$(Src)/Meteoros/MeteorSprites.cs" />

@@ -165,8 +165,8 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`arte-arcilla.png`](arte-arcilla.png)
 - [`aterrizaje.png`](aterrizaje.png)
 - [`bitacora.png`](bitacora.png)
-- [`correo-escudo.png`](correo-escudo.png)
-- [`correo-estelar.png`](correo-estelar.png)
+- [`correo-escudo.png`](correo-escudo.png) (del vuelo viejo; historia)
+- [`correo-estelar.png`](correo-estelar.png) (del vuelo viejo; historia)
 - [`fichas-arcilla.png`](fichas-arcilla.png)
 - [`freno.png`](freno.png)
 - [`piloto-estelar.png`](piloto-estelar.png)
@@ -180,6 +180,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
   equivocado (carteles verde y coral, en celeste lo que movió el cambio y en dorado lo que había que tocar) y dos cambios con todo en verde (réplica, no captura). Script: `tools/art-preview/engranajes.py`.
 - [`engranajes-taller-boceto.html`](engranajes-taller-boceto.html): el boceto jugable aprobado del Taller (con `?etapa=N` se entra a cada etapa).
 - [`constelaciones.png`](constelaciones.png): «Constelaciones» (7-oct): los 12 objetos y los 4 gemelos del arte real, las luces dormidas y abiertas, la línea dorada y la celeste punteada, y el aro de memoria / de luz nueva. Script: `tools/art-preview/constelaciones.py`.
+- [`correo-estacion.png`](correo-estacion.png): «La estación de correo» (8-oct): las 12 cartas (4 planetas × normal, sello dorado y lazo), los 4 planetas-buzón, la caja fuerte, el faro apagado y encendido, la nave con su saco y un cuadro del momento del faro (la luz detrás de la estación y la nave delante), con el arte REAL. Script: `tools/art-preview/correo.py`. Sonidos nuevos: [`correo-sonidos.wav`](correo-sonidos.wav). Boceto aprobado: [`correo-estacion-boceto.html`](correo-estacion-boceto.html).
 - [`simbolos-neutros.png`](simbolos-neutros.png): los símbolos neutros del 4-oct (puertos, cartas de Parejas Ocultas —ya retiradas—, señales de Piloto). Script: `tools/art-preview/simbolos_neutros.py`.
 
 ## Bienvenida, resultados, logros y compartir

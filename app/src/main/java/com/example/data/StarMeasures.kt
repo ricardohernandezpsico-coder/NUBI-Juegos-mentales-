@@ -89,7 +89,8 @@ object StarMeasures {
     MeasureDef("bodega", "bodega", "Tus objetos al primer intento en Bodega de carga", "%", "de los objetos, al primer intento", lowerIsBetter = false, short = "los objetos que encuentras al primer intento", compactPattern = "{v}", levelDependent = true),
     MeasureDef("place", "parejas", "Tu memoria de lugar en Constelaciones", "%", "de las veces, directo a una pareja ya vista", lowerIsBetter = false, short = "tu memoria de lugar", compactPattern = "{v}", levelDependent = true),
     MeasureDef("trail", "secuencia", "Tu rastro en Rastro de luz", "", "luces seguidas", lowerIsBetter = false, short = "tu rastro", compactPattern = "{v} luces", levelDependent = true),
-    MeasureDef("pending", "correo", "Tu memoria para lo pendiente", "%", "de encargos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}", levelDependent = true)
+    // Clave `estacion` (no `pending`): el juego se rehízo el 8-oct («La estación de correo») y su medida cuenta otra cosa (encargos por evento, por hora y cancelados); los puntos viejos (clave `pending`) quedan guardados pero ya no se leen.
+    MeasureDef("estacion", "correo", "Tu memoria para lo pendiente en Correo Estelar", "%", "de los encargos, cumplidos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}", levelDependent = true)
   )
 
   val gameNames = mapOf(

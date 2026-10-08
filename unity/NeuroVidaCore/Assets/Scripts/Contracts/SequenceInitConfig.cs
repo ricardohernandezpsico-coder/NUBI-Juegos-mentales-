@@ -76,6 +76,10 @@ namespace NeuroVida.Contracts
         /// botones [Debug] de la app, la etapa (1..18) con que empieza la partida (0 = la de siempre).</summary>
         public int con_best;
         public int con_stage;
+        /// <summary>Solo «La estación de correo» (id <c>correo</c>): el récord «cartas en un día perfecto» (progreso: la app lo guarda, lo manda aquí y Unity devuelve el nuevo en <c>mail_best</c>) y, solo en las herramientas de prueba,
+        /// la etapa (1..10) con que empieza la partida (0 = la que corresponde).</summary>
+        public int mail_best;
+        public int mail_stage;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;

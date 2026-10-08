@@ -87,6 +87,31 @@ class MigrationTest {
   }
 
   @Test
+  fun `de la version 13 a la 14 el rating de Correo se lleva a la mitad y los demas juegos no se tocan`() {
+    helper.createDatabase("migracion14", 13).apply {
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('correo', 3, 80, 9, 1700000000000, 1, 1100, 0.9)")
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('secuencia', 3, 80, 9, 1700000000000, 1, 1100, 0.9)")
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('rumbo', 1, 0, 0, 0, 0, 0, -1)")
+      close()
+    }
+    val db = helper.runMigrationsAndValidate("migracion14", 14, true, *NeuroVidaDatabase.MIGRATIONS)
+    val rating = mutableMapOf<String, Double>()
+    db.query("SELECT gameId, ddaRating FROM game_progress").use { c ->
+      while (c.moveToNext()) rating[c.getString(0)] = c.getDouble(1)
+    }
+    // 0,9 del vuelo viejo parte en 0,45 (etapa 5 de 10); el mismo número que calcula la app (Mail.translateOldRating).
+    assertEquals(com.example.data.Mail.translateOldRating(0.9f).toDouble(), rating["correo"]!!, 1e-4)
+    assertEquals(0.45, rating["correo"]!!, 1e-4)
+    assertEquals(0.9, rating["secuencia"]!!, 1e-6)
+    assertEquals(-1.0, rating["rumbo"]!!, 0.0)
+    db.query("SELECT totalGamesPlayed FROM game_progress WHERE gameId = 'correo'").use { c ->
+      assertTrue(c.moveToFirst())
+      assertEquals(9, c.getInt(0))
+    }
+    db.close()
+  }
+
+  @Test
   fun `cada version exportada tiene su migracion a la siguiente`() {
     val versions = File("schemas").walkTopDown().filter { it.extension == "json" }.map { it.nameWithoutExtension.toInt() }.toList().sorted()
     assertTrue("no encontré los esquemas exportados en app/schemas", versions.isNotEmpty())

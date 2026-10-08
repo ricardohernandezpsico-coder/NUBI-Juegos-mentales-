@@ -1,234 +1,240 @@
-"""Maqueta de Correo Estelar (propuesta, antes de programar): el vuelo de Piloto Estelar con ENCARGOS que hay que
-recordar en el momento justo (memoria prospectiva). Arte de los .raw de ArtPreview (nave, planetas-puerto,
-marcas); el sobre, la radio y el reloj tapado se dibujan acá.
+"""Lámina de «La estación de correo» (8-oct-2026; id correo): las 12 cartas (4 planetas × normal, sello dorado y lazo), los 4 planetas-buzón, la caja fuerte (dial con marcas y manija), el faro apagado y encendido, la nave del correo
+con su saco dorado, y un cuadro del momento del faro (la luz DETRÁS de la estación y la nave DELANTE), con los sprites REALES horneados (tools/art-preview) en las posiciones del boceto aprobado
+(docs/previews/correo-estacion-boceto.html). No es una captura del juego: el movimiento no se ve en una imagen quieta.
 
-Tres momentos: la hoja de ruta (los encargos), el vuelo con un planeta coral que pasa (¡tócalo!) y la entrega con el
-reloj destapado.
-
-Uso: python3 tools/art-preview/correo.py <raw> [--out docs/previews]  ->  correo-estelar.png y correo-escudo.png
-(el escudo de la nave con el arte REAL de MailSprites: entera, dañada, con humo y en reparación de emergencia).
+Uso:  python tools/art-preview/correo.py <raw> [--out docs/previews]
+      (<raw> = la carpeta que vuelca ArtPreview: `dotnet run --project tools/art-preview -- <raw>`; con solo el runtime 10 de .NET: DOTNET_ROLL_FORWARD=LatestMajor)
+Genera docs/previews/correo-estacion.png. (correo-escudo.png y correo-estelar.png son del vuelo y quedan como historia.)
 """
 import argparse
+import math
 import os
+import struct
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-from juegos import INK, W, H, ROOT, FB, load, night, put, glow, clay_text, hexc
-from piloto import clay_box, lane, ship, control, SKY, CORAL, SUN, LIME, SURFACE
-
-CREAM = (255, 248, 236)
-GRAPE = hexc(0xB8A4FF)
-
-
-def font(size):
-    return ImageFont.truetype(FB, size)
-
-
-def hud(im, level, info):
-    d = ImageDraw.Draw(im)
-    d.text((30, 38), 'Correo Estelar', font=font(34), fill=(255, 255, 255), anchor='lm', stroke_width=2, stroke_fill=INK)
-    clay_box(im, (30, 62, 132, 90), 14, SURFACE)
-    d = ImageDraw.Draw(im)
-    d.text((81, 76), f'Nivel {level}', font=font(20), fill=SKY, anchor='mm')
-    w = 40 + 11 * len(info)
-    clay_box(im, (142, 62, 142 + w, 90), 14, SURFACE)
-    d = ImageDraw.Draw(im)
-    d.text((142 + w / 2, 76), info, font=font(20), fill=SUN, anchor='mm')
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+FB = ROOT + '/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-Bold.ttf'
+FS = ROOT + '/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-SemiBold.ttf'
+S = 2            # píxeles por dp
+GOLD = (255, 201, 74)
+CYAN = (127, 216, 255)
+LAV = (171, 165, 210)
+TEXT = (237, 234, 251)
+INK = (26, 18, 64)
+PLANETS = ['Coralia', 'Celesta', 'Lima', 'Uva']
+SHAPES = ['círculo', 'triángulo', 'cuadrado', 'gota']
 
 
-def envelope(im, cx, cy, s=1.0, col=CREAM):
-    """Sobre de arcilla (lo que se recoge al volar)."""
-    d = ImageDraw.Draw(im)
-    w, h = 34 * s, 24 * s
-    d.rounded_rectangle((cx - w / 2, cy - h / 2 + 3, cx + w / 2, cy + h / 2 + 3), 5, fill=INK)
-    d.rounded_rectangle((cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2), 5, fill=col, outline=INK, width=3)
-    d.line((cx - w / 2 + 3, cy - h / 2 + 3, cx, cy + 2 * s, cx + w / 2 - 3, cy - h / 2 + 3), fill=INK, width=3)
+def load(raw, name):
+    b = open(os.path.join(raw, name + '.raw'), 'rb').read()
+    n = struct.unpack('<i', b[:4])[0]
+    w = -n
+    h = struct.unpack('<i', b[4:8])[0]
+    return Image.frombytes('RGBA', (w, h), b[8:8 + w * h * 4]).transpose(Image.FLIP_TOP_BOTTOM)
 
 
-def package(im, cx, cy, s=1.0):
-    d = ImageDraw.Draw(im)
-    r = 16 * s
-    d.rounded_rectangle((cx - r, cy - r + 3, cx + r, cy + r + 3), 5, fill=INK)
-    d.rounded_rectangle((cx - r, cy - r, cx + r, cy + r), 5, fill=hexc(0xD9A066), outline=INK, width=3)
-    d.line((cx, cy - r, cx, cy + r), fill=SUN, width=4)
-    d.line((cx - r, cy, cx + r, cy), fill=SUN, width=4)
+def font(size, bold=True):
+    return ImageFont.truetype(FB if bold else FS, int(size * S))
 
 
-def radio(im, cx, cy, lit=False):
-    """Botón de la radio (encargo por hora): disco de arcilla con antena y ondas."""
-    if lit:
-        glow(im, cx, cy, 60, SUN, 90)
-    d = ImageDraw.Draw(im)
-    r = 38
-    d.ellipse((cx - r, cy - r + 5, cx + r, cy + r + 5), fill=INK)
-    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=GRAPE, outline=INK, width=4)
-    d.rounded_rectangle((cx - 15, cy - 4, cx + 15, cy + 18), 5, fill=CREAM, outline=INK, width=3)
-    d.line((cx + 6, cy - 4, cx + 14, cy - 22), fill=INK, width=4)
-    d.ellipse((cx + 10, cy - 27, cx + 18, cy - 19), fill=SUN, outline=INK, width=2)
-    for k, rr in enumerate((10, 17)):
-        d.arc((cx - 4 - rr, cy - 22 - rr, cx - 4 + rr, cy - 22 + rr), 200, 250, fill=CREAM, width=3)
-    d.text((cx, cy + r + 14), 'radio', font=font(15), fill=(255, 255, 255, 200), anchor='mm')
+def put(img, sprite, cx, cy, wdp, hdp=None, rot=0.0, alpha=1.0):
+    """Pega un sprite centrado en (cx, cy) dp, con ancho/alto en dp (si no, la proporción del sprite)."""
+    hdp = hdp if hdp is not None else wdp * sprite.height / sprite.width
+    sp = sprite.resize((max(1, int(round(wdp * S))), max(1, int(round(hdp * S)))), Image.LANCZOS)
+    if rot:
+        sp = sp.rotate(-math.degrees(rot), resample=Image.BICUBIC, expand=True)
+    if alpha < 1.0:
+        a = sp.getchannel('A').point(lambda v: int(v * alpha))
+        sp.putalpha(a)
+    img.alpha_composite(sp, (int(round(cx * S - sp.width / 2)), int(round(cy * S - sp.height / 2))))
 
 
-def clock(im, cx, cy, shown=None):
-    """Reloj de la misión: tapado (hay que tocarlo para mirar) o destapado un momento con el tiempo."""
-    d = ImageDraw.Draw(im)
-    r = 30
-    d.ellipse((cx - r, cy - r + 4, cx + r, cy + r + 4), fill=INK)
-    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=SURFACE if shown is None else CREAM, outline=INK, width=4)
-    if shown is None:
-        d.text((cx, cy + 1), '?', font=font(30), fill=(255, 255, 255, 170), anchor='mm')
-        d.text((cx, cy + r + 13), 'reloj', font=font(14), fill=(255, 255, 255, 180), anchor='mm')
-    else:
-        d.line((cx, cy, cx, cy - r + 9), fill=INK, width=4)
-        d.line((cx, cy, cx + 12, cy + 6), fill=INK, width=4)
-        d.text((cx, cy + r + 15), shown, font=font(20), fill=SUN, anchor='mm', stroke_width=2, stroke_fill=INK)
+def night(w, h):
+    img = Image.new('RGBA', (int(w * S), int(h * S)), (7, 10, 38, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(int(h * S)):
+        t = y / (h * S)
+        d.line([(0, y), (w * S, y)], fill=(int(3 + 8 * t), int(4 + 12 * t), int(26 + 22 * t), 255))
+    import random
+    r = random.Random(11)
+    for _ in range(int(w * h / 700)):
+        x, y = r.random() * w * S, r.random() * h * S
+        rad = 0.5 + r.random() * 1.2
+        a = int(60 + r.random() * 120)
+        d.ellipse([x - rad, y - rad, x + rad, y + rad], fill=(255, 255, 255, a))
+    return img
 
 
-def frame_brief(raw):
-    """Antes de salir: la hoja de ruta con los encargos (sin recuadros: ícono + texto)."""
-    im = night(31)
-    glow(im, W / 2, 0, 280, SKY, 45)
-    d = ImageDraw.Draw(im)
-    hud(im, 3, 'Encargos 2')
-    d = ImageDraw.Draw(im)
-    clay_text(d, (W / 2, 190), 'Tu hoja de ruta', 36)
-    d.text((W / 2, 232), 'Recuerda tus encargos mientras vuelas', font=font(18), fill=(230, 232, 250), anchor='mm')
-    # Encargo por lugar.
-    glow(im, 110, 350, 60, CORAL, 70)
-    put(im, load(f'{raw}/port_0.raw'), 110, 350, 100)
-    package(im, 150, 385, 0.8)
-    d = ImageDraw.Draw(im)
-    d.text((185, 332), 'Cuando pases un', font=font(22), fill=(255, 255, 255), anchor='lm')
-    d.text((185, 360), 'planeta coral, tócalo', font=font(22), fill=CORAL, anchor='lm', stroke_width=1, stroke_fill=INK)
-    d.text((185, 390), 'le entregas su paquete', font=font(16), fill=(215, 220, 245), anchor='lm')
-    # Encargo por hora.
-    radio(im, 110, 505)
-    d = ImageDraw.Draw(im)
-    d.text((185, 488), 'Cada 30 segundos,', font=font(22), fill=(255, 255, 255), anchor='lm')
-    d.text((185, 516), 'toca la radio', font=font(22), fill=GRAPE, anchor='lm', stroke_width=1, stroke_fill=INK)
-    d.text((185, 546), 'avisas a la base que vas bien', font=font(16), fill=(215, 220, 245), anchor='lm')
-    clock(im, 110, 650)
-    d = ImageDraw.Draw(im)
-    d.text((185, 640), 'El reloj va tapado:', font=font(20), fill=(255, 255, 255), anchor='lm')
-    d.text((185, 668), 'tócalo si quieres mirar la hora', font=font(16), fill=(215, 220, 245), anchor='lm')
-    # Botón.
-    clay_box(im, (W / 2 - 120, 790, W / 2 + 120, 850), 30, LIME)
-    d = ImageDraw.Draw(im)
-    d.text((W / 2, 820), '¡A volar!', font=font(28), fill=INK, anchor='mm')
-    return im
+def glow(img, cx, cy, radius, rgb, alpha):
+    """Un resplandor radial (el baño de luz tibia, el destello de la lámpara)."""
+    size = int(radius * 2 * S)
+    g = Image.radial_gradient('L').resize((size, size), Image.BICUBIC)
+    a = g.point(lambda v: int(max(0, 255 - v * 1.0) * alpha * (1 - v / 255.0) ** 0.5))
+    layer = Image.new('RGBA', (size, size), rgb + (255,))
+    layer.putalpha(a)
+    img.alpha_composite(layer, (int(cx * S - size / 2), int(cy * S - size / 2)))
 
 
-def frame_flight(raw):
-    """En vuelo: la ruta con sobres, un planeta coral que pasa a la derecha (¿te acordarás?) y uno celeste que no."""
-    im = night(32)
-    glow(im, W / 2, 0, 260, SKY, 50)
-    d = ImageDraw.Draw(im)
-    hud(im, 3, 'Entregas 2')
-    clock(im, W - 60, 60)
-    c = lane(im, 3900, 703, 0.14, 0.24, False)
-    for (x, y) in ((0.47, 560), (0.52, 430), (0.5, 300)):
-        envelope(im, x * W, y)
-    glow(im, 470, 330, 70, CORAL, 55)
-    put(im, load(f'{raw}/port_0.raw'), 470, 330, 96)
-    put(im, load(f'{raw}/port_2.raw'), 70, 480, 86)
-    ship(im, raw, c * W + 4, 703, -6)
-    d = ImageDraw.Draw(im)
-    clay_text(d, (W / 2 - 60, 640), '+10', 24, SUN)
-    radio(im, W - 62, 700)
-    d = ImageDraw.Draw(im)
-    control(im, d, '‹  Desliza aquí para guiar la nave  ›', 'En la ruta', LIME)
-    return im
+def rr(img, x, y, w, h, r, fill, outline=None, width=0, shadow=False):
+    d = ImageDraw.Draw(img, 'RGBA')
+    if shadow:
+        d.rounded_rectangle([(x + 3) * S, (y + 6) * S, (x + w + 3) * S, (y + h + 6) * S], radius=r * S, fill=(0, 0, 0, 90))
+    d.rounded_rectangle([x * S, y * S, (x + w) * S, (y + h) * S], radius=r * S, fill=fill, outline=outline, width=int(width * S))
 
 
-def frame_deliver(raw):
-    """Tocaste el planeta coral: el paquete vuela hasta él (¡Entregado!); miraste el reloj (0:27): falta poco para la radio."""
-    im = night(33)
-    glow(im, W / 2, 0, 260, SKY, 50)
-    d = ImageDraw.Draw(im)
-    hud(im, 3, 'Entregas 3')
-    clock(im, W - 60, 60, shown='0:27')
-    c = lane(im, 4150, 703, 0.14, 0.24, False)
-    envelope(im, 0.5 * W, 420)
-    glow(im, 440, 440, 90, CORAL, 90)
-    put(im, load(f'{raw}/port_0.raw'), 440, 440, 100)
-    put(im, load(f'{raw}/mark_check.raw'), 478, 400, 40)
-    ship(im, raw, c * W, 703, 4)
-    # Estela del paquete desde la nave hasta el planeta.
-    d = ImageDraw.Draw(im)
-    sx, sy_ = c * W + 10, 660
-    for k in range(7):
-        t = k / 7
-        x = sx + (440 - sx) * t
-        y = sy_ + (445 - sy_) * t - 60 * (4 * t * (1 - t))
-        d.ellipse((x - 4, y - 4, x + 4, y + 4), fill=SUN + (int(80 + 150 * t),))
-    package(im, 420, 470, 0.8)
-    d = ImageDraw.Draw(im)
-    clay_text(d, (410, 360), '¡Entregado! +100', 26, LIME)
-    radio(im, W - 62, 700, lit=True)
-    d = ImageDraw.Draw(im)
-    control(im, d, '', 'Encargo cumplido', LIME)
-    return im
+def text(img, xy, s, size, fill, bold=True, anchor='mm'):
+    ImageDraw.Draw(img).text((xy[0] * S, xy[1] * S), s, font=font(size, bold), fill=fill, anchor=anchor)
 
 
-def shield_frame(raw, segments, emergency=False):
-    """Vuelo con el escudo (3 segmentos arriba a la izquierda) y la nave con el daño que corresponde."""
-    im = night(40 + segments)
-    glow(im, W / 2, 0, 260, SKY, 50)
-    hud(im, 3, 'Entregas 2')
-    clock(im, W - 60, 60)
-    c = lane(im, 3900 + 300 * segments, 703, 0.14, 0.24, False)
-    # Escudo: segmentos del arte real.
-    for i in range(3):
-        pip = load(f'{raw}/mail_shield_{"full" if i < segments else "empty"}.raw')
-        put(im, pip, 40 + i * 43, 128, 39)
-    d = ImageDraw.Draw(im)
-    d.text((83, 158), 'escudo', font=font(15), fill=CREAM + (190,), anchor='mm')
-    x, y = c * W + 4, 703
-    lost = 3 - segments
-    if lost >= 2:
-        for k in range(6):
-            r = 10 + k * 5
-            glow(im, x + (k % 2) * 6 - 3, y + 20 + k * 22, r, (158, 153, 189), 110 - k * 16)
-    if emergency:
-        glow(im, x, y, 110, SUN, 90)
-    ship(im, raw, x, y, -4)
-    if lost > 0:
-        dmg = load(f'{raw}/mail_damage{min(lost, 2)}.raw').resize((88, 88), Image.LANCZOS).rotate(-4, resample=Image.BICUBIC, expand=True)
-        im.alpha_composite(dmg, (int(x - dmg.width / 2), int(y - dmg.height / 2)))
-    radio(im, W - 62, 700)
-    d = ImageDraw.Draw(im)
-    if emergency:
-        clay_text(d, (W / 2, 330), '¡Reparación de emergencia!', 30, SUN)
-        d.text((W / 2, 368), 'Sin escudo: la nave va lenta unos segundos', font=font(17), fill=CREAM, anchor='mm')
-        control(im, d, '‹  Desliza aquí para guiar la nave  ›', 'Reparando la nave…', SUN)
-    else:
-        if segments == 2:
-            clay_text(d, (x, 620), '¡Asteroide!', 26, CORAL)
-        if segments == 3:
-            clay_text(d, (83, 210), 'Escudo reparado', 20, LIME)
-        control(im, d, '‹  Desliza aquí para guiar la nave  ›', 'En la ruta', LIME)
-    return im
+def sheet_letters(raw, w):
+    pad = 14
+    img = night(w, 456)
+    text(img, (pad, 20), 'Las cartas: un sello por planeta', 17, TEXT, anchor='lm')
+    kinds = [('normal', 0), ('sello dorado = encargo', 1), ('lazo = encargo (no focal)', 2)]
+    for r, (label, cue) in enumerate(kinds):
+        y = 96 + r * 102
+        text(img, (pad, y - 46), label, 14, LAV, bold=False, anchor='lm')
+        for pl in range(4):
+            put(img, load(raw, f'mail_letter_{pl}_{cue}'), 52 + pl * 88, y, 82)
+    text(img, (pad, 350), 'Los planetas-buzón: color y figura propios', 14, LAV, bold=False, anchor='lm')
+    for pl in range(4):
+        put(img, load(raw, f'mail_planet_{pl}'), 52 + pl * 88, 386, 52)
+        text(img, (52 + pl * 88, 420), PLANETS[pl], 13, TEXT)
+        text(img, (52 + pl * 88, 436), SHAPES[pl], 12, LAV, bold=False)
+    return img
+
+
+def safe_and_beacon(img, raw, x, y, on=False):
+    """La caja fuerte (dial con marcas y manija) y el faro (apagado o encendido), como en el boceto."""
+    # caja fuerte
+    rr(img, x, y, 158, 88, 20, (58, 51, 82, 255), INK, 3, shadow=True)
+    rr(img, x + 10, y + 10, 62, 68, 12, (90, 82, 128, 255), INK, 2.5)
+    put(img, load(raw, 'mail_dial'), x + 41, y + 36, 32)
+    rr(img, x + 27, y + 56, 28, 7, 3.5, GOLD + (255,), INK, 2)
+    text(img, (x + 82, y + 33), 'Caja', 17, TEXT, anchor='lm')
+    text(img, (x + 82, y + 55), 'fuerte', 17, TEXT, anchor='lm')
+    # faro
+    bx = x + 170
+    rr(img, bx, y, 158, 88, 20, (58, 51, 82, 255), INK, 3, shadow=True)
+    fx, fy = bx + 40, y + 48
+    if on:
+        glow(img, fx, fy - 20, 40, (255, 226, 122), 0.9)
+    put(img, load(raw, 'mail_tower'), fx, fy, 44)
+    put(img, load(raw, 'mail_lamp_on' if on else 'mail_lamp_off'), fx, fy - 20, 28)
+    text(img, (bx + 70, y + 44), 'Faro', 17, TEXT, anchor='lm')
+
+
+def mailbox(img, raw, i, n, y0):
+    gap, w = 10, {2: 150, 3: 102, 4: 78}[n]
+    tot = n * w + (n - 1) * gap
+    x = 180 - tot / 2 + i * (w + gap)
+    rr(img, x, y0, w, 112, 18, (35, 40, 80, 255), INK, 3, shadow=True)
+    rr(img, x + 12, y0 + 12, w - 24, 12, 6, (11, 10, 38, 255))
+    R = min(28, w * 0.3)
+    put(img, load(raw, f'mail_planet_{i}'), x + w / 2, y0 + 60, 64 * R / 28)
+    text(img, (x + w / 2, y0 + 98), PLANETS[i], 14, (214, 209, 242), bold=False)
+
+
+def station_panel(raw, w=360, h=600, show=True):
+    """Un cuadro del momento del faro: la luz va DETRÁS de la estación; delante, la lámpara, la nave y el saco."""
+    img = night(w, h)
+    belt_y = 252
+    lx, ly = 186 + 40, 468 + 44 - 16 - 14        # la lámpara del faro (coordenadas del cuadro)
+    # --- DETRÁS: el baño de luz tibia y el haz que barre el cielo
+    if show:
+        glow(img, lx, ly, 330, (255, 226, 150), 0.62)
+        beam = Image.new('RGBA', img.size, (0, 0, 0, 0))
+        bd = ImageDraw.Draw(beam)
+        ang = -math.pi / 2 + 0.55
+        for half, a in ((0.34, 38), (0.15, 85)):
+            pts = [(lx * S, ly * S), ((lx + math.cos(ang - half) * 700) * S, (ly + math.sin(ang - half) * 700) * S), ((lx + math.cos(ang + half) * 700) * S, (ly + math.sin(ang + half) * 700) * S)]
+            bd.polygon(pts, fill=(255, 240, 190, a))
+        beam = beam.filter(ImageFilter.GaussianBlur(6))
+        img.alpha_composite(beam)
+    # --- la estación
+    d = ImageDraw.Draw(img, 'RGBA')
+    text(img, (16, 82), 'Día 2 de 4', 18, TEXT, anchor='lm')
+    text(img, (16, 106), 'Cartas: 14', 14, LAV, bold=False, anchor='lm')
+    d.ellipse([(316 - 28) * S, (100 - 28) * S, (316 + 28) * S, (100 + 28) * S], fill=(43, 49, 112, 255), outline=INK, width=3 * S)
+    d.ellipse([(316 - 24) * S, (100 - 24) * S, (316 + 24) * S, (100 + 24) * S], fill=(183, 155, 255, 255))
+    text(img, (316, 101), '?', 24, INK)
+    text(img, (316, 142), 'reloj', 14, LAV, bold=False)
+    d.rectangle([-10 * S, (belt_y - 50) * S, (w + 10) * S, (belt_y + 50) * S], fill=(20, 27, 58, 255))
+    d.rectangle([0, (belt_y - 48) * S, w * S, (belt_y - 42) * S], fill=(35, 43, 87, 255))
+    d.rectangle([0, (belt_y + 40) * S, w * S, (belt_y + 48) * S], fill=(35, 43, 87, 255))
+    for k in range(14):
+        d.rectangle([(-28 + 9 + k * 28) * S, (belt_y + 42) * S, (-28 + 9 + k * 28 + 14) * S, (belt_y + 46) * S], fill=(127, 216, 255, 30))
+    frame = load(raw, 'mail_frame')
+    tint = Image.new('RGBA', frame.size, CYAN + (255,))
+    tint.putalpha(frame.getchannel('A').point(lambda v: int(v * 0.55)))
+    put(img, tint, 150, belt_y, 140, 100)
+    put(img, load(raw, 'mail_letter_1_1'), 150, belt_y, 128)
+    put(img, load(raw, 'mail_letter_2_0'), 260, belt_y, 128 * 0.7)
+    put(img, load(raw, 'mail_letter_0_2'), 330, belt_y, 128 * 0.7)
+    for i in range(4):
+        mailbox(img, raw, i, 4, belt_y + 76)
+    safe_and_beacon(img, raw, 16, 468, on=show)
+    text(img, (180, 578), 'Toca el buzón del sello', 14, (143, 138, 192), bold=False)
+    # --- DELANTE: el destello de la lámpara, la nave del correo (siguiendo la luz) y el saco que cae
+    if show:
+        glow(img, lx, ly, 46, (255, 236, 170), 0.95)
+        glow(img, lx, ly, 18, (255, 255, 235), 0.95)
+        sx, sy = 150, belt_y - 100
+        put(img, load(raw, 'mail_flame'), sx - 41, sy, 20, 16)
+        glow(img, sx - 48, sy, 16, (255, 180, 110), 0.8)
+        put(img, load(raw, 'mail_ship'), sx, sy, 100, rot=-0.05)
+        glow(img, 180, belt_y - 52, 30, GOLD, 0.7)
+        put(img, load(raw, 'mail_sack'), 180, belt_y - 52, 40)
+        rr(img, 56, 440, 248, 30, 15, (8, 10, 34, 235))
+        text(img, (180, 455), '¡Faro encendido a tiempo!', 15, GOLD)
+    return img
+
+
+def recap_panel(raw, w=360, h=600):
+    img = night(w, h)
+    d = ImageDraw.Draw(img, 'RGBA')
+    d.rectangle([0, 0, w * S, h * S], fill=(2, 3, 15, 220))
+    text(img, (180, 62), 'FIN DEL DÍA 2', 15, GOLD)
+    text(img, (180, 94), 'Encargos: 2 de 3', 26, (255, 255, 255))
+    rows = [('Sello dorado: caja fuerte', '2 de 2', True), ('Faro a media tarde · de todos los días', 'a tiempo: la nave del correo llegó', True), ('Faro al mediodía (cancelado)', 'lo hiciste igual', False)]
+    y = 140
+    for t, det, ok in rows:
+        rr(img, 18, y - 26, w - 36, 52, 16, (20, 27, 58, 255))
+        put(img, load(raw, 'mail_check_ok' if ok else 'mail_check_no'), 46, y, 28)
+        text(img, (70, y - 8), t, 15, TEXT, anchor='lm')
+        text(img, (70, y + 12), det, 14, LAV, bold=False, anchor='lm')
+        y += 62
+    text(img, (180, y + 8), 'Cartas bien puestas: 14 de 15 · racha mayor ×11', 15, (214, 209, 242), bold=False)
+    text(img, (180, y + 32), 'Reloj: lo miraste 2 veces, 2 cerca de la hora', 15, (214, 209, 242), bold=False)
+    text(img, (180, h - 130), 'Mañana: mismo ritmo', 15, LAV)
+    rr(img, 90, h - 100, 180, 58, 29, CYAN + (255,), INK, 3)
+    text(img, (180, h - 71), 'Siguiente día', 20, INK)
+    return img
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('raw')
-    ap.add_argument('--out', default=ROOT + '/docs/previews')
+    ap.add_argument('--out', default=os.path.join(ROOT, 'docs', 'previews'))
     a = ap.parse_args()
-    panels = [frame_brief(a.raw), frame_flight(a.raw), frame_deliver(a.raw)]
-    gap = 24
-    sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
-    for i, p in enumerate(panels):
-        sheet.alpha_composite(p, (gap + i * (W + gap), gap))
+    W = 360
+    letters = sheet_letters(a.raw, W)
+    quiet = station_panel(a.raw, show=False)
+    show = station_panel(a.raw, show=True)
+    recap = recap_panel(a.raw)
+    gap = 24 * S
+    total_w = letters.width + gap + quiet.width + gap + show.width + gap + recap.width
+    total_h = max(letters.height, quiet.height, show.height, recap.height)
+    sheet = Image.new('RGBA', (total_w, total_h), (3, 4, 20, 255))
+    x = 0
+    for p in (letters, quiet, show, recap):
+        sheet.alpha_composite(p, (x, 0))
+        x += p.width + gap
     os.makedirs(a.out, exist_ok=True)
-    sheet.convert('RGB').save(os.path.join(a.out, 'correo-estelar.png'))
-    panels = [shield_frame(a.raw, 3), shield_frame(a.raw, 2), shield_frame(a.raw, 1), shield_frame(a.raw, 0, True)]
-    sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
-    for i, p in enumerate(panels):
-        sheet.alpha_composite(p, (gap + i * (W + gap), gap))
-    sheet.convert('RGB').save(os.path.join(a.out, 'correo-escudo.png'))
-    print('OK')
+    out = os.path.join(a.out, 'correo-estacion.png')
+    sheet.convert('RGB').save(out)
+    print('OK', out, sheet.size)
 
 
 if __name__ == '__main__':

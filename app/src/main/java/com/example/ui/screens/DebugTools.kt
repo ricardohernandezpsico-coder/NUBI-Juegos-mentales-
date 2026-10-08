@@ -28,7 +28,9 @@ private data class DebugGame(
   val shortVersion: Boolean = false,
   val tag: String = id,
   /** Solo Constelaciones: la etapa (1..18) con que empieza el primer cielo, para ver cada grupo sin jugar hasta él. */
-  val conStage: Int = 0
+  val conStage: Int = 0,
+  /** Solo La estación de correo: la etapa (1..10) con que empieza la partida. */
+  val mailStage: Int = 0
 )
 
 private val DebugGames = listOf(
@@ -67,7 +69,11 @@ private val DebugGames = listOf(
   DebugGame("intrusa", "La estrella intrusa (Reto 120 s)", level = 1, timed = true),
   DebugGame("acoplamiento", "Acoplamiento (Reto 120 s)", level = 1, timed = true),
   DebugGame("rumbo", "Rumbo a Casa (Reto 150 s)", level = 1, timed = true),
-  DebugGame("correo", "Correo Estelar (vuelo de 150 s)", level = 2, timed = true)
+  DebugGame("correo", "Correo Estelar con tutorial", level = 1, timed = false, tutorial = true, tag = "correo_tutorial"),
+  DebugGame("correo", "Correo Estelar etapa 2 (la hora)", level = 1, timed = false, tag = "correo_etapa2", mailStage = 2),
+  DebugGame("correo", "Correo Estelar etapa 4 (lo que cancela la radio)", level = 1, timed = false, tag = "correo_etapa4", mailStage = 4),
+  DebugGame("correo", "Correo Estelar etapa 5 (el lazo)", level = 1, timed = false, tag = "correo_etapa5", mailStage = 5),
+  DebugGame("correo", "Correo Estelar etapa 8", level = 1, timed = false, tag = "correo_etapa8", mailStage = 8)
 )
 
 /**
@@ -98,6 +104,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
             forceTutorial = g.tutorial,
             debugOverlay = tutorialOverlay,
             conStage = g.conStage,
+            mailStage = g.mailStage,
             assessmentStep = if (g.shortVersion) 1 else 0,
             assessmentTotal = if (g.shortVersion) 4 else 0
           )

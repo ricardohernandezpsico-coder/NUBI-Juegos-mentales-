@@ -2,8 +2,8 @@
 
 Estado: implementado en Unity el 24-sep-2026 (`Assets/Scripts/Games/AdaptiveDifficulty.cs`), conectado a
 Stroop, «Carga exacta» (antes Cálculo Sereno; id `calculo`) y «En la punta de la lengua» (antes Anagramas; y Cambio de Chip, Comparación Instantánea, Detective de Series, Ruta del Tesoro y Tráfico Estelar, retirados el 3 y el 4-oct: ver `docs/juegos/descartados.md`). El 3-oct
-se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (hoy «Constelaciones», ver §6): **los 19 juegos usan el motor común** (Piloto y Correo
-con dos instancias; Freno solo en la tarea de ir).
+se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (hoy «Constelaciones», ver §6): **los 19 juegos usan el motor común** (Piloto
+con dos instancias; Correo con una —desde el 8-oct, cada encargo es un ensayo, ver §6—; Freno solo en la tarea de ir).
 
 > **Alcance y honestidad**: esto es un diseño de ingeniería inspirado en literatura psicométrica y de
 > entrenamiento cognitivo. **No está validado clínicamente**, no es una herramienta diagnóstica y sus
@@ -140,6 +140,13 @@ a los juegos de rondas largas (un Desafío pide 6 rondas, no 12 ensayos). `parse
 al objetivo con un usuario simulado, techo y piso de modo, partida desde un rating guardado, el error por tiempo
 agotado, la evaluación y `end_rating` en la telemetría. Kotlin: `MemoryTelemetryTest` (lectura con y sin
 `end_rating`) y `MemoryGamesRatingTest` (guardado, suavizado y retomado del rating de los dos juegos).
+
+### Correo Estelar («La estación de correo», 8-oct)
+
+Una sola escalera de 10 etapas (`MailContract.MaxLevel`), arrancada del rating guardado como en todos (`RatingNormalized = (Rating − 1) / 10`; sin dato, la etapa de la edad). El motor recibe **un ensayo por encargo** (acierto = el encargo se cumplió, `stepUp` 0,3,
+sin tiempo de reacción): así queda el `end_rating` que lee la app. La etapa DENTRO de la partida, en cambio, la decide la regla del boceto aprobado (`MailContract.Advance`): al terminar cada día, si se cumplieron todos los encargos y la precisión de las
+cartas fue ≥ 85 % sube una etapa; si se cumplió menos de la mitad, baja una; siempre entre el piso y el techo del modo. Los encargos de un día cuyo aviso nunca llegó (la carta señal no se alcanzó a ver) no cuentan como ensayo.
+**Rating viejo:** el vuelo guardaba un rating de OTRA tarea; la migración de Room 13 → 14 lo lleva a la mitad (`ddaRating × 0,5`, `Mail.translateOldRating`) para que nadie parta en una etapa con mecánicas que aún no vio. Sin dato (−1) no se toca.
 
 ## 7. Siguientes pasos sugeridos
 

@@ -108,30 +108,29 @@ namespace NeuroVida.Contracts
         public int[] homing_beacon;
         /// <summary>Solo Rumbo a Casa: llegadas perfectas.</summary>
         public int homing_perfect;
-        /// <summary>Solo Correo Estelar: encargos por lugar (planetas entregados de los que pasaron), planetas tocados que no
-        /// eran del encargo (y cuántos de color parecido), encargos por hora (avisos a tiempo de las horas que hubo; período
-        /// en segundos, 0 = sin radio), avisos a destiempo, miradas al reloj (y cuántas justo antes de la hora), % en la ruta y
-        /// sobres. -1 = no aplica.</summary>
-        public int mail_event_hits = -1;
-        public int mail_event_total = -1;
+        // ---- «La estación de correo» (id correo desde el 8-oct; docs/diseno-correo-estacion.md §7). -1 = no aplica / sin dato (reemplaza a los mail_* del vuelo, que ya no existen).
+        /// <summary>Encargos por evento (cartas señal con sello dorado o lazo que se alcanzaron a resolver) y los que fueron a la caja fuerte.</summary>
+        public int mail_ev_hits = -1;
+        public int mail_ev_total = -1;
+        /// <summary>Encargos por hora (faro) que no fueron cancelados, y los encendidos a tiempo.</summary>
+        public int mail_time_hits = -1;
+        public int mail_time_total = -1;
+        /// <summary>Encargos cancelados por la radio y cuántas veces se hizo igual (error de comisión); veces que se encendió el faro antes de hora.</summary>
+        public int mail_cancels = -1;
         public int mail_commissions = -1;
-        public int mail_lure_commissions = -1;
-        public int mail_radio_hits = -1;
-        public int mail_radio_total = -1;
-        public int mail_radio_offtime = -1;
-        public int mail_radio_period_s = -1;
-        public int mail_clock_checks = -1;
-        public int mail_clock_late = -1;
-        public int mail_lane_pct = -1;
-        public int mail_envelopes = -1;
-        public int mail_envelopes_total = -1;
-        /// <summary>Solo Correo Estelar: asteroides chocados y asteroides que pasaron junto a la nave (esquivados + chocados).</summary>
-        public int mail_asteroid_hits = -1;
-        public int mail_asteroids = -1;
-        /// <summary>Correo Estelar: % del vuelo con el escudo entero (cuidado de la nave).</summary>
-        public int mail_hull_intact_pct = -1;
-        /// <summary>Correo Estelar: reparaciones de emergencia (veces que se quedó sin escudo).</summary>
-        public int mail_emergencies = -1;
+        public int mail_early = -1;
+        /// <summary>Miradas al reloj y cuántas fueron cerca de la hora (en el 30 % del día antes de la ventana o dentro de ella).</summary>
+        public int mail_peeks = -1;
+        public int mail_peeks_good = -1;
+        /// <summary>Cartas bien puestas, cartas clasificadas (se tocó un buzón), mejor racha de cartas del día y días con todos los encargos cumplidos.</summary>
+        public int mail_right = -1;
+        public int mail_sorted = -1;
+        public int mail_best_combo = -1;
+        public int mail_days_perfect = -1;
+        /// <summary>Grupo de etapas más alto (1..5), el récord «cartas en un día perfecto» (el guardado o el de esta partida, el mayor) y 1 si esta partida lo superó.</summary>
+        public int mail_group = -1;
+        public int mail_best = -1;
+        public int mail_new;
         /// <summary>Solo Lluvia de meteoros: palabras reales vistas y tocadas por banda de prevalencia (6: de la común a la
         /// rara). Sin datos = listas vacías.</summary>
         public int[] lex_band_seen;

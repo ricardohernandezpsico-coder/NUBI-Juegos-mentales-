@@ -394,3 +394,16 @@ dentro de una carga y no hay agua. Hay que sumar «Carga exacta» a la búsqueda
 juego clásico y público (la tradición de los acertijos de números); por eso NO se usan los nombres «24 Game», «Countdown» ni «Cifras y letras» (programa de televisión) en ninguna parte. Va a la lista del abogado
 junto con lo demás (comparar el aspecto y la jugada con los juegos de números de Lumosity y de Peak antes de publicar).
 
+
+## 8. Correo Estelar renovado: «La estación de correo» (8-oct)
+
+Correo Estelar conserva el nombre, el id (`correo`) y el historial; cambia la jugada (de un vuelo a clasificar cartas en una estación). El nombre ya estaba en la lista de la búsqueda oficial de marca (clases 9 y 41). Revisión de patentes del 8-oct
+(detalle en `docs/diseno-correo-estacion.md` §8; NO reemplaza al abogado). **Reglas que no se rompen en este juego:**
+1. **Nunca se conduce una nave.** Sin seguimiento continuo y sin una tarea de discriminación como interferencia: es la estructura de NeuroRacer (US 9,940,844 de UCSD, licenciada a Akili), cuyas reivindicaciones exigen un sensor de movimiento o de posición. Los toques son discretos; no se usan sensores del teléfono.
+2. **Sin pedidos con componentes ni tiempos de entrega**, sin cola de pedidos y sin varios relojes simultáneos (US 10,692,029 de Lumos Labs, el juego de pedidos de Lumosity). Cada encargo es UNA acción ante una señal o a una hora.
+3. **Sin vías, desvíos ni rutas** (la red de rutas de «Train of Thought»): las cartas se tocan directo a su buzón.
+4. **Nada del formato de Virtual Week** (tablero, dado, casillas, tarjetas de eventos) ni su nombre: se toma solo el principio científico, que no es protegible (días con encargos habituales y del día, por evento y por hora). Tampoco se usan los nombres NeuroRacer ni EndeavorRx.
+5. Ninguna figura (los buzones, la nave del correo) reacciona con una cara a cómo se juega (Akili).
+
+**Pregunta para el abogado:** si una pantalla táctil cuenta como «sensor de posición» para las reivindicaciones de la US 9,940,844 (afecta más a Piloto Estelar que a Correo, que ya no tiene seguimiento). Va también como «tarea de fondo genérica» (clasificar) para comparar con juegos de clasificar de otras apps antes de publicar:
+no encontramos uno de Lumosity, Peak ni Elevate que combine clasificar con recordar encargos (búsqueda del 8-oct).

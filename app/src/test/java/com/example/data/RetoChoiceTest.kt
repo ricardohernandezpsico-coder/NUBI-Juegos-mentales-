@@ -27,8 +27,14 @@ class RetoChoiceTest {
   }
 
   @Test
-  fun `todos los juegos tienen Reto y cada uno dice su duracion`() {
+  fun `todos los juegos tienen Reto menos La estacion de correo, y cada uno dice su duracion`() {
+    assertEquals(setOf("correo"), RetoChoice.WITHOUT_RETO)
     for (g in GameRegistry.allGames) {
+      if (g.id in RetoChoice.WITHOUT_RETO) {
+        assertFalse("${g.id} no debería ofrecer Reto", RetoChoice.supports(g.id))
+        assertNull("${g.id} no tiene duración de Reto", RetoChoice.seconds(g.id))
+        continue
+      }
       assertTrue("${g.id} debería tener Reto (o estar en WITHOUT_RETO)", RetoChoice.supports(g.id))
       assertNotNull("${g.id} no tiene duración de Reto", RetoChoice.seconds(g.id))
     }

@@ -206,40 +206,35 @@ Loomis et al., 1993), pero con 6-8 viajes por partida no se nombra ese patrón.
 
 ---
 
-## Correo Estelar: "Tu memoria para lo pendiente"
+## Correo Estelar («La estación de correo»): "Tu memoria para lo pendiente"
 
-**Qué mide.** Memoria prospectiva: acordarse de hacer algo en el momento justo mientras se está ocupado en otra cosa
-(Rummel y Kvavilashvili, 2023). Es la base de muchos olvidos del día a día (tomar un remedio, hacer una llamada). La tarea
-en curso es el vuelo de Piloto Estelar (mantenerse en la ruta y recoger sobres); los encargos se dan antes de salir y
-NO se muestran durante el vuelo.
-- **Por lugar** (evento): tocar los planetas de un color cuando pasan. Algo del entorno avisa (el planeta), pero hay
-  que reconocerlo a tiempo. Pocos planetas son del encargo (~23%) y desde el nivel 3 algunos tienen un color parecido.
-- **Por hora** (tiempo): tocar la radio cada 30 s (25 o 20 en niveles altos), con ±5 s de margen. Los dos tipos de
-  encargo van desde el primer vuelo, y la tarea en curso se pone exigente: el vuelo se acelera en tres tramos y hay
-  asteroides que esquivar (sin carga, los encargos serían fáciles de recordar y no medirían lo que pasa en el día). Nada avisa; el reloj
-  va tapado y tocarlo lo destapa 1,6 s. Cuándo se mira es la estrategia: lo eficaz es mirar poco al principio y más
-  cerca de la hora (el patrón clásico de las tareas por tiempo).
+*(Rehecho el 8-oct-2026: el vuelo de antes —planetas, radio cada 30 s, asteroides y escudo— se fue; esta es la medida vigente. El diseño completo está en [`diseno-correo-estacion.md`](diseno-correo-estacion.md).)*
+
+**Qué mide.** Memoria prospectiva: acordarse de hacer algo en el momento justo mientras se está ocupado en otra cosa (Rummel y Kvavilashvili, 2023). Es la base de muchos olvidos del día a día (tomar un remedio, hacer una llamada).
+La tarea en curso es clasificar cartas en cuatro buzones (toques sueltos, sin seguimiento continuo); los encargos se leen en la hoja del día y NO se muestran durante el día. Cuenta cada encargo de la partida, de tres clases:
+- **Por evento** (cartas señal): una carta con sello dorado, o con lazo, va a la caja fuerte en vez de a su buzón. Algo del entorno avisa (la carta), pero hay que reconocerlo a tiempo.
+- **Por hora** (el faro): encender el faro a la hora del día que dice la hoja («al mediodía», «al final de la tarde»…). Nada avisa; el reloj va tapado y tocarlo lo destapa 1,6 s. Cuándo se mira es la estrategia.
+- **Cancelados** (la radio): de vez en cuando la radio dice que hoy NO hace falta un encargo. No hacerlo cuenta como cumplido; hacerlo igual es un error de comisión (seguir una intención que ya no valía: el costo típico de la memoria prospectiva).
+
+**De dónde sale.** Los días trabajan sobre lo que muestra la literatura:
+- Entrenar la memoria prospectiva en mayores funciona a corto plazo (metaanálisis de 29 ensayos: g = 0,54 inmediato y 0,20 a largo plazo; Tse et al., 2022; https://doi.org/10.1007/s11065-022-09536-5).
+- Un juego que simula días con tareas por recordar («Virtual Week») mejoró la memoria prospectiva real y las actividades diarias de personas mayores (Rose et al., 2015; https://doi.org/10.3389/fnhum.2015.00592): es la base de días cortos con encargos habituales y de hoy, por evento y por hora. No se copia su formato.
+- Combinar práctica con estrategia («cuando vea X, haré Y») es lo que más transfiere (Henry et al., 2021; https://doi.org/10.1037/pag0000593): por eso la hoja dice «Dilo en voz baja: “cuando vea…, haré…”» y el consejo del final es un truco de ese tipo.
+- Revisar a tiempo (más cerca de la hora) mejora el desempeño (Peper y Ball, 2023; https://doi.org/10.1177/17470218231161015): es la medida del reloj.
+- Revisión: Hering et al., 2014 (https://doi.org/10.1007/s00426-014-0566-4).
 
 **Qué se dice y con qué mínimos.**
-- "N de M encargos" y el detalle por lugar y por hora.
-- Planetas tocados por error, sin culpa (y cuántos de color parecido).
-- El reloj, solo con 2 o más horas de radio: sin mirarlo, mirando sobre todo justo antes (≥ 50% de las miradas en el
-  último 30% del intervalo), mirando todo el rato (más de 3 veces por hora), o un truco.
-- Lugar contra hora, solo con 3 o más de cada uno y 25 puntos de diferencia, con un consejo para el día: si se pasan los
-  de hora, convertirlos en encargos de lugar (dejar el remedio junto al cepillo); si se pasan los de lugar, la intención
-  de implementación ("cuando vea el planeta, lo toco"; metaanálisis de Chen et al., 2015). El mismo truco aparece en la
-  hoja de ruta.
+- «Tu memoria para lo pendiente: N %» = encargos cumplidos / encargos (los cancelados que no se hicieron cuentan como cumplidos), con «N de M encargos cumplidos». Sin encargos: «—» y «No hubo encargos que recordar» (no se guarda como medida: `Mail.mark` devuelve null).
+- El detalle por evento (con discos llenos/vacíos, no solo color) y por hora, y «Cancelados que no hiciste: N de M» solo si la radio canceló algo.
+- «Miradas al reloj cerca de la hora: N de M» (cerca = en el 30 % del día antes de la ventana o dentro de ella), solo si se miró el reloj alguna vez.
+- «Cartas bien puestas», «Etapa más alta: N de 5» (grupos de dos etapas) y el récord (cartas bien puestas en un día perfecto: todos los encargos cumplidos). El «¡Nuevo récord!» solo se dice si se SUPERÓ el guardado; igualarlo no cuenta.
+- El consejo es un truco de intención de implementación según lo que más se escapó: primero lo cancelado que se hizo igual («cuando la radio cancele algo, dilo en voz baja: “hoy no lo hago”»), luego la hora («mira el reloj cuando se acerque la hora», o, si ya se miraba bien, «imagínate haciendo el encargo»), después las cartas señal («repite “cuando vea un lazo, caja fuerte”»). Si todo salió bien, no hay consejo.
+- Al pie va la nota común «Medida de esta partida… No es un diagnóstico.».
 
-**Cuidado de la nave (escudo).** Cada asteroide rompe un segmento del escudo y la nave se ve dañada; volar limpio lo
-repara. Tener algo propio que cuidar da motivo para anticiparse en vez de reaccionar (motivación y control proactivo:
-Braver, 2012; Botvinick y Braver, 2015). A propósito, quedarse sin escudo NO termina el vuelo (solo una reparación de
-emergencia de 3,5 s): si terminara, quien pilota peor tendría menos encargos y la medida de memoria dependería del
-pilotaje; además, con un castigo fuerte en una de dos tareas la gente descuida la otra. Al final se dice "Nave intacta
-el N% del vuelo" y cuántas reparaciones hubo; con menos de la mitad del vuelo intacta, un truco concreto (mirar más
-arriba de la nave para ver venir los asteroides). No es una medida de memoria: es parte del juego.
+**Qué NO se dice.** No se compara con normas ni se habla de «memoria prospectiva» como rasgo, ni se promete nada de salud: son 4 días de 50 s con unos pocos encargos por día, y la medida es de esta partida. La carta con lazo y el sello dorado nunca dependen solo del color
+(llevan marca y rótulo propios). Ninguna figura reacciona con una cara a cómo se juega.
 
-**Qué NO se dice.** No se compara con normas ni se habla de "memoria prospectiva" como rasgo: con 150 s de vuelo y unos
-7 encargos de cada tipo, la medida es de esta partida.
+**Cómo se guarda.** La marca (% de encargos cumplidos) va a `star_measures` con la clave `estacion`; los puntos de la clave vieja (`pending`: lugar y hora del vuelo) quedan guardados pero ya no se leen, porque la medida cambió de sentido. El récord vive en las preferencias `correo_record`, que sí van en el respaldo.
 
 ---
 

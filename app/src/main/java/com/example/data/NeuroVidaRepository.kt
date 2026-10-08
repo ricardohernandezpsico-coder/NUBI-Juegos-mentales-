@@ -255,6 +255,21 @@ class NeuroVidaRepository(
     constelacionesPrefs.edit().putInt("best", next).apply()
   }
 
+  // El récord de «La estación de correo»: las cartas bien puestas en un día perfecto (todos los encargos cumplidos), el mayor de siempre. Es progreso: SharedPreferences que VA en el respaldo (`correo_record`). La app lo manda a Unity en cada
+  // partida (`mail_best`) y Unity devuelve el mayor al terminar; aquí nunca baja.
+  private val correoPrefs = context.getSharedPreferences("correo_record", Context.MODE_PRIVATE)
+  private val _correoRecord = MutableStateFlow(Mail.mergeRecord(correoPrefs.getInt("best", 0), null))
+  val correoRecord: StateFlow<Int> = _correoRecord.asStateFlow()
+
+  /** Guarda el récord con que terminó una partida de «La estación de correo» (en cualquier modo). */
+  private fun recordCorreo(result: GamePlayResult) {
+    if (result.gameId != "correo") return
+    val next = Mail.mergeRecord(_correoRecord.value, result.mailBest)
+    if (next == _correoRecord.value) return
+    _correoRecord.value = next
+    correoPrefs.edit().putInt("best", next).apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -496,10 +511,7 @@ class NeuroVidaRepository(
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
       "piloto" -> "multitask" to r.multitaskCost?.toFloat()
       "rumbo" -> "homing" to r.homingErrorPct
-      "correo" -> "pending" to pct(
-        (r.mailEventHits ?: 0) + (r.mailRadioHits ?: 0),
-        if (r.mailEventTotal == null) null else r.mailEventTotal + (r.mailRadioTotal ?: 0)
-      )
+      "correo" -> "estacion" to (if (r.mailGroup != null) Mail.mark(r.correctAnswers, r.totalTrials) else null)
       else -> return emptyList()
     }
     return if (value == null || value.isNaN()) emptyList()
@@ -913,6 +925,8 @@ class NeuroVidaRepository(
     recordBodega(result)
     // El récord de Constelaciones también, en cualquier modo.
     recordConstelaciones(result)
+    // El récord de La estación de correo también, en cualquier modo.
+    recordCorreo(result)
     outcome
   }
 
@@ -998,6 +1012,8 @@ class NeuroVidaRepository(
     _bodegaRecord.value = 0
     constelacionesPrefs.edit().clear().apply()
     _constelacionesRecord.value = 0
+    correoPrefs.edit().clear().apply()
+    _correoRecord.value = 0
     retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()

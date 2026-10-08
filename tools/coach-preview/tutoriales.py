@@ -32,7 +32,7 @@ INK = (40, 30, 70)
 
 NAMES = {
     "anagramas": "En la punta de la lengua", "aterrizaje": "Aterrizaje lunar", "calculo": "Carga exacta",
-    "freno": "Freno de emergencia", "meteoros": "Lluvia de meteoros", "secuencia": "Rastro de luz", "stroop": "Dos orillas", "bodega": "Bodega de carga", "engranajes": "Engranajes", "parejas": "Constelaciones",
+    "freno": "Freno de emergencia", "meteoros": "Lluvia de meteoros", "secuencia": "Rastro de luz", "stroop": "Dos orillas", "bodega": "Bodega de carga", "engranajes": "Engranajes", "parejas": "Constelaciones", "correo": "Correo Estelar",
 }
 
 

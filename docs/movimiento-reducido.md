@@ -179,23 +179,21 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | 363 | La nave del mapa gira con el rumbo | ESENCIAL | — | Se queda | — |
 | 257-259, 427-435 | Chispas y ondas | DECORATIVA | sí (común) | — | — |
 
-**Correo Estelar** — `Correo/MailGameController.cs`
+**Correo Estelar («La estación de correo», rehecho el 8-oct)** — `Correo/MailGameController*.cs` y `MailMotion.cs` (la tabla del vuelo anterior —nave que se inclina, asteroides, escudo— se fue con el código)
 
-| Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
-|---|---|---|---|---|---|
-| 457-458 | La nave se inclina con el movimiento y se tambalea ±14° al golpe | DECORATIVA | no | Sin inclinación ni tambaleo | ✓ |
-| 572 | Los sobres se mecen ±8° | DECORATIVA | no | Quietos | ✓ |
-| 620 | Brillo de planetas `Sin(t·4)` | DECORATIVA | no | Fijo | ✓ |
-| 708-710 `FlyPackage` | El paquete vuela en arco, gira 360° y se encoge | DECORATIVA (comunica) | no | Aparece en el planeta con fundido | ✓ |
-| 772 `BlinkRadio` | La radio parpadea al vencer el aviso | DECORATIVA (comunica) | no | Tinte fijo | ✓ |
-| 777 | Brillo de la radio `Sin(t·3)` | DECORATIVA | no | Fijo | ✓ |
-| 824-825 | Brillo bajo la nave `Sin(t·12)` / `Sin(t·5)` | DECORATIVA | no | Fijo | ✓ |
-| 846 | Estela de motor | DECORATIVA | no | Sin estela | ✓ |
-| 888 | Los asteroides giran | DECORATIVA (el desplazamiento es ESENCIAL) | no | Sin giro | ✓ |
-| 969 | Escudo pulsa `|Sin(t·9)|` (≈ 2,9 Hz) | DECORATIVA (comunica) | no | Fijo / ≤ 2 Hz |
-| 1058 `FloatText` | Textos que suben | DECORATIVA (comunica) | no | Quietos con fundido | ✓ |
-| 1155 `PulseGo` | Botón «¡Ya!» respira | DECORATIVA | no | Quieto | ✓ |
-| 540-570, 880-910 | Sobres/asteroides/planetas que se desplazan | ESENCIAL | — | Se queda | — |
+| Qué | Qué hace | Clase | Cambio con «quitar animaciones» |
+|---|---|---|---|
+| La cinta: rodillos y cartas que avanzan | Los rodillos giran; la carta se desliza hasta su lugar | DECORATIVA (la posición de cada carta es ESENCIAL y no cambia) | Rodillos quietos; las cartas siguen en su lugar |
+| La carta vuela al buzón o a la caja fuerte | Arco corto con encogimiento | DECORATIVA (comunica) | Llega de una vez (0,001 s) |
+| El buzón se sacude con una carta equivocada | Sacudida horizontal que se apaga | DECORATIVA (comunica) | Sin sacudida: el halo del buzón se muestra fijo |
+| El buzón y la caja fuerte «respiran» al tocarlos | Pulso de escala 0,96 | DECORATIVA | Sin pulso |
+| La caja fuerte brilla al guardar (el dial gira) | Brillo con giro del dial | DECORATIVA (comunica) | Brillo fijo |
+| El faro: la luz barre, la nave del correo entra y deja el saco dorado | ~3,4 s de luz que gira y destellos que suben | DECORATIVA (comunica) | Luz fija hacia arriba, la nave quieta sobre la cinta, sin vuelo ni chispas; mismo texto y misma duración |
+| «¡Llega un saco!», avisos de la radio | Fundido de entrada y salida | DECORATIVA (comunica) | Aparecen y se van de una vez, con la misma duración |
+| Rótulos flotantes («¡Encargo cumplido!», «Otro buzón») | Suben ~18 dp mientras se desvanecen | DECORATIVA (comunica) | Sin subir, solo fundido |
+| Chispas y destellos | Salen del lugar del acierto | DECORATIVA | No se emiten |
+| Pantallas de hoja, resumen y final; tarjeta NUEVO | Fundido de 0,35 a 0,5 s | DECORATIVA (comunica) | Aparecen de una vez |
+| El tiempo del día, los 1,6 s del reloj, la ventana de la hora | — | ESENCIAL (es la tarea) | No cambian |
 
 ### Atención
 
@@ -417,7 +415,7 @@ Criterio para el resto: ¿sin ese movimiento la persona puede hacer la tarea y e
 - **Tráfico:** el giro de los desvíos y el avance de las naves; el aro urgente queda fijo pero sigue distinguiéndose por forma.
 - **Bitácora:** los puntos de la estela de la sonda quedan (opacidad, sin encogerse): muestran la ruta recorrida.
 - **Comparación/Stroop/Cambio de Chip:** el fundido de entrada de la tarjeta/ficha (opacidad, ≤ 0,24 s) se queda.
-- **Piloto/Correo/Rumbo/Aterrizaje/Freno:** el movimiento de la nave, las rutas, los asteroides, los obstáculos y el descenso.
+- **Piloto/Rumbo/Aterrizaje/Freno:** el movimiento de la nave, las rutas, los asteroides, los obstáculos y el descenso. (Correo ya no vuela, 8-oct: sus cartas avanzan por la cinta, lo esencial.)
 - **Acierto y error por forma o texto:** revisados los 23. Ya tenían texto (cartel, banner, aviso) o marca ✓/✗: Stroop, Comparación, Cambio de Chip, Secuencia, Ruta del Tesoro,
   Anagramas, Acoplamiento, Aterrizaje, Cosecha, Piloto, Radar, Satélites, Rumbo, Bitácora, Disparate, Freno, Tráfico, Correo, Meteoros, Intrusa. **Sí dependían de color + animación y
   recibieron una marca ✓/✗ estática (`ResultMark`): Series y Parejas (Cálculo Sereno también, hasta que se reemplazó por Carga exacta).**

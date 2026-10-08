@@ -12,14 +12,14 @@ package com.example.data
 object RetoChoice {
   private const val PREFIX = "reto_"
 
-  /** Hoy todos los juegos tienen Reto (cada uno con su duración). */
-  val WITHOUT_RETO: Set<String> = emptySet()
+  /** Los juegos sin Reto: «La estación de correo» (8-oct) son 4 días de 50 s con su hoja y su resumen: no hay una versión sin reloj ni una contra el reloj (el día YA tiene su ritmo), así que su ficha no muestra la elección. Los demás tienen Reto (cada uno con su duración). */
+  val WITHOUT_RETO: Set<String> = setOf("correo")
 
   /** Duración del Reto de cada juego, en segundos (la de Unity, de cada juego en `docs/juegos`). Constelaciones: 180 s en total (6 cielos). */
   private val SECONDS = mapOf(
     "secuencia" to 90, "stroop" to 60, "calculo" to 120, "engranajes" to 120, "bodega" to 120, "parejas" to 180, "anagramas" to 120, "piloto" to 90, "radar" to 90,
     "satelites" to 120, "freno" to 120, "aterrizaje" to 120, "meteoros" to 120, "disparate" to 120, "cosecha" to 180, "intrusa" to 120,
-    "acoplamiento" to 120, "rumbo" to 150, "correo" to 150
+    "acoplamiento" to 120, "rumbo" to 150
   )
 
   fun key(gameId: String): String = PREFIX + gameId

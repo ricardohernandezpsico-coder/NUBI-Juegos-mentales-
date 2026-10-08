@@ -15,7 +15,7 @@ import com.example.BuildConfig
     DomainMasteryEntity::class,
     ClaimedWeeklyChallengeEntity::class
   ],
-  version = 13,
+  version = 14,
   exportSchema = true
 )
 abstract class NeuroVidaDatabase : RoomDatabase() {
@@ -80,6 +80,13 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
       object : androidx.room.migration.Migration(12, 13) {
         override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
           db.execSQL("UPDATE game_progress SET ddaRating = ddaRating * 40.0 / 81.0 WHERE gameId = 'parejas' AND ddaRating >= 0")
+        }
+      },
+      // 13 -> 14 (8-oct): el vuelo de Correo Estelar se rehízo como «La estación de correo» (otra tarea, con etapas que traen mecánicas nuevas). El rating guardado (0..1) de quienes ya jugaban se lleva a la mitad para que nadie parta
+      // en una etapa con mecánicas que aún no vio (la cuenta está en data/Mail.translateOldRating). Sin dato (-1) no se toca. El esquema no cambia.
+      object : androidx.room.migration.Migration(13, 14) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+          db.execSQL("UPDATE game_progress SET ddaRating = ddaRating * 0.5 WHERE gameId = 'correo' AND ddaRating >= 0")
         }
       }
     )

@@ -127,10 +127,11 @@ object GameRegistry {
     ),
     GameDefinition(
       id = "correo",
+      // «La estación de correo» (8-oct): el vuelo se rehízo; el nombre y el id se mantienen (avance, marcas e historial).
       title = "Correo Estelar",
       domain = DomainType.MEMORIA,
       subtitle = "Memoria para lo pendiente: acordarte a tiempo",
-      instruction = "Guía la nave y recoge sobres. Antes de salir recibes encargos: tocar los planetas de un color cuando pasen y avisar por radio cada cierto tiempo. Durante el vuelo nadie te los recuerda.",
+      instruction = "Trabajas en la estación de correo: toca el buzón del sello de cada carta. Cada mañana recibes encargos (una carta con sello dorado o con lazo a la caja fuerte; encender el faro a una hora) y durante el día nadie te los recuerda.",
       iconEmoji = "✉️"
     ),
     GameDefinition(
@@ -303,25 +304,25 @@ data class GamePlayResult(
   val homingLateral: List<Float>? = null,
   val homingBeacon: List<Boolean>? = null,
   val homingPerfect: Int? = null,
-  // Solo Correo Estelar: encargos por lugar (planetas entregados de los que pasaron), planetas tocados por error (y de
-  // color parecido), encargos por hora (avisos por radio a tiempo, a destiempo, período), cómo se usó el reloj (miradas y
-  // cuántas justo antes de la hora), % en la ruta y sobres. La lectura está en data/Mail.kt. No se guardan en Room.
-  val mailEventHits: Int? = null,
-  val mailEventTotal: Int? = null,
+  // Solo «La estación de correo» (id correo): encargos por evento (cartas con sello dorado o lazo: cumplidos y total), por hora (faro a tiempo y total, sin contar los cancelados), cancelados por la radio y cuántas veces se hicieron igual
+  // (comisión), faros antes de hora, miradas al reloj (y cuántas cerca de la hora), cartas bien puestas y clasificadas, mejor racha, días con todos los encargos, el grupo de etapa más alto (1..5), el récord (cartas en un día perfecto, que se guarda) y
+  // si esta partida lo superó. Encargos cumplidos = correctAnswers, encargos = totalTrials. El récord va en prefs «correo_record» (y en el respaldo); la medida va a StarMeasures. La lectura está en data/Mail.kt. No se guardan en Room.
+  val mailEvHits: Int? = null,
+  val mailEvTotal: Int? = null,
+  val mailTimeHits: Int? = null,
+  val mailTimeTotal: Int? = null,
+  val mailCancels: Int? = null,
   val mailCommissions: Int? = null,
-  val mailLureCommissions: Int? = null,
-  val mailRadioHits: Int? = null,
-  val mailRadioTotal: Int? = null,
-  val mailRadioOfftime: Int? = null,
-  val mailRadioPeriodS: Int? = null,
-  val mailClockChecks: Int? = null,
-  val mailClockLate: Int? = null,
-  val mailLanePct: Int? = null,
-  val mailEnvelopes: Int? = null,
-  val mailAsteroidHits: Int? = null,
-  val mailAsteroids: Int? = null,
-  val mailHullIntactPct: Int? = null,
-  val mailEmergencies: Int? = null,
+  val mailEarly: Int? = null,
+  val mailPeeks: Int? = null,
+  val mailPeeksGood: Int? = null,
+  val mailRight: Int? = null,
+  val mailSorted: Int? = null,
+  val mailBestCombo: Int? = null,
+  val mailDaysPerfect: Int? = null,
+  val mailGroup: Int? = null,
+  val mailBest: Int? = null,
+  val mailNewRecord: Boolean? = null,
   // Solo Lluvia de meteoros: palabras reales vistas y tocadas por banda (6, de la común a la rara), inventadas vistas y
   // tocadas por tipo (3: obvia, una letra, letras traspuestas), mediana del tiempo de toque en comunes y raras (ms) y
   // las palabras raras acertadas. No se guardan en Room.

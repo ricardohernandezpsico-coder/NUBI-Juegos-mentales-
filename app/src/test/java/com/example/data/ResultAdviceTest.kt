@@ -29,8 +29,7 @@ class ResultAdviceTest {
   fun `nada se repite ni se oculta, la medida mas el consejo es el texto original`() {
     val originals = listOf(
       NumberLine.message(NumberLineReading.INICIO), NumberLine.message(NumberLineReading.CENTRO), NumberLine.message(NumberLineReading.FINAL),
-      Homing.sourceMessage(HomingSource.RUMBO)!!, Homing.sourceMessage(HomingSource.DISTANCIA)!!,
-      Mail.clockMessage(2, 0, 5)!!, Mail.shipMessage(30, 1)!!
+      Homing.sourceMessage(HomingSource.RUMBO)!!, Homing.sourceMessage(HomingSource.DISTANCIA)!!
     )
     for (t in originals) {
       val tip = ResultAdvice.tipOf(t)
@@ -86,6 +85,16 @@ class ResultAdviceTest {
   @Test
   fun `los juegos sin consejo propio no tienen bloque de consejo`() {
     for (id in listOf("freno", "stroop", "parejas", "radar", "satelites", "calculo")) assertTrue(id, ResultAdvice.tips(result(id)).isEmpty())
+  }
+
+  @Test
+  fun `La estacion de correo da su truco segun lo que mas se escapo y calla si todo salio bien`() {
+    val lost = ResultAdvice.tips(result("correo") { copy(mailGroup = 2, mailEvHits = 4, mailEvTotal = 4, mailTimeHits = 1, mailTimeTotal = 2, mailCommissions = 0, mailPeeks = 0, mailPeeksGood = 0) })
+    assertEquals(listOf("Mira el reloj cuando se acerque la hora."), lost)
+    val ok = ResultAdvice.tips(result("correo") { copy(mailGroup = 2, mailEvHits = 4, mailEvTotal = 4, mailTimeHits = 2, mailTimeTotal = 2, mailCommissions = 0, mailPeeks = 1, mailPeeksGood = 1) })
+    assertTrue(ok.isEmpty())
+    // una partida de otro juego, o de la versión vieja sin etapas, no tiene truco de la estación
+    assertTrue(ResultAdvice.tips(result("correo")).isEmpty())
   }
 
   @Test

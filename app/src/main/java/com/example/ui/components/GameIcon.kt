@@ -286,18 +286,23 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       sparkle(Offset(90f, 40f), 7f, Color.White)
     }
     "correo" -> {
-      // Un sobre que vuela (estela de puntos sol) hacia un planeta coral con anillo.
-      listOf(Offset(14f, 80f), Offset(22f, 72f), Offset(30f, 64f)).forEachIndexed { i, o ->
-        drawCircle(Ink, 3.8f + i * 0.4f, o)
-        drawCircle(Clay.Sun, 2.3f + i * 0.4f, o)
+      // La estación de correo: el faro (torre lila con su luz sol y dos ondas) arriba a la derecha y, delante, una carta crema con su sello dorado.
+      val tower = Path().apply {
+        moveTo(66f, 78f)
+        lineTo(71f, 40f)
+        lineTo(85f, 40f)
+        lineTo(90f, 78f)
+        close()
       }
-      clay(circle(Offset(72f, 26f), 15f), Clay.Coral, gloss = true)
-      drawPath(Path().apply { addOval(Rect(50f, 21f, 94f, 31f)) }, Ink, style = Stroke(4f))
-      drawPath(Path().apply { addArc(Rect(50f, 21f, 94f, 31f), 0f, 180f) }, Clay.Sun, style = Stroke(2.2f))
-      rotate(-14f, Offset(50f, 60f)) {
-        clay(roundRect(28f, 44f, 44f, 30f, 6f), Cream, gloss = true)
-        drawPath(Path().apply { moveTo(31f, 47f); lineTo(50f, 62f); lineTo(69f, 47f) }, Ink, style = Stroke(3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-        clay(circle(Offset(50f, 60f), 5f), Clay.Coral, border = 2.5f, shadow = false)
+      clay(tower, Clay.Grape, gloss = true)
+      for ((r, alpha) in listOf(Pair(17f, 0.95f), Pair(26f, 0.6f))) {
+        drawArc(Clay.Sun.copy(alpha = alpha), -150f, 120f, false, Offset(78f - r, 28f - r), Size(2f * r, 2f * r), style = Stroke(4f, cap = StrokeCap.Round))
+      }
+      clay(circle(Offset(78f, 28f), 9f), Clay.Sun, gloss = true)
+      rotate(-8f, Offset(34f, 68f)) {
+        clay(roundRect(8f, 50f, 52f, 36f, 6f), Cream, gloss = true)
+        drawPath(Path().apply { moveTo(11f, 54f); lineTo(34f, 72f); lineTo(57f, 54f) }, Ink, style = Stroke(3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        clay(circle(Offset(34f, 72f), 6.5f), Clay.Sun, border = 3f, shadow = false)
       }
     }
     "anagramas" -> {

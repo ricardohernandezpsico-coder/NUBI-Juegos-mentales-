@@ -60,7 +60,7 @@ Los marcados con ★ son **juegos estrella**: además del puntaje, al final mues
 | Secuencia Lumínica | Memoria | Repetir secuencias de fichas que se encienden, cada vez más largas |
 | Constelaciones ★ | Memoria | Abrir luces de un cielo nocturno y encontrar sus parejas (y tríos) de memoria: la línea dorada marca las que fuiste directo a buscar |
 | Rumbo a Casa ★ | Memoria | Volver a la base sin verla, sabiendo solo el camino que hiciste |
-| Correo Estelar ★ | Memoria | Acordarte de entregar un encargo o avisar por radio en el momento justo, mientras vuelas |
+| Correo Estelar ★ («La estación de correo») | Memoria | Clasificas cartas en cuatro buzones y acuerdas de los encargos del día: una carta con sello dorado a la caja fuerte, el faro a la hora justa, lo que la radio cancela |
 | Bodega de carga ★ | Memoria | Recordar dónde guardó cada cosa el robot en una bodega redonda: la carga entra por la esclusa, a veces cambia una caja de lugar y a veces la bodega gira |
 | Tinta o Palabra | Atención | Responder al color de la tinta o a la palabra, según la regla del momento |
 | Piloto Estelar ★ | Atención | Guiar una nave con un pulgar y atrapar señales con el otro |

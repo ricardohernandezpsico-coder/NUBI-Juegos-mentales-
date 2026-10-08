@@ -96,15 +96,8 @@ object ResultAdvice {
     if (result.interferenceMs != null || result.switchCostMs != null) {
       out += DosOrillas.tips(result.interferenceMs, result.switchCostMs).map { tipOf(it) }
     }
-    // Correo Estelar: el reloj, lugar contra hora y la nave.
-    result.mailEventTotal?.let { evTotal ->
-      val evHits = result.mailEventHits ?: 0
-      val raTotal = result.mailRadioTotal ?: 0
-      val raHits = result.mailRadioHits ?: 0
-      out += tipOf(Mail.clockMessage(result.mailClockChecks ?: -1, result.mailClockLate ?: 0, raTotal) ?: "")
-      out += tipOf(Mail.compareMessage(evHits, evTotal, raHits, raTotal) ?: "")
-      out += tipOf(Mail.shipMessage(result.mailHullIntactPct ?: -1, result.mailEmergencies ?: 0) ?: "")
-    }
+    // La estación de correo: un truco de intención de implementación según lo que más se escapó (la radio, la hora o las cartas señal).
+    if (result.mailGroup != null) out += tipOf(Mail.tip(result.mailEvHits, result.mailEvTotal, result.mailTimeHits, result.mailTimeTotal, result.mailCommissions, result.mailPeeks, result.mailPeeksGood) ?: "")
     return out.filterNotNull()
   }
 }

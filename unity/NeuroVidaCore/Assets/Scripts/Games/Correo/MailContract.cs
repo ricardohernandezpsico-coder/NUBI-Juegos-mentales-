@@ -1,338 +1,356 @@
 using System;
 using System.Collections.Generic;
+using NeuroVida.Contracts;
 
 namespace NeuroVida.Games.Correo
 {
-    /// <summary>Un planeta que pasa junto a la ruta: su color (0..7, los planetas-puerto de Shared/PortSprites), si es de un encargo y si es
-    /// un "parecido" (color cercano al de un encargo, para confundir).</summary>
-    public readonly struct MailPlanet
+    /// <summary>Los cuatro momentos del día (el centro de la ventana de un encargo por hora).</summary>
+    public enum MailMoment { Manana, Mediodia, Tarde, Noche }
+
+    /// <summary>Las tarjetas «NUEVO» (una sola vez por instalación cada una): la estación, la hora, lo de todos los días, lo que cancela la radio y el lazo.</summary>
+    public enum MailIntro { None, Estacion, Hora, Rutina, Cancela, Lazo }
+
+    /// <summary>Una etapa de la escalera (docs/diseno-correo-estacion.md §4): cuántos buzones hay, cada cuántos segundos llega una carta, cuántas cartas señal con sello dorado y con lazo trae cada día, los encargos por hora,
+    /// si el primero se repite todos los días, si la radio puede cancelar uno, qué tan ancha es la ventana de la hora (fracción del día) y qué tarjeta «NUEVO» trae.</summary>
+    public readonly struct MailStage
     {
-        public readonly int Color;
-        public readonly bool IsTarget, IsLure;
-        /// <summary>Lado de la ruta: -1 izquierda, +1 derecha.</summary>
-        public readonly int Side;
+        public readonly int Boxes, Gold, Lazo;
+        public readonly float Every, Win;
+        public readonly MailMoment[] Times;
+        public readonly bool Routine, Cancel;
+        public readonly MailIntro Intro;
 
-        public MailPlanet(int color, bool isTarget, bool isLure, int side)
+        public MailStage(int boxes, float every, int gold, int lazo, MailMoment[] times, bool routine, bool cancel, float win, MailIntro intro)
         {
-            Color = color;
-            IsTarget = isTarget;
-            IsLure = isLure;
-            Side = side;
+            Boxes = boxes;
+            Every = every;
+            Gold = gold;
+            Lazo = lazo;
+            Times = times ?? new MailMoment[0];
+            Routine = routine;
+            Cancel = cancel;
+            Win = win;
+            Intro = intro;
         }
-    }
-
-    public enum RadioJudgement { OnTime, Early, Late }
-
-    /// <summary>Cómo se usó el reloj: cuántas veces se miró y cuántas justo antes de la hora (último 30% del intervalo).</summary>
-    public readonly struct ClockProfile
-    {
-        public readonly int Checks, LateChecks, Intervals;
-        public ClockProfile(int checks, int lateChecks, int intervals)
-        {
-            Checks = checks;
-            LateChecks = lateChecks;
-            Intervals = intervals;
-        }
-
-        /// <summary>Parte de las miradas que fue justo antes de la hora (-1 = sin miradas).</summary>
-        public float LateShare => Checks == 0 ? -1f : (float)LateChecks / Checks;
     }
 
     /// <summary>
-    /// El escudo de la nave (28-sep, idea de Ricardo: "que el cohete se vaya dañando"): cada asteroide rompe un segmento;
-    /// volar limpio lo repara; sin escudo, una REPARACIÓN DE EMERGENCIA de unos segundos (nave lenta, sin sobres) y se
-    /// sigue con un segmento. Nunca termina el vuelo: los encargos necesitan los 150 s para medirse igual en todos.
-    /// </summary>
-    public sealed class ShipShield
-    {
-        public const int Max = 3;
-        /// <summary>Segundos sin chocar para recuperar un segmento.</summary>
-        public const float RepairSeconds = 20f;
-        /// <summary>Duración de la reparación de emergencia.</summary>
-        public const float EmergencySeconds = 3.5f;
-
-        public int Segments { get; private set; } = Max;
-        public int Emergencies { get; private set; }
-        private float _calmSince, _emergencyUntil = -1f, _intactTime, _lastT;
-        private bool _started;
-
-        public void Start(float now)
-        {
-            Segments = Max;
-            Emergencies = 0;
-            _calmSince = _lastT = now;
-            _emergencyUntil = -1f;
-            _intactTime = 0f;
-            _started = true;
-        }
-
-        public bool InEmergency(float now) => now < _emergencyUntil;
-
-        /// <summary>Un choque. Devuelve true si deja la nave sin escudo (empieza la reparación de emergencia). Durante la
-        /// emergencia los asteroides no la tocan.</summary>
-        public bool Hit(float now)
-        {
-            Advance(now);
-            if (InEmergency(now) || Segments <= 0) return false;
-            Segments--;
-            _calmSince = now;
-            if (Segments > 0) return false;
-            Emergencies++;
-            _emergencyUntil = now + EmergencySeconds;
-            return true;
-        }
-
-        /// <summary>Avanza el reloj del escudo. Devuelve true si en este paso se recuperó un segmento (por vuelo limpio o
-        /// al terminar la emergencia).</summary>
-        public bool Advance(float now)
-        {
-            if (!_started) Start(now);
-            if (Segments == Max) _intactTime += Math.Max(0f, now - _lastT);
-            _lastT = now;
-            if (Segments == 0 && _emergencyUntil >= 0f && now >= _emergencyUntil)
-            {
-                Segments = 1;
-                _calmSince = now;
-                return true;
-            }
-            if (Segments > 0 && Segments < Max && now - _calmSince >= RepairSeconds)
-            {
-                Segments++;
-                _calmSince = now;
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>Parte del vuelo con la nave intacta (0..1).</summary>
-        public float IntactShare(float flightSeconds) => flightSeconds <= 0f ? 1f : Math.Min(1f, _intactTime / flightSeconds);
-
-        /// <summary>Qué tan lento va la nave: 1 normal; durante la emergencia, a la mitad.</summary>
-        public float SpeedFactor(float now) => InEmergency(now) ? 0.5f : 1f;
-    }
-
-    /// <summary>
-    /// Reglas puras de "Correo Estelar": el vuelo de Piloto Estelar (mantenerse en la ruta y recoger sobres es la tarea en
-    /// curso) con ENCARGOS que hay que recordar en el momento justo, sin que nadie avise: memoria prospectiva (Rummel y
-    /// Kvavilashvili, 2023, revisión en Nature Reviews Psychology).
-    /// <list type="bullet">
-    /// <item><b>Por lugar</b> (evento): "cuando pases un planeta coral, tócalo" (le entregas su paquete). Los planetas pasan
-    /// a los costados; la mayoría no son del encargo y algunos tienen un color parecido.</item>
-    /// <item><b>Por hora</b> (tiempo): "cada 30 segundos, toca la radio". El reloj va tapado: tocarlo lo muestra un momento.
-    /// Cuándo se mira mide la estrategia: lo eficaz es mirar poco al principio y más a medida que se acerca la hora.</item>
-    /// </list>
-    /// Sin dependencias de UnityEngine: testeable con NUnit.
+    /// «La estación de correo» (id <c>correo</c>; docs/diseno-correo-estacion.md, boceto docs/previews/correo-estacion-boceto.html versión 2): las reglas puras de las etapas, los encargos, el plan del día y las medidas.
+    /// Las cartas llegan por una cinta y se tocan en el buzón del planeta de su sello (la tarea de fondo); los encargos del día se dan en la mañana y NO se ven durante el día: por evento («si llega una carta con sello
+    /// dorado o con lazo, a la caja fuerte») y por hora («al mediodía, enciende el faro», con el reloj tapado). Memoria prospectiva (Tse et al., 2022; Rose et al., 2015; Henry et al., 2021; Peper y Ball, 2023).
+    /// Sin conducción, sin pedidos con componentes ni tiempos de entrega, sin vías ni desvíos (docs §8: patentes de Akili/UCSD y de Lumos Labs).
     /// </summary>
     public static class MailContract
     {
         public const string GameId = "correo";
+
+        /// <summary>Etapas de la escalera (el rating del motor común va de 1 a este número).</summary>
         public const int MaxLevel = 10;
-        public const int PlanetColors = 8;
+        /// <summary>Un día dura 50 s; una partida son 4 días; el día de práctica del tutorial dura 30 s.</summary>
+        public const float DaySeconds = 50f, PracticeSeconds = 30f;
+        public const int Days = 4;
+        /// <summary>Paso de subida del motor común por encargo cumplido (cada encargo es un ensayo; con el objetivo 0,80 cada encargo fallado baja 4 veces eso).</summary>
+        public const float DdaStepUp = 0.3f;
 
-        /// <summary>Duración del vuelo (Reto y Precisión: Precisión vuela más tranquilo).</summary>
-        public const float FlightSeconds = 150f;
+        // ------------------------------------------------------------------ tiempos (docs §2, §5 y §11)
 
-        /// <summary>Ventana para el aviso por radio: ± segundos alrededor de la hora.</summary>
-        public const float RadioWindow = 5f;
+        /// <summary>El reloj tapado se destapa 1,6 s al tocarlo; la radio dura 3,2 s; el faro encendido a tiempo dura 3,4 s.</summary>
+        public const float PeekSeconds = 1.6f, RadioSeconds = 3.2f, ShowSeconds = 3.4f;
+        /// <summary>Un saco trae 5 cartas seguidas, una cada 0,85 s; mientras dura la cinta aguanta 7.</summary>
+        public const int RushLetters = 5;
+        public const float RushEvery = 0.85f, RushStartDelay = 0.6f;
+        public const int BeltCapacity = 3, RushBeltCapacity = 7;
+        /// <summary>Una carta de la cinta se puede tocar cuando ya llegó a su lugar (a 40 dp o menos de él).</summary>
+        public const float ReadyDistance = 40f;
+        /// <summary>El 30 % del día antes de la ventana cuenta como «cerca de la hora» para mirar el reloj.</summary>
+        public const float NearHourBefore = 0.30f;
+        /// <summary>Lo que se avanza o retrocede cada día (docs §4): todos los encargos y esta clasificación sube; menos de la mitad de los encargos baja.</summary>
+        public const float UpAccuracy = 0.85f, DownShare = 0.5f;
+        /// <summary>Racha: cada 10 cartas bien puestas seguidas es un escalón (×10, ×20, ×30 o más).</summary>
+        public const int ComboStep = 10;
 
-        /// <summary>"Justo antes de la hora" = el último 30% de cada intervalo.</summary>
-        public const float LateFraction = 0.3f;
+        // ------------------------------------------------------------------ los momentos del día (docs §4)
 
-        /// <summary>
-        /// Color parecido de cada color (para confundir): coral → naranjo, amarillo → naranjo, celeste → menta, lila → rosado
-        /// (y al revés para los demás). Los parecidos de los colores de encargo nunca son colores de encargo.
-        /// </summary>
-        private static readonly int[] LureOf = { 7, 7, 6, 6, 5, 0, 3, 0 };
-
-        /// <summary>Nombres de los colores (mismo orden que <c>PortSprites.Colors</c>).</summary>
-        public static readonly string[] ColorNames = { "coral", "amarillo", "celeste", "verde", "lila", "rosado", "menta", "naranjo" };
-
-        /// <summary>Colores que sirven para encargos (bien distintos entre sí): coral, celeste, amarillo, lila.</summary>
-        private static readonly int[] TargetPalette = { 0, 2, 1, 4 };
-
-        // ------------------------------------------------------------------ niveles
-
-        /// <summary>Colores de planeta con encargo: 1 (niveles 1-3) o 2 (desde el 4).</summary>
-        public static int EventColors(int level) => Clamp(level) >= 4 ? 2 : 1;
-
-        /// <summary>Cada cuántos segundos hay que avisar por radio: 30 (niveles 1-4), 25 (5-7), 20 (8-10). Desde el nivel 1:
-        /// los dos tipos de encargo desde el primer vuelo (Ricardo, 28-sep: con uno solo "no tuve que trabajar la memoria").</summary>
-        public static float RadioPeriod(int level)
+        public static float MomentCenter(MailMoment m)
         {
-            level = Clamp(level);
-            return level <= 4 ? 30f : level <= 7 ? 25f : 20f;
-        }
-
-        /// <summary>Probabilidad de que un planeta que no es del encargo tenga un color parecido: 0 (nivel 1), 0,15 → 0,45.</summary>
-        public static float LureChance(int level)
-        {
-            level = Clamp(level);
-            return level <= 1 ? 0f : 0.15f + 0.3f * (level - 2) / (MaxLevel - 2);
-        }
-
-        /// <summary>
-        /// Segundos entre un planeta y el siguiente: 3,6 (nivel 1) → 2,4 (nivel 10), y un 30% menos al final del vuelo
-        /// (<paramref name="progress"/> 0..1). Muchos planetas: casi todos hay que dejarlos pasar.
-        /// </summary>
-        public static float PlanetGap(int level, float progress) =>
-            (3.6f - 1.2f * (Clamp(level) - 1) / (MaxLevel - 1)) * (1f - 0.3f * Clamp01(progress));
-
-        /// <summary>Proporción de planetas que son del encargo (pocos: si fueran muchos, no habría que recordar nada).</summary>
-        public const float TargetChance = 0.3f;
-
-        /// <summary>Nivel de la ruta (ancho, curvas y velocidad: los de Piloto Estelar, que tiene 9).</summary>
-        public static int FlightLevel(int level) => Math.Max(1, Math.Min(9, Clamp(level)));
-
-        // ------------------------------------------------------------------ el vuelo se acelera
-
-        /// <summary>El vuelo tiene tres tramos (0, 1, 2); en cada uno la ruta va más rápida, más curva y más angosta.</summary>
-        public static int Stage(float progress) => progress < 1f / 3f ? 0 : progress < 2f / 3f ? 1 : 2;
-
-        /// <summary>Velocidad: × 1 al salir → × 1,5 al final del vuelo (sube de a poco, se nota en cada tramo).</summary>
-        public static float SpeedRamp(float progress) => 1f + 0.5f * Clamp01(progress);
-
-        /// <summary>Curvas: × 1 → × 1,5 (la ruta se vuelve más sinuosa).</summary>
-        public static float CurveRamp(float progress) => 1f + 0.5f * Clamp01(progress);
-
-        /// <summary>Ancho de la ruta: × 1 → × 0,85.</summary>
-        public static float LaneRamp(float progress) => 1f - 0.15f * Clamp01(progress);
-
-        /// <summary>
-        /// Segundos entre un asteroide y el siguiente en la ruta (hay que esquivarlos): 3,4 (pilotaje nivel 1) → 1,8 (9), y
-        /// un 35% menos al final del vuelo; nunca menos de 1,1.
-        /// </summary>
-        public static float AsteroidGap(int driveLevel, float progress)
-        {
-            float g = 3.4f - 1.6f * (Math.Max(1, Math.Min(9, driveLevel)) - 1) / 8f;
-            return Math.Max(1.1f, g * (1f - 0.35f * Clamp01(progress)));
-        }
-
-        private static float Clamp01(float x) => Math.Max(0f, Math.Min(1f, x));
-
-        // ------------------------------------------------------------------ encargos
-
-        /// <summary>Colores de los encargos por lugar del vuelo (distintos entre sí).</summary>
-        public static int[] PickTargets(int level, Random rng)
-        {
-            var pool = new List<int>(TargetPalette);
-            for (int i = pool.Count - 1; i > 0; i--)
+            switch (m)
             {
-                int j = rng.Next(i + 1);
-                (pool[i], pool[j]) = (pool[j], pool[i]);
+                case MailMoment.Manana: return 0.26f;
+                case MailMoment.Mediodia: return 0.50f;
+                case MailMoment.Tarde: return 0.70f;
+                default: return 0.88f;
             }
-            return pool.GetRange(0, EventColors(level)).ToArray();
         }
 
-        /// <summary>
-        /// El próximo planeta. Nunca dos del encargo seguidos (el encargo debe "sorprender"); los demás, a veces del color
-        /// parecido (desde el nivel 3) y si no, de un color que no es de ningún encargo ni parecido.
-        /// </summary>
-        public static MailPlanet NextPlanet(int level, IReadOnlyList<int> targets, bool previousWasTarget, Random rng)
+        /// <summary>«a media mañana», «al mediodía», «a media tarde», «al anochecer»: cómo se dice el momento en una frase.</summary>
+        public static string MomentPhrase(MailMoment m)
         {
-            int side = rng.Next(2) == 0 ? -1 : 1;
-            if (!previousWasTarget && rng.NextDouble() < TargetChance)
-                return new MailPlanet(targets[rng.Next(targets.Count)], true, false, side);
-            if (rng.NextDouble() < LureChance(level))
+            switch (m)
             {
-                int lure = LureOf[targets[rng.Next(targets.Count)]];
-                if (!Contains(targets, lure)) return new MailPlanet(lure, false, true, side);
+                case MailMoment.Manana: return "a media mañana";
+                case MailMoment.Mediodia: return "al mediodía";
+                case MailMoment.Tarde: return "a media tarde";
+                default: return "al anochecer";
             }
-            var others = new List<int>();
-            for (int c = 0; c < PlanetColors; c++)
+        }
+
+        /// <summary>La palabra corta de la barra del día.</summary>
+        public static string MomentWord(MailMoment m)
+        {
+            switch (m)
             {
-                if (Contains(targets, c)) continue;
-                bool isLure = false;
-                foreach (int t in targets) if (LureOf[t] == c) isLure = true;
-                if (!isLure) others.Add(c);
+                case MailMoment.Manana: return "mañana";
+                case MailMoment.Mediodia: return "mediodía";
+                case MailMoment.Tarde: return "tarde";
+                default: return "noche";
             }
-            if (others.Count == 0) for (int c = 0; c < PlanetColors; c++) if (!Contains(targets, c)) others.Add(c);
-            return new MailPlanet(others[rng.Next(others.Count)], false, false, side);
         }
 
-        private static bool Contains(IReadOnlyList<int> list, int v)
-        {
-            foreach (int x in list) if (x == v) return true;
-            return false;
-        }
+        public static readonly MailMoment[] AllMoments = { MailMoment.Manana, MailMoment.Mediodia, MailMoment.Tarde, MailMoment.Noche };
 
-        // ------------------------------------------------------------------ radio
+        // ------------------------------------------------------------------ las etapas (docs §4)
 
-        /// <summary>Horas de aviso por radio dentro del vuelo: período, 2 × período... (sin pasarse del final).</summary>
-        public static List<float> RadioTargets(float period, float flightSeconds)
-        {
-            var list = new List<float>();
-            if (period <= 0f) return list;
-            for (float t = period; t <= flightSeconds - 2f; t += period) list.Add(t);
-            return list;
-        }
+        private static MailMoment[] T(params MailMoment[] m) => m;
+        private const MailMoment Ma = MailMoment.Manana, Me = MailMoment.Mediodia, Ta = MailMoment.Tarde, No = MailMoment.Noche;
 
-        /// <summary>
-        /// Juzga un aviso por radio a los <paramref name="t"/> segundos. A tiempo = dentro de ± <see cref="RadioWindow"/> de
-        /// una hora que todavía no tenía aviso (devuelve cuál en <paramref name="index"/>). Si no, temprano o tarde respecto
-        /// de la hora más cercana.
-        /// </summary>
-        public static RadioJudgement JudgeRadio(float t, IReadOnlyList<float> targets, ISet<int> answered, out int index)
+        private static readonly MailStage[] Stages =
         {
-            index = -1;
-            float best = float.MaxValue;
-            int nearest = -1;
-            for (int i = 0; i < targets.Count; i++)
+            new MailStage(2, 2.6f, 2, 0, T(), false, false, 0.12f, MailIntro.Estacion),
+            new MailStage(3, 2.4f, 2, 0, T(Me), false, false, 0.12f, MailIntro.Hora),
+            new MailStage(3, 2.3f, 2, 0, T(Me), true, false, 0.12f, MailIntro.Rutina),
+            new MailStage(3, 2.1f, 2, 0, T(Ta), true, true, 0.12f, MailIntro.Cancela),
+            new MailStage(4, 2.1f, 0, 2, T(Me), true, false, 0.12f, MailIntro.Lazo),
+            new MailStage(4, 2.0f, 1, 2, T(Ta), true, true, 0.12f, MailIntro.None),
+            new MailStage(4, 1.9f, 0, 2, T(Ma, Ta), true, false, 0.10f, MailIntro.None),
+            new MailStage(4, 1.8f, 1, 2, T(Ma, Ta), true, true, 0.10f, MailIntro.None),
+            new MailStage(4, 1.7f, 0, 3, T(Me, No), true, true, 0.09f, MailIntro.None),
+            new MailStage(4, 1.6f, 1, 3, T(Ma, Ta, No), true, true, 0.08f, MailIntro.None),
+        };
+
+        /// <summary>La etapa <paramref name="level"/> (1..10; fuera de rango se acota).</summary>
+        public static MailStage Stage(int level) => Stages[Math.Max(1, Math.Min(MaxLevel, level)) - 1];
+
+        /// <summary>El grupo de etapas (1..5) de un nivel: 2 etapas por grupo.</summary>
+        public static int GroupOf(int level) => (Math.Max(1, Math.Min(MaxLevel, level)) - 1) / 2 + 1;
+        public const int GroupCount = 5;
+
+        /// <summary>Cuántos sacos caen en un día: 1 hasta la etapa 4 y 2 desde la 5.</summary>
+        public static int RushCount(int level) => level >= 5 ? 2 : 1;
+
+        /// <summary>Las tarjetas «NUEVO» que trae la etapa (y las anteriores que la persona nunca vio, por si empieza más arriba), en orden de aparición.</summary>
+        public static IEnumerable<MailIntro> IntrosFor(int level)
+        {
+            int l = Math.Max(1, Math.Min(MaxLevel, level));
+            for (int i = 1; i <= l; i++)
             {
-                float d = Math.Abs(t - targets[i]);
-                if (d <= RadioWindow && !answered.Contains(i))
-                {
-                    index = i;
-                    return RadioJudgement.OnTime;
-                }
-                if (d < best)
-                {
-                    best = d;
-                    nearest = i;
-                }
+                var intro = Stages[i - 1].Intro;
+                if (intro != MailIntro.None) yield return intro;
             }
-            if (nearest < 0) return RadioJudgement.Late;
-            return t < targets[nearest] ? RadioJudgement.Early : RadioJudgement.Late;
         }
 
-        /// <summary>
-        /// Cómo se usó el reloj: miradas durante los intervalos de radio (desde el inicio hasta la última hora + ventana), y
-        /// cuántas cayeron en el último 30% del intervalo, antes de su hora.
-        /// </summary>
-        public static ClockProfile Monitoring(IReadOnlyList<float> checks, IReadOnlyList<float> targets, float period)
+        // ------------------------------------------------------------------ los buzones: un planeta con su figura neutra (docs §5)
+
+        public const int PlanetCount = 4;
+        public static readonly string[] PlanetNames = { "Coralia", "Celesta", "Lima", "Uva" };
+        /// <summary>La figura de cada planeta: círculo, triángulo, cuadrado y gota (sin estrellas de puntas, cruces ni medias lunas).</summary>
+        public static readonly string[] PlanetShapes = { "círculo", "triángulo", "cuadrado", "gota" };
+        /// <summary>La nota de cada buzón (do, mi, sol y do alto).</summary>
+        public static readonly float[] PlanetNotes = { 523.25f, 659.25f, 783.99f, 1046.5f };
+        public static readonly float[] Penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880f, 1046.5f, 1174.66f, 1318.5f, 1567.98f, 1760f };
+
+        // ------------------------------------------------------------------ motor común
+
+        /// <summary>El motor común: escalera 1..10, parte del rating guardado (o de la etapa pedida desde las herramientas de prueba), usa el perfil de edad y respeta el techo y el piso del modo. Cada ENCARGO es un
+        /// ensayo de memoria prospectiva; la clasificación de las cartas es la tarea de fondo y no mueve el rating. Sin tiempo de reacción: mirar con calma no se penaliza.</summary>
+        public static AdaptiveDifficulty CreateEngine(SequenceConfigDetails config) =>
+            new AdaptiveDifficulty(MaxLevel, DdaUserProfileConfig.ParseAgeBand(config.age_band), StartRating(config), DdaStepUp, useReaction: false);
+
+        public static float StartRating(SequenceConfigDetails config) =>
+            config.mail_stage > 0 ? Math.Max(1f, Math.Min(MaxLevel, config.mail_stage)) : AdaptiveDifficulty.StartRating(config, MaxLevel);
+
+        /// <summary>La etapa con que empieza la partida (el nivel real del rating de partida, 1..10).</summary>
+        public static int StartLevel(AdaptiveDifficulty dda) => Math.Max(1, Math.Min(MaxLevel, dda.Level));
+
+        /// <summary>Lo que pasa al terminar un día (docs §4): con todos los encargos cumplidos y al menos 85 % de las cartas bien puestas sube una etapa; con menos de la mitad de los encargos baja una; si no, se queda.
+        /// <paramref name="floor"/> y <paramref name="ceiling"/> son los límites del modo (Suave, Desafío, Experto).</summary>
+        public static int Advance(int level, int ok, int all, float accuracy, int floor = 1, int ceiling = MaxLevel)
         {
-            if (targets.Count == 0 || period <= 0f) return new ClockProfile(0, 0, 0);
-            float end = targets[targets.Count - 1] + RadioWindow;
-            int n = 0, late = 0;
-            foreach (float c in checks)
+            int next = level;
+            if (all > 0)
             {
-                if (c < 0f || c > end) continue;
-                n++;
-                float phase = c % period;
-                if (phase >= period * (1f - LateFraction)) late++;
+                if (ok == all && accuracy >= UpAccuracy) next = level + 1;
+                else if ((float)ok / all < DownShare) next = level - 1;
             }
-            return new ClockProfile(n, late, targets.Count);
+            floor = Math.Max(1, Math.Min(MaxLevel, floor));
+            ceiling = Math.Max(floor, Math.Min(MaxLevel, ceiling));
+            return Math.Max(floor, Math.Min(ceiling, next));
         }
 
-        // ------------------------------------------------------------------ puntaje
+        /// <summary>Si el día subió (para el «Mañana: un poco más difícil» del resumen).</summary>
+        public static bool DayWasUp(int ok, int all, float accuracy) => all > 0 && ok == all && accuracy >= UpAccuracy;
 
-        public static float Rate(int hits, int total) => total <= 0 ? -1f : (float)hits / total;
+        // ------------------------------------------------------------------ medidas (docs §7)
 
-        /// <summary>
-        /// Puntaje 0-100: encargos cumplidos (60%: lugar y hora por igual si hay de los dos; se restan los planetas tocados
-        /// por error), la ruta (20%) y el nivel (20%).
-        /// </summary>
-        public static int Score(int eventHits, int eventTotal, int commissions, int radioHits, int radioTotal, float lanePct, int level)
+        /// <summary>«Tu memoria para lo pendiente»: encargos cumplidos sobre encargos (los cancelados que no hiciste cuentan como cumplidos). null sin encargos.</summary>
+        public static int? MemoryPercent(int ok, int all) => all <= 0 ? (int?)null : (int)Math.Round(100.0 * Math.Max(0, Math.Min(ok, all)) / all);
+
+        /// <summary>El puntaje de la partida (0..100): la memoria para lo pendiente; sin encargos que medir, 100.</summary>
+        public static int Score(int ok, int all) => MemoryPercent(ok, all) ?? 100;
+
+        /// <summary>El récord «cartas en un día perfecto»: nunca baja.</summary>
+        public static int NewRecord(int previous, int perfectDayLetters) => Math.Max(Math.Max(0, previous), Math.Max(0, perfectDayLetters));
+
+        /// <summary>Telemetría de salida de la partida (<c>-1</c> = sin dato; reemplaza a los <c>mail_*</c> del vuelo).</summary>
+        public static StroopSessionMetrics BuildMetrics(AdaptiveDifficulty dda, MailTally t, int bestRecord, bool newRecord, int maxLevelReached, SequenceConfigDetails config)
         {
-            float ev = eventTotal > 0 ? Math.Max(0f, (eventHits - 0.5f * commissions) / eventTotal) : -1f;
-            float ti = radioTotal > 0 ? (float)radioHits / radioTotal : -1f;
-            float pm = ev >= 0f && ti >= 0f ? (ev + ti) * 0.5f : ev >= 0f ? ev : Math.Max(0f, ti);
-            float lane = Math.Max(0f, Math.Min(1f, lanePct));
-            float lv = (float)(Clamp(level) - 1) / (MaxLevel - 1);
-            return Math.Max(0, Math.Min(100, (int)Math.Round((0.6f * Math.Min(1f, pm) + 0.2f * lane + 0.2f * lv) * 100f)));
+            int all = t.MeasureAll, ok = t.MeasureOk;
+            return new StroopSessionMetrics
+            {
+                correct_trials = ok,
+                total_trials = all,
+                calculated_score = Score(ok, all),
+                average_response_time_ms = 0,
+                level = config.level,
+                timed = config.timed,
+                end_rating = dda.RatingNormalized,
+                peak_level = Math.Max(dda.PeakLevel, maxLevelReached),
+                mode_trials = dda.ScoredTrials,
+                mode_hits = dda.ScoredCorrect,
+                mail_ev_hits = t.EventsOk,
+                mail_ev_total = t.Events,
+                mail_time_hits = t.TimesOk,
+                mail_time_total = t.Times,
+                mail_cancels = t.Cancels,
+                mail_commissions = t.Commissions,
+                mail_early = t.Early,
+                mail_peeks = t.Peeks,
+                mail_peeks_good = t.GoodPeeks,
+                mail_right = t.Right,
+                mail_sorted = t.Sorted,
+                mail_best_combo = t.BestCombo,
+                mail_days_perfect = t.PerfectDays,
+                mail_group = GroupOf(maxLevelReached),
+                mail_best = bestRecord,
+                mail_new = newRecord ? 1 : 0,
+            };
         }
 
-        public static int DeliveryPoints(int level, int streak) => 100 + 15 * (Clamp(level) - 1) + 25 * Math.Min(Math.Max(streak - 1, 0), 6);
+        // ------------------------------------------------------------------ textos (todos de 14 dp o más)
 
-        private static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
+        public const string TitleRun = "La estación de correo";
+        public const string CountdownSub = "Clasifica las cartas y cumple los encargos";
+        public const string BriefTitle = "Encargos de hoy";
+        public const string BriefStart = "Empezar el día";
+        public const string BriefNote1 = "Durante el día no los verás.";
+        public const string BriefNote2 = "Dilo en voz baja: «cuando vea…, haré…»";
+        public const string RoutineTag = "TODOS LOS DÍAS";
+        public const string RoutineTitle = "Y lo de todos los días";
+        public const string RoutineSub = "(ya no se anota: acuérdate tú)";
+        public const string PlayHint = "Toca el buzón del sello";
+        public const string TapToContinue = "Toca para seguir";
+        public const string ClockLabel = "reloj";
+        public const string ClockPanel = "Hora del día";
+        public const string RadioTag = "RADIO";
+        public const string RushTitle = "¡Llega un saco!";
+        public const string RushSub = "5 cartas seguidas: ¡rápido!";
+        public const string SafeLabelA = "Caja", SafeLabelB = "fuerte", BeaconLabel = "Faro";
+
+        public const string FloatWrongBox = "Otro buzón";
+        public const string FloatCueDone = "¡Encargo cumplido!";
+        public const string FloatGoldMissed = "Era con sello dorado: iba a la caja fuerte";
+        public const string FloatLazoMissed = "Tenía lazo: iba a la caja fuerte";
+        public const string FloatNotSafe = "Esa carta no va a la caja fuerte";
+        public const string FloatBeaconOn = "¡Faro encendido a tiempo!";
+        public const string FloatTooEarly = "Aún no es la hora";
+        public const string FloatNotNow = "Ahora no toca el faro";
+        public const string FloatCancelled = "¡Estaba cancelado!";
+        public const string FloatShipArrived = "¡La nave del correo llegó!";
+        public static string FloatLateWindow(MailMoment m) => "Se pasó la hora: " + MomentPhrase(m);
+        public static string FloatCombo(int combo)
+        {
+            int tier = combo / ComboStep;
+            return tier <= 1 ? "¡Racha ×" + combo + "!" : tier == 2 ? "¡Imparable! ×" + combo : "¡Maestro del correo! ×" + combo;
+        }
+        public static string RadioText(MailMoment m) => "hoy NO hace falta encender el faro " + MomentPhrase(m);
+
+        public static string DayTitle(int day) => "DÍA " + day + " DE " + Days;
+        public static string DayHud(int day) => "Día " + day + " de " + Days;
+        public static string CartasLine(int right, int late) => "Cartas: " + right + (late > 0 ? " · atrasadas: " + late : "");
+        public static string RecapTag(int day) => "FIN DEL DÍA " + day;
+        public static string RecapTitle(int ok, int all) => ok == all ? "¡Todos los encargos!" : "Encargos: " + ok + " de " + all;
+        public static string RecapCards(int right, int total, int bestCombo) => "Cartas bien puestas: " + right + " de " + total + " · racha mayor ×" + bestCombo;
+        public static string RecapClock(int peeks, int good) => "Reloj: lo miraste " + peeks + (peeks == 1 ? " vez" : " veces") + ", " + good + " cerca de la hora";
+        public const string RecapRecord = "¡Nuevo récord de cartas en un día perfecto!";
+        public const string RecapUp = "Mañana: un poco más difícil", RecapSame = "Mañana: mismo ritmo";
+        public static string RecapNext(int day) => day >= Days ? "Ver resultado" : "Siguiente día";
+
+        public static string CueLineA(MailCue cue) => cue == MailCue.Gold ? "Si llega una carta con sello dorado," : "Si llega una carta con lazo,";
+        public const string CueLineB = "guárdala en la caja fuerte";
+        public static string TimeLineA(MailMoment m)
+        {
+            string p = MomentPhrase(m);
+            return char.ToUpperInvariant(p[0]) + p.Substring(1) + ",";
+        }
+        public const string TimeLineB = "enciende el faro";
+
+        public static string ItemGold = "Sello dorado: caja fuerte", ItemLazo = "Carta con lazo: caja fuerte";
+        public static string ItemTime(MailMoment m, bool routine) => "Faro " + MomentPhrase(m) + (routine ? " · de todos los días" : "");
+        public static string ItemCancelled(MailMoment m) => "Faro " + MomentPhrase(m) + " (cancelado)";
+        public const string DetHit = "a tiempo: la nave del correo llegó", DetMiss = "se pasó la hora: la nave no llegó";
+        public const string DetCommission = "lo hiciste igual", DetNoCommission = "no lo hiciste: bien";
+        public static string DetCount(int ok, int all) => ok + " de " + all;
+
+        public static string IntroTag(MailIntro intro) => intro == MailIntro.Estacion ? "CORREO ESTELAR" : "NUEVO";
+
+        public static string[] IntroLines(MailIntro intro)
+        {
+            switch (intro)
+            {
+                case MailIntro.Estacion: return new[] { "Toca el buzón del sello de cada carta.", "Y cumple los encargos del día:", "nadie te los va a recordar." };
+                case MailIntro.Hora: return new[] { "Encargos con hora.", "El faro guía la nave del correo:", "enciéndelo a la hora justa.", "El reloj va tapado: tócalo para mirarla." };
+                case MailIntro.Rutina: return new[] { "Lo de todos los días.", "Un encargo que se repite cada día", "y que ya no se vuelve a anotar." };
+                case MailIntro.Cancela: return new[] { "A veces la radio cancela un encargo.", "Si lo cancela,", "acuérdate de NO hacerlo." };
+                case MailIntro.Lazo: return new[] { "Ahora la señal es un lazo,", "no el sello.", "Mira la carta entera." };
+                default: return new string[0];
+            }
+        }
+
+        public static readonly string[] Tips =
+        {
+            "Truco: repite «cuando vea un lazo, caja fuerte»",
+            "Truco: mira el reloj cuando se acerque la hora",
+            "Truco: imagínate haciendo el encargo",
+        };
+
+        /// <summary>El consejo del final: rota con el día y los encargos por evento (docs §7).</summary>
+        public static string Tip(int salt) => Tips[((salt % Tips.Length) + Tips.Length) % Tips.Length];
+    }
+
+    /// <summary>Lo que se acumula en toda la partida (suma de los días): la medida final (docs §7).</summary>
+    public sealed class MailTally
+    {
+        public int Days, PerfectDays;
+        public int Events, EventsOk, Times, TimesOk, Cancels, Commissions, Early;
+        public int Peeks, GoodPeeks;
+        public int Right, Sorted, Late, BestCombo;
+
+        /// <summary>Encargos medidos y cumplidos: por evento, por hora y los cancelados (los que NO se hicieron cuentan como cumplidos).</summary>
+        public int MeasureAll => Events + Times + Cancels;
+        public int MeasureOk => EventsOk + TimesOk + (Cancels - Commissions);
+
+        public void Add(MailDayStat d)
+        {
+            Days++;
+            if (d.Perfect) PerfectDays++;
+            Events += d.Events; EventsOk += d.EventsOk;
+            Times += d.TimesAll; TimesOk += d.TimesOk;
+            Cancels += d.Cancels; Commissions += d.Commissions;
+            Early += d.Early;
+            Peeks += d.Peeks; GoodPeeks += d.GoodPeeks;
+            Right += d.Right; Sorted += d.Sorted; Late += d.Late;
+            BestCombo = Math.Max(BestCombo, d.BestCombo);
+        }
+
+        public int? Percent => MailContract.MemoryPercent(MeasureOk, MeasureAll);
     }
 }

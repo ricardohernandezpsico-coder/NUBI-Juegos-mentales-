@@ -115,10 +115,13 @@ namespace NeuroVida.Bridge.EditorTools
         public static void RunBitacora() => RunGame("bitacora", 9f);
 
         /// <summary>Mismo smoke test pero con Rumbo a Casa como juego.</summary>
+        /// <summary>«La estación de correo» (id correo) con su tutorial guiado: la tarjeta de Nubi, el buzón del sello, la hoja del día, la carta dorada a la caja fuerte, el reloj tapado y el faro a la hora.</summary>
+        public static void RunTutorialCorreo() => RunGame("correo", 12f, tutorial: true);
+
         public static void RunRumbo() => RunGame("rumbo", 9f);
 
-        /// <summary>Mismo smoke test pero con Correo Estelar como juego.</summary>
-        public static void RunCorreo() => RunGame("correo", 9f);
+        /// <summary>Mismo smoke test pero con «La estación de correo» (id correo) como juego (se juega sola: clasifica, guarda las señal, mira el reloj y enciende el faro; los días duran 12 s en el smoke).</summary>
+        public static void RunCorreo() => RunGame("correo", 85f);
 
         /// <summary>Mismo smoke test pero con «Constelaciones» (id parejas) como juego (se juega sola: explora, recuerda y de vez en cuando se le escapa una compañera).</summary>
         public static void RunParejas() => RunGame("parejas", 30f);
@@ -129,12 +132,12 @@ namespace NeuroVida.Bridge.EditorTools
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
-            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f), ("TutorialCorreo", "correo", 12f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
             ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 24f), ("Bodega", "bodega", 30f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 30f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
             ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f),
-            ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 9f), ("Meteoros", "meteoros", 9f),
+            ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 85f), ("Meteoros", "meteoros", 9f),
             ("Disparate", "disparate", 9f), ("Cosecha", "cosecha", 9f), ("Intrusa", "intrusa", 9f),
         };
 
@@ -242,7 +245,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
 
@@ -430,7 +433,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.AssessmentOverride = assessment;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = (gameId == "engranajes" || gameId == "bodega" || gameId == "parejas") && !tutorial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = (gameId == "engranajes" || gameId == "bodega" || gameId == "parejas" || gameId == "correo") && !tutorial;
             EditorPlaytestBootstrap.GameIdOverride = gameId;
             EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
             EditorSceneManager.OpenScene(ScenePath);

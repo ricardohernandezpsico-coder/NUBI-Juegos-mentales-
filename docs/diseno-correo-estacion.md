@@ -219,3 +219,32 @@ Se agregó:
   - ×30 o más, «¡Maestro del correo!» con fuegos de cuatro colores.
 - **Simulación otra vez:** 0 partidas trabadas. Con memoria perfecta, 100 % (98-99 % en etapas altas, por el ritmo del
   jugador simulado).
+
+## 12. Cómo quedó hecho (8-oct, tras implementarlo)
+
+Todo lo anterior se implementó. Estas son las diferencias con el boceto y lo que el documento no fijaba, con el motivo:
+
+- **Código.** `MailContract` (etapas, textos, telemetría, `Advance`), `MailDay` (el día: máquina de estados sin Unity; 50 pruebas en total entre `MailContractTests` y `MailViewTests`), `MailLayout`/`MailMotion`/`MailSprites`/`MailSounds`/`WedgeGraphic`, y el controlador
+  repartido en `MailGameController.cs` (flujo y entrada), `.Build.cs` (construcción de la pantalla), `.Scene.cs` (animación y pantallas) y `.Guided.cs` (tutorial). Sin `Time.time` ni esperas de Unity: todo con `GameClock` y `Motion`.
+- **Reto: no aplica.** Son 4 días de 50 s con su hoja y su resumen; no hay una versión sin reloj ni una contra el reloj. `RetoChoice.WITHOUT_RETO = {correo}` (la ficha de Juegos no muestra la elección) y `GameResultScreen.NO_SPEED_GAMES` lo incluye.
+  *Duda abierta:* si Ricardo quiere un Reto de varios días seguidos, hay que decidir su duración.
+- **El rating de antes se llevó a la mitad.** Room 13 → 14 (`UPDATE game_progress SET ddaRating = ddaRating * 0.5 WHERE gameId = 'correo'`; la cuenta está en `Mail.translateOldRating`). Motivo: el vuelo guardaba el rating de OTRA tarea y cada etapa nueva trae
+  mecánicas (la hora, lo de todos los días, lo que cancela la radio, el lazo); así el mejor jugador del vuelo (0,9) empieza en la etapa 5 y no en una con mecánicas que nunca vio. El factor 0,5 es mío: no hay datos para calibrarlo. Hay prueba de migración.
+- **La etapa dentro de la partida la decide la regla del boceto (`MailContract.Advance`), y el motor común recibe un ensayo por encargo** (`stepUp` 0,3, sin tiempo de reacción). Motivo: el boceto aprobado fija cuándo sube y baja la etapa; el motor común
+  sigue dando el `end_rating` que guarda la app. Los encargos cuya carta señal nunca llegó a verse en el día (no se pudo ver el aviso) se excluyen del resumen y de los ensayos.
+- **La racha propia.** El HUD común se crea sin la píldora de racha (`withStreak: false`) y el juego dibuja su píldora dorada «Racha ×N» sobre la cinta, que es la que escala a ×10 / ×20 / ×30.
+- **Textos sin flecha.** Las fuentes de Fredoka no traen «→»; en el resumen y en los rótulos de las cartas señal se escribe «Sello dorado: caja fuerte» / «Carta con lazo: caja fuerte».
+- **Tutorial:** ocho pasos en vez de cinco (se sumaron avisos para que se entienda el reloj tapado y el faro): 1) tocar el buzón del sello; 2) Notice de la hoja con un encargo de sello dorado; 3) caja fuerte; 4) reloj; 5) Notice «Aquí está la hora del día» (el reloj destapado); 6) faro; 7) Notice «El faro guía la nave del correo» (la nave aparece solo ahora); 8) «¡Listo! Ahora va en serio». El día de práctica dura 30 s, no cuenta y no trae sacos. Pasa la red de seguridad de la Tarea 42 y no toca `_dda`,
+  `_run`, el récord ni la telemetría (lo vigilan las pruebas de `GuidedTutorialTests`).
+- **Herramientas de prueba:** `mail_stage` fuerza la etapa de arranque; botones «Correo con tutorial» y «Correo etapa 2 / 4 / 5 / 8» en las herramientas de depuración.
+- **Smoke:** corre `Correo` y `TutorialCorreo` (en 3 formas de pantalla). En el smoke el juego arranca en la etapa 4 con días de 24 s y 85 s en total: con días de 12 s no daba tiempo de ver ningún encargo.
+- **Datos que llegan a la app:** telemetría nueva `mail_*` (`mail_ev_hits/total`, `mail_time_hits/total`, `mail_cancels`, `mail_commissions`, `mail_early`, `mail_peeks`, `mail_peeks_good`, `mail_right`, `mail_sorted`, `mail_best_combo`,
+  `mail_days_perfect`, `mail_group`, `mail_best`, `mail_new`); la medida se guarda con la clave nueva `estacion` en `star_measures` (los puntos viejos `pending` quedan guardados pero no se leen) y el récord en las preferencias `correo_record`
+  (que van en `backup_rules.xml` y en las dos secciones de `data_extraction_rules.xml`; lo vigila `BackupRulesTest`). Se quitaron de `GameResultScreen` el texto de asteroides y escudo.
+- **Reglas que se mantienen:** ninguna cara reacciona al desempeño; nada depende solo del color (el sello dorado y el lazo tienen forma y rótulo, los buzones tienen su forma propia además del color); la nave aparece SOLO después de encender el faro;
+  toques de 56 dp o más y textos de 14 dp o más; la caja fuerte y el faro siempre visibles; sin tablero, dado ni pedidos (§8).
+- **Lámina:** `docs/previews/correo-estacion.png` (script `tools/art-preview/correo.py`, arte real horneado) y `correo-sonidos.wav`; sello visible «estilo 8-oct · estación de correo».
+- **Código retirado:** el vuelo (`PilotContract` ya no se usa aquí), `ShipShield`, los asteroides, los planetas-puerto, la radio cada 30 s, los parecidos de color, las dos dificultades y las láminas del vuelo (`correo-escudo.png` y
+  `correo-estelar.png` quedan solo como historia).
+- **Dudas abiertas para Ricardo:** (1) el factor 0,5 de la migración; (2) si quiere que Correo tenga Reto; (3) el tutorial: ¿explica bastante el reloj tapado?; (4) la frase del consejo «imagínate haciendo el encargo» (viene de la intención de
+  implementación, pero no es un truco que él haya revisado).

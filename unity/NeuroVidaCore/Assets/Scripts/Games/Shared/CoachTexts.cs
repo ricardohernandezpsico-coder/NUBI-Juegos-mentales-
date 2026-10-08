@@ -109,6 +109,18 @@ namespace NeuroVida.Games.Shared
             public const string Row = "Aquí se cuenta cuántas veces fuiste directo";
         }
 
+        /// <summary>La estación de correo (pantalla: la hoja de encargos, la cinta con la carta, la caja fuerte, el reloj tapado y el faro).</summary>
+        public static class Correo
+        {
+            public const string First = "Toca el buzón del sello";
+            public const string Sheet = "Esto te piden hoy. Durante el día no lo verás";
+            public const string Gold = "¡Esta es la del encargo! A la caja fuerte";
+            public const string Clock = "Hay un encargo con hora: toca el reloj para mirarla";
+            public const string Hour = "Aquí está la hora del día";
+            public const string Beacon = "¡Es la hora! Enciende el faro";
+            public const string Show = "El faro guía la nave del correo";
+        }
+
         /// <summary>Todos los textos (con el peor caso de los que cambian según la jugada) para comprobar que caben en el globo.</summary>
         public static IEnumerable<(string Game, string Step, string Text)> All()
         {
@@ -161,6 +173,14 @@ namespace NeuroVida.Games.Shared
             yield return ("parejas", "su pareja", Constelaciones.Partner);
             yield return ("parejas", "línea dorada", Constelaciones.GoldLine);
             yield return ("parejas", "de memoria", Constelaciones.Row);
+
+            yield return ("correo", "buzón", Correo.First);
+            yield return ("correo", "hoja", Correo.Sheet);
+            yield return ("correo", "caja fuerte", Correo.Gold);
+            yield return ("correo", "reloj", Correo.Clock);
+            yield return ("correo", "hora", Correo.Hour);
+            yield return ("correo", "faro", Correo.Beacon);
+            yield return ("correo", "nave", Correo.Show);
             yield return ("bodega", "empezar", Bodega.Begin);
             yield return ("bodega", "esclusa", Bodega.Watch);
             yield return ("bodega", "así quedó", Bodega.Reveal);

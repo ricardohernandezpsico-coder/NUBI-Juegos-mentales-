@@ -33,7 +33,7 @@ una sola matriz lógica. Este documento revisa lo que hay hoy, propone la regla 
 | 3 | La edad cambia la tasa de aciertos buscada (80% o 85%). | El rating de una persona mayor queda ~⅓ de nivel más abajo que si se midiera a 80%: su "45%" no significaría lo mismo que el de un adulto. Es chico, pero hay que corregirlo para que la regla sea una sola. |
 | 4 | (Hasta el 4-oct) Ruta del Tesoro buscaba 70% de aciertos (perder la ruta costaba una vida). Retirada: hoy ningún juego tiene objetivo propio, pero la corrección sigue disponible (`ownTarget`). | Su rating está medido con otra vara: se corrige con la misma fórmula. |
 | 5 | En un juego adaptativo **los aciertos se mantienen cerca de 8 de 10 por diseño**. | El porcentaje de aciertos NO sirve para mostrar avance ni fortalezas: lo que avanza es el nivel. |
-| 6 | Varias marcas de los juegos estrella dependen del nivel jugado (Aterrizaje: tipo de regla; Rumbo: cantidad de tramos; Correo: encargos; en parte Acoplamiento y Satélites). | Si subes de nivel, la marca puede "empeorar" aunque mejores. La evolución de la marca debe compararse a nivel parecido. Las marcas tipo umbral (tu vistazo, tu freno, tu carga, costo de multitarea) no tienen este problema. |
+| 6 | Varias marcas de los juegos estrella dependen del nivel jugado (Aterrizaje: tipo de regla; Rumbo: cantidad de tramos; Correo: encargos por día; en parte Acoplamiento y Satélites). | Si subes de nivel, la marca puede "empeorar" aunque mejores. La evolución de la marca debe compararse a nivel parecido. Las marcas tipo umbral (tu vistazo, tu freno, tu carga, costo de multitarea) no tienen este problema. |
 | 7 | (Resuelto el 3-oct: ver DDA-comun.md §6.) Secuencia (16 niveles) y Parejas (10 niveles) tenían motores propios y su avance salía del nivel 1-5 antiguo. | Ya usan el DDA común: su escalera normalizada a 0..1, como los demás. |
 | 8 | Con reloj / sin reloj cambia el tiempo disponible en algunos juegos (Acoplamiento 12 s sin reloj, Aterrizaje 10 s). | El mismo nivel es más fácil sin reloj. Ver decisión 3. |
 
@@ -118,7 +118,7 @@ Un solo mecanismo en Unity: A tu medida con **piso** o **techo**. No hay que toc
 | Evaluación inicial | la fija (es su propósito) | no | no |
 
 - **Superado** = después del calentamiento, acertaste al menos lo que buscas "a tu medida" (80%; 85% en mayores),
-  con un mínimo de 12 ensayos (6 rondas en los juegos de rondas largas: Rumbo, Satélites, Correo). Si lo
+  con un mínimo de 12 ensayos (6 rondas en los juegos de rondas largas: Rumbo, Satélites; Correo pide 4 días). Si lo
   lograste con el piso puesto, tu nivel de 8 de 10 está sobre el piso: tu avance sube.
 - **Cómo se mueve el avance**: ya se suaviza (60% la partida, 40% lo anterior). Se agrega un tope de bajada de
   5 puntos por partida: un mal día se nota, pero no borra semanas.
@@ -149,7 +149,7 @@ no haya dos escalas de nombres. La liga conserva sus metales (Bronce…Maestro),
 |---|---|---|
 | DDA común, una escalera | Tinta o Palabra, Carga exacta, Anagramas, Radar, Freno, Aterrizaje, Acoplamiento, Satélites, Rumbo | Directo: piso o techo sobre el rating. |
 | DDA común, objetivo propio | (ninguno hoy; el último fue Ruta del Tesoro, 70%) | Igual, con la corrección de la sección 3. |
-| Dos escaleras | Piloto (pilotaje y señales), Correo (encargos y pilotaje) | El avance es el de la tarea que se mide: Piloto, el promedio de las dos (como hoy); Correo, la de encargos. El piso o techo se aplica a las dos. |
+| Dos escaleras | Piloto (pilotaje y señales) | El avance es el de la tarea que se mide: Piloto, el promedio de las dos (como hoy). (Correo tuvo dos hasta el 8-oct; hoy tiene una sola.) El piso o techo se aplica a las dos. |
 | (Ya no hay motores propios desde el 3-oct) | Secuencia (16 niveles), Parejas (10 niveles) | Pasaron al DDA común: directo, piso o techo sobre el rating, igual que los demás. |
 
 ## 8. Fortalezas
