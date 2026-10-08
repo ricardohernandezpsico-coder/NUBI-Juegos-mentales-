@@ -59,9 +59,6 @@ class RetiredGameScreensTest {
   fun setUp() {
     app = ApplicationProvider.getApplicationContext()
     TestSupport.resetDatabase()
-    runCatching {
-      androidx.work.WorkManager.initialize(app, androidx.work.Configuration.Builder().setExecutor(java.util.concurrent.Executor { it.run() }).build())
-    }
   }
 
   @After

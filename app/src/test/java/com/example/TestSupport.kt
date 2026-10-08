@@ -8,42 +8,37 @@ import org.robolectric.Shadows.shadowOf
 /** Ayudas para las pruebas con Robolectric que crean el ViewModel de verdad (ver GameFlowTest). */
 object TestSupport {
   /**
-   * Regla que repite una prueba (hasta 3 veces, soltando la base entre intentos) si falla con «unable to open database file»: la base de la prueba anterior (o su trabajo de fondo) a veces se cruza
-   * con la siguiente. Solo para pruebas que ya fallaron así sin que el código tuviera culpa; cualquier otro fallo se informa tal cual.
+   * LA forma de preparar la base en las pruebas (todas las que crean el ViewModel, el repositorio o leen la base la llaman en `@Before` y en `@After`): suelta lo de la prueba anterior y deja una base de Room
+   * EN MEMORIA, nueva y vacía, como la que devuelve `NeuroVidaDatabase.getDatabase`. Nada se abre en disco.
+   *
+   * Por qué: antes la base era el archivo `neurovida_database` en la carpeta temporal de Robolectric, que se borra entre pruebas; el trabajo de fondo del repositorio (un flujo de Room que nunca se cancelaba)
+   * o la propia base lo reabrían ya sin carpeta y fallaba, a veces, con «unable to open database file» (sobre todo con la máquina cargada). Una base en memoria no tiene archivo que pueda desaparecer, y el
+   * repositorio de la prueba anterior se cancela aquí para que ningún trabajo viejo siga tocando la base nueva.
    */
-  fun retryOnDbFlake(times: Int = 3): org.junit.rules.TestRule = org.junit.rules.TestRule { base, _ ->
-    object : org.junit.runners.model.Statement() {
-      override fun evaluate() {
-        var last: Throwable? = null
-        repeat(times) {
-          try { base.evaluate(); return }
-          catch (e: Throwable) {
-            var c: Throwable? = e
-            var flake = false
-            while (c != null) { if (c is android.database.sqlite.SQLiteCantOpenDatabaseException) flake = true; c = c.cause }
-            if (!flake) throw e
-            last = e
-            resetDatabase()
-            Thread.sleep(300)
-          }
-        }
-        throw last!!
-      }
+  fun resetDatabase() {
+    closeAppRepository()
+    val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+    val db = androidx.room.Room.inMemoryDatabaseBuilder(context, NeuroVidaDatabase::class.java).allowMainThreadQueries().build()
+    NeuroVidaDatabase.setInstanceForTesting(db)
+    // los recordatorios (WorkManager) no se usan en las pruebas del ViewModel: ver CognitiveReminderWorker.disabledForTests
+    com.example.notification.CognitiveReminderWorker.disabledForTests = true
+    resetWorkManager()
+  }
+
+  /** Cancela el trabajo de fondo del repositorio de la aplicación de la prueba (el que usan los ViewModel), si ya se creó. */
+  private fun closeAppRepository() {
+    runCatching {
+      val app = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>() as? com.example.NeuroVidaApplication ?: return
+      val field = com.example.NeuroVidaApplication::class.java.getDeclaredField("repository\$delegate")
+      field.isAccessible = true
+      val lazy = field.get(app) as? Lazy<*> ?: return
+      if (lazy.isInitialized()) (lazy.value as? com.example.data.NeuroVidaRepository)?.close()
     }
   }
 
-  /**
-   * La base de datos es un singleton que guarda el contexto de la primera prueba; Robolectric borra los archivos entre
-   * pruebas, así que hay que soltarlo o la segunda prueba usaría una base ya cerrada.
-   */
-  fun resetDatabase() {
-    val field = NeuroVidaDatabase::class.java.getDeclaredField("INSTANCE")
-    field.isAccessible = true
-    (field.get(null) as? NeuroVidaDatabase)?.let { runCatching { it.close() } }
-    field.set(null, null)
-    resetWorkManager()
-    // La carpeta de bases de datos de la prueba puede haber desaparecido (Robolectric la limpia entre pruebas): sin ella la base no se puede abrir.
-    runCatching { androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>().getDatabasePath("neurovida_database").parentFile?.mkdirs() }
+  /** Cancela el trabajo de fondo de un repositorio que la prueba creó por su cuenta (`NeuroVidaRepository(app)`); va en el `@After`, antes de [resetDatabase]. */
+  fun release(repository: com.example.data.NeuroVidaRepository) {
+    runCatching { repository.close() }
   }
 
   /**

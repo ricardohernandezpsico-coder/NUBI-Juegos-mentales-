@@ -7,6 +7,8 @@ import com.example.viewmodel.NeuroVidaViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -15,6 +17,15 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class ExampleRobolectricTest {
+  @Before
+  fun setUp() {
+    TestSupport.resetDatabase()
+  }
+
+  @After
+  fun tearDown() {
+    TestSupport.resetDatabase()
+  }
 
   @Test
   fun `read string from context`() {
@@ -179,19 +190,27 @@ class ExampleRobolectricTest {
   @Test
   fun `workmanager reminder schedules without error`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
-    val config = androidx.work.Configuration.Builder()
-      .setMinimumLoggingLevel(android.util.Log.DEBUG)
-      .setExecutor(java.util.concurrent.Executors.newSingleThreadExecutor())
-      .build()
+    // Esta es LA prueba que usa WorkManager de verdad (las del ViewModel lo tienen apagado, ver TestSupport): lo enciende mientras corre y lo deja como estaba.
+    val before = com.example.notification.CognitiveReminderWorker.disabledForTests
+    com.example.notification.CognitiveReminderWorker.disabledForTests = false
     try {
-      androidx.work.WorkManager.initialize(context, config)
-    } catch (_: Exception) {}
+      TestSupport.resetWorkManager()
+      val config = androidx.work.Configuration.Builder()
+        .setMinimumLoggingLevel(android.util.Log.DEBUG)
+        .setExecutor(java.util.concurrent.Executors.newSingleThreadExecutor())
+        .build()
+      try {
+        androidx.work.WorkManager.initialize(context, config)
+      } catch (_: Exception) {}
 
-    com.example.notification.CognitiveReminderWorker.scheduleDailyReminder(context, 19, 0)
-    val workManager = androidx.work.WorkManager.getInstance(context)
-    val workInfos = workManager.getWorkInfosForUniqueWork(com.example.notification.CognitiveReminderWorker.WORK_NAME).get()
-    assertNotNull(workInfos)
-    assertTrue(workInfos.isNotEmpty())
+      com.example.notification.CognitiveReminderWorker.scheduleDailyReminder(context, 19, 0)
+      val workManager = androidx.work.WorkManager.getInstance(context)
+      val workInfos = workManager.getWorkInfosForUniqueWork(com.example.notification.CognitiveReminderWorker.WORK_NAME).get()
+      assertNotNull(workInfos)
+      assertTrue(workInfos.isNotEmpty())
+    } finally {
+      TestSupport.resetWorkManager()
+      com.example.notification.CognitiveReminderWorker.disabledForTests = before
+    }
   }
 }
-

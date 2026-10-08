@@ -120,7 +120,16 @@ class CognitiveReminderWorker(
     const val NOTIFICATION_REQUEST_CODE = 2001
     const val WORK_NAME = "neurovida_daily_cognitive_reminder"
 
+    /**
+     * Solo para pruebas: con `true` los tres puntos de entrada de abajo no hacen nada (no tocan WorkManager). Las pruebas del ViewModel no necesitan recordatorios y WorkManager abre su propia base en archivo
+     * y trabaja en hilos propios, que a veces fallaban («unable to open database file») cuando Robolectric borraba la carpeta temporal. En producción siempre es `false`. Ver TestSupport.
+     */
+    @androidx.annotation.VisibleForTesting
+    @Volatile
+    var disabledForTests = false
+
     fun scheduleDailyReminder(context: Context, hour: Int = 19, minute: Int = 0) {
+      if (disabledForTests) return
       val now = Calendar.getInstance()
       val target = Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, hour)
@@ -152,12 +161,14 @@ class CognitiveReminderWorker(
     }
 
     fun triggerImmediateTestReminder(context: Context) {
+      if (disabledForTests) return
       val workRequest = OneTimeWorkRequestBuilder<CognitiveReminderWorker>()
         .build()
       WorkManager.getInstance(context).enqueue(workRequest)
     }
 
     fun cancelReminder(context: Context) {
+      if (disabledForTests) return
       WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
     }
   }

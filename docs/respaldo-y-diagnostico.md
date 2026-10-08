@@ -30,6 +30,17 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   versión exportada en `app/schemas/`. Al subir `version`: entidad → `Migration(N, N+1)` en `NeuroVidaDatabase.MIGRATIONS`
   → compilar (genera `schemas/<N+1>.json`) → correr las pruebas. Los esquemas van en los assets de la variante debug
   (solo para esta prueba; la versión de tienda no los lleva).
+- **Pruebas con base de datos (8-oct, tarea 45): sin archivos, sin reintentos.** Antes la base de las pruebas con Robolectric era el archivo `neurovida_database` dentro de la carpeta temporal que Robolectric borra entre pruebas, y
+  fallaba sola con «unable to open database file» (con la máquina cargada, ~1 vuelta de cada 2 en el bucle de medición); se tapaba con reintentos. Ahora, **toda prueba que cree el `NeuroVidaViewModel` o el
+  `NeuroVidaRepository` o lea la base** hace esto:
+  - `@Before` y `@After`: `TestSupport.resetDatabase()`. Cierra lo de la prueba anterior, **cancela el repositorio de la aplicación** (su flujo de Room ya no sigue vivo) y deja una base de Room **en memoria**, nueva y vacía,
+    fijada con la costura `NeuroVidaDatabase.setInstanceForTesting` (solo pruebas; en producción nadie la llama). Una base en memoria no tiene archivo que pueda desaparecer.
+  - Si la prueba crea su propio `NeuroVidaRepository(app)`: `TestSupport.release(repo)` en el `@After`, antes de `resetDatabase()`. Si crea ViewModels: `TestSupport.release(*viewModels)`.
+  - **WorkManager queda apagado** en esas pruebas (`CognitiveReminderWorker.disabledForTests = true`, lo pone `resetDatabase()`): WorkManager abre su propia base en archivo y trabaja en hilos propios. Ya no hace falta
+    `WorkManager.initialize` ni crear carpetas a mano. La única prueba que usa WorkManager de verdad (`ExampleRobolectricTest`, «workmanager reminder schedules») lo enciende mientras corre y lo deja como estaba.
+  - `NoDiskDatabaseGuardTest` es el guardián: comprueba que la base de las pruebas es en memoria y sin archivo, y revisa el código de las pruebas: una que use la base, el repositorio o el ViewModel sin `TestSupport.resetDatabase()`,
+    o que abra `Room.databaseBuilder(` en archivo, falla con su nombre.
+  - Para medir una prueba sospechosa: bucle de `./gradlew.bat :app:testDebugUnitTest --tests "*Nombre" --rerun` (30 vueltas), con carga de CPU en paralelo (otra compilación) para imitar a IL2CPP.
 - **Verificación automática** (`.github/workflows/verificar.yml`, `tools/unity-falso.sh`): en cada push y pull request
   GitHub compila el C# de los juegos sin Unity y compila la app con sus pruebas Kotlin (con un unityLibrary falso).
   Un ✗ rojo en el commit = algo no compila o una prueba falló. NO corre las pruebas de Unity, el arranque de los 22

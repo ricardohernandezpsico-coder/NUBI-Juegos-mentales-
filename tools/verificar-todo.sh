@@ -156,19 +156,10 @@ fi
 T=$SECONDS
 cd "$REPO"
 GRADLE_OK=0
-for INTENTO in 1 2 3; do
-  if ./gradlew.bat testDebugUnitTest assembleDebug --console=plain > "$RESULTS/v-5-gradle.log" 2>&1; then GRADLE_OK=1; break; fi
-  # Las pruebas con Robolectric que usan la base de datos (RetiredBitacoraTest, ConstelacionesRecordTest...) a veces fallan solas con «unable to open database file» cuando la máquina va cargada (Gradle compila IL2CPP
-  # al mismo tiempo): una carrera entre el hilo de la base y la limpieza de la prueba, que no es un error del código (se vio también sin ningún cambio). Si TODAS las pruebas que fallaron fallaron por eso, se repite
-  # (hasta 3 veces); cualquier otro fallo, o un error de compilación, se informa tal cual.
-  NFALLO="$(grep -ac " > .* FAILED$" "$RESULTS/v-5-gradle.log")"
-  NCANTOPEN="$(grep -ac "^    android.database.sqlite.SQLiteCantOpenDatabaseException" "$RESULTS/v-5-gradle.log")"
-  if [ "$NFALLO" -gt 0 ] && [ "$NFALLO" = "$NCANTOPEN" ] && ! grep -aq "^e: " "$RESULTS/v-5-gradle.log" && [ "$INTENTO" -lt 3 ]; then
-    echo "*** AVISO: $NFALLO prueba(s) fallaron solo por la base de datos de la prueba (conocido); se repite (intento $((INTENTO + 1)) de 3)"
-    continue
-  fi
-  break
-done
+# Sin reintentos: las pruebas con base de datos usan una base EN MEMORIA (TestSupport.resetDatabase) y ya no fallan solas con «unable to open database file» (tarea 45, 8-oct).
+# Si una prueba falla, es un fallo real y se informa tal cual.
+# GRADLE_TEST_EXTRA="--rerun" fuerza a correr de verdad las pruebas Kotlin (sin esto Gradle puede darlas por buenas desde su caché si nada cambió)
+if ./gradlew.bat testDebugUnitTest ${GRADLE_TEST_EXTRA:-} assembleDebug --console=plain > "$RESULTS/v-5-gradle.log" 2>&1; then GRADLE_OK=1; fi
 [ "$GRADLE_OK" = 1 ] || fallo "5 Gradle" "compilacion o pruebas Kotlin" "$RESULTS/v-5-gradle.log"
 KT="$(cat app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null | grep -o '<testsuite [^>]*' | sed -n 's/.* tests="\([0-9]*\)".* failures="\([0-9]*\)".*/\1 \2/p' | awk '{t+=$1; f+=$2} END {print t+0" "f+0}')"
 linea "5 Gradle" "OK ${KT% *} pruebas Kotlin, ${KT#* } fallos, APK compilado" "$((SECONDS - T))"

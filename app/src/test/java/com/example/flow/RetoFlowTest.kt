@@ -22,7 +22,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class RetoFlowTest {
-  @get:org.junit.Rule val retryOnDbFlake = TestSupport.retryOnDbFlake()
 
   private lateinit var app: Application
 

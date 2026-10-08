@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.data.local.*
 import com.example.model.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
@@ -18,6 +19,12 @@ class NeuroVidaRepository(
   private val database: NeuroVidaDatabase = NeuroVidaDatabase.getDatabase(context)
 ) {
   private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+  /** Cancela el trabajo de fondo del repositorio (lo que sigue leyendo la base). Solo lo usan las pruebas, al terminar cada una; la app vive con el proceso. */
+  @androidx.annotation.VisibleForTesting
+  fun close() {
+    repositoryScope.cancel()
+  }
   private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
   private val gameResultDao = database.gameResultDao()

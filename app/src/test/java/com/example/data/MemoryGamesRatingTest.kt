@@ -38,6 +38,7 @@ class MemoryGamesRatingTest {
 
   @After
   fun tearDown() {
+    TestSupport.release(repo)             // cancela su trabajo de fondo ANTES de soltar la base
     TestSupport.resetDatabase()
   }
 

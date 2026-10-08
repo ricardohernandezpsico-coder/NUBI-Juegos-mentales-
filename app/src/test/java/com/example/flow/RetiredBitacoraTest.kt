@@ -55,7 +55,6 @@ import java.util.Locale
 @Config(qualifiers = "w412dp-h915dp", sdk = [36])
 class RetiredBitacoraTest {
   @get:Rule val composeTestRule = createComposeRule()
-  @get:Rule val retryOnDbFlake = TestSupport.retryOnDbFlake()
 
   private lateinit var app: Application
   private val old = "bitacora"
@@ -65,13 +64,6 @@ class RetiredBitacoraTest {
   fun setUp() {
     app = ApplicationProvider.getApplicationContext()
     TestSupport.resetDatabase()
-    // WorkManager abre su propia base en segundo plano apenas se inicializa; si la carpeta de bases de datos de la prueba todavía no existe (pasa cuando todo corre rápido), falla con
-    // «unable to open database file» y la prueba lo hereda («WM.task-1: The file system on the device is in a bad state»). Se crea antes.
-    app.getDatabasePath("neurovida_database").parentFile?.mkdirs()
-    app.noBackupFilesDir?.mkdirs()           // WorkManager guarda su base ahí
-    runCatching {
-      androidx.work.WorkManager.initialize(app, androidx.work.Configuration.Builder().setExecutor(java.util.concurrent.Executor { it.run() }).build())
-    }
   }
 
   private val viewModels = mutableListOf<NeuroVidaViewModel>()
@@ -89,16 +81,8 @@ class RetiredBitacoraTest {
 
   private fun today() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-  /** Una base que quedó atada a la prueba anterior (su ViewModel sigue vivo un momento y la reabre) da «unable to open database file»: se suelta y se reintenta (igual que en [RetiredGameTest]). */
-  private fun <T> withFreshDb(block: () -> T): T {
-    repeat(3) {
-      try { return block() } catch (e: android.database.sqlite.SQLiteCantOpenDatabaseException) { TestSupport.resetDatabase(); Thread.sleep(250) }
-    }
-    return block()
-  }
-
   /** Un teléfono con lo que dejó Bitácora: 3 partidas, su avance, su misión de hoy a medias, una medida `recall` y un camino de HOY que la nombra. */
-  private fun seedOldData() = withFreshDb { seedOldDataOnce() }
+  private fun seedOldData() = seedOldDataOnce()
 
   private fun seedOldDataOnce() = runBlocking {
     val now = System.currentTimeMillis()

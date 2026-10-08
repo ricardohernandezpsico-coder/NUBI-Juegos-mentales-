@@ -20,7 +20,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class ConstelacionesRecordTest {
-  @get:org.junit.Rule val retryOnDbFlake = TestSupport.retryOnDbFlake()
 
   private lateinit var app: Application
   private lateinit var repo: NeuroVidaRepository
@@ -38,6 +37,7 @@ class ConstelacionesRecordTest {
 
   @After
   fun tearDown() {
+    TestSupport.release(repo)             // cancela su trabajo de fondo ANTES de soltar la base
     TestSupport.resetDatabase()
   }
 

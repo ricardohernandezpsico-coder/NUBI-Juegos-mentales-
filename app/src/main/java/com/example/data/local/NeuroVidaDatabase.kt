@@ -30,6 +30,19 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
     @Volatile
     private var INSTANCE: NeuroVidaDatabase? = null
 
+    /**
+     * Solo para pruebas: fija la instancia que devuelve [getDatabase] (una base EN MEMORIA, ver TestSupport) y cierra la anterior; `null` la suelta. En producción nadie lo llama: la base sigue siendo el archivo
+     * `neurovida_database`. Existe porque una base en archivo dentro de la carpeta temporal de Robolectric (que se borra entre pruebas) fallaba a veces con «unable to open database file».
+     */
+    @androidx.annotation.VisibleForTesting
+    fun setInstanceForTesting(db: NeuroVidaDatabase?) {
+      synchronized(this) {
+        val old = INSTANCE
+        INSTANCE = db
+        if (old != null && old !== db) runCatching { old.close() }
+      }
+    }
+
     // Auditoría (21-sep, fase 2): antes esto era `.fallbackToDestructiveMigration()`
     // sin condición -- CUALQUIER futuro cambio de esquema (agregar una columna, una
     // tabla, etc.) habría borrado streaks/scores/rangos/historial de todos los

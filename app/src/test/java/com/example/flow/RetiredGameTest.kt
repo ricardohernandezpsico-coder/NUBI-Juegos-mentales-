@@ -60,12 +60,6 @@ class RetiredGameTest {
     app = ApplicationProvider.getApplicationContext()
     old = "cambiochip"
     TestSupport.resetDatabase()
-    // El ViewModel agenda el recordatorio con WorkManager; sin iniciarlo, esa excepción suelta hace fallar a la regla de Compose («uncaught exceptions before the test started»).
-    app.getDatabasePath("neurovida_database").parentFile?.mkdirs()
-    app.noBackupFilesDir?.mkdirs()           // WorkManager guarda su base ahí (si la carpeta no existe todavía, falla con «unable to open database file»)
-    runCatching {
-      androidx.work.WorkManager.initialize(app, androidx.work.Configuration.Builder().setExecutor(java.util.concurrent.Executor { it.run() }).build())
-    }
   }
 
   @After
@@ -76,15 +70,7 @@ class RetiredGameTest {
   private fun db() = NeuroVidaDatabase.getDatabase(app)
 
   /** Un teléfono con lo que dejó Cambio de Chip: 3 partidas (la última ayer), su avance, su medida en `skill` y un camino de HOY que lo nombra. */
-  /** Una base que quedó atada a la prueba anterior (su ViewModel sigue vivo un momento y la reabre) da «unable to open database file»: se suelta y se reintenta. */
-  private fun <T> withFreshDb(block: () -> T): T {
-    repeat(3) {
-      try { return block() } catch (e: android.database.sqlite.SQLiteCantOpenDatabaseException) { TestSupport.resetDatabase(); Thread.sleep(250) }
-    }
-    return block()
-  }
-
-  private fun seedOldData(todayWith: String = "$old,calculo,acoplamiento", completed: Int = 0) = withFreshDb { seedOldDataOnce(todayWith, completed) }
+  private fun seedOldData(todayWith: String = "$old,calculo,acoplamiento", completed: Int = 0) = seedOldDataOnce(todayWith, completed)
 
   private fun seedOldDataOnce(todayWith: String, completed: Int) = runBlocking {
     val now = System.currentTimeMillis()
@@ -139,7 +125,7 @@ class RetiredGameTest {
   @Test
   fun `la racha y el total de partidas cuentan los dias jugados, los logros no cuentan el juego retirado`() {
     seedOldData()
-    val history = withFreshDb { runBlocking { db().gameResultDao().getAllResultsSync().map { it.toDomain() } } }
+    val history = runBlocking { db().gameResultDao().getAllResultsSync().map { it.toDomain() } }
     val stats = computeAchievementStats(history, mapOf(old to 5000, "calculo" to 120))
     // 4 partidas y 4 días seguidos? ayer, anteayer, hace 3 días (los de Cambio de Chip) y hace 5: la racha larga son los 3 de Cambio de Chip
     assertEquals(4, stats.totalGames)
