@@ -63,11 +63,11 @@ jobs:
           grep -a "^e: " gradle-ci.log | sort -u | head -15 | while IFS= read -r l; do echo "::error title=Compilación::${l:0:900}"; done
           grep -a " > .* FAILED$" gradle-ci.log | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Prueba fallida::${l:0:900}"; done
           grep -a -A2 " > .* FAILED$" gradle-ci.log | grep -av " FAILED$" | grep -av "^--" | sort -u | head -15 | while IFS= read -r l; do echo "::error title=Motivo::${l:0:900}"; done
-          grep -a -B2 -A12 "What went wrong" gradle-ci.log | head -40 | while IFS= read -r l; do echo "::warning title=Gradle::${l:0:500}"; done
+          grep -a -B2 -A12 "What went wrong" gradle-ci.log | head -6 | while IFS= read -r l; do echo "::warning title=Gradle::${l:0:500}"; done
           # La traza de cada prueba que falló (primeras líneas de su informe XML: ahí aparecen las excepciones «Suppressed»), también como anotación.
           python3 - <<'PY'
           import glob, html, re
-          suites, fails = [], []
+          suites, fails, stray = [], [], []
           for f in sorted(glob.glob("app/build/test-results/testDebugUnitTest/*.xml")):
               s = open(f, encoding="utf-8", errors="replace").read()
               h = re.search(r'<testsuite name="([^"]+)"[^>]*timestamp="([^"]+)"[^>]*time="([^"]+)"', s)
@@ -75,17 +75,35 @@ jobs:
                   suites.append((h.group(2), h.group(1).split(".")[-1], h.group(3)))
               for m in re.finditer(r'<testcase name="([^"]+)" classname="([^"]+)"[^>]*>\s*<failure message="[^"]*"[^>]*>(.*?)</failure>', s, re.S):
                   fails.append((m.group(2).split(".")[-1], html.unescape(m.group(3)).strip()))
+              for m in re.finditer(r'Exception in thread "([^"]*)" ([^\n]*)\n((?:[^\n]*\n){0,5})', html.unescape(s)):
+                  stray.append((h.group(1).split(".")[-1] if h else f, m.group(1), m.group(2), m.group(3)))
           def enc(t): return t.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
           suites.sort()
-          for cls, body in fails[:4]:
+          names = [x[1] for x in suites]
+          for cls, body in fails[:3]:
               lines = [l.strip() for l in body.splitlines() if l.strip()]
-              print("::error title=Traza de %s::%s" % (cls, " | ".join(lines[:30])[:1500].replace("%", "%25")))
-              if "=== HILOS ===" in body:
-                  print("::error title=Hilos al fallar %s::%s" % (cls, enc(body.split("=== HILOS ===", 1)[1])[:9000]))
-              names = [x[1] for x in suites]
+              out = []
               if cls in names:
                   k = names.index(cls)
-                  print("::warning title=Orden antes de %s::%s" % (cls, " > ".join("%s (%ss)" % (x[1], x[2]) for x in suites[max(0, k - 6):k + 1])))
+                  out.append("ORDEN (los 8 anteriores y esta): " + " > ".join("%s (%ss)" % (x[1], x[2]) for x in suites[max(0, k - 8):k + 1]))
+              hidden = []
+              for n, l in enumerate(lines):
+                  if l.startswith("Suppressed:") or l.startswith("Caused by:"):
+                      hidden.append(" | ".join(lines[n:n + 6]))
+              if hidden:
+                  out.append("OCULTAS: " + " ## ".join(hidden[:4]))
+              out.append("TRAZA: " + " | ".join(lines[:12]))
+              if "=== HILOS ===" in body:
+                  out.append("HILOS:\n" + body.split("=== HILOS ===", 1)[1])
+              print("::error title=Detalle de %s::%s" % (cls, enc("\n".join(out))[:12000]))
+          if stray:
+              seen, rows = set(), []
+              for cls, thread, head, rest in stray:
+                  if head in seen:
+                      continue
+                  seen.add(head)
+                  rows.append("[%s en %s] %s\n%s" % (thread, cls, head, rest))
+              print("::error title=Excepciones sueltas (stderr de las pruebas)::%s" % enc("\n".join(rows[:6]))[:9000])
           PY
       - name: Guardar el informe de pruebas si algo falló
         if: failure()
