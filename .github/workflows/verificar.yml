@@ -51,10 +51,19 @@ jobs:
         # falla, se repite una vez: un fallo real de compilación o de una prueba vuelve a fallar y se informa igual.
         run: |
           for intento in 1 2; do
-            bash ./gradlew :app:testDebugUnitTest --console=plain -Pkotlin.compiler.execution.strategy=daemon && exit 0
+            bash ./gradlew :app:testDebugUnitTest --console=plain -Pkotlin.compiler.execution.strategy=daemon 2>&1 | tee gradle-ci.log
+            [ "${PIPESTATUS[0]}" = 0 ] && exit 0
             echo "::warning::Gradle falló (intento $intento de 2)"
           done
           exit 1
+      - name: Resumen del fallo (queda en las anotaciones, visibles sin iniciar sesión)
+        if: failure()
+        run: |
+          # Los registros de GitHub piden iniciar sesión; las anotaciones no. Aquí se copian los errores de compilación, las pruebas que fallaron y el final del registro de Gradle.
+          grep -a "^e: " gradle-ci.log | sort -u | head -15 | while IFS= read -r l; do echo "::error title=Compilación::${l:0:900}"; done
+          grep -a " > .* FAILED$" gradle-ci.log | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Prueba fallida::${l:0:900}"; done
+          grep -a -A2 " > .* FAILED$" gradle-ci.log | grep -av " FAILED$" | grep -av "^--" | sort -u | head -15 | while IFS= read -r l; do echo "::error title=Motivo::${l:0:900}"; done
+          grep -a -B2 -A12 "What went wrong" gradle-ci.log | head -40 | while IFS= read -r l; do echo "::warning title=Gradle::${l:0:500}"; done
       - name: Guardar el informe de pruebas si algo falló
         if: failure()
         uses: actions/upload-artifact@v6
