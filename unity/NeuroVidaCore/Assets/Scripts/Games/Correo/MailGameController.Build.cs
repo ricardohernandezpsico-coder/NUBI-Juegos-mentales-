@@ -511,7 +511,7 @@ namespace NeuroVida.Games.Correo
 
         private void BuildBrief()
         {
-            _briefDim = MakeImage(_briefLayer, "Dim", DiscSprite.Get());
+            _briefDim = MakeImage(_briefLayer, "Dim", null);
             Stretch(_briefDim.rectTransform);
             _briefDim.color = new Color(Night.r, Night.g, Night.b, 0.94f);
             _briefDim.raycastTarget = false;
@@ -537,7 +537,7 @@ namespace NeuroVida.Games.Correo
 
         private void BuildRecap()
         {
-            _recapDim = MakeImage(_recapLayer, "Dim", DiscSprite.Get());
+            _recapDim = MakeImage(_recapLayer, "Dim", null);
             Stretch(_recapDim.rectTransform);
             _recapDim.color = new Color(Night.r, Night.g, Night.b, 0.94f);
             _recapDim.raycastTarget = false;
@@ -555,7 +555,7 @@ namespace NeuroVida.Games.Correo
 
         private void BuildIntro()
         {
-            _dim = MakeImage(_introLayer, "Dim", DiscSprite.Get());
+            _dim = MakeImage(_introLayer, "Dim", null);
             Stretch(_dim.rectTransform);
             _dim.color = new Color(Night.r, Night.g, Night.b, 0.84f);
             _dim.raycastTarget = false;
@@ -581,7 +581,7 @@ namespace NeuroVida.Games.Correo
 
         private void BuildEnd()
         {
-            _endDim = MakeImage(_endLayer, "Dim", DiscSprite.Get());
+            _endDim = MakeImage(_endLayer, "Dim", null);
             Stretch(_endDim.rectTransform);
             _endDim.color = new Color(3f / 255f, 4f / 255f, 22f / 255f, 0.95f);
             _endDim.raycastTarget = false;

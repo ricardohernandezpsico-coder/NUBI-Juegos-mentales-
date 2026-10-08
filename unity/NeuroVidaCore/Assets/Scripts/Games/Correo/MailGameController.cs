@@ -27,6 +27,10 @@ namespace NeuroVida.Games.Correo
 
         private enum Phase { Idle, Intro, Brief, Play, Recap, Done }
 
+        /// <summary>SOLO EN EL EDITOR, para las capturas de pantalla (<c>verificar-todo.sh --capturas Correo</c>): con esta bandera el juego NO se juega solo ni pasa solo las tarjetas, y un guion (<see cref="EditorShotScript"/>) lo lleva por
+        /// los momentos que se fotografían. En el teléfono es siempre false.</summary>
+        public static bool EditorShotMode;
+
         // ------------------------------------------------------------------ estado
 
         private System.Random _rng;
@@ -205,7 +209,7 @@ namespace NeuroVida.Games.Correo
             while (!_tapped)
             {
                 waited += GameClock.RealDeltaTime;
-                if (GuidedTutorial.AutoPlayGame(waited)) _tapped = true;          // solo en el smoke del Editor
+                if (!EditorShotMode && GuidedTutorial.AutoPlayGame(waited)) _tapped = true;          // solo en el smoke del Editor
                 yield return null;
             }
             _inputOn = false;
@@ -227,7 +231,7 @@ namespace NeuroVida.Games.Correo
             while (!_tapped)
             {
                 waited += GameClock.RealDeltaTime;
-                if (GuidedTutorial.AutoPlayGame(waited)) _tapped = true;
+                if (!EditorShotMode && GuidedTutorial.AutoPlayGame(waited)) _tapped = true;
                 yield return null;
             }
             _inputOn = false;
@@ -298,7 +302,7 @@ namespace NeuroVida.Games.Correo
             while (!_tapped)
             {
                 waited += GameClock.RealDeltaTime;
-                if (GuidedTutorial.AutoPlayGame(waited)) _tapped = true;
+                if (!EditorShotMode && GuidedTutorial.AutoPlayGame(waited)) _tapped = true;
                 yield return null;
             }
             _inputOn = false;
@@ -425,7 +429,7 @@ namespace NeuroVida.Games.Correo
         /// «equivoca» de buzón (así el arranque de prueba pasa por los aciertos, los errores y los resúmenes). En el teléfono no hace nada.</summary>
         private void AutoPlay(float dt)
         {
-            if (!GuidedTutorial.AutoPlayGame(10f) || _day == null || _day.Ended) return;
+            if (EditorShotMode || !GuidedTutorial.AutoPlayGame(10f) || _day == null || _day.Ended) return;
             _botT += dt;
             if (_botT < 0.5f) return;
             _botT = 0f;

@@ -35,6 +35,9 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para el smoke test headless: arranca la versión corta del inicio («Tu punto de partida», <c>assessment</c> de la config).</summary>
         public static bool AssessmentOverride;
 
+        /// <summary>Solo para las capturas (<c>--capturas</c>): la etapa (1..10) con que arranca «La estación de correo» (<c>mail_stage</c> de la config; 0 = la que corresponde).</summary>
+        public static int MailStageOverride;
+
         private void Start()
         {
 #if UNITY_EDITOR
@@ -63,7 +66,8 @@ namespace NeuroVida.Bridge
                     show_tutorial = ShowTutorialOverride,
                     assessment = AssessmentOverride,
                     assessment_step = AssessmentOverride ? 1 : 0,
-                    assessment_total = AssessmentOverride ? 4 : 0
+                    assessment_total = AssessmentOverride ? 4 : 0,
+                    mail_stage = MailStageOverride
                 }
             };
 

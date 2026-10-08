@@ -319,9 +319,9 @@ namespace NeuroVida.Games.Correo
 
         public static readonly string[] Tips =
         {
-            "Truco: repite «cuando vea un lazo, caja fuerte»",
+            "Truco: repite «cuando vea una carta con señal, caja fuerte»",       // no nombra el lazo: las etapas 1 a 4 no lo traen (la app nombra la señal que de verdad se escapó: Mail.tip)
             "Truco: mira el reloj cuando se acerque la hora",
-            "Truco: imagínate haciendo el encargo",
+            "Truco: imagínate tocando el faro cuando llegue la hora",
         };
 
         /// <summary>El consejo del final: rota con el día y los encargos por evento (docs §7).</summary>

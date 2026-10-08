@@ -441,6 +441,16 @@ namespace NeuroVida.Games.Correo.Tests
         }
 
         [Test]
+        public void TheDimBehindEveryPanel_IsASolidRectangleThatCoversTheWholeScreen_NotAnEllipse()
+        {
+            // el fondo de la hoja, el resumen, las tarjetas «NUEVO» y la pantalla final era un disco estirado a la pantalla: una elipse que dejaba ver la estación (el reloj, los buzones) por las esquinas (lo vieron las capturas reales)
+            string build = Read("MailGameController.Build.cs");
+            foreach (var layer in new[] { "_briefLayer", "_recapLayer", "_introLayer", "_endLayer" })
+                StringAssert.Contains("MakeImage(" + layer + ", \"Dim\", null)", build, "el fondo de " + layer + " es un rectángulo liso");
+            StringAssert.DoesNotContain("\"Dim\", DiscSprite", build);
+        }
+
+        [Test]
         public void TheController_UsesOnlyTheGameClock_SoThePauseStopsEverything()
         {
             foreach (var file in ControllerFiles)

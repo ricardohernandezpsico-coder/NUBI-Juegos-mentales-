@@ -16,6 +16,10 @@
 #   --sin-animaciones  smoke de los juegos pedidos (o los 23) con "quitar animaciones" ACTIVO (NUBI_REDUCE_MOTION=1: la config del juego lleva
 #                      reduce_motion=true). Corre solo escena piloto + smoke; no reexporta ni toca Gradle ni instala (el APK es el mismo).
 #   --instalar         al final instala el APK en el telefono (DEVICE, por defecto el de Ricardo).
+#   --capturas <Juego> OPCIONAL, aparte del resto (no corre EditMode, smoke, export ni Gradle): saca CAPTURAS DE PANTALLA REALES del juego en forma
+#                      de telefono (1080x2400) llevandolo por sus momentos clave con un guion, y arma la hoja de contacto (tools/capturas/hoja.py;
+#                      Correo -> docs/previews/correo-estacion.png). Corre Unity SIN -nographics: necesita tarjeta de video y NO sirve en el CI de
+#                      GitHub ni en la nube. Hoy solo Correo tiene guion. Las capturas sueltas quedan en unity/test-results/capturas/<juego>/.
 #
 # El smoke corre en UN solo proceso de Unity (HeadlessPlaymodeSmokeTest.RunList). Si encadenarlos falla en algun juego, ese juego se
 # repite aislado (como antes) antes de dar FALLO, para no confundir un artefacto del encadenado con un error real.
@@ -28,7 +32,7 @@
 # Solo funciona en el PC de Ricardo: una sesion en la nube no tiene Unity ni el SDK.
 set -u
 
-INSTALAR=0; JUEGOS=""; FILTRO=""; SOLO_APP=0; SIN_ANIM=0
+INSTALAR=0; JUEGOS=""; FILTRO=""; SOLO_APP=0; SIN_ANIM=0; CAPTURAS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --instalar) INSTALAR=1 ;;
@@ -36,6 +40,7 @@ while [ $# -gt 0 ]; do
     --filtro-tests) FILTRO="${2:-}"; shift ;;
     --solo-app) SOLO_APP=1 ;;
     --sin-animaciones) SIN_ANIM=1 ;;
+    --capturas) CAPTURAS="${2:-}"; shift ;;
     *) echo "Opcion desconocida: $1"; sed -n 2,3p "$0"; exit 2 ;;
   esac
   shift
@@ -67,6 +72,27 @@ fallo() { # etapa, texto, log
   echo "--- ultimas lineas de $3 ---"; tail -n 15 "$3"
   echo "=== FALLO (total $((SECONDS - T0))s) ==="; exit 1
 }
+
+# --- capturas de pantalla reales (opcional: solo esto, sin el resto de la verificacion)
+if [ -n "$CAPTURAS" ]; then
+  T=$SECONDS
+  "$UNITY" -batchmode -nographics -quit -projectPath "$PROJ" \
+    -executeMethod NeuroVida.Bridge.EditorTools.CreatePilotTestScene.Create -logFile "$RESULTS/v-1-scene.log"
+  [ $? -eq 0 ] || fallo "1 Escena piloto" "no se pudo recrear" "$RESULTS/v-1-scene.log"
+  linea "1 Escena piloto" "OK" "$((SECONDS - T))"
+  T=$SECONDS
+  # SIN -nographics: dibujar necesita la tarjeta de video
+  NUBI_SHOTS_GAMES="$CAPTURAS" "$UNITY" -batchmode -projectPath "$PROJ" \
+    -executeMethod NeuroVida.Bridge.EditorTools.ScreenshotRunner.Run -logFile "$RESULTS/v-capturas.log"
+  grep -aq '\[Capturas\] OK' "$RESULTS/v-capturas.log" || fallo "2 Capturas ($CAPTURAS)" "$(grep -a '\[Capturas\] FALL' "$RESULTS/v-capturas.log" | head -1)" "$RESULTS/v-capturas.log"
+  NCAP="$(grep -a '\[Capturas\] OK' "$RESULTS/v-capturas.log" | head -1)"
+  linea "2 Capturas ($CAPTURAS)" "OK ${NCAP#*-- }" "$((SECONDS - T))"
+  T=$SECONDS
+  PY="python"; command -v python >/dev/null 2>&1 || PY="py -3"
+  $PY "$REPO/tools/capturas/hoja.py" "$CAPTURAS" > "$RESULTS/v-capturas-hoja.log" 2>&1 || fallo "3 Hoja de contacto" "no se pudo armar" "$RESULTS/v-capturas-hoja.log"
+  linea "3 Hoja de contacto" "$(tail -n 1 "$RESULTS/v-capturas-hoja.log")" "$((SECONDS - T))"
+  echo "=== CAPTURAS OK (total $((SECONDS - T0))s) ==="; exit 0
+fi
 
 if [ "$SOLO_APP" = 0 ]; then
   T=$SECONDS

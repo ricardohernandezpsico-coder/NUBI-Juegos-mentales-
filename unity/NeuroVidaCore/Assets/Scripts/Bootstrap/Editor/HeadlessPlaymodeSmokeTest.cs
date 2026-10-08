@@ -142,7 +142,7 @@ namespace NeuroVida.Bridge.EditorTools
         };
 
         /// <summary>
-        /// Una corrida «Pantalla*» por juego, en forma de TELÉFONO (lienzo de 1080x2400): la primera pantalla jugable y la pausa (el primer panel con botones), con la guardia de textos <see cref="ScanTextPlacement"/>. El Editor sin
+        /// Una corrida «Pantalla*» por juego SIN tutorial, en forma de TELÉFONO (lienzo de 1080x2400): la primera pantalla jugable y la pausa (el primer panel con botones), con la guardia de textos <see cref="ScanTextPlacement"/>. El Editor sin
         /// gráficos es una ventana de 640x480 (4:3), donde la disposición de un juego pensado para teléfono no cabe: ahí la guardia no sirve, por eso va aparte. «PantallaCorreo» dura más (40 s) y corre en dos formas
         /// (20:9 y 16:9) para ver la hoja, la partida y el resumen con sus botones.
         /// </summary>
@@ -150,10 +150,14 @@ namespace NeuroVida.Bridge.EditorTools
 
         private static (string Name, string Id, float Seconds)[] BuildPantallaCatalog()
         {
+            // los juegos con tutorial ya corren en forma de teléfono (3 formas) con la guardia de textos: su primera pantalla jugable y la pausa se ven ahí, sin repetirlos aquí (salvo Correo, que tiene hoja, resumen y pantalla final propios)
+            var withTutorial = new HashSet<string>();
+            foreach (var g in Catalog) if (g.Name.StartsWith("Tutorial")) withTutorial.Add(g.Id ?? "secuencia");
             var list = new List<(string, string, float)>();
             foreach (var g in Catalog)
             {
                 if (g.Name.StartsWith("Tutorial") || g.Name.StartsWith("Corto")) continue;
+                if (g.Name != "Correo" && withTutorial.Contains(g.Id ?? "secuencia")) continue;
                 list.Add(("Pantalla" + g.Name, g.Id, g.Name == "Correo" ? 40f : Mathf.Min(g.Seconds, 9f)));
             }
             return list.ToArray();
@@ -265,7 +269,9 @@ namespace NeuroVida.Bridge.EditorTools
             _screenLogged = false;
             _textGuardSeen.Clear();
             _guardPrev.Clear();
+            _guardOk.Clear();
             _textGuardAt = 0.0;
+            _entryStartAt = EditorApplication.timeSinceStartup;
             _pauseShowStage = 0;
             NeuroVida.Games.Shared.NubiCoach.AuditEnabled = _current.Name.StartsWith("Tutorial");
             NeuroVida.Games.Shared.NubiCoach.AuditGame = _current.Id ?? "secuencia";
@@ -404,19 +410,40 @@ namespace NeuroVida.Bridge.EditorTools
 
         // ------------------------------------------------------------------ guardia de textos: ¿cada texto está donde se ve?
 
-        /// <summary>Los juegos donde la guardia de textos hace FALLAR el smoke. En los demás solo avisa («AVISO guardia de textos»): sus textos fuera de lugar se anotan y se arreglan aparte; cuando un juego quede limpio, se suma aquí.</summary>
-        private static readonly string[] TextGuardStrictGames = { "correo" };
+        /// <summary>
+        /// Textos que a propósito se dibujan FUERA de la imagen de la que cuelgan (rótulos de una barra o de una bandera): (juego, final de la ruta del objeto). Solo se exceptúa la regla del padre; la de «dentro de la pantalla» sigue valiendo.
+        /// Cualquier otro texto fuera de lugar, en cualquier juego, hace FALLAR el smoke.
+        /// </summary>
+        private static readonly (string Id, string PathEnd)[] TextGuardExceptions =
+        {
+            ("aterrizaje", "Ruler/Min"),     // los extremos «0» y «10» de la regla, debajo de la barra
+            ("aterrizaje", "Ruler/Max"),
+            ("aterrizaje", "Flag/Label"),    // el número de la bandera, arriba de ella
+        };
+
+        private static bool GuardIsException(string rule, UnityEngine.UI.Text t)
+        {
+            if (!rule.StartsWith("fuera de su padre")) return false;
+            string path = GuardPath(t.transform);
+            foreach (var e in TextGuardExceptions)
+                if (e.Id == (_current.Id ?? "secuencia") && path.EndsWith(e.PathEnd, StringComparison.Ordinal)) return true;
+            return false;
+        }
 
         private static readonly HashSet<string> _textGuardSeen = new HashSet<string>();
         private static double _textGuardAt;
+        private static double _entryStartAt;
         private static readonly Vector3[] _guardCorners = new Vector3[4];
         private static readonly Dictionary<string, Rect> _guardPrev = new Dictionary<string, Rect>();
         private static readonly HashSet<string> _guardNow = new HashSet<string>();
+        /// <summary>Texto → huella de lo que se revisó (su rect, su texto y el rect del padre) la última vez que estaba bien: mientras no cambie, no se vuelve a medir (medir el texto es lo caro).</summary>
+        private static readonly Dictionary<int, int> _guardOk = new Dictionary<int, int>();
 
         /// <summary>Un texto solo se informa si queda fuera de lugar en DOS revisiones seguidas (0,4 s) y en el mismo sitio (≤ 2 unidades): lo que está animándose (una burbuja que entra, un número que crece) pasa por posiciones raras de camino y no es el error;
         /// un texto mal posicionado se queda quieto donde está.</summary>
         private static void GuardCandidate(bool strict, string rule, UnityEngine.UI.Text t, Rect drawn, Rect screen, string shape, Rect? parent)
         {
+            if (GuardIsException(rule, t)) return;
             string key = rule + "|" + t.GetInstanceID();
             _guardNow.Add(key);
             if (_guardPrev.TryGetValue(key, out var prev) && Mathf.Abs(prev.x - drawn.x) <= 2f && Mathf.Abs(prev.y - drawn.y) <= 2f && Mathf.Abs(prev.width - drawn.width) <= 2f)
@@ -470,15 +497,15 @@ namespace NeuroVida.Bridge.EditorTools
         /// Dos reglas sobre todo <c>Text</c> activo, con texto y visible (opacidad &gt; 0), solo en las corridas en forma de teléfono («Tutorial*» y «Pantalla*»; en la ventana de 640x480 un juego de teléfono no cabe y daría falsos avisos):
         /// (1) lo que se dibuja del texto cae DENTRO de la pantalla (el lienzo raíz); (2) si su padre es un <c>Image</c> (un botón o una píldora), el centro de lo dibujado cae dentro del rect del padre. Atrapa el error de posicionar
         /// un hijo con coordenadas de la capa (queda desplazado y el botón se ve vacío), que las pruebas de lógica no ven. Se revisa cada 0,4 s durante toda la corrida (la primera pantalla jugable, la pausa y cada panel con botón que el
-        /// juego abra). Cada texto se informa una vez por corrida, con el juego, el objeto y la posición. Hace FALLAR el smoke en <see cref="TextGuardStrictGames"/>; en los demás solo avisa.
+        /// juego abra). Cada texto se informa una vez por corrida, con el juego, el objeto y la posición. Hace FALLAR el smoke en cualquier juego, salvo las excepciones de <see cref="TextGuardExceptions"/>.
         /// </summary>
         private static void ScanTextPlacement()
         {
-            if (_currentHeight <= 0) return;
+            if (_currentHeight <= 0 || Environment.GetEnvironmentVariable("NUBI_TEXT_GUARD") == "0") return;
             double now = EditorApplication.timeSinceStartup;
-            if (now - _textGuardAt < 0.4) return;
+            if (now - _textGuardAt < 0.5) return;
             _textGuardAt = now;
-            bool strictGame = _current.Id != null && Array.IndexOf(TextGuardStrictGames, _current.Id) >= 0;
+            const bool strictGame = true;
             string shape = "1080x" + _currentHeight;
             _guardNow.Clear();
             foreach (var t in UnityEngine.Object.FindObjectsOfType<UnityEngine.UI.Text>())
@@ -488,21 +515,28 @@ namespace NeuroVida.Bridge.EditorTools
                 var canvas = t.canvas != null ? t.canvas.rootCanvas : null;
                 if (canvas == null) continue;
                 var screen = GuardWorldRect((RectTransform)canvas.transform);
+                var parent = t.transform.parent as RectTransform;
+                bool inImage = parent != null && parent.GetComponent<UnityEngine.UI.Image>() != null && parent.rect.width > 0f;
+                var raw = GuardWorldRect(t.rectTransform);
+                var pr = inImage ? GuardWorldRect(parent) : default(Rect);
+                int sig = unchecked((((Mathf.RoundToInt(raw.x) * 31 + Mathf.RoundToInt(raw.y)) * 31 + Mathf.RoundToInt(raw.width)) * 31 + Mathf.RoundToInt(raw.height)) * 31 + t.text.GetHashCode() + (inImage ? Mathf.RoundToInt(pr.x) * 17 + Mathf.RoundToInt(pr.y) * 13 + Mathf.RoundToInt(pr.width) * 7 + Mathf.RoundToInt(pr.height) : 0) + t.fontSize * 3);
+                int id = t.GetInstanceID();
+                if (_guardOk.TryGetValue(id, out var okSig) && okSig == sig) continue;          // no cambió desde que estaba bien
                 var drawn = GuardTextRect(t);
                 float tol = 0.004f * screen.width + 1f;
+                bool flagged = false;
                 // (1) dentro de la pantalla
                 if (drawn.xMin < screen.xMin - tol || drawn.xMax > screen.xMax + tol || drawn.yMin < screen.yMin - tol || drawn.yMax > screen.yMax + tol)
-                    GuardCandidate(strictGame, "fuera de la pantalla", t, drawn, screen, shape, null);
+                { GuardCandidate(strictGame, "fuera de la pantalla", t, drawn, screen, shape, null); flagged = true; }
                 // (2) dentro de su padre, si el padre es un botón o una píldora
-                var parent = t.transform.parent as RectTransform;
-                if (parent != null && parent.GetComponent<UnityEngine.UI.Image>() != null && parent.rect.width > 0f)
+                if (inImage)
                 {
-                    var pr = GuardWorldRect(parent);
                     var center = drawn.center;
                     float ptol = 0.002f * screen.width + 1f;
                     if (center.x < pr.xMin - ptol || center.x > pr.xMax + ptol || center.y < pr.yMin - ptol || center.y > pr.yMax + ptol)
-                        GuardCandidate(strictGame, "fuera de su padre «" + parent.name + "»", t, drawn, screen, shape, pr);
+                    { GuardCandidate(strictGame, "fuera de su padre «" + parent.name + "»", t, drawn, screen, shape, pr); flagged = true; }
                 }
+                if (flagged) _guardOk.Remove(id); else _guardOk[id] = sig;
             }
             var gone = new List<string>();
             foreach (var k in _guardPrev.Keys) if (!_guardNow.Contains(k)) gone.Add(k);
@@ -529,13 +563,14 @@ namespace NeuroVida.Bridge.EditorTools
 
         private static bool _screenLogged;
         private static readonly HashSet<int> _auditCanvases = new HashSet<int>();
+        internal static void ResetAuditCanvases() => _auditCanvases.Clear();
 
         /// <summary>
         /// La ventana del Editor sin gráficos mide 640x480 y no se puede cambiar: para revisar el tutorial en otras formas de pantalla, el lienzo de cada juego (de pantalla completa, con su
         /// <c>CanvasScaler</c> de 1080 de ancho) se pasa a «espacio del mundo» con 1080 x <paramref name="height"/> unidades, que es justo el área que vería el juego en ese teléfono. Se hace en cuanto aparece,
         /// antes de que el juego calcule su disposición.
         /// </summary>
-        private static void ForceAuditCanvasSize(int height)
+        internal static void ForceAuditCanvasSize(int height)
         {
             foreach (var canvas in UnityEngine.Object.FindObjectsOfType<Canvas>())
             {
@@ -602,9 +637,10 @@ namespace NeuroVida.Bridge.EditorTools
                 if (NeuroVida.Games.Shared.NubiCoach.AuditEnabled) { if (played < 8 || (played < 100 && !CoachAuditReachedEnd())) return; }
                 else if (played < _current.Seconds) return;
                 if (_currentHeight == 0 && !PauseCheckDone()) return;  // abre la pausa y comprueba que responde (no en el lienzo de revisión: ahí no hay dónde tocar)
-                if (_currentHeight > 0 && _current.Name.StartsWith("Pantalla") && !PauseShowDone()) return;      // en forma de teléfono solo se ABRE la pausa (para que la guardia de textos vea sus botones)
+                if (_currentHeight > 0 && (_current.Name.StartsWith("Pantalla") || (_current.Name.StartsWith("Tutorial") && _currentHeight == 2400)) && !PauseShowDone()) return;      // en forma de teléfono solo se ABRE la pausa (para que la guardia de textos vea sus botones)
 
                 _listPlaying = false;
+                Debug.Log($"[SmokeTest] tiempo {_current.Name} ({(_currentHeight > 0 ? "1080x" + _currentHeight : "ventana")}): {Mathf.RoundToInt((float)(EditorApplication.timeSinceStartup - _entryStartAt))} s");
                 CheckCoachAudit();
                 EditorApplication.ExitPlaymode();
                 CheckReduceMotionArrived();

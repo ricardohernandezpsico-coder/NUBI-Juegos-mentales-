@@ -1,10 +1,9 @@
-"""Lámina de «La estación de correo» (8-oct-2026; id correo): las 12 cartas (4 planetas × normal, sello dorado y lazo), los 4 planetas-buzón, la caja fuerte (dial con marcas y manija), el faro apagado y encendido, la nave del correo
-con su saco dorado, y un cuadro del momento del faro (la luz DETRÁS de la estación y la nave DELANTE), con los sprites REALES horneados (tools/art-preview) en las posiciones del boceto aprobado
-(docs/previews/correo-estacion-boceto.html). No es una captura del juego: el movimiento no se ve en una imagen quieta.
+"""Lámina de PIEZAS de «La estación de correo» (8-oct-2026; id correo): las 12 cartas (4 planetas × normal, sello dorado y lazo) y los 4 planetas-buzón, con los sprites REALES horneados (tools/art-preview) en las posiciones del boceto aprobado
+(docs/previews/correo-estacion-boceto.html). No es una captura del juego. (Las funciones station_panel y recap_panel de abajo ya no se usan: las pantallas salen de capturas reales de Unity.)
 
 Uso:  python tools/art-preview/correo.py <raw> [--out docs/previews]
       (<raw> = la carpeta que vuelca ArtPreview: `dotnet run --project tools/art-preview -- <raw>`; con solo el runtime 10 de .NET: DOTNET_ROLL_FORWARD=LatestMajor)
-Genera docs/previews/correo-estacion.png. (correo-escudo.png y correo-estelar.png son del vuelo y quedan como historia.)
+Genera docs/previews/correo-piezas.png (solo las piezas sueltas). Las pantallas de la estación salen de capturas reales: tools/capturas/hoja.py. (correo-escudo.png y correo-estelar.png son del vuelo y quedan como historia.)
 """
 import argparse
 import math
@@ -218,25 +217,17 @@ def recap_panel(raw, w=360, h=600):
 
 
 def main():
+    """Solo la hoja de PIEZAS sueltas (las 12 cartas y los 4 planetas-buzón): docs/previews/correo-piezas.png. Las pantallas de «La estación de correo» ya no se componen aquí: salen de capturas REALES de Unity
+    (`bash tools/verificar-todo.sh --capturas Correo` -> docs/previews/correo-estacion.png)."""
     ap = argparse.ArgumentParser()
     ap.add_argument('raw')
     ap.add_argument('--out', default=os.path.join(ROOT, 'docs', 'previews'))
     a = ap.parse_args()
-    W = 360
-    letters = sheet_letters(a.raw, W)
-    quiet = station_panel(a.raw, show=False)
-    show = station_panel(a.raw, show=True)
-    recap = recap_panel(a.raw)
-    gap = 24 * S
-    total_w = letters.width + gap + quiet.width + gap + show.width + gap + recap.width
-    total_h = max(letters.height, quiet.height, show.height, recap.height)
-    sheet = Image.new('RGBA', (total_w, total_h), (3, 4, 20, 255))
-    x = 0
-    for p in (letters, quiet, show, recap):
-        sheet.alpha_composite(p, (x, 0))
-        x += p.width + gap
+    letters = sheet_letters(a.raw, 360)
+    sheet = Image.new('RGBA', letters.size, (3, 4, 20, 255))
+    sheet.alpha_composite(letters, (0, 0))
     os.makedirs(a.out, exist_ok=True)
-    out = os.path.join(a.out, 'correo-estacion.png')
+    out = os.path.join(a.out, 'correo-piezas.png')
     sheet.convert('RGB').save(out)
     print('OK', out, sheet.size)
 
