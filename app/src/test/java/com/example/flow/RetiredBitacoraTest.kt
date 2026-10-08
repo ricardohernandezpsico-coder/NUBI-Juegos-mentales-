@@ -169,7 +169,8 @@ class RetiredBitacoraTest {
   fun `un camino de hoy guardado con Bitacora se cambia por otro juego de Memoria y conserva el avance`() {
     seedOldData()
     val vm = newViewModel()
-    TestSupport.awaitUntil(message = "El camino de hoy no se corrigió") { vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
+    // El estado inicial del repositorio no nombra el juego retirado y tiene 0 completados: hay que esperar al camino GUARDADO (1 completado).
+    TestSupport.awaitUntil(message = "El camino de hoy no se corrigió") { vm.dailySession.value.completedCount == 1 && vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
     val s = vm.dailySession.value
     assertEquals(1, s.completedCount)
     assertEquals("calculo", s.gameIds[1])

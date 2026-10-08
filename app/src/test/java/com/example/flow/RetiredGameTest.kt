@@ -154,7 +154,9 @@ class RetiredGameTest {
   fun `un camino de hoy guardado con el juego retirado se cambia por otro de su area y conserva el avance`() {
     seedOldData(todayWith = "calculo,$old,acoplamiento", completed = 1)
     val vm = newViewModel()
-    TestSupport.awaitUntil(message = "El camino de hoy no se corrigió") { vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
+    // El estado inicial del repositorio (calculo, parejas, stroop; 0 completados) tampoco nombra el juego retirado: hay que esperar a que llegue el camino GUARDADO (1 completado), o en una máquina
+    // más lenta (como el CI de GitHub) la prueba lee el estado inicial.
+    TestSupport.awaitUntil(message = "El camino de hoy no se corrigió") { vm.dailySession.value.completedCount == 1 && vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
     val s = vm.dailySession.value
     assertEquals(1, s.completedCount)
     assertEquals("calculo", s.gameIds[0])
