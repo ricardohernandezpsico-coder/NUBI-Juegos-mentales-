@@ -16,10 +16,12 @@
 #   --sin-animaciones  smoke de los juegos pedidos (o los 23) con "quitar animaciones" ACTIVO (NUBI_REDUCE_MOTION=1: la config del juego lleva
 #                      reduce_motion=true). Corre solo escena piloto + smoke; no reexporta ni toca Gradle ni instala (el APK es el mismo).
 #   --instalar         al final instala el APK en el telefono (DEVICE, por defecto el de Ricardo).
-#   --capturas <Juego> OPCIONAL, aparte del resto (no corre EditMode, smoke, export ni Gradle): saca CAPTURAS DE PANTALLA REALES del juego en forma
-#                      de telefono (1080x2400) llevandolo por sus momentos clave con un guion, y arma la hoja de contacto (tools/capturas/hoja.py;
-#                      Correo -> docs/previews/correo-estacion.png). Corre Unity SIN -nographics: necesita tarjeta de video y NO sirve en el CI de
-#                      GitHub ni en la nube. Hoy solo Correo tiene guion. Las capturas sueltas quedan en unity/test-results/capturas/<juego>/.
+#   --capturas <Juego|todos> OPCIONAL, aparte del resto (no corre EditMode, smoke, export ni Gradle): saca CAPTURAS DE PANTALLA REALES en forma de telefono
+#                      (1080x2400) y arma las hojas de contacto (tools/capturas/hoja.py). `todos` = los 19 juegos (unos 25 min: la primera pantalla jugable, a los 8/20/40 s,
+#                      la pausa, la cortina «¡Listo!» y la pantalla final si la partida llega, una toma con «quitar animaciones» y, con tutorial, los pasos 1 y 3; Engranajes,
+#                      Bodega, Constelaciones y Correo se juegan solos con el piloto del smoke); `Radar` o `Radar,Freno` = solo esos; `Correo` suelto sigue con su guion
+#                      (docs/previews/correo-estacion.png). Las hojas van a docs/previews/capturas/<juego>.png (+ README.md con fecha y commit con `todos`). Corre Unity SIN
+#                      -nographics: necesita tarjeta de video y NO sirve en el CI de GitHub ni en la nube. Las tomas sueltas quedan en unity/test-results/capturas/<juego>/.
 #
 # El smoke corre en UN solo proceso de Unity (HeadlessPlaymodeSmokeTest.RunList). Si encadenarlos falla en algun juego, ese juego se
 # repite aislado (como antes) antes de dar FALLO, para no confundir un artefacto del encadenado con un error real.
