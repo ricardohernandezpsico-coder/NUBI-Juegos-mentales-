@@ -264,6 +264,10 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /** Fin del recorrido («Empezar mi camino» o «Listo»): vuelve a Hoy y celebra los logros que quedaron pendientes. */
   fun finishFlight() {
+    // El día que se completa el Primer vuelo (el recorrido entero, no «repetir la evaluación»), ese día queda cumplido: el camino de hoy se da por hecho con el vuelo (ver repository.completeTodayWithFlight).
+    val flight = _flight.value
+    val completesTheDay = flight != null && flight.mode == com.example.data.FlightMode.FULL && flight.applied
+    if (completesTheDay) viewModelScope.launch { repository.completeTodayWithFlight() }
     setFlight(null)
     // También se cierra el panel de arriba (Ajustes / Perfil): si el inicio se abrió desde ahí (Debug «Repetir el inicio»), si no seguiría tapando Hoy.
     _topPanel.value = null

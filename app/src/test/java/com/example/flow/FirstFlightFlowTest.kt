@@ -147,6 +147,13 @@ class FirstFlightFlowTest {
     assertNull("no queda nada del recorrido en disco", FlightStore.load(app))
     assertEquals(AgeBand.SENIOR, vm.userSettings.value.ageBand)
     TestSupport.awaitUntil { savedResults() == 4 }
+    // El día del Primer vuelo no son 7 juegos: el camino de hoy queda CUMPLIDO con el vuelo, sin puntajes ni partidas duplicadas.
+    TestSupport.awaitUntil(message = "El camino de hoy no quedó cumplido con el Primer vuelo") { vm.dailySession.value.completedCount == vm.dailySession.value.gameIds.size }
+    assertEquals(3, vm.dailySession.value.gameIds.size)
+    assertTrue("un camino cumplido sin puntajes es el del Primer vuelo", vm.dailySession.value.scores.isEmpty())
+    assertEquals("no se duplican partidas", 4, savedResults())
+    // y con eso el día cuenta para la racha
+    assertEquals(1, vm.currentStreak.value)
   }
 
   @Test
@@ -272,6 +279,20 @@ class FirstFlightFlowTest {
     assertNotNull(vm.baseline.value)
     assertEquals(4, vm.baseline.value!!.measured.size)
     assertNull(FlightStore.load(app))
+  }
+
+  @Test
+  fun `repetir la evaluacion desde Avance no da por cumplido el camino de hoy`() {
+    val vm = newViewModel()
+    TestSupport.awaitUntil { vm.dailySession.value.gameIds.size == 3 }
+    vm.startBaseline()
+    for (i in 0..3) {
+      play(vm, i)
+      vm.flightContinue()
+    }
+    vm.flightContinue()
+    TestSupport.awaitUntil(message = "La evaluación no terminó") { vm.flight.value == null }
+    assertEquals("el camino de hoy sigue sin empezar", 0, vm.dailySession.value.completedCount)
   }
 
   @Test

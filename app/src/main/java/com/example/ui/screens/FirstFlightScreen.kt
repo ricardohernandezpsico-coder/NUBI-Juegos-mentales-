@@ -697,25 +697,10 @@ private fun ReminderPage(s: FlightState, a: FlightActions) {
 /** El último paso: los 3 juegos de hoy, elegidos por las metas y el punto de partida. «Empezar mi camino» entra a Hoy. */
 @Composable
 private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
+  // El día del Primer vuelo, el camino de hoy ya quedó cumplido con el vuelo (repository.completeTodayWithFlight): no se juegan 7 juegos. Mañana empieza el camino de 3 juegos.
   PageFrame(footer = { MainButton("Empezar mi camino", tag = "btn_flight_finish", onClick = a.onContinue) }) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiWithHalo(size = 130.dp, pose = NubiPose.CELEBRA) }
-    Title("Tu camino de hoy", center = true)
-    Sub("Elegido por tus metas y por lo que más conviene reforzar.", center = true)
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-      todayGames.take(3).forEach { id ->
-        val g = GameRegistry.getById(id) ?: return@forEach
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-          Box(
-            Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(g.domain.color).border(3.dp, Clay.Ink, RoundedCornerShape(16.dp)),
-            contentAlignment = Alignment.Center
-          ) { GameIcon(g.id, size = 36.dp) }
-          Spacer(Modifier.width(14.dp))
-          Column {
-            Text(g.title, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 19.sp)
-            Text(g.domain.displayName, color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp)
-          }
-        }
-      }
-    }
+    Title("Tu Primer vuelo fue tu camino de hoy", center = true)
+    Sub("Mañana empieza tu camino de 3 juegos, elegido por tus metas y por lo que más conviene reforzar.", center = true)
   }
 }

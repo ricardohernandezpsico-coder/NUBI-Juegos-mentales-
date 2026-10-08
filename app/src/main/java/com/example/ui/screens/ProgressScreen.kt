@@ -262,7 +262,7 @@ fun ProgressScreen(
         Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
           // Maestría por dominio (XP que solo crece)
           Column {
-            SpaceSectionTitle("Maestría por dominio", hint = "Cada partida suma experiencia a su dominio")
+            SpaceSectionTitle("Maestría por área", hint = "Cada partida suma experiencia a su área")
             Spacer(Modifier.height(12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
               domainMastery.forEach { info ->

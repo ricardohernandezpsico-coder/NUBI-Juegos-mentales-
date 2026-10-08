@@ -61,9 +61,24 @@ object TestSupport {
     val end = System.currentTimeMillis() + timeoutMs
     while (!condition()) {
       shadowOf(Looper.getMainLooper()).idle()
-      if (System.currentTimeMillis() > end) fail(message)
+      if (System.currentTimeMillis() > end) fail(message + "\n" + threadDump())
       Thread.sleep(20)
     }
+  }
+
+  /**
+   * Cuando una espera se acaba, qué estaban haciendo los hilos (los de Room, las corrutinas y el de la prueba): en la verificación de GitHub, que corre las pruebas en otro orden y más lento que el PC, esto
+   * dice si algo quedó colgado de otra prueba. Solo se calcula en el camino del fallo.
+   */
+  private fun threadDump(): String {
+    val sb = StringBuilder("=== HILOS ===\n")
+    val skip = listOf("Reference Handler", "Finalizer", "Signal Dispatcher", "Common-Cleaner", "Notification Thread", "process reaper", "Attach Listener", "Monitor Ctrl-Break")
+    for ((t, frames) in Thread.getAllStackTraces().entries.sortedBy { it.key.name }) {
+      if (skip.any { t.name.startsWith(it) } || frames.isEmpty()) continue
+      sb.append(t.name).append(" [").append(t.state).append("]\n")
+      frames.take(10).forEach { sb.append("  at ").append(it).append('\n') }
+    }
+    return sb.toString()
   }
 
   /**

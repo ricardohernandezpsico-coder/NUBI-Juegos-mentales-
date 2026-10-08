@@ -687,41 +687,59 @@ class NeuroVidaRepository(
     }
   }
 
-  private fun pickSessionQueue(history: List<GamePlayResult>): List<String> {
-    val domainScores = mutableMapOf<DomainType, MutableList<Int>>()
-    DomainType.values().forEach { domainScores[it] = mutableListOf() }
-    history.forEach { res ->
-      val game = GameRegistry.getById(res.gameId)
-      if (game != null) {
-        domainScores[game.domain]?.add(res.score)
-      }
-    }
-
-    // Nivel por dominio: puntaje promedio jugado (0..1) o, sin partidas, el del mapa del punto de partida.
+  /**
+   * El camino de hoy (3 juegos de 3 áreas): por AVANCE REAL y con variedad, ver [DailyPath]. El nivel de cada área es el promedio de [Skill.progress] de sus juegos con rating guardado; sin partidas, el del punto de partida.
+   * Se lee todo de la base (no de los StateFlow, que al arrancar todavía pueden estar vacíos) y el día se calcula UNA vez: queda guardado en Room.
+   */
+  private suspend fun pickSessionQueue(history: List<GamePlayResult>): List<String> {
+    val profile = userProfileDao.getActiveProfileSync() ?: userProfileDao.getUserProfileSync()
+    val age = profile?.toDomain()?.ageBand
+    val ratings = gameProgressDao.getAllProgressSync().associate { it.gameId to it.ddaRating }
     val baselineNow = _baseline.value
-    val domainLevel = DomainType.values().associateWith { domain ->
-      val scores = domainScores[domain].orEmpty()
-      if (scores.isNotEmpty()) scores.average().toFloat() / 100f else baselineNow?.domains?.get(domain) ?: 0f
-    }
-    // Primero las metas (la más baja primero) y lo más bajo; el tercer juego sale de un dominio que no es meta,
-    // para que el camino no repita siempre los mismos dominios.
-    val goalsNow = _goals.value
-    val ranked = rankDomainsForSession(goalsNow, domainLevel)
-    val sortedDomains = ranked.take(2) + (ranked.drop(2).firstOrNull { it !in goalsNow } ?: ranked[2])
-
-    val selected = mutableListOf<String>()
-    sortedDomains.take(3).forEach { domain ->
-      val gameInDomain = GameRegistry.allGames.filter { it.domain == domain }.randomOrNull()
-      if (gameInDomain != null) {
-        selected.add(gameInDomain.id)
+    val areaLevel = DomainType.values().associateWith { domain ->
+      val saved = GameRegistry.allGames.filter { it.domain == domain }
+        .mapNotNull { g -> ratings[g.id]?.takeIf { it >= 0f }?.let { Skill.progress(g.id, it, age) } }
+      when {
+        saved.isNotEmpty() -> saved.average().toFloat()
+        baselineNow != null -> baselineNow.domains[domain]?.let { Skill.progress(BaselinePlan.stepFor(domain).gameId, it, age) } ?: 0f
+        else -> 0f
       }
     }
+    val lastPlayedDay = history.groupBy { it.gameId }.mapValues { (_, rs) -> epochDay(rs.maxOf { it.timestamp }) }
+    return DailyPath.pick(
+      dateKey = getTodayDateKey(),
+      areaLevel = areaLevel,
+      goals = _goals.value,
+      yesterday = pathOf(-1),
+      dayBefore = pathOf(-2),
+      lastPlayedDay = lastPlayedDay,
+      today = epochDay(System.currentTimeMillis()),
+      tutorialGames = com.example.bridge.UnityGameLauncher.TUTORIAL_GAMES
+    )
+  }
 
-    while (selected.size < 3) {
-      val candidate = GameRegistry.allGames.random().id
-      if (!selected.contains(candidate)) selected.add(candidate)
-    }
-    return selected
+  /** El camino guardado hace [daysAgo] días (negativo: ayer = -1) o null si ese día no hubo. */
+  private suspend fun pathOf(daysAgo: Int): List<String>? {
+    val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, daysAgo) }
+    val key = synchronized(dateFormat) { dateFormat.format(cal.time) }
+    return dailySessionDao.getDailySessionSync(key)?.toDomain()?.gameIds?.takeIf { it.isNotEmpty() }
+  }
+
+  /** Días enteros desde 1970 en la hora local de [millis]. */
+  private fun epochDay(millis: Long): Long = (millis + java.util.TimeZone.getDefault().getOffset(millis)) / 86_400_000L
+
+  /**
+   * El día que se completa el Primer vuelo, el camino de ese día queda CUMPLIDO con el vuelo: cuenta como día jugado (la racha, la meta semanal y los desafíos de días salen de las partidas del vuelo, que ya se guardaron) sin sumar
+   * puntos ni partidas. Un camino cumplido SIN puntajes es, justamente, el del Primer vuelo (Hoy lo dice). Si el camino de hoy ya se completó jugándolo, no se toca.
+   */
+  suspend fun completeTodayWithFlight() = withContext(Dispatchers.IO) {
+    val today = getTodayDateKey()
+    val current = dailySessionDao.getDailySessionSync(today)?.toDomain()
+      ?: DailySessionState(dateKey = today, gameIds = pickSessionQueue(gameResultDao.getAllResultsSync().map { it.toDomain() }), completedCount = 0)
+    if (current.scores.isNotEmpty()) return@withContext        // un camino ya jugado (en parte o completo) no se toca
+    val entity = DailySessionEntity(dateKey = today, gameIdsRaw = current.gameIds.joinToString(","), completedCount = current.gameIds.size, scoresRaw = "")
+    dailySessionDao.insertOrUpdate(entity)
+    _dailySession.value = entity.toDomain()
   }
 
   /** [countsForDailySession] false = no avanza el camino de hoy (juegos de la evaluación inicial). */

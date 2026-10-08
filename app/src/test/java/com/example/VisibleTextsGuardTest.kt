@@ -14,7 +14,7 @@ import java.io.File
  * `app/src/main/java` trae esas palabras (los comentarios y los nombres de código no cuentan). Y la licencia de las tipografías va completa con sus avisos de copyright.
  */
 class VisibleTextsGuardTest {
-  private val banned = listOf("cognitiv", "cognitif", "entraîn", "entraine", "entrenamiento", "entrená", "entrenar", "entrena ", "estimulaci", "bienestar", "percentil", "cerebro", "neurona", "mejora tu", "fortalece", "previene", "workmanager", " en room", "base de datos room")
+  private val banned = listOf("cognitiv", "cognitif", "entraîn", "entraine", "entrenamiento", "entrená", "entrenar", "entrena ", "estimulaci", "bienestar", "percentil", "cerebro", "neurona", "mejora tu", "fortalece", "previene", "workmanager", " en room", "base de datos room", "dominio", "domínio")
 
   /** Cadenas técnicas que no se ven (nombres internos): se dejan tal cual. */
   private val internalLiterals = setOf("neurovida_daily_cognitive_reminder")

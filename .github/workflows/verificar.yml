@@ -67,16 +67,25 @@ jobs:
           # La traza de cada prueba que falló (primeras líneas de su informe XML: ahí aparecen las excepciones «Suppressed»), también como anotación.
           python3 - <<'PY'
           import glob, html, re
-          n = 0
+          suites, fails = [], []
           for f in sorted(glob.glob("app/build/test-results/testDebugUnitTest/*.xml")):
               s = open(f, encoding="utf-8", errors="replace").read()
+              h = re.search(r'<testsuite name="([^"]+)"[^>]*timestamp="([^"]+)"[^>]*time="([^"]+)"', s)
+              if h:
+                  suites.append((h.group(2), h.group(1).split(".")[-1], h.group(3)))
               for m in re.finditer(r'<testcase name="([^"]+)" classname="([^"]+)"[^>]*>\s*<failure message="[^"]*"[^>]*>(.*?)</failure>', s, re.S):
-                  lines = [l.strip() for l in html.unescape(m.group(3)).strip().splitlines() if l.strip()]
-                  text = " | ".join(lines[:30])[:1500].replace("%", "%25")
-                  print("::error title=Traza de %s::%s" % (m.group(2).split(".")[-1], text))
-                  n += 1
-                  if n >= 4:
-                      raise SystemExit
+                  fails.append((m.group(2).split(".")[-1], html.unescape(m.group(3)).strip()))
+          def enc(t): return t.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+          suites.sort()
+          for cls, body in fails[:4]:
+              lines = [l.strip() for l in body.splitlines() if l.strip()]
+              print("::error title=Traza de %s::%s" % (cls, " | ".join(lines[:30])[:1500].replace("%", "%25")))
+              if "=== HILOS ===" in body:
+                  print("::error title=Hilos al fallar %s::%s" % (cls, enc(body.split("=== HILOS ===", 1)[1])[:9000]))
+              names = [x[1] for x in suites]
+              if cls in names:
+                  k = names.index(cls)
+                  print("::warning title=Orden antes de %s::%s" % (cls, " > ".join("%s (%ss)" % (x[1], x[2]) for x in suites[max(0, k - 6):k + 1])))
           PY
       - name: Guardar el informe de pruebas si algo falló
         if: failure()

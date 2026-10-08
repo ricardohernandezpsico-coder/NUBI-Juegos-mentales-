@@ -23,7 +23,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   (hoy `estilo 8-oct · estación de correo`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES contra un UnityEngine mínimo y vuelca PNG; `constelaciones.py`, `bodega.py`, `correo.py`… arman las láminas de piezas) y `tools/previews/*.py` (réplicas PIL de pantallas Compose); resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina. **Capturas REALES** (el juego de verdad, no una composición): `bash tools/verificar-todo.sh --capturas Correo` (opcional; necesita tarjeta de video; detalle en `docs/respaldo-y-diagnostico.md`; hoy solo Correo).
 - Estilo con Ricardo: español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
-- Qué sigue (juegos que faltan para llegar a 5 por área, Avance, orden): [`docs/hoja-de-ruta.md`](docs/hoja-de-ruta.md).
+- Qué sigue y en qué orden (la ruta por etapas que Ricardo aprobó el 8-oct): [`docs/hoja-de-ruta.md`](docs/hoja-de-ruta.md).
 - Repositorios externos: si alguno de GitHub puede potenciar la app, COMENTARLO a Ricardo y él decide; nunca agregarlo sin preguntar (descartados y razones: hoja de ruta).
 
 ## Toolchain (PC Windows de Ricardo)
@@ -49,8 +49,8 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Las pestañas se pasan deslizando con el dedo (`HorizontalPager` en `MainActivity`, sincronizado con
   `viewModel.currentTab`). Una ventana abierta sobre una pestaña (área en Juegos, detalle de un área en Hoy o Avance)
   llama `LockTabSwipe()`: mientras esté, el dedo no cambia de pestaña y la barra de abajo se esconde.
-- Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`); al terminar, el resumen (`data/SessionSummary` + `SessionSummaryScreen`): áreas trabajadas, puntaje de cada juego, racha y «Hoy avanzó de X a Y» por área.
-- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `NumberLine`, `RetoChoice`,
+- Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`), elegidos por avance real y con variedad por `data/DailyPath` (reglas en su cabecera; nunca un juego sin tutorial que la persona no jugó). El día en que se completa el Primer vuelo, el camino de ese día queda cumplido con el vuelo (`completeTodayWithFlight`: completado y sin puntajes; Hoy lo dice). Al terminar, el resumen (`data/SessionSummary` + `SessionSummaryScreen`): áreas trabajadas, puntaje de cada juego, racha y «Hoy avanzó de X a Y» por área.
+- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DailyPath`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `NumberLine`, `RetoChoice`,
   `Planet`, `SessionSummary`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v14** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
@@ -157,7 +157,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 465 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 477 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y en `@After`:
   deja una base de Room EN MEMORIA (nunca el archivo `neurovida_database`), cancela el trabajo de fondo del repositorio anterior y apaga los recordatorios de
@@ -170,13 +170,6 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pendientes vigentes
 
-El estado y las decisiones de diseño de la app están en [docs/historial-desarrollo.md](docs/historial-desarrollo.md) § «Estado y notas de diseño de la app». Dificultad y avance: [docs/dificultad-y-avance.md](docs/dificultad-y-avance.md).
-Qué sigue de juegos y orden: [docs/hoja-de-ruta.md](docs/hoja-de-ruta.md).
-
-- Ideas en espera (NO implementar hasta que Ricardo lo pida): rangos de tripulación en vez de ligas de metales y
-  "Tu astronauta" (avatar propio, color de acento elegido). Detalle en [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).
-- Después, en la lista de Ricardo: revisar qué juegos usa la evaluación inicial ("los juegos no me quedan claros");
-  re-chequeo mensual del punto de partida; tutorial guiado en los otros 19 juegos (la pieza común ya está); marca ✓/✗ de arcilla sobre la
-  respuesta; calibrar el DDA con datos.
-- Para el final: i18n completo (hoy `ui/i18n/AppStrings` cubre solo algunos textos); `applicationId` propio (cambiarlo = app nueva); firma release y Play Store; servidores; y antes de publicar, la búsqueda oficial de marca (clases 9, 41; [docs/nombre-marca-y-riesgos.md](docs/nombre-marca-y-riesgos.md)).
-- Pendiente de licencia: SPALEX (léxico de Lluvia de meteoros), ver [docs/diseno-lluvia-de-meteoros.md](docs/diseno-lluvia-de-meteoros.md).
+Qué sigue y en qué orden: [docs/hoja-de-ruta.md](docs/hoja-de-ruta.md) (etapas 0 a 5 y «lo que NO hacemos ahora»; ahí están los tutoriales y juegos por revisar, la prueba con personas, Avance, la publicación y las cuentas). No se duplica aquí.
+El estado y las decisiones de diseño de la app: [docs/historial-desarrollo.md](docs/historial-desarrollo.md) § «Estado y notas de diseño de la app». Dificultad y avance: [docs/dificultad-y-avance.md](docs/dificultad-y-avance.md).
+Ideas en espera (NO implementar hasta que Ricardo lo pida): [`docs/ideas-guardadas.md`](docs/ideas-guardadas.md).

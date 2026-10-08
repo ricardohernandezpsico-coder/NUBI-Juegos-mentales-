@@ -195,6 +195,7 @@ fun HomeScreen(
       pausedGameId = pausedGameId,
       nextGameId = dailySession.gameIds.getOrNull(dailySession.completedCount)?.takeIf { dailySession.completedCount < 3 },
       completed = dailySession.completedCount,
+      flightDay = dailySession.gameIds.isNotEmpty() && dailySession.completedCount >= dailySession.gameIds.size && dailySession.scores.isEmpty(),
       hasBaseline = baseline != null,
       lang = lang,
       onResume = { viewModel.resumePausedGame() },
@@ -413,6 +414,7 @@ private fun TodayAction(
   pausedGameId: String?,
   nextGameId: String?,
   completed: Int,
+  flightDay: Boolean,
   hasBaseline: Boolean,
   lang: com.example.model.AppLanguage,
   onResume: () -> Unit,
@@ -434,6 +436,15 @@ private fun TodayAction(
         onClick = action,
         icon = Icons.Default.PlayArrow,
         modifier = Modifier.testTag(tag)
+      )
+    }
+    // El camino de hoy quedó cumplido sin jugarlo (completado y sin puntajes): fue el Primer vuelo.
+    if (def == null && flightDay) {
+      Text(
+        text = "Tu Primer vuelo fue tu camino de hoy. Mañana empieza tu camino.",
+        color = OnNightDim,
+        fontSize = 15.sp,
+        modifier = Modifier.padding(start = 4.dp, bottom = 6.dp).testTag("home_flight_day")
       )
     }
     if (!hasBaseline) {
