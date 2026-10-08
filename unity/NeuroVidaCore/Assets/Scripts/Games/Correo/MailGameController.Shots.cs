@@ -51,6 +51,12 @@ namespace NeuroVida.Games.Correo
             _day.Combo = 12;
             yield return WaitSeconds(1.3f);
             shot("cinta-dorado");
+            // --- la misma cinta con «quitar animaciones»: el sello dorado se nota por su forma y su tamaño, sin brillo que late
+            GameFeel.ReduceMotion = true;
+            yield return WaitSeconds(1.2f);
+            shot("cinta-sin-animaciones");
+            GameFeel.ReduceMotion = false;
+            yield return WaitSeconds(0.6f);
             // --- la pausa (con la cinta de fondo)
             yield return pauseShot();                       // el corredor abre la pausa (GameEntryPoint vive en Bootstrap, que este ensamblado no ve), saca la foto «pausa» y la cierra
             // --- el lazo al frente
@@ -63,14 +69,42 @@ namespace NeuroVida.Games.Correo
             DoBeacon();
             yield return WaitSeconds(1.5f);
             shot("faro");
-            // --- el resumen del día: casi todo cumplido (se ve un ✓ y una raya)
+            // --- el resumen del día 1: casi todo cumplido (se ve un ✓ y una raya)
             MarkDayDone(missOneLazo: true);
             yield return WaitSeconds(2.2f);
             _day.JumpTo(1f);
             while (_phase != Phase.Recap) yield return null;
             yield return WaitSeconds(0.9f);
             shot("resumen");
+            // --- el día 2 (etapa 6: trae la radio que cancela): «¡Llega un saco!» y la radio cancelando un encargo
+            _run.Level = 6;
+            _tapped = true;
+            while (_phase != Phase.Brief) yield return null;
+            yield return WaitSeconds(0.4f);
+            _tapped = true;
+            while (_phase != Phase.Play) yield return null;
+            _day.Belt.Clear();
+            ClearBelt();
+            _day.NextIndex = _day.Plan.Count;
+            _day.RushPlan.Clear();
+            _day.RushPlan.Add(new MailRush { At = _day.Fraction });
+            yield return WaitSeconds(1.0f);                   // el cartel (entero, antes de que se desvanezca) y las primeras cartas del saco
+            shot("saco");
+            while (_day.Rush != null) yield return null;      // el saco termina de caer
+            _day.Belt.Clear();
+            ClearBelt();
+            if (_day.CancelTodo != null)
+            {
+                _day.JumpTo(_day.CancelAt + 0.01f);
+                yield return WaitSeconds(1.2f);               // el aviso de la radio
+                shot("radio");
+            }
             // --- la pantalla final: se salta al último día para verla sin jugar los cuatro
+            MarkDayDone(missOneLazo: false);
+            yield return WaitSeconds(0.5f);
+            _day.JumpTo(1f);
+            while (_phase != Phase.Recap) yield return null;
+            yield return WaitSeconds(0.9f);
             _run.DayNo = MailContract.Days - 1;
             _tapped = true;
             while (_phase != Phase.Brief) yield return null;

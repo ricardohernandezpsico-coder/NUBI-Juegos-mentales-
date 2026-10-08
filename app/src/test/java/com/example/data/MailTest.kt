@@ -45,9 +45,19 @@ class MailTest {
     assertNull(Mail.clockLine(0, 0))
     assertEquals("Cartas bien puestas: 20", Mail.cardsLine(20))
     assertNull(Mail.cardsLine(-1))
-    assertEquals("Etapa más alta: 3 de 5", Mail.groupLine(3))
+    assertEquals("Etapa más alta: 3 de 5 (el lazo)", Mail.groupLine(3))
+    assertEquals("Etapa más alta: 1 de 5 (sellos y la hora)", Mail.groupLine(1))
+    assertEquals("Etapa más alta: 5 de 5 (el día completo)", Mail.groupLine(5))
     assertNull(Mail.groupLine(0))
     assertNull(Mail.groupLine(6))
+  }
+
+  @Test
+  fun `cada grupo de etapas tiene su nombre y son tantos como grupos`() {
+    assertEquals(Mail.GROUPS, Mail.GROUP_NAMES.size)
+    assertEquals(listOf("sellos y la hora", "lo diario y la radio", "el lazo", "dos horas al día", "el día completo"), Mail.GROUP_NAMES)
+    for (g in 1..Mail.GROUPS) assertTrue(Mail.groupLine(g)!!.endsWith("(" + Mail.GROUP_NAMES[g - 1] + ")"))
+    assertTrue("los nombres no se repiten", Mail.GROUP_NAMES.toSet().size == Mail.GROUPS)
   }
 
   @Test

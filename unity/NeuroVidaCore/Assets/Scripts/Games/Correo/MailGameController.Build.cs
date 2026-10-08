@@ -599,6 +599,7 @@ namespace NeuroVida.Games.Correo
             _endTip = MakeLabel(_endLayer, "Tip", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _endNote = MakeLabel(_endLayer, "Note", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
             foreach (var t in new[] { _endTitle, _endHead, _endPct, _endSub, _endTip, _endNote }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _endTip.horizontalOverflow = HorizontalWrapMode.Wrap;                 // el consejo es largo («Truco: …»): se parte en dos líneas en vez de salirse de la pantalla
             foreach (var t in _endLabels) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             foreach (var t in _endValues) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             _endHead.text = "Tu memoria para lo pendiente";

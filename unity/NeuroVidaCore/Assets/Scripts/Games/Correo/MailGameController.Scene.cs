@@ -822,7 +822,7 @@ namespace NeuroVida.Games.Correo
             int all = t.MeasureAll, ok = t.MeasureOk;
             _endPct.text = t.Percent.HasValue ? t.Percent.Value + " %" : "—";
             _endSub.text = ok + " de " + all + " encargos cumplidos";
-            string[] labels = { "Por evento (cartas señal)", "Por hora (faro)", "Cancelados que no hiciste", "Miradas al reloj cerca de la hora", "Cartas bien puestas", "Etapa más alta" };
+            string[] labels = { "Por evento (cartas señal)", "Por hora (faro)", "Cancelados que no hiciste", "Miradas al reloj cerca de la hora", "Cartas bien puestas", "Etapa más alta: " + MailContract.GroupName(MailContract.GroupOf(_run.MaxLevelReached)) };
             string[] values =
             {
                 t.Events > 0 ? t.EventsOk + " de " + t.Events : "—",
@@ -853,8 +853,8 @@ namespace NeuroVida.Games.Correo
                 SetRect(_endValues[i].rectTransform, MailLayout.W - 26f - 60f, y, 120f, 26f);
                 y += 36f;
             }
-            SetRect(_endTip.rectTransform, cx, y + 4f, 340f, 22f);
-            SetRect(_endNote.rectTransform, cx, y + 28f, 340f, 22f);
+            SetRect(_endTip.rectTransform, cx, y + 16f, 320f, 44f);
+            SetRect(_endNote.rectTransform, cx, y + 56f, 340f, 22f);
         }
 
         private void LayoutOverlays()
@@ -1051,6 +1051,46 @@ namespace NeuroVida.Games.Correo
             ClearBelt();
             _day = null;
             return problems;
+        }
+
+        /// <summary>Para las pruebas: con la hoja, el resumen, la tarjeta «NUEVO» y la pantalla final armados (con cada consejo del final), lo que se dibuja de cada texto cabe a lo ancho de la pantalla (360 dp con 8 de margen):
+        /// un texto largo en una sola línea se salía por los dos lados (el consejo del final, que lo mostraron las capturas reales). Devuelve lo que no cabe.</summary>
+        public List<string> AuditTextWidths()
+        {
+            var problems = new List<string>();
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _lay = MailLayout.Compute(_logicalH);
+            if (_rng == null) _rng = new System.Random(1);
+            foreach (var kv in _fonts) kv.Key.fontSize = Mathf.RoundToInt(kv.Value * _s);
+            _run = new MailRun(5, 0, _rng);
+            _day = _run.NextDay();
+            BindBrief();
+            _recap = _day.Summarize();
+            BindRecap();
+            _run.Complete(_day, _recap);
+            BindEnd();
+            for (int tip = 0; tip < MailContract.Tips.Length; tip++)
+            {
+                _endTip.text = MailContract.Tips[tip];
+                CheckTextWidths(problems, "consejo " + tip);
+            }
+            CheckTextWidths(problems, "pantallas");
+            _day = null; _run = null; _recap = null;
+            return problems;
+        }
+
+        private void CheckTextWidths(List<string> problems, string when)
+        {
+            foreach (var layer in new[] { _briefLayer, _recapLayer, _introLayer, _endLayer })
+                foreach (var t in layer.GetComponentsInChildren<Text>(true))
+                {
+                    if (string.IsNullOrEmpty(t.text)) continue;
+                    // un texto que se parte en líneas cabe si su alto alcanza; uno de una línea, si su ancho cabe en la pantalla
+                    float w = t.preferredWidth / _s;
+                    bool wraps = t.horizontalOverflow == HorizontalWrapMode.Wrap;
+                    if (wraps) { if (t.preferredHeight > t.rectTransform.sizeDelta.y + 1f) problems.Add(when + ": «" + t.text + "» (" + t.name + ") no cabe en su alto"); }
+                    else if (w > MailLayout.W - 16f) problems.Add(when + ": «" + t.text + "» (" + t.name + ") mide " + Mathf.RoundToInt(w) + " dp y la pantalla tiene " + MailLayout.W);
+                }
         }
 
         /// <summary>Para las pruebas: con la estación, la hoja, el resumen y la pantalla final armados, todo texto que es HIJO de un botón o de una píldora (un <see cref="Image"/>) tiene su centro dentro del rect del padre

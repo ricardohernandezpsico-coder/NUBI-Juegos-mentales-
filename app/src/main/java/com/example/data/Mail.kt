@@ -62,8 +62,14 @@ object Mail {
   /** «Cartas bien puestas: 20»; null sin dato. */
   fun cardsLine(right: Int?): String? = if (right == null || right < 0) null else "Cartas bien puestas: $right"
 
-  /** «Etapa más alta: 3 de 5»; null si no es un grupo válido (1..5). */
-  fun groupLine(group: Int?): String? = if (group == null || group !in 1..GROUPS) null else "Etapa más alta: $group de $GROUPS"
+  /**
+   * Lo que trae cada grupo de 2 etapas (la tabla de `MailContract.Stages` en Unity): 1-2 el sello dorado y la primera hora, 3-4 lo de todos los días y la radio que cancela, 5-6 el lazo, 7-8 dos horas al día, 9-10 el día completo.
+   * Unity dice lo mismo en su pantalla final (`MailContract.GroupNames`, con una prueba que ata cada nombre a la tabla).
+   */
+  val GROUP_NAMES = listOf("sellos y la hora", "lo diario y la radio", "el lazo", "dos horas al día", "el día completo")
+
+  /** «Etapa más alta: 3 de 5 (el lazo)»; null si no es un grupo válido (1..5). El juego muestra «Nivel N» (1..10): el nombre dice qué trae ese tramo. */
+  fun groupLine(group: Int?): String? = if (group == null || group !in 1..GROUPS) null else "Etapa más alta: $group de $GROUPS (${GROUP_NAMES[group - 1]})"
 
   /** «Tu mejor día: 20 cartas»; con «¡Nuevo récord!» solo cuando en esta partida se superó el guardado (lo dice Unity: igualarlo no cuenta). null sin récord. */
   fun recordLine(best: Int?, isNew: Boolean?): String? {

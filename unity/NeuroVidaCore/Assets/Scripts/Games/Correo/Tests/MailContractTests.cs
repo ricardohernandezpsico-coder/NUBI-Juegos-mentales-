@@ -744,6 +744,36 @@ namespace NeuroVida.Games.Correo.Tests
         }
 
         [Test]
+        public void TheGroupNames_SayWhatEachPairOfStagesBrings_AccordingToTheRealTable()
+        {
+            Assert.AreEqual(MailContract.GroupCount, MailContract.GroupNames.Length);
+            Assert.AreEqual("sellos y la hora", MailContract.GroupName(1));
+            Assert.AreEqual("lo diario y la radio", MailContract.GroupName(2));
+            Assert.AreEqual("el lazo", MailContract.GroupName(3));
+            Assert.AreEqual("dos horas al día", MailContract.GroupName(4));
+            Assert.AreEqual("el día completo", MailContract.GroupName(5));
+            Assert.AreEqual("sellos y la hora", MailContract.GroupName(0), "fuera de rango se acota");
+            Assert.AreEqual("el día completo", MailContract.GroupName(9));
+            for (int level = 1; level <= MailContract.MaxLevel; level++)
+                Assert.AreEqual(MailContract.GroupNames[MailContract.GroupOf(level) - 1], MailContract.GroupName(MailContract.GroupOf(level)));
+            // los nombres dicen lo que de verdad aparece en esas etapas
+            Assert.Greater(MailContract.Stage(1).Gold, 0, "grupo 1: el sello dorado");
+            Assert.AreEqual(0, MailContract.Stage(1).Times.Length, "y todavía sin hora");
+            Assert.AreEqual(1, MailContract.Stage(2).Times.Length, "grupo 1: la primera hora");
+            Assert.IsTrue(MailContract.Stage(3).Routine, "grupo 2: lo de todos los días");
+            Assert.IsTrue(MailContract.Stage(4).Cancel, "grupo 2: la radio que cancela");
+            Assert.IsFalse(MailContract.Stage(3).Cancel);
+            for (int l = 1; l <= 4; l++) Assert.AreEqual(0, MailContract.Stage(l).Lazo, "antes del grupo 3 no hay lazo");
+            Assert.Greater(MailContract.Stage(5).Lazo, 0, "grupo 3: el lazo");
+            Assert.Greater(MailContract.Stage(6).Lazo, 0);
+            Assert.AreEqual(1, MailContract.Stage(6).Times.Length, "y todavía una sola hora");
+            Assert.AreEqual(2, MailContract.Stage(7).Times.Length, "grupo 4: dos horas al día");
+            Assert.AreEqual(2, MailContract.Stage(8).Times.Length);
+            Assert.AreEqual(3, MailContract.Stage(10).Times.Length, "grupo 5: el día completo, con tres horas");
+            Assert.AreEqual(3, MailContract.Stage(10).Lazo);
+        }
+
+        [Test]
         public void TheTelemetry_ReplacesTheOldMailFields_AndCarriesTheNewMeasure()
         {
             var cfg = new SequenceConfigDetails { age_band = "ADULT", level = 2, timed = false };

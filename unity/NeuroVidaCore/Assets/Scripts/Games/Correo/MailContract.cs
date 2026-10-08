@@ -134,6 +134,13 @@ namespace NeuroVida.Games.Correo
         public static int GroupOf(int level) => (Math.Max(1, Math.Min(MaxLevel, level)) - 1) / 2 + 1;
         public const int GroupCount = 5;
 
+        /// <summary>Lo que trae cada grupo de 2 etapas (la tabla de <c>Stages</c>): 1-2 el sello dorado y la primera hora, 3-4 lo de todos los días y la radio que cancela, 5-6 el lazo, 7-8 dos horas al día, 9-10 el día completo (tres lazos y hasta tres horas).
+        /// Los nombres van en «Etapa más alta» al final (la app dice lo mismo: <c>Mail.GROUP_NAMES</c>); una prueba los ata a la tabla.</summary>
+        public static readonly string[] GroupNames = { "sellos y la hora", "lo diario y la radio", "el lazo", "dos horas al día", "el día completo" };
+
+        /// <summary>El nombre del grupo (1..5; fuera de rango se acota).</summary>
+        public static string GroupName(int group) => GroupNames[Math.Max(1, Math.Min(GroupCount, group)) - 1];
+
         /// <summary>Cuántos sacos caen en un día: 1 hasta la etapa 4 y 2 desde la 5.</summary>
         public static int RushCount(int level) => level >= 5 ? 2 : 1;
 

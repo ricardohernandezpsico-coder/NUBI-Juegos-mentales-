@@ -26,10 +26,13 @@ CAPTIONS = {
         'nuevo-lazo': 'Tarjeta «NUEVO»: el lazo',
         'hoja': 'La hoja de encargos de la mañana',
         'cinta-dorado': 'La cinta: sello dorado delante',
+        'cinta-sin-animaciones': 'La cinta con «quitar animaciones»',
         'pausa': 'La pausa',
         'cinta-lazo': 'La cinta: carta con lazo',
         'faro': 'El faro: la nave del correo llega',
         'resumen': 'El resumen del día',
+        'saco': '«¡Llega un saco!»',
+        'radio': 'La radio cancela un encargo',
         'final': 'La pantalla final',
     },
 }

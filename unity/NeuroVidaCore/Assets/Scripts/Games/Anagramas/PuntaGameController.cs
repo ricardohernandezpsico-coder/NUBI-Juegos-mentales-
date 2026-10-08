@@ -883,6 +883,8 @@ namespace NeuroVida.Games.Anagramas
             while (_phase == Phase.Think || _phase == Phase.Build)
             {
                 t += GameClock.RealDeltaTime;
+                // la segunda palabra del tutorial solo practica «Una ayuda»: después la persona toca «¡La tengo!» por su cuenta; el piloto del smoke también (si no, se quedaba en «pensar» hasta el tope de 100 s de la revisión)
+                if (t > 1.2f && _phase == Phase.Think) { t = 0f; _haveAt = GameClock.Time; ShowTiles(withExtra: true); }
                 if (t > 0.35f && _phase == Phase.Build)
                 {
                     t = 0f;

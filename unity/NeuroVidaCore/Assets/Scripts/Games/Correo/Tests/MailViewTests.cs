@@ -432,6 +432,18 @@ namespace NeuroVida.Games.Correo.Tests
         }
 
         [Test]
+        public void EveryTextOfTheScreens_FitsTheScreenWidth_EvenTheLongestEndTip()
+        {
+            var go = new GameObject("MailAudit");
+            try
+            {
+                var problems = BuildController(go).AuditTextWidths();
+                Assert.IsEmpty(problems, "Textos que no caben a lo ancho: " + string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void NoChildOfAButtonOrAPill_IsPositionedWithSetRect_WhichUsesLayerCoordinates()
         {
             // SetRect(rect, cx, cy, …) pone el rect en coordenadas de la CAPA; un hijo de un botón o de una píldora se posiciona con SetChild (desplazamiento desde el centro del padre)
