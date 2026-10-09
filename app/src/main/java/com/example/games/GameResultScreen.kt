@@ -364,14 +364,23 @@ fun GameResultScreen(
       )
     }
 
-    // Satélites: "tu seguimiento" (cuántos se siguen de verdad a la vez, sin contar la suerte) y la velocidad superada.
+    // Satélites: «Encendiste N luces» (el planeta con las luces que se ganaron), «Tu seguimiento» (cuántos se siguieron de verdad a la vez, sin contar la suerte), las rondas perfectas, el récord de luces y la velocidad superada.
+    // Las partidas del juego anterior (sin luces) siguen mostrando solo «Tu seguimiento».
+    if (result.satLights != null) {
+      Spacer(Modifier.height(14.dp))
+      val spoken = com.example.data.Satelites.spoken(result.satLights, result.trackingCapacity, result.trackingTargets)
+      LitPlanet(com.example.data.Satelites.dots(result.satLights), Modifier.size(150.dp).semantics { contentDescription = spoken })
+      com.example.data.Satelites.lightsLine(result.satLights)?.let {
+        Spacer(Modifier.height(6.dp))
+        Text(it, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily)
+      }
+    }
     result.trackingCapacity?.let { cap ->
       Spacer(Modifier.height(14.dp))
       val capText = String.format(java.util.Locale("es"), "%.1f", cap)
       val targets = result.trackingTargets
-      val ofText = targets?.let { " de " + String.format(java.util.Locale("es"), if (it % 1f == 0f) "%.0f" else "%.1f", it) } ?: ""
       Text(
-        text = "Tu seguimiento: $capText$ofText a la vez",
+        text = com.example.data.Satelites.trackingLine(cap, targets) ?: "Tu seguimiento: $capText a la vez",
         color = Clay.Sun,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
@@ -379,6 +388,18 @@ fun GameResultScreen(
       )
       Spacer(Modifier.height(6.dp))
       TrackingSlots(cap, Modifier.semantics { contentDescription = "Sigues $capText satélites a la vez" })
+      com.example.data.Satelites.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak)?.let {
+        Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+      }
+      com.example.data.Satelites.recordLine(result.satBest, result.satNewRecord)?.let {
+        Text(
+          it,
+          color = if (result.satNewRecord == true) Clay.Sun else TextSoft,
+          fontSize = if (result.satNewRecord == true) 15.sp else 14.sp,
+          fontWeight = if (result.satNewRecord == true) FontWeight.Bold else FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 2.dp)
+        )
+      }
       result.trackingSpeed?.let { speed ->
         Text(
           text = "Velocidad más alta superada: ${String.format(java.util.Locale("es"), "%.1f", speed)}×",
@@ -389,7 +410,9 @@ fun GameResultScreen(
         )
       }
       Text(
-        text = if (targets != null && targets < 3.5f)
+        text = if (result.satLights != null)
+          "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. Cambia con la velocidad y con cuántos satélites hay que seguir: el juego los va sumando a medida que aciertas."
+        else if (targets != null && targets < 3.5f)
           "Cuántos seguiste de verdad de los que había que seguir, sin contar los que aciertas por suerte. El juego suma satélites y velocidad a medida que aciertas: así se ve hasta dónde llegas."
         else
           "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. A velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri, 2007).",
@@ -1410,6 +1433,41 @@ private fun TrackingSlots(capacity: Float, modifier: Modifier = Modifier, slots:
         clipRect(left = c.x - r, top = top, right = c.x + r, bottom = c.y + r) { drawCircle(Clay.Sun, r, c) }
       }
       drawCircle(Clay.Ink, r, c, style = Stroke(border))
+    }
+  }
+}
+
+// ---------- Satélites: el planeta con las luces que se ganaron ----------
+
+/**
+ * El planeta a oscuras (azul noche, con sus continentes tenues) y [lights] luces doradas repartidas sin amontonarse (la espiral del ángulo áureo: la primera al centro, las demás hacia afuera); el halo crece con la cantidad. Es el mismo dibujo
+ * que la pantalla final del juego. Con 0 luces se ve apagado. La cantidad se lee por el número de arriba y por cuántas luces hay, no por el color.
+ */
+@Composable
+private fun LitPlanet(lights: Int, modifier: Modifier = Modifier) {
+  Canvas(modifier) {
+    val c = Offset(size.width / 2f, size.height / 2f)
+    val r = size.minDimension * 0.34f
+    val lit = (lights / 30f).coerceIn(0f, 1f)
+    if (lights > 0) {
+      drawCircle(
+        Brush.radialGradient(listOf(Color(0xFFFFD678).copy(alpha = 0.25f + 0.45f * lit), Color.Transparent), center = c, radius = r * 2.1f),
+        r * 2.1f, c
+      )
+    }
+    drawCircle(Clay.Ink, r + 3.dp.toPx(), c)
+    drawCircle(Brush.radialGradient(listOf(Color(0xFF3B3F86), Color(0xFF22265E), Color(0xFF151843)), center = c + Offset(-r * 0.3f, -r * 0.34f), radius = r * 1.5f), r, c)
+    val land = Color(0xFF7882D2).copy(alpha = 0.22f)
+    for ((dx, dy, w, h) in listOf(listOf(-0.30f, -0.16f, 0.34f, 0.24f), listOf(0.26f, 0.20f, 0.28f, 0.19f), listOf(0.38f, -0.38f, 0.17f, 0.12f), listOf(-0.12f, 0.42f, 0.20f, 0.13f))) {
+      drawOval(land, c + Offset((dx - w) * r, (dy - h) * r), Size(2f * w * r, 2f * h * r))
+    }
+    val n = com.example.data.Satelites.dots(lights)
+    for (i in 0 until n) {
+      val a = i * 2.39996f
+      val d = Math.sqrt((i + 0.5) / n.coerceAtLeast(1).toDouble()).toFloat() * r * 0.78f
+      val p = c + Offset((d * Math.cos(a.toDouble())).toFloat(), (d * Math.sin(a.toDouble())).toFloat())
+      drawCircle(Color(0xFFFFDC8C).copy(alpha = 0.35f), r * 0.1f, p)
+      drawCircle(Color(0xFFFFE7A8), r * 0.04f, p)
     }
   }
 }

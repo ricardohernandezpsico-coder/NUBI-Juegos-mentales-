@@ -195,7 +195,7 @@ object GameRegistry {
       title = "Satélites",
       domain = DomainType.ATENCION,
       subtitle = "Seguimiento de varios objetos a la vez",
-      instruction = "Algunos satélites encienden su señal y se apagan. Todos se mueven y se cruzan: síguelos con la vista y, cuando se detengan, toca los que brillaban.",
+      instruction = "Algunos satélites traen un mensaje: se apagan y todos giran alrededor de tu planeta. Síguelos con la vista y, cuando se detengan, toca los que lo traían: cada mensaje enciende una luz.",
       iconEmoji = "🛰️"
     ),
     GameDefinition(
@@ -326,6 +326,13 @@ data class GamePlayResult(
   val mailGroup: Int? = null,
   val mailBest: Int? = null,
   val mailNewRecord: Boolean? = null,
+  // Solo «Satélites: enciende tu planeta» (id satelites, renovado el 9-oct): luces encendidas (= mensajes entregados), rondas perfectas (rondas = totalTrials), racha mayor de rondas perfectas, el récord de luces en una partida (el guardado o el de
+  // esta partida, el mayor) y si esta partida lo superó. «Tu seguimiento» sigue en trackingCapacity / trackingTargets / trackingSpeed. El récord va en prefs «satelites_record» (y en el respaldo); la lectura está en data/Satelites.kt. No se guarda en Room.
+  val satLights: Int? = null,
+  val satPerfect: Int? = null,
+  val satBestStreak: Int? = null,
+  val satBest: Int? = null,
+  val satNewRecord: Boolean? = null,
   // Solo Lluvia de meteoros: palabras reales vistas y tocadas por banda (6, de la común a la rara), inventadas vistas y
   // tocadas por tipo (3: obvia, una letra, letras traspuestas), mediana del tiempo de toque en comunes y raras (ms) y
   // las palabras raras acertadas. No se guardan en Room.

@@ -30,7 +30,10 @@ private data class DebugGame(
   /** Solo Constelaciones: la etapa (1..18) con que empieza el primer cielo, para ver cada grupo sin jugar hasta él. */
   val conStage: Int = 0,
   /** Solo La estación de correo: la etapa (1..10) con que empieza la partida. */
-  val mailStage: Int = 0
+  val mailStage: Int = 0,
+  /** Solo Satélites: el nivel (1..12) con que empieza la partida, y la sorpresa que sale en todas las rondas (1 órbita, 2 nube, 4 rápidas). */
+  val satStage: Int = 0,
+  val satSurprise: Int = 0
 )
 
 private val DebugGames = listOf(
@@ -61,6 +64,11 @@ private val DebugGames = listOf(
   DebugGame("piloto", "Piloto Estelar (Reto 90 s)", level = 1, timed = true),
   DebugGame("radar", "Radar (Reto 90 s)", level = 1, timed = true),
   DebugGame("satelites", "Satélites (Reto 120 s)", level = 1, timed = true),
+  DebugGame("satelites", "Satélites con tutorial", level = 1, timed = false, tutorial = true, tag = "satelites_tutorial"),
+  DebugGame("satelites", "Satélites nivel 3", level = 1, timed = false, tag = "satelites_nivel3", satStage = 3),
+  DebugGame("satelites", "Satélites nivel 6", level = 1, timed = false, tag = "satelites_nivel6", satStage = 6),
+  DebugGame("satelites", "Satélites nivel 9", level = 1, timed = false, tag = "satelites_nivel9", satStage = 9),
+  DebugGame("satelites", "Satélites sorpresa: nube", level = 1, timed = false, tag = "satelites_nube", satStage = 5, satSurprise = 2),
   DebugGame("freno", "Freno de Emergencia (Reto 120 s)", level = 1, timed = true),
   DebugGame("aterrizaje", "Aterrizaje Lunar (Reto 120 s)", level = 1, timed = true),
   DebugGame("meteoros", "Lluvia de meteoros (Reto 120 s)", level = 1, timed = true),
@@ -105,6 +113,8 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
             debugOverlay = tutorialOverlay,
             conStage = g.conStage,
             mailStage = g.mailStage,
+            satStage = g.satStage,
+            satSurprise = g.satSurprise,
             assessmentStep = if (g.shortVersion) 1 else 0,
             assessmentTotal = if (g.shortVersion) 4 else 0
           )

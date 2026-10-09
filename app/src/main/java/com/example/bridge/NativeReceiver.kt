@@ -178,6 +178,12 @@ object NativeReceiver {
     val mail_group: Int = -1,
     val mail_best: Int = -1,
     val mail_new: Int = 0,
+    // Solo «Satélites: enciende tu planeta»: luces encendidas, rondas perfectas, racha mayor de rondas perfectas, récord de luces (el mayor) y 1 si esta partida lo superó (-1 = no aplica).
+    val sat_lights: Int = -1,
+    val sat_perfect: Int = -1,
+    val sat_best_streak: Int = -1,
+    val sat_best: Int = -1,
+    val sat_new: Int = 0,
     // Solo Lluvia de meteoros: palabras vistas/tocadas por banda (6), inventadas vistas/tocadas por tipo (3), medianas de
     // reconocimiento en comunes y raras (ms, -1 = pocas muestras) y palabras raras acertadas (separadas por coma).
     val lex_band_seen: List<Int>? = null,
@@ -479,6 +485,7 @@ object NativeReceiver {
     // solo si las tres listas vienen completas y del mismo largo.
     // La estación de correo: sus campos solo valen si el juego es Correo y trae la medida nueva (una versión vieja de Unity mandaba el vuelo y no trae mail_group).
     val mail = telemetry.game_id == "correo" && metrics.mail_group >= 1
+    val sat = telemetry.game_id == "satelites" && metrics.sat_lights >= 0
     val homing = run {
       val along = metrics.homing_along
       val lateral = metrics.homing_lateral
@@ -546,6 +553,11 @@ object NativeReceiver {
       mailGroup = metrics.mail_group.takeIf { mail },
       mailBest = metrics.mail_best.takeIf { mail && it >= 0 },
       mailNewRecord = metrics.mail_best.takeIf { mail && it >= 0 }?.let { metrics.mail_new == 1 },
+      satLights = metrics.sat_lights.takeIf { sat },
+      satPerfect = metrics.sat_perfect.takeIf { sat && it >= 0 },
+      satBestStreak = metrics.sat_best_streak.takeIf { sat && it >= 0 },
+      satBest = metrics.sat_best.takeIf { sat && it >= 0 },
+      satNewRecord = metrics.sat_best.takeIf { sat && it >= 0 }?.let { metrics.sat_new == 1 },
       lexBandSeen = metrics.lex_band_seen?.takeIf { telemetry.game_id == "meteoros" && it.size == 6 },
       lexBandHits = metrics.lex_band_hits?.takeIf { telemetry.game_id == "meteoros" && it.size == 6 },
       lexFaSeen = metrics.lex_fa_seen?.takeIf { telemetry.game_id == "meteoros" && it.size == 3 },

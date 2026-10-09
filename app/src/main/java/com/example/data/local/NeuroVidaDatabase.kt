@@ -15,7 +15,7 @@ import com.example.BuildConfig
     DomainMasteryEntity::class,
     ClaimedWeeklyChallengeEntity::class
   ],
-  version = 14,
+  version = 15,
   exportSchema = true
 )
 abstract class NeuroVidaDatabase : RoomDatabase() {
@@ -87,6 +87,13 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
       object : androidx.room.migration.Migration(13, 14) {
         override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
           db.execSQL("UPDATE game_progress SET ddaRating = ddaRating * 0.5 WHERE gameId = 'correo' AND ddaRating >= 0")
+        }
+      },
+      // 14 -> 15 (9-oct): Satélites se renovó como «Satélites: enciende tu planeta» (anillos que se cruzan de frente desde el nivel 3, sorpresas desde el 2 y media vuelta desde el 6: cada nivel pide más que el del juego viejo). El rating guardado
+      // (0..1) de quienes ya jugaban se lleva a las tres cuartas partes para que nadie parta en un nivel con mecánicas que aún no vio (la cuenta está en data/Satelites.translateOldRating). Sin dato (-1) no se toca. El esquema no cambia.
+      object : androidx.room.migration.Migration(14, 15) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+          db.execSQL("UPDATE game_progress SET ddaRating = ddaRating * 0.75 WHERE gameId = 'satelites' AND ddaRating >= 0")
         }
       }
     )

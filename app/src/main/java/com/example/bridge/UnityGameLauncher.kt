@@ -21,7 +21,7 @@ object UnityGameLauncher {
 
   /** Juegos con tutorial guiado (ronda guiada propia) y «Cómo se juega» en la pausa. Rastro de luz fue el primero; Freno, Aterrizaje y Meteoros se sumaron el 3-oct
    *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
-  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa")
+  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites")
 
   /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
   fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =
@@ -67,6 +67,11 @@ object UnityGameLauncher {
     // empieza la partida (0 = la que corresponde).
     val mail_best: Int = 0,
     val mail_stage: Int = 0,
+    // Solo «Satélites: enciende tu planeta» (id satelites): el récord de luces en una partida (progreso: la app lo guarda y Unity devuelve el nuevo) y, solo en las herramientas de prueba, el nivel (1..12) con que empieza la partida (0 = el que
+    // corresponde) y la sorpresa que sale en todas las rondas (1 órbita, 2 nube, 4 rápidas; 0 = las de siempre).
+    val sat_best: Int = 0,
+    val sat_stage: Int = 0,
+    val sat_surprise: Int = 0,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -104,8 +109,10 @@ object UnityGameLauncher {
     forceTutorial: Boolean = false, // solo las herramientas de prueba: abre el tutorial aunque la persona ya haya jugado
     debugOverlay: Boolean = false,  // solo las herramientas de prueba: Unity dibuja los rectángulos del tutorial y el último toque
     conStage: Int = 0,              // solo las herramientas de prueba: Constelaciones empieza en esta etapa (0 = normal)
-    mailStage: Int = 0              // solo las herramientas de prueba: La estación de correo empieza en esta etapa (0 = normal)
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage)
+    mailStage: Int = 0,             // solo las herramientas de prueba: La estación de correo empieza en esta etapa (0 = normal)
+    satStage: Int = 0,              // solo las herramientas de prueba: Satélites empieza en este nivel (0 = normal)
+    satSurprise: Int = 0            // solo las herramientas de prueba: Satélites trae esta sorpresa en todas las rondas (1 órbita, 2 nube, 4 rápidas; 0 = las de siempre)
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise)
 
   private fun buildIntent(
     context: Context,
@@ -123,7 +130,9 @@ object UnityGameLauncher {
     forceTutorial: Boolean = false,
     debugOverlay: Boolean = false,
     conStage: Int = 0,
-    mailStage: Int = 0
+    mailStage: Int = 0,
+    satStage: Int = 0,
+    satSurprise: Int = 0
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
@@ -156,6 +165,9 @@ object UnityGameLauncher {
         con_stage = if (gameId == "parejas") conStage.coerceIn(0, 18) else 0,
         mail_best = if (gameId == "correo") com.example.NeuroVidaApplication.instance.repository.correoRecord.value else 0,
         mail_stage = if (gameId == "correo") mailStage.coerceIn(0, 10) else 0,
+        sat_best = if (gameId == "satelites") com.example.NeuroVidaApplication.instance.repository.satelitesRecord.value else 0,
+        sat_stage = if (gameId == "satelites") satStage.coerceIn(0, 12) else 0,
+        sat_surprise = if (gameId == "satelites") satSurprise.coerceIn(0, 7) else 0,
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f
