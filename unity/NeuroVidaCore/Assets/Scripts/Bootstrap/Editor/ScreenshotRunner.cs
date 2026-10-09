@@ -369,12 +369,12 @@ namespace NeuroVida.Bridge.EditorTools
             yield return ExitPlay();
         }
 
-        /// <summary>El tutorial guiado con sus pasos andando solos (el smoke): una toma del paso 1 y otra del paso 3, a 0,3 s de que el paso aparece (para que ya se vea asentado; en algunos juegos el paso 1 dura poco).</summary>
+        /// <summary>El tutorial guiado con sus pasos andando solos (el smoke): una toma del paso 1 y otra del paso 3, a 0,3 s de que el paso aparece (para que ya se vea asentado; en algunos juegos el paso 1 dura poco). Piloto suma el paso 6, el de «Cruzaste el arco: ¡tu misión cambió!» (Tarea 63).</summary>
         private static IEnumerator TutorialShots(string id)
         {
             Configure(id, tutorial: true, reduceMotion: false);
             yield return EnterPlay();
-            bool shot1 = false, shot3 = false;
+            bool shot1 = false, shot3 = false, shotNew = id != "piloto";
             int lastIndex = -1;
             double activeSince = 0, start = Now;
             NeuroVida.Games.Shared.NubiCoach coach = null;
@@ -384,15 +384,17 @@ namespace NeuroVida.Bridge.EditorTools
                 if (coach == null && Now - lastFind > 0.25) { lastFind = Now; coach = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.NubiCoach>(); }
                 int index = NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count;
                 bool active = coach != null && coach.Active;
-                if (!active) { lastIndex = -1; return shot3 || (shot1 && index > 2); }
+                if (!active) { lastIndex = -1; return (shot3 && shotNew) || (shot1 && index > (id == "piloto" ? 6 : 2)); }
                 if (index != lastIndex) { lastIndex = index; activeSince = Now; }
                 if (Now - activeSince >= 0.3)
                 {
                     if (index == 0 && !shot1) { Shot("tutorial-1"); shot1 = true; }
                     else if (index == 2 && !shot3) { Shot("tutorial-3"); shot3 = true; }
+                    else if (index == 5 && id == "piloto" && !shotNew) { Shot("tutorial-nueva-mision"); shotNew = true; }
                 }
-                return shot3;
+                return shot3 && shotNew;
             }, 90);
+            if (!shotNew) GameNotes.Add("el tutorial de Piloto no llegó al paso de la misión nueva (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shot1) GameNotes.Add("el tutorial no mostró el paso 1 a tiempo");
             if (!shot3) GameNotes.Add("el tutorial no llegó a un paso 3 (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             NeuroVida.Games.Shared.NubiCoach.AuditEnabled = false;
@@ -527,8 +529,12 @@ namespace NeuroVida.Bridge.EditorTools
             // y a que el fundido del menú llegue a 1 (antes la pausa salía a medio aparecer, con el velo y los botones a medias).
             var group = menu != null ? menu.GetComponent<CanvasGroup>() : null;
             double settleAt = Now + 0.6;
+            int framesBefore = Time.frameCount;
             yield return Wait.Until(() => Now >= settleAt && (group == null || group.alpha >= 0.999f), 5);
             yield return Wait.For(0.25);
+            // Mientras se espera acá el juego avanza muy pocos cuadros (en una corrida, 2 en 5 s) y la entrada del menú cuenta el tiempo por cuadro: sin esto la pausa salía a medio aparecer, desvaída y con los botones sin leerse. Se termina la entrada de golpe.
+            Debug.Log("[Capturas] entrada de la pausa: grupo " + (group == null ? "NULO" : "alfa " + group.alpha.ToString("0.00")) + ", cuadros de juego durante la espera " + (Time.frameCount - framesBefore) + "; se termina de golpe");
+            if (menu != null) menu.SettleForCapture();
             LogPauseState();
             Shot("pausa");
             if (menu != null && menu.IsShown)

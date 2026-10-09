@@ -73,7 +73,8 @@ namespace NeuroVida.Games.Radar
             // --- la partida avanza de golpe: la última ronda se juega bien y llega el final con varias cápsulas a salvo y la captura medida
             for (int i = 0; i < 2; i++) _run.Add(RadarContract.RainRound(5, rng), 4, 0, 300f);
             for (int i = 0; i < 4; i++) _run.Add(RadarContract.NextRound(9, rng), 4, 0, 150f);
-            for (int i = 0; i < 18; i++) _seats.Add((CapsuleType)(i % RadarContract.TypeCount));
+            // el contador de arriba y la nave tienen que decir lo mismo que el total de la partida (en una partida real coinciden solos: cada cápsula rescatada sube y suma una vez): se completan las que faltan por las rondas que se sumaron de golpe
+            while (_seats.Count < _run.Rescued) _seats.Add((CapsuleType)(_seats.Count % RadarContract.TypeCount));
             _shownRescued = _seats.Count;
             _roundsTotal = _run.RoundsPlayed + 1;
             _retoSeconds = 0f;

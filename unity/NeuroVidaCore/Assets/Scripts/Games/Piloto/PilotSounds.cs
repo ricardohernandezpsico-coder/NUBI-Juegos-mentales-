@@ -6,8 +6,8 @@ namespace NeuroVida.Games.Piloto
 {
     /// <summary>
     /// Sonido PROPIO de «Piloto Estelar: la ruta de las balizas», sintetizado por código (docs/diseno-piloto.md §8): el motor (un diente de sierra y un triángulo graves con un filtro; un segundo exacto que se repite sin cortes: la velocidad le sube el tono y el hiperimpulso le abre el
-    /// filtro), una nota para cada baliza que se pasa DENTRO de la ruta (la escala pentatónica) y un zumbido para la que se pasa fuera, un «blip» igual para todas las señales (no delata cuál es la de la misión), una campana al atrapar, un golpe sordo al equivocarse, un soplido y dos
-    /// campanas al cambiar de sector y un destello al entrar en hiperimpulso. Nada suena fuerte: todo ≤ 0,5.
+    /// filtro), una nota para cada baliza que se pasa DENTRO de la ruta (la escala pentatónica) y un zumbido para la que se pasa fuera, un «blip» igual para todas las señales (no delata cuál es la de la misión), una campana al atrapar, un golpe sordo al equivocarse, un soplido al cruzar el arco de un sector, DOS NOTAS QUE SUBEN (con timbre de triángulo, no de campana) al cambiar la misión
+    /// y un destello al entrar en hiperimpulso. Nada suena fuerte: todo ≤ 0,5.
     /// </summary>
     public static class PilotSounds
     {
@@ -67,13 +67,17 @@ namespace NeuroVida.Games.Piloto
             return 0.3f * Sin(hz, t) * Mathf.Exp(-t / 0.08f);
         }));
 
-        /// <summary>Un sector nuevo: un soplido que sube y dos campanas (mi y si agudos).</summary>
-        public static AudioClip Whoosh() => Get("whoosh", () => Make("whoosh", 1.4f, t =>
+        /// <summary>Se cruza el arco de un sector: un soplido que sube (las notas de la misión nueva van aparte: <see cref="MissionChange"/>).</summary>
+        public static AudioClip Whoosh() => Get("whoosh", () => Make("whoosh", 0.8f, t =>
         {
             float k = Mathf.Clamp01(t / 0.7f);
-            float n = t < 0.7f ? 0.13f * Noise(t, 300f * Mathf.Pow(2400f / 300f, k)) * Mathf.Sin(k * Mathf.PI) : 0f;
-            return n + 0.12f * (Bell(659.25f, t - 0.1f, 0.4f) + Bell(987.77f, t - 0.25f, 0.45f));
+            return t < 0.7f ? 0.2f * Noise(t, 300f * Mathf.Pow(2400f / 300f, k)) * Mathf.Sin(k * Mathf.PI) : 0f;
         }));
+
+        /// <summary>
+        /// La misión cambió (Tarea 63): dos notas que suben (mi y si agudos), una por cada latido de la tarjeta (0,4 s entre una y otra), con timbre de triángulo y caída rápida: se distingue de la campana de atrapar, que es larga y con armónicos.
+        /// </summary>
+        public static AudioClip MissionChange() => Get("mission", () => Make("mission", 1.0f, t => 0.3f * (Pluck(659.25f, t, 0.16f) + Pluck(987.77f, t - PilotContract.PulseBeatSeconds, 0.24f)), echo: true));
 
         /// <summary>El hiperimpulso: un destello que se abre y cuatro campanas que suben.</summary>
         public static AudioClip Hyper() => Get("hyper", () => Make("hyper", 1.6f, t =>
@@ -93,6 +97,14 @@ namespace NeuroVida.Games.Piloto
             if (t < 0f) return 0f;
             float env = (t < 0.01f ? t / 0.01f : 1f) * Mathf.Exp(-Mathf.Max(0f, t - 0.01f) / tau);
             return env * (Sin(hz, t) + 0.16f * Sin(hz * 2.76f, t) + 0.05f * Sin(hz * 5.4f, t));
+        }
+
+        private static float Pluck(float hz, float t, float tau)
+        {
+            if (t < 0f) return 0f;
+            float env = (t < 0.008f ? t / 0.008f : 1f) * Mathf.Exp(-Mathf.Max(0f, t - 0.008f) / tau);
+            float tri = 2f / Mathf.PI * Mathf.Asin(Mathf.Sin(2f * Mathf.PI * hz * t));
+            return env * (0.85f * tri + 0.15f * Sin(hz * 2f, t));
         }
 
         private static float Noise(float t, float center)
@@ -147,7 +159,7 @@ namespace NeuroVida.Games.Piloto
             for (int i = 0; i < 5; i++) Catch(i);
             Thud();
             yield return null;
-            Whoosh(); Hyper(); Finale();
+            Whoosh(); MissionChange(); Hyper(); Finale();
         }
 
         public static int CachedCount => Cache.Count;

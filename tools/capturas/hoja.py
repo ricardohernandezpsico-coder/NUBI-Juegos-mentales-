@@ -48,6 +48,7 @@ CAPTIONS = {
     'sin-animaciones': 'Con «quitar animaciones»',
     'tutorial-1': 'Tutorial: paso 1',
     'tutorial-3': 'Tutorial: paso 3',
+    'tutorial-nueva-mision': 'Tutorial: la misión cambió',
 }
 GAME_CAPTIONS = {
     'correo': {

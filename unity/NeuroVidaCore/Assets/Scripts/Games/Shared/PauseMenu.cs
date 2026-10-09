@@ -184,6 +184,20 @@ namespace NeuroVida.Games.Shared
             StartCoroutine(PopIn());
         }
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// SOLO EN EL EDITOR (capturas de pantalla): termina de golpe la entrada del menú (fundido y rebote). Mientras el guion de capturas espera, el juego avanza muy pocos cuadros y la entrada, que cuenta el tiempo por cuadro, salía a medio aparecer
+        /// (desvaída y con los botones sin leerse). En el teléfono no existe.
+        /// </summary>
+        public void SettleForCapture()
+        {
+            if (!IsShown) return;
+            StopAllCoroutines();
+            _group.alpha = 1f;
+            _panel.localScale = Vector3.one;
+        }
+#endif
+
         /// <summary>Oculta el menú (no reanuda: eso lo decide quien llama).</summary>
         public void Hide()
         {

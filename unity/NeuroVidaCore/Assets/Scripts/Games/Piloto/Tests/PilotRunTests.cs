@@ -141,6 +141,62 @@ namespace NeuroVida.Games.Piloto.Tests
             Assert.Less(b.X1, PilotContract.FieldWidth);
         }
 
+        [Test]
+        public void TheMissionNoticeHasRoomForTheTitleTheDrawnShapeAndTheSector_AndNeverReachesTheShip()
+        {
+            Assert.GreaterOrEqual(PilotPlan.NoticeShapeDp, 48f, "la forma se dibuja a 48 dp o más");
+            // título (26 dp desde 3) + forma (52 dp, centrada a 56) + sector (20 dp, centrado a 98): todo cabe en el alto
+            Assert.GreaterOrEqual(PilotPlan.NoticeHeight, 4f + 26f + PilotPlan.NoticeShapeDp + 20f);
+            foreach (float h in new[] { 640f, 720f, 800f, 900f })
+            {
+                var p = new PilotPlan(h, false);
+                var n = p.NoticeBox;
+                string at = " (alto " + h + ")";
+                Assert.Greater(n.Y0, p.MissionBottom, "bajo la tarjeta de misión" + at);
+                Assert.AreEqual(p.BannerTop, n.Y0, 1e-3f, "mismo lugar de arriba que el aviso corto" + at);
+                Assert.Greater(n.Y1 - n.Y0, 100f, "alto para tres renglones y la forma" + at);
+                Assert.Less(n.Y1, p.ShipY - 30f, "el aviso nunca llega a la nave" + at);
+                Assert.Less(n.Y1, p.SkyBottom, "queda sobre el final del cielo" + at);
+                Assert.GreaterOrEqual(n.X0, 0f); Assert.LessOrEqual(n.X1, PilotContract.FieldWidth);
+                Assert.LessOrEqual(n.X0, p.BannerBox.X0, "contiene al aviso corto" + at);
+                Assert.GreaterOrEqual(n.X1, p.BannerBox.X1);
+                Assert.GreaterOrEqual(n.Y1, p.BannerBox.Y1);
+                Assert.GreaterOrEqual(p.SkyBottom - p.SkyTop, 100f, "el cielo de señales no se achica por el aviso nuevo" + at);
+            }
+        }
+
+        [Test]
+        public void TheMissionNoticeTextsAreTheSketchOnes_AndTheFirstSectorOnlyAnnouncesTheMission()
+        {
+            Assert.AreEqual("¡Tu misión!", PilotContract.MissionNoticeTitle(0));
+            Assert.AreEqual("¡Nueva misión!", PilotContract.MissionNoticeTitle(1));
+            Assert.AreEqual("¡Nueva misión!", PilotContract.MissionNoticeTitle(2));
+            Assert.AreEqual("Sector 2 · Cinturón de hielo", PilotContract.MissionNoticeFoot(1));
+            Assert.AreEqual("círculo con punto", PilotContract.MissionName(new PilotMission(SignalShape.Circle, SignalDetail.Dot)));
+            foreach (var t in new[] { PilotContract.MissionNoticeTitle(0), PilotContract.MissionNoticeTitle(1), PilotContract.MissionNoticeFoot(0), PilotContract.MissionNoticeFoot(2) })
+                foreach (var bad in new[] { "cognitiv", "entrenamiento", "cerebro" })
+                    Assert.IsFalse(t.ToLowerInvariant().Contains(bad), t);
+        }
+
+        [Test]
+        public void TheMissionCardPulsesTwiceInAboutEightTenthsOfASecond()
+        {
+            Assert.AreEqual(0.8f, PilotContract.PulseBeats * PilotContract.PulseBeatSeconds, 1e-5f);
+            Assert.AreEqual(1f, PilotContract.MissionPulseScale(-0.1f), 1e-5f, "antes del cambio, en reposo");
+            Assert.AreEqual(1f, PilotContract.MissionPulseScale(0f), 1e-4f);
+            Assert.AreEqual(1.12f, PilotContract.MissionPulseScale(0.2f), 1e-4f, "primer latido: 1,12 a la mitad");
+            Assert.AreEqual(1f, PilotContract.MissionPulseScale(0.4f), 1e-4f, "entre un latido y otro vuelve a 1");
+            Assert.AreEqual(1.12f, PilotContract.MissionPulseScale(0.6f), 1e-4f, "segundo latido");
+            Assert.AreEqual(1f, PilotContract.MissionPulseScale(0.8f), 1e-5f);
+            Assert.AreEqual(1f, PilotContract.MissionPulseScale(5f), 1e-5f, "después, en reposo");
+            for (float t = 0f; t < 0.8f; t += 0.01f)
+            {
+                float k = PilotContract.MissionPulseScale(t);
+                Assert.GreaterOrEqual(k, 1f - 1e-5f);
+                Assert.LessOrEqual(k, 1.12f + 1e-5f);
+            }
+        }
+
         // ------------------------------------------------------------------ los dos motores comunes
 
         private static SequenceConfigDetails Config(int stage = 5) => new SequenceConfigDetails { age_band = "ADULT", pil_stage = stage, level = 3, timed = true };
@@ -273,7 +329,7 @@ namespace NeuroVida.Games.Piloto.Tests
             int before = PilotSounds.CachedCount;
             Assert.AreSame(PilotSounds.Engine(), PilotSounds.Engine(), "un clip por sonido");
             Assert.AreEqual(before, PilotSounds.CachedCount);
-            foreach (var clip in new[] { PilotSounds.Engine(), PilotSounds.Beacon(2), PilotSounds.Buzz(), PilotSounds.Blip(), PilotSounds.Catch(3), PilotSounds.Thud(), PilotSounds.Whoosh(), PilotSounds.Hyper(), PilotSounds.Finale() })
+            foreach (var clip in new[] { PilotSounds.Engine(), PilotSounds.Beacon(2), PilotSounds.Buzz(), PilotSounds.Blip(), PilotSounds.Catch(3), PilotSounds.Thud(), PilotSounds.Whoosh(), PilotSounds.MissionChange(), PilotSounds.Hyper(), PilotSounds.Finale() })
             {
                 var data = new float[clip.samples * clip.channels];
                 clip.GetData(data, 0);

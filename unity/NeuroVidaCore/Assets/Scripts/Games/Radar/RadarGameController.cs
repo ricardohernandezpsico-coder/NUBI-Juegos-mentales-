@@ -341,6 +341,9 @@ namespace NeuroVida.Games.Radar
             int record = Mathf.Max(_bestRecord, _run.Rescued);
             bool broke = _run.Rescued > _bestRecord;
 #if UNITY_EDITOR
+            // el contador de arriba, las cápsulas de la nave y el título «N cápsulas a salvo» tienen que decir lo mismo (cada cápsula rescatada sube a la nave y suma una sola vez): si no, el smoke falla
+            if (!EditorShotMode && (_shownRescued != _run.Rescued || _seats.Count != _run.Rescued))
+                Debug.LogError("[SmokeTest] Radar: el contador (" + _shownRescued + "), la nave (" + _seats.Count + ") y el total de la partida (" + _run.Rescued + ") no coinciden");
             Debug.Log("[SmokeTest] Radar: partida terminada: " + _run.Rescued + " cápsulas, " + _run.Perfect + " rondas perfectas de " + _run.RoundsPlayed + ", racha mayor " + _run.BestStreak + ", vistazo " + _run.GlanceMs + " ms, captura " + _run.Capture.ToString("0.0") + ", nivel " + _dda.Level);
 #endif
             HideRoundObjects();

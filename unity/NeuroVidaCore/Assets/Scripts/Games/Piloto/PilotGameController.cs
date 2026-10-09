@@ -188,7 +188,7 @@ namespace NeuroVida.Games.Piloto
             _route = new PilotRoute(PilotContract.DriveLevel(_driveDda.Level, true));
             ExtendRoute();
             _mission = PilotContract.PickMission(_rng, null);
-            _missionFreshAt = -10f;
+            _missionFreshAt = _missionPulseAt = -10f;
             ClearSignals();
             _gates.Clear();
             ClearNotices();
@@ -201,7 +201,7 @@ namespace NeuroVida.Games.Piloto
             _tintMix = 1f;
             _hud.SetLevelText(PilotContract.SectorChip(0));
             UpdateHud();
-            RequestNotice(PilotContract.SectorBannerTag(0), PilotContract.SectorName(0), NoticeSeconds, Gold);
+            RequestMissionNotice(0, _mission, NoticeSeconds);
             _phase = Phase.Fly;
             StartEngine();
             LayoutStrip();
@@ -276,7 +276,7 @@ namespace NeuroVida.Games.Piloto
             }
 
             StepSignals(now, dt);
-            if (!_guided) StepSectors(now);
+            if (!_guided) StepSectors(now); else StepPracticeGate(now);
             if (!_guided && Endless) SetJourney(_t / _flightSeconds);
             if (!_guided && Endless && _t >= _flightSeconds) EndFlight();
         }
@@ -407,7 +407,7 @@ namespace NeuroVida.Games.Piloto
         private void BuildForbidden()
         {
             _forbidden.Clear();
-            if (NoticeClaimsZone) _forbidden.Add(_plan.BannerBox);
+            if (NoticeClaimsZone) _forbidden.Add(ClaimedBox);
             foreach (var f in _floatViews) if (f.Active) _forbidden.Add(f.Area);
         }
 
@@ -486,6 +486,21 @@ namespace NeuroVida.Games.Piloto
 
         // ------------------------------------------------------------------ sectores
 
+        /// <summary>El arco de la práctica del tutorial: al cruzarlo la misión cambia de verdad (ver <see cref="PracticeMissionChange"/>). Nada se detiene: ni la nave ni la ruta.</summary>
+        private void StepPracticeGate(float now)
+        {
+            for (int i = _gates.Count - 1; i >= 0; i--)
+            {
+                var g = _gates[i];
+                if (_dist >= g.P && !_practiceCrossed)
+                {
+                    _practiceCrossed = true;
+                    PracticeMissionChange(now);
+                }
+                if (_plan.ShipY - (g.P - _dist) > _plan.ShipY + 90f) _gates.RemoveAt(i);
+            }
+        }
+
         /// <summary>Reto: el arco sale arriba a tiempo para que la nave lo cruce en el límite del sector. Precisión: sale cuando ya nacieron las 8 señales del sector. La misión cambia al cruzar el arco; nada se detiene.</summary>
         private void StepSectors(float now)
         {
@@ -532,13 +547,12 @@ namespace NeuroVida.Games.Piloto
             // las señales que quedaban eran de la misión vieja: se retiran sin contar
             foreach (var s in _signals) if (s.Alive) { s.Outcome = Outcome.Gone; s.DoneAt = now - SignalFadeSeconds + 0.12f; _dropped++; }
             _mission = PilotContract.PickMission(_rng, _mission);
-            _missionFreshAt = now;
-            SetMissionCard();
+            MissionChanged(now);                                      // la tarjeta se ilumina y late dos veces, y suenan dos notas que suben (Tarea 63)
             _tintFrom = _tintTo;
             _tintTo = sector;
             _tintMix = 0f;
             _hud.SetLevelText(PilotContract.SectorChip(sector), highlight: true);
-            RequestNotice(PilotContract.SectorBannerTag(sector), PilotContract.SectorName(sector), NoticeSeconds, Gold);
+            RequestMissionNotice(sector, _mission, NoticeSeconds);   // el aviso muestra la MISIÓN NUEVA (forma dibujada y nombre), no solo el nombre del sector
             PlayClip(PilotSounds.Whoosh(), 0.8f);
             GameFeel.Haptic(GameFeel.HapticKind.Firm);
         }
@@ -754,7 +768,7 @@ namespace NeuroVida.Games.Piloto
         {
             if (_guardReports >= 3 || _signals.Count == 0) return;
             var boxes = new List<Box>();
-            if (_notice != null && _bannerGroup.alpha > 0.05f) boxes.Add(_plan.BannerBox);
+            if (_notice != null && _bannerGroup.alpha > 0.05f) boxes.Add(BoxOf(_notice.Value));
             foreach (var f in _floatViews) if (f.Active) boxes.Add(f.Area);
             foreach (var s in _signals)
             {

@@ -10,7 +10,9 @@ namespace NeuroVida.Games.Piloto
         /// <summary>La práctica del tutorial: ruta ancha (nivel 1), nave a tres cuartos de la velocidad, señales espaciadas y que duran 4 s.</summary>
         private const float PracticeSpeedFactor = 0.75f, PracticeGapFactor = 1.7f, PracticeExposure = 4f;
 
-        private bool _practiceSpawn;
+        private bool _practiceSpawn, _practiceCrossed;
+        /// <summary>La misión que trae el arco de la práctica (distinta de «hexágono con punto»).</summary>
+        private readonly PilotMission _practiceNewMission = new PilotMission(SignalShape.Circle, SignalDetail.Ring);
 
         // ------------------------------------------------------------------ ronda guiada del tutorial (pieza común)
 
@@ -22,7 +24,8 @@ namespace NeuroVida.Games.Piloto
             while (!_baked) yield return null;
             // «Nubi entrenadora» (docs/diseno-piloto.md §10), sobre una práctica que no cuenta (ruta ancha, nave lenta, misión «hexágono con punto»; no alimenta motores ni medidas). LAS DOS TAREAS VAN JUNTAS desde el paso 2 (regla permanente 1): nunca
             // una pantalla de señales sola ni una ruta sin señales. 1) «Esta es tu misión» (foco en la tarjeta, con una señal de ejemplo a la vista); 2) «Desliza aquí para guiar la nave» (señales ya apareciendo despacio); 3) tocar una señal de la misión
-            // (hueco = esa señal; el toque en el hueco es el de verdad y la práctica hace la jugada); 4) «Las parecidas tienen otro detalle»; 5) «En cada sector cambia la misión»; 6) «¡Listo!».
+            // (hueco = esa señal; el toque en el hueco es el de verdad y la práctica hace la jugada); 4) «Las parecidas tienen otro detalle»; 5) un ARCO DE VERDAD sale arriba y se acerca («Al cruzar un arco dorado, cambia la misión»; la nave y la ruta no se
+            // detienen); 6) al cruzarlo la misión cambia (la tarjeta se ilumina y late, suenan dos notas) y Nubi apunta a la tarjeta: «Cruzaste el arco: ¡tu misión cambió!»; 7) aparece una señal de la misión NUEVA y se toca (toque real); 8) «¡Listo!».
             var savedRun = _run;
             var savedMission = _mission;
             float savedFresh = _missionFreshAt, savedT = _t, savedDist = _dist, savedHyper = _hyperLeft;
@@ -30,7 +33,8 @@ namespace NeuroVida.Games.Piloto
             float savedMix = _tintMix;
             _run = new PilotRun();
             _mission = new PilotMission(SignalShape.Hexagon, SignalDetail.Dot);
-            _missionFreshAt = -10f;
+            _missionFreshAt = _missionPulseAt = -10f;
+            _practiceCrossed = false;
             _hyperLeft = 0f;
             _t = _dist = 0f;
             _steeredSeconds = 0f;
@@ -51,7 +55,7 @@ namespace NeuroVida.Games.Piloto
             _practiceSpawn = false;
             _phase = Phase.Idle;                                           // el paso 1 es un cuadro quieto
             var coach = t.Coach;
-            var script = new GuidedScript(6);
+            var script = new GuidedScript(7);
             bool ok = !t.Skipped;
 
             // 1) esta es tu misión: la tarjeta, y una señal de la misión a la vista para compararla
@@ -110,12 +114,45 @@ namespace NeuroVida.Games.Piloto
                 if (ok) script.Success();
             }
 
-            // 5) en cada sector cambia la misión
+            // 5) un arco de verdad: sale arriba y se acerca mientras Nubi lo explica; la nave y la ruta siguen (nada se detiene)
             if (ok)
             {
-                yield return StartCoroutine(coach.Notice(CoachTexts.Piloto.Sector, 2.8f, keep: new Func<Rect>[] { SignalsZone(coach), coach.Zone(_missionFill.rectTransform) }));
+                _practiceCrossed = false;
+                _gates.Clear();
+                _gates.Add(new Gate { P = _dist + (_plan.ShipY - _plan.RouteTop - 14f), Sector = 1 });
+                yield return StartCoroutine(coach.Notice(CoachTexts.Piloto.Sector, 2.0f, keep: new Func<Rect>[] { SignalsZone(coach), coach.Zone(_missionFill.rectTransform) }));
+                ok = !t.Skipped;
+                float wait = 0f;
+                while (ok && !_practiceCrossed && wait < 6f) { wait += Time.unscaledDeltaTime; yield return null; ok = !t.Skipped; }
+                if (ok && !_practiceCrossed) { _practiceCrossed = true; PracticeMissionChange(Now); }     // red de seguridad: si el arco no llegó, la misión cambia igual
+                if (ok) script.Success();
+            }
+
+            // 6) la misión cambió: Nubi apunta a la tarjeta (que late y brilla)
+            if (ok)
+            {
+                float started = Time.unscaledTime;
+                yield return StartCoroutine(coach.Watch(() => coach.RectOf(_missionFill.rectTransform), CoachTexts.Piloto.NewMission, () => Time.unscaledTime - started > 2.6f, 3.0f, keep: new Func<Rect>[] { SignalsZone(coach) }));
                 ok = !t.Skipped;
                 if (ok) script.Success();
+            }
+
+            // 7) una señal de la misión NUEVA, para tocarla (toque real)
+            if (ok)
+            {
+                Signal target = SpawnForced(new PilotSignalKind(_practiceNewMission.Shape, _practiceNewMission.Detail, true, false), PracticeExposure * 2f);
+                yield return null;
+                if (target.View >= 0)
+                {
+                    int view = target.View;
+                    yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[view].Root), CoachTexts.Piloto.NewTarget, circle: true, keep: new Func<Rect>[] { SignalsZone(coach) }));
+                    ok = !t.Skipped;
+                    if (ok)
+                    {
+                        if (target.Alive) CatchSignal(target);                  // la práctica hace la jugada (si el toque no llegó —red de seguridad— igual sigue)
+                        script.Success();
+                    }
+                }
             }
             if (ok) yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             coach.Hide();
@@ -130,6 +167,11 @@ namespace NeuroVida.Games.Piloto
             _steerFinger = -1;
             _mouseSteer = false;
             _guided = false;
+            _gates.Clear();
+            _gateScheduled = false;
+            _practiceCrossed = false;
+            _missionPulseAt = -10f;
+            _missionCard.localScale = Vector3.one;
             _run = savedRun;
             _mission = savedMission;
             _missionFreshAt = savedFresh;
@@ -146,6 +188,16 @@ namespace NeuroVida.Games.Piloto
         // </guided>
 
         private float _guidedBotT;
+
+        /// <summary>Se cruzó el arco de la práctica: la misión cambia de «hexágono con punto» a «círculo con anillo». La tarjeta se ilumina y late y suenan dos notas (igual que en el vuelo); lo que quedaba a la vista era de la misión vieja y se retira.</summary>
+        private void PracticeMissionChange(float now)
+        {
+            foreach (var s in _signals) if (s.Alive) { s.Outcome = Outcome.Gone; s.DoneAt = now - SignalFadeSeconds + 0.12f; }
+            _mission = _practiceNewMission;
+            MissionChanged(now);
+            PlayClip(PilotSounds.Whoosh(), 0.8f);
+            GameFeel.Haptic(GameFeel.HapticKind.Firm);
+        }
 
         private Signal FindAlive(bool target)
         {

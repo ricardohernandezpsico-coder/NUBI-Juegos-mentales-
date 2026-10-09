@@ -65,11 +65,15 @@ namespace NeuroVida.Games.Piloto
         // arriba: viaje y misión
         private Image _journeyTrack, _journeyFill, _sepA, _sepB, _missionRim, _missionFill, _missionIcon;
         private Text _missionTag, _missionName;
+        /// <summary>La tarjeta de misión entera, centrada en sí misma: así late (escala) alrededor de su centro (Tarea 63).</summary>
+        private RectTransform _missionCard;
 
-        // el aviso de sector y de hiperimpulso
+        // el aviso de hiperimpulso (corto) y el de misión nueva (alto, con la forma dibujada: Tarea 63)
         private CanvasGroup _bannerGroup;
         private Image _bannerRim, _bannerFill;
         private Text _bannerTag, _bannerTitle;
+        private Image _tallRim, _tallFill, _tallIcon;
+        private Text _tallTitle, _tallName, _tallFoot;
 
         // la pantalla final
         private readonly Image[] _endSector = new Image[PilotContract.Sectors], _endLink = new Image[PilotContract.Sectors - 1];
@@ -244,12 +248,16 @@ namespace NeuroVida.Games.Piloto
             _sepA = MakeImage(_topLayer, "SepA", null);
             _sepB = MakeImage(_topLayer, "SepB", null);
             _sepA.color = _sepB.color = new Color(26f / 255f, 18f / 255f, 64f / 255f, 1f);
-            _missionRim = Rr(_topLayer, "MissionRim", PanelEdge, 19f);
-            _missionFill = Rr(_topLayer, "MissionFill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f), 17f);
-            _missionIcon = MakeImage(_topLayer, "MissionIcon", null);
+            var card = new GameObject("MissionCard");
+            card.transform.SetParent(_topLayer, false);
+            _missionCard = card.AddComponent<RectTransform>();
+            _missionCard.anchorMin = _missionCard.anchorMax = _missionCard.pivot = new Vector2(0.5f, 0.5f);
+            _missionRim = Rr(_missionCard, "MissionRim", PanelEdge, 19f);
+            _missionFill = Rr(_missionCard, "MissionFill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f), 17f);
+            _missionIcon = MakeImage(_missionCard, "MissionIcon", null);
             _missionIcon.enabled = false;
-            _missionTag = MakeLabel(_topLayer, "MissionTag", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
-            _missionName = MakeLabel(_topLayer, "MissionName", 15f, UiFonts.Bold, TextColor, TextAnchor.MiddleLeft);
+            _missionTag = MakeLabel(_missionCard, "MissionTag", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
+            _missionName = MakeLabel(_missionCard, "MissionName", 15f, UiFonts.Bold, TextColor, TextAnchor.MiddleLeft);
             _missionTag.horizontalOverflow = HorizontalWrapMode.Overflow;
             _missionName.horizontalOverflow = HorizontalWrapMode.Overflow;
             _missionName.resizeTextForBestFit = false;
@@ -270,6 +278,13 @@ namespace NeuroVida.Games.Piloto
             _bannerTag = MakeLabel(_noticeLayer, "BannerTag", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _bannerTitle = MakeLabel(_noticeLayer, "BannerTitle", 18f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _bannerTag.horizontalOverflow = _bannerTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _tallRim = Rr(_noticeLayer, "TallRim", Gold, 21f);
+            _tallFill = Rr(_noticeLayer, "TallFill", Pill, 20f);
+            _tallTitle = MakeLabel(_noticeLayer, "TallTitle", 18f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _tallIcon = MakeImage(_noticeLayer, "TallIcon", null);
+            _tallName = MakeLabel(_noticeLayer, "TallName", 18f, UiFonts.Bold, Color.white, TextAnchor.MiddleLeft);
+            _tallFoot = MakeLabel(_noticeLayer, "TallFoot", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            _tallTitle.horizontalOverflow = _tallName.horizontalOverflow = _tallFoot.horizontalOverflow = HorizontalWrapMode.Overflow;
             _bannerGroup.alpha = 0f;
             _noticeLayer.gameObject.SetActive(false);
             for (int i = 0; i < _floatViews.Length; i++)
@@ -493,9 +508,10 @@ namespace NeuroVida.Games.Piloto
             SetRect(_sepA.rectTransform, JourneyLeft + JourneyW / 3f, _plan.JourneyY, 2f, 9f);
             SetRect(_sepB.rectTransform, JourneyLeft + JourneyW * 2f / 3f, _plan.JourneyY, 2f, 9f);
             float my = (_plan.MissionTop + _plan.MissionBottom) * 0.5f, mw = PilotPlan.Width - 24f;
-            SetRect(_missionRim.rectTransform, cx, my, mw + 3f, 39f);
-            SetRect(_missionFill.rectTransform, cx, my, mw, 36f);
-            SetRect(_missionIcon.rectTransform, 34f, my, 28f, 28f);
+            SetRect(_missionCard, cx, my, 0f, 0f);                         // la tarjeta (con todo lo suyo) centrada en sí misma: late alrededor de su centro
+            SetChild(_missionRim.rectTransform, 0f, 0f, mw + 3f, 39f);
+            SetChild(_missionFill.rectTransform, 0f, 0f, mw, 36f);
+            SetChild(_missionIcon.rectTransform, 34f - cx, 0f, 28f, 28f);
             PlaceMissionTexts();
             var sky = _plan.SkyBox;
             SetRect(_skyZone, PilotPlan.Width * 0.5f, (sky.Y0 + sky.Y1) * 0.5f, sky.X1 - sky.X0, sky.Y1 - sky.Y0);
@@ -521,7 +537,24 @@ namespace NeuroVida.Games.Piloto
             SetRect(_bannerFill.rectTransform, cx, cy, w, h);
             SetRect(_bannerTag.rectTransform, cx, b.Y0 + 15f, w - 16f, 22f);
             SetRect(_bannerTitle.rectTransform, cx, b.Y0 + 37f, w - 16f, 28f);
+            LayoutTallNotice();
         }
+
+        /// <summary>El aviso de misión nueva: título arriba (18 dp), al medio la forma dibujada a 52 dp con su nombre (18 dp) y abajo «Sector N · nombre» (14 dp). El grupo de forma y nombre se centra según lo ancho del nombre.</summary>
+        private void LayoutTallNotice()
+        {
+            var b = _plan.NoticeBox;
+            float cx = (b.X0 + b.X1) * 0.5f, w = b.X1 - b.X0, h = b.Y1 - b.Y0;
+            SetRect(_tallRim.rectTransform, cx, (b.Y0 + b.Y1) * 0.5f, w + 3f, h + 3f);
+            SetRect(_tallFill.rectTransform, cx, (b.Y0 + b.Y1) * 0.5f, w, h);
+            SetRect(_tallTitle.rectTransform, cx, b.Y0 + 16f, w - 16f, 26f);
+            float nameW = Mathf.Min(w - 16f - PilotPlan.NoticeShapeDp - 10f, _tallName.preferredWidth / _s + 6f);
+            float left = cx - (PilotPlan.NoticeShapeDp + 10f + nameW) * 0.5f, row = b.Y0 + 56f;
+            SetRect(_tallIcon.rectTransform, left + PilotPlan.NoticeShapeDp * 0.5f, row, PilotPlan.NoticeShapeDp * PilotSignalSprites.SideInDiameters, PilotPlan.NoticeShapeDp * PilotSignalSprites.SideInDiameters);
+            SetRect(_tallName.rectTransform, left + PilotPlan.NoticeShapeDp + 10f + nameW * 0.5f, row, nameW, 24f);
+            SetRect(_tallFoot.rectTransform, cx, b.Y0 + 98f, w - 16f, 20f);
+        }
+
 
         private void LayoutEnd()
         {

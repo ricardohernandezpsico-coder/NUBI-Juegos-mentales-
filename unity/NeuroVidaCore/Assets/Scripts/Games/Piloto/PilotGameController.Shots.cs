@@ -60,7 +60,12 @@ namespace NeuroVida.Games.Piloto
                 guard += Time.unscaledDeltaTime;
                 yield return null;
             }
-            yield return WaitSeconds(0.55f);
+            if (!arcShot) Debug.Log("[Capturas] Piloto: el arco de sector no se vio a media altura antes de cruzarlo");
+            // el aviso de misión nueva a la vista y entero (entra con un fundido de 0,2 s; con pocos cuadros por segundo en las capturas, un tiempo fijo no basta): se espera a que se vea y se saca justo en el latido de la tarjeta
+            float noticeGuard = 0f;
+            while (noticeGuard < 4f && !(_notice.HasValue && _notice.Value.Tall && _bannerGroup.alpha > 0.95f)) { noticeGuard += Time.unscaledDeltaTime; yield return null; }
+            if (noticeGuard >= 4f) Debug.Log("[Capturas] Piloto: el aviso de misión nueva no llegó a verse en 4 s (señales a la vista: " + _signals.Count + ", avisos en espera: " + _noticeQueue.Count + ")");
+            yield return WaitSeconds(0.1f);
             shot("sector-nueva-mision");
             // --- el hiperimpulso: estrellas en líneas, la nave azul
             yield return WaitSeconds(2.0f);

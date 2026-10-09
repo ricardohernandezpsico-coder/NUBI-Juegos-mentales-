@@ -73,6 +73,23 @@ namespace NeuroVida.Games.Piloto.Tests
         private static (float center, float half) Straight(float y) => (180f, 80f);
 
         [Test]
+        public void ASignalNeverBornUnderTheMissionNotice()
+        {
+            var rng = new Random(11);
+            var notice = new List<Box> { Plan.NoticeBox };
+            var live = new List<(float x, float y)>();
+            int placed = 0;
+            for (int i = 0; i < 4000; i++)
+            {
+                live.Clear();
+                if (!PilotSpawn.TryPlace(rng, i % 3 == 0, Plan.SkyTop, Plan.SkyBottom, notice, live, Straight, out float x, out float y)) continue;
+                placed++;
+                Assert.IsFalse(Box.Around(x, y, PilotContract.SignalRingSize * 0.5f).Intersects(Plan.NoticeBox, 0f), "nace bajo el aviso de misión nueva");
+            }
+            Assert.Greater(placed, 3000, "con el aviso alto a la vista todavía hay lugar para las señales");
+        }
+
+        [Test]
         public void ASignalNeverBornUnderANotice()
         {
             var rng = new Random(4);

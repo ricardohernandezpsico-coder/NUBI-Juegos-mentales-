@@ -228,6 +228,23 @@ namespace NeuroVida.Games.Piloto
         public static string SectorHud(int sector) => "Sector " + (sector + 1) + " de " + Sectors + " · " + SectorName(sector);
         public static string SectorBannerTag(int sector) => "SECTOR " + (sector + 1);
 
+        /// <summary>El aviso de misión (Tarea 63): arriba el título (en el primer sector todavía nada cambió: «¡Tu misión!»; en los otros, «¡Nueva misión!»), al medio la forma con su detalle dibujada y su nombre, abajo «Sector N · nombre».</summary>
+        public const string FirstMissionTitle = "¡Tu misión!", NewMissionTitle = "¡Nueva misión!";
+        public static string MissionNoticeTitle(int sector) => sector <= 0 ? FirstMissionTitle : NewMissionTitle;
+        public static string MissionNoticeFoot(int sector) => "Sector " + (sector + 1) + " · " + SectorName(sector);
+
+        /// <summary>
+        /// El latido de la tarjeta de misión al cambiar (Tarea 63): escala 1 → 1,12 → 1, dos veces en 0,8 s (<see cref="PulseBeatSeconds"/> por latido). Fuera de esos 0,8 s vale 1. Con «quitar animaciones» el juego no lo usa (queda el brillo fijo y el tono).
+        /// </summary>
+        public const float PulseBeatSeconds = 0.4f, PulsePeak = 1.12f;
+        public const int PulseBeats = 2;
+        public static float MissionPulseScale(float secondsSinceChange)
+        {
+            if (secondsSinceChange < 0f || secondsSinceChange >= PulseBeats * PulseBeatSeconds) return 1f;
+            float k = secondsSinceChange / PulseBeatSeconds;
+            return 1f + (PulsePeak - 1f) * (float)Math.Sin(Math.PI * (k - Math.Floor(k)));
+        }
+
         /// <summary>El chip de arriba del marcador: «Sector 2 de 3».</summary>
         public static string SectorChip(int sector) => "Sector " + (sector + 1) + " de " + Sectors;
 

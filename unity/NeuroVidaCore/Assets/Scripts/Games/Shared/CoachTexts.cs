@@ -149,7 +149,9 @@ namespace NeuroVida.Games.Shared
             public const string Steer = "Desliza aquí para guiar la nave";
             public const string Catch = "Toca la señal de tu misión";
             public const string Lookalike = "Las parecidas tienen otro detalle: no las toques";
-            public const string Sector = "En cada sector cambia la misión";
+            public const string Sector = "Al cruzar un arco dorado, cambia la misión";
+            public const string NewMission = "Cruzaste el arco: ¡tu misión cambió!";
+            public const string NewTarget = "Ahora toca una señal de la misión nueva";
         }
 
         /// <summary>Cosecha de palabras (pantalla: las siete letras que giran, la bandeja, «Sembrar» y «Borrar» abajo y el planeta del huerto). La práctica arma CASA con las letras I R A O A S C.</summary>
@@ -257,6 +259,8 @@ namespace NeuroVida.Games.Shared
             yield return ("piloto", "atrapar", Piloto.Catch);
             yield return ("piloto", "parecidas", Piloto.Lookalike);
             yield return ("piloto", "sector", Piloto.Sector);
+            yield return ("piloto", "misión nueva", Piloto.NewMission);
+            yield return ("piloto", "señal nueva", Piloto.NewTarget);
             yield return ("bodega", "empezar", Bodega.Begin);
             yield return ("bodega", "esclusa", Bodega.Watch);
             yield return ("bodega", "así quedó", Bodega.Reveal);

@@ -59,6 +59,17 @@ namespace NeuroVida.Games.Piloto
         // ------------------------------------------------------------------ la tarjeta de misión
 
         private bool _missionFresh;
+        /// <summary>Cuándo cambió la misión (el latido de la tarjeta cuenta desde ahí; -10 = hace mucho).</summary>
+        private float _missionPulseAt = -10f;
+
+        /// <summary>La misión acaba de cambiar: la tarjeta se ilumina (brillo dorado 1,6 s), late dos veces (escala 1 → 1,12 → 1, ~0,8 s) y suenan dos notas que suben. «Quitar animaciones»: sin latido, queda el brillo fijo y el tono.</summary>
+        private void MissionChanged(float now)
+        {
+            _missionFreshAt = now;
+            _missionPulseAt = now;
+            SetMissionCard();
+            PlayClip(PilotSounds.MissionChange(), 0.85f);
+        }
 
         private void SetMissionCard()
         {
@@ -73,10 +84,11 @@ namespace NeuroVida.Games.Piloto
         private void PlaceMissionTexts()
         {
             float my = (_plan.MissionTop + _plan.MissionBottom) * 0.5f;
+            float cx = PilotPlan.Width * 0.5f;                                           // la tarjeta es un objeto centrado en sí mismo: sus textos van por desplazamiento desde su centro
             float tagW = _missionTag.preferredWidth / _s + 4f;
-            SetRect(_missionTag.rectTransform, 54f + tagW * 0.5f, my, tagW, 22f);
+            SetChild(_missionTag.rectTransform, 54f + tagW * 0.5f - cx, 0f, tagW, 22f);
             float left = 54f + tagW + 6f, w = 346f - left;
-            SetRect(_missionName.rectTransform, left + w * 0.5f, my, w, 22f);
+            SetChild(_missionName.rectTransform, left + w * 0.5f - cx, 0f, w, 22f);
         }
 
         private void AnimateMission(float now)
@@ -89,17 +101,22 @@ namespace NeuroVida.Games.Piloto
                 _missionRim.color = fresh ? Gold : PanelEdge;
                 PlaceMissionTexts();
             }
+            _missionCard.localScale = Vector3.one * (Motion.Decorative ? PilotContract.MissionPulseScale(now - _missionPulseAt) : 1f);
             float a = fresh ? (Motion.Decorative ? 0.25f + 0.2f * Mathf.Sin(now * 11f) + 0.2f : 0.5f) : 0.95f;
             _missionFill.color = fresh ? new Color(Gold.r * 0.55f + PanelFill.r * 0.45f, Gold.g * 0.55f + PanelFill.g * 0.45f, Gold.b * 0.4f + PanelFill.b * 0.6f, Mathf.Clamp(a + 0.4f, 0.6f, 1f)) : new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f);
         }
 
-        // ------------------------------------------------------------------ avisos (sector, hiperimpulso)
+        // ------------------------------------------------------------------ avisos (misión nueva por sector, hiperimpulso)
 
         private struct NoticeReq
         {
             public string Tag, Title;
             public float Seconds;
             public Color Tint;
+            /// <summary>true = el aviso ALTO de misión nueva (título, forma dibujada con su nombre y el sector); false = el corto de dos renglones (hiperimpulso).</summary>
+            public bool Tall;
+            public int Sector;
+            public PilotMission Mission;
         }
 
         private readonly Queue<NoticeReq> _noticeQueue = new Queue<NoticeReq>();
@@ -109,9 +126,28 @@ namespace NeuroVida.Games.Piloto
         /// <summary>true mientras hay un aviso a la vista o esperando su turno: su rectángulo es zona prohibida para las señales nuevas (docs/diseno-piloto.md §7).</summary>
         private bool NoticeClaimsZone => _notice != null || _noticeQueue.Count > 0;
 
+        private Box BoxOf(NoticeReq r) => r.Tall ? _plan.NoticeBox : _plan.BannerBox;
+
+        /// <summary>El rectángulo que reclaman el aviso a la vista y los que esperan: el alto contiene al corto, así que si hay uno alto, ese.</summary>
+        private Box ClaimedBox
+        {
+            get
+            {
+                bool tall = _notice.HasValue && _notice.Value.Tall;
+                foreach (var q in _noticeQueue) tall |= q.Tall;
+                return tall ? _plan.NoticeBox : _plan.BannerBox;
+            }
+        }
+
         private void RequestNotice(string tag, string title, float seconds, Color tint)
         {
             _noticeQueue.Enqueue(new NoticeReq { Tag = tag, Title = title, Seconds = seconds, Tint = tint });
+        }
+
+        /// <summary>El aviso de misión nueva (Tarea 63): «¡Nueva misión!», la forma con su detalle dibujada grande, su nombre y «Sector N · nombre». Va en el mismo lugar fijo de avisos, con la misma guardia: nunca sobre una señal.</summary>
+        private void RequestMissionNotice(int sector, PilotMission mission, float seconds)
+        {
+            _noticeQueue.Enqueue(new NoticeReq { Seconds = seconds, Tint = Gold, Tall = true, Sector = sector, Mission = mission });
         }
 
         private void ClearNotices()
@@ -124,15 +160,12 @@ namespace NeuroVida.Games.Piloto
         /// <summary>El aviso espera a que NINGUNA señal (ni viva ni desvaneciéndose) quede bajo su rectángulo; mientras espera, las señales nuevas ya no nacen ahí.</summary>
         private void UpdateNotice(float now)
         {
-            if (_notice == null && _noticeQueue.Count > 0 && !SignalUnder(_plan.BannerBox))
+            if (_notice == null && _noticeQueue.Count > 0 && !SignalUnder(BoxOf(_noticeQueue.Peek())))
             {
                 var r = _noticeQueue.Dequeue();
                 _notice = r;
                 _noticeAt = now;
-                _bannerTag.text = r.Tag;
-                _bannerTag.color = r.Tint;
-                _bannerTitle.text = r.Title;
-                _bannerRim.color = r.Tint;
+                ShowNoticeContent(r);
                 _bannerGroup.alpha = 0f;
                 _noticeLayer.gameObject.SetActive(true);
             }
@@ -143,6 +176,38 @@ namespace NeuroVida.Games.Piloto
             {
                 _notice = null;
                 _noticeLayer.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>Enciende solo las piezas del aviso que toca (corto o alto) y les pone su texto y su forma.</summary>
+        private void ShowNoticeContent(NoticeReq r)
+        {
+            _bannerRim.gameObject.SetActive(!r.Tall);
+            _bannerFill.gameObject.SetActive(!r.Tall);
+            _bannerTag.gameObject.SetActive(!r.Tall);
+            _bannerTitle.gameObject.SetActive(!r.Tall);
+            _tallRim.gameObject.SetActive(r.Tall);
+            _tallFill.gameObject.SetActive(r.Tall);
+            _tallTitle.gameObject.SetActive(r.Tall);
+            _tallIcon.gameObject.SetActive(r.Tall);
+            _tallName.gameObject.SetActive(r.Tall);
+            _tallFoot.gameObject.SetActive(r.Tall);
+            if (r.Tall)
+            {
+                _tallRim.color = r.Tint;
+                _tallTitle.text = PilotContract.MissionNoticeTitle(r.Sector);
+                _tallTitle.color = r.Tint;
+                _tallIcon.sprite = PilotSignalSprites.Get(r.Mission.Shape, r.Mission.Detail);
+                _tallName.text = PilotContract.MissionName(r.Mission);
+                _tallFoot.text = PilotContract.MissionNoticeFoot(r.Sector);
+                LayoutTallNotice();                                      // el grupo forma + nombre se centra según lo ancho del nombre
+            }
+            else
+            {
+                _bannerTag.text = r.Tag;
+                _bannerTag.color = r.Tint;
+                _bannerTitle.text = r.Title;
+                _bannerRim.color = r.Tint;
             }
         }
 
@@ -192,7 +257,7 @@ namespace NeuroVida.Games.Piloto
             if (b.Y0 < _plan.MissionBottom + 8f || b.Y1 > _plan.StripTop - 4f) return false;
             foreach (var s in _signals)
                 if (s != owner && Box.Around(s.X, s.Y, PilotContract.SignalRingSize * 0.5f).Intersects(b, 2f)) return false;
-            if (NoticeClaimsZone && b.Intersects(_plan.BannerBox, 2f)) return false;
+            if (NoticeClaimsZone && b.Intersects(ClaimedBox, 2f)) return false;
             foreach (var o in _floatViews)
                 if (o != self && o.Active && b.Intersects(o.Area, 2f)) return false;
             return true;
