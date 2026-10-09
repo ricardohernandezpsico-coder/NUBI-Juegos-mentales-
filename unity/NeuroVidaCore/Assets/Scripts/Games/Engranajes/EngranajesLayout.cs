@@ -23,8 +23,11 @@ namespace NeuroVida.Games.Engranajes
         public const float SceneShiftX = -4.5f;
 
         public const float StripH = 42f, QuestionH = 48f, MinScale = 0.55f;
-        /// <summary>La escena nunca pasa de 0,96: así la flecha del motor (que sale de la sala por la izquierda) y la aleta del cohete quedan ~10 dp adentro de la pantalla y no se cortan.</summary>
-        public const float MaxScale = 0.96f;
+        /// <summary>La escena nunca pasa de 0,88: así la flecha del motor (que sale de la sala por la izquierda) y la aleta del cohete quedan adentro de la pantalla y, sobre todo, el cartel de la turbina y de la antena (que cuelga a la derecha
+        /// del cohete, hasta 369 en el boceto) queda a 16 dp o más del borde (8-oct: con 0,96 llegaba a 3 dp del borde y el marco del tutorial se cortaba).</summary>
+        public const float MaxScale = 0.88f;
+        /// <summary>El borde derecho del cartel más ancho (boceto) y el margen mínimo que debe dejar a la derecha (dp).</summary>
+        public const float CartelRight = 369f, CartelMargin = 16f;
 
         public struct Metrics
         {

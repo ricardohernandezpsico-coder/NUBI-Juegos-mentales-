@@ -1087,7 +1087,8 @@ namespace NeuroVida.Games.Anagramas
             if (_card.gameObject.activeSelf != show) _card.gameObject.SetActive(show);
             if (!show || _word == null) return;
             float now = GameClock.Time;
-            float k = Motion.Decorative ? UiFx.EaseOutCubic(Mathf.Clamp01((now - _cardAt) / 0.42f)) : 1f;
+            // En el tutorial la tarjeta aparece ENTERA desde el primer cuadro: el foco de Nubi («Lee la definición…») congela el reloj de juego y, si entrara con fundido, quedaría vacía (alfa 0) mientras Nubi habla de ella
+            float k = Motion.Decorative && !_guided ? UiFx.EaseOutCubic(Mathf.Clamp01((now - _cardAt) / 0.42f)) : 1f;
             _cardGroup.alpha = k;
             _card.anchoredPosition = new Vector2(0f, -(1f - k) * 12f * _s);
 

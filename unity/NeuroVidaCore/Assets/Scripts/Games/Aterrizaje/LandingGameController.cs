@@ -959,7 +959,15 @@ namespace NeuroVida.Games.Aterrizaje
         private Rect LineHole()
         {
             var r = _tutorial.Coach.RectOf(_rulerRect);
-            return new Rect(r.xMin, r.center.y - 150f, r.width, 300f);
+            // El hueco incluye los rótulos «0» y «10» de los extremos (cuelgan fuera de la regla y debajo de ella): su caja y las de las etiquetas, unidas
+            float x0 = r.xMin, x1 = r.xMax, y0 = r.center.y - 150f, y1 = r.center.y + 150f;
+            foreach (var l in new[] { _minLabel, _maxLabel })
+            {
+                if (l == null) continue;
+                var lr = _tutorial.Coach.RectOf(l.rectTransform);
+                x0 = Mathf.Min(x0, lr.xMin - 16f); x1 = Mathf.Max(x1, lr.xMax + 16f); y0 = Mathf.Min(y0, lr.yMin - 16f);
+            }
+            return Rect.MinMaxRect(x0, y0, x1, y1);
         }
         // </guided>
 

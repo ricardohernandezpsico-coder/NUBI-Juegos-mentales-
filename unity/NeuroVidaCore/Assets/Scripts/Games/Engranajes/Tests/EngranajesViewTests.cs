@@ -48,6 +48,17 @@ namespace NeuroVida.Games.Engranajes.Tests
         }
 
         [Test]
+        public void TheWidestCartel_StaysAtLeast16DpFromTheRightEdge_AtEveryScale()
+        {
+            foreach (float h in Heights)
+            {
+                var m = EngranajesLayout.Compute(h);
+                var right = EngranajesLayout.SceneToLogical(m, EngranajesLayout.CartelRight, 142f);
+                Assert.LessOrEqual(right.x, EngranajesLayout.W - EngranajesLayout.CartelMargin, "alto " + h + ": el cartel de la turbina y de la antena deja 16 dp o más a la derecha");
+            }
+        }
+
+        [Test]
         public void TheCounterAndTheStartButton_FitSideBySide_AndTheStartButtonIsTheBigOne()
         {
             foreach (float h in Heights)

@@ -38,11 +38,11 @@ namespace NeuroVida.Games.Engranajes
             }
         }
 
-        /// <summary>El centro de un cartel de ancho <paramref name="w"/>: pegado a los engranajes y sin pasarse del borde derecho de la pantalla (3 dp de margen) aunque la escena esté achicada.</summary>
+        /// <summary>El centro de un cartel de ancho <paramref name="w"/>: pegado a los engranajes y sin pasarse del borde derecho de la pantalla (16 dp de margen: <see cref="EngranajesLayout.CartelMargin"/>) aunque la escena esté achicada.</summary>
         private float CartelX(float w)
         {
             float k = _lay.SceneScale <= 0f ? 1f : _lay.SceneScale;
-            float maxEdge = 180f + (EngranajesLayout.W - 3f - (EngranajesLayout.W / 2f + EngranajesLayout.SceneShiftX)) / k;
+            float maxEdge = 180f + (EngranajesLayout.W - EngranajesLayout.CartelMargin - (EngranajesLayout.W / 2f + EngranajesLayout.SceneShiftX)) / k;
             return Mathf.Min(273f + w / 2f, maxEdge - w / 2f);
         }
 

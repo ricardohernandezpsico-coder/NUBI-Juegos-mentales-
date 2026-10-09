@@ -1023,7 +1023,8 @@ namespace NeuroVida.Games.Freno
             _laneTop = _playH * 0.5f - (GameHud.Height + 150f);
             _gaugeW = Mathf.Min(960f, _playW - MarginU * 2f);
             _prompt.rectTransform.sizeDelta = new Vector2(_playW - MarginU * 2f, 110f);
-            _prompt.rectTransform.anchoredPosition = new Vector2(0f, bottom + 980f);
+            // el letrero («¡FRENO PERFECTO!», «Lanza el cohete…») va DEBAJO del aro que se abre alrededor de la señal ALTO (radio 260 sobre la señal, que está en bottom+1180): su borde de arriba queda en bottom+905 < 920
+            _prompt.rectTransform.anchoredPosition = new Vector2(0f, bottom + 850f);
             _stopRect.anchoredPosition = new Vector2(0f, bottom + 1180f);
             _stopRect.sizeDelta = new Vector2(400f, 400f);
         }

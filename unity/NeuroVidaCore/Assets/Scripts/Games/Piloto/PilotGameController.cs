@@ -411,6 +411,7 @@ namespace NeuroVida.Games.Piloto
             {
                 float y = _shipY + (seg.D - _traveled);
                 if (y < bottom || y > top || used >= _beaconsL.Count) continue;
+                if (y < _controlTop) continue;                          // la ruta termina arriba de la franja «Desliza aquí…»: sus puntos no se dibujan encima de ella ni de su texto
                 // Profundidad: las balizas lejanas (arriba) son más chicas y tenues.
                 float depth = Mathf.InverseLerp(bottom, top, y);
                 float scale = Mathf.Lerp(1.25f, 0.6f, depth);

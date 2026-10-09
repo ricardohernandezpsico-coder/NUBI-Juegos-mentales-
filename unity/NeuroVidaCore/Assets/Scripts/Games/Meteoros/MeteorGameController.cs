@@ -80,7 +80,7 @@ namespace NeuroVida.Games.Meteoros
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
-        private float _playW, _playH, _spawnY, _atmosphereY, _bottom;
+        private float _playW, _playH, _spawnY, _atmosphereY, _bottom, _hudBottomY;
         private Vector2 _starTarget;
 
         // ------------------------------------------------------------------ sesión
@@ -310,7 +310,8 @@ namespace NeuroVida.Games.Meteoros
 
             // recorrido: arriba, en un lugar donde no se pise con otro meteoro, hasta un punto de la atmósfera (diagonal suave)
             float half = Mathf.Max(40f, _playW * 0.5f - MarginU - m.Rx);
-            float dropH = (_spawnY + m.Ry) - _atmosphereY;
+            float startY = SpawnCenterY(m);
+            float dropH = startY - _atmosphereY;
             bool placed = false;
             float sx = 0f, tx = 0f;
             for (int tries = 0; tries < 14 && !placed; tries++)
@@ -321,7 +322,7 @@ namespace NeuroVida.Games.Meteoros
                 tx = Mathf.Clamp(tx, sx - dropH * 0.35f, sx + dropH * 0.35f);
                 tx = Mathf.Clamp(tx, -half, half);
                 var v = new Vector2((tx - sx) / spec.FallSeconds, -dropH / spec.FallSeconds);
-                placed = !CollidesWithActive(m, new Vector2(sx, _spawnY + m.Ry), v);
+                placed = !CollidesWithActive(m, new Vector2(sx, startY), v);
             }
             if (!placed)
             {
@@ -329,7 +330,7 @@ namespace NeuroVida.Games.Meteoros
                 return false;
             }
             _pending = null;
-            m.Pos = new Vector2(sx, _spawnY + m.Ry);
+            m.Pos = new Vector2(sx, startY);
             m.Vel = new Vector2((tx - sx) / spec.FallSeconds, -dropH / spec.FallSeconds);
             m.Root.anchoredPosition = m.Pos;
             ApplyTrail(m);
@@ -337,6 +338,9 @@ namespace NeuroVida.Games.Meteoros
             StartCoroutine(PopIn(m.Root, 0.2f));
             return true;
         }
+
+        /// <summary>El centro de la roca al nacer: su borde de arriba queda justo DEBAJO del marcador (antes nacían con la roca asomando por encima de él y tapaban el título y los rótulos).</summary>
+        private float SpawnCenterY(Meteor m) => Mathf.Min(_spawnY + m.Ry, _hudBottomY - 20f - m.Ry);
 
         /// <summary>¿El recorrido de [m] (de [pos] con [vel]) pisaría la roca de otro meteoro en algún momento de la caída de
         /// ambos? Se mira cada 0,2 s con la caja de las dos rocas más un poco de aire.</summary>
@@ -362,9 +366,11 @@ namespace NeuroVida.Games.Meteoros
         {
             bool glow = _streak >= MeteorContract.StreakGlow;
             float len = (glow ? 620f : 430f) * (GameFeel.ReduceMotion ? 0.5f : 1f);
+            Vector2 back = m.Vel.sqrMagnitude > 0.01f ? -m.Vel.normalized : Vector2.up;
+            // la estela crece al caer: nunca sube más arriba del borde de abajo del marcador (la punta de la estela queda DEBAJO de él)
+            if (_hudBottomY != 0f) len = Mathf.Min(len, Mathf.Max(0f, (_hudBottomY - 8f - m.Pos.y) / Mathf.Max(0.3f, back.y)));
             m.TrailRect.sizeDelta = new Vector2(m.TrailBase * (glow ? 1.35f : 1f), len);
             m.TrailImg.color = new Color(1f, 1f, 1f, glow ? 1f : 0.85f);
-            Vector2 back = m.Vel.sqrMagnitude > 0.01f ? -m.Vel.normalized : Vector2.up;
             m.TrailRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(-back.x, back.y) * Mathf.Rad2Deg);
         }
 
@@ -383,6 +389,7 @@ namespace NeuroVida.Games.Meteoros
                 if (m.Done) continue;
                 m.Pos += m.Vel * dt;
                 m.Root.anchoredPosition = m.Pos;
+                ApplyTrail(m);                                                  // el largo de la estela depende de qué tan abajo del marcador va la roca
                 if (!GameFeel.ReduceMotion) m.Rock.localRotation = Quaternion.Euler(0f, 0f, 7f * Mathf.Sin(t * 0.9f + m.Wobble));
                 if (m.Pos.y <= _atmosphereY + m.Ry * 0.35f) ResolvePass(m);
             }
@@ -1017,6 +1024,7 @@ namespace NeuroVida.Games.Meteoros
             _prompt.rectTransform.anchoredPosition = new Vector2(0f, top - (GameHud.Height + 200f));
 
             _spawnY = top - (GameHud.Height + 190f);
+            _hudBottomY = top - GameHud.Height;
             // la atmósfera queda sobre la cúpula del observatorio (la superficie ocupa el 16% de abajo)
             _atmosphereY = _bottom + _playH * 0.30f;
             _atmosphere.anchoredPosition = new Vector2(0f, _atmosphereY - 40f);
