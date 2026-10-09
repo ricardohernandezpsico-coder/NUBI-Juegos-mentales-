@@ -20,6 +20,14 @@ Revisión a primera vista de las 19 láminas de esta carpeta (Tarea 53) y lo que
 | Lluvia de meteoros (`meteoros`) | Nacían sobre el título; estela sobre el marcador; «se fue: fondo» chico. | Nacen debajo del marcador y la estela crece sin pasar de él. «se fue: …» mide 46 unidades = 15 dp (≥ 14): sin cambio. **Queda**: al empezar, el primer meteoro pasa sobre la línea de ayuda «Toca las palabras que existen…» (ya pasaba antes, más tarde). |
 | La estrella intrusa (`intrusa`) | Las palabras parecen de ~29 dp de alto. | **Verificado**: el área TOCABLE de cada palabra es de al menos 64 dp (`IntrusaLayout.TouchArea`, con prueba `TouchArea_NuncaBajaDe64Dp…`), mayor que el rótulo. Sin cambios. |
 
+## Tutoriales nuevos (Tarea 56, 9-oct)
+
+Las láminas de Cosecha, ¿Verdad o disparate? y La estrella intrusa ya traen sus pasos 1 y 3 del tutorial. Lo que se vio al revisarlas:
+
+- **¿Verdad o disparate?, paso 3**: Nubi y su globo caían sobre el botón VERDAD (tapaban su ícono). **Arreglado**: los avisos del tutorial protegen los dos botones (y la placa y, en el Reto, la barra de señal).
+- **La estrella intrusa, paso 3**: el hueco cortaba las placas «manzana» y «pera». **Arreglado**: el hueco es la caja de la figura más las placas de las cuatro palabras.
+- **Cosecha, paso 1**: el globo de Nubi queda pegado al borde de arriba de Sembrar. **Se deja**: no tapa ningún texto ni el hueco (la C) y en pantalla 16:9 no hay otro lugar sin cubrir letras.
+
 ## Letra de 14 dp
 
 Se midió con una regla exacta en el smoke (el tamaño efectivo de cada texto visible entre 3 unidades por dp). Estaban bajo 14 dp: «Nivel N», el avance («1 de 40»…) y «racha» del marcador de TODOS los juegos (13,3 y 9,3 dp); «Límite del freno» (12) y su valor (13,3) en Freno; «Tu estación» (11,3) y «PUERTO» (10,7) en Acoplamiento; el cartel de la misión de Piloto (12) y su franja «Desliza aquí…» (13,3); «Rescatados» (13,3) y la ayuda (12,3) de Radar; «Toca la señal para ir al cristal» (13,3) y «faro» (12) de Rumbo; la ayuda de Aterrizaje (13,3), la cruz de Satélites (12,7), el «Extra» de los resultados de 9 juegos (13,3) y los mínimos de los ajustes automáticos de los avisos de Acoplamiento, Cosecha, Freno, Radar, Rumbo, Satélites y Stroop (hasta 9,3 dp). Constelaciones, Rastro de luz y Carga exacta SÍ estaban en regla (la medición por cuadro de la revisión visual era imprecisa).

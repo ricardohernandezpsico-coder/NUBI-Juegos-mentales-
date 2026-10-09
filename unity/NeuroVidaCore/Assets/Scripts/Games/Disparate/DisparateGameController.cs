@@ -997,7 +997,9 @@ namespace NeuroVida.Games.Disparate
             _allow = Allow.None;
             var specs = DisparateContract.PracticeSpecs(Precision);
             var plate = new[] { coach.Zone(() => coach.RectOf(_plate)) };
-            var plateAndSignal = Precision ? plate : new[] { plate[0], coach.Zone(_sigBar) };
+            var buttons = coach.ZoneOf(_btnTrue, _btnFalse);                    // los avisos tampoco tapan los botones
+            var plateAndButtons = new[] { plate[0], buttons };
+            var plateSignalAndButtons = Precision ? plateAndButtons : new[] { plate[0], coach.Zone(_sigBar), buttons };
             bool ok = !t.Skipped;
 
             // 1) una verdad clarísima
@@ -1045,7 +1047,7 @@ namespace NeuroVida.Games.Disparate
             {
                 yield return StartCoroutine(ShowSentence(specs[2]));
                 if (!Precision) StartCoroutine(PracticeSignal(specs[2].SignalSeconds, 3.6f));
-                yield return StartCoroutine(coach.Notice(CoachTexts.Disparate.Rhythm, 3.6f, keep: plateAndSignal));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Disparate.Rhythm, 3.6f, keep: plateSignalAndButtons));
                 ok = !t.Skipped;
             }
 
@@ -1053,7 +1055,7 @@ namespace NeuroVida.Games.Disparate
             if (ok)
             {
                 _allow = Allow.Hold;
-                yield return StartCoroutine(coach.Notice(CoachTexts.Disparate.Unclear, 3.8f, keep: plate));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Disparate.Unclear, 3.8f, keep: plateAndButtons));
                 ok = !t.Skipped;
             }
             _allow = Allow.None;

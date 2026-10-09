@@ -1186,6 +1186,19 @@ namespace NeuroVida.Games.Intrusa
             return _holeRect;
         }
 
+        /// <summary>La caja de la figura más las placas de las cuatro palabras (algunas sobresalen: la de arriba va sobre su estrella y la de abajo, debajo), para iluminarlo todo junto.</summary>
+        private LRect FigureHole()
+        {
+            float x0 = IntrusaLayout.BoxX, y0 = IntrusaLayout.BoxY, x1 = x0 + IntrusaLayout.BoxW, y1 = y0 + IntrusaLayout.BoxH;
+            for (int i = 0; i < 4; i++)
+            {
+                var q = _slots[i].Plaque;
+                x0 = Mathf.Min(x0, q.X); y0 = Mathf.Min(y0, q.Y); x1 = Mathf.Max(x1, q.X + q.W); y1 = Mathf.Max(y1, q.Y + q.H);
+            }
+            const float pad = 8f;
+            return new LRect(x0 - pad, y0 - pad, x1 - x0 + 2f * pad, y1 - y0 + 2f * pad);
+        }
+
         /// <summary>La caída de la intrusa, la chispa que dibuja la figura y el grabado con su nombre; después avisa. No anota nada: ni racha, ni puntos, ni lámina del atlas.</summary>
         private IEnumerator PracticeReveal(IntrusaSpec spec, System.Action done)
         {
@@ -1250,7 +1263,7 @@ namespace NeuroVida.Games.Intrusa
                 float revealedAt = -1f;
                 fall = StartCoroutine(FallStar(_slots[4]));
                 reveal = StartCoroutine(PracticeReveal(spec, () => revealed = true));
-                yield return StartCoroutine(coach.Watch(() => coach.RectOf(HoleOver(new LRect(IntrusaLayout.BoxX, IntrusaLayout.BoxY, IntrusaLayout.BoxW, IntrusaLayout.BoxH))), CoachTexts.Intrusa.Spark,
+                yield return StartCoroutine(coach.Watch(() => coach.RectOf(HoleOver(FigureHole())), CoachTexts.Intrusa.Spark,
                     () =>
                     {
                         if (!revealed) return false;
