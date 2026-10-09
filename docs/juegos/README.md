@@ -4,7 +4,7 @@
 > estrella que no tienen documento de diseño propio, y el texto de apertura de la antigua sección «Juegos estrella (27-sep)».
 
 Pedido de Ricardo: juegos que diferencien a la app, con respaldo científico y mucho enganche. Orden acordado:
-**Piloto Estelar** (hecho, primera versión) → **Radar** (hecho, primera versión; velocidad de procesamiento / campo visual útil, ensayo ACTIVE)
+**Piloto Estelar** (hecho, primera versión) → **Radar** (hecho, primera versión; velocidad de procesamiento / campo visual útil, ensayo ACTIVE; renovado el 9-oct como «Rescate relámpago: qué cápsulas viste»)
 → **Satélites** (hecho, primera versión; seguimiento de múltiples objetos; renovado el 9-oct como «enciende tu planeta»). Después, catálogo: Formación (flancos), Eco Estelar (N-back),
 Torre de Lunas (Torre de Londres), Matriz Perdida (tipo Raven), Constelación de Palabras (fluidez verbal).
 
@@ -18,7 +18,7 @@ Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ri
 ## Fichas
 
 - [Piloto Estelar](../diseno-piloto.md) (renovado el 9-oct: «la ruta de las balizas»; la ficha vieja, como historia, en [piloto.md](piloto.md))
-- [Radar (Rescate relámpago)](radar.md)
+- [Rescate relámpago (antes Radar)](../diseno-rescate.md) (renovado el 9-oct: «qué cápsulas viste»; la ficha vieja, como historia, en [radar.md](radar.md))
 - [Satélites](satelites.md) (historia; la ficha vigente es [diseno-satelites.md](../diseno-satelites.md))
 - [Freno de Emergencia](freno.md)
 - [Aterrizaje Lunar](aterrizaje.md)

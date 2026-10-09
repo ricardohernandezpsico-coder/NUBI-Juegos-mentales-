@@ -1,4 +1,7 @@
-# Radar (Rescate relámpago) (`radar`) — ficha técnica
+# Rescate relámpago (antes Radar) (`radar`) — ficha técnica
+
+> **RENOVADO el 9-oct (Tarea 62): la ficha vigente es [`docs/diseno-rescate.md`](../diseno-rescate.md)** («Rescate relámpago: qué cápsulas viste»: se responde QUÉ se vio y no DÓNDE, seis cápsulas con forma y color fijos, rocas grises, nave que se llena, lluvia de cápsulas, récord, tutorial con Nubi). Lo de abajo describe la versión ANTERIOR (astronautas en 16 lugares) y se conserva como historia; ya no vale.
+
 
 > Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
 

@@ -29,7 +29,7 @@ OUT_DIR = os.path.join(ROOT, 'docs', 'previews', 'capturas')
 # id -> nombre que se ve
 NAMES = {
     'parejas': 'Constelaciones', 'secuencia': 'Rastro de luz', 'bodega': 'Bodega de carga', 'rumbo': 'Rumbo a Casa', 'correo': 'La estación de correo',
-    'stroop': 'Tinta o Palabra', 'piloto': 'Piloto Estelar', 'freno': 'Freno de Emergencia', 'satelites': 'Satélites', 'radar': 'Radar (Rescate relámpago)',
+    'stroop': 'Tinta o Palabra', 'piloto': 'Piloto Estelar', 'freno': 'Freno de Emergencia', 'satelites': 'Satélites', 'radar': 'Rescate relámpago',
     'acoplamiento': 'Acoplamiento', 'calculo': 'Carga exacta', 'aterrizaje': 'Aterrizaje Lunar', 'engranajes': 'Engranajes',
     'anagramas': 'En la punta de la lengua', 'meteoros': 'Lluvia de meteoros', 'disparate': '¿Verdad o disparate?', 'cosecha': 'Cosecha de palabras', 'intrusa': 'La estrella intrusa',
 }

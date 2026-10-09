@@ -171,9 +171,11 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`freno.png`](freno.png)
 - [`piloto-estelar.png`](piloto-estelar.png) (del juego anterior; historia)
 - [`piloto-balizas-boceto.html`](piloto-balizas-boceto.html): el boceto jugable de «la ruta de las balizas» (Piloto Estelar, 9-oct), aprobado por Ricardo; lo que quedó en el juego: `docs/diseno-piloto.md` § 12. Capturas reales: `capturas/piloto.png`.
-- [`radar-rescate.png`](radar-rescate.png)
+- [`radar-rescate.png`](radar-rescate.png): maqueta del rediseño del 29-sep (juego ANTERIOR, historia)
 - [`radar-retoque.png`](radar-retoque.png)
-- [`radar.png`](radar.png)
+- [`radar.png`](radar.png): del juego ANTERIOR (historia); lo vigente es `rescate-piezas.png` y las capturas reales `capturas/radar.png`
+- [`rescate-piezas.png`](rescate-piezas.png): «Rescate relámpago: qué cápsulas viste» (9-oct): las piezas con los sprites REALES (radar con haz y con estática, las seis cápsulas, botones del tablero, roca, nave con ventanas, «¡Rescatar!» y planeta). Script: `tools/art-preview/radar.py`.
+- [`rescate-boceto.html`](rescate-boceto.html): el boceto jugable aprobado por Ricardo el 9-oct (versión 3); la lógica y el diseño, en `docs/diseno-rescate.md`
 - [`rumbo.png`](rumbo.png)
 - [`satelites.png`](satelites.png): del juego ANTERIOR de Satélites (historia); lo vigente es `satelites-piezas.png` y las capturas reales `capturas/satelites.png`
 - [`satelites-piezas.png`](satelites-piezas.png): «Satélites: enciende tu planeta» (9-oct): las piezas con los sprites REALES (planeta a oscuras, satélite, con mensaje, marcado, entregado, sin mensaje, el que faltó, nube de polvo y la fila de rondas). Script: `tools/art-preview/satelites.py`.

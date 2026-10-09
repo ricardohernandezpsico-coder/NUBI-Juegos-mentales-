@@ -211,6 +211,8 @@ HACE. Por eso los retoques de abajo cambian pasos, no dibujos.
 
 ### Radar — riesgo ALTO → rediseño "Rescate relámpago" (aprobado por Ricardo e implementado el 29-sep) (maqueta: `docs/previews/radar-rescate.png`)
 
+> **Actualización del 9-oct (Tarea 62):** este rediseño del 29-sep todavía pedía tocar DÓNDE aparecieron los astronautas (16 lugares); eso es lo que reivindican las patentes de Nike (sección 9, regla 2). Se rehízo otra vez como «qué cápsulas viste»: ver `docs/diseno-rescate.md`. Lo de abajo describe la versión del 29-sep y queda como historia.
+
 US 8,348,671 (Posit Science, "entrenamiento de atención visual dividida", vence ~nov. 2031). Su reclamo 1 exige,
 todo junto: (a) una imagen en el centro y a la vez (b) una ubicación marcada en la periferia, por un tiempo, y se
 apagan; (c) mostrar dos o más imágenes candidatas y (d) exigir que se elija la del centro entre ellas; (e) SOLO si
@@ -306,7 +308,7 @@ Tracker, BrainHQ, NeuroRacer, EndeavorRx, NeuroTracker, Train of Thought, Lumosi
 internos, como referencia científica, sí.
 
 **Lista para el abogado** (cuando llegue el momento de publicar): el nombre elegido; Radar rediseñado; el costo
-de multitarea de Piloto; el sistema de avance (Desafío → Experto) frente a US 10,559,221; y (3-oct) **el inicio completo («Primer vuelo con Nubi»)
+de multitarea de Piloto (ya quitado, Tarea 61); los equivalentes de las patentes de Nike frente a Rescate relámpago; el sistema de avance (Desafío → Experto) frente a US 10,559,221; y (3-oct) **el inicio completo («Primer vuelo con Nubi»)
 frente al de Lumosity**: orden de pasos, preguntas, tarjetas y barra de avance, antes de publicar (la pregunta del ánimo y la tarjeta «X puso a prueba tu Y» ya se cambiaron
 por otras propias: «¿qué te sirve más ver primero?» y «Acabas de usar tu…»).
 
@@ -416,6 +418,6 @@ Ricardo las aprobó el 9-oct y las confirmó en el chat de implementación. Cada
 1. **Piloto Estelar: las dos tareas (pilotar y señales) van siempre juntas.** Ninguna se presenta sola dentro de una partida ni se mide sola; no hay «costo de multitarea»; el tutorial las enseña juntas. Patentes de Akili: US 12,016,700, US 11,723,598 y la solicitud 2025/0000455.
    **Estado hoy: Piloto lo cumple desde la Tarea 61 (9-oct).** Se rehízo como «la ruta de las balizas» (`docs/diseno-piloto.md`): sin piloto automático ni `multitask_cost` en Unity, la telemetría, la app y las fichas de medidas; los primeros 10 s son suaves pero con las dos tareas a la vez; el tutorial las enseña juntas desde el paso 2; una prueba (`PilotContractTests.ThereIsNoAutopilotNorMultitaskCostAnywhere`) falla si alguien lo vuelve a poner. La nota de la sección de Piloto de arriba («va a la lista del abogado») ya no aplica.
 2. **Rescate relámpago: se responde QUÉ se vio, no DÓNDE.** Sin lugares fijos ni cuadrícula, y la zona del destello nunca crece con el nivel. Patentes de Nike: US 8,136,943 y US 8,342,685, vigentes hasta ≈ jul-2029.
-   **Estado hoy: el juego NO cumple esta regla** (se toca DÓNDE aparecieron los astronautas, sobre ocho sectores y dos anillos). Se rehace en la Etapa 1 de la hoja de ruta.
+   **Estado hoy: Rescate relámpago lo cumple desde la Tarea 62 (9-oct).** Se rehízo como «qué cápsulas viste» (`docs/diseno-rescate.md`): se elige QUÉ cápsulas se vieron en un tablero de orden fijo por tipo y nunca se toca un lugar; las posiciones del radar son continuas y al azar (sin lugares fijos, cuadrícula ni anillos que ubiquen); el radio de la zona es fijo en los 12 niveles (solo cambian cuántas, cuánto dura el destello y las rocas); ninguna medida ni telemetría lleva lugares. Lo vigilan pruebas de Unity (`TheZoneOfTheFlashNeverGrowsWithTheLevel`, `ThePositionsAreContinuous_NotOnAFixedGridOrOnRings`, `TheBoardHasAFixedOrder_ThatNeverDependsOnTheRound`, `TheTelemetryCarriesWhatWasMeasured_AndNoPlacesAtAll`). Lo de equivalentes de Nike sigue en la lista del abogado.
 3. **Sistema: los juegos viven en el APK.** Una futura cuenta o nube solo sincroniza progreso: nunca entrega ni desbloquea juegos, ni controla su acceso desde un servidor. Tampoco habrá una red social dentro de un mapa. Patente de Posit: US 9,308,445, hasta 2034.
    **Cualquier función en línea que toque el acceso a juegos pasa antes por el abogado.** Hoy se cumple: todos los juegos van en el APK y nada en línea decide qué se puede jugar.

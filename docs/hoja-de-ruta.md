@@ -9,12 +9,12 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 
 ## Dónde estamos (8-oct)
 
-19 juegos en 4 áreas. Tienen tutorial guiado 16 (`UnityGameLauncher.TUTORIAL_GAMES`); faltan 3: Radar, Rumbo y Acoplamiento. Los retirados están en `docs/juegos/descartados.md`.
+19 juegos en 4 áreas. Tienen tutorial guiado 17 (`UnityGameLauncher.TUTORIAL_GAMES`); faltan 2: Rumbo y Acoplamiento. Los retirados están en `docs/juegos/descartados.md`.
 
 | Área | Juegos |
 |---|---|
 | Memoria | Constelaciones, Rastro de luz, Bodega de carga, Rumbo a Casa, Correo Estelar («La estación de correo») |
-| Atención | Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites, Radar («Rescate relámpago») |
+| Atención | Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites, Rescate relámpago (antes Radar) |
 | Razonamiento | Acoplamiento, Carga exacta, Aterrizaje Lunar, Engranajes («Taller de reparación») |
 | Lenguaje | En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras, La estrella intrusa |
 
@@ -25,16 +25,16 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 - **Hecho (Tareas 53 y 54)**: capturas reales de los 19 juegos (`--capturas todos`, láminas en `docs/previews/capturas/`) y arreglo de lo que mostraron: los avisos van debajo del marcador, la letra de los juegos de Unity no baja de 14 dp (con guardia en el smoke), el foco del tutorial ya no deja cuadrados oscuros y varios detalles por juego (`docs/previews/capturas/hallazgos.md`).
 - **Hecho (Tarea 55)**: los avisos ya no tapan el juego (se acomodan en una franja libre; el smoke lo prueba). Queda exento Rumbo, que se rehace en la etapa 2: al rehacerlo, quitarlo de `ToastCoverExceptions` (Piloto ya salió en la Tarea 61 y tiene su propia guardia).
 - **Hecho (Tarea 56)**: tutoriales guiados con Nubi en Cosecha de palabras, ¿Verdad o disparate? y La estrella intrusa (cada uno con su ronda de práctica que no cuenta, «Saltar tutorial», «Cómo se juega» en la pausa y su smoke en las tres formas de pantalla).
-- **En espera, no ahora**: los pilotos automáticos que faltan en 15 juegos (las capturas de 8, 20 y 40 s repiten la primera situación donde no los hay) y, al tocar cada juego en las etapas 1 y 2, agrandar su área de juego: en pantalla 20:9 sobra casi un tercio de abajo en Rescate relámpago, Rumbo, La estrella intrusa y Bodega (Satélites ya usa toda la altura desde la tarea 59).
+- **En espera, no ahora**: los pilotos automáticos que faltan en 15 juegos (las capturas de 8, 20 y 40 s repiten la primera situación donde no los hay) y, al tocar cada juego en las etapas 1 y 2, agrandar su área de juego: en pantalla 20:9 sobra casi un tercio de abajo en Rumbo, La estrella intrusa y Bodega (y, en menor medida, en Rescate relámpago, que escala la pantalla de 360 × 640 dp sin estirarla) (Satélites ya usa toda la altura desde la tarea 59).
 
 ## Etapa 1 — Atención
 
-Cada juego sale con su tutorial (Freno ya lo tiene; los otros tres lo reciben aquí). Orden:
+Cada juego sale con su tutorial (Freno ya lo tenía; los otros tres lo reciben aquí). **Etapa 1 completa (Tarea 62, 9-oct).** Orden:
 
 1. **Freno de Emergencia** — **Hecho (Tarea 57)**: el SSRT (lo que tarda la persona en frenar) salió del puntaje (`100 × (0,75 × lanzamientos correctos + 0,25 × min(1, altos frenados ÷ altos ÷ 0,5))`) y queda solo como medida; «Tu freno» se muestra como el promedio de las últimas ≤ 5 estimaciones válidas, en un velocímetro de tres zonas con nombre (ágil < 230 ms, firme 230-300, pausado > 300; cortes de diseño, no normas), sin milisegundos; Juegos y Hoy dicen la zona.
 2. **Satélites** — **Hecho (Tarea 59)**: renovado como «enciende tu planeta» (mismo id): órbitas planas en tres anillos que usan toda la pantalla, sorpresas anunciadas antes (cambio de órbita, nube de polvo, órbitas rápidas), cada mensaje entregado enciende una luz en el planeta, tutorial con Nubi y récord de luces (`docs/diseno-satelites.md`). Falta que Ricardo lo pruebe con personas: «se hace largo y monótono» era el problema que lo motivó.
 3. **Piloto Estelar** — **Hecho (Tarea 61)**: renovado como «la ruta de las balizas» (mismo id): ruta de balizas, señales por forma y detalle (nunca solo por color), sectores con misión nueva, hiperimpulso, sonido de motor, tutorial con Nubi, ningún aviso tapa una señal y las dos tareas siempre juntas, sin «costo de multitarea» (`docs/diseno-piloto.md`). Falta que Ricardo lo pruebe en el teléfono.
-4. **Rescate relámpago**: cambio para esquivar patentes y cumplir la regla permanente de Ricardo del 9-oct (`docs/nombre-marca-y-riesgos.md` §9): responder QUÉ y no DÓNDE (hoy no lo cumple). **Pendiente de aprobación de Ricardo** antes de programar.
+4. **Rescate relámpago** — **Hecho (Tarea 62)**: renovado como «qué cápsulas viste» (mismo id `radar`): seis cápsulas con forma y color fijos que se eligen en un tablero de orden fijo (se responde QUÉ y no DÓNDE: regla permanente de Ricardo, `docs/nombre-marca-y-riesgos.md` §9), rocas grises, nave que se llena con el rayo tractor, lluvia de cápsulas cada 4 rondas, «Tu vistazo» y «Tu captura: X de 4», récord de cápsulas, tutorial con Nubi y sin ninguna medida por lugar (`docs/diseno-rescate.md`). Falta que Ricardo lo pruebe en el teléfono.
 
 ## Etapa 2 — Memoria y razonamiento
 

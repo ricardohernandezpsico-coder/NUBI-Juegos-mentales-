@@ -50,38 +50,29 @@ Código: `app/.../data/NumberLine.kt` (`reading`) con sus pruebas.
 
 ---
 
-## Radar (Rescate relámpago): "Tu vistazo", "Tu captura", "Tu filtro" y "Tu radar"
+## Rescate relámpago: "Tu vistazo" y "Tu captura" (renovado el 9-oct, Tarea 62)
 
-Rediseño del 29-sep (la versión con una nave en el centro se parecía demasiado a una patente: ver
-`docs/nombre-marca-y-riesgos.md`). La tarea es de **informe total** (Sperling, 1960) en la línea de la teoría de la
-atención visual (TVA: Bundesen, 1990; revisión clínica de Habekost, 2015): varios astronautas en un destello
-enmascarado, y se marcan todos los lugares donde se vieron (se sabe cuántos eran).
+Renovado el 9-oct por una regla permanente de Ricardo: se responde QUÉ se vio, no DÓNDE (ver `docs/diseno-rescate.md` y `docs/nombre-marca-y-riesgos.md`, sección 9). La tarea sigue siendo de **informe total** (Sperling, 1960) en la línea de la teoría de la
+atención visual (TVA: Bundesen, 1990; revisión clínica de Habekost, 2015): un destello muestra de 2 a 4 cápsulas, la estática lo borra y en el tablero se elige **qué cápsulas** se vieron (seis tipos, cada uno con forma, color y nombre fijos; se sabe cuántas eran).
+Las rocas grises distraen la mirada y no se rescatan. Ninguna medida depende del lugar donde aparecieron las cápsulas.
 
-**Tu vistazo.** La duración de destello más breve con la que se rescatan casi todos (todos hasta 3; todos menos uno con
-4 o más) de forma estable. La escalera apunta a ~80%, por eso el texto dice "unas 4 de cada 5 veces", y dice con
-cuántos astronautas a la vez se logró (la cantidad sube con el nivel). Media geométrica de las duraciones REALES de
-las últimas 12 rondas normales, sin las 4 primeras. No es la "velocidad de procesamiento C" de TVA (para estimarla hace
-falta ajustar un modelo con muchas duraciones fijas): es un umbral práctico.
+**Tu vistazo.** La duración de destello más breve con la que se rescatan casi todas (todas hasta 3; todas menos una con 4) de forma estable. La escalera apunta a ~80%, por eso el texto dice "unas 4 de cada 5 veces", y dice con cuántas cápsulas a la vez se logró
+(la cantidad sube con el nivel). Media geométrica de las duraciones REALES de las últimas 12 rondas normales, sin las 3 primeras, y solo con 5 o más rondas contadas. No es la "velocidad de procesamiento C" de TVA (para estimarla hace falta ajustar un modelo con
+muchas duraciones fijas): es un umbral práctico.
 
-**Tu captura.** Promedio de las "lluvias de astronautas" (cada 5 rondas: 6 astronautas, 300 ms, fuera de la escalera):
-rescatados menos balizas de más (poner balizas al azar no suma). Con destellos largos y máscara, el informe total se
-acerca a la capacidad de la memoria visual de corto plazo (K en TVA), que en adultos ronda 3 a 4 elementos (Luck y
-Vogel, 1997; Cowan, 2001): por eso el texto da esa referencia general. Se muestra solo con 2 o más lluvias.
+**Tu captura.** "X de 4": cuántas cápsulas se nombran bien de un vistazo cuando el destello no apura. Se calcula en las lluvias de cápsulas (cada 4 rondas: 4 cápsulas, sin rocas, destello FIJO de 300 ms, fuera de la escalera, para poder comparar partidas):
+promedio de (aciertos − 2 × elegidas que no estaban), con un mínimo de 0 en el total (cada ronda no se corta en 0, para no inflar el azar). **Por qué 2×:** en una lluvia hay 4 cápsulas entre 6 tipos, así que elegir al azar acierta 2 de cada 3 veces; con el
+factor 2, adivinar da 0 en promedio y quien elige solo lo que vio obtiene exactamente lo que vio. Se muestra solo con 2 o más lluvias. Con destellos largos y máscara, el informe total se acerca a la capacidad de la memoria visual de corto plazo, que ronda 3 a 4
+elementos (Luck y Vogel, 1997; Cowan, 2001); pero acá el techo es 4 y hay 6 tipos, así que "X de 4" es una medida de este juego y no equivale a esa capacidad de laboratorio: por eso **no se compara con ninguna referencia**.
 
-**Tu filtro.** Robots tocados de los mostrados (desde el nivel 5: informe parcial, seleccionar lo relevante). Se
-nombra solo con 6 o más robots en la partida. Tocar un robot también puede ser una baliza al azar: por eso el texto no
-lo interpreta como "impulsividad" (además, no calculamos perfiles de ese tipo: ver la nota de patentes).
+**Lo que no es medida.** Las cápsulas rescatadas en la partida y su récord (`rescate_record`, que va en el respaldo) son el premio, como las luces de Satélites; el final también cuenta las rondas perfectas, la racha mayor y el destello más corto con el que se
+resolvió una ronda normal perfecta (en ms reales).
 
-**Tu radar.** Rescatados por dirección (cuñas) y cerca / lejos del centro. Se nombra dónde más y dónde menos solo con
-4 o más astronautas en cada dirección y 40 puntos de diferencia; cerca / lejos, con 6 o más en cada anillo y 25 puntos
-(el campo visual útil se achica hacia la periferia cuando la tarea apura). Siempre "en esta partida... si se repite".
+**Alerta.** El destello llega sin aviso (espera de 1,5 a 3,5 s): entrenar la alerta propia aumentó la velocidad de procesamiento visual medida con TVA en mayores (Penning et al., Psychological Science, 2021). No se mide aparte, y es un estudio sin replicación
+amplia: no se promete ninguna transferencia.
 
-**Alerta.** El destello llega sin aviso (espera de 1,5 a 3,5 s): entrenar la alerta propia aumentó la velocidad de
-procesamiento visual medida con TVA en mayores (Penning et al., Psychological Science, 2021). No se mide aparte.
-
-**Qué NO se dice.** No se compara con normas clínicas (UFOV ni TVA): otro aparato, otra pantalla, otra distancia a los
-ojos. No se usa la evidencia del ensayo ACTIVE para prometer efectos.
-
+**Qué NO se dice.** No se compara con normas clínicas (UFOV ni TVA): otro aparato, otra pantalla, otra distancia a los ojos. No se usa la evidencia del ensayo ACTIVE para prometer efectos. Los textos solo hablan de mirar rápido y retener varias cosas de un
+vistazo: nada de mejorar la vista, la conducción ni la salud.
 ---
 
 ## Satélites: "Tu seguimiento" (y las luces, desde el 9-oct)

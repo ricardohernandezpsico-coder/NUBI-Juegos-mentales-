@@ -1,180 +1,64 @@
-"""Maqueta de Radar / Rescate relámpago (disposición según RadarGameController.Layout a medio canvas; arte exacto:
-radar, haz, interferencia, robot, baliza, aros de lugar, cascos y marcas salen de los .raw que vuelca ArtPreview; los
-lugares usan RadarContract.Position: 8 direcciones x 2 anillos).
+"""Lámina de PIEZAS de «Rescate relámpago: qué cápsulas viste» (9-oct-2026; id radar): el radar con su estática y su haz, las seis cápsulas (forma, color y emblema fijos), la roca gris, la nave con sus ventanas, el botón del tablero con su aro de marcado y su aro
+punteado, y «¡Rescatar!», con los sprites REALES horneados (tools/art-preview) a su tamaño en el juego (1 dp = 2 px). No es una captura: las pantallas salen de capturas reales (tools/capturas/hoja.py → docs/previews/capturas/radar.png). El boceto aprobado es
+docs/previews/rescate-boceto.html. (docs/previews/radar.png y radar-rescate.png son del juego ANTERIOR y quedan como historia.)
 
-Uso: python3 tools/art-preview/radar.py <raw> [--out docs/previews]  ->  radar.png
+Uso:  python tools/art-preview/radar.py <raw> [--out docs/previews]
+      (<raw> = la carpeta que vuelca ArtPreview: `dotnet run --project tools/art-preview -- <raw>`; con solo el runtime 10 de .NET: DOTNET_ROLL_FORWARD=LatestMajor)
+Genera docs/previews/rescate-piezas.png.
 """
 import argparse
-import math
 import os
-import random
+import struct
 
 from PIL import Image, ImageDraw, ImageFont
 
-from juegos import FB, INK, W, H, ROOT, load, night, put, glow, clay_text, hexc, tinted
-from piloto import clay_box, hud
-
-LIME, SUN, CORAL, CREAM, SKY = hexc(0x9BE564), hexc(0xFFC93C), hexc(0xFF6B4A), hexc(0xFFF8EC), hexc(0x4CC9F0)
-RINGS = [0.46, 0.80]
-SCOPE = 500                 # lado del radar (medio canvas)
-CX, CY = W / 2, 166 + SCOPE / 2
-GLASS = SCOPE / 2 * 0.86 / 1.06
-ITEM = GLASS * 0.26
-CW = 0.16 * GLASS
-
-
-def slot_center(s):
-    a = (s % 8) * math.pi / 4
-    r = RINGS[s // 8]
-    return CX + r * math.sin(a) * GLASS, CY - r * math.cos(a) * GLASS
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+FB = ROOT + '/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-Bold.ttf'
+FS = ROOT + '/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-SemiBold.ttf'
+S = 2                       # píxeles por dp
+LIME = (166, 227, 107)
+CYAN = (127, 216, 255)
+CORAL = (255, 138, 107)
+LAV = (171, 165, 210)
+TEXT = (237, 234, 251)
+NAMES = ['Hexágono', 'Gota', 'Círculo', 'Cuadrado', 'Triángulo', 'Rombo']
 
 
-def slot(s, seed):
-    a = (s % 8) * math.pi / 4
-    r = RINGS[s // 8]
-    j = random.Random(s * 7919 + seed)
-    jx, jy = (j.random() - 0.5) * 0.05, (j.random() - 0.5) * 0.05
-    return CX + (r * math.sin(a) + jx) * GLASS, CY - (r * math.cos(a) + jy) * GLASS
+def load(raw, name):
+    b = open(os.path.join(raw, name + '.raw'), 'rb').read()
+    n = struct.unpack('<i', b[:4])[0]
+    if n > 0:                                  # cuadrado: int32 lado + RGBA
+        w = h = n
+        data = b[4:4 + w * h * 4]
+    else:                                      # rectangular: int32 -ancho, int32 alto + RGBA
+        w = -n
+        h = struct.unpack('<i', b[4:8])[0]
+        data = b[8:8 + w * h * 4]
+    return Image.frombytes('RGBA', (w, h), data).transpose(Image.FLIP_TOP_BOTTOM)
 
 
-def base(raw, seed, level, points, streak, prompt, prompt_col=(255, 255, 255), timer=0.7, rescued=3):
-    im = night(seed)
-    glow(im, W / 2, CY, 300, LIME, 22)
-    d = ImageDraw.Draw(im)
-    hud(im, d, level, points, streak, 'Radar')
-    d = ImageDraw.Draw(im)
-    d.rounded_rectangle((30, 98, W - 30, 106), 4, fill=(255, 255, 255, 30))
-    d.rounded_rectangle((30, 98, 30 + (W - 60) * timer, 106), 4, fill=LIME if timer > 0.5 else SUN)
-    clay_text(d, (W / 2, 138), prompt, 30, prompt_col)
-    put(im, load(f'{raw}/radar_scope.raw'), CX, CY, SCOPE)
-    # Fila de rescatados.
-    d = ImageDraw.Draw(im)
-    d.text((W / 2, 872), f'Rescatados: {rescued}', font=ImageFont.truetype(FB, 20), fill=(255, 255, 255, 190), anchor='mm')
-    total = 10 * 40 + 9 * 6
-    helmet = load(f'{raw}/sym_Helmet_1.raw')
-    for i in range(10):
-        x = W / 2 - total / 2 + 20 + i * 46
-        if i < rescued:
-            put(im, helmet, x, 916, 40)
-        else:
-            d.ellipse((x - 10, 906, x + 10, 926), fill=(255, 255, 255, 26))
-    return im
+def font(size, bold=True):
+    return ImageFont.truetype(FB if bold else FS, int(size * S))
 
 
-def sweep(im, raw, angle):
-    s = tinted(load(f'{raw}/radar_sweep.raw'), LIME)
-    s.putalpha(s.getchannel('A').point(lambda v: v * 32 // 100))
-    s = s.resize((int(GLASS * 2), int(GLASS * 2)), Image.LANCZOS).rotate(angle, resample=Image.BICUBIC)
-    im.alpha_composite(s, (int(CX - s.width / 2), int(CY - s.height / 2)))
+def put(img, sprite, cx, cy, wdp, hdp=None):
+    hdp = hdp if hdp is not None else wdp * sprite.height / sprite.width
+    sp = sprite.resize((max(1, int(round(wdp * S))), max(1, int(round(hdp * S)))), Image.LANCZOS)
+    img.alpha_composite(sp, (int(round(cx * S - sp.width / 2)), int(round(cy * S - sp.height / 2))))
 
 
-def hint(im, text):
-    d = ImageDraw.Draw(im)
-    d.text((W / 2, CY + SCOPE / 2 + 26), text, font=ImageFont.truetype(FB, 19), fill=(255, 255, 255, 205), anchor='mm')
+def tint(sprite, rgb):
+    """El sprite blanco (haz, aros, ventana) teñido con un color, como hace Image.color en el juego."""
+    r, g, b, a = sprite.split()
+    solid = Image.new('RGBA', sprite.size, rgb + (255,))
+    solid.putalpha(a)
+    return solid
 
 
-def rescue_button(im):
-    y = CY + SCOPE / 2 + 92
-    layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
-    clay_box(layer, (W / 2 - 140, y - 35, W / 2 + 140, y + 35), 30, SUN)
-    im.alpha_composite(layer)
-    ImageDraw.Draw(im).text((W / 2, y), '¡RESCATAR!', font=ImageFont.truetype(FB, 30), fill=INK, anchor='mm')
-
-
-def fixation(im, raw):
-    d = ImageDraw.Draw(im)
-    r = CW * 0.45
-    d.ellipse((CX - r, CY - r, CX + r, CY + r), outline=SUN + (180,), width=3)
-
-
-def stimuli(im, raw, targets, robots, seed):
-    for s in targets:
-        x, y = slot(s, seed)
-        put(im, load(f'{raw}/sym_Helmet_1.raw'), x, y, ITEM)
-    for s in robots:
-        x, y = slot(s, seed)
-        put(im, load(f'{raw}/radar_robot.raw'), x, y, ITEM * 1.25)
-
-
-def slots(im, raw, beacons=(), skip=()):
-    ring = tinted(load(f'{raw}/radar_slot.raw'), CREAM)
-    ring.putalpha(ring.getchannel('A').point(lambda v: v // 2))
-    for s in range(16):
-        if s in skip:
-            continue
-        x, y = slot_center(s)
-        if s in beacons:
-            put(im, load(f'{raw}/radar_beacon.raw'), x, y, ITEM * 0.95)
-        else:
-            put(im, ring, x, y, ITEM * 1.2)
-
-
-TARGETS, ROBOTS, SEED = [9, 3, 13, 6], [0], 5
-
-
-def frame_wait(raw):
-    """Atento: el haz gira; el destello llega sin aviso."""
-    im = base(raw, 30, 6, 1480, 4, 'Atento al radar...')
-    sweep(im, raw, 60)
-    fixation(im, raw)
-    hint(im, 'El destello llega en cualquier momento.')
-    return im
-
-
-def frame_flash(raw):
-    """Nivel 6, el destello: 4 astronautas y un robot (desde el nivel 5)."""
-    im = base(raw, 31, 6, 1480, 4, 'Atento al radar...')
-    stimuli(im, raw, TARGETS, ROBOTS, SEED)
-    return im
-
-
-def frame_mask(raw):
-    """La interferencia que borra la imagen."""
-    im = base(raw, 32, 6, 1480, 4, 'Atento al radar...')
-    m = load(f'{raw}/radar_mask_0.raw').resize((SCOPE, SCOPE), Image.LANCZOS).rotate(40, resample=Image.BICUBIC)
-    im.alpha_composite(m, (int(CX - SCOPE / 2), int(CY - SCOPE / 2)))
-    return im
-
-
-def frame_answer(raw):
-    """¿Dónde estaban los 4? Tres balizas puestas (una en un lugar vacío)."""
-    im = base(raw, 33, 6, 1480, 4, '¿Dónde estaban los 4?')
-    slots(im, raw, beacons={9, 3, 6, 10})
-    hint(im, '4 de 4 balizas · toca de nuevo para sacar')
-    rescue_button(im)
-    return im
-
-
-def frame_feedback(raw):
-    """Revelación: 3 rescatados (✓), uno se escapó (aro sol), una baliza de más (✗) y el robot."""
-    im = base(raw, 34, 6, 1780, 5, 'Rescataste 3 de 4', SUN, rescued=6)
-    sweep(im, raw, 200)
-    hits, missed, extra = [9, 3, 6], [13], [10]
-    for s in hits:
-        x, y = slot(s, SEED)
-        glow(im, x, y, 44, LIME, 140)
-        put(im, load(f'{raw}/sym_Helmet_1.raw'), x, y, ITEM)
-        cx, cy = slot_center(s)
-        put(im, load(f'{raw}/mark_check.raw'), cx + ITEM * 0.45, cy - ITEM * 0.45, ITEM * 0.6)
-    for s in missed:
-        x, y = slot(s, SEED)
-        ring = tinted(load(f'{raw}/radar_slot.raw'), SUN)
-        cx, cy = slot_center(s)
-        put(im, ring, cx, cy, ITEM * 1.45)
-        h = load(f'{raw}/sym_Helmet_1.raw')
-        h.putalpha(h.getchannel('A').point(lambda v: v * 6 // 10))
-        put(im, h, x, y, ITEM)
-    for s in extra:
-        cx, cy = slot_center(s)
-        put(im, load(f'{raw}/radar_beacon.raw'), cx, cy, ITEM * 0.95)
-        put(im, load(f'{raw}/mark_cross.raw'), cx + ITEM * 0.45, cy - ITEM * 0.45, ITEM * 0.6)
-    for s in ROBOTS:
-        x, y = slot(s, SEED)
-        put(im, load(f'{raw}/radar_robot.raw'), x, y, ITEM * 1.25)
-    d = ImageDraw.Draw(im)
-    clay_text(d, (CX, CY - GLASS - 4), '+168', 26, SUN)
-    hint(im, 'Uno se escapó (aro sol)')
-    return im
+def label(d, x, y, text, size=14, rgb=LAV):
+    f = font(size, bold=False)
+    w = d.textlength(text, font=f)
+    d.text((x * S - w / 2, y * S), text, font=f, fill=rgb + (255,))
 
 
 def main():
@@ -182,13 +66,61 @@ def main():
     ap.add_argument('raw')
     ap.add_argument('--out', default=ROOT + '/docs/previews')
     a = ap.parse_args()
-    panels = [frame_wait(a.raw), frame_flash(a.raw), frame_mask(a.raw), frame_answer(a.raw), frame_feedback(a.raw)]
-    gap = 24
-    sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
-    for i, p in enumerate(panels):
-        sheet.alpha_composite(p, (gap + i * (W + gap), gap))
+    W, H = 380, 520
+    img = Image.new('RGBA', (W * S, H * S), (7, 10, 38, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(H * S):
+        t = y / (H * S)
+        d.line([(0, y), (W * S, y)], fill=(int(3 + 8 * t), int(4 + 12 * t), int(26 + 22 * t), 255))
+    d = ImageDraw.Draw(img)
+    d.text((18 * S, 12 * S), 'Rescate relámpago · piezas', font=font(20), fill=TEXT + (255,))
+
+    # fila 1: el radar solo, con el haz, y con la estática encima
+    scope = load(a.raw, 'radar_scope')
+    side = 128 * 2 * 1.16                              # el sprite del radar con su bisel (ScopeZoom) a radio 128 dp
+    k = 0.55
+    put(img, scope, 95, 110, side * k)
+    put(img, scope, 285, 110, side * k)
+    put(img, tint(load(a.raw, 'radar_sweep'), LIME), 95, 110, side * k * 0.78)
+    put(img, load(a.raw, 'radar_mask_0'), 285, 110, side * k * 0.78)
+    d = ImageDraw.Draw(img)
+    label(d, 95, 196, 'radar con el haz')
+    label(d, 285, 196, 'radar con la estática')
+
+    # fila 2: las seis cápsulas, cada una con su forma, su color y su nombre
+    for i in range(6):
+        x = 38 + i * 61
+        put(img, load(a.raw, f'radar_capsule_{i}'), x, 250, 55 * 0.95)
+    d = ImageDraw.Draw(img)
+    for i in range(6):
+        label(d, 38 + i * 61, 282, NAMES[i], size=12)
+
+    # fila 3: botones del tablero (sin marcar, marcado, y la que no estaba) y la roca
+    btn = load(a.raw, 'radar_button')
+    for i, (x, lbl) in enumerate(((62, 'sin marcar'), (160, 'marcada'), (258, 'estaba y no la elegiste'))):
+        put(img, tint(btn, (237, 234, 251)), x, 340, 104 * 0.95)
+        put(img, load(a.raw, 'radar_capsule_1'), x, 336, 34)
+    put(img, tint(load(a.raw, 'radar_button_ring'), LIME), 160, 340, 104 * 0.95)
+    put(img, tint(load(a.raw, 'radar_button_ring_dashed'), CORAL), 258, 340, 104 * 0.95)
+    d = ImageDraw.Draw(img)
+    for x, t in ((62, 'sin marcar'), (160, 'marcada'), (258, 'no la elegiste')):
+        label(d, x, 375, t, size=12)
+    put(img, load(a.raw, 'radar_rock'), 340, 340, 50)
+    d = ImageDraw.Draw(img)
+    label(d, 340, 375, 'roca gris', size=12)
+
+    # fila 4: la nave con ventanas encendidas, «¡Rescatar!» y el planeta de fondo
+    put(img, load(a.raw, 'radar_ship'), 80, 450, 130)
+    for j in range(5):
+        put(img, tint(load(a.raw, 'radar_window'), [(166, 227, 107), (127, 216, 255), (255, 138, 107), (255, 201, 74), (183, 155, 255)][j]), 53 + j * 13, 452, 10)
+    put(img, tint(load(a.raw, 'radar_go'), (255, 201, 74)), 215, 450, 140)
+    put(img, load(a.raw, 'radar_planet'), 340, 450, 60)
+    d = ImageDraw.Draw(img)
+    label(d, 80, 492, 'nave de rescate', size=12)
+    label(d, 215, 482, '¡Rescatar!', size=12)
+    label(d, 340, 484, 'planeta', size=12)
     os.makedirs(a.out, exist_ok=True)
-    sheet.convert('RGB').save(os.path.join(a.out, 'radar.png'))
+    img.convert('RGB').save(os.path.join(a.out, 'rescate-piezas.png'))
     print('OK')
 
 

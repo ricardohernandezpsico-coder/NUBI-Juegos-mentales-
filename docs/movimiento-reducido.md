@@ -267,14 +267,16 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | 434 `PlaceAll`, 454 `DrawTrails` | Los satélites en movimiento y sus estelas | ESENCIAL | — | Se queda (estelas: DUDA menor) | — |
 | 180, 315, 326, 349, 400 | `PopIn`, `PopRect`, chispas | DECORATIVA | sí (común) | — | — |
 
-**Radar** — `Radar/RadarGameController.cs`
+**Rescate relámpago (antes Radar)** — `Radar/RadarGameController*.cs` (rehecho el 9-oct, Tarea 62; sección 12 de `docs/diseno-rescate.md`)
 
-| Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
-|---|---|---|---|---|---|
-| 394-397 | El barrido gira | DECORATIVA | sí | — | — |
-| 560-592 `FlyToCrew` | Los rescatados vuelan en arco a la tripulación | DECORATIVA (comunica) | sí | — | — |
-| 634 `FloatText` | «+puntos» suben | DECORATIVA (comunica) | no | Quietos con fundido | ✓ |
-| 244, 424, 512, 615 | `PopIn`, `PopRect` | DECORATIVA | sí (común) | — | — |
+| Qué hace | Clase | Resp. | Con «quitar animaciones» |
+|---|---|---|---|
+| El haz gira y deja estela; los ecos sueltos | DECORATIVA | sí | Sin estela del haz ni ecos |
+| Resplandor, onda y luz de pantalla del destello | DECORATIVA | sí | Sin resplandor, sin onda y sin luz en toda la pantalla; el destello se sigue viendo |
+| La estática dentro del disco | ESENCIAL (es la máscara de la tarea) | — | **Se mantiene**, pero como imagen quieta, sin parpadeo |
+| Polvo de fondo, llamas de la nave, salto de la nave, confeti | DECORATIVA | sí | Polvo quieto, llamas fijas, sin salto y sin confeti |
+| Las cápsulas giran al alejarse | DECORATIVA (comunica) | sí | No rotan |
+| El rayo tractor sube las rescatadas con chispas | DECORATIVA (comunica) | sí | Cono fijo, sin chispas |
 
 ### Razonamiento
 

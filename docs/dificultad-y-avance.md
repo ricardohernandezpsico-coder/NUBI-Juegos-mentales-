@@ -146,7 +146,7 @@ no haya dos escalas de nombres. La liga conserva sus metales (Bronce…Maestro),
 
 | Tipo | Juegos | Cómo se aplica |
 |---|---|---|
-| DDA común, una escalera | Tinta o Palabra, Carga exacta, Anagramas, Radar, Freno, Aterrizaje, Acoplamiento, Satélites, Rumbo | Directo: piso o techo sobre el rating. |
+| DDA común, una escalera | Tinta o Palabra, Carga exacta, Anagramas, Rescate relámpago, Freno, Aterrizaje, Acoplamiento, Satélites, Rumbo | Directo: piso o techo sobre el rating. |
 | DDA común, objetivo propio | (ninguno hoy; el último fue Ruta del Tesoro, 70%) | Igual, con la corrección de la sección 3. |
 | Dos escaleras | Piloto (pilotaje y señales) | El avance es el de la tarea que se mide: Piloto, el promedio de las dos (como hoy). (Correo tuvo dos hasta el 8-oct; hoy tiene una sola.) El piso o techo se aplica a las dos. |
 | (Ya no hay motores propios desde el 3-oct) | Secuencia (16 niveles), Parejas (10 niveles) | Pasaron al DDA común: directo, piso o techo sobre el rating, igual que los demás. |
@@ -157,19 +157,19 @@ Como los aciertos son estables por diseño, las fortalezas no pueden salir de "c
 
 - **Juegos estrella**: dos aspectos que el juego ya mide, en una escala fija de 1 a 5 puntos con cortes escritos
   en `docs/medidas-juegos-estrella.md`. Ejemplos: Rumbo (rumbo: error de dirección; distancia: error de largo),
-  Radar (centro y periferia), Freno (rapidez al lanzar y freno), Aterrizaje (inicio, centro y final de la regla).
+  Rescate relámpago (vistazo y captura), Freno (rapidez al lanzar y freno), Aterrizaje (inicio, centro y final de la regla).
   Se calculan con las últimas 3 a 5 partidas A tu medida.
 - **Todos los juegos**: **Constancia** = partidas en los últimos 14 días (1 punto cada 2, hasta 5).
 - **Juegos clásicos**: en vez de puntos inventados, "Tu mejor etapa" y la constancia.
 
-## 9. Ejemplo con números (Radar, 12 niveles, `s` = 1)
+## 9. Ejemplo con números (Rescate relámpago, 12 niveles, `s` = 1)
 
 - **Diego, 30 años.** Su rating A tu medida (80%) queda en 5,8 → avance (5,8 − 1) / 12 = **40% · Hábil**.
   Desafío parte en 6,3 (acierta ~7 de 10). Suave nunca pasa de 5,0.
 - **Rosa, 70 años.** Su rating A tu medida (85%) queda en 4,2 → leído a 8 de 10: 4,2 + 0,35 = 4,55 → avance
   **30% · Aprendiz**. Desafío parte en 4,8 (acierta ~7 u 8 de 10). Suave nunca pasa de 3,5 (acierta ~9 de 10).
 - Rosa entrena con menos errores y una subida más pausada, y su 30% significa exactamente lo mismo que el de
-  cualquier otra persona: el punto de Radar donde acierta 8 de 10.
+  cualquier otra persona: el punto de Rescate relámpago donde acierta 8 de 10.
 
 ## 10. Supuestos y cómo se calibran
 
