@@ -254,7 +254,10 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | 290, 305, 354, 335, 401, 554, 570-571, 585 | `Shake`, `RingBurst`, `PopRect`, `PopIn`, chispas | DECORATIVA | sí (común) | — | — |
 | 407 | El cartel de ALTO aparece YA (el retraso es la medida) | ESENCIAL | — | Se queda | — |
 
-**Satélites** — `Satelites/SatelliteGameController.cs`
+**Satélites** — `Satelites/SatelliteGameController*.cs`
+
+> **Renovado el 9-oct (tarea 59).** Con «quitar animaciones» (`Motion.Decorative` en false): los satélites SIGUEN girando (es la tarea); el aro de la señal queda fijo (sin pulso); los sobres de los entregados no vuelan (se quedan y se apagan, y la luz aparece al terminar el tiempo
+> del vuelo); las luces del planeta quedan fijas (sin pulso ni destello); sin chispas ni «pop» al marcar; el aviso de sorpresa aparece y se va sin fundido; el «¿Aquí se cruzaron?» aparece sin crecer. La tabla de abajo es del juego ANTERIOR y queda como historia.
 
 | Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
 |---|---|---|---|---|---|
@@ -413,7 +416,7 @@ dorso y cara con la misma duración; Cosecha, órbita decorativa (ya se detiene)
 Criterio para el resto: ¿sin ese movimiento la persona puede hacer la tarea y entender qué pasó? Si sí, decorativo. Casos dudosos que dejé conservadores (se quedan en movimiento):
 - **Carga exacta (antes Cálculo, modo con reloj):** ya no hay burbuja que caiga ni indicador animado de una carga: lo único con reloj es la barra de tiempo del Reto (un indicador de tiempo, se queda).
 - **En la punta de la lengua (antes Anagramas):** las fichas que se deslizan a su lugar (la acción de la persona). Las burbujas se borraron.
-- **Satélites:** las estelas de los satélites (ayudan a seguirlos; derivan del movimiento esencial).
+- **Satélites:** (juego anterior) las estelas de los satélites (ayudaban a seguirlos). El juego nuevo no tiene estelas.
 - **Tráfico:** el giro de los desvíos y el avance de las naves; el aro urgente queda fijo pero sigue distinguiéndose por forma.
 - **Bitácora:** los puntos de la estela de la sonda quedan (opacidad, sin encogerse): muestran la ruta recorrida.
 - **Comparación/Stroop/Cambio de Chip:** el fundido de entrada de la tarjeta/ficha (opacidad, ≤ 0,24 s) se queda.

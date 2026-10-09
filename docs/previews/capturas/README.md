@@ -18,7 +18,7 @@ Corrida completa: 1056 s · 141 capturas · 19 juegos.
 | Tinta o Palabra (`stroop`) | [stroop.png](stroop.png) | 8 | 59 s | sin errores de consola |
 | Piloto Estelar (`piloto`) | [piloto.png](piloto.png) | 6 | 49 s | sin errores de consola |
 | Freno de Emergencia (`freno`) | [freno.png](freno.png) | 8 | 61 s | sin errores de consola |
-| Satélites (`satelites`) | [satelites.png](satelites.png) | 6 | 49 s | sin errores de consola |
+| Satélites (`satelites`, renovado el 9-oct: guion propio) | [satelites.png](satelites.png) | 12 | 74 s | sin errores de consola |
 | Radar (Rescate relámpago) (`radar`) | [radar.png](radar.png) | 6 | 53 s | sin errores de consola |
 | Acoplamiento (`acoplamiento`) | [acoplamiento.png](acoplamiento.png) | 6 | 49 s | sin errores de consola |
 | Carga exacta (`calculo`) | [calculo.png](calculo.png) | 8 | 55 s | sin errores de consola |

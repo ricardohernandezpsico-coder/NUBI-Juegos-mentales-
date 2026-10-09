@@ -1,5 +1,7 @@
 # Satélites (`satelites`) — ficha técnica
 
+> **RENOVADO el 9-oct (Tarea 59): la ficha vigente es [`docs/diseno-satelites.md`](../diseno-satelites.md)** («Satélites: enciende tu planeta»: órbitas planas, sorpresas, luces en el planeta, tutorial con Nubi). Lo de abajo describe el juego ANTERIOR (satélites que rebotaban) y se conserva como historia.
+
 > Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
 
 **Satélites** (`Games/Satelites/`, id `satelites`, dominio atención): seguimiento de múltiples objetos (Pylyshyn y

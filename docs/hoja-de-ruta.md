@@ -9,7 +9,7 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 
 ## Dónde estamos (8-oct)
 
-19 juegos en 4 áreas. Tienen tutorial guiado 14 (`UnityGameLauncher.TUTORIAL_GAMES`); faltan 5: Piloto, Satélites, Radar, Rumbo y Acoplamiento. Los retirados están en `docs/juegos/descartados.md`.
+19 juegos en 4 áreas. Tienen tutorial guiado 15 (`UnityGameLauncher.TUTORIAL_GAMES`); faltan 4: Piloto, Radar, Rumbo y Acoplamiento. Los retirados están en `docs/juegos/descartados.md`.
 
 | Área | Juegos |
 |---|---|
@@ -25,14 +25,14 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 - **Hecho (Tareas 53 y 54)**: capturas reales de los 19 juegos (`--capturas todos`, láminas en `docs/previews/capturas/`) y arreglo de lo que mostraron: los avisos van debajo del marcador, la letra de los juegos de Unity no baja de 14 dp (con guardia en el smoke), el foco del tutorial ya no deja cuadrados oscuros y varios detalles por juego (`docs/previews/capturas/hallazgos.md`).
 - **Hecho (Tarea 55)**: los avisos ya no tapan el juego (se acomodan en una franja libre; el smoke lo prueba). Quedan exentos Piloto y Rumbo, que se rehacen en las etapas 1 y 2: al rehacerlos, quitarlos de `ToastCoverExceptions`.
 - **Hecho (Tarea 56)**: tutoriales guiados con Nubi en Cosecha de palabras, ¿Verdad o disparate? y La estrella intrusa (cada uno con su ronda de práctica que no cuenta, «Saltar tutorial», «Cómo se juega» en la pausa y su smoke en las tres formas de pantalla).
-- **En espera, no ahora**: los pilotos automáticos que faltan en 15 juegos (las capturas de 8, 20 y 40 s repiten la primera situación donde no los hay) y, al tocar cada juego en las etapas 1 y 2, agrandar su área de juego: en pantalla 20:9 sobra casi un tercio de abajo en Satélites, Rescate relámpago, Rumbo, La estrella intrusa y Bodega.
+- **En espera, no ahora**: los pilotos automáticos que faltan en 15 juegos (las capturas de 8, 20 y 40 s repiten la primera situación donde no los hay) y, al tocar cada juego en las etapas 1 y 2, agrandar su área de juego: en pantalla 20:9 sobra casi un tercio de abajo en Rescate relámpago, Rumbo, La estrella intrusa y Bodega (Satélites ya usa toda la altura desde la tarea 59).
 
 ## Etapa 1 — Atención
 
 Cada juego sale con su tutorial (Freno ya lo tiene; los otros tres lo reciben aquí). Orden:
 
 1. **Freno de Emergencia** — **Hecho (Tarea 57)**: el SSRT (lo que tarda la persona en frenar) salió del puntaje (`100 × (0,75 × lanzamientos correctos + 0,25 × min(1, altos frenados ÷ altos ÷ 0,5))`) y queda solo como medida; «Tu freno» se muestra como el promedio de las últimas ≤ 5 estimaciones válidas, en un velocímetro de tres zonas con nombre (ágil < 230 ms, firme 230-300, pausado > 300; cortes de diseño, no normas), sin milisegundos; Juegos y Hoy dicen la zona.
-2. **Satélites**: probarlo con personas y decidir si sigue o se retira.
+2. **Satélites** — **Hecho (Tarea 59)**: renovado como «enciende tu planeta» (mismo id): órbitas planas en tres anillos que usan toda la pantalla, sorpresas anunciadas antes (cambio de órbita, nube de polvo, órbitas rápidas), cada mensaje entregado enciende una luz en el planeta, tutorial con Nubi y récord de luces (`docs/diseno-satelites.md`). Falta que Ricardo lo pruebe con personas: «se hace largo y monótono» era el problema que lo motivó.
 3. **Piloto Estelar y Rescate relámpago**: cambios para esquivar patentes (`docs/nombre-marca-y-riesgos.md`). **Pendiente de aprobación de Ricardo** antes de programar.
 
 ## Etapa 2 — Memoria y razonamiento

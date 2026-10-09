@@ -5,7 +5,7 @@
 
 Pedido de Ricardo: juegos que diferencien a la app, con respaldo científico y mucho enganche. Orden acordado:
 **Piloto Estelar** (hecho, primera versión) → **Radar** (hecho, primera versión; velocidad de procesamiento / campo visual útil, ensayo ACTIVE)
-→ **Satélites** (hecho, primera versión; seguimiento de múltiples objetos). Después, catálogo: Formación (flancos), Eco Estelar (N-back),
+→ **Satélites** (hecho, primera versión; seguimiento de múltiples objetos; renovado el 9-oct como «enciende tu planeta»). Después, catálogo: Formación (flancos), Eco Estelar (N-back),
 Torre de Lunas (Torre de Londres), Matriz Perdida (tipo Raven), Constelación de Palabras (fluidez verbal).
 
 Segunda tanda (27-sep, pedido de Ricardo: "que generen enganche", paso a paso y probando cada uno): **Freno de
@@ -19,7 +19,7 @@ Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ri
 
 - [Piloto Estelar](piloto.md)
 - [Radar (Rescate relámpago)](radar.md)
-- [Satélites](satelites.md)
+- [Satélites](satelites.md) (historia; la ficha vigente es [diseno-satelites.md](../diseno-satelites.md))
 - [Freno de Emergencia](freno.md)
 - [Aterrizaje Lunar](aterrizaje.md)
 - [Lluvia de meteoros](../diseno-lluvia-de-meteoros.md)

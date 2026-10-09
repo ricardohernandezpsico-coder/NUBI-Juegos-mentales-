@@ -84,7 +84,11 @@ ojos. No se usa la evidencia del ensayo ACTIVE para prometer efectos.
 
 ---
 
-## Satélites: "Tu seguimiento"
+## Satélites: "Tu seguimiento" (y las luces, desde el 9-oct)
+
+> Desde la renovación del 9-oct («enciende tu planeta», `docs/diseno-satelites.md`) la medida sigue siendo la de abajo; lo nuevo que muestra el final es «Encendiste N luces» (mensajes entregados), las rondas perfectas, la racha mayor y el récord de luces
+> (`satelites_record`). Las luces son un premio, no una medida: la medida es «Tu seguimiento». La nota «Medida de esta partida. No es un diagnóstico.» va al pie. Se quitó la referencia comparada con adultos del final (el juego ahora trae sorpresas,
+> sentidos mezclados y media vuelta: la condición ya no es la de los estudios de velocidad moderada).
 
 **Qué mide.** Cuántos objetos se siguieron de verdad, descontando los aciertos por suerte. Se usa el modelo de
 adivinación: aciertos = m + (k − m)² / (n − m).

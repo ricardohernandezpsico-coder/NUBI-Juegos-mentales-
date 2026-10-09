@@ -59,8 +59,8 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 
 ## El smoke y la guardia de textos (detalle que antes vivía en CLAUDE.md)
 
-- Los tutoriales de 14 juegos corren en 3 formas de pantalla (20:9, 18:9, 16:9) y fallan si Nubi, su globo o «Saltar tutorial» tapan algo (ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`). Los juegos que no tienen tutorial corren además una
-  corrida «Pantalla…» en forma de teléfono (lienzo de 1080×2400), y Correo dos (20:9 y 16:9). Las corridas `HowTo…` (Tarea 56: Cosecha, ¿Verdad o disparate? y La estrella intrusa) abren «Cómo se juega» a los 9 s de partida y fallan si no termina, si hay un error o si la
+- Los tutoriales de 15 juegos corren en 3 formas de pantalla (20:9, 18:9, 16:9) y fallan si Nubi, su globo o «Saltar tutorial» tapan algo (ver `docs/tutoriales-con-nubi.md`; `--juegos Tutorial,TutorialFreno,CortoFreno…`). Los juegos que no tienen tutorial corren además una
+  corrida «Pantalla…» en forma de teléfono (lienzo de 1080×2400), y Correo dos (20:9 y 16:9). Satélites (Tarea 59) corre además `Satelites` (55 s: se juega solo desde el nivel 6 y pasa por las tres sorpresas) y `PantallaSatelites` (la misma partida en forma de teléfono, con la guardia de textos). Las corridas `HowTo…` (Tarea 56: Cosecha, ¿Verdad o disparate? y La estrella intrusa; Tarea 59: Satélites) abren «Cómo se juega» a los 9 s de partida y fallan si no termina, si hay un error o si la
   partida no vuelve a estar en marcha (prueban que la partida se aparta y se retoma bien). En los pasos de «tocar» de esos tutoriales el smoke da además un toque «de verdad» en el centro del hueco y comprueba que llega al juego.
 - **Guardia de textos** (todas esas corridas): todo texto visible cae dentro de la pantalla y, si es hijo de un botón o una píldora, dentro de él; mide lo que se DIBUJA (no el rect entero) y solo informa un texto que queda fuera en dos revisiones seguidas. Hace FALLAR el smoke en cualquier juego;
   las únicas excepciones (rótulos que cuelgan a propósito de su imagen) están en `TextGuardExceptions` de `HeadlessPlaymodeSmokeTest.cs`.

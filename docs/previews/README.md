@@ -174,7 +174,9 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`radar-retoque.png`](radar-retoque.png)
 - [`radar.png`](radar.png)
 - [`rumbo.png`](rumbo.png)
-- [`satelites.png`](satelites.png)
+- [`satelites.png`](satelites.png): del juego ANTERIOR de Satélites (historia); lo vigente es `satelites-piezas.png` y las capturas reales `capturas/satelites.png`
+- [`satelites-piezas.png`](satelites-piezas.png): «Satélites: enciende tu planeta» (9-oct): las piezas con los sprites REALES (planeta a oscuras, satélite, con mensaje, marcado, entregado, sin mensaje, el que faltó, nube de polvo y la fila de rondas). Script: `tools/art-preview/satelites.py`.
+- [`satelites-orbitas-boceto.html`](satelites-orbitas-boceto.html): el boceto jugable aprobado por Ricardo el 9-oct (versión 2); la lógica y el diseño, en `docs/diseno-satelites.md`
 - [`simbolos-parejas.png`](simbolos-parejas.png)
 - [`engranajes.png`](engranajes.png): «Engranajes: Taller de reparación» (5-oct): tres pantallas (etapas 3, 7 y 10) compuestas con los sprites REALES y máquinas del generador real: la máquina recién armada con sus carteles, un cambio
   equivocado (carteles verde y coral, en celeste lo que movió el cambio y en dorado lo que había que tocar) y dos cambios con todo en verde (réplica, no captura). Script: `tools/art-preview/engranajes.py`.
