@@ -23,8 +23,19 @@ namespace NeuroVida.Games.Shared
 
         public bool IsShown => gameObject.activeSelf;
 
-        /// <summary>true mientras algún menú de pausa está abierto (el foco de Nubi entrenadora no debe tomar esos toques ni reanudar el juego).</summary>
-        public static bool Open { get; private set; }
+        private static PauseMenu s_shown;
+
+        /// <summary>
+        /// true mientras algún menú de pausa esté a la vista (el foco de Nubi entrenadora no debe tomar esos toques ni reanudar el juego). Se calcula del menú VIVO, no es una bandera que alguien tenga que acordarse de apagar:
+        /// «Salir» deja el menú a la vista «para cuando se vuelva a abrir el juego» y el juego siguiente carga una escena nueva que lo destruye, pero la bandera estática de antes se quedaba en true para siempre y el foco de Nubi
+        /// ignoraba TODOS los toques (Engranajes y Carga exacta en el teléfono de Ricardo, 9-oct, Tarea 58; el registro traía el paso pero ningún toque).
+        /// </summary>
+        public static bool Open => s_shown != null && s_shown.gameObject.activeInHierarchy;
+
+        private void OnDestroy()
+        {
+            if (s_shown == this) s_shown = null;
+        }
 
         /// <summary>Los botones que se ven ahora (nombre y rect), para las pruebas que tocan el centro de cada uno.</summary>
         public System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, RectTransform>> VisibleButtons()
@@ -165,7 +176,7 @@ namespace NeuroVida.Games.Shared
         public void Show()
         {
             GameClock.Pause();
-            Open = true;
+            s_shown = this;
             if (IsShown) return;
             Relayout(_onHowTo != null && _canHowTo != null && _canHowTo());
             gameObject.SetActive(true);
@@ -176,7 +187,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Oculta el menú (no reanuda: eso lo decide quien llama).</summary>
         public void Hide()
         {
-            Open = false;
+            if (s_shown == this) s_shown = null;
             gameObject.SetActive(false);
         }
 

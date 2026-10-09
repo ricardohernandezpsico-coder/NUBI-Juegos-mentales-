@@ -1000,6 +1000,7 @@ namespace NeuroVida.Games.Disparate
             var buttons = coach.ZoneOf(_btnTrue, _btnFalse);                    // los avisos tampoco tapan los botones
             var plateAndButtons = new[] { plate[0], buttons };
             var plateSignalAndButtons = Precision ? plateAndButtons : new[] { plate[0], coach.Zone(_sigBar), buttons };
+            int tries = 0;
             bool ok = !t.Skipped;
 
             // 1) una verdad clarísima
@@ -1007,6 +1008,7 @@ namespace NeuroVida.Games.Disparate
             {
                 yield return StartCoroutine(ShowSentence(specs[0]));
                 _allow = Allow.Truth;
+                tries = 0;
                 while (ok && !_answerGiven)
                 {
 #if UNITY_EDITOR
@@ -1014,6 +1016,7 @@ namespace NeuroVida.Games.Disparate
 #endif
                     yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnTrue), CoachTexts.Disparate.Truth, keep: plate));
                     ok = !t.Skipped;
+                    if (ok && !_answerGiven && (coach.ClosedBySafetyNet || ++tries >= 2)) RequestAnswer(true);          // el toque no llegó (red de seguridad) o ya se pidió dos veces: la ronda responde y sigue (Tarea 58)
 #if UNITY_EDITOR
                     if (ok && GuidedTutorial.EditorAutoContinue && !_answerGiven) RequestAnswer(true);
 #endif
@@ -1027,6 +1030,7 @@ namespace NeuroVida.Games.Disparate
             {
                 yield return StartCoroutine(ShowSentence(specs[1]));
                 _allow = Allow.Nonsense;
+                tries = 0;
                 while (ok && !_answerGiven)
                 {
 #if UNITY_EDITOR
@@ -1034,6 +1038,7 @@ namespace NeuroVida.Games.Disparate
 #endif
                     yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnFalse), CoachTexts.Disparate.Nonsense, keep: plate));
                     ok = !t.Skipped;
+                    if (ok && !_answerGiven && (coach.ClosedBySafetyNet || ++tries >= 2)) RequestAnswer(false);
 #if UNITY_EDITOR
                     if (ok && GuidedTutorial.EditorAutoContinue && !_answerGiven) RequestAnswer(false);
 #endif

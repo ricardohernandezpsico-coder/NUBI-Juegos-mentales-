@@ -984,6 +984,7 @@ namespace NeuroVida.Games.Cosecha
 
             // 1) la primera letra (toque de verdad en la ficha C)
             _allow = Allow.Tile;
+            int tries = 0;
             while (ok && _session.Tray.Count == 0)
             {
 #if UNITY_EDITOR
@@ -991,6 +992,7 @@ namespace NeuroVida.Games.Cosecha
 #endif
                 yield return StartCoroutine(coach.Touch(() => TileHole(coach, _rail[0]), CoachTexts.Cosecha.First, circle: true));
                 ok = !t.Skipped;
+                if (ok && _session.Tray.Count == 0 && (coach.ClosedBySafetyNet || ++tries >= 2)) TapTile(_rail[0]);          // el toque no llegó (red de seguridad) o ya se pidió dos veces: la ronda hace la jugada y sigue (Tarea 58)
 #if UNITY_EDITOR
                 if (ok && GuidedTutorial.EditorAutoContinue && _session.Tray.Count == 0) TapTile(_rail[0]);          // el smoke no toca: lo hace por la persona
 #endif
@@ -1008,6 +1010,7 @@ namespace NeuroVida.Games.Cosecha
 
             // 3) Sembrar
             _allow = Allow.Sow;
+            tries = 0;
             while (ok && _session.Found.Count == 0)
             {
 #if UNITY_EDITOR
@@ -1015,6 +1018,7 @@ namespace NeuroVida.Games.Cosecha
 #endif
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnSow), CoachTexts.Cosecha.Sow, keep: tray));
                 ok = !t.Skipped;
+                if (ok && _session.Found.Count == 0 && (coach.ClosedBySafetyNet || ++tries >= 2)) Plant();
 #if UNITY_EDITOR
                 if (ok && GuidedTutorial.EditorAutoContinue && _session.Found.Count == 0) Plant();
 #endif
@@ -1042,6 +1046,7 @@ namespace NeuroVida.Games.Cosecha
                 foreach (int tile in CosechaContract.TilesFor(round.letras, CosechaContract.PracticeMistake)) TapTile(tile);
                 _allow = Allow.Clear;
                 yield return Motion.Hold(0.5f);
+                tries = 0;
                 while (ok && _session.Tray.Count > 0)
                 {
 #if UNITY_EDITOR
@@ -1049,6 +1054,7 @@ namespace NeuroVida.Games.Cosecha
 #endif
                     yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnClear), CoachTexts.Cosecha.Erase, keep: tray));
                     ok = !t.Skipped;
+                    if (ok && _session.Tray.Count > 0 && (coach.ClosedBySafetyNet || ++tries >= 2)) ClearTray();
 #if UNITY_EDITOR
                     if (ok && GuidedTutorial.EditorAutoContinue && _session.Tray.Count > 0) ClearTray();
 #endif

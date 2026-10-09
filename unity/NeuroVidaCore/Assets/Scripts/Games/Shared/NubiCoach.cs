@@ -90,6 +90,27 @@ namespace NeuroVida.Games.Shared
         /// <summary>true mientras hay un foco (Tocar, Mirar o un aviso) a la vista.</summary>
         public bool Active => _kind != Kind.None;
 
+        /// <summary>
+        /// true si el último paso de Tocar se cerró por la RED DE SEGURIDAD (el segundo toque fuera del hueco, o un toque pasados 10 s) y no por un toque válido en el hueco: ese toque no llegó al juego. La ronda guiada, entonces, hace
+        /// ella misma la jugada que el paso pedía (como si se hubiera tocado bien) y sigue; nunca vuelve a pedir el mismo paso en un bucle (Tarea 58).
+        /// </summary>
+        public bool ClosedBySafetyNet { get; private set; }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// SOLO EN EL EDITOR (smoke de los tutoriales, Tarea 58): con esto encendido, en CADA paso de Tocar el foco da por su cuenta un toque «de verdad» en el centro del hueco (entra por <see cref="GuidedTutorial.TryPress"/>, el mismo camino que un dedo,
+        /// no por un atajo) y comprueba que el paso se cierra. Si no se cierra, deja el motivo en <see cref="ProbeFailures"/>. Antes el Editor cerraba los pasos solo, a los 1,2 s, sin tocar: así nunca se vio que en el teléfono los
+        /// toques de Engranajes y de Carga exacta no llegaban al foco. En el teléfono no existe.
+        /// </summary>
+        public static bool EditorProbe;
+        public static readonly List<string> ProbeFailures = new List<string>();
+        /// <summary>Cuántos pasos de Tocar se cerraron por un toque «de verdad» (el del foco o el de un juego); el smoke exige uno por cada paso de Tocar.</summary>
+        public static int RealTouchesAccepted;
+        private const float ProbeAfterSeconds = 0.85f, ProbeWaitsSeconds = 0.3f;
+        private int _stepSerial, _probeSerial = -1;
+        private float _probeAt;
+#endif
+
         // ------------------------------------------------------------------ registro de pasos (pruebas y smoke)
 
         /// <summary>true = cada paso que se cierra deja su <see cref="CoachStepReport"/> en <see cref="AuditSteps"/> (lo usa el smoke del Editor; en el teléfono no se llena).</summary>
@@ -300,6 +321,10 @@ namespace NeuroVida.Games.Shared
             _lastReplace = -10f;
             _misses = 0;
             _hasTouch = false;
+            ClosedBySafetyNet = false;
+#if UNITY_EDITOR
+            _stepSerial++;
+#endif
             _litShown.Clear();
             _text.text = text;
             if (_nubi.sprite == null) _nubi.sprite = NubiTeacherSprite.Get();
@@ -367,7 +392,24 @@ namespace NeuroVida.Games.Shared
                         if (_kind == Kind.None) return;
                     }
 #if UNITY_EDITOR
-                    if (GuidedTutorial.EditorAutoContinue && _waited > 1.2f) { Close(); return; }
+                    if (EditorProbe)
+                    {
+                        if (_probeSerial != _stepSerial && _waited >= ProbeAfterSeconds)
+                        {
+                            _probeSerial = _stepSerial;
+                            _probeAt = _waited;
+                            var world = _root.TransformPoint(new Vector3(_hole.center.x, _hole.center.y, 0f));
+                            GuidedTutorial.EditorPressPos = RectTransformUtility.WorldToScreenPoint(null, world);
+                            GuidedTutorial.EditorPressFrame = Time.frameCount + 1;
+                        }
+                        else if (_probeSerial == _stepSerial && _waited >= _probeAt + ProbeWaitsSeconds)
+                        {
+                            // el toque de prueba cayó en el centro del hueco y el paso sigue abierto: un dedo de verdad tampoco lo cerraría
+                            ProbeFailures.Add($"{AuditGame}: un toque en el centro del hueco NO cerró el paso «{_text.text}» (PauseMenu.Open={PauseMenu.Open}, hueco {_hole})");
+                            _probeSerial = -2;
+                        }
+                    }
+                    if (GuidedTutorial.EditorAutoContinue && _waited > 1.2f && (!EditorProbe || _probeSerial == -2 || _waited > 2.4f)) { Close(); return; }
 #endif
                     if (_waited - _lastInsist >= InsistSeconds && _waited >= InsistSeconds)
                     {
@@ -413,8 +455,11 @@ namespace NeuroVida.Games.Shared
                 else why = "fuera del hueco: no se acepta";
             }
             LogTouch(screenPos, local, mapped, dist, accept, why);
+#if UNITY_EDITOR
+            if (accept && pass && GuidedTutorial.EditorPressFrame == Time.frameCount) RealTouchesAccepted++;
+#endif
             if (!accept) return;
-            if (!pass) _swallowFrame = Time.frameCount;
+            if (!pass) { _swallowFrame = Time.frameCount; ClosedBySafetyNet = true; }
             Close();     // el juego recibe este mismo toque (este componente corre antes que él), salvo el que avanzó por la red de seguridad
         }
 

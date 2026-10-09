@@ -195,6 +195,24 @@ namespace NeuroVida.Bridge.EditorTools
         private static bool _howToStarted, _howToDone;
         private static double _howToAt;
 
+        /// <summary>
+        /// Con <c>NUBI_STALE_PAUSE=1</c> el smoke reproduce lo que pasó en el teléfono (Tarea 58): «Salir» del menú de pausa deja el menú a la vista y, al cargarse el juego siguiente, la escena se destruye con el menú adentro. Aquí se
+        /// abre un menú de pausa, se destruye y se deja el reloj en su lugar: si el estado de «pausa abierta» sobrevive, el foco de Nubi ya no recibe ningún toque.
+        /// </summary>
+        private static bool StalePauseRequested => Environment.GetEnvironmentVariable("NUBI_STALE_PAUSE") == "1";
+        private static bool _staleDone;
+
+        private static void SimulateStalePause()
+        {
+            _staleDone = true;
+            var host = new GameObject("StalePauseHost");
+            var menu = NeuroVida.Games.Shared.PauseMenu.Create(host.transform, null, null, null);
+            menu.Show();
+            UnityEngine.Object.DestroyImmediate(host);                  // la escena que se recarga se lleva el menú
+            NeuroVida.Games.Shared.GameClock.Reset();
+            Debug.Log($"[SmokeTest] pausa vieja simulada: PauseMenu.Open={NeuroVida.Games.Shared.PauseMenu.Open}");
+        }
+
         private static void DriveHowTo(double played)
         {
             var controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.GameControllerBase>();
@@ -374,6 +392,10 @@ namespace NeuroVida.Bridge.EditorTools
             _toastSeen.Clear();
             _sampleToastShown = false;
             _howToStarted = _howToDone = false;
+            _staleDone = false;
+            NeuroVida.Games.Shared.NubiCoach.EditorProbe = _current.Name.StartsWith("Tutorial");        // toque «de verdad» en el hueco de cada paso de Tocar (Tarea 58)
+            NeuroVida.Games.Shared.NubiCoach.ProbeFailures.Clear();
+            NeuroVida.Games.Shared.NubiCoach.RealTouchesAccepted = 0;
             NeuroVida.Games.Shared.GuidedTutorial.EditorPressFrame = -1;      // un toque de prueba de la corrida anterior no cuenta en esta
             _textGuardAt = 0.0;
             _entryStartAt = EditorApplication.timeSinceStartup;
@@ -886,6 +908,15 @@ namespace NeuroVida.Bridge.EditorTools
             Debug.Log($"[SmokeTest] tutorial de {game} a {Screen.width}x{Screen.height}: {steps.Count} paso(s) registrados");
             bool strict = true;
             if (steps.Count == 0 && strict) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el tutorial de {game} no registró ningún paso"); }
+            foreach (var failure in NeuroVida.Games.Shared.NubiCoach.ProbeFailures) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: {_currentHeight}: {failure}"); }
+            int touchSteps = 0;
+            foreach (var st in steps) if (st.Kind == "Touch") touchSteps++;
+            if (NeuroVida.Games.Shared.NubiCoach.RealTouchesAccepted < touchSteps)
+            {
+                if (strict) _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: {game} {_currentHeight}: {touchSteps} paso(s) de Tocar y solo {NeuroVida.Games.Shared.NubiCoach.RealTouchesAccepted} se cerraron por un toque de verdad en el hueco");
+            }
+            else Debug.Log($"[SmokeTest] {game} {_currentHeight}: los {touchSteps} paso(s) de Tocar se cerraron por un toque de verdad en el hueco");
             foreach (var st in steps)
             {
                 string where = $"{game} {_currentHeight}, paso {st.Index} ({st.Kind}) «{st.Text}»";
@@ -918,6 +949,7 @@ namespace NeuroVida.Bridge.EditorTools
                 ScanTextPlacement();
                 if (_current.Name.StartsWith("Aviso") && !_sampleToastShown && played >= 5.5) ShowSampleToast();
                 if (_current.Name.StartsWith("HowTo")) DriveHowTo(played);
+                if (StalePauseRequested && !_staleDone) SimulateStalePause();
                 // la revisión del tutorial espera a que la ronda guiada llegue a su último aviso («¡Listo! Ahora va en serio»), con tope de 100 s
                 if (NeuroVida.Games.Shared.NubiCoach.AuditEnabled) { if (played < 8 || (played < 100 && !CoachAuditReachedEnd())) return; }
                 else if (played < _current.Seconds) return;

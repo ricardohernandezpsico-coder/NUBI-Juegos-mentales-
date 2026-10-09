@@ -1238,6 +1238,7 @@ namespace NeuroVida.Games.Intrusa
 
             // 2) tocar la intrusa (solo vale esa: si el toque cae en otra estrella, se vuelve a pedir)
             int choice = -1;
+            int tries = 0;
             _practiceHit = false;
             while (ok && choice != 4)
             {
@@ -1249,6 +1250,7 @@ namespace NeuroVida.Games.Intrusa
                 ok = !t.Skipped;
                 if (ok && _press.HasValue) choice = PickSlot(_press.Value);
                 _press = null;
+                if (ok && choice != 4 && (coach.ClosedBySafetyNet || ++tries >= 2)) choice = 4;          // el toque no llegó (red de seguridad) o ya se pidió dos veces: la ronda toca la intrusa y sigue (Tarea 58)
 #if UNITY_EDITOR
                 if (ok && GuidedTutorial.EditorAutoContinue && choice != 4) choice = 4;          // el smoke no toca: lo hace por la persona
 #endif

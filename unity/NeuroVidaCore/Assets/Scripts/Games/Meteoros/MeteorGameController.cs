@@ -368,9 +368,11 @@ namespace NeuroVida.Games.Meteoros
             bool glow = _streak >= MeteorContract.StreakGlow;
             float len = (glow ? 620f : 430f) * (GameFeel.ReduceMotion ? 0.5f : 1f);
             Vector2 back = m.Vel.sqrMagnitude > 0.01f ? -m.Vel.normalized : Vector2.up;
-            // la estela crece al caer: nunca sube más arriba del borde de abajo del marcador (la punta de la estela queda DEBAJO de él)
-            if (_hudBottomY != 0f) len = Mathf.Min(len, Mathf.Max(0f, (_hudBottomY - 8f - m.Pos.y) / Mathf.Max(0.3f, back.y)));
-            m.TrailRect.sizeDelta = new Vector2(m.TrailBase * (glow ? 1.35f : 1f), len);
+            float width = m.TrailBase * (glow ? 1.35f : 1f);
+            // la estela crece al caer: nunca sube más arriba del borde de abajo del marcador. Cuenta también el ancho: con la estela girada (la roca cae en diagonal) sus esquinas suben más que su punta, y la caja de la estela llegaba a
+            // tapar el «1 de 40» del marcador (lo vio el smoke cuando el toque de verdad dejó la roca recién nacida un instante más)
+            if (_hudBottomY != 0f) len = Mathf.Min(len, Mathf.Max(0f, (_hudBottomY - 8f - m.Pos.y - width * 0.5f * Mathf.Abs(back.x)) / Mathf.Max(0.3f, back.y)));
+            m.TrailRect.sizeDelta = new Vector2(width, len);
             m.TrailImg.color = new Color(1f, 1f, 1f, glow ? 1f : 0.85f);
             m.TrailRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(-back.x, back.y) * Mathf.Rad2Deg);
         }
