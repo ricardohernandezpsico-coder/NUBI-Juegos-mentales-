@@ -43,8 +43,8 @@ Un dedo, en la franja de abajo, guía la nave por una ruta de balizas. El otro d
   - Toque a la señal más cercana dentro de 40 dp.
 - **Señal no atrapada:** si era de la misión, «Se fue» (cuenta como omisión); si no era, cuenta como acierto del motor, en silencio.
 - **Sectores:**
-  - Al cruzar el límite, un arco dorado sobre la ruta y el aviso «SECTOR N · nombre».
-  - La tarjeta de misión dice «NUEVA MISIÓN:» y se ilumina 1,6 s; la misión nueva es distinta de la anterior.
+  - Al cruzar el límite, un arco dorado sobre la ruta y el aviso de MISIÓN NUEVA (Tarea 63, ver §13): «¡Nueva misión!», la forma con su detalle dibujada grande, su nombre y «Sector N · nombre».
+  - La tarjeta de misión dice «NUEVA MISIÓN:», se ilumina 1,6 s y late dos veces (Tarea 63); la misión nueva es distinta de la anterior.
   - El cielo cambia de tinte (Nebulosa azul, Cinturón de hielo, Mar de polvo coral, Puerto lunar).
   - Nada se detiene.
 - **Hiperimpulso:** cada 5 señales bien resueltas seguidas, con ≥ 3 ventanas limpias de pilotaje: puntos × 2 durante 6 s, velocidad × 1,15 y estrellas en líneas.
@@ -99,7 +99,7 @@ Interpolación lineal entre filas (fórmulas en `src.html` del boceto: `P.speed`
   - zumbido fuera;
   - campana al atrapar;
   - golpe sordo al equivocarse;
-  - soplido y campanas al cambiar de sector.
+  - un soplido al cruzar el arco de un sector y, al cambiar la misión, dos notas que suben con timbre de triángulo (no de campana: no se confunde con la de atrapar; Tarea 63).
 - **«Quitar animaciones»:** sin temblor, sin estrellas en línea, sin parpadeo; balizas con brillo fijo.
 - **Toques:** franja del dedo de ≥ 100 dp de alto; toque de señal de 80 dp de diámetro.
 
@@ -116,8 +116,10 @@ Práctica que no cuenta (no alimenta motores ni medidas): ruta ancha, nave lenta
 2. «Desliza aquí para guiar la nave», con señales ya apareciendo despacio; las dos tareas a la vez desde este paso.
 3. Tocar una señal de la misión (hueco: la señal).
 4. Aviso «Las parecidas tienen otro detalle: no las toques».
-5. Aviso «En cada sector cambia la misión».
-6. «¡Listo!».
+5. Un ARCO de verdad sale arriba y se acerca mientras Nubi dice «Al cruzar un arco dorado, cambia la misión» (la nave y la ruta no se detienen); al cruzarlo la misión cambia.
+6. Nubi apunta a la tarjeta (hueco: la tarjeta, que late y brilla): «Cruzaste el arco: ¡tu misión cambió!».
+7. Aparece una señal de la misión NUEVA («círculo con anillo») y se toca con toque real: «Ahora toca una señal de la misión nueva».
+8. «¡Listo!». (Hasta la Tarea 62 el paso 5 era solo un aviso; Tarea 63.)
 
 Nunca una pantalla de señales sola con conteo, ni una ruta sin señales.
 
@@ -141,3 +143,13 @@ Nunca una pantalla de señales sola con conteo, ni una ruta sin señales.
 - **Motor**: un solo clip de un segundo en bucle cuyo tono sube con la velocidad; en hiperimpulso el tono sube un poco más (el filtro no se abre: un clip no puede cambiar su filtro).
 - **Pruebas**: `Games/Piloto/Tests` (contrato, ruta, nacimiento de señales, vuelo, pantalla en cuatro formas, motores, arte, sonido, y que no exista piloto automático ni `multitask_cost` en ninguna parte); smoke `Piloto` (Precisión), `PilotoReto`, `TutorialPiloto` (3 formas de teléfono, toque real en el hueco), `PantallaPiloto` y `HowToPiloto`.
 
+## 13. El cambio de misión se nota (Tarea 63, 9-oct)
+
+Ricardo probó el tutorial y una partida de 90 s y lo aprobó; lo único: «cuando pasa el arco de luz va cambiando el signo… de un comienzo no lo noté muy bien» (lo entendió jugando). El cambio se anunciaba arriba, en la tarjeta y el nombre del sector, mientras la vista está abajo, en la nave y las señales. Ahora:
+
+- **Aviso de misión nueva** (reemplaza al aviso de «SECTOR N · nombre»): arriba «¡Nueva misión!» (18 dp; en el sector 1, donde nada cambió, «¡Tu misión!»), al medio la forma con su detalle dibujada a 52 dp con su nombre («círculo con punto», 18 dp) y abajo «Sector N · nombre» (14 dp). Dura 2,2 s, aprovechando la ventana sin señales nuevas (no nacen señales 2,2 s antes del arco). Va en el mismo lugar fijo de arriba que el aviso corto, bajo la tarjeta de misión, pero **más alto**: `PilotPlan.NoticeBox` (112 dp, de 30 a 330 dp de ancho) contra los 52 dp de `BannerBox`, que queda para el hiperimpulso. El cielo de señales NO se achica: el rectángulo solo es zona prohibida mientras el aviso está a la vista o en espera (misma guardia: ninguna señal debajo, `GuardNotices` en el Editor; los textos flotantes tampoco lo pisan).
+- **Tarjeta de misión:** al cambiar late dos veces (escala 1 → 1,12 → 1, dos latidos de 0,4 s = 0,8 s, `PilotContract.MissionPulseScale`), además del brillo dorado de siempre; la tarjeta es un solo objeto centrado en sí mismo (`_missionCard`) para que lata alrededor de su centro. Con «quitar animaciones»: sin latido, queda el brillo fijo y el tono.
+- **Tono propio:** `PilotSounds.MissionChange`, dos notas que suben (mi y si agudos, una por latido) con timbre de triángulo y caída rápida; el soplido del arco (`Whoosh`) ya no lleva las dos campanas que tenía.
+- **Tutorial:** pasos 5 a 7 de §10: un arco real que cruza la práctica, la tarjeta señalada por Nubi y una señal de la misión nueva para tocar (toque real). Las dos tareas siguen juntas (regla permanente 1). En la práctica no sale el aviso alto: Nubi y su globo ocupan esa zona y la explicación va en el globo; el aviso se ve en el vuelo de verdad.
+- **Nada se detiene:** ni la nave ni la ruta, ni en el vuelo ni en la práctica.
+- **Pruebas:** contrato (`PilotRunTests`: alto y lugar del aviso en cuatro formas de teléfono, textos, latido), nacimiento de señales (`ASignalNeverBornUnderTheMissionNotice`), sonido; el smoke de Piloto (la guardia de avisos) y `TutorialPiloto` en las tres formas de pantalla con toque real en cada paso de Tocar. Capturas: `sector-nueva-mision` y `tutorial-nueva-mision` en `docs/previews/capturas/piloto.png`.

@@ -16,10 +16,10 @@ Corrida completa: 1056 s · 141 capturas · 19 juegos.
 | Rumbo a Casa (`rumbo`) | [rumbo.png](rumbo.png) | 6 | 52 s | sin errores de consola |
 | La estación de correo (`correo`) | [correo.png](correo.png) | 13 | 52 s | sin errores de consola |
 | Tinta o Palabra (`stroop`) | [stroop.png](stroop.png) | 8 | 59 s | sin errores de consola |
-| Piloto Estelar (`piloto`) | [piloto.png](piloto.png) | 6 | 49 s | sin errores de consola |
+| Piloto Estelar (`piloto`, guion propio; Tarea 63: aviso de misión nueva y paso nuevo del tutorial) | [piloto.png](piloto.png) | 14 | 79 s | sin errores de consola |
 | Freno de Emergencia (`freno`) | [freno.png](freno.png) | 8 | 61 s | sin errores de consola |
 | Satélites (`satelites`, renovado el 9-oct: guion propio) | [satelites.png](satelites.png) | 12 | 74 s | sin errores de consola |
-| Rescate relámpago (`radar`, renovado el 9-oct: guion propio) | [radar.png](radar.png) | 12 | 63 s | sin errores de consola |
+| Rescate relámpago (`radar`, renovado el 9-oct: guion propio) | [radar.png](radar.png) | 12 | 62 s | sin errores de consola |
 | Acoplamiento (`acoplamiento`) | [acoplamiento.png](acoplamiento.png) | 6 | 49 s | sin errores de consola |
 | Carga exacta (`calculo`) | [calculo.png](calculo.png) | 8 | 55 s | sin errores de consola |
 | Aterrizaje Lunar (`aterrizaje`) | [aterrizaje.png](aterrizaje.png) | 8 | 71 s | sin errores de consola |
