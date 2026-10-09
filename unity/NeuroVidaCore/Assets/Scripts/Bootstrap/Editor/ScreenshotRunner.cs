@@ -295,14 +295,14 @@ namespace NeuroVida.Bridge.EditorTools
             double playable = Now;
             Shot("primera");
             bool ended = false;
-            foreach (var step in new[] { ("t08", 8.0), ("t20", 20.0), ("t40", 40.0) })
+            foreach (var step in new[] { ("t08", 8.0), ("t20", 20.0), ("pausa", 21.0), ("t40", 40.0) })
             {
                 double at = playable + step.Item2;
                 yield return Wait.Until(() => Now >= at || CurtainUp(), step.Item2 + 30);
                 if (CurtainUp()) { ended = true; break; }
-                Shot(step.Item1);
+                // la pausa va a los 21 s, a mitad de partida: más tarde un juego corto ya terminó (Bodega acaba sus 6 pedidos hacia los 40 s) y su pausa ya no ofrece «Cómo se juega»
+                if (step.Item1 == "pausa") yield return PauseShot(); else Shot(step.Item1);
             }
-            if (!ended && !CurtainUp()) yield return PauseShot();
             if (ended || CurtainUp()) yield return EndShots();
             if (_count < 4) GameNotes.Add("solo " + _count + " toma(s) de la partida (¿terminó muy pronto o no arrancó?)");
             yield return ExitPlay();
@@ -422,9 +422,15 @@ namespace NeuroVida.Bridge.EditorTools
             var entry = UnityEngine.Object.FindObjectOfType<GameEntryPoint>();
             if (entry == null) { GameNotes.Add("no hay GameEntryPoint para abrir la pausa"); yield break; }
             typeof(GameEntryPoint).GetMethod("ShowPause", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(entry, null);
-            for (float t = 0f; t < 0.9f; t += Time.unscaledDeltaTime) yield return null;
-            Shot("pausa");
             var menu = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.PauseMenu>();
+            // La entrada del menú (fundido y rebote, 0,22 s con el reloj REAL de los cuadros del juego) tiene que haber TERMINADO: el guion avanza en cada vuelta del Editor (hay varias por cuadro) y no sirve sumar el tiempo de cuadro. Se espera en tiempo real
+            // y a que el fundido del menú llegue a 1 (antes la pausa salía a medio aparecer, con el velo y los botones a medias).
+            var group = menu != null ? menu.GetComponent<CanvasGroup>() : null;
+            double settleAt = Now + 0.6;
+            yield return Wait.Until(() => Now >= settleAt && (group == null || group.alpha >= 0.999f), 5);
+            yield return Wait.For(0.25);
+            LogPauseState();
+            Shot("pausa");
             if (menu != null && menu.IsShown)
                 foreach (var kv in menu.VisibleButtons())
                     if (kv.Key.Contains("Continuar"))
@@ -433,6 +439,38 @@ namespace NeuroVida.Bridge.EditorTools
                         break;
                     }
             for (float t = 0f; t < 0.4f; t += Time.unscaledDeltaTime) yield return null;
+        }
+
+        /// <summary>Para entender una pausa que sale «apagada»: qué está a la vista a pantalla casi completa (nombre, opacidad y orden de su lienzo) y si la pausa ofrece «Cómo se juega». Solo informa en el log.</summary>
+        private static void LogPauseState()
+        {
+            try
+            {
+                var g = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.GameControllerBase>();
+                Debug.Log("[Capturas] pausa de " + _gameId + ": CanShowHowTo=" + (g != null ? g.CanShowHowTo.ToString() : "sin juego") + ", GameClock.Paused=" + NeuroVida.Games.Shared.GameClock.Paused + ", timeScale=" + Time.timeScale);
+                if (g != null)
+                {
+                    const System.Reflection.BindingFlags all = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance;
+                    var baseType = typeof(NeuroVida.Games.Shared.GameControllerBase);
+                    var tutorial = baseType.GetField("_tutorial", all)?.GetValue(g);
+                    var running = baseType.GetField("_howToRunning", all)?.GetValue(g);
+                    var ready = baseType.GetProperty("HowToReady", all)?.GetValue(g);
+                    var phase = g.GetType().GetField("_phase", all)?.GetValue(g);
+                    var loopOn = g.GetType().GetField("_loopOn", all)?.GetValue(g);
+                    Debug.Log("[Capturas]   _tutorial " + (tutorial == null ? "NULO" : "ok") + ", _howToRunning=" + running + ", HowToReady=" + ready + ", _phase=" + phase + ", _loopOn=" + loopOn);
+                }
+                foreach (var img in UnityEngine.Object.FindObjectsOfType<UnityEngine.UI.Graphic>())
+                {
+                    if (!img.isActiveAndEnabled || img.canvas == null) continue;
+                    var rt = img.rectTransform;
+                    float a = img.color.a * (img.canvasRenderer != null ? img.canvasRenderer.GetInheritedAlpha() : 1f);
+                    if (a < 0.05f || rt.rect.width < 900f || rt.rect.height < 1500f) continue;
+                    var path = new System.Text.StringBuilder();
+                    for (var t = img.transform; t != null && path.Length < 160; t = t.parent) path.Insert(0, t.name + "/");
+                    Debug.Log("[Capturas]   a pantalla casi completa: " + path + " alfa " + a.ToString("0.00") + " canvas orden " + img.canvas.rootCanvas.sortingOrder + " profundidad " + (img.canvasRenderer != null ? img.canvasRenderer.absoluteDepth : -1));
+                }
+            }
+            catch (Exception e) { Debug.Log("[Capturas] LogPauseState: " + e.Message); }
         }
 
         /// <summary>Dibuja el lienzo (en espacio del mundo, 1080x2400, centrado en el origen) con una cámara ortográfica y lo guarda como PNG numerado.</summary>

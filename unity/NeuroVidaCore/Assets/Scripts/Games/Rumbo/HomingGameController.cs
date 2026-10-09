@@ -967,7 +967,7 @@ namespace NeuroVida.Games.Rumbo
             NeuroStyle.ClayText(_prompt, 3.5f, 5f);
             _detail = CenteredText(_play, "Detail", 42, new Color(1f, 1f, 1f, 0.9f));
             NeuroStyle.ClayText(_detail, 2.5f, 3f);
-            _hint = CenteredText(_play, "Hint", 40, new Color(1f, 1f, 1f, 0.9f));
+            _hint = CenteredText(_play, "Hint", 42, new Color(1f, 1f, 1f, 0.9f));
             NeuroStyle.ClayText(_hint, 2.5f, 3f);
             _hint.gameObject.SetActive(false);
 
@@ -977,7 +977,7 @@ namespace NeuroVida.Games.Rumbo
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -1073,7 +1073,7 @@ namespace NeuroVida.Games.Rumbo
             var star = NewImage(_beacon, "Star", HomingSprites.Beacon());
             Stretch(star.rectTransform);
             star.gameObject.SetActive(true);
-            var beaconLabel = MakeText(_beacon, "Label", 36, TextAnchor.MiddleCenter, NeuroStyle.Sun, 0f, 0f);
+            var beaconLabel = MakeText(_beacon, "Label", 42, TextAnchor.MiddleCenter, NeuroStyle.Sun, 0f, 0f);
             NeuroStyle.ClayText(beaconLabel, 2.5f, 3f);
             beaconLabel.text = "faro";
             var bl = beaconLabel.rectTransform;
@@ -1158,7 +1158,7 @@ namespace NeuroVida.Games.Rumbo
             var t = MakeText(r, "Label", 64, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             t.text = label;
             Stretch(t.rectTransform);
-            BestFit(t, 36);
+            BestFit(t, 42);
             go.SetActive(false);
             return r;
         }

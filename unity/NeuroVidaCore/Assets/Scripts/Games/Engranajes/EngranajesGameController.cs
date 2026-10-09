@@ -431,7 +431,7 @@ namespace NeuroVida.Games.Engranajes
 
         /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo).</summary>
         private void SetUpTutorial() =>
-            BuildTutorial(_safe, GameHud.Height + 10f, "Engranajes", "Arregla la máquina: toca el motor o una correa para cambiar su giro y después toca Arrancar.", badgeAtBottom: true);
+            BuildTutorial(_safe, GameHud.Height + 10f, "Engranajes", "Arregla la máquina: toca el motor o una correa y luego Arrancar.", badgeAtBottom: true);
 
         // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
 

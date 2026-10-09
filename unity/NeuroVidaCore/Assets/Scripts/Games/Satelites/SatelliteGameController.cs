@@ -626,7 +626,7 @@ namespace NeuroVida.Games.Satelites
             var pr = _prompt.rectTransform;
             pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 1f);
             pr.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(_prompt, 40);
+            BestFit(_prompt, 42);
 
             BuildArena();
             BuildPickRow();
@@ -639,7 +639,7 @@ namespace NeuroVida.Games.Satelites
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -686,7 +686,7 @@ namespace NeuroVida.Games.Satelites
             ring.sprite = RingSprite.Get();
             ring.color = BadColor;
             ring.raycastTarget = false;
-            _crossLabel = MakeText(_crossMarker, "Label", 38, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
+            _crossLabel = MakeText(_crossMarker, "Label", 42, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
             NeuroStyle.ClayText(_crossLabel, 3f, 4f);
             var lr = _crossLabel.rectTransform;
             lr.anchorMin = lr.anchorMax = new Vector2(0.5f, 0f);

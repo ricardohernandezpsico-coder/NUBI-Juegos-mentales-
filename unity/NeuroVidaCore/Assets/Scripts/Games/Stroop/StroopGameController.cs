@@ -478,7 +478,7 @@ namespace NeuroVida.Games.Stroop
             _exit = new ExitButton(_safe, this, UnitsPerDp);
 
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
             BuildTutorial(_safe, GameHud.Height + 10f, "Tinta o Palabra", "La palabra llega por una orilla: de la TINTA, toca su color; de la PALABRA, lo que dice.",
                 badgeAtBottom: true);
 
@@ -522,7 +522,7 @@ namespace NeuroVida.Games.Stroop
             tr.anchorMax = Vector2.one;
             tr.offsetMin = new Vector2(130f, 4f);
             tr.offsetMax = new Vector2(-30f, -4f);
-            BestFit(_ribbonText, 40);
+            BestFit(_ribbonText, 42);
         }
 
         private void BuildTimer()
@@ -830,7 +830,7 @@ namespace NeuroVida.Games.Stroop
             lr.anchorMin = new Vector2(0.06f, 0.06f);
             lr.anchorMax = new Vector2(0.94f, 0.38f);
             lr.offsetMin = lr.offsetMax = Vector2.zero;
-            BestFit(line, 28);
+            BestFit(line, 42);
             line.text = "Toca lo que DICE la palabra, no su color";
             go.SetActive(false);
         }
@@ -945,7 +945,7 @@ namespace NeuroVida.Games.Stroop
 
             // píldora de estado (y explicación del error) en el hueco entre la tarjeta y los botones; el y se mide desde el centro del Safe Area
             _pill.SetPosition(new Vector2(0f, sh / 2f - (y + pillGap / 2f)));
-            _toast.SetTopOffset(0f); // avisos arriba (zona del título), nunca sobre la tarjeta
+            _toast.SetBelowHud(); // los avisos van debajo del marcador, nunca sobre el título
             _lastBlock = block;
             _lastBottom = bottom;
         }

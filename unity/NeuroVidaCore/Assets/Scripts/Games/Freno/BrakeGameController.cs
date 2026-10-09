@@ -779,7 +779,7 @@ namespace NeuroVida.Games.Freno
             _prompt = MakeText(_play, "Prompt", 66, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
             NeuroStyle.ClayText(_prompt, 3.5f, 5f);
             _prompt.rectTransform.anchorMin = _prompt.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            BestFit(_prompt, 40);
+            BestFit(_prompt, 42);
 
             _lanesRoot = Layer(_play, "Lanes");
             for (int i = 0; i < MaxLanes; i++) _lanes.Add(BuildLane(i));
@@ -791,7 +791,7 @@ namespace NeuroVida.Games.Freno
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
             BuildTutorial(_safe, GameHud.Height + 125f, "Freno de Emergencia", "Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.",
                 skipAtTop: true, captionFromBottomU: 700f);
 
@@ -871,25 +871,25 @@ namespace NeuroVida.Games.Freno
             var root = go.AddComponent<RectTransform>();
             root.anchorMin = root.anchorMax = new Vector2(0.5f, 1f);
             root.pivot = new Vector2(0.5f, 1f);
-            root.sizeDelta = new Vector2(960f, 96f);
+            root.sizeDelta = new Vector2(960f, 104f);
             root.anchoredPosition = new Vector2(0f, -(GameHud.Height + 36f));
 
-            var label = MakeText(root, "Label", 36, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
+            var label = MakeText(root, "Label", 42, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
             label.text = "Límite del freno";
             var lr = label.rectTransform;
             lr.anchorMin = new Vector2(0f, 1f);
             lr.anchorMax = new Vector2(0.7f, 1f);
             lr.pivot = new Vector2(0f, 1f);
-            lr.sizeDelta = new Vector2(0f, 50f);
+            lr.sizeDelta = new Vector2(0f, 58f);
             lr.anchoredPosition = Vector2.zero;
 
-            _gaugeValue = MakeText(root, "Value", 40, TextAnchor.MiddleRight, NeuroStyle.Sky, 0f, 0f);
+            _gaugeValue = MakeText(root, "Value", 42, TextAnchor.MiddleRight, NeuroStyle.Sky, 0f, 0f);
             NeuroStyle.ClayText(_gaugeValue, 2.5f, 3f);
             var vr = _gaugeValue.rectTransform;
             vr.anchorMin = new Vector2(0.6f, 1f);
             vr.anchorMax = new Vector2(1f, 1f);
             vr.pivot = new Vector2(1f, 1f);
-            vr.sizeDelta = new Vector2(0f, 50f);
+            vr.sizeDelta = new Vector2(0f, 58f);
             vr.anchoredPosition = Vector2.zero;
 
             var barGo = new GameObject("Bar");

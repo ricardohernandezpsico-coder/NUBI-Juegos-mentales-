@@ -970,7 +970,7 @@ namespace NeuroVida.Games.Bitacora
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

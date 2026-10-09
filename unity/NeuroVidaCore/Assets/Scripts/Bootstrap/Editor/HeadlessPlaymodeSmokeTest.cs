@@ -270,6 +270,9 @@ namespace NeuroVida.Bridge.EditorTools
             _textGuardSeen.Clear();
             _guardPrev.Clear();
             _guardOk.Clear();
+            _hudNow.Clear();
+            _hudPrev.Clear();
+            _hudSeen.Clear();
             _textGuardAt = 0.0;
             _entryStartAt = EditorApplication.timeSinceStartup;
             _pauseShowStage = 0;
@@ -421,6 +424,24 @@ namespace NeuroVida.Bridge.EditorTools
             ("aterrizaje", "Flag/Label"),    // el número de la bandera, arriba de ella
         };
 
+        /// <summary>Tamaño mínimo de letra de TODO texto visible, en dp (el lienzo de los juegos mide 1080 unidades de ancho = 360 dp: 3 unidades por dp). Pensamos en mayores: nada más chico que esto (CLAUDE.md, «Reglas que no se rompen»).</summary>
+        private const float MinFontDp = 14f;
+
+        /// <summary>Textos que a propósito van más chicos que <see cref="MinFontDp"/>: (juego, final de la ruta del objeto, por qué). Cualquier otro texto bajo 14 dp, en cualquier juego, hace FALLAR el smoke. Mantenerla CORTA y justificada.</summary>
+        private static readonly (string Id, string PathEnd, string Why)[] TextSizeExceptions =
+        {
+            ("*", "CountdownScreen/StyleStamp", "marca de versión de las builds de depuración (CountdownScreen.StyleStamp): no es parte del juego y se quita antes de publicar"),
+            ("bitacora", "*", "Bitácora de Misión está RETIRADA de la app (5-oct): ya no se ve; su código y su arranque en el smoke se conservan sin rehacerle la letra"),
+        };
+
+        private static bool SizeIsException(UnityEngine.UI.Text t)
+        {
+            string path = GuardPath(t.transform);
+            foreach (var e in TextSizeExceptions)
+                if ((e.Id == "*" || e.Id == (_current.Id ?? "secuencia")) && (e.PathEnd == "*" || path.EndsWith(e.PathEnd, StringComparison.Ordinal))) return true;
+            return false;
+        }
+
         private static bool GuardIsException(string rule, UnityEngine.UI.Text t)
         {
             if (!rule.StartsWith("fuera de su padre")) return false;
@@ -497,7 +518,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// Dos reglas sobre todo <c>Text</c> activo, con texto y visible (opacidad &gt; 0), solo en las corridas en forma de teléfono («Tutorial*» y «Pantalla*»; en la ventana de 640x480 un juego de teléfono no cabe y daría falsos avisos):
         /// (1) lo que se dibuja del texto cae DENTRO de la pantalla (el lienzo raíz); (2) si su padre es un <c>Image</c> (un botón o una píldora), el centro de lo dibujado cae dentro del rect del padre. Atrapa el error de posicionar
         /// un hijo con coordenadas de la capa (queda desplazado y el botón se ve vacío), que las pruebas de lógica no ven. Se revisa cada 0,4 s durante toda la corrida (la primera pantalla jugable, la pausa y cada panel con botón que el
-        /// juego abra). Cada texto se informa una vez por corrida, con el juego, el objeto y la posición. Hace FALLAR el smoke en cualquier juego, salvo las excepciones de <see cref="TextGuardExceptions"/>.
+        /// juego abra). (4) el texto no queda cortado por el alto de su caja (con «Truncate» una línea que no cabe desaparece entera); (3) la letra mide al menos <see cref="MinFontDp"/> dp (14: el tamaño efectivo, con el ajuste automático ya hecho). Y aparte, <see cref="ScanHudCover"/>: nada tapa el HUD. Cada texto se informa una vez por corrida, con el juego, el objeto y la posición. Hace FALLAR el smoke en cualquier juego, salvo las excepciones de <see cref="TextGuardExceptions"/>.
         /// </summary>
         private static void ScanTextPlacement()
         {
@@ -519,7 +540,11 @@ namespace NeuroVida.Bridge.EditorTools
                 bool inImage = parent != null && parent.GetComponent<UnityEngine.UI.Image>() != null && parent.rect.width > 0f;
                 var raw = GuardWorldRect(t.rectTransform);
                 var pr = inImage ? GuardWorldRect(parent) : default(Rect);
-                int sig = unchecked((((Mathf.RoundToInt(raw.x) * 31 + Mathf.RoundToInt(raw.y)) * 31 + Mathf.RoundToInt(raw.width)) * 31 + Mathf.RoundToInt(raw.height)) * 31 + t.text.GetHashCode() + (inImage ? Mathf.RoundToInt(pr.x) * 17 + Mathf.RoundToInt(pr.y) * 13 + Mathf.RoundToInt(pr.width) * 7 + Mathf.RoundToInt(pr.height) : 0) + t.fontSize * 3);
+                // tamaño EFECTIVO de la letra en dp: el que usó el ajuste automático (bestFit) o el fontSize, por la escala del objeto respecto del lienzo, entre las unidades por dp del lienzo (1080 de ancho = 360 dp)
+                float rootScale = Mathf.Abs(canvas.transform.lossyScale.y) > 0.0001f ? Mathf.Abs(canvas.transform.lossyScale.y) : 1f;
+                int used = t.resizeTextForBestFit && t.cachedTextGenerator.fontSizeUsedForBestFit > 0 ? t.cachedTextGenerator.fontSizeUsedForBestFit : t.fontSize;
+                float dp = used * (Mathf.Abs(t.transform.lossyScale.y) / rootScale) / (screen.width / 360f);
+                int sig = unchecked((((Mathf.RoundToInt(raw.x) * 31 + Mathf.RoundToInt(raw.y)) * 31 + Mathf.RoundToInt(raw.width)) * 31 + Mathf.RoundToInt(raw.height)) * 31 + t.text.GetHashCode() + (inImage ? Mathf.RoundToInt(pr.x) * 17 + Mathf.RoundToInt(pr.y) * 13 + Mathf.RoundToInt(pr.width) * 7 + Mathf.RoundToInt(pr.height) : 0) + used * 3 + Mathf.RoundToInt(dp * 10f));
                 int id = t.GetInstanceID();
                 if (_guardOk.TryGetValue(id, out var okSig) && okSig == sig) continue;          // no cambió desde que estaba bien
                 var drawn = GuardTextRect(t);
@@ -536,11 +561,106 @@ namespace NeuroVida.Bridge.EditorTools
                     if (center.x < pr.xMin - ptol || center.x > pr.xMax + ptol || center.y < pr.yMin - ptol || center.y > pr.yMax + ptol)
                     { GuardCandidate(strictGame, "fuera de su padre «" + parent.name + "»", t, drawn, screen, shape, pr); flagged = true; }
                 }
+                // (3) tamaño mínimo de letra: 14 dp
+                if (dp < MinFontDp - 0.05f && t.resizeTextForBestFit && !SizeIsException(t))
+                {
+                    // el tamaño que dejó el ajuste automático puede ser el de antes de pasar el lienzo a «espacio del mundo» (los menús que aparecen a mitad de la corrida): se regenera el texto y se vuelve a medir
+                    t.SetAllDirty();
+                    Canvas.ForceUpdateCanvases();
+                    used = t.cachedTextGenerator.fontSizeUsedForBestFit > 0 ? t.cachedTextGenerator.fontSizeUsedForBestFit : t.fontSize;
+                    dp = used * (Mathf.Abs(t.transform.lossyScale.y) / rootScale) / (screen.width / 360f);
+                }
+                if (dp < MinFontDp - 0.05f && !SizeIsException(t))
+                { GuardCandidate(strictGame, "letra menor de " + MinFontDp + " dp (" + dp.ToString("0.0") + " dp)", t, drawn, screen, shape, null); flagged = true; }
+                // (4) texto CORTADO por el alto de su caja: con «Truncate», una línea que no cabe en el alto del rect se OCULTA entera (el texto desaparece, no se recorta): pasa cuando se agranda la letra sin agrandar la caja. Lo que el texto pide de alto
+                // (con el ajuste automático ya hecho, y en el ancho que tiene) no puede pasar del alto de su caja.
+                if (t.verticalOverflow == VerticalWrapMode.Truncate && t.text.Length > 1)
+                {
+                    if (t.resizeTextForBestFit)
+                    {
+                        // con ajuste automático, «preferredHeight» mide con la letra más grande: se cuentan las letras que SÍ se dibujaron (si ni con la letra mínima cabe, faltan)
+                        int visibleChars = t.cachedTextGenerator.characterCountVisible;
+                        if (!t.supportRichText && !t.text.Contains("\n") && visibleChars > 0 && visibleChars < t.text.Length - 1)
+                        { GuardCandidate(strictGame, "texto cortado por el alto de su caja (se ven " + visibleChars + " de " + t.text.Length + " letras)", t, drawn, screen, shape, null); flagged = true; }
+                    }
+                    else
+                    {
+                        float asks = t.preferredHeight, has = t.rectTransform.rect.height;
+                        if (asks > has + 1f)
+                        { GuardCandidate(strictGame, "texto cortado por el alto de su caja (pide " + Mathf.RoundToInt(asks) + " y la caja mide " + Mathf.RoundToInt(has) + ")", t, drawn, screen, shape, null); flagged = true; }
+                    }
+                }
                 if (flagged) _guardOk.Remove(id); else _guardOk[id] = sig;
             }
             var gone = new List<string>();
             foreach (var k in _guardPrev.Keys) if (!_guardNow.Contains(k)) gone.Add(k);
             foreach (var k in gone) _guardPrev.Remove(k);
+            ScanHudCover();
+        }
+
+        /// <summary>Las piezas de foco de <see cref="NeuroVida.Games.Shared.NubiCoach"/> (velo, esquinas, marco, aro y dedo): oscurecen o enmarcan a propósito. Nubi y su globo NO son de foco: no deben tapar el HUD.</summary>
+        private static bool IsCoachFocusPiece(UnityEngine.UI.Graphic g)
+        {
+            for (var c = g.transform; c != null; c = c.parent)
+                if (c.name == "NubiCoach")
+                {
+                    string n = g.name;
+                    return n.StartsWith("Veil") || n.StartsWith("Corner") || n == "Frame" || n == "Ring" || n == "Finger" || n == "FingerRim";
+                }
+            return false;
+        }
+
+        private static readonly HashSet<string> _hudNow = new HashSet<string>();
+        private static readonly HashSet<string> _hudPrev = new HashSet<string>();
+        private static readonly HashSet<string> _hudSeen = new HashSet<string>();
+
+        /// <summary>
+        /// Ningún cartel, globo o elemento del juego tapa el HUD de arriba (el título y los rótulos de «Nivel», el avance y la racha): se busca todo lo visible que NO es del HUD, del mismo lienzo, dibujado DESPUÉS de cada texto del HUD (o sea, delante)
+        /// y que cubre más de la cuarta parte de lo que el texto dibuja. Se ignoran los fondos y los velos (más de 0,8 del ancho o 0,3 del alto de la pantalla) y los destellos (menores de 30 unidades). Como el resto de la guardia, solo informa lo que se
+        /// repite en dos revisiones seguidas (los avisos duran más de 1 s a plena vista).
+        /// </summary>
+        private static void ScanHudCover()
+        {
+            _hudNow.Clear();
+            UnityEngine.UI.Graphic[] graphics = null;
+            foreach (var t in UnityEngine.Object.FindObjectsOfType<UnityEngine.UI.Text>())
+            {
+                if (t == null || !t.isActiveAndEnabled || string.IsNullOrWhiteSpace(t.text) || t.canvas == null || t.canvasRenderer == null) continue;
+                if (t.color.a * t.canvasRenderer.GetInheritedAlpha() < 0.3f) continue;
+                Transform hud = null;
+                for (var c = t.transform.parent; c != null; c = c.parent) if (c.name == "Hud") { hud = c; break; }
+                if (hud == null) continue;
+                var canvas = t.canvas.rootCanvas;
+                var screen = GuardWorldRect((RectTransform)canvas.transform);
+                var mine = GuardTextRect(t);
+                float area = mine.width * mine.height;
+                if (area <= 0f) continue;
+                int depth = t.canvasRenderer.absoluteDepth;
+                if (graphics == null) graphics = UnityEngine.Object.FindObjectsOfType<UnityEngine.UI.Graphic>();
+                foreach (var g in graphics)
+                {
+                    if (g == null || g == t || !g.isActiveAndEnabled || g.canvas == null || g.canvasRenderer == null || g.canvas.rootCanvas != canvas) continue;
+                    if (g.transform.IsChildOf(hud)) continue;
+                    if (IsCoachFocusPiece(g)) continue;                              // el velo y el marco de foco del tutorial se ponen a propósito sobre el juego (Nubi y su globo, no: esos cuentan)
+                    var gText = g as UnityEngine.UI.Text;
+                    if (gText != null && string.IsNullOrWhiteSpace(gText.text)) continue;
+                    if (g.color.a * g.canvasRenderer.GetInheritedAlpha() < (gText != null ? 0.25f : 0.4f)) continue;      // un halo o un aro casi transparente no tapa nada
+                    if (g.canvasRenderer.absoluteDepth <= depth) continue;          // se dibuja ANTES: queda detrás del texto del HUD
+                    var gr = gText != null ? GuardTextRect(gText) : GuardWorldRect(g.rectTransform);          // de un texto, lo que dibuja (no toda su caja)
+                    if (gr.width >= 0.8f * screen.width || gr.height >= 0.3f * screen.height) continue;      // fondos y velos
+                    if (gr.width < 30f && gr.height < 30f) continue;                                          // destellos
+                    float ox = Mathf.Min(mine.xMax, gr.xMax) - Mathf.Max(mine.xMin, gr.xMin), oy = Mathf.Min(mine.yMax, gr.yMax) - Mathf.Max(mine.yMin, gr.yMin);
+                    if (ox <= 0f || oy <= 0f || ox * oy < 0.25f * area) continue;
+                    string key = GuardPath(t.transform) + "<-" + GuardPath(g.transform);
+                    _hudNow.Add(key);
+                    if (!_hudPrev.Contains(key) || !_hudSeen.Add(key)) continue;
+                    string text = t.text.Replace("\n", " ");
+                    _errorCount++;
+                    Debug.Log($"[SmokeTest] Error capturado: guardia del HUD: {_current.Name} ({_current.Id}), 1080x{_currentHeight}: «{text}» [{GuardPath(t.transform)}] queda tapado por [{GuardPath(g.transform)}] ({Mathf.RoundToInt(gr.width)}x{Mathf.RoundToInt(gr.height)} en {Mathf.RoundToInt(gr.xMin)},{Mathf.RoundToInt(gr.yMin)})");
+                }
+            }
+            _hudPrev.Clear();
+            foreach (var k in _hudNow) _hudPrev.Add(k);
         }
 
         private static void GuardReport(bool strict, string rule, UnityEngine.UI.Text t, Rect rect, Rect screen, string shape, Rect? parent)

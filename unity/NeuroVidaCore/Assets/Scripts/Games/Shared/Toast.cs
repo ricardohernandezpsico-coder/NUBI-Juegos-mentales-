@@ -94,8 +94,17 @@ namespace NeuroVida.Games.Shared
             _rect.gameObject.SetActive(false);
         }
 
-        /// <summary>Posición (respecto del borde superior del contenedor) donde aparece.</summary>
-        public void SetTopOffset(float topOffsetU) => _basePosition = new Vector2(0f, -topOffsetU);
+        /// <summary>
+        /// El aviso aparece DEBAJO del marcador de arriba (<see cref="GameHud"/>: título, «Nivel», avance y racha), nunca encima: <paramref name="extraU"/> unidades más abajo todavía si el juego lo pide. Antes se ponía en el borde superior
+        /// y tapaba el título y los rótulos (8-oct, revisión de las capturas).
+        /// </summary>
+        public void SetBelowHud(float extraU = 0f) => _basePosition = new Vector2(0f, -(GameHud.Height + BelowHudGap + extraU));
+
+        /// <summary>Aire entre el marcador y el aviso (unidades).</summary>
+        public const float BelowHudGap = 14f;
+
+        /// <summary>Cuánto baja el aviso desde el borde de arriba del contenedor (unidades): lo que fijó <see cref="SetBelowHud"/>. Para las pruebas.</summary>
+        public float TopOffsetU => -_basePosition.y;
 
         public void Show(string title, string subtitle, Color accent, float holdSeconds = 1.2f)
         {
@@ -182,7 +191,7 @@ namespace NeuroVida.Games.Shared
 
             const float inSeconds = 0.30f;
             const float outSeconds = 0.30f;
-            float drop = 46f * _u;
+            float drop = 36f * _u;           // entra subiendo desde abajo (no cae desde arriba: ahí está el marcador)
 
             float elapsed = 0f;
             while (elapsed < inSeconds)
@@ -190,7 +199,7 @@ namespace NeuroVida.Games.Shared
                 elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / inSeconds);
                 _group.alpha = Mathf.Clamp01(t * 1.6f);
-                _rect.anchoredPosition = _basePosition + new Vector2(0f, (1f - UiFx.EaseOutBack(t)) * drop);
+                _rect.anchoredPosition = _basePosition - new Vector2(0f, Mathf.Max(0f, 1f - UiFx.EaseOutBack(t)) * drop);
                 yield return null;
             }
             _group.alpha = 1f;
@@ -204,7 +213,7 @@ namespace NeuroVida.Games.Shared
                 elapsed += GameClock.DeltaTime;
                 float t = Mathf.Clamp01(elapsed / outSeconds);
                 _group.alpha = 1f - t;
-                _rect.anchoredPosition = _basePosition + new Vector2(0f, t * drop * 0.6f);
+                _rect.anchoredPosition = _basePosition - new Vector2(0f, t * drop * 0.6f);
                 yield return null;
             }
             _group.alpha = 0f;

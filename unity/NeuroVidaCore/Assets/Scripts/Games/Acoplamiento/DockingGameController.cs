@@ -622,7 +622,7 @@ namespace NeuroVida.Games.Acoplamiento
             _prompt = MakeText(_play, "Prompt", 58, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
             NeuroStyle.ClayText(_prompt, 3.5f, 5f);
             _prompt.rectTransform.anchorMin = _prompt.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            BestFit(_prompt, 36);
+            BestFit(_prompt, 42);
 
             BuildPort();
             BuildModule();
@@ -634,7 +634,7 @@ namespace NeuroVida.Games.Acoplamiento
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -652,27 +652,27 @@ namespace NeuroVida.Games.Acoplamiento
             go.transform.SetParent(_play, false);
             _stationRow = go.AddComponent<RectTransform>();
             _stationRow.anchorMin = _stationRow.anchorMax = new Vector2(0.5f, 0.5f);
-            _stationRow.sizeDelta = new Vector2(960f, 110f);
-            _stationLabel = MakeText(_stationRow, "Label", 34, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
+            _stationRow.sizeDelta = new Vector2(960f, 122f);
+            _stationLabel = MakeText(_stationRow, "Label", 42, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
             var lr = _stationLabel.rectTransform;
             lr.anchorMin = new Vector2(0f, 1f);
             lr.anchorMax = new Vector2(1f, 1f);
             lr.pivot = new Vector2(0.5f, 1f);
-            lr.sizeDelta = new Vector2(0f, 46f);
+            lr.sizeDelta = new Vector2(0f, 54f);
             lr.anchoredPosition = Vector2.zero;
             // Riel de la estación y los módulos acoplados en fila.
             var rail = NewImage(_stationRow, "Rail", RoundedRectSprite.Get(8));
             rail.type = Image.Type.Sliced;
             rail.color = new Color(1f, 1f, 1f, 0.16f);
             rail.rectTransform.sizeDelta = new Vector2(960f, 10f);
-            rail.rectTransform.anchoredPosition = new Vector2(0f, -28f);
+            rail.rectTransform.anchoredPosition = new Vector2(0f, -40f);
             rail.gameObject.SetActive(true);
             const float icon = 52f, gap = 16f;
             for (int i = 0; i < StationIcons; i++)
             {
                 var m = NewImage(_stationRow, "Module", DockingSprites.ModuleCell());
                 m.rectTransform.sizeDelta = new Vector2(icon, icon);
-                m.rectTransform.anchoredPosition = new Vector2(-480f + icon * 0.5f + i * (icon + gap), -28f);
+                m.rectTransform.anchoredPosition = new Vector2(-480f + icon * 0.5f + i * (icon + gap), -40f);
                 _stationIcons.Add(m);
             }
         }
@@ -696,12 +696,12 @@ namespace NeuroVida.Games.Acoplamiento
             _portGlow.color = new Color(1f, 1f, 1f, 0f);
             _portGlow.gameObject.SetActive(true);
 
-            var label = MakeText(_portRect, "Label", 32, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.6f), 0f, 0f);
+            var label = MakeText(_portRect, "Label", 42, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.6f), 0f, 0f);
             label.text = "PUERTO";
             var lr = label.rectTransform;
             lr.anchorMin = lr.anchorMax = new Vector2(0.5f, 1f);
             lr.pivot = new Vector2(0.5f, 1f);
-            lr.sizeDelta = new Vector2(400f, 50f);
+            lr.sizeDelta = new Vector2(400f, 58f);
             lr.anchoredPosition = new Vector2(0f, -12f);
 
             var sr = new GameObject("Socket");
@@ -793,7 +793,7 @@ namespace NeuroVida.Games.Acoplamiento
                 tr.anchorMax = new Vector2(1f, 1f);
                 tr.offsetMin = new Vector2(150f, 0f);
                 tr.offsetMax = new Vector2(-18f, 0f);
-                BestFit(t, 36);
+                BestFit(t, 42);
                 _buttons[i] = r;
             }
         }

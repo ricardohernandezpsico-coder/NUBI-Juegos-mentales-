@@ -855,7 +855,7 @@ namespace NeuroVida.Games.Piloto
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -912,16 +912,16 @@ namespace NeuroVida.Games.Piloto
             tr.anchorMax = new Vector2(1f, 1f);
             tr.offsetMin = new Vector2(170f, 0f);
             tr.offsetMax = new Vector2(-24f, -6f);
-            BestFit(_bannerTitle, 30);
+            BestFit(_bannerTitle, 42);
 
-            _bannerSub = MakeText(go.transform, "Sub", 36, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
-            _bannerSub.text = "Misma forma y mismo color. Ignora las demás.";
+            _bannerSub = MakeText(go.transform, "Sub", 42, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
+            _bannerSub.text = "Misma forma y color. Ignora las demás.";       // más corto: a 14 dp cabe en un renglón
             var sr = _bannerSub.rectTransform;
             sr.anchorMin = new Vector2(0f, 0f);
             sr.anchorMax = new Vector2(1f, 0.46f);
             sr.offsetMin = new Vector2(170f, 8f);
             sr.offsetMax = new Vector2(-24f, 0f);
-            BestFit(_bannerSub, 24);
+            BestFit(_bannerSub, 42);
         }
 
         private void BuildTimer()
@@ -979,10 +979,10 @@ namespace NeuroVida.Games.Piloto
             _controlImage.type = Image.Type.Sliced;
             _controlImage.color = new Color(1f, 1f, 1f, 0.06f);
             _controlImage.raycastTarget = false;
-            _controlLabel = MakeText(ctl.transform, "Label", 40, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.7f), 0f, 0f);
+            _controlLabel = MakeText(ctl.transform, "Label", 42, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.7f), 0f, 0f);
             _controlLabel.text = "‹  Desliza aquí para guiar la nave  ›";
             Stretch(_controlLabel.rectTransform);
-            BestFit(_controlLabel, 26);
+            BestFit(_controlLabel, 42);
 
             _laneRoot = Layer(_play, "Lane");
             int pool = 64;

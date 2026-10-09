@@ -306,6 +306,10 @@ namespace NeuroVida.Games.Shared
             _root.gameObject.SetActive(true);
             bool veil = kind != Kind.Notice;
             foreach (var s in _veil) { s.gameObject.SetActive(false); s.raycastTarget = kind == Kind.Touch; }
+            // Las esquinas oscuras que redondean el hueco del foco anterior se apagan TAMBIÉN aquí: un aviso (sin velo) no las vuelve a calcular y quedaban a la vista alrededor de lo último que se iluminó, como un cuadrado oscuro (8-oct, paso 3 de Rastro de luz).
+            // Y se olvida el último velo calculado, para que el foco siguiente lo arme de nuevo aunque caiga en el mismo lugar.
+            foreach (var c in _corners) c.gameObject.SetActive(false);
+            _litShown.Clear();
             _frame.gameObject.SetActive(veil && !circle);
             _ring.gameObject.SetActive(veil && circle);
             _finger.gameObject.SetActive(false);

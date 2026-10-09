@@ -565,7 +565,7 @@ namespace NeuroVida.Games.Aterrizaje
             NeuroStyle.ClayText(_mission, 6f, 10f);
             _prompt = CenteredText(_play, "Prompt", 62, Color.white);
             NeuroStyle.ClayText(_prompt, 3.5f, 5f);
-            _hint = CenteredText(_play, "Hint", 40, new Color(1f, 1f, 1f, 0.85f));
+            _hint = CenteredText(_play, "Hint", 42, new Color(1f, 1f, 1f, 0.85f));
             _hint.gameObject.SetActive(false);
 
             BuildRuler();
@@ -590,7 +590,7 @@ namespace NeuroVida.Games.Aterrizaje
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
             BuildTutorial(_safe, GameHud.Height + 10f, "Aterrizaje Lunar", "Aterriza en el número que te piden. La regla solo marca sus dos extremos.");
 
             var flashGo = new GameObject("Flash");

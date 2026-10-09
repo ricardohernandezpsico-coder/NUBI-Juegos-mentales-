@@ -14,6 +14,9 @@ namespace NeuroVida.Games.Shared
         public static readonly Color Good = new Color(0x22 / 255f, 0xC5 / 255f, 0x5E / 255f);
         public static readonly Color Bad = new Color(0xEF / 255f, 0x44 / 255f, 0x44 / 255f);
 
+        /// <summary>Ancho del lienzo de los juegos (unidades) y margen mínimo a cada lado (dp).</summary>
+        public const float ReferenceWidthU = 1080f, MarginDp = 16f;
+
         private readonly MonoBehaviour _runner;
         private readonly RectTransform _rect;
         private readonly List<Image> _dots = new List<Image>();
@@ -29,16 +32,26 @@ namespace NeuroVida.Games.Shared
             _rect.anchorMin = new Vector2(0.5f, 1f);
             _rect.anchorMax = new Vector2(0.5f, 1f);
             _rect.pivot = new Vector2(0.5f, 1f);
-            _rect.sizeDelta = new Vector2(900f, dotDp * 1.6f * unitsPerDp);
+            // La fila cabe SIEMPRE en el ancho del juego con 16 dp (48 unidades) de margen a cada lado: primero se junta la separación (hasta 0,3 del punto) y, si aún no entra, se achica el punto (8-oct: con 16 puntos se salía por la derecha).
+            float size = dotDp * unitsPerDp;
+            float maxW = ReferenceWidthU - 2f * MarginDp * unitsPerDp;
+            float gap = size * 0.75f;
+            if (count > 1 && count * size + (count - 1) * gap > maxW) gap = Mathf.Max(size * 0.3f, (maxW - count * size) / (count - 1));
+            if (count * size + Mathf.Max(0, count - 1) * gap > maxW)
+            {
+                float k = maxW / (count * size + Mathf.Max(0, count - 1) * gap);
+                size *= k;
+                gap *= k;
+            }
+            _rect.sizeDelta = new Vector2(maxW, Mathf.Max(dotDp * 1.6f * unitsPerDp, size * 1.6f));
             var layout = go.AddComponent<HorizontalLayoutGroup>();
             layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.spacing = dotDp * 0.75f * unitsPerDp;
+            layout.spacing = gap;
             layout.childControlWidth = false;
             layout.childControlHeight = false;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
 
-            float size = dotDp * unitsPerDp;
             for (int i = 0; i < count; i++)
             {
                 var dotGo = new GameObject("Dot_" + i);

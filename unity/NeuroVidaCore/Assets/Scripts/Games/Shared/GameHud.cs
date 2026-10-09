@@ -49,7 +49,7 @@ namespace NeuroVida.Games.Shared
             Rect.sizeDelta = new Vector2(0f, Height);
             Rect.anchoredPosition = Vector2.zero;
 
-            const float pillW = 220f, pillH = 118f;
+            const float pillW = 240f, pillH = 150f;          // «racha» a 14 dp (42 unidades) pide una píldora más ancha y alta: un texto de Unity cuya línea no cabe en el alto de su caja se OCULTA entero (Truncate)
             float reserve = withStreak ? pillW + 24f : rightReserve;
 
             var titleText = MakeText(Rect, "Title", 70, TextAnchor.UpperLeft, Color.white, 3f, 0.45f);
@@ -88,13 +88,13 @@ namespace NeuroVida.Games.Shared
 
                 _streakNumber = MakeText(_streakPill, "Number", 60, TextAnchor.MiddleCenter, NeuroStyle.Cream, 0f, 0f);
                 var nr = _streakNumber.rectTransform;
-                nr.offsetMin = new Vector2(92f, 34f);
-                nr.offsetMax = new Vector2(-14f, -6f);
-                _streakLabel = MakeText(_streakPill, "Label", 28, TextAnchor.MiddleCenter, NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.7f), 0f, 0f);
+                nr.offsetMin = new Vector2(92f, 66f);
+                nr.offsetMax = new Vector2(-14f, -4f);
+                _streakLabel = MakeText(_streakPill, "Label", 42, TextAnchor.MiddleCenter, NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.7f), 0f, 0f);
                 _streakLabel.font = UiFonts.Regular;
                 var lr = _streakLabel.rectTransform;
-                lr.offsetMin = new Vector2(92f, 8f);
-                lr.offsetMax = new Vector2(-14f, -76f);
+                lr.offsetMin = new Vector2(92f, 6f);
+                lr.offsetMax = new Vector2(-14f, -88f);
                 _streakLabel.text = "racha";
                 SetStreak(0, animate: false);
             }
@@ -115,7 +115,7 @@ namespace NeuroVida.Games.Shared
             bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
             bg.raycastTarget = false;
             NeuroStyle.ClayFrame(bg, 3f, 6f);
-            text = MakeText(rect, "Text", 40, TextAnchor.MiddleCenter, textColor, 0f, 0f);
+            text = MakeText(rect, "Text", 42, TextAnchor.MiddleCenter, textColor, 0f, 0f);       // 14 dp: nada de letra más chica
             return rect;
         }
 

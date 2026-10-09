@@ -880,7 +880,7 @@ namespace NeuroVida.Games.Meteoros
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
             BuildTutorial(_safe, GameHud.Height + 10f, "Lluvia de meteoros", "Toca las palabras que existen. Las inventadas, déjalas caer.",
                 captionFromBottomU: 430f, badgeAtBottom: true);
 

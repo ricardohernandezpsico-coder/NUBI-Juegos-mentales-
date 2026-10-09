@@ -364,7 +364,7 @@ namespace NeuroVida.Games.Parejas
             var detail = AddResultText("Detail", 44, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
             detail.horizontalOverflow = HorizontalWrapMode.Wrap;
             detail.rectTransform.sizeDelta = new Vector2(820f, 130f);
-            var extra = AddResultText("Extra", 40, new Vector2(0f, -270f), new Color(1f, 1f, 1f, 0.65f));
+            var extra = AddResultText("Extra", 42, new Vector2(0f, -270f), new Color(1f, 1f, 1f, 0.65f));
             extra.horizontalOverflow = HorizontalWrapMode.Wrap;
             go.SetActive(false);
         }

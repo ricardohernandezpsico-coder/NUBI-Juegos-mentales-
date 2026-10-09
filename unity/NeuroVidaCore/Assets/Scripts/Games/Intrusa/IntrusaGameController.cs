@@ -1265,7 +1265,7 @@ namespace NeuroVida.Games.Intrusa
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -1487,7 +1487,7 @@ namespace NeuroVida.Games.Intrusa
             AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
             AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
             AddResultText("Detail", 44, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            var extra = AddResultText("Extra", 40, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
+            var extra = AddResultText("Extra", 42, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
             extra.horizontalOverflow = HorizontalWrapMode.Wrap;
             go.SetActive(false);
         }

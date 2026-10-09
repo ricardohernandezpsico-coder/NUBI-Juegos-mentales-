@@ -744,7 +744,7 @@ namespace NeuroVida.Games.Radar
             var pr = _prompt.rectTransform;
             pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 1f);
             pr.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(_prompt, 40);
+            BestFit(_prompt, 42);
 
             BuildScope();
             BuildRescueButton();
@@ -754,7 +754,7 @@ namespace NeuroVida.Games.Radar
             var hr = _hint.rectTransform;
             hr.anchorMin = hr.anchorMax = new Vector2(0.5f, 1f);
             hr.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(_hint, 32);
+            BestFit(_hint, 42);                      // la letra no baja de 14 dp: si no cabe en un renglón pasa a dos
             _hint.gameObject.SetActive(false);
 
             var fx = new GameObject("Fx");
@@ -765,7 +765,7 @@ namespace NeuroVida.Games.Radar
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetTopOffset(0f);
+            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -857,7 +857,7 @@ namespace NeuroVida.Games.Radar
             _crewRow.sizeDelta = new Vector2(960f, 170f);
             _crewRow.anchoredPosition = new Vector2(0f, 40f);
 
-            _crewLabel = MakeText(_crewRow, "Label", 40, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.75f), 0f, 0f);
+            _crewLabel = MakeText(_crewRow, "Label", 42, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.75f), 0f, 0f);
             var lr = _crewLabel.rectTransform;
             lr.anchorMin = new Vector2(0f, 1f);
             lr.anchorMax = new Vector2(1f, 1f);
@@ -985,7 +985,7 @@ namespace NeuroVida.Games.Radar
 
             // Radar: lo más grande posible (más grande = más periferia y lugares más fáciles de tocar), dejando lugar
             // para la línea de ayuda, el botón y la fila de rescatados.
-            const float hintH = 90f, buttonH = 170f, crewH = 220f;
+            const float hintH = 116f, buttonH = 170f, crewH = 220f;
             _scopeSize = Mathf.Min(contentW + 40f, sh - y - hintH - buttonH - crewH);
             _scopeSize = Mathf.Max(_scopeSize, 620f);
             _scopeRect.sizeDelta = new Vector2(_scopeSize, _scopeSize);
