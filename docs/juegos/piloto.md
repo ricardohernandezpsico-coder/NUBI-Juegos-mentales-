@@ -1,6 +1,9 @@
 # Piloto Estelar (`piloto`) — ficha técnica
 
-> Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
+> **Renovado el 9-oct (Tarea 61): «la ruta de las balizas».** El diseño, las reglas, los niveles, el tutorial, la medida y los desvíos están en [`docs/diseno-piloto.md`](../diseno-piloto.md); el boceto aprobado, en [`docs/previews/piloto-balizas-boceto.html`](../previews/piloto-balizas-boceto.html). Código: `Games/Piloto/` (`PilotContract`, `PilotRoute`, `PilotSpawn`, `PilotRun`, `PilotLayout`, `PilotMetrics`, `PilotSignalSprites`, `PilotSounds`, `PilotGameController` en partes). Lectura en la app: `data/Piloto.kt`.
+> Lo de abajo es la historia del juego anterior (con piloto automático y «costo de multitarea», que ya no existen por la regla permanente 1 de Ricardo); se conserva solo como referencia.
+
+## Historia: el Piloto Estelar anterior (27-sep a 9-oct)
 
 **Piloto Estelar** (`Games/Piloto/`, id `piloto`, dominio atención): multitarea al estilo NeuroRacer (Anguera et al.,
 Nature 2013) + señales periféricas breves (UFOV). La nave vuela por una ruta de balizas que serpentea: un pulgar la

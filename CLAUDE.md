@@ -20,7 +20,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Salida corta; los logs completos van a `unity/test-results/v-*.log`. Modos para iterar: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 9-oct · enciende tu planeta`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 9-oct · ruta de las balizas`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES y vuelca PNG; `correo.py`, `satelites.py`… arman las láminas de piezas) y `tools/previews/*.py` (réplicas PIL de pantallas Compose); resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina. **Capturas REALES**: `bash tools/verificar-todo.sh --capturas todos` (los 19 juegos, ~18 min; necesita tarjeta de video; láminas en `docs/previews/capturas/`; detalle en `docs/respaldo-y-diagnostico.md`).
 - Estilo con Ricardo: español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
 - Qué sigue y en qué orden (la ruta por etapas que Ricardo aprobó el 8-oct): [`docs/hoja-de-ruta.md`](docs/hoja-de-ruta.md).
@@ -86,7 +86,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
   `GameFeel` (sonidos sintetizados y vibración), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
   (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `PressScale`, sprites varios, y el **tutorial guiado común** (`GuidedTutorial` + `NubiTeacherSprite`;
-  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = Rastro de luz, Freno, Aterrizaje, Meteoros, Tinta o Palabra, En la punta de la lengua, Carga exacta, Engranajes, Bodega de carga, Constelaciones, Correo Estelar, Cosecha de palabras, ¿Verdad o disparate?, La estrella intrusa y Satélites; «Cómo se juega» en la pausa; cómo sumar otro: `docs/diseno-rastro-de-luz.md`; colocación de Nubi: `docs/tutoriales-con-nubi.md`).
+  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = Rastro de luz, Freno, Aterrizaje, Meteoros, Tinta o Palabra, En la punta de la lengua, Carga exacta, Engranajes, Bodega de carga, Constelaciones, Correo Estelar, Cosecha de palabras, ¿Verdad o disparate?, La estrella intrusa, Satélites y Piloto Estelar; «Cómo se juega» en la pausa; cómo sumar otro: `docs/diseno-rastro-de-luz.md`; colocación de Nubi: `docs/tutoriales-con-nubi.md`).
 
 ## Juegos (índice)
 
@@ -103,7 +103,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 | Rumbo a Casa | `rumbo` | Memoria | `Games/Rumbo/` | [docs/juegos/rumbo.md](docs/juegos/rumbo.md) | `Homing.kt` |
 | Correo Estelar — «La estación de correo» (renovado el 8-oct, conserva el id) | `correo` | Memoria | `Games/Correo/` | [docs/diseno-correo-estacion.md](docs/diseno-correo-estacion.md) | `Mail.kt` |
 | Tinta o Palabra («Dos orillas», 3-oct) | `stroop` | Atención | `Games/Stroop/` | [docs/diseno-tinta-o-palabra.md](docs/diseno-tinta-o-palabra.md) | `DosOrillas.kt` |
-| Piloto Estelar | `piloto` | Atención | `Games/Piloto/` | [docs/juegos/piloto.md](docs/juegos/piloto.md) | — |
+| Piloto Estelar — «la ruta de las balizas» (renovado el 9-oct, conserva el id) | `piloto` | Atención | `Games/Piloto/` | [docs/diseno-piloto.md](docs/diseno-piloto.md) | `Piloto.kt` |
 | Freno de Emergencia | `freno` | Atención | `Games/Freno/` | [docs/juegos/freno.md](docs/juegos/freno.md) | — |
 | Satélites — «enciende tu planeta» (renovado el 9-oct, conserva el id) | `satelites` | Atención | `Games/Satelites/` | [docs/diseno-satelites.md](docs/diseno-satelites.md) | `Satelites.kt` |
 | Radar | `radar` | Atención | `Games/Radar/` | [docs/juegos/radar.md](docs/juegos/radar.md) | — |
@@ -140,7 +140,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 - **Decisiones de Ricardo**: servidores, cuentas, Firebase, suscripciones y requisitos de tiendas se dejan para el
   FINAL. La app debe ser masiva, social y motivadora (ligas, logros, compartir), no clínica.
 - **Reglas por patentes** (no romper; números y razones: [docs/nombre-marca-y-riesgos.md](docs/nombre-marca-y-riesgos.md)): Radar es «Rescate relámpago» (sin nave central ni opciones entre las que elegir); Piloto nunca con inclinación ni sensores del cuerpo; ningún juego calcula un perfil «impulsivo / conservador» ni usa caras con emociones que reaccionen al desempeño; Parejas siempre con el tablero a la vez; Satélites siempre plano, sin respuesta durante el seguimiento y sin «firma» por series; las etapas de avance en la escala común; nombres propios, sin los ajenos (UFOV, Double Decision, NeuroTracker…).
-- **Reglas permanentes (Ricardo, 9-oct)**: (1) Piloto: pilotar y señales siempre JUNTAS (ninguna sola ni medida sola; sin «costo de multitarea»; el tutorial las enseña juntas). (2) Rescate relámpago: se responde QUÉ se vio, no DÓNDE (sin lugares fijos ni cuadrícula; la zona del destello nunca crece con el nivel); **hoy NO lo cumple: se rehace en la Etapa 1**. (3) Los juegos viven en el APK: una cuenta o nube solo sincroniza progreso, nunca entrega ni desbloquea juegos ni controla su acceso desde un servidor; sin red social dentro de un mapa; toda función en línea que toque el acceso a juegos pasa antes por el abogado.
+- **Reglas permanentes (Ricardo, 9-oct)**: (1) Piloto: pilotar y señales siempre JUNTAS (ninguna sola ni medida sola; sin «costo de multitarea»; el tutorial las enseña juntas; se cumple desde la Tarea 61). (2) Rescate relámpago: se responde QUÉ se vio, no DÓNDE (sin lugares fijos ni cuadrícula; la zona del destello nunca crece con el nivel); **hoy NO lo cumple: se rehace en la Etapa 1**. (3) Los juegos viven en el APK: una cuenta o nube solo sincroniza progreso, nunca entrega ni desbloquea juegos ni controla su acceso desde un servidor; sin red social dentro de un mapa; toda función en línea que toque el acceso a juegos pasa antes por el abogado.
 
 ## Cuando Android cierra la app, respaldo y verificación automática (resumen; detalle en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md))
 
@@ -157,12 +157,12 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 515 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 526 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
-- Unity EditMode: 648 (contratos de cada juego, DDA común, tutoriales guiados, `CoachLayoutTests`…) + 104 arranques de smoke (juegos, versiones cortas, tutoriales en 3 formas de pantalla y corridas «Pantalla…» en forma de teléfono, todos con la **guardia de textos**: un texto fuera de lugar falla el smoke; detalle y excepciones en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md)).
-- Datos de los juegos de Lenguaje (Python, `python -m unittest <módulo>` desde su carpeta): `tools/lexico` (11 pruebas, nombres propios de Lluvia de meteoros), `tools/punta` (16, banco de definiciones), `tools/frases` (32, ¿Verdad o disparate?) y `tools/cosecha` (17; ~70 s; `COSECHA_REGENERAR=1` reconstruye desde las fuentes).
+- Unity EditMode: 678 (contratos de cada juego, DDA común, tutoriales guiados, `CoachLayoutTests`…) + 107 arranques de smoke (juegos, versiones cortas, tutoriales en 3 formas de pantalla y corridas «Pantalla…» en forma de teléfono, todos con la **guardia de textos**: un texto fuera de lugar falla el smoke; detalle y excepciones en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md)).
+- Datos de los juegos de Lenguaje: pruebas de Python en `tools/` (`python -m unittest <módulo>`); detalle en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md) § «Pruebas de datos».
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el inicio sin borrar datos. "Borrar datos" en Ajustes deja la app como recién instalada.
 

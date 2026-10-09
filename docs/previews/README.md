@@ -169,7 +169,8 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`correo-estelar.png`](correo-estelar.png) (del vuelo viejo; historia)
 - [`fichas-arcilla.png`](fichas-arcilla.png)
 - [`freno.png`](freno.png)
-- [`piloto-estelar.png`](piloto-estelar.png)
+- [`piloto-estelar.png`](piloto-estelar.png) (del juego anterior; historia)
+- [`piloto-balizas-boceto.html`](piloto-balizas-boceto.html): el boceto jugable de «la ruta de las balizas» (Piloto Estelar, 9-oct), aprobado por Ricardo; lo que quedó en el juego: `docs/diseno-piloto.md` § 12. Capturas reales: `capturas/piloto.png`.
 - [`radar-rescate.png`](radar-rescate.png)
 - [`radar-retoque.png`](radar-retoque.png)
 - [`radar.png`](radar.png)

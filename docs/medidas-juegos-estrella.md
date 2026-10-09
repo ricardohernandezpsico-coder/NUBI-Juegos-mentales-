@@ -141,19 +141,23 @@ Cooper y Shepard (1973); Shepard y Metzler (1971) usaron figuras 3D.
 
 ---
 
-## Piloto Estelar: "Costo de multitarea"
+## Piloto Estelar: "Tus señales a los mandos" (desde el 9-oct, Tarea 61; antes "Costo de multitarea")
 
-**Qué mide.** Cuánto baja la puntería con las señales (aciertos menos falsas alarmas, Snodgrass y Corwin, 1988) al
-pasar de solo mirarlas (piloto automático) a pilotar y mirarlas a la vez. Es la idea de NeuroRacer (Anguera et al.,
-2013).
+**Qué mide.** De las señales de la misión que aparecieron, cuántas atrapaste, descontando los toques equivocados:
+(aciertos − toques equivocados) / señales de la misión (el «reconocimiento corregido», Snodgrass y Corwin, 1988), con
+el nivel en que se asentó el motor de señales. **Todo se mide mientras pilotas: las dos tareas van siempre juntas.** No
+existe una medida de una tarea sola ni un «costo de multitarea» (regla permanente 1 de Ricardo, 9-oct): se borró de
+Unity, de la app y de esta ficha.
 
 **Límites.**
-- El piloto automático dura 15 s: pocas señales.
-- Siempre va primero, así que la práctica y el cansancio se mezclan con el costo.
-- La dificultad de las señales sigue ajustándose entre las dos fases.
+- Solo se muestra con 8 o más señales de la misión resueltas; con menos, el final lo dice y no da proporción.
+- Depende del nivel de señales (más difícil = señales más cortas y parecidas): por eso `StarMeasures` la marca `levelDependent` y el final muestra «Tu nivel de señales».
+- Los 10 s de inicio suave cuentan igual (señales más espaciadas); la misión cambia en cada sector.
+- Los puntos viejos de `multitask` quedan guardados en el teléfono pero ya no se leen (la medida nueva usa la clave `mandos`).
 
-Por eso el texto describe lo que pasó en la partida y no lo compara con nadie. "Con práctica suele bajar" es lo que
-mostró el estudio de NeuroRacer con la tarea entrenada.
+El texto describe lo que pasó en la partida y no la compara con nadie. «Con práctica suele subir» es una expectativa
+razonable, no una promesa: Anguera et al. (2013) no tuvo réplica independiente. El consejo del final sale de las cifras
+de la partida (toques equivocados, ruta, señales que se fueron), nunca de una conclusión de pocos casos.
 
 ---
 

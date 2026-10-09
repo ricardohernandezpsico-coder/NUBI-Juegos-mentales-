@@ -17,7 +17,7 @@ Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ri
 
 ## Fichas
 
-- [Piloto Estelar](piloto.md)
+- [Piloto Estelar](../diseno-piloto.md) (renovado el 9-oct: «la ruta de las balizas»; la ficha vieja, como historia, en [piloto.md](piloto.md))
 - [Radar (Rescate relámpago)](radar.md)
 - [Satélites](satelites.md) (historia; la ficha vigente es [diseno-satelites.md](../diseno-satelites.md))
 - [Freno de Emergencia](freno.md)

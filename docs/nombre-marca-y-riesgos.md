@@ -278,8 +278,8 @@ animaciones" (el haz queda quieto) y el sonido apagado; texto de estado corto y 
   (pulso, EEG). Piloto no hace nada de eso. **Reglas para todos los juegos**: no calcular un "perfil impulsivo /
   conservador"; no usar caras con emociones que reaccionen a cómo le va a la persona (por ejemplo, un astronauta que
   sonríe o se entristece según los aciertos); no usar sensores del cuerpo.
-- El **costo de multitarea** (caída entre piloto automático y a los mandos) es una medida clásica de doble tarea
-  (décadas de laboratorio), pero Akili la describe en sus patentes: va a la lista del abogado.
+- El **costo de multitarea** (caída entre piloto automático y a los mandos) era una medida clásica de doble tarea
+  (décadas de laboratorio), pero Akili la describe en sus patentes: **se quitó el 9-oct (Tarea 61)**, ver §9 regla 1.
 
 ### Sistema de avance (no es un juego) — riesgo bajo-medio; con reglas
 
@@ -414,7 +414,7 @@ no encontramos uno de Lumosity, Peak ni Elevate que combine clasificar con recor
 Ricardo las aprobó el 9-oct y las confirmó en el chat de implementación. Cada una tiene una línea en `CLAUDE.md` («Reglas permanentes»); acá van las razones y el estado de cada juego.
 
 1. **Piloto Estelar: las dos tareas (pilotar y señales) van siempre juntas.** Ninguna se presenta sola dentro de una partida ni se mide sola; no hay «costo de multitarea»; el tutorial las enseña juntas. Patentes de Akili: US 12,016,700, US 11,723,598 y la solicitud 2025/0000455.
-   **Estado hoy: Piloto NO lo cumple por completo.** `PilotGameController` calcula y envía `multitask_cost` (la caída entre piloto automático y a los mandos), y la sección de Piloto de este documento lo dejaba «en la lista del abogado». Se corrige al rehacerlo en la Etapa 1 de la hoja de ruta (tarea 3: Piloto y Rescate relámpago).
+   **Estado hoy: Piloto lo cumple desde la Tarea 61 (9-oct).** Se rehízo como «la ruta de las balizas» (`docs/diseno-piloto.md`): sin piloto automático ni `multitask_cost` en Unity, la telemetría, la app y las fichas de medidas; los primeros 10 s son suaves pero con las dos tareas a la vez; el tutorial las enseña juntas desde el paso 2; una prueba (`PilotContractTests.ThereIsNoAutopilotNorMultitaskCostAnywhere`) falla si alguien lo vuelve a poner. La nota de la sección de Piloto de arriba («va a la lista del abogado») ya no aplica.
 2. **Rescate relámpago: se responde QUÉ se vio, no DÓNDE.** Sin lugares fijos ni cuadrícula, y la zona del destello nunca crece con el nivel. Patentes de Nike: US 8,136,943 y US 8,342,685, vigentes hasta ≈ jul-2029.
    **Estado hoy: el juego NO cumple esta regla** (se toca DÓNDE aparecieron los astronautas, sobre ocho sectores y dos anillos). Se rehace en la Etapa 1 de la hoja de ruta.
 3. **Sistema: los juegos viven en el APK.** Una futura cuenta o nube solo sincroniza progreso: nunca entrega ni desbloquea juegos, ni controla su acceso desde un servidor. Tampoco habrá una red social dentro de un mapa. Patente de Posit: US 9,308,445, hasta 2034.
