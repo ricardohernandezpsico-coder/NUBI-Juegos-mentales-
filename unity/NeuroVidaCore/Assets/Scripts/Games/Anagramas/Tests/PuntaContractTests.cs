@@ -506,5 +506,76 @@ namespace NeuroVida.Games.Anagramas.Tests
                 }
             }
         }
+
+        // ---- ronda guiada del tutorial (Tarea 60, 9-oct): «Saltar tutorial» nunca cae sobre las fichas.
+        // El smoke falló una vez en 1080x1920: la palabra de la ronda era de 5 letras (+2 de relleno = 7 fichas = DOS filas) y el hueco de la ficha pedida, en la fila de abajo, pisaba «Saltar tutorial».
+
+        /// <summary>Alturas del área de juego en dp: 640 = lienzo 1080x1920 (la más corta que se revisa), 720 = 1080x2160, 800 = 1080x2400 y teléfonos más altos.</summary>
+        private static readonly float[] GuidedHeights = { 640f, 660f, 700f, 720f, 780f, 800f, 860f, 960f };
+
+        /// <summary>Lo más bajo que ilumina el foco sobre la ficha <paramref name="tileY"/> (dp desde arriba).</summary>
+        private static float HoleBottom(PuntaLayout.Metrics m, float tileY) => tileY + PuntaLayout.GuidedHoleScale * m.TileD / 2f + PuntaLayout.GuidedHoleSlack;
+
+        [Test]
+        public void GuidedRound_PicksOnlyWordsWhoseBankIsOneRow_ForYoungAndSenior()
+        {
+            var bank = PuntaBank.Load();
+            foreach (bool senior in new[] { false, true })
+            {
+                int extra = PuntaContract.ExtraLetters(1, senior);
+                var pool = bank.OfLevel(1).Where(w => PuntaLayout.FitsGuidedBank(w.Tiles, extra)).ToList();
+                Assert.GreaterOrEqual(pool.Count, 20, "hay palabras de sobra para dos rondas distintas (mayores: " + senior + ")");
+                foreach (var w in pool)
+                    foreach (float h in GuidedHeights)
+                        Assert.AreEqual(1, PuntaLayout.Compute(h, w.Tiles.Length + extra, 0f, PuntaLayout.GuidedReserve).Rows, w.Word + " con " + (w.Tiles.Length + extra) + " fichas a " + h + " dp");
+            }
+            Assert.IsFalse(PuntaLayout.FitsGuidedBank("RELOJ", 2), "5 letras + 2 de relleno son 7 fichas: dos filas");
+            Assert.IsTrue(PuntaLayout.FitsGuidedBank("CASA", 2));
+            Assert.IsTrue(PuntaLayout.FitsGuidedBank("RELOJ", 1), "los mayores llevan una de relleno menos");
+            Assert.IsFalse(PuntaLayout.FitsGuidedBank("SOL", 2), "menos de 4 letras no es una palabra de la ronda");
+        }
+
+        [Test]
+        public void GuidedSkip_StaysClearOfEveryBankHole_TheAyudasLabelAndTheButtons_AtEveryHeight()
+        {
+            const float margin = 6f;
+            foreach (float h in GuidedHeights)
+            {
+                for (int count = 5; count <= PuntaLayout.GuidedMaxTiles; count++)
+                {
+                    var m = PuntaLayout.Compute(h, count, 0f, PuntaLayout.GuidedReserve);
+                    string at = $"alto {h}, {count} fichas";
+                    Assert.AreEqual(1, m.Rows, at);
+                    float center = h - PuntaLayout.GuidedSkipFromBottom(m);          // dp desde arriba
+                    float skipTop = center - PuntaLayout.SkipH / 2f, skipBottom = center + PuntaLayout.SkipH / 2f;
+                    for (int k = 0; k < count; k++)
+                        Assert.LessOrEqual(HoleBottom(m, PuntaLayout.BankHome(m, k, count).y) + margin, skipTop, at + ": el hueco de la ficha " + k + " pisa «Saltar tutorial»");
+                    Assert.LessOrEqual(skipBottom + margin, m.LadderY - PuntaLayout.LadderHalfH, at + ": «Saltar tutorial» tapa «Ayudas»");
+                    Assert.LessOrEqual(skipBottom + margin, m.ButtonsTop, at + ": «Saltar tutorial» toca los botones");
+                    // el resto de la disposición sigue en orden con el aire reservado
+                    Assert.Less(m.CardBottom, m.SayY, at);
+                    Assert.Less(m.SayY, m.SlotY - 16f, at);
+                    Assert.Less(m.SlotY + 16f, m.BankFirstY - m.TileD / 2f, at + ": las fichas no pisan las casillas");
+                    Assert.Less(m.LadderY, m.ButtonsTop, at);
+                }
+            }
+        }
+
+        [Test]
+        public void GuidedSkip_TheOldRuleOf19PercentOfTheHeight_DidHitTheBottomRowOfASevenTileBank()
+        {
+            // la regla vieja: «Saltar tutorial» a 0,19 de la altura desde abajo y una palabra de 5 letras + 2 de relleno = 7 fichas = dos filas
+            float h = 640f;
+            var m = PuntaLayout.Compute(h, 7);
+            Assert.AreEqual(2, m.Rows);
+            float skipTop = (h - h * 0.19f) - PuntaLayout.SkipH / 2f;
+            bool hit = false;
+            for (int k = 0; k < 7; k++) hit |= HoleBottom(m, PuntaLayout.BankHome(m, k, 7).y) > skipTop;
+            Assert.IsTrue(hit, "con la regla vieja y dos filas, el hueco de una ficha de abajo pisaba «Saltar tutorial» (5105 u² en el smoke del 9-oct)");
+            // con seis fichas (una fila) la regla vieja pasaba por apenas 4 dp: por eso falló "a veces" y solo en la pantalla más corta
+            var one = PuntaLayout.Compute(h, 6);
+            Assert.Less(HoleBottom(one, one.BankFirstY), skipTop);
+            Assert.Less(skipTop - HoleBottom(one, one.BankFirstY), 5f);
+        }
     }
 }

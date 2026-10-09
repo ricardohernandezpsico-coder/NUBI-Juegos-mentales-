@@ -123,6 +123,9 @@ sale, una escalera de ayudas aclara la señal hasta que aparece. Nunca te quedas
 - **Tutorial guiado («Nubi entrenadora», 4-oct, tarea 30; antes «aprender haciendo»):** cuatro focos de `NubiCoach`, cada uno congela el juego y el toque en el hueco es el de verdad; la definición
   aparece entera. Palabra 1: (1) la tarjeta («Lee la definición y piensa la palabra»), (2) «¡La tengo!», (3) la primera ficha («Arma la palabra tocando las letras en orden»; el resto se arma a tu
   ritmo) y un aviso con el color del lucero. Palabra 2: (4) «Una ayuda» una sola vez y se sigue normal. Cierra con «¡Listo! Ahora va en serio». «Cómo se juega» en la pausa.
+  **Disposición de la ronda (9-oct, tarea 60):** las dos palabras son de las más cortas (nivel 1, 4 letras; los mayores, hasta 5) para que el banco sea de UNA fila (6 fichas como mucho,
+  `PuntaLayout.GuidedMaxTiles`); con 7 el banco pasaba a dos filas y, en la pantalla más corta (1080x1920), el hueco de una ficha de la fila de abajo pisaba «Saltar tutorial». Además la ronda deja
+  `PuntaLayout.GuidedReserve` (64 dp) de aire entre el banco y «Ayudas», y «Saltar tutorial» va en el centro de esa franja (`GuidedSkipFromBottom`) en vez de a un 19 % de la altura.
 - **Movimiento reducido:** texto entero, sin ondas, nebulosa, flotación, temblor ni chispas; el lucero aparece directo en el cielo; el vuelo de la ficha a su casilla se queda (más corto).
 - **Se borró:** `BubbleField` (las burbujas), los sprites del hueco y los iconos de botones, `AnagramContract` (banco viejo de ~95 palabras) y el mundo `SkyLetters` de `WorldBackdrop`
   (letras flotando); solo los usaba Anagramas. `docs/previews/anagramas-burbujas.png` y su script también.

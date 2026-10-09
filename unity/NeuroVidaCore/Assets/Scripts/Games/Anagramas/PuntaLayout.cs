@@ -22,6 +22,24 @@ namespace NeuroVida.Games.Anagramas
         public const float SkyRadius = 7f;
         public const float TileHitRadius = 27f;
 
+        // ---- ronda guiada del tutorial: dónde cabe «Saltar tutorial» (docs/tutoriales-con-nubi.md, «Punta»)
+        /// <summary>Fichas de la ronda guiada: seis como mucho. Con siete el banco pasa a DOS filas y, en una pantalla corta, el hueco de una ficha de la fila de abajo pisa «Saltar tutorial».</summary>
+        public const int GuidedMaxTiles = 6;
+        /// <summary>El hueco del foco sobre una ficha mide esto por la ficha (paso «Toca las letras en orden»).</summary>
+        public const float GuidedHoleScale = 1.7f;
+        /// <summary>Lo que el hueco sobresale de ese cuadrado (el borde de NubiCoach, 12 u = 4 dp) más lo que flota la ficha (3 dp).</summary>
+        public const float GuidedHoleSlack = 7f;
+        /// <summary>«Saltar tutorial» mide 132 unidades del lienzo = 44 dp (GuidedTutorial).</summary>
+        public const float SkipH = 44f;
+        /// <summary>Altura del rótulo «Ayudas» (con su letra a 14 dp): la mitad cae sobre LadderY.</summary>
+        public const float LadderHalfH = 8f;
+        /// <summary>Aire que la ronda guiada deja entre el banco y la escalera de ayudas: «Saltar tutorial» (44 dp) con ~9 dp de cada lado y lo que el hueco sobresale de la ficha.</summary>
+        public const float GuidedReserve = 64f;
+
+        /// <summary>Las fichas de la ronda guiada: de 4 letras en adelante y, con las de relleno del nivel 1, sin pasar de <see cref="GuidedMaxTiles"/> (una sola fila de banco).</summary>
+        public static bool FitsGuidedBank(string tiles, int extraLetters) =>
+            tiles != null && tiles.Length >= 4 && tiles.Length + extraLetters <= GuidedMaxTiles;
+
         public struct Metrics
         {
             public float SkyY, CardTop, CardBottom, SayY, SlotY, BankFirstY, LadderY, ButtonsTop;
@@ -30,7 +48,8 @@ namespace NeuroVida.Games.Anagramas
         }
 
         /// <param name="extraGap">dp de aire que se suman entre la tarjeta y las casillas (el mensaje de Nubi en el tutorial va ahí y no tapa nada).</param>
-        public static Metrics Compute(float height, int tileCount, float extraGap = 0f)
+        /// <param name="reserveBelowBank">dp que se dejan libres entre el banco de fichas y la escalera de ayudas (la ronda guiada pasa <see cref="GuidedReserve"/>: ahí va «Saltar tutorial»).</param>
+        public static Metrics Compute(float height, int tileCount, float extraGap = 0f, float reserveBelowBank = 0f)
         {
             var m = new Metrics();
             m.SkyY = HudDp + 18f;
@@ -50,7 +69,7 @@ namespace NeuroVida.Games.Anagramas
             float slotY = m.CardBottom + 66f + extraGap;
             float bankY = slotY + 80f;
             float bankBottom = bankY + (m.Rows - 1) * m.RowGap + m.TileD / 2f;
-            float limit = m.LadderY - 16f;
+            float limit = m.LadderY - 16f - reserveBelowBank;
             if (bankBottom > limit)
             {
                 // pantalla bajita: las filas se acercan un poco (nunca por debajo de la ficha + 6 dp)
@@ -72,6 +91,19 @@ namespace NeuroVida.Games.Anagramas
             m.SlotY = slotY;
             m.BankFirstY = bankY;
             return m;
+        }
+
+        /// <summary>
+        /// Dónde va «Saltar tutorial» en la ronda guiada: el centro de la franja libre entre lo más bajo que ilumina el foco de una ficha del banco y lo más alto del rótulo «Ayudas»,
+        /// en dp desde el borde de ABAJO. Sale de la disposición (no de un porcentaje de la altura): así ninguna palabra ni ninguna pantalla lo deja sobre las fichas.
+        /// Vale para un banco de una sola fila (hasta <see cref="GuidedMaxTiles"/> fichas, calculado con <c>reserveBelowBank = GuidedReserve</c>) y pantallas desde 640 dp (1080x1920).
+        /// </summary>
+        public static float GuidedSkipFromBottom(Metrics m)
+        {
+            float height = m.ButtonsTop + ButtonH + ButtonsBottomMargin;
+            float top = m.BankFirstY + (m.Rows - 1) * m.RowGap + GuidedHoleScale * m.TileD / 2f + GuidedHoleSlack;   // lo más bajo que ilumina el foco del banco
+            float bottom = m.LadderY - LadderHalfH;                                                                   // lo más alto de «Ayudas»
+            return height - (top + bottom) / 2f;
         }
 
         /// <summary>Separación entre casillas: 46 dp como mucho, y se aprieta con las palabras largas para que quepan en el ancho.</summary>

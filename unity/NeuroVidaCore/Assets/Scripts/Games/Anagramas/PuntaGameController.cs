@@ -358,7 +358,7 @@ namespace NeuroVida.Games.Anagramas
             int n = word.Tiles.Length;
             _extra = PuntaContract.ExtraLetters(level, _senior);
             _maxTiles = n + _extra;
-            _m = PuntaLayout.Compute(_logicalH - _reserve, _maxTiles, _guidedGap);
+            _m = PuntaLayout.Compute(_logicalH - _reserve, _maxTiles, _guidedGap, _guided ? PuntaLayout.GuidedReserve : 0f);
             _slots = new Tile[n];
             ApplyMetrics(n);
             _cardAt = GameClock.Time;
@@ -777,14 +777,17 @@ namespace NeuroVida.Games.Anagramas
         protected override IEnumerator GuidedRound(GuidedTutorial t)
         {
             t.BeginPractice();
-            t.PlaceControls(GameHud.Height + 10f, false, -1f, skipFromBottomU: _safe.rect.height * 0.19f);          // «Saltar tutorial» a esa altura: abajo están los botones del juego, arriba la tarjeta y entre medio las fichas
+            // «Saltar tutorial» va en la franja libre entre el banco de fichas y «Ayudas» (se calcula de la disposición, no de la altura: ver PuntaLayout.GuidedSkipFromBottom);
+            // por eso el banco de la ronda guiada es siempre de UNA fila (GuidedWord) y se deja ese aire bajo él (BeginWord)
             _guided = true;
+            var guidedMetrics = PuntaLayout.Compute(_logicalH - _reserve, PuntaLayout.GuidedMaxTiles, _guidedGap, PuntaLayout.GuidedReserve);
+            t.PlaceControls(GameHud.Height + 10f, false, -1f, skipFromBottomU: PuntaLayout.GuidedSkipFromBottom(guidedMetrics) * _s);
             SetSkyVisible(false);
             var coach = t.Coach;
             var script = new GuidedScript(2);                         // dos palabras; «Saltar tutorial» lo termina
             // «Nubi entrenadora»: palabra 1: leer la definición, tocar «¡La tengo!» y tocar la primera ficha (el resto se arma solo, a tu ritmo); palabra 2: tocar «Una ayuda» una vez.
             // Cada foco congela el juego y el toque en el hueco es el de verdad. La definición aparece entera: hay tiempo de leer.
-            var w1 = GuidedWord(1, 5);
+            var w1 = GuidedWord(1);
             BeginWord(w1, 1);
             _inputOn = false;
             // zona protegida: la tarjeta con la definición queda iluminada mientras Nubi habla de ella
@@ -807,7 +810,7 @@ namespace NeuroVida.Games.Anagramas
                 var first = _tiles.Find(x => x.Char == w1.Tiles[0] && x.Slot < 0 && !x.Gone);
                 if (first != null)
                 {
-                    yield return StartCoroutine(coach.Touch(() => coach.AroundOf(first.Root, Vector2.one * (_m.TileD * _s * 1.7f)), CoachTexts.Punta.Letters, circle: true, keep: card));
+                    yield return StartCoroutine(coach.Touch(() => coach.AroundOf(first.Root, Vector2.one * (_m.TileD * _s * PuntaLayout.GuidedHoleScale)), CoachTexts.Punta.Letters, circle: true, keep: card));
                     ok = !t.Skipped;
                     if (ok) TapTile(first);                                // el toque en el hueco ES el toque en la ficha
                 }
@@ -830,7 +833,7 @@ namespace NeuroVida.Games.Anagramas
             // ---- palabra 2: pedir una ayuda
             if (ok)
             {
-                var w2 = GuidedWord(1, 5, w1.Word);
+                var w2 = GuidedWord(1, w1.Word);
                 BeginWord(w2, 1);
                 _inputOn = false;
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[1].Root), CoachTexts.Punta.Help, keep: card));
@@ -900,11 +903,13 @@ namespace NeuroVida.Games.Anagramas
         }
 #endif
 
-        /// <summary>Una palabra fácil para la ronda guiada: del nivel dado y de pocas letras.</summary>
-        private PuntaWord GuidedWord(int level, int maxLetters, string not = null)
+        /// <summary>Una palabra fácil para la ronda guiada: del nivel dado y con tan pocas letras que, con las de relleno del nivel, el banco queda en UNA fila
+        /// (<see cref="PuntaLayout.FitsGuidedBank"/>): la disposición de la ronda no depende de la palabra que salga y «Saltar tutorial» nunca cae sobre las fichas.</summary>
+        private PuntaWord GuidedWord(int level, string not = null)
         {
+            int extra = PuntaContract.ExtraLetters(level, _senior);
             var pool = new List<PuntaWord>();
-            foreach (var w in _bank.OfLevel(level)) if (w.Tiles.Length <= maxLetters && w.Tiles.Length >= 4 && w.Word != not) pool.Add(w);
+            foreach (var w in _bank.OfLevel(level)) if (PuntaLayout.FitsGuidedBank(w.Tiles, extra) && w.Word != not) pool.Add(w);
             if (pool.Count == 0) foreach (var w in _bank.OfLevel(level)) if (w.Word != not) pool.Add(w);
             if (pool.Count == 0) pool.AddRange(_bank.All);
             return pool[_rng.Next(pool.Count)];
