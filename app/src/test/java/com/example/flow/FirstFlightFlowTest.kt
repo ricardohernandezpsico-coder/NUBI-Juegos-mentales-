@@ -47,12 +47,16 @@ class FirstFlightFlowTest {
     TestSupport.resetDatabase()
   }
 
+  private val viewModels = mutableListOf<NeuroVidaViewModel>()
+
   @After
   fun tearDown() {
+    TestSupport.release(*viewModels.toTypedArray())      // antes de soltar la base: ver TestSupport.release
+    viewModels.clear()
     TestSupport.resetDatabase()
   }
 
-  private fun newViewModel() = NeuroVidaViewModel(app)
+  private fun newViewModel(): NeuroVidaViewModel = NeuroVidaViewModel(app).also { viewModels.add(it) }
 
   private fun resultFor(gameId: String): GamePlayResult {
     val base = GamePlayResult(gameId = gameId, score = 70, correctAnswers = 7, totalTrials = 10, timed = false, level = 1, endRating = 0.6f)

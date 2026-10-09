@@ -22,8 +22,12 @@ class ExampleRobolectricTest {
     TestSupport.resetDatabase()
   }
 
+  private val viewModels = mutableListOf<NeuroVidaViewModel>()
+
   @After
   fun tearDown() {
+    TestSupport.release(*viewModels.toTypedArray())      // antes de soltar la base: ver TestSupport.release
+    viewModels.clear()
     TestSupport.resetDatabase()
   }
 
@@ -37,7 +41,7 @@ class ExampleRobolectricTest {
   @Test
   fun `viewmodel initializes without exception`() {
     val app = ApplicationProvider.getApplicationContext<Application>()
-    val viewModel = NeuroVidaViewModel(app)
+    val viewModel = NeuroVidaViewModel(app).also { viewModels.add(it) }
     assertNotNull(viewModel.userSettings.value)
     assertNotNull(viewModel.dailySession.value)
   }

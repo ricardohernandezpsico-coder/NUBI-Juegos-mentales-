@@ -157,11 +157,10 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 477 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 480 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
-  Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y en `@After`:
-  deja una base de Room EN MEMORIA (nunca el archivo `neurovida_database`), cancela el trabajo de fondo del repositorio anterior y apaga los recordatorios de
-  WorkManager (`CognitiveReminderWorker.disabledForTests`); `NoDiskDatabaseGuardTest` falla si una prueba nueva no lo hace. Detalle en
+  Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y en `@After` (base de Room EN MEMORIA, nunca el archivo `neurovida_database`; apaga WorkManager)
+  y SUELTAN lo que crearon con `TestSupport.release(...)`, que cancela y ESPERA su trabajo de fondo antes de cerrar la base; `NoDiskDatabaseGuardTest` falla si una prueba nueva no lo hace. Detalle en
   [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
 - Unity EditMode: 601 (contratos de cada juego, `AdaptiveDifficultyTests`, Constelaciones, La estación de correo, perfil por edad, Rastro de luz, tutoriales guiados, `CoachLayoutTests`) + 73 arranques de smoke (los juegos, las versiones cortas, los tutoriales en 3 formas de pantalla y las corridas «Pantalla…» en forma de teléfono, todos con la **guardia de textos**: un texto fuera de lugar hace fallar el smoke en cualquier juego; detalle y excepciones en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md)).
 - Datos de los juegos de Lenguaje (Python, `python -m unittest <módulo>` desde su carpeta): `tools/lexico` (11 pruebas, nombres propios de Lluvia de meteoros), `tools/punta` (16, banco de definiciones), `tools/frases` (32, ¿Verdad o disparate?) y `tools/cosecha` (17; ~70 s; `COSECHA_REGENERAR=1` reconstruye desde las fuentes).

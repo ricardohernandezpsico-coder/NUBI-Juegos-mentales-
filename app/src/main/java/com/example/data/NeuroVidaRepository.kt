@@ -20,10 +20,18 @@ class NeuroVidaRepository(
 ) {
   private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-  /** Cancela el trabajo de fondo del repositorio (lo que sigue leyendo la base). Solo lo usan las pruebas, al terminar cada una; la app vive con el proceso. */
+  /**
+   * Cancela el trabajo de fondo del repositorio (lo que sigue leyendo la base) Y ESPERA a que termine (hasta 10 s). Solo lo usan las pruebas, al terminar cada una; la app vive con el proceso.
+   *
+   * Esperar es lo que importa: una lectura de Room que ya está a medias no se puede interrumpir, y si la base se cierra mientras sigue corriendo, su `endTransaction` encuentra la base cerrada («attempt to re-open an already-closed
+   * object») y el error le llega a la prueba siguiente (el rojo intermitente de la verificación de GitHub, Tarea 57; reproducido por `BackgroundWorkShutdownTest`).
+   */
   @androidx.annotation.VisibleForTesting
   fun close() {
-    repositoryScope.cancel()
+    val job = repositoryScope.coroutineContext[kotlinx.coroutines.Job] ?: return
+    job.cancel()
+    val limit = System.nanoTime() + 10_000_000_000L
+    while (!job.isCompleted && System.nanoTime() < limit) Thread.sleep(2)
   }
   private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 

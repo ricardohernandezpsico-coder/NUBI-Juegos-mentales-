@@ -62,8 +62,12 @@ class RetiredGameTest {
     TestSupport.resetDatabase()
   }
 
+  private val viewModels = mutableListOf<NeuroVidaViewModel>()
+
   @After
   fun tearDown() {
+    TestSupport.release(*viewModels.toTypedArray())      // antes de soltar la base: ver TestSupport.release
+    viewModels.clear()
     TestSupport.resetDatabase()
   }
 
@@ -89,7 +93,7 @@ class RetiredGameTest {
       .putString("state", SkillState(measured = setOf(old, "calculo")).encode()).commit()
   }
 
-  private fun newViewModel() = NeuroVidaViewModel(app)
+  private fun newViewModel(): NeuroVidaViewModel = NeuroVidaViewModel(app).also { viewModels.add(it) }
 
   @Test
   fun `el registro tiene 19 juegos, Atencion 5, y el id retirado queda reservado`() {

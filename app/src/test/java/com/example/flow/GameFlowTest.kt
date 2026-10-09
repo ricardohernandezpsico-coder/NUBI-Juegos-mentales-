@@ -39,12 +39,16 @@ class GameFlowTest {
     TestSupport.resetDatabase()
   }
 
+  private val viewModels = mutableListOf<NeuroVidaViewModel>()
+
   @After
   fun tearDown() {
+    TestSupport.release(*viewModels.toTypedArray())      // antes de soltar la base: ver TestSupport.release
+    viewModels.clear()
     TestSupport.resetDatabase()
   }
 
-  private fun newViewModel() = NeuroVidaViewModel(app)
+  private fun newViewModel(): NeuroVidaViewModel = NeuroVidaViewModel(app).also { viewModels.add(it) }
 
   private fun result(game: String = "calculo") =
     GamePlayResult(gameId = game, score = 80, correctAnswers = 8, totalTrials = 10, timed = false, level = 2)

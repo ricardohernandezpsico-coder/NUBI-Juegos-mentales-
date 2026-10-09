@@ -70,6 +70,26 @@ class NoDiskDatabaseGuardTest {
     assertTrue("Estas pruebas usan la base/repositorio/ViewModel sin `TestSupport.resetDatabase()` (en @Before y @After): $offenders", offenders.isEmpty())
   }
 
+  /**
+   * Y quien crea el ViewModel o el repositorio tiene que SOLTARLO al terminar (`TestSupport.release`, o `close()` del repositorio): sin eso su trabajo de fondo sigue corriendo cuando se cierra la base y el error le llega a la
+   * prueba siguiente (el rojo intermitente de GitHub, Tarea 57; ver `BackgroundWorkShutdownTest`).
+   */
+  @Test
+  fun `toda prueba que crea el ViewModel o el repositorio los suelta al terminar`() {
+    val root = File("src/test/java")
+    val creates = listOf("NeuroVidaRepository(", "NeuroVidaViewModel(")
+    val offenders = root.walkTopDown()
+      .filter { it.isFile && it.extension == "kt" }
+      .filter { it.name != "TestSupport.kt" && it.name != "NoDiskDatabaseGuardTest.kt" }
+      .filter { f ->
+        val text = f.readText()
+        creates.any { it in text } && "TestSupport.release(" !in text && ".close()" !in text
+      }
+      .map { it.name }
+      .toList()
+    assertTrue("Estas pruebas crean el ViewModel o el repositorio y no los sueltan (`TestSupport.release(...)` en el @After, antes de `resetDatabase()`): $offenders", offenders.isEmpty())
+  }
+
   @Test
   fun `ninguna prueba crea su propia base en archivo con Room`() {
     val root = File("src/test/java")

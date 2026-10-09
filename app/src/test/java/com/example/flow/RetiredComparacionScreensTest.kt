@@ -61,8 +61,12 @@ class RetiredComparacionScreensTest {
     TestSupport.resetDatabase()
   }
 
+  private val viewModels = mutableListOf<NeuroVidaViewModel>()
+
   @After
   fun tearDown() {
+    TestSupport.release(*viewModels.toTypedArray())      // antes de soltar la base: ver TestSupport.release
+    viewModels.clear()
     TestSupport.resetDatabase()
   }
 
@@ -87,7 +91,7 @@ class RetiredComparacionScreensTest {
   @Test
   fun `Hoy, Juegos y Avance se abren sin errores con datos viejos y no nombran el juego`() {
     seedOldData()
-    val vm = NeuroVidaViewModel(app)
+    val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
     TestSupport.awaitUntil { vm.gameHistory.value.isNotEmpty() && vm.dailySession.value.gameIds.none { it == old } }
     composeTestRule.mainClock.autoAdvance = false
     val screen = androidx.compose.runtime.mutableIntStateOf(0)

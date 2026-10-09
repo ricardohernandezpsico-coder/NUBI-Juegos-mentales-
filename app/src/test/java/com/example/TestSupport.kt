@@ -1,6 +1,7 @@
 package com.example
 
 import android.os.Looper
+import androidx.lifecycle.viewModelScope
 import com.example.data.local.NeuroVidaDatabase
 import org.junit.Assert.fail
 import org.robolectric.Shadows.shadowOf
@@ -86,12 +87,19 @@ object TestSupport {
    * cuando termina la prueba recibe «unable to open database file» (los archivos ya no están) y el error le llega a la prueba como si fuera suyo: pasaba sobre todo cuando todo corre rápido.
    */
   fun release(vararg viewModels: androidx.lifecycle.ViewModel) {
+    // los trabajos de cada ViewModel se anotan ANTES de soltarlo: después de clear() hay que esperar a que terminen (una lectura de Room a medias no se puede interrumpir y no puede seguir corriendo cuando se cierre la base)
+    val jobs = viewModels.mapNotNull { vm -> runCatching { vm.viewModelScope.coroutineContext[kotlinx.coroutines.Job] }.getOrNull() }
     for (vm in viewModels) {
       runCatching {
         val clear = androidx.lifecycle.ViewModel::class.java.getDeclaredMethod("clear")
         clear.isAccessible = true
         clear.invoke(vm)
       }
+    }
+    val limit = System.nanoTime() + 10_000_000_000L
+    while (jobs.any { !it.isCompleted } && System.nanoTime() < limit) {
+      runCatching { shadowOf(Looper.getMainLooper()).idle() }       // lo que sigue pendiente puede necesitar el hilo principal para terminar
+      Thread.sleep(2)
     }
     runCatching { shadowOf(Looper.getMainLooper()).idle() }
   }
