@@ -285,6 +285,21 @@ class NeuroVidaRepository(
     satelitesPrefs.edit().putInt("best", next).apply()
   }
 
+  // El récord de «Rescate relámpago»: las cápsulas rescatadas en una partida, el mayor de siempre. Es progreso: SharedPreferences que VA en el respaldo (`rescate_record`). La app lo manda a Unity en cada partida (`resc_best`) y Unity devuelve el mayor al
+  // terminar; aquí nunca baja.
+  private val rescatePrefs = context.getSharedPreferences("rescate_record", Context.MODE_PRIVATE)
+  private val _rescateRecord = MutableStateFlow(Rescate.mergeRecord(rescatePrefs.getInt("best", 0), null))
+  val rescateRecord: StateFlow<Int> = _rescateRecord.asStateFlow()
+
+  /** Guarda el récord con que terminó una partida de «Rescate relámpago» (en cualquier modo). */
+  private fun recordRescate(result: GamePlayResult) {
+    if (result.gameId != "radar") return
+    val next = Rescate.mergeRecord(_rescateRecord.value, result.rescBest)
+    if (next == _rescateRecord.value) return
+    _rescateRecord.value = next
+    rescatePrefs.edit().putInt("best", next).apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -924,6 +939,7 @@ class NeuroVidaRepository(
     recordCorreo(result)
     // El récord de Satélites también, en cualquier modo.
     recordSatelites(result)
+    recordRescate(result)
     outcome
   }
 
@@ -1013,6 +1029,8 @@ class NeuroVidaRepository(
     _correoRecord.value = 0
     satelitesPrefs.edit().clear().apply()
     _satelitesRecord.value = 0
+    rescatePrefs.edit().clear().apply()
+    _rescateRecord.value = 0
     retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()

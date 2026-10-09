@@ -312,22 +312,34 @@ fun GameResultScreen(
       }
     }
 
-    // Radar (Rescate relámpago): tu vistazo, tu captura, tu filtro y tu radar. Ver docs/medidas-juegos-estrella.md.
-    result.glanceMs?.let { ms ->
+    // Rescate relámpago («qué cápsulas viste», 9-oct): las cápsulas a salvo (el premio), «Tu captura» (de 4), «Tu vistazo» y lo que pasó en la partida. Ya no hay «Tu radar» ni «Tu filtro»: no se responde dónde. Ver docs/medidas-juegos-estrella.md.
+    result.rescRescued?.let { rescued ->
       Spacer(Modifier.height(14.dp))
+      Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = com.example.data.Rescate.spoken(rescued, result.captureK, result.glanceMs) }) {
+        RescuedCapsules(com.example.data.Rescate.dots(rescued), Modifier.padding(bottom = 8.dp))
+        com.example.data.Rescate.rescuedLine(rescued)?.let { Text(it, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily) }
+        com.example.data.Rescate.perfectLine(result.rescPerfect, result.rescRounds, result.rescBestStreak)?.let {
+          Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+        }
+        com.example.data.Rescate.shortestLine(result.rescShortestMs)?.let {
+          Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
+        }
+        com.example.data.Rescate.recordLine(result.rescBest, result.rescNewRecord)?.let {
+          Text(
+            it,
+            color = if (result.rescNewRecord == true) Clay.Sun else TextSoft,
+            fontSize = if (result.rescNewRecord == true) 15.sp else 14.sp,
+            fontWeight = if (result.rescNewRecord == true) FontWeight.Bold else FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 2.dp)
+          )
+        }
+      }
+    }
+    com.example.data.Rescate.glanceLine(result.glanceMs)?.let { line ->
+      Spacer(Modifier.height(14.dp))
+      Text(text = line, color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
       Text(
-        text = "Tu vistazo: $ms ms",
-        color = Clay.Sky,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        fontFamily = AppFamily
-      )
-      val load = result.glanceLoad?.let { l ->
-        val n = String.format(java.util.Locale("es"), if (l % 1f == 0f) "%.0f" else "%.1f", l)
-        "con $n astronautas a la vez, "
-      } ?: ""
-      Text(
-        text = "El destello más breve con el que, ${load}los rescatas casi todos unas 4 de cada 5 veces. Mientras menos milisegundos, más rápido captas.",
+        text = com.example.data.Rescate.glanceExplanation(result.glanceLoad),
         color = TextSoft,
         fontSize = 15.sp,
         textAlign = TextAlign.Center,
@@ -336,54 +348,12 @@ fun GameResultScreen(
     }
     result.captureK?.let { k ->
       Spacer(Modifier.height(12.dp))
-      val kText = String.format(java.util.Locale("es"), "%.1f", k)
-      Text(
-        text = "Tu captura: $kText de un vistazo",
-        color = Clay.Sun,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        fontFamily = AppFamily
-      )
+      val line = com.example.data.Rescate.captureLine(k) ?: "Tu captura"
+      Text(text = line, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
       Spacer(Modifier.height(6.dp))
-      TrackingSlots(k, slots = 6, modifier = Modifier.semantics { contentDescription = "Captas $kText astronautas de un vistazo" })
+      TrackingSlots(k, slots = com.example.data.Rescate.CAPTURE_MAX, modifier = Modifier.semantics { contentDescription = line })
       Text(
-        text = "Cuántos astronautas captas cuando el destello no apura (en las lluvias de astronautas), sin contar las balizas puestas al azar. Los adultos suelen captar entre 3 y 4 cosas de un vistazo.",
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-      )
-    }
-    val robotsShown = result.robotsShown
-    if (robotsShown != null && robotsShown >= 6) {
-      val touched = result.robotsTouched ?: 0
-      Spacer(Modifier.height(12.dp))
-      Text(
-        text = "Tu filtro: tocaste $touched de $robotsShown robots",
-        color = Clay.Cream,
-        fontWeight = FontWeight.Bold,
-        fontSize = 16.sp,
-        fontFamily = AppFamily
-      )
-      Text(
-        text = if (touched * 5 <= robotsShown) "Ignoras bien lo que no hay que rescatar, aunque se parezca."
-        else "A veces un robot se cuela como astronauta: fíjate en la forma (el robot es cuadrado, el casco es redondo).",
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
-    }
-    val hits = result.sectorHits
-    val trials = result.sectorTrials
-    if (hits != null && trials != null && trials.sum() > 0) {
-      Spacer(Modifier.height(12.dp))
-      val summary = radarSummary(hits, trials) + ringSummary(result.ringHits, result.ringTrials)
-      Text("Tu radar", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
-      Spacer(Modifier.height(6.dp))
-      RadarField(hits, trials, Modifier.size(150.dp).semantics { contentDescription = "Tu radar. $summary" })
-      Text(
-        text = summary,
+        text = com.example.data.Rescate.CAPTURE_EXPLANATION,
         color = TextSoft,
         fontSize = 15.sp,
         textAlign = TextAlign.Center,
@@ -1369,78 +1339,10 @@ private fun DailyProgress(completed: Int, total: Int) {
   }
 }
 
-// ---------- Radar: "tu radar" ----------
-
-private val RadarDirections = listOf(
-  "arriba", "arriba a la derecha", "a la derecha", "abajo a la derecha",
-  "abajo", "abajo a la izquierda", "a la izquierda", "arriba a la izquierda"
-)
-
-/** Dónde se rescató más y dónde menos (solo direcciones con al menos 2 destellos, para no sacar conclusiones de uno). */
-private fun radarSummary(hits: List<Int>, trials: List<Int>): String {
-  // Con pocos astronautas por dirección las diferencias suelen ser azar: solo se nombra una dirección con 4 o más
-  // en cada una y una diferencia grande (40 puntos).
-  val rated = (0 until 8).filter { trials[it] >= 4 }.map { it to hits[it].toFloat() / trials[it] }
-  if (rated.size < 4) return "Cada cuña es una dirección: mientras más larga, más astronautas rescataste ahí. Con más partidas se ve si alguna dirección te cuesta más."
-  val best = rated.maxBy { it.second }
-  val worst = rated.minBy { it.second }
-  if (best.second - worst.second < 0.4f) return "Parejo en todas las direcciones. Cada cuña larga = muchos rescates."
-  return "En esta partida rescataste más ${RadarDirections[best.first]} y menos ${RadarDirections[worst.first]}. Si se repite en otras partidas, vale la pena mirar más hacia ese lado."
-}
-
-/**
- * Cerca / lejos del centro: se nombra solo con 6 o más astronautas en cada anillo y 25 puntos de diferencia (el campo
- * visual útil se achica hacia la periferia cuando la tarea apura).
- */
-private fun ringSummary(hits: List<Int>?, trials: List<Int>?): String {
-  if (hits == null || trials == null || trials.size != 2 || trials.any { it < 6 }) return ""
-  val near = hits[0].toFloat() / trials[0]
-  val far = hits[1].toFloat() / trials[1]
-  return when {
-    near - far >= 0.25f -> " Te cuestan más los de lejos del centro: al esperar el destello, mira el centro pero abarca todo el radar."
-    far - near >= 0.25f -> " Te cuestan más los de cerca del centro: no te vayas solo al borde."
-    else -> " Cerca y lejos del centro, parecido."
-  }
-}
-
-/**
- * Mapa de aciertos por dirección: un radar de arcilla con una cuña por dirección, tan larga como la proporción de
- * astronautas ubicados ahí (la longitud dice el valor; no depende del color). Direcciones sin destellos: un punto.
- */
-@Composable
-private fun RadarField(hits: List<Int>, trials: List<Int>, modifier: Modifier = Modifier) {
-  Canvas(modifier) {
-    val c = center
-    val r = size.minDimension / 2f - 6.dp.toPx()
-    val border = 3.dp.toPx()
-    drawCircle(Clay.Ink, r + border, c + Offset(0f, 4.dp.toPx()))
-    drawCircle(Color(0xFF0C1648), r, c)
-    drawCircle(Clay.Ink, r, c, style = Stroke(border))
-    listOf(0.33f, 0.66f).forEach { k ->
-      drawCircle(Clay.Sky.copy(alpha = 0.22f), r * k, c, style = Stroke(1.dp.toPx()))
-    }
-    for (d in 0 until 8) {
-      val angle = -90f + 45f * d
-      if (trials[d] <= 0) {
-        val a = Math.toRadians(angle.toDouble())
-        val p = c + Offset((kotlin.math.cos(a) * r * 0.8f).toFloat(), (kotlin.math.sin(a) * r * 0.8f).toFloat())
-        drawCircle(Clay.Cream.copy(alpha = 0.35f), 3.dp.toPx(), p)
-        continue
-      }
-      val acc = hits[d].toFloat() / trials[d]
-      val wr = r * (0.18f + 0.78f * acc)
-      val topLeft = c - Offset(wr, wr)
-      drawArc(Clay.Lime, angle - 19f, 38f, useCenter = true, topLeft = topLeft, size = Size(wr * 2f, wr * 2f))
-      drawArc(Clay.Ink, angle - 19f, 38f, useCenter = true, topLeft = topLeft, size = Size(wr * 2f, wr * 2f), style = Stroke(2.dp.toPx()))
-    }
-    drawCircle(Clay.Cream, 4.dp.toPx(), c)
-  }
-}
-
 // ---------- Satélites: "tu seguimiento" ----------
 
 /**
- * Discos de arcilla (5; 6 en la captura de Radar): se llenan en sol hasta la capacidad (3,4 = tres llenos y el cuarto al 40%).
+ * Discos de arcilla (5; 4 en la captura de Rescate relámpago): se llenan en sol hasta la capacidad (3,4 = tres llenos y el cuarto al 40%).
  * La cantidad se lee por cuántos están llenos, no por el color.
  */
 @Composable
@@ -1495,6 +1397,67 @@ private fun LitPlanet(lights: Int, modifier: Modifier = Modifier) {
       val p = c + Offset((d * Math.cos(a.toDouble())).toFloat(), (d * Math.sin(a.toDouble())).toFloat())
       drawCircle(Color(0xFFFFDC8C).copy(alpha = 0.35f), r * 0.1f, p)
       drawCircle(Color(0xFFFFE7A8), r * 0.04f, p)
+    }
+  }
+}
+
+// ---------- Rescate relámpago: las cápsulas a salvo ----------
+
+/**
+ * Las cápsulas rescatadas, en filas de 8 (hasta 40), con las seis formas y colores del juego en orden (hexágono, gota, círculo, cuadrado, triángulo, rombo). Es el mismo dibujo que la nave de la pantalla final del juego. La cantidad se lee por el número de
+ * arriba y por cuántas cápsulas hay; la forma lleva la identidad, no solo el color. Con 0 no dibuja nada.
+ */
+@Composable
+private fun RescuedCapsules(count: Int, modifier: Modifier = Modifier) {
+  if (count <= 0) return
+  val cell = 30.dp
+  val cols = count.coerceAtMost(com.example.data.Rescate.ROW)
+  val rows = (count + com.example.data.Rescate.ROW - 1) / com.example.data.Rescate.ROW
+  val colors = listOf(Color(0xFFA6E36B), Color(0xFF7FD8FF), Color(0xFFFF8A6B), Color(0xFFFFC94A), Color(0xFFB79BFF), Color(0xFFFFB3D1))
+  Canvas(modifier.size(width = cell * cols, height = cell * rows + 3.dp)) {
+    val step = cell.toPx()
+    val r = 11.dp.toPx()
+    val border = 2.dp.toPx()
+    for (i in 0 until count) {
+      val c = Offset((i % com.example.data.Rescate.ROW) * step + step / 2f, (i / com.example.data.Rescate.ROW) * step + step / 2f)
+      val kind = i % 6
+      drawPath(capsulePath(kind, c + Offset(0f, 2.dp.toPx()), r), Clay.Ink)
+      drawPath(capsulePath(kind, c, r), colors[kind])
+      drawPath(capsulePath(kind, c, r), Clay.Ink, style = Stroke(border, join = StrokeJoin.Round))
+    }
+  }
+}
+
+private fun capsulePath(kind: Int, c: Offset, r: Float): Path = Path().apply {
+  when (kind) {
+    0 -> {                                                                    // hexágono
+      for (k in 0 until 6) {
+        val a = Math.toRadians(30.0 + 60.0 * k)
+        val p = Offset(c.x + (r * Math.cos(a)).toFloat(), c.y + (r * Math.sin(a)).toFloat())
+        if (k == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y)
+      }
+      close()
+    }
+    1 -> {                                                                    // gota
+      moveTo(c.x, c.y - r)
+      cubicTo(c.x + r * 0.95f, c.y - r * 0.05f, c.x + r * 0.9f, c.y + r, c.x, c.y + r)
+      cubicTo(c.x - r * 0.9f, c.y + r, c.x - r * 0.95f, c.y - r * 0.05f, c.x, c.y - r)
+      close()
+    }
+    2 -> addOval(androidx.compose.ui.geometry.Rect(c.x - r, c.y - r, c.x + r, c.y + r))   // círculo
+    3 -> addRoundRect(androidx.compose.ui.geometry.RoundRect(c.x - r * 0.9f, c.y - r * 0.9f, c.x + r * 0.9f, c.y + r * 0.9f, r * 0.25f, r * 0.25f))   // cuadrado
+    4 -> {                                                                    // triángulo
+      moveTo(c.x, c.y - r)
+      lineTo(c.x + r, c.y + r * 0.8f)
+      lineTo(c.x - r, c.y + r * 0.8f)
+      close()
+    }
+    else -> {                                                                 // rombo
+      moveTo(c.x, c.y - r)
+      lineTo(c.x + r * 0.85f, c.y)
+      lineTo(c.x, c.y + r)
+      lineTo(c.x - r * 0.85f, c.y)
+      close()
     }
   }
 }

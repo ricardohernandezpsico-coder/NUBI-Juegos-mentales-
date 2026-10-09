@@ -200,10 +200,10 @@ object GameRegistry {
     ),
     GameDefinition(
       id = "radar",
-      title = "Radar",
+      title = "Rescate relámpago",
       domain = DomainType.ATENCION,
-      subtitle = "Velocidad de procesamiento y visión periférica",
-      instruction = "Atento al radar: en un destello aparecen varios astronautas perdidos. Toca todos los lugares donde los viste y pulsa ¡Rescatar! Los robots no se rescatan.",
+      subtitle = "Qué ves de un vistazo",
+      instruction = "Atento al radar: un relámpago muestra unas cápsulas. Elige en el tablero cuáles viste y toca ¡Rescatar! Las rocas grises no se rescatan.",
       iconEmoji = "📡"
     ),
     GameDefinition(
@@ -265,19 +265,19 @@ data class GamePlayResult(
   val pilBestStreak: Int? = null,
   val pilPoints: Int? = null,
   val pilHyper: Int? = null,
-  // Solo Radar (Rescate relámpago): "tu vistazo" en ms (destello en el que se asentó la dificultad) y cuántos
-  // astronautas había en esas rondas; rescatados / mostrados por dirección (8, 0 = arriba y en sentido horario) y
-  // cerca / lejos del centro (2) para "tu radar"; "tu captura" (cuántos de un vistazo, en las lluvias) y robots
-  // mostrados / tocados ("tu filtro"). No se guardan en Room.
+  // Solo Rescate relámpago («qué cápsulas viste», id radar, renovado el 9-oct): "tu vistazo" en ms (destello en el que se asentó la dificultad, medido en duraciones REALES) y cuántas cápsulas había en esas rondas; "tu captura" (cuántas se nombran bien de un
+  // vistazo, de 4, en las lluvias); cápsulas rescatadas, rondas perfectas, rondas jugadas (con lluvias), racha mayor, el destello más corto resuelto (ms), el récord de cápsulas en una partida (el guardado o el de esta partida, el mayor) y si esta partida lo
+  // superó. El récord va en prefs «rescate_record» (y en el respaldo); la lectura está en data/Rescate.kt. Ya no hay medidas por lugar ni robots. No se guardan en Room.
   val glanceMs: Int? = null,
   val glanceLoad: Float? = null,
-  val sectorHits: List<Int>? = null,
-  val sectorTrials: List<Int>? = null,
-  val ringHits: List<Int>? = null,
-  val ringTrials: List<Int>? = null,
   val captureK: Float? = null,
-  val robotsShown: Int? = null,
-  val robotsTouched: Int? = null,
+  val rescRescued: Int? = null,
+  val rescPerfect: Int? = null,
+  val rescRounds: Int? = null,
+  val rescBestStreak: Int? = null,
+  val rescShortestMs: Int? = null,
+  val rescBest: Int? = null,
+  val rescNewRecord: Boolean? = null,
   // Solo Satélites: cuántos se siguen de verdad a la vez (descontando la suerte) y la velocidad más alta superada
   // completa (múltiplo de la del nivel 1). No se guardan en Room.
   val trackingCapacity: Float? = null,

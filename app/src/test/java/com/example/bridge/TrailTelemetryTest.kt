@@ -107,8 +107,8 @@ class TrailTelemetryTest {
 
   @Test
   fun `los juegos sin tutorial guiado no lo piden aunque no tengan historial`() {
-    assertFalse(UnityGameLauncher.shouldShowTutorial("radar", emptyList()))
-    assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto"), UnityGameLauncher.TUTORIAL_GAMES)
+    assertFalse(UnityGameLauncher.shouldShowTutorial("rumbo", emptyList()))
+    assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar"), UnityGameLauncher.TUTORIAL_GAMES)
   }
 
   @Test
@@ -116,6 +116,13 @@ class TrailTelemetryTest {
     assertTrue(UnityGameLauncher.shouldShowTutorial("satelites", emptyList()))
     assertTrue(UnityGameLauncher.shouldShowTutorial("satelites", listOf(played("radar"))))
     assertFalse(UnityGameLauncher.shouldShowTutorial("satelites", listOf(played("satelites"))))
+  }
+
+  @Test
+  fun `Rescate relampago pide el tutorial solo a quien nunca lo jugo`() {
+    assertTrue(UnityGameLauncher.shouldShowTutorial("radar", emptyList()))
+    assertTrue(UnityGameLauncher.shouldShowTutorial("radar", listOf(played("satelites"))))
+    assertFalse(UnityGameLauncher.shouldShowTutorial("radar", listOf(played("radar"))))
   }
 
   @Test

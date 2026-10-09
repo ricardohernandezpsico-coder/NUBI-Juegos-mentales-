@@ -17,8 +17,8 @@ class StarMeasuresTest {
     assertNull(StarMeasures.discover(series("glance", 120f, 110f), now))
     val n = StarMeasures.nudge(series("glance", 120f, 110f))
     assertEquals(1, n.remaining)
-    assertEquals("Juega Radar 1 vez más y verás cómo evoluciona tu vistazo.", n.text)
-    assertEquals("Juega Radar para descubrir tu vistazo.", StarMeasures.nudge(emptyList()).text)
+    assertEquals("Juega Rescate relámpago 1 vez más y verás cómo evoluciona tu vistazo.", n.text)
+    assertEquals("Juega Rescate relámpago para descubrir tu vistazo.", StarMeasures.nudge(emptyList()).text)
   }
 
   @Test
@@ -62,7 +62,7 @@ class StarMeasuresTest {
     // Rumbo depende del nivel (10 niveles: banda 0,1): solo las de rating parecido a la última.
     val homing = listOf(p(5, "homing", 30f, 0.20f, false), p(4, "homing", 25f, 0.45f, false), p(3, "homing", 22f, 0.50f, true), p(1, "homing", 20f, 0.52f, false))
     assertEquals(listOf(25f, 20f), StarMeasures.comparable(homing).map { it.value })
-    // Radar no depende del nivel: solo el reloj.
+    // Rescate relámpago no depende del nivel: solo el reloj.
     val glance = listOf(p(3, "glance", 120f, 0.1f, true), p(2, "glance", 110f, 0.9f, false), p(1, "glance", 100f, 0.5f, true))
     assertEquals(listOf(120f, 100f), StarMeasures.comparable(glance).map { it.value })
     // Partidas viejas sin dato: se comparan entre ellas mientras la última tampoco lo tenga.

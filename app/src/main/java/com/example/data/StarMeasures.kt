@@ -12,7 +12,7 @@ import kotlin.math.roundToInt
 data class MeasurePoint(val timestamp: Long, val key: String, val value: Float, val rating: Float = -1f, val timed: Boolean? = null)
 
 /**
- * Cómo se muestra una medida: "Tu vistazo en Radar" · 84 ms. [suffix] va pegado al número ("18%") y [unit] después
+ * Cómo se muestra una medida: "Tu vistazo en Rescate relámpago" · 84 ms. [suffix] va pegado al número ("18%") y [unit] después
  * ("de casa"). [lowerIsBetter]: menos es mejor (ms, distancia); en el gráfico "mejor" va siempre hacia arriba.
  */
 data class MeasureDef(
@@ -71,7 +71,7 @@ object StarMeasures {
   private const val DAY_MS = 86_400_000L
 
   val defs = listOf(
-    MeasureDef("glance", "radar", "Tu vistazo en Radar", "", "ms", lowerIsBetter = true, short = "tu vistazo", compactPattern = "{v} ms"),
+    MeasureDef("glance", "radar", "Tu vistazo en Rescate relámpago", "", "ms", lowerIsBetter = true, short = "tu vistazo", compactPattern = "{v} ms"),
     MeasureDef("brake", "freno", "Tu freno en Freno de Emergencia", "", "ms", lowerIsBetter = true, short = "tu freno", compactPattern = "{v} ms"),
     MeasureDef("tracking", "satelites", "Tu seguimiento en Satélites", "", "a la vez", lowerIsBetter = false, decimals = 1, short = "tu seguimiento", compactPattern = "{v} a la vez", levelDependent = true),
     MeasureDef("numline", "aterrizaje", "Tu estimación en Aterrizaje Lunar", "%", "del blanco", lowerIsBetter = true, decimals = 1, short = "tu estimación", compactPattern = "a {v}", levelDependent = true),
@@ -95,7 +95,7 @@ object StarMeasures {
   )
 
   val gameNames = mapOf(
-    "radar" to "Radar", "freno" to "Freno de Emergencia", "satelites" to "Satélites", "aterrizaje" to "Aterrizaje Lunar",
+    "radar" to "Rescate relámpago", "freno" to "Freno de Emergencia", "satelites" to "Satélites", "aterrizaje" to "Aterrizaje Lunar",
     "acoplamiento" to "Acoplamiento", "piloto" to "Piloto Estelar", "rumbo" to "Rumbo a Casa",
     "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?", "cosecha" to "Cosecha de palabras", "intrusa" to "La estrella intrusa", "secuencia" to "Rastro de luz", "anagramas" to "En la punta de la lengua", "calculo" to "Carga exacta", "engranajes" to "Engranajes", "bodega" to "Bodega de carga", "parejas" to "Constelaciones"
   )
@@ -147,7 +147,7 @@ object StarMeasures {
     return Discovery(d, recent(list), DiscoveryKind.STEADY)
   }
 
-  /** Sin descubrimiento: el juego estrella al que le faltan menos partidas (o Radar si todavía no hay ninguna). */
+  /** Sin descubrimiento: el juego estrella al que le faltan menos partidas (o Rescate relámpago si todavía no hay ninguna). */
   fun nudge(points: List<MeasurePoint>): DiscoveryNudge {
     val counts = points.groupingBy { it.key }.eachCount()
     val best = counts.filter { it.value < MIN_POINTS && def(it.key) != null }.maxByOrNull { it.value }

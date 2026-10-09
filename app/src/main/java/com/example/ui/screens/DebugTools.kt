@@ -36,7 +36,9 @@ private data class DebugGame(
   val satSurprise: Int = 0,
   /** Solo Piloto Estelar: el nivel (1..9) con que empiezan los dos motores y los segundos por sector (con 5, el sector 2 llega a los 5 s). */
   val pilStage: Int = 0,
-  val pilSectorS: Int = 0
+  val pilSectorS: Int = 0,
+  /** Solo Rescate relámpago: el nivel (1..12) con que empieza la partida. */
+  val rescStage: Int = 0
 )
 
 private val DebugGames = listOf(
@@ -70,7 +72,11 @@ private val DebugGames = listOf(
   DebugGame("piloto", "Piloto nivel 6", level = 1, timed = true, tag = "piloto_nivel6", pilStage = 6),
   DebugGame("piloto", "Piloto nivel 9", level = 1, timed = true, tag = "piloto_nivel9", pilStage = 9),
   DebugGame("piloto", "Piloto: cambio de sector (el 2 a los 5 s)", level = 1, timed = true, tag = "piloto_sector", pilSectorS = 5),
-  DebugGame("radar", "Radar (Reto 90 s)", level = 1, timed = true),
+  DebugGame("radar", "Rescate relámpago (Reto 120 s)", level = 1, timed = true),
+  DebugGame("radar", "Rescate relámpago con tutorial", level = 1, timed = false, tutorial = true, tag = "radar_tutorial"),
+  DebugGame("radar", "Rescate relámpago nivel 3", level = 1, timed = false, tag = "radar_nivel3", rescStage = 3),
+  DebugGame("radar", "Rescate relámpago nivel 6", level = 1, timed = false, tag = "radar_nivel6", rescStage = 6),
+  DebugGame("radar", "Rescate relámpago nivel 9", level = 1, timed = false, tag = "radar_nivel9", rescStage = 9),
   DebugGame("satelites", "Satélites (Reto 120 s)", level = 1, timed = true),
   DebugGame("satelites", "Satélites con tutorial", level = 1, timed = false, tutorial = true, tag = "satelites_tutorial"),
   DebugGame("satelites", "Satélites nivel 3", level = 1, timed = false, tag = "satelites_nivel3", satStage = 3),
@@ -125,6 +131,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
             satSurprise = g.satSurprise,
             pilStage = g.pilStage,
             pilSectorS = g.pilSectorS,
+            rescStage = g.rescStage,
             assessmentStep = if (g.shortVersion) 1 else 0,
             assessmentTotal = if (g.shortVersion) 4 else 0
           )

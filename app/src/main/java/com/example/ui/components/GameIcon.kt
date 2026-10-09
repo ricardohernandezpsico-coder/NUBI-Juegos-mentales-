@@ -145,7 +145,7 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(hexagon(Offset(79f, 21f), 15f), Clay.Sun, border = 3.5f)
     }
     "radar" -> {
-      // Pantalla de radar de arcilla: aro, vidrio, anillos, el haz que barre y el astronauta (punto sol).
+      // Pantalla de radar de arcilla: aro, vidrio, anillos, el haz que barre y una cápsula (punto sol).
       clay(circle(Offset(50f, 50f), 40f), Color(0xFF2A3590), gloss = true)
       drawCircle(Color(0xFF0C1648), 31f, Offset(50f, 50f))
       drawCircle(Ink, 31f, Offset(50f, 50f), style = Stroke(3f))

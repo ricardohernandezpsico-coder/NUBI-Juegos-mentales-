@@ -21,7 +21,7 @@ object UnityGameLauncher {
 
   /** Juegos con tutorial guiado (ronda guiada propia) y «Cómo se juega» en la pausa. Rastro de luz fue el primero; Freno, Aterrizaje y Meteoros se sumaron el 3-oct
    *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
-  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto")
+  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar")
 
   /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
   fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =
@@ -76,6 +76,9 @@ object UnityGameLauncher {
     // sector 2 llega a los 5 s y el vuelo dura 15).
     val pil_stage: Int = 0,
     val pil_sector_s: Int = 0,
+    // Solo «Rescate relámpago» (id radar): el récord de cápsulas rescatadas en una partida (progreso: la app lo guarda y Unity devuelve el nuevo) y, solo en las herramientas de prueba, el nivel (1..12) con que empieza la partida (0 = el que corresponde).
+    val resc_best: Int = 0,
+    val resc_stage: Int = 0,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -117,8 +120,9 @@ object UnityGameLauncher {
     satStage: Int = 0,              // solo las herramientas de prueba: Satélites empieza en este nivel (0 = normal)
     satSurprise: Int = 0,           // solo las herramientas de prueba: Satélites trae esta sorpresa en todas las rondas (1 órbita, 2 nube, 4 rápidas; 0 = las de siempre)
     pilStage: Int = 0,              // solo las herramientas de prueba: Piloto empieza en este nivel (0 = normal)
-    pilSectorS: Int = 0             // solo las herramientas de prueba: segundos por sector de Piloto (0 = 30)
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS)
+    pilSectorS: Int = 0,            // solo las herramientas de prueba: segundos por sector de Piloto (0 = 30)
+    rescStage: Int = 0              // solo las herramientas de prueba: Rescate relámpago empieza en este nivel (0 = normal)
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS, rescStage)
 
   private fun buildIntent(
     context: Context,
@@ -140,7 +144,8 @@ object UnityGameLauncher {
     satStage: Int = 0,
     satSurprise: Int = 0,
     pilStage: Int = 0,
-    pilSectorS: Int = 0
+    pilSectorS: Int = 0,
+    rescStage: Int = 0
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
@@ -178,6 +183,8 @@ object UnityGameLauncher {
         sat_surprise = if (gameId == "satelites") satSurprise.coerceIn(0, 7) else 0,
         pil_stage = if (gameId == "piloto") pilStage.coerceIn(0, 9) else 0,
         pil_sector_s = if (gameId == "piloto") pilSectorS.coerceIn(0, 30) else 0,
+        resc_best = if (gameId == "radar") com.example.NeuroVidaApplication.instance.repository.rescateRecord.value else 0,
+        resc_stage = if (gameId == "radar") rescStage.coerceIn(0, 12) else 0,
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f
