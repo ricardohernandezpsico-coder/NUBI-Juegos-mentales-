@@ -9,7 +9,7 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 
 ## Dónde estamos (8-oct)
 
-19 juegos en 4 áreas. Tienen tutorial guiado 13 (`UnityGameLauncher.TUTORIAL_GAMES`); faltan 6: Piloto, Satélites, Radar, Rumbo, Acoplamiento y La estrella intrusa. Los retirados están en `docs/juegos/descartados.md`.
+19 juegos en 4 áreas. Tienen tutorial guiado 14 (`UnityGameLauncher.TUTORIAL_GAMES`); faltan 5: Piloto, Satélites, Radar, Rumbo y Acoplamiento. Los retirados están en `docs/juegos/descartados.md`.
 
 | Área | Juegos |
 |---|---|
@@ -24,7 +24,7 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 - **Hecho (Tarea 52)**: el camino diario se elige por avance real y con variedad (`data/DailyPath.kt`: 3 juegos de 3 áreas, el área que quedó fuera ayer entra hoy, sin repetir los de ayer y anteayer, sin juegos que la persona nunca jugó y no tienen tutorial, determinístico por fecha); el día en que se completa el Primer vuelo, ese día queda cumplido con el vuelo (cuenta para la racha, la meta semanal y los desafíos de días, sin duplicar puntos ni partidas), y «dominio» pasó a «área» en lo que se ve.
 - **Hecho (Tareas 53 y 54)**: capturas reales de los 19 juegos (`--capturas todos`, láminas en `docs/previews/capturas/`) y arreglo de lo que mostraron: los avisos van debajo del marcador, la letra de los juegos de Unity no baja de 14 dp (con guardia en el smoke), el foco del tutorial ya no deja cuadrados oscuros y varios detalles por juego (`docs/previews/capturas/hallazgos.md`).
 - **Hecho (Tarea 55)**: los avisos ya no tapan el juego (se acomodan en una franja libre; el smoke lo prueba). Quedan exentos Piloto y Rumbo, que se rehacen en las etapas 1 y 2: al rehacerlos, quitarlos de `ToastCoverExceptions`.
-- **Falta**: tutorial guiado de La estrella intrusa (Cosecha de palabras y ¿Verdad o disparate? ya lo tienen, Tarea 56).
+- **Hecho (Tarea 56)**: tutoriales guiados con Nubi en Cosecha de palabras, ¿Verdad o disparate? y La estrella intrusa (cada uno con su ronda de práctica que no cuenta, «Saltar tutorial», «Cómo se juega» en la pausa y su smoke en las tres formas de pantalla).
 - **En espera, no ahora**: los pilotos automáticos que faltan en 15 juegos (las capturas de 8, 20 y 40 s repiten la primera situación donde no los hay) y, al tocar cada juego en las etapas 1 y 2, agrandar su área de juego: en pantalla 20:9 sobra casi un tercio de abajo en Satélites, Rescate relámpago, Rumbo, La estrella intrusa y Bodega.
 
 ## Etapa 1 — Atención

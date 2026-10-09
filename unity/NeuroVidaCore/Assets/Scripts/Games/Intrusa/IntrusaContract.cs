@@ -146,6 +146,18 @@ namespace NeuroVida.Games.Intrusa
         /// <summary>Segundos que dura la caída de la intrusa (estrella fugaz).</summary>
         public const float FallSeconds = 0.9f;
 
+        // ------------------------------------------------------------------ ronda de práctica (tutorial con Nubi)
+
+        /// <summary>La semilla con que se acomoda la ronda de práctica: así la figura, el hueco y el reparto de las palabras son siempre los mismos y el tutorial se puede revisar en las tres formas de pantalla.</summary>
+        public const int PracticeSeed = 56;
+
+        /// <summary>El ejemplo del tutorial: cuatro frutas y un zapato, de la regla «fruta» (la figura de La Manzana). No sale del banco, no cuenta para nada ni se anota en el atlas.</summary>
+        public static IntrusaGroup PracticeGroup() => new IntrusaGroup
+        {
+            i = "practica", t = 1, p = new[] { "manzana", "pera", "uva", "melón" }, x = "zapato", n = "Frutas",
+            o = new[] { "Frutas", "Calzado", "Animales" }, c = 0, a = "", e = "Todas son frutas; el zapato no.", r = "", k = "fruta"
+        };
+
         public static int ClampLevel(int level) => Math.Max(1, Math.Min(MaxLevel, level));
 
         /// <summary>Tipo de grupo por nivel: 1-2 amplia, 3-4 vecina, 5-6 uso, 7-8 material/lugar/parte, 9-10 trampa, 11-12 regla + trampa.</summary>

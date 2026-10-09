@@ -140,6 +140,15 @@ namespace NeuroVida.Games.Shared
             public const string Unclear = "Si una frase no está clara, mantenla presionada";
         }
 
+        /// <summary>La estrella intrusa (pantalla: cinco estrellas con una palabra, una figura que aparece al contestar y su nombre). La práctica usa cuatro frutas y un zapato.</summary>
+        public static class Intrusa
+        {
+            public const string Look = "Cuatro estrellas comparten algo; una no";
+            public const string Tap = "Toca la intrusa";
+            public const string Spark = "La chispa une las otras cuatro: son frutas";
+            public const string Atlas = "Cada figura que dibujas se guarda en tu atlas";
+        }
+
         /// <summary>Todos los textos (con el peor caso de los que cambian según la jugada) para comprobar que caben en el globo.</summary>
         public static IEnumerable<(string Game, string Step, string Text)> All()
         {
@@ -217,6 +226,11 @@ namespace NeuroVida.Games.Shared
             yield return ("disparate", "disparate", Disparate.Nonsense);
             yield return ("disparate", "ritmo", Disparate.Rhythm);
             yield return ("disparate", "no está clara", Disparate.Unclear);
+
+            yield return ("intrusa", "cuatro comparten", Intrusa.Look);
+            yield return ("intrusa", "toca la intrusa", Intrusa.Tap);
+            yield return ("intrusa", "chispa", Intrusa.Spark);
+            yield return ("intrusa", "atlas", Intrusa.Atlas);
 
             yield return ("stroop", "tinta", Stroop.InkRule);
             yield return ("stroop", "palabra", Stroop.WordRule);

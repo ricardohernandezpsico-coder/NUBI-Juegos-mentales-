@@ -161,6 +161,7 @@ namespace NeuroVida.Games.Intrusa
             _lastTickSecond = -1;
             _clearShown = false;
             _pulsing = false;
+            _loopOn = _guided = false;
 
             _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
@@ -182,7 +183,21 @@ namespace NeuroVida.Games.Intrusa
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
+            _baked = false;
             StartCoroutine(PrewarmSprites());
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre el cielo ya armado, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                HideRound();
+                _safe.gameObject.SetActive(false);
+            }
             yield return StartCoroutine(_countdown.Play("La estrella intrusa", Assessment.Subtitle("Toca la que no pertenece"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
@@ -196,7 +211,13 @@ namespace NeuroVida.Games.Intrusa
             _hint.gameObject.SetActive(true);
             _hint.text = "Una estrella no pertenece.\nToca la intrusa";
             _nextSpec = PrepareRound();
+            _loopOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
 
+        /// <summary>Una ronda tras otra hasta que se acabe el tiempo (Reto) o las 20 (Precisión), y el final. «Cómo se juega» la retoma desde aquí.</summary>
+        private IEnumerator MainLoop()
+        {
             while (!Finished())
             {
                 var spec = _nextSpec ?? PrepareRound();
@@ -231,6 +252,7 @@ namespace NeuroVida.Games.Intrusa
             IntrusaSounds.Named();
             IntrusaSounds.Pulse();
             IntrusaSounds.Dull();
+            _baked = true;
         }
 
         // ------------------------------------------------------------------ preparar la ronda
@@ -1056,6 +1078,7 @@ namespace NeuroVida.Games.Intrusa
 
         private void Update()
         {
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un toque al juego
             float dt = GameClock.DeltaTime;
             UpdateClock();
             if (_clearGlow != null && _phase == Phase.Playing)
@@ -1085,7 +1108,11 @@ namespace NeuroVida.Games.Intrusa
                 down = Input.GetMouseButtonDown(0);
                 pos = Input.mousePosition;
             }
+#if UNITY_EDITOR
+            if (_guided && !down && GuidedTutorial.TryPress(out var injected)) { down = true; pos = injected; }       // el smoke da un toque «de verdad» en el hueco
+#endif
             if (!down) return;
+            if (_tutorial != null && _tutorial.Coach != null && _tutorial.Coach.Blocks(pos)) return;                  // el foco de Nubi: solo vale el toque dentro del hueco
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, pos, null, out var local)) return;
             _press = PlayToLogical(local);
         }
@@ -1115,7 +1142,7 @@ namespace NeuroVida.Games.Intrusa
 
         private void UpdateClock()
         {
-            if (!Endless || _phase != Phase.Playing || _endsAt <= 0f) return;
+            if (_guided || !Endless || _phase != Phase.Playing || _endsAt <= 0f) return;
             float left = _endsAt - GameClock.Time;
             float frac = Mathf.Clamp01(1f - left / IntrusaContract.RetoSeconds);
             // la cometa cruza de izquierda a derecha: sin reloj por ronda
@@ -1134,6 +1161,165 @@ namespace NeuroVida.Games.Intrusa
             _hud.SetLevel(_dda.PresentedLevel);
             if (Endless) _hud.SetPoints(_points);
             else _hud.SetInfo($"{Mathf.Min(_resolved + 1, IntrusaContract.PrecisionRounds)} de {IntrusaContract.PrecisionRounds}");
+        }
+
+        // ------------------------------------------------------------------ tutorial con Nubi (ronda guiada) y «Cómo se juega» desde la pausa
+
+        private bool _guided, _loopOn, _baked, _practiceHit;
+        private RectTransform _holeRect;                        // una caja invisible que sigue a lo que el foco del tutorial ilumina
+
+        /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo).</summary>
+        private void SetUpTutorial()
+        {
+            var hole = new GameObject("TutorialHole", typeof(RectTransform));
+            hole.transform.SetParent(_play, false);
+            _holeRect = (RectTransform)hole.transform;
+            _holeRect.anchorMin = _holeRect.anchorMax = new Vector2(0.5f, 0.5f);
+            BuildTutorial(_safe, GameHud.Height + 10f, "La estrella intrusa", "Cuatro estrellas comparten algo y una no. Toca la intrusa.");
+        }
+
+        /// <summary>Pone la caja invisible sobre un rectángulo lógico (dp de una pantalla de 360 de ancho) y la devuelve, para que el foco la ilumine.</summary>
+        private RectTransform HoleOver(LRect r)
+        {
+            _holeRect.anchoredPosition = LogicalToPlay(new Vector2(r.CenterX, r.CenterY));
+            _holeRect.sizeDelta = new Vector2(r.W * _s, r.H * _s);
+            return _holeRect;
+        }
+
+        /// <summary>La caída de la intrusa, la chispa que dibuja la figura y el grabado con su nombre; después avisa. No anota nada: ni racha, ni puntos, ni lámina del atlas.</summary>
+        private IEnumerator PracticeReveal(IntrusaSpec spec, System.Action done)
+        {
+            yield return Trace(spec, 1f, false);
+            yield return Reveal(spec, false, false, false);
+            done();
+        }
+
+        // <guided>
+        protected override IEnumerator GuidedRound(GuidedTutorial t)
+        {
+            t.BeginPractice();
+            _guided = true;
+            while (!_baked) yield return null;                         // el arte se hornea mientras Nubi se presenta
+            var coach = t.Coach;
+            // Pasos: 1) «Cuatro estrellas comparten algo; una no» (aviso); 2) «Toca la intrusa» (hueco: la palabra intrusa); 3) la intrusa cae, la chispa dibuja la figura de las otras cuatro y aparece su nombre (mirar);
+            // 4) la figura se guarda en el atlas (aviso); 5) «¡Listo!». Ejemplo clarísimo: cuatro frutas y un zapato. No pasa por el DDA, el puntaje, el atlas ni el repaso.
+            var group = IntrusaContract.PracticeGroup();
+            var shape = _bank.FigureOf(group.k) ?? IntrusaBank.Fallback().FigureOf(group.k);
+            var spec = IntrusaLayout.Arrange(group, shape, new System.Random(IntrusaContract.PracticeSeed), TextWidthLogical);
+            _hint.gameObject.SetActive(false);
+            _timerTrack.gameObject.SetActive(false);
+            _phase = Phase.Playing;
+            _press = null;
+            _roundLive = false;
+            _spec = spec;
+            ShowRound(spec);
+            yield return StartCoroutine(AppearStars());
+            bool ok = !t.Skipped;
+
+            // 1) cuatro comparten algo; una no
+            if (ok)
+            {
+                yield return StartCoroutine(coach.Notice(CoachTexts.Intrusa.Look, 3.4f));
+                ok = !t.Skipped;
+            }
+
+            // 2) tocar la intrusa (solo vale esa: si el toque cae en otra estrella, se vuelve a pedir)
+            int choice = -1;
+            _practiceHit = false;
+            while (ok && choice != 4)
+            {
+                _press = null;
+#if UNITY_EDITOR
+                StartCoroutine(ProbeTap(coach));
+#endif
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(HoleOver(_slots[4].Touch)), CoachTexts.Intrusa.Tap));
+                ok = !t.Skipped;
+                if (ok && _press.HasValue) choice = PickSlot(_press.Value);
+                _press = null;
+#if UNITY_EDITOR
+                if (ok && GuidedTutorial.EditorAutoContinue && choice != 4) choice = 4;          // el smoke no toca: lo hace por la persona
+#endif
+            }
+            _practiceHit = choice == 4;
+
+            // 3) mirar: la intrusa cae, la chispa une las otras cuatro y aparece la figura con su nombre
+            Coroutine fall = null, reveal = null;
+            if (ok)
+            {
+                bool revealed = false;
+                float revealedAt = -1f;
+                fall = StartCoroutine(FallStar(_slots[4]));
+                reveal = StartCoroutine(PracticeReveal(spec, () => revealed = true));
+                yield return StartCoroutine(coach.Watch(() => coach.RectOf(HoleOver(new LRect(IntrusaLayout.BoxX, IntrusaLayout.BoxY, IntrusaLayout.BoxW, IntrusaLayout.BoxH))), CoachTexts.Intrusa.Spark,
+                    () =>
+                    {
+                        if (!revealed) return false;
+                        if (revealedAt < 0f) revealedAt = GameClock.Time;
+                        return GameClock.Time - revealedAt >= 1.4f;
+                    }, 25f));
+                ok = !t.Skipped;
+            }
+
+            // 4) la figura va al atlas
+            if (ok)
+            {
+                yield return StartCoroutine(coach.Notice(CoachTexts.Intrusa.Atlas, 3.4f));
+                ok = !t.Skipped;
+            }
+            if (ok) yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
+
+            if (fall != null) StopCoroutine(fall);
+            if (reveal != null) StopCoroutine(reveal);
+            coach.Hide();
+            HideRound();
+            _press = null;
+            _roundLive = false;
+            _timerTrack.gameObject.SetActive(Endless);
+            _guided = false;
+            _phase = Phase.Idle;                                       // la partida (o «Cómo se juega») sigue desde su bucle
+            t.EndPractice();
+        }
+        // </guided>
+
+#if UNITY_EDITOR
+        /// <summary>SOLO EN EL EDITOR (smoke del tutorial): da un toque «de verdad» en el centro de la palabra intrusa que el paso ilumina y comprueba que el juego la reconoce. Si el hueco no coincidiera con la estrella dibujada,
+        /// el tutorial se «pegaría» sin dejar tocar lo que pide (Ricardo, 6-oct); así se vería antes de llegar al teléfono.</summary>
+        private IEnumerator ProbeTap(NubiCoach coach)
+        {
+            if (!GuidedTutorial.EditorAutoContinue) yield break;
+            float w = 0f;
+            while (!coach.Active && w < 3f) { w += GameClock.RealDeltaTime; yield return null; }
+            w = 0f;
+            while (coach.Active && w < 0.7f) { w += GameClock.RealDeltaTime; yield return null; }
+            if (!coach.Active) yield break;
+            GuidedTutorial.EditorPressPos = RectTransformUtility.WorldToScreenPoint(null, _holeRect.position);
+            GuidedTutorial.EditorPressFrame = Time.frameCount + 1;
+            for (int i = 0; i < 4; i++) yield return null;
+            if (!_practiceHit) Debug.LogError("[SmokeTest] Intrusa: un toque en el centro de la palabra intrusa NO llegó al juego (el hueco no coincide con la estrella)");
+            else Debug.Log("[SmokeTest] Intrusa: un toque en el centro de la palabra intrusa llegó al juego");
+        }
+#endif
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        protected override bool HowToReady => _loopOn && _phase == Phase.Playing && !_guided;
+
+        protected override void HowToSuspend()
+        {
+            // la ronda que estaba en pantalla se descarta (si todavía no se había contestado, no cuenta); después sigue la partida con una nueva
+            _roundLive = false;
+            _press = null;
+            HideRound();
+            _phase = Phase.Idle;
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            _endsAt = HowToClock.Shift(_endsAt, spentSeconds);       // el tiempo que duró «Cómo se juega» no se le descuenta al Reto
+            _lastTickSecond = -1;
+            _nextSpec = null;
+            _phase = Phase.Playing;
+            StartCoroutine(MainLoop());
         }
 
         // ------------------------------------------------------------------ fin
@@ -1266,6 +1452,7 @@ namespace NeuroVida.Games.Intrusa
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            SetUpTutorial();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

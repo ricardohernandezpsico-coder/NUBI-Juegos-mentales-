@@ -124,6 +124,9 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>«¿Verdad o disparate?» (id disparate) con su tutorial guiado: la tarjeta de Nubi y tres frases de práctica (una verdad, un disparate y una donde se ve la señal), con un toque «de verdad» en cada botón.</summary>
         public static void RunTutorialDisparate() => RunGame("disparate", 12f, tutorial: true);
 
+        /// <summary>«La estrella intrusa» (id intrusa) con su tutorial guiado: la tarjeta de Nubi y una ronda de práctica (cuatro frutas y un zapato): el aviso, el toque en la intrusa (con un toque «de verdad»), la chispa que dibuja la figura y el atlas.</summary>
+        public static void RunTutorialIntrusa() => RunGame("intrusa", 12f, tutorial: true);
+
         public static void RunRumbo() => RunGame("rumbo", 9f);
 
         /// <summary>Mismo smoke test pero con «La estación de correo» (id correo) como juego (se juega sola: clasifica, guarda las señal, mira el reloj y enciende el faro; los días duran 12 s en el smoke).</summary>
@@ -138,7 +141,7 @@ namespace NeuroVida.Bridge.EditorTools
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
-            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f), ("TutorialCorreo", "correo", 12f), ("TutorialCosecha", "cosecha", 12f), ("TutorialDisparate", "disparate", 12f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f), ("TutorialCorreo", "correo", 12f), ("TutorialCosecha", "cosecha", 12f), ("TutorialDisparate", "disparate", 12f), ("TutorialIntrusa", "intrusa", 12f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
             ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 24f), ("Bodega", "bodega", 30f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 30f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
@@ -186,7 +189,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// </summary>
         private static readonly (string Name, string Id, float Seconds)[] HowToCatalog =
         {
-            ("HowToCosecha", "cosecha", 60f), ("HowToDisparate", "disparate", 60f),
+            ("HowToCosecha", "cosecha", 60f), ("HowToDisparate", "disparate", 60f), ("HowToIntrusa", "intrusa", 60f),
         };
 
         private static bool _howToStarted, _howToDone;
@@ -371,6 +374,7 @@ namespace NeuroVida.Bridge.EditorTools
             _toastSeen.Clear();
             _sampleToastShown = false;
             _howToStarted = _howToDone = false;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorPressFrame = -1;      // un toque de prueba de la corrida anterior no cuenta en esta
             _textGuardAt = 0.0;
             _entryStartAt = EditorApplication.timeSinceStartup;
             _pauseShowStage = 0;

@@ -258,6 +258,32 @@ namespace NeuroVida.Games.Intrusa.Tests
         }
 
         [Test]
+        public void Practica_EsUnGrupoValidoConUnaIntrusaClarisima_YSeAcomodaSiempreIgual()
+        {
+            var g = IntrusaContract.PracticeGroup();
+            Assert.AreEqual(4, g.p.Length);
+            Assert.AreEqual(3, g.o.Length);
+            Assert.AreEqual(g.n, g.o[g.c], "la opción correcta es la regla");
+            CollectionAssert.DoesNotContain(g.p, g.x);
+            Assert.AreEqual(1, g.t, "categoría amplia, intrusa lejana: sin «¿Qué las une?»");
+            Assert.IsFalse(g.IsTrap);
+            Assert.IsFalse(IntrusaContract.HasBonus(g.t));
+            var shape = IntrusaBank.Fallback().FigureOf(g.k);
+            Assert.IsNotNull(shape, "la figura de la regla existe");
+            Assert.AreEqual(1, new IntrusaBank(new[] { g }, new[] { shape }).Count, "pasa las mismas validaciones que un grupo del banco");
+
+            // misma semilla, mismo acomodo, y sin placas encimadas
+            var a = IntrusaLayout.Arrange(g, shape, new Random(IntrusaContract.PracticeSeed), Width);
+            var b = IntrusaLayout.Arrange(g, shape, new Random(IntrusaContract.PracticeSeed), Width);
+            CollectionAssert.AreEqual(a.AnchorWords, b.AnchorWords);
+            Assert.AreEqual(a.Hole, b.Hole);
+            Assert.AreEqual(a.Mirror, b.Mirror);
+            Assert.AreEqual(a.RotationDeg, b.RotationDeg, 1e-6f);
+            CollectionAssert.AreEquivalent(g.p, a.AnchorWords);
+            Assert.AreEqual(0f, IntrusaLayout.Violation(IntrusaLayout.Plaques(shape, a.AnchorWords, g.x, a.Mirror, a.RotationDeg, a.Hole, Width)), 1e-4f);
+        }
+
+        [Test]
         public void Arrange_EncuentraUnaCombinacionSinChoques_YReflejaYGiraAlAzar()
         {
             var shape = Shape();

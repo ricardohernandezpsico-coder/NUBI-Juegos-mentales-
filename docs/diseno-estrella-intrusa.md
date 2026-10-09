@@ -159,6 +159,12 @@ Sprites, Sounds, Controller; 26 pruebas puras + 5 del banco real), telemetría `
 Pendiente: que Ricardo lo pruebe en el teléfono (ritmo de cada ronda, cuántas láminas reconoce a la primera, las figuras dudosas de la
 hoja: El Calcetín, Los Pulmones, La Garra, La Margarita, El Baúl), el archivo de la tipografía Fraunces (ya incluido, tarea 16).
 
+## 9. Tutorial con Nubi (Tarea 56, 9-oct)
+
+Con la pieza común (`GuidedTutorial` + `NubiCoach` + `CoachTexts.Intrusa`), antes de la cuenta regresiva de la primera partida y desde «Cómo se juega» en la pausa. La práctica usa un ejemplo clarísimo (`IntrusaContract.PracticeGroup`: manzana, pera, uva y melón, con «zapato» de intrusa, la figura de La Manzana, acomodada siempre con la misma semilla): no sale del banco, no pasa por el DDA ni el repaso y NO se anota en el atlas.
+
+Cinco pasos: 1) «Cuatro estrellas comparten algo; una no» (aviso); 2) «Toca la intrusa» (hueco: la palabra intrusa; si el toque cae en otra estrella se vuelve a pedir); 3) la intrusa cae, una chispa une las otras cuatro y aparece la figura con su nombre y la regla (mirar: «La chispa une las otras cuatro: son frutas»); 4) «Cada figura que dibujas se guarda en tu atlas» (aviso; el atlas es «Tu atlas» de la pantalla final); 5) «¡Listo! Ahora va en serio». No hay «¿Qué las une?» en la práctica (es del nivel 3 en adelante). Desde la pausa, «Cómo se juega» descarta la ronda en pantalla sin contarla y sigue con una nueva (el Reto no pierde el tiempo del tutorial). El smoke da un toque «de verdad» en el centro de la palabra intrusa y corre `HowToIntrusa`.
+
 ---
 
 ## Ficha técnica (movida desde CLAUDE.md, 2-oct)
