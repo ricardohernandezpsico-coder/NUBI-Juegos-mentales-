@@ -121,6 +121,16 @@ namespace NeuroVida.Games.Shared
             public const string Show = "El faro guía la nave del correo";
         }
 
+        /// <summary>Cosecha de palabras (pantalla: las siete letras que giran, la bandeja, «Sembrar» y «Borrar» abajo y el planeta del huerto). La práctica arma CASA con las letras I R A O A S C.</summary>
+        public static class Cosecha
+        {
+            public const string First = "Forma CASA: toca primero la C";
+            public const string Next = "Sigue con la A, la S y otra A";
+            public const string Sow = "Toca Sembrar para guardarla";
+            public const string Sprout = "¡Brotó! Cada palabra hace crecer tu huerto";
+            public const string Erase = "Si te equivocas, Borrar vacía la bandeja";
+        }
+
         /// <summary>Todos los textos (con el peor caso de los que cambian según la jugada) para comprobar que caben en el globo.</summary>
         public static IEnumerable<(string Game, string Step, string Text)> All()
         {
@@ -187,6 +197,12 @@ namespace NeuroVida.Games.Shared
             foreach (var name in new[] { "la llave", "la campana", "el farol", "la manzana", "el hongo", "la taza", "el paraguas", "el libro", "la gema", "el reloj de arena", "la pluma", "la bellota" })
                 yield return ("bodega", "toca " + name, Bodega.Ask(name));
             yield return ("bodega", "error", Bodega.Wrong);
+
+            yield return ("cosecha", "letras", Cosecha.First);
+            yield return ("cosecha", "sigue", Cosecha.Next);
+            yield return ("cosecha", "sembrar", Cosecha.Sow);
+            yield return ("cosecha", "brotó", Cosecha.Sprout);
+            yield return ("cosecha", "borrar", Cosecha.Erase);
 
             yield return ("stroop", "tinta", Stroop.InkRule);
             yield return ("stroop", "palabra", Stroop.WordRule);

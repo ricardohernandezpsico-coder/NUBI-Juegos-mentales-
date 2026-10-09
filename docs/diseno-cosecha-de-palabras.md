@@ -134,6 +134,12 @@ Maqueta y muestra aprobadas por Ricardo (1-oct; "cola" y "pasta" se dejan visibl
 (`Games/Cosecha/`: contrato, sesión, medidas, banco, huerto, sprites, sonidos y controlador; 33 pruebas) y app (`Harvest.kt`, pantalla final,
 marca de evolución, ícono, créditos). Pendiente: que Ricardo lo pruebe en el teléfono (órbita, tamaño de las fichas, ritmo, sonidos, pista).
 
+## 10. Tutorial con Nubi (Tarea 56, 9-oct)
+
+Con la pieza común (`GuidedTutorial` + `NubiCoach` + `CoachTexts.Cosecha`), antes de la cuenta regresiva de la primera partida y desde «Cómo se juega» en la pausa. Se practica con una ronda fija (`CosechaContract.PracticeRound()`: las letras I R A O A S C y seis palabras muy conocidas: CASA, ROSA, ROCA, COSA, CASO y SACA) sobre el mismo planeta, con la órbita QUIETA (en una fase fija: así Nubi y su globo caben siempre entre las letras, en las tres formas de pantalla) y sin reloj ni lista de palabras. «Saltar tutorial» va arriba, bajo «Práctica: no cuenta»: abajo están Sembrar y Borrar.
+
+Seis pasos (explicar → mirar → hacer): 1) «Forma CASA: toca primero la C» (hueco redondo en la ficha); 2) «Sigue con la A, la S y otra A» (el foco sigue a la ficha que toca); 3) «Toca Sembrar para guardarla»; 4) «¡Brotó! Cada palabra hace crecer tu huerto» (se mira cómo vuela la semilla y brota); 5) con «RO» en la bandeja, «Si te equivocas, Borrar vacía la bandeja»; 6) «¡Listo! Ahora va en serio». En la práctica solo se acepta la ficha que toca (en orden) y el botón que se pide, y no pasa por el DDA, el puntaje, el banco de rondas ni el guardado. Desde la pausa, «Cómo se juega» deja la cosecha en curso apartada (bandeja, huerto y puntos) y la retoma con su reloj corrido lo que duró el tutorial. El smoke da un toque «de verdad» en el centro de cada hueco y comprueba que llega al juego.
+
 ---
 
 ## Ficha técnica (movida desde CLAUDE.md, 2-oct)

@@ -66,11 +66,17 @@ namespace NeuroVida.Games.Tests
             Assert.Greater(n, 40, "la lista de textos del tutorial está completa");
         }
 
+        /// <summary>El vocabulario que no va en nada visible (el mismo de <c>VisibleTextsGuardTest</c> de la app): ni promesas de salud ni «cognitivo», «entrenamiento», «cerebro» o percentiles.</summary>
+        private static readonly string[] BannedWords =
+            { "cognitiv", "entren", "estimulaci", "bienestar", "percentil", "cerebro", "neurona", "mejora tu", "fortalece", "previene" };
+
         [Test]
         public void TheTutorialTexts_AreWrittenToTheRules()
         {
             foreach (var (game, step, text) in CoachTexts.All())
             {
+                foreach (var word in BannedWords)
+                    Assert.IsFalse(text.ToLowerInvariant().Contains(word), $"{game} · {step}: «{text}» usa «{word}» (vocabulario que no va: juego, partida, camino, tu avance, áreas, mente activa)");
                 Assert.IsFalse(text.EndsWith("."), $"{game} · {step}: sin punto final en el globo");
                 int sentences = text.Split(new[] { ". " }, System.StringSplitOptions.RemoveEmptyEntries).Length;
                 Assert.LessOrEqual(sentences, 2, $"{game} · {step}: una idea por globo");

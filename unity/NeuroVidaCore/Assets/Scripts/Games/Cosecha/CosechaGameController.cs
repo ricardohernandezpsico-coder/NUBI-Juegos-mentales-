@@ -134,6 +134,11 @@ namespace NeuroVida.Games.Cosecha
             Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
+            _loopOn = false;
+            _guided = false;
+            _allow = Allow.All;
+            _rail = null;
+            _flying.Clear();
             _session = null;
             _cosecha = 0;
             _points = 0;
@@ -146,23 +151,7 @@ namespace NeuroVida.Games.Cosecha
             _recentTimes.Clear();
             _orbitPhase = (float)_rng.NextDouble() * Mathf.PI * 2f;
 
-            _resultRoot.gameObject.SetActive(false);
-            _exit.Hide();
-            _timerBg.gameObject.SetActive(true);
-            _msg.gameObject.SetActive(false);
-            _readyDim.gameObject.SetActive(false);
-            _readyTitle.gameObject.SetActive(false);
-            _readySub.gameObject.SetActive(false);
-            _trayRect.gameObject.SetActive(false);
-            _planetRect.gameObject.SetActive(false);
-            foreach (var t in _tiles) t.Rect.gameObject.SetActive(false);
-            _btnSow.gameObject.SetActive(false);
-            _btnClear.gameObject.SetActive(false);
-            _cosechaLabel.gameObject.SetActive(false);
-            _listTitle.gameObject.SetActive(false);
-            _listWords.gameObject.SetActive(false);
-            _orbitRing.gameObject.SetActive(false);
-            ClearGarden();
+            HideBoard();
 
             StopAllCoroutines();
             StartCoroutine(GameLoop());
@@ -176,7 +165,21 @@ namespace NeuroVida.Games.Cosecha
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
+            _baked = false;
             StartCoroutine(Prewarm());
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre el planeta ya armado, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                HideBoard();
+                _session = null;
+                _safe.gameObject.SetActive(false);
+            }
             yield return StartCoroutine(_countdown.Play("Cosecha de palabras", Assessment.Subtitle("Forma palabras y haz crecer tu huerto"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
@@ -184,9 +187,18 @@ namespace NeuroVida.Games.Cosecha
             Canvas.ForceUpdateCanvases();
             Layout();
 
-            for (_cosecha = 0; _cosecha < CosechaContract.Cosechas; _cosecha++)
+            _loopOn = true;
+            _cosecha = 0;
+            yield return StartCoroutine(MainLoop(false));
+        }
+
+        /// <summary>Las tres cosechas, una tras otra, y el final. «Cómo se juega» la retoma desde aquí, en la cosecha donde estaba (<paramref name="resume"/>: sigue la que quedó a medias, sin armarla de nuevo).</summary>
+        private IEnumerator MainLoop(bool resume)
+        {
+            for (; _cosecha < CosechaContract.Cosechas; _cosecha++)
             {
-                yield return StartCoroutine(RunCosecha());
+                yield return StartCoroutine(resume ? PlayCosecha() : RunCosecha());
+                resume = false;
                 if (_cosecha < CosechaContract.Cosechas - 1) yield return StartCoroutine(ReadyBetween());
             }
             yield return StartCoroutine(FinishGame());
@@ -222,6 +234,7 @@ namespace NeuroVida.Games.Cosecha
             CosechaSounds.Ready();
             CosechaSounds.Hint();
             CosechaSounds.Shine();
+            _baked = true;
         }
 
         // ------------------------------------------------------------------ una cosecha
@@ -246,6 +259,12 @@ namespace NeuroVida.Games.Cosecha
             _lastActionAt = GameClock.Time;
             _hintOn = false;
             _lastTickSecond = -1;
+            yield return StartCoroutine(PlayCosecha());
+        }
+
+        /// <summary>El resto de una cosecha: corre el reloj y, al acabar, la cuenta y la registra. «Cómo se juega» retoma la cosecha desde aquí.</summary>
+        private IEnumerator PlayCosecha()
+        {
             while (GameClock.Time < _endsAt) yield return null;
 
             _phase = Phase.Between;
@@ -331,6 +350,7 @@ namespace NeuroVida.Games.Cosecha
 
         private void Update()
         {
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un toque al juego
             if (_phase == Phase.Idle) return;
             UpdateClock();
             AnimateOrbit();
@@ -343,6 +363,12 @@ namespace NeuroVida.Games.Cosecha
 
         private void HandleInput()
         {
+            if (_guided)
+            {
+                // la práctica lee el toque igual que Nubi (así el smoke puede dar un toque «de verdad» en el hueco)
+                if (GuidedTutorial.TryPress(out var pressed)) Press(pressed);
+                return;
+            }
             if (Input.touchCount > 0)
             {
                 for (int i = 0; i < Input.touchCount; i++)
@@ -356,15 +382,28 @@ namespace NeuroVida.Games.Cosecha
 
         private void Press(Vector2 screen)
         {
+            if (_tutorial != null && _tutorial.Coach != null && _tutorial.Coach.Blocks(screen)) return;       // el foco de Nubi: solo vale el toque dentro del hueco
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, screen, null, out var local)) return;
-            if (InRect(local, _btnSowCenter, _btnSowSize)) { StartCoroutine(PopRect(_btnSow, 0.94f, 0.14f)); Plant(); return; }
-            if (InRect(local, _btnClearCenter, _btnClearSize)) { StartCoroutine(PopRect(_btnClear, 0.9f, 0.14f)); ClearTray(); return; }
+            if (InRect(local, _btnSowCenter, _btnSowSize))
+            {
+                if (!Allows(Allow.Sow)) return;
+                StartCoroutine(PopRect(_btnSow, 0.94f, 0.14f));
+                Plant();
+                return;
+            }
+            if (InRect(local, _btnClearCenter, _btnClearSize))
+            {
+                if (!Allows(Allow.Clear)) return;
+                StartCoroutine(PopRect(_btnClear, 0.9f, 0.14f));
+                ClearTray();
+                return;
+            }
             // la última letra de la bandeja la devuelve
             int n = _session.Tray.Count;
             if (n > 0)
             {
                 var slot = new Vector2(SlotX(n - 1), _trayY);
-                if (InRect(local, slot, new Vector2(_slotStep, 200f))) { BackOne(); return; }
+                if (InRect(local, slot, new Vector2(_slotStep, 200f))) { if (Allows(Allow.Back)) BackOne(); return; }
             }
             // una ficha de la órbita: la más cercana al toque (el radio de la ficha + un margen)
             Tile best = null;
@@ -374,7 +413,7 @@ namespace NeuroVida.Games.Cosecha
                 float d = Vector2.Distance(local, t.Pos);
                 if (d <= t.Size * 0.5f + 14f && d < bestD) { best = t; bestD = d; }
             }
-            if (best != null) TapTile(_tiles.IndexOf(best));
+            if (best != null && Allows(Allow.Tile)) TapTile(_tiles.IndexOf(best));
         }
 
         private static bool InRect(Vector2 p, Vector2 center, Vector2 size) =>
@@ -383,6 +422,11 @@ namespace NeuroVida.Games.Cosecha
         private void TapTile(int index)
         {
             if (_session == null) return;
+            if (_guided && _rail != null)
+            {
+                int next = _session.Tray.Count;                        // la práctica acepta las fichas solo en el orden pedido
+                if (next >= _rail.Length || index != _rail[next]) return;
+            }
             int before = _session.Tray.Count;
             bool wasLast = before > 0 && _session.Tray[before - 1] == index;
             if (!_session.TapTile(index)) return;
@@ -463,7 +507,10 @@ namespace NeuroVida.Games.Cosecha
             bool tree = false;
             if (r.Star && !_treeDone) { spot = _garden.TreeSpot(); tree = true; _treeDone = true; }
             else spot = _garden.Add(CosechaContract.Normalize(r.Word.p).Length, r.Word.IsRare || (r.Star && _treeDone));
-            StartCoroutine(SowRoutine(letters, slotPositions, spot, tree, r));
+            var flight = new Flight { Spot = spot, Tree = tree };
+            _flying.Add(flight);
+            _lastSowAt = GameClock.Time;
+            StartCoroutine(SowRoutine(letters, slotPositions, spot, tree, r, flight));
         }
 
         private void NoteFastWord()
@@ -480,7 +527,7 @@ namespace NeuroVida.Games.Cosecha
         }
 
         /// <summary>Las letras vuelan hacia una semilla, la semilla cae en arco al lugar de su planta y brota con rebote.</summary>
-        private IEnumerator SowRoutine(List<string> letters, List<Vector2> from, PlantSpot spot, bool tree, SubmitResult r)
+        private IEnumerator SowRoutine(List<string> letters, List<Vector2> from, PlantSpot spot, bool tree, SubmitResult r, Flight pending)
         {
             Vector2 center = new Vector2(0f, _trayY);
             Vector2 target = PlantPosition(spot);
@@ -544,6 +591,7 @@ namespace NeuroVida.Games.Cosecha
             else PlayClip(CosechaSounds.Sprout(), 0.4f);
             GameFeel.Correct(Mathf.Min(7, _session.Found.Count));
             if (tree) SpawnTree(spot); else SpawnPlant(spot);
+            _flying.Remove(pending);
             UpdateGrass();
             StartCoroutine(UiFx.RingBurst(_fxRect, target, r.Star ? NeuroStyle.Sun : NeuroStyle.Lime, 60f, 340f, 0.5f));
             if (!calm) StartCoroutine(UiFx.SparkBurst(_fxRect, target, r.Star ? NeuroStyle.Sun : NeuroStyle.Lime, r.Star ? 14 : 8, r.Star ? 300f : 190f, 22f, 0.6f));
@@ -633,7 +681,7 @@ namespace NeuroVida.Games.Cosecha
 
         private void CheckHint()
         {
-            if (_hintOn || _session == null) return;
+            if (_guided || _hintOn || _session == null) return;
             if (GameClock.Time - _lastActionAt < CosechaContract.HintAfter(Senior)) return;
             var word = CosechaContract.PickHint(_session.Round, _session.FoundNormalized);
             if (word == null) return;
@@ -728,7 +776,7 @@ namespace NeuroVida.Games.Cosecha
         private void AnimateOrbit()
         {
             if (_phase == Phase.Idle || _session == null) return;
-            if (!GameFeel.ReduceMotion && (_phase == Phase.Playing || _phase == Phase.Between)) _orbitPhase += GameClock.DeltaTime * Mathf.PI * 2f / OrbitSeconds;
+            if (!GameFeel.ReduceMotion && !_guided && (_phase == Phase.Playing || _phase == Phase.Between)) _orbitPhase += GameClock.DeltaTime * Mathf.PI * 2f / OrbitSeconds;
             PositionTiles(false);
         }
 
@@ -776,7 +824,7 @@ namespace NeuroVida.Games.Cosecha
 
         private void UpdateClock()
         {
-            if (_phase != Phase.Playing || _endsAt <= 0f) return;
+            if (_guided || _phase != Phase.Playing || _endsAt <= 0f) return;
             float left = Mathf.Max(0f, _endsAt - GameClock.Time);
             SetTimerFraction(Mathf.Clamp01(left / _cosechaSeconds));
             int whole = Mathf.CeilToInt(left);
@@ -786,6 +834,309 @@ namespace NeuroVida.Games.Cosecha
                 _lastTickSecond = whole;
                 GameFeel.Tick();
             }
+        }
+
+        // ------------------------------------------------------------------ tutorial con Nubi (ronda guiada) y «Cómo se juega» desde la pausa
+
+        /// <summary>Qué se puede tocar durante la ronda guiada (fuera de ella, todo).</summary>
+        [System.Flags]
+        private enum Allow { None = 0, Tile = 1, Sow = 2, Clear = 4, Back = 8, All = 15 }
+
+        /// <summary>Una semilla en vuelo: si la partida se corta antes de que caiga («Cómo se juega»), su planta se pone igual.</summary>
+        private sealed class Flight { public PlantSpot Spot; public bool Tree; }
+
+        /// <summary>La cosecha en curso, apartada mientras «Cómo se juega» usa el mismo planeta para la práctica.</summary>
+        private sealed class KeptBoard
+        {
+            public CosechaSession Session;
+            public Garden Garden;
+            public List<RectTransform> Plants;
+            public List<float> PlantY;
+            public RectTransform Tree;
+            public bool TreeDone;
+            public int Points;
+            public float Orbit;
+        }
+
+        /// <summary>La órbita queda QUIETA durante la práctica y en esta fase (radianes): la C a la izquierda y las demás fichas repartidas, para que Nubi y su globo quepan entre las letras en cualquier forma de pantalla.</summary>
+        private const float PracticeOrbit = 3.9f;
+
+        private bool _guided, _loopOn, _baked;
+        private Allow _allow = Allow.All;
+        private int[] _rail;                                  // las fichas que la práctica pide tocar, en orden (null = cualquiera)
+        private float _lastSowAt = -10f;
+        private readonly List<Flight> _flying = new List<Flight>();
+
+        /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo). «Saltar tutorial» va arriba: abajo están Sembrar y Borrar.</summary>
+        private void SetUpTutorial() =>
+            BuildTutorial(_safe, GameHud.Height + 10f, "Cosecha de palabras", "Forma palabras de 3 letras o más con las letras que giran y haz crecer tu huerto.", skipAtTop: true);
+
+        private bool Allows(Allow what) => !_guided || (_allow & what) != 0;
+
+        /// <summary>Deja el tablero como al empezar una partida: nada del huerto a la vista (lo usan <c>StartSession</c> y el final de la práctica).</summary>
+        private void HideBoard()
+        {
+            _resultRoot.gameObject.SetActive(false);
+            _exit.Hide();
+            _timerBg.gameObject.SetActive(true);
+            _msg.gameObject.SetActive(false);
+            _readyDim.gameObject.SetActive(false);
+            _readyTitle.gameObject.SetActive(false);
+            _readySub.gameObject.SetActive(false);
+            _trayRect.gameObject.SetActive(false);
+            _planetRect.gameObject.SetActive(false);
+            foreach (var t in _tiles) t.Rect.gameObject.SetActive(false);
+            _btnSow.gameObject.SetActive(false);
+            _btnClear.gameObject.SetActive(false);
+            _cosechaLabel.gameObject.SetActive(false);
+            _listTitle.gameObject.SetActive(false);
+            _listWords.gameObject.SetActive(false);
+            _orbitRing.gameObject.SetActive(false);
+            ClearGarden();
+        }
+
+        /// <summary>Durante la práctica no hay reloj ni lista de palabras (en su lugar van «Práctica: no cuenta» y «Saltar tutorial»).</summary>
+        private void ShowPracticeChrome(bool practice)
+        {
+            _cosechaLabel.gameObject.SetActive(!practice);
+            _timerBg.gameObject.SetActive(!practice);
+            _listTitle.gameObject.SetActive(!practice);
+            _listWords.gameObject.SetActive(!practice);
+        }
+
+        /// <summary>Lo que una corrutina cortada dejó a medias (fichas, botones y bandeja a medio rebote).</summary>
+        private void ResetPieces()
+        {
+            _planetRect.localScale = Vector3.one;
+            _trayRect.localScale = Vector3.one;
+            _trayRect.anchoredPosition = new Vector2(0f, _trayY);
+            _btnSow.localScale = Vector3.one;
+            _btnClear.localScale = Vector3.one;
+            foreach (var t in _tiles) t.Rect.localScale = Vector3.one;
+        }
+
+        private KeptBoard SetAsideBoard()
+        {
+            if (_session == null) return null;
+            var kept = new KeptBoard
+            {
+                Session = _session, Garden = _garden, Plants = new List<RectTransform>(_plants), PlantY = new List<float>(_plantY),
+                Tree = _treeRect, TreeDone = _treeDone, Points = _points, Orbit = _orbitPhase
+            };
+            foreach (var p in kept.Plants) if (p != null) p.gameObject.SetActive(false);
+            if (kept.Tree != null) kept.Tree.gameObject.SetActive(false);
+            _plants.Clear();
+            _plantY.Clear();
+            _treeRect = null;
+            return kept;
+        }
+
+        private void RestoreBoard(KeptBoard kept)
+        {
+            ClearGarden();                                    // las plantas de la práctica
+            _session = kept.Session;
+            _garden = kept.Garden;
+            _treeDone = kept.TreeDone;
+            _points = kept.Points;
+            _orbitPhase = kept.Orbit;
+            _plants.AddRange(kept.Plants);
+            _plantY.AddRange(kept.PlantY);
+            _treeRect = kept.Tree;
+            foreach (var p in kept.Plants) if (p != null) p.gameObject.SetActive(true);
+            if (_treeRect != null) _treeRect.gameObject.SetActive(true);
+            for (int i = 0; i < _tiles.Count; i++) _tiles[i].Letter.text = char.ToUpperInvariant(_session.Round.letras[i]).ToString();
+            SortPlants();
+            UpdateGrass();
+            _hud.SetPoints(_points);
+            RefreshTray();
+            RefreshList();
+        }
+
+        private Rect TileHole(NubiCoach coach, int tile) => coach.AroundOf(_tiles[tile].Rect, Vector2.one * (TileUnits + 36f));
+
+        private int RailTile() => _rail[Mathf.Min(_session.Tray.Count, _rail.Length - 1)];
+
+        // <guided>
+        protected override IEnumerator GuidedRound(GuidedTutorial t)
+        {
+            t.BeginPractice();
+            _guided = true;
+            while (!_baked) yield return null;                         // el arte se hornea mientras Nubi se presenta
+            var coach = t.Coach;
+            // Pasos (explicar → mirar → hacer): 1) la primera letra de CASA; 2) las otras tres, con el foco siguiendo a la ficha que toca; 3) Sembrar; 4) mirar cómo brota; 5) un error de muestra (dos
+            // letras que no forman palabra) y Borrar; 6) «¡Listo!». Las fichas se aceptan solo en el orden pedido: nadie se queda con una palabra que no existe sin saber cómo salir.
+            var kept = SetAsideBoard();
+            var round = CosechaContract.PracticeRound();
+            _session = new CosechaSession(round);
+            _points = 0;
+            _hud.SetPoints(0);
+            _rail = CosechaContract.TilesFor(round.letras, CosechaContract.PracticeWord);
+            _allow = Allow.None;
+            _orbitPhase = PracticeOrbit;
+            SetupRound(round);
+            ShowPracticeChrome(true);
+            _msg.gameObject.SetActive(false);
+            _phase = Phase.Playing;
+            yield return StartCoroutine(PopIn(_planetRect, 0.45f));
+
+            var tray = new[] { coach.Zone(() => coach.RectOf(_trayRect)) };
+            bool ok = !t.Skipped;
+
+            // 1) la primera letra (toque de verdad en la ficha C)
+            _allow = Allow.Tile;
+            while (ok && _session.Tray.Count == 0)
+            {
+#if UNITY_EDITOR
+                StartCoroutine(ProbeTap(coach, _tiles[_rail[0]].Rect, "la primera letra", () => _session.Tray.Count > 0));
+#endif
+                yield return StartCoroutine(coach.Touch(() => TileHole(coach, _rail[0]), CoachTexts.Cosecha.First, circle: true));
+                ok = !t.Skipped;
+#if UNITY_EDITOR
+                if (ok && GuidedTutorial.EditorAutoContinue && _session.Tray.Count == 0) TapTile(_rail[0]);          // el smoke no toca: lo hace por la persona
+#endif
+            }
+
+            // 2) las otras tres: el foco sigue a la ficha que toca (las que ya están en la bandeja no se vuelven a pedir)
+            while (ok && _session.Tray.Count < _rail.Length)
+            {
+#if UNITY_EDITOR
+                if (GuidedTutorial.EditorAutoContinue) StartCoroutine(EditorTapRail());
+#endif
+                yield return StartCoroutine(coach.Watch(() => TileHole(coach, RailTile()), CoachTexts.Cosecha.Next, () => _session.Tray.Count >= _rail.Length, 40f, circle: true, keep: tray));
+                ok = !t.Skipped;
+            }
+
+            // 3) Sembrar
+            _allow = Allow.Sow;
+            while (ok && _session.Found.Count == 0)
+            {
+#if UNITY_EDITOR
+                StartCoroutine(ProbeTap(coach, _btnSow, "Sembrar", () => _session.Found.Count > 0));
+#endif
+                yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnSow), CoachTexts.Cosecha.Sow, keep: tray));
+                ok = !t.Skipped;
+#if UNITY_EDITOR
+                if (ok && GuidedTutorial.EditorAutoContinue && _session.Found.Count == 0) Plant();
+#endif
+            }
+
+            // 4) mirar: la semilla vuela, brota y el huerto crece
+            _allow = Allow.None;
+            if (ok)
+            {
+                float landedAt = -1f;
+                System.Func<bool> sprouted = () =>
+                {
+                    if (_flying.Count > 0) return false;
+                    if (landedAt < 0f) landedAt = GameClock.Time;
+                    return GameClock.Time - landedAt >= 1.8f;
+                };
+                yield return StartCoroutine(coach.Watch(() => coach.AroundOf(_planetRect, Vector2.one * (_planetR * 2.7f)), CoachTexts.Cosecha.Sprout, sprouted, 10f, circle: true));
+                ok = !t.Skipped;
+            }
+
+            // 5) un error de muestra: dos letras que no forman palabra, y Borrar las quita
+            if (ok)
+            {
+                _rail = null;
+                foreach (int tile in CosechaContract.TilesFor(round.letras, CosechaContract.PracticeMistake)) TapTile(tile);
+                _allow = Allow.Clear;
+                yield return Motion.Hold(0.5f);
+                while (ok && _session.Tray.Count > 0)
+                {
+#if UNITY_EDITOR
+                    StartCoroutine(ProbeTap(coach, _btnClear, "Borrar", () => _session.Tray.Count == 0));
+#endif
+                    yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnClear), CoachTexts.Cosecha.Erase, keep: tray));
+                    ok = !t.Skipped;
+#if UNITY_EDITOR
+                    if (ok && GuidedTutorial.EditorAutoContinue && _session.Tray.Count > 0) ClearTray();
+#endif
+                }
+                _allow = Allow.None;
+                if (ok) yield return Motion.Hold(0.4f);
+            }
+            if (ok) yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
+
+            // si se saltó con una semilla en el aire, que termine de brotar y se apaguen sus destellos antes de limpiar
+            while (GameClock.Time - _lastSowAt < 1.4f) yield return null;
+            coach.Hide();
+            _allow = Allow.All;
+            _rail = null;
+            _flying.Clear();
+            foreach (Transform c in _fxRect) Destroy(c.gameObject);
+            ClearHint();
+            ShowPracticeChrome(false);
+            if (kept != null) RestoreBoard(kept);
+            else
+            {
+                _session = null;
+                _points = 0;
+                _hud.SetPoints(0);
+            }
+            ResetPieces();
+            _guided = false;
+            _phase = Phase.Idle;                                       // la partida (o «Cómo se juega») sigue desde su bucle
+            t.EndPractice();
+        }
+        // </guided>
+
+#if UNITY_EDITOR
+        /// <summary>SOLO EN EL EDITOR (smoke del tutorial): da un toque «de verdad» en el centro de lo que el paso ilumina y comprueba que el paso se cierra. Si el hueco no coincidiera con lo dibujado, el tutorial se
+        /// «pegaría» sin dejar tocar lo que pide (Ricardo, 6-oct); así se vería antes de llegar al teléfono.</summary>
+        private IEnumerator ProbeTap(NubiCoach coach, RectTransform target, string what, System.Func<bool> reached)
+        {
+            if (!GuidedTutorial.EditorAutoContinue) yield break;
+            float w = 0f;
+            while (!coach.Active && w < 3f) { w += GameClock.RealDeltaTime; yield return null; }
+            w = 0f;
+            while (coach.Active && w < 0.7f) { w += GameClock.RealDeltaTime; yield return null; }
+            if (!coach.Active) yield break;
+            GuidedTutorial.EditorPressPos = RectTransformUtility.WorldToScreenPoint(null, target.position);
+            GuidedTutorial.EditorPressFrame = Time.frameCount + 1;
+            for (int i = 0; i < 4; i++) yield return null;
+            if (!reached()) Debug.LogError("[SmokeTest] Cosecha: un toque en el centro de " + what + " NO llegó al juego (el hueco no coincide con lo que se toca)");
+            else Debug.Log("[SmokeTest] Cosecha: un toque en el centro de " + what + " llegó al juego");
+        }
+
+        /// <summary>SOLO EN EL EDITOR (smoke): mientras Nubi mira, toca las fichas que faltan de CASA, una cada medio segundo.</summary>
+        private IEnumerator EditorTapRail()
+        {
+            float w = 0f;
+            while (w < 2.2f) { w += GameClock.RealDeltaTime; yield return null; }
+            while (_guided && _rail != null && _session != null && _session.Tray.Count < _rail.Length)
+            {
+                TapTile(_rail[_session.Tray.Count]);
+                float g = 0f;
+                while (g < 0.45f) { g += GameClock.RealDeltaTime; yield return null; }
+            }
+        }
+#endif
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        protected override bool HowToReady => _loopOn && _phase == Phase.Playing && !_guided;
+
+        protected override void HowToSuspend()
+        {
+            // las semillas en vuelo brotan ya (su corrutina se va a detener) y lo que flotaba en el aire se barre
+            foreach (var f in _flying) { if (f.Tree) SpawnTree(f.Spot); else SpawnPlant(f.Spot, false); }
+            _flying.Clear();
+            foreach (Transform c in _fxRect) Destroy(c.gameObject);
+            UpdateGrass();
+            ClearHint();
+            _msg.gameObject.SetActive(false);
+            ResetPieces();
+            _phase = Phase.Idle;
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            _endsAt = HowToClock.Shift(_endsAt, spentSeconds);       // el tiempo que duró «Cómo se juega» no se le descuenta a la cosecha
+            _lastActionAt = GameClock.Time;
+            _lastTickSecond = -1;
+            _phase = Phase.Playing;
+            StartCoroutine(MainLoop(true));
         }
 
         // ------------------------------------------------------------------ fin
@@ -897,6 +1248,7 @@ namespace NeuroVida.Games.Cosecha
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            SetUpTutorial();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -940,10 +1292,10 @@ namespace NeuroVida.Games.Cosecha
                 letter.verticalOverflow = VerticalWrapMode.Overflow;
                 var badge = NewImage(img.rectTransform, "Badge", DiscSprite.Get());
                 badge.color = NeuroStyle.Sky;
-                badge.rectTransform.sizeDelta = new Vector2(66f, 66f);
+                badge.rectTransform.sizeDelta = new Vector2(72f, 72f);
                 badge.rectTransform.anchorMin = badge.rectTransform.anchorMax = new Vector2(0.82f, 0.9f);
                 badge.rectTransform.anchoredPosition = Vector2.zero;
-                var bt = MakeText(badge.rectTransform, "N", 44, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
+                var bt = MakeText(badge.rectTransform, "N", 48, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
                 bt.horizontalOverflow = HorizontalWrapMode.Overflow;
                 var ring = NewImage(img.rectTransform, "HintRing", RingSprite.Get());
                 ring.color = NeuroStyle.Sun;

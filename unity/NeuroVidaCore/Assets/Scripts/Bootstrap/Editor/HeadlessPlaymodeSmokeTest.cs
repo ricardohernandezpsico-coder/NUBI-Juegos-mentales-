@@ -118,6 +118,9 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>«La estación de correo» (id correo) con su tutorial guiado: la tarjeta de Nubi, el buzón del sello, la hoja del día, la carta dorada a la caja fuerte, el reloj tapado y el faro a la hora.</summary>
         public static void RunTutorialCorreo() => RunGame("correo", 12f, tutorial: true);
 
+        /// <summary>«Cosecha de palabras» (id cosecha) con su tutorial guiado: la tarjeta de Nubi y una ronda de práctica con las letras de CASA (la primera ficha, las otras tres, Sembrar, mirar cómo brota y Borrar), con un toque «de verdad» en cada hueco.</summary>
+        public static void RunTutorialCosecha() => RunGame("cosecha", 12f, tutorial: true);
+
         public static void RunRumbo() => RunGame("rumbo", 9f);
 
         /// <summary>Mismo smoke test pero con «La estación de correo» (id correo) como juego (se juega sola: clasifica, guarda las señal, mira el reloj y enciende el faro; los días duran 12 s en el smoke).</summary>
@@ -132,7 +135,7 @@ namespace NeuroVida.Bridge.EditorTools
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
-            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f), ("TutorialCorreo", "correo", 12f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f), ("TutorialCorreo", "correo", 12f), ("TutorialCosecha", "cosecha", 12f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
             ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 24f), ("Bodega", "bodega", 30f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 30f), ("Piloto", "piloto", 9f), ("Radar", "radar", 9f), ("Satelites", "satelites", 9f),
@@ -174,6 +177,52 @@ namespace NeuroVida.Bridge.EditorTools
             ("AvisoRumbo", "rumbo", 10.5f), ("AvisoSatelites", "satelites", 10.5f), ("AvisoStroop", "stroop", 10.5f),
         };
 
+        /// <summary>
+        /// Una corrida «HowTo*» por juego con el tutorial nuevo (Tarea 56): a los 9 s de partida el smoke abre «Cómo se juega» (la ronda guiada sobre la partida en curso, que avanza sola) y comprueba que termina, que no hay errores y que la
+        /// partida vuelve a estar en marcha (<c>CanShowHowTo</c> otra vez). Es lo que prueba que la partida se aparta y se retoma bien.
+        /// </summary>
+        private static readonly (string Name, string Id, float Seconds)[] HowToCatalog =
+        {
+            ("HowToCosecha", "cosecha", 60f),
+        };
+
+        private static bool _howToStarted, _howToDone;
+        private static double _howToAt;
+
+        private static void DriveHowTo(double played)
+        {
+            var controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.GameControllerBase>();
+            if (controller == null) return;
+            if (!_howToStarted)
+            {
+                if (played < 9.0) return;
+                _howToStarted = true;
+                _howToAt = played;
+                if (!controller.CanShowHowTo)
+                {
+                    _errorCount++;
+                    Debug.Log($"[SmokeTest] Error capturado: «Cómo se juega» no está disponible a los 9 s de partida en {_current.Name}");
+                    return;
+                }
+                controller.ShowHowTo();
+                Debug.Log($"[SmokeTest] {_current.Name}: «Cómo se juega» abierto a los {played:0.#} s");
+                return;
+            }
+            if (!_howToDone && played > _howToAt + 3.0 && controller.CanShowHowTo)
+            {
+                _howToDone = true;
+                Debug.Log($"[SmokeTest] {_current.Name}: «Cómo se juega» terminó y la partida volvió ({played - _howToAt:0.#} s)");
+            }
+        }
+
+        private static void CheckHowTo()
+        {
+            if (!_current.Name.StartsWith("HowTo")) return;
+            if (_howToDone) return;
+            _errorCount++;
+            Debug.Log($"[SmokeTest] Error capturado: «Cómo se juega» no terminó o la partida no volvió a estar en marcha en {_current.Name}");
+        }
+
         /// <summary>Juegos cuyo aviso puede quedar sobre el juego, con el porqué (lista corta).</summary>
         private static readonly (string Id, string Why)[] ToastCoverExceptions =
         {
@@ -206,6 +255,7 @@ namespace NeuroVida.Bridge.EditorTools
                 foreach (var g in Catalog) Enqueue(g);
                 foreach (var g in PantallaCatalog) Enqueue(g);
                 foreach (var g in AvisoCatalog) Enqueue(g);
+                foreach (var g in HowToCatalog) Enqueue(g);
             }
             else
             {
@@ -222,6 +272,14 @@ namespace NeuroVida.Bridge.EditorTools
                     }
                     if (!found)
                         foreach (var g in AvisoCatalog)
+                        {
+                            if (!string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
+                            Enqueue(g);
+                            found = true;
+                            break;
+                        }
+                    if (!found)
+                        foreach (var g in HowToCatalog)
                         {
                             if (!string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
                             Enqueue(g);
@@ -309,6 +367,7 @@ namespace NeuroVida.Bridge.EditorTools
             _toastPrev.Clear();
             _toastSeen.Clear();
             _sampleToastShown = false;
+            _howToStarted = _howToDone = false;
             _textGuardAt = 0.0;
             _entryStartAt = EditorApplication.timeSinceStartup;
             _pauseShowStage = 0;
@@ -326,7 +385,7 @@ namespace NeuroVida.Bridge.EditorTools
             bool tutorial = _current.Name.StartsWith("Tutorial");
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial || _current.Name.StartsWith("HowTo");      // «HowTo*» no arranca con tutorial: lo abre el smoke desde la partida
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
@@ -851,6 +910,7 @@ namespace NeuroVida.Bridge.EditorTools
                 double played = EditorApplication.timeSinceStartup - _enteredPlayAt;
                 ScanTextPlacement();
                 if (_current.Name.StartsWith("Aviso") && !_sampleToastShown && played >= 5.5) ShowSampleToast();
+                if (_current.Name.StartsWith("HowTo")) DriveHowTo(played);
                 // la revisión del tutorial espera a que la ronda guiada llegue a su último aviso («¡Listo! Ahora va en serio»), con tope de 100 s
                 if (NeuroVida.Games.Shared.NubiCoach.AuditEnabled) { if (played < 8 || (played < 100 && !CoachAuditReachedEnd())) return; }
                 else if (played < _current.Seconds) return;
@@ -860,6 +920,7 @@ namespace NeuroVida.Bridge.EditorTools
                 _listPlaying = false;
                 Debug.Log($"[SmokeTest] tiempo {_current.Name} ({(_currentHeight > 0 ? "1080x" + _currentHeight : "ventana")}): {Mathf.RoundToInt((float)(EditorApplication.timeSinceStartup - _entryStartAt))} s");
                 CheckCoachAudit();
+                CheckHowTo();
                 EditorApplication.ExitPlaymode();
                 CheckReduceMotionArrived();
                 var ok = _errorCount == 0;

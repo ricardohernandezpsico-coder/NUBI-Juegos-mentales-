@@ -134,6 +134,42 @@ namespace NeuroVida.Games.Cosecha
             return Math.Max(0, Math.Min(100, (int)Math.Round((0.7f * a + 0.3f * lv) * 100f)));
         }
 
+        // ------------------------------------------------------------------ ronda de práctica (tutorial con Nubi)
+
+        /// <summary>Las siete letras de la práctica (las de la ronda de respaldo): alcanzan para CASA, ROSA, ROCA, COSA, CASO y SACA, y nada más hace falta.</summary>
+        public const string PracticeLetters = "iraoasc";
+        /// <summary>La palabra que Nubi pide formar en la práctica, y la que se arma «por error» para mostrar «Borrar».</summary>
+        public const string PracticeWord = "casa", PracticeMistake = "ro";
+
+        /// <summary>La ronda de la práctica: seis palabras muy conocidas (banda 1), ninguna rara ni estrella. No pasa por el banco, el nivel ni el puntaje: solo existe mientras dura el tutorial.</summary>
+        public static HarvestRound PracticeRound()
+        {
+            var words = new List<HarvestWord>();
+            foreach (var p in new[] { "casa", "rosa", "roca", "cosa", "caso", "saca" }) words.Add(new HarvestWord { p = p, b = 1, comun = true });
+            return new HarvestRound { id = "practica", nivel = 1, letras = PracticeLetters, palabras = words.ToArray() };
+        }
+
+        /// <summary>Qué fichas hay que tocar, en orden, para escribir <paramref name="word"/> con <paramref name="letters"/> (cada ficha una vez); null si no se puede.</summary>
+        public static int[] TilesFor(string letters, string word)
+        {
+            if (string.IsNullOrEmpty(letters) || string.IsNullOrEmpty(word)) return null;
+            var used = new bool[letters.Length];
+            var tiles = new int[word.Length];
+            for (int i = 0; i < word.Length; i++)
+            {
+                tiles[i] = -1;
+                for (int k = 0; k < letters.Length; k++)
+                {
+                    if (used[k] || letters[k] != word[i]) continue;
+                    used[k] = true;
+                    tiles[i] = k;
+                    break;
+                }
+                if (tiles[i] < 0) return null;
+            }
+            return tiles;
+        }
+
         // ------------------------------------------------------------------ pista
 
         /// <summary>La palabra común que falta y se ilumina: la MÁS CORTA (empata por uso más común y luego por orden). La ficha

@@ -382,6 +382,47 @@ namespace NeuroVida.Games.Cosecha.Tests
             }
         }
 
+        // ------------------------------------------------------------------ ronda de práctica del tutorial
+
+        [Test]
+        public void Practica_LaPalabraPedidaSeSiembraDeVerdad_YLaDelErrorNo()
+        {
+            var s = new CosechaSession(CosechaContract.PracticeRound());
+            foreach (int tile in CosechaContract.TilesFor(CosechaContract.PracticeLetters, CosechaContract.PracticeWord)) s.TapTile(tile);
+            Assert.AreEqual(CosechaContract.PracticeWord, s.TrayText);
+            Assert.AreEqual(SubmitKind.Valid, s.Submit(1f).Kind);
+
+            // lo que se arma «por error» para mostrar «Borrar» es corto: no se podría sembrar (hace falta MinLetters)
+            foreach (int tile in CosechaContract.TilesFor(CosechaContract.PracticeLetters, CosechaContract.PracticeMistake)) s.TapTile(tile);
+            Assert.Less(s.TrayText.Length, CosechaContract.MinLetters);
+            Assert.AreEqual(SubmitKind.TooShort, s.Submit(2f).Kind);
+        }
+
+        [Test]
+        public void Practica_SoloTienePalabrasMuyConocidas_YNingunaEstrella()
+        {
+            var r = CosechaContract.PracticeRound();
+            Assert.AreEqual(CosechaContract.LetterCount, r.letras.Length);
+            Assert.GreaterOrEqual(r.palabras.Length, 2, "la práctica necesita al menos dos palabras fáciles");
+            foreach (var w in r.palabras)
+            {
+                Assert.IsTrue(w.IsCommon, w.p);
+                Assert.IsFalse(w.estrella, w.p);
+                Assert.IsFalse(w.IsRare, w.p);
+                Assert.IsNotNull(CosechaContract.TilesFor(r.letras, CosechaContract.Normalize(w.p)), "se puede formar con las 7 letras: " + w.p);
+            }
+        }
+
+        [Test]
+        public void TilesFor_UsaCadaFichaUnaVez_YDaNullSiNoSePuede()
+        {
+            CollectionAssert.AreEqual(new[] { 6, 2, 5, 4 }, CosechaContract.TilesFor("iraoasc", "casa"));
+            CollectionAssert.AreEqual(new[] { 1, 3 }, CosechaContract.TilesFor("iraoasc", "ro"));
+            Assert.IsNull(CosechaContract.TilesFor("iraoasc", "casaa"), "solo hay dos A");
+            Assert.IsNull(CosechaContract.TilesFor("iraoasc", "luna"));
+            Assert.IsNull(CosechaContract.TilesFor("", "casa"));
+        }
+
         [Test]
         public void Huerto_ElArbolDoradoVaArribaAlCentro()
         {
