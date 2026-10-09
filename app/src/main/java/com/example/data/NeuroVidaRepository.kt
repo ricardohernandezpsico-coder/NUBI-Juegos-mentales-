@@ -524,7 +524,7 @@ class NeuroVidaRepository(
       "secuencia" -> "trail" to Trail.mark(r.rasBestLen)
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
-      "piloto" -> "multitask" to r.multitaskCost?.toFloat()
+      "piloto" -> "mandos" to Piloto.mark(r.pilSignalPct)
       "rumbo" -> "homing" to r.homingErrorPct
       "correo" -> "estacion" to (if (r.mailGroup != null) Mail.mark(r.correctAnswers, r.totalTrials) else null)
       else -> return emptyList()

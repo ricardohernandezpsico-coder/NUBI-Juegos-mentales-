@@ -254,8 +254,17 @@ data class GamePlayResult(
   val playMode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
   val modeTrials: Int = 0,
   val modeHits: Int = 0,
-  // Solo Piloto Estelar: costo de multitarea en % de esta partida (se muestra en el resultado; no se guarda en Room).
-  val multitaskCost: Int? = null,
+  // Solo Piloto Estelar («la ruta de las balizas», 9-oct): todo se mide con las dos tareas a la vez. % del vuelo dentro de la ruta; señales de la misión atrapadas y resueltas; toques equivocados; «tus señales a los mandos»
+  // (% = (aciertos − toques equivocados) / señales de la misión; null con menos de 8); nivel de señales y de pilotaje (1..9); racha mayor; puntos; hiperimpulsos. No se guardan en Room.
+  val pilLanePct: Int? = null,
+  val pilHits: Int? = null,
+  val pilTargets: Int? = null,
+  val pilFalse: Int? = null,
+  val pilSignalPct: Int? = null,
+  val pilSignalLevel: Int? = null,
+  val pilBestStreak: Int? = null,
+  val pilPoints: Int? = null,
+  val pilHyper: Int? = null,
   // Solo Radar (Rescate relámpago): "tu vistazo" en ms (destello en el que se asentó la dificultad) y cuántos
   // astronautas había en esas rondas; rescatados / mostrados por dirección (8, 0 = arriba y en sentido horario) y
   // cerca / lejos del centro (2) para "tu radar"; "tu captura" (cuántos de un vistazo, en las lluvias) y robots

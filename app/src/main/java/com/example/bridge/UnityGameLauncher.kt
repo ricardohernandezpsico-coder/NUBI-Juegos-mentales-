@@ -21,7 +21,7 @@ object UnityGameLauncher {
 
   /** Juegos con tutorial guiado (ronda guiada propia) y «Cómo se juega» en la pausa. Rastro de luz fue el primero; Freno, Aterrizaje y Meteoros se sumaron el 3-oct
    *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
-  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites")
+  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto")
 
   /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
   fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =
@@ -72,6 +72,10 @@ object UnityGameLauncher {
     val sat_best: Int = 0,
     val sat_stage: Int = 0,
     val sat_surprise: Int = 0,
+    // Solo «Piloto Estelar: la ruta de las balizas» (id piloto), solo en las herramientas de prueba: el nivel (1..9) con que empiezan los dos motores (0 = el que corresponde) y cada cuántos segundos cambia el sector (0 = 30; con 5, el
+    // sector 2 llega a los 5 s y el vuelo dura 15).
+    val pil_stage: Int = 0,
+    val pil_sector_s: Int = 0,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -111,8 +115,10 @@ object UnityGameLauncher {
     conStage: Int = 0,              // solo las herramientas de prueba: Constelaciones empieza en esta etapa (0 = normal)
     mailStage: Int = 0,             // solo las herramientas de prueba: La estación de correo empieza en esta etapa (0 = normal)
     satStage: Int = 0,              // solo las herramientas de prueba: Satélites empieza en este nivel (0 = normal)
-    satSurprise: Int = 0            // solo las herramientas de prueba: Satélites trae esta sorpresa en todas las rondas (1 órbita, 2 nube, 4 rápidas; 0 = las de siempre)
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise)
+    satSurprise: Int = 0,           // solo las herramientas de prueba: Satélites trae esta sorpresa en todas las rondas (1 órbita, 2 nube, 4 rápidas; 0 = las de siempre)
+    pilStage: Int = 0,              // solo las herramientas de prueba: Piloto empieza en este nivel (0 = normal)
+    pilSectorS: Int = 0             // solo las herramientas de prueba: segundos por sector de Piloto (0 = 30)
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS)
 
   private fun buildIntent(
     context: Context,
@@ -132,7 +138,9 @@ object UnityGameLauncher {
     conStage: Int = 0,
     mailStage: Int = 0,
     satStage: Int = 0,
-    satSurprise: Int = 0
+    satSurprise: Int = 0,
+    pilStage: Int = 0,
+    pilSectorS: Int = 0
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
@@ -168,6 +176,8 @@ object UnityGameLauncher {
         sat_best = if (gameId == "satelites") com.example.NeuroVidaApplication.instance.repository.satelitesRecord.value else 0,
         sat_stage = if (gameId == "satelites") satStage.coerceIn(0, 12) else 0,
         sat_surprise = if (gameId == "satelites") satSurprise.coerceIn(0, 7) else 0,
+        pil_stage = if (gameId == "piloto") pilStage.coerceIn(0, 9) else 0,
+        pil_sector_s = if (gameId == "piloto") pilSectorS.coerceIn(0, 30) else 0,
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f

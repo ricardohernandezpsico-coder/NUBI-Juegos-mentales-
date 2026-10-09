@@ -118,8 +118,18 @@ object NativeReceiver {
     val mode_trials: Int = 0,
     val mode_hits: Int = 0,
     val peak_level: Int = 0,
-    // Solo Piloto Estelar: costo de multitarea en % (-1 = no aplica / sin datos).
-    val multitask_cost: Int = -1,
+    // Solo Piloto Estelar («la ruta de las balizas», 9-oct; TODO medido con las dos tareas a la vez): % en la ruta, señales de la misión atrapadas / resueltas, toques equivocados, «tus señales a los mandos» (%; -1 con menos de 8 señales
+    // de la misión), nivel de señales y de pilotaje, racha mayor, puntos e hiperimpulsos (-1 = no aplica / sin datos).
+    val pil_lane_pct: Int = -1,
+    val pil_hits: Int = -1,
+    val pil_targets: Int = -1,
+    val pil_false: Int = -1,
+    val pil_signal_pct: Int = -1,
+    val pil_signal_level: Int = -1,
+    val pil_drive_level: Int = -1,
+    val pil_best_streak: Int = -1,
+    val pil_points: Int = -1,
+    val pil_hyper: Int = -1,
     // Solo Radar: vistazo en ms (-1 = no aplica) y astronautas en esas rondas; rescatados/mostrados por dirección (8)
     // y cerca/lejos (2); captura en las lluvias (-1 = sin medida); robots mostrados/tocados.
     val glance_ms: Int = -1,
@@ -505,7 +515,15 @@ object NativeReceiver {
       endRating = metrics.end_rating?.toFloat(),
       modeTrials = metrics.mode_trials,
       modeHits = metrics.mode_hits,
-      multitaskCost = metrics.multitask_cost.takeIf { it >= 0 },
+      pilLanePct = metrics.pil_lane_pct.takeIf { it >= 0 },
+      pilHits = metrics.pil_hits.takeIf { it >= 0 },
+      pilTargets = metrics.pil_targets.takeIf { it >= 0 },
+      pilFalse = metrics.pil_false.takeIf { it >= 0 },
+      pilSignalPct = metrics.pil_signal_pct.takeIf { it >= 0 },
+      pilSignalLevel = metrics.pil_signal_level.takeIf { it > 0 },
+      pilBestStreak = metrics.pil_best_streak.takeIf { it >= 0 },
+      pilPoints = metrics.pil_points.takeIf { it >= 0 },
+      pilHyper = metrics.pil_hyper.takeIf { it >= 0 },
       glanceMs = metrics.glance_ms.takeIf { it > 0 },
       glanceLoad = metrics.glance_load.takeIf { it > 0.0 }?.toFloat(),
       sectorHits = metrics.sector_hits?.takeIf { it.size == 8 },

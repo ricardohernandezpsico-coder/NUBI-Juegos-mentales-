@@ -266,23 +266,50 @@ fun GameResultScreen(
 
     // Las medidas de la partida (propias de cada juego): «Lo que avancé». Más abajo se decide si van antes o después del consejo.
     val measures: @Composable ColumnScope.() -> Unit = {
-    // Piloto Estelar: la medida propia del juego (NeuroRacer): cuánto baja la precisión al hacer dos cosas a la vez.
-    result.multitaskCost?.let { cost ->
+    // Piloto Estelar («la ruta de las balizas», 9-oct): «Tus señales a los mandos» (TODO medido con las dos tareas a la vez: no hay medida de una tarea sola) y, debajo, lo que pasó en el vuelo.
+    result.pilLanePct?.let { lane ->
       Spacer(Modifier.height(14.dp))
-      Text(
-        text = "Costo de multitarea: $cost%",
-        color = if (cost <= 15) Clay.Lime else Clay.Sun,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        fontFamily = AppFamily
-      )
-      Text(
-        text = "Cuánto bajó tu puntería con las señales al pasar de solo mirarlas (piloto automático) a pilotar y mirarlas a la vez. Mientras más bajo, mejor repartes la atención. Con práctica suele bajar.",
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
+      val measure = com.example.data.Piloto.measureLine(result.pilSignalPct)
+      val spoken = com.example.data.Piloto.spoken(result.pilSignalPct, lane, result.pilHits, result.pilTargets)
+      Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = spoken }) {
+        if (measure != null) {
+          Text(measure, color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
+          Text(
+            text = com.example.data.Piloto.MEASURE_EXPLANATION,
+            color = TextSoft,
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        } else {
+          Text(
+            text = com.example.data.Piloto.TOO_FEW_LINE,
+            color = TextSoft,
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
+          )
+        }
+        Spacer(Modifier.height(6.dp))
+        listOfNotNull(
+          com.example.data.Piloto.laneLine(lane),
+          com.example.data.Piloto.missionLine(result.pilHits, result.pilTargets),
+          com.example.data.Piloto.wrongLine(result.pilFalse),
+          com.example.data.Piloto.levelLine(result.pilSignalLevel),
+          com.example.data.Piloto.streakLine(result.pilBestStreak),
+          com.example.data.Piloto.pointsLine(result.pilPoints)
+        ).forEach { Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp)) }
+        com.example.data.Piloto.advice(result.pilHits, result.pilTargets, result.pilFalse, lane)?.let {
+          Text(
+            text = it,
+            color = Clay.Sun,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp)
+          )
+        }
+      }
     }
 
     // Radar (Rescate relámpago): tu vistazo, tu captura, tu filtro y tu radar. Ver docs/medidas-juegos-estrella.md.
@@ -1160,7 +1187,7 @@ fun GameResultScreen(
 
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
-      result.multitaskCost, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
+      result.pilLanePct, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
       result.rotationSpeedDps, result.rotationCurveMs,
       result.homingErrorPct, result.mailGroup, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
       result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa, result.conGroup

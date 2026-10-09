@@ -78,8 +78,8 @@ class DailyPathTest {
       assertEquals(3, path.size)
       assertTrue("$path trae un juego sin tutorial que nunca se jugó", path.none { it in noTutorial })
     }
-    // Piloto (sin tutorial) ya jugado hace mucho: en Atención, con metas, es el que más días lleva sin jugarse
-    val played = mapOf("stroop" to 49L, "freno" to 49L, "satelites" to 49L, "piloto" to 10L)       // (Satélites tiene tutorial desde el 9-oct: se juega reciente para que el más antiguo siga siendo Piloto)
+    // Piloto ya jugado hace mucho: en Atención, con metas, es el que más días lleva sin jugarse
+    val played = mapOf("stroop" to 49L, "freno" to 49L, "satelites" to 49L, "piloto" to 10L)       // (Satélites y Piloto tienen tutorial desde el 9-oct: Satélites se juega reciente para que el más antiguo siga siendo Piloto)
     val path = DailyPath.pick("2026-11-30", level, setOf(DomainType.ATENCION), null, null, played, 50L, tutorial)
     assertTrue("piloto ya se jugó: es elegible y el más antiguo", "piloto" in path)
     // y uno sin tutorial que nunca se jugó sigue excluido aunque sea del mismo área (Satélites ya tiene tutorial desde el 9-oct)
