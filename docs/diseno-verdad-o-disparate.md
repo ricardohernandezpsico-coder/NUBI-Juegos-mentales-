@@ -134,6 +134,12 @@ Programado y verificado el 1-oct (Unity: `DisparateContract`, `DisparateDirector
 sprites y sonidos; app: `Reading.kt`, final de partida, marca "tu lectura" en la evolución, ícono de la antena). Medidas y
 referencias en `docs/medidas-juegos-estrella.md`. Pendiente: que Ricardo lo pruebe en el teléfono (fluidez, deslizar, mantener).
 
+## 10. Tutorial con Nubi (Tarea 56, 9-oct)
+
+Con la pieza común (`GuidedTutorial` + `NubiCoach` + `CoachTexts.Disparate`), antes de la cuenta regresiva de la primera partida y desde «Cómo se juega» en la pausa. La práctica usa tres frases fijas (`DisparateContract.PracticeSpecs`: «Los peces nadan», «Las piedras cantan» y «El sol calienta la tierra»; no salen del banco ni cuentan para nada). «Saltar tutorial» va arriba, bajo «Práctica: no cuenta»: abajo están los dos botones.
+
+Cinco pasos (explicar → hacer → mirar): 1) «Si es verdad, toca VERDAD» (hueco: el botón VERDAD; solo vale ese); 2) «Si no tiene sentido, toca DISPARATE» (hueco: DISPARATE; al acertar se ve la marca y los puntos de siempre); 3) «Responde rápido, pero lo que cuenta es acertar» (aviso con una tercera frase y, en el Reto, la barra de señal bajando; el puntaje solo mide aciertos y nivel); 4) «Si una frase no está clara, mantenla presionada» (en este juego «no está clara» NO es un botón: es mantener presionada la placa; en la práctica se puede probar de verdad y no queda anotada); 5) «¡Listo! Ahora va en serio». Lo que la práctica mueve (racha, puntos, antena) vuelve a como estaba, y no pasa por el DDA, la tabla ni el guardado. Desde la pausa, «Cómo se juega» descarta la frase en pantalla sin contarla y sigue con una nueva (el Reto no pierde el tiempo del tutorial). El smoke da un toque «de verdad» en el centro de cada botón y corre `HowToDisparate`.
+
 ---
 
 ## Ficha técnica (movida desde CLAUDE.md, 2-oct)

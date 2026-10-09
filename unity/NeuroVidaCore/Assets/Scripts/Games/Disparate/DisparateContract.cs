@@ -97,6 +97,28 @@ namespace NeuroVida.Games.Disparate
         /// <summary>Alto mínimo de los botones, en dp.</summary>
         public const float MinButtonDp = 64f;
 
+        // ------------------------------------------------------------------ frases de la práctica (tutorial con Nubi)
+
+        /// <summary>Segundos de señal de la tercera frase de la práctica: solo se ve bajar la barra un rato (en Precisión no hay señal).</summary>
+        public const float PracticeSignalSeconds = 8f;
+
+        /// <summary>Las tres frases de la práctica: una verdad clarísima, un disparate clarísimo (con su corrección) y otra verdad corta donde se ve la señal. No salen del banco ni cuentan para nada.</summary>
+        public static SentenceSpec[] PracticeSpecs(bool precision)
+        {
+            SentenceSpec Spec(string f, bool truth, int type, string kind, string fix, string id, float signal) => new SentenceSpec
+            {
+                S = new SentenceItem { f = f, v = truth, t = type, c = kind, n = f.Split(' ').Length, r = fix, i = id },
+                Burst = false,
+                SignalSeconds = signal
+            };
+            return new[]
+            {
+                Spec("Los peces nadan", true, 1, "", "", "practica-1", 0f),
+                Spec("Las piedras cantan", false, 1, "evidente", "Las piedras no cantan", "practica-2", 0f),
+                Spec("El sol calienta la tierra", true, 2, "", "", "practica-3", precision ? 0f : PracticeSignalSeconds)
+            };
+        }
+
         // ------------------------------------------------------------------ qué sale
 
         /// <summary>Quién sale: 50% verdad y 50% disparate, y NUNCA más de <see cref="MaxSameAnswerRun"/> iguales seguidas.</summary>

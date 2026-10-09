@@ -131,6 +131,15 @@ namespace NeuroVida.Games.Shared
             public const string Erase = "Si te equivocas, Borrar vacía la bandeja";
         }
 
+        /// <summary>¿Verdad o disparate? (pantalla: la placa con la frase, la barra de señal y los botones VERDAD y DISPARATE abajo).</summary>
+        public static class Disparate
+        {
+            public const string Truth = "Si es verdad, toca VERDAD";
+            public const string Nonsense = "Si no tiene sentido, toca DISPARATE";
+            public const string Rhythm = "Responde rápido, pero lo que cuenta es acertar";
+            public const string Unclear = "Si una frase no está clara, mantenla presionada";
+        }
+
         /// <summary>Todos los textos (con el peor caso de los que cambian según la jugada) para comprobar que caben en el globo.</summary>
         public static IEnumerable<(string Game, string Step, string Text)> All()
         {
@@ -203,6 +212,11 @@ namespace NeuroVida.Games.Shared
             yield return ("cosecha", "sembrar", Cosecha.Sow);
             yield return ("cosecha", "brotó", Cosecha.Sprout);
             yield return ("cosecha", "borrar", Cosecha.Erase);
+
+            yield return ("disparate", "verdad", Disparate.Truth);
+            yield return ("disparate", "disparate", Disparate.Nonsense);
+            yield return ("disparate", "ritmo", Disparate.Rhythm);
+            yield return ("disparate", "no está clara", Disparate.Unclear);
 
             yield return ("stroop", "tinta", Stroop.InkRule);
             yield return ("stroop", "palabra", Stroop.WordRule);

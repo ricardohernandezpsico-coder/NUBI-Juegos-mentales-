@@ -22,6 +22,36 @@ namespace NeuroVida.Games.Disparate.Tests
         }
 
         [Test]
+        public void Practica_TresFrases_VerdadDisparateYVerdad_SinSerDelBanco()
+        {
+            var specs = DisparateContract.PracticeSpecs(false);
+            Assert.AreEqual(3, specs.Length);
+            Assert.IsTrue(specs[0].S.v);
+            Assert.IsFalse(specs[1].S.v);
+            Assert.IsTrue(specs[2].S.v);
+            Assert.AreEqual("evidente", specs[1].S.c);
+            Assert.IsFalse(string.IsNullOrEmpty(specs[1].S.r), "el disparate muestra su corrección");
+            var ids = new HashSet<string>();
+            foreach (var s in specs)
+            {
+                Assert.IsFalse(s.Burst);
+                Assert.LessOrEqual(s.S.t, 2, "frases cortas: la práctica no enseña ni negaciones ni comparaciones");
+                Assert.LessOrEqual(s.S.n, 5, s.S.f);
+                Assert.IsTrue(ids.Add(s.S.i), "ids distintos");
+                Assert.IsTrue(s.S.i.StartsWith("practica-"), "no se confunde con el id de una frase del banco");
+            }
+        }
+
+        [Test]
+        public void Practica_LaSenalSoloSeVeEnElReto()
+        {
+            Assert.AreEqual(0f, DisparateContract.PracticeSpecs(true)[2].SignalSeconds, "Precisión: sin señal");
+            Assert.AreEqual(DisparateContract.PracticeSignalSeconds, DisparateContract.PracticeSpecs(false)[2].SignalSeconds);
+            Assert.Greater(DisparateContract.PracticeSignalSeconds, 3.6f, "la barra no llega a cero mientras Nubi habla");
+            foreach (var s in DisparateContract.PracticeSpecs(false)) Assert.IsFalse(s.S.IsSubtle, s.S.f);
+        }
+
+        [Test]
         public void LevelTable_TypeAndSignal()
         {
             Assert.AreEqual(SentenceType.Short, DisparateContract.TypeForLevel(1));

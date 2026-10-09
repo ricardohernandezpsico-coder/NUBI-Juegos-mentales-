@@ -131,6 +131,8 @@ namespace NeuroVida.Games.Disparate
             _hintDone = _perfectShown = false;
             _warpTarget = 0f;
             _lit = 0;
+            _loopOn = _guided = false;
+            _allow = Allow.All;
 
             _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
@@ -158,7 +160,21 @@ namespace NeuroVida.Games.Disparate
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
+            _baked = false;
             StartCoroutine(PrewarmSprites());
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre la sala de radio ya armada, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ClearStage();
+                _safe.gameObject.SetActive(false);
+            }
             yield return StartCoroutine(_countdown.Play("¿Verdad o disparate?", Assessment.Subtitle("Lee y decide rápido"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
@@ -171,7 +187,13 @@ namespace NeuroVida.Games.Disparate
             _phase = Phase.Playing;
             _hint.gameObject.SetActive(true);
             _hint.text = "¿Es verdad o es un disparate?\nResponde rápido";
+            _loopOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
 
+        /// <summary>Una frase tras otra hasta que se acabe el tiempo (Reto) o las 30 (Precisión), y el final. «Cómo se juega» la retoma desde aquí.</summary>
+        private IEnumerator MainLoop()
+        {
             while (!Finished())
             {
                 var spec = TakeNext();
@@ -205,6 +227,7 @@ namespace NeuroVida.Games.Disparate
             yield return null;
             DisparateSounds.WaveRing();
             DisparateSounds.Lost();
+            _baked = true;
         }
 
         // ------------------------------------------------------------------ preparar y mostrar la frase
@@ -304,8 +327,8 @@ namespace NeuroVida.Games.Disparate
             _label.text = spec.S.f;
             _legibleAt = GameClock.Time;              // el reloj de respuesta arranca recién ahora: la frase ya es nítida
             _answerable = true;
-            // la siguiente se prepara mientras esta se lee
-            PrefetchNext();
+            // la siguiente se prepara mientras esta se lee (en la práctica no: no se gasta ninguna frase del banco)
+            if (!_guided) PrefetchNext();
         }
 
         private void ApplyLayout(PlateLayout l, string text)
@@ -399,6 +422,7 @@ namespace NeuroVida.Games.Disparate
 
         private void Update()
         {
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un toque al juego
             UpdateClock();
             AnimateAmbient();
             if (_phase != Phase.Playing) return;
@@ -425,15 +449,19 @@ namespace NeuroVida.Games.Disparate
                 up = Input.GetMouseButtonUp(0);
                 held = Input.GetMouseButton(0);
             }
+#if UNITY_EDITOR
+            if (_guided && !down && GuidedTutorial.TryPress(out var injected)) { down = true; pos = injected; }       // el smoke da un toque «de verdad» en el hueco
+#endif
             if (!down && !held && !up) return;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, pos, null, out var local)) return;
 
             if (down)
             {
+                if (_tutorial != null && _tutorial.Coach != null && _tutorial.Coach.Blocks(pos)) { _ignoreUntilUp = true; return; }      // el foco de Nubi: solo vale el toque dentro del hueco
                 if (!_answerable || _answerGiven) { _ignoreUntilUp = true; return; }
                 _ignoreUntilUp = false;
-                if (InRect(local, _btnTrueCenter, _btnSize)) { PressButton(_btnTrue); RequestAnswer(true); _ignoreUntilUp = true; return; }
-                if (InRect(local, _btnFalseCenter, _btnSize)) { PressButton(_btnFalse); RequestAnswer(false); _ignoreUntilUp = true; return; }
+                if (InRect(local, _btnTrueCenter, _btnSize)) { if (Allows(Allow.Truth)) { PressButton(_btnTrue); RequestAnswer(true); } _ignoreUntilUp = true; return; }
+                if (InRect(local, _btnFalseCenter, _btnSize)) { if (Allows(Allow.Nonsense)) { PressButton(_btnFalse); RequestAnswer(false); } _ignoreUntilUp = true; return; }
                 if (InRect(local, new Vector2(0f, _plateY), _plate.sizeDelta * 1.08f))
                 {
                     _dragging = true; _moved = false; _holdFired = false;
@@ -469,6 +497,7 @@ namespace NeuroVida.Games.Disparate
         private void RequestAnswer(bool saysTruth)
         {
             if (!_answerable || _answerGiven) return;
+            if (_guided && !Allows(saysTruth ? Allow.Truth : Allow.Nonsense)) return;          // en la práctica solo vale la respuesta que se pide
             _answerGiven = true;
             _answerIsTruth = saysTruth;
             _answerAt = GameClock.Time;
@@ -479,8 +508,9 @@ namespace NeuroVida.Games.Disparate
         private void ReportUnclear()
         {
             if (_cur == null || _unclearDone) return;
+            if (_guided && !Allows(Allow.Hold)) return;
             _unclearDone = true;
-            _tally.ReportUnclear(_cur.S.i);
+            if (!_guided) _tally.ReportUnclear(_cur.S.i);                // la frase de la práctica no se anota
             _toast.Show("Gracias, la revisaremos", "Marcaste esta frase como poco clara", AmberColor, 1.0f);
             PlayClip(DisparateSounds.Unclear(), 0.5f);
             GameFeel.Haptic(GameFeel.HapticKind.Double);
@@ -880,7 +910,7 @@ namespace NeuroVida.Games.Disparate
 
         private void UpdateClock()
         {
-            if (!Endless || _phase != Phase.Playing || _endsAt <= 0f) return;
+            if (_guided || !Endless || _phase != Phase.Playing || _endsAt <= 0f) return;
             float left = _endsAt - GameClock.Time;
             SetTimerFraction(Mathf.Clamp01(left / DisparateContract.RetoSeconds));
             int whole = Mathf.CeilToInt(left);
@@ -896,6 +926,207 @@ namespace NeuroVida.Games.Disparate
             _hud.SetLevel(_dda.PresentedLevel);
             if (Endless) _hud.SetPoints(_points);
             else _hud.SetInfo($"{Mathf.Min(_resolved + 1, DisparateContract.PrecisionSentences)} de {DisparateContract.PrecisionSentences}");
+        }
+
+        // ------------------------------------------------------------------ tutorial con Nubi (ronda guiada) y «Cómo se juega» desde la pausa
+
+        /// <summary>Qué se puede hacer durante la ronda guiada (fuera de ella, todo).</summary>
+        [System.Flags]
+        private enum Allow { None = 0, Truth = 1, Nonsense = 2, Hold = 4, All = 7 }
+
+        private bool _guided, _loopOn, _baked;
+        private Allow _allow = Allow.All;
+        private float _lastFeedbackAt = -10f;
+
+        /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo). «Saltar tutorial» va arriba: abajo están los dos botones.</summary>
+        private void SetUpTutorial() =>
+            BuildTutorial(_safe, GameHud.Height + 10f, "¿Verdad o disparate?", "Lee la frase y decide: ¿es verdad o es un disparate? Responde con un toque.", skipAtTop: true);
+
+        private bool Allows(Allow what) => !_guided || (_allow & what) != 0;
+
+        /// <summary>Quita de la pantalla la frase y su marca (lo usan el final de la práctica y «Cómo se juega»).</summary>
+        private void ClearStage()
+        {
+            _plate.gameObject.SetActive(false);
+            _plateGroup.alpha = 0f;
+            _mark.gameObject.SetActive(false);
+            _fix.text = "";
+            _swipeTrue.gameObject.SetActive(false);
+            _swipeFalse.gameObject.SetActive(false);
+        }
+
+        /// <summary>La señal de la práctica baja un rato para que se vea qué es (la barra de abajo se apaga: el tiempo que hay para responder).</summary>
+        private IEnumerator PracticeSignal(float signalSeconds, float showSeconds)
+        {
+            float t = 0f;
+            while (t < showSeconds)
+            {
+                t += GameClock.DeltaTime;
+                SetSignal(Mathf.Clamp01(1f - t / signalSeconds));
+                yield return null;
+            }
+        }
+
+        /// <summary>La respuesta de una frase de la práctica: el aviso de acierto o de error de siempre, sin tabla, nivel ni puntaje.</summary>
+        private IEnumerator PracticeFeedback(SentenceSpec spec)
+        {
+            _lastFeedbackAt = GameClock.Time;
+            bool correct = _answerIsTruth == spec.S.v;
+            yield return StartCoroutine(correct ? CorrectFeedback(spec) : WrongFeedback(spec));
+        }
+
+        // <guided>
+        protected override IEnumerator GuidedRound(GuidedTutorial t)
+        {
+            t.BeginPractice();
+            _guided = true;
+            while (!_baked) yield return null;                         // el arte se hornea mientras Nubi se presenta
+            var coach = t.Coach;
+            // Pasos: 1) una verdad clarísima (hueco: VERDAD); 2) un disparate clarísimo (hueco: DISPARATE); 3) el ritmo (la barra de señal baja); 4) cómo avisar que una frase no está clara (mantenerla presionada);
+            // 5) «¡Listo!». Solo vale el botón que se pide; lo que se muestra (racha, puntos, antena) vuelve a como estaba.
+            int keptStreak = _streak, keptPoints = _points, keptLit = _lit;
+            bool keptPerfect = _perfectShown, keptBurst = _wasBurst;
+            var keptCur = _cur;
+            _streak = 0;
+            _points = 0;
+            SetMeter(0, false);
+            _hud.SetStreak(0);
+            _hint.gameObject.SetActive(false);
+            _timerBg.gameObject.SetActive(false);
+            _phase = Phase.Playing;
+            _allow = Allow.None;
+            var specs = DisparateContract.PracticeSpecs(Precision);
+            var plate = new[] { coach.Zone(() => coach.RectOf(_plate)) };
+            var plateAndSignal = Precision ? plate : new[] { plate[0], coach.Zone(_sigBar) };
+            bool ok = !t.Skipped;
+
+            // 1) una verdad clarísima
+            if (ok)
+            {
+                yield return StartCoroutine(ShowSentence(specs[0]));
+                _allow = Allow.Truth;
+                while (ok && !_answerGiven)
+                {
+#if UNITY_EDITOR
+                    StartCoroutine(ProbeTap(coach, _btnTrue, "VERDAD"));
+#endif
+                    yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnTrue), CoachTexts.Disparate.Truth, keep: plate));
+                    ok = !t.Skipped;
+#if UNITY_EDITOR
+                    if (ok && GuidedTutorial.EditorAutoContinue && !_answerGiven) RequestAnswer(true);
+#endif
+                }
+                _allow = Allow.None;
+                if (ok) yield return StartCoroutine(PracticeFeedback(specs[0]));
+            }
+
+            // 2) un disparate clarísimo
+            if (ok)
+            {
+                yield return StartCoroutine(ShowSentence(specs[1]));
+                _allow = Allow.Nonsense;
+                while (ok && !_answerGiven)
+                {
+#if UNITY_EDITOR
+                    StartCoroutine(ProbeTap(coach, _btnFalse, "DISPARATE"));
+#endif
+                    yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnFalse), CoachTexts.Disparate.Nonsense, keep: plate));
+                    ok = !t.Skipped;
+#if UNITY_EDITOR
+                    if (ok && GuidedTutorial.EditorAutoContinue && !_answerGiven) RequestAnswer(false);
+#endif
+                }
+                _allow = Allow.None;
+                if (ok) yield return StartCoroutine(PracticeFeedback(specs[1]));
+            }
+
+            // 3) el ritmo: la frase espera y la señal baja un rato
+            if (ok)
+            {
+                yield return StartCoroutine(ShowSentence(specs[2]));
+                if (!Precision) StartCoroutine(PracticeSignal(specs[2].SignalSeconds, 3.6f));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Disparate.Rhythm, 3.6f, keep: plateAndSignal));
+                ok = !t.Skipped;
+            }
+
+            // 4) una frase que no está clara: se mantiene presionada (aquí se puede probar de verdad; no queda anotada)
+            if (ok)
+            {
+                _allow = Allow.Hold;
+                yield return StartCoroutine(coach.Notice(CoachTexts.Disparate.Unclear, 3.8f, keep: plate));
+                ok = !t.Skipped;
+            }
+            _allow = Allow.None;
+            _answerable = false;
+            if (ok) yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
+
+            // si se saltó con la respuesta a medio mostrar, que termine antes de limpiar
+            while (GameClock.Time - _lastFeedbackAt < 1.2f) yield return null;
+            coach.Hide();
+            _allow = Allow.All;
+            ClearStage();
+            _dragging = _moved = _holdFired = false;
+            _answerGiven = _timedOut = false;
+            _streak = keptStreak;
+            _points = keptPoints;
+            SetMeter(keptLit, false);
+            _hud.SetStreak(_streak);
+            _perfectShown = keptPerfect;
+            _wasBurst = keptBurst;
+            _cur = keptCur;
+            _timerBg.gameObject.SetActive(Endless);
+            _hint.gameObject.SetActive(_loopOn && !_hintDone);
+            UpdateHud();
+            _guided = false;
+            _phase = Phase.Idle;                                       // la partida (o «Cómo se juega») sigue desde su bucle
+            t.EndPractice();
+        }
+        // </guided>
+
+#if UNITY_EDITOR
+        /// <summary>SOLO EN EL EDITOR (smoke del tutorial): da un toque «de verdad» en el centro del botón que el paso ilumina y comprueba que la respuesta llegó al juego. Si el hueco no coincidiera con el botón dibujado,
+        /// el tutorial se «pegaría» sin dejar tocar lo que pide (Ricardo, 6-oct); así se vería antes de llegar al teléfono.</summary>
+        private IEnumerator ProbeTap(NubiCoach coach, RectTransform target, string what)
+        {
+            if (!GuidedTutorial.EditorAutoContinue) yield break;
+            float w = 0f;
+            while (!coach.Active && w < 3f) { w += GameClock.RealDeltaTime; yield return null; }
+            w = 0f;
+            while (coach.Active && w < 0.7f) { w += GameClock.RealDeltaTime; yield return null; }
+            if (!coach.Active) yield break;
+            GuidedTutorial.EditorPressPos = RectTransformUtility.WorldToScreenPoint(null, target.position);
+            GuidedTutorial.EditorPressFrame = Time.frameCount + 1;
+            for (int i = 0; i < 4; i++) yield return null;
+            if (!_answerGiven) Debug.LogError("[SmokeTest] Disparate: un toque en el centro de " + what + " NO llegó al juego (el hueco no coincide con el botón)");
+            else Debug.Log("[SmokeTest] Disparate: un toque en el centro de " + what + " llegó al juego");
+        }
+#endif
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        protected override bool HowToReady => _loopOn && _phase == Phase.Playing && !_guided;
+
+        protected override void HowToSuspend()
+        {
+            // la frase que estaba en pantalla se descarta sin contar; después sigue la partida con una nueva
+            _answerable = _answerGiven = _timedOut = false;
+            _dragging = _moved = _holdFired = _ignoreUntilUp = false;
+            _tremble = 0f;
+            _staticAlpha = 0f;
+            SetEdgeStatic(0f);
+            _shaking = false;
+            _plateX = 0f;
+            HideAurora();
+            ClearStage();
+            _phase = Phase.Idle;
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            _endsAt = HowToClock.Shift(_endsAt, spentSeconds);       // el tiempo que duró «Cómo se juega» no se le descuenta al Reto
+            _lastTickSecond = -1;
+            _phase = Phase.Playing;
+            StartCoroutine(MainLoop());
         }
 
         // ------------------------------------------------------------------ fin
@@ -1016,6 +1247,7 @@ namespace NeuroVida.Games.Disparate
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            SetUpTutorial();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
