@@ -407,3 +407,15 @@ Correo Estelar conserva el nombre, el id (`correo`) y el historial; cambia la ju
 
 **Pregunta para el abogado:** si una pantalla táctil cuenta como «sensor de posición» para las reivindicaciones de la US 9,940,844 (afecta más a Piloto Estelar que a Correo, que ya no tiene seguimiento). Va también como «tarea de fondo genérica» (clasificar) para comparar con juegos de clasificar de otras apps antes de publicar:
 no encontramos uno de Lumosity, Peak ni Elevate que combine clasificar con recordar encargos (búsqueda del 8-oct).
+
+
+## 9. Reglas permanentes (Ricardo, 9-oct-2026)
+
+Ricardo las aprobó el 9-oct y las confirmó en el chat de implementación. Cada una tiene una línea en `CLAUDE.md` («Reglas permanentes»); acá van las razones y el estado de cada juego.
+
+1. **Piloto Estelar: las dos tareas (pilotar y señales) van siempre juntas.** Ninguna se presenta sola dentro de una partida ni se mide sola; no hay «costo de multitarea»; el tutorial las enseña juntas. Patentes de Akili: US 12,016,700, US 11,723,598 y la solicitud 2025/0000455.
+   **Estado hoy: Piloto NO lo cumple por completo.** `PilotGameController` calcula y envía `multitask_cost` (la caída entre piloto automático y a los mandos), y la sección de Piloto de este documento lo dejaba «en la lista del abogado». Se corrige al rehacerlo en la Etapa 1 de la hoja de ruta (tarea 3: Piloto y Rescate relámpago).
+2. **Rescate relámpago: se responde QUÉ se vio, no DÓNDE.** Sin lugares fijos ni cuadrícula, y la zona del destello nunca crece con el nivel. Patentes de Nike: US 8,136,943 y US 8,342,685, vigentes hasta ≈ jul-2029.
+   **Estado hoy: el juego NO cumple esta regla** (se toca DÓNDE aparecieron los astronautas, sobre ocho sectores y dos anillos). Se rehace en la Etapa 1 de la hoja de ruta.
+3. **Sistema: los juegos viven en el APK.** Una futura cuenta o nube solo sincroniza progreso: nunca entrega ni desbloquea juegos, ni controla su acceso desde un servidor. Tampoco habrá una red social dentro de un mapa. Patente de Posit: US 9,308,445, hasta 2034.
+   **Cualquier función en línea que toque el acceso a juegos pasa antes por el abogado.** Hoy se cumple: todos los juegos van en el APK y nada en línea decide qué se puede jugar.

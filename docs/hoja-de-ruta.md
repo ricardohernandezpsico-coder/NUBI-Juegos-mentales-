@@ -33,7 +33,7 @@ Cada juego sale con su tutorial (Freno ya lo tiene; los otros tres lo reciben aq
 
 1. **Freno de Emergencia** — **Hecho (Tarea 57)**: el SSRT (lo que tarda la persona en frenar) salió del puntaje (`100 × (0,75 × lanzamientos correctos + 0,25 × min(1, altos frenados ÷ altos ÷ 0,5))`) y queda solo como medida; «Tu freno» se muestra como el promedio de las últimas ≤ 5 estimaciones válidas, en un velocímetro de tres zonas con nombre (ágil < 230 ms, firme 230-300, pausado > 300; cortes de diseño, no normas), sin milisegundos; Juegos y Hoy dicen la zona.
 2. **Satélites** — **Hecho (Tarea 59)**: renovado como «enciende tu planeta» (mismo id): órbitas planas en tres anillos que usan toda la pantalla, sorpresas anunciadas antes (cambio de órbita, nube de polvo, órbitas rápidas), cada mensaje entregado enciende una luz en el planeta, tutorial con Nubi y récord de luces (`docs/diseno-satelites.md`). Falta que Ricardo lo pruebe con personas: «se hace largo y monótono» era el problema que lo motivó.
-3. **Piloto Estelar y Rescate relámpago**: cambios para esquivar patentes (`docs/nombre-marca-y-riesgos.md`). **Pendiente de aprobación de Ricardo** antes de programar.
+3. **Piloto Estelar y Rescate relámpago**: cambios para esquivar patentes y cumplir las reglas permanentes de Ricardo del 9-oct (`docs/nombre-marca-y-riesgos.md` §9): Piloto sin «costo de multitarea» y con las dos tareas siempre juntas (hoy lo mide); Rescate relámpago respondiendo QUÉ y no DÓNDE (hoy no lo cumple). **Pendiente de aprobación de Ricardo** antes de programar.
 
 ## Etapa 2 — Memoria y razonamiento
 
