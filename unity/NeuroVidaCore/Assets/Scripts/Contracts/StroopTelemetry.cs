@@ -39,22 +39,19 @@ namespace NeuroVida.Contracts
         /// <summary>Solo Tinta o Palabra: «Cambiar de orilla te costó», en ms: promedio de tiempo de los aciertos tras un cambio de orilla menos el de los que repiten orilla (costo de cambio).
         /// -1 con menos de 3 aciertos de cada tipo (en los niveles 1 y 2 no hay cambios) o en otro juego.</summary>
         public int switch_cost_ms = -1;
-        /// <summary>Solo Radar: "tu vistazo" en ms (duración de destello en la que se asentó la escalera). -1 = no aplica.</summary>
+        /// <summary>Solo «Rescate relámpago» (id radar): "tu vistazo" en ms (media geométrica de las duraciones REALES del destello de las rondas normales desde la 4.ª; -1 con menos de 5 rondas) y con cuántas cápsulas a la vez (-1 = sin dato).</summary>
         public int glance_ms = -1;
-        /// <summary>Solo Radar: cuántos astronautas había en promedio en las rondas del vistazo. -1 = no aplica.</summary>
         public float glance_load = -1f;
-        /// <summary>Solo Radar: astronautas rescatados por dirección (8, 0 = arriba y en sentido horario).</summary>
-        public int[] sector_hits;
-        /// <summary>Solo Radar: astronautas mostrados por dirección (8).</summary>
-        public int[] sector_trials;
-        /// <summary>Solo Radar: rescatados / mostrados cerca del centro y lejos (2: anillo de adentro, de afuera).</summary>
-        public int[] ring_hits;
-        public int[] ring_trials;
-        /// <summary>Solo Radar: "tu captura", cuántos se captan de un vistazo en las lluvias de astronautas. -1 = sin medida.</summary>
+        /// <summary>Solo Rescate relámpago: "tu captura", cuántas cápsulas se nombran bien de un vistazo (de 4; promedio de aciertos − 2 × elegidas que no estaban en las lluvias, mínimo 0; -1 con menos de 2 lluvias).</summary>
         public float capture = -1f;
-        /// <summary>Solo Radar: robots mostrados y robots tocados ("tu filtro").</summary>
-        public int robots_shown;
-        public int robots_touched;
+        /// <summary>Solo Rescate relámpago (renovado el 9-oct; docs/diseno-rescate.md §6): cápsulas rescatadas en la partida, rondas perfectas, rondas jugadas (con lluvias), racha mayor de rondas perfectas, el destello más corto (ms reales) con que se resolvió una ronda normal perfecta (-1 = ninguna), el récord de cápsulas rescatadas (el guardado o el de esta partida, el mayor) y 1 si esta partida lo superó. -1 = no aplica.</summary>
+        public int resc_rescued = -1;
+        public int resc_perfect = -1;
+        public int resc_rounds = -1;
+        public int resc_best_streak = -1;
+        public int resc_shortest_ms = -1;
+        public int resc_best = -1;
+        public int resc_new;
         /// <summary>Solo Satélites: "tu seguimiento", cuántos se siguen de verdad a la vez (descontando la suerte). -1 = no aplica.</summary>
         public float tracking_capacity = -1f;
         /// <summary>Solo Satélites: cuántos había que seguir por ronda, en promedio (el techo de "tu seguimiento"). -1 = no aplica.</summary>

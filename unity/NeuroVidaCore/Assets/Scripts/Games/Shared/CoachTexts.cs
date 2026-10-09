@@ -131,6 +131,17 @@ namespace NeuroVida.Games.Shared
             public const string Lights = "¡Cada mensaje enciende una luz!";
         }
 
+        /// <summary>Rescate relámpago (pantalla: el radar arriba, la nave de rescate, el tablero de seis botones y «¡Rescatar!» abajo). La práctica son dos rondas que no cuentan: dos cápsulas con un destello largo y después dos cápsulas con una roca.</summary>
+        public static class Radar
+        {
+            public const string Watch = "Mira el radar: un relámpago mostrará unas cápsulas";
+            public const string First = "Toca en el tablero las que viste";
+            public const string Second = "Toca la otra que viste";
+            public const string Rescue = "Ahora toca ¡Rescatar!";
+            public const string Ship = "¡Las rescatadas suben a tu nave!";
+            public const string Rocks = "Las rocas grises no se rescatan: no están en el tablero";
+        }
+
         /// <summary>Piloto Estelar: la ruta de las balizas (pantalla: la tarjeta de misión arriba, el cielo de señales, la nave y la franja del dedo abajo). Las dos tareas van juntas desde el paso 2 (regla permanente 1).</summary>
         public static class Piloto
         {
@@ -235,6 +246,12 @@ namespace NeuroVida.Games.Shared
             yield return ("satelites", "primero", Satelites.First);
             yield return ("satelites", "segundo", Satelites.Second);
             yield return ("satelites", "luces", Satelites.Lights);
+            yield return ("radar", "mirar", Radar.Watch);
+            yield return ("radar", "primera", Radar.First);
+            yield return ("radar", "segunda", Radar.Second);
+            yield return ("radar", "rescatar", Radar.Rescue);
+            yield return ("radar", "nave", Radar.Ship);
+            yield return ("radar", "rocas", Radar.Rocks);
             yield return ("piloto", "misión", Piloto.Mission);
             yield return ("piloto", "deslizar", Piloto.Steer);
             yield return ("piloto", "atrapar", Piloto.Catch);

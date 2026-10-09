@@ -47,6 +47,9 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para las capturas (<c>--capturas</c>): el nivel (1..9) con que arrancan los dos motores de «Piloto Estelar» (<c>pil_stage</c> de la config; 0 = el que corresponde) y cada cuántos segundos cambia el sector (<c>pil_sector_s</c>; 0 = 30).</summary>
         public static int PilStageOverride, PilSectorOverride;
 
+        /// <summary>Solo para las capturas: el nivel (1..12) con que arranca «Rescate relámpago» (<c>resc_stage</c> de la config; 0 = el que corresponde).</summary>
+        public static int RescStageOverride;
+
         /// <summary>Solo para el smoke y las capturas: arranca la partida en modo Reto (con reloj) aunque el campo <c>timed</c> de la escena esté apagado.</summary>
         public static bool TimedOverride;
 
@@ -83,7 +86,8 @@ namespace NeuroVida.Bridge
                     sat_stage = SatStageOverride,
                     sat_surprise = SatSurpriseOverride,
                     pil_stage = PilStageOverride,
-                    pil_sector_s = PilSectorOverride
+                    pil_sector_s = PilSectorOverride,
+                    resc_stage = RescStageOverride
                 }
             };
 

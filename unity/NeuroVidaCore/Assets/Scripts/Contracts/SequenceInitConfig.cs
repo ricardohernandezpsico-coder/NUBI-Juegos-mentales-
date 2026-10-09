@@ -89,6 +89,9 @@ namespace NeuroVida.Contracts
         /// </summary>
         public int pil_stage;
         public int pil_sector_s;
+        /// <summary>Solo «Rescate relámpago» (id <c>radar</c>): el récord de cápsulas rescatadas en una partida (progreso: la app lo guarda, lo manda aquí y Unity devuelve el nuevo en <c>resc_best</c>) y, solo en las herramientas de prueba, el nivel (1..12) con que empieza la partida (0 = el que corresponde).</summary>
+        public int resc_best;
+        public int resc_stage;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;

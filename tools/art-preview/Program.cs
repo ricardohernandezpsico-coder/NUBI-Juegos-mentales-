@@ -200,12 +200,26 @@ internal static class Program
         Dump("screw", NeonSignSprites.Screw());
         Dump("mark_check", AnswerMarkSprite.Check());
         Dump("mark_cross", AnswerMarkSprite.Cross());
+        // Rescate relámpago (Tarea 62): el radar, el haz, las 6 cápsulas (y sus emblemas), la roca, las máscaras de estática, el aro punteado, el eje, el planeta, la nave con su ventana y los botones del tablero
         Dump("radar_scope", NeuroVida.Games.Radar.RadarSprites.Scope());
         Dump("radar_sweep", NeuroVida.Games.Radar.RadarSprites.Sweep());
-        Dump("radar_robot", NeuroVida.Games.Radar.RadarSprites.Robot());
-        Dump("radar_beacon", NeuroVida.Games.Radar.RadarSprites.Beacon());
-        Dump("radar_slot", NeuroVida.Games.Radar.RadarSprites.Slot());
+        for (int i = 0; i < NeuroVida.Games.Radar.RadarContract.TypeCount; i++)
+        {
+            var t = (NeuroVida.Games.Radar.CapsuleType)i;
+            Dump("radar_capsule_" + i, NeuroVida.Games.Radar.RadarSprites.CapsuleSprite(t));
+            Dump("radar_emblem_" + i, NeuroVida.Games.Radar.RadarSprites.Emblem(t));
+        }
+        Dump("radar_rock", NeuroVida.Games.Radar.RadarSprites.Rock());
         for (int i = 0; i < 2; i++) Dump("radar_mask_" + i, NeuroVida.Games.Radar.RadarSprites.Mask(i));
+        Dump("radar_dashed", NeuroVida.Games.Radar.RadarSprites.DashedRing());
+        Dump("radar_axis", NeuroVida.Games.Radar.RadarSprites.Axis());
+        Dump("radar_planet", NeuroVida.Games.Radar.RadarSprites.Planet());
+        Dump("radar_ship", NeuroVida.Games.Radar.RadarSprites.Ship());
+        Dump("radar_window", NeuroVida.Games.Radar.RadarSprites.Window());
+        Dump("radar_button", NeuroVida.Games.Radar.RadarSprites.Button());
+        Dump("radar_button_ring", NeuroVida.Games.Radar.RadarSprites.ButtonRing(false));
+        Dump("radar_button_ring_dashed", NeuroVida.Games.Radar.RadarSprites.ButtonRing(true));
+        Dump("radar_go", NeuroVida.Games.Radar.RadarSprites.GoButton());
         Dump("brake_stop", NeuroVida.Games.Freno.BrakeSprites.StopSign());
         Dump("brake_pad", NeuroVida.Games.Freno.BrakeSprites.LaunchPad());
         Dump("brake_button", NeuroVida.Games.Freno.BrakeSprites.LaunchButton(false));

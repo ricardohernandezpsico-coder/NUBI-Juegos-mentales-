@@ -3,265 +3,300 @@ using System.Collections.Generic;
 
 namespace NeuroVida.Games.Radar
 {
-    /// <summary>Una ronda de Radar: dónde aparecen los astronautas y los robots, y cuánto dura el destello.</summary>
-    public sealed class RadarTrial
+    /// <summary>Los seis tipos de cápsula: cada uno con su forma, su color y su nombre FIJOS (la identidad nunca es solo el color). En una ronda no se repite ninguno.</summary>
+    public enum CapsuleType { Hexagon, Drop, Circle, Square, Triangle, Diamond }
+
+    /// <summary>Un objeto que aparece en el destello: una cápsula (con su tipo) o una roca gris. <see cref="X"/> e <see cref="Y"/> en dp desde el centro del radar (y hacia abajo); <see cref="Tilt"/> en radianes.</summary>
+    public sealed class RadarObject
     {
-        /// <summary>Lugares con astronautas (lugar = anillo * 8 + dirección), sin repetir.</summary>
-        public int[] Targets;
-        /// <summary>Lugares con robots (se ven, pero no se rescatan). Nunca coinciden con un astronauta.</summary>
-        public int[] Robots;
-        public int ExposureMs;
-        public int Level;
-        /// <summary>"¡Lluvia de astronautas!": destello largo con muchos, para medir cuántos se captan de un vistazo.
-        /// No mueve la dificultad ni cuenta para "tu vistazo".</summary>
-        public bool Rain;
+        public CapsuleType Type;
+        public bool IsRock;
+        public float X, Y, Tilt;
     }
 
-    /// <summary>Cómo le fue a una respuesta (las balizas que puso la persona).</summary>
+    /// <summary>Una ronda de Rescate relámpago: qué cápsulas y rocas aparecen, dónde (posiciones continuas al azar, solo para dibujarlas) y cuánto dura el destello.</summary>
+    public sealed class RadarRound
+    {
+        public RadarObject[] Capsules;
+        public RadarObject[] Rocks;
+        public int ExposureMs;
+        public int Level;
+        /// <summary>«¡Lluvia de cápsulas!»: 4 cápsulas, sin rocas y destello FIJO de 300 ms, fuera del motor de dificultad: sirve para que «Tu captura» se pueda comparar entre partidas.</summary>
+        public bool Rain;
+
+        public int Count => Capsules.Length;
+        public int Needed => RadarContract.Needed(Count);
+
+        /// <summary>El tipo de cada cápsula de la ronda.</summary>
+        public HashSet<CapsuleType> Types()
+        {
+            var set = new HashSet<CapsuleType>();
+            foreach (var c in Capsules) set.Add(c.Type);
+            return set;
+        }
+    }
+
+    /// <summary>Cómo le fue a una respuesta: cápsulas elegidas que estaban y elegidas que no estaban («de más»).</summary>
     public struct RadarAnswer
     {
-        /// <summary>Balizas sobre un astronauta.</summary>
-        public int Hits;
-        /// <summary>Balizas donde no había astronauta (vacío o robot).</summary>
-        public int Extras;
-        /// <summary>De esas, las que cayeron sobre un robot.</summary>
-        public int RobotsTouched;
+        public int Hits, Extras;
     }
 
     /// <summary>
-    /// Reglas puras de "Radar" / Rescate relámpago (28-sep, rediseño aprobado por Ricardo): VELOCIDAD DE PROCESAMIENTO
-    /// VISUAL con informe total ("whole report": Sperling, 1960; teoría de la atención visual, TVA: Bundesen, 1990;
-    /// Habekost, 2015). En un destello breve aparecen VARIOS astronautas repartidos por el radar (8 direcciones x 2
-    /// anillos = 16 lugares, cerca y lejos del centro); una interferencia borra la imagen y se tocan todos los lugares
-    /// donde se vieron (se sabe cuántos eran). El destello llega en un momento imprevisible (alerta propia: Penning et
-    /// al., 2021). Desde el nivel 5 hay robots que no se rescatan (informe parcial: seleccionar lo importante).
-    /// No hay imagen central que identificar ni opciones entre las que elegir (ver docs/nombre-marca-y-riesgos.md).
-    /// Sin dependencias de UnityEngine: testeable con NUnit.
+    /// Reglas puras de «Rescate relámpago: qué cápsulas viste» (id <c>radar</c>, renovado el 9-oct; docs/diseno-rescate.md): VELOCIDAD DE PROCESAMIENTO VISUAL con informe total tras una exposición breve con máscara (Sperling, 1960; teoría de la atención
+    /// visual: Bundesen, 1990; Habekost, 2015; capacidad de unos 4 objetos: Luck y Vogel, 1997; Cowan, 2001; destello sin aviso = alerta propia: Penning et al., 2021).
+    /// Un relámpago ilumina unas cápsulas de escape a la deriva en posiciones continuas al azar; la estática borra la imagen y en el tablero se elige QUÉ cápsulas se vieron (nunca DÓNDE): el tablero tiene un orden fijo por tipo y no tiene ninguna relación
+    /// con las posiciones del radar. Reglas de patentes (docs/diseno-rescate.md §9; probadas): sin lugares fijos ni cuadrícula, el radio de la zona del destello NO crece con el nivel, los aros del radar son adorno, sin objetivo central, el contraste y el color
+    /// de cápsulas, rocas y fondo son iguales en todos los niveles, y ninguna medida es por lugar. Sin dependencias de UnityEngine: testeable con NUnit.
     /// </summary>
     public static class RadarContract
     {
         public const string GameId = "radar";
+        public const string Title = "Rescate relámpago";
         public const int MaxLevel = 12;
-        public const int Directions = 8;
-        public const int Rings = 2;
-        public const int Slots = Directions * Rings;
 
-        /// <summary>Reto: 120 s de radar (cada ronda dura más que en la versión de un astronauta: ~8 s).</summary>
+        /// <summary>Reto: 120 s. Precisión: 12 rondas (9 normales y 3 lluvias).</summary>
         public const int RetoSeconds = 120;
-        /// <summary>Precisión (sin reloj): cantidad de destellos (incluidas las lluvias).</summary>
-        public const int PrecisionTrials = 20;
+        public const int PrecisionRounds = 12;
 
-        /// <summary>Radio de cada anillo como fracción del radio del radar (cerca / lejos del centro).</summary>
-        public static readonly float[] RingRadius = { 0.46f, 0.80f };
+        // ------------------------------------------------------------------ la zona del destello (dp; FIJA: no cambia con el nivel)
 
-        /// <summary>Radio de la mira del centro (fracción del radio del radar): tocar adentro no elige lugar.</summary>
-        public const float CenterWindow = 0.16f;
+        /// <summary>Radio de la pantalla del radar (dp). Fijo en todos los niveles.</summary>
+        public const float RadarRadius = 128f;
+        /// <summary>Las cápsulas y las rocas aparecen a menos de esto del centro (RR − 34), con al menos <see cref="MinSeparation"/> entre centros.</summary>
+        public const float SpawnRadius = RadarRadius - 34f;
+        public const float MinSeparation = 66f;
+        /// <summary>El tamaño de una cápsula en el radar (dp de diámetro).</summary>
+        public const float CapsuleSize = 55f;
 
-        /// <summary>Cada cuántas rondas llega una lluvia de astronautas, con cuántos y con qué destello.</summary>
-        public const int RainEvery = 5, RainTargets = 6, RainExposureMs = 300;
+        // ------------------------------------------------------------------ una ronda
 
-        // ------------------------------------------------------------------ dificultad
+        /// <summary>Espera antes del relámpago: de 1,5 a 3,5 s al azar (el destello llega sin aviso).</summary>
+        public const float WatchMinSeconds = 1.5f, WatchMaxSeconds = 3.5f;
+        /// <summary>La estática dentro del disco (ms).</summary>
+        public const int MaskMs = 350;
+        /// <summary>La revelación (s).</summary>
+        public const float RevealSeconds = 2.3f;
+        /// <summary>Tope de espera de la respuesta (s): después se evalúa lo que haya, como en Satélites.</summary>
+        public const float AnswerTimeoutSeconds = 25f;
 
-        /// <summary>Duración del destello (ms): 600 en el nivel 1 → 80 en el 12, en pasos proporcionales (~17% menos
-        /// por nivel). Más larga que en la versión de un solo astronauta: acá se captan varios a la vez.</summary>
-        public static int ExposureMs(int level)
-        {
-            double k = (Clamp(level) - 1) / (double)(MaxLevel - 1);
-            return (int)Math.Round(600.0 * Math.Pow(80.0 / 600.0, k));
-        }
+        /// <summary>Cada cuántas rondas llega una lluvia (la 4, la 8, la 12…), con cuántas cápsulas y con qué destello FIJO.</summary>
+        public const int RainEvery = 4, RainCapsules = 4, RainExposureMs = 300;
 
-        /// <summary>Astronautas por destello: 2 → 5.</summary>
-        public static int TargetCount(int level)
-        {
-            int l = Clamp(level);
-            return l <= 2 ? 2 : l <= 5 ? 3 : l <= 8 ? 4 : 5;
-        }
+        public static bool IsRainRound(int index) => index >= 0 && (index + 1) % RainEvery == 0;
 
-        /// <summary>Robots que distraen: ninguno hasta el nivel 4, uno del 5 al 8, dos desde el 9.</summary>
-        public static int RobotCount(int level)
-        {
-            int l = Clamp(level);
-            return l <= 4 ? 0 : l <= 8 ? 1 : 2;
-        }
+        // ------------------------------------------------------------------ los 12 niveles (solo cambian la cantidad, la duración y las rocas)
 
-        /// <summary>¿La ronda número <paramref name="index"/> (0 = la primera) es una lluvia de astronautas?</summary>
-        public static bool IsRainTrial(int index) => index >= 0 && (index + 1) % RainEvery == 0;
+        private static readonly int[] CapsuleCounts = { 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4 };
+        private static readonly int[] Exposures = { 800, 600, 600, 450, 350, 280, 280, 220, 180, 150, 120, 100 };
+        private static readonly int[] RockCounts = { 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2 };
 
-        public static RadarTrial NextTrial(int level, Random rng)
+        public static int Capsules(int level) => CapsuleCounts[Clamp(level) - 1];
+        public static int ExposureMs(int level) => Exposures[Clamp(level) - 1];
+        public static int Rocks(int level) => RockCounts[Clamp(level) - 1];
+
+        public static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
+
+        // ------------------------------------------------------------------ el tablero: orden FIJO por tipo
+
+        public const int TypeCount = 6;
+
+        /// <summary>El orden de los seis botones del tablero (3 × 2): el mismo siempre; nunca depende de las posiciones del radar ni de la ronda.</summary>
+        public static readonly CapsuleType[] BoardOrder = { CapsuleType.Hexagon, CapsuleType.Drop, CapsuleType.Circle, CapsuleType.Square, CapsuleType.Triangle, CapsuleType.Diamond };
+
+        public static readonly string[] TypeNames = { "Hexágono", "Gota", "Círculo", "Cuadrado", "Triángulo", "Rombo" };
+
+        public static string TypeName(CapsuleType t) => TypeNames[(int)t];
+
+        // ------------------------------------------------------------------ armar una ronda
+
+        public static RadarRound NextRound(int level, Random rng)
         {
             level = Clamp(level);
-            var picked = PickSlots(TargetCount(level) + RobotCount(level), rng);
-            int n = TargetCount(level);
-            return new RadarTrial
-            {
-                Targets = picked.GetRange(0, n).ToArray(),
-                Robots = picked.GetRange(n, picked.Count - n).ToArray(),
-                ExposureMs = ExposureMs(level),
-                Level = level,
-            };
+            return Build(Capsules(level), Rocks(level), ExposureMs(level), level, false, rng);
         }
 
-        public static RadarTrial RainTrial(int level, Random rng) => new RadarTrial
-        {
-            Targets = PickSlots(RainTargets, rng).ToArray(),
-            Robots = new int[0],
-            ExposureMs = RainExposureMs,
-            Level = Clamp(level),
-            Rain = true,
-        };
+        public static RadarRound RainRound(int level, Random rng) => Build(RainCapsules, 0, RainExposureMs, Clamp(level), true, rng);
 
-        /// <summary>Lugares distintos al azar (los primeros serán los astronautas, el resto robots).</summary>
-        private static List<int> PickSlots(int count, Random rng)
+        /// <summary>Una ronda a medida (la ronda de práctica del tutorial: no alimenta el motor ni las medidas).</summary>
+        public static RadarRound Custom(int capsules, int rocks, int ms, Random rng) => Build(capsules, rocks, ms, 1, false, rng);
+
+        private static RadarRound Build(int capsules, int rocks, int ms, int level, bool rain, Random rng)
         {
-            var all = new List<int>();
-            for (int s = 0; s < Slots; s++) all.Add(s);
+            var types = new List<CapsuleType>();
+            for (int t = 0; t < TypeCount; t++) types.Add((CapsuleType)t);
+            for (int i = types.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (types[i], types[j]) = (types[j], types[i]);
+            }
+            var spots = Place(capsules + rocks, rng);
+            var round = new RadarRound { Capsules = new RadarObject[capsules], Rocks = new RadarObject[rocks], ExposureMs = ms, Level = level, Rain = rain };
+            for (int i = 0; i < capsules; i++) round.Capsules[i] = new RadarObject { Type = types[i], X = spots[i].x, Y = spots[i].y, Tilt = Tilt(rng) };
+            for (int i = 0; i < rocks; i++) round.Rocks[i] = new RadarObject { IsRock = true, X = spots[capsules + i].x, Y = spots[capsules + i].y, Tilt = Tilt(rng) };
+            return round;
+        }
+
+        private static float Tilt(Random rng) => ((float)rng.NextDouble() - 0.5f) * 0.6f;
+
+        /// <summary>
+        /// Posiciones CONTINUAS al azar dentro de un disco de radio fijo (<see cref="SpawnRadius"/>), con al menos <see cref="MinSeparation"/> entre centros: sin lugares fijos, sin cuadrícula, sin anillos. Funciona SIEMPRE con 6 objetos (4 cápsulas y
+        /// 2 rocas): primero se prueba al azar y, si no cupo (es raro con 6), se acomoda un anillo de seis más el centro, girado al azar y con un pequeño corrimiento (nunca «si no cabe, al centro»). Una prueba con 10.000 semillas lo garantiza.
+        /// </summary>
+        public static List<(float x, float y)> Place(int count, Random rng)
+        {
+            for (int attempt = 0; attempt < 60; attempt++)
+            {
+                var pts = new List<(float x, float y)>();
+                bool ok = true;
+                for (int i = 0; i < count && ok; i++)
+                {
+                    bool placed = false;
+                    for (int tries = 0; tries < 200 && !placed; tries++)
+                    {
+                        double a = rng.NextDouble() * Math.PI * 2.0, r = Math.Sqrt(rng.NextDouble()) * SpawnRadius;
+                        float x = (float)(r * Math.Cos(a)), y = (float)(r * Math.Sin(a));
+                        if (!FarEnough(pts, x, y)) continue;
+                        pts.Add((x, y));
+                        placed = true;
+                    }
+                    ok = placed;
+                }
+                if (ok) return pts;
+            }
+            return Ring(count, rng);
+        }
+
+        /// <summary>El plan B: un anillo de seis puntos a 70 dp del centro y el centro (siete lugares a ≥ 70 dp entre sí), girado al azar, con un corrimiento de hasta 1,2 dp; se eligen <paramref name="count"/> al azar.</summary>
+        public static List<(float x, float y)> Ring(int count, Random rng)
+        {
+            const float radius = 70f;
+            double turn = rng.NextDouble() * Math.PI * 2.0;
+            var all = new List<(float x, float y)> { (0f, 0f) };
+            for (int k = 0; k < 6; k++) all.Add(((float)(radius * Math.Cos(turn + k * Math.PI / 3.0)), (float)(radius * Math.Sin(turn + k * Math.PI / 3.0))));
             for (int i = all.Count - 1; i > 0; i--)
             {
                 int j = rng.Next(i + 1);
                 (all[i], all[j]) = (all[j], all[i]);
             }
-            return all.GetRange(0, Math.Min(count, Slots));
+            var pts = new List<(float x, float y)>();
+            for (int i = 0; i < Math.Min(count, all.Count); i++)
+                pts.Add((all[i].x + ((float)rng.NextDouble() * 2f - 1f) * 1.2f, all[i].y + ((float)rng.NextDouble() * 2f - 1f) * 1.2f));
+            return pts;
         }
 
-        // ------------------------------------------------------------------ geometría
-
-        public static int SlotOf(int direction, int ring) => ring * Directions + direction;
-        public static int DirectionOf(int slot) => slot % Directions;
-        public static int RingOf(int slot) => slot / Directions;
-
-        /// <summary>Posición de un lugar en coordenadas del radar (radio 1, y hacia arriba).</summary>
-        public static void Position(int slot, out float x, out float y)
+        private static bool FarEnough(List<(float x, float y)> pts, float x, float y)
         {
-            double a = DirectionOf(slot) * Math.PI / 4.0;
-            float r = RingRadius[Math.Max(0, Math.Min(Rings - 1, RingOf(slot)))];
-            x = (float)(r * Math.Sin(a));
-            y = (float)(r * Math.Cos(a));
-        }
-
-        /// <summary>El lugar más cercano a un toque en (x, y) (en radios del radar), o -1 si el toque cae en la mira del
-        /// centro o lejos del radar. Toda la zona alrededor de cada lugar cuenta: no hace falta acertarle al círculo.</summary>
-        public static int NearestSlot(float x, float y)
-        {
-            double r = Math.Sqrt(x * x + y * y);
-            if (r < CenterWindow || r > 1.2) return -1;
-            int best = -1;
-            double bestD = double.MaxValue;
-            for (int s = 0; s < Slots; s++)
+            foreach (var p in pts)
             {
-                Position(s, out float sx, out float sy);
-                double d = (sx - x) * (sx - x) + (sy - y) * (sy - y);
-                if (d < bestD)
-                {
-                    bestD = d;
-                    best = s;
-                }
+                float dx = p.x - x, dy = p.y - y;
+                if (dx * dx + dy * dy < MinSeparation * MinSeparation) return false;
             }
-            return best;
+            return true;
         }
-
-        private static readonly string[] DirectionNames =
-            { "arriba", "arriba a la derecha", "a la derecha", "abajo a la derecha", "abajo", "abajo a la izquierda", "a la izquierda", "arriba a la izquierda" };
-
-        public static string DirectionName(int direction) => DirectionNames[((direction % Directions) + Directions) % Directions];
 
         // ------------------------------------------------------------------ respuesta
 
-        /// <summary>Compara las balizas con lo que había. Las balizas repetidas cuentan una vez.</summary>
-        public static RadarAnswer Evaluate(RadarTrial trial, IEnumerable<int> beacons)
+        /// <summary>Compara los tipos elegidos con las cápsulas que había (las rocas no están en el tablero: no se pueden elegir).</summary>
+        public static RadarAnswer Evaluate(RadarRound round, IEnumerable<CapsuleType> picks)
         {
-            var targets = new HashSet<int>(trial.Targets);
-            var robots = new HashSet<int>(trial.Robots ?? new int[0]);
+            var types = round.Types();
             var a = new RadarAnswer();
-            foreach (int b in new HashSet<int>(beacons))
+            foreach (var p in new HashSet<CapsuleType>(picks))
             {
-                if (targets.Contains(b)) a.Hits++;
-                else
-                {
-                    a.Extras++;
-                    if (robots.Contains(b)) a.RobotsTouched++;
-                }
+                if (types.Contains(p)) a.Hits++;
+                else a.Extras++;
             }
             return a;
         }
 
-        /// <summary>Astronautas que hay que rescatar para que la ronda cuente como lograda: todos hasta 3; con 4 o más,
-        /// todos menos uno. Así la escalera apunta a "rescatar casi todos".</summary>
-        public static int Needed(int targets) => targets <= 3 ? targets : targets - 1;
+        /// <summary>Cápsulas que hay que acertar (netas) para que la ronda cuente como lograda: todas hasta 3; con 4, todas menos una.</summary>
+        public static int Needed(int capsules) => capsules <= 3 ? capsules : capsules - 1;
 
-        public static bool Success(RadarTrial trial, RadarAnswer answer) => answer.Hits >= Needed(trial.Targets.Length);
+        /// <summary>Éxito para el motor: aciertos − elegidas que no estaban ≥ <see cref="Needed"/>.</summary>
+        public static bool Success(int capsules, int hits, int extras) => hits - extras >= Needed(capsules);
 
-        /// <summary>Puntos: 40 por rescatado (con bono de nivel), más un bono si se logró la ronda, que crece con la racha.</summary>
-        public static int Points(int hits, bool success, int level, int streak)
-        {
-            int pts = hits * (40 + 4 * (Clamp(level) - 1));
-            if (success) pts += 60 + 20 * Math.Min(Math.Max(streak - 1, 0), 10);
-            return pts;
-        }
+        public static bool Success(RadarRound round, RadarAnswer a) => Success(round.Count, a.Hits, a.Extras);
+
+        /// <summary>Ronda perfecta (para la celebración y la racha, no para el motor): todas las cápsulas y ninguna de más.</summary>
+        public static bool Perfect(int capsules, int hits, int extras) => hits == capsules && extras == 0;
 
         // ------------------------------------------------------------------ medidas
 
-        /// <summary>Rondas iniciales que no cuentan para <see cref="GlanceMs"/> (la escalera todavía está buscando).</summary>
-        public const int GlanceSkip = 4;
-        /// <summary>Rondas finales que se promedian.</summary>
-        public const int GlanceWindow = 12;
-
         /// <summary>
-        /// "Tu vistazo" (ms): la duración de destello en la que la escalera se asentó, o sea, la más breve con la que
-        /// la persona rescata casi todos cerca de 8 de cada 10 veces. Media geométrica de las duraciones reales de las
-        /// últimas rondas normales (sin lluvias), sin las primeras. -1 si hay muy pocas.
+        /// «Tu captura»: cuántas cápsulas se nombran bien de un vistazo (de 4), en las lluvias. Cada lluvia vale <c>aciertos − 2 × elegidas que no estaban</c>: en una lluvia hay 4 cápsulas entre 6 tipos, así que adivinar acierta 2 de cada 3 veces y con el factor 2
+        /// (= 4 que estaban / 2 que no estaban) adivinar da 0 en promedio, y quien marca solo lo que vio obtiene exactamente lo que vio. Se promedia sin cortar cada lluvia en 0 (así no se infla el azar) y el total tiene mínimo 0. -1 con menos de 2 lluvias.
         /// </summary>
-        public static int GlanceMs(IReadOnlyList<float> exposuresMs)
+        public static float Capture(IReadOnlyList<int> rainRaws)
         {
-            if (exposuresMs == null || exposuresMs.Count < GlanceSkip + 4) return -1;
-            int from = Math.Max(GlanceSkip, exposuresMs.Count - GlanceWindow);
+            if (rainRaws == null || rainRaws.Count < MinRains) return -1f;
+            float sum = 0f;
+            foreach (int r in rainRaws) sum += r;
+            return Math.Max(0f, sum / rainRaws.Count);
+        }
+
+        public const int MinRains = 2;
+
+        public static int RainRaw(int hits, int extras) => hits - 2 * extras;
+
+        /// <summary>Rondas normales iniciales que no cuentan para «Tu vistazo» (la escalera todavía busca), rondas finales que se promedian y las que hacen falta para mostrarlo (5 o más).</summary>
+        public const int GlanceSkip = 3, GlanceWindow = 12, GlanceMin = 5;
+
+        /// <summary>«Tu vistazo» (ms): media geométrica de las duraciones REALES del destello de las rondas normales desde la 4.ª (las últimas 12). -1 con menos de 5 rondas contadas.</summary>
+        public static int GlanceMs(IReadOnlyList<float> realMs)
+        {
+            if (realMs == null || realMs.Count < GlanceSkip + GlanceMin) return -1;
+            int from = Math.Max(GlanceSkip, realMs.Count - GlanceWindow);
             double logSum = 0;
             int n = 0;
-            for (int i = from; i < exposuresMs.Count; i++)
+            for (int i = from; i < realMs.Count; i++)
             {
-                logSum += Math.Log(Math.Max(1.0, exposuresMs[i]));
+                logSum += Math.Log(Math.Max(1.0, realMs[i]));
                 n++;
             }
             return (int)Math.Round(Math.Exp(logSum / n));
         }
 
-        /// <summary>Cuántos astronautas había en promedio en las mismas rondas que usa <see cref="GlanceMs"/> (el
-        /// vistazo se lee "con N a la vez"). -1 si no hay vistazo.</summary>
-        public static float GlanceLoad(IReadOnlyList<int> targetCounts)
+        /// <summary>Cuántas cápsulas había en promedio en las mismas rondas que usa <see cref="GlanceMs"/> («con N a la vez»). -1 si no hay vistazo.</summary>
+        public static float GlanceLoad(IReadOnlyList<int> counts)
         {
-            if (targetCounts == null || targetCounts.Count < GlanceSkip + 4) return -1f;
-            int from = Math.Max(GlanceSkip, targetCounts.Count - GlanceWindow);
+            if (counts == null || counts.Count < GlanceSkip + GlanceMin) return -1f;
+            int from = Math.Max(GlanceSkip, counts.Count - GlanceWindow);
             float sum = 0f;
-            for (int i = from; i < targetCounts.Count; i++) sum += targetCounts[i];
-            return sum / (targetCounts.Count - from);
+            for (int i = from; i < counts.Count; i++) sum += counts[i];
+            return sum / (counts.Count - from);
         }
 
-        /// <summary>Puntaje de una lluvia: rescatados menos balizas de más (poner balizas al azar no suma).</summary>
-        public static int RainScore(RadarAnswer a) => Math.Max(0, a.Hits - a.Extras);
-
-        /// <summary>
-        /// "Tu captura": cuántos astronautas se captan de un vistazo cuando el tiempo no es el límite (promedio de las
-        /// lluvias: 6 astronautas, 300 ms). En TVA es la capacidad de la memoria visual de corto plazo, que en adultos
-        /// ronda 3 a 4 elementos. -1 con menos de 2 lluvias.
-        /// </summary>
-        public static float Capture(IReadOnlyList<int> rainScores)
-        {
-            if (rainScores == null || rainScores.Count < 2) return -1f;
-            float sum = 0f;
-            foreach (int s in rainScores) sum += s;
-            return sum / rainScores.Count;
-        }
-
-        /// <summary>Puntaje 0-100: rondas logradas (50%) y rapidez del vistazo (50%, escala logarítmica entre 600 y
-        /// 80 ms). Sin vistazo medido, solo las rondas logradas.</summary>
+        /// <summary>Puntaje 0-100: rondas logradas (50 %) y rapidez del vistazo (50 %, escala logarítmica entre 800 y 100 ms). Sin vistazo medido, solo las rondas logradas.</summary>
         public static int Score(float accuracy, int glanceMs)
         {
             float acc = Math.Max(0f, Math.Min(1f, accuracy));
             if (glanceMs <= 0) return (int)Math.Round(acc * 100f);
-            double speed = Math.Log(600.0 / Math.Max(1, glanceMs)) / Math.Log(600.0 / 80.0);
+            double speed = Math.Log(800.0 / Math.Max(1, glanceMs)) / Math.Log(800.0 / 100.0);
             speed = Math.Max(0.0, Math.Min(1.0, speed));
             return Math.Max(0, Math.Min(100, (int)Math.Round((0.5 * acc + 0.5 * speed) * 100.0)));
         }
 
-        private static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
+        // ------------------------------------------------------------------ textos
+
+        public const string WatchMessage = "Atento al relámpago…", AskHint = "Elige solo las que viste", RainMessage = "¡Lluvia de cápsulas!", RescueLabel = "¡Rescatar!";
+        public const string RedoMessage = "Otra vez", RedoHint = "La pausa cortó el destello";
+        public static string AskMessage(int count) => "¿Qué cápsulas viste? (eran " + count + ")";
+        public static string AllSafe(int streak) => streak >= 3 ? "¡Todos a salvo! Racha ×" + streak : "¡Todos a salvo!";
+        public static string Partial(int hits, int count, int extras) => "Rescataste " + hits + " de " + count + (extras > 0 ? " · " + extras + (extras == 1 ? " no estaba" : " no estaban") : "");
+        public static string RoundChip(int round, int total) => total > 0 ? "Ronda " + Math.Min(round, total) + " de " + total : "Ronda " + round;
+        public static string StreakChip(int streak) => "Racha ×" + streak;
+
+        public const string EndTag = "¡RESCATE COMPLETO!";
+        public static string EndTitle(int rescued) => rescued == 1 ? "1 cápsula a salvo" : rescued + " cápsulas a salvo";
+        public const string EndCapture = "Tu captura", EndShortest = "Destello más corto resuelto", EndPerfect = "Rondas perfectas", EndStreak = "Racha mayor";
+        public static string CaptureValue(float capture) => capture < 0f ? "—" : capture.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " de 4";
+        public static string ShortestValue(int ms) => ms <= 0 ? "—" : ms + " ms";
+        public static string PerfectValue(int perfect, int rounds) => perfect + " de " + rounds;
+        public static string StreakValue(int best) => best >= 2 ? "×" + best : "—";
+        public const string EndNote1 = "Captura: cuántas nombras bien en la lluvia;", EndNote2 = "una que no estaba descuenta el doble.", EndNote3 = "Medida de esta partida. No es un diagnóstico.";
+        public const string NewRecord = "¡Récord nuevo!";
+        public static string RecordLine(int best) => "Tu récord: " + best + (best == 1 ? " cápsula" : " cápsulas");
+        public const string CountdownSub = "Mira un instante y elige qué cápsulas viste";
     }
 }

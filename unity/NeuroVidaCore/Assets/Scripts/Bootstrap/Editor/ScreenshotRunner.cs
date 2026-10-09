@@ -39,7 +39,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Los juegos con tutorial guiado (los de <c>UnityGameLauncher.TUTORIAL_GAMES</c> de la app).</summary>
         private static readonly HashSet<string> TutorialGames = new HashSet<string>
         {
-            "secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto",
+            "secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar",
         };
 
         /// <summary>Los juegos que el smoke juega solos con <c>GuidedTutorial.EditorAutoPlayGame</c> (el único «piloto automático» que hay de la partida real).</summary>
@@ -198,6 +198,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Correo.MailGameController.EditorShotMode = false;
             NeuroVida.Games.Satelites.SatelliteGameController.EditorShotMode = false;
             NeuroVida.Games.Piloto.PilotGameController.EditorShotMode = false;
+            NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
             double total = Now - _startedAt;
             Summary.Insert(0, "total\t" + Mathf.RoundToInt((float)total) + " s\t" + _totalShots + " capturas\t" + _gamesDone + " juegos\n");
             try { File.WriteAllText(Path.Combine(_root, "_resumen.txt"), Summary.ToString(), new UTF8Encoding(false)); } catch (Exception) { /* el resumen es un extra */ }
@@ -227,8 +228,9 @@ namespace NeuroVida.Bridge.EditorTools
                 if (id == "correo") yield return CorreoScript();
                 else if (id == "satelites") yield return SatelitesScript();
                 else if (id == "piloto") yield return PilotoScript();
+                else if (id == "radar") yield return RadarScript();
                 else yield return PlayShots(id);
-                if (id != "correo" && id != "satelites" && id != "piloto") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites y Piloto ya traen su toma con «quitar animaciones»
+                if (id != "correo" && id != "satelites" && id != "piloto" && id != "radar") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto y Rescate ya traen su toma con «quitar animaciones»
                 if (TutorialGames.Contains(id)) yield return TutorialShots(id);
                 yield return Stopped();
 
@@ -260,6 +262,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.PilStageOverride = 0;
             EditorPlaytestBootstrap.PilSectorOverride = 0;
             EditorPlaytestBootstrap.TimedOverride = false;
+            EditorPlaytestBootstrap.RescStageOverride = 0;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = !tutorial && AutoPlayGames.Contains(id);
             NeuroVida.Games.Shared.NubiCoach.AuditEnabled = tutorial;
@@ -268,6 +271,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Correo.MailGameController.EditorShotMode = false;
             NeuroVida.Games.Satelites.SatelliteGameController.EditorShotMode = false;
             NeuroVida.Games.Piloto.PilotGameController.EditorShotMode = false;
+            NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
             HeadlessPlaymodeSmokeTest.ResetAuditCanvases();
         }
 
@@ -452,6 +456,25 @@ namespace NeuroVida.Bridge.EditorTools
             yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 240);
             if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion de Piloto no terminó a tiempo");
             NeuroVida.Games.Piloto.PilotGameController.EditorShotMode = false;
+            yield return ExitPlay();
+        }
+
+        // ------------------------------------------------------------------ Rescate relámpago (su guion)
+
+        private static IEnumerator RadarScript()
+        {
+            Configure("radar", tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.RescStageOverride = 8;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
+            NeuroVida.Games.Radar.RadarGameController.EditorShotMode = true;
+            yield return EnterPlay();
+            NeuroVida.Games.Radar.RadarGameController controller = null;
+            yield return Wait.Until(() => (controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Radar.RadarGameController>()) != null, 40);
+            if (controller == null) { GameNotes.Add("no apareció el juego de Rescate relámpago"); yield return ExitPlay(); yield break; }
+            controller.StartCoroutine(controller.EditorShotScript(Shot, PauseShot));
+            yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 240);
+            if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion de Rescate relámpago no terminó a tiempo");
+            NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
             yield return ExitPlay();
         }
 
