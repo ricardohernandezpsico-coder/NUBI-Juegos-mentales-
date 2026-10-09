@@ -39,9 +39,6 @@ namespace NeuroVida.Contracts
         /// <summary>Solo Tinta o Palabra: «Cambiar de orilla te costó», en ms: promedio de tiempo de los aciertos tras un cambio de orilla menos el de los que repiten orilla (costo de cambio).
         /// -1 con menos de 3 aciertos de cada tipo (en los niveles 1 y 2 no hay cambios) o en otro juego.</summary>
         public int switch_cost_ms = -1;
-        /// <summary>Solo Piloto Estelar: costo de multitarea en % (cuánto baja la precisión en señales al pilotar a la
-        /// vez). -1 = no aplica o sin datos.</summary>
-        public int multitask_cost = -1;
         /// <summary>Solo Radar: "tu vistazo" en ms (duración de destello en la que se asentó la escalera). -1 = no aplica.</summary>
         public int glance_ms = -1;
         /// <summary>Solo Radar: cuántos astronautas había en promedio en las rondas del vistazo. -1 = no aplica.</summary>
@@ -134,6 +131,20 @@ namespace NeuroVida.Contracts
         public int mail_group = -1;
         public int mail_best = -1;
         public int mail_new;
+        // ---- «Piloto Estelar: la ruta de las balizas» (renovado el 9-oct; docs/diseno-piloto.md §9). TODO se mide con las dos tareas juntas: no hay medida de una tarea sola. -1 = no aplica / sin dato.
+        /// <summary>% del vuelo con la nave dentro de la ruta; señales de la misión atrapadas y resueltas (atrapadas + las que se fueron); toques equivocados.</summary>
+        public int pil_lane_pct = -1;
+        public int pil_hits = -1;
+        public int pil_targets = -1;
+        public int pil_false = -1;
+        /// <summary>«Tus señales a los mandos»: (aciertos − toques equivocados) / señales de la misión, en % (-1 con menos de 8 señales de la misión).</summary>
+        public int pil_signal_pct = -1;
+        /// <summary>Nivel asentado de cada motor (1..9): señales y pilotaje; mejor racha de señales bien resueltas, puntos y veces que se entró en hiperimpulso.</summary>
+        public int pil_signal_level = -1;
+        public int pil_drive_level = -1;
+        public int pil_best_streak = -1;
+        public int pil_points = -1;
+        public int pil_hyper = -1;
         // ---- «Satélites: enciende tu planeta» (renovado el 9-oct; docs/diseno-satelites.md §8). -1 = no aplica / sin dato. Siguen los tracking_capacity / tracking_targets / tracking_speed de siempre.
         /// <summary>Luces encendidas en la partida (mensajes entregados), rondas perfectas (todos los k), racha mayor de rondas perfectas, el récord de luces (el guardado o el de esta partida, el mayor) y 1 si esta partida lo superó.</summary>
         public int sat_lights = -1;

@@ -143,6 +143,15 @@ namespace NeuroVida.Games.Shared
             if (up) _runner.StartCoroutine(LevelUpGlow());
         }
 
+        /// <summary>Texto libre del chip de arriba cuando «Nivel N» no es lo que hay que decir (Piloto Estelar: «Sector 2 de 3»). <paramref name="highlight"/> hace saltar y brillar el chip, como al subir de nivel.</summary>
+        public void SetLevelText(string text, bool highlight = false)
+        {
+            _level = -1;
+            _levelText.text = text;
+            LayoutChips();
+            if (highlight) _runner.StartCoroutine(LevelUpGlow());
+        }
+
         /// <summary>Puntos del modo Reto: el número cuenta hacia arriba en ~0,3 s.</summary>
         public void SetPoints(int points)
         {

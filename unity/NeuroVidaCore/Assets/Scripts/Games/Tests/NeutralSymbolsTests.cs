@@ -60,17 +60,18 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
-        public void ThePilotSignals_AreSixDifferentShapes_WithoutAStarOrACrescent()
+        public void ThePilotSignals_AreFiveDifferentShapes_WithoutAStarACrescentOrACross()
         {
-            Assert.AreEqual(6, PilotContract.Shapes.Length);
-            CollectionAssert.AllItemsAreUnique(PilotContract.Shapes);
-            Assert.Contains((int)ShapeKind.Hexagon, PilotContract.Shapes);
-            Assert.Contains((int)ShapeKind.Drop, PilotContract.Shapes);
-            foreach (int s in PilotContract.Shapes)
-            {
-                string name = ((ShapeKind)s).ToString();
-                Assert.IsFalse(name == "Star" || name == "Moon", "una señal de Piloto es «" + name + "»");
-            }
+            var names = System.Enum.GetNames(typeof(SignalShape));
+            Assert.AreEqual(PilotContract.ShapeCount, names.Length);
+            CollectionAssert.AllItemsAreUnique(names);
+            CollectionAssert.Contains(names, "Hexagon");
+            CollectionAssert.Contains(names, "Drop");
+            foreach (string name in names)
+                Assert.IsFalse(name == "Star" || name == "Moon" || name == "Crescent" || name == "Cross", "una señal de Piloto es «" + name + "»");
+            foreach (SignalShape shape in System.Enum.GetValues(typeof(SignalShape)))
+                foreach (SignalDetail detail in System.Enum.GetValues(typeof(SignalDetail)))
+                    Assert.IsNotNull(PilotSignalSprites.Get(shape, detail), shape + " " + detail);
         }
     }
 }

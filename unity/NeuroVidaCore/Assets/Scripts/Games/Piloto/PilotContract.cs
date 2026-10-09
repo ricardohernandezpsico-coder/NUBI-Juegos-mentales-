@@ -2,190 +2,206 @@ using System;
 
 namespace NeuroVida.Games.Piloto
 {
-    /// <summary>Una señal que aparece en el espacio durante el vuelo: tocarla solo si es la de la misión.</summary>
-    public readonly struct PilotSignal
-    {
-        /// <summary>Índice en <see cref="PilotContract.Shapes"/>.</summary>
-        public readonly int Shape;
-        /// <summary>Variante de color del ícono (0..2, ver <c>SymbolSprite</c>; la 3 es un tono análogo de la 0 y no se
-        /// usa: dos señales de la misma forma deben diferenciarse bien por color).</summary>
-        public readonly int Variant;
-        public readonly bool IsTarget;
-        /// <summary>Posición normalizada dentro de la zona de señales (0..1; x = ancho, y = alto).</summary>
-        public readonly float X, Y;
-        public readonly bool Peripheral;
+    /// <summary>Las formas de las señales: sin estrellas con puntas, cruces ni medias lunas (docs/simbolos-neutros.md). Cada forma tiene SIEMPRE el mismo color: las parecidas (misma forma, otro detalle) se distinguen por el detalle, no por el color.</summary>
+    public enum SignalShape { Hexagon, Drop, Circle, Square, Triangle }
 
-        public PilotSignal(int shape, int variant, bool isTarget, float x, float y, bool peripheral)
+    /// <summary>El detalle que lleva una señal dentro de su forma.</summary>
+    public enum SignalDetail { Dot, Ring, Stripe }
+
+    /// <summary>Una señal: qué es (forma y detalle), si es la de la misión y si nace en los costados.</summary>
+    public readonly struct PilotSignalKind
+    {
+        public readonly SignalShape Shape;
+        public readonly SignalDetail Detail;
+        public readonly bool IsTarget, Peripheral;
+
+        public PilotSignalKind(SignalShape shape, SignalDetail detail, bool isTarget, bool peripheral)
         {
             Shape = shape;
-            Variant = variant;
+            Detail = detail;
             IsTarget = isTarget;
-            X = x;
-            Y = y;
             Peripheral = peripheral;
         }
     }
 
+    /// <summary>La misión de un sector: «hexágono con punto», por ejemplo.</summary>
+    public readonly struct PilotMission : IEquatable<PilotMission>
+    {
+        public readonly SignalShape Shape;
+        public readonly SignalDetail Detail;
+
+        public PilotMission(SignalShape shape, SignalDetail detail)
+        {
+            Shape = shape;
+            Detail = detail;
+        }
+
+        public bool Equals(PilotMission o) => Shape == o.Shape && Detail == o.Detail;
+        public override bool Equals(object obj) => obj is PilotMission m && Equals(m);
+        public override int GetHashCode() => (int)Shape * 31 + (int)Detail;
+        public override string ToString() => PilotContract.MissionName(this);
+    }
+
     /// <summary>
-    /// Reglas puras de "Piloto Estelar": entrenamiento de MULTITAREA inspirado en NeuroRacer (Anguera et al., Nature
-    /// 2013), con señales periféricas breves como en el entrenamiento de campo visual útil (UFOV, ensayo ACTIVE:
-    /// Ball et al., JAMA 2002). Dos tareas a la vez, cada una con su propia dificultad adaptativa:
-    /// <list type="bullet">
-    /// <item><b>Pilotaje</b> (seguimiento visomotor continuo): mantener la nave dentro de una ruta que serpentea. La
-    /// dificultad sube la velocidad, estrecha la ruta y la hace más sinuosa.</item>
-    /// <item><b>Señales</b> (go/no-go): tocar solo las señales de la misión (forma + color) e ignorar el resto. La
-    /// dificultad acorta el tiempo de cada señal, las hace más seguidas, agrega distractores parecidos (misma forma,
-    /// otro color) y desde el nivel 5 las lleva a la periferia.</item>
-    /// </list>
-    /// El vuelo empieza con <see cref="AutopilotSeconds"/> de piloto automático (solo señales): esa parte mide la
-    /// tarea de señales sola y permite calcular el <see cref="MultitaskCost"/> (cuánto empeora al hacer las dos a la
-    /// vez), la medida propia de NeuroRacer. Sin dependencias de UnityEngine: testeable con NUnit.
+    /// Reglas puras de «Piloto Estelar: la ruta de las balizas» (renovado el 9-oct; ver docs/diseno-piloto.md). Un dedo, en la franja de abajo, guía la nave por una ruta de balizas; el otro atrapa SOLO las señales de la misión (forma y detalle).
+    /// Las dos tareas van SIEMPRE juntas, desde el primer segundo hasta el final (regla permanente de Ricardo, 9-oct): ninguna se presenta sola dentro de una partida ni se mide sola, y no existe un «costo de multitarea».
+    /// Cada tarea tiene su propio motor común de dificultad (pilotaje: ventanas de 1,5 s, objetivo 85 %; señales: por señal, objetivo 80 %). Sin dependencias de UnityEngine: testeable con NUnit.
     /// </summary>
     public static class PilotContract
     {
         public const string GameId = "piloto";
+        public const string Title = "Piloto Estelar";
         public const int MaxLevel = 9;
 
-        /// <summary>Reto: vuelo de 90 s (15 de piloto automático + 75 a los mandos).</summary>
-        public const int FlightSeconds = 90;
-        public const int AutopilotSeconds = 15;
-        /// <summary>Precisión (sin reloj): el vuelo termina tras esta cantidad de señales a los mandos.</summary>
-        public const int PrecisionSignals = 24;
+        // ------------------------------------------------------------------ el vuelo
 
-        /// <summary>Ventana de pilotaje: cada tanto se evalúa si la nave estuvo en la ruta (un "ensayo" del DDA).</summary>
-        public const float DriveWindowSeconds = 1.5f;
-        /// <summary>Fracción de la ventana dentro de la ruta para contarla como acierto.</summary>
-        public const float DriveWindowPass = 0.85f;
+        /// <summary>Reto: vuelo de 90 s en 3 sectores de 30 s.</summary>
+        public const int FlightSeconds = 90, SectorSeconds = 30, Sectors = 3;
+        /// <summary>Inicio suave: los primeros 10 s la ruta usa el nivel de pilotaje − 2 y las señales salen más espaciadas y duran más. Las dos tareas siguen juntas.</summary>
+        public const float GentleSeconds = 10f, GentleDriveLevels = 2f, GentleGapFactor = 1.4f, GentleExposureFactor = 1.25f;
+        /// <summary>Precisión (sin reloj): velocidad × 0,8 y exposición × 1,3; termina tras 24 señales, con un sector cada 8.</summary>
+        public const int PrecisionSignals = 24, PrecisionSectorEvery = 8;
+        public const float PrecisionSpeedFactor = 0.8f, PrecisionExposureFactor = 1.3f;
 
-        /// <summary>Proporción de señales que son de la misión.</summary>
-        public const float TargetChance = 0.4f;
+        // ------------------------------------------------------------------ los dos motores comunes de dificultad (docs/DDA-comun.md)
 
-        /// <summary>Íconos que se usan como señales (índices de <c>ShapeKind</c> de Parejas: se eligen los que se
-        /// distinguen bien por silueta aun en un vistazo): hexágono, cometa, planeta, gota, cohete, platillo (4-oct: sin estrella ni media luna; 14 = <c>ShapeKind.Hexagon</c>, 13 = <c>ShapeKind.Drop</c>).</summary>
-        public static readonly int[] Shapes = { 14, 2, 0, 13, 1, 5 };
+        /// <summary>Pilotaje: un ensayo por ventana de 1,5 s, objetivo 85 % (el descenso por ventana fallada es 0,85 niveles). Señales: un ensayo por señal resuelta, objetivo 80 % (el descenso por error es 1 nivel).</summary>
+        public const float DriveStepUp = 0.15f, DriveTarget = 0.85f, SignalStepUp = 0.25f, SignalTarget = 0.80f;
 
-        // ------------------------------------------------------------------ pilotaje
+        // ------------------------------------------------------------------ pilotaje (dp lógicos de un campo de 360 de ancho)
 
-        /// <summary>Velocidad de avance de la ruta (unidades de lienzo por segundo).</summary>
-        public static float ScrollSpeed(int level, bool precision)
-        {
-            float v = 360f + 48f * (Clamp(level) - 1);
-            return precision ? v * 0.8f : v;
-        }
+        public const float FieldWidth = 360f;
+        /// <summary>Una baliza cada 64 dp de ruta; cada una guarda su centro y su ancho al crearse (así un cambio de nivel no deforma lo visible).</summary>
+        public const float BeaconGap = 64f;
+        /// <summary>La nave cuenta como «dentro» a menos de (medio ancho − 10 dp) del centro.</summary>
+        public const float InsideMargin = 10f;
+        /// <summary>La nave sigue la x del dedo con inercia: factor por segundo del <c>lerp</c>.</summary>
+        public const float ShipFollow = 9f;
+        public const float ShipSize = 44f;
+        public const float DriveWindowSeconds = 1.5f, DriveWindowPass = 0.85f;
+        /// <summary>Distancia (dp) de la que la ruta no se acerca al borde del campo.</summary>
+        public const float RouteEdgeMargin = 16f;
+        /// <summary>La ruta serpentea en función de la distancia recorrida dividida por esto (dp): no depende del alto de la pantalla.</summary>
+        public const float RouteWavelength = 640f;
 
-        /// <summary>Medio ancho de la ruta como fracción del ancho de pantalla: 0.30 (fácil) → 0.15.</summary>
-        public static float LaneHalfWidth(int level) => 0.30f - 0.15f * (Clamp(level) - 1) / (MaxLevel - 1);
+        private static float Lv01(int level) => (Clamp(level) - 1) / (float)(MaxLevel - 1);
 
-        /// <summary>Cuánto se aleja la ruta del centro (fracción del ancho): 0.10 → 0.30.</summary>
-        public static float Curviness(int level) => 0.10f + 0.20f * (Clamp(level) - 1) / (MaxLevel - 1);
+        /// <summary>Avance de la ruta (dp/s): 150 → 294.</summary>
+        public static float Speed(int level, bool precision) => (150f + 144f * Lv01(level)) * (precision ? PrecisionSpeedFactor : 1f);
+
+        /// <summary>Medio ancho de la ruta (dp): 104 → 54.</summary>
+        public static float HalfWidth(int level) => 104f - 50f * Lv01(level);
+
+        /// <summary>Cuánto serpentea (fracción del ancho): 0,10 → 0,30.</summary>
+        public static float Curve(int level) => 0.10f + 0.20f * Lv01(level);
+
+        /// <summary>El nivel de pilotaje con que se vuela: en el inicio suave, dos menos (mínimo 1).</summary>
+        public static int DriveLevel(int level, bool gentle) => gentle ? Math.Max(1, level - (int)GentleDriveLevels) : Clamp(level);
 
         /// <summary>
-        /// Centro de la ruta (0..1 del ancho) a la distancia recorrida <paramref name="d"/> (en alturas de pantalla),
-        /// con amplitud <paramref name="amp"/>. Suma de dos senos de frecuencias no múltiplos: no se repite a la vista.
-        /// La amplitud la guarda cada tramo de la ruta al crearse, así un cambio de nivel no deforma lo ya visible.
+        /// Centro de la ruta (dp, de 0 a <see cref="FieldWidth"/>) a la distancia <paramref name="p"/> (dp), con la curva <paramref name="curve"/> y el medio ancho <paramref name="half"/>: la suma de dos senos de frecuencias que no son múltiplos
+        /// (no se repite a la vista), sin salirse nunca del campo.
         /// </summary>
-        public static float CenterAt(float d, float amp, float halfWidth)
+        public static float CenterAt(float p, float curve, float half)
         {
+            float d = p / RouteWavelength;
             float wave = 0.62f * (float)Math.Sin(d * 2.1f) + 0.38f * (float)Math.Sin(d * 3.7f + 1.3f);
-            float x = 0.5f + amp * wave;
-            // La ruta nunca se sale de la pantalla.
-            float min = halfWidth + 0.04f, max = 1f - halfWidth - 0.04f;
-            return Math.Max(min, Math.Min(max, x));
+            float x = FieldWidth * (0.5f + curve * wave);
+            return Math.Max(half + RouteEdgeMargin, Math.Min(FieldWidth - half - RouteEdgeMargin, x));
         }
 
-        /// <summary>¿La nave (x normalizada) está dentro de la ruta?</summary>
-        public static bool InLane(float shipX, float center, float halfWidth) => Math.Abs(shipX - center) <= halfWidth;
+        /// <summary>¿Está la nave dentro de la ruta (con el margen interior de 10 dp)?</summary>
+        public static bool Inside(float shipX, float center, float half) => Math.Abs(shipX - center) <= half - InsideMargin;
 
         // ------------------------------------------------------------------ señales
 
-        /// <summary>Segundos entre una señal y la siguiente: 2.2 → 1.1.</summary>
-        public static float SignalGap(int level, bool precision)
-        {
-            float g = 2.2f - 1.1f * (Clamp(level) - 1) / (MaxLevel - 1);
-            return precision ? g * 1.15f : g;
-        }
+        /// <summary>Segundos entre una señal y la siguiente: 2,2 → 1,1.</summary>
+        public static float Gap(int level, bool gentle) => (2.2f - 1.1f * Lv01(level)) * (gentle ? GentleGapFactor : 1f);
 
         /// <summary>Cuánto dura visible cada señal (ms): 1600 → 650.</summary>
-        public static int ExposureMs(int level, bool precision)
+        public static int ExposureMs(int level, bool precision, bool gentle)
         {
-            int ms = 1600 - (int)Math.Round(950f * (Clamp(level) - 1) / (MaxLevel - 1));
-            return precision ? (int)(ms * 1.3f) : ms;
+            float ms = 1600f - 950f * Lv01(level);
+            if (precision) ms *= PrecisionExposureFactor;
+            if (gentle) ms *= GentleExposureFactor;
+            return (int)Math.Round(ms);
         }
 
-        /// <summary>Probabilidad de que un distractor tenga LA MISMA forma que la misión (otro color): obliga a mirar
-        /// forma y color juntos. 0 en los niveles 1-2.</summary>
+        /// <summary>Probabilidad de que un distractor sea PARECIDO a la misión (misma forma, otro detalle): 0 en 1-2, 30 % en 3-4, 55 % desde el 5.</summary>
         public static float LookalikeChance(int level)
         {
             int l = Clamp(level);
             return l <= 2 ? 0f : l <= 4 ? 0.3f : 0.55f;
         }
 
-        /// <summary>Probabilidad de que la señal aparezca en la periferia (desde el nivel 5).</summary>
-        public static float PeripheralChance(int level)
+        /// <summary>Desde el nivel 5 algunas señales (45 %) nacen en los bordes: campo visual útil.</summary>
+        public static bool PeripheralLevel(int level) => Clamp(level) >= 5;
+        public const float PeripheralChance = 0.45f;
+
+        public const float TargetChance = 0.4f;
+        /// <summary>El toque va a la señal viva más cercana dentro de esta distancia (dp; un toque de 80 dp de diámetro).</summary>
+        public const float TouchRadius = 40f;
+        /// <summary>El diámetro de una señal (dp) y el del anillo que se vacía con el tiempo que le queda.</summary>
+        public const float SignalSize = 34f, SignalRingSize = 54f;
+
+        public const int ShapeCount = 5, DetailCount = 3;
+
+        public static PilotMission PickMission(Random rng, PilotMission? previous)
         {
-            int l = Clamp(level);
-            return l < 5 ? 0f : Math.Min(0.7f, 0.25f + 0.1f * (l - 5));
+            PilotMission m;
+            do m = new PilotMission((SignalShape)rng.Next(ShapeCount), (SignalDetail)rng.Next(DetailCount));
+            while (previous.HasValue && m.Equals(previous.Value));
+            return m;
         }
 
-        /// <summary>La misión de un vuelo: forma y variante de color a atrapar.</summary>
-        public const int Variants = 3;
-
-        public static (int shape, int variant) PickMission(Random rng) =>
-            (rng.Next(Shapes.Length), rng.Next(Variants));
-
-        public static PilotSignal NextSignal(int level, int missionShape, int missionVariant, Random rng)
+        /// <summary>
+        /// La próxima señal: el 40 % es de la misión; entre las demás, las parecidas (misma forma, OTRO detalle) con la probabilidad del nivel y el resto de otra forma con cualquier detalle. Como cada forma tiene su color fijo, las parecidas tienen el
+        /// mismo color que la misión.
+        /// </summary>
+        public static PilotSignalKind NextSignal(int level, PilotMission mission, Random rng)
         {
             bool target = rng.NextDouble() < TargetChance;
-            int shape = missionShape, variant = missionVariant;
+            SignalShape shape = mission.Shape;
+            SignalDetail detail = mission.Detail;
             if (!target)
             {
                 if (rng.NextDouble() < LookalikeChance(level))
                 {
-                    // Misma forma, otro color.
-                    variant = (missionVariant + 1 + rng.Next(Variants - 1)) % Variants;
+                    do detail = (SignalDetail)rng.Next(DetailCount); while (detail == mission.Detail);
                 }
                 else
                 {
-                    shape = (missionShape + 1 + rng.Next(Shapes.Length - 1)) % Shapes.Length;
-                    variant = rng.Next(Variants);
+                    do shape = (SignalShape)rng.Next(ShapeCount); while (shape == mission.Shape);
+                    detail = (SignalDetail)rng.Next(DetailCount);
                 }
             }
-            bool peripheral = rng.NextDouble() < PeripheralChance(level);
-            float x = peripheral
-                ? (rng.NextDouble() < 0.5 ? 0.08f + 0.10f * (float)rng.NextDouble() : 0.82f + 0.10f * (float)rng.NextDouble())
-                : 0.30f + 0.40f * (float)rng.NextDouble();
-            float y = 0.15f + 0.75f * (float)rng.NextDouble();
-            return new PilotSignal(shape, variant, target, x, y, peripheral);
+            bool peripheral = PeripheralLevel(level) && rng.NextDouble() < PeripheralChance;
+            return new PilotSignalKind(shape, detail, target, peripheral);
         }
 
-        // ------------------------------------------------------------------ puntaje
+        // ------------------------------------------------------------------ puntos, hiperimpulso y medida
 
-        /// <summary>Puntos por señal atrapada, con bono de racha y el multiplicador de "hiperimpulso".</summary>
-        public static int PointsForCatch(int streak, bool boost) => (100 + 20 * Math.Min(Math.Max(streak - 1, 0), 10)) * (boost ? 2 : 1);
+        public const int PointsPerCatch = 10;
+        public const int HyperEvery = 5, HyperCleanWindows = 3;
+        public const float HyperSeconds = 6f, HyperSpeedFactor = 1.15f;
 
-        /// <summary>
-        /// Precisión en la tarea de señales: aciertos (atrapadas) menos falsas alarmas, sobre su total ("reconocimiento
-        /// corregido" Pr = H − FA, Snodgrass y Corwin, 1988). 0..1; null si faltan señales de alguno de los dos tipos.
-        /// </summary>
-        public static float? SignalAccuracy(int hits, int targets, int falseAlarms, int nonTargets)
+        public static int Points(bool hyper) => PointsPerCatch * (hyper ? 2 : 1);
+
+        /// <summary>Las señales de la misión que se atraparon menos los toques equivocados, sobre las señales de la misión (0 a 1; «reconocimiento corregido», Snodgrass y Corwin, 1988). null si hubo menos de <see cref="MinTargetsForMeasure"/>.</summary>
+        public static float? SignalScore(int hits, int falseAlarms, int targets) =>
+            targets < MinTargetsForMeasure ? (float?)null : Math.Max(0f, Math.Min(1f, (hits - falseAlarms) / (float)targets));
+
+        public const int MinTargetsForMeasure = 8;
+
+        /// <summary>Puntaje 0-100 del vuelo: señales (55 %) y tiempo dentro de la ruta (45 %); sin medida de señales cuenta solo la ruta.</summary>
+        public static int Score(float? signalScore, float inLaneFraction)
         {
-            if (targets <= 0 || nonTargets <= 0) return null;
-            float h = (float)hits / targets, fa = (float)falseAlarms / nonTargets;
-            return Math.Max(0f, Math.Min(1f, h - fa));
+            float lane = Math.Max(0f, Math.Min(1f, inLaneFraction));
+            if (!signalScore.HasValue) return (int)Math.Round(lane * 100f);
+            return Math.Max(0, Math.Min(100, (int)Math.Round((0.55f * signalScore.Value + 0.45f * lane) * 100f)));
         }
 
-        /// <summary>Costo de multitarea (%): cuánto baja la precisión en señales al pilotar al mismo tiempo, respecto de
-        /// hacerlas solas (piloto automático). 0 = sin costo. -1 = sin datos suficientes.</summary>
-        public static int MultitaskCost(float? single, float? dual)
-        {
-            if (single == null || dual == null || single.Value < 0.2f) return -1;
-            float cost = (single.Value - dual.Value) / single.Value;
-            return (int)Math.Round(Math.Max(0f, Math.Min(1f, cost)) * 100f);
-        }
-
-        /// <summary>Puntaje 0-100 del vuelo: señales (55%) y tiempo dentro de la ruta (45%).</summary>
-        /// <summary>De las dos tareas (pilotaje y señales), la de menor proporción de aciertos: un Desafío en Piloto se
-        /// supera solo si se superan las dos. Sin ensayos en una, cuenta la otra.</summary>
+        /// <summary>De las dos tareas (pilotaje y señales), la de menor proporción de aciertos: un Desafío en Piloto se supera solo si se superan las dos. Sin ensayos en una, cuenta la otra.</summary>
         public static (int hits, int trials) WeakerOf(int hitsA, int trialsA, int hitsB, int trialsB)
         {
             if (trialsA <= 0) return (hitsB, trialsB);
@@ -193,10 +209,49 @@ namespace NeuroVida.Games.Piloto
             return (float)hitsA / trialsA <= (float)hitsB / trialsB ? (hitsA, trialsA) : (hitsB, trialsB);
         }
 
-        public static int Score(float signalAccuracy, float inLaneFraction) =>
-            Math.Max(0, Math.Min(100, (int)Math.Round((0.55f * Clamp01(signalAccuracy) + 0.45f * Clamp01(inLaneFraction)) * 100f)));
+        // ------------------------------------------------------------------ sectores y textos
 
-        private static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
-        private static float Clamp01(float v) => Math.Max(0f, Math.Min(1f, v));
+        public static readonly string[] SectorNames = { "Nebulosa azul", "Cinturón de hielo", "Mar de polvo coral", "Puerto lunar" };
+
+        public static string SectorName(int sector) => SectorNames[((sector % SectorNames.Length) + SectorNames.Length) % SectorNames.Length];
+
+        /// <summary>El sector (0..2) en que va el vuelo a los <paramref name="seconds"/> s (Reto) o tras <paramref name="resolved"/> señales (Precisión: un sector cada 8).</summary>
+        public static int SectorAt(float seconds) => Math.Min(Sectors - 1, Math.Max(0, (int)(seconds / SectorSeconds)));
+        public static int SectorAfter(int resolved) => Math.Min(Sectors - 1, Math.Max(0, resolved / PrecisionSectorEvery));
+
+        public static readonly string[] ShapeNames = { "hexágono", "gota", "círculo", "cuadrado", "triángulo" };
+        public static readonly string[] DetailNames = { "con punto", "con anillo", "con franja" };
+
+        public static string MissionName(PilotMission m) => ShapeNames[(int)m.Shape] + " " + DetailNames[(int)m.Detail];
+
+        public const string MissionLabel = "MISIÓN:", NewMissionLabel = "NUEVA MISIÓN:";
+        public static string SectorHud(int sector) => "Sector " + (sector + 1) + " de " + Sectors + " · " + SectorName(sector);
+        public static string SectorBannerTag(int sector) => "SECTOR " + (sector + 1);
+
+        /// <summary>El chip de arriba del marcador: «Sector 2 de 3».</summary>
+        public static string SectorChip(int sector) => "Sector " + (sector + 1) + " de " + Sectors;
+
+        // ------------------------------------------------------------------ textos de la partida (todos a 14 dp o más)
+
+        public const string CountdownSub = "Guía la nave y atrapa tu misión";
+        public const string StripLabel = "‹  Desliza aquí  ›", StripLabelGentle = "‹  Desliza aquí para guiar la nave  ›", StripHint = "Con el otro dedo, toca solo tu misión";
+        public const string WrongText = "No era de tu misión", GoneText = "Se fue";
+        public const string HyperTitle = "¡HIPERIMPULSO!", HyperSub = "Puntos ×2";
+        public const string HyperChip = " ×2";
+        public static string PointsText(int points) => points.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture).Replace(',', '.') + " pts";
+        public static string PrecisionChip(int resolved, int total = PrecisionSignals) => Math.Min(resolved, total) + " de " + total;
+
+        public const string EndTag = "LLEGASTE AL PUERTO";
+        public static string EndTitle(int points) => PointsText(points);
+        public const string EndLane = "En la ruta", EndMission = "Señales de tu misión", EndWrong = "Toques equivocados", EndLevel = "Tu nivel de señales", EndStreak = "Racha mayor", EndMeasure = "Tus señales a los mandos";
+        public static string LaneValue(float fraction) => (int)Math.Round(Math.Max(0f, Math.Min(1f, fraction)) * 100f) + " %";
+        public static string MissionValue(int hits, int targets) => hits + " de " + targets;
+        public static string LevelValue(int level) => Clamp(level) + " de " + MaxLevel;
+        public static string StreakValue(int best) => "×" + best;
+        public static string MeasureValue(float? score) => score.HasValue ? (int)Math.Round(score.Value * 100f) + " %" : "—";
+        public const string MeasureTooFew = "faltan señales";
+        public const string EndNote1 = "Todo medido mientras hacías las dos cosas a la vez.", EndNote2 = "Medida de esta partida. No es un diagnóstico.";
+
+        public static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
     }
 }

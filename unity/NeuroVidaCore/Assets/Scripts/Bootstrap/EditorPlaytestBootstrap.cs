@@ -44,6 +44,12 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para las capturas: la sorpresa que sale en todas las rondas de «Satélites» (<c>sat_surprise</c>: 1 órbita, 2 nube, 4 rápidas; 0 = las de siempre).</summary>
         public static int SatSurpriseOverride;
 
+        /// <summary>Solo para las capturas (<c>--capturas</c>): el nivel (1..9) con que arrancan los dos motores de «Piloto Estelar» (<c>pil_stage</c> de la config; 0 = el que corresponde) y cada cuántos segundos cambia el sector (<c>pil_sector_s</c>; 0 = 30).</summary>
+        public static int PilStageOverride, PilSectorOverride;
+
+        /// <summary>Solo para el smoke y las capturas: arranca la partida en modo Reto (con reloj) aunque el campo <c>timed</c> de la escena esté apagado.</summary>
+        public static bool TimedOverride;
+
         private void Start()
         {
 #if UNITY_EDITOR
@@ -65,7 +71,7 @@ namespace NeuroVida.Bridge
                 {
                     level = level,
                     base_intensity = baseIntensity,
-                    timed = timed,
+                    timed = timed || TimedOverride,
                     age_band = ageBand,
                     sound_enabled = true,
                     reduce_motion = ReduceMotionOverride,
@@ -75,7 +81,9 @@ namespace NeuroVida.Bridge
                     assessment_total = AssessmentOverride ? 4 : 0,
                     mail_stage = MailStageOverride,
                     sat_stage = SatStageOverride,
-                    sat_surprise = SatSurpriseOverride
+                    sat_surprise = SatSurpriseOverride,
+                    pil_stage = PilStageOverride,
+                    pil_sector_s = PilSectorOverride
                 }
             };
 

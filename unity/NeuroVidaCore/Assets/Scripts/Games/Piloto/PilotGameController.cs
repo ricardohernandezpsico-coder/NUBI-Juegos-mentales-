@@ -4,8 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using NeuroVida.Bridge;
 using NeuroVida.Contracts;
-using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
-using NeuroVida.Games.Parejas;   // SymbolSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
 using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
@@ -13,109 +11,84 @@ using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también exi
 namespace NeuroVida.Games.Piloto
 {
     /// <summary>
-    /// "Piloto Estelar": juego estrella de multitarea (ver <see cref="PilotContract"/>). La nave vuela por una ruta de
-    /// balizas que serpentea; con el pulgar (tocar o arrastrar en la franja de abajo) se la mantiene dentro, y con el
-    /// otro dedo se atrapan solo las señales de la misión, que aparecen un instante en el espacio.
-    /// <list type="bullet">
-    /// <item>Piloto automático (15 s): solo señales. Mide la tarea sola para el costo de multitarea.</item>
-    /// <item>"¡A los mandos!": las dos tareas a la vez, cada una con su dificultad adaptativa (DDA común x2).</item>
-    /// <item>Hiperimpulso: racha de señales + ruta limpia = puntos x2 y las estrellas pasan a hiperespacio.</item>
-    /// </list>
-    /// Reto = 90 s; Precisión = vuelo más tranquilo que termina tras 24 señales. Telemetría: <see cref="StroopTelemetry"/>
-    /// con <c>multitask_cost</c>.
+    /// «Piloto Estelar: la ruta de las balizas» (id <c>piloto</c>, renovado el 9-oct; ver <see cref="PilotContract"/> y docs/diseno-piloto.md; el boceto aprobado es docs/previews/piloto-balizas-boceto.html).
+    /// DOBLE TAREA SIEMPRE JUNTA (regla permanente 1 de Ricardo): un dedo, en la franja de abajo, guía la nave por una ruta de balizas; con el otro se atrapan SOLO las señales de la misión (forma y detalle: «hexágono con punto»). El vuelo de 90 s
+    /// cruza tres sectores con nombre, y en cada uno cambia la misión; nada se detiene. No hay piloto automático ni «costo de multitarea»: nada se mide con una tarea sola (los primeros 10 s son suaves, con las dos tareas a la vez).
+    /// Dos motores comunes de dificultad (pilotaje por ventanas de 1,5 s y señales por señal). Todo el tiempo va con <see cref="GameClock"/> y lo que se mueve con <see cref="Motion"/>.
+    /// Pedido explícito de Ricardo (9-oct): NINGÚN aviso, globo ni cartel tapa una señal visible ni la zona donde nacen. Los avisos (sector, hiperimpulso) van en una franja fija sobre el cielo de señales y esperan a que no haya
+    /// ninguna señal bajo ellos; mientras uno está a la vista o en espera, las señales nuevas nacen fuera de su rectángulo (<see cref="PilotSpawn"/>); los textos flotantes se ponen junto a su señal sin tapar otra.
     /// </summary>
-    public class PilotGameController : GameControllerBase
+    public sealed partial class PilotGameController : GameControllerBase
     {
         public const string GameId = PilotContract.GameId;
 
         private const float UnitsPerDp = 3f;
         private const float MarginU = 60f;
-        private const float Spacing = 46f;          // distancia entre balizas de la ruta
-        private const float PathScale = 1900f;      // unidades de lienzo por "altura de pantalla" en CenterAt
-        private const float ShipSize = 176f;
-        private const float SignalSize = 160f;
-        private const int SignalPool = 3;
-        private const int TrailPool = 12;
+        /// <summary>Antes del cambio de sector no nacen señales durante este tiempo (más que la exposición más larga): así la misión nueva no encuentra señales viejas.</summary>
+        private const float SpawnPauseSeconds = 2.2f;
+        private const float NoticeSeconds = 2.2f;
 
-        private static readonly Color GoodColor = NeuroStyle.Lime;
-        private static readonly Color BadColor = NeuroStyle.Coral;
-        private static readonly Color AmberColor = NeuroStyle.Sun;
-        private static readonly Color LaneColor = NeuroStyle.Sky;
+        /// <summary>SOLO EN EL EDITOR, para las capturas de pantalla (<c>verificar-todo.sh --capturas Piloto</c>): con esta bandera el juego NO se juega solo y un guion (<see cref="EditorShotScript"/>) lo lleva por los
+        /// momentos que se fotografían. En el teléfono es siempre false.</summary>
+        public static bool EditorShotMode;
 
-        private enum Phase { Idle, Autopilot, Manual, Done }
+        private enum Phase { Idle, Fly, Done }
+        private enum Outcome { None, Gone, Caught, Wrong }
 
-        private struct Segment
+        /// <summary>Una señal viva (o que se está desvaneciendo): qué es, dónde está y cuándo nació.</summary>
+        private sealed class Signal
         {
-            public float D, Center, Half;
+            public PilotSignalKind Kind;
+            public float X, Y, At, Expo, DoneAt;
+            public Outcome Outcome;
+            public int View = -1;
+            public bool BotSeen;
+            public bool Alive => Outcome == Outcome.None;
         }
 
-        private sealed class ActiveSignal
+        /// <summary>El arco de un sector: a qué distancia de la ruta (dp) lo cruza la nave y a qué sector entra.</summary>
+        private sealed class Gate
         {
-            public RectTransform Rect;
-            public Image Icon, Ring, Mark;
-            public CanvasGroup Group;
-            public PilotSignal Data;
-            public float SpawnAt, ExpiresAt;
-            public bool Live, Manual;
-            /// <summary>Terminando su animación de salida: todavía no se puede reusar.</summary>
-            public bool Busy;
+            public float P;
+            public int Sector;
         }
+
+        // ------------------------------------------------------------------ estado
 
         private System.Random _rng;
         private AdaptiveDifficulty _driveDda, _signalDda;
+        private PilotRun _run = new PilotRun();
+        private PilotRoute _route = new PilotRoute(1);
+        private PilotMission _mission;
         private Phase _phase = Phase.Idle;
-        private bool Endless => _config != null && _config.config.timed;
-        private bool Precision => !Endless;
-
-        // misión
-        private int _missionShape, _missionVariant;
-
-        // pilotaje
-        private readonly List<Segment> _segments = new List<Segment>();
-        private float _traveled, _speed, _amp, _half;
-        private float _shipX = 0.5f, _shipTargetX = 0.5f, _shipVx;
-        private int _steerFinger = -1;
-        private bool _mouseSteer;
-        private bool _inLane = true;
-        private float _windowT, _windowIn;
-        private float _manualTime, _manualInLane;
-        private int _laneStreak;
-        private float _laneAccum;
-        private bool _labelFading;
-
-        // señales
-        private readonly List<ActiveSignal> _signals = new List<ActiveSignal>();
-        private float _nextSignalAt;
-        private int _autoHits, _autoTargets, _autoFa, _autoNonTargets;
-        private int _hits, _targets, _fa, _nonTargets, _correctRejections, _manualResolved;
-        private int _streak, _bestStreak, _points;
-        private long _rtSum;
-        private int _rtCount;
-
-        // tiempo
-        private float _flightStart, _manualStart, _endsAt;
-        private float _boostUntil;
-        private int _lastTickSecond = -1;
-        private bool _ended;
-
-        // UI
-        private RectTransform _safe, _play, _fxRect, _shipRect, _controlRect, _bannerRect, _timerBg, _timerFill, _laneRoot, _trailRoot;
-        private Image _shipImage, _shipGlow, _vignetteL, _vignetteR, _controlImage, _missionIcon;
-        private Text _controlLabel, _bannerTitle, _bannerSub, _bigText;
+        private bool _loopOn, _baked, _guided, _gateScheduled;
+        private int _sector, _spawned, _dropped, _debugStage;
+        private float _t, _dist, _shipX = PilotPlan.Width * 0.5f, _steerX = PilotPlan.Width * 0.5f;
+        private float _nextSignalIn, _hyperLeft, _wobbleAt = -10f, _missionFreshAt = -10f, _beamAt = -10f, _beamX, _beamY, _steeredSeconds;
+        private float _flightSeconds = PilotContract.FlightSeconds, _sectorSeconds = PilotContract.SectorSeconds;
+        private int _steerFinger = -1, _previousFrameRate;
+        /// <summary>Cuántas señales dura Precisión (24) y cada cuántas hay un sector nuevo (un tercio). El arranque de prueba del Editor las acorta para llegar al final.</summary>
+        private int _precisionTotal = PilotContract.PrecisionSignals;
+        private int PrecisionEvery => _precisionTotal / PilotContract.Sectors;
+        private bool _mouseSteer, _insideNow = true;
         private StarfieldFx _stars;
-        private readonly List<Image> _beaconsL = new List<Image>();
-        private readonly List<Image> _beaconsR = new List<Image>();
-        private readonly List<Image> _bands = new List<Image>();
-        private readonly List<Image> _trail = new List<Image>();
-        private readonly List<float> _trailAge = new List<float>();
-        private int _trailNext;
-        private float _trailEmitAt;
-        private PhasePill _pill;
-        private Toast _toast;
+        private readonly List<Signal> _signals = new List<Signal>();
+        private readonly List<Gate> _gates = new List<Gate>();
+        private readonly List<Box> _forbidden = new List<Box>();
+        private readonly List<(float x, float y)> _liveSpots = new List<(float x, float y)>();
+
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
-        private float _playW, _playH, _shipY, _controlTop, _signalBottom, _signalTop;
+
+        private bool Endless => _config != null && _config.config.timed;
+        private float Now => GameClock.Time;
+        private bool Hyper => _hyperLeft > 0f;
+        private bool Gentle => !_guided && _t < PilotContract.GentleSeconds;
+        private bool Precision => !_guided && !Endless;
+        private int DriveLevel => _guided ? 1 : PilotContract.DriveLevel(_driveDda.Level, Gentle);
+        private int SignalLevel => _guided ? 1 : _signalDda.Level;
+        private float Speed => PilotContract.Speed(DriveLevel, Precision) * (Hyper ? PilotContract.HyperSpeedFactor : 1f) * (_guided ? PracticeSpeedFactor : 1f);
 
         // ------------------------------------------------------------------ sesión
 
@@ -123,159 +96,597 @@ namespace NeuroVida.Games.Piloto
         {
             _config = config;
             _rng = new System.Random();
-            var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
-            float start = AdaptiveDifficulty.StartRating(config.config, PilotContract.MaxLevel);
-            _driveDda = new AdaptiveDifficulty(PilotContract.MaxLevel, age, start, stepUp: 0.14f, useReaction: false);
-            _signalDda = new AdaptiveDifficulty(PilotContract.MaxLevel, age, start, stepUp: 0.14f, useReaction: config.config.timed);
-            (_missionShape, _missionVariant) = PilotContract.PickMission(_rng);
-
+#if UNITY_EDITOR
+            // el smoke arranca en el nivel 5 (señales en los bordes y parecidas) y con sectores de 6 s: pasa por los tres sectores y el final en pocos segundos
+            if (GuidedTutorial.EditorAutoPlayGame && !EditorShotMode)
+            {
+                if (config.config.pil_stage <= 0) config.config.pil_stage = 5;
+                if (config.config.pil_sector_s <= 0) config.config.pil_sector_s = 6;
+            }
+            _precisionTotal = GuidedTutorial.EditorAutoPlayGame && !EditorShotMode ? 6 : PilotContract.PrecisionSignals;
+#endif
+            _driveDda = PilotMetrics.CreateDriveEngine(config.config);
+            _signalDda = PilotMetrics.CreateSignalEngine(config.config);
+            _debugStage = Mathf.Max(0, config.config.pil_stage);
+            _sectorSeconds = config.config.pil_sector_s > 0 ? config.config.pil_sector_s : PilotContract.SectorSeconds;
+            _flightSeconds = _sectorSeconds * PilotContract.Sectors;
+            _run = new PilotRun();
             _phase = Phase.Idle;
-            _ended = false;
-            _segments.Clear();
-            _traveled = 0f;
-            _speed = PilotContract.ScrollSpeed(_driveDda.PresentedLevel, Precision);
-            _amp = PilotContract.Curviness(_driveDda.PresentedLevel) * 0.6f;
-            _half = PilotContract.LaneHalfWidth(_driveDda.PresentedLevel);
-            _shipX = _shipTargetX = 0.5f;
-            _shipVx = 0f;
+            _loopOn = _guided = false;
             _steerFinger = -1;
             _mouseSteer = false;
-            _inLane = true;
-            _windowT = _windowIn = _manualTime = _manualInLane = 0f;
-            _laneStreak = 0;
-            _laneAccum = 0f;
-            _labelFading = false;
-            _controlLabel.color = new Color(1f, 1f, 1f, 0.7f);
-            _autoHits = _autoTargets = _autoFa = _autoNonTargets = 0;
-            _hits = _targets = _fa = _nonTargets = _correctRejections = _manualResolved = 0;
-            _streak = _bestStreak = _points = 0;
-            _rtSum = 0;
-            _rtCount = 0;
-            _boostUntil = 0f;
-            _lastTickSecond = -1;
-            foreach (var s in _signals) Retire(s);
 
-            _resultRoot.gameObject.SetActive(false);
-            _bigText.gameObject.SetActive(false);
+            // Movimiento continuo: a 60 cuadros por segundo se ve fluido (Android da 30 por defecto).
+            _previousFrameRate = Application.targetFrameRate;
+            Application.targetFrameRate = 60;
+
+            ResetViews();
             _exit.Hide();
-            _missionIcon.sprite = SymbolSprite.Get((ShapeKind)PilotContract.Shapes[_missionShape], _missionVariant);
-            _timerBg.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
-
+            _tutorial.Hide();
             StopAllCoroutines();
             StartCoroutine(GameLoop());
         }
 
+        private void OnDisable()
+        {
+            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
+            StopEngine();
+        }
+
         private IEnumerator GameLoop()
         {
+            StartCoroutine(Prewarm());
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre la pantalla ya armada, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetViews();
+            }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Piloto Estelar", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play(PilotContract.Title, Assessment.Subtitle(PilotContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
+            while (!_baked) yield return null;
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
-            FillPath();
-
-            _flightStart = GameClock.Time;
-            _endsAt = _flightStart + PilotContract.FlightSeconds;
-            _nextSignalAt = _flightStart + 1.2f;
-            _phase = Phase.Autopilot;
-            UpdateHud();
-            _pill.Set("Piloto automático · solo atrapa tus señales", LaneColor);
-            StartCoroutine(PulseBanner());
-
-            while (_phase == Phase.Autopilot && GameClock.Time < _flightStart + PilotContract.AutopilotSeconds) yield return null;
-            yield return StartCoroutine(TakeControl());
-
-            while (!_ended) yield return null;
-            yield return StartCoroutine(FinishGame());
+            BeginFlight();
+            _loopOn = true;
         }
 
-        /// <summary>Paso del piloto automático a los mandos: aviso grande, la franja de control late.</summary>
-        private IEnumerator TakeControl()
+        /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
+        private IEnumerator Prewarm()
         {
-            _phase = Phase.Manual;
-            _manualStart = GameClock.Time;
-            _pill.Set("¡A los mandos! Guía la nave por la ruta", AmberColor);
-            GameFeel.LevelUp();
-            GameFeel.Haptic(GameFeel.HapticKind.Firm);
-            _bigText.text = "¡A LOS MANDOS!";
-            _bigText.gameObject.SetActive(true);
-            StartCoroutine(UiFx.RingBurst(_fxRect, new Vector2(0f, _shipY), AmberColor, 160f, 900f, 0.6f));
-            float t = 0f;
-            const float seconds = 1.1f;
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _bigText.rectTransform.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.6f, 1f, UiFx.EaseOutBack(Mathf.Clamp01(k * 3f))) : 1f); // sin ReduceMotion: sin rebote
-                _bigText.color = new Color(1f, 1f, 1f, k < 0.7f ? 1f : 1f - (k - 0.7f) / 0.3f);
-                float pulse = Motion.Decorative ? 0.10f + 0.12f * Mathf.Abs(Mathf.Sin(k * Mathf.PI * 3f)) : 0.16f; // sin ReduceMotion: tinte fijo
-                _controlImage.color = NeuroStyle.WithAlpha(AmberColor, pulse);
-                yield return null;
-            }
-            _bigText.gameObject.SetActive(false);
-            _controlImage.color = new Color(1f, 1f, 1f, 0.06f);
+            if (_baked) yield break;
+            var sprites = PilotSignalSprites.Prewarm();
+            while (sprites.MoveNext()) yield return null;
+            PilotShipSprite.Get();
+            yield return null;
+            var sounds = PilotSounds.Prewarm();
+            while (sounds.MoveNext()) yield return null;
+            _baked = true;
         }
 
-        // ------------------------------------------------------------------ bucle por cuadro
+        /// <summary>Empieza el vuelo de verdad: la ruta, la primera misión y el primer sector (con su aviso).</summary>
+        private void BeginFlight()
+        {
+            _guided = false;
+            _run = new PilotRun();
+            _t = _dist = 0f;
+            _sector = _spawned = _dropped = 0;
+            _gateScheduled = false;
+            _hyperLeft = 0f;
+            _steeredSeconds = 0f;
+            _shipX = _steerX = PilotPlan.Width * 0.5f;
+            _wobbleAt = _beamAt = -10f;
+            _route = new PilotRoute(PilotContract.DriveLevel(_driveDda.Level, true));
+            ExtendRoute();
+            _mission = PilotContract.PickMission(_rng, null);
+            _missionFreshAt = -10f;
+            ClearSignals();
+            _gates.Clear();
+            ClearNotices();
+            _nextSignalIn = 1.2f;
+            ShowFlightLayers(true);
+            _endLayer.gameObject.SetActive(false);
+            SetMissionCard();
+            SetJourney(0f);
+            _tintFrom = _tintTo = 0;
+            _tintMix = 1f;
+            _hud.SetLevelText(PilotContract.SectorChip(0));
+            UpdateHud();
+            RequestNotice(PilotContract.SectorBannerTag(0), PilotContract.SectorName(0), NoticeSeconds, Gold);
+            _phase = Phase.Fly;
+            StartEngine();
+            LayoutStrip();
+        }
+
+        private void ExtendRoute()
+        {
+            _route.Extend(_dist + (_plan.ShipY - _plan.RouteTop) + 160f, DriveLevel);
+            _route.Prune(_dist - 90f);
+        }
+
+        // ------------------------------------------------------------------ un cuadro
 
         private void Update()
         {
-            if (_phase != Phase.Autopilot && _phase != Phase.Manual) return;
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un toque al juego
             float dt = GameClock.DeltaTime;
-            if (dt <= 0f) return; // en pausa
-            float now = GameClock.Time;
-
-            HandleInput();
-            UpdateFlight(dt);
-            UpdateSignals(now);
-            UpdateEffects(dt, now);
-            UpdateClock(now);
+            ReadInput(dt);
+            if (_phase == Phase.Fly && dt > 0f) Step(Mathf.Min(dt, 0.05f));
+            Animate(Now, dt);
+#if UNITY_EDITOR
+            if (_guided && _phase == Phase.Fly && GuidedTutorial.EditorAutoContinue && dt > 0f)
+            {
+                _guidedBotT += dt;                         // el smoke «desliza» solo en el paso 2 del tutorial
+                if (_guidedBotT > 2f) _steeredSeconds = Mathf.Max(_steeredSeconds, 1.6f);
+            }
+            if (_phase == Phase.Fly && !_guided && dt > 0f) AutoPlay();
+            GuardNotices();
+#endif
         }
 
-        private void HandleInput()
+        /// <summary>Un paso de vuelo: avanza la ruta, mueve la nave, pasa las balizas, cierra las ventanas de pilotaje, hace nacer y vencer las señales y cambia de sector.</summary>
+        private void Step(float dt)
         {
-            // Dedos: el que empieza en la franja de control guía la nave hasta que se levanta; un toque que empieza
-            // arriba intenta atrapar una señal. Se lee Input directo (varios dedos a la vez).
+            float now = Now;
+            _t += dt;
+            _dist += Speed * dt;
+            ExtendRoute();
+            bool wasHyper = Hyper;
+            if (_hyperLeft > 0f) _hyperLeft = Mathf.Max(0f, _hyperLeft - dt);
+            if (wasHyper && !Hyper) UpdateHud();                 // el chip de puntos deja de decir «×2»
+
+            // la nave sigue al dedo con inercia
+            _shipX = Mathf.Lerp(_shipX, _steerX, Mathf.Min(1f, dt * PilotContract.ShipFollow));
+            _route.At(_dist, out float center, out float half);
+            _insideNow = PilotContract.Inside(_shipX, center, half);
+            if (_run.Fly(dt, _insideNow, out bool passed) && !_guided)
+            {
+                _driveDda.Register(passed);
+                if (passed) AfterResolve();                  // tres ventanas limpias pueden dar el hiperimpulso a una racha que ya iba en cinco
+            }
+
+            // las balizas que pasan: se encienden si la nave iba dentro; si iba fuera, parpadean, la nave tiembla y suena un zumbido
+            var beacons = _route.Beacons;
+            for (int i = 0; i < beacons.Count; i++)
+            {
+                var b = beacons[i];
+                if (b.Passed || b.P > _dist) continue;
+                b.Passed = true;
+                if (_insideNow)
+                {
+                    b.LitAt = now;
+                    PlayClip(PilotSounds.Beacon(Mathf.RoundToInt(b.P / PilotContract.BeaconGap)), 0.6f);
+                }
+                else
+                {
+                    b.BadAt = now;
+                    _wobbleAt = now;
+                    PlayClip(PilotSounds.Buzz(), 0.7f);
+                    GameFeel.Haptic(GameFeel.HapticKind.Light);
+                }
+            }
+
+            StepSignals(now, dt);
+            if (!_guided) StepSectors(now);
+            if (!_guided && Endless) SetJourney(_t / _flightSeconds);
+            if (!_guided && Endless && _t >= _flightSeconds) EndFlight();
+        }
+
+        // ------------------------------------------------------------------ las señales
+
+        private void StepSignals(float now, float dt)
+        {
+            // vencen: una de la misión que se fue es una omisión; una que no era de la misión y se dejó pasar es un acierto en silencio
+            for (int i = 0; i < _signals.Count; i++)
+            {
+                var s = _signals[i];
+                if (!s.Alive || now - s.At <= s.Expo) continue;
+                s.Outcome = Outcome.Gone;
+                s.DoneAt = now;
+                if (s.Kind.IsTarget)
+                {
+                    _run.Miss();
+                    if (!_guided) _signalDda.Register(false);
+                    ShowFloat(PilotContract.GoneText, Bad, s.X, s.Y, s);
+                }
+                else
+                {
+                    _run.Ignore();
+                    if (!_guided) _signalDda.Register(true);
+                }
+                UpdateHud();
+                AfterResolve();
+            }
+            for (int i = _signals.Count - 1; i >= 0; i--)
+            {
+                var s = _signals[i];
+                if (s.Alive || now - s.DoneAt < SignalFadeSeconds) continue;
+                ReleaseView(s);
+                _signals.RemoveAt(i);
+            }
+
+            // nacen
+            if (_guided ? !_practiceSpawn : SpawnPaused) return;
+            _nextSignalIn -= dt;
+            if (_nextSignalIn > 0f) return;
+            if (TrySpawn(now))
+            {
+                float gap = PilotContract.Gap(SignalLevel, Gentle) * (_guided ? PracticeGapFactor : 1f);
+                _nextSignalIn = gap * (0.85f + (float)_rng.NextDouble() * 0.3f);
+            }
+            else _nextSignalIn = 0.15f;                       // no hubo lugar libre (un aviso a la vista o muchas señales): se vuelve a probar enseguida
+        }
+
+        private const float SignalFadeSeconds = 0.6f;
+
+        /// <summary>true mientras no deben nacer señales: justo antes de un cambio de sector (que la misión nueva no encuentre señales viejas) o cuando ya nacieron las 24 de Precisión.</summary>
+        private bool SpawnPaused
+        {
+            get
+            {
+                if (_gateScheduled) return true;
+                int next = _sector + 1;
+                if (Endless) return next < PilotContract.Sectors && _t >= next * _sectorSeconds - SpawnPauseSeconds;
+                if (_spawned >= _precisionTotal) return true;
+                return next < PilotContract.Sectors && _spawned >= next * PrecisionEvery;
+            }
+        }
+
+        private bool TrySpawn(float now)
+        {
+            int view = FreeView();
+            if (view < 0) return false;
+            var kind = PilotContract.NextSignal(SignalLevel, _mission, _rng);
+            return SpawnKind(kind, view, now, SignalLevel);
+        }
+
+        private bool SpawnKind(PilotSignalKind kind, int view, float now, int level)
+        {
+            BuildForbidden();
+            _liveSpots.Clear();
+            foreach (var s in _signals) if (s.Alive) _liveSpots.Add((s.X, s.Y));
+            if (!PilotSpawn.TryPlace(_rng, kind.Peripheral, _plan.SkyTop, _plan.SkyBottom, _forbidden, _liveSpots, RouteAtY, out float x, out float y)) return false;
+            float expo = _guided ? PracticeExposure : PilotContract.ExposureMs(level, Precision, Gentle) / 1000f;
+            AddSignal(kind, x, y, expo, view, now);
+            return true;
+        }
+
+        private Signal AddSignal(PilotSignalKind kind, float x, float y, float expo, int view, float now)
+        {
+            var s = new Signal { Kind = kind, X = x, Y = y, At = now, Expo = expo, View = view };
+            _signals.Add(s);
+            _views[view].InUse = true;
+            var v = _views[view];
+            v.Body.sprite = PilotSignalSprites.Get(kind.Shape, kind.Detail);
+            v.Mark.gameObject.SetActive(false);
+            v.Root.gameObject.SetActive(true);
+            v.Root.localScale = Vector3.one;
+            v.Root.anchoredPosition = P(x, y);
+            if (!_guided) _spawned++;
+            PlayClip(PilotSounds.Blip(), 0.5f);
+            return s;
+        }
+
+        private (float center, float half) RouteAtY(float y)
+        {
+            _route.At(_dist + (_plan.ShipY - y), out float c, out float h);
+            return (c, h);
+        }
+
+        private int FreeView()
+        {
+            for (int i = 0; i < _views.Length; i++) if (!_views[i].InUse) return i;
+            return -1;
+        }
+
+        private void ReleaseView(Signal s)
+        {
+            if (s.View < 0) return;
+            _views[s.View].InUse = false;
+            _views[s.View].Root.gameObject.SetActive(false);
+            s.View = -1;
+        }
+
+        private void ClearSignals()
+        {
+            foreach (var s in _signals) ReleaseView(s);
+            _signals.Clear();
+            foreach (var v in _views) { v.InUse = false; v.Root.gameObject.SetActive(false); }
+        }
+
+        /// <summary>Los rectángulos donde NO nacen señales: el aviso a la vista o en espera y los textos flotantes que están a la vista.</summary>
+        private void BuildForbidden()
+        {
+            _forbidden.Clear();
+            if (NoticeClaimsZone) _forbidden.Add(_plan.BannerBox);
+            foreach (var f in _floatViews) if (f.Active) _forbidden.Add(f.Area);
+        }
+
+        // ------------------------------------------------------------------ atrapar
+
+        /// <summary>Un toque en el cielo: la señal viva más cercana dentro de 40 dp (un toque de 80 dp de diámetro). Si no hay ninguna, no pasa nada.</summary>
+        private bool TapAt(float x, float y)
+        {
+            Signal best = null;
+            float bestD = PilotContract.TouchRadius;
+            foreach (var s in _signals)
+            {
+                if (!s.Alive) continue;
+                float d = Mathf.Sqrt((s.X - x) * (s.X - x) + (s.Y - y) * (s.Y - y));
+                if (d < bestD) { bestD = d; best = s; }
+            }
+            if (best == null) return false;
+            if (best.Kind.IsTarget) CatchSignal(best); else WrongTap(best);
+            return true;
+        }
+
+        private void CatchSignal(Signal s)
+        {
+            float now = Now;
+            s.Outcome = Outcome.Caught;
+            s.DoneAt = now;
+            int pts = _run.Catch(Hyper);
+            if (!_guided) _signalDda.Register(true);
+            _beamAt = now;
+            _beamX = s.X;
+            _beamY = s.Y;
+            ShowFloat("+" + pts, Good, s.X, s.Y, s);
+            if (Motion.Decorative) StartCoroutine(UiFx.SparkBurst(_fxLayer, P(s.X, s.Y), Gold, 8, 60f * _s, 5f * _s, 0.45f));
+            PlayClip(PilotSounds.Catch(_run.Streak), 0.8f);
+            GameFeel.Haptic(GameFeel.HapticKind.Light);
+            UpdateHud();
+            AfterResolve();
+        }
+
+        private void WrongTap(Signal s)
+        {
+            s.Outcome = Outcome.Wrong;
+            s.DoneAt = Now;
+            _run.FalseAlarm();
+            if (!_guided) _signalDda.Register(false);
+            ShowFloat(PilotContract.WrongText, Bad, s.X, s.Y, s);
+            PlayClip(PilotSounds.Thud(), 0.7f);
+            GameFeel.Haptic(GameFeel.HapticKind.Double);
+            UpdateHud();
+            AfterResolve();
+        }
+
+        /// <summary>Después de resolverse una señal (o de cerrarse una ventana limpia): ¿hiperimpulso? ¿se acabó la partida de Precisión?</summary>
+        private void AfterResolve()
+        {
+            if (_guided) return;
+            if (_run.ShouldHyper(Hyper)) StartHyper();
+            if (!Endless)
+            {
+                int done = _run.Resolved + _dropped;
+                SetJourney((float)done / _precisionTotal);
+                if (done >= _precisionTotal && _phase == Phase.Fly) EndFlight();
+            }
+        }
+
+        private void StartHyper()
+        {
+            _hyperLeft = PilotContract.HyperSeconds;
+            _run.CountHyper();
+            RequestNotice(PilotContract.HyperTitle, PilotContract.HyperSub, 1.8f, Cyan);
+            PlayClip(PilotSounds.Hyper(), 0.8f);
+            GameFeel.Haptic(GameFeel.HapticKind.Firm);
+            if (Motion.Decorative) StartCoroutine(UiFx.RingBurst(_fxLayer, P(_shipX, _plan.ShipY), Gold, 40f * _s, 230f * _s, 0.55f));
+            UpdateHud();
+        }
+
+        // ------------------------------------------------------------------ sectores
+
+        /// <summary>Reto: el arco sale arriba a tiempo para que la nave lo cruce en el límite del sector. Precisión: sale cuando ya nacieron las 8 señales del sector. La misión cambia al cruzar el arco; nada se detiene.</summary>
+        private void StepSectors(float now)
+        {
+            int next = _sector + 1;
+            if (next < PilotContract.Sectors && !_gateScheduled)
+            {
+                float ahead = GateAhead;
+                bool due = Endless ? _t >= next * _sectorSeconds - ahead / Mathf.Max(1f, Speed)
+                                   : _spawned >= next * PrecisionEvery;
+                if (due)
+                {
+                    _gates.Add(new Gate { P = _dist + ahead, Sector = next });
+                    _gateScheduled = true;
+                }
+            }
+            for (int i = _gates.Count - 1; i >= 0; i--)
+            {
+                var g = _gates[i];
+                if (_dist >= g.P && g.Sector > _sector) EnterSector(g.Sector, now);
+                if (_plan.ShipY - (g.P - _dist) > _plan.ShipY + 90f) _gates.RemoveAt(i);
+            }
+        }
+
+        /// <summary>A qué distancia por delante de la nave (dp) sale el arco de un sector: arriba del todo, bajo la tarjeta de misión. El arranque de prueba del Editor lo acerca para llegar al final en pocos segundos.</summary>
+        private float GateAhead
+        {
+            get
+            {
+                float full = _plan.ShipY - _plan.RouteTop - 14f;
+#if UNITY_EDITOR
+                if (GuidedTutorial.EditorAutoPlayGame && !EditorShotMode) return Mathf.Min(full, 200f);
+#endif
+                return full;
+            }
+        }
+
+        private void EnterSector(int sector, float now)
+        {
+            _sector = sector;
+            _gateScheduled = false;
+#if UNITY_EDITOR
+            Debug.Log("[SmokeTest] Piloto: sector " + (sector + 1) + " a los " + _t.ToString("0.0") + " s (" + (Endless ? "Reto" : "Precisión") + "), nacieron " + _spawned + ", resueltas " + _run.Resolved);
+#endif
+            // las señales que quedaban eran de la misión vieja: se retiran sin contar
+            foreach (var s in _signals) if (s.Alive) { s.Outcome = Outcome.Gone; s.DoneAt = now - SignalFadeSeconds + 0.12f; _dropped++; }
+            _mission = PilotContract.PickMission(_rng, _mission);
+            _missionFreshAt = now;
+            SetMissionCard();
+            _tintFrom = _tintTo;
+            _tintTo = sector;
+            _tintMix = 0f;
+            _hud.SetLevelText(PilotContract.SectorChip(sector), highlight: true);
+            RequestNotice(PilotContract.SectorBannerTag(sector), PilotContract.SectorName(sector), NoticeSeconds, Gold);
+            PlayClip(PilotSounds.Whoosh(), 0.8f);
+            GameFeel.Haptic(GameFeel.HapticKind.Firm);
+        }
+
+        // ------------------------------------------------------------------ marcador
+
+        private void UpdateHud()
+        {
+            if (_guided) return;
+            _hud.SetStreak(_run.Streak);
+            if (Endless)
+            {
+                if (Hyper) _hud.SetInfo(PilotContract.PointsText(_run.Points) + PilotContract.HyperChip);
+                else _hud.SetPoints(_run.Points);
+            }
+            else _hud.SetInfo(PilotContract.PrecisionChip(_run.Resolved + _dropped, _precisionTotal));
+        }
+
+        // ------------------------------------------------------------------ fin
+
+        private void EndFlight()
+        {
+            if (_phase == Phase.Done) return;
+            _phase = Phase.Done;
+            StartCoroutine(FinishGame());
+        }
+
+        private IEnumerator FinishGame()
+        {
+            _loopOn = false;
+            StopEngine();
+            ClearSignals();
+            ClearNotices();
+            foreach (var f in _floatViews) { f.Active = false; f.Root.gameObject.SetActive(false); }
+            _hyperLeft = 0f;
+            UpdateHud();                                       // el chip de puntos deja de decir «×2»
+            if (_stars != null) _stars.Warp = 0.12f;           // las estrellas vuelven a su paso de siempre detrás de la pantalla final
+            float? score = _run.SignalScore;
+#if UNITY_EDITOR
+            Debug.Log("[SmokeTest] Piloto: partida terminada: " + _run.Points + " puntos, en la ruta " + Mathf.RoundToInt(_run.InLaneFraction * 100f) + " %, señales " + _run.Hits + " de " + _run.Targets + ", toques equivocados " + _run.FalseAlarms
+                      + ", racha mayor " + _run.BestStreak + ", hiperimpulsos " + _run.HyperCount + ", sector " + (_sector + 1) + ", nivel de señales " + _signalDda.Level + ", pilotaje " + _driveDda.Level);
+#endif
+            ShowFlightLayers(false);
+            ShowEnd(score);
+            _exit.Show();
+            PlayClip(PilotSounds.Finale(), 0.8f);
+            var telemetry = new StroopTelemetry
+            {
+                user_id = _config.user_id,
+                game_id = _config.game_id,
+                session_metrics = PilotMetrics.Build(_driveDda, _signalDda, _run, _config.config)
+            };
+            NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
+            yield break;
+        }
+
+        // ------------------------------------------------------------------ pieza del tutorial
+
+        /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo).</summary>
+        private void SetUpTutorial() =>
+            BuildTutorial(_safe, GameHud.Height + 10f, PilotContract.Title, "Guía la nave con un dedo y, con el otro, atrapa solo las señales de tu misión.", badgeAtBottom: true);
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        protected override bool HowToReady => _loopOn && _phase == Phase.Fly;
+
+        protected override void HowToSuspend()
+        {
+            // el vuelo queda quieto (el tiempo y lo ganado se conservan); las señales y avisos a la vista se retiran
+            _phase = Phase.Idle;
+            StopEngine();
+            ClearSignals();
+            ClearNotices();
+            _gates.Clear();
+            _gateScheduled = false;
+            foreach (var f in _floatViews) { f.Active = false; f.Root.gameObject.SetActive(false); }
+            _steerFinger = -1;
+            _mouseSteer = false;
+        }
+
+        protected override void HowToResume(float spentSeconds)
+        {
+            Layout();
+            _guided = false;
+            _route = new PilotRoute(PilotContract.DriveLevel(_driveDda.Level, false));
+            _dist = 0f;
+            _shipX = _steerX = PilotPlan.Width * 0.5f;
+            ExtendRoute();
+            ShowFlightLayers(true);
+            SetMissionCard();
+            _hud.SetLevelText(PilotContract.SectorChip(_sector));            // la práctica dejó el chip en «Sector 1 de 3»
+            SetJourney(Endless ? _t / _flightSeconds : (float)(_run.Resolved + _dropped) / _precisionTotal);
+            _nextSignalIn = 1.4f;
+            UpdateHud();
+            _phase = Phase.Fly;
+            StartEngine();
+            LayoutStrip();
+        }
+
+        // ------------------------------------------------------------------ entrada
+
+        /// <summary>El dedo que empieza en la franja de abajo guía la nave hasta que se levanta; cualquier otro toque intenta atrapar una señal. Se lee <c>Input</c> directo (varios dedos a la vez).</summary>
+        private void ReadInput(float dt)
+        {
+            if (_phase != Phase.Fly) { _steerFinger = -1; _mouseSteer = false; return; }
+            bool coachBlocks = false;
             if (Input.touchCount > 0)
             {
                 bool steering = false;
                 for (int i = 0; i < Input.touchCount; i++)
                 {
                     var touch = Input.GetTouch(i);
-                    if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, touch.position, null, out var local)) continue;
+                    if (!ScreenToLogical(touch.position, out Vector2 p)) continue;
                     if (touch.phase == TouchPhase.Began)
                     {
-                        if (local.y <= _controlTop) _steerFinger = touch.fingerId;
-                        else TryCatch(local);
+                        coachBlocks = _tutorial != null && _tutorial.Coach != null && _tutorial.Coach.Blocks(touch.position);
+                        if (p.y >= _plan.StripTop) { if (_steerFinger < 0) _steerFinger = touch.fingerId; }
+                        else if (!coachBlocks && dt > 0f) TapAt(p.x, p.y);
                     }
                     if (touch.fingerId == _steerFinger)
                     {
                         if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) _steerFinger = -1;
-                        else
-                        {
-                            SteerTo(local.x);
-                            steering = true;
-                        }
+                        else { SteerTo(p.x, dt); steering = true; }
                     }
                 }
                 if (!steering && _steerFinger >= 0 && !FingerAlive(_steerFinger)) _steerFinger = -1;
                 return;
             }
+            _steerFinger = -1;
 
-            // Mouse (Editor): arrastrar en la franja de control guía; clic arriba atrapa.
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, Input.mousePosition, null, out var m))
+            // Mouse (Editor): arrastrar en la franja de abajo guía; clic arriba atrapa.
+            if (!ScreenToLogical(Input.mousePosition, out Vector2 m)) return;
+            if (Input.GetMouseButtonDown(0))
             {
-                if (Input.GetMouseButtonDown(0))
-                {
-                    if (m.y <= _controlTop) _mouseSteer = true;
-                    else TryCatch(m);
-                }
-                if (Input.GetMouseButtonUp(0)) _mouseSteer = false;
-                if (_mouseSteer && Input.GetMouseButton(0)) SteerTo(m.x);
+                coachBlocks = _tutorial != null && _tutorial.Coach != null && _tutorial.Coach.Blocks(Input.mousePosition);
+                if (m.y >= _plan.StripTop) _mouseSteer = true;
+                else if (!coachBlocks && dt > 0f) TapAt(m.x, m.y);
             }
+            if (Input.GetMouseButtonUp(0)) _mouseSteer = false;
+            if (_mouseSteer && Input.GetMouseButton(0)) SteerTo(m.x, dt);
+        }
+
+        private bool ScreenToLogical(Vector2 screen, out Vector2 logical)
+        {
+            logical = Vector2.zero;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, screen, null, out var local)) return false;
+            logical = ToLogical(local);
+            return true;
         }
 
         private static bool FingerAlive(int fingerId)
@@ -285,903 +696,79 @@ namespace NeuroVida.Games.Piloto
             return false;
         }
 
-        private void SteerTo(float localX)
+        private void SteerTo(float x, float dt)
         {
-            if (_phase != Phase.Manual) return;
-            _shipTargetX = Mathf.Clamp01(localX / _playW + 0.5f);
-            if (!_labelFading && GameClock.Time - _manualStart > 3f)
-            {
-                _labelFading = true;
-                StartCoroutine(FadeControlLabel());
-            }
+            _steerX = Mathf.Clamp(x, 20f, PilotPlan.Width - 20f);
+            if (dt > 0f) _steeredSeconds += dt;
         }
 
-        private void UpdateFlight(float dt)
+        private void PlayClip(AudioClip clip, float volume)
         {
-            int dl = _driveDda.PresentedLevel;
-            float targetSpeed = PilotContract.ScrollSpeed(dl, Precision) * (Boosted ? 1.12f : 1f);
-            _speed = Mathf.MoveTowards(_speed, targetSpeed, 120f * dt);
-            _traveled += _speed * dt;
-            FillPath();
-
-            float center = CenterAtShip(out float half);
-            if (_phase == Phase.Autopilot)
-                _shipTargetX = center + (Motion.Decorative ? 0.04f * Mathf.Sin(GameClock.Time * 1.3f) : 0f); // sin ReduceMotion: no se mece
-
-            // La nave sigue al dedo con un resorte suave (rápida, sin teletransportarse).
-            float before = _shipX;
-            float follow = 1f - Mathf.Exp(-dt * 14f);
-            float step = (_shipTargetX - _shipX) * follow;
-            float maxStep = 2.6f * dt;
-            _shipX += Mathf.Clamp(step, -maxStep, maxStep);
-            _shipVx = (_shipX - before) / dt;
-
-            bool inLane = PilotContract.InLane(_shipX, center, half);
-            if (_phase == Phase.Manual)
-            {
-                _manualTime += dt;
-                _windowT += dt;
-                if (inLane)
-                {
-                    _manualInLane += dt;
-                    _windowIn += dt;
-                    // 5 puntos por segundo dentro de la ruta (el doble en hiperimpulso).
-                    _laneAccum += dt;
-                    while (_laneAccum >= 0.2f)
-                    {
-                        _laneAccum -= 0.2f;
-                        _points += Boosted ? 2 : 1;
-                    }
-                }
-                if (_inLane && !inLane)
-                {
-                    PlayTone(196f, 0.16f, 0.12f);
-                    _pill.Set("¡Vuelve a la ruta!", BadColor);
-                }
-                else if (!_inLane && inLane) _pill.Set("En la ruta", GoodColor);
-
-                if (_windowT >= PilotContract.DriveWindowSeconds)
-                {
-                    bool pass = _windowIn / _windowT >= PilotContract.DriveWindowPass;
-                    _laneStreak = pass ? _laneStreak + 1 : 0;
-                    var change = _driveDda.Register(pass);
-                    if (change == DdaChange.Up)
-                    {
-                        _toast.Show("Más velocidad", "La ruta se estrecha", GoodColor, 0.9f);
-                        GameFeel.LevelUp();
-                    }
-                    else if (change == DdaChange.Down) _toast.Show("Con calma", "Ruta más ancha", AmberColor, 0.9f);
-                    _windowT = _windowIn = 0f;
-                    UpdateHud();
-                    TryBoost();
-                }
-            }
-            _inLane = inLane;
-
-            // Nave: posición, alabeo según la velocidad lateral, tinte si está fuera de la ruta.
-            _shipRect.anchoredPosition = new Vector2((_shipX - 0.5f) * _playW, _shipY);
-            _shipRect.localRotation = Quaternion.Euler(0f, 0f, Motion.Decorative ? Mathf.Clamp(-_shipVx * 22f, -16f, 16f) : 0f); // sin ReduceMotion: sin alabeo
-            _shipImage.color = inLane || _phase == Phase.Autopilot ? Color.white : new Color(1f, 0.78f, 0.74f, 1f);
-
-            LayoutPath(center);
+            if (clip == null || !SoundWanted) return;
+            _audioSource.PlayOneShot(clip, volume);
         }
 
-        /// <summary>Crea tramos de ruta por delante y descarta los que ya quedaron atrás.</summary>
-        private void FillPath()
+        private bool SoundWanted => GameFeel.SoundOn && (_config == null || _config.config == null || _config.config.sound_enabled);
+
+        private void StartEngine()
         {
-            float ahead = _playH + 200f;
-            float lastD = _segments.Count > 0 ? _segments[_segments.Count - 1].D : _traveled - _shipY - _playH;
-            int dl = _driveDda.PresentedLevel;
-            float targetAmp = PilotContract.Curviness(dl);
-            float targetHalf = PilotContract.LaneHalfWidth(dl);
-            while (lastD < _traveled + ahead)
-            {
-                lastD += Spacing;
-                // Cambios de dificultad suaves: la ruta ya dibujada no se deforma, se afina de a poco.
-                _amp = Mathf.MoveTowards(_amp, targetAmp, 0.004f);
-                _half = Mathf.MoveTowards(_half, targetHalf, 0.0025f);
-                _segments.Add(new Segment { D = lastD, Half = _half, Center = PilotContract.CenterAt(lastD / PathScale, _amp, _half) });
-            }
-            float behind = _traveled - (_playH * 0.5f + _shipY) - 200f;
-            while (_segments.Count > 0 && _segments[0].D < behind) _segments.RemoveAt(0);
+            if (!SoundWanted || _engineSource == null) return;
+            _engineSource.clip = PilotSounds.Engine();
+            _engineSource.volume = 0.5f;
+            _engineSource.pitch = 0.9f;
+            _engineSource.mute = false;
+            _engineSource.Play();
         }
 
-        /// <summary>Centro y medio ancho de la ruta a la altura de la nave (interpolados entre tramos).</summary>
-        private float CenterAtShip(out float half)
+        private void StopEngine()
         {
-            for (int i = 1; i < _segments.Count; i++)
-            {
-                if (_segments[i].D < _traveled) continue;
-                var a = _segments[i - 1];
-                var b = _segments[i];
-                float k = Mathf.InverseLerp(a.D, b.D, _traveled);
-                half = Mathf.Lerp(a.Half, b.Half, k);
-                return Mathf.Lerp(a.Center, b.Center, k);
-            }
-            half = _half;
-            return 0.5f;
+            if (_engineSource != null && _engineSource.isPlaying) _engineSource.Stop();
         }
 
-        private void LayoutPath(float centerAtShip)
+#if UNITY_EDITOR
+        private float _botFlipAt;
+        private int _botWrong;
+
+        /// <summary>SOLO EN EL EDITOR (smoke): juega solo. Guía la nave por el centro de la ruta (y de vez en cuando se sale a propósito, para ver las balizas en coral), atrapa casi todas las señales de la misión y, de vez en cuando,
+        /// toca una que no era (así el arranque de prueba pasa por los aciertos, los errores y el hiperimpulso). En el teléfono no hace nada.</summary>
+        private void AutoPlay()
         {
-            int used = 0;
-            float top = _playH * 0.5f + 80f;
-            float bottom = -_playH * 0.5f - 80f;
-            foreach (var seg in _segments)
-            {
-                float y = _shipY + (seg.D - _traveled);
-                if (y < bottom || y > top || used >= _beaconsL.Count) continue;
-                if (y < _controlTop) continue;                          // la ruta termina arriba de la franja «Desliza aquí…»: sus puntos no se dibujan encima de ella ni de su texto
-                // Profundidad: las balizas lejanas (arriba) son más chicas y tenues.
-                float depth = Mathf.InverseLerp(bottom, top, y);
-                float scale = Mathf.Lerp(1.25f, 0.6f, depth);
-                float alpha = Mathf.Lerp(1f, 0.45f, depth);
-                bool nearShip = Mathf.Abs(y - _shipY) < 160f;
-                Color beacon = nearShip && !_inLane && _phase == Phase.Manual ? BadColor : (Boosted ? NeuroStyle.Sun : LaneColor);
-                bool big = Mathf.RoundToInt(seg.D / Spacing) % 3 == 0;
-                float size = (big ? 26f : 16f) * scale;
-
-                float lx = (seg.Center - seg.Half - 0.5f) * _playW;
-                float rx = (seg.Center + seg.Half - 0.5f) * _playW;
-                Place(_beaconsL[used], new Vector2(lx, y), size, NeuroStyle.WithAlpha(beacon, alpha));
-                Place(_beaconsR[used], new Vector2(rx, y), size, NeuroStyle.WithAlpha(beacon, alpha));
-
-                var band = _bands[used];
-                band.gameObject.SetActive(true);
-                var br = band.rectTransform;
-                br.anchoredPosition = new Vector2((seg.Center - 0.5f) * _playW, y);
-                br.sizeDelta = new Vector2(Mathf.Max(0f, rx - lx), Spacing + 1f);
-                band.color = NeuroStyle.WithAlpha(Boosted ? NeuroStyle.Sun : LaneColor, 0.055f * alpha);
-                used++;
-            }
-            for (int i = used; i < _beaconsL.Count; i++)
-            {
-                _beaconsL[i].gameObject.SetActive(false);
-                _beaconsR[i].gameObject.SetActive(false);
-                _bands[i].gameObject.SetActive(false);
-            }
-        }
-
-        private static void Place(Image img, Vector2 pos, float size, Color color)
-        {
-            img.gameObject.SetActive(true);
-            var r = img.rectTransform;
-            r.anchoredPosition = pos;
-            r.sizeDelta = new Vector2(size, size);
-            img.color = color;
-        }
-
-        // ------------------------------------------------------------------ señales
-
-        private void UpdateSignals(float now)
-        {
-            bool manual = _phase == Phase.Manual;
-            if (now >= _nextSignalAt && !(Precision && manual && _manualResolved + LiveCount() >= PilotContract.PrecisionSignals))
-            {
-                var free = _signals.Find(s => !s.Live && !s.Busy);
-                if (free != null) Spawn(free, now, manual);
-                _nextSignalAt = now + PilotContract.SignalGap(_signalDda.PresentedLevel, Precision) * (0.8f + 0.4f * (float)_rng.NextDouble());
-            }
-
+            if (EditorShotMode || !GuidedTutorial.AutoPlayGame(_t)) return;
+            _route.At(_dist, out float center, out float half);
+            float off = ((int)(_t / 5f)) % 4 == 3 ? (center < PilotPlan.Width * 0.5f ? 1f : -1f) * (half + 20f) : Mathf.Sin(_t * 0.9f) * half * 0.25f;
+            _steerX = Mathf.Clamp(center + off, 20f, PilotPlan.Width - 20f);
             foreach (var s in _signals)
             {
-                if (!s.Live) continue;
-                float life = Mathf.Clamp01((now - s.SpawnAt) / (s.ExpiresAt - s.SpawnAt));
-                s.Ring.fillAmount = 1f - life;
-                float pop = Mathf.Clamp01((now - s.SpawnAt) / 0.14f);
-                s.Rect.localScale = Vector3.one * (Motion.Decorative ? Mathf.LerpUnclamped(0.4f, 1f, UiFx.EaseOutBack(pop)) : 1f); // aparece a su tamaño
-                if (now >= s.ExpiresAt) Expire(s);
+                if (!s.Alive || s.BotSeen || Now - s.At < 0.4f) continue;
+                s.BotSeen = true;
+                if (s.Kind.IsTarget) { if (_botWrong++ % 9 != 4) TapAt(s.X, s.Y); }
+                else if (_botWrong++ % 7 == 3) TapAt(s.X, s.Y);
+                break;
             }
-
-            if (Precision && manual && _manualResolved >= PilotContract.PrecisionSignals && LiveCount() == 0) _ended = true;
         }
 
-        private int LiveCount()
-        {
-            int n = 0;
-            foreach (var s in _signals) if (s.Live) n++;
-            return n;
-        }
+        private int _guardReports;
 
-        private void Spawn(ActiveSignal s, float now, bool manual)
+        /// <summary>SOLO EN EL EDITOR: el pedido de Ricardo hecho prueba. Si un aviso (el de sector o hiperimpulso, o un texto flotante) se dibuja sobre una señal viva, el smoke falla (cualquier error de consola lo hace).</summary>
+        private void GuardNotices()
         {
-            s.Data = PilotContract.NextSignal(_signalDda.PresentedLevel, _missionShape, _missionVariant, _rng);
-            // Que no caiga encima de otra señal viva.
-            for (int tries = 0; tries < 4 && Overlaps(s.Data); tries++)
-                s.Data = PilotContract.NextSignal(_signalDda.PresentedLevel, _missionShape, _missionVariant, _rng);
-            s.SpawnAt = now;
-            s.ExpiresAt = now + PilotContract.ExposureMs(_signalDda.PresentedLevel, Precision) / 1000f;
-            s.Live = true;
-            s.Manual = manual;
-            s.Icon.sprite = SymbolSprite.Get((ShapeKind)PilotContract.Shapes[s.Data.Shape], s.Data.Variant);
-            s.Icon.color = Color.white;
-            s.Ring.color = NeuroStyle.WithAlpha(Color.white, 0.75f);
-            s.Mark.gameObject.SetActive(false);
-            s.Rect.anchoredPosition = SignalPosition(s.Data);
-            s.Rect.localScale = Vector3.one * 0.4f;
-            s.Group.alpha = 1f;
-            s.Rect.gameObject.SetActive(true);
-            PlayTone(s.Data.Peripheral ? 1046f : 880f, 0.05f, 0.05f); // mismo "blip" para todas: no delata cuál es
-        }
-
-        private bool Overlaps(PilotSignal d)
-        {
-            var p = SignalPosition(d);
-            foreach (var o in _signals)
-                if (o.Live && Vector2.Distance(o.Rect.anchoredPosition, p) < SignalSize * 1.2f) return true;
-            return false;
-        }
-
-        private Vector2 SignalPosition(PilotSignal d)
-        {
-            float x = (d.X - 0.5f) * (_playW - SignalSize);
-            float y = Mathf.Lerp(_signalBottom, _signalTop, d.Y);
-            return new Vector2(x, y);
-        }
-
-        private void TryCatch(Vector2 local)
-        {
-            ActiveSignal best = null;
-            float bestDist = SignalSize * 0.66f; // área de toque generosa (≥ 48 dp)
+            if (_guardReports >= 3 || _signals.Count == 0) return;
+            var boxes = new List<Box>();
+            if (_notice != null && _bannerGroup.alpha > 0.05f) boxes.Add(_plan.BannerBox);
+            foreach (var f in _floatViews) if (f.Active) boxes.Add(f.Area);
             foreach (var s in _signals)
             {
-                if (!s.Live) continue;
-                float d = Vector2.Distance(local, s.Rect.anchoredPosition);
-                if (d < bestDist)
-                {
-                    bestDist = d;
-                    best = s;
-                }
-            }
-            if (best == null) return;
-            float rtMs = (GameClock.Time - best.SpawnAt) * 1000f;
-            if (best.Data.IsTarget) Caught(best, rtMs);
-            else FalseAlarm(best);
-        }
-
-        private void Caught(ActiveSignal s, float rtMs)
-        {
-            s.Live = false;
-            Count(s, hit: true);
-            _streak++;
-            _bestStreak = Mathf.Max(_bestStreak, _streak);
-            int pts = PilotContract.PointsForCatch(_streak, Boosted);
-            _points += pts;
-            _rtSum += (long)rtMs;
-            _rtCount++;
-            _hud.SetStreak(_streak);
-            RegisterSignal(true, rtMs);
-            GameFeel.Correct(_streak);
-            s.Mark.sprite = AnswerMarkSprite.Check();
-            s.Mark.gameObject.SetActive(true);
-            StartCoroutine(UiFx.SparkBurst(_fxRect, s.Rect.anchoredPosition, NeuroStyle.Sun, 14, 240f, 40f, 0.5f));
-            StartCoroutine(UiFx.RingBurst(_fxRect, s.Rect.anchoredPosition, Color.white, 120f, 360f, 0.4f));
-            StartCoroutine(FloatText(s.Rect.anchoredPosition, "+" + pts, NeuroStyle.Sun));
-            StartCoroutine(Vanish(s, 0.28f, 1.35f));
-            TryBoost();
-        }
-
-        private void FalseAlarm(ActiveSignal s)
-        {
-            s.Live = false;
-            Count(s, hit: false, falseAlarm: true);
-            _streak = 0;
-            _hud.SetStreak(0);
-            RegisterSignal(false, -1f);
-            GameFeel.Wrong();
-            s.Icon.color = new Color(1f, 1f, 1f, 0.55f);
-            s.Mark.sprite = AnswerMarkSprite.Cross();
-            s.Mark.gameObject.SetActive(true);
-            StartCoroutine(UiFx.Shake(18f, 0.3f, s.Rect));
-            StartCoroutine(Flash(BadColor, 0.10f, 0.25f));
-            StartCoroutine(Vanish(s, 0.45f, 0.9f));
-        }
-
-        private void Expire(ActiveSignal s)
-        {
-            s.Live = false;
-            if (s.Data.IsTarget)
-            {
-                // Se escapó una señal de la misión: se marca y la racha se corta (sin sonido de error: fue una omisión).
-                Count(s, hit: false);
-                _streak = 0;
-                _hud.SetStreak(0);
-                RegisterSignal(false, -1f);
-                s.Icon.color = new Color(1f, 1f, 1f, 0.5f);
-                s.Mark.sprite = AnswerMarkSprite.Cross();
-                s.Mark.gameObject.SetActive(true);
-                StartCoroutine(Vanish(s, 0.4f, 0.85f));
-            }
-            else
-            {
-                Count(s, hit: false);
-                _correctRejections++;
-                RegisterSignal(true, -1f);
-                StartCoroutine(Vanish(s, 0.18f, 0.8f));
+                if (!s.Alive) continue;
+                var sb = Box.Around(s.X, s.Y, PilotContract.SignalSize * 0.5f);
+                foreach (var b in boxes)
+                    if (sb.Intersects(b, 0f))
+                    {
+                        _guardReports++;
+                        Debug.LogError("[SmokeTest] Piloto: un aviso tapa una señal activa (señal en " + Mathf.RoundToInt(s.X) + "," + Mathf.RoundToInt(s.Y) + ", aviso de " + Mathf.RoundToInt(b.X0) + "," + Mathf.RoundToInt(b.Y0) + " a " + Mathf.RoundToInt(b.X1) + "," + Mathf.RoundToInt(b.Y1) + ")");
+                        return;
+                    }
             }
         }
-
-        private void Count(ActiveSignal s, bool hit, bool falseAlarm = false)
-        {
-            if (s.Manual)
-            {
-                _manualResolved++;
-                if (s.Data.IsTarget) { _targets++; if (hit) _hits++; }
-                else { _nonTargets++; if (falseAlarm) _fa++; }
-            }
-            else
-            {
-                if (s.Data.IsTarget) { _autoTargets++; if (hit) _autoHits++; }
-                else { _autoNonTargets++; if (falseAlarm) _autoFa++; }
-            }
-            if (Precision && s.Manual) UpdateHud();
-        }
-
-        private void RegisterSignal(bool correct, float rtMs)
-        {
-            var change = _signalDda.Register(correct, rtMs);
-            if (change == DdaChange.Up)
-            {
-                _toast.Show("Señales más rápidas", _signalDda.Level >= 5 ? "Ahora también a los costados" : "Atento a los colores", GoodColor, 0.9f);
-                GameFeel.LevelUp();
-            }
-            else if (_signalDda.Struggling) _toast.Show("Con calma", "Solo las de tu misión", AmberColor, 0.9f);
-            UpdateHud();
-        }
-
-        private IEnumerator Vanish(ActiveSignal s, float hold, float endScale)
-        {
-            s.Busy = true;
-            float t = 0f;
-            while (t < hold)
-            {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / hold);
-                s.Group.alpha = 1f - k * k;
-                s.Rect.localScale = Vector3.one * (Motion.Decorative ? Mathf.Lerp(1f, endScale, k) : 1f); // sin ReduceMotion: solo se desvanece
-                yield return null;
-            }
-            s.Rect.gameObject.SetActive(false);
-            s.Busy = false;
-        }
-
-        private void Retire(ActiveSignal s)
-        {
-            s.Live = false;
-            s.Busy = false;
-            if (s.Rect != null) s.Rect.gameObject.SetActive(false);
-        }
-
-        private IEnumerator FloatText(Vector2 pos, string text, Color color)
-        {
-            var t = MakeText(_fxRect, "Float", 58, TextAnchor.MiddleCenter, color, 0f, 0f);
-            NeuroStyle.ClayText(t, 4f, 6f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(300f, 90f);
-            t.text = text;
-            float e = 0f;
-            const float seconds = 0.7f;
-            while (e < seconds)
-            {
-                e += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 60f + 90f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
-                t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
-                yield return null;
-            }
-            Destroy(t.gameObject);
-        }
-
-        // ------------------------------------------------------------------ hiperimpulso y efectos
-
-        private bool Boosted => GameClock.Time < _boostUntil;
-
-        /// <summary>Racha de señales y ruta limpia a la vez = hiperimpulso (puntos x2 durante 6 s).</summary>
-        private void TryBoost()
-        {
-            if (_phase != Phase.Manual || Boosted) return;
-            if (_streak >= 5 && _laneStreak >= 4)
-            {
-                _boostUntil = GameClock.Time + 6f;
-                _laneStreak = 0;
-                _toast.Show("¡Hiperimpulso!", "Puntos x2", NeuroStyle.Sun, 1.1f);
-                GameFeel.LevelUp();
-                GameFeel.Haptic(GameFeel.HapticKind.Firm);
-                StartCoroutine(UiFx.RingBurst(_fxRect, new Vector2(0f, _shipY), NeuroStyle.Sun, 200f, 1400f, 0.7f));
-            }
-        }
-
-        private void UpdateEffects(float dt, float now)
-        {
-            // Estrellas: más rápido cuanto más rápido se vuela; hiperespacio durante el hiperimpulso.
-            float speedK = Mathf.InverseLerp(PilotContract.ScrollSpeed(1, false), PilotContract.ScrollSpeed(PilotContract.MaxLevel, false), _speed);
-            float warp = Boosted ? 0.85f : 0.12f + 0.3f * speedK;
-            if (_stars != null) _stars.Warp = Mathf.MoveTowards(_stars.Warp, warp, dt * 1.5f);
-
-            // Viñeta coral a los costados cuando la nave está fuera de la ruta.
-            float target = !_inLane && _phase == Phase.Manual ? 0.55f : 0f;
-            float a = Mathf.MoveTowards(_vignetteL.color.a, target, dt * 3f);
-            _vignetteL.color = _vignetteR.color = NeuroStyle.WithAlpha(BadColor, a);
-
-            // Brillo bajo la nave que respira; estela de motor.
-            _shipGlow.color = NeuroStyle.WithAlpha(Boosted ? NeuroStyle.Sun : LaneColor, Motion.Decorative ? 0.30f + 0.08f * Mathf.Sin(now * 5f) : 0.30f);
-            if (now >= _trailEmitAt && Motion.Decorative) // sin ReduceMotion: sin estela de motor
-            {
-                _trailEmitAt = now + 0.045f;
-                var img = _trail[_trailNext];
-                _trailAge[_trailNext] = 0f;
-                img.gameObject.SetActive(true);
-                img.rectTransform.anchoredPosition = _shipRect.anchoredPosition + new Vector2(0f, -ShipSize * 0.42f);
-                _trailNext = (_trailNext + 1) % _trail.Count;
-            }
-            for (int i = 0; i < _trail.Count; i++)
-            {
-                if (!_trail[i].gameObject.activeSelf) continue;
-                _trailAge[i] += dt;
-                float k = _trailAge[i] / 0.4f;
-                if (k >= 1f)
-                {
-                    _trail[i].gameObject.SetActive(false);
-                    continue;
-                }
-                var r = _trail[i].rectTransform;
-                r.anchoredPosition += new Vector2(0f, -_speed * dt);
-                float size = Mathf.Lerp(60f, 18f, k);
-                r.sizeDelta = new Vector2(size, size);
-                _trail[i].color = NeuroStyle.WithAlpha(Boosted ? NeuroStyle.Sun : NeuroStyle.Coral, 0.55f * (1f - k));
-            }
-        }
-
-        private void UpdateClock(float now)
-        {
-            if (!Endless) return;
-            float left = _endsAt - now;
-            SetTimerFraction(Mathf.Clamp01(left / PilotContract.FlightSeconds));
-            int whole = Mathf.CeilToInt(left);
-            if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
-            {
-                _lastTickSecond = whole;
-                GameFeel.Tick();
-            }
-            if (left <= 0f) _ended = true;
-        }
-
-        private IEnumerator FadeControlLabel()
-        {
-            var c = _controlLabel.color;
-            float t = 0f;
-            while (t < 0.6f)
-            {
-                t += GameClock.DeltaTime;
-                _controlLabel.color = NeuroStyle.WithAlpha(c, c.a * (1f - Mathf.Clamp01(t / 0.6f)));
-                yield return null;
-            }
-            _controlLabel.color = NeuroStyle.WithAlpha(c, 0f);
-        }
-
-        private IEnumerator PulseBanner()
-        {
-            for (int i = 0; i < 2; i++) yield return StartCoroutine(PopRect(_bannerRect, 1.06f, 0.35f));
-        }
-
-        // ------------------------------------------------------------------ fin
-
-        private IEnumerator FinishGame()
-        {
-            _phase = Phase.Done;
-            foreach (var s in _signals) Retire(s);
-
-            float? single = PilotContract.SignalAccuracy(_autoHits, _autoTargets, _autoFa, _autoNonTargets);
-            float? dual = PilotContract.SignalAccuracy(_hits, _targets, _fa, _nonTargets);
-            float lane = _manualTime > 0f ? _manualInLane / _manualTime : 0f;
-            int score = PilotContract.Score(dual ?? 0f, lane);
-            int cost = PilotContract.MultitaskCost(single, dual);
-            int total = _autoTargets + _autoNonTargets + _targets + _nonTargets;
-            int correct = _autoHits + (_autoNonTargets - _autoFa) + _hits + (_nonTargets - _fa);
-            int avgMs = _rtCount > 0 ? (int)(_rtSum / _rtCount) : 0;
-
-            _pill.Set("Aterrizaje", GoodColor);
-            ShowResult(score, lane, cost);
-
-            var telemetry = new StroopTelemetry
-            {
-                user_id = _config.user_id,
-                game_id = _config.game_id,
-                session_metrics = new StroopSessionMetrics
-                {
-                    correct_trials = correct,
-                    total_trials = total,
-                    calculated_score = score,
-                    average_response_time_ms = avgMs,
-                    level = _config.config.level,
-                    timed = _config.config.timed,
-                    end_rating = (_driveDda.RatingNormalized + _signalDda.RatingNormalized) * 0.5f,
-                    // Desafío superado en Piloto = las dos tareas: se informa la de menos aciertos (pilotaje o señales).
-                    mode_trials = PilotContract.WeakerOf(_driveDda.ScoredCorrect, _driveDda.ScoredTrials, _signalDda.ScoredCorrect, _signalDda.ScoredTrials).trials,
-                    mode_hits = PilotContract.WeakerOf(_driveDda.ScoredCorrect, _driveDda.ScoredTrials, _signalDda.ScoredCorrect, _signalDda.ScoredTrials).hits,
-                    peak_level = Mathf.Max(_driveDda.PeakLevel, _signalDda.PeakLevel),
-                    multitask_cost = cost
-                }
-            };
-            NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
-            yield break;
-        }
-
-        private void ShowResult(int score, float lane, int cost)
-        {
-            _exit.Show();
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Vuelo impecable!" : score >= 65 ? "¡Buen vuelo!" : "Vuelo completado";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_hits} de {_targets} señales · {Mathf.RoundToInt(lane * 100f)}% en la ruta";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = cost >= 0 ? $"Costo de multitarea {cost}%" : $"Mejor racha {_bestStreak}";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
-        }
-
-        // ------------------------------------------------------------------ construcción de UI
-
-        protected override void BuildUi()
-        {
-
-            var canvasGo = new GameObject("PilotCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080f, 1920f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0f;
-            canvasGo.AddComponent<GraphicRaycaster>();
-
-            var bg = new GameObject("Background");
-            bg.transform.SetParent(canvasGo.transform, false);
-            var bgRect = bg.AddComponent<RectTransform>();
-            Stretch(bgRect);
-            // Mundo "Hiperespacio": las estrellas nacen arriba y pasan junto a la nave (sensación de avance).
-            WorldBackdrop.Build(bgRect, GameWorld.Hyperspace);
-            _stars = bgRect.GetComponentInChildren<StarfieldFx>();
-
-            var safeGo = new GameObject("SafeAreaContent");
-            safeGo.transform.SetParent(canvasGo.transform, false);
-            _safe = safeGo.AddComponent<RectTransform>();
-            ApplySafeArea(_safe);
-
-            _hud = new GameHud(_safe, "Piloto Estelar", MarginU, this);
-            BuildBanner();
-            BuildTimer();
-            BuildPlayField();
-            _pill = new PhasePill(_safe, this, UnitsPerDp, 21);
-
-            BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
-
-            var flashGo = new GameObject("Flash");
-            flashGo.transform.SetParent(canvasGo.transform, false);
-            Stretch(flashGo.AddComponent<RectTransform>());
-            _flash = flashGo.AddComponent<Image>();
-            _flash.raycastTarget = false;
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
-        }
-
-        /// <summary>Cartel de la misión: el ícono a atrapar, bien grande (forma + color, sin depender de leer).</summary>
-        private void BuildBanner()
-        {
-            var go = new GameObject("MissionBanner");
-            go.transform.SetParent(_safe, false);
-            _bannerRect = go.AddComponent<RectTransform>();
-            _bannerRect.anchorMin = _bannerRect.anchorMax = new Vector2(0.5f, 1f);
-            _bannerRect.pivot = new Vector2(0.5f, 0.5f);
-            var bg = go.AddComponent<Image>();
-            bg.sprite = RoundedRectSprite.Get(64);
-            bg.type = Image.Type.Sliced;
-            bg.color = NeuroStyle.Surface;
-            bg.raycastTarget = false;
-            NeuroStyle.ClayFrame(bg, 4f, 8f);
-
-            var iconBg = new GameObject("IconDisc");
-            iconBg.transform.SetParent(go.transform, false);
-            var ir = iconBg.AddComponent<RectTransform>();
-            ir.anchorMin = ir.anchorMax = new Vector2(0f, 0.5f);
-            ir.pivot = new Vector2(0.5f, 0.5f);
-            ir.sizeDelta = new Vector2(124f, 124f);
-            ir.anchoredPosition = new Vector2(84f, 0f);
-            var disc = iconBg.AddComponent<Image>();
-            disc.sprite = DiscSprite.Get();
-            disc.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.14f);
-            disc.raycastTarget = false;
-
-            var icon = new GameObject("MissionIcon");
-            icon.transform.SetParent(iconBg.transform, false);
-            var mr = icon.AddComponent<RectTransform>();
-            mr.anchorMin = new Vector2(0.02f, 0.02f);
-            mr.anchorMax = new Vector2(0.98f, 0.98f);
-            mr.offsetMin = mr.offsetMax = Vector2.zero;
-            _missionIcon = icon.AddComponent<Image>();
-            _missionIcon.raycastTarget = false;
-            _missionIcon.preserveAspect = true;
-
-            _bannerTitle = MakeText(go.transform, "Title", 50, TextAnchor.MiddleLeft, Color.white, 0f, 0f);
-            NeuroStyle.ClayText(_bannerTitle, 3f, 4f);
-            _bannerTitle.text = "MISIÓN: atrapa solo esta";
-            var tr = _bannerTitle.rectTransform;
-            tr.anchorMin = new Vector2(0f, 0.42f);
-            tr.anchorMax = new Vector2(1f, 1f);
-            tr.offsetMin = new Vector2(170f, 0f);
-            tr.offsetMax = new Vector2(-24f, -6f);
-            BestFit(_bannerTitle, 42);
-
-            _bannerSub = MakeText(go.transform, "Sub", 42, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
-            _bannerSub.text = "Misma forma y color. Ignora las demás.";       // más corto: a 14 dp cabe en un renglón
-            var sr = _bannerSub.rectTransform;
-            sr.anchorMin = new Vector2(0f, 0f);
-            sr.anchorMax = new Vector2(1f, 0.46f);
-            sr.offsetMin = new Vector2(170f, 8f);
-            sr.offsetMax = new Vector2(-24f, 0f);
-            BestFit(_bannerSub, 42);
-        }
-
-        private void BuildTimer()
-        {
-            var bg = new GameObject("TimerBar");
-            bg.transform.SetParent(_safe, false);
-            _timerBg = bg.AddComponent<RectTransform>();
-            _timerBg.anchorMin = _timerBg.anchorMax = new Vector2(0.5f, 1f);
-            _timerBg.pivot = new Vector2(0.5f, 0.5f);
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.sprite = RoundedRectSprite.Get(10);
-            bgImg.type = Image.Type.Sliced;
-            bgImg.color = new Color(1f, 1f, 1f, 0.12f);
-            bgImg.raycastTarget = false;
-
-            var fill = new GameObject("Fill");
-            fill.transform.SetParent(bg.transform, false);
-            _timerFill = fill.AddComponent<RectTransform>();
-            _timerFill.anchorMin = Vector2.zero;
-            _timerFill.anchorMax = Vector2.one;
-            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
-            var img = fill.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(10);
-            img.type = Image.Type.Sliced;
-            img.raycastTarget = false;
-            img.color = GoodColor;
-        }
-
-        private void SetTimerFraction(float fraction)
-        {
-            _timerFill.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
-            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
-            _timerFill.GetComponent<Image>().color = fraction > 0.5f ? Color.Lerp(AmberColor, GoodColor, (fraction - 0.5f) * 2f)
-                                                                      : Color.Lerp(BadColor, AmberColor, fraction * 2f);
-        }
-
-        private void BuildPlayField()
-        {
-            var go = new GameObject("PlayField");
-            go.transform.SetParent(_safe, false);
-            _play = go.AddComponent<RectTransform>();
-            _play.anchorMin = Vector2.zero;
-            _play.anchorMax = Vector2.one;
-            _play.pivot = new Vector2(0.5f, 0.5f);
-
-            // Franja de control (abajo): donde va el pulgar que guía la nave.
-            var ctl = new GameObject("ControlBand");
-            ctl.transform.SetParent(_play, false);
-            _controlRect = ctl.AddComponent<RectTransform>();
-            _controlRect.anchorMin = new Vector2(0f, 0f);
-            _controlRect.anchorMax = new Vector2(1f, 0f);
-            _controlRect.pivot = new Vector2(0.5f, 0f);
-            _controlImage = ctl.AddComponent<Image>();
-            _controlImage.sprite = RoundedRectSprite.Get(64);
-            _controlImage.type = Image.Type.Sliced;
-            _controlImage.color = new Color(1f, 1f, 1f, 0.06f);
-            _controlImage.raycastTarget = false;
-            _controlLabel = MakeText(ctl.transform, "Label", 42, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.7f), 0f, 0f);
-            _controlLabel.text = "‹  Desliza aquí para guiar la nave  ›";
-            Stretch(_controlLabel.rectTransform);
-            BestFit(_controlLabel, 42);
-
-            _laneRoot = Layer(_play, "Lane");
-            int pool = 64;
-            for (int i = 0; i < pool; i++)
-            {
-                _bands.Add(NewImage(_laneRoot, "Band", null));
-            }
-            for (int i = 0; i < pool; i++)
-            {
-                _beaconsL.Add(NewImage(_laneRoot, "BeaconL", DiscSprite.Get()));
-                _beaconsR.Add(NewImage(_laneRoot, "BeaconR", DiscSprite.Get()));
-            }
-
-            // Viñetas de "fuera de la ruta" a los costados.
-            _vignetteL = NewImage(_play, "VignetteL", RadialGlowSprite.Get());
-            _vignetteR = NewImage(_play, "VignetteR", RadialGlowSprite.Get());
-            foreach (var v in new[] { _vignetteL, _vignetteR })
-            {
-                v.color = new Color(0f, 0f, 0f, 0f);
-                v.gameObject.SetActive(true);
-            }
-
-            _trailRoot = Layer(_play, "Trail");
-            for (int i = 0; i < TrailPool; i++)
-            {
-                var img = NewImage(_trailRoot, "Trail", RadialGlowSprite.Get());
-                _trail.Add(img);
-                _trailAge.Add(1f);
-            }
-
-            var shipGo = new GameObject("Ship");
-            shipGo.transform.SetParent(_play, false);
-            _shipRect = shipGo.AddComponent<RectTransform>();
-            _shipRect.anchorMin = _shipRect.anchorMax = new Vector2(0.5f, 0.5f);
-            _shipRect.pivot = new Vector2(0.5f, 0.5f);
-            _shipRect.sizeDelta = new Vector2(ShipSize, ShipSize);
-            var glowGo = new GameObject("Glow");
-            glowGo.transform.SetParent(shipGo.transform, false);
-            var gr = glowGo.AddComponent<RectTransform>();
-            gr.anchorMin = gr.anchorMax = new Vector2(0.5f, 0.5f);
-            gr.sizeDelta = new Vector2(ShipSize * 2.2f, ShipSize * 2.2f);
-            _shipGlow = glowGo.AddComponent<Image>();
-            _shipGlow.sprite = RadialGlowSprite.Get();
-            _shipGlow.raycastTarget = false;
-            var bodyGo = new GameObject("Body");
-            bodyGo.transform.SetParent(shipGo.transform, false);
-            Stretch(bodyGo.AddComponent<RectTransform>());
-            _shipImage = bodyGo.AddComponent<Image>();
-            _shipImage.sprite = PilotShipSprite.Get();
-            _shipImage.raycastTarget = false;
-
-            for (int i = 0; i < SignalPool; i++) _signals.Add(BuildSignal(i));
-
-            _fxRect = Layer(_play, "Fx");
-
-            _bigText = MakeText(_play, "BigText", 110, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
-            NeuroStyle.ClayText(_bigText, 6f, 10f);
-            var br = _bigText.rectTransform;
-            br.anchorMin = br.anchorMax = new Vector2(0.5f, 0.5f);
-            br.sizeDelta = new Vector2(1000f, 180f);
-            BestFit(_bigText, 60);
-            _bigText.gameObject.SetActive(false);
-        }
-
-        private ActiveSignal BuildSignal(int i)
-        {
-            var go = new GameObject("Signal" + i);
-            go.transform.SetParent(_play, false);
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(SignalSize, SignalSize);
-            var group = go.AddComponent<CanvasGroup>();
-            group.blocksRaycasts = false;
-
-            var halo = NewImage(rect, "Halo", RadialGlowSprite.Get());
-            halo.rectTransform.anchorMin = halo.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            halo.rectTransform.sizeDelta = new Vector2(SignalSize * 1.9f, SignalSize * 1.9f);
-            halo.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.22f);
-            halo.gameObject.SetActive(true);
-
-            // Anillo que se vacía: cuánto le queda a la señal.
-            var ring = NewImage(rect, "Ring", RingSprite.Get());
-            ring.rectTransform.anchorMin = ring.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            ring.rectTransform.sizeDelta = new Vector2(SignalSize * 1.18f, SignalSize * 1.18f);
-            ring.type = Image.Type.Filled;
-            ring.fillMethod = Image.FillMethod.Radial360;
-            ring.fillOrigin = (int)Image.Origin360.Top;
-            ring.fillClockwise = false;
-            ring.gameObject.SetActive(true);
-
-            var icon = NewImage(rect, "Icon", null);
-            Stretch(icon.rectTransform);
-            icon.preserveAspect = true;
-            icon.gameObject.SetActive(true);
-
-            var mark = NewImage(rect, "Mark", null);
-            var mr = mark.rectTransform;
-            mr.anchorMin = mr.anchorMax = new Vector2(0.82f, 0.82f);
-            mr.sizeDelta = new Vector2(SignalSize * 0.5f, SignalSize * 0.5f);
-            mark.color = Color.white;
-
-            go.SetActive(false);
-            return new ActiveSignal { Rect = rect, Icon = icon, Ring = ring, Mark = mark, Group = group };
-        }
-
-        private static RectTransform Layer(Transform parent, string name)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var r = go.AddComponent<RectTransform>();
-            Stretch(r);
-            return r;
-        }
-
-        private static Image NewImage(Transform parent, string name, Sprite sprite)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var r = go.AddComponent<RectTransform>();
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            var img = go.AddComponent<Image>();
-            img.sprite = sprite;
-            img.raycastTarget = false;
-            go.SetActive(false);
-            return img;
-        }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-
-            AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 48, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            AddResultText("Extra", 44, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            go.SetActive(false);
-        }
-
-        // ------------------------------------------------------------------ layout
-
-        private void Layout()
-        {
-            Rect safe = _safe.rect;
-            float sw = Mathf.Max(safe.width, 400f);
-            float sh = Mathf.Max(safe.height, 800f);
-            float contentW = sw - MarginU * 2f;
-
-            float y = GameHud.Height + 10f;
-            float bannerH = 150f;
-            _bannerRect.sizeDelta = new Vector2(contentW, bannerH);
-            _bannerRect.anchoredPosition = new Vector2(0f, -(y + bannerH / 2f));
-            y += bannerH + 22f;
-            _timerBg.sizeDelta = new Vector2(contentW, 16f);
-            _timerBg.anchoredPosition = new Vector2(0f, -(y + 8f));
-            y += 16f + 12f;
-
-            // Zona de vuelo: todo lo que queda debajo.
-            _play.offsetMin = Vector2.zero;
-            _play.offsetMax = new Vector2(0f, -y);
-            Canvas.ForceUpdateCanvases();
-            _playW = _play.rect.width;
-            _playH = _play.rect.height;
-
-            float controlH = Mathf.Clamp(_playH * 0.24f, 240f, 380f);
-            _controlRect.offsetMin = new Vector2(MarginU * 0.5f, 18f);
-            _controlRect.offsetMax = new Vector2(-MarginU * 0.5f, 18f + controlH);
-            _controlTop = -_playH * 0.5f + 18f + controlH;
-            _shipY = _controlTop + ShipSize * 0.75f;
-            _signalBottom = _shipY + ShipSize * 1.1f;
-            _signalTop = _playH * 0.5f - SignalSize * 0.7f;
-
-            float vh = _playH * 0.9f;
-            _vignetteL.rectTransform.sizeDelta = _vignetteR.rectTransform.sizeDelta = new Vector2(520f, vh);
-            _vignetteL.rectTransform.anchoredPosition = new Vector2(-_playW * 0.5f, 0f);
-            _vignetteR.rectTransform.anchoredPosition = new Vector2(_playW * 0.5f, 0f);
-
-            // Píldora de estado arriba dentro de la franja de control (la nave queda libre, justo encima).
-            _pill.SetPosition(new Vector2(0f, -sh / 2f + 18f + controlH - 56f));
-            _pill.Rect.SetAsLastSibling();
-        }
-
-        private void UpdateHud()
-        {
-            int level = Mathf.RoundToInt((_driveDda.PresentedLevel + _signalDda.PresentedLevel) * 0.5f);
-            _hud.SetLevel(level);
-            if (Endless) _hud.SetPoints(_points);
-            else _hud.SetInfo(_phase == Phase.Manual ? $"{Mathf.Min(_manualResolved, PilotContract.PrecisionSignals)} de {PilotContract.PrecisionSignals}" : "Despegue");
-        }
+#endif
     }
 }

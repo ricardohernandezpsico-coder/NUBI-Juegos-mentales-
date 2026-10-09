@@ -131,6 +131,16 @@ namespace NeuroVida.Games.Shared
             public const string Lights = "¡Cada mensaje enciende una luz!";
         }
 
+        /// <summary>Piloto Estelar: la ruta de las balizas (pantalla: la tarjeta de misión arriba, el cielo de señales, la nave y la franja del dedo abajo). Las dos tareas van juntas desde el paso 2 (regla permanente 1).</summary>
+        public static class Piloto
+        {
+            public const string Mission = "Esta es tu misión: busca esta señal";
+            public const string Steer = "Desliza aquí para guiar la nave";
+            public const string Catch = "Toca la señal de tu misión";
+            public const string Lookalike = "Las parecidas tienen otro detalle: no las toques";
+            public const string Sector = "En cada sector cambia la misión";
+        }
+
         /// <summary>Cosecha de palabras (pantalla: las siete letras que giran, la bandeja, «Sembrar» y «Borrar» abajo y el planeta del huerto). La práctica arma CASA con las letras I R A O A S C.</summary>
         public static class Cosecha
         {
@@ -225,6 +235,11 @@ namespace NeuroVida.Games.Shared
             yield return ("satelites", "primero", Satelites.First);
             yield return ("satelites", "segundo", Satelites.Second);
             yield return ("satelites", "luces", Satelites.Lights);
+            yield return ("piloto", "misión", Piloto.Mission);
+            yield return ("piloto", "deslizar", Piloto.Steer);
+            yield return ("piloto", "atrapar", Piloto.Catch);
+            yield return ("piloto", "parecidas", Piloto.Lookalike);
+            yield return ("piloto", "sector", Piloto.Sector);
             yield return ("bodega", "empezar", Bodega.Begin);
             yield return ("bodega", "esclusa", Bodega.Watch);
             yield return ("bodega", "así quedó", Bodega.Reveal);

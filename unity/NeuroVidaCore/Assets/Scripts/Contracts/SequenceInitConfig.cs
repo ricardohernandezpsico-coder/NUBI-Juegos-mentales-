@@ -85,6 +85,10 @@ namespace NeuroVida.Contracts
         public int sat_best;
         public int sat_stage;
         public int sat_surprise;
+        /// <summary>Solo «Piloto Estelar: la ruta de las balizas» (id <c>piloto</c>), solo en las herramientas de prueba: el nivel (1..9) con que empiezan los dos motores (0 = el que corresponde) y cada cuántos segundos cambia el sector (0 = 30; con 5 el sector 2 llega a los 5 s).
+        /// </summary>
+        public int pil_stage;
+        public int pil_sector_s;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;
