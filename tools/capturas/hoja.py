@@ -42,6 +42,7 @@ CAPTIONS = {
     't20': 'A los 20 s de juego',
     't40': 'A los 40 s de juego',
     'pausa': 'La pausa',
+    'aviso': 'Un aviso (de prueba)',
     'listo': 'Cortina «¡Listo!»',
     'final': 'La pantalla final',
     'sin-animaciones': 'Con «quitar animaciones»',

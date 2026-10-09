@@ -89,7 +89,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Lo esconde de una vez (si el juego detiene todas sus corrutinas, como al abrir «Cómo se juega», el aviso no queda a medias).</summary>
         public void Hide()
         {
-            _anim = null;
+            if (_anim != null) { _runner.StopCoroutine(_anim); _anim = null; }
             _group.alpha = 0f;
             _rect.gameObject.SetActive(false);
         }
@@ -98,7 +98,66 @@ namespace NeuroVida.Games.Shared
         /// El aviso aparece DEBAJO del marcador de arriba (<see cref="GameHud"/>: título, «Nivel», avance y racha), nunca encima: <paramref name="extraU"/> unidades más abajo todavía si el juego lo pide. Antes se ponía en el borde superior
         /// y tapaba el título y los rótulos (8-oct, revisión de las capturas).
         /// </summary>
-        public void SetBelowHud(float extraU = 0f) => _basePosition = new Vector2(0f, -(GameHud.Height + BelowHudGap + extraU));
+        public void SetBelowHud(float extraU = 0f)
+        {
+            _minTopU = GameHud.Height + BelowHudGap + extraU;
+            _basePosition = new Vector2(0f, -_minTopU);
+        }
+
+        private float _minTopU = GameHud.Height + BelowHudGap;
+
+        /// <summary>Cuánto baja el aviso desde el borde de arriba de su contenedor donde quedó (unidades).</summary>
+        public float PlacedTopU => -_basePosition.y;
+
+        /// <summary>La caja del aviso (para la guardia del smoke y las pruebas).</summary>
+        public RectTransform Rect => _rect;
+
+        /// <summary>Cuánto pisa el aviso, donde quedó, a lo que no se debe tapar (0 = franja libre; <see cref="ToastPlacement"/>).</summary>
+        public float PlacedOverlap { get; private set; }
+
+        private readonly System.Collections.Generic.List<RectTransform> _keepOut = new System.Collections.Generic.List<RectTransform>();
+
+        /// <summary>
+        /// Una zona donde el aviso NUNCA va, aunque en este momento no se vea nada en ella (el campo donde se mueve el estímulo: el cielo de Meteoros y de Aterrizaje, la arena de Satélites, el radar, el lugar de la señal de Freno). Las cajas invisibles y apagadas cuentan.
+        /// </summary>
+        public void KeepOut(RectTransform zone)
+        {
+            if (zone != null && !_keepOut.Contains(zone)) _keepOut.Add(zone);
+        }
+
+        /// <summary>Las zonas que el juego declaró con <see cref="KeepOut"/> (para la guardia del smoke).</summary>
+        public System.Collections.Generic.IReadOnlyList<RectTransform> KeepOutZones => _keepOut;
+
+        /// <summary>Lo más que el aviso espera a que aparezca una franja libre antes de mostrarse donde menos choque (segundos).</summary>
+        public const float MaxWaitSeconds = 4f;
+
+        /// <summary>
+        /// Busca la primera franja libre debajo del marcador (de arriba hacia abajo, de 12 en 12 unidades) donde el aviso, con el tamaño que ya tiene, no choca con ningún texto, ningún botón, el estímulo del juego (<see cref="ToastPlacement"/>) ni una zona declarada
+        /// con <see cref="KeepOut"/>. Devuelve true si la encontró; si no, deja el aviso donde menos choca. Cada juego deja su disposición como está y el aviso se acomoda a ella (Tarea 55: antes caía sobre «Tu estación», la pregunta y la pieza de Acoplamiento y sobre el medidor de Freno).
+        /// </summary>
+        private bool TryPlace()
+        {
+            var parent = _rect.parent as RectTransform;
+            PlacedOverlap = 0f;
+            if (parent == null || parent.rect.height <= 0f) return true;
+            var protectedBoxes = ToastPlacement.Collect(parent, _rect);
+            foreach (var z in _keepOut) if (z != null) protectedBoxes.Add(ToastPlacement.LocalRectOf(parent, z));
+            float h = _rect.sizeDelta.y, w = _rect.sizeDelta.x;
+            float cx = parent.rect.center.x;
+            float maxTop = parent.rect.height - h - 6f;
+            float best = _minTopU, bestScore = float.MaxValue;
+            for (float top = _minTopU; top <= Mathf.Max(_minTopU, maxTop); top += 12f)
+            {
+                var box = new Rect(cx - w * 0.5f, top, w, h);
+                float score = 0f;
+                foreach (var p in protectedBoxes) score += ToastPlacement.Overlap(box, p);
+                if (score < bestScore) { bestScore = score; best = top; }
+                if (score <= 1f) break;
+            }
+            _basePosition = new Vector2(0f, -best);
+            PlacedOverlap = bestScore <= 1f ? 0f : bestScore;
+            return bestScore <= 1f;
+        }
 
         /// <summary>Aire entre el marcador y el aviso (unidades).</summary>
         public const float BelowHudGap = 14f;
@@ -121,6 +180,7 @@ namespace NeuroVida.Games.Shared
 
             FitSize(hasSubtitle);
 
+            _group.alpha = 0f;
             _rect.gameObject.SetActive(true);
             if (_anim != null) _runner.StopCoroutine(_anim);
             _anim = _runner.StartCoroutine(Run(holdSeconds));
@@ -135,7 +195,7 @@ namespace NeuroVida.Games.Shared
         {
             const float iconAndPad = 96f; // dp: 76 a la izquierda (punto) + 20 a la derecha
             const float minWidthDp = 300f;
-            const float padDp = 16f, titleLineDp = 30f, subtitleLineDp = 22f;
+            const float padDp = 12f, titleLineDp = 28f, subtitleLineDp = 22f;
             // Deja siempre un margen a cada lado del contenedor real (la zona seguridad del juego), no un ancho fijo:
             // así el aviso nunca toca el borde ni se corta en pantallas angostas.
             var parentRect = _rect.parent as RectTransform;
@@ -156,7 +216,7 @@ namespace NeuroVida.Games.Shared
             _subtitle.horizontalOverflow = subtitleLines > 1 ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
 
             float titleH = titleLines * titleLineDp, subtitleH = subtitleLines * subtitleLineDp;
-            float heightDp = Mathf.Max(84f, padDp * 2f + titleH + subtitleH);
+            float heightDp = Mathf.Max(72f, padDp * 2f + titleH + subtitleH);
             _rect.sizeDelta = new Vector2(widthDp * _u, heightDp * _u);
 
             // Cada texto en su franja (arriba el título, debajo el subtítulo), centrados en el alto del recuadro.
@@ -178,6 +238,14 @@ namespace NeuroVida.Games.Shared
 
         private IEnumerator Run(float hold)
         {
+            // Sin franja libre en este momento (el estímulo ocupa donde cabría), el aviso espera «entre ensayos» a que aparezca una; a los MaxWaitSeconds se muestra donde menos choca.
+            float waited = 0f;
+            while (!TryPlace() && waited < MaxWaitSeconds)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            _rect.anchoredPosition = _basePosition;
             if (!Motion.Decorative)
             {
                 // "Quitar animaciones": sin caída ni rebote; solo aparece y se va con un fundido de opacidad.

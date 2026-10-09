@@ -978,6 +978,12 @@ namespace NeuroVida.Games.Rumbo
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            _toast.KeepOut(_prompt.rectTransform);          // los textos del juego, aunque en este momento estén vacíos
+            _toast.KeepOut(_detail.rectTransform);
+            _toast.KeepOut(_hint.rectTransform);
+            _toast.KeepOut(_shipRect);
+            _toast.KeepOut(_signal);                        // la señal y la baliza aparecen a mitad de ronda
+            _toast.KeepOut(_beacon);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -1169,7 +1175,7 @@ namespace NeuroVida.Games.Rumbo
             var r = t.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(t, Mathf.Max(24, size / 2));
+            BestFit(t, 42);                                  // nunca bajo 14 dp: si no cabe en un renglón pasa a dos
             return t;
         }
 

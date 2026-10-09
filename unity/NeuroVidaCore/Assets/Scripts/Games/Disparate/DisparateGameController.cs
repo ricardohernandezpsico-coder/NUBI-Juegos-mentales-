@@ -1228,7 +1228,7 @@ namespace NeuroVida.Games.Disparate
             var r = t.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(t, Mathf.Max(24, size / 2));
+            BestFit(t, 42);                                  // nunca bajo 14 dp: si no cabe en un renglón pasa a dos
             return t;
         }
 

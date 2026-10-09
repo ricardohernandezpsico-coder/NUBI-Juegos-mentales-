@@ -640,6 +640,8 @@ namespace NeuroVida.Games.Satelites
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            _toast.KeepOut(_arena);                         // el campo donde se mueven los satélites
+            _toast.KeepOut(_prompt.rectTransform);          // la consigna, aunque en este momento esté vacía
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

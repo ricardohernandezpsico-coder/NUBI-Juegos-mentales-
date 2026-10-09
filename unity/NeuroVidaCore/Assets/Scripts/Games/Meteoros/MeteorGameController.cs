@@ -81,6 +81,7 @@ namespace NeuroVida.Games.Meteoros
         private GameHud _hud;
         private CountdownScreen _countdown;
         private float _playW, _playH, _spawnY, _atmosphereY, _bottom, _hudBottomY;
+        private RectTransform _toastKeepOut;
         private Vector2 _starTarget;
 
         // ------------------------------------------------------------------ sesión
@@ -888,6 +889,13 @@ namespace NeuroVida.Games.Meteoros
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            // el campo donde se mueve el estímulo: el aviso nunca va ahí (se mide en Layout)
+            var keepOut = new GameObject("ToastKeepOut", typeof(RectTransform));
+            keepOut.transform.SetParent(_play, false);
+            _toastKeepOut = (RectTransform)keepOut.transform;
+            _toastKeepOut.anchorMin = _toastKeepOut.anchorMax = new Vector2(0.5f, 0.5f);
+            _toastKeepOut.pivot = new Vector2(0.5f, 1f);
+            _toast.KeepOut(_toastKeepOut);
             BuildTutorial(_safe, GameHud.Height + 10f, "Lluvia de meteoros", "Toca las palabras que existen. Las inventadas, déjalas caer.",
                 captionFromBottomU: 430f, badgeAtBottom: true);
 
@@ -918,7 +926,7 @@ namespace NeuroVida.Games.Meteoros
             var r = t.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(t, Mathf.Max(24, size / 2));
+            BestFit(t, 42);                                  // nunca bajo 14 dp: si no cabe en un renglón pasa a dos
             return t;
         }
 
@@ -1028,6 +1036,9 @@ namespace NeuroVida.Games.Meteoros
             // la atmósfera queda sobre la cúpula del observatorio (la superficie ocupa el 16% de abajo)
             _atmosphereY = _bottom + _playH * 0.30f;
             _atmosphere.anchoredPosition = new Vector2(0f, _atmosphereY - 40f);
+            // zona prohibida del aviso: el cielo por donde caen los meteoros, de debajo del marcador a la atmósfera; el aviso va abajo, en la cúpula y la superficie
+            _toastKeepOut.sizeDelta = new Vector2(_playW, Mathf.Max(0f, (top - GameHud.Height) - _atmosphereY));
+            _toastKeepOut.anchoredPosition = new Vector2(0f, top - GameHud.Height);
         }
 
         private void UpdateHud()

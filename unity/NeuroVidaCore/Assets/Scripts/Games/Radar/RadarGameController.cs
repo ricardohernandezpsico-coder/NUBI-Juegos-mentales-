@@ -766,6 +766,11 @@ namespace NeuroVida.Games.Radar
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            _toast.KeepOut(_scopeRect);                     // el radar donde destellan los astronautas
+            _toast.KeepOut(_prompt.rectTransform);
+            _toast.KeepOut(_hint.rectTransform);
+            _toast.KeepOut(_rescueRect);                    // el botón ¡RESCATAR! y la fila de rescatados, aunque todavía no se vean
+            _toast.KeepOut(_crewRow);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

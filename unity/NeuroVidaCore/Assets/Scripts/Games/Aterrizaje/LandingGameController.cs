@@ -64,6 +64,7 @@ namespace NeuroVida.Games.Aterrizaje
         private RectTransform _safe, _play, _fxRect, _landerRect, _rulerRect, _flagRect, _gapRect, _midTick, _timerBg, _timerFill;
         private Image _lander, _flame, _gapLine;
         private Text _missionSmall, _mission, _prompt, _minLabel, _maxLabel, _flagLabel, _gapLabel, _hint;
+        private RectTransform _toastKeepOut;
         private readonly List<Image> _beam = new List<Image>();
         private Toast _toast;
         private ExitButton _exit;
@@ -591,6 +592,13 @@ namespace NeuroVida.Games.Aterrizaje
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            // el campo donde se mueve el estímulo: el aviso nunca va ahí (se mide en Layout)
+            var keepOut = new GameObject("ToastKeepOut", typeof(RectTransform));
+            keepOut.transform.SetParent(_play, false);
+            _toastKeepOut = (RectTransform)keepOut.transform;
+            _toastKeepOut.anchorMin = _toastKeepOut.anchorMax = new Vector2(0.5f, 0.5f);
+            _toastKeepOut.pivot = new Vector2(0.5f, 1f);
+            _toast.KeepOut(_toastKeepOut);
             BuildTutorial(_safe, GameHud.Height + 10f, "Aterrizaje Lunar", "Aterriza en el número que te piden. La regla solo marca sus dos extremos.");
 
             var flashGo = new GameObject("Flash");
@@ -609,7 +617,7 @@ namespace NeuroVida.Games.Aterrizaje
             var r = t.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(t, Mathf.Max(24, size / 2));
+            BestFit(t, 42);                                  // nunca bajo 14 dp: si no cabe en un renglón pasa a dos
             return t;
         }
 
@@ -822,8 +830,12 @@ namespace NeuroVida.Games.Aterrizaje
             _rulerY = bottom + _playH * 0.26f;
             _rulerRect.sizeDelta = new Vector2(_rulerW, 28f);
             _rulerRect.anchoredPosition = new Vector2(0f, _rulerY);
-            _hint.rectTransform.sizeDelta = new Vector2(contentW, 70f);
+            _hint.rectTransform.sizeDelta = new Vector2(contentW, 110f);
             _hint.rectTransform.anchoredPosition = new Vector2(0f, bottom + _playH * 0.12f);
+            // zona prohibida del aviso: desde debajo del marcador hasta debajo de la regla y sus rótulos (la misión y la nave que baja); el aviso va en la superficie lunar
+            float koTop = top - GameHud.Height, koBottom = _rulerY - 150f;
+            _toastKeepOut.sizeDelta = new Vector2(_playW, Mathf.Max(0f, koTop - koBottom));
+            _toastKeepOut.anchoredPosition = new Vector2(0f, koTop);
         }
 
         private void UpdateHud()

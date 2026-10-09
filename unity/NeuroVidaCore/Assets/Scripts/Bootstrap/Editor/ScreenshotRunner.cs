@@ -295,17 +295,43 @@ namespace NeuroVida.Bridge.EditorTools
             double playable = Now;
             Shot("primera");
             bool ended = false;
-            foreach (var step in new[] { ("t08", 8.0), ("t20", 20.0), ("pausa", 21.0), ("t40", 40.0) })
+            foreach (var step in new[] { ("t08", 8.0), ("t20", 20.0), ("pausa", 21.0), ("aviso", 30.0), ("t40", 40.0) })
             {
                 double at = playable + step.Item2;
                 yield return Wait.Until(() => Now >= at || CurtainUp(), step.Item2 + 30);
                 if (CurtainUp()) { ended = true; break; }
                 // la pausa va a los 21 s, a mitad de partida: más tarde un juego corto ya terminó (Bodega acaba sus 6 pedidos hacia los 40 s) y su pausa ya no ofrece «Cómo se juega»
-                if (step.Item1 == "pausa") yield return PauseShot(); else Shot(step.Item1);
+                if (step.Item1 == "pausa") yield return PauseShot();
+                else if (step.Item1 == "aviso") yield return ToastShot();
+                else Shot(step.Item1);
             }
             if (ended || CurtainUp()) yield return EndShots();
             if (_count < 4) GameNotes.Add("solo " + _count + " toma(s) de la partida (¿terminó muy pronto o no arrancó?)");
             yield return ExitPlay();
+        }
+
+        /// <summary>
+        /// Muestra un aviso de prueba (de dos renglones) con el <c>Toast</c> del juego y saca la toma «aviso» cuando ya se ve del todo: para revisar a ojo que no tapa el título, el estímulo ni los botones (Tarea 55). Los juegos sin aviso
+        /// (Constelaciones, Rastro de luz, Bodega, Engranajes, Correo) no sacan esta toma. Si el aviso espera una franja libre («entre ensayos») y no aparece en 5 s, la toma sale igual con lo que haya.
+        /// </summary>
+        private static IEnumerator ToastShot()
+        {
+            NeuroVida.Games.Shared.Toast toast = null;
+            foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+            {
+                var field = mb.GetType().GetField("_toast", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field == null || field.FieldType != typeof(NeuroVida.Games.Shared.Toast)) continue;
+                toast = (NeuroVida.Games.Shared.Toast)field.GetValue(mb);
+                if (toast != null) break;
+            }
+            if (toast == null) yield break;
+            toast.Show("Aviso de prueba", "Una frase de dos renglones para probar dónde queda el aviso en esta pantalla", NeuroVida.Games.Shared.NeuroStyle.Sun, 7f);
+            var group = toast.Rect.GetComponent<CanvasGroup>();
+            double limit = Now + 5.5;
+            yield return Wait.Until(() => (group != null && group.alpha >= 0.99f) || Now > limit, 6.5);
+            yield return Wait.For(0.3);
+            Debug.Log("[Capturas] aviso de " + _gameId + ": a " + Mathf.RoundToInt(toast.PlacedTopU) + " u del borde de arriba, choque " + Mathf.RoundToInt(toast.PlacedOverlap));
+            Shot("aviso");
         }
 
         /// <summary>Cuando aparece la cortina «¡Listo!»: una toma con la cortina y otra con la pantalla final (la cortina se va y queda el resultado con «Continuar»).</summary>

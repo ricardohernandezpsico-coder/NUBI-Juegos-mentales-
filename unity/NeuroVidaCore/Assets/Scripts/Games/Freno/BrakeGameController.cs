@@ -792,6 +792,8 @@ namespace NeuroVida.Games.Freno
             _exit = new ExitButton(_safe, this, UnitsPerDp);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
+            _toast.KeepOut(_stopRect);                      // el lugar de la señal ALTO, aunque en este momento no se vea
+            _toast.KeepOut(_prompt.rectTransform);          // y el letrero de las instrucciones
             BuildTutorial(_safe, GameHud.Height + 125f, "Freno de Emergencia", "Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.",
                 skipAtTop: true, captionFromBottomU: 700f);
 

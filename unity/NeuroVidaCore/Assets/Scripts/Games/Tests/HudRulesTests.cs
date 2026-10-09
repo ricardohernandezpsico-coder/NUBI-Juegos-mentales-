@@ -54,6 +54,30 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
+        public void Toast_AvoidsAKeepOutZone_AndSaysSoWhenThereIsNoRoom()
+        {
+            var area = NewArea(1080f, 2200f);
+            var toast = new Toast(area, NewHost(), 3f);
+            toast.SetBelowHud();
+            var zoneGo = new GameObject("zona", typeof(RectTransform));
+            _made.Add(zoneGo);
+            var zone = (RectTransform)zoneGo.transform;
+            zone.SetParent(area, false);
+            zone.anchorMin = zone.anchorMax = new Vector2(0.5f, 1f);
+            zone.pivot = new Vector2(0.5f, 1f);
+            zone.sizeDelta = new Vector2(1080f, 800f);
+            zone.anchoredPosition = new Vector2(0f, -250f);                   // de 250 a 1050 desde arriba
+            toast.KeepOut(zone);
+            toast.Show("Aviso", "Un subtítulo corto", Color.white, 1f);        // la primera vuelta de su corrutina lo coloca
+            Assert.GreaterOrEqual(toast.PlacedTopU, 1050f - 1f, "el aviso queda DEBAJO de la zona prohibida");
+            Assert.AreEqual(0f, toast.PlacedOverlap, 0.01f, "y sin chocar con nada");
+            zone.sizeDelta = new Vector2(1080f, 2100f);
+            zone.anchoredPosition = new Vector2(0f, -120f);                   // ya no queda franja libre
+            toast.Show("Aviso", "Un subtítulo corto", Color.white, 1f);
+            Assert.Greater(toast.PlacedOverlap, 0f, "sin franja libre lo dice (el aviso espera «entre ensayos»)");
+        }
+
+        [Test]
         public void EveryGameWithAToast_PutsItBelowTheHud()
         {
             var root = Path.Combine(Application.dataPath, "Scripts", "Games");
@@ -92,6 +116,7 @@ namespace NeuroVida.Games.Tests
 
         private static readonly Regex MakeTextSize = new Regex(@"MakeText\(\s*[^,;]+,\s*(?:""[^""]*""|[A-Za-z_\.\+ ""]+?),\s*(\d+)\s*,");
         private static readonly Regex BestFitMin = new Regex(@"BestFit\(\s*[^,;]+,\s*(\d+)\s*\)");
+        private static readonly Regex BestFitMax = new Regex(@"BestFit\(\s*[^,;]+,\s*Mathf\.Max\(\s*(\d+)");
         private static readonly Regex CenteredSize = new Regex(@"CenteredText\(\s*[^,;]+,\s*""[^""]*"",\s*(\d+)\s*,");
         private static readonly Regex ResultSize = new Regex(@"AddResultText\(\s*""[^""]*"",\s*(\d+)\s*,");
 
@@ -112,7 +137,7 @@ namespace NeuroVida.Games.Tests
                     string trimmed = line.TrimStart();
                     if (trimmed.StartsWith("//") || trimmed.StartsWith("*") || trimmed.StartsWith("///")) continue;
                     if (rel == "Shared/NubiCoach.cs" && line.Contains("_dbgText")) continue;                  // el rótulo de depuración del foco: solo en builds de prueba
-                    foreach (var rx in new[] { MakeTextSize, BestFitMin, CenteredSize, ResultSize })
+                    foreach (var rx in new[] { MakeTextSize, BestFitMin, BestFitMax, CenteredSize, ResultSize })
                         foreach (Match m in rx.Matches(line))
                             if (int.Parse(m.Groups[1].Value) < 42) found.Add(rel + ":" + (i + 1) + " " + trimmed);
                 }
