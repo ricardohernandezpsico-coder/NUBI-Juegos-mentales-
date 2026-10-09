@@ -80,6 +80,11 @@ namespace NeuroVida.Contracts
         /// la etapa (1..10) con que empieza la partida (0 = la que corresponde).</summary>
         public int mail_best;
         public int mail_stage;
+        /// <summary>Solo «Satélites: enciende tu planeta» (id <c>satelites</c>): el récord de luces en una partida (progreso: la app lo guarda, lo manda aquí y Unity devuelve el nuevo en <c>sat_best</c>) y, solo en las herramientas de prueba,
+        /// el nivel (1..12) con que empieza la partida (0 = el que corresponde) y la sorpresa que sale en TODAS las rondas (1 órbita, 2 nube, 4 rápidas; 0 = las de siempre).</summary>
+        public int sat_best;
+        public int sat_stage;
+        public int sat_surprise;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;

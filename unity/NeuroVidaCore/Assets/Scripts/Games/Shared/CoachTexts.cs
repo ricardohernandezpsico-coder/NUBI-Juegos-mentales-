@@ -121,6 +121,16 @@ namespace NeuroVida.Games.Shared
             public const string Show = "El faro guía la nave del correo";
         }
 
+        /// <summary>Satélites (pantalla: las tres órbitas alrededor del planeta a oscuras; los satélites con mensaje llevan un aro dorado y un sobre).</summary>
+        public static class Satelites
+        {
+            public const string Message = "Algunos traen un mensaje";
+            public const string Follow = "Síguelos con la vista";
+            public const string First = "Toca uno de los que traían mensaje";
+            public const string Second = "Ahora toca el otro";
+            public const string Lights = "¡Cada mensaje enciende una luz!";
+        }
+
         /// <summary>Cosecha de palabras (pantalla: las siete letras que giran, la bandeja, «Sembrar» y «Borrar» abajo y el planeta del huerto). La práctica arma CASA con las letras I R A O A S C.</summary>
         public static class Cosecha
         {
@@ -209,6 +219,12 @@ namespace NeuroVida.Games.Shared
             yield return ("correo", "hora", Correo.Hour);
             yield return ("correo", "faro", Correo.Beacon);
             yield return ("correo", "nave", Correo.Show);
+
+            yield return ("satelites", "mensaje", Satelites.Message);
+            yield return ("satelites", "seguir", Satelites.Follow);
+            yield return ("satelites", "primero", Satelites.First);
+            yield return ("satelites", "segundo", Satelites.Second);
+            yield return ("satelites", "luces", Satelites.Lights);
             yield return ("bodega", "empezar", Bodega.Begin);
             yield return ("bodega", "esclusa", Bodega.Watch);
             yield return ("bodega", "así quedó", Bodega.Reveal);

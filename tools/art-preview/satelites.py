@@ -1,173 +1,71 @@
-"""Maqueta de Satélites (disposición según SatelliteGameController.Layout a medio canvas; arte exacto: satélites,
-anillos y marcas salen de los .raw que vuelca ArtPreview; el movimiento imita SatelliteSwarm: velocidad constante,
-rumbo que deriva, rebotes).
+"""Lámina de PIEZAS de «Satélites: enciende tu planeta» (9-oct-2026; id satelites): el planeta a oscuras, el satélite (todos iguales: la señal es el aro dorado y el sobre), el sobre, la nube de polvo, el aro punteado del que faltó, el medio disco de
+las rondas parciales y las marcas de la revelación (✓ y la aspa diagonal), con los sprites REALES horneados (tools/art-preview) a su tamaño en el juego (1 dp = 2 px). No es una captura: las pantallas salen de capturas reales (tools/capturas/hoja.py →
+docs/previews/capturas/satelites.png). El boceto aprobado es docs/previews/satelites-orbitas-boceto.html. (docs/previews/satelites.png es del juego ANTERIOR y queda como historia.)
 
-Uso: python3 tools/art-preview/satelites.py <raw> [--out docs/previews]  ->  satelites.png
+Uso:  python tools/art-preview/satelites.py <raw> [--out docs/previews]
+      (<raw> = la carpeta que vuelca ArtPreview: `dotnet run --project tools/art-preview -- <raw>`; con solo el runtime 10 de .NET: DOTNET_ROLL_FORWARD=LatestMajor)
+Genera docs/previews/satelites-piezas.png.
 """
 import argparse
 import math
 import os
-import random
+import struct
 
 from PIL import Image, ImageDraw, ImageFont
 
-from juegos import FB, W, H, ROOT, load, night, put, glow, clay_text, hexc
-from piloto import hud
-
-LIME, SUN, CORAL, SKY = hexc(0x9BE564), hexc(0xFFC93C), hexc(0xFF6B4A), hexc(0x4CC9F0)
-AW, AH = 490, 717
-AX, AY = W / 2, 168 + AH / 2
-R = 0.06
-FIELD_H = AH / AW
-SAT = R * 2 * AW * 1.25
-
-
-def ui(x, y):
-    return AX + (x - 0.5) * AW, AY - (y - FIELD_H / 2) * AW
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+FB = ROOT + '/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-Bold.ttf'
+FS = ROOT + '/unity/NeuroVidaCore/Assets/Resources/Fonts/Fredoka-SemiBold.ttf'
+S = 2                       # píxeles por dp
+GOLD = (255, 201, 74)
+CYAN = (127, 216, 255)
+CORAL = (255, 138, 107)
+LAV = (171, 165, 210)
+TEXT = (237, 234, 251)
 
 
-def simulate(n, seconds, speed, seed):
-    rng = random.Random(seed)
-    pos = []
-    for i in range(n):
-        while True:
-            p = [R + rng.random() * (1 - 2 * R), R + rng.random() * (FIELD_H - 2 * R), rng.random() * 6.283]
-            if all(math.dist(p[:2], q[:2]) > R * 3.2 for q in pos):
-                break
-        pos.append(p)
-    paths = [[(p[0], p[1])] for p in pos]
-    dt = 1 / 60
-    for step in range(int(seconds * 60)):
-        for p in pos:
-            p[2] += (rng.random() - 0.5) * 3.6 * dt
-            p[0] += math.cos(p[2]) * speed * dt
-            p[1] += math.sin(p[2]) * speed * dt
-            if p[0] < R or p[0] > 1 - R:
-                p[0] = min(max(p[0], R), 1 - R); p[2] = math.pi - p[2]
-            if p[1] < R or p[1] > FIELD_H - R:
-                p[1] = min(max(p[1], R), FIELD_H - R); p[2] = -p[2]
-        for i in range(n):
-            for j in range(i + 1, n):
-                dx, dy = pos[j][0] - pos[i][0], pos[j][1] - pos[i][1]
-                d = math.hypot(dx, dy)
-                if 0 < d < R * 2.1:
-                    nx, ny = dx / d, dy / d
-                    push = (R * 2.1 - d) / 2
-                    pos[i][0] -= nx * push; pos[i][1] -= ny * push
-                    pos[j][0] += nx * push; pos[j][1] += ny * push
-                    pos[i][2] = math.atan2(-ny, -nx) + (rng.random() - 0.5)
-                    pos[j][2] = math.atan2(ny, nx) + (rng.random() - 0.5)
-        if step % 6 == 0:
-            for i, p in enumerate(pos):
-                paths[i].append((p[0], p[1]))
-    return pos, paths
+def load(raw, name):
+    b = open(os.path.join(raw, name + '.raw'), 'rb').read()
+    n = struct.unpack('<i', b[:4])[0]
+    if n > 0:                                  # cuadrado: int32 lado + RGBA
+        w = h = n
+        data = b[4:4 + w * h * 4]
+    else:                                      # rectangular: int32 -ancho, int32 alto + RGBA
+        w = -n
+        h = struct.unpack('<i', b[4:8])[0]
+        data = b[8:8 + w * h * 4]
+    return Image.frombytes('RGBA', (w, h), data).transpose(Image.FLIP_TOP_BOTTOM)
 
 
-def base(raw, seed, level, points, streak, prompt, prompt_col=(255, 255, 255), timer=0.6, picks=0, targets=3):
-    im = night(seed)
-    d = ImageDraw.Draw(im)
-    hud(im, d, level, points, streak, 'Satélites')
-    d = ImageDraw.Draw(im)
-    d.rounded_rectangle((30, 98, W - 30, 106), 4, fill=(255, 255, 255, 30))
-    d.rounded_rectangle((30, 98, 30 + (W - 60) * timer, 106), 4, fill=LIME if timer > 0.5 else SUN)
-    clay_text(d, (W / 2, 138), prompt, 30, prompt_col)
-    layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
-    ImageDraw.Draw(layer).rounded_rectangle((AX - AW / 2, AY - AH / 2, AX + AW / 2, AY + AH / 2), 32,
-                                            fill=(255, 255, 255, 9), outline=SKY + (64,), width=1)
-    im.alpha_composite(layer)
-    d = ImageDraw.Draw(im)
-    for i in range(targets):
-        x = W / 2 + (i - (targets - 1) / 2) * 29
-        d.ellipse((x - 9.5, 922 - 9.5, x + 9.5, 922 + 9.5), fill=SKY if i < picks else (255, 255, 255, 40))
-    return im
+def font(size, bold=True):
+    return ImageFont.truetype(FB if bold else FS, int(size * S))
 
 
-def sat(im, raw, x, y, alpha=1.0, angle=5):
-    layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
-    hr = R * AW * 1.1
-    ImageDraw.Draw(layer).ellipse((x - hr, y - hr, x + hr, y + hr), fill=SKY + (int(33 * alpha),))
-    im.alpha_composite(layer)
-    s = load(f'{raw}/sym_Satellite_0.raw').resize((int(SAT), int(SAT)), Image.LANCZOS).rotate(angle, resample=Image.BICUBIC)
-    if alpha < 1:
-        s.putalpha(s.getchannel('A').point(lambda v: int(v * alpha)))
-    im.alpha_composite(s, (int(x - s.width / 2), int(y - s.height / 2)))
+def put(img, sprite, cx, cy, wdp, hdp=None):
+    hdp = hdp if hdp is not None else wdp * sprite.height / sprite.width
+    sp = sprite.resize((max(1, int(round(wdp * S))), max(1, int(round(hdp * S)))), Image.LANCZOS)
+    img.alpha_composite(sp, (int(round(cx * S - sp.width / 2)), int(round(cy * S - sp.height / 2))))
 
 
-def ring(im, x, y, col, scale=1.0, width=4):
-    r = R * AW * 1.35 * scale
-    layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
-    ImageDraw.Draw(layer).ellipse((x - r, y - r, x + r, y + r), outline=col + (255,), width=width)
-    im.alpha_composite(layer)
+def tint(sprite, rgb):
+    """El sprite blanco (aro punteado, medio disco) teñido con un color, como hace Image.color en el juego."""
+    r, g, b, a = sprite.split()
+    solid = Image.new('RGBA', sprite.size, rgb + (255,))
+    solid.putalpha(a)
+    return solid
 
 
-def mark(im, raw, x, y, kind):
-    put(im, load(f'{raw}/mark_{kind}.raw'), x + SAT * 0.38, y - SAT * 0.38, SAT * 0.5)
-
-
-TARGETS = {1, 4, 6}
-
-
-def frame_cue(raw, start):
-    im = base(raw, 41, 3, 620, 2, 'Memoriza los 3 que brillan')
-    for i, p in enumerate(start):
-        x, y = ui(p[0], p[1])
-        if i in TARGETS:
-            glow(im, x, y, SAT * 0.9, SUN, 190)
-            ring(im, x, y, SUN, 1.08)
-        sat(im, raw, x, y)
-    return im
-
-
-def frame_track(raw, mid):
-    im = base(raw, 42, 3, 620, 2, '¡Síguelos con la vista!', SUN, timer=0.55)
-    for p in mid:
-        x, y = ui(p[0], p[1])
-        sat(im, raw, x, y, angle=-6)
-    return im
-
-
-def frame_answer(raw, end):
-    im = base(raw, 43, 3, 620, 2, 'Toca los 3 que brillaban', picks=2, timer=0.5)
-    for i, p in enumerate(end):
-        x, y = ui(p[0], p[1])
-        sat(im, raw, x, y, angle=2)
-        if i in (1, 3):
-            ring(im, x, y, SKY)
-    return im
-
-
-def frame_reveal(raw, end, paths):
-    im = base(raw, 44, 3, 700, 0, '2 de 3', SUN, picks=3, timer=0.46)
-    layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
+def ring(img, cx, cy, rdp, rgb, wdp=3.8):
+    layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
-    for i in TARGETS:
-        pts = paths[i]
-        for k in range(0, len(pts), 2):
-            age = k / max(1, len(pts) - 1)
-            x, y = ui(*pts[k])
-            r = (3 + 3.5 * age)
-            d.ellipse((x - r, y - r, x + r, y + r), fill=SUN + (int(255 * (0.18 + 0.42 * age)),))
-    im.alpha_composite(layer)
-    picked = {1, 4, 3}
-    for i, p in enumerate(end):
-        x, y = ui(p[0], p[1])
-        if i in picked and i in TARGETS:
-            sat(im, raw, x, y); ring(im, x, y, LIME); mark(im, raw, x, y, 'check')
-        elif i in picked:
-            sat(im, raw, x, y, 0.55); ring(im, x, y, CORAL); mark(im, raw, x, y, 'cross')
-        elif i in TARGETS:
-            glow(im, x, y, SAT * 0.9, SUN, 170); sat(im, raw, x, y); ring(im, x, y, SUN, 1.05)
-        else:
-            sat(im, raw, x, y, 0.45)
-    # "¿Aquí se cruzaron?": el punto en que el que faltó (6) pasó más cerca del elegido por error (3).
-    a, b = paths[6], paths[3]
-    k = min(range(min(len(a), len(b))), key=lambda i: math.dist(a[i], b[i]))
-    mx, my = ui((a[k][0] + b[k][0]) / 2, (a[k][1] + b[k][1]) / 2)
-    ring(im, mx, my, CORAL, 1.3, 5)
-    d = ImageDraw.Draw(im)
-    clay_text(d, (mx, my + 60), '¿Aquí se cruzaron?', 19)
-    clay_text(d, (W / 2, 900), '+180', 28, SUN)
-    return im
+    d.ellipse(((cx - rdp) * S, (cy - rdp) * S, (cx + rdp) * S, (cy + rdp) * S), outline=rgb + (255,), width=int(wdp * S))
+    img.alpha_composite(layer)
+
+
+def label(d, x, y, text, size=14, rgb=LAV):
+    f = font(size, bold=False)
+    w = d.textlength(text, font=f)
+    d.text((x * S - w / 2, y * S), text, font=f, fill=rgb + (255,))
 
 
 def main():
@@ -175,17 +73,58 @@ def main():
     ap.add_argument('raw')
     ap.add_argument('--out', default=ROOT + '/docs/previews')
     a = ap.parse_args()
-    start, _ = simulate(7, 0, 0.19, 5)
-    start = [p[:] for p in start]
-    mid, _ = simulate(7, 2.5, 0.19, 5)
-    end, paths = simulate(7, 5.0, 0.19, 5)
-    panels = [frame_cue(a.raw, start), frame_track(a.raw, mid), frame_answer(a.raw, end), frame_reveal(a.raw, end, paths)]
-    gap = 24
-    sheet = Image.new('RGBA', (len(panels) * W + (len(panels) + 1) * gap, H + 2 * gap), (0x02, 0x03, 0x10, 255))
-    for i, p in enumerate(panels):
-        sheet.alpha_composite(p, (gap + i * (W + gap), gap))
+    W, H = 380, 470
+    img = Image.new('RGBA', (W * S, H * S), (7, 10, 38, 255))
+    d = ImageDraw.Draw(img)
+    for y in range(H * S):
+        t = y / (H * S)
+        d.line([(0, y), (W * S, y)], fill=(int(3 + 8 * t), int(4 + 12 * t), int(26 + 22 * t), 255))
+    d = ImageDraw.Draw(img)
+    d.text((18 * S, 12 * S), 'Satélites: enciende tu planeta · piezas', font=font(20), fill=TEXT + (255,))
+
+    body = load(a.raw, 'sat_body')
+    side = 14 * 4.55                                   # el lado del sprite del satélite en dp (BodySpriteSideInDiscRadii)
+    # fila 1: el planeta a oscuras, el satélite, el satélite con la señal (aro dorado y sobre)
+    put(img, load(a.raw, 'sat_planet'), 80, 120, 44 * 2 * 1.14 / 0.9)
+    put(img, body, 205, 120, side)
+    put(img, body, 310, 120, side)
+    ring(img, 310, 120, 20, GOLD)
+    put(img, load(a.raw, 'sat_envelope'), 310, 92, 36.7)
+    d = ImageDraw.Draw(img)
+    label(d, 80, 186, 'planeta a oscuras')
+    label(d, 205, 186, 'satélite')
+    label(d, 310, 186, 'con mensaje')
+    # fila 2: marcado (aro celeste), ✓, aspa diagonal, aro punteado del que faltó
+    put(img, body, 55, 262, side)
+    ring(img, 55, 262, 21, CYAN)
+    put(img, body, 148, 262, side)
+    ring(img, 148, 262, 20, GOLD)
+    put(img, load(a.raw, 'mark_check'), 163, 247, 22)
+    put(img, body, 241, 262, side)
+    ring(img, 241, 262, 21, CORAL)
+    put(img, load(a.raw, 'mark_cross'), 256, 247, 22)
+    put(img, body, 334, 262, side)
+    ring(img, 334, 262, 20, GOLD)
+    put(img, tint(load(a.raw, 'sat_dashed'), CORAL), 334, 262, 25 / 0.47 * 1.0)
+    d = ImageDraw.Draw(img)
+    for x, t in ((55, 'marcado'), (148, 'entregado'), (241, 'sin mensaje'), (334, 'faltó')):
+        label(d, x, 300, t)
+    # fila 3: la nube, las rondas (lleno / medio / vacío)
+    put(img, load(a.raw, 'sat_cloud'), 110, 390, 200 * 0.8)
+    d = ImageDraw.Draw(img)
+    label(d, 110, 440, 'nube de polvo (plana y opaca)')
+    gx = 246
+    ring(img, gx, 380, 8.5, LAV, wdp=2.0)
+    ring(img, gx + 26, 380, 8.5, LAV, wdp=2.0)
+    ring(img, gx + 52, 380, 8.5, CYAN, wdp=2.0)
+    disc = Image.new('RGBA', (96, 96), (0, 0, 0, 0))
+    ImageDraw.Draw(disc).ellipse((6, 6, 90, 90), fill=(166, 227, 107, 255))
+    put(img, disc, gx, 380, 14)
+    put(img, tint(load(a.raw, 'sat_half'), GOLD), gx + 26, 380, 15)
+    d = ImageDraw.Draw(img)
+    label(d, gx + 26, 404, 'rondas: lleno · medio · actual')
     os.makedirs(a.out, exist_ok=True)
-    sheet.convert('RGB').save(os.path.join(a.out, 'satelites.png'))
+    img.convert('RGB').save(os.path.join(a.out, 'satelites-piezas.png'))
     print('OK')
 
 

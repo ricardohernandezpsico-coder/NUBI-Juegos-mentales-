@@ -298,6 +298,16 @@ internal static class Program
                 DumpMail("mail_daybar", NeuroVida.Games.Correo.MailSprites.DayBar());
             }
             CorreoSoundDemo(Path.Combine(dir, "correo-sonidos.wav"));
+            // «Satélites: enciende tu planeta»: el planeta, el satélite, el sobre, la nube, el aro punteado y el medio disco (cuadrados: -lado, lado)
+            {
+                void DumpSat(string name, Color32[] px, int size) => DumpRect(name, px, size, size);
+                DumpSat("sat_planet", NeuroVida.Games.Satelites.SatelliteSprites.RenderPlanet(256), 256);
+                DumpSat("sat_body", NeuroVida.Games.Satelites.SatelliteSprites.RenderBody(256), 256);
+                DumpSat("sat_envelope", NeuroVida.Games.Satelites.SatelliteSprites.RenderEnvelope(192), 192);
+                DumpSat("sat_cloud", NeuroVida.Games.Satelites.SatelliteSprites.RenderCloud(256), 256);
+                DumpSat("sat_dashed", NeuroVida.Games.Satelites.SatelliteSprites.RenderDashed(256), 256);
+                DumpSat("sat_half", NeuroVida.Games.Satelites.SatelliteSprites.RenderHalf(96), 96);
+            }
         }
         using (var f = File.CreateText(Path.Combine(dir, "palette.txt")))
             for (int i = 0; i < 16; i++)

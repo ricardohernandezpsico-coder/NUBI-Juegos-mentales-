@@ -1,0 +1,507 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Satélites</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055; --panel:#0C0B2C;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:9/16;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Satélites</h1>
+    <p class="lead">Tu planeta está a oscuras. Algunos satélites traen un mensaje: síguelos con la vista mientras dan vueltas, y cuando se detengan, tócalos. Cada mensaje que llega enciende una luz en el planeta.</p>
+
+    <h2>Lo que cambia frente a la versión de hoy</h2>
+    <ul class="list">
+      <li><b>Órbitas, no rebotes:</b> los satélites giran alrededor del planeta a distinta velocidad y se adelantan unos a otros. Es más bonito de mirar y la dificultad está donde importa: en los cruces.</li>
+      <li><b>Rondas más cortas:</b> se sigue 3,5 a 6 segundos (antes 5 a 8). La ronda completa dura unos 10 segundos.</li>
+      <li><b>Cada acierto se ve:</b> el mensaje vuela al planeta y enciende una luz. Al final de la partida, el planeta queda iluminado con todo lo que seguiste.</li>
+      <li><b>Rondas con sorpresa</b> (se van sumando por nivel): <b>cambio de órbita</b> (algunos saltan de anillo), <b>nube de polvo</b> (los tapa un momento al pasar) y <b>órbitas rápidas</b> (más corta, más rápida).</li>
+      <li><b>Sin segunda tarea</b> mientras se sigue: solo mirar. Así no se parece a la patente de multitarea de Akili. Todo es plano, sin 3D.</li>
+      <li><b>«¿Aquí se cruzaron?»:</b> si se confunde uno por otro, el juego muestra dónde pasaron más cerca.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable: 8 rondas por partida y 12 niveles. Una ronda perfecta sube un nivel; fallar dos o más baja uno. Desde el nivel 3 hay satélites que se cruzan de frente en el mismo anillo, y desde el 6 algunos dan media vuelta. Para revisar un nivel: <code>?nivel=N</code>; para forzar una sorpresa: <code>?evento=orbita</code>, <code>nube</code> o <code>rapida</code>.</p>
+  </div>
+
+  <div class="phone"><canvas id="cv" aria-label="Satélites: sigue con la vista los satélites que traen mensaje y tócalos cuando se detengan"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 640;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+// ============================================================ niveles
+// k: a seguir · n: en total · v: velocidad media (px/s) · t: segundos de seguimiento · ev: sorpresas posibles
+const LEVELS = [
+  // frente: en un mismo anillo los hay en los dos sentidos (se cruzan de frente) · vuelta: algunos invierten el sentido a mitad de ronda
+  { k:2, n:6,  v:55,  t:3.5, ev:[] },
+  { k:3, n:6,  v:58,  t:3.8, ev:['orbita'] },
+  { k:3, n:7,  v:64,  t:4.0, ev:['orbita'], frente:true },
+  { k:3, n:8,  v:70,  t:4.2, ev:['orbita','nube'], frente:true },
+  { k:4, n:8,  v:74,  t:4.4, ev:['orbita','nube'], frente:true },
+  { k:4, n:9,  v:80,  t:4.6, ev:['orbita','nube','rapida'], frente:true, vuelta:true },
+  { k:4, n:10, v:88,  t:4.8, ev:['orbita','nube','rapida'], frente:true, vuelta:true },
+  { k:4, n:10, v:96,  t:5.0, ev:['orbita','nube','rapida'], frente:true, vuelta:true },
+  { k:5, n:11, v:100, t:5.2, ev:['orbita','nube','rapida'], frente:true, vuelta:true },
+  { k:5, n:11, v:108, t:5.4, ev:['orbita','nube','rapida'], frente:true, vuelta:true },
+  { k:5, n:12, v:116, t:5.7, ev:['orbita','nube','rapida'], frente:true, vuelta:true },
+  { k:5, n:13, v:126, t:6.0, ev:['orbita','nube','rapida'], frente:true, vuelta:true },
+];
+const EVENTS = {
+  orbita: { name:'Cambio de órbita', line:'Algunos saltan a otro anillo. No los pierdas.' },
+  nube:   { name:'Nube de polvo',    line:'Una nube pasa por encima. Lo que entra, sale.' },
+  rapida: { name:'Órbitas rápidas',  line:'Ronda más corta, pero más rápida.' },
+};
+let ROUNDS = 8;
+const CX = 180, CY = 340, PLANET_R = 44;
+const RX = [80, 110, 140], RY_K = 1.42;           // tres anillos, más altos que anchos: usan la pantalla y el más externo nunca se sale (140·1,06 + 23 ≤ 180 − 8)
+const SAT_R = 14, TOUCH_R = 30, MIN_GAP = 38;
+const CUE = 1.8, REVEAL = 1.9;
+const G = { state:'menu', parts:[], floats:[] };
+const S = {};
+const SAVE = { best:0, seen:{} };
+try { Object.assign(SAVE, JSON.parse(localStorage.getItem('nubi_satelites2')||'{}')); } catch(e){}
+function save(){ try { localStorage.setItem('nubi_satelites2', JSON.stringify(SAVE)); } catch(e){} }
+const QS = new URLSearchParams(location.search), DEBUG = QS.has('debug');
+if (QS.get('rondas')) ROUNDS = Math.max(1, +QS.get('rondas'));
+const R = rng(Date.now() & 0xffff);
+const clampLv = l => Math.max(1, Math.min(12, l));
+const LV = () => LEVELS[clampLv(Math.floor(S.lv)) - 1];
+
+// ============================================================ partida
+function startGame(){
+  S.lv = clampLv(+(QS.get('nivel') || SAVE.lastLv || 1));
+  S.round = 0; S.lights = []; S.hitsTotal = 0; S.perfect = 0; S.streak = 0; S.bestStreak = 0;
+  S.log = []; S.maxLvCleared = 0; S.results = [];
+  nextRound();
+}
+function pickEvent(){
+  if (QS.get('evento')) return QS.get('evento');
+  const ev = LV().ev; if (!ev.length) return null;
+  // una de cada dos rondas trae sorpresa, desde la 2ª; nunca dos iguales seguidas
+  if (S.round < 2 || S.round % 2) return null;
+  const pool = ev.filter(e => e !== S.lastEvent); const e = pool[Math.floor(R()*pool.length)] || ev[0];
+  S.lastEvent = e; return e;
+}
+function nextRound(){
+  S.round++;
+  if (S.round > ROUNDS) return endGame();
+  const L = LV(); S.L = { ...L };
+  S.event = pickEvent();
+  if (S.event === 'rapida'){ S.L.v *= 1.25; S.L.t *= .8; }
+  makeSwarm();
+  S.trail = []; S.trailT = 0; S.marks = []; S.evalAt = 0; S.extra = 0;
+  S.cloud = null;
+  const now = performance.now();
+  if (S.event){ G.state = 'event'; S.stateAt = now; S.eventNew = !SAVE.seen[S.event]; SAVE.seen[S.event] = 1; save(); }
+  else { G.state = 'ready'; S.stateAt = now; }
+}
+function makeSwarm(){
+  const { k, n, v } = S.L;
+  S.sats = [];
+  let tries = 0;
+  while (S.sats.length < n && tries++ < 4000){
+    const ring = Math.floor(R()*3), th = R()*Math.PI*2, lane = 1 + (R()-.5)*.12;
+    const s = { ring, rr:ring, lane, th, x:0, y:0 }; place(s);
+    if (S.sats.every(o => Math.hypot(o.x-s.x, o.y-s.y) >= MIN_GAP + 8)) S.sats.push(s);
+  }
+  // velocidades: cada uno con la suya (se adelantan) y sentidos mezclados (al menos un anillo al revés)
+  const dirRing = [R()<.5?1:-1, 0, 0]; dirRing[1] = -dirRing[0]; dirRing[2] = R()<.5?1:-1;
+  for (const s of S.sats){
+    const rad = (RX[s.ring] + RX[s.ring]*RY_K) / 2;
+    const sp = v * (0.75 + R()*0.5);
+    const dir = S.L.frente ? (R()<.5 ? 1 : -1) : dirRing[s.ring];
+    s.w = dir * sp / rad;
+    // desde el nivel 6, algunos invierten el sentido a mitad de ronda (con un frenado suave)
+    if (S.L.vuelta && R() < .35){ s.revAt = 0.8 + R()*(S.L.t - 1.8); s.w0 = s.w; }
+    s.target = false; s.mark = false;
+  }
+  // los que traen mensaje: repartidos (no todos en el mismo anillo si se puede)
+  const idx = [...S.sats.keys()].sort(() => R()-.5);
+  for (let i=0;i<k;i++) S.sats[idx[i]].target = true;
+  S.transfers = [];
+  if (S.event === 'orbita'){
+    const m = Math.min(S.sats.length, 2 + Math.floor(R()*3));
+    const order = [...S.sats.keys()].sort(() => R()-.5).slice(0, m);
+    // al menos uno de los que traen mensaje salta de anillo
+    const tIdx = S.sats.findIndex(s => s.target); if (!order.includes(tIdx)) order[0] = tIdx;
+    order.forEach((i, j) => { const s = S.sats[i]; const to = s.ring === 0 ? 1 : s.ring === 2 ? 1 : (R()<.5?0:2);
+      S.transfers.push({ i, to, at: 0.7 + (S.L.t - 1.8) * (j + R()*.6) / m, dur: .9 }); });
+  }
+}
+function place(s){
+  const rx = lerp(RX[Math.floor(s.rr)], RX[Math.ceil(s.rr)], s.rr % 1) * s.lane;
+  s.x = CX + rx * Math.cos(s.th); s.y = CY + rx * RY_K * Math.sin(s.th);
+}
+const lerp = (a,b,t) => a + (b-a)*t;
+
+function step(dt, now){
+  if (G.state === 'event' && now - S.stateAt > (S.eventNew ? 2600 : 1700)){ G.state = 'ready'; S.stateAt = now; }
+  if (G.state === 'ready' && now - S.stateAt > 450){ G.state = 'cue'; S.stateAt = now; cueSound(); }
+  if (G.state === 'cue' && now - S.stateAt > CUE*1000){ G.state = 'track'; S.stateAt = now; S.trackT = 0; startSound();
+    if (S.event === 'nube') makeCloud(); }
+  if (G.state === 'track'){
+    S.trackT += dt;
+    for (const s of S.sats){
+      if (s.revAt !== undefined){ const k = (S.trackT - s.revAt)/.5; if (k >= 0 && k <= 1) s.w = s.w0 * Math.cos(Math.PI*k); else if (k > 1) s.w = -s.w0; }
+      s.th += s.w * dt; }
+    for (const tr of S.transfers){ const s = S.sats[tr.i]; const k = (S.trackT - tr.at) / tr.dur;
+      if (k >= 0 && k <= 1){ if (tr.from === undefined) tr.from = s.ring; s.rr = lerp(tr.from, tr.to, easeIO(k)); }
+      else if (k > 1 && tr.from !== undefined && s.ring !== tr.to){ s.ring = tr.to; s.rr = tr.to; } }
+    for (const s of S.sats) place(s);
+    if (S.cloud){ S.cloud.x += S.cloud.vx * dt; }
+    S.trailT += dt; if (S.trailT >= .1){ S.trailT = 0; S.trail.push(S.sats.map(s => [s.x, s.y])); }
+    const done = S.trackT >= S.L.t;
+    if (done){
+      const ok = minGap() >= MIN_GAP && !(S.cloud && cloudCovers());
+      if (ok || S.trackT >= S.L.t + .9){ G.state = 'answer'; S.stateAt = now; stopSound(); S.cloud = null; }
+    }
+  }
+  if (G.state === 'answer' && S.evalAt && now >= S.evalAt){ evaluate(now); }
+  if (G.state === 'reveal' && now - S.stateAt > REVEAL*1000 + (S.cross ? 500 : 0)){ nextRound(); }
+}
+function easeIO(t){ return t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+function minGap(){ let m = 1e9; for (let i=0;i<S.sats.length;i++) for (let j=i+1;j<S.sats.length;j++) m = Math.min(m, Math.hypot(S.sats[i].x-S.sats[j].x, S.sats[i].y-S.sats[j].y)); return m; }
+function makeCloud(){
+  // cruza el campo de un lado a otro y sale antes de que se detengan
+  const dir = R()<.5 ? 1 : -1, span = W + 220, dur = Math.max(1.6, S.L.t - .9);
+  S.cloud = { x: dir>0 ? -110 : W+110, y: CY + (R()-.5)*160, vx: dir*span/dur, rx: 78, ry: 62 };
+}
+function underCloud(s){ const c = S.cloud; if (!c) return false; const dx=(s.x-c.x)/c.rx, dy=(s.y-c.y)/c.ry; return dx*dx+dy*dy < .8; }
+function cloudCovers(){ return S.sats.some(underCloud); }
+
+function tap(x, y, now){
+  if (G.state !== 'answer' || S.evalAt) return;
+  let best = -1, bd = TOUCH_R;
+  S.sats.forEach((s, i) => { const d = Math.hypot(s.x-x, s.y-y); if (d < bd){ bd = d; best = i; } });
+  if (best < 0) return;
+  const s = S.sats[best]; s.mark = !s.mark;
+  const n = S.sats.filter(o => o.mark).length;
+  if (s.mark){ bell(PENTA[2 + Math.min(6, n)], .05, .6); } else pop();
+  if (n === S.L.k) S.evalAt = now + 550;               // un momento para corregir el último
+}
+function evaluate(now){
+  S.evalAt = 0;
+  const k = S.L.k, n = S.sats.length;
+  const hits = S.sats.filter(s => s.mark && s.target).length;
+  const wrong = S.sats.filter(s => s.mark && !s.target);
+  const missed = S.sats.filter(s => !s.mark && s.target);
+  S.results.push({ hits, k, n, lv: Math.floor(S.lv) });
+  S.hitsTotal += hits;
+  const perfect = hits === k;
+  if (perfect){ S.perfect++; S.streak++; S.bestStreak = Math.max(S.bestStreak, S.streak); S.maxLvCleared = Math.max(S.maxLvCleared, Math.floor(S.lv)); }
+  else S.streak = 0;
+  // «¿Aquí se cruzaron?»: el que faltó y el elegido por error, donde pasaron más cerca
+  S.cross = null;
+  if (missed.length && wrong.length && S.trail.length){
+    const a = S.sats.indexOf(missed[0]), b = S.sats.indexOf(wrong[0]); let bd = 1e9, bp = null;
+    for (const fr of S.trail){ const d = Math.hypot(fr[a][0]-fr[b][0], fr[a][1]-fr[b][1]); if (d < bd){ bd = d; bp = [(fr[a][0]+fr[b][0])/2, (fr[a][1]+fr[b][1])/2]; } }
+    if (bp && bd < 70) S.cross = { x: bp[0], y: bp[1] };
+  }
+  // los mensajes vuelan al planeta y encienden luces
+  S.flying = S.sats.filter(s => s.mark && s.target).map((s, j) => ({ from:[s.x, s.y], at: now + 250 + j*170, to: lightSpot() }));
+  S.flying.forEach((f, j) => setTimeout(() => { S.lights.push({ x:f.to[0], y:f.to[1], at: performance.now() }); bell(PENTA[4 + j % 5], .055, 1.0); }, 250 + j*170 + 600));
+  // nivel
+  const before = Math.floor(S.lv);
+  if (perfect) S.lv = clampLv(Math.floor(S.lv) + 1); else if (hits <= k - 2) S.lv = clampLv(Math.floor(S.lv) - 1);
+  S.lvUp = Math.floor(S.lv) > before; S.lvDown = Math.floor(S.lv) < before;
+  G.state = 'reveal'; S.stateAt = now;
+  float(W/2, 96, perfect ? (S.streak >= 3 ? `¡${k} de ${k}! Racha ×${S.streak}` : `¡${k} de ${k}!`) : `${hits} de ${k}`, perfect ? '#A6E36B' : '#FFC94A', perfect);
+  if (perfect) setTimeout(chime, 200); else thud();
+}
+function lightSpot(){
+  // puntos sobre el planeta, sin amontonarse
+  for (let t=0; t<60; t++){ const a = R()*Math.PI*2, r = Math.sqrt(R())*(PLANET_R-9); const x = CX + r*Math.cos(a), y = CY + r*Math.sin(a);
+    if (S.lights.every(l => Math.hypot(l.x-x, l.y-y) > 7)) return [x, y]; }
+  return [CX + (R()-.5)*50, CY + (R()-.5)*50];
+}
+function endGame(){
+  G.state = 'end'; G.endT = performance.now();
+  S.estimate = capacity(S.results);
+  SAVE.best = Math.max(SAVE.best || 0, S.hitsTotal); SAVE.lastLv = Math.max(1, Math.floor(S.lv) - 1); save();
+}
+// cuántos se siguieron de verdad, descontando la suerte: aciertos = m + (k−m)²/(n−m)
+function tracked(h, k, n){ let lo = 0, hi = k; for (let i=0;i<40;i++){ const m = (lo+hi)/2, v = m + (k-m)*(k-m)/Math.max(.001, n-m); if (v < h) lo = m; else hi = m; } return (lo+hi)/2; }
+function capacity(rs){ if (!rs.length) return null; const m = rs.map(r => tracked(r.hits, r.k, r.n)); const ks = rs.map(r => r.k);
+  return { m: m.reduce((a,b)=>a+b,0)/m.length, k: ks.reduce((a,b)=>a+b,0)/ks.length }; }
+
+// ============================================================ sonido
+function cueSound(){ S.sats.filter(s=>s.target).forEach((s,j)=>bell(PENTA[2+j], .045, .9, j*.12)); }
+let hum = null;
+function startSound(){ const a = ac(); if (!a) return; const t = a.currentTime, o = a.createOscillator(), g = a.createGain(); o.type='sine'; o.frequency.value = 110; g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.02, t+.4); o.connect(g).connect(a.destination); o.start(t); hum = { o, g }; }
+function stopSound(){ const a = ac(); if (hum && a){ const t = a.currentTime; hum.g.gain.exponentialRampToValueAtTime(.0001, t+.25); hum.o.stop(t+.3); hum = null; } noise(.18, 900, 300, .05, 2); }
+
+// ============================================================ dibujo
+function drawPlanet(c, now){
+  // halo de las luces encendidas
+  const lit = Math.min(1, S.lights.length / 30);
+  if (lit > 0){ c.globalAlpha = .25 + .45*lit; c.drawImage(glow('255,214,120'), CX-PLANET_R*2.1, CY-PLANET_R*2.1, PLANET_R*4.2, PLANET_R*4.2); c.globalAlpha = 1; }
+  const g = c.createRadialGradient(CX-14, CY-16, 6, CX, CY, PLANET_R);
+  g.addColorStop(0, '#3B3F86'); g.addColorStop(.7, '#22265E'); g.addColorStop(1, '#151843');
+  c.fillStyle = g; c.beginPath(); c.arc(CX, CY, PLANET_R, 0, 7); c.fill();
+  c.strokeStyle = '#1A1240'; c.lineWidth = 3; c.stroke();
+  // continentes tenues
+  c.save(); c.beginPath(); c.arc(CX, CY, PLANET_R-2, 0, 7); c.clip(); c.fillStyle = 'rgba(120,130,210,.22)';
+  for (const [dx,dy,r] of [[-14,-8,16],[12,10,13],[18,-18,8],[-6,20,9]]){ c.beginPath(); c.ellipse(CX+dx, CY+dy, r, r*.7, .5, 0, 7); c.fill(); }
+  // luces
+  for (const l of S.lights){ const k = Math.min(1, (now - l.at)/500); const pulse = reduce ? 1 : 1 + .25*Math.sin(now/400 + l.x);
+    c.globalAlpha = k; c.drawImage(glow('255,220,140'), l.x-9*pulse, l.y-9*pulse, 18*pulse, 18*pulse); c.fillStyle = '#FFE7A8'; c.beginPath(); c.arc(l.x, l.y, 2.2, 0, 7); c.fill(); c.globalAlpha = 1; }
+  c.restore();
+}
+function drawOrbits(c){
+  c.lineWidth = 1.2; c.setLineDash([3, 7]);
+  for (let i=0;i<3;i++){ c.strokeStyle = 'rgba(127,216,255,.16)'; c.beginPath(); c.ellipse(CX, CY, RX[i], RX[i]*RY_K, 0, 0, 7); c.stroke(); }
+  c.setLineDash([]);
+}
+function drawSat(c, s, now){
+  const st = G.state, cueing = st === 'cue' || st === 'ready';
+  const showTarget = (cueing && s.target) || (st === 'reveal' && s.target);
+  // resplandor de la señal
+  // la señal se apaga en los últimos 300 ms de la presentación
+  const fade = st === 'cue' ? Math.max(0, Math.min(1, (CUE*1000 - (now - S.stateAt))/300)) : 1;
+  if (cueing && s.target){ const p = reduce ? 1 : .75 + .25*Math.sin((now - S.stateAt)/140); c.globalAlpha = p*fade; c.drawImage(glow('255,201,74'), s.x-30, s.y-30, 60, 60); c.globalAlpha = 1; }
+  // cuerpo: disco + paneles (siempre igual; la señal es el sobre y el aro)
+  c.save(); c.translate(s.x, s.y);
+  c.fillStyle = '#1A1240'; c.fillRect(-SAT_R-9, -4, 9, 8); c.fillRect(SAT_R, -4, 9, 8);
+  c.fillStyle = '#7FB6FF'; c.fillRect(-SAT_R-8, -3, 7, 6); c.fillRect(SAT_R+1, -3, 7, 6);
+  c.beginPath(); c.arc(0, 0, SAT_R, 0, 7); c.fillStyle = '#E9E6FF'; c.fill(); c.strokeStyle = '#1A1240'; c.lineWidth = 3; c.stroke();
+  c.beginPath(); c.arc(0, 0, 5, 0, 7); c.fillStyle = '#5A5296'; c.fill();
+  c.restore();
+  if (showTarget && (cueing || st === 'reveal')){
+    // aro dorado + sobre (forma, no solo color)
+    c.globalAlpha = cueing ? fade : 1;
+    c.strokeStyle = '#FFC94A'; c.lineWidth = 3; c.beginPath(); c.arc(s.x, s.y, SAT_R+6, 0, 7); c.stroke();
+    if (cueing) envelope(c, s.x, s.y - SAT_R - 14, .9);
+    c.globalAlpha = 1;
+  }
+  if (s.mark && st !== 'reveal'){ c.strokeStyle = '#7FD8FF'; c.lineWidth = 3.5; c.beginPath(); c.arc(s.x, s.y, SAT_R+7, 0, 7); c.stroke(); }
+  if (st === 'reveal'){
+    if (s.mark && s.target) badge(c, s.x + 15, s.y - 15, 'ok');
+    else if (s.mark && !s.target) badge(c, s.x + 15, s.y - 15, 'no');
+    else if (!s.mark && s.target){ c.strokeStyle = '#FF8A6B'; c.lineWidth = 2.5; c.setLineDash([5,4]); c.beginPath(); c.arc(s.x, s.y, SAT_R+11, 0, 7); c.stroke(); c.setLineDash([]); }
+  }
+}
+function envelope(c, x, y, s){
+  c.save(); c.translate(x, y); c.scale(s, s);
+  rr(c, -11, -8, 22, 16, 3); c.fillStyle = '#FFF4D6'; c.fill(); c.strokeStyle = '#1A1240'; c.lineWidth = 2; c.stroke();
+  c.beginPath(); c.moveTo(-10, -7); c.lineTo(0, 1); c.lineTo(10, -7); c.stroke(); c.restore();
+}
+function badge(c, x, y, kind){
+  c.beginPath(); c.arc(x, y, 11, 0, 7); c.fillStyle = kind === 'ok' ? '#A6E36B' : '#FF8A6B'; c.fill(); c.strokeStyle = '#1A1240'; c.lineWidth = 2; c.stroke();
+  c.strokeStyle = '#1A1240'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath();
+  if (kind === 'ok'){ c.moveTo(x-5, y); c.lineTo(x-1, y+4); c.lineTo(x+6, y-4); }
+  else { c.moveTo(x-4, y-4); c.lineTo(x+4, y+4); c.moveTo(x+4, y-4); c.lineTo(x-4, y+4); }   // aspa diagonal, no cruz
+  c.stroke(); c.lineCap = 'butt';
+}
+function drawCloud(c){
+  const cl = S.cloud; if (!cl) return;
+  c.save();
+  for (let i=0;i<5;i++){ const ox = [-34, 0, 34, -16, 18][i], oy = [6, -16, 4, 22, 20][i], r = [44, 52, 44, 36, 38][i];
+    const g = c.createRadialGradient(cl.x+ox, cl.y+oy, r*.2, cl.x+ox, cl.y+oy, r); g.addColorStop(0, 'rgba(58,46,104,.97)'); g.addColorStop(.75, 'rgba(46,36,88,.93)'); g.addColorStop(1, 'rgba(46,36,88,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(cl.x+ox, cl.y+oy, r, 0, 7); c.fill(); }
+  c.fillStyle = 'rgba(255,255,255,.08)'; for (let i=0;i<14;i++){ c.beginPath(); c.arc(cl.x - 50 + (i*37)%100, cl.y - 30 + (i*23)%60, 1.4, 0, 7); c.fill(); }
+  c.restore();
+}
+function drawFlying(c, now){
+  if (!S.flying) return;
+  for (const f of S.flying){ const k = (now - f.at)/600; if (k < 0 || k > 1) continue; const e = easeIO(k);
+    const x = lerp(f.from[0], f.to[0], e), y = lerp(f.from[1], f.to[1], e) - Math.sin(Math.PI*e)*40;
+    if (!reduce){ c.globalAlpha = .7; c.drawImage(glow('255,214,120'), x-16, y-16, 32, 32); c.globalAlpha = 1; }
+    envelope(c, x, y, .8 - .4*e); }
+}
+function drawHeader(c){
+  c.fillStyle = '#EDEAFB'; c.font = '700 20px Fredoka'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText('Satélites', 16, 26);
+  c.fillStyle = '#ABA5D2'; c.font = '600 14px Nunito'; c.fillText(`Ronda ${Math.min(S.round, ROUNDS)} de ${ROUNDS} · Nivel ${Math.floor(S.lv)}`, 16, 50);
+  if (S.streak >= 2){ const t = `Racha ×${S.streak}`; c.font = '700 15px Fredoka'; const w = c.measureText(t).width + 22;
+    c.fillStyle = '#FFC94A'; rr(c, W-16-w, 14, w, 26, 13); c.fill(); c.fillStyle = '#1A1240'; c.textAlign = 'center'; c.fillText(t, W-16-w/2, 27.5); }
+}
+function instruction(){
+  const k = S.L.k, n = S.sats.filter(s=>s.mark).length;
+  switch (G.state){
+    case 'ready': case 'cue': return [`Estos ${k} traen un mensaje`, 'Síguelos con la vista'];
+    case 'track': return ['Síguelos con la vista', S.event === 'nube' ? 'Lo que entra a la nube, sale' : S.event === 'orbita' ? 'Ojo: algunos cambian de anillo' : ''];
+    case 'answer': return [`Toca los ${k} que traían mensaje`, `${n} de ${k} marcados · toca otra vez para quitar`];
+    default: return null;
+  }
+}
+function drawInstruction(c){
+  const t = instruction(); if (!t) return;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = G.state === 'answer' ? '#7FD8FF' : '#EDEAFB'; c.font = `700 ${fitFont(c, t[0], W-32, 18)}px Fredoka`; c.fillText(t[0], W/2, 84);
+  if (t[1]){ c.fillStyle = '#ABA5D2'; c.font = '600 14px Nunito'; c.fillText(t[1], W/2, 106); }
+}
+function drawFooter(c){
+  // rondas: disco lleno = perfecta, medio = parcial (con texto abajo, no solo color)
+  const y = H - 48, gap = 26, x0 = W/2 - gap*(ROUNDS-1)/2;
+  for (let i=0;i<ROUNDS;i++){ const r = S.results[i], x = x0 + i*gap;
+    c.beginPath(); c.arc(x, y, 8, 0, 7);
+    if (!r){ c.strokeStyle = i === S.round-1 ? '#7FD8FF' : 'rgba(171,165,210,.45)'; c.lineWidth = 2; c.stroke(); }
+    else if (r.hits === r.k){ c.fillStyle = '#A6E36B'; c.fill(); }
+    else { c.fillStyle = '#FFC94A'; c.beginPath(); c.arc(x, y, 8, Math.PI/2, Math.PI*1.5); c.fill(); c.strokeStyle = '#FFC94A'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 8, 0, 7); c.stroke(); }
+  }
+  c.fillStyle = '#ABA5D2'; c.font = '600 14px Nunito'; c.textAlign = 'center'; c.fillText(`Luces encendidas: ${S.lights.length}`, W/2, H - 20);
+}
+function drawEventCard(c, now){
+  if (G.state !== 'event') return;
+  const e = EVENTS[S.event], dur = S.eventNew ? 2600 : 1700, t = now - S.stateAt, a = Math.min(1, t/200, (dur - t)/250);
+  c.save(); c.globalAlpha = Math.max(0, a);
+  c.fillStyle = 'rgba(4,5,26,.6)'; c.fillRect(0, 0, W, H);
+  const y0 = 230; rr(c, 28, y0, W-56, 132, 22); c.fillStyle = '#14123A'; c.fill(); c.strokeStyle = '#FFC94A'; c.lineWidth = 2.5; c.stroke();
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#FFC94A'; c.font = '700 14px Fredoka'; c.fillText(S.eventNew ? 'NUEVO' : 'SORPRESA', W/2, y0 + 26);
+  c.fillStyle = '#fff'; c.font = '700 24px Fredoka'; c.fillText(e.name, W/2, y0 + 60);
+  c.fillStyle = '#D6D1F2'; c.font = `600 ${fitFont(c, e.line, W-80, 15, 600)}px Nunito`; c.fillText(e.line, W/2, y0 + 98);
+  c.restore();
+}
+function drawCross(c, now){
+  if (G.state !== 'reveal' || !S.cross) return; const k = Math.min(1, (now - S.stateAt)/400);
+  c.globalAlpha = k; c.strokeStyle = '#FF8A6B'; c.lineWidth = 2.5; c.beginPath(); c.arc(S.cross.x, S.cross.y, 24, 0, 7); c.stroke();
+  const t = '¿Aquí se cruzaron?'; c.font = '700 14px Fredoka'; const w = c.measureText(t).width + 18; const x = Math.max(w/2+8, Math.min(W-w/2-8, S.cross.x)), y = S.cross.y - 40;
+  c.fillStyle = 'rgba(8,10,34,.94)'; rr(c, x-w/2, y-13, w, 26, 13); c.fill(); c.fillStyle = '#FF8A6B'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, x, y+1); c.globalAlpha = 1;
+}
+function float(x, y, text, col, big){ G.floats.push({ x, y, text, col, big, at: performance.now() }); }
+function drawFloats(c, now){
+  G.floats = G.floats.filter(f => { const k = (now - f.at)/(f.big ? 1500 : 1200); if (k >= 1) return false; const a = Math.min(1, k*6, (1-k)*3), y = f.y - (reduce ? 0 : 10*ease(k));
+    c.globalAlpha = a; c.font = `700 ${f.big ? 19 : 17}px Fredoka`; c.textAlign = 'center'; c.textBaseline = 'middle'; const w = c.measureText(f.text).width + 26;
+    c.fillStyle = 'rgba(8,10,34,.94)'; rr(c, f.x-w/2, y-17, w, 34, 17); c.fill(); c.fillStyle = f.col; c.fillText(f.text, f.x, y+1); c.globalAlpha = 1; return true; });
+}
+function drawMenu(c, now){
+  S.lights = S.lights || []; drawOrbits(c); drawPlanet(c, now);
+  // satélites de muestra girando
+  for (let i=0;i<5;i++){ const ring = i % 3, th = now/1000*(.3 + .1*i)*(ring===1?-1:1) + i*1.3; const s = { ring, rr:ring, lane:1, th }; place(s); drawSatPlain(c, s); }
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = 'rgba(4,5,26,.75)'; rr(c, 24, 54, W-48, 104, 20); c.fill();
+  c.fillStyle = '#fff'; c.font = '700 30px Fredoka'; c.fillText('Satélites', W/2, 88);
+  c.fillStyle = '#D6D1F2'; c.font = '600 15px Nunito'; c.fillText('Sigue los que traen mensaje', W/2, 122); c.fillText('y enciende tu planeta', W/2, 142);
+  c.fillStyle = '#7FD8FF'; rr(c, 110, 568, 140, 56, 28); c.fill(); c.strokeStyle = '#1A1240'; c.lineWidth = 3; c.stroke(); c.fillStyle = '#1A1240'; c.font = '700 21px Fredoka'; c.fillText('Jugar', W/2, 597);
+  if (SAVE.best){ c.fillStyle = '#ABA5D2'; c.font = '600 14px Nunito'; c.fillText(`Tu récord: ${SAVE.best} luces en una partida`, W/2, 546); }
+}
+function drawSatPlain(c, s){ c.save(); c.translate(s.x, s.y); c.fillStyle = '#1A1240'; c.fillRect(-SAT_R-9, -4, 9, 8); c.fillRect(SAT_R, -4, 9, 8); c.fillStyle = '#7FB6FF'; c.fillRect(-SAT_R-8, -3, 7, 6); c.fillRect(SAT_R+1, -3, 7, 6);
+  c.beginPath(); c.arc(0, 0, SAT_R, 0, 7); c.fillStyle = '#E9E6FF'; c.fill(); c.strokeStyle = '#1A1240'; c.lineWidth = 3; c.stroke(); c.beginPath(); c.arc(0, 0, 5, 0, 7); c.fillStyle = '#5A5296'; c.fill(); c.restore(); }
+function drawEnd(c, now){
+  c.fillStyle = 'rgba(4,5,26,.55)'; c.fillRect(0, 0, W, H);
+  // el planeta, grande: todo lo que seguiste quedó encendido
+  c.save(); c.translate(CX, 236); c.scale(1.75, 1.75); c.translate(-CX, -CY); drawPlanet(c, now); c.restore();
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#FFC94A'; c.font = '700 14px Fredoka'; c.fillText('FIN DE LA PARTIDA', W/2, 70);
+  c.fillStyle = '#fff'; c.font = '700 26px Fredoka'; c.fillText(`Encendiste ${S.hitsTotal} luces`, W/2, 102);
+  const e = S.estimate; const y0 = 362;
+  rr(c, 24, y0, W-48, 112, 18); c.fillStyle = '#14123A'; c.fill(); c.strokeStyle = '#3A3480'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#ABA5D2'; c.font = '600 14px Nunito'; c.fillText('Tu seguimiento', W/2, y0 + 22);
+  if (e){ c.fillStyle = '#FFC94A'; c.font = '700 28px Fredoka'; c.fillText(`${e.m.toFixed(1).replace('.', ',')} de ${e.k.toFixed(1).replace('.', ',').replace(',0','')} a la vez`, W/2, y0 + 54);
+    c.fillStyle = '#D6D1F2'; c.font = '600 14px Nunito'; c.fillText(`Rondas perfectas: ${S.perfect} de ${ROUNDS}` + (S.bestStreak >= 2 ? ` · racha mayor ×${S.bestStreak}` : ''), W/2, y0 + 86); }
+  c.fillStyle = '#8F8AC0'; c.font = '600 14px Nunito'; c.fillText('Descuenta lo que se acierta por suerte.', W/2, y0 + 136); c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, y0 + 158);
+  c.fillStyle = '#7FD8FF'; rr(c, 100, H-74, 160, 54, 27); c.fill(); c.strokeStyle = '#1A1240'; c.lineWidth = 3; c.stroke(); c.fillStyle = '#1A1240'; c.font = '700 20px Fredoka'; c.fillText('Otra partida', W/2, H-47);
+}
+
+function frame(now){
+  const c = ctx; c.setTransform(scale, 0, 0, scale, 0, 0); c.drawImage(BG, 0, 0, W, H);
+  const dt = Math.min(.05, (now - (G.last || now))/1000); G.last = now;
+  if (G.state === 'menu') drawMenu(c, now);
+  else if (G.state === 'end') drawEnd(c, now);
+  else {
+    step(dt, now);
+    drawOrbits(c); drawPlanet(c, now);
+    for (const s of S.sats) drawSat(c, s, now);
+    drawCloud(c);
+    drawFlying(c, now); drawCross(c, now);
+    drawHeader(c); drawInstruction(c); drawFooter(c);
+    drawFloats(c, now); drawEventCard(c, now);
+  }
+  G.parts = G.parts.filter(p => { const k = (now - p.t)/p.life; if (k >= 1) return false; p.x += p.vx/60; p.y += p.vy/60; c.fillStyle = `rgba(${p.rgb},${.9*(1-k)})`; c.beginPath(); c.arc(p.x, p.y, p.r*(1-k*.5), 0, 7); c.fill(); return true; });
+  if (DEBUG){ cv.dataset.state = G.state; cv.dataset.stats = JSON.stringify({ lv:S.lv, round:S.round, ev:S.event, k:S.L&&S.L.k, n:S.sats&&S.sats.length, gap:S.sats?Math.round(minGap()):0, lights:(S.lights||[]).length, res:S.results, sats:(S.sats||[]).map(s=>[Math.round(s.x),Math.round(s.y),s.target?1:0,s.mark?1:0]) }); }
+}
+const loop = now => { frame(now); requestAnimationFrame(loop); };
+requestAnimationFrame(loop);
+if (DEBUG) setInterval(() => { if (document.hidden || performance.now() - (G.last || 0) > 200) frame(performance.now()); }, 60);
+cv.addEventListener('pointerdown', e => {
+  ac(); const [x, y] = toLocal(e), now = performance.now();
+  if (G.state === 'menu'){ if (y > 560 && y < 632 && x > 100 && x < 260) startGame(); return; }
+  if (G.state === 'end'){ if (now - G.endT > 700 && y > H-84){ G.state = 'menu'; S.lights = []; } return; }
+  tap(x, y, now);
+});
+document.getElementById('snd').addEventListener('click', e => { soundOn = !soundOn; e.currentTarget.setAttribute('aria-pressed', soundOn); e.currentTarget.textContent = 'Sonido: ' + (soundOn ? 'sí' : 'no'); });
+document.getElementById('rm').addEventListener('click', e => { reduce = !reduce; e.currentTarget.setAttribute('aria-pressed', reduce); });
+</script>

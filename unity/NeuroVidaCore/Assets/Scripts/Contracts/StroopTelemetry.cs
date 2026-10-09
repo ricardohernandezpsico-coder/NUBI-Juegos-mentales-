@@ -134,6 +134,13 @@ namespace NeuroVida.Contracts
         public int mail_group = -1;
         public int mail_best = -1;
         public int mail_new;
+        // ---- «Satélites: enciende tu planeta» (renovado el 9-oct; docs/diseno-satelites.md §8). -1 = no aplica / sin dato. Siguen los tracking_capacity / tracking_targets / tracking_speed de siempre.
+        /// <summary>Luces encendidas en la partida (mensajes entregados), rondas perfectas (todos los k), racha mayor de rondas perfectas, el récord de luces (el guardado o el de esta partida, el mayor) y 1 si esta partida lo superó.</summary>
+        public int sat_lights = -1;
+        public int sat_perfect = -1;
+        public int sat_best_streak = -1;
+        public int sat_best = -1;
+        public int sat_new;
         /// <summary>Solo Lluvia de meteoros: palabras reales vistas y tocadas por banda de prevalencia (6: de la común a la
         /// rara). Sin datos = listas vacías.</summary>
         public int[] lex_band_seen;

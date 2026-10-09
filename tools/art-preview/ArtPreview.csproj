@@ -57,6 +57,7 @@
     <Compile Include="$(Src)/Correo/MailDay.cs" />
     <Compile Include="$(Src)/Correo/MailSprites.cs" />
     <Compile Include="$(Src)/Correo/MailSounds.cs" />
+    <Compile Include="$(Src)/Satelites/SatelliteSprites.cs" />
     <Compile Include="$(Src)/Meteoros/MeteorSprites.cs" />
     <Compile Include="$(Src)/Disparate/DisparateSprites.cs" />
     <Compile Include="$(Src)/Cosecha/CosechaSprites.cs" />

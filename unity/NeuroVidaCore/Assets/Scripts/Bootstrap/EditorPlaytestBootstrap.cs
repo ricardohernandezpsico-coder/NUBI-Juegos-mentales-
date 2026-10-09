@@ -38,6 +38,12 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para las capturas (<c>--capturas</c>): la etapa (1..10) con que arranca «La estación de correo» (<c>mail_stage</c> de la config; 0 = la que corresponde).</summary>
         public static int MailStageOverride;
 
+        /// <summary>Solo para las capturas (<c>--capturas</c>): el nivel (1..12) con que arranca «Satélites» (<c>sat_stage</c> de la config; 0 = el que corresponde).</summary>
+        public static int SatStageOverride;
+
+        /// <summary>Solo para las capturas: la sorpresa que sale en todas las rondas de «Satélites» (<c>sat_surprise</c>: 1 órbita, 2 nube, 4 rápidas; 0 = las de siempre).</summary>
+        public static int SatSurpriseOverride;
+
         private void Start()
         {
 #if UNITY_EDITOR
@@ -67,7 +73,9 @@ namespace NeuroVida.Bridge
                     assessment = AssessmentOverride,
                     assessment_step = AssessmentOverride ? 1 : 0,
                     assessment_total = AssessmentOverride ? 4 : 0,
-                    mail_stage = MailStageOverride
+                    mail_stage = MailStageOverride,
+                    sat_stage = SatStageOverride,
+                    sat_surprise = SatSurpriseOverride
                 }
             };
 

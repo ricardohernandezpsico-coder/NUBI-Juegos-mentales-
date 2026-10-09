@@ -4,8 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using NeuroVida.Bridge;
 using NeuroVida.Contracts;
-using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite / RingSprite
-using NeuroVida.Games.Parejas;   // SymbolSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
 using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
@@ -13,74 +11,53 @@ using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también exi
 namespace NeuroVida.Games.Satelites
 {
     /// <summary>
-    /// "Satélites": juego estrella de seguimiento de múltiples objetos (ver <see cref="SatelliteContract"/>). Eres
-    /// control de misión: algunos satélites encienden su señal un momento, se apagan, y todos se mueven y se cruzan.
-    /// Al detenerse, tocas los que llevaban la señal.
-    /// <list type="bullet">
-    /// <item>Al revelar se dibuja el camino que hicieron los de la señal; si confundiste uno, se marca dónde pasó más
-    /// cerca del que elegiste ("¿aquí se cruzaron?"): se ve el momento exacto de la confusión.</item>
-    /// <item>Medida propia: "tu seguimiento", cuántos satélites sigues de verdad a la vez (descontando la suerte), y la
-    /// velocidad máxima superada.</item>
-    /// </list>
-    /// Reto = 2 minutos de rondas; Precisión = 8 rondas sin reloj.
+    /// «Satélites: enciende tu planeta» (id <c>satelites</c>, renovado el 9-oct; ver <see cref="SatelliteContract"/> y docs/diseno-satelites.md; el boceto aprobado es docs/previews/satelites-orbitas-boceto.html, versión 2).
+    /// SEGUIMIENTO DE MÚLTIPLES OBJETOS en órbitas planas: tu planeta está a oscuras; algunos satélites traen un mensaje (aro dorado y sobre), se apagan y todos giran en tres anillos; cuando se detienen se tocan los que traían
+    /// mensaje y cada uno entregado vuela al planeta y enciende una luz. Una ronda dura de 12 a 16 s: aviso de sorpresa si hay (cambio de órbita, nube de polvo, órbitas rápidas: SIEMPRE antes de la presentación), presentación de
+    /// 1,8 s, seguimiento SIN ninguna respuesta posible, respuesta (se puede corregir hasta 0,55 s después del último), revelación. El motor común recibe un ensayo por ronda (acierto = todos los k). Todo el tiempo va con
+    /// <see cref="GameClock"/> y lo que se mueve con <see cref="Motion"/>: con «quitar animaciones» los satélites siguen girando (es la tarea) pero sin pulso del aro, sin partículas, sin vuelo de los sobres y con luces fijas.
+    /// Reglas por patentes: plano (sin profundidad simulada), ninguna respuesta durante el seguimiento y sin «firma» por series.
     /// </summary>
-    public class SatelliteGameController : GameControllerBase
+    public sealed partial class SatelliteGameController : GameControllerBase
     {
         public const string GameId = SatelliteContract.GameId;
 
         private const float UnitsPerDp = 3f;
         private const float MarginU = 60f;
+        /// <summary>Si en la respuesta pasan tantos segundos sin completar los marcados, se evalúa lo que haya (nadie se queda atascado ni el Reto sin terminar).</summary>
+        private const float AnswerTimeoutSeconds = 25f;
         private const float SampleEvery = 0.1f;
-        private const int TrailPool = 260;
-        private const int MaxSatellites = 12;
 
-        private static readonly Color GoodColor = NeuroStyle.Lime;
-        private static readonly Color BadColor = NeuroStyle.Coral;
-        private static readonly Color SignalColor = NeuroStyle.Sun;
-        private static readonly Color PickColor = NeuroStyle.Sky;
+        private enum Phase { Idle, Surprise, Ready, Cue, Track, Answer, Reveal, Done }
 
-        private enum Phase { Idle, Cue, Track, Answer, Feedback, Done }
+        /// <summary>SOLO EN EL EDITOR, para las capturas de pantalla (<c>verificar-todo.sh --capturas Satelites</c>): con esta bandera el juego NO se juega solo y un guion (<see cref="EditorShotScript"/>) lo lleva por los
+        /// momentos que se fotografían. En el teléfono es siempre false.</summary>
+        public static bool EditorShotMode;
 
-        private sealed class Sat
-        {
-            public RectTransform Rect;
-            public Image Body, Halo, Glow, Ring, Mark;
-            public bool Target, Picked;
-            public readonly List<float> PathX = new List<float>();
-            public readonly List<float> PathY = new List<float>();
-        }
+        // ------------------------------------------------------------------ estado
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
+        private SatelliteRun _run;
+        private OrbitSwarm _swarm;
+        private LevelSpec _spec;
+        private Surprise _surprise, _lastSurprise;
         private Phase _phase = Phase.Idle;
-        private bool Endless => _config != null && _config.config.timed;
-        private bool Precision => !Endless;
+        private bool _loopOn, _baked, _guided, _inputOn, _tapped, _planetBig;
+        private int _roundNo, _level, _bestRecord, _debugStage, _debugSurprise, _lightsShown, _lastTickSecond;
+        private float _endsAt, _evalAt, _answerStartedAt, _phaseAt;
         private int _previousFrameRate;
+        private Vector2? _press;
+        private readonly bool[] _marked = new bool[SatPool];
+        private readonly List<float[]> _framesX = new List<float[]>(), _framesY = new List<float[]>();
+        private readonly List<(float x, float y)> _lightSpots = new List<(float x, float y)>();
 
-        // ronda en curso
-        private SatelliteSwarm _swarm;
-        private int _level, _targets, _picked;
-        private float _sampleAt;
-
-        // sesión
-        private readonly List<(int hits, int targets, int total)> _rounds = new List<(int hits, int targets, int total)>();
-        private int _hitsTotal, _targetsTotal, _cleared, _bestCleared;
-        private int _streak, _bestStreak, _points;
-        private float _endsAt;
-        private int _lastTickSecond = -1;
-
-        // UI
-        private RectTransform _safe, _fxRect, _arena, _pickRow, _crossMarker, _timerBg, _timerFill;
-        private Image _arenaImage;
-        private Text _prompt, _crossLabel;
-        private readonly List<Sat> _sats = new List<Sat>();
-        private readonly List<Image> _trail = new List<Image>();
-        private readonly List<Image> _pickDots = new List<Image>();
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
-        private float _arenaW, _arenaH, _fieldH, _satSize;
+
+        private bool Endless => _config != null && _config.config.timed;
+        private float Now => GameClock.Time;
 
         // ------------------------------------------------------------------ sesión
 
@@ -88,29 +65,35 @@ namespace NeuroVida.Games.Satelites
         {
             _config = config;
             _rng = new System.Random();
-            var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
-            float start = AdaptiveDifficulty.StartRating(config.config, SatelliteContract.MaxLevel);
-            // Pocas rondas por partida (~8-10): pasos grandes. Sin tiempo de reacción: cuenta lo que se siguió.
-            _dda = new AdaptiveDifficulty(SatelliteContract.MaxLevel, age, start, stepUp: 0.5f, useReaction: false);
+#if UNITY_EDITOR
+            // el smoke arranca en el nivel 6 (con las tres sorpresas, la media vuelta y los de frente) para pasar por todo lo importante en pocas rondas
+            if (GuidedTutorial.EditorAutoPlayGame && !EditorShotMode && config.config.sat_stage <= 0) config.config.sat_stage = 6;
+#endif
+            _dda = SatelliteMetrics.CreateEngine(config.config);
+            _bestRecord = Mathf.Max(0, config.config.sat_best);
+            _debugStage = Mathf.Max(0, config.config.sat_stage);
+            _debugSurprise = Mathf.Max(0, config.config.sat_surprise);
+            _run = new SatelliteRun();
+            _swarm = null;
+            _surprise = _lastSurprise = Surprise.None;
+            _phase = Phase.Idle;
+            _loopOn = _guided = _inputOn = _planetBig = false;
+            _roundNo = 0;
+            _lightsShown = 0;
+            _lastTickSecond = -1;
+            _endsAt = 0f;
+            _press = null;
+            _lightSpots.Clear();
 
             // Movimiento continuo: a 60 cuadros por segundo se ve fluido (Android da 30 por defecto).
             _previousFrameRate = Application.targetFrameRate;
             Application.targetFrameRate = 60;
 
-            _phase = Phase.Idle;
-            _rounds.Clear();
-            _hitsTotal = _targetsTotal = _cleared = _bestCleared = 0;
-            _streak = _bestStreak = _points = 0;
-            _lastTickSecond = -1;
-            _endsAt = 0f;
-            _swarm = null;
-
-            _resultRoot.gameObject.SetActive(false);
+            ResetRoundViews();
+            ResetPlanet();
             _exit.Hide();
-            _timerBg.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
-            HideAll();
-
+            _tutorial.Hide();
             StopAllCoroutines();
             StartCoroutine(GameLoop());
         }
@@ -122,301 +105,326 @@ namespace NeuroVida.Games.Satelites
 
         private IEnumerator GameLoop()
         {
+            StartCoroutine(Prewarm());
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre la pantalla ya armada, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetRoundViews();
+                ResetPlanet();
+            }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Satélites", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play(SatelliteContract.Title, Assessment.Subtitle(SatelliteContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
+            while (!_baked) yield return null;
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
-            UpdateHud();
-
             _endsAt = GameClock.Time + SatelliteContract.RetoSeconds;
-            while (!Finished())
-                yield return StartCoroutine(RunRound());
+            _timerBg.gameObject.SetActive(Endless);
+            _loopOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
+
+        /// <summary>El bucle de la partida: una ronda tras otra hasta que se cumplan las rondas (Precisión) o el tiempo (Reto). «Cómo se juega» lo retoma desde acá.</summary>
+        private IEnumerator MainLoop()
+        {
+            while (!Finished()) yield return StartCoroutine(PlayRound());
+            _loopOn = false;
             yield return StartCoroutine(FinishGame());
         }
 
-        private bool Finished() => Precision ? _rounds.Count >= SatelliteContract.PrecisionRounds : GameClock.Time >= _endsAt;
+        private bool Finished() => !Endless ? _run.RoundsPlayed >= SatelliteContract.PrecisionRounds : GameClock.Time >= _endsAt;
+
+        /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
+        private IEnumerator Prewarm()
+        {
+            if (!_baked)
+            {
+                var sprites = SatelliteSprites.Prewarm();
+                while (sprites.MoveNext()) yield return null;
+                AssignSprites();
+                _baked = true;
+            }
+            var sounds = SatelliteSounds.Prewarm();
+            while (sounds.MoveNext()) yield return null;
+        }
 
         // ------------------------------------------------------------------ una ronda
 
-        private IEnumerator RunRound()
+        private IEnumerator PlayRound()
         {
+            _roundNo = _run.RoundsPlayed + 1;
             _level = _dda.PresentedLevel;
-            _targets = SatelliteContract.Targets(_level);
-            int total = SatelliteContract.Total(_level);
-            _swarm = new SatelliteSwarm(total, _fieldH, SatelliteContract.Speed(_level), _rng);
-            _picked = 0;
+            var baseSpec = SatelliteContract.Level(_level);
+            _surprise = ChooseSurprise(baseSpec);
+            if (_surprise != Surprise.None) _lastSurprise = _surprise;
+            _spec = baseSpec.With(_surprise);
+#if UNITY_EDITOR
+            if (GuidedTutorial.EditorAutoPlayGame) _spec = _spec.Scaled(0.55f);          // el smoke juega más rápido para pasar por varias rondas
+#endif
+            BeginRoundObjects(_spec, _surprise);
+            SetPrompt("", "", TextColor);                       // sin el resultado de la ronda anterior detrás del aviso
+            UpdateHud();
+            if (_surprise != Surprise.None) yield return StartCoroutine(ShowSurprise(_surprise));
+            yield return StartCoroutine(DoReady());
+            yield return StartCoroutine(DoCue());
+            yield return StartCoroutine(DoTrack());
+            yield return StartCoroutine(DoAnswer());
+            yield return StartCoroutine(DoReveal());
+            ClearRoundViews();
+        }
 
-            // Quiénes llevan la señal: k al azar.
-            var order = new List<int>();
-            for (int i = 0; i < total; i++) order.Add(i);
-            for (int i = order.Count - 1; i > 0; i--)
+        private Surprise ChooseSurprise(LevelSpec spec)
+        {
+#if UNITY_EDITOR
+            if (GuidedTutorial.EditorAutoPlayGame && _debugSurprise == 0 && !EditorShotMode)
             {
-                int j = _rng.Next(i + 1);
-                (order[i], order[j]) = (order[j], order[i]);
+                // el smoke pasa por las tres en las tres primeras rondas (y deja la primera sin sorpresa para mirar lo básico)
+                Surprise[] cycle = { Surprise.None, Surprise.Orbit, Surprise.Cloud, Surprise.Fast };
+                var s = cycle[(_roundNo - 1) % cycle.Length];
+                return s == Surprise.None || (spec.Surprises & s) != 0 ? s : Surprise.None;
             }
-            for (int i = 0; i < _sats.Count; i++)
-            {
-                var s = _sats[i];
-                s.Target = false;
-                s.Picked = false;
-                s.PathX.Clear();
-                s.PathY.Clear();
-                s.Mark.gameObject.SetActive(false);
-                s.Ring.gameObject.SetActive(false);
-                s.Glow.gameObject.SetActive(false);
-                s.Body.color = Color.white;
-                s.Rect.gameObject.SetActive(i < total);
-            }
-            for (int i = 0; i < _targets; i++) _sats[order[i]].Target = true;
-            HideTrails();
-            _crossMarker.gameObject.SetActive(false);
-            SetPickRow(0);
-            PlaceAll();
+#endif
+            if (_debugSurprise != 0) return (Surprise)_debugSurprise;
+            return SatelliteContract.PickSurprise(spec.Surprises, _roundNo, _lastSurprise, _rng);
+        }
 
-            // 1. Aparecen (uno tras otro, rápido).
-            SetPrompt($"Memoriza los {_targets} que brillan", Color.white);
-            for (int i = 0; i < total; i++) StartCoroutine(PopIn(_sats[i].Rect, 0.22f));
-            yield return StartCoroutine(Wait(0.3f));
+        private IEnumerator DoReady()
+        {
+            _phase = Phase.Ready;
+            _phaseAt = Now;
+            SetPrompt(SatelliteContract.CueTitle(_spec.K), SatelliteContract.CueSub, TextColor);
+            yield return Wait(SatelliteContract.ReadySeconds);
+        }
 
-            // 2. Señal: los elegidos brillan y laten.
+        /// <summary>La presentación (1,8 s): los que traen mensaje con su aro dorado y su sobre; en los últimos 300 ms la señal se desvanece.</summary>
+        private IEnumerator DoCue()
+        {
             _phase = Phase.Cue;
-            foreach (var s in _sats)
-            {
-                if (!s.Target || !s.Rect.gameObject.activeSelf) continue;
-                s.Glow.gameObject.SetActive(true);
-                s.Ring.gameObject.SetActive(true);
-                s.Ring.color = SignalColor;
-            }
+            var targets = new List<int>();
+            for (int i = 0; i < _swarm.Count; i++) if (_swarm.Target[i]) targets.Add(i);
+            foreach (int i in targets) SetCue(i, 1f, 1f);
+            SetPrompt(SatelliteContract.CueTitle(_spec.K), SatelliteContract.CueSub, TextColor);
             float t = 0f;
-            int beeps = 0;
+            int rung = 0;
             while (t < SatelliteContract.CueSeconds)
             {
                 t += GameClock.DeltaTime;
-                float pulse = Motion.Decorative ? 0.5f + 0.5f * Mathf.Sin(t * Mathf.PI * 2f * 1.4f) : 1f; // sin ReduceMotion: la señal queda fija (brillante), sin pulso
-                foreach (var s in _sats)
-                {
-                    if (!s.Target) continue;
-                    s.Glow.color = NeuroStyle.WithAlpha(SignalColor, 0.45f + 0.35f * pulse);
-                    s.Ring.rectTransform.localScale = Vector3.one * (1.05f + 0.08f * pulse);
-                }
-                if (t > beeps * 0.7f && beeps < 3)
-                {
-                    beeps++;
-                    PlayTone(988f, 0.07f, 0.05f);
-                }
+                if (rung < targets.Count && t >= rung * 0.12f) { PlayClip(SatelliteSounds.CueBell(rung), 0.7f); rung++; }
+                float fade = Mathf.Clamp01((SatelliteContract.CueSeconds - t) / SatelliteContract.CueFadeSeconds);
+                float pulse = Motion.Decorative ? 0.75f + 0.25f * Mathf.Sin(t * 7.1f) : 1f;          // sin «quitar animaciones» la señal queda fija
+                foreach (int i in targets) SetCue(i, fade, pulse);
                 yield return null;
             }
-
-            // 3. Se apagan: todos iguales. Arrancan de a poco.
-            t = 0f;
-            while (t < 0.3f)
-            {
-                t += GameClock.DeltaTime;
-                float k = 1f - Mathf.Clamp01(t / 0.3f);
-                foreach (var s in _sats)
-                {
-                    if (!s.Target) continue;
-                    s.Glow.color = NeuroStyle.WithAlpha(SignalColor, 0.8f * k);
-                    s.Ring.color = NeuroStyle.WithAlpha(SignalColor, k);
-                }
-                yield return null;
-            }
-            foreach (var s in _sats) { s.Glow.gameObject.SetActive(false); s.Ring.gameObject.SetActive(false); }
-
-            _phase = Phase.Track;
-            SetPrompt("¡Síguelos con la vista!", SignalColor);
-            PlayTone(660f, 0.1f, 0.06f);
-            float speed = SatelliteContract.Speed(_level);
-            float track = SatelliteContract.TrackSeconds(_level);
-            _sampleAt = 0f;
-            t = 0f;
-            while (t < track)
-            {
-                float dt = GameClock.DeltaTime;
-                t += dt;
-                // Arranque y frenado suaves (0,5 s).
-                float ease = Mathf.Clamp01(t / 0.5f) * Mathf.Clamp01((track - t) / 0.5f + 0.15f);
-                _swarm.Speed = speed * ease;
-                _swarm.Step(dt);
-                if (t >= _sampleAt)
-                {
-                    _sampleAt += SampleEvery;
-                    for (int i = 0; i < _swarm.Count; i++)
-                    {
-                        _sats[i].PathX.Add(_swarm.X[i]);
-                        _sats[i].PathY.Add(_swarm.Y[i]);
-                    }
-                }
-                PlaceAll();
-                if (t > track * 0.5f && t - dt <= track * 0.5f) SetPrompt("¡Síguelos con la vista!", Color.white);
-                yield return null;
-            }
-
-            // 4. Respuesta: tocar los que llevaban la señal.
-            _phase = Phase.Answer;
-            PlayTone(523f, 0.12f, 0.06f);
-            SetPrompt($"Toca los {_targets} que brillaban", Color.white);
-            while (_picked < _targets) yield return null;
-            _phase = Phase.Feedback; // ya no se puede desmarcar
-            yield return StartCoroutine(Wait(0.3f));
-
-            // 5. Revelar.
-            yield return StartCoroutine(Reveal());
+            foreach (int i in targets) HideCue(i);
         }
 
-        private IEnumerator Reveal()
+        /// <summary>El seguimiento: giran en sus anillos sin que se pueda tocar nada. Termina cuando se cumple el tiempo Y nadie está a menos de 38 dp de otro ni bajo la nube (hasta 0,9 s más).</summary>
+        private IEnumerator DoTrack()
         {
-            int hits = 0;
-            Sat missed = null, wrong = null;
-            foreach (var s in _sats)
+            _phase = Phase.Track;
+            SetPrompt(SatelliteContract.TrackTitle, SatelliteContract.TrackHint(_surprise), TextColor);
+            if (_surprise == Surprise.Cloud)
             {
-                if (!s.Rect.gameObject.activeSelf) continue;
-                if (s.Target && s.Picked) hits++;
-                if (s.Target && !s.Picked && missed == null) missed = s;
-                if (!s.Target && s.Picked && wrong == null) wrong = s;
+                _swarm.StartCloud(ScreenPlan.Width);
+                _cloud.gameObject.SetActive(true);
             }
-            int total = _swarm.Count;
-            bool all = hits >= _targets;
-            _rounds.Add((hits, _targets, total));
-            _hitsTotal += hits;
-            _targetsTotal += _targets;
-            if (all)
+            StartHum();
+            _framesX.Clear();
+            _framesY.Clear();
+            float sampleAt = 0f;
+            Sample();
+            while (true)
             {
-                _cleared++;
-                _bestCleared = Mathf.Max(_bestCleared, _level);
-            }
-            _streak = all ? _streak + 1 : 0;
-            _bestStreak = Mathf.Max(_bestStreak, _streak);
-            int pts = SatelliteContract.Points(hits, _targets, _level, _streak);
-            _points += pts;
-            _hud.SetStreak(_streak);
-
-            // Marcas: ✓ en los bien encontrados, ✗ en los equivocados; los que faltaron vuelven a brillar ("era este").
-            foreach (var s in _sats)
-            {
-                if (!s.Rect.gameObject.activeSelf) continue;
-                if (s.Picked)
+                float dt = GameClock.DeltaTime;
+                if (dt > 0f)
                 {
-                    s.Mark.sprite = s.Target ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
-                    s.Mark.gameObject.SetActive(true);
-                    s.Ring.gameObject.SetActive(true);
-                    s.Ring.color = s.Target ? GoodColor : BadColor;
-                    s.Ring.rectTransform.localScale = Vector3.one * 1.05f;
-                    if (!s.Target) s.Body.color = new Color(1f, 1f, 1f, 0.55f);
+                    _swarm.Step(Mathf.Min(dt, 0.05f));
+                    if (_swarm.Time >= sampleAt) { sampleAt += SampleEvery; Sample(); }
                 }
-                else if (s.Target)
-                {
-                    s.Glow.gameObject.SetActive(true);
-                    s.Glow.color = NeuroStyle.WithAlpha(SignalColor, 0.7f);
-                    s.Ring.gameObject.SetActive(true);
-                    s.Ring.color = SignalColor;
-                    StartCoroutine(PopRect(s.Rect, 1.2f, 0.35f));
-                }
-                else s.Body.color = new Color(1f, 1f, 1f, 0.45f);
+                if (_swarm.ReadyToStop()) break;
+                yield return null;
             }
-
-            var change = _dda.Register(all);
-            if (all)
+            _swarm.EndCloud();
+            _cloud.gameObject.SetActive(false);
+            StopHum();
+            PlayClip(SatelliteSounds.Stop(), 0.8f);
+            // si todavía hay dos casi tocándose, se apartan lo mínimo en 0,35 s (así nunca quedan encimados al responder)
+            if (_swarm.PlanSettle())
             {
-                GameFeel.Correct(_streak);
-                SetPrompt(_streak >= 3 ? $"¡Todos! · racha {_streak}" : "¡Todos!", GoodColor);
-                foreach (var s in _sats)
-                    if (s.Target) StartCoroutine(UiFx.SparkBurst(_fxRect, LocalIn(_fxRect, s.Rect), SignalColor, 10, 160f, 30f, 0.45f));
+                while (_swarm.Settling)
+                {
+                    _swarm.SettleStep(Mathf.Min(GameClock.DeltaTime, 0.05f));
+                    yield return null;
+                }
+            }
+            Sample();
+        }
+
+        private void Sample()
+        {
+            _framesX.Add((float[])_swarm.X.Clone());
+            _framesY.Add((float[])_swarm.Y.Clone());
+        }
+
+        /// <summary>La respuesta: tocar marca o desmarca. Al marcar el k-ésimo se evalúa 0,55 s después (un margen para corregir el último).</summary>
+        private IEnumerator DoAnswer()
+        {
+            _phase = Phase.Answer;
+            for (int i = 0; i < _marked.Length; i++) _marked[i] = false;
+            _evalAt = 0f;
+            _answerStartedAt = Now;
+            _inputOn = true;
+            _press = null;
+#if UNITY_EDITOR
+            _botPlan = null;
+            _botT = 0f;
+#endif
+            UpdateAnswerPrompt();
+            while (true)
+            {
+                if (_evalAt > 0f && Now >= _evalAt && MarkedCount() == _spec.K) break;
+                if (Now - _answerStartedAt > AnswerTimeoutSeconds) break;
+                yield return null;
+            }
+            _inputOn = false;
+            _evalAt = 0f;
+        }
+
+        private int MarkedCount()
+        {
+            int n = 0;
+            for (int i = 0; i < _swarm.Count; i++) if (_marked[i]) n++;
+            return n;
+        }
+
+        private void UpdateAnswerPrompt()
+        {
+            int n = MarkedCount();
+            SetPrompt(SatelliteContract.AnswerTitle(_spec.K), SatelliteContract.AnswerSub(n, _spec.K), Cyan);
+        }
+
+        // ------------------------------------------------------------------ la revelación
+
+        private IEnumerator DoReveal()
+        {
+            _phase = Phase.Reveal;
+            int k = _spec.K, n = _swarm.Count;
+            int hits = 0, missedIdx = -1, wrongIdx = -1;
+            for (int i = 0; i < n; i++)
+            {
+                if (_marked[i] && _swarm.Target[i]) hits++;
+                else if (!_marked[i] && _swarm.Target[i] && missedIdx < 0) missedIdx = i;
+                else if (_marked[i] && !_swarm.Target[i] && wrongIdx < 0) wrongIdx = i;
+            }
+            bool perfect = SatelliteContract.IsPerfect(hits, k);
+            if (!_guided)
+            {
+                _run.Add(hits, k, n, _level);            // la ronda guiada del tutorial no cuenta: ni puntos, ni motor, ni racha
+                _dda.Register(perfect);
+                _hud.SetStreak(_run.Streak);
+            }
+            int streak = _guided ? 0 : _run.Streak;
+#if UNITY_EDITOR
+            if (!_guided) Debug.Log("[SmokeTest] Satelites: ronda " + _roundNo + " nivel " + _level + (_surprise != Surprise.None ? " sorpresa " + SatelliteContract.SurpriseName(_surprise) : "") + ": " + hits + " de " + k + " (de " + n + "), luces " + _run.Lights + ", racha " + _run.Streak);
+#endif
+            // las marcas: ✓ en los entregados, aspa diagonal coral en los marcados sin mensaje, aro punteado en los que faltaron
+            for (int i = 0; i < n; i++)
+            {
+                var v = _sats[i];
+                bool target = _swarm.Target[i], marked = _marked[i];
+                v.MarkRing.gameObject.SetActive(false);
+                if (target) SetCue(i, 1f, 1f, full: false);
+                if (marked && target) ShowBadge(v, true);
+                else if (marked) { ShowBadge(v, false); v.MarkRing.color = Bad; v.MarkRing.gameObject.SetActive(true); }
+                else if (target) { v.Dashed.color = Bad; v.Dashed.gameObject.SetActive(true); }
+                if (!marked && !target) v.Body.color = new Color(1f, 1f, 1f, 0.55f);
+            }
+            // el sonido y la sensación de la ronda
+            if (perfect)
+            {
+                GameFeel.Haptic(GameFeel.HapticKind.Firm);
+                PlayClip(SatelliteSounds.Perfect(), 0.8f);          // el sonido es el propio del juego (un arpegio), no el pling común
             }
             else
             {
-                GameFeel.Wrong();
-                SetPrompt($"{hits} de {_targets}", SignalColor);
+                GameFeel.Haptic(GameFeel.HapticKind.Double);
+                PlayClip(SatelliteSounds.Partial(), 0.7f);          // nunca un castigo: un tono suave que baja
             }
-            StartCoroutine(FloatText(LocalIn(_fxRect, _pickRow) + new Vector2(0f, 40f), "+" + pts, NeuroStyle.Sun));
-
-            // El camino que hicieron los de la señal.
-            yield return StartCoroutine(DrawTrails());
-
-            // ¿Dónde se confundió? El punto en que el que faltó pasó más cerca del que se eligió por error.
-            float hold = all ? 1.0f : 1.4f;
-            if (missed != null && wrong != null)
+            SetPrompt(SatelliteContract.ResultTitle(hits, k), SatelliteContract.ResultSub(perfect, streak), perfect ? Good : Gold);
+            StartCoroutine(PopRect(_promptA.rectTransform, 1.12f, 0.25f));
+            // los sobres de los entregados vuelan al planeta y encienden luces
+            int j = 0;
+            for (int i = 0; i < n; i++)
             {
-                int k = SatelliteContract.ClosestApproach(missed.PathX, missed.PathY, wrong.PathX, wrong.PathY);
-                if (k >= 0)
-                {
-                    float mx = (missed.PathX[k] + wrong.PathX[k]) * 0.5f, my = (missed.PathY[k] + wrong.PathY[k]) * 0.5f;
-                    _crossMarker.anchoredPosition = ToUi(mx, my);
-                    _crossMarker.gameObject.SetActive(true);
-                    _crossLabel.text = "¿Aquí se cruzaron?";
-                    StartCoroutine(PopIn(_crossMarker, 0.3f));
-                    hold = 2.2f;
-                }
+                if (!(_marked[i] && _swarm.Target[i])) continue;
+                StartFlight(i, Now + 0.25f + j * 0.17f);
+                j++;
             }
-
-            if (change == DdaChange.Up)
+            // ¿dónde se confundió? Donde el que faltó y el que se marcó por error pasaron más cerca
+            float hold = SatelliteContract.RevealSeconds;
+            if (missedIdx >= 0 && wrongIdx >= 0 && SatelliteContract.TryCrossPoint(_framesX, _framesY, missedIdx, wrongIdx, out float cx, out float cy))
             {
-                _toast.Show("Sube la dificultad", LevelNews(_dda.Level), GoodColor, 1.0f);
-                GameFeel.LevelUp();
+                ShowCross(cx, cy);
+                hold += SatelliteContract.CrossExtraSeconds;
             }
-            else if (change == DdaChange.Down || _dda.Struggling)
-                _toast.Show("Con calma", "Un poco más fácil", SignalColor, 0.9f);
-            UpdateHud();
-
-            yield return StartCoroutine(Wait(hold));
-            HideAll();
+            if (!_guided) UpdateHud();
+            UpdateFooter();
+            yield return Wait(hold);
+            _phase = Phase.Idle;
         }
 
-        private static string LevelNews(int level)
+        // ------------------------------------------------------------------ fin
+
+        private IEnumerator FinishGame()
         {
-            if (SatelliteContract.Targets(level) > SatelliteContract.Targets(level - 1)) return $"Ahora son {SatelliteContract.Targets(level)} con señal";
-            if (SatelliteContract.Total(level) > SatelliteContract.Total(level - 1)) return "Un satélite más en órbita";
-            return $"Más rápido · {SatelliteContract.SpeedFactor(level):0.0}×".Replace('.', ',');
+            _phase = Phase.Done;
+            _inputOn = false;
+            int record = SatelliteContract.NewRecord(_bestRecord, _run.Lights);
+            bool broke = SatelliteContract.BrokeRecord(_bestRecord, _run.Lights);
+#if UNITY_EDITOR
+            Debug.Log("[SmokeTest] Satelites: partida terminada: " + _run.Lights + " luces, " + _run.Perfect + " rondas perfectas de " + _run.RoundsPlayed + ", seguimiento " + _run.Capacity.ToString("0.0") + ", nivel más alto " + _run.BestCleared);
+#endif
+            ClearRoundViews();
+            ShowEnd(record, broke);
+            _exit.Show();
+            PlayClip(SatelliteSounds.Finale(), 0.8f);
+            var telemetry = new StroopTelemetry
+            {
+                user_id = _config.user_id,
+                game_id = _config.game_id,
+                session_metrics = SatelliteMetrics.Build(_dda, _run, record, broke, _config.config)
+            };
+            NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
+            yield break;
         }
 
-        // ------------------------------------------------------------------ entrada
+        // ------------------------------------------------------------------ marcador
 
-        private void Update()
+        private void UpdateHud()
         {
-            UpdateClock();
-            if (_phase == Phase.Cue || _phase == Phase.Track || _phase == Phase.Answer) Wobble();
-            if (_phase != Phase.Answer || GameClock.DeltaTime <= 0f || _swarm == null) return;
-            if (!Input.GetMouseButtonDown(0)) return;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_arena, Input.mousePosition, null, out var local)) return;
-            float x = local.x / _arenaW + 0.5f, y = local.y / _arenaW + _fieldH * 0.5f;
-            int i = _swarm.Nearest(x, y, SatelliteSwarm.Radius * 1.9f);
-            if (i < 0) return;
-            var s = _sats[i];
-            if (s.Picked)
-            {
-                s.Picked = false;
-                _picked--;
-                s.Ring.gameObject.SetActive(false);
-            }
-            else if (_picked < _targets)
-            {
-                s.Picked = true;
-                _picked++;
-                s.Ring.gameObject.SetActive(true);
-                s.Ring.color = PickColor;
-                s.Ring.rectTransform.localScale = Vector3.one;
-                StartCoroutine(PopRect(s.Rect, 1.15f, 0.18f));
-            }
-            GameFeel.Haptic(GameFeel.HapticKind.Light);
-            PlayTone(s.Picked ? 784f : 523f, 0.05f, 0.05f);
-            SetPickRow(_picked);
-        }
-
-        /// <summary>Todos los satélites se balancean IGUAL (vida sin dar pistas de cuál es cuál).</summary>
-        private void Wobble()
-        {
-            float a = Motion.Decorative ? 7f * Mathf.Sin(GameClock.Time * 1.7f) : 0f; // sin ReduceMotion: quietos
-            foreach (var s in _sats) s.Body.rectTransform.localRotation = Quaternion.Euler(0f, 0f, a);
+            _hud.SetLevel(_dda.PresentedLevel);
+            // la ronda que se juega (también durante su revelación: el número no salta hasta que empieza la siguiente)
+            int round = Mathf.Max(1, _roundNo);
+            _hud.SetInfo(Endless ? SatelliteContract.RoundHudReto(round)
+                                 : SatelliteContract.RoundHud(Mathf.Min(round, SatelliteContract.PrecisionRounds), SatelliteContract.PrecisionRounds));
         }
 
         private void UpdateClock()
         {
-            if (!Endless || _phase == Phase.Idle || _phase == Phase.Done || _endsAt <= 0f) return;
+            if (!Endless || _endsAt <= 0f || _phase == Phase.Idle || _phase == Phase.Done || _guided) return;
             float left = _endsAt - GameClock.Time;
-            SetTimerFraction(Mathf.Clamp01(left / SatelliteContract.RetoSeconds));
+            float fraction = Mathf.Clamp01(left / SatelliteContract.RetoSeconds);
+            _timerFill.anchorMax = new Vector2(fraction, 1f);
+            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
+            _timerFillImage.color = fraction > 0.5f ? Color.Lerp(Gold, Good, (fraction - 0.5f) * 2f) : Color.Lerp(Bad, Gold, fraction * 2f);
             int whole = Mathf.CeilToInt(left);
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
@@ -425,105 +433,167 @@ namespace NeuroVida.Games.Satelites
             }
         }
 
-        // ------------------------------------------------------------------ dibujo
+        // ------------------------------------------------------------------ el aviso de sorpresa («NUEVO» una sola vez por instalación cada una)
 
-        private Vector2 ToUi(float x, float y) => new Vector2((x - 0.5f) * _arenaW, (y - _fieldH * 0.5f) * _arenaW);
+        private const string IntroKey = "sat_intros";
 
-        private void PlaceAll()
+        private static bool IntroSeen(Surprise s)
         {
-            if (_swarm == null) return;
-            for (int i = 0; i < _swarm.Count; i++) _sats[i].Rect.anchoredPosition = ToUi(_swarm.X[i], _swarm.Y[i]);
+            try { return (PlayerPrefs.GetInt(IntroKey, 0) & (int)s) != 0; }
+            catch (System.Exception) { return false; }
         }
 
-        /// <summary>Estela del recorrido de cada satélite con señal: puntos que se encienden del principio al final.</summary>
-        private IEnumerator DrawTrails()
+        private static void MarkIntroSeen(Surprise s)
         {
-            var dots = new List<(Vector2 pos, float age)>();
-            foreach (var s in _sats)
-            {
-                if (!s.Target || !s.Rect.gameObject.activeSelf) continue;
-                int n = s.PathX.Count;
-                for (int k = 0; k < n; k += 2) dots.Add((ToUi(s.PathX[k], s.PathY[k]), n > 1 ? (float)k / (n - 1) : 1f));
-            }
-            int used = Mathf.Min(dots.Count, _trail.Count);
-            // Si hay más puntos que imágenes, se reparten parejo.
-            float step = dots.Count > 0 ? (float)dots.Count / Mathf.Max(1, used) : 1f;
-            for (int i = 0; i < used; i++)
-            {
-                var d = dots[Mathf.Min(dots.Count - 1, Mathf.FloorToInt(i * step))];
-                var img = _trail[i];
-                img.rectTransform.anchoredPosition = d.pos;
-                float size = Mathf.Lerp(6f, 13f, d.age);
-                img.rectTransform.sizeDelta = new Vector2(size, size);
-                img.color = NeuroStyle.WithAlpha(SignalColor, 0f);
-                img.gameObject.SetActive(true);
-            }
+            try { PlayerPrefs.SetInt(IntroKey, PlayerPrefs.GetInt(IntroKey, 0) | (int)s); PlayerPrefs.Save(); }
+            catch (System.Exception) { }
+        }
+
+        /// <summary>El aviso se muestra ANTES de la presentación (nunca durante el seguimiento): 1,7 s, y 2,6 s con la etiqueta «NUEVO» la primera vez que sale cada sorpresa.</summary>
+        private IEnumerator ShowSurprise(Surprise s)
+        {
+            _phase = Phase.Surprise;
+            bool isNew = !IntroSeen(s);
+            MarkIntroSeen(s);
+            _surpriseTag.text = isNew ? SatelliteContract.NewTag : SatelliteContract.SurpriseTag;
+            _surpriseName.text = SatelliteContract.SurpriseName(s);
+            _surpriseLine.text = SatelliteContract.SurpriseLine(s);
+            _surpriseLayer.gameObject.SetActive(true);
+            _surpriseGroup.alpha = 0f;
+            PlayClip(SatelliteSounds.Chime(), 0.7f);
+            float total = isNew ? SatelliteContract.SurpriseFirstSeconds : SatelliteContract.SurpriseSeconds;
             float t = 0f;
-            const float seconds = 0.6f;
-            while (t < seconds)
+            while (t < total)
             {
                 t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                for (int i = 0; i < used; i++)
-                {
-                    var d = dots[Mathf.Min(dots.Count - 1, Mathf.FloorToInt(i * step))];
-                    float on = Mathf.Clamp01((k - d.age * 0.8f) / 0.2f);
-                    _trail[i].color = NeuroStyle.WithAlpha(SignalColor, on * Mathf.Lerp(0.18f, 0.6f, d.age));
-                }
+                _surpriseGroup.alpha = Motion.Decorative ? Mathf.Min(1f, t / 0.2f, (total - t) / 0.25f) : 1f;
                 yield return null;
             }
+            _surpriseLayer.gameObject.SetActive(false);
         }
 
-        private void HideTrails()
+        // ------------------------------------------------------------------ pieza del tutorial
+
+        /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo).</summary>
+        private void SetUpTutorial() =>
+            BuildTutorial(_safe, GameHud.Height + 10f, SatelliteContract.Title, "Sigue los satélites que traen un mensaje y enciende las luces de tu planeta.", badgeAtBottom: true);
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        protected override bool HowToReady => _loopOn && _phase != Phase.Done;
+
+        protected override void HowToSuspend()
         {
-            foreach (var d in _trail) d.gameObject.SetActive(false);
+            // la ronda a medias no cuenta: se vuelve a jugar entera
+            _phase = Phase.Idle;
+            _inputOn = false;
+            _roundNo = _run != null ? _run.RoundsPlayed : 0;
+            _swarm = null;
+            StopHum();
+            ResetRoundViews();
         }
 
-        private void HideAll()
+        protected override void HowToResume(float spentSeconds)
         {
-            foreach (var s in _sats) s.Rect.gameObject.SetActive(false);
-            HideTrails();
-            if (_crossMarker != null) _crossMarker.gameObject.SetActive(false);
+            if (Endless) _endsAt += spentSeconds;                // el tiempo del tutorial no se le descuenta al Reto
+            _timerBg.gameObject.SetActive(Endless);
+            Layout();
+            UpdateHud();
+            UpdateFooter();
+            StartCoroutine(MainLoop());
         }
 
-        private void SetPickRow(int picked)
+        // ------------------------------------------------------------------ entrada
+
+        private void Update()
         {
-            for (int i = 0; i < _pickDots.Count; i++)
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un toque al juego
+            float now = GameClock.Time;
+            UpdateClock();
+            AnimateLights(now);
+            AnimateFlights(now);
+            if (_swarm != null) PlaceSwarm();
+            if (_inputOn)
             {
-                var d = _pickDots[i];
-                d.gameObject.SetActive(i < _targets);
-                d.color = i < picked ? PickColor : new Color(1f, 1f, 1f, 0.16f);
+                ReadPress();
+                HandlePress();
             }
-            float gap = 58f;
-            for (int i = 0; i < _targets && i < _pickDots.Count; i++)
-                _pickDots[i].rectTransform.anchoredPosition = new Vector2((i - (_targets - 1) * 0.5f) * gap, 0f);
+#if UNITY_EDITOR
+            if (_phase == Phase.Answer && !_guided && GameClock.DeltaTime > 0f) AutoPlay(GameClock.DeltaTime);
+#endif
         }
 
-        private void SetPrompt(string text, Color color)
+        private void ReadPress()
         {
-            _prompt.text = text;
-            _prompt.color = color;
+            if (!GuidedTutorial.TryPress(out Vector2 pos)) return;
+            if (_tutorial != null && _tutorial.Coach != null && _tutorial.Coach.Blocks(pos)) return;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, pos, null, out var local)) return;
+            _press = ToLogical(local);
         }
 
-        private IEnumerator FloatText(Vector2 pos, string text, Color color)
+        private void HandlePress()
         {
-            var t = MakeText(_fxRect, "Float", 58, TextAnchor.MiddleCenter, color, 0f, 0f);
-            NeuroStyle.ClayText(t, 4f, 6f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(300f, 90f);
-            t.text = text;
-            float e = 0f;
-            const float seconds = 0.8f;
-            while (e < seconds)
+            if (!_press.HasValue) return;
+            var p = _press.Value;
+            _press = null;
+            if (_phase == Phase.Answer && _swarm != null) OnAnswerTap(p);
+        }
+
+        /// <summary>Un toque en la respuesta: el satélite más cercano (a menos de 30 dp) se marca o se desmarca.</summary>
+        private void OnAnswerTap(Vector2 p)
+        {
+            int i = _swarm.Nearest(p.x, p.y);
+            if (i >= 0) ToggleMark(i);
+        }
+
+        private void ToggleMark(int i)
+        {
+            int n = MarkedCount();
+            if (_marked[i])
             {
-                e += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 60f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
-                t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
-                yield return null;
+                _marked[i] = false;
+                n--;
+                _sats[i].MarkRing.gameObject.SetActive(false);
+                PlayClip(SatelliteSounds.Unmark(), 0.7f);
             }
-            Destroy(t.gameObject);
+            else if (n >= _spec.K)
+            {
+                PlayClip(SatelliteSounds.Blocked(), 0.6f);          // ya están todos: para cambiar uno, primero se quita otro
+                return;
+            }
+            else
+            {
+                _marked[i] = true;
+                n++;
+                var ring = _sats[i].MarkRing;
+                ring.color = Cyan;
+                ring.gameObject.SetActive(true);
+                StartCoroutine(PopRect(_sats[i].Root, 1.12f, 0.18f));
+                PlayClip(SatelliteSounds.Mark(n), 0.8f);
+            }
+            GameFeel.Haptic(GameFeel.HapticKind.Light);
+            _evalAt = n == _spec.K ? Now + SatelliteContract.EvalDelaySeconds : 0f;
+            UpdateAnswerPrompt();
+        }
+
+        private void PlayClip(AudioClip clip, float volume)
+        {
+            if (clip == null || !GameFeel.SoundOn) return;
+            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
+            _audioSource.PlayOneShot(clip, volume);
+        }
+
+        private void StartHum()
+        {
+            if (!GameFeel.SoundOn || (_config != null && _config.config != null && !_config.config.sound_enabled)) return;
+            _humSource.clip = SatelliteSounds.Hum();
+            _humSource.volume = 0.12f;
+            _humSource.Play();
+        }
+
+        private void StopHum()
+        {
+            if (_humSource != null && _humSource.isPlaying) _humSource.Stop();
         }
 
         private static IEnumerator Wait(float seconds)
@@ -536,323 +606,41 @@ namespace NeuroVida.Games.Satelites
             }
         }
 
-        // ------------------------------------------------------------------ fin
+#if UNITY_EDITOR
+        private float _botT;
+        private List<int> _botPlan;
 
-        private IEnumerator FinishGame()
+        /// <summary>SOLO EN EL EDITOR (smoke): juega solo. Espera un momento tras la parada y marca los que traían mensaje; una de cada cuatro rondas se «equivoca» con el satélite vecino de uno (así el arranque de prueba pasa por los aciertos,
+        /// los errores y «¿Aquí se cruzaron?»). En el teléfono no hace nada.</summary>
+        private void AutoPlay(float dt)
         {
-            _phase = Phase.Done;
-            HideAll();
-
-            float hitRate = _targetsTotal > 0 ? (float)_hitsTotal / _targetsTotal : 0f;
-            float capacity = SatelliteContract.Capacity(_rounds);
-            float meanTargets = 0f;
-            foreach (var r in _rounds) meanTargets += r.targets;
-            meanTargets = _rounds.Count > 0 ? meanTargets / _rounds.Count : -1f;
-            float speedReached = _bestCleared > 0 ? SatelliteContract.SpeedFactor(_bestCleared) : -1f;
-            int score = SatelliteContract.Score(hitRate, _bestCleared);
-
-            SetPrompt("Fin de la misión", GoodColor);
-            ShowResult(score, capacity, meanTargets);
-
-            var telemetry = new StroopTelemetry
+            if (EditorShotMode || !GuidedTutorial.AutoPlayGame(10f) || _swarm == null) return;
+            if (_botPlan == null)
             {
-                user_id = _config.user_id,
-                game_id = _config.game_id,
-                session_metrics = new StroopSessionMetrics
+                _botPlan = new List<int>();
+                for (int i = 0; i < _swarm.Count; i++) if (_swarm.Target[i]) _botPlan.Add(i);
+                if (_roundNo % 4 == 3 && _botPlan.Count > 0)
                 {
-                    correct_trials = _cleared,
-                    total_trials = _rounds.Count,
-                    calculated_score = score,
-                    average_response_time_ms = 0,
-                    level = _config.config.level,
-                    timed = _config.config.timed,
-                    end_rating = _dda.RatingNormalized,
-                    mode_trials = _dda.ScoredTrials,
-                    mode_hits = _dda.ScoredCorrect,
-                    peak_level = _dda.PeakLevel,
-                    tracking_capacity = capacity,
-                    tracking_targets = meanTargets,
-                    tracking_speed = speedReached
+                    int wrong = -1;
+                    float best = float.MaxValue;
+                    int from = _botPlan[_botPlan.Count - 1];
+                    for (int i = 0; i < _swarm.Count; i++)
+                    {
+                        if (_swarm.Target[i]) continue;
+                        float d = Mathf.Abs(_swarm.X[i] - _swarm.X[from]) + Mathf.Abs(_swarm.Y[i] - _swarm.Y[from]);
+                        if (d < best) { best = d; wrong = i; }
+                    }
+                    if (wrong >= 0) _botPlan[_botPlan.Count - 1] = wrong;
                 }
-            };
-            NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
-            yield break;
-        }
-
-        private void ShowResult(int score, float capacity, float meanTargets)
-        {
-            _exit.Show();
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Control de misión experto!" : score >= 65 ? "¡Buena misión!" : "Misión completada";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_hitsTotal} de {_targetsTotal} satélites encontrados";
-            // "de N": cuántos había que seguir. El juego sube esa cantidad al acertar: el número no es un techo personal.
-            _resultRoot.Find("Extra").GetComponent<Text>().text = capacity >= 0f
-                ? $"Seguiste {capacity:0.0} de {meanTargets:0.#} a la vez".Replace('.', ',') : $"Mejor racha {_bestStreak}";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
-        }
-
-        // ------------------------------------------------------------------ construcción de UI
-
-        protected override void BuildUi()
-        {
-
-            var canvasGo = new GameObject("SatelliteCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080f, 1920f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0f;
-            canvasGo.AddComponent<GraphicRaycaster>();
-
-            var bg = new GameObject("Background");
-            bg.transform.SetParent(canvasGo.transform, false);
-            var bgRect = bg.AddComponent<RectTransform>();
-            Stretch(bgRect);
-            WorldBackdrop.Build(bgRect, GameWorld.MissionControl);
-
-            var safeGo = new GameObject("SafeAreaContent");
-            safeGo.transform.SetParent(canvasGo.transform, false);
-            _safe = safeGo.AddComponent<RectTransform>();
-            ApplySafeArea(_safe);
-
-            _hud = new GameHud(_safe, "Satélites", MarginU, this);
-            BuildTimer();
-
-            _prompt = MakeText(_safe, "Prompt", 64, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
-            NeuroStyle.ClayText(_prompt, 3.5f, 5f);
-            var pr = _prompt.rectTransform;
-            pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 1f);
-            pr.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(_prompt, 42);
-
-            BuildArena();
-            BuildPickRow();
-
-            var fx = new GameObject("Fx");
-            fx.transform.SetParent(_safe, false);
-            _fxRect = fx.AddComponent<RectTransform>();
-            Stretch(_fxRect);
-
-            BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
-            _toast.KeepOut(_arena);                         // el campo donde se mueven los satélites
-            _toast.KeepOut(_prompt.rectTransform);          // la consigna, aunque en este momento esté vacía
-
-            var flashGo = new GameObject("Flash");
-            flashGo.transform.SetParent(canvasGo.transform, false);
-            Stretch(flashGo.AddComponent<RectTransform>());
-            _flash = flashGo.AddComponent<Image>();
-            _flash.raycastTarget = false;
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
-        }
-
-        private void BuildArena()
-        {
-            var go = new GameObject("Arena");
-            go.transform.SetParent(_safe, false);
-            _arena = go.AddComponent<RectTransform>();
-            _arena.anchorMin = _arena.anchorMax = new Vector2(0.5f, 1f);
-            _arena.pivot = new Vector2(0.5f, 0.5f);
-            // El campo: un vidrio apenas visible con borde fino (marca el límite donde rebotan; no es una tarjeta).
-            _arenaImage = go.AddComponent<Image>();
-            _arenaImage.sprite = RoundedRectSprite.Get(64);
-            _arenaImage.type = Image.Type.Sliced;
-            _arenaImage.color = new Color(1f, 1f, 1f, 0.035f);
-            _arenaImage.raycastTarget = false;
-            var edge = go.AddComponent<Outline>();
-            edge.effectColor = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.25f);
-            edge.effectDistance = new Vector2(2f, -2f);
-
-            var trailRoot = new GameObject("Trails");
-            trailRoot.transform.SetParent(_arena, false);
-            var tr = trailRoot.AddComponent<RectTransform>();
-            Stretch(tr);
-            for (int i = 0; i < TrailPool; i++) _trail.Add(NewImage(tr, "Dot", DiscSprite.Get()));
-
-            for (int i = 0; i < MaxSatellites; i++) _sats.Add(BuildSat(i));
-
-            // Marcador de la confusión: anillo coral + texto.
-            var cm = new GameObject("CrossMarker");
-            cm.transform.SetParent(_arena, false);
-            _crossMarker = cm.AddComponent<RectTransform>();
-            _crossMarker.anchorMin = _crossMarker.anchorMax = new Vector2(0.5f, 0.5f);
-            _crossMarker.sizeDelta = new Vector2(150f, 150f);
-            var ring = cm.AddComponent<Image>();
-            ring.sprite = RingSprite.Get();
-            ring.color = BadColor;
-            ring.raycastTarget = false;
-            _crossLabel = MakeText(_crossMarker, "Label", 42, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
-            NeuroStyle.ClayText(_crossLabel, 3f, 4f);
-            var lr = _crossLabel.rectTransform;
-            lr.anchorMin = lr.anchorMax = new Vector2(0.5f, 0f);
-            lr.pivot = new Vector2(0.5f, 1f);
-            lr.sizeDelta = new Vector2(460f, 60f);
-            lr.anchoredPosition = new Vector2(0f, -6f);
-            cm.SetActive(false);
-        }
-
-        private Sat BuildSat(int i)
-        {
-            var go = new GameObject("Satellite" + i);
-            go.transform.SetParent(_arena, false);
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-
-            var glow = NewImage(rect, "Glow", RadialGlowSprite.Get());
-            // Disco tenue detrás: el satélite es delgado (paneles); así se ve como una ficha y se sigue mejor.
-            var halo = NewImage(rect, "Halo", DiscSprite.Get());
-            halo.color = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.13f);
-            halo.gameObject.SetActive(true);
-            var ring = NewImage(rect, "Ring", RingSprite.Get());
-            var body = NewImage(rect, "Body", SymbolSprite.Get(ShapeKind.Satellite, 0));
-            body.preserveAspect = true;
-            body.gameObject.SetActive(true);
-            var mark = NewImage(rect, "Mark", null);
-            go.SetActive(false);
-            return new Sat { Rect = rect, Body = body, Halo = halo, Glow = glow, Ring = ring, Mark = mark };
-        }
-
-        private void BuildPickRow()
-        {
-            var go = new GameObject("PickRow");
-            go.transform.SetParent(_safe, false);
-            _pickRow = go.AddComponent<RectTransform>();
-            _pickRow.anchorMin = _pickRow.anchorMax = new Vector2(0.5f, 0f);
-            _pickRow.pivot = new Vector2(0.5f, 0.5f);
-            _pickRow.sizeDelta = new Vector2(600f, 60f);
-            for (int i = 0; i < 5; i++)
-            {
-                var d = NewImage(_pickRow, "Pick", DiscSprite.Get());
-                d.rectTransform.sizeDelta = new Vector2(38f, 38f);
-                _pickDots.Add(d);
+                _botT = 0f;
             }
+            _botT += dt;
+            if (_botT < 0.5f || _botPlan.Count == 0) return;
+            _botT = 0.3f;
+            int next = _botPlan[0];
+            _botPlan.RemoveAt(0);
+            if (!_marked[next]) ToggleMark(next);
         }
-
-        private void BuildTimer()
-        {
-            var bg = new GameObject("TimerBar");
-            bg.transform.SetParent(_safe, false);
-            _timerBg = bg.AddComponent<RectTransform>();
-            _timerBg.anchorMin = _timerBg.anchorMax = new Vector2(0.5f, 1f);
-            _timerBg.pivot = new Vector2(0.5f, 0.5f);
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.sprite = RoundedRectSprite.Get(10);
-            bgImg.type = Image.Type.Sliced;
-            bgImg.color = new Color(1f, 1f, 1f, 0.12f);
-            bgImg.raycastTarget = false;
-
-            var fill = new GameObject("Fill");
-            fill.transform.SetParent(bg.transform, false);
-            _timerFill = fill.AddComponent<RectTransform>();
-            _timerFill.anchorMin = Vector2.zero;
-            _timerFill.anchorMax = Vector2.one;
-            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
-            var img = fill.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(10);
-            img.type = Image.Type.Sliced;
-            img.raycastTarget = false;
-            img.color = GoodColor;
-        }
-
-        private void SetTimerFraction(float fraction)
-        {
-            _timerFill.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
-            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
-            _timerFill.GetComponent<Image>().color = fraction > 0.5f ? Color.Lerp(SignalColor, GoodColor, (fraction - 0.5f) * 2f)
-                                                                      : Color.Lerp(BadColor, SignalColor, fraction * 2f);
-        }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-
-            AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 48, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            AddResultText("Extra", 44, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            go.SetActive(false);
-        }
-
-        private static Image NewImage(Transform parent, string name, Sprite sprite)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var r = go.AddComponent<RectTransform>();
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            var img = go.AddComponent<Image>();
-            img.sprite = sprite;
-            img.raycastTarget = false;
-            go.SetActive(false);
-            return img;
-        }
-
-        // ------------------------------------------------------------------ layout
-
-        private void Layout()
-        {
-            Rect safe = _safe.rect;
-            float sw = Mathf.Max(safe.width, 400f);
-            float sh = Mathf.Max(safe.height, 800f);
-            float contentW = sw - MarginU * 2f;
-
-            float y = GameHud.Height + 6f;
-            _timerBg.sizeDelta = new Vector2(contentW, 16f);
-            _timerBg.anchoredPosition = new Vector2(0f, -(y + 8f));
-            y += 16f + 14f;
-
-            const float promptH = 100f;
-            _prompt.rectTransform.sizeDelta = new Vector2(contentW, promptH);
-            _prompt.rectTransform.anchoredPosition = new Vector2(0f, -(y + promptH / 2f));
-            y += promptH + 10f;
-
-            // Campo: todo el ancho y lo que queda de alto, menos la fila de elegidos.
-            const float bottomH = 150f;
-            _arenaW = contentW + 20f;
-            _arenaH = Mathf.Max(600f, sh - y - bottomH);
-            _arenaH = Mathf.Min(_arenaH, _arenaW * 1.6f);
-            _fieldH = _arenaH / _arenaW;
-            _arena.sizeDelta = new Vector2(_arenaW, _arenaH);
-            _arena.anchoredPosition = new Vector2(0f, -(y + _arenaH / 2f));
-            _pickRow.anchoredPosition = new Vector2(0f, Mathf.Max(60f, (sh - y - _arenaH) * 0.5f));
-
-            // Tamaños proporcionales al campo (el radio del contrato es en anchos de campo).
-            float diameter = SatelliteSwarm.Radius * 2f * _arenaW;
-            _satSize = diameter * 1.25f; // el ícono trae margen para el borde y la sombra
-            foreach (var s in _sats)
-            {
-                s.Rect.sizeDelta = new Vector2(_satSize, _satSize);
-                Stretch(s.Body.rectTransform);
-                s.Halo.rectTransform.sizeDelta = new Vector2(diameter * 1.1f, diameter * 1.1f);
-                s.Glow.rectTransform.sizeDelta = new Vector2(_satSize * 2.3f, _satSize * 2.3f);
-                s.Ring.rectTransform.sizeDelta = new Vector2(diameter * 1.35f, diameter * 1.35f);
-                s.Mark.rectTransform.sizeDelta = new Vector2(_satSize * 0.5f, _satSize * 0.5f);
-                s.Mark.rectTransform.anchoredPosition = new Vector2(_satSize * 0.38f, _satSize * 0.38f);
-            }
-        }
-
-        private void UpdateHud()
-        {
-            _hud.SetLevel(_dda.PresentedLevel);
-            if (Endless) _hud.SetPoints(_points);
-            else _hud.SetInfo($"{Mathf.Min(_rounds.Count + 1, SatelliteContract.PrecisionRounds)} de {SatelliteContract.PrecisionRounds}");
-        }
+#endif
     }
 }
