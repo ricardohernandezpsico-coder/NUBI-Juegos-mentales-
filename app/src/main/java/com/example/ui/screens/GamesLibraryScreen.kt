@@ -236,7 +236,8 @@ internal fun cardData(
     playedToday = daysAgo == 0,
     progress = progress,
     measureTitle = def?.short?.replaceFirstChar { it.uppercase() },
-    measureValue = series.lastOrNull()?.let { p -> def?.let { measureText(it, p.value) } },
+    measureValue = def?.let { StarMeasures.zoneText(it, measures) }                        // Freno: la zona del promedio, no milisegundos
+      ?: series.lastOrNull()?.let { p -> def?.let { measureText(it, p.value) } },
     measureTag = when (kind) {
       DiscoveryKind.RECORD -> "Tu récord"
       DiscoveryKind.IMPROVING -> "Mejorando"

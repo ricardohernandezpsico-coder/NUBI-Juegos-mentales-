@@ -102,10 +102,55 @@ namespace NeuroVida.Games.Freno.Tests
             Assert.Greater(BrakeContract.GoPoints(500, 1400, 6, 1), BrakeContract.GoPoints(500, 1400, 1, 1));
             Assert.AreEqual(BrakeContract.GoPoints(500, 1400, 1, 11), BrakeContract.GoPoints(500, 1400, 1, 50));
             Assert.Greater(BrakeContract.StopPoints(400, 1), BrakeContract.StopPoints(150, 1));
-            Assert.AreEqual(80, BrakeContract.Score(0.8f, -1));
-            Assert.AreEqual(100, BrakeContract.Score(1f, 150));
-            Assert.AreEqual(50, BrakeContract.Score(1f, 450));
-            Assert.Greater(BrakeContract.Score(0.9f, 220), BrakeContract.Score(0.9f, 320));
+        }
+
+        // ------------------------------------------------------------------ puntaje sin SSRT (Tarea 57)
+
+        [Test]
+        public void Score_UnaPartidaPerfecta_Da100()
+        {
+            Assert.AreEqual(100, BrakeContract.Score(1f, 12, 12));
+            Assert.AreEqual(100, BrakeContract.Score(1f, 12, 6), "frenar la mitad de los altos ya da el cuarto completo");
+        }
+
+        [Test]
+        public void Score_IgnorarTodosLosAltos_PierdeElCuarto()
+        {
+            Assert.AreEqual(75, BrakeContract.Score(1f, 12, 0));
+            Assert.AreEqual(60, BrakeContract.Score(0.8f, 12, 0));
+        }
+
+        [Test]
+        public void Score_FrenarAlCincuentaPorCiento_SacaElCuartoCompleto()
+        {
+            Assert.AreEqual(100, BrakeContract.Score(1f, 10, 5));
+            Assert.AreEqual(85, BrakeContract.Score(0.8f, 10, 5), "0,75 × 0,8 + 0,25 = 0,85");
+        }
+
+        [Test]
+        public void Score_FrenarMenosDeLaMitad_DaProporcionalDelCuarto()
+        {
+            // stopRate 0,2 → 0,4 del cuarto: 10 puntos de 25
+            Assert.AreEqual(85, BrakeContract.Score(1f, 10, 2));
+        }
+
+        [Test]
+        public void Score_SinAltos_UsaSoloLosLanzamientos()
+        {
+            Assert.AreEqual(80, BrakeContract.Score(0.8f, 0, 0));
+            Assert.AreEqual(100, BrakeContract.Score(1f, 0, 0));
+            Assert.AreEqual(0, BrakeContract.Score(0f, 0, 0));
+        }
+
+        [Test]
+        public void Score_NoDependeDelSsrt_YSeMantieneEnRango()
+        {
+            // misma partida (mismos aciertos y altos): el puntaje es el mismo sin importar qué tan rápido frenó
+            Assert.AreEqual(BrakeContract.Score(0.9f, 20, 9), BrakeContract.Score(0.9f, 20, 9));
+            Assert.AreEqual(0, BrakeContract.Score(0f, 10, 0));
+            Assert.AreEqual(25, BrakeContract.Score(0f, 10, 10));
+            Assert.LessOrEqual(BrakeContract.Score(1f, 3, 3), 100);
+            Assert.GreaterOrEqual(BrakeContract.Score(-1f, 5, -2), 0, "valores raros no salen del rango");
         }
     }
 }

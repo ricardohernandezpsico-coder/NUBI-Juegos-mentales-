@@ -131,6 +131,8 @@ fun GameResultScreen(
   modeNote: String? = null,
   /** El atlas de La estrella intrusa (láminas ganadas y por repasar); solo lo usa ese juego. */
   atlas: com.example.data.AtlasState? = null,
+  /** Las medidas de los juegos estrella guardadas por partida (`star_measures`): «Tu freno» de Freno de Emergencia es el promedio de las últimas, no la de una sola partida. */
+  starMeasures: List<com.example.data.MeasurePoint> = emptyList(),
   /** Qué te sirve más ver primero (`result_focus`): solo cambia el orden de lo que se muestra. */
   resultFocus: ResultFocus = ResultFocus.DEFAULT
 ) {
@@ -398,20 +400,23 @@ fun GameResultScreen(
       )
     }
 
-    // Freno de Emergencia: "tu freno" (tiempo de frenado, SSRT) en un velocímetro de arcilla + cuántos altos frenó.
+    // Freno de Emergencia: "tu freno" como PROMEDIO de las últimas partidas, en un velocímetro de tres zonas con nombre (sin milisegundos: una sola partida trae pocos altos) + cuántos altos frenó.
     if (result.stopsTotal != null) {
       Spacer(Modifier.height(14.dp))
       val brake = result.brakeMs
-      if (brake != null) {
+      val reading = com.example.data.Brake.reading(starMeasures, brake, result.timestamp)
+      if (reading != null) {
         Text(
-          text = "Tu freno: $brake ms",
+          text = reading.headline,
           color = Clay.Coral,
           fontWeight = FontWeight.Bold,
           fontSize = 18.sp,
-          fontFamily = AppFamily
+          fontFamily = AppFamily,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(horizontal = 24.dp)
         )
         Spacer(Modifier.height(6.dp))
-        BrakeGauge(brake, Modifier.semantics { contentDescription = "Tu freno: $brake milisegundos" })
+        BrakeGauge(reading, Modifier.semantics { contentDescription = reading.spoken })
       }
       val record = result.brakeBestSsdMs?.let { " · récord: frenaste con el alto a $it ms" } ?: ""
       Text(
@@ -423,8 +428,9 @@ fun GameResultScreen(
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
       )
       Text(
-        text = if (brake != null) "Estimación de cuánto tardas en frenar una acción que ya ibas a hacer. Mientras más bajo, más rápido frenas. Con pocos altos por partida varía bastante: mira cómo va en varias."
-        else "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4. Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona.",
+        text = if (brake != null) "Mide cuánto tardas en frenar una acción que ya ibas a hacer. Una sola partida trae pocos altos: por eso mostramos el promedio de varias."
+        else "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4. Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona." +
+          if (reading != null) " Una sola partida trae pocos altos: por eso mostramos el promedio de varias." else "",
         color = TextSoft,
         fontSize = 15.sp,
         textAlign = TextAlign.Center,
@@ -1430,31 +1436,55 @@ private fun FilledSlots(filled: Int, total: Int, color: Color, modifier: Modifie
 // ---------- Freno de Emergencia: "tu freno" ----------
 
 /**
- * Velocímetro de arcilla: medio aro de 450 ms (izquierda, freno lento) a 150 ms (derecha, freno rápido), con la aguja
- * en el tiempo de frenado. Rótulos en texto a los lados: el valor no depende del color.
+ * Velocímetro de arcilla de tres ZONAS con nombre (de izquierda, freno lento, a derecha, freno rápido): «pausado», «firme» y «ágil», un tercio del medio aro cada una, separadas por una marca, con la aguja en el PROMEDIO de las
+ * últimas partidas. La zona se lee por su nombre, por su lugar y por la aguja (la de la persona va en negrita y subrayada), no por el color. Sin milisegundos.
  */
 @Composable
-private fun BrakeGauge(brakeMs: Int, modifier: Modifier = Modifier) {
-  Row(modifier, verticalAlignment = Alignment.Bottom) {
-    Text("lento", color = TextSoft, fontSize = 14.sp, modifier = Modifier.padding(end = 6.dp))
-    Canvas(Modifier.size(width = 150.dp, height = 84.dp)) {
-      val stroke = 14.dp.toPx()
+private fun BrakeGauge(reading: com.example.data.BrakeReading, modifier: Modifier = Modifier) {
+  val pos = com.example.data.Brake.gaugePosition(reading.averageMs)
+  // de izquierda a derecha: pausado, firme, ágil (del tono más apagado al más vivo)
+  val tints = listOf(Color(0xFF2B3680), Color(0xFF4A5AC0), Clay.Coral)
+  val names = listOf(com.example.data.BrakeZone.PAUSADO, com.example.data.BrakeZone.FIRME, com.example.data.BrakeZone.AGIL)
+  Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+    Canvas(Modifier.size(width = 240.dp, height = 112.dp)) {
+      val stroke = 18.dp.toPx()
       val r = size.width / 2f - stroke
-      val c = Offset(size.width / 2f, size.height - 6.dp.toPx())
+      val c = Offset(size.width / 2f, size.height - 8.dp.toPx())
       val topLeft = c - Offset(r, r)
       val arc = Size(r * 2f, r * 2f)
       drawArc(Clay.Ink, 180f, 180f, useCenter = false, topLeft = topLeft + Offset(0f, 3.dp.toPx()), size = arc, style = Stroke(stroke + 6.dp.toPx()))
-      drawArc(Color(0xFF1B2466), 180f, 180f, useCenter = false, topLeft = topLeft, size = arc, style = Stroke(stroke))
-      val k = ((450f - brakeMs) / 300f).coerceIn(0f, 1f)
-      drawArc(Clay.Coral, 180f, 180f * k, useCenter = false, topLeft = topLeft, size = arc, style = Stroke(stroke))
-      val ang = Math.toRadians((180.0 + 180.0 * k))
+      for (i in 0 until 3) {
+        val active = names[i] == reading.zone
+        drawArc(if (active) tints[i] else tints[i].copy(alpha = 0.55f), 180f + 60f * i, 60f, useCenter = false, topLeft = topLeft, size = arc, style = Stroke(stroke))
+      }
+      // las marcas entre zonas (a 60° y 120° del arco)
+      for (i in 1..2) {
+        val a = Math.toRadians(180.0 + 60.0 * i)
+        val from = c + Offset((kotlin.math.cos(a) * (r - stroke / 2f)).toFloat(), (kotlin.math.sin(a) * (r - stroke / 2f)).toFloat())
+        val to = c + Offset((kotlin.math.cos(a) * (r + stroke / 2f)).toFloat(), (kotlin.math.sin(a) * (r + stroke / 2f)).toFloat())
+        drawLine(Clay.Ink, from, to, 4.dp.toPx())
+      }
+      val ang = Math.toRadians(180.0 + 180.0 * pos)
       val tip = c + Offset((kotlin.math.cos(ang) * r * 0.95f).toFloat(), (kotlin.math.sin(ang) * r * 0.95f).toFloat())
       drawLine(Clay.Ink, c, tip, 7.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
       drawLine(Clay.Cream, c, tip, 3.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
       drawCircle(Clay.Ink, 8.dp.toPx(), c)
       drawCircle(Clay.Sun, 5.dp.toPx(), c)
     }
-    Text("rápido", color = TextSoft, fontSize = 14.sp, modifier = Modifier.padding(start = 6.dp))
+    Row(Modifier.width(240.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+      for (z in names) {
+        val active = z == reading.zone
+        Text(
+          text = z.label,
+          color = if (active) Clay.Cream else TextSoft,
+          fontSize = 15.sp,
+          fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+          textDecoration = if (active) androidx.compose.ui.text.style.TextDecoration.Underline else androidx.compose.ui.text.style.TextDecoration.None,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.weight(1f)
+        )
+      }
+    }
   }
 }
 

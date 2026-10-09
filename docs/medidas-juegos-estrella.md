@@ -115,6 +115,12 @@ medida, y esa también es una recomendación del consenso.
 **Qué NO se dice.** Con 10 a 20 altos por partida la estimación es ruidosa. Por eso el texto dice "estimación" y
 "varía bastante: mira cómo va en varias partidas".
 
+**Medida honesta y puntaje estable (Tarea 57, 9-oct).** El consenso (Verbruggen et al., 2019) pide **50 o más** ensayos de alto para estimar el SSRT de una persona; el juego trae 6 a 20 por partida, así que el SSRT de una sola partida es ruido. Por eso:
+- **El puntaje ya no usa el SSRT**: `100 × (0,75 × goAccuracy + 0,25 × min(1, stopRate / 0,5))` (lanzamientos de ir correctos a tiempo y altos frenados; la escalera del SSD lleva el frenado cerca del 50 %, así que frenar bien da el cuarto completo e ignorar el ALTO lo pierde).
+- **«Tu freno» se muestra como el PROMEDIO de las últimas ≤ 5 estimaciones válidas** (con la de hoy), en un velocímetro de tres zonas con nombre: **ágil** (< 230 ms), **firme** (230-300 ms) y **pausado** (> 300 ms), sin milisegundos en pantalla. Con 3 o más estimaciones dice «promedio de tus últimas N partidas»; con 1 o 2, «Primera lectura… Se afina con más partidas».
+- **Los cortes (230 y 300 ms) son una decisión de diseño, NO normas ni valores de referencia clínicos.** Se eligieron mirando los rangos típicos que reporta la literatura (adultos jóvenes sanos, ~200-250 ms en la tarea de señal de alto; más lento en mayores y con carga, p. ej. Verbruggen et al., 2019) para que la mayoría caiga en «firme» y las zonas sirvan para ver el cambio propio entre partidas, no para compararse con nadie. No se dice nada del estilo «tu freno es normal / anormal».
+- Cada partida sigue estimando el SSRT igual y lo guarda (en ms, interno) en `star_measures`; de ahí sale el promedio. Si todavía no hay estimación, el final lo explica.
+
 ---
 
 ## Acoplamiento: "Tu giro mental" y "Tu curva de giro"

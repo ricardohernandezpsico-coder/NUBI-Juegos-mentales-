@@ -14,11 +14,19 @@ en ~30% aparece la señal ¡ALTO! (octágono coral con texto + sirena) un instan
 - Enganche: cada despegue con llama, humo y temblor deja una estrella en el cielo; frenar da más puntos (más cuanto
   más tarde llegó el alto) y empuja el medidor "Límite del freno" (marca sol = récord, aviso "¡Nuevo límite!"); no
   frenar = el cohete da un salto y vuelve (sin choques).
+- **Puntaje (Tarea 57, 9-oct)**: `BrakeContract.Score = 100 × (0,75 × goAccuracy + 0,25 × min(1, stopRate / 0,5))`; goAccuracy = lanzamientos
+  correctos a tiempo ÷ lanzamientos de ir y stopRate = altos frenados ÷ altos (sin altos en la partida cuenta solo goAccuracy). **Ya no depende del SSRT.**
+  Motivo: con 6 a 20 altos por partida el SSRT de UNA partida es ruido (el consenso de Verbruggen et al., 2019 pide 50 o más) y no debe mover el puntaje ni
+  el rango. La escalera del SSD lleva el frenado cerca del 50 %, así que quien frena bien saca el cuarto completo y quien ignora el ALTO lo pierde.
 - Medida propia: **tu freno** (SSRT por integración con reemplazo de omisiones; -1 con menos de 6 altos o
-  p(responder|alto) fuera de 0,25-0,75, el criterio del consenso de Verbruggen et al., 2019; si no hay estimación, el
-  final lo explica y pide lanzar sin esperar al ALTO). Viaja en `brake_ms / stops_ok / stops_total / brake_best_ssd_ms` →
-  `GamePlayResult.brakeMs / stopsOk / stopsTotal / brakeBestSsdMs` → `GameResultScreen`: velocímetro de arcilla
-  (450 ms lento → 150 ms rápido) + "Frenaste N de M altos · récord".
+  p(responder|alto) fuera de 0,25-0,75, el criterio del consenso de Verbruggen et al., 2019). Cada partida lo estima igual y lo guarda en
+  `star_measures` (clave `brake`, en ms, interno). Viaja en `brake_ms / stops_ok / stops_total / brake_best_ssd_ms` →
+  `GamePlayResult.brakeMs / stopsOk / stopsTotal / brakeBestSsdMs` → `GameResultScreen`. **Se muestra por ZONAS y como PROMEDIO** (`data/Brake.kt`): el promedio de las
+  últimas ≤ 5 estimaciones válidas (con la de hoy) en un velocímetro de 3 zonas con nombre: «ágil» (< 230 ms), «firme» (230-300 ms) y «pausado» (> 300 ms), con la aguja en
+  el promedio. Con 3 o más: «Tu freno, promedio de tus últimas N partidas: zona firme»; con 1 o 2: «Primera lectura: zona firme. Se afina con más partidas». Sin ms en la
+  pantalla (tampoco en Juegos y Hoy: ahí dice «zona firme»). Debajo: «Frenaste N de M altos · récord» (igual que antes) y la nota «Una sola partida trae pocos altos: por eso
+  mostramos el promedio de varias». Si esta vez no se pudo estimar, el final lo explica y pide lanzar sin esperar al ALTO (y, si hay partidas anteriores, muestra su promedio).
+  El «Límite del freno» (récord de SSD) y lo demás del juego no cambian.
 - Arte: `BrakeSprites` (alto, plataforma, botón), `GameWorld.LaunchBase`. Vista previa:
   `python3 tools/art-preview/freno.py <raw>` → `docs/previews/freno.png`. Probado por Ricardo (27-sep): "me gustó,
   funciona muy bien".

@@ -695,11 +695,11 @@ namespace NeuroVida.Games.Freno
 
             float goAcc = _goTrials > 0 ? (float)_goCorrect / _goTrials : 0f;
             int ssrt = BrakeContract.Ssrt(_goRts, _stopSsds, _stopResponded);
-            int score = BrakeContract.Score(goAcc, ssrt);
+            int score = BrakeContract.Score(goAcc, _stopSsds.Count, _stopsOk);       // el puntaje ya no depende del tiempo de frenado (Tarea 57); el SSRT sigue en la telemetría como medida
             int avgMs = _rtCount > 0 ? (int)(_rtSum / _rtCount) : 0;
 
             SetPrompt("Fin de los lanzamientos", GoodColor);
-            ShowResult(score, ssrt);
+            ShowResult(score);
 
             var telemetry = new StroopTelemetry
             {
@@ -727,12 +727,12 @@ namespace NeuroVida.Games.Freno
             yield break;
         }
 
-        private void ShowResult(int score, int ssrt)
+        private void ShowResult(int score)
         {
             _exit.Show();
             _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Frenos de acero!" : score >= 65 ? "¡Buena base!" : "Lanzamientos completados";
             _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_launched} despegues · {_stopsOk} de {_stopSsds.Count} frenos";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = ssrt > 0 ? $"Tu freno: {ssrt} ms" : $"Mejor racha {_bestStreak}";
+            _resultRoot.Find("Extra").GetComponent<Text>().text = $"Mejor racha {_bestStreak}";          // «Tu freno» (en zonas y como promedio de varias partidas) se muestra en la pantalla final de la app
             _resultRoot.gameObject.SetActive(true);
             StartCoroutine(AnimateResult(score));
         }

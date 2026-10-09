@@ -100,6 +100,15 @@ object StarMeasures {
   )
 
   fun def(key: String) = defs.firstOrNull { it.key == key }
+
+  /**
+   * «Tu freno» no se muestra en milisegundos sino en zonas y como promedio de las últimas partidas (Tarea 57, ver [Brake]): para esa medida, el texto de la zona del promedio («zona firme»); para las demás, null (se muestran con su unidad).
+   * También null si todavía no hay ninguna estimación válida de freno.
+   */
+  fun zoneText(def: MeasureDef, points: List<MeasurePoint>): String? {
+    if (def.key != Brake.KEY) return null
+    return Brake.reading(points)?.let { "zona ${it.zone.label}" }
+  }
   fun defForGame(gameId: String) = defs.firstOrNull { it.gameId == gameId }
 
   private fun better(def: MeasureDef, a: Float, b: Float) = if (def.lowerIsBetter) a < b else a > b

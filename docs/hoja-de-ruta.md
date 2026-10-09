@@ -31,7 +31,7 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 
 Cada juego sale con su tutorial (Freno ya lo tiene; los otros tres lo reciben aquí). Orden:
 
-1. **Freno de Emergencia**: el SSRT (lo que tarda la persona en frenar) sale del puntaje y queda solo como medida; el velocímetro muestra rangos, no un número exacto; las medidas del final salen del promedio de varias partidas, no de una sola.
+1. **Freno de Emergencia** — **Hecho (Tarea 57)**: el SSRT (lo que tarda la persona en frenar) salió del puntaje (`100 × (0,75 × lanzamientos correctos + 0,25 × min(1, altos frenados ÷ altos ÷ 0,5))`) y queda solo como medida; «Tu freno» se muestra como el promedio de las últimas ≤ 5 estimaciones válidas, en un velocímetro de tres zonas con nombre (ágil < 230 ms, firme 230-300, pausado > 300; cortes de diseño, no normas), sin milisegundos; Juegos y Hoy dicen la zona.
 2. **Satélites**: probarlo con personas y decidir si sigue o se retira.
 3. **Piloto Estelar y Rescate relámpago**: cambios para esquivar patentes (`docs/nombre-marca-y-riesgos.md`). **Pendiente de aprobación de Ricardo** antes de programar.
 

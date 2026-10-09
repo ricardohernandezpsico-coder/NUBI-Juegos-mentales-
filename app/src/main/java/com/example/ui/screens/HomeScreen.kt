@@ -315,7 +315,7 @@ internal fun AreaDetail(
         val m = StarMeasures.latest(measures, g.id)
         val last = lastPlayed[g.id]
         val detail = when {
-          m != null -> "${m.first.format(m.second)} ${m.first.unit} · tu última"
+          m != null -> StarMeasures.zoneText(m.first, measures)?.let { "$it · promedio reciente" } ?: "${m.first.format(m.second)} ${m.first.unit} · tu última"
           last == null -> "Sin jugar aún"
           else -> playedAgo(now, last)
         }

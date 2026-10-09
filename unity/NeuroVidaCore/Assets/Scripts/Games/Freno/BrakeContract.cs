@@ -156,14 +156,22 @@ namespace NeuroVida.Games.Freno
         public static int StopPoints(int ssdMs, int streak) =>
             150 + Math.Max(0, ssdMs) / 5 + 10 * Math.Min(Math.Max(streak - 1, 0), 10);
 
-        /// <summary>Puntaje 0-100: lanzamientos correctos a tiempo (50%) y tiempo de frenado (50%, 450 ms → 0,
-        /// 150 ms → 1). Sin SSRT confiable, solo los lanzamientos.</summary>
-        public static int Score(float goAccuracy, int ssrtMs)
+        /// <summary>Peso de los lanzamientos de ir y de los altos frenados en el puntaje, y la tasa de frenado que ya da el cuarto completo (la escalera del SSD lleva el frenado cerca del 50 %).</summary>
+        public const float ScoreGoWeight = 0.75f, ScoreStopWeight = 0.25f, ScoreStopRateFull = 0.5f;
+
+        /// <summary>
+        /// Puntaje 0-100 (Tarea 57): <c>100 × (0,75 × goAccuracy + 0,25 × min(1, stopRate / 0,5))</c>. <paramref name="goAccuracy"/> = lanzamientos correctos a tiempo ÷ lanzamientos de ir; stopRate = altos frenados
+        /// (<paramref name="stopsHeld"/>) ÷ altos (<paramref name="stopsTotal"/>). Como la escalera del SSD lleva el frenado cerca del 50 %, quien frena bien saca el cuarto completo y quien ignora el ALTO lo pierde.
+        /// Sin altos en la partida (stopRate sin definir) cuenta solo goAccuracy. Ya NO depende del SSRT: con 6 a 20 altos por partida esa estimación es ruido (Verbruggen et al., 2019 piden 50 o más), así que
+        /// queda como medida (promedio de varias partidas, en zonas) y no entra en el puntaje.
+        /// </summary>
+        public static int Score(float goAccuracy, int stopsTotal, int stopsHeld)
         {
             float acc = Math.Max(0f, Math.Min(1f, goAccuracy));
-            if (ssrtMs <= 0) return (int)Math.Round(acc * 100f);
-            float brake = Math.Max(0f, Math.Min(1f, (450f - ssrtMs) / 300f));
-            return Math.Max(0, Math.Min(100, (int)Math.Round((0.5f * acc + 0.5f * brake) * 100f)));
+            if (stopsTotal <= 0) return (int)Math.Round(acc * 100f);
+            float stopRate = Math.Max(0f, Math.Min(1f, (float)stopsHeld / stopsTotal));
+            float brake = Math.Min(1f, stopRate / ScoreStopRateFull);
+            return Math.Max(0, Math.Min(100, (int)Math.Round((ScoreGoWeight * acc + ScoreStopWeight * brake) * 100f)));
         }
 
         private static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
