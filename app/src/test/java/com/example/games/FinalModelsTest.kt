@@ -1,6 +1,8 @@
 package com.example.games
 
 import com.example.data.MeasurePoint
+import com.example.data.PuntaEntry
+import com.example.data.PuntaTier
 import com.example.model.GamePlayResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -307,6 +309,118 @@ class FinalModelsTest {
   @Test
   fun `todos los textos de los finales del grupo 3 cumplen las reglas de vocabulario`() {
     for (r in listOf(carga, engranajes, acoplamiento)) {
+      val m = FinalModels.forGame(r, points("x", 60f, 70f))!!
+      val all = listOfNotNull(m.boxTitle, m.headline, m.headlineUnit, m.dataLine, m.progressPhrase, m.trick, m.why, m.source, m.note, m.spoken).joinToString(" ").lowercase()
+      for (bad in listOf("entren", "cerebro", "cognitiv", "percentil", "otras personas")) assertTrue("${r.gameId}: «$bad»", !all.contains(bad))
+    }
+  }
+
+  // ------------------------------------------------------------------ grupo 4 (Lenguaje)
+
+  private val punta = result("anagramas") { copy(puntaSolo = 5, puntaPista = 2, puntaLetras = 0, puntaVista = 1, puntaMs = 6500, puntaWords = listOf(PuntaEntry("luna", PuntaTier.SOLO), PuntaEntry("barco", PuntaTier.PISTA), PuntaEntry("nube", PuntaTier.VISTA))) }
+  private val meteoros = result("meteoros") { copy(lexBandSeen = listOf(8, 8, 8, 8, 8, 8), lexBandHits = listOf(8, 8, 7, 6, 5, 3), lexFaSeen = listOf(7, 7, 7), lexFaHits = listOf(0, 1, 2), lexRtCommonMs = 700, lexRtRareMs = 1100, lexRareWords = listOf("alcayata", "badil")) }
+  private val disparate = result("disparate") { copy(svSeenType = listOf(8, 8, 8, 8, 8, 8), svRtType = listOf(900, 950, 1300, 1500, 1100, 1000), svWpm = 142, svSubtleHits = 6, svSubtleSeen = 8, svBestStreak = 14) }
+  private val cosecha = result("cosecha") { copy(harvWords = 34, harvCommonFound = 21, harvCommonTotal = 48, harvClusterPct = 75, harvFirst20 = 12, harvLast20 = 6, harvStar = "mariposa", harvBest = "mariposa", harvMissed = listOf("saciar", "acosar"), harvHints = 1) }
+  private val intrusa = result("intrusa") { copy(intrSeenType = listOf(3, 3, 2, 2, 2, 2), intrHitsType = listOf(3, 2, 2, 2, 1, 1), intrBonusSeen = 5, intrBonusHits = 3, intrRtMs = 1800) }
+
+  @Test
+  fun `los juegos del grupo 4 usan el final con sentido solo con sus datos propios`() {
+    for (r in listOf(punta, meteoros, disparate, cosecha, intrusa)) assertTrue(r.gameId, FinalModels.usesMeaningful(r))
+    for (id in listOf("anagramas", "meteoros", "disparate", "cosecha", "intrusa")) assertTrue(id, !FinalModels.usesMeaningful(result(id)))
+  }
+
+  @Test
+  fun `todos los juegos con medida usan ya el final con sentido`() {
+    val ids = listOf(punta, meteoros, disparate, cosecha, intrusa, tinta, piloto, freno, satelites, rescate, carga, engranajes, acoplamiento, constelaciones, rastro, bodega, correo, result("aterrizaje") { copy(numlineErrorPct = 8f) }).map { it.gameId }
+    assertEquals("los 18 juegos", 18, ids.toSet().size)
+    for (id in ids) assertNotNull(id, com.example.data.StarMeasures.defForGame(id))
+  }
+
+  @Test
+  fun `En la punta de la lengua dice las palabras por tu cuenta y su truco condicional`() {
+    val m = FinalModels.forGame(punta, emptyList())!!
+    assertEquals("Tu cielo de palabras", m.boxTitle)
+    assertEquals("5 de 8", m.headline)
+    assertEquals("palabras encontradas por tu cuenta", m.headlineUnit)
+    assertEquals("Tardaste 6,5 s en decir «¡La tengo!» en las que salieron solas", m.dataLine)
+    assertEquals("Si una no sale, piensa en cómo empieza o en otra parecida: suele destrabarla.", m.trick)
+    assertEquals("las azules vuelven: es el dato cuando no hay tiempo que decir", "Las azules vuelven en otra partida.", FinalModels.forGame(punta.copy(puntaSolo = 1, puntaPista = 2, puntaVista = 1), emptyList())!!.dataLine)
+    assertEquals(listOf("63 %", "—", "—"), m.chips.map { it.value })
+    assertEquals("Fuente: Shafto y otros, 2007", m.source)
+    assertTrue(m.why.startsWith("Pusiste en juego lo que usas para encontrar una palabra que conoces y que no sale."))
+  }
+
+  @Test
+  fun `Lluvia de meteoros dice el vocabulario reconocido y el consejo de las letras cambiadas de lugar`() {
+    val m = FinalModels.forGame(meteoros, points("vocab", 40f, 50f, 60f))!!
+    assertEquals("Tu vocabulario", m.boxTitle)
+    assertEquals("51 %", m.headline)
+    assertEquals("de las palabras menos comunes, reconocidas", m.headlineUnit)
+    assertTrue(m.dataLine!!, m.dataLine!!.startsWith("Reconoces "))
+    assertEquals("Las letras cambiadas de lugar engañan a casi todos: leemos la palabra entera. Mira el centro de la palabra para no caer.", m.trick)
+    assertEquals(listOf("51 %", "50 %", "60 %"), m.chips.map { it.value })
+    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    // sin lo que engaña: el truco general
+    assertEquals("Si dudas, mira el centro de la palabra: ahí suelen esconderse las letras cambiadas.", FinalModels.forGame(meteoros.copy(lexFaSeen = listOf(7, 7, 7), lexFaHits = listOf(0, 0, 0)), emptyList())!!.trick)
+    val few = FinalModels.forGame(meteoros.copy(lexBandSeen = listOf(2, 2, 2, 2, 2, 2), lexBandHits = listOf(2, 2, 2, 2, 2, 2)), emptyList())!!
+    assertEquals("—", few.headline)
+    assertNull(few.dataLine)
+  }
+
+  @Test
+  fun `Verdad o disparate dice las palabras por minuto, lo que te frena y el truco de ese tipo de frase`() {
+    val m = FinalModels.forGame(disparate, points("wpm", 130f, 140f, 150f))!!
+    assertEquals("Tu lectura con comprensión", m.boxTitle)
+    assertEquals("142 ppm", m.headline)
+    assertTrue(m.headlineUnit.startsWith("palabras por minuto, leyendo y decidiendo"))
+    assertTrue(m.dataLine!!, m.dataLine!!.contains("te toman 0,6 s más que las frases simples"))
+    assertTrue(m.trick, m.trick.isNotBlank() && m.trick != "Con un «no», lee la frase sin él y después dale la vuelta.")
+    assertEquals(listOf("142 ppm", "140 ppm", "150 ppm"), m.chips.map { it.value })
+    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    // sin tipo lento: el dato es tu mejor racha y el truco es el general
+    val even = FinalModels.forGame(disparate.copy(svRtType = listOf(900, 900, 900, 900, 900, 900)), emptyList())!!
+    assertEquals("Tu mejor racha: 14 seguidas", even.dataLine)
+    assertEquals("Con un «no», lee la frase sin él y después dale la vuelta.", even.trick)
+    assertEquals("—", FinalModels.forGame(disparate.copy(svWpm = null), emptyList())!!.headline)
+  }
+
+  @Test
+  fun `Cosecha de palabras dice las comunes que encontraste y tu palabra estrella`() {
+    val m = FinalModels.forGame(cosecha, points("harvest", 40f, 44f, 50f))!!
+    assertEquals("Tu cosecha", m.boxTitle)
+    assertEquals("21 de 48", m.headline)
+    assertEquals("palabras comunes", m.headlineUnit)
+    assertEquals("Tu palabra estrella: MARIPOSA", m.dataLine)
+    assertEquals("la búsqueda se inclina a los racimos: su frase trae el consejo", "Exprimes bien cada idea (casa, casas, caso). Prueba también saltar a otra letra inicial.", m.trick)
+    assertEquals("Cuando una palabra funciona, busca sus parientes; si se agotan, salta a otra letra inicial.", FinalModels.forGame(cosecha.copy(harvClusterPct = 50), emptyList())!!.trick)
+    assertEquals(listOf("44 %", "45 %", "50 %"), m.chips.map { it.value })
+    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    // sin palabra estrella el dato es el ritmo
+    assertEquals("Arrancas fuerte y bajas al final, es lo normal: si te atascas, cambia de idea.", FinalModels.forGame(cosecha.copy(harvStar = null, harvBest = null), emptyList())!!.dataLine)
+    // sin comunes medidas, la cifra es el total de palabras
+    val noCommon = FinalModels.forGame(cosecha.copy(harvCommonFound = null, harvCommonTotal = null), emptyList())!!
+    assertEquals("34", noCommon.headline)
+    assertEquals("palabras", noCommon.headlineUnit)
+  }
+
+  @Test
+  fun `La estrella intrusa dice las rondas bien y las trampas que te enganaron`() {
+    val m = FinalModels.forGame(intrusa, points("atlas", 70f, 75f, 80f))!!
+    assertEquals("Tu red de significados", m.boxTitle)
+    assertEquals("11 de 14", m.headline)
+    assertEquals("rondas bien", m.headlineUnit)
+    assertEquals("Las trampas te engañaron 2 de 4", m.dataLine)
+    assertEquals("Antes de tocar, pregúntate qué TIPO de cosa es cada una.", m.trick)
+    assertEquals(listOf("79 %", "75 %", "80 %"), m.chips.map { it.value })
+    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    // las resististe todas: el dato es el bonus
+    assertEquals("¿Qué las une? Nombraste 3 de 5", FinalModels.forGame(intrusa.copy(intrHitsType = listOf(3, 3, 2, 2, 2, 2)), emptyList())!!.dataLine)
+    assertEquals("Fuente: Mirman, Landrigan y Britt, 2017", m.source)
+  }
+
+  @Test
+  fun `todos los textos de los finales del grupo 4 cumplen las reglas de vocabulario`() {
+    for (r in listOf(punta, meteoros, disparate, cosecha, intrusa)) {
       val m = FinalModels.forGame(r, points("x", 60f, 70f))!!
       val all = listOfNotNull(m.boxTitle, m.headline, m.headlineUnit, m.dataLine, m.progressPhrase, m.trick, m.why, m.source, m.note, m.spoken).joinToString(" ").lowercase()
       for (bad in listOf("entren", "cerebro", "cognitiv", "percentil", "otras personas")) assertTrue("${r.gameId}: «$bad»", !all.contains(bad))

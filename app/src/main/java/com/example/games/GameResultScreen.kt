@@ -391,219 +391,151 @@ fun GameResultScreen(
       MeaningfulResult(model)
     }
 
-    // Lluvia de meteoros (pantalla final, 1-oct: mezcla de las propuestas A y C de docs/previews/meteoros-final.png): "tu
-    // vocabulario" = una cifra grande ("8 de cada 10") + tres barras (comunes, intermedias, raras) + una frase; "tu
-    // reconocimiento" en una línea; "tu filtro" con el total y tres renglones; "tu colección" en una línea.
-    val lexSeen = result.lexBandSeen
-    val lexHits = result.lexBandHits
-    if (lexSeen != null && lexHits != null) {
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "meteoros" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
       val vocab = com.example.data.Vocabulary
-      val bands = vocab.bandPercents(lexSeen, lexHits, result.lexFaSeen, result.lexFaHits)
-      val groups = vocab.groupPercents(lexSeen, lexHits, result.lexFaSeen, result.lexFaHits)
+      val groups = vocab.groupPercents(result.lexBandSeen, result.lexBandHits, result.lexFaSeen, result.lexFaHits)
       val phrase = vocab.phraseFor(groups)
-      Spacer(Modifier.height(14.dp))
-      Text("Tu vocabulario", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = "Tu vocabulario. $phrase" },
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        val lowGroup = vocab.lowestGroup(groups)
-        vocab.GROUP_LABELS.forEachIndexed { i, label ->
-          VocabBar(label, groups[i], i == lowGroup, Modifier.fillMaxWidth().padding(vertical = 4.dp))
+      val model = remember(result, starMeasures) { FinalModels.meteoros(result, starMeasures) }
+      MeaningfulResult(model, detail = {
+        Text("Por grupo de palabras", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = "Tu vocabulario. $phrase" }, horizontalAlignment = Alignment.CenterHorizontally) {
+          val lowGroup = vocab.lowestGroup(groups)
+          vocab.GROUP_LABELS.forEachIndexed { i, label -> VocabBar(label, groups[i], i == lowGroup, Modifier.fillMaxWidth().padding(vertical = 4.dp)) }
         }
-      }
-
-      vocab.recognitionSentence(result.lexRtCommonMs, result.lexRtRareMs)?.let { line ->
-        Spacer(Modifier.height(14.dp))
-        Text("Tu reconocimiento", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Text(line, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 16.dp))
-        Text("Es normal: las raras tardan más.", color = TextSoft, fontSize = 14.sp)
-      }
-
-      val faSeen = result.lexFaSeen
-      val faHits = result.lexFaHits
-      vocab.filterHeadline(faSeen, faHits)?.let { headline ->
-        Spacer(Modifier.height(14.dp))
-        Text("Tu filtro", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Text(headline, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-      }
-
-      result.lexRareWords?.takeIf { it.isNotEmpty() }?.let { words ->
-        Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-          Text("Tu colección", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
-          Text(
-            text = "+${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
-            color = Clay.Lime,
-            fontWeight = FontWeight.Bold,
-            fontSize = 17.sp,
-            fontFamily = AppFamily
-          )
+        vocab.recognitionSentence(result.lexRtCommonMs, result.lexRtRareMs)?.let { line ->
+          Spacer(Modifier.height(14.dp))
+          Text("Tu reconocimiento", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          Text(line, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 16.dp))
+          Text("Es normal: las raras tardan más.", color = TextSoft, fontSize = 14.sp)
         }
-        Text(words.joinToString(" · "), color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
-      }
+        vocab.filterHeadline(result.lexFaSeen, result.lexFaHits)?.let { headline ->
+          Spacer(Modifier.height(14.dp))
+          Text("Tu filtro", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          Text(headline, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
+        }
+        result.lexRareWords?.takeIf { it.isNotEmpty() }?.let { words ->
+          Spacer(Modifier.height(14.dp))
+          Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Tu colección", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
+            Text(
+              text = "+${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
+              color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 17.sp, fontFamily = AppFamily
+            )
+          }
+          Text(words.joinToString(" · "), color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+        }
+      })
     }
 
-    // Cosecha de palabras (pantalla final, maqueta docs/previews/cosecha.png, pantalla 4): "tu cosecha" (cifra grande de palabras y
-    // "de las comunes, N de M"), "tu manera de buscar" (barra partida racimos / saltos, con la frase-consejo y "cómo buscaste en esta
-    // partida"), "tu ritmo" (primeros contra últimos 20 s), tu palabra estrella y "también podías". Sin recuadros, nunca solo color.
-    val harvWords = com.example.data.Harvest.words(result.harvWords)
-    if (harvWords != null) {
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "cosecha" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
       val harv = com.example.data.Harvest
-      Spacer(Modifier.height(14.dp))
-      Text("Tu cosecha", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = harv.spoken(harvWords, result.harvCommonFound, result.harvCommonTotal) },
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        // la cifra grande es lo propio de la cosecha (las palabras comunes que habia); el total de palabras ya esta en la fila "aciertos"
-        val common = harv.common(result.harvCommonFound, result.harvCommonTotal)
-        Row(verticalAlignment = Alignment.Bottom) {
-          Text(if (common != null) "${common.first} de ${common.second}" else "$harvWords", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
-          Text(
-            if (common != null) "palabras comunes" else harv.wordsLabel(harvWords), color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 8.dp, bottom = 10.dp)
-          )
-        }
-      }
-
-      harv.clusterPct(result.harvClusterPct)?.let { pct ->
-        Spacer(Modifier.height(14.dp))
-        Text("Tu manera de buscar", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Column(Modifier.fillMaxWidth().padding(horizontal = 34.dp, vertical = 6.dp)) {
-          HarvestSplitBar(pct, Modifier.fillMaxWidth().height(14.dp))
-          Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            Text(harv.clusterLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Text(harv.jumpLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+      val model = remember(result, starMeasures) { FinalModels.cosecha(result, starMeasures) }
+      val harvWords = harv.words(result.harvWords) ?: 0
+      MeaningfulResult(model, detail = {
+        DetailLine(harv.spoken(harvWords, result.harvCommonFound, result.harvCommonTotal).replaceFirstChar { it.uppercase() }, "cosecha_total", strong = true)
+        harv.clusterPct(result.harvClusterPct)?.let { pct ->
+          Spacer(Modifier.height(14.dp))
+          Text("Tu manera de buscar", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          Column(Modifier.fillMaxWidth().padding(horizontal = 34.dp, vertical = 6.dp)) {
+            HarvestSplitBar(pct, Modifier.fillMaxWidth().height(14.dp))
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+              Text(harv.clusterLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+              Text(harv.jumpLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+          }
+          harv.searchLine(pct)?.takeIf { it != model.trick }?.let {
+            Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
           }
         }
-        harv.searchLine(pct)?.let {
-          Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
+        val first = result.harvFirst20
+        val last = result.harvLast20
+        harv.rhythmLine(first, last)?.let { line ->
+          Spacer(Modifier.height(14.dp))
+          Text("Tu ritmo", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 6.dp)) {
+            HarvestRhythmRow("Primeros 20 s", first ?: 0, harv.barFraction(first ?: 0, last ?: 0), Clay.Grape, Modifier.fillMaxWidth().padding(vertical = 3.dp))
+            HarvestRhythmRow("Últimos 20 s", last ?: 0, harv.barFraction(last ?: 0, first ?: 0), Clay.Sky, Modifier.fillMaxWidth().padding(vertical = 3.dp))
+          }
+          if (line != model.dataLine) Text(line, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
         }
-      }
-
-      val first = result.harvFirst20
-      val last = result.harvLast20
-      harv.rhythmLine(first, last)?.let { line ->
-        Spacer(Modifier.height(14.dp))
-        Text("Tu ritmo", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 6.dp)) {
-          HarvestRhythmRow("Primeros 20 s", first ?: 0, harv.barFraction(first ?: 0, last ?: 0), Clay.Grape, Modifier.fillMaxWidth().padding(vertical = 3.dp))
-          HarvestRhythmRow("Últimos 20 s", last ?: 0, harv.barFraction(last ?: 0, first ?: 0), Clay.Sky, Modifier.fillMaxWidth().padding(vertical = 3.dp))
-        }
-        Text(line, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-      }
-
-      harv.starTitle(result.harvStar, result.harvBest)?.let { (title, word) ->
-        Spacer(Modifier.height(14.dp))
-        Text(title, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Text(word, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 34.sp, fontFamily = AppFamily, modifier = Modifier.padding(vertical = 2.dp))
-      }
-      harv.missedLine(result.harvMissed)?.let {
-        Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
-      }
-      result.harvHints?.takeIf { it > 0 }?.let {
-        Text("Pistas de Nubi: $it", color = TextSoft, fontSize = 14.sp)
-      }
+        harv.missedLine(result.harvMissed)?.let { DetailLine(it, "cosecha_missed", soft = false) }
+        result.harvHints?.takeIf { it > 0 }?.let { DetailLine("Pistas de Nubi: $it", "cosecha_hints") }
+      })
     }
 
-    // La estrella intrusa (pantalla final, Atlas celeste): cada dato aparece UNA vez y en este orden: "tu red de significados" (una barra
-    // por categoría con al menos 3 rondas, la más baja marcada con TEXTO; el total de aciertos ya está en la fila "aciertos"), "las
-    // trampas" (solo cuántas te engañaron: lo resistido ya está en la barra), "¿qué las une?", "tu atlas" SIN recuadro (hasta 3
-    // miniaturas de láminas ganadas hoy y una línea de cifras), la rapidez como dato secundario y la nota al pie.
-    val intrSeen = result.intrSeenType
-    if (intrSeen != null) {
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "intrusa" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
       val atlasLogic = com.example.data.Atlas
-      Spacer(Modifier.height(14.dp))
-      Text("Tu red de significados", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+      val intrSeen = result.intrSeenType
+      val model = remember(result, starMeasures) { FinalModels.intrusa(result, starMeasures) }
       val rows = atlasLogic.categoryRows(intrSeen, result.intrHitsType)
-      if (rows.isNotEmpty()) {
-        Column(
-          Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 8.dp).semantics { contentDescription = atlasLogic.spoken(intrSeen, result.intrHitsType) }
-        ) {
-          rows.forEach { row -> AtlasBar(row, Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
-        }
-      } else {
-        Text(
-          "Juega unas rondas más para ver tu red: cada tipo se mide con 3 rondas o más.",
-          color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-        )
-      }
-      if (atlasLogic.trapReading(intrSeen, result.intrHitsType) != null) {
-        Spacer(Modifier.height(12.dp))
-        Text("Las trampas", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        atlasLogic.trapFooledLine(intrSeen, result.intrHitsType)?.let {
-          Text(it, color = Clay.Coral, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+      MeaningfulResult(model, detail = {
+        Text("Por tipo de cosa", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+        if (rows.isNotEmpty()) {
+          Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 8.dp).semantics { contentDescription = atlasLogic.spoken(intrSeen, result.intrHitsType) }) {
+            rows.forEach { row -> AtlasBar(row, Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
+          }
+        } else {
+          DetailLine("Juega unas rondas más para ver tu red: cada tipo se mide con 3 rondas o más.", "intrusa_few")
         }
         atlasLogic.trapReading(intrSeen, result.intrHitsType)?.let {
+          Spacer(Modifier.height(12.dp))
+          Text("Las trampas", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          atlasLogic.trapFooledLine(intrSeen, result.intrHitsType)?.takeIf { f -> f != model.dataLine }?.let { f ->
+            Text(f, color = Clay.Coral, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+          }
           Text(com.example.data.ResultAdvice.body(it), color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
         }
-      }
-      atlasLogic.bonusLine(result.intrBonusSeen, result.intrBonusHits)?.let {
-        Spacer(Modifier.height(12.dp))
-        Text("¿Qué las une?", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Text(it, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-      }
-      // Tu atlas: las láminas de hoy (hasta 3) y las cifras, sin recuadro
-      val today = remember { java.time.LocalDate.now().toEpochDay().toInt() }
-      val figures = remember { com.example.data.FigureBank.load(context) }
-      val summary = atlas?.let { atlasLogic.summary(it, today) }
-      if (summary != null) {
-        Spacer(Modifier.height(14.dp))
-        Text("Tu atlas", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        val thumbs = atlas?.let { atlasLogic.todayPlates(it, today) }.orEmpty().mapNotNull { figures[it] }
-        if (thumbs.isNotEmpty()) {
-          Spacer(Modifier.height(6.dp))
-          com.example.ui.components.AtlasThumbRow(thumbs, Modifier.padding(horizontal = 16.dp))
+        atlasLogic.bonusLine(result.intrBonusSeen, result.intrBonusHits)?.takeIf { b -> model.dataLine?.endsWith(b) != true }?.let {
+          Spacer(Modifier.height(12.dp))
+          Text("¿Qué las une?", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          Text(it, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         }
-        Text(summary, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp))
-      }
-      atlasLogic.speedLine(result.intrRtMs)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
-      }
-      if (rows.any { it.lowest }) {
-        Text(
-          "Cada tipo se mide con 3 rondas o más. Sirve para ver dónde practicar, no para compararte.",
-          color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp)
-        )
-      }
+        // Tu atlas: las láminas de hoy (hasta 3) y las cifras, sin recuadro
+        val today = remember { java.time.LocalDate.now().toEpochDay().toInt() }
+        val figures = remember { com.example.data.FigureBank.load(context) }
+        val summary = atlas?.let { atlasLogic.summary(it, today) }
+        if (summary != null) {
+          Spacer(Modifier.height(14.dp))
+          Text("Tu atlas", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          val thumbs = atlas?.let { atlasLogic.todayPlates(it, today) }.orEmpty().mapNotNull { figures[it] }
+          if (thumbs.isNotEmpty()) {
+            Spacer(Modifier.height(6.dp))
+            com.example.ui.components.AtlasThumbRow(thumbs, Modifier.padding(horizontal = 16.dp))
+          }
+          Text(summary, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp))
+        }
+        atlasLogic.speedLine(result.intrRtMs)?.takeIf { sp -> sp != model.dataLine }?.let { DetailLine(it, "intrusa_speed") }
+        if (rows.any { it.lowest }) DetailLine("Cada tipo se mide con 3 rondas o más. Sirve para ver dónde practicar, no para compararte.", "intrusa_note")
+      })
     }
 
-    // En la punta de la lengua (pantalla final, docs/diseno-punta-de-la-lengua.md §6): «Tu cielo de palabras». «Encontraste X de N por tu cuenta» (las palabras
-    // con lucero dorado), el desglose en una línea, la lista de palabras con su lucero (el nombre del lucero va en TEXTO: nunca solo color), las azules que vuelven y,
-    // con 3 o más solas, el tiempo hasta «¡La tengo!». Cada dato aparece UNA vez; sin recuadros.
-    val puntaSolo = result.puntaSolo
-    if (puntaSolo != null) {
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "anagramas" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
       val punta = com.example.data.Punta
+      val puntaSolo = result.puntaSolo
       val puntaTotal = punta.total(puntaSolo, result.puntaPista, result.puntaLetras, result.puntaVista)
-      Spacer(Modifier.height(14.dp))
-      Text("Tu cielo de palabras", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = punta.spoken(puntaSolo, puntaTotal) }.testTag("punta_headline"),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text("Encontraste", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Row(verticalAlignment = Alignment.Bottom) {
-          Text("${puntaSolo.coerceIn(0, maxOf(puntaTotal, 0))} de $puntaTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
-          Text("por tu cuenta", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))
-        }
-        punta.breakdown(puntaSolo, result.puntaPista, result.puntaLetras, result.puntaVista)?.let {
-          Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
-        }
-      }
+      val model = remember(result, starMeasures) { FinalModels.punta(result, starMeasures) }
       val puntaEntries = result.puntaWords.orEmpty()
-      if (puntaEntries.isNotEmpty()) {
-        Spacer(Modifier.height(10.dp))
-        Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp).testTag("punta_words")) {
-          puntaEntries.forEach { PuntaWordRow(it, Modifier.fillMaxWidth().padding(vertical = 4.dp)) }
+      val puntaRows = listOfNotNull(
+        punta.breakdown(puntaSolo, result.puntaPista, result.puntaLetras, result.puntaVista)?.let { "punta_breakdown" to it },
+        punta.blueNote(result.puntaVista)?.let { "punta_blue_note" to it },
+        punta.speedLine(result.puntaMs, puntaSolo)?.let { "punta_speed" to it }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = if (puntaEntries.isEmpty() && puntaRows.isEmpty()) null else ({
+        if (puntaEntries.isNotEmpty()) {
+          Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp).testTag("punta_words")) {
+            puntaEntries.forEach { PuntaWordRow(it, Modifier.fillMaxWidth().padding(vertical = 4.dp)) }
+          }
         }
-      }
-      punta.blueNote(result.puntaVista)?.let {
-        Text(it, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp).testTag("punta_blue_note"))
-      }
-      punta.speedLine(result.puntaMs, puntaSolo)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
-      }
+        puntaRows.forEach { (tag, line) -> DetailLine(line, tag) }
+      }))
     }
 
     // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
@@ -696,63 +628,39 @@ fun GameResultScreen(
       })
     }
 
-    // ¿Verdad o disparate? (pantalla final, maqueta docs/previews/disparate.png): "tu lectura con comprensión" (cifra grande de
-    // palabras por minuto), "qué te frena" (barras por tipo de frase, la más lenta marcada con TEXTO además del color), "tu
-    // precisión" y "tu mejor racha". Sin recuadros; nada de perfil de sesgo.
-    val svSeen = result.svSeenType
-    if (svSeen != null) {
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "disparate" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
       val reading = com.example.data.Reading
-      val wpm = reading.wpm(result.svWpm)
       val rows = reading.typeRows(result.svRtType)
-      Spacer(Modifier.height(14.dp))
-      Text("Tu lectura con comprensión", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      if (wpm != null) {
-        Column(
-          Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = reading.spoken(wpm) },
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          Text("$wpm", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 48.sp, fontFamily = AppFamily)
-          Text("palabras por minuto", color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-          Text("leyendo y decidiendo, en las frases que acertaste", color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
+      val model = remember(result, starMeasures) { FinalModels.disparate(result, starMeasures) }
+      val slow = reading.slowText(rows)
+      val subtle = reading.subtleLine(result.svSubtleHits, result.svSubtleSeen)
+      val streak = reading.streakLine(result.svBestStreak)
+      MeaningfulResult(model, detail = {
+        if (rows.size >= 2) {
+          Text("Qué te frena", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 6.dp)) {
+            rows.forEach { row -> ReadingBar(row, reading.barFraction(row.ms, rows), Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
+          }
+          when {
+            slow != null -> if (slow != model.dataLine) DetailLine(slow, "disparate_slow", soft = false)
+            reading.balanced(rows) -> DetailLine("Todas las frases te toman parecido. ¡Buen ritmo!", "disparate_balanced", soft = false)
+          }
         }
-      } else {
-        Text(
-          "Juega un poco más para medir tu lectura: hacen falta unas 10 respuestas bien.",
-          color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-        )
-      }
-
-      if (rows.size >= 2) {
-        Spacer(Modifier.height(14.dp))
-        Text("Qué te frena", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 6.dp)) {
-          rows.forEach { row -> ReadingBar(row, reading.barFraction(row.ms, rows), Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
+        subtle?.let {
+          Spacer(Modifier.height(14.dp))
+          Text("Disparates sutiles", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          Text(it, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
         }
-        val slow = reading.slowText(rows)
-        when {
-          slow != null -> Text(
-            text = slow,
-            color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp)
-          )
-          reading.balanced(rows) -> Text(
-            "Todas las frases te toman parecido. ¡Buen ritmo!",
-            color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp)
-          )
+        streak?.takeIf { "Tu mejor racha: $it" != model.dataLine }?.let { line ->
+          Spacer(Modifier.height(14.dp))
+          Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Tu mejor racha", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
+            Text(line, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          }
         }
-      }
-
-      reading.subtleLine(result.svSubtleHits, result.svSubtleSeen)?.let { line ->
-        Spacer(Modifier.height(14.dp))
-        Text("Disparates sutiles", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Text(line, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-      }
-      reading.streakLine(result.svBestStreak)?.let { line ->
-        Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-          Text("Tu mejor racha", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
-          Text(line, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        }
-      }
+      })
     }
 
     // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
@@ -828,20 +736,6 @@ fun GameResultScreen(
       })
     }
 
-    // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
-    val hasStarMeasure = listOf(
-      result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.puntaSolo
-    ).any { it != null }
-    if (hasStarMeasure) {
-      Text(
-        text = "Medida de esta partida: cambia de un día a otro. Lo que vale es cómo evoluciona, no un resultado suelto. No es un diagnóstico.",
-        color = TextSoft.copy(alpha = 0.8f),
-        fontSize = 14.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 32.dp, vertical = 10.dp)
-      )
-    }
     }  // fin de measures
 
     // Lo que subió con la partida (la nota del modo y el cambio de etapa): va con «Lo que avancé».

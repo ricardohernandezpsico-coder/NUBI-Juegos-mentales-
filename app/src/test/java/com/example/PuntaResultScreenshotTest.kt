@@ -13,7 +13,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.swipeUp
@@ -31,7 +32,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** El final de «En la punta de la lengua» con datos de ejemplo: «Encontraste X de N por tu cuenta», la lista con su lucero y las azules que vuelven. */
+/**
+ * El final de «En la punta de la lengua» con datos de ejemplo (final con sentido, `docs/finales-con-sentido.md`): «Tu cielo de palabras» con «X de N encontradas por tu cuenta»; la lista con su lucero y las azules que vuelven
+ * siguen, sin repetirse, detrás de «Ver el detalle de tu partida».
+ */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
@@ -54,11 +58,12 @@ class PuntaResultScreenshotTest {
         }
       }
     }
-    composeTestRule.onNodeWithTag("punta_headline").performScrollToNodeSafely()
-    composeTestRule.onNodeWithTag("punta_headline").assertIsDisplayed()
-    composeTestRule.onNodeWithTag("punta_words").assertIsDisplayed()
-    composeTestRule.onNodeWithTag("punta_blue_note").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("meaningful_box").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("punta_words").assertDoesNotExist()   // la lista va en el detalle, cerrado por defecto
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/punta-final.png")
+    openDetail()
+    composeTestRule.onNodeWithTag("punta_words").performScrollTo().assertIsDisplayed()
+    composeTestRule.onNodeWithTag("punta_blue_note").performScrollTo().assertIsDisplayed()
     composeTestRule.onAllNodes(hasScrollAction()).onFirst().performTouchInput { swipeUp(durationMillis = 100) }
     composeTestRule.waitForIdle()
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/punta-final-2.png")
@@ -74,13 +79,16 @@ class PuntaResultScreenshotTest {
         }
       }
     }
-    composeTestRule.onNodeWithTag("punta_headline").performScrollToNodeSafely()
-    composeTestRule.onNodeWithTag("punta_headline").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("meaningful_box").assertIsDisplayed()
+    openDetail()
+    composeTestRule.onNodeWithTag("punta_words").performScrollTo().assertIsDisplayed()
     composeTestRule.onAllNodes(hasTestTag("punta_blue_note")).assertCountEquals(0)
+    composeTestRule.onAllNodes(hasTestTag("punta_speed")).assertCountEquals(0)   // con menos de 3 solas no hay tiempo que mostrar
   }
 
-  /** Lleva la lista de abajo a la vista (la pantalla de resultado se desliza). */
-  private fun androidx.compose.ui.test.SemanticsNodeInteraction.performScrollToNodeSafely() {
-    runCatching { composeTestRule.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(hasTestTag("punta_headline")) }
+  /** Abre «Ver el detalle de tu partida» (la pantalla de resultado se desliza). */
+  private fun openDetail() {
+    composeTestRule.onNodeWithTag("detail_toggle").performScrollTo().performClick()
+    composeTestRule.waitForIdle()
   }
 }

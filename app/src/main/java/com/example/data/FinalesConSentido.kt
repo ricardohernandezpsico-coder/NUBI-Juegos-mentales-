@@ -137,6 +137,9 @@ object FinalesConSentido {
   /** «212 °/s» (grados por segundo, redondeado); «—» sin dato. */
   fun degreesText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} °/s"
 
+  /** «142 ppm» (palabras por minuto, redondeado); «—» sin dato. */
+  fun ppmText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} ppm"
+
   /** «3,2 a la vez» (coma decimal); «—» sin dato. */
   fun atOnceText(value: Float?): String = if (value == null || value.isNaN()) "—" else String.format(java.util.Locale("es"), "%.1f", value) + " a la vez"
 

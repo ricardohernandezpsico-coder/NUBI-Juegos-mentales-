@@ -1,6 +1,7 @@
 package com.example.games
 
 import com.example.data.Acoplamiento
+import com.example.data.Atlas
 import com.example.data.Bodega
 import com.example.data.Brake
 import com.example.data.Carga
@@ -8,13 +9,17 @@ import com.example.data.Constelaciones
 import com.example.data.DosOrillas
 import com.example.data.Engranajes
 import com.example.data.FinalesConSentido
+import com.example.data.Harvest
 import com.example.data.Mail
 import com.example.data.MeasurePoint
 import com.example.data.Piloto
+import com.example.data.Punta
+import com.example.data.Reading
 import com.example.data.Rescate
 import com.example.data.ResultAdvice
 import com.example.data.Satelites
 import com.example.data.Trail
+import com.example.data.Vocabulary
 import com.example.model.GamePlayResult
 import com.example.ui.components.MeaningfulResultModel
 import com.example.ui.components.ResultChip
@@ -22,7 +27,7 @@ import kotlin.math.roundToInt
 
 /**
  * Lo que dice el «final con sentido» de cada juego (Etapa 3, `docs/finales-con-sentido.md`), armado desde la partida y las medidas guardadas. Lógica pura con pruebas: la pantalla (`GameResultScreen`) solo lo dibuja con `MeaningfulResult`.
- * Grupo 1 (Memoria): Constelaciones, Rastro de luz, Bodega de carga y La estación de correo. Grupo 2 (Atención): Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Rescate relámpago. Grupo 3 (Razonamiento): Carga exacta, Engranajes y Acoplamiento.
+ * Grupo 1 (Memoria): Constelaciones, Rastro de luz, Bodega de carga y La estación de correo. Grupo 2 (Atención): Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Rescate relámpago. Grupo 3 (Razonamiento): Carga exacta, Engranajes y Acoplamiento. Grupo 4 (Lenguaje): En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras y La estrella intrusa.
  * (Aterrizaje Lunar, hecho antes, arma el suyo en `GameResultScreen`.)
  *
  * «Lo que hiciste»: la medida propia que el juego ya mostraba, en grande, más UN dato tuyo (el récord si lo superaste hoy; si no, el más útil de los que ya mostraba: ver cada juego). «Tu avance»: Hoy, Tu promedio y Tu mejor en la
@@ -35,7 +40,16 @@ object FinalModels {
   /** Para el rastro (luces seguidas, números enteros): media luz. */
   const val TOLERANCE_LIGHTS = 0.5f
 
-  /** Carga exacta y Engranajes (% de 6 a 12 ensayos por partida: uno solo pesa de 8 a 17 puntos): 10 puntos. */
+  /** Lluvia de meteoros («tu vocabulario», % ponderado sobre unas 30 a 60 palabras): 5 puntos. */
+  const val TOLERANCE_VOCAB = 5f
+
+  /** ¿Verdad o disparate? («tu lectura», palabras por minuto; entre partidas parecidas varía unas 10 ppm): 10 ppm. */
+  const val TOLERANCE_WPM = 10f
+
+  /** Cosecha de palabras («las comunes encontradas», % sobre unas 20 a 50 comunes: cada una pesa de 2 a 5 puntos): 5 puntos. */
+  const val TOLERANCE_HARVEST = 5f
+
+  /** Carga exacta y Engranajes (% de 6 a 12 ensayos por partida: uno solo pesa de 8 a 17 puntos): 10 puntos. En la punta de la lengua y La estrella intrusa (de 6 a 12 palabras o rondas) también. */
   const val TOLERANCE_PERCENT_SHORT = 10f
 
   /** Acoplamiento («tu giro mental», grados por segundo; la pendiente del tiempo contra el ángulo cambia de 20 a 40 °/s entre partidas parecidas): 30 °/s. */
@@ -71,6 +85,11 @@ object FinalModels {
     "calculo" -> result.cargaAlone != null
     "engranajes" -> result.engrEtapa != null
     "acoplamiento" -> result.dockDocked != null || result.rotationSpeedDps != null
+    "anagramas" -> result.puntaSolo != null
+    "meteoros" -> result.lexBandSeen != null && result.lexBandHits != null
+    "disparate" -> result.svSeenType != null
+    "cosecha" -> Harvest.words(result.harvWords) != null
+    "intrusa" -> result.intrSeenType != null
     else -> false
   }
 
@@ -89,6 +108,11 @@ object FinalModels {
     result.gameId == "calculo" -> carga(result, measures)
     result.gameId == "engranajes" -> engranajes(result, measures)
     result.gameId == "acoplamiento" -> acoplamiento(result, measures)
+    result.gameId == "anagramas" -> punta(result, measures)
+    result.gameId == "meteoros" -> meteoros(result, measures)
+    result.gameId == "disparate" -> disparate(result, measures)
+    result.gameId == "cosecha" -> cosecha(result, measures)
+    result.gameId == "intrusa" -> intrusa(result, measures)
     else -> null
   }
 
@@ -300,6 +324,92 @@ object FinalModels {
       unit = if (dps != null) "los grados que giras la pieza en tu mente cada segundo" else "Se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
       dataLine = if (result.dockNewRecord == true) record else Acoplamiento.dockedLine(result.dockDocked) ?: record,
       conditionalTrick = null
+    )
+  }
+
+  // ------------------------------------------------------------------ Grupo 4 (Lenguaje)
+
+  /** En la punta de la lengua («Tu cielo de palabras»): las palabras que encontraste por tu cuenta; los cuadros van en %. */
+  fun punta(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
+    val punta = Punta
+    val solo = result.puntaSolo
+    val total = punta.total(solo, result.puntaPista, result.puntaLetras, result.puntaVista)
+    return build(
+      result, measures, key = "punta", copy = FinalesConSentido.copy("anagramas")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
+      todayValue = punta.mark(solo, total),
+      boxTitle = "Tu cielo de palabras",
+      headline = if (solo != null && total > 0) "${solo.coerceIn(0, total)} de $total" else "—",
+      unit = "palabras encontradas por tu cuenta",
+      dataLine = punta.speedLine(result.puntaMs, solo) ?: punta.blueNote(result.puntaVista) ?: punta.breakdown(solo, result.puntaPista, result.puntaLetras, result.puntaVista),
+      conditionalTrick = punta.message(solo, total)?.let { ResultAdvice.tipOf(it) }
+    )
+  }
+
+  /** Lluvia de meteoros («Tu vocabulario»): el % reconocido de las palabras menos comunes (menos las inventadas tocadas). */
+  fun meteoros(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
+    val vocab = Vocabulary
+    val bands = vocab.bandPercents(result.lexBandSeen, result.lexBandHits, result.lexFaSeen, result.lexFaHits)
+    val groups = vocab.groupPercents(result.lexBandSeen, result.lexBandHits, result.lexFaSeen, result.lexFaHits)
+    val mark = vocab.mark(bands, result.lexBandSeen)
+    return build(
+      result, measures, key = "vocab", copy = FinalesConSentido.copy("meteoros")!!, tolerance = TOLERANCE_VOCAB, format = FinalesConSentido::percentText,
+      todayValue = mark,
+      boxTitle = "Tu vocabulario",
+      headline = mark?.let { "${it.roundToInt()} %" } ?: "—",
+      unit = if (mark != null) "de las palabras menos comunes, reconocidas" else "Esta vez no hubo palabras suficientes para medir tu vocabulario.",
+      dataLine = if (mark != null) vocab.phraseFor(groups) else null,
+      conditionalTrick = vocab.filterAdvice(result.lexFaSeen, result.lexFaHits)
+    )
+  }
+
+  /** ¿Verdad o disparate? («Tu lectura con comprensión»): palabras por minuto, leyendo y decidiendo; más es mejor. */
+  fun disparate(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
+    val reading = Reading
+    val wpm = reading.wpm(result.svWpm)
+    val rows = reading.typeRows(result.svRtType)
+    return build(
+      result, measures, key = "wpm", copy = FinalesConSentido.copy("disparate")!!, tolerance = TOLERANCE_WPM, format = FinalesConSentido::ppmText,
+      todayValue = reading.mark(wpm),
+      boxTitle = "Tu lectura con comprensión",
+      headline = wpm?.let { "$it ppm" } ?: "—",
+      unit = if (wpm != null) "palabras por minuto, leyendo y decidiendo, en las frases que acertaste" else "Juega un poco más para medir tu lectura: hacen falta unas 10 respuestas bien.",
+      dataLine = reading.slowText(rows) ?: reading.streakLine(result.svBestStreak)?.let { "Tu mejor racha: $it" },
+      conditionalTrick = reading.tip(rows)?.let { ResultAdvice.tipOf(it) }
+    )
+  }
+
+  /** Cosecha de palabras («Tu cosecha»): las palabras comunes que había y encontraste; tu palabra estrella es el dato tuyo. */
+  fun cosecha(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
+    val harv = Harvest
+    val words = harv.words(result.harvWords) ?: 0
+    val common = harv.common(result.harvCommonFound, result.harvCommonTotal)
+    val star = harv.starTitle(result.harvStar, result.harvBest)
+    val search = harv.searchLine(result.harvClusterPct)
+    val pct = harv.clusterPct(result.harvClusterPct)
+    return build(
+      result, measures, key = "harvest", copy = FinalesConSentido.copy("cosecha")!!, tolerance = TOLERANCE_HARVEST, format = FinalesConSentido::percentText,
+      todayValue = harv.mark(result.harvCommonFound, result.harvCommonTotal),
+      boxTitle = "Tu cosecha",
+      headline = if (common != null) "${common.first} de ${common.second}" else "$words",
+      unit = if (common != null) "palabras comunes" else harv.wordsLabel(words),
+      dataLine = star?.let { it.first + ": " + it.second } ?: harv.rhythmLine(result.harvFirst20, result.harvLast20),
+      // la frase de «tu manera de buscar» trae su consejo cuando la búsqueda se inclina mucho a un lado; si no, el general de la tabla
+      conditionalTrick = if (pct != null && (pct >= Harvest.MANY_CLUSTERS || pct <= Harvest.MANY_JUMPS)) search else null
+    )
+  }
+
+  /** La estrella intrusa («Tu red de significados»): las rondas bien; las trampas que te engañaron son el dato tuyo. */
+  fun intrusa(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
+    val atlas = Atlas
+    val totals = atlas.totals(result.intrSeenType, result.intrHitsType)
+    return build(
+      result, measures, key = "atlas", copy = FinalesConSentido.copy("intrusa")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
+      todayValue = atlas.mark(result.intrSeenType, result.intrHitsType),
+      boxTitle = "Tu red de significados",
+      headline = totals?.let { "${it.first} de ${it.second}" } ?: "—",
+      unit = "rondas bien",
+      dataLine = atlas.trapFooledLine(result.intrSeenType, result.intrHitsType) ?: atlas.bonusLine(result.intrBonusSeen, result.intrBonusHits)?.let { "¿Qué las une? " + it } ?: atlas.speedLine(result.intrRtMs),
+      conditionalTrick = atlas.trapReading(result.intrSeenType, result.intrHitsType)?.let { ResultAdvice.tipOf(it) }
     )
   }
 
