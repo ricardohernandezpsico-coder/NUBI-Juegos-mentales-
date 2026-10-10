@@ -85,13 +85,6 @@ object ResultAdvice {
     if (result.bodGroup != null) out += tipOf(Bodega.tip(result.correctAnswers, result.totalTrials) ?: "")
     // Constelaciones: cuando alguna vez se te escapó una compañera ya vista, dar vuelta primero una luz nueva.
     if (result.conGroup != null) out += tipOf(Constelaciones.tip(result.correctAnswers, result.totalTrials) ?: "")
-    // Rumbo a Casa: de dónde sale lo que te aleja de casa.
-    val along = result.homingAlong
-    val lateral = result.homingLateral
-    val beacon = result.homingBeacon
-    if (result.homingErrorPct != null && along != null && lateral != null && beacon != null) {
-      Homing.sourceMessage(Homing.source(Homing.trips(along, lateral, beacon)))?.let { out += tipOf(it) }
-    }
     // Tinta o Palabra: si la palabra o el cambio de orilla te frenaron mucho (≥ 0,3 s).
     if (result.interferenceMs != null || result.switchCostMs != null) {
       out += DosOrillas.tips(result.interferenceMs, result.switchCostMs).map { tipOf(it) }

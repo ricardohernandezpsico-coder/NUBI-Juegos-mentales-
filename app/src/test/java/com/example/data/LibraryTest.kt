@@ -12,7 +12,7 @@ class LibraryTest {
   private val games = listOf(
     LibraryGame("anagramas", "LENGUAJE", star = false),
     LibraryGame("secuencia", "MEMORIA", star = false),
-    LibraryGame("rumbo", "MEMORIA", star = true),
+    LibraryGame("bodega", "MEMORIA", star = true),
     LibraryGame("radar", "ATENCION", star = true)
   )
 
@@ -24,7 +24,7 @@ class LibraryTest {
     val p = Library.picks(planet("LENGUAJE", 6), games, last, now, dayOf) { names[it] ?: it }
     assertEquals("anagramas", p[0].gameId)
     assertEquals("Tu zona de Lenguaje está quieta hace 6 días.", p[0].reason)
-    assertEquals("rumbo", p[1].gameId)
+    assertEquals("bodega", p[1].gameId)
     assertTrue(p[1].reason.startsWith("Nuevo para ti"))
     assertEquals("secuencia", p[2].gameId)
     assertEquals("No lo juegas hace 3 días.", p[2].reason)

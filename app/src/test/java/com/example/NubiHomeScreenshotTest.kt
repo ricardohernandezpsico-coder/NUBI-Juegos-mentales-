@@ -67,7 +67,7 @@ class NubiHomeScreenshotTest {
         Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
           AreaDetail(
             areaKey = AREA_ORDER[0], statuses = statuses, names = names, history = emptyList(),
-            measures = listOf(MeasurePoint(now - day, "homing", 18f)), now = now, lang = AppLanguage.SPANISH,
+            measures = listOf(MeasurePoint(now - day, "numline", 18f)), now = now, lang = AppLanguage.SPANISH,
             onArea = {}, onPlay = {}, onClose = {}
           )
         }

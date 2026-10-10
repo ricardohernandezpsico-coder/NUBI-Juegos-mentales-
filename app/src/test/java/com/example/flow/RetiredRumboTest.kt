@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -47,17 +46,16 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * «Bitácora de Misión» (`bitacora`, retirada el 5-oct-2026 por pedido de Ricardo): no aparece en Juegos, en el camino diario, en Hoy (ya no hay línea de «Misión del día»), en Avance ni en las medidas,
- * pero NADA se borra: sus partidas y su avance siguen en la base, su misión (`mission_log`) y su medida (`recall`) siguen guardadas aunque ya no se lean. Datos viejos de verdad en Room y en las preferencias.
+ * «Rumbo a Casa» (`rumbo`, retirado el 10-oct-2026 por decisión de Ricardo tras probarlo con una persona de 60 años o más): no aparece en Juegos, en el camino diario, en Hoy, en Avance ni en las medidas, pero NADA se borra: sus partidas y su avance siguen en la base, su medida (`homing`) sigue guardada aunque ya no se lea, y una partida vieja suya sigue contando en la racha y en el total. Datos viejos de verdad en Room y en las preferencias.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w412dp-h915dp", sdk = [36])
-class RetiredBitacoraTest {
+class RetiredRumboTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   private lateinit var app: Application
-  private val old = "bitacora"
+  private val old = "rumbo"
   private val day = 24L * 60 * 60 * 1000
 
   @Before
@@ -81,7 +79,7 @@ class RetiredBitacoraTest {
 
   private fun today() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-  /** Un teléfono con lo que dejó Bitácora: 3 partidas, su avance, su misión de hoy a medias, una medida `recall` y un camino de HOY que la nombra. */
+  /** Un teléfono con lo que dejó Rumbo: 3 partidas, su avance, una medida `homing` y un camino de HOY que lo nombra. */
   private fun seedOldData() = seedOldDataOnce()
 
   private fun seedOldDataOnce() = runBlocking {
@@ -95,9 +93,7 @@ class RetiredBitacoraTest {
       )
     }
     db().dailySessionDao().insertOrUpdate(DailySessionEntity(dateKey = today(), gameIdsRaw = "$old,calculo,stroop", completedCount = 1, scoresRaw = ""))
-    app.getSharedPreferences("mission_log", android.content.Context.MODE_PRIVATE).edit()
-      .putString("date", today()).putInt("seed", 4321).putLong("encodedAt", now - 60_000L).putInt("archivedTotal", 17).commit()
-    val points = (0..3).map { MeasurePoint(now - (4 - it) * day, "recall", 40f + it * 10f) }
+    val points = (0..3).map { MeasurePoint(now - (4 - it) * day, "homing", 40f - it * 5f) }
     app.getSharedPreferences("star_measures", android.content.Context.MODE_PRIVATE).edit().putString("points", StarMeasures.encode(points)).commit()
   }
 
@@ -109,12 +105,13 @@ class RetiredBitacoraTest {
     assertEquals("MEMORIA", GameRegistry.retiredDomains[old]!!.name)
     assertEquals(18, GameRegistry.allGames.size)
     assertEquals(setOf("parejas", "secuencia", "bodega", "correo"), GameRegistry.allGames.filter { it.domain.name == "MEMORIA" }.map { it.id }.toSet())
-    assertNull("ya no hay medida de Bitácora", StarMeasures.defForGame(old))
-    assertNull(StarMeasures.def("recall"))
+    assertNull("ya no hay medida de Rumbo", StarMeasures.defForGame(old))
+    assertNull(StarMeasures.def("homing"))
+    assertTrue("todos los juegos de la app tienen tutorial", GameRegistry.allGames.all { it.id in com.example.bridge.UnityGameLauncher.TUTORIAL_GAMES })
   }
 
   @Test
-  fun `las partidas de Bitacora cuentan para la racha y el total pero no para los logros de juegos`() {
+  fun `las partidas de Rumbo cuentan para la racha y el total pero no para los logros de juegos`() {
     val now = System.currentTimeMillis()
     fun played(id: String, daysAgo: Int) = GamePlayResult(gameId = id, score = 80, correctAnswers = 10, totalTrials = 12, timed = true, level = 4, timestamp = now - daysAgo * day)
     val history = listOf(played(old, 1), played(old, 2), played(old, 3), played("calculo", 5))
@@ -126,22 +123,20 @@ class RetiredBitacoraTest {
   }
 
   @Test
-  fun `el historial y la mision se conservan, no se muestran y la medida vieja no se lee`() {
+  fun `el historial se conserva, no se muestra y la medida vieja no se lee`() {
     seedOldData()
     val vm = newViewModel()
     TestSupport.awaitUntil(message = "Las partidas viejas no se cargaron") { vm.gameHistory.value.isNotEmpty() }
     // los datos siguen ahí: nada se borra
     assertEquals(3, runBlocking { db().gameResultDao().getAllResultsSync().count { it.gameId == old } })
     assertNotNull(runBlocking { db().gameProgressDao().getProgressForGameSync(old) })
-    val mission = app.getSharedPreferences("mission_log", android.content.Context.MODE_PRIVATE)
-    assertEquals("la misión guardada sigue ahí (va en el respaldo)", 17, mission.getInt("archivedTotal", -1))
-    assertTrue(app.getSharedPreferences("star_measures", android.content.Context.MODE_PRIVATE).getString("points", "")!!.contains("recall"))
+    assertTrue("la medida guardada sigue ahí (va en el respaldo)", app.getSharedPreferences("star_measures", android.content.Context.MODE_PRIVATE).getString("points", "")!!.contains("homing"))
     // pero no aparece en lo que muestra la app
     assertEquals(18, vm.gameRanks.value.size)
     assertTrue(vm.gameRanks.value.none { it.gameId == old })
     assertEquals(18, vm.gameLevelsForProgress.value.size)
     assertFalse(vm.gameLevelsForProgress.value.containsKey(old))
-    assertTrue("sin medidas de Bitácora en Avance", StarMeasures.discover(vm.starMeasures.value, System.currentTimeMillis()) == null)
+    assertTrue("sin medidas de Rumbo en Avance", StarMeasures.discover(vm.starMeasures.value, System.currentTimeMillis()) == null)
     // no se puede abrir, ni desde Juegos ni desde las herramientas
     vm.launchGame(old)
     assertNull(vm.activeGame.value)
@@ -150,7 +145,7 @@ class RetiredBitacoraTest {
   }
 
   @Test
-  fun `un camino de hoy guardado con Bitacora se cambia por otro juego de Memoria y conserva el avance`() {
+  fun `un camino de hoy guardado con Rumbo se cambia por otro juego de Memoria y conserva el avance`() {
     seedOldData()
     val vm = newViewModel()
     // El estado inicial del repositorio no nombra el juego retirado y tiene 0 completados: hay que esperar al camino GUARDADO (1 completado).
@@ -166,7 +161,7 @@ class RetiredBitacoraTest {
   }
 
   @Test
-  fun `los caminos nuevos nunca traen Bitacora y la sesion de hoy se puede empezar`() {
+  fun `los caminos nuevos nunca traen Rumbo y la sesion de hoy se puede empezar`() {
     seedOldData()
     val vm = newViewModel()
     TestSupport.awaitUntil { vm.dailySession.value.gameIds.none { it == old } && vm.dailySession.value.gameIds.size == 3 }
@@ -176,7 +171,7 @@ class RetiredBitacoraTest {
   }
 
   @Test
-  fun `Hoy, Juegos y Avance se abren sin errores, no nombran Bitacora y Hoy ya no tiene la linea de la mision`() {
+  fun `Hoy, Juegos y Avance se abren sin errores y no nombran Rumbo`() {
     seedOldData()
     val vm = newViewModel()
     TestSupport.awaitUntil { vm.gameHistory.value.isNotEmpty() && vm.dailySession.value.gameIds.none { it == old } }
@@ -199,8 +194,15 @@ class RetiredBitacoraTest {
       screen.intValue = i
       composeTestRule.mainClock.advanceTimeBy(500)
       composeTestRule.waitForIdle()
-      assertEquals("«Bitácora» no debe verse en la pantalla $i", 0, composeTestRule.onAllNodesWithText("Bitácora", substring = true).fetchSemanticsNodes().size)
-      assertEquals("la línea de la misión ya no existe (pantalla $i)", 0, composeTestRule.onAllNodesWithTag("mission_line").fetchSemanticsNodes().size)
+      assertEquals("«Rumbo» no debe verse en la pantalla $i", 0, composeTestRule.onAllNodesWithText("Rumbo", substring = true).fetchSemanticsNodes().size)
     }
+  }
+
+  @Test
+  fun `un resultado de Rumbo que llegara de Unity ya no se lee ni se guarda`() {
+    val r = com.example.bridge.NativeReceiver.parse(
+      """{"user_id":"u1","game_id":"rumbo","session_metrics":{"correct_trials":6,"total_trials":8,"calculated_score":70,"average_response_time_ms":0,"level":3,"timed":true}}"""
+    )
+    assertNull("el juego está retirado: no tiene lector de resultados", r)
   }
 }

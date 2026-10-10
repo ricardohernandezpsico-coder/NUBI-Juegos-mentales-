@@ -28,8 +28,7 @@ class ResultAdviceTest {
   @Test
   fun `nada se repite ni se oculta, la medida mas el consejo es el texto original`() {
     val originals = listOf(
-      NumberLine.message(NumberLineReading.INICIO), NumberLine.message(NumberLineReading.CENTRO), NumberLine.message(NumberLineReading.FINAL),
-      Homing.sourceMessage(HomingSource.RUMBO)!!, Homing.sourceMessage(HomingSource.DISTANCIA)!!
+      NumberLine.message(NumberLineReading.INICIO), NumberLine.message(NumberLineReading.CENTRO), NumberLine.message(NumberLineReading.FINAL)
     )
     for (t in originals) {
       val tip = ResultAdvice.tipOf(t)

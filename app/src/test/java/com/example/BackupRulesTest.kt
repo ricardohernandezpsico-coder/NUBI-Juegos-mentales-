@@ -98,6 +98,17 @@ class BackupRulesTest {
   }
 
   @Test
+  fun `retirar un juego no quita nada del respaldo (Rumbo no tenia preferencias propias)`() {
+    // lo que guarda el avance de Rumbo (partidas y avance en la base, medidas y nivel en estas preferencias) sigue respaldándose
+    for (text in listOf(xml("backup_rules.xml"), cloudSection(xml("data_extraction_rules.xml")), transferSection(xml("data_extraction_rules.xml")))) {
+      assertTrue(includes(text, "database").contains("neurovida_database"))
+      val prefs = includes(text, "sharedpref")
+      for (name in listOf("star_measures.xml", "skill.xml", "progress_log.xml", "league_events.xml", "achievements.xml")) assertTrue(name, prefs.contains(name))
+      assertTrue("Rumbo nunca tuvo un archivo propio de preferencias", prefs.none { it.contains("rumbo") })
+    }
+  }
+
+  @Test
   fun `lo pasajero no se respalda`() {
     val backedUp = includes(xml("backup_rules.xml"), "sharedpref").map { it.removeSuffix(".xml") }.toSet()
     assertTrue(backedUp.intersect(transient).isEmpty())

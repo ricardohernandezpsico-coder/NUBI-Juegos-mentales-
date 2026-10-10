@@ -19,7 +19,7 @@ object RetoChoice {
   private val SECONDS = mapOf(
     "secuencia" to 90, "stroop" to 60, "calculo" to 120, "engranajes" to 120, "bodega" to 120, "parejas" to 180, "anagramas" to 120, "piloto" to 90, "radar" to 120,
     "satelites" to 120, "freno" to 120, "aterrizaje" to 120, "meteoros" to 120, "disparate" to 120, "cosecha" to 180, "intrusa" to 120,
-    "acoplamiento" to 120, "rumbo" to 150
+    "acoplamiento" to 120
   )
 
   fun key(gameId: String): String = PREFIX + gameId

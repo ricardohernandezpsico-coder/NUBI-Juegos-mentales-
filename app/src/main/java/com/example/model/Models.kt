@@ -118,14 +118,6 @@ object GameRegistry {
       iconEmoji = "⭐"
     ),
     GameDefinition(
-      id = "rumbo",
-      title = "Rumbo a Casa",
-      domain = DomainType.MEMORIA,
-      subtitle = "Orientación: volver a casa sin mapa",
-      instruction = "Toca las señales para ir de cristal en cristal: el espacio gira a tu alrededor. Al final, apunta hacia tu base y avanza hasta donde creas que está. Recuerda cada giro.",
-      iconEmoji = "🧭"
-    ),
-    GameDefinition(
       id = "correo",
       // «La estación de correo» (8-oct): el vuelo se rehízo; el nombre y el id se mantienen (avance, marcas e historial).
       title = "Correo Estelar",
@@ -229,10 +221,12 @@ object GameRegistry {
    *  - `trafico` (Tráfico Estelar, Razonamiento): retirado el 4-oct-2026 (docs/juegos/descartados.md).
    *  - `bitacora` (Bitácora de Misión, Memoria): retirado el 5-oct-2026 (docs/juegos/descartados.md). Su misión del día vivía en las preferencias `mission_log` (siguen en el respaldo; ya no se leen) y
    *    sus medidas guardadas (clave `recall`) quedan sin leerse.
+   *  - `rumbo` (Rumbo a Casa, Memoria): retirado el 10-oct-2026 (docs/juegos/descartados.md): Ricardo lo probó con una persona de 60 años o más y no se entendía la mecánica. No tenía preferencias propias; sus medidas guardadas (clave `homing`) quedan sin leerse. El código de Unity
+   *    (`Games/Rumbo/`) se conserva.
    */
   val retiredDomains: Map<String, DomainType> = mapOf(
     "cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION, "series" to DomainType.RAZONAMIENTO, "rutatesoro" to DomainType.MEMORIA,
-    "trafico" to DomainType.RAZONAMIENTO, "bitacora" to DomainType.MEMORIA
+    "trafico" to DomainType.RAZONAMIENTO, "bitacora" to DomainType.MEMORIA, "rumbo" to DomainType.MEMORIA
   )
 
   fun isRetired(id: String): Boolean = id in retiredDomains
@@ -312,15 +306,6 @@ data class GamePlayResult(
   val dockRings: Int? = null,
   val dockBest: Int? = null,
   val dockNewRecord: Boolean? = null,
-  // Solo Rumbo a Casa: "tu brújula interna" (a qué distancia de casa quedaste, en % de la distancia que había), dónde
-  // quedó cada vuelta en el marco de la vuelta justa (en fracciones de esa distancia: la base en along = 1,
-  // lateral = 0; lateral + = a la derecha), si el viaje tenía faro y llegadas perfectas. La lectura está en
-  // data/Homing.kt. No se guardan en Room.
-  val homingErrorPct: Float? = null,
-  val homingAlong: List<Float>? = null,
-  val homingLateral: List<Float>? = null,
-  val homingBeacon: List<Boolean>? = null,
-  val homingPerfect: Int? = null,
   // Solo «La estación de correo» (id correo): encargos por evento (cartas con sello dorado o lazo: cumplidos y total), por hora (faro a tiempo y total, sin contar los cancelados), cancelados por la radio y cuántas veces se hicieron igual
   // (comisión), faros antes de hora, miradas al reloj (y cuántas cerca de la hora), cartas bien puestas y clasificadas, mejor racha, días con todos los encargos, el grupo de etapa más alto (1..5), el récord (cartas en un día perfecto, que se guarda) y
   // si esta partida lo superó. Encargos cumplidos = correctAnswers, encargos = totalTrials. El récord va en prefs «correo_record» (y en el respaldo); la medida va a StarMeasures. La lectura está en data/Mail.kt. No se guardan en Room.

@@ -169,13 +169,6 @@ object NativeReceiver {
     val rings: Int = -1,
     val dock_best: Int = -1,
     val dock_new: Int = 0,
-    // Solo Rumbo a Casa: a qué distancia de casa quedó (% de la distancia que había, -1 = no aplica), dónde quedó cada
-    // vuelta (a lo largo y a lo ancho de la vuelta justa, en fracciones de esa distancia), faro (1/0) y perfectas.
-    val homing_error_pct: Double = -1.0,
-    val homing_along: List<Double>? = null,
-    val homing_lateral: List<Double>? = null,
-    val homing_beacon: List<Int>? = null,
-    val homing_perfect: Int = 0,
     // Solo «La estación de correo» (ver StroopTelemetry.cs): encargos por evento y por hora, cancelados, reloj, cartas, etapa y récord. -1 = no aplica.
     val mail_ev_hits: Int = -1,
     val mail_ev_total: Int = -1,
@@ -410,7 +403,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Carga exacta, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "calculo", "engranajes", "bodega", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "rumbo", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
+      "stroop", "calculo", "engranajes", "bodega", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
@@ -499,20 +492,9 @@ object NativeReceiver {
 
     val metrics = telemetry.session_metrics
     Log.i(TAG, "DDA ${telemetry.game_id}: end_rating=${metrics.end_rating} peak_level=${metrics.peak_level}")
-    // Rumbo a Casa: una terna por viaje (dónde quedó a lo largo y a lo ancho de la vuelta justa, y si había faro);
-    // solo si las tres listas vienen completas y del mismo largo.
     // La estación de correo: sus campos solo valen si el juego es Correo y trae la medida nueva (una versión vieja de Unity mandaba el vuelo y no trae mail_group).
     val mail = telemetry.game_id == "correo" && metrics.mail_group >= 1
     val sat = telemetry.game_id == "satelites" && metrics.sat_lights >= 0
-    val homing = run {
-      val along = metrics.homing_along
-      val lateral = metrics.homing_lateral
-      val beacon = metrics.homing_beacon
-      if (telemetry.game_id != "rumbo" || along.isNullOrEmpty() || lateral == null || beacon == null ||
-        lateral.size != along.size || beacon.size != along.size
-      ) null
-      else along.indices.map { i -> Triple(along[i].toFloat(), lateral[i].toFloat(), beacon[i] == 1) }
-    }
     return GamePlayResult(
       gameId = telemetry.game_id,
       score = metrics.calculated_score.coerceIn(0, 100),
@@ -562,11 +544,6 @@ object NativeReceiver {
       dockRings = metrics.rings.takeIf { it >= 0 },
       dockBest = metrics.dock_best.takeIf { it >= 0 },
       dockNewRecord = if (metrics.docked >= 0) metrics.dock_new == 1 else null,
-      homingErrorPct = metrics.homing_error_pct.takeIf { it >= 0.0 }?.toFloat(),
-      homingAlong = homing?.let { h -> h.map { it.first } },
-      homingLateral = homing?.let { h -> h.map { it.second } },
-      homingBeacon = homing?.let { h -> h.map { it.third } },
-      homingPerfect = metrics.homing_perfect.takeIf { metrics.homing_error_pct >= 0.0 },
       mailEvHits = metrics.mail_ev_hits.takeIf { mail && it >= 0 },
       mailEvTotal = metrics.mail_ev_total.takeIf { mail && it >= 0 },
       mailTimeHits = metrics.mail_time_hits.takeIf { mail && it >= 0 },

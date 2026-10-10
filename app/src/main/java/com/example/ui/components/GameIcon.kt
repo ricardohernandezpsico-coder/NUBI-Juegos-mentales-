@@ -73,7 +73,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 }
 
 private val DrawnIcons = setOf(
-  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "rumbo", "correo",
+  "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "correo",
   "secuencia", "parejas", "stroop", "anagramas", "calculo", "engranajes", "bodega", "meteoros", "disparate", "cosecha", "intrusa"
 )
 
@@ -263,27 +263,6 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       drawPath(hole, Ink.copy(alpha = 0.85f))
       drawPath(hole, Cream, style = Stroke(3f, join = StrokeJoin.Round))
       curvedArrow(Offset(30f, 33f), 30f, 190f, 95f, Clay.Sun)
-    }
-    "rumbo" -> {
-      // Tu base (casa), la ruta de ida en puntos lima hasta un cristal, y la flecha sol que vuelve a casa.
-      val trail = listOf(Offset(29f, 50f), Offset(30f, 40f), Offset(31f, 30f), Offset(40f, 27f), Offset(50f, 26f), Offset(60f, 25f))
-      trail.forEach { o ->
-        drawCircle(Ink, 4.2f, o)
-        drawCircle(Clay.Lime, 2.6f, o)
-      }
-      val back = Path().apply {
-        moveTo(74f, 38f)
-        quadraticBezierTo(72f, 66f, 49f, 71f)
-        // Punta de la flecha (dirección de llegada: hacia la izquierda y un poco abajo).
-        moveTo(57.8f, 78.2f)
-        lineTo(47f, 71.4f)
-        lineTo(53.8f, 60.6f)
-      }
-      clayStroke(back, Clay.Sun, 6f)
-      clay(circle(Offset(27f, 72f), 17f), Cream, gloss = true)
-      clay(circle(Offset(27f, 72f), 7f), Clay.Coral, border = 3.5f, shadow = false)
-      clay(diamond(Offset(76f, 22f), 9f, 13f), Clay.Sky, gloss = true)
-      sparkle(Offset(90f, 40f), 7f, Color.White)
     }
     "correo" -> {
       // La estación de correo: el faro (torre lila con su luz sol y dos ondas) arriba a la derecha y, delante, una carta crema con su sello dorado.

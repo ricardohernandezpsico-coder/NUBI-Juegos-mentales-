@@ -91,7 +91,6 @@ private val DebugGames = listOf(
   DebugGame("intrusa", "La estrella intrusa (Reto 120 s)", level = 1, timed = true),
   DebugGame("acoplamiento", "Acoplamiento (Reto 120 s)", level = 1, timed = true),
   DebugGame("acoplamiento", "Acoplamiento con tutorial", level = 1, timed = false, tutorial = true, tag = "acoplamiento_tutorial"),
-  DebugGame("rumbo", "Rumbo a Casa (Reto 150 s)", level = 1, timed = true),
   DebugGame("correo", "Correo Estelar con tutorial", level = 1, timed = false, tutorial = true, tag = "correo_tutorial"),
   DebugGame("correo", "Correo Estelar etapa 2 (la hora)", level = 1, timed = false, tag = "correo_etapa2", mailStage = 2),
   DebugGame("correo", "Correo Estelar etapa 4 (lo que cancela la radio)", level = 1, timed = false, tag = "correo_etapa4", mailStage = 4),

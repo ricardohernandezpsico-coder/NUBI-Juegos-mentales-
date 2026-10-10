@@ -54,7 +54,7 @@ class VisibleTextsGuardTest {
       val all = listOf(t.progressTitle, t.progressSubtitle, t.gamesLibrarySubtitle, t.sessionCompletedTitle, t.startDailySession, t.dailySessionTitle, t.trainAnotherRound).joinToString(" ").lowercase()
       assertFalse(lang.name, listOf("cognit", "training", "trainings", "workout", "brain", "entrenamiento", "treino", "treinos", "entraîn", "22 ").any { it in all })
     }
-    assertEquals("19 juegos en 4 áreas", getTranslations(AppLanguage.SPANISH).gamesLibrarySubtitle)
+    assertEquals("18 juegos en 4 áreas", getTranslations(AppLanguage.SPANISH).gamesLibrarySubtitle)
     assertEquals("Tu avance", getTranslations(AppLanguage.SPANISH).progressTitle)
   }
 

@@ -13,9 +13,9 @@ class AreaProgressTest {
   fun `el cambio compara con hace 7 dias y un juego nuevo no cuenta`() {
     val pts = listOf(
       ProgressPoint("parejas", now - 20 * day, 0.30f), ProgressPoint("parejas", now - 2 * day, 0.36f),
-      ProgressPoint("rumbo", now - 1 * day, 0.50f) // medido por primera vez esta semana
+      ProgressPoint("bodega", now - 1 * day, 0.50f) // medido por primera vez esta semana
     )
-    val s = AreaProgress.status("MEMORIA", listOf("parejas", "rumbo", "secuencia"), mapOf("parejas" to 0.36f, "rumbo" to 0.50f), pts, now)
+    val s = AreaProgress.status("MEMORIA", listOf("parejas", "bodega", "secuencia"), mapOf("parejas" to 0.36f, "bodega" to 0.50f), pts, now)
     assertEquals(0.43f, s.value!!, eps)          // promedio de los dos medidos
     assertEquals(0.06f, s.change, eps)           // solo parejas: 0,30 → 0,36
     assertEquals(43, s.points); assertEquals(37, s.pointsBefore)

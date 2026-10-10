@@ -52,7 +52,7 @@ class SkillTest {
     assertFalse(Skill.passed("radar", PlayMode.DESAFIO, AgeBand.ADULT, hits = 9, trials = 12))
     assertFalse(Skill.passed("radar", PlayMode.DESAFIO, AgeBand.ADULT, hits = 11, trials = 11))
     assertFalse(Skill.passed("radar", PlayMode.DESAFIO, AgeBand.SENIOR, hits = 10, trials = 12))
-    assertTrue(Skill.passed("rumbo", PlayMode.EXPERTO, AgeBand.ADULT, hits = 5, trials = 6))
+    assertTrue(Skill.passed("satelites", PlayMode.EXPERTO, AgeBand.ADULT, hits = 5, trials = 6))
     assertFalse(Skill.passed("radar", PlayMode.A_TU_MEDIDA, AgeBand.ADULT, hits = 12, trials = 12))
     assertFalse(Skill.passed("radar", PlayMode.SUAVE, AgeBand.ADULT, hits = 12, trials = 12))
   }
@@ -78,7 +78,7 @@ class SkillTest {
     assertEquals(1 to "Aprendiz", Skill.toNextStage(0.199f))
     assertNull(Skill.toNextStage(0.85f))
     assertEquals(45, Skill.percent(0.459f))
-    val (avg, explored) = Skill.area(listOf("rumbo", "correo", "secuencia"), mapOf("rumbo" to 0.4f, "secuencia" to 0.6f, "radar" to 1f))
+    val (avg, explored) = Skill.area(listOf("bodega", "correo", "secuencia"), mapOf("bodega" to 0.4f, "secuencia" to 0.6f, "radar" to 1f))
     assertEquals(0.5f, avg!!, eps); assertEquals(2, explored)
     assertEquals(null to 0, Skill.area(listOf("correo"), emptyMap()))
   }

@@ -44,7 +44,7 @@ object Skill {
   const val MIN_TRIALS = 12
   const val MIN_ROUNDS = 6
   /** Juegos de rondas largas: "superado" pide 6 rondas en vez de 12 ensayos. */
-  private val LONG_ROUNDS = setOf("rumbo", "satelites", "correo", "secuencia", "anagramas", "calculo", "engranajes", "bodega")
+  private val LONG_ROUNDS = setOf("satelites", "correo", "secuencia", "anagramas", "calculo", "engranajes", "bodega")
 
   val STAGES = listOf("Inicio", "Aprendiz", "Hábil", "Experto", "Maestro")
 
@@ -53,7 +53,7 @@ object Skill {
     "piloto" to Ladder(9),
     "radar" to Ladder(12), "freno" to Ladder(12), "aterrizaje" to Ladder(12), "acoplamiento" to Ladder(12),
     "satelites" to Ladder(12), "meteoros" to Ladder(12), "disparate" to Ladder(12), "cosecha" to Ladder(10), "intrusa" to Ladder(12),
-    "rumbo" to Ladder(10), "correo" to Ladder(10), "parejas" to Ladder(18),
+    "correo" to Ladder(10), "parejas" to Ladder(18),
     "secuencia" to Ladder(16)
   )
 

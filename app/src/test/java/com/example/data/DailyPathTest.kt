@@ -70,20 +70,23 @@ class DailyPathTest {
 
   @Test
   fun `un juego sin tutorial que la persona nunca jugo no entra, y si ya lo jugo si es elegible`() {
+    // Desde la Tarea 69 (retiro de Rumbo) TODOS los juegos de la app tienen tutorial y la regla queda inerte; se sigue probando simulando uno sin él (Bodega de carga)
+    val partial = tutorial - "bodega"
     // Nadie jugó nada: solo entran juegos con tutorial
-    val noTutorial = GameRegistry.allGames.map { it.id }.filter { it !in tutorial }.toSet()
+    val noTutorial = GameRegistry.allGames.map { it.id }.filter { it !in partial }.toSet()
+    assertEquals(setOf("bodega"), noTutorial)
     assertTrue(noTutorial.isNotEmpty())
     for (d in 1..40) {
-      val path = DailyPath.pick("2026-11-%02d".format(d % 28 + 1) + d, level, emptySet(), null, null, emptyMap(), d.toLong(), tutorial)
+      val path = DailyPath.pick("2026-11-%02d".format(d % 28 + 1) + d, level, emptySet(), null, null, emptyMap(), d.toLong(), partial)
       assertEquals(3, path.size)
       assertTrue("$path trae un juego sin tutorial que nunca se jugó", path.none { it in noTutorial })
     }
     // Piloto ya jugado hace mucho: en Atención, con metas, es el que más días lleva sin jugarse
     val played = mapOf("stroop" to 49L, "freno" to 49L, "satelites" to 49L, "radar" to 49L, "piloto" to 10L)       // (Satélites, Piloto y Rescate relámpago tienen tutorial desde el 9-oct: Satélites y Rescate se juegan recientes para que el más antiguo siga siendo Piloto)
-    val path = DailyPath.pick("2026-11-30", level, setOf(DomainType.ATENCION), null, null, played, 50L, tutorial)
+    val path = DailyPath.pick("2026-11-30", level, setOf(DomainType.ATENCION), null, null, played, 50L, partial)
     assertTrue("piloto ya se jugó: es elegible y el más antiguo", "piloto" in path)
-    // y uno sin tutorial que nunca se jugó sigue excluido (Rumbo a Casa)
-    assertFalse("rumbo" in path)
+    // y uno sin tutorial que nunca se jugó sigue excluido
+    assertFalse("bodega" in path)
   }
 
   @Test

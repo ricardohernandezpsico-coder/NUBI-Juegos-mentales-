@@ -78,7 +78,6 @@ object StarMeasures {
     MeasureDef("rotation", "acoplamiento", "Tu giro mental en Acoplamiento", "°", "por segundo", lowerIsBetter = false, short = "tu giro mental", compactPattern = "{v}/s", levelDependent = true),
     // Clave `mandos` (no `multitask`): el juego se rehízo el 9-oct y se borró el «costo de multitarea» (regla permanente 1 de Ricardo: nada se mide con una tarea sola); los puntos viejos quedan guardados pero ya no se leen.
     MeasureDef("mandos", "piloto", "Tus señales a los mandos en Piloto Estelar", "%", "de las señales de tu misión, a los mandos", lowerIsBetter = false, short = "tus señales a los mandos", compactPattern = "{v}", levelDependent = true),
-    MeasureDef("homing", "rumbo", "Tu brújula en Rumbo a Casa", "%", "de casa", lowerIsBetter = true, short = "tu brújula", compactPattern = "a {v}", levelDependent = true),
     MeasureDef("vocab", "meteoros", "Tu vocabulario en Lluvia de meteoros", "%", "reconocido (palabras menos comunes)", lowerIsBetter = false, short = "tu vocabulario", compactPattern = "{v}", levelDependent = true),
     MeasureDef("wpm", "disparate", "Tu lectura en ¿Verdad o disparate?", "", "palabras por minuto", lowerIsBetter = false, short = "tu lectura", compactPattern = "{v} ppm", levelDependent = true),
     MeasureDef("harvest", "cosecha", "Tu cosecha en Cosecha de palabras", "%", "de las comunes", lowerIsBetter = false, short = "tu cosecha", compactPattern = "{v}", levelDependent = true),
@@ -96,7 +95,7 @@ object StarMeasures {
 
   val gameNames = mapOf(
     "radar" to "Rescate relámpago", "freno" to "Freno de Emergencia", "satelites" to "Satélites", "aterrizaje" to "Aterrizaje Lunar",
-    "acoplamiento" to "Acoplamiento", "piloto" to "Piloto Estelar", "rumbo" to "Rumbo a Casa",
+    "acoplamiento" to "Acoplamiento", "piloto" to "Piloto Estelar",
     "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?", "cosecha" to "Cosecha de palabras", "intrusa" to "La estrella intrusa", "secuencia" to "Rastro de luz", "anagramas" to "En la punta de la lengua", "calculo" to "Carga exacta", "engranajes" to "Engranajes", "bodega" to "Bodega de carga", "parejas" to "Constelaciones"
   )
 
