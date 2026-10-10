@@ -278,6 +278,8 @@ data class GamePlayResult(
   val rescShortestMs: Int? = null,
   val rescBest: Int? = null,
   val rescNewRecord: Boolean? = null,
+  /** Rescate relámpago (v4): los viajes a la estación de esta partida (la nave se llena con 10 cápsulas a bordo, viaja y vuelve vacía). */
+  val rescTrips: Int? = null,
   // Solo Satélites: cuántos se siguen de verdad a la vez (descontando la suerte) y la velocidad más alta superada
   // completa (múltiplo de la del nivel 1). No se guardan en Room.
   val trackingCapacity: Float? = null,

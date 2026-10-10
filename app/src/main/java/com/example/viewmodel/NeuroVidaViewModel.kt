@@ -295,6 +295,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** Medidas propias de los juegos estrella por partida (descubrimiento del día y zonas del planeta en Hoy). */
   val starMeasures = repository.starMeasures
   val atlas = repository.atlas
+  val rescateTotals = repository.rescateTotals
 
   /** Las frases de ¿Verdad o disparate? marcadas como poco claras, para el informe de errores de Ajustes. */
   fun unclearReport(): String = repository.unclearReport()

@@ -133,6 +133,8 @@ fun GameResultScreen(
   atlas: com.example.data.AtlasState? = null,
   /** Las medidas de los juegos estrella guardadas por partida (`star_measures`): «Tu freno» de Freno de Emergencia es el promedio de las últimas, no la de una sola partida. */
   starMeasures: List<com.example.data.MeasurePoint> = emptyList(),
+  /** Rescate relámpago: las cápsulas rescatadas y los viajes a la estación de toda la vida (ya con esta partida sumada), para «En total: …». */
+  rescateTotals: com.example.data.Rescate.Totals? = null,
   /** Qué te sirve más ver primero (`result_focus`): solo cambia el orden de lo que se muestra. */
   resultFocus: ResultFocus = ResultFocus.DEFAULT
 ) {
@@ -324,6 +326,9 @@ fun GameResultScreen(
         com.example.data.Rescate.shortestLine(result.rescShortestMs)?.let {
           Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
         }
+        com.example.data.Rescate.tripsLine(result.rescTrips)?.let {
+          Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
+        }
         com.example.data.Rescate.recordLine(result.rescBest, result.rescNewRecord)?.let {
           Text(
             it,
@@ -332,6 +337,9 @@ fun GameResultScreen(
             fontWeight = if (result.rescNewRecord == true) FontWeight.Bold else FontWeight.SemiBold,
             modifier = Modifier.padding(top = 2.dp)
           )
+        }
+        com.example.data.Rescate.totalLine(rescateTotals)?.let {
+          Text(it, color = TextSoft, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp, start = 24.dp, end = 24.dp))
         }
       }
     }

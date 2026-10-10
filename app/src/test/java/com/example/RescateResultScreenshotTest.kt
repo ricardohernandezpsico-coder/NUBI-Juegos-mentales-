@@ -35,16 +35,16 @@ class RescateResultScreenshotTest {
   private fun result(rescued: Int, capture: Float?) = GamePlayResult(
     gameId = "radar", score = 71, correctAnswers = 9, totalTrials = 12, timed = false, level = 6,
     glanceMs = 280, glanceLoad = 3.5f, captureK = capture,
-    rescRescued = rescued, rescPerfect = 5, rescRounds = 12, rescBestStreak = 3, rescShortestMs = 150, rescBest = rescued, rescNewRecord = rescued > 0, timestamp = 1_000_000L
+    rescRescued = rescued, rescPerfect = 5, rescRounds = 12, rescBestStreak = 3, rescShortestMs = 150, rescBest = rescued, rescNewRecord = rescued > 0, rescTrips = rescued / 10, timestamp = 1_000_000L
   )
 
-  private fun show(result: GamePlayResult, shot: String) {
+  private fun show(result: GamePlayResult, shot: String, totals: com.example.data.Rescate.Totals? = null) {
     composeTestRule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
           GameResultScreen(
             result = result, didLevelUp = false, isDailyFlow = true, dailyCompletedCount = 2, dailyTotalCount = 3,
-            starMeasures = emptyList(), onPlayAgain = {}, onContinue = {}
+            starMeasures = emptyList(), rescateTotals = totals, onPlayAgain = {}, onContinue = {}
           )
         }
       }
@@ -57,11 +57,11 @@ class RescateResultScreenshotTest {
 
   @Test
   fun final_de_rescate_con_captura() {
-    show(result(rescued = 31, capture = 3.25f), "rescate-final")
+    show(result(rescued = 31, capture = 3.25f), "rescate-final", com.example.data.Rescate.Totals(342, 12))
   }
 
   @Test
   fun final_de_rescate_sin_lluvias() {
-    show(result(rescued = 6, capture = null), "rescate-final-sin-captura")
+    show(result(rescued = 6, capture = null), "rescate-final-sin-captura", com.example.data.Rescate.Totals(6, 0))
   }
 }

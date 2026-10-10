@@ -63,6 +63,28 @@ object Rescate {
   /** El récord que se guarda: el mayor de lo guardado y lo que trae la partida; nunca baja y nunca es negativo. */
   fun mergeRecord(saved: Int, fromGame: Int?): Int = maxOf(saved.coerceAtLeast(0), (fromGame ?: 0).coerceAtLeast(0))
 
+  /** «Viajes a la estación: 2» (los de esta partida: cada vez que la nave se llena viaja a la estación y vuelve vacía); null si no hubo ninguno o sin dato. */
+  fun tripsLine(trips: Int?): String? = if (trips == null || trips <= 0) null else "Viajes a la estación: $trips"
+
+  /** Lo que se suma partida a partida (preferencias `rescate_record`, que van en el respaldo): las cápsulas rescatadas y los viajes a la estación de toda la vida. */
+  data class Totals(val rescued: Int = 0, val trips: Int = 0)
+
+  /** Los totales después de una partida: lo guardado más lo de la partida; nunca bajan ni son negativos (un dato que no vino suma 0). */
+  fun addTotals(saved: Totals, rescued: Int?, trips: Int?): Totals =
+    Totals(saved.rescued.coerceAtLeast(0) + (rescued ?: 0).coerceAtLeast(0), saved.trips.coerceAtLeast(0) + (trips ?: 0).coerceAtLeast(0))
+
+  /** «En total: 342 cápsulas y 12 viajes a la estación» (en singular cuando es uno; sin viajes: solo las cápsulas); null si todavía no hay nada. */
+  fun totalLine(totals: Totals?): String? {
+    if (totals == null || (totals.rescued <= 0 && totals.trips <= 0)) return null
+    val capsules = if (totals.rescued == 1) "1 cápsula" else "${totals.rescued} cápsulas"
+    val trips = if (totals.trips == 1) "1 viaje a la estación" else "${totals.trips} viajes a la estación"
+    return "En total: " + when {
+      totals.trips <= 0 -> capsules
+      totals.rescued <= 0 -> trips
+      else -> "$capsules y $trips"
+    }
+  }
+
   /** Para lectores de pantalla. */
   fun spoken(rescued: Int?, capture: Float?, glanceMs: Int?): String =
     listOfNotNull(rescuedLine(rescued), captureLine(capture), glanceLine(glanceMs)).joinToString(". ")

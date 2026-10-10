@@ -142,6 +142,8 @@ object NativeReceiver {
     val resc_shortest_ms: Int = -1,
     val resc_best: Int = -1,
     val resc_new: Int = 0,
+    // Rescate relámpago (v4, 9-oct): cuántas veces la nave se llenó y viajó a la estación en esta partida (-1 = no aplica).
+    val resc_trips: Int = -1,
     // Solo Satélites: seguimiento (satélites a la vez) y velocidad superada (-1 = no aplica).
     val tracking_capacity: Double = -1.0,
     val tracking_targets: Double = -1.0,
@@ -535,6 +537,7 @@ object NativeReceiver {
       rescShortestMs = metrics.resc_shortest_ms.takeIf { it > 0 },
       rescBest = metrics.resc_best.takeIf { it >= 0 },
       rescNewRecord = if (metrics.resc_rescued >= 0) metrics.resc_new == 1 else null,
+      rescTrips = metrics.resc_trips.takeIf { it >= 0 },
       trackingCapacity = metrics.tracking_capacity.takeIf { it >= 0.0 }?.toFloat(),
       trackingTargets = metrics.tracking_targets.takeIf { it > 0.0 }?.toFloat(),
       trackingSpeed = metrics.tracking_speed.takeIf { it > 0.0 }?.toFloat(),

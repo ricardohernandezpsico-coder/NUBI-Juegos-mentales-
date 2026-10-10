@@ -291,13 +291,27 @@ class NeuroVidaRepository(
   private val _rescateRecord = MutableStateFlow(Rescate.mergeRecord(rescatePrefs.getInt("best", 0), null))
   val rescateRecord: StateFlow<Int> = _rescateRecord.asStateFlow()
 
-  /** Guarda el récord con que terminó una partida de «Rescate relámpago» (en cualquier modo). */
+  // Los totales de toda la vida («En total: 342 cápsulas y 12 viajes a la estación», v4): las cápsulas rescatadas y los viajes a la estación, sumados partida a partida. Van en las mismas preferencias `rescate_record` (claves `total` y `trips`), así que
+  // ya están en el respaldo; cada resultado se guarda una sola vez (`UnityResultInbox`), así que sumar no cuenta doble.
+  private val _rescateTotals = MutableStateFlow(Rescate.Totals(rescatePrefs.getInt("total", 0).coerceAtLeast(0), rescatePrefs.getInt("trips", 0).coerceAtLeast(0)))
+  val rescateTotals: StateFlow<Rescate.Totals> = _rescateTotals.asStateFlow()
+
+  /** Guarda el récord y suma los totales con que terminó una partida de «Rescate relámpago» (en cualquier modo). */
   private fun recordRescate(result: GamePlayResult) {
     if (result.gameId != "radar") return
-    val next = Rescate.mergeRecord(_rescateRecord.value, result.rescBest)
-    if (next == _rescateRecord.value) return
-    _rescateRecord.value = next
-    rescatePrefs.edit().putInt("best", next).apply()
+    val record = Rescate.mergeRecord(_rescateRecord.value, result.rescBest)
+    val totals = Rescate.addTotals(_rescateTotals.value, result.rescRescued, result.rescTrips)
+    if (record == _rescateRecord.value && totals == _rescateTotals.value) return
+    val edit = rescatePrefs.edit()
+    if (record != _rescateRecord.value) {
+      _rescateRecord.value = record
+      edit.putInt("best", record)
+    }
+    if (totals != _rescateTotals.value) {
+      _rescateTotals.value = totals
+      edit.putInt("total", totals.rescued).putInt("trips", totals.trips)
+    }
+    edit.apply()
   }
 
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
@@ -1031,6 +1045,7 @@ class NeuroVidaRepository(
     _satelitesRecord.value = 0
     rescatePrefs.edit().clear().apply()
     _rescateRecord.value = 0
+    _rescateTotals.value = Rescate.Totals()
     retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()

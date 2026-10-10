@@ -43,8 +43,8 @@ class RescateRecordTest {
     TestSupport.resetDatabase()
   }
 
-  private fun game(best: Int, rescued: Int = 23, game: String = "radar") = NativeReceiver.parse(
-    """{"user_id":"u1","game_id":"$game","session_metrics":{"correct_trials":9,"total_trials":12,"calculated_score":71,"average_response_time_ms":0,"level":6,"timed":false,"end_rating":0.5,"peak_level":7,"glance_ms":280,"glance_load":3.5,"capture":3.25,"resc_rescued":$rescued,"resc_perfect":5,"resc_rounds":12,"resc_best_streak":3,"resc_shortest_ms":150,"resc_best":$best,"resc_new":1}}"""
+  private fun game(best: Int, rescued: Int = 23, game: String = "radar", trips: Int = 2) = NativeReceiver.parse(
+    """{"user_id":"u1","game_id":"$game","session_metrics":{"correct_trials":9,"total_trials":12,"calculated_score":71,"average_response_time_ms":0,"level":6,"timed":false,"end_rating":0.5,"peak_level":7,"glance_ms":280,"glance_load":3.5,"capture":3.25,"resc_rescued":$rescued,"resc_perfect":5,"resc_rounds":12,"resc_best_streak":3,"resc_shortest_ms":150,"resc_best":$best,"resc_new":1,"resc_trips":$trips}}"""
   )!!
 
   private fun saved() = app.getSharedPreferences("rescate_record", android.content.Context.MODE_PRIVATE).getInt("best", -1)
@@ -59,6 +59,7 @@ class RescateRecordTest {
     assertEquals(150, r.rescShortestMs)
     assertEquals(24, r.rescBest)
     assertEquals(true, r.rescNewRecord)
+    assertEquals(2, r.rescTrips)
     assertEquals(280, r.glanceMs)
     assertEquals(3.5f, r.glanceLoad!!, 1e-4f)
     assertEquals(3.25f, r.captureK!!, 1e-4f)
@@ -76,6 +77,7 @@ class RescateRecordTest {
     assertNull("sin las cápsulas no es el juego nuevo", old.rescRescued)
     assertNull(old.rescBest)
     assertNull(old.rescNewRecord)
+    assertNull("sin viajes la versión vieja no inventa ninguno", old.rescTrips)
     assertEquals(300, old.glanceMs)
   }
 
@@ -86,6 +88,10 @@ class RescateRecordTest {
     repo.recordGameResult(game(best = 24), countsForDailySession = false)
     assertEquals(24, repo.rescateRecord.value)
     assertEquals(24, saved())
+    assertEquals(Rescate.Totals(23, 2), repo.rescateTotals.value)
+    val prefs = app.getSharedPreferences("rescate_record", android.content.Context.MODE_PRIVATE)
+    assertEquals("los totales van en las mismas preferencias del respaldo", 23, prefs.getInt("total", -1))
+    assertEquals(2, prefs.getInt("trips", -1))
     val m = repo.starMeasures.value.lastOrNull { it.key == "glance" }
     assertNotNull(m)
     assertEquals(280f, m!!.value, 1e-3f)
@@ -99,5 +105,6 @@ class RescateRecordTest {
     repo.recordGameResult(other, countsForDailySession = false)
     assertEquals(0, repo.rescateRecord.value)
     assertEquals(-1, saved())
+    assertEquals(Rescate.Totals(), repo.rescateTotals.value)
   }
 }
