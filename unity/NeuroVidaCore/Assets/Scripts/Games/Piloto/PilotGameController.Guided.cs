@@ -101,7 +101,8 @@ namespace NeuroVida.Games.Piloto
                     ok = !t.Skipped;
                     if (ok)
                     {
-                        if (target.Alive) CatchSignal(target);                  // la práctica hace la jugada (si el toque no llegó —red de seguridad— igual sigue, y nunca se repite el paso)
+                        if (target.Alive) CatchSignal(target);                  // la práctica ASEGURA la jugada (si el toque ya la atrapó, no se repite; si no llegó —red de seguridad— igual sigue)
+                        TutorialGuards.Expect(target.Outcome == Outcome.Caught, "Piloto", "tras el toque guiado la señal de la misión no quedó atrapada");
                         script.Success();
                     }
                 }
@@ -155,7 +156,8 @@ namespace NeuroVida.Games.Piloto
                     ok = !t.Skipped;
                     if (ok)
                     {
-                        if (target.Alive) CatchSignal(target);                  // la práctica hace la jugada (si el toque no llegó —red de seguridad— igual sigue)
+                        if (target.Alive) CatchSignal(target);                  // la práctica ASEGURA la jugada (si el toque no llegó —red de seguridad— igual sigue)
+                        TutorialGuards.Expect(target.Outcome == Outcome.Caught, "Piloto", "tras el toque guiado la señal de la misión nueva no quedó atrapada");
                         script.Success();
                     }
                 }

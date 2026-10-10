@@ -660,19 +660,22 @@ namespace NeuroVida.Games.Calculo
             {
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[idA].Root), CoachTexts.Calculo.Cell, keep: reactor));
                 ok = !t.Skipped;
-                if (ok) TapCell(idA);                                  // el toque en el hueco ES el toque en la celda
+                if (ok) TapCell(idA);                                  // el toque en el hueco ES el toque en la celda (la entrada está apagada en la práctica: no se repite)
+                TutorialGuards.Expect(!ok || _sel == idA, "Carga exacta", "tras el primer toque guiado la celda no quedó elegida");
             }
             if (ok)
             {
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_opViews[0].Root), CoachTexts.Calculo.Plus, keep: reactor));
                 ok = !t.Skipped;
                 if (ok) TapOp(CargaOp.Add);
+                TutorialGuards.Expect(!ok || _op == (int)CargaOp.Add, "Carga exacta", "tras el toque en «+» la operación no quedó elegida");
             }
             if (ok)
             {
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[idB].Root), CoachTexts.Calculo.OtherCell, keep: reactor));
                 ok = !t.Skipped;
                 if (ok) TapCell(idB);
+                TutorialGuards.Expect(!ok || _phase == Phase.Solved, "Carga exacta", "tras el tercer toque guiado las celdas no se juntaron: la carga no quedó exacta");
             }
             if (ok && _phase == Phase.Solved)
             {

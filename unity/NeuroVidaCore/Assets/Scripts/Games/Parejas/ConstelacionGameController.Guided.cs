@@ -45,12 +45,14 @@ namespace NeuroVida.Games.Parejas
                 yield return StartCoroutine(coach.Touch(() => HoleOf(a1), CoachTexts.Constelaciones.First, circle: true, keep: card));
                 ok = !t.Skipped;
                 if (ok) TapLight(a1.Id);                               // el toque en el hueco ES el toque en la luz
+                TutorialGuards.Expect(!ok || a1.State != ConState.Down, "Constelaciones", "tras el primer toque guiado la luz no quedó abierta");
             }
             if (ok)
             {
                 yield return StartCoroutine(coach.Touch(() => HoleOf(b1), CoachTexts.Constelaciones.Second, circle: true, keep: card));
                 ok = !t.Skipped;
                 if (ok) TapLight(b1.Id);
+                TutorialGuards.Expect(!ok || b1.State != ConState.Down, "Constelaciones", "tras el segundo toque guiado la otra luz no quedó abierta");
             }
             if (ok)
             {
@@ -84,6 +86,7 @@ namespace NeuroVida.Games.Parejas
                 }
                 _inputOn = false;
                 _guidedOnly = -1;
+                TutorialGuards.Expect(!ok || _guidedHit, "Constelaciones", "el toque en la compañera no cerró la pareja");
             }
             if (ok)
             {
@@ -105,6 +108,7 @@ namespace NeuroVida.Games.Parejas
                 AutoPlaySky();
                 while (!_sky.Complete && !t.Skipped) yield return null;
                 ok = !t.Skipped;
+                TutorialGuards.Expect(!ok || _sky.Complete, "Constelaciones", "la práctica no terminó el cielo");
                 if (ok)
                 {
                     yield return Motion.Hold(0.65f);

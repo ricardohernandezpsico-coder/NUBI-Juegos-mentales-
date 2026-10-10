@@ -812,7 +812,8 @@ namespace NeuroVida.Games.Anagramas
                 {
                     yield return StartCoroutine(coach.Touch(() => coach.AroundOf(first.Root, Vector2.one * (_m.TileD * _s * PuntaLayout.GuidedHoleScale)), CoachTexts.Punta.Letters, circle: true, keep: card));
                     ok = !t.Skipped;
-                    if (ok) TapTile(first);                                // el toque en el hueco ES el toque en la ficha
+                    if (ok) TapTile(first);                                // el toque en el hueco ES el toque en la ficha (la entrada está apagada en la práctica: no se repite)
+                    TutorialGuards.Expect(!ok || first.Slot >= 0, "En la punta de la lengua", "tras el toque guiado la ficha no quedó colocada");
                 }
             }
             if (ok)

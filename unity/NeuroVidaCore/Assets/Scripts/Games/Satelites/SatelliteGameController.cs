@@ -325,6 +325,7 @@ namespace NeuroVida.Games.Satelites
                 else if (_marked[i] && !_swarm.Target[i] && wrongIdx < 0) wrongIdx = i;
             }
             bool perfect = SatelliteContract.IsPerfect(hits, k);
+            if (_guided) TutorialGuards.Expect(perfect, "Satélites", "la práctica terminó con " + hits + " de " + k + " y " + (MarkedCount() - hits) + " de más: siguiendo las instrucciones debe ser perfecta");
             if (!_guided)
             {
                 _run.Add(hits, k, n, _level);            // la ronda guiada del tutorial no cuenta: ni puntos, ni motor, ni racha

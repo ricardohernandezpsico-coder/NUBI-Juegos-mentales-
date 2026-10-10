@@ -89,8 +89,10 @@ namespace NeuroVida.Games.Satelites
                 UpdateAnswerPrompt();
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_sats[i].Root), n == 0 ? CoachTexts.Satelites.First : CoachTexts.Satelites.Second, circle: true));
                 ok = !t.Skipped;
-                if (ok) { ToggleMark(i); script.Success(); }              // la ronda marca (el toque era del paso, no del juego): si el toque no llegó (red de seguridad) igual sigue, y nunca se repite el paso
+                if (ok) { ToggleMark(i); script.Success(); }              // la ronda marca (el toque era del paso, no del juego: la entrada está apagada durante la práctica, así que el toque no marca dos veces); si el toque no llegó (red de seguridad) igual sigue, y nunca se repite el paso
+                TutorialGuards.Expect(!ok || _marked[i], "Satélites", "tras el toque guiado el satélite " + (n + 1) + " no quedó marcado");
             }
+            TutorialGuards.Expect(!ok || MarkedCount() == targets.Count, "Satélites", "al terminar los toques guiados hay " + MarkedCount() + " marcados y eran " + targets.Count);
 
             // 4) cada mensaje enciende una luz
             if (ok)

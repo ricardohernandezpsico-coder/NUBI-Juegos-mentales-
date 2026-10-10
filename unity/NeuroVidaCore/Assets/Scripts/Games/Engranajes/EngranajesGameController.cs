@@ -481,7 +481,8 @@ namespace NeuroVida.Games.Engranajes
             {
                 yield return StartCoroutine(coach.Touch(() => coach.AroundOf(_motorArrowRect, Vector2.one * SceneUnits(100f)), CoachTexts.Engranajes.Motor, circle: true, keep: antena));
                 ok = !t.Skipped;
-                if (ok) ToggleSwitch(EngranajesContract.MotorId);      // el toque en el hueco ES el cambio
+                if (ok) ToggleSwitch(EngranajesContract.MotorId);      // el toque en el hueco ES el cambio (la entrada está apagada en la práctica: no se repite)
+                TutorialGuards.Expect(!ok || _changes.Contains(EngranajesContract.MotorId), "Engranajes", "tras el toque guiado el motor no quedó cambiado");
             }
             if (ok)
             {
@@ -493,6 +494,7 @@ namespace NeuroVida.Games.Engranajes
                     PressStart();                                      // el toque en el hueco ES «Arrancar»
                     coach.Hide();
                     yield return StartCoroutine(RevealRoutine(easy, new List<int>(_changes), false));
+                    TutorialGuards.Expect(_okAnswer, "Engranajes", "la práctica terminó sin arreglar la antena: siguiendo las instrucciones debe quedar bien");
                     yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
                 }
             }

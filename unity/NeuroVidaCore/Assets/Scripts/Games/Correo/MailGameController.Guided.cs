@@ -46,6 +46,7 @@ namespace NeuroVida.Games.Correo
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_boxes[first.Planet].Body.rectTransform), CoachTexts.Correo.First, keep: belt));
                 ok = !t.Skipped;
                 if (ok) { DoBox(first.Planet); script.Success(); }
+                TutorialGuards.Expect(!ok || _day.Sorted > 0, "La estación de correo", "tras el toque guiado la primera carta no quedó en su buzón");
             }
             if (ok)
             {
