@@ -206,7 +206,7 @@ iluminan una por una y queda a la vista **qué parte del cielo armaste con tu me
   - **vueltas inútiles:** segunda luz ya vista que no era compañera, sin oportunidad;
   - **turnos**;
   - el `end_rating` del motor común.
-- Va en `StarMeasures` / `ResultAdvice` como los demás juegos estrella. Truco del consejo: «da vuelta primero una luz
+- Va en `StarMeasures` y en su final con sentido (`FinalModels`; la marca «Truco: » la lee `ResultAdvice.tipOf`) como los demás juegos estrella. Truco del consejo: «da vuelta primero una luz
   nueva».
 
 ## 8. Tutorial (NubiCoach, se aprende haciendo)

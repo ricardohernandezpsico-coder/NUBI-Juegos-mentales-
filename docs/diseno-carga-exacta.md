@@ -75,7 +75,7 @@ una para la pista. Reglas:
 
 - Cargas logradas, cuántas sin pista y tiempo medio por carga.
 - **«Caminos cortos»**: cuántas resolvió en tantos pasos como la solución más corta.
-- Nota común «Medida de esta partida… No es un diagnóstico». Consejo en `ResultAdvice`, por ejemplo: «Mira primero si
+- Nota común «Medida de esta partida… No es un diagnóstico». Consejo: Truco para la próxima, en el final con sentido (`FinalModels`; la marca «Truco: » la lee `ResultAdvice.tipOf`), por ejemplo: «Mira primero si
   multiplicar dos celdas te deja cerca de la carga; después ajusta sumando o restando».
 
 ## 7. Tutorial (Nubi entrenadora) y movimiento reducido

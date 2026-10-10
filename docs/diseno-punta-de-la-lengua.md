@@ -97,7 +97,7 @@ sale, una escalera de ayudas aclara la señal hasta que aparece. Nunca te quedas
 - «Encontraste X de N por tu cuenta» (luceros dorados) y la lista de palabras con su lucero.
 - Telemetría: cuántas fueron solas, con pista, con letras y mostradas, y el tiempo medio hasta «¡La tengo!» de las que
   salieron solas.
-- Nota común: «Medida de esta partida… No es un diagnóstico». Consejo en `ResultAdvice`, por ejemplo: «Si una palabra no
+- Nota común: «Medida de esta partida… No es un diagnóstico». Consejo: Truco para la próxima, en el final con sentido (`FinalModels`; la marca «Truco: » la lee `ResultAdvice.tipOf`), por ejemplo: «Si una palabra no
   sale, piensa en cómo empieza o en otra parecida: suele destrabarla».
 
 ## 7. Tutorial y movimiento reducido

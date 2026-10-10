@@ -236,7 +236,7 @@ En «cualquier grupo», el grupo «todas fallan», que se arregla con el motor, 
 - Ritmo, en segundos por máquina.
 - La nota común «Medida de esta partida… No es un diagnóstico».
 - Medida estrella en `StarMeasures`: «Tus máquinas arregladas en Engranajes» (el % de máquinas arregladas).
-- Consejo en `ResultAdvice`: «Antes de cambiar algo, mira qué piezas quedan después: lo que tocas antes de una rama mueve
+- Consejo: Truco para la próxima, en el final con sentido (`FinalModels`; la marca «Truco: » la lee `ResultAdvice.tipOf`): «Antes de cambiar algo, mira qué piezas quedan después: lo que tocas antes de una rama mueve
   todo lo que sigue».
 
 ## 10. Tarjetas «NUEVO» (una vez por instalación)

@@ -92,7 +92,7 @@ Nueva preferencia = decidir su respaldo en `BackupRulesTest` (es progreso de con
 **Archivos**
 - `data/FirstFlight.kt`: lógica pura. `FlightStep` (los 18 pasos), `FlightState` (dónde va, respuestas, medidas, frases, juegos dejados para después),
   `FirstFlight` (`next`, `back`, `skipRemainingGames`, `withResult`, `minutesLeft`, `progress`, `startingPoint`), `FlightCopy` (textos por juego),
-  `CoachTone`, `ColorVision` y `FlightStore` (disco). Dos formas: `FlightMode.FULL` (la primera vez) y `FlightMode.GAMES` («Hacer la evaluación» desde Avance/Hoy:
+  `ColorVision` y `FlightStore` (disco). Dos formas: `FlightMode.FULL` (la primera vez) y `FlightMode.GAMES` («Hacer la evaluación» desde Avance/Hoy:
   solo los 4 juegos, sin preguntas, y al final «Listo»).
 - `data/Baseline.kt`: `BaselinePlan.steps` = 4 juegos, uno por área (Rastro de luz, Freno, Aterrizaje, Meteoros). `buildBaseline`/`seedRatings` siembran el rating
   de cada uno y la estimación de su área para los demás juegos. `data/FirstData.kt`: primer dato de los 4 (Rastro: «Repetiste bien un rastro de N luces.»;
