@@ -177,7 +177,7 @@ object ShareCard {
 
     // Pie
     val foot = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
-    centered(measurer, "Juega. Entrena. Sube de liga.", foot, h - 170f)
+    centered(measurer, "Juega. Avanza. Sube de liga.", foot, h - 170f)
   }
 
   /** Texto centrado a todo el ancho (con márgenes); devuelve la coordenada Y de su borde inferior. */

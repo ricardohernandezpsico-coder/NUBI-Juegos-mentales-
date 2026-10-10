@@ -604,7 +604,7 @@ internal fun SuggestionHeader(s: AreaSuggestionUi) {
       modifier = Modifier.size(104.dp)
     )
     Column(Modifier.weight(1f)) {
-      Text("¿Qué entrenamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
+      Text("¿Qué jugamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
       Text(
         "Te sugiero ${s.name}: ${s.reason.replaceFirstChar { it.lowercase() }}",
         color = OnNightDim, fontSize = 15.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 2.dp).testTag("suggestion_text")
@@ -774,7 +774,7 @@ internal fun AreaWindow(
           )
           NubiBubble(
             title = "Nubi",
-            text = "¿Con cuál entrenamos ${AreaProgress.your(title)}?",
+            text = "¿Qué juego de $title jugamos?",
             tailLeft = true,
             modifier = Modifier.weight(1f)
           )
