@@ -86,7 +86,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BaselinePlan
-import com.example.data.ResultFocus
 import com.example.data.ColorVision
 import com.example.data.FirstFlight
 import com.example.data.FlightCopy
@@ -121,7 +120,6 @@ class FlightActions(
   val onName: (String) -> Unit,
   val onAge: (AgeBand) -> Unit,
   val onGoal: (DomainType) -> Unit,
-  val onFocus: (ResultFocus) -> Unit,
   val onColor: (ColorVision) -> Unit,
   val onDays: (Int) -> Unit,
   val onHour: (Int) -> Unit,
@@ -131,7 +129,7 @@ class FlightActions(
 ) {
   companion object {
     /** Acciones vacías (capturas y pruebas de la pantalla). */
-    val None = FlightActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+    val None = FlightActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
   }
 }
 
@@ -251,16 +249,6 @@ private fun FlightPage(step: FlightStep, s: FlightState, todayGames: List<String
       onPick = { v -> DomainType.entries.firstOrNull { it.name == v }?.let(a.onGoal) },
       hint = "Elige hasta 3. Tu camino de cada día les dará prioridad.",
       canContinue = s.goals.isNotEmpty(),
-      onContinue = a.onContinue
-    )
-    FlightStep.ENFOQUE -> QuestionPage(
-      eyebrow = "Para ordenar tus resultados",
-      title = "Al terminar cada juego, ¿qué te sirve más ver primero?",
-      options = ResultFocus.entries.map { Opt(it.name, it.label) },
-      selected = setOf(s.focus?.name),
-      onPick = { v -> ResultFocus.fromStored(v)?.let(a.onFocus) },
-      hint = "Así ordeno lo que te muestro al final. Lo puedes cambiar en Ajustes.",
-      canContinue = s.focus != null,
       onContinue = a.onContinue
     )
     FlightStep.COLOR -> QuestionPage(

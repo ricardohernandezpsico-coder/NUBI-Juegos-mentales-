@@ -85,12 +85,10 @@ class EngranajesTest {
   }
 
   @Test
-  fun `el consejo entra en los de la pantalla final`() {
-    val r = com.example.model.GamePlayResult(gameId = "engranajes", score = 70, correctAnswers = 7, totalTrials = 10, timed = false, level = 1, engrEtapa = 3)
-    val tips = ResultAdvice.tips(r)
-    assertTrue(tips.any { it.startsWith("Antes de cambiar algo, mira qué piezas quedan después") && it.contains("lo que tocas antes de una rama mueve todo lo que sigue") })
-    val perfect = r.copy(correctAnswers = 10, score = 100)
-    assertTrue(ResultAdvice.tips(perfect).none { it.contains("lo que tocas antes de una rama") })
+  fun `el consejo sale cuando alguna maquina fallo y calla si todas salieron bien`() {
+    val tip = ResultAdvice.tipOf(Engranajes.tip(7, 10)!!)!!
+    assertTrue(tip, tip.startsWith("Antes de cambiar algo, mira qué piezas quedan después") && tip.contains("lo que tocas antes de una rama mueve todo lo que sigue"))
+    assertNull(Engranajes.tip(10, 10))
   }
 
   @Test

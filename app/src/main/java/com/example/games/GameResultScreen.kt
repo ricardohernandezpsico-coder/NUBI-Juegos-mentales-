@@ -57,7 +57,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.ResultFocus
 import com.example.model.GamePlayResult
 import com.example.model.GameRankInfo
 import com.example.model.GameRegistry
@@ -89,8 +88,7 @@ object ResultPhrases {
   val NO_SPEED_GAMES = setOf("secuencia", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes", "bodega", "parejas", "correo")
 
   /**
-   * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono: lo que cambia con la preferencia de la persona
-   * es el ORDEN del resultado, ver [com.example.data.ResultFocus]). Las reglas de arriba valen: sin «velocidad» ni «ritmo» donde el puntaje no la usa.
+   * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono). Las reglas de arriba valen: sin «velocidad» ni «ritmo» donde el puntaje no la usa.
    */
   fun feedback(gameId: String, score: Int): String {
     val noSpeed = gameId in NO_SPEED_GAMES
@@ -141,9 +139,7 @@ fun GameResultScreen(
   /** Acoplamiento: los módulos acoplados y los anillos completos de toda la vida (ya con esta partida sumada), para «Has acoplado …». */
   acoplamientoTotals: com.example.data.Acoplamiento.Totals? = null,
   /** Aterrizaje Lunar: las cúpulas de tu base de toda la vida (ya con esta partida sumada), para «Tu base lunar: …». */
-  aterrizajeTotals: com.example.data.Aterrizaje.Totals? = null,
-  /** Qué te sirve más ver primero (`result_focus`): solo cambia el orden de lo que se muestra. */
-  resultFocus: ResultFocus = ResultFocus.DEFAULT
+  aterrizajeTotals: com.example.data.Aterrizaje.Totals? = null
 ) {
   val gameDef = GameRegistry.getById(result.gameId)
   val domainColor = gameDef?.domain?.color ?: Clay.Sky
@@ -755,19 +751,9 @@ fun GameResultScreen(
     }
     }  // fin de progressNotes
 
-    // «Al terminar cada juego, ¿qué te sirve más ver primero?» (`result_focus`, Ajustes): SOLO cambia el orden. «Lo que avancé» pone primero las
-    // medidas de la partida y lo que subió; «Un consejo para la próxima», el consejo concreto. Ningún dato se repite ni se oculta: el consejo sale
-    // de las medidas (no se muestra dos veces) y los juegos sin consejo propio se ven igual con las dos opciones.
-    val adviceTips = remember(result) { if (usesMeaningfulResult) emptyList() else com.example.data.ResultAdvice.tips(result) }       // los finales con sentido traen su «Truco para la próxima»
-    if (resultFocus == ResultFocus.CONSEJO) {
-      AdviceBlock(adviceTips)
-      measures()
-      progressNotes()
-    } else {
-      measures()
-      progressNotes()
-      AdviceBlock(adviceTips)
-    }
+    // Un solo orden: las medidas de la partida (cada juego con su final con sentido, que trae su propio «Truco para la próxima») y lo que subió.
+    measures()
+    progressNotes()
 
     if (rank != null) {
       Spacer(Modifier.height(18.dp))
@@ -1363,17 +1349,6 @@ private fun PuntaWordRow(entry: com.example.data.PuntaEntry, modifier: Modifier 
     Text(entry.word, color = Clay.Cream, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, modifier = Modifier.padding(start = 10.dp))
     Spacer(Modifier.weight(1f))
     Text(entry.tier.label, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.End, softWrap = false)
-  }
-}
-
-/** «Un consejo para la próxima»: el consejo concreto de la partida (ver [com.example.data.ResultAdvice]); sin consejo, no hay bloque. */
-@Composable
-private fun ColumnScope.AdviceBlock(tips: List<String>) {
-  if (tips.isEmpty()) return
-  Spacer(Modifier.height(14.dp))
-  Text("Un consejo para la próxima", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.testTag("result_advice"))
-  tips.forEach { tip ->
-    Text(tip, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
   }
 }
 

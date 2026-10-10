@@ -24,21 +24,20 @@ copiado: nombres, textos, arte y juegos propios.
 5. **¿Qué te gustaría entrenar?** (hasta 3 áreas).
 6. **Nubi: un dato** («poco y seguido rinde más»: práctica distribuida; sin promesas de mejora).
 7. **Juego 2 · Atención**: Freno de Emergencia.
-8. **Al terminar cada juego, ¿qué te sirve más ver primero?** «Lo que avancé» / «Un consejo para la próxima» (3-oct, tarea 21c; antes
-   «¿Cómo prefieres que te anime?», demasiado parecida a la de Lumosity): cambia el ORDEN de la pantalla de resultado, no lo que se muestra. Se cambia en Ajustes.
-9. **(nuevo) ¿Te cuesta distinguir algunos colores?** Sí / No / No sé. Con «sí», los juegos que dependen del color usan su
+8. **(nuevo) ¿Te cuesta distinguir algunos colores?** Sí / No / No sé. Con «sí», los juegos que dependen del color usan su
    paleta segura y Tinta o Palabra se marca para revisar (ver «Accesibilidad»). Se cambia en Ajustes.
-10. **Juego 3 · Razonamiento**: Aterrizaje Lunar.
-11. **¿Cuántos días por semana?** (3 / 4 recomendado / 5 / todos).
-12. **Juego 4 · Lenguaje**: Lluvia de meteoros.
-13. **Tu punto de partida**: las 4 áreas con su etapa (Inicio…Maestro), «tu fuerte hoy» y «donde más vamos a jugar»;
+9. **Juego 3 · Razonamiento**: Aterrizaje Lunar.
+10. **¿Cuántos días por semana?** (3 / 4 recomendado / 5 / todos).
+11. **Juego 4 · Lenguaje**: Lluvia de meteoros.
+12. **Tu punto de partida**: las 4 áreas con su etapa (Inicio…Maestro), «tu fuerte hoy» y «donde más vamos a jugar»;
     «No es un examen: es desde dónde partimos». **(nuevo) Nace tu primera estrella**: Nubi celebra y en el cielo aparece la
     primera estrella (la historia de Nubi: «cada partida hace nacer una estrella»). Se enciende el día 1 de la racha.
-14. **¿A qué hora te aviso?** (aquí se pide el permiso de notificaciones de Android 13+).
-15. **Tu camino de hoy**: los 3 juegos del día elegidos por las metas y el punto de partida → entra a Hoy.
+13. **¿A qué hora te aviso?** (aquí se pide el permiso de notificaciones de Android 13+).
+14. **Tu camino de hoy**: los 3 juegos del día elegidos por las metas y el punto de partida → entra a Hoy.
 
-Salen del inicio: nivel de estudios (pasa a Perfil, opcional: hoy no cambia nada del juego) y «Así funciona» (cada cosa
-se explica cuando aparece por primera vez).
+Salen del inicio: nivel de estudios (pasa a Perfil, opcional: hoy no cambia nada del juego), «Así funciona» (cada cosa
+se explica cuando aparece por primera vez) y, desde el 10-oct (Tarea 78), la pregunta «Al terminar cada juego, ¿qué te sirve más ver primero?» («Lo que avancé» / «Un consejo para la próxima»;
+puesta el 3-oct, tarea 21c): con los finales con sentido de los 18 juegos, que tienen UN solo orden y traen su truco dentro, no cambiaba nada de lo que se ve. El recorrido quedó en 18 pasos (la lista tiene 14 puntos porque cada juego va junto con su tarjeta).
 
 ## Reglas
 
@@ -91,7 +90,7 @@ Nueva preferencia = decidir su respaldo en `BackupRulesTest` (es progreso de con
 ## Ficha técnica (programado el 3-oct, tarea 21b)
 
 **Archivos**
-- `data/FirstFlight.kt`: lógica pura. `FlightStep` (los 19 pasos), `FlightState` (dónde va, respuestas, medidas, frases, juegos dejados para después),
+- `data/FirstFlight.kt`: lógica pura. `FlightStep` (los 18 pasos), `FlightState` (dónde va, respuestas, medidas, frases, juegos dejados para después),
   `FirstFlight` (`next`, `back`, `skipRemainingGames`, `withResult`, `minutesLeft`, `progress`, `startingPoint`), `FlightCopy` (textos por juego),
   `CoachTone`, `ColorVision` y `FlightStore` (disco). Dos formas: `FlightMode.FULL` (la primera vez) y `FlightMode.GAMES` («Hacer la evaluación» desde Avance/Hoy:
   solo los 4 juegos, sin preguntas, y al final «Listo»).
@@ -105,13 +104,12 @@ Nueva preferencia = decidir su respaldo en `BackupRulesTest` (es progreso de con
 
 **Preferencias**
 - `first_flight` (nueva, `FlightStore`): el recorrido en curso como JSON. Estado PASAJERO: va a `transient` en `BackupRulesTest` (no al respaldo).
-- `result_focus` (avance / consejo) y `color_vision`: dentro de `profile_extra`, que YA va al respaldo (son configuración de la persona). Valores por defecto: avance y «no sé».
-  Editables en Ajustes. `result_focus` reemplazó a `coach_tone` el 3-oct (tarea 21c): se MIGRA una sola vez (celebrar → avance, claro → consejo) y la clave vieja se borra
-  (`ResultFocus.migrate`, `NeuroVidaRepository.loadResultFocus`). Cambia el orden de `GameResultScreen`: el bloque «Un consejo para la próxima» (`data/ResultAdvice.kt`: el «Truco: …» de
-  cada medida, que ya no se repite dentro de ella) va antes o después de las medidas y de lo que subió; los juegos sin consejo propio (Freno, Satélites, Radar…) se ven igual con las dos
-  opciones. Con consejo hoy: Rastro de luz, Aterrizaje, Meteoros, ¿Verdad o disparate?, La estrella intrusa, Rumbo a Casa y Correo Estelar (Bitácora y Cosecha lo llevan dentro de su texto).
+- `color_vision`: dentro de `profile_extra`, que YA va al respaldo (es configuración de la persona). Valor por defecto: «no sé». Editable en Ajustes. Por ahora solo se guarda.
+  `result_focus` (avance / consejo; reemplazó a `coach_tone` el 3-oct, tarea 21c) **se quitó el 10-oct (Tarea 78)**: el ajuste de Opciones, la pregunta del inicio, `ResultFocus` y el bloque
+  «Un consejo para la próxima» de `GameResultScreen` ya no existen. Lo que haya quedado guardado en `profile_extra` (`result_focus` o el viejo `coach_tone`) no se borra: simplemente ya no se lee ni se
+  migra. De `data/ResultAdvice.kt` queda solo lo que usan los finales con sentido: separar el «Truco: …» de una frase de medida (`body` y `tipOf`). Un recorrido guardado en el paso viejo
+  (`ENFOQUE`) sigue en el paso siguiente (`COLOR`) al leerlo (`FlightStore.decode`).
   Nubi vuelve a UN solo tono, cálido y sin culpa, en veredictos (`ResultPhrases.feedback`) y recordatorios (`buildReminder`): se quitaron las variantes de tono.
-  `color_vision` por ahora solo se guarda.
 - `education`: ya no se pregunta; se edita en Perfil (opcional) y conserva el valor de quien ya lo tenía.
 
 **Cómo se retoma**: cada cambio de `FlightState` se guarda con `commit()`. Un ViewModel nuevo lee `FlightStore` al crearse; si Android mató la app durante un juego,

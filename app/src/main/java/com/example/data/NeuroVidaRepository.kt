@@ -446,19 +446,8 @@ class NeuroVidaRepository(
   private val _baseline = MutableStateFlow(decodeBaseline(profilePrefs.getString("baseline", null)))
   val baseline: StateFlow<Baseline?> = _baseline.asStateFlow()
 
-  // Preferencias del inicio nuevo (`docs/diseno-inicio.md`): qué te sirve más ver primero al terminar un juego y si cuesta distinguir colores. En el mismo archivo
-  // `profile_extra` (ya va al respaldo: es configuración de la persona, no estado pasajero). Sin dato = el valor por defecto de cada una.
-  /** Lee `result_focus`; si todavía está el valor viejo `coach_tone` lo migra (celebrar → avance, claro → consejo) y borra la clave vieja. */
-  private fun loadResultFocus(): ResultFocus {
-    val focus = ResultFocus.migrate(profilePrefs.getString("result_focus", null), profilePrefs.getString("coach_tone", null))
-    if (profilePrefs.contains("coach_tone")) profilePrefs.edit().putString("result_focus", focus.name).remove("coach_tone").apply()
-    return focus
-  }
-
-  // `result_focus` (qué te sirve más ver primero al terminar un juego: avance / consejo) reemplazó el 3-oct a `coach_tone` (celebrar / claro): se migra
-  // el valor viejo una sola vez y se borra la clave vieja.
-  private val _resultFocus = MutableStateFlow(loadResultFocus())
-  val resultFocus: StateFlow<ResultFocus> = _resultFocus.asStateFlow()
+  // Preferencia del inicio nuevo (`docs/diseno-inicio.md`): si cuesta distinguir colores. Va en `profile_extra` (ya va al respaldo: es configuración de la persona, no estado pasajero). Sin dato = el valor por defecto.
+  // `result_focus` (y el viejo `coach_tone`), «qué te sirve más ver primero al terminar un juego», se quitó el 10-oct: ya no se lee ni se escribe; si quedó guardado en `profile_extra`, se deja como está.
   private val _colorVision = MutableStateFlow(ColorVision.fromStored(profilePrefs.getString("color_vision", null)) ?: ColorVision.DEFAULT)
   val colorVision: StateFlow<ColorVision> = _colorVision.asStateFlow()
 
@@ -472,11 +461,6 @@ class NeuroVidaRepository(
   fun saveGoals(goals: Set<DomainType>) {
     _goals.value = goals
     profilePrefs.edit().putString("goals", encodeGoals(goals)).apply()
-  }
-
-  fun saveResultFocus(focus: ResultFocus) {
-    _resultFocus.value = focus
-    profilePrefs.edit().putString("result_focus", focus.name).remove("coach_tone").apply()
   }
 
   fun saveColorVision(vision: ColorVision) {
@@ -1107,7 +1091,6 @@ class NeuroVidaRepository(
     _education.value = null
     _goals.value = emptySet()
     _baseline.value = null
-    _resultFocus.value = ResultFocus.DEFAULT
     _colorVision.value = ColorVision.DEFAULT
     initializeDatabaseDefaults()
   }

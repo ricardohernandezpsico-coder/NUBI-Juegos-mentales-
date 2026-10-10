@@ -35,7 +35,7 @@ enum class FlightStep(val game: Int? = null) {
   JUEGO_1(0), TARJETA_1(0),
   METAS, DATO,
   JUEGO_2(1), TARJETA_2(1),
-  ENFOQUE, COLOR,
+  COLOR,
   JUEGO_3(2), TARJETA_3(2),
   DIAS,
   JUEGO_4(3), TARJETA_4(3),
@@ -57,8 +57,6 @@ data class FlightState(
   val name: String = "",
   val age: AgeBand? = null,
   val goals: Set<DomainType> = emptySet(),
-  /** Qué le sirve más ver primero al terminar un juego (`result_focus`). */
-  val focus: ResultFocus? = null,
   val color: ColorVision? = null,
   val days: Int? = null,
   /** Hora del aviso diario; [NO_REMINDER] = sin aviso; null = todavía no respondió. */
@@ -90,7 +88,7 @@ object FirstFlight {
   private val full = listOf(
     FlightStep.HOLA, FlightStep.NOMBRE, FlightStep.EDAD,
     FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.METAS, FlightStep.DATO,
-    FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.ENFOQUE, FlightStep.COLOR,
+    FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.COLOR,
     FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS,
     FlightStep.JUEGO_4, FlightStep.TARJETA_4, FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO
   )
@@ -169,7 +167,7 @@ object FirstFlight {
     else -> when (step) {
       FlightStep.HOLA -> 5
       FlightStep.NOMBRE -> 8
-      FlightStep.EDAD, FlightStep.ENFOQUE, FlightStep.COLOR, FlightStep.DIAS, FlightStep.METAS -> 6
+      FlightStep.EDAD, FlightStep.COLOR, FlightStep.DIAS, FlightStep.METAS -> 6
       FlightStep.DATO -> 5
       FlightStep.PUNTO -> 12
       FlightStep.AVISO -> 8
@@ -305,7 +303,6 @@ object FlightStore {
     put("name", s.name)
     s.age?.let { put("age", it.name) }
     put("goals", encodeGoals(s.goals))
-    s.focus?.let { put("focus", it.name) }
     s.color?.let { put("color", it.name) }
     s.days?.let { put("days", it) }
     s.hour?.let { put("hour", it) }
@@ -321,7 +318,8 @@ object FlightStore {
     return try {
       val o = JSONObject(raw)
       val mode = FlightMode.valueOf(o.getString("mode"))
-      val step = FlightStep.valueOf(o.getString("step"))
+      // «ENFOQUE» (la pregunta «¿qué te sirve más ver primero?», quitada el 10-oct) ya no es un paso: quien quedó guardado ahí sigue en el paso que venía, COLOR. La clave «focus» guardada se ignora.
+      val step = FlightStep.valueOf(o.getString("step").let { if (it == "ENFOQUE") "COLOR" else it })
       if (step !in FirstFlight.steps(mode)) return null
       val measured = o.optJSONObject("measured")?.let { m -> m.keys().asSequence().associateWith { m.getDouble(it).toFloat() } }.orEmpty()
       val phrases = o.optJSONObject("phrases")?.let { m -> m.keys().asSequence().associateWith { m.getString(it) } }.orEmpty()
@@ -332,7 +330,6 @@ object FlightStore {
         name = o.optString("name"),
         age = AgeBand.entries.firstOrNull { it.name == o.optString("age") },
         goals = decodeGoals(o.optString("goals")),
-        focus = ResultFocus.fromStored(o.optString("focus")),
         color = ColorVision.fromStored(o.optString("color")),
         days = if (o.has("days")) o.getInt("days") else null,
         hour = if (o.has("hour")) o.getInt("hour") else null,

@@ -34,8 +34,7 @@ private val StreakMilestones = listOf(3, 7, 14, 30, 50, 100, 200, 365)
  * cognitiva"). Devuelve null si no hay que avisar (ya completó la sesión de hoy: no se insiste).
  * Prioridad: sesión a medias > racha en juego > volver después de varios días > meta semanal > invitación.
  *
- * UN solo tono, cálido (el 3-oct se quitaron las variantes de tono: lo que la persona elige en el inicio y en Ajustes es qué ver primero al terminar un
- * juego, no cómo le habla Nubi). Ningún mensaje cuenta lo que «falló»: volver después de varios días nunca lleva reproche.
+ * UN solo tono, cálido (el 3-oct se quitaron las variantes de tono: no hay nada que la persona elija sobre cómo le habla Nubi). Ningún mensaje cuenta lo que «falló»: volver después de varios días nunca lleva reproche.
  */
 fun buildReminder(input: ReminderInput): ReminderMessage? {
   if (input.completedToday >= 3) return null

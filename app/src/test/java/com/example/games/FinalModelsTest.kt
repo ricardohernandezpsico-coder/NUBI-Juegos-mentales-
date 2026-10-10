@@ -108,6 +108,11 @@ class FinalModelsTest {
     // todo salió bien: el truco general
     val ok = FinalModels.forGame(correo.copy(mailEvHits = 4, mailTimeHits = 2, mailPeeksGood = 3), emptyList())!!
     assertEquals("Antes de empezar, dilo en voz baja: «cuando vea…, haré…».", ok.trick)
+    // las cartas señal: el truco nombra la señal que se escapó (etapa 2: sello dorado; etapa 5: lazo)
+    val gold = FinalModels.forGame(correo.copy(mailGroup = 1, mailEvHits = 1, mailEvTotal = 2, mailTimeHits = 0, mailTimeTotal = 0, mailCommissions = 0, mailPeeks = 0, mailPeeksGood = 0, mailGoldMissed = 1, mailLazoMissed = 0), emptyList())!!
+    assertEquals("Repite «cuando vea un sello dorado, caja fuerte».", gold.trick)
+    val lazo = FinalModels.forGame(correo.copy(mailGroup = 3, mailEvHits = 0, mailEvTotal = 2, mailTimeHits = 0, mailTimeTotal = 0, mailCommissions = 0, mailPeeks = 0, mailPeeksGood = 0, mailGoldMissed = 0, mailLazoMissed = 2), emptyList())!!
+    assertEquals("Repite «cuando vea un lazo, caja fuerte».", lazo.trick)
     assertEquals("Fuente: Hering y otros, 2014", m.source)
   }
 
@@ -345,6 +350,9 @@ class FinalModelsTest {
     assertEquals("Tardaste 6,5 s en decir «¡La tengo!» en las que salieron solas", m.dataLine)
     assertEquals("Si una no sale, piensa en cómo empieza o en otra parecida: suele destrabarla.", m.trick)
     assertEquals("las azules vuelven: es el dato cuando no hay tiempo que decir", "Las azules vuelven en otra partida.", FinalModels.forGame(punta.copy(puntaSolo = 1, puntaPista = 2, puntaVista = 1), emptyList())!!.dataLine)
+    // todas solas: no hay nada que aconsejar y el truco que sale es el general de la tabla (el mismo texto: siempre hay truco)
+    val allAlone = FinalModels.forGame(punta.copy(puntaSolo = 8, puntaPista = 0, puntaLetras = 0, puntaVista = 0), emptyList())!!
+    assertEquals("Si una no sale, piensa en cómo empieza o en otra parecida: suele destrabarla.", allAlone.trick)
     assertEquals(listOf("63 %", "—", "—"), m.chips.map { it.value })
     assertEquals("Fuente: Shafto y otros, 2007", m.source)
     assertTrue(m.why.startsWith("Pusiste en juego lo que usas para encontrar una palabra que conoces y que no sale."))

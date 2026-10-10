@@ -5,7 +5,6 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.TestSupport
 import com.example.bridge.GameSessionStore
 import com.example.data.BaselinePlan
-import com.example.data.ResultFocus
 import com.example.data.ColorVision
 import com.example.data.FirstFlight
 import com.example.data.FlightMode
@@ -114,9 +113,8 @@ class FirstFlightFlowTest {
     assertEquals(FlightStep.JUEGO_2, vm.flight.value!!.step)
     play(vm, 1)
     assertEquals("Frenaste a tiempo 6 de 8 veces.", vm.flight.value!!.phrases["freno"])
-    vm.flightContinue() // -> ANIMO
-    vm.flightSetFocus(ResultFocus.CONSEJO)
-    vm.flightContinue() // -> COLOR
+    vm.flightContinue() // TARJETA_2 -> COLOR (ya no hay pregunta de qué ver primero)
+    assertEquals(FlightStep.COLOR, vm.flight.value!!.step)
     vm.flightSetColorVision(ColorVision.DIFICULTAD)
     vm.flightContinue() // -> JUEGO_3
     play(vm, 2)
@@ -136,7 +134,6 @@ class FirstFlightFlowTest {
     assertEquals("Ana", vm.userSettings.value.name)
     assertEquals(5, vm.userSettings.value.weeklyGoal)
     assertEquals(setOf(DomainType.LENGUAJE, DomainType.MEMORIA), vm.goals.value)
-    assertEquals(ResultFocus.CONSEJO, vm.resultFocus.value)
     assertEquals(ColorVision.DIFICULTAD, vm.colorVision.value)
 
     vm.flightConfirmReminder(9)
@@ -172,8 +169,7 @@ class FirstFlightFlowTest {
     val s = vm.flight.value!!
     assertEquals(setOf("freno", "aterrizaje", "meteoros"), s.skipped)
     assertEquals(setOf("secuencia"), s.measured.keys)
-    assertEquals("sigue por la pregunta que falta, sin juegos", FlightStep.ENFOQUE, s.step)
-    vm.flightSetFocus(ResultFocus.AVANCE); vm.flightContinue() // COLOR
+    assertEquals("sigue por la pregunta que falta, sin juegos", FlightStep.COLOR, s.step)
     vm.flightSetColorVision(ColorVision.NORMAL); vm.flightContinue() // DIAS
     vm.flightSetDays(3); vm.flightContinue()
     assertEquals(FlightStep.PUNTO, vm.flight.value!!.step)
@@ -215,7 +211,7 @@ class FirstFlightFlowTest {
     play(first, 0)
     first.flightContinue(); first.flightToggleGoal(DomainType.MEMORIA); first.flightContinue(); first.flightContinue()
     play(first, 1)
-    first.flightContinue(); first.flightSetFocus(ResultFocus.AVANCE); first.flightContinue()
+    first.flightContinue() // TARJETA_2 -> COLOR
     first.flightSetColorVision(ColorVision.NO_SE); first.flightContinue()
     assertEquals(FlightStep.JUEGO_3, first.flight.value!!.step)
     first.flightPlay(2)
@@ -364,42 +360,30 @@ class FirstFlightFlowTest {
   }
 
   @Test
-  fun `el enfoque del resultado y la vision de color se guardan y sobreviven al cierre de la app`() {
+  fun `la vision de color se guarda y sobrevive al cierre de la app`() {
     val first = newViewModel()
-    assertEquals(ResultFocus.AVANCE, first.resultFocus.value)
     assertEquals(ColorVision.NO_SE, first.colorVision.value)
-    first.setResultFocus(ResultFocus.CONSEJO)
     first.setColorVision(ColorVision.DIFICULTAD)
     val second = newViewModel()
-    assertEquals(ResultFocus.CONSEJO, second.resultFocus.value)
     assertEquals(ColorVision.DIFICULTAD, second.colorVision.value)
   }
 
   @Test
-  fun `coach_tone se migra a result_focus y la clave vieja se borra`() {
-    // Una app que ya tenía la pregunta vieja: celebrar -> avance, claro -> consejo.
+  fun `lo que quedo guardado de result_focus y coach_tone ya no se lee ni se toca`() {
+    // La pregunta «¿qué te sirve más ver primero?» se quitó el 10-oct: lo guardado se queda en el teléfono tal cual, sin leerse y sin migrarse.
     val prefs = app.getSharedPreferences("profile_extra", android.content.Context.MODE_PRIVATE)
-    prefs.edit().putString("coach_tone", "CLARO").commit()
+    prefs.edit().putString("result_focus", "CONSEJO").putString("coach_tone", "CLARO").commit()
     val vm = newViewModel()
-    assertEquals(ResultFocus.CONSEJO, vm.resultFocus.value)
+    assertEquals(ColorVision.NO_SE, vm.colorVision.value)
     assertEquals("CONSEJO", prefs.getString("result_focus", null))
-    assertFalse("la clave vieja ya no debe quedar", prefs.contains("coach_tone"))
-    // Y la migración no se repite ni pisa lo que la persona cambie después.
-    vm.setResultFocus(ResultFocus.AVANCE)
-    assertEquals(ResultFocus.AVANCE, newViewModel().resultFocus.value)
-  }
-
-  @Test
-  fun `coach_tone celebrar pasa a avance`() {
-    app.getSharedPreferences("profile_extra", android.content.Context.MODE_PRIVATE).edit().putString("coach_tone", "CELEBRAR").commit()
-    assertEquals(ResultFocus.AVANCE, newViewModel().resultFocus.value)
+    assertEquals("CLARO", prefs.getString("coach_tone", null))
   }
 
   @Test
   fun `el recorrido guardado se codifica y se lee de vuelta, y lo ilegible se descarta`() {
     val s = FlightState(
       mode = FlightMode.FULL, step = FlightStep.JUEGO_3, name = "Ana", age = AgeBand.SENIOR,
-      goals = setOf(DomainType.MEMORIA, DomainType.LENGUAJE), focus = ResultFocus.CONSEJO, color = ColorVision.DIFICULTAD, days = 4, hour = FirstFlight.NO_REMINDER,
+      goals = setOf(DomainType.MEMORIA, DomainType.LENGUAJE), color = ColorVision.DIFICULTAD, days = 4, hour = FirstFlight.NO_REMINDER,
       measured = mapOf("secuencia" to 0.5f, "freno" to 0.25f), phrases = mapOf("freno" to "Frenaste a tiempo 6 de 8 veces."),
       skipped = setOf("meteoros"), applied = false
     )
@@ -409,6 +393,15 @@ class FirstFlightFlowTest {
     assertNull(FlightStore.decode(null))
     // Un paso que no es de ese recorrido (otra versión de la app) también se descarta.
     assertNull(FlightStore.decode(FlightStore.encode(s.copy(mode = FlightMode.GAMES, step = FlightStep.JUEGO_1)).replace("JUEGO_1", "NOMBRE")))
+  }
+
+  @Test
+  fun `quien quedo guardado en la pregunta que se quito sigue en la que venia, sin reiniciar el recorrido`() {
+    // Un recorrido guardado con la versión anterior (con el paso ENFOQUE y la clave focus): no se descarta, sigue en COLOR y la respuesta vieja se ignora.
+    val s = FlightState(mode = FlightMode.FULL, step = FlightStep.COLOR, name = "Ana", age = AgeBand.SENIOR, measured = mapOf("secuencia" to 0.5f, "freno" to 0.25f))
+    val old = FlightStore.encode(s).replace("\"step\":\"COLOR\"", "\"step\":\"ENFOQUE\"").replaceFirst("{", "{\"focus\":\"CONSEJO\",")
+    assertTrue("el JSON viejo trae el paso que ya no existe", old.contains("ENFOQUE") && old.contains("focus"))
+    assertEquals(s, FlightStore.decode(old))
   }
 
   @Test

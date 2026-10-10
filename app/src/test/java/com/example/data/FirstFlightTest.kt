@@ -25,14 +25,15 @@ class FirstFlightTest {
   }
 
   @Test
-  fun `el recorrido completo tiene los 19 pasos en el orden aprobado`() {
+  fun `el recorrido completo tiene los 18 pasos en el orden aprobado`() {
     assertEquals(
       listOf(
-        "HOLA", "NOMBRE", "EDAD", "JUEGO_1", "TARJETA_1", "METAS", "DATO", "JUEGO_2", "TARJETA_2", "ENFOQUE", "COLOR",
+        "HOLA", "NOMBRE", "EDAD", "JUEGO_1", "TARJETA_1", "METAS", "DATO", "JUEGO_2", "TARJETA_2", "COLOR",
         "JUEGO_3", "TARJETA_3", "DIAS", "JUEGO_4", "TARJETA_4", "PUNTO", "AVISO", "CAMINO"
       ),
       FirstFlight.steps(FlightMode.FULL).map { it.name }
     )
+    assertNull("ya no hay pregunta sobre qué ver primero al terminar un juego", FlightStep.entries.firstOrNull { it.name == "ENFOQUE" })
   }
 
   @Test
@@ -46,7 +47,7 @@ class FirstFlightTest {
     val steps = FirstFlight.steps(FlightMode.GAMES)
     assertEquals(FlightStep.JUEGO_1, steps.first())
     assertEquals(FlightStep.PUNTO, steps.last())
-    val questions = setOf(FlightStep.NOMBRE, FlightStep.EDAD, FlightStep.METAS, FlightStep.ENFOQUE, FlightStep.COLOR, FlightStep.DIAS, FlightStep.AVISO)
+    val questions = setOf(FlightStep.NOMBRE, FlightStep.EDAD, FlightStep.METAS, FlightStep.COLOR, FlightStep.DIAS, FlightStep.AVISO)
     assertTrue(steps.none { it in questions })
   }
 
@@ -75,7 +76,7 @@ class FirstFlightTest {
   @Test
   fun `un juego dejado para despues se salta con su tarjeta`() {
     val s = full(FlightStep.DATO).copy(skipped = setOf("freno"))
-    assertEquals(FlightStep.ENFOQUE, FirstFlight.next(s)!!.step)
+    assertEquals(FlightStep.COLOR, FirstFlight.next(s)!!.step)
   }
 
   @Test
@@ -103,7 +104,7 @@ class FirstFlightTest {
 
   @Test
   fun `atras se salta la tarjeta de un juego que se dejo para despues`() {
-    val s = full(FlightStep.ENFOQUE).copy(skipped = setOf("freno"))
+    val s = full(FlightStep.COLOR).copy(skipped = setOf("freno"))
     assertEquals(FlightStep.DATO, FirstFlight.back(s)!!.step)
   }
 
@@ -187,17 +188,9 @@ class FirstFlightTest {
   }
 
   @Test
-  fun `el enfoque del resultado y la vision de color tienen valor por defecto`() {
-    assertEquals(ResultFocus.AVANCE, ResultFocus.DEFAULT)
+  fun `la vision de color tiene valor por defecto`() {
     assertEquals(ColorVision.NO_SE, ColorVision.DEFAULT)
-    assertNull(ResultFocus.fromStored(null))
     assertNull(ColorVision.fromStored("otra"))
-    assertEquals(ResultFocus.CONSEJO, ResultFocus.fromStored("CONSEJO"))
     assertNotNull(ColorVision.fromStored("DIFICULTAD"))
-  }
-
-  @Test
-  fun `la pregunta del enfoque no se parece a la de animo de Lumosity`() {
-    assertEquals(listOf("Lo que avancé", "Un consejo para la próxima"), ResultFocus.entries.map { it.label })
   }
 }

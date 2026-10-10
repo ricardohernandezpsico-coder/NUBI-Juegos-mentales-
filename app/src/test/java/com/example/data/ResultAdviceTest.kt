@@ -1,17 +1,13 @@
 package com.example.data
 
-import com.example.model.GamePlayResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** El consejo de la pantalla de resultado, separado de la medida (`result_focus`): cada frase sale UNA sola vez, antes o después. */
+/** El «Truco: …» de una frase de medida, separado de ella: lo que usan los finales con sentido y el detalle de la partida. */
 class ResultAdviceTest {
-  private fun result(id: String, block: GamePlayResult.() -> GamePlayResult = { this }) =
-    GamePlayResult(gameId = id, score = 70, correctAnswers = 7, totalTrials = 10, timed = false, level = 1).block()
-
   @Test
   fun `la medida queda sin el truco y el consejo es solo el truco`() {
     val text = "Donde más te alejas del blanco: el centro de la regla. Truco: ubica primero la mitad exacta y corrige desde ahí."
@@ -41,74 +37,5 @@ class ResultAdviceTest {
       assertTrue(t.contains(tip!!.replaceFirstChar { it.lowercase() }))
       assertTrue(t.startsWith(body))
     }
-  }
-
-  @Test
-  fun `En la punta de la lengua da su truco si alguna palabra necesito ayuda o la mostro Nubi`() {
-    val some = ResultAdvice.tips(result("anagramas") { copy(puntaSolo = 5, puntaPista = 2, puntaLetras = 0, puntaVista = 1) })
-    assertEquals(listOf("Si una no sale, piensa en cómo empieza o en otra parecida: suele destrabarla."), some)
-    // todas solas: nada que aconsejar; sin datos del juego, tampoco
-    assertTrue(ResultAdvice.tips(result("anagramas") { copy(puntaSolo = 8, puntaPista = 0, puntaLetras = 0, puntaVista = 0) }).isEmpty())
-    assertTrue(ResultAdvice.tips(result("anagramas")).isEmpty())
-  }
-
-  @Test
-  fun `Aterrizaje ya no pasa por el bloque de consejo, su truco viene en su propio final`() {
-    // primer tercio mucho peor que el resto: el truco lo da NumberLine.trick dentro de MeaningfulResult, no ResultAdvice
-    val trues = listOf(0.1f, 0.2f, 0.5f, 0.5f, 0.9f, 0.9f)
-    val givens = listOf(0.3f, 0.4f, 0.5f, 0.52f, 0.9f, 0.91f)
-    assertTrue(ResultAdvice.tips(result("aterrizaje") { copy(numlineErrorPct = 8f, numlineTrue = trues, numlineGiven = givens) }).isEmpty())
-    assertTrue(ResultAdvice.tips(result("aterrizaje") { copy(numlineErrorPct = 8f) }).isEmpty())
-  }
-
-  @Test
-  fun `Rastro de luz da el truco del modo que mas costo`() {
-    val tips = ResultAdvice.tips(result("secuencia") { copy(rasBestLen = listOf(5, 4, 3, 2), rasRounds = listOf(7, 4, 5, 3), rasHits = listOf(7, 3, 2, 2)) })
-    assertEquals(1, tips.size)
-    assertTrue(tips[0], tips[0].startsWith("Sigue a un lucero"))
-    // sin modos con rondas suficientes no hay consejo
-    assertTrue(ResultAdvice.tips(result("secuencia") { copy(rasBestLen = listOf(5, 0, 0, 0), rasRounds = listOf(7, 0, 0, 0), rasHits = listOf(7, 0, 0, 0)) }).isEmpty())
-  }
-
-  @Test
-  fun `Meteoros da su consejo solo si las traspuestas enganan mas`() {
-    val seen = listOf(6, 6, 6, 6, 6, 6)
-    val hits = listOf(5, 5, 5, 5, 5, 5)
-    val tips = ResultAdvice.tips(result("meteoros") { copy(lexBandSeen = seen, lexBandHits = hits, lexFaSeen = listOf(6, 6, 6), lexFaHits = listOf(1, 1, 5)) })
-    assertEquals(1, tips.size)
-    assertTrue(tips[0].startsWith("Las letras cambiadas de lugar"))
-    assertTrue(ResultAdvice.tips(result("meteoros") { copy(lexBandSeen = seen, lexBandHits = hits, lexFaSeen = listOf(6, 6, 6), lexFaHits = listOf(3, 3, 3)) }).isEmpty())
-  }
-
-  @Test
-  fun `los juegos sin consejo propio no tienen bloque de consejo`() {
-    for (id in listOf("freno", "stroop", "parejas", "radar", "satelites", "calculo")) assertTrue(id, ResultAdvice.tips(result(id)).isEmpty())
-  }
-
-  @Test
-  fun `La estacion de correo da su truco segun lo que mas se escapo y calla si todo salio bien`() {
-    val lost = ResultAdvice.tips(result("correo") { copy(mailGroup = 2, mailEvHits = 4, mailEvTotal = 4, mailTimeHits = 1, mailTimeTotal = 2, mailCommissions = 0, mailPeeks = 0, mailPeeksGood = 0) })
-    assertEquals(listOf("Mira el reloj cuando se acerque la hora."), lost)
-    val ok = ResultAdvice.tips(result("correo") { copy(mailGroup = 2, mailEvHits = 4, mailEvTotal = 4, mailTimeHits = 2, mailTimeTotal = 2, mailCommissions = 0, mailPeeks = 1, mailPeeksGood = 1) })
-    assertTrue(ok.isEmpty())
-    // las cartas señal: el truco nombra la señal que se escapó (etapa 2: sello dorado; etapa 5: lazo)
-    val gold = ResultAdvice.tips(result("correo") { copy(mailGroup = 1, mailEvHits = 1, mailEvTotal = 2, mailTimeHits = 0, mailTimeTotal = 0, mailCommissions = 0, mailGoldMissed = 1, mailLazoMissed = 0) })
-    assertEquals(listOf("Repite «cuando vea un sello dorado, caja fuerte»."), gold)
-    val lazo = ResultAdvice.tips(result("correo") { copy(mailGroup = 3, mailEvHits = 0, mailEvTotal = 2, mailTimeHits = 0, mailTimeTotal = 0, mailCommissions = 0, mailGoldMissed = 0, mailLazoMissed = 2) })
-    assertEquals(listOf("Repite «cuando vea un lazo, caja fuerte»."), lazo)
-    // una partida de otro juego, o de la versión vieja sin etapas, no tiene truco de la estación
-    assertTrue(ResultAdvice.tips(result("correo")).isEmpty())
-  }
-
-  @Test
-  fun `el orden por defecto es avance y la migracion de coach_tone`() {
-    assertEquals(ResultFocus.AVANCE, ResultFocus.DEFAULT)
-    assertEquals(ResultFocus.AVANCE, ResultFocus.migrate(null, "CELEBRAR"))
-    assertEquals(ResultFocus.CONSEJO, ResultFocus.migrate(null, "CLARO"))
-    assertEquals(ResultFocus.AVANCE, ResultFocus.migrate(null, null))
-    assertEquals(ResultFocus.AVANCE, ResultFocus.migrate(null, "otra cosa"))
-    // lo ya elegido gana sobre el valor viejo
-    assertEquals(ResultFocus.CONSEJO, ResultFocus.migrate("CONSEJO", "CELEBRAR"))
-    assertEquals(ResultFocus.AVANCE, ResultFocus.migrate("AVANCE", "CLARO"))
   }
 }

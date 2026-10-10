@@ -117,6 +117,6 @@ en el inicio.
   la pausa (`HowToReady/Suspend/Resume`; el Reto no pierde tiempo). Durante la práctica los botones suben 270 u para dejar lugar a «Práctica: no cuenta» y «Saltar tutorial».
   `UnityGameLauncher.TUTORIAL_GAMES` incluye `stroop`; el smoke tiene `TutorialStroop`. Sin versión corta.
 - Telemetría: `interference_ms` y `switch_cost_ms` en `StroopSessionMetrics` (lo leen `NativeReceiver` y `GamePlayResult.interferenceMs/switchCostMs`; solo para `stroop`).
-  App: `data/DosOrillas.kt` (texto de las medidas y consejo), bloques en `GameResultScreen`, consejo en `ResultAdvice` (para «¿qué te sirve más ver primero?»).
+  App: `data/DosOrillas.kt` (texto de las medidas y consejo), bloques en `GameResultScreen`, el consejo es el «Truco para la próxima» de su final con sentido (`FinalModels.tinta`; `ResultAdvice.tipOf` separa el «Truco: …»).
   Todavía NO hay marca de evolución en Hoy (`StarMeasures`): queda para cuando Ricardo la pida.
 - Pruebas: `StroopContractTests` (paleta, niveles, generación, medidas, guion), `DosOrillasTest`, `StroopTelemetryTest`; smoke `TutorialStroop` y `Stroop`.

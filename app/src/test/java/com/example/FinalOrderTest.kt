@@ -11,7 +11,6 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
-import com.example.data.ResultFocus
 import com.example.games.GameResultScreen
 import com.example.model.GamePlayResult
 import com.example.ui.theme.NeuroVidaTheme
@@ -26,13 +25,13 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * `result_focus` desde que los 18 juegos usan el final con sentido (`docs/finales-con-sentido.md`): el final tiene UN solo orden (lo que hiciste, tu avance, el truco, ¿por qué importa?) y el truco viene dentro de él,
- * así que el ajuste «Lo que avancé / Un consejo para la próxima» ya no cambia lo que se ve: ninguna de las dos opciones saca el bloque viejo «Un consejo para la próxima» ni mueve nada.
+ * El orden de la pantalla de resultado (`docs/finales-con-sentido.md`): los 18 juegos usan el final con sentido, que tiene UN solo orden (lo que hiciste, tu avance, el truco, ¿por qué importa?)
+ * y trae su truco dentro. Desde el 10-oct ya no hay ajuste «Lo que avancé / Un consejo para la próxima» que lo mueva ni bloque aparte de consejo: el truco sale una sola vez, dentro del final.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
-class ResultFocusOrderTest {
+class FinalOrderTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   // En la punta de la lengua: la medida («Tu cielo de palabras») y un truco. Aterrizaje Lunar y los otros 16 también usan el final con sentido.
@@ -41,15 +40,12 @@ class ResultFocusOrderTest {
     puntaSolo = 5, puntaPista = 2, puntaLetras = 0, puntaVista = 1
   )
 
-  private fun show(focus: ResultFocus, result: GamePlayResult = punta) {
+  private fun show(result: GamePlayResult = punta) {
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
-          GameResultScreen(
-            result = result, didLevelUp = false, isDailyFlow = false, dailyCompletedCount = 0,
-            onPlayAgain = {}, onContinue = {}, resultFocus = focus
-          )
+          GameResultScreen(result = result, didLevelUp = false, isDailyFlow = false, dailyCompletedCount = 0, onPlayAgain = {}, onContinue = {})
         }
       }
     }
@@ -60,39 +56,30 @@ class ResultFocusOrderTest {
   private fun countTag(tag: String) = composeTestRule.onAllNodesWithTag(tag).fetchSemanticsNodes().size
   private fun countText(text: String) = composeTestRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().size
 
-  private fun checkOrder(focus: ResultFocus) {
-    show(focus)
+  @Test
+  fun el_final_va_en_su_orden_lo_que_hiciste_tu_avance_y_el_truco() {
+    show()
     val box = yOfTag("meaningful_box")
     val chips = yOfTag("progress_chips")
     val trick = yOfTag("next_trick")
-    assertTrue("lo que hiciste va antes de tu avance ($focus)", box < chips)
-    assertTrue("tu avance va antes del truco ($focus)", chips < trick)
-    assertEquals("la medida no se oculta ($focus)", 1, countText("Tu cielo de palabras"))
+    assertTrue("lo que hiciste va antes de tu avance", box < chips)
+    assertTrue("tu avance va antes del truco", chips < trick)
+    assertEquals("la medida no se oculta", 1, countText("Tu cielo de palabras"))
   }
 
   @Test
-  fun avance_el_final_va_en_su_orden_de_siempre() = checkOrder(ResultFocus.AVANCE)
-
-  @Test
-  fun consejo_el_final_va_en_su_orden_de_siempre() = checkOrder(ResultFocus.CONSEJO)
-
-  private fun checkNoOldAdvice(focus: ResultFocus) {
-    show(focus)
-    assertEquals("el bloque viejo de consejo ya no sale ($focus)", 0, countTag("result_advice"))
-    assertEquals("el título viejo ya no sale ($focus)", 0, countText("Un consejo para la próxima"))
-    assertEquals("el truco sale una sola vez, dentro del final ($focus)", 1, countTag("next_trick"))
+  fun el_truco_sale_una_sola_vez_dentro_del_final_y_no_hay_bloque_aparte_de_consejo() {
+    show()
+    assertEquals("el título del bloque viejo ya no sale", 0, countText("Un consejo para la próxima"))
+    assertEquals("el truco sale una sola vez, dentro del final", 1, countTag("next_trick"))
+    assertEquals(1, countText("Truco para la próxima"))
   }
 
   @Test
-  fun avance_el_consejo_viejo_ya_no_sale_y_el_truco_va_una_sola_vez() = checkNoOldAdvice(ResultFocus.AVANCE)
-
-  @Test
-  fun consejo_el_consejo_viejo_ya_no_sale_y_el_truco_va_una_sola_vez() = checkNoOldAdvice(ResultFocus.CONSEJO)
-
-  @Test
-  fun un_juego_sin_consejo_se_ve_igual_con_las_dos_opciones() {
-    val brake = GamePlayResult(gameId = "freno", score = 70, correctAnswers = 7, totalTrials = 10, timed = false, level = 2)
-    show(ResultFocus.CONSEJO, brake)
-    assertEquals(0, countTag("result_advice"))
+  fun un_juego_sin_truco_condicional_tambien_trae_su_truco_general_una_sola_vez() {
+    val brake = GamePlayResult(gameId = "freno", score = 70, correctAnswers = 7, totalTrials = 10, timed = false, level = 2, brakeMs = 245, stopsOk = 6, stopsTotal = 8)
+    show(brake)
+    assertEquals(0, countText("Un consejo para la próxima"))
+    assertEquals(1, countTag("next_trick"))
   }
 }

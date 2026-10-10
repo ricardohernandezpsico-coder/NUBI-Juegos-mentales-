@@ -11,7 +11,7 @@ Movido TAL CUAL desde `CLAUDE.md` el 10-oct-2026 (Tarea 69) para dejarle lugar a
   "Ver más detalles"). No se dice "Mi cerebro" (Ricardo: suena a Lumosity). Arriba a la derecha en las 3
   (`TabTopBar` + `components/TopActions`): tu inicial en arcilla celeste = perfil (`ProfileScreen`: escudo, cifras,
   logros) y engranaje = opciones (`SettingsPanel` → `SettingsScreen`); se abren como paneles (`viewModel.topPanel`).
-  Inicio «Primer vuelo con Nubi» (`FirstFlightScreen` + `FirstFlightHost`, `data/FirstFlight.kt`, `docs/diseno-inicio.md`): 19 pasos con 4 juegos (uno por área) y preguntas intercaladas, mientras `UserSettings.ageBand == null` o haya un recorrido guardado.
+  Inicio «Primer vuelo con Nubi» (`FirstFlightScreen` + `FirstFlightHost`, `data/FirstFlight.kt`, `docs/diseno-inicio.md`): 18 pasos con 4 juegos (uno por área) y preguntas intercaladas, mientras `UserSettings.ageBand == null` o haya un recorrido guardado.
   Las pestañas se pasan deslizando con el dedo (`HorizontalPager` en `MainActivity`, sincronizado con
   `viewModel.currentTab`). Una ventana abierta sobre una pestaña (área en Juegos, detalle de un área en Hoy o Avance)
   llama `LockTabSwipe()`: mientras esté, el dedo no cambia de pestaña y la barra de abajo se esconde.

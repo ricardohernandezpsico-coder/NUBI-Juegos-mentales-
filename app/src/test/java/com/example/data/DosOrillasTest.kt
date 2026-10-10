@@ -1,12 +1,11 @@
 package com.example.data
 
-import com.example.model.GamePlayResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Las medidas de Tinta o Palabra («Dos orillas») en palabras, y su consejo para «¿qué te sirve más ver primero?». */
+/** Las medidas de Tinta o Palabra («Dos orillas») en palabras, y su consejo («Truco para la próxima» de su final). */
 class DosOrillasTest {
   @Test
   fun `la diferencia se dice en segundos con coma, y casi nada bajo 0,05 s`() {
@@ -40,14 +39,13 @@ class DosOrillasTest {
   }
 
   @Test
-  fun `el consejo entra a ResultAdvice sin repetir la medida`() {
-    val r = GamePlayResult(gameId = "stroop", score = 70, correctAnswers = 11, totalTrials = 16, timed = false, level = 3, interferenceMs = 450, switchCostMs = 100)
-    val tips = ResultAdvice.tips(r)
+  fun `el consejo trae su marca de truco y no repite la medida`() {
+    val tips = DosOrillas.tips(450, 100).map { ResultAdvice.tipOf(it) }
     assertEquals(1, tips.size)
-    assertTrue(tips[0], tips[0].startsWith("Mira primero de qué orilla llega"))
+    assertTrue(tips[0], tips[0]!!.startsWith("Mira primero de qué orilla llega"))
     assertFalse(DosOrillas.INTERFERENCE_LINE.contains("Truco"))
-    // sin medidas (menos de 3 aciertos de cada tipo) no hay bloque de consejo
-    assertTrue(ResultAdvice.tips(r.copy(interferenceMs = null, switchCostMs = null)).isEmpty())
-    assertTrue(ResultAdvice.tips(r.copy(interferenceMs = 100, switchCostMs = 0)).isEmpty())
+    // sin medidas (menos de 3 aciertos de cada tipo) o con diferencia chica no hay consejo
+    assertTrue(DosOrillas.tips(null, null).isEmpty())
+    assertTrue(DosOrillas.tips(100, 0).isEmpty())
   }
 }

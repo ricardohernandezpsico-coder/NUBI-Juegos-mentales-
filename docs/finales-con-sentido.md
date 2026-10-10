@@ -189,4 +189,7 @@ Punta, Cosecha e Intrusa muestran sus tres cuadros en **%** aunque el recuadro d
 
 **Con el grupo 4 los 18 juegos usan el final con sentido** (`FinalModels.usesMeaningful`), así que la nota «Medida de esta partida. No es un diagnóstico.» sale solo de su pie y se quitó la nota común de la pantalla.
 
-**Pendiente de decidir (Ricardo / Opus): el ajuste «Lo que avancé / Un consejo para la próxima».** Con los 18 juegos en el final con sentido, que tiene UN solo orden y trae su truco dentro, la opción `ResultFocus` (Opciones y la pregunta de «Primer vuelo») ya no cambia nada de lo que se ve: ni mueve bloques ni saca el consejo viejo. Se dejó tal cual (el código y el dato guardado siguen) hasta que se decida si se quita o se reorienta; `ResultFocusOrderTest` ahora comprueba que el orden es el mismo con las dos opciones y que el bloque viejo `result_advice` ya no sale.
+**Resuelto (Tarea 78, 10-oct): se quitó el ajuste «Lo que avancé / Un consejo para la próxima».** Con los 18 juegos en el final con sentido, que tiene UN solo orden y trae su truco dentro, la opción no cambiaba nada de lo que se ve; Ricardo decidió quitarla.
+Se fueron: el ajuste de Opciones, la pregunta del «Primer vuelo» (que quedó en 18 pasos), `ResultFocus`, el bloque «Un consejo para la próxima» de `GameResultScreen` y `ResultAdvice.tips`. Queda de `ResultAdvice` solo `body` y `tipOf`
+(separan el «Truco: …» de una frase; los finales con sentido los usan para su truco condicional). La preferencia que ya estuviera guardada (`result_focus` / `coach_tone` en `profile_extra`) no se borra: ya no se lee.
+`FinalOrderTest` (antes `ResultFocusOrderTest`) comprueba el orden fijo del final y que el truco sale una sola vez, dentro de él.

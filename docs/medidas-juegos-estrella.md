@@ -385,7 +385,7 @@ Ficha completa: [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md). Dos dife
   justamente porque una señal clara de la regla reduce ese costo.
 - **Cómo leerlo**: es cuánto más tardaste en promedio en esta partida, no un rasgo tuyo ni un test clínico: cambia de un día a otro y con pocos aciertos es poco fiable. No se compara con
   otras personas ni se habla de «control ejecutivo» o de la concentración en la vida diaria.
-- **Consejo** (solo con una diferencia de 0,3 s o más, para «¿qué te sirve más ver primero?»): «mira primero de qué orilla llega y recién después la palabra» (interferencia) y «cuando cambie
+- **Consejo** (solo con una diferencia de 0,3 s o más; va como «Truco para la próxima» del final): «mira primero de qué orilla llega y recién después la palabra» (interferencia) y «cuando cambie
   la orilla, dite por dentro "ahora, tinta" o "ahora, palabra" antes de tocar» (costo de cambio). Son sugerencias de estrategia, no promesas.
 - **Paleta**: 4 tintas para todos (ROJO C93C3C, AZUL 4A86E8, AMARILLO F2CC1D, BLANCO F4F4F4) verificadas con `tools/paleta_daltonismo.py` (diferencia ≥ 20 en visión típica, protanopía y
   deuteranopía; Machado et al., 2009). Una sola paleta para todos; no depende de `color_vision`.
