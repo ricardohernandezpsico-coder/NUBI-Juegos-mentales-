@@ -448,20 +448,14 @@ namespace NeuroVida.Games.Piloto
 
         private void AnimateAudioAndStars(float dt)
         {
-            float speedK = Mathf.InverseLerp(PilotContract.Speed(1, false), PilotContract.Speed(PilotContract.MaxLevel, false) * PilotContract.HyperSpeedFactor, Speed);
+            float speedK = SpeedK;
             if (_stars != null)
             {
                 float warp = Motion.Decorative ? (Hyper ? 0.85f : 0.12f + 0.3f * speedK) : 0.08f;      // «quitar animaciones»: sin estrellas en línea
                 _stars.Warp = Mathf.MoveTowards(_stars.Warp, warp, dt * 1.5f);
             }
-            if (_engineSource != null && _engineSource.isPlaying)
-            {
-                float pitch = 0.85f + 0.55f * speedK + (Hyper ? 0.15f : 0f);
-                _engineSource.pitch = Mathf.MoveTowards(_engineSource.pitch, pitch, Mathf.Max(0.01f, dt) * 1.5f);
-                _engineSource.mute = GameClock.AudioSilenced;
-                // con Nubi congelando el juego (tutorial) el motor no se corta: baja al 30 % y al soltar vuelve a su volumen (Tarea 64); con la pausa del menú el audio ya está callado
-                _engineSource.volume = Mathf.MoveTowards(_engineSource.volume, 0.5f * GameClock.LoopVolume, GameClock.RealDeltaTime * 3f);
-            }
+            // el motor «Cohete»: la mezcla y el tono siguen la velocidad. Con Nubi congelando el juego (tutorial) no se corta: baja al 30 % y al soltar vuelve a su volumen (Tarea 64); con la pausa del menú el audio queda callado
+            if (_engine != null) _engine.Tick(speedK, Hyper, GameClock.RealDeltaTime, GameClock.LoopVolume, GameClock.AudioSilenced);
         }
 
         // ------------------------------------------------------------------ la pantalla final

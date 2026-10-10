@@ -328,9 +328,9 @@ namespace NeuroVida.Games.Piloto.Tests
             while (warm.MoveNext()) { }
             Assert.GreaterOrEqual(PilotSounds.CachedCount, 14);
             int before = PilotSounds.CachedCount;
-            Assert.AreSame(PilotSounds.Engine(), PilotSounds.Engine(), "un clip por sonido");
+            Assert.AreSame(PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), "un clip por sonido");
             Assert.AreEqual(before, PilotSounds.CachedCount);
-            foreach (var clip in new[] { PilotSounds.Engine(), PilotSounds.Beacon(2), PilotSounds.Buzz(), PilotSounds.Blip(), PilotSounds.Catch(3), PilotSounds.Thud(), PilotSounds.Whoosh(), PilotSounds.MissionChange(), PilotSounds.Hyper(), PilotSounds.Finale() })
+            foreach (var clip in new[] { PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Fast), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Boost), PilotSounds.Beacon(2), PilotSounds.Buzz(), PilotSounds.Blip(), PilotSounds.Catch(3), PilotSounds.Thud(), PilotSounds.Whoosh(), PilotSounds.MissionChange(), PilotSounds.Hyper(), PilotSounds.Finale() })
             {
                 var data = new float[clip.samples * clip.channels];
                 clip.GetData(data, 0);
@@ -339,16 +339,6 @@ namespace NeuroVida.Games.Piloto.Tests
                 Assert.Greater(peak, 0.02f, clip.name + " suena");
                 Assert.LessOrEqual(peak, 0.5001f, clip.name + " no pasa de 0,5");
             }
-        }
-
-        [Test]
-        public void TheEngineLoopHasNoJumpAtTheSeam()
-        {
-            var clip = PilotSounds.Engine();
-            var data = new float[clip.samples];
-            clip.GetData(data, 0);
-            Assert.AreEqual(44100, data.Length, "un segundo exacto");
-            Assert.Less(Math.Abs(data[0] - data[data.Length - 1]), 0.06f, "el final empalma con el principio");
         }
     }
 }

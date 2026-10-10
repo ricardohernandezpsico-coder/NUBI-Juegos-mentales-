@@ -729,18 +729,17 @@ namespace NeuroVida.Games.Piloto
 
         private void StartEngine()
         {
-            if (!SoundWanted || _engineSource == null) return;
-            _engineSource.clip = PilotSounds.Engine();
-            _engineSource.volume = 0.5f;
-            _engineSource.pitch = 0.9f;
-            _engineSource.mute = false;
-            _engineSource.Play();
+            if (!SoundWanted || _engine == null) return;                    // con el sonido apagado no suena ninguna capa
+            _engine.Start(SpeedK, Hyper);
         }
 
         private void StopEngine()
         {
-            if (_engineSource != null && _engineSource.isPlaying) _engineSource.Stop();
+            _engine?.Stop();
         }
+
+        /// <summary>La velocidad normalizada (0 = la del nivel 1; 1 = la del nivel máximo con hiperimpulso): de ella dependen la mezcla y el tono del motor y el avance de las estrellas.</summary>
+        private float SpeedK => Mathf.InverseLerp(PilotContract.Speed(1, false), PilotContract.Speed(PilotContract.MaxLevel, false) * PilotContract.HyperSpeedFactor, Speed);
 
 #if UNITY_EDITOR
         private float _botFlipAt;

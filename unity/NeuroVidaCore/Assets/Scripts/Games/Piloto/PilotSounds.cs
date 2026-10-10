@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Piloto
 {
     /// <summary>
-    /// Sonido PROPIO de «Piloto Estelar: la ruta de las balizas», sintetizado por código (docs/diseno-piloto.md §8): el motor (un diente de sierra y un triángulo graves con un filtro; un segundo exacto que se repite sin cortes: la velocidad le sube el tono y el hiperimpulso le abre el
-    /// filtro), una nota para cada baliza que se pasa DENTRO de la ruta (la escala pentatónica) y un zumbido para la que se pasa fuera, un «blip» igual para todas las señales (no delata cuál es la de la misión), una campana al atrapar, un golpe sordo al equivocarse, un soplido al cruzar el arco de un sector, DOS NOTAS QUE SUBEN (con timbre de triángulo, no de campana) al cambiar la misión
+    /// Sonido PROPIO de «Piloto Estelar: la ruta de las balizas», sintetizado por código (docs/diseno-piloto.md §8): el motor «Cohete» (tres capas en bucle sin costura, de 4 s: crucero, rápido e hiperimpulso; ruido grave con turbulencia, como un despegue; la velocidad las mezcla y les sube el tono: ver <see cref="PilotEngine"/>),
+    /// una nota para cada baliza que se pasa DENTRO de la ruta (la escala pentatónica) y un zumbido para la que se pasa fuera, un «blip» igual para todas las señales (no delata cuál es la de la misión), una campana al atrapar, un golpe sordo al equivocarse, un soplido al cruzar el arco de un sector, DOS NOTAS QUE SUBEN (con timbre de triángulo, no de campana) al cambiar la misión
     /// y un destello al entrar en hiperimpulso. Nada suena fuerte: todo ≤ 0,5.
     /// </summary>
     public static class PilotSounds
@@ -17,32 +18,106 @@ namespace NeuroVida.Games.Piloto
         /// <summary>La escala pentatónica de do mayor desde do5: la de los otros juegos.</summary>
         public static readonly float[] Penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880f, 1046.5f, 1174.66f, 1318.51f, 1567.98f, 1760f };
 
-        /// <summary>El motor: dos senos graves con armónicos (55 y 82,5 Hz: 55 y 82 ciclos exactos en un segundo) filtrados; se toca en bucle y su tono sube con la velocidad (<c>AudioSource.pitch</c>).</summary>
-        public static AudioClip Engine() => Get("engine", () =>
+        // ------------------------------------------------------------------ el motor «Cohete» (Tarea 66)
+
+        /// <summary>Las tres capas del motor: crucero (rugido profundo), rápido (más abierto, con chasquidos raros) y hiperimpulso (un chorro de aire que se suma encima).</summary>
+        public enum EngineLayer { Cruise, Fast, Boost }
+
+        /// <summary>El bucle de 4 s de una capa del motor: se calcula UNA vez (en la precarga) y queda guardado. Mono, 44.100 Hz, 176.400 muestras (0,7 MB).</summary>
+        public static AudioClip EngineLoop(EngineLayer layer) => Get("engine-" + layer, () =>
         {
-            int n = Rate;
-            var data = new float[n];
-            // se calcula dos vueltas y se guarda la segunda: el filtro llega al régimen y el bucle no tiene salto
-            var two = new float[2 * n];
-            float lp = 0f;
-            const float a = 0.055f;                                    // pasa-bajos de un polo (≈ 380 Hz)
-            for (int i = 0; i < two.Length; i++)
-            {
-                float t = (i % n) / (float)Rate;
-                float saw = 2f * (t * 55f - Mathf.Floor(t * 55f + 0.5f));
-                float tri = 2f / Mathf.PI * Mathf.Asin(Mathf.Sin(2f * Mathf.PI * 82f * t));
-                float x = 0.6f * saw + 0.4f * tri;
-                lp += a * (x - lp);
-                two[i] = lp;
-            }
-            float peak = 0f;
-            for (int i = 0; i < n; i++) peak = Mathf.Max(peak, Mathf.Abs(two[n + i]));
-            float gain = peak > 0.001f ? 0.45f / peak : 1f;               // la mitad del volumen máximo: nada pasa de 0,5
-            for (int i = 0; i < n; i++) data[i] = two[n + i] * gain;
-            var clip = AudioClip.Create("engine", n, 1, Rate, false);
+            var data = MakeEngineLoop(layer);
+            var clip = AudioClip.Create("engine-" + layer, data.Length, 1, Rate, false);
             clip.SetData(data, 0);
             return clip;
         });
+
+        private const double LoopSeconds = 4.0, CrossSeconds = 2.0;
+
+        /// <summary>
+        /// Las muestras de una capa del motor «Cohete»: PORT 1 a 1 de <c>ENGINES.cohete</c> del laboratorio del motor (docs/previews/motor-laboratorio.html; mismas semillas, filtros, niveles y bucle sin costura), con <see cref="SoundKit"/>. Una prueba lo compara con muestras de referencia
+        /// generadas con node (tools/sonido/referencia-motor.js). Crucero: ruido café por un paso bajo de 280 Hz con turbulencia a 3 Hz y un seno de 41,25 Hz (pico 0,46). Rápido: paso bajo de 650 Hz, turbulencia a 5 Hz, seno de 55 Hz y chasquidos raros filtrados a 1800 Hz (pico 0,50).
+        /// Hiperimpulso: ruido de banda de 2000 Hz con turbulencia a 7 Hz (pico 0,32). Todos los tonos son múltiplos de 0,25 Hz: vuelven a la misma fase cada 4 s.
+        /// </summary>
+        public static float[] MakeEngineLoop(EngineLayer layer)
+        {
+            switch (layer)
+            {
+                case EngineLayer.Cruise:
+                {
+                    var lp = new SoundKit.Biquad(SoundKit.FilterType.LowPass, 280.0, 0.6);
+                    var brown = Brown(11);
+                    var am = SmoothRand(12, 3.0);
+                    return LoopOf(t => lp.Run(brown()) * (0.75 + 0.5 * am()) + 0.35 * Math.Sin(SoundKit.Tau * 41.25 * t), 0.46);
+                }
+                case EngineLayer.Fast:
+                {
+                    var lp = new SoundKit.Biquad(SoundKit.FilterType.LowPass, 650.0, 0.6);
+                    var bp = new SoundKit.Biquad(SoundKit.FilterType.BandPass, 1800.0, 1.2);
+                    var brown = Brown(13);
+                    var r = new SoundKit.Rng(14);
+                    var am = SmoothRand(15, 5.0);
+                    double crack = 0.0;
+                    return LoopOf(t =>
+                    {
+                        if (r.Next() < 0.0009) crack = 1.0;
+                        crack *= 0.992;
+                        double body = lp.Run(brown()) * (0.7 + 0.6 * am());
+                        return body + 0.3 * Math.Sin(SoundKit.Tau * 55.0 * t) + 0.25 * bp.Run((r.Next() * 2.0 - 1.0) * crack);
+                    }, 0.5);
+                }
+                default:
+                {
+                    var bp = new SoundKit.Biquad(SoundKit.FilterType.BandPass, 2000.0, 0.5);
+                    var r = new SoundKit.Rng(16);
+                    var am = SmoothRand(17, 7.0);
+                    return LoopOf(t => bp.Run(r.Next() * 2.0 - 1.0) * (0.6 + 0.8 * am()), 0.32);
+                }
+            }
+        }
+
+        /// <summary>Ruido café (el ruido blanco integrado con un poco de fuga): grave y suave.</summary>
+        private static Func<double> Brown(uint seed)
+        {
+            var r = new SoundKit.Rng(seed);
+            double b = 0.0;
+            return () =>
+            {
+                b = (b + 0.02 * (r.Next() * 2.0 - 1.0)) / 1.02;
+                return b * 3.5;
+            };
+        }
+
+        /// <summary>Un valor al azar que se mueve despacio (cerca de <paramref name="hz"/> veces por segundo): la turbulencia.</summary>
+        private static Func<double> SmoothRand(uint seed, double hz)
+        {
+            var r = new SoundKit.Rng(seed);
+            double v = 0.5, a = 1.0 - Math.Exp(-SoundKit.Tau * hz / Rate);
+            return () =>
+            {
+                v += a * (r.Next() - v);
+                return v;
+            };
+        }
+
+        /// <summary>Bucle sin costura (mono): se calculan 6 s y los 2 últimos se funden sobre los 2 primeros → 4 s exactos; el pico queda en <paramref name="level"/>.</summary>
+        private static float[] LoopOf(Func<double, double> fn, double level)
+        {
+            var x = SoundKit.Render(LoopSeconds + CrossSeconds, fn);
+            int n = (int)(LoopSeconds * Rate), f = (int)(CrossSeconds * Rate);
+            var output = new float[n];
+            Array.Copy(x, output, n);
+            for (int i = 0; i < f; i++)
+            {
+                double k = i / (double)f;
+                output[i] = (float)(x[i] * k + x[i + n] * (1.0 - k));
+            }
+            double peak = 1e-9;
+            for (int i = 0; i < n; i++) peak = Math.Max(peak, Math.Abs((double)output[i]));
+            double g = level / peak;
+            for (int i = 0; i < n; i++) output[i] = (float)(output[i] * g);
+            return output;
+        }
 
         /// <summary>Una baliza que se pasa dentro de la ruta: una nota corta y suave de la pentatónica (la baliza número <paramref name="index"/>).</summary>
         public static AudioClip Beacon(int index) => Get("beacon" + (Mathf.Abs(index) % 4), () => Make("beacon", 0.3f, t => 0.22f * Bell(Penta[1 + Mathf.Abs(index) % 4], t, 0.1f)));
@@ -151,7 +226,11 @@ namespace NeuroVida.Games.Piloto
         /// <summary>Para las pruebas y el calentamiento: sintetiza todos los clips (cada uno una sola vez), de a poco.</summary>
         public static System.Collections.IEnumerator Prewarm()
         {
-            Engine();
+            EngineLoop(EngineLayer.Cruise);
+            yield return null;
+            EngineLoop(EngineLayer.Fast);
+            yield return null;
+            EngineLoop(EngineLayer.Boost);
             yield return null;
             for (int i = 0; i < 4; i++) Beacon(i);
             Buzz(); Blip();

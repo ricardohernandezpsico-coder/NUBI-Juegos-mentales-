@@ -83,7 +83,7 @@ namespace NeuroVida.Games.Piloto
         private readonly Text[] _endLabel = new Text[6], _endValue = new Text[6];
 
         // el motor (se repite)
-        private AudioSource _engineSource;
+        private PilotEngine _engine;
 
         // ------------------------------------------------------------------ construcción de UI
 
@@ -147,10 +147,7 @@ namespace NeuroVida.Games.Piloto
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _engineSource = gameObject.AddComponent<AudioSource>();
-            _engineSource.loop = true;
-            _engineSource.playOnAwake = false;
-            _engineSource.volume = 0f;
+            _engine = new PilotEngine(gameObject);                                 // el motor «Cohete»: tres capas en bucle (Tarea 66)
 
             _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
             SetUpTutorial();
