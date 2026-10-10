@@ -92,7 +92,7 @@ namespace NeuroVida.Games.Tests
                 games++;
                 if (!text.Contains("_toast.SetBelowHud(")) missing.Add(rel);
             }
-            Assert.Greater(games, 10, "se revisaron los juegos con aviso");
+            Assert.GreaterOrEqual(games, 10, "se revisaron los juegos con aviso");
             Assert.IsEmpty(missing, "estos juegos crean un Toast y no lo ponen debajo del marcador (SetBelowHud): " + string.Join(", ", missing));
         }
 

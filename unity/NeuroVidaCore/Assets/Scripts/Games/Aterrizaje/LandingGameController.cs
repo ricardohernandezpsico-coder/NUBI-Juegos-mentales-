@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using NeuroVida.Bridge;
 using NeuroVida.Contracts;
-using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
 using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
@@ -12,66 +11,66 @@ using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también exi
 namespace NeuroVida.Games.Aterrizaje
 {
     /// <summary>
-    /// "Aterrizaje Lunar": juego estrella de sentido numérico (ver <see cref="LandingContract"/>). Arriba, la misión
-    /// ("Aterriza en 37"); abajo, la superficie de la luna es una regla con solo los extremos marcados. El módulo lunar
-    /// baja solo: se arrastra con el dedo a lo ancho (un haz de luz marca dónde se posará) y al soltar cae rápido. Al
-    /// posarse aparece la bandera en el lugar exacto y se ve a cuánto quedó.
-    /// <list type="bullet">
-    /// <item>"¡Diana lunar!" cuando queda justo en el blanco: destellos y bono.</item>
-    /// <item>Medida propia: "tu estimación" (distancia media al blanco en % de la regla) y "tu línea" (cada objetivo y
-    /// dónde aterrizaste), que la app dibuja y lee por tramos de la regla (dónde más se aleja del blanco).</item>
-    /// </list>
-    /// Reto = 2 minutos (la nave baja más rápido al subir de nivel); Precisión = 15 aterrizajes, bajada lenta.
+    /// «Aterrizaje Lunar: la misma tarea, más grande, con más vida y un final con sentido» (id <c>aterrizaje</c>, renovado el 10-oct; ver <see cref="LandingContract"/> y docs/diseno-aterrizaje.md; el boceto aprobado es docs/previews/aterrizaje-boceto.html): ESTIMACIÓN EN LA LÍNEA NUMÉRICA (Siegler y Opfer, 2003). Arriba, la misión («Aterriza en» y el número en grande);
+    /// abajo, la luna con una regla de arcilla que solo marca sus extremos. La nave baja sola (de 6 a 3,5 s según el nivel; Precisión 10 s): el dedo, en CUALQUIER parte del cielo, la mueve a lo ancho (con una guía de puntos hasta la regla) y al soltar cae en 320 ms; si la bajada termina sin soltar, se posa donde está.
+    /// Al posarse: polvo, el tramo entre la nave y el lugar justo (lima con ✓ o coral con aspa: nunca solo color), una bandera de 80 dp en el lugar justo con su número (en las sumas, el RESULTADO) y un aviso en el cielo vacío («¡Diana lunar!», «¡Justo! a 3 del blanco», «Cerca: a 3 del blanco»). Cada 5 aterrizajes justos se arma una cúpula de tu base (SOLO en el marcador:
+    /// nada fijo cerca de la regla, serviría de pista). Las dos cordilleras lunares se desplazan despacio y con «quitar animaciones» NO se dibujan. Reto de 120 s o Precisión de 15 aterrizajes (8 en la versión corta del inicio). Todo el tiempo va con <see cref="GameClock"/> y lo que se mueve con <see cref="Motion"/>.
+    /// Los avisos van en el cielo vacío, DESPUÉS de posarse, y NUNCA sobre la nave, la regla, la bandera ni la misión (el smoke lo comprueba). El final de la app (<c>GameResultScreen</c>) ordena lo que hiciste, tu avance contigo, un truco y, abajo y en chico, por qué importa.
     /// </summary>
-    public class LandingGameController : GameControllerBase
+    public sealed partial class LandingGameController : GameControllerBase
     {
         public const string GameId = LandingContract.GameId;
 
         private const float UnitsPerDp = 3f;
         private const float MarginU = 60f;
-        private const float LanderSize = 230f;
-        private const int BeamDots = 24;
 
-        private static readonly Color GoodColor = NeuroStyle.Lime;
-        private static readonly Color BadColor = NeuroStyle.Coral;
-        private static readonly Color AmberColor = NeuroStyle.Sun;
+        /// <summary>SOLO EN EL EDITOR, para las capturas de pantalla (<c>verificar-todo.sh --capturas Aterrizaje</c>): con esta bandera el juego NO se juega solo y un guion (<see cref="EditorShotScript"/>) lo lleva por los momentos que se fotografían. En el teléfono es siempre false.</summary>
+        public static bool EditorShotMode;
 
-        private enum Phase { Idle, Flying, Reveal, Done }
+        private enum Phase { Idle, Fall, Drop, Land, Done }
+
+        // ------------------------------------------------------------------ estado
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
         private Phase _phase = Phase.Idle;
-        // la versión corta del inicio (Assessment) es de aterrizajes fijos y sin reloj, aunque la config traiga timed
-        private bool Endless => _config != null && _config.config.timed && !Assessment.Active;
-        private bool Precision => !Endless;
-        private int _previousFrameRate;
-
-        // aterrizaje en curso
-        private LandingTrial _trial;
-        private float _landerX, _landerTargetX, _landerY;
-        private bool _touching, _released, _everTouched;
-
-        // sesión
-        private readonly List<float> _errors = new List<float>();
-        private readonly List<float> _trueFractions = new List<float>();
-        private readonly List<float> _givenFractions = new List<float>();
-        private int _hits, _bullseyes, _streak, _bestStreak, _points;
+        private bool _loopOn, _baked, _guided;
+        private int _previousFrameRate, _lastTickSecond;
         private float _endsAt;
-        private int _lastTickSecond = -1;
-        private bool _hintShown;
+        private AudioSource _hoverSource;
 
-        // UI
-        private RectTransform _safe, _play, _fxRect, _landerRect, _rulerRect, _flagRect, _gapRect, _midTick, _timerBg, _timerFill;
-        private Image _lander, _flame, _gapLine;
-        private Text _missionSmall, _mission, _prompt, _minLabel, _maxLabel, _flagLabel, _gapLabel, _hint;
-        private RectTransform _toastKeepOut;
-        private readonly List<Image> _beam = new List<Image>();
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
-        private float _playW, _playH, _rulerY, _rulerW, _skyTop;
-        private Image _zone;
+
+        private bool Endless => _config != null && _config.config.timed && !Assessment.Active;
+        private bool Precision => !Endless;
+        private float Now => GameClock.Time;
+
+        // el aterrizaje en curso
+        private LandingTrial _trial;
+        private float _x, _tx, _y, _y0, _fallAt, _dropAt, _descent, _landAt, _holdT = 2.3f, _popAt = -10f;
+        private bool _released, _touching, _everTouched;
+
+        /// <summary>Cómo salió el aterrizaje (se calcula al tocar la regla).</summary>
+        private sealed class Landing
+        {
+            public float Frac, Value, Err, TargetFrac;
+            public LandingContract.Outcome Outcome;
+            public bool Hit => Outcome != LandingContract.Outcome.Far;
+            public bool Bull => Outcome == LandingContract.Outcome.Bull;
+            public string Notice;
+            public bool DomeEarned;
+            public int Streak;
+        }
+
+        private Landing _land;
+
+        // la partida
+        private readonly List<float> _errors = new List<float>(), _trueFractions = new List<float>(), _givenFractions = new List<float>();
+        private int _trials, _hits, _bulls, _streak, _bestStreak, _domes, _shownHits, _shownDomes;
+        private int _trialsTotal = LandingContract.PrecisionTrials;
+        private float _retoSeconds = LandingContract.RetoSeconds;
 
         // ------------------------------------------------------------------ sesión
 
@@ -81,30 +80,34 @@ namespace NeuroVida.Games.Aterrizaje
             _rng = new System.Random();
             // ~18 aterrizajes por partida: pasos medianos. Sin tiempo de reacción: cuenta la precisión.
             _dda = LandingContract.CreateEngine(config.config);
-
+            _trialsTotal = LandingContract.TotalTrials(Assessment.Active);
+            _retoSeconds = LandingContract.RetoSeconds;
+#if UNITY_EDITOR
+            // el smoke juega una partida corta: 7 aterrizajes (los suficientes para llegar a la primera cúpula) o 40 s de Reto
+            if (GuidedTutorial.EditorAutoPlayGame && !EditorShotMode && !Assessment.Active)
+            {
+                _trialsTotal = 7;
+                _retoSeconds = 40f;
+            }
+#endif
             // Vuelo continuo y fluido: 60 cuadros por segundo (Android da 30).
             _previousFrameRate = Application.targetFrameRate;
             Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
+            _loopOn = _guided = false;
             _errors.Clear();
             _trueFractions.Clear();
             _givenFractions.Clear();
-            _hits = _bullseyes = _streak = _bestStreak = _points = 0;
+            _trials = _hits = _bulls = _streak = _bestStreak = _domes = _shownHits = _shownDomes = 0;
             _endsAt = 0f;
             _lastTickSecond = -1;
-            _hintShown = false;
+            _trial = null;
+            _land = null;
 
-            _resultRoot.gameObject.SetActive(false);
+            ResetViews();
             _exit.Hide();
-            _timerBg.gameObject.SetActive(Endless);
-            _hud.SetStreak(0);
-            _loopOn = false;
             _tutorial.Hide();
-            HideReveal();
-            HideZone();
-            _landerRect.gameObject.SetActive(false);
-
             StopAllCoroutines();
             StartCoroutine(GameLoop());
         }
@@ -112,10 +115,12 @@ namespace NeuroVida.Games.Aterrizaje
         private void OnDisable()
         {
             if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
+            if (_hoverSource != null) _hoverSource.Stop();
         }
 
         private IEnumerator GameLoop()
         {
+            StartCoroutine(Prewarm());
             if (TutorialWanted)
             {
                 // la ronda guiada se juega sobre la luna ya armada, antes de la cuenta regresiva
@@ -124,20 +129,21 @@ namespace NeuroVida.Games.Aterrizaje
                 ApplySafeArea(_safe);
                 Canvas.ForceUpdateCanvases();
                 Layout();
-                UpdateHud();
                 yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetViews();
             }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Aterrizaje Lunar", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play(LandingContract.Title, Assessment.Subtitle(LandingContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
+            while (!_baked) yield return null;
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
-            SetPrompt("", Color.white);
+            _endsAt = Now + _retoSeconds;
+            _timerTrack.gameObject.SetActive(Endless);
+            _timerFill.gameObject.SetActive(Endless);
             UpdateHud();
-
-            _endsAt = GameClock.Time + LandingContract.RetoSeconds;
             _loopOn = true;
             yield return StartCoroutine(MainLoop());
         }
@@ -145,334 +151,222 @@ namespace NeuroVida.Games.Aterrizaje
         /// <summary>El bucle de la partida: un aterrizaje tras otro. «Cómo se juega» lo retoma desde acá.</summary>
         private IEnumerator MainLoop()
         {
-            while (!Finished())
-                yield return StartCoroutine(RunTrial());
+            while (!Finished()) yield return StartCoroutine(PlayTrial());
             _loopOn = false;
             yield return StartCoroutine(FinishGame());
         }
 
-        private bool Finished() => Precision ? _errors.Count >= LandingContract.TotalTrials(Assessment.Active) : GameClock.Time >= _endsAt;
+        private bool Finished() => Precision ? _trials >= _trialsTotal : Now >= _endsAt;
+
+        /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
+        private IEnumerator Prewarm()
+        {
+            if (_baked) yield break;
+            var sprites = LandingSprites.Prewarm();
+            while (sprites.MoveNext()) yield return null;
+            _baked = true;
+            AssignSprites();
+            if (SoundWanted)                                                                  // con «Efectos de sonido» apagado no se calcula ningún clip
+            {
+                var sounds = LandingSounds.Prewarm();
+                while (sounds.MoveNext()) yield return null;
+                _hoverSource.clip = LandingSounds.HoverLoop();
+            }
+            Layout();
+        }
 
         // ------------------------------------------------------------------ un aterrizaje
 
-        private IEnumerator RunTrial()
+        private float Descent(int level) => LandingContract.DescentSeconds(level, Precision && !Assessment.Active);
+
+        private IEnumerator PlayTrial()
         {
             int level = _dda.PresentedLevel;
-            _trial = LandingContract.NextTrial(level, _rng);
-            HideReveal();
-            SetRuler(_trial);
-            _missionSmall.text = "Aterriza en";
-            _mission.text = _trial.Label;
-            StartCoroutine(PopRect(_mission.rectTransform, 1.15f, 0.3f));
-            SetPrompt("", Color.white);
-            yield return StartCoroutine(Fly(LandingContract.DescentSeconds(level, Precision && !Assessment.Active), !_hintShown));
-            yield return StartCoroutine(Reveal(level));
+            var trial = LandingContract.NextTrial(level, _rng);
+#if UNITY_EDITOR
+            if (_editorTrial != null)                                                         // las capturas fuerzan el aterrizaje (la regla y el blanco)
+            {
+                trial = _editorTrial;
+                _editorTrial = null;
+            }
+#endif
+            BeginTrial(trial, Descent(level));
+            yield return StartCoroutine(WaitForLanding());
+            yield return StartCoroutine(ResolveRoutine());
+            EndTrial();
         }
 
-        /// <summary>La nave aparece arriba, baja sola (el dedo la mueve a lo ancho; al soltar, cae rápido) y toca el suelo. Termina con la nave posada (<c>_landerX</c>).</summary>
-        private IEnumerator Fly(float descent, bool showHint)
+        /// <summary>La nave aparece arriba, en un lugar al azar (no siempre en el centro: no regala el medio) y empieza a bajar.</summary>
+        private void BeginTrial(LandingTrial trial, float descentSeconds)
         {
-            // La nave aparece arriba, en una posición al azar (no siempre en el centro: no regala el medio).
-            _landerX = _landerTargetX = Mathf.Lerp(-_rulerW * 0.4f, _rulerW * 0.4f, (float)_rng.NextDouble());
-            _landerY = _skyTop;
-            _touching = _released = _everTouched = false;
-            _landerRect.gameObject.SetActive(true);
-            _lander.color = Color.white;
-            PlaceLander();
-            StartCoroutine(PopIn(_landerRect, 0.25f));
-            if (showHint)
-            {
-                _hint.gameObject.SetActive(true);
-                _hint.text = "Arrastra para mover la nave · suelta para aterrizar";
-            }
-
-            // Vuelo: baja sola; el dedo la mueve a lo ancho; al soltar, cae rápido.
-            _phase = Phase.Flying;
-            float slow = (_skyTop - GroundY()) / descent;
-            float speed = 0f;
-            while (_landerY > GroundY() && !GuidedSkipped)
-            {
-                float dt = GameClock.DeltaTime;
-                float target = _released ? slow * 5f : slow;
-                speed = Mathf.MoveTowards(speed, target, slow * 12f * dt);
-                _landerY = Mathf.Max(GroundY(), _landerY - speed * dt);
-                float follow = 1f - Mathf.Exp(-dt * 16f);
-                _landerX += (_landerTargetX - _landerX) * follow;
-                PlaceLander();
-                // Retrocohetes: la llama crece cerca del suelo (frenando) y titila.
-                float near = 1f - Mathf.Clamp01((_landerY - GroundY()) / 500f);
-                float f = (0.45f + 0.55f * near) * (Motion.Decorative ? 0.85f + 0.15f * Mathf.Sin(GameClock.Time * 50f) : 1f); // la llama crece al frenar (informa); el titileo se apaga con ReduceMotion
-                _flame.rectTransform.sizeDelta = new Vector2(LanderSize * 0.5f * f, LanderSize * 0.9f * f);
-                _flame.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.55f + 0.35f * near);
-                yield return null;
-            }
-            _phase = Phase.Reveal;
-            _hint.gameObject.SetActive(false);
-            _flame.color = new Color(1f, 1f, 1f, 0f);
-            foreach (var d in _beam) d.gameObject.SetActive(false);
-            if (GuidedSkipped) yield break;              // «Saltar tutorial» en pleno vuelo: sin toque de suelo
-
-            // Toque de suelo: polvo y un pequeño rebote.
-            PlayTone(110f, 0.18f, 0.07f);
-            GameFeel.Haptic(GameFeel.HapticKind.Light);
-            for (int i = 0; i < 6; i++) StartCoroutine(Dust(new Vector2(_landerX, _rulerY + 10f), i));
-            StartCoroutine(PopRect(_landerRect, 0.92f, 0.18f));
+            _trial = trial;
+            _missionNumber.text = trial.Label;
+            _minLabel.text = trial.MinLabel;
+            _maxLabel.text = trial.MaxLabel;
+            _tickMid.gameObject.SetActive(trial.MidTick);
+            ClearResultViews();
+            float startFrac = Mathf.Lerp(0.1f, 0.9f, (float)_rng.NextDouble());
+            _x = _tx = LandingPlan.FracX(startFrac);
+            _y = LandingPlan.StartY;
+            _released = _touching = _everTouched = false;
+            _fallAt = Now;
+            _popAt = Now;
+            _descent = Mathf.Max(0.5f, descentSeconds);
+            _land = null;
+            _phase = Phase.Fall;
+            _landerRoot.gameObject.SetActive(true);
+            _landerGroup.alpha = 1f;
+            _hint.gameObject.SetActive(!_guided && _trials < LandingContract.HintTrials);
+            UpdateHud();
+#if UNITY_EDITOR
+            _botT = 0f;
+            _botReleased = false;
+#endif
         }
 
-        private IEnumerator Reveal(int level)
+        private IEnumerator WaitForLanding()
         {
-            float given = Mathf.Clamp01(_landerX / _rulerW + 0.5f);
-            float value = LandingContract.ValueAt(_trial, given);
-            float err = LandingContract.Error(_trial, value);
-            bool hit = LandingContract.IsHit(err), bull = LandingContract.IsBullseye(err);
-            _errors.Add(err);
-            _trueFractions.Add(_trial.TargetFraction);
-            _givenFractions.Add(given);
-            if (hit) _hits++;
-            if (bull) _bullseyes++;
-            _streak = hit ? _streak + 1 : 0;
-            _bestStreak = Mathf.Max(_bestStreak, _streak);
-            int pts = LandingContract.Points(err, level, _streak);
-            _points += pts;
-            _hud.SetStreak(_streak);
+            while (_phase == Phase.Fall || _phase == Phase.Drop) yield return null;
+        }
 
-            // Bandera en el lugar exacto, con el número.
-            float tx = (_trial.TargetFraction - 0.5f) * _rulerW;
-            _flagRect.anchoredPosition = new Vector2(tx, _rulerY);
-            _flagRect.gameObject.SetActive(true);
-            _flagLabel.text = _trial.Label;
-            yield return StartCoroutine(PlantFlag());
-
-            // Tramo entre donde aterrizó y el blanco (si no fue diana).
-            if (!bull)
+        /// <summary>Un cuadro de vuelo: baja sola (de y 196 a 50 dp sobre la regla, en lo que dice el nivel), el dedo la mueve a lo ancho con suavizado y, al soltar, cae en 320 ms. Termina cuando toca la regla.</summary>
+        private void StepFlight(float now, float dt)
+        {
+            if (_phase != Phase.Fall && _phase != Phase.Drop) return;
+            _x += (_tx - _x) * Mathf.Min(1f, dt * 14f);
+            if (_phase == Phase.Fall)
             {
-                float lx = _landerX;
-                float left = Mathf.Min(lx, tx), right = Mathf.Max(lx, tx);
-                _gapRect.gameObject.SetActive(true);
-                _gapRect.anchoredPosition = new Vector2((left + right) * 0.5f, _rulerY - 40f);
-                _gapRect.sizeDelta = new Vector2(Mathf.Max(8f, right - left), 12f);
-                _gapLine.color = hit ? GoodColor : BadColor;
-                _gapLabel.text = "a " + LandingContract.DistanceLabel(_trial, value);
-                _gapLabel.color = hit ? GoodColor : NeuroStyle.Cream;
-            }
-
-            if (bull)
-            {
-                SetPrompt(_streak >= 3 ? $"¡DIANA LUNAR! · racha {_streak}" : "¡DIANA LUNAR!", AmberColor);
-                GameFeel.Correct(_streak);
-                GameFeel.LevelUp();
-                StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(tx, _rulerY + 60f), NeuroStyle.Sun, 22, 300f, 42f, 0.7f));
-                StartCoroutine(UiFx.RingBurst(_fxRect, new Vector2(tx, _rulerY + 40f), NeuroStyle.Sun, 120f, 520f, 0.5f));
-            }
-            else if (hit)
-            {
-                SetPrompt(_streak >= 3 ? $"¡Buen aterrizaje! · racha {_streak}" : "¡Buen aterrizaje!", GoodColor);
-                GameFeel.Correct(_streak);
-                StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(_landerX, _rulerY + 60f), GoodColor, 12, 180f, 32f, 0.5f));
+                float t = now - _fallAt;
+                _y = LandingPlan.StartY + (_plan.RestY - LandingPlan.StartY) * Mathf.Clamp01(t / _descent);
+                if (t >= _descent) TouchDown();
             }
             else
             {
-                SetPrompt(err < 0.1f ? "¡Casi!" : "Esta vez quedó lejos", AmberColor);
-                GameFeel.Wrong();
+                float k = Mathf.Clamp01((now - _dropAt) / (LandingContract.DropMs / 1000f));
+                _y = _y0 + (_plan.RestY - _y0) * k * k;
+                if (k >= 1f) TouchDown();
             }
-            if (pts > 0) StartCoroutine(FloatText(new Vector2(_landerX, _rulerY + LanderSize * 0.9f), "+" + pts, NeuroStyle.Sun));
-
-            var change = _dda.Register(hit);
-            if (change == DdaChange.Up)
-            {
-                _toast.Show("¡Subes de nivel!", LandingContract.LevelNews(_dda.Level), GoodColor, 1.1f);
-            }
-            else if (change == DdaChange.Down || _dda.Struggling)
-                _toast.Show("Con calma", "Mira dónde quedaría la mitad", AmberColor, 0.9f);
-            UpdateHud();
-
-            yield return StartCoroutine(Wait(bull ? 1.1f : 1.4f));
-            // La nave despega para el siguiente.
-            yield return StartCoroutine(TakeOff());
         }
 
-        // ------------------------------------------------------------------ entrada
-
-        private void Update()
+        /// <summary>Soltar: la nave cae rápido.</summary>
+        private void Release()
         {
-            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no mueve la nave
-            UpdateClock();
-            if (_phase != Phase.Flying || GameClock.DeltaTime <= 0f) return;
-            bool down = Input.touchCount > 0 || Input.GetMouseButton(0);
-            if (down)
+            if (_phase != Phase.Fall || _released) return;
+            _released = true;
+            _phase = Phase.Drop;
+            _dropAt = Now;
+            _y0 = _y;
+            Play(LandSfx.Release);
+        }
+
+        /// <summary>La nave toca la regla: se mide dónde quedó, se cuenta (salvo en la práctica del tutorial) y empieza el resultado.</summary>
+        private void TouchDown()
+        {
+            _phase = Phase.Land;
+            _landAt = Now;
+            _x = _tx = Mathf.Clamp(_x, LandingPlan.RulerX0, LandingPlan.RulerX1);
+            _y = _plan.RestY;
+            float f = LandingPlan.FracOf(_x);
+            float value = LandingContract.ValueAt(_trial, f);
+            float err = LandingContract.Error(_trial, value);
+            var land = new Landing { Frac = f, Value = value, Err = err, TargetFrac = _trial.TargetFraction, Outcome = LandingContract.OutcomeOf(err) };
+            if (!_guided)
             {
-                Vector2 pos = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
-                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, pos, null, out var local))
+                _trials++;
+                _errors.Add(err);
+                _trueFractions.Add(land.TargetFrac);
+                _givenFractions.Add(f);
+                if (land.Hit) _hits++;
+                if (land.Bull) _bulls++;
+                _streak = land.Hit ? _streak + 1 : 0;
+                _bestStreak = Mathf.Max(_bestStreak, _streak);
+                land.DomeEarned = land.Hit && LandingContract.EarnsDome(_hits);
+                _domes = LandingContract.Domes(_hits);
+                _dda.Register(land.Hit);
+            }
+            land.Streak = _streak;
+            land.Notice = LandingContract.Notice(_trial, value, _streak);
+            _land = land;
+            _holdT = land.DomeEarned ? Mathf.Max(LandingContract.ResultHoldMs / 1000f, (LandingContract.NoticeDelayMs + LandingContract.DomeNoticeDelayMs) / 1000f + DomeNoticeLife + 0.08f) : LandingContract.ResultHoldMs / 1000f;
+            Play(LandSfx.Touch);
+            GameFeel.Haptic(GameFeel.HapticKind.Light);
+            SpawnDust();
+#if UNITY_EDITOR
+            Debug.Log("[SmokeTest] Aterrizaje: aterrizaje " + _trials + " nivel " + _trial.Level + " regla " + _trial.MinLabel + "–" + _trial.MaxLabel + " blanco " + _trial.Label + ": quedó a " + (err * 100f).ToString("0.0") + " % → " + (land.Bull ? "diana" : land.Hit ? "justo" : "lejos") + ", racha " + _streak + ", aviso «" + land.Notice + "»");
+#endif
+        }
+
+        private const float NoticeLife = 1.4f, BullNoticeLife = 1.7f, DomeNoticeLife = 1.7f;
+
+        /// <summary>El tiempo del resultado, en segundos desde que la nave tocó la regla (las capturas lo detienen con <c>_editorResultT</c>).</summary>
+        private float ResultT()
+        {
+#if UNITY_EDITOR
+            if (_editorResultT >= 0f) return _editorResultT;
+#endif
+            return Now - _landAt;
+        }
+
+        /// <summary>
+        /// Lo que pasa después de posarse, atado al tiempo del resultado: a los 380 ms suena la kalimba de la bandera, a los 620 el aviso (con su sonido) y el marcador (puntos y cúpulas) y, si se armó una cúpula, 900 ms después el aviso de la cúpula con su acorde; la siguiente nave llega a los 2300 ms
+        /// (más tarde si hubo cúpula, para que su aviso no se pise con la nave que baja).
+        /// </summary>
+        private IEnumerator ResolveRoutine()
+        {
+            var land = _land;
+            bool flag = false, notice = false, dome = false;
+            float domeAt = (LandingContract.NoticeDelayMs + LandingContract.DomeNoticeDelayMs) / 1000f;
+            while (true)
+            {
+                float t = ResultT();
+                if (!flag && t >= LandingContract.FlagDelayMs / 1000f)
                 {
-                    _landerTargetX = Mathf.Clamp(local.x, -_rulerW * 0.5f, _rulerW * 0.5f);
-                    if (!_everTouched)
-                    {
-                        _everTouched = true;
-                        _hintShown = true;
-                        _hint.gameObject.SetActive(false);
-                    }
+                    flag = true;
+                    Play(LandSfx.Flag);
                 }
-                _touching = true;
-            }
-            else if (_touching)
-            {
-                // Soltó: aterrizar ya.
-                _touching = false;
-                if (!_released)
+                if (!notice && t >= LandingContract.NoticeDelayMs / 1000f)
                 {
-                    _released = true;
-                    PlayTone(392f, 0.08f, 0.05f);
+                    notice = true;
+                    ShowResultNotice(land);
                 }
-            }
-        }
-
-        private void UpdateClock()
-        {
-            if (!Endless || _phase == Phase.Idle || _phase == Phase.Done || _endsAt <= 0f) return;
-            float left = _endsAt - GameClock.Time;
-            SetTimerFraction(Mathf.Clamp01(left / LandingContract.RetoSeconds));
-            int whole = Mathf.CeilToInt(left);
-            if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
-            {
-                _lastTickSecond = whole;
-                GameFeel.Tick();
-            }
-        }
-
-        // ------------------------------------------------------------------ dibujo
-
-        private float GroundY() => _rulerY + LanderSize * (0.5f - LandingSprites.LanderFootFraction) + 6f;
-
-        private void PlaceLander()
-        {
-            _landerRect.anchoredPosition = new Vector2(_landerX, _landerY);
-            // Inclinación leve según hacia dónde se mueve.
-            float tilt = Motion.Decorative ? Mathf.Clamp((_landerTargetX - _landerX) * -0.05f, -10f, 10f) : 0f; // sin ReduceMotion: sin inclinación
-            _lander.rectTransform.localRotation = Quaternion.Euler(0f, 0f, tilt);
-            // Haz de aterrizaje: puntos desde la nave hasta la regla, justo donde se posaría.
-            float top = _landerY - LanderSize * 0.4f, bottom = _rulerY + 16f;
-            for (int i = 0; i < _beam.Count; i++)
-            {
-                float k = (i + 0.5f) / _beam.Count;
-                float y = Mathf.Lerp(top, bottom, k);
-                var d = _beam[i];
-                bool on = y > bottom && y < top;
-                d.gameObject.SetActive(on);
-                if (!on) continue;
-                d.rectTransform.anchoredPosition = new Vector2(_landerX, y);
-                d.color = NeuroStyle.WithAlpha(GoodColor, 0.25f + 0.5f * k);
-            }
-        }
-
-        private void SetRuler(LandingTrial t)
-        {
-            _minLabel.text = t.MinLabel;
-            _maxLabel.text = t.MaxLabel;
-            _midTick.gameObject.SetActive(t.MidTick);
-        }
-
-        private IEnumerator PlantFlag()
-        {
-            PlayTone(659f, 0.08f, 0.06f);
-            var r = _flagRect;
-            float t = 0f;
-            const float seconds = 0.28f;
-            if (!Motion.Decorative) { r.localScale = Vector3.one; yield return Motion.Hold(seconds); yield break; } // sin rebote
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                r.localScale = new Vector3(1f, Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(k)), 1f);
+                if (land.DomeEarned && !dome && t >= domeAt)
+                {
+                    dome = true;
+                    ShowDomeNotice(land);
+                }
+                if (t >= _holdT) break;
                 yield return null;
             }
-            r.localScale = Vector3.one;
         }
 
-        private IEnumerator TakeOff()
+        private void ShowResultNotice(Landing land)
         {
-            HideReveal();
-            float t = 0f;
-            const float seconds = 0.45f;
-            float from = _landerY;
-            while (t < seconds)
+            Color color = land.Outcome == LandingContract.Outcome.Far ? Gold : Lime;
+            SetNotice(0, land.Notice, color, land.Bull, land.Bull ? BullNoticeLife : NoticeLife, LandingContract.NoticeDelayMs / 1000f);
+            if (!_guided)
             {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _landerY = from + (_skyTop + 400f - from) * k * k;
-                _landerRect.anchoredPosition = new Vector2(_landerX, _landerY);
-                _flame.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.8f);
-                _flame.rectTransform.sizeDelta = new Vector2(LanderSize * 0.5f, LanderSize);
-                _lander.color = new Color(1f, 1f, 1f, 1f - k);
-                yield return null;
+                _shownHits = _hits;
+                _shownDomes = _domes;
+                RefreshHudExtras();
             }
-            _landerRect.gameObject.SetActive(false);
-            _flame.color = new Color(1f, 1f, 1f, 0f);
+            Play(land.Bull ? LandSfx.Bull : land.Hit ? LandSfx.Hit : LandSfx.Miss);
+            GameFeel.Haptic(land.Bull ? GameFeel.HapticKind.Firm : land.Hit ? GameFeel.HapticKind.Light : GameFeel.HapticKind.Double);
+            if (land.Bull && Motion.Decorative) StartCoroutine(UiFx.SparkBurst(_fxLayer, P(LandingPlan.FracX(land.TargetFrac), _plan.RulerY - 50f), Gold, 22, 300f, 42f, 0.7f));
         }
 
-        private IEnumerator Dust(Vector2 at, int i)
+        private void ShowDomeNotice(Landing land)
         {
-            if (!Motion.Decorative) yield break; // sin ReduceMotion: sin polvo
-            var img = NewImage(_fxRect, "Dust", DiscSprite.Get());
-            img.gameObject.SetActive(true);
-            var r = img.rectTransform;
-            float dir = i % 2 == 0 ? -1f : 1f;
-            float spread = 50f + 35f * (i / 2);
-            float t = 0f;
-            const float seconds = 0.55f;
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                r.anchoredPosition = at + new Vector2(dir * spread * UiFx.EaseOutCubic(k), 30f * k);
-                float s = Mathf.Lerp(30f, 90f, k);
-                r.sizeDelta = new Vector2(s, s);
-                img.color = new Color(0.8f, 0.78f, 0.95f, 0.5f * (1f - k));
-                yield return null;
-            }
-            Destroy(img.gameObject);
+            SetNotice(1, LandingContract.DomeNotice, Cyan, !land.Bull, DomeNoticeLife, (LandingContract.NoticeDelayMs + LandingContract.DomeNoticeDelayMs) / 1000f);          // en la fila que no usa el aviso de la diana
+            _domePopAt = Now;
+            Play(LandSfx.Dome);
+            GameFeel.Haptic(GameFeel.HapticKind.Firm);
         }
 
-        private void HideReveal()
+        private void EndTrial()
         {
-            if (_flagRect != null) _flagRect.gameObject.SetActive(false);
-            if (_gapRect != null) _gapRect.gameObject.SetActive(false);
-        }
-
-        private void SetPrompt(string text, Color color)
-        {
-            _prompt.text = text;
-            _prompt.color = color;
-        }
-
-        private IEnumerator FloatText(Vector2 pos, string text, Color color)
-        {
-            var t = MakeText(_fxRect, "Float", 58, TextAnchor.MiddleCenter, color, 0f, 0f);
-            NeuroStyle.ClayText(t, 4f, 6f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(300f, 90f);
-            t.text = text;
-            float e = 0f;
-            const float seconds = 0.8f;
-            while (e < seconds)
-            {
-                e += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
-                t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
-                yield return null;
-            }
-            Destroy(t.gameObject);
-        }
-
-        private static IEnumerator Wait(float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                yield return null;
-            }
+            _phase = Phase.Idle;
+            _landerRoot.gameObject.SetActive(false);
+            ClearResultViews();
         }
 
         // ------------------------------------------------------------------ fin
@@ -480,15 +374,19 @@ namespace NeuroVida.Games.Aterrizaje
         private IEnumerator FinishGame()
         {
             _phase = Phase.Done;
-            HideReveal();
-            _landerRect.gameObject.SetActive(false);
-
+            _landerRoot.gameObject.SetActive(false);
+            ClearResultViews();
+            StopHover();
             float meanErr = LandingContract.MeanErrorPct(_errors);
             int score = LandingContract.Score(meanErr, _dda.PeakLevel);
-
-            SetPrompt("Fin de la misión", GoodColor);
-            ShowResult(score, meanErr);
-
+#if UNITY_EDITOR
+            Debug.Log("[SmokeTest] Aterrizaje: partida terminada: " + _hits + " justos de " + _trials + ", " + _bulls + " dianas, " + _domes + " cúpulas, racha mayor " + _bestStreak + ", a " + meanErr.ToString("0.0") + " %, nivel " + _dda.Level);
+            if (!EditorShotMode && _domes != LandingContract.Domes(_hits))
+                Debug.LogError("[SmokeTest] Aterrizaje: las cúpulas (" + _domes + ") no son las de los aterrizajes justos (" + _hits + ")");
+#endif
+            ShowEnd(meanErr);
+            _exit.Show();
+            Play(LandSfx.Finale);
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,
@@ -508,495 +406,173 @@ namespace NeuroVida.Games.Aterrizaje
                     numline_error_pct = meanErr,
                     numline_true = _trueFractions.ToArray(),
                     numline_given = _givenFractions.ToArray(),
-                    numline_bullseyes = _bullseyes
+                    numline_bullseyes = _bulls,
+                    domes = _domes,
+                    land_streak = _bestStreak,
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
             yield break;
         }
 
-        private void ShowResult(int score, float meanErr)
-        {
-            _exit.Show();
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Piloto de precisión!" : score >= 65 ? "¡Buenos aterrizajes!" : "Misión completada";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_hits} de {_errors.Count} en el blanco · {_bullseyes} dianas";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = meanErr >= 0f ? $"A {meanErr:0.0}% del blanco".Replace('.', ',') : $"Mejor racha {_bestStreak}";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
-        }
+        // ------------------------------------------------------------------ pieza del tutorial
 
-        // ------------------------------------------------------------------ construcción de UI
-
-        protected override void BuildUi()
-        {
-
-            var canvasGo = new GameObject("LandingCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080f, 1920f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0f;
-            canvasGo.AddComponent<GraphicRaycaster>();
-
-            var bg = new GameObject("Background");
-            bg.transform.SetParent(canvasGo.transform, false);
-            var bgRect = bg.AddComponent<RectTransform>();
-            Stretch(bgRect);
-            WorldBackdrop.Build(bgRect, GameWorld.LunarRange);
-
-            var safeGo = new GameObject("SafeAreaContent");
-            safeGo.transform.SetParent(canvasGo.transform, false);
-            _safe = safeGo.AddComponent<RectTransform>();
-            ApplySafeArea(_safe);
-
-            _hud = new GameHud(_safe, "Aterrizaje Lunar", MarginU, this);
-            BuildTimer();
-
-            var playGo = new GameObject("Play");
-            playGo.transform.SetParent(_safe, false);
-            _play = playGo.AddComponent<RectTransform>();
-            Stretch(_play);
-
-            // Misión: texto suelto (sin tarjeta), el número grande en sol.
-            _missionSmall = CenteredText(_play, "MissionSmall", 44, new Color(1f, 1f, 1f, 0.8f));
-            _mission = CenteredText(_play, "Mission", 150, NeuroStyle.Sun);
-            NeuroStyle.ClayText(_mission, 6f, 10f);
-            _prompt = CenteredText(_play, "Prompt", 62, Color.white);
-            NeuroStyle.ClayText(_prompt, 3.5f, 5f);
-            _hint = CenteredText(_play, "Hint", 42, new Color(1f, 1f, 1f, 0.85f));
-            _hint.gameObject.SetActive(false);
-
-            BuildRuler();
-
-            var beamRoot = Layer(_play, "Beam");
-            for (int i = 0; i < BeamDots; i++)
-            {
-                var d = NewImage(beamRoot, "Dot", DiscSprite.Get());
-                d.rectTransform.sizeDelta = new Vector2(12f, 12f);
-                _beam.Add(d);
-            }
-
-            // la zona guía de la ronda guiada: una franja sol sobre el lugar justo (detrás de la nave)
-            _zone = NewImage(_play, "GuideZone", RoundedRectSprite.Get(24));
-            _zone.type = Image.Type.Sliced;
-            _zone.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.32f);
-            BuildLander();
-            BuildFlag(); // encima de la nave: el blanco siempre se ve, aunque la nave quede justo al lado
-
-            _fxRect = Layer(_play, "Fx");
-
-            BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
-            // el campo donde se mueve el estímulo: el aviso nunca va ahí (se mide en Layout)
-            var keepOut = new GameObject("ToastKeepOut", typeof(RectTransform));
-            keepOut.transform.SetParent(_play, false);
-            _toastKeepOut = (RectTransform)keepOut.transform;
-            _toastKeepOut.anchorMin = _toastKeepOut.anchorMax = new Vector2(0.5f, 0.5f);
-            _toastKeepOut.pivot = new Vector2(0.5f, 1f);
-            _toast.KeepOut(_toastKeepOut);
-            BuildTutorial(_safe, GameHud.Height + 10f, "Aterrizaje Lunar", "Aterriza en el número que te piden. La regla solo marca sus dos extremos.");
-
-            var flashGo = new GameObject("Flash");
-            flashGo.transform.SetParent(canvasGo.transform, false);
-            Stretch(flashGo.AddComponent<RectTransform>());
-            _flash = flashGo.AddComponent<Image>();
-            _flash.raycastTarget = false;
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
-        }
-
-        private static Text CenteredText(Transform parent, string name, int size, Color color)
-        {
-            var t = MakeText(parent, name, size, TextAnchor.MiddleCenter, color, 0f, 0f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(t, 42);                                  // nunca bajo 14 dp: si no cabe en un renglón pasa a dos
-            return t;
-        }
-
-        private void BuildRuler()
-        {
-            // La regla: una tira de arcilla crema sobre el borde de la superficie; marcas en los extremos (y el medio
-            // en los niveles bajos). Los números de los extremos van debajo, sobre la luna.
-            var go = new GameObject("Ruler");
-            go.transform.SetParent(_play, false);
-            _rulerRect = go.AddComponent<RectTransform>();
-            _rulerRect.anchorMin = _rulerRect.anchorMax = new Vector2(0.5f, 0.5f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(16);
-            img.type = Image.Type.Sliced;
-            img.color = ClayRaster.Cream;
-            img.raycastTarget = false;
-            NeuroStyle.ClayFrame(img, 4f, 7f);
-
-            foreach (float x in new[] { 0f, 1f })
-            {
-                var tick = NewImage(_rulerRect, "EndTick", RoundedRectSprite.Get(8));
-                tick.type = Image.Type.Sliced;
-                tick.color = NeuroStyle.Ink;
-                var tr = tick.rectTransform;
-                tr.anchorMin = tr.anchorMax = new Vector2(x, 0.5f);
-                tr.sizeDelta = new Vector2(12f, 76f);
-                tick.gameObject.SetActive(true);
-            }
-            var mid = NewImage(_rulerRect, "MidTick", RoundedRectSprite.Get(8));
-            mid.type = Image.Type.Sliced;
-            mid.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, 0.7f);
-            _midTick = mid.rectTransform;
-            _midTick.anchorMin = _midTick.anchorMax = new Vector2(0.5f, 0.5f);
-            _midTick.sizeDelta = new Vector2(8f, 48f);
-
-            _minLabel = EndLabel("Min", 0f);
-            _maxLabel = EndLabel("Max", 1f);
-
-            // Tramo entre el aterrizaje y el blanco.
-            var gapGo = new GameObject("Gap");
-            gapGo.transform.SetParent(_play, false);
-            _gapRect = gapGo.AddComponent<RectTransform>();
-            _gapRect.anchorMin = _gapRect.anchorMax = new Vector2(0.5f, 0.5f);
-            _gapLine = gapGo.AddComponent<Image>();
-            _gapLine.sprite = RoundedRectSprite.Get(8);
-            _gapLine.type = Image.Type.Sliced;
-            _gapLine.raycastTarget = false;
-            _gapLabel = MakeText(_gapRect, "Label", 44, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
-            NeuroStyle.ClayText(_gapLabel, 3f, 4f);
-            var gl = _gapLabel.rectTransform;
-            gl.anchorMin = gl.anchorMax = new Vector2(0.5f, 0f);
-            gl.pivot = new Vector2(0.5f, 1f);
-            gl.sizeDelta = new Vector2(300f, 60f);
-            gl.anchoredPosition = new Vector2(0f, -4f);
-            gapGo.SetActive(false);
-        }
-
-        private Text EndLabel(string name, float x)
-        {
-            var t = MakeText(_rulerRect, name, 56, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
-            NeuroStyle.ClayText(t, 3.5f, 5f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(x, 0f);
-            r.pivot = new Vector2(0.5f, 1f);
-            r.sizeDelta = new Vector2(240f, 80f);
-            r.anchoredPosition = new Vector2(0f, -34f);
-            return t;
-        }
-
-        private void BuildFlag()
-        {
-            var go = new GameObject("Flag");
-            go.transform.SetParent(_play, false);
-            _flagRect = go.AddComponent<RectTransform>();
-            _flagRect.anchorMin = _flagRect.anchorMax = new Vector2(0.5f, 0.5f);
-            // El pivote es el pie del asta: la bandera "crece" desde el suelo, justo en el blanco.
-            _flagRect.pivot = new Vector2((-0.5f / 1.05f + 1f) * 0.5f, (-0.95f / 1.05f + 1f) * 0.5f);
-            _flagRect.sizeDelta = new Vector2(190f, 190f);
-            var img = go.AddComponent<Image>();
-            img.sprite = LandingSprites.Flag();
-            img.raycastTarget = false;
-            _flagLabel = MakeText(_flagRect, "Label", 58, TextAnchor.MiddleCenter, NeuroStyle.Sun, 0f, 0f);
-            NeuroStyle.ClayText(_flagLabel, 4f, 6f);
-            var lr = _flagLabel.rectTransform;
-            lr.anchorMin = lr.anchorMax = new Vector2(0.26f, 1f);
-            lr.pivot = new Vector2(0.5f, 0f);
-            lr.sizeDelta = new Vector2(320f, 80f);
-            lr.anchoredPosition = new Vector2(0f, 4f);
-            go.SetActive(false);
-        }
-
-        private void BuildLander()
-        {
-            var go = new GameObject("Lander");
-            go.transform.SetParent(_play, false);
-            _landerRect = go.AddComponent<RectTransform>();
-            _landerRect.anchorMin = _landerRect.anchorMax = new Vector2(0.5f, 0.5f);
-            _landerRect.sizeDelta = new Vector2(LanderSize, LanderSize);
-            _flame = NewImage(_landerRect, "Flame", RadialGlowSprite.Get());
-            _flame.rectTransform.anchoredPosition = new Vector2(0f, -LanderSize * 0.42f);
-            _flame.color = new Color(1f, 1f, 1f, 0f);
-            _flame.gameObject.SetActive(true);
-            _lander = NewImage(_landerRect, "Body", LandingSprites.Lander());
-            Stretch(_lander.rectTransform);
-            _lander.gameObject.SetActive(true);
-            go.SetActive(false);
-        }
-
-        private void BuildTimer()
-        {
-            var bg = new GameObject("TimerBar");
-            bg.transform.SetParent(_safe, false);
-            _timerBg = bg.AddComponent<RectTransform>();
-            _timerBg.anchorMin = _timerBg.anchorMax = new Vector2(0.5f, 1f);
-            _timerBg.pivot = new Vector2(0.5f, 0.5f);
-            _timerBg.sizeDelta = new Vector2(960f, 16f);
-            _timerBg.anchoredPosition = new Vector2(0f, -(GameHud.Height + 14f));
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.sprite = RoundedRectSprite.Get(10);
-            bgImg.type = Image.Type.Sliced;
-            bgImg.color = new Color(1f, 1f, 1f, 0.12f);
-            bgImg.raycastTarget = false;
-
-            var fillGo = new GameObject("Fill");
-            fillGo.transform.SetParent(bg.transform, false);
-            _timerFill = fillGo.AddComponent<RectTransform>();
-            _timerFill.anchorMin = Vector2.zero;
-            _timerFill.anchorMax = Vector2.one;
-            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
-            var img = fillGo.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(10);
-            img.type = Image.Type.Sliced;
-            img.raycastTarget = false;
-            img.color = GoodColor;
-        }
-
-        private void SetTimerFraction(float fraction)
-        {
-            _timerFill.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
-            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
-            _timerFill.GetComponent<Image>().color = fraction > 0.5f ? Color.Lerp(AmberColor, GoodColor, (fraction - 0.5f) * 2f)
-                                                                      : Color.Lerp(BadColor, AmberColor, fraction * 2f);
-        }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-
-            AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 48, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            AddResultText("Extra", 44, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            go.SetActive(false);
-        }
-
-        private static RectTransform Layer(Transform parent, string name)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var r = go.AddComponent<RectTransform>();
-            Stretch(r);
-            return r;
-        }
-
-        private static Image NewImage(Transform parent, string name, Sprite sprite)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var r = go.AddComponent<RectTransform>();
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            var img = go.AddComponent<Image>();
-            img.sprite = sprite;
-            img.raycastTarget = false;
-            go.SetActive(false);
-            return img;
-        }
-
-        // ------------------------------------------------------------------ layout
-
-        private void Layout()
-        {
-            Canvas.ForceUpdateCanvases();
-            _playW = _play.rect.width;
-            _playH = _play.rect.height;
-            float top = _playH * 0.5f, bottom = -_playH * 0.5f;
-            float contentW = _playW - MarginU * 2f;
-
-            // Misión arriba (debajo del marcador), el aviso del resultado bajo la misión.
-            float y = top - (GameHud.Height + 40f);
-            _missionSmall.rectTransform.sizeDelta = new Vector2(contentW, 60f);
-            _missionSmall.rectTransform.anchoredPosition = new Vector2(0f, y - 30f);
-            _mission.rectTransform.sizeDelta = new Vector2(contentW, 180f);
-            _mission.rectTransform.anchoredPosition = new Vector2(0f, y - 150f);
-            _prompt.rectTransform.sizeDelta = new Vector2(contentW, 90f);
-            _prompt.rectTransform.anchoredPosition = new Vector2(0f, y - 290f);
-            _skyTop = y - 330f - LanderSize * 0.5f;
-
-            // Regla sobre el borde de la superficie lunar (el mundo la dibuja en el 26% de abajo).
-            _rulerW = contentW - 60f;
-            _rulerY = bottom + _playH * 0.26f;
-            _rulerRect.sizeDelta = new Vector2(_rulerW, 28f);
-            _rulerRect.anchoredPosition = new Vector2(0f, _rulerY);
-            _hint.rectTransform.sizeDelta = new Vector2(contentW, 110f);
-            _hint.rectTransform.anchoredPosition = new Vector2(0f, bottom + _playH * 0.12f);
-            // zona prohibida del aviso: desde debajo del marcador hasta debajo de la regla y sus rótulos (la misión y la nave que baja); el aviso va en la superficie lunar
-            float koTop = top - GameHud.Height, koBottom = _rulerY - 150f;
-            _toastKeepOut.sizeDelta = new Vector2(_playW, Mathf.Max(0f, koTop - koBottom));
-            _toastKeepOut.anchoredPosition = new Vector2(0f, koTop);
-        }
-
-        private void UpdateHud()
-        {
-            _hud.SetLevel(_dda.PresentedLevel);
-            if (Endless) _hud.SetPoints(_points);
-            else
-            {
-                int total = LandingContract.TotalTrials(Assessment.Active);
-                _hud.SetInfo($"{Mathf.Min(_errors.Count + 1, total)} de {total}");
-            }
-        }
+        /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo).</summary>
+        private void SetUpTutorial() =>
+            BuildTutorial(_safe, GameHud.Height + 10f, LandingContract.Title, "Aterriza en el número que te piden. La regla solo marca sus dos extremos.", badgeAtBottom: true);
 
         // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
 
-        private bool _loopOn;
-
-        protected override bool HowToReady => _loopOn && _phase != Phase.Done;
+        protected override bool HowToReady => _loopOn && _phase != Phase.Done && _phase != Phase.Idle;
 
         protected override void HowToSuspend()
         {
+            // el aterrizaje a medias no cuenta: sigue otro con el mismo estado (lo ganado hasta ahora se conserva)
             _phase = Phase.Idle;
-            _toast.Hide();
-            ClearTransient();
+            _touching = false;
+            StopHover();
+            _landerRoot.gameObject.SetActive(false);
+            ClearResultViews();
+            _hint.gameObject.SetActive(false);
         }
 
         protected override void HowToResume(float spentSeconds)
         {
-            _endsAt = HowToClock.Shift(_endsAt, spentSeconds);       // el tiempo que duró «Cómo se juega» no se le descuenta al Reto
-            _phase = Phase.Idle;
-            ClearTransient();
-            StartCoroutine(MainLoop());                              // el aterrizaje que estaba en curso no contó: sigue otro con el mismo estado
+            if (Endless) _endsAt += spentSeconds;                // el tiempo del tutorial no se le descuenta al Reto
+            Layout();
+            UpdateHud();
+            StartCoroutine(MainLoop());
         }
 
-        /// <summary>Quita lo que quedó a medias (nave, bandera, efectos, zona guía, el haz) sin tocar ninguna cuenta.</summary>
-        private void ClearTransient()
+        // ------------------------------------------------------------------ entrada
+
+        private void Update()
         {
-            foreach (Transform c in _fxRect) Destroy(c.gameObject);
-            HideReveal();
-            HideZone();
-            _landerRect.gameObject.SetActive(false);
-            _hint.gameObject.SetActive(false);
-            foreach (var d in _beam) d.gameObject.SetActive(false);
-            _flame.color = new Color(1f, 1f, 1f, 0f);
-            _missionSmall.gameObject.SetActive(true);
-            SetPrompt("", Color.white);
-        }
-
-        /// <summary>Se tocó «Saltar tutorial» durante la ronda guiada (el vuelo y las esperas terminan de una vez).</summary>
-        private bool GuidedSkipped => _tutorial != null && _tutorial.Practicing && _tutorial.Skipped;
-
-        private void HideZone() { if (_zone != null) _zone.gameObject.SetActive(false); }
-
-        // ------------------------------------------------------------------ ronda guiada del tutorial (pieza común)
-
-        // <guided>
-        protected override IEnumerator GuidedRound(GuidedTutorial t)
-        {
-            t.BeginPractice();
-            _phase = Phase.Idle;
-            _missionSmall.gameObject.SetActive(false);
-            HideReveal();
-            SetPrompt("", Color.white);
-            var coach = t.Coach;
-            // «Nubi entrenadora»: un solo aterrizaje. Foco sobre la línea (el juego se congela; el toque ahí es el real: se arrastra la nave y se suelta), y un aviso al aterrizar.
-            var script = new GuidedScript(1);
-            var trial = LandingContract.GuidedTrial(_rng);
-            // zona protegida: el número grande de la misión (a dónde hay que aterrizar) queda iluminado junto a la línea
-            var mission = new[] { coach.ZoneOfTexts(_mission) };
-            while (!script.Finished)
-            {
-                if (t.Skipped) { script.Skip(); break; }
-                float zoneHalf = LandingContract.GuidedZones[0];
-                _trial = trial;
-                SetRuler(trial);
-                _mission.text = trial.Label;
-                ShowZone(trial, zoneHalf);
-                // baja despacio (14 s) para que dé tiempo a moverla
-                var fly = StartCoroutine(Fly(14f, false));
-                AutoLand(trial, script.Failures);
-                yield return null;                                         // la nave aparece arriba
-                yield return StartCoroutine(coach.Touch(() => LineHole(),
-                    script.Failures == 0 ? CoachTexts.Aterrizaje.Drag(trial.Label) : CoachTexts.Aterrizaje.Again(trial.Label), keep: mission));
-                yield return fly;
-                if (t.Skipped) { script.Skip(); break; }
-
-                float given = Mathf.Clamp01(_landerX / _rulerW + 0.5f);
-                float err = LandingContract.Error(trial, LandingContract.ValueAt(trial, given));
-                float tx = (trial.TargetFraction - 0.5f) * _rulerW;
-                _flagRect.anchoredPosition = new Vector2(tx, _rulerY);
-                _flagRect.gameObject.SetActive(true);
-                _flagLabel.text = trial.Label;
-                yield return StartCoroutine(PlantFlag());
-                if (err <= zoneHalf)
-                {
-                    GameFeel.Correct(1);
-                    StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(_landerX, _rulerY + 60f), GoodColor, 12, 180f, 32f, 0.5f));
-                    script.Success();
-                    yield return StartCoroutine(coach.Notice(CoachTexts.Aterrizaje.Good, 2.2f, mission));
-                }
-                else
-                {
-                    GameFeel.Wrong();
-                    script.Failure();
-                    yield return StartCoroutine(coach.Notice(CoachTexts.Aterrizaje.Close(trial.Label), 2.4f, mission));
-                }
-                HideZone();
-                yield return StartCoroutine(TakeOff());
-            }
-            HideZone();
-            HideReveal();
-            _landerRect.gameObject.SetActive(false);
-            _missionSmall.gameObject.SetActive(true);
-            if (!script.Skipped)
-            {
-                PlayTone(523f, 0.4f, 0.08f);
-                yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
-            }
-            t.EndPractice();
-            _phase = Phase.Idle;
-            SetPrompt("", Color.white);
-        }
-
-        /// <summary>La franja guía sobre el lugar justo: de ± <paramref name="halfFraction"/> del largo de la regla a cada lado del número.</summary>
-        private void ShowZone(LandingTrial trial, float halfFraction)
-        {
-            float tx = (trial.TargetFraction - 0.5f) * _rulerW;
-            _zone.rectTransform.sizeDelta = new Vector2(_rulerW * halfFraction * 2f, 150f);
-            _zone.rectTransform.anchoredPosition = new Vector2(tx, _rulerY + 40f);
-            _zone.gameObject.SetActive(true);
-        }
-        /// <summary>La línea (regla) con aire arriba y abajo: ahí se arrastra la nave (para el foco de «tocar»).</summary>
-        private Rect LineHole()
-        {
-            var r = _tutorial.Coach.RectOf(_rulerRect);
-            // El hueco incluye los rótulos «0» y «10» de los extremos (cuelgan fuera de la regla y debajo de ella): su caja y las de las etiquetas, unidas
-            float x0 = r.xMin, x1 = r.xMax, y0 = r.center.y - 150f, y1 = r.center.y + 150f;
-            foreach (var l in new[] { _minLabel, _maxLabel })
-            {
-                if (l == null) continue;
-                var lr = _tutorial.Coach.RectOf(l.rectTransform);
-                x0 = Mathf.Min(x0, lr.xMin - 16f); x1 = Mathf.Max(x1, lr.xMax + 16f); y0 = Mathf.Min(y0, lr.yMin - 16f);
-            }
-            return Rect.MinMaxRect(x0, y0, x1, y1);
-        }
-        // </guided>
-
-        /// <summary>SOLO EN EL EDITOR (smoke): en el segundo intento la nave se lleva sola al número, para que el arranque de prueba pase también por el aviso de acierto. En el teléfono no hace nada.</summary>
-        private void AutoLand(LandingTrial trial, int failures)
-        {
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no mueve la nave
+            float now = Now, dt = GameClock.DeltaTime;
+            UpdateClock();
+            ReadInput();
+            StepFlight(now, dt);
+            Animate(now, dt);
 #if UNITY_EDITOR
-            if (GuidedTutorial.EditorAutoContinue && failures > 0) StartCoroutine(EditorAutoLand(trial));
+            if (_phase == Phase.Fall && !_guided && dt > 0f) AutoPlay(dt);
+            GuardNotices();
+            GuardWorld();
 #endif
         }
 
-#if UNITY_EDITOR
-        private IEnumerator EditorAutoLand(LandingTrial trial)
+        private void UpdateClock()
         {
-            float waited = 0f;
-            while (waited < 2.5f) { waited += GameClock.RealDeltaTime; yield return null; }
-            _landerTargetX = (trial.TargetFraction - 0.5f) * _rulerW;
+            if (!Endless || _guided || !_loopOn || _phase == Phase.Done || _endsAt <= 0f) return;
+            float left = _endsAt - Now;
+            SetTimer(left / _retoSeconds);
+            int whole = Mathf.CeilToInt(left);
+            if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
+            {
+                _lastTickSecond = whole;
+                GameFeel.Tick();
+            }
+        }
+
+        /// <summary>El dedo (o el ratón): en CUALQUIER parte del cielo (de y 160 hacia abajo) mueve la nave a lo ancho; al soltar, cae. El que empezó en el marcador no cuenta.</summary>
+        private void ReadInput()
+        {
+            if (_phase != Phase.Fall || GameClock.DeltaTime <= 0f) return;                   // en pausa los toques los recibe el paso o el menú, no el juego
+            bool down = Input.touchCount > 0 || Input.GetMouseButton(0);
+            if (down)
+            {
+                Vector2 pos = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
+                if (_tutorial != null && _tutorial.Coach != null && !_touching && _tutorial.Coach.Blocks(pos)) return;
+                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, pos, null, out var local)) return;
+                var p = ToLogical(local);
+                if (!_touching && p.y <= LandingPlan.TouchTopY) return;
+                _tx = Mathf.Clamp(p.x, LandingPlan.RulerX0, LandingPlan.RulerX1);
+                _touching = true;
+                _everTouched = true;
+            }
+            else if (_touching)
+            {
+                _touching = false;
+                Release();
+            }
+        }
+
+        /// <summary>Un sonido de «Madera cálida» (<see cref="LandingSounds"/>): con «Efectos de sonido» apagado no se calcula ni suena nada. Volumen 0,8: el del laboratorio donde Ricardo lo eligió.</summary>
+        private void Play(LandSfx sfx)
+        {
+            if (!SoundWanted) return;
+            var clip = LandingSounds.Get(sfx);
+            if (clip != null) _audioSource.PlayOneShot(clip, 0.8f);
+        }
+
+        private bool SoundWanted => GameFeel.SoundOn && (_config == null || _config.config == null || _config.config.sound_enabled);
+
+#if UNITY_EDITOR
+        private float _botT;
+        private bool _botReleased;
+        private int _guardReports;
+
+        /// <summary>
+        /// SOLO EN EL EDITOR (smoke): juega solo, una conducta por aterrizaje: 0 y 4 = justo en el blanco (diana), 1, 3 y 5 = cerca (justo), 2 = lejos (casi a un tercio de la regla) y 6 = no toca nada (se posa donde empezó). Suelta a los 1,2 s. En el teléfono no hace nada.
+        /// </summary>
+        private void AutoPlay(float dt)
+        {
+            if (EditorShotMode || !GuidedTutorial.EditorAutoPlayGame || _trial == null || _botReleased) return;
+            int kind = _trials % 7;
+            _botT += dt;
+            float tf = _trial.TargetFraction;
+            float f = kind == 0 || kind == 4 ? tf : kind == 1 || kind == 3 || kind == 5 ? tf + (tf < 0.5f ? 0.03f : -0.03f) : kind == 2 ? (tf < 0.5f ? Mathf.Min(1f, tf + 0.34f) : Mathf.Max(0f, tf - 0.34f)) : -1f;
+            if (_botT < 0.5f) return;
+            if (f >= 0f) _tx = LandingPlan.FracX(Mathf.Clamp01(f));
+            if (_botT >= 1.2f)
+            {
+                _botReleased = true;
+                if (f >= 0f) Release();                                                       // el que no toca nada se posa donde está (cuando termina la bajada)
+            }
+        }
+
+        private float _guardRangeX = float.NaN, _guardRangeAt;
+        private bool _guardWorldReported;
+
+        /// <summary>
+        /// SOLO EN EL EDITOR: «nada fijo junto a la regla» (docs/diseno-aterrizaje.md §4) hecho prueba. Con animaciones las dos cordilleras se dibujan Y SE MUEVEN (si se quedan quietas cerca de la regla servirían de marca para estimar); con «quitar animaciones» NO se dibujan.
+        /// Si no se cumple, el smoke falla (cualquier error de consola lo hace). Los cráteres tenues y solo lejos de la regla los vigila <c>LandingV2Tests</c>; las cúpulas van SOLO en el marcador.
+        /// </summary>
+        private void GuardWorld()
+        {
+            if (_guardWorldReported || _phase == Phase.Idle || _phase == Phase.Done || GameClock.DeltaTime <= 0f || _rangeNear == null) return;
+            bool drawn = _rangeFar.gameObject.activeSelf || _rangeNear.gameObject.activeSelf;
+            if (!Motion.Decorative)
+            {
+                if (drawn) { _guardWorldReported = true; Debug.LogError("[SmokeTest] Aterrizaje: con «quitar animaciones» se dibuja una cordillera (quieta junto a la regla sería una marca para estimar)"); }
+                return;
+            }
+            if (!drawn) { _guardWorldReported = true; Debug.LogError("[SmokeTest] Aterrizaje: con animaciones las cordilleras no se dibujan"); return; }
+            float x = _rangeNear.rectTransform.anchoredPosition.x;
+            if (float.IsNaN(_guardRangeX)) { _guardRangeX = x; _guardRangeAt = Now; return; }
+            if (Now - _guardRangeAt < 2f) return;
+            if (Mathf.Abs(x - _guardRangeX) < 0.01f * _s) { _guardWorldReported = true; Debug.LogError("[SmokeTest] Aterrizaje: las cordilleras están quietas (se tienen que desplazar despacio: quietas junto a la regla serían una marca)"); }
+            _guardRangeX = x;
+            _guardRangeAt = Now;
+        }
+
+        /// <summary>SOLO EN EL EDITOR: el pedido de Ricardo hecho prueba. El aviso (con su píldora y su texto) nunca toca la nave, la regla, la bandera ni la misión: si se cruzan, el smoke falla (cualquier error de consola lo hace).</summary>
+        private void GuardNotices()
+        {
+            if (_guardReports >= 3 || _s <= 0f || _phase == Phase.Done || _land == null) return;
+            foreach (var n in _notices)
+            {
+                if (!n.Live) continue;
+                var box = _plan.NoticeBox(n.Big, n.Width);
+                var zones = new[] { ("la nave", _plan.LanderBox(_x)), ("la regla", _plan.RulerBox), ("la bandera", _plan.FlagBox(LandingPlan.FracX(_land.TargetFrac))), ("la misión", _plan.MissionBox) };
+                foreach (var z in zones)
+                    if (box.Intersects(z.Item2))
+                    {
+                        _guardReports++;
+                        Debug.LogError("[SmokeTest] Aterrizaje: un aviso tapa " + z.Item1 + " (aviso de " + Mathf.RoundToInt(box.X0) + "," + Mathf.RoundToInt(box.Y0) + " a " + Mathf.RoundToInt(box.X1) + "," + Mathf.RoundToInt(box.Y1) + ")");
+                        return;
+                    }
+            }
         }
 #endif
     }

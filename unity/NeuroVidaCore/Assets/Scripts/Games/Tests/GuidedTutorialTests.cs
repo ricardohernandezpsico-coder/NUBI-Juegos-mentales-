@@ -123,8 +123,8 @@ namespace NeuroVida.Games.Tests
             AssertDoesNotTouchNoScript("Games/Secuencia/RastroGameController.cs", "_session.Complete", "_counter", ".Tally", "_dda", "Dda.");
             AssertDoesNotTouch("Games/Freno/BrakeGameController.cs", "_dda", "_points", "_streak", "_trials", "_goTrials", "_goCorrect", "_stopsOk", "_launched",
                 "_bestSsd", "_ssd", "_rtSum", "_goRts", "_stopSsds", "_stopResponded", "Register(");
-            AssertDoesNotTouch("Games/Aterrizaje/LandingGameController.cs", "_dda", "_points", "_streak", "_bestStreak", "_errors", "_hits", "_bullseyes",
-                "_trueFractions", "_givenFractions", "Register(", "(Reveal(", " Reveal(");
+            AssertDoesNotTouch("Games/Aterrizaje/LandingGameController.Guided.cs", "_dda", "_points", "_streak", "_bestStreak", "_errors", "_hits", "_bulls", "_domes", "_trials",
+                "_trueFractions", "_givenFractions", "Register(", "FinishGame(", "PlayerPrefs");
             AssertDoesNotTouch("Games/Meteoros/MeteorGameController.cs", "_dda", "_points", "_streak", "_bestStreak", "_rescued", "_resolved", "_tally", "_allMs",
                 "Register(", "ResolveTap(", "ResolvePass(", "RescueEffect(", "LightConstellation(");
             AssertDoesNotTouch("Games/Anagramas/PuntaGameController.cs", "_dda", "_points", "_streak", "_bestStreak", "_resolved", "_tally", "_credit", "_director",
@@ -151,7 +151,7 @@ namespace NeuroVida.Games.Tests
             // «Aprender haciendo» (Ricardo, 3-oct): las explicaciones quedan puestas hasta un toque; ninguna pausa fija ≥ 1 s entre un paso y el siguiente.
             var files = new[]
             {
-                ("Games/Secuencia/RastroGameController.cs", true), ("Games/Freno/BrakeGameController.cs", true), ("Games/Aterrizaje/LandingGameController.cs", true),
+                ("Games/Secuencia/RastroGameController.cs", true), ("Games/Freno/BrakeGameController.cs", true), ("Games/Aterrizaje/LandingGameController.Guided.cs", true),
                 ("Games/Meteoros/MeteorGameController.cs", true), ("Games/Stroop/StroopGameController.cs", true), ("Games/Anagramas/PuntaGameController.cs", false), ("Games/Calculo/CalculoGameController.cs", true), ("Games/Engranajes/EngranajesGameController.cs", true), ("Games/Bodega/BodegaGameController.cs", true), ("Games/Parejas/ConstelacionGameController.Guided.cs", true), ("Games/Correo/MailGameController.Guided.cs", true)
             };
             foreach (var (file, usesCommonWait) in files)

@@ -94,6 +94,10 @@ namespace NeuroVida.Contracts
         public float[] numline_given;
         /// <summary>Solo Aterrizaje Lunar: dianas (justo en el blanco).</summary>
         public int numline_bullseyes;
+        /// <summary>Solo Aterrizaje Lunar (renovado el 10-oct): cúpulas de tu base armadas en la partida (una cada 5 aterrizajes justos). -1 = no aplica.</summary>
+        public int domes = -1;
+        /// <summary>Solo Aterrizaje Lunar: la racha mayor de aterrizajes justos seguidos. -1 = no aplica.</summary>
+        public int land_streak = -1;
         /// <summary>Solo Acoplamiento: "tu giro mental" (grados por segundo). -1 = sin medida.</summary>
         public int rotation_speed_dps = -1;
         /// <summary>Solo Acoplamiento: tiempo medio de los aciertos a 0°, 45°, 90°, 135° y 180° (-1 = sin datos).</summary>

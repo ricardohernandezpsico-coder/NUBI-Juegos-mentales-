@@ -153,6 +153,15 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.10f), NebulaBPos = new Vector2(0.5f, 0.3f),
         };
 
+        /// <summary>Aterrizaje Lunar (renovación del 10-oct): el cielo de la app SIN estrellas ni perspectiva ni planeta ni superficie y con nebulosas muy tenues: todo lo que se ve en el cielo (estrellas que titilan, la Tierra, un satélite, la luna y sus dos cordilleras que se desplazan) lo arma
+        /// el propio juego (nada fijo junto a la regla: serviría de pista).</summary>
+        public static GameWorld LunarBase => new GameWorld
+        {
+            Name = "Base lunar", Stars = 0,
+            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.10f), NebulaAPos = new Vector2(0.17f, 0.85f),
+            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.07f), NebulaBPos = new Vector2(0.9f, 0.3f),
+        };
+
         /// <summary>Acoplamiento: muelle de la estación, cielo quieto (nada gira en el fondo: el giro es la tarea) y un
         /// planeta celeste asomando abajo a la izquierda.</summary>
         public static GameWorld DockingBay => new GameWorld

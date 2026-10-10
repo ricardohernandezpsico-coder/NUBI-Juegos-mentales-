@@ -202,6 +202,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Piloto.PilotGameController.EditorShotMode = false;
             NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
             NeuroVida.Games.Acoplamiento.DockingGameController.EditorShotMode = false;
+            NeuroVida.Games.Aterrizaje.LandingGameController.EditorShotMode = false;
             double total = Now - _startedAt;
             Summary.Insert(0, "total\t" + Mathf.RoundToInt((float)total) + " s\t" + _totalShots + " capturas\t" + _gamesDone + " juegos\n");
             try { File.WriteAllText(Path.Combine(_root, "_resumen.txt"), Summary.ToString(), new UTF8Encoding(false)); } catch (Exception) { /* el resumen es un extra */ }
@@ -233,8 +234,9 @@ namespace NeuroVida.Bridge.EditorTools
                 else if (id == "piloto") yield return PilotoScript();
                 else if (id == "radar") { yield return RadarScript(); yield return RadarScript16(); }
                 else if (id == "acoplamiento") { yield return AcoplamientoScript(); yield return AcoplamientoScript16(); }
+                else if (id == "aterrizaje") { yield return AterrizajeScript(); yield return AterrizajeScript16(); }
                 else yield return PlayShots(id);
-                if (id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
+                if (id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
                 if (TutorialGames.Contains(id)) yield return TutorialShots(id);
                 yield return Stopped();
 
@@ -277,6 +279,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Piloto.PilotGameController.EditorShotMode = false;
             NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
             NeuroVida.Games.Acoplamiento.DockingGameController.EditorShotMode = false;
+            NeuroVida.Games.Aterrizaje.LandingGameController.EditorShotMode = false;
             HeadlessPlaymodeSmokeTest.ResetAuditCanvases();
         }
 
@@ -379,7 +382,7 @@ namespace NeuroVida.Bridge.EditorTools
         {
             Configure(id, tutorial: true, reduceMotion: false);
             yield return EnterPlay();
-            bool shot1 = false, shot3 = false, shotNew = id != "piloto", shotNew2 = id != "piloto", shotRescue = id != "radar", shotDock = id != "acoplamiento", shotMirror = id != "acoplamiento";
+            bool shot1 = false, shot3 = false, shotNew = id != "piloto", shotNew2 = id != "piloto", shotRescue = id != "radar", shotDock = id != "acoplamiento", shotMirror = id != "acoplamiento", shotLand = id != "aterrizaje";
             int lastIndex = -1;
             double activeSince = 0, start = Now;
             NeuroVida.Games.Shared.NubiCoach coach = null;
@@ -389,7 +392,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (coach == null && Now - lastFind > 0.25) { lastFind = Now; coach = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.NubiCoach>(); }
                 int index = NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count;
                 bool active = coach != null && coach.Active;
-                if (!active) { lastIndex = -1; return (shot3 && shotNew && shotNew2 && shotRescue && shotDock && shotMirror) || (shot1 && index > (id == "piloto" || id == "acoplamiento" ? 7 : id == "radar" ? 3 : 2)); }
+                if (!active) { lastIndex = -1; return (shot3 && shotNew && shotNew2 && shotRescue && shotDock && shotMirror && shotLand) || (shot1 && index > (id == "piloto" || id == "acoplamiento" ? 7 : id == "radar" ? 3 : 2)); }
                 if (index != lastIndex) { lastIndex = index; activeSince = Now; }
                 if (Now - activeSince >= 0.3)
                 {
@@ -399,9 +402,10 @@ namespace NeuroVida.Bridge.EditorTools
                     else if (index == 6 && id == "piloto" && !shotNew2) { Shot("tutorial-toca-nueva-mision"); shotNew2 = true; }
                     else if (index == 3 && id == "acoplamiento" && !shotDock) { Shot("tutorial-se-suma"); shotDock = true; }                 // «¡Encaja! Se suma a tu estación» con el módulo volando a su casillero (Tarea 68)
                     else if (index == 6 && id == "acoplamiento" && !shotMirror) { Shot("tutorial-espejo"); shotMirror = true; }             // «¿Y este?» con el espejo esperando
+                    else if (index == 1 && id == "aterrizaje" && !shotLand) { Shot("tutorial-suelta"); shotLand = true; }                  // «Suelta para aterrizar» con la nave bajando y el hueco de la regla iluminado
                     else if (index == 3 && id == "radar" && !shotRescue) { Shot("tutorial-rescatar"); shotRescue = true; }          // «Ahora toca ¡Rescatar!» con las dos cápsulas marcadas y el botón encendido (Tarea 65)
                 }
-                return shot3 && shotNew && shotNew2 && shotRescue && shotDock && shotMirror;
+                return shot3 && shotNew && shotNew2 && shotRescue && shotDock && shotMirror && shotLand;
             }, 90);
             if (!shotDock || !shotMirror) GameNotes.Add("el tutorial de Acoplamiento no llegó a los pasos de la estación y del espejo (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shotNew || !shotNew2) GameNotes.Add("el tutorial de Piloto no llegó a los pasos de la misión nueva (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
@@ -507,6 +511,45 @@ namespace NeuroVida.Bridge.EditorTools
             yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 120);
             if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion de Rescate relámpago en 16:9 no terminó a tiempo");
             NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
+            Height = 2400;
+            yield return ExitPlay();
+        }
+
+        // ------------------------------------------------------------------ Aterrizaje Lunar (su guion)
+
+        private static IEnumerator AterrizajeScript()
+        {
+            Configure("aterrizaje", tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.TimedOverride = false;                                               // Precisión: la instrucción se ve en los primeros aterrizajes
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
+            NeuroVida.Games.Aterrizaje.LandingGameController.EditorShotMode = true;
+            yield return EnterPlay();
+            NeuroVida.Games.Aterrizaje.LandingGameController controller = null;
+            yield return Wait.Until(() => (controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Aterrizaje.LandingGameController>()) != null, 40);
+            if (controller == null) { GameNotes.Add("no apareció el juego de Aterrizaje Lunar"); yield return ExitPlay(); yield break; }
+            controller.StartCoroutine(controller.EditorShotScript(Shot, PauseShot));
+            yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 240);
+            if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion de Aterrizaje Lunar no terminó a tiempo");
+            NeuroVida.Games.Aterrizaje.LandingGameController.EditorShotMode = false;
+            yield return ExitPlay();
+        }
+
+        /// <summary>Aterrizaje Lunar en 16:9 (1080 × 1920): el layout compacto (la regla va anclada abajo), con unas pocas tomas (nombres «…-16x9»).</summary>
+        private static IEnumerator AterrizajeScript16()
+        {
+            Height = 1920;
+            Configure("aterrizaje", tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.TimedOverride = false;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
+            NeuroVida.Games.Aterrizaje.LandingGameController.EditorShotMode = true;
+            yield return EnterPlay();
+            NeuroVida.Games.Aterrizaje.LandingGameController controller = null;
+            yield return Wait.Until(() => (controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Aterrizaje.LandingGameController>()) != null, 40);
+            if (controller == null) { GameNotes.Add("no apareció el juego de Aterrizaje Lunar (16:9)"); Height = 2400; yield return ExitPlay(); yield break; }
+            controller.StartCoroutine(controller.EditorShortShotScript(Shot));
+            yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 120);
+            if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion corto de Aterrizaje Lunar en 16:9 no terminó a tiempo");
+            NeuroVida.Games.Aterrizaje.LandingGameController.EditorShotMode = false;
             Height = 2400;
             yield return ExitPlay();
         }

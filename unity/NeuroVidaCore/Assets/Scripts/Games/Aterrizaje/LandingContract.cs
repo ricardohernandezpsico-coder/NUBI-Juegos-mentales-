@@ -14,6 +14,12 @@ namespace NeuroVida.Games.Aterrizaje
         /// <summary>Marca a la mitad de la regla (ayuda en los niveles bajos).</summary>
         public bool MidTick;
         public int Level;
+        /// <summary>La regla es de números enteros o de porcentajes: la distancia al blanco se dice en unidades («a 3 del blanco»); en fracciones y decimales se dice en % de la regla («a 3 % del blanco»).</summary>
+        public bool Unit;
+        /// <summary>Lo que dice la bandera: el número (en las sumas, el RESULTADO, para que se vea contra qué se aterrizó). Si es null, es <see cref="Label"/>.</summary>
+        public string FlagLabel;
+
+        public string FlagText => FlagLabel ?? Label;
 
         /// <summary>Dónde está el objetivo en la regla (0 = extremo izquierdo, 1 = derecho).</summary>
         public float TargetFraction => (Target - Min) / (Max - Min);
@@ -25,6 +31,7 @@ namespace NeuroVida.Games.Aterrizaje
     /// hay que posar la nave en su lugar sobre una regla que solo tiene marcados los extremos. La dificultad amplía la
     /// escala (0-10 → 0-1000), quita la marca del medio, pasa a fracciones, decimales y porcentajes, a reglas que no
     /// empiezan en 0, a sumas que hay que resolver antes de aterrizar y a números negativos.
+    /// Renovación «la misma tarea, más grande, con más vida y un final con sentido» (10-oct, docs/diseno-aterrizaje.md): las REGLAS no cambian; se suman las cúpulas de tu base (una cada 5 aterrizajes justos), los tiempos del resultado y los textos de los avisos.
     /// Sin dependencias de UnityEngine: testeable con NUnit.
     /// </summary>
     public static class LandingContract
@@ -67,7 +74,7 @@ namespace NeuroVida.Games.Aterrizaje
             return new LandingTrial
             {
                 Level = 1, Min = 0, Max = 10, Target = v, Label = v.ToString(CultureInfo.InvariantCulture),
-                MinLabel = "0", MaxLabel = "10", MidTick = true
+                MinLabel = "0", MaxLabel = "10", MidTick = true, Unit = true
             };
         }
 
@@ -130,6 +137,7 @@ namespace NeuroVida.Games.Aterrizaje
                 case 11: Fraction(t, 2, 8, rng); break;
                 default: Integers(t, -50, 50, false, rng); break;
             }
+            t.FlagLabel = t.FlagLabel ?? t.Label;
             return t;
         }
 
@@ -148,6 +156,7 @@ namespace NeuroVida.Games.Aterrizaje
             t.MinLabel = min.ToString(CultureInfo.InvariantCulture);
             t.MaxLabel = max.ToString(CultureInfo.InvariantCulture);
             t.MidTick = mid;
+            t.Unit = true;
         }
 
         /// <summary>Fracción propia (o hasta 2 si <paramref name="upTo"/> = 2) con denominador 2..<paramref name="maxDen"/>.</summary>
@@ -191,6 +200,7 @@ namespace NeuroVida.Games.Aterrizaje
             t.MinLabel = "0%";
             t.MaxLabel = "100%";
             t.MidTick = false;
+            t.Unit = true;
         }
 
         private static void Sum(LandingTrial t, Random rng)
@@ -201,9 +211,11 @@ namespace NeuroVida.Games.Aterrizaje
             t.Max = 1000;
             t.Target = a + b;
             t.Label = a + " + " + b;
+            t.FlagLabel = (a + b).ToString(CultureInfo.InvariantCulture);          // la bandera dice el RESULTADO de la suma
             t.MinLabel = "0";
             t.MaxLabel = "1000";
             t.MidTick = false;
+            t.Unit = true;
         }
 
         private static int Gcd(int a, int b) => b == 0 ? a : Gcd(b, a % b);
@@ -246,14 +258,85 @@ namespace NeuroVida.Games.Aterrizaje
             return Math.Max(0, Math.Min(100, (int)Math.Round((0.7f * acc + 0.3f * lv) * 100f)));
         }
 
-        /// <summary>Diferencia en las unidades de la regla, para mostrar ("a 7", "a 0,1").</summary>
+        /// <summary>Diferencia en las unidades de la regla, para mostrar ("7", "0,3", "0,05"): con una regla corta lleva decimales, para que un aterrizaje justo nunca diga «0» (con 5 % de error en una regla de 0 a 10 hay medio punto).</summary>
         public static string DistanceLabel(LandingTrial t, float landedValue)
         {
             float d = Math.Abs(landedValue - t.Target);
             float span = t.Max - t.Min;
             if (span <= 2f) return Dec(d, "0.00");
+            if (span <= 25f) return Dec(d, "0.0");
             return Math.Round(d).ToString(CultureInfo.InvariantCulture);
         }
+
+        /// <summary>«a 3 del blanco» (reglas de números enteros y porcentajes: en unidades) o «a 3 % del blanco» (fracciones y decimales: en % de la regla; nunca menos de 1).</summary>
+        public static string DistanceText(LandingTrial t, float landedValue)
+        {
+            if (t.Unit) return "a " + DistanceLabel(t, landedValue) + " del blanco";
+            int pct = Math.Max(1, (int)Math.Round(Error(t, landedValue) * 100f));
+            return "a " + pct + " % del blanco";
+        }
+
+        // ------------------------------------------------------------------ cúpulas de tu base
+
+        /// <summary>Cada cuántos aterrizajes justos se arma una cúpula de tu base.</summary>
+        public const int DomeEvery = 5;
+
+        /// <summary>Las cúpulas que se armaron con <paramref name="hits"/> aterrizajes justos.</summary>
+        public static int Domes(int hits) => Math.Max(0, hits) / DomeEvery;
+
+        /// <summary>Cuántos aterrizajes justos van hacia la próxima cúpula (0 a 4: los puntos del marcador).</summary>
+        public static int ToNextDome(int hits) => Math.Max(0, hits) % DomeEvery;
+
+        /// <summary>¿El aterrizaje justo número <paramref name="hitsAfter"/> arma una cúpula?</summary>
+        public static bool EarnsDome(int hitsAfter) => hitsAfter > 0 && hitsAfter % DomeEvery == 0;
+
+        // ------------------------------------------------------------------ los tiempos del resultado (ms desde que la nave toca la regla)
+
+        /// <summary>Soltar: la nave cae en 320 ms.</summary>
+        public const int DropMs = 320;
+        /// <summary>El tramo entre la nave y el lugar justo se dibuja entre los 300 y los 600 ms; la bandera sube entre los 380 y los 800 ms (80 dp); el aviso sale a los 620 ms y el de la cúpula 900 ms después; la siguiente nave llega a los 2300 ms.</summary>
+        public const int LineDelayMs = 300, LineMs = 300, FlagDelayMs = 380, FlagMs = 420, NoticeDelayMs = 620, DomeNoticeDelayMs = 900, ResultHoldMs = 2300;
+        /// <summary>Alto de la bandera (dp).</summary>
+        public const float FlagHeight = 80f;
+
+        // ------------------------------------------------------------------ textos (docs/diseno-aterrizaje.md §3 y §6)
+
+        public const string Title = "Aterrizaje Lunar", MissionLabel = "Aterriza en", CountdownSub = "Prepárate";
+        public const string Hint = "Arrastra para mover la nave · suelta para aterrizar";
+        /// <summary>La instrucción se ve en los primeros aterrizajes.</summary>
+        public const int HintTrials = 3;
+        public const string BullNotice = "¡Diana lunar!", DomeNotice = "¡Nueva cúpula en tu base!";
+
+        public static string RoundChip(int n, int total) => total > 0 ? "Aterrizaje " + Math.Min(n, total) + " de " + total : "Aterrizaje " + n;
+        public static string StreakChip(int streak) => "Racha ×" + streak;
+
+        /// <summary>Cómo salió el aterrizaje.</summary>
+        public enum Outcome { Far, Hit, Bull }
+
+        public static Outcome OutcomeOf(float error) => IsBullseye(error) ? Outcome.Bull : IsHit(error) ? Outcome.Hit : Outcome.Far;
+
+        /// <summary>El aviso de después de posarse (va en el cielo vacío): «¡Diana lunar!», «¡Justo! a 3 del blanco» (desde la racha 3, con «· Racha ×N») o «Cerca: a 3 del blanco».</summary>
+        public static string Notice(LandingTrial t, float landedValue, int streak)
+        {
+            float err = Error(t, landedValue);
+            if (IsBullseye(err)) return BullNotice;
+            string d = DistanceText(t, landedValue);
+            if (IsHit(err)) return streak >= 3 ? "¡Justo! " + d + " · Racha ×" + streak : "¡Justo! " + d;
+            return "Cerca: " + d;
+        }
+
+        // ------------------------------------------------------------------ el final dentro del juego (el de la app va en GameResultScreen)
+
+        public const string EndTag = "¡MISIÓN CUMPLIDA!", EndBoxTitle = "Tu estimación de hoy", EndBoxUnit = "del lugar justo";
+
+        public static string EndTitle(int hits, int total) => (hits == 1 ? "1 aterrizaje justo" : hits + " aterrizajes justos") + " de " + total;
+
+        /// <summary>«a 11 de cada 100» (el error medio redondeado, nunca menos de 1); «—» sin aterrizajes.</summary>
+        public static string EndEstimate(float meanErrorPct) => meanErrorPct < 0f ? "—" : "a " + Math.Max(1, (int)Math.Round(meanErrorPct)) + " de cada 100";
+
+        /// <summary>«2 dianas lunares · racha mayor ×4 · 1 cúpula» (en singular cuando corresponde; sin racha mayor: «—»).</summary>
+        public static string EndSummary(int bulls, int bestStreak, int domes) =>
+            (bulls == 1 ? "1 diana lunar" : bulls + " dianas lunares") + " · racha mayor " + (bestStreak >= 2 ? "×" + bestStreak : "—") + " · " + (domes == 1 ? "1 cúpula" : domes + " cúpulas");
 
         private static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
     }
