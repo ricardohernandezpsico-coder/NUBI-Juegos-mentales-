@@ -15,6 +15,7 @@ achicándose si no cabía. Esto es el arreglo de sistema (no un parche por juego
 5. **Búsqueda del lugar** (`CoachLayout.Place`): prueba los dos costados, 4 tamaños de Nubi (300 / 240 / 180 / 150), 5 anchos de globo y una altura cada 10 unidades. Gana el de cero solape que menos se
    aleja de lo esperado (abajo, del lado contrario al hueco, globo ancho, Nubi grande). Evita el hueco (+24), las zonas (+10), los textos del juego (+6) y el dedo que insiste. Si ninguno queda
    limpio gana el que menos tapa, queda un aviso en el log (`[Coach] sin lugar limpio…`) y las pruebas fallan. Si algo se mueve y el lugar deja de servir, se busca otro (como mucho cada 0,3 s).
+6. **El foco de Tocar congela el reloj de juego pero NO calla el audio** (Tarea 64, 9-oct): `GameClock.Pause(silenceAudio: false)`. Antes ponía también `AudioListener.pause` y el sonido que estaba sonando cuando aparecía Nubi se cortaba a la mitad y el resto salía de golpe al tocar («los sonidos se cortan», Ricardo). Ahora termina completo; los sonidos en bucle (el motor de Piloto, el zumbido de Satélites) bajan al 30 % (`GameClock.LoopVolume`) mientras dura la congelación y vuelven al soltar. La pausa del MENÚ sigue callando todo (si llega sobre una congelación de Nubi, también). El smoke falla si un paso de Tocar deja el audio en pausa (`NubiCoach.ProbeFailures`).
 
 ## Qué zonas declara cada juego
 
