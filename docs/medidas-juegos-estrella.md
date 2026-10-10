@@ -184,7 +184,7 @@ Practicar el recuerdo afianza (Roediger y Karpicke, 2006).
 
 ---
 
-## Rumbo a Casa: "Tu brújula interna" y "Tus llegadas"
+## Rumbo a Casa: "Tu brújula interna" y "Tus llegadas" (RETIRADO el 10-oct-2026: la app ya no lo tiene ni lee su medida `homing`; se conserva como historia)
 
 **Qué mide.** Integración de trayecto: volver al punto de partida sin verlo, usando solo lo que se registró al moverse
 (cuánto se giró y cuánto se avanzó). Es la tarea de completar el triángulo (Klatzky et al., 1990; Loomis et al., 1993),

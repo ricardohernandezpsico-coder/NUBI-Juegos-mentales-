@@ -1,5 +1,7 @@
 # Rumbo a Casa (`rumbo`) — ficha técnica
 
+> **RETIRADO el 10-oct-2026 (Tarea 69):** Ricardo lo probó con una persona de 60 años o más, «le costó entender un poco la mecánica» y «le generó una especie de desorientación»; eligió retirarlo en vez de rediseñarlo. Ver [`descartados.md`](descartados.md). Esta ficha se conserva como historia; el código de Unity (`Games/Rumbo/`) también, pero la app ya no lo lanza.
+
 > Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
 
 **Rumbo a Casa** (`Games/Rumbo/`, id `rumbo`, dominio MEMORIA; juego estrella de orientación, 28-sep, elegido por

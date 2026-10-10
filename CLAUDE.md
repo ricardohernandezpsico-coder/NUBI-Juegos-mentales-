@@ -6,7 +6,7 @@
 > (`NeuroVida.*`, `unity/NeuroVidaCore/`) y clases Kotlin (`NeuroVidaViewModel`…), y el `applicationId` (`com.aistudio.neurovida.cgnv`, se define UNA vez antes de publicar: `docs/auditoria-30-sep.md`). La carpeta es `C:/Users/RURAL7/Desktop/Proyectos/Nubi`
 > (renombrada el 1-oct; Unity Hub necesita agregar el proyecto `unity/NeuroVidaCore` de nuevo). La app no muestra "NeuroVida" en ningún texto visible; en los documentos, "NeuroVida" solo aparece en identificadores o para el nombre viejo.
 
-App Android de juegos mentales cortos para mantener la mente activa: 19 juegos en 4 áreas (Memoria, Atención, Razonamiento y Lenguaje; de 6 a 4 áreas el 30-sep; juegos retirados en `docs/juegos/descartados.md`), Room v15, dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
+App Android de juegos mentales cortos para mantener la mente activa: 18 juegos en 4 áreas (Memoria, Atención, Razonamiento y Lenguaje; de 6 a 4 áreas el 30-sep; juegos retirados en `docs/juegos/descartados.md`), Room v15, dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a Lumosity/Peak/Elevate en calidad y en motivación.
 
 El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de Ricardo) está en
@@ -21,7 +21,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
   (hoy `estilo 10-oct · acoplamiento muelle`). **Cambiarla con cada cambio visible de Unity.**
-- Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES y vuelca PNG; `correo.py`, `satelites.py`… arman las láminas de piezas) y `tools/previews/*.py` (réplicas PIL de pantallas Compose); resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina. **Capturas REALES**: `bash tools/verificar-todo.sh --capturas todos` (los 19 juegos, ~18 min; necesita tarjeta de video; láminas en `docs/previews/capturas/`; detalle en `docs/respaldo-y-diagnostico.md`).
+- Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES y vuelca PNG; `correo.py`, `satelites.py`… arman las láminas de piezas) y `tools/previews/*.py` (réplicas PIL de pantallas Compose); resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina. **Capturas REALES**: `bash tools/verificar-todo.sh --capturas todos` (todos los juegos, ~18 min; necesita tarjeta de video; láminas en `docs/previews/capturas/`; detalle en `docs/respaldo-y-diagnostico.md`).
 - Estilo con Ricardo: español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
 - Qué sigue y en qué orden (la ruta por etapas que Ricardo aprobó el 8-oct): [`docs/hoja-de-ruta.md`](docs/hoja-de-ruta.md).
 - Repositorios externos: si alguno de GitHub puede potenciar la app, COMENTARLO a Ricardo y él decide; nunca agregarlo sin preguntar (descartados y razones: hoja de ruta).
@@ -38,18 +38,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
-- 3 pestañas (29-sep, `docs/previews/navegacion-nubi.png`; `ui/components/NeuroNavBar`, SIN botón "play" central: el
-  desafío del día se empieza desde Hoy): Hoy (casa; `HomeScreen`, Nubi al centro con las 4 áreas: ver abajo) · Juegos
-  (player; `GamesLibraryScreen`: ver abajo) · Avance (cerebro dibujado, `BrainIcon`; `ProgressScreen`: tu liga con
-  compartir, tus 4 áreas con la barra de Hoy y su detalle, desafíos de la semana, avance por juego, punto de partida y
-  "Ver más detalles"). No se dice "Mi cerebro" (Ricardo: suena a Lumosity). Arriba a la derecha en las 3
-  (`TabTopBar` + `components/TopActions`): tu inicial en arcilla celeste = perfil (`ProfileScreen`: escudo, cifras,
-  logros) y engranaje = opciones (`SettingsPanel` → `SettingsScreen`); se abren como paneles (`viewModel.topPanel`).
-  Inicio «Primer vuelo con Nubi» (`FirstFlightScreen` + `FirstFlightHost`, `data/FirstFlight.kt`, `docs/diseno-inicio.md`): 19 pasos con 4 juegos (uno por área) y preguntas intercaladas, mientras `UserSettings.ageBand == null` o haya un recorrido guardado.
-  Las pestañas se pasan deslizando con el dedo (`HorizontalPager` en `MainActivity`, sincronizado con
-  `viewModel.currentTab`). Una ventana abierta sobre una pestaña (área en Juegos, detalle de un área en Hoy o Avance)
-  llama `LockTabSwipe()`: mientras esté, el dedo no cambia de pestaña y la barra de abajo se esconde.
-- Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`), elegidos por avance real y con variedad por `data/DailyPath` (reglas en su cabecera; nunca un juego sin tutorial que la persona no jugó). El día del Primer vuelo el camino queda cumplido con el vuelo (`completeTodayWithFlight`). Al terminar, el resumen (`data/SessionSummary` + `SessionSummaryScreen`): áreas trabajadas, puntaje de cada juego, racha y «Hoy avanzó de X a Y» por área.
+- 3 pestañas (Hoy, Juegos, Avance; se pasan deslizando), perfil y opciones como paneles, inicio «Primer vuelo con Nubi» y sesión diaria (SOLO los 3 juegos del camino): detalle en [`docs/arquitectura-app.md`](docs/arquitectura-app.md).
 - Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DailyPath`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `NumberLine`, `RetoChoice`,
   `Planet`, `SessionSummary`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
@@ -86,7 +75,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
   `GameFeel` (sonidos sintetizados y vibración), `SoundKit` (síntesis de sonido; Rescate), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
   (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `PressScale`, sprites varios, y el **tutorial guiado común** (`GuidedTutorial` + `NubiTeacherSprite`;
-  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = 18 de los 19 juegos (todos menos Rumbo a Casa; Rescate y Acoplamiento entraron en las Tareas 62 y 68); «Cómo se juega» en la pausa; cómo sumar otro: `docs/diseno-rastro-de-luz.md`; colocación de Nubi: `docs/tutoriales-con-nubi.md`).
+  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = los 18 juegos de la app (Rescate y Acoplamiento entraron en las Tareas 62 y 68; Rumbo, sin tutorial, se retiró en la 69); «Cómo se juega» en la pausa; cómo sumar otro: `docs/diseno-rastro-de-luz.md`; colocación de Nubi: `docs/tutoriales-con-nubi.md`).
 
 ## Juegos (índice)
 
@@ -100,7 +89,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 | Rastro de luz (antes Secuencia Lumínica) | `secuencia` | Memoria | `Games/Secuencia/` | [docs/diseno-rastro-de-luz.md](docs/diseno-rastro-de-luz.md) | `Trail.kt` |
 | Bodega de carga (nuevo, 5-oct; ocupa el lugar de Bitácora de Misión con otro id) | `bodega` | Memoria | `Games/Bodega/` | [docs/diseno-bodega-de-carga.md](docs/diseno-bodega-de-carga.md) | `Bodega.kt` |
 | ~~Bitácora de Misión~~ **RETIRADA el 5-oct-2026** (la app ya no la lanza; el código de Unity y el historial se conservan; ver `docs/juegos/descartados.md`) | `bitacora` | (Memoria) | `Games/Bitacora/` | [docs/juegos/bitacora.md](docs/juegos/bitacora.md) | — |
-| Rumbo a Casa | `rumbo` | Memoria | `Games/Rumbo/` | [docs/juegos/rumbo.md](docs/juegos/rumbo.md) | `Homing.kt` |
+| ~~Rumbo a Casa~~ **RETIRADO el 10-oct-2026** (la app ya no lo lanza; el código de Unity y el historial se conservan; ver `docs/juegos/descartados.md`) | `rumbo` | (Memoria) | `Games/Rumbo/` | [docs/juegos/rumbo.md](docs/juegos/rumbo.md) | — |
 | Correo Estelar — «La estación de correo» (renovado el 8-oct, conserva el id) | `correo` | Memoria | `Games/Correo/` | [docs/diseno-correo-estacion.md](docs/diseno-correo-estacion.md) | `Mail.kt` |
 | Tinta o Palabra («Dos orillas», 3-oct) | `stroop` | Atención | `Games/Stroop/` | [docs/diseno-tinta-o-palabra.md](docs/diseno-tinta-o-palabra.md) | `DosOrillas.kt` |
 | Piloto Estelar — «la ruta de las balizas» (renovado el 9-oct, conserva el id) | `piloto` | Atención | `Games/Piloto/` | [docs/diseno-piloto.md](docs/diseno-piloto.md) | `Piloto.kt` |
@@ -157,7 +146,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 565 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 568 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).

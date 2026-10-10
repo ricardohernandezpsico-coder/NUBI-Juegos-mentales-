@@ -9,11 +9,11 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 
 ## Dónde estamos (8-oct)
 
-19 juegos en 4 áreas. Tienen tutorial guiado 18 (`UnityGameLauncher.TUTORIAL_GAMES`); falta 1: Rumbo (Acoplamiento lo recibió en la Tarea 68, 10-oct). Los retirados están en `docs/juegos/descartados.md`.
+18 juegos en 4 áreas. TODOS tienen tutorial guiado (`UnityGameLauncher.TUTORIAL_GAMES`): Acoplamiento lo recibió en la Tarea 68 y Rumbo a Casa, el único que faltaba, se retiró en la 69 (10-oct). Los retirados están en `docs/juegos/descartados.md`.
 
 | Área | Juegos |
 |---|---|
-| Memoria | Constelaciones, Rastro de luz, Bodega de carga, Rumbo a Casa, Correo Estelar («La estación de correo») |
+| Memoria | Constelaciones, Rastro de luz, Bodega de carga, Correo Estelar («La estación de correo») |
 | Atención | Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites, Rescate relámpago (antes Radar) |
 | Razonamiento | Acoplamiento, Carga exacta, Aterrizaje Lunar, Engranajes («Taller de reparación») |
 | Lenguaje | En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras, La estrella intrusa |
@@ -23,7 +23,7 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 - **Hecho (Tarea 51)**: textos sin promesas de salud (guardia `VisibleTextsGuardTest`), sin percentiles ni varios perfiles, licencia OFL completa y documentos al día.
 - **Hecho (Tarea 52)**: el camino diario se elige por avance real y con variedad (`data/DailyPath.kt`: 3 juegos de 3 áreas, el área que quedó fuera ayer entra hoy, sin repetir los de ayer y anteayer, sin juegos que la persona nunca jugó y no tienen tutorial, determinístico por fecha); el día en que se completa el Primer vuelo, ese día queda cumplido con el vuelo (cuenta para la racha, la meta semanal y los desafíos de días, sin duplicar puntos ni partidas), y «dominio» pasó a «área» en lo que se ve.
 - **Hecho (Tareas 53 y 54)**: capturas reales de los 19 juegos (`--capturas todos`, láminas en `docs/previews/capturas/`) y arreglo de lo que mostraron: los avisos van debajo del marcador, la letra de los juegos de Unity no baja de 14 dp (con guardia en el smoke), el foco del tutorial ya no deja cuadrados oscuros y varios detalles por juego (`docs/previews/capturas/hallazgos.md`).
-- **Hecho (Tarea 55)**: los avisos ya no tapan el juego (se acomodan en una franja libre; el smoke lo prueba). Queda exento Rumbo, que se rehace en la etapa 2: al rehacerlo, quitarlo de `ToastCoverExceptions` (Piloto ya salió en la Tarea 61 y tiene su propia guardia).
+- **Hecho (Tarea 55)**: los avisos ya no tapan el juego (se acomodan en una franja libre; el smoke lo prueba). Queda exento Rumbo, que se rehace en la etapa 2: al rehacerlo, quitarlo de `ToastCoverExceptions` (Piloto ya salió en la Tarea 61 y tiene su propia guardia). Rumbo se retiró el 10-oct (Tarea 69): su exención sigue mientras se conserven su código de Unity y su arranque de prueba.
 - **Hecho (Tarea 56)**: tutoriales guiados con Nubi en Cosecha de palabras, ¿Verdad o disparate? y La estrella intrusa (cada uno con su ronda de práctica que no cuenta, «Saltar tutorial», «Cómo se juega» en la pausa y su smoke en las tres formas de pantalla).
 - **En espera, no ahora**: los pilotos automáticos que faltan en 15 juegos (las capturas de 8, 20 y 40 s repiten la primera situación donde no los hay) y, al tocar cada juego en las etapas 1 y 2, agrandar su área de juego: en pantalla 20:9 sobra casi un tercio de abajo en Rumbo, La estrella intrusa y Bodega (y, en menor medida, en Rescate relámpago, que escala la pantalla de 360 × 640 dp sin estirarla) (Satélites ya usa toda la altura desde la tarea 59).
 
@@ -38,10 +38,10 @@ Cada juego sale con su tutorial (Freno ya lo tenía; los otros tres lo reciben a
 
 ## Etapa 2 — Memoria y razonamiento
 
-- **Rumbo a Casa**: antes de pulirlo, probar con una persona mayor si marea y si el dial se entiende.
+- **Rumbo a Casa** — **RETIRADO (Tarea 69, 10-oct)**: Ricardo lo probó con una persona de 60 años o más (le costó entender la mecánica y le generó desorientación) y eligió retirarlo en vez de rediseñarlo con un mapa fijo con el norte arriba. Ver `docs/juegos/descartados.md`.
 - **Acoplamiento** — **Hecho (Tarea 68, 10-oct)**: renovado como «muelle de acoplamiento» (mismo id): piezas de hasta 4 × 4 bloques, módulo y hueco grandes y a la misma escala, estación de anillos que crece (8 casilleros por anillo), luz y sombra fijas, revelación en seis tiempos, sonido «Madera cálida», récord y totales, tutorial con Nubi (`docs/diseno-acoplamiento.md`).
-- **Aterrizaje Lunar**: revisión (ya tiene tutorial).
-- Con esto los 19 juegos tendrán tutorial (hoy falta solo Rumbo) y la regla del camino diario «nunca un juego sin tutorial que nunca se jugó» queda inerte.
+- **Aterrizaje Lunar**: lo que sigue: una pasada visual y de sonido (ya tiene tutorial).
+- Con la 68 y la 69, TODOS los juegos de la app tienen tutorial, así que la regla del camino diario «nunca un juego sin tutorial que nunca se jugó» queda inerte (sigue en el código, con su prueba, por si se suma un juego nuevo sin tutorial).
 
 ## Etapa 2b — Probar con personas
 

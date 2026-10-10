@@ -164,7 +164,7 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | 622 `FlyProbe`, 716 `PlaceOnPlanet` | La sonda viaja entre planetas | ESENCIAL (muestra el orden de la ruta) | — | Se queda | — |
 | 600 `UpdateComets` | Cometas que cruzan | ESENCIAL (decisión: son la «patrulla» que ocupa la atención durante la espera) | — | Se quedan | — |
 
-**Rumbo a Casa** — `Rumbo/HomingGameController.cs`
+**Rumbo a Casa (RETIRADO de la app el 10-oct-2026; el código de Unity se conserva y esta tabla queda como historia)** — `Rumbo/HomingGameController.cs`
 
 | Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
 |---|---|---|---|---|---|
