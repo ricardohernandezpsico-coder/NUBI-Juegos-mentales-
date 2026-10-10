@@ -99,8 +99,8 @@ En orden de importancia. Es la plantilla que después se puede llevar a los dem�
 
 1. **Título:** «N aterrizajes justos de M».
 2. **Lo que hiciste (recuadro principal):**
-   - «Tu estimación de hoy»;
-   - en grande y en sol, **«a X de cada 100»**, con debajo «del lugar justo». X es `numline_error_pct` redondeado, mínimo 1;
+   - «Tu distancia promedio al lugar justo» (rótulo chico);
+   - en grande y en sol, **«X % de la regla»**, con debajo la línea simple «Como quedar a X en una regla de 0 a 100.». X es `numline_error_pct` redondeado, mínimo 1. (Cambiado el 10-oct por Ricardo, Tarea 71: «a 9 de cada 100 qué… metros, centímetros, números… a ojos de un técnico sería raro»; antes decía «a X de cada 100 del lugar justo».);
    - el dato tuyo, sacado de `NumberLine.reading`:
 
 | Lectura | Línea |
@@ -112,7 +112,7 @@ En orden de importancia. Es la plantilla que después se puede llevar a los dem�
 | SIN_DATOS | sin línea |
 
    - una línea chica: «N dianas lunares · racha mayor ×N · N cúpulas», en singular cuando corresponde.
-3. **Tu avance, solo contigo,** en una fila de tres chips: «Hoy», «Tu promedio» y «Tu mejor», cada uno «N de 100». El promedio y el mejor salen de las partidas ANTERIORES de este juego (`StarMeasures`). Frase según el caso:
+3. **Tu avance, solo contigo,** en una fila de tres chips: «Hoy», «Tu promedio» y «Tu mejor», cada uno «N %». El promedio y el mejor salen de las partidas ANTERIORES de este juego (`StarMeasures`). Frase según el caso:
 
 | Caso | Frase |
 |---|---|
@@ -187,3 +187,8 @@ En orden de importancia. Es la plantilla que después se puede llevar a los dem�
 **Verificación completa (10-oct):** EditMode 815 pruebas, smoke de 118 juegos (con las corridas «Reto», «Mudo», «Pantalla», «CómoSeJuega» y «Corto» de Aterrizaje y el tutorial en tres formas de pantalla), Kotlin 590, instalado en el teléfono.
 
 **Capturas reales:** `bash tools/verificar-todo.sh --capturas Aterrizaje` → `docs/previews/capturas/aterrizaje.png` (20:9 y 16:9).
+
+## 11. Pendientes (para la próxima tarea de Unity)
+
+- **El cierre «¡Listo!» del juego** todavía dice «a N de cada 100» (`LandingContract.EndEstimate`, `EndBoxTitle`, `EndBoxUnit`). Al tocar Unity, debe decir lo mismo que la app: «Tu distancia promedio al lugar justo», «N % de la regla» y «Como quedar a N en una regla de 0 a 100.».
+- **El «14 de 13» de las capturas:** en el cierre de las tomas sale «14 aterrizajes justos de 13». Viene de `AddFakeProgress` (`.Shots.cs`), que suma sobre `_hits = 4` sin sumar `_trials`. En una partida real no pasa.

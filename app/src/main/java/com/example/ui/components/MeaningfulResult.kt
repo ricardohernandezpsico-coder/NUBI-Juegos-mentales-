@@ -25,7 +25,7 @@ import com.example.ui.theme.AppFamily
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayCard
 
-/** Un número del «Tu avance»: «Hoy», «Tu promedio» o «Tu mejor», con su valor ya escrito («11 de 100» o «—»). El de hoy va resaltado. */
+/** Un número del «Tu avance»: «Hoy», «Tu promedio» o «Tu mejor», con su valor ya escrito («11 %» o «—»). El de hoy va resaltado. */
 data class ResultChip(val label: String, val value: String, val highlight: Boolean = false)
 
 /**

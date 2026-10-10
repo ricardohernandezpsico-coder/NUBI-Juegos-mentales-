@@ -1471,7 +1471,7 @@ private fun aterrizajeModel(
     title = title,
     boxTitle = a.BOX_TITLE,
     headline = headline,
-    headlineUnit = a.UNIT,
+    headlineUnit = a.unitLine(progress.today),
     dataLine = dataLine,
     summaryLine = a.summaryLine(result.numlineBullseyes, result.landStreak, result.landDomes),
     extraLine = a.baseLine(totals),

@@ -5,19 +5,22 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** «Aterrizaje Lunar renovado» (10-oct): lo que dice el final con sentido (la estimación «de cada 100», tu avance solo contigo, la base lunar) y las cúpulas que nunca bajan. */
+/** «Aterrizaje Lunar renovado» (10-oct): lo que dice el final con sentido (la distancia promedio «N % de la regla», tu avance solo contigo, la base lunar) y las cúpulas que nunca bajan. */
 class AterrizajeTest {
 
   @Test
-  fun `la estimacion es de cada 100, redondeada y nunca menos de 1`() {
+  fun `la distancia es un porcentaje de la regla, redondeado y nunca menos de 1`() {
     assertEquals(11, Aterrizaje.estimate(11.2f))
     assertEquals(12, Aterrizaje.estimate(11.5f))
-    assertEquals("un error casi cero igual se dice a 1 de cada 100", 1, Aterrizaje.estimate(0.2f))
+    assertEquals("un error casi cero igual se dice 1 % de la regla", 1, Aterrizaje.estimate(0.2f))
     assertEquals(1, Aterrizaje.estimate(0f))
     assertNull(Aterrizaje.estimate(null))
     assertNull(Aterrizaje.estimate(-3f))
     assertNull(Aterrizaje.estimate(Float.NaN))
-    assertEquals("a 11 de cada 100", Aterrizaje.headline(11))
+    assertEquals("11 % de la regla", Aterrizaje.headline(11))
+    assertEquals("Como quedar a 11 en una regla de 0 a 100.", Aterrizaje.unitLine(11))
+    assertEquals("", Aterrizaje.unitLine(null))
+    assertEquals("Tu distancia promedio al lugar justo", Aterrizaje.BOX_TITLE)
     assertEquals("—", Aterrizaje.headline(null))
   }
 
@@ -44,7 +47,7 @@ class AterrizajeTest {
     assertNull(p.best)
     assertEquals("Juega otra vez para ver tu avance.", p.phrase)
     assertEquals("—", Aterrizaje.chipValue(p.average))
-    assertEquals("11 de 100", Aterrizaje.chipValue(p.today))
+    assertEquals("11 %", Aterrizaje.chipValue(p.today))
   }
 
   @Test
@@ -128,11 +131,11 @@ class AterrizajeTest {
 
   @Test
   fun `el texto para lectores de pantalla junta lo importante`() {
-    val spoken = Aterrizaje.spoken("12 aterrizajes justos de 15", "a 11 de cada 100", "Te costó más el final de la regla", "Hoy quedaste más cerca que tu promedio.")
+    val spoken = Aterrizaje.spoken("12 aterrizajes justos de 15", "11 % de la regla", "Te costó más el final de la regla", "Hoy quedaste más cerca que tu promedio.")
     assertEquals(
-      "12 aterrizajes justos de 15. Tu estimación de hoy, a 11 de cada 100 del lugar justo. Te costó más el final de la regla. Hoy quedaste más cerca que tu promedio.",
+      "12 aterrizajes justos de 15. Tu distancia promedio al lugar justo, 11 % de la regla. Te costó más el final de la regla. Hoy quedaste más cerca que tu promedio.",
       spoken
     )
-    assertTrue("sin la línea de datos no queda un hueco", !Aterrizaje.spoken("t", "a 5 de cada 100", null, "f").contains(". ."))
+    assertTrue("sin la línea de datos no queda un hueco", !Aterrizaje.spoken("t", "5 % de la regla", null, "f").contains(". ."))
   }
 }
