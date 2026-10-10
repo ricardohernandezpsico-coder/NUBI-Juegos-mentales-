@@ -90,13 +90,15 @@ object StarMeasures {
     MeasureDef("place", "parejas", "Tu memoria de lugar en Constelaciones", "%", "de las veces, directo a una pareja ya vista", lowerIsBetter = false, short = "tu memoria de lugar", compactPattern = "{v}", levelDependent = true),
     MeasureDef("trail", "secuencia", "Tu rastro en Rastro de luz", "", "luces seguidas", lowerIsBetter = false, short = "tu rastro", compactPattern = "{v} luces", levelDependent = true),
     // Clave `estacion` (no `pending`): el juego se rehízo el 8-oct («La estación de correo») y su medida cuenta otra cosa (encargos por evento, por hora y cancelados); los puntos viejos (clave `pending`) quedan guardados pero ya no se leen.
+    // Tarea 77 (Etapa 3, finales con sentido): «Cuánto te frenó la palabra» de Tinta o Palabra, que el juego ya calculaba pero no guardaba, para poder mostrar «Tu avance» (hoy, tu promedio y tu mejor). Menos es mejor.
+    MeasureDef("stroop", "stroop", "Cuánto te frenó la palabra en Tinta o Palabra", "", "ms", lowerIsBetter = true, short = "cuánto te frena la palabra", compactPattern = "{v} ms", levelDependent = true),
     MeasureDef("estacion", "correo", "Tu memoria para lo pendiente en Correo Estelar", "%", "de los encargos, cumplidos", lowerIsBetter = false, short = "tu memoria para lo pendiente", compactPattern = "{v}", levelDependent = true)
   )
 
   val gameNames = mapOf(
     "radar" to "Rescate relámpago", "freno" to "Freno de Emergencia", "satelites" to "Satélites", "aterrizaje" to "Aterrizaje Lunar",
     "acoplamiento" to "Acoplamiento", "piloto" to "Piloto Estelar",
-    "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?", "cosecha" to "Cosecha de palabras", "intrusa" to "La estrella intrusa", "secuencia" to "Rastro de luz", "anagramas" to "En la punta de la lengua", "calculo" to "Carga exacta", "engranajes" to "Engranajes", "bodega" to "Bodega de carga", "parejas" to "Constelaciones"
+    "correo" to "Correo Estelar", "meteoros" to "Lluvia de meteoros", "disparate" to "¿Verdad o disparate?", "cosecha" to "Cosecha de palabras", "intrusa" to "La estrella intrusa", "secuencia" to "Rastro de luz", "anagramas" to "En la punta de la lengua", "calculo" to "Carga exacta", "engranajes" to "Engranajes", "bodega" to "Bodega de carga", "parejas" to "Constelaciones", "stroop" to "Tinta o Palabra"
   )
 
   fun def(key: String) = defs.firstOrNull { it.key == key }
@@ -106,6 +108,8 @@ object StarMeasures {
    * También null si todavía no hay ninguna estimación válida de freno.
    */
   fun zoneText(def: MeasureDef, points: List<MeasurePoint>): String? {
+    // Tinta o Palabra (Tarea 77): también en palabras, como en su final («casi nada», «+0,4 s»), no en milisegundos
+    if (def.key == "stroop") return points.filter { it.key == "stroop" }.maxByOrNull { it.timestamp }?.let { DosOrillas.cost(it.value.roundToInt()) }
     if (def.key != Brake.KEY) return null
     return Brake.reading(points)?.let { "zona ${it.zone.label}" }
   }

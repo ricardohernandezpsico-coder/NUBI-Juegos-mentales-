@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -164,17 +167,18 @@ fun YourProgress(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
   Column(modifier = modifier.fillMaxWidth().padding(top = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
     Text(model.progressTitle, color = Soft, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp)
     Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().testTag("progress_chips")) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("progress_chips")) {
       for (chip in model.chips) {
         val spoken = chip.label + ": " + chip.value
         ClayCard(
-          modifier = Modifier.weight(1f).semantics(mergeDescendants = true) { contentDescription = spoken },
+          modifier = Modifier.weight(1f).fillMaxHeight().semantics(mergeDescendants = true) { contentDescription = spoken },
           color = if (chip.highlight) Clay.Sun else ChipFill,
           radius = 14.dp,
           depth = 3.dp,
           contentPadding = 8.dp
         ) {
-          Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+          // los tres cuadros miden lo mismo aunque un valor largo («3,2 a la vez», «zona firme») pase a dos líneas
+          Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize()) {
             Text(chip.label, color = if (chip.highlight) Clay.Ink else Soft, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
             Text(chip.value, color = if (chip.highlight) Clay.Ink else Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, textAlign = TextAlign.Center)
           }

@@ -24,8 +24,15 @@ object FinalesConSentido {
    * [source] = la cita corta (el DOI vive en el documento).
    */
   data class Copy(val gameId: String, val put: String, val trick: String, val why: String, val source: String) {
-    /** «Pusiste en juego la memoria de lugar: recordar dónde quedó cada cosa. Recordar qué va con qué…» (el «lo que pusiste en juego» con su primera letra en minúscula, seguido de «por qué importa»). */
-    val whyText: String get() = "Pusiste en juego " + put.replaceFirstChar { it.lowercase() } + " " + why
+    /**
+     * «Pusiste en juego la memoria de lugar: recordar dónde quedó cada cosa. Recordar qué va con qué…» (el «lo que pusiste en juego» con su primera letra en minúscula, seguido de «por qué importa»).
+     * Si lo que pusiste en juego EMPIEZA con un verbo en infinitivo («Recordar dónde guardaste cada cosa.») la frase quedaría torcida («Pusiste en juego recordar…»): se arma como «Pusiste en juego lo que usas para recordar dónde guardaste cada cosa.»
+     */
+    val whyText: String
+      get() {
+        val lower = put.replaceFirstChar { it.lowercase() }
+        return (if (startsWithInfinitive(put)) "Pusiste en juego lo que usas para " else "Pusiste en juego ") + lower + " " + why
+      }
     val sourceText: String get() = "Fuente: $source"
   }
 
@@ -65,6 +72,9 @@ object FinalesConSentido {
     Copy("intrusa", "Ordenar significados sin dejarte llevar por lo que suele ir junto.", "Antes de tocar, pregúntate qué TIPO de cosa es cada una.",
       "Ordenamos lo que sabemos de dos maneras: por tipo de cosa (perro, oso) y por lo que suele ir junto (perro, correa).", "Mirman, Landrigan y Britt, 2017")
   )
+
+  /** ¿El texto empieza con un verbo en infinitivo (Recordar, Frenar, Seguir, Captar, Atender, Hacer, Imaginar, Girar, Encontrar, Reconocer, Comprender, Sacar, Ordenar…)? Una sola palabra en -ar, -er o -ir con mayúscula inicial; los sustantivos («La memoria…») no. */
+  fun startsWithInfinitive(text: String): Boolean = Regex("^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,}(ar|er|ir)\\b").containsMatchIn(text.trim())
 
   private val BY_GAME = ALL.associateBy { it.gameId }
 
@@ -120,6 +130,12 @@ object FinalesConSentido {
 
   /** «78 %» (redondeado); «—» sin dato. */
   fun percentText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} %"
+
+  /** «170 ms» (redondeado); «—» sin dato. */
+  fun msText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} ms"
+
+  /** «3,2 a la vez» (coma decimal); «—» sin dato. */
+  fun atOnceText(value: Float?): String = if (value == null || value.isNaN()) "—" else String.format(java.util.Locale("es"), "%.1f", value) + " a la vez"
 
   /** «6 luces» (en singular «1 luz»; el promedio se redondea a un número entero de luces); «—» sin dato. */
   fun lightsText(value: Float?): String = if (value == null || value.isNaN()) "—" else value.roundToInt().let { if (it == 1) "1 luz" else "$it luces" }

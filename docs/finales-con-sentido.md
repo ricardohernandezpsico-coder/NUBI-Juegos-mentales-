@@ -26,6 +26,7 @@ Es la plantilla de Aterrizaje Lunar (Tarea 70; componente `ui/components/Meaning
 4. **Abajo, en chico y sin recuadro:**
    - «¿Por qué importa?»
    - «Pusiste en juego » + «Lo que pusiste en juego» (con la primera letra en minúscula), seguido del texto de «Por qué importa»;
+   - **Si «Lo que pusiste en juego» empieza con un verbo en infinitivo** (Recordar, Frenar, Seguir, Captar, Atender, Hacer, Imaginar, Girar, Encontrar, Reconocer, Comprender, Sacar, Ordenar), se arma como «Pusiste en juego lo que usas para » + el texto en minúscula («Pusiste en juego lo que usas para recordar dónde guardaste cada cosa.»); si empieza con un sustantivo («La memoria de lugar…») queda «Pusiste en juego la memoria de lugar…». Regla en `FinalesConSentido.Copy.whyText`, con prueba.
    - «Fuente: <cita corta>»;
    - «Medida de esta partida. No es un diagnóstico.»
 
@@ -99,3 +100,33 @@ El condicional del juego si aplica a esta partida (`Constelaciones.tip`, el modo
 ### Capturas y pruebas
 
 `FinalesConSentidoTest` (la tabla y «Tu avance»), `FinalModelsTest` (el final de cada juego) y `Grupo1FinalesScreenshotTest` (capturas Roborazzi `*-final-sentido-*.png` de los cuatro finales y del detalle abierto; el botón mide 56 dp o más; la fila común ya no repite los aciertos).
+
+---
+
+## Grupo 2 (Atención): Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Rescate relámpago
+
+**Tolerancia de «parejo» por medida** (en la unidad de la medida; frase y cuadros como en el grupo 1):
+
+| Juego | Medida (unidad) | Mejor es | Tolerancia | Por qué |
+|---|---|---|---|---|
+| Tinta o Palabra | cuánto te frenó la palabra (ms; se dice en palabras: «casi nada», «+0,4 s») | hacia abajo | 0,1 s (100 ms) | con pocos aciertos de cada tipo la diferencia varía 0,1 s o más, y en pantalla solo se ve en décimas de segundo |
+| Piloto Estelar | tus señales a los mandos (%) | hacia arriba | 5 puntos | de 8 a 25 señales de la misión por partida |
+| Freno de Emergencia | tu freno (ms; se dice en ZONAS: ágil, firme, pausado) | hacia abajo | 20 ms | una estimación sola trae pocos altos y varía unos 20 ms; la frase mira los milisegundos, pero NUNCA se muestran |
+| Satélites | cuántos seguiste de verdad a la vez (con un decimal) | hacia arriba | 0,3 | una partida varía de 0,3 a 0,6 de una a otra |
+| Rescate relámpago | tu vistazo (ms) | hacia abajo | 20 ms | la duración de destello varía unos 20 ms entre partidas parecidas |
+
+**Una medida que no se guardaba: Tinta o Palabra.** El juego ya calculaba «cuánto te frenó la palabra» pero no la guardaba, así que no había con qué comparar. Se guarda ahora como una medida estrella más (`stroop`, en `star_measures`, que ya va en el respaldo; menos es mejor; dependiente del nivel) y la ficha del juego y Hoy la muestran en palabras. Las partidas anteriores a este cambio no tienen punto: el primer final dice «Juega otra vez para ver tu avance».
+
+**UN dato tuyo** (si hay récord nuevo hoy, ese; si no):
+
+| Juego | Medida a la vista | UN dato tuyo |
+|---|---|---|
+| Tinta o Palabra | «+0,4 s» y la frase de siempre («cuánto más tardaste…») | «Cambiar de orilla te costó: +0,2 s» (desde el nivel 3) |
+| Piloto Estelar | «58 %» «de las señales de tu misión, a los mandos» | «Señales de tu misión: 14 de 18» |
+| Freno de Emergencia | «zona firme» y «promedio de tus últimas 5 partidas» (o «primera lectura») | «Frenaste 6 de 8 altos» |
+| Satélites | «2,6 a la vez» y «cuántos seguiste de verdad al mismo tiempo…» | «Encendiste 12 luces» (o las rondas perfectas) |
+| Rescate relámpago | «170 ms» y «el destello más breve con el que rescatas casi todas las cápsulas» | «23 cápsulas a salvo» |
+
+**Detrás de «Ver el detalle de tu partida»** (sin repetir lo que ya está arriba): Tinta, la explicación del costo de cambio; Piloto, cómo leer la medida, la ruta, los toques equivocados, el nivel, la racha y los puntos; Freno, el velocímetro de tres zonas, el récord de frenado y cómo leerlo; Satélites, el planeta con sus luces, las rondas perfectas, el récord, la velocidad superada y cómo leerlo; Rescate, las cápsulas a salvo en fila, las rondas perfectas, el destello más corto, los viajes, el récord, el total, «Tu captura» con sus casilleros y cómo leer el vistazo.
+
+**El truco:** el condicional si aplica (Tinta: `DosOrillas.tips`; Piloto: `Piloto.advice`; Freno: «Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona.» cuando no hubo estimación) y si no el general de la tabla.

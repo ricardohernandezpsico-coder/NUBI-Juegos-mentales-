@@ -594,6 +594,7 @@ class NeuroVidaRepository(
       "meteoros" -> "vocab" to Vocabulary.mark(Vocabulary.bandPercents(r.lexBandSeen, r.lexBandHits, r.lexFaSeen, r.lexFaHits), r.lexBandSeen)
       "acoplamiento" -> "rotation" to r.rotationSpeedDps?.toFloat()
       "piloto" -> "mandos" to Piloto.mark(r.pilSignalPct)
+      "stroop" -> "stroop" to r.interferenceMs?.toFloat()                          // lo que ya calculaba y no se guardaba (Etapa 3): «Tu avance» del final
       "correo" -> "estacion" to (if (r.mailGroup != null) Mail.mark(r.correctAnswers, r.totalTrials) else null)
       else -> return emptyList()
     }

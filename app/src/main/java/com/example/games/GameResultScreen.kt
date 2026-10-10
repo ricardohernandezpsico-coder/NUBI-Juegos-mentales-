@@ -279,202 +279,108 @@ fun GameResultScreen(
 
     // Las medidas de la partida (propias de cada juego): «Lo que avancé». Más abajo se decide si van antes o después del consejo.
     val measures: @Composable ColumnScope.() -> Unit = {
-    // Piloto Estelar («la ruta de las balizas», 9-oct): «Tus señales a los mandos» (TODO medido con las dos tareas a la vez: no hay medida de una tarea sola) y, debajo, lo que pasó en el vuelo.
-    result.pilLanePct?.let { lane ->
-      Spacer(Modifier.height(14.dp))
-      val measure = com.example.data.Piloto.measureLine(result.pilSignalPct)
-      val spoken = com.example.data.Piloto.spoken(result.pilSignalPct, lane, result.pilHits, result.pilTargets)
-      Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = spoken }) {
-        if (measure != null) {
-          Text(measure, color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
-          Text(
-            text = com.example.data.Piloto.MEASURE_EXPLANATION,
-            color = TextSoft,
-            fontSize = 15.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-          )
-        } else {
-          Text(
-            text = com.example.data.Piloto.TOO_FEW_LINE,
-            color = TextSoft,
-            fontSize = 15.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-          )
-        }
-        Spacer(Modifier.height(6.dp))
-        listOfNotNull(
-          com.example.data.Piloto.laneLine(lane),
-          com.example.data.Piloto.missionLine(result.pilHits, result.pilTargets),
-          com.example.data.Piloto.wrongLine(result.pilFalse),
-          com.example.data.Piloto.levelLine(result.pilSignalLevel),
-          com.example.data.Piloto.streakLine(result.pilBestStreak),
-          com.example.data.Piloto.pointsLine(result.pilPoints)
-        ).forEach { Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp)) }
-        com.example.data.Piloto.advice(result.pilHits, result.pilTargets, result.pilFalse, lane)?.let {
-          Text(
-            text = it,
-            color = Clay.Sun,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp)
-          )
-        }
-      }
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "piloto" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
+      val pil = com.example.data.Piloto
+      val model = remember(result, starMeasures) { FinalModels.piloto(result, starMeasures) }
+      val pilRows = listOfNotNull(
+        pil.laneLine(result.pilLanePct)?.let { "piloto_lane" to it },
+        pil.wrongLine(result.pilFalse)?.let { "piloto_wrong" to it },
+        pil.levelLine(result.pilSignalLevel)?.let { "piloto_level" to it },
+        pil.streakLine(result.pilBestStreak)?.let { "piloto_streak" to it },
+        pil.pointsLine(result.pilPoints)?.let { "piloto_points" to it }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = {
+        DetailLine(pil.MEASURE_EXPLANATION, "piloto_explain", soft = false)
+        pilRows.forEach { (tag, line) -> DetailLine(line, tag, strong = true) }
+      })
     }
 
-    // Rescate relámpago («qué cápsulas viste», 9-oct): las cápsulas a salvo (el premio), «Tu captura» (de 4), «Tu vistazo» y lo que pasó en la partida. Ya no hay «Tu radar» ni «Tu filtro»: no se responde dónde. Ver docs/medidas-juegos-estrella.md.
-    result.rescRescued?.let { rescued ->
-      Spacer(Modifier.height(14.dp))
-      Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = com.example.data.Rescate.spoken(rescued, result.captureK, result.glanceMs) }) {
-        RescuedCapsules(com.example.data.Rescate.dots(rescued), Modifier.padding(bottom = 8.dp))
-        com.example.data.Rescate.rescuedLine(rescued)?.let { Text(it, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily) }
-        com.example.data.Rescate.perfectLine(result.rescPerfect, result.rescRounds, result.rescBestStreak)?.let {
-          Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "radar" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
+      val resc = com.example.data.Rescate
+      val model = remember(result, starMeasures) { FinalModels.rescate(result, starMeasures) }
+      val rescRows = listOfNotNull(
+        resc.rescuedLine(result.rescRescued)?.let { "rescate_rescued" to it },
+        resc.perfectLine(result.rescPerfect, result.rescRounds, result.rescBestStreak)?.let { "rescate_perfect" to it },
+        resc.shortestLine(result.rescShortestMs)?.let { "rescate_shortest" to it },
+        resc.tripsLine(result.rescTrips)?.let { "rescate_trips" to it },
+        resc.recordLine(result.rescBest, result.rescNewRecord)?.let { "rescate_record" to it },
+        resc.totalLine(rescateTotals)?.let { "rescate_total" to it }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = {
+        RescuedCapsules(resc.dots(result.rescRescued), Modifier.padding(bottom = 8.dp).semantics { contentDescription = resc.spoken(result.rescRescued, result.captureK, result.glanceMs) })
+        rescRows.forEach { (tag, line) -> DetailLine(line, tag, strong = true) }
+        result.captureK?.let { k ->
+          val line = resc.captureLine(k) ?: "Tu captura"
+          Spacer(Modifier.height(12.dp))
+          Text(text = line, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
+          Spacer(Modifier.height(6.dp))
+          TrackingSlots(k, slots = resc.CAPTURE_MAX, modifier = Modifier.semantics { contentDescription = line })
+          DetailLine(resc.CAPTURE_EXPLANATION, "rescate_capture_explain", soft = false)
         }
-        com.example.data.Rescate.shortestLine(result.rescShortestMs)?.let {
-          Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
-        }
-        com.example.data.Rescate.tripsLine(result.rescTrips)?.let {
-          Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
-        }
-        com.example.data.Rescate.recordLine(result.rescBest, result.rescNewRecord)?.let {
-          Text(
-            it,
-            color = if (result.rescNewRecord == true) Clay.Sun else TextSoft,
-            fontSize = if (result.rescNewRecord == true) 15.sp else 14.sp,
-            fontWeight = if (result.rescNewRecord == true) FontWeight.Bold else FontWeight.SemiBold,
-            modifier = Modifier.padding(top = 2.dp)
-          )
-        }
-        com.example.data.Rescate.totalLine(rescateTotals)?.let {
-          Text(it, color = TextSoft, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp, start = 24.dp, end = 24.dp))
-        }
-      }
-    }
-    com.example.data.Rescate.glanceLine(result.glanceMs)?.let { line ->
-      Spacer(Modifier.height(14.dp))
-      Text(text = line, color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
-      Text(
-        text = com.example.data.Rescate.glanceExplanation(result.glanceLoad),
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
-    }
-    result.captureK?.let { k ->
-      Spacer(Modifier.height(12.dp))
-      val line = com.example.data.Rescate.captureLine(k) ?: "Tu captura"
-      Text(text = line, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
-      Spacer(Modifier.height(6.dp))
-      TrackingSlots(k, slots = com.example.data.Rescate.CAPTURE_MAX, modifier = Modifier.semantics { contentDescription = line })
-      Text(
-        text = com.example.data.Rescate.CAPTURE_EXPLANATION,
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-      )
+        if (result.glanceMs != null) DetailLine(resc.glanceExplanation(result.glanceLoad), "rescate_glance_explain", soft = false)
+      })
     }
 
-    // Satélites: «Encendiste N luces» (el planeta con las luces que se ganaron), «Tu seguimiento» (cuántos se siguieron de verdad a la vez, sin contar la suerte), las rondas perfectas, el récord de luces y la velocidad superada.
-    // Las partidas del juego anterior (sin luces) siguen mostrando solo «Tu seguimiento».
-    if (result.satLights != null) {
-      Spacer(Modifier.height(14.dp))
-      val spoken = com.example.data.Satelites.spoken(result.satLights, result.trackingCapacity, result.trackingTargets)
-      LitPlanet(com.example.data.Satelites.dots(result.satLights), Modifier.size(150.dp).semantics { contentDescription = spoken })
-      com.example.data.Satelites.lightsLine(result.satLights)?.let {
-        Spacer(Modifier.height(6.dp))
-        Text(it, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily)
-      }
-    }
-    result.trackingCapacity?.let { cap ->
-      Spacer(Modifier.height(14.dp))
-      val capText = String.format(java.util.Locale("es"), "%.1f", cap)
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "satelites" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
+      val sat = com.example.data.Satelites
+      val model = remember(result, starMeasures) { FinalModels.satelites(result, starMeasures) }
+      val cap = result.trackingCapacity
       val targets = result.trackingTargets
-      Text(
-        text = com.example.data.Satelites.trackingLine(cap, targets) ?: "Tu seguimiento: $capText a la vez",
-        color = Clay.Sun,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        fontFamily = AppFamily
-      )
-      Spacer(Modifier.height(6.dp))
-      TrackingSlots(cap, Modifier.semantics { contentDescription = "Sigues $capText satélites a la vez" })
-      com.example.data.Satelites.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak)?.let {
-        Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
-      }
-      com.example.data.Satelites.recordLine(result.satBest, result.satNewRecord)?.let {
-        Text(
-          it,
-          color = if (result.satNewRecord == true) Clay.Sun else TextSoft,
-          fontSize = if (result.satNewRecord == true) 15.sp else 14.sp,
-          fontWeight = if (result.satNewRecord == true) FontWeight.Bold else FontWeight.SemiBold,
-          modifier = Modifier.padding(top = 2.dp)
-        )
-      }
-      result.trackingSpeed?.let { speed ->
-        Text(
-          text = "Velocidad más alta superada: ${String.format(java.util.Locale("es"), "%.1f", speed)}×",
-          color = Clay.Cream,
-          fontSize = 14.sp,
-          fontWeight = FontWeight.SemiBold,
-          modifier = Modifier.padding(top = 6.dp)
-        )
-      }
-      Text(
-        text = if (result.satLights != null)
-          "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. Cambia con la velocidad y con cuántos satélites hay que seguir: el juego los va sumando a medida que aciertas."
-        else if (targets != null && targets < 3.5f)
-          "Cuántos seguiste de verdad de los que había que seguir, sin contar los que aciertas por suerte. El juego suma satélites y velocidad a medida que aciertas: así se ve hasta dónde llegas."
-        else
-          "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. A velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri, 2007).",
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-      )
+      val satRows = listOfNotNull(
+        sat.lightsLine(result.satLights)?.let { "satelites_lights" to it },
+        sat.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak)?.let { "satelites_perfect" to it },
+        sat.recordLine(result.satBest, result.satNewRecord)?.let { "satelites_record" to it },
+        result.trackingSpeed?.let { "satelites_speed" to "Velocidad más alta superada: ${String.format(java.util.Locale("es"), "%.1f", it)}×" }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = {
+        if (result.satLights != null) LitPlanet(sat.dots(result.satLights), Modifier.size(150.dp).semantics { contentDescription = sat.spoken(result.satLights, cap, targets) })
+        satRows.forEach { (tag, line) -> DetailLine(line, tag, strong = true) }
+        if (cap != null) {
+          val capText = String.format(java.util.Locale("es"), "%.1f", cap)
+          Spacer(Modifier.height(6.dp))
+          TrackingSlots(cap, Modifier.semantics { contentDescription = "Sigues $capText satélites a la vez" })
+          DetailLine(
+            if (result.satLights != null)
+              "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. Cambia con la velocidad y con cuántos satélites hay que seguir: el juego los va sumando a medida que aciertas."
+            else if (targets != null && targets < 3.5f)
+              "Cuántos seguiste de verdad de los que había que seguir, sin contar los que aciertas por suerte. El juego suma satélites y velocidad a medida que aciertas: así se ve hasta dónde llegas."
+            else
+              "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. A velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri, 2007).",
+            "satelites_explain", soft = false
+          )
+        }
+      })
     }
 
-    // Freno de Emergencia: "tu freno" como PROMEDIO de las últimas partidas, en un velocímetro de tres zonas con nombre (sin milisegundos: una sola partida trae pocos altos) + cuántos altos frenó.
-    if (result.stopsTotal != null) {
-      Spacer(Modifier.height(14.dp))
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "freno" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
       val brake = result.brakeMs
       val reading = com.example.data.Brake.reading(starMeasures, brake, result.timestamp)
-      if (reading != null) {
-        Text(
-          text = reading.headline,
-          color = Clay.Coral,
-          fontWeight = FontWeight.Bold,
-          fontSize = 18.sp,
-          fontFamily = AppFamily,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 24.dp)
+      val model = remember(result, starMeasures) { FinalModels.freno(result, starMeasures) }
+      MeaningfulResult(model, detail = {
+        if (reading != null) {
+          Text(
+            text = reading.headline, color = Clay.Coral, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 24.dp)
+          )
+          Spacer(Modifier.height(6.dp))
+          BrakeGauge(reading, Modifier.semantics { contentDescription = reading.spoken })
+        }
+        result.brakeBestSsdMs?.let { DetailLine("Récord: frenaste con el alto a $it ms", "freno_record", strong = true) }
+        DetailLine(
+          if (brake != null) "Mide cuánto tardas en frenar una acción que ya ibas a hacer. Una sola partida trae pocos altos: por eso mostramos el promedio de varias."
+          else "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4. Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona." +
+            if (reading != null) " Una sola partida trae pocos altos: por eso mostramos el promedio de varias." else "",
+          "freno_explain", soft = false
         )
-        Spacer(Modifier.height(6.dp))
-        BrakeGauge(reading, Modifier.semantics { contentDescription = reading.spoken })
-      }
-      val record = result.brakeBestSsdMs?.let { " · récord: frenaste con el alto a $it ms" } ?: ""
-      Text(
-        text = "Frenaste ${result.stopsOk ?: 0} de ${result.stopsTotal} altos$record",
-        color = Clay.Cream,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-      )
-      Text(
-        text = if (brake != null) "Mide cuánto tardas en frenar una acción que ya ibas a hacer. Una sola partida trae pocos altos: por eso mostramos el promedio de varias."
-        else "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4. Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona." +
-          if (reading != null) " Una sola partida trae pocos altos: por eso mostramos el promedio de varias." else "",
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
+      })
     }
 
     // Aterrizaje Lunar (renovado el 10-oct; docs/diseno-aterrizaje.md §6): un final CON SENTIDO, con el componente reutilizable MeaningfulResult: lo que hiciste («11 % de la regla» de distancia promedio al lugar justo, con un dato tuyo y lo que pasó), tu avance SOLO contigo (hoy, tu promedio y tu mejor), un truco para la próxima
@@ -972,41 +878,18 @@ fun GameResultScreen(
       })
     }
 
-    // Tinta o Palabra («Dos orillas»): «cuánto te frenó la palabra» (cifra grande) y, desde el nivel 3 (hay cambios de orilla), «cambiar de orilla te costó».
-    // Ver docs/medidas-juegos-estrella.md. El consejo va aparte (ResultAdvice), antes o después según result_focus.
-    result.interferenceMs?.let { ms ->
-      Spacer(Modifier.height(14.dp))
-      Text(com.example.data.DosOrillas.INTERFERENCE_TITLE, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Text(
-        text = com.example.data.DosOrillas.cost(ms),
-        color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 40.sp, fontFamily = AppFamily,
-        modifier = Modifier.semantics { contentDescription = "${com.example.data.DosOrillas.INTERFERENCE_TITLE}: ${com.example.data.DosOrillas.cost(ms)}" }
-      )
-      Text(
-        text = com.example.data.DosOrillas.INTERFERENCE_LINE,
-        color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
-    }
-    result.switchCostMs?.let { ms ->
-      Spacer(Modifier.height(14.dp))
-      Text(com.example.data.DosOrillas.SWITCH_TITLE, color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Text(
-        text = com.example.data.DosOrillas.cost(ms),
-        color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 40.sp, fontFamily = AppFamily,
-        modifier = Modifier.semantics { contentDescription = "${com.example.data.DosOrillas.SWITCH_TITLE}: ${com.example.data.DosOrillas.cost(ms)}" }
-      )
-      Text(
-        text = com.example.data.DosOrillas.SWITCH_LINE,
-        color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "stroop" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
+      val model = remember(result, starMeasures) { FinalModels.tinta(result, starMeasures) }
+      MeaningfulResult(model, detail = if (result.switchCostMs == null) null else { { DetailLine(com.example.data.DosOrillas.SWITCH_LINE, "stroop_switch_line", soft = false) } })
     }
 
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
-      result.pilLanePct, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal,
       result.rotationSpeedDps, result.rotationCurveMs,
       result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa
+      result.puntaSolo, result.cargaAlone, result.engrEtapa
     ).any { it != null }
     if (hasStarMeasure) {
       Text(

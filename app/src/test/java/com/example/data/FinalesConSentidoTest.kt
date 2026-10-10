@@ -32,7 +32,8 @@ class FinalesConSentidoTest {
       }
       assertTrue("$id: lo que pusiste en juego empieza con mayúscula", c.put.first().isUpperCase())
       assertTrue("$id: la fuente es una cita corta con su año: ${c.source}", Regex(".*, \\d{4}").matches(c.source))
-      assertTrue("$id: «Pusiste en juego » y lo que pusiste con su primera letra en minúscula", c.whyText.startsWith("Pusiste en juego " + c.put.first().lowercase() + c.put.drop(1)))
+      val prefix = if (FinalesConSentido.startsWithInfinitive(c.put)) "Pusiste en juego lo que usas para " else "Pusiste en juego "
+      assertTrue("$id: «$prefix» y lo que pusiste con su primera letra en minúscula", c.whyText.startsWith(prefix + c.put.first().lowercase() + c.put.drop(1)))
       assertTrue("$id: «por qué importa» sigue a lo que pusiste en juego", c.whyText.endsWith(" " + c.why))
       assertEquals("Fuente: " + c.source, c.sourceText)
     }
@@ -48,6 +49,36 @@ class FinalesConSentidoTest {
     assertEquals("Fuente: Baddeley, 2003", c.sourceText)
     assertEquals("Junta las luces de a dos o tres, como cuando dictas un número de teléfono.", c.trick)
     assertEquals("Medida de esta partida. No es un diagnóstico.", FinalesConSentido.NOTE)
+  }
+
+  @Test
+  fun `si lo que pusiste en juego empieza con un verbo en infinitivo la frase se arma con lo que usas para`() {
+    // los 14 que empiezan con infinitivo (Recordar, Frenar, Seguir, Captar, Atender, Hacer, Imaginar, Girar, Encontrar, Reconocer, Comprender, Sacar, Ordenar)
+    val infinitives = listOf("bodega", "stroop", "piloto", "freno", "satelites", "radar", "calculo", "engranajes", "acoplamiento", "anagramas", "meteoros", "disparate", "cosecha", "intrusa")
+    for (id in infinitives) {
+      val c = FinalesConSentido.copy(id)!!
+      assertTrue("$id: «${c.put}» empieza con un infinitivo", FinalesConSentido.startsWithInfinitive(c.put))
+      assertTrue("$id: ${c.whyText}", c.whyText.startsWith("Pusiste en juego lo que usas para " + c.put.first().lowercase()))
+      assertTrue("$id: nunca «Pusiste en juego recordar…»", !c.whyText.startsWith("Pusiste en juego " + c.put.first().lowercase()))
+    }
+    // los que empiezan con un sustantivo («La memoria…») quedan igual
+    for (id in listOf("parejas", "secuencia", "correo")) {
+      val c = FinalesConSentido.copy(id)!!
+      assertTrue("$id: «${c.put}» NO empieza con un infinitivo", !FinalesConSentido.startsWithInfinitive(c.put))
+      assertTrue(c.whyText.startsWith("Pusiste en juego la memoria"))
+    }
+    assertEquals(
+      "Pusiste en juego lo que usas para recordar dónde guardaste cada cosa. Recordar dónde están las cosas es esencial en el día a día, y une tres piezas: la cosa, el lugar y el lazo entre las dos.",
+      FinalesConSentido.copy("bodega")!!.whyText
+    )
+    assertEquals(
+      "Pusiste en juego lo que usas para frenar a tiempo una acción que ya empezaste. Detener a tiempo lo que ya no conviene nos permite adaptarnos cuando las cosas cambian de golpe.",
+      FinalesConSentido.copy("freno")!!.whyText
+    )
+    assertEquals(17, infinitives.size + 3)
+    assertTrue(FinalesConSentido.startsWithInfinitive("Hacer cuentas con flexibilidad para llegar a un número."))
+    assertTrue(!FinalesConSentido.startsWithInfinitive("La memoria de lugar: recordar dónde quedó cada cosa."))
+    assertTrue(!FinalesConSentido.startsWithInfinitive("Memoria de trabajo"))
   }
 
   // ------------------------------------------------------------------ tu avance
