@@ -38,7 +38,7 @@ namespace NeuroVida.Games.Radar
             Func<Rect> boardZone = coach.ZoneOf(BoardRoots());
 
             // 1) mirar el radar: el destello llega solo, con la práctica de 2 cápsulas
-            var r1 = RadarContract.Custom(2, 0, 1200, new System.Random(11));
+            var r1 = RadarContract.Custom(2, 0, 1200, new System.Random(11), _geo);
             var types1 = new List<CapsuleType>(r1.Types());
             if (ok)
             {
@@ -59,15 +59,21 @@ namespace NeuroVida.Games.Radar
                 int cell = Array.IndexOf(RadarContract.BoardOrder, type);
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_buttons[cell].Root), n == 0 ? CoachTexts.Radar.First : CoachTexts.Radar.Second));
                 ok = !t.Skipped;
-                if (ok) { ToggleType(type, cell); script.Success(); }              // la práctica marca (el toque era del paso, no del juego): si el toque no llegó (red de seguridad) igual sigue, y nunca se repite el paso
+                if (ok) { EnsurePicked(type, cell); script.Success(); }            // el toque del paso SÍ llega al juego (el foco lo suelta antes que el juego lea): si ya la marcó, no se toca; si no llegó (red de seguridad, o el smoke sin toque), la práctica la marca. Nunca se ALTERNA: antes se desmarcaba sola (Tarea 65)
+#if UNITY_EDITOR
+                if (ok) GuardGuided(_picks.Contains(type), "tras el toque guiado en «" + RadarContract.TypeName(type) + "» la cápsula no quedó marcada");
+#endif
             }
 
             // 3) rescatar
+#if UNITY_EDITOR
+            if (ok) GuardGuided(_picks.Count == types1.Count && _go.Bg.color == Gold, "al llegar al paso «¡Rescatar!» el botón no está encendido o faltan cápsulas marcadas (marcadas " + _picks.Count + " de " + types1.Count + ")");
+#endif
             if (ok)
             {
                 yield return StartCoroutine(coach.Touch(() => coach.RectOf(_go.Root), CoachTexts.Radar.Rescue));
                 ok = !t.Skipped;
-                if (ok) { PressGo(); script.Success(); }
+                if (ok) { if (!_rescueTapped) PressGo(); script.Success(); }          // lo mismo: el toque en «¡Rescatar!» ya pudo entregar lo elegido
             }
 
             // 4) las rescatadas suben a la nave
@@ -84,7 +90,7 @@ namespace NeuroVida.Games.Radar
             // 5) las rocas: segunda práctica (2 cápsulas, 1 roca, 800 ms); después de la estática se explica y la práctica contesta sola
             if (ok)
             {
-                var r2 = RadarContract.Custom(2, 1, 800, new System.Random(5));
+                var r2 = RadarContract.Custom(2, 1, 800, new System.Random(5), _geo);
                 BeginRoundObjects(r2);
                 _practiceReady = false;
                 _practiceFlash = StartCoroutine(PracticeFlash(1.0f));
@@ -96,8 +102,8 @@ namespace NeuroVida.Games.Radar
                 }
                 if (ok)
                 {
-                    foreach (var type in new List<CapsuleType>(r2.Types())) ToggleType(type, Array.IndexOf(RadarContract.BoardOrder, type));
-                    PressGo();
+                    foreach (var type in new List<CapsuleType>(r2.Types())) EnsurePicked(type, Array.IndexOf(RadarContract.BoardOrder, type));          // sin alternar: si la persona ya marcó alguna por su cuenta, se queda marcada
+                    if (!_rescueTapped) PressGo();
                     _practiceReveal = StartCoroutine(DoReveal());
                     yield return null;
                     while (ok && _phase == Phase.Reveal) { yield return null; ok = !t.Skipped; }
@@ -153,6 +159,20 @@ namespace NeuroVida.Games.Radar
             SetMessage(RadarContract.AskMessage(_round.Count), RadarContract.AskHint, Cyan);
             _practiceReady = true;
         }
+
+        /// <summary>Deja marcada la cápsula de la práctica (no alterna: si ya está marcada, no hace nada).</summary>
+        private void EnsurePicked(CapsuleType type, int cell)
+        {
+            if (!_picks.Contains(type)) ToggleType(type, cell);
+        }
+
+#if UNITY_EDITOR
+        /// <summary>SOLO EN EL EDITOR (smoke del tutorial, Tarea 65): lo que el tutorial pide tiene que pasar de verdad en el juego (no solo que los pasos avancen). Si no, error de consola y el smoke falla.</summary>
+        private static void GuardGuided(bool ok, string what)
+        {
+            if (!ok) Debug.LogError("[SmokeTest] Radar, tutorial: " + what);
+        }
+#endif
 
         private RectTransform[] BoardRoots()
         {

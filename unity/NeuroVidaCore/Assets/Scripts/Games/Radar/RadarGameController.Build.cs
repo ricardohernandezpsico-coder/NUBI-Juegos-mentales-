@@ -35,7 +35,7 @@ namespace NeuroVida.Games.Radar
 
     public sealed partial class RadarGameController
     {
-        private const int CapsulePool = 6, RockPool = 2, EchoPool = 6, DustPool = 26, WindowCount = 10, BeamPool = 4, SparksPerBeam = 5, EndCapsPool = 48, ConfettiPool = 60;
+        private const int CapsulePool = 6, RockPool = 2, EchoPool = 6, DustPool = 30, DebrisPool = 5, SmokePool = 4, NebulaPool = 4, WindowCount = 10, BeamPool = 4, SparksPerBeam = 5, EndCapsPool = 48, ConfettiPool = 60, TripLines = 7, DockSparks = 6, EndRows = 5;
 
         private static readonly Color Gold = new Color(255f / 255f, 201f / 255f, 74f / 255f);
         private static readonly Color Cyan = new Color(127f / 255f, 216f / 255f, 255f / 255f);
@@ -66,11 +66,12 @@ namespace NeuroVida.Games.Radar
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Image, float>> _radii = new List<KeyValuePair<Image, float>>();
 
-        // fondo
-        private Image _planet;
-        private readonly Image[] _dust = new Image[DustPool];
-        private readonly Vector2[] _dustPos = new Vector2[DustPool];
+        // fondo (v4): nebulosas, planeta lejano, la estación accidentada (baliza que parpadea y humo), restos que flotan y polvo
+        private Image _planet, _station, _stationGlow, _stationDot;
+        private readonly Image[] _nebulae = new Image[NebulaPool], _smoke = new Image[SmokePool], _debris = new Image[DebrisPool], _dust = new Image[DustPool];
+        private readonly Vector2[] _dustPos = new Vector2[DustPool], _debrisPos = new Vector2[DebrisPool];
         private readonly float[] _dustSpeed = new float[DustPool], _dustSize = new float[DustPool];
+        private readonly float[] _debrisSpeed = new float[DebrisPool], _debrisAngle = new float[DebrisPool], _debrisSpin = new float[DebrisPool], _debrisSize = new float[DebrisPool];
 
         // radar
         private Image _scope, _sweep, _beamLine, _sweepHead, _mask, _axis, _flashFill, _flashGlow, _flashWave;
@@ -78,9 +79,11 @@ namespace NeuroVida.Games.Radar
         private readonly float[] _echoAt = new float[EchoPool], _echoAngle = new float[EchoPool], _echoRadius = new float[EchoPool];
         private readonly Image[] _capImgs = new Image[CapsulePool], _capRings = new Image[CapsulePool], _rockImgs = new Image[RockPool];
 
-        // nave, rayos y cápsulas que vuelan
-        private Image _shipHull;
-        private readonly Image[] _windows = new Image[WindowCount], _flames = new Image[2], _flying = new Image[BeamPool], _sparks = new Image[BeamPool * SparksPerBeam];
+        // nave protagonista, rayos y cápsulas que vuelan (la nave es un solo objeto centrado en sí mismo: salta y viaja entera)
+        private RectTransform _shipRoot;
+        private Image _shipHull, _dockRing;
+        private Text _shipCount;
+        private readonly Image[] _windows = new Image[WindowCount], _flames = new Image[2], _flying = new Image[BeamPool], _sparks = new Image[BeamPool * SparksPerBeam], _dockSparks = new Image[DockSparks], _tripLines = new Image[TripLines];
         private readonly RadarBeamGraphic[] _beams = new RadarBeamGraphic[BeamPool];
 
         // tablero
@@ -95,7 +98,7 @@ namespace NeuroVida.Games.Radar
         private Image _endCard, _endRecordBg;
         private readonly Image[] _endCaps = new Image[EndCapsPool], _confetti = new Image[ConfettiPool];
         private Text _endTag, _endTitle, _endNote1, _endNote2, _endNote3, _endRecord;
-        private readonly Text[] _endLabel = new Text[4], _endValue = new Text[4];
+        private readonly Text[] _endLabel = new Text[EndRows], _endValue = new Text[EndRows];
 
         // ------------------------------------------------------------------ construcción de UI
 
@@ -116,7 +119,10 @@ namespace NeuroVida.Games.Radar
             bg.transform.SetParent(canvasGo.transform, false);
             var bgRect = bg.AddComponent<RectTransform>();
             Stretch(bgRect);
-            WorldBackdrop.Build(bgRect, GameWorld.RadarStation);
+            var world = GameWorld.RadarStation;                                         // el cielo base; las nebulosas de la v4 las pone el juego (BuildBack)
+            world.NebulaA = Color.clear;
+            world.NebulaB = Color.clear;
+            WorldBackdrop.Build(bgRect, world);
 
             var safeGo = new GameObject("SafeAreaContent");
             safeGo.transform.SetParent(canvasGo.transform, false);
@@ -162,16 +168,35 @@ namespace NeuroVida.Games.Radar
 
         private void BuildBack()
         {
+            // nebulosas fijas (degradados radiales): verde agua abajo a la izquierda, uva arriba a la derecha, azul al centro y coral abajo a la derecha
+            var neb = new[] { new Color(60f / 255f, 200f / 255f, 190f / 255f, 0.13f), new Color(183f / 255f, 100f / 255f, 1f, 0.15f), new Color(80f / 255f, 120f / 255f, 1f, 0.07f), new Color(1f, 138f / 255f, 107f / 255f, 0.06f) };
+            for (int i = 0; i < NebulaPool; i++) { _nebulae[i] = MakeImage(_backLayer, "Nebula" + i, RadialGlowSprite.Get()); _nebulae[i].color = neb[i]; }
             _planet = MakeImage(_backLayer, "Planet", null);
-            _planet.color = new Color(1f, 1f, 1f, 0.55f);
-            var rng = new System.Random(5);
+            _planet.color = new Color(1f, 1f, 1f, 0.7f);
+            _station = MakeImage(_backLayer, "Station", null);
+            _stationGlow = MakeImage(_backLayer, "StationGlow", RadialGlowSprite.Get());
+            _stationGlow.color = new Color(1f, 138f / 255f, 107f / 255f, 0.8f);
+            _stationDot = MakeImage(_backLayer, "StationLight", DiscSprite.Get());
+            for (int i = 0; i < SmokePool; i++) { _smoke[i] = MakeImage(_backLayer, "Smoke" + i, DiscSprite.Get()); _smoke[i].color = new Color(170f / 255f, 165f / 255f, 210f / 255f, 0f); }
+            // los restos y el polvo salen de las mismas semillas del boceto (rng 9 y rng 5)
+            var rd = new SoundKit.Rng(9);
+            for (int i = 0; i < DebrisPool; i++)
+            {
+                _debris[i] = MakeImage(_backLayer, "Debris" + i, null);
+                _debrisPos[i] = new Vector2((float)rd.Next() * RadarPlan.Width, 120f + (float)rd.Next() * (RadarPlan.TallHeight - 300f));
+                _debrisSpeed[i] = 3f + (float)rd.Next() * 5f;
+                _debrisAngle[i] = (float)rd.Next() * 6f;
+                _debrisSpin[i] = ((float)rd.Next() - 0.5f) * 0.6f;
+                _debrisSize[i] = 4f + (float)rd.Next() * 5f;
+            }
+            var rs = new SoundKit.Rng(5);
             for (int i = 0; i < DustPool; i++)
             {
                 _dust[i] = MakeImage(_backLayer, "Dust" + i, DiscSprite.Get());
                 _dust[i].color = new Color(214f / 255f, 209f / 255f, 242f / 255f, 0.35f);
-                _dustPos[i] = new Vector2((float)rng.NextDouble() * RadarPlan.Width, (float)rng.NextDouble() * 900f);
-                _dustSpeed[i] = 4f + (float)rng.NextDouble() * 8f;
-                _dustSize[i] = 1.2f + (float)rng.NextDouble() * 2.8f;
+                _dustPos[i] = new Vector2((float)rs.Next() * RadarPlan.Width, (float)rs.Next() * RadarPlan.TallHeight);
+                _dustSpeed[i] = 4f + (float)rs.Next() * 8f;
+                _dustSize[i] = (0.6f + (float)rs.Next() * 1.4f) * 2f;
             }
         }
 
@@ -189,14 +214,14 @@ namespace NeuroVida.Games.Radar
                 _echoes[i].gameObject.SetActive(false);
             }
             _sweep = MakeImage(_radarLayer, "Sweep", null);
-            _sweep.color = new Color(190f / 255f, 240f / 255f, 1f, 0.95f);
+            _sweep.color = new Color(120f / 255f, 240f / 255f, 220f / 255f, 1f);                       // la estela (el sprite lleva el 40 %)
             _beamLine = MakeImage(_radarLayer, "BeamLine", null);
             _beamLine.rectTransform.pivot = new Vector2(0f, 0.5f);
-            _beamLine.color = new Color(190f / 255f, 240f / 255f, 1f, 0.95f);
+            _beamLine.color = new Color(205f / 255f, 1f, 240f / 255f, 0.95f);                          // la línea del haz
             _sweepHead = MakeImage(_radarLayer, "SweepHead", RadialGlowSprite.Get());
-            _sweepHead.color = new Color(190f / 255f, 240f / 255f, 1f, 0.9f);
+            _sweepHead.color = new Color(170f / 255f, 1f, 235f / 255f, 0.9f);
             _flashFill = MakeImage(_radarLayer, "FlashFill", DiscSprite.Get());
-            _flashFill.color = new Color(205f / 255f, 232f / 255f, 1f, 0f);
+            _flashFill.color = new Color(190f / 255f, 1f, 240f / 255f, 0f);
             _flashGlow = MakeImage(_radarLayer, "FlashGlow", RadialGlowSprite.Get());
             _flashGlow.color = new Color(225f / 255f, 245f / 255f, 1f, 0f);
             _flashWave = MakeImage(_radarLayer, "FlashWave", RingSprite.Get());
@@ -221,13 +246,32 @@ namespace NeuroVida.Games.Radar
             zone.transform.SetParent(_shipLayer, false);
             _shipZone = zone.AddComponent<RectTransform>();
             _shipZone.anchorMin = _shipZone.anchorMax = _shipZone.pivot = new Vector2(0.5f, 0.5f);
+            for (int i = 0; i < TripLines; i++)
+            {
+                _tripLines[i] = MakeImage(_shipLayer, "TripLine" + i, null);
+                _tripLines[i].color = new Color(205f / 255f, 240f / 255f, 1f, 0f);
+                _tripLines[i].gameObject.SetActive(false);
+            }
+            var root = new GameObject("ShipRoot");
+            root.transform.SetParent(_shipLayer, false);
+            _shipRoot = root.AddComponent<RectTransform>();
+            _shipRoot.anchorMin = _shipRoot.anchorMax = _shipRoot.pivot = new Vector2(0.5f, 0.5f);
             for (int i = 0; i < _flames.Length; i++)
             {
-                _flames[i] = MakeImage(_shipLayer, "Flame" + i, RadialGlowSprite.Get());
-                _flames[i].color = new Color(1f, 170f / 255f, 90f / 255f, 0.8f);
+                _flames[i] = MakeImage(_shipRoot, "Flame" + i, RadialGlowSprite.Get());
+                _flames[i].color = new Color(1f, 170f / 255f, 90f / 255f, 0.85f);
             }
-            _shipHull = MakeImage(_shipLayer, "Hull", null);
-            for (int i = 0; i < WindowCount; i++) _windows[i] = MakeImage(_shipLayer, "Window" + i, null);
+            _shipHull = MakeImage(_shipRoot, "Hull", null);
+            for (int i = 0; i < WindowCount; i++) _windows[i] = MakeImage(_shipRoot, "Window" + i, null);
+            _dockRing = MakeImage(_shipRoot, "DockRing", RingSprite.Get());
+            _dockRing.color = new Color(1f, 1f, 1f, 0f);
+            for (int i = 0; i < DockSparks; i++)
+            {
+                _dockSparks[i] = MakeImage(_shipRoot, "DockSpark" + i, DiscSprite.Get());
+                _dockSparks[i].color = new Color(1f, 236f / 255f, 160f / 255f, 0f);
+            }
+            _shipCount = MakeLabel(_shipLayer, "ShipCount", 14f, UiFonts.Bold, new Color(214f / 255f, 209f / 255f, 242f / 255f), TextAnchor.MiddleCenter);
+            _shipCount.horizontalOverflow = HorizontalWrapMode.Overflow;
         }
 
         private void BuildFx()
@@ -337,6 +381,7 @@ namespace NeuroVida.Games.Radar
             _endLabel[1].text = RadarContract.EndShortest;
             _endLabel[2].text = RadarContract.EndPerfect;
             _endLabel[3].text = RadarContract.EndStreak;
+            _endLabel[4].text = RadarContract.EndTrips;
             foreach (var t in new[] { _endTag, _endTitle, _endNote1, _endNote2, _endNote3, _endRecord }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
             for (int i = 0; i < ConfettiPool; i++)
             {
@@ -426,6 +471,8 @@ namespace NeuroVida.Games.Radar
         private void AssignSprites()
         {
             _planet.sprite = RadarSprites.Planet();
+            _station.sprite = RadarSprites.Station();
+            foreach (var d in _debris) d.sprite = RadarSprites.Debris();
             _scope.sprite = RadarSprites.Scope();
             _sweep.sprite = RadarSprites.Sweep();
             _axis.sprite = RadarSprites.Axis();
@@ -489,62 +536,76 @@ namespace NeuroVida.Games.Radar
 
         private void LayoutBack()
         {
-            SetRect(_planet.rectTransform, 330f, 120f, 224f, 224f);
+            // todo lo que acompaña al radar (el planeta y la estación) va con él y a su escala; las nebulosas, con las proporciones de la pantalla
+            float rk = _plan.GlassR / 146f, cx = _plan.RadarCx, cy = _plan.RadarCy;
+            var nebPos = new[] { new Vector2(30f / 360f, 650f / 780f), new Vector2(340f / 360f, 70f / 780f), new Vector2(190f / 360f, 300f / 780f), new Vector2(1f, 560f / 780f) };
+            var nebR = new[] { 320f, 260f, 230f, 200f };
+            for (int i = 0; i < NebulaPool; i++) SetRect(_nebulae[i].rectTransform, nebPos[i].x * RadarPlan.Width, nebPos[i].y * _logicalH, nebR[i] * 2f, nebR[i] * 2f);
+            SetRect(_planet.rectTransform, cx - 150f * rk, cy - 114f * rk, 46f * 2f * 1.6f * rk, 46f * 2f * 1.6f * rk);
+            float sx = cx + 148f * rk, sy = cy - 94f * rk;
+            SetRect(_station.rectTransform, sx, sy, RadarSprites.StationSide * rk, RadarSprites.StationSide * rk);
+            _station.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 0.35f * Mathf.Rad2Deg);
+            SetRect(_stationGlow.rectTransform, sx, sy, 24f * rk, 24f * rk);
+            SetRect(_stationDot.rectTransform, sx, sy, 8f * rk, 8f * rk);
         }
 
         private void LayoutRadar()
         {
-            float cx = _plan.RadarCx, cy = _plan.RadarCy, side = _plan.BezelR * RadarSprites.ScopeSideInBezelRadii;
+            _geo = RadarGeometry.For(_plan.GlassR);
+            float cx = _plan.RadarCx, cy = _plan.RadarCy, side = _plan.BezelR * RadarSprites.ScopeSideInBezelRadii, k = _plan.Scale;
             SetRect(_radarZone, cx, cy, _plan.BezelR * 2f, _plan.BezelR * 2f);
             SetRect(_scope.rectTransform, cx, cy, side, side);
             SetRect(_mask.rectTransform, cx, cy, side, side);
             SetRect(_sweep.rectTransform, cx, cy, _plan.GlassR * 2f, _plan.GlassR * 2f);
-            _beamLine.rectTransform.sizeDelta = new Vector2(_plan.GlassR * _s, 2.5f * _s);
+            _beamLine.rectTransform.sizeDelta = new Vector2(_plan.GlassR * _s, 2.8f * k * _s);
             _beamLine.rectTransform.anchoredPosition = P(cx, cy);
-            SetRect(_flashFill.rectTransform, cx, cy, (_plan.GlassR - 2f * _plan.Scale) * 2f, (_plan.GlassR - 2f * _plan.Scale) * 2f);
+            SetRect(_flashFill.rectTransform, cx, cy, (_plan.GlassR - 2f * k) * 2f, (_plan.GlassR - 2f * k) * 2f);
             SetRect(_flashGlow.rectTransform, cx, cy, _plan.GlassR * 2.6f, _plan.GlassR * 2.6f);
-            SetRect(_flashWave.rectTransform, cx, cy, 40f * _plan.Scale, 40f * _plan.Scale);
-            SetRect(_sweepHead.rectTransform, cx, cy, 20f * _plan.Scale, 20f * _plan.Scale);
-            SetRect(_axis.rectTransform, cx, cy, 15f * _plan.Scale, 15f * _plan.Scale);
-            foreach (var e in _echoes) e.rectTransform.sizeDelta = new Vector2(5f * _plan.Scale * _s, 5f * _plan.Scale * _s);
-            float cs = RadarContract.CapsuleSize * RadarSprites.CapsuleSideInSizes * _plan.Scale;
+            SetRect(_flashWave.rectTransform, cx, cy, 40f * k, 40f * k);
+            SetRect(_sweepHead.rectTransform, cx, cy, 20f * k, 20f * k);
+            SetRect(_axis.rectTransform, cx, cy, 15f * k, 15f * k);
+            foreach (var e in _echoes) e.rectTransform.sizeDelta = new Vector2(5f * k * _s, 5f * k * _s);
+            float cs = _geo.CapsuleSize * RadarSprites.CapsuleSideInSizes;
             foreach (var c in _capImgs) c.rectTransform.sizeDelta = new Vector2(cs * _s, cs * _s);
-            foreach (var r in _capRings) r.rectTransform.sizeDelta = new Vector2(80f * _plan.Scale * _s, 80f * _plan.Scale * _s);
-            float rs = 23f * RadarSprites.RockSideInRadii * _plan.Scale;
+            foreach (var r in _capRings) r.rectTransform.sizeDelta = new Vector2(80f * k * _s, 80f * k * _s);
+            float rs = 23f * RadarSprites.RockSideInRadii * k;
             foreach (var r in _rockImgs) r.rectTransform.sizeDelta = new Vector2(rs * _s, rs * _s);
             PlaceRoundObjects();
         }
 
         private void LayoutShip()
         {
-            float k = _plan.ShipScale, cx = _plan.RadarCx, y = _plan.ShipY;
-            SetRect(_shipZone, cx, y - 6f * k, 168f * k, 46f * k);
-            SetRect(_shipHull.rectTransform, cx, y, RadarSprites.ShipSide * k, RadarSprites.ShipSide * k);
-            for (int i = 0; i < WindowCount; i++) SetRect(_windows[i].rectTransform, cx - 63f * k + i * 14f * k, y + 2f * k, 11f * k, 11f * k);
-            SetRect(_flames[0].rectTransform, cx - 74f * k, y + 22f * k, 18f * k, 24f * k);
-            SetRect(_flames[1].rectTransform, cx + 74f * k, y + 22f * k, 18f * k, 24f * k);
-            float fs = 36f * k;
+            float ss = _plan.ShipScale, cx = _plan.RadarCx, y = _plan.ShipY;
+            SetRect(_shipZone, cx, y, 228f * ss, 84f * ss);
+            SetRect(_shipRoot, cx, y, 0f, 0f);                                              // la nave (todo lo suyo, centrado en sí misma): salta y viaja entera
+            SetChild(_shipHull.rectTransform, 0f, 0f, RadarSprites.ShipSide * ss, RadarSprites.ShipSide * ss);
+            for (int i = 0; i < WindowCount; i++) SetChild(_windows[i].rectTransform, (-81f + i * 18f) * ss, -2f * ss, RadarSprites.WindowSide * ss, RadarSprites.WindowSide * ss);
+            float fs = _geo.CapsuleSize * RadarSprites.CapsuleSideInSizes;
             foreach (var f in _flying) f.rectTransform.sizeDelta = new Vector2(fs * _s, fs * _s);
-            foreach (var sp in _sparks) sp.rectTransform.sizeDelta = new Vector2(4.4f * k * _s, 4.4f * k * _s);
+            foreach (var sp in _sparks) sp.rectTransform.sizeDelta = new Vector2(4.4f * ss * _s, 4.4f * ss * _s);
+            foreach (var d in _dockSparks) d.rectTransform.sizeDelta = new Vector2(4f * ss * _s, 4f * ss * _s);
+            SetRect(_shipCount.rectTransform, cx, _plan.ShipCountY, 180f, 22f);
+            _shipCount.gameObject.SetActive(_plan.ShowShipCount && !_hideShipCount);
         }
 
         private void LayoutBoard()
         {
+            float c = _plan.CellW / 104f;                                                    // la escala del botón (1 con los 104 × 74 dp de la referencia)
             for (int i = 0; i < _buttons.Length; i++)
             {
                 var (cx, cy) = _plan.CellCenter(i);
                 var v = _buttons[i];
-                float k = _plan.Scale;
                 SetRect(v.Root, cx, cy, _plan.CellW, _plan.CellH);
-                SetChild(v.Bg.rectTransform, 0f, 0f, RadarSprites.ButtonSide * k, RadarSprites.ButtonSide * k);
-                SetChild(v.Ring.rectTransform, 0f, 0f, RadarSprites.ButtonSide * k, RadarSprites.ButtonSide * k);
-                SetChild(v.Emblem.rectTransform, 0f, -9f * k, 14f * 2f * RadarSprites.CapsuleSideInSizes * k, 14f * 2f * RadarSprites.CapsuleSideInSizes * k);
-                SetChild(v.Label.rectTransform, 0f, 19f * k, _plan.CellW - 8f, 20f);
-                SetChild(v.Badge.rectTransform, _plan.CellW * 0.5f - 12f * k, -_plan.CellH * 0.5f + 10f * k, 22f * k, 22f * k);
+                SetChild(v.Bg.rectTransform, 0f, 0f, RadarSprites.ButtonSide * c, RadarSprites.ButtonSide * c);
+                SetChild(v.Ring.rectTransform, 0f, 0f, RadarSprites.ButtonSide * c, RadarSprites.ButtonSide * c);
+                float es = 18f * 2f * RadarSprites.CapsuleSideInSizes * c;                     // forma de 18 (unos 36 dp)
+                SetChild(v.Emblem.rectTransform, 0f, -11f * c, es, es);
+                SetChild(v.Label.rectTransform, 0f, 24f * c, _plan.CellW - 8f, 20f);
+                SetChild(v.Badge.rectTransform, _plan.CellW * 0.5f - 12f * c, -_plan.CellH * 0.5f + 10f * c, 22f * c, 22f * c);
             }
             SetRect(_go.Root, _plan.GoCx, _plan.GoCy, _plan.GoW, _plan.GoH);
             float gs = RadarSprites.GoSide * (_plan.GoW / 172f);
-            SetChild(_go.Bg.rectTransform, 0f, 0f, gs, gs * 1f);
+            SetChild(_go.Bg.rectTransform, 0f, 0f, gs, gs);
             SetChild(_go.Label.rectTransform, 0f, 1f, _plan.GoW - 20f, 28f);
         }
 
@@ -575,23 +636,23 @@ namespace NeuroVida.Games.Radar
 
         private void LayoutEnd()
         {
-            float cx = RadarPlan.Width * 0.5f, y = RadarPlan.HudBottom;
-            SetRect(_endTag.rectTransform, cx, y + 20f, 300f, 22f);
-            SetRect(_endTitle.rectTransform, cx, y + 52f, 330f, 36f);
+            float cx = RadarPlan.Width * 0.5f;
+            SetRect(_endTag.rectTransform, cx, RadarPlan.HudBottom + 12f, 300f, 20f);               // bajo el marcador (63 dp): nunca lo tapa
+            SetRect(_endTitle.rectTransform, cx, RadarPlan.HudBottom + 39f, 330f, 34f);
             PlaceEndCaps();
-            int rows = Mathf.Max(1, Mathf.CeilToInt(Mathf.Min(_seats.Count, EndCapsPool) / 8f));
-            float y0 = Mathf.Min(y + 84f + rows * 34f + 14f, _logicalH - 330f);
-            SetRect(_endCard.rectTransform, cx, y0 + 66f, RadarPlan.Width - 44f, 132f);
+            int rows = Mathf.Max(1, Mathf.CeilToInt(Mathf.Min(_seats.Count, EndCapsPool) / 10f));
+            float y0 = Mathf.Min(150f + rows * 32f, 290f);                                      // hasta 48 caben sin tocar la tarjeta
+            SetRect(_endCard.rectTransform, cx, y0 + 86f, RadarPlan.Width - 44f, 172f);
             for (int i = 0; i < _endLabel.Length; i++)
             {
-                SetRect(_endLabel[i].rectTransform, 40f + 110f, y0 + 20f + i * 30f, 220f, 24f);
-                SetRect(_endValue[i].rectTransform, RadarPlan.Width - 40f - 70f, y0 + 20f + i * 30f, 140f, 24f);
+                SetRect(_endLabel[i].rectTransform, 40f + 110f, y0 + 22f + i * 32f, 220f, 24f);
+                SetRect(_endValue[i].rectTransform, RadarPlan.Width - 40f - 70f, y0 + 22f + i * 32f, 140f, 24f);
             }
-            SetRect(_endNote1.rectTransform, cx, y0 + 152f, 336f, 22f);
-            SetRect(_endNote2.rectTransform, cx, y0 + 172f, 336f, 22f);
-            SetRect(_endNote3.rectTransform, cx, y0 + 192f, 336f, 22f);
-            SetRect(_endRecordBg.rectTransform, cx, y0 + 222f, 190f, 30f);
-            SetRect(_endRecord.rectTransform, cx, y0 + 222f, 190f, 24f);
+            SetRect(_endNote1.rectTransform, cx, y0 + 194f, 336f, 22f);
+            SetRect(_endNote2.rectTransform, cx, y0 + 214f, 336f, 22f);
+            SetRect(_endNote3.rectTransform, cx, y0 + 234f, 336f, 22f);
+            SetRect(_endRecordBg.rectTransform, cx, y0 + 270f, 190f, 30f);
+            SetRect(_endRecord.rectTransform, cx, y0 + 270f, 190f, 24f);
         }
 
         /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>

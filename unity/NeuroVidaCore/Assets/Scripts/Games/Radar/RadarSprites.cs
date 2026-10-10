@@ -160,16 +160,35 @@ namespace NeuroVida.Games.Radar
         public static Sprite Axis() => Get(134, () => ToSprite(RenderAxis(64), 64, 64));
         public static Sprite Planet() => Get(135, () => ToSprite(RenderPlanet(256), 256, 256));
 
+        /// <summary>El radio de pantalla de la v4 (dp): el sprite se dibuja con las medidas del boceto v4 (diseno-rescate-v4.md §3) y se escala con el radar.</summary>
+        private const float V4Glass = 146f;
+
+        /// <summary>El vidrio de la v4: degradado radial #11495C → #082233 (70 %) → #051522 con la luz un poco arriba (el boceto: círculo de 10 dp en (0, −30) hasta el borde). Mismo color y mismo contraste en TODOS los niveles (patente: la dificultad no ajusta el contraste).</summary>
+        private static Color GlassColor(float x, float y, float dp)
+        {
+            float r1 = GlassR, r0 = 10f * dp, up = 30f * dp;
+            float d0 = Mathf.Sqrt(x * x + y * y);
+            float t = Mathf.Clamp01(d0 / r1);
+            for (int i = 0; i < 4; i++)
+            {
+                float cy = up * (1f - t), dx = x, dy = y - cy;
+                t = Mathf.Clamp01((Mathf.Sqrt(dx * dx + dy * dy) - r0) / (r1 - r0));
+            }
+            Color a = Hex(0x11495C), b = Hex(0x082233), c = Hex(0x051522);
+            return t <= 0.7f ? Color.Lerp(a, b, t / 0.7f) : Color.Lerp(b, c, (t - 0.7f) / 0.3f);
+        }
+
         public static Color32[] RenderScope(int size) => RenderClay(size, ScopeZoom, 0.027f, 0.05f, 0.006f, (x, y) => Circle(x, y, 0f, 0f, BezelR), (ref Px p, float x, float y) =>
         {
             const float aa = 0.006f;
             float r = Mathf.Sqrt(x * x + y * y);
+            float dp = GlassR / V4Glass;                     // unidades del dibujo por dp del boceto v4
             // el bisel de arcilla, con luz arriba
             p.Over(Gradient(Bezel, y, BezelR), Cover(r - BezelR, aa));
             p.Over(new Color(1f, 1f, 1f, 0.2f), Cover(Ellipse(x, y, -0.5f, 0.72f, 0.16f, 0.045f), aa) * Cover(-(r - GlassR - 0.03f), aa));
             // las 48 marcas del bisel (una larga cada cuatro)
             float k = BezelR / (RadarContract.RadarRadius + 13f);
-            for (int i = 0; i < 48; i++)
+            for (int i = 0; i < 48 && r > BezelR - 13.5f * k && r < BezelR - 1f * k; i++)               // las marcas solo existen junto al borde del bisel (así el sprite se hornea en una fracción del tiempo)
             {
                 float a = i * Mathf.PI / 24f;
                 bool longTick = i % 4 == 0;
@@ -177,24 +196,25 @@ namespace NeuroVida.Games.Radar
                 float tick = Capsule(x, y, Mathf.Cos(a) * r0, Mathf.Sin(a) * r0, Mathf.Cos(a) * r1, Mathf.Sin(a) * r1, (longTick ? 1.2f : 0.7f) * k);
                 p.Over(longTick ? Hex(0xB8B0FF) : new Color(184f / 255f, 176f / 255f, 1f, 0.5f), Cover(tick, aa));
             }
-            // la pantalla: borde de tinta y vidrio azul noche con luz arriba
-            p.Over(Ink, Cover(r - GlassR - 3.5f * k, aa));
-            float gy = y - GlassR * 0.23f;
-            p.Over(Color.Lerp(GlassCenter, Glass, Mathf.Clamp01(Mathf.Sqrt(x * x + gy * gy) / GlassR)), Cover(r - GlassR, aa));
-            if (r > GlassR) return;
-            // adorno: dos aros punteados y una cruz (NUNCA lugares de respuesta)
-            var line = new Color(127f / 255f, 216f / 255f, 1f, 0.16f);
+            // la pantalla: borde de tinta y vidrio verde agua con luz
+            p.Over(Ink, Cover(r - GlassR - 3.5f * dp, aa));
+            if (r > GlassR + 0.02f) return;
+            p.Over(GlassColor(x, y, dp), Cover(r - GlassR, aa));
+            // aro interior luminoso (radio RR − 5, 6 dp, al 16 %)
+            p.Over(new Color(120f / 255f, 240f / 255f, 220f / 255f, 0.16f), Cover(Mathf.Abs(r - (GlassR - 5f * dp)) - 3f * dp, aa));
+            // adorno: dos aros punteados y una cruz, verde agua al 20 % (NUNCA lugares de respuesta)
+            var line = new Color(120f / 255f, 240f / 255f, 220f / 255f, 0.20f);
             float ang = Mathf.Atan2(y, x);
             foreach (float rr in new[] { 0.36f, 0.7f })
             {
-                float dash = Mathf.Sin(ang * rr * 60f) > -0.1f ? 1f : 0f;
-                p.Over(line, Cover(Mathf.Abs(r - rr * GlassR) - 1.0f * k, aa) * dash);
+                float dash = Mathf.Repeat(Mathf.Abs(ang) * rr * V4Glass, 10f) < 4f ? 1f : 0f;
+                p.Over(line, Cover(Mathf.Abs(r - rr * GlassR) - 0.6f * dp, aa) * dash);
             }
-            p.Over(line, Cover(Mathf.Abs(y) - 0.9f * k, aa));
-            p.Over(line, Cover(Mathf.Abs(x) - 0.9f * k, aa));
+            p.Over(line, Cover(Mathf.Abs(y) - 0.6f * dp, aa));
+            p.Over(line, Cover(Mathf.Abs(x) - 0.6f * dp, aa));
         });
 
-        /// <summary>Haz del radar: cuña con el borde delantero brillante (apunta hacia arriba) y una estela que se apaga hacia atrás (sentido antihorario: el haz gira en sentido horario).</summary>
+        /// <summary>La estela del haz (v4): una cuña que se apaga hacia atrás (al 40 % junto al haz; sentido antihorario: el haz gira en sentido horario). Blanca: se tiñe de verde agua con <c>Image.color</c>; la línea del haz es aparte.</summary>
         public static Color32[] RenderSweep(int size)
         {
             var pixels = new Color32[size * size];
@@ -212,9 +232,8 @@ namespace NeuroVida.Games.Radar
                         float behind = Mathf.Atan2(-x, y);
                         if (behind < 0f) behind += Mathf.PI * 2f;
                         float fade = behind <= trail ? 1f - behind / trail : 0f;
-                        float edge = Mathf.Clamp01(1f - Mathf.Abs(x) * size * 0.25f) * (y > 0f ? 1f : 0f);
                         float radial = Mathf.Clamp01((1f - r) * 12f) * Mathf.Clamp01(r * 6f);
-                        a = Mathf.Max(fade * fade * 0.3f, edge * 0.95f) * radial;
+                        a = fade * 0.40f * radial;
                     }
                     pixels[py * size + px] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(a) * 255f));
                 }
@@ -291,7 +310,7 @@ namespace NeuroVida.Games.Radar
                     var p = new Px();
                     float r = Mathf.Sqrt(x * x + y * y);
                     float ring = (Mathf.Sqrt((x / 1.5f) * (x / 1.5f) + (y / 0.26f) * (y / 0.26f)) - 1f) * 0.26f;
-                    var ringColor = new Color(183f / 255f, 155f / 255f, 1f, 0.55f);
+                    var ringColor = new Color(183f / 255f, 155f / 255f, 1f, 0.4f);
                     if (y < 0f) p.Over(ringColor, Cover(Mathf.Abs(ring) - 0.025f, 0.02f));
                     float lx = x + 0.34f, ly = y - 0.37f;
                     p.Over(Color.Lerp(Hex(0x5D4FB3), Hex(0x231B5C), Mathf.Clamp01(Mathf.Sqrt(lx * lx + ly * ly) / 1.15f)), Cover(r - 1f, 0.02f));
@@ -301,62 +320,121 @@ namespace NeuroVida.Games.Radar
             return pixels;
         }
 
-        // ------------------------------------------------------------------ la nave de rescate
+        // ------------------------------------------------------------------ la nave de rescate (v4: protagonista)
 
-        private const int ShipPx = 256;
-        private const float ShipZoom = 1.18f, ShipUnit = 80f;
-        /// <summary>El lado del sprite de la nave (dp): 1 unidad = 80 dp.</summary>
+        private const int ShipPx = 512;
+        private const float ShipZoom = 1.2f, ShipUnit = 100f;
+        /// <summary>El lado del sprite de la nave (dp con la nave a escala 1): 1 unidad = 100 dp, el casco mide 200 × 38 dp.</summary>
         public const float ShipSide = 2f * ShipZoom * ShipUnit;
 
-        private static float ShipBody(float x, float y)
-        {
-            float hull = RoundBox(x, y, 0f, 0f, 1f, 0.2f, 0.2f);
-            float cabin = Intersect(Circle(x, y, 0f, 0.2f, 0.19f), -(y - 0.2f));
-            float th = Union(RoundBox(x, y, -0.925f, -0.02f, 0.125f, 0.113f, 0.088f), RoundBox(x, y, 0.925f, -0.02f, 0.125f, 0.113f, 0.088f));
-            return Union(Union(hull, cabin), th);
-        }
+        private static readonly float[] FinRight = { 0.80f, 0.04f, 1.12f, -0.14f, 1.04f, -0.24f, 0.74f, -0.17f };
+        private static readonly float[] FinLeft = { -0.80f, 0.04f, -1.12f, -0.14f, -1.04f, -0.24f, -0.74f, -0.17f };
+
+        private static float Hull(float x, float y) => RoundBox(x, y, 0f, 0f, 1f, 0.19f, 0.19f);
+        private static float Cabin(float x, float y) => Intersect(Circle(x, y, 0f, 0.19f, 0.20f), -(y - 0.19f));
+        private static float Thruster(float x, float y, float sx) => RoundBox(x, y, sx, -0.10f, 0.11f, 0.08f, 0.06f);
+        private static float Fins(float x, float y) => Union(Polygon(x, y, FinRight), Polygon(x, y, FinLeft));
+
+        private static float ShipBody(float x, float y) =>
+            Mathf.Abs(y) > 0.5f ? 1f : Union(Union(Union(Hull(x, y), Cabin(x, y)), Union(Thruster(x, y, -0.86f), Thruster(x, y, 0.86f))), Fins(x, y));
 
         public static Sprite Ship() => Get(140, () => ToSprite(RenderShip(ShipPx), ShipPx, ShipPx));
         public static Sprite Window() => Get(141, () => ToSprite(RenderWindow(64), 64, 64));
 
-        public static Color32[] RenderShip(int size) => RenderClay(size, ShipZoom, 0.04f, 0.06f, 0.012f, ShipBody, (ref Px p, float x, float y) =>
+        private static void Part(ref Px p, float sdf, Color fill, float border, float aa) { p.Over(Ink, Cover(sdf - border, aa)); p.Over(fill, Cover(sdf, aa)); }
+
+        /// <summary>
+        /// La nave de rescate (v4, diseno-rescate-v4.md §4): casco crema de 200 × 38 dp con franja celeste, aletas uva, dos propulsores coral y la cabina celeste con el casco del piloto (SIN cara: regla de caras). Las diez ventanas (r 7 dp, cada 18 dp) y las llamas van aparte.
+        /// </summary>
+        public static Color32[] RenderShip(int size) => RenderClay(size, ShipZoom, 0.03f, 0.05f, 0.008f, ShipBody, (ref Px p, float x, float y) =>
         {
-            const float aa = 0.012f;
-            // propulsores (detrás del casco)
-            foreach (float sx in new[] { -0.925f, 0.925f })
-            {
-                float th = RoundBox(x, y, sx, -0.02f, 0.125f, 0.113f, 0.088f);
-                p.Over(Ink, Cover(th - 0.035f, aa));
-                p.Over(Gradient(Hex(0xFF8A6B), y, 0.12f), Cover(th, aa));
-            }
-            float hull = RoundBox(x, y, 0f, 0f, 1f, 0.2f, 0.2f);
-            float cabin = Intersect(Circle(x, y, 0f, 0.2f, 0.19f), -(y - 0.2f));
-            p.Over(Ink, Cover(cabin - 0.035f, aa));
-            p.Over(Gradient(Hex(0x7FD8FF), y, 0.4f), Cover(cabin, aa));
-            p.Over(Ink, Cover(hull - 0.04f, aa));
-            p.Over(Gradient(Hex(0xE9E6FF), y, 0.2f), Cover(hull, aa));
-            p.Over(new Color(1f, 1f, 1f, 0.38f), Cover(Ellipse(x, y, -0.55f, 0.1f, 0.2f, 0.04f), aa) * Cover(hull + 0.03f, aa));
+            const float aa = 0.008f;
+            if (Mathf.Abs(y) > 0.5f) return;                                                             // el casco ocupa una franja: fuera de ella no hay nada que pintar
+            Part(ref p, Polygon(x, y, FinRight), Gradient(Hex(0xB79BFF), y, 0.15f), 0.03f, aa);
+            Part(ref p, Polygon(x, y, FinLeft), Gradient(Hex(0xB79BFF), y, 0.15f), 0.03f, aa);
+            foreach (float sx in new[] { -0.86f, 0.86f }) Part(ref p, Thruster(x, y, sx), Gradient(Hex(0xFF8A6B), y + 0.10f, 0.08f), 0.03f, aa);
+            float hull = Hull(x, y);
+            Part(ref p, Cabin(x, y), Gradient(Hex(0x7FD8FF), y - 0.19f, 0.2f), 0.032f, aa);
+            Part(ref p, hull, Gradient(Hex(0xE9E6FF), y, 0.19f), 0.038f, aa);
+            p.Over(new Color(127f / 255f, 216f / 255f, 1f, 0.45f), Cover(RoundBox(x, y, 0f, -0.115f, 0.9f, 0.015f, 0f), aa) * Cover(hull + 0.01f, aa));
+            p.Over(new Color(1f, 1f, 1f, 0.38f), Cover(Ellipse(x, y, -0.55f, 0.08f, 0.2f, 0.04f), aa) * Cover(hull + 0.03f, aa));
+            // el piloto: casco blanco con visor azul, sin cara
+            p.Over(Ink, Cover(Circle(x, y, 0f, 0.24f, 0.085f) - 0.024f, aa));
+            p.Over(Hex(0xF4F2FF), Cover(Circle(x, y, 0f, 0.24f, 0.085f), aa));
+            p.Over(Visor, Cover(Ellipse(x, y, 0f, 0.235f, 0.056f, 0.042f), aa));
         });
 
-        /// <summary>Una ventana de la nave: disco claro con borde de tinta (se tiñe con <c>Image.color</c> cuando una cápsula rescatada ocupa su lugar).</summary>
+        /// <summary>Una ventana de la nave: disco claro con borde de tinta (se tiñe con <c>Image.color</c> cuando una cápsula rescatada ocupa su lugar). Con el borde mide 16,4 dp; el sprite, 18,9.</summary>
+        public const float WindowDisc = 16.4f, WindowSide = WindowDisc * 1.15f;
+
         public static Color32[] RenderWindow(int size) => RenderClay(size, 1.15f, 0.2f, 0f, 0.03f, (x, y) => Circle(x, y, 0f, 0f, 0.8f), (ref Px p, float x, float y) => p.Over(Color.white, Cover(Circle(x, y, 0f, 0f, 0.8f), 0.03f)));
+
+        // ------------------------------------------------------------------ la estación accidentada y los restos que flotan (fondo)
+
+        private const int StationPx = 384;
+        private const float StationZoom = 1.18f, StationUnit = 90f;
+        /// <summary>El lado del sprite de la estación (dp): 1 unidad = 90 dp (anillo roto de 32 a 46 dp, paneles hasta 80 dp).</summary>
+        public const float StationSide = 2f * StationZoom * StationUnit;
+
+        private const float Ring0 = 32f / StationUnit, Ring1 = 46f / StationUnit, Hub = 14f / StationUnit;
+
+        /// <summary>El anillo roto: un anillo al que le falta el tramo de abajo a la derecha (entre 0,08π y 0,42π hacia abajo en el boceto: ahí sale el humo).</summary>
+        private static float BrokenRing(float x, float y)
+        {
+            float r = Mathf.Sqrt(x * x + y * y);
+            float ring = Mathf.Max(r - Ring1, Ring0 - r);
+            float ang = Mathf.Atan2(y, x);                                        // y arriba: el hueco queda abajo a la derecha
+            bool gap = ang < -0.08f * Mathf.PI && ang > -0.42f * Mathf.PI;
+            return gap ? 1f : ring;
+        }
+
+        private static float Panel(float x, float y, float sign) => RoundBox(x, y, 0f, sign * 65f / StationUnit, 9f / StationUnit, 15f / StationUnit, 4f / StationUnit);
+
+        private static float StationBody(float x, float y) => Mathf.Abs(x) > 0.62f || Mathf.Abs(y) > 0.97f ? 1f : Union(Union(BrokenRing(x, y), Circle(x, y, 0f, 0f, Hub)), Union(Panel(x, y, 1f), Panel(x, y, -1f)));
+
+        public static Sprite Station() => Get(170, () => ToSprite(RenderStation(StationPx), StationPx, StationPx));
+
+        public static Color32[] RenderStation(int size) => RenderClay(size, StationZoom, 3f / StationUnit, 3f / StationUnit, 0.008f, StationBody, (ref Px p, float x, float y) =>
+        {
+            const float aa = 0.008f;
+            if (Mathf.Abs(x) > 0.62f || Mathf.Abs(y) > 0.97f) return;                                    // fuera del anillo y de los paneles no hay nada que pintar
+            foreach (float sg in new[] { 1f, -1f })
+            {
+                Part(ref p, Panel(x, y, sg), Gradient(Hex(0x3E5BA8), y - sg * 65f / StationUnit, 15f / StationUnit), 2.6f / StationUnit, aa);
+                foreach (float ly in new[] { 60f, 70f })
+                    p.Over(new Color(127f / 255f, 216f / 255f, 1f, 0.45f), Cover(RoundBox(x, y, 0f, sg * ly / StationUnit, 7f / StationUnit, 0.6f / StationUnit, 0f), aa) * Cover(Panel(x, y, sg) + 3f / StationUnit, aa));
+            }
+            foreach (float a in new[] { Mathf.PI * 0.75f, Mathf.PI * 1.25f, Mathf.PI * 1.75f })       // los tres puntales (ink)
+                p.Over(Ink, Cover(Capsule(x, y, Mathf.Cos(a) * 14f / StationUnit, -Mathf.Sin(a) * 14f / StationUnit, Mathf.Cos(a) * 34f / StationUnit, -Mathf.Sin(a) * 34f / StationUnit, 2.5f / StationUnit), aa));
+            Part(ref p, BrokenRing(x, y), Gradient(Hex(0x6A62B0), y, Ring1), 3f / StationUnit, aa);
+            Part(ref p, Circle(x, y, 0f, 0f, Hub), Gradient(Hex(0x8E86D8), y, Hub), 3f / StationUnit, aa);
+        });
+
+        private const int DebrisPx = 64;
+        private static readonly float[] DebrisPts = { -1f, 0.4f, 0.2f, 0.8f, 1f, -0.1f, -0.3f, -0.7f };
+
+        /// <summary>Un fragmento (restos de la estación): polígono gris violáceo con borde de tinta; su tamaño (4 a 9 dp) lo da el Image.</summary>
+        public static Sprite Debris() => Get(171, () => ToSprite(RenderDebris(DebrisPx), DebrisPx, DebrisPx));
+
+        public static Color32[] RenderDebris(int size) => RenderClay(size, 1.5f, 0.22f, 0f, 0.05f, (x, y) => Polygon(x, y, DebrisPts), (ref Px p, float x, float y) => p.Over(Hex(0x4A4580), Cover(Polygon(x, y, DebrisPts), 0.05f)));
 
         // ------------------------------------------------------------------ el tablero
 
         private const int ButtonPx = 256;
         private const float ButtonZoom = 1.12f;
-        /// <summary>El botón del tablero: 104 × 62 dp en un sprite cuadrado de lado 116,5 dp (1 unidad = 52 dp).</summary>
+        /// <summary>El botón del tablero (v4): 104 × 74 dp en un sprite cuadrado de lado 116,5 dp (1 unidad = 52 dp).</summary>
         public const float ButtonUnit = 52f, ButtonSide = 2f * ButtonZoom * ButtonUnit;
+        private const float ButtonHalfH = 74f / 104f;
 
         public static Sprite Button() => Get(150, () => ToSprite(RenderButton(ButtonPx), ButtonPx, ButtonPx));
         public static Sprite ButtonRing(bool dashed) => Get(151 + (dashed ? 1 : 0), () => ToSprite(RenderButtonRing(ButtonPx, dashed), ButtonPx, ButtonPx));
         public static Sprite GoButton() => Get(153, () => ToSprite(RenderGo(ButtonPx), ButtonPx, ButtonPx));
 
-        private static float ButtonShape(float x, float y) => RoundBox(x, y, 0f, 0f, 1f, 0.596f, 0.346f);
+        private static float ButtonShape(float x, float y) => RoundBox(x, y, 0f, 0f, 1f, ButtonHalfH, 0.346f);
 
-        /// <summary>El botón del tablero en blanco con luz arriba (se tiñe con <c>Image.color</c>: el borde de tinta y la sombra dura quedan oscuros).</summary>
+        /// <summary>El botón del tablero en blanco (se tiñe con <c>Image.color</c>: el borde de tinta y la sombra dura quedan oscuros). Apagado va SIN brillo de arcilla (lo apaga el juego con la opacidad del grupo y el color).</summary>
         public static Color32[] RenderButton(int size) => RenderClay(size, ButtonZoom, 0.06f, 0.1f, Aa, ButtonShape, (ref Px p, float x, float y) =>
-            p.Over(Gradient(Color.white, y, 0.6f), Cover(ButtonShape(x, y) + 0.02f, Aa)));
+            p.Over(Gradient(Color.white, y, ButtonHalfH), Cover(ButtonShape(x, y) + 0.02f, Aa)));
 
         public static Color32[] RenderButtonRing(int size, bool dashed)
         {
@@ -365,9 +443,9 @@ namespace NeuroVida.Games.Radar
                 for (int px = 0; px < size; px++)
                 {
                     float x = ((px + 0.5f) / size * 2f - 1f) * ButtonZoom, y = ((py + 0.5f) / size * 2f - 1f) * ButtonZoom;
-                    float sdf = RoundBox(x, y, 0f, 0f, 0.9f, 0.496f, 0.27f);
+                    float sdf = RoundBox(x, y, 0f, 0f, 0.9f, ButtonHalfH - 0.1f, 0.27f);
                     float a = Cover(Mathf.Abs(sdf) - 0.04f, Aa);
-                    if (dashed) a *= Mathf.Sin(Mathf.Atan2(y / 0.6f, x) * 11f) > -0.15f ? 1f : 0f;
+                    if (dashed) a *= Mathf.Sin(Mathf.Atan2(y / ButtonHalfH, x) * 11f) > -0.15f ? 1f : 0f;
                     pixels[py * size + px] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(a) * 255f));
                 }
             return pixels;
@@ -403,7 +481,9 @@ namespace NeuroVida.Games.Radar
             Rock(); Axis(); Window(); yield return null;
             Scope(); yield return null;
             Sweep(); Mask(0); Mask(1); yield return null;
-            Ship(); Button(); ButtonRing(false); ButtonRing(true); GoButton(); Planet();
+            Ship(); yield return null;
+            Station(); Debris(); Planet(); yield return null;
+            Button(); ButtonRing(false); ButtonRing(true); GoButton();
         }
     }
 }

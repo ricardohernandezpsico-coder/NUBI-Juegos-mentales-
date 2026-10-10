@@ -52,6 +52,8 @@ namespace NeuroVida.Contracts
         public int resc_shortest_ms = -1;
         public int resc_best = -1;
         public int resc_new;
+        /// <summary>Solo Rescate relámpago (v4): los viajes de la nave a la estación en la partida (-1 = no aplica).</summary>
+        public int resc_trips = -1;
         /// <summary>Solo Satélites: "tu seguimiento", cuántos se siguen de verdad a la vez (descontando la suerte). -1 = no aplica.</summary>
         public float tracking_capacity = -1f;
         /// <summary>Solo Satélites: cuántos había que seguir por ronda, en promedio (el techo de "tu seguimiento"). -1 = no aplica.</summary>

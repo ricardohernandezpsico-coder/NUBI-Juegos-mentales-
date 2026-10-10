@@ -24,7 +24,9 @@ namespace NeuroVida.Bridge.EditorTools
     public static class ScreenshotRunner
     {
         private const string ScenePath = "Assets/Scenes/SecuenciaPilotoTest.unity";
-        private const int Width = 1080, Height = 2400;
+        private const int Width = 1080;
+        /// <summary>El alto del lienzo de las capturas: 2400 (20:9) casi siempre; Rescate relámpago saca además unas tomas en 1920 (16:9).</summary>
+        private static int Height = 2400;
         private const double WholeRunTimeoutSeconds = 3.0 * 3600.0;
 
         /// <summary>Los 19 juegos en el orden de las áreas (nombre de la hoja de ruta / id).</summary>
@@ -228,7 +230,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (id == "correo") yield return CorreoScript();
                 else if (id == "satelites") yield return SatelitesScript();
                 else if (id == "piloto") yield return PilotoScript();
-                else if (id == "radar") yield return RadarScript();
+                else if (id == "radar") { yield return RadarScript(); yield return RadarScript16(); }
                 else yield return PlayShots(id);
                 if (id != "correo" && id != "satelites" && id != "piloto" && id != "radar") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto y Rescate ya traen su toma con «quitar animaciones»
                 if (TutorialGames.Contains(id)) yield return TutorialShots(id);
@@ -369,12 +371,12 @@ namespace NeuroVida.Bridge.EditorTools
             yield return ExitPlay();
         }
 
-        /// <summary>El tutorial guiado con sus pasos andando solos (el smoke): una toma del paso 1 y otra del paso 3, a 0,3 s de que el paso aparece (para que ya se vea asentado; en algunos juegos el paso 1 dura poco). Piloto suma el paso 6, el de «Cruzaste el arco: ¡tu misión cambió!» (Tarea 63), y el 7, el de tocar la señal de la misión nueva (Tarea 64).</summary>
+        /// <summary>El tutorial guiado con sus pasos andando solos (el smoke): una toma del paso 1 y otra del paso 3, a 0,3 s de que el paso aparece (para que ya se vea asentado; en algunos juegos el paso 1 dura poco). Piloto suma el paso 6, el de «Cruzaste el arco: ¡tu misión cambió!» (Tarea 63), y el 7, el de tocar la señal de la misión nueva (Tarea 64); Rescate suma el paso 4, «Ahora toca ¡Rescatar!», con lo marcado y el botón encendido (Tarea 65).</summary>
         private static IEnumerator TutorialShots(string id)
         {
             Configure(id, tutorial: true, reduceMotion: false);
             yield return EnterPlay();
-            bool shot1 = false, shot3 = false, shotNew = id != "piloto", shotNew2 = id != "piloto";
+            bool shot1 = false, shot3 = false, shotNew = id != "piloto", shotNew2 = id != "piloto", shotRescue = id != "radar";
             int lastIndex = -1;
             double activeSince = 0, start = Now;
             NeuroVida.Games.Shared.NubiCoach coach = null;
@@ -384,7 +386,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (coach == null && Now - lastFind > 0.25) { lastFind = Now; coach = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.NubiCoach>(); }
                 int index = NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count;
                 bool active = coach != null && coach.Active;
-                if (!active) { lastIndex = -1; return (shot3 && shotNew && shotNew2) || (shot1 && index > (id == "piloto" ? 7 : 2)); }
+                if (!active) { lastIndex = -1; return (shot3 && shotNew && shotNew2 && shotRescue) || (shot1 && index > (id == "piloto" ? 7 : id == "radar" ? 3 : 2)); }
                 if (index != lastIndex) { lastIndex = index; activeSince = Now; }
                 if (Now - activeSince >= 0.3)
                 {
@@ -392,10 +394,12 @@ namespace NeuroVida.Bridge.EditorTools
                     else if (index == 2 && !shot3) { Shot("tutorial-3"); shot3 = true; }
                     else if (index == 5 && id == "piloto" && !shotNew) { Shot("tutorial-nueva-mision"); shotNew = true; }
                     else if (index == 6 && id == "piloto" && !shotNew2) { Shot("tutorial-toca-nueva-mision"); shotNew2 = true; }
+                    else if (index == 3 && id == "radar" && !shotRescue) { Shot("tutorial-rescatar"); shotRescue = true; }          // «Ahora toca ¡Rescatar!» con las dos cápsulas marcadas y el botón encendido (Tarea 65)
                 }
-                return shot3 && shotNew && shotNew2;
+                return shot3 && shotNew && shotNew2 && shotRescue;
             }, 90);
             if (!shotNew || !shotNew2) GameNotes.Add("el tutorial de Piloto no llegó a los pasos de la misión nueva (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
+            if (!shotRescue) GameNotes.Add("el tutorial de Rescate no llegó al paso «¡Rescatar!» (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shot1) GameNotes.Add("el tutorial no mostró el paso 1 a tiempo");
             if (!shot3) GameNotes.Add("el tutorial no llegó a un paso 3 (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             NeuroVida.Games.Shared.NubiCoach.AuditEnabled = false;
@@ -478,6 +482,26 @@ namespace NeuroVida.Bridge.EditorTools
             yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 240);
             if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion de Rescate relámpago no terminó a tiempo");
             NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
+            yield return ExitPlay();
+        }
+
+        /// <summary>Rescate relámpago en 16:9 (1080 × 1920): el layout compacto de la Tarea 62, con unas pocas tomas (nombres «…-16x9»).</summary>
+        private static IEnumerator RadarScript16()
+        {
+            Height = 1920;
+            Configure("radar", tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.RescStageOverride = 8;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
+            NeuroVida.Games.Radar.RadarGameController.EditorShotMode = true;
+            yield return EnterPlay();
+            NeuroVida.Games.Radar.RadarGameController controller = null;
+            yield return Wait.Until(() => (controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Radar.RadarGameController>()) != null, 40);
+            if (controller == null) { GameNotes.Add("no apareció el juego de Rescate relámpago (16:9)"); Height = 2400; yield return ExitPlay(); yield break; }
+            controller.StartCoroutine(controller.EditorShortShotScript(Shot));
+            yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 120);
+            if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion de Rescate relámpago en 16:9 no terminó a tiempo");
+            NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
+            Height = 2400;
             yield return ExitPlay();
         }
 

@@ -39,7 +39,8 @@ namespace NeuroVida.Games.Radar
                 resc_best_streak = run.BestStreak,
                 resc_shortest_ms = run.ShortestPerfectMs > 0 ? run.ShortestPerfectMs : -1,
                 resc_best = record,
-                resc_new = newRecord ? 1 : 0
+                resc_new = newRecord ? 1 : 0,
+                resc_trips = run.Trips
             };
         }
     }

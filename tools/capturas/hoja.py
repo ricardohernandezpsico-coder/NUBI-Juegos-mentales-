@@ -46,6 +46,13 @@ CAPTIONS = {
     'listo': 'Cortina «¡Listo!»',
     'final': 'La pantalla final',
     'sin-animaciones': 'Con «quitar animaciones»',
+    'tutorial-rescatar': 'Tutorial: rescatar (marcadas y botón encendido)',
+    'viaje-salida': 'El viaje: a mitad de la salida',
+    'viaje-vuelta': 'El viaje: a mitad de la vuelta',
+    'atento-16x9': 'En 16:9: atento',
+    'destello-16x9': 'En 16:9: el destello',
+    'respuesta-16x9': 'En 16:9: la respuesta',
+    'revelacion-16x9': 'En 16:9: la revelación',
     'tutorial-1': 'Tutorial: paso 1',
     'tutorial-3': 'Tutorial: paso 3',
     'tutorial-nueva-mision': 'Tutorial: la misión cambió',
@@ -92,7 +99,15 @@ def sheet_for(game, src, out, title_extra=''):
     d.text((pad, 14), '%s — capturas reales de Unity (lienzo de teléfono 1080×2400)' % NAMES.get(game, game), font=font(FB, 24), fill=TEXT)
     d.text((pad, 46), 'Sale de `bash tools/verificar-todo.sh --capturas %s`: el juego de verdad, no una composición.%s' % (game, title_extra), font=font(FS, 14), fill=LAV)
     for i, f in enumerate(files):
-        im = Image.open(os.path.join(src, f)).convert('RGB').resize((w, h), Image.LANCZOS)
+        im = Image.open(os.path.join(src, f)).convert('RGB')
+        if abs(im.width / im.height - 1080 / 2400) > 0.01:             # otra proporción (16:9, 1080×1920): entra a todo lo ancho de la celda, centrada de alto
+            ih = int(round(w * im.height / im.width))
+            im = im.resize((w, ih), Image.LANCZOS)
+            cell = Image.new('RGB', (w, h), BG)
+            cell.paste(im, (0, (h - ih) // 2))
+            im = cell
+        else:
+            im = im.resize((w, h), Image.LANCZOS)
         r, c = divmod(i, COLS)
         x = pad + c * (w + pad)
         y = top + r * (h + cap_h + pad)

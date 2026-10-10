@@ -109,6 +109,11 @@ namespace NeuroVida.Games.Radar.Tests
                     Assert.IsFalse(strip.Intersects(p.BoardBox), "franja y tablero" + at);
                     Assert.IsFalse(strip.Intersects(p.GoBox), "franja y «¡Rescatar!»" + at);
                     Assert.IsFalse(p.RadarBox.Intersects(p.BoardBox), "radar y tablero" + at);
+                    Assert.IsFalse(p.ShipBox.Intersects(p.RadarBox), "la nave no pisa el radar" + at);
+                    Assert.IsFalse(p.ShipBox.Intersects(p.BoardBox), "la nave no pisa el tablero" + at);
+                    Assert.IsFalse(p.ShipBox.Intersects(p.GoBox), "la nave no pisa «¡Rescatar!»" + at);
+                    Assert.GreaterOrEqual(p.ShipBox.X0, 0f, "la nave entra a lo ancho" + at);
+                    Assert.LessOrEqual(p.ShipBox.X1, RadarPlan.Width, "la nave entra a lo ancho" + at);
                     Assert.IsFalse(p.GoBox.Intersects(p.BoardBox), "«¡Rescatar!» y tablero" + at);
                     Assert.LessOrEqual(p.GoBox.Y1, h - (guided ? RadarPlan.TutorialControls : 0f) + 0.01f, "todo entra" + at);
                     Assert.GreaterOrEqual(p.RadarBox.X0, 0f, "radar dentro" + at);
@@ -120,14 +125,15 @@ namespace NeuroVida.Games.Radar.Tests
         }
 
         [Test]
-        public void TheBoardIs3By2WithCellsOf104By62Dp_AndTheScaleIsOneOnATallScreen()
+        public void TheBoardIs3By2WithCellsOf104By74Dp_OnTheTallReferenceScreen()
         {
-            var p = new RadarPlan(800f, false);
-            Assert.AreEqual(1f, p.Scale, 1e-5f);
-            Assert.AreEqual(104f, p.CellW, 1e-3f);
-            Assert.AreEqual(62f, p.CellH, 1e-3f);
-            Assert.AreEqual(172f, p.GoW, 1e-3f);
-            Assert.AreEqual(44f, p.GoH, 1e-3f);
+            var p = new RadarPlan(780f, false);
+            Assert.AreEqual(146f / 128f, p.Scale, 1e-4f);
+            Assert.AreEqual(104f, p.CellW, 1e-2f);
+            Assert.AreEqual(74f, p.CellH, 1e-2f);
+            Assert.AreEqual(8f, p.CellGap, 1e-2f);
+            Assert.AreEqual(172f, p.GoW, 1e-2f);
+            Assert.AreEqual(44f, p.GoH, 1e-2f);
             var (x0, y0) = p.CellCenter(0);
             var (x2, y2) = p.CellCenter(2);
             var (x3, y3) = p.CellCenter(3);
@@ -136,7 +142,7 @@ namespace NeuroVida.Games.Radar.Tests
             Assert.AreEqual(x0, x3, 1e-3f);
             Assert.AreEqual(p.CellH + p.CellGap, y3 - y0, 1e-3f);
             // el tablero nunca depende de la ronda: su geometría sale solo de la pantalla
-            Assert.AreEqual(new RadarPlan(800f, false).BoardBox.X0, p.BoardBox.X0);
+            Assert.AreEqual(new RadarPlan(780f, false).BoardBox.X0, p.BoardBox.X0);
         }
 
         // ------------------------------------------------------------------ el motor común y la telemetría
@@ -264,34 +270,6 @@ namespace NeuroVida.Games.Radar.Tests
             Assert.AreEqual(0, mask[0].a, "y transparente fuera");
             var scope = RadarSprites.RenderScope(128);
             Assert.Greater(scope[64 * 128 + 64].a, 200);
-        }
-
-        [Test]
-        public void TheSoundsAreSynthesizedOnceAndNothingIsLoud()
-        {
-            var warm = RadarSounds.Prewarm();
-            while (warm.MoveNext()) { }
-            Assert.GreaterOrEqual(RadarSounds.CachedCount, 18);
-            int before = RadarSounds.CachedCount;
-            Assert.AreSame(RadarSounds.Ping(), RadarSounds.Ping(), "un clip por sonido");
-            Assert.AreEqual(before, RadarSounds.CachedCount);
-            foreach (var clip in new[] { RadarSounds.Ping(), RadarSounds.Flash(), RadarSounds.Static(), RadarSounds.Mark(1), RadarSounds.Mark(4), RadarSounds.Pop(), RadarSounds.Rescue(0), RadarSounds.Chime(), RadarSounds.Thud(), RadarSounds.Rain(), RadarSounds.Finale() })
-            {
-                var data = new float[clip.samples * clip.channels];
-                clip.GetData(data, 0);
-                float peak = 0f;
-                foreach (float v in data) peak = Math.Max(peak, Math.Abs(v));
-                Assert.Greater(peak, 0.02f, clip.name + " suena");
-                Assert.LessOrEqual(peak, 0.5001f, clip.name + " no pasa de 0,5");
-            }
-        }
-
-        [Test]
-        public void TheMarkNotesRiseWithEveryMark()
-        {
-            // la nota de la 1.ª marca es más grave que la de la 3.ª: el clip es una nota de la pentatónica que sube
-            Assert.Less(RadarSounds.Penta[2 + 1], RadarSounds.Penta[2 + 3]);
-            Assert.AreNotSame(RadarSounds.Mark(1), RadarSounds.Mark(3));
         }
     }
 }

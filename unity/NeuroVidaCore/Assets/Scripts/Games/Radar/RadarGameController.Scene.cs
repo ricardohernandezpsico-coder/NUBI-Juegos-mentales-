@@ -16,7 +16,7 @@ namespace NeuroVida.Games.Radar
             public int Index, Slot;
             public CapsuleType Type;
             public float FromX, FromY, Tilt, At;
-            public bool Landed;
+            public bool Landed, BeamPlayed;
         }
 
         private readonly List<CapsuleType> _seats = new List<CapsuleType>();
@@ -25,7 +25,12 @@ namespace NeuroVida.Games.Radar
         private readonly HashSet<CapsuleType> _hitSet = new HashSet<CapsuleType>(), _wrongSet = new HashSet<CapsuleType>(), _missedSet = new HashSet<CapsuleType>();
         private readonly float[] _pressAt = { -10f, -10f, -10f, -10f, -10f, -10f };
         private BoardMode _boardMode = BoardMode.Dim;
-        private float _flashAt = -10f, _flashMs = 100f, _shipPopAt = -10f, _revealAt = -10f, _endAt = -10f, _goPressAt = -10f, _beamAngle;
+        private float _flashAt = -10f, _flashMs = 100f, _shipPopAt = -10f, _dockAt = -10f, _tripAt = -10f, _revealAt = -10f, _endAt = -10f, _goPressAt = -10f, _beamAngle;
+        /// <summary>La geometría con que se armó la ronda en curso (si la pantalla cambia a mitad de ronda, las posiciones se escalan con el radar).</summary>
+        private RadarGeometry _roundGeo = RadarGeometry.Reference;
+        private bool _hideShipCount;
+        private bool OnTrip => _phase == Phase.Trip;
+        private int OnBoard => RadarCargo.OnBoard(_seats.Count, _trips);
         private int _shownRescued, _lastTurn = -1, _maskCount;
         private bool _beamOn = true;
         private bool _confettiOn;
@@ -58,6 +63,7 @@ namespace NeuroVida.Games.Radar
             _radarLayer.gameObject.SetActive(true);
             _seats.Clear();
             _shownRescued = 0;
+            _trips = 0;
             _beamOn = true;
             SetBoard(BoardMode.Dim);
             SetMessage("", "");
@@ -69,6 +75,7 @@ namespace NeuroVida.Games.Radar
         private void BeginRoundObjects(RadarRound round)
         {
             _round = round;
+            _roundGeo = _geo;
             HideRoundObjects();
             for (int i = 0; i < round.Capsules.Length; i++)
             {
@@ -87,18 +94,18 @@ namespace NeuroVida.Games.Radar
         private void PlaceRoundObjects()
         {
             if (_round == null) return;
-            float k = _plan.Scale, cx = _plan.RadarCx, cy = _plan.RadarCy;
+            float kk = _plan.GlassR / _roundGeo.GlassR, cx = _plan.RadarCx, cy = _plan.RadarCy;           // las posiciones salen en dp del radar con que se armó la ronda
             for (int i = 0; i < _round.Capsules.Length; i++)
             {
                 var o = _round.Capsules[i];
-                _capImgs[i].rectTransform.anchoredPosition = P(cx + o.X * k, cy + o.Y * k);
+                _capImgs[i].rectTransform.anchoredPosition = P(cx + o.X * kk, cy + o.Y * kk);
                 _capImgs[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, -o.Tilt * Mathf.Rad2Deg);
                 _capRings[i].rectTransform.anchoredPosition = _capImgs[i].rectTransform.anchoredPosition;
             }
             for (int i = 0; i < _round.Rocks.Length; i++)
             {
                 var o = _round.Rocks[i];
-                _rockImgs[i].rectTransform.anchoredPosition = P(cx + o.X * k, cy + o.Y * k);
+                _rockImgs[i].rectTransform.anchoredPosition = P(cx + o.X * kk, cy + o.Y * kk);
                 _rockImgs[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, -o.Tilt * Mathf.Rad2Deg);
             }
         }
@@ -195,7 +202,7 @@ namespace NeuroVida.Games.Radar
                     ring = typeColor;
                 }
                 v.Bg.color = fill;
-                v.Group.alpha = live ? 1f : 0.45f;
+                v.Group.alpha = live ? 1f : 0.45f;                  // apagado (antes de la respuesta y durante el viaje): sin brillo de arcilla, a menos de la mitad de luz
                 v.Ring.gameObject.SetActive(ring.HasValue);
                 if (ring.HasValue)
                 {
@@ -235,9 +242,10 @@ namespace NeuroVida.Games.Radar
 
         private void AnimateBack(float now, float dt)
         {
+            bool alive = Motion.Decorative && dt > 0f;
             for (int i = 0; i < DustPool; i++)
             {
-                if (Motion.Decorative && dt > 0f)
+                if (alive)
                 {
                     _dustPos[i].y += _dustSpeed[i] * dt;
                     _dustPos[i].x += _dustSpeed[i] * 0.3f * dt;
@@ -245,6 +253,34 @@ namespace NeuroVida.Games.Radar
                     if (_dustPos[i].x > RadarPlan.Width) _dustPos[i].x -= RadarPlan.Width;
                 }
                 SetRect(_dust[i].rectTransform, _dustPos[i].x, Mathf.Min(_dustPos[i].y, _logicalH), _dustSize[i], _dustSize[i]);
+            }
+            // los restos de la estación flotan despacio hacia la derecha y giran (pasan por detrás del radar); con «quitar animaciones» quedan quietos
+            for (int i = 0; i < DebrisPool; i++)
+            {
+                if (alive)
+                {
+                    _debrisPos[i].x += _debrisSpeed[i] * dt;
+                    _debrisAngle[i] += _debrisSpin[i] * dt;
+                    if (_debrisPos[i].x > RadarPlan.Width + 12f) _debrisPos[i].x = -12f;
+                }
+                float s2 = _debrisSize[i] * 2f * 1.5f / 1.0f;                                  // el sprite mide 1,5 veces su tamaño de dibujo
+                SetRect(_debris[i].rectTransform, _debrisPos[i].x, Mathf.Min(_debrisPos[i].y * (_logicalH / RadarPlan.TallHeight), _logicalH), s2, s2);
+                _debris[i].rectTransform.localRotation = Quaternion.Euler(0f, 0f, -_debrisAngle[i] * Mathf.Rad2Deg);
+            }
+            // la estación accidentada: la baliza coral parpadea a 1 Hz y sale humo del tramo roto (con «quitar animaciones»: baliza fija encendida y sin humo)
+            float rk = _plan.GlassR / 146f, cx = _plan.RadarCx + 148f * rk, cy = _plan.RadarCy - 94f * rk;
+            float blink = Motion.Decorative ? (Mathf.Sin(now * Mathf.PI * 2f) > 0f ? 1f : 0.25f) : 1f;
+            _stationGlow.color = new Color(1f, 138f / 255f, 107f / 255f, 0.8f * blink);
+            _stationDot.color = blink > 0.5f ? new Color(1f, 138f / 255f, 107f / 255f) : new Color(142f / 255f, 74f / 255f, 90f / 255f);
+            float gx = cx + Mathf.Cos(-0.35f + Mathf.PI * 0.25f) * 40f * rk, gy = cy + Mathf.Sin(-0.35f + Mathf.PI * 0.25f) * 40f * rk;
+            for (int i = 0; i < SmokePool; i++)
+            {
+                _smoke[i].gameObject.SetActive(Motion.Decorative);
+                if (!Motion.Decorative) continue;
+                float k = (now / 2.8f + i / (float)SmokePool) % 1f;
+                float r = (4f + k * 11f) * 2f * rk;
+                SetRect(_smoke[i].rectTransform, gx + k * 34f * rk, gy - k * 30f * rk, r, r);
+                _smoke[i].color = new Color(170f / 255f, 165f / 255f, 210f / 255f, 0.28f * (1f - k));
             }
         }
 
@@ -267,7 +303,7 @@ namespace NeuroVida.Games.Radar
                 if (turn != _lastTurn)
                 {
                     _lastTurn = turn;
-                    if (_phase == Phase.Watch) PlayClip(RadarSounds.Ping(), 0.45f);              // un «ping» por vuelta
+                    if (_phase == Phase.Watch) Play(RadarSfx.Ping);              // un «ping» por vuelta
                 }
                 // ecos sueltos que deja el haz: adorno, nunca están donde aparecerán las cápsulas
                 if (_phase == Phase.Watch && Motion.Decorative && dt > 0f && Random.value < 0.06f * dt * 60f)
@@ -276,7 +312,7 @@ namespace NeuroVida.Games.Radar
                         {
                             _echoAt[i] = now;
                             _echoAngle[i] = a;
-                            _echoRadius[i] = (30f + Random.value * (RadarContract.RadarRadius - 40f)) * k;
+                            _echoRadius[i] = 30f * k + Random.value * (_plan.GlassR - 40f * k);
                             break;
                         }
             }
@@ -294,12 +330,12 @@ namespace NeuroVida.Games.Radar
             if (_phase == Phase.Flash)
             {
                 float t = now - _flashAt, k2 = _plan.Scale;
-                _flashFill.color = new Color(205f / 255f, 232f / 255f, 1f, 0.2f);
+                _flashFill.color = new Color(190f / 255f, 1f, 240f / 255f, 0.24f);
                 if (Motion.Decorative)
                 {
                     _flashGlow.color = new Color(225f / 255f, 245f / 255f, 1f, Mathf.Max(0f, 0.55f - t / 0.4f));
                     float wk = Mathf.Min(1f, t / Mathf.Max(0.12f, _flashMs / 1000f));
-                    float wd = 2f * (20f + wk * (RadarContract.RadarRadius - 20f)) * k2;
+                    float wd = 2f * (20f * k2 + wk * (_plan.GlassR - 20f * k2));
                     SetRect(_flashWave.rectTransform, _plan.RadarCx, _plan.RadarCy, wd, wd);
                     _flashWave.color = new Color(225f / 255f, 245f / 255f, 1f, 0.6f * (1f - wk));
                 }
@@ -312,16 +348,78 @@ namespace NeuroVida.Games.Radar
             }
         }
 
+        /// <summary>
+        /// La nave protagonista (v4): salta al entrar una cápsula; su ventana lanza un aro que se abre y 6 chispas (450 ms); las llamas titilan. En el VIAJE A LA ESTACIÓN (2,0 s) sale llena y acelerando por la derecha con líneas de velocidad (0-45 %), queda fuera de pantalla
+        /// (45-55 %) y vuelve vacía por la izquierda frenando, con las cápsulas que no cupieron ya a bordo (55-100 %). Con «quitar animaciones» no se mueve y las ventanas cambian a la mitad.
+        /// </summary>
         private void AnimateShip(float now)
         {
-            float k = _plan.ShipScale;
-            float pop = Motion.Decorative && now - _shipPopAt >= 0f && now - _shipPopAt < 0.26f ? Mathf.Sin((now - _shipPopAt) / 0.26f * Mathf.PI) : 0f;
-            _shipHull.rectTransform.localScale = new Vector3(1f + 0.04f * pop, 1f - 0.08f * pop, 1f);
-            for (int i = 0; i < WindowCount; i++) _windows[i].rectTransform.localScale = new Vector3(1f + 0.04f * pop, 1f - 0.08f * pop, 1f);
-            for (int i = 0; i < _flames.Length; i++)
+            float ss = _plan.ShipScale, cx = _plan.RadarCx, y0 = _plan.ShipY;
+            float ox = 0f, lines = 0f;
+            int baseIdx = 10 * _trips, shown = RadarCargo.Shown(OnBoard);
+            bool away = false;
+            if (OnTrip)
             {
-                float fl = Motion.Decorative ? 22f + 4f * Mathf.Sin(now * 16.7f + i) : 22f;
-                SetRect(_flames[i].rectTransform, _plan.RadarCx + (i == 0 ? -74f : 74f) * k, _plan.ShipY + 22f * k, 18f * k, fl * k);
+                float k = (now - _tripAt) / RadarCargo.TripSeconds;
+#if UNITY_EDITOR
+                if (_editorTripK >= 0f) k = _editorTripK;                       // las capturas sostienen el viaje a mitad de la salida y a mitad de la vuelta
+#endif
+                int carried = RadarCargo.CarriedOver(OnBoard);
+                if (!Motion.Decorative)
+                {
+                    if (k >= 0.5f) { baseIdx += 10; shown = carried; }
+                    else shown = 10;
+                }
+                else if (k < 0.45f) { float e = Mathf.Pow(Mathf.Clamp01(k / 0.45f), 2.2f); ox = e * 330f; lines = e; shown = 10; }
+                else if (k < 0.55f) away = true;
+                else { float e = 1f - Mathf.Pow(1f - Mathf.Clamp01((k - 0.55f) / 0.45f), 3f); ox = -330f * (1f - e); baseIdx += 10; shown = carried; }
+            }
+            ApplyWindows(baseIdx, shown);
+            _shipRoot.gameObject.SetActive(!away);
+            _shipCount.gameObject.SetActive(_plan.ShowShipCount && !_hideShipCount && !away);
+            if (!away)
+            {
+                float pop = Motion.Decorative && now - _shipPopAt >= 0f && now - _shipPopAt < 0.26f ? Mathf.Sin((now - _shipPopAt) / 0.26f * Mathf.PI) : 0f;
+                SetRect(_shipRoot, cx + ox, y0, 0f, 0f);
+                _shipRoot.localScale = new Vector3(1f + 0.04f * pop, 1f - 0.08f * pop, 1f);
+                for (int i = 0; i < _flames.Length; i++)
+                {
+                    float h = (Motion.Decorative ? 24f + 5f * Mathf.Sin(now * 1000f / 60f) : 24f) + 26f * lines;
+                    SetChild(_flames[i].rectTransform, (i == 0 ? -86f : 86f) * ss, (12f + h * 0.5f) * ss, 22f * ss, h * ss);
+                    _flames[i].gameObject.SetActive(Motion.Decorative);
+                }
+                _shipCount.text = shown + " de " + RadarCargo.Capacity + " a bordo";
+                SetRect(_shipCount.rectTransform, cx + ox, _plan.ShipCountY, 180f, 22f);
+                AnimateDockEffect(now, shown, ss);
+            }
+            for (int i = 0; i < TripLines; i++)
+            {
+                bool on = lines > 0f && !away;
+                _tripLines[i].gameObject.SetActive(on);
+                if (!on) continue;
+                float yy = y0 + (-18f + i * 6f) * ss, len = (30f + 90f * lines * (0.5f + (i % 3) / 3f));
+                SetRect(_tripLines[i].rectTransform, cx + ox - 115f * ss - len * 0.5f, yy, len + 6f, 2f);
+                _tripLines[i].color = new Color(205f / 255f, 240f / 255f, 1f, (0.2f + 0.5f * lines) * 0.8f);
+            }
+        }
+
+        /// <summary>La ventana de la nave que se acaba de encender: un aro blanco que se abre (7 → 20 dp) y 6 chispas, en 450 ms (solo con animaciones y fuera del viaje).</summary>
+        private void AnimateDockEffect(float now, int shown, float ss)
+        {
+            float k = (now - _dockAt) / 0.45f;
+            bool on = Motion.Decorative && !OnTrip && shown > 0 && k >= 0f && k < 1f;
+            _dockRing.gameObject.SetActive(on);
+            foreach (var d in _dockSparks) d.gameObject.SetActive(on);
+            if (!on) return;
+            float wx = (-81f + (shown - 1) * 18f) * ss, wy = -2f * ss;
+            float rd = (7f + 13f * k) * 2f * ss;
+            SetChild(_dockRing.rectTransform, wx, wy, rd, rd);
+            _dockRing.color = new Color(1f, 1f, 1f, 1f - k);
+            for (int j = 0; j < DockSparks; j++)
+            {
+                float an = j * Mathf.PI / 3f + 0.3f, rr = (10f + 16f * k) * ss;
+                SetChild(_dockSparks[j].rectTransform, wx + Mathf.Cos(an) * rr, wy + Mathf.Sin(an) * rr, 4f * ss, 4f * ss);
+                _dockSparks[j].color = new Color(1f, 236f / 255f, 160f / 255f, 1f - k);
             }
         }
 
@@ -329,7 +427,7 @@ namespace NeuroVida.Games.Radar
         private void AnimateReveal(float now)
         {
             float t = now - _revealAt;
-            float k = _plan.Scale, cx = _plan.RadarCx, cy = _plan.RadarCy;
+            float k = _plan.Scale, kk = _plan.GlassR / _roundGeo.GlassR, ss = _plan.ShipScale, cx = _plan.RadarCx, cy = _plan.RadarCy;
             foreach (var r in _rockImgs) r.color = new Color(1f, 1f, 1f, 0.5f);
             // las que no elegiste
             foreach (int i in _drifting)
@@ -338,7 +436,7 @@ namespace NeuroVida.Games.Radar
                 float d = Mathf.Min(1f, t / 2f);
                 float x = o.X + o.X * 0.22f * d, y = o.Y + o.Y * 0.22f * d;
                 var img = _capImgs[i];
-                img.rectTransform.anchoredPosition = P(cx + x * k, cy + y * k);
+                img.rectTransform.anchoredPosition = P(cx + x * kk, cy + y * kk);
                 img.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -(o.Tilt + (Motion.Decorative ? d * 0.6f : 0f)) * Mathf.Rad2Deg);
                 img.color = new Color(1f, 1f, 1f, 1f - 0.45f * d);
                 _capRings[i].rectTransform.anchoredPosition = img.rectTransform.anchoredPosition;
@@ -358,19 +456,20 @@ namespace NeuroVida.Games.Radar
                     if (!l.Landed) Land(l, now);
                     continue;
                 }
-                float sx = cx, sy = _plan.ShipY - 18f * k;
-                float fx = cx + l.FromX * k, fy = cy + l.FromY * k;
+                if (!l.BeamPlayed && now >= l.At) { l.BeamPlayed = true; Play(RadarSfx.Beam); }          // el rayo tractor de cada cápsula suena al salir (una marimba que sube)
+                float sx = cx, sy = _plan.ShipY - 18f * ss;
+                float fx = cx + l.FromX * kk, fy = cy + l.FromY * kk;
                 beam.gameObject.SetActive(true);
                 float fade = 1f - lk * 0.6f;
-                beam.Set(P(fx - 30f * k, fy), P(fx + 30f * k, fy), P(sx + 10f * k, sy), P(sx - 10f * k, sy), new Color(Lime.r, Lime.g, Lime.b, 0.15f * 0.55f * fade), new Color(Lime.r, Lime.g, Lime.b, 0.75f * 0.55f * fade));
+                beam.Set(P(fx - 30f * k, fy), P(fx + 30f * k, fy), P(sx + 10f * ss, sy), P(sx - 10f * ss, sy), new Color(Lime.r, Lime.g, Lime.b, 0.15f * 0.55f * fade), new Color(Lime.r, Lime.g, Lime.b, 0.75f * 0.55f * fade));
                 _capImgs[l.Index].gameObject.SetActive(false);
                 fly.gameObject.SetActive(true);
                 if (Motion.Decorative)
                 {
-                    float px = Mathf.Lerp(fx, sx, e), py = Mathf.Lerp(fy, _plan.ShipY - 8f * k, e);
+                    float px = Mathf.Lerp(fx, sx, e), py = Mathf.Lerp(fy, _plan.ShipY - 8f * ss, e);
                     fly.rectTransform.anchoredPosition = P(px, py);
                     fly.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -l.Tilt * (1f - e) * Mathf.Rad2Deg);
-                    float sc = (1f - 0.62f * e) * RadarContract.CapsuleSize * RadarSprites.CapsuleSideInSizes * k;
+                    float sc = (1f - 0.62f * e) * _geo.CapsuleSize * RadarSprites.CapsuleSideInSizes;
                     fly.rectTransform.sizeDelta = new Vector2(sc * _s, sc * _s);
                     fly.color = Color.white;
                     int n = 0;
@@ -387,7 +486,7 @@ namespace NeuroVida.Games.Radar
                     // «quitar animaciones»: el cono queda fijo, la cápsula no vuela (se apaga al llegar su turno) y no hay chispas
                     fly.rectTransform.anchoredPosition = P(fx, fy);
                     fly.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -l.Tilt * Mathf.Rad2Deg);
-                    float full = RadarContract.CapsuleSize * RadarSprites.CapsuleSideInSizes * k;
+                    float full = _geo.CapsuleSize * RadarSprites.CapsuleSideInSizes;
                     fly.rectTransform.sizeDelta = new Vector2(full * _s, full * _s);
                     fly.color = new Color(1f, 1f, 1f, 1f - lk);
                 }
@@ -404,21 +503,22 @@ namespace NeuroVida.Games.Radar
             l.Landed = true;
             _seats.Add(l.Type);
             _shownRescued++;
-            _shipPopAt = now;
+            _shipPopAt = _dockAt = now;                                        // la nave salta y su ventana lanza el aro con chispas
             RefreshSeats();
             UpdateHudExtras();
-            PlayClip(RadarSounds.Rescue(l.Slot), 0.8f);
+            Play(RadarSfx.Dock, l.Slot);
             GameFeel.Haptic(GameFeel.HapticKind.Light);
         }
 
-        /// <summary>Las diez ventanas de la nave: cada cápsula rescatada ocupa una con su color (se ven las últimas 10).</summary>
-        private void RefreshSeats()
+        /// <summary>Las diez ventanas de la nave: cada cápsula a bordo (las rescatadas que todavía no viajaron) enciende la suya con su color. Si llegan más de las que caben, esperan al viaje.</summary>
+        private void RefreshSeats() => ApplyWindows(10 * _trips, RadarCargo.Shown(OnBoard));
+
+        private void ApplyWindows(int baseIdx, int shown)
         {
-            int from = Mathf.Max(0, _seats.Count - WindowCount);
             for (int i = 0; i < WindowCount; i++)
             {
-                int s = from + i;
-                _windows[i].color = s < _seats.Count ? RadarSprites.Colors[(int)_seats[s]] : WindowEmpty;
+                int s = baseIdx + i;
+                _windows[i].color = i < shown && s < _seats.Count ? RadarSprites.Colors[(int)_seats[s]] : WindowEmpty;
             }
         }
 
@@ -426,11 +526,11 @@ namespace NeuroVida.Games.Radar
 
         private void PlaceEndCaps()
         {
-            float y0 = RadarPlan.HudBottom + 84f, cs = 30f * RadarSprites.CapsuleSideInSizes;
+            float cs = 29f * RadarSprites.CapsuleSideInSizes;                                      // las rescatadas, a media escala, en filas de 10 cada 32 dp
             for (int i = 0; i < EndCapsPool; i++)
             {
-                int col = i % 8, row = i / 8;
-                SetRect(_endCaps[i].rectTransform, RadarPlan.Width * 0.5f - 3.5f * 34f + col * 34f, y0 + row * 34f, cs, cs);
+                int col = i % 10, row = i / 10;
+                SetRect(_endCaps[i].rectTransform, RadarPlan.Width * 0.5f - 4.5f * 32f + col * 32f, 136f + row * 32f, cs, cs);
             }
         }
 
@@ -443,6 +543,7 @@ namespace NeuroVida.Games.Radar
             _radarLayer.gameObject.SetActive(false);
             _shipLayer.gameObject.SetActive(false);
             _boardLayer.gameObject.SetActive(false);
+            foreach (var l in _tripLines) l.gameObject.SetActive(false);
             _msgA.text = _msgB.text = "";
             _msgPill.gameObject.SetActive(false);
             _endTitle.text = RadarContract.EndTitle(_run.Rescued);
@@ -450,6 +551,7 @@ namespace NeuroVida.Games.Radar
             _endValue[1].text = RadarContract.ShortestValue(_run.ShortestPerfectMs);
             _endValue[2].text = RadarContract.PerfectValue(_run.Perfect, _run.RoundsPlayed);
             _endValue[3].text = RadarContract.StreakValue(_run.BestStreak);
+            _endValue[4].text = RadarContract.TripsValue(_run.Trips);
             _endRecord.text = broke ? RadarContract.NewRecord : RadarContract.RecordLine(record);
             _endRecordBg.color = broke ? Gold : new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0f);
             _endRecord.color = broke ? Ink : Lavender;

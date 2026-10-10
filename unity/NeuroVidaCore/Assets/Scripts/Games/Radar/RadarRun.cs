@@ -41,6 +41,9 @@ namespace NeuroVida.Games.Radar
         /// <summary>El destello más corto (ms reales) con que se resolvió una ronda normal perfecta; 0 si ninguna.</summary>
         public int ShortestPerfectMs { get; private set; }
         public int Rains => _rainRaws.Count;
+        /// <summary>Los viajes de la nave a la estación (cada vez que se llenó con 10 a bordo).</summary>
+        public int Trips { get; private set; }
+        public void AddTrip() { Trips++; }
         public IReadOnlyList<float> RealMs => _realMs;
         public IReadOnlyList<int> RainRaws => _rainRaws;
 

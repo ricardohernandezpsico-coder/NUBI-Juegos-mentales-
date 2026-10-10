@@ -27,7 +27,7 @@ namespace NeuroVida.Games.Radar
         /// <summary>SOLO EN EL EDITOR, para las capturas de pantalla (<c>verificar-todo.sh --capturas Radar</c>): con esta bandera el juego NO se juega solo y un guion (<see cref="EditorShotScript"/>) lo lleva por los momentos que se fotografían. En el teléfono es siempre false.</summary>
         public static bool EditorShotMode;
 
-        private enum Phase { Idle, Watch, Flash, Mask, Answer, Reveal, Done }
+        private enum Phase { Idle, Watch, Flash, Mask, Answer, Reveal, Trip, Done }
 
         // ------------------------------------------------------------------ estado
 
@@ -38,7 +38,10 @@ namespace NeuroVida.Games.Radar
         private Phase _phase = Phase.Idle;
         private bool _loopOn, _baked, _guided, _rescueTapped, _flashPaused;
         private int _bestRecord, _debugStage, _lastTickSecond, _previousFrameRate;
-        private float _endsAt, _answerStartedAt, _actualMs;
+        private RetoClock _clock;
+        private float _answerStartedAt, _actualMs;
+        private int _trips;
+        private RadarGeometry _geo = RadarGeometry.Reference;
         private readonly HashSet<CapsuleType> _picks = new HashSet<CapsuleType>();
 
         // los tiempos y el largo de la partida (el arranque de prueba del Editor los acorta para llegar al final)
@@ -87,7 +90,8 @@ namespace NeuroVida.Games.Radar
             _loopOn = _guided = false;
             _picks.Clear();
             _lastTickSecond = -1;
-            _endsAt = 0f;
+            _clock = null;
+            _trips = 0;
 
             // Los destellos son de decenas de milisegundos: a 30 cuadros por segundo (lo que Android da por defecto) los saltos serían gruesos. Se piden 60 mientras dura el juego.
             _previousFrameRate = Application.targetFrameRate;
@@ -130,7 +134,7 @@ namespace NeuroVida.Games.Radar
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
-            _endsAt = GameClock.Time + _retoSeconds;
+            _clock = new RetoClock(GameClock.Time, _retoSeconds);
             _timerTrack.gameObject.SetActive(Endless);
             _timerFill.gameObject.SetActive(Endless);
             UpdateHud();
@@ -141,12 +145,16 @@ namespace NeuroVida.Games.Radar
         /// <summary>El bucle de la partida: una ronda tras otra hasta que se cumplan las rondas (Precisión) o el tiempo (Reto). «Cómo se juega» lo retoma desde acá.</summary>
         private IEnumerator MainLoop()
         {
-            while (!Finished()) yield return StartCoroutine(PlayRound());
+            while (!Finished())
+            {
+                yield return StartCoroutine(PlayRound());
+                if (RadarCargo.TripDue(OnBoard) && !Finished()) yield return StartCoroutine(DoTrip());       // la nave se llenó (10 a bordo tras una revelación): viaja a la estación
+            }
             _loopOn = false;
             yield return StartCoroutine(FinishGame());
         }
 
-        private bool Finished() => Endless ? GameClock.Time >= _endsAt : _run.RoundsPlayed >= _roundsTotal;
+        private bool Finished() => Endless ? _clock != null && _clock.Finished(GameClock.Time) : _run.RoundsPlayed >= _roundsTotal;
 
         /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
         private IEnumerator Prewarm()
@@ -155,8 +163,11 @@ namespace NeuroVida.Games.Radar
             var sprites = RadarSprites.Prewarm();
             while (sprites.MoveNext()) yield return null;
             AssignSprites();
-            var sounds = RadarSounds.Prewarm();
-            while (sounds.MoveNext()) yield return null;
+            if (SoundWanted)                                                                  // con «Efectos de sonido» apagado no se calcula ningún clip
+            {
+                var sounds = RadarSounds.Prewarm();
+                while (sounds.MoveNext()) yield return null;
+            }
             _baked = true;
             Layout();
         }
@@ -167,7 +178,8 @@ namespace NeuroVida.Games.Radar
         {
             bool rain = RadarContract.IsRainRound(_run.RoundsPlayed);
             int level = _dda.PresentedLevel;
-            var round = rain ? RadarContract.RainRound(level, _rng) : RadarContract.NextRound(level, _rng);
+            _geo = RadarGeometry.For(_plan.GlassR);
+            var round = rain ? RadarContract.RainRound(level, _rng, _geo) : RadarContract.NextRound(level, _rng, _geo);
             BeginRoundObjects(round);
             UpdateHud();
             yield return StartCoroutine(DoWatch(_watchMin + (_watchMax - _watchMin) * (float)_rng.NextDouble(), rain));
@@ -199,7 +211,7 @@ namespace NeuroVida.Games.Radar
             if (rain)
             {
                 SetMessage(RadarContract.RainMessage, "", Gold, pill: true);
-                PlayClip(RadarSounds.Rain(), 0.7f);
+                Play(RadarSfx.Rain);
                 GameFeel.Haptic(GameFeel.HapticKind.Light);
                 while (t < 1.4f) { t += GameClock.DeltaTime; yield return null; }
             }
@@ -215,7 +227,7 @@ namespace NeuroVida.Games.Radar
             ShowObjects(1.06f);
             _flashAt = Now;
             _flashMs = _round.ExposureMs;
-            PlayClip(RadarSounds.Flash(), 0.7f);
+            Play(RadarSfx.Flash);
             if (Motion.Decorative) StartCoroutine(Flash(new Color(230f / 255f, 244f / 255f, 1f), 0.16f, 0.12f));          // 120 ms de luz suave en toda la pantalla; un solo destello por ronda
             SetMessage("", "");
             float shownAt = Time.unscaledTime;
@@ -244,7 +256,7 @@ namespace NeuroVida.Games.Radar
             _mask.rectTransform.localRotation = Quaternion.Euler(0f, 0f, (float)_rng.NextDouble() * 360f);
             _mask.color = Color.white;
             _mask.gameObject.SetActive(true);
-            PlayClip(RadarSounds.Static(), 0.5f);
+            Play(RadarSfx.Static);
             float t = 0f;
             while (t < RadarContract.MaskMs / 1000f) { t += GameClock.DeltaTime; yield return null; }
             _mask.gameObject.SetActive(false);
@@ -286,6 +298,13 @@ namespace NeuroVida.Games.Radar
                 Debug.Log("[SmokeTest] Radar: ronda " + _run.RoundsPlayed + (_round.Rain ? " (lluvia)" : " nivel " + _round.Level) + ": " + answer.Hits + " de " + _round.Count + ", " + answer.Extras + " de más, destello real " + _actualMs.ToString("0") + " ms de " + _round.ExposureMs + ", racha " + _run.Streak);
 #endif
             }
+#if UNITY_EDITOR
+            else if (!EditorShotMode)
+            {
+                // las prácticas del tutorial, si se siguen las instrucciones, terminan perfectas (Tarea 65: antes los toques guiados no quedaban marcados y la revelación decía «Rescataste 0 de 2»)
+                GuardGuided(answer.Hits == _round.Count && answer.Extras == 0, "la práctica terminó con " + answer.Hits + " de " + _round.Count + " y " + answer.Extras + " de más: siguiendo las instrucciones debe ser perfecta");
+            }
+#endif
             UpdateHud();
             _revealAt = Now;
             _lifts.Clear();
@@ -312,13 +331,13 @@ namespace NeuroVida.Games.Radar
             if (perfect)
             {
                 SetMessage(RadarContract.AllSafe(streak), "", Lime, pill: true);
-                PlayClip(RadarSounds.Chime(), 0.8f);
+                Play(RadarSfx.Perfect);
                 GameFeel.Haptic(GameFeel.HapticKind.Firm);
             }
             else
             {
                 SetMessage(RadarContract.Partial(answer.Hits, _round.Count, answer.Extras), "", Gold, pill: true);
-                PlayClip(RadarSounds.Thud(), 0.7f);
+                Play(RadarSfx.Miss);
                 GameFeel.Haptic(GameFeel.HapticKind.Double);
             }
             yield return Wait(_revealSeconds);
@@ -329,6 +348,30 @@ namespace NeuroVida.Games.Radar
             _lifts.Clear();
             _drifting.Clear();
             SetBoard(BoardMode.Dim);
+            SetMessage("", "");
+            _phase = Phase.Idle;
+        }
+
+        /// <summary>
+        /// El viaje a la estación (v4): con 10 o más a bordo la nave sale llena por la derecha y vuelve vacía por la izquierda (2,0 s), con las cápsulas que no cupieron ya a bordo. Sin destellos, el tablero apagado y el tiempo del Reto NO corre
+        /// (<see cref="UpdateClock"/> corre el final lo que dura el viaje).
+        /// </summary>
+        private IEnumerator DoTrip()
+        {
+            _phase = Phase.Trip;
+            _tripAt = Now;
+            _beamOn = true;
+            SetBoard(BoardMode.Dim);
+            SetMessage(RadarContract.TripNotice, "", Cyan, pill: true);
+            Play(RadarSfx.Trip);
+            GameFeel.Haptic(GameFeel.HapticKind.Firm);
+            yield return Wait(RadarCargo.TripSeconds);
+#if UNITY_EDITOR
+            while (_editorTripK >= 0f) yield return null;                       // las capturas sostienen el viaje hasta sacar las fotos
+#endif
+            _trips++;
+            _run.AddTrip();
+            RefreshSeats();
             SetMessage("", "");
             _phase = Phase.Idle;
         }
@@ -349,7 +392,7 @@ namespace NeuroVida.Games.Radar
             HideRoundObjects();
             ShowEnd(record, broke);
             _exit.Show();
-            PlayClip(RadarSounds.Finale(), 0.8f);
+            Play(RadarSfx.Finale);
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,
@@ -368,7 +411,7 @@ namespace NeuroVida.Games.Radar
 
         // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
 
-        protected override bool HowToReady => _loopOn && _phase != Phase.Done && _phase != Phase.Idle;
+        protected override bool HowToReady => _loopOn && _phase != Phase.Done && _phase != Phase.Idle && _phase != Phase.Trip;
 
         protected override void HowToSuspend()
         {
@@ -389,7 +432,7 @@ namespace NeuroVida.Games.Radar
 
         protected override void HowToResume(float spentSeconds)
         {
-            if (Endless) _endsAt += spentSeconds;                // el tiempo del tutorial no se le descuenta al Reto
+            if (Endless) _clock?.Shift(spentSeconds);            // el tiempo del tutorial no se le descuenta al Reto
             _timerTrack.gameObject.SetActive(Endless);
             _timerFill.gameObject.SetActive(Endless);
             Layout();
@@ -415,8 +458,9 @@ namespace NeuroVida.Games.Radar
 
         private void UpdateClock()
         {
-            if (!Endless || _endsAt <= 0f || _guided || !_loopOn || _phase == Phase.Done) return;
-            float left = _endsAt - GameClock.Time;
+            if (!Endless || _clock == null || _guided || !_loopOn || _phase == Phase.Done) return;
+            if (_phase == Phase.Trip) _clock.Shift(GameClock.DeltaTime);                // el viaje a la estación no descuenta tiempo del Reto
+            float left = _clock.Remaining(GameClock.Time);
             SetTimer(left / _retoSeconds);
             int whole = Mathf.CeilToInt(left);
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
@@ -454,12 +498,12 @@ namespace NeuroVida.Games.Radar
             if (_picks.Contains(type))
             {
                 _picks.Remove(type);
-                PlayClip(RadarSounds.Pop(), 0.7f);
+                Play(RadarSfx.Unmark);
             }
             else if (_picks.Count < _round.Count)
             {
                 _picks.Add(type);
-                PlayClip(RadarSounds.Mark(_picks.Count), 0.8f);
+                Play(RadarSfx.Mark, _picks.Count);
                 GameFeel.Haptic(GameFeel.HapticKind.Light);
             }
             else return;                                                   // ya están todas las que eran: para cambiar una, primero se quita otra
@@ -473,12 +517,16 @@ namespace NeuroVida.Games.Radar
             _rescueTapped = true;
         }
 
-        private void PlayClip(AudioClip clip, float volume)
+        /// <summary>Un sonido de «Madera cálida» (<see cref="RadarSounds"/>): con «Efectos de sonido» apagado no se calcula ni suena nada. Volumen 0,8: el del laboratorio donde Ricardo lo eligió.</summary>
+        private void Play(RadarSfx sfx, int arg = 0)
         {
-            if (clip == null || !GameFeel.SoundOn) return;
+            if (!GameFeel.SoundOn) return;
             if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            _audioSource.PlayOneShot(clip, volume);
+            var clip = RadarSounds.Get(sfx, arg);
+            if (clip != null) _audioSource.PlayOneShot(clip, 0.8f);
         }
+
+        private bool SoundWanted => GameFeel.SoundOn && (_config == null || _config.config == null || _config.config.sound_enabled);
 
         private static IEnumerator Wait(float seconds)
         {
