@@ -1,0 +1,205 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorio del motor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07081F; --panel:#121236; --panel2:#1B1A4A; --line:#2C2A66; --ink:#EEEBFC; --dim:#ABA5D2; --faint:#8C86BD;
+  --sky:#7FD8FF; --sun:#FFC94A; --coral:#FF8A6B; --grape:#B79BFF; --inkd:#1A1240;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)}
+.wrap{max-width:900px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+.eyebrow{font:700 14px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--sun);margin:0 0 4px}
+h1{font:700 clamp(28px,4.4vw,40px)/1.1 var(--f-display);margin:0 0 8px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 6px;max-width:66ch}
+.tip{color:var(--faint);font-size:15px;margin:0 0 22px;max-width:66ch}
+h2{font:600 20px var(--f-display);margin:30px 0 12px}
+.styles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.style{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--panel);border:3px solid var(--line);border-radius:20px;padding:14px 16px 16px;color:var(--ink);cursor:pointer;min-height:56px;font:inherit;box-shadow:0 5px 0 #03041A;transition:transform .12s ease-out,border-color .12s}
+.style:active{transform:translateY(3px);box-shadow:0 2px 0 #03041A}
+.style[aria-pressed="true"]{border-color:var(--c);background:var(--panel2)}
+.style .tag{font:700 13px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.style .nm{font:700 20px var(--f-display)}
+.style .ds{color:var(--dim);font-size:15px}
+@media (max-width:600px){.styles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.style{padding:12px;border-radius:16px}.style .nm{font-size:18px}.style .ds{font-size:14px;line-height:1.4}}
+.controls{display:grid;gap:16px;background:var(--panel);border:3px solid var(--line);border-radius:22px;padding:18px}
+.btns{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:60px;padding:12px 22px;border-radius:18px;border:3px solid var(--inkd);background:var(--sun);color:var(--inkd);font:700 19px var(--f-display);cursor:pointer;box-shadow:0 5px 0 #03041A;transition:transform .1s ease-out;flex:1 1 180px}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #03041A}
+.btn.hyper{background:var(--sky)}
+.btn.hyper.on{background:#fff;outline:3px solid var(--sky);outline-offset:2px}
+.btn[disabled]{opacity:.45;cursor:default}
+.lvl{display:grid;gap:8px}
+.lvl label{font:600 17px var(--f-display);display:flex;justify-content:space-between;gap:12px}
+.lvl output{color:var(--sky);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:32px;accent-color:var(--sky)}
+.scale{display:flex;justify-content:space-between;color:var(--faint);font-size:14px}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+label.vol{display:flex;align-items:center;gap:10px;font-weight:600}
+label.vol input{width:160px}
+.now{min-height:24px;color:var(--sky);font:600 15px var(--f-display)}
+.note{color:var(--faint);font-size:15px;margin-top:28px;max-width:70ch}
+:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Piloto Estelar</p>
+  <h1>Laboratorio del motor</h1>
+  <p class="lead">El motor suena todo el vuelo, así que tiene que ser agradable y moderno. Elige un motor, tócalo y mueve la velocidad como si subieras de nivel; prueba también el hiperimpulso.</p>
+  <p class="tip">Mejor con audífonos o el parlante a volumen medio. Cambia de motor sin detenerlo para comparar.</p>
+
+  <h2>1. Elige un motor</h2>
+  <div class="styles" id="styles"></div>
+
+  <h2>2. Pruébalo</h2>
+  <div class="controls">
+    <div class="btns">
+      <button class="btn" id="play">Encender motor</button>
+      <button class="btn hyper" id="hyper" disabled>Hiperimpulso (6 s)</button>
+    </div>
+    <div class="lvl">
+      <label for="speed">Velocidad <output id="lv">nivel 3</output></label>
+      <input type="range" id="speed" min="1" max="9" step="0.1" value="3">
+      <div class="scale"><span>lento (nivel 1)</span><span>rápido (nivel 9)</span></div>
+    </div>
+    <div class="row">
+      <label class="vol">Volumen <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8"></label>
+    </div>
+    <div class="now" id="now" aria-live="polite"></div>
+  </div>
+
+  <p class="note">Igual que en el juego: cada motor son tres capas en bucle (crucero, rápido e hiperimpulso) que se mezclan según la velocidad, más un cambio suave de tono. Todo se genera con código, sin archivos descargados, para que lo que elijas suene igual en el teléfono.</p>
+</div>
+
+<script>
+const SR = 44100, TAU = Math.PI * 2;
+function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function render(sec, fn){ const n = Math.ceil(sec * SR), out = new Float32Array(n); for (let i = 0; i < n; i++) out[i] = fn(i / SR, i); return out; }
+function biquad(type, f, q){
+  let b0, b1, b2, a1, a2, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  function set(fc, Q = q){ const w = TAU * Math.min(Math.max(fc, 20), SR * 0.45) / SR, c = Math.cos(w), s = Math.sin(w), al = s / (2 * Q); let n0, n1, n2;
+    if (type === 'lp'){ n0 = (1 - c) / 2; n1 = 1 - c; n2 = (1 - c) / 2; } else if (type === 'hp'){ n0 = (1 + c) / 2; n1 = -(1 + c); n2 = (1 + c) / 2; } else { n0 = al; n1 = 0; n2 = -al; }
+    const d0 = 1 + al; b0 = n0 / d0; b1 = n1 / d0; b2 = n2 / d0; a1 = -2 * c / d0; a2 = (1 - al) / d0; }
+  set(f, q);
+  return { set, run(x){ const y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; } };
+}
+// Bucle sin costura: se calculan 6 s y los 2 últimos se funden sobre los 2 primeros → 4 s exactos.
+// Por eso todos los tonos son múltiplos de 0,25 Hz (vuelven a la misma fase cada 4 s).
+const LOOP = 4, CROSS = 2;
+function loop(fn, lvl){
+  const x = render(LOOP + CROSS, fn), N = LOOP * SR, F = CROSS * SR, out = x.slice(0, N);
+  for (let i = 0; i < F; i++){ const k = i / F; out[i] = x[i] * k + x[i + N] * (1 - k); }
+  let pk = 1e-9; for (const v of out) pk = Math.max(pk, Math.abs(v));
+  for (let i = 0; i < N; i++) out[i] *= lvl / pk;
+  return out;
+}
+const sin = (f, t) => Math.sin(TAU * f * t);
+function brown(seed){ const r = rng(seed); let b = 0; return () => { b = (b + 0.02 * (r() * 2 - 1)) / 1.02; return b * 3.5; }; }
+function smoothRand(seed, hz){ const r = rng(seed); let v = 0.5; const a = 1 - Math.exp(-TAU * hz / SR); return () => { v += a * (r() - v); return v; }; }
+
+// El motor de HOY (PilotSounds.Engine): diente de sierra 55 Hz + triángulo 82 Hz por un paso bajo de un polo, 1 s en bucle.
+function todayClip(){
+  const n = SR, two = new Float32Array(2 * n); let lp = 0;
+  for (let i = 0; i < two.length; i++){ const t = (i % n) / SR; const saw = 2 * (t * 55 - Math.floor(t * 55 + 0.5)); const tri = 2 / Math.PI * Math.asin(Math.sin(TAU * 82 * t)); lp += 0.055 * (0.6 * saw + 0.4 * tri - lp); two[i] = lp; }
+  let pk = 0; for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(two[n + i])); const out = new Float32Array(n); for (let i = 0; i < n; i++) out[i] = two[n + i] * 0.45 / pk; return out;
+}
+
+const ENGINES = {
+  hoy: {
+    tag: 'Hoy', name: 'Como suena hoy', desc: 'El motor actual del juego.', col: '#ABA5D2',
+    today: true,
+  },
+  turbina: {
+    tag: 'A', name: 'Turbina eléctrica', desc: 'Suave y moderna: un zumbido grave limpio, aire que corre y un silbido fino arriba.', col: '#7FD8FF',
+    pitch: [0.96, 0.12],
+    cruise: () => { const bp = biquad('bp', 700, 0.7), r = rng(3); return loop(t => 0.5 * sin(55, t) + 0.45 * sin(55.25, t) + 0.16 * sin(110, t) + 0.5 * bp.run(r() * 2 - 1) + 0.03 * Math.sin(TAU * 1760 * t + 0.6 * sin(0.5, t)), 0.42); },
+    fast: () => { const bp = biquad('bp', 1400, 0.6), r = rng(4); return loop(t => 0.45 * sin(73.5, t) + 0.4 * sin(73.75, t) + 0.14 * sin(147, t) + 0.7 * bp.run(r() * 2 - 1) + 0.04 * Math.sin(TAU * 2640 * t + 0.6 * sin(0.75, t)), 0.46); },
+    boost: () => { const hp = biquad('hp', 2600, 0.7), r = rng(5); return loop(t => 0.8 * hp.run(r() * 2 - 1) + 0.05 * sin(3520, t) * (0.6 + 0.4 * sin(0.5, t)), 0.3); },
+  },
+  cohete: {
+    tag: 'B', name: 'Cohete', desc: 'Como un despegue: rugido profundo y potente, con turbulencia; en hiperimpulso se abre el chorro.', col: '#FF8A6B',
+    pitch: [0.96, 0.1],
+    cruise: () => { const lp = biquad('lp', 280, 0.6), b = brown(11), am = smoothRand(12, 3); return loop(t => lp.run(b()) * (0.75 + 0.5 * am()) + 0.35 * sin(41.25, t), 0.46); },
+    fast: () => { const lp = biquad('lp', 650, 0.6), bp = biquad('bp', 1800, 1.2), b = brown(13), r = rng(14), am = smoothRand(15, 5); let crack = 0;
+      return loop(t => { if (r() < 0.0009) crack = 1; crack *= 0.992; return lp.run(b()) * (0.7 + 0.6 * am()) + 0.3 * sin(55, t) + 0.25 * bp.run((r() * 2 - 1) * crack); }, 0.5); },
+    boost: () => { const bp = biquad('bp', 2000, 0.5), r = rng(16), am = smoothRand(17, 7); return loop(t => bp.run(r() * 2 - 1) * (0.6 + 0.8 * am()), 0.32); },
+  },
+  plasma: {
+    tag: 'C', name: 'Plasma', desc: 'Ciencia ficción suave: un acorde grave que vibra, como una nave que flota.', col: '#B79BFF',
+    pitch: [0.95, 0.15],
+    cruise: () => { const lp = biquad('lp', 900, 0.7), bp = biquad('bp', 900, 0.6), r = rng(21); return loop(t => lp.run(0.5 * sin(110, t) + 0.35 * sin(165, t) + 0.3 * sin(220.25, t) + 0.12 * sin(330, t)) * (0.85 + 0.15 * sin(0.5, t)) + 0.18 * bp.run(r() * 2 - 1), 0.4); },
+    fast: () => { const lp = biquad('lp', 1500, 0.7), bp = biquad('bp', 1500, 0.6), r = rng(22); return loop(t => lp.run(0.45 * sin(146.75, t) + 0.35 * sin(220, t) + 0.3 * sin(293.5, t) + 0.12 * sin(440, t)) * (0.85 + 0.15 * sin(0.75, t)) + 0.25 * bp.run(r() * 2 - 1), 0.44); },
+    boost: () => { const hp = biquad('hp', 3000, 0.7), r = rng(23); return loop(t => (0.5 * sin(880, t) + 0.35 * sin(1320, t)) * (0.6 + 0.4 * sin(6, t)) * 0.4 + 0.4 * hp.run(r() * 2 - 1), 0.28); },
+  },
+};
+
+// ---------- audio: tres capas en bucle (como tres AudioSource en Unity)
+let AC = null, master = null, layers = null, running = false, which = 'cohete', level = 3, hyperUntil = 0;
+const bufCache = new Map(), rawCache = new Map();
+// Las muestras se calculan antes (sin audio); el búfer se arma al encender, ya con el permiso del toque.
+function rawFor(k){ if (rawCache.has(k)) return rawCache.get(k); const E = ENGINES[k]; const o = E.today ? { cruise: todayClip() } : { cruise: E.cruise(), fast: E.fast(), boost: E.boost() }; rawCache.set(k, o); return o; }
+function ctx(){ if (!AC){ AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = +document.getElementById('vol').value; master.connect(AC.destination); } if (AC.state === 'suspended') AC.resume(); return AC; }
+function buf(arr){ const b = ctx().createBuffer(1, arr.length, SR); b.copyToChannel(arr, 0); return b; }
+function bufsFor(k){
+  if (bufCache.has(k)) return bufCache.get(k);
+  const r = rawFor(k), o = { cruise: buf(r.cruise), fast: r.fast ? buf(r.fast) : null, boost: r.boost ? buf(r.boost) : null };
+  bufCache.set(k, o); return o;
+}
+// Velocidad del juego (PilotContract): 150 + 144·(nivel−1)/8 dp/s; hiperimpulso ×1,15.
+function speedK(){ const hyper = performance.now() < hyperUntil; const sp = (150 + 144 * (level - 1) / 8) * (hyper ? 1.15 : 1); return { k: Math.max(0, Math.min(1, (sp - 150) / (294 * 1.15 - 150))), hyper }; }
+function start(){
+  stop(); const c = ctx(), B = bufsFor(which), t0 = c.currentTime + 0.03;
+  layers = {};
+  for (const name of ['cruise', 'fast', 'boost']){
+    if (!B[name]) continue;
+    const s = c.createBufferSource(); s.buffer = B[name]; s.loop = true;
+    const g = c.createGain(); g.gain.value = 0; s.connect(g).connect(master); s.start(t0, (name === 'fast' ? 1.3 : name === 'boost' ? 2.7 : 0));
+    layers[name] = { s, g };
+  }
+  running = true; update(true);
+}
+function stop(){ if (layers){ for (const l of Object.values(layers)){ try { l.s.stop(); } catch (_){} } } layers = null; running = false; }
+// Igual que en Unity: tono y mezcla se acercan de a poco al valor nuevo (nada salta).
+function update(instant = false){
+  if (!running || !layers) return;
+  const { k, hyper } = speedK(), c = ctx(), now = c.currentTime, E = ENGINES[which], tc = instant ? 0.01 : 0.25;
+  if (E.today){
+    const pitch = 0.85 + 0.55 * k + (hyper ? 0.15 : 0);
+    layers.cruise.s.playbackRate.setTargetAtTime(pitch, now, tc); layers.cruise.g.gain.setTargetAtTime(0.5, now, tc);
+  } else {
+    const pitch = E.pitch[0] + E.pitch[1] * k + (hyper ? 0.04 : 0);
+    for (const l of Object.values(layers)) l.s.playbackRate.setTargetAtTime(pitch, now, tc);
+    // crucero ↔ rápido con potencia constante; el hiperimpulso se suma encima
+    layers.cruise.g.gain.setTargetAtTime(0.55 * Math.cos(k * Math.PI / 2), now, tc);
+    layers.fast.g.gain.setTargetAtTime(0.55 * Math.sin(k * Math.PI / 2), now, tc);
+    layers.boost.g.gain.setTargetAtTime(hyper ? 0.5 : 0, now, hyper ? 0.12 : 0.35);
+  }
+}
+setInterval(() => { if (running) update(); const h = performance.now() < hyperUntil; hyperBtn.classList.toggle('on', h); hyperBtn.textContent = h ? 'Hiperimpulso en marcha…' : 'Hiperimpulso (6 s)'; }, 100);
+
+// ---------- interfaz
+const now = document.getElementById('now'), playBtn = document.getElementById('play'), hyperBtn = document.getElementById('hyper');
+const stylesEl = document.getElementById('styles');
+for (const [k, E] of Object.entries(ENGINES)){
+  const b = document.createElement('button'); b.className = 'style'; b.style.setProperty('--c', E.col); b.setAttribute('aria-pressed', k === which);
+  b.innerHTML = `<span class="tag">${E.tag}</span><span class="nm">${E.name}</span><span class="ds">${E.desc}</span>`;
+  b.onclick = () => { which = k; stylesEl.querySelectorAll('.style').forEach(x => x.setAttribute('aria-pressed', x === b)); now.textContent = 'Motor: ' + E.name; if (running){ now.textContent = 'Preparando…'; setTimeout(() => { start(); now.textContent = 'Sonando: ' + E.name; }, 20); } };
+  stylesEl.appendChild(b);
+}
+playBtn.onclick = () => {
+  if (running){ stop(); playBtn.textContent = 'Encender motor'; hyperBtn.disabled = true; now.textContent = ''; return; }
+  now.textContent = 'Preparando…';
+  setTimeout(() => { start(); playBtn.textContent = 'Apagar motor'; hyperBtn.disabled = false; now.textContent = 'Sonando: ' + ENGINES[which].name; }, 20);
+};
+hyperBtn.onclick = () => { hyperUntil = performance.now() + 6000; update(); };
+const sp = document.getElementById('speed'), lv = document.getElementById('lv');
+sp.addEventListener('input', () => { level = +sp.value; lv.textContent = 'nivel ' + Math.round(level); });
+document.getElementById('vol').addEventListener('input', e => { if (master) master.gain.value = +e.target.value; });
+// precarga en segundo plano
+setTimeout(() => { for (const k of ['cohete', 'turbina', 'plasma', 'hoy']) setTimeout(() => { try { rawFor(k); } catch (_){} }, 50); }, 300);
+</script>
