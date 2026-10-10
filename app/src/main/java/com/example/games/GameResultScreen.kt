@@ -61,6 +61,9 @@ import com.example.data.ResultFocus
 import com.example.model.GamePlayResult
 import com.example.model.GameRankInfo
 import com.example.model.GameRegistry
+import com.example.ui.components.MeaningfulResult
+import com.example.ui.components.MeaningfulResultModel
+import com.example.ui.components.ResultChip
 import com.example.ui.components.rememberReduceMotion
 import com.example.model.LevelTier
 import com.example.ui.components.LeagueShield
@@ -137,6 +140,8 @@ fun GameResultScreen(
   rescateTotals: com.example.data.Rescate.Totals? = null,
   /** Acoplamiento: los módulos acoplados y los anillos completos de toda la vida (ya con esta partida sumada), para «Has acoplado …». */
   acoplamientoTotals: com.example.data.Acoplamiento.Totals? = null,
+  /** Aterrizaje Lunar: las cúpulas de tu base de toda la vida (ya con esta partida sumada), para «Tu base lunar: …». */
+  aterrizajeTotals: com.example.data.Aterrizaje.Totals? = null,
   /** Qué te sirve más ver primero (`result_focus`): solo cambia el orden de lo que se muestra. */
   resultFocus: ResultFocus = ResultFocus.DEFAULT
 ) {
@@ -468,54 +473,12 @@ fun GameResultScreen(
       )
     }
 
-    // Aterrizaje Lunar: "tu estimación" y "tu línea" (cada blanco y dónde te posaste), con el tramo donde más se aleja.
-    result.numlineErrorPct?.let { err ->
-      Spacer(Modifier.height(14.dp))
-      val errText = String.format(java.util.Locale("es"), "%.1f", err)
-      Text(
-        text = "Tu estimación: a $errText% del blanco",
-        color = Clay.Sky,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        fontFamily = AppFamily,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 24.dp)
-      )
-      Text(
-        text = "En promedio, qué tan lejos del blanco te posaste (en % del largo de la regla). Ubicar un número en una regla junta dos cosas: saber cuánto vale y calcular a ojo qué parte de la regla le toca.",
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-      )
-      val trues = result.numlineTrue
-      val givens = result.numlineGiven
-      if (trues != null && givens != null) {
-        val bias = com.example.data.NumberLine.reading(trues, givens)
-        Spacer(Modifier.height(8.dp))
-        Text("Tu línea", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
-        NumberLineStrip(
-          trues, givens,
-          Modifier.fillMaxWidth().padding(horizontal = 28.dp).height(64.dp)
-            .semantics { contentDescription = "Tu línea: ${com.example.data.ResultAdvice.body(com.example.data.NumberLine.message(bias))}" }
-        )
-        Text(
-          text = com.example.data.ResultAdvice.body(com.example.data.NumberLine.message(bias)),
-          color = TextSoft,
-          fontSize = 15.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp)
-        )
-      }
-      result.numlineBullseyes?.takeIf { it > 0 }?.let { n ->
-        Text(
-          text = if (n == 1) "1 diana lunar" else "$n dianas lunares",
-          color = Clay.Sun,
-          fontSize = 14.sp,
-          fontWeight = FontWeight.SemiBold,
-          modifier = Modifier.padding(top = 4.dp)
-        )
-      }
+    // Aterrizaje Lunar (renovado el 10-oct; docs/diseno-aterrizaje.md §6): un final CON SENTIDO, con el componente reutilizable MeaningfulResult: lo que hiciste («a 11 de cada 100 del lugar justo», con un dato tuyo y lo que pasó), tu avance SOLO contigo (hoy, tu promedio y tu mejor), un truco para la próxima
+    // y, abajo y en chico, por qué importa con su fuente. Ya no hay «Tu línea» (el gráfico de puntos no le decía nada a la persona). Nunca percentiles ni comparación con otras personas.
+    if (result.gameId == "aterrizaje" && result.numlineErrorPct != null) {
+      Spacer(Modifier.height(18.dp))
+      val model = remember(result, starMeasures, aterrizajeTotals) { aterrizajeModel(result, starMeasures, aterrizajeTotals) }
+      MeaningfulResult(model)
     }
 
     // Lluvia de meteoros (pantalla final, 1-oct: mezcla de las propuestas A y C de docs/previews/meteoros-final.png): "tu
@@ -1105,7 +1068,7 @@ fun GameResultScreen(
 
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
-      result.pilLanePct, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal, result.numlineErrorPct,
+      result.pilLanePct, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal,
       result.rotationSpeedDps, result.rotationCurveMs,
       result.mailGroup, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
       result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa, result.conGroup
@@ -1484,36 +1447,49 @@ private fun BrakeGauge(reading: com.example.data.BrakeReading, modifier: Modifie
   }
 }
 
-// ---------- Aterrizaje Lunar: "tu línea" ----------
+// ---------- Aterrizaje Lunar: el final con sentido ----------
 
-/**
- * La regla de 0 a 1 con cada aterrizaje: una marca tinta donde estaba el blanco y un punto donde se posó la nave,
- * unidos por una línea fina (lima si quedó cerca, sol si no). La distancia se ve por la posición, no por el color.
- */
-@Composable
-private fun NumberLineStrip(trues: List<Float>, givens: List<Float>, modifier: Modifier = Modifier) {
-  Canvas(modifier) {
-    val y = size.height * 0.62f
-    val l = 8.dp.toPx()
-    val r = size.width - 8.dp.toPx()
-    val w = r - l
-    drawLine(Clay.Ink, Offset(l, y + 3.dp.toPx()), Offset(r, y + 3.dp.toPx()), 8.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
-    drawLine(Clay.Cream, Offset(l, y), Offset(r, y), 6.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
-    for (x in listOf(l, r)) drawLine(Clay.Ink, Offset(x, y - 10.dp.toPx()), Offset(x, y + 10.dp.toPx()), 3.dp.toPx())
-    val n = minOf(trues.size, givens.size)
-    for (i in 0 until n) {
-      val tx = l + w * trues[i].coerceIn(0f, 1f)
-      val gx = l + w * givens[i].coerceIn(0f, 1f)
-      // Cada intento a una altura un poco distinta, para que no se tapen.
-      val gy = y - (14f + (i % 4) * 7f) * density
-      val near = kotlin.math.abs(trues[i] - givens[i]) <= 0.05f
-      val col = if (near) Clay.Lime else Clay.Sun
-      drawLine(col.copy(alpha = 0.7f), Offset(tx, y - 4.dp.toPx()), Offset(gx, gy), 1.5.dp.toPx())
-      drawLine(Clay.Ink, Offset(tx, y - 5.dp.toPx()), Offset(tx, y + 5.dp.toPx()), 2.dp.toPx())
-      drawCircle(Clay.Ink, 4.5.dp.toPx(), Offset(gx, gy))
-      drawCircle(col, 3.dp.toPx(), Offset(gx, gy))
-    }
-  }
+/** Lo que muestra el final de Aterrizaje Lunar (docs/diseno-aterrizaje.md §6), armado con la lectura de `data/Aterrizaje.kt` y `data/NumberLine.kt`. */
+private fun aterrizajeModel(
+  result: GamePlayResult,
+  starMeasures: List<com.example.data.MeasurePoint>,
+  totals: com.example.data.Aterrizaje.Totals?
+): MeaningfulResultModel {
+  val a = com.example.data.Aterrizaje
+  val err = result.numlineErrorPct
+  val trues = result.numlineTrue
+  val givens = result.numlineGiven
+  val reading = if (trues != null && givens != null) com.example.data.NumberLine.reading(trues, givens) else com.example.data.NumberLineReading.SIN_DATOS
+  // la partida de hoy tal como se guarda como medida: así se compara con las ANTERIORES (misma marca de tiempo = no se cuenta dos veces)
+  val today = com.example.data.MeasurePoint(result.timestamp, "numline", err ?: 0f, result.endRating?.coerceIn(0f, 1f) ?: -1f, result.timed)
+  val previous = if (err != null) a.previousErrors(starMeasures, today) else emptyList()
+  val progress = a.progress(err, previous)
+  val headline = a.headline(progress.today)
+  val dataLine = com.example.data.NumberLine.line(reading)
+  val title = a.title(result.correctAnswers, result.totalTrials)
+  return MeaningfulResultModel(
+    title = title,
+    boxTitle = a.BOX_TITLE,
+    headline = headline,
+    headlineUnit = a.UNIT,
+    dataLine = dataLine,
+    summaryLine = a.summaryLine(result.numlineBullseyes, result.landStreak, result.landDomes),
+    extraLine = a.baseLine(totals),
+    progressTitle = a.PROGRESS_TITLE,
+    chips = listOf(
+      ResultChip("Hoy", a.chipValue(progress.today), highlight = true),
+      ResultChip("Tu promedio", a.chipValue(progress.average)),
+      ResultChip("Tu mejor", a.chipValue(progress.best))
+    ),
+    progressPhrase = progress.phrase,
+    trickTitle = a.TRICK_TITLE,
+    trick = com.example.data.NumberLine.trick(reading),
+    whyTitle = a.WHY_TITLE,
+    why = a.WHY,
+    source = a.SOURCE,
+    note = a.NOTE,
+    spoken = a.spoken(title, headline, dataLine, progress.phrase)
+  )
 }
 
 // ---------- Acoplamiento: "tu curva de giro" ----------

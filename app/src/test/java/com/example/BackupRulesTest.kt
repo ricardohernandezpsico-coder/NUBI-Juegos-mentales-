@@ -98,6 +98,13 @@ class BackupRulesTest {
   }
 
   @Test
+  fun `las cupulas de Aterrizaje Lunar se respaldan (es progreso)`() {
+    for (text in listOf(xml("backup_rules.xml"), cloudSection(xml("data_extraction_rules.xml")), transferSection(xml("data_extraction_rules.xml")))) {
+      assertTrue(includes(text, "sharedpref").contains("aterrizaje_record.xml"))
+    }
+  }
+
+  @Test
   fun `retirar un juego no quita nada del respaldo (Rumbo no tenia preferencias propias)`() {
     // lo que guarda el avance de Rumbo (partidas y avance en la base, medidas y nivel en estas preferencias) sigue respaldándose
     for (text in listOf(xml("backup_rules.xml"), cloudSection(xml("data_extraction_rules.xml")), transferSection(xml("data_extraction_rules.xml")))) {

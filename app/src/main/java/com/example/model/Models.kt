@@ -296,6 +296,9 @@ data class GamePlayResult(
   val numlineTrue: List<Float>? = null,
   val numlineGiven: List<Float>? = null,
   val numlineBullseyes: Int? = null,
+  // Solo Aterrizaje Lunar (renovado el 10-oct): las cúpulas de tu base armadas en la partida (una cada 5 aterrizajes justos) y la racha mayor de aterrizajes justos seguidos. Las dianas son numlineBullseyes. El récord y el total de cúpulas van en prefs «aterrizaje_record» (y en el respaldo); la lectura está en data/Aterrizaje.kt. No se guardan en Room.
+  val landDomes: Int? = null,
+  val landStreak: Int? = null,
   // Solo Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (ms medios a 0/45/90/135/180°;
   // null = sin datos en esa columna). No se guardan en Room.
   val rotationSpeedDps: Int? = null,

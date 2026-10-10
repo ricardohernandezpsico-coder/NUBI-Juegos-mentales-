@@ -297,6 +297,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   val atlas = repository.atlas
   val rescateTotals = repository.rescateTotals
   val acoplamientoTotals = repository.acoplamientoTotals
+  val aterrizajeTotals = repository.aterrizajeTotals
 
   /** Las frases de ¿Verdad o disparate? marcadas como poco claras, para el informe de errores de Ajustes. */
   fun unclearReport(): String = repository.unclearReport()

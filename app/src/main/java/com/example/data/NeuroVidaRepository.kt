@@ -340,6 +340,20 @@ class NeuroVidaRepository(
     edit.apply()
   }
 
+  // Las cúpulas de tu base de «Aterrizaje Lunar» (10-oct): las de toda la vida (`total`) y las de tu mejor partida (`best`). Es progreso: SharedPreferences que VA en el respaldo (`aterrizaje_record`). Cada resultado se guarda una sola vez (`UnityResultInbox`), así que sumar no cuenta doble.
+  private val aterrizajePrefs = context.getSharedPreferences("aterrizaje_record", Context.MODE_PRIVATE)
+  private val _aterrizajeTotals = MutableStateFlow(Aterrizaje.Totals(aterrizajePrefs.getInt("total", 0).coerceAtLeast(0), aterrizajePrefs.getInt("best", 0).coerceAtLeast(0)))
+  val aterrizajeTotals: StateFlow<Aterrizaje.Totals> = _aterrizajeTotals.asStateFlow()
+
+  /** Suma las cúpulas con que terminó una partida de «Aterrizaje Lunar» (en cualquier modo). */
+  private fun recordAterrizaje(result: GamePlayResult) {
+    if (result.gameId != "aterrizaje") return
+    val totals = Aterrizaje.addTotals(_aterrizajeTotals.value, result.landDomes)
+    if (totals == _aterrizajeTotals.value) return
+    _aterrizajeTotals.value = totals
+    aterrizajePrefs.edit().putInt("total", totals.domes).putInt("best", totals.best).apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -981,6 +995,8 @@ class NeuroVidaRepository(
     recordRescate(result)
     // El récord de Acoplamiento y sus totales también, en cualquier modo.
     recordAcoplamiento(result)
+    // Las cúpulas de Aterrizaje también, en cualquier modo.
+    recordAterrizaje(result)
     outcome
   }
 
@@ -1076,6 +1092,8 @@ class NeuroVidaRepository(
     acoplamientoPrefs.edit().clear().apply()
     _acoplamientoRecord.value = 0
     _acoplamientoTotals.value = Acoplamiento.Totals()
+    aterrizajePrefs.edit().clear().apply()
+    _aterrizajeTotals.value = Aterrizaje.Totals()
     retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()

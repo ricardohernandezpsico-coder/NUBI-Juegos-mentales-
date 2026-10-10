@@ -56,12 +56,7 @@ object ResultAdvice {
     result.rasRounds?.let { rounds ->
       out += Trail.readingLines(Trail.modeRows(rounds, result.rasHits)).drop(1).map { tipOf(it) }
     }
-    // Aterrizaje Lunar: el truco del tramo de la regla donde más te alejas.
-    val trues = result.numlineTrue
-    val givens = result.numlineGiven
-    if (result.numlineErrorPct != null && trues != null && givens != null) {
-      out += tipOf(NumberLine.message(NumberLine.reading(trues, givens)))
-    }
+    // Aterrizaje Lunar (renovado el 10-oct) ya no pasa por aquí: su «Truco para la próxima» viene en su propio final con sentido (`MeaningfulResult`, `NumberLine.trick`).
     // Lluvia de meteoros: las letras cambiadas de lugar engañan (solo con datos suficientes).
     if (result.lexBandSeen != null && result.lexBandHits != null) {
       out += Vocabulary.filterAdvice(result.lexFaSeen, result.lexFaHits)

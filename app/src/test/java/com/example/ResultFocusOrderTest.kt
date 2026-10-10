@@ -33,12 +33,13 @@ import org.robolectric.annotation.GraphicsMode
 class ResultFocusOrderTest {
   @get:Rule val composeTestRule = createComposeRule()
 
-  private val landing = GamePlayResult(
-    gameId = "aterrizaje", score = 74, correctAnswers = 6, totalTrials = 8, timed = false, level = 3, numlineErrorPct = 8f,
-    numlineTrue = listOf(0.1f, 0.2f, 0.5f, 0.5f, 0.9f, 0.9f), numlineGiven = listOf(0.3f, 0.4f, 0.5f, 0.52f, 0.9f, 0.91f)
+  // En la punta de la lengua: la medida («Tu cielo de palabras») y un consejo (alguna palabra necesitó ayuda o la mostró Nubi). Aterrizaje Lunar ya no usa este bloque: su truco viene en su propio final (`MeaningfulResult`).
+  private val punta = GamePlayResult(
+    gameId = "anagramas", score = 74, correctAnswers = 6, totalTrials = 8, timed = false, level = 3,
+    puntaSolo = 5, puntaPista = 2, puntaLetras = 0, puntaVista = 1
   )
 
-  private fun show(focus: ResultFocus, result: GamePlayResult = landing) {
+  private fun show(focus: ResultFocus, result: GamePlayResult = punta) {
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
       NeuroVidaTheme {
@@ -60,19 +61,19 @@ class ResultFocusOrderTest {
   @Test
   fun avance_primero_pone_la_medida_antes_del_consejo() {
     show(ResultFocus.AVANCE)
-    assertTrue("«Tu línea» (la medida) va antes del consejo", yOfText("Tu línea") < yOfTag("result_advice"))
+    assertTrue("«Tu cielo de palabras» (la medida) va antes del consejo", yOfText("Tu cielo de palabras") < yOfTag("result_advice"))
   }
 
   @Test
   fun consejo_primero_pone_el_consejo_antes_de_la_medida() {
     show(ResultFocus.CONSEJO)
-    assertTrue("el consejo va antes de «Tu línea»", yOfTag("result_advice") < yOfText("Tu línea"))
+    assertTrue("el consejo va antes de «Tu cielo de palabras»", yOfTag("result_advice") < yOfText("Tu cielo de palabras"))
   }
 
   private fun checkOnce(focus: ResultFocus) {
     show(focus)
-    assertEquals("el consejo debe salir una sola vez ($focus)", 1, countText("Mide desde el 0"))
-    assertEquals("la medida no se oculta ($focus)", 1, countText("Donde más te alejas del blanco: el primer tercio de la regla."))
+    assertEquals("el consejo debe salir una sola vez ($focus)", 1, countText("Si una no sale, piensa en cómo empieza"))
+    assertEquals("la medida no se oculta ($focus)", 1, countText("Tu cielo de palabras"))
     assertEquals(1, composeTestRule.onAllNodesWithTag("result_advice").fetchSemanticsNodes().size)
   }
 

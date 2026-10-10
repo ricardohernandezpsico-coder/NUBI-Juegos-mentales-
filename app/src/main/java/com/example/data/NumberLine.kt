@@ -60,14 +60,22 @@ object NumberLine {
     }
   }
 
-  fun message(reading: NumberLineReading): String = when (reading) {
-    NumberLineReading.SIN_DATOS -> "Cada punto es un aterrizaje: la marca es el blanco y el punto, dónde te posaste."
-    NumberLineReading.PAREJA -> "Te posas igual de cerca del blanco en toda la regla."
-    NumberLineReading.INICIO ->
-      "Donde más te alejas del blanco: el primer tercio de la regla. Truco: mide desde el 0 y desde la mitad; el cuarto queda justo entre los dos."
-    NumberLineReading.CENTRO ->
-      "Donde más te alejas del blanco: el centro de la regla. Truco: ubica primero la mitad exacta y corrige desde ahí."
-    NumberLineReading.FINAL ->
-      "Donde más te alejas del blanco: el último tercio de la regla. Truco: mide hacia atrás desde el final, no solo desde el 0."
+  /**
+   * La línea de «Lo que hiciste» (docs/diseno-aterrizaje.md §6): el dato tuyo, dónde te costó más. Sin lectura clara (pocos aterrizajes en algún tramo) no hay línea: null. No dice «agrandas» ni «achicas» (ver arriba): solo dónde fue más lejos del blanco.
+   */
+  fun line(reading: NumberLineReading): String? = when (reading) {
+    NumberLineReading.SIN_DATOS -> null
+    NumberLineReading.PAREJA -> "Quedaste igual de cerca en toda la regla"
+    NumberLineReading.INICIO -> "Te costó más el comienzo de la regla"
+    NumberLineReading.CENTRO -> "Te costó más el medio de la regla"
+    NumberLineReading.FINAL -> "Te costó más el final de la regla"
+  }
+
+  /** El «Truco para la próxima» (§6): medir desde la referencia más cercana, la estrategia de quienes mejor estiman. Con lectura pareja o sin datos, el truco general: buscar la mitad. */
+  fun trick(reading: NumberLineReading): String = when (reading) {
+    NumberLineReading.INICIO -> "En el primer tramo, mide desde el 0 y desde la mitad: el cuarto queda entre los dos."
+    NumberLineReading.CENTRO -> "Cerca del medio, ubica primero la mitad exacta y corrige desde ahí."
+    NumberLineReading.FINAL -> "En el último tramo, mide hacia atrás desde el final, no solo desde el 0."
+    NumberLineReading.PAREJA, NumberLineReading.SIN_DATOS -> "Antes de soltar, busca la mitad: ¿tu número está antes o después?"
   }
 }

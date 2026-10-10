@@ -161,6 +161,9 @@ object NativeReceiver {
     val numline_true: List<Double>? = null,
     val numline_given: List<Double>? = null,
     val numline_bullseyes: Int = 0,
+    // Aterrizaje Lunar (10-oct): cúpulas de tu base armadas en la partida y racha mayor de aterrizajes justos (-1 = no aplica).
+    val domes: Int = -1,
+    val land_streak: Int = -1,
     // Solo Acoplamiento: giro mental (°/s, -1 = sin medida) y curva de giro (5 columnas, -1 = sin datos).
     val rotation_speed_dps: Int = -1,
     val rotation_curve_ms: List<Int>? = null,
@@ -538,6 +541,8 @@ object NativeReceiver {
       numlineTrue = metrics.numline_true?.map { it.toFloat() }?.takeIf { it.isNotEmpty() },
       numlineGiven = metrics.numline_given?.map { it.toFloat() }?.takeIf { it.isNotEmpty() },
       numlineBullseyes = metrics.numline_bullseyes.takeIf { metrics.numline_error_pct >= 0.0 },
+      landDomes = metrics.domes.takeIf { it >= 0 },
+      landStreak = metrics.land_streak.takeIf { it >= 0 },
       rotationSpeedDps = metrics.rotation_speed_dps.takeIf { it > 0 },
       rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } },
       dockDocked = metrics.docked.takeIf { it >= 0 },

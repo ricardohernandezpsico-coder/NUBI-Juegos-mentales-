@@ -28,7 +28,9 @@ class ResultAdviceTest {
   @Test
   fun `nada se repite ni se oculta, la medida mas el consejo es el texto original`() {
     val originals = listOf(
-      NumberLine.message(NumberLineReading.INICIO), NumberLine.message(NumberLineReading.CENTRO), NumberLine.message(NumberLineReading.FINAL)
+      "Donde más te alejas del blanco: el comienzo de la regla. Truco: mide desde el 0 y desde la mitad: el cuarto queda entre los dos.",
+      "Donde más te alejas del blanco: el centro de la regla. Truco: ubica primero la mitad exacta y corrige desde ahí.",
+      "Donde más te alejas del blanco: el final de la regla. Truco: mide hacia atrás desde el final, no solo desde el 0."
     )
     for (t in originals) {
       val tip = ResultAdvice.tipOf(t)
@@ -51,14 +53,11 @@ class ResultAdviceTest {
   }
 
   @Test
-  fun `Aterrizaje da su truco solo con una lectura clara`() {
-    // primer tercio mucho peor que el resto
+  fun `Aterrizaje ya no pasa por el bloque de consejo, su truco viene en su propio final`() {
+    // primer tercio mucho peor que el resto: el truco lo da NumberLine.trick dentro de MeaningfulResult, no ResultAdvice
     val trues = listOf(0.1f, 0.2f, 0.5f, 0.5f, 0.9f, 0.9f)
     val givens = listOf(0.3f, 0.4f, 0.5f, 0.52f, 0.9f, 0.91f)
-    val tips = ResultAdvice.tips(result("aterrizaje") { copy(numlineErrorPct = 8f, numlineTrue = trues, numlineGiven = givens) })
-    assertEquals(1, tips.size)
-    assertTrue(tips[0], tips[0].startsWith("Mide desde el 0"))
-    // sin datos de la regla: ningún consejo
+    assertTrue(ResultAdvice.tips(result("aterrizaje") { copy(numlineErrorPct = 8f, numlineTrue = trues, numlineGiven = givens) }).isEmpty())
     assertTrue(ResultAdvice.tips(result("aterrizaje") { copy(numlineErrorPct = 8f) }).isEmpty())
   }
 
