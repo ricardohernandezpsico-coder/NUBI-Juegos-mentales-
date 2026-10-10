@@ -6,6 +6,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -36,6 +38,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -313,8 +316,20 @@ internal fun GameSheet(
   var choice by remember(data.game.id) { mutableStateOf(selected) }
   var withClock by remember(data.game.id) { mutableStateOf(timed) }
   Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-    Box(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
-      GameSheetContent(data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice, withClock) }, onClose = onDismiss, timed = withClock, onChooseTimed = { withClock = it })
+    // 10-oct (Tarea 73): en el Motorola, en los juegos con medida, gráfico y reloj, la ficha quedaba más alta que la pantalla y «Jugar» caía bajo la barra de navegación. Ahora la ventana ocupa toda la
+    // pantalla pero la tarjeta vive DENTRO de las barras del sistema (estado y navegación) con un margen, mide como máximo lo que queda (su contenido hace scroll por dentro) y «Jugar» va fijo abajo.
+    // Un toque fuera de la tarjeta la cierra (como antes); los toques sobre la tarjeta no.
+    Box(
+      Modifier
+        .fillMaxSize()
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
+        .windowInsetsPadding(WindowInsets.safeDrawing)
+        .padding(horizontal = 14.dp, vertical = 12.dp),
+      contentAlignment = Alignment.Center
+    ) {
+      Box(Modifier.fillMaxWidth().pointerInput(Unit) { detectTapGestures { } }) {
+        GameSheetContent(data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice, withClock) }, onClose = onDismiss, timed = withClock, onChooseTimed = { withClock = it })
+      }
     }
   }
 }
@@ -333,7 +348,8 @@ internal fun GameSheetContent(
 ) {
   val g = data.game
   ClayCard(color = CardCream, radius = 28.dp, contentPadding = 0.dp, modifier = Modifier.fillMaxWidth().testTag("game_sheet")) {
-    Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp)) {
+    // Lo que hace scroll (todo menos «Jugar»): ocupa lo que haga falta y, si no cabe, se corta al alto disponible de la tarjeta.
+    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp)) {
       // El juego
       Row(verticalAlignment = Alignment.CenterVertically) {
         com.example.ui.components.MiniPlanet(g.id, 58.dp)
@@ -471,12 +487,13 @@ internal fun GameSheetContent(
         Text(com.example.data.RetoChoice.help(timed), color = CardMuted, fontSize = Small, lineHeight = 19.sp)
       }
 
-      ClayCard(color = Clay.Sun, radius = 22.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onPlay, modifier = Modifier.fillMaxWidth().padding(top = 14.dp).testTag("sheet_play")) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().height(54.dp)) {
-          Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(24.dp))
-          Spacer(Modifier.width(6.dp))
-          Text(if (choice == PlayMode.A_TU_MEDIDA) "Jugar a tu medida" else "Jugar en ${choice.label}", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        }
+    }
+    // «Jugar»: FUERA del scroll, fijo abajo en la tarjeta, siempre a la vista.
+    ClayCard(color = Clay.Sun, radius = 22.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onPlay, modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 12.dp).testTag("sheet_play")) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().height(54.dp)) {
+        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(if (choice == PlayMode.A_TU_MEDIDA) "Jugar a tu medida" else "Jugar en ${choice.label}", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
       }
     }
   }

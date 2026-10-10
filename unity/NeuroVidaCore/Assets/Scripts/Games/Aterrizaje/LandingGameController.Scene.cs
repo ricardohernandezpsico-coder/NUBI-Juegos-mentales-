@@ -421,6 +421,8 @@ namespace NeuroVida.Games.Aterrizaje
             _noticeLayer.gameObject.SetActive(false);
             _timerTrack.gameObject.SetActive(false);
             _timerFill.gameObject.SetActive(false);
+            _missionSmall.gameObject.SetActive(false);                                // la misión («Aterriza en» y su número) se transparentaba detrás del recuadro del cierre (Tarea 73); ResetViews la vuelve a mostrar
+            _missionNumber.gameObject.SetActive(false);
             _endTitle.text = LandingContract.EndTitle(_hits, _trials);
             _endEstimate.text = LandingContract.EndEstimate(meanErr);
             _endUnit.text = LandingContract.EndAnalogy(meanErr);

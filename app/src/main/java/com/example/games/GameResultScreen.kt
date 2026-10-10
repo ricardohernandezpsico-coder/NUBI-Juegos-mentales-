@@ -263,11 +263,15 @@ fun GameResultScreen(
       modifier = Modifier.padding(top = 4.dp)
     )
 
-    // Datos de la partida, sueltos en una línea.
+    // Datos de la partida, sueltos en una línea. Los juegos con final con sentido (`MeaningfulResult`, hoy solo Aterrizaje Lunar) ya dicen sus aciertos en su título
+    // («13 aterrizajes justos de 15»): ahí la fila deja solo etapa y modo (Tarea 73). Los demás juegos quedan igual.
+    val usesMeaningfulResult = result.gameId == "aterrizaje" && result.numlineErrorPct != null
     Spacer(Modifier.height(18.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
-      Stat("${result.correctAnswers}/${result.totalTrials}", "aciertos")
-      Dot()
+      if (!usesMeaningfulResult) {
+        Stat("${result.correctAnswers}/${result.totalTrials}", "aciertos")
+        Dot()
+      }
       Stat(LevelTier.fromLevel(result.level).tierName, "etapa")
       Dot()
       Stat(if (result.timed) "Reto" else "Precisión", "modo")
@@ -475,7 +479,7 @@ fun GameResultScreen(
 
     // Aterrizaje Lunar (renovado el 10-oct; docs/diseno-aterrizaje.md §6): un final CON SENTIDO, con el componente reutilizable MeaningfulResult: lo que hiciste («11 % de la regla» de distancia promedio al lugar justo, con un dato tuyo y lo que pasó), tu avance SOLO contigo (hoy, tu promedio y tu mejor), un truco para la próxima
     // y, abajo y en chico, por qué importa con su fuente. Ya no hay «Tu línea» (el gráfico de puntos no le decía nada a la persona). Nunca percentiles ni comparación con otras personas.
-    if (result.gameId == "aterrizaje" && result.numlineErrorPct != null) {
+    if (usesMeaningfulResult) {
       Spacer(Modifier.height(18.dp))
       val model = remember(result, starMeasures, aterrizajeTotals) { aterrizajeModel(result, starMeasures, aterrizajeTotals) }
       MeaningfulResult(model)

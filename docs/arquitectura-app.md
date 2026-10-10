@@ -15,6 +15,7 @@ Movido TAL CUAL desde `CLAUDE.md` el 10-oct-2026 (Tarea 69) para dejarle lugar a
   Las pestañas se pasan deslizando con el dedo (`HorizontalPager` en `MainActivity`, sincronizado con
   `viewModel.currentTab`). Una ventana abierta sobre una pestaña (área en Juegos, detalle de un área en Hoy o Avance)
   llama `LockTabSwipe()`: mientras esté, el dedo no cambia de pestaña y la barra de abajo se esconde.
+  La ficha de un juego (`GameSheet` en `GamesLibraryScreen`, ventana superpuesta) ocupa toda la pantalla pero su tarjeta vive DENTRO de las barras del sistema (`WindowInsets.safeDrawing`) con un margen y mide como máximo el alto que queda: lo demás hace scroll por dentro y «Jugar» va FIJO abajo, fuera del scroll (Tarea 73, 10-oct: en el Motorola, en juegos con medida, gráfico y reloj, «Jugar» caía bajo la barra de navegación). Prueba: `GameSheetFitScreenshotTest` (360 × 780 y 360 × 640).
 
 ## Sesión diaria
 

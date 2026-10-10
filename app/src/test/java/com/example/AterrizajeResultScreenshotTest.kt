@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
@@ -19,6 +20,7 @@ import com.example.model.GamePlayResult
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -85,5 +87,15 @@ class AterrizajeResultScreenshotTest {
       result(errorPct = 10.6f, given = finalLejos, hits = 10, bulls = 0, domes = 0, streak = 2), "aterrizaje-final-lectura",
       earlier(9f, 10f, 11f), com.example.data.Aterrizaje.Totals(domes = 1, best = 1)
     )
+  }
+
+  @Test
+  fun la_fila_comun_de_aterrizaje_ya_no_repite_los_aciertos() {
+    // Tarea 73: «13/15 aciertos» repetía lo que el título («13 aterrizajes justos de 15») ya dice; en los juegos con MeaningfulResult la fila deja solo etapa y modo.
+    show(result(errorPct = 7.4f, given = parejo, hits = 13, bulls = 3, domes = 2, streak = 6), "aterrizaje-final-mejor", earlier(12f, 10f, 9.5f), com.example.data.Aterrizaje.Totals(domes = 7, best = 2))
+    assertEquals(0, composeTestRule.onAllNodesWithText("aciertos").fetchSemanticsNodes().size)
+    assertEquals(1, composeTestRule.onAllNodesWithText("etapa").fetchSemanticsNodes().size)
+    assertEquals(1, composeTestRule.onAllNodesWithText("modo").fetchSemanticsNodes().size)
+    assertEquals(1, composeTestRule.onAllNodesWithText("13 aterrizajes justos de 15").fetchSemanticsNodes().size)
   }
 }
