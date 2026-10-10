@@ -108,7 +108,7 @@ class TrailTelemetryTest {
   @Test
   fun `los juegos sin tutorial guiado no lo piden aunque no tengan historial`() {
     assertFalse(UnityGameLauncher.shouldShowTutorial("rumbo", emptyList()))
-    assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar"), UnityGameLauncher.TUTORIAL_GAMES)
+    assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar", "acoplamiento"), UnityGameLauncher.TUTORIAL_GAMES)
   }
 
   @Test
@@ -135,6 +135,13 @@ class TrailTelemetryTest {
     assertTrue(UnityGameLauncher.shouldShowTutorial("radar", emptyList()))
     assertTrue(UnityGameLauncher.shouldShowTutorial("radar", listOf(played("satelites"))))
     assertFalse(UnityGameLauncher.shouldShowTutorial("radar", listOf(played("radar"))))
+  }
+
+  @Test
+  fun `Acoplamiento pide el tutorial solo a quien nunca lo jugo`() {
+    assertTrue(UnityGameLauncher.shouldShowTutorial("acoplamiento", emptyList()))
+    assertTrue(UnityGameLauncher.shouldShowTutorial("acoplamiento", listOf(played("radar"))))
+    assertFalse(UnityGameLauncher.shouldShowTutorial("acoplamiento", listOf(played("acoplamiento"))))
   }
 
   @Test

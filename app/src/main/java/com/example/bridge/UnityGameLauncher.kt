@@ -21,7 +21,7 @@ object UnityGameLauncher {
 
   /** Juegos con tutorial guiado (ronda guiada propia) y «Cómo se juega» en la pausa. Rastro de luz fue el primero; Freno, Aterrizaje y Meteoros se sumaron el 3-oct
    *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
-  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar")
+  val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar", "acoplamiento")
 
   /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
   fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =
@@ -79,6 +79,8 @@ object UnityGameLauncher {
     // Solo «Rescate relámpago» (id radar): el récord de cápsulas rescatadas en una partida (progreso: la app lo guarda y Unity devuelve el nuevo) y, solo en las herramientas de prueba, el nivel (1..12) con que empieza la partida (0 = el que corresponde).
     val resc_best: Int = 0,
     val resc_stage: Int = 0,
+    // Solo «Acoplamiento» (id acoplamiento): el récord de módulos acoplados en una partida (progreso: la app lo guarda y Unity devuelve el nuevo).
+    val dock_best: Int = 0,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -191,6 +193,7 @@ object UnityGameLauncher {
         pil_sector_s = if (gameId == "piloto") pilSectorS.coerceIn(0, 30) else 0,
         resc_best = if (gameId == "radar") com.example.NeuroVidaApplication.instance.repository.rescateRecord.value else 0,
         resc_stage = if (gameId == "radar") rescStage.coerceIn(0, 12) else 0,
+        dock_best = if (gameId == "acoplamiento") com.example.NeuroVidaApplication.instance.repository.acoplamientoRecord.value else 0,
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f

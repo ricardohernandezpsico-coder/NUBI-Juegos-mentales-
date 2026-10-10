@@ -306,6 +306,12 @@ data class GamePlayResult(
   // null = sin datos en esa columna). No se guardan en Room.
   val rotationSpeedDps: Int? = null,
   val rotationCurveMs: List<Int?>? = null,
+  // Acoplamiento («muelle de acoplamiento», 10-oct): el premio, que no es una medida. Módulos acoplados y anillos completos de la partida, el récord de módulos (el guardado o el de esta partida, el mayor) y si esta partida lo superó. El récord y los totales van
+  // en prefs «acoplamiento_record» (y en el respaldo); la lectura está en data/Acoplamiento.kt. No se guardan en Room.
+  val dockDocked: Int? = null,
+  val dockRings: Int? = null,
+  val dockBest: Int? = null,
+  val dockNewRecord: Boolean? = null,
   // Solo Rumbo a Casa: "tu brújula interna" (a qué distancia de casa quedaste, en % de la distancia que había), dónde
   // quedó cada vuelta en el marco de la vuelta justa (en fracciones de esa distancia: la base en along = 1,
   // lateral = 0; lateral + = a la derecha), si el viaje tenía faro y llegadas perfectas. La lectura está en

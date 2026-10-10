@@ -91,6 +91,13 @@ class BackupRulesTest {
   }
 
   @Test
+  fun `el record y los totales de Acoplamiento se respaldan (es progreso)`() {
+    for (text in listOf(xml("backup_rules.xml"), cloudSection(xml("data_extraction_rules.xml")), transferSection(xml("data_extraction_rules.xml")))) {
+      assertTrue(includes(text, "sharedpref").contains("acoplamiento_record.xml"))
+    }
+  }
+
+  @Test
   fun `lo pasajero no se respalda`() {
     val backedUp = includes(xml("backup_rules.xml"), "sharedpref").map { it.removeSuffix(".xml") }.toSet()
     assertTrue(backedUp.intersect(transient).isEmpty())

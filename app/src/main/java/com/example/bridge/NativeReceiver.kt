@@ -164,6 +164,11 @@ object NativeReceiver {
     // Solo Acoplamiento: giro mental (°/s, -1 = sin medida) y curva de giro (5 columnas, -1 = sin datos).
     val rotation_speed_dps: Int = -1,
     val rotation_curve_ms: List<Int>? = null,
+    // Acoplamiento (10-oct): módulos acoplados y anillos completos de la partida (-1 = no aplica), el récord de módulos (el guardado o el de esta partida, el mayor) y si esta partida lo superó.
+    val docked: Int = -1,
+    val rings: Int = -1,
+    val dock_best: Int = -1,
+    val dock_new: Int = 0,
     // Solo Rumbo a Casa: a qué distancia de casa quedó (% de la distancia que había, -1 = no aplica), dónde quedó cada
     // vuelta (a lo largo y a lo ancho de la vuelta justa, en fracciones de esa distancia), faro (1/0) y perfectas.
     val homing_error_pct: Double = -1.0,
@@ -553,6 +558,10 @@ object NativeReceiver {
       numlineBullseyes = metrics.numline_bullseyes.takeIf { metrics.numline_error_pct >= 0.0 },
       rotationSpeedDps = metrics.rotation_speed_dps.takeIf { it > 0 },
       rotationCurveMs = metrics.rotation_curve_ms?.takeIf { it.size == 5 && it.any { v -> v > 0 } }?.map { v -> v.takeIf { it > 0 } },
+      dockDocked = metrics.docked.takeIf { it >= 0 },
+      dockRings = metrics.rings.takeIf { it >= 0 },
+      dockBest = metrics.dock_best.takeIf { it >= 0 },
+      dockNewRecord = if (metrics.docked >= 0) metrics.dock_new == 1 else null,
       homingErrorPct = metrics.homing_error_pct.takeIf { it >= 0.0 }?.toFloat(),
       homingAlong = homing?.let { h -> h.map { it.first } },
       homingLateral = homing?.let { h -> h.map { it.second } },

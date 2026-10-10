@@ -314,6 +314,32 @@ class NeuroVidaRepository(
     edit.apply()
   }
 
+  // El récord de «Acoplamiento» («muelle de acoplamiento», 10-oct): los módulos acoplados en una partida, el mayor de siempre. Es progreso: SharedPreferences que VA en el respaldo (`acoplamiento_record`). La app lo manda a Unity en cada partida (`dock_best`) y Unity devuelve el
+  // mayor al terminar; aquí nunca baja. Los totales de toda la vida («Has acoplado 342 módulos · 12 anillos») van en las mismas preferencias (claves `total` y `rings`); cada resultado se guarda una sola vez (`UnityResultInbox`), así que sumar no cuenta doble.
+  private val acoplamientoPrefs = context.getSharedPreferences("acoplamiento_record", Context.MODE_PRIVATE)
+  private val _acoplamientoRecord = MutableStateFlow(Acoplamiento.mergeRecord(acoplamientoPrefs.getInt("best", 0), null))
+  val acoplamientoRecord: StateFlow<Int> = _acoplamientoRecord.asStateFlow()
+  private val _acoplamientoTotals = MutableStateFlow(Acoplamiento.Totals(acoplamientoPrefs.getInt("total", 0).coerceAtLeast(0), acoplamientoPrefs.getInt("rings", 0).coerceAtLeast(0)))
+  val acoplamientoTotals: StateFlow<Acoplamiento.Totals> = _acoplamientoTotals.asStateFlow()
+
+  /** Guarda el récord y suma los totales con que terminó una partida de «Acoplamiento» (en cualquier modo). */
+  private fun recordAcoplamiento(result: GamePlayResult) {
+    if (result.gameId != "acoplamiento") return
+    val record = Acoplamiento.mergeRecord(_acoplamientoRecord.value, result.dockBest)
+    val totals = Acoplamiento.addTotals(_acoplamientoTotals.value, result.dockDocked, result.dockRings)
+    if (record == _acoplamientoRecord.value && totals == _acoplamientoTotals.value) return
+    val edit = acoplamientoPrefs.edit()
+    if (record != _acoplamientoRecord.value) {
+      _acoplamientoRecord.value = record
+      edit.putInt("best", record)
+    }
+    if (totals != _acoplamientoTotals.value) {
+      _acoplamientoTotals.value = totals
+      edit.putInt("total", totals.modules).putInt("rings", totals.rings)
+    }
+    edit.apply()
+  }
+
   // Frases de ¿Verdad o disparate? que la persona marcó como "no está clara" (ids; las últimas 300). Van en el informe de
   // errores de Ajustes para que quien dio la app las corrija en el banco (tools/frases/buscar.py las encuentra por id).
   private val unclearPrefs = context.getSharedPreferences("unclear_sentences", Context.MODE_PRIVATE)
@@ -954,6 +980,8 @@ class NeuroVidaRepository(
     // El récord de Satélites también, en cualquier modo.
     recordSatelites(result)
     recordRescate(result)
+    // El récord de Acoplamiento y sus totales también, en cualquier modo.
+    recordAcoplamiento(result)
     outcome
   }
 
@@ -1046,6 +1074,9 @@ class NeuroVidaRepository(
     rescatePrefs.edit().clear().apply()
     _rescateRecord.value = 0
     _rescateTotals.value = Rescate.Totals()
+    acoplamientoPrefs.edit().clear().apply()
+    _acoplamientoRecord.value = 0
+    _acoplamientoTotals.value = Acoplamiento.Totals()
     retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()

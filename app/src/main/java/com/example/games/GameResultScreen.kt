@@ -135,6 +135,8 @@ fun GameResultScreen(
   starMeasures: List<com.example.data.MeasurePoint> = emptyList(),
   /** Rescate relámpago: las cápsulas rescatadas y los viajes a la estación de toda la vida (ya con esta partida sumada), para «En total: …». */
   rescateTotals: com.example.data.Rescate.Totals? = null,
+  /** Acoplamiento: los módulos acoplados y los anillos completos de toda la vida (ya con esta partida sumada), para «Has acoplado …». */
+  acoplamientoTotals: com.example.data.Acoplamiento.Totals? = null,
   /** Qué te sirve más ver primero (`result_focus`): solo cambia el orden de lo que se muestra. */
   resultFocus: ResultFocus = ResultFocus.DEFAULT
 ) {
@@ -967,6 +969,32 @@ fun GameResultScreen(
       }
     }
 
+    // Acoplamiento («muelle de acoplamiento», 10-oct): los módulos acoplados (el premio), los anillos completos, el récord y lo acoplado en toda la vida. Después van las medidas de siempre. Ver docs/diseno-acoplamiento.md §8.
+    result.dockDocked?.let { docked ->
+      Spacer(Modifier.height(14.dp))
+      Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = com.example.data.Acoplamiento.spoken(docked, result.dockRings, result.dockBest, result.dockNewRecord) }
+      ) {
+        com.example.data.Acoplamiento.dockedLine(docked)?.let { Text(it, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily) }
+        com.example.data.Acoplamiento.ringsLine(result.dockRings)?.let {
+          Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+        }
+        com.example.data.Acoplamiento.recordLine(result.dockBest, result.dockNewRecord)?.let {
+          Text(
+            it,
+            color = if (result.dockNewRecord == true) Clay.Sun else TextSoft,
+            fontSize = if (result.dockNewRecord == true) 15.sp else 14.sp,
+            fontWeight = if (result.dockNewRecord == true) FontWeight.Bold else FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 2.dp)
+          )
+        }
+        com.example.data.Acoplamiento.totalLine(acoplamientoTotals)?.let {
+          Text(it, color = TextSoft, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp, start = 24.dp, end = 24.dp))
+        }
+      }
+    }
+
     // Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (cuánto más tarda cuanto más girado).
     if (result.rotationSpeedDps != null || result.rotationCurveMs != null) {
       Spacer(Modifier.height(14.dp))
@@ -989,7 +1017,7 @@ fun GameResultScreen(
         )
       }
       Text(
-        text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. En Precisión, sin apuro de combustible, la medida es más fiel."
+        text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. En Precisión, sin apuro de tiempo, la medida es más fiel."
         else "Tu giro mental se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
         color = TextSoft,
         fontSize = 15.sp,
