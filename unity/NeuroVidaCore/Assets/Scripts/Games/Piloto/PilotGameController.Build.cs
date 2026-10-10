@@ -507,11 +507,11 @@ namespace NeuroVida.Games.Piloto
             SetJourney(_journeyProgress);
             SetRect(_sepA.rectTransform, JourneyLeft + JourneyW / 3f, _plan.JourneyY, 2f, 9f);
             SetRect(_sepB.rectTransform, JourneyLeft + JourneyW * 2f / 3f, _plan.JourneyY, 2f, 9f);
-            float my = (_plan.MissionTop + _plan.MissionBottom) * 0.5f, mw = PilotPlan.Width - 24f;
+            float my = (_plan.MissionTop + _plan.MissionBottom) * 0.5f, mw = PilotPlan.MissionCardWidth;
             SetRect(_missionCard, cx, my, 0f, 0f);                         // la tarjeta (con todo lo suyo) centrada en sí misma: late alrededor de su centro
             SetChild(_missionRim.rectTransform, 0f, 0f, mw + 3f, 39f);
             SetChild(_missionFill.rectTransform, 0f, 0f, mw, 36f);
-            SetChild(_missionIcon.rectTransform, 34f - cx, 0f, 28f, 28f);
+            SetChild(_missionIcon.rectTransform, 36f - cx, 0f, 28f, 28f);
             PlaceMissionTexts();
             var sky = _plan.SkyBox;
             SetRect(_skyZone, PilotPlan.Width * 0.5f, (sky.Y0 + sky.Y1) * 0.5f, sky.X1 - sky.X0, sky.Y1 - sky.Y0);

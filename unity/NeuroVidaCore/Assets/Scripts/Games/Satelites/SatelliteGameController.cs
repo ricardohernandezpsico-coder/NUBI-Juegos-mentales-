@@ -509,6 +509,7 @@ namespace NeuroVida.Games.Satelites
         {
             if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un toque al juego
             float now = GameClock.Time;
+            if (_humSource != null && _humSource.isPlaying) _humSource.volume = 0.12f * GameClock.LoopVolume;     // el zumbido no se corta si Nubi congela el juego: baja al 30 % (Tarea 64)
             UpdateClock();
             AnimateLights(now);
             AnimateFlights(now);

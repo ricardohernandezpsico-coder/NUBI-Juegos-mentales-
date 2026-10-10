@@ -234,9 +234,9 @@ namespace NeuroVida.Games.Piloto
         public static string MissionNoticeFoot(int sector) => "Sector " + (sector + 1) + " · " + SectorName(sector);
 
         /// <summary>
-        /// El latido de la tarjeta de misión al cambiar (Tarea 63): escala 1 → 1,12 → 1, dos veces en 0,8 s (<see cref="PulseBeatSeconds"/> por latido). Fuera de esos 0,8 s vale 1. Con «quitar animaciones» el juego no lo usa (queda el brillo fijo y el tono).
+        /// El latido de la tarjeta de misión al cambiar (Tarea 63; 1,06 desde la Tarea 64: a 1,12 la tarjeta se salía por los bordes): escala 1 → 1,06 → 1, dos veces en 0,8 s (<see cref="PulseBeatSeconds"/> por latido). Fuera de esos 0,8 s vale 1. Con «quitar animaciones» el juego no lo usa (queda el brillo fijo y el tono).
         /// </summary>
-        public const float PulseBeatSeconds = 0.4f, PulsePeak = 1.12f;
+        public const float PulseBeatSeconds = 0.4f, PulsePeak = 1.06f;
         public const int PulseBeats = 2;
         public static float MissionPulseScale(float secondsSinceChange)
         {

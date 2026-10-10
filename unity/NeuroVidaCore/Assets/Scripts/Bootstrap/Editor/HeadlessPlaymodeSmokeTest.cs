@@ -153,7 +153,7 @@ namespace NeuroVida.Bridge.EditorTools
             ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f), ("TutorialCorreo", "correo", 12f), ("TutorialCosecha", "cosecha", 12f), ("TutorialDisparate", "disparate", 12f), ("TutorialIntrusa", "intrusa", 12f), ("TutorialSatelites", "satelites", 14f), ("TutorialPiloto", "piloto", 14f), ("TutorialRadar", "radar", 14f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
             ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 24f), ("Bodega", "bodega", 30f), ("Anagramas", "anagramas", 9f),
-            ("Parejas", "parejas", 30f), ("Piloto", "piloto", 30f), ("PilotoReto", "piloto", 30f), ("Radar", "radar", 30f), ("RadarReto", "radar", 30f), ("Satelites", "satelites", 55f),
+            ("Parejas", "parejas", 30f), ("Piloto", "piloto", 30f), ("PilotoReto", "piloto", 30f), ("PilotoMudo", "piloto", 30f), ("Radar", "radar", 30f), ("RadarReto", "radar", 30f), ("RadarMudo", "radar", 30f), ("Satelites", "satelites", 55f),
             ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f),
             ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 85f), ("Meteoros", "meteoros", 9f),
             ("Disparate", "disparate", 9f), ("Cosecha", "cosecha", 9f), ("Intrusa", "intrusa", 9f),
@@ -422,9 +422,12 @@ namespace NeuroVida.Bridge.EditorTools
             bool tutorial = _current.Name.StartsWith("Tutorial");
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.TimedOverride = _current.Name == "PilotoReto" || _current.Name == "RadarReto";            // el Reto (con reloj) de Piloto; las demás corridas son Precisión
+            EditorPlaytestBootstrap.SoundOffOverride = _current.Name.EndsWith("Mudo");                                       // «…Mudo»: con «Efectos de sonido» apagado no tiene que sonar NADA (Tarea 64)
+            _audioSampleAt = 0.0;
+            _audioHeard = _audioReported = false;
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial || _current.Name.StartsWith("HowTo");      // «HowTo*» no arranca con tutorial: lo abre el smoke desde la partida
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
 
@@ -666,6 +669,7 @@ namespace NeuroVida.Bridge.EditorTools
             {
                 if (t == null || !t.isActiveAndEnabled || string.IsNullOrWhiteSpace(t.text)) continue;
                 if (t.canvasRenderer == null || t.color.a * t.canvasRenderer.GetInheritedAlpha() < 0.02f) continue;      // invisible (en fundido o sin opacidad): no se ve
+                if (Mathf.Abs(t.transform.lossyScale.y) < 0.0001f || Mathf.Abs(t.transform.lossyScale.x) < 0.0001f) continue;      // escala cero (un botón que recién empieza a aparecer, como «Continuar» del final): no se dibuja nada, no hay letra que medir
                 var canvas = t.canvas != null ? t.canvas.rootCanvas : null;
                 if (canvas == null) continue;
                 var screen = GuardWorldRect((RectTransform)canvas.transform);
@@ -939,6 +943,30 @@ namespace NeuroVida.Bridge.EditorTools
         [Serializable]
         private sealed class CoachAuditFile { public string Game; public int Width, Height; public NeuroVida.Games.Shared.CoachStepReport[] Steps; }
 
+        // ------------------------------------------------------------------ «Efectos de sonido» apagado (Tarea 64)
+
+        private static double _audioSampleAt;
+        private static bool _audioHeard, _audioReported;
+
+        /// <summary>Cada 0,2 s mira si algún AudioSource está sonando. En las corridas «…Mudo» (sound_enabled = false) cualquier sonido es un error; en «Piloto» y «Radar» (con sonido) sirve de control de que la medida funciona.</summary>
+        private static void SampleAudio()
+        {
+            double now = EditorApplication.timeSinceStartup;
+            if (now - _audioSampleAt < 0.2) return;
+            _audioSampleAt = now;
+            string playing = null;
+            foreach (var s in UnityEngine.Object.FindObjectsOfType<AudioSource>())
+                if (s != null && s.isPlaying) { playing = s.gameObject.name + "/" + (s.clip != null ? s.clip.name : "(sin clip)"); break; }
+            if (playing == null) return;
+            _audioHeard = true;
+            if (_current.Name.EndsWith("Mudo") && !_audioReported)
+            {
+                _audioReported = true;
+                _errorCount++;
+                Debug.Log("[SmokeTest] Error capturado: con el sonido apagado (sound_enabled = false) sonó " + playing + " en " + _current.Name);
+            }
+        }
+
         private static void PauseFail(string what)
         {
             _errorCount++;
@@ -956,6 +984,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (_enteredPlayAt == 0) _enteredPlayAt = EditorApplication.timeSinceStartup;
                 double played = EditorApplication.timeSinceStartup - _enteredPlayAt;
                 ScanTextPlacement();
+                if (_current.Name.EndsWith("Mudo") || _current.Name == "Piloto" || _current.Name == "Radar") SampleAudio();
                 if (_current.Name.StartsWith("Aviso") && !_sampleToastShown && played >= 5.5) ShowSampleToast();
                 if (_current.Name.StartsWith("HowTo")) DriveHowTo(played);
                 if (StalePauseRequested && !_staleDone) SimulateStalePause();
@@ -969,6 +998,8 @@ namespace NeuroVida.Bridge.EditorTools
                 Debug.Log($"[SmokeTest] tiempo {_current.Name} ({(_currentHeight > 0 ? "1080x" + _currentHeight : "ventana")}): {Mathf.RoundToInt((float)(EditorApplication.timeSinceStartup - _entryStartAt))} s");
                 CheckCoachAudit();
                 CheckHowTo();
+                if (_current.Name == "Piloto" || _current.Name == "Radar")
+                    Debug.Log("[SmokeTest] control de audio de " + _current.Name + ": " + (_audioHeard ? "se oyó sonido (el instrumento sirve)" : "NO se detectó ningún sonido: la prueba de «sonido apagado» no sería concluyente"));
                 EditorApplication.ExitPlaymode();
                 CheckReduceMotionArrived();
                 var ok = _errorCount == 0;

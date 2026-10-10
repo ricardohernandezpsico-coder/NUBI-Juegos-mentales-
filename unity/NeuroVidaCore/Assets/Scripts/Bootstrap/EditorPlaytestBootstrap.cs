@@ -50,6 +50,9 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para las capturas: el nivel (1..12) con que arranca «Rescate relámpago» (<c>resc_stage</c> de la config; 0 = el que corresponde).</summary>
         public static int RescStageOverride;
 
+        /// <summary>Solo para el smoke (corridas «…Mudo»): la partida arranca con <c>sound_enabled = false</c>, como si la persona hubiera apagado «Efectos de sonido» en Opciones.</summary>
+        public static bool SoundOffOverride;
+
         /// <summary>Solo para el smoke y las capturas: arranca la partida en modo Reto (con reloj) aunque el campo <c>timed</c> de la escena esté apagado.</summary>
         public static bool TimedOverride;
 
@@ -76,7 +79,7 @@ namespace NeuroVida.Bridge
                     base_intensity = baseIntensity,
                     timed = timed || TimedOverride,
                     age_band = ageBand,
-                    sound_enabled = true,
+                    sound_enabled = !SoundOffOverride,
                     reduce_motion = ReduceMotionOverride,
                     show_tutorial = ShowTutorialOverride,
                     assessment = AssessmentOverride,

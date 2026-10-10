@@ -49,6 +49,7 @@ CAPTIONS = {
     'tutorial-1': 'Tutorial: paso 1',
     'tutorial-3': 'Tutorial: paso 3',
     'tutorial-nueva-mision': 'Tutorial: la misión cambió',
+    'tutorial-toca-nueva-mision': 'Tutorial: toca la misión nueva',
 }
 GAME_CAPTIONS = {
     'correo': {

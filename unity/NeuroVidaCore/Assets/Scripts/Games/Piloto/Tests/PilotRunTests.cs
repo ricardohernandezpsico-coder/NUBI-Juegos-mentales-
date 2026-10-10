@@ -184,16 +184,17 @@ namespace NeuroVida.Games.Piloto.Tests
             Assert.AreEqual(0.8f, PilotContract.PulseBeats * PilotContract.PulseBeatSeconds, 1e-5f);
             Assert.AreEqual(1f, PilotContract.MissionPulseScale(-0.1f), 1e-5f, "antes del cambio, en reposo");
             Assert.AreEqual(1f, PilotContract.MissionPulseScale(0f), 1e-4f);
-            Assert.AreEqual(1.12f, PilotContract.MissionPulseScale(0.2f), 1e-4f, "primer latido: 1,12 a la mitad");
+            Assert.AreEqual(1.06f, PilotContract.MissionPulseScale(0.2f), 1e-4f, "primer latido: 1,06 a la mitad");
             Assert.AreEqual(1f, PilotContract.MissionPulseScale(0.4f), 1e-4f, "entre un latido y otro vuelve a 1");
-            Assert.AreEqual(1.12f, PilotContract.MissionPulseScale(0.6f), 1e-4f, "segundo latido");
+            Assert.AreEqual(1.06f, PilotContract.MissionPulseScale(0.6f), 1e-4f, "segundo latido");
+            Assert.LessOrEqual(PilotPlan.MissionCardWidth * PilotContract.PulsePeak, PilotPlan.Width - 8f, "con el latido la tarjeta queda a más de 4 dp de cada borde de la pantalla");
             Assert.AreEqual(1f, PilotContract.MissionPulseScale(0.8f), 1e-5f);
             Assert.AreEqual(1f, PilotContract.MissionPulseScale(5f), 1e-5f, "después, en reposo");
             for (float t = 0f; t < 0.8f; t += 0.01f)
             {
                 float k = PilotContract.MissionPulseScale(t);
                 Assert.GreaterOrEqual(k, 1f - 1e-5f);
-                Assert.LessOrEqual(k, 1.12f + 1e-5f);
+                Assert.LessOrEqual(k, 1.06f + 1e-5f);
             }
         }
 

@@ -90,10 +90,14 @@ namespace NeuroVida.Games.Piloto
             {
                 Signal target = FindAlive(true) ?? SpawnForced(new PilotSignalKind(_mission.Shape, _mission.Detail, true, false), PracticeExposure * 2f);
                 yield return null;
-                if (target.View >= 0)
+                // si la señal que hay a la vista nació hace un instante, se espera a que termine de entrar ANTES de que el paso congele el juego (Tarea 64)
+                while (ok && target.Alive && Now - target.At < SignalEnterSeconds + 0.05f) { yield return null; ok = !t.Skipped; }
+                if (ok && target.View >= 0)
                 {
                     int view = target.View;
+                    _touchTarget = target;
                     yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[view].Root), CoachTexts.Piloto.Catch, circle: true, keep: new Func<Rect>[] { SignalsZone(coach) }));
+                    _touchTarget = null;
                     ok = !t.Skipped;
                     if (ok)
                     {
@@ -145,7 +149,9 @@ namespace NeuroVida.Games.Piloto
                 if (target.View >= 0)
                 {
                     int view = target.View;
+                    _touchTarget = target;
                     yield return StartCoroutine(coach.Touch(() => coach.RectOf(_views[view].Root), CoachTexts.Piloto.NewTarget, circle: true, keep: new Func<Rect>[] { SignalsZone(coach) }));
+                    _touchTarget = null;
                     ok = !t.Skipped;
                     if (ok)
                     {
@@ -189,6 +195,10 @@ namespace NeuroVida.Games.Piloto
 
         private float _guidedBotT;
 
+        /// <summary>La señal que el paso de toque del tutorial pide tocar (null fuera de esos pasos): la guardia del smoke comprueba que se vea encendida.</summary>
+        private Signal _touchTarget;
+        private float _touchTargetSince = -1f;
+
         /// <summary>Se cruzó el arco de la práctica: la misión cambia de «hexágono con punto» a «círculo con anillo». La tarjeta se ilumina y late y suenan dos notas (igual que en el vuelo); lo que quedaba a la vista era de la misión vieja y se retira.</summary>
         private void PracticeMissionChange(float now)
         {
@@ -223,7 +233,7 @@ namespace NeuroVida.Games.Piloto
                 x = PilotPlan.Width * 0.5f + 70f;
                 y = (_plan.SkyTop + _plan.SkyBottom) * 0.5f;
             }
-            return AddSignal(kind, x, y, expo, view, Now);
+            return AddSignal(kind, x, y, expo, view, Now - SignalEnterSeconds - 0.05f);          // nace con la entrada ya terminada: si un paso de toque congela el juego justo ahora, la señal se ve encendida (Tarea 64)
         }
 
         /// <summary>Una zona protegida para el globo de Nubi que cubre TODAS las señales a la vista (o, si no hay ninguna, el cielo de señales): el globo nunca tapa una señal.</summary>

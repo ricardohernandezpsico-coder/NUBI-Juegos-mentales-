@@ -86,8 +86,8 @@ namespace NeuroVida.Games.Piloto
             float my = (_plan.MissionTop + _plan.MissionBottom) * 0.5f;
             float cx = PilotPlan.Width * 0.5f;                                           // la tarjeta es un objeto centrado en sí mismo: sus textos van por desplazamiento desde su centro
             float tagW = _missionTag.preferredWidth / _s + 4f;
-            SetChild(_missionTag.rectTransform, 54f + tagW * 0.5f - cx, 0f, tagW, 22f);
-            float left = 54f + tagW + 6f, w = 346f - left;
+            SetChild(_missionTag.rectTransform, 56f + tagW * 0.5f - cx, 0f, tagW, 22f);
+            float left = 56f + tagW + 6f, w = 342f - left;
             SetChild(_missionName.rectTransform, left + w * 0.5f - cx, 0f, w, 22f);
         }
 
@@ -101,7 +101,11 @@ namespace NeuroVida.Games.Piloto
                 _missionRim.color = fresh ? Gold : PanelEdge;
                 PlaceMissionTexts();
             }
-            _missionCard.localScale = Vector3.one * (Motion.Decorative ? PilotContract.MissionPulseScale(now - _missionPulseAt) : 1f);
+            float pulse = Motion.Decorative ? PilotContract.MissionPulseScale(now - _missionPulseAt) : 1f;
+#if UNITY_EDITOR
+            if (_editorNoticeHold && Motion.Decorative && now - _missionPulseAt >= 0f) pulse = PilotContract.PulsePeak;      // la toma del cambio de misión se saca con la tarjeta en lo más grande del latido (el peor caso para los bordes)
+#endif
+            _missionCard.localScale = Vector3.one * pulse;
             float a = fresh ? (Motion.Decorative ? 0.25f + 0.2f * Mathf.Sin(now * 11f) + 0.2f : 0.5f) : 0.95f;
             _missionFill.color = fresh ? new Color(Gold.r * 0.55f + PanelFill.r * 0.45f, Gold.g * 0.55f + PanelFill.g * 0.45f, Gold.b * 0.4f + PanelFill.b * 0.6f, Mathf.Clamp(a + 0.4f, 0.6f, 1f)) : new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f);
         }
@@ -171,6 +175,9 @@ namespace NeuroVida.Games.Piloto
             }
             if (_notice == null) return;
             float t = now - _noticeAt, total = _notice.Value.Seconds;
+#if UNITY_EDITOR
+            if (_editorNoticeHold) total = Mathf.Max(total, t + 1f);      // las capturas sostienen el aviso a la vista hasta sacar la foto (con pocos cuadros por segundo un tiempo fijo no alcanza)
+#endif
             _bannerGroup.alpha = Motion.Decorative ? Mathf.Clamp01(Mathf.Min(t / 0.2f, (total - t) / 0.3f)) : (t < total ? 1f : 0f);
             if (t >= total)
             {
@@ -407,7 +414,7 @@ namespace NeuroVida.Games.Piloto
                 var v = _views[s.View];
                 float age = now - s.At;
                 bool done = !s.Alive;
-                float k = done ? Mathf.Max(0f, 1f - (now - s.DoneAt) / SignalFadeSeconds) : Mathf.Min(1f, age / 0.15f);
+                float k = done ? Mathf.Max(0f, 1f - (now - s.DoneAt) / SignalFadeSeconds) : Mathf.Min(1f, age / SignalEnterSeconds);
                 if (!Motion.Decorative) k = done ? (now - s.DoneAt < SignalFadeSeconds * 0.8f ? 1f : 0f) : 1f;
                 v.Ring.gameObject.SetActive(!done);
                 if (!done) v.Ring.fillAmount = Mathf.Clamp01(1f - age / s.Expo);
@@ -451,7 +458,9 @@ namespace NeuroVida.Games.Piloto
             {
                 float pitch = 0.85f + 0.55f * speedK + (Hyper ? 0.15f : 0f);
                 _engineSource.pitch = Mathf.MoveTowards(_engineSource.pitch, pitch, Mathf.Max(0.01f, dt) * 1.5f);
-                _engineSource.mute = GameClock.Paused;
+                _engineSource.mute = GameClock.AudioSilenced;
+                // con Nubi congelando el juego (tutorial) el motor no se corta: baja al 30 % y al soltar vuelve a su volumen (Tarea 64); con la pausa del menú el audio ya está callado
+                _engineSource.volume = Mathf.MoveTowards(_engineSource.volume, 0.5f * GameClock.LoopVolume, GameClock.RealDeltaTime * 3f);
             }
         }
 

@@ -346,7 +346,7 @@ namespace NeuroVida.Games.Shared
             if (kind == Kind.Touch) LogStep(text);
             if (kind == Kind.Touch && freeze && !PauseMenu.Open)
             {
-                GameClock.Pause();
+                GameClock.Pause(silenceAudio: false);        // el reloj se detiene pero el audio sigue: un sonido que estaba sonando termina completo (Tarea 64)
                 _frozen = true;
             }
             UpdateLayout(0f);
@@ -385,7 +385,7 @@ namespace NeuroVida.Games.Shared
             {
                 case Kind.Touch:
                     // si la pausa del menú se cerró mientras el foco seguía abierto, el juego se vuelve a congelar
-                    if (_freeze && _frozen && !GameClock.Paused && !PauseMenu.Open) GameClock.Pause();
+                    if (_freeze && _frozen && !GameClock.Paused && !PauseMenu.Open) GameClock.Pause(silenceAudio: false);
                     if (!PauseMenu.Open && GuidedTutorial.TryPress(out Vector2 pos) && _waited > 0.15f && !(_isSkip != null && _isSkip(pos)))
                     {
                         HandleTouch(pos);
@@ -398,6 +398,8 @@ namespace NeuroVida.Games.Shared
                         {
                             _probeSerial = _stepSerial;
                             _probeAt = _waited;
+                            // congelar para Nubi detiene el reloj pero NO calla el audio (Tarea 64): si el audio queda en pausa, un sonido que estaba sonando se cortaría a la mitad
+                            if (_frozen && !PauseMenu.Open && AudioListener.pause) ProbeFailures.Add($"{AuditGame}: el paso «{_text.text}» congeló el juego Y calló el audio (AudioListener.pause): los sonidos se cortarían");
                             var world = _root.TransformPoint(new Vector3(_hole.center.x, _hole.center.y, 0f));
                             GuidedTutorial.EditorPressPos = RectTransformUtility.WorldToScreenPoint(null, world);
                             GuidedTutorial.EditorPressFrame = Time.frameCount + 1;

@@ -13,6 +13,9 @@ namespace NeuroVida.Games.Piloto
 
         private bool _shotOffRoute;
 
+        /// <summary>Mientras es true el aviso de misión nueva no se va y la tarjeta se queda en lo más grande de su latido: la toma «sector-nueva-mision» se saca así aunque el juego avance pocos cuadros.</summary>
+        private bool _editorNoticeHold;
+
         /// <summary>
         /// SOLO EN EL EDITOR. El guion de las capturas de pantalla reales de «Piloto Estelar: la ruta de las balizas» (<c>verificar-todo.sh --capturas Piloto</c>, docs/previews/capturas/piloto.png): lleva el vuelo por los momentos que se fotografían
         /// usando el flujo REAL del juego (inicio suave, ruta con las balizas encendidas, señal atrapada con su rayo, señal parecida tocada con su aspa, nave fuera de la ruta con las balizas en coral, arco de sector con «NUEVA MISIÓN», hiperimpulso, la pausa,
@@ -50,6 +53,7 @@ namespace NeuroVida.Games.Piloto
             _shotOffRoute = false;
             yield return WaitSeconds(1.6f);
             // --- el arco de sector: la nave lo cruza y la tarjeta dice «NUEVA MISIÓN»
+            _editorNoticeHold = true;
             _t = _sectorSeconds - 3.4f;
             float guard = 0f;
             bool arcShot = false;
@@ -67,6 +71,7 @@ namespace NeuroVida.Games.Piloto
             if (noticeGuard >= 4f) Debug.Log("[Capturas] Piloto: el aviso de misión nueva no llegó a verse en 4 s (señales a la vista: " + _signals.Count + ", avisos en espera: " + _noticeQueue.Count + ")");
             yield return WaitSeconds(0.1f);
             shot("sector-nueva-mision");
+            _editorNoticeHold = false;
             // --- el hiperimpulso: estrellas en líneas, la nave azul
             yield return WaitSeconds(2.0f);
             if (!Hyper) StartHyper();

@@ -16,6 +16,8 @@ namespace NeuroVida.Games.Piloto
         public const float StripMinHeight = 100f;
         /// <summary>Alto del aviso de MISIÓN NUEVA (dp): el título, la forma dibujada a ≥ 48 dp con su nombre y el sector. Va bajo la tarjeta de misión, sobre el cielo de señales (el cielo no se achica: solo es zona prohibida mientras el aviso está a la vista).</summary>
         public const float NoticeHeight = 112f;
+        /// <summary>El ancho (dp) de la tarjeta de misión: con el latido (×1,06) todavía queda a más de 4 dp de cada borde de la pantalla.</summary>
+        public const float MissionCardWidth = Width - 32f;
         /// <summary>El diámetro (dp) de la forma dibujada en el aviso de misión nueva: al menos 48.</summary>
         public const float NoticeShapeDp = 52f;
 

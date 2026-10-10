@@ -369,12 +369,12 @@ namespace NeuroVida.Bridge.EditorTools
             yield return ExitPlay();
         }
 
-        /// <summary>El tutorial guiado con sus pasos andando solos (el smoke): una toma del paso 1 y otra del paso 3, a 0,3 s de que el paso aparece (para que ya se vea asentado; en algunos juegos el paso 1 dura poco). Piloto suma el paso 6, el de «Cruzaste el arco: ¡tu misión cambió!» (Tarea 63).</summary>
+        /// <summary>El tutorial guiado con sus pasos andando solos (el smoke): una toma del paso 1 y otra del paso 3, a 0,3 s de que el paso aparece (para que ya se vea asentado; en algunos juegos el paso 1 dura poco). Piloto suma el paso 6, el de «Cruzaste el arco: ¡tu misión cambió!» (Tarea 63), y el 7, el de tocar la señal de la misión nueva (Tarea 64).</summary>
         private static IEnumerator TutorialShots(string id)
         {
             Configure(id, tutorial: true, reduceMotion: false);
             yield return EnterPlay();
-            bool shot1 = false, shot3 = false, shotNew = id != "piloto";
+            bool shot1 = false, shot3 = false, shotNew = id != "piloto", shotNew2 = id != "piloto";
             int lastIndex = -1;
             double activeSince = 0, start = Now;
             NeuroVida.Games.Shared.NubiCoach coach = null;
@@ -384,17 +384,18 @@ namespace NeuroVida.Bridge.EditorTools
                 if (coach == null && Now - lastFind > 0.25) { lastFind = Now; coach = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.NubiCoach>(); }
                 int index = NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count;
                 bool active = coach != null && coach.Active;
-                if (!active) { lastIndex = -1; return (shot3 && shotNew) || (shot1 && index > (id == "piloto" ? 6 : 2)); }
+                if (!active) { lastIndex = -1; return (shot3 && shotNew && shotNew2) || (shot1 && index > (id == "piloto" ? 7 : 2)); }
                 if (index != lastIndex) { lastIndex = index; activeSince = Now; }
                 if (Now - activeSince >= 0.3)
                 {
                     if (index == 0 && !shot1) { Shot("tutorial-1"); shot1 = true; }
                     else if (index == 2 && !shot3) { Shot("tutorial-3"); shot3 = true; }
                     else if (index == 5 && id == "piloto" && !shotNew) { Shot("tutorial-nueva-mision"); shotNew = true; }
+                    else if (index == 6 && id == "piloto" && !shotNew2) { Shot("tutorial-toca-nueva-mision"); shotNew2 = true; }
                 }
-                return shot3 && shotNew;
+                return shot3 && shotNew && shotNew2;
             }, 90);
-            if (!shotNew) GameNotes.Add("el tutorial de Piloto no llegó al paso de la misión nueva (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
+            if (!shotNew || !shotNew2) GameNotes.Add("el tutorial de Piloto no llegó a los pasos de la misión nueva (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shot1) GameNotes.Add("el tutorial no mostró el paso 1 a tiempo");
             if (!shot3) GameNotes.Add("el tutorial no llegó a un paso 3 (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             NeuroVida.Games.Shared.NubiCoach.AuditEnabled = false;

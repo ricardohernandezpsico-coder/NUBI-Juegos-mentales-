@@ -45,6 +45,64 @@ namespace NeuroVida.Games.Tests
             Assert.IsFalse(GameClock.Paused, "al cerrarse el foco el juego sigue");
         }
 
+        // ------------------------------------------------------------------ el audio no se corta (Tarea 64)
+
+        [Test]
+        public void TouchFocus_FreezesTheClock_ButDoesNotSilenceTheAudio()
+        {
+            _coach.Touch(SomeHole, "Toca aquí").MoveNext();
+            Assert.IsTrue(GameClock.Paused, "el reloj se detiene");
+            Assert.IsFalse(UnityEngine.AudioListener.pause, "pero el audio sigue: un sonido que estaba sonando termina completo");
+            Assert.IsFalse(GameClock.AudioSilenced);
+            Assert.AreEqual(GameClock.FrozenLoopVolume, GameClock.LoopVolume, 1e-5f, "los sonidos en bucle bajan al 30 %, no se cortan");
+            _coach.Hide();
+            Assert.IsFalse(UnityEngine.AudioListener.pause, "al soltar todo queda como estaba");
+            Assert.AreEqual(1f, GameClock.LoopVolume, 1e-5f, "los bucles vuelven a su volumen");
+            Assert.AreEqual(1f, UnityEngine.Time.timeScale, 1e-5f);
+        }
+
+        [Test]
+        public void TheMenuPause_SilencesAllTheAudio_AsBefore_AndResumeGivesEverythingBack()
+        {
+            GameClock.Pause();
+            Assert.IsTrue(GameClock.Paused);
+            Assert.IsTrue(UnityEngine.AudioListener.pause, "la pausa del menú calla todo");
+            Assert.IsTrue(GameClock.AudioSilenced);
+            Assert.AreEqual(1f, GameClock.LoopVolume, 1e-5f, "con el audio callado no se baja nada: al reanudar vuelven a su volumen");
+            GameClock.Resume();
+            Assert.IsFalse(GameClock.Paused);
+            Assert.IsFalse(UnityEngine.AudioListener.pause);
+            Assert.IsFalse(GameClock.AudioSilenced);
+            Assert.AreEqual(1f, UnityEngine.Time.timeScale, 1e-5f);
+        }
+
+        [Test]
+        public void AMenuPauseOverANubiFreeze_SilencesTheAudio_AndEverythingComesBackWhenItEnds()
+        {
+            _coach.Touch(SomeHole, "Toca aquí").MoveNext();
+            Assert.IsFalse(UnityEngine.AudioListener.pause, "Nubi congela sin callar");
+            GameClock.Pause();                                       // llega la pausa del menú encima
+            Assert.IsTrue(UnityEngine.AudioListener.pause, "ahora sí se calla todo");
+            Assert.IsTrue(GameClock.AudioSilenced);
+            GameClock.Resume();                                      // el menú se cierra
+            Assert.IsFalse(UnityEngine.AudioListener.pause);
+            Assert.IsFalse(GameClock.Paused);
+            _coach.Hide();
+            Assert.IsFalse(UnityEngine.AudioListener.pause);
+            Assert.IsFalse(GameClock.Paused);
+            Assert.AreEqual(1f, UnityEngine.Time.timeScale, 1e-5f);
+        }
+
+        [Test]
+        public void ResetLeavesTheAudioAndTheLoopsClean()
+        {
+            GameClock.Pause(silenceAudio: false);
+            GameClock.Reset();
+            Assert.IsFalse(GameClock.Paused);
+            Assert.IsFalse(UnityEngine.AudioListener.pause);
+            Assert.AreEqual(1f, GameClock.LoopVolume, 1e-5f);
+        }
+
         [Test]
         public void WatchFocusAndNotice_NeverFreezeTheGame()
         {

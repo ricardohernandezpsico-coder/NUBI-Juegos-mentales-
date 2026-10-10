@@ -230,6 +230,7 @@ namespace NeuroVida.Games.Piloto
             }
             if (_phase == Phase.Fly && !_guided && dt > 0f) AutoPlay();
             GuardNotices();
+            GuardTouchTarget();
 #endif
         }
 
@@ -327,6 +328,8 @@ namespace NeuroVida.Games.Piloto
         }
 
         private const float SignalFadeSeconds = 0.6f;
+        /// <summary>Lo que tarda una señal en entrar (alfa de 0 a 1). Un paso de toque del tutorial congela el reloj de juego: si la señal nace justo antes, su entrada queda detenida a medias y se ve apagada (Tarea 64), así que la señal guiada nace ya completa.</summary>
+        private const float SignalEnterSeconds = 0.15f;
 
         /// <summary>true mientras no deben nacer señales: justo antes de un cambio de sector (que la misión nueva no encuentre señales viejas) o cuando ya nacieron las 24 de Precisión.</summary>
         private bool SpawnPaused
@@ -761,7 +764,24 @@ namespace NeuroVida.Games.Piloto
             }
         }
 
-        private int _guardReports;
+        private int _guardReports, _touchGuardReports;
+
+        /// <summary>
+        /// SOLO EN EL EDITOR: en un paso de toque del tutorial la señal que hay que tocar se ve ENCENDIDA (alfa ≥ 0,95, su dibujo puesto y su color de siempre, sin tinte): si el juego se congeló con la señal a medio entrar quedaba oscura, casi del color del fondo (Ricardo, 9-oct).
+        /// Si no, error de consola y el smoke falla.
+        /// </summary>
+        private void GuardTouchTarget()
+        {
+            if (_touchTarget == null) { _touchTargetSince = -1f; return; }
+            if (_touchTargetSince < 0f) _touchTargetSince = Time.unscaledTime;
+            if (_touchGuardReports >= 3 || Time.unscaledTime - _touchTargetSince < 0.4f || _touchTarget.View < 0) return;
+            var v = _views[_touchTarget.View];
+            var c = v.Body.color;
+            bool lit = v.Root.gameObject.activeInHierarchy && v.Body.sprite != null && c.a >= 0.95f && c.r >= 0.99f && c.g >= 0.99f && c.b >= 0.99f && v.Ring.color.a >= 0.8f;
+            if (lit) return;
+            _touchGuardReports++;
+            Debug.LogError("[SmokeTest] Piloto: en un paso de toque del tutorial la señal que hay que tocar está apagada (alfa " + c.a.ToString("0.00") + ", color " + c + ", anillo " + v.Ring.color.a.ToString("0.00") + ", dibujo " + (v.Body.sprite != null ? "ok" : "falta") + ")");
+        }
 
         /// <summary>SOLO EN EL EDITOR: el pedido de Ricardo hecho prueba. Si un aviso (el de sector o hiperimpulso, o un texto flotante) se dibuja sobre una señal viva, el smoke falla (cualquier error de consola lo hace).</summary>
         private void GuardNotices()
