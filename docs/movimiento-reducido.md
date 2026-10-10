@@ -62,7 +62,7 @@ Además: `GameClock.SimulatedDeltaTime` y `GameClock.RealDeltaTime` (solo para q
 | `CountdownScreen` (línea ~364 antes) | `Sin(elapsed*30+i)` en el alfa de las 26 chispas de «¡Ya!» (±25 %) | 4,8 Hz | **Arreglado**: ahora `elapsed*12` (1,9 Hz). Con ReduceMotion no hay chispas. |
 | `Freno/BrakeGameController.cs:539` `Blink` | La baliza de la vía se prende y apaga 3 veces cada 0,08 s | 6,25 Hz (0,5 s) | **Arreglado (todos los modos)**: el brillo oscila solo entre 1 y ≈ 0,67 (antes 1 ↔ 0,18). Con ReduceMotion queda prendida 0,48 s (misma duración) sin parpadeo. |
 | `Freno:469` llama del cohete | Tamaño `0,8 + 0,25·Sin(t·60)` | 9,5 Hz | Decisión: cambia tamaño, no brillo, así que SE QUEDA en modo normal; con ReduceMotion el despegue no se dibuja (sin llama). |
-| `Aterrizaje/LandingGameController.cs:174` llama | Tamaño `0,85 + 0,15·Sin(t·50)` | 8 Hz | Igual: se queda en normal; con ReduceMotion la llama no titila (fija, sigue creciendo al frenar). |
+| `Aterrizaje/LandingGameController.Scene.cs` llama (rehecha el 10-oct) | Tamaño `30 + 6·Sin(t·20)` dp, solo mientras vuela | ≈ 3,2 Hz | Cambia tamaño, no brillo: se queda en normal; con ReduceMotion NO hay llama (la nave baja sin ella). |
 | `Rumbo/HomingGameController.cs:644` llama | `0,85 + 0,15·Sin(t·40)` | 6,4 Hz | Igual: se queda en normal; con ReduceMotion queda fija (encendida mientras avanza). |
 | `Correo/MailGameController.cs:457` golpe | La nave se tambalea ±14° mientras dura el golpe | 6,4 Hz | Es rotación (no brillo): se queda en normal; con ReduceMotion no hay tambaleo (el tinte rojo del golpe sí). |
 | `Correo:969` escudo (la nave parpadea mientras se repara) | `0,55 + 0,45·|Sin(t·9)|` | ≈ 2,9 Hz con amplitud grande | **Arreglado (todos los modos)**: `Sin(t·5,5)` ≈ 1,75 Hz. Con ReduceMotion queda semitransparente fija (0,7); el estado se sigue leyendo en el cartel. |
@@ -341,17 +341,19 @@ La revelación es una función del TIEMPO (`RevealT()`: giro 320, vuelta 300, ba
 | 774 `MarkAt` | La marca de acierto/error aparece creciendo | DECORATIVA (comunica) | no | Aparece quieta | ✓ |
 | 670 `UpdateKnobs`, 637 `UpdateFlow`, 723 `DrawPods` | Los desvíos giran y las naves avanzan | ESENCIAL | — | Se queda | — |
 
-**Aterrizaje Lunar** — `Aterrizaje/LandingGameController.cs`
+**Aterrizaje Lunar** — `Aterrizaje/LandingGameController.Scene.cs` (rehecho el 10-oct, Tarea 70; la tabla vieja, por línea, ya no existe)
 
-| Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
-|---|---|---|---|---|---|
-| 174 | La llama titila (8 Hz, ±15 % de tamaño) | DECORATIVA | no | Llama fija (y ≤ 3 Hz en todos los modos) | ✓ |
-| 321 `PlaceLander` | El módulo se inclina | DECORATIVA | no | Sin inclinación | ✓ |
-| 354 `PlantFlag` | La bandera crece con rebote | DECORATIVA (comunica) | no | Aparece de una vez | ✓ |
-| 394 `Dust` | Polvo al aterrizar | DECORATIVA | no | Sin polvo | ✓ |
-| 429 `FloatText` | «+puntos» suben | DECORATIVA (comunica) | no | Quietos con fundido | ✓ |
-| 168-171, 267 | El módulo desciende y sigue el dedo | ESENCIAL | — | Se queda | — |
-| 141-249 | `PopRect`, `PopIn`, chispas, ondas | DECORATIVA | sí (común) | — | — |
+| Qué hace | Clase | Resp. | Cambio con «quitar animaciones» |
+|---|---|---|---|
+| Las 26 estrellas titilan (alfa 0,35-0,85, ≈ 0,2 Hz) | DECORATIVA | no | Fijas (alfa 0,6) |
+| Estrella fugaz (cada 9 s o más, 700 ms) y satélite que cruza (9 dp/s) | DECORATIVA | no | No se dibujan |
+| **Las dos cordilleras** que se desplazan (3 y 7 dp/s) detrás del borde de la luna | DECORATIVA (y **una trampa si están quietas**: junto a la regla serían marcas para estimar) | no | **NO se dibujan.** El smoke lo vigila (`GuardWorld`: con animaciones se mueven y NO hay nada fijo junto a la regla; sin ellas no se dibuja ninguna) |
+| La nave se inclina hacia donde la llevan (±10°) y «salta» al aparecer | DECORATIVA | no | Sin inclinación ni salto |
+| La llama (solo mientras vuela) y las dos luces que parpadean (400 ms) | DECORATIVA | no | Sin llama; luces fijas |
+| Al posarse: el tramo hasta el lugar justo se dibuja entre los 300 y 600 ms y la bandera sube 80 dp entre los 380 y 800 ms | DECORATIVA (comunica) | no | Aparecen de una vez (con su ✓ o aspa y el número: nunca solo color) |
+| Polvo (14 motas), chispas de la diana, rebote de la cúpula del marcador y confeti del cierre | DECORATIVA | no | No hay |
+| Los avisos del cielo (fundido de entrada y salida) | DECORATIVA (comunica) | no | Se quedan: es opacidad, no movimiento |
+| La nave desciende y sigue el dedo | ESENCIAL | — | Se queda |
 
 ### Lenguaje
 

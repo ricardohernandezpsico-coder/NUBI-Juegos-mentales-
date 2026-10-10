@@ -40,7 +40,7 @@ Cada juego sale con su tutorial (Freno ya lo tenía; los otros tres lo reciben a
 
 - **Rumbo a Casa** — **RETIRADO (Tarea 69, 10-oct)**: Ricardo lo probó con una persona de 60 años o más (le costó entender la mecánica y le generó desorientación) y eligió retirarlo en vez de rediseñarlo con un mapa fijo con el norte arriba. Ver `docs/juegos/descartados.md`.
 - **Acoplamiento** — **Hecho (Tarea 68, 10-oct)**: renovado como «muelle de acoplamiento» (mismo id): piezas de hasta 4 × 4 bloques, módulo y hueco grandes y a la misma escala, estación de anillos que crece (8 casilleros por anillo), luz y sombra fijas, revelación en seis tiempos, sonido «Madera cálida», récord y totales, tutorial con Nubi (`docs/diseno-acoplamiento.md`).
-- **Aterrizaje Lunar**: lo que sigue: una pasada visual y de sonido (ya tiene tutorial).
+- **Aterrizaje Lunar** — **Hecho (Tarea 70, 10-oct)**: renovado como «la misma tarea, más grande, con más vida y un final con sentido» (mismo id): nave y regla grandes, Tierra, estrellas y cordilleras que se desplazan (nada fijo junto a la regla), bandera y cúpulas de una base lunar, sonido «Madera cálida», tutorial con el aspecto nuevo y un final con sentido (`ui/components/MeaningfulResult.kt`, la plantilla para llevar a los demás juegos si Ricardo lo confirma) (`docs/diseno-aterrizaje.md`). **Con este juego se cierra la Etapa 2**; falta que Ricardo lo pruebe con sonido y, después, con personas (Etapa 2b).
 - Con la 68 y la 69, TODOS los juegos de la app tienen tutorial, así que la regla del camino diario «nunca un juego sin tutorial que nunca se jugó» queda inerte (sigue en el código, con su prueba, por si se suma un juego nuevo sin tutorial).
 
 ## Etapa 2b — Probar con personas

@@ -23,7 +23,7 @@ achicándose si no cabía. Esto es el arreglo de sistema (no un parche por juego
 |---|---|
 | Carga exacta (`calculo`) | el número del reactor y su rótulo «carga exacta» (en todos los pasos) |
 | Rastro de luz (`secuencia`) | el contador «luces recordadas» |
-| Aterrizaje lunar (`aterrizaje`) | el número grande de la misión (a dónde aterrizar) |
+| Aterrizaje lunar (`aterrizaje`, renovado el 10-oct) | el número grande de la misión (a dónde aterrizar) y, mientras se arrastra, la nave (la tarjeta de Nubi no la tapa); el hueco es la regla |
 | Dos orillas (`stroop`) | la cinta «Responde: TINTA / PALABRA» y la tarjeta con la palabra; el hueco son solo los 4 botones de color (antes era todo el escenario y no dejaba dónde poner a Nubi) |
 | En la punta de la lengua (`anagramas`) | la tarjeta de la definición (pasos «¡La tengo!», letras y «Una ayuda»; en el primero ES el hueco). Las dos palabras de la ronda tienen tan pocas letras que el banco queda en UNA fila (4 letras + 2 de relleno = 6 fichas; mayores: 5 + 1) y «Saltar tutorial» va en la franja libre entre el banco y «Ayudas» (`PuntaLayout.GuidedSkipFromBottom`; 9-oct, tarea 60) |
 | Engranajes (`engranajes`) | la antena (que se ve en los tres pasos) y, en el último, el cartel de la antena |

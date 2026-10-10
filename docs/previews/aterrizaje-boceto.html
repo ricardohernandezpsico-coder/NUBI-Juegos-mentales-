@@ -1,0 +1,518 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aterrizaje Lunar renovado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:360/780;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Aterrizaje Lunar</h1>
+    <p class="lead">Llevas el módulo lunar a la luna. Arriba te dicen dónde aterrizar; la regla solo marca sus dos extremos. Arrastra para moverte y suelta para bajar: ¿qué tan cerca del número quedaste?</p>
+    <h2>Propuesta: la misma tarea, más grande y con más vida</h2>
+    <ul class="list">
+      <li><b>Todo más grande:</b> el número pedido en grande arriba, una nave de casi 60 dp con llama y luces, y una regla gruesa de arcilla con sus extremos en letra de 20.</li>
+      <li><b>Un mundo:</b> la Tierra en el cielo, estrellas, la luna con su borde y polvo al posarse.</li>
+      <li><b>Arrastrar en cualquier parte:</b> el dedo mueve la nave desde cualquier lugar del cielo; una línea de puntos baja hasta la regla.</li>
+      <li><b>La verdad, clara y no solo por color:</b> al posarse se levanta la bandera en el lugar justo con su número, y el tramo entre los dos lleva ✓ o aspa y dice «a 3 del blanco». Con muy poco error: «¡Diana lunar!».</li>
+      <li><b>Un final ordenado (v4):</b> arriba y en grande lo que hiciste («a 11 de cada 100 del lugar justo») con un dato tuyo (dónde te costó más); tu avance en una fila; el truco para la próxima; y abajo, en chico, por qué importa en una frase con su fuente.</li>
+      <li><b>Antes (v3):</b> «a 3 de cada 100 del lugar justo»; tu avance comparado solo contigo (hoy, tu promedio, tu mejor); «Lo que pusiste en juego» y «Por qué importa», generales y con respaldo (Schley y Peters, 2014), y un truco concreto según el tramo de la regla donde más te alejaste.</li>
+      <li><b>El planeta (v3):</b> dos estilos para elegir con los botones de abajo: la Tierra redibujada (tierras suaves, nubes, noche y atmósfera) o un planeta lavanda con anillo.</li>
+      <li><b>Un cielo con vida (v2):</b> estrellas que titilan, una estrella fugaz, un satélite que cruza, la Tierra con resplandor y dos cordilleras lunares que se mueven despacio (nada queda fijo junto a la regla).</li>
+      <li><b>Una meta liviana:</b> cada 5 aterrizajes justos se arma una cúpula de tu base (arriba, en el marcador). No se dibuja nada sobre el suelo junto a la regla: serían pistas.</li>
+      <li><b>Sonido Madera cálida:</b> un soplo al soltar, un golpe suave al posarse, una kalimba cuando sube la bandera y marimba en las dianas.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+      <button class="chip" id="pl1" aria-pressed="true">Planeta: Tierra</button>
+      <button class="chip" id="pl2" aria-pressed="false">Planeta: con anillo</button>
+    </div>
+    <p class="note">Boceto jugable: 15 aterrizajes y los 12 niveles de hoy (de 0-10 a fracciones, sumas y negativos). Dos aterrizajes justos seguidos suben un nivel; uno lejos baja uno. Para revisar un nivel: <code>?nivel=N</code>.</p>
+  </div>
+  <div class="phone"><canvas id="cv" aria-label="Aterrizaje Lunar: arrastra la nave y suéltala sobre el número pedido"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 780;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+const INK = '#1A1240';
+const QS = new URLSearchParams(location.search), DEBUG = QS.has('debug');
+const TOTAL = Math.max(1, +(QS.get('aterrizajes') || 15));
+const R = rng(Date.now() & 0xffff);
+const SAVE = { domes: 0, best: 0 };
+try { Object.assign(SAVE, JSON.parse(localStorage.getItem('nubi_luna1') || '{}')); } catch (e){}
+function save(){ try { localStorage.setItem('nubi_luna1', JSON.stringify(SAVE)); } catch (e){} }
+
+// ============================================================ sonido «Madera cálida» (recetas del laboratorio)
+const SR = 44100, TAU = Math.PI*2;
+const P = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760];
+function render(sec, fn){ const n = Math.ceil(sec*SR), o = new Float32Array(n); for (let i=0;i<n;i++) o[i] = fn(i/SR, i); return o; }
+function blank(sec){ return new Float32Array(Math.ceil(sec*SR)); }
+function addTo(d, s, at = 0, g = 1){ const o = Math.round(at*SR); for (let i=0;i<s.length && o + i < d.length;i++) d[o + i] += s[i]*g; return d; }
+const envE = (t, a, tau) => t < 0 ? 0 : (t < a ? t/a : Math.exp(-(t - a)/tau));
+function biquad(type, f, q){ let b0, b1, b2, a1, a2, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  function set(fc){ const w = TAU*Math.min(Math.max(fc, 20), SR*.45)/SR, c = Math.cos(w), s = Math.sin(w), al = s/(2*q); let n0, n1, n2;
+    if (type === 'lp'){ n0 = (1 - c)/2; n1 = 1 - c; n2 = (1 - c)/2; } else if (type === 'hp'){ n0 = (1 + c)/2; n1 = -(1 + c); n2 = (1 + c)/2; } else { n0 = al; n1 = 0; n2 = -al; }
+    const d0 = 1 + al; b0 = n0/d0; b1 = n1/d0; b2 = n2/d0; a1 = -2*c/d0; a2 = (1 - al)/d0; }
+  set(f); return { set, run(x){ const y = b0*x + b1*x1 + b2*x2 - a1*y1 - a2*y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; } }; }
+function kalimba(f, tau = .45){ const r = rng(7); return render(tau*3, t => Math.sin(TAU*f*(1 + .012*Math.exp(-t/.012))*t)*envE(t, .002, tau) + .28*Math.sin(TAU*f*5.95*t)*envE(t, .001, .035) + .12*Math.sin(TAU*f*2*t)*envE(t, .002, tau*.4) + (t < .004 ? (r()*2 - 1)*.3*(1 - t/.004) : 0)); }
+function marimba(f, tau = .3){ return render(tau*3.2, t => .9*Math.sin(TAU*f*t)*envE(t, .003, tau) + .25*Math.sin(TAU*f*4*t)*envE(t, .002, .03) + .06*Math.sin(TAU*f*9.8*t)*envE(t, .001, .012)); }
+function woodblock(f){ return render(.25, t => Math.sin(TAU*f*t)*envE(t, .001, .035) + .5*Math.sin(TAU*f*2.71*t)*envE(t, .001, .02)); }
+function thump(sec, f0, f1, tau){ let ph = 0; return render(sec, t => { ph += f0*Math.pow(f1/f0, Math.min(1, t/sec))/SR; return Math.sin(TAU*ph)*envE(t, .002, tau); }); }
+function sweep(sec, f0, f1, type, q, tau, seed){ const r = rng(seed), fl = biquad(type, f0, q); return render(sec, t => { fl.set(f0*Math.pow(f1/f0, Math.min(1, t/sec))); return fl.run(r()*2 - 1)*envE(t, .004, tau); }); }
+function seqN(notes, gap, mk, total){ const x = blank(total); notes.forEach((f, i) => addTo(x, mk(f), i*gap)); return x; }
+const COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], APS = [556, 441, 341, 225];
+function comb(n){ const b = new Float32Array(n); let i = 0, st = 0; return (x, fb, dm) => { const o = b[i]; st = o*(1 - dm) + st*dm; b[i] = x + st*fb; if (++i >= n) i = 0; return o; }; }
+function allp(n){ const b = new Float32Array(n); let i = 0; return x => { const bo = b[i], o = -x + bo; b[i] = x + bo*.5; if (++i >= n) i = 0; return o; }; }
+function verb(x, lvl){ // Madera cálida: sala 0,7 · amortiguación 0,5 · mezcla 0,18 · cola 0,9 s · ancho 0,8
+  const n = x.length + Math.round(.9*SR), L = new Float32Array(n), Rr = new Float32Array(n);
+  const cl = COMBS.map(s => comb(s)), cr = COMBS.map(s => comb(s + 23)), al = APS.map(s => allp(s)), ar = APS.map(s => allp(s + 23));
+  const fb = .7*.28 + .7, dm = .5*.4, w = .18*3, w1 = w*(.8/2 + .5), w2 = w*((1 - .8)/2);
+  for (let i=0;i<n;i++){ const dry = i < x.length ? x[i] : 0, inp = dry*.015; let l = 0, r = 0;
+    for (let c=0;c<8;c++){ l += cl[c](inp, fb, dm); r += cr[c](inp, fb, dm); } for (let a=0;a<4;a++){ l = al[a](l); r = ar[a](r); }
+    L[i] = dry + l*w1 + r*w2; Rr[i] = dry + r*w1 + l*w2; }
+  let pk = 1e-9; for (let i=0;i<n;i++) pk = Math.max(pk, Math.abs(L[i]), Math.abs(Rr[i]));
+  const f = Math.round(.03*SR); for (let i=0;i<n;i++){ const k = i >= n - f ? (n - 1 - i)/f : 1; L[i] *= lvl/pk*k; Rr[i] *= lvl/pk*k; }
+  return [L, Rr];
+}
+
+const SFX = {
+  release: () => verb(sweep(.5, 1400, 300, 'lp', .7, .14, 41), .08),                                            // soltar: un soplo que baja
+  touch:   () => verb(addTo(thump(.3, 110, 55, .09), woodblock(520), 0, .25), .26),                             // posarse: golpe suave de madera
+  flag:    () => verb(kalimba(P[3], .35), .2),                                                                  // sube la bandera
+  hit:     () => verb(addTo(addTo(blank(1.2), marimba(P[2], .3)), marimba(P[4], .35), .1), .26),               // aterrizaje justo
+  bull:    () => verb(addTo(seqN([P[0], P[2], P[3], P[5]], .07, f => marimba(f, .35), 1.6), kalimba(P[7]), .32, .6), .34),
+  miss:    () => verb(seqN([196, 164.81], .13, f => marimba(f, .25), .9), .2),
+  dome:    () => { const x = blank(2.4); [261.63, 329.63, 392, 523.25].forEach((f, i) => addTo(x, marimba(f, .5), i*.06, .8)); addTo(x, kalimba(P[5], .6), .3, .6); return verb(x, .36); },
+  finale:  () => { const x = blank(3); [261.63, 329.63, 392, 523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { for (let h=0;h<3;h++) addTo(x, marimba(f, .4), i*.07 + h*.05, h ? .35 : .8); }); addTo(x, kalimba(P[7], .6), .55, .7); return verb(x, .4); },
+};
+const sfxCache = new Map();
+function sfx(name){ const a = ac(); if (!a) return; let b = sfxCache.get(name);
+  if (!b){ const [L, Rr] = SFX[name](); b = a.createBuffer(2, L.length, SR); b.copyToChannel(L, 0); b.copyToChannel(Rr, 1); sfxCache.set(name, b); }
+  const s = a.createBufferSource(); s.buffer = b; s.connect(a.destination); s.start(); }
+// el propulsor mientras baja: un bucle suave de ruido grave (4 s sin costura)
+let hover = null, hoverBuf = null;
+function hoverOn(){ const a = ac(); if (!a || hover) return;
+  if (!hoverBuf){ const lp = biquad('lp', 420, .7), r = rng(43); let b = 0; const x = render(6, () => { b = (b + .02*(r()*2 - 1))/1.02; return lp.run(b*3.5); });
+    const N = 4*SR, F = 2*SR, out = x.slice(0, N); for (let i=0;i<F;i++){ const k = i/F; out[i] = x[i]*k + x[i + N]*(1 - k); } let pk = 1e-9; for (const v of out) pk = Math.max(pk, Math.abs(v)); for (let i=0;i<N;i++) out[i] *= .5/pk;
+    hoverBuf = a.createBuffer(1, N, SR); hoverBuf.copyToChannel(out, 0); }
+  const s = a.createBufferSource(), g = a.createGain(); s.buffer = hoverBuf; s.loop = true; g.gain.value = 0; s.connect(g).connect(a.destination); s.start(); g.gain.setTargetAtTime(.09, a.currentTime, .15); hover = { s, g }; }
+function hoverOff(){ if (!hover) return; const a = ac(); const h = hover; hover = null; if (a){ h.g.gain.setTargetAtTime(0, a.currentTime, .08); setTimeout(() => { try { h.s.stop(); } catch (_){} }, 500); } }
+
+// ============================================================ reglas (las del contrato de hoy)
+const MAXLV = 12;
+const descent = lv => QS.has('precision') ? 10 : 6 - 2.5*(lv - 1)/(MAXLV - 1);
+const ri = (a, b) => a + Math.floor(R()*(b - a + 1));
+const fmt = (v, dec = 0) => (dec ? v.toFixed(dec).replace('.', ',') : String(Math.round(v))).replace('-', '−');
+function ints(min, max, mid){ const span = max - min, lo = min + Math.max(1, Math.ceil(span*.04)), hi = max - Math.max(1, Math.ceil(span*.04)); let v;
+  do { v = ri(lo, hi); } while (mid && Math.abs(v - (min + max)/2) < span*.04);
+  return { min, max, mid, target: v, label: fmt(v), ends: [fmt(min), fmt(max)], unit: true }; }
+function trialFor(lv){
+  switch (lv){
+    case 1: return ints(0, 10, true); case 2: return ints(0, 20, true); case 3: return ints(0, 100, true); case 4: return ints(0, 100, false);
+    case 5: return ints(0, 1000, true); case 6: return ints(0, 1000, false);
+    case 7: { const d = ri(3, 10), n = ri(1, d - 1); return { min: 0, max: 1, mid: false, target: n/d, label: `${n}/${d}`, ends: ['0', '1'] }; }
+    case 8: if (R() < .5){ const v = ri(5, 95)/100; return { min: 0, max: 1, mid: false, target: v, label: fmt(v, 2), ends: ['0', '1'] }; }
+            else { const v = ri(4, 96); return { min: 0, max: 100, mid: false, target: v, label: `${v} %`, ends: ['0 %', '100 %'], unit: true }; }
+    case 9: { const s = 100*ri(1, 5); return ints(s, s + 500, false); }
+    case 10: { const a = ri(12, 58), b = ri(6, 36), t = ints(0, 100, false); t.target = a + b; t.label = `${a} + ${b}`; t.flag = fmt(a + b); return t; }
+    case 11: { const d = ri(2, 8); let n; do { n = ri(1, 2*d - 1); } while (n === d); return { min: 0, max: 2, mid: false, target: n/d, label: `${n}/${d}`, ends: ['0', '2'] }; }
+    default: return ints(-50, 50, false);
+  }
+}
+
+// ============================================================ pantalla (360 × 780)
+const RULER = { x0: 36, x1: 324, y: 604, h: 20 };
+const START_Y = 196;
+const fracX = f => RULER.x0 + f*(RULER.x1 - RULER.x0);
+
+// ============================================================ partida
+const G = { state: 'menu', floats: [], parts: [], dust: [] };
+const S = {};
+function startGame(){
+  Object.assign(S, { lv: Math.max(1, Math.min(MAXLV, +(QS.get('nivel') || SAVE.lastLv || 1))), n: 0, okRow: 0, streak: 0, best: 0, hits: 0, bulls: 0, domes: 0, log: [], x: W/2, tx: W/2, peak: 1 });
+  next();
+}
+function next(){
+  if (S.n >= TOTAL) return endGame();
+  S.n++; S.t = trialFor(S.lv); S.peak = Math.max(S.peak || 1, S.lv); S.x = S.tx = W/2; S.y = START_Y; S.land = null;
+  G.state = 'fall'; S.at = performance.now(); S.dur = descent(S.lv)*1000; hoverOn();
+}
+function drop(now){ if (G.state !== 'fall') return; G.state = 'drop'; S.at = now; S.y0 = S.y; hoverOff(); sfx('release'); }
+function land(now){
+  G.state = 'land'; S.at = now; S.x = S.tx = Math.max(RULER.x0, Math.min(RULER.x1, S.x));
+  const T = S.t, f = (S.x - RULER.x0)/(RULER.x1 - RULER.x0), v = T.min + f*(T.max - T.min), err = Math.abs(v - T.target)/(T.max - T.min);
+  const hit = err <= .05, bull = err <= .012;
+  S.land = { f, v, err, hit, bull, tf: (T.target - T.min)/(T.max - T.min) };
+  S.log.push({ f, tf: S.land.tf, err });
+  if (hit){ S.hits++; S.streak++; S.best = Math.max(S.best, S.streak); S.okRow++; if (bull) S.bulls++; if (S.okRow >= 2){ S.lv = Math.min(MAXLV, S.lv + 1); S.okRow = 0; } S.peak = Math.max(S.peak || 1, S.lv); }
+  else { S.streak = 0; S.okRow = 0; if (err > .12) S.lv = Math.max(1, S.lv - 1); }
+  sfx('touch'); for (let i=0;i<14 && !reduce;i++) G.dust.push({ x: S.x + (Math.random() - .5)*18, y: RULER.y - 2, vx: (Math.random() - .5)*90, vy: -20 - Math.random()*40, t: now, life: 700 + Math.random()*400 });
+  setTimeout(() => sfx('flag'), 380);
+  const dist = T.unit ? `a ${fmt(Math.abs(v - T.target))} del blanco` : `a ${Math.round(err*100)} % del blanco`;
+  setTimeout(() => {
+    if (bull){ sfx('bull'); float('¡Diana lunar!', '#A6E36B', true); }
+    else if (hit){ sfx('hit'); float(S.streak >= 3 ? `¡Justo! ${dist} · Racha ×${S.streak}` : `¡Justo! ${dist}`, '#A6E36B'); }
+    else { sfx('miss'); float(`Cerca: ${dist}`, '#FFC94A'); }
+    if (hit && S.hits % 5 === 0){ S.domes++; S.domeAt = performance.now(); setTimeout(() => { sfx('dome'); float('¡Nueva cúpula en tu base!', '#7FD8FF', true); }, 900); }
+  }, 620);
+}
+function endGame(){
+  G.state = 'end'; G.endT = performance.now(); hoverOff();
+  S.meanPct = S.log.length ? S.log.reduce((a, l) => a + l.err, 0)/S.log.length*100 : null;
+  // tu avance: se compara solo contigo (las partidas anteriores en este teléfono), nunca con otras personas
+  SAVE.hist = SAVE.hist || [];
+  const prev = SAVE.hist.slice();
+  S.prevMean = prev.length ? prev.reduce((a, b) => a + b, 0)/prev.length : null;
+  S.prevBest = prev.length ? Math.min(...prev) : null;
+  if (S.meanPct !== null){ SAVE.hist.push(+S.meanPct.toFixed(1)); SAVE.hist = SAVE.hist.slice(-10); }
+  // el tramo de la regla donde más te alejas (la misma lectura de la app: NumberLine.reading) → el truco del día
+  const zones = [0, 1, 2].map(z => { const e = S.log.filter(l => (l.tf < 1/3 ? 0 : l.tf > 2/3 ? 2 : 1) === z).map(l => Math.abs(l.f - l.tf)); return e.length >= 2 ? e.reduce((a, b) => a + b, 0)/e.length : null; });
+  const rated = [0, 1, 2].filter(z => zones[z] !== null); S.zone = 'pareja';
+  if (rated.length >= 2){ const worst = rated.reduce((a, b) => zones[b] > zones[a] ? b : a), best = rated.reduce((a, b) => zones[b] < zones[a] ? b : a);
+    if (zones[worst] - zones[best] >= .03 && zones[worst] >= 1.5*zones[best]) S.zone = ['inicio', 'centro', 'final'][worst]; }
+  S.peak = Math.max(S.peak || 1, S.lv);
+  SAVE.domes += S.domes; SAVE.lastLv = Math.max(1, S.lv - 1); save();
+  sfx('finale'); confetti(50);
+}
+function step(now, dt){
+  const t = now - S.at;
+  S.x += (S.tx - S.x)*Math.min(1, dt*14);
+  if (G.state === 'fall'){ S.y = START_Y + (RULER.y - 50 - START_Y)*Math.min(1, t/S.dur); if (t >= S.dur){ hoverOff(); land(now); } }
+  else if (G.state === 'drop'){ const k = Math.min(1, t/320); S.y = S.y0 + (RULER.y - 50 - S.y0)*k*k; if (k >= 1) land(now); }
+  else if (G.state === 'land' && t >= 2300) next();
+}
+
+// ============================================================ dibujo
+const clamp01 = x => Math.max(0, Math.min(1, x));
+function shade(h, k){ const v = [1,3,5].map(i => parseInt(h.slice(i, i+2), 16)), f = x => Math.round(k >= 0 ? x + (255 - x)*k : x*(1 + k)); return `rgb(${f(v[0])},${f(v[1])},${f(v[2])})`; }
+function clay(c, pathFn, col, o = {}){
+  const sh = o.shadow ?? 5, bw = o.border ?? 3.5, h = o.h ?? 40;
+  c.save(); c.translate(0, sh); c.beginPath(); pathFn(); c.fillStyle = 'rgba(8,6,30,.55)'; c.fill(); c.restore();
+  c.beginPath(); pathFn(); const g = c.createLinearGradient(0, -h, 0, h); g.addColorStop(0, shade(col, .32)); g.addColorStop(.55, col); g.addColorStop(1, shade(col, -.12)); c.fillStyle = g; c.fill();
+  if (o.hl !== false){ c.save(); c.clip(); c.globalAlpha = .38; c.fillStyle = '#fff'; c.beginPath(); c.ellipse(-h*.38, -h*.55, h*.5, h*.26, -.5, 0, Math.PI*2); c.fill(); c.restore(); }
+  c.beginPath(); pathFn(); c.lineWidth = bw; c.strokeStyle = INK; c.lineJoin = 'round'; c.stroke();
+}
+
+// el planeta del cielo (v3): dos estilos para elegir, los dos en arcilla de noche (borde de tinta, luz arriba a la izquierda)
+const PLANET = QS.get('planeta') === 'anillado' ? 'anillado' : 'tierra';
+let planetChoice = PLANET;
+function drawEarth(c, x, y, r){
+  c.save(); c.globalAlpha = .32; c.drawImage(glow('127,216,255'), x - r*1.8, y - r*1.8, r*3.6, r*3.6); c.restore();
+  c.save(); c.translate(x, y); c.beginPath(); c.arc(0, 0, r, 0, TAU); c.save(); c.clip();
+  const sea = c.createRadialGradient(-r*.4, -r*.4, r*.1, 0, 0, r*1.05); sea.addColorStop(0, '#9EDCFF'); sea.addColorStop(.55, '#3F8AD8'); sea.addColorStop(1, '#22508F'); c.fillStyle = sea; c.fillRect(-r, -r, 2*r, 2*r);
+  // tierras suaves (sin bordes duros) y nubes en trazos
+  c.fillStyle = 'rgba(150,214,140,.9)';
+  c.beginPath(); c.moveTo(-r*.62, -r*.18); c.bezierCurveTo(-r*.45, -r*.62, -r*.02, -r*.5, -r*.08, -r*.18); c.bezierCurveTo(-r*.12, r*.12, -r*.34, r*.02, -r*.4, r*.22); c.bezierCurveTo(-r*.52, r*.36, -r*.72, r*.12, -r*.62, -r*.18); c.fill();
+  c.beginPath(); c.moveTo(r*.18, r*.18); c.bezierCurveTo(r*.42, r*.02, r*.66, r*.22, r*.5, r*.46); c.bezierCurveTo(r*.36, r*.66, r*.12, r*.5, r*.18, r*.18); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineCap = 'round';
+  for (const [x0, y0, x1, y1, w] of [[-.7, .45, -.1, .38, 4.5], [.05, -.62, .55, -.5, 4], [.3, -.05, .75, .02, 3.5], [-.35, -.78, -.05, -.82, 3]]){ c.lineWidth = w; c.beginPath(); c.moveTo(x0*r, y0*r); c.quadraticCurveTo((x0 + x1)/2*r, (y0 + y1)/2*r - 6, x1*r, y1*r); c.stroke(); }
+  c.lineCap = 'butt';
+  // sombra de la noche, suave, y borde de atmósfera
+  const nt = c.createLinearGradient(-r*.1, -r*.1, r, r); nt.addColorStop(0, 'rgba(6,8,34,0)'); nt.addColorStop(1, 'rgba(6,8,34,.6)'); c.fillStyle = nt; c.fillRect(-r, -r, 2*r, 2*r);
+  const at = c.createRadialGradient(0, 0, r*.8, 0, 0, r); at.addColorStop(0, 'rgba(170,225,255,0)'); at.addColorStop(1, 'rgba(170,225,255,.5)'); c.fillStyle = at; c.fillRect(-r, -r, 2*r, 2*r);
+  c.restore(); c.lineWidth = 3.5; c.strokeStyle = INK; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.stroke(); c.restore();
+}
+function drawRinged(c, x, y, r){
+  c.save(); c.globalAlpha = .3; c.drawImage(glow('183,155,255'), x - r*1.8, y - r*1.8, r*3.6, r*3.6); c.restore();
+  c.save(); c.translate(x, y); c.rotate(-.32);
+  const ring = (a0, a1) => { c.lineWidth = 11; c.strokeStyle = INK; c.beginPath(); c.ellipse(0, 0, r*1.75, r*.42, 0, a0, a1); c.stroke(); c.lineWidth = 6; c.strokeStyle = '#FFC94A'; c.beginPath(); c.ellipse(0, 0, r*1.75, r*.42, 0, a0, a1); c.stroke(); c.lineWidth = 2; c.strokeStyle = 'rgba(255,240,200,.7)'; c.beginPath(); c.ellipse(0, 0, r*1.6, r*.36, 0, a0, a1); c.stroke(); };
+  ring(Math.PI, TAU);
+  c.beginPath(); c.arc(0, 0, r, 0, TAU); c.save(); c.clip();
+  const g = c.createRadialGradient(-r*.4, -r*.4, r*.1, 0, 0, r*1.05); g.addColorStop(0, '#E2D6FF'); g.addColorStop(.55, '#A28BEF'); g.addColorStop(1, '#5D4FB3'); c.fillStyle = g; c.fillRect(-r, -r, 2*r, 2*r);
+  for (const [yy, h, a] of [[-.45, .12, .18], [-.1, .16, .14], [.3, .1, .18], [.55, .08, .12]]){ c.fillStyle = `rgba(255,255,255,${a})`; c.fillRect(-r, yy*r, 2*r, h*r); }
+  const nt = c.createLinearGradient(-r*.1, -r*.1, r, r); nt.addColorStop(0, 'rgba(6,8,34,0)'); nt.addColorStop(1, 'rgba(6,8,34,.55)'); c.fillStyle = nt; c.fillRect(-r, -r, 2*r, 2*r);
+  c.restore(); c.lineWidth = 3.5; c.strokeStyle = INK; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.stroke();
+  ring(0, Math.PI);
+  c.restore();
+}
+// el cielo con vida: nada fijo junto a la regla (serían pistas); lo que está cerca de ella se mueve despacio
+let mts = null, twk = null, shoot = null, sat = { x: -30, at: 0 };
+function mountains(seed, n, hmin, hmax){ const r = rng(seed); const pts = []; for (let i=0;i<=n;i++) pts.push([i*(W/n), hmin + r()*(hmax - hmin)]); return pts; }
+function drawRange(c, pts, off, base, col){
+  c.save(); c.translate(-(off % W), 0);
+  for (const k of [0, W]){ c.beginPath(); c.moveTo(k, base); for (const [x, h] of pts) c.lineTo(k + x, base - h); c.lineTo(k + W, base); c.closePath(); c.fillStyle = col; c.fill(); c.lineWidth = 2.5; c.strokeStyle = 'rgba(26,18,64,.6)'; c.stroke(); }
+  c.restore();
+}
+function drawWorld(c, now, dt = 0){
+  c.drawImage(BG, 0, 0, W, H);
+  // una franja de nebulosa en diagonal, muy suave
+  c.save(); const nb = c.createLinearGradient(0, 120, W, 480); nb.addColorStop(0, 'rgba(183,100,255,0)'); nb.addColorStop(.45, 'rgba(183,100,255,.13)'); nb.addColorStop(.55, 'rgba(127,216,255,.10)'); nb.addColorStop(1, 'rgba(127,216,255,0)'); c.fillStyle = nb; c.fillRect(0, 0, W, 600); c.restore();
+  // estrellas que titilan
+  if (!twk){ const r = rng(77); twk = Array.from({ length: 26 }, () => ({ x: r()*W, y: 170 + r()*380, p: r()*6, s: .8 + r()*1.4 })); }
+  for (const t of twk){ const a = reduce ? .6 : .35 + .5*(.5 + .5*Math.sin(now/700 + t.p)); c.fillStyle = `rgba(255,255,255,${a})`; c.beginPath(); c.arc(t.x, t.y, t.s, 0, TAU); c.fill(); }
+  // una estrella fugaz de vez en cuando
+  if (!reduce){ if (!shoot || now - shoot.at > 9000) shoot = { at: now + 2500 + Math.random()*5000, x: 40 + Math.random()*200, y: 170 + Math.random()*120 };
+    const k = (now - shoot.at)/700; if (k > 0 && k < 1){ const x = shoot.x + 160*k, y = shoot.y + 60*k; const g = c.createLinearGradient(x - 50, y - 19, x, y); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, `rgba(255,255,255,${.9*(1 - k)})`); c.strokeStyle = g; c.lineWidth = 2.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(x - 50, y - 19); c.lineTo(x, y); c.stroke(); c.lineCap = 'butt'; } }
+  if (planetChoice === 'anillado') drawRinged(c, 312, 300, 50); else drawEarth(c, 318, 300, 58);
+  // un satélite que cruza despacio el cielo
+  if (!reduce){ sat.x += 9*dt; if (sat.x > W + 30) sat.x = -30; }
+  c.save(); c.translate(sat.x, 236 + 12*Math.sin(sat.x/90)); c.rotate(-.2); c.fillStyle = '#3E5BA8'; c.fillRect(-14, -3, 9, 6); c.fillRect(5, -3, 9, 6); c.fillStyle = '#E9E6FF'; c.fillRect(-4, -4, 8, 8); c.restore();
+  // cordilleras lunares que se mueven despacio (detrás del borde de la luna): no sirven de marca porque no quedan quietas
+  if (!mts){ mts = { far: mountains(5, 9, 18, 52), near: mountains(9, 7, 10, 34), o1: 0, o2: 0 }; }
+  if (!reduce){ mts.o1 += 3*dt; mts.o2 += 7*dt; }
+  drawRange(c, mts.far, mts.o1, 600, '#2C2766');
+  drawRange(c, mts.near, mts.o2, 604, '#3D3784');
+  // la luna: el suelo, con cráteres tenues y lejos de la regla
+  c.save(); const m = c.createLinearGradient(0, 590, 0, H); m.addColorStop(0, '#9A93D8'); m.addColorStop(1, '#4C4596');
+  c.beginPath(); c.arc(W/2, 1240, 652, 0, TAU); c.fillStyle = m; c.fill(); c.lineWidth = 4; c.strokeStyle = INK; c.stroke();
+  c.fillStyle = 'rgba(58,52,134,.35)'; for (const [x, y, r] of [[60, 720, 22], [250, 742, 30], [150, 768, 16], [320, 700, 12]]){ c.beginPath(); c.ellipse(x, y, r, r*.4, 0, 0, TAU); c.fill(); }
+  c.restore();
+}
+function drawRuler(c, T){
+  const { x0, x1, y, h } = RULER;
+  c.save(); c.translate((x0 + x1)/2, y + h/2); clay(c, () => c.roundRect(-(x1 - x0)/2 - 8, -h/2, x1 - x0 + 16, h, 10), '#F3EBD3', { shadow: 5, border: 3.4, h: h/2, hl: false }); c.restore();
+  c.strokeStyle = INK; c.lineWidth = 3.4; c.lineCap = 'round';
+  for (const x of [x0, x1]){ c.beginPath(); c.moveTo(x, y - 6); c.lineTo(x, y + h + 6); c.stroke(); }
+  if (T.mid){ c.lineWidth = 2.6; c.beginPath(); c.moveTo((x0 + x1)/2, y + 3); c.lineTo((x0 + x1)/2, y + h - 3); c.stroke(); }
+  c.lineCap = 'butt';
+  c.fillStyle = '#fff'; c.font = '700 20px Fredoka'; c.textBaseline = 'middle';
+  c.textAlign = 'left'; c.fillText(T.ends[0], x0 - 8, y + h + 24); c.textAlign = 'right'; c.fillText(T.ends[1], x1 + 8, y + h + 24);
+}
+function drawLander(c, x, y, now, flame){
+  c.save(); c.translate(x, y); c.scale(1.25, 1.25);
+  if (flame > 0 && !reduce){ c.globalAlpha = .9*flame; c.drawImage(glow('255,170,90'), -11, 14, 22, 30 + 6*Math.sin(now/50)); c.globalAlpha = 1; }
+  c.strokeStyle = INK; c.lineWidth = 3.2; c.lineCap = 'round';
+  for (const s of [-1, 1]){ c.beginPath(); c.moveTo(s*12, 8); c.lineTo(s*24, 24); c.stroke(); c.beginPath(); c.moveTo(s*30, 24); c.lineTo(s*18, 24); c.stroke(); }
+  c.lineCap = 'butt';
+  clay(c, () => c.roundRect(-22, -2, 44, 16, 6), '#FFC94A', { shadow: 3, border: 3, h: 8, hl: false });
+  clay(c, () => { c.beginPath(); c.arc(0, -6, 17, Math.PI, 0); c.lineTo(17, 0); c.lineTo(-17, 0); c.closePath(); }, '#E9E6FF', { shadow: 0, border: 3, h: 16 });
+  c.beginPath(); c.arc(0, -9, 7, 0, TAU); c.fillStyle = '#7FD8FF'; c.fill(); c.lineWidth = 2.4; c.strokeStyle = INK; c.stroke();
+  const blink = reduce ? 1 : (Math.floor(now/400) % 2 ? 1 : .3);
+  for (const [lx, col] of [[-15, '255,138,107'], [15, '166,227,107']]){ c.globalAlpha = blink; c.drawImage(glow(col), lx - 6, -2 - 6 + 6, 12, 12); c.globalAlpha = 1; }
+  c.restore();
+}
+function drawGuide(c, x, y){
+  c.fillStyle = 'rgba(166,227,107,.8)'; for (let yy = y + 42; yy < RULER.y - 4; yy += 12){ c.beginPath(); c.arc(x, yy, 2.2, 0, TAU); c.fill(); }
+  c.fillStyle = '#A6E36B'; c.beginPath(); c.moveTo(x - 7, RULER.y - 10); c.lineTo(x + 7, RULER.y - 10); c.lineTo(x, RULER.y - 2); c.closePath(); c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
+}
+function drawResult(c, now){
+  const L = S.land, t = now - S.at, T = S.t;
+  const tx = fracX(clamp01(L.tf)), lx = S.x, yy = RULER.y + RULER.h/2;
+  // el tramo entre donde te posaste y el lugar justo, con ✓ o aspa (no solo color)
+  const k = reduce ? 1 : clamp01((t - 300)/300);
+  if (k > 0){ c.save(); c.globalAlpha = k; c.lineWidth = 6; c.lineCap = 'round'; c.strokeStyle = L.hit ? '#A6E36B' : '#FF8A6B'; c.beginPath(); c.moveTo(lx, yy); c.lineTo(lx + (tx - lx)*k, yy); c.stroke(); c.restore(); }
+  // la bandera sube en el lugar justo, con su número
+  const kf = reduce ? 1 : clamp01((t - 380)/420), fh = 80*(1 - Math.pow(1 - kf, 3));
+  if (kf > 0){ c.save(); c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.moveTo(tx, RULER.y); c.lineTo(tx, RULER.y - fh); c.stroke();
+    if (fh > 30){ c.save(); c.translate(tx, RULER.y - fh); clay(c, () => { c.beginPath(); c.moveTo(0, 0); c.lineTo(26, 7); c.lineTo(0, 15); c.closePath(); }, '#FFC94A', { shadow: 2, border: 2.4, h: 8, hl: false }); c.restore();
+      c.font = '700 18px Fredoka'; const lbl = T.flag || T.label, w = c.measureText(lbl).width + 16; const bx = Math.max(10 + w/2, Math.min(W - 10 - w/2, tx)), by = RULER.y - fh - 22;
+      c.save(); c.translate(bx, by); clay(c, () => c.roundRect(-w/2, -14, w, 28, 14), '#1F1B4E', { shadow: 3, border: 2.6, h: 14, hl: false }); c.restore();
+      c.fillStyle = '#FFC94A'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(lbl, bx, by + 1); }
+    c.restore(); }
+  if (k >= 1){ badge(c, (lx + tx)/2, yy + 26, L.hit); }
+}
+function badge(c, x, y, ok){ c.beginPath(); c.arc(x, y, 12, 0, TAU); c.fillStyle = ok ? '#A6E36B' : '#FF8A6B'; c.fill(); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
+  c.strokeStyle = INK; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); if (ok){ c.moveTo(x - 5, y); c.lineTo(x - 1, y + 4); c.lineTo(x + 5, y - 4); } else { c.moveTo(x - 4, y - 4); c.lineTo(x + 4, y + 4); c.moveTo(x + 4, y - 4); c.lineTo(x - 4, y + 4); } c.stroke(); c.lineCap = 'butt'; }
+function pill(c, x, y, text, col, txt = INK, align = 'left'){ c.font = '700 14px Fredoka'; const w = c.measureText(text).width + 22, x0 = align === 'right' ? x - w : x;
+  c.save(); c.translate(x0 + w/2, y + 13); clay(c, () => c.roundRect(-w/2, -13, w, 26, 13), col, { shadow: 3, border: 2.6, h: 13, hl: false }); c.restore(); c.fillStyle = txt; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, x0 + w/2, y + 14); return w; }
+function dome(c, x, y, on, s = 1){ c.save(); c.translate(x, y); c.scale(s, s); clay(c, () => { c.beginPath(); c.arc(0, 4, 11, Math.PI, 0); c.lineTo(11, 6); c.lineTo(-11, 6); c.closePath(); }, on ? '#7FD8FF' : '#3A3486', { shadow: 2, border: 2.4, h: 8, hl: false }); c.restore(); }
+function drawHud(c, now){
+  c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = '#F4F2FF'; c.font = '700 21px Fredoka'; c.fillText('Aterrizaje Lunar', 16, 24);
+  const w1 = pill(c, 16, 40, `Aterrizaje ${Math.min(S.n, TOTAL)} de ${TOTAL}`, '#E9E6FF'); pill(c, 16 + w1 + 8, 40, `Nivel ${S.lv}`, '#7FD8FF');
+  // tu base: una cúpula cada 5 aterrizajes justos (arriba: no deja marcas cerca de la regla)
+  const toNext = S.hits % 5; dome(c, W - 30, 20, S.domes > 0, 1.1);
+  c.textAlign = 'right'; c.fillStyle = '#F4F2FF'; c.font = '700 20px Fredoka'; c.fillText(`${S.domes}`, W - 48, 22);
+  for (let i=0;i<5;i++){ c.beginPath(); c.arc(W - 70 + i*11, 46, 3.6, 0, TAU); c.fillStyle = i < toNext ? '#A6E36B' : 'rgba(184,176,255,.35)'; c.fill(); }
+  if (S.streak >= 2) pill(c, W - 16, 56, `Racha ×${S.streak}`, '#FFC94A', INK, 'right');
+  // la misión: el número en grande, sin tarjeta
+  c.textAlign = 'center'; c.fillStyle = '#D6D1F2'; c.font = '600 16px Nunito'; c.fillText('Aterriza en', W/2, 96);
+  c.fillStyle = '#FFC94A'; let fs = 52; do { c.font = `700 ${fs}px Fredoka`; } while (c.measureText(S.t.label).width > W - 120 && (fs -= 4) > 28);
+  c.fillText(S.t.label, W/2, 138);
+}
+function float(text, col, big){ G.floats.push({ text, col, big, at: performance.now() }); }
+function drawFloats(c, now){
+  // los avisos van en el cielo vacío, después de posarse: nunca sobre la nave, la regla ni la bandera
+  G.floats = G.floats.filter(f => { const k = (now - f.at)/(f.big ? 1700 : 1400); if (k >= 1) return false; const a = Math.min(1, k*7, (1 - k)*3);
+    let s = f.big ? 19 : 17; do { c.font = `700 ${s}px Fredoka`; } while (c.measureText(f.text).width > W - 56 && --s > 14);
+    const w = c.measureText(f.text).width + 30, y = f.big ? 300 : 340;
+    c.globalAlpha = a; c.save(); c.translate(W/2, y); clay(c, () => c.roundRect(-w/2, -17, w, 34, 17), '#1F1B4E', { shadow: 4, border: 3, h: 17, hl: false }); c.restore();
+    c.fillStyle = f.col; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(f.text, W/2, y + 1); c.globalAlpha = 1; return true; });
+}
+function confetti(n){ if (reduce) return; const cols = ['166,227,107', '127,216,255', '255,201,74', '183,155,255', '255,138,107']; for (let i=0;i<n;i++) G.parts.push({ x: W/2 + (Math.random() - .5)*120, y: 170, vx: (Math.random() - .5)*260, vy: -120 - Math.random()*220, g: 300, r: 3 + Math.random()*3, rgb: cols[i % 5], t: performance.now(), life: 1600 + Math.random()*700 }); }
+function drawMenu(c, now){
+  drawRuler(c, { mid: true, ends: ['0', '10'] });
+  drawLander(c, 240, 420 + (reduce ? 0 : 6*Math.sin(now/600)), now, 1);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#fff'; c.font = '700 28px Fredoka'; c.fillText('Aterrizaje Lunar', W/2, 96);
+  c.fillStyle = '#D6D1F2'; c.font = '600 15px Nunito'; c.fillText('Aterriza justo en el número.', W/2, 128); c.fillText('La regla solo marca sus extremos.', W/2, 148);
+  if (SAVE.domes){ c.fillStyle = '#7FD8FF'; c.font = '700 16px Fredoka'; c.fillText(`Tu base lunar: ${SAVE.domes} cúpulas`, W/2, 520); }
+  c.save(); c.translate(W/2, H - 82); clay(c, () => c.roundRect(-74, -28, 148, 56, 28), '#7FD8FF', { shadow: 6, border: 3.4, h: 28 }); c.restore();
+  c.fillStyle = INK; c.font = '700 22px Fredoka'; c.fillText('Jugar', W/2, H - 81);
+}
+const TIPS_SHORT = {
+  inicio: 'En el primer tramo, mide desde el 0 y desde la mitad: el cuarto queda entre los dos.',
+  centro: 'Cerca del medio, ubica primero la mitad exacta y corrige desde ahí.',
+  final: 'En el último tramo, mide hacia atrás desde el final, no solo desde el 0.',
+  pareja: 'Antes de soltar, busca la mitad: ¿tu número está antes o después?',
+};
+const TIPS = {
+  inicio: 'Truco: en el primer tramo, mide desde el 0 y desde la mitad; el cuarto queda justo entre los dos.',
+  centro: 'Truco: cerca del medio, ubica primero la mitad exacta y corrige desde ahí.',
+  final: 'Truco: en el último tramo, mide hacia atrás desde el final, no solo desde el 0.',
+  pareja: 'Truco: antes de soltar, busca la mitad y pregúntate si tu número está antes o después.',
+};
+function wrapText(c, text, x, y, maxW, lh){ const words = text.split(' '); let line = '', yy = y; for (const w of words){ const t = line ? line + ' ' + w : w; if (c.measureText(t).width > maxW && line){ c.fillText(line, x, yy); line = w; yy += lh; } else line = t; } if (line) c.fillText(line, x, yy); return yy; }
+function drawEnd(c, now){
+  c.fillStyle = 'rgba(4,5,26,.62)'; c.fillRect(0, 0, W, H);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#FFC94A'; c.font = '700 15px Fredoka'; c.fillText('¡MISIÓN CUMPLIDA!', W/2, 34);
+  c.fillStyle = '#fff'; c.font = '700 25px Fredoka'; c.fillText(`${S.hits} aterrizajes justos de ${S.log.length}`, W/2, 64);
+  // 1) LO QUE HICISTE (lo principal, en grande) + un dato tuyo: dónde te fue mejor y dónde te costó
+  const pct = S.meanPct === null ? null : Math.max(1, Math.round(S.meanPct));
+  let y0 = 92;
+  c.save(); c.translate(W/2, y0 + 82); clay(c, () => c.roundRect(-(W - 36)/2, -82, W - 36, 164, 22), '#22205A', { shadow: 6, border: 3, h: 82, hl: false }); c.restore();
+  c.fillStyle = '#D6D1F2'; c.font = '700 15px Fredoka'; c.fillText('Tu estimación de hoy', W/2, y0 + 22);
+  c.fillStyle = '#FFC94A'; c.font = '700 34px Fredoka'; c.fillText(pct === null ? '—' : `a ${pct} de cada 100`, W/2, y0 + 56);
+  c.fillStyle = '#fff'; c.font = '600 16px Nunito'; c.fillText('del lugar justo', W/2, y0 + 84);
+  const ZN = { inicio: 'el comienzo', centro: 'el medio', final: 'el final' };
+  const zline = S.zone && S.zone !== 'pareja' ? `Te costó más ${ZN[S.zone]} de la regla` : 'Quedaste igual de cerca en toda la regla';
+  c.fillStyle = '#7FD8FF'; c.font = '700 15px Nunito'; c.fillText(zline, W/2, y0 + 114);
+  const pl = (n, a, b) => `${n} ${n === 1 ? a : b}`;
+  c.fillStyle = '#ABA5D2'; c.font = '600 14px Nunito'; c.fillText(`${pl(S.bulls, 'diana lunar', 'dianas lunares')} · racha mayor ${S.best >= 2 ? '×' + S.best : '—'} · ${pl(S.domes, 'cúpula', 'cúpulas')}`, W/2, y0 + 140);
+  // 2) TU AVANCE: una fila, solo contigo
+  y0 = 276;
+  c.fillStyle = '#D6D1F2'; c.font = '700 15px Fredoka'; c.fillText('Tu avance', W/2, y0);
+  const chips = [['Hoy', pct], ['Tu promedio', S.prevMean === null ? null : Math.max(1, Math.round(S.prevMean))], ['Tu mejor', S.prevBest === null ? null : Math.max(1, Math.round(Math.min(S.prevBest, S.meanPct ?? 99)))]];
+  chips.forEach(([lbl, v], i) => { const x = W/2 + (i - 1)*110; c.save(); c.translate(x, y0 + 36); clay(c, () => c.roundRect(-50, -22, 100, 44, 14), i === 0 ? '#FFC94A' : '#2C2A6E', { shadow: 3, border: 2.6, h: 22, hl: false }); c.restore();
+    c.fillStyle = i === 0 ? INK : '#D6D1F2'; c.font = '700 14px Nunito'; c.fillText(lbl, x, y0 + 26); c.fillStyle = i === 0 ? INK : '#fff'; c.font = '700 17px Fredoka'; c.fillText(v === null ? '—' : `${v} de 100`, x, y0 + 45); });
+  let verdict;
+  if (S.prevMean === null) verdict = 'Juega otra vez para ver tu avance.';
+  else if (S.meanPct < S.prevBest) verdict = '¡Tu partida más precisa hasta ahora!';
+  else if (S.meanPct < S.prevMean - .5) verdict = 'Hoy quedaste más cerca que tu promedio.';
+  else if (S.meanPct > S.prevMean + .5) verdict = 'Un poco más lejos que tu promedio: es normal que varíe.';
+  else verdict = 'Igual que tu promedio: vas parejo.';
+  c.fillStyle = '#F4F2FF'; c.font = '600 15px Nunito'; c.fillText(verdict, W/2, y0 + 80);
+  // 3) EL TRUCO para la próxima (acción concreta, junto a tu resultado)
+  y0 = 380;
+  c.save(); c.translate(W/2, y0 + 36); clay(c, () => c.roundRect(-(W - 36)/2, -36, W - 36, 72, 18), '#1F3A35', { shadow: 4, border: 3, h: 36, hl: false }); c.restore();
+  c.textAlign = 'left'; c.fillStyle = '#A6E36B'; c.font = '700 15px Fredoka'; c.fillText('Truco para la próxima', 34, y0 + 18);
+  c.fillStyle = '#F4F2FF'; c.font = '600 14px Nunito'; wrapText(c, TIPS_SHORT[S.zone || 'pareja'], 34, y0 + 40, W - 68, 18);
+  // 4) ABAJO, EN CHICO: lo que pusiste en juego y por qué importa (una sola frase, con su fuente)
+  y0 = 486;
+  c.strokeStyle = 'rgba(184,176,255,.25)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(40, y0); c.lineTo(W - 40, y0); c.stroke();
+  c.textAlign = 'center'; c.fillStyle = '#ABA5D2'; c.font = '700 14px Nunito'; c.fillText('¿Por qué importa?', W/2, y0 + 20);
+  c.font = '600 14px Nunito'; c.fillStyle = '#ABA5D2';
+  const yy = wrapText(c, 'Pusiste en juego la estimación en proporción. Ubicar números a ojo se relaciona con cómo valoramos montos, tiempos y riesgos al decidir.', W/2, y0 + 42, W - 64, 18);
+  c.fillStyle = '#8F8AC0'; c.fillText('Fuente: Schley y Peters, 2014', W/2, yy + 22); c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, yy + 42);
+  c.save(); c.translate(W/2, H - 60); clay(c, () => c.roundRect(-82, -27, 164, 54, 27), '#7FD8FF', { shadow: 6, border: 3.4, h: 27 }); c.restore();
+  c.fillStyle = INK; c.font = '700 20px Fredoka'; c.fillText('Otra misión', W/2, H - 59);
+}
+function frame(now){
+  const c = ctx; c.setTransform(scale, 0, 0, scale, 0, 0);
+  const dt = Math.min(.05, (now - (G.last || now))/1000); G.last = now;
+  drawWorld(c, now, dt);
+  if (G.state === 'menu') drawMenu(c, now);
+  else if (G.state === 'end') drawEnd(c, now);
+  else {
+    step(now, dt);
+    drawRuler(c, S.t); drawHud(c, now);
+    if (G.state === 'land') drawResult(c, now);
+    const flying = G.state === 'fall' || G.state === 'drop';
+    if (flying) drawGuide(c, S.x, S.y);
+    drawLander(c, S.x, S.y, now, flying ? 1 : 0);
+    if (G.state === 'fall' && S.n <= 3){ c.fillStyle = '#ABA5D2'; c.font = '600 14px Nunito'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Arrastra para mover la nave · suelta para aterrizar', W/2, 748); }
+    G.dust = G.dust.filter(d => { const k = (now - d.t)/d.life; if (k >= 1) return false; d.x += d.vx*dt; d.y += d.vy*dt; d.vy += 60*dt; c.fillStyle = `rgba(214,209,242,${.6*(1 - k)})`; c.beginPath(); c.arc(d.x, d.y, 3 + 5*k, 0, TAU); c.fill(); return true; });
+    drawFloats(c, now);
+  }
+  G.parts = G.parts.filter(p => { const k = (now - p.t)/p.life; if (k >= 1) return false; p.vy += p.g*dt; p.x += p.vx*dt; p.y += p.vy*dt; c.fillStyle = `rgba(${p.rgb},${.95*(1 - k)})`; c.beginPath(); c.arc(p.x, p.y, p.r*(1 - k*.4), 0, TAU); c.fill(); return true; });
+  if (DEBUG){ cv.dataset.state = G.state; cv.dataset.stats = JSON.stringify({ lv: S.lv, n: S.n, hits: S.hits, domes: S.domes, t: S.t, land: S.land }); }
+}
+const loop = now => { frame(now); requestAnimationFrame(loop); };
+requestAnimationFrame(loop);
+if (DEBUG) setInterval(() => { if (document.hidden || performance.now() - (G.last || 0) > 200) frame(performance.now()); }, 60);
+let dragging = false;
+cv.addEventListener('pointerdown', e => {
+  ac(); const [x, y] = toLocal(e), now = performance.now();
+  if (G.state === 'menu'){ if (y > H - 110 && y < H - 54 && x > 100 && x < 260) startGame(); return; }
+  if (G.state === 'end'){ if (now - G.endT > 700 && y > H - 92){ G.state = 'menu'; } return; }
+  if (G.state === 'fall' && y > 160){ dragging = true; cv.setPointerCapture(e.pointerId); S.tx = Math.max(RULER.x0, Math.min(RULER.x1, x)); }
+});
+cv.addEventListener('pointermove', e => { if (!dragging || G.state !== 'fall') return; const [x] = toLocal(e); S.tx = Math.max(RULER.x0, Math.min(RULER.x1, x)); });
+cv.addEventListener('pointerup', e => { if (!dragging) return; dragging = false; drop(performance.now()); });
+document.getElementById('snd').addEventListener('click', e => { soundOn = !soundOn; e.currentTarget.setAttribute('aria-pressed', soundOn); e.currentTarget.textContent = 'Sonido: ' + (soundOn ? 'sí' : 'no'); if (!soundOn) hoverOff(); });
+document.getElementById('rm').addEventListener('click', e => { reduce = !reduce; e.currentTarget.setAttribute('aria-pressed', reduce); });
+for (const [id, v] of [['pl1', 'tierra'], ['pl2', 'anillado']]) document.getElementById(id).addEventListener('click', () => { planetChoice = v; document.getElementById('pl1').setAttribute('aria-pressed', v === 'tierra'); document.getElementById('pl2').setAttribute('aria-pressed', v === 'anillado'); });
+if (PLANET === 'anillado'){ document.getElementById('pl1').setAttribute('aria-pressed', false); document.getElementById('pl2').setAttribute('aria-pressed', true); }
+</script>

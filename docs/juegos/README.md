@@ -21,7 +21,7 @@ Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ri
 - [Rescate relámpago (antes Radar)](../diseno-rescate.md) (renovado el 9-oct: «qué cápsulas viste»; la ficha vieja, como historia, en [radar.md](radar.md))
 - [Satélites](satelites.md) (historia; la ficha vigente es [diseno-satelites.md](../diseno-satelites.md))
 - [Freno de Emergencia](freno.md)
-- [Aterrizaje Lunar](aterrizaje.md)
+- [Aterrizaje Lunar](../diseno-aterrizaje.md) (renovado el 10-oct: «la misma tarea, más grande, con más vida y un final con sentido»; la ficha vieja, como historia, en [aterrizaje.md](aterrizaje.md))
 - [Lluvia de meteoros](../diseno-lluvia-de-meteoros.md)
 - [¿Verdad o disparate?](../diseno-verdad-o-disparate.md)
 - [Cosecha de palabras](../diseno-cosecha-de-palabras.md)

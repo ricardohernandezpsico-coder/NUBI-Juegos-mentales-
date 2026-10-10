@@ -163,7 +163,8 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
   más difícil (nivel 9, 2 renglones y racha encendida), acierto y error con la corrección, y las medidas del final. Script:
   `tools/art-preview/disparate.py`. Pendiente de aprobar. Las frases salen de `tools/frases/` (muestra en `docs/frases-muestra-disparate.md`).
 - [`arte-arcilla.png`](arte-arcilla.png)
-- [`aterrizaje.png`](aterrizaje.png)
+- [`aterrizaje.png`](aterrizaje.png) (del Aterrizaje viejo; historia)
+- [`aterrizaje-boceto.html`](aterrizaje-boceto.html): el boceto v4 que Ricardo aprobó el 10-oct para la renovación (Tarea 70); el diseño manda sobre él (`docs/diseno-aterrizaje.md`). Las capturas reales del juego nuevo: `capturas/aterrizaje.png` (20:9 y 16:9).
 - [`bitacora.png`](bitacora.png)
 - [`correo-escudo.png`](correo-escudo.png) (del vuelo viejo; historia)
 - [`correo-estelar.png`](correo-estelar.png) (del vuelo viejo; historia)

@@ -1,5 +1,7 @@
 # Aterrizaje Lunar (`aterrizaje`) — ficha técnica
 
+> **RENOVADO el 10-oct (Tarea 70): la ficha vigente es [`docs/diseno-aterrizaje.md`](../diseno-aterrizaje.md)** («la misma tarea, más grande, con más vida y un final con sentido»: nave grande, regla gruesa, Tierra y cordilleras que se mueven, cúpulas de una base lunar, sonido «Madera cálida» y un final con «a X de cada 100 del lugar justo», tu avance solo contigo y un truco; sin el gráfico «Tu línea»). Las reglas, los 12 niveles y la medida «tu estimación» NO cambiaron. Lo de abajo queda como historia: lo que dice del dibujo «Tu línea» y de la nave, la regla y el cielo de entonces ya no vale.
+
 > Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
 
 **Aterrizaje Lunar** (`Games/Aterrizaje/`, id `aterrizaje`, dominio cálculo): estimación en la línea numérica (Siegler

@@ -20,7 +20,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Salida corta; los logs completos van a `unity/test-results/v-*.log`. Modos para iterar: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 10-oct · acoplamiento muelle`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 10-oct · aterrizaje luna`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES y vuelca PNG; `correo.py`, `satelites.py`… arman las láminas de piezas) y `tools/previews/*.py` (réplicas PIL de pantallas Compose); resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina. **Capturas REALES**: `bash tools/verificar-todo.sh --capturas todos` (todos los juegos, ~18 min; necesita tarjeta de video; láminas en `docs/previews/capturas/`; detalle en `docs/respaldo-y-diagnostico.md`).
 - Estilo con Ricardo: español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
 - Qué sigue y en qué orden (la ruta por etapas que Ricardo aprobó el 8-oct): [`docs/hoja-de-ruta.md`](docs/hoja-de-ruta.md).
@@ -39,7 +39,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
 - 3 pestañas (Hoy, Juegos, Avance; se pasan deslizando), perfil y opciones como paneles, inicio «Primer vuelo con Nubi» y sesión diaria (SOLO los 3 juegos del camino): detalle en [`docs/arquitectura-app.md`](docs/arquitectura-app.md).
-- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DailyPath`, `FirstFlight`, `DdaRating`, `Homing`, `Mail`, `LeagueEvents`, `NumberLine`, `RetoChoice`,
+- Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DailyPath`, `FirstFlight`, `DdaRating`, `Mail`, `LeagueEvents`, `NumberLine`, `Aterrizaje`, `RetoChoice`,
   `Planet`, `SessionSummary`, `StarMeasures`, `Library`, `Skill`; y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v15** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
@@ -99,7 +99,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 | Carga exacta (reemplaza a Cálculo Sereno el 4-oct; conserva el id) | `calculo` | Razonamiento | `Games/Calculo/` | [docs/diseno-carga-exacta.md](docs/diseno-carga-exacta.md) | `Carga.kt` |
 | Engranajes: Taller de reparación (nuevo, 5-oct; ocupa el lugar de Tráfico Estelar con otro id) | `engranajes` | Razonamiento | `Games/Engranajes/` | [docs/diseno-engranajes.md](docs/diseno-engranajes.md) | `Engranajes.kt` |
 | Acoplamiento «muelle» (renovado el 10-oct, conserva el id) | `acoplamiento` | Razonamiento | `Games/Acoplamiento/` | [docs/diseno-acoplamiento.md](docs/diseno-acoplamiento.md) | `Acoplamiento.kt` |
-| Aterrizaje Lunar | `aterrizaje` | Razonamiento | `Games/Aterrizaje/` | [docs/juegos/aterrizaje.md](docs/juegos/aterrizaje.md) | `NumberLine.kt` |
+| Aterrizaje Lunar (renovado el 10-oct, conserva el id) | `aterrizaje` | Razonamiento | `Games/Aterrizaje/` | [docs/diseno-aterrizaje.md](docs/diseno-aterrizaje.md) | `Aterrizaje.kt`, `NumberLine.kt` |
 | En la punta de la lengua (reemplaza a Anagramas el 3-oct; conserva el id) | `anagramas` | Lenguaje | `Games/Anagramas/` | [docs/diseno-punta-de-la-lengua.md](docs/diseno-punta-de-la-lengua.md) | `Punta.kt` |
 | Lluvia de meteoros | `meteoros` | Lenguaje | `Games/Meteoros/` | [docs/diseno-lluvia-de-meteoros.md](docs/diseno-lluvia-de-meteoros.md) | `Vocabulary.kt` |
 | ¿Verdad o disparate? | `disparate` | Lenguaje | `Games/Disparate/` | [docs/diseno-verdad-o-disparate.md](docs/diseno-verdad-o-disparate.md) | `Reading.kt` |
@@ -136,7 +136,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 - Con Unity al frente Android puede cerrar el proceso de la app: lo que el flujo necesita vive en disco (`bridge/GameSessionStore`) y el
   resultado pendiente lo procesa el ViewModel al volver. Si se toca `NeuroVidaViewModel` o `GameSessionStore`, correr `flow/GameFlowTest`
   y `bridge/GameSessionStoreTest` antes de instalar (reproducir: Opciones de desarrollador → «No conservar actividades»).
-- Respaldo: solo el PROGRESO (la base de datos y las preferencias `skill`, `star_measures`, `progress_log`, `league_events`, `achievements`, `mission_log`, `profile_extra`, `atlas`, `punta_words`, `engranajes_rocket` y los récords `bodega_record`, `constelaciones_record`, `correo_record`, `satelites_record`, `rescate_record` y `acoplamiento_record`). Pasajero (NO se respalda): `paused_game`, `game_session`, `unity_results`, `library_focus`, `first_flight`. **Si se agrega un archivo de preferencias nuevo**, `BackupRulesTest` falla hasta que se sume a `res/xml/backup_rules.xml` y `data_extraction_rules.xml` o a `transient` de la prueba.
+- Respaldo: solo el PROGRESO (la base de datos y las preferencias `skill`, `star_measures`, `progress_log`, `league_events`, `achievements`, `mission_log`, `profile_extra`, `atlas`, `punta_words`, `engranajes_rocket` y los récords `bodega_record`, `constelaciones_record`, `correo_record`, `satelites_record`, `rescate_record`, `acoplamiento_record` y `aterrizaje_record`). Pasajero (NO se respalda): `paused_game`, `game_session`, `unity_results`, `library_focus`, `first_flight`. **Si se agrega un archivo de preferencias nuevo**, `BackupRulesTest` falla hasta que se sume a `res/xml/backup_rules.xml` y `data_extraction_rules.xml` o a `transient` de la prueba.
 - Room: al subir `version`: entidad → `Migration(N, N+1)` en `NeuroVidaDatabase.MIGRATIONS` → compilar (genera `schemas/<N+1>.json`; comitearlo) →
   correr pruebas (`MigrationTest`, dos veces la primera: lee el esquema nuevo recién generado).
 - Errores en el teléfono: `diag/ErrorLog` (`files/errores.txt`; Ajustes → «Enviar informe de errores»). GitHub Actions
@@ -146,11 +146,11 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 568 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 590 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
-- Unity EditMode: 783 (contratos de cada juego, DDA común, tutoriales guiados, `CoachLayoutTests`…) + 116 arranques de smoke (juegos, versiones cortas, tutoriales en 3 formas de pantalla y corridas «Pantalla…» en forma de teléfono, todos con la **guardia de textos**: un texto fuera de lugar falla el smoke; detalle y excepciones en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md)).
+- Unity EditMode: 815 (contratos de cada juego, DDA común, tutoriales guiados, `CoachLayoutTests`…) + 118 arranques de smoke (juegos, versiones cortas, tutoriales en 3 formas de pantalla y corridas «Pantalla…» en forma de teléfono, todos con la **guardia de textos**: un texto fuera de lugar falla el smoke; detalle y excepciones en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md)).
 - Datos de los juegos de Lenguaje: pruebas de Python en `tools/` (`python -m unittest <módulo>`); detalle en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md) § «Pruebas de datos».
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el inicio sin borrar datos. "Borrar datos" en Ajustes deja la app como recién instalada.

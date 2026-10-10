@@ -15,7 +15,7 @@ Reglas para todas:
 
 ---
 
-## Aterrizaje Lunar: "Tu estimación" y "Tu línea"
+## Aterrizaje Lunar: "Tu estimación" (y, hasta el 10-oct, "Tu línea")
 
 **Qué es la tarea.** Estimación en la línea numérica con los dos extremos marcados (Siegler y Opfer, 2003).
 
@@ -36,17 +36,17 @@ grandes"). Tenía dos problemas:
 2. **El patrón no aplica.** La curva logarítmica de Siegler y Opfer se describió en niños, y en adultos se discute que
    sea logarítmica (Barth y Paladino, 2011).
 
-**Qué dice ahora.**
-- "Tu estimación: a X% del blanco": la distancia media, en % del largo de la regla. Una línea explica que la tarea
-  junta dos cosas: saber cuánto vale el número y calcular a ojo qué parte de la regla le toca.
-- "Tu línea": el dibujo de cada blanco y dónde se posó.
-- El tramo de la regla (inicio, centro o final) donde más se aleja del blanco, medido con distancia **sin signo**.
-  Solo se nombra si hay al menos 2 aterrizajes por tramo y el peor tramo está al menos 3 puntos y 1,5 veces más lejos
-  que el mejor.
-- Un truco con respaldo: medir desde la referencia más cercana (la mitad, los cuartos, el final), que es la estrategia
-  de quienes mejor estiman.
+**Qué dice ahora (final con sentido, 10-oct, Tarea 70; `docs/diseno-aterrizaje.md` §6).** Ricardo reparó el dibujo «Tu línea»: «no tiene ningún dato relevante… no enseña nada». Se quitó, y el final se ordena por importancia:
+- **Lo que hiciste:** «N aterrizajes justos de M» y, en grande, «a X de cada 100 del lugar justo»: la misma distancia media de siempre (en % del largo de la regla), dicha como «de cada 100» y nunca menos de 1. Debajo, UN dato tuyo: el tramo de la regla (comienzo, medio o final) donde más te costó,
+  medido con distancia **sin signo**; solo se nombra si hay al menos 2 aterrizajes por tramo y el peor tramo está al menos 3 puntos y 1,5 veces más lejos que el mejor («Quedaste igual de cerca en toda la regla» si no hay diferencia; sin línea con pocos aterrizajes). Y una línea chica con lo que pasó: dianas, racha mayor y cúpulas.
+- **Tu avance, solo contigo:** «Hoy», «Tu promedio» y «Tu mejor», de las partidas ANTERIORES de este juego (hasta las últimas 10, el mismo reloj y un nivel parecido: `StarMeasures.comparable`), y una frase. Nunca percentiles ni otras personas.
+- **Truco para la próxima:** medir desde la referencia más cercana (el 0 y la mitad, la mitad exacta, el final hacia atrás), que es la estrategia de quienes mejor estiman; sin lectura clara, buscar la mitad.
+- **¿Por qué importa?** (abajo, en chico): ubicar números a ojo se relaciona con cómo valoramos montos, tiempos y riesgos al decidir (Schley y Peters, 2014), y el manejo de números con la calidad de las decisiones de salud y de dinero (Best et al., 2021). **Lo que NO se promete:** practicar la línea numérica afinó la ubicación de números y la suma de precios a ojo,
+  pero no mejoró otras medidas de manejo numérico ni la toma de decisiones (Sobkow et al., 2019).
 
-Código: `app/.../data/NumberLine.kt` (`reading`) con sus pruebas.
+Las cúpulas de la base lunar (una cada 5 aterrizajes justos) y el récord son el premio, no una medida.
+
+Código: `app/.../data/NumberLine.kt` (`reading`, `line`, `trick`), `data/Aterrizaje.kt` (la lectura del final y las cúpulas) y `ui/components/MeaningfulResult.kt`, con sus pruebas.
 
 ---
 
@@ -495,6 +495,7 @@ se nombran enfermedades; al pie va la nota común «No es un diagnóstico» y «
 - Ball, K., et al. (2002). Effects of cognitive training interventions with older adults. *JAMA*, 288, 2271–2281.
 - Barth, H. C., y Paladino, A. M. (2011). The development of numerical estimation: evidence against a representational
   shift. *Developmental Science*, 14, 125–135.
+- Best, R., et al. (2021). *Psychology and Aging* (doi:10.1037/pag0000657): seguimiento de 11 años del manejo de números en adultos.
 - Botvinick, M., y Braver, T. (2015). Motivation and cognitive control: from behavior to neural mechanism. *Annual
   Review of Psychology*, 66, 83–113.
 - Bower, G. H. (1970). Imagery as a relational organizer in associative learning. *Journal of Verbal Learning and
@@ -533,12 +534,14 @@ se nombran enfermedades; al pie va la nota común «No es un diagnóstico» y «
   retention. *Psychological Science*, 17, 249–255.
 - Rummel, J., y Kvavilashvili, L. (2023). Current theories of prospective memory and new directions for theory
   development. *Nature Reviews Psychology*, 2, 40–54.
+- Schley, D. R., y Peters, E. (2014). Assessing "economic value": symbolic-number mappings predict risky and riskless valuations. *Psychological Science*, 25, 753–761 (doi:10.1177/0956797613515485).
 - Schneider, M., et al. (2018). Associations of number line estimation with mathematical competence: a meta-analysis.
   *Child Development*, 89, 1467–1484.
 - Siegler, R. S., y Opfer, J. E. (2003). The development of numerical estimation. *Psychological Science*, 14, 237–243.
 - Simms, V., Clayton, S., Cragg, L., Gilmore, C., y Johnson, S. (2016). Explaining the relationship between number line
   estimation and mathematical achievement: the role of visuomotor integration and visuospatial skills. *Journal of
   Experimental Child Psychology*, 145, 22–33.
+- Sobkow, A., et al. (2019). *Journal of Experimental Psychology: Applied* (doi:10.1037/xap0000207): ensayo con 122 adultos que practicaron la línea numérica.
 - Snodgrass, J. G., y Corwin, J. (1988). Pragmatics of measuring recognition memory. *Journal of Experimental
   Psychology: General*, 117, 34–50.
 - Sullivan, J. L., Juhasz, B. J., Slattery, T. J., y Barth, H. C. (2011). Adults' number-line estimation strategies:
