@@ -54,6 +54,11 @@ namespace NeuroVida.Contracts
         public int resc_new;
         /// <summary>Solo Rescate relámpago (v4): los viajes de la nave a la estación en la partida (-1 = no aplica).</summary>
         public int resc_trips = -1;
+        /// <summary>Solo Acoplamiento (renovado el 10-oct; docs/diseno-acoplamiento.md §8): módulos acoplados en la partida, anillos completos (cada 8), el récord de módulos acoplados (el guardado o el de esta partida, el mayor) y 1 si esta partida lo superó. -1 = no aplica.</summary>
+        public int docked = -1;
+        public int rings = -1;
+        public int dock_best = -1;
+        public int dock_new;
         /// <summary>Solo Satélites: "tu seguimiento", cuántos se siguen de verdad a la vez (descontando la suerte). -1 = no aplica.</summary>
         public float tracking_capacity = -1f;
         /// <summary>Solo Satélites: cuántos había que seguir por ronda, en promedio (el techo de "tu seguimiento"). -1 = no aplica.</summary>

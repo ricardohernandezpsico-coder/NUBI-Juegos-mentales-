@@ -41,7 +41,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Los juegos con tutorial guiado (los de <c>UnityGameLauncher.TUTORIAL_GAMES</c> de la app).</summary>
         private static readonly HashSet<string> TutorialGames = new HashSet<string>
         {
-            "secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar",
+            "secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar", "acoplamiento",
         };
 
         /// <summary>Los juegos que el smoke juega solos con <c>GuidedTutorial.EditorAutoPlayGame</c> (el único «piloto automático» que hay de la partida real).</summary>
@@ -201,6 +201,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Satelites.SatelliteGameController.EditorShotMode = false;
             NeuroVida.Games.Piloto.PilotGameController.EditorShotMode = false;
             NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
+            NeuroVida.Games.Acoplamiento.DockingGameController.EditorShotMode = false;
             double total = Now - _startedAt;
             Summary.Insert(0, "total\t" + Mathf.RoundToInt((float)total) + " s\t" + _totalShots + " capturas\t" + _gamesDone + " juegos\n");
             try { File.WriteAllText(Path.Combine(_root, "_resumen.txt"), Summary.ToString(), new UTF8Encoding(false)); } catch (Exception) { /* el resumen es un extra */ }
@@ -231,8 +232,9 @@ namespace NeuroVida.Bridge.EditorTools
                 else if (id == "satelites") yield return SatelitesScript();
                 else if (id == "piloto") yield return PilotoScript();
                 else if (id == "radar") { yield return RadarScript(); yield return RadarScript16(); }
+                else if (id == "acoplamiento") { yield return AcoplamientoScript(); yield return AcoplamientoScript16(); }
                 else yield return PlayShots(id);
-                if (id != "correo" && id != "satelites" && id != "piloto" && id != "radar") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto y Rescate ya traen su toma con «quitar animaciones»
+                if (id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
                 if (TutorialGames.Contains(id)) yield return TutorialShots(id);
                 yield return Stopped();
 
@@ -274,6 +276,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Satelites.SatelliteGameController.EditorShotMode = false;
             NeuroVida.Games.Piloto.PilotGameController.EditorShotMode = false;
             NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
+            NeuroVida.Games.Acoplamiento.DockingGameController.EditorShotMode = false;
             HeadlessPlaymodeSmokeTest.ResetAuditCanvases();
         }
 
@@ -376,7 +379,7 @@ namespace NeuroVida.Bridge.EditorTools
         {
             Configure(id, tutorial: true, reduceMotion: false);
             yield return EnterPlay();
-            bool shot1 = false, shot3 = false, shotNew = id != "piloto", shotNew2 = id != "piloto", shotRescue = id != "radar";
+            bool shot1 = false, shot3 = false, shotNew = id != "piloto", shotNew2 = id != "piloto", shotRescue = id != "radar", shotDock = id != "acoplamiento", shotMirror = id != "acoplamiento";
             int lastIndex = -1;
             double activeSince = 0, start = Now;
             NeuroVida.Games.Shared.NubiCoach coach = null;
@@ -386,7 +389,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (coach == null && Now - lastFind > 0.25) { lastFind = Now; coach = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Shared.NubiCoach>(); }
                 int index = NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count;
                 bool active = coach != null && coach.Active;
-                if (!active) { lastIndex = -1; return (shot3 && shotNew && shotNew2 && shotRescue) || (shot1 && index > (id == "piloto" ? 7 : id == "radar" ? 3 : 2)); }
+                if (!active) { lastIndex = -1; return (shot3 && shotNew && shotNew2 && shotRescue && shotDock && shotMirror) || (shot1 && index > (id == "piloto" || id == "acoplamiento" ? 7 : id == "radar" ? 3 : 2)); }
                 if (index != lastIndex) { lastIndex = index; activeSince = Now; }
                 if (Now - activeSince >= 0.3)
                 {
@@ -394,10 +397,13 @@ namespace NeuroVida.Bridge.EditorTools
                     else if (index == 2 && !shot3) { Shot("tutorial-3"); shot3 = true; }
                     else if (index == 5 && id == "piloto" && !shotNew) { Shot("tutorial-nueva-mision"); shotNew = true; }
                     else if (index == 6 && id == "piloto" && !shotNew2) { Shot("tutorial-toca-nueva-mision"); shotNew2 = true; }
+                    else if (index == 3 && id == "acoplamiento" && !shotDock) { Shot("tutorial-se-suma"); shotDock = true; }                 // «¡Encaja! Se suma a tu estación» con el módulo volando a su casillero (Tarea 68)
+                    else if (index == 6 && id == "acoplamiento" && !shotMirror) { Shot("tutorial-espejo"); shotMirror = true; }             // «¿Y este?» con el espejo esperando
                     else if (index == 3 && id == "radar" && !shotRescue) { Shot("tutorial-rescatar"); shotRescue = true; }          // «Ahora toca ¡Rescatar!» con las dos cápsulas marcadas y el botón encendido (Tarea 65)
                 }
-                return shot3 && shotNew && shotNew2 && shotRescue;
+                return shot3 && shotNew && shotNew2 && shotRescue && shotDock && shotMirror;
             }, 90);
+            if (!shotDock || !shotMirror) GameNotes.Add("el tutorial de Acoplamiento no llegó a los pasos de la estación y del espejo (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shotNew || !shotNew2) GameNotes.Add("el tutorial de Piloto no llegó a los pasos de la misión nueva (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shotRescue) GameNotes.Add("el tutorial de Rescate no llegó al paso «¡Rescatar!» (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shot1) GameNotes.Add("el tutorial no mostró el paso 1 a tiempo");
@@ -501,6 +507,45 @@ namespace NeuroVida.Bridge.EditorTools
             yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 120);
             if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion de Rescate relámpago en 16:9 no terminó a tiempo");
             NeuroVida.Games.Radar.RadarGameController.EditorShotMode = false;
+            Height = 2400;
+            yield return ExitPlay();
+        }
+
+        // ------------------------------------------------------------------ Acoplamiento (su guion)
+
+        private static IEnumerator AcoplamientoScript()
+        {
+            Configure("acoplamiento", tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.TimedOverride = true;                                                // en Reto: se ve la barra de «Tiempo»
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
+            NeuroVida.Games.Acoplamiento.DockingGameController.EditorShotMode = true;
+            yield return EnterPlay();
+            NeuroVida.Games.Acoplamiento.DockingGameController controller = null;
+            yield return Wait.Until(() => (controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Acoplamiento.DockingGameController>()) != null, 40);
+            if (controller == null) { GameNotes.Add("no apareció el juego de Acoplamiento"); yield return ExitPlay(); yield break; }
+            controller.StartCoroutine(controller.EditorShotScript(Shot, PauseShot));
+            yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 240);
+            if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion de Acoplamiento no terminó a tiempo");
+            NeuroVida.Games.Acoplamiento.DockingGameController.EditorShotMode = false;
+            yield return ExitPlay();
+        }
+
+        /// <summary>Acoplamiento en 16:9 (1080 × 1920): el layout compacto, con unas pocas tomas (nombres «…-16x9»).</summary>
+        private static IEnumerator AcoplamientoScript16()
+        {
+            Height = 1920;
+            Configure("acoplamiento", tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.TimedOverride = true;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
+            NeuroVida.Games.Acoplamiento.DockingGameController.EditorShotMode = true;
+            yield return EnterPlay();
+            NeuroVida.Games.Acoplamiento.DockingGameController controller = null;
+            yield return Wait.Until(() => (controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Acoplamiento.DockingGameController>()) != null, 40);
+            if (controller == null) { GameNotes.Add("no apareció el juego de Acoplamiento (16:9)"); Height = 2400; yield return ExitPlay(); yield break; }
+            controller.StartCoroutine(controller.EditorShortShotScript(Shot));
+            yield return Wait.Until(() => controller == null || controller.EditorShotFinished, 120);
+            if (controller != null && !controller.EditorShotFinished) GameNotes.Add("el guion corto de Acoplamiento en 16:9 no terminó a tiempo");
+            NeuroVida.Games.Acoplamiento.DockingGameController.EditorShotMode = false;
             Height = 2400;
             yield return ExitPlay();
         }

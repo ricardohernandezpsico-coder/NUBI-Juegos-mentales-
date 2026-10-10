@@ -142,6 +142,18 @@ namespace NeuroVida.Games.Shared
             public const string Rocks = "Las rocas grises no se rescatan: no están en el tablero";
         }
 
+        /// <summary>Acoplamiento (pantalla: la estación arriba, el módulo al centro, el puerto con su hueco y los dos botones abajo). La práctica son tres módulos que no cuentan: uno girado que SÍ encaja (el toque es real), un espejo que se explica solo y otro espejo (toque real).</summary>
+        public static class Acoplamiento
+        {
+            public const string Port = "Este es el puerto: el hueco tiene la forma de la pieza";
+            public const string Arrives = "Llega un módulo girado. Gíralo en tu mente: ¿cabe en el hueco?";
+            public const string Fits = "Si calza, toca Encaja";
+            public const string Docks = "¡Encaja! Se suma a tu estación";
+            public const string MirrorSeen = "Este está dado vuelta: es su espejo";
+            public const string MirrorTouch = "Si está dado vuelta, toca Espejo";
+            public const string AndThis = "¿Y este?";
+        }
+
         /// <summary>Piloto Estelar: la ruta de las balizas (pantalla: la tarjeta de misión arriba, el cielo de señales, la nave y la franja del dedo abajo). Las dos tareas van juntas desde el paso 2 (regla permanente 1).</summary>
         public static class Piloto
         {
@@ -186,6 +198,14 @@ namespace NeuroVida.Games.Shared
         public static IEnumerable<(string Game, string Step, string Text)> All()
         {
             yield return ("todos", "listo", Ready);
+
+            yield return ("acoplamiento", "puerto", Acoplamiento.Port);
+            yield return ("acoplamiento", "llega", Acoplamiento.Arrives);
+            yield return ("acoplamiento", "encaja", Acoplamiento.Fits);
+            yield return ("acoplamiento", "se suma", Acoplamiento.Docks);
+            yield return ("acoplamiento", "espejo visto", Acoplamiento.MirrorSeen);
+            yield return ("acoplamiento", "toca espejo", Acoplamiento.MirrorTouch);
+            yield return ("acoplamiento", "otro", Acoplamiento.AndThis);
 
             yield return ("anagramas", "definición", Punta.ReadDefinition);
             yield return ("anagramas", "la tengo", Punta.Have);

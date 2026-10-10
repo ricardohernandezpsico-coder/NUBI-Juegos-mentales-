@@ -116,8 +116,11 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Mismo smoke test pero con Aterrizaje Lunar como juego.</summary>
         public static void RunAterrizaje() => RunGame("aterrizaje", 9f);
 
-        /// <summary>Mismo smoke test pero con Acoplamiento como juego.</summary>
-        public static void RunAcoplamiento() => RunGame("acoplamiento", 9f);
+        /// <summary>Mismo smoke test pero con Acoplamiento («muelle de acoplamiento», renovado el 10-oct) como juego (se juega solo: contesta bien casi siempre, de vez en cuando se equivoca a propósito y una de cada cinco no contesta, para pasar por «Sin tiempo»).</summary>
+        public static void RunAcoplamiento() => RunGame("acoplamiento", 30f);
+
+        /// <summary>Acoplamiento con su tutorial guiado: el puerto, un módulo girado que encaja (toque «de verdad» en «Encaja»), su acople a la estación, un espejo que se muestra solo y otro espejo (toque «de verdad» en «Espejo»), con las guardias de estado.</summary>
+        public static void RunTutorialAcoplamiento() => RunGame("acoplamiento", 14f, tutorial: true);
 
 
         /// <summary>Mismo smoke test pero con Bitácora de Misión como juego.</summary>
@@ -150,11 +153,11 @@ namespace NeuroVida.Bridge.EditorTools
         private static readonly (string Name, string Id, float Seconds)[] Catalog =
         {
             ("Run", null, 10f), ("Tutorial", "secuencia", 12f),
-            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f), ("TutorialCorreo", "correo", 12f), ("TutorialCosecha", "cosecha", 12f), ("TutorialDisparate", "disparate", 12f), ("TutorialIntrusa", "intrusa", 12f), ("TutorialSatelites", "satelites", 14f), ("TutorialPiloto", "piloto", 14f), ("TutorialRadar", "radar", 14f),
+            ("TutorialFreno", "freno", 12f), ("TutorialAterrizaje", "aterrizaje", 12f), ("TutorialMeteoros", "meteoros", 12f), ("TutorialStroop", "stroop", 12f), ("TutorialAnagramas", "anagramas", 12f), ("TutorialCalculo", "calculo", 12f), ("TutorialEngranajes", "engranajes", 12f), ("TutorialBodega", "bodega", 12f), ("TutorialParejas", "parejas", 12f), ("TutorialCorreo", "correo", 12f), ("TutorialCosecha", "cosecha", 12f), ("TutorialDisparate", "disparate", 12f), ("TutorialIntrusa", "intrusa", 12f), ("TutorialSatelites", "satelites", 14f), ("TutorialPiloto", "piloto", 14f), ("TutorialRadar", "radar", 14f), ("TutorialAcoplamiento", "acoplamiento", 14f),
             ("CortoFreno", "freno", 10f), ("CortoAterrizaje", "aterrizaje", 10f), ("CortoMeteoros", "meteoros", 10f), ("Stroop", "stroop", 9f), 
             ("Calculo", "calculo", 9f), ("Engranajes", "engranajes", 24f), ("Bodega", "bodega", 30f), ("Anagramas", "anagramas", 9f),
             ("Parejas", "parejas", 30f), ("Piloto", "piloto", 30f), ("PilotoReto", "piloto", 30f), ("PilotoMudo", "piloto", 30f), ("Radar", "radar", 30f), ("RadarReto", "radar", 30f), ("RadarMudo", "radar", 30f), ("Satelites", "satelites", 55f),
-            ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 9f),
+            ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 9f), ("Acoplamiento", "acoplamiento", 30f), ("AcoplamientoReto", "acoplamiento", 30f), ("AcoplamientoMudo", "acoplamiento", 30f),
             ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 85f), ("Meteoros", "meteoros", 9f),
             ("Disparate", "disparate", 9f), ("Cosecha", "cosecha", 9f), ("Intrusa", "intrusa", 9f),
         };
@@ -175,8 +178,8 @@ namespace NeuroVida.Bridge.EditorTools
             foreach (var g in Catalog)
             {
                 if (g.Name.StartsWith("Tutorial") || g.Name.StartsWith("Corto")) continue;
-                if (g.Name != "Correo" && g.Name != "Satelites" && g.Name != "Piloto" && g.Name != "Radar" && withTutorial.Contains(g.Id ?? "secuencia")) continue;
-                list.Add(("Pantalla" + g.Name, g.Id, g.Name == "Correo" ? 40f : g.Name == "Satelites" ? 55f : g.Name == "Piloto" || g.Name == "Radar" ? 30f : Mathf.Min(g.Seconds, 9f)));
+                if (g.Name != "Correo" && g.Name != "Satelites" && g.Name != "Piloto" && g.Name != "Radar" && g.Name != "Acoplamiento" && withTutorial.Contains(g.Id ?? "secuencia")) continue;
+                list.Add(("Pantalla" + g.Name, g.Id, g.Name == "Correo" ? 40f : g.Name == "Satelites" ? 55f : g.Name == "Piloto" || g.Name == "Radar" || g.Name == "Acoplamiento" ? 30f : Mathf.Min(g.Seconds, 9f)));
             }
             return list.ToArray();
         }
@@ -187,7 +190,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// </summary>
         private static readonly (string Name, string Id, float Seconds)[] AvisoCatalog =
         {
-            ("AvisoAcoplamiento", "acoplamiento", 10.5f), ("AvisoAnagramas", "anagramas", 10.5f), ("AvisoAterrizaje", "aterrizaje", 10.5f), ("AvisoCosecha", "cosecha", 10.5f), ("AvisoDisparate", "disparate", 10.5f),
+            ("AvisoAnagramas", "anagramas", 10.5f), ("AvisoAterrizaje", "aterrizaje", 10.5f), ("AvisoCosecha", "cosecha", 10.5f), ("AvisoDisparate", "disparate", 10.5f),
             ("AvisoFreno", "freno", 10.5f), ("AvisoIntrusa", "intrusa", 10.5f), ("AvisoMeteoros", "meteoros", 10.5f),
             ("AvisoRumbo", "rumbo", 10.5f), ("AvisoStroop", "stroop", 10.5f),
         };
@@ -198,7 +201,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// </summary>
         private static readonly (string Name, string Id, float Seconds)[] HowToCatalog =
         {
-            ("HowToCosecha", "cosecha", 60f), ("HowToDisparate", "disparate", 60f), ("HowToIntrusa", "intrusa", 60f), ("HowToSatelites", "satelites", 60f), ("HowToPiloto", "piloto", 60f), ("HowToRadar", "radar", 60f),
+            ("HowToCosecha", "cosecha", 60f), ("HowToDisparate", "disparate", 60f), ("HowToIntrusa", "intrusa", 60f), ("HowToSatelites", "satelites", 60f), ("HowToPiloto", "piloto", 60f), ("HowToRadar", "radar", 60f), ("HowToAcoplamiento", "acoplamiento", 60f),
         };
 
         private static bool _howToStarted, _howToDone;
@@ -421,13 +424,13 @@ namespace NeuroVida.Bridge.EditorTools
             // «Tutorial*» = con la tarjeta de Nubi (sigue sola en el Editor) y la ronda guiada; «Corto*» = la versión corta del inicio (assessment)
             bool tutorial = _current.Name.StartsWith("Tutorial");
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
-            EditorPlaytestBootstrap.TimedOverride = _current.Name == "PilotoReto" || _current.Name == "RadarReto";            // el Reto (con reloj) de Piloto; las demás corridas son Precisión
+            EditorPlaytestBootstrap.TimedOverride = _current.Name == "PilotoReto" || _current.Name == "RadarReto" || _current.Name == "AcoplamientoReto";            // el Reto (con reloj) de Piloto; las demás corridas son Precisión
             EditorPlaytestBootstrap.SoundOffOverride = _current.Name.EndsWith("Mudo");                                       // «…Mudo»: con «Efectos de sonido» apagado no tiene que sonar NADA (Tarea 64)
             _audioSampleAt = 0.0;
             _audioHeard = _audioReported = false;
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial || _current.Name.StartsWith("HowTo");      // «HowTo*» no arranca con tutorial: lo abre el smoke desde la partida
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas" || _current.Name == "Acoplamiento" || _current.Name == "AcoplamientoReto" || _current.Name == "AcoplamientoMudo" || _current.Name == "PantallaAcoplamiento";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
 
@@ -921,6 +924,8 @@ namespace NeuroVida.Bridge.EditorTools
             Debug.Log($"[SmokeTest] tutorial de {game} a {Screen.width}x{Screen.height}: {steps.Count} paso(s) registrados");
             bool strict = true;
             if (steps.Count == 0 && strict) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el tutorial de {game} no registró ningún paso"); }
+            // «el smoke mira el estado» (Tarea 68): la práctica tiene que llegar a su último aviso («¡Listo!»); si el tope de 100 s la cortó, el tutorial se quedó trabado y no se da por bueno
+            if (steps.Count > 0 && !CoachAuditReachedEnd()) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: {game} {_currentHeight}: el tutorial no llegó a su último aviso en 100 s (se quedó en el paso {steps.Count})"); }
             foreach (var failure in NeuroVida.Games.Shared.NubiCoach.ProbeFailures) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: {_currentHeight}: {failure}"); }
             int touchSteps = 0;
             foreach (var st in steps) if (st.Kind == "Touch") touchSteps++;
@@ -984,7 +989,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (_enteredPlayAt == 0) _enteredPlayAt = EditorApplication.timeSinceStartup;
                 double played = EditorApplication.timeSinceStartup - _enteredPlayAt;
                 ScanTextPlacement();
-                if (_current.Name.EndsWith("Mudo") || _current.Name == "Piloto" || _current.Name == "Radar") SampleAudio();
+                if (_current.Name.EndsWith("Mudo") || _current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento") SampleAudio();
                 if (_current.Name.StartsWith("Aviso") && !_sampleToastShown && played >= 5.5) ShowSampleToast();
                 if (_current.Name.StartsWith("HowTo")) DriveHowTo(played);
                 if (StalePauseRequested && !_staleDone) SimulateStalePause();
@@ -998,7 +1003,7 @@ namespace NeuroVida.Bridge.EditorTools
                 Debug.Log($"[SmokeTest] tiempo {_current.Name} ({(_currentHeight > 0 ? "1080x" + _currentHeight : "ventana")}): {Mathf.RoundToInt((float)(EditorApplication.timeSinceStartup - _entryStartAt))} s");
                 CheckCoachAudit();
                 CheckHowTo();
-                if (_current.Name == "Piloto" || _current.Name == "Radar")
+                if (_current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento")
                     Debug.Log("[SmokeTest] control de audio de " + _current.Name + ": " + (_audioHeard ? "se oyó sonido (el instrumento sirve)" : "NO se detectó ningún sonido: la prueba de «sonido apagado» no sería concluyente"));
                 EditorApplication.ExitPlaymode();
                 CheckReduceMotionArrived();
@@ -1030,7 +1035,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.TimedOverride = false;
             EditorPlaytestBootstrap.AssessmentOverride = assessment;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = (gameId == "engranajes" || gameId == "bodega" || gameId == "parejas" || gameId == "correo" || gameId == "satelites" || gameId == "piloto" || gameId == "radar") && !tutorial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = (gameId == "engranajes" || gameId == "bodega" || gameId == "parejas" || gameId == "correo" || gameId == "satelites" || gameId == "piloto" || gameId == "radar" || gameId == "acoplamiento") && !tutorial;
             EditorPlaytestBootstrap.GameIdOverride = gameId;
             EditorPlaytestBootstrap.ReduceMotionOverride = ReduceMotionRequested;
             EditorSceneManager.OpenScene(ScenePath);

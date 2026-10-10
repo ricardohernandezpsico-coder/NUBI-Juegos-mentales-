@@ -30,8 +30,8 @@ namespace NeuroVida.Games.Acoplamiento
     /// 1973). Llega un módulo girado y hay que decidir si encaja en el puerto (es la misma pieza, girada) o si es su
     /// reflejo en espejo (no encaja por más que se gire). El tiempo de respuesta crece con el ángulo: esa pendiente da
     /// la velocidad de giro mental. Las habilidades espaciales mejoran con práctica y esa mejora dura y se transfiere
-    /// (meta-análisis de Uttal et al., 2013). Las piezas son poliominós quirales al azar (distintos de su reflejo).
-    /// Sin dependencias de UnityEngine: testeable con NUnit.
+    /// (meta-análisis de Uttal et al., 2013). Las piezas son poliominós quirales al azar (distintos de su reflejo) que caben en 4 × 4 bloques
+    /// (v2, 10-oct: así el módulo y el hueco se ven grandes; docs/diseno-acoplamiento.md). Sin dependencias de UnityEngine: testeable con NUnit.
     /// </summary>
     public static class DockingContract
     {
@@ -45,6 +45,21 @@ namespace NeuroVida.Games.Acoplamiento
 
         /// <summary>Ángulos (0..180) de las columnas de "tu curva de giro".</summary>
         public static readonly int[] CurveBins = { 0, 45, 90, 135, 180 };
+
+        /// <summary>La pieza cabe en un cuadro de 4 × 4 bloques (el módulo y el hueco se dibujan grandes, a la misma escala).</summary>
+        public const int MaxBlocksSide = 4;
+
+        /// <summary>Casilleros de cada anillo de la estación: cada módulo acoplado ocupa uno; con 8 el anillo está completo.</summary>
+        public const int Slots = 8;
+
+        /// <summary>Los tiempos de la revelación (ms): el módulo gira hasta quedar derecho, se da vuelta (solo si era espejo), baja al puerto, espera y vuela a su casillero; si no acertó, se aleja.</summary>
+        public const int ArriveMs = 420, UpMs = 320, FlipMs = 300, DownMs = 380, HoldMs = 220, FlyMs = 520, GoneMs = 600, AfterDockMs = 380;
+
+        /// <summary>El anillo que completa el módulo número <paramref name="dockedAfter"/> (1, 2, 3…): cada 8.</summary>
+        public static bool CompletesRing(int dockedAfter) => dockedAfter > 0 && dockedAfter % Slots == 0;
+
+        /// <summary>El casillero (anillo, lugar) del módulo acoplado número <paramref name="index"/> (0, 1, 2…).</summary>
+        public static (int ring, int slot) SlotOf(int index) => (Math.Max(0, index) / Slots, Math.Max(0, index) % Slots);
 
         // ------------------------------------------------------------------ dificultad
 
@@ -100,10 +115,18 @@ namespace NeuroVida.Games.Acoplamiento
                     if (set.Add(c)) list.Add(c);
                 }
                 var shape = Normalize(list);
-                if (IsChiral(shape)) return shape;
+                if (FitsInBox(shape) && IsChiral(shape)) return shape;
             }
             // Respaldo (no debería pasar): una L, que siempre es quiral.
             return Normalize(new List<Cell> { new Cell(0, 0), new Cell(0, 1), new Cell(0, 2), new Cell(1, 0) });
+        }
+
+        /// <summary>¿La pieza cabe en 4 × 4 bloques?</summary>
+        public static bool FitsInBox(IReadOnlyList<Cell> shape)
+        {
+            int w = 0, h = 0;
+            foreach (var c in shape) { w = Math.Max(w, c.X + 1); h = Math.Max(h, c.Y + 1); }
+            return w <= MaxBlocksSide && h <= MaxBlocksSide;
         }
 
         /// <summary>¿La pieza es distinta de su reflejo? (ningún giro de 90° del reflejo coincide con ella).</summary>
@@ -249,5 +272,44 @@ namespace NeuroVida.Games.Acoplamiento
         }
 
         private static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
+
+        // ------------------------------------------------------------------ textos (docs/diseno-acoplamiento.md §5, §6 y §8)
+
+        public const string Title = "Acoplamiento", PortLabel = "Puerto", TimeLabel = "Tiempo";
+        public const string FitsLabel = "Encaja", MirrorLabel = "Espejo";
+        public const string Hint = "Gira la pieza en tu mente y compárala con el hueco";
+        public const string RingComplete = "¡Anillo completo!";
+        public const string CountdownSub = "¿Encaja en el puerto o es su espejo?";
+        /// <summary>La pista de los primeros módulos.</summary>
+        public const int HintModules = 3;
+
+        public static string RoundChip(int module, int total) => total > 0 ? "Módulo " + Math.Min(module, total) + " de " + total : "Módulo " + module;
+        public static string StreakChip(int streak) => "Racha ×" + streak;
+
+        /// <summary>Qué se contestó: 0 = «Encaja», 1 = «Espejo», −1 = no hubo tiempo.</summary>
+        public const int AnswerFits = 0, AnswerMirror = 1, AnswerTimeout = -1;
+
+        /// <summary>¿Fue un acierto? (sin respuesta nunca lo es).</summary>
+        public static bool IsCorrect(bool mirrored, int answer) => answer != AnswerTimeout && (answer == AnswerFits) == !mirrored;
+
+        /// <summary>El aviso de arriba tras la respuesta (la verdad siempre se ve).</summary>
+        public static string Notice(bool mirrored, int answer, int streak)
+        {
+            if (answer == AnswerTimeout) return mirrored ? "Sin tiempo: era su espejo" : "Sin tiempo: sí encajaba";
+            if (!IsCorrect(mirrored, answer)) return mirrored ? "Era su espejo" : "Sí encajaba";
+            if (mirrored) return "¡Bien visto! Era su espejo";
+            return streak >= 3 ? "¡Encaja! Racha ×" + streak : "¡Encaja!";
+        }
+
+        public const string EndTag = "¡TU ESTACIÓN CRECIÓ!";
+        public static string EndTitle(int docked) => docked == 1 ? "1 módulo acoplado" : docked + " módulos acoplados";
+        public const string EndHits = "Aciertos", EndSpeed = "Tu giro mental", EndRings = "Anillos completos", EndStreak = "Racha mayor", EndCurve = "Tu curva de giro";
+        public static string HitsValue(int correct, int trials) => correct + " de " + trials;
+        public static string SpeedValue(int dps) => dps > 0 ? dps + "° por segundo" : "—";
+        public static string StreakValue(int best) => best >= 2 ? "×" + best : "—";
+        public static string CurveValue(int ms) => ms < 0 ? "—" : (ms / 1000f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " s";
+        public const string EndNote1 = "Más giro, más tiempo: es lo esperable.", EndNote2 = "Medida de esta partida. No es un diagnóstico.";
+        public const string NewRecord = "¡Récord nuevo!";
+        public static string RecordLine(int best) => "Tu récord: " + best + (best == 1 ? " módulo" : " módulos");
     }
 }

@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using NeuroVida.Bridge;
 using NeuroVida.Contracts;
-using NeuroVida.Games.Secuencia; // RoundedRectSprite / RadialGlowSprite
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.UiKit;
 using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también existe
@@ -12,68 +11,60 @@ using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también exi
 namespace NeuroVida.Games.Acoplamiento
 {
     /// <summary>
-    /// "Acoplamiento": juego estrella de rotación mental (ver <see cref="DockingContract"/>). Abajo, el puerto de la
-    /// estación con el hueco de una pieza; arriba llega un módulo girado. ¿ENCAJA (es la misma pieza, girada) o es su
-    /// ESPEJO (su reflejo: no entra por más que se gire)?
-    /// <list type="bullet">
-    /// <item>Siempre se ve la respuesta: el módulo gira hasta quedar derecho y baja al puerto. Si era el reflejo, se da
-    /// vuelta como un espejo (y recién ahí entra): se ve por qué.</item>
-    /// <item>Cada módulo acoplado se suma a tu estación (arriba): crece con la partida.</item>
-    /// <item>Medida propia: "tu giro mental" (grados por segundo) y "tu curva de giro" (cuánto más tardas cuanto más
-    /// girado viene), la huella clásica de Shepard y Metzler.</item>
-    /// </list>
-    /// Reto = 2 minutos, con combustible limitado por módulo (6 → 2,5 s); Precisión = 24 módulos sin apuro.
+    /// «Acoplamiento: muelle de acoplamiento» (id <c>acoplamiento</c>, renovado el 10-oct; ver <see cref="DockingContract"/> y docs/diseno-acoplamiento.md; el boceto aprobado es docs/previews/acoplamiento-boceto.html): ROTACIÓN MENTAL (Shepard y Metzler, 1971). Estás armando una estación espacial: llega un módulo girado y hay
+    /// que decidir si ENCAJA en el hueco del puerto (es la misma pieza, girada) o es su ESPEJO (dado vuelta). Los dos aciertos suman un módulo a la estación (si era espejo y lo dijiste, el muelle lo da vuelta y también se acopla); cada 8 módulos se completa un anillo. SIEMPRE se ve la verdad:
+    /// el módulo gira hasta quedar derecho, se da vuelta si era espejo y baja al puerto; si acertaste vuela a su casillero de la estación y, si no, se aleja sin castigo. Un módulo: llega (420 ms) → decidir (Reto: de 6 a 2,5 s según el nivel, con su barra de «Tiempo»; Precisión sin apuro) → revelación.
+    /// Reto de 120 s; Precisión de 24 módulos. La pieza cabe en 4 × 4 bloques; la luz y la sombra quedan fijas en la pantalla (no giran con la pieza, para no delatar el giro) y nada gira en el fondo. Los avisos van en una franja fija (y 246-278) y NUNCA sobre el módulo, el puerto ni los botones (el smoke lo comprueba).
+    /// Todo el tiempo va con <see cref="GameClock"/> y lo que se mueve con <see cref="Motion"/>: con «quitar animaciones» el módulo aparece de una vez y cada paso de la revelación (giro, vuelta, bajada, vuelo) cambia de golpe, y los chevrones no parpadean.
     /// </summary>
-    public class DockingGameController : GameControllerBase
+    public sealed partial class DockingGameController : GameControllerBase
     {
         public const string GameId = DockingContract.GameId;
 
         private const float UnitsPerDp = 3f;
         private const float MarginU = 60f;
-        private const int PxPerCell = 64;
-        private const int StationIcons = 14;
-        private const float ShadowDrop = 10f;
+        private const int NoAnswer = -2;
 
-        private static readonly Color GoodColor = NeuroStyle.Lime;
-        private static readonly Color BadColor = NeuroStyle.Coral;
-        private static readonly Color AmberColor = NeuroStyle.Sun;
+        /// <summary>SOLO EN EL EDITOR, para las capturas de pantalla (<c>verificar-todo.sh --capturas Acoplamiento</c>): con esta bandera el juego NO se juega solo y un guion (<see cref="EditorShotScript"/>) lo lleva por los momentos que se fotografían. En el teléfono es siempre false.</summary>
+        public static bool EditorShotMode;
 
-        private enum Phase { Idle, Arrive, Decide, Resolve, Done }
+        private enum Phase { Idle, Arrive, Decide, Reveal, Done }
+
+        // ------------------------------------------------------------------ estado
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
         private Phase _phase = Phase.Idle;
-        private bool Endless => _config != null && _config.config.timed;
-        private bool Precision => !Endless;
-        private int _previousFrameRate;
+        /// <summary>true mientras corre <see cref="RevealRoutine"/> (la fase sigue siendo «Reveal» hasta que alguien pasa a la siguiente: el juego en <c>EndTrial</c>, la práctica del tutorial por su cuenta).</summary>
+        private bool _revealing;
+        private bool _loopOn, _baked, _guided, _inputOn, _landingPending, _revealDemo;
+        private int _previousFrameRate, _lastTickSecond;
+        private float _endsAt;
 
-        // módulo en curso
+        // el módulo en curso
         private DockingTrial _trial;
-        private int _answer = -1; // 0 = encaja, 1 = espejo
-        private float _answerAt;
-        private float _cell;
+        private int _answer = NoAnswer, _shownAnswer = NoAnswer;
+        private float _decideAt, _answerAt, _deadline, _arriveAt, _revealAt = -10f;
+        private bool _shownCorrect;
+        private readonly float[] _pressAt = { -10f, -10f };
 
-        // sesión
+        // la partida
         private readonly List<int> _disparities = new List<int>();
         private readonly List<float> _rts = new List<float>();
         private readonly List<bool> _corrects = new List<bool>();
-        private int _trials, _correct, _docked, _streak, _bestStreak, _points;
-        private float _endsAt;
-        private int _lastTickSecond = -1;
+        private int _trials, _correct, _docked, _rings, _streak, _bestStreak, _bestRecord, _stationShown;
 
-        // UI
-        private RectTransform _safe, _play, _fxRect, _holder, _bodyRoot, _shadowRoot, _portRect, _socketRoot, _fuelBg, _fuelFill,
-            _stationRow, _timerBg, _timerFill;
-        private Image _body, _shadow, _socket;
-        private readonly List<Image> _stationIcons = new List<Image>();
-        private readonly RectTransform[] _buttons = new RectTransform[2];
-        private Image _portGlow;
-        private Text _prompt, _stationLabel;
-        private Toast _toast;
+        // los tiempos y el largo de la partida (el arranque de prueba del Editor los acorta para llegar al final)
+        private int _trialsTotal = DockingContract.PrecisionTrials;
+        private float _retoSeconds = DockingContract.RetoSeconds;
+
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
-        private float _playW, _playH, _arriveY, _portY;
+
+        private bool Endless => _config != null && _config.config.timed;
+        private bool Precision => !Endless;
+        private float Now => GameClock.Time;
 
         // ------------------------------------------------------------------ sesión
 
@@ -85,27 +76,34 @@ namespace NeuroVida.Games.Acoplamiento
             float start = AdaptiveDifficulty.StartRating(config.config, DockingContract.MaxLevel);
             // ~25 módulos por partida. Sin modulación por tiempo: el tiempo ES la medida (no debe mover la dificultad).
             _dda = new AdaptiveDifficulty(DockingContract.MaxLevel, age, start, stepUp: 0.3f, useReaction: false);
-
+            _bestRecord = Mathf.Max(0, config.config.dock_best);
+            _trialsTotal = DockingContract.PrecisionTrials;
+            _retoSeconds = DockingContract.RetoSeconds;
+#if UNITY_EDITOR
+            // el smoke juega una partida corta (6 módulos) desde el nivel 5 (piezas de 5 bloques, giros de a 15°)
+            if (GuidedTutorial.EditorAutoPlayGame && !EditorShotMode)
+            {
+                _trialsTotal = 6;
+                _retoSeconds = 16f;
+            }
+#endif
             _previousFrameRate = Application.targetFrameRate;
             Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
+            _loopOn = _guided = _inputOn = _landingPending = false;
             _disparities.Clear();
             _rts.Clear();
             _corrects.Clear();
-            _trials = _correct = _docked = _streak = _bestStreak = _points = 0;
+            _trials = _correct = _docked = _rings = _streak = _bestStreak = _stationShown = 0;
             _endsAt = 0f;
             _lastTickSecond = -1;
+            _trial = null;
+            _answer = _shownAnswer = NoAnswer;
 
-            _resultRoot.gameObject.SetActive(false);
+            ResetViews();
             _exit.Hide();
-            _timerBg.gameObject.SetActive(Endless);
-            _hud.SetStreak(0);
-            _holder.gameObject.SetActive(false);
-            foreach (var s in _stationIcons) s.gameObject.SetActive(false);
-            _stationLabel.text = "Tu estación";
-            SetButtonsActive(false);
-
+            _tutorial.Hide();
             StopAllCoroutines();
             StartCoroutine(GameLoop());
         }
@@ -115,82 +113,127 @@ namespace NeuroVida.Games.Acoplamiento
             if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
         }
 
-        /// <summary>Las piezas se hornean en cada intento: al cerrar el juego se liberan sus texturas.</summary>
-        private void OnDestroy()
-        {
-            foreach (var img in new[] { _body, _shadow, _socket })
-                if (img != null) Replace(img, null);
-        }
+        /// <summary>Las piezas se hornean en cada módulo: al cerrar el juego se liberan sus texturas.</summary>
+        private void OnDestroy() => ReleasePiece();
 
         private IEnumerator GameLoop()
         {
+            StartCoroutine(Prewarm());
+            if (TutorialWanted)
+            {
+                // la ronda guiada se juega sobre la pantalla ya armada, antes de la cuenta regresiva
+                _safe.gameObject.SetActive(true);
+                yield return null;
+                ApplySafeArea(_safe);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetViews();
+            }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Acoplamiento", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play(DockingContract.Title, Assessment.Subtitle(DockingContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
+            while (!_baked) yield return null;
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            _endsAt = Now + _retoSeconds;
+            _timerTrack.gameObject.SetActive(Endless);
+            _timerFill.gameObject.SetActive(Endless);
             UpdateHud();
+            _loopOn = true;
+            yield return StartCoroutine(MainLoop());
+        }
 
-            _endsAt = GameClock.Time + DockingContract.RetoSeconds;
-            while (!Finished())
-                yield return StartCoroutine(RunTrial());
+        /// <summary>El bucle de la partida: un módulo tras otro hasta que se cumplan los módulos (Precisión) o el tiempo (Reto). «Cómo se juega» lo retoma desde acá.</summary>
+        private IEnumerator MainLoop()
+        {
+            while (!Finished()) yield return StartCoroutine(PlayTrial());
+            _loopOn = false;
             yield return StartCoroutine(FinishGame());
         }
 
-        private bool Finished() => Precision ? _trials >= DockingContract.PrecisionTrials : GameClock.Time >= _endsAt;
+        private bool Finished() => Precision ? _trials >= _trialsTotal : Now >= _endsAt;
+
+        /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
+        private IEnumerator Prewarm()
+        {
+            if (_baked) yield break;
+            var sprites = DockingSprites.Prewarm();
+            while (sprites.MoveNext()) yield return null;
+            _baked = true;
+            AssignSprites();
+            if (SoundWanted)                                                                  // con «Efectos de sonido» apagado no se calcula ningún clip
+            {
+                var sounds = DockingSounds.Prewarm();
+                while (sounds.MoveNext()) yield return null;
+            }
+            Layout();
+        }
 
         // ------------------------------------------------------------------ un módulo
 
-        private IEnumerator RunTrial()
+        private IEnumerator PlayTrial()
         {
             int level = _dda.PresentedLevel;
-            _trial = DockingContract.NextTrial(level, _rng);
-            _answer = -1;
-            BuildPiece(_trial);
-            SetPrompt(_trials < 2 ? "¿Encaja en el puerto o es su espejo?" : "", Color.white);
+            var trial = DockingContract.NextTrial(level, _rng);
+#if UNITY_EDITOR
+            if (_editorMirror >= 0) trial.Mirrored = _editorMirror == 1;                         // las capturas fuerzan el módulo (espejo o igual, y su giro)
+            if (_editorAngle != NoAngle) trial.AngleDeg = _editorAngle;
+#endif
+            BeginTrial(trial);
+            yield return null;                                                                // el horneado de la pieza ya se hizo: el módulo llega en un cuadro limpio
+            UpdateHud();
+            yield return StartCoroutine(DoArrive());
+            yield return StartCoroutine(DoDecide(level));
+            EvaluateAnswer(level, out bool correct, out int answer);
+            yield return StartCoroutine(RevealRoutine(correct, answer));
+            EndTrial();
+        }
 
-            // 1. Llega el módulo (desde arriba, ya girado).
+        /// <summary>Llega el módulo (420 ms, desde arriba y ya girado). Con «quitar animaciones» aparece de una vez.</summary>
+        private IEnumerator DoArrive()
+        {
             _phase = Phase.Arrive;
-            _holder.gameObject.SetActive(true);
-            _holder.localScale = Vector3.one;
-            float t = 0f;
-            const float arrive = 0.3f;
-            var from = new Vector2(0f, _arriveY + 500f);
-            var to = new Vector2(0f, _arriveY);
-            while (t < arrive)
-            {
-                t += GameClock.DeltaTime;
-                float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / arrive));
-                _holder.anchoredPosition = Vector2.LerpUnclamped(from, to, Motion.Decorative ? k : 1f); // sin ReduceMotion: el módulo aparece en su lugar (mismo tiempo)
-                yield return null;
-            }
-            _holder.anchoredPosition = to;
-            PlayTone(523f, 0.05f, 0.05f);
+            _arriveAt = Now;
+            _moduleRoot.gameObject.SetActive(true);
+            Play(DockSfx.Arrive);
+            float dur = Motion.Decorative ? DockingContract.ArriveMs / 1000f : 0f;
+            while (Now - _arriveAt < dur) yield return null;
+        }
 
-            // 2. Decidir (con combustible limitado en Reto).
+        /// <summary>Decidir: «Encaja» o «Espejo». La respuesta cuenta al PRESIONAR (el tiempo de respuesta es la medida). En el Reto hay una barra de «Tiempo» (de 6 a 2,5 s según el nivel); en Precisión no hay apuro.</summary>
+        private IEnumerator DoDecide(int level)
+        {
             _phase = Phase.Decide;
-            SetButtonsActive(true);
-            float shownAt = GameClock.Time;
-            float deadline = DockingContract.DeadlineMs(level, Precision) / 1000f;
-            _fuelBg.gameObject.SetActive(Endless);
-            while (_answer < 0 && GameClock.Time - shownAt < deadline)
+            _answer = NoAnswer;
+            _decideAt = Now;
+            _deadline = DockingContract.DeadlineMs(level, Precision) / 1000f;
+#if UNITY_EDITOR
+            if (GuidedTutorial.EditorAutoPlayGame && !EditorShotMode) _deadline = Mathf.Min(_deadline, 1.6f);                  // el smoke no espera 6 s para ver «Sin tiempo»
+            if (_editorDeadline > 0f) _deadline = _editorDeadline;                                                         // y las capturas, tampoco
+#endif
+            _inputOn = true;
+            SetFuelVisible(Endless);
+            _hint.gameObject.SetActive(_trials < DockingContract.HintModules);
+            while (_answer == NoAnswer && Now - _decideAt < _deadline)
             {
-                float left = 1f - (GameClock.Time - shownAt) / deadline;
-                SetFuel(left);
-                // Flota apenas (solo sube y baja: girar cambiaría el ángulo que hay que evaluar).
-                _holder.anchoredPosition = to + new Vector2(0f, Motion.Decorative ? 6f * Mathf.Sin((GameClock.Time - shownAt) * 3f) : 0f); // sin ReduceMotion: no flota
+                SetFuel(1f - (Now - _decideAt) / _deadline);
                 yield return null;
             }
-            _fuelBg.gameObject.SetActive(false);
-            SetButtonsActive(false);
-            _phase = Phase.Resolve;
-            bool timedOut = _answer < 0;
-            float rtMs = timedOut ? deadline * 1000f : (_answerAt - shownAt) * 1000f;
-            bool saidFits = _answer == 0;
-            bool correct = !timedOut && saidFits == !_trial.Mirrored;
+            _inputOn = false;
+            _hint.gameObject.SetActive(false);
+            SetFuelVisible(false);
+        }
 
+        /// <summary>Lo que cuenta la respuesta (o su falta): aciertos, racha, motor, medidas. Sin tiempo es un error («Sin tiempo») y la verdad se muestra igual.</summary>
+        private void EvaluateAnswer(int level, out bool correct, out int answer)
+        {
+            bool timedOut = _answer == NoAnswer;
+            answer = timedOut ? DockingContract.AnswerTimeout : _answer;
+            correct = DockingContract.IsCorrect(_trial.Mirrored, answer);
+            float rtMs = timedOut ? _deadline * 1000f : (_answerAt - _decideAt) * 1000f;
             _trials++;
             _disparities.Add(_trial.Disparity);
             _rts.Add(rtMs);
@@ -198,336 +241,108 @@ namespace NeuroVida.Games.Acoplamiento
             if (correct) _correct++;
             _streak = correct ? _streak + 1 : 0;
             _bestStreak = Mathf.Max(_bestStreak, _streak);
-            int pts = DockingContract.Points(correct, rtMs, (int)(deadline * 1000f), level, _streak);
-            _points += pts;
-            _hud.SetStreak(_streak);
-            var change = _dda.Register(correct);
-
-            // 3. Mostrar la verdad: girar hasta quedar derecho, darse vuelta si era el reflejo y acoplar.
-            if (timedOut)
-            {
-                SetPrompt("¡Sin combustible!", AmberColor);
-                GameFeel.Wrong();
-                yield return StartCoroutine(DriftAway());
-            }
-            else if (correct)
-            {
-                SetPrompt(_trial.Mirrored ? "¡Bien visto! Era su reflejo" : (_streak >= 3 ? $"¡Acoplado! · racha {_streak}" : "¡Acoplado!"), GoodColor);
-                GameFeel.Correct(_streak);
-                yield return StartCoroutine(Straighten());
-                if (_trial.Mirrored) yield return StartCoroutine(Flip());
-                yield return StartCoroutine(Dock(true));
-                StartCoroutine(FloatText(new Vector2(0f, _portY + 160f), "+" + pts, NeuroStyle.Sun));
-                AddToStation();
-            }
-            else if (_trial.Mirrored)
-            {
-                // Dijo "encaja" y era el reflejo: se intenta, no entra, y se ve el espejo.
-                SetPrompt("No encaja: era su reflejo", BadColor);
-                GameFeel.Wrong();
-                yield return StartCoroutine(Straighten());
-                yield return StartCoroutine(Bump());
-                yield return StartCoroutine(Flip());
-                yield return StartCoroutine(Wait(0.35f));
-                yield return StartCoroutine(DriftAway());
-            }
-            else
-            {
-                // Dijo "espejo" y era la misma pieza: se ve que sí entraba.
-                SetPrompt("Sí encajaba: era la misma pieza girada", AmberColor);
-                GameFeel.Wrong();
-                yield return StartCoroutine(Straighten());
-                yield return StartCoroutine(Dock(false));
-            }
-
-            if (change == DdaChange.Up)
-            {
-                _toast.Show("¡Subes de nivel!", LevelNews(_dda.Level), GoodColor, 1.0f);
-                GameFeel.LevelUp();
-            }
-            else if (change == DdaChange.Down || _dda.Struggling)
-                _toast.Show("Con calma", "Gira la pieza en tu mente", AmberColor, 0.9f);
+            _dda.Register(correct);
             UpdateHud();
-            yield return StartCoroutine(Wait(0.45f));
-            _holder.gameObject.SetActive(false);
-            _portGlow.color = new Color(1f, 1f, 1f, 0f);
+#if UNITY_EDITOR
+            Debug.Log("[SmokeTest] Acoplamiento: módulo " + _trials + " nivel " + level + (_trial.Mirrored ? " espejo" : " igual") + " " + _trial.AngleDeg + "°: " + (timedOut ? "sin tiempo" : answer == DockingContract.AnswerFits ? "dijo «Encaja»" : "dijo «Espejo»") + " → " + (correct ? "acierto" : "error") + ", " + rtMs.ToString("0") + " ms, racha " + _streak);
+#endif
         }
 
-        private static string LevelNews(int level)
+        private void EndTrial()
         {
-            if (DockingContract.Cells(level) > DockingContract.Cells(level - 1)) return $"Piezas de {DockingContract.Cells(level)} bloques";
-            if (DockingContract.MaxAngle(level) > DockingContract.MaxAngle(level - 1)) return $"Giros de hasta {DockingContract.MaxAngle(level)}°";
-            if (DockingContract.AngleStep(level) < DockingContract.AngleStep(level - 1)) return "Giros en cualquier ángulo";
-            return "Menos combustible";
+            _phase = Phase.Idle;
+            HideModule();
+            SetNotice("", Lime, false);
         }
 
-        // ------------------------------------------------------------------ pieza
+        // ------------------------------------------------------------------ la revelación (siempre se ve la verdad)
 
         /// <summary>
-        /// Arma el módulo (girado y, si toca, reflejado) y el hueco del puerto (la pieza derecha). Cada pieza se hornea
-        /// entera como una sola arcilla (un contorno, juntas tenues entre bloques); las texturas del intento anterior se
-        /// liberan.
+        /// La revelación: el módulo gira hasta quedar derecho (320 ms), se da vuelta si era espejo (300 ms), baja al puerto (380 ms) y, si acertaste, el borde y los chevrones se ponen lima, 220 ms después vuela a su casillero de la estación (520 ms) y se enciende; cada 8 módulos, «¡Anillo completo!».
+        /// Si no acertaste, el borde se pone celeste («mostrar») y el módulo se aleja hacia la derecha mientras se apaga (600 ms), sin castigo. El movimiento sale del TIEMPO de la revelación (<see cref="RevealT"/>), así las capturas pueden detenerlo a mitad de un paso.
         /// </summary>
-        private void BuildPiece(DockingTrial t)
+        private IEnumerator RevealRoutine(bool correct, int answer, bool demo = false)
         {
-            int w = 0, h = 0;
-            foreach (var c in t.Shape) { w = Mathf.Max(w, c.X + 1); h = Mathf.Max(h, c.Y + 1); }
-            _cell = Mathf.Min(96f, 400f / Mathf.Max(w, h));
-            float side = DockingSprites.PieceSide(t.Shape);
-            int px = Mathf.CeilToInt(side * PxPerCell);
-
-            Replace(_body, DockingSprites.PieceSprite(t.Shape, t.Mirrored, DockingSprites.PieceLayer.Body, px));
-            Replace(_shadow, DockingSprites.PieceSprite(t.Shape, t.Mirrored, DockingSprites.PieceLayer.Silhouette, px));
-            Replace(_socket, DockingSprites.PieceSprite(t.Shape, false, DockingSprites.PieceLayer.Socket, px));
-            var size = new Vector2(side * _cell, side * _cell);
-            _body.rectTransform.sizeDelta = _shadow.rectTransform.sizeDelta = _socket.rectTransform.sizeDelta = size;
-            _body.gameObject.SetActive(true);
-            _shadow.gameObject.SetActive(true);
-            _socket.gameObject.SetActive(true);
-            _body.color = Color.white;
-            _shadow.color = NeuroStyle.Ink;
-
-            var rot = Quaternion.Euler(0f, 0f, t.AngleDeg);
-            _bodyRoot.localRotation = _shadowRoot.localRotation = rot;
-            _bodyRoot.localScale = _shadowRoot.localScale = Vector3.one;
-        }
-
-        private static void Replace(Image img, Sprite sprite)
-        {
-            var old = img.sprite;
-            img.sprite = sprite;
-            if (old != null)
+            _phase = Phase.Reveal;
+            _revealing = true;
+            _revealAt = Now;
+            _revealDemo = demo;
+            _shownAnswer = demo ? NoAnswer : answer;
+            _shownCorrect = correct;
+            _landingPending = correct && !demo;
+            if (!demo) SetNotice(DockingContract.Notice(_trial.Mirrored, answer, _streak), correct ? Lime : Gold, false);
+            RefreshButtons(Now);
+            float tA = RevealUp + (_trial.Mirrored ? RevealFlip : 0f);
+            float end = demo ? tA + RevealDown + 0.9f : correct ? tA + RevealDown + RevealHold + RevealFly + RevealAfter : tA + RevealDown + RevealGone + 0.2f;
+            bool soundFlip = false, soundDock = false, soundMiss = false;
+            while (true)
             {
-                Destroy(old.texture);
-                Destroy(old);
-            }
-        }
-
-        /// <summary>«Quitar animaciones»: fundido cruzado a un estado nuevo de la pieza (se apaga, cambia, se prende) en <paramref name="seconds"/>.</summary>
-        private IEnumerator CrossfadeState(float seconds, System.Action apply)
-        {
-            var body = _bodyRoot.GetComponent<CanvasGroup>() ?? _bodyRoot.gameObject.AddComponent<CanvasGroup>();
-            var shadow = _shadowRoot.GetComponent<CanvasGroup>() ?? _shadowRoot.gameObject.AddComponent<CanvasGroup>();
-            float half = seconds * 0.5f;
-            StartCoroutine(Motion.Fade(shadow, 1f, 0f, half));
-            yield return Motion.Fade(body, 1f, 0f, half);
-            apply();
-            StartCoroutine(Motion.Fade(shadow, 0f, 1f, half));
-            yield return Motion.Fade(body, 0f, 1f, half);
-        }
-
-        private IEnumerator Straighten()
-        {
-            float a0 = _trial.AngleDeg;
-            float t = 0f;
-            float seconds = 0.2f + 0.3f * Mathf.Abs(a0) / 180f;
-            if (!Motion.Decorative)
-            {
-                // Sin giro: fundido cruzado a la pieza ya alineada, misma duración total.
-                yield return CrossfadeState(seconds, () => _bodyRoot.localRotation = _shadowRoot.localRotation = Quaternion.identity);
-                yield break;
-            }
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                float k = UiFx.EaseOutCubic(Mathf.Clamp01(t / seconds));
-                var rot = Quaternion.Euler(0f, 0f, Mathf.Lerp(a0, 0f, k));
-                _bodyRoot.localRotation = _shadowRoot.localRotation = rot;
+                float t = RevealT();
+                if (_trial.Mirrored && !soundFlip && t >= RevealUp) { soundFlip = true; Play(DockSfx.Flip); }
+                if (correct || demo)
+                {
+                    if (!soundDock && t >= tA + RevealDown)
+                    {
+                        soundDock = true;
+                        Play(DockSfx.Dock);
+                        GameFeel.Haptic(GameFeel.HapticKind.Firm);
+                    }
+                    if (_landingPending && t >= tA + RevealDown + RevealHold + RevealFly) Land();
+                }
+                else if (!soundMiss && t >= tA + 0.12f)
+                {
+                    soundMiss = true;
+                    Play(DockSfx.Miss);
+                    GameFeel.Haptic(GameFeel.HapticKind.Double);
+                }
+                if (t >= end) break;
                 yield return null;
             }
-            _bodyRoot.localRotation = _shadowRoot.localRotation = Quaternion.identity;
+            if (_landingPending) Land();
+            _shownAnswer = NoAnswer;
+            _revealDemo = false;
+            _revealing = false;
+            RefreshButtons(Now);
         }
 
-        /// <summary>El reflejo se da vuelta como en un espejo (escala x de 1 a −1).</summary>
-        private IEnumerator Flip()
+        private const float RevealUp = DockingContract.UpMs / 1000f, RevealFlip = DockingContract.FlipMs / 1000f, RevealDown = DockingContract.DownMs / 1000f, RevealHold = DockingContract.HoldMs / 1000f,
+            RevealFly = DockingContract.FlyMs / 1000f, RevealGone = DockingContract.GoneMs / 1000f, RevealAfter = DockingContract.AfterDockMs / 1000f;
+
+        /// <summary>El tiempo de la revelación, en segundos (las capturas lo detienen con <c>_editorRevealT</c>).</summary>
+        private float RevealT()
         {
-            PlayTone(880f, 0.08f, 0.05f);
-            float t = 0f;
-            const float seconds = 0.4f;
-            if (!Motion.Decorative)
-            {
-                // Sin giro de espejo: fundido cruzado al reflejo ya dado vuelta, misma duración.
-                yield return CrossfadeState(seconds, () => _bodyRoot.localScale = _shadowRoot.localScale = new Vector3(-1f, 1f, 1f));
-                yield break;
-            }
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                float sx = Mathf.Cos(k * Mathf.PI); // 1 → −1 pasando por 0 (de canto)
-                _bodyRoot.localScale = _shadowRoot.localScale = new Vector3(sx, 1f, 1f);
-                yield return null;
-            }
-            _bodyRoot.localScale = _shadowRoot.localScale = new Vector3(-1f, 1f, 1f);
+#if UNITY_EDITOR
+            if (_editorRevealT >= 0f) return _editorRevealT;
+#endif
+            return Now - _revealAt;
         }
 
-        private IEnumerator Dock(bool celebrate)
+        /// <summary>El módulo llegó a su casillero: se suma a la estación (y a la partida, salvo en la práctica del tutorial), se enciende con un aro blanco y suena la kalimba que sube con la racha; cada 8, «¡Anillo completo!».</summary>
+        private void Land()
         {
-            var from = _holder.anchoredPosition;
-            var to = new Vector2(0f, _portY + _socketRoot.anchoredPosition.y);
-            float t = 0f;
-            const float seconds = 0.35f;
-            while (t < seconds)
+            _landingPending = false;
+            int index = _stationShown;
+            _stationShown++;
+            if (!_guided) _docked++;
+            _slotFlashAt = Now;
+            _slotFlashIndex = index;
+            RefreshStation();
+            UpdateHudExtras();
+            Play(DockSfx.Slot, _guided ? 1 : _streak);
+            GameFeel.Haptic(GameFeel.HapticKind.Light);
+            if (DockingContract.CompletesRing(_stationShown))
             {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _holder.anchoredPosition = Vector2.Lerp(from, to, Motion.Decorative ? k * k : 1f); // sin ReduceMotion: aparece acoplado (mismo tiempo)
-                yield return null;
-            }
-            _holder.anchoredPosition = to;
-            // ¡Clunk!: el puerto se ilumina.
-            PlayTone(147f, 0.16f, 0.08f);
-            GameFeel.Haptic(GameFeel.HapticKind.Firm);
-            StartCoroutine(UiFx.Shake(8f, 0.15f, _portRect));
-            _portGlow.color = NeuroStyle.WithAlpha(celebrate ? GoodColor : AmberColor, 0.5f);
-            if (celebrate)
-            {
-                _docked++;
-                StartCoroutine(UiFx.SparkBurst(_fxRect, new Vector2(0f, _portY), NeuroStyle.Sun, 16, 260f, 36f, 0.55f));
-                StartCoroutine(UiFx.RingBurst(_fxRect, new Vector2(0f, _portY), GoodColor, 200f, 640f, 0.45f));
+                if (!_guided) _rings++;
+                SetNotice(DockingContract.RingComplete, Cyan, true);
+                StartCoroutine(PlayLater(DockSfx.Ring, 0.26f));
             }
         }
 
-        /// <summary>Intento de entrar que no calza: baja, choca y rebota.</summary>
-        private IEnumerator Bump()
-        {
-            var from = _holder.anchoredPosition;
-            var hit = new Vector2(0f, _portY + _cell * 1.2f);
-            float t = 0f;
-            const float seconds = 0.25f;
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                _holder.anchoredPosition = Vector2.Lerp(from, Motion.Decorative ? hit : from, Mathf.Clamp01(t / seconds)); // sin ReduceMotion: sin choque (el rojo del puerto y el sonido sí)
-                yield return null;
-            }
-            PlayTone(110f, 0.12f, 0.07f);
-            GameFeel.Haptic(GameFeel.HapticKind.Double);
-            _portGlow.color = NeuroStyle.WithAlpha(BadColor, 0.45f);
-            yield return StartCoroutine(UiFx.Shake(18f, 0.25f, _holder));
-            t = 0f;
-            while (t < 0.2f)
-            {
-                t += GameClock.DeltaTime;
-                _holder.anchoredPosition = Vector2.Lerp(Motion.Decorative ? hit : from, from, Mathf.Clamp01(t / 0.2f));
-                yield return null;
-            }
-        }
-
-        private IEnumerator DriftAway()
-        {
-            var from = _holder.anchoredPosition;
-            float t = 0f;
-            const float seconds = 0.5f;
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(t / seconds);
-                _holder.anchoredPosition = from + (Motion.Decorative ? new Vector2(_playW * 0.8f * k * k, 120f * k) : Vector2.zero); // sin ReduceMotion: se desvanece en su lugar
-                _body.color = new Color(1f, 1f, 1f, 1f - k);
-                _shadow.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, 1f - k);
-                yield return null;
-            }
-        }
-
-        private void AddToStation()
-        {
-            int i = Mathf.Min(_docked, StationIcons) - 1;
-            _stationLabel.text = _docked == 1 ? "Tu estación · 1 módulo" : $"Tu estación · {_docked} módulos";
-            if (i < 0 || i >= _stationIcons.Count) return;
-            var icon = _stationIcons[i];
-            icon.gameObject.SetActive(true);
-            StartCoroutine(PopIn(icon.rectTransform, 0.25f));
-            if (_docked % 10 == 0)
-            {
-                _toast.Show($"¡{_docked} módulos!", "Tu estación crece", NeuroStyle.Sun, 1.0f);
-                GameFeel.LevelUp();
-            }
-        }
-
-        // ------------------------------------------------------------------ entrada
-
-        private void Update()
-        {
-            UpdateClock();
-            if (_phase != Phase.Decide || _answer >= 0 || GameClock.DeltaTime <= 0f) return;
-            if (!Input.GetMouseButtonDown(0)) return;
-            // Al presionar (no al soltar): el tiempo de respuesta es la medida.
-            for (int i = 0; i < 2; i++)
-            {
-                if (!RectTransformUtility.RectangleContainsScreenPoint(_buttons[i], Input.mousePosition, null)) continue;
-                _answer = i;
-                _answerAt = GameClock.Time;
-                GameFeel.Haptic(GameFeel.HapticKind.Light);
-                StartCoroutine(PopRect(_buttons[i], 0.92f, 0.15f));
-                return;
-            }
-        }
-
-        private void UpdateClock()
-        {
-            if (!Endless || _phase == Phase.Idle || _phase == Phase.Done || _endsAt <= 0f) return;
-            float left = _endsAt - GameClock.Time;
-            SetTimerFraction(Mathf.Clamp01(left / DockingContract.RetoSeconds));
-            int whole = Mathf.CeilToInt(left);
-            if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
-            {
-                _lastTickSecond = whole;
-                GameFeel.Tick();
-            }
-        }
-
-        private void SetButtonsActive(bool on)
-        {
-            foreach (var b in _buttons)
-            {
-                if (b == null) continue;
-                b.GetComponent<CanvasGroup>().alpha = on ? 1f : 0.45f;
-            }
-        }
-
-        private void SetFuel(float fraction)
-        {
-            _fuelFill.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
-            _fuelFill.offsetMin = _fuelFill.offsetMax = Vector2.zero;
-            _fuelFill.GetComponent<Image>().color = fraction > 0.35f ? NeuroStyle.Sky : AmberColor;
-        }
-
-        private void SetPrompt(string text, Color color)
-        {
-            _prompt.text = text;
-            _prompt.color = color;
-        }
-
-        private IEnumerator FloatText(Vector2 pos, string text, Color color)
-        {
-            var t = MakeText(_fxRect, "Float", 58, TextAnchor.MiddleCenter, color, 0f, 0f);
-            NeuroStyle.ClayText(t, 4f, 6f);
-            var r = t.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.sizeDelta = new Vector2(300f, 90f);
-            t.text = text;
-            float e = 0f;
-            const float seconds = 0.8f;
-            while (e < seconds)
-            {
-                e += GameClock.DeltaTime;
-                float k = Mathf.Clamp01(e / seconds);
-                r.anchoredPosition = pos + new Vector2(0f, 70f * (Motion.Decorative ? UiFx.EaseOutCubic(k) : 0f));
-                t.color = NeuroStyle.WithAlpha(color, 1f - k * k);
-                yield return null;
-            }
-            Destroy(t.gameObject);
-        }
-
-        private static IEnumerator Wait(float seconds)
+        private IEnumerator PlayLater(DockSfx sfx, float seconds)
         {
             float t = 0f;
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                yield return null;
-            }
+            while (t < seconds) { t += GameClock.DeltaTime; yield return null; }
+            Play(sfx);
         }
 
         // ------------------------------------------------------------------ fin
@@ -535,8 +350,8 @@ namespace NeuroVida.Games.Acoplamiento
         private IEnumerator FinishGame()
         {
             _phase = Phase.Done;
-            _holder.gameObject.SetActive(false);
-
+            int record = Mathf.Max(_bestRecord, _docked);
+            bool broke = _docked > _bestRecord;
             float accuracy = _trials > 0 ? (float)_correct / _trials : 0f;
             int speed = DockingContract.RotationSpeed(_disparities, _rts, _corrects);
             int[] curve = DockingContract.Curve(_disparities, _rts, _corrects);
@@ -544,10 +359,16 @@ namespace NeuroVida.Games.Acoplamiento
             float rtSum = 0f;
             int rtN = 0;
             for (int i = 0; i < _rts.Count; i++) if (_corrects[i]) { rtSum += _rts[i]; rtN++; }
-
-            SetPrompt("Fin de los acoplamientos", GoodColor);
-            ShowResult(score, speed);
-
+#if UNITY_EDITOR
+            // el contador de arriba, la estación y el título «N módulos acoplados» tienen que decir lo mismo (cada acierto se acopla una sola vez): si no, el smoke falla
+            if (!EditorShotMode && (_docked != _correct || _stationShown != _docked))
+                Debug.LogError("[SmokeTest] Acoplamiento: los acoplados (" + _docked + "), la estación (" + _stationShown + ") y los aciertos (" + _correct + ") no coinciden");
+            Debug.Log("[SmokeTest] Acoplamiento: partida terminada: " + _docked + " módulos, " + _rings + " anillos, " + _correct + " de " + _trials + ", racha mayor " + _bestStreak + ", giro " + speed + " °/s, nivel " + _dda.Level);
+#endif
+            HideModule();
+            ShowEnd(record, broke, speed, curve);
+            _exit.Show();
+            Play(DockSfx.Finale);
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,
@@ -565,348 +386,162 @@ namespace NeuroVida.Games.Acoplamiento
                     mode_hits = _dda.ScoredCorrect,
                     peak_level = _dda.PeakLevel,
                     rotation_speed_dps = speed,
-                    rotation_curve_ms = curve
+                    rotation_curve_ms = curve,
+                    docked = _docked,
+                    rings = _rings,
+                    dock_best = record,
+                    dock_new = broke ? 1 : 0,
                 }
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
             yield break;
         }
 
-        private void ShowResult(int score, int speed)
+        // ------------------------------------------------------------------ pieza del tutorial
+
+        /// <summary>El tutorial guiado común sobre el área segura (se llama al final de <c>BuildUi</c>, para que quede encima de todo).</summary>
+        private void SetUpTutorial() =>
+            BuildTutorial(_safe, GameHud.Height + 10f, DockingContract.Title, "Llegan módulos girados: decide si encajan en el puerto o son su espejo.", badgeAtBottom: true);
+
+        // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
+
+        protected override bool HowToReady => _loopOn && _phase != Phase.Done && _phase != Phase.Idle;
+
+        protected override void HowToSuspend()
         {
-            _exit.Show();
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Ingeniería espacial!" : score >= 65 ? "¡Buena estación!" : "Acoplamientos completados";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_correct} de {_trials} bien · {_docked} módulos";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = speed > 0 ? $"Tu giro mental: {speed}° por segundo" : $"Mejor racha {_bestStreak}";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
+            // el módulo a medias no cuenta: se vuelve a jugar entero (lo ganado hasta ahora se conserva; si ya había acertado, el módulo se acopla)
+            if (_landingPending) Land();
+            _phase = Phase.Idle;
+            _inputOn = false;
+            _shownAnswer = NoAnswer;
+            HideModule();
+            SetNotice("", Lime, false);
+            SetFuelVisible(false);
+            _hint.gameObject.SetActive(false);
+            RefreshButtons(Now);
         }
 
-        // ------------------------------------------------------------------ construcción de UI
-
-        protected override void BuildUi()
+        protected override void HowToResume(float spentSeconds)
         {
-
-            var canvasGo = new GameObject("DockingCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080f, 1920f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0f;
-            canvasGo.AddComponent<GraphicRaycaster>();
-
-            var bg = new GameObject("Background");
-            bg.transform.SetParent(canvasGo.transform, false);
-            var bgRect = bg.AddComponent<RectTransform>();
-            Stretch(bgRect);
-            WorldBackdrop.Build(bgRect, GameWorld.DockingBay);
-
-            var safeGo = new GameObject("SafeAreaContent");
-            safeGo.transform.SetParent(canvasGo.transform, false);
-            _safe = safeGo.AddComponent<RectTransform>();
-            ApplySafeArea(_safe);
-
-            _hud = new GameHud(_safe, "Acoplamiento", MarginU, this);
-            BuildTimer();
-
-            var playGo = new GameObject("Play");
-            playGo.transform.SetParent(_safe, false);
-            _play = playGo.AddComponent<RectTransform>();
-            Stretch(_play);
-
-            BuildStation();
-
-            _prompt = MakeText(_play, "Prompt", 58, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
-            NeuroStyle.ClayText(_prompt, 3.5f, 5f);
-            _prompt.rectTransform.anchorMin = _prompt.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            BestFit(_prompt, 42);
-
-            BuildPort();
-            BuildModule();
-            BuildFuel();
-            BuildButtons();
-
-            _fxRect = Layer(_play, "Fx");
-
-            BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
-            _toast.KeepOut(_prompt.rectTransform);          // la pregunta, aunque en este momento esté vacía
-
-            var flashGo = new GameObject("Flash");
-            flashGo.transform.SetParent(canvasGo.transform, false);
-            Stretch(flashGo.AddComponent<RectTransform>());
-            _flash = flashGo.AddComponent<Image>();
-            _flash.raycastTarget = false;
-            _flash.color = new Color(0f, 0f, 0f, 0f);
-
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            if (Endless) _endsAt += spentSeconds;                // el tiempo del tutorial no se le descuenta al Reto
+            Layout();
+            UpdateHud();
+            StartCoroutine(MainLoop());
         }
 
-        private void BuildStation()
+        // ------------------------------------------------------------------ entrada
+
+        private void Update()
         {
-            var go = new GameObject("Station");
-            go.transform.SetParent(_play, false);
-            _stationRow = go.AddComponent<RectTransform>();
-            _stationRow.anchorMin = _stationRow.anchorMax = new Vector2(0.5f, 0.5f);
-            _stationRow.sizeDelta = new Vector2(960f, 122f);
-            _stationLabel = MakeText(_stationRow, "Label", 42, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
-            var lr = _stationLabel.rectTransform;
-            lr.anchorMin = new Vector2(0f, 1f);
-            lr.anchorMax = new Vector2(1f, 1f);
-            lr.pivot = new Vector2(0.5f, 1f);
-            lr.sizeDelta = new Vector2(0f, 54f);
-            lr.anchoredPosition = Vector2.zero;
-            // Riel de la estación y los módulos acoplados en fila.
-            var rail = NewImage(_stationRow, "Rail", RoundedRectSprite.Get(8));
-            rail.type = Image.Type.Sliced;
-            rail.color = new Color(1f, 1f, 1f, 0.16f);
-            rail.rectTransform.sizeDelta = new Vector2(960f, 10f);
-            rail.rectTransform.anchoredPosition = new Vector2(0f, -40f);
-            rail.gameObject.SetActive(true);
-            const float icon = 52f, gap = 16f;
-            for (int i = 0; i < StationIcons; i++)
+            if (PollTutorialSkip()) return;             // un toque en «Saltar tutorial» no es un toque al juego
+            float now = Now, dt = GameClock.DeltaTime;
+            UpdateClock();
+            ReadInput();
+            Animate(now, dt);
+#if UNITY_EDITOR
+            if (_phase == Phase.Decide && !_guided && dt > 0f) AutoPlay(dt);
+            GuardNotices();
+#endif
+        }
+
+        private void UpdateClock()
+        {
+            if (!Endless || _guided || !_loopOn || _phase == Phase.Done || _endsAt <= 0f) return;
+            float left = _endsAt - Now;
+            SetTimer(left / _retoSeconds);
+            int whole = Mathf.CeilToInt(left);
+            if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
-                var m = NewImage(_stationRow, "Module", DockingSprites.ModuleCell());
-                m.rectTransform.sizeDelta = new Vector2(icon, icon);
-                m.rectTransform.anchoredPosition = new Vector2(-480f + icon * 0.5f + i * (icon + gap), -40f);
-                _stationIcons.Add(m);
+                _lastTickSecond = whole;
+                GameFeel.Tick();
             }
         }
 
-        private void BuildPort()
+        private void ReadInput()
         {
-            var go = new GameObject("Port");
-            go.transform.SetParent(_play, false);
-            _portRect = go.AddComponent<RectTransform>();
-            _portRect.anchorMin = _portRect.anchorMax = new Vector2(0.5f, 0.5f);
-            _portRect.sizeDelta = new Vector2(620f, 560f);
-            var panel = go.AddComponent<Image>();
-            panel.sprite = RoundedRectSprite.Get(64);
-            panel.type = Image.Type.Sliced;
-            panel.color = NeuroStyle.Surface;
-            panel.raycastTarget = false;
-            NeuroStyle.ClayFrame(panel, 6f, 14f);
-
-            _portGlow = NewImage(_portRect, "Glow", RadialGlowSprite.Get());
-            _portGlow.rectTransform.sizeDelta = new Vector2(760f, 760f);
-            _portGlow.color = new Color(1f, 1f, 1f, 0f);
-            _portGlow.gameObject.SetActive(true);
-
-            var label = MakeText(_portRect, "Label", 42, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.6f), 0f, 0f);
-            label.text = "PUERTO";
-            var lr = label.rectTransform;
-            lr.anchorMin = lr.anchorMax = new Vector2(0.5f, 1f);
-            lr.pivot = new Vector2(0.5f, 1f);
-            lr.sizeDelta = new Vector2(400f, 58f);
-            lr.anchoredPosition = new Vector2(0f, -12f);
-
-            var sr = new GameObject("Socket");
-            sr.transform.SetParent(_portRect, false);
-            _socketRoot = sr.AddComponent<RectTransform>();
-            _socketRoot.anchorMin = _socketRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _socketRoot.anchoredPosition = new Vector2(0f, -10f);
-            _socket = NewImage(_socketRoot, "Hole", null);
-        }
-
-        private void BuildModule()
-        {
-            var go = new GameObject("Module");
-            go.transform.SetParent(_play, false);
-            _holder = go.AddComponent<RectTransform>();
-            _holder.anchorMin = _holder.anchorMax = new Vector2(0.5f, 0.5f);
-
-            // Sombra: la misma pieza en tinta, corrida hacia abajo EN PANTALLA (el contenedor no gira; la pieza sí).
-            var sg = new GameObject("ShadowRoot");
-            sg.transform.SetParent(_holder, false);
-            _shadowRoot = sg.AddComponent<RectTransform>();
-            _shadowRoot.anchorMin = _shadowRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _shadowRoot.anchoredPosition = new Vector2(0f, -ShadowDrop);
-            var bgo = new GameObject("BodyRoot");
-            bgo.transform.SetParent(_holder, false);
-            _bodyRoot = bgo.AddComponent<RectTransform>();
-            _bodyRoot.anchorMin = _bodyRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _shadow = NewImage(_shadowRoot, "Shadow", null);
-            _body = NewImage(_bodyRoot, "Body", null);
-            go.SetActive(false);
-        }
-
-        private void BuildFuel()
-        {
-            var bg = new GameObject("Fuel");
-            bg.transform.SetParent(_play, false);
-            _fuelBg = bg.AddComponent<RectTransform>();
-            _fuelBg.anchorMin = _fuelBg.anchorMax = new Vector2(0.5f, 0.5f);
-            _fuelBg.sizeDelta = new Vector2(420f, 16f);
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.sprite = RoundedRectSprite.Get(10);
-            bgImg.type = Image.Type.Sliced;
-            bgImg.color = new Color(1f, 1f, 1f, 0.12f);
-            bgImg.raycastTarget = false;
-            var fillGo = new GameObject("Fill");
-            fillGo.transform.SetParent(bg.transform, false);
-            _fuelFill = fillGo.AddComponent<RectTransform>();
-            _fuelFill.anchorMin = Vector2.zero;
-            _fuelFill.anchorMax = Vector2.one;
-            _fuelFill.offsetMin = _fuelFill.offsetMax = Vector2.zero;
-            var img = fillGo.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(10);
-            img.type = Image.Type.Sliced;
-            img.raycastTarget = false;
-            img.color = NeuroStyle.Sky;
-            bg.SetActive(false);
-        }
-
-        private void BuildButtons()
-        {
-            string[] labels = { "ENCAJA", "ESPEJO" };
-            Color[] colors = { NeuroStyle.Lime, NeuroStyle.Grape };
-            Sprite[] icons = { DockingSprites.FitIcon(), DockingSprites.MirrorIcon() };
+            if (!_inputOn || _phase != Phase.Decide || _answer != NoAnswer) return;
+            if (!GuidedTutorial.TryPress(out Vector2 pos)) return;
+            if (_tutorial != null && _tutorial.Coach != null && _tutorial.Coach.Blocks(pos)) return;
+            if (GameClock.DeltaTime <= 0f) return;                         // en pausa los toques los recibe el paso o el menú, no el juego
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, pos, null, out var local)) return;
+            var p = ToLogical(local);
             for (int i = 0; i < 2; i++)
             {
-                var go = new GameObject("Button" + labels[i]);
-                go.transform.SetParent(_play, false);
-                var r = go.AddComponent<RectTransform>();
-                r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-                r.sizeDelta = new Vector2(440f, 190f);
-                go.AddComponent<CanvasGroup>();
-                var img = go.AddComponent<Image>();
-                img.sprite = RoundedRectSprite.Get(64);
-                img.type = Image.Type.Sliced;
-                img.color = colors[i];
-                img.raycastTarget = false;
-                NeuroStyle.ClayFrame(img, 6f, 14f);
-
-                var icon = NewImage(r, "Icon", icons[i]);
-                icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-                icon.rectTransform.sizeDelta = new Vector2(120f, 120f);
-                icon.rectTransform.anchoredPosition = new Vector2(88f, 0f);
-                icon.gameObject.SetActive(true);
-
-                var t = MakeText(r, "Label", 60, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
-                t.text = labels[i];
-                var tr = t.rectTransform;
-                tr.anchorMin = new Vector2(0f, 0f);
-                tr.anchorMax = new Vector2(1f, 1f);
-                tr.offsetMin = new Vector2(150f, 0f);
-                tr.offsetMax = new Vector2(-18f, 0f);
-                BestFit(t, 42);
-                _buttons[i] = r;
+                var b = _plan.ButtonBox(i);
+                if (p.x >= b.X0 && p.x <= b.X1 && p.y >= b.Y0 && p.y <= b.Y1) { PressButton(i); return; }
             }
         }
 
-        private void BuildTimer()
+        /// <summary>Un toque en un botón (0 = «Encaja», 1 = «Espejo»): la respuesta cuenta al presionar.</summary>
+        private void PressButton(int i)
         {
-            var bg = new GameObject("TimerBar");
-            bg.transform.SetParent(_safe, false);
-            _timerBg = bg.AddComponent<RectTransform>();
-            _timerBg.anchorMin = _timerBg.anchorMax = new Vector2(0.5f, 1f);
-            _timerBg.pivot = new Vector2(0.5f, 0.5f);
-            _timerBg.sizeDelta = new Vector2(960f, 16f);
-            _timerBg.anchoredPosition = new Vector2(0f, -(GameHud.Height + 14f));
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.sprite = RoundedRectSprite.Get(10);
-            bgImg.type = Image.Type.Sliced;
-            bgImg.color = new Color(1f, 1f, 1f, 0.12f);
-            bgImg.raycastTarget = false;
-
-            var fillGo = new GameObject("Fill");
-            fillGo.transform.SetParent(bg.transform, false);
-            _timerFill = fillGo.AddComponent<RectTransform>();
-            _timerFill.anchorMin = Vector2.zero;
-            _timerFill.anchorMax = Vector2.one;
-            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
-            var img = fillGo.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(10);
-            img.type = Image.Type.Sliced;
-            img.raycastTarget = false;
-            img.color = GoodColor;
+            if (_answer != NoAnswer) return;
+            _answer = i;
+            _answerAt = Now;
+            _pressAt[i] = Now;
+            Play(DockSfx.Tap);
+            GameFeel.Haptic(GameFeel.HapticKind.Light);
         }
 
-        private void SetTimerFraction(float fraction)
+        /// <summary>Un sonido de «Madera cálida» (<see cref="DockingSounds"/>): con «Efectos de sonido» apagado no se calcula ni suena nada. Volumen 0,8: el del laboratorio donde Ricardo lo eligió.</summary>
+        private void Play(DockSfx sfx, int arg = 0)
         {
-            _timerFill.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
-            _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
-            _timerFill.GetComponent<Image>().color = fraction > 0.5f ? Color.Lerp(AmberColor, GoodColor, (fraction - 0.5f) * 2f)
-                                                                      : Color.Lerp(BadColor, AmberColor, fraction * 2f);
+            if (!SoundWanted) return;
+            var clip = DockingSounds.Get(sfx, arg);
+            if (clip != null) _audioSource.PlayOneShot(clip, 0.8f);
         }
 
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+        private bool SoundWanted => GameFeel.SoundOn && (_config == null || _config.config == null || _config.config.sound_enabled);
 
-            AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 48, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            AddResultText("Extra", 44, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            go.SetActive(false);
+        private static IEnumerator Wait(float seconds)
+        {
+            float t = 0f;
+            while (t < seconds)
+            {
+                t += GameClock.DeltaTime;
+                yield return null;
+            }
         }
 
-        private static RectTransform Layer(Transform parent, string name)
+#if UNITY_EDITOR
+        private float _botT;
+        private int _botPick = NoAnswer;
+        private int _guardReports;
+
+        /// <summary>SOLO EN EL EDITOR (smoke): juega solo. Contesta bien casi siempre, una vez de cada tres se equivoca a propósito (para ver «Era su espejo» y «Sí encajaba») y una de cada cinco no contesta (para ver «Sin tiempo»). En el teléfono no hace nada.</summary>
+        private void AutoPlay(float dt)
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var r = go.AddComponent<RectTransform>();
-            Stretch(r);
-            return r;
+            if (EditorShotMode || !GuidedTutorial.EditorAutoPlayGame || _trial == null || _answer != NoAnswer) return;
+            if (_botPick == NoAnswer)
+            {
+                bool silent = _trials % 5 == 4;
+                bool wrong = _trials % 3 == 1;
+                _botPick = silent ? -1 : ((_trial.Mirrored ? 1 : 0) ^ (wrong ? 1 : 0));
+                _botT = 0f;
+            }
+            _botT += dt;
+            if (_botT < 0.5f || _botPick < 0) return;
+            int pick = _botPick;
+            _botPick = NoAnswer;
+            PressButton(pick);
         }
 
-        private static Image NewImage(Transform parent, string name, Sprite sprite)
+        /// <summary>SOLO EN EL EDITOR: el pedido de Ricardo hecho prueba. El aviso (con su píldora y su texto) nunca toca el módulo, el puerto ni los botones: si se cruzan, el smoke falla (cualquier error de consola lo hace).</summary>
+        private void GuardNotices()
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var r = go.AddComponent<RectTransform>();
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            var img = go.AddComponent<Image>();
-            img.sprite = sprite;
-            img.raycastTarget = false;
-            go.SetActive(false);
-            return img;
+            if (_guardReports >= 3 || _s <= 0f || _phase == Phase.Done || !_noticePill.gameObject.activeSelf) return;
+            var rt = _noticePill.rectTransform;
+            var c = ToLogical(rt.anchoredPosition);
+            var box = new DockBox(c.x - rt.sizeDelta.x / _s * 0.5f, c.y - rt.sizeDelta.y / _s * 0.5f, c.x + rt.sizeDelta.x / _s * 0.5f, c.y + rt.sizeDelta.y / _s * 0.5f);
+            var zones = new[] { ("el módulo", _plan.ModuleBox), ("el puerto", _plan.PortBox), ("«Encaja»", _plan.ButtonBox(0)), ("«Espejo»", _plan.ButtonBox(1)), ("la barra de tiempo", _plan.FuelBox) };
+            foreach (var z in zones)
+                if (box.Intersects(z.Item2))
+                {
+                    _guardReports++;
+                    Debug.LogError("[SmokeTest] Acoplamiento: un aviso tapa " + z.Item1 + " (aviso de " + Mathf.RoundToInt(box.X0) + "," + Mathf.RoundToInt(box.Y0) + " a " + Mathf.RoundToInt(box.X1) + "," + Mathf.RoundToInt(box.Y1) + ")");
+                    return;
+                }
         }
-
-        // ------------------------------------------------------------------ layout
-
-        private void Layout()
-        {
-            Canvas.ForceUpdateCanvases();
-            _playW = _play.rect.width;
-            _playH = _play.rect.height;
-            float top = _playH * 0.5f, bottom = -_playH * 0.5f;
-
-            _stationRow.anchoredPosition = new Vector2(0f, top - (GameHud.Height + 90f));
-            _prompt.rectTransform.sizeDelta = new Vector2(_playW - MarginU * 2f, 90f);
-            _prompt.rectTransform.anchoredPosition = new Vector2(0f, top - (GameHud.Height + 200f));
-
-            // Botones abajo; el puerto encima; el módulo llega arriba, entre el aviso y el puerto.
-            float buttonsY = bottom + 60f + 95f;
-            _buttons[0].anchoredPosition = new Vector2(-240f, buttonsY);
-            _buttons[1].anchoredPosition = new Vector2(240f, buttonsY);
-            _portY = buttonsY + 95f + 40f + 280f;
-            _portRect.anchoredPosition = new Vector2(0f, _portY);
-            float promptBottom = top - (GameHud.Height + 245f);
-            _arriveY = (promptBottom + (_portY + 280f)) * 0.5f;
-            _fuelBg.anchoredPosition = new Vector2(0f, _portY + 300f);
-        }
-
-        private void UpdateHud()
-        {
-            _hud.SetLevel(_dda.PresentedLevel);
-            if (Endless) _hud.SetPoints(_points);
-            else _hud.SetInfo($"{Mathf.Min(_trials + 1, DockingContract.PrecisionTrials)} de {DockingContract.PrecisionTrials}");
-        }
+#endif
     }
 }
