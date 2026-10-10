@@ -119,6 +119,18 @@ class TrailTelemetryTest {
   }
 
   @Test
+  fun `el ajuste de sonido de la persona manda siempre, tambien en las herramientas de prueba`() {
+    // las herramientas de prueba (DebugTools) abren el juego sin decir nada del sonido (null): con el sonido apagado en Opciones no tiene que sonar
+    assertFalse(UnityGameLauncher.soundFor(requested = null, setting = false))
+    assertTrue(UnityGameLauncher.soundFor(requested = null, setting = true))
+    // quien llama puede pedir silencio, pero nunca forzar el sonido sobre un ajuste apagado
+    assertFalse(UnityGameLauncher.soundFor(requested = true, setting = false))
+    assertFalse(UnityGameLauncher.soundFor(requested = false, setting = true))
+    assertFalse(UnityGameLauncher.soundFor(requested = false, setting = false))
+    assertTrue(UnityGameLauncher.soundFor(requested = true, setting = true))
+  }
+
+  @Test
   fun `Rescate relampago pide el tutorial solo a quien nunca lo jugo`() {
     assertTrue(UnityGameLauncher.shouldShowTutorial("radar", emptyList()))
     assertTrue(UnityGameLauncher.shouldShowTutorial("radar", listOf(played("satelites"))))

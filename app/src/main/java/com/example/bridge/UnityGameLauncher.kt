@@ -100,6 +100,12 @@ object UnityGameLauncher {
    * con un [EXTRA_LAUNCH_ID] nuevo. La vuelta a la app llega a `MainActivity.onNewIntent` (ver
    * `NativeReceiver.returnToApp`).
    */
+  /**
+   * Si suena o no: el ajuste «Efectos de sonido» de la persona manda SIEMPRE (Tarea 64: las herramientas de prueba abrían el juego sin pasarlo y todo seguía sonando con el sonido apagado). Quien llama puede pedir silencio (false) o no decir nada (null);
+   * nunca puede forzar el sonido si la persona lo apagó. Igual que la vibración, que se lee del repositorio.
+   */
+  fun soundFor(requested: Boolean?, setting: Boolean): Boolean = setting && (requested ?: true)
+
   fun buildGameIntent(
     context: Context,
     gameId: String,
@@ -108,7 +114,7 @@ object UnityGameLauncher {
     baseIntensity: Int,
     timed: Boolean,
     ageBand: AgeBand,
-    soundEnabled: Boolean = true,
+    soundEnabled: Boolean? = null,    // null = el ajuste de la persona (ver soundFor)
     launchId: String? = null, // una partida en pausa se retoma con SU id (Unity no la reinicia)
     assessmentStep: Int = 0,  // 1..assessmentTotal en la evaluación inicial; 0 = partida normal
     assessmentTotal: Int = 0,
@@ -132,7 +138,7 @@ object UnityGameLauncher {
     baseIntensity: Int,
     timed: Boolean,
     ageBand: AgeBand,
-    soundEnabled: Boolean,
+    soundEnabled: Boolean?,
     launchId: String? = null,
     assessmentStep: Int = 0,
     assessmentTotal: Int = 0,
@@ -158,7 +164,7 @@ object UnityGameLauncher {
         base_intensity = baseIntensity,
         timed = timed,
         age_band = ageBand.name, // "SENIOR"/"ADULT"/"UNDER_18" -- coincide 1:1 con DdaUserProfileConfig.ParseAgeBand en C#
-        sound_enabled = soundEnabled,
+        sound_enabled = soundFor(soundEnabled, com.example.NeuroVidaApplication.instance.repository.userSettings.value.soundEnabled),
         haptics_enabled = com.example.NeuroVidaApplication.instance.repository.userSettings.value.hapticsEnabled,
         has_dda_rating = savedRating >= 0f,
         dda_rating = savedRating.coerceAtLeast(0f).toDouble(),
