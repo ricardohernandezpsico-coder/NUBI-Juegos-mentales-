@@ -130,3 +130,61 @@ El condicional del juego si aplica a esta partida (`Constelaciones.tip`, el modo
 **Detrás de «Ver el detalle de tu partida»** (sin repetir lo que ya está arriba): Tinta, la explicación del costo de cambio; Piloto, cómo leer la medida, la ruta, los toques equivocados, el nivel, la racha y los puntos; Freno, el velocímetro de tres zonas, el récord de frenado y cómo leerlo; Satélites, el planeta con sus luces, las rondas perfectas, el récord, la velocidad superada y cómo leerlo; Rescate, las cápsulas a salvo en fila, las rondas perfectas, el destello más corto, los viajes, el récord, el total, «Tu captura» con sus casilleros y cómo leer el vistazo.
 
 **El truco:** el condicional si aplica (Tinta: `DosOrillas.tips`; Piloto: `Piloto.advice`; Freno: «Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona.» cuando no hubo estimación) y si no el general de la tabla.
+
+---
+
+## Grupo 3 (Razonamiento): Carga exacta, Engranajes y Acoplamiento
+
+**Tolerancia de «parejo» por medida:**
+
+| Juego | Medida (unidad) | Mejor es | Tolerancia | Por qué |
+|---|---|---|---|---|
+| Carga exacta | cargas logradas sin pista (%) | hacia arriba | 10 puntos | de 6 a 12 cargas por partida: una sola pesa de 8 a 17 puntos |
+| Engranajes | máquinas arregladas (%) | hacia arriba | 10 puntos | de 6 a 12 máquinas por partida |
+| Acoplamiento | tu giro mental (grados por segundo) | hacia arriba | 30 °/s | la pendiente del tiempo contra el ángulo cambia de 20 a 40 °/s entre partidas parecidas |
+
+Los cuadros de Carga y Engranajes van en **%** aunque el recuadro diga «5 de 8» / «7 de 10 máquinas» (cada partida trae un total distinto, como en Bodega).
+
+**UN dato tuyo** (si hay récord nuevo hoy, ese; si no):
+
+| Juego | Medida a la vista | UN dato tuyo |
+|---|---|---|
+| Carga exacta («Tu reactor») | «5 de 8» «cargas logradas sin pista» | «Camino corto en 3 de esas 5» (con 3 o más sin pista); si no, el desglose «2 sin pista · 3 con pista» |
+| Engranajes («Tu cohete») | «7 de 10 máquinas» «arregladas» | lo que pasó con el cohete: «¡Despegó tu cohete n.º 3!» o «Faltan 4 luces: tu cohete espera en el hangar» |
+| Acoplamiento («Tu giro mental») | «212° por segundo» «los grados que giras la pieza en tu mente cada segundo» (sin medida de giro, la frase sin culpa de siempre) | «24 módulos acoplados» (o el récord nuevo) |
+
+**Detrás de «Ver el detalle de tu partida»:** Carga, el desglose, el camino corto y el tiempo por carga; Engranajes, la etapa más alta, los cohetes en órbita, las luces del hangar y el ritmo; Acoplamiento, los anillos completos, el récord, lo acoplado en toda la vida, la curva de giro y cómo leerla.
+
+**El truco:** el condicional si aplica (Carga: `Carga.tip`, que cambia con el nivel; Engranajes: `Engranajes.tip`) y si no el general de la tabla; Acoplamiento solo tiene el general.
+
+---
+
+## Grupo 4 (Lenguaje): En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras y La estrella intrusa
+
+**Tolerancia de «parejo» por medida:**
+
+| Juego | Medida (unidad) | Mejor es | Tolerancia | Por qué |
+|---|---|---|---|---|
+| En la punta de la lengua | palabras encontradas por tu cuenta (%) | hacia arriba | 10 puntos | de 6 a 12 palabras por partida: una sola pesa de 8 a 17 puntos |
+| Lluvia de meteoros | vocabulario reconocido en las palabras menos comunes (%) | hacia arriba | 5 puntos | promedio ponderado sobre unas 30 a 60 palabras |
+| ¿Verdad o disparate? | tu lectura (palabras por minuto) | hacia arriba | 10 ppm | entre partidas parecidas varía unas 10 palabras por minuto |
+| Cosecha de palabras | las palabras comunes encontradas (%) | hacia arriba | 5 puntos | sobre unas 20 a 50 comunes: cada una pesa de 2 a 5 puntos |
+| La estrella intrusa | rondas bien (%) | hacia arriba | 10 puntos | de 8 a 14 rondas por partida |
+
+Punta, Cosecha e Intrusa muestran sus tres cuadros en **%** aunque el recuadro diga «5 de 8» (cada partida trae un total distinto).
+
+**UN dato tuyo** (el primero que haya de la lista; el resto va al detalle):
+
+| Juego | Medida a la vista | UN dato tuyo |
+|---|---|---|
+| En la punta de la lengua («Tu cielo de palabras») | «5 de 8» «palabras encontradas por tu cuenta» | el tiempo hasta «¡La tengo!» (con 3 o más solas); si no, «Las azules vuelven en otra partida.»; si no, el desglose |
+| Lluvia de meteoros («Tu vocabulario») | «51 %» «de las palabras menos comunes, reconocidas» | la frase de siempre («Reconoces casi todas las comunes…») |
+| ¿Verdad o disparate? («Tu lectura con comprensión») | «142 ppm» «palabras por minuto, leyendo y decidiendo, en las frases que acertaste» | lo que más te frena («Las negaciones te toman 0,6 s más que las frases simples…»); si ningún tipo se separa, «Tu mejor racha: 14 seguidas» |
+| Cosecha de palabras («Tu cosecha») | «21 de 48» «palabras comunes» (sin comunes medidas, el total de palabras) | «Tu palabra estrella: MARIPOSA» (o la más larga); si no, la lectura del ritmo |
+| La estrella intrusa («Tu red de significados») | «11 de 14» «rondas bien» | «Las trampas te engañaron 2 de 4»; si no, «¿Qué las une? Nombraste 3 de 5»; si no, la mediana al tocar |
+
+**Detrás de «Ver el detalle de tu partida»:** Punta, la lista de palabras con su lucero, el desglose, las azules y el tiempo; Meteoros, las barras por grupo de palabras, el reconocimiento, el filtro y la colección de raras; Disparate, las barras «Qué te frena», los disparates sutiles y la mejor racha; Cosecha, «Tu manera de buscar», «Tu ritmo», «También podías…» y las pistas de Nubi; Intrusa, las barras por tipo de cosa, las trampas, «¿Qué las une?», tu atlas con sus láminas y la nota.
+
+**El truco:** el condicional si aplica (Punta: `Punta.message`; Meteoros: `Vocabulary.filterAdvice`; Disparate: `Reading.tip` del tipo más lento; Cosecha: la frase de «tu manera de buscar» cuando la búsqueda se inclina mucho a los racimos o a los saltos; Intrusa: `Atlas.trapReading` cuando alguna trampa engañó) y si no el general de la tabla.
+
+**Con el grupo 4 los 18 juegos usan el final con sentido** (`FinalModels.usesMeaningful`), así que la nota «Medida de esta partida. No es un diagnóstico.» sale solo de su pie y se quitó la nota común de la pantalla.

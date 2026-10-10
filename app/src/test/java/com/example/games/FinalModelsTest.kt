@@ -129,7 +129,7 @@ class FinalModelsTest {
     val m = FinalModels.forGame(tinta, emptyList())!!
     assertEquals("Cuánto te frenó la palabra", m.boxTitle)
     assertEquals("+0,4 s", m.headline)
-    assertTrue(m.headlineUnit.startsWith("Cuánto más tardaste, en promedio, cuando la palabra decía un color"))
+    assertEquals("Lo que tardaste de más cuando la palabra y su tinta no coincidían.", m.headlineUnit)
     assertEquals("Cambiar de orilla te costó: +0,2 s", m.dataLine)
     assertEquals("la diferencia es de 0,3 s o más: el truco condicional", "Mira primero de qué orilla llega y recién después la palabra: la orilla te dice qué tocar.", m.trick)
     val small = FinalModels.forGame(tinta.copy(interferenceMs = 80, switchCostMs = null), emptyList())!!
@@ -203,6 +203,7 @@ class FinalModelsTest {
     val m = FinalModels.forGame(satelites, points("tracking", 2.2f, 2.4f, 2.9f))!!
     assertEquals("Tu seguimiento", m.boxTitle)
     assertEquals("2,6 a la vez", m.headline)
+    assertEquals("cuántos seguiste de verdad al mismo tiempo, sin contar la suerte", m.headlineUnit)
     assertEquals("Encendiste 12 luces", m.dataLine)
     assertEquals(listOf("2,6 a la vez", "2,5 a la vez", "2,9 a la vez"), m.chips.map { it.value })
     assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
@@ -228,6 +229,84 @@ class FinalModelsTest {
   @Test
   fun `todos los textos de los finales del grupo 2 cumplen las reglas de vocabulario`() {
     for (r in listOf(tinta, piloto, freno, satelites, rescate)) {
+      val m = FinalModels.forGame(r, points("x", 60f, 70f))!!
+      val all = listOfNotNull(m.boxTitle, m.headline, m.headlineUnit, m.dataLine, m.progressPhrase, m.trick, m.why, m.source, m.note, m.spoken).joinToString(" ").lowercase()
+      for (bad in listOf("entren", "cerebro", "cognitiv", "percentil", "otras personas")) assertTrue("${r.gameId}: «$bad»", !all.contains(bad))
+    }
+  }
+
+  // ------------------------------------------------------------------ grupo 3 (Razonamiento)
+
+  private val carga = result("calculo") { copy(correctAnswers = 5, totalTrials = 8, level = 4, cargaAlone = 5, cargaHinted = 2, cargaShort = 3, cargaMs = 14_000) }
+  private val engranajes = result("engranajes") { copy(correctAnswers = 7, totalTrials = 10, engrEtapa = 3, engrLaunches = 1, engrOrbit = 3, engrLights = 0, engrMs = 7500) }
+  private val acoplamiento = result("acoplamiento") { copy(rotationSpeedDps = 212, rotationCurveMs = listOf(900, 1100, 1400, 1750, 2100), dockDocked = 24, dockRings = 3, dockBest = 31, dockNewRecord = false) }
+
+  @Test
+  fun `los juegos del grupo 3 usan el final con sentido solo con sus datos propios`() {
+    for (r in listOf(carga, engranajes, acoplamiento)) assertTrue(r.gameId, FinalModels.usesMeaningful(r))
+    for (id in listOf("calculo", "engranajes", "acoplamiento")) assertTrue(id, !FinalModels.usesMeaningful(result(id)))
+    assertTrue("sin la medida de giro pero con módulos acoplados también", FinalModels.usesMeaningful(result("acoplamiento") { copy(dockDocked = 5) }))
+  }
+
+  @Test
+  fun `Carga exacta dice las cargas sin pista, el camino corto y su truco segun el nivel`() {
+    val m = FinalModels.forGame(carga, emptyList())!!
+    assertEquals("Tu reactor", m.boxTitle)
+    assertEquals("5 de 8", m.headline)
+    assertEquals("cargas logradas sin pista", m.headlineUnit)
+    assertEquals("Camino corto en 3 de esas 5", m.dataLine)
+    assertEquals("Mira primero si multiplicar dos celdas te deja cerca de la carga; después ajusta sumando o restando.", m.trick)
+    // nivel bajo y alguna con pista: el truco condicional es otro
+    assertEquals("Mira cuánto le falta a la celda más grande para llegar a la carga y busca otra celda que lo complete.", FinalModels.forGame(carga.copy(level = 2), emptyList())!!.trick)
+    // sin camino corto (menos de 3 sin pista) el dato es el desglose
+    assertEquals("2 sin pista · 3 con pista", FinalModels.forGame(carga.copy(correctAnswers = 2, totalTrials = 5, cargaAlone = 2, cargaHinted = 3, cargaShort = null), emptyList())!!.dataLine)
+    assertEquals("Fuente: Reyna y otros, 2009", m.source)
+    assertTrue(m.why.startsWith("Pusiste en juego lo que usas para hacer cuentas con flexibilidad para llegar a un número."))
+  }
+
+  @Test
+  fun `Carga exacta compara en porcentaje con 10 puntos de tolerancia`() {
+    val prev = points("carga", 50f, 75f, 62.5f)
+    val m = FinalModels.forGame(carga, prev)!!               // hoy 62,5 %
+    assertEquals(listOf("63 %", "63 %", "75 %"), m.chips.map { it.value })
+    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    assertEquals("¡Tu mejor partida hasta ahora!", FinalModels.forGame(carga.copy(correctAnswers = 7, cargaAlone = 7), prev)!!.progressPhrase)
+  }
+
+  @Test
+  fun `Engranajes dice las maquinas arregladas y lo que paso con el cohete`() {
+    val m = FinalModels.forGame(engranajes, emptyList())!!
+    assertEquals("Tu cohete", m.boxTitle)
+    assertEquals("7 de 10 máquinas", m.headline)
+    assertEquals("arregladas", m.headlineUnit)
+    assertEquals("¡Despegó tu cohete n.º 3!", m.dataLine)
+    assertEquals("Faltan 4 luces: tu cohete espera en el hangar", FinalModels.forGame(engranajes.copy(engrLaunches = 0, engrLights = 6), emptyList())!!.dataLine)
+    assertEquals("Antes de cambiar algo, mira qué piezas quedan después: lo que tocas antes de una rama mueve todo lo que sigue.", m.trick)
+    assertEquals("Fuente: Hegarty, 2004", m.source)
+    assertEquals(listOf("70 %", "—", "—"), m.chips.map { it.value })
+  }
+
+  @Test
+  fun `Acoplamiento dice el giro mental en grados por segundo y los modulos acoplados`() {
+    val m = FinalModels.forGame(acoplamiento, points("rotation", 180f, 200f, 260f))!!
+    assertEquals("Tu giro mental", m.boxTitle)
+    assertEquals("212° por segundo", m.headline)
+    assertEquals("24 módulos acoplados", m.dataLine)
+    assertEquals(listOf("212 °/s", "213 °/s", "260 °/s"), m.chips.map { it.value })
+    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    assertEquals("Elige una parte que destaque, como una punta o un codo, y gira solo esa en tu mente.", m.trick)
+    assertEquals("¡Récord nuevo: 31 módulos!", FinalModels.forGame(acoplamiento.copy(dockNewRecord = true), emptyList())!!.dataLine)
+    assertEquals("Hoy te fue mejor que tu promedio.", FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 270), points("rotation", 180f, 200f, 300f))!!.progressPhrase)
+    assertEquals("¡Tu mejor partida hasta ahora!", FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 320), points("rotation", 180f, 200f, 300f))!!.progressPhrase)
+    val none = FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = null, rotationCurveMs = null), emptyList())!!
+    assertEquals("—", none.headline)
+    assertTrue(none.headlineUnit.startsWith("Se calcula con al menos 8 aciertos"))
+    assertEquals("24 módulos acoplados", none.dataLine)
+  }
+
+  @Test
+  fun `todos los textos de los finales del grupo 3 cumplen las reglas de vocabulario`() {
+    for (r in listOf(carga, engranajes, acoplamiento)) {
       val m = FinalModels.forGame(r, points("x", 60f, 70f))!!
       val all = listOfNotNull(m.boxTitle, m.headline, m.headlineUnit, m.dataLine, m.progressPhrase, m.trick, m.why, m.source, m.note, m.spoken).joinToString(" ").lowercase()
       for (bad in listOf("entren", "cerebro", "cognitiv", "percentil", "otras personas")) assertTrue("${r.gameId}: «$bad»", !all.contains(bad))

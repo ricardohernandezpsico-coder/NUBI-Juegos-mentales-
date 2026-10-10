@@ -606,68 +606,35 @@ fun GameResultScreen(
       }
     }
 
-    // Carga exacta (pantalla final, docs/diseno-carga-exacta.md §6): «Tu reactor». «Lograste X de N sin pista» (las cargas sin la pista de Nubi), el desglose en una
-    // línea y, con 3 o más cargas sin pista, el tiempo medio por carga y cuántas fueron por el camino más corto. Cada dato aparece UNA vez; sin recuadros.
-    val cargaAlone = result.cargaAlone
-    if (cargaAlone != null) {
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "calculo" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
       val carga = com.example.data.Carga
+      val cargaAlone = result.cargaAlone
       val cargaTotal = result.totalTrials
-      Spacer(Modifier.height(14.dp))
-      Text("Tu reactor", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = carga.spoken(cargaAlone, cargaTotal) }.testTag("carga_headline"),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text("Lograste", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Row(verticalAlignment = Alignment.Bottom) {
-          Text("${cargaAlone.coerceIn(0, maxOf(cargaTotal, 0))} de $cargaTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
-          Text("sin pista", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))
-        }
-        carga.breakdown(cargaAlone, result.cargaHinted, cargaTotal)?.let {
-          Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
-        }
-      }
-      carga.shortLine(result.cargaShort, cargaAlone)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("carga_short"))
-      }
-      carga.speedLine(result.cargaMs, cargaAlone)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("carga_speed"))
-      }
+      val model = remember(result, starMeasures) { FinalModels.carga(result, starMeasures) }
+      val cargaRows = listOfNotNull(
+        carga.breakdown(cargaAlone, result.cargaHinted, cargaTotal)?.let { "carga_breakdown" to it },
+        carga.shortLine(result.cargaShort, cargaAlone)?.let { "carga_short" to it },
+        carga.speedLine(result.cargaMs, cargaAlone)?.let { "carga_speed" to it }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = if (cargaRows.isEmpty()) null else { { cargaRows.forEach { (tag, line) -> DetailLine(line, tag) } } })
     }
 
-    // Engranajes (pantalla final, docs/diseno-engranajes.md §9): «Tu cohete». «Arreglaste X de N máquinas», la etapa más alta (de 5), qué pasó con el cohete (despegó, o
-    // cuántas luces faltan y que espera en el hangar), los cohetes en órbita y, con 3 o más máquinas, el ritmo. Cada dato aparece UNA vez; sin recuadros.
-    val engrEtapa = result.engrEtapa
-    if (engrEtapa != null) {
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "engranajes" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
       val eng = com.example.data.Engranajes
       val engTotal = result.totalTrials
-      Spacer(Modifier.height(14.dp))
-      Text("Tu cohete", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = eng.spoken(result.correctAnswers, engTotal) }.testTag("engranajes_headline"),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text("Arreglaste", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Row(verticalAlignment = Alignment.Bottom) {
-          Text("${result.correctAnswers.coerceIn(0, maxOf(engTotal, 0))} de $engTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
-          Text("máquinas", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))
-        }
-      }
-      eng.etapaLine(engrEtapa)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_etapa"))
-      }
-      eng.launchLine(result.engrLaunches, result.engrOrbit)?.let {
-        Text(it, color = Clay.Sun, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_launch"))
-      }
-      eng.hangarLine(result.engrLights)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_hangar"))
-      }
-      eng.orbitLine(result.engrOrbit)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_orbit"))
-      }
-      eng.paceLine(result.engrMs, engTotal)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("engranajes_pace"))
-      }
+      val model = remember(result, starMeasures) { FinalModels.engranajes(result, starMeasures) }
+      val engRows = listOfNotNull(
+        eng.etapaLine(result.engrEtapa)?.let { "engranajes_etapa" to it },
+        eng.launchLine(result.engrLaunches, result.engrOrbit)?.let { "engranajes_launch" to it },
+        eng.hangarLine(result.engrLights)?.let { "engranajes_hangar" to it },
+        eng.orbitLine(result.engrOrbit)?.let { "engranajes_orbit" to it },
+        eng.paceLine(result.engrMs, engTotal)?.let { "engranajes_pace" to it }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = if (engRows.isEmpty()) null else { { engRows.forEach { (tag, line) -> DetailLine(line, tag) } } })
     }
 
     // Bodega de carga (pantalla final, docs/diseno-bodega-de-carga.md §7): «Tu bodega». «Encontraste X de N objetos al primer intento», la etapa más alta (de 5), la racha más larga, tu bodega
@@ -788,61 +755,34 @@ fun GameResultScreen(
       }
     }
 
-    // Acoplamiento («muelle de acoplamiento», 10-oct): los módulos acoplados (el premio), los anillos completos, el récord y lo acoplado en toda la vida. Después van las medidas de siempre. Ver docs/diseno-acoplamiento.md §8.
-    result.dockDocked?.let { docked ->
-      Spacer(Modifier.height(14.dp))
-      Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = com.example.data.Acoplamiento.spoken(docked, result.dockRings, result.dockBest, result.dockNewRecord) }
-      ) {
-        com.example.data.Acoplamiento.dockedLine(docked)?.let { Text(it, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily) }
-        com.example.data.Acoplamiento.ringsLine(result.dockRings)?.let {
-          Text(it, color = Clay.Cream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
-        }
-        com.example.data.Acoplamiento.recordLine(result.dockBest, result.dockNewRecord)?.let {
-          Text(
-            it,
-            color = if (result.dockNewRecord == true) Clay.Sun else TextSoft,
-            fontSize = if (result.dockNewRecord == true) 15.sp else 14.sp,
-            fontWeight = if (result.dockNewRecord == true) FontWeight.Bold else FontWeight.SemiBold,
-            modifier = Modifier.padding(top = 2.dp)
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
+    if (result.gameId == "acoplamiento" && usesMeaningfulResult) {
+      Spacer(Modifier.height(18.dp))
+      val aco = com.example.data.Acoplamiento
+      val model = remember(result, starMeasures) { FinalModels.acoplamiento(result, starMeasures) }
+      val acoRows = listOfNotNull(
+        aco.dockedLine(result.dockDocked)?.let { "acoplamiento_docked" to it },
+        aco.ringsLine(result.dockRings)?.let { "acoplamiento_rings" to it },
+        aco.recordLine(result.dockBest, result.dockNewRecord)?.let { "acoplamiento_record" to it },
+        aco.totalLine(acoplamientoTotals)?.let { "acoplamiento_total" to it }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = {
+        acoRows.forEach { (tag, line) -> DetailLine(line, tag) }
+        result.rotationCurveMs?.let { curve ->
+          Spacer(Modifier.height(8.dp))
+          Text("Tu curva de giro", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
+          RotationCurve(
+            curve,
+            Modifier.padding(horizontal = 40.dp).fillMaxWidth().height(110.dp)
+              .semantics { contentDescription = "Tu curva de giro: tiempo de respuesta según cuán girada venía la pieza" }
           )
         }
-        com.example.data.Acoplamiento.totalLine(acoplamientoTotals)?.let {
-          Text(it, color = TextSoft, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp, start = 24.dp, end = 24.dp))
-        }
-      }
-    }
-
-    // Acoplamiento: "tu giro mental" (grados por segundo) y "tu curva de giro" (cuánto más tarda cuanto más girado).
-    if (result.rotationSpeedDps != null || result.rotationCurveMs != null) {
-      Spacer(Modifier.height(14.dp))
-      result.rotationSpeedDps?.let { dps ->
-        Text(
-          text = "Tu giro mental: $dps° por segundo",
-          color = Clay.Grape,
-          fontWeight = FontWeight.Bold,
-          fontSize = 18.sp,
-          fontFamily = AppFamily
+        DetailLine(
+          if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. En Precisión, sin apuro de tiempo, la medida es más fiel."
+          else "Tu giro mental se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
+          "acoplamiento_explain", soft = false
         )
-      }
-      result.rotationCurveMs?.let { curve ->
-        Spacer(Modifier.height(8.dp))
-        Text("Tu curva de giro", color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 16.sp, fontFamily = AppFamily)
-        RotationCurve(
-          curve,
-          Modifier.padding(horizontal = 40.dp).fillMaxWidth().height(110.dp)
-            .semantics { contentDescription = "Tu curva de giro: tiempo de respuesta según cuán girada venía la pieza" }
-        )
-      }
-      Text(
-        text = if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. En Precisión, sin apuro de tiempo, la medida es más fiel."
-        else "Tu giro mental se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-      )
+      })
     }
 
     // La estación de correo (pantalla final, docs/diseno-correo-estacion.md §7): «Tu memoria para lo pendiente» con el % en grande, los encargos cumplidos (por evento y por hora, con discos), los cancelados que no hiciste, las miradas al reloj
@@ -882,14 +822,16 @@ fun GameResultScreen(
     if (result.gameId == "stroop" && usesMeaningfulResult) {
       Spacer(Modifier.height(18.dp))
       val model = remember(result, starMeasures) { FinalModels.tinta(result, starMeasures) }
-      MeaningfulResult(model, detail = if (result.switchCostMs == null) null else { { DetailLine(com.example.data.DosOrillas.SWITCH_LINE, "stroop_switch_line", soft = false) } })
+      MeaningfulResult(model, detail = {
+        DetailLine(com.example.data.DosOrillas.INTERFERENCE_LINE, "stroop_interference_line", soft = false)
+        if (result.switchCostMs != null) DetailLine(com.example.data.DosOrillas.SWITCH_LINE, "stroop_switch_line", soft = false)
+      })
     }
 
     // Nota común a las medidas propias de los juegos estrella: son de esta partida, no un diagnóstico.
     val hasStarMeasure = listOf(
-      result.rotationSpeedDps, result.rotationCurveMs,
       result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.puntaSolo, result.cargaAlone, result.engrEtapa
+      result.puntaSolo
     ).any { it != null }
     if (hasStarMeasure) {
       Text(

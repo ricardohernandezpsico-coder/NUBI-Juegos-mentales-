@@ -65,7 +65,7 @@ class Grupo1FinalesScreenshotTest {
   private fun show(result: GamePlayResult, measures: List<MeasurePoint>) {
     composeTestRule.setContent {
       NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
+        Box(Modifier.width(393.dp).height(873.dp).background(Color(0xFF050823))) {
           GameResultScreen(
             result = result, didLevelUp = false, isDailyFlow = true, dailyCompletedCount = 2, dailyTotalCount = 3,
             starMeasures = measures, onPlayAgain = {}, onContinue = {}
@@ -73,6 +73,7 @@ class Grupo1FinalesScreenshotTest {
         }
       }
     }
+    composeTestRule.assertUnitLineAtMostTwoLines(result, measures)
   }
 
   /** Las pantallas de arriba hacia abajo: la primera tal cual y una más por cada deslizada. */

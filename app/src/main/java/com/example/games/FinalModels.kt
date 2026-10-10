@@ -1,9 +1,12 @@
 package com.example.games
 
+import com.example.data.Acoplamiento
 import com.example.data.Bodega
 import com.example.data.Brake
+import com.example.data.Carga
 import com.example.data.Constelaciones
 import com.example.data.DosOrillas
+import com.example.data.Engranajes
 import com.example.data.FinalesConSentido
 import com.example.data.Mail
 import com.example.data.MeasurePoint
@@ -19,7 +22,7 @@ import kotlin.math.roundToInt
 
 /**
  * Lo que dice el «final con sentido» de cada juego (Etapa 3, `docs/finales-con-sentido.md`), armado desde la partida y las medidas guardadas. Lógica pura con pruebas: la pantalla (`GameResultScreen`) solo lo dibuja con `MeaningfulResult`.
- * Grupo 1 (Memoria): Constelaciones, Rastro de luz, Bodega de carga y La estación de correo. Grupo 2 (Atención): Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Rescate relámpago.
+ * Grupo 1 (Memoria): Constelaciones, Rastro de luz, Bodega de carga y La estación de correo. Grupo 2 (Atención): Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Rescate relámpago. Grupo 3 (Razonamiento): Carga exacta, Engranajes y Acoplamiento.
  * (Aterrizaje Lunar, hecho antes, arma el suyo en `GameResultScreen`.)
  *
  * «Lo que hiciste»: la medida propia que el juego ya mostraba, en grande, más UN dato tuyo (el récord si lo superaste hoy; si no, el más útil de los que ya mostraba: ver cada juego). «Tu avance»: Hoy, Tu promedio y Tu mejor en la
@@ -31,6 +34,12 @@ object FinalModels {
 
   /** Para el rastro (luces seguidas, números enteros): media luz. */
   const val TOLERANCE_LIGHTS = 0.5f
+
+  /** Carga exacta y Engranajes (% de 6 a 12 ensayos por partida: uno solo pesa de 8 a 17 puntos): 10 puntos. */
+  const val TOLERANCE_PERCENT_SHORT = 10f
+
+  /** Acoplamiento («tu giro mental», grados por segundo; la pendiente del tiempo contra el ángulo cambia de 20 a 40 °/s entre partidas parecidas): 30 °/s. */
+  const val TOLERANCE_DPS = 30f
 
   /** Piloto («tus señales a los mandos», % de 8 a 25 señales de la misión): 5 puntos. */
   const val TOLERANCE_SIGNALS = 5f
@@ -59,6 +68,9 @@ object FinalModels {
     "freno" -> result.stopsTotal != null
     "satelites" -> result.satLights != null || result.trackingCapacity != null
     "radar" -> result.rescRescued != null
+    "calculo" -> result.cargaAlone != null
+    "engranajes" -> result.engrEtapa != null
+    "acoplamiento" -> result.dockDocked != null || result.rotationSpeedDps != null
     else -> false
   }
 
@@ -74,6 +86,9 @@ object FinalModels {
     result.gameId == "freno" -> freno(result, measures)
     result.gameId == "satelites" -> satelites(result, measures)
     result.gameId == "radar" -> rescate(result, measures)
+    result.gameId == "calculo" -> carga(result, measures)
+    result.gameId == "engranajes" -> engranajes(result, measures)
+    result.gameId == "acoplamiento" -> acoplamiento(result, measures)
     else -> null
   }
 
@@ -167,7 +182,7 @@ object FinalModels {
       todayValue = ms?.toFloat(),
       boxTitle = dos.INTERFERENCE_TITLE,
       headline = ms?.let { dos.cost(it) } ?: "—",
-      unit = if (ms != null) dos.INTERFERENCE_LINE else "Esta vez no hubo aciertos suficientes para medirlo: hacen falta al menos 3 con la palabra que choca y 3 donde coincide.",
+      unit = if (ms != null) "Lo que tardaste de más cuando la palabra y su tinta no coincidían." else "Esta vez no hubo aciertos suficientes para medirlo.",
       dataLine = switch?.let { dos.SWITCH_TITLE + ": " + dos.cost(it) },
       conditionalTrick = dos.tips(ms, switch).firstOrNull()?.let { ResultAdvice.tipOf(it) }
     )
@@ -218,7 +233,7 @@ object FinalModels {
       todayValue = cap,
       boxTitle = "Tu seguimiento",
       headline = cap?.let { FinalesConSentido.atOnceText(it) } ?: "—",
-      unit = if (cap != null) "cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte" else "Esta vez no hubo rondas suficientes para medir tu seguimiento.",
+      unit = if (cap != null) "cuántos seguiste de verdad al mismo tiempo, sin contar la suerte" else "Esta vez no hubo rondas suficientes para medir tu seguimiento.",
       dataLine = if (result.satNewRecord == true) record else Satelites.lightsLine(result.satLights) ?: Satelites.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak),
       conditionalTrick = null
     )
@@ -235,6 +250,55 @@ object FinalModels {
       headline = ms?.let { "$it ms" } ?: "—",
       unit = if (ms != null) "el destello más breve con el que rescatas casi todas las cápsulas" else "Esta vez no hubo rondas suficientes para medir tu vistazo.",
       dataLine = if (result.rescNewRecord == true) record else Rescate.rescuedLine(result.rescRescued) ?: record,
+      conditionalTrick = null
+    )
+  }
+
+  // ------------------------------------------------------------------ Grupo 3 (Razonamiento)
+
+  /** Carga exacta («Tu reactor»): las cargas logradas sin pista; los cuadros van en % porque cada partida trae un total de cargas distinto. */
+  fun carga(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
+    val carga = Carga
+    val alone = result.cargaAlone
+    val total = result.totalTrials
+    return build(
+      result, measures, key = "carga", copy = FinalesConSentido.copy("calculo")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
+      todayValue = carga.mark(alone, total),
+      boxTitle = "Tu reactor",
+      headline = if (alone != null && total > 0) "${alone.coerceIn(0, total)} de $total" else "—",
+      unit = "cargas logradas sin pista",
+      dataLine = carga.shortLine(result.cargaShort, alone) ?: carga.breakdown(alone, result.cargaHinted, total),
+      conditionalTrick = carga.tip(alone, total, result.level)?.let { ResultAdvice.tipOf(it) }
+    )
+  }
+
+  /** Engranajes («Tu cohete»): las máquinas arregladas; lo que pasó con el cohete (despegó, o cuántas luces faltan) es el dato tuyo. */
+  fun engranajes(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
+    val eng = Engranajes
+    val total = result.totalTrials
+    val ok = result.correctAnswers
+    return build(
+      result, measures, key = "taller", copy = FinalesConSentido.copy("engranajes")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
+      todayValue = eng.mark(ok, total),
+      boxTitle = "Tu cohete",
+      headline = if (total > 0) "${ok.coerceIn(0, total)} de $total máquinas" else "—",
+      unit = "arregladas",
+      dataLine = eng.launchLine(result.engrLaunches, result.engrOrbit) ?: eng.hangarLine(result.engrLights),
+      conditionalTrick = eng.tip(ok, total)?.let { ResultAdvice.tipOf(it) }
+    )
+  }
+
+  /** Acoplamiento («Tu giro mental»): grados por segundo, más es mejor; los módulos acoplados (el premio) son el dato tuyo. Sin medida de giro lo dice sin culpa. */
+  fun acoplamiento(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
+    val dps = result.rotationSpeedDps
+    val record = Acoplamiento.recordLine(result.dockBest, result.dockNewRecord)
+    return build(
+      result, measures, key = "rotation", copy = FinalesConSentido.copy("acoplamiento")!!, tolerance = TOLERANCE_DPS, format = FinalesConSentido::degreesText,
+      todayValue = dps?.toFloat(),
+      boxTitle = "Tu giro mental",
+      headline = dps?.let { "$it° por segundo" } ?: "—",
+      unit = if (dps != null) "los grados que giras la pieza en tu mente cada segundo" else "Se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
+      dataLine = if (result.dockNewRecord == true) record else Acoplamiento.dockedLine(result.dockDocked) ?: record,
       conditionalTrick = null
     )
   }

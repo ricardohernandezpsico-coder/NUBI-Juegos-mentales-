@@ -52,6 +52,7 @@ Cada juego sale con su tutorial (Freno ya lo tenía; los otros tres lo reciben a
 
 ## Etapa 3 — Avance de fondo
 
+- **Finales con sentido en los 18 juegos — Hecho (Tarea 77, 10-oct)**: lo que hiciste con UN dato tuyo, tu avance solo contigo (hoy, tu promedio y tu mejor, con su frase), el truco y «¿Por qué importa?» con su fuente de PubMed; el detalle de siempre va detrás de «Ver el detalle de tu partida» (`docs/finales-con-sentido.md`).
 - **Avance**: dos números visibles, logros por conducta (lo que la persona hace, no cuánto rinde), meta semanal como número principal y racha que perdona.
 - Revisar los juegos del Primer vuelo (y de la evaluación inicial) y el re-chequeo mensual del punto de partida.
 - Marcas ✓/✗ de arcilla sobre las respuestas: el ✗ en aspa diagonal, no en cruz (`docs/simbolos-neutros.md`).
