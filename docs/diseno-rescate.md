@@ -4,6 +4,8 @@ Boceto v3 aprobado por Ricardo el 9-oct: `docs/previews/rescate-boceto.html`
 (artifact https://claude.ai/artifact/WBNUtFmtcGjvxcEg4wy63q). Mismo id `radar`, carpeta `Games/Radar/`.
 Título visible en la app: **«Rescate relámpago»** (antes «Radar»); donde un texto corto no quepa, «Rescate».
 
+**Versión 4 (Tarea 65, aprobada por Ricardo el 9-oct):** más mundo, más luz y toda la pantalla, con el sonido «Madera cálida». Boceto: `docs/previews/rescate-boceto-v4.html`; el laboratorio de sonido, `docs/previews/sonido-laboratorio.html`. **La sección 16 es lo que manda hoy**: las secciones 7 (pantalla), 8 (estética) y 11 (sonido) describen la v3, que sigue valiendo solo para la pantalla de 16:9 y para las reglas; las secciones 1 a 6, 9, 10 y 12 a 14 no cambian.
+
 ## 1. Por qué se renueva
 
 - **Patente (regla permanente 2 de CLAUDE.md, aprobada por Ricardo el 9-oct).** La versión actual pide «¿Dónde estaban los N?» en 16 lugares fijos (8 direcciones × 2 anillos). Eso es justo lo que reivindican las patentes de Nike US 8,136,943 y 8,342,685: informar POSICIONES activadas, con lugares en círculos concéntricos. La nueva versión pide QUÉ se vio, no DÓNDE. Análisis de patentes del 9-oct (informe externo, fuera del repositorio): riesgo BAJO con este diseño.
@@ -89,7 +91,7 @@ Hubo un accidente y hay cápsulas de escape a la deriva. El radar gira y, sin av
   - Quitarlos de la telemetría, de `GamePlayResult`, de `NativeReceiver`, de `GameResultScreen` y de `docs/medidas-juegos-estrella.md`. No están en Room: no hace falta migración.
 - **Premio, no medida:** cápsulas rescatadas en la partida y su récord (`rescate_record`), igual que las luces de Satélites.
 
-## 7. Pantalla (360 × 640 dp de referencia; layout por proporciones en pantallas altas)
+## 7. Pantalla de la v3 (360 × 640 dp de referencia; en 20:9 manda la sección 16.2)
 
 - **Arriba:**
   - «Rescate relámpago»;
@@ -169,7 +171,7 @@ Fable revisó el boceto v1 (8 tipos, robots, tablero solo en la respuesta). El v
 - Los avisos van en la franja de arriba (sección 7).
 - Agregar al smoke de Rescate la guardia de que ningún aviso intersecta el radar ni el tablero.
 
-## 11. Sonido
+## 11. Sonido (v3; desde la v4 es «Madera cálida», sección 16.9)
 
 - Ping agudo por vuelta del haz.
 - Golpe de ruido filtrado en el relámpago.
@@ -210,13 +212,90 @@ Rescate entra en `TUTORIAL_GAMES` con Piloto ya sumado. Se siguen `docs/tutorial
 
 - **Archivos** (`Games/Radar/`): `RadarContract` (reglas, niveles, textos), `RadarRun` (la partida: motor aparte de las lluvias, medidas), `RadarLayout` (la pantalla por proporciones), `RadarMetrics` (motor y telemetría), `RadarSprites` y `RadarSounds` (todo el arte y el sonido, en código), y el controlador en cinco partes (`RadarGameController` con el flujo, `.Build` la interfaz, `.Scene` los movimientos, `.Guided` el tutorial, `.Shots` las capturas).
 - **Avisos: franja propia, no el `Toast` común.** El `Toast` busca solo una franja libre, pero en esta pantalla no sobra ninguna: el radar, la nave, el tablero y «¡Rescatar!» llenan el alto. Los mensajes (la espera, la pregunta, el resultado de la ronda y los de la lluvia) van en la franja fija de arriba (y 78-114 dp) y nada más. Lo vigilan una guardia del smoke («ningún aviso toca el radar, la nave ni el tablero»; falla con `Debug.LogError` si pasa) y la prueba `TheScreenFitsInFourPhoneShapes_AndTheStripNeverTouchesTheRadarTheShipOrTheBoard`. Por eso el juego tiene su propia guardia y ya no usa la corrida «AvisoRadar» del smoke común (la de los avisos del `Toast`).
-- **Pantalla escalada en teléfonos bajos.** El plano de `RadarLayout` es el de 360 × 640 dp; en pantallas bajas, y en el tutorial (que reserva abajo la franja de Nubi), todo se achica parejo hasta un mínimo de 0,75 para que nada se pise. En una pantalla alta la escala es 1 (el tablero queda de 3 × 2 con botones de 104 × 62 dp). Lo que sobra abajo en 20:9 sigue pendiente (hoja de ruta, «en espera»).
+- **Pantalla escalada en teléfonos bajos.** El plano de `RadarLayout` es el de 360 × 640 dp; en pantallas bajas, y en el tutorial (que reserva abajo la franja de Nubi), todo se achica parejo hasta un mínimo de 0,75 para que nada se pise. En una pantalla alta la escala era 1 (el tablero de 3 × 2 con botones de 104 × 62 dp) y lo que sobraba abajo en 20:9 quedaba pendiente: **la v4 lo resolvió (sección 16.2)**; el layout de esta tarea sigue intacto en 16:9 (640 dp).
 - **Tutorial (sección 13).** El paso 1 oculta el tablero (aparece justo después del destello): así Nubi tiene dónde ponerse y no hay nada que mirar fuera del radar. Los pasos de Tocar son de TOQUE REAL, uno por cada cápsula de la práctica (el hueco es su botón y la práctica hace la jugada, sin bucles) y otro para «¡Rescatar!». La segunda práctica (2 cápsulas y 1 roca, 800 ms) contesta sola después del aviso de las rocas.
 - **«Destello más corto resuelto»** es la duración REAL (en ms, a 60 cuadros/s) del destello más breve de una ronda normal perfecta; no el valor de la tabla de niveles.
 - **Reto de 120 s** también en `RetoChoice` (la app lo tenía en 90 s para Radar).
 - **Sin migración de nivel** (sección 5): se mantiene el rating guardado; el motor se reacomoda solo en 2 o 3 partidas. La escalera de la app (`Skill`) ya tenía 12 niveles.
 - **Pruebas:** 33 en Unity (`RadarContractTests`: 10.000 semillas con 6 objetos, posiciones continuas, radio fijo en los 12 niveles, mismos colores y contraste, tablero de orden fijo, `Needed`/éxito, captura, lluvia fija de 300 ms; `RadarRunTests`: partida, medidas, pantalla en cuatro formas de teléfono, arte, sonido y telemetría sin ningún dato de lugar) y las de Kotlin (`RescateTest`, `RescateRecordTest`, el respaldo de `rescate_record` en `BackupRulesTest`, las del tutorial en `TrailTelemetryTest`/`DailyPathTest`/`PuntaPendingTest` y la captura `RescateResultScreenshotTest`).
-- **Telemetría nueva** (sin ningún dato por lugar): `glance_ms`, `glance_load`, `capture`, `resc_rescued`, `resc_perfect`, `resc_rounds`, `resc_best_streak`, `resc_shortest_ms`, `resc_best`, `resc_new`; la app manda `resc_best` (récord guardado en `rescate_record`) y, solo en depuración, `resc_stage`.
+- **Telemetría nueva** (sin ningún dato por lugar): `glance_ms`, `glance_load`, `capture`, `resc_rescued`, `resc_perfect`, `resc_rounds`, `resc_best_streak`, `resc_shortest_ms`, `resc_best`, `resc_new` (y desde la v4 `resc_trips`); la app manda `resc_best` (récord guardado en `rescate_record`) y, solo en depuración, `resc_stage`.
 - **Final en la app** (`GameResultScreen`): las cápsulas rescatadas en filas de 8 (hasta 40, con las seis formas en orden: la cantidad se lee por el número y no por el color), «N cápsulas a salvo», rondas perfectas y racha, el destello más corto resuelto, el récord, «Tu vistazo» y «Tu captura: X de 4» con sus discos. El título «¡RESCATE COMPLETO!» y el confeti los pone el cierre del juego en Unity.
 - **Contador de cápsulas (Tarea 63).** El contador de arriba, las cápsulas de la nave y «N cápsulas a salvo» salen de tres cuentas (cada cápsula rescatada sube y suma una vez; el total de la partida suma los aciertos de cada ronda). En una partida real siempre coinciden. En la toma «final» no coincidían (28 contra 40) porque el guion de capturas suma rondas de golpe sin hacer subir las cápsulas: ahora el guion completa la nave con las que faltan, y el juego, en el Editor, escribe un error de consola (y falla el smoke) si al terminar las tres cuentas no son iguales.
 - **Piezas de arte:** `docs/previews/rescate-piezas.png` (script `tools/art-preview/radar.py`, sprites reales); pantallas reales: `docs/previews/capturas/radar.png`.
+
+## 16. Versión 4 (Tarea 65, 9-oct): mundo, luz y toda la pantalla, con el sonido «Madera cálida»
+
+Boceto v4 aprobado por Ricardo el 9-oct: `docs/previews/rescate-boceto-v4.html`. Mismo id, mismas reglas.
+
+### 16.1 Qué cambia y qué no
+
+- **Cambia:** la pantalla usa TODO el alto (en 20:9 el radar es más grande, la nave queda al centro y el tablero baja a la zona del pulgar, con botones más altos); el fondo es un lugar con historia; el radar es un instrumento luminoso; la nave es la protagonista; cuando se llena (10 cápsulas) viaja a la estación; y el sonido es nuevo.
+- **No cambia:** las reglas (sección 4), los 12 niveles y su tabla (sección 5), las medidas (sección 6), el motor de dificultad, la lluvia cada 4 rondas, las reglas de patentes (sección 9), las zonas protegidas de los avisos (sección 10) ni el tutorial (solo se reacomoda a la pantalla nueva).
+
+### 16.2 La pantalla (referencia de 360 × 780 dp, 20:9)
+
+| Pieza | v4 en 20:9 (780 dp) | v3 en 16:9 (640 dp, igual que la Tarea 62) |
+|---|---|---|
+| Marcador común y franja de mensajes | 0-63 y 78-114 dp | igual |
+| Radar: centro | (180, 290) | (180, 261,75) |
+| Radar: pantalla y bisel | radio 146 y 160,8 dp | 128 y 141 dp |
+| Nave: centro | y 494, a escala 1 (casco de 200 dp de ancho) | y 429,4, a media escala |
+| «N de 10 a bordo» | y 536 (42 dp bajo la nave) | no se muestra (no hay lugar) |
+| Tablero 3 × 2 | desde y 552; botones de 104 × 74 dp, separación 8 | desde y 442,7; 104 × 62 dp, separación 8 |
+| «¡Rescatar!» (172 × 44 dp) | centro en y 740 (termina en 762) | centro en y 607,8 |
+
+- **Entre una y otra** (`RadarPlan`, lógica pura con pruebas) la v4 entra de a poco: se mezclan los dos layouts desde que la escala de la v4 iguala al radar de 128 dp (unos 690 dp de alto) hasta que mide 1 (unos 770 dp). El radar nunca se achica al crecer la pantalla y ningún dato se pisa en toda la cuenta (la prueba recorre los cuatro alto de siempre, con y sin tutorial).
+- **Más alto que 780 dp:** el radar ya no crece; lo que sobra se reparte hacia abajo (15 % radar, 40 % nave, 75 % tablero, 90 % «¡Rescatar!»): el tablero sigue al pulgar.
+- **Tutorial:** reserva 96 dp abajo (Nubi y los controles); el plano se calcula con el alto menos 96.
+- **Pantallas bajas:** todo se achica parejo; ningún texto baja de 14 dp.
+- **Botones inactivos** (antes de la respuesta y durante el viaje): SIN brillo de arcilla y a menos de la mitad de luz (45 %); la forma y el nombre siguen leyéndose.
+
+### 16.3 La zona del destello (regla permanente 2: no crece con el nivel)
+
+- La geometría depende SOLO del radio de la pantalla (`RadarGeometry`): radio de la zona = radio − 34 (112 dp con 146; 94 con 128), distancia mínima entre centros = 66 + (radio − 128)/3 (72 dp con 146) y tamaño de la cápsula = 55 + (radio − 128)/6 (58 dp con 146).
+- La pantalla no recibe el nivel: el radio de la zona es **FIJO en los 12 niveles**. Lo prueban `RadarV4Tests` (12 niveles × 4 tamaños de radar × 200 semillas) y 10.000 semillas con seis objetos.
+
+### 16.4 El mundo
+
+- **Cielo y luz:** nebulosas fijas (verde agua abajo a la izquierda, uva arriba a la derecha, azul al centro y coral abajo a la derecha), planeta lejano a media luz y polvo que deriva.
+- **La estación accidentada** asoma detrás del radar (arriba a la derecha): anillo roto con paneles, baliza coral que parpadea a 1 Hz y humo que sale del tramo roto. Alrededor flotan cinco restos que giran despacio y pasan por detrás del radar.
+- **Con «quitar animaciones»** (sección 12): baliza fija encendida, sin humo, restos y polvo quietos.
+
+### 16.5 El radar luminoso
+
+- Vidrio verde agua (degradado #11495C → #082233 al 70 % → #051522, con la luz un poco arriba), aro interior luminoso, dos aros punteados y una cruz de adorno al 20 %, y haz con estela verde agua.
+- **El color y el contraste son los mismos en los 12 niveles** (regla de patentes 5): el arte no recibe el nivel.
+
+### 16.6 La nave protagonista
+
+- Casco crema de 200 × 38 dp con franja celeste, aletas uva, dos propulsores coral con llama y cabina celeste con el piloto (casco blanco y visor, **sin cara**: regla de caras).
+- **Diez ventanas** (r 7 dp, cada 18 dp): cada cápsula rescatada enciende la suya con su color, con un aro que se abre y 6 chispas (450 ms); la nave salta (260 ms). Debajo, «N de 10 a bordo» (solo en pantallas altas).
+
+### 16.7 El viaje a la estación
+
+- **Cuándo:** exactamente al terminar una revelación con 10 o más cápsulas a bordo (`RadarCargo.TripDue`). Las que no cupieron (había 9 y entraron 4: sobran 3) pasan a la nave nueva.
+- **Cómo:** 2,0 s. Sale llena y acelerando por la derecha con líneas de velocidad (0-45 %), queda fuera de pantalla (45-55 %) y vuelve vacía por la izquierda frenando (55-100 %), ya con las que sobraron a bordo. Aviso «¡Nave llena! Viaje a la estación»; sonido propio; vibración firme.
+- **Durante el viaje:** sin destellos, tablero apagado y, en el Reto, el tiempo NO se descuenta (`RetoClock.Shift` corre el final lo que dura el viaje). Sin luces que parpadeen.
+- **Con «quitar animaciones»:** la nave no se mueve; a mitad de tiempo cambian las ventanas (de las 10 a las que sobraron).
+- **Se cuenta:** `resc_trips` en la telemetría; «Viajes a la estación: N» en el final de Unity y de la app; y los totales de toda la vida (16.8).
+
+### 16.8 Final y totales
+
+- **Final en Unity:** se agrega la línea «Viajes a la estación» a las del final.
+- **Totales** (`rescate_record`, que ya va en el respaldo; claves `total` y `trips`): cada partida suma sus cápsulas rescatadas y sus viajes; nunca bajan. La app los muestra bajo el récord como «En total: 342 cápsulas y 12 viajes a la estación» (`Rescate.totalLine`). «Borrar datos» los pone en cero.
+
+### 16.9 Sonido «Madera cálida»
+
+- **Común:** `Games/Shared/SoundKit.cs` (ruido repetible mulberry32; filtros pasa-bajos, pasa-altos y pasa-banda de Robert Bristow-Johnson con frecuencia que cambia muestra a muestra; reverberación estéreo tipo Freeverb; cierre con el nivel pedido; suma y secuencia de notas; bucles sin corte). Es un puerto 1 a 1 de las recetas del laboratorio (`docs/previews/sonido-laboratorio.html`, estilo `madera`).
+- **Recetas del juego** (`RadarSounds`, 18 clips estéreo a 44,1 kHz): ping = bloque de madera (1250 Hz); destello = barrido de ruido que cae de 3500 a 300 Hz más un golpe grave; estática; marcar = kalimba (sube con cada marca); desmarcar = kalimba corta; rayo tractor = ocho notas de marimba; entrar a la nave = marimba y bloque de madera (cuatro tonos que se alternan); ronda perfecta, ronda con error, lluvia y final; viaje = el rayo más rápido y una kalimba.
+- **Cómo se hornea:** los clips se calculan UNA vez al abrir el juego, durante la cuenta regresiva, por pedazos de 24.000 muestras por cuadro (la reverberación es lo caro), para no trabar el arranque. Medido: 12,4 MB en total (estéreo, 18 clips), 115 cuadros de precarga y unos 525 ms de cálculo repartidos (en el PC). El sonido apagado en la app se respeta como siempre.
+- **Fidelidad:** `tools/sonido/referencia.js` corre el código del laboratorio en Node y vuelca muestras de referencia a `Games/Radar/Tests/RadarSoundReference.json`; las pruebas comparan ocho sonidos contra ellas (error del orden de 1e-4).
+
+### 16.10 Cómo quedó hecho
+
+- **Archivos nuevos:** `Games/Shared/SoundKit.cs` (+ `Games/Tests/SoundKitTests.cs`), `Games/Radar/Tests/RadarV4Tests.cs`, `RadarSoundTests.cs` y `RadarSoundReference.json`; `RadarSounds`, `RadarSprites`, `RadarLayout` y el controlador (cinco partes) se rehicieron.
+- **Capturas:** `bash tools/verificar-todo.sh --capturas Radar` saca la hoja en 20:9 (incluye el viaje: a mitad de la salida y a mitad de la vuelta, y una ventana encendida) y unas tomas en 16:9 (1080 × 1920) con el layout de la Tarea 62.
+- **Marca de verificación:** `estilo 9-oct · rescate v4 madera`.
+- **Arreglo del tutorial (Ricardo, en el teléfono, con el APK de la Tarea 64).** Al tocar las cápsulas en el tablero no quedaban marcadas, «¡Rescatar!» salía apagado y la revelación decía «Rescataste 0 de 2». **Causa:** el toque que cierra un paso de Tocar SÍ llega al juego (el foco lo suelta antes de que el juego lea la entrada), que marcaba la cápsula, y después la práctica volvía a ALTERNAR la misma marca y la desmarcaba (marcar + alternar = nada); con «¡Rescatar!» pasaba igual (sin marcadas no entrega nada). **Arreglo:** la práctica ahora solo ASEGURA la marca (`EnsurePicked`: si ya está marcada no hace nada; si el toque no llegó, por la red de seguridad o porque el smoke no toca, la marca ella) y en la segunda práctica también, así que lo que la persona marque por su cuenta se queda. **Guardias del smoke de `TutorialRadar`** (el smoke antes solo comprobaba que los pasos avanzaran, no el estado del juego): tras cada toque guiado la cápsula queda marcada; al llegar al paso «¡Rescatar!» están todas marcadas y el botón encendido; y cada práctica termina con todas acertadas y 0 de más. Si fallan escriben un error de consola y el smoke falla; sin el arreglo, el smoke fallaba con «marcadas 0 de 2». Captura nueva en la hoja de Radar: «Tutorial: rescatar».
+- **Horneado del arte.** Al agregar el radar de 768 px, la nave y la estación, el horneado en el Editor pasó de unos 3 s a más de 8 s (lo notó el smoke de «Cómo se juega», que pide el juego en marcha a los 9 s): las marcas del bisel se dibujaban en cada píxel (48 cápsulas por píxel), y la nave y la estación evaluaban todas sus formas incluso lejos de ellas. Ahora las marcas solo se calculan junto al borde y la nave y la estación salen de su franja sin evaluar nada: 8,3 s → unos 2 s en el Editor (el resultado es el mismo píxel por píxel salvo 128 píxeles del radar).
+- **Final de la partida.** El rótulo «¡RESCATE COMPLETO!» y el título quedan bajo el marcador (antes, en la v4, el rótulo lo tapaba y la guardia del HUD del smoke lo detectó en `PantallaRadar`).

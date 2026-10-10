@@ -267,7 +267,7 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | 434 `PlaceAll`, 454 `DrawTrails` | Los satélites en movimiento y sus estelas | ESENCIAL | — | Se queda (estelas: DUDA menor) | — |
 | 180, 315, 326, 349, 400 | `PopIn`, `PopRect`, chispas | DECORATIVA | sí (común) | — | — |
 
-**Rescate relámpago (antes Radar)** — `Radar/RadarGameController*.cs` (rehecho el 9-oct, Tarea 62; sección 12 de `docs/diseno-rescate.md`)
+**Rescate relámpago (antes Radar)** — `Radar/RadarGameController*.cs` (rehecho el 9-oct, Tarea 62; sección 12 de `docs/diseno-rescate.md`; mundo y viaje a la estación de la v4, Tarea 65: secciones 16.4 y 16.7)
 
 | Qué hace | Clase | Resp. | Con «quitar animaciones» |
 |---|---|---|---|
@@ -277,6 +277,9 @@ Probado con `verificar-todo.sh --sin-animaciones --juegos Run`.
 | Polvo de fondo, llamas de la nave, salto de la nave, confeti | DECORATIVA | sí | Polvo quieto, llamas fijas, sin salto y sin confeti |
 | Las cápsulas giran al alejarse | DECORATIVA (comunica) | sí | No rotan |
 | El rayo tractor sube las rescatadas con chispas | DECORATIVA (comunica) | sí | Cono fijo, sin chispas |
+| La baliza de la estación parpadea a 1 Hz, el humo sale del tramo roto, los restos flotan y giran (v4) | DECORATIVA | sí | Baliza fija encendida, sin humo, restos quietos |
+| Al entrar una cápsula, su ventana lanza un aro y 6 chispas (v4) | DECORATIVA (comunica) | sí | Sin aro ni chispas; la ventana se enciende de golpe |
+| El viaje a la estación: la nave sale llena por la derecha con líneas de velocidad y vuelve vacía por la izquierda (2,0 s; v4) | DECORATIVA (comunica) | sí | La nave no se mueve: a mitad de tiempo cambian las ventanas (10 por las que sobraron), sin líneas de velocidad |
 
 ### Razonamiento
 

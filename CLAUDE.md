@@ -20,7 +20,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   Salida corta; los logs completos van a `unity/test-results/v-*.log`. Modos para iterar: ver «Cómo trabajar una tarea de un juego».
 - `unity/AndroidExport/` está fuera de git: si no se reexporta, el APK lleva los juegos viejos sin avisar.
   Marca de verificación: en builds de depuración la cuenta regresiva muestra `CountdownScreen.StyleStamp`
-  (hoy `estilo 9-oct · sonido sin cortes`). **Cambiarla con cada cambio visible de Unity.**
+  (hoy `estilo 9-oct · rescate v4 madera`). **Cambiarla con cada cambio visible de Unity.**
 - Vistas previas sin Unity ni teléfono: `tools/art-preview` (compila los generadores de sprites REALES y vuelca PNG; `correo.py`, `satelites.py`… arman las láminas de piezas) y `tools/previews/*.py` (réplicas PIL de pantallas Compose); resultados en `docs/previews/`. Si se cambia el arte, actualizar la lámina. **Capturas REALES**: `bash tools/verificar-todo.sh --capturas todos` (los 19 juegos, ~18 min; necesita tarjeta de video; láminas en `docs/previews/capturas/`; detalle en `docs/respaldo-y-diagnostico.md`).
 - Estilo con Ricardo: español, sin jerga, cambios chicos y verificables, y decirle siempre qué probar.
 - Qué sigue y en qué orden (la ruta por etapas que Ricardo aprobó el 8-oct): [`docs/hoja-de-ruta.md`](docs/hoja-de-ruta.md).
@@ -84,7 +84,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 - `Games/Shared/`: sello visual y piezas comunes — `NeuroStyle` (paleta de la app, `ClayText`, `ClayFrame`),
   `ClayRaster` (pincel SDF para todo el arte en arcilla), `WorldBackdrop` (cielo + un elemento propio por juego),
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
-  `GameFeel` (sonidos sintetizados y vibración), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
+  `GameFeel` (sonidos sintetizados y vibración), `SoundKit` (síntesis de sonido; Rescate), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
   (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `PressScale`, sprites varios, y el **tutorial guiado común** (`GuidedTutorial` + `NubiTeacherSprite`;
   gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = 17 de los 19 juegos (todos menos Rumbo a Casa y Acoplamiento; entró Rescate relámpago en la Tarea 62); «Cómo se juega» en la pausa; cómo sumar otro: `docs/diseno-rastro-de-luz.md`; colocación de Nubi: `docs/tutoriales-con-nubi.md`).
 
@@ -157,11 +157,11 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 545 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 548 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
-- Unity EditMode: 706 (contratos de cada juego, DDA común, tutoriales guiados, `CoachLayoutTests`…) + 112 arranques de smoke (juegos, versiones cortas, tutoriales en 3 formas de pantalla y corridas «Pantalla…» en forma de teléfono, todos con la **guardia de textos**: un texto fuera de lugar falla el smoke; detalle y excepciones en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md)).
+- Unity EditMode: 739 (contratos de cada juego, DDA común, tutoriales guiados, `CoachLayoutTests`…) + 112 arranques de smoke (juegos, versiones cortas, tutoriales en 3 formas de pantalla y corridas «Pantalla…» en forma de teléfono, todos con la **guardia de textos**: un texto fuera de lugar falla el smoke; detalle y excepciones en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md)).
 - Datos de los juegos de Lenguaje: pruebas de Python en `tools/` (`python -m unittest <módulo>`); detalle en [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md) § «Pruebas de datos».
 - Herramientas: botones "[Debug]" (`ui/screens/DebugTools.kt`, solo builds de depuración) para abrir cada juego,
   ver las celebraciones y repetir el inicio sin borrar datos. "Borrar datos" en Ajustes deja la app como recién instalada.

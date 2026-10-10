@@ -200,7 +200,7 @@ internal static class Program
         Dump("screw", NeonSignSprites.Screw());
         Dump("mark_check", AnswerMarkSprite.Check());
         Dump("mark_cross", AnswerMarkSprite.Cross());
-        // Rescate relámpago (Tarea 62): el radar, el haz, las 6 cápsulas (y sus emblemas), la roca, las máscaras de estática, el aro punteado, el eje, el planeta, la nave con su ventana y los botones del tablero
+        // Rescate relámpago (Tareas 62 y 65): el radar, el haz, las 6 cápsulas (y sus emblemas), la roca, las máscaras de estática, el aro punteado, el eje, el planeta, la estación accidentada, los restos, la nave con su ventana y los botones del tablero
         Dump("radar_scope", NeuroVida.Games.Radar.RadarSprites.Scope());
         Dump("radar_sweep", NeuroVida.Games.Radar.RadarSprites.Sweep());
         for (int i = 0; i < NeuroVida.Games.Radar.RadarContract.TypeCount; i++)
@@ -215,6 +215,8 @@ internal static class Program
         Dump("radar_axis", NeuroVida.Games.Radar.RadarSprites.Axis());
         Dump("radar_planet", NeuroVida.Games.Radar.RadarSprites.Planet());
         Dump("radar_ship", NeuroVida.Games.Radar.RadarSprites.Ship());
+        Dump("radar_station", NeuroVida.Games.Radar.RadarSprites.Station());
+        Dump("radar_debris", NeuroVida.Games.Radar.RadarSprites.Debris());
         Dump("radar_window", NeuroVida.Games.Radar.RadarSprites.Window());
         Dump("radar_button", NeuroVida.Games.Radar.RadarSprites.Button());
         Dump("radar_button_ring", NeuroVida.Games.Radar.RadarSprites.ButtonRing(false));

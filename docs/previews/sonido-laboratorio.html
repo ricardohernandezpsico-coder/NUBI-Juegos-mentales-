@@ -1,0 +1,366 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorio de sonido</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07081F; --panel:#121236; --panel2:#1B1A4A; --line:#2C2A66; --ink:#EEEBFC; --dim:#ABA5D2; --faint:#8C86BD;
+  --sky:#7FD8FF; --sun:#FFC94A; --lime:#A6E36B; --coral:#FF8A6B; --grape:#B79BFF; --inkd:#1A1240;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+h1{font:700 clamp(28px,4.4vw,40px)/1.1 var(--f-display);margin:0 0 8px;text-wrap:balance}
+.eyebrow{font:700 14px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--sun);margin:0 0 4px}
+.lead{color:var(--dim);margin:0 0 6px;max-width:66ch}
+.tip{color:var(--faint);font-size:15px;margin:0 0 22px;max-width:66ch}
+h2{font:600 20px var(--f-display);margin:30px 0 12px}
+.styles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.style{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--panel);border:3px solid var(--line);border-radius:20px;padding:14px 16px 16px;color:var(--ink);cursor:pointer;min-height:56px;font:inherit;box-shadow:0 5px 0 #03041A;transition:transform .12s ease-out,border-color .12s}
+.style:active{transform:translateY(3px);box-shadow:0 2px 0 #03041A}
+.style[aria-pressed="true"]{border-color:var(--c);background:var(--panel2)}
+.style .tag{font:700 13px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.style .nm{font:700 20px var(--f-display)}
+.style .ds{color:var(--dim);font-size:15px}
+.scenes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.btn{display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 16px;border-radius:18px;border:3px solid var(--inkd);background:var(--sun);color:var(--inkd);font:700 18px var(--f-display);cursor:pointer;box-shadow:0 5px 0 #03041A;transition:transform .1s ease-out;text-align:left}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #03041A}
+.btn svg{flex:none}
+.btn.sec{background:var(--panel2);color:var(--ink);border-color:var(--line);font-size:16px;min-height:56px}
+.btn.playing{outline:3px solid var(--sky);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-top:18px}
+.switch{display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer;color:var(--ink);font-weight:600}
+.switch input{width:22px;height:22px;accent-color:var(--sky)}
+label.vol{display:flex;align-items:center;gap:10px;color:var(--ink);font-weight:600}
+input[type=range]{width:180px;accent-color:var(--sky)}
+.now{min-height:24px;color:var(--sky);font:600 15px var(--f-display);margin-top:12px}
+.note{color:var(--faint);font-size:15px;margin-top:28px;max-width:70ch}
+@media (max-width:600px){.styles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.style{padding:12px;border-radius:16px}.style .nm{font-size:18px}.style .ds{font-size:14px;line-height:1.4}}
+:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Rescate relámpago</p>
+  <h1>Laboratorio de sonido</h1>
+  <p class="lead">Escucha cómo suena hoy el juego y tres propuestas nuevas. Elige un estilo arriba y toca «Una ronda» para oírlo en contexto; abajo está cada sonido por separado.</p>
+  <p class="tip">Mejor con audífonos o con el parlante del teléfono a volumen medio. Compara la misma ronda en cada estilo y dime cuál te gusta (o qué mezclarías).</p>
+
+  <h2>1. Elige un estilo</h2>
+  <div class="styles" id="styles"></div>
+
+  <h2>2. Escúchalo en una ronda</h2>
+  <div class="scenes" id="scenes"></div>
+  <div class="row">
+    <label class="switch"><input type="checkbox" id="amb"> Ambiente de fondo (muy suave)</label>
+    <label class="vol">Volumen <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8"></label>
+  </div>
+  <div class="now" id="now" aria-live="polite"></div>
+
+  <h2>3. Cada sonido por separado</h2>
+  <div class="grid" id="single"></div>
+
+  <p class="note">Todo se genera con código, igual que en el juego: no hay archivos de sonido descargados. Por eso el estilo que elijas se puede llevar tal cual al teléfono (y, si te gusta, después a los demás juegos, para que Nubi tenga un sonido propio).</p>
+</div>
+
+<script>
+// =====================================================================================
+//  RECETAS DE SONIDO (pensadas para portarse 1:1 a C#: cada sonido es un arreglo de
+//  muestras a 44100 Hz calculado una vez; luego reverberación estéreo tipo Freeverb).
+// =====================================================================================
+const SR = 44100, TAU = Math.PI * 2;
+// Pentatónica de do mayor desde do5 (la misma de los juegos).
+const P = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760, 2093, 2349.32, 2637.02];
+
+function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function render(sec, fn){ const n = Math.ceil(sec * SR), out = new Float32Array(n); for (let i = 0; i < n; i++) out[i] = fn(i / SR, i); return out; }
+function blank(sec){ return new Float32Array(Math.ceil(sec * SR)); }
+function add(dst, src, at = 0, g = 1){ const o = Math.round(at * SR); for (let i = 0; i < src.length && o + i < dst.length; i++) dst[o + i] += src[i] * g; return dst; }
+const env = (t, a, tau) => t < 0 ? 0 : (t < a ? t / a : Math.exp(-(t - a) / tau));
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+// Filtro biquad (recetas de R. Bristow-Johnson): 'lp', 'hp', 'bp'.
+function biquad(type, f, q){
+  let b0, b1, b2, a1, a2, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  function set(fc, Q = q){
+    const w = TAU * Math.min(Math.max(fc, 20), SR * 0.45) / SR, c = Math.cos(w), s = Math.sin(w), al = s / (2 * Q);
+    let n0, n1, n2;
+    if (type === 'lp'){ n0 = (1 - c) / 2; n1 = 1 - c; n2 = (1 - c) / 2; }
+    else if (type === 'hp'){ n0 = (1 + c) / 2; n1 = -(1 + c); n2 = (1 + c) / 2; }
+    else { n0 = al; n1 = 0; n2 = -al; }
+    const d0 = 1 + al; b0 = n0 / d0; b1 = n1 / d0; b2 = n2 / d0; a1 = -2 * c / d0; a2 = (1 - al) / d0;
+  }
+  set(f, q);
+  return { set, run(x){ const y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; } };
+}
+
+// ---------- instrumentos
+// Campana FM: portadora f, moduladora f·ratio, índice que se apaga (ratio 1 = celesta; 3,5 = vidrio).
+function fmBell(f, { sec = 1.2, ratio = 3.5, index = 1.2, itau = 0.06, tau = 0.4, a = 0.002 } = {}){
+  return render(sec, t => env(t, a, tau) * Math.sin(TAU * f * t + index * Math.exp(-t / itau) * Math.sin(TAU * f * ratio * t)));
+}
+function celesta(f, tau = 0.42){ const x = fmBell(f, { sec: tau * 3.2, ratio: 1, index: 1.6, itau: 0.045, tau }); return add(x, fmBell(f * 2, { sec: 0.5, ratio: 3.5, index: 0.4, itau: 0.03, tau: 0.15 }), 0, 0.25); }
+function kalimba(f, { tau = 0.45, seed = 7 } = {}){
+  const r = rng(seed);
+  return render(tau * 3, t => {
+    const bend = 1 + 0.012 * Math.exp(-t / 0.012);
+    return Math.sin(TAU * f * bend * t) * env(t, 0.002, tau) + 0.28 * Math.sin(TAU * f * 5.95 * t) * env(t, 0.001, 0.035)
+         + 0.12 * Math.sin(TAU * f * 2 * t) * env(t, 0.002, tau * 0.4) + (t < 0.004 ? (r() * 2 - 1) * 0.3 * (1 - t / 0.004) : 0);
+  });
+}
+function marimba(f, tau = 0.3){ return render(tau * 3.2, t => 0.9 * Math.sin(TAU * f * t) * env(t, 0.003, tau) + 0.25 * Math.sin(TAU * f * 4 * t) * env(t, 0.002, 0.03) + 0.06 * Math.sin(TAU * f * 9.8 * t) * env(t, 0.001, 0.012)); }
+function woodblock(f){ return render(0.25, t => Math.sin(TAU * f * t) * env(t, 0.001, 0.035) + 0.5 * Math.sin(TAU * f * 2.71 * t) * env(t, 0.001, 0.02)); }
+// Sintetizador «pluck»: diente de sierra suave (8 armónicos) por un paso bajo que se cierra, más un seno grave.
+function pluck(f, { tau = 0.35, cut0 = 4200, cut1 = 520, ctau = 0.12, glide = 0, sub = 0.35 } = {}){
+  const lp = biquad('lp', cut0, 0.9); let ph = 0;
+  return render(tau * 3, t => {
+    const ff = f * Math.pow(2, glide * Math.min(1, t / 0.08)); ph += ff / SR;
+    let s = 0; for (let k = 1; k <= 8; k++){ if (k * ff > SR * 0.45) break; s += Math.sin(TAU * k * ph) / k; }
+    lp.set(cut1 + (cut0 - cut1) * Math.exp(-t / ctau));
+    return (lp.run(s * 0.55) + sub * Math.sin(TAU * ph)) * env(t, 0.003, tau);
+  });
+}
+// Colchón (pad): osciladores apenas desafinados, entrada lenta y salida lenta.
+function pad(freqs, { sec = 3, a = 0.4, rel = 1.2, cut = 1400, det = 0.006, harm = 6, sweep = 0 } = {}){
+  const lp = biquad('lp', cut, 0.7), os = freqs.flatMap(f => [{ f: f * (1 - det), p: 0 }, { f: f * (1 + det), p: 0.37 }]);
+  return render(sec, t => {
+    let s = 0; for (const o of os){ o.p += o.f / SR; for (let k = 1; k <= harm; k++) s += Math.sin(TAU * k * o.p) / k; }
+    if (sweep) lp.set(cut + sweep * clamp01(t / (sec * 0.6)));
+    return lp.run(s / os.length) * Math.min(1, t / a) * (t > sec - rel ? Math.max(0, (sec - t) / rel) : 1);
+  });
+}
+// Ruido filtrado con barrido de frecuencia (exponencial de f0 a f1).
+function noiseSweep(sec, { f0, f1, q = 0.8, type = 'bp', a = 0.002, tau = 0.08, seed = 1 }){
+  const r = rng(seed), flt = biquad(type, f0, q);
+  return render(sec, t => { flt.set(f0 * Math.pow(f1 / f0, Math.min(1, t / sec))); return flt.run(r() * 2 - 1) * env(t, a, tau); });
+}
+// Estática: ruido de banda con granos al azar (y aleteo opcional, como radio).
+function staticNoise(sec, { center = 1800, q = 0.7, seed = 3, grain = 0.003, flutter = 0 } = {}){
+  const r = rng(seed), bp = biquad('bp', center, q); let g = 0, next = 0;
+  return render(sec, t => {
+    if (t >= next){ g = r() < 0.35 ? r() : r() * 0.25; next = t + grain * (0.5 + r()); }
+    const fl = flutter ? 0.6 + 0.4 * Math.sin(TAU * flutter * t) : 1;
+    return bp.run(r() * 2 - 1) * g * fl * Math.min(1, t / 0.01) * Math.min(1, (sec - t) / 0.08);
+  });
+}
+// Golpe grave (sube el cuerpo del relámpago o del acople).
+function thump(sec, { f0 = 90, f1 = 50, tau = 0.09 } = {}){ let ph = 0; return render(sec, t => { ph += f0 * Math.pow(f1 / f0, Math.min(1, t / sec)) / SR; return Math.sin(TAU * ph) * env(t, 0.002, tau); }); }
+// Rayo tractor: tres senos que suben con vibrato + aire que se abre.
+function tractor(sec, { f0 = 330, f1 = 990, vib = 6, seed = 5, saw = false, cut0 = 600, cut1 = 3200 } = {}){
+  const r = rng(seed), hp = biquad('hp', 2000, 0.7), lp = biquad('lp', cut0, 0.8), ph = [0, 0, 0], rt = [1, 1.5, 2.01];
+  return render(sec, t => {
+    const k = Math.min(1, t / (sec * 0.85)), f = f0 * Math.pow(f1 / f0, k) * (1 + 0.012 * Math.sin(TAU * vib * t));
+    let s = 0;
+    rt.forEach((q, j) => { ph[j] += f * q / SR; if (saw){ for (let h = 1; h <= 5; h++) s += Math.sin(TAU * h * ph[j]) / h * (j ? 0.3 : 0.55); } else s += Math.sin(TAU * ph[j]) * (j ? 0.35 : 0.6); });
+    if (saw){ lp.set(cut0 * Math.pow(cut1 / cut0, k)); s = lp.run(s * 0.6); }
+    hp.set(2000 + 4000 * k);
+    return (s + hp.run(r() * 2 - 1) * 0.22) * Math.min(1, t / 0.25) * Math.min(1, (sec - t) / 0.15);
+  });
+}
+function echo(x, time, fb, extra = 1){ const d = Math.round(time * SR), n = x.length + Math.round(extra * SR), y = new Float32Array(n); for (let i = 0; i < n; i++) y[i] = (i < x.length ? x[i] : 0) + (i >= d ? y[i - d] * fb : 0); return y; }
+function seq(notes, gap, make, total){ const x = blank(total ?? (notes.length * gap + 1.4)); notes.forEach((f, i) => add(x, make(f, i), i * gap)); return x; }
+
+// ---------- reverberación estéreo (Freeverb de Jezar, afinaciones estándar)
+const COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], APS = [556, 441, 341, 225];
+function comb(size){ const b = new Float32Array(size); let i = 0, st = 0; return (x, fb, dmp) => { const o = b[i]; st = o * (1 - dmp) + st * dmp; b[i] = x + st * fb; if (++i >= size) i = 0; return o; }; }
+function allpass(size){ const b = new Float32Array(size); let i = 0; return x => { const bo = b[i], o = -x + bo; b[i] = x + bo * 0.5; if (++i >= size) i = 0; return o; }; }
+function reverb(x, { room = 0.84, damp = 0.3, wet = 0.3, tail = 1.5, width = 1 } = {}){
+  const n = x.length + Math.round(tail * SR), L = new Float32Array(n), R = new Float32Array(n);
+  if (wet <= 0){ L.set(x); R.set(x); return [L, R]; }
+  const cl = COMBS.map(s => comb(s)), cr = COMBS.map(s => comb(s + 23)), al = APS.map(s => allpass(s)), ar = APS.map(s => allpass(s + 23));
+  const fb = room * 0.28 + 0.7, dm = damp * 0.4, w = wet * 3, w1 = w * (width / 2 + 0.5), w2 = w * ((1 - width) / 2);
+  for (let i = 0; i < n; i++){
+    const dry = i < x.length ? x[i] : 0, inp = dry * 0.015;
+    let l = 0, r = 0; for (let c = 0; c < 8; c++){ l += cl[c](inp, fb, dm); r += cr[c](inp, fb, dm); }
+    for (let a = 0; a < 4; a++){ l = al[a](l); r = ar[a](r); }
+    L[i] = dry + l * w1 + r * w2; R[i] = dry + r * w1 + l * w2;
+  }
+  return [L, R];
+}
+// Ajusta el pico a «lvl» y funde los últimos 30 ms (sin «clic» de corte).
+function finish([L, R], lvl){
+  let pk = 1e-9; for (let i = 0; i < L.length; i++) pk = Math.max(pk, Math.abs(L[i]), Math.abs(R[i]));
+  const g = lvl / pk, f = Math.min(L.length, Math.round(0.03 * SR));
+  for (let i = 0; i < L.length; i++){ const k = i >= L.length - f ? (L.length - 1 - i) / f : 1; L[i] *= g * k; R[i] *= g * k; }
+  return [L, R];
+}
+function loopify([L, R], cross = 2){ const F = Math.round(cross * SR), N = L.length - F, oL = L.slice(0, N), oR = R.slice(0, N); for (let i = 0; i < F; i++){ const k = i / F; oL[i] = L[i] * k + L[i + N] * (1 - k); oR[i] = R[i] * k + R[i + N] * (1 - k); } return [oL, oR]; }
+
+// ---------- lo que suena HOY (copia exacta de RadarSounds.cs, para comparar)
+const PA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760];
+const aBell = (hz, t, tau) => t < 0 ? 0 : ((t < 0.008 ? t / 0.008 : 1) * Math.exp(-Math.max(0, t - 0.008) / tau)) * (Math.sin(TAU * hz * t) + 0.16 * Math.sin(TAU * hz * 2.76 * t) + 0.05 * Math.sin(TAU * hz * 5.4 * t));
+const aNoise = (t, c) => { const q = [0.71, 0.93, 1.07, 1.29, 1.51, 0.83, 1.17]; let s = 0; q.forEach((v, i) => s += Math.sin(TAU * c * v * t + i * 1.7)); return s / q.length; };
+function aMake(sec, fn, vol, ech = false){
+  const d = render(sec, fn);
+  if (ech){ const k = Math.round(0.16 * SR); for (let i = d.length - 1; i >= k; i--) d[i] += 0.28 * d[i - k]; }
+  let pk = 0; for (const v of d) pk = Math.max(pk, Math.abs(v)); const g = pk > 0.5 ? 0.5 / pk : 1;
+  const f = Math.min(d.length, SR / 100); for (let i = 0; i < d.length; i++){ d[i] = Math.max(-1, Math.min(1, d[i] * g)); }
+  for (let i = 0; i < f; i++) d[d.length - 1 - i] *= i / f;
+  for (let i = 0; i < d.length; i++) d[i] *= vol;
+  return [d, d];
+}
+
+// ---------- los cuatro estilos
+const STYLES = {
+  actual: {
+    tag: 'Hoy', name: 'Como suena hoy', desc: 'Lo que tiene el juego en el teléfono.', col: '#ABA5D2', raw: true,
+    ev: {
+      ping: () => aMake(0.4, t => 0.22 * aBell(1567.98, t, 0.1), 0.45),
+      flash: () => aMake(0.18, t => 0.3 * Math.exp(-t / 0.05) * aNoise(t, 3000 + (1200 - 3000) * clamp01(t / 0.12)), 0.7),
+      static: () => aMake(0.3, t => 0.12 * Math.min(1, t / 0.02) * Math.exp(-t / 0.2) * aNoise(t, 520), 0.5),
+      mark: n => aMake(0.5, t => 0.26 * aBell(PA[2 + Math.min(5, Math.max(1, n))], t, 0.14), 0.8),
+      unmark: () => aMake(0.12, t => 0.25 * Math.sin(TAU * (520 + (260 - 520) * clamp01(t / 0.08)) * t) * Math.exp(-t / 0.035), 0.7),
+      beam: null,
+      dock: i => aMake(0.9, t => 0.24 * aBell(PA[4 + i % 5], t, 0.28), 0.8),
+      perfect: () => aMake(1.2, t => 0.16 * (aBell(1046.5, t, 0.35) + aBell(1318.51, t - 0.07, 0.35) + aBell(1567.98, t - 0.14, 0.4)), 0.8, true),
+      miss: () => aMake(0.3, t => 0.3 * Math.sin(TAU * (220 + (130 - 220) * clamp01(t / 0.2)) * t) * Math.exp(-t / 0.08), 0.7),
+      rain: () => aMake(1.0, t => 0.14 * (aBell(PA[8], t, 0.18) + aBell(PA[7], t - 0.09, 0.18) + aBell(PA[6], t - 0.18, 0.2) + aBell(PA[5], t - 0.27, 0.25)), 0.7),
+      finale: () => aMake(2.0, t => 0.18 * (aBell(784, t, 0.5) + aBell(1046.5, t - 0.12, 0.5) + aBell(1318.51, t - 0.24, 0.55)), 0.8, true),
+    },
+    amb: null,
+  },
+  cristal: {
+    tag: 'A', name: 'Cristal', desc: 'Campanas de vidrio y celesta, con aire y eco amplio. Luminoso y limpio.', col: '#7FD8FF',
+    verb: { room: 0.86, damp: 0.35, wet: 0.32, tail: 1.6, width: 1 },
+    ev: {
+      ping: () => ({ x: fmBell(P[8], { sec: 0.6, ratio: 3.5, index: 0.9, itau: 0.05, tau: 0.22 }), wet: 0.5, lvl: 0.16 }),
+      flash: () => { const x = blank(0.5); add(x, noiseSweep(0.4, { f0: 8000, f1: 1800, q: 0.9, tau: 0.07, seed: 11 }), 0, 0.9); add(x, thump(0.3, { f0: 110, f1: 55, tau: 0.09 }), 0, 0.7); [P[7], P[8], P[10]].forEach((f, i) => add(x, fmBell(f, { sec: 0.45, ratio: 3.5, index: 0.6, itau: 0.03, tau: 0.12 }), 0.004 * i, 0.28)); return { x, wet: 0.3, lvl: 0.42 }; },
+      static: () => ({ x: add(staticNoise(0.34, { center: 2400, q: 0.8, seed: 4, grain: 0.004 }), noiseSweep(0.34, { f0: 900, f1: 600, type: 'lp', q: 0.7, a: 0.01, tau: 0.2, seed: 9 }), 0, 0.4), wet: 0.12, lvl: 0.2 }),
+      mark: n => ({ x: celesta(P[1 + n]), lvl: 0.32 }),
+      unmark: () => ({ x: fmBell(392, { sec: 0.4, ratio: 1, index: 1, itau: 0.03, tau: 0.12 }), lvl: 0.2 }),
+      beam: () => ({ x: tractor(0.85, { f0: 330, f1: 990 }), wet: 0.45, lvl: 0.18 }),
+      dock: i => ({ x: add(celesta(P[5 + i % 4], 0.35), thump(0.15, { f0: 180, f1: 120, tau: 0.04 }), 0, 0.4), lvl: 0.3 }),
+      perfect: () => { const x = seq([P[5], P[7], P[8], P[10]], 0.07, f => celesta(f, 0.5), 2); add(x, pad([P[0], P[2], P[3], 987.77], { sec: 1.6, a: 0.15, rel: 1.2, cut: 2500 }), 0, 0.35); return { x, wet: 0.45, tail: 2, lvl: 0.34 }; },
+      miss: () => ({ x: seq([392, 329.63], 0.14, f => fmBell(f, { sec: 0.8, ratio: 1, index: 0.8, itau: 0.05, tau: 0.25 })), wet: 0.3, lvl: 0.22 }),
+      rain: () => { const x = seq([12, 11, 10, 9, 8, 7, 6, 5].map(k => P[k]), 0.055, f => fmBell(f, { sec: 0.6, ratio: 3.5, index: 0.7, itau: 0.03, tau: 0.18 }), 1.2); add(x, noiseSweep(0.6, { f0: 6000, f1: 2500, q: 0.6, a: 0.15, tau: 0.25, seed: 21 }), 0, 0.25); return { x, wet: 0.45, lvl: 0.3 }; },
+      finale: () => { const x = seq([P[0], P[3], P[5], P[7], P[8]], 0.06, f => celesta(f, 0.7), 3.2); add(x, pad([261.63, 329.63, 392, 493.88, 587.33], { sec: 3.2, a: 0.5, rel: 1.6, cut: 2200 }), 0, 0.4); return { x, wet: 0.5, tail: 2.5, lvl: 0.4 }; },
+    },
+    amb: () => { const x = pad([130.81, 196, 261.63, 329.63], { sec: 12, a: 2, rel: 2, cut: 900, det: 0.004, harm: 4 }); add(x, noiseSweep(12, { f0: 600, f1: 500, type: 'lp', q: 0.7, a: 2, tau: 1e9, seed: 31 }), 0, 0.15); return { x, lvl: 0.06 }; },
+  },
+  madera: {
+    tag: 'B', name: 'Madera cálida', desc: 'Kalimba y marimba, de sala pequeña. Cercano, suave, como un juguete fino.', col: '#FFC94A',
+    verb: { room: 0.7, damp: 0.5, wet: 0.18, tail: 0.9, width: 0.8 },
+    ev: {
+      ping: () => ({ x: woodblock(1250), wet: 0.25, lvl: 0.16 }),
+      flash: () => { const x = noiseSweep(0.4, { f0: 3500, f1: 300, type: 'lp', q: 0.7, tau: 0.09, seed: 12 }); add(x, thump(0.35, { f0: 140, f1: 60, tau: 0.13 }), 0, 0.9); return { x, lvl: 0.4 }; },
+      static: () => ({ x: staticNoise(0.3, { center: 5000, q: 0.6, grain: 0.002, seed: 6 }), wet: 0.08, lvl: 0.18 }),
+      mark: n => ({ x: kalimba(P[n - 1]), lvl: 0.34 }),
+      unmark: () => ({ x: kalimba(392, { tau: 0.07 }), lvl: 0.22 }),
+      beam: () => ({ x: seq([261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25], 0.07, f => marimba(f, 0.18), 1.2), lvl: 0.18 }),
+      dock: i => ({ x: add(marimba(P[2 + i % 4]), woodblock(1800), 0, 0.25), lvl: 0.3 }),
+      perfect: () => { const x = seq([P[0], P[2], P[3], P[5]], 0.08, f => marimba(f, 0.35), 1.6); add(x, kalimba(P[5]), 0.34, 0.6); add(x, kalimba(P[7]), 0.42, 0.6); return { x, lvl: 0.34 }; },
+      miss: () => ({ x: seq([196, 164.81], 0.13, f => marimba(f, 0.25)), lvl: 0.24 }),
+      rain: () => ({ x: seq([9, 8, 7, 6, 5, 4, 3, 2].map(k => P[k]), 0.06, f => kalimba(f, { tau: 0.3 }), 1.6), lvl: 0.3 }),
+      finale: () => { const x = blank(3); [261.63, 329.63, 392, 523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { for (let h = 0; h < 3; h++) add(x, marimba(f, 0.4), i * 0.07 + h * 0.05, h ? 0.35 : 0.8); }); add(x, kalimba(P[7], { tau: 0.6 }), 0.55, 0.7); return { x, lvl: 0.4 }; },
+    },
+    amb: () => { const r = rng(41); const lp = biquad('lp', 180, 0.7); const x = render(12, t => (Math.sin(TAU * 65.41 * t) * 0.5 + Math.sin(TAU * 98 * t) * 0.3) * (0.75 + 0.25 * Math.sin(TAU * 0.1 * t)) * Math.min(1, t / 2) + lp.run(r() * 2 - 1) * 1.6); return { x, lvl: 0.05 }; },
+  },
+  nebulosa: {
+    tag: 'C', name: 'Nebulosa', desc: 'Sintetizador suave: sonar con eco, rayo que zumba, colchón espacial. Más «de nave».', col: '#B79BFF',
+    verb: { room: 0.9, damp: 0.25, wet: 0.35, tail: 2.2, width: 1 },
+    ev: {
+      ping: () => { let ph = 0; const x = render(0.7, t => { ph += (1180 + (1020 - 1180) * clamp01(t / 0.4)) / SR; return Math.sin(TAU * ph) * env(t, 0.004, 0.18); }); return { x: echo(x, 0.32, 0.4, 1), wet: 0.4, lvl: 0.16 }; },
+      flash: () => { const x = pluck(2200, { tau: 0.12, cut0: 7000, cut1: 700, ctau: 0.06, glide: -3.6, sub: 0 }); add(x, noiseSweep(0.3, { f0: 6000, f1: 1200, q: 0.7, tau: 0.06, seed: 13 }), 0, 0.5); add(x, thump(0.3, { f0: 120, f1: 50, tau: 0.1 }), 0, 0.6); return { x, wet: 0.25, lvl: 0.38 }; },
+      static: () => ({ x: staticNoise(0.34, { center: 2600, q: 1.1, seed: 8, flutter: 38 }), wet: 0.1, lvl: 0.2 }),
+      mark: n => ({ x: pluck(P[1 + n]), lvl: 0.3 }),
+      unmark: () => ({ x: pluck(P[0], { tau: 0.12, glide: -0.4 }), lvl: 0.2 }),
+      beam: () => ({ x: tractor(0.85, { f0: 196, f1: 587, vib: 5.5, saw: true, cut0: 500, cut1: 3200 }), wet: 0.4, lvl: 0.2 }),
+      dock: i => { const f = P[5 + i % 4]; let ph = 0; const x = blank(1.0); add(x, render(0.12, t => { ph += f * (0.5 + 0.5 * clamp01(t / 0.025)) / SR; return Math.sin(TAU * ph) * env(t, 0.002, 0.04); })); add(x, pluck(f, { tau: 0.3 }), 0, 0.8); return { x, lvl: 0.3 }; },
+      perfect: () => { const x = seq([P[0], P[2], P[3], P[5], P[7]], 0.06, f => pluck(f, { tau: 0.3 }), 2); add(x, pad([261.63, 329.63, 392, 493.88, 587.33], { sec: 1.8, a: 0.2, rel: 1.2, cut: 1800 }), 0, 0.4); return { x, lvl: 0.34 }; },
+      miss: () => ({ x: seq([196, 164.81], 0.14, f => pluck(f, { tau: 0.25, cut0: 1800, cut1: 300 })), lvl: 0.24 }),
+      rain: () => ({ x: echo(seq([10, 9, 8, 7, 6, 5, 4, 3].map(k => P[k]), 0.06, f => pluck(f, { tau: 0.18 }), 1.0), 0.18, 0.3, 0.8), lvl: 0.3 }),
+      finale: () => { const x = pad([130.81, 196, 246.94, 293.66, 329.63], { sec: 3.4, a: 0.6, rel: 1.6, cut: 400, sweep: 2000 }); add(x, seq([P[0], P[2], P[3], P[5], P[7], P[8]], 0.08, f => pluck(f, { tau: 0.35 }), 2), 0.3, 0.5); return { x, tail: 2.5, lvl: 0.4 }; },
+    },
+    amb: () => { const x = pad([65.41, 98, 130.81], { sec: 12, a: 2, rel: 2, cut: 320, det: 0.008, harm: 5 }); add(x, render(12, t => Math.sin(TAU * 1046.5 * t) * (0.5 + 0.5 * Math.sin(TAU * 0.07 * t)) * 0.02 * Math.min(1, t / 2)), 0, 1); return { x, lvl: 0.06 }; },
+  },
+};
+
+// ---------- audio
+let AC = null, master = null, ambNode = null, style = 'cristal';
+const cache = new Map();
+function ctx(){ if (!AC){ AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = +document.getElementById('vol').value; master.connect(AC.destination); } if (AC.state === 'suspended') AC.resume(); return AC; }
+function toBuffer([L, R]){ const b = ctx().createBuffer(2, L.length, SR); b.copyToChannel(L, 0); b.copyToChannel(R, 1); return b; }
+// Las muestras se calculan una vez y se guardan; el búfer de audio se arma al tocar (es inmediato).
+function raw(st, ev, arg = 0){
+  const key = st + ':' + ev + ':' + arg; if (cache.has(key)) return cache.get(key);
+  const S = STYLES[st], f = S.ev[ev]; let r = null;
+  if (f){
+    if (S.raw) r = f(arg);
+    else { const o = f(arg), v = { ...S.verb, ...(o.wet !== undefined ? { wet: o.wet } : {}), ...(o.tail ? { tail: o.tail } : {}) }; r = finish(reverb(o.x, v), o.lvl); }
+  }
+  cache.set(key, r); return r;
+}
+const bufs = new Map();
+function sound(st, ev, arg = 0){ const key = st + ':' + ev + ':' + arg; if (!bufs.has(key)){ const r = raw(st, ev, arg); bufs.set(key, r ? toBuffer(r) : null); } return bufs.get(key); }
+// Precarga en segundo plano los sonidos del estilo elegido, de a uno, sin trabar la página.
+function prewarm(st){
+  const jobs = [['ping'], ['flash'], ['static'], ['mark', 1], ['mark', 2], ['mark', 3], ['beam'], ['perfect'], ['dock', 0], ['dock', 1], ['dock', 2], ['unmark'], ['miss'], ['mark', 4], ['dock', 3], ['rain'], ['finale']];
+  let i = 0; const step = () => { if (st !== style || i >= jobs.length) return; const [e, a] = jobs[i++]; raw(st, e, a ?? 0); setTimeout(step, 30); };
+  setTimeout(step, 60);
+}
+function playAt(b, when){ if (!b) return; const s = ctx().createBufferSource(); s.buffer = b; s.connect(master); s.start(when); }
+
+// Rondas de ejemplo: [segundo, evento, argumento]
+const SCENES = {
+  perfecta: { label: 'Una ronda perfecta', sub: 'radar, relámpago, 3 marcas, rescate', steps: [[0, 'ping'], [1.7, 'flash'], [2.25, 'static'], [3.2, 'mark', 1], [3.7, 'mark', 2], [4.2, 'mark', 3], [5.1, 'beam', 0], [5.26, 'beam', 1], [5.42, 'beam', 2], [5.15, 'perfect'], [5.85, 'dock', 0], [6.01, 'dock', 1], [6.17, 'dock', 2]] },
+  error: { label: 'Una ronda con un error', sub: 'marca, desmarca y falla una', steps: [[0, 'ping'], [1.5, 'flash'], [2.05, 'static'], [2.9, 'mark', 1], [3.4, 'mark', 2], [3.85, 'unmark'], [4.3, 'mark', 2], [4.8, 'mark', 3], [5.6, 'beam', 0], [5.76, 'beam', 1], [5.65, 'miss'], [6.35, 'dock', 0], [6.51, 'dock', 1]] },
+  lluvia: { label: 'La lluvia de cápsulas', sub: 'cada 4 rondas, con 4 cápsulas', steps: [[0, 'rain'], [1.4, 'flash'], [1.95, 'static'], [2.7, 'mark', 1], [3.1, 'mark', 2], [3.5, 'mark', 3], [3.9, 'mark', 4], [4.7, 'beam', 0], [4.86, 'beam', 1], [5.02, 'beam', 2], [5.18, 'beam', 3], [4.75, 'perfect'], [5.45, 'dock', 0], [5.61, 'dock', 1], [5.77, 'dock', 2], [5.93, 'dock', 3]] },
+  final: { label: 'El final de la partida', sub: 'rescate completo', steps: [[0, 'finale']] },
+};
+const SINGLE = [['ping', 0, 'Radar (cada vuelta)'], ['flash', 0, 'Relámpago'], ['static', 0, 'Estática'], ['marks', 0, 'Marcar 1, 2, 3, 4'], ['unmark', 0, 'Desmarcar'], ['beam', 0, 'Rayo tractor'], ['dock', 0, 'Entra en la nave'], ['perfect', 0, 'Ronda perfecta'], ['miss', 0, 'Ronda con error'], ['rain', 0, 'Lluvia'], ['finale', 0, 'Final']];
+
+const now = document.getElementById('now');
+function say(t){ now.textContent = t; }
+function runSteps(steps, label, btn){
+  say('Preparando…');
+  setTimeout(() => {
+    const bufs = steps.map(([t, e, a]) => [t, sound(style, e, a ?? 0)]);
+    const t0 = ctx().currentTime + 0.08;
+    bufs.forEach(([t, b]) => playAt(b, t0 + t));
+    const dur = Math.max(...bufs.map(([t, b]) => t + (b ? b.duration : 0)));
+    say('Sonando: ' + label + ' · ' + STYLES[style].name);
+    if (btn){ btn.classList.add('playing'); setTimeout(() => btn.classList.remove('playing'), dur * 1000); }
+    setTimeout(() => { if (now.textContent.startsWith('Sonando: ' + label)) say(''); }, dur * 1000);
+  }, 20);
+}
+
+// ---------- interfaz
+const icon = '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="currentColor" opacity=".18"/><path d="M8.5 6.5v9l7-4.5z" fill="currentColor"/></svg>';
+const stylesEl = document.getElementById('styles');
+for (const [k, S] of Object.entries(STYLES)){
+  const b = document.createElement('button'); b.className = 'style'; b.style.setProperty('--c', S.col); b.setAttribute('aria-pressed', k === style);
+  b.innerHTML = `<span class="tag">${S.tag}</span><span class="nm">${S.name}</span><span class="ds">${S.desc}</span>`;
+  b.onclick = () => { style = k; stylesEl.querySelectorAll('.style').forEach(x => x.setAttribute('aria-pressed', x === b)); setAmb(); say('Estilo: ' + S.name); prewarm(k); };
+  stylesEl.appendChild(b);
+}
+const scenesEl = document.getElementById('scenes');
+for (const [k, sc] of Object.entries(SCENES)){
+  const b = document.createElement('button'); b.className = 'btn'; b.innerHTML = icon + `<span>${sc.label}<br><span style="font:600 14px var(--f-body);opacity:.75">${sc.sub}</span></span>`;
+  b.onclick = () => runSteps(sc.steps, sc.label, b); scenesEl.appendChild(b);
+}
+const singleEl = document.getElementById('single');
+for (const [e, a, label] of SINGLE){
+  const b = document.createElement('button'); b.className = 'btn sec'; b.innerHTML = icon + `<span>${label}</span>`;
+  b.onclick = () => {
+    if (e === 'marks') return runSteps([[0, 'mark', 1], [0.45, 'mark', 2], [0.9, 'mark', 3], [1.35, 'mark', 4]], label, b);
+    if (!STYLES[style].ev[e]) return say('Este estilo no tiene ese sonido (hoy el rayo tractor no suena).');
+    runSteps([[0, e, a]], label, b);
+  };
+  singleEl.appendChild(b);
+}
+function setAmb(){
+  if (ambNode){ try { ambNode.stop(); } catch (_){} ambNode = null; }
+  if (!document.getElementById('amb').checked) return;
+  const S = STYLES[style]; if (!S.amb){ say('Hoy el juego no tiene ambiente de fondo.'); return; }
+  const key = style + ':amb'; let b = bufs.get(key);
+  if (!b){ const o = S.amb(); b = toBuffer(finish(loopify(reverb(o.x, { ...S.verb, wet: 0.4, tail: 0.5 })), o.lvl)); bufs.set(key, b); }
+  ambNode = ctx().createBufferSource(); ambNode.buffer = b; ambNode.loop = true; ambNode.connect(master); ambNode.start();
+}
+document.getElementById('amb').addEventListener('change', () => { say('Preparando…'); setTimeout(() => { setAmb(); if (now.textContent === 'Preparando…') say(''); }, 20); });
+document.getElementById('vol').addEventListener('input', e => { if (master) master.gain.value = +e.target.value; });
+prewarm(style);
+</script>

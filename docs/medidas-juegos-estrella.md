@@ -65,7 +65,7 @@ promedio de (aciertos − 2 × elegidas que no estaban), con un mínimo de 0 en 
 factor 2, adivinar da 0 en promedio y quien elige solo lo que vio obtiene exactamente lo que vio. Se muestra solo con 2 o más lluvias. Con destellos largos y máscara, el informe total se acerca a la capacidad de la memoria visual de corto plazo, que ronda 3 a 4
 elementos (Luck y Vogel, 1997; Cowan, 2001); pero acá el techo es 4 y hay 6 tipos, así que "X de 4" es una medida de este juego y no equivale a esa capacidad de laboratorio: por eso **no se compara con ninguna referencia**.
 
-**Lo que no es medida.** Las cápsulas rescatadas en la partida y su récord (`rescate_record`, que va en el respaldo) son el premio, como las luces de Satélites; el final también cuenta las rondas perfectas, la racha mayor y el destello más corto con el que se
+**Lo que no es medida.** Las cápsulas rescatadas en la partida, su récord y los totales de toda la vida («En total: … cápsulas y … viajes a la estación»; `rescate_record`, que va en el respaldo) son el premio, como las luces de Satélites; el final también cuenta las rondas perfectas, la racha mayor y el destello más corto con el que se
 resolvió una ronda normal perfecta (en ms reales).
 
 **Alerta.** El destello llega sin aviso (espera de 1,5 a 3,5 s): entrenar la alerta propia aumentó la velocidad de procesamiento visual medida con TVA en mayores (Penning et al., Psychological Science, 2021). No se mide aparte, y es un estudio sin replicación
