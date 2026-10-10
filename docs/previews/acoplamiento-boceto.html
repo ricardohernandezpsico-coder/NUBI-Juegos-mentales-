@@ -1,0 +1,462 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Acoplamiento renovado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04051A; --ink:#EDEAFB; --dim:#ABA5D2; --line:#262055;
+  --sky:#7FD8FF; --sun:#FFC94A;
+  --f-display:'Fredoka',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+h1{font:700 clamp(30px,4.4vw,44px)/1.05 var(--f-display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--dim);margin:0 0 20px;max-width:62ch}
+h2{font:600 19px var(--f-display);margin:24px 0 10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chip{font:500 15px var(--f-display);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1C1750;border-color:#5B4FC0}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.list{margin:0;padding-left:18px;color:var(--dim);font-size:15px;display:grid;gap:6px}
+.list b{color:var(--ink)}
+.phone{position:sticky;top:20px;width:100%;max-width:380px;aspect-ratio:360/780;border-radius:34px;overflow:hidden;border:1px solid var(--line);background:#02030F}
+.phone canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+.note{font-size:14px;color:var(--dim);margin-top:24px;max-width:64ch}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.phone{position:relative;top:0;margin-inline:auto;order:-1}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Acoplamiento</h1>
+    <p class="lead">Estás armando una estación espacial. Llegan módulos girados: si es la misma pieza que el hueco del puerto, encaja; si está dada vuelta, es su espejo. Cada respuesta correcta suma un módulo a tu estación.</p>
+    <h2>Propuesta: muelle de acoplamiento</h2>
+    <ul class="list">
+      <li><b>Toda la pantalla:</b> arriba tu estación, al centro el módulo y el puerto grandes y a la misma escala, abajo los dos botones en la zona del pulgar.</li>
+      <li><b>Una estación que crece:</b> cada acierto acopla un módulo en un anillo de 8. Al completar un anillo, se enciende y empieza otro encima («¡Anillo completo!»).</li>
+      <li><b>Los dos aciertos construyen:</b> si dices «Espejo» y era espejo, el muelle lo da vuelta y también se acopla. Así no conviene apostar siempre a «Encaja».</li>
+      <li><b>Siempre se ve la verdad:</b> el módulo gira hasta quedar derecho, se da vuelta si era espejo y baja al puerto. Si no acertaste, se ve igual y se aleja, sin castigo.</li>
+      <li><b>Combustible:</b> la barra muestra el tiempo para decidir (de 6 a 2,5 s según el nivel; en Precisión, sin apuro).</li>
+      <li><b>Nada gira en el fondo:</b> el cielo y la estación están quietos, para no confundir el giro mental.</li>
+      <li><b>Sonido Madera cálida</b> (el que elegiste), ahora más suave y atado a lo que pasa: un soplo cuando el módulo se acerca, un toque apagado al elegir, dos notas cuando se da vuelta, un golpe hueco cuando encaja y una kalimba que sube con tu racha cuando se suma a la estación.</li>
+    </ul>
+    <div class="row">
+      <button class="chip" id="snd" aria-pressed="true">Sonido: sí</button>
+      <button class="chip" id="rm" aria-pressed="false">Ver con «quitar animaciones»</button>
+    </div>
+    <p class="note">Boceto jugable: 24 módulos y 12 niveles (los mismos de hoy). Dos aciertos seguidos suben un nivel; un error baja uno. Al final, «Tu giro mental» y tu curva de giro.</p>
+  </div>
+  <div class="phone"><canvas id="cv" aria-label="Acoplamiento: decide si el módulo encaja en el puerto o es su espejo"></canvas></div>
+</div>
+
+<script>
+const W = 360, H = 780;
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760];
+// ---------- audio
+let soundOn = true, actx = null, reduce = false;
+function ac(){ if (!soundOn) return null; try { actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if (actx.state==='suspended') actx.resume(); } catch(e){ return null; } return actx; }
+function bell(f, v=.07, d=1.2, delay=0){
+  const a = ac(); if (!a) return; const t = a.currentTime + delay, g = a.createGain();
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d); g.connect(a.destination);
+  [[1,1],[2.76,.16],[5.4,.05]].forEach(([m,amp])=>{ const o=a.createOscillator(), og=a.createGain(); o.type='sine'; o.frequency.value=f*m; og.gain.value=amp; o.connect(og).connect(g); o.start(t); o.stop(t+d); });
+}
+function noise(dur, f0, f1, vol, q=3){
+  const a = ac(); if (!a) return; const len=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+  const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain(), t=a.currentTime; s.buffer=b; f.type='bandpass'; f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur); g.gain.value=vol; s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const swash = () => noise(.45, 500, 1600, .05, 1.4);          // pincel que moja el papel
+const pop   = () => { noise(.12, 1800, 700, .05, 2); };
+function thud(){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='sine'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(130,t+.25); g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.32); }
+function chime(){ bell(659.25,.05,.9); bell(880,.045,1.1,.09); }
+
+// ---------- utilidades
+const ease = t => t<0?0:t>1?1:1-Math.pow(1-t,3);
+const easeBack = t => { const c=1.4; t=Math.min(1,Math.max(0,t)); return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2); };
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const hexRgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');
+function rng(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const glowCache = {};
+function glow(rgb){ if (glowCache[rgb]) return glowCache[rgb]; const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,`rgba(${rgb},1)`); r.addColorStop(.35,`rgba(${rgb},.45)`); r.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=r; g.fillRect(0,0,64,64); return glowCache[rgb]=c; }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
+function fitFont(c, text, maxW, size, weight=700){ let s=size; do { c.font=`${weight} ${s}px Fredoka`; if (c.measureText(text).width<=maxW) break; s-=2; } while (s>14); return s; }
+
+// fondo nocturno compartido (más cálido que Rastro: tinta y papel)
+function makeBg(){
+  const S=2, c=document.createElement('canvas'); c.width=W*S; c.height=H*S; const g=c.getContext('2d'); g.scale(S,S); const R=rng(11);
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#03041A'); sky.addColorStop(.6,'#070A26'); sky.addColorStop(1,'#0B1030'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  const neb=(x,y,r,rgb,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,`rgba(${rgb},${a})`); gr.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=gr; g.fillRect(0,0,W,H); };
+  neb(60,120,220,'90,60,200',.14); neb(320,520,260,'20,120,140',.10);
+  for (let i=0;i<180;i++){ const x=R()*W,y=R()*H,r=.3+Math.pow(R(),3)*1.1; g.fillStyle=`rgba(255,255,255,${.15+R()*.5})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  return c;
+}
+const BG = makeBg();
+
+// íconos de la regla: gota (TINTA) y libro abierto (PALABRA)
+function iconDrop(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.beginPath(); c.moveTo(0,-11); c.bezierCurveTo(6,-3,9,2,9,6); c.arc(0,6,9,0,Math.PI,false); c.bezierCurveTo(-9,2,-6,-3,0,-11); c.closePath(); c.fillStyle=col; c.fill(); c.beginPath(); c.arc(-3,6,2.4,0,7); c.fillStyle='rgba(255,255,255,.55)'; c.fill(); c.restore(); }
+function iconBook(c,x,y,s,col){ c.save(); c.translate(x,y); c.scale(s/24,s/24); c.fillStyle=col; c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round';
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(-6,-10,-12,-8); c.lineTo(-12,8); c.quadraticCurveTo(-6,6,0,10); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,-6); c.quadraticCurveTo(6,-10,12,-8); c.lineTo(12,8); c.quadraticCurveTo(6,6,0,10); c.closePath(); c.globalAlpha=.75; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=1.2; for (const k of [-3,1]){ c.beginPath(); c.moveTo(-9,k); c.lineTo(-3,k+1.5); c.stroke(); c.beginPath(); c.moveTo(3,k+1.5); c.lineTo(9,k); c.stroke(); } c.restore(); }
+function ruleIcon(c,rule,x,y,s,col='#fff'){ rule==='ink' ? iconDrop(c,x,y,s,col) : iconBook(c,x,y,s,col); }
+
+// ---------- lienzo
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function resize(){ const r=cv.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); scale=cv.width/W; }
+new ResizeObserver(resize).observe(cv); resize();
+function toLocal(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W, (e.clientY-r.top)/r.height*H]; }
+
+const INK = '#1A1240';
+const QS = new URLSearchParams(location.search), DEBUG = QS.has('debug');
+const TOTAL = Math.max(1, +(QS.get('modulos') || 24));
+const R = rng(Date.now() & 0xffff);
+const SAVE = { total: 0, rings: 0, best: 0 };
+try { Object.assign(SAVE, JSON.parse(localStorage.getItem('nubi_acople1') || '{}')); } catch (e){}
+function save(){ try { localStorage.setItem('nubi_acople1', JSON.stringify(SAVE)); } catch (e){} }
+
+// ============================================================ reglas (las del contrato de hoy)
+const MAXLV = 12;
+const cellsFor = lv => 4 + Math.floor((lv - 1)/3);
+const maxAngle = lv => lv === 1 ? 90 : lv === 2 ? 135 : 180;
+const angleStep = lv => lv <= 4 ? 45 : 15;
+const deadline = lv => (6000 - Math.round(3500*(lv - 1)/(MAXLV - 1)))/1000;
+const kkey = cells => cells.map(c => c.join(',')).sort().join(';');
+function norm(cells){ const mx = Math.min(...cells.map(c => c[0])), my = Math.min(...cells.map(c => c[1])); return cells.map(([x, y]) => [x - mx, y - my]).sort((a, b) => a[1] - b[1] || a[0] - b[0]); }
+const rot90 = cells => norm(cells.map(([x, y]) => [-y, x]));
+const mirror = cells => norm(cells.map(([x, y]) => [-x, y]));
+function chiral(p){ const m = kkey(mirror(p)); let r = p; for (let i=0;i<4;i++){ if (kkey(r) === m) return false; r = rot90(r); } return true; }
+// pieza conexa y quiral; NUEVO: cabe en 4 × 4 bloques, para que el módulo y el hueco se vean grandes
+function genPiece(n){
+  for (let t=0;t<900;t++){
+    const cells = [[0, 0]];
+    while (cells.length < n){ const [x, y] = cells[Math.floor(R()*cells.length)], d = [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(R()*4)], c = [x + d[0], y + d[1]]; if (!cells.some(q => q[0] === c[0] && q[1] === c[1])) cells.push(c); }
+    const p = norm(cells), w = Math.max(...p.map(c => c[0])) + 1, h = Math.max(...p.map(c => c[1])) + 1;
+    if (w <= 4 && h <= 4 && chiral(p)) return p;
+  }
+  return norm([[0,0],[0,1],[0,2],[1,0]]);
+}
+function nextTrial(lv){
+  const step = angleStep(lv), max = maxAngle(lv); let ang = step*Math.floor(R()*(max/step + 1));
+  if (ang !== 0 && ang !== 180 && R() < .5) ang = -ang;
+  return { cells: genPiece(cellsFor(lv)), mirrored: R() < .5, ang, lv };
+}
+
+// ============================================================ geometría de la pantalla (360 × 780)
+const CS = 26;                                   // lado de un bloque: el módulo y el hueco, a la misma escala
+const MOD = { x: 180, y: 360 };                  // donde espera el módulo
+const PORT = { x: 180, y: 534, w: 168, h: 146 }; // el puerto
+const FUEL = { x: 80, y: 438, w: 200, h: 12 };
+const BTN = { y: 622, h: 76, w: 158, gap: 12 };
+const STATION = { cx: 180, base: 200, rx: 128, ry: 30, step: 24, slots: 8 };
+const btnRect = i => ({ x: W/2 - BTN.gap/2 - BTN.w + i*(BTN.w + BTN.gap), y: BTN.y, w: BTN.w, h: BTN.h });
+
+// ============================================================ sonido «Madera cálida» (recetas del laboratorio)
+const SR = 44100, TAU = Math.PI*2;
+const P = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760];
+function render(sec, fn){ const n = Math.ceil(sec*SR), o = new Float32Array(n); for (let i=0;i<n;i++) o[i] = fn(i/SR, i); return o; }
+function blank(sec){ return new Float32Array(Math.ceil(sec*SR)); }
+function addTo(d, s, at = 0, g = 1){ const o = Math.round(at*SR); for (let i=0;i<s.length && o + i < d.length;i++) d[o + i] += s[i]*g; return d; }
+const envE = (t, a, tau) => t < 0 ? 0 : (t < a ? t/a : Math.exp(-(t - a)/tau));
+function biquad(type, f, q){ let b0, b1, b2, a1, a2, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  function set(fc){ const w = TAU*Math.min(Math.max(fc, 20), SR*.45)/SR, c = Math.cos(w), s = Math.sin(w), al = s/(2*q); let n0, n1, n2;
+    if (type === 'lp'){ n0 = (1 - c)/2; n1 = 1 - c; n2 = (1 - c)/2; } else if (type === 'hp'){ n0 = (1 + c)/2; n1 = -(1 + c); n2 = (1 + c)/2; } else { n0 = al; n1 = 0; n2 = -al; }
+    const d0 = 1 + al; b0 = n0/d0; b1 = n1/d0; b2 = n2/d0; a1 = -2*c/d0; a2 = (1 - al)/d0; }
+  set(f); return { set, run(x){ const y = b0*x + b1*x1 + b2*x2 - a1*y1 - a2*y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; } }; }
+function kalimba(f, tau = .45){ const r = rng(7); return render(tau*3, t => Math.sin(TAU*f*(1 + .012*Math.exp(-t/.012))*t)*envE(t, .002, tau) + .28*Math.sin(TAU*f*5.95*t)*envE(t, .001, .035) + .12*Math.sin(TAU*f*2*t)*envE(t, .002, tau*.4) + (t < .004 ? (r()*2 - 1)*.3*(1 - t/.004) : 0)); }
+function marimba(f, tau = .3){ return render(tau*3.2, t => .9*Math.sin(TAU*f*t)*envE(t, .003, tau) + .25*Math.sin(TAU*f*4*t)*envE(t, .002, .03) + .06*Math.sin(TAU*f*9.8*t)*envE(t, .001, .012)); }
+function woodblock(f){ return render(.25, t => Math.sin(TAU*f*t)*envE(t, .001, .035) + .5*Math.sin(TAU*f*2.71*t)*envE(t, .001, .02)); }
+function thump(sec, f0, f1, tau){ let ph = 0; return render(sec, t => { ph += f0*Math.pow(f1/f0, Math.min(1, t/sec))/SR; return Math.sin(TAU*ph)*envE(t, .002, tau); }); }
+function sweep(sec, f0, f1, type, q, tau, seed){ const r = rng(seed), fl = biquad(type, f0, q); return render(sec, t => { fl.set(f0*Math.pow(f1/f0, Math.min(1, t/sec))); return fl.run(r()*2 - 1)*envE(t, .004, tau); }); }
+function seqN(notes, gap, mk, total){ const x = blank(total); notes.forEach((f, i) => addTo(x, mk(f), i*gap)); return x; }
+const COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], APS = [556, 441, 341, 225];
+function comb(n){ const b = new Float32Array(n); let i = 0, st = 0; return (x, fb, dm) => { const o = b[i]; st = o*(1 - dm) + st*dm; b[i] = x + st*fb; if (++i >= n) i = 0; return o; }; }
+function allp(n){ const b = new Float32Array(n); let i = 0; return x => { const bo = b[i], o = -x + bo; b[i] = x + bo*.5; if (++i >= n) i = 0; return o; }; }
+function verb(x, lvl){ // Madera cálida: sala 0,7 · amortiguación 0,5 · mezcla 0,18 · cola 0,9 s · ancho 0,8
+  const n = x.length + Math.round(.9*SR), L = new Float32Array(n), Rr = new Float32Array(n);
+  const cl = COMBS.map(s => comb(s)), cr = COMBS.map(s => comb(s + 23)), al = APS.map(s => allp(s)), ar = APS.map(s => allp(s + 23));
+  const fb = .7*.28 + .7, dm = .5*.4, w = .18*3, w1 = w*(.8/2 + .5), w2 = w*((1 - .8)/2);
+  for (let i=0;i<n;i++){ const dry = i < x.length ? x[i] : 0, inp = dry*.015; let l = 0, r = 0;
+    for (let c=0;c<8;c++){ l += cl[c](inp, fb, dm); r += cr[c](inp, fb, dm); } for (let a=0;a<4;a++){ l = al[a](l); r = ar[a](r); }
+    L[i] = dry + l*w1 + r*w2; Rr[i] = dry + r*w1 + l*w2; }
+  let pk = 1e-9; for (let i=0;i<n;i++) pk = Math.max(pk, Math.abs(L[i]), Math.abs(Rr[i]));
+  const f = Math.round(.03*SR); for (let i=0;i<n;i++){ const k = i >= n - f ? (n - 1 - i)/f : 1; L[i] *= lvl/pk*k; Rr[i] *= lvl/pk*k; }
+  return [L, Rr];
+}
+const SFX = {
+  // cada sonido es lo que pasa en pantalla: se acerca, tocaste, se da vuelta, encaja, se suma a la estación
+  arrive: () => verb(sweep(.6, 900, 300, 'lp', .7, .2, 31), .06),                                  // el módulo se acerca: un soplo suave
+  tap:    () => verb(marimba(392, .06), .07),                                                       // tocaste un botón: un toque de madera apagado
+  flip:   () => verb(addTo(addTo(blank(.9), kalimba(P[4], .18)), kalimba(P[2], .22), .09), .16),   // se da vuelta: dos notas que bajan
+  dock:   () => verb(addTo(addTo(thump(.35, 130, 60, .1), marimba(P[0], .3), .01, .6), woodblock(700), 0, .2), .3),   // encaja: golpe hueco + marimba
+  slot:   i => verb(kalimba(P[1 + Math.min(i, 8)], .4), .26),                                       // se suma a la estación: la nota sube con la racha
+  ring:   () => verb(addTo(seqN([P[0], P[2], P[3], P[5]], .08, f => marimba(f, .35), 1.6), kalimba(P[7]), .4, .6), .36),
+  miss:   () => verb(seqN([196, 164.81], .13, f => marimba(f, .25), .9), .22),
+  finale: () => { const x = blank(3); [261.63, 329.63, 392, 523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { for (let h=0;h<3;h++) addTo(x, marimba(f, .4), i*.07 + h*.05, h ? .35 : .8); }); addTo(x, kalimba(P[7], .6), .55, .7); return verb(x, .4); },
+};
+const sfxCache = new Map();
+function sfx(name, arg = 0){
+  const a = ac(); if (!a) return;
+  const key = name + arg; let b = sfxCache.get(key);
+  if (!b){ const [L, Rr] = SFX[name](arg); b = a.createBuffer(2, L.length, SR); b.copyToChannel(L, 0); b.copyToChannel(Rr, 1); sfxCache.set(key, b); }
+  const s = a.createBufferSource(); s.buffer = b; s.connect(a.destination); s.start();
+}
+
+// ============================================================ partida
+const G = { state: 'menu', floats: [], parts: [] };
+const S = { docked: [], rings: 0 };
+function startGame(){
+  Object.assign(S, { lv: Math.max(1, Math.min(MAXLV, +(QS.get('nivel') || SAVE.lastLv || 1))), n: 0, okRow: 0, streak: 0, best: 0, correct: 0, docked: [], rings: 0, trials: [], answer: null, press: {} });
+  next();
+}
+function next(){
+  if (S.n >= TOTAL) return endGame();
+  S.n++; S.t = nextTrial(S.lv); S.answer = null; S.fx = 1;
+  G.state = 'arrive'; S.at = performance.now(); sfx('arrive');
+}
+function answer(which, now){
+  if (G.state !== 'answer') return;
+  S.answer = which; const rt = now - S.ansAt;
+  const ok = which !== null && ((which === 'encaja') === !S.t.mirrored);
+  S.ok = ok;
+  const disp = Math.abs(S.t.ang) % 360 > 180 ? 360 - Math.abs(S.t.ang) % 360 : Math.abs(S.t.ang) % 360;
+  S.trials.push({ disp, rt, ok, timeout: which === null });
+  if (ok){ S.correct++; S.streak++; S.best = Math.max(S.best, S.streak); S.okRow++; if (S.okRow >= 2){ S.lv = Math.min(MAXLV, S.lv + 1); S.okRow = 0; } }
+  else { S.streak = 0; S.okRow = 0; S.lv = Math.max(1, S.lv - 1); }
+  G.state = 'reveal'; S.at = now; S.revealSnd = 0;
+  const msg = ok ? (S.t.mirrored ? '¡Bien visto! Era su espejo' : (S.streak >= 3 ? `¡Encaja! Racha ×${S.streak}` : '¡Encaja!'))
+                 : which === null ? (S.t.mirrored ? 'Sin combustible: era su espejo' : 'Sin combustible: sí encajaba')
+                 : (S.t.mirrored ? 'Era su espejo' : 'Sí encajaba');
+  float(msg, ok ? '#A6E36B' : '#FFC94A');
+}
+function endGame(){
+  G.state = 'end'; G.endT = performance.now();
+  SAVE.total += S.docked.length; SAVE.rings += S.rings; S.newRecord = S.docked.length > (SAVE.best || 0); SAVE.best = Math.max(SAVE.best || 0, S.docked.length); SAVE.lastLv = Math.max(1, S.lv - 1); save();
+  // «Tu giro mental»: recta del tiempo contra el ángulo en los aciertos (≥ 8 aciertos, ≥ 3 ángulos, ≥ 70 % en total)
+  const ok = S.trials.filter(t => t.ok && !t.timeout), acc = S.trials.length ? S.correct/S.trials.length : 0;
+  const angs = new Set(ok.map(t => t.disp));
+  S.speed = null;
+  if (ok.length >= 8 && angs.size >= 3 && acc >= .7){ const mx = ok.reduce((a, t) => a + t.disp, 0)/ok.length, my = ok.reduce((a, t) => a + t.rt, 0)/ok.length;
+    let num = 0, den = 0; for (const t of ok){ num += (t.disp - mx)*(t.rt - my); den += (t.disp - mx)**2; } const slope = den ? num/den : 0; if (slope > .5) S.speed = Math.round(1000/slope); }
+  S.curve = [0, 45, 90, 135, 180].map(b => { const xs = ok.filter(t => Math.abs(t.disp - b) <= 22); return xs.length ? Math.round(xs.reduce((a, t) => a + t.rt, 0)/xs.length) : null; });
+  sfx('finale'); confetti(50);
+}
+// cuánto dura cada parte de la revelación (ms)
+const RV = { up: 320, flip: 300, down: 380, hold: 220, fly: 520, gone: 600 };
+function step(now){
+  const t = now - S.at;
+  if (G.state === 'arrive' && t >= (reduce ? 0 : 420)){ G.state = 'answer'; S.at = now; S.ansAt = now; S.fuel = QS.has('precision') ? 12 : deadline(S.t.lv); }
+  else if (G.state === 'answer'){ if ((now - S.ansAt)/1000 >= S.fuel) answer(null, now); }
+  else if (G.state === 'reveal'){
+    const tA = RV.up + (S.t.mirrored ? RV.flip : 0);
+    if (S.t.mirrored && S.revealSnd === 0 && t >= RV.up){ S.revealSnd = 1; sfx('flip'); }
+    if (S.ok){
+      if (S.revealSnd < 2 && t >= tA + RV.down){ S.revealSnd = 2; sfx('dock'); S.portFlash = now; }
+      if (S.revealSnd < 3 && t >= tA + RV.down + RV.hold + RV.fly){ S.revealSnd = 3; const k = S.docked.length; S.docked.push(1); S.slotFlash = now; sfx('slot', Math.min(8, S.streak));
+        if (S.docked.length % STATION.slots === 0){ S.rings++; S.ringAt = now; setTimeout(() => sfx('ring'), 260); float('¡Anillo completo!', '#7FD8FF', true); } }
+      if (t >= tA + RV.down + RV.hold + RV.fly + 380) next();
+    } else {
+      if (S.revealSnd < 2 && t >= tA + 120){ S.revealSnd = 2; sfx('miss'); }
+      if (t >= tA + RV.down + RV.gone + 200) next();
+    }
+  }
+}
+
+// ============================================================ dibujo
+const easeIO = k => k < .5 ? 2*k*k : 1 - Math.pow(-2*k + 2, 2)/2;
+const clamp01 = x => Math.max(0, Math.min(1, x));
+function shade(h, k){ const v = [1,3,5].map(i => parseInt(h.slice(i, i+2), 16)), f = x => Math.round(k >= 0 ? x + (255 - x)*k : x*(1 + k)); return `rgb(${f(v[0])},${f(v[1])},${f(v[2])})`; }
+function clay(c, pathFn, col, o = {}){
+  const sh = o.shadow ?? 5, bw = o.border ?? 3.5, h = o.h ?? 40;
+  c.save(); c.translate(0, sh); c.beginPath(); pathFn(); c.fillStyle = 'rgba(8,6,30,.55)'; c.fill(); c.restore();
+  c.beginPath(); pathFn(); const g = c.createLinearGradient(0, -h, 0, h); g.addColorStop(0, shade(col, .32)); g.addColorStop(.55, col); g.addColorStop(1, shade(col, -.12)); c.fillStyle = g; c.fill();
+  if (o.hl !== false){ c.save(); c.clip(); c.globalAlpha = .38; c.fillStyle = '#fff'; c.beginPath(); c.ellipse(-h*.38, -h*.55, h*.5, h*.26, -.5, 0, Math.PI*2); c.fill(); c.restore(); }
+  c.beginPath(); pathFn(); c.lineWidth = bw; c.strokeStyle = INK; c.lineJoin = 'round'; c.stroke();
+}
+const dims = cells => [Math.max(...cells.map(c => c[0])) + 1, Math.max(...cells.map(c => c[1])) + 1];
+function cellsPath(c, cells, s, grow, rad){ const [w, h] = dims(cells); for (const [x, y] of cells) c.roundRect((x - w/2)*s - grow, (y - h/2)*s - grow, s + 2*grow, s + 2*grow, rad); }
+// el módulo: bloques de arcilla; la luz y la sombra quedan fijas en la pantalla (no delatan el giro) y los remaches son simétricos
+function drawModule(c, cells, x, y, s, ang, fx, col, alpha = 1, scl = 1){
+  const T = () => { c.translate(x, y); c.rotate(ang); c.scale(fx*scl, scl); };
+  const rad = Math.hypot(...dims(cells))*s*scl/2;
+  c.save(); c.globalAlpha = alpha;
+  c.save(); c.translate(0, 6*scl); T(); c.beginPath(); cellsPath(c, cells, s, 3, 7); c.restore(); c.fillStyle = 'rgba(8,6,30,.55)'; c.fill();
+  c.save(); T(); c.beginPath(); cellsPath(c, cells, s, 3, 7); c.restore(); c.fillStyle = INK; c.fill();
+  c.save(); T(); c.beginPath(); cellsPath(c, cells, s, -.5, 5); c.restore();
+  const g = c.createLinearGradient(x, y - rad, x, y + rad); g.addColorStop(0, shade(col, .35)); g.addColorStop(.55, col); g.addColorStop(1, shade(col, -.15)); c.fillStyle = g; c.fill();
+  c.save(); c.clip(); c.globalAlpha = .3*alpha; c.fillStyle = '#fff'; c.beginPath(); c.ellipse(x - rad*.35, y - rad*.5, rad*.55, rad*.24, -.45, 0, Math.PI*2); c.fill(); c.restore();
+  c.save(); T(); const [w, h] = dims(cells); c.fillStyle = 'rgba(26,18,64,.35)';
+  for (const [cx, cy] of cells){ const px = (cx - w/2 + .5)*s, py = (cy - h/2 + .5)*s; for (const [dx, dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ c.beginPath(); c.arc(px + dx*s*.27, py + dy*s*.27, s*.06, 0, Math.PI*2); c.fill(); } }
+  c.restore(); c.restore();
+}
+function drawPort(c, cells, now, state){
+  const { x, y, w, h } = PORT;
+  c.save(); c.translate(x, y); clay(c, () => c.roundRect(-w/2, -h/2, w, h, 22), '#2C2A6E', { shadow: 6, border: 3.4, h: h/2, hl: false }); c.restore();
+  c.fillStyle = '#D6D1F2'; c.font = '700 14px Nunito'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Puerto', x, y - h/2 + 16);
+  // luces del borde (chevrones)
+  for (let i=0;i<4;i++){ const lx = x - w/2 + 22 + i*((w - 44)/3), on = state === 'ok' && !reduce ? (Math.floor(now/90) + i) % 2 : 0;
+    c.fillStyle = on ? '#A6E36B' : 'rgba(166,227,107,.35)'; c.beginPath(); c.moveTo(lx - 6, y + h/2 - 14); c.lineTo(lx, y + h/2 - 8); c.lineTo(lx + 6, y + h/2 - 14); c.lineWidth = 3; c.strokeStyle = c.fillStyle; c.stroke(); }
+  const edge = state === 'ok' ? '#A6E36B' : state === 'show' ? '#7FD8FF' : 'rgba(120,240,220,.65)';
+  c.save(); c.translate(x, y + 6);
+  c.beginPath(); cellsPath(c, cells, CS, 3, 7); c.fillStyle = edge; c.fill();
+  c.beginPath(); cellsPath(c, cells, CS, -.6, 5); c.fillStyle = '#070818'; c.fill();
+  c.restore();
+}
+function drawStation(c, now, docked, ringsDone){
+  const { cx, base, rx, ry, step: dy, slots } = STATION;
+  const rings = Math.max(1, Math.ceil((docked + 1)/slots));
+  // la torre central (quieta: en este juego nada gira de adorno)
+  c.save(); c.translate(cx, base - (rings - 1)*dy/2 - 6); clay(c, () => c.roundRect(-20, -((rings - 1)*dy/2 + 34), 40, (rings - 1)*dy + 60, 14), '#8E86D8', { shadow: 4, border: 3, h: 30 }); c.restore();
+  for (let r = 0; r < rings; r++){
+    const cy = base - r*dy, full = (r + 1)*slots <= docked, glowOn = full;
+    const slotsOf = k => { const a = Math.PI/2 + k*TAU/slots; return [cx + rx*Math.cos(a), cy + ry*Math.sin(a), Math.sin(a)]; };
+    const mod = (k, front) => { const [sx, sy, sn] = slotsOf(k); if ((sn >= 0) !== front) return; const idx = r*slots + k, on = idx < docked;
+      c.save(); c.translate(sx, sy); const sc = .82 + .18*(sn + 1)/2; c.scale(sc, sc);
+      if (on){ clay(c, () => c.roundRect(-13, -9, 26, 18, 6), glowOn ? '#A6E36B' : '#7FD8FF', { shadow: 3, border: 2.6, h: 9, hl: false }); c.fillStyle = '#FFF6C8'; c.beginPath(); c.arc(0, 0, 3.2, 0, TAU); c.fill(); }
+      else { c.lineWidth = 2; c.strokeStyle = 'rgba(184,176,255,.35)'; c.setLineDash([4, 4]); c.beginPath(); c.roundRect(-12, -8, 24, 16, 6); c.stroke(); c.setLineDash([]); }
+      if (on && idx === docked - 1 && S.slotFlash && !reduce){ const k2 = (now - S.slotFlash)/450; if (k2 < 1){ c.strokeStyle = `rgba(255,255,255,${1 - k2})`; c.lineWidth = 2.5; c.beginPath(); c.arc(0, 0, 10 + 14*k2, 0, TAU); c.stroke(); } }
+      c.restore(); };
+    for (let k=0;k<slots;k++) mod(k, false);
+    c.save(); c.lineWidth = 9; c.strokeStyle = INK; c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, TAU); c.stroke();
+    c.lineWidth = 5; c.strokeStyle = glowOn ? '#A6E36B' : '#5B4FC0'; c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, TAU); c.stroke(); c.restore();
+    for (let k=0;k<slots;k++) mod(k, true);
+  }
+}
+function drawBackdrop(c){
+  c.drawImage(BG, 0, 0, W, H);
+  // planeta grande abajo (quieto)
+  c.save(); const g = c.createRadialGradient(80, 860, 40, 120, 900, 300); g.addColorStop(0, '#3E5BA8'); g.addColorStop(1, '#14143E'); c.globalAlpha = .55; c.fillStyle = g; c.beginPath(); c.arc(120, 930, 300, 0, TAU); c.fill(); c.restore();
+  c.save(); const n = c.createRadialGradient(300, 120, 10, 300, 120, 240); n.addColorStop(0, 'rgba(183,100,255,.14)'); n.addColorStop(1, 'rgba(183,100,255,0)'); c.fillStyle = n; c.fillRect(0, 0, W, H); c.restore();
+}
+function pill(c, x, y, text, col, txt = INK, align = 'left'){ c.font = '700 14px Fredoka'; const w = c.measureText(text).width + 22, x0 = align === 'right' ? x - w : x;
+  c.save(); c.translate(x0 + w/2, y + 13); clay(c, () => c.roundRect(-w/2, -13, w, 26, 13), col, { shadow: 3, border: 2.6, h: 13, hl: false }); c.restore(); c.fillStyle = txt; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, x0 + w/2, y + 14); return w; }
+function drawHud(c){
+  c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = '#F4F2FF'; c.font = '700 21px Fredoka'; c.fillText('Acoplamiento', 16, 24);
+  const w1 = pill(c, 16, 40, `Módulo ${Math.min(S.n, TOTAL)} de ${TOTAL}`, '#E9E6FF'); pill(c, 16 + w1 + 8, 40, `Nivel ${S.lv}`, '#7FD8FF');
+  c.textAlign = 'right'; c.fillStyle = '#F4F2FF'; c.font = '700 22px Fredoka'; c.fillText(`${S.docked.length}`, W - 44, 26);
+  c.save(); c.translate(W - 26, 26); clay(c, () => c.roundRect(-11, -8, 22, 16, 5), '#7FD8FF', { shadow: 2, border: 2.4, h: 8, hl: false }); c.restore();
+  if (S.streak >= 2) pill(c, W - 16, 40, `Racha ×${S.streak}`, '#FFC94A', INK, 'right');
+}
+function drawFuel(c, now){
+  const { x, y, w, h } = FUEL; const left = G.state === 'answer' ? clamp01(1 - (now - S.ansAt)/1000/S.fuel) : G.state === 'arrive' ? 1 : 0;
+  c.save(); c.fillStyle = 'rgba(8,6,30,.6)'; c.beginPath(); c.roundRect(x, y, w, h, 6); c.fill(); c.lineWidth = 2.4; c.strokeStyle = INK; c.stroke();
+  if (left > 0){ const col = left > .3 ? '#FFC94A' : '#FF8A6B'; c.fillStyle = col; c.beginPath(); c.roundRect(x + 2, y + 2, (w - 4)*left, h - 4, 4); c.fill(); }
+  c.fillStyle = '#D6D1F2'; c.font = '700 14px Nunito'; c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillText('Tiempo', x - 8, y + h/2 + 1); c.restore();
+}
+function iconDock(c){ c.lineWidth = 3; c.strokeStyle = INK; c.fillStyle = '#E9E6FF'; c.beginPath(); c.roundRect(-9, -14, 8, 8, 2); c.roundRect(-1, -14, 8, 8, 2); c.roundRect(-1, -6, 8, 8, 2); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(-13, 6); c.lineTo(-13, 13); c.lineTo(13, 13); c.lineTo(13, 6); c.stroke(); }
+function iconMirror(c){ c.lineWidth = 3; c.strokeStyle = INK; c.fillStyle = '#E9E6FF';
+  c.beginPath(); c.roundRect(-15, -10, 6, 6, 2); c.roundRect(-15, -4, 6, 6, 2); c.roundRect(-9, 2, 6, 6, 2); c.fill(); c.stroke();
+  c.beginPath(); c.roundRect(9, -10, 6, 6, 2); c.roundRect(9, -4, 6, 6, 2); c.roundRect(3, 2, 6, 6, 2); c.fill(); c.stroke();
+  c.setLineDash([3, 3]); c.beginPath(); c.moveTo(0, -14); c.lineTo(0, 14); c.stroke(); c.setLineDash([]); }
+function drawButtons(c, now){
+  const live = G.state === 'answer';
+  [['encaja', 'Encaja', '#A6E36B', iconDock], ['espejo', 'Espejo', '#B79BFF', iconMirror]].forEach(([id, label, col, icon], i) => {
+    const b = btnRect(i), press = S.press && S.press[id] && now - S.press[id] < 140 ? 3 : 0;
+    c.save(); c.globalAlpha = live || G.state === 'reveal' ? 1 : .45; c.translate(b.x + b.w/2, b.y + b.h/2 + press);
+    clay(c, () => c.roundRect(-b.w/2, -b.h/2, b.w, b.h, 22), col, { shadow: 6 - press, border: 3.4, h: b.h/2, hl: false });
+    c.save(); c.translate(-b.w/2 + 34, 0); icon(c); c.restore();
+    c.fillStyle = INK; c.font = '700 22px Fredoka'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(label, -b.w/2 + 58, 1);
+    c.restore();
+    if (G.state === 'reveal' && S.answer === id) badge(c, b.x + b.w - 12, b.y + 10, S.ok);
+  });
+}
+function badge(c, x, y, ok){ c.beginPath(); c.arc(x, y, 12, 0, TAU); c.fillStyle = ok ? '#A6E36B' : '#FF8A6B'; c.fill(); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
+  c.strokeStyle = INK; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); if (ok){ c.moveTo(x - 5, y); c.lineTo(x - 1, y + 4); c.lineTo(x + 5, y - 4); } else { c.moveTo(x - 4, y - 4); c.lineTo(x + 4, y + 4); c.moveTo(x + 4, y - 4); c.lineTo(x - 4, y + 4); } c.stroke(); c.lineCap = 'butt'; }
+function drawScene(c, now){
+  const t = now - S.at, T = S.t, ang0 = T.ang*Math.PI/180;
+  let x = MOD.x, y = MOD.y, ang = ang0, fx = T.mirrored ? -1 : 1, a = 1, scl = 1, portState = 'idle';
+  if (G.state === 'arrive'){ const k = reduce ? 1 : 1 - Math.pow(1 - clamp01(t/420), 3); y = 250 + (MOD.y - 250)*k; a = k; }
+  if (G.state === 'reveal'){
+    const kUp = reduce ? 1 : easeIO(clamp01(t/RV.up)); ang = ang0*(1 - kUp);
+    let tA = RV.up;
+    if (T.mirrored){ const kF = reduce ? (t >= RV.up ? 1 : 0) : easeIO(clamp01((t - RV.up)/RV.flip)); fx = -1 + 2*kF; tA += RV.flip; }
+    const kD = reduce ? (t >= tA ? 1 : 0) : easeIO(clamp01((t - tA)/RV.down)); y = MOD.y + (PORT.y + 6 - MOD.y)*kD;
+    if (S.ok){
+      if (t >= tA + RV.down) portState = 'ok';
+      const tF = tA + RV.down + RV.hold, kF2 = clamp01((t - tF)/RV.fly);
+      if (t >= tF){ const idx = S.docked.length, ring = Math.floor(idx/STATION.slots), k = idx % STATION.slots, an = Math.PI/2 + k*TAU/STATION.slots;
+        const tx = STATION.cx + STATION.rx*Math.cos(an), ty = STATION.base - ring*STATION.step + STATION.ry*Math.sin(an), e = reduce ? 1 : easeIO(kF2);
+        x = x + (tx - x)*e; y = y + (ty - y)*e; scl = 1 - .78*e; if (kF2 >= 1) a = 0; }
+    } else {
+      if (t >= tA + RV.down) portState = 'show';
+      const kG = clamp01((t - tA - RV.down - 120)/RV.gone); if (kG > 0){ x += (reduce ? 0 : 150*kG*kG); a = 1 - kG; }
+    }
+  }
+  drawPort(c, T.cells, now, portState);
+  if (a > 0) drawModule(c, T.cells, x, y, CS, ang, fx, '#7FD8FF', a, scl);
+}
+function float(text, col, big){ G.floats.push({ text, col, big, at: performance.now() }); }
+function drawFloats(c, now){
+  // los avisos van en la franja entre la estación y el módulo: nunca sobre el módulo, el puerto ni los botones
+  G.floats = G.floats.filter(f => { const k = (now - f.at)/(f.big ? 1700 : 1300); if (k >= 1) return false; const a = Math.min(1, k*7, (1 - k)*3);
+    let s = f.big ? 18 : 17; do { c.font = `700 ${s}px Fredoka`; } while (c.measureText(f.text).width > W - 56 && --s > 14);
+    const w = c.measureText(f.text).width + 30, y = 262;
+    c.globalAlpha = a; c.save(); c.translate(W/2, y); clay(c, () => c.roundRect(-w/2, -16, w, 32, 16), '#1F1B4E', { shadow: 4, border: 3, h: 16, hl: false }); c.restore();
+    c.fillStyle = f.col; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(f.text, W/2, y + 1); c.globalAlpha = 1; return true; });
+}
+function confetti(n){ if (reduce) return; const cols = ['166,227,107', '127,216,255', '255,201,74', '183,155,255', '255,138,107']; for (let i=0;i<n;i++) G.parts.push({ x: W/2 + (Math.random() - .5)*120, y: 170, vx: (Math.random() - .5)*260, vy: -120 - Math.random()*220, g: 300, r: 3 + Math.random()*3, rgb: cols[i % 5], t: performance.now(), life: 1600 + Math.random()*700 }); }
+function drawMenu(c, now){
+  drawStation(c, now, Math.min(SAVE.total, 3*STATION.slots - 1), 0);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#fff'; c.font = '700 28px Fredoka'; c.fillText('Acoplamiento', W/2, 270);
+  c.fillStyle = '#D6D1F2'; c.font = '600 15px Nunito'; c.fillText('¿El módulo encaja en el puerto,', W/2, 302); c.fillText('o es su espejo?', W/2, 322);
+  const demo = [[0,0],[0,1],[0,2],[1,2]];
+  drawModule(c, demo, 180, 392, CS, Math.PI/4, 1, '#7FD8FF');
+  drawPort(c, demo, now, 'idle');
+  if (SAVE.total){ c.fillStyle = '#7FD8FF'; c.font = '700 16px Fredoka'; c.fillText(`Has acoplado ${SAVE.total} módulos · ${SAVE.rings} anillos`, W/2, 628); }
+  c.save(); c.translate(W/2, H - 90); clay(c, () => c.roundRect(-74, -28, 148, 56, 28), '#7FD8FF', { shadow: 6, border: 3.4, h: 28 }); c.restore();
+  c.fillStyle = INK; c.font = '700 22px Fredoka'; c.fillText('Jugar', W/2, H - 89);
+}
+function drawEnd(c, now){
+  drawStation(c, now, S.docked.length, S.rings);
+  c.fillStyle = 'rgba(4,5,26,.55)'; c.fillRect(0, 250, W, H - 250);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#FFC94A'; c.font = '700 15px Fredoka'; c.fillText('¡TU ESTACIÓN CRECIÓ!', W/2, 34);
+  c.fillStyle = '#fff'; c.font = '700 26px Fredoka'; c.fillText(`${S.docked.length} módulos acoplados`, W/2, 64);
+  const y0 = 262;
+  c.save(); c.translate(W/2, y0 + 80); clay(c, () => c.roundRect(-(W - 44)/2, -80, W - 44, 160, 22), '#22205A', { shadow: 6, border: 3, h: 80, hl: false }); c.restore();
+  const lines = [['Aciertos', `${S.correct} de ${S.trials.length}`], ['Tu giro mental', S.speed === null ? '—' : `${S.speed}° por segundo`], ['Anillos completos', `${S.rings}`], ['Racha mayor', S.best >= 2 ? `×${S.best}` : '—']];
+  lines.forEach((l, i) => { const y = y0 + 24 + i*36; c.textAlign = 'left'; c.fillStyle = '#D6D1F2'; c.font = '600 15px Nunito'; c.fillText(l[0], 40, y); c.textAlign = 'right'; c.fillStyle = '#fff'; c.font = '700 17px Fredoka'; c.fillText(l[1], W - 40, y); });
+  // tu curva de giro: cinco columnas (tiempo medio de los aciertos por ángulo)
+  const cy = y0 + 200, base = cy + 120, maxv = Math.max(1500, ...S.curve.filter(v => v !== null));
+  c.textAlign = 'center'; c.fillStyle = '#D6D1F2'; c.font = '700 15px Fredoka'; c.fillText('Tu curva de giro', W/2, cy);
+  [0, 45, 90, 135, 180].forEach((b, i) => { const x = 56 + i*62, v = S.curve[i];
+    if (v !== null){ const hgt = 80*v/maxv; c.save(); c.translate(x, base - hgt/2); clay(c, () => c.roundRect(-14, -hgt/2, 28, hgt, 8), '#B79BFF', { shadow: 3, border: 2.6, h: hgt/2, hl: false }); c.restore();
+      c.fillStyle = '#fff'; c.font = '700 14px Nunito'; c.fillText(`${(v/1000).toFixed(1).replace('.', ',')} s`, x, base - hgt - 12); }
+    else { c.fillStyle = '#8F8AC0'; c.font = '700 14px Nunito'; c.fillText('—', x, base - 12); }
+    c.fillStyle = '#D6D1F2'; c.font = '700 14px Nunito'; c.fillText(`${b}°`, x, base + 16); });
+  c.fillStyle = '#8F8AC0'; c.font = '600 14px Nunito'; c.fillText('Más giro, más tiempo: es lo esperable.', W/2, base + 44); c.fillText('Medida de esta partida. No es un diagnóstico.', W/2, base + 64);
+  if (S.newRecord){ c.save(); c.translate(W/2, H - 112); clay(c, () => c.roundRect(-82, -15, 164, 30, 15), '#FFC94A', { shadow: 3, border: 2.6, h: 15, hl: false }); c.restore(); c.fillStyle = INK; c.font = '700 15px Fredoka'; c.fillText('¡Récord nuevo!', W/2, H - 111); }
+  c.save(); c.translate(W/2, H - 52); clay(c, () => c.roundRect(-82, -27, 164, 54, 27), '#7FD8FF', { shadow: 6, border: 3.4, h: 27 }); c.restore();
+  c.fillStyle = INK; c.font = '700 20px Fredoka'; c.fillText('Otra partida', W/2, H - 51);
+}
+function frame(now){
+  const c = ctx; c.setTransform(scale, 0, 0, scale, 0, 0);
+  const dt = Math.min(.05, (now - (G.last || now))/1000); G.last = now;
+  drawBackdrop(c);
+  if (G.state === 'menu') drawMenu(c, now);
+  else if (G.state === 'end') drawEnd(c, now);
+  else { step(now); drawStation(c, now, S.docked.length, S.rings); drawHud(c); drawFuel(c, now); drawScene(c, now); drawButtons(c, now); drawFloats(c, now);
+    if (G.state === 'answer' && S.n <= 3){ c.fillStyle = '#ABA5D2'; c.font = '600 14px Nunito'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Gira la pieza en tu mente y compárala con el hueco', W/2, 734); } }
+  G.parts = G.parts.filter(p => { const k = (now - p.t)/p.life; if (k >= 1) return false; p.vy += p.g*dt; p.x += p.vx*dt; p.y += p.vy*dt; c.fillStyle = `rgba(${p.rgb},${.95*(1 - k)})`; c.beginPath(); c.arc(p.x, p.y, p.r*(1 - k*.4), 0, TAU); c.fill(); return true; });
+  if (DEBUG){ cv.dataset.state = G.state; cv.dataset.stats = JSON.stringify({ lv: S.lv, n: S.n, docked: S.docked.length, rings: S.rings, mirrored: S.t && S.t.mirrored, ang: S.t && S.t.ang, cells: S.t && S.t.cells }); }
+}
+const loop = now => { frame(now); requestAnimationFrame(loop); };
+requestAnimationFrame(loop);
+// solo para revisar el boceto con la pestaña escondida (sin cuadros de animación)
+if (DEBUG) setInterval(() => { if (document.hidden || performance.now() - (G.last || 0) > 200) frame(performance.now()); }, 60);
+cv.addEventListener('pointerdown', e => {
+  ac(); const [x, y] = toLocal(e), now = performance.now();
+  if (G.state === 'menu'){ if (y > H - 118 && y < H - 62 && x > 100 && x < 260) startGame(); return; }
+  if (G.state === 'end'){ if (now - G.endT > 700 && y > H - 84){ G.state = 'menu'; } return; }
+  if (G.state !== 'answer') return;
+  for (const [i, id] of [[0, 'encaja'], [1, 'espejo']]){ const b = btnRect(i); if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h){ S.press[id] = now; sfx('tap'); answer(id, now); return; } }
+});
+document.getElementById('snd').addEventListener('click', e => { soundOn = !soundOn; e.currentTarget.setAttribute('aria-pressed', soundOn); e.currentTarget.textContent = 'Sonido: ' + (soundOn ? 'sí' : 'no'); });
+document.getElementById('rm').addEventListener('click', e => { reduce = !reduce; e.currentTarget.setAttribute('aria-pressed', reduce); });
+</script>

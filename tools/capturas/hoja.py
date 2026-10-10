@@ -59,6 +59,22 @@ CAPTIONS = {
     'tutorial-toca-nueva-mision': 'Tutorial: toca la misión nueva',
 }
 GAME_CAPTIONS = {
+    'acoplamiento': {
+        'llegada': 'Llega un módulo',
+        'respuesta': 'Hay que decidir (Encaja / Espejo)',
+        'vuelta-del-espejo': 'Era un espejo: se da vuelta',
+        'acople': 'Encaja en el puerto',
+        'vuelo-a-la-estacion': 'Vuela a su casillero',
+        'anillo-completo': '¡Anillo completo!',
+        'error': 'Un error: el módulo se aleja',
+        'sin-tiempo': 'Sin tiempo: se ve la verdad',
+        'respuesta-16x9': 'En 16:9: hay que decidir',
+        'acople-16x9': 'En 16:9: encaja',
+        'vuelo-16x9': 'En 16:9: vuela a la estación',
+        'final-16x9': 'En 16:9: la pantalla final',
+        'tutorial-se-suma': 'Tutorial: se suma a la estación',
+        'tutorial-espejo': 'Tutorial: «Espejo» (toque real)',
+    },
     'correo': {
         'nuevo-estacion': 'Tarjeta «NUEVO»: la estación',
         'nuevo-lazo': 'Tarjeta «NUEVO»: el lazo',

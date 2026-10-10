@@ -316,18 +316,18 @@ se abren y se cierran (el cambio de estado se ve), la caja se ve en su escotilla
 brillo dorado quieto (la pista del error) y «vacía» se lee igual. Los tiempos de mirar NO cambian: guardar (0,33 + 0,33 + 0,42 + 0,95 s por objeto), cada caja (≈ 4 s), el giro (1,5 s) y las pausas del error
 (0,75 + 0,25 + 0,7 s) son `Motion.Hold`, esperas por reloj (`GameClock`), no animaciones: sin esos tiempos la tarea cambiaría (los mayores los llevan ×1,35 aparte).
 
-**Acoplamiento** — `Acoplamiento/DockingGameController.cs`
+**Acoplamiento («muelle de acoplamiento», v2 del 10-oct)** — `Acoplamiento/DockingGameController*.cs` (la tabla de la v1, con `Straighten`/`Flip`/`Dock`/`Bump`/`DriftAway`/`FloatText`, ya no vale)
 
-| Línea | Qué hace | Clase | Resp. | Cambio | Hecho |
-|---|---|---|---|---|---|
-| 165 | La pieza entra deslizando | DECORATIVA | no | Aparece (fundido) | ✓ |
-| 182 | La pieza flota ±6 px (`Sin(t·3)`) | DECORATIVA | no | Quieta | ✓ |
-| 315 `Straighten` / 331 `Flip` | Tras responder, la pieza se endereza o se da vuelta como espejo | DECORATIVA (comunica: enseña la solución) | no | Fundido cruzado a la pieza ya alineada / reflejada, misma duración total (`CrossfadeState`) | ✓ |
-| 348 `Dock` | La pieza entra al puerto | DECORATIVA (comunica) | no | Aparece acoplada | ✓ |
-| 375-386 `Bump` | Rebote al fallar | DECORATIVA (comunica) | no | Sin rebote; marca de error | ✓ |
-| 400 `DriftAway` | La pieza se aleja flotando al fallar | DECORATIVA (comunica) | no | Fundido | ✓ |
-| 490 `FloatText` | «+puntos» suben | DECORATIVA (comunica) | no | Quietos con fundido | ✓ |
-| 355-361, 414, 436 | `Shake`, chispas, ondas, `PopIn`, `PopRect` | DECORATIVA | sí (común) | — | — |
+La revelación es una función del TIEMPO (`RevealT()`: giro 320, vuelta 300, bajada 380, espera 220, vuelo 520, alejarse 600 ms), no una cadena de animaciones: con «quitar animaciones» la pose salta de un paso al siguiente en los MISMOS tiempos (derecho → vuelto → en el puerto → en su casillero), así que la partida dura lo mismo.
+
+| Qué | Clase | Con «quitar animaciones» |
+|---|---|---|
+| El módulo llega deslizando desde arriba y apareciendo (420 ms) | DECORATIVA | Aparece en su lugar al instante; el reloj de respuesta empieza cuando está en su lugar, con o sin animación |
+| El módulo gira hasta quedar derecho, se da vuelta (si era espejo), baja al puerto, espera y vuela a su casillero (o se aleja) | DECORATIVA (comunica: enseña la solución) | Los pasos se ven como imágenes fijas, cada una durante su mismo tiempo; el borde del puerto (lima si encaja) y la insignia ✓ / ✗ del botón dicen el resultado sin movimiento |
+| Las 4 luces («chevrones») del puerto parpadean alternadas cuando encaja | DECORATIVA | Quedan encendidas fijas |
+| El aro blanco que se abre en el casillero recién ocupado (450 ms) | DECORATIVA | No sale (el casillero se ve ocupado) |
+| El confeti de la pantalla final | DECORATIVA | No sale |
+| Luz y sombra del módulo, anillos de la estación, botones, aviso de arriba | ESTADO | Igual (no se mueven solos) |
 
 **Tráfico Estelar (RETIRADO el 4-oct; su tabla queda como historia)** — `Trafico/TrafficGameController.cs`
 
@@ -414,7 +414,7 @@ brillo dorado quieto (la pista del error) y «vacía» se lee igual. Los tiempos
 
 ## Decisiones de la Fase B (Ricardo/Opus) y casos que quedaron conservadores
 
-Decisiones aplicadas: Rumbo (cámara y polvo de estrellas) ESENCIAL; Acoplamiento `Straighten`/`Flip` = decorativo que comunica (fundido cruzado, misma duración);
+Decisiones aplicadas: Rumbo (cámara y polvo de estrellas) ESENCIAL; Acoplamiento (v1) `Straighten`/`Flip` = decorativo que comunica (fundido cruzado, misma duración; en la v2 del 10-oct la revelación se calcula por tiempo: ver su tabla);
 Piloto `Warp` DECORATIVO (estrellas quietas; el aviso de tramo existente da los cambios de velocidad por texto); Parejas, giro de carta = fundido entre
 dorso y cara con la misma duración; Cosecha, órbita decorativa (ya se detiene); Bitácora, cometas ESENCIALES; paralaje de la app quieto; «+puntos» quietos con fundido.
 

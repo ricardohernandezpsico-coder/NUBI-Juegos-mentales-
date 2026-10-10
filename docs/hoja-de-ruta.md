@@ -9,7 +9,7 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 
 ## Dónde estamos (8-oct)
 
-19 juegos en 4 áreas. Tienen tutorial guiado 17 (`UnityGameLauncher.TUTORIAL_GAMES`); faltan 2: Rumbo y Acoplamiento. Los retirados están en `docs/juegos/descartados.md`.
+19 juegos en 4 áreas. Tienen tutorial guiado 18 (`UnityGameLauncher.TUTORIAL_GAMES`); falta 1: Rumbo (Acoplamiento lo recibió en la Tarea 68, 10-oct). Los retirados están en `docs/juegos/descartados.md`.
 
 | Área | Juegos |
 |---|---|
@@ -39,8 +39,9 @@ Cada juego sale con su tutorial (Freno ya lo tenía; los otros tres lo reciben a
 ## Etapa 2 — Memoria y razonamiento
 
 - **Rumbo a Casa**: antes de pulirlo, probar con una persona mayor si marea y si el dial se entiende.
-- **Acoplamiento** y **Aterrizaje Lunar**: revisión y, donde falte, tutorial (Aterrizaje ya lo tiene; Acoplamiento y Rumbo, no).
-- Con esto los 19 juegos tienen tutorial y la regla del camino diario «nunca un juego sin tutorial que nunca se jugó» queda inerte.
+- **Acoplamiento** — **Hecho (Tarea 68, 10-oct)**: renovado como «muelle de acoplamiento» (mismo id): piezas de hasta 4 × 4 bloques, módulo y hueco grandes y a la misma escala, estación de anillos que crece (8 casilleros por anillo), luz y sombra fijas, revelación en seis tiempos, sonido «Madera cálida», récord y totales, tutorial con Nubi (`docs/diseno-acoplamiento.md`).
+- **Aterrizaje Lunar**: revisión (ya tiene tutorial).
+- Con esto los 19 juegos tendrán tutorial (hoy falta solo Rumbo) y la regla del camino diario «nunca un juego sin tutorial que nunca se jugó» queda inerte.
 
 ## Etapa 2b — Probar con personas
 

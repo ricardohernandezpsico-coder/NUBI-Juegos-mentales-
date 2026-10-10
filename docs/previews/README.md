@@ -137,7 +137,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 
 ## Arte y pantallas de cada juego
 
-- [`acoplamiento.png`](acoplamiento.png)
+- [`acoplamiento.png`](acoplamiento.png): la lámina de arte de la versión 1 (historia); la versión «muelle de acoplamiento» se ve en [`capturas/acoplamiento.png`](capturas/acoplamiento.png) (capturas reales de Unity)
 - [`meteoros.png`](meteoros.png): maqueta de **Lluvia de meteoros** (juego de Lenguaje en diseño): así se juega, más difícil, acierto y error, y las 4 medidas del final. Script: `tools/art-preview/meteoros.py`. Pendiente de aprobar.
 - [`meteoros-letra.png`](meteoros-letra.png): la letra de las palabras en 4 fuentes (Fredoka actual, Nunito Medium, Atkinson
   Hyperlegible Bold y Lexend SemiBold) a tamaño real, con las palabras que muestran la confusión a/o. Script:
@@ -179,6 +179,7 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`rescate-boceto-v4.html`](rescate-boceto-v4.html): el boceto jugable de la versión 4 (Tarea 65, 9-oct): mundo, luz y toda la pantalla (360 × 780 dp), nave protagonista y viaje a la estación; el diseño está en la sección 16 de `docs/diseno-rescate.md`
 - [`sonido-laboratorio.html`](sonido-laboratorio.html): el laboratorio de sonido que Ricardo aprobó el 9-oct (estilo «Madera cálida»); `Games/Shared/SoundKit.cs` y `Games/Radar/RadarSounds.cs` son su puerto 1 a 1 y `tools/sonido/referencia.js` corre su código en Node para sacar las muestras de referencia de las pruebas
 - [`motor-laboratorio.html`](motor-laboratorio.html): el laboratorio del motor de Piloto Estelar (Tarea 66, 10-oct): «Cohete» (el que eligió Ricardo), «Turbina eléctrica», «Plasma» y el de hoy para comparar; `Games/Piloto/PilotSounds.cs` + `PilotEngine.cs` son el port 1 a 1 de «Cohete» y `tools/sonido/referencia-motor.js` corre su código en Node para las muestras de referencia de las pruebas
+- [`acoplamiento-boceto.html`](acoplamiento-boceto.html): el boceto jugable de «muelle de acoplamiento» que Ricardo aprobó el 10-oct (Tarea 68): pantalla de 360 × 780 dp, módulo y hueco a la misma escala, estación de anillos, revelación y sonido «Madera cálida»; el diseño está en `docs/diseno-acoplamiento.md` y `tools/sonido/referencia-acoplamiento.js` corre su sonido en Node
 - [`rumbo.png`](rumbo.png)
 - [`satelites.png`](satelites.png): del juego ANTERIOR de Satélites (historia); lo vigente es `satelites-piezas.png` y las capturas reales `capturas/satelites.png`
 - [`satelites-piezas.png`](satelites-piezas.png): «Satélites: enciende tu planeta» (9-oct): las piezas con los sprites REALES (planeta a oscuras, satélite, con mensaje, marcado, entregado, sin mensaje, el que faltó, nube de polvo y la fila de rondas). Script: `tools/art-preview/satelites.py`.

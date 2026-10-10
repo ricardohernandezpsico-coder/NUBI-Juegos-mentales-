@@ -127,8 +127,10 @@ Cooper y Shepard (1973); Shepard y Metzler (1971) usaron figuras 3D.
 **Qué cambió.**
 - Si se responde mucho al azar, la curva sale plana y parece un "giro rapidísimo". Ahora el giro no se calcula con
   menos de **70% de aciertos**, con una prueba que lo comprueba.
-- En Reto, el combustible corta las respuestas lentas en los ángulos grandes, y eso aplana la curva. El texto sugiere
+- En Reto, la barra de «Tiempo» corta las respuestas lentas en los ángulos grandes, y eso aplana la curva. El texto sugiere
   Precisión para una medida más fiel.
+
+**Lo que no es medida (10-oct, Tarea 68).** Los módulos acoplados en la partida, los anillos completos (cada 8), el récord de módulos y el total de toda la vida («Has acoplado N módulos · M anillos»; `acoplamiento_record`, que va en el respaldo) son el premio, como las cápsulas de Rescate y las luces de Satélites. Las dos medidas (giro mental y curva de giro), sus mínimos y su cita no cambiaron con la renovación «muelle de acoplamiento».
 
 ---
 

@@ -26,7 +26,7 @@ Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ri
 - [¿Verdad o disparate?](../diseno-verdad-o-disparate.md)
 - [Cosecha de palabras](../diseno-cosecha-de-palabras.md)
 - [La estrella intrusa](../diseno-estrella-intrusa.md)
-- [Acoplamiento](acoplamiento.md)
+- [Acoplamiento](../diseno-acoplamiento.md) (renovado el 10-oct: «muelle de acoplamiento»; la ficha vieja, como historia, en [acoplamiento.md](acoplamiento.md))
 - [Engranajes](../diseno-engranajes.md)
 - [Bodega de carga](../diseno-bodega-de-carga.md)
 - [Constelaciones](../diseno-constelaciones.md) (antes Parejas Ocultas; renovado el 7-oct, conserva el id `parejas`)

@@ -1,5 +1,7 @@
 # Acoplamiento (`acoplamiento`) — ficha técnica
 
+> **RENOVADO el 10-oct (Tarea 68): la ficha vigente es [`docs/diseno-acoplamiento.md`](../diseno-acoplamiento.md)** («muelle de acoplamiento»: piezas de hasta 4 × 4 bloques, módulo y hueco grandes y a la misma escala, estación de anillos que crece, luz y sombra fijas en la pantalla, revelación en seis tiempos, sonido «Madera cálida», récord y totales, tutorial con Nubi). Lo de abajo describe la versión ANTERIOR (puerto chico abajo, pieza flotando, franja «Tu estación», «combustible») y se conserva como historia; ya no vale.
+
 > Ficha técnica movida TAL CUAL desde `CLAUDE.md` el 2-oct (CLAUDE.md quedó como índice). Lo que manda es el código; esta ficha explica cómo y por qué.
 
 **Acoplamiento** (`Games/Acoplamiento/`, id `acoplamiento`, dominio razonamiento): rotación mental (Shepard y Metzler,
