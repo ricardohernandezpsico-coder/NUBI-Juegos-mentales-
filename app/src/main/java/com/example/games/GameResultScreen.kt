@@ -263,9 +263,9 @@ fun GameResultScreen(
       modifier = Modifier.padding(top = 4.dp)
     )
 
-    // Datos de la partida, sueltos en una línea. Los juegos con final con sentido (`MeaningfulResult`, hoy solo Aterrizaje Lunar) ya dicen sus aciertos en su título
-    // («13 aterrizajes justos de 15»): ahí la fila deja solo etapa y modo (Tarea 73). Los demás juegos quedan igual.
-    val usesMeaningfulResult = result.gameId == "aterrizaje" && result.numlineErrorPct != null
+    // Datos de la partida, sueltos en una línea. Los juegos con final con sentido (`MeaningfulResult`: Aterrizaje Lunar y, desde la Etapa 3, los que ya se llevaron a ese orden: ver `FinalModels.usesMeaningful`) ya dicen sus aciertos
+    // en su propio recuadro («13 aterrizajes justos de 15», «7 de 9 veces…»): ahí la fila deja solo etapa y modo (Tarea 73). Los demás juegos quedan igual.
+    val usesMeaningfulResult = FinalModels.usesMeaningful(result)
     Spacer(Modifier.height(18.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (!usesMeaningfulResult) {
@@ -479,7 +479,7 @@ fun GameResultScreen(
 
     // Aterrizaje Lunar (renovado el 10-oct; docs/diseno-aterrizaje.md §6): un final CON SENTIDO, con el componente reutilizable MeaningfulResult: lo que hiciste («11 % de la regla» de distancia promedio al lugar justo, con un dato tuyo y lo que pasó), tu avance SOLO contigo (hoy, tu promedio y tu mejor), un truco para la próxima
     // y, abajo y en chico, por qué importa con su fuente. Ya no hay «Tu línea» (el gráfico de puntos no le decía nada a la persona). Nunca percentiles ni comparación con otras personas.
-    if (usesMeaningfulResult) {
+    if (result.gameId == "aterrizaje" && usesMeaningfulResult) {
       Spacer(Modifier.height(18.dp))
       val model = remember(result, starMeasures, aterrizajeTotals) { aterrizajeModel(result, starMeasures, aterrizajeTotals) }
       MeaningfulResult(model)
@@ -766,115 +766,61 @@ fun GameResultScreen(
 
     // Bodega de carga (pantalla final, docs/diseno-bodega-de-carga.md §7): «Tu bodega». «Encontraste X de N objetos al primer intento», la etapa más alta (de 5), la racha más larga, tu bodega
     // más grande de hoy (el pedido más grande sin errores), tu récord (con «¡Nuevo récord!» si lo superaste) y, con 3 o más objetos, el ritmo. Cada dato aparece UNA vez; sin recuadros.
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
     val bodGroup = result.bodGroup
     if (bodGroup != null) {
+      Spacer(Modifier.height(18.dp))
       val bod = com.example.data.Bodega
       val bodTotal = result.totalTrials
-      Spacer(Modifier.height(14.dp))
-      Text("Tu bodega", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = bod.spoken(result.correctAnswers, bodTotal) }.testTag("bodega_headline"),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text("Al primer intento", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Row(verticalAlignment = Alignment.Bottom) {
-          Text("${result.correctAnswers.coerceIn(0, maxOf(bodTotal, 0))} de $bodTotal", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
-          Text("objetos", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp, bottom = 10.dp))
-        }
-      }
-      bod.groupLine(bodGroup)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_group"))
-      }
-      bod.streakLine(result.bodBestStreak, bodTotal)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_streak"))
-      }
-      bod.biggestLine(result.bodBiggest)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_biggest"))
-      }
-      bod.recordLine(result.bodBest, result.bodNewRecord)?.let {
-        Text(it, color = if (result.bodNewRecord == true) Clay.Sun else TextSoft, fontSize = if (result.bodNewRecord == true) 15.sp else 14.sp, fontWeight = if (result.bodNewRecord == true) FontWeight.SemiBold else FontWeight.Normal, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_record"))
-      }
-      bod.paceLine(result.bodMs, bodTotal)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("bodega_pace"))
-      }
+      val model = remember(result, starMeasures) { FinalModels.bodega(result, starMeasures) }
+      val bodRows = listOfNotNull(
+        bod.groupLine(bodGroup)?.let { "bodega_group" to it },
+        bod.streakLine(result.bodBestStreak, bodTotal)?.let { "bodega_streak" to it },
+        bod.biggestLine(result.bodBiggest)?.let { "bodega_biggest" to it },
+        bod.recordLine(result.bodBest, result.bodNewRecord)?.let { "bodega_record" to it },
+        bod.paceLine(result.bodMs, bodTotal)?.let { "bodega_pace" to it }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = if (bodRows.isEmpty()) null else { { bodRows.forEach { (tag, line) -> DetailLine(line, tag) } } })
     }
 
     // Constelaciones (pantalla final, docs/diseno-constelaciones.md §5): «Tu memoria de lugar». «X de Y veces fuiste directo a una pareja que ya habías visto» con el % en grande, las parejas de memoria,
     // la racha de memoria más larga, la etapa más alta (de 6), tu mejor racha (con «¡Nueva mejor racha!» si la superaste) y la nota de que lo encontrado por suerte no cuenta. Sin oportunidades no hay % («—»). Sin recuadros.
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
     val conGroup = result.conGroup
     if (conGroup != null) {
+      Spacer(Modifier.height(18.dp))
       val con = com.example.data.Constelaciones
-      val conOpps = result.totalTrials
-      Spacer(Modifier.height(14.dp))
-      Text("Tu memoria de lugar", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = con.spoken(result.correctAnswers, conOpps) }.testTag("constelaciones_headline"),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-          Text(con.percent(result.correctAnswers, conOpps)?.let { "$it %" } ?: "—", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
-        }
-        Text(con.detailLine(result.correctAnswers, conOpps), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
-      }
-      con.memoryGroupsLine(result.conMemGroups, result.conGroups)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_groups"))
-      }
-      con.streakLine(result.conBestStreak)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_streak"))
-      }
-      con.groupLine(conGroup)?.let {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_group"))
-      }
-      con.recordLine(result.conBest, result.conNewRecord)?.let {
-        Text(it, color = if (result.conNewRecord == true) Clay.Sun else TextSoft, fontSize = if (result.conNewRecord == true) 15.sp else 14.sp, fontWeight = if (result.conNewRecord == true) FontWeight.SemiBold else FontWeight.Normal, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_record"))
-      }
-      Text(con.LUCK_NOTE, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("constelaciones_luck"))
+      val model = remember(result, starMeasures) { FinalModels.constelaciones(result, starMeasures) }
+      val conRows = listOfNotNull(
+        con.memoryGroupsLine(result.conMemGroups, result.conGroups)?.let { "constelaciones_groups" to it },
+        con.streakLine(result.conBestStreak)?.let { "constelaciones_streak" to it },
+        con.groupLine(conGroup)?.let { "constelaciones_group" to it },
+        con.recordLine(result.conBest, result.conNewRecord)?.let { "constelaciones_record" to it },
+      ).filter { it.second != model.dataLine } + ("constelaciones_luck" to con.LUCK_NOTE)
+      MeaningfulResult(model, detail = { conRows.forEach { (tag, line) -> DetailLine(line, tag) } })
     }
 
     // Rastro de luz (pantalla final, docs/diseno-rastro-de-luz.md §6): "tu rastro" (cifra grande: las luces más largas que repetiste bien en el
     // rastro simple), "por modo" (al revés, el cielo gira y en marcha, cada uno con 3 rondas o más; el de menos aciertos marcado con TEXTO «el que
     // más te costó» y un truco), y la lectura en palabras. Sin recuadros ni percentiles; cada dato aparece UNA vez.
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
     val rasRounds = result.rasRounds
     if (rasRounds != null) {
+      Spacer(Modifier.height(18.dp))
       val trail = com.example.data.Trail
-      val best = trail.bestTrail(result.rasBestLen)
       val rows = trail.modeRows(rasRounds, result.rasHits)
-      Spacer(Modifier.height(14.dp))
-      Text("Tu rastro", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = trail.spoken(result.rasBestLen) },
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        if (best != null) {
-          Row(verticalAlignment = Alignment.Bottom) {
-            Text("$best", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
-            Text(
-              if (best == 1) "luz" else "luces", color = Clay.Cream, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-              modifier = Modifier.padding(start = 8.dp, bottom = 10.dp)
-            )
+      val model = remember(result, starMeasures) { FinalModels.rastro(result, starMeasures) }
+      val reading = trail.readingLines(rows).take(1).filter { it != model.dataLine }
+      MeaningfulResult(model, detail = {
+        if (rows.isNotEmpty()) {
+          Text("Por modo", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
+          Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 8.dp)) {
+            rows.forEach { row -> TrailModeBar(row, Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
           }
-          Text("las más largas que repetiste bien en el rastro simple", color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center)
-        } else {
-          Text(trail.noTrailLine(rasRounds), color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center)
         }
-      }
-      trail.unlockedLine(result.rasNewModes)?.let {
-        Text(it, color = Clay.Lime, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp))
-      }
-      if (rows.isNotEmpty()) {
-        Spacer(Modifier.height(14.dp))
-        Text("Por modo", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-        Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 8.dp)) {
-          rows.forEach { row -> TrailModeBar(row, Modifier.fillMaxWidth().padding(vertical = 3.dp)) }
-        }
-        trail.readingLines(rows).take(1).forEachIndexed { i, line ->
-          Text(
-            line, color = if (i == 0) Clay.Cream else TextSoft, fontSize = if (i == 0) 15.sp else 14.sp, textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = if (i == 0) 2.dp else 6.dp)
-          )
-        }
-      }
-      Text(trail.WORKING_MEMORY, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp))
+        reading.forEach { DetailLine(it, "rastro_reading", strong = true) }
+        DetailLine(trail.WORKING_MEMORY, "rastro_working_memory")
+      })
     }
 
     // ¿Verdad o disparate? (pantalla final, maqueta docs/previews/disparate.png): "tu lectura con comprensión" (cifra grande de
@@ -995,50 +941,35 @@ fun GameResultScreen(
 
     // La estación de correo (pantalla final, docs/diseno-correo-estacion.md §7): «Tu memoria para lo pendiente» con el % en grande, los encargos cumplidos (por evento y por hora, con discos), los cancelados que no hiciste, las miradas al reloj
     // cerca de la hora, las cartas bien puestas, la etapa más alta y el récord. Cada dato aparece UNA vez; sin recuadros; sin encargos no hay % («—»).
+    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
     val mailGroup = result.mailGroup
     if (mailGroup != null) {
+      Spacer(Modifier.height(18.dp))
       val mail = com.example.data.Mail
-      val ok = result.correctAnswers
-      val all = result.totalTrials
-      Spacer(Modifier.height(14.dp))
-      Text("Tu memoria para lo pendiente", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-      Column(
-        Modifier.fillMaxWidth().padding(horizontal = 28.dp).semantics { contentDescription = mail.spoken(ok, all) }.testTag("correo_headline"),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text(mail.percent(ok, all)?.let { "$it %" } ?: "—", color = Clay.Grape, fontWeight = FontWeight.Bold, fontSize = 52.sp, fontFamily = AppFamily)
-        Text(mail.detailLine(ok, all), color = TextSoft, fontSize = 15.sp, textAlign = TextAlign.Center)
-      }
-      Text(
-        text = "Acordarte de hacer algo en el momento justo, sin que nada te avise del todo: como tomar un remedio o hacer una llamada.",
-        color = TextSoft,
-        fontSize = 15.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp)
-      )
+      val model = remember(result, starMeasures) { FinalModels.correo(result, starMeasures) }
       val evHits = result.mailEvHits ?: 0
       val evTotal = result.mailEvTotal ?: 0
       val timeHits = result.mailTimeHits ?: 0
       val timeTotal = result.mailTimeTotal ?: 0
-      mail.eventLine(evHits, evTotal)?.let {
-        Text(it, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp).testTag("correo_event"))
-        FilledSlots(evHits, evTotal, Clay.Coral, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por evento: $evHits de $evTotal" })
-      }
-      mail.timeLine(timeHits, timeTotal)?.let {
-        Text(it, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp).testTag("correo_time"))
-        FilledSlots(timeHits, timeTotal, Clay.Grape, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por hora: $timeHits de $timeTotal" })
-      }
-      listOfNotNull(
-        mail.cancelLine(result.mailCancels, result.mailCommissions),
-        mail.clockLine(result.mailPeeksGood, result.mailPeeks),
-        mail.cardsLine(result.mailRight),
-        mail.groupLine(mailGroup)
-      ).forEach {
-        Text(it, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
-      }
-      mail.recordLine(result.mailBest, result.mailNewRecord)?.let {
-        Text(it, color = if (result.mailNewRecord == true) Clay.Sun else TextSoft, fontSize = if (result.mailNewRecord == true) 15.sp else 14.sp, fontWeight = if (result.mailNewRecord == true) FontWeight.SemiBold else FontWeight.Normal, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag("correo_record"))
-      }
+      val mailRows = listOfNotNull(
+        mail.cancelLine(result.mailCancels, result.mailCommissions)?.let { "correo_cancel" to it },
+        mail.clockLine(result.mailPeeksGood, result.mailPeeks)?.let { "correo_clock" to it },
+        mail.cardsLine(result.mailRight)?.let { "correo_cards" to it },
+        mail.groupLine(mailGroup)?.let { "correo_group" to it },
+        mail.recordLine(result.mailBest, result.mailNewRecord)?.let { "correo_record" to it }
+      ).filter { it.second != model.dataLine }
+      MeaningfulResult(model, detail = {
+        DetailLine("Acordarte de hacer algo en el momento justo, sin que nada te avise del todo: como tomar un remedio o hacer una llamada.", "correo_explain", soft = false)
+        mail.eventLine(evHits, evTotal)?.let {
+          Text(it, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp).testTag("correo_event"))
+          FilledSlots(evHits, evTotal, Clay.Coral, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por evento: $evHits de $evTotal" })
+        }
+        mail.timeLine(timeHits, timeTotal)?.let {
+          Text(it, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp).testTag("correo_time"))
+          FilledSlots(timeHits, timeTotal, Clay.Grape, Modifier.padding(top = 4.dp).semantics { contentDescription = "Por hora: $timeHits de $timeTotal" })
+        }
+        mailRows.forEach { (tag, line) -> DetailLine(line, tag) }
+      })
     }
 
     // Tinta o Palabra («Dos orillas»): «cuánto te frenó la palabra» (cifra grande) y, desde el nivel 3 (hay cambios de orilla), «cambiar de orilla te costó».
@@ -1074,8 +1005,8 @@ fun GameResultScreen(
     val hasStarMeasure = listOf(
       result.pilLanePct, result.glanceMs, result.captureK, result.trackingCapacity, result.stopsTotal,
       result.rotationSpeedDps, result.rotationCurveMs,
-      result.mailGroup, result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
-      result.rasRounds, result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa, result.conGroup
+      result.lexBandSeen, result.svSeenType, result.harvWords, result.intrSeenType,
+      result.interferenceMs, result.switchCostMs, result.puntaSolo, result.cargaAlone, result.engrEtapa
     ).any { it != null }
     if (hasStarMeasure) {
       Text(
@@ -1108,7 +1039,7 @@ fun GameResultScreen(
     // «Al terminar cada juego, ¿qué te sirve más ver primero?» (`result_focus`, Ajustes): SOLO cambia el orden. «Lo que avancé» pone primero las
     // medidas de la partida y lo que subió; «Un consejo para la próxima», el consejo concreto. Ningún dato se repite ni se oculta: el consejo sale
     // de las medidas (no se muestra dos veces) y los juegos sin consejo propio se ven igual con las dos opciones.
-    val adviceTips = remember(result) { com.example.data.ResultAdvice.tips(result) }
+    val adviceTips = remember(result) { if (usesMeaningfulResult) emptyList() else com.example.data.ResultAdvice.tips(result) }       // los finales con sentido traen su «Truco para la próxima»
     if (resultFocus == ResultFocus.CONSEJO) {
       AdviceBlock(adviceTips)
       measures()
@@ -1725,4 +1656,18 @@ private fun ColumnScope.AdviceBlock(tips: List<String>) {
   tips.forEach { tip ->
     Text(tip, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 3.dp))
   }
+}
+
+/** Una línea del detalle de la partida (lo que cada juego mostraba antes de los finales con sentido): texto chico y suelto, sin recuadro; las que empiezan con «¡» (un récord nuevo) van en sol. */
+@Composable
+private fun DetailLine(text: String, tag: String, strong: Boolean = false, soft: Boolean = true) {
+  val celebrate = text.startsWith("¡")
+  Text(
+    text = text,
+    color = if (celebrate) Clay.Sun else if (strong) Clay.Cream else TextSoft,
+    fontSize = if (celebrate || strong || !soft) 15.sp else 14.sp,
+    fontWeight = if (celebrate) FontWeight.SemiBold else FontWeight.Normal,
+    textAlign = TextAlign.Center,
+    modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag(tag)
+  )
 }

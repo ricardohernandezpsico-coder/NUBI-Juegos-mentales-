@@ -4,23 +4,39 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.FinalesConSentido
 import com.example.ui.theme.AppFamily
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayCard
@@ -34,6 +50,8 @@ data class ResultChip(val label: String, val value: String, val highlight: Boole
  * 2. **Tu avance**, solo contigo (nunca percentiles ni otras personas): una fila de tres números y una frase;
  * 3. **Un truco** para la próxima (recuadro chico);
  * 4. **¿Por qué importa?**, abajo, en chico y sin recuadro: una frase, su fuente y la nota de siempre («Medida de esta partida. No es un diagnóstico.»).
+ * Si el juego trae [detail] (los 17 juegos de la Etapa 3: `docs/finales-con-sentido.md`), el detalle que antes se veía (barras, listas, desgloses) NO se borra: va detrás de «Ver el detalle de tu partida», un botón de 56 dp o más cerrado por defecto,
+ * entre el truco y «¿Por qué importa?». El [MeaningfulResultModel.title] y el [MeaningfulResultModel.boxTitle] pueden ir en blanco (no se dibujan).
  * Todo el texto va desde 14 sp, nada se dice solo con color y cada pieza se lee de corrido con un lector de pantalla.
  */
 data class MeaningfulResultModel(
@@ -65,12 +83,37 @@ private val Muted = Color(0xFFABA5D2)
 private val Faint = Color(0xFF8F8AC0)
 
 @Composable
-fun MeaningfulResult(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
+fun MeaningfulResult(model: MeaningfulResultModel, modifier: Modifier = Modifier, detail: (@Composable ColumnScope.() -> Unit)? = null) {
   Column(modifier = modifier.fillMaxWidth().testTag("meaningful_result"), horizontalAlignment = Alignment.CenterHorizontally) {
     WhatYouDid(model)
     YourProgress(model)
     NextTrick(model)
+    if (detail != null) DetailSection(detail)
     WhyItMatters(model)
+  }
+}
+
+/** «Ver el detalle de tu partida»: un botón de 56 dp o más, cerrado por defecto, que abre el detalle que cada juego ya mostraba (nada se borra). */
+@Composable
+fun DetailSection(content: @Composable ColumnScope.() -> Unit) {
+  var open by rememberSaveable { mutableStateOf(false) }
+  Column(Modifier.fillMaxWidth().padding(top = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    val label = if (open) FinalesConSentido.DETAIL_CLOSE else FinalesConSentido.DETAIL_OPEN
+    ClayCard(
+      modifier = Modifier.fillMaxWidth().testTag("detail_toggle").semantics(mergeDescendants = true) { role = Role.Button; contentDescription = label; stateDescription = if (open) "abierto" else "cerrado" },
+      color = ChipFill,
+      radius = 18.dp,
+      depth = 4.dp,
+      contentPadding = 0.dp,
+      onClick = { open = !open }
+    ) {
+      Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+        Text(label, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+        Spacer(Modifier.width(8.dp))
+        Icon(if (open) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+      }
+    }
+    if (open) Column(Modifier.fillMaxWidth().padding(top = 10.dp).testTag("detail_content"), horizontalAlignment = Alignment.CenterHorizontally, content = content)
   }
 }
 
@@ -78,16 +121,18 @@ fun MeaningfulResult(model: MeaningfulResultModel, modifier: Modifier = Modifier
 @Composable
 fun WhatYouDid(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
   Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(
-      text = model.title,
-      color = Color.White,
-      fontFamily = AppFamily,
-      fontWeight = FontWeight.Bold,
-      fontSize = 24.sp,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.padding(horizontal = 16.dp)
-    )
-    Spacer(Modifier.height(12.dp))
+    if (model.title.isNotBlank()) {
+      Text(
+        text = model.title,
+        color = Color.White,
+        fontFamily = AppFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 16.dp)
+      )
+      Spacer(Modifier.height(12.dp))
+    }
     ClayCard(
       modifier = Modifier.fillMaxWidth().testTag("meaningful_box").semantics(mergeDescendants = true) { if (model.spoken.isNotEmpty()) contentDescription = model.spoken },
       color = BoxFill,
@@ -96,7 +141,7 @@ fun WhatYouDid(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
       contentPadding = 16.dp
     ) {
       Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Text(model.boxTitle, color = Soft, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center)
+        if (model.boxTitle.isNotBlank()) Text(model.boxTitle, color = Soft, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center)
         Text(model.headline, color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 34.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
         Text(model.headlineUnit, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center)
         model.dataLine?.let {

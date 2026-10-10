@@ -1,5 +1,7 @@
 # Medidas del final de los juegos estrella: qué miden y qué se puede decir
 
+> **Desde el 10-oct (Etapa 3, Tarea 77) el final de cada juego sigue el orden de [`finales-con-sentido.md`](finales-con-sentido.md)**: lo que hiciste (la medida de abajo, más UN dato tuyo), tu avance solo contigo (hoy, tu promedio y tu mejor, con la tolerancia de «parejo» de cada medida), el truco y «¿Por qué importa?» con su fuente. Lo que se mostraba antes de cada juego (barras, listas, desgloses) sigue existiendo detrás de «Ver el detalle de tu partida». Hechos: Aterrizaje Lunar y el grupo 1 (Constelaciones, Rastro de luz, Bodega de carga y La estación de correo); los demás se llevan por grupos.
+
 Revisión del 27-sep, pedida por Ricardo después de jugar Aterrizaje Lunar: que lo que dice el final de cada juego
 aguante la mirada de alguien que conoce los estudios. Para cada medida: qué mide de verdad, cómo se calcula, qué
 NO se puede decir con ella y en qué estudios se apoya.
