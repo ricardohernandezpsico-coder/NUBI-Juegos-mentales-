@@ -96,7 +96,7 @@ namespace NeuroVida.Games.Aterrizaje.Tests
             Assert.AreEqual(LandingContract.Outcome.Hit, LandingContract.OutcomeOf(0.03f));
             Assert.AreEqual(LandingContract.Outcome.Far, LandingContract.OutcomeOf(0.2f));
             foreach (var bad in new[] { "cognitiv", "entrenamiento", "cerebro" })
-                foreach (var text in new[] { LandingContract.Hint, LandingContract.BullNotice, LandingContract.DomeNotice, LandingContract.EndTag, LandingContract.EndBoxTitle, LandingContract.Notice(t, 60f, 0) })
+                foreach (var text in new[] { LandingContract.Hint, LandingContract.BullNotice, LandingContract.DomeNotice, LandingContract.EndTag, LandingContract.EndBoxTitle, LandingContract.EndEstimate(88f), LandingContract.EndAnalogy(88f), LandingContract.Notice(t, 60f, 0) })
                     Assert.IsFalse(text.ToLowerInvariant().Contains(bad), "«" + text + "» usa «" + bad + "»");
         }
 
@@ -133,9 +133,14 @@ namespace NeuroVida.Games.Aterrizaje.Tests
             Assert.AreEqual("12 aterrizajes justos de 15", LandingContract.EndTitle(12, 15));
             Assert.AreEqual("1 aterrizaje justo de 8", LandingContract.EndTitle(1, 8));
             Assert.AreEqual("0 aterrizajes justos de 8", LandingContract.EndTitle(0, 8));
-            Assert.AreEqual("a 11 de cada 100", LandingContract.EndEstimate(10.6f));
-            Assert.AreEqual("a 1 de cada 100", LandingContract.EndEstimate(0.2f), "nunca menos de 1");
+            Assert.AreEqual("11 % de la regla", LandingContract.EndEstimate(10.6f));
+            Assert.AreEqual("1 % de la regla", LandingContract.EndEstimate(0.2f), "nunca menos de 1");
             Assert.AreEqual("—", LandingContract.EndEstimate(-1f));
+            Assert.AreEqual("Tu distancia promedio al lugar justo", LandingContract.EndBoxTitle, "el rótulo dice de qué es la cifra (igual que la app)");
+            Assert.AreEqual("Como quedar a 11 en una regla de 0 a 100.", LandingContract.EndAnalogy(10.6f), "la unidad puesta en algo que se imagina, con el mismo N de la cifra");
+            Assert.AreEqual("Como quedar a 88 en una regla de 0 a 100.", LandingContract.EndAnalogy(88.2f), "un N de dos cifras");
+            Assert.AreEqual("Como quedar a 1 en una regla de 0 a 100.", LandingContract.EndAnalogy(0.2f), "nunca menos de 1");
+            Assert.AreEqual("", LandingContract.EndAnalogy(-1f), "sin aterrizajes no hay línea");
             Assert.AreEqual("1 diana lunar · racha mayor — · 1 cúpula", LandingContract.EndSummary(1, 0, 1));
             Assert.AreEqual("0 dianas lunares · racha mayor ×4 · 2 cúpulas", LandingContract.EndSummary(0, 4, 2));
             Assert.AreEqual("2 dianas lunares · racha mayor — · 0 cúpulas", LandingContract.EndSummary(2, 1, 0), "la racha de 1 no se nombra");

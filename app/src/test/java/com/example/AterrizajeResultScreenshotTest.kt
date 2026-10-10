@@ -27,7 +27,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * El final de «Aterrizaje Lunar» renovado (Tarea 70, docs/diseno-aterrizaje.md §6), en el orden del diseño: el título, el recuadro «a X de cada 100 del lugar justo», «Tu avance» (hoy, tu promedio, tu mejor),
+ * El final de «Aterrizaje Lunar» renovado (Tarea 70, docs/diseno-aterrizaje.md §6), en el orden del diseño: el título, el recuadro «X % de la regla» (distancia promedio al lugar justo), «Tu avance» (hoy, tu promedio, tu mejor),
  * «Truco para la próxima» y, abajo y en chico, «¿Por qué importa?» con su fuente. Tres casos: la primera partida (sin con qué compararse), mejor que tu promedio y con una lectura clara (te costó el final de la regla).
  */
 @RunWith(RobolectricTestRunner::class)

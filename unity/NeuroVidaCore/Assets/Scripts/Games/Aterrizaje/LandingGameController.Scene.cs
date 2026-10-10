@@ -423,6 +423,7 @@ namespace NeuroVida.Games.Aterrizaje
             _timerFill.gameObject.SetActive(false);
             _endTitle.text = LandingContract.EndTitle(_hits, _trials);
             _endEstimate.text = LandingContract.EndEstimate(meanErr);
+            _endUnit.text = LandingContract.EndAnalogy(meanErr);
             _endSummary.text = LandingContract.EndSummary(_bulls, _bestStreak, _domes);
             _endAt = Now;
             _endLayer.gameObject.SetActive(true);

@@ -38,7 +38,7 @@ h2{font:600 19px var(--f-display);margin:24px 0 10px}
       <li><b>Un mundo:</b> la Tierra en el cielo, estrellas, la luna con su borde y polvo al posarse.</li>
       <li><b>Arrastrar en cualquier parte:</b> el dedo mueve la nave desde cualquier lugar del cielo; una línea de puntos baja hasta la regla.</li>
       <li><b>La verdad, clara y no solo por color:</b> al posarse se levanta la bandera en el lugar justo con su número, y el tramo entre los dos lleva ✓ o aspa y dice «a 3 del blanco». Con muy poco error: «¡Diana lunar!».</li>
-      <li><b>Un final ordenado (v4):</b> arriba y en grande lo que hiciste («a 11 de cada 100 del lugar justo») con un dato tuyo (dónde te costó más); tu avance en una fila; el truco para la próxima; y abajo, en chico, por qué importa en una frase con su fuente.</li>
+      <li><b>Un final ordenado (v4):</b> arriba y en grande lo que hiciste («11 % de la regla», con «Como quedar a 11 en una regla de 0 a 100.» debajo) con un dato tuyo (dónde te costó más); tu avance en una fila; el truco para la próxima; y abajo, en chico, por qué importa en una frase con su fuente.</li>
       <li><b>Antes (v3):</b> «a 3 de cada 100 del lugar justo»; tu avance comparado solo contigo (hoy, tu promedio, tu mejor); «Lo que pusiste en juego» y «Por qué importa», generales y con respaldo (Schley y Peters, 2014), y un truco concreto según el tramo de la regla donde más te alejaste.</li>
       <li><b>El planeta (v3):</b> dos estilos para elegir con los botones de abajo: la Tierra redibujada (tierras suaves, nubes, noche y atmósfera) o un planeta lavanda con anillo.</li>
       <li><b>Un cielo con vida (v2):</b> estrellas que titilan, una estrella fugaz, un satélite que cruza, la Tierra con resplandor y dos cordilleras lunares que se mueven despacio (nada queda fijo junto a la regla).</li>
@@ -434,6 +434,8 @@ const TIPS = {
   pareja: 'Truco: antes de soltar, busca la mitad y pregúntate si tu número está antes o después.',
 };
 function wrapText(c, text, x, y, maxW, lh){ const words = text.split(' '); let line = '', yy = y; for (const w of words){ const t = line ? line + ' ' + w : w; if (c.measureText(t).width > maxW && line){ c.fillText(line, x, yy); line = w; yy += lh; } else line = t; } if (line) c.fillText(line, x, yy); return yy; }
+// el texto se achica de a medio px, sin bajar nunca de 14 px, hasta caber en maxW (el recuadro del cierre: W - 36 menos 4 px de aire a cada lado)
+function fitFont(c, text, weight, start, fam, maxW){ let px = start; do { c.font = `${weight} ${px}px ${fam}`; if (c.measureText(text).width <= maxW) break; px -= 0.5; } while (px > 14); c.font = `${weight} ${Math.max(14, px)}px ${fam}`; }
 function drawEnd(c, now){
   c.fillStyle = 'rgba(4,5,26,.62)'; c.fillRect(0, 0, W, H);
   c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -443,9 +445,11 @@ function drawEnd(c, now){
   const pct = S.meanPct === null ? null : Math.max(1, Math.round(S.meanPct));
   let y0 = 92;
   c.save(); c.translate(W/2, y0 + 82); clay(c, () => c.roundRect(-(W - 36)/2, -82, W - 36, 164, 22), '#22205A', { shadow: 6, border: 3, h: 82, hl: false }); c.restore();
-  c.fillStyle = '#D6D1F2'; c.font = '700 15px Fredoka'; c.fillText('Tu estimación de hoy', W/2, y0 + 22);
-  c.fillStyle = '#FFC94A'; c.font = '700 34px Fredoka'; c.fillText(pct === null ? '—' : `a ${pct} de cada 100`, W/2, y0 + 56);
-  c.fillStyle = '#fff'; c.font = '600 16px Nunito'; c.fillText('del lugar justo', W/2, y0 + 84);
+  const boxW = W - 36 - 8;
+  c.fillStyle = '#D6D1F2'; fitFont(c, 'Tu distancia promedio al lugar justo', 700, 15, 'Fredoka', boxW); c.fillText('Tu distancia promedio al lugar justo', W/2, y0 + 22);
+  c.fillStyle = '#FFC94A'; c.font = '700 34px Fredoka'; c.fillText(pct === null ? '—' : `${pct} % de la regla`, W/2, y0 + 56);
+  const analogy = pct === null ? '' : `Como quedar a ${pct} en una regla de 0 a 100.`;
+  c.fillStyle = '#fff'; fitFont(c, analogy, 600, 16, 'Nunito', boxW); c.fillText(analogy, W/2, y0 + 84);
   const ZN = { inicio: 'el comienzo', centro: 'el medio', final: 'el final' };
   const zline = S.zone && S.zone !== 'pareja' ? `Te costó más ${ZN[S.zone]} de la regla` : 'Quedaste igual de cerca en toda la regla';
   c.fillStyle = '#7FD8FF'; c.font = '700 15px Nunito'; c.fillText(zline, W/2, y0 + 114);
@@ -456,7 +460,7 @@ function drawEnd(c, now){
   c.fillStyle = '#D6D1F2'; c.font = '700 15px Fredoka'; c.fillText('Tu avance', W/2, y0);
   const chips = [['Hoy', pct], ['Tu promedio', S.prevMean === null ? null : Math.max(1, Math.round(S.prevMean))], ['Tu mejor', S.prevBest === null ? null : Math.max(1, Math.round(Math.min(S.prevBest, S.meanPct ?? 99)))]];
   chips.forEach(([lbl, v], i) => { const x = W/2 + (i - 1)*110; c.save(); c.translate(x, y0 + 36); clay(c, () => c.roundRect(-50, -22, 100, 44, 14), i === 0 ? '#FFC94A' : '#2C2A6E', { shadow: 3, border: 2.6, h: 22, hl: false }); c.restore();
-    c.fillStyle = i === 0 ? INK : '#D6D1F2'; c.font = '700 14px Nunito'; c.fillText(lbl, x, y0 + 26); c.fillStyle = i === 0 ? INK : '#fff'; c.font = '700 17px Fredoka'; c.fillText(v === null ? '—' : `${v} de 100`, x, y0 + 45); });
+    c.fillStyle = i === 0 ? INK : '#D6D1F2'; c.font = '700 14px Nunito'; c.fillText(lbl, x, y0 + 26); c.fillStyle = i === 0 ? INK : '#fff'; c.font = '700 17px Fredoka'; c.fillText(v === null ? '—' : `${v} %`, x, y0 + 45); });
   let verdict;
   if (S.prevMean === null) verdict = 'Juega otra vez para ver tu avance.';
   else if (S.meanPct < S.prevBest) verdict = '¡Tu partida más precisa hasta ahora!';

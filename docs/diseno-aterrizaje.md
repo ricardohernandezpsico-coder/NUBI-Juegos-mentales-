@@ -190,5 +190,5 @@ En orden de importancia. Es la plantilla que después se puede llevar a los dem�
 
 ## 11. Pendientes (para la próxima tarea de Unity)
 
-- **El cierre «¡Listo!» del juego** todavía dice «a N de cada 100» (`LandingContract.EndEstimate`, `EndBoxTitle`, `EndBoxUnit`). Al tocar Unity, debe decir lo mismo que la app: «Tu distancia promedio al lugar justo», «N % de la regla» y «Como quedar a N en una regla de 0 a 100.».
-- **El «14 de 13» de las capturas:** en el cierre de las tomas sale «14 aterrizajes justos de 13». Viene de `AddFakeProgress` (`.Shots.cs`), que suma sobre `_hits = 4` sin sumar `_trials`. En una partida real no pasa.
+- **RESUELTO (Tarea 72, 10-oct) — el cierre «¡Listo!» del juego decía «a N de cada 100»** (`LandingContract.EndEstimate`, `EndBoxTitle`, `EndBoxUnit`). Ahora dice lo mismo que la app: «Tu distancia promedio al lugar justo» (se achica hasta 14 dp para caber en una línea del recuadro), «N % de la regla» (`EndEstimate`) y «Como quedar a N en una regla de 0 a 100.» (`EndAnalogy`, que reemplaza a la constante `EndBoxUnit`), con el mismo N de la app y vacía sin aterrizajes.
+- **RESUELTO (Tarea 72) — el «14 de 13» de las capturas.** El culpable no era `AddFakeProgress` (que sí suma `_trials`), sino el guion de capturas, que para que el quinto justo armara la cúpula ponía `_hits = 4` sin sumar `_trials`; en el guion corto de 16:9 solo se habían jugado dos aterrizajes. Ahora `ForceHits(n)` (`.Shots.cs`) suma los aterrizajes que falten como justos: los justos nunca superan los aterrizajes. En una partida real no pasaba.

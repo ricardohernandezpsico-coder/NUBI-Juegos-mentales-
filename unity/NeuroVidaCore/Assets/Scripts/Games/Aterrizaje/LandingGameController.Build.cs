@@ -312,9 +312,9 @@ namespace NeuroVida.Games.Aterrizaje
             _endBoxTitle.text = LandingContract.EndBoxTitle;
             _endEstimate = MakeLabel(_endLayer, "Estimate", 34f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endUnit = MakeLabel(_endLayer, "Unit", 16f, UiFonts.Regular, Color.white, TextAnchor.MiddleCenter);
-            _endUnit.text = LandingContract.EndBoxUnit;
             _endSummary = MakeLabel(_endLayer, "Summary", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             foreach (var t in new[] { _endTag, _endTitle, _endBoxTitle, _endEstimate, _endUnit, _endSummary }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _endBoxTitle.horizontalOverflow = _endUnit.horizontalOverflow = HorizontalWrapMode.Overflow;          // estas dos se achican (hasta 14 dp) para caber en UNA línea del recuadro: ver FitEndLine
             _endLayer.gameObject.SetActive(false);
         }
 
@@ -515,10 +515,28 @@ namespace NeuroVida.Games.Aterrizaje
             SetRect(_endTag.rectTransform, cx, 34f, 300f, 22f);
             SetRect(_endTitle.rectTransform, cx, 64f, 330f, 36f);
             SetRect(_endCard.rectTransform, cx, 92f + 78f, LandingPlan.Width - 36f, 156f);
-            SetRect(_endBoxTitle.rectTransform, cx, 92f + 22f, 300f, 22f);
+            SetRect(_endBoxTitle.rectTransform, cx, 92f + 22f, EndTextWidth, 22f);
             SetRect(_endEstimate.rectTransform, cx, 92f + 56f, 300f, 44f);
-            SetRect(_endUnit.rectTransform, cx, 92f + 84f, 300f, 24f);
+            SetRect(_endUnit.rectTransform, cx, 92f + 84f, EndTextWidth, 24f);
             SetRect(_endSummary.rectTransform, cx, 92f + 126f, 300f, 22f);
+            FitEndLine(_endBoxTitle, 15f);
+            FitEndLine(_endUnit, 16f);
+        }
+
+        /// <summary>Lo que cabe de ancho dentro del recuadro del cierre (324 dp de recuadro menos 4 dp de aire a cada lado).</summary>
+        private const float EndTextWidth = LandingPlan.Width - 36f - 8f;
+
+        /// <summary>Deja el texto en UNA línea dentro del recuadro: parte de su tamaño y lo achica de a medio dp, sin bajar nunca de 14 dp.</summary>
+        private void FitEndLine(Text t, float startDp)
+        {
+            float fs = startDp;
+            do
+            {
+                t.fontSize = Mathf.RoundToInt(fs * _s);
+                if (t.preferredWidth / _s <= EndTextWidth) break;
+                fs -= 0.5f;
+            } while (fs > 14f);
+            t.fontSize = Mathf.RoundToInt(Mathf.Max(14f, fs) * _s);
         }
     }
 }

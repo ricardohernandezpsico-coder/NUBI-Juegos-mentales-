@@ -59,8 +59,7 @@ namespace NeuroVida.Games.Aterrizaje
             shot("suma");
             _editorResultT = -1f;
             // --- 6) la cúpula nueva: el quinto aterrizaje justo
-            _hits = 4;
-            _shownHits = 4;
+            ForceHits(4);
             _editorTrial = ShotTrial(3, 62f);
             yield return LandAt(0.62f + 0.025f);
             yield return Freeze(1.9f);
@@ -100,8 +99,7 @@ namespace NeuroVida.Games.Aterrizaje
             yield return Freeze(1.0f);
             shot("acierto-16x9");
             _editorResultT = -1f;
-            _hits = 4;
-            _shownHits = 4;
+            ForceHits(4);
             _editorTrial = ShotTrial(3, 62f);
             yield return LandAt(0.62f + 0.025f);
             yield return Freeze(1.9f);
@@ -123,7 +121,24 @@ namespace NeuroVida.Games.Aterrizaje
             return t;
         }
 
-        /// <summary>Suma aterrizajes de golpe (la partida, el marcador y las medidas del final): 10 aterrizajes con 8 justos, 2 dianas, racha de 4, una cúpula y un error medio de unos 9 de cada 100.</summary>
+        /// <summary>
+        /// Deja <paramref name="n"/> aterrizajes justos ya hechos (para que el siguiente arme la cúpula). Si hacen falta más aterrizajes que los jugados, se suman como justos: así los justos NUNCA superan los aterrizajes
+        /// (antes se ponía solo <c>_hits = 4</c> y el cierre de las capturas decía «14 aterrizajes justos de 13»).
+        /// </summary>
+        private void ForceHits(int n)
+        {
+            while (_trials < n)
+            {
+                _errors.Add(0.02f);
+                _trueFractions.Add(0.5f);
+                _givenFractions.Add(0.52f);
+                _trials++;
+            }
+            _hits = n;
+            _shownHits = n;
+        }
+
+        /// <summary>Suma aterrizajes de golpe (la partida, el marcador y las medidas del final): 10 aterrizajes con 8 justos, 2 dianas, racha de 4, una cúpula y un error medio de unos 9 % de la regla.</summary>
         private void AddFakeProgress()
         {
             float[] errors = { 0.009f, 0.031f, 0.14f, 0.022f, 0.008f, 0.041f, 0.012f, 0.19f, 0.027f, 0.045f };
