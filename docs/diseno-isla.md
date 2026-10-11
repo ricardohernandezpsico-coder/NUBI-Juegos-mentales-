@@ -26,6 +26,18 @@ Estos valores mandan sobre el resto del documento donde difieran.
 
 ---
 
+## Pedidos de Ricardo para las próximas fases (11-oct)
+
+Ricardo probó la fase 1 en su teléfono: Hoy se ve como se le describió y los edificios responden. Pidió esto para lo que sigue. **Es solo un registro: nada de esto está implementado.** Cada punto necesita su diseño y su fase.
+
+1. **Barra nueva (fase 5):** bandeja crema y cubos con íconos, como la versión aprobada (ver «Barra de pestañas» en los valores finales).
+2. **La isla, protagonista de Hoy.** Más grande que los ~240 dp actuales. Debajo, algo informativo o de las partidas de hoy, compacto. Se rediseña cómo conviven la isla grande y la ruta del día (hoy: globo, tres paradas y un botón, con la isla en lo que sobra).
+3. **Nubi dinámica (fase 3):** mira hacia el edificio que se toca.
+4. **Tocar un edificio ya NO lleva a Juegos ni al detalle de área de hoy.** Abre una **lámina** de plasticina con el avance de esa área y, ahí mismo, la opción de jugar en esa área. **Esto reemplaza** lo dicho en §4.1 (punto 3, «Tocar un edificio abre Juegos con ese lugar elegido») y en §6 («Los edificios se tocan»): ambos textos se conservan, marcados.
+5. **Al abrirse la lámina, Nubi se desplaza a otra zona,** como presentando la información. Expresión neutra y amable, nunca según el desempeño.
+
+---
+
 ## 1 · Tokens
 
 ### 1.1 Color (texto siempre en tinta sobre pastel o crema; crema o sol sobre noche)
@@ -94,7 +106,7 @@ Implementación (método 3D, ver §13.4): los **símbolos chicos** de área (24 
 ### 4.1 Hoy (la isla es la protagonista)
 1. **Saludo** con nombre y momento del día («Buenas tardes, Ricardo») y la fecha.
 2. **Semana de constancia**: siete farolitos colgados de una cuerda; los días jugados se encienden (sol + brillo), el día de hoy lleva un aro lima; debajo «3 de 4 días de tu meta».
-3. **La isla** (≈ 40 % de la altura): la losa crema sobre su base de tierra, los cuatro edificios en rombo (Observatorio a la izquierda, Antena arriba a la izquierda, Biblioteca a la derecha, Hangar abajo), la **ruta de hoy** como puntos sol que unen los tres lugares del camino, **lámparas encendidas** en esos tres lugares, Nubi flotando arriba a la derecha del centro con su sombra en la losa. Tocar un edificio abre Juegos con ese lugar elegido (también por teclado y lector de pantalla: cada edificio es un botón con el nombre del lugar).
+3. **La isla** (≈ 40 % de la altura): la losa crema sobre su base de tierra, los cuatro edificios en rombo (Observatorio a la izquierda, Antena arriba a la izquierda, Biblioteca a la derecha, Hangar abajo), la **ruta de hoy** como puntos sol que unen los tres lugares del camino, **lámparas encendidas** en esos tres lugares, Nubi flotando arriba a la derecha del centro con su sombra en la losa. Tocar un edificio abre Juegos con ese lugar elegido (también por teclado y lector de pantalla: cada edificio es un botón con el nombre del lugar). **[Reemplazado el 11-oct en lo que hace el toque: ahora abre una lámina con el avance de esa área y la opción de jugarla; ver «Pedidos de Ricardo para las próximas fases», punto 4. Lo demás (isla de ≈ 40 %, botones con nombre) sigue.]**
 4. **Globo de Nubi**: «Hoy la ruta pasa por el Observatorio, la Antena y la Biblioteca. Seis minutos.» De noche: «Ya pasaste por la isla hoy. Mañana sigo aquí.»
 5. **«Hoy en la isla»**: tres paradas en tarjetas de arcilla (número, glifo del lugar, nombre del juego, «Observatorio · hecho»); la que sigue va en sol con «es la que sigue». Tocar una parada abre su ficha.
 6. **Un solo botón grande**: «Seguir la ruta · 1 juego» (o «Empezar la ruta · 3 juegos» a primera hora; «Ruta completa» con Nubi celebrando al terminar).
@@ -161,7 +173,7 @@ La lectura de `ANIMATOR_DURATION_SCALE == 0` ya existe (`ReduceMotion.kt`); todo
 
 **Encaje en la pantalla.** La isla es un `Box` con `aspectRatio(ancho/alto del recorte común)` (hoy 977/972 = 1,005) y ancho = ancho de pantalla + 28 dp de sangrado lateral (igual que en el boceto), con tope de 480 dp en tabletas; dentro, las tres capas con `ContentScale.FillBounds` y los vectores encima en un `Canvas` que convierte las coordenadas 0-1 del JSON a píxeles del `Box`. Nubi es un `Image` aparte, posicionado por su caja del JSON (`capa_nubi.hola.caja`), para animarlo solo.
 
-**Los edificios se tocan.** Cada lugar es un `Box` transparente de 56 dp como mínimo centrado en `lugares.<nombre>.centro`, con `Role.Button` y nombre «Hangar, Razonamiento» (§12); tocarlo abre Juegos con ese lugar elegido. Las áreas tocables no se superponen: entre centros hay más de 120 dp a 360 dp de ancho.
+**Los edificios se tocan.** Cada lugar es un `Box` transparente de 56 dp como mínimo centrado en `lugares.<nombre>.centro`, con `Role.Button` y nombre «Hangar, Razonamiento» (§12); tocarlo abre Juegos con ese lugar elegido **[reemplazado el 11-oct: abre una lámina con el avance del área y la opción de jugarla; ver «Pedidos de Ricardo para las próximas fases», punto 4. Hoy, en la fase 1, abre el detalle de su área como puente]**. Las áreas tocables no se superponen: entre centros hay más de 120 dp a 360 dp de ancho.
 
 ## 7 · Plan por fases para Sonnet (cada fase deja algo que Ricardo prueba en el teléfono)
 
