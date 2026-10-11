@@ -266,8 +266,13 @@ animaciones" (el haz queda quieto) y el sonido apagado; texto de estado corto y 
 
 ### Licencias de terceros (1-oct)
 
-- **SPALEX** (palabras de Lluvia de meteoros): CC BY 4.0, uso comercial permitido con atribución (confirmado por el autor,
-  Prof. Duñabeitia, 1-oct; datos oficiales en FigShare). Atribución en Ajustes → "Licencias y créditos".
+- **SPALEX** (palabras de Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua): CC BY 4.0, uso comercial permitido con atribución (confirmado por el autor,
+  Prof. Duñabeitia, 1-oct; datos oficiales en FigShare). Atribución en Ajustes → "Licencias y créditos" (desde el 10-oct, Tarea 79, cubre los tres juegos y el cambio hecho en cada uno).
+- **Hunspell es_ES de LibreOffice** (solo al GENERAR las palabras; no va en la app): triple licencia disjunta a elección, GPL 3 o posterior, LGPL 3 o posterior o MPL 1.1 o posterior
+  (`LICENSE.md` y `README_hunspell_es.txt` de github.com/LibreOffice/dictionaries, carpeta `es`; confirmado el 10-oct, Tarea 79; la copia local es la misma: 58.221 entradas). No exige crédito; se cita igual.
+  Los otros diccionarios Hunspell que `tools/lexico/meteoros.py` lee para descartar inventadas que sean palabra real en otro idioma (en_US, it_IT, pt_PT y pt_BR) tampoco van en la app; su licencia NO se verificó.
+- **EsPal** (la frecuencia «zipf» que trae SPALEX, columna `EsPal_written_Zipf`, y que En la punta de la lengua usa para el nivel de cada palabra; Duchon, Perea, Sebastián-Gallés, Martí y Carreiras, 2013, *Behavior Research Methods*, 45, 1246–1258):
+  términos de uso NO confirmados (su sitio, bcbl.eu/databases/espal, no declara licencia ni uso comercial). **Pendiente** de decidir con Ricardo o el abogado.
 - **Fredoka y Nunito**: SIL Open Font License 1.1 (aviso en la misma pantalla). **Unity**: aviso "Hecho con Unity".
 
 ### Piloto Estelar — riesgo bajo; sin retoque, con reglas

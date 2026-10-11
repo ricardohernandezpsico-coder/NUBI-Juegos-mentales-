@@ -80,10 +80,9 @@ pretérito, el verbo es muy usado. Las no comunes se aceptan en silencio y no se
 
 **Palabras ocultas por pedido de Ricardo (1-oct)**: se aceptan si alguien las forma, pero no se muestran ni cuentan como comunes. Quedaron en `tools/lexico/excluir.txt` (bloque «Ampliación del 1-oct»): dobles sentidos (raja, pajas, pito, picos, nalgas, cojos, bicho, tieso, porra…), drogas (coca), tauromaquia (toreo, torear, torero, corrida…), términos médicos (óseo, anal, fecal, rectal, renal, vaginal, útero, cólico, erecta…) y caza y matar (caza, cazar, mata, matan, maté…). El generador conserva las rondas que siguen cumpliendo los mínimos (solo reemplaza las que no) y `--desde-cero` las vuelve a elegir todas.
 
-**Licencia del diccionario**: el Hunspell es_ES de LibreOffice se distribuye con GPL v3, LGPL v2.1/v3 o MPL 1.1 (a elección). Solo se usa
-al GENERAR (`tools/lexico/fuentes/`, fuera de git); a la app van listas de palabras sueltas por ronda, no el diccionario. Para quedar en
-orden basta una línea de crédito en Ajustes → Licencias y créditos («Palabras: SPALEX, CC BY 4.0; formas verbales y plurales con el
-diccionario Hunspell es_ES de LibreOffice»), que se agrega al programar el juego.
+**Licencia del diccionario** (confirmada el 10-oct en `LICENSE.md` de github.com/LibreOffice/dictionaries, carpeta `es`): el Hunspell es_ES de LibreOffice se distribuye con un triple esquema de licencias disjuntas, a elección:
+GPL 3 o posterior, LGPL 3 o posterior o MPL 1.1 o posterior (la LGPL 2.1 es solo del diccionario de sinónimos). Solo se usa al GENERAR (`tools/lexico/fuentes/`, fuera de git); a la app van listas de palabras sueltas por ronda, no el diccionario.
+El crédito está en Ajustes → Licencias y créditos, en la sección «Diccionario: Hunspell es_ES de LibreOffice», que desde la Tarea 79 cubre también a Lluvia de meteoros y a En la punta de la lengua.
 
 ## 6. Dificultad (DDA común por cosecha, `stepUp` 0.5 como Satélites; 10 niveles)
 
@@ -176,5 +175,5 @@ las pasa a la bandeja, tocar la última de la bandeja la devuelve, "Sembrar" (li
   las 2 primeras letras o la raíz con la anterior; "cómo buscaste en esta partida", sin normas), **tu ritmo** (primeros contra
   últimos 20 s, promedio de las cosechas), **tu palabra estrella** (o la más larga) y **también podías** (5 comunes). Marca para la
   evolución (`StarMeasures` `harvest`): % de las comunes encontradas. Captura real: `docs/previews/cosecha-final-real.png`.
-- Créditos: Ajustes → Licencias y créditos cita SPALEX y el diccionario Hunspell es_ES (MPL 1.1 / LGPL / GPL, a elección).
+- Créditos: Ajustes → Licencias y créditos cita SPALEX y el diccionario Hunspell es_ES (GPL 3+ / LGPL 3+ / MPL 1.1+, a elección).
 - Pendiente: que Ricardo lo pruebe en el teléfono (órbita, tamaño de las fichas, ritmo de las cosechas, sonidos, la pista).

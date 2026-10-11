@@ -156,8 +156,8 @@ existía"); una palabra que se va queda anotada ("se fue: brújula"). El toque c
   en las bandas 3-6. Detalle y referencias: `docs/medidas-juegos-estrella.md`. La pantalla final se desplaza.
 - Arte: `MeteorSprites` (roca con relieve y brasa en 4 formas y 5 colores, `HeatTrail` con o sin chispas, estrellas de la constelación; las rocas se hornean durante la cuenta regresiva), `ObservatorySprite`. Letra de las palabras: `UiFonts.Word` (Atkinson, SIL OFL, créditos en Ajustes → Licencias).
   Vista previa de diseño: `python tools/art-preview/meteoros.py` → `docs/previews/meteoros.png`.
-- Pendiente: licencia de SPALEX para uso comercial (Ricardo pidió permiso a los autores; se avanzó como si lo dieran);
-  que Ricardo revise la muestra de palabras e inventadas; probarlo en el teléfono.
+- Licencia de SPALEX: resuelta el 1-oct (CC BY 4.0, uso comercial con atribución; ver §8 y `docs/nombre-marca-y-riesgos.md`).
+- Pendiente: que Ricardo revise la muestra de palabras e inventadas; probarlo en el teléfono.
 
 
 ## Tutorial guiado, «Cómo se juega» y versión corta del inicio (3-oct, tarea 21a)

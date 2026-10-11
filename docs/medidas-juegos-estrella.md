@@ -276,8 +276,8 @@ personas, hasta tener datos propios. Los meteoros de la Lluvia de estrellas (pal
 ninguna medida. La marca para ver la evolución (`vocab`) es el promedio, ponderado por palabras vistas, del % reconocido
 en las bandas 3 a 6 (lo que de verdad distingue un vocabulario amplio); "mejor" = más alto.
 
-**Pendiente.** Licencia de SPALEX para uso comercial: se pidió permiso a los autores; mientras tanto el léxico se arma
-con ella (`tools/lexico/meteoros.py`) y el plan B es una lista abierta de frecuencias.
+**Licencia de SPALEX: resuelta el 1-oct.** Los datos completos están en FigShare bajo CC BY 4.0, que permite el uso comercial con atribución (lo confirmó el autor, Prof. Duñabeitia; ver `docs/nombre-marca-y-riesgos.md`).
+La atribución está en la app (Ajustes → «Licencias y créditos») y, desde el 10-oct, cubre también a Cosecha de palabras y a En la punta de la lengua. El léxico se arma con ella (`tools/lexico/meteoros.py`); ya no hace falta el plan B (una lista abierta de frecuencias).
 
 Código: `Games/Meteoros/MeteorContract.cs` (reglas y medidas, con pruebas), `app/.../data/Vocabulary.kt` (lectura, con
 pruebas) y `GameResultScreen`.
@@ -344,6 +344,36 @@ dio Nubi se anotan ("Pistas de Nubi: N").
 
 Código: `Games/Cosecha/CosechaContract.cs` y `CosechaSession.cs` (reglas y medidas, con pruebas), `app/.../data/Harvest.kt` (lectura,
 con pruebas), rondas en `tools/cosecha/`.
+
+## La estrella intrusa (id `intrusa`): "Tu red de significados", "Las trampas", "¿Qué las une?" y "Tu atlas"
+
+**Qué es la tarea.** «¿Cuál no va?»: cada ronda muestra cinco estrellas-palabra y una es la intrusa; se toca la que no pertenece al grupo. Las reglas son de seis tipos de grupo, que las medidas reúnen en cuatro categorías (por tipo de cosa, para qué sirve,
+dónde está o de qué es, y trampas). Una **trampa** es una intrusa que va con una de las otras por lo que suele ir junto (correa con perro) aunque no sea del mismo tipo: hay que frenar la asociación y mirar el tipo.
+
+**De dónde sale cada medida.** Todas salen de UNA sola fuente (rondas vistas y aciertos por cada uno de los 6 tipos de grupo; `data/Atlas.kt`) y se dicen solo con el mínimo de rondas:
+- **Tu red de significados.** «11 de 14 rondas bien» (`Atlas.totals`). Marca para ver su evolución (`StarMeasures` `atlas`): el % de aciertos de la partida (`Atlas.mark`; más alto = mejor), comparable solo entre partidas de nivel parecido (`levelDependent`).
+- **Por categoría** (en el detalle). Una barra por categoría, solo con 3 rondas o más (`MIN_CATEGORY_ROUNDS`); la más baja se marca con TEXTO, nunca solo con color, y solo si hay dos o más categorías y no todas empatan.
+- **Las trampas.** Solo con 4 trampas o más (`MIN_TRAP_ROUNDS`) y si alguna engañó: «Las trampas te engañaron 3 de 8» y su lectura: «Es normal: solemos unir lo que suele ir junto. Truco: antes de tocar, pregúntate qué TIPO de cosa es cada una.»
+  Si ninguna engañó: «Resististe todas: separas bien lo que va junto de lo que es del mismo tipo.»
+- **¿Qué las une?** «Nombraste 3 de 5» (desde el nivel 3, si se jugó el bonus; ignorarlo no castiga).
+- **Rapidez.** Solo como dato secundario: «Mediana al tocar: 1,8 s» (mediana del tiempo hasta el toque en los aciertos), sin perfil de sesgo.
+- **Tu atlas.** Las láminas ganadas (regla → día), cuántas hoy y cuántas quedan por repasar (`Atlas.summary`). Es progreso del juego, no una medida de la persona.
+
+**Fuentes** (PubMed, 1-oct; `docs/diseno-estrella-intrusa.md` §2):
+- Mirman, Landrigan y Britt (2017), *Psychological Bulletin*, 143, 499–520: dos sistemas de significado, por tipo de cosa (taxonómico) y por lo que va junto (temático). Es la base de la medida y del «¿Por qué importa?» del final. doi:10.1037/bul0000092
+- Mirman y Graziano (2012), *Journal of Experimental Psychology: General*, 141, 601–609: ambos sistemas se activan solos al leer una palabra y las personas difieren en cuál pesa más. doi:10.1037/a0026451
+- Geller, Landrigan y Mirman (2019), *Journal of Cognition*, 2, 6: las relaciones débiles piden más esfuerzo de control (tiempos, errores y pupila). Es la palanca de dificultad: intrusas cada vez más cercanas y trampas que hay que frenar. doi:10.5334/joc.56
+- Hebart et al. (2020), *Nature Human Behaviour*, 4, 1173–1185: elegir «el que no va» entre varios objetos revela dimensiones estables y medibles del significado. doi:10.1038/s41562-020-00951-3
+- Verhaeghen (2003), *Psychology and Aging*, 18, 332–339: el vocabulario y el conocimiento semántico mejoran con la edad (metaanálisis de 324 comparaciones, ventaja de 0,8 DE para mayores). Es el juego donde los mayores brillan, y se dice sin prometer nada de salud. doi:10.1037/0882-7974.18.2.332
+
+**Qué NO se dice.** No se etiqueta a la persona («de pensamiento temático» o «taxonómico»): las personas difieren en cuál sistema pesa más, pero eso no se infiere de una partida. No se compara con otras personas ni con estudios (las figuras y las rondas son propias, no copiadas
+de pruebas como Semejanzas), no se promete nada de salud y la rapidez no arma ningún perfil. Una categoría con menos de 3 rondas no se muestra, y con menos de 4 trampas no se dice nada de ellas.
+
+**Final con sentido (10-oct, Tarea 77; [`finales-con-sentido.md`](finales-con-sentido.md), grupo 4).** Cifra «11 de 14» con «rondas bien»; UN dato tuyo: «Las trampas te engañaron 2 de 4» (si no hubo, «¿Qué las une? Nombraste 3 de 5» y, si tampoco, la mediana al tocar);
+«Tu avance» en % con tolerancia de «parejo» de 10 puntos; truco condicional `Atlas.trapReading` si alguna trampa engañó (si no, el general: «Antes de tocar, pregúntate qué TIPO de cosa es cada una.»); «¿Por qué importa?» con la fuente Mirman, Landrigan y Britt, 2017.
+El detalle de siempre (barras por tipo, trampas, «¿Qué las une?», atlas y la nota) va detrás de «Ver el detalle de tu partida».
+
+Código: `Games/Intrusa/` (reglas y medidas, con pruebas), `app/.../data/Atlas.kt` y `FigureBank.kt` (lectura y banco de figuras, con pruebas) y `FinalModels.intrusa`.
 
 ## Rastro de luz: "Tu rastro" y "Por modo"
 
@@ -589,3 +619,9 @@ se nombran enfermedades; al pie va la nota común «No es un diagnóstico» y «
   - Stark, S. M., y Stark, C. E. L. (2017). Age-related deficits in the mnemonic similarity task for objects and scenes. *Behavioural Brain Research*, 333, 109–117: https://doi.org/10.1016/j.bbr.2017.06.049
   - Stark, S. M., et al. (2015). Distinguir lo visto de algo muy parecido depende del hipocampo. *Behavioral Neuroscience*: https://doi.org/10.1037/bne0000055
   - Davidson, et al. (2019). Parte de la dificultad con objetos parecidos, en mayores, es de la vista. *Journals of Gerontology B*: https://doi.org/10.1093/geronb/gby130
+- Para La estrella intrusa (autor, año y para qué se usa; los DOI son los de `docs/diseno-estrella-intrusa.md` §2):
+  - Mirman, Landrigan y Britt (2017), dos sistemas de significado (por tipo de cosa y por lo que va junto): https://doi.org/10.1037/bul0000092
+  - Mirman y Graziano (2012), ambos sistemas se activan solos y se difiere en cuál pesa más: https://doi.org/10.1037/a0026451
+  - Geller, Landrigan y Mirman (2019), las relaciones débiles piden más control: es la palanca de dificultad: https://doi.org/10.5334/joc.56
+  - Hebart et al. (2020), «el que no va» revela dimensiones estables del significado: https://doi.org/10.1038/s41562-020-00951-3
+  - Verhaeghen (2003), el vocabulario y el conocimiento semántico mejoran con la edad: https://doi.org/10.1037/0882-7974.18.2.332

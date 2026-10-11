@@ -31,7 +31,8 @@ private val Body = Color(0xFFC7D0FF)
 /**
  * "Licencias y créditos" (Ajustes, 1-oct): lo que hay que citar de lo que no es nuestro. Texto suelto con títulos, sin
  * recuadros; los enlaces van como texto (no abren el navegador). Letra de 14 sp o más.
- * - SPALEX (datos de las palabras de Lluvia de meteoros): CC BY 4.0, con su atribución y el cambio que se le hizo.
+ * - SPALEX (datos de las palabras de Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua): CC BY 4.0, con su atribución y el cambio que se le hizo en cada juego.
+ * - Hunspell es_ES de LibreOffice (diccionario que sirvió para armar y filtrar esas palabras; solo al generar): GPL 3+, LGPL 3+ o MPL 1.1+, a elección (LICENSE.md del repositorio LibreOffice/dictionaries, carpeta es).
  * - Tipografías (Fredoka, Nunito, Atkinson Hyperlegible y Fraunces): SIL Open Font License 1.1, con los avisos de copyright de cada una y el texto completo de la licencia (desplegable; vive en `res/raw/ofl.txt`, no en un string).
  * - Unity (el motor de los juegos).
  */
@@ -59,20 +60,26 @@ fun LicensesContent(modifier: Modifier = Modifier) {
       color = Body, fontSize = 16.sp, lineHeight = 22.sp
     )
 
-    Section("Palabras de Lluvia de meteoros: SPALEX")
+    Section("Palabras de Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua: SPALEX")
     Para(
       "Aguasvivas, J. A., Carreiras, M., Brysbaert, M., Mandera, P., Keuleers, E. y Duñabeitia, J. A. (2018). " +
         "SPALEX: A Spanish Lexical Decision Database From a Massive Online Data Collection. Frontiers in Psychology, 9, 2156. " +
         "doi:10.3389/fpsyg.2018.02156"
     )
     Para("Datos bajo licencia CC BY 4.0 (creativecommons.org/licenses/by/4.0). Fuente: figshare.com/projects/SPALEX/29722")
-    Para("Cambios: se usaron para ordenar las palabras en bandas de dificultad en Lluvia de meteoros.")
-
-    Section("Palabras de Cosecha de palabras")
     Para(
-      "Las palabras de cada ronda salen de SPALEX (arriba) y sus formas verbales y plurales se generaron con el diccionario " +
-        "Hunspell es_ES de LibreOffice (licencias MPL 1.1, LGPL y GPL, a elección; documentfoundation.org). En la app solo van " +
-        "listas de palabras sueltas, no el diccionario."
+      "Cambios: en Lluvia de meteoros y en Cosecha de palabras se usaron para ordenar las palabras en bandas de dificultad. " +
+        "En En la punta de la lengua solo entran palabras que figuran en SPALEX, y su frecuencia de uso (que SPALEX incluye) decide en qué nivel va cada una."
+    )
+
+    Section("Diccionario: Hunspell es_ES de LibreOffice")
+    Para(
+      "En Cosecha de palabras, las palabras de cada ronda salen de SPALEX (arriba) y sus formas verbales y plurales se generaron con este diccionario. " +
+        "En Lluvia de meteoros y En la punta de la lengua el mismo diccionario sirvió para comprobar qué es una palabra de verdad."
+    )
+    Para(
+      "Hunspell es_ES, diccionario iniciado por Santiago Bosio (github.com/LibreOffice/dictionaries). Se distribuye con tres licencias a elección: " +
+        "GNU GPL 3 o posterior, GNU LGPL 3 o posterior, o MPL 1.1 o posterior. En la app solo van listas de palabras sueltas, no el diccionario."
     )
 
     Section("Tipografías")

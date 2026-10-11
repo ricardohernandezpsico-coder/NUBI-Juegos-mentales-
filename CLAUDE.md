@@ -67,7 +67,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StroopTelemetry` (salida común de casi todos; lleva `end_rating` y `peak_level`; `SequenceTelemetry` y `CardsTelemetry` llevan los mismos campos).
 - `Games/AdaptiveDifficulty.cs`: DDA común (up-down ponderado de Kaernbach hacia 80% de aciertos, 85% en mayores;
   ver `docs/DDA-comun.md`). Lo usan Tinta o Palabra (`Stroop/`),
-  «Carga exacta», «Engranajes», «En la punta de la lengua», **Rastro de luz** (escalera de 16 niveles), **Constelaciones** (18 etapas en 6 grupos) y **Correo Estelar** (10 etapas; cada encargo es un ensayo); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Rescate relámpago**, **Satélites** y **Freno de Emergencia** (solo la tarea de ir) una. Desde el 3-oct los 23 juegos usan el motor común. Fundamento: Levitt 1971 y Kaernbach 1991; el 80/85 % es decisión de diseño (`docs/DDA-comun.md`).
+  «Carga exacta», «Engranajes», «En la punta de la lengua», **Rastro de luz** (escalera de 16 niveles), **Constelaciones** (18 etapas en 6 grupos) y **Correo Estelar** (10 etapas; cada encargo es un ensayo); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Rescate relámpago**, **Satélites** y **Freno de Emergencia** (solo la tarea de ir) una. Desde el 3-oct los 18 juegos de la app usan el motor común. Fundamento: Levitt 1971 y Kaernbach 1991; el 80/85 % es decisión de diseño (`docs/DDA-comun.md`).
 - Cada juego: `XContract.cs` (reglas puras con pruebas) + `XGameController.cs` (UI construida por código). Los 7 del
   DDA común heredan de `Shared/GameControllerBase` y usan `Shared/GameHud`.
 - `Games/Shared/`: sello visual y piezas comunes — `NeuroStyle` (paleta de la app, `ClayText`, `ClayFrame`),
