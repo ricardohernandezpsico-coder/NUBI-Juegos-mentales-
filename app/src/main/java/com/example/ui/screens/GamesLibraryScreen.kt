@@ -328,7 +328,13 @@ internal fun GameSheet(
   var choice by remember(data.game.id) { mutableStateOf(selected) }
   var withClock by remember(data.game.id) { mutableStateOf(timed) }
   val reduceMotion = com.example.ui.components.rememberReduceMotion()
-  Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+  // `decorFitsSystemWindows = false` (Tarea 81): desde Android 15 la ventana de un diálogo ya va borde a borde, pero con el valor por defecto (true) los insets de las barras le llegan al contenido en CERO y `safeDrawing` no sirve de nada:
+  // en el Motorola (Android 16, navegación de 3 botones) la barra se dibujaba ENCIMA de «Jugar». Con false la ventana es borde a borde a propósito y Compose recibe los insets reales de las barras.
+  Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+    // Con `usePlatformDefaultWidth = false` Compose mide el contenido para TODA la pantalla, pero Android 15+ ajusta el marco de la ventana del diálogo DENTRO de las barras (`fitInsetsTypes`): la tarjeta se desbordaba y la barra tapaba «Jugar».
+    // Se hace la ventana borde a borde de verdad para que `safeDrawing` reciba los insets reales (barra de 3 botones o de gestos) y la tarjeta quede dentro de ellos.
+    val dialogWindow = (androidx.compose.ui.platform.LocalView.current.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+    SideEffect { dialogWindow?.let(::makeDialogWindowEdgeToEdge) }
     // La ventana ocupa toda la pantalla pero la tarjeta vive DENTRO de las barras del sistema (estado y navegación) con un margen (Tarea 73: en el Motorola «Jugar» caía bajo la barra de navegación).
     // Un toque fuera de la tarjeta la cierra (como antes); los toques sobre la tarjeta no.
     Box(
@@ -349,6 +355,21 @@ internal fun GameSheet(
           GameSheetContent(data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice, withClock) }, onClose = onDismiss, timed = withClock, onChooseTimed = { withClock = it })
         }
       }
+    }
+  }
+}
+
+/**
+ * Deja la ventana de un diálogo BORDE A BORDE (Tarea 81): sin `fitInsetsTypes` el sistema no la recorta dentro de las barras y el contenido recibe los insets reales por `WindowInsets.safeDrawing`.
+ * Antes de la API 30 no existe `fitInsetsTypes` y alcanza con `setDecorFitsSystemWindows(false)`.
+ */
+internal fun makeDialogWindowEdgeToEdge(window: android.view.Window) {
+  androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+  if (android.os.Build.VERSION.SDK_INT >= 30) {
+    val attrs = window.attributes
+    if (attrs.fitInsetsTypes != 0) {
+      attrs.fitInsetsTypes = 0
+      window.attributes = attrs
     }
   }
 }

@@ -70,3 +70,15 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
 ## Pruebas de datos de los juegos de Lenguaje (movido de CLAUDE.md el 9-oct)
 
 Python, `python -m unittest <módulo>` desde su carpeta: `tools/lexico` (11 pruebas, nombres propios de Lluvia de meteoros), `tools/punta` (16, banco de definiciones), `tools/frases` (32, ¿Verdad o disparate?) y `tools/cosecha` (17; ~70 s; `COSECHA_REGENERAR=1` reconstruye desde las fuentes).
+
+## Barras del sistema (insets): probar en el emulador, no con Roborazzi (Tarea 81, 11-oct)
+
+Roborazzi y Robolectric NO simulan los insets reales de las barras de Android (la de 3 botones, la de gestos, el recorte de la ventana de un diálogo): una pantalla puede verse perfecta ahí y quedar tapada en un teléfono. Todo lo que se ancle abajo (fichas, diálogos, botones fijos) se comprueba en una ventana real de Android 16 con el emulador del SDK (`medium_phone`, API 36, 1080×2400 a 420 dpi = 393 × 873 dp), SIN tocar el teléfono de Ricardo:
+
+1. `emulator -avd medium_phone -no-window -no-audio -no-snapshot -gpu swiftshader_indirect` (con WHPX arranca en un par de minutos; esperar `adb -s emulator-5554 shell getprop sys.boot_completed` = 1). Si aparece «System UI isn't responding», tocar «Wait».
+2. Navegación de 3 botones: `adb -s emulator-5554 shell cmd overlay enable-exclusive --category com.android.internal.systemui.navbar.threebutton` (gestos: `...navbar.gestural`; se confirma con `settings get secure navigation_mode`: 0 = 3 botones, 2 = gestos). Letra grande: `settings put system font_scale 1.3` (o 2.0) y volver a 1.0. Son ajustes del EMULADOR.
+3. `adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk` (el APK trae también arm64; el emulador x86_64 lo traduce). Siempre con `-s emulator-5554`: hay dos aparatos conectados.
+4. Navegar con `adb shell uiautomator dump` + `adb shell input tap` (el ayudante `tools/emulador_ui.py` hace `texts`, `tap "texto"`, `xy X Y` y `shot nombre.png`, y se niega a tocar nada que no sea un emulador) y sacar `adb exec-out screencap -p`. Para ver el marco real de una ventana: `adb shell dumpsys window windows` (buscar `Frames:` y `fitTypes=`).
+5. La ficha de un juego: pestaña Juegos → un área → un juego. «Jugar a tu medida» debe verse ENTERO por encima de la barra, con 3 botones, con gestos y con letra grande.
+
+Lo que se aprendió: `Frames: ...frame=[0,63][1079,2274]` con `Requested h=2399` era el síntoma (ventana recortada por las barras con contenido medido para toda la pantalla). Lo único que Roborazzi sí puede fijar es que el código pida la ventana borde a borde (`GameSheetEdgeToEdgeTest`). Capturas del emulador: `docs/previews/ficha-insets-antes-emulador.png` (la barra tapa «Jugar») y `docs/previews/ficha-insets-despues-emulador.png` (la tarjeta dentro de las barras).
