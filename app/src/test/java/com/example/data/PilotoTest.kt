@@ -76,4 +76,13 @@ class PilotoTest {
     assertEquals("mandos", mandos.key)
     assertFalse(mandos.lowerIsBetter)
   }
+
+  @Test
+  fun `los textos visibles de Piloto no hablan de multitarea ni de piloto automatico y dicen que las dos tareas van juntas`() {
+    val g = com.example.model.GameRegistry.getById("piloto")!!
+    val text = (g.subtitle + " " + g.instruction).lowercase()
+    for (bad in listOf("multitarea", "atención dividida", "atencion dividida", "piloto automático", "piloto automatico", "costo")) org.junit.Assert.assertFalse(bad, text.contains(bad))
+    assertEquals("Pilota y atrapa las señales de tu misión", g.subtitle)
+    assertTrue(g.instruction, g.instruction.contains("juntas desde el primer segundo"))
+  }
 }

@@ -102,14 +102,6 @@ object GameRegistry {
       iconEmoji = "🧩"
     ),
     GameDefinition(
-      id = "cosecha",
-      title = "Cosecha de palabras",
-      domain = DomainType.LENGUAJE,
-      subtitle = "Forma palabras y haz crecer tu huerto",
-      instruction = "Siete letras giran alrededor de un planeta. Toca letras en orden para formar palabras de 3 letras o más y toca «Sembrar»: cada palabra brota como una planta. Si usas las 7 letras, nace un árbol dorado. Si te atascas, Nubi te da una pista.",
-      iconEmoji = "🌱"
-    ),
-    GameDefinition(
       id = "intrusa",
       title = "La estrella intrusa",
       domain = DomainType.LENGUAJE,
@@ -170,8 +162,8 @@ object GameRegistry {
       id = "piloto",
       title = "Piloto Estelar",
       domain = DomainType.ATENCION,
-      subtitle = "Multitarea y atención dividida",
-      instruction = "Guía la nave por la ruta de luces con un pulgar y, con el otro dedo, atrapa solo las señales de tu misión. Empieza en piloto automático.",
+      subtitle = "Pilota y atrapa las señales de tu misión",
+      instruction = "Guía la nave por la ruta de luces con un pulgar y, con el otro dedo, atrapa solo las señales de tu misión. Las dos cosas van juntas desde el primer segundo; al empezar, la ruta es más fácil y las señales salen más espaciadas.",
       iconEmoji = "🚀"
     ),
     GameDefinition(
@@ -223,10 +215,12 @@ object GameRegistry {
    *    sus medidas guardadas (clave `recall`) quedan sin leerse.
    *  - `rumbo` (Rumbo a Casa, Memoria): retirado el 10-oct-2026 (docs/juegos/descartados.md): Ricardo lo probó con una persona de 60 años o más y no se entendía la mecánica. No tenía preferencias propias; sus medidas guardadas (clave `homing`) quedan sin leerse. El código de Unity
    *    (`Games/Rumbo/`) se conserva.
+   *  - `cosecha` (Cosecha de palabras, Lenguaje): retirado el 10-oct-2026 (docs/juegos/descartados.md): repetía a En la punta de la lengua (las dos arman palabras con letras), tenía la medida más débil de Lenguaje y es un género muy poblado.
+   *    No tenía preferencias propias; su medida guardada (clave `harvest`) queda sin leerse. El código de Unity (`Games/Cosecha/`) se conserva.
    */
   val retiredDomains: Map<String, DomainType> = mapOf(
     "cambiochip" to DomainType.ATENCION, "comparacion" to DomainType.ATENCION, "series" to DomainType.RAZONAMIENTO, "rutatesoro" to DomainType.MEMORIA,
-    "trafico" to DomainType.RAZONAMIENTO, "bitacora" to DomainType.MEMORIA, "rumbo" to DomainType.MEMORIA
+    "trafico" to DomainType.RAZONAMIENTO, "bitacora" to DomainType.MEMORIA, "rumbo" to DomainType.MEMORIA, "cosecha" to DomainType.LENGUAJE
   )
 
   fun isRetired(id: String): Boolean = id in retiredDomains
@@ -361,19 +355,6 @@ data class GamePlayResult(
   val svSubtleSeen: Int? = null,
   val svBestStreak: Int? = null,
   val svUnclear: List<String>? = null,
-  // Solo Cosecha de palabras: palabras de las 3 cosechas (sin las ocultas), de las comunes cuántas se encontraron y cuántas había,
-  // % de palabras en racimo (sin dato con menos de 10), palabras en los primeros y en los últimos 20 s (promedio de las cosechas),
-  // la palabra estrella encontrada, la más larga o rara, hasta 5 comunes que faltaron y las pistas usadas. No se guardan en Room.
-  val harvWords: Int? = null,
-  val harvCommonFound: Int? = null,
-  val harvCommonTotal: Int? = null,
-  val harvClusterPct: Int? = null,
-  val harvFirst20: Int? = null,
-  val harvLast20: Int? = null,
-  val harvStar: String? = null,
-  val harvBest: String? = null,
-  val harvMissed: List<String>? = null,
-  val harvHints: Int? = null,
   // Solo La estrella intrusa: rondas vistas y aciertos por tipo de grupo (6: amplia, vecina, uso, material/lugar/parte, trampa,
   // regla + trampa), mediana al tocar (ms), mejor racha, «¿Qué las une?» vistas y acertadas, y las reglas (claves) de las láminas
   // nuevas, las falladas, las repasadas y las ganadas con nombre propio. No se guardan en Room: el atlas va en Atlas.kt.

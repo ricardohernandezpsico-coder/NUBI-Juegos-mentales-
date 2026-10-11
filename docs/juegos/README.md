@@ -1,6 +1,6 @@
 # Juegos estrella — catálogo, orden y fichas
 
-> La tabla índice de los 18 juegos (id, área, carpeta, documento) está en `CLAUDE.md`. Aquí van las fichas técnicas de los juegos
+> La tabla índice de los 17 juegos (id, área, carpeta, documento) está en `CLAUDE.md`. Aquí van las fichas técnicas de los juegos
 > estrella que no tienen documento de diseño propio, y el texto de apertura de la antigua sección «Juegos estrella (27-sep)».
 
 Pedido de Ricardo: juegos que diferencien a la app, con respaldo científico y mucho enganche. Orden acordado:
@@ -24,7 +24,7 @@ Cada juego estrella lleva una MEDIDA PROPIA al final (lo que más le gustó a Ri
 - [Aterrizaje Lunar](../diseno-aterrizaje.md) (renovado el 10-oct: «la misma tarea, más grande, con más vida y un final con sentido»; la ficha vieja, como historia, en [aterrizaje.md](aterrizaje.md))
 - [Lluvia de meteoros](../diseno-lluvia-de-meteoros.md)
 - [¿Verdad o disparate?](../diseno-verdad-o-disparate.md)
-- [Cosecha de palabras](../diseno-cosecha-de-palabras.md)
+- [Cosecha de palabras](../diseno-cosecha-de-palabras.md) (RETIRADA el 10-oct-2026: ver [descartados.md](descartados.md); la ficha queda como historia)
 - [La estrella intrusa](../diseno-estrella-intrusa.md)
 - [Acoplamiento](../diseno-acoplamiento.md) (renovado el 10-oct: «muelle de acoplamiento»; la ficha vieja, como historia, en [acoplamiento.md](acoplamiento.md))
 - [Engranajes](../diseno-engranajes.md)

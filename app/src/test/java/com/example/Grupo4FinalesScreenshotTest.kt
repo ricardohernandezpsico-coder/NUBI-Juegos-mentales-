@@ -34,7 +34,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Los finales con sentido del grupo 4 de la Etapa 3 (Lenguaje; `docs/finales-con-sentido.md`): En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras y La estrella intrusa. Cada uno, en el orden de la plantilla: lo que hiciste
+ * Los finales con sentido del grupo 4 de la Etapa 3 (Lenguaje; `docs/finales-con-sentido.md`): En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate? y La estrella intrusa (Cosecha de palabras salió de la app el 10-oct, Tarea 80). Cada uno, en el orden de la plantilla: lo que hiciste
  * con UN dato tuyo, tu avance (hoy, tu promedio y tu mejor, con su frase), el truco, el botón «Ver el detalle de tu partida» (cerrado) y, abajo y en chico, «¿Por qué importa?». Capturas `*-final-sentido-*.png`.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -51,7 +51,6 @@ class Grupo4FinalesScreenshotTest {
   private val punta = base("anagramas") { copy(puntaSolo = 5, puntaPista = 2, puntaLetras = 0, puntaVista = 1, puntaMs = 6500, puntaWords = listOf(PuntaEntry("luna", PuntaTier.SOLO), PuntaEntry("barco", PuntaTier.PISTA), PuntaEntry("nube", PuntaTier.VISTA))) }
   private val meteoros = base("meteoros") { copy(lexBandSeen = listOf(8, 8, 8, 8, 8, 8), lexBandHits = listOf(8, 8, 7, 6, 5, 3), lexFaSeen = listOf(7, 7, 7), lexFaHits = listOf(0, 1, 2), lexRtCommonMs = 700, lexRtRareMs = 1100, lexRareWords = listOf("alcayata", "badil")) }
   private val disparate = base("disparate") { copy(svSeenType = listOf(8, 8, 8, 8, 8, 8), svRtType = listOf(900, 950, 1300, 1500, 1100, 1000), svWpm = 142, svSubtleHits = 6, svSubtleSeen = 8, svBestStreak = 14) }
-  private val cosecha = base("cosecha") { copy(harvWords = 34, harvCommonFound = 21, harvCommonTotal = 48, harvClusterPct = 75, harvFirst20 = 12, harvLast20 = 6, harvStar = "mariposa", harvBest = "mariposa", harvMissed = listOf("saciar", "acosar"), harvHints = 1) }
   private val intrusa = base("intrusa") { copy(intrSeenType = listOf(3, 3, 2, 2, 2, 2), intrHitsType = listOf(3, 2, 2, 2, 1, 1), intrBonusSeen = 5, intrBonusHits = 3, intrRtMs = 1800) }
 
   private fun show(result: GamePlayResult, measures: List<MeasurePoint>) {
@@ -99,27 +98,10 @@ class Grupo4FinalesScreenshotTest {
   }
 
   @Test
-  fun final_de_cosecha_con_sentido() {
-    show(cosecha, points("harvest", 40f, 44f, 50f))
-    composeTestRule.onNodeWithTag("meaningful_result").assertExists()
-    capture("cosecha-final-sentido")
-  }
-
-  @Test
   fun final_de_intrusa_con_sentido() {
     show(intrusa, points("atlas", 70f, 75f, 80f))
     composeTestRule.onNodeWithTag("meaningful_result").assertExists()
     capture("intrusa-final-sentido")
-  }
-
-  @Test
-  fun el_detalle_de_meteoros_y_de_cosecha_conserva_lo_que_mostraban_antes() {
-    show(cosecha, points("harvest", 40f, 44f, 50f))
-    composeTestRule.onNodeWithTag("detail_content").assertDoesNotExist()
-    composeTestRule.onNodeWithTag("detail_toggle").performScrollTo().performClick()
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag("cosecha_missed").performScrollTo().assertExists()
-    capture("cosecha-final-sentido-detalle", pages = 4)
   }
 
   private fun assertNoRepeatedHits(result: GamePlayResult, measures: List<MeasurePoint>) {
@@ -136,9 +118,6 @@ class Grupo4FinalesScreenshotTest {
 
   @Test
   fun la_fila_comun_de_disparate_ya_no_repite_los_aciertos() = assertNoRepeatedHits(disparate, points("wpm", 140f))
-
-  @Test
-  fun la_fila_comun_de_cosecha_ya_no_repite_los_aciertos() = assertNoRepeatedHits(cosecha, points("harvest", 40f))
 
   @Test
   fun la_fila_comun_de_intrusa_ya_no_repite_los_aciertos() = assertNoRepeatedHits(intrusa, points("atlas", 70f))

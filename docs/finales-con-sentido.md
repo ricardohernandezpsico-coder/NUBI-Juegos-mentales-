@@ -1,6 +1,8 @@
-# Finales con sentido: los 18 juegos (Etapa 3)
+# Finales con sentido: los 18 juegos (Etapa 3; 17 desde el retiro de Cosecha)
 
 **Aprobado por Ricardo el 10-oct-2026, sin cambios.** Boceto: https://claude.ai/artifact/GrXqcMScgaY3rVG7L8Qrox
+
+> **Desde el 10-oct (Tarea 80) son 17:** Cosecha de palabras (fila 17 de la tabla y su parte del grupo 4) se retiró de la app. Su final se quitó del código (`FinalModels.cosecha`, su tolerancia de 5 puntos y su prueba); sus filas de abajo quedan solo como historia. Ver `docs/juegos/descartados.md`.
 
 ## Orden del final, para todos los juegos
 

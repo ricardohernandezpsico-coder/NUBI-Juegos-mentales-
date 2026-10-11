@@ -426,44 +426,6 @@ fun GameResultScreen(
     }
 
     // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
-    if (result.gameId == "cosecha" && usesMeaningfulResult) {
-      Spacer(Modifier.height(18.dp))
-      val harv = com.example.data.Harvest
-      val model = remember(result, starMeasures) { FinalModels.cosecha(result, starMeasures) }
-      val harvWords = harv.words(result.harvWords) ?: 0
-      MeaningfulResult(model, detail = {
-        DetailLine(harv.spoken(harvWords, result.harvCommonFound, result.harvCommonTotal).replaceFirstChar { it.uppercase() }, "cosecha_total", strong = true)
-        harv.clusterPct(result.harvClusterPct)?.let { pct ->
-          Spacer(Modifier.height(14.dp))
-          Text("Tu manera de buscar", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-          Column(Modifier.fillMaxWidth().padding(horizontal = 34.dp, vertical = 6.dp)) {
-            HarvestSplitBar(pct, Modifier.fillMaxWidth().height(14.dp))
-            Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-              Text(harv.clusterLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-              Text(harv.jumpLabel(pct), color = Clay.Cream, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-          }
-          harv.searchLine(pct)?.takeIf { it != model.trick }?.let {
-            Text(it, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp))
-          }
-        }
-        val first = result.harvFirst20
-        val last = result.harvLast20
-        harv.rhythmLine(first, last)?.let { line ->
-          Spacer(Modifier.height(14.dp))
-          Text("Tu ritmo", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
-          Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 6.dp)) {
-            HarvestRhythmRow("Primeros 20 s", first ?: 0, harv.barFraction(first ?: 0, last ?: 0), Clay.Grape, Modifier.fillMaxWidth().padding(vertical = 3.dp))
-            HarvestRhythmRow("Últimos 20 s", last ?: 0, harv.barFraction(last ?: 0, first ?: 0), Clay.Sky, Modifier.fillMaxWidth().padding(vertical = 3.dp))
-          }
-          if (line != model.dataLine) Text(line, color = Clay.Cream, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
-        }
-        harv.missedLine(result.harvMissed)?.let { DetailLine(it, "cosecha_missed", soft = false) }
-        result.harvHints?.takeIf { it > 0 }?.let { DetailLine("Pistas de Nubi: $it", "cosecha_hints") }
-      })
-    }
-
-    // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
     if (result.gameId == "intrusa" && usesMeaningfulResult) {
       Spacer(Modifier.height(18.dp))
       val atlasLogic = com.example.data.Atlas
@@ -1227,40 +1189,6 @@ private fun ReadingBar(row: com.example.data.Reading.TypeRow, fraction: Float, m
   }
 }
 
-
-// ---------- Cosecha de palabras: "tu manera de buscar" y "tu ritmo" ----------
-
-/**
- * Barra partida de "tu manera de buscar": a la izquierda los racimos (lila), a la derecha los saltos (celeste), con una marca de
- * tinta en el corte. Los porcentajes van siempre escritos debajo: el color solo acompaña.
- */
-@Composable
-private fun HarvestSplitBar(clusterPct: Int, modifier: Modifier = Modifier) {
-  Canvas(modifier) {
-    val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
-    drawRoundRect(Clay.Sky, cornerRadius = r)
-    val cut = size.width * clusterPct.coerceIn(0, 100) / 100f
-    if (cut > 0f) drawRoundRect(Clay.Grape, size = androidx.compose.ui.geometry.Size(maxOf(cut, size.height), size.height), cornerRadius = r)
-    if (clusterPct in 1..99) drawLine(Color(0xFF1A1240), Offset(cut, -2f), Offset(cut, size.height + 2f), 2.5f)
-  }
-}
-
-/** Una fila de "tu ritmo": el tramo a la izquierda, una barra y las palabras a la derecha (el número siempre escrito). */
-@Composable
-private fun HarvestRhythmRow(label: String, count: Int, fraction: Float, color: Color, modifier: Modifier = Modifier) {
-  Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-    Text(label, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(118.dp), softWrap = false)
-    Canvas(Modifier.weight(1f).height(11.dp)) {
-      val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
-      drawRoundRect(Color(0x33FFFFFF), cornerRadius = r)
-      drawRoundRect(color, size = androidx.compose.ui.geometry.Size(maxOf(size.height, size.width * fraction), size.height), cornerRadius = r)
-    }
-    Text(
-      text = "$count ${com.example.data.Harvest.wordsLabel(count)}", color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.Bold,
-      textAlign = TextAlign.End, softWrap = false, modifier = Modifier.width(104.dp)
-    )
-  }
-}
 
 // ---------- La estrella intrusa: "tu red de significados" ----------
 

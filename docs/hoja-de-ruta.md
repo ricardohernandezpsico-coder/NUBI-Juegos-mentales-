@@ -9,14 +9,14 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 
 ## Dónde estamos (8-oct)
 
-18 juegos en 4 áreas. TODOS tienen tutorial guiado (`UnityGameLauncher.TUTORIAL_GAMES`): Acoplamiento lo recibió en la Tarea 68 y Rumbo a Casa, el único que faltaba, se retiró en la 69 (10-oct). Los retirados están en `docs/juegos/descartados.md`.
+17 juegos en 4 áreas (Cosecha de palabras se retiró el 10-oct, Tarea 80). TODOS tienen tutorial guiado (`UnityGameLauncher.TUTORIAL_GAMES`): Acoplamiento lo recibió en la Tarea 68 y Rumbo a Casa, el único que faltaba, se retiró en la 69 (10-oct). Los retirados están en `docs/juegos/descartados.md`.
 
 | Área | Juegos |
 |---|---|
 | Memoria | Constelaciones, Rastro de luz, Bodega de carga, Correo Estelar («La estación de correo») |
 | Atención | Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites, Rescate relámpago (antes Radar) |
 | Razonamiento | Acoplamiento, Carga exacta, Aterrizaje Lunar, Engranajes («Taller de reparación») |
-| Lenguaje | En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras, La estrella intrusa |
+| Lenguaje | En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, La estrella intrusa |
 
 ## Etapa 0 — Limpiar y destrabar
 
@@ -52,7 +52,8 @@ Cada juego sale con su tutorial (Freno ya lo tenía; los otros tres lo reciben a
 
 ## Etapa 3 — Avance de fondo
 
-- **Finales con sentido en los 18 juegos — Hecho (Tarea 77, 10-oct)**: lo que hiciste con UN dato tuyo, tu avance solo contigo (hoy, tu promedio y tu mejor, con su frase), el truco y «¿Por qué importa?» con su fuente de PubMed; el detalle de siempre va detrás de «Ver el detalle de tu partida» (`docs/finales-con-sentido.md`).
+- **Finales con sentido en los juegos de la app (18 entonces; 17 desde el retiro de Cosecha) — Hecho (Tarea 77, 10-oct)**: lo que hiciste con UN dato tuyo, tu avance solo contigo (hoy, tu promedio y tu mejor, con su frase), el truco y «¿Por qué importa?» con su fuente de PubMed; el detalle de siempre va detrás de «Ver el detalle de tu partida» (`docs/finales-con-sentido.md`).
+- **Cosecha de palabras retirada y textos de Piloto — Hecho (Tarea 80, 10-oct)**: Ricardo decidió «quitemos cosecha; dejemos piloto». Cosecha repetía a En la punta de la lengua y tenía la medida más débil de Lenguaje (`docs/juegos/descartados.md`); la app queda en 17 juegos y Lenguaje en 4. Piloto Estelar se queda y sus textos visibles se corrigieron (ya no dicen «multitarea», «atención dividida» ni «piloto automático»: las dos tareas van juntas desde el primer segundo, regla permanente 1). Más adelante podría hacerse otra modificación de Piloto para no tener conflictos con patentes (idea de Ricardo, sin fecha).
 - **Avance**: dos números visibles, logros por conducta (lo que la persona hace, no cuánto rinde), meta semanal como número principal y racha que perdona.
 - Revisar los juegos del Primer vuelo (y de la evaluación inicial) y el re-chequeo mensual del punto de partida.
 - Marcas ✓/✗ de arcilla sobre las respuestas: el ✗ en aspa diagonal, no en cruz (`docs/simbolos-neutros.md`).
@@ -62,6 +63,7 @@ Cada juego sale con su tutorial (Freno ya lo tenía; los otros tres lo reciben a
 Solo cuando la app esté casi lista.
 
 - **Abogado y especialista en lanzamiento.**
+- **EsPal, pendiente de consulta (decisión de Ricardo, 10-oct):** la frecuencia de uso que trae SPALEX y que En la punta de la lengua usa para el nivel de cada palabra viene de EsPal, y sus términos de uso no están confirmados. Ya se cita por cortesía en «Licencias y créditos» (sin ninguna licencia escrita); antes de publicar hay que consultar a los autores o al abogado, o sacar esa dependencia (`docs/nombre-marca-y-riesgos.md`, «Licencias de terceros»).
 - **Marca**: búsqueda oficial (clases 9 y 41) y `applicationId` propio (cambiarlo después = app nueva).
 - **Ficha de la tienda sin promesas de salud.** Declaración de salud de Google Play («Mental Acuity»); privacidad y seguridad de datos.
 - Página «La ciencia de Nubi» (qué mide cada medida y qué no).

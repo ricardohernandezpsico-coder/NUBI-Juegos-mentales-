@@ -32,6 +32,7 @@ private val Body = Color(0xFFC7D0FF)
  * "Licencias y créditos" (Ajustes, 1-oct): lo que hay que citar de lo que no es nuestro. Texto suelto con títulos, sin
  * recuadros; los enlaces van como texto (no abren el navegador). Letra de 14 sp o más.
  * - SPALEX (datos de las palabras de Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua): CC BY 4.0, con su atribución y el cambio que se le hizo en cada juego.
+ * - EsPal (Duchon et al., 2013): la frecuencia de uso que trae SPALEX y que En la punta de la lengua usa para el nivel de cada palabra. Se CITA por cortesía (decisión de Ricardo, Tarea 80); su licencia propia NO está confirmada y no se escribe ninguna (consulta a los autores o al abogado pendiente antes de publicar).
  * - Hunspell es_ES de LibreOffice (diccionario que sirvió para armar y filtrar esas palabras; solo al generar): GPL 3+, LGPL 3+ o MPL 1.1+, a elección (LICENSE.md del repositorio LibreOffice/dictionaries, carpeta es).
  * - Tipografías (Fredoka, Nunito, Atkinson Hyperlegible y Fraunces): SIL Open Font License 1.1, con los avisos de copyright de cada una y el texto completo de la licencia (desplegable; vive en `res/raw/ofl.txt`, no en un string).
  * - Unity (el motor de los juegos).
@@ -70,6 +71,10 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     Para(
       "Cambios: en Lluvia de meteoros y en Cosecha de palabras se usaron para ordenar las palabras en bandas de dificultad. " +
         "En En la punta de la lengua solo entran palabras que figuran en SPALEX, y su frecuencia de uso (que SPALEX incluye) decide en qué nivel va cada una."
+    )
+    Para(
+      "Esa frecuencia de uso es la de EsPal y llega a la app a través de SPALEX: Duchon, A., Perea, M., Sebastián-Gallés, N., Martí, A. y Carreiras, M. (2013). " +
+        "EsPal: One-stop shopping for Spanish word properties. Behavior Research Methods, 45, 1246-1258."
     )
 
     Section("Diccionario: Hunspell es_ES de LibreOffice")

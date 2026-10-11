@@ -567,7 +567,6 @@ class NeuroVidaRepository(
       "satelites" -> "tracking" to r.trackingCapacity
       "aterrizaje" -> "numline" to r.numlineErrorPct
       "disparate" -> "wpm" to Reading.mark(r.svWpm)
-      "cosecha" -> "harvest" to Harvest.mark(r.harvCommonFound, r.harvCommonTotal)
       "intrusa" -> "atlas" to Atlas.mark(r.intrSeenType, r.intrHitsType)
       "anagramas" -> "punta" to Punta.mark(r.puntaSolo, Punta.total(r.puntaSolo, r.puntaPista, r.puntaLetras, r.puntaVista))
       "calculo" -> "carga" to Carga.mark(r.cargaAlone, r.totalTrials)

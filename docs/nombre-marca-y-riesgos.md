@@ -267,12 +267,12 @@ animaciones" (el haz queda quieto) y el sonido apagado; texto de estado corto y 
 ### Licencias de terceros (1-oct)
 
 - **SPALEX** (palabras de Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua): CC BY 4.0, uso comercial permitido con atribución (confirmado por el autor,
-  Prof. Duñabeitia, 1-oct; datos oficiales en FigShare). Atribución en Ajustes → "Licencias y créditos" (desde el 10-oct, Tarea 79, cubre los tres juegos y el cambio hecho en cada uno).
+  Prof. Duñabeitia, 1-oct; datos oficiales en FigShare). Atribución en Ajustes → "Licencias y créditos" (desde el 10-oct, Tarea 79, cubre los tres juegos y el cambio hecho en cada uno). Cosecha de palabras se retiró de la app el 10-oct (Tarea 80), pero su archivo de palabras (`cosecha_es.json`) y la tipografía de sus letras siguen dentro del paquete de Unity: los créditos se mantienen mientras estén ahí.
 - **Hunspell es_ES de LibreOffice** (solo al GENERAR las palabras; no va en la app): triple licencia disjunta a elección, GPL 3 o posterior, LGPL 3 o posterior o MPL 1.1 o posterior
   (`LICENSE.md` y `README_hunspell_es.txt` de github.com/LibreOffice/dictionaries, carpeta `es`; confirmado el 10-oct, Tarea 79; la copia local es la misma: 58.221 entradas). No exige crédito; se cita igual.
   Los otros diccionarios Hunspell que `tools/lexico/meteoros.py` lee para descartar inventadas que sean palabra real en otro idioma (en_US, it_IT, pt_PT y pt_BR) tampoco van en la app; su licencia NO se verificó.
 - **EsPal** (la frecuencia «zipf» que trae SPALEX, columna `EsPal_written_Zipf`, y que En la punta de la lengua usa para el nivel de cada palabra; Duchon, Perea, Sebastián-Gallés, Martí y Carreiras, 2013, *Behavior Research Methods*, 45, 1246–1258):
-  términos de uso NO confirmados (su sitio, bcbl.eu/databases/espal, no declara licencia ni uso comercial). **Pendiente** de decidir con Ricardo o el abogado.
+  términos de uso NO confirmados (su sitio, bcbl.eu/databases/espal, no declara licencia ni uso comercial). Decisión de Ricardo (10-oct, Tarea 80): se CITA por cortesía en «Licencias y créditos» (la referencia completa, aclarando que la frecuencia llega por SPALEX y para qué la usa Punta), SIN escribir ninguna licencia; y consultar a los autores o al abogado queda **PENDIENTE antes de publicar** (lista de abajo y Etapa 4 de `docs/hoja-de-ruta.md`).
 - **Fredoka y Nunito**: SIL Open Font License 1.1 (aviso en la misma pantalla). **Unity**: aviso "Hecho con Unity".
 
 ### Piloto Estelar — riesgo bajo; sin retoque, con reglas
@@ -315,7 +315,7 @@ internos, como referencia científica, sí.
 **Lista para el abogado** (cuando llegue el momento de publicar): el nombre elegido; Radar rediseñado; el costo
 de multitarea de Piloto (ya quitado, Tarea 61); los equivalentes de las patentes de Nike frente a Rescate relámpago; el sistema de avance (Desafío → Experto) frente a US 10,559,221; y (3-oct) **el inicio completo («Primer vuelo con Nubi»)
 frente al de Lumosity**: orden de pasos, preguntas, tarjetas y barra de avance, antes de publicar (la pregunta del ánimo y la tarjeta «X puso a prueba tu Y» ya se cambiaron
-por otras propias: «¿qué te sirve más ver primero?» y «Acabas de usar tu…»).
+por otras propias: «¿qué te sirve más ver primero?» y «Acabas de usar tu…»). Y (10-oct, Tarea 79 y 80) **EsPal**: la frecuencia «zipf» que trae SPALEX y que En la punta de la lengua usa para el nivel de cada palabra; sus términos de uso no están confirmados, así que hay que consultar a los autores (Duchon, Perea, Sebastián-Gallés, Martí y Carreiras, 2013) o al abogado antes de publicar (ver «Licencias de terceros»).
 
 ## 6. Publicidad y textos: la lección de Lumosity
 

@@ -98,12 +98,12 @@ class RetiredRumboTest {
   }
 
   @Test
-  fun `el registro queda con 18 juegos, Memoria con 4, y el id retirado reservado`() {
+  fun `el registro queda con 17 juegos, Memoria con 4, y el id retirado reservado`() {
     assertNull(GameRegistry.getById(old))
     assertFalse(GameRegistry.allGames.any { it.id == old })
     assertTrue(GameRegistry.isRetired(old))
     assertEquals("MEMORIA", GameRegistry.retiredDomains[old]!!.name)
-    assertEquals(18, GameRegistry.allGames.size)
+    assertEquals(17, GameRegistry.allGames.size)
     assertEquals(setOf("parejas", "secuencia", "bodega", "correo"), GameRegistry.allGames.filter { it.domain.name == "MEMORIA" }.map { it.id }.toSet())
     assertNull("ya no hay medida de Rumbo", StarMeasures.defForGame(old))
     assertNull(StarMeasures.def("homing"))
@@ -132,9 +132,9 @@ class RetiredRumboTest {
     assertNotNull(runBlocking { db().gameProgressDao().getProgressForGameSync(old) })
     assertTrue("la medida guardada sigue ahí (va en el respaldo)", app.getSharedPreferences("star_measures", android.content.Context.MODE_PRIVATE).getString("points", "")!!.contains("homing"))
     // pero no aparece en lo que muestra la app
-    assertEquals(18, vm.gameRanks.value.size)
+    assertEquals(17, vm.gameRanks.value.size)
     assertTrue(vm.gameRanks.value.none { it.gameId == old })
-    assertEquals(18, vm.gameLevelsForProgress.value.size)
+    assertEquals(17, vm.gameLevelsForProgress.value.size)
     assertFalse(vm.gameLevelsForProgress.value.containsKey(old))
     assertTrue("sin medidas de Rumbo en Avance", StarMeasures.discover(vm.starMeasures.value, System.currentTimeMillis()) == null)
     // no se puede abrir, ni desde Juegos ni desde las herramientas

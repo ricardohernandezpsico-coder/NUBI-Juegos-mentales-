@@ -3,7 +3,7 @@ package com.example.data
 import kotlin.math.roundToInt
 
 /**
- * «Finales con sentido» (Etapa 3, aprobados por Ricardo el 10-oct-2026; especificación y textos EXACTOS de los 18 juegos: `docs/finales-con-sentido.md`): la plantilla de Aterrizaje Lunar llevada a los demás juegos.
+ * «Finales con sentido» (Etapa 3, aprobados por Ricardo el 10-oct-2026; especificación y textos EXACTOS de los juegos de la app (17 desde el retiro de Cosecha, el 10-oct): `docs/finales-con-sentido.md`): la plantilla de Aterrizaje Lunar llevada a los demás juegos.
  * Cada final, en este orden: (1) lo que hiciste, con la medida propia del juego y UN dato tuyo; (2) tu avance, solo contigo (hoy, tu promedio y tu mejor, más una frase); (3) un truco para la próxima (el condicional del juego si aplica a
  * la partida y, si no, el general de la tabla); (4) abajo, en chico, «¿Por qué importa?» con su fuente y la nota común. El detalle que antes se veía (barras, listas, desgloses) va detrás de «Ver el detalle de tu partida», cerrado por defecto.
  * Lógica pura con pruebas. Nunca percentiles, comparación con otras personas ni promesas de salud.
@@ -67,8 +67,6 @@ object FinalesConSentido {
       "El vocabulario suele mantenerse, e incluso crecer, con los años.", "Verhaeghen, 2003"),
     Copy("disparate", "Comprender frases rápido y decidir si son ciertas.", "Con un «no», lee la frase sin él y después dale la vuelta.",
       "Las frases con «no» piden más esfuerzo que las afirmativas, a todas las personas. Entenderlas bien es parte de leer con atención.", "Xiang, Kramer y Nordmeyer, 2020"),
-    Copy("cosecha", "Sacar palabras de la memoria con rapidez.", "Cuando una palabra funciona, busca sus parientes; si se agotan, salta a otra letra inicial.",
-      "Para encontrar palabras usamos dos caminos: agrupar parecidas y saltar a otro grupo cuando se agotan.", "Troyer, Moscovitch y Winocur, 1997"),
     Copy("intrusa", "Ordenar significados sin dejarte llevar por lo que suele ir junto.", "Antes de tocar, pregúntate qué TIPO de cosa es cada una.",
       "Ordenamos lo que sabemos de dos maneras: por tipo de cosa (perro, oso) y por lo que suele ir junto (perro, correa).", "Mirman, Landrigan y Britt, 2017")
   )

@@ -66,10 +66,17 @@ class LicensesScreenshotTest {
       "Aguasvivas, J. A., Carreiras, M., Brysbaert, M., Mandera, P., Keuleers, E. y Duñabeitia, J. A. (2018)",
       "CC BY 4.0",
       "En En la punta de la lengua solo entran palabras que figuran en SPALEX",
+      "Esa frecuencia de uso es la de EsPal y llega a la app a través de SPALEX",
+      "Duchon, A., Perea, M., Sebastián-Gallés, N., Martí, A. y Carreiras, M. (2013)",
+      "EsPal: One-stop shopping for Spanish word properties. Behavior Research Methods, 45, 1246-1258",
       "Diccionario: Hunspell es_ES de LibreOffice",
       "GNU GPL 3 o posterior, GNU LGPL 3 o posterior, o MPL 1.1 o posterior",
       "no el diccionario"
     )) assertTrue("falta en los créditos: $t", shown(t))
+    // de EsPal SOLO se cita: ninguna licencia que no esté confirmada (decisión de Ricardo, Tarea 80)
+    val espal = composeTestRule.onAllNodesWithText("Esa frecuencia de uso es la de EsPal", substring = true).fetchSemanticsNodes().single()
+      .config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }.lowercase()
+    for (claim in listOf("licencia", "cc by", "gpl", "mpl", "libre", "gratis", "permiso")) assertTrue("EsPal no lleva «$claim»", !espal.contains(claim))
     // la licencia vieja, imprecisa, ya no está
     assertTrue(!shown("licencias MPL 1.1, LGPL y GPL"))
   }

@@ -112,6 +112,7 @@ class BackupRulesTest {
       val prefs = includes(text, "sharedpref")
       for (name in listOf("star_measures.xml", "skill.xml", "progress_log.xml", "league_events.xml", "achievements.xml")) assertTrue(name, prefs.contains(name))
       assertTrue("Rumbo nunca tuvo un archivo propio de preferencias", prefs.none { it.contains("rumbo") })
+      assertTrue("Cosecha de palabras tampoco: su medida (harvest) vive en star_measures", prefs.none { it.contains("cosecha") || it.contains("harvest") })
     }
   }
 

@@ -2,7 +2,7 @@
 
 Estado: implementado en Unity el 24-sep-2026 (`Assets/Scripts/Games/AdaptiveDifficulty.cs`), conectado a
 Stroop, «Carga exacta» (antes Cálculo Sereno; id `calculo`) y «En la punta de la lengua» (antes Anagramas; y Cambio de Chip, Comparación Instantánea, Detective de Series, Ruta del Tesoro y Tráfico Estelar, retirados el 3 y el 4-oct: ver `docs/juegos/descartados.md`). El 3-oct
-se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (hoy «Constelaciones», ver §6): **los 18 juegos de la app usan el motor común** (también Bitácora y Rumbo, retirados de la app, que conservan su código en Unity) (Piloto
+se sumaron Secuencia Lumínica (hoy «Rastro de luz») y Parejas Ocultas (hoy «Constelaciones», ver §6): **los 17 juegos de la app usan el motor común** (también Bitácora, Rumbo y Cosecha, retirados de la app, que conservan su código en Unity) (Piloto
 con dos instancias; Correo con una —desde el 8-oct, cada encargo es un ensayo, ver §6—; Freno solo en la tarea de ir).
 
 > **Alcance y honestidad**: esto es un diseño de ingeniería inspirado en literatura psicométrica y de

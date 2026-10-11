@@ -108,8 +108,9 @@ class TrailTelemetryTest {
   @Test
   fun `todos los juegos de la app tienen tutorial guiado y un juego retirado no lo pide`() {
     assertFalse(UnityGameLauncher.shouldShowTutorial("rumbo", emptyList()))                      // retirado el 10-oct (Tarea 69)
+    assertFalse(UnityGameLauncher.shouldShowTutorial("cosecha", emptyList()))                    // retirado el 10-oct (Tarea 80)
     assertEquals(com.example.model.GameRegistry.allGames.map { it.id }.toSet(), UnityGameLauncher.TUTORIAL_GAMES)
-    assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar", "acoplamiento"), UnityGameLauncher.TUTORIAL_GAMES)
+    assertEquals(setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "disparate", "intrusa", "satelites", "piloto", "radar", "acoplamiento"), UnityGameLauncher.TUTORIAL_GAMES)
   }
 
   @Test

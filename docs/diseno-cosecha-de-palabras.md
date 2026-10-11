@@ -1,5 +1,7 @@
 # Cosecha de palabras — diseño (1-oct, para aprobar con maqueta)
 
+> **RETIRADA de la app el 10-oct-2026 (Tarea 80, decisión de Ricardo)**: ver `docs/juegos/descartados.md`. Este documento queda como historia; el código de Unity (`Games/Cosecha/`) y los datos guardados se conservan.
+
 Juego estrella de **Lenguaje** (id `cosecha`), el cuarto del área, elegido por Ricardo el 1-oct entre Cosecha de
 palabras, La palabra intrusa y ¿Cómo se llama?. Llena el hueco del área: los otros tres juegos RECONOCEN o
 COMPRENDEN; este pide **producir** palabras desde la memoria (lo que más cuesta con la edad). Retoma la idea de

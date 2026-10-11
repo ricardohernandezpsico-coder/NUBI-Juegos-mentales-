@@ -219,18 +219,6 @@ object NativeReceiver {
     val sv_subtle_seen: Int = -1,
     val sv_best_streak: Int = -1,
     val sv_unclear: String = "",
-    // Solo Cosecha de palabras (-1 / "" = sin dato): palabras, comunes encontradas y disponibles, % de racimos, palabras en los
-    // primeros y últimos 20 s, palabra estrella, la más larga o rara, comunes que faltaron (separadas por coma) y pistas.
-    val harv_words: Int = -1,
-    val harv_common_found: Int = -1,
-    val harv_common_total: Int = -1,
-    val harv_cluster_pct: Int = -1,
-    val harv_first20: Int = -1,
-    val harv_last20: Int = -1,
-    val harv_star: String = "",
-    val harv_best: String = "",
-    val harv_missed: String = "",
-    val harv_hints: Int = -1,
     // Solo La estrella intrusa (-1 / "" = sin dato): rondas y aciertos por tipo de grupo, mediana al tocar, mejor racha, «¿Qué las une?»
     // vistas y acertadas, y las claves de reglas (separadas por ';') de las láminas nuevas, falladas, repasadas y con nombre propio.
     val intr_seen_type: List<Int>? = null,
@@ -406,7 +394,7 @@ object NativeReceiver {
       "secuencia" -> parseSequenceResult(json)
       "parejas" -> parseCardsResult(json)
       // Carga exacta, Anagramas y Piloto Estelar reusan el mismo esquema de telemetría por ensayos que Stroop.
-      "stroop", "calculo", "engranajes", "bodega", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "correo", "meteoros", "disparate", "cosecha", "intrusa" -> parseStroopResult(json)
+      "stroop", "calculo", "engranajes", "bodega", "anagramas", "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "correo", "meteoros", "disparate", "intrusa" -> parseStroopResult(json)
       else -> {
         Log.e(TAG, "game_id \"$gameId\" no tiene un parser de telemetría registrado todavía.")
         ErrorLog.record("RESULTADO", "Una partida no se guardó: el juego «$gameId» no tiene lector de resultados en la app.")
@@ -591,17 +579,6 @@ object NativeReceiver {
       svBestStreak = metrics.sv_best_streak.takeIf { telemetry.game_id == "disparate" && it >= 0 },
       svUnclear = metrics.sv_unclear.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         .takeIf { telemetry.game_id == "disparate" && it.isNotEmpty() },
-      harvWords = metrics.harv_words.takeIf { telemetry.game_id == "cosecha" && it >= 0 },
-      harvCommonFound = metrics.harv_common_found.takeIf { telemetry.game_id == "cosecha" && it >= 0 },
-      harvCommonTotal = metrics.harv_common_total.takeIf { telemetry.game_id == "cosecha" && it > 0 },
-      harvClusterPct = metrics.harv_cluster_pct.takeIf { telemetry.game_id == "cosecha" && it in 0..100 },
-      harvFirst20 = metrics.harv_first20.takeIf { telemetry.game_id == "cosecha" && it >= 0 },
-      harvLast20 = metrics.harv_last20.takeIf { telemetry.game_id == "cosecha" && it >= 0 },
-      harvStar = metrics.harv_star.trim().takeIf { telemetry.game_id == "cosecha" && it.isNotEmpty() },
-      harvBest = metrics.harv_best.trim().takeIf { telemetry.game_id == "cosecha" && it.isNotEmpty() },
-      harvMissed = metrics.harv_missed.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(5)
-        .takeIf { telemetry.game_id == "cosecha" && it.isNotEmpty() },
-      harvHints = metrics.harv_hints.takeIf { telemetry.game_id == "cosecha" && it >= 0 },
       intrSeenType = metrics.intr_seen_type?.takeIf { telemetry.game_id == "intrusa" && it.size == 6 },
       intrHitsType = metrics.intr_hits_type?.takeIf { telemetry.game_id == "intrusa" && it.size == 6 },
       intrRtMs = metrics.intr_rt_ms.takeIf { telemetry.game_id == "intrusa" && it > 0 },

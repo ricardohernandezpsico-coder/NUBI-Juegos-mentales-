@@ -313,7 +313,7 @@ Ráfaga (3 palabras, muy rápidas) no entran en ninguna medida. Una frase que la
 Código: `Games/Disparate/DisparateContract.cs` y `DisparateDirector.cs` (reglas y medidas, con pruebas), `app/.../data/Reading.kt`
 (lectura, con pruebas), frases en `tools/frases/`.
 
-## Cosecha de palabras: "Tu cosecha", "Tu manera de buscar", "Tu ritmo" y "Tu palabra estrella"
+## Cosecha de palabras: "Tu cosecha", "Tu manera de buscar", "Tu ritmo" y "Tu palabra estrella" (RETIRADA el 10-oct-2026: la app ya no la tiene ni lee su medida `harvest`; queda como historia, `docs/juegos/descartados.md`)
 
 **Qué es la tarea.** Fluidez verbal con un juego de letras fijo: siete letras giran alrededor de un planeta y se forman todas las
 palabras posibles (3 letras o más) durante tres cosechas de 60 s. Pide PRODUCIR palabras desde la memoria bajo presión de tiempo, lo
@@ -343,7 +343,7 @@ buscaste en esta partida").
 dio Nubi se anotan ("Pistas de Nubi: N").
 
 Código: `Games/Cosecha/CosechaContract.cs` y `CosechaSession.cs` (reglas y medidas, con pruebas), `app/.../data/Harvest.kt` (lectura,
-con pruebas), rondas en `tools/cosecha/`.
+con pruebas; borrada de la app al retirar el juego, queda en el historial de git), rondas en `tools/cosecha/`.
 
 ## La estrella intrusa (id `intrusa`): "Tu red de significados", "Las trampas", "¿Qué las une?" y "Tu atlas"
 

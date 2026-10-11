@@ -60,7 +60,7 @@ class IntrusaTelemetryTest {
   @Test
   fun `otros juegos no traen los campos de la estrella intrusa`() {
     val r = NativeReceiver.parse(
-      """{"user_id":"u1","game_id":"cosecha","session_metrics":{"correct_trials":8,"total_trials":10,"calculated_score":70,"average_response_time_ms":1500,"level":3,"timed":true,"intr_rt_ms":900,"intr_new_plates":"fruta"}}"""
+      """{"user_id":"u1","game_id":"disparate","session_metrics":{"correct_trials":8,"total_trials":10,"calculated_score":70,"average_response_time_ms":1500,"level":3,"timed":true,"intr_rt_ms":900,"intr_new_plates":"fruta"}}"""
     )!!
     assertNull(r.intrRtMs)
     assertNull(r.intrNewPlates)

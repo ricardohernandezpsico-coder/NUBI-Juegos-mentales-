@@ -9,7 +9,6 @@ import com.example.data.Constelaciones
 import com.example.data.DosOrillas
 import com.example.data.Engranajes
 import com.example.data.FinalesConSentido
-import com.example.data.Harvest
 import com.example.data.Mail
 import com.example.data.MeasurePoint
 import com.example.data.Piloto
@@ -27,7 +26,7 @@ import kotlin.math.roundToInt
 
 /**
  * Lo que dice el «final con sentido» de cada juego (Etapa 3, `docs/finales-con-sentido.md`), armado desde la partida y las medidas guardadas. Lógica pura con pruebas: la pantalla (`GameResultScreen`) solo lo dibuja con `MeaningfulResult`.
- * Grupo 1 (Memoria): Constelaciones, Rastro de luz, Bodega de carga y La estación de correo. Grupo 2 (Atención): Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Rescate relámpago. Grupo 3 (Razonamiento): Carga exacta, Engranajes y Acoplamiento. Grupo 4 (Lenguaje): En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, Cosecha de palabras y La estrella intrusa.
+ * Grupo 1 (Memoria): Constelaciones, Rastro de luz, Bodega de carga y La estación de correo. Grupo 2 (Atención): Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Rescate relámpago. Grupo 3 (Razonamiento): Carga exacta, Engranajes y Acoplamiento. Grupo 4 (Lenguaje): En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate? y La estrella intrusa (Cosecha de palabras tuvo el suyo hasta su retiro, el 10-oct).
  * (Aterrizaje Lunar, hecho antes, arma el suyo en `GameResultScreen`.)
  *
  * «Lo que hiciste»: la medida propia que el juego ya mostraba, en grande, más UN dato tuyo (el récord si lo superaste hoy; si no, el más útil de los que ya mostraba: ver cada juego). «Tu avance»: Hoy, Tu promedio y Tu mejor en la
@@ -45,9 +44,6 @@ object FinalModels {
 
   /** ¿Verdad o disparate? («tu lectura», palabras por minuto; entre partidas parecidas varía unas 10 ppm): 10 ppm. */
   const val TOLERANCE_WPM = 10f
-
-  /** Cosecha de palabras («las comunes encontradas», % sobre unas 20 a 50 comunes: cada una pesa de 2 a 5 puntos): 5 puntos. */
-  const val TOLERANCE_HARVEST = 5f
 
   /** Carga exacta y Engranajes (% de 6 a 12 ensayos por partida: uno solo pesa de 8 a 17 puntos): 10 puntos. En la punta de la lengua y La estrella intrusa (de 6 a 12 palabras o rondas) también. */
   const val TOLERANCE_PERCENT_SHORT = 10f
@@ -88,7 +84,6 @@ object FinalModels {
     "anagramas" -> result.puntaSolo != null
     "meteoros" -> result.lexBandSeen != null && result.lexBandHits != null
     "disparate" -> result.svSeenType != null
-    "cosecha" -> Harvest.words(result.harvWords) != null
     "intrusa" -> result.intrSeenType != null
     else -> false
   }
@@ -111,7 +106,6 @@ object FinalModels {
     result.gameId == "anagramas" -> punta(result, measures)
     result.gameId == "meteoros" -> meteoros(result, measures)
     result.gameId == "disparate" -> disparate(result, measures)
-    result.gameId == "cosecha" -> cosecha(result, measures)
     result.gameId == "intrusa" -> intrusa(result, measures)
     else -> null
   }
@@ -375,26 +369,6 @@ object FinalModels {
       unit = if (wpm != null) "palabras por minuto, leyendo y decidiendo, en las frases que acertaste" else "Juega un poco más para medir tu lectura: hacen falta unas 10 respuestas bien.",
       dataLine = reading.slowText(rows) ?: reading.streakLine(result.svBestStreak)?.let { "Tu mejor racha: $it" },
       conditionalTrick = reading.tip(rows)?.let { ResultAdvice.tipOf(it) }
-    )
-  }
-
-  /** Cosecha de palabras («Tu cosecha»): las palabras comunes que había y encontraste; tu palabra estrella es el dato tuyo. */
-  fun cosecha(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
-    val harv = Harvest
-    val words = harv.words(result.harvWords) ?: 0
-    val common = harv.common(result.harvCommonFound, result.harvCommonTotal)
-    val star = harv.starTitle(result.harvStar, result.harvBest)
-    val search = harv.searchLine(result.harvClusterPct)
-    val pct = harv.clusterPct(result.harvClusterPct)
-    return build(
-      result, measures, key = "harvest", copy = FinalesConSentido.copy("cosecha")!!, tolerance = TOLERANCE_HARVEST, format = FinalesConSentido::percentText,
-      todayValue = harv.mark(result.harvCommonFound, result.harvCommonTotal),
-      boxTitle = "Tu cosecha",
-      headline = if (common != null) "${common.first} de ${common.second}" else "$words",
-      unit = if (common != null) "palabras comunes" else harv.wordsLabel(words),
-      dataLine = star?.let { it.first + ": " + it.second } ?: harv.rhythmLine(result.harvFirst20, result.harvLast20),
-      // la frase de «tu manera de buscar» trae su consejo cuando la búsqueda se inclina mucho a un lado; si no, el general de la tabla
-      conditionalTrick = if (pct != null && (pct >= Harvest.MANY_CLUSTERS || pct <= Harvest.MANY_JUMPS)) search else null
     )
   }
 

@@ -74,7 +74,7 @@ fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
 
 private val DrawnIcons = setOf(
   "piloto", "radar", "satelites", "freno", "aterrizaje", "acoplamiento", "correo",
-  "secuencia", "parejas", "stroop", "anagramas", "calculo", "engranajes", "bodega", "meteoros", "disparate", "cosecha", "intrusa"
+  "secuencia", "parejas", "stroop", "anagramas", "calculo", "engranajes", "bodega", "meteoros", "disparate", "intrusa"
 )
 
 // Todo en un lienzo de 100x100 unidades.
@@ -218,16 +218,6 @@ private fun DrawScope.drawGameIcon(id: String, measurer: TextMeasurer) {
       clay(poly(22f, 30f, 78f, 30f, 68f, 50f, 32f, 50f), Cream)
       clay(roundRect(28f, 26f, 44f, 9f, 4.5f), Clay.Sky, border = 2.5f, shadow = false)
       clay(circle(Offset(50f, 16f), 6f), Clay.Sun, border = 2.5f, shadow = false)
-    }
-    "cosecha" -> {
-      // Un planeta de tierra con un brote, y dos letras-luna girando en su órbita.
-      drawArc(Clay.Sky.copy(alpha = 0.55f), 0f, 360f, false, Offset(6f, 46f), Size(88f, 40f), style = Stroke(3.5f))
-      clay(circle(Offset(50f, 64f), 22f), Color(0xFF9E6642), gloss = true)
-      clay(roundRect(47.5f, 28f, 5f, 22f, 2.5f), Clay.Lime, border = 2.5f, shadow = false)
-      clay(circle(Offset(40f, 33f), 7.5f), Clay.Lime, border = 2.5f, shadow = false)
-      clay(circle(Offset(60f, 33f), 7.5f), Clay.Lime, border = 2.5f, shadow = false)
-      clay(circle(Offset(13f, 60f), 8.5f), Cream)
-      clay(circle(Offset(87f, 72f), 8.5f), Clay.Grape)
     }
     "intrusa" -> {
       // Cuatro luceros redondos unidos por una línea de luz (sin cerrar) y un quinto que se suelta como lucero fugaz con su estela.

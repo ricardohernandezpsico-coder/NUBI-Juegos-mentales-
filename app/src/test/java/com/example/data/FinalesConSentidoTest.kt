@@ -6,16 +6,16 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** «Finales con sentido» (Etapa 3, `docs/finales-con-sentido.md`): los textos de la tabla de los 17 juegos y «Tu avance» (hoy, tu promedio, tu mejor y su frase) con su tolerancia de «parejo». */
+/** «Finales con sentido» (Etapa 3, `docs/finales-con-sentido.md`): los textos de la tabla de los 16 juegos (los de la app menos Aterrizaje, que tiene los suyos) y «Tu avance» (hoy, tu promedio, tu mejor y su frase) con su tolerancia de «parejo». */
 class FinalesConSentidoTest {
 
   @Test
-  fun `la tabla trae los 17 juegos de la etapa 3 y ninguno trae a Aterrizaje`() {
+  fun `la tabla trae los 16 juegos de la etapa 3 y ninguno trae a Aterrizaje`() {
     val ids = FinalesConSentido.gameIds
-    assertEquals(17, ids.size)
-    assertEquals("sin repetidos", 17, ids.toSet().size)
+    assertEquals(16, ids.size)
+    assertEquals("sin repetidos", 16, ids.toSet().size)
     assertNull("Aterrizaje Lunar ya está hecho (Tareas 70 a 73) y tiene sus textos en Aterrizaje.kt", FinalesConSentido.copy("aterrizaje"))
-    for (id in listOf("parejas", "secuencia", "bodega", "correo", "stroop", "piloto", "freno", "satelites", "radar", "calculo", "engranajes", "acoplamiento", "anagramas", "meteoros", "disparate", "cosecha", "intrusa")) {
+    for (id in listOf("parejas", "secuencia", "bodega", "correo", "stroop", "piloto", "freno", "satelites", "radar", "calculo", "engranajes", "acoplamiento", "anagramas", "meteoros", "disparate", "intrusa")) {
       assertNotNull(id, FinalesConSentido.copy(id))
     }
   }
@@ -54,7 +54,7 @@ class FinalesConSentidoTest {
   @Test
   fun `si lo que pusiste en juego empieza con un verbo en infinitivo la frase se arma con lo que usas para`() {
     // los 14 que empiezan con infinitivo (Recordar, Frenar, Seguir, Captar, Atender, Hacer, Imaginar, Girar, Encontrar, Reconocer, Comprender, Sacar, Ordenar)
-    val infinitives = listOf("bodega", "stroop", "piloto", "freno", "satelites", "radar", "calculo", "engranajes", "acoplamiento", "anagramas", "meteoros", "disparate", "cosecha", "intrusa")
+    val infinitives = listOf("bodega", "stroop", "piloto", "freno", "satelites", "radar", "calculo", "engranajes", "acoplamiento", "anagramas", "meteoros", "disparate", "intrusa")
     for (id in infinitives) {
       val c = FinalesConSentido.copy(id)!!
       assertTrue("$id: «${c.put}» empieza con un infinitivo", FinalesConSentido.startsWithInfinitive(c.put))
@@ -75,7 +75,7 @@ class FinalesConSentidoTest {
       "Pusiste en juego lo que usas para frenar a tiempo una acción que ya empezaste. Detener a tiempo lo que ya no conviene nos permite adaptarnos cuando las cosas cambian de golpe.",
       FinalesConSentido.copy("freno")!!.whyText
     )
-    assertEquals(17, infinitives.size + 3)
+    assertEquals(16, infinitives.size + 3)
     assertTrue(FinalesConSentido.startsWithInfinitive("Hacer cuentas con flexibilidad para llegar a un número."))
     assertTrue(!FinalesConSentido.startsWithInfinitive("La memoria de lugar: recordar dónde quedó cada cosa."))
     assertTrue(!FinalesConSentido.startsWithInfinitive("Memoria de trabajo"))

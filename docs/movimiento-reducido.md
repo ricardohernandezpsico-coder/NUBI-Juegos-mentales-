@@ -2,7 +2,7 @@
 
 > **Cambio de Chip se retiró el 3-oct (tarea 25):** sus filas de las tablas quedan como historia; la regla se aplica en los 19 juegos que quedan (Engranajes, el 5-oct, nació con la regla) (Comparación Instantánea, Detective de Series, Ruta del Tesoro y Tráfico Estelar también se retiraron, el 4-oct: tareas 31, 33, 34 y 35).
 
-Tarea 18 (3-oct). Fase A: regla, componentes comunes e inventario. Fase B: la regla aplicada dentro de los 23 juegos (columna «Hecho» de las tablas).
+Tarea 18 (3-oct). Fase A: regla, componentes comunes e inventario. Fase B: la regla aplicada dentro de los 23 juegos de entonces (columna «Hecho» de las tablas; hoy la regla vale en los 17 juegos de la app).
 
 ## La regla
 
@@ -95,7 +95,7 @@ Los destellos de acierto/error de pantalla completa son de UN solo pulso por res
   `WorldBackdrop` y `StarfieldFx` sin cambios en 240 cuadros, sin estrellas fugaces, la cuenta regresiva termina sin chispas/órbita/onda/rebote,
   `FinishCurtain` termina, `PressScale` oscurece. Hay un control con ReduceMotion = false para probar que el fondo SÍ se mueve.
 - Smoke: `NUBI_REDUCE_MOTION=1` (lo lee `HeadlessPlaymodeSmokeTest`, que además comprueba que la bandera llegó al juego).
-  `bash tools/verificar-todo.sh --sin-animaciones` corre escena piloto + smoke de los 23 juegos con la bandera (no exporta, no corre Gradle, no instala).
+  `bash tools/verificar-todo.sh --sin-animaciones` corre escena piloto + smoke completo de Unity (todos sus arranques: los juegos de la app y los retirados que conservan código) con la bandera (no exporta, no corre Gradle, no instala).
 - Sello de la cuenta regresiva: `estilo 3-oct · movimiento B` (Fase B).
 
 ## Inventario por juego (Fase B)

@@ -87,7 +87,6 @@ private val DebugGames = listOf(
   DebugGame("aterrizaje", "Aterrizaje Lunar (Reto 120 s)", level = 1, timed = true),
   DebugGame("meteoros", "Lluvia de meteoros (Reto 120 s)", level = 1, timed = true),
   DebugGame("disparate", "¿Verdad o disparate? (Reto 120 s)", level = 1, timed = true),
-  DebugGame("cosecha", "Cosecha de palabras (Reto 3 × 60 s)", level = 1, timed = true),
   DebugGame("intrusa", "La estrella intrusa (Reto 120 s)", level = 1, timed = true),
   DebugGame("acoplamiento", "Acoplamiento (Reto 120 s)", level = 1, timed = true),
   DebugGame("acoplamiento", "Acoplamiento con tutorial", level = 1, timed = false, tutorial = true, tag = "acoplamiento_tutorial"),

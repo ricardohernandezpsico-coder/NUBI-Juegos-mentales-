@@ -28,7 +28,7 @@ class FinalModelsTest {
     assertTrue(FinalModels.usesMeaningful(result("aterrizaje") { copy(numlineErrorPct = 8f) }))
     // sin los datos propios del juego (una partida de la versión vieja de Unity) se queda con el final de siempre
     for (id in listOf("parejas", "secuencia", "bodega", "correo", "aterrizaje")) assertTrue(id, !FinalModels.usesMeaningful(result(id)))
-    for (id in listOf("stroop", "piloto", "freno", "satelites", "radar", "calculo", "engranajes", "acoplamiento", "anagramas", "meteoros", "disparate", "cosecha", "intrusa")) assertNull(id, FinalModels.forGame(result(id), emptyList()))
+    for (id in listOf("stroop", "piloto", "freno", "satelites", "radar", "calculo", "engranajes", "acoplamiento", "anagramas", "meteoros", "disparate", "intrusa")) assertNull(id, FinalModels.forGame(result(id), emptyList()))
     assertNotNull(FinalModels.forGame(constelaciones, emptyList()))
   }
 
@@ -325,19 +325,19 @@ class FinalModelsTest {
   private val punta = result("anagramas") { copy(puntaSolo = 5, puntaPista = 2, puntaLetras = 0, puntaVista = 1, puntaMs = 6500, puntaWords = listOf(PuntaEntry("luna", PuntaTier.SOLO), PuntaEntry("barco", PuntaTier.PISTA), PuntaEntry("nube", PuntaTier.VISTA))) }
   private val meteoros = result("meteoros") { copy(lexBandSeen = listOf(8, 8, 8, 8, 8, 8), lexBandHits = listOf(8, 8, 7, 6, 5, 3), lexFaSeen = listOf(7, 7, 7), lexFaHits = listOf(0, 1, 2), lexRtCommonMs = 700, lexRtRareMs = 1100, lexRareWords = listOf("alcayata", "badil")) }
   private val disparate = result("disparate") { copy(svSeenType = listOf(8, 8, 8, 8, 8, 8), svRtType = listOf(900, 950, 1300, 1500, 1100, 1000), svWpm = 142, svSubtleHits = 6, svSubtleSeen = 8, svBestStreak = 14) }
-  private val cosecha = result("cosecha") { copy(harvWords = 34, harvCommonFound = 21, harvCommonTotal = 48, harvClusterPct = 75, harvFirst20 = 12, harvLast20 = 6, harvStar = "mariposa", harvBest = "mariposa", harvMissed = listOf("saciar", "acosar"), harvHints = 1) }
   private val intrusa = result("intrusa") { copy(intrSeenType = listOf(3, 3, 2, 2, 2, 2), intrHitsType = listOf(3, 2, 2, 2, 1, 1), intrBonusSeen = 5, intrBonusHits = 3, intrRtMs = 1800) }
 
   @Test
   fun `los juegos del grupo 4 usan el final con sentido solo con sus datos propios`() {
-    for (r in listOf(punta, meteoros, disparate, cosecha, intrusa)) assertTrue(r.gameId, FinalModels.usesMeaningful(r))
-    for (id in listOf("anagramas", "meteoros", "disparate", "cosecha", "intrusa")) assertTrue(id, !FinalModels.usesMeaningful(result(id)))
+    for (r in listOf(punta, meteoros, disparate, intrusa)) assertTrue(r.gameId, FinalModels.usesMeaningful(r))
+    for (id in listOf("anagramas", "meteoros", "disparate", "intrusa")) assertTrue(id, !FinalModels.usesMeaningful(result(id)))
   }
 
   @Test
   fun `todos los juegos con medida usan ya el final con sentido`() {
-    val ids = listOf(punta, meteoros, disparate, cosecha, intrusa, tinta, piloto, freno, satelites, rescate, carga, engranajes, acoplamiento, constelaciones, rastro, bodega, correo, result("aterrizaje") { copy(numlineErrorPct = 8f) }).map { it.gameId }
-    assertEquals("los 18 juegos", 18, ids.toSet().size)
+    val ids = listOf(punta, meteoros, disparate, intrusa, tinta, piloto, freno, satelites, rescate, carga, engranajes, acoplamiento, constelaciones, rastro, bodega, correo, result("aterrizaje") { copy(numlineErrorPct = 8f) }).map { it.gameId }
+    assertEquals("los 17 juegos de la app", 17, ids.toSet().size)
+    assertEquals("los mismos que el registro", com.example.model.GameRegistry.allGames.map { it.id }.toSet(), ids.toSet())
     for (id in ids) assertNotNull(id, com.example.data.StarMeasures.defForGame(id))
   }
 
@@ -393,25 +393,6 @@ class FinalModelsTest {
   }
 
   @Test
-  fun `Cosecha de palabras dice las comunes que encontraste y tu palabra estrella`() {
-    val m = FinalModels.forGame(cosecha, points("harvest", 40f, 44f, 50f))!!
-    assertEquals("Tu cosecha", m.boxTitle)
-    assertEquals("21 de 48", m.headline)
-    assertEquals("palabras comunes", m.headlineUnit)
-    assertEquals("Tu palabra estrella: MARIPOSA", m.dataLine)
-    assertEquals("la búsqueda se inclina a los racimos: su frase trae el consejo", "Exprimes bien cada idea (casa, casas, caso). Prueba también saltar a otra letra inicial.", m.trick)
-    assertEquals("Cuando una palabra funciona, busca sus parientes; si se agotan, salta a otra letra inicial.", FinalModels.forGame(cosecha.copy(harvClusterPct = 50), emptyList())!!.trick)
-    assertEquals(listOf("44 %", "45 %", "50 %"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
-    // sin palabra estrella el dato es el ritmo
-    assertEquals("Arrancas fuerte y bajas al final, es lo normal: si te atascas, cambia de idea.", FinalModels.forGame(cosecha.copy(harvStar = null, harvBest = null), emptyList())!!.dataLine)
-    // sin comunes medidas, la cifra es el total de palabras
-    val noCommon = FinalModels.forGame(cosecha.copy(harvCommonFound = null, harvCommonTotal = null), emptyList())!!
-    assertEquals("34", noCommon.headline)
-    assertEquals("palabras", noCommon.headlineUnit)
-  }
-
-  @Test
   fun `La estrella intrusa dice las rondas bien y las trampas que te enganaron`() {
     val m = FinalModels.forGame(intrusa, points("atlas", 70f, 75f, 80f))!!
     assertEquals("Tu red de significados", m.boxTitle)
@@ -428,7 +409,7 @@ class FinalModelsTest {
 
   @Test
   fun `todos los textos de los finales del grupo 4 cumplen las reglas de vocabulario`() {
-    for (r in listOf(punta, meteoros, disparate, cosecha, intrusa)) {
+    for (r in listOf(punta, meteoros, disparate, intrusa)) {
       val m = FinalModels.forGame(r, points("x", 60f, 70f))!!
       val all = listOfNotNull(m.boxTitle, m.headline, m.headlineUnit, m.dataLine, m.progressPhrase, m.trick, m.why, m.source, m.note, m.spoken).joinToString(" ").lowercase()
       for (bad in listOf("entren", "cerebro", "cognitiv", "percentil", "otras personas")) assertTrue("${r.gameId}: «$bad»", !all.contains(bad))

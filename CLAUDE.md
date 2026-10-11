@@ -6,7 +6,7 @@
 > (`NeuroVida.*`, `unity/NeuroVidaCore/`) y clases Kotlin (`NeuroVidaViewModel`…), y el `applicationId` (`com.aistudio.neurovida.cgnv`, se define UNA vez antes de publicar: `docs/auditoria-30-sep.md`). La carpeta es `C:/Users/RURAL7/Desktop/Proyectos/Nubi`
 > (renombrada el 1-oct; Unity Hub necesita agregar el proyecto `unity/NeuroVidaCore` de nuevo). La app no muestra "NeuroVida" en ningún texto visible; en los documentos, "NeuroVida" solo aparece en identificadores o para el nombre viejo.
 
-App Android de juegos mentales cortos para mantener la mente activa: 18 juegos en 4 áreas (Memoria, Atención, Razonamiento y Lenguaje; de 6 a 4 áreas el 30-sep; juegos retirados en `docs/juegos/descartados.md`), Room v15, dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
+App Android de juegos mentales cortos para mantener la mente activa: 17 juegos en 4 áreas (Memoria, Atención, Razonamiento y Lenguaje; de 6 a 4 áreas el 30-sep; juegos retirados en `docs/juegos/descartados.md`), Room v15, dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a Lumosity/Peak/Elevate en calidad y en motivación.
 
 El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de Ricardo) está en
@@ -67,7 +67,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StroopTelemetry` (salida común de casi todos; lleva `end_rating` y `peak_level`; `SequenceTelemetry` y `CardsTelemetry` llevan los mismos campos).
 - `Games/AdaptiveDifficulty.cs`: DDA común (up-down ponderado de Kaernbach hacia 80% de aciertos, 85% en mayores;
   ver `docs/DDA-comun.md`). Lo usan Tinta o Palabra (`Stroop/`),
-  «Carga exacta», «Engranajes», «En la punta de la lengua», **Rastro de luz** (escalera de 16 niveles), **Constelaciones** (18 etapas en 6 grupos) y **Correo Estelar** (10 etapas; cada encargo es un ensayo); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Rescate relámpago**, **Satélites** y **Freno de Emergencia** (solo la tarea de ir) una. Desde el 3-oct los 18 juegos de la app usan el motor común. Fundamento: Levitt 1971 y Kaernbach 1991; el 80/85 % es decisión de diseño (`docs/DDA-comun.md`).
+  «Carga exacta», «Engranajes», «En la punta de la lengua», **Rastro de luz** (escalera de 16 niveles), **Constelaciones** (18 etapas en 6 grupos) y **Correo Estelar** (10 etapas; cada encargo es un ensayo); **Piloto Estelar** usa DOS instancias (pilotaje y señales); **Rescate relámpago**, **Satélites** y **Freno de Emergencia** (solo la tarea de ir) una. Desde el 3-oct los 17 juegos de la app usan el motor común. Fundamento: Levitt 1971 y Kaernbach 1991; el 80/85 % es decisión de diseño (`docs/DDA-comun.md`).
 - Cada juego: `XContract.cs` (reglas puras con pruebas) + `XGameController.cs` (UI construida por código). Los 7 del
   DDA común heredan de `Shared/GameControllerBase` y usan `Shared/GameHud`.
 - `Games/Shared/`: sello visual y piezas comunes — `NeuroStyle` (paleta de la app, `ClayText`, `ClayFrame`),
@@ -75,7 +75,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
   `StarfieldFx`, `CountdownScreen`, `FinishCurtain` + `ExitButton` (cierre "¡Listo!" → resultado en la app),
   `GameFeel` (sonidos sintetizados y vibración), `SoundKit` (síntesis de sonido; Rescate), `Motion` («quitar animaciones»: ver [docs/movimiento-reducido.md](docs/movimiento-reducido.md)), `GameClock` (tiempo pausable), `PauseMenu`, `Assessment`
   (modo evaluación), `UiKit`, `Toast`, `PhasePill`, `PressScale`, sprites varios, y el **tutorial guiado común** (`GuidedTutorial` + `NubiTeacherSprite`;
-  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = los 18 juegos de la app (Rescate y Acoplamiento entraron en las Tareas 62 y 68; Rumbo, sin tutorial, se retiró en la 69); «Cómo se juega» en la pausa; cómo sumar otro: `docs/diseno-rastro-de-luz.md`; colocación de Nubi: `docs/tutoriales-con-nubi.md`).
+  gancho `GuidedRound` en `GameControllerBase`; la app manda `show_tutorial` si no hay partidas del juego: `UnityGameLauncher.TUTORIAL_GAMES` = los 17 juegos de la app (Rescate y Acoplamiento entraron en las Tareas 62 y 68; Rumbo, sin tutorial, se retiró en la 69, y Cosecha en la 80); «Cómo se juega» en la pausa; cómo sumar otro: `docs/diseno-rastro-de-luz.md`; colocación de Nubi: `docs/tutoriales-con-nubi.md`).
 
 ## Juegos (índice)
 
@@ -103,7 +103,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 | En la punta de la lengua (reemplaza a Anagramas el 3-oct; conserva el id) | `anagramas` | Lenguaje | `Games/Anagramas/` | [docs/diseno-punta-de-la-lengua.md](docs/diseno-punta-de-la-lengua.md) | `Punta.kt` |
 | Lluvia de meteoros | `meteoros` | Lenguaje | `Games/Meteoros/` | [docs/diseno-lluvia-de-meteoros.md](docs/diseno-lluvia-de-meteoros.md) | `Vocabulary.kt` |
 | ¿Verdad o disparate? | `disparate` | Lenguaje | `Games/Disparate/` | [docs/diseno-verdad-o-disparate.md](docs/diseno-verdad-o-disparate.md) | `Reading.kt` |
-| Cosecha de palabras | `cosecha` | Lenguaje | `Games/Cosecha/` | [docs/diseno-cosecha-de-palabras.md](docs/diseno-cosecha-de-palabras.md) | `Harvest.kt` |
+| ~~Cosecha de palabras~~ **RETIRADA el 10-oct-2026** (la app ya no la lanza; el código de Unity y el historial se conservan; ver `docs/juegos/descartados.md`) | `cosecha` | (Lenguaje) | `Games/Cosecha/` | [docs/diseno-cosecha-de-palabras.md](docs/diseno-cosecha-de-palabras.md) | — |
 | La estrella intrusa | `intrusa` | Lenguaje | `Games/Intrusa/` | [docs/diseno-estrella-intrusa.md](docs/diseno-estrella-intrusa.md) | `Atlas.kt`, `FigureBank.kt` |
 
 ## Cómo trabajar una tarea de un juego
@@ -146,7 +146,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 674 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 666 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
