@@ -163,7 +163,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   var celebratedOne by remember(lastResult) { mutableStateOf(false) }
 
   Box(modifier = Modifier.fillMaxSize()) {
-    com.example.ui.components.CosmosBackground()
+    // El fondo de toda la app: el tablero azul marino de la isla (Tarea 82). Una sola capa detrás del pager: al deslizar entre Hoy, Juegos y Avance no salta.
+    com.example.ui.components.BoardBackground()
     Scaffold(
       modifier = Modifier
         .fillMaxSize()
