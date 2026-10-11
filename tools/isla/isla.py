@@ -2,7 +2,7 @@
 """
 La isla de Nubi en 3D (versión vigente: ronda 26b, 11-oct-2026): pocas piezas, gordas y redondeadas; Nubi con lóbulos simples y cara
 lisa; torre de celosía sin plato; luz más clara; edificios con silueta de juguete. Blender 4.5, solo herramientas de Blender.
-Uso: blender -b -P isla.py -- [--engine EEVEE|CYCLES] [--samples N] [--width 1080] [--out DIR] [--layers] [--json] [--solo-nubi --mirada X] [--perfil] [--tablero --lamina A|B] [--nubi hola|descansa]
+Uso: blender -b -P isla.py -- [--engine EEVEE|CYCLES] [--samples N] [--width 1080] [--out DIR] [--layers] [--json] [--solo-nubi --mirada X] [--perfil] [--tablero --lamina A|B [--sin-luceros | --solo-luceros] [--b-aprobado]] [--nubi hola|descansa]
 Ver tools/isla/README.md y tools/isla/render.sh.
 """
 import bpy, bmesh, math, os, sys, time, random
@@ -817,6 +817,17 @@ def render_fondo():
 # ------------------------------------------------------------------ fondo como TABLERO físico: lámina de plasticina azul noche con luceros apoyados
 TAB_W, TAB_H = 6.0, 10.0   # proporción de teléfono 3:5 (unidades de escena)
 TEXTO = (0.04, 0.08, 0.70, 0.22); BARRA_Z = (0.0, 0.88, 1.0, 1.0)   # zonas (x0,y0,x1,y1 en fracción, y hacia abajo) sin luceros: saludo y barra
+# Tarea 83: los luceros son una capa APARTE (solo se ven en Hoy; Juegos y Avance muestran la lámina sola, porque en pantallas que se deslizan un lucero fijo acaba bajo un texto).
+#   --sin-luceros   renderiza solo la lámina (azul marino con su nebulosa y su textura) → fondo_lamina.png, opaca.
+#   --solo-luceros  renderiza solo los luceros con su sombra de contacto → fondo_luceros.png, transparente: la lámina es «shadow catcher» de Cycles (invisible, pero recibe la sombra y el rebote).
+#   --b-aprobado    no quita los luceros de las zonas ampliadas de abajo: reproduce el B aprobado de la ronda 26b (sirve para comprobar que lámina + luceros apilados dan el B exacto).
+# Zonas AMPLIADAS sin luceros (x0,y0,x1,y1 en fracción de la imagen, y hacia abajo): ningún texto de Hoy que vaya directo sobre el fondo debe caer sobre un lucero. Los luceros que caen ahí se QUITAN sin tocar
+# la secuencia de colocación (semilla 5): todos los demás quedan exactamente donde estaban en el B aprobado.
+ZONAS_HOY = (
+  (0.0, 0.07, 0.75, 0.29),   # encabezado: saludo, fecha, liga, semana y racha (también a 360 dp, donde el saludo ocupa dos líneas y la racha baja a y ≈ 25 %)
+  (0.0, 0.74, 1.0, 0.93),    # franja del enlace «¿Aún sin tu punto de partida?» y de los botones, sobre la barra de pestañas (con barra de gestos, más abajo que con tres botones)
+)
+SIN_LUCEROS = '--sin-luceros' in args; SOLO_LUCEROS = '--solo-luceros' in args; B_APROBADO = '--b-aprobado' in args
 def tablero():
     lam = box((TAB_W, TAB_H, 0.3), loc=(0,0,-0.15), coll='iconos', name='tab_lamina'); bevel(lam, 0.06, 3)
     m = clay('m_lamina', '#1C1A50' if LAMINA == 'A' else '#23255A', bump=0.7, sss=0.1, vary=0.05, rough=0.72, spec=0.22, dents=1.0, dent_scale=1.6, grain=0.2, mid=0.4, sat=1.0, piece=0, chalk=0, prints=0.15)   # A: lila actual; B: azul noche como la referencia y el fondo de la app
@@ -828,18 +839,20 @@ def tablero():
     prev = b.inputs['Base Color'].links[0].from_socket
     mix = N.new('ShaderNodeMixRGB'); mix.blend_type = 'MIX'; mix.inputs['Fac'].default_value = 0.5; L.new(prev, mix.inputs['Color1']); L.new(ramp.outputs['Color'], mix.inputs['Color2']); L.new(mix.outputs['Color'], b.inputs['Base Color'])
     mat(lam, m)
+    if SOLO_LUCEROS: lam.is_shadow_catcher = True   # tarea 83: la lámina no se ve, solo recibe la sombra y el rebote de cada lucero
     # luceros: bolitas de plasticina crema medio hundidas, 3 tamaños, sin amontonarse, fuera del saludo y de la barra (incluido su borde)
     rnd = random.Random(5); puestos = []; TAM = ((0.042, 0.55), (0.06, 0.32), (0.085, 0.13)); n = 0   # ronda 26: puntitos, no perlas
     # bolitas chicas, como las de la referencia (1-2 % del ancho del teléfono)
     mlu = clay('m_lucero_t', '#F3DFBF', bump=0.5, sss=0.3, vary=0.03, dents=0.5, dent_scale=12, grain=0.1, ao=0.2, ao_cool=1.0, sat=1.0, rough=0.7, spec=0.2)
     def zona(fx, fy, z): return z[0] <= fx <= z[2] and z[1] <= fy <= z[3]
-    while n < 58:
+    while n < 58 and not SIN_LUCEROS:
         u = rnd.random(); r = (TAM[0][0] if u < 0.55 else TAM[1][0] if u < 0.87 else TAM[2][0]) * rnd.uniform(0.9, 1.1)
         fx, fy = rnd.random(), rnd.random(); x, y = (fx - 0.5) * TAB_W, (0.5 - fy) * TAB_H
         fr = r / TAB_W
         if any(zona(fx+dx, fy+dy*TAB_W/TAB_H, TEXTO) or zona(fx+dx, fy+dy*TAB_W/TAB_H, BARRA_Z) for dx in (-fr,0,fr) for dy in (-fr,0,fr)): continue
         if any((x-px)**2 + (y-py)**2 < (r*4.5)**2 for px, py in puestos): continue
         puestos.append((x, y)); n += 1
+        if not B_APROBADO and any(zona(fx+dx, fy+dy*TAB_W/TAB_H, z) for z in ZONAS_HOY for dx in (-fr,0,fr) for dy in (-fr,0,fr)): continue   # tarea 83: cuenta para la secuencia pero no se crea
         o = sphere(r=r, seg=32, loc=(x, y, r*0.62), coll='iconos', name='tab_lucero'); organic(o, 0.012, 0.3, 1); mat(o, mlu)   # ronda 25: menos hundido, para que su sombra se vea
 
 def render_tablero():
@@ -852,12 +865,12 @@ def render_tablero():
         if nm in bpy.data.objects: bpy.data.objects.remove(bpy.data.objects[nm], do_unlink=True)
     L1 = bpy.data.lights.new('tab_centro','AREA'); L1.energy = float(arg('--tabcentro','260')); L1.size = 4.5; L1.color = lin(hx('#EEF0FF'))   # caída de luz y viñeta naturales: una luz sobre el centro de la lámina
     lo = bpy.data.objects.new('tab_centro', L1); lo.location = (0.6, 1.5, 7.5); scene.collection.objects.link(lo); link(lo,'luces'); lo.rotation_euler = (0,0,0)
-    scene.render.resolution_x = 720; scene.render.resolution_y = 1200; scene.render.film_transparent = False
+    scene.render.resolution_x = 720; scene.render.resolution_y = 1200; scene.render.film_transparent = SOLO_LUCEROS
     for nm in arg('--sin','').split(','):
         if nm and nm in bpy.data.objects: bpy.data.objects.remove(bpy.data.objects[nm], do_unlink=True); print('[isla] sin', nm)
     scene.render.resolution_percentage = int(arg('--pct','100'))
     if arg('--exec',''): exec(arg('--exec',''))   # pruebas: código arbitrario justo antes de renderizar
-    times['tablero'] = render('fondo_tablero', {'iconos','luces'})
+    times['tablero'] = render('fondo_lamina' if SIN_LUCEROS else 'fondo_luceros' if SOLO_LUCEROS else 'fondo_tablero', {'iconos','luces'})
 
 
 # ------------------------------------------------------------------ íconos de la barra, ronda 25: siluetas que se reconozcan a 32 dp

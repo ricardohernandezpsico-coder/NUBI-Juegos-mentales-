@@ -1,7 +1,7 @@
 #!/bin/bash
 # Renderiza la isla de Hoy (Blender, Cycles) y prepara lo que entra a la app. NO se corre en las verificaciones: es un paso de arte, a mano.
 #   BLENDER=/ruta/a/blender bash tools/isla/render.sh [lámina]     (lámina A = lila, B = azul marino, la que usa la app; por defecto B)
-# Tarda ~10 min con Cycles solo por CPU (Ryzen 5 5625U): isla completa y capas ~90 s, cada mirada de Nubi ~15 s, el tablero ~3 min.
+# Tarda ~20 min con Cycles solo por CPU (Ryzen 5 5625U): isla completa y capas ~90 s, cada mirada de Nubi ~15 s, el tablero completo y la lámina ~2 min cada uno y los luceros ~4 min.
 # Salida: tools/isla/out/ (git-ignorada). Al final se copian a mano (o con las líneas de abajo) a app/src/main/res/.
 set -e
 cd "$(dirname "$0")"
@@ -16,12 +16,16 @@ run --layers --json --out "$OUT"
 # 2. Las miradas de Nubi hacia cada edificio (fase 3: todavía no las usa la app) y su perfil.
 for m in frente observatorio antena hangar biblioteca; do run --solo-nubi --mirada "$m" --out "$OUT"; done
 cp "$OUT/capa-nubi-frente.png" "$OUT/capa-nubi.png"
-# 3. El tablero (fondo de la app).
-run --tablero --lamina "$LAMINA" --out "$OUT/tablero"
+# 3. El fondo en DOS capas (Tarea 83). La lámina B (azul marino) es la que usa la app; la A (lila) quedó descartada.
+#    - completo: el B entero con todos sus luceros (--b-aprobado: no quita los de las zonas sin luceros de Hoy); sirve de referencia para calcular el color de la capa de luceros.
+#    - lámina: sola, sin luceros.   - luceros: solo los luceros y su sombra, con la lámina como «shadow catcher» (transparente), SIN los de las zonas de texto de Hoy (ZONAS_HOY en isla.py).
+run --tablero --lamina "$LAMINA" --b-aprobado --out "$OUT/tablero-completo"
+run --tablero --lamina "$LAMINA" --sin-luceros --out "$OUT/tablero-lamina"
+run --tablero --lamina "$LAMINA" --solo-luceros --out "$OUT/tablero-luceros"
 
-# 4. Recortes, WebP a 2× e isla.json normalizado (0-1) → tools/isla/out/app/ y tools/isla/out/fondo/
+# 4. Recortes, WebP a 2× e isla.json normalizado (0-1) → tools/isla/out/app/; las dos capas del fondo → tools/isla/out/fondo/ (y la medida de cuánto se parece el apilado al B completo)
 python -I componer.py "$OUT" "$OUT/app"
-python -I tablero.py "$OUT/tablero" "$OUT/fondo"
+python -I tablero.py "$OUT/tablero-lamina" "$OUT/tablero-luceros" "$OUT/tablero-completo" "$OUT/fondo"
 
 cat <<MSG
 
@@ -29,6 +33,6 @@ Listo. Para llevarlo a la app (a drawable-nodpi: NO en carpetas de densidad, ah�
   cp $OUT/app/isla_base.webp $OUT/app/isla_edificios.webp ../../app/src/main/res/drawable-nodpi/
   cp $OUT/app/nubi_hola.webp ../../app/src/main/res/drawable-nodpi/isla_nubi_hola.webp      # el prefijo isla_ evita chocar con el nubi_hola de la app
   cp $OUT/app/isla.json ../../app/src/main/res/raw/isla.json
-  cp $OUT/fondo/fondo_tablero.webp ../../app/src/main/res/drawable-nodpi/
-Después: correr IslaJsonTest y BoardBackgroundContrastTest (miden que las imágenes y el JSON sigan siendo del mismo render y que el saludo se lea).
+  cp $OUT/fondo/fondo_lamina.webp $OUT/fondo/fondo_luceros.webp ../../app/src/main/res/drawable-nodpi/
+Después: correr IslaJsonTest, BoardBackgroundContrastTest y HoyIslaScreenshotTest (miden que las imágenes y el JSON sigan siendo del mismo render, que el saludo se lea y que ningún texto de Hoy caiga sobre un lucero).
 MSG

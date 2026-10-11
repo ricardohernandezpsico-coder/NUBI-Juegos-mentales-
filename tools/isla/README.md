@@ -8,21 +8,38 @@ Las imágenes de la isla de Hoy no se dibujan a mano: las genera un script de Bl
 |---|---|
 | `isla.py` | El script `bpy`: isla, edificios (Observatorio, Antena, Biblioteca, Hangar), Nubi, farolas y el tablero del fondo, todo por código. Escribe PNG con fondo transparente, `isla.json` (posiciones en píxeles) y `tiempos.txt`. |
 | `componer.py` | Recorta las capas a un encuadre común, las guarda en WebP a 2× y normaliza `isla.json` a coordenadas 0-1. |
-| `tablero.py` | Convierte el render del tablero en `fondo_tablero.webp` y mide el contraste del saludo sobre él. |
-| `render.sh` | Corre todo en orden (Cycles, 112 muestras, ~10 min por CPU). Al final imprime las líneas para copiar a la app. |
+| `tablero.py` | Convierte los renders del tablero en las DOS capas del fondo (`fondo_lamina.webp` y `fondo_luceros.webp`), mide cuánto se parece su apilado al B completo y el contraste del saludo sobre la lámina. |
+| `render.sh` | Corre todo en orden (Cycles, 112 muestras, ~20 min por CPU). Al final imprime las líneas para copiar a la app. |
 | `out/` | Salida (git-ignorada). |
 
 ```
 BLENDER=/ruta/a/blender.exe bash tools/isla/render.sh        # lámina B (azul marino)
 ```
 
-No se probó el `render.sh` completo al subirlo (Tarea 82 no corrió Blender): los pasos y las opciones son los de la cadena con la que se hicieron las imágenes vigentes (ronda 26b, 11-oct-2026).
+El paso del tablero (lámina, luceros y `tablero.py`) se corrió de verdad en la Tarea 83. Los pasos de la isla y de Nubi (1 y 2 de `render.sh`) son los de la cadena con la que se hicieron las imágenes vigentes (ronda 26b, 11-oct-2026) pero no se volvieron a correr desde el repo.
+
+## El fondo en dos capas (Tarea 83)
+
+El fondo B (tablero azul marino con luceros de plasticina) son DOS imágenes apiladas: `fondo_lamina` (la lámina con su nebulosa y su textura, sin luceros, siempre detrás del pager) y `fondo_luceros` (las bolitas con su sombra de contacto, transparente, encima; solo se ve en Hoy). Porque en Juegos y Avance el contenido se desliza y un lucero fijo acaba bajo un texto. En la app: `ui/components/BoardBackground.kt` (la opacidad de los luceros sigue la posición del pager: 1 en Hoy, 0 en Juegos y Avance).
+
+Opciones de `isla.py` para el tablero (se usan siempre con `--tablero --lamina B`):
+
+| Opción | Qué renderiza | Archivo |
+|---|---|---|
+| (ninguna) | el B entero (lámina y luceros) SIN los luceros de las zonas libres de Hoy | `fondo_tablero.png` |
+| `--sin-luceros` | solo la lámina, opaca | `fondo_lamina.png` |
+| `--solo-luceros` | solo los luceros y su sombra, transparente (la lámina es «shadow catcher» de Cycles: no se ve, solo recibe la sombra y el rebote) | `fondo_luceros.png` |
+| `--b-aprobado` | no quita los luceros de las zonas libres de Hoy: reproduce el B aprobado de la ronda 26b, con los 59 luceros | (se suma a cualquiera de las anteriores) |
+
+Los luceros salen de la MISMA semilla de colocación (`random.Random(5)`) que el B aprobado. Las zonas sin luceros de Hoy (`ZONAS_HOY` en `isla.py`: el encabezado con el saludo, la fecha, la liga, la semana y la racha, y la franja del enlace «¿Aún sin tu punto de partida?» sobre la barra de pestañas) no cambian esa secuencia: sus luceros se calculan y NO se crean, así que todos los demás quedan exactamente donde estaban en el B aprobado. Si se agrega texto directo sobre el fondo de Hoy, hay que ampliar esas zonas y volver a correr `render.sh`; `HoyIslaScreenshotTest` falla si un texto cae sobre un lucero.
+
+**Apilados dan el B.** `tablero.py` mide el apilado (los WebP que entran a la app) contra el B completo: media 0,85/255, p99 3, y solo el 0,23 % de los píxeles difieren en más de 8 (máximo 27); es el mismo nivel de ruido que hay entre dos renders del MISMO B (media 0,85, p99 3). Detalle: el «shadow catcher» solo da bien la máscara (dónde hay luceros y sombras); su sombra sale gris por el canal alfa y la real es más cálida (rebote del lucero) y menos azul, así que dentro de esa máscara el color y la opacidad de la capa se calculan para que `lámina · (1-α) + color · α` dé el píxel del B completo.
 
 ## Cómo entra a la app
 
-- `isla_base.webp`, `isla_edificios.webp`, `isla_nubi_hola.webp` y `fondo_tablero.webp` van en `app/src/main/res/drawable-nodpi/`, a 2×. **No** en carpetas de densidad: Android las reescala al decodificarlas (un teléfono de 420 dpi las achicaba a 0,66 y se veían borrosas). `nubi_hola` se llama `isla_nubi_hola` porque ya existe un `nubi_hola` en la app.
+- `isla_base.webp`, `isla_edificios.webp`, `isla_nubi_hola.webp`, `fondo_lamina.webp` y `fondo_luceros.webp` van en `app/src/main/res/drawable-nodpi/`, a 2×. **No** en carpetas de densidad: Android las reescala al decodificarlas (un teléfono de 420 dpi las achicaba a 0,66 y se veían borrosas). `nubi_hola` se llama `isla_nubi_hola` porque ya existe un `nubi_hola` en la app.
 - `isla.json` va en `app/src/main/res/raw/`. Sus coordenadas son 0-1 sobre el recorte común (930 × 1042 px); `data/IslaLayout.kt` lo lee y `ui/components/Island.kt` dibuja sobre él la sombra de Nubi, el halo de la torre y los de las farolas.
-- `IslaJsonTest` comprueba que las imágenes y el JSON son del mismo render (mismo tamaño, Nubi en su caja) y que los edificios, las farolas y la sombra no se pisan. `BoardBackgroundContrastTest` comprueba que el saludo se lea sobre el fondo (≥ 4,5:1) y que su zona no tenga luceros.
+- `IslaJsonTest` comprueba que las imágenes y el JSON son del mismo render (mismo tamaño, Nubi en su caja) y que los edificios, las farolas y la sombra no se pisan. `BoardBackgroundContrastTest` comprueba que el saludo se lea sobre la lámina (≥ 4,5:1), que la lámina no tenga luceros y que la capa de luceros no tenga ninguno en las zonas libres de Hoy.
 - Si se cambia el encuadre o los edificios, hay que volver a correr `componer.py` y copiar LAS TRES cosas juntas (imágenes y JSON): mezclarlas de renders distintos desalinea los toques y los halos.
 
 ## Qué falta (fases siguientes de `docs/diseno-isla.md`)
