@@ -15,7 +15,6 @@ import com.example.data.MeasurePoint
 import com.example.model.AppLanguage
 import com.example.model.DomainType
 import com.example.ui.components.AREA_ORDER
-import com.example.ui.components.NubiHome
 import com.example.ui.screens.AreaDetail
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
@@ -27,7 +26,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Hoy con Nubi al centro y el detalle de un área, con datos de ejemplo (para ver el dibujo real sin teléfono). */
+/** El detalle de un área (se abre tocando su edificio en la isla de Hoy), con datos de ejemplo (para ver el dibujo real sin teléfono). */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
@@ -44,20 +43,6 @@ class NubiHomeScreenshotTest {
     AreaStatus("RAZONAMIENTO", 0.43f, 0f, listOf(0.43f, 0.43f, 0.43f, 0.43f)),
     AreaStatus("LENGUAJE", 0.12f, 0.03f, listOf(0.06f, 0.08f, 0.09f, 0.12f))
   )
-
-  @Test
-  fun hoy_con_nubi() {
-    composeTestRule.mainClock.autoAdvance = false
-    composeTestRule.setContent {
-      NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(680.dp).background(Color(0xFF050823))) {
-          NubiHome(statuses, names, AreaProgress.nubiLine(statuses, names), onArea = {})
-        }
-      }
-    }
-    composeTestRule.mainClock.advanceTimeBy(1_000)
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-nubi.png")
-  }
 
   @Test
   fun detalle_de_memoria() {
