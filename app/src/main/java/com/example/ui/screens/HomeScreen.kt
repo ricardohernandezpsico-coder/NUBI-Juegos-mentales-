@@ -304,8 +304,8 @@ internal fun HomeContent(
 ) {
   BoxWithConstraints(modifier.fillMaxSize()) {
     Column(Modifier.fillMaxWidth().heightIn(min = maxHeight).verticalScroll(rememberScrollState())) {
-      // Saludo con la fecha y tu liga; arriba a la derecha tu perfil y las opciones (como en las otras pestañas). Todo el texto va a la IZQUIERDA y desde 24 dp bajo la barra: es la zona del fondo sin luceros (`BoardBackgroundContrastTest`).
-      Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 24.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+      // Saludo con la fecha y tu liga; arriba a la derecha tu perfil y las opciones (como en las otras pestañas). Todo el texto va a la IZQUIERDA y desde 28 dp bajo la barra: la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`; la vigila `HoyIslaScreenshotTest`). Con 24 dp, en una pantalla de 411 × 914 dp, el lucero de arriba a la izquierda rozaba la caja del saludo.
+      Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 28.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
           Text(
             if (ui.name.isBlank()) greetingWord(ui.now) else "${greetingWord(ui.now)}, ${ui.name.trim()}",
@@ -313,7 +313,7 @@ internal fun HomeContent(
           )
           FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(dateText(ui.now), color = HoySoft, fontSize = 14.sp, modifier = Modifier.testTag("home_date").then(RowItem))
-            Row(RowItem, verticalAlignment = Alignment.CenterVertically) {
+            Row(RowItem.testTag("home_tier"), verticalAlignment = Alignment.CenterVertically) {
               LeagueShield(tier = ui.tier, size = 20.dp)
               Spacer(Modifier.width(5.dp))
               Text(ui.tier.tierName, color = HoyCream, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -374,7 +374,7 @@ private fun HoyWeek(ui: HomeUi) {
     }
     FlowRow(Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
       // El lector de pantalla oye la semana UNA vez (en los farolitos); este texto es solo para la vista.
-      Box(RowItem.clearAndSetSemantics { }, contentAlignment = Alignment.CenterStart) {
+      Box(RowItem.testTag("home_week_caption").clearAndSetSemantics { }, contentAlignment = Alignment.CenterStart) {
         Text(Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal), color = HoySoft, fontSize = 14.sp)
       }
       Row(RowItem, verticalAlignment = Alignment.CenterVertically) {

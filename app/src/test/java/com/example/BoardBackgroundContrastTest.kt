@@ -11,8 +11,9 @@ import org.robolectric.annotation.GraphicsMode
 import kotlin.math.pow
 
 /**
- * El saludo de Hoy sobre el fondo B (el tablero azul marino de la isla, Tarea 82): el contraste de cada color de texto contra el PEOR píxel de la zona del saludo (x 4-70 %, y 8-22 % de la imagen, sin luceros por diseño)
- * tiene que ser de 4,5:1 o más (WCAG AA). Se mide sobre la imagen que entra a la app, no sobre la maqueta. Medido el 11-oct: crema 8,3:1 y sol 6,7:1.
+ * El fondo B en dos capas (Tarea 83): la lámina azul marino SIN luceros (`fondo_lamina`, la que va siempre detrás del pager) y los luceros con su sombra (`fondo_luceros`, que solo se ven en Hoy).
+ * Se miden las imágenes que entran a la app: el saludo se lee sobre la lámina con 4,5:1 o más (WCAG AA; medido el 11-oct sobre el B entero: crema 8,3:1 y sol 6,7:1), la lámina no tiene ningún lucero y los luceros no caen en las zonas
+ * que `tools/isla/isla.py` (`ZONAS_HOY`) deja libres para el texto que va directo sobre el fondo de Hoy.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -34,7 +35,7 @@ class BoardBackgroundContrastTest {
 
   @Test
   fun el_saludo_se_lee_sobre_el_fondo_con_4_5_a_1_o_mas() {
-    val bmp = BitmapFactory.decodeFile("src/main/res/drawable-nodpi/fondo_tablero.webp")
+    val bmp = BitmapFactory.decodeFile("src/main/res/drawable-nodpi/fondo_lamina.webp")
     assertEquals("el fondo mide 720 × 1200 px a 2×", 720 to 1200, bmp.width to bmp.height)
     val x0 = (bmp.width * 0.04).toInt(); val x1 = (bmp.width * 0.70).toInt()
     val y0 = (bmp.height * 0.08).toInt(); val y1 = (bmp.height * 0.22).toInt()
@@ -49,10 +50,31 @@ class BoardBackgroundContrastTest {
   }
 
   @Test
-  fun la_zona_del_saludo_no_tiene_luceros() {
-    val bmp = BitmapFactory.decodeFile("src/main/res/drawable-nodpi/fondo_tablero.webp")
+  fun la_lamina_no_tiene_ningun_lucero() {
+    val bmp = BitmapFactory.decodeFile("src/main/res/drawable-nodpi/fondo_lamina.webp")
     var brightest = 0.0
-    for (y in (bmp.height * 0.08).toInt() until (bmp.height * 0.22).toInt() step 2) for (x in (bmp.width * 0.04).toInt() until (bmp.width * 0.70).toInt() step 2) brightest = maxOf(brightest, lum(bmp.getPixel(x, y) and 0xFFFFFF))
-    assertTrue("el píxel más claro de la zona del saludo debe ser de fondo, no un lucero (luminancia %.2f)".format(brightest), brightest < 0.12)
+    for (y in 0 until bmp.height step 2) for (x in 0 until bmp.width step 2) brightest = maxOf(brightest, lum(bmp.getPixel(x, y) and 0xFFFFFF))
+    assertTrue("el píxel más claro de la lámina debe ser de fondo, no un lucero (luminancia %.2f)".format(brightest), brightest < 0.12)
+  }
+
+  // Mismos valores que ZONAS_HOY de tools/isla/isla.py (x0, y0, x1, y1 en fracción de la imagen, y hacia abajo).
+  private val zonasHoy = listOf(
+    floatArrayOf(0.0f, 0.07f, 0.75f, 0.29f),   // encabezado: saludo, fecha, liga, semana y racha
+    floatArrayOf(0.0f, 0.74f, 1.0f, 0.93f)     // franja del enlace del punto de partida y de los botones
+  )
+
+  @Test
+  fun los_luceros_no_caen_en_las_zonas_sin_luceros_de_Hoy() {
+    val bmp = BitmapFactory.decodeFile("src/main/res/drawable-nodpi/fondo_luceros.webp")
+    assertEquals("los luceros miden 720 × 1200 px a 2×", 720 to 1200, bmp.width to bmp.height)
+    assertTrue("la capa de luceros tiene transparencia", bmp.hasAlpha())
+    var total = 0
+    for (y in 0 until bmp.height) for (x in 0 until bmp.width) if ((bmp.getPixel(x, y) ushr 24) >= 128) total++
+    assertTrue("la capa de luceros no está vacía ($total píxeles opacos)", total > 3000)
+    for (z in zonasHoy) {
+      var inside = 0
+      for (y in (bmp.height * z[1]).toInt() until (bmp.height * z[3]).toInt()) for (x in (bmp.width * z[0]).toInt() until (bmp.width * z[2]).toInt()) if ((bmp.getPixel(x, y) ushr 24) >= 128) inside++
+      assertEquals("píxeles de lucero dentro de la zona ${z.toList()}", 0, inside)
+    }
   }
 }

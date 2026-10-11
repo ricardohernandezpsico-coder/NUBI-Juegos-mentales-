@@ -21,8 +21,9 @@ object Week {
     return Lamps(List(7) { (monday + it) in days }, offset)
   }
 
-  /** «3 de 4 días de tu meta» (sin meta, «3 días esta semana»). */
+  /** «3 de 4 días de tu meta»; pasada la meta, «6 días esta semana: meta cumplida» (no «6 de 4»); sin meta, «3 días esta semana». */
   fun caption(daysPlayed: Int, goal: Int): String = when {
+    goal > 0 && daysPlayed > goal -> "$daysPlayed días esta semana: meta cumplida"
     goal > 0 -> "$daysPlayed de $goal ${if (goal == 1) "día" else "días"} de tu meta"
     daysPlayed == 1 -> "1 día esta semana"
     else -> "$daysPlayed días esta semana"

@@ -29,6 +29,7 @@ import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -193,6 +194,44 @@ class HoyIslaScreenshotTest {
     composeTestRule.onNodeWithTag("isla_antena").performClick()
     assertEquals("ATENCION", placeTapped)
   }
+
+  // ---- Los luceros del fondo (Tarea 83): ningún texto de Hoy que va directo sobre el fondo cae sobre un lucero, en cada estado y tamaño.
+  // Se compara la CAJA de cada texto (más grande que sus letras, así que es estricto) con la capa `fondo_luceros` recortada como la pinta `BoardBackground` (ContentScale.Crop, centrado).
+
+  private val textsOnBackground = listOf("home_greeting", "home_date", "home_tier", "home_week_caption", "streak_pill", "btn_home_baseline")
+
+  private fun assertNoLucerosUnderTexts(ui: HomeUi, widthDp: Int, heightDp: Int, fontScale: Float = 1f) {
+    show(ui, widthDp, heightDp, fontScale)
+    val luceros = android.graphics.BitmapFactory.decodeFile("src/main/res/drawable-nodpi/fondo_luceros.webp")
+    val root = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot
+    val k = maxOf(root.width / luceros.width, root.height / luceros.height)
+    val x0 = (luceros.width * k - root.width) / 2f
+    val y0 = (luceros.height * k - root.height) / 2f
+    val margin = 0   // la caja de un texto ya es más grande que sus letras (incluye el espacio sobre las mayúsculas): sin margen extra
+    val hits = mutableListOf<String>()
+    var checked = 0
+    for (tag in textsOnBackground) for (node in composeTestRule.onAllNodes(androidx.compose.ui.test.hasTestTag(tag)).fetchSemanticsNodes()) {
+      val b = node.boundsInRoot; checked++
+      val ix1 = (((b.left + x0) / k).toInt() - margin).coerceIn(0, luceros.width - 1); val ix2 = (((b.right + x0) / k).toInt() + margin).coerceIn(0, luceros.width - 1)
+      val iy1 = (((b.top + y0) / k).toInt() - margin).coerceIn(0, luceros.height - 1); val iy2 = (((b.bottom + y0) / k).toInt() + margin).coerceIn(0, luceros.height - 1)
+      var n = 0
+      for (y in iy1..iy2) for (x in ix1..ix2) if ((luceros.getPixel(x, y) ushr 24) >= 128) n++
+      if (n > 0) hits += "«$tag» (caja $b) tiene $n píxeles de lucero debajo"
+    }
+    assertTrue("hay textos de Hoy sobre luceros a $widthDp × $heightDp, letra $fontScale: $hits", hits.isEmpty())
+    assertTrue("se revisaron al menos 5 textos ($checked)", checked >= 5)
+  }
+
+  @Test fun sin_luceros_bajo_el_texto_normal_393() = assertNoLucerosUnderTexts(ui(), 393, 873)
+  @Test fun sin_luceros_bajo_el_texto_con_el_enlace_393() = assertNoLucerosUnderTexts(ui(hasBaseline = false), 393, 873)
+  @Test fun sin_luceros_bajo_el_texto_con_partida_en_pausa_393() = assertNoLucerosUnderTexts(ui(paused = "Carga exacta", hasBaseline = false), 393, 873)
+  @Test fun sin_luceros_bajo_el_texto_con_ruta_completa_393() = assertNoLucerosUnderTexts(ui(completed = 3, hasBaseline = false), 393, 873)
+  @Test fun sin_luceros_bajo_el_texto_con_el_primer_vuelo_393() = assertNoLucerosUnderTexts(ui(completed = 3, flightDay = true, hasBaseline = false), 393, 873)
+  @Test fun sin_luceros_bajo_el_texto_normal_360() = assertNoLucerosUnderTexts(ui(), 360, 780)
+  @Test fun sin_luceros_bajo_el_texto_con_el_enlace_360() = assertNoLucerosUnderTexts(ui(hasBaseline = false), 360, 780)
+  @Test fun sin_luceros_bajo_el_texto_con_partida_en_pausa_360() = assertNoLucerosUnderTexts(ui(paused = "Carga exacta", hasBaseline = false), 360, 780)
+  @Test fun sin_luceros_bajo_el_texto_con_ruta_completa_360() = assertNoLucerosUnderTexts(ui(completed = 3, hasBaseline = false), 360, 780)
+  @Test fun sin_luceros_bajo_el_texto_en_el_emulador_411() = assertNoLucerosUnderTexts(ui(hasBaseline = false), 411, 914)
 
   private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTagCount(tag: String) =
     onAllNodes(androidx.compose.ui.test.hasTestTag(tag)).fetchSemanticsNodes().size

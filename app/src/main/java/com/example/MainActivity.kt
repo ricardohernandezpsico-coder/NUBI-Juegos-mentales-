@@ -164,7 +164,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
 
   Box(modifier = Modifier.fillMaxSize()) {
     // El fondo de toda la app: el tablero azul marino de la isla (Tarea 82). Una sola capa detrás del pager: al deslizar entre Hoy, Juegos y Avance no salta.
-    com.example.ui.components.BoardBackground()
+    // La lámina siempre; los luceros solo en Hoy, con un fundido que sigue al dedo al deslizar entre pestañas.
+    com.example.ui.components.BoardBackground(lucerosAlpha = { com.example.ui.components.lucerosAlpha(pagerState) })
     Scaffold(
       modifier = Modifier
         .fillMaxSize()
