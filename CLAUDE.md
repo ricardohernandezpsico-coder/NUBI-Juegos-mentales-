@@ -119,6 +119,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 ## Reglas que no se rompen
 
 - **Diseño**: "noche + arcilla": cielo nocturno animado (**fondo C**, `docs/previews/fondo-oscuro.png`; colores en `NeuroStyle.Night*`); lo tocable es arcilla (borde tinta grueso `Ink`, sombra dura, colores Coral/Sun/Sky/Grape/Lime/Cream). **Tipografía**: `AppFamily` elige por peso: normal y medio = Nunito, seminegrita y negrita = Fredoka. **Tamaños**: ningún texto bajo 14 sp (13 solo en la barra de pestañas y rótulos de gráficos). En los juegos de Unity ningún texto bajo 14 dp (42 unidades del lienzo de 1080): lo mide el smoke y `HudRulesTests`; los avisos (`Toast`) buscan solos una franja libre (`ToastPlacement`; el smoke lo prueba). Las pantallas principales NO usan recuadros para informar (texto suelto, objetos, líneas finas); tarjetas solo en diálogos. Nada de emojis como íconos; acierto/error nunca solo por color (forma o texto); contraste ≥ 4.5:1; respetar "quitar animaciones", sonido y vibración apagados. Usar la skill `ui-ux-pro-max` (`.claude/skills/`) para decisiones de diseño.
+- **Dirección visual de la isla** (en curso, Tareas 82-83): [docs/diseno-isla.md](docs/diseno-isla.md) (valores finales, fases y reglas del fondo; el arte se regenera con `tools/isla/`).
 - **Juegos Unity**: medir el tiempo con `GameClock.Time/DeltaTime` (no `Time.unscaled*`), para que la pausa funcione.
   El arte se hornea en sprites con `ClayRaster` (`Image.color` blanco); la sombra dura cae siempre hacia abajo.
 - **Símbolos** (4-oct): nada de estrella con puntas, media luna ni cruz en juegos ni íconos (luceros redondos, hexágono, gota, ola): ver [docs/simbolos-neutros.md](docs/simbolos-neutros.md). Los planetas-puerto de colores viven en `Games/Shared/PortSprites` (antes en Tráfico Estelar).
@@ -146,7 +147,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 691 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 707 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
