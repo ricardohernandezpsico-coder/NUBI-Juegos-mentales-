@@ -9,6 +9,12 @@ data class IslaPoint(val x: Float, val y: Float)
 /** Un lugar de la isla: [key] (`observatorio`, `antena`, `biblioteca`, `hangar`), el área a la que pertenece (`MEMORIA`…) y sus tres puntos. */
 data class IslaPlace(val key: String, val area: String, val foot: IslaPoint, val center: IslaPoint, val top: IslaPoint)
 
+/** La caja de una imagen de Nubi (`hola` o `mira_<lugar>`) sobre el recorte común: esquina superior izquierda, esquina inferior derecha y su tamaño en píxeles a 2×. */
+data class IslaNubiBox(val topLeft: IslaPoint, val bottomRight: IslaPoint, val widthPx: Int, val heightPx: Int) {
+  val width: Float get() = bottomRight.x - topLeft.x
+  val height: Float get() = bottomRight.y - topLeft.y
+}
+
 /** La sombra de Nubi sobre la losa: elipse de tinta, ancho y alto normalizados a ese ancho y alto del recorte. */
 data class IslaShadow(val center: IslaPoint, val width: Float, val height: Float, val opacity: Float, val blur: Float)
 
@@ -34,7 +40,9 @@ data class IslaLayout(
   val nubiHeightPx: Int,
   val shadow: IslaShadow,
   val antennaHalo: IslaHalo,
-  val lampHalos: IslaHalo
+  val lampHalos: IslaHalo,
+  /** Las cajas de Nubi mirando hacia cada lugar (`observatorio`, `antena`, `biblioteca`, `hangar`): cada imagen tiene la suya porque se recortó a su borde. */
+  val miraBoxes: Map<String, IslaNubiBox> = emptyMap()
 ) {
   /** Ancho / alto del recorte (0,89): el `Box` de la isla en pantalla. */
   val aspect: Float get() = widthPx.toFloat() / heightPx
@@ -60,6 +68,12 @@ data class IslaLayout(
       val box = nubi.getJSONArray("caja")
       val px = nubi.getJSONArray("px_2x")
       val sh = root.getJSONObject("nubi").getJSONObject("sombra_elipse")
+      val capa = root.getJSONObject("capa_nubi")
+      val mira = PLACE_ORDER.associateWith { key ->
+        val o = capa.getJSONObject("mira_$key")
+        val b = o.getJSONArray("caja"); val q = o.getJSONArray("px_2x")
+        IslaNubiBox(pt(b.getJSONArray(0)), pt(b.getJSONArray(1)), q.getInt(0), q.getInt(1))
+      }
       val ha = root.getJSONObject("halo_antena")
       val hf = root.getJSONObject("halos_farolas")
       return IslaLayout(
@@ -70,7 +84,8 @@ data class IslaLayout(
         nubiWidthPx = px.getInt(0), nubiHeightPx = px.getInt(1),
         shadow = IslaShadow(pt(sh.getJSONArray("centro")), sh.getDouble("ancho").toFloat(), sh.getDouble("alto").toFloat(), sh.getDouble("opacidad").toFloat(), sh.getDouble("desenfoque").toFloat()),
         antennaHalo = IslaHalo(listOf(pt(ha.getJSONArray("centro"))), ha.getDouble("radio").toFloat(), ha.getDouble("opacidad").toFloat(), ha.getString("color")),
-        lampHalos = IslaHalo(pts(hf.getJSONArray("centros")), hf.getDouble("radio").toFloat(), hf.getDouble("opacidad").toFloat(), hf.getString("color"))
+        lampHalos = IslaHalo(pts(hf.getJSONArray("centros")), hf.getDouble("radio").toFloat(), hf.getDouble("opacidad").toFloat(), hf.getString("color")),
+        miraBoxes = mira
       )
     }
   }
@@ -85,6 +100,9 @@ object IslaLugar {
 
   /** «Observatorio» para `MEMORIA`, etc.; null si el área no existe. */
   fun nameOfArea(area: String): String? = NAME_BY_AREA[area]
+
+  /** «Memoria», «Atención», «Razonamiento», «Lenguaje» para `MEMORIA`…; null si el área no existe. */
+  fun areaName(area: String): String? = AREA_NAME[area]
 
   /** «Hangar, Razonamiento»: lo que lee el lector de pantalla al llegar a un edificio. */
   fun spoken(area: String): String? = NAME_BY_AREA[area]?.let { "$it, ${AREA_NAME.getValue(area)}" }
