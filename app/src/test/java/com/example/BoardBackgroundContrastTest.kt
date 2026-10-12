@@ -59,8 +59,8 @@ class BoardBackgroundContrastTest {
 
   // Mismos valores que ZONAS_HOY de tools/isla/isla.py (x0, y0, x1, y1 en fracción de la imagen, y hacia abajo).
   private val zonasHoy = listOf(
-    floatArrayOf(0.0f, 0.07f, 0.75f, 0.29f),   // encabezado: saludo, fecha, liga, semana y racha
-    floatArrayOf(0.0f, 0.74f, 1.0f, 0.93f)     // franja del enlace del punto de partida y de los botones
+    floatArrayOf(0.0f, 0.07f, 1.0f, 0.28f),   // encabezado: saludo, fecha con la meta, farolitos y racha
+    floatArrayOf(0.0f, 0.46f, 1.0f, 0.93f)    // «Tu ruta de hoy», los avisos bajo el botón y el enlace del punto de partida
   )
 
   @Test
@@ -70,7 +70,7 @@ class BoardBackgroundContrastTest {
     assertTrue("la capa de luceros tiene transparencia", bmp.hasAlpha())
     var total = 0
     for (y in 0 until bmp.height) for (x in 0 until bmp.width) if ((bmp.getPixel(x, y) ushr 24) >= 128) total++
-    assertTrue("la capa de luceros no está vacía ($total píxeles opacos)", total > 3000)
+    assertTrue("la capa de luceros no está vacía ($total píxeles opacos)", total > 1000)
     for (z in zonasHoy) {
       var inside = 0
       for (y in (bmp.height * z[1]).toInt() until (bmp.height * z[3]).toInt()) for (x in (bmp.width * z[0]).toInt() until (bmp.width * z[2]).toInt()) if ((bmp.getPixel(x, y) ushr 24) >= 128) inside++

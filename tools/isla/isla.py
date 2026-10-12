@@ -824,8 +824,8 @@ TEXTO = (0.04, 0.08, 0.70, 0.22); BARRA_Z = (0.0, 0.88, 1.0, 1.0)   # zonas (x0,
 # Zonas AMPLIADAS sin luceros (x0,y0,x1,y1 en fracción de la imagen, y hacia abajo): ningún texto de Hoy que vaya directo sobre el fondo debe caer sobre un lucero. Los luceros que caen ahí se QUITAN sin tocar
 # la secuencia de colocación (semilla 5): todos los demás quedan exactamente donde estaban en el B aprobado.
 ZONAS_HOY = (
-  (0.0, 0.07, 0.75, 0.29),   # encabezado: saludo, fecha, liga, semana y racha (también a 360 dp, donde el saludo ocupa dos líneas y la racha baja a y ≈ 25 %)
-  (0.0, 0.74, 1.0, 0.93),    # franja del enlace «¿Aún sin tu punto de partida?» y de los botones, sobre la barra de pestañas (con barra de gestos, más abajo que con tres botones)
+  (0.0, 0.07, 1.0, 0.28),    # encabezado de Hoy a todo el ancho: saludo (a 360 dp en dos líneas), fecha con la meta, farolitos y racha. Medido en las pruebas: el texto llega a y 22,5 %; margen para barras de estado más altas (Tarea 84; en la 83 era x 0-75 %, y 7-29 %)
+  (0.0, 0.46, 1.0, 0.93),    # de «Tu ruta de hoy» (medido: empieza en y 51,5 %) hasta la barra: el título y su meta, los avisos bajo el botón y el enlace del punto de partida; su alto cambia con el estado, la pantalla y la barra de navegación (Tarea 84)
 )
 SIN_LUCEROS = '--sin-luceros' in args; SOLO_LUCEROS = '--solo-luceros' in args; B_APROBADO = '--b-aprobado' in args
 def tablero():
