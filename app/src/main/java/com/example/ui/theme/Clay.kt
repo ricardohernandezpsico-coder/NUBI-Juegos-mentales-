@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -110,10 +112,12 @@ fun ClayButton(
     onClick = onClick,
     contentPadding = 0.dp
   ) {
+    // 52 dp como mínimo, no fijo: con letra 2,0 el texto pasa a dos líneas y el botón crece en vez de cortarlo.
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .height(52.dp),
+        .heightIn(min = 52.dp)
+        .padding(horizontal = 8.dp, vertical = 6.dp),
       horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -121,7 +125,7 @@ fun ClayButton(
         Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(8.dp))
       }
-      Text(text, color = textColor, fontSize = fontSize, fontWeight = FontWeight.Bold)
+      Text(text, color = textColor, fontSize = fontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
     }
   }
 }

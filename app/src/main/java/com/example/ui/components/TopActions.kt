@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -72,12 +74,24 @@ fun LockTabSwipe() {
  * arcilla celeste = tu perfil, y el engranaje = opciones (Ajustes). Botones de 44 dp con nombre para el lector.
  */
 @Composable
-fun TopActions(name: String, onProfile: () -> Unit, onSettings: () -> Unit, modifier: Modifier = Modifier) {
+fun TopActions(
+  name: String,
+  onProfile: () -> Unit,
+  onSettings: () -> Unit,
+  modifier: Modifier = Modifier,
+  /** Lo que dice el lector de pantalla del botón del perfil (Hoy le suma la liga). */
+  profileLabel: String = "Tu perfil",
+  /** Una insignia chica en la esquina de abajo a la derecha del perfil (Hoy: el escudo de tu liga). Es decorativa: la liga va en [profileLabel]. */
+  profileBadge: (@Composable () -> Unit)? = null
+) {
   Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-    ClayCircle(Clay.Sky, "Tu perfil", onProfile, Modifier.testTag("btn_top_profile")) {
-      val initial = name.trim().firstOrNull()?.uppercase()
-      if (initial != null) Text(initial, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-      else Icon(Icons.Default.Person, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(24.dp))
+    Box {
+      ClayCircle(Clay.Sky, profileLabel, onProfile, Modifier.testTag("btn_top_profile")) {
+        val initial = name.trim().firstOrNull()?.uppercase()
+        if (initial != null) Text(initial, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        else Icon(Icons.Default.Person, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(24.dp))
+      }
+      if (profileBadge != null) Box(Modifier.align(Alignment.BottomEnd).offset(x = 6.dp, y = 6.dp).clearAndSetSemantics { }) { profileBadge() }
     }
     Spacer(Modifier.width(8.dp))
     ClayCircle(Clay.Cream, "Opciones", onSettings, Modifier.testTag("btn_top_settings")) {

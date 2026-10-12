@@ -29,6 +29,10 @@ object Week {
     else -> "$daysPlayed días esta semana"
   }
 
-  /** Lo que lee el lector de pantalla para el grupo de siete farolitos (una sola descripción, no siete). */
-  fun spoken(daysPlayed: Int, goal: Int): String = "Tu semana: " + caption(daysPlayed, goal)
+  /** Lo que lee el lector de pantalla para el grupo de siete farolitos (una sola descripción, no siete; la meta ya la lee la línea de la fecha). */
+  fun lampsSpoken(daysPlayed: Int): String = when (daysPlayed) {
+    0 -> "Tu semana: ningún día con partida todavía"
+    1 -> "Tu semana: 1 día con partida"
+    else -> "Tu semana: $daysPlayed días con partida"
+  }
 }

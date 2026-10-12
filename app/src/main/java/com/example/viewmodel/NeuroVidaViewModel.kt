@@ -726,6 +726,16 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
   }
 
+  /**
+   * «Jugar» en la ficha que abre una piedrita de «Tu ruta de hoy» (Hoy): igual que [playFromLibrary] pero SIN recordar casilla ni área de Juegos y sin «volver» a Juegos: al terminar la partida la persona sigue en Hoy.
+   * Si el juego es el que sigue en el camino de hoy, su resultado lo avanza igual que desde Juegos (`recordGameResult` avanza el camino con el juego que toca).
+   */
+  fun playFromHome(gameId: String, mode: com.example.data.PlayMode, timed: Boolean? = null) {
+    focusPrefs.edit().putBoolean("return", false).apply()
+    if (timed != null) repository.setReto(gameId, timed)       // se recuerda por juego
+    launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
+  }
+
   /** La elección «Sin reloj / Contra el reloj» que vale hoy para [gameId] (la ficha de Juegos la muestra elegida). */
   fun retoFor(gameId: String): Boolean = repository.retoFor(gameId)
 

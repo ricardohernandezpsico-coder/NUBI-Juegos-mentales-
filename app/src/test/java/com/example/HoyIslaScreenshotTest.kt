@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -22,6 +24,7 @@ import com.example.model.AppLanguage
 import com.example.model.RankTier
 import com.example.ui.components.BoardBackground
 import com.example.ui.screens.HomeContent
+import com.example.ui.screens.HomeStop
 import com.example.ui.screens.HomeUi
 import com.example.ui.screens.ISLAND_MIN_HEIGHT
 import com.example.ui.screens.homeStops
@@ -29,6 +32,7 @@ import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -39,8 +43,9 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
 
 /**
- * Hoy con la isla (Tarea 82, fase 1; `docs/diseno-isla.md` §4.1). Capturas a 393 × 873 dp (el teléfono de referencia), a 360 dp de ancho y con letra 1,3, sobre el fondo nuevo y con las barras del sistema simuladas por margen
- * (24 dp arriba; abajo 48 dp de la barra de Android y 71 dp de la barra de pestañas actual). La regla que manda: con letra normal las TRES paradas y el botón se ven sin deslizar.
+ * Hoy con la isla protagonista y «Tu ruta de hoy» (Tarea 84, distribución «A» de `docs/diseno-isla.md`). Capturas a 393 × 873 dp (el teléfono de referencia), a 360 dp de ancho, con letra 1,3 y con letra 2,0, sobre el fondo en dos capas y con las barras
+ * del sistema simuladas por margen (24 dp arriba; abajo 48 dp de la barra de Android y 71 dp de la barra de pestañas actual). La regla que manda: con letra normal las TRES piedritas y el botón se ven sin deslizar y la isla toma el resto;
+ * con letra grande se desliza, pero nada se corta ni se superpone. Y ningún texto que va directo sobre el fondo cae sobre un lucero.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -59,6 +64,7 @@ class HoyIslaScreenshotTest {
     )
 
   private var placeTapped: String? = null
+  private var stopTapped: HomeStop? = null
   private var played = 0
   private var resumed = 0
 
@@ -70,7 +76,7 @@ class HoyIslaScreenshotTest {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
             HomeContent(
-              ui = ui, onProfile = {}, onSettings = {}, onPlace = { placeTapped = it }, onPlay = { played++ }, onResume = { resumed++ }, onBaseline = {},
+              ui = ui, onProfile = {}, onSettings = {}, onPlace = { placeTapped = it }, onStop = { stopTapped = it }, onPlay = { played++ }, onResume = { resumed++ }, onBaseline = {},
               modifier = Modifier.padding(top = 24.dp, bottom = 119.dp)
             )
           }
@@ -80,36 +86,126 @@ class HoyIslaScreenshotTest {
     composeTestRule.waitForIdle()
   }
 
+  private fun bounds(tag: String): Rect = composeTestRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+
+  /** Imprime el alto de la isla en dp (para los informes: «ISLA 393×873 …»). */
+  private fun printIsland(label: String) = println("ISLA %s: %.0f dp de alto, %.0f dp de ancho".format(label, bounds("home_isla").height / composeTestRule.density.density, bounds("home_isla").width / composeTestRule.density.density))
+
+  // ---- La regla que manda y las capturas
+
   @Test
-  fun hoy_a_393_por_873_las_tres_paradas_y_el_boton_se_ven_sin_deslizar() {
+  fun hoy_a_393_por_873_las_tres_piedritas_y_el_boton_se_ven_sin_deslizar() {
     show(ui())
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-isla-393.png")
-    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(220.dp)   // la isla es la protagonista: no se queda en su mínimo cuando la pantalla alcanza
-    for (tag in listOf("home_greeting", "home_week", "home_isla", "nubi_line", "home_stop_1", "home_stop_2", "home_stop_3", "btn_home_play")) {
-      try { composeTestRule.onNodeWithTag(tag).assertIsDisplayed() } catch (e: AssertionError) { throw AssertionError("«$tag» no se ve sin deslizar a 393 × 873: ${composeTestRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot}", e) }
+    for (tag in listOf("home_greeting", "home_date", "home_week", "home_isla", "home_route_title", "home_route_meta", "home_stop_1", "home_stop_2", "home_stop_3", "btn_home_play")) {
+      try { composeTestRule.onNodeWithTag(tag).assertIsDisplayed() } catch (e: AssertionError) { throw AssertionError("«$tag» no se ve sin deslizar a 393 × 873: ${bounds(tag)}", e) }
     }
   }
 
   @Test
-  fun hoy_a_360_dp_de_ancho_tambien_muestra_las_paradas_y_el_boton() {
+  fun la_isla_es_la_protagonista_y_toma_lo_que_sobra() {
+    show(ui())
+    printIsland("393×873 sin el enlace")
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(380.dp)   // a 393 × 873 con letra 1,0 y sin el enlace: más de 380 dp (en la Tarea 83 eran ~240)
+  }
+
+  @Test
+  fun con_el_enlace_del_punto_de_partida_la_isla_cede_ese_alto_pero_sigue_siendo_grande() {
+    show(ui(hasBaseline = false))
+    printIsland("393×873 con el enlace")
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(320.dp)
+    composeTestRule.onNodeWithTag("btn_home_baseline").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("btn_home_play").assertIsDisplayed()
+  }
+
+  @Test
+  fun hoy_a_360_dp_de_ancho_tambien_muestra_las_piedritas_y_el_boton() {
     show(ui(), widthDp = 360, heightDp = 780)
     for (tag in listOf("home_stop_1", "home_stop_2", "home_stop_3", "btn_home_play")) composeTestRule.onNodeWithTag(tag).assertIsDisplayed()
+    printIsland("360×780 sin el enlace")
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(ISLAND_MIN_HEIGHT)
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-isla-360.png")
   }
 
   @Test
-  fun hoy_con_letra_1_3_se_desliza_pero_la_isla_no_se_pierde() {
+  fun hoy_con_letra_1_3_se_desliza_pero_la_isla_no_se_pierde_y_nada_se_superpone() {
     show(ui(), fontScale = 1.3f)
-    composeTestRule.onNodeWithTag("home_isla").assertIsDisplayed().assertHeightIsAtLeast(ISLAND_MIN_HEIGHT)   // no se achica más que su mínimo: la pantalla se desliza
+    composeTestRule.onNodeWithTag("home_isla").assertIsDisplayed().assertHeightIsAtLeast(ISLAND_MIN_HEIGHT)
     composeTestRule.onNodeWithTag("home_greeting").assertIsDisplayed()
+    assertNothingCutOrOverlapping(393)
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-isla-letra13.png")
   }
 
   @Test
-  fun el_saludo_dice_el_momento_del_dia_el_nombre_y_la_fecha() {
+  fun hoy_con_letra_2_0_se_desliza_y_nada_se_corta_ni_se_superpone() {
+    show(ui(hasBaseline = false), fontScale = 2f)
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(ISLAND_MIN_HEIGHT)
+    assertNothingCutOrOverlapping(393)
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-isla-letra20.png")
+  }
+
+  @Test
+  fun a_360_dp_con_letra_1_3_nada_se_corta_ni_se_superpone() {
+    show(ui(), widthDp = 360, heightDp = 780, fontScale = 1.3f)
+    assertNothingCutOrOverlapping(360)
+  }
+
+  /**
+   * Ningún texto se corta a lo alto (`TextLayoutResult.didOverflowHeight`): es lo que le pasaba al botón grande con letra 2,0 (alto fijo de 52 dp). A lo ancho no se mira aquí: dentro de `IntrinsicSize` el último diseño que guarda el texto es el de la medición
+   * intrínseca y `didOverflowWidth` da falsos positivos; el ancho lo cubre [assertNothingCutOrOverlapping] y las capturas.
+   */
+  private fun assertNoTextCut(vararg texts: String) {
+    for (text in texts) {
+      val node = composeTestRule.onNodeWithText(text).fetchSemanticsNode()
+      val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+      node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+      val r = results.firstOrNull() ?: throw AssertionError("«$text» no dio su diseño de texto")
+      assertTrue("«$text» se corta a lo alto", !r.didOverflowHeight)
+    }
+  }
+
+  @Test
+  fun con_letra_2_0_ningun_texto_de_Hoy_se_corta() {
+    show(ui(completed = 0), fontScale = 2f)
+    // Las filas de las paradas no se miden aquí: su `TextLayoutResult` da falsos positivos dentro de `ClayCard`; se vieron enteras en el emulador con letra 2,0.
+    assertNoTextCut("Empezar la ruta · 3 juegos", "Tu ruta de hoy", "0 de 3 · unos 6 minutos", "Buenas tardes, Ricardo")
+  }
+
+  @Test
+  fun con_letra_1_3_ningun_texto_de_Hoy_se_corta() {
+    show(ui(completed = 1), fontScale = 1.3f)
+    assertNoTextCut("Seguir la ruta · 2 juegos", "Tu ruta de hoy", "Bodega de carga", "Buenas tardes, Ricardo")
+  }
+
+  @Test
+  fun a_360_dp_ningun_texto_de_las_piedritas_se_corta() {
+    show(ui(completed = 1), widthDp = 360, heightDp = 780)
+    assertNoTextCut("Bodega de carga", "Carga exacta", "La estrella intrusa", "Biblioteca", "Sigue", "Hecho")
+  }
+
+  /** Cada pieza de Hoy que se mide va dentro del ancho de la pantalla (nada se corta) y ninguna pisa a otra (cajas que no se cruzan). */
+  private fun assertNothingCutOrOverlapping(widthDp: Int) {
+    val density = composeTestRule.density.density
+    val width = widthDp * density
+    val tags = listOf("home_greeting", "home_date", "home_week", "home_isla", "home_route_title", "home_route_meta", "home_stop_1", "home_stop_2", "home_stop_3", "btn_home_play", "btn_home_baseline")
+      .filter { composeTestRule.onAllNodes(hasTestTag(it)).fetchSemanticsNodes().isNotEmpty() }
+    val rects = tags.associateWith { bounds(it) }
+    for ((tag, r) in rects) assertTrue("«$tag» se sale del ancho: $r (ancho $width)", r.left >= -1f && r.right <= width + 1f)
+    val names = rects.keys.toList()
+    for (i in names.indices) for (j in i + 1 until names.size) {
+      val a = rects.getValue(names[i]); val b = rects.getValue(names[j])
+      val w = minOf(a.right, b.right) - maxOf(a.left, b.left); val h = minOf(a.bottom, b.bottom) - maxOf(a.top, b.top)
+      assertTrue("«${names[i]}» $a se superpone con «${names[j]}» $b", w <= 1f || h <= 1f)
+    }
+  }
+
+  // ---- Encabezado
+
+  @Test
+  fun el_saludo_dice_el_momento_del_dia_el_nombre_y_la_fecha_con_la_meta_en_una_linea() {
     show(ui())
     composeTestRule.onNodeWithText("Buenas tardes, Ricardo").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Domingo 11 de octubre").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Domingo 11 de octubre · 3 de 4 días de tu meta").assertIsDisplayed()
   }
 
   @Test
@@ -119,27 +215,82 @@ class HoyIslaScreenshotTest {
   }
 
   @Test
-  fun la_semana_se_lee_en_palabras_como_un_solo_grupo() {
+  fun la_semana_se_lee_en_palabras_como_un_solo_grupo_y_la_racha_se_ve() {
     show(ui())
-    composeTestRule.onNodeWithText("3 de 4 días de tu meta", useUnmergedTree = true).assertExists()   // el texto se ve, pero el lector de pantalla lo oye UNA vez, en el grupo
-    composeTestRule.onNodeWithContentDescription("Tu semana: 3 de 4 días de tu meta").assertExists()
+    composeTestRule.onNodeWithContentDescription("Tu semana: 3 días con partida").assertExists()
     composeTestRule.onNodeWithTag("streak_pill").assertExists()
+    composeTestRule.onNodeWithText("3 días").assertIsDisplayed()
   }
 
   @Test
-  fun las_paradas_dicen_su_estado_en_texto_y_no_solo_con_color() {
+  fun la_liga_va_como_escudo_en_el_perfil_y_el_lector_la_dice() {
+    show(ui())
+    composeTestRule.onNodeWithContentDescription("Tu perfil, liga Bronce").assertExists()
+    composeTestRule.onNodeWithTag("btn_top_profile").assertIsDisplayed()
+  }
+
+  // ---- «Tu ruta de hoy»
+
+  @Test
+  fun la_ruta_dice_cuantos_juegos_van_y_cuanto_falta() {
+    show(ui(completed = 1))
+    composeTestRule.onNodeWithText("Tu ruta de hoy").assertIsDisplayed()
+    composeTestRule.onNodeWithText("1 de 3 · unos 4 minutos").assertIsDisplayed()
+  }
+
+  @Test
+  fun al_empezar_dice_0_de_3_y_unos_6_minutos() {
+    show(ui(completed = 0))
+    composeTestRule.onNodeWithText("0 de 3 · unos 6 minutos").assertIsDisplayed()
+  }
+
+  @Test
+  fun las_piedritas_dicen_su_estado_en_texto_y_con_forma_y_no_solo_con_color() {
     show(ui(completed = 1))
     composeTestRule.onNodeWithContentDescription("Bodega de carga, Observatorio, hecho").assertExists()
     composeTestRule.onNodeWithContentDescription("Carga exacta, Hangar, es la que sigue").assertExists()
     composeTestRule.onNodeWithContentDescription("La estrella intrusa, Biblioteca, después").assertExists()
-    composeTestRule.onNodeWithText("Es la que sigue").assertExists()
-    composeTestRule.onNodeWithText("Hecho").assertExists()
+    composeTestRule.onNodeWithText("Hecho").assertIsDisplayed()          // la hecha: visto + «Hecho»
+    composeTestRule.onNodeWithText("Sigue").assertIsDisplayed()          // la que sigue: «Sigue» en lugar del lugar
+    composeTestRule.onNodeWithText("Biblioteca").assertIsDisplayed()     // la que viene después: su lugar
   }
 
   @Test
-  fun el_globo_y_el_boton_siguen_la_ruta_de_hoy() {
+  fun las_tres_piedritas_van_en_fila_y_miden_lo_mismo() {
     show(ui(completed = 0))
-    composeTestRule.onNodeWithText("Hoy la ruta pasa por el Observatorio, el Hangar y la Biblioteca. Unos 6 minutos.").assertExists()
+    val a = bounds("home_stop_1"); val b = bounds("home_stop_2"); val c = bounds("home_stop_3")
+    assertTrue("en fila: $a $b $c", a.right <= b.left + 1f && b.right <= c.left + 1f && Math.abs(a.top - b.top) < 1f && Math.abs(b.top - c.top) < 1f)
+    assertEquals("mismo alto", a.height, b.height, 1f)
+    assertEquals("mismo alto", b.height, c.height, 1f)
+    assertTrue("88 dp como mínimo (84 + la sombra)", a.height / composeTestRule.density.density >= 84f)
+  }
+
+  @Test
+  fun tocar_una_piedrita_abre_la_ficha_de_ese_juego() {
+    show(ui(completed = 1))
+    composeTestRule.onNodeWithTag("home_stop_2").performClick()
+    assertEquals("calculo", stopTapped?.gameId)
+    composeTestRule.onNodeWithTag("home_stop_3").performClick()
+    assertEquals("intrusa", stopTapped?.gameId)
+    composeTestRule.onNodeWithTag("home_stop_1").performClick()      // también las hechas (para repasar su ficha)
+    assertEquals("bodega", stopTapped?.gameId)
+  }
+
+  @Test
+  fun con_letra_grande_las_piedritas_son_filas_y_tambien_se_tocan() {
+    show(ui(completed = 1), fontScale = 1.3f)
+    val a = bounds("home_stop_1"); val b = bounds("home_stop_2")
+    assertTrue("una debajo de otra: $a $b", b.top >= a.bottom - 1f && Math.abs(a.left - b.left) < 1f)
+    composeTestRule.onNodeWithTag("home_stop_2").performClick()
+    assertNotNull(stopTapped)
+    assertEquals("calculo", stopTapped?.gameId)
+  }
+
+  // ---- El botón y lo que se dice debajo
+
+  @Test
+  fun el_boton_empieza_la_ruta_o_la_sigue() {
+    show(ui(completed = 0))
     composeTestRule.onNodeWithText("Empezar la ruta · 3 juegos").performClick()
     assertEquals(1, played)
   }
@@ -148,7 +299,7 @@ class HoyIslaScreenshotTest {
   fun a_mitad_de_camino_el_boton_dice_cuantos_juegos_faltan() {
     show(ui(completed = 2))
     composeTestRule.onNodeWithText("Seguir la ruta · 1 juego").assertExists()
-    composeTestRule.onNodeWithText("Hoy la ruta pasa por la Biblioteca. Unos 2 minutos.").assertExists()
+    composeTestRule.onNodeWithText("2 de 3 · unos 2 minutos").assertExists()
   }
 
   @Test
@@ -156,22 +307,23 @@ class HoyIslaScreenshotTest {
     show(ui(completed = 3))
     composeTestRule.onNodeWithTag("home_route_done").assertExists()
     composeTestRule.onNodeWithText("Ruta completa").assertExists()
-    composeTestRule.onNodeWithText("Ya pasaste por la isla hoy. Mañana sigo aquí.").assertExists()
-    assertEquals(0, composeTestRule.onAllNodesWithTagCount("btn_home_play"))
+    composeTestRule.onNodeWithText("3 de 3 · completa").assertExists()
+    composeTestRule.onNodeWithText("Ya pasaste por la isla hoy. Mañana sigo aquí.").assertIsDisplayed()
+    assertEquals(0, composeTestRule.onAllNodes(hasTestTag("btn_home_play")).fetchSemanticsNodes().size)
   }
 
   @Test
-  fun una_partida_en_pausa_se_retoma_con_el_mismo_boton_grande() {
+  fun una_partida_en_pausa_se_retoma_con_el_mismo_boton_grande_y_Hoy_dice_cual() {
     show(ui(paused = "Carga exacta"))
     composeTestRule.onNodeWithText("Seguir tu partida").performClick()
     assertEquals(1, resumed)
-    composeTestRule.onNodeWithText("Tienes una partida en pausa: Carga exacta.").assertExists()
+    composeTestRule.onNodeWithText("Tienes una partida en pausa: Carga exacta.").assertIsDisplayed()
   }
 
   @Test
-  fun si_el_camino_fue_el_primer_vuelo_Nubi_lo_dice_y_no_hay_boton_de_jugar() {
+  fun si_el_camino_fue_el_primer_vuelo_Hoy_lo_dice_y_no_hay_boton_de_jugar() {
     show(ui(completed = 3, flightDay = true))
-    composeTestRule.onNodeWithTag("home_flight_day").assertExists()
+    composeTestRule.onNodeWithTag("home_flight_day").assertIsDisplayed()
     composeTestRule.onNodeWithText("Tu Primer vuelo fue tu camino de hoy. Mañana empieza tu camino.").assertExists()
   }
 
@@ -182,12 +334,13 @@ class HoyIslaScreenshotTest {
     composeTestRule.onNodeWithText("¿Aún sin tu punto de partida? Encuéntralo en 5 minutos").assertExists()
   }
 
+  // ---- La isla
+
   @Test
   fun la_isla_es_decorativa_con_una_descripcion_de_grupo_y_cada_edificio_es_un_boton_con_su_nombre() {
     show(ui(completed = 1))
     composeTestRule.onNodeWithContentDescription("Tu isla: hoy la ruta pasa por el Observatorio, el Hangar y la Biblioteca").assertExists()
     for (name in listOf("Observatorio, Memoria", "Antena, Atención", "Biblioteca, Lenguaje", "Hangar, Razonamiento")) composeTestRule.onNodeWithContentDescription(name).assertExists()
-    // las áreas de las paradas hechas dicen «hecho hoy» (Bodega = Memoria = Observatorio)
     composeTestRule.onNodeWithTag("isla_observatorio").assertExists()
     composeTestRule.onNodeWithTag("isla_hangar").performClick()
     assertEquals("RAZONAMIENTO", placeTapped)
@@ -195,10 +348,10 @@ class HoyIslaScreenshotTest {
     assertEquals("ATENCION", placeTapped)
   }
 
-  // ---- Los luceros del fondo (Tarea 83): ningún texto de Hoy que va directo sobre el fondo cae sobre un lucero, en cada estado y tamaño.
+  // ---- Los luceros del fondo: ningún texto de Hoy que va directo sobre el fondo cae sobre un lucero, en cada estado y tamaño.
   // Se compara la CAJA de cada texto (más grande que sus letras, así que es estricto) con la capa `fondo_luceros` recortada como la pinta `BoardBackground` (ContentScale.Crop, centrado).
 
-  private val textsOnBackground = listOf("home_greeting", "home_date", "home_tier", "home_week_caption", "streak_pill", "btn_home_baseline")
+  private val textsOnBackground = listOf("home_greeting", "home_date", "home_route_title", "home_route_meta", "home_caption", "home_flight_day", "streak_pill", "btn_home_baseline")
 
   private fun assertNoLucerosUnderTexts(ui: HomeUi, widthDp: Int, heightDp: Int, fontScale: Float = 1f) {
     show(ui, widthDp, heightDp, fontScale)
@@ -207,15 +360,15 @@ class HoyIslaScreenshotTest {
     val k = maxOf(root.width / luceros.width, root.height / luceros.height)
     val x0 = (luceros.width * k - root.width) / 2f
     val y0 = (luceros.height * k - root.height) / 2f
-    val margin = 0   // la caja de un texto ya es más grande que sus letras (incluye el espacio sobre las mayúsculas): sin margen extra
     val hits = mutableListOf<String>()
     var checked = 0
-    for (tag in textsOnBackground) for (node in composeTestRule.onAllNodes(androidx.compose.ui.test.hasTestTag(tag)).fetchSemanticsNodes()) {
+    for (tag in textsOnBackground) for (node in composeTestRule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes()) {
       val b = node.boundsInRoot; checked++
-      val ix1 = (((b.left + x0) / k).toInt() - margin).coerceIn(0, luceros.width - 1); val ix2 = (((b.right + x0) / k).toInt() + margin).coerceIn(0, luceros.width - 1)
-      val iy1 = (((b.top + y0) / k).toInt() - margin).coerceIn(0, luceros.height - 1); val iy2 = (((b.bottom + y0) / k).toInt() + margin).coerceIn(0, luceros.height - 1)
+      val ix1 = (((b.left + x0) / k).toInt()).coerceIn(0, luceros.width - 1); val ix2 = (((b.right + x0) / k).toInt()).coerceIn(0, luceros.width - 1)
+      val iy1 = (((b.top + y0) / k).toInt()).coerceIn(0, luceros.height - 1); val iy2 = (((b.bottom + y0) / k).toInt()).coerceIn(0, luceros.height - 1)
       var n = 0
       for (y in iy1..iy2) for (x in ix1..ix2) if ((luceros.getPixel(x, y) ushr 24) >= 128) n++
+      println("ZONAS %d×%d letra %.1f: %s y %.3f–%.3f x %.3f–%.3f de la imagen".format(widthDp, heightDp, fontScale, tag, iy1.toFloat() / luceros.height, iy2.toFloat() / luceros.height, ix1.toFloat() / luceros.width, ix2.toFloat() / luceros.width))   // para ajustar ZONAS_HOY (tools/isla/isla.py)
       if (n > 0) hits += "«$tag» (caja $b) tiene $n píxeles de lucero debajo"
     }
     assertTrue("hay textos de Hoy sobre luceros a $widthDp × $heightDp, letra $fontScale: $hits", hits.isEmpty())
@@ -232,7 +385,5 @@ class HoyIslaScreenshotTest {
   @Test fun sin_luceros_bajo_el_texto_con_partida_en_pausa_360() = assertNoLucerosUnderTexts(ui(paused = "Carga exacta", hasBaseline = false), 360, 780)
   @Test fun sin_luceros_bajo_el_texto_con_ruta_completa_360() = assertNoLucerosUnderTexts(ui(completed = 3, hasBaseline = false), 360, 780)
   @Test fun sin_luceros_bajo_el_texto_en_el_emulador_411() = assertNoLucerosUnderTexts(ui(hasBaseline = false), 411, 914)
-
-  private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTagCount(tag: String) =
-    onAllNodes(androidx.compose.ui.test.hasTestTag(tag)).fetchSemanticsNodes().size
+  @Test fun sin_luceros_bajo_el_texto_en_el_emulador_411_con_partida_en_pausa() = assertNoLucerosUnderTexts(ui(paused = "Carga exacta", hasBaseline = false), 411, 914)
 }

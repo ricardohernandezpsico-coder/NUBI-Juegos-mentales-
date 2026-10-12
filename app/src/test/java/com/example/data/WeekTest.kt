@@ -46,6 +46,8 @@ class WeekTest {
     assertEquals("6 días esta semana: meta cumplida", Week.caption(6, 4))
     assertEquals("2 días esta semana", Week.caption(2, 0))
     assertEquals("1 día esta semana", Week.caption(1, 0))
-    assertEquals("Tu semana: 3 de 4 días de tu meta", Week.spoken(3, 4))
+    assertEquals("Tu semana: 3 días con partida", Week.lampsSpoken(3))
+    assertEquals("Tu semana: 1 día con partida", Week.lampsSpoken(1))
+    assertEquals("Tu semana: ningún día con partida todavía", Week.lampsSpoken(0))
   }
 }

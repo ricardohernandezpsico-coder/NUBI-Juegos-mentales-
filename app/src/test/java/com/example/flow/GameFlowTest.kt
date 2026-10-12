@@ -199,6 +199,21 @@ class GameFlowTest {
   }
 
   @Test
+  fun `desde una piedrita de Hoy, al cerrar el resultado se sigue en Hoy y Juegos no se toca`() {
+    val vm = newViewModel()
+    // un «volver a Juegos» de una partida anterior lanzada desde Juegos no debe llevarse a Hoy
+    vm.playFromLibrary("freno", PlayMode.DESAFIO)
+    vm.closeGameOrResult()
+    vm.setTab(AppTab.HOY)
+    vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
+    assertEquals("calculo", vm.activeGame.value?.gameDef?.id)
+    vm.closeGameOrResult()
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertFalse("Juegos no abre ningún área", vm.libraryFocus.value.open)
+    assertEquals("la casilla de Juegos no cambia", "freno", vm.libraryFocus.value.gameId)
+  }
+
+  @Test
   fun `entrar a Juegos despues de jugar desde Juegos muestra las 4 areas`() {
     val vm = newViewModel()
     vm.playFromLibrary("freno", PlayMode.DESAFIO)
