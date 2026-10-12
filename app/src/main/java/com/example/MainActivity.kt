@@ -174,12 +174,20 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       bottomBar = {
         // Show bottom bar only when not playing a game or looking at results
         if (activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() &&
-          sessionSummary == null && topPanel == null && swipeLock.intValue == 0
+          sessionSummary == null && topPanel == null
         ) {
-          com.example.ui.components.NeuroNavBar(
-            current = currentTab,
-            onSelect = { viewModel.setTab(it) }
-          )
+          // Con una lámina o ventana abierta (swipeLock > 0) la barra se retira con un deslizamiento corto en vez de desaparecer de golpe (con «quitar animaciones», de golpe).
+          val reduceBar = com.example.ui.components.rememberReduceMotion()
+          androidx.compose.animation.AnimatedVisibility(
+            visible = swipeLock.intValue == 0,
+            enter = if (reduceBar) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(expandFrom = androidx.compose.ui.Alignment.Top),
+            exit = if (reduceBar) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(shrinkTowards = androidx.compose.ui.Alignment.Top)
+          ) {
+            com.example.ui.components.NeuroNavBar(
+              current = currentTab,
+              onSelect = { viewModel.setTab(it) }
+            )
+          }
         }
       }
     ) { innerPadding ->

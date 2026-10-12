@@ -43,6 +43,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import com.example.ui.components.rememberIslaLayout
+import com.example.ui.components.rememberReduceMotion
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -150,7 +156,6 @@ fun HomeScreen(
   }
   val lang = LocalAppLanguage.current
 
-  var openArea by rememberSaveable { mutableStateOf<String?>(null) }
   var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }
   val skill by viewModel.skill.collectAsState()
   val lastPlayed = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
@@ -165,28 +170,17 @@ fun HomeScreen(
     }
   }
 
-  openArea?.let { key ->
-    LockTabSwipe()
-    BackHandler { openArea = null }
-    AreaDetail(
-      areaKey = key,
-      statuses = statuses,
-      names = names,
-      history = history,
-      measures = measures,
-      now = clock,
-      lang = lang,
-      onArea = { openArea = it },
-      onPlay = { id ->
-        openArea = null
-        viewModel.launchGame(id)
-      },
-      onClose = { openArea = null },
-      modifier = modifier
-    )
-    return
+  // La lámina de cada lugar: el avance de su área y sus juegos (la lógica del antiguo detalle de área).
+  val places = remember(statuses, history, measures, clock, lang) {
+    AREA_ORDER.mapIndexed { i, key ->
+      val domain = domainOf(key)
+      key to com.example.data.PlaceSheets.build(
+        area = key, status = statuses.getOrNull(i) ?: AreaStatus(key, null, 0f, emptyList()),
+        games = GameRegistry.allGames.filter { it.domain == domain }, titleOf = { g -> getGameTitle(g.id, lang, g.title) },
+        history = history, measures = measures, now = clock
+      )
+    }.toMap()
   }
-
   val completed = dailySession.completedCount
   val ui = HomeUi(
     name = settings.name,
@@ -198,13 +192,14 @@ fun HomeScreen(
     stops = homeStops(dailySession.gameIds, completed, lang),
     pausedTitle = pausedGameId?.let { GameRegistry.getById(it) }?.let { getGameTitle(it.id, lang, it.title) },
     flightDay = dailySession.gameIds.isNotEmpty() && completed >= dailySession.gameIds.size && dailySession.scores.isEmpty(),
-    hasBaseline = baseline != null
+    hasBaseline = baseline != null,
+    places = places
   )
   HomeContent(
     ui = ui,
     onProfile = { viewModel.openTopPanel(TopPanel.PERFIL) },
     onSettings = { viewModel.openTopPanel(TopPanel.AJUSTES) },
-    onPlace = { openArea = it },
+    onPlaceGame = { id -> viewModel.playFromHome(id, com.example.data.PlayMode.A_TU_MEDIDA) },
     onStop = { stop -> GameRegistry.getById(stop.gameId)?.let { sheetFor = it } },
     onPlay = { viewModel.startDailySession() },
     onResume = { viewModel.resumePausedGame() },
@@ -248,7 +243,9 @@ internal data class HomeUi(
   val pausedTitle: String?,
   /** El camino de hoy quedó cumplido sin jugarlo: fue el Primer vuelo. */
   val flightDay: Boolean,
-  val hasBaseline: Boolean
+  val hasBaseline: Boolean,
+  /** La lámina de cada lugar (por área: `MEMORIA`…) que se abre al tocar su edificio. */
+  val places: Map<String, com.example.data.PlaceSheetUi> = emptyMap()
 ) {
   val completed: Int get() = stops.count { it.state == StopState.DONE }
 }
@@ -297,23 +294,39 @@ internal fun islandDescription(ui: HomeUi): String {
  * El contenido de Hoy sin ViewModel (Tarea 84, distribución «A» aprobada por Ricardo el 12-oct): saludo con tu perfil y opciones, la fecha con la meta de la semana, los siete farolitos con tu racha, LA ISLA (la protagonista: toma todo lo que sobra),
  * «Tu ruta de hoy» con tres piedritas (una por juego; tocarlas abre la ficha del juego) y UN solo botón grande. La isla ocupa lo que SOBRA entre los demás elementos,
  * con un mínimo de [ISLAND_MIN_HEIGHT] ([HoyColumn]): si lo demás no cabe (letra grande, pantalla chica) la isla se queda en su mínimo y toda la pantalla se desliza. Con letra grande (≥ 1,3) las tres piedritas pasan a una lista de filas, porque en tres columnas no caben las palabras.
- * [onStop] = se tocó la piedrita de un juego del camino; [onPlace] = se tocó un edificio de la isla.
+ * [onStop] = se tocó la piedrita de un juego del camino; [onPlaceGame] = se pidió jugar un juego desde la lámina de un lugar (Tarea 85: tocar un edificio abre esa lámina con el avance del área; ver `HoyPlace.kt`).
+ * [fx] = el estado de esa lámina (se pasa solo en pruebas).
  */
 @Composable
 internal fun HomeContent(
   ui: HomeUi,
   onProfile: () -> Unit,
   onSettings: () -> Unit,
-  onPlace: (area: String) -> Unit,
+  onPlaceGame: (gameId: String) -> Unit,
   onStop: (HomeStop) -> Unit,
   onPlay: () -> Unit,
   onResume: () -> Unit,
   onBaseline: () -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  fx: PlaceFx = remember { PlaceFx() }
 ) {
-  BoxWithConstraints(modifier.fillMaxSize()) {
-    val viewportHeight = maxHeight
-    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+  val scope = rememberCoroutineScope()
+  val reduceMotion = rememberReduceMotion()
+  val layout = rememberIslaLayout()
+  var rootOffset by remember { mutableStateOf(Offset.Zero) }
+  var islandWindow by remember { mutableStateOf(Rect.Zero) }
+  // Con la lámina abierta la barra de pestañas se retira y la caja de Hoy crece hacia abajo: Hoy se queda con el alto que tenía al abrir (la isla no salta).
+  var frozenViewport by remember { mutableStateOf<Dp?>(null) }
+  // El alto de Hoy se suelta un momento DESPUÉS de cerrar: la barra de pestañas tarda en volver a su sitio y, si se soltara antes, la isla crecería y se encogería de nuevo.
+  LaunchedEffect(fx.active) { if (!fx.active) { kotlinx.coroutines.delay(450); frozenViewport = null } }
+  if (fx.active) {
+    LockTabSwipe()                                            // las pestañas no se deslizan con la lámina abierta (y la barra se retira)
+    BackHandler { fx.close(scope, reduceMotion) }             // Atrás la cierra
+  }
+  BoxWithConstraints(modifier.fillMaxSize().onGloballyPositioned { rootOffset = it.positionInWindow() }) {
+    val liveViewport = maxHeight
+    val viewportHeight = frozenViewport ?: liveViewport
+    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState(), enabled = !fx.active)) {
       HoyColumn(
         viewportHeight = viewportHeight,
         top = {
@@ -343,8 +356,23 @@ internal fun HomeContent(
         island = {
           Island(
             description = islandDescription(ui),
+            layout = layout,
             doneAreas = ui.stops.filter { it.state == StopState.DONE }.map { it.area }.toSet(),
-            onPlace = onPlace,
+            onPlace = { area ->
+              val key = IslaLugar.nameOfArea(area)?.lowercase()
+              if (key != null && ui.places.containsKey(area) && !fx.active) {
+                frozenViewport = liveViewport
+                fx.open(scope, key, reduceMotion)
+              }
+            },
+            lookKey = fx.key,
+            lookAmount = { fx.look.value },
+            lookMoves = fx.moves,
+            nubiAlpha = { if (fx.flight.value > 0f) 0f else 1f },
+            shadowAlpha = { fx.shadow.value },
+            glowKey = fx.key,
+            glowAlpha = { fx.glow.value },
+            onDrawnRect = { islandWindow = it },
             modifier = Modifier.fillMaxWidth().testTag("home_isla")
           )
         },
@@ -356,6 +384,18 @@ internal fun HomeContent(
         }
       )
     }
+
+    // La lámina del lugar tocado (velo, lámina, Nubi volando y su globo) va encima de todo Hoy.
+    val density = LocalDensity.current
+    PlaceLayer(
+      fx = fx,
+      place = fx.key?.let { k -> ui.places.values.firstOrNull { it.key == k } },
+      layout = layout,
+      island = Rect(islandWindow.left - rootOffset.x, islandWindow.top - rootOffset.y, islandWindow.right - rootOffset.x, islandWindow.bottom - rootOffset.y),
+      top = with(density) { (viewportHeight * 0.22f).toPx() },
+      onClose = { fx.close(scope, reduceMotion) },
+      onPlay = onPlaceGame
+    )
   }
 }
 
