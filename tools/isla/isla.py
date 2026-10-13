@@ -817,16 +817,17 @@ def render_fondo():
 # ------------------------------------------------------------------ fondo como TABLERO físico: lámina de plasticina azul noche con luceros apoyados
 TAB_W, TAB_H = 6.0, 10.0   # proporción de teléfono 3:5 (unidades de escena)
 TEXTO = (0.04, 0.08, 0.70, 0.22); BARRA_Z = (0.0, 0.88, 1.0, 1.0)   # zonas (x0,y0,x1,y1 en fracción, y hacia abajo) sin luceros: saludo y barra
-# Tarea 83: los luceros son una capa APARTE (solo se ven en Hoy; Juegos y Avance muestran la lámina sola, porque en pantallas que se deslizan un lucero fijo acaba bajo un texto).
+# Tarea 83: los luceros son una capa APARTE (la lámina y los luceros se apilan en la app). Tarea 87: la capa va FIJA detrás de las tres pestañas (Hoy, Juegos y Avance), ya sin fundido por pestaña.
 #   --sin-luceros   renderiza solo la lámina (azul marino con su nebulosa y su textura) → fondo_lamina.png, opaca.
 #   --solo-luceros  renderiza solo los luceros con su sombra de contacto → fondo_luceros.png, transparente: la lámina es «shadow catcher» de Cycles (invisible, pero recibe la sombra y el rebote).
-#   --b-aprobado    no quita los luceros de las zonas ampliadas de abajo: reproduce el B aprobado de la ronda 26b (sirve para comprobar que lámina + luceros apilados dan el B exacto).
-# Zonas AMPLIADAS sin luceros (x0,y0,x1,y1 en fracción de la imagen, y hacia abajo): ningún texto de Hoy que vaya directo sobre el fondo debe caer sobre un lucero. Los luceros que caen ahí se QUITAN sin tocar
-# la secuencia de colocación (semilla 5): todos los demás quedan exactamente donde estaban en el B aprobado.
+#   --b-aprobado    no quita los luceros de la zona fija: reproduce el B aprobado de la ronda 26b con sus primeros 58 luceros (la secuencia sigue hasta N_LUCEROS).
+# Tarea 87 (Ricardo encontró Hoy «muy vacío»): ~80 luceros visibles en vez de 17. Zona libre de luceros SOLO bajo los textos grandes que caen siempre en el mismo lugar: el saludo de Hoy y los títulos de Juegos y Avance, que están en la banda de arriba.
+# Bajo botones, piedritas y tarjetas no se excluye nada (son opacas y los tapan); los textos claros que van directo sobre el fondo llevan un halo navy (`OnBoardText`). Los luceros de esa banda se QUITAN sin tocar la secuencia de colocación (semilla 5):
+# los primeros 58 quedan exactamente donde estaban en el B aprobado y la secuencia sigue hasta N_LUCEROS.
 ZONAS_HOY = (
-  (0.0, 0.07, 1.0, 0.28),    # encabezado de Hoy a todo el ancho: saludo (a 360 dp en dos líneas), fecha con la meta, farolitos y racha. Medido en las pruebas: el texto llega a y 22,5 %; margen para barras de estado más altas (Tarea 84; en la 83 era x 0-75 %, y 7-29 %)
-  (0.0, 0.46, 1.0, 0.93),    # de «Tu ruta de hoy» (medido: empieza en y 51,5 %) hasta la barra: el título y su meta, los avisos bajo el botón y el enlace del punto de partida; su alto cambia con el estado, la pantalla y la barra de navegación (Tarea 84)
+  (0.0, 0.03, 1.0, 0.28),    # encabezado a todo el ancho: saludo de Hoy (a 360 dp en dos líneas), fecha con la meta, farolitos y racha (el texto llega a y 22,5 %), «Tu avance» (y 5-8 %) y «¿Qué jugamos hoy?» con su sugerencia (y 10-20 %); margen para barras de estado más altas. Se mide en las pruebas
 )
+N_LUCEROS = 95   # 95 colocados: ~80 visibles (los demás caen en la banda de arriba o en la de la barra)
 SIN_LUCEROS = '--sin-luceros' in args; SOLO_LUCEROS = '--solo-luceros' in args; B_APROBADO = '--b-aprobado' in args
 def tablero():
     lam = box((TAB_W, TAB_H, 0.3), loc=(0,0,-0.15), coll='iconos', name='tab_lamina'); bevel(lam, 0.06, 3)
@@ -845,7 +846,7 @@ def tablero():
     # bolitas chicas, como las de la referencia (1-2 % del ancho del teléfono)
     mlu = clay('m_lucero_t', '#F3DFBF', bump=0.5, sss=0.3, vary=0.03, dents=0.5, dent_scale=12, grain=0.1, ao=0.2, ao_cool=1.0, sat=1.0, rough=0.7, spec=0.2)
     def zona(fx, fy, z): return z[0] <= fx <= z[2] and z[1] <= fy <= z[3]
-    while n < 58 and not SIN_LUCEROS:
+    while n < N_LUCEROS and not SIN_LUCEROS:
         u = rnd.random(); r = (TAM[0][0] if u < 0.55 else TAM[1][0] if u < 0.87 else TAM[2][0]) * rnd.uniform(0.9, 1.1)
         fx, fy = rnd.random(), rnd.random(); x, y = (fx - 0.5) * TAB_W, (0.5 - fy) * TAB_H
         fr = r / TAB_W

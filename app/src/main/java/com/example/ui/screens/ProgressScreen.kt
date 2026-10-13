@@ -45,6 +45,7 @@ import com.example.data.Skill
 import com.example.model.DomainType
 import com.example.model.GameRegistry
 import com.example.model.RankTier
+import com.example.ui.components.OnBoardText
 import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.AreaBar
 import com.example.ui.components.LockTabSwipe
@@ -95,6 +96,7 @@ fun ProgressScreen(
   val dateFormatter = remember { SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()) }
   var showMore by remember { mutableStateOf(false) }
   var openArea by rememberSaveable { mutableStateOf<String?>(null) }
+  var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }   // la ficha de un juego tocado en el detalle de un área
   val streak by viewModel.currentStreak.collectAsState()
   val context = androidx.compose.ui.platform.LocalContext.current
   val shareScope = androidx.compose.runtime.rememberCoroutineScope()
@@ -117,13 +119,22 @@ fun ProgressScreen(
       areaKey = key, statuses = statuses, names = names, history = history, measures = measures, now = now,
       lang = currentLang, onArea = { openArea = it },
       onPlay = { id -> openArea = null; viewModel.launchGame(id) },
+      onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
       onClose = { openArea = null }, modifier = modifier
     )
+    // La ficha del juego tocado, encima del detalle del área. Jugar desde ella no recuerda casilla de Juegos y, al volver de la partida, la persona sigue en Avance.
+    sheetFor?.let { g ->
+      GameSheetHost(
+        game = g, viewModel = viewModel,
+        onDismiss = { sheetFor = null },
+        onPlay = { m, timed -> sheetFor = null; openArea = null; viewModel.playFromHome(g.id, m, timed) }
+      )
+    }
     return
   }
 
   Column(modifier.fillMaxSize()) {
-  TabTopBar(viewModel) { Text("Tu avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold) }
+  TabTopBar(viewModel) { OnBoardText("Tu avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold) }
   LazyColumn(
     modifier = Modifier
       .weight(1f)
@@ -185,8 +196,8 @@ fun ProgressScreen(
               .testTag("progress_area_${s.area.lowercase()}")
           ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-              Text(name, color = OnNight, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-              Text(s.value?.let { Skill.stageName(it) } ?: "Sin medir", color = OnNightDim, fontSize = 14.sp)
+              OnBoardText(name, color = OnNight, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+              OnBoardText(s.value?.let { Skill.stageName(it) } ?: "Sin medir", color = OnNightDim, fontSize = 14.sp)
             }
             AreaBar(s.value, s.change, modifier = Modifier.padding(top = 8.dp))
           }
@@ -205,8 +216,8 @@ fun ProgressScreen(
         weeklyChallenges.forEach { wc ->
           Column(Modifier.padding(vertical = 6.dp)) {
             Row(Modifier.fillMaxWidth()) {
-              Text(wc.def.title, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-              Text(
+              OnBoardText(wc.def.title, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+              OnBoardText(
                 if (wc.isComplete) "Listo" else "${wc.progress} de ${wc.def.target}",
                 color = if (wc.isComplete) Clay.Lime else Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold
               )
@@ -271,7 +282,7 @@ fun ProgressScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                       Box(Modifier.size(10.dp).clip(CircleShape).background(info.domain.color))
                       Spacer(Modifier.width(8.dp))
-                      Text(getDomainName(info.domain, currentLang), color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                      OnBoardText(getDomainName(info.domain, currentLang), color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
                     Text("${info.tier.tierName} · ${info.xpLabel}", color = info.domain.color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                   }
@@ -312,13 +323,13 @@ fun ProgressScreen(
                 Box(Modifier.size(10.dp).clip(CircleShape).background(game?.domain?.color ?: TealPrimary))
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                  Text(
+                  OnBoardText(
                     if (game != null) getGameTitle(game.id, currentLang, game.title) else "Juego",
                     color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold
                   )
-                  Text(dateFormatter.format(Date(item.timestamp)), color = OnNightDim, fontSize = 14.sp)
+                  OnBoardText(dateFormatter.format(Date(item.timestamp)), color = OnNightDim, fontSize = 14.sp)
                 }
-                Text("${item.score} pts", color = game?.domain?.color ?: TealPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                OnBoardText("${item.score} pts", color = game?.domain?.color ?: TealPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
               }
             }
           }

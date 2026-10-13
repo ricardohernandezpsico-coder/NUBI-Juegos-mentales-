@@ -219,6 +219,7 @@ internal fun PlaceLayer(
   top: Float,
   onClose: () -> Unit,
   onPlay: (String) -> Unit,
+  onGame: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
   if (!fx.active || place == null) return
@@ -256,7 +257,7 @@ internal fun PlaceLayer(
           }
       ) {
         PlaceSheetContent(
-          place, headerStart = headerStart, nubiDrop = with(density) { (perchH * 0.74f).toDp() }, onClose = onClose, onPlay = onPlay,
+          place, headerStart = headerStart, nubiDrop = with(density) { (perchH * 0.74f).toDp() }, onClose = onClose, onPlay = onPlay, onGame = onGame,
           footerBottom = pageFooterBottom(pageHeight)
         )
       }
@@ -354,7 +355,7 @@ private fun PlaceGlobe(fx: PlaceFx, text: String, perch: Rect, top: Float) {
  * entre Nubi y la X, ni achicándolo hasta 20 sp, pasa a una línea propia debajo de Nubi).
  */
 @Composable
-internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: Dp, onClose: () -> Unit, onPlay: (String) -> Unit, modifier: Modifier = Modifier, footerBottom: Dp = 48.dp) {
+internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: Dp, onClose: () -> Unit, onPlay: (String) -> Unit, onGame: (String) -> Unit, modifier: Modifier = Modifier, footerBottom: Dp = 48.dp) {
   val titleFocus = remember { FocusRequester() }
   LaunchedEffect(place.key) { runCatching { titleFocus.requestFocus() } }
   val color = placeColor(place.area)
@@ -393,7 +394,7 @@ internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: D
       Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0x26211C45)))
       Text("Tus juegos aquí", color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
       Column {
-        place.games.forEach { g -> GameRow(g, color, onClick = { onPlay(g.gameId) }) }
+        place.games.forEach { g -> GameRow(g, color, onClick = { onGame(g.gameId) }) }
       }
     }
 
@@ -543,7 +544,7 @@ private fun WeeksRow(place: PlaceSheetUi) {
   }
 }
 
-/** Una fila de «Tus juegos aquí»: el punto del área, el nombre del juego y su dato; tocarla lo abre a jugar (como el detalle de área de antes). */
+/** Una fila de «Tus juegos aquí»: el punto del área, el nombre del juego y su dato; tocarla abre la FICHA de ese juego encima de la lámina (solo el botón grande «Jugar en…» juega directo; Tarea 87). */
 @Composable
 private fun GameRow(row: PlaceGameRow, color: Color, onClick: () -> Unit) {
   Row(
@@ -551,7 +552,7 @@ private fun GameRow(row: PlaceGameRow, color: Color, onClick: () -> Unit) {
       .fillMaxWidth()
       .heightIn(min = 44.dp)
       .clip(RoundedCornerShape(12.dp))
-      .clickable(role = Role.Button, onClick = onClick)
+      .clickable(onClickLabel = "Ver su ficha", role = Role.Button, onClick = onClick)
       .semantics(mergeDescendants = true) { contentDescription = "${row.title}, ${row.detail}" }
       .padding(vertical = 4.dp)
       .testTag("place_game_${row.gameId}"),

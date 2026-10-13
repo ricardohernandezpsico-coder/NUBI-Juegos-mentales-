@@ -23,7 +23,6 @@ import com.example.model.GameRegistry
 import com.example.model.UserSettings
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalTabSwipeLock
-import com.example.ui.components.lucerosAlpha
 import com.example.ui.screens.GamesLibraryScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProgressScreen
@@ -44,8 +43,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Hoy, Juegos y Avance sobre el fondo en dos capas (Tarea 83), con las pantallas REALES y datos de ejemplo: la lámina siempre y los luceros solo en Hoy
- * (opacidad según la página del pager). Deja `fondo-hoy.png`, `fondo-juegos.png` y `fondo-avance.png` en `src/test/screenshots/` (git-ignorada). Ventana de 393 × 873 dp con las barras del sistema simuladas por margen.
+ * Hoy, Juegos y Avance sobre el fondo en dos capas, con las pantallas REALES y datos de ejemplo: la lámina y los luceros, fijos detrás de las tres pestañas (Tarea 87). Deja `fondo-hoy.png`, `fondo-juegos.png` y `fondo-avance.png` en `src/test/screenshots/` (git-ignorada). Ventana de 393 × 873 dp con las barras del sistema simuladas por margen.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -83,7 +81,7 @@ class FondoPorPestanaScreenshotTest {
   }
 
   @Test
-  fun hoy_juegos_y_avance_sobre_la_lamina_y_los_luceros_solo_en_Hoy() {
+  fun hoy_juegos_y_avance_sobre_la_lamina_y_los_luceros() {
     seed()
     val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
     TestSupport.awaitUntil { vm.gameHistory.value.isNotEmpty() }
@@ -92,7 +90,7 @@ class FondoPorPestanaScreenshotTest {
     composeTestRule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(873.dp)) {
-          BoardBackground(lucerosAlpha = { lucerosAlpha(page.intValue, 0f) })
+          BoardBackground()
           CompositionLocalProvider(LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
             Box(Modifier.padding(top = 24.dp, bottom = 163.dp)) {
               when (page.intValue) {

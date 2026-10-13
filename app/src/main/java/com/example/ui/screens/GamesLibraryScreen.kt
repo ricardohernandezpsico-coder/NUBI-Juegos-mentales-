@@ -65,6 +65,7 @@ import com.example.data.AreaProgress
 import com.example.data.AreaSuggestion
 import com.example.data.AreaStatus
 import com.example.data.DiscoveryKind
+import com.example.ui.components.OnBoardText
 import com.example.ui.components.AREA_BODY_FRACTION
 import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.AreaBar
@@ -219,6 +220,34 @@ fun GamesLibraryScreen(
       }
     )
   }
+}
+
+/**
+ * La ficha de [game] con sus datos ya leídos del ViewModel: la usan Hoy (la piedrita de «Tu ruta de hoy» y las filas de la lámina de un lugar) y Avance (las filas del detalle de un área), igual que Juegos. Tocar el nombre de un juego abre SIEMPRE esta ficha;
+ * solo los botones grandes («Empezar la ruta», «Jugar en el …», «¡Sí, vamos!» y el «Jugar» de la propia ficha) juegan directo (Tarea 87).
+ */
+@Composable
+internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, onDismiss: () -> Unit, onPlay: (PlayMode, Boolean) -> Unit) {
+  val history by viewModel.gameHistory.collectAsState()
+  val settings by viewModel.userSettings.collectAsState()
+  val measures by viewModel.starMeasures.collectAsState()
+  val progress by viewModel.gameProgress.collectAsState()
+  val skill by viewModel.skill.collectAsState()
+  val lang = LocalAppLanguage.current
+  val now = remember(game.id) { System.currentTimeMillis() }
+  val data = cardData(
+    game, getGameTitle(game.id, lang, game.title), history.filter { it.gameId == game.id }.maxOfOrNull { it.timestamp }, now, progress[game.id], measures,
+    history.count { it.gameId == game.id && now - it.timestamp <= 14 * DAY_MS }
+  )
+  GameSheet(
+    data = data,
+    age = settings.ageBand,
+    expertOpen = game.id in skill.expertOpen,
+    selected = PlayMode.A_TU_MEDIDA,
+    timed = viewModel.retoFor(game.id),
+    onDismiss = onDismiss,
+    onPlay = onPlay
+  )
 }
 
 /** Arma los datos de un juego: cuándo se jugó, avance, marca con su etiqueta y constancia. */
@@ -625,8 +654,8 @@ internal fun SuggestionHeader(s: AreaSuggestionUi) {
       modifier = Modifier.size(104.dp)
     )
     Column(Modifier.weight(1f)) {
-      Text("¿Qué jugamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
-      Text(
+      OnBoardText("¿Qué jugamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
+      OnBoardText(
         "Te sugiero ${s.name}: ${s.reason.replaceFirstChar { it.lowercase() }}",
         color = OnNightDim, fontSize = 15.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 2.dp).testTag("suggestion_text")
       )
@@ -695,10 +724,10 @@ internal fun AreaGrid(
                 }
                 if (isSuggested) SuggestedTag(Modifier.align(Alignment.Center).offset(y = -ringRadius))
               }
-              Text(name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-              Text(domain.tagline, color = OnNightDim, fontSize = 15.sp, maxLines = 1)
+              OnBoardText(name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+              OnBoardText(domain.tagline, color = OnNightDim, fontSize = 15.sp, maxLines = 1)
               AreaBar(s.value, s.change, modifier = Modifier.width(140.dp).padding(vertical = 8.dp), height = 9.dp)
-              Text(
+              OnBoardText(
                 (s.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (count == 1) "1 juego" else "$count juegos",
                 color = OnNightDim, fontSize = 15.sp, maxLines = 1
               )
@@ -760,8 +789,8 @@ internal fun AreaWindow(
     ) {
       Image(painterResource(areaPlanetRes(domain.name)), contentDescription = null, modifier = Modifier.size(64.dp))
       Column(Modifier.weight(1f)) {
-        Text(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
-        Text(
+        OnBoardText(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
+        OnBoardText(
           (status?.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (cards.size == 1) "1 juego" else "${cards.size} juegos",
           color = OnNightDim, fontSize = 15.sp
         )

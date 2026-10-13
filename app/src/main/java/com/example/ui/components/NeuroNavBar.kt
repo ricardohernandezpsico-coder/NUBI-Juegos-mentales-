@@ -90,7 +90,7 @@ fun NeuroNavBar(current: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier 
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             Box(Modifier.height(trayHeight).fillMaxWidth())
-            Text(
+            OnBoardText(
               c.label, color = if (selected) LabelOn else LabelOff, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, textAlign = TextAlign.Center, softWrap = false,
               modifier = Modifier.offset(x = BarraGeometry.dp(c.x - (left + right) / 2f, scale)).padding(top = 1.dp, bottom = 3.dp)
             )

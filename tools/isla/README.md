@@ -20,20 +20,20 @@ El paso del tablero (lámina, luceros y `tablero.py`) se corrió de verdad en la
 
 ## El fondo en dos capas (Tarea 83)
 
-El fondo B (tablero azul marino con luceros de plasticina) son DOS imágenes apiladas: `fondo_lamina` (la lámina con su nebulosa y su textura, sin luceros, siempre detrás del pager) y `fondo_luceros` (las bolitas con su sombra de contacto, transparente, encima; solo se ve en Hoy). Porque en Juegos y Avance el contenido se desliza y un lucero fijo acaba bajo un texto. En la app: `ui/components/BoardBackground.kt` (la opacidad de los luceros sigue la posición del pager: 1 en Hoy, 0 en Juegos y Avance).
+El fondo B (tablero azul marino con luceros de plasticina) son DOS imágenes apiladas: `fondo_lamina` (la lámina con su nebulosa y su textura, sin luceros) y `fondo_luceros` (las bolitas con su sombra de contacto, transparente, encima). Desde la Tarea 87 van FIJAS detrás de Hoy, Juegos y Avance (~80 luceros visibles; antes solo se veían en Hoy, con 17). En la app: `ui/components/BoardBackground.kt` (sin fundido por pestaña).
 
 Opciones de `isla.py` para el tablero (se usan siempre con `--tablero --lamina B`):
 
 | Opción | Qué renderiza | Archivo |
 |---|---|---|
-| (ninguna) | el B entero (lámina y luceros) SIN los luceros de las zonas libres de Hoy | `fondo_tablero.png` |
+| (ninguna) | el B entero (lámina y luceros) SIN los luceros de la zona libre de arriba | `fondo_tablero.png` |
 | `--sin-luceros` | solo la lámina, opaca | `fondo_lamina.png` |
 | `--solo-luceros` | solo los luceros y su sombra, transparente (la lámina es «shadow catcher» de Cycles: no se ve, solo recibe la sombra y el rebote) | `fondo_luceros.png` |
-| `--b-aprobado` | no quita los luceros de las zonas libres de Hoy: reproduce el B aprobado de la ronda 26b, con los 59 luceros | (se suma a cualquiera de las anteriores) |
+| `--b-aprobado` | no quita los luceros de la zona libre de arriba (la secuencia llega a `N_LUCEROS`; los primeros 58 son los del B aprobado de la ronda 26b) | (se suma a cualquiera de las anteriores) |
 
-Los luceros salen de la MISMA semilla de colocación (`random.Random(5)`) que el B aprobado. Las zonas sin luceros de Hoy (`ZONAS_HOY` en `isla.py`, x 0-100 % en las dos) no cambian esa secuencia: sus luceros se calculan y NO se crean, así que todos los demás quedan exactamente donde estaban en el B aprobado.
-Hoy son dos franjas: el **encabezado** (y 7-28 %: saludo, fecha con la meta, farolitos y racha) y **de «Tu ruta de hoy» hasta la barra** (y 46-93 %: el título y su meta, los avisos bajo el botón y el enlace del punto de partida). El texto de Hoy medido en las pruebas llega a y 22,5 % (encabezado) y empieza en y 51,5 % (ruta): el resto es margen para barras de estado más altas y para la barra de gestos.
-Quedan unos 15 de los 59 luceros (cinco arriba del todo y los demás alrededor de la isla). Si se agrega texto directo sobre el fondo de Hoy, hay que ampliar esas zonas y volver a correr `render.sh`; `HoyIslaScreenshotTest` falla si un texto cae sobre un lucero (e imprime en qué fracción de la imagen cae cada texto: líneas «ZONAS …»).
+Los luceros salen de la MISMA semilla de colocación (`random.Random(5)`) que el B aprobado: los primeros 58 quedan donde estaban y la secuencia sigue hasta `N_LUCEROS` = 95 colocados (~80 visibles: los que caen en la zona libre de arriba o en la banda de la barra se calculan y NO se crean). La única zona libre (`ZONAS_HOY` en `isla.py`, x 0-100 %, y 3-28 %) es el encabezado: el saludo de Hoy y los títulos de Juegos y Avance, que siempre caen en el mismo lugar.
+El texto de Hoy medido en las pruebas llega a y 22,5 % (encabezado); «Tu avance» está en y 5-8 % y «¿Qué jugamos hoy?» con su sugerencia en y 10-20 %. Bajo botones, piedritas y tarjetas no se excluye nada (son opacas); los demás textos claros directo sobre el fondo se leen por su contorno navy (`OnBoardText`).
+Si se agrega un título grande directo sobre el fondo que caiga siempre en el mismo lugar, hay que ampliar la zona y volver a correr `render.sh`; `HoyIslaScreenshotTest` falla si el saludo, la fecha o la racha de Hoy caen sobre un lucero (e imprime en qué fracción de la imagen cae cada texto: líneas «ZONAS …»), y `BoardBackgroundContrastTest` cuenta los luceros (70-90) y que ninguno se pegue a otro.
 
 **Apilados dan el B.** `tablero.py` mide el apilado (los WebP que entran a la app) contra el B completo: media 0,85/255, p99 3, y solo el 0,23 % de los píxeles difieren en más de 8 (máximo 27); es el mismo nivel de ruido que hay entre dos renders del MISMO B (media 0,85, p99 3). Detalle: el «shadow catcher» solo da bien la máscara (dónde hay luceros y sombras); su sombra sale gris por el canal alfa y la real es más cálida (rebote del lucero) y menos azul, así que dentro de esa máscara el color y la opacidad de la capa se calculan para que `lámina · (1-α) + color · α` dé el píxel del B completo.
 

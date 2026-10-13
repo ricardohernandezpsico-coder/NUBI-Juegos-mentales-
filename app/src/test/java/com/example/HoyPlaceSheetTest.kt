@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
@@ -66,6 +67,7 @@ class HoyPlaceSheetTest {
   )
 
   private var played: String? = null
+  private var cardOpened: String? = null
   private val fx = PlaceFx()
   private val lock = mutableIntStateOf(0)
 
@@ -77,7 +79,7 @@ class HoyPlaceSheetTest {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
             HomeContent(
-              ui = ui, onProfile = {}, onSettings = {}, onPlaceGame = { played = it }, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, fx = fx,
+              ui = ui, onProfile = {}, onSettings = {}, onPlaceGame = { played = it }, onPlaceGameCard = { cardOpened = it }, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, fx = fx,
               modifier = Modifier.padding(top = 24.dp, bottom = 48.dp)       // 24 dp de barra de estado y 48 de barra de navegación (con la lámina abierta la barra de pestañas se retira)
             )
           }
@@ -277,11 +279,35 @@ class HoyPlaceSheetTest {
   }
 
   @Test
-  fun tocar_una_fila_de_juego_lo_abre_a_jugar() {
+  fun tocar_una_fila_de_juego_abre_su_ficha_y_no_juega() {
     show(); open("observatorio")
     val first = ui.places.getValue("MEMORIA").games.first().gameId
     rule.onNodeWithTag("place_game_$first").performClick()
-    assertEquals(first, played)
+    assertEquals("la fila abre la ficha de ese juego", first, cardOpened)
+    assertNull("y NO lo juega directo", played)
+  }
+
+  private fun assertRowsOpenCards(key: String, area: String) {
+    show(); open(key)
+    for (g in ui.places.getValue(area).games) {
+      cardOpened = null
+      rule.onNodeWithTag("place_game_${g.gameId}").performScrollTo().performClick()
+      assertEquals("$key: la fila de ${g.gameId} abre su ficha", g.gameId, cardOpened)
+    }
+    assertNull("$key: ninguna fila juega directo", played)
+  }
+
+  @Test fun las_filas_del_observatorio_abren_la_ficha() = assertRowsOpenCards("observatorio", "MEMORIA")
+  @Test fun las_filas_de_la_antena_abren_la_ficha() = assertRowsOpenCards("antena", "ATENCION")
+  @Test fun las_filas_del_hangar_abren_la_ficha() = assertRowsOpenCards("hangar", "RAZONAMIENTO")
+  @Test fun las_filas_de_la_biblioteca_abren_la_ficha() = assertRowsOpenCards("biblioteca", "LENGUAJE")
+
+  @Test
+  fun las_filas_se_anuncian_como_boton_que_abre_la_ficha() {
+    show(); open("observatorio")
+    val first = ui.places.getValue("MEMORIA").games.first().gameId
+    val node = rule.onNodeWithTag("place_game_$first").fetchSemanticsNode()
+    assertEquals("Ver su ficha", node.config[androidx.compose.ui.semantics.SemanticsActions.OnClick].label)
   }
 
   @Test
@@ -290,6 +316,7 @@ class HoyPlaceSheetTest {
     rule.onNodeWithTag("place_play").performClick()
     assertNotNull(played)
     assertEquals(ui.places.getValue("MEMORIA").chosenGameId, played)
+    assertNull("el botón grande juega directo, sin abrir ninguna ficha", cardOpened)
   }
 
   // ---- La línea de tiempo: mirando → velo y lámina → vuelo → posada → de vuelta

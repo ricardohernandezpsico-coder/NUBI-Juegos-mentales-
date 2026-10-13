@@ -40,8 +40,8 @@ fun SpaceSectionTitle(text: String, modifier: Modifier = Modifier, hint: String?
         .height(1.dp)
         .background(Color.White.copy(alpha = 0.10f))
     )
-    Text(text, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp))
-    if (hint != null) Text(hint, color = OnNightDim, fontSize = 15.sp, modifier = Modifier.padding(top = 2.dp))
+    OnBoardText(text, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp))
+    if (hint != null) OnBoardText(hint, color = OnNightDim, fontSize = 15.sp, modifier = Modifier.padding(top = 2.dp))
   }
 }
 
@@ -55,8 +55,8 @@ fun LeagueHero(tier: RankTier, rating: Int, progress: Float, index: Int?, modifi
   val next = RankTier.entries.getOrNull(tier.ordinal + 1)
   Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
     LeagueShield(tier = tier, size = 150.dp, pips = ((progress * 5).toInt() + 1).coerceIn(1, 5), glow = true)
-    Text(tier.tierName, color = pal.base, fontSize = 34.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
-    Text(
+    OnBoardText(tier.tierName, color = pal.base, fontSize = 34.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+    OnBoardText(
       text = buildString {
         append("$rating trofeos")
         if (index != null) append("  ·  nivel $index")
@@ -80,7 +80,7 @@ fun LeagueHero(tier: RankTier, rating: Int, progress: Float, index: Int?, modifi
             .background(pal.base)
         )
       }
-      Text(
+      OnBoardText(
         "faltan ${(next.minRating - rating).coerceAtLeast(0)} para ${next.tierName}",
         color = OnNightDim, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp)
       )
@@ -100,8 +100,8 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
           Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(g.title, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-            Text(
+            OnBoardText(g.title, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            OnBoardText(
               text = if (v == null) "Sin medir" else levelWord(v),
               color = if (v == null) OnNightDim else g.domain.color,
               fontSize = 14.sp, fontWeight = FontWeight.Bold
@@ -125,14 +125,14 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
               )
             }
           }
-          Text(
+          OnBoardText(
             rank?.label ?: "",
             color = OnNightDim, fontSize = 14.sp, modifier = Modifier.padding(top = 3.dp)
           )
         }
       }
     }
-    Text(
+    OnBoardText(
       "Estimación interna según cómo se adapta la dificultad a ti; no es una medida clínica.",
       color = OnNightDim, fontSize = 14.sp
     )

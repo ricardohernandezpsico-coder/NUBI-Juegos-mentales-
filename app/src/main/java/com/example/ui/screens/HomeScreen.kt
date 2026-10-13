@@ -47,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import com.example.ui.components.OnBoardText
 import com.example.ui.components.rememberIslaLayout
 import com.example.ui.components.rememberReduceMotion
 import androidx.compose.runtime.remember
@@ -200,6 +201,7 @@ fun HomeScreen(
     onProfile = { viewModel.openTopPanel(TopPanel.PERFIL) },
     onSettings = { viewModel.openTopPanel(TopPanel.AJUSTES) },
     onPlaceGame = { id -> viewModel.playFromHome(id, com.example.data.PlayMode.A_TU_MEDIDA) },
+    onPlaceGameCard = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
     onStop = { stop -> GameRegistry.getById(stop.gameId)?.let { sheetFor = it } },
     onPlay = { viewModel.startDailySession() },
     onResume = { viewModel.resumePausedGame() },
@@ -207,15 +209,10 @@ fun HomeScreen(
     modifier = modifier
   )
 
-  // La ficha del juego de la piedrita que se tocó: la misma de Juegos (avance, marca, constancia, cómo jugar y Jugar). Al volver de la partida se queda en Hoy.
+  // La ficha del juego que se tocó (una piedrita de «Tu ruta de hoy» o una fila de la lámina de un lugar): la misma de Juegos (avance, marca, constancia, cómo jugar y Jugar). Al volver de la partida se queda en Hoy.
   sheetFor?.let { g ->
-    val data = cardData(g, getGameTitle(g.id, lang, g.title), lastPlayed[g.id], clock, progress[g.id], measures, history.count { it.gameId == g.id && clock - it.timestamp <= 14 * DAY_MS })
-    GameSheet(
-      data = data,
-      age = settings.ageBand,
-      expertOpen = g.id in skill.expertOpen,
-      selected = com.example.data.PlayMode.A_TU_MEDIDA,
-      timed = viewModel.retoFor(g.id),
+    GameSheetHost(
+      game = g, viewModel = viewModel,
       onDismiss = { sheetFor = null },
       onPlay = { m, timed ->
         sheetFor = null
@@ -302,7 +299,10 @@ internal fun HomeContent(
   ui: HomeUi,
   onProfile: () -> Unit,
   onSettings: () -> Unit,
+  /** El botón grande «Jugar en el …» de la lámina: juega directo el juego que elige Nubi. */
   onPlaceGame: (gameId: String) -> Unit,
+  /** Tocar el nombre (la fila) de un juego en la lámina: abre la ficha de ese juego encima de ella (Tarea 87). */
+  onPlaceGameCard: (gameId: String) -> Unit,
   onStop: (HomeStop) -> Unit,
   onPlay: () -> Unit,
   onResume: () -> Unit,
@@ -334,7 +334,7 @@ internal fun HomeContent(
             // Saludo; arriba a la derecha tu perfil (con el escudo de tu liga) y las opciones, como en las otras pestañas. Todo el texto va a la IZQUIERDA y desde 28 dp bajo la barra: la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`;
             // la vigila `HoyIslaScreenshotTest`). Con 24 dp, en una pantalla de 411 × 914 dp, el lucero de arriba a la izquierda rozaba la caja del saludo.
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-              Text(
+              OnBoardText(
                 if (ui.name.isBlank()) greetingWord(ui.now) else "${greetingWord(ui.now)}, ${ui.name.trim()}",
                 color = HoyCream, fontSize = 22.sp, fontWeight = FontWeight.Bold, lineHeight = 27.sp, modifier = Modifier.weight(1f).testTag("home_greeting")
               )
@@ -346,7 +346,7 @@ internal fun HomeContent(
               )
             }
             // Una sola línea con la fecha y la meta de la semana.
-            Text(
+            OnBoardText(
               "${dateText(ui.now)} · ${Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal)}",
               color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
             )
@@ -394,7 +394,8 @@ internal fun HomeContent(
       island = Rect(islandWindow.left - rootOffset.x, islandWindow.top - rootOffset.y, islandWindow.right - rootOffset.x, islandWindow.bottom - rootOffset.y),
       top = with(density) { (viewportHeight * 0.22f).toPx() },
       onClose = { fx.close(scope, reduceMotion) },
-      onPlay = onPlaceGame
+      onPlay = onPlaceGame,
+      onGame = onPlaceGameCard
     )
   }
 }
@@ -437,7 +438,7 @@ private fun HoyWeek(ui: HomeUi) {
     Spacer(Modifier.width(12.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(Icons.Default.Whatshot, contentDescription = null, tint = Clay.Sun, modifier = Modifier.size(18.dp))
-      Text(
+      OnBoardText(
         if (ui.streak == 1) "1 día" else "${ui.streak} días", color = Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold,
         modifier = Modifier.testTag("streak_pill")
       )
@@ -479,13 +480,13 @@ private fun HoyRoute(ui: HomeUi, onStop: (HomeStop) -> Unit) {
     if (bigFont) {
       // Con letra grande el título y su meta no caben lado a lado: uno debajo del otro.
       Column {
-        Text("Tu ruta de hoy", color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("home_route_title"))
-        Text(routeMeta(ui), color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, modifier = Modifier.testTag("home_route_meta"))
+        OnBoardText("Tu ruta de hoy", color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("home_route_title"))
+        OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, modifier = Modifier.testTag("home_route_meta"))
       }
     } else {
       Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Tu ruta de hoy", color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("home_route_title"))
-        Text(routeMeta(ui), color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f).testTag("home_route_meta"))
+        OnBoardText("Tu ruta de hoy", color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("home_route_title"))
+        OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f).testTag("home_route_meta"))
       }
     }
     if (bigFont) {
@@ -597,13 +598,13 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
         }
     }
     captionLine(ui)?.let { line ->
-      Text(
+      OnBoardText(
         line, color = HoySoft, fontSize = 14.sp, lineHeight = 18.sp, textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag(if (ui.flightDay) "home_flight_day" else "home_caption")
       )
     }
     if (!ui.hasBaseline) {
-      Text(
+      OnBoardText(
         text = "¿Aún sin tu punto de partida? Encuéntralo en 5 minutos",
         color = Clay.Sun,
         fontSize = 15.sp,
@@ -643,7 +644,10 @@ internal fun AreaDetail(
   now: Long,
   lang: com.example.model.AppLanguage,
   onArea: (String) -> Unit,
+  /** «¡Sí, vamos!»: juega directo el juego que Nubi elige. */
   onPlay: (String) -> Unit,
+  /** Tocar el nombre (la fila) de un juego: abre su ficha (Tarea 87). */
+  onGame: (String) -> Unit,
   onClose: () -> Unit,
   modifier: Modifier = Modifier
 ) {
@@ -668,7 +672,7 @@ internal fun AreaDetail(
     ) {
       Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = OnNight, modifier = Modifier.size(22.dp))
       Spacer(Modifier.width(8.dp))
-      Text("Hoy", color = OnNight, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+      OnBoardText("Hoy", color = OnNight, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
     }
     Column(
       Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
@@ -691,8 +695,8 @@ internal fun AreaDetail(
         Spacer(Modifier.weight(1f))
         AreaArrow(left = false, onClick = { go(1) })
       }
-      Text(name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-      Text(
+      OnBoardText(name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+      OnBoardText(
         s.value?.let { "Etapa ${Skill.stageName(it)} · ${s.points} de 100" } ?: "Aún sin medir",
         color = OnNightDim, fontSize = 16.sp
       )
@@ -701,7 +705,7 @@ internal fun AreaDetail(
       Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
         Skill.STAGES.forEachIndexed { i, st ->
           val here = s.value != null && Skill.stage(s.value) == i
-          Text(
+          OnBoardText(
             st, fontSize = 13.sp, textAlign = TextAlign.Center, maxLines = 1,
             color = if (here) Color.White else OnNightSoft, fontWeight = if (here) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier.weight(1f)
@@ -709,8 +713,8 @@ internal fun AreaDetail(
         }
       }
       Spacer(Modifier.height(14.dp))
-      Text(AreaProgress.changeLine(s), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-      AreaProgress.toNextLine(s)?.let { Text(it, color = OnNightDim, fontSize = 15.sp) }
+      OnBoardText(AreaProgress.changeLine(s), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+      AreaProgress.toNextLine(s)?.let { OnBoardText(it, color = OnNightDim, fontSize = 15.sp) }
       if (s.value != null && s.weeks.count { it != null } >= 2) WeeksChart(s.weeks)
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 12.dp)) {
         AREA_ORDER.forEachIndexed { i, _ ->
@@ -720,7 +724,7 @@ internal fun AreaDetail(
           )
         }
       }
-      Text(
+      OnBoardText(
         "Tus juegos de ${name.lowercase()}", color = Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold,
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp)
       )
@@ -734,13 +738,13 @@ internal fun AreaDetail(
         }
         Row(
           verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPlay(g.id) }.padding(vertical = 6.dp)
+          modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onGame(g.id) }.padding(vertical = 6.dp)
         ) {
           MiniPlanet(g.id, 34.dp)
           Spacer(Modifier.width(12.dp))
           Column {
-            Text(getGameTitle(g.id, lang, g.title), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text(detail, color = OnNightDim, fontSize = 14.sp)
+            OnBoardText(getGameTitle(g.id, lang, g.title), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            OnBoardText(detail, color = OnNightDim, fontSize = 14.sp)
           }
         }
       }
@@ -749,14 +753,14 @@ internal fun AreaDetail(
     if (suggested != null) {
       // La invitación: la pregunta con el mismo estilo que el botón, para que se lean juntas.
       Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
+        OnBoardText(
           "¿Le damos un empujón a ${AreaProgress.your(name)}?", color = Clay.Sun, fontSize = 20.sp,
           fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(bottom = 8.dp)
         )
         ClayButton(text = "¡Sí, vamos!", onClick = { onPlay(suggested.id) }, modifier = Modifier.testTag("area_play"))
         val title = getGameTitle(suggested.id, lang, suggested.title)
         val last = lastPlayed[suggested.id]
-        Text(
+        OnBoardText(
           when {
             last == null -> "Nubi eligió $title: aún no la juegas"
             else -> "Nubi eligió $title: ${playedAgo(now, last).replaceFirstChar { it.lowercase() }}"
@@ -797,7 +801,7 @@ private fun WeeksChart(weeks: List<Float?>) {
   Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
     Row(Modifier.fillMaxWidth()) {
       vals.forEachIndexed { i, v ->
-        Text(
+        OnBoardText(
           v?.let { "${it.toInt()}" } ?: "", fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
           color = if (i == vals.lastIndex) Color.White else OnNightSoft, fontWeight = if (i == vals.lastIndex) FontWeight.Bold else FontWeight.Normal
         )
@@ -816,7 +820,7 @@ private fun WeeksChart(weeks: List<Float?>) {
     }
     Row(Modifier.fillMaxWidth()) {
       listOf("hace 3", "hace 2", "pasada", "esta").forEachIndexed { i, t ->
-        Text(t, fontSize = 13.sp, textAlign = TextAlign.Center, color = if (i == 3) Color.White else OnNightSoft, modifier = Modifier.weight(1f))
+        OnBoardText(t, fontSize = 13.sp, textAlign = TextAlign.Center, color = if (i == 3) Color.White else OnNightSoft, modifier = Modifier.weight(1f))
       }
     }
   }

@@ -17,8 +17,8 @@ run --layers --json --out "$OUT"
 for m in frente observatorio antena hangar biblioteca; do run --solo-nubi --mirada "$m" --out "$OUT"; done
 cp "$OUT/capa-nubi-frente.png" "$OUT/capa-nubi.png"
 # 3. El fondo en DOS capas (Tarea 83). La lámina B (azul marino) es la que usa la app; la A (lila) quedó descartada.
-#    - completo: el B entero con todos sus luceros (--b-aprobado: no quita los de las zonas sin luceros de Hoy); sirve de referencia para calcular el color de la capa de luceros.
-#    - lámina: sola, sin luceros.   - luceros: solo los luceros y su sombra, con la lámina como «shadow catcher» (transparente), SIN los de las zonas de texto de Hoy (ZONAS_HOY en isla.py).
+#    - completo: el B entero con todos sus luceros (--b-aprobado: no quita los de la zona libre de arriba); sirve de referencia para calcular el color de la capa de luceros.
+#    - lámina: sola, sin luceros.   - luceros: solo los luceros y su sombra, con la lámina como «shadow catcher» (transparente), SIN los de la zona libre de arriba (ZONAS_HOY en isla.py: el saludo de Hoy y los títulos de Juegos y Avance); son ~80 luceros (N_LUCEROS).
 run --tablero --lamina "$LAMINA" --b-aprobado --out "$OUT/tablero-completo"
 run --tablero --lamina "$LAMINA" --sin-luceros --out "$OUT/tablero-lamina"
 run --tablero --lamina "$LAMINA" --solo-luceros --out "$OUT/tablero-luceros"

@@ -53,7 +53,7 @@ class NubiHomeScreenshotTest {
           AreaDetail(
             areaKey = AREA_ORDER[0], statuses = statuses, names = names, history = emptyList(),
             measures = listOf(MeasurePoint(now - day, "numline", 18f)), now = now, lang = AppLanguage.SPANISH,
-            onArea = {}, onPlay = {}, onClose = {}
+            onArea = {}, onPlay = {}, onGame = {}, onClose = {}
           )
         }
       }

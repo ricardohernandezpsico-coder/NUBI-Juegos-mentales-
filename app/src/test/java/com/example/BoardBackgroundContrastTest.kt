@@ -11,9 +11,9 @@ import org.robolectric.annotation.GraphicsMode
 import kotlin.math.pow
 
 /**
- * El fondo B en dos capas (Tarea 83): la lámina azul marino SIN luceros (`fondo_lamina`, la que va siempre detrás del pager) y los luceros con su sombra (`fondo_luceros`, que solo se ven en Hoy).
+ * El fondo B en dos capas (Tarea 83): la lámina azul marino SIN luceros (`fondo_lamina`) y los luceros con su sombra (`fondo_luceros`); desde la Tarea 87 los luceros van fijos detrás de las tres pestañas (son ~80).
  * Se miden las imágenes que entran a la app: el saludo se lee sobre la lámina con 4,5:1 o más (WCAG AA; medido el 11-oct sobre el B entero: crema 8,3:1 y sol 6,7:1), la lámina no tiene ningún lucero y los luceros no caen en las zonas
- * que `tools/isla/isla.py` (`ZONAS_HOY`) deja libres para el texto que va directo sobre el fondo de Hoy.
+ * que `tools/isla/isla.py` (`ZONAS_HOY`) deja libre arriba para el saludo de Hoy y los títulos de Juegos y Avance, y que son entre 70 y 90.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -57,14 +57,13 @@ class BoardBackgroundContrastTest {
     assertTrue("el píxel más claro de la lámina debe ser de fondo, no un lucero (luminancia %.2f)".format(brightest), brightest < 0.12)
   }
 
-  // Mismos valores que ZONAS_HOY de tools/isla/isla.py (x0, y0, x1, y1 en fracción de la imagen, y hacia abajo).
+  // Mismos valores que ZONAS_HOY de tools/isla/isla.py (x0, y0, x1, y1 en fracción de la imagen, y hacia abajo). Tarea 87: una sola zona, arriba: el saludo de Hoy y los títulos de Juegos y Avance.
   private val zonasHoy = listOf(
-    floatArrayOf(0.0f, 0.07f, 1.0f, 0.28f),   // encabezado: saludo, fecha con la meta, farolitos y racha
-    floatArrayOf(0.0f, 0.46f, 1.0f, 0.93f)    // «Tu ruta de hoy», los avisos bajo el botón y el enlace del punto de partida
+    floatArrayOf(0.0f, 0.03f, 1.0f, 0.28f)    // saludo de Hoy, fecha con la meta, farolitos y racha; «Tu avance»; «¿Qué jugamos hoy?» y su sugerencia
   )
 
   @Test
-  fun los_luceros_no_caen_en_las_zonas_sin_luceros_de_Hoy() {
+  fun los_luceros_no_caen_en_la_zona_sin_luceros_de_arriba() {
     val bmp = BitmapFactory.decodeFile("src/main/res/drawable-nodpi/fondo_luceros.webp")
     assertEquals("los luceros miden 720 × 1200 px a 2×", 720 to 1200, bmp.width to bmp.height)
     assertTrue("la capa de luceros tiene transparencia", bmp.hasAlpha())
@@ -76,5 +75,41 @@ class BoardBackgroundContrastTest {
       for (y in (bmp.height * z[1]).toInt() until (bmp.height * z[3]).toInt()) for (x in (bmp.width * z[0]).toInt() until (bmp.width * z[2]).toInt()) if ((bmp.getPixel(x, y) ushr 24) >= 128) inside++
       assertEquals("píxeles de lucero dentro de la zona ${z.toList()}", 0, inside)
     }
+  }
+
+  /** Cuenta los luceros de la capa: las manchas conexas de píxeles opacos (α ≥ 128) de al menos 25 píxeles (las sombras sueltas son más chicas). */
+  private fun lucerosVisibles(): List<Pair<Float, Float>> {
+    val bmp = BitmapFactory.decodeFile("src/main/res/drawable-nodpi/fondo_luceros.webp")
+    val w = bmp.width; val h = bmp.height
+    val seen = BooleanArray(w * h)
+    val out = mutableListOf<Pair<Float, Float>>()
+    for (y0 in 0 until h) for (x0 in 0 until w) {
+      if (seen[y0 * w + x0] || (bmp.getPixel(x0, y0) ushr 24) < 128) continue
+      val stack = ArrayDeque<Int>(); stack.add(y0 * w + x0); seen[y0 * w + x0] = true
+      var n = 0; var sx = 0L; var sy = 0L
+      while (stack.isNotEmpty()) {
+        val i = stack.removeLast(); val x = i % w; val y = i / w
+        n++; sx += x; sy += y
+        for ((dx, dy) in listOf(1 to 0, -1 to 0, 0 to 1, 0 to -1)) {
+          val nx = x + dx; val ny = y + dy
+          if (nx in 0 until w && ny in 0 until h && !seen[ny * w + nx] && (bmp.getPixel(nx, ny) ushr 24) >= 128) { seen[ny * w + nx] = true; stack.add(ny * w + nx) }
+        }
+      }
+      if (n >= 25) out += (sx.toFloat() / n / w) to (sy.toFloat() / n / h)
+    }
+    return out
+  }
+
+  @Test
+  fun la_capa_tiene_entre_70_y_90_luceros_y_ninguno_pegado_a_otro() {
+    val luceros = lucerosVisibles()
+    assertTrue("luceros en la capa: ${luceros.size} (Tarea 87: entre 70 y 90)", luceros.size in 70..90)
+    var closest = Float.MAX_VALUE
+    for (i in luceros.indices) for (j in i + 1 until luceros.size) {
+      val dx = (luceros[i].first - luceros[j].first) * 720; val dy = (luceros[i].second - luceros[j].second) * 1200
+      closest = minOf(closest, kotlin.math.sqrt(dx * dx + dy * dy))
+    }
+    // la colocación exige una separación de 4,5 radios (isla.py): ≥ 21 px a 2× entre dos luceros chicos; ninguno se toca (el más grande mide 11 px de radio)
+    assertTrue("el par de luceros más cercano está a %.0f px (a 2×): se amontonan".format(closest), closest >= 20f)
   }
 }
