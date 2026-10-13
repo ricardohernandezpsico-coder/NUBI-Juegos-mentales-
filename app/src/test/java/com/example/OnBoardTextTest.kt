@@ -14,7 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.components.BoardNavy
 import com.example.ui.components.OnBoardHalo
 import com.example.ui.components.OnBoardText
 import com.example.ui.theme.NeuroVidaTheme
@@ -41,7 +40,7 @@ class OnBoardTextTest {
 
   @Test
   fun el_contorno_es_del_azul_del_tablero_y_mide_al_menos_3_dp() {
-    assertEquals("el contorno es del color del fondo", BoardNavy, OnBoardHalo.Tone)
+    assertEquals("el contorno es del color de la lámina en su zona más común (mediana 50, 51, 103)", androidx.compose.ui.graphics.Color(0xFF333369), OnBoardHalo.Tone)
     assertTrue("el contorno mide al menos 3 dp (con 2,5 dp la orilla no cubre el anillo de 1-2 dp alrededor de la letra y el contraste local baja a 1,9:1)", OnBoardHalo.Outline >= 3.dp)
   }
 

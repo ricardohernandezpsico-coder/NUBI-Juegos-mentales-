@@ -489,12 +489,43 @@ private fun HoyRoute(ui: HomeUi, onStop: (HomeStop) -> Unit) {
         OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f).testTag("home_route_meta"))
       }
     }
-    if (bigFont) {
-      // Con letra grande no caben las palabras en tres columnas: una fila por juego.
+    HoyStops(ui, onStop, bigFont)
+  }
+}
+
+/** Cómo van los nombres en las piedritas: de lo más cómodo a lo más justo (nombre en 15 o 14 sp, relleno interno de 9 o 6 dp). Si ni la última cabe, las paradas pasan a filas. */
+internal enum class StoneFit(val titleSp: Int, val padding: Dp) {
+  NORMAL(15, 9.dp), TIGHT_PADDING(15, 6.dp), SMALL_TEXT(14, 6.dp);
+
+  companion object {
+    /** La primera medida en la que la palabra MÁS LARGA de cada nombre cabe entera en la piedrita; `null` si en ninguna (entonces: filas). [widestWordPx] = ancho de la palabra más larga de todos los nombres a [titleSp] sp. */
+    fun pick(stoneWidthPx: Float, density: Float, widestWordPx: (titleSp: Int) -> Float): StoneFit? =
+      entries.firstOrNull { f -> widestWordPx(f.titleSp) + 2f * f.padding.value * density + 1f * density <= stoneWidthPx }
+  }
+}
+
+/**
+ * Las tres paradas del camino: piedritas en una fila o, con letra grande o si ni a 14 sp cabe la palabra más larga de un nombre, una fila por juego. Nunca se parte una palabra a la mitad (Tarea 87): antes de achicar nada se mide el nombre
+ * («Constelaciones» a 411 dp) y se elige [StoneFit]; el mínimo de texto es 14 sp.
+ */
+@Composable
+private fun HoyStops(ui: HomeUi, onStop: (HomeStop) -> Unit, bigFont: Boolean) {
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  val base = androidx.compose.material3.LocalTextStyle.current
+  val density = LocalDensity.current
+  BoxWithConstraints(Modifier.fillMaxWidth()) {
+    val stoneWidthPx = with(density) { ((maxWidth - 16.dp) / 3).toPx() }          // tres piedritas y dos separaciones de 8 dp
+    val titles = ui.stops.map { it.title }
+    val fit = if (bigFont) null else StoneFit.pick(stoneWidthPx, density.density) { sp ->
+      val style = base.merge(androidx.compose.ui.text.TextStyle(fontSize = sp.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp))
+      titles.maxOf { t -> t.split(' ').maxOf { w -> measurer.measure(w, style = style, softWrap = false, maxLines = 1).size.width } }.toFloat()
+    }
+    if (fit == null) {
+      // Con letra grande (o si la palabra no cabe ni a 14 sp) no caben las palabras en tres columnas: una fila por juego.
       Column(verticalArrangement = Arrangement.spacedBy(2.dp)) { ui.stops.forEachIndexed { i, s -> HoyStopRow(s, i + 1, onClick = { onStop(s) }) } }
     } else {
       Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ui.stops.forEachIndexed { i, s -> HoyStone(s, i + 1, onClick = { onStop(s) }, modifier = Modifier.weight(1f).fillMaxHeight()) }
+        ui.stops.forEachIndexed { i, s -> HoyStone(s, i + 1, fit, onClick = { onStop(s) }, modifier = Modifier.weight(1f).fillMaxHeight()) }
       }
     }
   }
@@ -522,14 +553,14 @@ private fun StopNumber(stop: HomeStop, number: Int) {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun HoyStone(stop: HomeStop, number: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun HoyStone(stop: HomeStop, number: Int, fit: StoneFit, onClick: () -> Unit, modifier: Modifier = Modifier) {
   val color = when (stop.state) { StopState.DONE -> Clay.Lime; StopState.NEXT -> Clay.Sun; StopState.LATER -> HoyCream }
   val tag = when (stop.state) { StopState.DONE -> "Hecho"; StopState.NEXT -> "Sigue"; StopState.LATER -> stop.place }
   ClayCard(
     modifier = modifier.heightIn(min = 84.dp).semantics(mergeDescendants = true) { contentDescription = stopDescription(stop) }.testTag("home_stop_$number"),
     color = color, radius = 18.dp, depth = 4.dp, contentPadding = 0.dp, onClick = onClick
   ) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 9.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = fit.padding, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
       // El número y el lugar van en una línea; si el lugar («Biblioteca») no cabe al lado (pantallas de ~360 dp), baja a la línea de abajo en vez de partirse a media palabra.
       FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         StopNumber(stop, number)
@@ -537,7 +568,7 @@ private fun HoyStone(stop: HomeStop, number: Int, onClick: () -> Unit, modifier:
           Text(tag, color = if (stop.state == StopState.LATER) HoyStoneMuted else Clay.Ink, fontSize = 14.sp, fontWeight = if (stop.state == StopState.LATER) FontWeight.Normal else FontWeight.Bold, lineHeight = 17.sp)
         }
       }
-      Text(stop.title, color = Clay.Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp)
+      Text(stop.title, color = Clay.Ink, fontSize = fit.titleSp.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp, modifier = Modifier.testTag("home_stop_title_$number"))
     }
   }
 }
@@ -605,7 +636,7 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
     }
     if (!ui.hasBaseline) {
       OnBoardText(
-        text = "¿Aún sin tu punto de partida? Encuéntralo en 5 minutos",
+        text = "Encuentra tu punto de partida · 5 min",
         color = Clay.Sun,
         fontSize = 15.sp,
         fontWeight = FontWeight.SemiBold,

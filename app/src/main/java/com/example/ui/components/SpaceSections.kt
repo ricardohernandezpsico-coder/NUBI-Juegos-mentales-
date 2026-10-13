@@ -142,7 +142,7 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
 /** Fila de texto clicable para expandir/ocultar detalles (sin recuadro). */
 @Composable
 fun SpaceToggle(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-  Text(
+  OnBoardText(
     text = text,
     color = Color(0xFFFFC93C),
     fontSize = 15.sp,

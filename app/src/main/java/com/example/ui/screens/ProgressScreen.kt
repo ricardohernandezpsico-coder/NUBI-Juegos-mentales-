@@ -189,7 +189,7 @@ fun ProgressScreen(
           Column(
             Modifier
               .fillMaxWidth()
-              .clip(RoundedCornerShape(12.dp))
+              // sin `clip`: el contorno de OnBoardText de la primera y la última letra sobresale 1,75 dp y un recorte lo comería (Tarea 87)
               .clickable { openArea = s.area }
               .padding(vertical = 8.dp)
               .semantics(mergeDescendants = true) { contentDescription = areaDescription(name, s) }
@@ -284,7 +284,7 @@ fun ProgressScreen(
                       Spacer(Modifier.width(8.dp))
                       OnBoardText(getDomainName(info.domain, currentLang), color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
-                    Text("${info.tier.tierName} · ${info.xpLabel}", color = info.domain.color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    OnBoardText("${info.tier.tierName} · ${info.xpLabel}", color = info.domain.color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                   }
                   Box(
                     modifier = Modifier

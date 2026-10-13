@@ -114,7 +114,7 @@ class HoyIslaScreenshotTest {
   fun con_el_enlace_del_punto_de_partida_la_isla_cede_ese_alto_pero_sigue_siendo_grande() {
     show(ui(hasBaseline = false))
     printIsland("393×873 con el enlace")
-    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(300.dp)
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(320.dp)   // con el enlace en UNA línea (Tarea 87): 331 dp a 393 × 873 (con la frase de dos líneas eran 307)
     composeTestRule.onNodeWithTag("btn_home_baseline").assertIsDisplayed()
     composeTestRule.onNodeWithTag("btn_home_play").assertIsDisplayed()
   }
@@ -332,7 +332,7 @@ class HoyIslaScreenshotTest {
   fun sin_punto_de_partida_la_invitacion_sigue_a_mano() {
     show(ui(hasBaseline = false))
     composeTestRule.onNodeWithTag("btn_home_baseline").assertExists()
-    composeTestRule.onNodeWithText("¿Aún sin tu punto de partida? Encuéntralo en 5 minutos").assertExists()
+    composeTestRule.onNodeWithText("Encuentra tu punto de partida · 5 min").assertExists()
   }
 
   // ---- La isla

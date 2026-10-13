@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
@@ -35,8 +36,11 @@ import androidx.compose.ui.unit.dp
 object OnBoardHalo {
   /** Ancho del contorno (1,75 dp hacia afuera de cada trazo). */
   val Outline: Dp = 3.5.dp
-  /** El azul marino del tablero. */
-  val Tone: Color = BoardNavy
+  /**
+   * El color del contorno: el de la lámina en su zona más común (mediana de `fondo_lamina`: 50, 51, 103), así sobre el fondo liso casi no se nota; la nebulosa va de ~#292A4E a ~#373A6F, es decir ±12 por canal: en lo más claro se lee como una sombra leve, no como un borde.
+   * Contra una letra clara (luminancia 0,65-0,9) sigue dando 8:1 o más.
+   */
+  val Tone: Color = Color(0xFF333369)
 }
 
 /**
@@ -68,7 +72,7 @@ fun OnBoardText(
   Text(
     text = text,
     modifier = modifier.drawBehind {
-      layout?.let { drawText(it, color = OnBoardHalo.Tone, drawStyle = Stroke(width = strokePx, join = StrokeJoin.Round)) }
+      if (strokePx > 0f) layout?.let { drawText(it, color = OnBoardHalo.Tone, drawStyle = Stroke(width = strokePx, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
     },
     color = color, fontSize = fontSize, fontStyle = fontStyle, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
     textDecoration = textDecoration, textAlign = textAlign, lineHeight = lineHeight, overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines,

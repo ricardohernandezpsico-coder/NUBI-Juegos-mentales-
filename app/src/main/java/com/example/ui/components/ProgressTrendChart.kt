@@ -148,13 +148,13 @@ fun ProgressTrendChart(
         verticalAlignment = Alignment.CenterVertically
       ) {
         Column(modifier = Modifier.weight(1f)) {
-          Text(
+          OnBoardText(
             text = "Tu avance en el tiempo",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
           )
-          Text(
+          OnBoardText(
             text = "Cómo fueron tus partidas",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -187,7 +187,7 @@ fun ProgressTrendChart(
                 modifier = Modifier.size(16.dp)
               )
               Spacer(modifier = Modifier.width(4.dp))
-              Text(
+              OnBoardText(
                 text = String.format(Locale.getDefault(), "%+.1f%%", stats.improvementPct),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.ExtraBold,
@@ -320,11 +320,11 @@ fun ProgressTrendChart(
             val lastDate = dateFormatter.format(Date(filteredData.last().timestamp))
 
             val slate400 = Color(0xFF94A3B8)
-            Text(text = firstDate, style = MaterialTheme.typography.labelSmall, color = slate400)
+            OnBoardText(text = firstDate, style = MaterialTheme.typography.labelSmall, color = slate400)
             if (filteredData.size > 2) {
-              Text(text = midDate, style = MaterialTheme.typography.labelSmall, color = slate400)
+              OnBoardText(text = midDate, style = MaterialTheme.typography.labelSmall, color = slate400)
             }
-            Text(text = lastDate, style = MaterialTheme.typography.labelSmall, color = slate400)
+            OnBoardText(text = lastDate, style = MaterialTheme.typography.labelSmall, color = slate400)
           }
 
           // 6. Selected Point Detail Card / Tooltip
@@ -355,14 +355,14 @@ fun ProgressTrendChart(
                   GameIcon(game?.id ?: "", size = 30.dp)
                   Spacer(modifier = Modifier.width(10.dp))
                   Column {
-                    Text(
+                    OnBoardText(
                       text = game?.title ?: "Juego",
                       style = MaterialTheme.typography.labelLarge,
                       fontWeight = FontWeight.Bold,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis
                     )
-                    Text(
+                    OnBoardText(
                       text = "${fullDateFormatter.format(Date(currentItem.timestamp))} • Nivel ${currentItem.level}",
                       style = MaterialTheme.typography.bodySmall,
                       color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -375,7 +375,7 @@ fun ProgressTrendChart(
                     shape = RoundedCornerShape(8.dp),
                     color = domain.color
                   ) {
-                    Text(
+                    OnBoardText(
                       text = "${currentItem.score} pts",
                       style = MaterialTheme.typography.labelMedium,
                       fontWeight = FontWeight.ExtraBold,
@@ -383,7 +383,7 @@ fun ProgressTrendChart(
                       modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                   }
-                  Text(
+                  OnBoardText(
                     text = "${currentItem.correctAnswers}/${currentItem.totalTrials} aciertos",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -407,7 +407,7 @@ fun ProgressTrendChart(
                 tint = slate400
               )
               Spacer(modifier = Modifier.width(4.dp))
-              Text(
+              OnBoardText(
                 text = "Toca o desliza sobre el gráfico para examinar cada sesión",
                 style = MaterialTheme.typography.labelSmall,
                 color = slate400
@@ -638,12 +638,12 @@ private fun MetricItem(
   color: Color
 ) {
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(
+    OnBoardText(
       text = label,
       style = MaterialTheme.typography.labelSmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant
     )
-    Text(
+    OnBoardText(
       text = value,
       style = MaterialTheme.typography.titleMedium,
       fontWeight = FontWeight.ExtraBold,
@@ -670,7 +670,7 @@ private fun EmptyChartState(
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       Text(text = "📈", fontSize = 32.sp)
-      Text(
+      OnBoardText(
         text = if (selectedDomain != null) {
           "Pocas sesiones en ${selectedDomain.displayName}"
         } else {
@@ -680,7 +680,7 @@ private fun EmptyChartState(
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
       )
-      Text(
+      OnBoardText(
         text = if (selectedDomain != null) {
           "Juega más partidas de ${selectedDomain.displayName} para trazar su curva de aprendizaje individual."
         } else {
