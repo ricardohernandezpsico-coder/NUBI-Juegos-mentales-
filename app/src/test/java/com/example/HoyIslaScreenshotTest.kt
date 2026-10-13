@@ -340,7 +340,7 @@ class HoyIslaScreenshotTest {
   @Test
   fun la_isla_es_decorativa_con_una_descripcion_de_grupo_y_cada_edificio_es_un_boton_con_su_nombre() {
     show(ui(completed = 1))
-    composeTestRule.onNodeWithContentDescription("Tu isla: hoy la ruta pasa por el Observatorio, el Hangar y la Biblioteca").assertExists()
+    composeTestRule.onNodeWithContentDescription("Tu isla: hecho el Observatorio; faltan el Hangar y la Biblioteca").assertExists()   // con una parada hecha (Tarea 88: la descripción incluye el estado de la ruta)
     for (name in listOf("Observatorio, Memoria", "Antena, Atención", "Biblioteca, Lenguaje", "Hangar, Razonamiento")) composeTestRule.onNodeWithContentDescription(name).assertExists()
     composeTestRule.onNodeWithTag("isla_observatorio").assertExists()
     composeTestRule.onNodeWithTag("isla_hangar").assertExists()

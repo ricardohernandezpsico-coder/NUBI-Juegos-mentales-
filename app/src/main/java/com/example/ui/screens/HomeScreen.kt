@@ -48,6 +48,12 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import com.example.ui.components.OnBoardText
+import com.example.ui.components.RouteFx
+import com.example.ui.components.RouteMotion
+import com.example.data.PrefsRouteCelebrationStore
+import com.example.data.RouteCelebrationStore
+import com.example.data.RouteLamps
+import com.example.data.RoutePlan
 import com.example.ui.components.rememberIslaLayout
 import com.example.ui.components.rememberReduceMotion
 import androidx.compose.runtime.remember
@@ -196,6 +202,8 @@ fun HomeScreen(
     hasBaseline = baseline != null,
     places = places
   )
+  val appContext = androidx.compose.ui.platform.LocalContext.current
+  val routeStore = remember { PrefsRouteCelebrationStore(appContext) }
   HomeContent(
     ui = ui,
     onProfile = { viewModel.openTopPanel(TopPanel.PERFIL) },
@@ -206,7 +214,8 @@ fun HomeScreen(
     onPlay = { viewModel.startDailySession() },
     onResume = { viewModel.resumePausedGame() },
     onBaseline = { viewModel.startBaseline() },
-    modifier = modifier
+    modifier = modifier,
+    routeStore = routeStore
   )
 
   // La ficha del juego que se tocó (una piedrita de «Tu ruta de hoy» o una fila de la lámina de un lugar): la misma de Juegos (avance, marca, constancia, cómo jugar y Jugar). Al volver de la partida se queda en Hoy.
@@ -280,12 +289,12 @@ internal fun greetingWord(now: Long): String {
 internal fun dateText(now: Long): String =
   java.text.SimpleDateFormat("EEEE d 'de' MMMM", java.util.Locale("es")).format(java.util.Date(now)).replaceFirstChar { it.uppercase() }
 
-/** El nombre que dice el lector de pantalla para la isla: «Tu isla: hoy la ruta pasa por el Observatorio, la Antena y la Biblioteca». */
-internal fun islandDescription(ui: HomeUi): String {
-  val places = ui.stops.mapNotNull { IslaLugar.withArticle(it.area) }
-  return if (places.isEmpty()) "Tu isla: el Observatorio, la Antena, la Biblioteca y el Hangar"
-  else "Tu isla: hoy la ruta pasa por " + (if (places.size > 1) places.dropLast(1).joinToString(", ") + " y " + places.last() else places.joinToString())
-}
+/**
+ * El nombre que dice el lector de pantalla para la isla, con el estado de la ruta de hoy (Tarea 88): «Tu isla: hoy la ruta pasa por el Observatorio, la Antena y el Hangar» (nada hecho), «Tu isla: hecho el Observatorio; faltan la Antena y el Hangar»
+ * (algo hecho) o «Tu isla: ruta completa, hechos …». Las farolas y su animación son decorativas: lo que importa para el lector es esto.
+ */
+internal fun islandDescription(ui: HomeUi): String =
+  RouteLamps.description(ui.stops.mapNotNull { s -> IslaLugar.withArticle(s.area)?.let { it to (s.state == StopState.DONE) } })
 
 /**
  * El contenido de Hoy sin ViewModel (Tarea 84, distribución «A» aprobada por Ricardo el 12-oct): saludo con tu perfil y opciones, la fecha con la meta de la semana, los siete farolitos con tu racha, LA ISLA (la protagonista: toma todo lo que sobra),
@@ -308,11 +317,29 @@ internal fun HomeContent(
   onResume: () -> Unit,
   onBaseline: () -> Unit,
   modifier: Modifier = Modifier,
-  fx: PlaceFx = remember { PlaceFx() }
+  fx: PlaceFx = remember { PlaceFx() },
+  /** Dónde se guarda lo celebrado hoy (las farolas que ya pulsaron y la ruta completa). Con null (pruebas de dibujo) no hay celebración: las farolas de las paradas hechas están encendidas y quietas. */
+  routeStore: RouteCelebrationStore? = null,
+  /** Avisa qué se va a animar (pruebas): se llama una vez por plan no vacío, justo antes de animar. */
+  onRoutePlan: (RoutePlan) -> Unit = {}
 ) {
   val scope = rememberCoroutineScope()
   val reduceMotion = rememberReduceMotion()
   val layout = rememberIslaLayout()
+  // Las farolas de la ruta (Tarea 88): qué se enciende ahora por primera vez hoy y si la ruta quedó completa. El plan sale de lo celebrado; se guarda al empezar a animar, así cada farola pulsa UNA vez por parada y por día.
+  val doneKeys = ui.stops.filter { it.state == StopState.DONE }.mapNotNull { RouteLamps.placeKey(it.area) }
+  val allDone = ui.stops.isNotEmpty() && ui.stops.all { it.state == StopState.DONE }
+  val day = RouteLamps.dayKey(ui.now)
+  val routeFx = remember(day, doneKeys, allDone, routeStore, reduceMotion) {
+    RouteFx(plan = if (routeStore == null) RoutePlan.NONE else RouteLamps.plan(doneKeys, allDone, routeStore.load(), day), reduceMotion = reduceMotion)
+  }
+  LaunchedEffect(routeFx) {
+    if (routeStore != null && !routeFx.plan.isEmpty) {
+      routeStore.save(RouteLamps.consume(routeFx.plan, routeStore.load(), day))
+      onRoutePlan(routeFx.plan)
+      routeFx.run()
+    }
+  }
   var rootOffset by remember { mutableStateOf(Offset.Zero) }
   var islandWindow by remember { mutableStateOf(Rect.Zero) }
   // Con la lámina abierta la barra de pestañas se retira y la caja de Hoy crece hacia abajo: Hoy se queda con el alto que tenía al abrir (la isla no salta).
@@ -365,9 +392,13 @@ internal fun HomeContent(
                 fx.open(scope, key, reduceMotion)
               }
             },
-            lookKey = fx.key,
-            lookAmount = { fx.look.value },
-            lookMoves = fx.moves,
+            lookKey = fx.key ?: routeFx.lookKey,
+            lookAmount = { if (fx.key != null) fx.look.value else routeFx.look.value },
+            lookMoves = if (fx.key != null) fx.moves else routeFx.moves,
+            lampProgress = { routeFx.pulseProgress(it) },
+            sparks = { routeFx.sparks.value },
+            nubiLiftDp = { RouteMotion.jumpLiftDp(routeFx.jump.value) },
+            nubiTiltDeg = { RouteMotion.jumpTiltDeg(routeFx.jump.value) },
             nubiAlpha = { if (fx.flight.value > 0f) 0f else 1f },
             shadowAlpha = { fx.shadow.value },
             glowKey = fx.key,

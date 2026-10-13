@@ -96,4 +96,15 @@ class IslaJsonTest {
       assertTrue("$key se parece en posición a hola", abs(box.topLeft.x - layout.nubiTopLeft.x) < 0.03f && abs(box.topLeft.y - layout.nubiTopLeft.y) < 0.03f)
     }
   }
+
+  @Test
+  fun las_farolas_encendidas_miden_el_doble_de_halo_y_caen_dentro_de_la_imagen() {
+    val lit = layout.litLamp
+    assertEquals("el halo de una farola encendida es de 2× el de las apagadas", layout.lampHalos.radius * 2f, lit.haloRadius, 0.0005f)
+    assertEquals("alfa ~0,8", 0.8f, lit.haloOpacity, 0.001f)
+    assertEquals("#FFC86A", lit.haloColorHex.uppercase())
+    assertTrue("el disco sol cabe en el halo", lit.discRadius in 0.005f..lit.haloRadius / 3f)
+    assertTrue("el pie de cada farola está dentro de la imagen", layout.lamps.all { it.y + lit.footDy <= 1f })
+    assertTrue("y el resplandor de la losa es leve", lit.footGlowOpacity in 0.1f..0.5f)
+  }
 }

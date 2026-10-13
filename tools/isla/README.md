@@ -47,3 +47,5 @@ Si se agrega un título grande directo sobre el fondo que caiga siempre en el mi
 ## Qué falta (fases siguientes de `docs/diseno-isla.md`)
 
 Las miradas de Nubi hacia cada edificio (`nubi_mira_*`, ya salen de `render.sh` pero la app aún no las usa), el movimiento (flotación y sombra), la barra de pestañas en 3D y la cortina de arranque.
+
+**Farolas de la ruta (Tarea 88).** `isla.json` lleva `lampara_de` (qué farola, por índice en `lamparas`, es de cada lugar: la asignación de menor distancia total entre el pie del edificio y el tope de la farola) y `farolas_encendidas` (disco sol, halo de 2× el de las apagadas, `pie_dy` y resplandor de la losa). `componer.py` los calcula; si no se re-renderiza la isla, se pueden agregar al `app/src/main/res/raw/isla.json` con el mismo código sin tocar las imágenes.

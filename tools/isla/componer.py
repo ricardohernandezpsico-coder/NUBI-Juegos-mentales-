@@ -5,7 +5,7 @@
    - isla.json con coordenadas normalizadas (0-1) respecto del recorte común, más la caja de Nubi dentro de él.
 Uso: python -I componer.py <carpeta_render> [<carpeta_salida>]   (salida por defecto: <carpeta_render>/app; `isla.json` va a `app/src/main/res/raw/`)
 """
-import sys, os, json
+import sys, os, json, math, itertools
 from PIL import Image
 
 src = sys.argv[1]; dst = sys.argv[2] if len(sys.argv) > 2 else os.path.join(src, 'app')
@@ -57,6 +57,15 @@ lp = data.get('lugares', {}).get('antena', {}).get('lampara')
 if lp:
     out['halos_farolas'] = {'centros': [norm(f) for f in data.get('lamparas', [])], 'radio': round(0.03 * data['imagen']['ancho'] / W, 4), 'opacidad': 0.45, 'color': '#FFBE6E', 'nota': 'un halo chico por farola, misma capa que el de la antena'}
     out['halo_antena'] = {'centro': norm(lp), 'radio': round(0.075 * data['imagen']['ancho'] / W, 4), 'opacidad': 0.6, 'color': '#FFC86A', 'nota': 'degradado radial sol sobre la capa de edificios; de noche puede subir a 0,75'}
+# Tarea 88: una farola por lugar (la asignación de menor distancia total entre el pie de cada edificio y el tope de cada farola) y cómo se ve una farola ENCENDIDA (parada hecha hoy).
+if lp:
+    pies = {k: out['lugares'][k]['pie'] for k in ('observatorio', 'antena', 'biblioteca', 'hangar')}
+    lamps = out['lamparas']
+    best = min(itertools.permutations(range(len(lamps)), len(pies)), key=lambda perm: sum(math.dist(pies[k], lamps[i]) for k, i in zip(pies, perm)))
+    out['lampara_de'] = dict(zip(pies, best))
+    out['farolas_encendidas'] = {'disco_radio': 0.0115, 'disco_color': '#FFC93C', 'halo_radio': round(2 * out['halos_farolas']['radio'], 4), 'halo_opacidad': 0.8, 'halo_color': '#FFC86A', 'pie_dy': 0.057,
+                                 'resplandor_losa': {'radio': 0.05, 'opacidad': 0.35, 'color': '#FFC86A'},
+                                 'nota': 'farola de una parada HECHA hoy: disco sol en el tope, halo de 2x el de las apagadas (alfa 0,8) y un leve resplandor en la losa a su pie (`pie_dy` = alto del poste, normalizado al alto del recorte); las apagadas quedan con `halos_farolas`'}
 out['mirada'] = {'nota': 'al tocar un lugar: fundido de 180 ms a nubi_mira_<lugar>, desplazamiento del 4 % del ancho de la isla hacia el lugar y ladeo de 6° hacia él durante 2 s, luego vuelve a hola; la sombra se mueve con Nubi; con animaciones reducidas solo cambia la imagen'}
 nw = nb[2] - nb[0]; sc = data['nubi']['sombra']
 out['nubi']['sombra_elipse'] = {'centro': norm((sc[0] + nw*0.04, sc[1])), 'ancho': round(nw*1.4 / W, 4), 'alto': round(nw*0.5 / H, 4), 'opacidad': 0.5, 'desenfoque': round(nw*0.09 / W, 4),

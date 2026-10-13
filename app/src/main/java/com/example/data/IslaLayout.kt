@@ -21,6 +21,17 @@ data class IslaShadow(val center: IslaPoint, val width: Float, val height: Float
 /** Uno o varios halos (degradado radial de [colorHex], de [opacity] al centro): [radius] es una fracción del ANCHO del recorte. */
 data class IslaHalo(val centers: List<IslaPoint>, val radius: Float, val opacity: Float, val colorHex: String)
 
+/** Cómo se ve una farola ENCENDIDA (parada hecha hoy; Tarea 88): disco sol en el tope, halo de 2× el de las apagadas y un leve resplandor en la losa a su pie. Los radios son fracciones del ANCHO del recorte; [footDy] baja del tope al pie (fracción del ALTO). */
+data class IslaLitLamp(
+  val discRadius: Float, val discColorHex: String,
+  val haloRadius: Float, val haloOpacity: Float, val haloColorHex: String,
+  val footDy: Float, val footGlowRadius: Float, val footGlowOpacity: Float, val footGlowColorHex: String
+) {
+  companion object {
+    val DEFAULT = IslaLitLamp(0.0115f, "#FFC93C", 0.0904f, 0.8f, "#FFC86A", 0.057f, 0.05f, 0.35f, "#FFC86A")
+  }
+}
+
 /**
  * Las coordenadas que Compose necesita para dibujar encima de la isla renderizada en Blender (`res/raw/isla.json`, que sale de `tools/isla/componer.py` junto con las imágenes: si se regenera la isla con otra cámara,
  * cambian las dos cosas a la vez; `IslaJsonTest` falla antes de llegar al teléfono si quedan desparejadas). Ver `docs/diseno-isla.md` §13.3.
@@ -42,12 +53,18 @@ data class IslaLayout(
   val antennaHalo: IslaHalo,
   val lampHalos: IslaHalo,
   /** Las cajas de Nubi mirando hacia cada lugar (`observatorio`, `antena`, `biblioteca`, `hangar`): cada imagen tiene la suya porque se recortó a su borde. */
-  val miraBoxes: Map<String, IslaNubiBox> = emptyMap()
+  val miraBoxes: Map<String, IslaNubiBox> = emptyMap(),
+  /** Qué farola (índice en [lamps]) es de cada lugar (`observatorio`…): la de menor distancia total entre el pie de cada edificio y el tope de cada farola (Tarea 88; `tools/isla/componer.py`). */
+  val lampOf: Map<String, Int> = emptyMap(),
+  val litLamp: IslaLitLamp = IslaLitLamp.DEFAULT
 ) {
   /** Ancho / alto del recorte (0,89): el `Box` de la isla en pantalla. */
   val aspect: Float get() = widthPx.toFloat() / heightPx
 
   fun place(key: String): IslaPlace = places.first { it.key == key }
+
+  /** El índice de la farola del lugar [placeKey] (`observatorio`…), o null si ese lugar no tiene. */
+  fun lampIndex(placeKey: String): Int? = lampOf[placeKey]
 
   companion object {
     /** El orden en que el lector de pantalla recorre los lugares (el del rombo de la ruta). */
@@ -74,6 +91,14 @@ data class IslaLayout(
         val b = o.getJSONArray("caja"); val q = o.getJSONArray("px_2x")
         IslaNubiBox(pt(b.getJSONArray(0)), pt(b.getJSONArray(1)), q.getInt(0), q.getInt(1))
       }
+      val lampOf = root.optJSONObject("lampara_de")?.let { o -> PLACE_ORDER.mapNotNull { k -> if (o.has(k)) k to o.getInt(k) else null }.toMap() } ?: emptyMap()
+      val litLamp = root.optJSONObject("farolas_encendidas")?.let { f ->
+        val g = f.getJSONObject("resplandor_losa")
+        IslaLitLamp(
+          f.getDouble("disco_radio").toFloat(), f.getString("disco_color"), f.getDouble("halo_radio").toFloat(), f.getDouble("halo_opacidad").toFloat(), f.getString("halo_color"),
+          f.getDouble("pie_dy").toFloat(), g.getDouble("radio").toFloat(), g.getDouble("opacidad").toFloat(), g.getString("color")
+        )
+      } ?: IslaLitLamp.DEFAULT
       val ha = root.getJSONObject("halo_antena")
       val hf = root.getJSONObject("halos_farolas")
       return IslaLayout(
@@ -85,7 +110,7 @@ data class IslaLayout(
         shadow = IslaShadow(pt(sh.getJSONArray("centro")), sh.getDouble("ancho").toFloat(), sh.getDouble("alto").toFloat(), sh.getDouble("opacidad").toFloat(), sh.getDouble("desenfoque").toFloat()),
         antennaHalo = IslaHalo(listOf(pt(ha.getJSONArray("centro"))), ha.getDouble("radio").toFloat(), ha.getDouble("opacidad").toFloat(), ha.getString("color")),
         lampHalos = IslaHalo(pts(hf.getJSONArray("centros")), hf.getDouble("radio").toFloat(), hf.getDouble("opacidad").toFloat(), hf.getString("color")),
-        miraBoxes = mira
+        miraBoxes = mira, lampOf = lampOf, litLamp = litLamp
       )
     }
   }

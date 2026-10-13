@@ -278,5 +278,25 @@
  },
  "mirada": {
   "nota": "al tocar un lugar: fundido de 180 ms a nubi_mira_<lugar>, desplazamiento del 4 % del ancho de la isla hacia el lugar y ladeo de 6° hacia él durante 2 s, luego vuelve a hola; la sombra se mueve con Nubi; con animaciones reducidas solo cambia la imagen"
+ },
+ "lampara_de": {
+  "observatorio": 3,
+  "antena": 0,
+  "biblioteca": 1,
+  "hangar": 2
+ },
+ "farolas_encendidas": {
+  "disco_radio": 0.0115,
+  "disco_color": "#FFC93C",
+  "halo_radio": 0.0904,
+  "halo_opacidad": 0.8,
+  "halo_color": "#FFC86A",
+  "pie_dy": 0.057,
+  "resplandor_losa": {
+   "radio": 0.05,
+   "opacidad": 0.35,
+   "color": "#FFC86A"
+  },
+  "nota": "farola de una parada HECHA hoy: disco sol en el tope, halo de 2x el de las apagadas (alfa 0,8) y un leve resplandor en la losa a su pie (`pie_dy` = alto del poste, normalizado al alto del recorte); las apagadas quedan con `halos_farolas`"
  }
 }
