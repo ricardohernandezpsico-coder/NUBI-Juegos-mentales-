@@ -116,45 +116,6 @@ private fun ClayCircle(color: Color, label: String, onClick: () -> Unit, modifie
 }
 
 /**
- * Cerebro de perfil para la pestaña Avance (dibujado aquí: los íconos de Material no tienen uno). Lóbulos en
- * nubecitas, cerebelo y tronco, con surcos ondulados calados (se ve el fondo por ellos).
- */
-@Composable
-fun BrainIcon(color: Color, size: Dp, modifier: Modifier = Modifier) {
-  Canvas(modifier.size(size).graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) { drawBrain(color) }
-}
-
-private fun DrawScope.drawBrain(color: Color) {
-  val s = size.minDimension / 2f * 0.98f
-  val c = center
-  fun p(x: Float, y: Float) = Offset(c.x + x * s, c.y + y * s)
-  listOf(
-    Triple(-0.58f, 0.02f, 0.4f), Triple(-0.3f, -0.34f, 0.44f), Triple(0.12f, -0.42f, 0.44f), Triple(0.52f, -0.16f, 0.42f),
-    Triple(0.5f, 0.2f, 0.34f), Triple(-0.02f, 0.18f, 0.46f), Triple(-0.44f, 0.3f, 0.3f)
-  ).forEach { (x, y, r) -> drawCircle(color, r * s, p(x, y)) }
-  drawCircle(color, 0.23f * s, p(0.49f, 0.54f))                              // cerebelo
-  drawRoundRect(color, p(0.02f, 0.4f), androidx.compose.ui.geometry.Size(0.24f * s, 0.52f * s),
-    androidx.compose.ui.geometry.CornerRadius(0.1f * s))                     // tronco
-  val w = 0.13f * s
-  fun wave(x0: Float, y0: Float, x1: Float, y1: Float, amp: Float, n: Int) {
-    val path = Path()
-    val nx = -(y1 - y0); val ny = x1 - x0; val l = hypot(nx, ny).takeIf { it > 0f } ?: 1f
-    for (i in 0..16) {
-      val t = i / 16f
-      val o = sin(t * PI.toFloat() * n) * amp
-      val pt = p(x0 + (x1 - x0) * t + nx / l * o, y0 + (y1 - y0) * t + ny / l * o)
-      if (i == 0) path.moveTo(pt.x, pt.y) else path.lineTo(pt.x, pt.y)
-    }
-    drawPath(path, Color.Black, style = Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Clear)
-  }
-  wave(-0.5f, 0.2f, 0.34f, 0.02f, 0.07f, 2)      // cisura lateral
-  wave(0.1f, -0.74f, -0.06f, 0.02f, 0.08f, 3)    // surco central
-  wave(-0.74f, -0.14f, -0.36f, -0.2f, 0.05f, 1)
-  wave(0.38f, -0.6f, 0.62f, -0.24f, 0.05f, 1)
-  wave(-0.36f, -0.66f, -0.2f, -0.36f, 0.04f, 1)
-}
-
-/**
  * Planeta de cada área (esfera de color con su ícono blanco; Atención = diana), horneado por
  * `tools/previews/nubi_recursos.py` en drawable-nodpi/area_*.webp. La esfera mide [AREA_BODY_FRACTION] del ancho.
  */

@@ -94,7 +94,7 @@ class FondoPorPestanaScreenshotTest {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground(lucerosAlpha = { lucerosAlpha(page.intValue, 0f) })
           CompositionLocalProvider(LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
-            Box(Modifier.padding(top = 24.dp, bottom = 119.dp)) {
+            Box(Modifier.padding(top = 24.dp, bottom = 163.dp)) {
               when (page.intValue) {
                 0 -> HomeScreen(viewModel = vm, onNavigateToGames = {})
                 1 -> GamesLibraryScreen(viewModel = vm)

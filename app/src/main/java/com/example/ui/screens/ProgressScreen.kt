@@ -70,7 +70,7 @@ private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = Color(0xFFB4BFEA)
 
 /**
- * Avance (29-sep; antes la pestaña "Liga"; ícono: un cerebro, `docs/previews/navegacion-nubi.png`). Sin tarjetas, en
+ * Avance (29-sep; antes la pestaña "Liga"; su ícono en la barra de abajo es hoy el farol de la ruta, Tarea 86). Sin tarjetas, en
  * secciones sueltas: tu liga (escudo y compartir), tus 4 áreas con la barra de Hoy (tocar una abre su detalle), los
  * desafíos de la semana, tu avance en cada juego y tu punto de partida. Lo secundario (tu posición, el mapa de áreas,
  * maestría, tendencia e historial) queda plegado detrás de "Ver más detalles" para no saturar.

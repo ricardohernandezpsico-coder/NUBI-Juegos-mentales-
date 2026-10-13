@@ -78,7 +78,7 @@ class HoyIslaScreenshotTest {
             BoardBackground()
             HomeContent(
               ui = ui, onProfile = {}, onSettings = {}, onPlaceGame = { playedFromSheet = it }, onStop = { stopTapped = it }, onPlay = { played++ }, onResume = { resumed++ }, onBaseline = {},
-              modifier = Modifier.padding(top = 24.dp, bottom = 119.dp)
+              modifier = Modifier.padding(top = 24.dp, bottom = 163.dp)
             )
           }
         }
@@ -107,14 +107,14 @@ class HoyIslaScreenshotTest {
   fun la_isla_es_la_protagonista_y_toma_lo_que_sobra() {
     show(ui())
     printIsland("393×873 sin el enlace")
-    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(380.dp)   // a 393 × 873 con letra 1,0 y sin el enlace: más de 380 dp (en la Tarea 83 eran ~240)
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(360.dp)   // a 393 × 873 con letra 1,0 y sin el enlace: más de 360 dp con la barra nueva de plasticina (371 en la Tarea 86; con la barra vieja eran ~417 y en la Tarea 83 ~240)
   }
 
   @Test
   fun con_el_enlace_del_punto_de_partida_la_isla_cede_ese_alto_pero_sigue_siendo_grande() {
     show(ui(hasBaseline = false))
     printIsland("393×873 con el enlace")
-    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(320.dp)
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(300.dp)
     composeTestRule.onNodeWithTag("btn_home_baseline").assertIsDisplayed()
     composeTestRule.onNodeWithTag("btn_home_play").assertIsDisplayed()
   }

@@ -24,6 +24,8 @@ object PlaceMotion {
   const val GLOBE_MS = 320
   const val SHADOW_MS = 320
   const val GLOW_MS = 320
+  /** Fundido entre el cubo normal y el elegido de la barra inferior (Tarea 86). */
+  const val CUBE_FADE_MS = 150
   /** Con «quitar animaciones»: un fundido corto y nada más. */
   const val REDUCED_FADE_MS = 150
 
