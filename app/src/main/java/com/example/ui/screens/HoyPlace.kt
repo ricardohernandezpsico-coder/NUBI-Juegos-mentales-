@@ -79,6 +79,7 @@ import com.example.data.PlaceGameRow
 import com.example.data.PlaceSheetUi
 import com.example.data.PlaceSheets
 import com.example.data.Skill
+import com.example.ui.components.PAGE_BOTTOM_FADE
 import com.example.ui.components.PlaceMotion
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
@@ -91,8 +92,8 @@ import kotlin.math.min
 
 // ------------------------------------------------------------------ La lámina del lugar (Tarea 85)
 
-private val SheetCream = Color(0xFFF5EBDB)
-private val SheetMuted = Color(0xFF4A4470)
+internal val SheetCream = Color(0xFFF5EBDB)
+internal val SheetMuted = Color(0xFF4A4470)
 private val SheetTrack = Color(0xFFE2D6C2)
 private val SheetFill = Color(0xFF8E7BD6)
 private val SheetNow = Color(0xFFE4DCF7)
@@ -242,7 +243,8 @@ internal fun PlaceLayer(
 
     // La lámina sube desde abajo (con «quitar animaciones» aparece en su sitio con un fundido).
     BoxWithConstraints(Modifier.fillMaxSize()) {
-      val sheetHeight = maxHeight - with(density) { top.toDp() }
+      val pageHeight = maxHeight
+      val sheetHeight = pageHeight - with(density) { top.toDp() }
       Box(
         Modifier
           .align(Alignment.BottomCenter)
@@ -253,7 +255,10 @@ internal fun PlaceLayer(
             if (fx.moves) translationY = (1f - p) * size.height else alpha = p
           }
       ) {
-        PlaceSheetContent(place, headerStart = headerStart, nubiDrop = with(density) { (perchH * 0.74f).toDp() }, onClose = onClose, onPlay = onPlay)
+        PlaceSheetContent(
+          place, headerStart = headerStart, nubiDrop = with(density) { (perchH * 0.74f).toDp() }, onClose = onClose, onPlay = onPlay,
+          footerBottom = pageFooterBottom(pageHeight)
+        )
       }
     }
 
@@ -349,7 +354,7 @@ private fun PlaceGlobe(fx: PlaceFx, text: String, perch: Rect, top: Float) {
  * entre Nubi y la X, ni achicándolo hasta 20 sp, pasa a una línea propia debajo de Nubi).
  */
 @Composable
-internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: Dp, onClose: () -> Unit, onPlay: (String) -> Unit, modifier: Modifier = Modifier) {
+internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: Dp, onClose: () -> Unit, onPlay: (String) -> Unit, modifier: Modifier = Modifier, footerBottom: Dp = 48.dp) {
   val titleFocus = remember { FocusRequester() }
   LaunchedEffect(place.key) { runCatching { titleFocus.requestFocus() } }
   val color = placeColor(place.area)
@@ -392,9 +397,8 @@ internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: D
       }
     }
 
-    // Pie fijo: Jugar, sobre la barra del teléfono, y lo que eligió Nubi.
-    // 32 dp abajo (no 14): la caja de Hoy se desvanece en su borde de abajo (MainActivity) y la leyenda quedaba en esa franja.
-    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    // Pie fijo: Jugar, sobre la barra del teléfono, y lo que eligió Nubi. [footerBottom] lo deja por encima de la franja donde la caja de Hoy se desvanece (`pageFooterBottom`): la leyenda se lee entera.
+    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = footerBottom), horizontalAlignment = Alignment.CenterHorizontally) {
       ClayButton(
         text = "Jugar en ${place.article}",
         onClick = { place.chosenGameId?.let(onPlay) },
@@ -405,6 +409,9 @@ internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: D
     }
   }
 }
+
+/** Margen de abajo del pie de la lámina: la franja que se desvanece (`PAGE_BOTTOM_FADE` del alto de la página) más 12 dp de aire, y nunca menos de 32. */
+internal fun pageFooterBottom(pageHeight: Dp): Dp = maxOf(32.dp, pageHeight * PAGE_BOTTOM_FADE + 12.dp)
 
 /** El tamaño (en sp, de 26 a 20) con el que [text] cabe en una línea de [availablePx]; null si ni a 20 sp cabe. */
 @Composable

@@ -151,6 +151,46 @@ class HoyPlaceSheetTest {
 
   private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTextCount(text: String) = onAllNodes(androidx.compose.ui.test.hasText(text)).fetchSemanticsNodes().size
 
+  // ---- La leyenda de Nubi no cae en la franja que se desvanece abajo (Tarea 86)
+
+  private fun luminance(c: androidx.compose.ui.graphics.Color): Double {
+    fun ch(v: Float): Double = v.toDouble().let { if (it <= 0.03928) it / 12.92 else Math.pow((it + 0.055) / 1.055, 2.4) }
+    return 0.2126 * ch(c.red) + 0.7152 * ch(c.green) + 0.0722 * ch(c.blue)
+  }
+
+  /** La caja de las pestañas (MainActivity) se desvanece en el último `PAGE_BOTTOM_FADE` de su alto: aquí la caja mide alto − 24 (estado) − 48 (navegación). */
+  private fun assertLegendClearOfFade(heightDp: Int) {
+    val density = rule.density.density
+    val pageBottom = (heightDp - 48) * density
+    val pageHeight = (heightDp - 24 - 48) * density
+    val fadeTop = pageBottom - pageHeight * com.example.ui.components.PAGE_BOTTOM_FADE
+    val legend = bounds("place_chosen")
+    assertTrue("la leyenda «Nubi elige…» termina en ${legend.bottom} y la franja que se desvanece empieza en $fadeTop", legend.bottom <= fadeTop - 4 * density)
+    val play = bounds("place_play")
+    assertTrue("«Jugar» también queda sobre la franja", play.bottom <= fadeTop)
+    rule.onNodeWithTag("place_chosen").assertIsDisplayed()
+  }
+
+  @Test fun la_leyenda_de_nubi_queda_sobre_la_franja_que_se_desvanece_a_393() { show(393, 873); open("observatorio"); assertLegendClearOfFade(873) }
+  @Test fun la_leyenda_de_nubi_queda_sobre_la_franja_que_se_desvanece_a_360() { show(360, 780); open("antena"); assertLegendClearOfFade(780) }
+  @Test fun la_leyenda_de_nubi_queda_sobre_la_franja_que_se_desvanece_con_letra_1_3() { show(393, 873, 1.3f); open("hangar"); assertLegendClearOfFade(873) }
+  @Test fun la_leyenda_de_nubi_queda_sobre_la_franja_que_se_desvanece_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertLegendClearOfFade(873) }
+
+  @Test
+  fun la_leyenda_de_nubi_sobre_la_lamina_tiene_contraste_de_al_menos_4_5() {
+    val a = luminance(com.example.ui.screens.SheetMuted)
+    val b = luminance(com.example.ui.screens.SheetCream)
+    val ratio = (maxOf(a, b) + 0.05) / (minOf(a, b) + 0.05)
+    assertTrue("contraste de la leyenda: $ratio", ratio >= 4.5)
+  }
+
+  @Test
+  fun el_margen_del_pie_sube_con_el_alto_de_la_pagina_y_nunca_baja_de_32_dp() {
+    assertEquals(48.05f, com.example.ui.screens.pageFooterBottom(801.dp).value, 0.1f)
+    assertEquals(32f, com.example.ui.screens.pageFooterBottom(300.dp).value, 0.01f)
+    assertTrue(com.example.ui.screens.pageFooterBottom(900.dp) > com.example.ui.screens.pageFooterBottom(700.dp))
+  }
+
   // ---- «Jugar» siempre a la vista
 
   private fun assertPlayInside(widthDp: Int, heightDp: Int) {

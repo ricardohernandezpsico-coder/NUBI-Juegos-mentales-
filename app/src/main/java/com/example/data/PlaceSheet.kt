@@ -45,11 +45,18 @@ object PlaceSheets {
   private const val DAY_MS = 86_400_000L
   private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)) / DAY_MS
 
-  /** «Jugado hoy», «Jugado ayer» o «Hace N días que no lo juegas». */
+  /** «Jugado hoy», «Jugado ayer» o «Hace N días que no lo juegas» (la leyenda de Nubi al pie de la lámina). */
   fun playedAgo(now: Long, last: Long): String = when (val days = (dayIndex(now) - dayIndex(last)).toInt()) {
     0 -> "Jugado hoy"
     1 -> "Jugado ayer"
     else -> "Hace $days días que no lo juegas"
+  }
+
+  /** El dato corto de una fila de juego: «Jugado hoy», «Jugado ayer» o «Hace N días» (la fila es angosta y la frase larga se partía; la leyenda de abajo conserva la larga). */
+  fun playedAgoShort(now: Long, last: Long): String = when (val days = (dayIndex(now) - dayIndex(last)).toInt()) {
+    0 -> "Jugado hoy"
+    1 -> "Jugado ayer"
+    else -> "Hace $days días"
   }
 
   /**
@@ -75,7 +82,7 @@ object PlaceSheets {
       val detail = when {
         m != null -> StarMeasures.zoneText(m.first, measures)?.let { "$it · promedio reciente" } ?: "${m.first.format(m.second)} ${m.first.unit} · tu última"
         last == null -> "Sin jugar aún"
-        else -> playedAgo(now, last)
+        else -> playedAgoShort(now, last)
       }
       PlaceGameRow(g.id, titleOf(g), detail)
     }

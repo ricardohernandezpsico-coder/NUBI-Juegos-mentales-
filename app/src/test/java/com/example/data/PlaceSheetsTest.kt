@@ -83,7 +83,22 @@ class PlaceSheetsTest {
     val p = build("MEMORIA", AreaStatus("MEMORIA", 0.22f, 0f, listOf(null, null, null, 0.22f)), history)
     assertEquals(g[1].id, p.chosenGameId)
     assertEquals("Nubi elige ${g[1].title}: hace 9 días que no lo juegas", p.chosenLine)
-    assertEquals("Hace 9 días que no lo juegas", p.games[1].detail)
+    assertEquals("la fila dice el dato corto, sin «que no lo juegas»", "Hace 9 días", p.games[1].detail)
+  }
+
+  @Test
+  fun la_fila_corta_dice_hoy_ayer_o_hace_n_dias_y_la_leyenda_conserva_la_frase_larga() {
+    assertEquals("Jugado hoy", PlaceSheets.playedAgoShort(now, now))
+    assertEquals("Jugado ayer", PlaceSheets.playedAgoShort(now, now - day))
+    assertEquals("Hace 2 días", PlaceSheets.playedAgoShort(now, now - 2 * day))
+    assertEquals("Hace 22 días", PlaceSheets.playedAgoShort(now, now - 22 * day))
+    assertEquals("Hace 22 días que no lo juegas", PlaceSheets.playedAgo(now, now - 22 * day))
+    val g = games("MEMORIA")
+    val history = g.mapIndexed { i, d -> result(d.id, now - (if (i == 0) 22 else 3) * day) }
+    val p = build("MEMORIA", AreaStatus("MEMORIA", 0.22f, 0f, listOf(null, null, null, 0.22f)), history)
+    assertEquals("Hace 22 días", p.games[0].detail)
+    assertEquals("Nubi elige ${g[0].title}: hace 22 días que no lo juegas", p.chosenLine)
+    assertTrue("ninguna fila repite «que no lo juegas»", p.games.none { it.detail.contains("que no lo juegas") })
   }
 
   @Test

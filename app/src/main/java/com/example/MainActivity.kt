@@ -199,7 +199,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             drawContent()
             // Las pantallas se desvanecen en los bordes en vez de cortarse en seco
             drawRect(
-              Brush.verticalGradient(0f to Color.Transparent, 0.025f to Color.Black, 0.955f to Color.Black, 1f to Color.Transparent),
+              Brush.verticalGradient(0f to Color.Transparent, 0.025f to Color.Black, (1f - com.example.ui.components.PAGE_BOTTOM_FADE) to Color.Black, 1f to Color.Transparent),
               blendMode = BlendMode.DstIn
             )
           }
