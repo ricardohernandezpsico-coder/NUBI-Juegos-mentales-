@@ -13,7 +13,7 @@ def arg(n, d): return args[args.index(n)+1] if n in args else d
 ENGINE = arg('--engine','EEVEE').upper(); SAMPLES = int(arg('--samples','48')); WIDTH = int(arg('--width','1080'))
 OUT = os.path.abspath(arg('--out', os.path.join(os.path.dirname(os.path.abspath(__file__)),'out'))); LAYERS = '--layers' in args; POSE = arg('--nubi','hola')
 JSON = '--json' in args; NORENDER = '--no-render' in args; ICONOS = '--iconos' in args; REPISA = '--repisa' in args; ALTERNATIVAS = '--alternativas' in args
-LAMINA = arg('--lamina','A').upper(); MIRADA = arg('--mirada','frente'); SOLO_NUBI = '--solo-nubi' in args; FONDO = '--fondo' in args; SOLO_EDIFICIOS = '--solo-edificios' in args; PERFIL = '--perfil' in args; TABLERO = '--tablero' in args; BARRA = '--barra' in args
+LAMINA = arg('--lamina','A').upper(); MIRADA = arg('--mirada','frente'); SOLO_NUBI = '--solo-nubi' in args; FONDO = '--fondo' in args; SOLO_EDIFICIOS = '--solo-edificios' in args; PERFIL = '--perfil' in args; TABLERO = '--tablero' in args; KIT = '--kit' in args; BARRA = '--barra' in args
 os.makedirs(OUT, exist_ok=True); random.seed(5)
 
 def hx(h): h=h.lstrip('#'); return tuple(int(h[i:i+2],16)/255 for i in (0,2,4))
@@ -984,6 +984,89 @@ def render_barra():
     before = set(bpy.data.objects); bandeja(); times['bandeja'] = render('bandeja', {'iconos','luces'})
     for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
 
+
+# ------------------------------------------------------------------ kit de plasticina (Tarea 89): losas de nine-slice, botón redondo con X y triángulo de «Jugar», cada uno en dos estados, para la app
+# 1 unidad de Blender = 20 dp; se renderiza a 3 px por dp (KIT_PX). Cámara ortogonal, casi desde arriba (KIT_TILT grados de inclinación: se ve un poco el canto de adelante); el sol de la isla (arriba a la izquierda) deja la sombra de contacto abajo a la derecha.
+KIT_DPU = 20.0; KIT_PX = 3.0; KIT_TILT = float(arg('--kit-tilt','30'))
+KIT_R = 22.0; KIT_CW = 24.0; KIT_CH = 8.0                       # radio de las esquinas, ancho y alto del centro que se estira (dp)
+KIT_MARGEN = (8.0, 6.0, 12.0, 14.0)                              # margen de la imagen alrededor del cuerpo: izquierda, arriba, derecha, abajo (dp): ahí cae la sombra
+KIT_H = float(arg('--kit-h','9')); KIT_H_P = KIT_H*0.5                                       # alto de la losa elevada y presionada (dp)
+KIT_SOL = '#FFCB45'; KIT_CREMA = '#F5EBDB'; KIT_LIMA = '#9BE564'; KIT_TINTA = '#140E30'   # la tinta del diseño es #211C45: se renderiza más oscura porque con la luz de la isla la plasticina oscura sale ~1,5× más clara
+
+def cam_kit(cx, cy, w_dp, h_dp, name='cam_kit'):
+    cam = bpy.data.cameras.new(name); cam.type = 'ORTHO'; cam.ortho_scale = w_dp / KIT_DPU      # la escala ortogonal es el ancho de la imagen en unidades
+    t = math.radians(KIT_TILT); d = Vector((0, -math.sin(t), math.cos(t)))
+    co = bpy.data.objects.new(name, cam); scene.collection.objects.link(co); tgt = Vector((cx, cy, 0.0)); co.location = tuple(tgt + d*30)
+    co.rotation_euler = (tgt - co.location).to_track_quat('-Z','Y').to_euler(); scene.camera = co
+    scene.render.resolution_x = int(round(w_dp*KIT_PX)); scene.render.resolution_y = int(round(h_dp*KIT_PX)); return cam
+
+def suelo_kit():
+    g = box((24, 24, 0.2), loc=(0, 0, -0.1), coll='iconos', name='kit_suelo'); g.is_shadow_catcher = True; return g
+
+def losa_kit(color, h_dp, name='kit_losa'):
+    """Losa de plasticina de esquinas muy redondas y canto blando, de (2R + centro) por el fondo que da el cuerpo de la imagen. Cara casi lisa: el centro se ESTIRA en la app (nine-slice), así que no lleva huellas."""
+    t = math.radians(KIT_TILT); body_w = 2*KIT_R + KIT_CW; body_h = 2*KIT_R + KIT_CH
+    h = h_dp / KIT_DPU
+    d_img = (body_h - h_dp*math.sin(t)) / KIT_DPU                           # lo que ocupa la CARA en la imagen (el canto de adelante suma h·sen)
+    o = cushion(body_w/KIT_DPU, d_img, h, r_plan=KIT_R/KIT_DPU, bev=h*0.72, seg=8, name=name, coll='iconos', barrel=0.012, rings=2); organic(o, 0.003, 1.4, 1)
+    o.scale = (1, 1/math.cos(t), 1)                                          # estirada en Y por 1/cos: vista inclinada, la cara y sus esquinas redondas quedan como pedidas
+    mat(o, clay('m_kit_' + color.strip('#') + ('p' if h_dp < KIT_H else ''), color, bump=0.28, sss=0.28, vary=0.012, rough=0.5, dents=0.0, grain=0.0, mid=0.3, ao=0.28, ao_cool=1.0, sat=1.0, piece=0, prints=0.0))
+    return o, d_img
+
+def render_kit():
+    body_w = 2*KIT_R + KIT_CW; body_h = 2*KIT_R + KIT_CH
+    ml, mt, mr, mb = KIT_MARGEN; w_dp = ml + body_w + mr; h_dp = mt + body_h + mb
+    t = math.radians(KIT_TILT); scene.view_settings.exposure = float(arg('--kit-exp','-0.42'))   # la plasticina clara se quemaba (crema y lima a 255) con el sol desde arriba
+    # La cámara apunta al centro del lienzo; el cuerpo queda desplazado (margen izquierdo/arriba distinto del derecho/abajo). `tools/isla/kit.py` recorta y rellena cada imagen para que el cuerpo caiga EXACTO en sus márgenes.
+    dx = (ml + body_w/2) - w_dp/2; dy = (mt + body_h/2) - h_dp/2           # dp que el centro del cuerpo queda a la derecha y abajo del centro del lienzo
+    cam = cam_kit(-dx/KIT_DPU, dy/(KIT_DPU*math.cos(t)), w_dp, h_dp)
+    for label, color in (('sol', KIT_SOL), ('crema', KIT_CREMA), ('lima', KIT_LIMA)):
+        for presionada in (False, True):
+            before = set(bpy.data.objects); suelo_kit()
+            col = color if not presionada else '#' + ''.join('%02X' % int(c*0.93) for c in (int(color.strip('#')[i:i+2], 16) for i in (0, 2, 4)))
+            losa_kit(col, KIT_H_P if presionada else KIT_H, 'kit_losa_' + label)
+            nombre = 'kit_losa_' + label + ('_p' if presionada else '')
+            times[nombre] = render(nombre, {'iconos','luces'})
+            for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
+
+
+def boton_cerrar_kit(presionado):
+    """Disco de plasticina crema con una X de dos churros de plasticina tinta de puntas redondas (la X de cerrar). Presionado: más bajo, la X más hundida y un punto más oscuro."""
+    t = math.radians(KIT_TILT); h = (KIT_H_P if presionado else KIT_H) / KIT_DPU; R = 24.0 / KIT_DPU
+    crema = '#F5EBDB' if not presionado else '#E5D9C5'
+    d = cyl(r=R, d=h, verts=64, loc=(0, 0, h/2), coll='iconos', name='kit_disco'); bevel(d, h*0.72, 8); organic(d, 0.003, 1.4, 1)
+    mat(d, clay('m_kit_disco' + ('p' if presionado else ''), crema, bump=0.28, sss=0.28, vary=0.012, rough=0.5, dents=0.0, grain=0.0, mid=0.3, ao=0.28, ao_cool=1.0, sat=1.0, piece=0, prints=0.0))
+    tinta = clay('m_kit_tinta', KIT_TINTA, bump=0.3, sss=0.15, vary=0.01, rough=0.55, dents=0.0, grain=0.0, ao=0.2, sat=1.0, piece=0, prints=0.0)
+    a = 5.4 / KIT_DPU; r = 2.1 / KIT_DPU; z = h + r*(0.55 if not presionado else 0.2)       # la X asoma de la cara; al presionar se hunde
+    objs = [d]
+    for (p0, p1) in (((-a, -a, z), (a, a, z)), ((-a, a, z), (a, -a, z))):
+        c = churro(p0, p1, r, tinta, coll='iconos', name='kit_x'); objs.append(c)
+    raiz = bpy.data.objects.new('kit_raiz', None); scene.collection.objects.link(raiz); raiz.scale = (1, 1/math.cos(t), 1)   # estirado en Y por 1/cos desde un padre: el disco se ve redondo y las piezas no se deforman (cada una conserva su giro)
+    for o in [o for o in bpy.data.objects if o.name.startswith('kit_x') or o.name == 'kit_disco']: o.parent = raiz
+
+def triangulo_jugar_kit():
+    """El triángulo de «Jugar» como un churrito de plasticina tinta: un prisma triangular de puntas muy redondas, apuntando a la derecha."""
+    t = math.radians(KIT_TILT); h = 7.0 / KIT_DPU; R = 12.0 / KIT_DPU
+    tri = cyl(r=R, d=h, verts=3, loc=(0, 0, h/2), rot=(0, 0, -90), coll='iconos', name='kit_triangulo'); bevel(tri, h*0.95, 8, ang=20); sd = tri.modifiers.new('Sub', 'SUBSURF'); sd.levels = 2; sd.render_levels = 2; smooth(tri)
+    mat(tri, clay('m_kit_tinta', KIT_TINTA, bump=0.3, sss=0.15, vary=0.01, rough=0.55, dents=0.0, grain=0.0, ao=0.2, sat=1.0, piece=0, prints=0.0))
+    raiz = bpy.data.objects.new('kit_raiz', None); scene.collection.objects.link(raiz); raiz.scale = (1, 1/math.cos(t), 1); tri.parent = raiz
+
+def render_kit_extras():
+    t = math.radians(KIT_TILT)
+    # el botón redondo con X: 48 dp de cuerpo, márgenes (6, 4, 10, 12) dp
+    ml, mt, mr, mb = 6.0, 4.0, 10.0, 12.0; body = 48.0; w_dp = ml + body + mr; h_dp = mt + body + mb
+    for presionado in (False, True):
+        cam_kit(-((ml + body/2) - w_dp/2)/KIT_DPU, ((mt + body/2) - h_dp/2)/(KIT_DPU*math.cos(t)), w_dp, h_dp)
+        before = set(bpy.data.objects); suelo_kit(); boton_cerrar_kit(presionado)
+        nombre = 'kit_cerrar' + ('_p' if presionado else ''); times[nombre] = render(nombre, {'iconos', 'luces'})
+        for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
+    # el triángulo de Jugar: 20 dp de ancho
+    ml, mt, mr, mb = 4.0, 3.0, 6.0, 7.0; bw, bh = 20.0, 22.0; w_dp = ml + bw + mr; h_dp = mt + bh + mb
+    cam_kit(-((ml + bw/2) - w_dp/2)/KIT_DPU, ((mt + bh/2) - h_dp/2)/(KIT_DPU*math.cos(t)), w_dp, h_dp)
+    before = set(bpy.data.objects); suelo_kit(); triangulo_jugar_kit()
+    times['kit_jugar'] = render('kit_jugar', {'iconos', 'luces'})
+    for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
+
 def camera_icono():
     cam = bpy.data.cameras.new('cam_ic'); cam.type = 'PERSP'; cam.lens = 90; cam.sensor_width = 36
     d = (Vector((12.8,-12.8,14.5)) - Vector((0,0,0.7))).normalized()   # misma dirección que la cámara de la isla
@@ -1009,12 +1092,13 @@ def render_repisa():
 
 t_all = time.time()
 times = {}
-if ICONOS or REPISA or ALTERNATIVAS or FONDO or TABLERO or BARRA:
+if ICONOS or REPISA or ALTERNATIVAS or FONDO or TABLERO or BARRA or KIT:
     studio(); compositor(); setup_render(); scene.render.film_transparent = True
     if ICONOS or ALTERNATIVAS: render_iconos()
     if FONDO: render_fondo()
     if TABLERO: render_tablero()
     if BARRA: render_barra()
+    if KIT: render_kit(); render_kit_extras()
     if REPISA: render_repisa()
     with open(os.path.join(OUT,'tiempos.txt'),'w',encoding='utf-8') as f:
         for k,v in times.items(): f.write(f'{k}: {v:.1f} s\n')

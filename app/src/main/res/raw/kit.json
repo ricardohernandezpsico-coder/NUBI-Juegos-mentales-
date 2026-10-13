@@ -1,0 +1,81 @@
+{
+ "px_por_dp": 3,
+ "nota": "Kit de plasticina (Tarea 89), renderizado en Blender con `tools/isla/isla.py --kit`; `tools/isla/kit.py` lo normaliza. Los WebP viven en drawable-nodpi (a 3 px por dp, sin que Android los reescale).",
+ "losa": {
+  "imagen_px": [
+   264,
+   216
+  ],
+  "margenes_dp": {
+   "izq": 8.0,
+   "arr": 6.0,
+   "der": 11.33,
+   "abajo": 17.0
+  },
+  "cuerpo_dp": {
+   "ancho": 68.67,
+   "alto": 49.0
+  },
+  "radio_dp": 22,
+  "insets_px": {
+   "izq": 90,
+   "arr": 84,
+   "der": 100,
+   "abajo": 117
+  },
+  "centro_px": [
+   74,
+   15
+  ],
+  "presionada": {
+   "texto_baja_dp": 2.0,
+   "borde_baja_dp": 0.33,
+   "nota": "la losa presionada es más baja (la mitad de alto), más oscura y de sombra más chica; el texto y el contenido bajan `texto_baja_dp` al apoyar el dedo"
+  },
+  "estados": [
+   "normal",
+   "_p"
+  ],
+  "colores": {
+   "sol": "#FFCB45",
+   "crema": "#F5EBDB",
+   "lima": "#9BE564"
+  }
+ },
+ "cerrar": {
+  "imagen_px": [
+   192,
+   192
+  ],
+  "margenes_dp": {
+   "izq": 6.0,
+   "arr": 4.0,
+   "der": 10.0,
+   "abajo": 12.0
+  },
+  "cuerpo_dp": {
+   "ancho": 48.0,
+   "alto": 48.0
+  },
+  "presionada": {
+   "texto_baja_dp": 2.0,
+   "borde_baja_dp": 0.67
+  }
+ },
+ "jugar": {
+  "imagen_px": [
+   90,
+   96
+  ],
+  "margenes_dp": {
+   "izq": 4.0,
+   "arr": 3.0,
+   "der": 8.67,
+   "abajo": 9.33
+  },
+  "cuerpo_dp": {
+   "ancho": 17.33,
+   "alto": 19.67
+  }
+ }
+}

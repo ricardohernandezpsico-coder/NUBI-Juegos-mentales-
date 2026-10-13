@@ -49,3 +49,17 @@ Si se agrega un título grande directo sobre el fondo que caiga siempre en el mi
 Las miradas de Nubi hacia cada edificio (`nubi_mira_*`, ya salen de `render.sh` pero la app aún no las usa), el movimiento (flotación y sombra), la barra de pestañas en 3D y la cortina de arranque.
 
 **Farolas de la ruta (Tarea 88).** `isla.json` lleva `lampara_de` (qué farola, por índice en `lamparas`, es de cada lugar: la asignación de menor distancia total entre el pie del edificio y el tope de la farola) y `farolas_encendidas` (disco sol, halo de 2× el de las apagadas, `pie_dy` y resplandor de la losa). `componer.py` los calcula; si no se re-renderiza la isla, se pueden agregar al `app/src/main/res/raw/isla.json` con el mismo código sin tocar las imágenes.
+
+**Kit de plasticina (Tarea 89, prueba).** `isla.py --kit` renderiza las piezas de la interfaz con la misma luz, el mismo material `clay()` y el sol de la isla: tres losas de nine-slice (sol `#FFCB45`, crema `#F5EBDB`, lima `#9BE564`) cada una en dos estados (normal y presionada: la mitad de alto, un punto más oscura y de sombra más chica), el botón redondo con X (disco crema y dos churros tinta de puntas redondas, dos estados) y el triángulo de «Jugar» como un churrito tinta. `kit.py` normaliza los PNG (cuerpo en el mismo sitio en todos los estados, recorta la bruma del «shadow catcher», WebP con alfa) y escribe `kit.json` con el lienzo, los márgenes (donde cae la sombra), el cuerpo y los insets del nine-slice.
+
+```
+BLENDER=/ruta/a/blender
+$BLENDER -b -P tools/isla/isla.py -- --engine CYCLES --samples 112 --kit --out tools/isla/out/kit     # ~90 s con Cycles por CPU (Ryzen 5 5625U): 9 imágenes de 1 a 12 s
+python -I tools/isla/kit.py tools/isla/out/kit tools/isla/out/kit/app                                  # WebP + kit.json
+cp tools/isla/out/kit/app/kit_*.webp app/src/main/res/drawable-nodpi/ && cp tools/isla/out/kit/app/kit.json app/src/main/res/raw/kit.json
+```
+
+Opciones de `--kit`: `--kit-tilt` (grados de inclinación de la cámara respecto de la vista desde arriba; 30 por defecto: se ve un poco el canto de adelante), `--kit-h` (alto de la losa elevada en dp; 9) y `--kit-exp` (exposición; −0,42: con el sol desde arriba la plasticina clara se quemaba y la crema y la lima salían a 255).
+**3× (3 px por dp).** El Motorola va a ~2,625 px por dp: una imagen a 3× se reduce 0,875 y queda nítida; a 2× habría que ampliarla 1,31 y se vería borrosa. Con 3× es 1:1 en pantallas de 480 dpi. Cuesta ~54 KB los 9 archivos (WebP calidad 92). Van en `drawable-nodpi` para que Android no los reescale.
+**El centro de la losa va casi liso** (desviación de 0,5-0,9 sobre 255 a lo ancho y a lo alto: `kit.py` lo mide): se estira hasta 5× en horizontal, y una huella o una veta estiradas se verían como un barrido. Las esquinas y los bordes, que no se estiran, llevan el volumen: canto blando con bisel, sombra de contacto y el jaspeado leve del material.
+
