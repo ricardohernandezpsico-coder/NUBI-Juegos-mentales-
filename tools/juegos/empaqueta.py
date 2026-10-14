@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -102,6 +102,18 @@ def grupo_radar():
         for k, v in json.load(open(p, encoding='utf-8')).items(): med.append((k, float(v)))
     return S, med
 
+ANCHOS_PILOTO = {'senal': 192, 'chica': 96, 'nave': 192}
+
+def grupo_piloto():
+    """Las 15 señales (192 px: el juego y el aviso de misión nueva; 96 px: la tarjeta de misión, que se ve a 28 dp) y la nave. La versión chica sale de la MISMA maestra."""
+    S = []
+    for f in ('hexagono', 'gota', 'circulo', 'cuadrado', 'triangulo'):
+        for d in ('punto', 'anillo', 'franja'):
+            S.append(sprite(f'senal_{f}_{d}', carga_render('piloto', f'senal_{f}_{d}', ANCHOS_PILOTO['senal'])))
+            S.append(sprite(f'chica_{f}_{d}', carga_render('piloto', f'senal_{f}_{d}', ANCHOS_PILOTO['chica'])))
+    S.append(sprite('nave', carga_render('piloto', 'nave', ANCHOS_PILOTO['nave'])))
+    return S, []
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -145,7 +157,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -333,7 +345,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

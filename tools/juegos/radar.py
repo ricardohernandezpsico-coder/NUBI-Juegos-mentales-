@@ -14,26 +14,13 @@ from plasticina import *
 
 SOLO = arg('--solo', 'todo')
 
-# ------------------------------------------------------------------ colores (los de RadarSprites.Colors: FIJOS, no cambian con el nivel)
-TIPOS = ('hexagono', 'gota', 'circulo', 'cuadrado', 'triangulo', 'rombo')            # el orden de CapsuleType
-COLORES = ('#A6E36B', '#7FD8FF', '#FF8A6B', '#FFC94A', '#B79BFF', '#FFB3D1')
+# ------------------------------------------------------------------ colores y siluetas (los de RadarSprites.Colors: FIJOS, no cambian con el nivel; viven en formas.py)
+from formas import TIPOS, COLORES, EXTRA, hexagono, triangulo, rombo, contorno_forma           # las seis formas (con Piloto): las mismas SDF de RadarSprites.ShapeSdf
 BLANCO_VENTANA = '#F4F2FF'; VISOR = '#284A8E'
 
-# ------------------------------------------------------------------ las siluetas (las SDF de RadarSprites.ShapeSdf, en unidades de diseño: y arriba)
-def hexagono(): return [(0.9 * math.cos(math.pi / 6 + i * math.pi / 3), 0.9 * math.sin(math.pi / 6 + i * math.pi / 3)) for i in range(6)]
-def triangulo(): return list(reversed([(0.0, 0.98), (0.98, -0.74), (-0.98, -0.74)]))
-def rombo(): return list(reversed([(0.0, 1.0), (0.84, 0.0), (0.0, -1.0), (-0.84, 0.0)]))
-
-EXTRA = 0.05           # la plasticina no lleva borde tinta (el de ClayRaster engordaba la silueta 0,075): se engorda un poco la forma para que la huella sea la misma
-
 def contorno(tipo):
-    """El contorno (antihorario) de cada cápsula, engordado EXTRA."""
-    if tipo == 'hexagono': return redondeado(hexagono(), 0.05 + EXTRA)
-    if tipo == 'gota': return casco_convexo([(0.0, -0.34, 0.66 + EXTRA), (0.0, 0.96, 0.07 + EXTRA)])
-    if tipo == 'circulo': return circulo(0.92 + EXTRA, 120)
-    if tipo == 'cuadrado': return redondeado([(0.52, 0.52), (-0.52, 0.52), (-0.52, -0.52), (0.52, -0.52)], 0.22 + EXTRA)      # caja de 0,74 con esquinas de 0,22
-    if tipo == 'triangulo': return redondeado(triangulo(), 0.08 + EXTRA)
-    return redondeado(rombo(), 0.06 + EXTRA)
+    """El contorno (antihorario) de cada cápsula, engordado EXTRA (la plasticina no lleva borde tinta)."""
+    return contorno_forma(tipo, EXTRA)
 
 def ventana_y(tipo): return -0.34 if tipo == 'gota' else (-0.28 if tipo == 'triangulo' else 0.0)
 
