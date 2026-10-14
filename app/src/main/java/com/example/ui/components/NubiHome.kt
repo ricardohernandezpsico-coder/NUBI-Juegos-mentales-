@@ -1,10 +1,8 @@
 package com.example.ui.components
 
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -25,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,6 +36,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
@@ -56,64 +57,55 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-/**
- * En las imágenes de Nubi (drawable-nodpi/nubi_*.webp, de tools/previews/nubi_recursos.py) el cuerpo mide esta
- * fracción del ancho del lienzo; el resto es su resplandor.
- */
-const val NUBI_BODY_FRACTION = 0.65f
+/** La relación ancho / alto de `nubi_3d.webp` (720 × 476 px): Nubi de plasticina de frente, recortada a su caja (render de `isla.py --solo-nubi`, ver `tools/isla/icono.py`). */
+const val NUBI_ASPECT = 720f / 476f
 
-enum class NubiPose(@DrawableRes val res: Int) {
-  HOLA(R.drawable.nubi_hola), MIRA(R.drawable.nubi_mira), CELEBRA(R.drawable.nubi_celebra),
-  /** Nubi con su bata de científica: las tarjetas «Acabas de usar tu…» del inicio. */
-  CIENTIFICA(R.drawable.nubi_cientifica)
-}
+/** La tinta de la sombra de Nubi: casi la del cielo de la app, para que se vea (más oscura que el fondo) y no ensucie. */
+private val NubiShadowInk = Color(0xFF0B0930)
 
 /**
- * Nubi con su halo detrás (aprobado por Ricardo, `docs/previews/nubi-hoy.png`): resplandor suave, dos aros finos y
- * unas pocas chispas que respiran despacio (quietos con "quitar animaciones"). [size] = ancho del cuerpo de Nubi; el
- * halo ocupa 1,35 veces eso.
+ * La Nubi de plasticina (Tarea 92, fase 4 de `docs/diseno-isla.md`): el render 3D de frente, de [width] de ancho (alto = ancho / [NUBI_ASPECT]), con una sombra elíptica suave debajo, como en la isla, en vez del halo de antes (la Nubi lila se separa bien del cielo sin él).
+ * Nubi flota apenas sobre su sombra. Con [celebrate] da el saltito de la Tarea 88 (dos saltos de 12 dp con un giro de ±5°, 900 ms, una sola vez al aparecer; la sombra se achica y aclara mientras sube): es movimiento decorativo, nunca una cara nueva y nunca según el desempeño;
+ * con «quitar animaciones» no salta. Mide [width] × ([width] / [NUBI_ASPECT] + el aire de la sombra, 0,1 × [width]).
  */
 @Composable
-fun NubiWithHalo(size: Dp, modifier: Modifier = Modifier, pose: NubiPose = NubiPose.HOLA) {
+fun NubiClay(width: Dp, modifier: Modifier = Modifier, celebrate: Boolean = false) {
   val reduceMotion = rememberReduceMotion()
-  val breath = if (reduceMotion) 0.5f else {
-    val t = rememberInfiniteTransition(label = "nubiHalo")
-    val v by t.animateFloat(0f, 1f, infiniteRepeatable(tween(3200), RepeatMode.Reverse), label = "nubiHaloV")
-    v
+  val hop = remember { Animatable(0f) }
+  LaunchedEffect(celebrate, reduceMotion) {
+    if (celebrate && !reduceMotion) {
+      hop.snapTo(0f)
+      hop.animateTo(1f, tween(RouteMotion.JUMP_MS, easing = LinearEasing))
+    }
   }
-  Box(modifier.size(size * 1.35f), contentAlignment = Alignment.Center) {
-    Canvas(Modifier.fillMaxSize()) { drawHalo(breath) }
+  val p = hop.value
+  val lift = RouteMotion.jumpLiftDp(p)
+  val tilt = RouteMotion.jumpTiltDeg(p)
+  val body = width / NUBI_ASPECT
+  Box(modifier.size(width, body + width * NUBI_SHADOW_ROOM), contentAlignment = Alignment.TopCenter) {
+    Canvas(Modifier.fillMaxSize()) { drawNubiGroundShadow(body.toPx(), strength = 1f - 0.3f * (lift / RouteMotion.JUMP_DP).coerceIn(0f, 1f)) }
     Image(
-      painter = painterResource(pose.res),
+      painter = painterResource(R.drawable.nubi_3d),
       contentDescription = "Nubi",
-      modifier = Modifier.requiredSize(size / NUBI_BODY_FRACTION)
+      modifier = Modifier.size(width, body).graphicsLayer { translationY = -lift * density; rotationZ = tilt }
     )
   }
 }
 
-private val HaloLilac = Color(0xFF968CFF)
-private val HaloSky = Color(0xFFBEE1FF)
-private val HaloRing = Color(0xFFDCD7FF)
+/** Cuánto aire (fracción del ancho) deja [NubiClay] debajo del cuerpo para su sombra. */
+private const val NUBI_SHADOW_ROOM = 0.1f
 
-private fun DrawScope.drawHalo(breath: Float) {
-  val c = center
-  val r = size.minDimension / 2f
-  drawCircle(Brush.radialGradient(listOf(HaloLilac.copy(alpha = 0.42f + 0.08f * breath), Color.Transparent), c, r), r, c)
-  drawCircle(Brush.radialGradient(listOf(HaloSky.copy(alpha = 0.30f), Color.Transparent), c, r * 0.62f), r * 0.62f, c)
-  drawCircle(HaloRing.copy(alpha = 0.28f), r * 0.86f, c, style = Stroke(1.5f * density))
-  drawCircle(HaloRing.copy(alpha = 0.14f + 0.06f * breath), r * 0.97f, c, style = Stroke(1.5f * density))
-  listOf(-58f to 5f, -128f to 3.5f, 18f to 3f, 152f to 4f).forEachIndexed { i, (ang, s) ->
-    val a = ang * PI.toFloat() / 180f
-    val p = Offset(c.x + cos(a) * r * 0.9f, c.y + sin(a) * r * 0.9f)
-    val k = s * density * (0.85f + 0.3f * if (i % 2 == 0) breath else 1f - breath)
-    drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.55f), Color.Transparent), p, k * 2.4f), k * 2.4f, p)
-    drawPath(sparkle(p, k), Color.White)
+/** La sombra elíptica bajo Nubi: 0,8 de su ancho, 0,17 de alto sobre eso, con borde suave (degradado radial), a ras de la base del cuerpo ([bodyHeightPx]). */
+private fun DrawScope.drawNubiGroundShadow(bodyHeightPx: Float, strength: Float) {
+  val rx = size.width * 0.4f * (0.85f + 0.15f * strength)
+  val ry = rx * 0.2f
+  val c = Offset(size.width / 2f, bodyHeightPx + size.width * NUBI_SHADOW_ROOM * 0.42f)
+  withTransform({ translate(c.x, c.y); scale(1f, ry / rx, Offset.Zero) }) {
+    drawCircle(
+      Brush.radialGradient(0f to NubiShadowInk.copy(alpha = 0.55f * strength), 0.62f to NubiShadowInk.copy(alpha = 0.45f * strength), 1f to Color.Transparent, center = Offset.Zero, radius = rx),
+      radius = rx, center = Offset.Zero
+    )
   }
-}
-
-/** Destello REDONDO (4-oct: antes era de 4 puntas): un disco chico. */
-private fun sparkle(c: Offset, r: Float): Path = Path().apply {
-  addOval(androidx.compose.ui.geometry.Rect(c.x - r * 0.6f, c.y - r * 0.6f, c.x + r * 0.6f, c.y + r * 0.6f))
 }
 
 // ------------------------------------------------------------------ Piezas de Hoy y del detalle de un área (la composición vieja «Nubi al centro con 4 áreas» salió con la isla, Tarea 82)

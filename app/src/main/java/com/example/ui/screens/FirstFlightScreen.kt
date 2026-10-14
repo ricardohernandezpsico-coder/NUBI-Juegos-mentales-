@@ -96,8 +96,7 @@ import com.example.model.AgeBand
 import com.example.model.DomainType
 import com.example.model.GameRegistry
 import com.example.ui.components.GameIcon
-import com.example.ui.components.NubiPose
-import com.example.ui.components.NubiWithHalo
+import com.example.ui.components.NubiClay
 import com.example.ui.components.rememberReduceMotion
 import com.example.ui.theme.AppFamily
 import com.example.ui.theme.Clay
@@ -416,7 +415,7 @@ private fun HolaPage(a: FlightActions) {
     centered = true,
     footer = { MainButton("¡Vamos!", onClick = a.onContinue) }
   ) {
-    NubiWithHalo(size = 190.dp)
+    NubiClay(width = 210.dp)
     Title("Hola, soy Nubi", center = true, size = 34)
     Say("Vamos a encontrar tu punto de partida jugando. Son unos 5 minutos.", highlight = "jugando", center = true)
   }
@@ -470,7 +469,7 @@ private fun QuestionPage(
 @Composable
 private fun DatoPage(a: FlightActions) {
   PageFrame(centered = true, footer = { MainButton("Continuar", onClick = a.onContinue) }) {
-    NubiWithHalo(size = 170.dp, pose = NubiPose.MIRA)
+    NubiClay(width = 190.dp)
     Eyebrow("¿Sabías que…?", center = true)
     Say("Practicar poco y seguido rinde más que mucho de una vez: es de lo más comprobado sobre cómo aprendemos.", highlight = "poco y seguido", center = true)
   }
@@ -490,7 +489,7 @@ private fun GameIntroPage(index: Int, s: FlightState, a: FlightActions) {
     GameStepper(s, now = index)
     Eyebrow(step.domain.displayName, center = true)
     Title(game?.title ?: step.gameId, center = true)
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiWithHalo(size = 130.dp, pose = NubiPose.MIRA) }
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(width = 150.dp) }
     Say(FlightCopy.of(step.gameId).how, center = true)
     Sub("Empieza con una ronda de práctica que no cuenta. Dura alrededor de un minuto.", center = true)
   }
@@ -504,7 +503,7 @@ private fun GameCardPage(index: Int, s: FlightState, a: FlightActions) {
   val copy = FlightCopy.of(step.gameId)
   PageFrame(footer = { MainButton("Continuar", onClick = a.onContinue) }) {
     GameStepper(s, now = null)
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiWithHalo(size = 130.dp, pose = NubiPose.CIENTIFICA) }
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(width = 150.dp) }
     Title("Acabas de usar tu ${copy.short}", center = true, size = 26)
     Say(s.phrases[step.gameId] ?: FlightCopy.NO_DATA_LINE, center = true)
     Sub(copy.why, center = true)
@@ -581,7 +580,7 @@ private fun FirstStar() {
   }
   Column(Modifier.fillMaxWidth().testTag("flight_first_star"), horizontalAlignment = Alignment.CenterHorizontally) {
     Box(contentAlignment = Alignment.Center) {
-      NubiWithHalo(size = 84.dp, pose = NubiPose.CELEBRA)
+      NubiClay(width = 100.dp, celebrate = true)
       Canvas(
         Modifier
           .align(Alignment.TopEnd)
@@ -639,7 +638,7 @@ private fun ReminderPage(s: FlightState, a: FlightActions) {
 private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
   // El día del Primer vuelo, el camino de hoy ya quedó cumplido con el vuelo (repository.completeTodayWithFlight): no se juegan 7 juegos. Mañana empieza el camino de 3 juegos.
   PageFrame(footer = { MainButton("Empezar mi camino", tag = "btn_flight_finish", onClick = a.onContinue) }) {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiWithHalo(size = 130.dp, pose = NubiPose.CELEBRA) }
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(width = 150.dp, celebrate = true) }
     Title("Tu Primer vuelo fue tu camino de hoy", center = true)
     Sub("Mañana empieza tu camino de 3 juegos, elegido por tus metas y por lo que más conviene reforzar.", center = true)
   }

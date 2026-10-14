@@ -662,10 +662,7 @@ internal fun SuggestionHeader(s: AreaSuggestionUi) {
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp).testTag("suggestion_header")
   ) {
-    Image(
-      painterResource(com.example.R.drawable.nubi_cientifica), contentDescription = "Nubi con bata de científica",
-      modifier = Modifier.size(104.dp)
-    )
+    com.example.ui.components.NubiClay(width = 100.dp, modifier = Modifier.padding(start = 2.dp, end = 6.dp))
     Column(Modifier.weight(1f)) {
       OnBoardText("¿Qué jugamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
       OnBoardText(
@@ -813,10 +810,7 @@ internal fun AreaWindow(
     ) {
       item(key = "nubi") {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-          Image(
-            painterResource(com.example.R.drawable.nubi_cientifica), contentDescription = "Nubi con bata de científica",
-            modifier = Modifier.size(150.dp)
-          )
+          com.example.ui.components.NubiClay(width = 132.dp, modifier = Modifier.padding(end = 4.dp))
           NubiBubble(
             title = "Nubi",
             text = "¿Qué juego de $title jugamos?",

@@ -34,8 +34,7 @@ import com.example.model.AppLanguage
 import com.example.model.GameRegistry
 import com.example.ui.components.AreaBar
 import com.example.ui.components.MiniPlanet
-import com.example.ui.components.NubiPose
-import com.example.ui.components.NubiWithHalo
+import com.example.ui.components.NubiClay
 import com.example.ui.components.areaDescription
 import com.example.ui.components.domainOf
 import com.example.ui.i18n.getGameTitle
@@ -65,7 +64,7 @@ fun SessionSummaryScreen(
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Spacer(Modifier.height(8.dp))
-      NubiWithHalo(size = 130.dp, pose = NubiPose.CELEBRA)
+      NubiClay(width = 150.dp, celebrate = true)
       Text("¡Sesión de hoy completa!", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
       Text(
         "Trabajaste " + joinNames(names.map { it.lowercase() }),

@@ -109,8 +109,7 @@ import com.example.ui.components.MiniPlanet
 import com.example.ui.components.NubiBubble
 import com.example.ui.components.Island
 import com.example.ui.components.TopActions
-import com.example.ui.components.NubiPose
-import com.example.ui.components.NubiWithHalo
+import com.example.ui.components.NubiClay
 import com.example.ui.components.areaDescription
 import com.example.ui.components.domainOf
 import com.example.ui.components.overallIndex
@@ -747,7 +746,7 @@ internal fun AreaDetail(
       ) {
         AreaArrow(left = true, onClick = { go(-1) })
         Spacer(Modifier.weight(1f))
-        NubiWithHalo(size = 104.dp, pose = NubiPose.MIRA)
+        NubiClay(width = 120.dp)
         Spacer(Modifier.weight(1f))
         AreaArrow(left = false, onClick = { go(1) })
       }

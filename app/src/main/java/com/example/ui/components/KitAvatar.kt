@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.AvatarIds
 
-/** El dibujo de plasticina de cada avatar (`AvatarIds`): Nubi sale del render de la isla; los otros siete, de `isla.py --kit --kit-solo avatares` (lienzo de 48 dp con su sombra de contacto). Un id desconocido cae al de Nubi. */
+/** El dibujo de plasticina de cada avatar (`AvatarIds`): Nubi sale del render `nubi_3d.webp`; los otros siete, de `isla.py --kit --kit-solo avatares` (lienzo de 48 dp con su sombra de contacto). Un id desconocido cae al de Nubi. */
 @DrawableRes
 internal fun avatarRes(id: String): Int = when (AvatarIds.resolve(id)) {
   AvatarIds.COHETE -> R.drawable.kit_av_cohete
@@ -24,7 +24,7 @@ internal fun avatarRes(id: String): Int = when (AvatarIds.resolve(id)) {
   AvatarIds.PLANETA -> R.drawable.kit_av_planeta
   AvatarIds.LUCERO -> R.drawable.kit_av_lucero
   AvatarIds.GOTA -> R.drawable.kit_av_gota
-  else -> R.drawable.isla_nubi_hola
+  else -> R.drawable.nubi_3d
 }
 
 /**
