@@ -557,7 +557,7 @@ internal fun GameSheetContent(
               modifier = Modifier.weight(1f)
             ) {
               Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(if (value) Icons.Filled.Timer else Icons.Filled.TimerOff, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(22.dp))
+                KitGlyph(if (value) Glyph.CLOCK else Glyph.CLOCK_OFF)
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                   Text(texts.first, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 19.sp)

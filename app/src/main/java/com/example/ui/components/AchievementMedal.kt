@@ -38,7 +38,7 @@ fun AchievementDef.medalColor(): Color = tier?.palette()?.base ?: when (glyph) {
   AchievementGlyph.FLAME -> Clay.Coral
   AchievementGlyph.COMPASS, AchievementGlyph.BOLT -> Clay.Sky
   AchievementGlyph.HEXAGON, AchievementGlyph.CHECK -> Clay.Lime
-  AchievementGlyph.STAR -> Clay.Grape
+  AchievementGlyph.LUCERO -> Clay.Grape
   AchievementGlyph.SHIELD -> Clay.Sun
 }
 
@@ -150,15 +150,15 @@ private fun DrawScope.drawGlyph(def: AchievementDef, c: Offset, box: Float, fill
       shape(hex(0.56f))
       if (outline != null) shape(hex(0.26f), Clay.Sky)
     }
-    AchievementGlyph.STAR -> shape(Path().apply {
-      for (i in 0 until 10) {
-        val a = (-90f + i * 36f) * PI.toFloat() / 180f
-        val rad = if (i % 2 == 0) 0.58f else 0.26f
-        val q = Offset(c.x + cos(a) * rad * u, c.y + sin(a) * rad * u - u * 0.04f)
-        if (i == 0) moveTo(q.x, q.y) else lineTo(q.x, q.y)
+    // Un lucero redondo (nada de estrellas con puntas: `docs/simbolos-neutros.md`): un cuerpo redondo con su aro de luz y, cuando está conseguido, su núcleo sol y un brillo.
+    AchievementGlyph.LUCERO -> {
+      shape(Path().apply { addOval(Rect(p(-0.4f, -0.4f), p(0.4f, 0.4f))) })
+      if (outline != null) {
+        drawCircle(outline.copy(alpha = 0.55f), u * 0.62f, c, style = Stroke(strokeW * 0.9f))
+        drawCircle(Clay.Sun, u * 0.2f, c)
+        drawCircle(Color.White.copy(alpha = 0.9f), u * 0.07f, p(-0.12f, -0.12f))
       }
-      close()
-    })
+    }
     AchievementGlyph.BOLT -> shape(Path().apply {
       val pts = listOf(p(0.1f, -0.58f), p(-0.34f, 0.06f), p(-0.02f, 0.06f), p(-0.12f, 0.58f), p(0.34f, -0.1f), p(0.02f, -0.1f))
       moveTo(pts[0].x, pts[0].y); pts.drop(1).forEach { lineTo(it.x, it.y) }; close()

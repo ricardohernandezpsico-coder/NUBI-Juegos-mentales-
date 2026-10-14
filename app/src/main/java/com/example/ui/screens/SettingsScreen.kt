@@ -41,6 +41,10 @@ import com.example.ui.components.ClayChoiceRow
 import com.example.ui.components.ClayDialog
 import com.example.ui.components.ClayDisc
 import com.example.ui.components.ClayPanel
+import com.example.ui.components.ClaySwitch
+import com.example.ui.components.ClayTextField
+import com.example.ui.components.KitAvatar
+import com.example.data.AvatarIds
 import com.example.ui.components.DiscStyle
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
@@ -52,6 +56,7 @@ import com.example.ui.theme.EmeraldAccent
 import com.example.ui.theme.TealPrimary
 import com.example.viewmodel.NeuroVidaViewModel
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
   viewModel: NeuroVidaViewModel,
@@ -133,8 +138,8 @@ fun SettingsScreen(
       color = MaterialTheme.colorScheme.onBackground
     )
 
-    // Language Selection Card (Internationalization)
-    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_language_selector"), verticalSpacing = 14.dp) {
+    // El selector de idioma: solo se muestra si hay más de un idioma TRADUCIDO (`AppLanguage.translated`). Hoy solo el español lo está: la app no se traduce al resto, así que elegirlos dejaba una app a medias.
+    if (AppLanguage.selectable.size > 1) ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_language_selector"), verticalSpacing = 14.dp) {
       run {
         Row(
           verticalAlignment = Alignment.CenterVertically,
@@ -142,7 +147,7 @@ fun SettingsScreen(
           modifier = Modifier.fillMaxWidth()
         ) {
           Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Language, contentDescription = null, tint = PanelAccent)
+            KitGlyph(Glyph.GLOBE)
             Spacer(modifier = Modifier.width(10.dp))
             Column {
               Text(
@@ -160,7 +165,7 @@ fun SettingsScreen(
         }
 
         ClayChoiceRow {
-          AppLanguage.entries.forEach { lang ->
+          AppLanguage.selectable.forEach { lang ->
             val isSelected = appLanguage == lang
             ClayChoice(
               selected = isSelected,
@@ -182,7 +187,7 @@ fun SettingsScreen(
               },
             ) {
               Text(
-                text = "${lang.flagEmoji} ${lang.displayName}",
+                text = lang.displayName,
                 fontSize = 15.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
               )
@@ -196,7 +201,7 @@ fun SettingsScreen(
     ClayPanel(modifier = Modifier.fillMaxWidth()) {
       run {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Icon(Icons.Default.Person, contentDescription = null, tint = PanelAccent)
+          KitGlyph(Glyph.PERSON)
           Spacer(modifier = Modifier.width(8.dp))
           Text(
             text = "Tu perfil",
@@ -215,36 +220,30 @@ fun SettingsScreen(
         )
         Spacer(modifier = Modifier.height(6.dp))
 
-        val avatarChoices = listOf("🧠", "👵", "👴", "🌟", "🎯", "🦉", "🌿", "💡", "⚡")
-        // Cada avatar es un disco de plasticina: el elegido va en celeste con su ✓ en la esquina (y quieto); los demás, en crema.
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          items(avatarChoices) { av ->
-            val isChosen = selectedAvatar == av
-            Box(Modifier.semantics { selected = isChosen }) {
-              ClayDisc(if (isChosen) DiscStyle.SKY else DiscStyle.CREAM, { selectedAvatar = av }, "Avatar $av") {
-                Text(text = av, fontSize = 22.sp)
+        // Cada avatar es un objeto de plasticina sobre un disco: el elegido va en celeste con su ✓ en la esquina (y quieto); los demás, en crema. Ocho (`AvatarIds`) en dos filas de cuatro.
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+          AvatarIds.ALL.chunked(4).forEach { fila ->
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+              fila.forEach { id ->
+                val isChosen = selectedAvatar == id
+                Box(Modifier.semantics { selected = isChosen }.testTag("avatar_$id")) {
+                  ClayDisc(if (isChosen) DiscStyle.SKY else DiscStyle.CREAM, { selectedAvatar = id }, "Avatar ${AvatarIds.LABELS[id]}") { KitAvatar(id) }
+                  if (isChosen) KitGlyph(Glyph.CHECK, Modifier.align(Alignment.BottomEnd).offset(x = 2.dp, y = 2.dp), size = 22.dp)
+                }
               }
-              if (isChosen) KitGlyph(Glyph.CHECK, Modifier.align(Alignment.BottomEnd).offset(x = 2.dp, y = 2.dp), size = 22.dp)
             }
           }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
+        Text(text = "Tu nombre", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(4.dp))
+        ClayTextField(
           value = nameInput,
           onValueChange = { nameInput = it },
-          label = { Text("Tu nombre") },
-          singleLine = true,
-          modifier = Modifier
-            .fillMaxWidth()
-            .testTag("input_user_name"),
-          shape = RoundedCornerShape(14.dp),
-          colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = PanelAccent,
-            focusedLabelColor = PanelAccent,
-            unfocusedBorderColor = Clay.InkMuted
-          )
+          modifier = Modifier.testTag("input_user_name"),
+          fontSize = 18.sp
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -346,7 +345,7 @@ fun SettingsScreen(
         // quieras desde Ajustes", esto cumple esa promesa.
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            KitGlyph(Glyph.PERSON)
             Spacer(modifier = Modifier.width(10.dp))
             Text(
               text = "Rango de edad",
@@ -403,7 +402,7 @@ fun SettingsScreen(
           verticalAlignment = Alignment.CenterVertically
         ) {
           Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            KitGlyph(Glyph.SPEAKER)
             Spacer(modifier = Modifier.width(10.dp))
             Text(
               text = "Efectos de sonido",
@@ -411,7 +410,7 @@ fun SettingsScreen(
               fontWeight = FontWeight.SemiBold
             )
           }
-          Switch(
+          ClaySwitch(
             checked = soundEnabled,
             onCheckedChange = {
               soundEnabled = it
@@ -426,8 +425,8 @@ fun SettingsScreen(
                 reminderMinute = reminderMinute
               )
             },
-            colors = creamSwitchColors(),
-            modifier = Modifier.testTag("switch_sound")
+            modifier = Modifier.testTag("switch_sound"),
+            label = "Efectos de sonido"
           )
         }
 
@@ -440,7 +439,7 @@ fun SettingsScreen(
           verticalAlignment = Alignment.CenterVertically
         ) {
           Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            Icon(Icons.Default.Vibration, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            KitGlyph(Glyph.VIBRATION)
             Spacer(modifier = Modifier.width(10.dp))
             Text(
               text = "Vibración y respuesta háptica",
@@ -448,7 +447,7 @@ fun SettingsScreen(
               fontWeight = FontWeight.SemiBold
             )
           }
-          Switch(
+          ClaySwitch(
             checked = hapticsEnabled,
             onCheckedChange = {
               hapticsEnabled = it
@@ -463,8 +462,8 @@ fun SettingsScreen(
                 reminderMinute = reminderMinute
               )
             },
-            colors = creamSwitchColors(),
-            modifier = Modifier.testTag("switch_haptics")
+            modifier = Modifier.testTag("switch_haptics"),
+            label = "Vibración y respuesta háptica"
           )
         }
       }
@@ -479,7 +478,7 @@ fun SettingsScreen(
           verticalAlignment = Alignment.CenterVertically
         ) {
           Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = PanelAccent)
+            KitGlyph(Glyph.BELL)
             Spacer(modifier = Modifier.width(8.dp))
             Column {
               Text(
@@ -495,7 +494,7 @@ fun SettingsScreen(
             }
           }
 
-          Switch(
+          ClaySwitch(
             checked = notificationsEnabled,
             onCheckedChange = { isChecked ->
               if (isChecked) {
@@ -530,8 +529,8 @@ fun SettingsScreen(
                 Toast.makeText(context, "Recordatorio desactivado", Toast.LENGTH_SHORT).show()
               }
             },
-            colors = creamSwitchColors(),
-            modifier = Modifier.testTag("switch_notifications_enabled")
+            modifier = Modifier.testTag("switch_notifications_enabled"),
+            label = "Recordatorio diario"
           )
         }
 
@@ -607,7 +606,7 @@ fun SettingsScreen(
       Row(
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Icon(Icons.Default.Security, contentDescription = null, tint = PanelAccent)
+        KitGlyph(Glyph.SHIELD)
         Spacer(modifier = Modifier.width(12.dp))
         Column {
           Text(
@@ -630,7 +629,7 @@ fun SettingsScreen(
       Row(
         verticalAlignment = Alignment.Top
       ) {
-        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        KitGlyph(Glyph.INFO)
         Spacer(modifier = Modifier.width(12.dp))
         Text(
           text = "Nubi es un juego para mantener la mente activa. No es una herramienta de salud: no diagnostica ni trata nada, y no promete resultados. Si te preocupa tu memoria, habla con un profesional.",
@@ -697,10 +696,3 @@ fun SettingsScreen(
 
 
 }
-
-/** Los colores del interruptor sobre una losa crema: encendido en azul oscuro con la perilla blanca; apagado en tinta suave con borde (se distingue por la posición de la perilla, no solo por el color). */
-@Composable
-private fun creamSwitchColors() = SwitchDefaults.colors(
-  checkedThumbColor = Color.White, checkedTrackColor = PanelAccent, checkedBorderColor = PanelAccent,
-  uncheckedThumbColor = Clay.InkMuted, uncheckedTrackColor = Clay.Ink.copy(alpha = 0.08f), uncheckedBorderColor = Clay.InkMuted
-)

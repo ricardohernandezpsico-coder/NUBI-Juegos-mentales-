@@ -13,6 +13,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -23,7 +28,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.ClayKitSpec
 import com.example.ui.components.Glyph
+import com.example.data.AvatarIds
 import com.example.ui.components.ClayChoice
+import com.example.ui.components.ClaySwitch
+import com.example.ui.components.ClayTextField
+import com.example.ui.components.avatarRes
 import com.example.ui.components.ClayDisc
 import com.example.ui.components.DiscStyle
 import com.example.ui.components.KitButton
@@ -86,7 +95,8 @@ class ClayKitTest {
       assertEquals(file, piece.widthPx to piece.heightPx, webpSize(res(file)))
     }
     assertEquals(setOf("cerrar", "disco_crema", "disco_cielo"), spec.discs.keys)
-    assertEquals(setOf("jugar", "volver", "visto", "izq", "der", "compartir", "candado", "engranaje"), spec.pieces.keys)
+    assertEquals("cada ícono del kit tiene su pieza en el JSON (los de la Tarea 91 reemplazan a los de Material de los paneles)", Glyph.values().map { it.key }.toSet(), spec.pieces.keys)
+    assertEquals(setOf("jugar", "volver", "visto", "izq", "der", "compartir", "candado", "engranaje", "globo", "altavoz", "vibracion", "reloj", "sin_reloj", "escudo", "info", "campana", "persona", "arriba", "abajo"), spec.pieces.keys)
   }
 
   @Test
@@ -311,5 +321,86 @@ class ClayKitTest {
     show { KitGlyph(Glyph.CHECK, Modifier.testTag("g"), size = 24.dp) }
     val b = rule.onNodeWithTag("g").fetchSemanticsNode().boundsInRoot
     assertEquals(24f * rule.density.density, b.width, 1f); assertEquals(24f * rule.density.density, b.height, 1f)
+  }
+
+  // ---- Los avatares (Tarea 91)
+
+  @Test
+  fun los_siete_avatares_renderizados_estan_en_el_json_con_su_imagen_de_48_dp_y_Nubi_sale_de_la_isla() {
+    val json = org.json.JSONObject(File("src/main/res/raw/kit.json").readText()).getJSONObject("avatares")
+    val renderizados = AvatarIds.ALL.filter { it != AvatarIds.NUBI }
+    assertEquals(renderizados.toSet(), json.keys().asSequence().toSet())
+    for (id in renderizados) {
+      val size = json.getJSONObject(id).getJSONArray("imagen_px")
+      assertEquals("kit_av_$id mide 48 dp a 3 px por dp", 144, size.getInt(0)); assertEquals(144, size.getInt(1))
+      assertEquals("kit_av_$id", size.getInt(0) to size.getInt(1), webpSize(res("kit_av_$id")))
+    }
+    val dibujos = AvatarIds.ALL.map { avatarRes(it) }
+    assertEquals("cada avatar tiene su dibujo, todos distintos", 8, dibujos.toSet().size)
+    assertEquals("un id desconocido cae al de Nubi", avatarRes(AvatarIds.NUBI), avatarRes("xyz"))
+  }
+
+  // ---- El interruptor de plasticina (Tarea 91)
+
+  @Test
+  fun el_interruptor_es_un_Switch_con_su_estado_mide_56_por_48_dp_y_se_cambia_con_un_toque() {
+    val on = androidx.compose.runtime.mutableStateOf(false)
+    show { ClaySwitch(checked = on.value, onCheckedChange = { on.value = it }, modifier = Modifier.testTag("sw"), label = "Efectos de sonido") }
+    val b = rule.onNodeWithTag("sw").fetchSemanticsNode().boundsInRoot
+    assertTrue("interruptor de ${b.width / rule.density.density} × ${b.height / rule.density.density} dp (mínimo 48 de alto)", b.height >= 48f * rule.density.density - 1 && b.width >= 48f * rule.density.density - 1)
+    val node = rule.onNodeWithTag("sw")
+    node.assertIsOff()
+    assertEquals(androidx.compose.ui.semantics.Role.Switch, node.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Role])
+    assertEquals("Efectos de sonido", node.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].single())
+    assertEquals("Apagado", node.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription])
+    node.performTouchInput { down(center); up() }
+    rule.waitForIdle()
+    node.assertIsOn()
+    assertEquals("Encendido", node.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription])
+    assertTrue(on.value)
+    node.performTouchInput { down(center); up() }
+    rule.waitForIdle()
+    node.assertIsOff()
+  }
+
+  @Test
+  fun el_interruptor_no_cambia_de_tamano_al_encenderse_y_con_letra_2_0_sigue_mediendo_lo_mismo() {
+    val on = androidx.compose.runtime.mutableStateOf(false)
+    show(fontScale = 2f) { ClaySwitch(checked = on.value, onCheckedChange = { on.value = it }, modifier = Modifier.testTag("sw")) }
+    val a = rule.onNodeWithTag("sw").fetchSemanticsNode().boundsInRoot
+    on.value = true; rule.waitForIdle()
+    val b = rule.onNodeWithTag("sw").fetchSemanticsNode().boundsInRoot
+    assertEquals(a.width, b.width, 0.5f); assertEquals(a.height, b.height, 0.5f)
+  }
+
+  // ---- El campo de texto de plasticina (Tarea 91)
+
+  @Test
+  fun el_campo_de_texto_recibe_el_foco_el_texto_y_mide_56_dp_o_mas() {
+    val text = androidx.compose.runtime.mutableStateOf("")
+    show { ClayTextField(value = text.value, onValueChange = { text.value = it }, modifier = Modifier.testTag("campo"), placeholder = "Tu nombre") }
+    rule.onNodeWithText("Tu nombre").assertExists()
+    val b = rule.onNodeWithTag("campo").fetchSemanticsNode().boundsInRoot
+    assertTrue("campo de ${b.height / rule.density.density} dp de alto (56 o más: un toque en cualquier parte de la losa le da el foco)", b.height >= 56f * rule.density.density - 1)
+    rule.onNodeWithTag("campo").performClick()
+    rule.onNodeWithTag("campo").assertIsFocused()
+    rule.onNodeWithTag("campo").performTextInput("Ana")
+    rule.waitForIdle()
+    assertEquals("Ana", text.value)
+    rule.onNodeWithText("Tu nombre").assertDoesNotExist()          // el placeholder se va al escribir
+  }
+
+  @Test
+  fun con_letra_2_0_el_campo_de_texto_crece_y_no_corta_lo_que_se_escribe() {
+    val text = androidx.compose.runtime.mutableStateOf("Alejandra")
+    show(fontScale = 2f) {
+      androidx.compose.foundation.layout.Column(Modifier.width(360.dp)) {
+        ClayTextField(value = text.value, onValueChange = { text.value = it }, modifier = Modifier.testTag("campo"), fontSize = androidx.compose.ui.unit.TextUnit(18f, androidx.compose.ui.unit.TextUnitType.Sp))
+      }
+    }
+    val b = rule.onNodeWithTag("campo").fetchSemanticsNode().boundsInRoot
+    assertTrue("a letra 2,0 el texto de 18 sp mide más de 30 dp de alto (${b.height / rule.density.density})", b.height / rule.density.density > 30f)
+    assertTrue("el campo ocupa casi todo el ancho de la losa (${b.width / rule.density.density} dp)", b.width / rule.density.density > 250f)
+    rule.onNodeWithText("Alejandra").assertExists()
   }
 }

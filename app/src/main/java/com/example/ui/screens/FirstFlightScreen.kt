@@ -429,30 +429,16 @@ private fun NamePage(name: String, a: FlightActions) {
   PageFrame(footer = { MainButton("Continuar", onClick = go) }) {
     Eyebrow("Para saludarte")
     Title("¿Cómo te llamo?")
-    BasicTextField(
+    // El campo es una losa crema HUNDIDA (la misma del resto de la app): texto tinta de 24 sp, cursor tinta y aro cielo con el foco.
+    com.example.ui.components.ClayTextField(
       value = text,
       onValueChange = { text = it.take(24) },
-      singleLine = true,
-      textStyle = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, color = Color.White),
-      cursorBrush = SolidColor(Clay.Sun),
+      placeholder = "Tu nombre",
+      fontSize = 24.sp,
       keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
       keyboardActions = KeyboardActions(onDone = { go() }),
-      modifier = Modifier.fillMaxWidth().testTag("input_flight_name"),
-      decorationBox = { inner ->
-        Box(
-          Modifier
-            .fillMaxWidth()
-            .heightIn(min = 58.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(RowFill)
-            .border(2.dp, RowBorder, RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-          contentAlignment = Alignment.CenterStart
-        ) {
-          if (text.isEmpty()) Text("Tu nombre", color = OnNightDim, fontFamily = AppFamily, fontSize = 24.sp)
-          inner()
-        }
-      }
+      minHeight = 64.dp,
+      modifier = Modifier.testTag("input_flight_name")
     )
     Sub("Es opcional.")
   }

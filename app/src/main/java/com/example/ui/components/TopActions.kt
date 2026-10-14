@@ -89,7 +89,7 @@ fun TopActions(
       ClayDisc(DiscStyle.SKY, onProfile, profileLabel, Modifier.testTag("btn_top_profile")) {
         val initial = name.trim().firstOrNull()?.uppercase()
         if (initial != null) Text(initial, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        else Icon(Icons.Default.Person, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(24.dp))
+        else KitGlyph(Glyph.PERSON)
       }
       if (profileBadge != null) Box(Modifier.align(Alignment.BottomEnd).offset(x = 6.dp, y = 6.dp).clearAndSetSemantics { }) { profileBadge() }
     }

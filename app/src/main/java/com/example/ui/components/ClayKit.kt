@@ -143,9 +143,9 @@ internal fun DrawScope.drawNineSlice(image: ImageBitmap, slab: KitSlab, pxPerDp:
   }
 }
 
-/** Dibuja una pieza suelta (un disco) entera, con su cuerpo en [body] y los márgenes alrededor. */
-internal fun DrawScope.drawKitPiece(image: ImageBitmap, piece: KitPiece, body: Rect, alpha: Float = 1f) {
-  val d = density; val m = piece.margins
+/** Dibuja una pieza suelta (un disco) entera, con su cuerpo en [body] y los márgenes alrededor; [scale] la achica o agranda entera (la perilla del interruptor es un disco a 0,54×). */
+internal fun DrawScope.drawKitPiece(image: ImageBitmap, piece: KitPiece, body: Rect, alpha: Float = 1f, scale: Float = 1f) {
+  val d = density * scale; val m = piece.margins
   drawImage(
     image, dstOffset = IntOffset((body.left - m.left * d).roundToInt(), (body.top - m.top * d).roundToInt()),
     dstSize = IntSize(((piece.widthPx / 3f) * d).roundToInt(), ((piece.heightPx / 3f) * d).roundToInt()), alpha = alpha, filterQuality = FilterQuality.High
@@ -215,7 +215,19 @@ enum class Glyph(val key: String, @DrawableRes val res: Int) {
   SHARE("compartir", R.drawable.kit_i_compartir),
   LOCK("candado", R.drawable.kit_i_candado),
   GEAR("engranaje", R.drawable.kit_i_engranaje),
-  PLAY("jugar", R.drawable.kit_jugar)
+  PLAY("jugar", R.drawable.kit_jugar),
+  // Tarea 91: los que reemplazan a los íconos de Material dentro de los paneles
+  GLOBE("globo", R.drawable.kit_i_globo),
+  SPEAKER("altavoz", R.drawable.kit_i_altavoz),
+  VIBRATION("vibracion", R.drawable.kit_i_vibracion),
+  CLOCK("reloj", R.drawable.kit_i_reloj),
+  CLOCK_OFF("sin_reloj", R.drawable.kit_i_sin_reloj),
+  SHIELD("escudo", R.drawable.kit_i_escudo),
+  INFO("info", R.drawable.kit_i_info),
+  BELL("campana", R.drawable.kit_i_campana),
+  PERSON("persona", R.drawable.kit_i_persona),
+  UP("arriba", R.drawable.kit_i_arriba),
+  DOWN("abajo", R.drawable.kit_i_abajo)
 }
 
 /** Un ícono de churro tinta en una caja de [size] × [size] dp (24 dp = el tamaño con que se renderizó; más grande se amplía de la misma imagen). */

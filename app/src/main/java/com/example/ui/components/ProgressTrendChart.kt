@@ -632,7 +632,7 @@ private fun EmptyChartState(
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-      Text(text = "📈", fontSize = 32.sp)
+      androidx.compose.material3.Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(32.dp))
       OnBoardText(
         text = if (selectedDomain != null) {
           "Pocas sesiones en ${selectedDomain.displayName}"

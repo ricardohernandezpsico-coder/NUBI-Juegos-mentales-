@@ -6,7 +6,7 @@ import com.example.model.RankTier
 import java.util.TimeZone
 
 /** Dibujo central de la medalla de un logro (ver `ui/components/AchievementMedal.kt`). */
-enum class AchievementGlyph { PLAY, FLAME, CALENDAR, COMPASS, HEXAGON, STAR, BOLT, CHECK, SHIELD }
+enum class AchievementGlyph { PLAY, FLAME, CALENDAR, COMPASS, HEXAGON, LUCERO, BOLT, CHECK, SHIELD }
 
 /**
  * Logro: [check] dice si está conseguido con las [AchievementStats] actuales; [progress] da (actual, meta) para
@@ -106,11 +106,11 @@ object Achievements {
       check = { it.distinctDomains >= 4 }, progress = { it.distinctDomains.coerceAtMost(4) to 4 }
     ),
     AchievementDef(
-      "brillante", "Brillante", "Consigue 90 puntos o más en una partida", AchievementGlyph.STAR, number = 90,
+      "brillante", "Brillante", "Consigue 90 puntos o más en una partida", AchievementGlyph.LUCERO, number = 90,
       check = { it.bestScore >= 90 }, progress = { it.bestScore.coerceAtMost(90) to 90 }
     ),
     AchievementDef(
-      "perfecto", "Perfecto", "Consigue 100 puntos en una partida", AchievementGlyph.STAR, number = 100,
+      "perfecto", "Perfecto", "Consigue 100 puntos en una partida", AchievementGlyph.LUCERO, number = 100,
       check = { it.bestScore >= 100 }, progress = { it.bestScore.coerceAtMost(100) to 100 }
     ),
     AchievementDef(

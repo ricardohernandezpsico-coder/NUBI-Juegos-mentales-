@@ -48,13 +48,16 @@ import kotlin.math.sin
  * - Engranajes: dos engranajes de arcilla que encajan (grande lila, chico sol) y la punta REDONDEADA de un cohete que asoma arriba a la derecha (nada de estrellas con puntas).
  * - Piloto Estelar: la nave volando por una ruta de balizas que serpentea, con una señal que atrapar.
  * Se dibuja pensado para ir sobre el planeta del color del dominio, pero se lee también sobre fondo claro.
- * Id desconocido: cae al emoji de [com.example.model.GameDefinition.iconEmoji].
+ * Id desconocido: cae a un lucero redondo de arcilla (nunca un emoji).
  */
 @Composable
 fun GameIcon(gameId: String, size: Dp, modifier: Modifier = Modifier) {
   if (gameId !in DrawnIcons) {
-    Box(modifier.size(size), contentAlignment = Alignment.Center) {
-      Text(GameRegistry.getById(gameId)?.iconEmoji ?: "🧠", fontSize = (size.value * 0.62f).sp)
+    Canvas(modifier.size(size)) {
+      val c = center; val r = this.size.minDimension * 0.34f
+      drawCircle(Clay.Ink, r, Offset(c.x, c.y + r * 0.1f))
+      drawCircle(Clay.Sun, r, c)
+      drawCircle(Color.White.copy(alpha = 0.6f), r * 0.28f, Offset(c.x - r * 0.35f, c.y - r * 0.38f))
     }
     return
   }

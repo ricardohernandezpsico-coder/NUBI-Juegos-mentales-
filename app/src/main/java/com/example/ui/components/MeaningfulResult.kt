@@ -111,7 +111,7 @@ fun DetailSection(content: @Composable ColumnScope.() -> Unit) {
       Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
         Text(label, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
         Spacer(Modifier.width(8.dp))
-        Icon(if (open) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(26.dp))
+        KitGlyph(if (open) Glyph.UP else Glyph.DOWN, size = 26.dp)
       }
     }
     if (open) Column(Modifier.fillMaxWidth().padding(top = 10.dp).testTag("detail_content"), horizontalAlignment = Alignment.CenterHorizontally, content = content)

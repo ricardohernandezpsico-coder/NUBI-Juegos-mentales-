@@ -53,8 +53,7 @@ data class GameDefinition(
   val title: String,
   val domain: DomainType,
   val subtitle: String,
-  val instruction: String,
-  val iconEmoji: String
+  val instruction: String
 )
 
 object GameRegistry {
@@ -65,8 +64,7 @@ object GameRegistry {
       title = "Constelaciones",
       domain = DomainType.MEMORIA,
       subtitle = "Memoria de lugar",
-      instruction = "Toca una luz para ver qué esconde y busca su pareja: las que son iguales se unen con una línea. Si te acuerdas de dónde estaba, ve directo a ella.",
-      iconEmoji = "🌌"
+      instruction = "Toca una luz para ver qué esconde y busca su pareja: las que son iguales se unen con una línea. Si te acuerdas de dónde estaba, ve directo a ella."
     ),
     GameDefinition(
       // El id «secuencia» se mantiene (avance, marcas e historial); el nombre visible es el del juego rehecho (3-oct).
@@ -74,40 +72,35 @@ object GameRegistry {
       title = "Rastro de luz",
       domain = DomainType.MEMORIA,
       subtitle = "Memoria de trabajo visoespacial",
-      instruction = "Mira el camino que hace la chispa entre los luceros y repítelo con el dedo, en el mismo orden. Cada lucero suena con su nota.",
-      iconEmoji = "🔮"
+      instruction = "Mira el camino que hace la chispa entre los luceros y repítelo con el dedo, en el mismo orden. Cada lucero suena con su nota."
     ),
     GameDefinition(
       id = "bodega",
       title = "Bodega de carga",
       domain = DomainType.MEMORIA,
       subtitle = "Recuerda dónde guardó cada cosa el robot",
-      instruction = "La carga entra por la esclusa y el robot la guarda en las escotillas de una bodega redonda. Mira bien dónde queda cada cosa: después te las piden una por una y tocas la escotilla que la tiene. A veces el robot cambia una caja de lugar y a veces la bodega gira.",
-      iconEmoji = "📦"
+      instruction = "La carga entra por la esclusa y el robot la guarda en las escotillas de una bodega redonda. Mira bien dónde queda cada cosa: después te las piden una por una y tocas la escotilla que la tiene. A veces el robot cambia una caja de lugar y a veces la bodega gira."
     ),
     GameDefinition(
       id = "stroop",
       title = "Tinta o Palabra",
       domain = DomainType.ATENCION,
       subtitle = "Dos orillas, dos reglas",
-      instruction = "La palabra llega por una orilla. Si viene de la orilla de la TINTA, toca el color con que está escrita; si viene de la orilla de la PALABRA, toca lo que dice. A veces cambia de orilla.",
-      iconEmoji = "🎨"
+      instruction = "La palabra llega por una orilla. Si viene de la orilla de la TINTA, toca el color con que está escrita; si viene de la orilla de la PALABRA, toca lo que dice. A veces cambia de orilla."
     ),
     GameDefinition(
       id = "acoplamiento",
       title = "Acoplamiento",
       domain = DomainType.RAZONAMIENTO,
       subtitle = "Razonamiento espacial: rotación mental",
-      instruction = "Llega un módulo girado: ¿encaja en el puerto o es su reflejo en espejo? Gíralo en tu mente y decide.",
-      iconEmoji = "🧩"
+      instruction = "Llega un módulo girado: ¿encaja en el puerto o es su reflejo en espejo? Gíralo en tu mente y decide."
     ),
     GameDefinition(
       id = "intrusa",
       title = "La estrella intrusa",
       domain = DomainType.LENGUAJE,
       subtitle = "Cinco palabras, una no pertenece",
-      instruction = "Cinco estrellas con una palabra: cuatro comparten algo y una no. Toca la intrusa. Después, una chispa dibuja la figura de lo que las une y la guardas en tu atlas. Cuidado: a veces la intrusa va muy bien con una de las otras.",
-      iconEmoji = "⭐"
+      instruction = "Cinco estrellas con una palabra: cuatro comparten algo y una no. Toca la intrusa. Después, una chispa dibuja la figura de lo que las une y la guardas en tu atlas. Cuidado: a veces la intrusa va muy bien con una de las otras."
     ),
     GameDefinition(
       id = "correo",
@@ -115,88 +108,77 @@ object GameRegistry {
       title = "Correo Estelar",
       domain = DomainType.MEMORIA,
       subtitle = "Memoria para lo pendiente: acordarte a tiempo",
-      instruction = "Trabajas en la estación de correo: toca el buzón del sello de cada carta. Cada mañana recibes encargos (una carta con sello dorado o con lazo a la caja fuerte; encender el faro a una hora) y durante el día nadie te los recuerda.",
-      iconEmoji = "✉️"
+      instruction = "Trabajas en la estación de correo: toca el buzón del sello de cada carta. Cada mañana recibes encargos (una carta con sello dorado o con lazo a la caja fuerte; encender el faro a una hora) y durante el día nadie te los recuerda."
     ),
     GameDefinition(
       id = "anagramas",
       title = "En la punta de la lengua",
       domain = DomainType.LENGUAJE,
       subtitle = "Encuentra la palabra que ya sabes",
-      instruction = "Nubi capta la definición de una palabra. Búscala en tu memoria; si la tienes, ordénala con las letras. Si no sale, pide una ayuda: siempre hay una, y nunca te quedas trabado.",
-      iconEmoji = "💬"
+      instruction = "Nubi capta la definición de una palabra. Búscala en tu memoria; si la tienes, ordénala con las letras. Si no sale, pide una ayuda: siempre hay una, y nunca te quedas trabado."
     ),
     GameDefinition(
       id = "meteoros",
       title = "Lluvia de meteoros",
       domain = DomainType.LENGUAJE,
       subtitle = "Toca solo las palabras que existen",
-      instruction = "Caen meteoros con palabras. Toca las que existen y deja pasar las inventadas: no pierdes nada si dudas. Las palabras raras valen más.",
-      iconEmoji = "☄️"
+      instruction = "Caen meteoros con palabras. Toca las que existen y deja pasar las inventadas: no pierdes nada si dudas. Las palabras raras valen más."
     ),
     GameDefinition(
       id = "disparate",
       title = "¿Verdad o disparate?",
       domain = DomainType.LENGUAJE,
       subtitle = "Lee y decide rápido",
-      instruction = "Llegan frases cortas desde la radio. Toca VERDAD si es cierta o DISPARATE si no tiene sentido; también puedes deslizar la frase. Si una frase no se entiende, mantenla presionada.",
-      iconEmoji = "📡"
+      instruction = "Llegan frases cortas desde la radio. Toca VERDAD si es cierta o DISPARATE si no tiene sentido; también puedes deslizar la frase. Si una frase no se entiende, mantenla presionada."
     ),
     GameDefinition(
       id = "calculo",
       title = "Carga exacta",
       domain = DomainType.RAZONAMIENTO,
       subtitle = "Combina las celdas de energía",
-      instruction = "El reactor pide una carga exacta. Toca una celda, una operación y otra celda para juntarlas; sigue hasta que una celda valga la carga. Cualquier camino sirve, y puedes deshacer sin costo.",
-      iconEmoji = "🔋"
+      instruction = "El reactor pide una carga exacta. Toca una celda, una operación y otra celda para juntarlas; sigue hasta que una celda valga la carga. Cualquier camino sirve, y puedes deshacer sin costo."
     ),
     GameDefinition(
       id = "engranajes",
       title = "Engranajes",
       domain = DomainType.RAZONAMIENTO,
       subtitle = "Arregla la máquina del cohete",
-      instruction = "La máquina del cohete viene mal armada: cada pieza tiene un cartel con lo que debe hacer. Con una llave (un cambio) toca el motor o una correa para cambiar su giro, y después toca Arrancar. Cada máquina arreglada enciende una luz; con diez, tu cohete despega.",
-      iconEmoji = "⚙️"
+      instruction = "La máquina del cohete viene mal armada: cada pieza tiene un cartel con lo que debe hacer. Con una llave (un cambio) toca el motor o una correa para cambiar su giro, y después toca Arrancar. Cada máquina arreglada enciende una luz; con diez, tu cohete despega."
     ),
     GameDefinition(
       id = "piloto",
       title = "Piloto Estelar",
       domain = DomainType.ATENCION,
       subtitle = "Pilota y atrapa las señales de tu misión",
-      instruction = "Guía la nave por la ruta de luces con un pulgar y, con el otro dedo, atrapa solo las señales de tu misión. Las dos cosas van juntas desde el primer segundo; al empezar, la ruta es más fácil y las señales salen más espaciadas.",
-      iconEmoji = "🚀"
+      instruction = "Guía la nave por la ruta de luces con un pulgar y, con el otro dedo, atrapa solo las señales de tu misión. Las dos cosas van juntas desde el primer segundo; al empezar, la ruta es más fácil y las señales salen más espaciadas."
     ),
     GameDefinition(
       id = "freno",
       title = "Freno de Emergencia",
       domain = DomainType.ATENCION,
       subtitle = "Control inhibitorio: frenar a tiempo",
-      instruction = "Lanza lo más rápido que puedas el cohete que se enciende. Si suena la alarma y aparece ¡ALTO!, no toques: frena a tiempo.",
-      iconEmoji = "🛑"
+      instruction = "Lanza lo más rápido que puedas el cohete que se enciende. Si suena la alarma y aparece ¡ALTO!, no toques: frena a tiempo."
     ),
     GameDefinition(
       id = "satelites",
       title = "Satélites",
       domain = DomainType.ATENCION,
       subtitle = "Seguimiento de varios objetos a la vez",
-      instruction = "Algunos satélites traen un mensaje: se apagan y todos giran alrededor de tu planeta. Síguelos con la vista y, cuando se detengan, toca los que lo traían: cada mensaje enciende una luz.",
-      iconEmoji = "🛰️"
+      instruction = "Algunos satélites traen un mensaje: se apagan y todos giran alrededor de tu planeta. Síguelos con la vista y, cuando se detengan, toca los que lo traían: cada mensaje enciende una luz."
     ),
     GameDefinition(
       id = "radar",
       title = "Rescate relámpago",
       domain = DomainType.ATENCION,
       subtitle = "Qué ves de un vistazo",
-      instruction = "Atento al radar: un relámpago muestra unas cápsulas. Elige en el tablero cuáles viste y toca ¡Rescatar! Las rocas grises no se rescatan.",
-      iconEmoji = "📡"
+      instruction = "Atento al radar: un relámpago muestra unas cápsulas. Elige en el tablero cuáles viste y toca ¡Rescatar! Las rocas grises no se rescatan."
     ),
     GameDefinition(
       id = "aterrizaje",
       title = "Aterrizaje Lunar",
       domain = DomainType.RAZONAMIENTO,
       subtitle = "Sentido numérico: estimar en la línea numérica",
-      instruction = "Posa la nave justo en el número de la misión. La regla solo tiene marcados los extremos: arrastra para mover la nave y suelta para aterrizar.",
-      iconEmoji = "🌙"
+      instruction = "Posa la nave justo en el número de la misión. La regla solo tiene marcados los extremos: arrastra para mover la nave y suelta para aterrizar."
     )
   )
 
@@ -462,13 +444,13 @@ enum class AgeBand(val label: String) {
  * tiene techo — sigue dando sensación de avance aunque todos los juegos de ese
  * dominio ya estén en Experto. Un dominio suma XP jugando CUALQUIER juego suyo.
  */
-enum class MasteryTier(val tierName: String, val minXp: Int, val icon: String) {
-  BRONCE("Bronce", 0, "🥉"),
-  PLATA("Plata", 100, "🥈"),
-  ORO("Oro", 300, "🥇"),
-  PLATINO("Platino", 600, "💠"),
-  DIAMANTE("Diamante", 1000, "💎"),
-  MAESTRO("Maestro", 2000, "👑");
+enum class MasteryTier(val tierName: String, val minXp: Int) {
+  BRONCE("Bronce", 0),
+  PLATA("Plata", 100),
+  ORO("Oro", 300),
+  PLATINO("Platino", 600),
+  DIAMANTE("Diamante", 1000),
+  MAESTRO("Maestro", 2000);
 
   companion object {
     fun fromXp(xp: Int): MasteryTier = entries.lastOrNull { xp >= it.minXp } ?: BRONCE
@@ -508,16 +490,15 @@ data class WeeklyChallengeDef(
   val key: String,
   val title: String,
   val description: String,
-  val iconEmoji: String,
   val target: Int
 )
 
 object WeeklyChallengeRegistry {
   val all = listOf(
-    WeeklyChallengeDef("dominios3", "Variedad", "Juega en 3 áreas distintas esta semana", "🧭", 3),
-    WeeklyChallengeDef("reto2", "Modo Reto", "Completa 2 partidas en modo Reto esta semana", "⚡", 2),
-    WeeklyChallengeDef("precision3", "Racha de precisión", "Consigue 85 puntos o más en 3 partidas esta semana", "🎯", 3),
-    WeeklyChallengeDef("dias4", "Constancia", "Juega 4 días distintos esta semana", "📅", 4)
+    WeeklyChallengeDef("dominios3", "Variedad", "Juega en 3 áreas distintas esta semana", 3),
+    WeeklyChallengeDef("reto2", "Modo Reto", "Completa 2 partidas en modo Reto esta semana", 2),
+    WeeklyChallengeDef("precision3", "Racha de precisión", "Consigue 85 puntos o más en 3 partidas esta semana", 3),
+    WeeklyChallengeDef("dias4", "Constancia", "Juega 4 días distintos esta semana", 4)
   )
   const val XP_REWARD_PER_DOMAIN = 10
 }
@@ -537,14 +518,14 @@ data class WeeklyChallengeProgress(
  * ladder competitivo. Es puramente un layer de progreso/motivación: no reemplaza
  * ni modifica el nivel de dificultad (1-5) ni masteryStreak, que siguen intactos.
  */
-enum class RankTier(val tierName: String, val minRating: Int, val icon: String, val color: Color) {
-  BRONCE("Bronce", 0, "🥉", Color(0xFFCD7F32)),
-  PLATA("Plata", 250, "🥈", Color(0xFF9CA3AF)),
-  ORO("Oro", 500, "🥇", Color(0xFFF59E0B)),
-  PLATINO("Platino", 750, "💠", Color(0xFF22D3EE)),
-  ESMERALDA("Esmeralda", 1000, "🟢", Color(0xFF17C97A)),
-  DIAMANTE("Diamante", 1250, "💎", Color(0xFF60A5FA)),
-  MAESTRO("Maestro", 1500, "👑", Color(0xFFA855F7));
+enum class RankTier(val tierName: String, val minRating: Int, val color: Color) {
+  BRONCE("Bronce", 0, Color(0xFFCD7F32)),
+  PLATA("Plata", 250, Color(0xFF9CA3AF)),
+  ORO("Oro", 500, Color(0xFFF59E0B)),
+  PLATINO("Platino", 750, Color(0xFF22D3EE)),
+  ESMERALDA("Esmeralda", 1000, Color(0xFF17C97A)),
+  DIAMANTE("Diamante", 1250, Color(0xFF60A5FA)),
+  MAESTRO("Maestro", 1500, Color(0xFFA855F7));
 
   companion object {
     const val DIVISION_SIZE = 50
@@ -607,7 +588,7 @@ data class GameRankInfo(
 data class UserSettings(
   val id: Long = 1L,
   val name: String = "",
-  val avatar: String = "🧠",
+  val avatar: String = com.example.data.AvatarIds.DEFAULT,
   val isActive: Boolean = true,
   val weeklyGoal: Int = 4, // days per week
   val defaultTimed: Boolean = false, // false: Precisión, true: Reto
