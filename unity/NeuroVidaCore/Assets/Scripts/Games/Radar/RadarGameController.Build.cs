@@ -52,6 +52,8 @@ namespace NeuroVida.Games.Radar
         private static readonly Color ButtonHit = new Color(61f / 255f, 106f / 255f, 44f / 255f);
         private static readonly Color ButtonWrong = new Color(107f / 255f, 46f / 255f, 58f / 255f);
         private static readonly Color WindowEmpty = new Color(197f / 255f, 192f / 255f, 230f / 255f);
+        /// <summary>Un asiento vacío: con el arte procedural, la ventana clara; con plasticina el asiento ya está pintado en el casco y la bolita que lo llena no se ve.</summary>
+        private static Color EmptySeat => RadarSprites.Plastic ? Color.clear : WindowEmpty;
 
         /// <summary>Un botón del tablero: su raíz (el área de toque y el hueco del tutorial), el fondo de arcilla, el aro, la forma, el nombre y la marca de la revelación.</summary>
         private sealed class BtnView
@@ -74,7 +76,7 @@ namespace NeuroVida.Games.Radar
         private readonly float[] _debrisSpeed = new float[DebrisPool], _debrisAngle = new float[DebrisPool], _debrisSpin = new float[DebrisPool], _debrisSize = new float[DebrisPool];
 
         // radar
-        private Image _scope, _sweep, _beamLine, _sweepHead, _mask, _axis, _flashFill, _flashGlow, _flashWave;
+        private Image _scope, _glass, _sweep, _beamLine, _sweepHead, _mask, _axis, _flashFill, _flashGlow, _flashWave;
         private readonly Image[] _echoes = new Image[EchoPool];
         private readonly float[] _echoAt = new float[EchoPool], _echoAngle = new float[EchoPool], _echoRadius = new float[EchoPool];
         private readonly Image[] _capImgs = new Image[CapsulePool], _capRings = new Image[CapsulePool], _rockImgs = new Image[RockPool];
@@ -206,6 +208,7 @@ namespace NeuroVida.Games.Radar
             zone.transform.SetParent(_radarLayer, false);
             _radarZone = zone.AddComponent<RectTransform>();
             _radarZone.anchorMin = _radarZone.anchorMax = _radarZone.pivot = new Vector2(0.5f, 0.5f);
+            _glass = MakeImage(_radarLayer, "Glass", null);                                          // con plasticina el vidrio (oscuro, con su rejilla) es procedural y va DEBAJO del aro de plasticina
             _scope = MakeImage(_radarLayer, "Scope", null);
             for (int i = 0; i < EchoPool; i++)
             {
@@ -342,13 +345,13 @@ namespace NeuroVida.Games.Radar
             _hudIcon = MakeImage(_hudLayer, "RescuedIcon", null);
             _hudCount = MakeLabel(_hudLayer, "RescuedCount", 22f, UiFonts.Bold, TextColor, TextAnchor.MiddleRight);
             _hudCount.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _streakBg = Rr(_hudLayer, "StreakBg", Gold, 13f);
+            _streakBg = Rr(_hudLayer, "StreakBg", Gold, 13f, SlabSize.Chip, SlabTone.Sun);
             _streakText = MakeLabel(_hudLayer, "StreakText", 14f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _streakText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _timerTrack = Rr(_hudLayer, "TimerTrack", new Color(Lavender.r, Lavender.g, Lavender.b, 0.25f), 2.5f);
             _timerFill = Rr(_hudLayer, "TimerFill", Lime, 2.5f);
             _timerFill.rectTransform.pivot = new Vector2(0f, 0.5f);
-            _msgPill = Rr(_hudLayer, "MessagePill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.96f), 17f);
+            _msgPill = Rr(_hudLayer, "MessagePill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.96f), 17f, SlabSize.Button, SlabTone.Night);
             _msgA = MakeLabel(_hudLayer, "MessageA", 18f, UiFonts.Bold, TextColor, TextAnchor.MiddleCenter);
             _msgB = MakeLabel(_hudLayer, "MessageB", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _msgA.horizontalOverflow = _msgB.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -361,7 +364,7 @@ namespace NeuroVida.Games.Radar
             _endTag = MakeLabel(_endLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endTitle = MakeLabel(_endLayer, "Title", 27f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             for (int i = 0; i < EndCapsPool; i++) { _endCaps[i] = MakeImage(_endLayer, "EndCap" + i, null); _endCaps[i].gameObject.SetActive(false); }
-            _endCard = Rr(_endLayer, "Card", new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f), 22f);
+            _endCard = Rr(_endLayer, "Card", new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f), 22f, SlabSize.Button, SlabTone.Night);
             for (int i = 0; i < _endLabel.Length; i++)
             {
                 _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 15f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
@@ -371,7 +374,7 @@ namespace NeuroVida.Games.Radar
             _endNote1 = MakeLabel(_endLayer, "Note1", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
             _endNote2 = MakeLabel(_endLayer, "Note2", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
             _endNote3 = MakeLabel(_endLayer, "Note3", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endRecordBg = Rr(_endLayer, "RecordBg", Gold, 15f);
+            _endRecordBg = Rr(_endLayer, "RecordBg", Gold, 15f, SlabSize.Chip, SlabTone.Sun);
             _endRecord = MakeLabel(_endLayer, "Record", 15f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _endTag.text = RadarContract.EndTag;
             _endNote1.text = RadarContract.EndNote1;
@@ -431,9 +434,10 @@ namespace NeuroVida.Games.Radar
         }
 
         /// <summary>Un rectángulo redondeado (9-slice) con el radio en dp: el radio en unidades se aplica en <see cref="Layout"/> (depende de la escala de la pantalla).</summary>
-        private Image Rr(Transform parent, string name, Color color, float radiusDp)
+        private Image Rr(Transform parent, string name, Color color, float radiusDp, SlabSize? slab = null, SlabTone tone = SlabTone.Night)
         {
             var img = MakeImage(parent, name, RoundedRectSprite.Get(24));
+            if (slab.HasValue && PlasticSlab.TryStyle(img, slab.Value, tone) != null) return img;          // la losa de plasticina (su tamaño sigue al rectángulo de [img]); sin ella, el rectángulo redondeado de siempre
             img.color = color;
             img.type = Image.Type.Sliced;
             _radii.Add(new KeyValuePair<Image, float>(img, radiusDp));
@@ -474,6 +478,8 @@ namespace NeuroVida.Games.Radar
             _station.sprite = RadarSprites.Station();
             foreach (var d in _debris) d.sprite = RadarSprites.Debris();
             _scope.sprite = RadarSprites.Scope();
+            _glass.gameObject.SetActive(RadarSprites.Plastic);
+            if (RadarSprites.Plastic) _glass.sprite = RadarSprites.GlassSprite();
             _sweep.sprite = RadarSprites.Sweep();
             _axis.sprite = RadarSprites.Axis();
             _shipHull.sprite = RadarSprites.Ship();
@@ -483,10 +489,10 @@ namespace NeuroVida.Games.Radar
             for (int i = 0; i < _buttons.Length; i++)
             {
                 var type = RadarContract.BoardOrder[i];
-                _buttons[i].Bg.sprite = RadarSprites.Button();
+                _buttons[i].Bg.sprite = RadarSprites.Plastic ? PlasticSlab.Sprite(SlabSize.Button, SlabTone.Night) : RadarSprites.Button();
                 _buttons[i].Emblem.sprite = RadarSprites.Emblem(type);
                 }
-            _go.Bg.sprite = RadarSprites.GoButton();
+            _go.Bg.sprite = RadarSprites.Plastic ? PlasticSlab.Sprite(SlabSize.Button, SlabTone.Dim) : RadarSprites.GoButton();
             _hudIcon.sprite = RadarSprites.Emblem(CapsuleType.Circle);
         }
 
@@ -555,6 +561,7 @@ namespace NeuroVida.Games.Radar
             float cx = _plan.RadarCx, cy = _plan.RadarCy, side = _plan.BezelR * RadarSprites.ScopeSideInBezelRadii, k = _plan.Scale;
             SetRect(_radarZone, cx, cy, _plan.BezelR * 2f, _plan.BezelR * 2f);
             SetRect(_scope.rectTransform, cx, cy, side, side);
+            SetRect(_glass.rectTransform, cx, cy, side, side);
             SetRect(_mask.rectTransform, cx, cy, side, side);
             SetRect(_sweep.rectTransform, cx, cy, _plan.GlassR * 2f, _plan.GlassR * 2f);
             _beamLine.rectTransform.sizeDelta = new Vector2(_plan.GlassR * _s, 2.8f * k * _s);
@@ -578,8 +585,9 @@ namespace NeuroVida.Games.Radar
             float ss = _plan.ShipScale, cx = _plan.RadarCx, y = _plan.ShipY;
             SetRect(_shipZone, cx, y, 228f * ss, 84f * ss);
             SetRect(_shipRoot, cx, y, 0f, 0f);                                              // la nave (todo lo suyo, centrado en sí misma): salta y viaja entera
-            SetChild(_shipHull.rectTransform, 0f, 0f, RadarSprites.ShipSide * ss, RadarSprites.ShipSide * ss);
-            for (int i = 0; i < WindowCount; i++) SetChild(_windows[i].rectTransform, (-81f + i * 18f) * ss, -2f * ss, RadarSprites.WindowSide * ss, RadarSprites.WindowSide * ss);
+            var shipCanvas = RadarSprites.ShipCanvas;                                           // con plasticina el lienzo de la nave no es cuadrado (240 × 100 dp)
+            SetChild(_shipHull.rectTransform, 0f, 0f, shipCanvas.x * ss, shipCanvas.y * ss);
+            for (int i = 0; i < WindowCount; i++) SetChild(_windows[i].rectTransform, (-81f + i * 18f) * ss, -RadarSprites.SeatDy * ss, RadarSprites.SeatSide * ss, RadarSprites.SeatSide * ss);
             float fs = _geo.CapsuleSize * RadarSprites.CapsuleSideInSizes;
             foreach (var f in _flying) f.rectTransform.sizeDelta = new Vector2(fs * _s, fs * _s);
             foreach (var sp in _sparks) sp.rectTransform.sizeDelta = new Vector2(4.4f * ss * _s, 4.4f * ss * _s);
@@ -596,7 +604,8 @@ namespace NeuroVida.Games.Radar
                 var (cx, cy) = _plan.CellCenter(i);
                 var v = _buttons[i];
                 SetRect(v.Root, cx, cy, _plan.CellW, _plan.CellH);
-                SetChild(v.Bg.rectTransform, 0f, 0f, RadarSprites.ButtonSide * c, RadarSprites.ButtonSide * c);
+                if (RadarSprites.Plastic) FitSlab(v.Bg.rectTransform);                                  // la losa de plasticina: su cuerpo es la casilla y la imagen sobresale por los márgenes (la sombra)
+                else SetChild(v.Bg.rectTransform, 0f, 0f, RadarSprites.ButtonSide * c, RadarSprites.ButtonSide * c);
                 SetChild(v.Ring.rectTransform, 0f, 0f, RadarSprites.ButtonSide * c, RadarSprites.ButtonSide * c);
                 float es = 18f * 2f * RadarSprites.CapsuleSideInSizes * c;                     // forma de 18 (unos 36 dp)
                 SetChild(v.Emblem.rectTransform, 0f, -11f * c, es, es);
@@ -605,8 +614,19 @@ namespace NeuroVida.Games.Radar
             }
             SetRect(_go.Root, _plan.GoCx, _plan.GoCy, _plan.GoW, _plan.GoH);
             float gs = RadarSprites.GoSide * (_plan.GoW / 172f);
-            SetChild(_go.Bg.rectTransform, 0f, 0f, gs, gs);
+            if (RadarSprites.Plastic) FitSlab(_go.Bg.rectTransform);
+            else SetChild(_go.Bg.rectTransform, 0f, 0f, gs, gs);
             SetChild(_go.Label.rectTransform, 0f, 1f, _plan.GoW - 20f, 28f);
+        }
+
+        /// <summary>Estira la imagen de una losa de plasticina sobre el rectángulo de su padre (el cuerpo) y la deja sobresalir por los márgenes del kit (donde cae la sombra de contacto).</summary>
+        private static void FitSlab(RectTransform r)
+        {
+            var m = PlasticSlab.Margins(SlabSize.Button, SlabTone.Night);
+            r.anchorMin = Vector2.zero;
+            r.anchorMax = Vector2.one;
+            r.offsetMin = new Vector2(-m.x, -m.w);
+            r.offsetMax = new Vector2(m.z, m.y);
         }
 
         private void LayoutHud()

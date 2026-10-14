@@ -67,7 +67,7 @@ namespace NeuroVida.Games.Radar
 
             // 3) rescatar
 #if UNITY_EDITOR
-            if (ok) GuardGuided(_picks.Count == types1.Count && _go.Bg.color == Gold, "al llegar al paso «¡Rescatar!» el botón no está encendido o faltan cápsulas marcadas (marcadas " + _picks.Count + " de " + types1.Count + ")");
+            if (ok) GuardGuided(_picks.Count == types1.Count && GoButtonLit, "al llegar al paso «¡Rescatar!» el botón no está encendido o faltan cápsulas marcadas (marcadas " + _picks.Count + " de " + types1.Count + ")");
 #endif
             if (ok)
             {

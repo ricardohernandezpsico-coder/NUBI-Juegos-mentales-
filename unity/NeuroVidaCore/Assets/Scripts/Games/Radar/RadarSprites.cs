@@ -14,6 +14,8 @@ namespace NeuroVida.Games.Radar
     /// <item><see cref="Ship"/>, <see cref="Window"/>: la nave de rescate (casco claro, cabina celeste, dos propulsores coral) y sus diez ventanas.</item>
     /// <item><see cref="Button"/>, <see cref="GoButton"/>, <see cref="ButtonRing"/>: los botones de arcilla del tablero y «¡Rescatar!».</item>
     /// </list>
+    /// <para><b>Plasticina (Tarea 94, el piloto):</b> si el atlas <c>Resources/Plasticina/radar</c> existe, las cápsulas, sus íconos, la roca, el aro del radar, la nave y su asiento salen de ahí (renders de Blender, <c>tools/juegos/radar.py</c>, en el MISMO lienzo y a la MISMA escala que los procedurales: no cambia ninguna medida)
+    /// y la pantalla de vidrio del radar sigue siendo procedural (<see cref="GlassSprite"/>), oscura y con su rejilla. Sin el atlas, todo cae al arte procedural de abajo.</para>
     /// El color y el brillo de cápsulas, rocas y fondo son IGUALES en todos los niveles (regla de patentes 5: la dificultad no ajusta el contraste figura-fondo). Las funciones <c>Render*</c> devuelven los píxeles (fila 0 = abajo) para poder previsualizarlos fuera de Unity.
     /// </summary>
     public static class RadarSprites
@@ -33,6 +35,17 @@ namespace NeuroVida.Games.Radar
 
         private const float Aa = 0.03f;
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
+
+        public const string PlasticGroup = "radar";
+        private static readonly string[] PlasticNames = { "hexagono", "gota", "circulo", "cuadrado", "triangulo", "rombo" };
+
+        /// <summary>true si el atlas de plasticina de Rescate existe (y no está desactivado): el arte que se ve es el de Blender.</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "nave");
+
+        /// <summary>Las medidas de la nave de plasticina (dp): ancho y alto del lienzo, y dónde caen los asientos pintados en el casco (la bolita que los llena va ahí). Con el arte procedural, el lienzo cuadrado de siempre.</summary>
+        public static Vector2 ShipCanvas => Plastic ? new Vector2(PlasticArt.Measure(PlasticGroup, "nave_ancho_dp", ShipSide), PlasticArt.Measure(PlasticGroup, "nave_alto_dp", ShipSide)) : new Vector2(ShipSide, ShipSide);
+        public static float SeatDy => Plastic ? PlasticArt.Measure(PlasticGroup, "asiento_dy_dp", 2f) : 2f;
+        public static float SeatSide => Plastic ? PlasticArt.Measure(PlasticGroup, "asiento_lleno_dp", WindowSide) : WindowSide;
 
         // ------------------------------------------------------------------ cápsulas
 
@@ -83,9 +96,10 @@ namespace NeuroVida.Games.Radar
             if (highlight) p.Over(new Color(1f, 1f, 1f, 0.38f), Cover(Ellipse(x, y, -0.3f, 0.42f, 0.2f, 0.09f), Aa) * Cover(sdf + 0.08f, Aa));
         }
 
-        public static Sprite CapsuleSprite(CapsuleType t) => Get(100 + (int)t, () => ToSprite(RenderCapsule(t, CapsulePx), CapsulePx, CapsulePx));
+        public static Sprite CapsuleSprite(CapsuleType t) => PlasticArt.Get(PlasticGroup, "capsula_" + PlasticNames[(int)t]) ?? Get(100 + (int)t, () => ToSprite(RenderCapsule(t, CapsulePx), CapsulePx, CapsulePx));
 
-        public static Sprite Emblem(CapsuleType t) => Get(110 + (int)t, () => ToSprite(RenderEmblem(t, CapsulePx), CapsulePx, CapsulePx));
+        /// <summary>La forma en chico (casillas del tablero, ícono del contador): en plasticina es la misma cápsula renderizada a 128 px (con su ventanilla), no la grande reducida.</summary>
+        public static Sprite Emblem(CapsuleType t) => PlasticArt.Get(PlasticGroup, "icono_" + PlasticNames[(int)t]) ?? Get(110 + (int)t, () => ToSprite(RenderEmblem(t, CapsulePx), CapsulePx, CapsulePx));
 
         public static Color32[] RenderCapsule(CapsuleType t, int size)
         {
@@ -132,7 +146,7 @@ namespace NeuroVida.Games.Radar
 
         private static readonly float[] RockPoly = RockPts();
 
-        public static Sprite Rock() => Get(120, () => ToSprite(RenderRock(RockPx), RockPx, RockPx));
+        public static Sprite Rock() => PlasticArt.Get(PlasticGroup, "roca") ?? Get(120, () => ToSprite(RenderRock(RockPx), RockPx, RockPx));
 
         public static Color32[] RenderRock(int size) => RenderClay(size, RockZoom, 0.1f, 0.1f, Aa, (x, y) => Polygon(x, y, RockPoly) - 0.04f, (ref Px p, float x, float y) =>
         {
@@ -153,7 +167,10 @@ namespace NeuroVida.Games.Radar
         /// <summary>El vidrio como fracción de la mitad del sprite (para la estática y el haz).</summary>
         public const float GlassFraction = GlassR / ScopeZoom;
 
-        public static Sprite Scope() => Get(130, () => ToSprite(RenderScope(ScopePx), ScopePx, ScopePx));
+        /// <summary>El radar: con plasticina es SOLO el aro y la consola (el vidrio va aparte, <see cref="GlassSprite"/>, debajo); sin ella, el radar entero procedural.</summary>
+        public static Sprite Scope() => PlasticArt.Get(PlasticGroup, "radar_aro") ?? Get(130, () => ToSprite(RenderScope(ScopePx), ScopePx, ScopePx));
+        /// <summary>El vidrio del radar (oscuro, con su rejilla): el mismo del radar procedural, sin el bisel. Va debajo del aro de plasticina, en el mismo lienzo.</summary>
+        public static Sprite GlassSprite() => Get(136, () => ToSprite(RenderGlass(ScopePx), ScopePx, ScopePx));
         public static Sprite Sweep() => Get(131, () => ToSprite(RenderSweep(256), 256, 256));
         public static Sprite Mask(int i) { i = Mathf.Abs(i) % 2; return Get(132 + i, () => ToSprite(RenderMask(512, 11 + i * 37), 512, 512)); }
         public static Sprite DashedRing() => Get(160, () => ToSprite(RenderDashedRing(128), 128, 128));
@@ -198,6 +215,28 @@ namespace NeuroVida.Games.Radar
             }
             // la pantalla: borde de tinta y vidrio verde agua con luz
             p.Over(Ink, Cover(r - GlassR - 3.5f * dp, aa));
+            PaintGlass(ref p, x, y, r, dp, aa);
+        });
+
+        /// <summary>El vidrio con plasticina: solo la pantalla (el aro de plasticina de <see cref="Scope"/> la enmarca y le tapa el borde). Mismo color, mismo brillo y mismo contraste que el vidrio del radar procedural y en TODOS los niveles.</summary>
+        public static Color32[] RenderGlass(int size)
+        {
+            var pixels = new Color32[size * size];
+            float dp = GlassR / V4Glass;
+            for (int py = 0; py < size; py++)
+                for (int px = 0; px < size; px++)
+                {
+                    float x = ((px + 0.5f) / size * 2f - 1f) * ScopeZoom, y = ((py + 0.5f) / size * 2f - 1f) * ScopeZoom;
+                    var p = new Px();
+                    PaintGlass(ref p, x, y, Mathf.Sqrt(x * x + y * y), dp, 0.006f);
+                    pixels[py * size + px] = p.ToColor32();
+                }
+            return pixels;
+        }
+
+        /// <summary>El vidrio de la pantalla: degradado verde agua oscuro, aro interior luminoso y el adorno (dos aros punteados y una cruz, NUNCA lugares de respuesta). Solo dentro del disco.</summary>
+        private static void PaintGlass(ref Px p, float x, float y, float r, float dp, float aa)
+        {
             if (r > GlassR + 0.02f) return;
             p.Over(GlassColor(x, y, dp), Cover(r - GlassR, aa));
             // aro interior luminoso (radio RR − 5, 6 dp, al 16 %)
@@ -212,7 +251,7 @@ namespace NeuroVida.Games.Radar
             }
             p.Over(line, Cover(Mathf.Abs(y) - 0.6f * dp, aa));
             p.Over(line, Cover(Mathf.Abs(x) - 0.6f * dp, aa));
-        });
+        }
 
         /// <summary>La estela del haz (v4): una cuña que se apaga hacia atrás (al 40 % junto al haz; sentido antihorario: el haz gira en sentido horario). Blanca: se tiñe de verde agua con <c>Image.color</c>; la línea del haz es aparte.</summary>
         public static Color32[] RenderSweep(int size)
@@ -338,8 +377,9 @@ namespace NeuroVida.Games.Radar
         private static float ShipBody(float x, float y) =>
             Mathf.Abs(y) > 0.5f ? 1f : Union(Union(Union(Hull(x, y), Cabin(x, y)), Union(Thruster(x, y, -0.86f), Thruster(x, y, 0.86f))), Fins(x, y));
 
-        public static Sprite Ship() => Get(140, () => ToSprite(RenderShip(ShipPx), ShipPx, ShipPx));
-        public static Sprite Window() => Get(141, () => ToSprite(RenderWindow(64), 64, 64));
+        public static Sprite Ship() => PlasticArt.Get(PlasticGroup, "nave") ?? Get(140, () => ToSprite(RenderShip(ShipPx), ShipPx, ShipPx));
+        /// <summary>Una ventana de la nave; con plasticina es la bolita blanca que llena un asiento (se tiñe del color de la cápsula) y los asientos vacíos ya están pintados en el casco.</summary>
+        public static Sprite Window() => PlasticArt.Get(PlasticGroup, "asiento_lleno") ?? Get(141, () => ToSprite(RenderWindow(64), 64, 64));
 
         private static void Part(ref Px p, float sdf, Color fill, float border, float aa) { p.Over(Ink, Cover(sdf - border, aa)); p.Over(fill, Cover(sdf, aa)); }
 
@@ -479,7 +519,7 @@ namespace NeuroVida.Games.Radar
         {
             for (int t = 0; t < RadarContract.TypeCount; t++) { CapsuleSprite((CapsuleType)t); Emblem((CapsuleType)t); yield return null; }
             Rock(); Axis(); Window(); yield return null;
-            Scope(); yield return null;
+            Scope(); GlassSprite(); yield return null;
             Sweep(); Mask(0); Mask(1); yield return null;
             Ship(); yield return null;
             Station(); Debris(); Planet(); yield return null;

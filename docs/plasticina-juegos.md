@@ -24,8 +24,8 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 
 | # | Juego | id | Objetos propios (aprox.) | Estado | Fecha | Capturas |
 |---|---|---|---:|---|---|---|
-| — | **Piezas comunes (fase 0)** | — | losas, marcas, anillo, Nubi 3D | inventario | 14-oct | — |
-| 1 | Rescate relámpago | `radar` | 6 cápsulas + 6 íconos, roca, aro del radar, nave, asiento | inventario | 14-oct | [antes](previews/plasticina/antes-radar.png) |
+| — | **Piezas comunes (fase 0)** | — | losas, marcas, anillo, Nubi 3D | integrado (verificación completa; falta que Ricardo lo vea en el teléfono) | 14-oct | [antes](previews/plasticina/antes-stroop.png) → [después](previews/plasticina/despues-stroop.png) · [Carga exacta](previews/plasticina/despues-calculo.png) · [Constelaciones](previews/plasticina/despues-parejas.png) |
+| 1 | Rescate relámpago | `radar` | 6 cápsulas + 6 íconos, roca, aro del radar, nave, asiento | integrado; **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-radar.png) → [después](previews/plasticina/despues-radar.png) |
 | 2 | Piloto Estelar | `piloto` | 15 señales, nave | inventario | 14-oct | — |
 | 3 | Freno de Emergencia | `freno` | botón ×2, ¡ALTO!, plataforma, cohete ×3 | inventario | 14-oct | — |
 | 4 | Satélites | `satelites` | 6 | inventario | 14-oct | — |
@@ -44,6 +44,13 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 | 17 | La estrella intrusa | `intrusa` | 2 (las 77 figuras se quedan procedurales) | inventario | 14-oct | — |
 
 (El orden de los números 2 a 17 es el **propuesto** más abajo; Opus decide.)
+
+## Lo que NO entró en la Tarea 94 (a decidir en las siguientes)
+
+- **Decorado de Rescate:** el planeta lejano, la estación accidentada, los restos y el polvo siguen planos (procedurales); el eje lima del centro del radar también. El barrido, la estática, el rayo tractor, las llamas y los aros de la revelación se quedan como efecto (son animados o se tiñen).
+- **Fase 0 por completar:** el punto de color de los avisos (`Toast`) y de `PhasePill` quedó en tinta sólida sobre la losa y se ve algo pesado (un punto negro sobre el sol): suavizarlo (tinta al 50 %) en la próxima tarea que toque `Games/Shared`. `ProgressDots`, `TileSprites` (las fichas de Tinta o Palabra y otros), `RingSprite`, los destellos y el cielo siguen procedurales: cada juego pasa sus piezas propias en su tarea.
+- **`art_version` en las medidas:** no se implementó (toca `StroopTelemetry`, `NativeReceiver` y la lectura de Kotlin); propuesta y razones en `docs/diseno-rescate.md` §17.2.
+- **Dos cápsulas con el canto en sombra más tenue:** la gota y el triángulo rinden 2,0 y 2,3:1 en su borde más oscuro contra el vidrio MÁS claro (el cuerpo rinde ≥ 4:1): mirarlas en el teléfono antes de tocar la luz.
 
 ## Piezas comunes (fase 0): las que benefician a los 17
 
@@ -304,4 +311,12 @@ Riesgos: **77 figuras no se modelan**: el grabado se queda procedural (la plasti
 
 ## Peso al APK
 
-Meta: **menos de ~1,5 MB por juego** sumados al APK. Se llena con cada tarea (ver `tools/juegos/README.md` § Peso).
+Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión de textura (la plasticina tiene degradés suaves); entre paréntesis, lo que pesaría con ASTC 6×6. Cómo se mide y se baja: [`tools/juegos/README.md`](../tools/juegos/README.md) § Peso. `PlasticArtTests` falla si un grupo pasa del tope.
+
+| Grupo | Sprites | Atlas | PNG en disco | En el APK (estimado) | Con ASTC 6×6 |
+|---|---:|---|---:|---:|---:|
+| `comun` (losas del kit y «noche», marcas ✓ ✗, anillo de la cuenta): se paga UNA vez para los 17 juegos | 28 | 896×2292 | 815 KB | 1,05 MB | 0,87 MB |
+| `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
+| `radar` (Rescate relámpago) | 16 | 1024×1776 | 790 KB | **1,11 MB** | 0,77 MB |
+
+Lo nuevo de Rescate en el APK (radar + comun + nubi) son unos 2,4 MB sin comprimir la textura y unos 1,8 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).

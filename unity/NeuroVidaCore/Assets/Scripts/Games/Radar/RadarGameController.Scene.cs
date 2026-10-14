@@ -176,6 +176,9 @@ namespace NeuroVida.Games.Radar
             RefreshBoard(Now);
         }
 
+        /// <summary>true si «¡Rescatar!» está encendido (hay algo elegido): en sol, con plasticina o sin ella.</summary>
+        private bool GoButtonLit => RadarSprites.Plastic ? _go.Bg.sprite == PlasticSlab.Sprite(SlabSize.Button, SlabTone.Sun) : _go.Bg.color == Gold;
+
         /// <summary>Colores y marcas del tablero según la fase: apagado (45 %), vivo con lo elegido, o la revelación (acertada: verde y ✓; elegida que no estaba: vino y ✗; estaba y no la elegiste: aro coral punteado).</summary>
         private void RefreshBoard(float now)
         {
@@ -190,18 +193,26 @@ namespace NeuroVida.Games.Radar
                 Color? ring = null;
                 bool dashed = false;
                 bool badgeOk = false, badgeNo = false;
+                var tone = live ? SlabTone.Night : SlabTone.Dim;                      // la casilla de plasticina: normal, apagada, acierto o error (la «elegida» es la losa hundida)
+                bool sunk = false;
                 if (_boardMode == BoardMode.Reveal)
                 {
-                    if (_hitSet.Contains(type)) { fill = ButtonHit; ring = Lime; badgeOk = true; }
-                    else if (_wrongSet.Contains(type)) { fill = ButtonWrong; ring = Coral; badgeNo = true; }
+                    if (_hitSet.Contains(type)) { fill = ButtonHit; ring = Lime; badgeOk = true; tone = SlabTone.Hit; }
+                    else if (_wrongSet.Contains(type)) { fill = ButtonWrong; ring = Coral; badgeNo = true; tone = SlabTone.Miss; }
                     else if (_missedSet.Contains(type)) { ring = Coral; dashed = true; }
                 }
                 else if (_boardMode == BoardMode.Live && picked)
                 {
                     fill = Color.Lerp(ButtonLive, typeColor, 0.32f);
                     ring = typeColor;
+                    sunk = true;
                 }
-                v.Bg.color = fill;
+                if (RadarSprites.Plastic)
+                {
+                    v.Bg.sprite = PlasticSlab.Sprite(SlabSize.Button, tone, sunk);
+                    v.Bg.color = Color.white;
+                }
+                else v.Bg.color = fill;
                 v.Group.alpha = live ? 1f : 0.45f;                  // apagado (antes de la respuesta y durante el viaje): sin brillo de arcilla, a menos de la mitad de luz
                 v.Ring.gameObject.SetActive(ring.HasValue);
                 if (ring.HasValue)
@@ -218,7 +229,12 @@ namespace NeuroVida.Games.Radar
                 v.Root.anchoredPosition = P(cx, cy + press);
             }
             bool on = _picks.Count > 0;
-            _go.Bg.color = on ? Gold : new Color(74f / 255f, 70f / 255f, 114f / 255f);
+            if (RadarSprites.Plastic)
+            {
+                _go.Bg.sprite = PlasticSlab.Sprite(SlabSize.Button, on ? SlabTone.Sun : SlabTone.Dim);       // «¡Rescatar!»: sol cuando hay algo elegido; apagado, la losa oscura
+                _go.Bg.color = Color.white;
+            }
+            else _go.Bg.color = on ? Gold : new Color(74f / 255f, 70f / 255f, 114f / 255f);
             _go.Label.color = on ? Ink : new Color(156f / 255f, 151f / 255f, 196f / 255f);
             float gp = now - _goPressAt < 0.14f && now >= _goPressAt ? 3f : 0f;
             _go.Root.anchoredPosition = P(_plan.GoCx, _plan.GoCy + gp);
@@ -518,7 +534,7 @@ namespace NeuroVida.Games.Radar
             for (int i = 0; i < WindowCount; i++)
             {
                 int s = baseIdx + i;
-                _windows[i].color = i < shown && s < _seats.Count ? RadarSprites.Colors[(int)_seats[s]] : WindowEmpty;
+                _windows[i].color = i < shown && s < _seats.Count ? RadarSprites.Colors[(int)_seats[s]] : EmptySeat;
             }
         }
 
@@ -553,7 +569,8 @@ namespace NeuroVida.Games.Radar
             _endValue[3].text = RadarContract.StreakValue(_run.BestStreak);
             _endValue[4].text = RadarContract.TripsValue(_run.Trips);
             _endRecord.text = broke ? RadarContract.NewRecord : RadarContract.RecordLine(record);
-            _endRecordBg.color = broke ? Gold : new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0f);
+            if (RadarSprites.Plastic) _endRecordBg.gameObject.SetActive(broke);                          // con plasticina el fondo es una losa (hija): se enciende o se apaga el objeto entero
+            else _endRecordBg.color = broke ? Gold : new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0f);
             _endRecord.color = broke ? Ink : Lavender;
             for (int i = 0; i < EndCapsPool; i++)
             {
