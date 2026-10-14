@@ -14,7 +14,7 @@ namespace NeuroVida.Games.Disparate
     /// <item><see cref="Band"/>: la cinta de luz de la transmisión. <see cref="NoiseTexture"/>: la estática (se repite).</item>
     /// </list>
     /// <para><b>Plasticina (Tarea 97):</b> si el atlas <c>Resources/Plasticina/disparate</c> existe, la antena, los dos íconos y las barras del medidor (<see cref="MeterBar"/>) salen de ahí (renders de Blender, <c>tools/juegos/disparate.py</c>, el mismo lienzo y la misma escala:
-    /// <see cref="AntennaTip"/>, <see cref="AntennaDish"/> y <see cref="AntennaFloor"/> valen igual). Sin el atlas, el arte procedural de abajo. La cinta de luz y la estática son luz y efecto: se quedan.</para>
+    /// <see cref="AntennaFloor"/> vale igual; <see cref="AntennaTip"/> y <see cref="AntennaDish"/> se movieron con la antena parabólica del 14-oct: el plato inclinado, el brazo del receptor y la luz aparte, para que no se lea como una copa). Sin el atlas, el arte procedural de abajo. La cinta de luz y la estática son luz y efecto: se quedan.</para>
     /// </summary>
     public static class DisparateSprites
     {
@@ -42,10 +42,13 @@ namespace NeuroVida.Games.Disparate
         /// <summary>Lo que sobresale la barra de plasticina del medidor alrededor de su cuerpo, en unidades del lienzo (0 sin plasticina).</summary>
         public static float MeterMargin => PlasticArt.Measure(PlasticGroup, "medidor_margen_u", 0f);
 
-        /// <summary>Dónde queda la luz de la punta de la antena, como fracción (0-1) del ancho y del alto del dibujo (desde abajo).</summary>
-        public static Vector2 AntennaTip => new Vector2(0.5f, (1.02f / AntennaZoom + 1f) * 0.5f);
-        /// <summary>Dónde queda el plato (de donde salen las ondas).</summary>
-        public static Vector2 AntennaDish => new Vector2(0.5f, (0.78f / AntennaZoom + 1f) * 0.5f);
+        /// <summary>
+        /// Dónde queda la luz de la punta de la antena, como fracción (0-1) del ancho y del alto del dibujo (desde abajo). La antena de plasticina es una parabólica con el plato inclinado a la derecha (14-oct): la luz queda al final del brazo, a la derecha del centro
+        /// (medido sobre el render por <c>tools/juegos/mide_disparate.py</c>); el dibujo de siempre (sin atlas) la tiene arriba al centro.
+        /// </summary>
+        public static Vector2 AntennaTip => Plastic ? new Vector2(0.678f, 0.902f) : new Vector2(0.5f, (1.02f / AntennaZoom + 1f) * 0.5f);
+        /// <summary>Dónde queda el plato (de donde salen las ondas): el centro de su boca en la antena de plasticina; el centro del cuenco en el dibujo de siempre.</summary>
+        public static Vector2 AntennaDish => Plastic ? new Vector2(0.603f, 0.648f) : new Vector2(0.5f, (0.78f / AntennaZoom + 1f) * 0.5f);
         /// <summary>Fracción del alto del dibujo donde termina la plataforma (el "suelo" de la antena).</summary>
         public static float AntennaFloor => ((-0.99f) / AntennaZoom + 1f) * 0.5f;
 

@@ -20,7 +20,7 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `cohete.py` | El cohete de plasticina que comparten Piloto (la nave) y Freno (los de cada carril, con el acento coral, cielo o lima). Solo se importa desde scripts de Blender. |
 | `freno.py` | Freno de Emergencia: el botón de lanzamiento (apagado y encendido), los 3 cohetes, la plataforma y la señal de ALTO, cada uno en el mismo lienzo que el sprite procedural al que reemplaza. |
 | `calculo.py` | Carga exacta: el aro del reactor (dona de azul noche) y su núcleo (domo de plasticina gris claro que el código tiñe). 1 unidad de Blender = 84 dp (la escena del estudio no admite objetos de cientos de unidades: la cámara los cortaba). |
-| `disparate.py` | ¿Verdad o disparate?: la antena (lienzo ±1,2: de ahí salen los puntos `AntennaTip`/`AntennaDish`/`AntennaFloor`), los íconos ✓ y onda rota (churros de tinta) y las barras del medidor (UNA por estado, nine-slice vertical). |
+| `disparate.py` | ¿Verdad o disparate?: la antena parabólica (lienzo ±1,2: de ahí salen los puntos `AntennaTip`/`AntennaDish`/`AntennaFloor`; el plato es una malla de revolución inclinada), los íconos ✓ y onda cortada en dos tramos (churros de tinta) y las barras del medidor (UNA por estado, nine-slice vertical). |
 | `satelites.py` | Satélites: el satélite (uno solo), el planeta (una esfera: su silueta es un círculo desde cualquier ángulo, así que NO va dentro de la raíz estirada), el sobre y la nube de polvo (cinco domos achatados). |
 | `rastro.py` | Rastro de luz: los 9 luceros (esferas idénticas, del color de `RastroBoard.Colors`, sin sombra de contacto: flotan). |
 | `stroop.py` | Tinta o Palabra: las 15 losas con el color EXACTO de las 4 tintas, la tarjeta, la cinta y las orillas (con el color de Blender corregido por lo que la luz le hace al tono) y los íconos de la gota y el libro. |
@@ -30,7 +30,7 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `mide_radar.py` | Las cápsulas contra lo que reemplazan (huella) y contra el vidrio del radar (contraste WCAG), y qué tanto se parecen de a pares (escala de grises). |
 | `mide_piloto.py` | Las 15 señales y la nave: huella, contraste contra el cielo, tinta contra el cuerpo, qué tanto se distinguen las «parecidas» y lo que miden los detalles a los tamaños reales. |
 | `mide_calculo.py` | El reactor de Carga exacta: tamaño y centro, el núcleo claro y el número que rinde sobre sus dos tintes, contraste de las losas de las celdas. |
-| `mide_disparate.py` | La antena (huella y dónde cae la luz de la punta), los íconos contra los botones lima y coral y las barras del medidor. |
+| `mide_disparate.py` | La antena (inclinación del plato, dónde cae la luz de la punta y el centro del plato, tono contra tono), los íconos contra los botones lima y coral (la onda cortada a 24, 28 y 32 dp) y las barras del medidor. |
 | `mide_satelites.py` | Satélites: huella, el satélite sin nada vertical, el planeta oscuro (y cuánto resaltan las luces doradas) y la nube opaca. |
 | `mide_rastro.py` | Los 9 luceros: huella, fidelidad del color de diseño (ΔE CIELAB), que los pares cercanos se sigan distinguiendo y contraste contra el cielo. |
 | `mide_stroop.py` | Tinta o Palabra: fidelidad del color de cada tinta (ΔE), separación con daltonismo (CIEDE2000), el nombre sobre cada botón y las 4 tintas sobre el fondo de la tarjeta. |

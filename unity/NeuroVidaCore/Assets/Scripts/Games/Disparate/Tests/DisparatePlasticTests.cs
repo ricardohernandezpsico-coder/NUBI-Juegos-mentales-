@@ -6,7 +6,7 @@ using NeuroVida.Games.Shared;
 namespace NeuroVida.Games.Disparate.Tests
 {
     /// <summary>
-    /// ¿Verdad o disparate? en plasticina (Tarea 97): el arte de Blender cumple lo que prometió. La antena conserva su huella y los puntos donde el código pone la luz y las ondas (punta, plato, suelo), los íconos se leen contra los botones lima y coral, las barras del medidor
+    /// ¿Verdad o disparate? en plasticina (Tarea 97; la antena parabólica y la onda cortada, corrección del 14-oct): el arte de Blender cumple lo que prometió. La antena conserva su huella y los puntos donde el código pone la luz y las ondas (punta, plato, suelo), los íconos se leen contra los botones lima y coral, las barras del medidor
     /// se estiran sin deformar los extremos y se distinguen por luminosidad, las losas de la placa, los botones y el panel del final existen, y sin el atlas todo sigue funcionando con el arte de siempre. Las medidas con números (para el informe) las saca <c>tools/juegos/mide_disparate.py</c>.
     /// </summary>
     public sealed class DisparatePlasticTests
@@ -113,6 +113,103 @@ namespace NeuroVida.Games.Disparate.Tests
                 var px = Pixels(atlas, "antena", out int w, out int h);
                 var cream = MeanOpaque(px, w, h, 0.6f, 1f);
                 Assert.GreaterOrEqual(Contrast(Luminance(cream), Luminance(Sky)), 8f, "el mástil y el plato crema contra el cielo");
+            }
+            finally { Object.DestroyImmediate(atlas); }
+        }
+
+        [Test]
+        public void TheAntenna_ReadsAsATiltedDish_WithItsArmAndItsLightApart()
+        {
+            // corrección del 14-oct: con el plato de frente y el pie se leía como una copa. Ahora el plato mira de lado (su interior celeste a la vista), el brazo del receptor es lila y la luz queda al final, aparte.
+            var atlas = ReadAtlas();
+            try
+            {
+                var px = Pixels(atlas, "antena", out int w, out int h);
+                bool IsSun(Color32 p) => p.a >= 250 && p.r > 220 && p.g > 150 && p.b < 130;
+                bool IsCream(Color32 p) => p.a >= 250 && p.r > 235 && p.g > 225 && p.b > 200 && p.b < 246;          // (sin el brillo blanco de la luz, que está pegado a ella)
+                bool IsInterior(Color32 p) => p.a >= 250 && p.b > 200 && p.r < 140 && p.g > 150;
+                bool IsLilac(Color32 p) => p.a >= 250 && Mathf.Abs(p.r - 142) < 40 && Mathf.Abs(p.g - 124) < 40 && p.b > 190;
+                // 1) el interior del plato (celeste) está en su sitio: el centro del plato que usa el código cae dentro de él
+                int dx = Mathf.RoundToInt(DisparateSprites.AntennaDish.x * w), dy = Mathf.RoundToInt(DisparateSprites.AntennaDish.y * h);
+                int interior = 0, interiorLeft = 0, interiorRight = 0;
+                double iy = 0;
+                for (int y = 0; y < h; y++)
+                    for (int x = 0; x < w; x++)
+                        if (IsInterior(px[y * w + x])) { interior++; iy += y; if (x < dx) interiorLeft++; else interiorRight++; }
+                Assert.Greater(interior, 0.03f * w * h, "el interior del plato (celeste) tiene que verse: es lo que lo separa de una copa");
+                Assert.AreEqual(dy, iy / interior, 20.0, "el centro del plato (AntennaDish) cae en su interior");
+                // 2) el brazo es lila y la luz queda lejos de lo crema: no se funden (tono contra tono)
+                int lilacAbove = 0, sunPx = 0, sunXi = 0, sunYi = 0;
+                for (int y = h * 3 / 4; y < h; y++) for (int x = 0; x < w; x++) if (IsLilac(px[y * w + x])) lilacAbove++;
+                for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) if (IsSun(px[y * w + x])) { sunPx++; sunXi += x; sunYi += y; }
+                Assert.Greater(lilacAbove, 150, "el brazo del receptor (lila) se ve arriba del plato");
+                Assert.Greater(sunPx, 400, "la luz de la punta (sol) tiene cuerpo");
+                float sunX = sunXi / (float)sunPx, sunY = sunYi / (float)sunPx;
+                // caminando de la luz por el eje del brazo (hacia abajo y a la izquierda, a ~28° de la vertical) hay un tramo largo de brazo y receptor: ni sol, ni crema, ni celeste
+                const float vx = -0.479f, vy = -0.878f;
+                int armSteps = 0;
+                for (float t = 22f; t < 170f; t += 1f)
+                {
+                    var q = px[Mathf.RoundToInt(sunY + vy * t) * w + Mathf.RoundToInt(sunX + vx * t)];
+                    if (IsCream(q) || IsInterior(q)) break;
+                    if (q.a >= 250 && !IsSun(q)) armSteps++;
+                }
+                Assert.GreaterOrEqual(armSteps, 60, "por el eje del brazo hay solo " + armSteps + " px de brazo y receptor entre la luz y el plato: la luz tiene que quedar separada de él");
+                // 3) el mástil (lila) se separa del plato crema por tono: ~3:1 de luminosidad (un cuerpo, no un hueco)
+                var mast = px[Mathf.RoundToInt(0.40f * h) * w + Mathf.RoundToInt(0.5f * w)];
+                Assert.IsTrue(IsLilac(mast), "en el mástil hay lila (" + mast + ")");
+                var cream = MeanOpaque(px, w, h, 0.7f, 1f);
+                Assert.GreaterOrEqual(Contrast(Luminance(cream), Luminance(mast)), 2.5f, "el mástil lila se separa del plato crema");
+                Assert.GreaterOrEqual(Contrast(Luminance(mast), Luminance(Sky)), 3f, "el mástil lila se ve contra el cielo");
+            }
+            finally { Object.DestroyImmediate(atlas); }
+        }
+
+        [Test]
+        public void TheBrokenWave_StaysTwoSeparatePieces_WithAClearGap_AtSmallSizes()
+        {
+            // corrección del 14-oct: el ícono de DISPARATE se leía como dos manchas. Ahora es una onda cortada en dos tramos con un hueco claro, y a 24, 28 y 32 dp se siguen viendo DOS trazos separados.
+            var atlas = ReadAtlas();
+            try
+            {
+                var px = Pixels(atlas, "icono_ola", out int w, out int h);
+                foreach (int dp in new[] { 24, 28, 32 })
+                {
+                    var mask = new bool[dp * dp];
+                    int k = w / dp;
+                    for (int y = 0; y < dp; y++)
+                        for (int x = 0; x < dp; x++)
+                        {
+                            float cover = 0f;
+                            for (int yy = 0; yy < k; yy++) for (int xx = 0; xx < k; xx++) cover += px[(y * k + yy) * w + x * k + xx].a >= 128 ? 1f : 0f;
+                            mask[y * dp + x] = cover / (k * k) > 0.5f;
+                        }
+                    // componentes de 4 vecinos
+                    var seen = new bool[dp * dp]; int pieces = 0;
+                    for (int s0 = 0; s0 < dp * dp; s0++)
+                    {
+                        if (!mask[s0] || seen[s0]) continue;
+                        pieces++;
+                        var stack = new System.Collections.Generic.Stack<int>(); stack.Push(s0); seen[s0] = true;
+                        while (stack.Count > 0)
+                        {
+                            int c = stack.Pop(), cx = c % dp, cy = c / dp;
+                            foreach (var (nx, ny) in new[] { (cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1) })
+                            {
+                                if (nx < 0 || ny < 0 || nx >= dp || ny >= dp) continue;
+                                int n = ny * dp + nx;
+                                if (mask[n] && !seen[n]) { seen[n] = true; stack.Push(n); }
+                            }
+                        }
+                    }
+                    Assert.AreEqual(2, pieces, "a " + dp + " dp la onda tiene que verse en DOS tramos");
+                    // el hueco: las columnas vacías entre el tramo izquierdo y el derecho
+                    int first = dp, last = 0; var colHas = new bool[dp];
+                    for (int x = 0; x < dp; x++) for (int y = 0; y < dp; y++) if (mask[y * dp + x]) { colHas[x] = true; first = Mathf.Min(first, x); last = Mathf.Max(last, x); }
+                    int run = 0, gap = 0;
+                    for (int x = first; x <= last; x++) { if (!colHas[x]) { run++; gap = Mathf.Max(gap, run); } else run = 0; }
+                    Assert.GreaterOrEqual(gap, 2, "a " + dp + " dp el hueco entre los dos tramos mide " + gap + " px: hace falta uno claro");
+                }
             }
             finally { Object.DestroyImmediate(atlas); }
         }

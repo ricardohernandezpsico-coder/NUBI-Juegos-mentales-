@@ -127,9 +127,9 @@
   }
  ],
  "peso": {
-  "png_bytes": 127589,
+  "png_bytes": 129035,
   "crudo_rgba32": 1175552,
-  "deflate_rgba32": 170570,
+  "deflate_rgba32": 184021,
   "astc6x6": 132096
  }
 }
