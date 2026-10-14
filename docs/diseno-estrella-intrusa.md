@@ -201,3 +201,18 @@ repasar» y no suma lámina). Cada ronda la figura se refleja y gira ±12° y la
   `Resources/Fonts/Fraunces-Italic.ttf`); ya está en Ajustes → Licencias (archivo y licencia en `Resources/Fonts/`, del repositorio oficial undercasetype/Fraunces).
 - Pendiente: que Ricardo lo pruebe en el teléfono (ritmo de cada ronda, que se reconozcan las figuras; dudosas en la hoja: El Calcetín, La Nariz,
   El Baúl).
+
+
+## 10. Plasticina (Tarea 101, 14-oct): las losas del kit
+
+Ricardo: todos los juegos en plasticina. Es SOLO arte: la escalera, el DDA, las láminas del atlas, las 77 figuras, los tiempos y las medidas no cambian. Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina punta e intrusa`; sin `art_version`: si hace falta separar series, se hace por fecha).
+
+Este juego no trae renders propios: lo que se ve de «objeto» sale de las **losas del kit** (`comun`) y lo demás es luz o figura.
+
+| De plasticina (losas del kit) | Se queda procedural |
+|---|---|
+| las **5 placas de las palabras** (losa chica crema; el aire entre placas no cambia: el cuerpo de la losa es exactamente el rectángulo de la placa y la sombra cae afuera) | las **estrellas-palabra** (núcleo, halo, destello redondo y aro): son luz sobre el cielo |
+| las **3 opciones** de «¿Qué las une?» (crema; al elegir, lima si acierta y coral si falla; la correcta no elegida se tiñe lima, sin marca: igual que antes) y el botón **«Seguir»** (crema) | el grabado de la figura, las 77 figuras (puntos y aristas por ronda), el cometa, la línea punteada de la trampa y los destellos |
+| el **panel del final** (losa «noche») | la barra de tiempo de las opciones, las marcas ✓ / ✗ (ya de plasticina desde la fase 0) |
+
+Con plasticina la opción ya no se tiñe con `Image.color`: cambia de losa (`SetOptionTone`). Pruebas: `IntrusaPlasticTests` (las tres losas existen y la interfaz se arma con y sin el atlas).

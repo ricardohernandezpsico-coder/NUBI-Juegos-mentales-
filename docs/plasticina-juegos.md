@@ -38,10 +38,10 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 | 11 | Engranajes | `engranajes` | 33 | inventario | 14-oct | — |
 | 12 | Acoplamiento | `acoplamiento` | 13 + módulos | inventario | 14-oct | — |
 | 13 | Aterrizaje Lunar | `aterrizaje` | 14 | inventario | 14-oct | — |
-| 14 | En la punta de la lengua | `anagramas` | 0 propios (fichas, casillas, lucero) | inventario | 14-oct | — |
+| 14 | En la punta de la lengua | `anagramas` | 3 (ficha, casilla, perla); la tarjeta, los botones y el panel, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-anagramas.png) → [después](previews/plasticina/despues-anagramas.png) |
 | 15 | Lluvia de meteoros | `meteoros` | 24 | inventario | 14-oct | — |
 | 16 | ¿Verdad o disparate? | `disparate` | 5 (antena, 2 íconos, 2 barras del medidor); el resto, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-disparate.png) → [después](previews/plasticina/despues-disparate.png) |
-| 17 | La estrella intrusa | `intrusa` | 2 (las 77 figuras se quedan procedurales) | inventario | 14-oct | — |
+| 17 | La estrella intrusa | `intrusa` | 0 propios: placas, opciones, «Seguir» y panel, losas del kit (las 77 figuras se quedan procedurales) | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-intrusa.png) → [después](previews/plasticina/despues-intrusa.png) |
 
 (El orden de los números 2 a 17 es el **propuesto** más abajo; Opus decide.)
 
@@ -295,6 +295,8 @@ Riesgos: **la precisión de la regla**: acierto con error ≤ 5 % del largo (≈
 
 Es el único de los cuatro de Memoria/Atención/Razonamiento/Lenguaje sin arcilla real: todo son 4 sprites genéricos horneados. Riesgos: la letra oscura (25 dp) va sobre una cara casi blanca y lisa; con 14 fichas en 3 filas el grosor del aro no baja; texto tinta sobre cobre y azul ≥ 4,5:1; **los estados son solo color** (ficha fija vs normal, y los 4 luceros oro/plata/cobre/azul se distinguen solo por color, que ES el dato: darles marca de forma); núcleo del lucero de 42 u y puntos de 33 u: siluetas simples (la textura no se ve); la tarjeta es 9-slice con texto blanco sobre oscuro; los arcos de la antena no deben leerse como media luna.
 
+**Ficha de arte (Tarea 101, hecha el 14-oct):** la ficha-letra (disco gris claro con cúpula que el código tiñe: crema, fija y los cuatro metales), la casilla (cuenco oscuro con aro celeste) y la perla del lucero del cielo (esfera gris clara teñida por el código) son renders propios; la tarjeta de la definición, los botones y el panel del final, losas del kit. Se quedan procedurales los resplandores, el lucero que vuela, las ondas de la antena y la escalera de ayudas. Medidas y detalle: [`diseno-punta-de-la-lengua.md`](diseno-punta-de-la-lengua.md) §9.
+
 ### 15. Lluvia de meteoros (`meteoros`, `Games/Meteoros/`)
 
 | Objeto | Clase | Estados | Tamaño | Común |
@@ -333,6 +335,8 @@ Riesgos: ancho y alto variables → 9-slice; la inclinación y el temblor giran 
 
 Riesgos: **77 figuras no se modelan**: el grabado se queda procedural (la plasticina, como mucho, para la lámina del atlas); el espejado del 50 % de las rondas invertiría la luz horneada; el núcleo de 21 u es un punto luminoso con halo (la textura no se ve) y debe resaltar sobre las ~230 estrellas del fondo; las placas no pueden crecer (3 dp de aire); la correcta no elegida solo se tiñe (agregar marca); nunca puntas ni cruz de luz. A revisar por silueta si algún día se modelan: Las Tijeras (aspa), El Martillo (T), La Llave, La Bicicleta, El Arcoíris (media luna), La Paloma, El Velero, El Planeta con Anillos.
 
+**Ficha de arte (Tarea 101, hecha el 14-oct):** sin renders propios: las placas de las palabras (losa chica crema), las 3 opciones de «¿Qué las une?» (crema; lima al acertar, coral al fallar; la correcta no elegida, lima y sin marca), «Seguir» y el panel del final salen de las losas del kit. Se quedan procedurales las estrellas-palabra (luz), el grabado, las 77 figuras y el cometa. Medidas y detalle: [`diseno-estrella-intrusa.md`](diseno-estrella-intrusa.md) §10.
+
 ## Peso al APK
 
 Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión de textura (la plasticina tiene degradés suaves); entre paréntesis, lo que pesaría con ASTC 6×6. Cómo se mide y se baja: [`tools/juegos/README.md`](../tools/juegos/README.md) § Peso. `PlasticArtTests` falla si un grupo pasa del tope.
@@ -349,5 +353,6 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 | `satelites` (Satélites: satélite, planeta, sobre, nube de polvo) | 4 | 1408×516 | 193 KB | **0,23 MB** | 0,31 MB |
 | `rastro` (Rastro de luz: los 9 luceros) | 9 | 1792×196 | 208 KB | **0,39 MB** | 0,15 MB |
 | `stroop` (Tinta o Palabra: 15 losas con el color de la tinta, la tarjeta y las orillas; gota y libro) | 17 | 1536×708 | 547 KB | **0,77 MB** | 0,46 MB |
+| `punta` (En la punta de la lengua: ficha, casilla, perla) | 3 | 512×196 | 45 KB | **0,06 MB** | 0,04 MB |
 
-Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites, Rastro de luz y Tinta o Palabra (radar + piloto + freno + calculo + disparate + satelites + rastro + stroop + comun + nubi) son unos 5,5 MB sin comprimir la textura y unos 3,9 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites, Rastro de luz, Tinta o Palabra, En la punta de la lengua y La estrella intrusa (radar + piloto + freno + calculo + disparate + satelites + rastro + stroop + punta + comun + nubi) son unos 5,6 MB sin comprimir la textura y unos 3,9 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).

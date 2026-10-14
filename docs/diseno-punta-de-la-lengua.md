@@ -130,3 +130,19 @@ sale, una escalera de ayudas aclara la señal hasta que aparece. Nunca te quedas
 - **Se borró:** `BubbleField` (las burbujas), los sprites del hueco y los iconos de botones, `AnagramContract` (banco viejo de ~95 palabras) y el mundo `SkyLetters` de `WorldBackdrop`
   (letras flotando); solo los usaba Anagramas. `docs/previews/anagramas-burbujas.png` y su script también.
 - **Piso para Desafío/Experto:** el juego ahora cuenta como «de rondas» (`Skill.LONG_ROUNDS`: 6 rondas), porque con 8 palabras nunca llegaba a las 12 que pide el resto.
+
+
+## 9. Plasticina (Tarea 101, 14-oct): fichas de plasticina y losas del kit
+
+Ricardo: todos los juegos en plasticina. Es SOLO arte: las palabras, las definiciones, las ayudas, el DDA, los tiempos y las medidas no cambian. Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina punta e intrusa`; sin `art_version`: si hace falta separar series, se hace por fecha).
+
+| De plasticina (atlas `Resources/Plasticina/punta`, `tools/juegos/punta.py`) | Se queda procedural |
+|---|---|
+| la **ficha-letra**: un disco de plasticina GRIS CLARO con cúpula que el código tiñe (crema, fija por ayuda, y los cuatro metales de las encendidas) como antes; trae su sombra de contacto, así que sobran la sombra dura, el aro de tinta y el brillo de siempre | los resplandores de las fichas encendidas, la estela del lucero que vuela y las ondas de la antena de la tarjeta (luz) |
+| la **casilla** (el hueco de cada letra): un cuenco oscuro con un aro celeste tenue; su aparición gradual sigue siendo el alfa de la imagen | las partículas, la nebulosa, el cielo y los puntos de la escalera de ayudas |
+| la **perla del lucero del cielo** (una esfera gris clara que el código tiñe de oro, plata, cobre o azul según lo bien que salió la palabra) | los textos (la letra de cada ficha sigue siendo `Text`) |
+| la **tarjeta de la definición**, los **botones** (el principal, cielo; el secundario, «noche») y el **panel del final**: losas del kit | |
+
+El cuerpo de cada pieza mide lo de siempre: la imagen se escala con 0,8 (ficha), 0,833 (casilla) y 0,94 (perla) del cuerpo dentro de su lado. Sin el atlas, todo cae al arte de siempre (`AuditVisibility` revisa los dos casos).
+
+**Lo que se midió** (`tools/juegos/mide_punta.py`): el cuerpo mide 0,79 del lado en la ficha, 0,83 en la casilla y 0,91 en la perla; la letra de tinta rinde 14,3 (normal), 12,1 (fija), 10,6 (oro), 11,8 (plata), 7,0 (cobre) y 6,8:1 (azul) sobre la ficha ya teñida; **los cuatro metales de los luceros se siguen distinguiendo** con la perla teñida (el color ES el dato): el par más cercano (oro y cobre) rinde ΔE 29,3 contra 33,2 de diseño, plata y azul 38,0 contra 42,0; las perlas contra el cielo, de 6,3 a 10,6:1. Pesa 0,06 MB. Pruebas: `PuntaPlasticTests`.

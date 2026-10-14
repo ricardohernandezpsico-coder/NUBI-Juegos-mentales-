@@ -126,7 +126,7 @@ namespace NeuroVida.Games.Intrusa
         private sealed class LineViz { public Image[] Img = new Image[3]; public Vector2 A, B; }
         private sealed class Particle { public Image Img; public Vector2 Pos, Vel; public float Age, Life; public bool Alive; }
         private sealed class RingFx { public Image Img; public Vector2 Pos; public float Age, Dur, Size; public bool Alive; }
-        private sealed class OptionButton { public RectTransform Rect; public Image Bg, Mark; public Text Label; public Vector2 CenterU, SizeU; }
+        private sealed class OptionButton { public RectTransform Rect; public Image Bg, Slab, Mark; public Text Label; public Vector2 CenterU, SizeU; }
 
         // ------------------------------------------------------------------ sesión
 
@@ -398,7 +398,7 @@ namespace NeuroVida.Games.Intrusa
             {
                 var o = _options[i];
                 o.Label.text = g.o[i];
-                o.Bg.color = PlateColor;
+                SetOptionTone(o, SlabTone.Cream, PlateColor);
                 o.Mark.gameObject.SetActive(false);
                 o.Rect.gameObject.SetActive(true);
                 o.Rect.localScale = Vector3.one * (Motion.Decorative ? 0.9f : 1f);
@@ -429,10 +429,10 @@ namespace NeuroVida.Games.Intrusa
                 result.Played = true;
                 result.Named = chosen == g.c;
                 var ob = _options[chosen];
-                ob.Bg.color = result.Named ? GoodColor : BadColor;
+                SetOptionTone(ob, result.Named ? SlabTone.Lime : SlabTone.Coral, result.Named ? GoodColor : BadColor);
                 ob.Mark.sprite = result.Named ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
                 ob.Mark.gameObject.SetActive(true);
-                if (!result.Named) { var ok = _options[g.c]; ok.Bg.color = GoodColor; PlayClip(IntrusaSounds.Dull(), 0.5f); }
+                if (!result.Named) { var ok = _options[g.c]; SetOptionTone(ok, SlabTone.Lime, GoodColor); PlayClip(IntrusaSounds.Dull(), 0.5f); }
                 else PlayClip(IntrusaSounds.Named(), 0.6f);
                 StartCoroutine(PopRect(ob.Rect, 1.08f, 0.2f));
                 float e = 0f;
@@ -440,6 +440,13 @@ namespace NeuroVida.Games.Intrusa
             }
             for (int i = 0; i < 3; i++) _options[i].Rect.gameObject.SetActive(false);
             _optionsBar.gameObject.SetActive(false);
+        }
+
+        /// <summary>El color de una opción: con plasticina cambia la losa del kit (crema, lima o coral); sin ella, el color del fondo de siempre.</summary>
+        private static void SetOptionTone(OptionButton o, SlabTone tone, Color fallback)
+        {
+            if (o.Slab != null) PlasticSlab.Set(o.Slab, SlabSize.Button, tone);
+            else o.Bg.color = fallback;
         }
 
         private int PickOption(Vector2 logical)
@@ -491,7 +498,7 @@ namespace NeuroVida.Games.Intrusa
             _explain.canvasRenderer.SetAlpha(0f);
             if (g.IsTrap && !string.IsNullOrEmpty(g.a)) ShowTrapLine(g);
             _seguir.gameObject.SetActive(true);
-            _seguirImg.color = PlateColor;
+            if (_seguirImg.sprite != null) _seguirImg.color = PlateColor;          // (con plasticina el fondo es la losa y no se tiñe)
             _press = null;
             float t = 0f;
             const float fade = 0.3f;
@@ -1568,11 +1575,14 @@ namespace NeuroVida.Games.Intrusa
                 s.PlateGroup = plate.AddComponent<CanvasGroup>();
                 s.PlateGroup.blocksRaycasts = false;
                 s.PlateBg = plate.AddComponent<Image>();
-                s.PlateBg.sprite = RoundedRectSprite.Get(28);
-                s.PlateBg.type = Image.Type.Sliced;
-                s.PlateBg.color = PlateColor;
-                s.PlateBg.raycastTarget = false;
-                NeuroStyle.ClayFrame(s.PlateBg, 3f, 5f);
+                if (PlasticSlab.TryStyle(s.PlateBg, SlabSize.Chip, SlabTone.Cream) == null)         // plasticina: la placa de la palabra es una losa chica crema del kit
+                {
+                    s.PlateBg.sprite = RoundedRectSprite.Get(28);
+                    s.PlateBg.type = Image.Type.Sliced;
+                    s.PlateBg.color = PlateColor;
+                    s.PlateBg.raycastTarget = false;
+                    NeuroStyle.ClayFrame(s.PlateBg, 3f, 5f);
+                }
                 s.Label = MakeText(s.Plate, "Word", 51, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
                 s.Label.font = UiFonts.Word;
                 s.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -1599,11 +1609,14 @@ namespace NeuroVida.Games.Intrusa
             _seguir.anchorMin = _seguir.anchorMax = new Vector2(0.5f, 0.5f);
             _seguir.pivot = new Vector2(0.5f, 0.5f);
             _seguirImg = go.AddComponent<Image>();
-            _seguirImg.sprite = RoundedRectSprite.Get(40);
-            _seguirImg.type = Image.Type.Sliced;
-            _seguirImg.color = PlateColor;
-            _seguirImg.raycastTarget = false;
-            NeuroStyle.ClayFrame(_seguirImg, 5f, 9f);
+            if (PlasticSlab.TryStyle(_seguirImg, SlabSize.Button, SlabTone.Cream) == null)          // plasticina: «Seguir» es una losa crema del kit
+            {
+                _seguirImg.sprite = RoundedRectSprite.Get(40);
+                _seguirImg.type = Image.Type.Sliced;
+                _seguirImg.color = PlateColor;
+                _seguirImg.raycastTarget = false;
+                NeuroStyle.ClayFrame(_seguirImg, 5f, 9f);
+            }
             _seguirLabel = MakeText(_seguir, "Label", 58, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             _seguirLabel.font = UiFonts.Word;
             _seguirLabel.text = "Seguir";
@@ -1656,11 +1669,15 @@ namespace NeuroVida.Games.Intrusa
                 r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
                 r.pivot = new Vector2(0.5f, 0.5f);
                 var img = go.AddComponent<Image>();
-                img.sprite = RoundedRectSprite.Get(40);
-                img.type = Image.Type.Sliced;
-                img.color = PlateColor;
-                img.raycastTarget = false;
-                NeuroStyle.ClayFrame(img, 5f, 9f);
+                var slab = PlasticSlab.TryStyle(img, SlabSize.Button, SlabTone.Cream);              // plasticina: crema; al elegir, lima (acierto) o coral (error)
+                if (slab == null)
+                {
+                    img.sprite = RoundedRectSprite.Get(40);
+                    img.type = Image.Type.Sliced;
+                    img.color = PlateColor;
+                    img.raycastTarget = false;
+                    NeuroStyle.ClayFrame(img, 5f, 9f);
+                }
                 var label = MakeText(r, "Label", 51, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
                 label.font = UiFonts.Word;
                 BestFit(label, 42);
@@ -1669,7 +1686,7 @@ namespace NeuroVida.Games.Intrusa
                 mark.rectTransform.anchoredPosition = new Vector2(-54f, 0f);
                 mark.rectTransform.sizeDelta = new Vector2(72f, 72f);
                 go.SetActive(false);
-                _options.Add(new OptionButton { Rect = r, Bg = img, Mark = mark, Label = label });
+                _options.Add(new OptionButton { Rect = r, Bg = img, Slab = slab, Mark = mark, Label = label });
             }
         }
 
@@ -1682,9 +1699,12 @@ namespace NeuroVida.Games.Intrusa
             _resultRoot.pivot = new Vector2(0.5f, 0.5f);
             _resultRoot.sizeDelta = new Vector2(880f, 760f);
             var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)                  // plasticina: losa «noche»
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            }
 
             AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
             AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);

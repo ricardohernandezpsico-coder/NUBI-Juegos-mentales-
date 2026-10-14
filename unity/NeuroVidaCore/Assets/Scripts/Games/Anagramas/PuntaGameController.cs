@@ -60,6 +60,14 @@ namespace NeuroVida.Games.Anagramas
             }
         }
 
+        // Plasticina (Tarea 101, tools/juegos/punta.py): la ficha-letra (gris claro, la tiñe el código), la casilla y la perla del lucero del cielo; la tarjeta, los botones y el panel del final son losas del kit (comun)
+        private const string PlasticGroup = "punta";
+        private static bool PlasticTiles => PlasticArt.Has(PlasticGroup, "ficha") && PlasticArt.Has(PlasticGroup, "casilla") && PlasticArt.Has(PlasticGroup, "perla");
+        private const float TileImageK = 1f / 0.8f;                  // el cuerpo de la ficha mide 0,8 del lado de su imagen
+        private const float SlotImageK = 1f / 0.833f;                // el de la casilla, 0,833
+        private const float PearlImageK = 1f / 0.94f;                // el de la perla, 0,94
+        private Image _cardSlab;
+
         private enum Phase { Idle, Think, Build, Solved, Done }
 
         private enum IntentKind { None, Have, Help, Clear, Tile, Next }
@@ -111,6 +119,7 @@ namespace NeuroVida.Games.Anagramas
         {
             public RectTransform Root;
             public Image Bg;
+            public Image Slab;          // la losa de plasticina (null sin el atlas)
             public Text Label;
             public Rect Rect;           // lógico (dp)
             public bool Visible, Primary;
@@ -1157,9 +1166,9 @@ namespace NeuroVida.Games.Anagramas
                 rb.sizeDelta = Vector2.one * ((d + 3f) * _s);
                 var rf = _slotFills[k].rectTransform;
                 rf.anchoredPosition = rb.anchoredPosition;
-                rf.sizeDelta = Vector2.one * (d * _s);
+                rf.sizeDelta = Vector2.one * (d * _s) * (PlasticTiles ? SlotImageK : 1f);
                 _slotBorders[k].color = NeuroStyle.WithAlpha(Cyan, 0.35f * a);
-                _slotFills[k].color = NeuroStyle.WithAlpha(SlotFill, a);
+                _slotFills[k].color = PlasticTiles ? new Color(1f, 1f, 1f, a) : NeuroStyle.WithAlpha(SlotFill, a);
             }
         }
 
@@ -1233,9 +1242,10 @@ namespace NeuroVida.Games.Anagramas
             t.Shadow.color = new Color(0f, 0f, 0f, 0.45f);
             t.Shadow.rectTransform.sizeDelta = new Vector2(d * 1.02f * _s, d * 1.02f * _s);
             t.Shadow.rectTransform.anchoredPosition = new Vector2(0f, -3f * _s);
-            t.Face = MakeImage(t.Root, "Face", DiscSprite.Get());
+            bool plastic = PlasticTiles;
+            t.Face = MakeImage(t.Root, "Face", plastic ? PlasticArt.Get(PlasticGroup, "ficha") : DiscSprite.Get());
             t.Face.gameObject.SetActive(true);
-            t.Face.rectTransform.sizeDelta = new Vector2(d * _s, d * _s);
+            t.Face.rectTransform.sizeDelta = new Vector2(d * _s, d * _s) * (plastic ? TileImageK : 1f);
             t.Shine = MakeImage(t.Root, "Shine", RadialGlowSprite.Get());
             t.Shine.gameObject.SetActive(true);
             t.Shine.color = new Color(1f, 1f, 1f, 0.7f);
@@ -1245,6 +1255,13 @@ namespace NeuroVida.Games.Anagramas
             t.Rim.gameObject.SetActive(true);
             t.Rim.color = NeuroStyle.Ink;
             t.Rim.rectTransform.sizeDelta = new Vector2(d * 1.02f * _s, d * 1.02f * _s);
+            if (plastic)
+            {
+                // plasticina: la ficha trae su sombra de contacto, su borde de cúpula y su brillo; sobran la sombra dura, el aro de tinta y el brillo de siempre
+                t.Shadow.gameObject.SetActive(false);
+                t.Shine.gameObject.SetActive(false);
+                t.Rim.gameObject.SetActive(false);
+            }
             t.Label = MakeText(t.Root, "Char", Mathf.RoundToInt(d * 0.55f * _s), TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             t.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.Label.verticalOverflow = VerticalWrapMode.Overflow;
@@ -1378,7 +1395,8 @@ namespace NeuroVida.Games.Anagramas
             b.Root.anchoredPosition = P(rect.center);
             b.Label.text = label;
             b.Label.color = primary ? NeuroStyle.Ink : ButtonText;
-            b.Bg.color = primary ? Cyan : ButtonSecondary;
+            if (b.Slab != null) PlasticSlab.Set(b.Slab, SlabSize.Button, primary ? SlabTone.Sky : SlabTone.Night);
+            else b.Bg.color = primary ? Cyan : ButtonSecondary;
             b.Label.rectTransform.offsetMin = new Vector2(10f, 4f);
             b.Label.rectTransform.offsetMax = new Vector2(-10f, -4f);
         }
@@ -1598,8 +1616,8 @@ namespace NeuroVida.Games.Anagramas
                 l.Ring.gameObject.SetActive(true);
                 l.Glow = MakeImage(l.Root, "Glow", RadialGlowSprite.Get());
                 l.Glow.rectTransform.sizeDelta = new Vector2(42f * UnitsPerDp, 42f * UnitsPerDp);
-                l.Core = MakeImage(l.Root, "Core", DiscSprite.Get());
-                l.Core.rectTransform.sizeDelta = new Vector2(14f * UnitsPerDp, 14f * UnitsPerDp);
+                l.Core = MakeImage(l.Root, "Core", PlasticTiles ? PlasticArt.Get(PlasticGroup, "perla") : DiscSprite.Get());
+                l.Core.rectTransform.sizeDelta = new Vector2(14f * UnitsPerDp, 14f * UnitsPerDp) * (PlasticTiles ? PearlImageK : 1f);
                 l.Shine = MakeImage(l.Root, "Shine", RadialGlowSprite.Get());
                 l.Shine.rectTransform.sizeDelta = new Vector2(7f * UnitsPerDp, 7f * UnitsPerDp);
                 l.Shine.rectTransform.anchoredPosition = new Vector2(-2.1f * UnitsPerDp, 2.4f * UnitsPerDp);
@@ -1621,6 +1639,8 @@ namespace NeuroVida.Games.Anagramas
             _cardShadow = RoundedPanel(_card, "Shadow", new Color(0f, 0f, 0f, 0.4f), 26);
             _cardBorder = RoundedPanel(_card, "Border", NeuroStyle.WithAlpha(Cyan, 0.35f), 26);
             _cardFill = RoundedPanel(_card, "Fill", CardFill, 24);
+            _cardSlab = PlasticSlab.TryStyle(_cardFill.GetComponent<Image>(), SlabSize.Panel, SlabTone.Night);       // plasticina: la tarjeta es una losa «noche» (sin la sombra ni el borde celeste de siempre)
+            if (_cardSlab != null) { _cardShadow.GetComponent<Image>().enabled = false; _cardBorder.GetComponent<Image>().enabled = false; }
 
             _antennaDot = MakeImage(_card, "Dot", DiscSprite.Get());
             _antennaDot.color = Cyan;
@@ -1659,7 +1679,8 @@ namespace NeuroVida.Games.Anagramas
             for (int k = 0; k < 10; k++)
             {
                 var border = MakeImage(_slotLayer, "SlotBorder" + k, DiscSprite.Get());
-                var fill = MakeImage(_slotLayer, "SlotFill" + k, DiscSprite.Get());
+                var fill = MakeImage(_slotLayer, "SlotFill" + k, PlasticTiles ? PlasticArt.Get(PlasticGroup, "casilla") : DiscSprite.Get());
+                if (PlasticTiles) border.enabled = false;                   // plasticina: la casilla trae su aro celeste
                 _slotBorders.Add(border);
                 _slotFills.Add(fill);
             }
@@ -1724,10 +1745,14 @@ namespace NeuroVida.Games.Anagramas
                 b.Group = go.AddComponent<CanvasGroup>();
                 b.Group.blocksRaycasts = false;
                 b.Bg = go.AddComponent<Image>();
-                b.Bg.sprite = RoundedRectSprite.Get(48);
-                b.Bg.type = Image.Type.Sliced;
-                b.Bg.raycastTarget = false;
-                NeuroStyle.ClayFrame(b.Bg, 4f, 8f);
+                b.Slab = PlasticSlab.TryStyle(b.Bg, SlabSize.Button, SlabTone.Sky);                 // plasticina: losa del kit (principal: cielo; secundaria: «noche»)
+                if (b.Slab == null)
+                {
+                    b.Bg.sprite = RoundedRectSprite.Get(48);
+                    b.Bg.type = Image.Type.Sliced;
+                    b.Bg.raycastTarget = false;
+                    NeuroStyle.ClayFrame(b.Bg, 4f, 8f);
+                }
                 b.Label = MakeText(b.Root, "Label", Mathf.RoundToInt(19f * UnitsPerDp), TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
                 BestFit(b.Label, Mathf.RoundToInt(15f * UnitsPerDp));
                 go.SetActive(false);
@@ -1745,9 +1770,12 @@ namespace NeuroVida.Games.Anagramas
             _resultRoot.pivot = new Vector2(0.5f, 0.5f);
             _resultRoot.sizeDelta = new Vector2(880f, 760f);
             var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)                  // plasticina: losa «noche»
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            }
 
             AddResultText("Title", 76, new Vector2(0f, 250f), Color.white);
             AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
@@ -1816,19 +1844,22 @@ namespace NeuroVida.Games.Anagramas
             var tile = MakeTile('A');
             tile.Root.gameObject.SetActive(true);
             Check("ficha.Face", tile.Face);
-            Check("ficha.Rim", tile.Rim);
-            Check("ficha.Shadow", tile.Shadow);
-            Check("ficha.Shine", tile.Shine);
+            if (!PlasticTiles)                                                  // (con plasticina la ficha trae su sombra, su borde y su brillo: esas piezas se apagan a propósito)
+            {
+                Check("ficha.Rim", tile.Rim);
+                Check("ficha.Shadow", tile.Shadow);
+                Check("ficha.Shine", tile.Shine);
+            }
             Check("ficha.Label", tile.Label);
             MakeGhost();
             _ghost.Root.gameObject.SetActive(true);
             Check("fija.Face", _ghost.Face);
-            Check("fija.Rim", _ghost.Rim);
+            if (!PlasticTiles) Check("fija.Rim", _ghost.Rim);
             SetButtonsFor(Phase.Think, false);
             foreach (var b in _buttons)
             {
                 if (!b.Root.gameObject.activeInHierarchy) problems.Add("botón " + b.Kind + ": apagado");
-                Check("botón " + b.Kind + ".fondo", b.Bg);
+                Check("botón " + b.Kind + ".fondo", b.Slab != null ? b.Slab : b.Bg);
                 Check("botón " + b.Kind + ".texto", b.Label);
             }
             FillLucero(0, PuntaTier.Solo);
@@ -1840,8 +1871,8 @@ namespace NeuroVida.Games.Anagramas
             Check("escalera.rótulo", _ladderLabel);
             _card.gameObject.SetActive(true);
             foreach (var w in _waves) { w.gameObject.SetActive(true); Check("onda", w, false); }
-            Check("tarjeta.fondo", _cardFill.GetComponent<Image>());
-            Check("tarjeta.borde", _cardBorder.GetComponent<Image>());
+            Check("tarjeta.fondo", _cardSlab != null ? _cardSlab : _cardFill.GetComponent<Image>());          // con plasticina la tarjeta es la losa (el fondo de siempre queda invisible a propósito)
+            if (_cardSlab == null) Check("tarjeta.borde", _cardBorder.GetComponent<Image>());
             Check("tarjeta.texto", _defText);
             foreach (var f in _flyers) { f.Root.gameObject.SetActive(true); Check("volador.Core", f.Core); Check("volador.Glow", f.Glow); f.Root.gameObject.SetActive(false); }
             return problems;   // nada se destruye aquí (en modo edición no se puede): quien llama destruye el objeto entero
