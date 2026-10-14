@@ -447,7 +447,7 @@ def screen_moments():
     items = orbit(img, cx, cy, rx, ry, LETRAS, phase=-1.12)
     draw_tiles(img, items, [], 3, back=True)
     draw_tiles(img, items, [], 3, back=False)
-    nubi = Image.open(os.path.join(NUBI, "nubi_mira.webp")).convert("RGBA").resize((130 * S, 130 * S), Image.LANCZOS)
+    nubi = Image.open(os.path.join(NUBI, "nubi_3d.webp")).convert("RGBA").resize((130 * S, 130 * S), Image.LANCZOS)
     img.alpha_composite(nubi, (int((40 - 65) * S), int((770 - 65) * S)))
     M.clay_rr(img, (96, 824, 392, 868), 22, PLACA, INK, 3.5, 4)
     d = ImageDraw.Draw(img)

@@ -29,7 +29,7 @@ DISCO = {'margen': (6, 4, 10, 12), 'cuerpo': (48, 48)}
 DISCOS = ('kit_cerrar', 'kit_disco_crema', 'kit_disco_cielo')
 ICONOS = ('volver', 'visto', 'izq', 'der', 'compartir', 'candado', 'engranaje',
           'globo', 'altavoz', 'vibracion', 'reloj', 'sin_reloj', 'escudo', 'info', 'campana', 'persona', 'arriba', 'abajo')      # los últimos once son de la Tarea 91 (reemplazan los de Material de los paneles)
-AVATARES = ('cohete', 'farol', 'isla', 'engranaje', 'planeta', 'lucero', 'gota')                                        # Tarea 91: objetos de plasticina de 48 dp para los avatares de Opciones (Nubi sale de isla_nubi_hola.webp)
+AVATARES = ('cohete', 'farol', 'isla', 'engranaje', 'planeta', 'lucero', 'gota')                                        # Tarea 91: objetos de plasticina de 48 dp para los avatares de Opciones (Nubi sale de nubi_3d.webp)
 ICONO = {'margen': (4, 3, 6, 7), 'cuerpo': (24, 24)}        # el lienzo de cada ícono (dp); el cuerpo real se mide en la imagen
 JUGAR = {'margen': (4, 3, 6, 7), 'cuerpo': (20, 22)}
 

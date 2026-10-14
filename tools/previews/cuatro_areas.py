@@ -203,7 +203,7 @@ def nubi(img, cx, cy, size):
     for rr in (size * 0.5, size * 0.56):
         ov(img, lambda dd, rr=rr: dd.ellipse([(cx - rr) * S, (cy - rr) * S, (cx + rr) * S, (cy + rr) * S],
                                              outline=(190, 180, 255, 60), width=S))
-    n = Image.open(os.path.join(RES, "drawable-nodpi", "nubi_hola.webp")).convert("RGBA")
+    n = Image.open(os.path.join(RES, "drawable-nodpi", "nubi_3d.webp")).convert("RGBA")
     ns = int(size * S)
     n = n.resize((ns, int(n.height * ns / n.width)), Image.LANCZOS)
     img.alpha_composite(n, (int(cx * S - n.width / 2), int(cy * S - n.height / 2)))
@@ -414,7 +414,7 @@ def screen_juegos_1():
 def screen_juegos_2():
     img = sky()
     top_buttons(img)
-    n = Image.open(os.path.join(RES, "drawable-nodpi", "nubi_cientifica.webp")).convert("RGBA")
+    n = Image.open(os.path.join(RES, "drawable-nodpi", "nubi_3d.webp")).convert("RGBA")
     ns = 96 * S
     n = n.resize((ns, int(n.height * ns / n.width)), Image.LANCZOS)
     img = radial(img, (66 * S, 130 * S), 70 * S, LAVENDER, 70, blur=0.2)

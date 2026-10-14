@@ -1176,7 +1176,7 @@ def triangulo_jugar_kit():
     mat(tri, mat_tinta()); tri.parent = raiz_kit()
 
 
-# ---- Tarea 91: los avatares de Opciones (8): Nubi sale de `isla_nubi_hola.webp`; los otros siete se renderizan acá en un lienzo de 48 dp (144 px) con la cámara y la luz de los íconos de la barra
+# ---- Tarea 91: los avatares de Opciones (8): Nubi sale de `nubi_3d.webp`; los otros siete se renderizan acá en un lienzo de 48 dp (144 px) con la cámara y la luz de los íconos de la barra
 AV_H = 1.65                                                     # alto de cada objeto (unidades; 20 dp = 1): 33 dp dentro del disco de 48
 def cam_av():
     cam_iso(target=(0, 0, 0.78), ortho=48.0/KIT_DPU, name='cam_av'); scene.render.resolution_x = 144; scene.render.resolution_y = 144

@@ -127,7 +127,7 @@ def panel(v):
     d = ImageDraw.Draw(img, "RGBA")
     for rr in (118, 132):
         d.ellipse([cx - rr * S, cy - rr * S, cx + rr * S, cy + rr * S], outline=(190, 180, 255, 60), width=S)
-    nubi = Image.open(os.path.join(RES, "drawable-nodpi", "nubi_hola.webp")).convert("RGBA")
+    nubi = Image.open(os.path.join(RES, "drawable-nodpi", "nubi_3d.webp")).convert("RGBA")
     ns = 190 * S
     nubi = nubi.resize((ns, int(nubi.height * ns / nubi.width)), Image.LANCZOS)
     img.alpha_composite(nubi, (cx - nubi.width // 2, cy - nubi.height // 2))
