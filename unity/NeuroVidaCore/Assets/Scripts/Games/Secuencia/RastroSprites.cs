@@ -9,6 +9,9 @@ namespace NeuroVida.Games.Secuencia
     /// blanco fino y brillo arriba a la izquierda; redondos, SIN puntas ni símbolos), el disco punteado del tablero y los íconos de los cuatro
     /// modos DIBUJADOS con trazos (no glifos de la fuente: cada teléfono los dibuja distinto o no los tiene). Todo en blanco o ya coloreado:
     /// los íconos y la ✗ se tiñen con <c>Image.color</c>.
+    /// <para><b>Plasticina (Tarea 99):</b> si el atlas <c>Resources/Plasticina/rastro</c> existe, los 9 luceros salen de ahí (renders de Blender, <c>tools/juegos/rastro.py</c>, el mismo lienzo y la misma escala): esferas IDÉNTICAS del color de <see cref="RastroBoard.Colors"/>
+    /// (la identidad de un lucero es su posición, su color y su nota), redondas, sin puntas ni símbolos; el halo que respira va detrás, procedural. Sin el atlas, el arte procedural de siempre. Los íconos de los modos, la ✗, el disco punteado, los aros y la viñeta
+    /// se quedan procedurales (se tiñen o giran).</para>
     /// </summary>
     public static class RastroSprites
     {
@@ -17,7 +20,12 @@ namespace NeuroVida.Games.Secuencia
         private static readonly Sprite[] Icons = new Sprite[RastroModes.Count];
         private static Sprite _disc, _cross, _dashed, _vignette;
 
-        public static Sprite Orb(int i) => Orbs[i] != null ? Orbs[i] : Orbs[i] = ToSprite(OrbPixels(Hex(RastroBoard.Colors[i]), OrbPx), OrbPx, 100f);
+        public const string PlasticGroup = "rastro";
+
+        /// <summary>true si el atlas de plasticina de Rastro de luz existe (y no está desactivado).</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "lucero_0");
+
+        public static Sprite Orb(int i) => PlasticArt.Get(PlasticGroup, "lucero_" + i) ?? (Orbs[i] != null ? Orbs[i] : Orbs[i] = ToSprite(OrbPixels(Hex(RastroBoard.Colors[i]), OrbPx), OrbPx, 100f));
         public static Sprite DottedDisc() => _disc != null ? _disc : _disc = ToSprite(DiscPixels(512), 512, 100f);
         public static Sprite DashedRing() => _dashed != null ? _dashed : _dashed = ToSprite(DashedRingPixels(128), 128, 100f);
         /// <summary>Viñeta: transparente en el centro y teñida hacia los bordes (se estira a toda la pantalla y se tiñe con <c>Image.color</c>): el tinte del modo.</summary>

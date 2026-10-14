@@ -518,7 +518,7 @@ namespace NeuroVida.Games.Secuencia
             var right = _orbs[res.Expected];
             wrong.Aro.color = NeuroStyle.WithAlpha(Coral, 1f);
             wrong.Aro.gameObject.SetActive(true);
-            wrong.X.color = Coral;
+            wrong.X.color = ErrorMarkColor;
             wrong.X.gameObject.SetActive(true);
             right.Aro.color = NeuroStyle.WithAlpha(Sun, 1f);
             right.Aro.gameObject.SetActive(true);
@@ -563,7 +563,7 @@ namespace NeuroVida.Games.Secuencia
                 // error: sin culpa, se explica y se repite el mismo camino
                 _orbs[res.Wrong].Aro.color = NeuroStyle.WithAlpha(Coral, 1f);
                 _orbs[res.Wrong].Aro.gameObject.SetActive(true);
-                _orbs[res.Wrong].X.color = Coral;
+                _orbs[res.Wrong].X.color = ErrorMarkColor;
                 _orbs[res.Wrong].X.gameObject.SetActive(true);
                 _orbs[res.Expected].Aro.color = NeuroStyle.WithAlpha(Sun, 1f);
                 _orbs[res.Expected].Aro.gameObject.SetActive(true);
@@ -1032,6 +1032,9 @@ namespace NeuroVida.Games.Secuencia
             _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
         }
 
+        /// <summary>El color de la ✗ del lucero errado: coral de siempre; con plasticina, tinta (la coral rendía entre 1,1 y 1,9:1 sobre los luceros claros; el aro coral de afuera sigue marcando el error).</summary>
+        private static Color ErrorMarkColor => RastroSprites.Plastic ? NeuroStyle.Ink : Coral;
+
         private void BuildOrbs()
         {
             for (int i = 0; i < RastroBoard.Orbs; i++)
@@ -1119,11 +1122,14 @@ namespace NeuroVida.Games.Secuencia
             var rect = go.AddComponent<RectTransform>();
             AnchorTopLeft(rect);
             var bg = go.AddComponent<Image>();
-            bg.sprite = RoundedRectSprite.Get(64);
-            bg.type = Image.Type.Sliced;
-            bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
-            bg.raycastTarget = false;
-            NeuroStyle.ClayFrame(bg, 3f, 6f);
+            if (PlasticSlab.TryStyle(bg, SlabSize.Chip, SlabTone.Night) == null)                    // plasticina: la píldora es una losa «noche» del kit
+            {
+                bg.sprite = RoundedRectSprite.Get(64);
+                bg.type = Image.Type.Sliced;
+                bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
+                bg.raycastTarget = false;
+                NeuroStyle.ClayFrame(bg, 3f, 6f);
+            }
             icon = null;
             if (withIcon)
             {
@@ -1224,9 +1230,12 @@ namespace NeuroVida.Games.Secuencia
             _resultRoot.pivot = new Vector2(0.5f, 0.5f);
             _resultRoot.sizeDelta = new Vector2(880f, 760f);
             var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)                  // plasticina: losa «noche»
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            }
             AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
             AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
             AddResultText("Detail", 44, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));

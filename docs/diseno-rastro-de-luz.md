@@ -234,3 +234,20 @@ rapidez (`secuencia`, `rutatesoro`, `bitacora`, `rumbo`, `satelites`, `aterrizaj
    dedo), **Watch** (foco sobre algo que se mueve, sin congelar; se cierra solo) y **Notice** (globo breve sin velo, ~1,8 s). Cada juego guía con 2-3 focos como máximo y termina con un aviso
    «¡Listo! Ahora va en serio» y la partida empieza sin otra pantalla. Dentro del tutorial nadie pierde por tiempo (si no responde, Nubi insiste). Con «quitar animaciones»: sin deslizamiento, latido ni
    salto, solo fundidos. `GuidedTutorialTests` falla si el tutorial de algún juego avanza con una pausa fija de 1 s o más. `WaitForContinue` (toque para seguir) queda disponible para casos puntuales.
+
+
+## 8. Plasticina (Tarea 99, 14-oct): los luceros de Blender
+
+Ricardo: todos los juegos en plasticina. Es SOLO arte: la escalera de 16 niveles, el DDA, los tiempos, las reglas de los modos, los sonidos y las medidas no cambian. Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina rastro`; sin `art_version`: si hace falta separar series, se hace por fecha).
+
+| De plasticina | Se queda procedural |
+|---|---|
+| los **9 luceros** (`lucero_0` … `lucero_8`, renders de Blender, `tools/juegos/rastro.py`): esferas de plasticina IDÉNTICAS del color de `RastroBoard.Colors`, redondas, sin puntas ni símbolos, en el mismo lienzo y a la misma escala que los de hoy | el halo que respira, el florecimiento, la chispa, el rastro y la cinta del dedo (mallas y luz), las partículas |
+| las **píldoras del marcador** (modo y cuenta): losa «noche» del kit | los íconos de los 4 modos (→, ←, ↻, ≫: se tiñen del color del modo), la ✗, los aros, el disco punteado, la viñeta y la barra del Reto |
+| el **panel del final**: losa «noche» | los puntitos de vidas y los textos |
+
+La identidad de un lucero es SOLO su posición, su color y su nota: las 9 esferas son idénticas (mismo tamaño y misma luz; sin grumos ni marcas propias) y el cuerpo no crece (el toque sigue en 72 dp y la separación en 79 dp). Cada lucero se renderiza sin sombra de contacto (flota; el halo va detrás): la sombra de una esfera tan alta se salía del lienzo y quedaba cortada en seco.
+
+**Dos cambios de forma:** (1) hoy el lucero es translúcido hacia el borde; la esfera de plasticina es OPACA (tapa el centro del halo, que sigue viéndose alrededor). (2) La ✗ del lucero errado va en TINTA con plasticina (antes coral): la coral rendía entre 1,1 y 1,9:1 contra los luceros claros; el aro coral de afuera sigue marcando el error y la forma de la ✗ no cambia.
+
+**Lo que se midió** (`tools/juegos/mide_rastro.py`): huella 0,98 de la de hoy, los 9 con la misma silueta; el color medio de la cara de cada lucero queda a ΔE 4,6 a 9,3 (CIELAB) de su color de diseño (la luz lo oscurece un poco en la mitad de abajo); **los pares cercanos siguen distinguiéndose**: el más cercano (FFC94A / FFE27A) rinde ΔE 15,4 contra 18,1 de diseño, y 7FD8FF / A9C7FF, 18,9 contra 19,8; contraste de cada lucero contra el cielo de 7,5 a 12,5:1. Pesa 0,39 MB en el APK. Pruebas: `RastroPlasticTests`.

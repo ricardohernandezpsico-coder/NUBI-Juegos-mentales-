@@ -40,7 +40,7 @@ namespace NeuroVida.Games.Tests
             return (RectTransform)go.transform;
         }
 
-        private static readonly string[] Groups = { "comun", "nubi", "radar", "piloto", "freno", "calculo", "disparate", "satelites" };
+        private static readonly string[] Groups = { "comun", "nubi", "radar", "piloto", "freno", "calculo", "disparate", "satelites", "rastro" };
 
         // ------------------------------------------------------------------ los atlas
 

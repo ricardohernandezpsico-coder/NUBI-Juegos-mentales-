@@ -33,7 +33,7 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 | 6 | Constelaciones | `parejas` | 20 | inventario | 14-oct | — |
 | 7 | Bodega de carga | `bodega` | 24 | inventario | 14-oct | — |
 | 8 | La estación de correo | `correo` | 27 | inventario | 14-oct | — |
-| 9 | Rastro de luz | `secuencia` | 17 | inventario | 14-oct | — |
+| 9 | Rastro de luz | `secuencia` | 9 luceros; el resto, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-secuencia.png) → [después](previews/plasticina/despues-secuencia.png) |
 | 10 | Carga exacta | `calculo` | 2 propios (aro y núcleo del reactor); el resto, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-calculo-arte.png) → [después](previews/plasticina/despues-calculo-arte.png) |
 | 11 | Engranajes | `engranajes` | 33 | inventario | 14-oct | — |
 | 12 | Acoplamiento | `acoplamiento` | 13 + módulos | inventario | 14-oct | — |
@@ -227,6 +227,8 @@ Riesgos: clasificar depende de la **figura del sello** (círculo, triángulo, cu
 
 Riesgos: **la identidad de un lucero es solo su posición, su color y su nota**; pares cercanos (7FD8FF/A9C7FF, FFC94A/FFE27A, 9FF5D6/8EE07A) que la plasticina no debe desaturar; esferas idénticas, sin grumos propios; hoy son translúcidos y una esfera opaca pesa más y tapa el halo; la ✗ coral pierde contraste sobre FF9F7A y F7A8E0; el cuerpo no crece (toque 72 dp, separación 79 dp). Íconos, ✗, aros, disco punteado y viñeta se quedan procedurales (se tiñen o giran). No tocar: chispa en curva, rastro, partículas, giro del tablero.
 
+**Ficha de arte (Tarea 99, hecha el 14-oct):** los 9 luceros son renders de Blender (esferas idénticas, del color de diseño, opacas, sin sombra de contacto) en el mismo lienzo y escala que los de hoy; las píldoras del marcador y el panel del final, losas «noche» del kit; la ✗ del lucero errado pasa a tinta. Se quedan procedurales el halo, el florecimiento, la chispa, el rastro, la cinta, los íconos de los modos, los aros, el disco punteado y la viñeta. Medidas y detalle: [`diseno-rastro-de-luz.md`](diseno-rastro-de-luz.md) §8.
+
 ### 10. Carga exacta (`calculo`, `Games/Calculo/`)
 
 | Objeto | Clase | Estados | Tamaño | Común |
@@ -343,5 +345,6 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 | `calculo` (Carga exacta: aro y núcleo del reactor) | 2 | 1152×556 | 242 KB | **0,32 MB** | 0,27 MB |
 | `disparate` (¿Verdad o disparate?: antena, 2 íconos, 2 barras del medidor) | 5 | 512×574 | 125 KB | **0,16 MB** | 0,13 MB |
 | `satelites` (Satélites: satélite, planeta, sobre, nube de polvo) | 4 | 1408×516 | 193 KB | **0,23 MB** | 0,31 MB |
+| `rastro` (Rastro de luz: los 9 luceros) | 9 | 1792×196 | 208 KB | **0,39 MB** | 0,15 MB |
 
-Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate? y Satélites (radar + piloto + freno + calculo + disparate + satelites + comun + nubi) son unos 4,3 MB sin comprimir la textura y unos 3,2 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites y Rastro de luz (radar + piloto + freno + calculo + disparate + satelites + rastro + comun + nubi) son unos 4,7 MB sin comprimir la textura y unos 3,4 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
