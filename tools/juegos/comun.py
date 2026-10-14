@@ -16,13 +16,6 @@ SOLO = arg('--solo', 'todo')
 # los colores de diseño de las casillas de Rescate (ButtonLive, ButtonHit, ButtonWrong, ButtonDim)
 DISENO = {'noche': '#2A2566', 'acierto': '#3D6A2C', 'error': '#6B2E3A', 'apagada': '#1C1A48'}
 
-def losa(nombre, color, presionada=False, radio=22.0):
-    """Una losa del kit (la misma función de `isla.py --kit`): cuerpo de (2R + centro) con los márgenes de la sombra."""
-    body_w = 2 * radio + KIT_CW; body_h = 2 * radio + KIT_CH
-    antes = set(bpy.data.objects); cam_pieza(KIT_MARGEN, body_w, body_h); suelo_kit()
-    losa_kit(oscurece(color) if presionada else color, KIT_H_P if presionada else KIT_H, radio, 'kit_losa_x')
-    render(nombre); limpia(antes)
-
 def render_losas():
     losa('losa_md_crema_control', KIT_CREMA)
     # Un color oscuro con el brillo normal del kit sale lechoso (el sol sobre la cara plana le suma un gris de ~45/255): con poco especular y sin «sheen» el centro queda a ±8/255 del color de diseño

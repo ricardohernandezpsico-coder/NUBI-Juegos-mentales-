@@ -29,7 +29,7 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 | 2 | Piloto Estelar | `piloto` | 15 señales (+ versión chica), nave | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-piloto.png) → [después](previews/plasticina/despues-piloto.png) |
 | 3 | Freno de Emergencia | `freno` | botón ×2, ¡ALTO!, plataforma, cohete ×3 | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-freno.png) → [después](previews/plasticina/despues-freno.png) |
 | 4 | Satélites | `satelites` | 4 (satélite, planeta, sobre, nube); el resto, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-satelites.png) → [después](previews/plasticina/despues-satelites.png) |
-| 5 | Tinta o Palabra | `stroop` | 3 (+ botones) | inventario | 14-oct | — |
+| 5 | Tinta o Palabra | `stroop` | 15 losas con el color exacto de la tinta, la tarjeta y las orillas + gota y libro | integrado (14-oct, con verificación completa); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-stroop-arte.png) → [después](previews/plasticina/despues-stroop-arte.png) |
 | 6 | Constelaciones | `parejas` | 20 | inventario | 14-oct | — |
 | 7 | Bodega de carga | `bodega` | 24 | inventario | 14-oct | — |
 | 8 | La estación de correo | `correo` | 27 | inventario | 14-oct | — |
@@ -119,6 +119,8 @@ Riesgos: la **silueta** es lo que se reconoce en el destello; el **contraste fig
 | Reloj / 16 puntos de avance, píldora de estado | I | — | barra 960×16 | `ProgressDots`, `PhasePill` |
 
 Riesgos: **el color de la tinta ES el estímulo** (4 hex validados con `tools/paleta_daltonismo.py`, separación ≥ 20 también en protanopía y deuteranopía): el botón de plasticina lleva la tinta como color base PLANO, sin luz de color ni oclusión que mueva el tono; la palabra sigue siendo `Text`; gota y libro se entregan blancos (se tiñen). El botón hoy se estira sin 9-slice: hace falta losa o aspecto ~2:1 exacto. Sin ruido ni sombras que bajen el contraste del nombre (5,0 / 4,9 / 11,2 / 15,9:1). No tocar: deslizamiento de la tarjeta, temblor, `SparkBurst`, `RingBurst`, pulso de la cinta, gradiente del haz.
+
+**Ficha de arte (Tarea 100, hecha el 14-oct):** los 4 botones (con la tinta como color base y la luz de plasticina SIN mover el tono: ΔE ≤ 1,6 de su color, separación con daltonismo intacta), la tarjeta (fondo #141B36 y borde de la orilla), la cinta, la tarjeta de la regla y el panel del final son losas; la gota y el libro, renders en gris claro para teñir. Se quedan procedurales los haces de luz, el aro, los puntos, el reloj y la palabra. Medidas y detalle: [`diseno-tinta-o-palabra.md`](diseno-tinta-o-palabra.md) §9.
 
 ### 3. Piloto Estelar (`piloto`, `Games/Piloto/`)
 
@@ -346,5 +348,6 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 | `disparate` (¿Verdad o disparate?: antena, 2 íconos, 2 barras del medidor) | 5 | 512×574 | 125 KB | **0,16 MB** | 0,13 MB |
 | `satelites` (Satélites: satélite, planeta, sobre, nube de polvo) | 4 | 1408×516 | 193 KB | **0,23 MB** | 0,31 MB |
 | `rastro` (Rastro de luz: los 9 luceros) | 9 | 1792×196 | 208 KB | **0,39 MB** | 0,15 MB |
+| `stroop` (Tinta o Palabra: 15 losas con el color de la tinta, la tarjeta y las orillas; gota y libro) | 17 | 1536×708 | 547 KB | **0,77 MB** | 0,46 MB |
 
-Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites y Rastro de luz (radar + piloto + freno + calculo + disparate + satelites + rastro + comun + nubi) son unos 4,7 MB sin comprimir la textura y unos 3,4 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites, Rastro de luz y Tinta o Palabra (radar + piloto + freno + calculo + disparate + satelites + rastro + stroop + comun + nubi) son unos 5,5 MB sin comprimir la textura y unos 3,9 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -165,6 +165,31 @@ def grupo_rastro():
     for i in range(9): S.append(sprite(f'lucero_{i}', carga_render('rastro', f'lucero_{i}', ANCHOS_RASTRO['lucero'])))
     return S, []
 
+ANCHOS_STROOP = {'icono': 128}
+LOSAS_STROOP = {'md': ('md_boton_rojo', 'md_boton_rojo_p', 'md_boton_azul', 'md_boton_azul_p', 'md_boton_amarillo', 'md_boton_amarillo_p', 'md_boton_blanco', 'md_boton_blanco_p', 'md_cinta_tinta', 'md_cinta_palabra'),
+                'gr': ('gr_tarjeta_fondo', 'gr_tarjeta_tinta', 'gr_tarjeta_palabra'), 'ch': ('ch_chip_tinta', 'ch_chip_palabra')}
+
+def grupo_stroop():
+    """Tinta o Palabra: las losas con el color EXACTO de cada tinta, de la tarjeta, de la cinta y de las orillas (mismo formato, nine-slice y márgenes que las del kit de la misma clase: ch, md o gr) y los íconos de la gota y el libro (128 px, en gris claro: el código los tiñe)."""
+    kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
+    S = []
+    for cls, nombres in LOSAS_STROOP.items():
+        d = kit['losas'][cls]; W, H = d['imagen_px']; m = d['margenes_dp']; ins = d['insets_px']
+        borde = (ins['izq'], ins['abajo'], ins['der'], ins['arr']); margen = tuple(round(m[k] * PX_DP) for k in ('izq', 'arr', 'der', 'abajo'))
+        ims = [carga_render('stroop', 'losa_' + n) for n in nombres]
+        ims = alinea_losa(ims, (m['izq'], m['arr']), W, H, ims[0])
+        for n, im in zip(nombres, ims): S.append(sprite('losa_' + n, im, borde=borde, margen=margen, baja=d['presionada']['texto_baja_dp'] * PX_DP))
+    for n in ('gota', 'libro'): S.append(sprite(n, carga_render('stroop', n, ANCHOS_STROOP['icono'])))
+    return S, []
+
+ANCHOS_PUNTA = {'ficha': 192, 'casilla': 128, 'perla': 64}
+
+def grupo_punta():
+    """En la punta de la lengua: la ficha-letra (gris claro: el código la tiñe; el cuerpo mide 0,8 del lado), la casilla (el cuerpo mide 0,83) y la perla del lucero del cielo (gris claro; 0,94)."""
+    S = []
+    for n in ('ficha', 'casilla', 'perla'): S.append(sprite(n, carga_render('punta', n, ANCHOS_PUNTA[n])))
+    return S, []
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -208,7 +233,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -396,7 +421,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

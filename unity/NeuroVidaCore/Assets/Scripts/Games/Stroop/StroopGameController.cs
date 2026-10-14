@@ -38,6 +38,12 @@ namespace NeuroVida.Games.Stroop
         private static readonly Color AmberColor = new Color(0xF5 / 255f, 0x9E / 255f, 0x0B / 255f);
         /// <summary>El aro por FUERA del botón correcto: celeste 7FD8FF con borde tinta, que se distingue alrededor de las cuatro tintas (también del botón blanco).</summary>
         private static readonly Color RingColor = new Color(0x7F / 255f, 0xD8 / 255f, 0xFF / 255f);
+
+        // Plasticina (Tarea 100): las losas con el color EXACTO de cada tinta, de la tarjeta, de la cinta y de las orillas viven en el atlas «stroop» (tools/juegos/stroop.py)
+        private const string Plastic = StroopSprites.PlasticGroup;
+        private static readonly string[] ButtonSlabs = { "losa_md_boton_rojo", "losa_md_boton_azul", "losa_md_boton_amarillo", "losa_md_boton_blanco" };
+        private static bool PlasticSlabs => PlasticSlab.AvailableCustom(Plastic, "losa_md_boton_rojo") && PlasticSlab.AvailableCustom(Plastic, "losa_gr_tarjeta_fondo");
+        private Image _ribbonSlab, _cardBorderSlab, _cardCornerSlab;
         private const float RingPad = 22f;
 
         private System.Random _rng;
@@ -299,7 +305,8 @@ namespace NeuroVida.Games.Stroop
                 int correctIndex = _trial.CorrectIndex;
                 _pill.Set(StroopContract.Explain(_trial), AmberColor);
                 GameFeel.Wrong();
-                _cardBorder.color = new Color(BadColor.r, BadColor.g, BadColor.b, 0.9f);
+                if (_cardBorderSlab != null) PlasticSlab.Set(_cardBorderSlab, SlabSize.Panel, SlabTone.Coral);              // plasticina: borde coral (la losa grande coral, o la mediana si no hay)
+                else _cardBorder.color = new Color(BadColor.r, BadColor.g, BadColor.b, 0.9f);
                 StartCoroutine(Flash(BadColor, 0.12f, 0.3f));
                 if (Motion.Decorative) StartCoroutine(UiFx.Shake(20f, 0.35f, _cardRect));
                 ShowRing(correctIndex);
@@ -501,10 +508,14 @@ namespace NeuroVida.Games.Stroop
             _ribbonRect.anchorMin = _ribbonRect.anchorMax = new Vector2(0.5f, 1f);
             _ribbonRect.pivot = new Vector2(0.5f, 0.5f);
             _ribbonBg = go.AddComponent<Image>();
-            _ribbonBg.sprite = RoundedRectSprite.Get(64);
-            _ribbonBg.type = Image.Type.Sliced;
-            _ribbonBg.raycastTarget = false;
-            NeuroStyle.ClayFrame(_ribbonBg, 4f, 8f);
+            if (PlasticSlabs) _ribbonSlab = PlasticSlab.TryStyleCustom(_ribbonBg, Plastic, "losa_md_cinta_tinta");          // plasticina: la cinta es una losa del color de la regla (violeta oscuro / turquesa oscuro)
+            if (_ribbonSlab == null)
+            {
+                _ribbonBg.sprite = RoundedRectSprite.Get(64);
+                _ribbonBg.type = Image.Type.Sliced;
+                _ribbonBg.raycastTarget = false;
+                NeuroStyle.ClayFrame(_ribbonBg, 4f, 8f);
+            }
 
             var iconGo = new GameObject("Icon");
             iconGo.transform.SetParent(go.transform, false);
@@ -664,10 +675,14 @@ namespace NeuroVida.Games.Stroop
             borderGo.transform.SetParent(root.transform, false);
             Stretch(borderGo.AddComponent<RectTransform>());
             _cardBorder = borderGo.AddComponent<Image>();
-            _cardBorder.sprite = RoundedRectSprite.Get(56);
-            _cardBorder.type = Image.Type.Sliced;
-            _cardBorder.raycastTarget = false;
-            NeuroStyle.ClayFrame(_cardBorder, 5f, 12f);
+            if (PlasticSlabs) _cardBorderSlab = PlasticSlab.TryStyleCustom(_cardBorder, Plastic, "losa_gr_tarjeta_tinta");     // plasticina: el borde es una losa del color de la orilla de la que llegó (violeta / turquesa; coral al fallar)
+            if (_cardBorderSlab == null)
+            {
+                _cardBorder.sprite = RoundedRectSprite.Get(56);
+                _cardBorder.type = Image.Type.Sliced;
+                _cardBorder.raycastTarget = false;
+                NeuroStyle.ClayFrame(_cardBorder, 5f, 12f);
+            }
 
             var fillGo = new GameObject("Fill");
             fillGo.transform.SetParent(root.transform, false);
@@ -677,10 +692,13 @@ namespace NeuroVida.Games.Stroop
             fr.offsetMin = new Vector2(9f, 9f);
             fr.offsetMax = new Vector2(-9f, -9f);
             var fillImg = fillGo.AddComponent<Image>();
-            fillImg.sprite = RoundedRectSprite.Get(52);
-            fillImg.type = Image.Type.Sliced;
-            fillImg.color = StroopContract.CardFill;          // #141B36: sobre este fondo se midieron los contrastes de las 4 tintas
-            fillImg.raycastTarget = false;
+            if (!PlasticSlabs || PlasticSlab.TryStyleCustom(fillImg, Plastic, "losa_gr_tarjeta_fondo") == null)      // plasticina: el fondo es una losa de color #141B36 (calibrada: ΔE ≤ 5)
+            {
+                fillImg.sprite = RoundedRectSprite.Get(52);
+                fillImg.type = Image.Type.Sliced;
+                fillImg.color = StroopContract.CardFill;          // #141B36: sobre este fondo se midieron los contrastes de las 4 tintas
+                fillImg.raycastTarget = false;
+            }
 
             // brillo suave detrás de la palabra
             var glowGo = new GameObject("WordGlow");
@@ -709,9 +727,13 @@ namespace NeuroVida.Games.Stroop
             cr.sizeDelta = new Vector2(86f, 86f);
             cr.anchoredPosition = new Vector2(58f, -58f);
             _cardCorner = cornerGo.AddComponent<Image>();
-            _cardCorner.sprite = RoundedRectSprite.Get(64);
-            _cardCorner.type = Image.Type.Sliced;
-            _cardCorner.raycastTarget = false;
+            if (PlasticSlabs) _cardCornerSlab = PlasticSlab.TryStyleCustom(_cardCorner, Plastic, "losa_ch_chip_tinta");        // plasticina: la esquina es una losa chica del color de la orilla
+            if (_cardCornerSlab == null)
+            {
+                _cardCorner.sprite = RoundedRectSprite.Get(64);
+                _cardCorner.type = Image.Type.Sliced;
+                _cardCorner.raycastTarget = false;
+            }
             var cornerIconGo = new GameObject("CornerIcon");
             cornerIconGo.transform.SetParent(cornerGo.transform, false);
             var cir = cornerIconGo.AddComponent<RectTransform>();
@@ -754,13 +776,34 @@ namespace NeuroVida.Games.Stroop
                 rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
                 rect.pivot = new Vector2(0.5f, 0.5f);
                 var img = go.AddComponent<Image>();
-                img.sprite = TileSprites.Get();                    // ficha de arcilla en grises: el color de la tinta la tiñe entera
-                img.color = color;
+                bool plastic = PlasticSlabs;
+                Image faceSlab = null;
+                if (plastic)
+                {
+                    // plasticina: la cara de la ficha es una losa del COLOR EXACTO de la tinta (en una hija que ocupa el 86 % del botón, como la ficha de arcilla de siempre); el Image del botón queda invisible y recibe el toque en todo su espacio
+                    img.sprite = null;
+                    img.color = new Color(1f, 1f, 1f, 0f);
+                    var faceGo = new GameObject("Face");
+                    faceGo.transform.SetParent(go.transform, false);
+                    var fr = faceGo.AddComponent<RectTransform>();
+                    fr.anchorMin = new Vector2(0.07f, 0.07f);
+                    fr.anchorMax = new Vector2(0.93f, 0.93f);
+                    fr.offsetMin = fr.offsetMax = Vector2.zero;
+                    var faceImg = faceGo.AddComponent<Image>();
+                    faceImg.raycastTarget = false;
+                    faceSlab = PlasticSlab.TryStyleCustom(faceImg, Plastic, ButtonSlabs[i]);
+                }
+                if (faceSlab == null)
+                {
+                    plastic = false;
+                    img.sprite = TileSprites.Get();                    // ficha de arcilla en grises: el color de la tinta la tiñe entera
+                    img.color = color;
+                }
                 var group = go.AddComponent<CanvasGroup>();
                 var button = go.AddComponent<Button>();
                 button.transition = Selectable.Transition.None;
                 button.onClick.AddListener(() => OnColorTapped(index));
-                go.AddComponent<PressScale>();
+                if (!plastic) go.AddComponent<PressScale>();
 
                 // el nombre, centrado sobre el color: blanco sobre ROJO, tinta oscura sobre las otras tres
                 var label = MakeText(go.transform, "Label", 72, TextAnchor.MiddleCenter, i == 0 ? Color.white : InkLabel, 0f, 0f);
@@ -771,6 +814,7 @@ namespace NeuroVida.Games.Stroop
                 lr.offsetMin = lr.offsetMax = Vector2.zero;
                 BestFit(label, 60);                                // 20 dp o más: «AMARILLO» cabe sin achicarse mucho
                 label.text = StroopContract.Names[i];
+                if (plastic) go.AddComponent<PlasticPress>().InitCustom(faceSlab, Plastic, ButtonSlabs[i], ButtonSlabs[i] + "_p", lr);      // plasticina: al tocar se hunde la losa y el nombre baja con ella (sin escala)
 
                 _buttonRects.Add(rect);
                 _buttonImages.Add(img);
@@ -789,11 +833,15 @@ namespace NeuroVida.Games.Stroop
             _ruleCardGroup = go.AddComponent<CanvasGroup>();
             _ruleCardGroup.blocksRaycasts = false;
             var bg = go.AddComponent<Image>();
-            bg.sprite = RoundedRectSprite.Get(64);
-            bg.type = Image.Type.Sliced;
-            bg.color = StroopContract.WordShore;
-            bg.raycastTarget = false;
-            NeuroStyle.ClayFrame(bg, 5f, 12f);
+            bool plasticRule = PlasticSlabs && PlasticSlab.TryStyleCustom(bg, Plastic, "losa_gr_tarjeta_palabra") != null;      // plasticina: el borde turquesa y el fondo son losas
+            if (!plasticRule)
+            {
+                bg.sprite = RoundedRectSprite.Get(64);
+                bg.type = Image.Type.Sliced;
+                bg.color = StroopContract.WordShore;
+                bg.raycastTarget = false;
+                NeuroStyle.ClayFrame(bg, 5f, 12f);
+            }
             var fillGo = new GameObject("Fill");
             fillGo.transform.SetParent(go.transform, false);
             var fr = fillGo.AddComponent<RectTransform>();
@@ -801,10 +849,13 @@ namespace NeuroVida.Games.Stroop
             fr.offsetMin = new Vector2(9f, 9f);
             fr.offsetMax = new Vector2(-9f, -9f);
             var fill = fillGo.AddComponent<Image>();
-            fill.sprite = RoundedRectSprite.Get(56);
-            fill.type = Image.Type.Sliced;
-            fill.color = StroopContract.CardFill;
-            fill.raycastTarget = false;
+            if (!plasticRule || PlasticSlab.TryStyleCustom(fill, Plastic, "losa_gr_tarjeta_fondo") == null)
+            {
+                fill.sprite = RoundedRectSprite.Get(56);
+                fill.type = Image.Type.Sliced;
+                fill.color = StroopContract.CardFill;
+                fill.raycastTarget = false;
+            }
 
             var iconGo = new GameObject("Icon");
             iconGo.transform.SetParent(go.transform, false);
@@ -844,12 +895,15 @@ namespace NeuroVida.Games.Stroop
             _resultRoot.pivot = new Vector2(0.5f, 0.5f);
             _resultRoot.sizeDelta = new Vector2(880f, 760f);
             var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-            var outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(1f, 1f, 1f, 0.14f);
-            outline.effectDistance = new Vector2(3f, -3f);
+            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)          // plasticina: losa «noche»
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+                var outline = go.AddComponent<Outline>();
+                outline.effectColor = new Color(1f, 1f, 1f, 0.14f);
+                outline.effectDistance = new Vector2(3f, -3f);
+            }
 
             AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
             AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
@@ -962,12 +1016,15 @@ namespace NeuroVida.Games.Stroop
             var shore = ink ? StroopContract.InkShore : StroopContract.WordShore;
             _shoreGroup[0].alpha = ink ? 1f : 0.35f;
             _shoreGroup[1].alpha = ink ? 0.35f : 1f;
-            _ribbonBg.color = Color.Lerp(StroopContract.CardFill, shore, 0.55f);
+            if (_ribbonSlab != null) PlasticSlab.SetCustom(_ribbonSlab, Plastic, ink ? "losa_md_cinta_tinta" : "losa_md_cinta_palabra");
+            else _ribbonBg.color = Color.Lerp(StroopContract.CardFill, shore, 0.55f);
             _ribbonIcon.sprite = ink ? StroopSprites.Drop() : StroopSprites.Book();
             _ribbonIcon.color = Color.Lerp(shore, Color.white, 0.7f);
             _ribbonText.text = StroopContract.Ribbon(rule);
-            _cardBorder.color = new Color(shore.r, shore.g, shore.b, 0.98f);
-            _cardCorner.color = shore;
+            if (_cardBorderSlab != null) PlasticSlab.SetCustom(_cardBorderSlab, Plastic, ink ? "losa_gr_tarjeta_tinta" : "losa_gr_tarjeta_palabra");
+            else _cardBorder.color = new Color(shore.r, shore.g, shore.b, 0.98f);
+            if (_cardCornerSlab != null) PlasticSlab.SetCustom(_cardCornerSlab, Plastic, ink ? "losa_ch_chip_tinta" : "losa_ch_chip_palabra");
+            else _cardCorner.color = shore;
             _cardCornerIcon.sprite = ink ? StroopSprites.Drop() : StroopSprites.Book();
             _cardCornerIcon.color = Color.white;
             var cr = _cardCorner.rectTransform;

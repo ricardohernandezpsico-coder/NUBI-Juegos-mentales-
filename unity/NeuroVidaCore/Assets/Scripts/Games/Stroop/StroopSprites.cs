@@ -1,4 +1,5 @@
 using UnityEngine;
+using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.ClayRaster;
 
 namespace NeuroVida.Games.Stroop
@@ -7,6 +8,8 @@ namespace NeuroVida.Games.Stroop
     /// Arte propio de «Tinta o Palabra» (modelo «Dos orillas»): la GOTA de la orilla de la TINTA y de cada botón, el LIBRO de la orilla de la PALABRA y el HAZ DE LUZ de
     /// cada orilla (una compuerta de luz, estética espacial: nada de papel). Todos van en blanco para teñirlos con <c>Image.color</c> (el borde tinta oscuro se
     /// mantiene oscuro al teñir). Se hornean una sola vez.
+    /// <para><b>Plasticina (Tarea 100):</b> si el atlas <c>Resources/Plasticina/stroop</c> existe, la gota y el libro salen de ahí (renders de Blender, <c>tools/juegos/stroop.py</c>, el mismo lienzo y la misma escala), en gris claro para teñir con <c>Image.color</c>; sin el atlas, el arte procedural
+    /// de abajo. El haz de luz es luz: se queda procedural.</para>
     /// </summary>
     public static class StroopSprites
     {
@@ -17,10 +20,15 @@ namespace NeuroVida.Games.Stroop
         private static Sprite _drop, _book, _beam;
 
         /// <summary>Gota de tinta blanca (para teñir) con borde tinta y un brillo.</summary>
-        public static Sprite Drop() => _drop != null ? _drop : (_drop = ToSprite(RenderDrop(SizePx), SizePx, SizePx));
+        public const string PlasticGroup = "stroop";
+
+        /// <summary>true si el atlas de plasticina de Tinta o Palabra existe (y no está desactivado).</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "gota");
+
+        public static Sprite Drop() => PlasticArt.Get(PlasticGroup, "gota") ?? (_drop != null ? _drop : (_drop = ToSprite(RenderDrop(SizePx), SizePx, SizePx)));
 
         /// <summary>Libro abierto blanco (para teñir) con borde tinta, lomo y renglones.</summary>
-        public static Sprite Book() => _book != null ? _book : (_book = ToSprite(RenderBook(SizePx), SizePx, SizePx));
+        public static Sprite Book() => PlasticArt.Get(PlasticGroup, "libro") ?? (_book != null ? _book : (_book = ToSprite(RenderBook(SizePx), SizePx, SizePx)));
 
         /// <summary>Haz de luz horizontal: opaco en el borde y se apaga hacia adentro (la orilla izquierda lo usa tal cual; la derecha, volteado).</summary>
         public static Sprite Beam() => _beam != null ? _beam : (_beam = BuildBeam());

@@ -121,3 +121,27 @@ en el inicio.
   La marca de evolución SÍ se guarda desde la Tarea 77 (10-oct): clave `stroop` en `StarMeasures` (los ms de interferencia; menos es mejor; `NeuroVidaRepository.starPoints` toma `interferenceMs`). Se dice en palabras
   («casi nada», «+0,4 s»; `StarMeasures.zoneText` → `DosOrillas.cost`) en Hoy y en la ficha del juego, y alimenta «Tu avance» de su final con sentido.
 - Pruebas: `StroopContractTests` (paleta, niveles, generación, medidas, guion), `DosOrillasTest`, `StroopTelemetryTest`; smoke `TutorialStroop` y `Stroop`.
+
+
+## 9. Plasticina (Tarea 100, 14-oct): el color de la tinta, medido
+
+Ricardo: todos los juegos en plasticina. Es SOLO arte: las reglas, el DDA, los tiempos, las 4 tintas de diseño, la palabra (sigue siendo `Text`) y las medidas no cambian. Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina tinta o palabra`; sin `art_version`: si hace falta separar series, se hace por fecha).
+
+**El color de la tinta ES el estímulo**, así que este juego se migró con un cuidado distinto: las losas de plasticina de los 4 botones de respuesta y del fondo de la tarjeta se renderizan con `material_kit(spec=0.05, sheen=0.0)` (sin el brillo normal del kit, que le suma un gris a la cara plana y movería el tono) y con el color de Blender CORREGIDO por lo que la luz cálida del estudio le hace al tono (sube el rojo hasta 13/255 y baja el azul): se renderiza una primera pasada, se mide y se corrige (diseño − diferencia). Resultado, medido sobre el atlas ya empaquetado (`tools/juegos/mide_stroop.py`):
+
+| Medida | Resultado |
+|---|---|
+| Color medio de la cara de cada botón contra su tinta de diseño | ΔE CIELAB 0,3 a 1,6 (meta ≤ 5): ROJO C83C3B, AZUL 4A87E8, AMARILLO EFCA1D, BLANCO F5F2F0 |
+| Fondo de la tarjeta contra #141B36 | ΔE 1,1 (151B35) |
+| Separación de las 4 tintas (CIEDE2000, mínimo entre pares; regla ≥ 20) | típica 29,0 (de diseño 29,8); protanopía 29,7 (30,5); deuteranopía 28,3 (28,6); tritanopía 21,0 (22,1) |
+| El nombre sobre cada botón | blanco sobre ROJO 5,1:1 (diseño 5,0); tinta sobre AZUL 4,9:1 (4,9), AMARILLO 10,9:1 (11,2) y BLANCO 15,7:1 (15,9) |
+| La palabra sobre el fondo de la tarjeta | ROJO 3,4:1, AZUL 4,7:1, AMARILLO 10,8:1, BLANCO 15,3:1: igual que en el diseño |
+
+| De plasticina (atlas `Resources/Plasticina/stroop`, `tools/juegos/stroop.py`) | Se queda procedural |
+|---|---|
+| los **4 botones de respuesta** (losa con el color EXACTO de la tinta, en una hija que ocupa el 86 % del botón como la ficha de arcilla de siempre; al tocarlos se hunde la losa (la presionada es otra imagen más oscura) y el nombre baja con ella, sin escala) | los haces de luz de las orillas y su línea de borde, el resplandor y la sombra detrás de la tarjeta |
+| la **tarjeta**: fondo #141B36 y borde de la orilla de la que llegó (violeta 7C5CE0 / turquesa 159A8C; coral al fallar), y la esquina con el ícono | la palabra (`Text`), el brillo detrás de la palabra |
+| la **cinta** «Responde: TINTA / PALABRA» (losa de la regla), la **tarjeta «Ahora: PALABRA»** y el **panel del final** (losa «noche») | el aro que marca el botón correcto al fallar y en la ronda guiada (celeste, por fuera), los puntos de avance, la barra del Reto |
+| los íconos de las reglas: la **gota** (TINTA) y el **libro** (PALABRA), en gris claro para teñir con `Image.color` (misma huella: razón 1,05 y 1,01) | las marcas de las orillas siguen siendo gota y libro: ahora de plasticina |
+
+`PlasticSlab` ganó las losas con el color exacto de un juego (`AttachCustom`, `TryStyleCustom`, `SetCustom`, `PlasticPress.InitCustom`): viven en el atlas del juego, con el mismo nine-slice y los mismos márgenes que las del kit de su clase. Sin el atlas, todo cae al arte de siempre (`TileSprites` y `ClayFrame`). Pesa 0,77 MB en el APK. Pruebas: `StroopPlasticTests`.

@@ -23,6 +23,7 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `disparate.py` | ¿Verdad o disparate?: la antena (lienzo ±1,2: de ahí salen los puntos `AntennaTip`/`AntennaDish`/`AntennaFloor`), los íconos ✓ y onda rota (churros de tinta) y las barras del medidor (UNA por estado, nine-slice vertical). |
 | `satelites.py` | Satélites: el satélite (uno solo), el planeta (una esfera: su silueta es un círculo desde cualquier ángulo, así que NO va dentro de la raíz estirada), el sobre y la nube de polvo (cinco domos achatados). |
 | `rastro.py` | Rastro de luz: los 9 luceros (esferas idénticas, del color de `RastroBoard.Colors`, sin sombra de contacto: flotan). |
+| `stroop.py` | Tinta o Palabra: las 15 losas con el color EXACTO de las 4 tintas, la tarjeta, la cinta y las orillas (con el color de Blender corregido por lo que la luz le hace al tono) y los íconos de la gota y el libro. |
 | `comun.py` | Lo común que NO sale del kit: las casillas «noche» (normal, presionada, acierto, error, apagada), las marcas ✓ y ✗ y el anillo de la cuenta regresiva. También re-renderiza una losa crema de CONTROL para comprobar que este pipeline da el mismo kit que la app. |
 | `empaqueta.py` | De los PNG de Blender (y de los WebP del kit de la app y la Nubi 3D) al atlas de cada grupo: reduce con Lanczos y alfa premultiplicado (los renders son la «maestra», a más resolución), limpia la bruma del suelo de sombra, empaca, escribe el manifiesto y los `.meta` (GUID fijo por ruta; un `.meta` que ya existe no se toca: Unity lo reescribe al importar y esa versión es la que va al repo) y **mide cuánto pesa**. |
 | `mide_radar.py` | Las cápsulas contra lo que reemplazan (huella) y contra el vidrio del radar (contraste WCAG), y qué tanto se parecen de a pares (escala de grises). |
@@ -31,6 +32,7 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `mide_disparate.py` | La antena (huella y dónde cae la luz de la punta), los íconos contra los botones lima y coral y las barras del medidor. |
 | `mide_satelites.py` | Satélites: huella, el satélite sin nada vertical, el planeta oscuro (y cuánto resaltan las luces doradas) y la nube opaca. |
 | `mide_rastro.py` | Los 9 luceros: huella, fidelidad del color de diseño (ΔE CIELAB), que los pares cercanos se sigan distinguiendo y contraste contra el cielo. |
+| `mide_stroop.py` | Tinta o Palabra: fidelidad del color de cada tinta (ΔE), separación con daltonismo (CIEDE2000), el nombre sobre cada botón y las 4 tintas sobre el fondo de la tarjeta. |
 | `mide_freno.py` | Botón, cohetes, plataforma y ALTO: huella contra el procedural, contraste contra el suelo de la luna y el cielo, flecha contra botón. |
 | `huella.py` | Lo que comparten las dos mediciones (la silueta de HOY y el contraste WCAG; solo numpy). |
 | `lamina.py` | Una lámina de contacto para MIRAR los renders sobre un fondo liso. |
@@ -46,14 +48,16 @@ $BLENDER -b -P tools/juegos/calculo.py -- --samples 112 --out tools/juegos/out/c
 $BLENDER -b -P tools/juegos/disparate.py -- --samples 112 --out tools/juegos/out/disparate  # ~5 min
 $BLENDER -b -P tools/juegos/satelites.py -- --samples 112 --out tools/juegos/out/satelites  # ~5 min
 $BLENDER -b -P tools/juegos/rastro.py -- --samples 112 --out tools/juegos/out/rastro        # ~8 min (9 esferas a 384 px)
+$BLENDER -b -P tools/juegos/stroop.py -- --samples 112 --out tools/juegos/out/stroop        # ~6 min (15 losas y 2 íconos)
 $BLENDER -b -P tools/juegos/comun.py -- --samples 112 --out tools/juegos/out/comun        # ~5 min
-python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro comun nubi   # atlas + manifiestos + pesos (segundos)
+python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop comun nubi   # atlas + manifiestos + pesos (segundos)
 python -I tools/juegos/mide_radar.py                          # huella, contraste y siluetas de las cápsulas
 python -I tools/juegos/mide_piloto.py                         # huella, contraste y detalles de las señales y la nave
 python -I tools/juegos/mide_calculo.py                        # tamaño del reactor, núcleo claro y losas de las celdas
 python -I tools/juegos/mide_disparate.py                      # antena, íconos y barras del medidor
 python -I tools/juegos/mide_satelites.py                      # satélite, planeta oscuro, sobre y nube opaca
 python -I tools/juegos/mide_rastro.py                         # luceros: huella, color de diseño, pares cercanos y contraste
+python -I tools/juegos/mide_stroop.py                         # tintas: ΔE, daltonismo, nombres y fondo de la tarjeta
 python -I tools/juegos/mide_freno.py                          # huella, contraste y flecha del botón, cohetes, plataforma y ALTO
 python -I tools/juegos/lamina.py out/lam.png '#0A2A3A' 3 1.5 out/radar/capsula_*.png     # para mirarlos
 ```
@@ -74,7 +78,7 @@ Opciones comunes de los scripts de Blender: `--solo <parte>` (renderiza una part
 - `Games/Shared/PlasticArt.cs`: el cargador. `PlasticArt.Get("radar", "capsula_gota")` entrega el sprite del atlas (o null); `GetOr(grupo, nombre, fallback)` cae al procedural. `PlasticArt.Disabled = true` lo apaga (pruebas). Cada grupo es UN atlas (`Resources/Plasticina/<grupo>/atlas.png`) y su `manifest.json` (rectángulo, pivote, nine-slice y márgenes de cada sprite, y las medidas que dejó Blender).
 - `Games/Shared/PlasticSlab.cs`: las losas del kit como nine-slice de Unity. `PlasticSlab.TryStyle(image, SlabSize, SlabTone)` pone la losa en lugar del fondo de siempre (que queda invisible, solo para los toques) o devuelve null si no hay plasticina: el que llama aplica entonces su estilo de siempre. `PlasticPress` da la presión (la losa presionada y el texto que baja). Tamaños: `Chip` (14 dp), `Button` (22 dp), `Panel` (30 dp). Tonos: `Sun, Cream, Lime, Sky, Coral, Lilac` (las del kit) y `Night, Hit, Miss, Dim` (las casillas oscuras de respuesta).
 - `Bootstrap/Editor/PlasticinaImporter.cs`: impone en cada importación los ajustes de textura del atlas (sin compresión, sin mipmaps, sin reescalar), por si un `.meta` se rompe.
-- Pruebas: `PlasticArtTests` (atlas, tope de peso, nine-slice, contraste del texto, caída al procedural), `RadarPlasticTests` (huella, contraste, siluetas, vidrio), `PilotPlasticTests` (huella, contraste, detalles y color, nave), `BrakePlasticTests` (huella, flecha, ALTO, cohetes, que el cohete quepa entre las torres), `CalculoPlasticTests` (tamaño del reactor, núcleo claro y teñible, losas de las celdas, interfaz con y sin atlas), `DisparatePlasticTests` (antena y sus puntos, íconos, barras del medidor, interfaz con y sin atlas), `SatellitePlasticTests` (huella, un solo satélite sin nada vertical, planeta oscuro, nube opaca), `RastroPlasticTests` (huella, luceros idénticos y redondos, color de diseño y pares cercanos, contraste).
+- Pruebas: `PlasticArtTests` (atlas, tope de peso, nine-slice, contraste del texto, caída al procedural), `RadarPlasticTests` (huella, contraste, siluetas, vidrio), `PilotPlasticTests` (huella, contraste, detalles y color, nave), `BrakePlasticTests` (huella, flecha, ALTO, cohetes, que el cohete quepa entre las torres), `CalculoPlasticTests` (tamaño del reactor, núcleo claro y teñible, losas de las celdas, interfaz con y sin atlas), `DisparatePlasticTests` (antena y sus puntos, íconos, barras del medidor, interfaz con y sin atlas), `SatellitePlasticTests` (huella, un solo satélite sin nada vertical, planeta oscuro, nube opaca), `RastroPlasticTests` (huella, luceros idénticos y redondos, color de diseño y pares cercanos, contraste), `StroopPlasticTests` (color de cada tinta, separación, nombres, fondo de la tarjeta, losas, íconos).
 
 ## Peso (lo que suma al APK)
 
@@ -89,6 +93,7 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 | `disparate` (¿Verdad o disparate?: antena, íconos, barras del medidor) | 5 | 512×574 | 125 KB | 0,16 MB | 0,13 MB |
 | `satelites` (Satélites: satélite, planeta, sobre, nube) | 4 | 1408×516 | 193 KB | 0,23 MB | 0,31 MB |
 | `rastro` (Rastro de luz: 9 luceros) | 9 | 1792×196 | 208 KB | 0,39 MB | 0,15 MB |
+| `stroop` (Tinta o Palabra: losas de color exacto, gota y libro) | 17 | 1536×708 | 547 KB | 0,77 MB | 0,46 MB |
 | `comun` (losas, marcas, anillo) | 28 | 896×2292 | 815 KB | 1,05 MB | 0,87 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 

@@ -106,6 +106,11 @@ namespace NeuroVida.Games.Shared
         {
             var sprite = Sprite(size, tone);
             if (sprite == null) return null;
+            return AttachSprite(host, sprite, Margins(size, tone));
+        }
+
+        private static Image AttachSprite(RectTransform host, Sprite sprite, Vector4 margins)
+        {
             var existing = host.Find(SlabName);
             GameObject go;
             if (existing != null) go = existing.gameObject;
@@ -120,16 +125,62 @@ namespace NeuroVida.Games.Shared
             var rt = (RectTransform)go.transform;
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
-            var m = Margins(size, tone);
-            Vector4 mb = m;
-            rt.offsetMin = new Vector2(-mb.x, -mb.w);
-            rt.offsetMax = new Vector2(mb.z, mb.y);
+            rt.offsetMin = new Vector2(-margins.x, -margins.w);
+            rt.offsetMax = new Vector2(margins.z, margins.y);
             var img = go.GetComponent<Image>();
             img.sprite = sprite;
             img.type = Image.Type.Sliced;
             img.color = Color.white;
             img.raycastTarget = false;
             return img;
+        }
+
+        // ------------------------------------------------------------------ losas con el color EXACTO que pide un juego (viven en el atlas del juego, con el formato y el nine-slice de las del kit)
+
+        /// <summary>true si el atlas [group] trae la losa [sprite] (por ejemplo «losa_md_boton_rojo» de «stroop»).</summary>
+        public static bool AvailableCustom(string group, string sprite) => PlasticArt.Group(group)?.Has(sprite) ?? false;
+
+        /// <summary>Lo que sobresale la imagen de una losa del atlas de un juego alrededor del cuerpo (izquierda, arriba, derecha, abajo), en unidades del lienzo.</summary>
+        public static Vector4 MarginsCustom(string group, string sprite)
+        {
+            var e = PlasticArt.Group(group)?.Entry(sprite);
+            if (e == null || e.margen == null || e.margen.Length != 4) return Vector4.zero;
+            return new Vector4(e.margen[0], e.margen[1], e.margen[2], e.margen[3]);
+        }
+
+        /// <summary>Cuánto baja el texto cuando la losa [sprite] del atlas de un juego está presionada (unidades del lienzo).</summary>
+        public static float PressDropCustom(string group, string sprite)
+        {
+            var e = PlasticArt.Group(group)?.Entry(sprite);
+            return e != null ? e.baja : 0f;
+        }
+
+        /// <summary>Como <see cref="Attach"/>, con una losa del atlas de un juego: la pone DETRÁS de lo que hay en [host]. Null si no existe (el que llama deja su arte de siempre).</summary>
+        public static Image AttachCustom(RectTransform host, string group, string sprite)
+        {
+            var s = PlasticArt.Get(group, sprite);
+            if (s == null) return null;
+            return AttachSprite(host, s, MarginsCustom(group, sprite));
+        }
+
+        /// <summary>Como <see cref="TryStyle"/>, con una losa del atlas de un juego.</summary>
+        public static Image TryStyleCustom(Image host, string group, string sprite, bool hit = false)
+        {
+            var slab = AttachCustom((RectTransform)host.transform, group, sprite);
+            if (slab == null) return null;
+            host.sprite = null;
+            host.type = Image.Type.Simple;
+            host.color = new Color(1f, 1f, 1f, 0f);
+            host.raycastTarget = hit;
+            return slab;
+        }
+
+        /// <summary>Cambia la losa de un <see cref="AttachCustom"/> por otra del mismo atlas (el cuerpo y los márgenes se quedan: las de una misma clase miden lo mismo).</summary>
+        public static void SetCustom(Image slab, string group, string sprite)
+        {
+            if (slab == null) return;
+            var s = PlasticArt.Get(group, sprite);
+            if (s != null) slab.sprite = s;
         }
 
         /// <summary>Cambia la losa de un <see cref="Attach"/> (color o estado); los márgenes y el nine-slice cambian con ella.</summary>
@@ -167,6 +218,7 @@ namespace NeuroVida.Games.Shared
         private SlabTone _tone;
         private float _drop;
         private bool _down;
+        private string _group, _normal, _pressed;                      // con losas del atlas de un juego (InitCustom)
         private readonly System.Collections.Generic.List<RectTransform> _moved = new System.Collections.Generic.List<RectTransform>();
 
         /// <summary>Le dice qué losa lleva y cuánto baja lo de encima; <paramref name="movers"/> son los hijos que acompañan la presión (el texto, el ícono).</summary>
@@ -176,6 +228,19 @@ namespace NeuroVida.Games.Shared
             _size = size;
             _tone = tone;
             _drop = PlasticSlab.PressDrop(size, tone);
+            _group = null;
+            _moved.Clear();
+            _moved.AddRange(movers);
+        }
+
+        /// <summary>Lo mismo con las losas de un atlas de un juego (el color exacto de la tinta): [normal] y [pressed] son nombres de sprite de [group].</summary>
+        public void InitCustom(Image slab, string group, string normal, string pressed, params RectTransform[] movers)
+        {
+            _slab = slab;
+            _group = group;
+            _normal = normal;
+            _pressed = pressed;
+            _drop = PlasticSlab.PressDropCustom(group, normal);
             _moved.Clear();
             _moved.AddRange(movers);
         }
@@ -189,7 +254,8 @@ namespace NeuroVida.Games.Shared
         {
             if (_slab == null || down == _down) return;
             _down = down;
-            PlasticSlab.Set(_slab, _size, _tone, down);
+            if (_group != null) PlasticSlab.SetCustom(_slab, _group, down ? _pressed : _normal);
+            else PlasticSlab.Set(_slab, _size, _tone, down);
             foreach (var r in _moved) if (r != null) r.anchoredPosition += new Vector2(0f, down ? -_drop : _drop);
         }
     }

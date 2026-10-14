@@ -196,6 +196,13 @@ def mat_oscuro(nombre, color):
     """El material del kit para un color OSCURO: con el brillo normal el sol sobre la cara plana le suma un gris de ~45/255 y la plasticina sale lechosa; con poco especular y sin «sheen» queda a ±8/255 del color pedido (igual que las casillas «noche»)."""
     return clay(nombre, color, **{**MAT_KIT, 'spec': 0.05, 'sheen': 0.0})
 
+def losa(nombre, color, presionada=False, radio=22.0):
+    """Una losa del kit (la misma función de `isla.py --kit`): cuerpo de (2R + centro) con los márgenes de la sombra. [radio] en dp: 14 = chica (ch), 22 = mediana (md), 30 = grande (gr)."""
+    body_w = 2 * radio + KIT_CW; body_h = 2 * radio + KIT_CH
+    antes = set(bpy.data.objects); cam_pieza(KIT_MARGEN, body_w, body_h); suelo_kit()
+    losa_kit(oscurece(color) if presionada else color, KIT_H_P if presionada else KIT_H, radio, 'kit_losa_x')
+    render(nombre); limpia(antes)
+
 def tinta(): return mat_tinta()
 
 # ------------------------------------------------------------------ render
