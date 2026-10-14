@@ -7,6 +7,9 @@ namespace NeuroVida.Games.Satelites
     /// <summary>
     /// Arte de «Satélites: enciende tu planeta» con el pincel de arcilla común (<see cref="ClayRaster"/>): el planeta a oscuras con sus continentes tenues, el satélite (disco con dos paneles; todos IGUALES: la señal es el aro dorado y el sobre,
     /// no el dibujo), el sobre del mensaje, la nube de polvo, el aro punteado del que faltó y el medio disco de las rondas parciales. Se hornea una vez (durante la cuenta regresiva) y se reutiliza. Todo plano.
+    /// <para><b>Plasticina (Tarea 98):</b> si el atlas <c>Resources/Plasticina/satelites</c> existe, el satélite, el planeta, el sobre y la nube salen de ahí (renders de Blender, <c>tools/juegos/satelites.py</c>, el mismo lienzo y la misma escala: las constantes
+    /// <see cref="BodySpriteSideInDiscRadii"/> y <see cref="PlanetSpriteSideInRadii"/> valen igual); sin el atlas, el arte procedural de abajo. El aro punteado y el medio disco se tiñen con <c>Image.color</c>: se quedan procedurales. El satélite es UNA sola imagen
+    /// para todos (sin giro ni luz por instancia), la nube es opaca y plana y el planeta es oscuro: las reglas de siempre.</para>
     /// </summary>
     public static class SatelliteSprites
     {
@@ -31,10 +34,15 @@ namespace NeuroVida.Games.Satelites
         /// <summary>Lo mismo para el planeta: lado = radio del planeta × esto.</summary>
         public const float PlanetSpriteSideInRadii = 2f * 1.14f / 0.9f;
 
-        public static Sprite Body() => _body != null ? _body : _body = ToSprite(RenderBody(128), 128, 128);
-        public static Sprite Planet() => _planet != null ? _planet : _planet = ToSprite(RenderPlanet(256), 256, 256);
-        public static Sprite Envelope() => _envelope != null ? _envelope : _envelope = ToSprite(RenderEnvelope(96), 96, 96);
-        public static Sprite Cloud() => _cloud != null ? _cloud : _cloud = ToSprite(RenderCloud(256), 256, 256);
+        public const string PlasticGroup = "satelites";
+
+        /// <summary>true si el atlas de plasticina de Satélites existe (y no está desactivado).</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "satelite");
+
+        public static Sprite Body() => PlasticArt.Get(PlasticGroup, "satelite") ?? (_body != null ? _body : _body = ToSprite(RenderBody(128), 128, 128));
+        public static Sprite Planet() => PlasticArt.Get(PlasticGroup, "planeta") ?? (_planet != null ? _planet : _planet = ToSprite(RenderPlanet(256), 256, 256));
+        public static Sprite Envelope() => PlasticArt.Get(PlasticGroup, "sobre") ?? (_envelope != null ? _envelope : _envelope = ToSprite(RenderEnvelope(96), 96, 96));
+        public static Sprite Cloud() => PlasticArt.Get(PlasticGroup, "nube") ?? (_cloud != null ? _cloud : _cloud = ToSprite(RenderCloud(256), 256, 256));
         /// <summary>Aro punteado (blanco: se tiñe con <c>Image.color</c>): el satélite con mensaje que no se marcó.</summary>
         public static Sprite DashedRing() => _dashed != null ? _dashed : _dashed = ToSprite(RenderDashed(256), 256, 256);
         /// <summary>El medio disco (la mitad de la izquierda) de una ronda parcial en la fila de rondas; blanco.</summary>

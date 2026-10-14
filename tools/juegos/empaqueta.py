@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -149,6 +149,22 @@ def grupo_disparate():
     med.append(('medidor_margen_u', MEDIDOR_MARGEN * MEDIDOR_U))
     return S, med
 
+ANCHOS_SATELITES = {'satelite': 192, 'planeta': 512, 'sobre': 128, 'nube': 448}
+
+def grupo_satelites():
+    """Satélites: el satélite (64 dp = 191 u en el juego; UNO solo, todos son iguales), el planeta (334 u, y ×1,75 = 585 u en la pantalla final), el sobre (110 u) y la nube de polvo (600 u). Cada uno en el mismo lienzo cuadrado que el sprite procedural al que reemplaza."""
+    S = []
+    for n in ('satelite', 'planeta', 'sobre', 'nube'): S.append(sprite(n, carga_render('satelites', n, ANCHOS_SATELITES[n])))
+    return S, []
+
+ANCHOS_RASTRO = {'lucero': 192}
+
+def grupo_rastro():
+    """Rastro de luz: los 9 luceros (192 px: el sprite mide 179 u en el juego), del color de `RastroBoard.Colors`. Cada uno sale de su maestra de 384 px."""
+    S = []
+    for i in range(9): S.append(sprite(f'lucero_{i}', carga_render('rastro', f'lucero_{i}', ANCHOS_RASTRO['lucero'])))
+    return S, []
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -192,7 +208,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -380,7 +396,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

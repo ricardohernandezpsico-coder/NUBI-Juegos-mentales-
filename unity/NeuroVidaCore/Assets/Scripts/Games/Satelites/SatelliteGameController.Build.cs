@@ -253,6 +253,7 @@ namespace NeuroVida.Games.Satelites
             _crossRing = MakeImage(_crossMarker, "Ring", RingSprite.Get());
             _crossRing.color = Bad;
             _crossPillBg = Rr(_crossMarker, "PillBg", new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.94f), 13f);
+            PlasticSlab.TryStyle(_crossPillBg, SlabSize.Chip, SlabTone.Night);       // plasticina: el rótulo es una losa «noche» (sin el atlas queda la píldora de siempre)
             _crossLabel = MakeLabel(_crossMarker, "Label", 15f, UiFonts.Bold, Bad, TextAnchor.MiddleCenter);
             _crossLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             _crossLabel.text = SatelliteContract.CrossText;
@@ -313,6 +314,7 @@ namespace NeuroVida.Games.Satelites
             Stretch(_surpriseDim.rectTransform);
             _surpriseCardRim = Rr(_surpriseLayer, "CardRim", Gold, 23.5f);
             _surpriseCard = Rr(_surpriseLayer, "Card", PanelFill, 22f);
+            if (PlasticSlab.TryStyle(_surpriseCard, SlabSize.Panel, SlabTone.Night) != null) _surpriseCardRim.enabled = false;       // plasticina: el aviso es una losa «noche»; el borde dorado de siempre sobra (la etiqueta ya va en dorado)
             _surpriseIcon = MakeImage(_surpriseLayer, "Icon", null);
             _surpriseTag = MakeLabel(_surpriseLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _surpriseName = MakeLabel(_surpriseLayer, "Name", 25f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);

@@ -174,3 +174,20 @@ Lo que se agregó o cambió respecto del diseño, y por qué:
 - **Telemetría.** Siguen `tracking_capacity`, `tracking_targets` y `tracking_speed` (la velocidad es la del nivel más alto superado completo, respecto del 1); se suman `sat_lights`, `sat_perfect`, `sat_best_streak`, `sat_best` y `sat_new`. El récord de luces va en `satelites_record` (respaldado).
 - **Herramientas de prueba.** Botones [Debug]: «Satélites con tutorial», «Satélites nivel 3 / 6 / 9» y «Satélites sorpresa: nube» (`sat_stage` y `sat_surprise` de la config).
 - **Smoke.** `Satelites` (55 s, juega solo desde el nivel 6 con las tres sorpresas en las tres primeras rondas), `PantallaSatelites` (en forma de teléfono, con la guardia de textos), `TutorialSatelites` (3 formas de pantalla, con toque real) y `HowToSatelites`. Capturas reales: `bash tools/verificar-todo.sh --capturas Satelites` → `docs/previews/capturas/satelites.png`.
+
+
+## 13. Plasticina (Tarea 98, 14-oct): arte de Blender
+
+Ricardo: todos los juegos en plasticina. Es SOLO arte: los niveles, el DDA, las órbitas, los tiempos, las reglas de la revelación y las medidas no cambian, y se siguen cumpliendo las reglas de patentes (plano, sin respuesta durante el seguimiento, sin «firma» por series). Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina satélites`; sin `art_version`: si hace falta separar series, se hace por fecha).
+
+| De plasticina (renders de Blender, atlas `Resources/Plasticina/satelites`, `tools/juegos/satelites.py`) | Se queda procedural |
+|---|---|
+| el **satélite**: UNA sola imagen para todos (disco crema-lila con núcleo, brazo y dos paneles azules con su divisoria), sin giro ni luz por instancia y sin nada vertical sobre el brazo (sería una cruz) | los aros (dorado de la señal, celeste del «marcado», coral punteado del que faltó: se tiñen) y el medio disco de las rondas parciales |
+| el **planeta a oscuras**: una esfera mate azul noche (sin continentes: eran tenues, al 22 %), oscura y de bajo contraste a propósito | las luces del planeta y su resplandor, el halo dorado del final, las órbitas (malla) |
+| el **sobre** del mensaje (papel crema con la solapa de tinta) | el vuelo del sobre y el resplandor |
+| la **nube de polvo**: cinco domos achatados que se funden, OPACA y de relieve bajo (plana), del mismo violeta | los discos de las rondas, la barra del Reto y los textos |
+| el rótulo «¿Aquí se cruzaron?» y el aviso de sorpresa: losas «noche» del kit (el aviso pierde su borde dorado: la etiqueta ya va en dorado) | las marcas ✓ / ✗ ya son de plasticina desde la fase 0 |
+
+Cada pieza sale en el MISMO lienzo y a la MISMA escala que el sprite de hoy (`BodySpriteSideInDiscRadii` y `PlanetSpriteSideInRadii` valen igual): ninguna medida de `Layout` cambia. Sin el atlas, todo cae al arte de siempre.
+
+**Lo que se midió** (`tools/juegos/mide_satelites.py`): huella 0,95 a 1,00 de la de hoy (IoU 0,92 a 0,97; el satélite 0,98, el planeta 0,95, el sobre 0,97 y la nube 1,00); el satélite mide 0,61 de alto por ancho (como el de hoy: un disco con brazo y paneles) y rinde 16:1 (disco) y 9:1 (paneles) contra el cielo; el planeta es AÚN más oscuro que el de hoy (luminancia 0,024 contra 0,035; 1,4:1 contra el cielo) y las luces doradas rinden 11,7:1 sobre él (hoy 10,2:1); la nube es opaca en el 100 % de su interior (la de hoy, 97 %) y rinde 2,2:1 contra el cielo. Pesa 0,23 MB en el APK. Pruebas: `SatellitePlasticTests`.

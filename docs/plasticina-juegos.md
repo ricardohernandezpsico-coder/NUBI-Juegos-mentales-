@@ -28,7 +28,7 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 | 1 | Rescate relámpago | `radar` | 6 cápsulas + 6 íconos, roca, aro del radar, nave, asiento | integrado; **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-radar.png) → [después](previews/plasticina/despues-radar.png) |
 | 2 | Piloto Estelar | `piloto` | 15 señales (+ versión chica), nave | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-piloto.png) → [después](previews/plasticina/despues-piloto.png) |
 | 3 | Freno de Emergencia | `freno` | botón ×2, ¡ALTO!, plataforma, cohete ×3 | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-freno.png) → [después](previews/plasticina/despues-freno.png) |
-| 4 | Satélites | `satelites` | 6 | inventario | 14-oct | — |
+| 4 | Satélites | `satelites` | 4 (satélite, planeta, sobre, nube); el resto, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-satelites.png) → [después](previews/plasticina/despues-satelites.png) |
 | 5 | Tinta o Palabra | `stroop` | 3 (+ botones) | inventario | 14-oct | — |
 | 6 | Constelaciones | `parejas` | 20 | inventario | 14-oct | — |
 | 7 | Bodega de carga | `bodega` | 24 | inventario | 14-oct | — |
@@ -175,6 +175,8 @@ El cohete de Freno ya NO usa `SymbolSprite.Rocket` (`BrakeSprites.Rocket(carril)
 | Discos de rondas (8), órbitas (malla) | I / E | lleno = perfecta, medio = parcial | 42–60 u | `RingSprite`, `Disc` |
 
 Riesgos: los satélites son IDÉNTICOS (la señal es el aro y el sobre, nunca el dibujo): UN solo asset, sin rotación ni luz por instancia, vista plana; sin antena vertical sobre el brazo (cruz); la nube plana y OPACA; el planeta oscuro y de bajo contraste; los estados de la revelación se leen por forma (aro continuo/punteado, visto/aspa). No tocar: órbitas, asentamiento, pulso del aro, halos, vuelo de sobres.
+
+**Ficha de arte (Tarea 98, hecha el 14-oct):** satélite (UN solo dibujo para todos), planeta (esfera mate azul noche, sin continentes), sobre y nube de polvo (opaca y de relieve bajo) son renders propios en el mismo lienzo y escala que los de hoy; el rótulo «¿Aquí se cruzaron?» y el aviso de sorpresa pasan a losas «noche» del kit. Se quedan procedurales los aros y el medio disco (se tiñen), las luces del planeta y sus resplandores, las órbitas y el vuelo del sobre. Medidas y detalle: [`diseno-satelites.md`](diseno-satelites.md) §13.
 
 ### 6. Constelaciones (`parejas`, `Games/Parejas/`)
 
@@ -340,5 +342,6 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 | `freno` (Freno de Emergencia: 2 botones, 3 cohetes, plataforma, ALTO) | 7 | 1152×664 | 369 KB | **0,50 MB** | 0,33 MB |
 | `calculo` (Carga exacta: aro y núcleo del reactor) | 2 | 1152×556 | 242 KB | **0,32 MB** | 0,27 MB |
 | `disparate` (¿Verdad o disparate?: antena, 2 íconos, 2 barras del medidor) | 5 | 512×574 | 125 KB | **0,16 MB** | 0,13 MB |
+| `satelites` (Satélites: satélite, planeta, sobre, nube de polvo) | 4 | 1408×516 | 193 KB | **0,23 MB** | 0,31 MB |
 
-Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta y ¿Verdad o disparate? (radar + piloto + freno + calculo + disparate + comun + nubi) son unos 4,0 MB sin comprimir la textura y unos 2,9 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate? y Satélites (radar + piloto + freno + calculo + disparate + satelites + comun + nubi) son unos 4,3 MB sin comprimir la textura y unos 3,2 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
