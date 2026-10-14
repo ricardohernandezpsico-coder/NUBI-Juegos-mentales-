@@ -2,6 +2,10 @@
 
 Ideas conversadas con Ricardo que quedan en espera: NO implementar hasta que él lo pida.
 
+## Modelo de negocio y enganche a la Duolingo (14-oct)
+
+En estudio, no implementar hasta que Ricardo lo pida. Todo está en [`docs/modelo-negocio.md`](modelo-negocio.md).
+
 ## Rangos de tripulación y "Tu astronauta" (27-sep)
 
 Origen: Ricardo propuso cambiar las ligas de metales (Bronce, Plata, Oro...) por nombres ligados al tema espacial

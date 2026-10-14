@@ -82,6 +82,7 @@ Solo cuando la app esté casi lista.
 - «Entrenamiento cognitivo» (ni «cerebro», ni promesas de salud) en ningún texto.
 
 Las ideas en espera (rangos de tripulación, «Tu astronauta») están en `docs/ideas-guardadas.md`.
+El modelo de negocio y el enganche a la Duolingo (planes, liga, protector de racha) están en estudio, sin implementar: [`docs/modelo-negocio.md`](modelo-negocio.md).
 
 ## Candidatos de juegos, para después de la prueba
 
