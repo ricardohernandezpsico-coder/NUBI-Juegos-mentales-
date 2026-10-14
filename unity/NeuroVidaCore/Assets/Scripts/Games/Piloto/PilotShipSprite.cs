@@ -1,4 +1,5 @@
 using UnityEngine;
+using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.ClayRaster;
 
 namespace NeuroVida.Games.Piloto
@@ -20,7 +21,8 @@ namespace NeuroVida.Games.Piloto
 
         private static readonly float[] Fin = { 0.20f, -0.10f, 0.52f, -0.46f, 0.52f, -0.68f, 0.20f, -0.52f };
 
-        public static Sprite Get() => _cache != null ? _cache : (_cache = ToSprite(Render(SizePx), SizePx, SizePx));
+        /// <summary>La nave de plasticina (Tarea 95, <c>tools/juegos/piloto.py</c>, el mismo lienzo y la misma escala) si existe el atlas «piloto»; si no, la procedural de siempre.</summary>
+        public static Sprite Get() => PlasticArt.Get(PilotSignalSprites.PlasticGroup, "nave") ?? (_cache != null ? _cache : (_cache = ToSprite(Render(SizePx), SizePx, SizePx)));
 
         private static float Hull(float u, float v) =>
             Mathf.Max(Mathf.Max(Circle(u, v, -0.62f, -0.06f, 0.92f), Circle(u, v, 0.62f, -0.06f, 0.92f)), -0.58f - v);

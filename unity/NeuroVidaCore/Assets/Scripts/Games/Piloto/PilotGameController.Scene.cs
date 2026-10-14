@@ -73,7 +73,7 @@ namespace NeuroVida.Games.Piloto
 
         private void SetMissionCard()
         {
-            _missionIcon.sprite = PilotSignalSprites.Get(_mission.Shape, _mission.Detail);
+            _missionIcon.sprite = PilotSignalSprites.Get(_mission.Shape, _mission.Detail, small: true);
             _missionIcon.enabled = true;
             _missionName.text = PilotContract.MissionName(_mission);
             _missionFresh = !(Now - _missionFreshAt < 1.6f);          // fuerza que se rearme
@@ -107,7 +107,7 @@ namespace NeuroVida.Games.Piloto
 #endif
             _missionCard.localScale = Vector3.one * pulse;
             float a = fresh ? (Motion.Decorative ? 0.25f + 0.2f * Mathf.Sin(now * 11f) + 0.2f : 0.5f) : 0.95f;
-            _missionFill.color = fresh ? new Color(Gold.r * 0.55f + PanelFill.r * 0.45f, Gold.g * 0.55f + PanelFill.g * 0.45f, Gold.b * 0.4f + PanelFill.b * 0.6f, Mathf.Clamp(a + 0.4f, 0.6f, 1f)) : new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f);
+            if (!PlasticPanels) _missionFill.color = fresh ? new Color(Gold.r * 0.55f + PanelFill.r * 0.45f, Gold.g * 0.55f + PanelFill.g * 0.45f, Gold.b * 0.4f + PanelFill.b * 0.6f, Mathf.Clamp(a + 0.4f, 0.6f, 1f)) : new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f);
         }
 
         // ------------------------------------------------------------------ avisos (misión nueva por sector, hiperimpulso)

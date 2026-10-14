@@ -26,7 +26,7 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 |---|---|---|---:|---|---|---|
 | — | **Piezas comunes (fase 0)** | — | losas, marcas, anillo, Nubi 3D | integrado (verificación completa; falta que Ricardo lo vea en el teléfono) | 14-oct | [antes](previews/plasticina/antes-stroop.png) → [después](previews/plasticina/despues-stroop.png) · [Carga exacta](previews/plasticina/despues-calculo.png) · [Constelaciones](previews/plasticina/despues-parejas.png) |
 | 1 | Rescate relámpago | `radar` | 6 cápsulas + 6 íconos, roca, aro del radar, nave, asiento | integrado; **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-radar.png) → [después](previews/plasticina/despues-radar.png) |
-| 2 | Piloto Estelar | `piloto` | 15 señales, nave | inventario | 14-oct | — |
+| 2 | Piloto Estelar | `piloto` | 15 señales (+ versión chica), nave | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-piloto.png) → [después](previews/plasticina/despues-piloto.png) |
 | 3 | Freno de Emergencia | `freno` | botón ×2, ¡ALTO!, plataforma, cohete ×3 | inventario | 14-oct | — |
 | 4 | Satélites | `satelites` | 6 | inventario | 14-oct | — |
 | 5 | Tinta o Palabra | `stroop` | 3 (+ botones) | inventario | 14-oct | — |
@@ -47,9 +47,9 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 
 ## Lo que NO entró en la Tarea 94 (a decidir en las siguientes)
 
-- **Decorado de Rescate:** el planeta lejano, la estación accidentada, los restos y el polvo siguen planos (procedurales); el eje lima del centro del radar también. El barrido, la estática, el rayo tractor, las llamas y los aros de la revelación se quedan como efecto (son animados o se tiñen).
+- **Decorado de Rescate (y de todos los juegos):** el planeta lejano, la estación accidentada, los restos, el polvo y el eje lima del centro del radar siguen planos (procedurales). **Queda para UNA pasada final de decorados, cuando estén todos los juegos migrados** (decisión de Opus, 14-oct). El barrido, la estática, el rayo tractor, las llamas y los aros de la revelación se quedan como efecto (son animados o se tiñen).
 - **Fase 0 por completar:** el punto de color de los avisos (`Toast`) y de `PhasePill` quedó en tinta sólida sobre la losa y se ve algo pesado (un punto negro sobre el sol): suavizarlo (tinta al 50 %) en la próxima tarea que toque `Games/Shared`. `ProgressDots`, `TileSprites` (las fichas de Tinta o Palabra y otros), `RingSprite`, los destellos y el cielo siguen procedurales: cada juego pasa sus piezas propias en su tarea.
-- **`art_version` en las medidas:** no se implementó (toca `StroopTelemetry`, `NativeReceiver` y la lectura de Kotlin); propuesta y razones en `docs/diseno-rescate.md` §17.2.
+- **Sin `art_version` en las medidas (decisión de Opus, 14-oct):** el cambio de arte se marca con su fecha (Rescate, 14-oct-2026; cada juego migrado anota la suya en su fila de arriba); si hace falta separar series, se hace por fecha.
 - **Dos cápsulas con el canto en sombra más tenue:** la gota y el triángulo rinden 2,0 y 2,3:1 en su borde más oscuro contra el vidrio MÁS claro (el cuerpo rinde ≥ 4:1): mirarlas en el teléfono antes de tocar la luz.
 
 ## Piezas comunes (fase 0): las que benefician a los 17
@@ -133,6 +133,8 @@ Riesgos: **el color de la tinta ES el estímulo** (4 hex validados con `tools/pa
 | Franja del dedo, barra del viaje, textos, final | I | — | — | `RoundedRect`, `Disc` |
 
 Riesgos: la jugabilidad es silueta + detalle; las «parecidas» (nivel 3 en adelante) son MISMA forma y MISMO color con otro detalle: los detalles deben ser planos, incrustados y de alto contraste; las 5 formas siguen distintas (hexágono vs círculo, cuadrado vs círculo); orientación fija (punta de la gota y del triángulo arriba), vista cenital; deben leerse a 102 u y a ~66 u en la tarjeta. Nada de fondo que parezca señal. Comparte las 5 formas y los colores con Rescate. No tocar: ruta y arco, balizas, rayo, hiperimpulso, anillo del tiempo, bamboleo, latido de la tarjeta.
+
+**Ficha de arte (Tarea 95, hecha el 14-oct):** señales = las MISMAS formas, colores fijos y grosor que las cápsulas de Rescate (`tools/juegos/formas.py`), sin ventanilla y con el detalle de churro de tinta incrustado (punto, anillo y franja: planos, grandes y de alto contraste); versión chica de 96 px para la tarjeta de misión; nave de arriba con la punta hacia arriba; los paneles pasan a las losas de la fase 0 (la franja del dedo, la más oscura). Se quedan procedurales la ruta, las balizas, el arco, el rayo, el anillo del tiempo y el halo de la nave. Medidas y detalle: [`diseno-piloto.md`](diseno-piloto.md) §16.
 
 ### 4. Freno de Emergencia (`freno`, `Games/Freno/`)
 
@@ -318,5 +320,6 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 | `comun` (losas del kit y «noche», marcas ✓ ✗, anillo de la cuenta): se paga UNA vez para los 17 juegos | 28 | 896×2292 | 815 KB | 1,05 MB | 0,87 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 | `radar` (Rescate relámpago) | 16 | 1024×1776 | 790 KB | **1,11 MB** | 0,77 MB |
+| `piloto` (Piloto Estelar: 15 señales a 192 y 96 px, nave) | 31 | 1664×492 | 472 KB | **0,58 MB** | 0,35 MB |
 
-Lo nuevo de Rescate en el APK (radar + comun + nubi) son unos 2,4 MB sin comprimir la textura y unos 1,8 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate y Piloto (radar + piloto + comun + nubi) son unos 3,0 MB sin comprimir la textura y unos 2,2 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).

@@ -222,8 +222,8 @@ namespace NeuroVida.Games.Piloto
 
         private void BuildStrip()
         {
-            _stripRim = Rr(_stripLayer, "StripRim", new Color(Cyan.r, Cyan.g, Cyan.b, 0.35f), 23f);
-            _stripFill = Rr(_stripLayer, "StripFill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.62f), 22f);
+            _stripRim = Rim(_stripLayer, "StripRim", new Color(Cyan.r, Cyan.g, Cyan.b, 0.35f), 23f);
+            _stripFill = Rr(_stripLayer, "StripFill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.62f), 22f, slab: true, tone: SlabTone.Dim);       // la franja del dedo es grande: la losa más oscura (apagada) para que no pese sobre el cielo
             for (int i = 0; i < _dots.Length; i++)
             {
                 _dots[i] = MakeImage(_stripLayer, "Dot" + i, DiscSprite.Get());
@@ -249,8 +249,8 @@ namespace NeuroVida.Games.Piloto
             card.transform.SetParent(_topLayer, false);
             _missionCard = card.AddComponent<RectTransform>();
             _missionCard.anchorMin = _missionCard.anchorMax = _missionCard.pivot = new Vector2(0.5f, 0.5f);
-            _missionRim = Rr(_missionCard, "MissionRim", PanelEdge, 19f);
-            _missionFill = Rr(_missionCard, "MissionFill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f), 17f);
+            _missionRim = Rim(_missionCard, "MissionRim", PanelEdge, 19f);
+            _missionFill = Rr(_missionCard, "MissionFill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f), 17f, slab: true);
             _missionIcon = MakeImage(_missionCard, "MissionIcon", null);
             _missionIcon.enabled = false;
             _missionTag = MakeLabel(_missionCard, "MissionTag", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
@@ -270,13 +270,13 @@ namespace NeuroVida.Games.Piloto
             _bannerGroup = _noticeLayer.gameObject.AddComponent<CanvasGroup>();
             _bannerGroup.blocksRaycasts = false;
             _bannerGroup.interactable = false;
-            _bannerRim = Rr(_noticeLayer, "BannerRim", Gold, 19f);
-            _bannerFill = Rr(_noticeLayer, "BannerFill", Pill, 18f);
+            _bannerRim = Rim(_noticeLayer, "BannerRim", Gold, 19f);
+            _bannerFill = Rr(_noticeLayer, "BannerFill", Pill, 18f, slab: true);
             _bannerTag = MakeLabel(_noticeLayer, "BannerTag", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _bannerTitle = MakeLabel(_noticeLayer, "BannerTitle", 18f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _bannerTag.horizontalOverflow = _bannerTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _tallRim = Rr(_noticeLayer, "TallRim", Gold, 21f);
-            _tallFill = Rr(_noticeLayer, "TallFill", Pill, 20f);
+            _tallRim = Rim(_noticeLayer, "TallRim", Gold, 21f);
+            _tallFill = Rr(_noticeLayer, "TallFill", Pill, 20f, slab: true);
             _tallTitle = MakeLabel(_noticeLayer, "TallTitle", 18f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _tallIcon = MakeImage(_noticeLayer, "TallIcon", null);
             _tallName = MakeLabel(_noticeLayer, "TallName", 18f, UiFonts.Bold, Color.white, TextAnchor.MiddleLeft);
@@ -291,7 +291,7 @@ namespace NeuroVida.Games.Piloto
                 go.transform.SetParent(_fxLayer, false);
                 f.Root = go.AddComponent<RectTransform>();
                 f.Root.anchorMin = f.Root.anchorMax = f.Root.pivot = new Vector2(0.5f, 0.5f);
-                f.Bg = Rr(f.Root, "Bg", Pill, 15f);
+                f.Bg = Rr(f.Root, "Bg", Pill, 15f, slab: true);
                 f.Label = MakeLabel(f.Root, "Label", 15f, UiFonts.Bold, Good, TextAnchor.MiddleCenter);
                 f.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
                 go.SetActive(false);
@@ -314,8 +314,8 @@ namespace NeuroVida.Games.Piloto
                 _endLink[i] = MakeImage(_endLayer, "Link" + i, null);
                 _endLink[i].color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.5f);
             }
-            _endPanelRim = Rr(_endLayer, "PanelRim", PanelEdge, 19f);
-            _endPanel = Rr(_endLayer, "Panel", new Color(20f / 255f, 18f / 255f, 58f / 255f, 0.96f), 17f);
+            _endPanelRim = Rim(_endLayer, "PanelRim", PanelEdge, 19f);
+            _endPanel = Rr(_endLayer, "Panel", new Color(20f / 255f, 18f / 255f, 58f / 255f, 0.96f), 17f, slab: true);
             for (int i = 0; i < _endLabel.Length; i++)
             {
                 _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 15f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
@@ -371,12 +371,24 @@ namespace NeuroVida.Games.Piloto
         }
 
         /// <summary>Un rectángulo redondeado (9-slice) con el radio en dp: el radio en unidades se aplica en <see cref="Layout"/> (depende de la escala de la pantalla).</summary>
-        private Image Rr(Transform parent, string name, Color color, float radiusDp)
+        private Image Rr(Transform parent, string name, Color color, float radiusDp, bool slab = false, SlabTone tone = SlabTone.Night)
         {
             var img = MakeImage(parent, name, RoundedRectSprite.Get(24));
+            if (slab && PlasticSlab.TryStyle(img, SlabSize.Button, tone) != null) return img;       // la losa «noche» de plasticina (su tamaño sigue al rectángulo de [img]); sin ella, el rectángulo redondeado de siempre
             img.color = color;
             img.type = Image.Type.Sliced;
             _radii.Add(new KeyValuePair<Image, float>(img, radiusDp));
+            return img;
+        }
+
+        /// <summary>true si los paneles de Piloto son losas de plasticina (el atlas común existe).</summary>
+        private static bool PlasticPanels => PlasticSlab.Available(SlabSize.Button, SlabTone.Night);
+
+        /// <summary>El borde de color de un panel. Con plasticina el panel es una losa y el borde no existe: queda apagado (el resto del código le puede cambiar el color o el objeto sin que se vea).</summary>
+        private Image Rim(Transform parent, string name, Color color, float radiusDp)
+        {
+            var img = Rr(parent, name, color, radiusDp);
+            if (PlasticPanels) img.enabled = false;
             return img;
         }
 

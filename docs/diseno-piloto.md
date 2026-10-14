@@ -170,3 +170,29 @@ Ricardo probó el tutorial y una partida de 90 s y lo aprobó; lo único: «cuan
 - **Se respeta:** el sonido apagado (no suena ninguna capa), la pausa del menú (calla todo) y la congelación de Nubi en los tutoriales (baja al 30 % y vuelve: `GameClock.LoopVolume`).
 - **Se fue:** `PilotSounds.Engine` (el motor viejo, de un segundo).
 - **Pruebas:** `Games/Piloto/Tests/PilotEngineTests` — las tres capas contra muestras de referencia generadas con node (`node tools/sonido/referencia-motor.js` corre el código del propio laboratorio; tolerancia 1e-4 en las primeras 2000 muestras, en el medio y en el final), bucles de 4 s sin salto en el empalme, potencia constante de la mezcla, acercamiento exponencial y el nivel respecto de las campanas.
+
+## 16. Plasticina (Tarea 95, 14-oct): el segundo juego en pasar al nuevo estilo
+
+Ricardo: todos los juegos en plasticina (el piloto fue Rescate, Tarea 94). Es SOLO arte: las dos tareas siguen siempre JUNTAS, sin inclinación ni sensores, y la ruta, la velocidad, los tiempos de las señales, el DDA y las medidas no cambian (regla permanente 1 y reglas de patentes). Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina piloto`; si algún día hay que separar series de medidas, se hace por fecha: decisión de Opus, no se agrega `art_version`).
+
+### 16.1 Qué es de plasticina y qué no
+
+| De plasticina (renders de Blender, atlas `Resources/Plasticina/piloto`) | Se queda procedural |
+|---|---|
+| las **15 señales** (hexágono, gota, círculo, cuadrado y triángulo × punto, anillo y franja): las MISMAS formas, colores fijos y grosor que las cápsulas de Rescate (`tools/juegos/formas.py`), sin ventanilla, con el detalle de churro de tinta incrustado: punto de radio 0,27, aro de 0,42 con 0,15 de ancho, franja de 0,30 de alto | la **ruta** (canal y bordes: malla), las **balizas** (puntos de luz con su resplandor), el **arco de sector**, el rayo al atrapar y las estrellas del hiperimpulso: son luz o efecto |
+| una versión CHICA de cada señal (96 px) para la tarjeta de misión de arriba, que se ve a 28 dp | el **anillo** del tiempo restante de cada señal (se vacía en radial), el aro y el punto del dedo y los puntos de la franja |
+| la **nave** (de arriba, con la punta hacia arriba): casco en forma de hoja crema, punta y aletas coral, ventanilla celeste con aro de tinta y llama de sol con el centro coral | el halo de la nave, el bamboleo y el tinte de «fuera de ruta» (se aplican por código sobre el sprite) |
+| las losas de plasticina de la fase 0 en lugar de los paneles planos: la franja del dedo (losa «apagada», la más oscura, porque es muy grande), la tarjeta de misión, los avisos corto y alto, los textos flotantes y el panel del final (losa «noche») | los textos, el tinte del título del aviso y la barra del viaje |
+
+### 16.2 Lo que se midió (`tools/juegos/mide_piloto.py`, sobre el atlas ya empaquetado)
+
+- **Misma huella y mismo tamaño:** el área del cuerpo de las 15 señales es el 97-102 % de la de hoy y la silueta coincide en 0,95-0,98 (IoU); la nave, el 98 % (IoU 0,96). Mismo lienzo (±1,18 y ±1,1): ninguna medida del controlador cambia. `PilotPlasticTests` lo vigila.
+- **Contraste de la forma contra el cielo del hiperespacio (WCAG, meta ≥ 3:1):** de 7,8 a 11,8:1 contra el cielo de arriba, 5,6 a 8,4:1 contra una nebulosa azul y 4,4 a 6,7:1 contra una coral (el más bajo, el triángulo). El casco de la nave rinde 15:1 contra el cielo.
+- **Las «parecidas» se distinguen por el detalle:** la tinta contra el cuerpo rinde 5,9 a 8,9:1; entre dos señales de la misma forma cambia al menos el 13 % de la forma (punto/franja es el par más cercano; punto/anillo y anillo/franja, 25 a 37 %); el color del cuerpo es el mismo en las tres (prueba). A los tamaños reales el detalle mide: en el juego (forma de 102 u) el aro 8,3 px de ancho, el punto 30 px y la franja 17 px; en la tarjeta de misión (66 u) 5,4, 19 y 11 px; en el aviso de misión nueva (156 u) 12,7, 46 y 25 px.
+- **Orientación y silueta:** igual que hoy (punta de la gota y del triángulo hacia arriba, vista cenital sin perspectiva), y el redondeo de la plasticina no acerca las formas: la misma `contorno_forma` que Rescate (par más parecido, hexágono/círculo, 0,92 de IoU contra 0,90 de hoy).
+
+### 16.3 Cómo quedó hecho
+
+- **Código:** `PilotSignalSprites.Get(forma, detalle, small)` y `PilotShipSprite.Get()` entregan el sprite de plasticina si el atlas existe y, si no, el procedural de siempre (`PilotSignalSprites.Plastic`; `PlasticArt.Disabled = true` lo apaga en las pruebas). La tarjeta de misión usa la versión chica (`small: true`). En `PilotGameController` los pares borde/relleno de los paneles (`Rim` + `Rr(..., slab: true)`): con plasticina el borde queda apagado y el relleno es una losa (`PlasticSlab.TryStyle`); la tarjeta de misión ya no cambia el color del relleno al llegar una misión nueva (queda el rótulo «NUEVA MISIÓN», el latido y el aviso); el resto no cambió.
+- **Pesa** 0,58 MB en el APK (472 KB de PNG; 0,35 MB con ASTC 6×6), bajo el tope de ~1,5 MB. 31 imágenes: 15 señales a 192 px, las mismas 15 a 96 px (salen de la misma maestra) y la nave.
+- **Pruebas:** `PilotPlasticTests` (huella, contraste, detalles y color, nave, caída al procedural).

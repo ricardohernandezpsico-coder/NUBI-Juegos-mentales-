@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.ClayRaster;
 
 namespace NeuroVida.Games.Piloto
@@ -7,6 +8,8 @@ namespace NeuroVida.Games.Piloto
     /// <summary>
     /// Las señales de Piloto Estelar con el pincel de arcilla común (<see cref="NeuroVida.Games.Shared.ClayRaster"/>): cinco formas (hexágono, gota, círculo, cuadrado y triángulo; sin estrellas con puntas, cruces ni medias lunas) con tres detalles (punto, anillo y franja). Cada forma
     /// tiene SIEMPRE el mismo color: las señales parecidas (misma forma, otro detalle) tienen el mismo color y se distinguen por el detalle, no por el color. Se hornean una vez (15 sprites de 128 px) y se reutilizan. Todo plano.
+    /// <para><b>Plasticina (Tarea 95):</b> si el atlas <c>Resources/Plasticina/piloto</c> existe, las 15 salen de ahí (renders de Blender, <c>tools/juegos/piloto.py</c>): las mismas formas y colores de las cápsulas de Rescate, en el mismo lienzo y a la misma escala, con el detalle de churro de tinta incrustado.
+    /// Hay una versión normal (192 px: la señal del juego y el aviso de misión nueva) y una CHICA (96 px: la tarjeta de misión de arriba, que se ve a 28 dp). Sin el atlas, el arte procedural de abajo.</para>
     /// </summary>
     public static class PilotSignalSprites
     {
@@ -28,8 +31,18 @@ namespace NeuroVida.Games.Piloto
 
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
 
-        public static Sprite Get(SignalShape shape, SignalDetail detail)
+        public const string PlasticGroup = "piloto";
+        private static readonly string[] ShapeNames = { "hexagono", "gota", "circulo", "cuadrado", "triangulo" };
+        private static readonly string[] DetailNames = { "punto", "anillo", "franja" };
+
+        /// <summary>true si el atlas de plasticina de Piloto existe (y no está desactivado).</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "nave");
+
+        /// <summary>La señal. <paramref name="small"/>: la versión chica de la tarjeta de misión (solo con plasticina: el procedural se achica sin problema).</summary>
+        public static Sprite Get(SignalShape shape, SignalDetail detail, bool small = false)
         {
+            var plastic = PlasticArt.Get(PlasticGroup, (small ? "chica_" : "senal_") + ShapeNames[(int)shape] + "_" + DetailNames[(int)detail]);
+            if (plastic != null) return plastic;
             int key = (int)shape * 8 + (int)detail;
             if (!Cache.TryGetValue(key, out var s) || s == null)
             {
