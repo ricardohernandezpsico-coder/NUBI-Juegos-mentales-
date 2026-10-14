@@ -1,81 +1,316 @@
 {
  "px_por_dp": 3,
- "nota": "Kit de plasticina (Tarea 89), renderizado en Blender con `tools/isla/isla.py --kit`; `tools/isla/kit.py` lo normaliza. Los WebP viven en drawable-nodpi (a 3 px por dp, sin que Android los reescale).",
- "losa": {
-  "imagen_px": [
-   264,
-   216
-  ],
-  "margenes_dp": {
-   "izq": 8.0,
-   "arr": 6.0,
-   "der": 11.33,
-   "abajo": 17.0
+ "nota": "Kit de plasticina (Tareas 89 y 90), renderizado en Blender con `tools/isla/isla.py --kit`; `tools/isla/kit.py` lo normaliza. Los WebP viven en drawable-nodpi (a 3 px por dp, sin que Android los reescale).",
+ "colores": {
+  "sol": "#FFCB45",
+  "crema": "#F5EBDB",
+  "lima": "#9BE564",
+  "cielo": "#4CC9F0",
+  "coral": "#FF6B4A",
+  "lila": "#B8A4FF"
+ },
+ "losas": {
+  "ch": {
+   "imagen_px": [
+    216,
+    168
+   ],
+   "margenes_dp": {
+    "izq": 8.0,
+    "arr": 6.0,
+    "der": 11.33,
+    "abajo": 17.33
+   },
+   "cuerpo_dp": {
+    "ancho": 52.67,
+    "alto": 32.67
+   },
+   "radio_dp": 14,
+   "insets_px": {
+    "izq": 66,
+    "arr": 60,
+    "der": 76,
+    "abajo": 94
+   },
+   "centro_px": [
+    74,
+    14
+   ],
+   "presionada": {
+    "texto_baja_dp": 2.0,
+    "borde_baja_dp": 0.0
+   },
+   "colores": [
+    "crema",
+    "sol",
+    "lima"
+   ]
   },
-  "cuerpo_dp": {
-   "ancho": 68.67,
-   "alto": 49.0
+  "md": {
+   "imagen_px": [
+    264,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 8.0,
+    "arr": 6.0,
+    "der": 11.33,
+    "abajo": 17.0
+   },
+   "cuerpo_dp": {
+    "ancho": 68.67,
+    "alto": 49.0
+   },
+   "radio_dp": 22,
+   "insets_px": {
+    "izq": 90,
+    "arr": 84,
+    "der": 100,
+    "abajo": 117
+   },
+   "centro_px": [
+    74,
+    15
+   ],
+   "presionada": {
+    "texto_baja_dp": 2.0,
+    "borde_baja_dp": 0.33
+   },
+   "colores": [
+    "sol",
+    "crema",
+    "lima",
+    "cielo",
+    "coral",
+    "lila"
+   ]
   },
-  "radio_dp": 22,
-  "insets_px": {
-   "izq": 90,
-   "arr": 84,
-   "der": 100,
-   "abajo": 117
+  "gr": {
+   "imagen_px": [
+    312,
+    264
+   ],
+   "margenes_dp": {
+    "izq": 8.0,
+    "arr": 6.0,
+    "der": 11.0,
+    "abajo": 17.0
+   },
+   "cuerpo_dp": {
+    "ancho": 85.0,
+    "alto": 65.0
+   },
+   "radio_dp": 30,
+   "insets_px": {
+    "izq": 114,
+    "arr": 108,
+    "der": 123,
+    "abajo": 141
+   },
+   "centro_px": [
+    75,
+    15
+   ],
+   "presionada": {
+    "texto_baja_dp": 2.0,
+    "borde_baja_dp": 0.33
+   },
+   "colores": [
+    "crema"
+   ]
   },
-  "centro_px": [
-   74,
-   15
-  ],
-  "presionada": {
-   "texto_baja_dp": 2.0,
-   "borde_baja_dp": 0.33,
-   "nota": "la losa presionada es más baja (la mitad de alto), más oscura y de sombra más chica; el texto y el contenido bajan `texto_baja_dp` al apoyar el dedo"
+  "nota": "la losa presionada es más baja (la mitad de alto), más oscura y de sombra más chica; el texto y el contenido bajan `texto_baja_dp` al apoyar el dedo"
+ },
+ "discos": {
+  "cerrar": {
+   "imagen_px": [
+    192,
+    192
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 4.0,
+    "der": 10.0,
+    "abajo": 12.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   },
+   "presionada": {
+    "texto_baja_dp": 2.0,
+    "borde_baja_dp": 0.67
+   }
   },
-  "estados": [
-   "normal",
-   "_p"
-  ],
-  "colores": {
-   "sol": "#FFCB45",
-   "crema": "#F5EBDB",
-   "lima": "#9BE564"
+  "disco_crema": {
+   "imagen_px": [
+    192,
+    192
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 4.0,
+    "der": 10.0,
+    "abajo": 12.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   },
+   "presionada": {
+    "texto_baja_dp": 2.0,
+    "borde_baja_dp": 0.67
+   }
+  },
+  "disco_cielo": {
+   "imagen_px": [
+    192,
+    192
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 4.0,
+    "der": 10.0,
+    "abajo": 12.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   },
+   "presionada": {
+    "texto_baja_dp": 2.0,
+    "borde_baja_dp": 0.33
+   }
   }
  },
- "cerrar": {
-  "imagen_px": [
-   192,
-   192
-  ],
-  "margenes_dp": {
-   "izq": 6.0,
-   "arr": 4.0,
-   "der": 10.0,
-   "abajo": 12.0
+ "piezas": {
+  "jugar": {
+   "imagen_px": [
+    90,
+    96
+   ],
+   "margenes_dp": {
+    "izq": 4.0,
+    "arr": 3.67,
+    "der": 8.67,
+    "abajo": 9.67
+   },
+   "cuerpo_dp": {
+    "ancho": 17.33,
+    "alto": 18.67
+   }
   },
-  "cuerpo_dp": {
-   "ancho": 48.0,
-   "alto": 48.0
+  "volver": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 7.33,
+    "arr": 5.67,
+    "der": 9.33,
+    "abajo": 11.67
+   },
+   "cuerpo_dp": {
+    "ancho": 17.33,
+    "alto": 16.67
+   }
   },
-  "presionada": {
-   "texto_baja_dp": 2.0,
-   "borde_baja_dp": 0.67
-  }
- },
- "jugar": {
-  "imagen_px": [
-   90,
-   96
-  ],
-  "margenes_dp": {
-   "izq": 4.0,
-   "arr": 3.0,
-   "der": 8.67,
-   "abajo": 9.33
+  "visto": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 6.67,
+    "arr": 6.0,
+    "der": 8.67,
+    "abajo": 12.67
+   },
+   "cuerpo_dp": {
+    "ancho": 18.67,
+    "alto": 15.33
+   }
   },
-  "cuerpo_dp": {
-   "ancho": 17.33,
-   "alto": 19.67
+  "izq": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 10.67,
+    "arr": 4.67,
+    "der": 12.67,
+    "abajo": 10.33
+   },
+   "cuerpo_dp": {
+    "ancho": 10.67,
+    "alto": 19.0
+   }
+  },
+  "der": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 10.67,
+    "arr": 4.67,
+    "der": 12.67,
+    "abajo": 10.33
+   },
+   "cuerpo_dp": {
+    "ancho": 10.67,
+    "alto": 19.0
+   }
+  },
+  "compartir": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 7.33,
+    "arr": 4.0,
+    "der": 9.33,
+    "abajo": 11.0
+   },
+   "cuerpo_dp": {
+    "ancho": 17.33,
+    "alto": 19.0
+   }
+  },
+  "candado": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 8.67,
+    "arr": 3.67,
+    "der": 10.67,
+    "abajo": 11.0
+   },
+   "cuerpo_dp": {
+    "ancho": 14.67,
+    "alto": 19.33
+   }
+  },
+  "engranaje": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 5.0,
+    "arr": 3.0,
+    "der": 7.0,
+    "abajo": 8.33
+   },
+   "cuerpo_dp": {
+    "ancho": 22.0,
+    "alto": 22.67
+   }
   }
  }
 }

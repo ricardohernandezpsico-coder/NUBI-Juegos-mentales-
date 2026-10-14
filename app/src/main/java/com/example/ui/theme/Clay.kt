@@ -41,6 +41,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.ClaySlab
+import com.example.ui.components.Glyph
+import com.example.ui.components.KitButton
+import com.example.ui.components.SlabSize
+import com.example.ui.components.slabColorFor
 
 /**
  * Lenguaje visual "noche + arcilla" de NeuroVida (ver NeuroVida/CLAUDE.md): fondo nocturno con estrellas
@@ -56,43 +61,28 @@ object Clay {
   val Lime = Color(0xFF9BE564)
   val Cream = Color(0xFFFFFFFF)
   val InkSoft = Color(0xFF6B6790)
+  /** Texto secundario sobre una losa crema (contraste 7:1). */
+  val InkMuted = Color(0xFF514B78)
   val Border = 3.dp
 }
 
-/** Tarjeta de arcilla: borde grueso, sombra dura abajo y "hundimiento" al presionar (si es clicable). */
+/**
+ * Tarjeta de plasticina (kit de la Tarea 90): una losa del color más parecido a [color] y del radio de [size] (chica 14 dp para chips y casillas, mediana 22 para botones y tarjetas, grande 30 para láminas y paneles) detrás del contenido; si es clicable,
+ * al apoyar el dedo se hunde (imagen presionada). El contenido define el tamaño y el centro de la losa se estira: con letra grande crece sin deformarse.
+ */
 @Composable
 fun ClayCard(
   modifier: Modifier = Modifier,
   color: Color = Clay.Cream,
-  radius: Dp = 24.dp,
-  depth: Dp = 5.dp,
+  size: SlabSize = SlabSize.MEDIUM,
   onClick: (() -> Unit)? = null,
   contentPadding: Dp = 16.dp,
   content: @Composable ColumnScope.() -> Unit
 ) {
-  val shape = RoundedCornerShape(radius)
-  val source = remember { MutableInteractionSource() }
-  val pressed by source.collectIsPressedAsState()
-  val press by animateDpAsState(if (pressed && onClick != null) depth else 0.dp, label = "clayPress")
-  val click = if (onClick != null) Modifier.clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick) else Modifier
-  Box(
-    modifier = modifier
-      .padding(bottom = depth)
-      .offset(y = press)
-      .drawBehind {
-        val d = (depth - press).toPx()
-        drawRoundRect(Clay.Ink, topLeft = Offset(0f, d), size = size, cornerRadius = CornerRadius(radius.toPx()))
-      }
-      .clip(shape)
-      .background(color, shape)
-      .border(BorderStroke(Clay.Border, Clay.Ink), shape)
-      .then(click)
-  ) {
-    Column(modifier = Modifier.padding(contentPadding), content = content)
-  }
+  ClaySlab(slabColorFor(color), modifier, size, onClick) { Column(modifier = Modifier.padding(contentPadding), content = content) }
 }
 
-/** Boton de arcilla (accion principal por defecto en amarillo sol). */
+/** Botón de plasticina (acción principal por defecto en sol): losa mediana con texto de Compose y, si hay [glyph], su ícono de churro tinta antes del texto. */
 @Composable
 fun ClayButton(
   text: String,
@@ -100,52 +90,25 @@ fun ClayButton(
   modifier: Modifier = Modifier,
   color: Color = Clay.Sun,
   textColor: Color = Clay.Ink,
-  icon: ImageVector? = null,
+  glyph: Glyph? = null,
   /** El inicio nuevo pide texto de 18 sp o más. */
-  fontSize: TextUnit = 17.sp
+  fontSize: TextUnit = 17.sp,
+  /** false = solo el ancho de su contenido (por defecto ocupa toda la fila). */
+  wide: Boolean = true
 ) {
-  ClayCard(
-    modifier = modifier.fillMaxWidth(),
-    color = color,
-    radius = 20.dp,
-    depth = 5.dp,
-    onClick = onClick,
-    contentPadding = 0.dp
-  ) {
-    // 52 dp como mínimo, no fijo: con letra 2,0 el texto pasa a dos líneas y el botón crece en vez de cortarlo.
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .heightIn(min = 52.dp)
-        .padding(horizontal = 8.dp, vertical = 6.dp),
-      horizontalArrangement = Arrangement.Center,
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      if (icon != null) {
-        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(22.dp))
-        Spacer(Modifier.width(8.dp))
-      }
-      Text(text, color = textColor, fontSize = fontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
-    }
-  }
+  KitButton(text, onClick, modifier, slabColorFor(color), glyph, fontSize, textColor, wide)
 }
 
-/** Pastilla pequeña con borde de tinta (rachas, etiquetas, contadores). */
+/** Pastilla de plasticina (losa chica de 14 dp; rachas, etiquetas, contadores). No es tocable: solo informa. */
 @Composable
-fun ClayPill(text: String, modifier: Modifier = Modifier, color: Color = Clay.Sun, textColor: Color = Clay.Ink, icon: ImageVector? = null) {
-  val shape = RoundedCornerShape(50)
-  Row(
-    modifier = modifier
-      .clip(shape)
-      .background(color, shape)
-      .border(BorderStroke(Clay.Border, Clay.Ink), shape)
-      .padding(horizontal = 12.dp, vertical = 4.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    if (icon != null) {
-      Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(16.dp))
-      Spacer(Modifier.width(4.dp))
+fun ClayPill(text: String, modifier: Modifier = Modifier, color: Color = Clay.Sun, textColor: Color = Clay.Ink, icon: ImageVector? = null, compact: Boolean = false) {
+  ClaySlab(slabColorFor(color), modifier, SlabSize.SMALL) {
+    Row(Modifier.heightIn(min = if (compact) 30.dp else 36.dp).padding(horizontal = if (compact) 10.dp else 14.dp, vertical = if (compact) 2.dp else 6.dp), verticalAlignment = Alignment.CenterVertically) {
+      if (icon != null) {
+        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(4.dp))
+      }
+      Text(text, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
-    Text(text, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
   }
 }

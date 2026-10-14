@@ -48,6 +48,7 @@ import com.example.model.RankTier
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.AreaBar
+import com.example.ui.components.Glyph
 import com.example.ui.components.LockTabSwipe
 import com.example.ui.components.areaDescription
 import com.example.ui.theme.Clay
@@ -147,34 +148,31 @@ fun ProgressScreen(
         LeagueHero(tier = tier, rating = avg, progress = prog, index = overallIndex(levels))
         Spacer(Modifier.height(14.dp))
         // Compartir la liga general como imagen (misma tarjeta que al ascender).
-        com.example.ui.theme.ClayPill(
+        ClayButton(
           text = "Compartir mi liga",
-          color = com.example.ui.theme.Clay.Sun,
-          icon = androidx.compose.material.icons.Icons.Default.Share,
-          modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .minimumInteractiveComponentSize() // área de toque de 48 dp aunque la píldora sea más baja
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
-            .clickable {
-              shareScope.launch {
-                try {
-                  com.example.ui.components.ShareCard.share(
-                    context,
-                    com.example.ui.components.ShareCard.Content(
-                      headline = "Estoy en liga ${tier.tierName}",
-                      subtitle = "Mi liga general",
-                      tier = tier,
-                      stats = com.example.ui.components.ShareCard.Content.trophiesAndStreak(avg, streak)
-                    ),
-                    "¡Estoy en la liga ${tier.tierName} de Nubi!"
-                  )
-                } catch (e: Exception) {
-                  android.util.Log.e("ProgressScreen", "No se pudo compartir la liga", e)
-                  com.example.diag.ErrorLog.record("COMPARTIR", "No se pudo compartir la liga.", e)
-                }
+          color = Clay.Sun,
+          glyph = Glyph.SHARE,
+          wide = false,
+          onClick = {
+            shareScope.launch {
+              try {
+                com.example.ui.components.ShareCard.share(
+                  context,
+                  com.example.ui.components.ShareCard.Content(
+                    headline = "Estoy en liga ${tier.tierName}",
+                    subtitle = "Mi liga general",
+                    tier = tier,
+                    stats = com.example.ui.components.ShareCard.Content.trophiesAndStreak(avg, streak)
+                  ),
+                  "¡Estoy en la liga ${tier.tierName} de Nubi!"
+                )
+              } catch (e: Exception) {
+                android.util.Log.e("ProgressScreen", "No se pudo compartir la liga", e)
+                com.example.diag.ErrorLog.record("COMPARTIR", "No se pudo compartir la liga.", e)
               }
             }
-            .testTag("btn_share_league")
+          },
+          modifier = Modifier.align(Alignment.CenterHorizontally).testTag("btn_share_league")
         )
       }
     }
@@ -184,22 +182,25 @@ fun ProgressScreen(
       Column {
         SpaceSectionTitle("Tus áreas", hint = "Tu avance de 0 a 100 en cada una; toca una para ver el detalle")
         Spacer(Modifier.height(8.dp))
-        statuses.forEach { s ->
-          val name = names[s.area] ?: s.area
-          Column(
-            Modifier
-              .fillMaxWidth()
-              // sin `clip`: el contorno de OnBoardText de la primera y la última letra sobresale 1,75 dp y un recorte lo comería (Tarea 87)
-              .clickable { openArea = s.area }
-              .padding(vertical = 8.dp)
-              .semantics(mergeDescendants = true) { contentDescription = areaDescription(name, s) }
-              .testTag("progress_area_${s.area.lowercase()}")
-          ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-              OnBoardText(name, color = OnNight, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-              OnBoardText(s.value?.let { Skill.stageName(it) } ?: "Sin medir", color = OnNightDim, fontSize = 14.sp)
+        // Cada área es una tarjeta de plasticina tocable (Tarea 90): su nombre, su etapa y la barra; tocarla abre su detalle.
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+          statuses.forEach { s ->
+            val name = names[s.area] ?: s.area
+            com.example.ui.theme.ClayCard(
+              modifier = Modifier
+                .fillMaxWidth()
+                .semantics(mergeDescendants = true) { contentDescription = areaDescription(name, s) }
+                .testTag("progress_area_${s.area.lowercase()}"),
+              onClick = { openArea = s.area }, contentPadding = 0.dp
+            ) {
+              Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                  Text(name, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                  Text(s.value?.let { Skill.stageName(it) } ?: "Sin medir", color = Clay.InkMuted, fontSize = 14.sp)
+                }
+                AreaBar(s.value, s.change, modifier = Modifier.padding(top = 8.dp), onCard = true)
+              }
             }
-            AreaBar(s.value, s.change, modifier = Modifier.padding(top = 8.dp))
           }
         }
       }

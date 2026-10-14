@@ -122,6 +122,8 @@ private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = Color(0xFFC7D0FF)
 /** Un solo color para las barras (el lavanda de Nubi): el NOMBRE dice qué área es, no el color. */
 val AreaBarColor = Color(0xFFC4BAFF)
+/** El mismo lavanda, más oscuro, para la barra sobre una tarjeta crema. */
+private val AreaBarOnCard = Color(0xFF7B6BD6)
 /** Lo que bajó en la semana: lila suave, nunca rojo (sin culpa). */
 private val AreaDownColor = Color(0xFFB2A8E8)
 private val BubbleFill = Color(0xFFFCFAFF)
@@ -137,18 +139,20 @@ val AREA_ORDER = listOf("MEMORIA", "ATENCION", "RAZONAMIENTO", "LENGUAJE")
  * punteado = lo que bajó. Forma distinta para cada caso, así no depende solo del color.
  */
 @Composable
-fun AreaBar(value: Float?, change: Float, modifier: Modifier = Modifier, height: Dp = 8.dp) {
+fun AreaBar(value: Float?, change: Float, modifier: Modifier = Modifier, height: Dp = 8.dp, onCard: Boolean = false) {
   Canvas(modifier.fillMaxWidth().height(height)) {
     val w = size.width; val h = size.height; val rad = CornerRadius(h / 2f, h / 2f)
-    drawRoundRect(Color.White.copy(alpha = 0.15f), cornerRadius = rad)
+    // Sobre una tarjeta crema (Tarea 90) la pista es tinta tenue y la barra un lavanda más oscuro (≥ 3:1 sobre la crema); sobre el cielo, como siempre.
+    drawRoundRect(if (onCard) Clay.Ink.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.15f), cornerRadius = rad)
     val v = (value ?: 0f).coerceIn(0f, 1f)
     val before = if (change > 0f) (v - change).coerceIn(0f, 1f) else v
-    if (value != null && before > 0.005f) drawRoundRect(AreaBarColor, size = Size(maxOf(h, w * before), h), cornerRadius = rad)
+    if (value != null && before > 0.005f) drawRoundRect(if (onCard) AreaBarOnCard else AreaBarColor, size = Size(maxOf(h, w * before), h), cornerRadius = rad)
     if (value != null && change > 0f) {
       val x0 = maxOf(0f, w * before - h / 2f); val x1 = w * v
       drawCircle(Brush.radialGradient(listOf(Clay.Sun.copy(alpha = 0.55f), Color.Transparent), Offset(x1, h / 2f), h * 1.6f), h * 1.6f, Offset(x1, h / 2f))
       drawRoundRect(Clay.Sun, topLeft = Offset(x0, 0f), size = Size(maxOf(h, x1 - x0), h), cornerRadius = rad)
-      drawCircle(Color.White, h * 0.22f, Offset(x1 - h * 0.1f, h / 2f))
+      if (onCard) drawRoundRect(Clay.Ink, topLeft = Offset(x0, 0f), size = Size(maxOf(h, x1 - x0), h), cornerRadius = rad, style = Stroke(1.2f * density))     // el tramo sol sobre crema necesita su contorno
+      drawCircle(if (onCard) Clay.Ink else Color.White, h * 0.22f, Offset(x1 - h * 0.1f, h / 2f))
     } else if (value != null && change < 0f) {
       val x0 = w * v; val x1 = w * (v - change).coerceIn(0f, 1f)
       drawRoundRect(AreaDownColor.copy(alpha = 0.28f), topLeft = Offset(x0 - h / 2f, 0f), size = Size(x1 - x0 + h / 2f, h), cornerRadius = rad)

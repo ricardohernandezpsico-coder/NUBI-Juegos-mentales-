@@ -71,7 +71,7 @@ fun LockTabSwipe() {
 
 /**
  * Arriba a la derecha en las 3 pestañas (aprobado por Ricardo, `docs/previews/navegacion-nubi.png`): la inicial en
- * arcilla celeste = tu perfil, y el engranaje = opciones (Ajustes). Botones de 44 dp con nombre para el lector.
+ * plasticina celeste = tu perfil, y el engranaje de plasticina = opciones (Ajustes). Discos de 48 dp (kit de la Tarea 90) con nombre para el lector.
  */
 @Composable
 fun TopActions(
@@ -86,7 +86,7 @@ fun TopActions(
 ) {
   Row(modifier, verticalAlignment = Alignment.CenterVertically) {
     Box {
-      ClayCircle(Clay.Sky, profileLabel, onProfile, Modifier.testTag("btn_top_profile")) {
+      ClayDisc(DiscStyle.SKY, onProfile, profileLabel, Modifier.testTag("btn_top_profile")) {
         val initial = name.trim().firstOrNull()?.uppercase()
         if (initial != null) Text(initial, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         else Icon(Icons.Default.Person, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(24.dp))
@@ -94,25 +94,8 @@ fun TopActions(
       if (profileBadge != null) Box(Modifier.align(Alignment.BottomEnd).offset(x = 6.dp, y = 6.dp).clearAndSetSemantics { }) { profileBadge() }
     }
     Spacer(Modifier.width(8.dp))
-    ClayCircle(Clay.Cream, "Opciones", onSettings, Modifier.testTag("btn_top_settings")) {
-      Icon(Icons.Default.Settings, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(26.dp))
-    }
+    ClayDisc(DiscStyle.CREAM, onSettings, "Opciones", Modifier.testTag("btn_top_settings")) { KitGlyph(Glyph.GEAR, size = 28.dp) }
   }
-}
-
-@Composable
-private fun ClayCircle(color: Color, label: String, onClick: () -> Unit, modifier: Modifier, content: @Composable () -> Unit) {
-  Box(
-    modifier
-      .size(44.dp)
-      .drawBehind { drawCircle(Clay.Ink, size.minDimension / 2f, center.copy(y = center.y + 3.dp.toPx())) }
-      .clip(CircleShape)
-      .background(color)
-      .border(2.5.dp, Clay.Ink, CircleShape)
-      .clickable(onClick = onClick)
-      .semantics { contentDescription = label; role = Role.Button },
-    contentAlignment = Alignment.Center
-  ) { content() }
 }
 
 /**

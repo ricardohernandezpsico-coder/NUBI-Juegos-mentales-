@@ -19,19 +19,20 @@ import androidx.compose.ui.test.down
 import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import androidx.test.core.app.ApplicationProvider
 import com.example.data.ClayKitSpec
-import com.example.ui.components.ClayKitCard
-import com.example.ui.components.ClayKitFlag
+import com.example.ui.components.Glyph
 import com.example.ui.components.KitButton
 import com.example.ui.components.KitCloseButton
+import com.example.ui.components.SlabColor
+import com.example.ui.components.SlabSize
+import com.example.ui.components.slabImages
+import com.example.ui.components.slabImagesOrNull
+import com.example.ui.theme.ClayCard
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.nineSlice
 import com.example.ui.theme.Clay
 import com.example.ui.theme.NeuroVidaTheme
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -51,8 +52,7 @@ class ClayKitTest {
   @get:Rule val rule = createComposeRule()
 
   private val spec = ClayKitSpec.parse(File("src/main/res/raw/kit.json").readText())
-
-  @After fun tearDown() { ClayKitFlag.forTest(false) }
+  private val slab = spec.slab("md")
 
   /** El tamaño de un WebP con cabecera extendida (VP8X), sin decodificarlo. */
   private fun webpSize(path: String): Pair<Int, Int> {
@@ -64,24 +64,50 @@ class ClayKitTest {
 
   // ---- El JSON y las imágenes
 
+  private val colorKeys = mapOf(SlabColor.SUN to "sol", SlabColor.CREAM to "crema", SlabColor.LIME to "lima", SlabColor.SKY to "cielo", SlabColor.CORAL to "coral", SlabColor.LILAC to "lila")
+  private fun res(name: String) = "src/main/res/drawable-nodpi/$name.webp"
+
   @Test
   fun el_json_y_las_imagenes_son_del_mismo_render() {
     assertEquals(3f, spec.pxPerDp, 0f)
-    for (c in listOf("sol", "crema", "lima")) for (suf in listOf("", "_p")) {
-      assertEquals("kit_losa_$c$suf", spec.slab.widthPx to spec.slab.heightPx, webpSize("src/main/res/drawable-nodpi/kit_losa_$c$suf.webp"))
+    assertEquals("los tres radios", setOf("ch", "md", "gr"), spec.slabs.keys)
+    for ((clase, slab) in spec.slabs) for (c in slab.colors) for (suf in listOf("", "_p")) {
+      assertEquals("kit_losa_${clase}_$c$suf", slab.widthPx to slab.heightPx, webpSize(res("kit_losa_${clase}_$c$suf")))
     }
-    for (suf in listOf("", "_p")) assertEquals("kit_cerrar$suf", spec.close.widthPx to spec.close.heightPx, webpSize("src/main/res/drawable-nodpi/kit_cerrar$suf.webp"))
-    assertEquals("kit_jugar", spec.play.widthPx to spec.play.heightPx, webpSize("src/main/res/drawable-nodpi/kit_jugar.webp"))
+    for ((name, disc) in spec.discs) for (suf in listOf("", "_p")) assertEquals("kit_$name$suf", disc.widthPx to disc.heightPx, webpSize(res("kit_$name$suf")))
+    for ((name, piece) in spec.pieces) {
+      val file = if (name == "jugar") "kit_jugar" else "kit_i_$name"
+      assertEquals(file, piece.widthPx to piece.heightPx, webpSize(res(file)))
+    }
+    assertEquals(setOf("cerrar", "disco_crema", "disco_cielo"), spec.discs.keys)
+    assertEquals(setOf("jugar", "volver", "visto", "izq", "der", "compartir", "candado", "engranaje"), spec.pieces.keys)
   }
 
   @Test
-  fun los_insets_caen_dentro_de_la_imagen_y_dejan_un_centro_para_estirar() {
-    val s = spec.slab
-    assertTrue("hay centro que estirar a lo ancho y a lo alto", s.insetLeftPx + s.insetRightPx < s.widthPx - 30 && s.insetTopPx + s.insetBottomPx < s.heightPx - 10)
-    assertTrue("las esquinas cubren el radio (22 dp) más el margen", s.insetLeftPx >= (s.margins.left + 22) * 3 - 1 && s.insetTopPx >= (s.margins.top + 22) * 3 - 1)
-    assertTrue("y la sombra cae dentro de los márgenes de la imagen", s.margins.bottom >= 10f && s.margins.right >= 8f)
-    assertEquals("la imagen mide cuerpo + márgenes", s.widthPx / 3f, s.margins.left + s.bodyWidth + s.margins.right, 0.5f)
-    assertEquals(s.heightPx / 3f, s.margins.top + s.bodyHeight + s.margins.bottom, 0.5f)
+  fun los_colores_del_codigo_son_los_que_se_renderizaron() {
+    for (size in SlabSize.values()) for (color in SlabColor.values()) {
+      val inJson = colorKeys.getValue(color) in spec.slab(size.key).colors
+      assertEquals("losa ${size.key}/${colorKeys[color]}: el código y el JSON dicen lo mismo", inJson, slabImagesOrNull(size, color) != null)
+    }
+    // Las combinaciones que usa la app en las tres pantallas de selección: chips y casillas (crema, sol, lima), botones (los seis colores) y láminas (crema).
+    for (c in listOf(SlabColor.CREAM, SlabColor.SUN, SlabColor.LIME)) assertTrue(slabImagesOrNull(SlabSize.SMALL, c) != null)
+    for (c in SlabColor.values()) assertTrue(slabImagesOrNull(SlabSize.MEDIUM, c) != null)
+    assertTrue(slabImagesOrNull(SlabSize.LARGE, SlabColor.CREAM) != null)
+    assertEquals("un color que no existe en ese radio cae al mediano, sin fallar", SlabSize.MEDIUM, slabImages(SlabSize.SMALL, SlabColor.CORAL).size)
+  }
+
+  @Test
+  fun los_radios_son_14_22_y_30_y_los_insets_caen_dentro_de_la_imagen_dejando_un_centro_para_estirar() {
+    assertEquals(listOf(14f, 22f, 30f), listOf("ch", "md", "gr").map { spec.slab(it).radius })
+    for ((clase, s) in spec.slabs) {
+      assertTrue("$clase: hay centro que estirar a lo ancho y a lo alto", s.insetLeftPx + s.insetRightPx < s.widthPx - 30 && s.insetTopPx + s.insetBottomPx < s.heightPx - 10)
+      assertTrue("$clase: las esquinas cubren el radio (${s.radius} dp) más el margen", s.insetLeftPx >= (s.margins.left + s.radius) * 3 - 1 && s.insetTopPx >= (s.margins.top + s.radius) * 3 - 1)
+      assertTrue("$clase: la sombra cae dentro de los márgenes de la imagen", s.margins.bottom >= 10f && s.margins.right >= 8f)
+      assertEquals("$clase: la imagen mide cuerpo + márgenes", s.widthPx / 3f, s.margins.left + s.bodyWidth + s.margins.right, 0.5f)
+      assertEquals(s.heightPx / 3f, s.margins.top + s.bodyHeight + s.margins.bottom, 0.5f)
+      assertEquals("$clase: el texto baja 2 dp al presionar", 2f, s.pressTextDy, 0f)
+    }
+    for ((name, d) in spec.discs) assertEquals("disco $name: 48 dp", 48f, d.bodyWidth, 0.5f)
   }
 
   // ---- El nine-slice: esquinas fijas, centro estirado
@@ -92,7 +118,7 @@ class ClayKitTest {
 
   @Test
   fun las_cuatro_esquinas_miden_lo_mismo_en_cualquier_tamano() {
-    fun corners(r: Rect) = nineSlice(spec.slab, spec.pxPerDp, 3f, r).let { p -> listOf(p[0], p[2], p[6], p[8]).map { it.dstW to it.dstH } }
+    fun corners(r: Rect) = nineSlice(slab, spec.pxPerDp, 3f, r).let { p -> listOf(p[0], p[2], p[6], p[8]).map { it.dstW to it.dstH } }
     val base = corners(body340x56)
     assertEquals(base, corners(body115x84))
     assertEquals(base, corners(body340x160))
@@ -101,7 +127,7 @@ class ClayKitTest {
 
   @Test
   fun solo_el_centro_y_los_bordes_se_estiran() {
-    val small = nineSlice(spec.slab, spec.pxPerDp, 3f, body115x84); val big = nineSlice(spec.slab, spec.pxPerDp, 3f, body340x160)
+    val small = nineSlice(slab, spec.pxPerDp, 3f, body115x84); val big = nineSlice(slab, spec.pxPerDp, 3f, body340x160)
     assertEquals("nueve trozos", 9, big.size)
     assertTrue("el centro crece a lo ancho y a lo alto", big[4].dstW > small[4].dstW && big[4].dstH > small[4].dstH)
     assertEquals("el borde de arriba crece a lo ancho, no a lo alto", small[1].dstH, big[1].dstH)
@@ -114,26 +140,25 @@ class ClayKitTest {
 
   @Test
   fun el_cuerpo_cae_donde_el_diseno_dice_y_la_sombra_sale_por_abajo_y_a_la_derecha() {
-    val parts = nineSlice(spec.slab, spec.pxPerDp, 3f, body340x56)
+    val parts = nineSlice(slab, spec.pxPerDp, 3f, body340x56)
     val left = parts.minOf { it.dstX }; val top = parts.minOf { it.dstY }; val right = parts.maxOf { it.dstX + it.dstW }; val bottom = parts.maxOf { it.dstY + it.dstH }
-    assertEquals(-spec.slab.margins.left * 3f, left.toFloat(), 1f)
-    assertEquals(-spec.slab.margins.top * 3f, top.toFloat(), 1f)
-    assertEquals(body340x56.right + spec.slab.margins.right * 3f, right.toFloat(), 1f)
-    assertEquals(body340x56.bottom + spec.slab.margins.bottom * 3f, bottom.toFloat(), 1f)
-    assertTrue("la sombra sale más por abajo que por arriba", spec.slab.margins.bottom > spec.slab.margins.top)
+    assertEquals(-slab.margins.left * 3f, left.toFloat(), 1f)
+    assertEquals(-slab.margins.top * 3f, top.toFloat(), 1f)
+    assertEquals(body340x56.right + slab.margins.right * 3f, right.toFloat(), 1f)
+    assertEquals(body340x56.bottom + slab.margins.bottom * 3f, bottom.toFloat(), 1f)
+    assertTrue("la sombra sale más por abajo que por arriba", slab.margins.bottom > slab.margins.top)
   }
 
   @Test
   fun un_cuerpo_mas_chico_que_dos_esquinas_achica_las_esquinas_parejas() {
-    val tiny = nineSlice(spec.slab, spec.pxPerDp, 3f, Rect(0f, 0f, 30f, 20f))
+    val tiny = nineSlice(slab, spec.pxPerDp, 3f, Rect(0f, 0f, 30f, 20f))
     assertTrue(tiny.all { it.dstW > 0 && it.dstH > 0 })
-    assertEquals("sigue cubriendo la imagen entera", (30f + (spec.slab.margins.left + spec.slab.margins.right) * 3), (tiny.maxOf { it.dstX + it.dstW } - tiny.minOf { it.dstX }).toFloat(), 1.5f)
+    assertEquals("sigue cubriendo la imagen entera", (30f + (slab.margins.left + slab.margins.right) * 3), (tiny.maxOf { it.dstX + it.dstW } - tiny.minOf { it.dstX }).toFloat(), 1.5f)
   }
 
   // ---- Reglas de tamaño y de estado
 
   private fun show(reduce: Boolean = false, fontScale: Float = 1f, content: @androidx.compose.runtime.Composable () -> Unit) {
-    ClayKitFlag.forTest(true)
     rule.setContent {
       val base = LocalDensity.current
       CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale), LocalReduceMotion provides reduce) { NeuroVidaTheme { Box(Modifier.width(393.dp)) { content() } } }
@@ -143,14 +168,14 @@ class ClayKitTest {
 
   @Test
   fun el_boton_grande_mide_al_menos_56_dp_y_crece_con_letra_2_0_sin_cortar_el_texto() {
-    show { KitButton("Empezar la ruta · 3 juegos", {}, play = true, modifier = Modifier.testTag("kb")) }
+    show { KitButton("Empezar la ruta · 3 juegos", {}, glyph = Glyph.PLAY, modifier = Modifier.testTag("kb")) }
     val h1 = rule.onNodeWithTag("kb").fetchSemanticsNode().boundsInRoot.height / rule.density.density
     assertTrue("alto del botón $h1 dp (≥ 56 + 6 de sombra)", h1 >= 56f)
   }
 
   @Test
   fun con_letra_2_0_el_boton_crece_en_vez_de_deformarse() {
-    show(fontScale = 2f) { KitButton("Jugar en el Observatorio", {}, play = true, fontSize = androidx.compose.ui.unit.TextUnit(19f, androidx.compose.ui.unit.TextUnitType.Sp), modifier = Modifier.testTag("kb")) }
+    show(fontScale = 2f) { KitButton("Jugar en el Observatorio", {}, glyph = Glyph.PLAY, fontSize = androidx.compose.ui.unit.TextUnit(19f, androidx.compose.ui.unit.TextUnitType.Sp), modifier = Modifier.testTag("kb")) }
     val h2 = rule.onNodeWithTag("kb").fetchSemanticsNode().boundsInRoot.height / rule.density.density
     assertTrue("a letra 2,0 el botón mide más de 80 dp ($h2): el texto pasa a dos líneas y la losa crece", h2 > 80f)
   }
@@ -169,7 +194,7 @@ class ClayKitTest {
   fun la_piedrita_mide_al_menos_84_dp_con_el_kit_y_su_marca_es_texto_ademas_del_color() {
     show {
       Column(Modifier.fillMaxWidth()) {
-        ClayKitCard(Modifier.testTag("stone").width(115.dp).heightIn(min = 90.dp), color = Clay.Sun, radius = 18.dp, depth = 4.dp, onClick = {}) { androidx.compose.material3.Text("Sigue", color = Clay.Ink) }
+        ClayCard(Modifier.testTag("stone").width(115.dp).heightIn(min = 90.dp), color = Clay.Sun, onClick = {}, contentPadding = 0.dp) { androidx.compose.material3.Text("Sigue", color = Clay.Ink) }
       }
     }
     val h = rule.onNodeWithTag("stone").fetchSemanticsNode().boundsInRoot.height / rule.density.density
@@ -213,28 +238,5 @@ class ClayKitTest {
     rule.mainClock.advanceTimeByFrame()
     rule.mainClock.advanceTimeByFrame()                                         // dos cuadros: sin animación el cambio no necesita más
     assertEquals("de golpe: ya bajó los 2 dp", 2f, pressedShift(), 0.25f)
-  }
-
-  // ---- El interruptor de depuración
-
-  @Test
-  fun el_interruptor_nace_encendido_en_depuracion_y_apagado_en_la_version_de_tienda() {
-    val ctx = ApplicationProvider.getApplicationContext<android.app.Application>()
-    ctx.getSharedPreferences("kit_plasticina", android.content.Context.MODE_PRIVATE).edit().clear().commit()
-    ClayKitFlag.init(ctx, debug = true)
-    assertTrue("en depuración, encendido por defecto", ClayKitFlag.on)
-    ClayKitFlag.init(ctx, debug = false)
-    assertFalse("en la versión de tienda, siempre apagado", ClayKitFlag.on)
-  }
-
-  @Test
-  fun el_interruptor_se_recuerda() {
-    val ctx = ApplicationProvider.getApplicationContext<android.app.Application>()
-    ClayKitFlag.set(ctx, false)
-    ClayKitFlag.init(ctx, debug = true)
-    assertFalse("lo apagado se queda apagado", ClayKitFlag.on)
-    ClayKitFlag.set(ctx, true)
-    ClayKitFlag.init(ctx, debug = true)
-    assertTrue(ClayKitFlag.on)
   }
 }

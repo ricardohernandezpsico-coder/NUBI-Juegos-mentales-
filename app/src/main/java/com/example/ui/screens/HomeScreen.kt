@@ -47,9 +47,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import com.example.ui.components.ClayKitCard
-import com.example.ui.components.ClayKitFlag
-import com.example.ui.components.KitButton
+import com.example.ui.components.Glyph
+import com.example.ui.components.KitGlyph
+import com.example.ui.components.SlabSize
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.RouteFx
 import com.example.ui.components.RouteMotion
@@ -590,9 +590,9 @@ private fun StopNumber(stop: HomeStop, number: Int) {
 private fun HoyStone(stop: HomeStop, number: Int, fit: StoneFit, onClick: () -> Unit, modifier: Modifier = Modifier) {
   val color = when (stop.state) { StopState.DONE -> Clay.Lime; StopState.NEXT -> Clay.Sun; StopState.LATER -> HoyCream }
   val tag = when (stop.state) { StopState.DONE -> "Hecho"; StopState.NEXT -> "Sigue"; StopState.LATER -> stop.place }
-  ClayKitCard(
-    modifier = modifier.heightIn(min = if (ClayKitFlag.on) 90.dp else 84.dp).semantics(mergeDescendants = true) { contentDescription = stopDescription(stop) }.testTag("home_stop_$number"),   // con el kit, 84 dp de losa + 6 de arranque de sombra
-    color = color, radius = 18.dp, depth = 4.dp, onClick = onClick
+  ClayCard(
+    modifier = modifier.heightIn(min = 90.dp).semantics(mergeDescendants = true) { contentDescription = stopDescription(stop) }.testTag("home_stop_$number"),   // 84 dp de losa + 6 de arranque de sombra
+    color = color, size = SlabSize.MEDIUM, onClick = onClick, contentPadding = 0.dp
   ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = fit.padding, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
       // El número y el lugar van en una línea; si el lugar («Biblioteca») no cabe al lado (pantallas de ~360 dp), baja a la línea de abajo en vez de partirse a media palabra.
@@ -612,9 +612,9 @@ private fun HoyStone(stop: HomeStop, number: Int, fit: StoneFit, onClick: () -> 
 private fun HoyStopRow(stop: HomeStop, number: Int, onClick: () -> Unit) {
   val color = when (stop.state) { StopState.DONE -> Clay.Lime; StopState.NEXT -> Clay.Sun; StopState.LATER -> HoyCream }
   val status = when (stop.state) { StopState.DONE -> "Hecho"; StopState.NEXT -> "Sigue"; StopState.LATER -> "Después" }
-  ClayKitCard(
+  ClayCard(
     modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = stopDescription(stop) }.testTag("home_stop_$number"),
-    color = color, radius = 16.dp, depth = 4.dp, onClick = onClick
+    color = color, size = SlabSize.SMALL, onClick = onClick, contentPadding = 0.dp
   ) {
     Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       StopNumber(stop, number)
@@ -644,20 +644,18 @@ internal fun captionLine(ui: HomeUi): String? {
 @Composable
 private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBaseline: () -> Unit) {
   val pending = ui.stops.count { it.state != StopState.DONE }
-  Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 6.dp)) {
+  Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 2.dp)) {
     when {
       ui.pausedTitle != null ->
-        if (ClayKitFlag.on) KitButton("Seguir tu partida", onResume, play = true, fontSize = 18.sp, modifier = Modifier.testTag("btn_resume_paused"))
-        else ClayButton(text = "Seguir tu partida", onClick = onResume, icon = Icons.Default.PlayArrow, fontSize = 18.sp, modifier = Modifier.testTag("btn_resume_paused"))
+        ClayButton(text = "Seguir tu partida", onClick = onResume, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = Modifier.testTag("btn_resume_paused"))
       pending > 0 -> {
         val label = if (ui.completed == 0) "Empezar la ruta · ${ui.stops.size} juegos" else "Seguir la ruta · $pending ${if (pending == 1) "juego" else "juegos"}"
-        if (ClayKitFlag.on) KitButton(label, onPlay, play = true, fontSize = 18.sp, modifier = Modifier.testTag("btn_home_play"))
-        else ClayButton(text = label, onClick = onPlay, icon = Icons.Default.PlayArrow, fontSize = 18.sp, modifier = Modifier.testTag("btn_home_play"))
+        ClayButton(text = label, onClick = onPlay, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = Modifier.testTag("btn_home_play"))
       }
       ui.stops.isNotEmpty() ->
-        ClayKitCard(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Ruta completa" }.testTag("home_route_done"), color = Clay.Lime, radius = 20.dp, depth = 5.dp) {
-          Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Check, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(22.dp))
+        ClayCard(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Ruta completa" }.testTag("home_route_done"), color = Clay.Lime, contentPadding = 0.dp) {
+          Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            KitGlyph(Glyph.CHECK)
             Spacer(Modifier.width(8.dp))
             Text("Ruta completa", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
           }
@@ -727,17 +725,9 @@ internal fun AreaDetail(
   fun go(step: Int) = onArea(AREA_ORDER[(idx + step + AREA_ORDER.size) % AREA_ORDER.size])
 
   Column(modifier.fillMaxSize().testTag("area_detail")) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier
-        .padding(start = 8.dp, top = 4.dp)
-        .clip(RoundedCornerShape(12.dp))
-        .clickable(onClick = onClose)
-        .padding(horizontal = 8.dp, vertical = 8.dp)
-        .testTag("area_back")
-    ) {
-      Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = OnNight, modifier = Modifier.size(22.dp))
-      Spacer(Modifier.width(8.dp))
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp, top = 4.dp)) {
+      com.example.ui.components.KitBackButton(onClose, Modifier.testTag("area_back"), label = "Volver a Hoy")
+      Spacer(Modifier.width(10.dp))
       OnBoardText("Hoy", color = OnNight, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
     }
     Column(
@@ -802,15 +792,15 @@ internal fun AreaDetail(
           last == null -> "Sin jugar aún"
           else -> playedAgo(now, last)
         }
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onGame(g.id) }.padding(vertical = 6.dp)
-        ) {
-          MiniPlanet(g.id, 34.dp)
-          Spacer(Modifier.width(12.dp))
-          Column {
-            OnBoardText(getGameTitle(g.id, lang, g.title), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            OnBoardText(detail, color = OnNightDim, fontSize = 14.sp)
+        // Cada juego es una tarjeta de plasticina tocable (Tarea 90): tocarla abre su ficha.
+        ClayCard(Modifier.fillMaxWidth().padding(vertical = 2.dp).testTag("area_game_${g.id}"), onClick = { onGame(g.id) }, contentPadding = 0.dp) {
+          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 8.dp)) {
+            MiniPlanet(g.id, 34.dp)
+            Spacer(Modifier.width(12.dp))
+            Column {
+              Text(getGameTitle(g.id, lang, g.title), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+              Text(detail, color = Clay.InkMuted, fontSize = 14.sp)
+            }
           }
         }
       }
@@ -846,14 +836,8 @@ private fun playedAgo(now: Long, last: Long): String = when (val days = (dayInde
 
 @Composable
 private fun AreaArrow(left: Boolean, onClick: () -> Unit) {
-  Box(
-    Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f)).clickable(onClick = onClick),
-    contentAlignment = Alignment.Center
-  ) {
-    Icon(
-      if (left) Icons.AutoMirrored.Filled.KeyboardArrowLeft else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-      contentDescription = if (left) "Área anterior" else "Área siguiente", tint = Color.White, modifier = Modifier.size(28.dp)
-    )
+  com.example.ui.components.ClayDisc(com.example.ui.components.DiscStyle.CREAM, onClick, if (left) "Área anterior" else "Área siguiente") {
+    com.example.ui.components.KitGlyph(if (left) Glyph.LEFT else Glyph.RIGHT, size = 28.dp)
   }
 }
 

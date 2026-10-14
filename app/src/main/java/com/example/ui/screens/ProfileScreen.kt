@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.SlabSize
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -67,16 +70,7 @@ fun PanelHeader(title: String, onBack: () -> Unit) {
       .padding(horizontal = 12.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Box(
-      modifier = Modifier
-        .size(44.dp)
-        .clip(CircleShape)
-        .background(Clay.Cream)
-        .border(Clay.Border, Clay.Ink, CircleShape)
-        .clickable(onClick = onBack)
-        .testTag("btn_panel_back"),
-      contentAlignment = Alignment.Center
-    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Clay.Ink) }
+    com.example.ui.components.KitBackButton(onBack, Modifier.testTag("btn_panel_back"))
     Spacer(Modifier.width(12.dp))
     Text(title, color = Color(0xFFEAF0FF), fontSize = 22.sp, fontWeight = FontWeight.Bold)
   }
@@ -135,16 +129,9 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
       Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(contentAlignment = Alignment.BottomEnd) {
           LeagueShield(tier = tier, size = 160.dp, pips = ((prog * 5).toInt() + 1).coerceIn(1, 5), glow = true)
-          Box(
-            modifier = Modifier
-              .size(54.dp)
-              .clip(CircleShape)
-              .background(Clay.Sky)
-              .border(Clay.Border, Clay.Ink, CircleShape),
-            contentAlignment = Alignment.Center
-          ) {
-            // La misma inicial del botón de arriba a la derecha (sin emojis como íconos).
-            Text(userSettings.name.trim().firstOrNull()?.uppercase() ?: "", color = Clay.Ink, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+          // La misma inicial del botón de arriba a la derecha, en el mismo disco de plasticina celeste (sin emojis como íconos); aquí solo adorna.
+          com.example.ui.components.ClayDisc(com.example.ui.components.DiscStyle.SKY, null, "") {
+            Text(userSettings.name.trim().firstOrNull()?.uppercase() ?: "", color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold)
           }
         }
         Text(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
@@ -172,37 +159,42 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
       Column {
         SpaceSectionTitle("Logros", hint = "${unlocks.keys.count { Achievements.byId(it) != null }} de ${Achievements.all.size} conseguidos")
         Spacer(Modifier.height(14.dp))
-        Achievements.all.chunked(4).forEach { row ->
-          Row(modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
+        // Cuántas medallas por fila: las que dejen a la palabra más larga («Contrarreloj», ≈ 78 dp a letra normal) entera; con letra grande, menos columnas (nunca se parte una palabra).
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val needed = 78.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale
+        val cols = (4 downTo 1).firstOrNull { maxWidth / it - 8.dp >= needed } ?: 1
+        Column {
+        Achievements.all.chunked(cols).forEach { row ->
+          Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(bottom = 4.dp)) {
             row.forEach { def ->
               val got = def.id in unlocks
-              Column(
-                modifier = Modifier
-                  .weight(1f)
-                  .clip(RoundedCornerShape(16.dp))
-                  .clickable { achievementDetail = def }
-                  .padding(vertical = 4.dp)
-                  .testTag("achievement_${def.id}"),
-                horizontalAlignment = Alignment.CenterHorizontally
+              // Cada medalla es una casilla de plasticina tocable (losa chica crema): tocarla abre su detalle.
+              com.example.ui.theme.ClayCard(
+                modifier = Modifier.weight(1f).fillMaxHeight().padding(horizontal = 2.dp).testTag("achievement_${def.id}"),
+                size = SlabSize.SMALL, onClick = { achievementDetail = def }, contentPadding = 0.dp
               ) {
-                AchievementMedal(def = def, unlocked = got, size = 64.dp)
-                Text(
-                  text = def.title,
-                  color = if (got) Color(0xFFEAF0FF) else Color(0xFFB4BFEA).copy(alpha = 0.7f),
-                  fontSize = 14.sp,
-                  fontWeight = FontWeight.SemiBold,
-                  textAlign = TextAlign.Center,
-                  maxLines = 2,
-                  lineHeight = 14.sp
-                )
-                if (!got) {
-                  val (cur, goal) = def.progress(achStats)
-                  Text("$cur/$goal", color = Clay.Sun.copy(alpha = 0.8f), fontSize = 14.sp)
+                Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                  AchievementMedal(def = def, unlocked = got, size = 56.dp)
+                  Text(
+                    text = def.title,
+                    color = if (got) Clay.Ink else Clay.InkMuted,
+                    fontSize = 14.sp,
+                    fontWeight = if (got) FontWeight.Bold else FontWeight.Normal,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    lineHeight = 14.sp
+                  )
+                  if (!got) {
+                    val (cur, goal) = def.progress(achStats)
+                    Text("$cur/$goal", color = Clay.Ink, fontSize = 14.sp)
+                  }
                 }
               }
             }
-            repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+            repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
           }
+        }
+        }
         }
       }
     }
@@ -215,21 +207,12 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
         Spacer(Modifier.height(10.dp))
         com.example.data.Education.entries.forEach { e ->
           val on = education == e
-          Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .heightIn(min = 52.dp)
-              .padding(bottom = 8.dp)
-              .clip(RoundedCornerShape(14.dp))
-              .background(if (on) Color(0xFF231C48) else Color(0xFF0E0C30))
-              .border(2.dp, if (on) Clay.Sun else Color(0xFF3A2E78), RoundedCornerShape(14.dp))
-              .clickable { viewModel.setEducation(if (on) null else e) }
-              .padding(horizontal = 14.dp, vertical = 10.dp)
-              .testTag("education_${e.name.lowercase()}"),
-            verticalAlignment = Alignment.CenterVertically
+          // Cada nivel es una casilla de plasticina: la elegida va en lima, con su ✓ y su texto en negrita (y quieta).
+          com.example.ui.components.ClayChoice(
+            selected = on, onClick = { viewModel.setEducation(if (on) null else e) }, minHeight = 52.dp,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp).testTag("education_${e.name.lowercase()}")
           ) {
-            Text(e.label, color = Color(0xFFEAF0FF), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            if (on) Text("✓", color = Clay.Sun, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(e.label, color = Clay.Ink, fontSize = 18.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f))
           }
         }
       }
@@ -251,7 +234,7 @@ private fun AchievementDetailDialog(def: AchievementDef, unlockedAt: Long?, stat
     com.example.ui.theme.ClayCard(
       modifier = Modifier.fillMaxWidth().padding(8.dp),
       color = Clay.Cream,
-      radius = 28.dp,
+      size = SlabSize.LARGE,
       contentPadding = 22.dp
     ) {
       Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {

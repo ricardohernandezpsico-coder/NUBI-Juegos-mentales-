@@ -79,8 +79,7 @@ import com.example.data.PlaceGameRow
 import com.example.data.PlaceSheetUi
 import com.example.data.PlaceSheets
 import com.example.data.Skill
-import com.example.ui.components.ClayKitFlag
-import com.example.ui.components.KitButton
+import com.example.ui.components.Glyph
 import com.example.ui.components.KitCloseButton
 import com.example.ui.components.PAGE_BOTTOM_FADE
 import com.example.ui.components.PlaceMotion
@@ -403,12 +402,10 @@ internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: D
 
     // Pie fijo: Jugar, sobre la barra del teléfono, y lo que eligió Nubi. [footerBottom] lo deja por encima de la franja donde la caja de Hoy se desvanece (`pageFooterBottom`): la leyenda se lee entera.
     Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = footerBottom), horizontalAlignment = Alignment.CenterHorizontally) {
-      if (ClayKitFlag.on) {
-        KitButton("Jugar en ${place.article}", { place.chosenGameId?.let(onPlay) }, play = true, fontSize = 19.sp, modifier = Modifier.testTag("place_play"))
-      } else ClayButton(
+      ClayButton(
         text = "Jugar en ${place.article}",
         onClick = { place.chosenGameId?.let(onPlay) },
-        icon = Icons.Default.PlayArrow, fontSize = 19.sp,
+        glyph = Glyph.PLAY, fontSize = 19.sp,
         modifier = Modifier.testTag("place_play")
       )
       place.chosenLine?.let { Text(it, color = SheetMuted, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp).testTag("place_chosen")) }
@@ -433,15 +430,7 @@ private fun rememberTitleSize(text: String, availablePx: Float): Int? {
 
 @Composable
 private fun CloseButton(onClose: () -> Unit) {
-  if (ClayKitFlag.on) { KitCloseButton(onClose, Modifier.testTag("place_close")); return }
-  Box(
-    Modifier
-      .size(48.dp).clip(CircleShape).background(GlobeFill).border(3.dp, Clay.Ink, CircleShape)
-      .clickable(role = Role.Button, onClickLabel = "Cerrar", onClick = onClose)
-      .semantics { contentDescription = "Cerrar" }
-      .testTag("place_close"),
-    contentAlignment = Alignment.Center
-  ) { Icon(Icons.Default.Close, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(20.dp)) }
+  KitCloseButton(onClose, Modifier.testTag("place_close"))
 }
 
 /** El nombre del lugar y su área (con un punto del color del área). */

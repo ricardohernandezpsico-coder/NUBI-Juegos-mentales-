@@ -57,7 +57,6 @@ class MainActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    com.example.ui.components.ClayKitFlag.init(applicationContext, BuildConfig.DEBUG)   // kit de plasticina (prueba, Tarea 89): encendido por defecto en depuración
     if (savedInstanceState == null) {
       handleGameReturn(intent)
       handleStartSession(intent)

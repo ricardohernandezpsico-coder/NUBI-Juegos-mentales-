@@ -23,7 +23,7 @@ run --tablero --lamina "$LAMINA" --b-aprobado --out "$OUT/tablero-completo"
 run --tablero --lamina "$LAMINA" --sin-luceros --out "$OUT/tablero-lamina"
 run --tablero --lamina "$LAMINA" --solo-luceros --out "$OUT/tablero-luceros"
 
-# 3b. (Tarea 89, prueba) el kit de plasticina: `run --kit --out "$OUT/kit"` y `python -I kit.py "$OUT/kit" "$OUT/kit/app"` (ver el README).
+# 3b. (Tareas 89 y 90) el kit de plasticina, el estilo de toda la app (~4,5 min): `run --kit --out "$OUT/kit"` y `python -I kit.py "$OUT/kit" "$OUT/kit/app"` (ver el README).
 # 4. Recortes, WebP a 2× e isla.json normalizado (0-1) → tools/isla/out/app/; las dos capas del fondo → tools/isla/out/fondo/ (y la medida de cuánto se parece el apilado al B completo)
 python -I componer.py "$OUT" "$OUT/app"
 python -I tablero.py "$OUT/tablero-lamina" "$OUT/tablero-luceros" "$OUT/tablero-completo" "$OUT/fondo"

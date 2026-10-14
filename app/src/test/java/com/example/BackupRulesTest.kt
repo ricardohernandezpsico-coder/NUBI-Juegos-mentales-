@@ -12,7 +12,7 @@ import org.junit.Test
 class BackupRulesTest {
   // Estado pasajero: se pierde a propósito al cambiar de teléfono (una partida o un recorrido del inicio «fantasma» a medias no sirven).
   // `first_flight` = «Primer vuelo con Nubi» en curso (data/FirstFlight.kt). `route_celebrations` = qué farolas de la ruta y qué ruta completa ya se celebraron HOY (data/RouteLamps.kt; Tarea 88). color_vision NO es pasajero: vive en profile_extra, que sí se respalda (igual que lo que quedó guardado de result_focus / coach_tone, que ya no se lee).
-  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "route_celebrations", "kit_plasticina")
+  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "route_celebrations")
 
   private fun xml(name: String) = File("src/main/res/xml/$name").readText()
 

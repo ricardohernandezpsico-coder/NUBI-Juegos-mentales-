@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.bridge.UnityGameLauncher
 import com.example.model.AgeBand
-import com.example.ui.components.ClayKitFlag
 import com.example.viewmodel.NeuroVidaViewModel
 
 /** Un juego de Unity lanzado suelto desde las herramientas de prueba (sin sesión: la partida solo se guarda). */
@@ -108,8 +107,6 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
   // Dibuja encima del tutorial los rectángulos del foco y el último toque (se pide a Unity con `debug_overlay`): para mandar una captura si un tutorial se traba.
   var tutorialOverlay by remember { mutableStateOf(false) }
   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    // Kit de plasticina (Tarea 89, prueba): el botón grande y las piedritas de Hoy y el botón y la X de la lámina; encendido por defecto en depuración.
-    DebugButton(if (ClayKitFlag.on) "[Debug] Kit plasticina (prueba): SÍ (tocar para quitar)" else "[Debug] Kit plasticina (prueba): NO (tocar para ver)", "btn_debug_kit_plasticina") { ClayKitFlag.set(context, !ClayKitFlag.on) }
     DebugButton(if (tutorialOverlay) "[Debug] Rectángulos del tutorial: SÍ (tocar para quitar)" else "[Debug] Rectángulos del tutorial: NO (tocar para ver)", "btn_debug_tutorial_overlay") { tutorialOverlay = !tutorialOverlay }
     DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
     DebugButton("[Debug] Ver celebración de logro", "btn_debug_achievement") { viewModel.debugShowAchievement() }

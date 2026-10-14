@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import com.example.model.GamePlayResult
 import com.example.model.GameRankInfo
 import com.example.model.GameRegistry
+import com.example.ui.components.Glyph
 import com.example.ui.components.MeaningfulResult
 import com.example.ui.components.MeaningfulResultModel
 import com.example.ui.components.ResultChip
@@ -739,7 +740,7 @@ fun GameResultScreen(
     ClayButton(
       text = if (moreToday) "Siguiente juego (${dailyCompletedCount + 1} de $dailyTotalCount)" else "Continuar",
       onClick = onContinue,
-      icon = Icons.AutoMirrored.Filled.ArrowForward,
+      glyph = Glyph.RIGHT,
       modifier = Modifier.testTag("btn_result_continue")
     )
     run {
@@ -748,7 +749,6 @@ fun GameResultScreen(
         text = "Jugar de nuevo",
         onClick = onPlayAgain,
         color = Clay.Cream,
-        icon = Icons.Filled.Refresh,
         modifier = Modifier.testTag("btn_result_replay")
       )
     }

@@ -78,9 +78,8 @@ data class MeaningfulResultModel(
   val spoken: String = ""
 )
 
-private val BoxFill = Color(0xFF22205A)
-private val ChipFill = Color(0xFF2C2A6E)
-private val TrickFill = Color(0xFF1F3A35)
+// Las piezas de este final son losas de plasticina CLARAS (Tarea 90): crema para lo que hiciste y los números, lima para el truco, sol para el número de hoy; su texto va en tinta.
+// `Soft`, `Muted` y `Faint` quedan para el texto que va suelto sobre el cielo de la pantalla.
 private val Soft = Color(0xFFD6D1F2)
 private val Muted = Color(0xFFABA5D2)
 private val Faint = Color(0xFF8F8AC0)
@@ -104,16 +103,15 @@ fun DetailSection(content: @Composable ColumnScope.() -> Unit) {
     val label = if (open) FinalesConSentido.DETAIL_CLOSE else FinalesConSentido.DETAIL_OPEN
     ClayCard(
       modifier = Modifier.fillMaxWidth().testTag("detail_toggle").semantics(mergeDescendants = true) { role = Role.Button; contentDescription = label; stateDescription = if (open) "abierto" else "cerrado" },
-      color = ChipFill,
-      radius = 18.dp,
-      depth = 4.dp,
+      color = Clay.Cream,
+      size = SlabSize.MEDIUM,
       contentPadding = 0.dp,
       onClick = { open = !open }
     ) {
       Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-        Text(label, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+        Text(label, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
         Spacer(Modifier.width(8.dp))
-        Icon(if (open) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+        Icon(if (open) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(26.dp))
       }
     }
     if (open) Column(Modifier.fillMaxWidth().padding(top = 10.dp).testTag("detail_content"), horizontalAlignment = Alignment.CenterHorizontally, content = content)
@@ -138,23 +136,22 @@ fun WhatYouDid(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
     }
     ClayCard(
       modifier = Modifier.fillMaxWidth().testTag("meaningful_box").semantics(mergeDescendants = true) { if (model.spoken.isNotEmpty()) contentDescription = model.spoken },
-      color = BoxFill,
-      radius = 22.dp,
-      depth = 5.dp,
+      color = Clay.Cream,
+      size = SlabSize.LARGE,
       contentPadding = 16.dp
     ) {
       Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        if (model.boxTitle.isNotBlank()) Text(model.boxTitle, color = Soft, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center)
-        Text(model.headline, color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 34.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
-        Text(model.headlineUnit, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center)
+        if (model.boxTitle.isNotBlank()) Text(model.boxTitle, color = Clay.InkMuted, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center)
+        Text(model.headline, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 34.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
+        Text(model.headlineUnit, color = Clay.Ink, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center)
         model.dataLine?.let {
-          Text(it, color = Clay.Sky, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+          Text(it, color = PanelAccent, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
         }
         model.summaryLine?.let {
-          Text(it, color = Muted, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
+          Text(it, color = Clay.InkMuted, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
         }
         model.extraLine?.let {
-          Text(it, color = Muted, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
+          Text(it, color = Clay.InkMuted, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
         }
       }
     }
@@ -172,15 +169,14 @@ fun YourProgress(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
         val spoken = chip.label + ": " + chip.value
         ClayCard(
           modifier = Modifier.weight(1f).fillMaxHeight().semantics(mergeDescendants = true) { contentDescription = spoken },
-          color = if (chip.highlight) Clay.Sun else ChipFill,
-          radius = 14.dp,
-          depth = 3.dp,
+          color = if (chip.highlight) Clay.Sun else Clay.Cream,
+          size = SlabSize.SMALL,
           contentPadding = 8.dp
         ) {
           // los tres cuadros miden lo mismo aunque un valor largo («3,2 a la vez», «zona firme») pase a dos líneas
           Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize()) {
-            Text(chip.label, color = if (chip.highlight) Clay.Ink else Soft, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
-            Text(chip.value, color = if (chip.highlight) Clay.Ink else Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, textAlign = TextAlign.Center)
+            Text(chip.label, color = if (chip.highlight) Clay.Ink else Clay.InkMuted, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
+            Text(chip.value, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, textAlign = TextAlign.Center)
           }
         }
       }
@@ -201,14 +197,13 @@ fun YourProgress(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
 fun NextTrick(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
   ClayCard(
     modifier = modifier.fillMaxWidth().padding(top = 18.dp).testTag("next_trick").semantics(mergeDescendants = true) { contentDescription = model.trickTitle + ": " + model.trick },
-    color = TrickFill,
-    radius = 18.dp,
-    depth = 4.dp,
+    color = Clay.Lime,
+    size = SlabSize.MEDIUM,
     contentPadding = 14.dp
   ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-      Text(model.trickTitle, color = Clay.Lime, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-      Text(model.trick, color = Color(0xFFF4F2FF), fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+      Text(model.trickTitle, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+      Text(model.trick, color = Clay.Ink, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
     }
   }
 }
