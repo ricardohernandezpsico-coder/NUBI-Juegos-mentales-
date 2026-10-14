@@ -20,6 +20,7 @@ namespace NeuroVida.Games.Shared
         private Action _onResume, _onRestart, _onExit, _onHowTo;
         private Func<bool> _canHowTo;
         private RectTransform _title, _subtitle, _btnContinue, _btnRestart, _btnHowTo, _btnExit;
+        private bool _plastic;
 
         public bool IsShown => gameObject.activeSelf;
 
@@ -91,38 +92,43 @@ namespace NeuroVida.Games.Shared
             _panel.anchorMin = _panel.anchorMax = new Vector2(0.5f, 0.5f);
             _panel.sizeDelta = new Vector2(820f, 940f);
             var panelImg = panelGo.AddComponent<Image>();
-            panelImg.sprite = RoundedRectSprite.Get(64);
-            panelImg.type = Image.Type.Sliced;
-            panelImg.color = NeuroStyle.Surface;
-            NeuroStyle.ClayFrame(panelImg, 7f, 18f);
+            // el panel es una lámina de plasticina crema (la de la app); sin ella, la superficie azul noche con borde tinta de siempre
+            _plastic = PlasticSlab.TryStyle(panelImg, SlabSize.Panel, SlabTone.Cream, hit: true) != null;
+            if (!_plastic)
+            {
+                panelImg.sprite = RoundedRectSprite.Get(64);
+                panelImg.type = Image.Type.Sliced;
+                panelImg.color = NeuroStyle.Surface;
+                NeuroStyle.ClayFrame(panelImg, 7f, 18f);
+            }
 
-            var title = MakeText(_panel, "Title", 110, TextAnchor.MiddleCenter, NeuroStyle.Sun, 0f, 0f);
+            var title = MakeText(_panel, "Title", 110, TextAnchor.MiddleCenter, _plastic ? NeuroStyle.Ink : NeuroStyle.Sun, 0f, 0f);
             _title = title.rectTransform;
             title.text = "Pausa";
-            NeuroStyle.ClayText(title, 6f, 12f);
+            if (!_plastic) NeuroStyle.ClayText(title, 6f, 12f);
 
-            var sub = MakeText(_panel, "Subtitle", 46, TextAnchor.MiddleCenter, NeuroStyle.Hex(0xB4BFEA), 0f, 0f);
+            var sub = MakeText(_panel, "Subtitle", 46, TextAnchor.MiddleCenter, _plastic ? NeuroStyle.InkSoft : NeuroStyle.Hex(0xB4BFEA), 0f, 0f);
             _subtitle = sub.rectTransform;
             sub.text = "Tu partida te espera";
 
-            _btnContinue = AddButton("Continuar", NeuroStyle.Sun, () =>
+            _btnContinue = AddButton("Continuar", NeuroStyle.Sun, SlabTone.Sun, () =>
             {
                 Hide();
                 GameClock.Resume();
                 _onResume?.Invoke();
             });
-            _btnRestart = AddButton("Reiniciar", NeuroStyle.Sky, () =>
+            _btnRestart = AddButton("Reiniciar", NeuroStyle.Sky, SlabTone.Sky, () =>
             {
                 Hide();
                 _onRestart?.Invoke();
             });
             // «Cómo se juega» (solo en los juegos con tutorial): el reloj lo retoma el juego, no el menú
-            _btnHowTo = AddButton("Cómo se juega", NeuroStyle.Grape, () =>
+            _btnHowTo = AddButton("Cómo se juega", NeuroStyle.Grape, SlabTone.Lilac, () =>
             {
                 Hide();
                 _onHowTo?.Invoke();
             });
-            _btnExit = AddButton("Salir", NeuroStyle.Cream, () => _onExit?.Invoke());
+            _btnExit = AddButton("Salir", NeuroStyle.Cream, SlabTone.Cream, () => _onExit?.Invoke());
             Relayout(false);
         }
 
@@ -143,24 +149,29 @@ namespace NeuroVida.Games.Shared
             _btnHowTo.gameObject.SetActive(withHowTo);
         }
 
-        private RectTransform AddButton(string label, Color fill, Action onClick)
+        private RectTransform AddButton(string label, Color fill, SlabTone tone, Action onClick)
         {
             var go = new GameObject("Btn_" + label);
             go.transform.SetParent(_panel, false);
             var rect = go.AddComponent<RectTransform>();
             var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = fill;
-            NeuroStyle.ClayFrame(img, 6f, 14f);
+            var slab = _plastic ? PlasticSlab.TryStyle(img, SlabSize.Button, tone, hit: true) : null;
+            if (slab == null)
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = fill;
+                NeuroStyle.ClayFrame(img, 6f, 14f);
+            }
             var button = go.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => onClick());
-            go.AddComponent<PressScale>();
 
             var text = MakeText(go.transform, "Label", 60, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             text.text = label;
             BestFit(text, 48);
+            if (slab != null) go.AddComponent<PlasticPress>().Init(slab, SlabSize.Button, tone, text.rectTransform);
+            else go.AddComponent<PressScale>();
             return rect;
         }
 

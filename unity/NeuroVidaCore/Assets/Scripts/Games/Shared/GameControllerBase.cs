@@ -44,8 +44,12 @@ namespace NeuroVida.Games.Shared
             var panel = _resultRoot.GetComponent<Image>();
             if (panel != null)
             {
-                panel.color = NeuroStyle.Surface;
-                NeuroStyle.ClayFrame(panel, 7f, 18f);
+                // plasticina: una losa «noche» (oscura, como la superficie de siempre: el texto de cada juego va en claro encima); sin ella, el arcilla de siempre
+                if (PlasticSlab.TryStyle(panel, SlabSize.Button, SlabTone.Night, hit: true) == null)
+                {
+                    panel.color = NeuroStyle.Surface;
+                    NeuroStyle.ClayFrame(panel, 7f, 18f);
+                }
             }
             var score = _resultRoot.Find("Score");
             var scoreText = score != null ? score.GetComponent<Text>() : null;

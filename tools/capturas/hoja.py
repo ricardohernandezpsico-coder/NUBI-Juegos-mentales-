@@ -37,6 +37,7 @@ ORDER = list(NAMES)
 
 # toma -> rótulo (las de cada juego se suman a estas)
 CAPTIONS = {
+    'cuenta': 'La cuenta regresiva (el número 2)',
     'primera': 'Primera pantalla jugable',
     't08': 'A los 8 s de juego',
     't20': 'A los 20 s de juego',

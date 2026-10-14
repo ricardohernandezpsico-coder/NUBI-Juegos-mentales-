@@ -18,6 +18,7 @@ namespace NeuroVida.Games.Shared
         private readonly CanvasGroup _group;
         private readonly Image _bg;
         private readonly Image _dot;
+        private readonly Image _slab;                // la losa de plasticina (null = el arcilla de siempre)
         private readonly Text _title;
         private readonly Text _subtitle;
         private readonly float _u;
@@ -42,10 +43,14 @@ namespace NeuroVida.Games.Shared
             _group.interactable = false;
 
             _bg = go.AddComponent<Image>();
-            _bg.sprite = RoundedRectSprite.Get(64);
-            _bg.type = Image.Type.Sliced;
-            _bg.raycastTarget = false;
-            NeuroStyle.ClayFrame(_bg, 4f, 8f);
+            _slab = PlasticSlab.TryStyle(_bg, SlabSize.Button, SlabTone.Cream);
+            if (_slab == null)
+            {
+                _bg.sprite = RoundedRectSprite.Get(64);
+                _bg.type = Image.Type.Sliced;
+                _bg.raycastTarget = false;
+                NeuroStyle.ClayFrame(_bg, 4f, 8f);
+            }
 
             var dotGo = new GameObject("Dot");
             dotGo.transform.SetParent(go.transform, false);
@@ -61,7 +66,12 @@ namespace NeuroVida.Games.Shared
 
             _title = NewText("Title", go.transform, 24, new Vector2(0f, 0.5f), new Vector2(1f, 1f));
             _subtitle = NewText("Subtitle", go.transform, 17, new Vector2(0f, 0f), new Vector2(1f, 0.5f));
-            _subtitle.color = new Color(1f, 1f, 1f, 0.78f);
+            if (_slab != null)
+            {
+                _title.color = NeuroStyle.Ink;
+                _subtitle.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, 0.8f);
+            }
+            else _subtitle.color = new Color(1f, 1f, 1f, 0.78f);
 
             go.SetActive(false);
         }
@@ -171,12 +181,20 @@ namespace NeuroVida.Games.Shared
             _title.text = title;
             _subtitle.text = subtitle;
             _subtitle.gameObject.SetActive(hasSubtitle);
-            _dot.color = accent;
-            _bg.color = new Color(
-                Mathf.Lerp(0.06f, accent.r, 0.28f),
-                Mathf.Lerp(0.09f, accent.g, 0.28f),
-                Mathf.Lerp(0.16f, accent.b, 0.28f),
-                0.95f);
+            if (_slab != null)
+            {
+                PlasticSlab.Set(_slab, SlabSize.Button, PlasticSlab.Nearest(accent));      // plasticina: el aviso toma el color del acento; el punto y el texto, en tinta
+                _dot.color = NeuroStyle.Ink;
+            }
+            else
+            {
+                _dot.color = accent;
+                _bg.color = new Color(
+                    Mathf.Lerp(0.06f, accent.r, 0.28f),
+                    Mathf.Lerp(0.09f, accent.g, 0.28f),
+                    Mathf.Lerp(0.16f, accent.b, 0.28f),
+                    0.95f);
+            }
 
             FitSize(hasSubtitle);
 

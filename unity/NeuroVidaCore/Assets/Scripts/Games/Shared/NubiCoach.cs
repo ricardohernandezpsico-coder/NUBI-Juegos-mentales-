@@ -170,11 +170,14 @@ namespace NeuroVida.Games.Shared
             _bubble = bubbleGo.AddComponent<RectTransform>();
             _bubble.anchorMin = _bubble.anchorMax = _bubble.pivot = new Vector2(0.5f, 0.5f);
             var bi = bubbleGo.AddComponent<Image>();
-            bi.sprite = RoundedRectSprite.Get(40);
-            bi.type = Image.Type.Sliced;
-            bi.color = BubbleColor;
-            bi.raycastTarget = false;
-            NeuroStyle.ClayFrame(bi, 5f, 9f);
+            if (PlasticSlab.TryStyle(bi, SlabSize.Button, SlabTone.Cream) == null)       // el globo es una losa crema de plasticina; sin ella, el arcilla de siempre
+            {
+                bi.sprite = RoundedRectSprite.Get(40);
+                bi.type = Image.Type.Sliced;
+                bi.color = BubbleColor;
+                bi.raycastTarget = false;
+                NeuroStyle.ClayFrame(bi, 5f, 9f);
+            }
             _text = MakeText(_bubble, "Text", CoachLayout.FontSize, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             _text.rectTransform.offsetMin = new Vector2(CoachLayout.PadX, CoachLayout.PadY);
             _text.rectTransform.offsetMax = new Vector2(-CoachLayout.PadX, -CoachLayout.PadY);
@@ -327,7 +330,7 @@ namespace NeuroVida.Games.Shared
 #endif
             _litShown.Clear();
             _text.text = text;
-            if (_nubi.sprite == null) _nubi.sprite = NubiTeacherSprite.Get();
+            if (_nubi.sprite == null) { _nubi.sprite = NubiTeacherSprite.Get(); _nubi.preserveAspect = true; }       // la Nubi 3D no es cuadrada
             _root.gameObject.SetActive(true);
             bool veil = kind != Kind.Notice;
             foreach (var s in _veil) { s.gameObject.SetActive(false); s.raycastTarget = kind == Kind.Touch; }
@@ -650,7 +653,7 @@ namespace NeuroVida.Games.Shared
             _group.sizeDelta = u.size;
             _nubi.rectTransform.sizeDelta = new Vector2(p.NubiSize, p.NubiSize);
             _nubi.rectTransform.anchoredPosition = p.Nubi.center - u.center;
-            _nubi.rectTransform.localScale = new Vector3(_left ? 1f : -1f, 1f, 1f);
+            _nubi.rectTransform.localScale = new Vector3(_left || NubiTeacherSprite.IsPlastic ? 1f : -1f, 1f, 1f);       // la Nubi 3D mira de frente (y su luz viene de la izquierda): no se espeja
             _bubble.sizeDelta = p.Bubble.size;
             _bubble.anchoredPosition = p.Bubble.center - u.center;
             _text.fontSize = CoachLayout.FontSize;

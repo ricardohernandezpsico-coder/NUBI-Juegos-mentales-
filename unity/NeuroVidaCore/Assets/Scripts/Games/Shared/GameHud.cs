@@ -30,6 +30,8 @@ namespace NeuroVida.Games.Shared
         private readonly RectTransform _levelChip, _infoChip, _streakPill;
         private readonly Text _levelText, _infoText, _streakNumber, _streakLabel;
         private readonly Image _levelBg, _streakSpark;
+        /// <summary>Las losas de plasticina de las pastillas (null = el arcilla de siempre): nivel, segundo chip y racha.</summary>
+        private readonly Image _levelSlab, _infoSlab, _streakSlab;
         private int _level = -1;
         private int _shownPoints = -1;
         private int _targetPoints;
@@ -57,8 +59,8 @@ namespace NeuroVida.Games.Shared
             BestFit(titleText, 44);
             titleText.text = title;
 
-            _levelChip = Chip("LevelChip", out _levelBg, out _levelText, NeuroStyle.Sky);
-            _infoChip = Chip("InfoChip", out _, out _infoText, NeuroStyle.Sun);
+            _levelChip = Chip("LevelChip", SlabTone.Cream, out _levelBg, out _levelSlab, out _levelText, NeuroStyle.Sky);
+            _infoChip = Chip("InfoChip", SlabTone.Sun, out _, out _infoSlab, out _infoText, NeuroStyle.Sun);
             _infoChip.gameObject.SetActive(false);
 
             if (withStreak)
@@ -70,11 +72,15 @@ namespace NeuroVida.Games.Shared
                 _streakPill.sizeDelta = new Vector2(pillW, pillH);
                 _streakPill.anchoredPosition = new Vector2(-marginU, -26f);
                 var bg = pillGo.AddComponent<Image>();
-                bg.sprite = RoundedRectSprite.Get(64);
-                bg.type = Image.Type.Sliced;
-                bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f);
-                bg.raycastTarget = false;
-                NeuroStyle.ClayFrame(bg, 4f, 8f);
+                _streakSlab = PlasticSlab.TryStyle(bg, SlabSize.Button, SlabTone.Cream);
+                if (_streakSlab == null)
+                {
+                    bg.sprite = RoundedRectSprite.Get(64);
+                    bg.type = Image.Type.Sliced;
+                    bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f);
+                    bg.raycastTarget = false;
+                    NeuroStyle.ClayFrame(bg, 4f, 8f);
+                }
 
                 var sparkGo = new GameObject("Spark");
                 sparkGo.transform.SetParent(_streakPill, false);
@@ -86,11 +92,11 @@ namespace NeuroVida.Games.Shared
                 _streakSpark.sprite = SparkleSprite.Get();
                 _streakSpark.raycastTarget = false;
 
-                _streakNumber = MakeText(_streakPill, "Number", 60, TextAnchor.MiddleCenter, NeuroStyle.Cream, 0f, 0f);
+                _streakNumber = MakeText(_streakPill, "Number", 60, TextAnchor.MiddleCenter, _streakSlab != null ? NeuroStyle.Ink : NeuroStyle.Cream, 0f, 0f);
                 var nr = _streakNumber.rectTransform;
                 nr.offsetMin = new Vector2(92f, 66f);
                 nr.offsetMax = new Vector2(-14f, -4f);
-                _streakLabel = MakeText(_streakPill, "Label", 42, TextAnchor.MiddleCenter, NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.7f), 0f, 0f);
+                _streakLabel = MakeText(_streakPill, "Label", 42, TextAnchor.MiddleCenter, _streakSlab != null ? NeuroStyle.Ink : NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.7f), 0f, 0f);
                 _streakLabel.font = UiFonts.Regular;
                 var lr = _streakLabel.rectTransform;
                 lr.offsetMin = new Vector2(92f, 6f);
@@ -100,7 +106,8 @@ namespace NeuroVida.Games.Shared
             }
         }
 
-        private RectTransform Chip(string name, out Image bg, out Text text, Color textColor)
+        /// <summary>Una pastilla: losa chica de plasticina del color [tone] con el texto en tinta o, sin plasticina, el chip oscuro de siempre con el texto de color.</summary>
+        private RectTransform Chip(string name, SlabTone tone, out Image bg, out Image slab, out Text text, Color textColor)
         {
             var go = new GameObject(name);
             go.transform.SetParent(Rect, false);
@@ -110,12 +117,16 @@ namespace NeuroVida.Games.Shared
             rect.sizeDelta = new Vector2(160f, ChipH);
             rect.anchoredPosition = new Vector2(_margin, -118f);
             bg = go.AddComponent<Image>();
-            bg.sprite = RoundedRectSprite.Get(64);
-            bg.type = Image.Type.Sliced;
-            bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
-            bg.raycastTarget = false;
-            NeuroStyle.ClayFrame(bg, 3f, 6f);
-            text = MakeText(rect, "Text", 42, TextAnchor.MiddleCenter, textColor, 0f, 0f);       // 14 dp: nada de letra más chica
+            slab = PlasticSlab.TryStyle(bg, SlabSize.Chip, tone);
+            if (slab == null)
+            {
+                bg.sprite = RoundedRectSprite.Get(64);
+                bg.type = Image.Type.Sliced;
+                bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
+                bg.raycastTarget = false;
+                NeuroStyle.ClayFrame(bg, 3f, 6f);
+            }
+            text = MakeText(rect, "Text", 42, TextAnchor.MiddleCenter, slab != null ? NeuroStyle.Ink : textColor, 0f, 0f);       // 14 dp: nada de letra más chica
             return rect;
         }
 
@@ -185,8 +196,17 @@ namespace NeuroVida.Games.Shared
             if (_streakPill == null) return;
             _streakNumber.text = streak.ToString();
             bool hot = streak >= 3;
-            _streakNumber.color = hot ? NeuroStyle.Sun : NeuroStyle.Cream;
-            _streakSpark.color = hot ? NeuroStyle.Coral : NeuroStyle.WithAlpha(Color.white, 0.25f);
+            if (_streakSlab != null)
+            {
+                // plasticina: con 3 o más la pastilla pasa de crema a coral (el número y la palabra siguen en tinta, con ≥ 4,5:1 sobre las dos)
+                PlasticSlab.Set(_streakSlab, SlabSize.Button, hot ? SlabTone.Coral : SlabTone.Cream);
+                _streakSpark.color = hot ? Color.white : NeuroStyle.WithAlpha(NeuroStyle.InkSoft, 0.55f);
+            }
+            else
+            {
+                _streakNumber.color = hot ? NeuroStyle.Sun : NeuroStyle.Cream;
+                _streakSpark.color = hot ? NeuroStyle.Coral : NeuroStyle.WithAlpha(Color.white, 0.25f);
+            }
             if (!animate || streak <= 0) return;
             bool milestone = streak % 5 == 0;
             _runner.StartCoroutine(PopRect(_streakPill, milestone ? 1.22f : 1.1f, milestone ? 0.3f : 0.2f));
@@ -223,6 +243,15 @@ namespace NeuroVida.Games.Shared
         private IEnumerator LevelUpGlow()
         {
             _runner.StartCoroutine(PopRect(_levelChip, 1.25f, 0.32f)); // sin animaciones: no hace nada (ver UiKit.PopRect)
+            if (_levelSlab != null)
+            {
+                // plasticina: la pastilla pasa un momento de crema a lima (con «quitar animaciones» también: es un cambio de color, no movimiento) y vuelve
+                PlasticSlab.Set(_levelSlab, SlabSize.Chip, SlabTone.Lime);
+                float hold = Motion.Decorative ? 0.6f : 0.45f, waited = 0f;
+                while (waited < hold) { waited += GameClock.DeltaTime; yield return null; }
+                PlasticSlab.Set(_levelSlab, SlabSize.Chip, SlabTone.Cream);
+                yield break;
+            }
             var baseColor = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
             if (!Motion.Decorative)
             {

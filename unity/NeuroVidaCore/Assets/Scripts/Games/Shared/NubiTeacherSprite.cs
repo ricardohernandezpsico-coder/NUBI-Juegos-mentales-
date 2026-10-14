@@ -14,7 +14,19 @@ namespace NeuroVida.Games.Shared
         private const int SizePx = 320;
         private static Sprite _sprite;
 
-        public static Sprite Get() => _sprite != null ? _sprite : _sprite = ToSprite(Render(SizePx), SizePx, 100f);
+        /// <summary>
+        /// La Nubi de los tutoriales: el render 3D de la app (<c>nubi_3d</c>, con su sombra elíptica) si existe el atlas «nubi»; si no, la Nubi plana procedural de siempre (<see cref="Render"/>).
+        /// La 3D no es cuadrada (720 × 548 con la sombra): el <c>Image</c> que la muestra debe llevar <c>preserveAspect</c>.
+        /// </summary>
+        public static Sprite Get()
+        {
+            var plastic = PlasticArt.Get("nubi", "nubi_3d");
+            if (plastic != null) return plastic;
+            return _sprite != null ? _sprite : _sprite = ToSprite(Render(SizePx), SizePx, 100f);
+        }
+
+        /// <summary>true si <see cref="Get"/> entrega la Nubi 3D de plasticina.</summary>
+        public static bool IsPlastic => PlasticArt.Has("nubi", "nubi_3d");
 
         // Unidades del dibujo original (la nube mide ~74 de ancho). El lienzo cubre 100 × 100 unidades, centrado en (0, -1) del dibujo (y hacia abajo).
         private const float Units = 100f;

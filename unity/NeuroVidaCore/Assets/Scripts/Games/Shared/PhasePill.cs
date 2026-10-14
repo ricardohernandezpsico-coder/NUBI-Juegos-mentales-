@@ -18,6 +18,7 @@ namespace NeuroVida.Games.Shared
         private readonly CanvasGroup _group;
         private readonly Image _bg;
         private readonly Image _dot;
+        private readonly Image _slab;                // la losa de plasticina (null = el arcilla de siempre)
         private readonly Text _text;
         private readonly float _fontPx;
         private Coroutine _anim;
@@ -38,10 +39,14 @@ namespace NeuroVida.Games.Shared
             _group.blocksRaycasts = false;
 
             _bg = go.AddComponent<Image>();
-            _bg.sprite = RoundedRectSprite.Get(64);
-            _bg.type = Image.Type.Sliced;
-            _bg.raycastTarget = false;
-            NeuroStyle.ClayFrame(_bg, 4f, 8f);
+            _slab = PlasticSlab.TryStyle(_bg, SlabSize.Button, SlabTone.Cream);
+            if (_slab == null)
+            {
+                _bg.sprite = RoundedRectSprite.Get(64);
+                _bg.type = Image.Type.Sliced;
+                _bg.raycastTarget = false;
+                NeuroStyle.ClayFrame(_bg, 4f, 8f);
+            }
 
             var dotGo = new GameObject("Dot");
             dotGo.transform.SetParent(go.transform, false);
@@ -67,11 +72,11 @@ namespace NeuroVida.Games.Shared
             _text.font = UiFonts.Bold;
             _text.fontSize = Mathf.RoundToInt(_fontPx);
             _text.alignment = TextAnchor.MiddleLeft;
-            _text.color = Color.white;
+            _text.color = _slab != null ? NeuroStyle.Ink : Color.white;
             _text.raycastTarget = false;
             _text.horizontalOverflow = HorizontalWrapMode.Overflow;
             _text.verticalOverflow = VerticalWrapMode.Overflow;
-            UiFonts.AddSoftShadow(textGo, 2f, 0.35f);
+            if (_slab == null) UiFonts.AddSoftShadow(textGo, 2f, 0.35f);
         }
 
         public RectTransform Rect => _rect;
@@ -81,12 +86,21 @@ namespace NeuroVida.Games.Shared
         public void Set(string text, Color accent)
         {
             _text.text = text;
-            _dot.color = accent;
-            _bg.color = new Color(
-                Mathf.Lerp(0.06f, accent.r, 0.22f),
-                Mathf.Lerp(0.09f, accent.g, 0.22f),
-                Mathf.Lerp(0.16f, accent.b, 0.22f),
-                0.90f);
+            if (_slab != null)
+            {
+                // plasticina: la pastilla toma el color del acento (losa del kit más parecida) y el punto y el texto van en tinta: se lee con o sin el color
+                PlasticSlab.Set(_slab, SlabSize.Button, PlasticSlab.Nearest(accent));
+                _dot.color = NeuroStyle.Ink;
+            }
+            else
+            {
+                _dot.color = accent;
+                _bg.color = new Color(
+                    Mathf.Lerp(0.06f, accent.r, 0.22f),
+                    Mathf.Lerp(0.09f, accent.g, 0.22f),
+                    Mathf.Lerp(0.16f, accent.b, 0.22f),
+                    0.90f);
+            }
 
             // Textos largos (p. ej. la explicación de una serie): primero se achica un poco la letra
             // y, si aun así no cabe en el ancho máximo, se parte en dos renglones.

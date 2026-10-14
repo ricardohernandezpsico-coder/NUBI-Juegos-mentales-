@@ -600,8 +600,8 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Espera a que termine la cuenta regresiva (el objeto «CountdownScreen» se apaga) y deja 0,8 s para que la primera pantalla se asiente. Si nunca se ve la cuenta, a los 14 s sigue igual.</summary>
         private static IEnumerator WaitPlayable()
         {
-            bool seen = false;
-            double start = Now, lastFind = 0;
+            bool seen = false, shotTaken = false;
+            double start = Now, lastFind = 0, seenAt = 0;
             _countdownRoot = null;
             yield return Wait.Until(() =>
             {
@@ -612,7 +612,13 @@ namespace NeuroVida.Bridge.EditorTools
                         if (t.name == "CountdownScreen") { _countdownRoot = t; break; }
                 }
                 bool active = _countdownRoot != null && _countdownRoot.gameObject.activeInHierarchy;
-                if (active) seen = true;
+                if (active)
+                {
+                    if (!seen) seenAt = Now;
+                    seen = true;
+                    // la cuenta regresiva (el anillo, la píldora del título y el número) a los ~1,3 s: en el paso «2»
+                    if (!shotTaken && Now - seenAt > 1.3) { shotTaken = true; Shot("cuenta"); }
+                }
                 return (seen && !active) || Now - start > 14.0;
             }, 20);
             if (!seen) GameNotes.Add("no se vio la cuenta regresiva; la 'primera' toma es a los 14 s");

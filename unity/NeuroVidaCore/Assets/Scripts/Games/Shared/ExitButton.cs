@@ -32,15 +32,19 @@ namespace NeuroVida.Games.Shared
             _rect.anchoredPosition = new Vector2(0f, 50f + 66f);
 
             var img = _root.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = NeuroStyle.Sun; // acción principal en sol con texto tinta, como el botón "Entrenar" de la app
-            NeuroStyle.ClayFrame(img, 6f, 14f);
+            // acción principal en sol con texto tinta, como el botón "Entrenar" de la app: losa de plasticina (la de la app) si existe; si no, el arcilla de siempre
+            var slab = PlasticSlab.TryStyle(img, SlabSize.Button, SlabTone.Sun, hit: true);
+            if (slab == null)
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = NeuroStyle.Sun;
+                NeuroStyle.ClayFrame(img, 6f, 14f);
+            }
 
             var button = _root.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(NativeBridge.CloseGameScreen);
-            _root.AddComponent<PressScale>();
 
             var textGo = new GameObject("Label");
             textGo.transform.SetParent(_root.transform, false);
@@ -56,6 +60,8 @@ namespace NeuroVida.Games.Shared
             text.raycastTarget = false;
             text.text = "Continuar";
 
+            if (slab != null) _root.AddComponent<PlasticPress>().Init(slab, SlabSize.Button, SlabTone.Sun, tr);
+            else _root.AddComponent<PressScale>();
             _root.SetActive(false);
         }
 

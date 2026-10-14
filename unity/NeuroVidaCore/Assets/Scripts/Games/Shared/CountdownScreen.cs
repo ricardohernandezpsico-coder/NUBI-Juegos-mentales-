@@ -37,7 +37,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Muestra la marca de version bajo la cuenta regresiva. Antes dependia de <c>Debug.isDebugBuild</c>,
         /// pero la exportacion de Unity es de produccion y nunca se veia. Poner en false antes de publicar en la tienda.</summary>
         public const bool ShowStyleStamp = true;
-        public const string StyleStamp = "estilo 10-oct · aterrizaje cierre";
+        public const string StyleStamp = "estilo 14-oct · plasticina rescate";
 
         private static readonly Color[] StepColors = { NeuroStyle.Sky, NeuroStyle.Grape, NeuroStyle.Coral };
         private static readonly float[] StepWarp = { 0.07f, 0.15f, 0.27f };
@@ -59,6 +59,7 @@ namespace NeuroVida.Games.Shared
         private readonly RectTransform _rippleRect;
         private readonly Image _ringTrack;
         private readonly Image _ringFill;
+        private readonly float _trackAlpha;
         private readonly RectTransform _orbitStar;
         private readonly Image _orbitStarImage;
         private readonly float _orbitRadius;
@@ -108,11 +109,14 @@ namespace NeuroVida.Games.Shared
             _rippleRect = NewChild("Ripple", _root, Vector2.zero, new Vector2(ringSize, ringSize));
             _ripple = AddImage(_rippleRect, RingSprite.Get(), new Color(1f, 1f, 1f, 0f));
 
+            // el anillo de la cuenta: un aro de plasticina (blanco, se tiñe con el color del paso; los mismos radios que RingSprite) o, sin ella, el aro procedural de siempre
+            var plasticRing = PlasticArt.Get("comun", "anillo_cuenta");
+            _trackAlpha = plasticRing != null ? 0.3f : 0.14f;
             var trackRect = NewChild("OrbitTrack", _root, Vector2.zero, new Vector2(ringSize, ringSize));
-            _ringTrack = AddImage(trackRect, RingSprite.Get(), NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.14f));
+            _ringTrack = AddImage(trackRect, plasticRing != null ? plasticRing : RingSprite.Get(), NeuroStyle.WithAlpha(NeuroStyle.Cream, _trackAlpha));
 
             var fillRect = NewChild("OrbitFill", _root, Vector2.zero, new Vector2(ringSize, ringSize));
-            _ringFill = AddImage(fillRect, RingSprite.Get(), StepColors[0]);
+            _ringFill = AddImage(fillRect, plasticRing != null ? plasticRing : RingSprite.Get(), StepColors[0]);
             _ringFill.type = Image.Type.Filled;
             _ringFill.fillMethod = Image.FillMethod.Radial360;
             _ringFill.fillOrigin = (int)Image.Origin360.Top;
@@ -129,10 +133,19 @@ namespace NeuroVida.Games.Shared
             // Píldora de arcilla crema con el título (arriba del anillo), como las píldoras de la app.
             _titleChipBase = new Vector2(0f, 262f * _u);
             _titleChipRect = NewChild("TitleChip", _root, _titleChipBase, new Vector2(230f * _u, 62f * _u));
-            AddClayLayer(_titleChipRect, "Shadow", NeuroStyle.Ink, new Vector2(0f, -5f * _u), new Vector2(0f, -5f * _u));
-            AddClayLayer(_titleChipRect, "Border", NeuroStyle.Ink, Vector2.zero, Vector2.zero);
-            float b = 3f * _u;
-            AddClayLayer(_titleChipRect, "Fill", NeuroStyle.Cream, new Vector2(b, b), new Vector2(-b, -b));
+            if (PlasticSlab.Available(SlabSize.Chip, SlabTone.Cream))
+            {
+                var chipHost = _titleChipRect.gameObject.AddComponent<Image>();      // la píldora es una losa chica de plasticina crema (la del kit de la app)
+                chipHost.raycastTarget = false;
+                PlasticSlab.TryStyle(chipHost, SlabSize.Chip, SlabTone.Cream);
+            }
+            else
+            {
+                AddClayLayer(_titleChipRect, "Shadow", NeuroStyle.Ink, new Vector2(0f, -5f * _u), new Vector2(0f, -5f * _u));
+                AddClayLayer(_titleChipRect, "Border", NeuroStyle.Ink, Vector2.zero, Vector2.zero);
+                float b = 3f * _u;
+                AddClayLayer(_titleChipRect, "Fill", NeuroStyle.Cream, new Vector2(b, b), new Vector2(-b, -b));
+            }
             _title = NewText("Title", _titleChipRect, Vector2.zero, new Vector2(230f * _u, 62f * _u), 30, TextAnchor.MiddleCenter, clay: false);
             _title.color = NeuroStyle.Ink;
             _title.GetComponent<Shadow>().enabled = false; // texto tinta sobre crema: sin sombra
@@ -185,7 +198,7 @@ namespace NeuroVida.Games.Shared
             _numberOut.color = NeuroStyle.WithAlpha(StepColors[0], 0f);
             _ringFill.fillAmount = 1f;
             _ringFill.color = StepColors[0];
-            _ringTrack.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.14f);
+            _ringTrack.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, _trackAlpha);
             _orbitStarImage.color = Motion.Decorative ? Color.white : new Color(1f, 1f, 1f, 0f); // con "quitar animaciones" la estrella no aparece
             _orbitStar.anchoredPosition = new Vector2(0f, _orbitRadius);
             _ripple.color = new Color(1f, 1f, 1f, 0f);
@@ -347,7 +360,7 @@ namespace NeuroVida.Games.Shared
 
                 float ringA = Mathf.Clamp01(1f - elapsed / 0.2f);
                 _ringFill.color = NeuroStyle.WithAlpha(_ringFill.color, ringA);
-                _ringTrack.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.14f * ringA);
+                _ringTrack.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, _trackAlpha * ringA);
                 _orbitStarImage.color = new Color(1f, 1f, 1f, ringA);
 
                 float tB = Mathf.Clamp01(elapsed / 0.55f);
@@ -453,7 +466,7 @@ namespace NeuroVida.Games.Shared
                 _centerGlow.color = Color.Lerp(fromGlow, NeuroStyle.WithAlpha(GoColor, 0.45f), k);
                 float ringA = 1f - k;
                 _ringFill.color = NeuroStyle.WithAlpha(_ringFill.color, ringA);
-                _ringTrack.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.14f * ringA);
+                _ringTrack.color = NeuroStyle.WithAlpha(NeuroStyle.Cream, _trackAlpha * ringA);
 
                 if (!revealed && elapsed >= revealAt)
                 {

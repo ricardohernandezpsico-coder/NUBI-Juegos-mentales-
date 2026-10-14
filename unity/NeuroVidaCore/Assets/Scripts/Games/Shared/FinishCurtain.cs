@@ -15,6 +15,8 @@ namespace NeuroVida.Games.Shared
     {
         private CanvasGroup _group;
         private RectTransform _title;
+        private RectTransform _plaque;          // la placa de plasticina detrás de «¡Listo!» (null = el texto con contorno de siempre)
+        private CanvasGroup _plaqueGroup;
         private CanvasGroup _subGroup;
         private StarfieldFx _stars;
         private RectTransform _fx;
@@ -65,14 +67,29 @@ namespace NeuroVida.Games.Shared
             _fx.anchorMin = _fx.anchorMax = new Vector2(0.5f, 0.55f);
             _fx.sizeDelta = Vector2.zero;
 
-            var title = MakeText(root, "Title", 170, TextAnchor.MiddleCenter, NeuroStyle.Sun, 0f, 0f);
+            // «¡Listo!»: una placa de plasticina sol (la losa del kit) con el texto en tinta encima; sin plasticina, el texto sol con contorno tinta de siempre
+            if (PlasticSlab.Available(SlabSize.Button, SlabTone.Sun))
+            {
+                var plaqueGo = new GameObject("TitlePlaque");
+                plaqueGo.transform.SetParent(root, false);
+                var plaqueRect = plaqueGo.AddComponent<RectTransform>();
+                plaqueRect.anchorMin = plaqueRect.anchorMax = new Vector2(0.5f, 0.55f);
+                plaqueRect.sizeDelta = new Vector2(780f, 270f);
+                plaqueRect.anchoredPosition = Vector2.zero;
+                var plaqueImg = plaqueGo.AddComponent<Image>();
+                PlasticSlab.TryStyle(plaqueImg, SlabSize.Button, SlabTone.Sun);
+                _plaque = plaqueRect;
+                _plaqueGroup = plaqueGo.AddComponent<CanvasGroup>();
+            }
+
+            var title = MakeText(root, "Title", 170, TextAnchor.MiddleCenter, _plaque != null ? NeuroStyle.Ink : NeuroStyle.Sun, 0f, 0f);
             _title = title.rectTransform;
             _title.anchorMin = _title.anchorMax = new Vector2(0.5f, 0.55f);
             _title.sizeDelta = new Vector2(1000f, 240f);
             _title.anchoredPosition = Vector2.zero;
             title.font = UiFonts.Bold;
             title.text = "¡Listo!";
-            NeuroStyle.ClayText(title, 8f, 16f);
+            if (_plaque == null) NeuroStyle.ClayText(title, 8f, 16f);
 
             var sub = MakeText(root, "Sub", 54, TextAnchor.MiddleCenter, NeuroStyle.Cream, 0f, 0f);
             var subRect = sub.rectTransform;
@@ -84,6 +101,16 @@ namespace NeuroVida.Games.Shared
             _subGroup.alpha = 0f;
 
             _title.localScale = Vector3.zero;
+            if (_plaque != null) _plaque.localScale = Vector3.zero;
+        }
+
+        /// <summary>El título y, si hay, su placa: escala y opacidad juntas.</summary>
+        private void SetTitle(float scale, float alpha)
+        {
+            _title.localScale = Vector3.one * scale;
+            if (_plaque == null) return;
+            _plaque.localScale = Vector3.one * scale;
+            _plaqueGroup.alpha = alpha;
         }
 
         /// <summary>Anima el cierre completo (≈1,2 s) con el reloj real.</summary>
@@ -94,7 +121,7 @@ namespace NeuroVida.Games.Shared
                 // Sin rebote, chispas ni hiperespacio: el cielo, "¡Listo!" y el subtítulo aparecen con un fundido de opacidad.
                 // La duración total (≈1,2 s) queda igual: es el aviso de que viene el resultado.
                 var titleText = _title.GetComponent<Text>();
-                _title.localScale = Vector3.one;
+                SetTitle(1f, 0f);
                 float elapsed = 0f;
                 const float calmTotal = 1.2f;
                 while (elapsed < calmTotal)
@@ -104,6 +131,7 @@ namespace NeuroVida.Games.Shared
                     var tc = titleText.color;
                     tc.a = Mathf.Clamp01((elapsed - 0.05f) / Motion.FadeSeconds);
                     titleText.color = tc;
+                    if (_plaque != null) _plaqueGroup.alpha = tc.a;
                     _subGroup.alpha = Mathf.Clamp01((elapsed - 0.35f) / Motion.FadeSeconds);
                     yield return null;
                 }
@@ -119,7 +147,7 @@ namespace NeuroVida.Games.Shared
                 _group.alpha = Mathf.Clamp01(t / 0.22f);
                 // "¡Listo!": rebote de 0,4 s, empieza con el cielo.
                 float k = Mathf.Clamp01((t - 0.05f) / 0.4f);
-                _title.localScale = Vector3.one * Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(k));
+                SetTitle(Mathf.LerpUnclamped(0f, 1f, UiFx.EaseOutBack(k)), 1f);
                 // Subtítulo: después del título.
                 _subGroup.alpha = Mathf.Clamp01((t - 0.35f) / 0.25f);
                 // Estrellas: aceleran hasta hiperespacio en la segunda mitad (el viaje "hacia" el resultado).

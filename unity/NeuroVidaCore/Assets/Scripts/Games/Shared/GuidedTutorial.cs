@@ -85,7 +85,9 @@ namespace NeuroVida.Games.Shared
             dim.color = new Color(0.008f, 0.012f, 0.06f, 0.78f);
             dim.raycastTarget = false;
 
-            var card = Panel(_intro, "Card", new Vector2(930f, 1240f), Vector2.zero, NeuroStyle.Surface, 7f, 18f);
+            // plasticina: la tarjeta es una lámina crema (la del kit de la app) con el texto en tinta; sin ella, la superficie azul noche de siempre
+            bool plastic = PlasticSlab.Available(SlabSize.Panel, SlabTone.Cream);
+            var card = Panel(_intro, "Card", new Vector2(930f, 1240f), Vector2.zero, NeuroStyle.Surface, 7f, 18f, SlabSize.Panel, SlabTone.Cream);
             var nubi = new GameObject("Nubi");
             nubi.transform.SetParent(card, false);
             var nr = nubi.AddComponent<RectTransform>();
@@ -95,16 +97,16 @@ namespace NeuroVida.Games.Shared
             _nubi = nubi.AddComponent<Image>();      // el dibujo se hornea al abrir la tarjeta por primera vez (no al armar el juego)
             _nubi.raycastTarget = false;
 
-            _title = Label(card, "Title", 72, new Vector2(0f, -70f), new Vector2(840f, 110f), NeuroStyle.Sun, TextAnchor.MiddleCenter);
+            _title = Label(card, "Title", 72, new Vector2(0f, -70f), new Vector2(840f, 110f), plastic ? NeuroStyle.Ink : NeuroStyle.Sun, TextAnchor.MiddleCenter);
             BestFit(_title, 48);
-            _line = Label(card, "Line", 54, new Vector2(0f, -240f), new Vector2(800f, 220f), Color.white, TextAnchor.MiddleCenter);
+            _line = Label(card, "Line", 54, new Vector2(0f, -240f), new Vector2(800f, 220f), plastic ? NeuroStyle.Ink : Color.white, TextAnchor.MiddleCenter);
             BestFit(_line, 48);                      // ajuste de línea; si no cabe, achica hasta 16 sp: nunca se corta
 
-            _startRect = Button(card, "Start", new Vector2(0f, -430f), new Vector2(720f, 150f), NeuroStyle.Sun, NeuroStyle.Ink, out var startLabel);
+            _startRect = Button(card, "Start", new Vector2(0f, -430f), new Vector2(720f, 150f), NeuroStyle.Sun, NeuroStyle.Ink, out var startLabel, SlabTone.Sun);
             _startRect.GetComponentInChildren<Text>().text = "Probar una ronda";
             BestFit(_startRect.GetComponentInChildren<Text>(), 48);
             _skipIntroRect = Panel(card, "SkipIntro", new Vector2(640f, 150f), new Vector2(0f, -560f), new Color(0f, 0f, 0f, 0f), 0f, 0f);
-            var skipText = Label(_skipIntroRect, "Label", 54, Vector2.zero, new Vector2(640f, 150f), new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
+            var skipText = Label(_skipIntroRect, "Label", 54, Vector2.zero, new Vector2(640f, 150f), plastic ? NeuroStyle.InkSoft : new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
             skipText.text = "Saltar tutorial";
             BestFit(skipText, 45);
             _intro.gameObject.SetActive(false);
@@ -118,11 +120,11 @@ namespace NeuroVida.Games.Shared
             _practiceRoot = pgo.AddComponent<RectTransform>();
             Stretch(_practiceRoot);
 
-            var badge = Panel(_practiceRoot, "Badge", new Vector2(640f, 96f), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f);
+            var badge = Panel(_practiceRoot, "Badge", new Vector2(640f, 96f), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f, SlabSize.Chip, SlabTone.Cream);
             badge.anchorMin = badge.anchorMax = new Vector2(0.5f, 1f);
             badge.anchoredPosition = new Vector2(0f, -practiceTopU - 48f);
             _badge = badge;
-            var badgeText = Label(badge, "Label", 48, Vector2.zero, new Vector2(620f, 96f), NeuroStyle.Grape, TextAnchor.MiddleCenter);
+            var badgeText = Label(badge, "Label", 48, Vector2.zero, new Vector2(620f, 96f), plastic ? NeuroStyle.Ink : NeuroStyle.Grape, TextAnchor.MiddleCenter);
             badgeText.text = "Práctica: no cuenta";
             BestFit(badgeText, 45);
 
@@ -132,10 +134,10 @@ namespace NeuroVida.Games.Shared
             BestFit(_caption, 48);
             NeuroStyle.ClayText(_caption, 3f, 4f);
 
-            _skipRect = Panel(_practiceRoot, "Skip", new Vector2(640f, 132f), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f);
+            _skipRect = Panel(_practiceRoot, "Skip", new Vector2(640f, 132f), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f, SlabSize.Button, SlabTone.Cream);
             _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(0.5f, 0f);
             _skipRect.anchoredPosition = new Vector2(0f, 12f * Dp + 66f);
-            _skipPracticeLabel = Label(_skipRect, "Label", 54, Vector2.zero, new Vector2(620f, 132f), new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
+            _skipPracticeLabel = Label(_skipRect, "Label", 54, Vector2.zero, new Vector2(620f, 132f), plastic ? NeuroStyle.Ink : new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
             _skipPracticeLabel.text = "Saltar tutorial";
             BestFit(_skipPracticeLabel, 45);
             Coach.ControlSkip = _skipRect;       // Nubi y su globo no los tapan, estén donde estén
@@ -176,7 +178,7 @@ namespace NeuroVida.Games.Shared
             _title.text = title;
             _line.text = line;
             _startRect.GetComponentInChildren<Text>().text = startLabel;
-            if (_nubi.sprite == null) _nubi.sprite = NubiTeacherSprite.Get();
+            if (_nubi.sprite == null) { _nubi.sprite = NubiTeacherSprite.Get(); _nubi.preserveAspect = true; }       // la Nubi 3D no es cuadrada
             _intro.gameObject.SetActive(true);
             yield return Motion.Fade(_introGroup, 0f, 1f, Motion.Decorative ? 0.25f : Motion.FadeSeconds);
             bool wait = true;
@@ -315,7 +317,7 @@ namespace NeuroVida.Games.Shared
 
         // ------------------------------------------------------------------ construcción
 
-        private static RectTransform Panel(RectTransform parent, string name, Vector2 size, Vector2 pos, Color color, float border, float depth)
+        private static RectTransform Panel(RectTransform parent, string name, Vector2 size, Vector2 pos, Color color, float border, float depth, SlabSize? slabSize = null, SlabTone slabTone = SlabTone.Cream)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -324,6 +326,8 @@ namespace NeuroVida.Games.Shared
             r.sizeDelta = size;
             r.anchoredPosition = pos;
             var img = go.AddComponent<Image>();
+            img.raycastTarget = false;
+            if (slabSize.HasValue && PlasticSlab.TryStyle(img, slabSize.Value, slabTone) != null) return r;     // la losa de plasticina; sin ella, lo de siempre
             img.sprite = RoundedRectSprite.Get(64);
             img.type = Image.Type.Sliced;
             img.color = color;
@@ -332,9 +336,9 @@ namespace NeuroVida.Games.Shared
             return r;
         }
 
-        private static RectTransform Button(RectTransform parent, string name, Vector2 pos, Vector2 size, Color fill, Color textColor, out Text label)
+        private static RectTransform Button(RectTransform parent, string name, Vector2 pos, Vector2 size, Color fill, Color textColor, out Text label, SlabTone slabTone = SlabTone.Sun)
         {
-            var r = Panel(parent, name, size, pos, fill, 6f, 14f);
+            var r = Panel(parent, name, size, pos, fill, 6f, 14f, SlabSize.Button, slabTone);
             label = Label(r, "Label", 62, Vector2.zero, size, textColor, TextAnchor.MiddleCenter);
             return r;
         }

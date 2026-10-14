@@ -16,8 +16,19 @@ namespace NeuroVida.Games.Shared
         private const float Drop = 0.1f;
         private static Sprite _check, _cross;
 
-        public static Sprite Check() => _check != null ? _check : _check = ToSprite(Render(true, SizePx), SizePx, SizePx);
-        public static Sprite Cross() => _cross != null ? _cross : _cross = ToSprite(Render(false, SizePx), SizePx, SizePx);
+        /// <summary>El visto: de plasticina (disco lima con el visto de churro tinta, el mismo lienzo) si existe el atlas «comun»; si no, el procedural.</summary>
+        public static Sprite Check()
+        {
+            var plastic = PlasticArt.Get("comun", "marca_ok");
+            return plastic != null ? plastic : _check != null ? _check : _check = ToSprite(Render(true, SizePx), SizePx, SizePx);
+        }
+
+        /// <summary>La aspa de error (diagonal, nunca una cruz): de plasticina (disco coral) o procedural.</summary>
+        public static Sprite Cross()
+        {
+            var plastic = PlasticArt.Get("comun", "marca_no");
+            return plastic != null ? plastic : _cross != null ? _cross : _cross = ToSprite(Render(false, SizePx), SizePx, SizePx);
+        }
 
         private static float Disc(float x, float y) => Circle(x, y, 0f, 0f, 0.8f);
 
