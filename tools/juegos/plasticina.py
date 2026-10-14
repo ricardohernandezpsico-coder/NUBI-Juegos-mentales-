@@ -176,6 +176,18 @@ def aro_plano(R, r, color=None, loc=(0, 0, 0), nombre='aro', material=None, padr
     if padre is not None: o.parent = padre
     return o
 
+def churro_c(p0, p1, r, z, material, nombre='churro'):
+    """Un churro de plasticina entre dos puntos de DISEÑO (y arriba) a la altura [z]: las posiciones se corrigen por 1/cos(inclinación) y la forma queda redonda."""
+    t = math.radians(TILT); k = 1 / math.cos(t)
+    a = Vector((p0[0], p0[1] * k, z)); b = Vector((p1[0], p1[1] * k, z)); d = b - a
+    o = cyl(r=r, d=d.length, verts=24, loc=tuple((a + b) / 2), coll='iconos', name=nombre); o.rotation_euler = d.to_track_quat('Z', 'Y').to_euler(); o.data.materials.append(material)
+    for pt in (a, b):
+        c = sphere(r=r, seg=20, loc=tuple(pt), coll='iconos', name=nombre + '_punta'); c.data.materials.append(material)
+
+def mat_oscuro(nombre, color):
+    """El material del kit para un color OSCURO: con el brillo normal el sol sobre la cara plana le suma un gris de ~45/255 y la plasticina sale lechosa; con poco especular y sin «sheen» queda a ±8/255 del color pedido (igual que las casillas «noche»)."""
+    return clay(nombre, color, **{**MAT_KIT, 'spec': 0.05, 'sheen': 0.0})
+
 def tinta(): return mat_tinta()
 
 # ------------------------------------------------------------------ render

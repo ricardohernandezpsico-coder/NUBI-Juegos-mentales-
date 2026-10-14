@@ -27,7 +27,7 @@ en ~30% aparece la señal ¡ALTO! (octágono coral con texto + sirena) un instan
   pantalla (tampoco en Juegos y Hoy: ahí dice «zona firme»). Debajo: «Frenaste N de M altos · récord» (igual que antes) y la nota «Una sola partida trae pocos altos: por eso
   mostramos el promedio de varias». Si esta vez no se pudo estimar, el final lo explica y pide lanzar sin esperar al ALTO (y, si hay partidas anteriores, muestra su promedio).
   El «Límite del freno» (récord de SSD) y lo demás del juego no cambian.
-- Arte: `BrakeSprites` (alto, plataforma, botón), `GameWorld.LaunchBase`. Vista previa:
+- Arte: `BrakeSprites` (alto, plataforma, botón, cohete; de **plasticina** desde la Tarea 96, ver abajo), `GameWorld.LaunchBase`. Vista previa:
   `python3 tools/art-preview/freno.py <raw>` → `docs/previews/freno.png`. Probado por Ricardo (27-sep): "me gustó,
   funciona muy bien".
 
@@ -49,3 +49,30 @@ Para el inicio nuevo (`docs/diseno-inicio.md`). La pieza común es `Games/Shared
   `end_rating` normal. **Primer dato** (se lee en la app, `data/FirstData.kt`): «Frenaste a tiempo N de M veces.» (con ≥ 4 altos), de `stops_ok`/`stops_total`.
 - Los cohetes llevan ¡ALTO! (octágono): no son «naves».
 - Pruebas: `FrenoTutorialTests` (plan, calendario de altos, arranque suave, rating normalizado), `GuidedTutorialTests` (guion, reloj, invariante de la ronda guiada).
+
+
+## Plasticina (Tarea 96, 14-oct): el tercer juego en pasar al nuevo estilo
+
+Ricardo: todos los juegos en plasticina (el piloto fue Rescate, Tarea 94). Es SOLO arte: el SSD, el DDA, los tiempos, la espera previa, el puntaje y la medida «tu freno» no cambian. Técnica y pesos: [`tools/juegos/README.md`](../../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](../plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina freno`; si algún día hay que separar series de medidas, se hace por fecha: decisión de Opus, no se agrega `art_version`).
+
+**Qué es de plasticina (renders de Blender, atlas `Resources/Plasticina/freno`, `tools/juegos/freno.py`) y qué no**
+
+| De plasticina | Se queda procedural |
+|---|---|
+| el **botón de lanzamiento**, apagado (azul oscuro, flecha crema) y encendido (lima, flecha de tinta) | la **baliza** (el disco de luz sobre cada cohete, que se tiñe de lima, ámbar o coral y se apaga al 18 %): es luz |
+| los **3 cohetes** de los carriles: el cohete de Piloto con el acento coral, cielo o lima | el resplandor del carril, la llama del despegue, el humo y el vapor |
+| la **plataforma** (losa con franjas de precaución y dos torres con travesaños) | las estrellas del cielo, el medidor «Límite del freno», el aro de ayuda del tutorial |
+| la **señal de ALTO** (octágono coral con el aro crema incrustado; el texto sigue siendo `Text`) | el texto, los avisos (de la fase 0) |
+
+Cada pieza sale en el MISMO lienzo y a la MISMA escala que el sprite procedural al que reemplaza (botón y ALTO ±1,1; plataforma ±1,05): `SetupLanes`, `BuildStopSign` y el tutorial no cambian ninguna medida. Dos ajustes de montaje: (1) el cohete de plasticina viene RECTO (el procedural venía dibujado en diagonal y se giraba 45°, de donde salía su inclinación de ~13°): `BrakeSprites.RocketAngle` da 0° con plasticina y 45° sin ella, y lo usan `BuildLane` y `FlyAway`; (2) el texto «ALTO» sube 26 u con la cara de la señal de plasticina (el canto de 0,3 se ve de lado y la cara queda ~14 u más arriba que el centro del lienzo).
+
+**El cohete ya no es el de Constelaciones.** Antes era `SymbolSprite.Rocket` (que usan también las cartas de Constelaciones); ahora es `BrakeSprites.Rocket(carril)`: con plasticina, el de Piloto con el acento del carril (coral, cielo, lima); sin ella, el ícono de siempre. Las cartas de Constelaciones no cambiaron (le toca a ese juego, fila 6 de `plasticina-juegos.md`). El casco crema domina, y el lima («ir») y el coral («alto») quedan solo en la punta y las aletas: el cohete deja de confundirse con la baliza y la señal.
+
+**Lo que se midió** (`tools/juegos/mide_freno.py`, sobre el atlas ya empaquetado; fondo = el suelo de la luna #595890 medido en la captura y el cielo #070A28):
+- **Misma huella y mismo tamaño:** razón de áreas 0,98 a 1,07 contra el sprite de hoy (con su borde de tinta) e IoU 0,89 a 0,98 (la plataforma, la más baja: sus torres salen algo más altas por el canto). El cohete llena el 92 % del alto del lienzo (el de hoy, ~89 %).
+- **Contraste:** el casco crema rinde 6,1:1 contra el suelo y 18:1 contra el cielo; el botón encendido, 4,0:1 y 11,8:1; el ALTO, 7,5:1 contra el cielo. **La flecha contra el botón: 10,0:1 (crema sobre el apagado) y 8,9:1 (tinta sobre el encendido).** Encendido y apagado se distinguen por luminosidad (4,0:1 entre sí contra el suelo; el apagado es el oscuro): el estímulo «ir» sigue leyéndose sin color.
+- **Lo más flojo, a juzgar en el teléfono:** el botón apagado rinde 1,9:1 contra el suelo de la luna (el de hoy, con su borde de tinta, 2,6:1; sin borde lo separa la sombra de contacto, y se oscureció de #2A3590 a #222B78 para ayudar); el aro crema del ALTO rinde 2,1:1 contra el coral (es adorno: la señal es forma, texto y sirena); los acentos coral y cielo de los cohetes rinden 2,3 y 3,4:1 contra el suelo (el casco es lo que se lee).
+- **Pesa** 0,50 MB en el APK (369 KB de PNG; 0,33 MB con ASTC 6×6), bajo el tope de ~1,5 MB. 7 imágenes: botón ×2 (256 px), cohete ×3 (256 px), plataforma (320 px) y ALTO (400 px).
+
+**Pruebas:** `BrakePlasticTests` (huella, flecha contra botón y luminosidad apagado/encendido, ALTO, casco común y acento por carril, que el cohete quepa entre las torres, ángulo, caída al procedural sin el atlas). Las del resto de Freno no cambiaron (`BrakeContractTests`, `FrenoTutorialTests`).
+

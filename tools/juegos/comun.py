@@ -32,14 +32,6 @@ def render_losas():
             if clave == 'noche': losa('losa_md_' + clave + '_p', dis, presionada=True)
 
 # ------------------------------------------------------------------ marcas ✓ y ✗ (AnswerMarkSprite: lienzo ±1,1, disco de radio 0,8, glifo de churro tinta)
-def churro_c(p0, p1, r, z, material, nombre='churro'):
-    """Un churro de plasticina entre dos puntos de DISEÑO (y arriba) a la altura [z]: las posiciones se corrigen por 1/cos(inclinación) y la forma queda redonda."""
-    t = math.radians(TILT); k = 1 / math.cos(t)
-    a = Vector((p0[0], p0[1] * k, z)); b = Vector((p1[0], p1[1] * k, z)); d = b - a
-    o = cyl(r=r, d=d.length, verts=24, loc=tuple((a + b) / 2), coll='iconos', name=nombre); o.rotation_euler = d.to_track_quat('Z', 'Y').to_euler(); o.data.materials.append(material)
-    for pt in (a, b):
-        c = sphere(r=r, seg=20, loc=tuple(pt), coll='iconos', name=nombre + '_punta'); c.data.materials.append(material)
-
 def marca(color, glifo):
     H = 0.16
     def construir(r):

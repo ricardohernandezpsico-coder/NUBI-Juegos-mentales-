@@ -88,9 +88,9 @@ namespace NeuroVida.Games.Shared
             _text.text = text;
             if (_slab != null)
             {
-                // plasticina: la pastilla toma el color del acento (losa del kit más parecida) y el punto y el texto van en tinta: se lee con o sin el color
+                // plasticina: la pastilla toma el color del acento (losa del kit más parecida), el texto va en tinta y el punto, en tinta suave (50 %): se lee con o sin el color
                 PlasticSlab.Set(_slab, SlabSize.Button, PlasticSlab.Nearest(accent));
-                _dot.color = NeuroStyle.Ink;
+                _dot.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, 0.5f);
             }
             else
             {

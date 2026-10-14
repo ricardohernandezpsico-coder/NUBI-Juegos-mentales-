@@ -495,7 +495,7 @@ namespace NeuroVida.Games.Freno
             flame.gameObject.SetActive(true);
             var body = NewImage(r, "Body", L.Rocket.sprite);
             Stretch(body.rectTransform);
-            body.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            body.rectTransform.localRotation = Quaternion.Euler(0f, 0f, BrakeSprites.RocketAngle);
             body.gameObject.SetActive(true);
             for (int i = 0; i < 6; i++) StartCoroutine(Puff(from + new Vector2(0f, -size * 0.45f), i));
 
@@ -825,9 +825,9 @@ namespace NeuroVida.Games.Freno
             rocketGo.transform.SetParent(root, false);
             var rr = rocketGo.AddComponent<RectTransform>();
             rr.anchorMin = rr.anchorMax = new Vector2(0.5f, 0.5f);
-            var rocket = NewImage(rr, "Rocket", SymbolSprite.Get(ShapeKind.Rocket, i % 3));
+            var rocket = NewImage(rr, "Rocket", BrakeSprites.Rocket(i));
             Stretch(rocket.rectTransform);
-            rocket.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f); // el ícono viene inclinado: apunta arriba
+            rocket.rectTransform.localRotation = Quaternion.Euler(0f, 0f, BrakeSprites.RocketAngle); // el ícono procedural viene inclinado (45°); el de plasticina, recto: apunta arriba
             rocket.preserveAspect = true;
             rocket.gameObject.SetActive(true);
 
@@ -860,7 +860,8 @@ namespace NeuroVida.Games.Freno
             _stopText = MakeText(_stopRect, "Label", 120, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
             NeuroStyle.ClayText(_stopText, 5f, 7f);
             Stretch(_stopText.rectTransform);
-            _stopText.rectTransform.offsetMin = new Vector2(0f, 14f);
+            // la cara de la señal de plasticina queda ~14 u más arriba que el centro de su lienzo (el canto de 0,3 se ve de lado): el texto sube con ella
+            _stopText.rectTransform.offsetMin = new Vector2(0f, BrakeSprites.Plastic ? 40f : 14f);
             _stopText.text = "ALTO";
             go.SetActive(false);
         }

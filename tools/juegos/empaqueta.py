@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -114,6 +114,17 @@ def grupo_piloto():
     S.append(sprite('nave', carga_render('piloto', 'nave', ANCHOS_PILOTO['nave'])))
     return S, []
 
+ANCHOS_FRENO = {'boton': 256, 'cohete': 256, 'plataforma': 320, 'alto': 400}
+
+def grupo_freno():
+    """Freno de Emergencia: los dos botones (210 u en el juego), los tres cohetes (230 u), la plataforma (300 u) y la señal de ALTO (400-420 u). Cada uno en el mismo lienzo cuadrado que el sprite procedural al que reemplaza."""
+    S = []
+    for n in ('boton_apagado', 'boton_encendido'): S.append(sprite(n, carga_render('freno', n, ANCHOS_FRENO['boton'])))
+    for n in ('cohete_coral', 'cohete_cielo', 'cohete_lima'): S.append(sprite(n, carga_render('freno', n, ANCHOS_FRENO['cohete'])))
+    S.append(sprite('plataforma', carga_render('freno', 'plataforma', ANCHOS_FRENO['plataforma'])))
+    S.append(sprite('alto', carga_render('freno', 'alto', ANCHOS_FRENO['alto'])))
+    return S, []
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -157,7 +168,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -345,7 +356,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

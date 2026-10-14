@@ -1,30 +1,51 @@
 using UnityEngine;
+using NeuroVida.Games.Parejas;
 using NeuroVida.Games.Shared;
 using static NeuroVida.Games.Shared.ClayRaster;
 
 namespace NeuroVida.Games.Freno
 {
     /// <summary>
-    /// Arte procedural de Freno de Emergencia, con el pincel de arcilla común (<see cref="ClayRaster"/>):
+    /// Arte de Freno de Emergencia:
     /// <list type="bullet">
     /// <item><see cref="StopSign"/>: señal de ALTO, octágono coral con aro crema (el texto "ALTO" lo pone un Text
     /// encima). Forma + texto + sonido: nunca solo color.</item>
     /// <item><see cref="LaunchPad"/>: plataforma de lanzamiento con franjas de precaución y una baliza apagada.</item>
-    /// <item><see cref="LaunchButton"/>: botón de arcilla de cada carril, con una flecha hacia arriba.</item>
+    /// <item><see cref="LaunchButton"/>: botón de cada carril, con una flecha hacia arriba.</item>
+    /// <item><see cref="Rocket"/>: el cohete de cada carril (casco crema; punta y aletas del color del carril).</item>
     /// </list>
-    /// Colores horneados: <c>Image.color</c> en blanco (salvo para atenuar).
+    /// <para><b>Plasticina (Tarea 96):</b> si el atlas <c>Resources/Plasticina/freno</c> existe, las cuatro piezas salen de ahí (renders de Blender, <c>tools/juegos/freno.py</c>, el mismo lienzo y la misma escala que el arte de abajo); si no, el arte procedural de siempre
+    /// con el pincel de arcilla común (<see cref="ClayRaster"/>; colores horneados: <c>Image.color</c> en blanco, salvo para atenuar). La baliza (el disco de luz sobre cada cohete) NO es de plasticina: es luz.</para>
     /// </summary>
     public static class BrakeSprites
     {
         private static Sprite _stop, _pad, _button, _buttonLit;
 
-        public static Sprite StopSign() => _stop != null ? _stop : _stop = ToSprite(RenderStopSign(256), 256, 256);
-        public static Sprite LaunchPad() => _pad != null ? _pad : _pad = ToSprite(RenderLaunchPad(256), 256, 256);
+        public const string PlasticGroup = "freno";
+        private static readonly string[] RocketNames = { "coral", "cielo", "lima" };
+
+        /// <summary>true si el atlas de plasticina de Freno existe (y no está desactivado).</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "plataforma");
+
+        public static Sprite StopSign() => PlasticArt.Get(PlasticGroup, "alto") ?? (_stop != null ? _stop : _stop = ToSprite(RenderStopSign(256), 256, 256));
+        public static Sprite LaunchPad() => PlasticArt.Get(PlasticGroup, "plataforma") ?? (_pad != null ? _pad : _pad = ToSprite(RenderLaunchPad(256), 256, 256));
         public static Sprite LaunchButton(bool lit)
         {
+            var plastic = PlasticArt.Get(PlasticGroup, lit ? "boton_encendido" : "boton_apagado");
+            if (plastic != null) return plastic;
             if (lit) return _buttonLit != null ? _buttonLit : _buttonLit = ToSprite(RenderButton(256, true), 256, 256);
             return _button != null ? _button : _button = ToSprite(RenderButton(256, false), 256, 256);
         }
+
+        /// <summary>
+        /// El cohete del carril <paramref name="lane"/> (el color rota entre coral, cielo y lima). Con plasticina es el cohete de Piloto con el acento del carril, mirando hacia ARRIBA; sin ella, el ícono de siempre
+        /// (<c>SymbolSprite.Rocket</c>, que viene dibujado en diagonal: hay que girarlo <see cref="RocketAngle"/>).
+        /// </summary>
+        public static Sprite Rocket(int lane) =>
+            PlasticArt.Get(PlasticGroup, "cohete_" + RocketNames[lane % 3]) ?? SymbolSprite.Get(ShapeKind.Rocket, lane % 3);
+
+        /// <summary>Cuánto hay que girar la imagen de <see cref="Rocket"/> para que apunte hacia arriba: 0° el de plasticina; 45° el procedural (viene en diagonal).</summary>
+        public static float RocketAngle => PlasticArt.Has(PlasticGroup, "cohete_" + RocketNames[0]) ? 0f : 45f;
 
         // ------------------------------------------------------------------ alto
 

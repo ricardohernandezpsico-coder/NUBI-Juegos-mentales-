@@ -183,8 +183,8 @@ namespace NeuroVida.Games.Shared
             _subtitle.gameObject.SetActive(hasSubtitle);
             if (_slab != null)
             {
-                PlasticSlab.Set(_slab, SlabSize.Button, PlasticSlab.Nearest(accent));      // plasticina: el aviso toma el color del acento; el punto y el texto, en tinta
-                _dot.color = NeuroStyle.Ink;
+                PlasticSlab.Set(_slab, SlabSize.Button, PlasticSlab.Nearest(accent));      // plasticina: el aviso toma el color del acento; el texto, en tinta y el punto, en tinta suave (50 %: acompaña sin competir con el texto)
+                _dot.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, 0.5f);
             }
             else
             {

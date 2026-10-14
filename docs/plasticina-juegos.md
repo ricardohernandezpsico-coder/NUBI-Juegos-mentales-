@@ -27,7 +27,7 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 | — | **Piezas comunes (fase 0)** | — | losas, marcas, anillo, Nubi 3D | integrado (verificación completa; falta que Ricardo lo vea en el teléfono) | 14-oct | [antes](previews/plasticina/antes-stroop.png) → [después](previews/plasticina/despues-stroop.png) · [Carga exacta](previews/plasticina/despues-calculo.png) · [Constelaciones](previews/plasticina/despues-parejas.png) |
 | 1 | Rescate relámpago | `radar` | 6 cápsulas + 6 íconos, roca, aro del radar, nave, asiento | integrado; **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-radar.png) → [después](previews/plasticina/despues-radar.png) |
 | 2 | Piloto Estelar | `piloto` | 15 señales (+ versión chica), nave | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-piloto.png) → [después](previews/plasticina/despues-piloto.png) |
-| 3 | Freno de Emergencia | `freno` | botón ×2, ¡ALTO!, plataforma, cohete ×3 | inventario | 14-oct | — |
+| 3 | Freno de Emergencia | `freno` | botón ×2, ¡ALTO!, plataforma, cohete ×3 | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-freno.png) → [después](previews/plasticina/despues-freno.png) |
 | 4 | Satélites | `satelites` | 6 | inventario | 14-oct | — |
 | 5 | Tinta o Palabra | `stroop` | 3 (+ botones) | inventario | 14-oct | — |
 | 6 | Constelaciones | `parejas` | 20 | inventario | 14-oct | — |
@@ -48,7 +48,7 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 ## Lo que NO entró en la Tarea 94 (a decidir en las siguientes)
 
 - **Decorado de Rescate (y de todos los juegos):** el planeta lejano, la estación accidentada, los restos, el polvo y el eje lima del centro del radar siguen planos (procedurales). **Queda para UNA pasada final de decorados, cuando estén todos los juegos migrados** (decisión de Opus, 14-oct). El barrido, la estática, el rayo tractor, las llamas y los aros de la revelación se quedan como efecto (son animados o se tiñen).
-- **Fase 0 por completar:** el punto de color de los avisos (`Toast`) y de `PhasePill` quedó en tinta sólida sobre la losa y se ve algo pesado (un punto negro sobre el sol): suavizarlo (tinta al 50 %) en la próxima tarea que toque `Games/Shared`. `ProgressDots`, `TileSprites` (las fichas de Tinta o Palabra y otros), `RingSprite`, los destellos y el cielo siguen procedurales: cada juego pasa sus piezas propias en su tarea.
+- **Fase 0 por completar:** ~~el punto de color de los avisos (`Toast`) y de `PhasePill` quedó en tinta sólida sobre la losa y se ve algo pesado~~: **hecho en la Tarea 96 (14-oct):** el punto va en tinta al 50 % (`NeuroStyle.WithAlpha(Ink, 0.5f)`), con verificación completa. `ProgressDots`, `TileSprites` (las fichas de Tinta o Palabra y otros), `RingSprite`, los destellos y el cielo siguen procedurales: cada juego pasa sus piezas propias en su tarea.
 - **Sin `art_version` en las medidas (decisión de Opus, 14-oct):** el cambio de arte se marca con su fecha (Rescate, 14-oct-2026; cada juego migrado anota la suya en su fila de arriba); si hace falta separar series, se hace por fecha.
 - **Dos cápsulas con el canto en sombra más tenue:** la gota y el triángulo rinden 2,0 y 2,3:1 en su borde más oscuro contra el vidrio MÁS claro (el cuerpo rinde ≥ 4:1): mirarlas en el teléfono antes de tocar la luz.
 
@@ -149,6 +149,18 @@ Riesgos: la jugabilidad es silueta + detalle; las «parecidas» (nivel 3 en adel
 | Marca ✓ / ✗, estrellas del cielo (brillo redondo), medidores | I / D | — | — | `AnswerMark`, `Sparkle` |
 
 Riesgos: el estímulo «ir» se lee en luminancia (apagado oscuro, encendido claro); los carriles son idénticos entre sí; el cohete lima/coral choca con «lima = ir / coral = alto» (neutralizar); el cohete se dibuja en diagonal y el `Image` lo gira 45° (un render vertical exige quitar esa rotación); verlo de lado, no de frente (4 aletas = cruz). No tocar: llama, humo, vapor, salto, sirena, parpadeo de baliza.
+
+**Ficha de arte (Tarea 96, hecha el 14-oct):**
+
+| Pieza | De plasticina (atlas `Resources/Plasticina/freno`) | Cómo quedó |
+|---|---|---|
+| Botón de lanzamiento (2) | `boton_apagado`, `boton_encendido` (256 px, lienzo ±1,1) | el disco de hoy (radio 0,8 + 0,08 de borde) como cúpula de plasticina con la flecha de churro: crema sobre azul oscuro (apagado) y tinta sobre lima (encendido). El apagado va algo más oscuro que el de hoy (#222B78 contra #2A3590) porque sin el borde de tinta el suelo de la luna lo tapaba |
+| Cohete (3) | `cohete_coral`, `cohete_cielo`, `cohete_lima` (256 px, lienzo de 1,9) | **el cohete de Piloto con el acento de cada carril** (`tools/juegos/cohete.py`): casco crema, punta y aletas del color del carril, ventanilla y llama. Recto (el procedural venía en diagonal y se giraba 45°: `BrakeSprites.RocketAngle`). El casco crema domina, así el lima («ir») y el coral («alto») ya no se confunden con el cohete |
+| Plataforma | `plataforma` (320 px, lienzo ±1,05) | losa lila con franjas de precaución (sol y tinta) y dos torres con travesaños, con las medidas de hoy |
+| Señal de ALTO | `alto` (400 px, lienzo ±1,1) | octágono coral de plasticina con el aro crema incrustado; el «ALTO» sigue siendo `Text` |
+| Baliza, resplandor del carril, humo, llama, estrellas | se quedan procedurales | son luz o efecto (igual que las balizas de Piloto) |
+
+El cohete de Freno ya NO usa `SymbolSprite.Rocket` (`BrakeSprites.Rocket(carril)`): las cartas de Constelaciones siguen con el suyo hasta que le toque a ese juego (fila 6). Medidas, pruebas y pesos: [`juegos/freno.md`](juegos/freno.md) § Plasticina.
 
 ### 5. Satélites «enciende tu planeta» (`satelites`, `Games/Satelites/`)
 
@@ -321,5 +333,6 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 | `radar` (Rescate relámpago) | 16 | 1024×1776 | 790 KB | **1,11 MB** | 0,77 MB |
 | `piloto` (Piloto Estelar: 15 señales a 192 y 96 px, nave) | 31 | 1664×492 | 472 KB | **0,58 MB** | 0,35 MB |
+| `freno` (Freno de Emergencia: 2 botones, 3 cohetes, plataforma, ALTO) | 7 | 1152×664 | 369 KB | **0,50 MB** | 0,33 MB |
 
-Lo nuevo en el APK con Rescate y Piloto (radar + piloto + comun + nubi) son unos 3,0 MB sin comprimir la textura y unos 2,2 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate, Piloto y Freno (radar + piloto + freno + comun + nubi) son unos 3,5 MB sin comprimir la textura y unos 2,5 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
