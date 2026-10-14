@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.theme.Clay
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -139,17 +141,10 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
   }
 }
 
-/** Fila de texto clicable para expandir/ocultar detalles (sin recuadro). */
+/** Botón de plasticina para expandir/ocultar detalles. */
 @Composable
 fun SpaceToggle(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-  OnBoardText(
-    text = text,
-    color = Color(0xFFFFC93C),
-    fontSize = 15.sp,
-    fontWeight = FontWeight.Bold,
-    modifier = modifier
-      .clip(RoundedCornerShape(12.dp))
-      .clickable(onClick = onClick)
-      .padding(vertical = 10.dp, horizontal = 4.dp)
-  )
+  Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    com.example.ui.theme.ClayButton(text = text, onClick = onClick, color = Clay.Cream, wide = false, modifier = Modifier.testTag("btn_space_toggle"))
+  }
 }

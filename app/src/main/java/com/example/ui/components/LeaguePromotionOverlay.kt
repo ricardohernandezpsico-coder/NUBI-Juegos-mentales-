@@ -275,6 +275,7 @@ fun LeaguePromotionOverlay(
         ClayButton(
           text = "Compartir",
           color = Clay.Cream,
+          glyph = Glyph.SHARE,
           onClick = {
             val where = if (game != null) " en ${game.title}" else ""
             val text = "¡Subí a la liga ${promotion.tier.tierName}$where en Nubi!"

@@ -747,7 +747,7 @@ internal fun AreaDetail(
       ) {
         AreaArrow(left = true, onClick = { go(-1) })
         Spacer(Modifier.weight(1f))
-        NubiWithHalo(size = 118.dp, pose = NubiPose.MIRA)
+        NubiWithHalo(size = 104.dp, pose = NubiPose.MIRA)
         Spacer(Modifier.weight(1f))
         AreaArrow(left = false, onClick = { go(1) })
       }
@@ -768,7 +768,7 @@ internal fun AreaDetail(
           )
         }
       }
-      Spacer(Modifier.height(14.dp))
+      Spacer(Modifier.height(8.dp))
       OnBoardText(AreaProgress.changeLine(s), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
       AreaProgress.toNextLine(s)?.let { OnBoardText(it, color = OnNightDim, fontSize = 15.sp) }
       if (s.value != null && s.weeks.count { it != null } >= 2) WeeksChart(s.weeks)
@@ -794,7 +794,7 @@ internal fun AreaDetail(
         }
         // Cada juego es una tarjeta de plasticina tocable (Tarea 90): tocarla abre su ficha.
         ClayCard(Modifier.fillMaxWidth().padding(vertical = 2.dp).testTag("area_game_${g.id}"), onClick = { onGame(g.id) }, contentPadding = 0.dp) {
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 8.dp)) {
+          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp, vertical = 6.dp)) {
             MiniPlanet(g.id, 34.dp)
             Spacer(Modifier.width(12.dp))
             Column {

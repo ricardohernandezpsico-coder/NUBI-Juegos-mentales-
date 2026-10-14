@@ -111,14 +111,10 @@ private fun OflText() {
   val text = remember(open) {
     if (!open) "" else runCatching { context.resources.openRawResource(com.example.R.raw.ofl).bufferedReader().use { it.readText() } }.getOrDefault("")
   }
-  Text(
+  com.example.ui.theme.ClayButton(
     text = if (open) "Ocultar el texto completo de la licencia" else "Ver el texto completo de la licencia",
-    color = Color(0xFF7FD8FF), fontSize = 15.sp, fontWeight = FontWeight.Bold,
-    modifier = Modifier
-      .padding(top = 6.dp, bottom = 8.dp)
-      .heightIn(min = 48.dp)
-      .clickable { open = !open }
-      .testTag("btn_ofl_text")
+    onClick = { open = !open }, color = com.example.ui.theme.Clay.Cream, fontSize = 16.sp,
+    modifier = Modifier.padding(top = 6.dp, bottom = 8.dp).testTag("btn_ofl_text")
   )
   if (open) {
     Text(text, color = Body, fontSize = 14.sp, lineHeight = 19.sp, modifier = Modifier.padding(bottom = 8.dp).testTag("ofl_text"))

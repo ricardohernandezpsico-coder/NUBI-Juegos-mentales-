@@ -164,16 +164,7 @@ fun FirstFlightScreen(
     // Arriba: volver + barra de avance, y debajo cuánto falta.
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
       if (canGoBack) {
-        Box(
-          modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(Clay.Cream)
-            .border(Clay.Border, Clay.Ink, CircleShape)
-            .clickable(role = Role.Button, onClick = actions.onBack)
-            .testTag("btn_flight_back"),
-          contentAlignment = Alignment.Center
-        ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Clay.Ink) }
+        com.example.ui.components.KitBackButton(actions.onBack, Modifier.testTag("btn_flight_back"), label = "Atrás")
       } else {
         Spacer(Modifier.size(48.dp))
       }
@@ -344,35 +335,18 @@ private fun Sub(text: String, center: Boolean = false) =
     textAlign = if (center) TextAlign.Center else TextAlign.Start, modifier = if (center) Modifier.fillMaxWidth() else Modifier
   )
 
-/** Una opción: fila tocable (no un recuadro que informa). La elegida lleva borde sol y una marca ✓ (no solo color). */
+/** Una opción: casilla de plasticina tocable (no un recuadro que informa). La elegida va en lima, con su ✓ de churro tinta y su texto en negrita (no solo color), y queda quieta. */
 @Composable
 private fun OptionRow(opt: Opt, selected: Boolean, multi: Boolean, onClick: () -> Unit) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .heightIn(min = 58.dp)
-      .clip(RoundedCornerShape(16.dp))
-      .background(if (selected) RowSelectedFill else RowFill)
-      .border(2.dp, if (selected) Clay.Sun else RowBorder, RoundedCornerShape(16.dp))
-      .semantics { this.selected = selected; role = if (multi) Role.Checkbox else Role.RadioButton }
-      .clickable(onClick = onClick)
-      .padding(horizontal = 14.dp, vertical = 10.dp)
-      .testTag("flight_opt_${opt.value}"),
-    verticalAlignment = Alignment.CenterVertically
+  com.example.ui.components.ClayChoice(
+    selected = selected, onClick = onClick, minHeight = 58.dp,
+    role = if (multi) Role.Checkbox else Role.RadioButton,
+    modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp).testTag("flight_opt_${opt.value}")
   ) {
-    Column(Modifier.weight(1f)) {
-      Text(opt.label, color = OnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 23.sp)
-      if (opt.sub != null) Text(opt.sub, color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 23.sp)
+    Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
+      Text(opt.label, color = Clay.Ink, fontFamily = AppFamily, fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 23.sp)
+      if (opt.sub != null) Text(opt.sub, color = Clay.InkMuted, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 23.sp)
     }
-    Spacer(Modifier.width(10.dp))
-    Box(
-      Modifier
-        .size(28.dp)
-        .clip(RoundedCornerShape(8.dp))
-        .background(if (selected) Clay.Sun else Color.Transparent)
-        .border(2.dp, if (selected) Clay.Sun else Color(0xFF5B4FC0), RoundedCornerShape(8.dp)),
-      contentAlignment = Alignment.Center
-    ) { if (selected) CheckMark(Modifier.size(16.dp), Clay.Ink) }
   }
 }
 
@@ -400,18 +374,10 @@ private fun MainButton(text: String, enabled: Boolean = true, tag: String = "btn
   }
 }
 
+/** La acción secundaria («Terminar después»): botón de plasticina crema, debajo del principal. */
 @Composable
 private fun LinkButton(text: String, tag: String, onClick: () -> Unit) {
-  Text(
-    text, color = OnNightDim, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp,
-    textDecoration = TextDecoration.Underline,
-    modifier = Modifier
-      .clip(RoundedCornerShape(12.dp))
-      .heightIn(min = 48.dp)
-      .clickable(role = Role.Button, onClick = onClick)
-      .padding(horizontal = 16.dp, vertical = 12.dp)
-      .testTag(tag)
-  )
+  ClayButton(text = text, onClick = onClick, color = Clay.Cream, fontSize = 18.sp, modifier = Modifier.padding(top = 4.dp).testTag(tag))
 }
 
 /** Los 4 pasos de juego (✓ ✓ ● ○): [done] los medidos y [now] el que toca. */

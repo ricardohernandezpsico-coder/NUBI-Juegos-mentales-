@@ -12,6 +12,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
@@ -21,7 +23,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.ClayKitSpec
 import com.example.ui.components.Glyph
+import com.example.ui.components.ClayChoice
+import com.example.ui.components.ClayDisc
+import com.example.ui.components.DiscStyle
 import com.example.ui.components.KitButton
+import com.example.ui.components.KitGlyph
 import com.example.ui.components.KitCloseButton
 import com.example.ui.components.SlabColor
 import com.example.ui.components.SlabSize
@@ -238,5 +244,72 @@ class ClayKitTest {
     rule.mainClock.advanceTimeByFrame()
     rule.mainClock.advanceTimeByFrame()                                         // dos cuadros: sin animación el cambio no necesita más
     assertEquals("de golpe: ya bajó los 2 dp", 2f, pressedShift(), 0.25f)
+  }
+
+  // ---- Elegido no es presionado
+
+  /** El texto de una casilla [tag] baja respecto de su reposo (dp): la primera lectura fija el reposo. */
+  private fun contentTop(text: String, rest: MutableMap<String, Float>): Float {
+    val top = rule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.top
+    val r = rest.getOrPut(text) { top }
+    return (top - r) / rule.density.density
+  }
+
+  @Test
+  fun una_casilla_elegida_se_queda_quieta_y_solo_baja_mientras_el_dedo_esta_encima() {
+    val rest = mutableMapOf<String, Float>()
+    show(reduce = true) {
+      androidx.compose.foundation.layout.Column {
+        ClayChoice(selected = true, onClick = {}, modifier = Modifier.testTag("elegida")) { androidx.compose.material3.Text("Elegida") }
+        ClayChoice(selected = false, onClick = {}, modifier = Modifier.testTag("libre")) { androidx.compose.material3.Text("Libre") }
+      }
+    }
+    rule.mainClock.autoAdvance = false
+    contentTop("Elegida", rest); contentTop("Libre", rest)                              // fijan el reposo
+    rule.mainClock.advanceTimeByFrame(); rule.mainClock.advanceTimeByFrame()
+    assertEquals("la elegida, sin tocarla, no baja: elegido no es presionado", 0f, contentTop("Elegida", rest), 0.05f)
+    assertEquals("la libre tampoco", 0f, contentTop("Libre", rest), 0.05f)
+    rule.onNodeWithTag("libre").performTouchInput { down(center) }
+    rule.mainClock.advanceTimeByFrame(); rule.mainClock.advanceTimeByFrame()
+    assertEquals("mientras el dedo está encima, baja 2 dp", 2f, contentTop("Libre", rest), 0.25f)
+    assertEquals("la elegida sigue quieta", 0f, contentTop("Elegida", rest), 0.05f)
+  }
+
+  @Test
+  fun la_casilla_reserva_el_lugar_del_visto_y_no_cambia_de_tamano_al_elegirse() {
+    val picked = androidx.compose.runtime.mutableStateOf(false)
+    show { ClayChoice(selected = picked.value, onClick = { picked.value = true }, modifier = Modifier.testTag("c")) { androidx.compose.material3.Text("Español") } }
+    val before = rule.onNodeWithTag("c").fetchSemanticsNode().boundsInRoot
+    rule.onNodeWithTag("c").performTouchInput { down(center); up() }
+    rule.waitForIdle()
+    val after = rule.onNodeWithTag("c").fetchSemanticsNode().boundsInRoot
+    assertEquals(before.width, after.width, 0.5f); assertEquals(before.height, after.height, 0.5f)
+    assertTrue("mide 48 dp o más", after.height >= 48f * rule.density.density - 1)
+    rule.onNodeWithTag("c").assertIsSelected()
+  }
+
+  // ---- Los discos
+
+  @Test
+  fun el_disco_mide_48_dp_se_toca_entero_y_si_es_solo_un_adorno_no_es_un_boton() {
+    var taps = 0
+    show {
+      androidx.compose.foundation.layout.Column {
+        ClayDisc(DiscStyle.CREAM, { taps++ }, "Opciones", Modifier.testTag("disco")) { KitGlyph(Glyph.GEAR, size = 28.dp) }
+        ClayDisc(DiscStyle.SKY, null, "", Modifier.testTag("adorno")) { androidx.compose.material3.Text("A") }
+      }
+    }
+    val b = rule.onNodeWithTag("disco").fetchSemanticsNode().boundsInRoot
+    assertTrue("disco de ${b.width / rule.density.density} × ${b.height / rule.density.density} dp", b.width >= 48f * rule.density.density - 1 && b.height >= 48f * rule.density.density - 1)
+    rule.onNodeWithTag("disco").performTouchInput { down(center); up() }
+    assertEquals(1, taps)
+    rule.onNodeWithTag("adorno").assertHasNoClickAction()
+  }
+
+  @Test
+  fun los_iconos_de_churro_tinta_se_centran_en_su_caja() {
+    show { KitGlyph(Glyph.CHECK, Modifier.testTag("g"), size = 24.dp) }
+    val b = rule.onNodeWithTag("g").fetchSemanticsNode().boundsInRoot
+    assertEquals(24f * rule.density.density, b.width, 1f); assertEquals(24f * rule.density.density, b.height, 1f)
   }
 }

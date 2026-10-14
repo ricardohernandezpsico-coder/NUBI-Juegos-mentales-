@@ -223,36 +223,17 @@ fun ProgressTrendChart(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        FilterChip(
-          selected = selectedDomain == null,
-          onClick = { selectedDomain = null },
-          label = { Text("General", style = MaterialTheme.typography.labelMedium) },
-          colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = TealPrimary,
-            selectedLabelColor = Color.White
-          ),
-          border = null
-        )
+        // Casillas de plasticina (Tarea 90): la elegida va en lima, con su ✓ y su texto en negrita.
+        ClayChoice(selected = selectedDomain == null, onClick = { selectedDomain = null }) {
+          Text("General", color = com.example.ui.theme.Clay.Ink, fontSize = 15.sp, fontWeight = if (selectedDomain == null) FontWeight.Bold else FontWeight.Medium)
+        }
 
         DomainType.values().forEach { domain ->
-          FilterChip(
-            selected = selectedDomain == domain,
-            onClick = { selectedDomain = if (selectedDomain == domain) null else domain },
-            label = { Text(domain.displayName, style = MaterialTheme.typography.labelMedium) },
-            leadingIcon = {
-              Box(
-                modifier = Modifier
-                  .size(8.dp)
-                  .clip(CircleShape)
-                  .background(if (selectedDomain == domain) Color.White else domain.color)
-              )
-            },
-            colors = FilterChipDefaults.filterChipColors(
-              selectedContainerColor = domain.color,
-              selectedLabelColor = Color.White
-            ),
-            border = null
-          )
+          ClayChoice(selected = selectedDomain == domain, onClick = { selectedDomain = if (selectedDomain == domain) null else domain }) {
+            Box(Modifier.size(10.dp).clip(CircleShape).background(domain.color))
+            Spacer(Modifier.width(8.dp))
+            Text(domain.displayName, color = com.example.ui.theme.Clay.Ink, fontSize = 15.sp, fontWeight = if (selectedDomain == domain) FontWeight.Bold else FontWeight.Medium)
+          }
         }
       }
 
@@ -261,29 +242,11 @@ fun ProgressTrendChart(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End
       ) {
-        Row(
-          modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .padding(2.dp),
-          horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           ChartTimeRange.values().forEach { range ->
             val isSelected = selectedRange == range
-            Box(
-              modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
-                .clickable { selectedRange = range }
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-              contentAlignment = Alignment.Center
-            ) {
-              Text(
-                text = range.label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-              )
+            ClayChoice(selected = isSelected, onClick = { selectedRange = range }) {
+              Text(text = range.label, color = com.example.ui.theme.Clay.Ink, fontSize = 14.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
             }
           }
         }

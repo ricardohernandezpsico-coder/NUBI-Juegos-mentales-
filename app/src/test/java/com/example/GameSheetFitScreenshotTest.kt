@@ -160,4 +160,16 @@ class GameSheetFitScreenshotTest {
     show(data, commonW, commonH, "ficha-primera-393x873", timed = false)
     assertEverythingVisibleWithoutScrolling()
   }
+
+  @Test
+  fun con_la_letra_del_sistema_al_200_por_ciento_las_casillas_van_de_a_una_y_el_boton_sigue_a_la_vista() {
+    // Con letra muy grande ninguna palabra se parte («medid/a», «Desafí/o»): los cuatro modos van de a UNO por fila (cada uno ocupa casi todo el ancho de la tarjeta, así que no caben dos lado a lado) y «Jugar» sigue a la vista.
+    show(rescue(), commonW, commonH, "ficha-rescate-393x873-letra200", fontScale = 2f)
+    assertPlayButtonInsideFrame()
+    val card = composeTestRule.onNodeWithTag("game_sheet").fetchSemanticsNode().boundsInRoot
+    val tags = listOf("mode_SUAVE", "mode_A_TU_MEDIDA", "mode_DESAFIO", "mode_EXPERTO")
+    for (tag in tags) composeTestRule.onNodeWithTag(tag).performScrollTo()
+    val bounds = tags.map { composeTestRule.onNodeWithTag(it).fetchSemanticsNode().boundsInRoot }
+    for ((tag, b) in tags.zip(bounds)) assertTrue("$tag ocupa casi todo el ancho de la tarjeta (${b.width} de ${card.width})", b.width >= card.width * 0.7f)
+  }
 }

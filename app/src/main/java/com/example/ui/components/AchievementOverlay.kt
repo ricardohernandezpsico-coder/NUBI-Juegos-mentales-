@@ -211,6 +211,7 @@ fun AchievementOverlay(
         ClayButton(
           text = "Compartir",
           color = Clay.Cream,
+          glyph = Glyph.SHARE,
           onClick = {
             scope.launch {
               try {
