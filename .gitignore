@@ -62,3 +62,6 @@ app/src/test/screenshots/
 
 # Renders de Blender de la isla (tools/isla/render.sh): pesan cientos de KB por PNG y se regeneran
 tools/isla/out/
+
+# Renders de Blender de los juegos (tools/juegos): salida intermedia; lo que entra al repo son los atlas de Assets/Resources/Plasticina
+tools/juegos/out/
