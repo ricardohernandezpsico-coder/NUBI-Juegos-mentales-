@@ -34,13 +34,13 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 | 7 | Bodega de carga | `bodega` | 24 | inventario | 14-oct | — |
 | 8 | La estación de correo | `correo` | 27 | inventario | 14-oct | — |
 | 9 | Rastro de luz | `secuencia` | 17 | inventario | 14-oct | — |
-| 10 | Carga exacta | `calculo` | 0 propios (todo del kit + reactor y celda) | inventario | 14-oct | — |
+| 10 | Carga exacta | `calculo` | 2 propios (aro y núcleo del reactor); el resto, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-calculo-arte.png) → [después](previews/plasticina/despues-calculo-arte.png) |
 | 11 | Engranajes | `engranajes` | 33 | inventario | 14-oct | — |
 | 12 | Acoplamiento | `acoplamiento` | 13 + módulos | inventario | 14-oct | — |
 | 13 | Aterrizaje Lunar | `aterrizaje` | 14 | inventario | 14-oct | — |
 | 14 | En la punta de la lengua | `anagramas` | 0 propios (fichas, casillas, lucero) | inventario | 14-oct | — |
 | 15 | Lluvia de meteoros | `meteoros` | 24 | inventario | 14-oct | — |
-| 16 | ¿Verdad o disparate? | `disparate` | 5 | inventario | 14-oct | — |
+| 16 | ¿Verdad o disparate? | `disparate` | 5 (antena, 2 íconos, 2 barras del medidor); el resto, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-disparate.png) → [después](previews/plasticina/despues-disparate.png) |
 | 17 | La estrella intrusa | `intrusa` | 2 (las 77 figuras se quedan procedurales) | inventario | 14-oct | — |
 
 (El orden de los números 2 a 17 es el **propuesto** más abajo; Opus decide.)
@@ -238,6 +238,8 @@ Riesgos: **la identidad de un lucero es solo su posición, su color y su nota**;
 
 No tiene `*Sprites.cs`: todo es `CalculoGameController.cs` con sprites genéricos. Riesgos: el número es texto sobre una zona lisa (contraste ≥ 4,5:1, hasta 5 cifras); con «quitar animaciones» la celda elegida solo cambia de color (darle forma: aro o hundida); los operadores «+» y «×» no deben leerse como cruz (brazos iguales); el aro de luces y el reactor son piezas separadas (las luces orbitan por código).
 
+**Ficha de arte (Tarea 97, hecha el 14-oct):** celdas (crema, elegida cielo y hundida con «quitar animaciones», lograda sol), botones de operación (losa «noche»; la elegida, sol), «Deshacer» / «Empezar de nuevo» (losa apagada) y el panel del final salen de las losas del kit; el reactor trae 2 renders propios: el aro (azul noche) y su núcleo (gris claro, teñido por el código de azul noche a dorado). Se quedan procedurales la ventanita de la celda, el halo de la pista, las luces que giran, el resplandor y las chispas. Medidas y detalle: [`diseno-carga-exacta.md`](diseno-carga-exacta.md) §8.
+
 ### 11. Engranajes «Taller de reparación» (`engranajes`, `Games/Engranajes/`)
 
 | Objeto | Clase | Estados | Tamaño | Común |
@@ -311,6 +313,8 @@ Riesgos: **la roca se estira**: un render fijo se deformaría (≥ 3 variantes d
 
 Riesgos: ancho y alto variables → 9-slice; la inclinación y el temblor giran la luz horneada; las anclas de la antena son fracciones fijas del sprite (`AntennaDish` (0,5; 0,825), `AntennaTip` (0,5; 0,925), `AntennaFloor` ≈ 0,0875): si el modelo cambia hay que actualizarlas; remaches de 0,02 se pierden a 420 u; el medidor cambia solo de color y brillo (darle forma); el plato es un semicírculo con borde elíptico (que no se lea como media luna).
 
+**Ficha de arte (Tarea 97, hecha el 14-oct):** la placa, los botones VERDAD (lima) y DISPARATE (coral) y el panel del final salen de las losas del kit; la antena (mismo lienzo ±1,2: `AntennaTip`, `AntennaDish` y `AntennaFloor` valen igual), los íconos ✓ y onda rota (churros de tinta) y las barras del medidor (nine-slice vertical) son renders propios. Se quedan procedurales la cinta de luz, las auroras, las ondas, el resplandor de la punta, la estática y las barras de señal y de tiempo. Medidas y detalle: [`diseno-verdad-o-disparate.md`](diseno-verdad-o-disparate.md) §11.
+
 ### 17. La estrella intrusa (`intrusa`, `Games/Intrusa/`)
 
 | Objeto | Clase | Estados | Tamaño | Común |
@@ -334,5 +338,7 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 | `radar` (Rescate relámpago) | 16 | 1024×1776 | 790 KB | **1,11 MB** | 0,77 MB |
 | `piloto` (Piloto Estelar: 15 señales a 192 y 96 px, nave) | 31 | 1664×492 | 472 KB | **0,58 MB** | 0,35 MB |
 | `freno` (Freno de Emergencia: 2 botones, 3 cohetes, plataforma, ALTO) | 7 | 1152×664 | 369 KB | **0,50 MB** | 0,33 MB |
+| `calculo` (Carga exacta: aro y núcleo del reactor) | 2 | 1152×556 | 242 KB | **0,32 MB** | 0,27 MB |
+| `disparate` (¿Verdad o disparate?: antena, 2 íconos, 2 barras del medidor) | 5 | 512×574 | 125 KB | **0,16 MB** | 0,13 MB |
 
-Lo nuevo en el APK con Rescate, Piloto y Freno (radar + piloto + freno + comun + nubi) son unos 3,5 MB sin comprimir la textura y unos 2,5 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta y ¿Verdad o disparate? (radar + piloto + freno + calculo + disparate + comun + nubi) son unos 4,0 MB sin comprimir la textura y unos 2,9 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).

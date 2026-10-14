@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -125,6 +125,30 @@ def grupo_freno():
     S.append(sprite('alto', carga_render('freno', 'alto', ANCHOS_FRENO['alto'])))
     return S, []
 
+ANCHOS_CALCULO = {'reactor': 552}
+
+def grupo_calculo():
+    """Carga exacta: el aro del reactor y su núcleo, en el MISMO lienzo cuadrado de ±92 dp (552 px a 3 px/dp = 1 px por unidad del lienzo de 1080). Del aro se limpia el hueco (lo cubre el núcleo): el suelo de sombra deja ahí un velo."""
+    S = []
+    S.append(sprite('reactor_aro', carga_render('calculo', 'reactor_aro', ANCHOS_CALCULO['reactor'], hueco=0.70)))
+    S.append(sprite('reactor_nucleo', carga_render('calculo', 'reactor_nucleo', ANCHOS_CALCULO['reactor'])))
+    return S, []
+
+ANCHOS_DISPARATE = {'antena': 420, 'icono': 128}
+MEDIDOR_U = 34.0                 # 1 unidad de Blender del medidor = 34 u del lienzo de 1080 (el ancho de la barra)
+MEDIDOR_MARGEN = 0.4             # lo que sobresale la sombra (en unidades de Blender); el radio de los extremos es 0,5
+
+def grupo_disparate():
+    """¿Verdad o disparate?: la antena (420 u en el juego), los dos íconos (120 u) y las barras del medidor, UNA por estado, como nine-slice VERTICAL a 1 px por unidad del lienzo (los extremos redondos no se estiran)."""
+    S = []; med = []
+    S.append(sprite('antena', carga_render('disparate', 'antena', ANCHOS_DISPARATE['antena'])))
+    for n in ('icono_visto', 'icono_ola'): S.append(sprite(n, carga_render('disparate', n, ANCHOS_DISPARATE['icono'])))
+    ancho = round((1.0 + 2 * MEDIDOR_MARGEN) * MEDIDOR_U); tope = round((MEDIDOR_MARGEN + 0.5) * MEDIDOR_U); margen = round(MEDIDOR_MARGEN * MEDIDOR_U)
+    for n in ('medidor_encendida', 'medidor_apagada'):
+        S.append(sprite(n, carga_render('disparate', n, ancho), borde=(0, tope, 0, tope), margen=(margen, margen, margen, margen)))
+    med.append(('medidor_margen_u', MEDIDOR_MARGEN * MEDIDOR_U))
+    return S, med
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -168,7 +192,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -356,7 +380,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

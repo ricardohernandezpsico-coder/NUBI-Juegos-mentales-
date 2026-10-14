@@ -177,3 +177,20 @@ guarda en `unclear_sentences`, con respaldo, y lo suma al informe de errores de 
 - Arte: `DisparateSprites` (antena de arcilla, íconos ✓ y onda rota, cinta de luz, estática), `DisparateSounds`,
   `GameWorld.Radio`. Maqueta: `python tools/art-preview/disparate.py` → `docs/previews/disparate.png`.
 - Pendiente: que Ricardo lo pruebe en el teléfono (fluidez, deslizar, mantener) y revise la muestra de frases.
+
+
+## 11. Plasticina (Tarea 97, 14-oct): arte de Blender y losas del kit
+
+Ricardo: todos los juegos en plasticina. Es SOLO arte: las frases, el DDA, los tiempos, el puntaje y la medida de lectura no cambian. Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina carga y disparate`; sin `art_version`: si hace falta separar series, se hace por fecha).
+
+| De plasticina | Se queda procedural |
+|---|---|
+| la **placa de la transmisión** (losa crema del kit, de ancho y alto variables) | el brillo de acierto/error de la placa, la estática de los bordes, el temblor y la inclinación (se aplican por código sobre la losa) |
+| los botones **VERDAD** (losa lima) y **DISPARATE** (losa coral) con sus **íconos** (`icono_visto`, `icono_ola`: churros de tinta, la onda rota es un zigzag, no una cruz) | la cinta de luz, las auroras, las ondas de la antena y el resplandor de la luz de la punta |
+| la **antena de la sala de radio** (`antena`: plataforma de acero, base uva, patas y mástil crema con remaches, plato crema con borde celeste, brazo y luz sol) | la barra de señal, la barra del tiempo, el texto |
+| las **barras del medidor** de señal (UNA imagen con los extremos redondos que se estira en vertical; encendida sol y apagada azul oscuro) | las marcas ✓ / ✗ ya son de plasticina desde la fase 0 |
+| el **panel del final** (losa «noche») | |
+
+La antena sale en el MISMO lienzo y a la MISMA escala (±1,2) que la de hoy: `DisparateSprites.AntennaTip`, `AntennaDish` y `AntennaFloor` (donde el código pone la luz y las ondas) valen igual; la luz de la punta cae a 0,5 % del lugar esperado. Las barras del medidor son nine-slice vertical (`MeterMargin`: lo que sobresale la sombra). La placa se inclina y tiembla con la luz horneada de la losa: la sombra gira con ella (es la placa entera, no un efecto aparte).
+
+**Lo que se midió** (`tools/juegos/mide_disparate.py`): la antena ocupa el 96 % de la huella de hoy (IoU 0,92; caja 338×381 contra 340×384) y el mástil y el plato crema rinden 17,7:1 contra el cielo; la tinta de los íconos, 9:1 contra el botón lima y 4,9:1 contra el coral, y ocupan lo mismo que los de hoy (0,72 × 0,58 y 0,92 × 0,48 del lienzo contra 0,75 × 0,59 y 0,96 × 0,50); la barra encendida y la apagada se distinguen 5,9:1 (luminosidad), la apagada rinde 2,1:1 contra el cielo. Pesa 0,16 MB en el APK. Pruebas: `DisparatePlasticTests`.

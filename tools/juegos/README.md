@@ -19,10 +19,14 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `piloto.py` | Piloto Estelar: las 15 señales (5 formas × punto, anillo y franja, con el detalle de churro de tinta incrustado) y la nave. Las maestras salen a 384 px; `empaqueta.py` saca de la misma maestra la versión de 192 y la chica de 96. |
 | `cohete.py` | El cohete de plasticina que comparten Piloto (la nave) y Freno (los de cada carril, con el acento coral, cielo o lima). Solo se importa desde scripts de Blender. |
 | `freno.py` | Freno de Emergencia: el botón de lanzamiento (apagado y encendido), los 3 cohetes, la plataforma y la señal de ALTO, cada uno en el mismo lienzo que el sprite procedural al que reemplaza. |
+| `calculo.py` | Carga exacta: el aro del reactor (dona de azul noche) y su núcleo (domo de plasticina gris claro que el código tiñe). 1 unidad de Blender = 84 dp (la escena del estudio no admite objetos de cientos de unidades: la cámara los cortaba). |
+| `disparate.py` | ¿Verdad o disparate?: la antena (lienzo ±1,2: de ahí salen los puntos `AntennaTip`/`AntennaDish`/`AntennaFloor`), los íconos ✓ y onda rota (churros de tinta) y las barras del medidor (UNA por estado, nine-slice vertical). |
 | `comun.py` | Lo común que NO sale del kit: las casillas «noche» (normal, presionada, acierto, error, apagada), las marcas ✓ y ✗ y el anillo de la cuenta regresiva. También re-renderiza una losa crema de CONTROL para comprobar que este pipeline da el mismo kit que la app. |
 | `empaqueta.py` | De los PNG de Blender (y de los WebP del kit de la app y la Nubi 3D) al atlas de cada grupo: reduce con Lanczos y alfa premultiplicado (los renders son la «maestra», a más resolución), limpia la bruma del suelo de sombra, empaca, escribe el manifiesto y los `.meta` (GUID fijo por ruta; un `.meta` que ya existe no se toca: Unity lo reescribe al importar y esa versión es la que va al repo) y **mide cuánto pesa**. |
 | `mide_radar.py` | Las cápsulas contra lo que reemplazan (huella) y contra el vidrio del radar (contraste WCAG), y qué tanto se parecen de a pares (escala de grises). |
 | `mide_piloto.py` | Las 15 señales y la nave: huella, contraste contra el cielo, tinta contra el cuerpo, qué tanto se distinguen las «parecidas» y lo que miden los detalles a los tamaños reales. |
+| `mide_calculo.py` | El reactor de Carga exacta: tamaño y centro, el núcleo claro y el número que rinde sobre sus dos tintes, contraste de las losas de las celdas. |
+| `mide_disparate.py` | La antena (huella y dónde cae la luz de la punta), los íconos contra los botones lima y coral y las barras del medidor. |
 | `mide_freno.py` | Botón, cohetes, plataforma y ALTO: huella contra el procedural, contraste contra el suelo de la luna y el cielo, flecha contra botón. |
 | `huella.py` | Lo que comparten las dos mediciones (la silueta de HOY y el contraste WCAG; solo numpy). |
 | `lamina.py` | Una lámina de contacto para MIRAR los renders sobre un fondo liso. |
@@ -34,10 +38,14 @@ BLENDER=/c/Users/RURAL7/Tools/blender-4.5.14/blender-4.5.14-windows-x64/blender.
 $BLENDER -b -P tools/juegos/radar.py -- --samples 112 --out tools/juegos/out/radar        # ~10 min con Cycles por CPU (Ryzen 5 5625U); el aro del radar tarda ~4 de eso
 $BLENDER -b -P tools/juegos/piloto.py -- --samples 112 --out tools/juegos/out/piloto      # ~10 min (15 señales a 384 px y la nave)
 $BLENDER -b -P tools/juegos/freno.py -- --samples 112 --out tools/juegos/out/freno        # ~6 min (botones, cohetes, plataforma, alto)
+$BLENDER -b -P tools/juegos/calculo.py -- --samples 112 --out tools/juegos/out/calculo      # ~6 min (el núcleo, el lienzo grande, tarda ~4)
+$BLENDER -b -P tools/juegos/disparate.py -- --samples 112 --out tools/juegos/out/disparate  # ~5 min
 $BLENDER -b -P tools/juegos/comun.py -- --samples 112 --out tools/juegos/out/comun        # ~5 min
-python -I tools/juegos/empaqueta.py radar piloto freno comun nubi   # atlas + manifiestos + pesos (segundos)
+python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate comun nubi   # atlas + manifiestos + pesos (segundos)
 python -I tools/juegos/mide_radar.py                          # huella, contraste y siluetas de las cápsulas
 python -I tools/juegos/mide_piloto.py                         # huella, contraste y detalles de las señales y la nave
+python -I tools/juegos/mide_calculo.py                        # tamaño del reactor, núcleo claro y losas de las celdas
+python -I tools/juegos/mide_disparate.py                      # antena, íconos y barras del medidor
 python -I tools/juegos/mide_freno.py                          # huella, contraste y flecha del botón, cohetes, plataforma y ALTO
 python -I tools/juegos/lamina.py out/lam.png '#0A2A3A' 3 1.5 out/radar/capsula_*.png     # para mirarlos
 ```
@@ -58,7 +66,7 @@ Opciones comunes de los scripts de Blender: `--solo <parte>` (renderiza una part
 - `Games/Shared/PlasticArt.cs`: el cargador. `PlasticArt.Get("radar", "capsula_gota")` entrega el sprite del atlas (o null); `GetOr(grupo, nombre, fallback)` cae al procedural. `PlasticArt.Disabled = true` lo apaga (pruebas). Cada grupo es UN atlas (`Resources/Plasticina/<grupo>/atlas.png`) y su `manifest.json` (rectángulo, pivote, nine-slice y márgenes de cada sprite, y las medidas que dejó Blender).
 - `Games/Shared/PlasticSlab.cs`: las losas del kit como nine-slice de Unity. `PlasticSlab.TryStyle(image, SlabSize, SlabTone)` pone la losa en lugar del fondo de siempre (que queda invisible, solo para los toques) o devuelve null si no hay plasticina: el que llama aplica entonces su estilo de siempre. `PlasticPress` da la presión (la losa presionada y el texto que baja). Tamaños: `Chip` (14 dp), `Button` (22 dp), `Panel` (30 dp). Tonos: `Sun, Cream, Lime, Sky, Coral, Lilac` (las del kit) y `Night, Hit, Miss, Dim` (las casillas oscuras de respuesta).
 - `Bootstrap/Editor/PlasticinaImporter.cs`: impone en cada importación los ajustes de textura del atlas (sin compresión, sin mipmaps, sin reescalar), por si un `.meta` se rompe.
-- Pruebas: `PlasticArtTests` (atlas, tope de peso, nine-slice, contraste del texto, caída al procedural), `RadarPlasticTests` (huella, contraste, siluetas, vidrio), `PilotPlasticTests` (huella, contraste, detalles y color, nave), `BrakePlasticTests` (huella, flecha, ALTO, cohetes, que el cohete quepa entre las torres).
+- Pruebas: `PlasticArtTests` (atlas, tope de peso, nine-slice, contraste del texto, caída al procedural), `RadarPlasticTests` (huella, contraste, siluetas, vidrio), `PilotPlasticTests` (huella, contraste, detalles y color, nave), `BrakePlasticTests` (huella, flecha, ALTO, cohetes, que el cohete quepa entre las torres), `CalculoPlasticTests` (tamaño del reactor, núcleo claro y teñible, losas de las celdas, interfaz con y sin atlas), `DisparatePlasticTests` (antena y sus puntos, íconos, barras del medidor, interfaz con y sin atlas).
 
 ## Peso (lo que suma al APK)
 
@@ -68,6 +76,9 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 |---|---:|---|---:|---:|---:|
 | `radar` (Rescate relámpago) | 16 | 1024×1776 | 790 KB | 1,11 MB | 0,77 MB |
 | `piloto` (Piloto Estelar) | 31 | 1664×492 | 472 KB | 0,58 MB | 0,35 MB |
+| `freno` (Freno de Emergencia) | 7 | 1152×664 | 369 KB | 0,50 MB | 0,33 MB |
+| `calculo` (Carga exacta: aro y núcleo del reactor) | 2 | 1152×556 | 242 KB | 0,32 MB | 0,27 MB |
+| `disparate` (¿Verdad o disparate?: antena, íconos, barras del medidor) | 5 | 512×574 | 125 KB | 0,16 MB | 0,13 MB |
 | `comun` (losas, marcas, anillo) | 28 | 896×2292 | 815 KB | 1,05 MB | 0,87 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 

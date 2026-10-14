@@ -1,0 +1,61 @@
+{
+ "version": 1,
+ "grupo": "calculo",
+ "ancho": 1152,
+ "alto": 556,
+ "sprites": [
+  {
+   "n": "reactor_aro",
+   "x": 2,
+   "y": 2,
+   "w": 552,
+   "h": 552,
+   "ppu": 100.0,
+   "px": 0.5,
+   "py": 0.5,
+   "borde": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "margen": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "baja": 0.0
+  },
+  {
+   "n": "reactor_nucleo",
+   "x": 558,
+   "y": 2,
+   "w": 552,
+   "h": 552,
+   "ppu": 100.0,
+   "px": 0.5,
+   "py": 0.5,
+   "borde": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "margen": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "baja": 0.0
+  }
+ ],
+ "medidas": [],
+ "peso": {
+  "png_bytes": 247890,
+  "crudo_rgba32": 2562048,
+  "deflate_rgba32": 331030,
+  "astc6x6": 285696
+ }
+}

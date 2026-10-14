@@ -89,3 +89,19 @@ una para la pista. Reglas:
 - **Movimiento reducido:**
   - **Se quita lo decorativo:** el rebote, las chispas, el arco y el giro del anillo; queda un fundido corto.
   - **Se mantiene:** el cambio de número y el color dorado del reactor.
+
+
+## 8. Plasticina (Tarea 97, 14-oct): arte de Blender y losas del kit
+
+Ricardo: todos los juegos en plasticina. Es SOLO arte: la generación, el DDA, los tiempos, las pistas, el puntaje y las medidas no cambian. Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina carga y disparate`; no se agrega `art_version`: si hace falta separar series, se hace por fecha).
+
+| De plasticina | Se queda procedural |
+|---|---|
+| las **celdas de energía** (losas `md` del kit: crema; elegida, cielo; lograda, sol); con «quitar animaciones» la elegida va además HUNDIDA (la losa presionada: ya no solo cambia de color, se distingue por la forma) | la **ventanita** de la celda (franja de tinta al 20 %), el halo de la pista, el resplandor, las chispas y el arco que junta dos celdas |
+| los **botones de operación** (losa «noche»; la elegida, sol) y **Deshacer / Empezar de nuevo** (losa apagada, la más oscura) | el aro de 12 luces que gira, el brillo del núcleo y el resplandor del reactor: son luz |
+| el **panel del final** (losa «noche») | los puntitos de progreso y la barra del tiempo |
+| el **aro del reactor** (`reactor_aro`, azul noche) y su **núcleo** (`reactor_nucleo`, un domo de plasticina GRIS CLARO: el código lo tiñe de azul noche a dorado con `Image.color`, como antes) | los textos (la carga, «carga exacta», «usa todas las celdas»), siempre `Text` |
+
+Las dos imágenes del reactor comparten el mismo lienzo cuadrado de ±92 dp centrado en el reactor (`PlasticReactorDp`), así que el diseño (`CargaLayout`) no cambia; el aro trae su sombra de contacto (sobran la sombra y el borde de tinta de hoy). Sin el atlas, todo cae al arte de siempre (`AuditVisibility` revisa los dos casos).
+
+**Lo que se midió** (`tools/juegos/mide_calculo.py`): el aro mide 167 dp (hoy 168) y el núcleo 143 dp (hoy 144), centrados; el número blanco rinde 18:1 sobre el núcleo apagado y el de tinta 7,9:1 sobre el dorado (apagado y dorado se distinguen 8,3:1: por luminosidad, no solo por color); el número de tinta sobre las celdas, 15:1 (crema), 8,7:1 (elegida) y 11,6:1 (lograda). El aro (azul noche) rinde 1,5:1 contra el cielo, igual que el de hoy: es el cuerpo del reactor, no un estímulo. Pesa 0,32 MB en el APK. Pruebas: `CalculoPlasticTests`.

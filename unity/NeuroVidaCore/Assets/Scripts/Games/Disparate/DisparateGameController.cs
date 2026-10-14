@@ -889,7 +889,9 @@ namespace NeuroVida.Games.Disparate
             for (int i = 0; i < _meter.Count; i++)
             {
                 bool on = i < lit;
-                _meter[i].color = on ? NeuroStyle.Sun : new Color(0.22f, 0.26f, 0.56f, 1f);
+                var plasticBar = DisparateSprites.MeterBar(on);
+                if (plasticBar != null) { _meter[i].sprite = plasticBar; _meter[i].color = Color.white; }       // plasticina: encendida (sol) o apagada (azul oscuro, plana)
+                else _meter[i].color = on ? NeuroStyle.Sun : new Color(0.22f, 0.26f, 0.56f, 1f);
                 if (pop && i == lit - 1) StartCoroutine(PopRect(_meter[i].rectTransform, 1.4f, 0.25f));
             }
         }
@@ -1300,11 +1302,12 @@ namespace NeuroVida.Games.Disparate
             // el medidor de señal (la racha): 5 barras que se encienden
             for (int i = 0; i < 5; i++)
             {
-                var bar = NewImage(_antenna, "Meter", RoundedRectSprite.Get(12));
+                var bar = NewImage(_antenna, "Meter", DisparateSprites.MeterBar(false) ?? RoundedRectSprite.Get(12));
                 bar.type = Image.Type.Sliced;
-                bar.rectTransform.sizeDelta = new Vector2(34f, 50f + 26f * i);
+                float margin = DisparateSprites.MeterMargin;                      // plasticina: la barra sobresale por su sombra (0 sin el atlas)
+                bar.rectTransform.sizeDelta = new Vector2(34f + 2f * margin, 50f + 26f * i + 2f * margin);
                 bar.rectTransform.pivot = new Vector2(0.5f, 0f);
-                NeuroStyle.ClayFrame(bar, 3f, 5f);
+                if (margin <= 0f) NeuroStyle.ClayFrame(bar, 3f, 5f);
                 bar.gameObject.SetActive(true);
                 _meter.Add(bar);
             }
@@ -1329,11 +1332,14 @@ namespace NeuroVida.Games.Disparate
             _plateGlow.gameObject.SetActive(true);
 
             _plateImg = plateGo.AddComponent<Image>();
-            _plateImg.sprite = RoundedRectSprite.Get(28);
-            _plateImg.type = Image.Type.Sliced;
-            _plateImg.color = PlateColor;
-            _plateImg.raycastTarget = false;
-            NeuroStyle.ClayFrame(_plateImg, 5f, 9f);
+            if (PlasticSlab.TryStyle(_plateImg, SlabSize.Button, SlabTone.Cream) == null)          // plasticina: la placa es una losa crema del kit
+            {
+                _plateImg.sprite = RoundedRectSprite.Get(28);
+                _plateImg.type = Image.Type.Sliced;
+                _plateImg.color = PlateColor;
+                _plateImg.raycastTarget = false;
+                NeuroStyle.ClayFrame(_plateImg, 5f, 9f);
+            }
 
             _label = MakeText(_plate, "Phrase", 72, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             _label.font = UiFonts.Word;
@@ -1442,11 +1448,14 @@ namespace NeuroVida.Games.Disparate
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
             var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = color;
-            img.raycastTarget = false;
-            NeuroStyle.ClayFrame(img, 6f, 14f);
+            if (PlasticSlab.TryStyle(img, SlabSize.Button, PlasticSlab.Nearest(color)) == null)    // plasticina: losa lima (VERDAD) o coral (DISPARATE) del kit
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = color;
+                img.raycastTarget = false;
+                NeuroStyle.ClayFrame(img, 6f, 14f);
+            }
             var ic = NewImage(r, "Icon", icon);
             ic.rectTransform.sizeDelta = new Vector2(120f, 120f);
             ic.rectTransform.anchoredPosition = new Vector2(0f, 46f);
@@ -1516,9 +1525,12 @@ namespace NeuroVida.Games.Disparate
             _resultRoot.pivot = new Vector2(0.5f, 0.5f);
             _resultRoot.sizeDelta = new Vector2(880f, 760f);
             var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)                 // plasticina: losa «noche»
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            }
 
             AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
             AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
@@ -1569,7 +1581,7 @@ namespace NeuroVida.Games.Disparate
             _tipPos = antCenter + new Vector2((DisparateSprites.AntennaTip.x - 0.5f) * antSize, (DisparateSprites.AntennaTip.y - 0.5f) * antSize);
             float floorY = antCenter.y + (DisparateSprites.AntennaFloor - 0.5f) * antSize;
             for (int i = 0; i < _meter.Count; i++)
-                _meter[i].rectTransform.anchoredPosition = new Vector2(antCenter.x + 150f + i * 46f, floorY + 70f);
+                _meter[i].rectTransform.anchoredPosition = new Vector2(antCenter.x + 150f + i * 46f, floorY + 70f - DisparateSprites.MeterMargin);
 
             // la placa va al medio; la barra de señal, el aviso y los botones, abajo
             _plateY = antCenter.y - antSize * 0.5f - 130f;

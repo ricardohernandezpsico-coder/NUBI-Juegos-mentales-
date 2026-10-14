@@ -53,6 +53,11 @@ namespace NeuroVida.Games.Calculo
 
         private enum Phase { Idle, Play, Solved, Done }
 
+        /// <summary>El atlas de plasticina de Carga exacta (Tarea 97, <c>tools/juegos/calculo.py</c>): el aro del reactor y su núcleo. Las celdas, los botones y el panel del final salen de las losas de <c>comun</c> (<see cref="PlasticSlab"/>).</summary>
+        private const string PlasticGroup = "calculo";
+        private const float PlasticReactorDp = 184f;       // el lienzo (cuadrado, en dp lógicos) de las dos imágenes del reactor: ±92 dp
+        private static bool PlasticReactor => PlasticArt.Has(PlasticGroup, "reactor_aro") && PlasticArt.Has(PlasticGroup, "reactor_nucleo");
+
         // ------------------------------------------------------------------ piezas
 
         private sealed class CellView
@@ -61,6 +66,7 @@ namespace NeuroVida.Games.Calculo
             public RectTransform Root;
             public CanvasGroup Group;
             public Image Halo, Glow, Face, Window, Shine;
+            public Image Slab;          // la losa de plasticina de la cara (null sin el atlas: queda la cara de siempre)
             public Text Label;
             public bool Shown, Flying;
             public int Value;
@@ -74,6 +80,7 @@ namespace NeuroVida.Games.Calculo
         {
             public RectTransform Root;
             public Image Shadow, Bg;
+            public Image Slab;          // la losa de plasticina (null sin el atlas)
             public Text Label;
             public CargaOp Op;
             public Rect Rect;           // lógico (dp)
@@ -85,6 +92,7 @@ namespace NeuroVida.Games.Calculo
         {
             public RectTransform Root;
             public Image Bg;
+            public Image Slab;          // la losa de plasticina (null sin el atlas)
             public Text Label;
             public Rect Rect;
             public bool Undo, Visible;
@@ -835,7 +843,14 @@ namespace NeuroVida.Games.Calculo
             v.Root.anchoredPosition = P(v.Pos + new Vector2(0f, -lift));
             v.Root.localScale = Vector3.one * Mathf.Max(0.01f, scale);
             v.Group.alpha = alpha;
-            v.Face.color = win ? CellWin : sel ? CellSelected : CellNormal;
+            if (v.Slab != null)
+            {
+                // plasticina: lograda = sol, elegida = cielo; con «quitar animaciones» la elegida además va hundida (la celda no sube): se distingue por la forma, no solo por el color
+                bool sunk = sel && !win && !Motion.Decorative;
+                PlasticSlab.Set(v.Slab, SlabSize.Button, win ? SlabTone.Sun : sel ? SlabTone.Sky : SlabTone.Cream, sunk);
+                v.Label.rectTransform.anchoredPosition = new Vector2(0f, 4f * _s - (sunk ? PlasticSlab.PressDrop(SlabSize.Button, SlabTone.Sky) : 0f));
+            }
+            else v.Face.color = win ? CellWin : sel ? CellSelected : CellNormal;
             bool glow = (sel || win) && Motion.Decorative;
             v.Glow.gameObject.SetActive(glow);
             if (glow) v.Glow.color = win ? NeuroStyle.WithAlpha(Gold, 1f) : NeuroStyle.WithAlpha(Cyan, 1f);
@@ -851,7 +866,8 @@ namespace NeuroVida.Games.Calculo
             {
                 var o = _opViews[i];
                 bool on = _op == (int)o.Op;
-                o.Bg.color = on ? Gold : OpIdle;
+                if (o.Slab != null) PlasticSlab.Set(o.Slab, SlabSize.Button, on ? SlabTone.Sun : SlabTone.Night);
+                else o.Bg.color = on ? Gold : OpIdle;
                 o.Label.color = on ? NeuroStyle.Ink : ButtonText;
                 o.Group.alpha = canPick ? 1f : 0.45f;
             }
@@ -1095,6 +1111,15 @@ namespace NeuroVida.Games.Calculo
             for (int i = 0; i < _lights.Length; i++) _lights[i] = MakeImage(_reactorLayer, "Light" + i, DiscSprite.Get());
             _core = MakeImage(_reactorLayer, "Core", DiscSprite.Get());
             _coreHi = MakeImage(_reactorLayer, "CoreHi", RadialGlowSprite.Get());
+            if (PlasticReactor)
+            {
+                // plasticina: el aro (azul noche, ya horneado) y el núcleo (gris claro: el código lo tiñe) ocupan el mismo lienzo de ±92 dp; la sombra y el borde de tinta de siempre sobran (el aro trae su sombra de contacto)
+                _reactorBody.sprite = PlasticArt.Get(PlasticGroup, "reactor_aro");
+                _reactorBody.color = Color.white;
+                _core.sprite = PlasticArt.Get(PlasticGroup, "reactor_nucleo");
+                _reactorShadow.gameObject.SetActive(false);
+                _reactorRim.gameObject.SetActive(false);
+            }
             _reactorLabel = MakeLabel(_reactorLayer, "Label", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _reactorLabel.text = "carga exacta";
             _targetText = MakeLabel(_reactorLayer, "Target", 52f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
@@ -1120,14 +1145,19 @@ namespace NeuroVida.Games.Calculo
                 v.Halo.color = Gold;
                 v.Glow = MakeImage(v.Root, "Glow", RadialGlowSprite.Get());
                 v.Face = MakeImage(v.Root, "Face", RoundedRectSprite.Get(60), true);
-                v.Face.type = Image.Type.Sliced;
-                v.Face.color = CellNormal;
-                NeuroStyle.ClayFrame(v.Face, 4f, 12f);             // celda de arcilla: borde tinta y sombra dura
+                v.Slab = PlasticSlab.TryStyle(v.Face, SlabSize.Button, SlabTone.Cream);         // plasticina: la celda es una losa del kit (crema; elegida: cielo; lograda: sol)
+                if (v.Slab == null)
+                {
+                    v.Face.type = Image.Type.Sliced;
+                    v.Face.color = CellNormal;
+                    NeuroStyle.ClayFrame(v.Face, 4f, 12f);         // celda de arcilla: borde tinta y sombra dura
+                }
                 v.Window = MakeImage(v.Root, "Window", RoundedRectSprite.Get(16), true);   // la ventanita de energía
                 v.Window.type = Image.Type.Sliced;
                 v.Window.color = CellWindow;
                 v.Shine = MakeImage(v.Root, "Shine", RadialGlowSprite.Get(), true);
                 v.Shine.color = new Color(1f, 1f, 1f, 0.55f);
+                if (v.Slab != null) v.Shine.gameObject.SetActive(false);       // la plasticina trae su propio brillo
                 v.Label = MakeLabel(v.Root, "Value", 30f, UiFonts.Bold, NeuroStyle.Ink, TextAnchor.MiddleCenter);
                 v.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
                 _fonts.RemoveAt(_fonts.Count - 1);                 // el tamaño lo fija SetValue según las cifras
@@ -1152,11 +1182,15 @@ namespace NeuroVida.Games.Calculo
                 o.Group = go.AddComponent<CanvasGroup>();
                 o.Group.blocksRaycasts = false;
                 o.Bg = go.AddComponent<Image>();
-                o.Bg.sprite = RoundedRectSprite.Get(48);
-                o.Bg.type = Image.Type.Sliced;
-                o.Bg.color = OpIdle;
-                o.Bg.raycastTarget = false;
-                NeuroStyle.ClayFrame(o.Bg, 4f, 8f);
+                o.Slab = PlasticSlab.TryStyle(o.Bg, SlabSize.Button, SlabTone.Night);          // plasticina: losa «noche»; la elegida, sol
+                if (o.Slab == null)
+                {
+                    o.Bg.sprite = RoundedRectSprite.Get(48);
+                    o.Bg.type = Image.Type.Sliced;
+                    o.Bg.color = OpIdle;
+                    o.Bg.raycastTarget = false;
+                    NeuroStyle.ClayFrame(o.Bg, 4f, 8f);
+                }
                 o.Label = MakeText(o.Root, "Label", Mathf.RoundToInt(30f * UnitsPerDp), TextAnchor.MiddleCenter, ButtonText, 0f, 0f);
                 o.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
                 _fonts.Add(new KeyValuePair<Text, float>(o.Label, 30f));
@@ -1173,11 +1207,15 @@ namespace NeuroVida.Games.Calculo
                 t.Group = go.AddComponent<CanvasGroup>();
                 t.Group.blocksRaycasts = false;
                 t.Bg = go.AddComponent<Image>();
-                t.Bg.sprite = RoundedRectSprite.Get(48);
-                t.Bg.type = Image.Type.Sliced;
-                t.Bg.color = ToolFill;
-                t.Bg.raycastTarget = false;
-                NeuroStyle.ClayFrame(t.Bg, 3f, 6f);
+                t.Slab = PlasticSlab.TryStyle(t.Bg, SlabSize.Button, SlabTone.Dim);            // plasticina: losa apagada (la más oscura: son acciones de segundo plano)
+                if (t.Slab == null)
+                {
+                    t.Bg.sprite = RoundedRectSprite.Get(48);
+                    t.Bg.type = Image.Type.Sliced;
+                    t.Bg.color = ToolFill;
+                    t.Bg.raycastTarget = false;
+                    NeuroStyle.ClayFrame(t.Bg, 3f, 6f);
+                }
                 t.Label = MakeText(t.Root, "Label", Mathf.RoundToInt(16f * UnitsPerDp), TextAnchor.MiddleCenter, ButtonText, 0f, 0f);
                 t.Label.font = UiFonts.Regular;
                 t.Label.text = i == 0 ? "Deshacer" : "Empezar de nuevo";
@@ -1223,9 +1261,12 @@ namespace NeuroVida.Games.Calculo
             _resultRoot.pivot = new Vector2(0.5f, 0.5f);
             _resultRoot.sizeDelta = new Vector2(880f, 760f);
             var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)          // plasticina: losa «noche»
+            {
+                img.sprite = RoundedRectSprite.Get(64);
+                img.type = Image.Type.Sliced;
+                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            }
 
             AddResultText("Title", 76, new Vector2(0f, 250f), Color.white);
             AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
@@ -1289,8 +1330,11 @@ namespace NeuroVida.Games.Calculo
                 if (!g.gameObject.activeInHierarchy) problems.Add(what + ": apagada");
                 else if (needsAlpha && g.color.a <= 0.01f) problems.Add(what + ": transparente");
             }
-            Check("reactor.Shadow", _reactorShadow);
-            Check("reactor.Rim", _reactorRim);
+            if (!PlasticReactor)
+            {
+                Check("reactor.Shadow", _reactorShadow);
+                Check("reactor.Rim", _reactorRim);
+            }
             Check("reactor.Body", _reactorBody);
             Check("reactor.Core", _core, false);          // el color lo fija AnimateReactor
             Check("reactor.CoreHi", _coreHi, false);
@@ -1299,20 +1343,20 @@ namespace NeuroVida.Games.Calculo
             Check("reactor.Rótulo", _reactorLabel);
             var cell = _views[0];
             cell.Root.gameObject.SetActive(true);
-            Check("celda.Face", cell.Face);
+            Check("celda.Face", cell.Slab != null ? cell.Slab : cell.Face);              // con plasticina la cara es la losa (el fondo de siempre queda invisible a propósito)
             Check("celda.Window", cell.Window);
-            Check("celda.Shine", cell.Shine);
+            if (cell.Slab == null) Check("celda.Shine", cell.Shine);                     // (con plasticina el brillo se apaga: la losa trae el suyo)
             Check("celda.Label", cell.Label);
             foreach (var o in _opViews)
             {
                 o.Root.gameObject.SetActive(true);
-                Check("operación.fondo", o.Bg);
+                Check("operación.fondo", o.Slab != null ? o.Slab : o.Bg);
                 Check("operación.texto", o.Label);
             }
             foreach (var t in _toolViews)
             {
                 t.Root.gameObject.SetActive(true);
-                Check("botón " + t.Label.text + ".fondo", t.Bg);
+                Check("botón " + t.Label.text + ".fondo", t.Slab != null ? t.Slab : t.Bg);
                 Check("botón " + t.Label.text + ".texto", t.Label);
             }
             foreach (var a in _arcs) foreach (var d in a.Dots) if (d == null) problems.Add("arco: punto no existe");
@@ -1355,9 +1399,9 @@ namespace NeuroVida.Games.Calculo
             SetRect(_reactorGlow.rectTransform, cx, cy, R * 4.4f, R * 4.4f);
             SetRect(_reactorShadow.rectTransform, cx, cy + 6f, outer * 2f, outer * 2f);
             SetRect(_reactorRim.rectTransform, cx, cy, outer * 2f + 4f, outer * 2f + 4f);
-            SetRect(_reactorBody.rectTransform, cx, cy, outer * 2f, outer * 2f);
+            SetRect(_reactorBody.rectTransform, cx, cy, PlasticReactor ? PlasticReactorDp : outer * 2f, PlasticReactor ? PlasticReactorDp : outer * 2f);
             foreach (var l in _lights) l.rectTransform.sizeDelta = Vector2.one * (6.4f * _s);
-            SetRect(_core.rectTransform, cx, cy, R * 2f, R * 2f);
+            SetRect(_core.rectTransform, cx, cy, PlasticReactor ? PlasticReactorDp : R * 2f, PlasticReactor ? PlasticReactorDp : R * 2f);
             SetRect(_coreHi.rectTransform, cx, cy - 10f, R * 1.7f, R * 1.7f);
             SetRect(_reactorLabel.rectTransform, cx, cy - 30f, 150f, 20f);
             SetRect(_targetText.rectTransform, cx, cy + 8f, 140f, 64f);

@@ -13,6 +13,8 @@ namespace NeuroVida.Games.Disparate
     /// <item><see cref="CheckIcon"/> / <see cref="BrokenWaveIcon"/>: los íconos de los botones VERDAD (✓) y DISPARATE (onda rota).</item>
     /// <item><see cref="Band"/>: la cinta de luz de la transmisión. <see cref="NoiseTexture"/>: la estática (se repite).</item>
     /// </list>
+    /// <para><b>Plasticina (Tarea 97):</b> si el atlas <c>Resources/Plasticina/disparate</c> existe, la antena, los dos íconos y las barras del medidor (<see cref="MeterBar"/>) salen de ahí (renders de Blender, <c>tools/juegos/disparate.py</c>, el mismo lienzo y la misma escala:
+    /// <see cref="AntennaTip"/>, <see cref="AntennaDish"/> y <see cref="AntennaFloor"/> valen igual). Sin el atlas, el arte procedural de abajo. La cinta de luz y la estática son luz y efecto: se quedan.</para>
     /// </summary>
     public static class DisparateSprites
     {
@@ -22,9 +24,23 @@ namespace NeuroVida.Games.Disparate
         private static Sprite _antenna, _check, _wave, _band;
         private static Texture2D _noise;
 
-        public static Sprite Antenna() => _antenna != null ? _antenna : _antenna = ToSprite(RenderAntenna(AntennaPx), AntennaPx, AntennaPx);
-        public static Sprite CheckIcon() => _check != null ? _check : _check = ToSprite(RenderFlat(96, CheckShape, Ink), 96, 96);
-        public static Sprite BrokenWaveIcon() => _wave != null ? _wave : _wave = ToSprite(RenderFlat(96, BrokenWaveShape, Ink), 96, 96);
+        public const string PlasticGroup = "disparate";
+
+        /// <summary>true si el atlas de plasticina de «¿Verdad o disparate?» existe (y no está desactivado).</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "antena");
+
+        public static Sprite Antenna() => PlasticArt.Get(PlasticGroup, "antena") ?? (_antenna != null ? _antenna : _antenna = ToSprite(RenderAntenna(AntennaPx), AntennaPx, AntennaPx));
+        public static Sprite CheckIcon() => PlasticArt.Get(PlasticGroup, "icono_visto") ?? (_check != null ? _check : _check = ToSprite(RenderFlat(96, CheckShape, Ink), 96, 96));
+        public static Sprite BrokenWaveIcon() => PlasticArt.Get(PlasticGroup, "icono_ola") ?? (_wave != null ? _wave : _wave = ToSprite(RenderFlat(96, BrokenWaveShape, Ink), 96, 96));
+
+        /// <summary>
+        /// La barra del medidor de señal (encendida o apagada) como nine-slice VERTICAL (los extremos redondos no se estiran), o null sin plasticina (el que llama usa su rectángulo redondeado de siempre).
+        /// La imagen sobresale <see cref="MeterMargin"/> por cada lado (donde cae la sombra): la barra mide de ancho 34 u y la imagen, 34 + 2 × margen.
+        /// </summary>
+        public static Sprite MeterBar(bool lit) => PlasticArt.Get(PlasticGroup, lit ? "medidor_encendida" : "medidor_apagada");
+
+        /// <summary>Lo que sobresale la barra de plasticina del medidor alrededor de su cuerpo, en unidades del lienzo (0 sin plasticina).</summary>
+        public static float MeterMargin => PlasticArt.Measure(PlasticGroup, "medidor_margen_u", 0f);
 
         /// <summary>Dónde queda la luz de la punta de la antena, como fracción (0-1) del ancho y del alto del dibujo (desde abajo).</summary>
         public static Vector2 AntennaTip => new Vector2(0.5f, (1.02f / AntennaZoom + 1f) * 0.5f);

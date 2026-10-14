@@ -90,7 +90,7 @@ def suelo():
 def camara(ancho, alto, px_por_u, centro=(0.0, 0.0)):
     """Cámara ortogonal inclinada. [ancho]/[alto] en unidades de diseño; [centro] es el punto del lienzo (x, y de diseño) que cae en el centro de la imagen."""
     t = math.radians(TILT); d = Vector((0, -math.sin(t), math.cos(t)))
-    cam = bpy.data.cameras.new('cam_juego'); cam.type = 'ORTHO'; cam.ortho_scale = ancho
+    cam = bpy.data.cameras.new('cam_juego'); cam.type = 'ORTHO'; cam.ortho_scale = max(ancho, alto)           # (en Blender la escala ortogonal cubre el lado MAYOR de la imagen)
     co = bpy.data.objects.new('cam_juego', cam); scene.collection.objects.link(co)
     tgt = Vector((centro[0], centro[1] / math.cos(t), 0.0)); co.location = tuple(tgt + d * 30)
     co.rotation_euler = (tgt - co.location).to_track_quat('-Z', 'Y').to_euler(); scene.camera = co
@@ -133,6 +133,14 @@ def casco_convexo(circulos, n=64):
         while len(sup) >= 2 and cruz(sup[-2], sup[-1], p) <= 1e-12: sup.pop()
         sup.append(p)
     return inf[:-1] + sup[:-1]
+
+def rect(cx, cy, hx, hy):
+    """Un rectángulo (antihorario) de centro (cx, cy) y medios hx × hy."""
+    return [(cx - hx, cy - hy), (cx + hx, cy - hy), (cx + hx, cy + hy), (cx - hx, cy + hy)]
+
+def elipse(cx, cy, rx, ry, n=96):
+    """El contorno (antihorario) de una elipse."""
+    return [(cx + rx * math.cos(2 * math.pi * i / n), cy + ry * math.sin(2 * math.pi * i / n)) for i in range(n)]
 
 def pieza(contorno, h, bis, color=None, nombre='pieza', z0=0.0, seg=8, panza=0.0, bultos=0.0, material=None, padre=None, coll='iconos'):
     """Una pieza de plasticina: el [contorno] (lista de (x, y) antihoraria, unidades de diseño) levantado [h], con el canto redondeado [bis] y, si [panza] > 0, el costado abombado.

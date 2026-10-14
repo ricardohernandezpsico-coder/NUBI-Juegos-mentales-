@@ -18,10 +18,6 @@ from cohete import cohete, COHETE_H, ccw
 SOLO = arg('--solo', 'todo')
 CREMA = '#FFF8EC'; LIMA = '#9BE564'; CORAL = '#FF6B4A'; SOL = '#FFC93C'; CIELO = '#4CC9F0'
 
-def rect(cx, cy, hx, hy):
-    """Un rectángulo (antihorario) de centro (cx, cy) y medios hx × hy."""
-    return [(cx - hx, cy - hy), (cx + hx, cy - hy), (cx + hx, cy + hy), (cx - hx, cy + hy)]
-
 # ------------------------------------------------------------------ el botón de lanzamiento (BrakeSprites.RenderButton: disco de radio 0,8 + borde de 0,08, con una flecha hacia arriba)
 BOT_LIENZO = 2.2
 BOT_PX = 384
