@@ -28,11 +28,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.ClayKitSpec
 import com.example.ui.components.Glyph
-import com.example.data.AvatarIds
 import com.example.ui.components.ClayChoice
 import com.example.ui.components.ClaySwitch
 import com.example.ui.components.ClayTextField
-import com.example.ui.components.avatarRes
 import com.example.ui.components.ClayDisc
 import com.example.ui.components.DiscStyle
 import com.example.ui.components.KitButton
@@ -321,23 +319,6 @@ class ClayKitTest {
     show { KitGlyph(Glyph.CHECK, Modifier.testTag("g"), size = 24.dp) }
     val b = rule.onNodeWithTag("g").fetchSemanticsNode().boundsInRoot
     assertEquals(24f * rule.density.density, b.width, 1f); assertEquals(24f * rule.density.density, b.height, 1f)
-  }
-
-  // ---- Los avatares (Tarea 91)
-
-  @Test
-  fun los_siete_avatares_renderizados_estan_en_el_json_con_su_imagen_de_48_dp_y_Nubi_sale_de_la_isla() {
-    val json = org.json.JSONObject(File("src/main/res/raw/kit.json").readText()).getJSONObject("avatares")
-    val renderizados = AvatarIds.ALL.filter { it != AvatarIds.NUBI }
-    assertEquals(renderizados.toSet(), json.keys().asSequence().toSet())
-    for (id in renderizados) {
-      val size = json.getJSONObject(id).getJSONArray("imagen_px")
-      assertEquals("kit_av_$id mide 48 dp a 3 px por dp", 144, size.getInt(0)); assertEquals(144, size.getInt(1))
-      assertEquals("kit_av_$id", size.getInt(0) to size.getInt(1), webpSize(res("kit_av_$id")))
-    }
-    val dibujos = AvatarIds.ALL.map { avatarRes(it) }
-    assertEquals("cada avatar tiene su dibujo, todos distintos", 8, dibujos.toSet().size)
-    assertEquals("un id desconocido cae al de Nubi", avatarRes(AvatarIds.NUBI), avatarRes("xyz"))
   }
 
   // ---- El interruptor de plasticina (Tarea 91)

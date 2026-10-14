@@ -779,7 +779,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     notificationsEnabled: Boolean = userSettings.value.notificationsEnabled,
     reminderHour: Int = userSettings.value.reminderHour,
     reminderMinute: Int = userSettings.value.reminderMinute,
-    avatar: String = userSettings.value.avatar,
     difficultyMode: DifficultyMode = userSettings.value.difficultyMode,
     themeMode: ThemeMode = userSettings.value.themeMode,
     language: AppLanguage = userSettings.value.language
@@ -788,7 +787,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       val current = userSettings.value
       val updated = current.copy(
         name = name,
-        avatar = avatar,
         weeklyGoal = weeklyGoal,
         defaultTimed = defaultTimed,
         soundEnabled = sound,

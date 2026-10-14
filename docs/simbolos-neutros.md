@@ -19,7 +19,7 @@ hexágono, una gota o una ola están bien. Lámina para ver el resultado: [`docs
 | `SparkleSprite` (el «brillo» de cuenta regresiva, celebraciones, racha y cielo) y el brillo de La estrella intrusa | destello de 4 puntas | brillo redondo (núcleo con halo) |
 | Íconos de la app (`GameIcon.kt`): Parejas, Piloto, La estrella intrusa, Aterrizaje y el «brillo» (`sparkle`) | estrellas de 5 y 4 puntas | lucero redondo / hexágono / brillo redondo |
 | Logros «Brillante» (90 puntos) y «Perfecto» (100) en la medalla (`AchievementGlyph.STAR`, Tarea 91) | estrella de 5 puntas | **lucero redondo** (`AchievementGlyph.LUCERO`: cuerpo redondo con su aro de luz y su núcleo sol) |
-| Avatares de Opciones (Tarea 91) | emojis (🧠 por defecto, caras de personas, ⭐, 🌟…) | **ocho objetos de plasticina**: Nubi, cohete, farol, isla, engranaje, planeta sin anillo, lucero redondo y gota (`data/AvatarIds.kt`) |
+| Avatares de Opciones (Tarea 91) | emojis (🧠 por defecto, caras de personas, ⭐, 🌟…) | **ocho objetos de plasticina**: Nubi, cohete, farol, isla, engranaje, planeta sin anillo, lucero redondo y gota. QUITADOS el 14-oct (Tarea 93): ya no hay avatares; el perfil lleva la inicial |
 
 ## Premios y calificaciones (tarea 36, aprobado por Ricardo el 4-oct)
 
@@ -30,5 +30,4 @@ La réplica `tools/previews/iconos_juegos.py` se actualizó con los íconos nuev
 
 ## Emojis (Tarea 91)
 
-Nada de emojis en la app: ni como íconos (ya era regla), ni en textos, banderas, avatares, saludos o listas. `EmojiSweepTest` lo vigila: revisa el código (sin comentarios), los recursos y las listas que la app arma al correr (avatares, idiomas, logros, juegos, desafíos, ligas, áreas y traducciones), y busca «cerebro» y «brain». Su lista de excepciones está VACÍA a propósito. Los avatares viejos guardados como emoji se
-traducen a los nuevos al leerlos (`AvatarIds.resolve`: el cerebro, y las caras de personas, pasan a Nubi) sin migrar Room. Tampoco hay banderas en los idiomas: solo el nombre en su propia lengua, y solo se ofrecen los idiomas traducidos (hoy, el español).
+Nada de emojis en la app: ni como íconos (ya era regla), ni en textos, banderas, avatares, saludos o listas. `EmojiSweepTest` lo vigila: revisa el código (sin comentarios), los recursos y las listas que la app arma al correr (avatares, idiomas, logros, juegos, desafíos, ligas, áreas y traducciones), y busca «cerebro» y «brain». Su lista de excepciones está VACÍA a propósito. La columna `avatar` de Room (que antes guardaba un emoji o un id) quedó sin uso desde la Tarea 93 y no se muestra en ninguna parte. Tampoco hay banderas en los idiomas: solo el nombre en su propia lengua, y solo se ofrecen los idiomas traducidos (hoy, el español).

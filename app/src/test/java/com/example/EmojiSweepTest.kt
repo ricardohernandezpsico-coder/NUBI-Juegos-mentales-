@@ -2,7 +2,6 @@ package com.example
 
 import com.example.data.Achievements
 import com.example.data.AchievementGlyph
-import com.example.data.AvatarIds
 import com.example.model.AppLanguage
 import com.example.model.DomainType
 import com.example.model.GameRegistry
@@ -17,7 +16,7 @@ import java.io.File
 
 /**
  * El barrido de emojis (Tarea 91, regla de CLAUDE.md: «Nada de emojis como íconos»): ningún texto, recurso o lista de la app lleva un emoji. Revisa (1) el código de `app/src/main/java` sin comentarios, (2) los recursos (`res/values*`, `res/xml`, `res/raw`, `assets`, el manifiesto) y (3) las listas que la app arma al correr:
- * avatares, idiomas, logros, juegos, desafíos, ligas, áreas y traducciones. Y busca «cerebro», «brain» y el emoji 🧠 en el código y los recursos (el avatar por defecto era un cerebro).
+ * idiomas, logros, juegos, desafíos, ligas, áreas y traducciones. Y busca «cerebro», «brain» y el emoji 🧠 en el código y los recursos (los avatares, que tenían un cerebro por defecto, se quitaron en la Tarea 93).
  *
  * [EXCEPCIONES]: la lista de lo que SÍ puede llevar un emoji. Está VACÍA a propósito y debe seguir vacía: si algún día hace falta una excepción, se anota acá con su archivo y su razón (y se la comenta a Ricardo).
  * El rango Unicode es razonable, no exhaustivo: los bloques de emojis y pictogramas (U+1F000–1FAFF), los símbolos varios y dingbats que la mayoría de los teléfonos dibujan como emoji (U+2600–27BF, salvo el visto ✓ ✗ de texto), la estrella ⭐, el círculo ⭕, los cuadrados ⬛⬜, flechas curvas,
@@ -99,7 +98,6 @@ class EmojiSweepTest {
 
   @Test
   fun `las listas de la app no traen emojis`() {
-    assertNoEmoji("avatares", AvatarIds.ALL + AvatarIds.LABELS.values + AvatarIds.LABELS.keys)
     assertNoEmoji("idiomas", AppLanguage.entries.flatMap { listOf(it.code, it.displayName) })
     assertNoEmoji("logros", Achievements.all.flatMap { listOf(it.id, it.title, it.description) })
     assertNoEmoji("juegos", GameRegistry.allGames.flatMap { listOf(it.id, it.title, it.subtitle, it.instruction) })

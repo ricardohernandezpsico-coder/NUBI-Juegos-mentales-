@@ -9,7 +9,7 @@ import java.io.File
 
 /**
  * La Nubi 3D (Tarea 92): el Nubi plano de antes (`nubi_hola`, `nubi_mira`, `nubi_celebra` y `nubi_cientifica`, con destellos de cruz; la científica con bata) ya no existe ni se menciona en ninguna parte; el único Nubi de las pantallas es `nubi_3d.webp`
- * (el render de `isla.py --solo-nubi`, 720 × 476 px) y el ícono, sus capas y el ícono de notificación salen de ese mismo render (`tools/isla/icono.py`) en todas las densidades. Y el APK no lleva arte sin uso: cada imagen de `drawable-nodpi` se usa desde el código, un XML o un JSON de `res/raw`.
+ * (el render de `isla.py --solo-nubi`, 720 × 476 px) y el ícono, sus capas y el ícono de notificación salen de ese mismo render (`tools/isla/icono.py`) en todas las densidades. Los avatares (Tarea 93) se quitaron. Y el APK no lleva arte sin uso: cada imagen de `drawable-nodpi` se usa desde el código, un XML o un JSON de `res/raw`.
  */
 class NubiAssetsTest {
   private val res = File("src/main/res")
@@ -74,6 +74,16 @@ class NubiAssetsTest {
       assertTrue("$n lleva el fondo, la capa de Nubi y la monocroma (ícono temático de Android 13+)", listOf("@drawable/ic_launcher_background", "@mipmap/ic_launcher_foreground", "@mipmap/ic_launcher_monochrome").all { it in xml })
     }
     assertTrue("el fondo es el azul marino de la lámina", File(res, "drawable/ic_launcher_background.xml").readText().contains("#23255A"))
+  }
+
+  @Test
+  fun `los avatares ya no existen (Tarea 93)`() {
+    val files = res.walkTopDown().filter { it.isFile && it.name.startsWith("kit_av_") }.map { it.path }.toList()
+    assertTrue("Quedan imágenes de avatar: $files", files.isEmpty())
+    assertFalse("kit.json todavía describe avatares", File(res, "raw/kit.json").readText().contains("\"avatares\""))
+    val words = listOf("AvatarIds", "KitAvatar", "avatarRes", "kit_av_", "Tu avatar")
+    val hits = (code() + xmls()).flatMap { (f, t) -> words.filter { it in t }.map { "$f: $it" } }
+    assertTrue("Referencias a los avatares:\n" + hits.joinToString("\n"), hits.isEmpty())
   }
 
   @Test

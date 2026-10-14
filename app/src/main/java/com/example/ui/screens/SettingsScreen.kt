@@ -34,18 +34,12 @@ import com.example.model.AppLanguage
 import com.example.model.DifficultyMode
 import com.example.model.DomainType
 import com.example.model.UserSettings
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import com.example.ui.components.ClayChoice
 import com.example.ui.components.ClayChoiceRow
 import com.example.ui.components.ClayDialog
-import com.example.ui.components.ClayDisc
 import com.example.ui.components.ClayPanel
 import com.example.ui.components.ClaySwitch
 import com.example.ui.components.ClayTextField
-import com.example.ui.components.KitAvatar
-import com.example.data.AvatarIds
-import com.example.ui.components.DiscStyle
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.PanelAccent
@@ -68,7 +62,6 @@ fun SettingsScreen(
   val colorVision by viewModel.colorVision.collectAsState()
 
   var nameInput by remember(userSettings.name) { mutableStateOf(userSettings.name) }
-  var selectedAvatar by remember(userSettings.avatar) { mutableStateOf(userSettings.avatar) }
   var weeklyGoal by remember(userSettings.weeklyGoal) { mutableStateOf(userSettings.weeklyGoal) }
   var defaultTimed by remember(userSettings.defaultTimed) { mutableStateOf(userSettings.defaultTimed) }
   var soundEnabled by remember(userSettings.soundEnabled) { mutableStateOf(userSettings.soundEnabled) }
@@ -197,7 +190,7 @@ fun SettingsScreen(
       }
     }
 
-    // 1. Tu perfil: el nombre y el avatar propios (8-oct: se quitó la gestión de varios perfiles; la tabla user_profile se queda, sin migración)
+    // 1. Tu perfil: el nombre propio (8-oct: se quitó la gestión de varios perfiles; la tabla user_profile se queda, sin migración). Los avatares se quitaron en la Tarea 93: el disco de perfil lleva la inicial.
     ClayPanel(modifier = Modifier.fillMaxWidth()) {
       run {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,31 +204,6 @@ fun SettingsScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        // Nombre y avatar propios
-        Text(
-          text = "Tu avatar:",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // Cada avatar es un objeto de plasticina sobre un disco: el elegido va en celeste con su ✓ en la esquina (y quieto); los demás, en crema. Ocho (`AvatarIds`) en dos filas de cuatro.
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-          AvatarIds.ALL.chunked(4).forEach { fila ->
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-              fila.forEach { id ->
-                val isChosen = selectedAvatar == id
-                Box(Modifier.semantics { selected = isChosen }.testTag("avatar_$id")) {
-                  ClayDisc(if (isChosen) DiscStyle.SKY else DiscStyle.CREAM, { selectedAvatar = id }, "Avatar ${AvatarIds.LABELS[id]}") { KitAvatar(id) }
-                  if (isChosen) KitGlyph(Glyph.CHECK, Modifier.align(Alignment.BottomEnd).offset(x = 2.dp, y = 2.dp), size = 22.dp)
-                }
-              }
-            }
-          }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         Text(text = "Tu nombre", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(4.dp))
@@ -253,7 +221,6 @@ fun SettingsScreen(
           onClick = {
             viewModel.updateSettings(
               name = nameInput.trim().ifEmpty { "Usuario" },
-              avatar = selectedAvatar,
               weeklyGoal = weeklyGoal,
               defaultTimed = defaultTimed,
               sound = soundEnabled,
@@ -296,7 +263,6 @@ fun SettingsScreen(
             weeklyGoal = it.toInt()
             viewModel.updateSettings(
               name = nameInput,
-              avatar = selectedAvatar,
               weeklyGoal = weeklyGoal,
               defaultTimed = defaultTimed,
               sound = soundEnabled,

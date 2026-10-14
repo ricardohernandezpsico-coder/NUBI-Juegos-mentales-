@@ -3,17 +3,19 @@
    - `kit_losa_<ch|md|gr>_<color>[_p].webp`: losas para NINE-SLICE (esquinas fijas, bordes estirados en un eje, centro estirado) en tres radios (ch = 14 dp: chips y casillas; md = 22: botones y tarjetas; gr = 30: láminas y paneles), normal y presionada, todas con el mismo lienzo y el cuerpo en el mismo sitio;
    - `kit_cerrar[_p].webp` (disco crema con la X de dos churros tinta), `kit_disco_<crema|cielo>[_p].webp` (discos lisos de 48 dp: perfil, volver, opciones; el ícono o la inicial va encima);
    - `kit_i_<volver|visto|izq|der|compartir|candado|engranaje|globo|altavoz|vibracion|reloj|sin_reloj|escudo|info|campana|persona|arriba|abajo>.webp` y `kit_jugar.webp`: íconos de churro tinta (sin estados: al presionar el disco bajan 2 dp);
-   - `kit_av_<cohete|farol|isla|engranaje|planeta|lucero|gota>.webp`: los avatares (Tarea 91), lienzo de 48 × 48 dp con su sombra de contacto;
+   - `kit_av_<cohete|farol|isla|engranaje|planeta|lucero|gota>.webp`: los avatares (Tarea 91), lienzo de 48 × 48 dp con su sombra de contacto. YA NO ENTRAN A LA APP (Tarea 93: los avatares se quitaron): solo se procesan con `--con-avatares`, por si algún día vuelven;
    - `kit.json`: la densidad del render, el lienzo, los márgenes (donde cae la sombra), el cuerpo y los insets del nine-slice de cada pieza.
    Mide que el CENTRO que se estira sea parejo (si no, el nine-slice deformaría las huellas): imprime la desviación a lo ancho y a lo alto de cada losa.
-Uso: python -I kit.py <carpeta_render> [<carpeta_salida>]     (la salida por defecto es <carpeta_render>/app; `kit.json` va a `app/src/main/res/raw/` y los WebP a `res/drawable-nodpi/`)"""
+Uso: python -I kit.py <carpeta_render> [<carpeta_salida>] [--con-avatares]     (la salida por defecto es <carpeta_render>/app; `kit.json` va a `app/src/main/res/raw/` y los WebP a `res/drawable-nodpi/`)"""
 import sys, os, json
 import numpy as np
 sys.stdout.reconfigure(encoding='utf-8')
 from PIL import Image
 
-src = sys.argv[1]
-dst = sys.argv[2] if len(sys.argv) > 2 else os.path.join(src, 'app')
+CON_AVATARES = '--con-avatares' in sys.argv
+args = [a for a in sys.argv[1:] if not a.startswith('--')]
+src = args[0]
+dst = args[1] if len(args) > 1 else os.path.join(src, 'app')
 os.makedirs(dst, exist_ok=True)
 PX = 3                                   # px por dp del render (KIT_PX en isla.py)
 MARGEN = (8, 6, 12, 14)                  # dp: margen (izq, arr, der, abajo) de las losas, igual que KIT_MARGEN de isla.py
@@ -29,7 +31,7 @@ DISCO = {'margen': (6, 4, 10, 12), 'cuerpo': (48, 48)}
 DISCOS = ('kit_cerrar', 'kit_disco_crema', 'kit_disco_cielo')
 ICONOS = ('volver', 'visto', 'izq', 'der', 'compartir', 'candado', 'engranaje',
           'globo', 'altavoz', 'vibracion', 'reloj', 'sin_reloj', 'escudo', 'info', 'campana', 'persona', 'arriba', 'abajo')      # los últimos once son de la Tarea 91 (reemplazan los de Material de los paneles)
-AVATARES = ('cohete', 'farol', 'isla', 'engranaje', 'planeta', 'lucero', 'gota')                                        # Tarea 91: objetos de plasticina de 48 dp para los avatares de Opciones (Nubi sale de nubi_3d.webp)
+AVATARES = ('cohete', 'farol', 'isla', 'engranaje', 'planeta', 'lucero', 'gota')                                        # Tarea 91 (quitados de la app en la 93): objetos de plasticina de 48 dp para los avatares de Opciones
 ICONO = {'margen': (4, 3, 6, 7), 'cuerpo': (24, 24)}        # el lienzo de cada ícono (dp); el cuerpo real se mide en la imagen
 JUGAR = {'margen': (4, 3, 6, 7), 'cuerpo': (20, 22)}
 
@@ -129,13 +131,14 @@ for nombre in ('jugar',) + ICONOS:
     marg, cuerpo = measured(im, ink=True)
     kit['piezas'][nombre] = {'imagen_px': list(im.size), 'margenes_dp': marg, 'cuerpo_dp': cuerpo}
 
-# ---- los avatares (Tarea 91): se dibujan enteros en una caja de 48 × 48 dp (sin márgenes: la sombra ya cae dentro del lienzo)
+# ---- los avatares (Tarea 91; quitados de la app en la Tarea 93): solo con --con-avatares. Se dibujan enteros en una caja de 48 × 48 dp (sin márgenes: la sombra ya cae dentro del lienzo)
 kit['avatares'] = {}
-for nombre in AVATARES:
+for nombre in (AVATARES if CON_AVATARES else ()):
     im = load('kit_av_' + nombre)
     total += save(im, 'kit_av_' + nombre)
     kit['avatares'][nombre] = {'imagen_px': list(im.size), 'margenes_dp': {'izq': 0.0, 'arr': 0.0, 'der': 0.0, 'abajo': 0.0}, 'cuerpo_dp': {'ancho': round(im.size[0] / PX, 2), 'alto': round(im.size[1] / PX, 2)}}
 
+if not kit['avatares']: del kit['avatares']
 json.dump(kit, open(os.path.join(dst, 'kit.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 for clase, d in kit['losas'].items():
     if clase == 'nota': continue
@@ -144,5 +147,5 @@ for clase, color, sz, rs, cs in reporte:
     print('  %s/%-6s cuerpo %dx%d px (%.1fx%.1f dp); desviación del centro: a lo ancho %.2f, a lo alto %.2f (de 255)' % (clase, color, sz[0], sz[1], sz[0] / PX, sz[1] / PX, rs, cs))
 for n, d in kit['discos'].items(): print('disco %s: cuerpo %s, baja %s dp' % (n, d['cuerpo_dp'], d['presionada']['borde_baja_dp']))
 for n, d in kit['piezas'].items(): print('pieza %s: cuerpo %s, margenes %s' % (n, d['cuerpo_dp'], d['margenes_dp']))
-for n, d in kit['avatares'].items(): print('avatar %s: %s px' % (n, d['imagen_px']))
+for n, d in kit.get('avatares', {}).items(): print('avatar %s: %s px' % (n, d['imagen_px']))
 print('peso total de los WebP: %.1f KB (%d archivos)' % (total / 1024, len(os.listdir(dst)) - 1))

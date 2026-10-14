@@ -121,7 +121,6 @@ class ExampleRobolectricTest {
     val id1 = dao.insertOrUpdate(
       com.example.data.local.UserProfileEntity(
         name = "Ana",
-        avatar = "🧠",
         isActive = true,
         difficultyMode = "ADAPTIVE",
         difficultyMemoria = 2
@@ -132,7 +131,6 @@ class ExampleRobolectricTest {
     val id2 = dao.insertOrUpdate(
       com.example.data.local.UserProfileEntity(
         name = "Abuela Rosa",
-        avatar = "👵",
         isActive = false,
         difficultyMode = "PRINCIPIANTE",
         difficultyMemoria = 1,

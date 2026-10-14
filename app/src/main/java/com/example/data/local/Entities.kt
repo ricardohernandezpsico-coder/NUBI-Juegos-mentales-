@@ -107,8 +107,8 @@ data class ClaimedWeeklyChallengeEntity(
 data class UserProfileEntity(
   @PrimaryKey(autoGenerate = true) val id: Long = 0L,
   val name: String = "",
-  /** El id del avatar (`AvatarIds`); en datos viejos puede ser un emoji: se resuelve al leerlo, sin migrar la base. */
-  val avatar: String = com.example.data.AvatarIds.DEFAULT,
+  /** Ya no se muestra (Tarea 93: los avatares se quitaron); la columna se queda con lo que tenga guardado, sin migrar la base. */
+  val avatar: String = "",
   val isActive: Boolean = true,
   val weeklyGoal: Int = 4,
   val defaultTimed: Boolean = false,
@@ -135,7 +135,7 @@ data class UserProfileEntity(
 fun UserProfileEntity.toDomain(): UserSettings = UserSettings(
   id = id,
   name = name,
-  avatar = com.example.data.AvatarIds.resolve(avatar),
+  avatar = avatar,
   isActive = isActive,
   weeklyGoal = weeklyGoal,
   defaultTimed = defaultTimed,
