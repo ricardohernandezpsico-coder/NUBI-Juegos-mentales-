@@ -34,7 +34,20 @@ import com.example.model.AppLanguage
 import com.example.model.DifficultyMode
 import com.example.model.DomainType
 import com.example.model.UserSettings
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import com.example.ui.components.ClayChoice
+import com.example.ui.components.ClayChoiceRow
+import com.example.ui.components.ClayDialog
+import com.example.ui.components.ClayDisc
+import com.example.ui.components.ClayPanel
+import com.example.ui.components.DiscStyle
+import com.example.ui.components.Glyph
+import com.example.ui.components.KitGlyph
+import com.example.ui.components.PanelAccent
 import com.example.ui.i18n.strings
+import com.example.ui.theme.Clay
+import com.example.ui.theme.ClayButton
 import com.example.ui.theme.EmeraldAccent
 import com.example.ui.theme.TealPrimary
 import com.example.viewmodel.NeuroVidaViewModel
@@ -121,22 +134,15 @@ fun SettingsScreen(
     )
 
     // Language Selection Card (Internationalization)
-    Card(
-      modifier = Modifier.fillMaxWidth().testTag("card_language_selector"),
-      shape = RoundedCornerShape(22.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-      Column(
-        modifier = Modifier.padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-      ) {
+    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_language_selector"), verticalSpacing = 14.dp) {
+      run {
         Row(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.SpaceBetween,
           modifier = Modifier.fillMaxWidth()
         ) {
           Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Language, contentDescription = null, tint = TealPrimary)
+            Icon(Icons.Default.Language, contentDescription = null, tint = PanelAccent)
             Spacer(modifier = Modifier.width(10.dp))
             Column {
               Text(
@@ -153,14 +159,12 @@ fun SettingsScreen(
           }
         }
 
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        ClayChoiceRow {
           AppLanguage.entries.forEach { lang ->
             val isSelected = appLanguage == lang
-            FilterChip(
+            ClayChoice(
               selected = isSelected,
+              modifier = Modifier.testTag("chip_lang_${lang.code}"),
               onClick = {
                 appLanguage = lang
                 viewModel.updateSettings(
@@ -176,32 +180,23 @@ fun SettingsScreen(
                   language = lang
                 )
               },
-              label = {
-                Text(
-                  text = "${lang.flagEmoji} ${lang.displayName}",
-                  fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                )
-              },
-              colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = TealPrimary.copy(alpha = 0.15f),
-                selectedLabelColor = TealPrimary
-              ),
-              modifier = Modifier.testTag("chip_lang_${lang.code}")
-            )
+            ) {
+              Text(
+                text = "${lang.flagEmoji} ${lang.displayName}",
+                fontSize = 15.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+              )
+            }
           }
         }
       }
     }
 
     // 1. Tu perfil: el nombre y el avatar propios (8-oct: se quitó la gestión de varios perfiles; la tabla user_profile se queda, sin migración)
-    Card(
-      modifier = Modifier.fillMaxWidth(),
-      shape = RoundedCornerShape(22.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-      Column(modifier = Modifier.padding(20.dp)) {
+    ClayPanel(modifier = Modifier.fillMaxWidth()) {
+      run {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Icon(Icons.Default.Person, contentDescription = null, tint = TealPrimary)
+          Icon(Icons.Default.Person, contentDescription = null, tint = PanelAccent)
           Spacer(modifier = Modifier.width(8.dp))
           Text(
             text = "Tu perfil",
@@ -221,20 +216,15 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(6.dp))
 
         val avatarChoices = listOf("🧠", "👵", "👴", "🌟", "🎯", "🦉", "🌿", "💡", "⚡")
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Cada avatar es un disco de plasticina: el elegido va en celeste con su ✓ en la esquina (y quieto); los demás, en crema.
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
           items(avatarChoices) { av ->
             val isChosen = selectedAvatar == av
-            Surface(
-              shape = CircleShape,
-              color = if (isChosen) TealPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-              border = if (isChosen) BorderStroke(2.dp, TealPrimary) else BorderStroke(1.dp, Color.Transparent),
-              modifier = Modifier
-                .size(42.dp)
-                .clickable { selectedAvatar = av }
-            ) {
-              Box(contentAlignment = Alignment.Center) {
-                Text(text = av, fontSize = 20.sp)
+            Box(Modifier.semantics { selected = isChosen }) {
+              ClayDisc(if (isChosen) DiscStyle.SKY else DiscStyle.CREAM, { selectedAvatar = av }, "Avatar $av") {
+                Text(text = av, fontSize = 22.sp)
               }
+              if (isChosen) KitGlyph(Glyph.CHECK, Modifier.align(Alignment.BottomEnd).offset(x = 2.dp, y = 2.dp), size = 22.dp)
             }
           }
         }
@@ -251,14 +241,16 @@ fun SettingsScreen(
             .testTag("input_user_name"),
           shape = RoundedCornerShape(14.dp),
           colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = TealPrimary,
-            focusedLabelColor = TealPrimary
+            focusedBorderColor = PanelAccent,
+            focusedLabelColor = PanelAccent,
+            unfocusedBorderColor = Clay.InkMuted
           )
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Button(
+        ClayButton(
+          text = "Guardar", wide = false, glyph = Glyph.CHECK,
           onClick = {
             viewModel.updateSettings(
               name = nameInput.trim().ifEmpty { "Usuario" },
@@ -274,26 +266,16 @@ fun SettingsScreen(
             )
             Toast.makeText(context, "Perfil guardado", Toast.LENGTH_SHORT).show()
           },
-          shape = RoundedCornerShape(12.dp),
-          colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
           modifier = Modifier
             .align(Alignment.End)
             .testTag("btn_save_name")
-        ) {
-          Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-          Spacer(modifier = Modifier.width(6.dp))
-          Text("Guardar")
-        }
+        )
       }
     }
 
     // 2. Meta semanal de juego
-    Card(
-      modifier = Modifier.fillMaxWidth(),
-      shape = RoundedCornerShape(22.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-      Column(modifier = Modifier.padding(20.dp)) {
+    ClayPanel(modifier = Modifier.fillMaxWidth()) {
+      run {
         Text(
           text = "Meta semanal de juego",
           style = MaterialTheme.typography.titleMedium,
@@ -303,7 +285,7 @@ fun SettingsScreen(
           text = "$weeklyGoal días por semana",
           style = MaterialTheme.typography.bodyLarge,
           fontWeight = FontWeight.Black,
-          color = TealPrimary,
+          color = PanelAccent,
           modifier = Modifier.padding(top = 4.dp)
         )
 
@@ -329,8 +311,11 @@ fun SettingsScreen(
           valueRange = 1f..7f,
           steps = 5,
           colors = SliderDefaults.colors(
-            thumbColor = TealPrimary,
-            activeTrackColor = TealPrimary
+            thumbColor = PanelAccent,
+            activeTrackColor = PanelAccent,
+            inactiveTrackColor = Clay.Ink.copy(alpha = 0.18f),
+            activeTickColor = Color.White,
+            inactiveTickColor = Clay.InkMuted
           ),
           modifier = Modifier.testTag("slider_weekly_goal")
         )
@@ -342,15 +327,8 @@ fun SettingsScreen(
     // (Suave / A tu medida / Desafío / Experto): ver docs/dificultad-y-avance.md.
 
     // Game Mode & Audio/Haptic Switches
-    Card(
-      modifier = Modifier.fillMaxWidth(),
-      shape = RoundedCornerShape(22.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-      Column(
-        modifier = Modifier.padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-      ) {
+    ClayPanel(modifier = Modifier.fillMaxWidth(), verticalSpacing = 16.dp) {
+      run {
         Text(
           text = "Experiencia de Juego",
           style = MaterialTheme.typography.titleMedium,
@@ -376,21 +354,16 @@ fun SettingsScreen(
               fontWeight = FontWeight.SemiBold
             )
           }
-          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          ClayChoiceRow {
             AgeBand.entries.forEach { band ->
-              FilterChip(
+              ClayChoice(
                 selected = ageBand == band,
                 onClick = {
                   ageBand = band
                   viewModel.setAgeBand(band)
                 },
-                label = { Text(text = band.label) },
-                colors = FilterChipDefaults.filterChipColors(
-                  selectedContainerColor = TealPrimary.copy(alpha = 0.15f),
-                  selectedLabelColor = TealPrimary
-                ),
                 modifier = Modifier.testTag("chip_age_band_${band.name.lowercase()}")
-              )
+              ) { Text(text = band.label, fontSize = 15.sp, fontWeight = if (ageBand == band) FontWeight.Bold else FontWeight.Medium) }
             }
           }
           Text(
@@ -407,16 +380,11 @@ fun SettingsScreen(
           Text(text = "¿Te cuesta distinguir algunos colores?", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             com.example.data.ColorVision.entries.forEach { vision ->
-              FilterChip(
+              ClayChoice(
                 selected = colorVision == vision,
                 onClick = { viewModel.setColorVision(vision) },
-                label = { Text(text = vision.label) },
-                colors = FilterChipDefaults.filterChipColors(
-                  selectedContainerColor = TealPrimary.copy(alpha = 0.15f),
-                  selectedLabelColor = TealPrimary
-                ),
-                modifier = Modifier.testTag("chip_color_vision_${vision.name.lowercase()}")
-              )
+                modifier = Modifier.fillMaxWidth().testTag("chip_color_vision_${vision.name.lowercase()}")
+              ) { Text(text = vision.label, fontSize = 15.sp, fontWeight = if (colorVision == vision) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f)) }
             }
           }
           Text(
@@ -458,7 +426,7 @@ fun SettingsScreen(
                 reminderMinute = reminderMinute
               )
             },
-            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = TealPrimary),
+            colors = creamSwitchColors(),
             modifier = Modifier.testTag("switch_sound")
           )
         }
@@ -495,7 +463,7 @@ fun SettingsScreen(
                 reminderMinute = reminderMinute
               )
             },
-            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = TealPrimary),
+            colors = creamSwitchColors(),
             modifier = Modifier.testTag("switch_haptics")
           )
         }
@@ -503,24 +471,15 @@ fun SettingsScreen(
     }
 
     // Programmed Notifications Card (WorkManager)
-    Card(
-      modifier = Modifier
-        .fillMaxWidth()
-        .testTag("card_notifications_workmanager"),
-      shape = RoundedCornerShape(22.dp),
-      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-      Column(
-        modifier = Modifier.padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-      ) {
+    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_notifications_workmanager"), verticalSpacing = 16.dp) {
+      run {
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {
           Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = TealPrimary)
+            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = PanelAccent)
             Spacer(modifier = Modifier.width(8.dp))
             Column {
               Text(
@@ -531,7 +490,7 @@ fun SettingsScreen(
               Text(
                 text = "Un aviso al día",
                 style = MaterialTheme.typography.labelSmall,
-                color = TealPrimary
+                color = PanelAccent
               )
             }
           }
@@ -571,7 +530,7 @@ fun SettingsScreen(
                 Toast.makeText(context, "Recordatorio desactivado", Toast.LENGTH_SHORT).show()
               }
             },
-            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = TealPrimary),
+            colors = creamSwitchColors(),
             modifier = Modifier.testTag("switch_notifications_enabled")
           )
         }
@@ -592,10 +551,8 @@ fun SettingsScreen(
             fontWeight = FontWeight.SemiBold
           )
 
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-          ) {
+          // Las cuatro horas en una cuadrícula de 2 × 2: la elegida en lima, con su ✓ y quieta.
+          Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             val times = listOf(
               Triple("Mañana", 9, 0),
               Triple("Tarde", 15, 0),
@@ -603,9 +560,11 @@ fun SettingsScreen(
               Triple("21:00", 21, 0)
             )
 
-            times.forEach { (label, h, m) ->
+            times.chunked(2).forEach { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { pair.forEach { (label, h, m) ->
               val isSelected = reminderHour == h && reminderMinute == m
-              OutlinedButton(
+              ClayChoice(
+                selected = isSelected,
+                modifier = Modifier.weight(1f).testTag("btn_time_${label.lowercase()}"),
                 onClick = {
                   reminderHour = h
                   reminderMinute = m
@@ -620,72 +579,42 @@ fun SettingsScreen(
                     reminderMinute = m
                   )
                   Toast.makeText(context, "Recordatorio fijado a las %02d:%02d".format(h, m), Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.weight(1f).testTag("btn_time_${label.lowercase()}"),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                  containerColor = if (isSelected) TealPrimary.copy(alpha = 0.15f) else Color.Transparent
-                ),
-                border = androidx.compose.foundation.BorderStroke(
-                  width = if (isSelected) 2.dp else 1.dp,
-                  color = if (isSelected) TealPrimary else MaterialTheme.colorScheme.outlineVariant
-                ),
-                contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
+                }
               ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                  Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) TealPrimary else MaterialTheme.colorScheme.onSurface
-                  )
-                  Text(
-                    text = "%02d:%02d".format(h, m),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) TealPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                  )
+                Column(Modifier.weight(1f)) {
+                  Text(text = label, fontSize = 15.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
+                  Text(text = "%02d:%02d".format(h, m), fontSize = 14.sp, color = Clay.InkMuted)
                 }
               }
-            }
+            } } }
           }
 
           // Test notification button
-          OutlinedButton(
+          ClayButton(
+            text = "Probar el aviso ahora", color = Clay.Cream,
             onClick = {
               viewModel.triggerTestNotification()
               Toast.makeText(context, "Aviso de prueba enviado", Toast.LENGTH_SHORT).show()
             },
-            modifier = Modifier
-              .fillMaxWidth()
-              .testTag("btn_test_notification"),
-            shape = RoundedCornerShape(12.dp)
-          ) {
-            Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Probar el aviso ahora")
-          }
+            modifier = Modifier.testTag("btn_test_notification")
+          )
         }
       }
     }
 
     // Privacy Card
-    Surface(
-      shape = RoundedCornerShape(18.dp),
-      color = TealPrimary.copy(alpha = 0.08f),
-      modifier = Modifier.fillMaxWidth()
-    ) {
+    ClayPanel(modifier = Modifier.fillMaxWidth(), padding = 16.dp) {
       Row(
-        modifier = Modifier.padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Icon(Icons.Default.Security, contentDescription = null, tint = TealPrimary)
+        Icon(Icons.Default.Security, contentDescription = null, tint = PanelAccent)
         Spacer(modifier = Modifier.width(12.dp))
         Column {
           Text(
             text = "Tu progreso es tuyo",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = TealPrimary
+            color = PanelAccent
           )
           Text(
             text = "Sin cuenta, sin internet y sin anuncios. Tu progreso se guarda en tu teléfono y en la copia de seguridad de Android, si la tienes activada.",
@@ -697,13 +626,8 @@ fun SettingsScreen(
     }
 
     // Medical Disclaimer
-    Surface(
-      shape = RoundedCornerShape(18.dp),
-      color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-      modifier = Modifier.fillMaxWidth()
-    ) {
+    ClayPanel(modifier = Modifier.fillMaxWidth(), padding = 16.dp) {
       Row(
-        modifier = Modifier.padding(16.dp),
         verticalAlignment = Alignment.Top
       ) {
         Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -725,7 +649,8 @@ fun SettingsScreen(
 
     // Informe de errores, sin servidores ni cuentas: la persona lo comparte con quien le dio la app (ver diag/ErrorLog).
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-      OutlinedButton(
+      ClayButton(
+        text = "Enviar informe de errores", color = Clay.Cream,
         onClick = {
           val send = android.content.Intent(android.content.Intent.ACTION_SEND)
             .setType("text/plain")
@@ -735,13 +660,8 @@ fun SettingsScreen(
             android.content.Intent.createChooser(send, "Enviar informe").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
           )
         },
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("btn_send_error_report")
-      ) {
-        Text("Enviar informe de errores")
-      }
+        modifier = Modifier.testTag("btn_send_error_report")
+      )
       Text(
         text = "Si algo falla, comparte este informe con quien te dio la app. No incluye tu nombre; si una partida no se pudo guardar, incluye los datos de esa partida para encontrar el error.",
         style = MaterialTheme.typography.bodyMedium,
@@ -750,54 +670,37 @@ fun SettingsScreen(
     }
     Spacer(modifier = Modifier.height(12.dp))
 
-    OutlinedButton(
-      onClick = onOpenLicenses,
-      shape = RoundedCornerShape(14.dp),
-      modifier = Modifier
-        .fillMaxWidth()
-        .testTag("btn_licenses")
-    ) {
-      Text("Licencias y créditos")
-    }
+    ClayButton(text = "Licencias y créditos", onClick = onOpenLicenses, color = Clay.Cream, modifier = Modifier.testTag("btn_licenses"))
     Spacer(modifier = Modifier.height(12.dp))
 
     // Reset Data button
-    OutlinedButton(
-      onClick = { showResetDialog = true },
-      colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-      shape = RoundedCornerShape(14.dp),
-      modifier = Modifier
-        .fillMaxWidth()
-        .testTag("btn_reset_data")
-    ) {
-      Text("Restablecer datos y puntuaciones")
-    }
+    // Borra datos: va en coral (y su texto lo dice), no solo por el color.
+    ClayButton(text = "Restablecer datos y puntuaciones", onClick = { showResetDialog = true }, color = Clay.Coral, modifier = Modifier.testTag("btn_reset_data"))
 
     Spacer(modifier = Modifier.height(90.dp))
   }
 
   if (showResetDialog) {
-    AlertDialog(
-      onDismissRequest = { showResetDialog = false },
-      title = { Text("¿Restablecer datos?") },
-      text = { Text("Esta acción borrará el historial de partidas y niveles guardados en este dispositivo.") },
-      confirmButton = {
-        TextButton(
-          onClick = {
-            viewModel.resetData()
-            showResetDialog = false
-          }
-        ) {
-          Text("Restablecer", color = MaterialTheme.colorScheme.error)
-        }
+    ClayDialog(
+      title = "¿Restablecer datos?",
+      text = "Esta acción borrará el historial de partidas y niveles guardados en este dispositivo.",
+      confirmText = "Restablecer",
+      onConfirm = {
+        viewModel.resetData()
+        showResetDialog = false
       },
-      dismissButton = {
-        TextButton(onClick = { showResetDialog = false }) {
-          Text("Cancelar")
-        }
-      }
+      dismissText = "Cancelar",
+      onDismiss = { showResetDialog = false },
+      confirmColor = Clay.Coral
     )
   }
 
 
 }
+
+/** Los colores del interruptor sobre una losa crema: encendido en azul oscuro con la perilla blanca; apagado en tinta suave con borde (se distingue por la posición de la perilla, no solo por el color). */
+@Composable
+private fun creamSwitchColors() = SwitchDefaults.colors(
+  checkedThumbColor = Color.White, checkedTrackColor = PanelAccent, checkedBorderColor = PanelAccent,
+  uncheckedThumbColor = Clay.InkMuted, uncheckedTrackColor = Clay.Ink.copy(alpha = 0.08f), uncheckedBorderColor = Clay.InkMuted
+)
