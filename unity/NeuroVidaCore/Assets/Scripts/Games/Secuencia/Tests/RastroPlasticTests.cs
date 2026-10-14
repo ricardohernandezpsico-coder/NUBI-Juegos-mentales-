@@ -6,7 +6,7 @@ using NeuroVida.Games.Shared;
 namespace NeuroVida.Games.Secuencia.Tests
 {
     /// <summary>
-    /// Rastro de luz en plasticina (Tarea 99): el arte de Blender cumple lo que prometió. Los 9 luceros ocupan el lugar y el tamaño de los de hoy, son IDÉNTICOS entre sí (la identidad de un lucero es su posición, su color y su nota), conservan su color de diseño y los pares cercanos
+    /// Rastro de luz en plasticina (Tarea 99; el estado presionado de cada lucero, regla del 14-oct): el arte de Blender cumple lo que prometió. Los 9 luceros ocupan el lugar y el tamaño de los de hoy, son IDÉNTICOS entre sí (la identidad de un lucero es su posición, su color y su nota), conservan su color de diseño y los pares cercanos
     /// (7FD8FF / A9C7FF, FFC94A / FFE27A, 9FF5D6 / 8EE07A) se siguen distinguiendo, son redondos (sin puntas ni símbolos), contrastan con el cielo, y sin el atlas todo sigue funcionando con el arte de siempre. Las medidas con números (para el informe) las saca <c>tools/juegos/mide_rastro.py</c>.
     /// </summary>
     public sealed class RastroPlasticTests
@@ -28,12 +28,14 @@ namespace NeuroVida.Games.Secuencia.Tests
             return tex;
         }
 
-        private static Color32[] Pixels(Texture2D atlas, int orb)
+        private static Color32[] Pixels(Texture2D atlas, int orb) => PixelsOf(atlas, "lucero_" + orb);
+
+        private static Color32[] PixelsOf(Texture2D atlas, string name)
         {
-            var e = PlasticArt.Group(RastroSprites.PlasticGroup).Entry("lucero_" + orb);
-            Assert.IsNotNull(e, "falta el lucero " + orb + " en el atlas de Rastro de luz");
-            Assert.AreEqual(Px, e.w, "lucero " + orb + ": ancho");
-            Assert.AreEqual(Px, e.h, "lucero " + orb + ": el lienzo es cuadrado, como el del procedural");
+            var e = PlasticArt.Group(RastroSprites.PlasticGroup).Entry(name);
+            Assert.IsNotNull(e, "falta «" + name + "» en el atlas de Rastro de luz");
+            Assert.AreEqual(Px, e.w, name + ": ancho");
+            Assert.AreEqual(Px, e.h, name + ": el lienzo es cuadrado, como el del procedural");
             var colors = atlas.GetPixels(e.x, e.y, e.w, e.h);
             var result = new Color32[colors.Length];
             for (int i = 0; i < colors.Length; i++) result[i] = colors[i];
@@ -172,6 +174,125 @@ namespace NeuroVida.Games.Secuencia.Tests
             finally { Object.DestroyImmediate(atlas); }
         }
 
+        private static void Box(Color32[] px, out int minX, out int maxX, out int minY, out int maxY)
+        {
+            minX = Px; maxX = 0; minY = Px; maxY = 0;
+            for (int y = 0; y < Px; y++)
+                for (int x = 0; x < Px; x++)
+                    if (px[y * Px + x].a >= 250) { minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x); minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y); }
+        }
+
+        /// <summary>El detalle fino de la cara (la desviación de la luminosidad menos su desenfoque de 7 px): lo que suma la huella, sin el degradé de la luz.</summary>
+        private static float FineDetail(Color32[] px)
+        {
+            var lum = new float[Px * Px];
+            for (int i = 0; i < lum.Length; i++) lum[i] = Luminance(px[i]) * 255f;
+            var tmp = new float[Px * Px]; var blur = new float[Px * Px];
+            const int r = 3;
+            for (int y = 0; y < Px; y++)
+                for (int x = 0; x < Px; x++) { float a = 0; for (int k = -r; k <= r; k++) a += lum[y * Px + Mathf.Clamp(x + k, 0, Px - 1)]; tmp[y * Px + x] = a / (2 * r + 1); }
+            for (int y = 0; y < Px; y++)
+                for (int x = 0; x < Px; x++) { float a = 0; for (int k = -r; k <= r; k++) a += tmp[Mathf.Clamp(y + k, 0, Px - 1) * Px + x]; blur[y * Px + x] = a / (2 * r + 1); }
+            double sum = 0, sum2 = 0; int n = 0;
+            float cy = Px / 2f + 0.05f * Px / 2f;
+            for (int y = 0; y < Px; y++)
+                for (int x = 0; x < Px; x++)
+                {
+                    if (px[y * Px + x].a < 250 || Mathf.Sqrt((x - Px / 2f) * (x - Px / 2f) + (y - cy) * (y - cy)) > 0.5f * Px / 2f) continue;
+                    float d = lum[y * Px + x] - blur[y * Px + x]; sum += d; sum2 += d * d; n++;
+                }
+            Assert.Greater(n, 3000, "la cara del lucero");
+            return Mathf.Sqrt((float)(sum2 / n - (sum / n) * (sum / n)));
+        }
+
+        [Test]
+        public void ThePressedOrbs_AreSquashed_Darker_WithAFingerprint_AndKeepTheColorRules()
+        {
+            // regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, aplastado y con huella. El color es la identidad: la regla de ΔE sigue valiendo en los dos estados.
+            Assert.IsTrue(RastroSprites.HasPressed, "faltan los luceros presionados en el atlas");
+            var atlas = ReadAtlas();
+            try
+            {
+                var faces = new Color32[RastroBoard.Orbs];
+                for (int i = 0; i < RastroBoard.Orbs; i++)
+                {
+                    var normal = Pixels(atlas, i); var pressed = PixelsOf(atlas, "lucero_p_" + i);
+                    Box(normal, out int nMinX, out int nMaxX, out int nMinY, out int nMaxY);
+                    Box(pressed, out int pMinX, out int pMaxX, out int pMinY, out int pMaxY);
+                    float nW = nMaxX - nMinX + 1, pW = pMaxX - pMinX + 1, nH = nMaxY - nMinY + 1, pH = pMaxY - pMinY + 1;
+                    Assert.That(pW / nW, Is.InRange(1.01f, 1.08f), "lucero " + i + ": el presionado es más ancho que el normal (" + pW + " contra " + nW + " px)");
+                    Assert.LessOrEqual(pH, nH + 3f, "lucero " + i + ": el presionado no es más alto");
+                    Assert.Less(pH / pW, 1f, "lucero " + i + ": aplastado (más ancho que alto)");
+                    float drop = (nMinY + nMaxY) / 2f - (pMinY + pMaxY) / 2f;
+                    Assert.LessOrEqual(Mathf.Abs(drop), 2.5f, "lucero " + i + ": al cambiar de imagen el lucero «salta» " + drop.ToString("0.0") + " px (el lienzo va centrado en la esfera aplastada)");
+                    Assert.Greater(Mathf.Min(pMinX, pMinY, Px - 1 - pMaxX, Px - 1 - pMaxY), 0, "lucero " + i + ": el presionado se pega al borde del lienzo");
+                    faces[i] = FaceColor(pressed);
+                    var faceNormal = FaceColor(normal);
+                    Assert.Less(Luminance(faces[i]), Luminance(faceNormal), "lucero " + i + ": el presionado es un punto más oscuro");
+                    Assert.That(DeltaE(faces[i], faceNormal), Is.InRange(1.5f, 8f), "lucero " + i + ": el presionado se aleja demasiado del normal (o no se nota)");
+                    Assert.Less(DeltaE(faces[i], Design(i)), 14f, "lucero " + i + ": el presionado se aleja del color de diseño");
+                    Assert.GreaterOrEqual(Contrast(Luminance(faces[i]), Luminance(Sky)), 4.5f, "lucero " + i + ": el presionado contra el cielo");
+                    float fineN = FineDetail(normal), fineP = FineDetail(pressed);
+                    Assert.GreaterOrEqual(fineP, 2f, "lucero " + i + ": la huella se tiene que ver");
+                    Assert.GreaterOrEqual(fineP, 3f * fineN, "lucero " + i + ": el presionado trae la huella (" + fineP.ToString("0.0") + " contra " + fineN.ToString("0.0") + " del normal)");
+                }
+                for (int i = 0; i < RastroBoard.Orbs; i++)
+                    for (int j = i + 1; j < RastroBoard.Orbs; j++)
+                    {
+                        float design = DeltaE(Design(i), Design(j));
+                        if (design > 40f) continue;
+                        float plastic = DeltaE(faces[i], faces[j]);
+                        Assert.GreaterOrEqual(plastic, 12f, "presionados " + i + " y " + j + ": se parecen demasiado (ΔE " + plastic.ToString("0.0") + ")");
+                        Assert.GreaterOrEqual(plastic, design * 0.75f, "presionados " + i + " y " + j + ": la plasticina los acerca (ΔE " + plastic.ToString("0.0") + " contra " + design.ToString("0.0") + " de diseño)");
+                    }
+            }
+            finally { Object.DestroyImmediate(atlas); }
+        }
+
+        private static object GetField(object target, string name) =>
+            target.GetType().GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).GetValue(target);
+
+        private static void SetField(object target, string name, object value) =>
+            target.GetType().GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).SetValue(target, value);
+
+        [Test]
+        public void AnOrb_ShowsItsPressedImage_WhileTheFingerIsOnIt_AndGoesBackWhenItLetsGo()
+        {
+            foreach (bool disabled in new[] { false, true })
+            {
+                PlasticArt.Disabled = disabled;
+                bool reduce = GameFeel.ReduceMotion;
+                var go = new GameObject("RastroPressedAudit");
+                try
+                {
+                    var controller = go.AddComponent<RastroGameController>();
+                    typeof(RastroGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(controller, null);
+                    var place = typeof(RastroGameController).GetMethod("PlaceOrbs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    var orbs = (System.Array)GetField(controller, "_orbs");
+                    Sprite BodyOf(int i) => ((UnityEngine.UI.Image)GetField(orbs.GetValue(i), "Body")).sprite;
+
+                    SetField(controller, "_pressedOrb", 2);                       // el dedo está sobre el lucero 2
+                    place.Invoke(controller, new object[] { 0.016f });
+                    for (int i = 0; i < RastroBoard.Orbs; i++)
+                        Assert.AreEqual(i == 2 && !disabled ? RastroSprites.OrbPressed(2) : RastroSprites.Orb(i), BodyOf(i),
+                            (disabled ? "sin plasticina" : "con plasticina") + ": el lucero " + i + (i == 2 ? " con el dedo encima" : " sin tocar"));
+                    if (!disabled) Assert.IsNotNull(RastroSprites.OrbPressed(2));
+
+                    GameFeel.ReduceMotion = true;                                  // «quitar animaciones»: solo cambia la imagen, sin rebote
+                    place.Invoke(controller, new object[] { 0.016f });
+                    var body = ((UnityEngine.UI.Image)GetField(orbs.GetValue(2), "Body")).rectTransform;
+                    Assert.AreEqual(Vector3.one, body.localScale, "con «quitar animaciones» el lucero no cambia de escala");
+                    GameFeel.ReduceMotion = reduce;
+
+                    SetField(controller, "_pressedOrb", -1);                       // el dedo se levantó: pasados los 80 ms vuelve a la imagen de siempre
+                    SetField(orbs.GetValue(2), "PressUntil", -1f);
+                    place.Invoke(controller, new object[] { 0.016f });
+                    Assert.AreEqual(RastroSprites.Orb(2), BodyOf(2), "al soltar vuelve el lucero de siempre");
+                }
+                finally { GameFeel.ReduceMotion = reduce; Object.DestroyImmediate(go); }
+            }
+        }
+
         [Test]
         public void TheSlabsOfThePillsAndTheFinalPanel_Exist()
         {
@@ -184,7 +305,8 @@ namespace NeuroVida.Games.Secuencia.Tests
         {
             PlasticArt.Disabled = true;
             Assert.IsFalse(RastroSprites.Plastic);
-            for (int i = 0; i < RastroBoard.Orbs; i++) Assert.IsNotNull(RastroSprites.Orb(i), "lucero " + i);
+            Assert.IsFalse(RastroSprites.HasPressed);
+            for (int i = 0; i < RastroBoard.Orbs; i++) { Assert.IsNotNull(RastroSprites.Orb(i), "lucero " + i); Assert.IsNull(RastroSprites.OrbPressed(i), "sin plasticina no hay lucero presionado: el juego deja el de siempre"); }
             Assert.IsNotNull(RastroSprites.XMark());
             Assert.IsNotNull(RastroSprites.DashedRing());
         }

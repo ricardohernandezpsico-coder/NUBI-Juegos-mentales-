@@ -100,6 +100,8 @@ namespace NeuroVida.Games.Secuencia
             public Image Halo, Body, Aro, Hint, X;
             public float HitAt = -10f;
             public float Phase;
+            public float PressUntil = -10f, UpAt = -10f;           // el estado presionado (dedo sobre el lucero): hasta cuándo se muestra y cuándo se soltó
+            public bool Down;
         }
 
         private struct Pt { public Vector2 Pos; public float T; }
@@ -125,6 +127,9 @@ namespace NeuroVida.Games.Secuencia
             public PointerEvent(Vector2 l) { Logical = l; }
         }
         private readonly Queue<PointerEvent> _events = new Queue<PointerEvent>();
+        private int _pressedOrb = -1;                                   // el lucero que tiene el dedo encima ahora (solo mientras se repite la secuencia); -1 = ninguno
+        private const float PressMinSeconds = 0.08f;                    // un toque rápido también se ve presionado
+        private const float PressBounceSeconds = 0.22f;                 // el rebote chico al soltar
 
         private sealed class InputResult
         {
@@ -672,6 +677,7 @@ namespace NeuroVida.Games.Secuencia
 
         private void ReadPointer()
         {
+            _pressedOrb = -1;
             bool down, held;
             Vector2 pos;
             if (Input.touchCount > 0)
@@ -692,7 +698,9 @@ namespace NeuroVida.Games.Secuencia
             if (_tutorial != null && _tutorial.Coach.Blocks(pos)) return;          // el foco de Nubi: solo vale el toque dentro del hueco
             if (_phase != Phase.Input) return;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, pos, null, out var local)) return;
-            _events.Enqueue(new PointerEvent(PlayToLogical(local)));
+            var logical = PlayToLogical(local);
+            _events.Enqueue(new PointerEvent(logical));
+            if (held) _pressedOrb = RastroBoard.OrbAt(logical, _angle, _senior ? RastroBoard.HitRadiusSenior : RastroBoard.HitRadius);
         }
 
         private void UpdateTimer()
@@ -723,7 +731,14 @@ namespace NeuroVida.Games.Secuencia
                 float haloD = diameter * 1.9f * breathe + 28f * f * (Motion.Decorative ? 1f : 0f);
                 o.Halo.rectTransform.sizeDelta = new Vector2(haloD * _s, haloD * _s);
                 o.Halo.color = NeuroStyle.WithAlpha(OrbColor(i), 0.35f + 0.65f * f);
-                o.Body.rectTransform.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.12f * f : 1f);
+                UpdatePressed(o, i, now);
+                float bounce = 0f;
+                if (Motion.Decorative && RastroSprites.HasPressed && !o.Down && now - o.UpAt < PressBounceSeconds)
+                {
+                    float u = (now - o.UpAt) / PressBounceSeconds;                       // un resorte que se amortigua: sube un poco y se asienta
+                    bounce = 0.07f * Mathf.Sin(u * Mathf.PI * 2f) * (1f - u);
+                }
+                o.Body.rectTransform.localScale = Vector3.one * (Motion.Decorative ? 1f + 0.12f * f + bounce : 1f);
                 if (o.Aro.gameObject.activeSelf)
                 {
                     float pulse = Motion.Decorative ? 1f + 0.06f * Mathf.Sin(now * 8f) : 1f;
@@ -734,6 +749,21 @@ namespace NeuroVida.Games.Secuencia
                 if (hint) o.Hint.rectTransform.localEulerAngles = new Vector3(0f, 0f, Motion.Decorative ? -now * 25f : 0f);
             }
             _disc.rectTransform.localEulerAngles = new Vector3(0f, 0f, -_angle);
+        }
+
+        /// <summary>
+        /// El estado presionado de un lucero (regla del 14-oct: todo objeto de plasticina que se toca tiene su imagen presionada, aplastada y con huella): mientras el dedo está encima (y 80 ms más, para que un toque rápido también se vea)
+        /// el lucero muestra su imagen presionada; al soltar vuelve a la de siempre. Solo para el toque de la persona: cuando el juego enciende un lucero en la secuencia no pasa por aquí. Sin plasticina no hace nada.
+        /// </summary>
+        private void UpdatePressed(OrbView o, int i, float now)
+        {
+            if (!RastroSprites.HasPressed) return;
+            if (i == _pressedOrb) o.PressUntil = now + PressMinSeconds;
+            bool show = now < o.PressUntil;
+            if (show == o.Down) return;
+            o.Down = show;
+            if (!show) o.UpAt = now;
+            o.Body.sprite = (show ? RastroSprites.OrbPressed(i) : null) ?? RastroSprites.Orb(i);
         }
 
         private void UpdateFx(float dt)

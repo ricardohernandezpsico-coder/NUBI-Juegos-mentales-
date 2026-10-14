@@ -22,7 +22,7 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `calculo.py` | Carga exacta: el aro del reactor (dona de azul noche) y su núcleo (domo de plasticina gris claro que el código tiñe). 1 unidad de Blender = 84 dp (la escena del estudio no admite objetos de cientos de unidades: la cámara los cortaba). |
 | `disparate.py` | ¿Verdad o disparate?: la antena parabólica (lienzo ±1,2: de ahí salen los puntos `AntennaTip`/`AntennaDish`/`AntennaFloor`; el plato es una malla de revolución inclinada), los íconos ✓ y onda cortada en dos tramos (churros de tinta) y las barras del medidor (UNA por estado, nine-slice vertical). |
 | `satelites.py` | Satélites: el satélite (uno solo), el planeta (una esfera: su silueta es un círculo desde cualquier ángulo, así que NO va dentro de la raíz estirada), el sobre y la nube de polvo (cinco domos achatados). |
-| `rastro.py` | Rastro de luz: los 9 luceros (esferas idénticas, del color de `RastroBoard.Colors`, sin sombra de contacto: flotan). |
+| `rastro.py` | Rastro de luz: los 9 luceros (esferas idénticas, del color de `RastroBoard.Colors`, sin sombra de contacto: flotan) y sus 9 estados presionados (`lucero_p_i`: la esfera aplastada, un punto más oscura y con una huella de dedo hundida: malla fina con los vértices desplazados). |
 | `stroop.py` | Tinta o Palabra: las 15 losas con el color EXACTO de las 4 tintas, la tarjeta, la cinta y las orillas (con el color de Blender corregido por lo que la luz le hace al tono) y los íconos de la gota y el libro. |
 | `punta.py` | En la punta de la lengua: la ficha-letra y la perla del lucero (grises claros, el código las tiñe) y la casilla (cuenco oscuro con aro celeste). |
 | `comun.py` | Lo común que NO sale del kit: las casillas «noche» (normal, presionada, acierto, error, apagada), las marcas ✓ y ✗ y el anillo de la cuenta regresiva. También re-renderiza una losa crema de CONTROL para comprobar que este pipeline da el mismo kit que la app. |
@@ -32,7 +32,7 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `mide_calculo.py` | El reactor de Carga exacta: tamaño y centro, el núcleo claro y el número que rinde sobre sus dos tintes, contraste de las losas de las celdas. |
 | `mide_disparate.py` | La antena (inclinación del plato, dónde cae la luz de la punta y el centro del plato, tono contra tono), los íconos contra los botones lima y coral (la onda cortada a 24, 28 y 32 dp) y las barras del medidor. |
 | `mide_satelites.py` | Satélites: huella, el satélite sin nada vertical, el planeta oscuro (y cuánto resaltan las luces doradas) y la nube opaca. |
-| `mide_rastro.py` | Los 9 luceros: huella, fidelidad del color de diseño (ΔE CIELAB), que los pares cercanos se sigan distinguiendo y contraste contra el cielo. |
+| `mide_rastro.py` | Los 9 luceros: huella, fidelidad del color de diseño (ΔE CIELAB), que los pares cercanos se sigan distinguiendo y contraste contra el cielo; y sus estados presionados (tamaño, color en las mismas reglas de ΔE, cuánto se ve la huella). |
 | `mide_stroop.py` | Tinta o Palabra: fidelidad del color de cada tinta (ΔE), separación con daltonismo (CIEDE2000), el nombre sobre cada botón y las 4 tintas sobre el fondo de la tarjeta. |
 | `mide_punta.py` | La ficha, la casilla y la perla: tamaño del cuerpo, la letra de tinta sobre cada estado teñido y que los cuatro metales se sigan distinguiendo. |
 | `mide_freno.py` | Botón, cohetes, plataforma y ALTO: huella contra el procedural, contraste contra el suelo de la luna y el cielo, flecha contra botón. |
@@ -49,7 +49,7 @@ $BLENDER -b -P tools/juegos/freno.py -- --samples 112 --out tools/juegos/out/fre
 $BLENDER -b -P tools/juegos/calculo.py -- --samples 112 --out tools/juegos/out/calculo      # ~6 min (el núcleo, el lienzo grande, tarda ~4)
 $BLENDER -b -P tools/juegos/disparate.py -- --samples 112 --out tools/juegos/out/disparate  # ~5 min
 $BLENDER -b -P tools/juegos/satelites.py -- --samples 112 --out tools/juegos/out/satelites  # ~5 min
-$BLENDER -b -P tools/juegos/rastro.py -- --samples 112 --out tools/juegos/out/rastro        # ~8 min (9 esferas a 384 px)
+$BLENDER -b -P tools/juegos/rastro.py -- --samples 112 --out tools/juegos/out/rastro        # ~15 min (9 esferas y 9 presionadas a 384 px; --solo p renderiza solo las presionadas)
 $BLENDER -b -P tools/juegos/stroop.py -- --samples 112 --out tools/juegos/out/stroop        # ~6 min (15 losas y 2 íconos)
 $BLENDER -b -P tools/juegos/punta.py -- --samples 112 --out tools/juegos/out/punta          # ~2 min (ficha, casilla y perla)
 $BLENDER -b -P tools/juegos/comun.py -- --samples 112 --out tools/juegos/out/comun        # ~5 min
@@ -96,7 +96,7 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 | `calculo` (Carga exacta: aro y núcleo del reactor) | 2 | 1152×556 | 242 KB | 0,32 MB | 0,27 MB |
 | `disparate` (¿Verdad o disparate?: antena, íconos, barras del medidor) | 5 | 512×574 | 125 KB | 0,16 MB | 0,13 MB |
 | `satelites` (Satélites: satélite, planeta, sobre, nube) | 4 | 1408×516 | 193 KB | 0,23 MB | 0,31 MB |
-| `rastro` (Rastro de luz: 9 luceros) | 9 | 1792×196 | 208 KB | 0,39 MB | 0,15 MB |
+| `rastro` (Rastro de luz: 9 luceros + 9 presionados) | 18 | 1792×392 | 444 KB | 0,83 MB | 0,31 MB |
 | `stroop` (Tinta o Palabra: losas de color exacto, gota y libro) | 17 | 1536×708 | 547 KB | 0,77 MB | 0,46 MB |
 | `punta` (En la punta de la lengua: ficha, casilla, perla) | 3 | 512×196 | 45 KB | 0,06 MB | 0,04 MB |
 | `comun` (losas, marcas, anillo) | 28 | 896×2292 | 815 KB | 1,05 MB | 0,87 MB |

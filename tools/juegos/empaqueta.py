@@ -160,9 +160,10 @@ def grupo_satelites():
 ANCHOS_RASTRO = {'lucero': 192}
 
 def grupo_rastro():
-    """Rastro de luz: los 9 luceros (192 px: el sprite mide 179 u en el juego), del color de `RastroBoard.Colors`. Cada uno sale de su maestra de 384 px."""
+    """Rastro de luz: los 9 luceros (192 px: el sprite mide 179 u en el juego), del color de `RastroBoard.Colors`, y los 9 PRESIONADOS (`lucero_p_i`: la esfera aplastada, un punto más oscura y con la huella de un dedo; se muestran mientras el dedo está apoyado). Cada uno sale de su maestra de 384 px."""
     S = []
     for i in range(9): S.append(sprite(f'lucero_{i}', carga_render('rastro', f'lucero_{i}', ANCHOS_RASTRO['lucero'])))
+    for i in range(9): S.append(sprite(f'lucero_p_{i}', carga_render('rastro', f'lucero_p_{i}', ANCHOS_RASTRO['lucero'])))
     return S, []
 
 ANCHOS_STROOP = {'icono': 128}
