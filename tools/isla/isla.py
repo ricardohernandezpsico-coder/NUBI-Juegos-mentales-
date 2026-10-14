@@ -987,7 +987,7 @@ def render_barra():
 
 # ------------------------------------------------------------------ kit de plasticina (Tareas 89 y 90): losas de nine-slice en tres radios, discos redondos, íconos de churro tinta y el triángulo de «Jugar», con dos estados las losas y los discos
 # 1 unidad de Blender = 20 dp; se renderiza a 3 px por dp (KIT_PX). Cámara ortogonal, casi desde arriba (KIT_TILT grados de inclinación: se ve un poco el canto de adelante); el sol de la isla (arriba a la izquierda) deja la sombra de contacto abajo a la derecha.
-# `--kit-solo losas|discos|iconos` renderiza solo una parte (todo por defecto).
+# `--kit-solo losas|discos|iconos|avatares` renderiza solo una parte (todo por defecto).
 KIT_DPU = 20.0; KIT_PX = 3.0; KIT_TILT = float(arg('--kit-tilt','30')); KIT_SOLO = arg('--kit-solo','todo')
 KIT_CW = 24.0; KIT_CH = 8.0                                      # ancho y alto del centro que se estira (dp)
 KIT_MARGEN = (8.0, 6.0, 12.0, 14.0)                              # margen de la imagen alrededor del cuerpo: izquierda, arriba, derecha, abajo (dp): ahí cae la sombra
@@ -1076,11 +1076,61 @@ def render_discos():
 # ---- íconos de churro tinta: se dibujan en el plano del suelo (x a la derecha, y hacia arriba en pantalla), en dp, y descansan sobre él
 KIT_ICONO_R = 1.9                                                # radio del churro (dp)
 def churros(trazos, radio=KIT_ICONO_R):
-    m = mat_tinta(); objs = []
+    m = mat_tinta(); antes = set(bpy.data.objects)
     for (x0, y0, x1, y1) in trazos:
         a = Vector((x0/KIT_DPU, y0/KIT_DPU, radio/KIT_DPU)); b_ = Vector((x1/KIT_DPU, y1/KIT_DPU, radio/KIT_DPU))
-        o = churro(tuple(a), tuple(b_), radio/KIT_DPU, m, coll='iconos', name='kit_ch'); objs.append(o)
-    return [o for o in bpy.data.objects if o.name.startswith('kit_ch')]
+        churro(tuple(a), tuple(b_), radio/KIT_DPU, m, coll='iconos', name='kit_ch')
+    return [o for o in bpy.data.objects if o not in antes]
+
+
+# ---- Tarea 91: los íconos de Material de los paneles pasan a churros tinta (idioma, volumen, vibración, reloj, sin reloj, escudo, info, campana, persona, flechas arriba y abajo)
+def poli(pts, cerrar=False):
+    """Una línea quebrada (en dp) como segmentos de churro."""
+    t = [(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]) for i in range(len(pts)-1)]
+    if cerrar: t.append((pts[-1][0], pts[-1][1], pts[0][0], pts[0][1]))
+    return t
+
+def aro(R, x=0.0, y=0.0, r=KIT_ICONO_R, sx=1.0):
+    """Un aro de churro tinta (torus acostado) de radio R dp con centro (x, y); [sx] lo achata a lo ancho (elipse)."""
+    o = torus(R=R/KIT_DPU, r=r/KIT_DPU, loc=(x/KIT_DPU, y/KIT_DPU, r/KIT_DPU), coll='iconos', name='kit_ch_aro'); o.scale = (sx, 1.0, 1.0); mat(o, mat_tinta()); return o
+
+def punto(x, y, rad=1.6):
+    sp = sphere(r=rad/KIT_DPU, seg=20, loc=(x/KIT_DPU, y/KIT_DPU, rad/KIT_DPU), coll='iconos', name='kit_ch_punto'); mat(sp, mat_tinta()); return sp
+
+def ic_globo():
+    return churros([(-7.6, 3.9, 7.6, 3.9), (-7.6, -3.9, 7.6, -3.9)], radio=1.3) + [aro(8.7), aro(8.7, sx=0.5, r=1.4)]
+
+def ic_altavoz():
+    return churros(poli([(-9, -3), (-5, -3), (0, -7), (0, 7), (-5, 3), (-9, 3)], cerrar=True) + poli([(3.5, -3.5), (5.5, 0), (3.5, 3.5)]) + poli([(7, -6.5), (10, 0), (7, 6.5)]), radio=1.6)
+
+def ic_vibracion():
+    return churros(poli([(-4, -8), (4, -8), (4, 8), (-4, 8)], cerrar=True) + poli([(-7, -3.5), (-9.5, 0), (-7, 3.5)]) + poli([(7, -3.5), (9.5, 0), (7, 3.5)]), radio=1.6)
+
+def ic_reloj():
+    return churros([(0, 0, 0, 5.2), (0, 0, 3.8, -1.2)], radio=1.6) + [aro(8.6)]
+
+def ic_sin_reloj():
+    return ic_reloj() + churros([(-9.5, 9.0, 9.5, -9.0)], radio=1.7)
+
+def ic_escudo():
+    return churros(poli([(-7.5, 6.5), (0, 9.5), (7.5, 6.5), (7.5, -1.5), (0, -9.5), (-7.5, -1.5)], cerrar=True) + poli([(-3.2, 0), (-0.8, -2.8), (3.6, 3.2)]), radio=1.6)
+
+def ic_info():
+    return churros([(0, -5.2, 0, -0.6)], radio=1.7) + [aro(8.6), punto(0, 4.4, 1.7)]
+
+def ic_campana():
+    return churros(poli([(-8, -4), (-5.6, 3.2), (-2.4, 7), (2.4, 7), (5.6, 3.2), (8, -4)], cerrar=True), radio=1.6) + [punto(0, -7.4, 1.8), punto(0, 9.2, 1.5)]
+
+def ic_persona():
+    return churros(poli([(-7.5, -8), (-6.5, -3.5), (-3.5, -0.8), (3.5, -0.8), (6.5, -3.5), (7.5, -8)]), radio=1.7) + [aro(3.6, 0, 4.6)]
+
+def ic_arriba():
+    return churros(poli([(-6.5, -3.2), (0, 3.4), (6.5, -3.2)]), radio=1.9)
+
+def ic_abajo():
+    return churros(poli([(-6.5, 3.2), (0, -3.4), (6.5, 3.2)]), radio=1.9)
+
+ICONOS_T91 = {'globo': ic_globo, 'altavoz': ic_altavoz, 'vibracion': ic_vibracion, 'reloj': ic_reloj, 'sin_reloj': ic_sin_reloj, 'escudo': ic_escudo, 'info': ic_info, 'campana': ic_campana, 'persona': ic_persona, 'arriba': ic_arriba, 'abajo': ic_abajo}
 
 def icono_kit(nombre):
     objs = []
@@ -1107,12 +1157,14 @@ def icono_kit(nombre):
         for k in range(8):
             ang = k*math.tau/8; rr = 9.0/KIT_DPU
             d = box((3.6/KIT_DPU, 4.4/KIT_DPU, 4.4/KIT_DPU), loc=(rr*math.cos(ang), rr*math.sin(ang), 2.2/KIT_DPU), rot=(0, 0, math.degrees(ang) + 90), coll='iconos', name='kit_ch_diente'); bevel(d, 0.04, 4); mat(d, m); objs.append(d)
+    elif nombre in ICONOS_T91:
+        objs = ICONOS_T91[nombre]()
     raiz = raiz_kit()
     for o in objs: o.parent = raiz
 
 def render_iconos_kit():
     cam_pieza((4.0, 3.0, 6.0, 7.0), 24.0, 24.0)
-    for nombre in ('volver', 'visto', 'izq', 'der', 'compartir', 'candado', 'engranaje'):
+    for nombre in ('volver', 'visto', 'izq', 'der', 'compartir', 'candado', 'engranaje') + tuple(ICONOS_T91):
         before = set(bpy.data.objects); suelo_kit(); icono_kit(nombre)
         n = 'kit_i_' + nombre; times[n] = render(n, {'iconos', 'luces'})
         for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
@@ -1123,10 +1175,84 @@ def triangulo_jugar_kit():
     tri = cyl(r=R, d=h, verts=3, loc=(0, 0, h/2), rot=(0, 0, -90), coll='iconos', name='kit_triangulo'); bevel(tri, h*0.95, 8, ang=20); sd = tri.modifiers.new('Sub', 'SUBSURF'); sd.levels = 2; sd.render_levels = 2; smooth(tri)
     mat(tri, mat_tinta()); tri.parent = raiz_kit()
 
+
+# ---- Tarea 91: los avatares de Opciones (8): Nubi sale de `isla_nubi_hola.webp`; los otros siete se renderizan acá en un lienzo de 48 dp (144 px) con la cámara y la luz de los íconos de la barra
+AV_H = 1.65                                                     # alto de cada objeto (unidades; 20 dp = 1): 33 dp dentro del disco de 48
+def cam_av():
+    cam_iso(target=(0, 0, 0.78), ortho=48.0/KIT_DPU, name='cam_av'); scene.render.resolution_x = 144; scene.render.resolution_y = 144
+
+def av_raiz(z):
+    """Un padre inclinado para que lo que cuelga de él mire a la cámara (la misma elevación de ~37° que la isla)."""
+    r = bpy.data.objects.new('av_raiz', None); scene.collection.objects.link(r)
+    e = math.atan2(14.5-0.7, math.hypot(12.8, 12.8)); r.location = (0, 0, z); r.rotation_euler = (math.pi/2 - e, 0, 0); return r
+
+def av_cohete():
+    antes = set(bpy.data.objects); icono_juegos3(False)
+    normaliza([o for o in bpy.data.objects if o not in antes and o.type in ('MESH', 'LIGHT')], AV_H, 0.0)
+
+def av_farol():
+    antes = set(bpy.data.objects); icono_avance_farol3(False)
+    normaliza([o for o in bpy.data.objects if o not in antes and o.type in ('MESH', 'LIGHT')], AV_H, 0.0)
+
+def av_isla():
+    antes = set(bpy.data.objects); icono_hoy3(False)
+    normaliza([o for o in bpy.data.objects if o not in antes and o.type in ('MESH', 'LIGHT')], AV_H * 0.95, 0.0)
+
+def av_engranaje():
+    R = 0.64; z = R * 0.8 + 0.02 + 0.08; raiz = av_raiz(z)
+    m = clay('m_av_sol', KIT_SOL, bump=0.4, sss=0.25, vary=0.012, rough=0.5, dents=0.0, grain=0.0, mid=0.3, ao=0.25, ao_cool=1.0, sat=1.0, piece=0, prints=0.0)
+    cuerpo = cyl(r=R, d=0.2, verts=48, loc=(0, 0, 0), coll='iconos', name='av_cuerpo'); bevel(cuerpo, 0.07, 5); organic(cuerpo, 0.004, 1.4, 1); mat(cuerpo, m); cuerpo.parent = raiz
+    for k in range(8):
+        a = k * math.tau / 8; rr = R * 1.02
+        d = box((0.26, 0.2, 0.22), loc=(rr * math.cos(a), rr * math.sin(a), 0), rot=(0, 0, math.degrees(a) + 90), coll='iconos', name='av_diente'); bevel(d, 0.05, 4); mat(d, m); d.parent = raiz
+    hub = cyl(r=R * 0.38, d=0.26, verts=36, loc=(0, 0, 0.03), coll='iconos', name='av_eje'); bevel(hub, 0.05, 4); mat(hub, clay('m_av_cielo', KIT_CIELO, bump=0.3, sss=0.25, vary=0.01, rough=0.5, dents=0.0, grain=0.0, mid=0.3, ao=0.25, ao_cool=1.0, sat=1.0, piece=0, prints=0.0)); hub.parent = raiz
+
+def av_planeta():
+    R = 0.7; base = sphere(r=R, seg=64, loc=(0, 0, R + 0.01), coll='iconos', name='av_planeta'); organic(base, 0.006, 1.2, 1)
+    mat(base, clay('m_av_cielo2', KIT_CIELO, bump=0.3, sss=0.28, vary=0.012, rough=0.5, dents=0.0, grain=0.0, mid=0.3, ao=0.25, ao_cool=1.0, sat=1.0, piece=0, prints=0.0))
+    e = math.atan2(14.5-0.7, math.hypot(12.8, 12.8)); dirc = Vector((0, -math.cos(e), math.sin(e)))
+    verde = clay('m_av_lima', KIT_LIMA, bump=0.3, sss=0.25, vary=0.012, rough=0.5, dents=0.0, grain=0.0, mid=0.3, ao=0.25, ao_cool=1.0, sat=1.0, piece=0, prints=0.0)
+    for (dx, dz, sc, ss) in ((-0.28, 0.20, 0.30, 0.9), (0.30, -0.12, 0.24, 1.0), (-0.12, -0.38, 0.18, 1.1)):
+        up = Vector((0, math.sin(e), math.cos(e))); right = Vector((1, 0, 0))
+        n = (dirc + right * dx + up * dz).normalized()
+        c = sphere(r=sc * R, seg=32, loc=tuple(Vector((0, 0, R + 0.01)) + n * (R * 0.93)), coll='iconos', name='av_continente')
+        c.rotation_euler = n.to_track_quat('Z', 'Y').to_euler(); c.scale = (1.0, 1.0 * ss, 0.38); mat(c, verde)
+
+def av_lucero():
+    R = 0.62; o = sphere(r=R, seg=64, loc=(0, 0, R + 0.01), coll='iconos', name='av_lucero'); organic(o, 0.005, 1.2, 1)
+    mat(o, clay('m_av_sol2', KIT_SOL, bump=0.25, sss=0.3, vary=0.012, rough=0.45, dents=0.0, grain=0.0, mid=0.3, ao=0.2, ao_cool=1.0, sat=1.0, piece=0, prints=0.0))
+    e = math.atan2(14.5-0.7, math.hypot(12.8, 12.8)); n = Vector((-0.45, -math.cos(e), math.sin(e) + 0.35)).normalized()
+    b = sphere(r=0.125, seg=24, loc=tuple(Vector((0, 0, R + 0.01)) + n * (R * 0.9)), coll='iconos', name='av_brillo'); b.scale = (1, 1, 0.45); b.rotation_euler = n.to_track_quat('Z', 'Y').to_euler()
+    mat(b, clay('m_av_brillo', '#FFF3C4', bump=0.1, sss=0.3, vary=0.0, rough=0.4, dents=0.0, grain=0.0, mid=0.3, ao=0.0, sat=1.0, piece=0, prints=0.0))
+
+def av_gota():
+    R = 0.58; H = 1.5
+    o = sphere(r=R, seg=64, loc=(0, 0, 0.0), coll='iconos', name='av_gota')
+    for v in o.data.vertices:
+        z = v.co.z
+        if z > 0:
+            s = min(1.0, z / R); k = (1.0 - s ** 1.5 * 0.97)
+            v.co.x *= k; v.co.y *= k; v.co.z = z * (H - R) / R
+    o.location = (0, 0, R + 0.01); organic(o, 0.004, 1.2, 1)
+    mat(o, clay('m_av_cielo3', KIT_CIELO, bump=0.3, sss=0.3, vary=0.012, rough=0.4, dents=0.0, grain=0.0, mid=0.3, ao=0.25, ao_cool=1.0, sat=1.0, piece=0, prints=0.0))
+    e = math.atan2(14.5-0.7, math.hypot(12.8, 12.8)); n = Vector((-0.5, -math.cos(e), math.sin(e) + 0.1)).normalized()
+    b = sphere(r=0.105, seg=20, loc=tuple(Vector((0, 0, R + 0.01)) + n * (R * 0.95)), coll='iconos', name='av_brillo'); b.scale = (1, 1, 0.4); b.rotation_euler = n.to_track_quat('Z', 'Y').to_euler()
+    mat(b, clay('m_av_brillo2', '#E6F8FF', bump=0.1, sss=0.3, vary=0.0, rough=0.4, dents=0.0, grain=0.0, mid=0.3, ao=0.0, sat=1.0, piece=0, prints=0.0))
+
+AVATARES = {'cohete': av_cohete, 'farol': av_farol, 'isla': av_isla, 'engranaje': av_engranaje, 'planeta': av_planeta, 'lucero': av_lucero, 'gota': av_gota}
+
+def render_avatares():
+    cam_av()
+    for nombre, fn in AVATARES.items():
+        before = set(bpy.data.objects); suelo_kit(); fn()
+        n = 'kit_av_' + nombre; times[n] = render(n, {'iconos', 'luces'})
+        for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
+
 def render_kit():
     scene.view_settings.exposure = float(arg('--kit-exp','-0.42'))   # la plasticina clara se quemaba (crema y lima a 255) con el sol desde arriba
     if KIT_SOLO in ('todo', 'losas'): render_losas()
     if KIT_SOLO in ('todo', 'discos'): render_discos()
+    if KIT_SOLO in ('todo', 'avatares'): render_avatares()
     if KIT_SOLO in ('todo', 'iconos'):
         render_iconos_kit()
         cam_pieza((4.0, 3.0, 6.0, 7.0), 20.0, 22.0)

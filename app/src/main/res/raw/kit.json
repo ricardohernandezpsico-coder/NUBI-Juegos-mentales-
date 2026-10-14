@@ -311,6 +311,296 @@
     "ancho": 22.0,
     "alto": 22.67
    }
+  },
+  "globo": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 5.67,
+    "arr": 3.33,
+    "der": 7.33,
+    "abajo": 9.0
+   },
+   "cuerpo_dp": {
+    "ancho": 21.0,
+    "alto": 21.67
+   }
+  },
+  "altavoz": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 5.67,
+    "arr": 5.67,
+    "der": 6.67,
+    "abajo": 11.33
+   },
+   "cuerpo_dp": {
+    "ancho": 21.67,
+    "alto": 17.0
+   }
+  },
+  "vibracion": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 5.0,
+    "arr": 4.67,
+    "der": 7.0,
+    "abajo": 10.0
+   },
+   "cuerpo_dp": {
+    "ancho": 22.0,
+    "alto": 19.33
+   }
+  },
+  "reloj": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 5.67,
+    "arr": 3.67,
+    "der": 7.67,
+    "abajo": 9.33
+   },
+   "cuerpo_dp": {
+    "ancho": 20.67,
+    "alto": 21.0
+   }
+  },
+  "sin_reloj": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 5.0,
+    "arr": 3.33,
+    "der": 7.0,
+    "abajo": 9.0
+   },
+   "cuerpo_dp": {
+    "ancho": 22.0,
+    "alto": 21.67
+   }
+  },
+  "escudo": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 7.0,
+    "arr": 3.33,
+    "der": 9.0,
+    "abajo": 8.67
+   },
+   "cuerpo_dp": {
+    "ancho": 18.0,
+    "alto": 22.0
+   }
+  },
+  "info": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 5.67,
+    "arr": 3.67,
+    "der": 7.67,
+    "abajo": 9.33
+   },
+   "cuerpo_dp": {
+    "ancho": 20.67,
+    "alto": 21.0
+   }
+  },
+  "campana": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 6.67,
+    "arr": 3.67,
+    "der": 8.33,
+    "abajo": 10.67
+   },
+   "cuerpo_dp": {
+    "ancho": 19.0,
+    "alto": 19.67
+   }
+  },
+  "persona": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 7.0,
+    "arr": 4.0,
+    "der": 9.0,
+    "abajo": 10.0
+   },
+   "cuerpo_dp": {
+    "ancho": 18.0,
+    "alto": 20.0
+   }
+  },
+  "arriba": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 7.67,
+    "arr": 8.67,
+    "der": 9.67,
+    "abajo": 14.67
+   },
+   "cuerpo_dp": {
+    "ancho": 16.67,
+    "alto": 10.67
+   }
+  },
+  "abajo": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 7.67,
+    "arr": 9.0,
+    "der": 9.67,
+    "abajo": 14.67
+   },
+   "cuerpo_dp": {
+    "ancho": 16.67,
+    "alto": 10.33
+   }
+  }
+ },
+ "avatares": {
+  "cohete": {
+   "imagen_px": [
+    144,
+    144
+   ],
+   "margenes_dp": {
+    "izq": 0.0,
+    "arr": 0.0,
+    "der": 0.0,
+    "abajo": 0.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   }
+  },
+  "farol": {
+   "imagen_px": [
+    144,
+    144
+   ],
+   "margenes_dp": {
+    "izq": 0.0,
+    "arr": 0.0,
+    "der": 0.0,
+    "abajo": 0.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   }
+  },
+  "isla": {
+   "imagen_px": [
+    144,
+    144
+   ],
+   "margenes_dp": {
+    "izq": 0.0,
+    "arr": 0.0,
+    "der": 0.0,
+    "abajo": 0.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   }
+  },
+  "engranaje": {
+   "imagen_px": [
+    144,
+    144
+   ],
+   "margenes_dp": {
+    "izq": 0.0,
+    "arr": 0.0,
+    "der": 0.0,
+    "abajo": 0.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   }
+  },
+  "planeta": {
+   "imagen_px": [
+    144,
+    144
+   ],
+   "margenes_dp": {
+    "izq": 0.0,
+    "arr": 0.0,
+    "der": 0.0,
+    "abajo": 0.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   }
+  },
+  "lucero": {
+   "imagen_px": [
+    144,
+    144
+   ],
+   "margenes_dp": {
+    "izq": 0.0,
+    "arr": 0.0,
+    "der": 0.0,
+    "abajo": 0.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   }
+  },
+  "gota": {
+   "imagen_px": [
+    144,
+    144
+   ],
+   "margenes_dp": {
+    "izq": 0.0,
+    "arr": 0.0,
+    "der": 0.0,
+    "abajo": 0.0
+   },
+   "cuerpo_dp": {
+    "ancho": 48.0,
+    "alto": 48.0
+   }
   }
  }
 }

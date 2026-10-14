@@ -18,6 +18,8 @@ hexágono, una gota o una ola están bien. Lámina para ver el resultado: [`docs
 | Rumbo a Casa: el faro de la base | estrella de 4 puntas | lucero redondo con su aro |
 | `SparkleSprite` (el «brillo» de cuenta regresiva, celebraciones, racha y cielo) y el brillo de La estrella intrusa | destello de 4 puntas | brillo redondo (núcleo con halo) |
 | Íconos de la app (`GameIcon.kt`): Parejas, Piloto, La estrella intrusa, Aterrizaje y el «brillo» (`sparkle`) | estrellas de 5 y 4 puntas | lucero redondo / hexágono / brillo redondo |
+| Logros «Brillante» (90 puntos) y «Perfecto» (100) en la medalla (`AchievementGlyph.STAR`, Tarea 91) | estrella de 5 puntas | **lucero redondo** (`AchievementGlyph.LUCERO`: cuerpo redondo con su aro de luz y su núcleo sol) |
+| Avatares de Opciones (Tarea 91) | emojis (🧠 por defecto, caras de personas, ⭐, 🌟…) | **ocho objetos de plasticina**: Nubi, cohete, farol, isla, engranaje, planeta sin anillo, lucero redondo y gota (`data/AvatarIds.kt`) |
 
 ## Premios y calificaciones (tarea 36, aprobado por Ricardo el 4-oct)
 
@@ -25,3 +27,8 @@ También pasaron a **luceros redondos**, para que toda la app hable el mismo len
 los destellos de las celebraciones de ascenso de liga y de logros (`drawGlint`, antes `drawFourPointStar`); el brillo de Nubi en Hoy (`NubiHome`) y de la tarjeta para compartir (`ShareCard`); y la «primera estrella» del Primer vuelo, que ahora es
 **«tu primer lucero»** en el texto, la descripción para lectores de pantalla y el dibujo. «Juego estrella» (los juegos con medida propia) y «La estrella intrusa» (nombre de un juego) NO son símbolos y se quedan igual.
 La réplica `tools/previews/iconos_juegos.py` se actualizó con los íconos nuevos de Parejas, Piloto y Aterrizaje (el de La estrella intrusa no está en esa réplica) y se quitaron de su lámina los juegos retirados; lámina: `docs/previews/iconos-juegos.png`.
+
+## Emojis (Tarea 91)
+
+Nada de emojis en la app: ni como íconos (ya era regla), ni en textos, banderas, avatares, saludos o listas. `EmojiSweepTest` lo vigila: revisa el código (sin comentarios), los recursos y las listas que la app arma al correr (avatares, idiomas, logros, juegos, desafíos, ligas, áreas y traducciones), y busca «cerebro» y «brain». Su lista de excepciones está VACÍA a propósito. Los avatares viejos guardados como emoji se
+traducen a los nuevos al leerlos (`AvatarIds.resolve`: el cerebro, y las caras de personas, pasan a Nubi) sin migrar Room. Tampoco hay banderas en los idiomas: solo el nombre en su propia lengua, y solo se ofrecen los idiomas traducidos (hoy, el español).
