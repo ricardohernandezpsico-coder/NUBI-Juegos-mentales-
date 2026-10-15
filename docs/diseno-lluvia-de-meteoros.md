@@ -200,3 +200,24 @@ La (c) sale del mismo diccionario Hunspell que ya figura en los créditos. `mete
 Resultado: de 64.665 inventadas «obvias» posibles (auditoría con otra semilla), 60 (0,09 %) eran un nombre propio; en el léxico anterior había 2 (`mario`, `lara`).
 Además se sacaron del banco de palabras reales 9 que se ven como nombres (`nacho`, `puebla`, `pancho`, `amador`, `aquilino`, `escobar`, `olmedo`, `roque`, `rebeca`: `revision-manual.txt`);
 quedan 30 que son nombre Y palabra común (luna, justo, norma, margarita…): son reales y se tocan bien.
+
+## 14. Plasticina (Tarea 105, 14-oct): la roca de plasticina, estirable
+
+Ricardo: todos los juegos en plasticina. Es SOLO arte: las palabras, los meteoros, el DDA, los tiempos, las zonas de toque y las medidas no cambian. Técnica y pesos: [`tools/juegos/README.md`](../tools/juegos/README.md); seguimiento de los 17 juegos: [`plasticina-juegos.md`](plasticina-juegos.md). **Fecha del cambio de arte: 14-oct-2026** (marca `estilo 14-oct · plasticina meteoros`; sin `art_version`).
+
+| De plasticina | Se queda procedural |
+|---|---|
+| la **roca** (`roca_0..3`, `tools/juegos/meteoros.py`): las 4 siluetas de siempre (la elipse de 0,9 × 0,62 con ondulaciones), de plasticina GRIS CLARA que el código tiñe (`Image.color`: lila, celeste, coral, sol o polvo), con sus cráteres hundidos. **Nine-slice**: las esquinas (con los cráteres) no se estiran y el centro, liso, sí | la **estela de calor**, el halo y el aro de la dorada, las chispas y los efectos |
+| la **roca presionada** (`roca_p_0..3`): aplastada (+4 % de ancho), un punto más oscura y con la huella de un dedo en el espacio libre de UNA ESQUINA (el centro lo tapa la placa y se estira: una huella ahí se deformaría); se ve al tocar la roca | la **brasa** del borde que va por delante (`brasa_0..3`) y las **grietas** de la roca de polvo (`grietas_0..3`): capas de numpy sobre el mismo lienzo (son luz y marca, no plasticina) |
+| la **placa con la palabra**: losa chica crema del kit | la barra tachada coral de la inventada tocada |
+| las **dos estrellas de la constelación** (`estrella_encendida`, `estrella_apagada`): esferas redondas (sol y azul noche) | el texto, el cielo, la cúpula del observatorio y la superficie lunar |
+| el **panel del final**: losa «noche» | |
+
+**El nine-slice:** la imagen de la roca (300 × 228 px a 120 px por unidad; en el juego se muestra 1,5 veces más grande: `ppu` 66,7) tiene bordes de 112 px a los lados y 90 arriba y abajo; el centro de 0,64 × 0,4 unidades es lo único que se estira. Así la roca se alarga con la palabra (de 370 a 880 u) sin deformarse, como pidió Opus. El CUERPO mide lo de siempre
+(0,93 del ancho y 0,6 del alto de la roca del juego, `MeteorSprites.BodyWidthK/BodyHeightK`) y la imagen sobresale por la sombra y la brasa (`RockMargin`: a cada lado, arriba y abajo por separado, porque el cuerpo no está centrado en el lienzo: la cúpula sube y la sombra cae; el juego corre la imagen para centrar el CUERPO en la roca): la zona de toque y los choques entre meteoros no cambian. Con «quitar animaciones» la roca sigue sin girar.
+
+**Al tocarla** (regla del 14-oct): la roca que la persona toca se ve **presionada** al menos 0,1 s: si era una palabra real, durante el estallido de 0,22 s; si era una inventada, 0,1 s antes de volverse polvo con sus grietas (esa espera no cuenta para nada: el meteoro ya salió de la lista). Con la guiada igual. Sin el atlas, el dibujo de siempre.
+
+**Lo que se midió** (`tools/juegos/mide_meteoros.py`): el cuerpo mide 1,82-1,85 × 1,32-1,38 unidades (la elipse de hoy, ~2,0 × 1,3: la silueta es la de siempre); la presionada es 4,1 % más ancha, 3,7 % más alta, a 0,83 de la luminosidad de la normal (ΔE 6,3) y el centro se corre 1 px; la roca gris teñida queda a ΔE 6,2 a 11,1 del color de diseño (el dorado, la bonificación, a 11,1: se sigue distinguiendo de los
+otros colores, ΔE 51 a 105); **la palabra de tinta sobre la placa rinde 15,1:1** (hoy, 16,5:1) y la placa crema se separa de cada roca teñida por luminosidad (1,69:1 contra la dorada, la más cercana; 2,2 a 2,9:1 contra las demás) y por su sombra: ya no lleva el borde de tinta de hoy; las estrellas son esferas redondas de 50 px sobre 96 (redondez 1,01), la encendida rinde 11,2:1 contra el cielo,
+la apagada 1,6:1 y se distinguen entre sí 7,1:1. Pesa 0,52 MB en el APK (0,55 MB con ASTC). Pruebas: `MeteorPlasticTests`. Hoja de capturas: [antes](previews/plasticina/antes-meteoros.png) → [después](previews/plasticina/despues-meteoros.png).

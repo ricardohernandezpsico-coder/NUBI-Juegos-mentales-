@@ -43,7 +43,7 @@ namespace NeuroVida.Games.Meteoros
         {
             public MeteorSpec Spec;
             public RectTransform Root, Rock, Plaque, TrailRect, AuraRect;
-            public Image RockImg, TrailImg, AuraImg, GlowImg;
+            public Image RockImg, TrailImg, AuraImg, GlowImg, EmberImg, CracksImg;       // (EmberImg y CracksImg: las capas de la roca de plasticina; null sin el atlas)
             public Text Label;
             public Vector2 Pos, Vel;
             public float Spawned, Rx, Ry, Wobble, TrailBase;
@@ -213,7 +213,7 @@ namespace NeuroVida.Games.Meteoros
             MeteorSprites.HeatTrail(!GameFeel.ReduceMotion);
             yield return null;
             while (MeteorSprites.Prewarm(ref step)) yield return null;
-            MeteorSprites.Rock(0, RockTint.Dust);
+            if (!MeteorSprites.Plastic) MeteorSprites.Rock(0, RockTint.Dust);
         }
 
         private bool Finished()
@@ -259,9 +259,20 @@ namespace NeuroVida.Games.Meteoros
                 m.GlowImg.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.55f);
                 m.GlowImg.gameObject.SetActive(true);
             }
-            m.RockImg = NewImage(m.Root, "Rock", MeteorSprites.Rock(m.Shape, m.Tint));
+            bool plasticRock = MeteorSprites.Plastic;
+            m.RockImg = NewImage(m.Root, "Rock", plasticRock ? MeteorSprites.RockBody(m.Shape) : MeteorSprites.Rock(m.Shape, m.Tint));
             m.Rock = m.RockImg.rectTransform;
             m.RockImg.gameObject.SetActive(true);
+            if (plasticRock)
+            {
+                // plasticina: la roca es una imagen NINE-SLICE (las esquinas con sus cráteres no se estiran; el centro, liso, sí) en gris claro que se tiñe con el color del meteoro; la brasa del borde que va por delante es una capa aparte (luz)
+                m.RockImg.type = Image.Type.Sliced;
+                m.RockImg.color = MeteorSprites.TintColor(m.Tint);
+                m.EmberImg = NewImage(m.Rock, "Ember", MeteorSprites.Ember(m.Shape));
+                m.EmberImg.type = Image.Type.Sliced;
+                Stretch(m.EmberImg.rectTransform);
+                m.EmberImg.gameObject.SetActive(true);
+            }
             if (spec.Golden)
             {
                 m.AuraImg = NewImage(m.Root, "Aura", RingSprite.Get());
@@ -280,7 +291,7 @@ namespace NeuroVida.Games.Meteoros
             pimg.type = Image.Type.Sliced;
             pimg.color = new Color(1f, 0.973f, 0.925f, 1f);
             pimg.raycastTarget = false;
-            NeuroStyle.ClayFrame(pimg, 4f, 7f);
+            if (PlasticSlab.TryStyle(pimg, SlabSize.Chip, SlabTone.Cream) == null) NeuroStyle.ClayFrame(pimg, 4f, 7f);       // plasticina: la placa es una losa chica crema del kit (sin ella, el borde de tinta de siempre)
             m.Label = MakeText(m.Plaque, "Word", fontPx, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             m.Label.font = UiFonts.Word;
             m.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -302,7 +313,14 @@ namespace NeuroVida.Games.Meteoros
             // la roca es grande: la placa ocupa ~1/3 de su alto
             var size = MeteorContract.RockSize(m.Plaque.sizeDelta.x, m.Plaque.sizeDelta.y);
             float rockW = size.w, rockH = size.h;
-            m.Rock.sizeDelta = new Vector2(rockW, rockH) * MeteorSprites.ImageScale;
+            if (plasticRock)
+            {
+                // el CUERPO de la roca mide lo de siempre (0,93 del ancho y 0,6 del alto de la roca del juego); la imagen sobresale por la sombra y la brasa (los márgenes del atlas)
+                var margin = MeteorSprites.RockMargin;
+                m.Rock.sizeDelta = new Vector2(rockW * MeteorSprites.BodyWidthK + 2f * margin.x, rockH * MeteorSprites.BodyHeightK + margin.y + margin.z);
+                m.Rock.anchoredPosition = new Vector2(0f, (margin.y - margin.z) * 0.5f);            // el cuerpo (no la imagen) queda centrado en la roca
+            }
+            else m.Rock.sizeDelta = new Vector2(rockW, rockH) * MeteorSprites.ImageScale;
             m.Rx = rockW * 0.5f;
             m.Ry = rockH * 0.5f;
             if (m.GlowImg != null) m.GlowImg.rectTransform.sizeDelta = new Vector2(rockW * 1.5f, rockH * 1.5f);
@@ -456,6 +474,7 @@ namespace NeuroVida.Games.Meteoros
             if (_guided) { GuidedResolve(m, true); return; }   // la ronda guiada no cuenta: nada de lo de abajo
             m.Done = true;
             _active.Remove(m);
+            ShowPressed(m);                                     // plasticina: la roca que la persona toca se ve presionada (aplastada, con la huella de un dedo)
             var spec = m.Spec;
             int ms = Mathf.RoundToInt((GameClock.Time - m.Spawned) * 1000f);
             bool hit = spec.IsWord;
@@ -625,10 +644,35 @@ namespace NeuroVida.Games.Meteoros
                 _conStars[i].sprite = i < lit ? MeteorSprites.StarLit() : MeteorSprites.StarDim();
         }
 
+        /// <summary>La roca que la persona toca se ve presionada (plasticina, 14-oct): aplastada, un punto más oscura y con la huella de un dedo en una esquina. Sin el atlas no hace nada.</summary>
+        private static void ShowPressed(Meteor m)
+        {
+            if (m.RockImg == null || m.EmberImg == null) return;                   // (EmberImg solo existe con la roca de plasticina)
+            var pressed = MeteorSprites.RockPressed(m.Shape);
+            if (pressed != null) m.RockImg.sprite = pressed;
+        }
+
         private IEnumerator CrackEffect(Meteor m)
         {
             // la roca se vuelve polvo gris con grietas; la palabra queda tachada y sale un ✗
-            m.RockImg.sprite = MeteorSprites.Rock(m.Shape, RockTint.Dust);
+            if (m.EmberImg != null)
+            {
+                // plasticina: primero se ve presionada (al menos 0,1 s: la persona la tocó) y después se vuelve polvo con sus grietas (una capa aparte sobre la misma roca)
+                ShowPressed(m);
+                float held = 0f;
+                while (held < PlasticTouch.MinSeconds + 0.02f) { held += GameClock.DeltaTime; yield return null; }
+                m.RockImg.sprite = MeteorSprites.RockBody(m.Shape);
+                m.RockImg.color = MeteorSprites.TintColor(RockTint.Dust);
+                m.EmberImg.gameObject.SetActive(false);                              // sin brasa: la roca se apagó
+                if (m.CracksImg == null)
+                {
+                    m.CracksImg = NewImage(m.Rock, "Cracks", MeteorSprites.Cracks(m.Shape));
+                    m.CracksImg.type = Image.Type.Sliced;
+                    Stretch(m.CracksImg.rectTransform);
+                }
+                m.CracksImg.gameObject.SetActive(true);
+            }
+            else m.RockImg.sprite = MeteorSprites.Rock(m.Shape, RockTint.Dust);
             if (m.TrailImg != null) m.TrailImg.color = new Color(1f, 1f, 1f, 0f); // la roca se apagó: sin calor
             if (m.GlowImg != null) m.GlowImg.gameObject.SetActive(false);
             if (m.AuraImg != null) m.AuraImg.gameObject.SetActive(false);
@@ -980,6 +1024,7 @@ namespace NeuroVida.Games.Meteoros
             img.sprite = RoundedRectSprite.Get(64);
             img.type = Image.Type.Sliced;
             img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
+            PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night);          // plasticina: el panel del final es una losa «noche» del kit
 
             AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
             AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
@@ -1179,6 +1224,7 @@ namespace NeuroVida.Games.Meteoros
         {
             m.Done = true;
             _active.Remove(m);
+            if (tapped) ShowPressed(m);
             bool word = m.Spec.IsWord;
             if (tapped && word)
             {

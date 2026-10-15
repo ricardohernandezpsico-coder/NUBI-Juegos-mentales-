@@ -215,9 +215,11 @@ def hundimiento(x, y, cx, cy, rd, prof=0.085, cresta=0.011, lam=0.095, ang=18.0,
     f = (1.0 - (s / rd) ** 4) ** 2
     return prof * f - cresta * f * math.cos(2 * math.pi * s / lam)
 
-def pieza_huella(contorno, h, bis, color=None, nombre='pieza', z0=0.0, material=None, padre=None, coll='iconos', panza=0.0, huella=None, anillos=64, n=180, seg=8, fino=0.62, suave=False):
-    """Como `pieza`, pero la cara de arriba es una rejilla radial fina para poder hundirle la huella de un dedo. [huella] = (cx, cy, rd) o None (sin huella: solo la rejilla); la rejilla fina cubre hasta [fino] del radio; [suave] le suma una subdivisión (para igualar los discos del estado normal). El contorno tiene que ser un polígono ANTIHORARIO que se ve desde su centro (todas las formas de los juegos lo son)."""
+def pieza_huella(contorno, h, bis, color=None, nombre='pieza', z0=0.0, material=None, padre=None, coll='iconos', panza=0.0, huella=None, anillos=64, n=180, seg=8, fino=0.62, suave=False, bultos=0.0, domo=0.0, redondea=False):
+    """Como `pieza`, pero la cara de arriba es una rejilla radial fina para poder hundirle la huella de un dedo. [huella] = (cx, cy, rd[, prof, cresta, lam, ang, alargado]) o una LISTA de ellas (los cráteres de una roca) o None (sin huella: solo la rejilla); la rejilla fina cubre hasta [fino] del radio; [domo] levanta el centro (una cúpula: z = domo × (1 − f²)², plana en el borde y en el centro); [redondea] suaviza los anillos de adentro (sin ondulaciones: la cúpula sale sin pliegues radiales); [suave] le suma una subdivisión (para igualar los discos del estado normal). El contorno tiene que ser un polígono ANTIHORARIO que se ve desde su centro (todas las formas de los juegos lo son)."""
     cont = remuestrea(contorno, n); c0x = sum(p[0] for p in cont) / n; c0y = sum(p[1] for p in cont) / n
+    huellas = [] if not huella else (list(huella) if isinstance(huella, list) else [huella])
+    def hund(px, py): return sum(hundimiento(px, py, *h) for h in huellas)                   # varias huellas (los cráteres de una roca) suman
     me = bpy.data.meshes.new(nombre); bm = bmesh.new(); R = 2; zt = z0 + h
     capas = []
     for i in range(R + 1):
@@ -226,13 +228,19 @@ def pieza_huella(contorno, h, bis, color=None, nombre='pieza', z0=0.0, material=
     bm.faces.new(list(reversed(capas[0])))
     for i in range(R):
         for j in range(n): bm.faces.new((capas[i][j], capas[i][(j + 1) % n], capas[i + 1][(j + 1) % n], capas[i + 1][j]))
-    centro = bm.verts.new((c0x, c0y, zt - (hundimiento(c0x, c0y, *huella) if huella else 0.0)))
+    centro = bm.verts.new((c0x, c0y, zt + domo - hund(c0x, c0y)))
     filas = [None] * (anillos + 2); filas[anillos + 1] = capas[-1]                       # la rejilla fina solo llega hasta [fino] del radio: de ahí al borde, una banda ancha (el bisel grande necesita caras anchas para no recortarse)
+    if redondea:                                                                  # los anillos de adentro son una versión SUAVE del contorno (sin las ondulaciones): una cúpula sin pliegues radiales
+        v = max(2, n // 6); suave_c = []
+        for i in range(n):
+            ax = sum(cont[(i + d) % n][0] for d in range(-v, v + 1)) / (2 * v + 1); ay = sum(cont[(i + d) % n][1] for d in range(-v, v + 1)) / (2 * v + 1)
+            suave_c.append((ax, ay))
     for k in range(1, anillos + 1):
         f = fino * k / anillos; fila = []
-        for (x, y) in cont:
+        for j, (x, y) in enumerate(cont):
+            if redondea: g = f * f; x, y = suave_c[j][0] * (1 - g) + x * g, suave_c[j][1] * (1 - g) + y * g
             px, py = c0x + (x - c0x) * f, c0y + (y - c0y) * f
-            fila.append(bm.verts.new((px, py, zt - (hundimiento(px, py, *huella) if huella else 0.0))))
+            fila.append(bm.verts.new((px, py, zt + domo * (1.0 - f * f) ** 2 - hund(px, py))))
         filas[k] = fila
     for j in range(n): bm.faces.new((centro, filas[1][j], filas[1][(j + 1) % n]))
     for k in range(1, anillos + 1):
@@ -241,6 +249,7 @@ def pieza_huella(contorno, h, bis, color=None, nombre='pieza', z0=0.0, material=
     o = bpy.data.objects.new(nombre, me); scene.collection.objects.link(o); link(o, coll)
     md = bevel(o, bis, seg, ang=40); md.limit_method = 'ANGLE'; smooth(o)
     if suave: sd = o.modifiers.new('Sub', 'SUBSURF'); sd.levels = 1; sd.render_levels = 1           # redondea el canto como los discos (cilindro + bisel + subdivisión) del estado normal
+    if bultos: organic(o, bultos, 1.4, 1)                                                          # una piedra: bultos suaves (subdivisión + desplazamiento)
     wn = o.modifiers.new('Normales', 'WEIGHTED_NORMAL'); wn.keep_sharp = True; wn.weight = 60
     o.data.materials.append(material if material is not None else mat_kit('m_j_' + nombre + '_' + str(color).strip('#'), color))
     if padre is not None: o.parent = padre

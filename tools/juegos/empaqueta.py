@@ -192,6 +192,30 @@ def grupo_punta():
     for n in ('ficha', 'ficha_p', 'casilla', 'perla'): S.append(sprite(n, carga_render('punta', n, ANCHOS_PUNTA[n.replace('_p', '')])))       # (ficha_p: la ficha presionada)
     return S, []
 
+ANCHOS_METEOROS = {'roca': 300, 'estrella': 96}
+BORDE_ROCA = (112, 90, 112, 90)                  # el nine-slice de la roca (izquierda, abajo, derecha, arriba, en px finales): el centro de 0,64 × 0,4 unidades (120 px por unidad) es lo que se estira
+PPU_ROCA = 100.0 * 120.0 / 180.0                 # el dibujo mide 120 px por unidad de diseño y en el juego 1 unidad = 180 u: la imagen se muestra 1,5 veces más grande
+
+def grupo_meteoros():
+    """Lluvia de meteoros: la roca de plasticina (4 siluetas, nine-slice, a 120 px por unidad: 300 × 228) y sus 4 presionadas, la brasa y las grietas (capas de numpy, del mismo lienzo y tamaño) y las 2 estrellas de la constelación (96 px)."""
+    S = []; med = []
+    cuerpos = [carga_render('meteoros', f'roca_{i}', ANCHOS_METEOROS['roca']) for i in range(4)]
+    for i, im in enumerate(cuerpos): S.append(sprite(f'roca_{i}', im, ppu=PPU_ROCA, borde=BORDE_ROCA))
+    for i in range(4): S.append(sprite(f'roca_p_{i}', carga_render('meteoros', f'roca_p_{i}', ANCHOS_METEOROS['roca']), ppu=PPU_ROCA, borde=BORDE_ROCA))
+    for capa in ('brasa', 'grietas'):
+        for i in range(4):
+            im = Image.open(os.path.join(RENDER, 'meteoros', f'{capa}_{i}.png')).convert('RGBA'); assert im.size == cuerpos[0].size, (capa, im.size, cuerpos[0].size)
+            S.append(sprite(f'{capa}_{i}', im, ppu=PPU_ROCA, borde=BORDE_ROCA))
+    for n in ('estrella_encendida', 'estrella_apagada'): S.append(sprite(n, carga_render('meteoros', n, ANCHOS_METEOROS['estrella'])))
+    # cuánto sobresale la imagen alrededor del CUERPO (la sombra y el resplandor): el mínimo de las 4 formas, en unidades del lienzo del juego (1 px del atlas = 1,5 u)
+    ml = mr = mt = mb = 99999
+    for im in cuerpos:
+        x0, y0, x1, y1 = cuerpo_bbox(im); ml = min(ml, x0); mr = min(mr, im.width - x1); mt = min(mt, y0); mb = min(mb, im.height - y1)
+    k = 100.0 / PPU_ROCA
+    # el cuerpo no está centrado en el lienzo (la cúpula sube y la sombra cae abajo): arriba sobra más que abajo. El juego usa cada lado y corre la imagen para que el CUERPO quede centrado en la roca
+    med += [('roca_margen_x_u', (ml + mr) / 2 * k), ('roca_margen_arr_u', mt * k), ('roca_margen_abj_u', mb * k)]
+    return S, med
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -235,7 +259,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -423,7 +447,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

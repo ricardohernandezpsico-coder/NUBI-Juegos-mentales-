@@ -22,6 +22,10 @@ namespace NeuroVida.Games.Meteoros
     /// </list>
     /// Colores horneados: <c>Image.color</c> en blanco. Las formas se hornean al primer uso; <see cref="Prewarm"/> las hornea
     /// de a una por cuadro mientras corre la cuenta regresiva.
+    /// <para><b>Plasticina (Tarea 105, 14-oct):</b> si el atlas <c>Resources/Plasticina/meteoros</c> existe, la roca es de plasticina (<c>tools/juegos/meteoros.py</c>): las 4 siluetas en gris claro (el código las tiñe con <c>Image.color</c>: lila, celeste, coral, sol o polvo), dibujadas como
+    /// NINE-SLICE (<see cref="RockBody"/>: las esquinas, con sus cráteres, no se estiran; el centro, liso, sí: así la roca se alarga con la palabra sin deformarse). La brasa del borde que va por delante (<see cref="Ember"/>, luz) y las grietas de la roca de polvo
+    /// (<see cref="Cracks"/>) son capas aparte sobre el mismo lienzo. <see cref="RockPressed"/> es la roca presionada (aplastada, un punto más oscura, con la huella de un dedo en una esquina): se ve cuando la persona la toca. Las dos estrellas de la constelación (<see cref="StarLit"/> y
+    /// <see cref="StarDim"/>) son esferas redondas. Sin el atlas, el arte procedural de siempre.</para>
     /// </summary>
     public static class MeteorSprites
     {
@@ -37,6 +41,29 @@ namespace NeuroVida.Games.Meteoros
         private static readonly Dictionary<int, Sprite> Rocks = new Dictionary<int, Sprite>();
         private static Sprite _starLit, _starDim, _trailSparks, _trailPlain;
 
+        public const string PlasticGroup = "meteoros";
+
+        /// <summary>true si el atlas de plasticina de Lluvia de meteoros existe (y no está desactivado).</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "roca_0");
+
+        /// <summary>La roca de plasticina de la forma [shape] (gris claro; nine-slice) o null sin atlas.</summary>
+        public static Sprite RockBody(int shape) => PlasticArt.Get(PlasticGroup, "roca_" + Wrap(shape));
+        /// <summary>La roca presionada de la forma [shape] (aplastada, un punto más oscura, con la huella de un dedo en una esquina) o null sin atlas.</summary>
+        public static Sprite RockPressed(int shape) => PlasticArt.Get(PlasticGroup, "roca_p_" + Wrap(shape));
+        /// <summary>La brasa del borde que va por delante (luz, sobre el mismo lienzo que la roca) o null sin atlas.</summary>
+        public static Sprite Ember(int shape) => PlasticArt.Get(PlasticGroup, "brasa_" + Wrap(shape));
+        /// <summary>Las grietas de la roca de polvo (la inventada tocada), sobre el mismo lienzo que la roca, o null sin atlas.</summary>
+        public static Sprite Cracks(int shape) => PlasticArt.Get(PlasticGroup, "grietas_" + Wrap(shape));
+        /// <summary>
+        /// Lo que sobresale la imagen de la roca de plasticina alrededor de su cuerpo (la sombra y el resplandor), en unidades del lienzo: <c>x</c> a cada lado, <c>y</c> ARRIBA y <c>z</c> ABAJO (el cuerpo no está centrado: la cúpula sube y la sombra cae; 0 sin atlas).
+        /// El juego agranda la imagen con estos márgenes y la corre <c>(arriba − abajo) / 2</c> hacia arriba para que el CUERPO quede centrado en la roca.
+        /// </summary>
+        public static Vector3 RockMargin => new Vector3(PlasticArt.Measure(PlasticGroup, "roca_margen_x_u", 0f), PlasticArt.Measure(PlasticGroup, "roca_margen_arr_u", 0f), PlasticArt.Measure(PlasticGroup, "roca_margen_abj_u", 0f));
+        /// <summary>Del ancho y del alto de la roca del juego (los de <c>MeteorContract.RockSize</c>) a lo que mide el CUERPO de plasticina: el dibujo de siempre ocupaba 0,93 del ancho y 0,6 del alto de su imagen estirada.</summary>
+        public const float BodyWidthK = 0.93f, BodyHeightK = 0.6f;
+
+        private static int Wrap(int shape) => ((shape % ShapeCount) + ShapeCount) % ShapeCount;
+
         public static Sprite Rock(int shape, RockTint tint)
         {
             int key = (shape % ShapeCount) * 8 + (int)tint;
@@ -50,14 +77,14 @@ namespace NeuroVida.Games.Meteoros
         public static bool Prewarm(ref int step)
         {
             const int total = ShapeCount * 4;
-            if (step >= total) return false;
+            if (Plastic || step >= total) return false;                           // con plasticina no hay nada que hornear: las rocas vienen del atlas
             Rock(step / 4, (RockTint)(step % 4));
             step++;
             return step < total;
         }
 
-        public static Sprite StarLit() => _starLit != null ? _starLit : _starLit = ToSprite(RenderStar(96, true), 96, 96);
-        public static Sprite StarDim() => _starDim != null ? _starDim : _starDim = ToSprite(RenderStar(96, false), 96, 96);
+        public static Sprite StarLit() => PlasticArt.Get(PlasticGroup, "estrella_encendida") ?? (_starLit != null ? _starLit : _starLit = ToSprite(RenderStar(96, true), 96, 96));
+        public static Sprite StarDim() => PlasticArt.Get(PlasticGroup, "estrella_apagada") ?? (_starDim != null ? _starDim : _starDim = ToSprite(RenderStar(96, false), 96, 96));
 
         /// <summary>Estela de calor, fila 0 = extremo caliente (pegado a la roca; pivote abajo). Con [sparks] lleva chispas.</summary>
         public static Sprite HeatTrail(bool sparks)
