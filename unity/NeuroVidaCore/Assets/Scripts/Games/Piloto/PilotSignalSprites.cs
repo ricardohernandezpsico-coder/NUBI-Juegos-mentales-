@@ -52,6 +52,13 @@ namespace NeuroVida.Games.Piloto
             return s;
         }
 
+        /// <summary>true si el atlas trae las señales PRESIONADAS (aplastadas, un punto más oscuras y con la huella de un dedo en el espacio libre del detalle).</summary>
+        public static bool HasPressed => PlasticArt.Has(PlasticGroup, "senal_p_hexagono_punto");
+
+        /// <summary>La señal presionada (solo se muestra cuando la persona la toca), o null sin plasticina: entonces el juego deja la de siempre.</summary>
+        public static Sprite GetPressed(SignalShape shape, SignalDetail detail) =>
+            PlasticArt.Get(PlasticGroup, "senal_p_" + ShapeNames[(int)shape] + "_" + DetailNames[(int)detail]);
+
         /// <summary>Hornea las 15 de a poco (durante la cuenta regresiva).</summary>
         public static System.Collections.IEnumerator Prewarm()
         {

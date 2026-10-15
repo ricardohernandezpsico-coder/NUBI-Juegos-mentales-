@@ -62,6 +62,7 @@ namespace NeuroVida.Games.Radar
             public Image Bg, Ring, Emblem, Badge;
             public Text Label;
             public CanvasGroup Group;
+            public PlasticTouch Touch;          // plasticina: la losa presionada (con su huella) al tocarla; el juego lee Touch.Down al elegir la imagen
         }
 
         private RectTransform _safe, _play, _backLayer, _radarLayer, _shipLayer, _fxLayer, _boardLayer, _hudLayer, _endLayer, _radarZone, _shipZone;
@@ -316,6 +317,7 @@ namespace NeuroVida.Games.Radar
             v.Root.anchorMin = v.Root.anchorMax = v.Root.pivot = new Vector2(0.5f, 0.5f);
             v.Group = go.AddComponent<CanvasGroup>();
             v.Group.blocksRaycasts = false;
+            v.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Night);
             v.Bg = MakeImage(v.Root, "Bg", null);
             v.Ring = MakeImage(v.Root, "Ring", null);
             v.Ring.gameObject.SetActive(false);
@@ -334,6 +336,7 @@ namespace NeuroVida.Games.Radar
             go.transform.SetParent(_boardLayer, false);
             _go.Root = go.AddComponent<RectTransform>();
             _go.Root.anchorMin = _go.Root.anchorMax = _go.Root.pivot = new Vector2(0.5f, 0.5f);
+            _go.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Sun);
             _go.Bg = MakeImage(_go.Root, "Bg", null);
             _go.Label = MakeLabel(_go.Root, "Label", 20f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _go.Label.text = RadarContract.RescueLabel;

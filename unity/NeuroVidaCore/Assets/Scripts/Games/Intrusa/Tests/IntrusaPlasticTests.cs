@@ -43,6 +43,8 @@ namespace NeuroVida.Games.Intrusa.Tests
                     foreach (var t in go.GetComponentsInChildren<Transform>(true)) if (t.name == "Slab") slabs++;
                     if (disabled) Assert.AreEqual(0, slabs, "sin plasticina no hay losas");
                     else Assert.GreaterOrEqual(slabs, 5 + 3 + 1 + 1, "con plasticina: 5 placas, 3 opciones, «Seguir» y el panel del final son losas (" + slabs + ")");
+                    int touches = go.GetComponentsInChildren<PlasticTouch>(true).Length;           // Tarea 104: las 3 opciones y «Seguir» se ven presionadas (con la huella) al tocarlas
+                    Assert.AreEqual(disabled ? 0 : 4, touches, "las tres opciones y «Seguir» llevan su estado presionado solo con plasticina");
                 }
                 finally { Object.DestroyImmediate(go); }
             }

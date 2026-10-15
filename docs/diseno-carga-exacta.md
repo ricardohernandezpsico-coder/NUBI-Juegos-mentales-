@@ -105,3 +105,8 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: la generación, el DDA, l
 Las dos imágenes del reactor comparten el mismo lienzo cuadrado de ±92 dp centrado en el reactor (`PlasticReactorDp`), así que el diseño (`CargaLayout`) no cambia; el aro trae su sombra de contacto (sobran la sombra y el borde de tinta de hoy). Sin el atlas, todo cae al arte de siempre (`AuditVisibility` revisa los dos casos).
 
 **Lo que se midió** (`tools/juegos/mide_calculo.py`): el aro mide 167 dp (hoy 168) y el núcleo 143 dp (hoy 144), centrados; el número blanco rinde 18:1 sobre el núcleo apagado y el de tinta 7,9:1 sobre el dorado (apagado y dorado se distinguen 8,3:1: por luminosidad, no solo por color); el número de tinta sobre las celdas, 15:1 (crema), 8,7:1 (elegida) y 11,6:1 (lograda). El aro (azul noche) rinde 1,5:1 contra el cielo, igual que el de hoy: es el cuerpo del reactor, no un estímulo. Pesa 0,32 MB en el APK. Pruebas: `CalculoPlasticTests`.
+
+### Estado presionado (Tarea 104, 14-oct)
+
+Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
+- **Carga exacta:** las celdas, las 4 operaciones y las dos herramientas (Deshacer y Empezar de nuevo) se ven presionadas al tocarlas, con o sin animaciones (`PlasticTouch` en modo cuenta; la «elegida» sigue hundida con «quitar animaciones»). Las herramientas usan la losa «apagada», que ahora trae su `losa_md_apagada_p` en `comun`.

@@ -40,6 +40,8 @@ namespace NeuroVida.Games.Satelites
         public static bool Plastic => PlasticArt.Has(PlasticGroup, "satelite");
 
         public static Sprite Body() => PlasticArt.Get(PlasticGroup, "satelite") ?? (_body != null ? _body : _body = ToSprite(RenderBody(128), 128, 128));
+        /// <summary>El satélite presionado (aplastado, un punto más oscuro, con la huella de un dedo): se ve un instante cuando la persona lo toca para marcarlo; null sin plasticina.</summary>
+        public static Sprite BodyPressed() => PlasticArt.Get(PlasticGroup, "satelite_p");
         public static Sprite Planet() => PlasticArt.Get(PlasticGroup, "planeta") ?? (_planet != null ? _planet : _planet = ToSprite(RenderPlanet(256), 256, 256));
         public static Sprite Envelope() => PlasticArt.Get(PlasticGroup, "sobre") ?? (_envelope != null ? _envelope : _envelope = ToSprite(RenderEnvelope(96), 96, 96));
         public static Sprite Cloud() => PlasticArt.Get(PlasticGroup, "nube") ?? (_cloud != null ? _cloud : _cloud = ToSprite(RenderCloud(256), 256, 256));

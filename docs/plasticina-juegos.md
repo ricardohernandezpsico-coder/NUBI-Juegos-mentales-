@@ -16,7 +16,7 @@ La técnica (Blender, el cargador de Unity, los pesos) está en [`tools/juegos/R
 - **La claridad del estímulo manda sobre la estética.** Misma silueta y mismo tamaño que hoy, contraste con el fondo (≥ 3:1 medido contra el fondo real del juego), nada que dependa solo del color, y las reglas de símbolos ([`simbolos-neutros.md`](simbolos-neutros.md): sin estrella con puntas, media luna ni cruz).
 - **El arte no toca la jugabilidad:** la dificultad, el DDA, los tiempos y las medidas no cambian. Si un render puede cambiar lo difícil que es reconocer algo, se avisa y la medida empieza una serie nueva (versión de arte en el resultado).
 - Lo que se anima por código (giros, estelas, halos, partículas, mallas) se queda procedural. El texto sigue siendo `Text` de Unity.
-- **Todo objeto de plasticina que se toca dentro de un juego tiene su estado presionado con textura** (regla de Ricardo, 14-oct): la pieza **aplastada** (~8 % más baja y ~4 % más ancha), **un punto más oscura** y con una **huella de dedo** suave y poco profunda al centro; mismo lienzo y escala que la normal, el color medio dentro de la regla de ΔE de la pieza y, si el color es el dato, que se siga distinguiendo. Se muestra al apoyar el dedo (al menos ~80 ms) y vuelve al soltar con un rebote chico de escala; con «quitar animaciones» solo cambia la imagen. Lo que el JUEGO enciende (luz, halo, secuencia a recordar) no lleva huella: la huella es solo para el toque de la persona. Las losas del kit ya traen su imagen presionada. Revisión de los juegos ya migrados: sección «Estado presionado» al final.
+- **Todo objeto de plasticina que se toca dentro de un juego tiene su estado presionado con textura** (regla de Ricardo, 14-oct): la pieza **aplastada** (~8 % más baja y ~4 % más ancha), **un punto más oscura** y con una **huella de dedo** suave y poco profunda al centro; mismo lienzo y escala que la normal, el color medio dentro de la regla de ΔE de la pieza y, si el color es el dato, que se siga distinguiendo. Se muestra al apoyar el dedo (al menos ~80 ms) y vuelve al soltar con un rebote chico de escala; con «quitar animaciones» solo cambia la imagen. Lo que el JUEGO enciende (luz, halo, secuencia a recordar) no lleva huella: la huella es solo para el toque de la persona. Las losas del kit ya traen su imagen presionada. Cómo quedó cada juego: sección «Estado presionado» al final (Tarea 104); los juegos que falten migrar nacen con él.
 - Lo que el código tiñe con `Image.color` entrega la imagen en BLANCO/gris (si es plasticina de color fijo, no se tiñe).
 
 ## Estado
@@ -344,32 +344,45 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 
 | Grupo | Sprites | Atlas | PNG en disco | En el APK (estimado) | Con ASTC 6×6 |
 |---|---:|---|---:|---:|---:|
-| `comun` (losas del kit y «noche», marcas ✓ ✗, anillo de la cuenta): se paga UNA vez para los 17 juegos | 28 | 896×2292 | 815 KB | 1,05 MB | 0,87 MB |
+| `comun` (losas del kit y «noche», marcas ✓ ✗, anillo de la cuenta): se paga UNA vez para los 17 juegos | 29 | 896×2472 | 849 KB | 1,11 MB | 0,97 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 | `radar` (Rescate relámpago) | 16 | 1024×1776 | 790 KB | **1,11 MB** | 0,77 MB |
-| `piloto` (Piloto Estelar: 15 señales a 192 y 96 px, nave) | 31 | 1664×492 | 472 KB | **0,58 MB** | 0,35 MB |
-| `freno` (Freno de Emergencia: 2 botones, 3 cohetes, plataforma, ALTO) | 7 | 1152×664 | 369 KB | **0,50 MB** | 0,33 MB |
+| `piloto` (Piloto Estelar: 15 señales a 192 y 96 px, 15 presionadas, nave) | 46 | 1664×884 | 912 KB | **1,21 MB** | 0,64 MB |
+| `freno` (Freno de Emergencia: 2 botones y sus 2 presionados, 3 cohetes, plataforma, ALTO) | 9 | 1408×664 | 473 KB | **0,66 MB** | 0,41 MB |
 | `calculo` (Carga exacta: aro y núcleo del reactor) | 2 | 1152×556 | 242 KB | **0,32 MB** | 0,27 MB |
 | `disparate` (¿Verdad o disparate?: antena, 2 íconos, 2 barras del medidor) | 5 | 512×574 | 125 KB | **0,16 MB** | 0,13 MB |
-| `satelites` (Satélites: satélite, planeta, sobre, nube de polvo) | 4 | 1408×516 | 193 KB | **0,23 MB** | 0,31 MB |
+| `satelites` (Satélites: satélite y su presionado, planeta, sobre, nube de polvo) | 5 | 1024×712 | 204 KB | **0,25 MB** | 0,32 MB |
 | `rastro` (Rastro de luz: 9 luceros + 9 presionados) | 18 | 1792×392 | 444 KB | **0,83 MB** | 0,31 MB |
 | `stroop` (Tinta o Palabra: 15 losas con el color de la tinta, la tarjeta y las orillas; gota y libro) | 17 | 1536×708 | 547 KB | **0,77 MB** | 0,46 MB |
-| `punta` (En la punta de la lengua: ficha, casilla, perla) | 3 | 512×196 | 45 KB | **0,06 MB** | 0,04 MB |
+| `punta` (En la punta de la lengua: ficha y su presionada, casilla, perla) | 4 | 640×196 | 75 KB | **0,10 MB** | 0,06 MB |
 
-Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites, Rastro de luz, Tinta o Palabra, En la punta de la lengua y La estrella intrusa (radar + piloto + freno + calculo + disparate + satelites + rastro + stroop + punta + comun + nubi) son unos 6,0 MB sin comprimir la textura y unos 4,1 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites, Rastro de luz, Tinta o Palabra, En la punta de la lengua y La estrella intrusa (radar + piloto + freno + calculo + disparate + satelites + rastro + stroop + punta + comun + nubi) son unos 6,9 MB sin comprimir la textura y unos 4,6 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
 
-## Estado presionado (regla del 14-oct): revisión de los juegos ya migrados
+## Estado presionado (regla del 14-oct): cómo quedó cada juego (Tarea 104)
 
-La regla (arriba, «Reglas que valen para todos»): todo objeto de plasticina que se toca tiene su estado presionado con textura. **Hecho:** los luceros de Rastro de luz (`lucero_p_0..8`) y las losas del kit (`_p`: lo usan los botones con `PlasticPress`: pausa, «Salir», Tinta o Palabra). **Revisión (14-oct) de los demás: qué objetos TOCABLES no tienen todavía imagen presionada con huella** (hoy la respuesta al toque es un cambio de escala, un oscurecer el color o un cambio de tono de selección):
+La regla (arriba, «Reglas que valen para todos»): todo objeto de plasticina que se toca tiene su estado presionado con textura. Quedó hecha para los juegos ya migrados; **los que falten migrar nacen con ella**. La ayuda común para los juegos que leen `Input` directo es
+[`PlasticTouch`](../unity/NeuroVidaCore/Assets/Scripts/Games/Shared/PlasticTouch.cs): el juego la llama cuando ACEPTA un toque (`Press()`), y la losa pasa a su imagen presionada (`_p`) mientras el dedo siga encima y al menos 80 ms, el texto baja con ella, y al soltar vuelve con un
+rebote chico de escala (con «quitar animaciones» solo cambia la imagen). Dos modos: dueña de la losa (Disparate, Intrusa, Punta) o solo lleva la cuenta (`Down`, `Drop`, `Bounce`) para los juegos que ya redibujan la losa en cada cuadro (Rescate, Carga). Las losas del kit traen su `_p`
+(más baja, más oscura, sombra más chica); la de las herramientas de Carga («apagada») es nueva en `comun`. Los objetos propios traen su render presionado: la pieza **aplastada** (~8 % más baja y ~4 % más ancha), **un punto más oscura** (×0,93 como las losas) y con la **huella** de un dedo (un óvalo
+suave y poco profundo con crestas finas), en el mismo lienzo y la misma escala, sin «saltar» de lugar (`aplasta`, `pieza_huella` y `espacio_libre` de `tools/juegos/plasticina.py`).
 
-| Juego | Objetos que se tocan | Cómo responden hoy | Falta |
-|---|---|---|---|
-| Rescate relámpago | las 6 casillas de respuesta y «¡Rescatar!» (losas del kit con lectura de toque propia) | pasan a «marcada» por tono; sin imagen presionada al apoyar | la losa `_p` al apoyar (el kit ya la tiene) |
-| Piloto Estelar | las señales (15; se atrapan tocando) | se atrapan y desaparecen con efecto | una señal presionada (aplastada y con huella) un instante al atraparla |
-| Freno de Emergencia | el botón de cada carril (`boton_encendido` / `boton_apagado`) | se encoge al 90 %, o se oscurece 20 % con «quitar animaciones» | un botón presionado (aplastado y con huella): hoy no hay imagen presionada |
-| Carga exacta | celdas, opciones y herramientas (losas del kit con lectura de toque propia) | tono «elegida»; solo con «quitar animaciones» va hundida (losa `_p`); con movimiento sube y se agranda | la losa `_p` al apoyar el dedo, con o sin animaciones |
-| ¿Verdad o disparate? | VERDAD y DISPARATE (losas del kit con lectura de toque propia) | `PopRect` a 0,94 durante 0,14 s | la losa `_p` al apoyar |
-| Satélites | los satélites al responder (toque en el enjambre) | anillo de marca y `PopRect` 1,12 | un satélite presionado (aplastado y con huella) al marcarlo |
-| En la punta de la lengua / La estrella intrusa | las fichas y botones (losas del kit y ficha propia con `PressedAt` por código) | animación de presión por escala | revisar cuando se haga la pasada |
+| Juego | Qué se ve presionado | Cómo |
+|---|---|---|
+| Rescate relámpago | las 6 casillas de respuesta y «¡Rescatar!» | `PlasticTouch` (modo cuenta): losa `_p` al tocar, además de la «elegida» (hundida); sin el hundir de 3 dp de siempre |
+| Piloto Estelar | la señal que la persona toca (atrapada o falsa alarma) | las 15 `senal_p_*` (a 192 px): se ve presionada mientras se va; las que se van solas, no. **La huella va en el espacio libre más grande entre el detalle de tinta y el borde** (el detalle es el estímulo: no se pisa) |
+| Freno de Emergencia | el botón del carril | `boton_encendido_p` y `boton_apagado_p`: ≥ 0,1 s y rebote chico (el 90 % de escala de siempre solo sin atlas) |
+| Carga exacta | celdas, opciones y herramientas | `PlasticTouch` (modo cuenta): losa `_p` al tocar con o sin animaciones; `losa_md_apagada_p` nueva |
+| ¿Verdad o disparate? | VERDAD y DISPARATE | `PlasticTouch` en lugar del `PopRect` (el ícono y el texto bajan con la losa) |
+| Satélites | el satélite al marcarlo o desmarcarlo | `satelite_p`: ≥ 0,1 s y rebote chico, junto al aro de marca de siempre |
+| En la punta de la lengua | las fichas-letra y los dos botones | `ficha_p` (gris claro: el código la tiñe como a la normal) y `PlasticTouch` en los botones |
+| La estrella intrusa | las 3 opciones y «Seguir» | `PlasticTouch`: la opción tocada se ve presionada (crema, y al acertar o fallar, lima o coral presionada); «Seguir» se ve presionado 0,1 s antes de irse |
+| Rastro de luz (Tarea 103) | los luceros al tocarlos | `lucero_p_0..8` |
+| Tinta o Palabra | los botones | `PlasticPress` con `losa_md_boton_*_p` desde la Tarea 100 |
 
-Qué no cabía en la tarea del lucero: son 6 juegos con lectura de toque propia (no hay `Button`: leen `Input` directo), así que no sirve `PlasticPress`. Lo limpio es una ayuda común (`PlasticTouch`: cambiar la losa a su `_p` mientras el dedo está sobre su rectángulo) y, para los objetos propios (señal de Piloto, botón de Freno, satélite), un estado presionado renderizado cada uno. Se deja en el seguimiento; **lo primero que conviene hacer es la ayuda común para las losas del kit** (Rescate, Carga, Disparate: solo código) y después los tres objetos propios (renders).
+**Medido** (`tools/juegos/mide_presionados.py`, informe en `tools/juegos/out/presionados_medidas.md`; pruebas `PressedSpritesTests`, `PlasticTouchTests` y las de cada juego): la pieza presionada es 0,5 a 4 % más ancha (las señales, hasta 2,8 %: la gota y el triángulo llegan casi al borde del lienzo y no pueden crecer más), el centro
+se corre 2,5 px como máximo (no «salta») y queda a 4 px o más del borde del lienzo (no se recorta); queda a 0,83-0,91 de la luminosidad de la normal (ΔE 3,2 a 7,0: un punto más oscura sin cambiar de color: el color de los luceros, los metales y las señales sigue siendo el dato); la tinta del detalle de las
+señales se conserva (≥ 104 %); la letra de tinta sobre la ficha presionada de Punta rinde 11,9 (normal), 10,0 (fija), 8,9 (oro), 9,8 (plata), 5,9 (cobre) y 5,8:1 (azul). **La huella se ve** (el detalle fino de la superficie en su zona pasa de 0,5-2,6 a 3,0-12,6), pero es **chica donde el espacio libre es chico**: en las señales,
+en el botón y en el satélite mide unos 0,3 de diámetro (en el botón apagado, azul oscuro, se ve poco). Hoja con un cuadro normal y uno presionado de cada objeto, armada con los sprites reales (la herramienta de capturas no puede simular un dedo apoyado): [`previews/plasticina/presionados.png`](previews/plasticina/presionados.png)
+(`tools/juegos/hoja_presionados.py`).
+
+Peso (Tarea 104): `piloto` pasa de 0,58 a 1,21 MB (las 15 señales presionadas; 0,64 MB con ASTC), `freno` de 0,50 a 0,66 MB, `satelites` de 0,23 a 0,25 MB, `punta` de 0,06 a 0,10 MB y `comun` de 1,05 a 1,11 MB (la losa apagada presionada); todos bajo el tope de ~1,5 MB por juego.

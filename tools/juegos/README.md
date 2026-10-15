@@ -16,6 +16,8 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `plasticina.py` | El módulo común de Blender. **No copia nada de `tools/isla/isla.py`: lo TOMA** (lee su árbol de sintaxis y ejecuta solo `clay()`, `studio()`, `compositor()`, `setup_render()` y las funciones de las losas del kit), así que si la luz o el material cambian, los juegos cambian con ellos. Pone la cámara ortogonal inclinada del kit (con la compensación 1/cos para que las formas planas salgan como se dibujaron), el suelo que solo recibe sombra, `pieza()` (un contorno levantado con el canto redondo) y el render con fondo transparente. |
 | `formas.py` | Las formas con silueta que comparten Rescate y Piloto: `contorno_forma(tipo, extra)` (las mismas SDF de `RadarSprites.ShapeSdf` y `PilotSignalSprites.ShapeSdf`), `recorta_banda` (la franja) y `engorda`. |
 | `radar.py` | Rescate relámpago: las 6 cápsulas (256 px) y sus íconos (128 px), la roca, el aro del radar (con consola y antena), la nave con sus 10 asientos y la bolita que los llena. Escribe `medidas.json` (dónde caen los asientos…). |
+| `mide_presionados.py` | Los estados presionados de Piloto, Freno, Satélites y Punta contra los normales: tamaño y margen del lienzo, centro, color (luminosidad y ΔE), tinta del detalle y el detalle fino donde cae la huella. |
+| `hoja_presionados.py` | Arma `docs/previews/plasticina/presionados.png`: un cuadro normal y uno presionado de lo que se toca en cada juego, con los sprites reales de los atlas. |
 | `piloto.py` | Piloto Estelar: las 15 señales (5 formas × punto, anillo y franja, con el detalle de churro de tinta incrustado) y la nave. Las maestras salen a 384 px; `empaqueta.py` saca de la misma maestra la versión de 192 y la chica de 96. |
 | `cohete.py` | El cohete de plasticina que comparten Piloto (la nave) y Freno (los de cada carril, con el acento coral, cielo o lima). Solo se importa desde scripts de Blender. |
 | `freno.py` | Freno de Emergencia: el botón de lanzamiento (apagado y encendido), los 3 cohetes, la plataforma y la señal de ALTO, cada uno en el mismo lienzo que el sprite procedural al que reemplaza. |
@@ -91,15 +93,15 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 | Grupo | Sprites | Atlas | PNG | En el APK (sin comprimir) | Con ASTC 6×6 |
 |---|---:|---|---:|---:|---:|
 | `radar` (Rescate relámpago) | 16 | 1024×1776 | 790 KB | 1,11 MB | 0,77 MB |
-| `piloto` (Piloto Estelar) | 31 | 1664×492 | 472 KB | 0,58 MB | 0,35 MB |
-| `freno` (Freno de Emergencia) | 7 | 1152×664 | 369 KB | 0,50 MB | 0,33 MB |
+| `piloto` (Piloto Estelar) | 46 | 1664×884 | 912 KB | 1,21 MB | 0,64 MB |
+| `freno` (Freno de Emergencia) | 9 | 1408×664 | 473 KB | 0,66 MB | 0,41 MB |
 | `calculo` (Carga exacta: aro y núcleo del reactor) | 2 | 1152×556 | 242 KB | 0,32 MB | 0,27 MB |
 | `disparate` (¿Verdad o disparate?: antena, íconos, barras del medidor) | 5 | 512×574 | 125 KB | 0,16 MB | 0,13 MB |
-| `satelites` (Satélites: satélite, planeta, sobre, nube) | 4 | 1408×516 | 193 KB | 0,23 MB | 0,31 MB |
+| `satelites` (Satélites: satélite, planeta, sobre, nube) | 5 | 1024×712 | 204 KB | 0,25 MB | 0,32 MB |
 | `rastro` (Rastro de luz: 9 luceros + 9 presionados) | 18 | 1792×392 | 444 KB | 0,83 MB | 0,31 MB |
 | `stroop` (Tinta o Palabra: losas de color exacto, gota y libro) | 17 | 1536×708 | 547 KB | 0,77 MB | 0,46 MB |
-| `punta` (En la punta de la lengua: ficha, casilla, perla) | 3 | 512×196 | 45 KB | 0,06 MB | 0,04 MB |
-| `comun` (losas, marcas, anillo) | 28 | 896×2292 | 815 KB | 1,05 MB | 0,87 MB |
+| `punta` (En la punta de la lengua: ficha, casilla, perla) | 4 | 640×196 | 75 KB | 0,10 MB | 0,06 MB |
+| `comun` (losas, marcas, anillo) | 29 | 896×2472 | 849 KB | 1,11 MB | 0,97 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 
 Si algún juego se pasa del tope: bajar el ancho final de sus imágenes en `empaqueta.py` (`ANCHOS_<JUEGO>`, la maestra de Blender no se toca) o comprimir su atlas (ASTC 6×6 en el `.meta`/`PlasticinaImporter`).

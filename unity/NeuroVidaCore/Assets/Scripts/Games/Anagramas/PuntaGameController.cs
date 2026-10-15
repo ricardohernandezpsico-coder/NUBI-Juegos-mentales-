@@ -90,6 +90,7 @@ namespace NeuroVida.Games.Anagramas
             public int Slot = -1;
             public bool Locked, Gone, Lit;
             public float Born, Phase, Fade, ScaleNow;
+            public float PressedAt = -10f;      // el último toque de la persona sobre la ficha (plasticina: se ve la ficha presionada un instante)
             public Color LitColor;
         }
 
@@ -126,6 +127,7 @@ namespace NeuroVida.Games.Anagramas
             public IntentKind Kind;
             public float PressedAt = -10f;
             public CanvasGroup Group;
+            public PlasticTouch Touch;  // plasticina: la losa presionada al tocarlo (null sin el atlas)
         }
 
         // ------------------------------------------------------------------ estado
@@ -489,6 +491,7 @@ namespace NeuroVida.Games.Anagramas
         private void TapTile(Tile t)
         {
             if (t == null || _phase != Phase.Build || t.Gone) return;
+            t.PressedAt = GameClock.Time;                              // plasticina: la ficha se ve presionada (aplastada, con la huella de un dedo) un instante
             if (t.Slot >= 0)
             {
                 if (t.Locked) { StartCoroutine(PopRect(t.Root, 1.12f, 0.18f)); return; }
@@ -1001,6 +1004,7 @@ namespace NeuroVida.Games.Anagramas
                 if (r.Contains(p))
                 {
                     b.PressedAt = GameClock.Time;
+                    b.Touch?.Press();                                  // plasticina: la losa presionada con su huella
                     return new Intent { Kind = b.Kind };
                 }
             }
@@ -1207,6 +1211,11 @@ namespace NeuroVida.Games.Anagramas
             t.ScaleNow = Mathf.Lerp(t.ScaleNow <= 0f ? target : t.ScaleNow, target, spring);
             if (t.Gone) { t.Fade = Mathf.Min(1f, t.Fade + 0.06f); }
             t.Root.localScale = Vector3.one * Mathf.Max(0.0001f, t.ScaleNow);
+            if (PlasticTiles && t.Face != null)
+            {
+                var face = PlasticArt.Get(PlasticGroup, now - t.PressedAt < PlasticTouch.MinSeconds + 0.04f ? "ficha_p" : "ficha");
+                if (face != null && t.Face.sprite != face) t.Face.sprite = face;
+            }
             float alpha = Mathf.Clamp01((now - t.Born) / 0.25f) * (1f - t.Fade);
             float dim = _strict && t.Slot < 0 && t != _allowTile ? 0.35f : 1f;     // tutorial: solo la ficha pedida se ve completa
             SetTileAlpha(t, (Motion.Decorative ? alpha : (1f - t.Fade)) * dim);
@@ -1347,7 +1356,7 @@ namespace NeuroVida.Games.Anagramas
                 if (!b.Visible) continue;
                 if (b.Group != null) b.Group.alpha = _strict && b.Kind != _allowKind ? 0.35f : 1f;
                 float pr = Mathf.Max(0f, 1f - (now - b.PressedAt) / 0.2f);
-                b.Root.anchoredPosition = P(b.Rect.center) + new Vector2(0f, -pr * 4f * _s);
+                b.Root.anchoredPosition = P(b.Rect.center) + new Vector2(0f, -pr * (b.Touch != null ? 0f : 4f) * _s);       // con plasticina la baja la losa presionada, no el botón entero
             }
         }
 
@@ -1395,7 +1404,8 @@ namespace NeuroVida.Games.Anagramas
             b.Root.anchoredPosition = P(rect.center);
             b.Label.text = label;
             b.Label.color = primary ? NeuroStyle.Ink : ButtonText;
-            if (b.Slab != null) PlasticSlab.Set(b.Slab, SlabSize.Button, primary ? SlabTone.Sky : SlabTone.Night);
+            if (b.Touch != null) b.Touch.SetTone(primary ? SlabTone.Sky : SlabTone.Night);      // plasticina: cambia la losa conservando si está presionada
+            else if (b.Slab != null) PlasticSlab.Set(b.Slab, SlabSize.Button, primary ? SlabTone.Sky : SlabTone.Night);
             else b.Bg.color = primary ? Cyan : ButtonSecondary;
             b.Label.rectTransform.offsetMin = new Vector2(10f, 4f);
             b.Label.rectTransform.offsetMax = new Vector2(-10f, -4f);
@@ -1755,6 +1765,7 @@ namespace NeuroVida.Games.Anagramas
                 }
                 b.Label = MakeText(b.Root, "Label", Mathf.RoundToInt(19f * UnitsPerDp), TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
                 BestFit(b.Label, Mathf.RoundToInt(15f * UnitsPerDp));
+                b.Touch = PlasticTouch.On(go, b.Slab, SlabSize.Button, SlabTone.Sky);            // sin movers: ConfigureButton reacomoda el texto en cada momento
                 go.SetActive(false);
                 _buttons[i] = b;
             }

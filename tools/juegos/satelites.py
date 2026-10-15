@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Satélites «enciende tu planeta» en plasticina (Tarea 98): el satélite (UNO solo: todos son iguales), el planeta a oscuras, el sobre del mensaje y la nube de polvo.
 
-Uso: blender -b -P tools/juegos/satelites.py -- [--solo satelite|planeta|sobre|nube] [--samples N] [--out DIR]
+Uso: blender -b -P tools/juegos/satelites.py -- [--solo satelite|satelite_p|planeta|sobre|nube] [--samples N] [--out DIR]
 Salida (en --out, por defecto tools/juegos/out): las «maestras» con fondo transparente; `empaqueta.py satelites` las reduce al tamaño final.
 
 Cada pieza sale en el MISMO lienzo y a la MISMA escala que el sprite procedural de `SatelliteSprites` al que reemplaza (satélite ±1,25; planeta ±1,14; sobre ±1,3; nube ±1): el controlador no cambia ninguna medida. Donde el sprite de hoy lleva borde de tinta, la plasticina ocupa
@@ -29,6 +29,25 @@ def satelite(r):
         churro_c((sx * 0.76, -0.13), (sx * 0.76, 0.13), 0.016, 0.12, mat_kit('m_j_sat_div', divisoria), 'sat_divisoria')
     disco(0.55 + L - 0.01, SAT_H, 0.09, cuerpo, nombre='sat_disco', padre=r, verts=96)
     disco(0.2, 0.03, 0.012, nucleo, loc=(0, 0, SAT_H - 0.012), nombre='sat_nucleo', padre=r, verts=64)
+
+def satelite_presionado(r):
+    """El estado presionado del satélite (regla del 14-oct: lo toca la persona al responder): aplastado, un punto más oscuro y con la huella de un dedo en el cuerpo (en el espacio libre entre el núcleo y el borde). Idéntico a los demás satélites."""
+    aplasta(r)
+    osc = lambda c: oscurece(c, PRES_OSCURA)
+    cuerpo = '#E9E6FF'; brazo = '#9C94D6'; panel = '#7FB6FF'; nucleo = '#5A5296'; divisoria = '#587EB3'
+    pieza(redondeado(rect(0, 0, 0.675, 0.025), 0.025 + L), 0.08, 0.03, osc(brazo), 'sat_brazo', padre=r)
+    for sx in (-1, 1):
+        pieza(redondeado(rect(sx * 0.76, 0, 0.13, 0.10), 0.05 + L), 0.12, 0.04, osc(panel), 'sat_panel', padre=r)
+        churro_c((sx * 0.76 * PRES_ANCHO, -0.13 * PRES_ANCHO), (sx * 0.76 * PRES_ANCHO, 0.13 * PRES_ANCHO), 0.016, 0.12 * PRES_ALTO, mat_kit('m_j_sat_div', divisoria), 'sat_divisoria')
+    cont = circulo(0.55 + L - 0.01, 96)
+    cx, cy, d = espacio_libre(cont, [((0.0, 0.0), (0.0, 0.0), 0.2 + 0.03)])
+    rd = max(0.09, min(0.2, (d - 0.04) / 1.3))
+    print(f'[juegos] huella del satélite: centro ({cx:.2f}, {cy:.2f}), espacio libre {d:.2f}, semieje {rd:.2f}')
+    pieza_huella(cont, SAT_H, 0.09, osc(cuerpo), 'sat_disco_p', padre=r, huella=(cx, cy, rd), anillos=48, suave=True)
+    disco(0.2, 0.03, 0.012, nucleo, loc=(0, 0, SAT_H - 0.012), nombre='sat_nucleo', padre=r, verts=64)
+
+def render_satelite_presionado():
+    una('satelite_p', satelite_presionado, SAT_LIENZO, SAT_LIENZO, SAT_PX / SAT_LIENZO, centro=(0.0, sube(SAT_H * PRES_ALTO) / 2))
 
 def render_satelite():
     una('satelite', satelite, SAT_LIENZO, SAT_LIENZO, SAT_PX / SAT_LIENZO, centro=(0.0, sube(SAT_H) / 2))
@@ -77,6 +96,7 @@ def render_nube():
 
 preparar()
 if SOLO in ('todo', 'satelite'): render_satelite()
+if SOLO in ('todo', 'satelite_p'): render_satelite_presionado()
 if SOLO in ('todo', 'planeta'): render_planeta()
 if SOLO in ('todo', 'sobre'): render_sobre()
 if SOLO in ('todo', 'nube'): render_nube()

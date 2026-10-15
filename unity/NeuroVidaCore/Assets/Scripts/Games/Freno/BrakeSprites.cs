@@ -29,9 +29,13 @@ namespace NeuroVida.Games.Freno
 
         public static Sprite StopSign() => PlasticArt.Get(PlasticGroup, "alto") ?? (_stop != null ? _stop : _stop = ToSprite(RenderStopSign(256), 256, 256));
         public static Sprite LaunchPad() => PlasticArt.Get(PlasticGroup, "plataforma") ?? (_pad != null ? _pad : _pad = ToSprite(RenderLaunchPad(256), 256, 256));
-        public static Sprite LaunchButton(bool lit)
+        /// <summary>true si el atlas trae el botón presionado (aplastado, un punto más oscuro y con la huella de un dedo).</summary>
+        public static bool HasPressedButton => PlasticArt.Has(PlasticGroup, "boton_encendido_p");
+
+        /// <summary>El botón de lanzamiento (encendido o apagado); <paramref name="pressed"/>: el estado presionado (solo con plasticina: sin ella devuelve el de siempre).</summary>
+        public static Sprite LaunchButton(bool lit, bool pressed = false)
         {
-            var plastic = PlasticArt.Get(PlasticGroup, lit ? "boton_encendido" : "boton_apagado");
+            var plastic = PlasticArt.Get(PlasticGroup, (lit ? "boton_encendido" : "boton_apagado") + (pressed ? "_p" : "")) ?? (pressed ? PlasticArt.Get(PlasticGroup, lit ? "boton_encendido" : "boton_apagado") : null);
             if (plastic != null) return plastic;
             if (lit) return _buttonLit != null ? _buttonLit : _buttonLit = ToSprite(RenderButton(256, true), 256, 256);
             return _button != null ? _button : _button = ToSprite(RenderButton(256, false), 256, 256);

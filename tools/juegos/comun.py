@@ -22,7 +22,7 @@ def render_losas():
     with material_kit(spec=0.05, sheen=0.0):
         for clave, dis in DISENO.items():
             losa('losa_md_' + clave, dis)
-            if clave == 'noche': losa('losa_md_' + clave + '_p', dis, presionada=True)
+            if clave in ('noche', 'apagada'): losa('losa_md_' + clave + '_p', dis, presionada=True)          # (la apagada: las herramientas de Carga exacta, que se tocan)
 
 # ------------------------------------------------------------------ marcas ✓ y ✗ (AnswerMarkSprite: lienzo ±1,1, disco de radio 0,8, glifo de churro tinta)
 def marca(color, glifo):

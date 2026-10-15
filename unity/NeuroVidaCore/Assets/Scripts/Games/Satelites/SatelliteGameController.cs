@@ -548,6 +548,32 @@ namespace NeuroVida.Games.Satelites
             if (i >= 0) ToggleMark(i);
         }
 
+        /// <summary>
+        /// El satélite que la persona toca se ve presionado un instante (plasticina, 14-oct): aplastado, un punto más oscuro y con la huella de un dedo, al menos 0,1 s, y vuelve con un rebote chico (con «quitar animaciones», solo cambia la imagen).
+        /// Sin el atlas no hace nada: el anillo de marca y el «pop» de siempre.
+        /// </summary>
+        private IEnumerator PressSat(int i)
+        {
+            var pressed = SatelliteSprites.BodyPressed();
+            var body = _sats[i].Body;
+            if (pressed == null || body == null) yield break;
+            body.sprite = pressed;
+            float t = 0f;
+            while (t < PlasticTouch.MinSeconds + 0.02f) { t += GameClock.DeltaTime; yield return null; }
+            if (body.sprite == pressed) body.sprite = SatelliteSprites.Body();
+            if (!Motion.Decorative) yield break;
+            t = 0f;
+            var r = body.rectTransform;
+            while (t < PlasticTouch.BounceSeconds)
+            {
+                t += GameClock.DeltaTime;
+                float u = Mathf.Clamp01(t / PlasticTouch.BounceSeconds);
+                r.localScale = Vector3.one * (1f + 0.07f * Mathf.Sin(u * Mathf.PI * 2f) * (1f - u));
+                yield return null;
+            }
+            r.localScale = Vector3.one;
+        }
+
         private void ToggleMark(int i)
         {
             int n = MarkedCount();
@@ -555,6 +581,7 @@ namespace NeuroVida.Games.Satelites
             {
                 _marked[i] = false;
                 n--;
+                StartCoroutine(PressSat(i));
                 _sats[i].MarkRing.gameObject.SetActive(false);
                 PlayClip(SatelliteSounds.Unmark(), 0.7f);
             }
@@ -567,6 +594,7 @@ namespace NeuroVida.Games.Satelites
             {
                 _marked[i] = true;
                 n++;
+                StartCoroutine(PressSat(i));
                 var ring = _sats[i].MarkRing;
                 ring.color = Cyan;
                 ring.gameObject.SetActive(true);

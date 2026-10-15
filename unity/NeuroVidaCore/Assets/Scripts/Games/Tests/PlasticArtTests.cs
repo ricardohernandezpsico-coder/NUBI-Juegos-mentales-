@@ -100,13 +100,14 @@ namespace NeuroVida.Games.Tests
                 Assert.AreEqual(e.borde[0], s.border.x, 0.01f, sprite);
                 slabs++;
             }
-            Assert.AreEqual(25, slabs, "las losas del kit (ch 6, md 12, gr 2) y las 5 de las casillas «noche» (normal, presionada, acierto, error, apagada)");
+            Assert.AreEqual(26, slabs, "las losas del kit (ch 6, md 12, gr 2) y las 6 de las casillas «noche» (normal, presionada, acierto, error, apagada y la apagada presionada de las herramientas de Carga exacta)");
             // las combinaciones que usan los juegos existen, normal y presionada
             foreach (SlabTone tone in new[] { SlabTone.Sun, SlabTone.Cream, SlabTone.Sky, SlabTone.Lilac, SlabTone.Coral, SlabTone.Lime, SlabTone.Night, SlabTone.Hit, SlabTone.Miss, SlabTone.Dim })
                 Assert.IsTrue(PlasticSlab.Available(SlabSize.Button, tone), "falta la losa md " + tone);
             Assert.IsTrue(PlasticSlab.Available(SlabSize.Panel, SlabTone.Cream), "falta la lámina grande crema");
             Assert.IsTrue(PlasticSlab.Available(SlabSize.Chip, SlabTone.Sun) && PlasticSlab.Available(SlabSize.Chip, SlabTone.Lime), "faltan las losas chicas");
             Assert.IsNotNull(PlasticSlab.Sprite(SlabSize.Button, SlabTone.Night, true), "la casilla «noche» tiene su imagen presionada");
+            Assert.AreNotEqual(PlasticSlab.Sprite(SlabSize.Button, SlabTone.Dim, false), PlasticSlab.Sprite(SlabSize.Button, SlabTone.Dim, true), "la losa apagada (las herramientas de Carga exacta, que se tocan) tiene su imagen presionada");
             Assert.AreEqual(SlabSize.Button, PlasticSlab.Resolve(SlabSize.Chip, SlabTone.Coral), "sin losa chica coral, se usa la mediana (como en la app)");
         }
 

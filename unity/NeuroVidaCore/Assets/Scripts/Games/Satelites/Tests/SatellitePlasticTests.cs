@@ -183,6 +183,16 @@ namespace NeuroVida.Games.Satelites.Tests
         }
 
         [Test]
+        public void ThePressedSatellite_IsAnotherImage_AndOnlyWithThePlasticAtlas()
+        {
+            // Tarea 104 (regla del 14-oct): el satélite que la persona toca al responder se ve presionado (aplastado, un punto más oscuro, con la huella de un dedo)
+            Assert.IsNotNull(SatelliteSprites.BodyPressed(), "falta el satélite presionado en el atlas");
+            Assert.AreNotEqual(SatelliteSprites.Body(), SatelliteSprites.BodyPressed());
+            PlasticArt.Disabled = true;
+            Assert.IsNull(SatelliteSprites.BodyPressed(), "sin plasticina el juego deja el satélite de siempre");
+        }
+
+        [Test]
         public void WithoutThePlasticAtlas_SatellitesKeepsItsProceduralArt()
         {
             PlasticArt.Disabled = true;

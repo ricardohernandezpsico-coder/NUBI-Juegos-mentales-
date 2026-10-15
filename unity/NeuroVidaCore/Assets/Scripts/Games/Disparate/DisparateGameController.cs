@@ -492,7 +492,12 @@ namespace NeuroVida.Games.Disparate
         private static bool InRect(Vector2 p, Vector2 center, Vector2 size) =>
             Mathf.Abs(p.x - center.x) <= size.x * 0.5f && Mathf.Abs(p.y - center.y) <= size.y * 0.5f;
 
-        private void PressButton(RectTransform rect) => StartCoroutine(PopRect(rect, 0.94f, 0.14f));
+        private void PressButton(RectTransform rect)
+        {
+            var touch = rect.GetComponent<PlasticTouch>();
+            if (touch != null) touch.Press();                                  // plasticina: la losa presionada con su huella (14-oct), no el encogerse de siempre
+            else StartCoroutine(PopRect(rect, 0.94f, 0.14f));
+        }
 
         private void RequestAnswer(bool saysTruth)
         {
@@ -1436,11 +1441,11 @@ namespace NeuroVida.Games.Disparate
 
         private void BuildButtons()
         {
-            _btnTrue = MakeButton("VERDAD", GoodColor, DisparateSprites.CheckIcon());
-            _btnFalse = MakeButton("DISPARATE", BadColor, DisparateSprites.BrokenWaveIcon());
+            _btnTrue = MakeButton("VERDAD", GoodColor, DisparateSprites.CheckIcon(), 120f);
+            _btnFalse = MakeButton("DISPARATE", BadColor, DisparateSprites.BrokenWaveIcon(), 150f);       // la onda cortada ocupa menos alto que el ✓: con 150 u se ve del mismo tamaño que él
         }
 
-        private RectTransform MakeButton(string label, Color color, Sprite icon)
+        private RectTransform MakeButton(string label, Color color, Sprite icon, float iconSize)
         {
             var go = new GameObject("Button" + label);
             go.transform.SetParent(_play, false);
@@ -1448,7 +1453,9 @@ namespace NeuroVida.Games.Disparate
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
             var img = go.AddComponent<Image>();
-            if (PlasticSlab.TryStyle(img, SlabSize.Button, PlasticSlab.Nearest(color)) == null)    // plasticina: losa lima (VERDAD) o coral (DISPARATE) del kit
+            var tone = PlasticSlab.Nearest(color);
+            var slab = PlasticSlab.TryStyle(img, SlabSize.Button, tone);                           // plasticina: losa lima (VERDAD) o coral (DISPARATE) del kit
+            if (slab == null)
             {
                 img.sprite = RoundedRectSprite.Get(64);
                 img.type = Image.Type.Sliced;
@@ -1457,7 +1464,7 @@ namespace NeuroVida.Games.Disparate
                 NeuroStyle.ClayFrame(img, 6f, 14f);
             }
             var ic = NewImage(r, "Icon", icon);
-            ic.rectTransform.sizeDelta = new Vector2(120f, 120f);
+            ic.rectTransform.sizeDelta = new Vector2(iconSize, iconSize);
             ic.rectTransform.anchoredPosition = new Vector2(0f, 46f);
             ic.gameObject.SetActive(true);
             var t = MakeText(r, "Label", 62, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
@@ -1467,6 +1474,7 @@ namespace NeuroVida.Games.Disparate
             tr.anchoredPosition = new Vector2(0f, -58f);
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.text = label;
+            PlasticTouch.On(go, slab, SlabSize.Button, tone, ic.rectTransform, tr);               // plasticina: al tocarlo la losa pasa a su imagen presionada (con su huella) y el ícono y el texto bajan con ella
             return r;
         }
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Piloto Estelar en plasticina (Tarea 95): las 15 señales (5 formas × 3 detalles) y la nave del jugador.
 
-Uso: blender -b -P tools/juegos/piloto.py -- [--solo senales|nave] [--samples N] [--out DIR]
+Uso: blender -b -P tools/juegos/piloto.py -- [--solo senales|senales_p|nave] [--samples N] [--out DIR]
 Salida (en --out, por defecto tools/juegos/out/piloto): PNG con fondo transparente (las «maestras» a mayor resolución; `empaqueta.py` las reduce al tamaño final y saca de la misma maestra la versión chica de la tarjeta de misión).
 
 Las señales son las MISMAS formas y colores FIJOS que las cápsulas de Rescate (`formas.py`: las SDF de `PilotSignalSprites.ShapeSdf` son las de `RadarSprites.ShapeSdf`), en el mismo lienzo de ±1,18 y con el mismo grosor de plasticina, SIN la ventanilla: en su lugar,
@@ -43,6 +43,37 @@ def render_senales():
         for det in DETALLES:
             una(f'senal_{tipo}_{det}', senal(tipo, color, det), SEN_LIENZO, SEN_LIENZO, SEN_PX / SEN_LIENZO, centro=(0.0, sube(SEN_H) / 2))
 
+# ------------------------------------------------------------------ la señal PRESIONADA (regla del 14-oct: se ve solo cuando la persona la toca). Aplastada, un punto más oscura y con la huella de un dedo; el DETALLE de tinta (punto, anillo o franja) es el
+# estímulo y NO se pisa: la huella va en el espacio libre más grande que queda entre el detalle y el borde de la forma.
+def obstaculos_detalle(tipo, detalle):
+    cy = detalle_y(tipo)
+    if detalle == 'punto': return [((0.0, cy), (0.0, cy), 0.27 + 0.05)]
+    if detalle == 'anillo': return [((0.42 * math.cos(a), cy + 0.42 * math.sin(a)), (0.42 * math.cos(a), cy + 0.42 * math.sin(a)), 0.075 + 0.05) for a in [2 * math.pi * k / 24 for k in range(24)]]
+    return [((-1.2, cy), (1.2, cy), 0.15 + 0.05)]
+
+def senal_presionada(tipo, color, detalle):
+    def construir(r):
+        aplasta(r, 1.025)                                      # las puntas de la gota y del triángulo llegan casi al borde del lienzo: no pueden crecer 4 %
+        cont = contorno_forma(tipo)
+        cx, cy2, d = espacio_libre(cont, obstaculos_detalle(tipo, detalle))
+        rd = max(0.11, min(0.30, (d - 0.10) / 1.3))
+        print(f'[juegos] huella de {tipo} {detalle}: centro ({cx:.2f}, {cy2:.2f}), espacio libre {d:.2f}, semieje {rd:.2f}')
+        pieza_huella(cont, SEN_H, 0.15, oscurece(color, PRES_OSCURA), 'sen_p_' + tipo, padre=r, panza=0.012, huella=(cx, cy2, rd))
+        cy = detalle_y(tipo); z = SEN_H
+        if detalle == 'punto':
+            disco(0.27, 0.07, 0.03, material=tinta(), loc=(0, cy, z - 0.012), nombre='sen_punto', padre=r, verts=64)
+        elif detalle == 'anillo':
+            aro_plano(0.42, 0.075, material=tinta(), loc=(0, cy, z + 0.03), nombre='sen_anillo', padre=r)
+        else:
+            banda = recorta_banda(contorno_forma(tipo, EXTRA - 0.11), cy - 0.15, cy + 0.15)
+            pieza(banda, 0.07, 0.03, material=tinta(), nombre='sen_franja', z0=z - 0.012, padre=r)
+    return construir
+
+def render_senales_presionadas():
+    for tipo, color in zip(FORMAS, COLORES):
+        for det in DETALLES:
+            una(f'senal_p_{tipo}_{det}', senal_presionada(tipo, color, det), SEN_LIENZO, SEN_LIENZO, SEN_PX / SEN_LIENZO, centro=(0.0, sube(SEN_H * PRES_ALTO) / 2))
+
 # ------------------------------------------------------------------ la nave (PilotShipSprite: lienzo de ±1,1, mirando hacia arriba)
 NAV_LIENZO = 2.2
 NAV_PX = 384
@@ -80,5 +111,6 @@ def render_nave():
 
 preparar()
 if SOLO in ('todo', 'senales'): render_senales()
+if SOLO in ('todo', 'senales_p'): render_senales_presionadas()
 if SOLO in ('todo', 'nave'): render_nave()
 termina()

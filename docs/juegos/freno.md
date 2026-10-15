@@ -76,3 +76,7 @@ Cada pieza sale en el MISMO lienzo y a la MISMA escala que el sprite procedural 
 
 **Pruebas:** `BrakePlasticTests` (huella, flecha contra botón y luminosidad apagado/encendido, ALTO, casco común y acento por carril, que el cohete quepa entre las torres, ángulo, caída al procedural sin el atlas). Las del resto de Freno no cambiaron (`BrakeContractTests`, `FrenoTutorialTests`).
 
+### Estado presionado (Tarea 104, 14-oct)
+
+Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](../plasticina-juegos.md) § «Estado presionado».
+- **Freno:** el botón de cada carril pasa a `boton_encendido_p` / `boton_apagado_p` (aplastado, un punto más oscuro, con la huella de un dedo en el espacio libre de al lado de la flecha: la flecha es lo que se lee y no se pisa) al menos 0,1 s y vuelve con un rebote chico; sin el atlas, el 90 % de escala de siempre (o oscurecer con «quitar animaciones»). En el botón apagado (azul oscuro) la huella se ve poco.

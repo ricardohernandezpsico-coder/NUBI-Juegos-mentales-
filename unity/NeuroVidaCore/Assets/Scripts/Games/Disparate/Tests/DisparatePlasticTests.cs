@@ -311,6 +311,8 @@ namespace NeuroVida.Games.Disparate.Tests
                     foreach (var t in go.GetComponentsInChildren<Transform>(true)) if (t.name == "Slab") slabs++;
                     if (disabled) Assert.AreEqual(0, slabs, "sin plasticina no hay losas");
                     else Assert.GreaterOrEqual(slabs, 4, "con plasticina: la placa, los dos botones y el panel del final son losas (" + slabs + ")");
+                    int touches = go.GetComponentsInChildren<PlasticTouch>(true).Length;           // Tarea 104: VERDAD y DISPARATE se ven presionados (con la huella) al tocarlos
+                    Assert.AreEqual(disabled ? 0 : 2, touches, "los dos botones llevan su estado presionado solo con plasticina");
                 }
                 finally { Object.DestroyImmediate(go); }
             }

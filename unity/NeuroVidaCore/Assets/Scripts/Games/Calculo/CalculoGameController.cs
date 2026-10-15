@@ -67,6 +67,7 @@ namespace NeuroVida.Games.Calculo
             public CanvasGroup Group;
             public Image Halo, Glow, Face, Window, Shine;
             public Image Slab;          // la losa de plasticina de la cara (null sin el atlas: queda la cara de siempre)
+            public PlasticTouch Touch;  // plasticina: la losa presionada al tocarla (null sin el atlas)
             public Text Label;
             public bool Shown, Flying;
             public int Value;
@@ -81,6 +82,7 @@ namespace NeuroVida.Games.Calculo
             public RectTransform Root;
             public Image Shadow, Bg;
             public Image Slab;          // la losa de plasticina (null sin el atlas)
+            public PlasticTouch Touch;  // plasticina: la losa presionada al tocarla (null sin el atlas)
             public Text Label;
             public CargaOp Op;
             public Rect Rect;           // lógico (dp)
@@ -93,6 +95,7 @@ namespace NeuroVida.Games.Calculo
             public RectTransform Root;
             public Image Bg;
             public Image Slab;          // la losa de plasticina (null sin el atlas)
+            public PlasticTouch Touch;  // plasticina: la losa presionada al tocarla (null sin el atlas)
             public Text Label;
             public Rect Rect;
             public bool Undo, Visible;
@@ -755,16 +758,17 @@ namespace NeuroVida.Games.Calculo
             foreach (var v in _views)
             {
                 if (!v.Shown || v.Flying || GameClock.Time < v.BornAt) continue;
-                if (Mathf.Abs(p.x - v.Target.x) < hw && Mathf.Abs(p.y - v.Target.y) < hh) { TapCell(v.Id); return; }
+                if (Mathf.Abs(p.x - v.Target.x) < hw && Mathf.Abs(p.y - v.Target.y) < hh) { v.Touch?.Press(); TapCell(v.Id); return; }
             }
             for (int i = 0; i < _shownOpCount; i++)
             {
                 var o = _opViews[i];
-                if (o.Rect.Contains(p)) { TapOp(o.Op); return; }
+                if (o.Rect.Contains(p)) { o.Touch?.Press(); TapOp(o.Op); return; }
             }
             foreach (var tl in _toolViews)
             {
                 if (!tl.Visible || !tl.Rect.Contains(p)) continue;
+                tl.Touch?.Press();
                 if (tl.Undo) Undo(); else Restart();
                 return;
             }
@@ -846,9 +850,13 @@ namespace NeuroVida.Games.Calculo
             if (v.Slab != null)
             {
                 // plasticina: lograda = sol, elegida = cielo; con «quitar animaciones» la elegida además va hundida (la celda no sube): se distingue por la forma, no solo por el color
-                bool sunk = sel && !win && !Motion.Decorative;
-                PlasticSlab.Set(v.Slab, SlabSize.Button, win ? SlabTone.Sun : sel ? SlabTone.Sky : SlabTone.Cream, sunk);
-                v.Label.rectTransform.anchoredPosition = new Vector2(0f, 4f * _s - (sunk ? PlasticSlab.PressDrop(SlabSize.Button, SlabTone.Sky) : 0f));
+                // además, al tocarla (con o sin animaciones) la losa pasa a su imagen presionada, con su huella, y vuelve con un rebote chico (PlasticTouch)
+                var tone = win ? SlabTone.Sun : sel ? SlabTone.Sky : SlabTone.Cream;
+                v.Touch?.SetTone(tone);
+                bool sunk = (sel && !win && !Motion.Decorative) || (v.Touch != null && v.Touch.Down);
+                PlasticSlab.Set(v.Slab, SlabSize.Button, tone, sunk);
+                v.Slab.rectTransform.localScale = Vector3.one * (1f + (v.Touch != null ? v.Touch.Bounce : 0f));
+                v.Label.rectTransform.anchoredPosition = new Vector2(0f, 4f * _s - (sunk ? PlasticSlab.PressDrop(SlabSize.Button, tone) : 0f));
             }
             else v.Face.color = win ? CellWin : sel ? CellSelected : CellNormal;
             bool glow = (sel || win) && Motion.Decorative;
@@ -866,7 +874,15 @@ namespace NeuroVida.Games.Calculo
             {
                 var o = _opViews[i];
                 bool on = _op == (int)o.Op;
-                if (o.Slab != null) PlasticSlab.Set(o.Slab, SlabSize.Button, on ? SlabTone.Sun : SlabTone.Night);
+                if (o.Slab != null)
+                {
+                    var tone = on ? SlabTone.Sun : SlabTone.Night;
+                    o.Touch?.SetTone(tone);
+                    bool down = o.Touch != null && o.Touch.Down;                      // plasticina: la losa presionada al tocarla (con su huella)
+                    PlasticSlab.Set(o.Slab, SlabSize.Button, tone, down);
+                    o.Slab.rectTransform.localScale = Vector3.one * (1f + (o.Touch != null ? o.Touch.Bounce : 0f));
+                    o.Label.rectTransform.anchoredPosition = new Vector2(0f, down ? -PlasticSlab.PressDrop(SlabSize.Button, tone) : 0f);
+                }
                 else o.Bg.color = on ? Gold : OpIdle;
                 o.Label.color = on ? NeuroStyle.Ink : ButtonText;
                 o.Group.alpha = canPick ? 1f : 0.45f;
@@ -876,7 +892,16 @@ namespace NeuroVida.Games.Calculo
         private void AnimateTools()
         {
             bool can = _phase == Phase.Play && _board != null && _board.CanUndo;
-            foreach (var t in _toolViews) if (t.Visible) t.Group.alpha = can ? 1f : 0.45f;
+            foreach (var t in _toolViews)
+            {
+                if (!t.Visible) continue;
+                t.Group.alpha = can ? 1f : 0.45f;
+                if (t.Slab == null) continue;
+                bool down = t.Touch != null && t.Touch.Down;                          // plasticina: la losa presionada al tocarla (con su huella)
+                PlasticSlab.Set(t.Slab, SlabSize.Button, SlabTone.Dim, down);
+                t.Slab.rectTransform.localScale = Vector3.one * (1f + (t.Touch != null ? t.Touch.Bounce : 0f));
+                t.Label.rectTransform.anchoredPosition = new Vector2(0f, down ? -PlasticSlab.PressDrop(SlabSize.Button, SlabTone.Dim) : 0f);
+            }
         }
 
         private void AnimateTexts(float now)
@@ -1146,6 +1171,7 @@ namespace NeuroVida.Games.Calculo
                 v.Glow = MakeImage(v.Root, "Glow", RadialGlowSprite.Get());
                 v.Face = MakeImage(v.Root, "Face", RoundedRectSprite.Get(60), true);
                 v.Slab = PlasticSlab.TryStyle(v.Face, SlabSize.Button, SlabTone.Cream);         // plasticina: la celda es una losa del kit (crema; elegida: cielo; lograda: sol)
+                if (v.Slab != null) v.Touch = PlasticTouch.On(v.Face.gameObject, SlabSize.Button, SlabTone.Cream);       // y se ve presionada (con su huella) al tocarla
                 if (v.Slab == null)
                 {
                     v.Face.type = Image.Type.Sliced;
@@ -1183,6 +1209,7 @@ namespace NeuroVida.Games.Calculo
                 o.Group.blocksRaycasts = false;
                 o.Bg = go.AddComponent<Image>();
                 o.Slab = PlasticSlab.TryStyle(o.Bg, SlabSize.Button, SlabTone.Night);          // plasticina: losa «noche»; la elegida, sol
+                if (o.Slab != null) o.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Night);
                 if (o.Slab == null)
                 {
                     o.Bg.sprite = RoundedRectSprite.Get(48);
@@ -1208,6 +1235,7 @@ namespace NeuroVida.Games.Calculo
                 t.Group.blocksRaycasts = false;
                 t.Bg = go.AddComponent<Image>();
                 t.Slab = PlasticSlab.TryStyle(t.Bg, SlabSize.Button, SlabTone.Dim);            // plasticina: losa apagada (la más oscura: son acciones de segundo plano)
+                if (t.Slab != null) t.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Dim);
                 if (t.Slab == null)
                 {
                     t.Bg.sprite = RoundedRectSprite.Get(48);

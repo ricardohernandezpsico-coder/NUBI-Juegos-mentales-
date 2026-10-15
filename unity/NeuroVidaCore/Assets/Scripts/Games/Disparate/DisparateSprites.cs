@@ -7,14 +7,13 @@ namespace NeuroVida.Games.Disparate
     /// <summary>
     /// Arte de "¿Verdad o disparate?" con el pincel de arcilla común (<see cref="ClayRaster"/>), colores horneados:
     /// <list type="bullet">
-    /// <item><see cref="Antenna"/>: la antena de la sala de radio — plataforma y base con volumen, mástil crema con remaches y
-    /// patas, plato con borde celeste, brazo y luz en la punta; sombra dura hacia abajo. <see cref="AntennaTip"/> dice dónde
+    /// <item><see cref="Antenna"/>: la antena parabólica de la sala de radio — plataforma y base con volumen, mástil lila, plato oblicuo con su interior celeste, brazo y receptor, y la luz de la punta aparte; sombra dura hacia abajo. <see cref="AntennaTip"/> dice dónde
     /// queda la luz (para emitir las ondas desde ahí).</item>
     /// <item><see cref="CheckIcon"/> / <see cref="BrokenWaveIcon"/>: los íconos de los botones VERDAD (✓) y DISPARATE (onda rota).</item>
     /// <item><see cref="Band"/>: la cinta de luz de la transmisión. <see cref="NoiseTexture"/>: la estática (se repite).</item>
     /// </list>
     /// <para><b>Plasticina (Tarea 97):</b> si el atlas <c>Resources/Plasticina/disparate</c> existe, la antena, los dos íconos y las barras del medidor (<see cref="MeterBar"/>) salen de ahí (renders de Blender, <c>tools/juegos/disparate.py</c>, el mismo lienzo y la misma escala:
-    /// <see cref="AntennaFloor"/> vale igual; <see cref="AntennaTip"/> y <see cref="AntennaDish"/> se movieron con la antena parabólica del 14-oct: el plato inclinado, el brazo del receptor y la luz aparte, para que no se lea como una copa). Sin el atlas, el arte procedural de abajo. La cinta de luz y la estática son luz y efecto: se quedan.</para>
+    /// <see cref="AntennaFloor"/> vale igual; <see cref="AntennaTip"/> y <see cref="AntennaDish"/> se movieron con la antena parabólica del 14-oct: el plato inclinado, el brazo del receptor y la luz aparte, para que no se lea como una copa). Sin el atlas, el arte procedural de abajo (también una parabólica, con las mismas anclas). La cinta de luz y la estática son luz y efecto: se quedan.</para>
     /// </summary>
     public static class DisparateSprites
     {
@@ -43,12 +42,12 @@ namespace NeuroVida.Games.Disparate
         public static float MeterMargin => PlasticArt.Measure(PlasticGroup, "medidor_margen_u", 0f);
 
         /// <summary>
-        /// Dónde queda la luz de la punta de la antena, como fracción (0-1) del ancho y del alto del dibujo (desde abajo). La antena de plasticina es una parabólica con el plato inclinado a la derecha (14-oct): la luz queda al final del brazo, a la derecha del centro
-        /// (medido sobre el render por <c>tools/juegos/mide_disparate.py</c>); el dibujo de siempre (sin atlas) la tiene arriba al centro.
+        /// Dónde queda la luz de la punta de la antena, como fracción (0-1) del ancho y del alto del dibujo (desde abajo). La antena es una parabólica con el plato inclinado a la derecha (14-oct): la luz queda al final del brazo, a la derecha del centro. Valen igual con
+        /// plasticina (medido sobre el render por <c>tools/juegos/mide_disparate.py</c>) y con el dibujo de respaldo, que se rehízo con las mismas anclas.
         /// </summary>
-        public static Vector2 AntennaTip => Plastic ? new Vector2(0.678f, 0.902f) : new Vector2(0.5f, (1.02f / AntennaZoom + 1f) * 0.5f);
-        /// <summary>Dónde queda el plato (de donde salen las ondas): el centro de su boca en la antena de plasticina; el centro del cuenco en el dibujo de siempre.</summary>
-        public static Vector2 AntennaDish => Plastic ? new Vector2(0.603f, 0.648f) : new Vector2(0.5f, (0.78f / AntennaZoom + 1f) * 0.5f);
+        public static Vector2 AntennaTip => new Vector2(0.678f, 0.902f);
+        /// <summary>Dónde queda el plato (de donde salen las ondas): el centro de su boca.</summary>
+        public static Vector2 AntennaDish => new Vector2(0.603f, 0.648f);
         /// <summary>Fracción del alto del dibujo donde termina la plataforma (el "suelo" de la antena).</summary>
         public static float AntennaFloor => ((-0.99f) / AntennaZoom + 1f) * 0.5f;
 
@@ -56,21 +55,26 @@ namespace NeuroVida.Games.Disparate
 
         private static float Platform(float x, float y) => RoundBox(x, y, 0f, -0.86f, 0.92f, 0.13f, 0.08f);
         private static float Base(float x, float y) => RoundBox(x, y, 0f, -0.62f, 0.40f, 0.15f, 0.07f);
-        private static float LegL(float x, float y) => Capsule(x, y, -0.3f, -0.52f, -0.05f, -0.02f, 0.05f);
-        private static float LegR(float x, float y) => Capsule(x, y, 0.3f, -0.52f, 0.05f, -0.02f, 0.05f);
-        private static float Mast(float x, float y) => RoundBox(x, y, 0f, 0.12f, 0.075f, 0.5f, 0.04f);
-        private static float Bowl(float x, float y) => Intersect(Circle(x, y, 0f, 0.74f, 0.52f), y - 0.74f);
-        private static float Rim(float x, float y) => Ellipse(x, y, 0f, 0.74f, 0.52f, 0.1f);
-        private static float Arm(float x, float y) => Capsule(x, y, 0f, 0.74f, 0f, 1.0f, 0.035f);
-        private static float Tip(float x, float y) => Circle(x, y, 0f, 1.02f, 0.085f);
+        // la antena PARABÓLICA (corrección del 14-oct, también el dibujo de respaldo): un plato oblicuo (su boca es una elipse inclinada con el interior celeste), un mástil lila con su base, el brazo del receptor que sale del centro del plato,
+        // el receptor de tinta suave y la luz de la punta aparte. Las anclas son las mismas que las de plasticina (AntennaTip y AntennaDish).
+        private const float DishCx = 0.247f, DishCy = 0.355f, DishRx = 0.62f, DishRy = 0.36f, DishAngle = -0.62f;        // el lado largo de la boca baja hacia la derecha (~35°)
+        private const float ArmBx = 0.4272f, ArmBy = 0.9648f;                                                              // donde queda la luz (AntennaTip)
+        private static float DishU(float x, float y) => (x - DishCx) * Mathf.Cos(DishAngle) + (y - DishCy) * Mathf.Sin(DishAngle);
+        private static float DishV(float x, float y) => -(x - DishCx) * Mathf.Sin(DishAngle) + (y - DishCy) * Mathf.Cos(DishAngle);
+        private static float Mast(float x, float y) => Capsule(x, y, 0f, -0.54f, 0.0f, 0.2f, 0.066f);
+        private static float Dish(float x, float y) => Ellipse(DishU(x, y), DishV(x, y), 0f, 0f, DishRx, DishRy);
+        private static float DishInside(float x, float y) => Ellipse(DishU(x, y), DishV(x, y), 0f, 0f, DishRx * 0.88f, DishRy * 0.84f);
+        private static float Arm(float x, float y) => Capsule(x, y, DishCx - 0.12f, DishCy - 0.1f, ArmBx - 0.07f, ArmBy - 0.12f, 0.04f);
+        private static float Receiver(float x, float y) => Capsule(x, y, ArmBx - 0.075f, ArmBy - 0.135f, ArmBx - 0.04f, ArmBy - 0.07f, 0.075f);
+        private static float Tip(float x, float y) => Circle(x, y, ArmBx, ArmBy, 0.105f);
 
         private static float AntennaBody(float x, float y) =>
-            Union(Union(Union(Platform(x, y), Base(x, y)), Union(LegL(x, y), LegR(x, y))),
-                  Union(Union(Mast(x, y), Union(Bowl(x, y), Rim(x, y))), Union(Arm(x, y), Tip(x, y))));
+            Union(Union(Union(Platform(x, y), Base(x, y)), Union(Mast(x, y), Dish(x, y))), Union(Arm(x, y), Union(Receiver(x, y), Tip(x, y))));
 
         public static Color32[] RenderAntenna(int size) => RenderClay(size, AntennaZoom, 0.05f, 0.06f, Aa, AntennaBody, (ref Px p, float x, float y) =>
         {
             var steel = Hex(0x39408F);
+            var lilac = Hex(0x8E7CE0);
             // plataforma y base con relieve (claro arriba a la izquierda)
             float plat = Platform(x, y);
             p.Over(Shade(steel, Mathf.Clamp(1.05f + (-x * 0.1f + y * 0.9f) * 0.2f, 0.8f, 1.2f)), Cover(plat, Aa));
@@ -78,27 +82,22 @@ namespace NeuroVida.Games.Disparate
             float bs = Base(x, y);
             p.Over(Shade(Grape, Mathf.Clamp(1f + (-x * 0.35f + y * 0.5f) * 0.25f, 0.82f, 1.15f)), Cover(bs, Aa));
             for (int i = -1; i <= 1; i += 2) p.Over(WithAlpha(Ink, 0.45f), Cover(Circle(x, y, i * 0.28f, -0.62f, 0.028f), Aa) * Cover(bs + 0.02f, Aa));
-            // patas y mástil crema
-            float legs = Union(LegL(x, y), LegR(x, y));
-            p.Over(Shade(Cream, 0.9f), Cover(legs, Aa));
+            // mástil lila
             float mast = Mast(x, y);
-            p.Over(Shade(Cream, Mathf.Clamp(1f + (-x * 5f) * 0.12f, 0.82f, 1.08f)), Cover(mast, Aa));
-            p.Over(new Color(1f, 1f, 1f, 0.5f), Cover(Capsule(x, y, -0.035f, -0.3f, -0.035f, 0.55f, 0.013f), Aa) * Cover(mast + 0.02f, Aa));
-            for (int i = 0; i < 5; i++) p.Over(WithAlpha(Ink, 0.4f), Cover(Circle(x, y, 0f, -0.3f + 0.18f * i, 0.022f), Aa) * Cover(mast + 0.02f, Aa));
-            // plato: cuenco crema con relieve y borde celeste por dentro
-            float bowl = Bowl(x, y);
-            p.Over(Shade(Cream, Mathf.Clamp(1f + (-x * 0.5f + (y - 0.74f) * 0.9f) * 0.22f, 0.78f, 1.12f)), Cover(bowl, Aa));
-            p.Over(WithAlpha(Shade(Grape, 0.9f), 0.4f), Cover(bowl, Aa) * Mathf.Clamp01(x * 0.9f));
-            float rim = Rim(x, y);
-            p.Over(Cream, Cover(rim, Aa));
-            p.Over(Sky, Cover(Ellipse(x, y, 0f, 0.745f, 0.45f, 0.065f), Aa));
-            p.Over(new Color(1f, 1f, 1f, 0.55f), Cover(Ellipse(x, y, -0.15f, 0.76f, 0.16f, 0.02f), Aa));
-            p.Over(WithAlpha(Ink, 0.55f), Cover(Mathf.Abs(rim) - 0.012f, Aa) * 0.7f);
-            // brazo y luz de la punta
-            p.Over(Shade(Cream, 0.92f), Cover(Arm(x, y), Aa));
+            p.Over(Shade(lilac, Mathf.Clamp(1f + (-x * 5f) * 0.1f, 0.85f, 1.1f)), Cover(mast, Aa));
+            p.Over(new Color(1f, 1f, 1f, 0.35f), Cover(Capsule(x, y, -0.03f, -0.5f, -0.03f, 0.15f, 0.012f), Aa) * Cover(mast + 0.02f, Aa));
+            // plato: la cara de afuera crema, un labio, y el interior celeste con un brillo
+            float dish = Dish(x, y);
+            p.Over(Shade(Cream, Mathf.Clamp(1f + (-DishU(x, y) * 0.2f + DishV(x, y) * 0.3f), 0.82f, 1.08f)), Cover(dish, Aa));
+            p.Over(Sky, Cover(DishInside(x, y), Aa));
+            p.Over(WithAlpha(Shade(Sky, 0.7f), 0.35f), Cover(DishInside(x, y), Aa) * Mathf.Clamp01((DishU(x, y) / DishRx + 0.2f) * 0.8f));
+            p.Over(new Color(1f, 1f, 1f, 0.5f), Cover(Ellipse(DishU(x, y), DishV(x, y), -0.2f, 0.1f, 0.17f, 0.04f), Aa) * Cover(DishInside(x, y), Aa));
+            // brazo del receptor (lila), receptor (tinta suave) y la luz de la punta
+            p.Over(Shade(lilac, 0.95f), Cover(Arm(x, y), Aa));
+            p.Over(Hex(0x4A3F8C), Cover(Receiver(x, y), Aa));
             float tip = Tip(x, y);
             p.Over(Sun, Cover(tip, Aa));
-            p.Over(new Color(1f, 1f, 1f, 0.8f), Cover(Circle(x, y, -0.025f, 1.045f, 0.028f), Aa) * Cover(tip + 0.01f, Aa));
+            p.Over(new Color(1f, 1f, 1f, 0.8f), Cover(Circle(x, y, ArmBx - 0.04f, ArmBy + 0.035f, 0.03f), Aa) * Cover(tip + 0.01f, Aa));
         });
 
         // ------------------------------------------------------------------ íconos planos (tinta sobre transparente)

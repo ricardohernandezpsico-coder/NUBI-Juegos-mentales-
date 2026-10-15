@@ -163,6 +163,93 @@ def pieza(contorno, h, bis, color=None, nombre='pieza', z0=0.0, seg=8, panza=0.0
     if padre is not None: o.parent = padre
     return o
 
+# ------------------------------------------------------------------ el estado PRESIONADO (regla del 14-oct: todo objeto de plasticina que se toca tiene su imagen presionada: aplastada, un punto más oscura y con la huella de un dedo)
+PRES_ALTO, PRES_ANCHO, PRES_OSCURA = 0.92, 1.04, 0.93       # ~8 % más baja, ~4 % más ancha, un punto más oscura (el `oscurece` de las losas presionadas del kit)
+
+def remuestrea(pts, n):
+    """Un contorno cerrado vuelto a muestrear con [n] puntos a pasos iguales de largo de arco (el mismo dibujo, sin esquinas largas sin vértices)."""
+    m = len(pts); largos = [math.hypot(pts[(i + 1) % m][0] - pts[i][0], pts[(i + 1) % m][1] - pts[i][1]) for i in range(m)]
+    total = sum(largos); out = []; i = 0; acum = 0.0
+    for k in range(n):
+        objetivo = total * k / n
+        while acum + largos[i] < objetivo - 1e-12: acum += largos[i]; i += 1
+        t = (objetivo - acum) / largos[i] if largos[i] > 0 else 0.0
+        a, b = pts[i], pts[(i + 1) % m]; out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+    return out
+
+def _dist_seg(p, a, b):
+    ax, ay = a; bx, by = b; dx, dy = bx - ax, by - ay; l2 = dx * dx + dy * dy
+    t = 0.0 if l2 == 0 else max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy) / l2))
+    return math.hypot(p[0] - ax - dx * t, p[1] - ay - dy * t)
+
+def _dentro(p, pts):
+    x, y = p; c = False; n = len(pts)
+    for i in range(n):
+        (x1, y1), (x2, y2) = pts[i], pts[(i + 1) % n]
+        if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1: c = not c
+    return c
+
+def espacio_libre(contorno, obstaculos=(), paso=0.02):
+    """El círculo grande que cabe dentro de [contorno] sin tocar los [obstaculos] y lo más cerca de su centro (cápsulas ((x0, y0), (x1, y1), r); con p0 == p1, un disco): donde se puede hundir la huella sin pisar lo que es el estímulo. Devuelve (cx, cy, radio libre)."""
+    xs = [p[0] for p in contorno]; ys = [p[1] for p in contorno]; mejor = (0.0, 0.0, -1.0); mejor_puntos = -1e9
+    n = len(contorno); c0x = sum(xs) / n; c0y = sum(ys) / n
+    x = min(xs)
+    while x <= max(xs):
+        y = min(ys)
+        while y <= max(ys):
+            if _dentro((x, y), contorno):
+                d = min(_dist_seg((x, y), contorno[i], contorno[(i + 1) % n]) for i in range(n))
+                for (a, b, r) in obstaculos: d = min(d, _dist_seg((x, y), a, b) - r)
+                puntos = d - 0.3 * math.hypot(x - c0x, y - c0y)                    # a igual espacio, lo más cerca del centro (las puntas y las esquinas tienen poca malla para la huella)
+                if puntos > mejor_puntos: mejor_puntos = puntos; mejor = (x, y, d)
+            y += paso
+        x += paso
+    return mejor
+
+def hundimiento(x, y, cx, cy, rd, prof=0.085, cresta=0.011, lam=0.095, ang=18.0, alargado=1.3):
+    """Cuánto se hunde (hacia -z) la cara de arriba en (x, y): un óvalo suave de semieje [rd] (más alto que ancho en [alargado] y girado [ang]°) con crestas finas como las de la yema. 0 fuera del óvalo, sin esquina en el borde."""
+    a = math.radians(ang); u, w = x - cx, y - cy
+    uu, ww = u * math.cos(a) + w * math.sin(a), (-u * math.sin(a) + w * math.cos(a)) / alargado
+    s = math.hypot(uu, ww)
+    if s >= rd: return 0.0
+    f = (1.0 - (s / rd) ** 4) ** 2
+    return prof * f - cresta * f * math.cos(2 * math.pi * s / lam)
+
+def pieza_huella(contorno, h, bis, color=None, nombre='pieza', z0=0.0, material=None, padre=None, coll='iconos', panza=0.0, huella=None, anillos=64, n=180, seg=8, fino=0.62, suave=False):
+    """Como `pieza`, pero la cara de arriba es una rejilla radial fina para poder hundirle la huella de un dedo. [huella] = (cx, cy, rd) o None (sin huella: solo la rejilla); la rejilla fina cubre hasta [fino] del radio; [suave] le suma una subdivisión (para igualar los discos del estado normal). El contorno tiene que ser un polígono ANTIHORARIO que se ve desde su centro (todas las formas de los juegos lo son)."""
+    cont = remuestrea(contorno, n); c0x = sum(p[0] for p in cont) / n; c0y = sum(p[1] for p in cont) / n
+    me = bpy.data.meshes.new(nombre); bm = bmesh.new(); R = 2; zt = z0 + h
+    capas = []
+    for i in range(R + 1):
+        t = i / R; k = 1 + panza * math.sin(math.pi * t)
+        capas.append([bm.verts.new((x * k, y * k, z0 + h * t)) for (x, y) in cont])
+    bm.faces.new(list(reversed(capas[0])))
+    for i in range(R):
+        for j in range(n): bm.faces.new((capas[i][j], capas[i][(j + 1) % n], capas[i + 1][(j + 1) % n], capas[i + 1][j]))
+    centro = bm.verts.new((c0x, c0y, zt - (hundimiento(c0x, c0y, *huella) if huella else 0.0)))
+    filas = [None] * (anillos + 2); filas[anillos + 1] = capas[-1]                       # la rejilla fina solo llega hasta [fino] del radio: de ahí al borde, una banda ancha (el bisel grande necesita caras anchas para no recortarse)
+    for k in range(1, anillos + 1):
+        f = fino * k / anillos; fila = []
+        for (x, y) in cont:
+            px, py = c0x + (x - c0x) * f, c0y + (y - c0y) * f
+            fila.append(bm.verts.new((px, py, zt - (hundimiento(px, py, *huella) if huella else 0.0))))
+        filas[k] = fila
+    for j in range(n): bm.faces.new((centro, filas[1][j], filas[1][(j + 1) % n]))
+    for k in range(1, anillos + 1):
+        for j in range(n): bm.faces.new((filas[k][j], filas[k + 1][j], filas[k + 1][(j + 1) % n], filas[k][(j + 1) % n]))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces)); bm.normal_update(); bm.to_mesh(me); bm.free(); me.update()
+    o = bpy.data.objects.new(nombre, me); scene.collection.objects.link(o); link(o, coll)
+    md = bevel(o, bis, seg, ang=40); md.limit_method = 'ANGLE'; smooth(o)
+    if suave: sd = o.modifiers.new('Sub', 'SUBSURF'); sd.levels = 1; sd.render_levels = 1           # redondea el canto como los discos (cilindro + bisel + subdivisión) del estado normal
+    wn = o.modifiers.new('Normales', 'WEIGHTED_NORMAL'); wn.keep_sharp = True; wn.weight = 60
+    o.data.materials.append(material if material is not None else mat_kit('m_j_' + nombre + '_' + str(color).strip('#'), color))
+    if padre is not None: o.parent = padre
+    return o
+
+def aplasta(r, ancho=PRES_ANCHO):
+    """Aplasta lo que cuelga del padre [r] (~8 % más bajo y ~4 % más ancho; [ancho] menor si la forma llega casi al borde del lienzo y no puede crecer): el estado presionado. Las piezas sueltas (sin padre) se aplastan a mano."""
+    r.scale = (r.scale.x * ancho, r.scale.y * ancho, r.scale.z * PRES_ALTO)
+
 def disco(r, h, bis, color=None, loc=(0, 0, 0), nombre='disco', material=None, padre=None, verts=64):
     """Un disco de plasticina redondo (cilindro bajo con el canto blando)."""
     o = cyl(r=r, d=h, verts=verts, loc=(loc[0], loc[1], loc[2] + h / 2), coll='iconos', name=nombre)

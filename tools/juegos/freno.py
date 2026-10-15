@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Freno de Emergencia en plasticina (Tarea 96): el botón de lanzamiento (apagado y encendido), los cohetes de los carriles, la plataforma y la señal de ALTO.
 
-Uso: blender -b -P tools/juegos/freno.py -- [--solo botones|cohetes|plataforma|alto] [--samples N] [--out DIR]
+Uso: blender -b -P tools/juegos/freno.py -- [--solo botones|botones_p|cohetes|plataforma|alto] [--samples N] [--out DIR]
 Salida (en --out, por defecto tools/juegos/out): las «maestras» con fondo transparente; `empaqueta.py freno` las reduce al tamaño final.
 
 Cada pieza sale en el MISMO lienzo y a la MISMA escala que el sprite procedural de `BrakeSprites` al que reemplaza (botón y alto: ±1,1; plataforma: ±1,05): el controlador no cambia ninguna medida. Donde el sprite de hoy tiene borde de tinta, la plasticina
@@ -33,6 +33,26 @@ def boton(encendido):
         for (a, b) in (((0.0, -0.36), (0.0, 0.30)), ((-0.27, 0.04), (0.0, 0.34)), ((0.27, 0.04), (0.0, 0.34))):
             churro_c(a, b, 0.09, BOT_H, flecha, 'bot_flecha')
     return construir
+
+FLECHA = (((0.0, -0.36), (0.0, 0.30)), ((-0.27, 0.04), (0.0, 0.34)), ((0.27, 0.04), (0.0, 0.34)))
+
+def boton_presionado(encendido):
+    """El estado presionado del botón (regla del 14-oct): aplastado, un punto más oscuro y con la huella de un dedo en el espacio libre de al lado de la flecha (la flecha es lo que se lee: no se pisa). Todo se aplasta a mano: la flecha va suelta."""
+    def construir(r):
+        aplasta(r)
+        cont = circulo(0.88, 120)
+        cx, cy, d = espacio_libre(cont, [(a, b, 0.09 + 0.05) for (a, b) in FLECHA])
+        rd = max(0.12, min(0.32, (d - 0.10) / 1.3))
+        print(f'[juegos] huella del botón: centro ({cx:.2f}, {cy:.2f}), espacio libre {d:.2f}, semieje {rd:.2f}')
+        if encendido: pieza_huella(cont, BOT_H, 0.17, oscurece(LIMA, PRES_OSCURA), 'bot_p', padre=r, panza=0.01, huella=(cx, cy, rd), suave=True)
+        else: pieza_huella(cont, BOT_H, 0.17, nombre='bot_p', padre=r, panza=0.01, huella=(cx, cy, rd, 0.15, 0.022), suave=True, material=mat_oscuro('m_j_boton_apagado_p', oscurece(BOT_APAGADO, PRES_OSCURA)))
+        flecha = tinta() if encendido else mat_kit('m_j_flecha_crema', CREMA)
+        for (a, b) in FLECHA: churro_c((a[0] * PRES_ANCHO, a[1] * PRES_ANCHO), (b[0] * PRES_ANCHO, b[1] * PRES_ANCHO), 0.09, BOT_H * PRES_ALTO, flecha, 'bot_flecha')
+    return construir
+
+def render_botones_presionados():
+    for nombre, enc in (('boton_apagado_p', False), ('boton_encendido_p', True)):
+        una(nombre, boton_presionado(enc), BOT_LIENZO, BOT_LIENZO, BOT_PX / BOT_LIENZO, centro=(0.0, sube(BOT_H * PRES_ALTO) / 2))
 
 def render_botones():
     for nombre, enc in (('boton_apagado', False), ('boton_encendido', True)):
@@ -111,6 +131,7 @@ def render_alto():
 
 preparar()
 if SOLO in ('todo', 'botones'): render_botones()
+if SOLO in ('todo', 'botones_p'): render_botones_presionados()
 if SOLO in ('todo', 'cohetes'): render_cohetes()
 if SOLO in ('todo', 'plataforma'): render_plataforma()
 if SOLO in ('todo', 'alto'): render_alto()

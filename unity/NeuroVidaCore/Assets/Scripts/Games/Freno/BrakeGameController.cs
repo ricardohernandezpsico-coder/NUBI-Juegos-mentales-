@@ -574,6 +574,28 @@ namespace NeuroVida.Games.Freno
         private IEnumerator PressButton(Lane L)
         {
             var r = L.Button.rectTransform;
+            if (BrakeSprites.HasPressedButton)
+            {
+                // plasticina (14-oct): el botón pasa a su imagen presionada (aplastado, un punto más oscuro, con la huella de un dedo) al menos 0,1 s y vuelve con un rebote chico de escala (con «quitar animaciones», solo cambia la imagen)
+                bool lit = L.Button.sprite == BrakeSprites.LaunchButton(true);
+                var pressed = BrakeSprites.LaunchButton(lit, true);
+                L.Button.sprite = pressed;
+                yield return StartCoroutine(Wait(0.1f));
+                if (L.Button.sprite == pressed) L.Button.sprite = BrakeSprites.LaunchButton(lit);          // (si el juego ya lo cambió, se queda como lo dejó)
+                if (Motion.Decorative)
+                {
+                    float t = 0f;
+                    while (t < PlasticTouch.BounceSeconds)
+                    {
+                        t += GameClock.DeltaTime;
+                        float u = Mathf.Clamp01(t / PlasticTouch.BounceSeconds);
+                        r.localScale = Vector3.one * (1f + 0.07f * Mathf.Sin(u * Mathf.PI * 2f) * (1f - u));
+                        yield return null;
+                    }
+                    r.localScale = Vector3.one;
+                }
+                yield break;
+            }
             if (!Motion.Decorative)
             {
                 // Sin encogerse: el botón se oscurece un instante (como PressScale).

@@ -111,6 +111,7 @@ def grupo_piloto():
         for d in ('punto', 'anillo', 'franja'):
             S.append(sprite(f'senal_{f}_{d}', carga_render('piloto', f'senal_{f}_{d}', ANCHOS_PILOTO['senal'])))
             S.append(sprite(f'chica_{f}_{d}', carga_render('piloto', f'senal_{f}_{d}', ANCHOS_PILOTO['chica'])))
+            S.append(sprite(f'senal_p_{f}_{d}', carga_render('piloto', f'senal_p_{f}_{d}', ANCHOS_PILOTO['senal'])))         # presionada (se ve solo cuando la persona toca la señal)
     S.append(sprite('nave', carga_render('piloto', 'nave', ANCHOS_PILOTO['nave'])))
     return S, []
 
@@ -119,7 +120,7 @@ ANCHOS_FRENO = {'boton': 256, 'cohete': 256, 'plataforma': 320, 'alto': 400}
 def grupo_freno():
     """Freno de Emergencia: los dos botones (210 u en el juego), los tres cohetes (230 u), la plataforma (300 u) y la señal de ALTO (400-420 u). Cada uno en el mismo lienzo cuadrado que el sprite procedural al que reemplaza."""
     S = []
-    for n in ('boton_apagado', 'boton_encendido'): S.append(sprite(n, carga_render('freno', n, ANCHOS_FRENO['boton'])))
+    for n in ('boton_apagado', 'boton_encendido', 'boton_apagado_p', 'boton_encendido_p'): S.append(sprite(n, carga_render('freno', n, ANCHOS_FRENO['boton'])))       # (los _p: el botón presionado)
     for n in ('cohete_coral', 'cohete_cielo', 'cohete_lima'): S.append(sprite(n, carga_render('freno', n, ANCHOS_FRENO['cohete'])))
     S.append(sprite('plataforma', carga_render('freno', 'plataforma', ANCHOS_FRENO['plataforma'])))
     S.append(sprite('alto', carga_render('freno', 'alto', ANCHOS_FRENO['alto'])))
@@ -154,7 +155,7 @@ ANCHOS_SATELITES = {'satelite': 192, 'planeta': 512, 'sobre': 128, 'nube': 448}
 def grupo_satelites():
     """Satélites: el satélite (64 dp = 191 u en el juego; UNO solo, todos son iguales), el planeta (334 u, y ×1,75 = 585 u en la pantalla final), el sobre (110 u) y la nube de polvo (600 u). Cada uno en el mismo lienzo cuadrado que el sprite procedural al que reemplaza."""
     S = []
-    for n in ('satelite', 'planeta', 'sobre', 'nube'): S.append(sprite(n, carga_render('satelites', n, ANCHOS_SATELITES[n])))
+    for n in ('satelite', 'satelite_p', 'planeta', 'sobre', 'nube'): S.append(sprite(n, carga_render('satelites', n, ANCHOS_SATELITES[n.replace('_p', '')])))       # (satelite_p: el satélite presionado, al responder)
     return S, []
 
 ANCHOS_RASTRO = {'lucero': 192}
@@ -188,7 +189,7 @@ ANCHOS_PUNTA = {'ficha': 192, 'casilla': 128, 'perla': 64}
 def grupo_punta():
     """En la punta de la lengua: la ficha-letra (gris claro: el código la tiñe; el cuerpo mide 0,8 del lado), la casilla (el cuerpo mide 0,83) y la perla del lucero del cielo (gris claro; 0,94)."""
     S = []
-    for n in ('ficha', 'casilla', 'perla'): S.append(sprite(n, carga_render('punta', n, ANCHOS_PUNTA[n])))
+    for n in ('ficha', 'ficha_p', 'casilla', 'perla'): S.append(sprite(n, carga_render('punta', n, ANCHOS_PUNTA[n.replace('_p', '')])))       # (ficha_p: la ficha presionada)
     return S, []
 
 def grupo_comun():
@@ -206,7 +207,7 @@ def grupo_comun():
     # 2) las losas «noche» (md): se alinean al lienzo y a los márgenes de las md de la app
     md = kit['losas']['md']; W, H = md['imagen_px']; m = md['margenes_dp']; ins = md['insets_px']
     borde = (ins['izq'], ins['abajo'], ins['der'], ins['arr']); margen = tuple(round(m[k] * PX_DP) for k in ('izq', 'arr', 'der', 'abajo'))
-    nombres = ['losa_md_noche', 'losa_md_noche_p', 'losa_md_acierto', 'losa_md_error', 'losa_md_apagada', 'losa_md_crema_control']
+    nombres = ['losa_md_noche', 'losa_md_noche_p', 'losa_md_acierto', 'losa_md_error', 'losa_md_apagada', 'losa_md_apagada_p', 'losa_md_crema_control']
     ims = [carga_render('comun', n) for n in nombres]
     ims = alinea_losa(ims, (m['izq'], m['arr']), W, H, ims[0])
     for n, im in zip(nombres, ims):

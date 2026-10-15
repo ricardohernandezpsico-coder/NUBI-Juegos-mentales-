@@ -157,6 +157,9 @@ namespace NeuroVida.Games.Calculo.Tests
                     go.SetActive(true);
                     var problems = controller.AuditVisibility();
                     Assert.IsEmpty(problems, (disabled ? "sin plasticina" : "con plasticina") + ": piezas que no se verían: " + string.Join(" | ", problems));
+                    int touches = go.GetComponentsInChildren<PlasticTouch>(true).Length;           // Tarea 104: las celdas, las operaciones y las dos herramientas se ven presionadas al tocarlas (con la huella)
+                    if (disabled) Assert.AreEqual(0, touches, "sin plasticina no hay losas que presionar");
+                    else Assert.AreEqual(5 + 4 + 2, touches, "con plasticina: celdas, operaciones y herramientas llevan su estado presionado");
                 }
                 finally { Object.DestroyImmediate(go); }
             }

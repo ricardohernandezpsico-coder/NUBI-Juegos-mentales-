@@ -94,6 +94,7 @@ namespace NeuroVida.Games.Intrusa
         private Text _measure, _name, _rule, _named, _explain, _trapText, _reviewTag, _hint, _seguirLabel;
         private RectTransform _seguir, _optionsBar, _optionsFill;
         private Image _seguirImg;
+        private PlasticTouch _seguirTouch;
         private readonly Slot[] _slots = new Slot[5];
         private readonly List<LineViz> _lines = new List<LineViz>();
         private readonly List<Image> _minor = new List<Image>();
@@ -126,7 +127,7 @@ namespace NeuroVida.Games.Intrusa
         private sealed class LineViz { public Image[] Img = new Image[3]; public Vector2 A, B; }
         private sealed class Particle { public Image Img; public Vector2 Pos, Vel; public float Age, Life; public bool Alive; }
         private sealed class RingFx { public Image Img; public Vector2 Pos; public float Age, Dur, Size; public bool Alive; }
-        private sealed class OptionButton { public RectTransform Rect; public Image Bg, Slab, Mark; public Text Label; public Vector2 CenterU, SizeU; }
+        private sealed class OptionButton { public RectTransform Rect; public Image Bg, Slab, Mark; public Text Label; public Vector2 CenterU, SizeU; public PlasticTouch Touch; }
 
         // ------------------------------------------------------------------ sesión
 
@@ -419,6 +420,7 @@ namespace NeuroVida.Games.Intrusa
                 {
                     var p = _press.Value; _press = null;
                     chosen = PickOption(p);
+                    if (chosen >= 0) _options[chosen].Touch?.Press();                  // plasticina: la opción tocada se ve presionada (con su huella)
                 }
                 yield return null;
             }
@@ -445,7 +447,8 @@ namespace NeuroVida.Games.Intrusa
         /// <summary>El color de una opción: con plasticina cambia la losa del kit (crema, lima o coral); sin ella, el color del fondo de siempre.</summary>
         private static void SetOptionTone(OptionButton o, SlabTone tone, Color fallback)
         {
-            if (o.Slab != null) PlasticSlab.Set(o.Slab, SlabSize.Button, tone);
+            if (o.Touch != null) o.Touch.SetTone(tone);                       // plasticina: cambia la losa conservando si está presionada
+            else if (o.Slab != null) PlasticSlab.Set(o.Slab, SlabSize.Button, tone);
             else o.Bg.color = fallback;
         }
 
@@ -502,7 +505,7 @@ namespace NeuroVida.Games.Intrusa
             _press = null;
             float t = 0f;
             const float fade = 0.3f;
-            bool go = false;
+            bool go = false, tappedSeguir = false;
             while (!go)
             {
                 t += GameClock.DeltaTime;
@@ -514,10 +517,16 @@ namespace NeuroVida.Games.Intrusa
                     var p = _press.Value; _press = null;
                     Vector2 u = LogicalToPlay(p);
                     Vector2 sc = _seguir.anchoredPosition, ss = _seguir.sizeDelta;
-                    if (Mathf.Abs(u.x - sc.x) <= ss.x * 0.5f && Mathf.Abs(u.y - sc.y) <= ss.y * 0.5f) go = true;
+                    if (Mathf.Abs(u.x - sc.x) <= ss.x * 0.5f && Mathf.Abs(u.y - sc.y) <= ss.y * 0.5f) { go = true; tappedSeguir = true; }
                 }
                 if (Endless && Finished() && t > 1f) go = true;     // se acabó el tiempo mientras leía: no se queda esperando
                 yield return null;
+            }
+            if (tappedSeguir && _seguirTouch != null)               // plasticina: «Seguir» se ve presionado un instante antes de irse
+            {
+                _seguirTouch.Press();
+                float held = 0f;
+                while (held < PlasticTouch.MinSeconds + 0.02f) { held += GameClock.DeltaTime; yield return null; }
             }
             StopCoroutine(pulse);
             _seguir.gameObject.SetActive(false);
@@ -1609,7 +1618,8 @@ namespace NeuroVida.Games.Intrusa
             _seguir.anchorMin = _seguir.anchorMax = new Vector2(0.5f, 0.5f);
             _seguir.pivot = new Vector2(0.5f, 0.5f);
             _seguirImg = go.AddComponent<Image>();
-            if (PlasticSlab.TryStyle(_seguirImg, SlabSize.Button, SlabTone.Cream) == null)          // plasticina: «Seguir» es una losa crema del kit
+            var seguirSlab = PlasticSlab.TryStyle(_seguirImg, SlabSize.Button, SlabTone.Cream);       // plasticina: «Seguir» es una losa crema del kit
+            if (seguirSlab == null)
             {
                 _seguirImg.sprite = RoundedRectSprite.Get(40);
                 _seguirImg.type = Image.Type.Sliced;
@@ -1620,6 +1630,7 @@ namespace NeuroVida.Games.Intrusa
             _seguirLabel = MakeText(_seguir, "Label", 58, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
             _seguirLabel.font = UiFonts.Word;
             _seguirLabel.text = "Seguir";
+            _seguirTouch = PlasticTouch.On(go, seguirSlab, SlabSize.Button, SlabTone.Cream, _seguirLabel.rectTransform);
             go.SetActive(false);
         }
 
@@ -1686,7 +1697,8 @@ namespace NeuroVida.Games.Intrusa
                 mark.rectTransform.anchoredPosition = new Vector2(-54f, 0f);
                 mark.rectTransform.sizeDelta = new Vector2(72f, 72f);
                 go.SetActive(false);
-                _options.Add(new OptionButton { Rect = r, Bg = img, Slab = slab, Mark = mark, Label = label });
+                var touch = PlasticTouch.On(go, slab, SlabSize.Button, SlabTone.Cream, label.rectTransform, mark.rectTransform);          // plasticina: al tocarla pasa a su losa presionada (el texto y la marca bajan con ella)
+                _options.Add(new OptionButton { Rect = r, Bg = img, Slab = slab, Mark = mark, Label = label, Touch = touch });
             }
         }
 

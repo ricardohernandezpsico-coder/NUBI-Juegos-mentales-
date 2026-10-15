@@ -173,6 +173,23 @@ namespace NeuroVida.Games.Piloto.Tests
         }
 
         [Test]
+        public void ThePressedSignals_ExistForAll15_AndOnlyWithThePlasticAtlas()
+        {
+            // Tarea 104 (regla del 14-oct): la señal que la persona toca se ve presionada (aplastada, un punto más oscura, con la huella de un dedo)
+            Assert.IsTrue(PilotSignalSprites.HasPressed, "faltan las señales presionadas en el atlas");
+            foreach (SignalShape shape in System.Enum.GetValues(typeof(SignalShape)))
+                foreach (SignalDetail detail in System.Enum.GetValues(typeof(SignalDetail)))
+                {
+                    var pressed = PilotSignalSprites.GetPressed(shape, detail);
+                    Assert.IsNotNull(pressed, "falta la señal presionada " + shape + " " + detail);
+                    Assert.AreNotEqual(PilotSignalSprites.Get(shape, detail), pressed);
+                }
+            PlasticArt.Disabled = true;
+            Assert.IsFalse(PilotSignalSprites.HasPressed);
+            Assert.IsNull(PilotSignalSprites.GetPressed(SignalShape.Hexagon, SignalDetail.Dot), "sin plasticina el juego deja la señal de siempre");
+        }
+
+        [Test]
         public void WithoutThePlasticAtlas_PilotKeepsItsProceduralArt()
         {
             PlasticArt.Disabled = true;

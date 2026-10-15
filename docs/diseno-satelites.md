@@ -191,3 +191,8 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: los niveles, el DDA, las 
 Cada pieza sale en el MISMO lienzo y a la MISMA escala que el sprite de hoy (`BodySpriteSideInDiscRadii` y `PlanetSpriteSideInRadii` valen igual): ninguna medida de `Layout` cambia. Sin el atlas, todo cae al arte de siempre.
 
 **Lo que se midió** (`tools/juegos/mide_satelites.py`): huella 0,95 a 1,00 de la de hoy (IoU 0,92 a 0,97; el satélite 0,98, el planeta 0,95, el sobre 0,97 y la nube 1,00); el satélite mide 0,61 de alto por ancho (como el de hoy: un disco con brazo y paneles) y rinde 16:1 (disco) y 9:1 (paneles) contra el cielo; el planeta es AÚN más oscuro que el de hoy (luminancia 0,024 contra 0,035; 1,4:1 contra el cielo) y las luces doradas rinden 11,7:1 sobre él (hoy 10,2:1); la nube es opaca en el 100 % de su interior (la de hoy, 97 %) y rinde 2,2:1 contra el cielo. Pesa 0,23 MB en el APK. Pruebas: `SatellitePlasticTests`.
+
+### Estado presionado (Tarea 104, 14-oct)
+
+Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
+- **Satélites:** el satélite que la persona toca al responder se ve presionado (`satelite_p`) al menos 0,1 s y vuelve con un rebote chico, junto al aro de marca y el «pop» de siempre; al marcar y al desmarcar. Todos siguen idénticos (la señal es el aro dorado y el sobre).

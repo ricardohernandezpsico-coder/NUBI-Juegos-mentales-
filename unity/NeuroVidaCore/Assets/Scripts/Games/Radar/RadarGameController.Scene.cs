@@ -209,8 +209,11 @@ namespace NeuroVida.Games.Radar
                 }
                 if (RadarSprites.Plastic)
                 {
-                    v.Bg.sprite = PlasticSlab.Sprite(SlabSize.Button, tone, sunk);
+                    // además de la «elegida» (hundida), la losa pasa a su imagen presionada, con su huella, al tocarla, y vuelve con un rebote chico (PlasticTouch)
+                    v.Touch.SetTone(tone);
+                    v.Bg.sprite = PlasticSlab.Sprite(SlabSize.Button, tone, sunk || v.Touch.Down);
                     v.Bg.color = Color.white;
+                    v.Bg.rectTransform.localScale = Vector3.one * (1f + v.Touch.Bounce);
                 }
                 else v.Bg.color = fill;
                 v.Group.alpha = live ? 1f : 0.45f;                  // apagado (antes de la respuesta y durante el viaje): sin brillo de arcilla, a menos de la mitad de luz
@@ -224,19 +227,22 @@ namespace NeuroVida.Games.Radar
                 if (badgeOk) v.Badge.sprite = AnswerMarkSprite.Check();
                 else if (badgeNo) v.Badge.sprite = AnswerMarkSprite.Cross();
                 // se hunde 3 dp durante 140 ms al tocarlo
-                float press = now - _pressAt[i] < 0.14f && now >= _pressAt[i] ? 3f : 0f;
+                float press = !RadarSprites.Plastic && now - _pressAt[i] < 0.14f && now >= _pressAt[i] ? 3f : 0f;           // (con plasticina la baja la losa presionada)
                 var (cx, cy) = _plan.CellCenter(i);
                 v.Root.anchoredPosition = P(cx, cy + press);
             }
             bool on = _picks.Count > 0;
             if (RadarSprites.Plastic)
             {
-                _go.Bg.sprite = PlasticSlab.Sprite(SlabSize.Button, on ? SlabTone.Sun : SlabTone.Dim);       // «¡Rescatar!»: sol cuando hay algo elegido; apagado, la losa oscura
+                var goTone = on ? SlabTone.Sun : SlabTone.Dim;
+                _go.Touch.SetTone(goTone);
+                _go.Bg.sprite = PlasticSlab.Sprite(SlabSize.Button, goTone, _go.Touch.Down);       // «¡Rescatar!»: sol cuando hay algo elegido; apagado, la losa oscura; al tocarlo, presionado con su huella
                 _go.Bg.color = Color.white;
+                _go.Bg.rectTransform.localScale = Vector3.one * (1f + _go.Touch.Bounce);
             }
             else _go.Bg.color = on ? Gold : new Color(74f / 255f, 70f / 255f, 114f / 255f);
             _go.Label.color = on ? Ink : new Color(156f / 255f, 151f / 255f, 196f / 255f);
-            float gp = now - _goPressAt < 0.14f && now >= _goPressAt ? 3f : 0f;
+            float gp = !RadarSprites.Plastic && now - _goPressAt < 0.14f && now >= _goPressAt ? 3f : 0f;
             _go.Root.anchoredPosition = P(_plan.GoCx, _plan.GoCy + gp);
         }
 

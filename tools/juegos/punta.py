@@ -26,6 +26,14 @@ def ficha(r):
 def render_ficha():
     una('ficha', ficha, FIC_LIENZO, FIC_LIENZO, FIC_PX / FIC_LIENZO, centro=(0.0, sube(FIC_H) / 2))
 
+def ficha_presionada(r):
+    """El estado presionado de la ficha (regla del 14-oct): aplastada, un punto más oscura y con la huella de un dedo hundida en la cara (al centro: la letra de tinta va encima y se sigue leyendo; la huella es de contraste bajo)."""
+    aplasta(r)
+    pieza_huella(circulo(1.0, 96), FIC_H, 0.30, oscurece(GRIS, PRES_OSCURA), 'ficha_p', padre=r, huella=(0.0, 0.0, 0.40), suave=True)
+
+def render_ficha_presionada():
+    una('ficha_p', ficha_presionada, FIC_LIENZO, FIC_LIENZO, FIC_PX / FIC_LIENZO, centro=(0.0, sube(FIC_H * PRES_ALTO) / 2))
+
 # ------------------------------------------------------------------ la casilla: un cuenco oscuro con un aro celeste tenue; lienzo de ±1,2 (el cuerpo mide 0,83 del lado)
 CAS_LIENZO = 2.4
 CAS_PX = 256                                              # la maestra: se reduce a 128
@@ -52,6 +60,7 @@ def render_perla():
 
 preparar()
 if SOLO in ('todo', 'ficha'): render_ficha()
+if SOLO in ('todo', 'ficha_p'): render_ficha_presionada()
 if SOLO in ('todo', 'casilla'): render_casilla()
 if SOLO in ('todo', 'perla'): render_perla()
 termina()

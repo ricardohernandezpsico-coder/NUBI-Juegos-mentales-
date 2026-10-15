@@ -420,6 +420,13 @@ namespace NeuroVida.Games.Piloto
                 if (!done) v.Ring.fillAmount = Mathf.Clamp01(1f - age / s.Expo);
                 v.Ring.color = new Color(TextColor.r, TextColor.g, TextColor.b, 0.85f * k);
                 v.Body.color = new Color(1f, 1f, 1f, k);
+                if (PilotSignalSprites.HasPressed)
+                {
+                    // plasticina: la señal que la persona acaba de tocar (atrapada o falsa alarma) se ve presionada, con la huella de un dedo, mientras se va (14-oct); las que se van solas no
+                    bool touched = done && (s.Outcome == Outcome.Caught || s.Outcome == Outcome.Wrong);
+                    var want = (touched ? PilotSignalSprites.GetPressed(s.Kind.Shape, s.Kind.Detail) : null) ?? PilotSignalSprites.Get(s.Kind.Shape, s.Kind.Detail);
+                    if (v.Body.sprite != want) v.Body.sprite = want;
+                }
                 float scale = s.Outcome == Outcome.Caught && Motion.Decorative ? 1f + 0.6f * (1f - k) : 1f;
                 v.Body.rectTransform.localScale = Vector3.one * scale;
                 bool wrong = s.Outcome == Outcome.Wrong;

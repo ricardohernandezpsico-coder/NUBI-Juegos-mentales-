@@ -216,3 +216,8 @@ Este juego no trae renders propios: lo que se ve de «objeto» sale de las **los
 | el **panel del final** (losa «noche») | la barra de tiempo de las opciones, las marcas ✓ / ✗ (ya de plasticina desde la fase 0) |
 
 Con plasticina la opción ya no se tiñe con `Image.color`: cambia de losa (`SetOptionTone`). Pruebas: `IntrusaPlasticTests` (las tres losas existen y la interfaz se arma con y sin el atlas).
+
+### Estado presionado (Tarea 104, 14-oct)
+
+Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
+- **La estrella intrusa:** las 3 opciones y «Seguir» se ven presionadas al tocarlas (`PlasticTouch` dueña de la losa: al acertar o fallar la opción pasa a lima o coral conservando el estado presionado; «Seguir» se ve presionado 0,1 s antes de irse).

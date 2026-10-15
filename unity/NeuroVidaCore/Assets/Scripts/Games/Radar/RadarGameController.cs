@@ -495,6 +495,7 @@ namespace NeuroVida.Games.Radar
         private void ToggleType(CapsuleType type, int cell)
         {
             _pressAt[cell] = Now;
+            _buttons[cell].Touch.Press();
             if (_picks.Contains(type))
             {
                 _picks.Remove(type);
@@ -514,6 +515,7 @@ namespace NeuroVida.Games.Radar
         {
             if (_picks.Count == 0) return;
             _goPressAt = Now;
+            _go.Touch.Press();
             _rescueTapped = true;
         }
 

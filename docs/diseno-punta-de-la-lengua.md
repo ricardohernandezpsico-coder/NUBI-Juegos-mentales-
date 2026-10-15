@@ -146,3 +146,8 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: las palabras, las definic
 El cuerpo de cada pieza mide lo de siempre: la imagen se escala con 0,8 (ficha), 0,833 (casilla) y 0,94 (perla) del cuerpo dentro de su lado. Sin el atlas, todo cae al arte de siempre (`AuditVisibility` revisa los dos casos).
 
 **Lo que se midió** (`tools/juegos/mide_punta.py`): el cuerpo mide 0,79 del lado en la ficha, 0,83 en la casilla y 0,91 en la perla; la letra de tinta rinde 14,3 (normal), 12,1 (fija), 10,6 (oro), 11,8 (plata), 7,0 (cobre) y 6,8:1 (azul) sobre la ficha ya teñida; **los cuatro metales de los luceros se siguen distinguiendo** con la perla teñida (el color ES el dato): el par más cercano (oro y cobre) rinde ΔE 29,3 contra 33,2 de diseño, plata y azul 38,0 contra 42,0; las perlas contra el cielo, de 6,3 a 10,6:1. Pesa 0,06 MB. Pruebas: `PuntaPlasticTests`.
+
+### Estado presionado (Tarea 104, 14-oct)
+
+Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
+- **En la punta de la lengua:** la ficha que se toca se ve presionada (`ficha_p`, gris claro como la normal: el código la tiñe igual; la letra de tinta rinde 5,8 a 11,9:1 sobre ella) un instante, y los dos botones (cielo y «noche») pasan a su losa presionada con `PlasticTouch`.

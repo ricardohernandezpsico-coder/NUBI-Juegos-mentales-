@@ -220,6 +220,21 @@ namespace NeuroVida.Games.Freno.Tests
         }
 
         [Test]
+        public void ThePressedButton_IsAnotherImage_ForBothStates_AndOnlyWithThePlasticAtlas()
+        {
+            // Tarea 104 (regla del 14-oct): al tocar el botón de un carril pasa a su imagen presionada (aplastado, un punto más oscuro, con la huella de un dedo)
+            Assert.IsTrue(BrakeSprites.HasPressedButton, "faltan los botones presionados en el atlas");
+            foreach (bool lit in new[] { true, false })
+            {
+                Assert.IsNotNull(BrakeSprites.LaunchButton(lit, true));
+                Assert.AreNotEqual(BrakeSprites.LaunchButton(lit), BrakeSprites.LaunchButton(lit, true), "el botón " + (lit ? "encendido" : "apagado") + " presionado es otra imagen");
+            }
+            PlasticArt.Disabled = true;
+            Assert.IsFalse(BrakeSprites.HasPressedButton);
+            Assert.AreEqual(BrakeSprites.LaunchButton(true), BrakeSprites.LaunchButton(true, true), "sin plasticina el botón de siempre (y su encogerse)");
+        }
+
+        [Test]
         public void WithoutThePlasticAtlas_FrenoKeepsItsProceduralArt()
         {
             PlasticArt.Disabled = true;

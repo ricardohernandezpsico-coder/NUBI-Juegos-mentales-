@@ -167,6 +167,8 @@ namespace NeuroVida.Games.Anagramas.Tests
                     go.SetActive(true);
                     var problems = controller.AuditVisibility();
                     Assert.IsEmpty(problems, (disabled ? "sin plasticina" : "con plasticina") + ": piezas que no se verían: " + string.Join(" | ", problems));
+                    int touches = go.GetComponentsInChildren<PlasticTouch>(true).Length;           // Tarea 104: los dos botones se ven presionados (con la huella) al tocarlos
+                    Assert.AreEqual(disabled ? 0 : 2, touches, "los dos botones llevan su estado presionado solo con plasticina");
                 }
                 finally { Object.DestroyImmediate(go); }
             }
