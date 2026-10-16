@@ -65,7 +65,7 @@ namespace NeuroVida.Games.Engranajes
         private sealed class CartelView
         {
             public RectTransform Root;
-            public Image Rim, Bg, Icon, Check;
+            public Image Rim, Bg, Icon, Check, Cross;                // Check = ✓ (cumplió) y Cross = aspa (falló): acierto y error nunca van solo por color
             public Text Name, Word;
         }
 
@@ -76,6 +76,8 @@ namespace NeuroVida.Games.Engranajes
             public Image Shadow, Rim, Bg, Icon;
             public Text Label;
             public Rect Rect;          // lógico (dp)
+            public Image Slab;         // la losa del kit (null sin plasticina)
+            public PlasticTouch Touch;
         }
 
         private sealed class Spark { public Image Img; public Vector2 Pos, Vel; public float Age, Life, Size; public bool Alive; public Color Color; }
@@ -471,6 +473,8 @@ namespace NeuroVida.Games.Engranajes
             c.Icon = MakeImage(c.Root, "Icon", null);
             c.Check = MakeImage(c.Root, "Check", null);
             c.Check.color = Mint;
+            c.Cross = MakeImage(c.Root, "Cross", null);
+            c.Cross.color = Coral;
             foreach (var t in new[] { c.Name, c.Word }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             go.SetActive(false);
             return c;
@@ -516,6 +520,16 @@ namespace NeuroVida.Games.Engranajes
             b.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
             b.Label.verticalOverflow = VerticalWrapMode.Overflow;
             b.Label.text = "Arrancar";
+            if (PlasticSlab.Available(SlabSize.Button, SlabTone.Sky))
+            {
+                // con plasticina «Arrancar» es una losa celeste del kit (el cuerpo es exactamente el rectángulo de la raíz; sobresale por sus márgenes) y se ve presionada al tocarla; sin ella, el fondo, el borde y la sombra de siempre
+                b.Slab = PlasticSlab.Attach(b.Root, SlabSize.Button, SlabTone.Sky);
+                if (b.Slab != null)
+                {
+                    b.Shadow.enabled = b.Rim.enabled = b.Bg.enabled = false;
+                    b.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Sky);
+                }
+            }
             go.SetActive(false);
             _start = b;
         }
@@ -695,8 +709,12 @@ namespace NeuroVida.Games.Engranajes
                 c.Rim.sprite = c.Bg.sprite = RoundedRectSprite.Get(24);
                 SetRadius(c.Rim, 13f * Su);
                 SetRadius(c.Bg, 12f * Su);
-                c.Check.sprite = EngranajesSprites.Check();
-                c.Check.rectTransform.sizeDelta = Vector2.one * (14f * Su);
+                bool coins = EngranajesSprites.BadgesAreCoins;                                            // las monedas de lo común traen su color (verde con ✓, coral con aspa); las blancas de siempre se tiñen
+                c.Check.sprite = EngranajesSprites.CheckBadge();
+                c.Cross.sprite = EngranajesSprites.CrossBadge();
+                c.Check.rectTransform.sizeDelta = c.Cross.rectTransform.sizeDelta = Vector2.one * ((coins ? 17f : 14f) * Su);
+                c.Check.color = coins ? Color.white : Mint;
+                c.Cross.color = coins ? Color.white : Coral;
             }
             for (int k = 0; k < 2; k++) _wrenches[k].sprite = EngranajesSprites.Wrench();
             _start.Icon.sprite = EngranajesSprites.GlyphSprite(EngranajesSprites.Glyph.Play);

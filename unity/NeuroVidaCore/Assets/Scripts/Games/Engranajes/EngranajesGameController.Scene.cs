@@ -323,6 +323,7 @@ namespace NeuroVida.Games.Engranajes
             c.Word.rectTransform.anchoredPosition = new Vector2((ix + 10f + (wordW + 4f) / 2f) * Su, -9.5f * Su);
             c.Icon.rectTransform.anchoredPosition = new Vector2(ix * Su, -9.5f * Su);
             c.Check.rectTransform.anchoredPosition = new Vector2((w / 2f - 11f) * Su, 10f * Su);
+            c.Cross.rectTransform.anchoredPosition = c.Check.rectTransform.anchoredPosition;
         }
 
         /// <summary>Coloca una pieza respecto del centro de su padre en unidades de la escena (dp del boceto; y hacia abajo).</summary>
@@ -353,7 +354,25 @@ namespace NeuroVida.Games.Engranajes
                 c.Word.color = col;
                 c.Icon.color = col;
                 c.Check.gameObject.SetActive(ok);
+                c.Cross.gameObject.SetActive(bad);                                          // el cartel que falla lleva su aspa (diagonal), no solo el coral
             }
+        }
+
+        /// <summary>Lo que lleva cada cartel según el veredicto (para las pruebas): { ✓ del que cumplió, aspa del que cumplió, ✓ del que falló, aspa del que falló }. Aplica el mismo código de <see cref="AnimateCartels"/> a un cartel de muestra.</summary>
+        public bool[] VerdictMarks()
+        {
+            var c = _cartels[0];
+            var result = new bool[4];
+            c.Root.gameObject.SetActive(true);
+            foreach (bool ok in new[] { true, false })
+            {
+                bool bad = !ok;
+                c.Check.gameObject.SetActive(ok);
+                c.Cross.gameObject.SetActive(bad);
+                result[ok ? 0 : 2] = c.Check.gameObject.activeSelf;
+                result[ok ? 1 : 3] = c.Cross.gameObject.activeSelf;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------------ giro y cascada
@@ -423,6 +442,7 @@ namespace NeuroVida.Games.Engranajes
 
             AnimateMotor(m, now, deco, fixing);
             AnimateBelts(m, now, deco, fixing);
+            AnimatePressed(m, now);
             AnimateParts(m, running, run, step, deco);
             AnimatePulses(m, running, run, step, deco);
             AnimateCartels(now, deco);
@@ -450,6 +470,32 @@ namespace NeuroVida.Games.Engranajes
             else if (_phase == Phase.Play && deco && m.Stage.Hint == Hint.Motor && now - _hintAt < 2.6f) pulse = 0.35f + 0.3f * Mathf.Sin(now * 4.5f);
             _motorPulse.gameObject.SetActive(pulse > 0.01f);
             _motorPulse.color = new Color(Gold.r, Gold.g, Gold.b, pulse);
+        }
+
+        /// <summary>Con plasticina, lo que se toca se ve PRESIONADO al menos 80 ms (<see cref="PlasticTouch.MinSeconds"/>): el engranaje del motor (más oscuro y más plano; el contorno de sus dientes no cambia) y las dos poleas de la correa tocada. El estado del juego no espera: el cambio ya está hecho.</summary>
+        private void AnimatePressed(Machine m, float now)
+        {
+            if (!EngranajesSprites.Plastic) return;
+            var g0 = m.Gears[0];
+            var size = EngranajesSprites.SizeOf(g0);
+            bool motorDown = _motorPressAt > 0f && now - _motorPressAt < PlasticTouch.MinSeconds;
+            _gears[0].Body.sprite = (motorDown ? EngranajesSprites.GearPressed(size) : null) ?? EngranajesSprites.Gear(size, EngranajesSprites.PaletteOf(g0, 0));
+            for (int b = 0; b < _beltLinks.Count; b++)
+            {
+                bool down = _beltPressAt.TryGetValue(_beltLinks[b], out float at) && at > 0f && now - at < PlasticTouch.MinSeconds;
+                var pulley = (down ? EngranajesSprites.PulleyPressed() : null) ?? EngranajesSprites.Pulley();
+                foreach (var pu in _belts[b].Pulleys) pu.sprite = pulley;
+            }
+        }
+
+        private float _motorPressAt = -10f;
+        private readonly Dictionary<int, float> _beltPressAt = new Dictionary<int, float>();
+
+        /// <summary>Un toque aceptado en el motor (id del motor) o en una correa (el índice de su unión): se ve presionado.</summary>
+        private void MarkPressed(int id)
+        {
+            if (id == EngranajesContract.MotorId) _motorPressAt = GameClock.Time;
+            else _beltPressAt[id] = GameClock.Time;
         }
 
         private void AnimateBelts(Machine m, float now, bool deco, bool fixing)
@@ -595,12 +641,13 @@ namespace NeuroVida.Games.Engranajes
             }
             var b = _start;
             b.Group.alpha = can ? 1f : 0.45f;
-            float pr = _startPressAt > 0f ? Mathf.Max(0f, 1f - (now - _startPressAt) / 0.2f) : 0f;
+            float pr = b.Slab != null || _startPressAt <= 0f ? 0f : Mathf.Max(0f, 1f - (now - _startPressAt) / 0.2f);          // con plasticina la losa presionada reemplaza el hundido de siempre
             b.Bg.color = Cyan;
             b.Rim.color = NeuroStyle.Ink;
             b.Label.color = NeuroStyle.Ink;
             b.Icon.color = NeuroStyle.Ink;
-            var top = new Vector2(0f, -pr * 4f * _s);
+            if (b.Slab != null) PlasticSlab.Set(b.Slab, SlabSize.Button, SlabTone.Sky, b.Touch.Down);
+            var top = new Vector2(0f, -(b.Slab != null ? b.Touch.Drop : pr * 4f * _s));
             b.Bg.rectTransform.anchoredPosition = top;
             b.Rim.rectTransform.anchoredPosition = top;
             b.Icon.rectTransform.anchoredPosition = new Vector2((-b.Rect.width / 2f + 63f) * _s, 0f) + top;
@@ -822,6 +869,8 @@ namespace NeuroVida.Games.Engranajes
                     Check(tag + "Arrancar.fondo", _start.Bg, true);
                     Check(tag + "Arrancar.borde", _start.Rim, true);
                     Check(tag + "Arrancar.ícono", _start.Icon, true);
+                    if (PlasticSlab.Available(SlabSize.Button, SlabTone.Sky) && _start.Slab == null) problems.Add(tag + "Arrancar: falta la losa de plasticina");
+                    if (_start.Slab != null && _start.Touch == null) problems.Add(tag + "Arrancar: sin estado presionado");
                     Check(tag + "Arrancar.texto", _start.Label, false);
                     for (int b = 0; b < _beltLinks.Count; b++)
                     {
@@ -837,6 +886,8 @@ namespace NeuroVida.Games.Engranajes
                         Check(tag + "cartel " + kv.Key + ".nombre", cv.Name, false);
                         Check(tag + "cartel " + kv.Key + ".palabra", cv.Word, false);
                         Check(tag + "cartel " + kv.Key + ".ícono", cv.Icon, true);
+                        Check(tag + "cartel " + kv.Key + ".✓", cv.Check, true, false);
+                        Check(tag + "cartel " + kv.Key + ".aspa", cv.Cross, true, false);
                         if (kv.Key == Station.Compuerta || kv.Key == Station.Carga) Check(tag + "barra de " + kv.Key, _racks[kv.Key == Station.Compuerta ? 0 : 1], true);
                     }
                 }

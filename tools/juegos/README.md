@@ -30,6 +30,9 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `hoja_correo.py` | Arma `docs/previews/plasticina/correo-piezas.png`: las 12 cartas sobre la cinta, el sello dorado y el normal de cada planeta a tamaño real, en grises y con las tres simulaciones de daltonismo, los planetas, los buzones (y uno presionado), la caja fuerte (y presionada), el faro apagado y encendido, el reloj (tapado, presionado, destapado), la nave, el saco, la raya y el ✓. |
 | `mide_aterrizaje.py` | La regla manda: el centro en x de las marcas y del asta ANTES y DESPUÉS sobre capturas reales (`--antes`/`--despues`), la cara lisa de la regla, la simetría y el centro de masa de la nave, y el tamaño de cada pieza. |
 | `hoja_aterrizaje.py` | Arma `docs/previews/plasticina/aterrizaje-piezas.png`: la zona de la regla como la arma el juego (regla de plasticina, marcas, números y asta en tinta, nave posada con su eje) y las piezas sueltas (nave y su espejo, Tierra, satélite, cúpulas, gallardete, insignias). |
+| `engranajes.py` | Engranajes: los 6 engranajes (placa con el contorno EXACTO del trapecio de los dientes —el bisel solo toma los cantos de arriba y de abajo: `angle_limit` de 82°, porque con los 40° de `pieza` redondeaba la punta y rellenaba la raíz—, aro y 5 o 3 rayos; el motor presionado), el radar, la turbina de 5 aspas, la polea (y la presionada), el portón, el marco, la plataforma, la caja, la barra dentada, el casco, las flechas del motor y del cartel (la de en contra del reloj es el espejo de la otra) y los triángulos. Lo que GIRA (`--solo giran|engranajes --tilt 0`) se ve exactamente desde arriba, sin suelo, y se promedia en CUATRO luces (`promedio_cuatro`); `--uno gear_0_0` prueba una sola pieza. 1 dp = 1/20 de unidad de Blender. |
+| `mide_engranajes.py` | Los dientes (ancho de la punta y del hueco contra el trapecio exacto y contra el contorno de ANTES, ±0,3 dp; alfa interpolado, sub-píxel), el engrane en reposo (cuánto se pisan y cuánto hueco se ve, antes y después), los rayos (5 y 3), la asimetría que muestra el sentido, la luz de las aspas y del radar, el punto coral, el cruce de la correa, las flechas (espejo y cabeza en grises) y los presionados. Para «antes» lee `unity/test-results/engranajes-antes/*.png` (los deja la prueba `TheProceduralDrawing_IsSavedForTheMeasureScript`). |
+| `hoja_engranajes.py` | Arma `docs/previews/plasticina/engranajes-piezas.png`: los 6 engranajes y los presionados, el par en reposo (antes, después y mal encajado), el radar, la turbina, la polea, el portón, la carga, la barra, las flechas (a color y en grises), los triángulos y el casco. |
 | `hoja_bodega.py` | Arma `docs/previews/plasticina/bodega-piezas.png`: los 12 objetos dentro de su escotilla, la escotilla cerrada y presionada, el robot armado, la caja, la esclusa y los círculos del carro. |
 | `mide_presionados.py` | Los estados presionados de Piloto, Freno, Satélites y Punta contra los normales: tamaño y margen del lienzo, centro, color (luminosidad y ΔE), tinta del detalle y el detalle fino donde cae la huella. |
 | `hoja_presionados.py` | Arma `docs/previews/plasticina/presionados.png`: un cuadro normal y uno presionado de lo que se toca en cada juego, con los sprites reales de los atlas. |
@@ -73,8 +76,10 @@ $BLENDER -b -P tools/juegos/constelaciones.py -- --samples 112 --out tools/juego
 $BLENDER -b -P tools/juegos/bodega.py -- --samples 112 --out tools/juegos/out/bodega      # ~14 min (12 objetos a 384 px, la escotilla —las hojas, ×4 luces—, el robot, la caja, la esclusa y el carro); --solo obj|obj_K|escotilla|robot|resto
 $BLENDER -b -P tools/juegos/correo.py -- --samples 112 --out tools/juegos/out/correo      # ~30 min (12 cartas a 768 px —las cartas, ~1,5 min c/u—, 4 planetas, el dial ×4 luces, la puerta, la manija, la torre, las lámparas, la nave, el saco, la raya y el reloj); --solo cartas|carta_P_C|planetas|piezas|reloj
 $BLENDER -b -P tools/juegos/aterrizaje.py -- --samples 112 --out tools/juegos/out/aterrizaje   # ~4 min (la Tierra tarda ~2,5; la nave, la regla, el gallardete, el satélite y las cúpulas, segundos); --solo nave|gallardete|tierra|satelite|domo|regla
+$BLENDER -b -P tools/juegos/engranajes.py -- --solo giran --tilt 0 --samples 112 --out tools/juegos/out/engranajes   # ~2 h con los 8 engranajes a 8 px/dp (¡32 renders de ~2 min!): conviene `--solo engranajes --samples 72` (~15 min; el px de los engranajes es PX_G) y `--solo giran` solo para el radar y la turbina
+$BLENDER -b -P tools/juegos/engranajes.py -- --solo fijas --samples 112 --out tools/juegos/out/engranajes   # ~25 min (el casco tarda ~12; polea, portón, marco, plataforma, caja, barra, 6 flechas y 3 triángulos)
 $BLENDER -b -P tools/juegos/comun.py -- --samples 112 --out tools/juegos/out/comun        # ~5 min
-python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop punta meteoros parejas bodega correo aterrizaje comun nubi   # atlas + manifiestos + pesos (segundos)
+python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop punta meteoros parejas bodega correo aterrizaje engranajes comun nubi   # atlas + manifiestos + pesos (segundos)
 python -I tools/juegos/mide_radar.py                          # huella, contraste y siluetas de las cápsulas
 python -I tools/juegos/mide_piloto.py                         # huella, contraste y detalles de las señales y la nave
 python -I tools/juegos/mide_calculo.py                        # tamaño del reactor, núcleo claro y losas de las celdas
@@ -91,6 +96,8 @@ python -I tools/juegos/mide_bodega.py                         # objetos, escotil
 python -I tools/juegos/hoja_bodega.py                         # la hoja de las piezas de Bodega
 python -I tools/juegos/mide_aterrizaje.py --antes <capturas antes> --despues <capturas después>   # marcas y asta antes/después, regla lisa, nave simétrica
 python -I tools/juegos/hoja_aterrizaje.py                     # la hoja de las piezas de Aterrizaje
+python -I tools/juegos/mide_engranajes.py                     # dientes (±0,3 dp), engrane en reposo, rayos, turbina, radar, flechas y presionados (antes: unity/test-results/engranajes-antes)
+python -I tools/juegos/hoja_engranajes.py                     # la hoja de las piezas de Engranajes
 python -I tools/juegos/mide_correo.py                         # cartas, sello dorado, figuras (daltonismo), dial, faro, reloj y nave
 python -I tools/juegos/hoja_correo.py                         # la hoja de las piezas de Correo (a tamaño real, en grises y con daltonismo)
 python -I tools/juegos/lamina.py out/lam.png '#0A2A3A' 3 1.5 out/radar/capsula_*.png     # para mirarlos
@@ -134,6 +141,7 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 | `bodega` (Bodega de carga: 12 objetos, escotilla, robot, caja, esclusa, carro) | 30 | 1024×1384 | 684 KB | 0,89 MB | 0,60 MB |
 | `correo` (La estación de correo: 12 cartas, 4 planetas, dial, puerta, manija, torre, lámparas, nave, saco, raya, reloj) | 28 | 1280×1852 | 1162 KB | 1,49 MB | 1,01 MB |
 | `aterrizaje` (Aterrizaje Lunar: nave, regla nine-slice, gallardete, Tierra, satélite, 2 cúpulas) | 7 | 512×780 | 152 KB | 0,21 MB | 0,17 MB |
+| `engranajes` (Engranajes: 6 engranajes + presionado, radar, turbina, polea, portón, marco, plataforma, caja, barra, casco, flechas, triángulos) | 27 | 512×3768 | 672 KB | 0,86 MB | 0,82 MB |
 | `comun` (losas, marcas, anillo) | 29 | 896×2472 | 849 KB | 1,11 MB | 0,97 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 

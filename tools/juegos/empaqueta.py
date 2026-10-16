@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|bodega|correo|aterrizaje|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|bodega|correo|aterrizaje|engranajes|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -385,6 +385,60 @@ def grupo_aterrizaje():
     med += [('regla_cuerpo_ancho_dp', float(cuerpo_w)), ('regla_cuerpo_alto_dp', float(cuerpo_h))]
     return S, med
 
+PX_ENG = 3.5                                                         # píxeles por dp de los engranajes y las piezas de la sala (el procedural: 3,5)
+TIP_ENG = {0: 33.0, 1: 23.0}
+PAL_ENG = {0: ('#CFEFFF', '#5FA3E0'), 1: ('#F1EDFF', '#A49BE0'), 2: ('#FFF1C2', '#E2B24A')}
+
+def hexv(h): return np.array([int(h.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)], np.float32)
+
+def promedia_cuatro_eng(nombre):
+    """Las cuatro maestras de una pieza que GIRA por código (`<nombre>_d0..3`: la luz del estudio girada 0°, 90°, 180° y 270°, vista exactamente desde arriba y sin suelo) promediadas con alfa premultiplicado: ni la luz ni la sombra giran con la pieza."""
+    ims = [np.asarray(Image.open(os.path.join(RENDER, 'engranajes', f'{nombre}_d{k}.png')).convert('RGBA')).astype(np.float32) / 255.0 for k in range(4)]
+    pm = [np.concatenate([x[..., :3] * x[..., 3:4], x[..., 3:4]], axis=2) for x in ims]
+    m = sum(pm) / 4.0; al = m[..., 3:4]
+    rgb = np.where(al > 1e-4, m[..., :3] / np.maximum(al, 1e-4), 0.0)
+    return Image.fromarray((np.clip(np.concatenate([rgb, al], axis=2), 0, 1) * 255.0 + 0.5).astype(np.uint8), 'RGBA')
+
+def degrade_engranaje(im, size, pal, ppd):
+    """El degradé radial del boceto (de un foco chico arriba a la izquierda, en el color claro de la paleta, hasta la punta, en el oscuro), como COLOR y no como luz: gira con el engranaje (es lo que muestra el sentido del giro, junto con los rayos). Se aplica como una razón por canal sobre
+    el color medio con que se renderizó (el relieve y su luz se conservan)."""
+    a = np.asarray(im).astype(np.float32); H, W = a.shape[:2]; tip = TIP_ENG[size]
+    yy, xx = np.mgrid[0:H, 0:W]; x = (xx + 0.5 - W / 2.0) / ppd; y = (H / 2.0 - yy - 0.5) / ppd                       # dp, y hacia ARRIBA, como el sprite de siempre
+    fx, fy = -tip * 0.35, tip * 0.35
+    t = np.clip(np.hypot(x - fx, y - fy) / (tip + 0.35 * tip * 1.4142), 0.0, 1.0)
+    c0, c1 = hexv(PAL_ENG[pal][0]), hexv(PAL_ENG[pal][1]); medio = c0 + (c1 - c0) * 0.45
+    objetivo = c0[None, None, :] + (c1 - c0)[None, None, :] * t[..., None]
+    razon = np.clip(objetivo / medio[None, None, :], 0.72, 1.30)
+    a[..., :3] = np.clip(a[..., :3] * razon, 0, 255)
+    return Image.fromarray(a.astype(np.uint8), 'RGBA')
+
+def carga_eng(nombre, ancho, bruma=False, promedio=False):
+    """Un render de Engranajes: lo que gira se promedia en cuatro luces; lo fijo, no. Ninguna pieza lleva suelo (no hay sombra de contacto que limpiar), salvo [bruma]."""
+    im = promedia_cuatro_eng(nombre) if promedio else Image.open(os.path.join(RENDER, 'engranajes', nombre + '.png')).convert('RGBA')
+    if bruma: im = limpia_bruma(im)
+    return quita_ruido_alfa(reduce_premult(im, ancho), 6)
+
+def grupo_engranajes():
+    """Engranajes «Taller de reparación»: los 6 engranajes (grande y chico en las tres paletas) y el estado presionado del motor, el radar y la turbina (que giran: cuatro luces promediadas y vistos desde arriba), la polea (y su presionada), el portón, el marco, la plataforma y la caja de la
+    carga, la barra dentada, el casco, las flechas del motor (grande y chica, a favor y en contra del reloj) y del cartel, y los triángulos (blancos: se tiñen). 3,5 px por dp salvo el casco y las flechas grandes (3), la flechita (4) y los triángulos (2)."""
+    S = []; med = []
+    for size, box in ((0, 72.0), (1, 52.0)):
+        ancho = round(box * PX_ENG)
+        for pal in (0, 1, 2):
+            im = degrade_engranaje(carga_eng(f'gear_{size}_{pal}', ancho, promedio=True), size, pal, PX_ENG)
+            S.append(sprite(f'gear_{size}_{pal}', im, ppu=PX_ENG))
+        im = degrade_engranaje(carga_eng(f'gear_{size}_0_p', ancho, promedio=True), size, 0, PX_ENG)
+        S.append(sprite(f'gear_{size}_0_p', im, ppu=PX_ENG))
+    S.append(sprite('radar', carga_eng('radar', round(48 * PX_ENG), promedio=True), ppu=PX_ENG))
+    S.append(sprite('turbina', carga_eng('turbina', round(40 * PX_ENG), promedio=True), ppu=PX_ENG))
+    for n, w in (('polea', 40), ('polea_p', 40), ('porton', 44), ('marco_carga', 48), ('plataforma', 40), ('caja_carga', 32), ('barra', 20)): S.append(sprite(n, carga_eng(n, round(w * PX_ENG)), ppu=PX_ENG))
+    S.append(sprite('casco', carga_eng('casco', 348), ppu=3.0))
+    for n, box in (('grande', 2 * (33 + 8 + 14)), ('chico', 2 * (23 + 8 + 14))):
+        for suf in ('cw', 'ccw'): S.append(sprite(f'flecha_{n}_{suf}', carga_eng(f'flecha_{n}_{suf}', round(box * 3)), ppu=3.0))
+    for suf in ('cw', 'ccw'): S.append(sprite(f'miniflecha_{suf}', carga_eng(f'miniflecha_{suf}', 88), ppu=4.0))
+    for n in ('tri_arriba', 'tri_abajo', 'tri_play'): S.append(sprite(n, carga_eng(n, 112), ppu=2.0))
+    return S, med
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -428,7 +482,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'aterrizaje': grupo_aterrizaje, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'aterrizaje': grupo_aterrizaje, 'engranajes': grupo_engranajes, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -616,7 +670,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'aterrizaje', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'aterrizaje', 'engranajes', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

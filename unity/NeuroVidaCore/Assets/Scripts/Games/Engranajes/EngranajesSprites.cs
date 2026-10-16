@@ -21,6 +21,22 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Íconos sueltos (blancos: se tiñen): triángulo hacia arriba o abajo (carteles de la carga y la compuerta) y el «play» de «Arrancar».</summary>
         public enum Glyph { Up, Down, Play }
 
+        /// <summary>El atlas de plasticina de este juego (<c>Resources/Plasticina/engranajes</c>): los 6 engranajes (y el estado presionado del motor), el radar, la turbina de 5 aspas, la polea (y su presionada), el portón, el marco, la plataforma y la caja de la carga, la barra dentada,
+        /// el casco, las flechas del motor y del cartel y los triángulos. Los DIENTES son la mecánica: el contorno de los engranajes es el mismo trapecio de <see cref="GearPolygon"/> (punta ±0,17 y raíz ±0,32 del paso angular), sin borde que lo ensanche. Lo que gira (engranajes, radar, turbina)
+        /// se renderizó visto desde arriba y con la luz promediada: ninguna luz ni sombra gira con la pieza. Se quedan procedurales: la sala, el cubo, la silueta de la sombra, las correas (tiras y medias vueltas, que se tiñen), la llave inglesa y el ✓ de los carteles (salvo con atlas: las monedas de lo común).
+        /// Sin el atlas todo cae al arte horneado de siempre.</summary>
+        public const string PlasticGroup = "engranajes";
+
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "gear_0_0");
+
+        private static Sprite Art(string name) => PlasticArt.Get(PlasticGroup, name);
+
+        /// <summary>El engranaje del motor PRESIONADO (más oscuro y más plano; el contorno de los dientes no cambia). Null sin plasticina. La huella de un dedo no va: un engranaje gira y una huella fuera del centro giraría con él.</summary>
+        public static Sprite GearPressed(GearSize size) => Art("gear_" + (int)size + "_0_p");
+
+        /// <summary>La polea presionada (la correa se toca por sus extremos). Null sin plasticina.</summary>
+        public static Sprite PulleyPressed() => Art("polea_p");
+
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
         private static readonly Dictionary<GearSize, float[]> GearPts = new Dictionary<GearSize, float[]>();
 
@@ -129,6 +145,8 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>El engranaje de arcilla (gira): degradé, aro interior y rayos, borde tinta. El diente 0 apunta a la derecha.</summary>
         public static Sprite Gear(GearSize size, Palette palette)
         {
+            var art = Art("gear_" + (int)size + "_" + (int)palette);
+            if (art != null) return art;
             float tip = TipOf(size), box = GearBox(size);
             float ringR = (tip - EngranajesContract.ToothDepth) * 0.72f;
             int spokes = TeethOf(size) >= EngranajesContract.BigTeeth ? 5 : 3;
@@ -220,7 +238,7 @@ namespace NeuroVida.Games.Engranajes
         }
 
         /// <summary>El casco del cohete (116 × 358 dp, centrado en (306, 267) del boceto): degradé lila, aletas rojas y tobera, bordes tinta.</summary>
-        public static Sprite Hull() => Bake("hull", 116f, 358f, Ppd, (ref Px p, float x, float y) =>
+        public static Sprite Hull() => Art("casco") ?? Bake("hull", 116f, 358f, Ppd, (ref Px p, float x, float y) =>
         {
             float aa = Aa;
             // en el tramo recto de las paredes la distancia es solo la horizontal (así no se mide contra todo el polígono en cada píxel)
@@ -245,7 +263,7 @@ namespace NeuroVida.Games.Engranajes
         // ------------------------------------------------------------------ las piezas del cohete
 
         /// <summary>El radar de la antena (gira con su engranaje): elipse celeste de borde tinta con un punto coral en la punta.</summary>
-        public static Sprite Dish() => Bake("dish", 48f, 24f, Ppd, (ref Px p, float x, float y) =>
+        public static Sprite Dish() => Art("radar") ?? Bake("dish", 48f, 24f, Ppd, (ref Px p, float x, float y) =>
         {
             float aa = Aa;
             float e = Ellipse(x, y, 0f, 0f, 20f, 7f);
@@ -253,14 +271,16 @@ namespace NeuroVida.Games.Engranajes
             p.Over(Hex(0xFF8C6B), Cover(Circle(x, y, 18f, 0f, 3.5f), aa));
         });
 
-        /// <summary>La turbina (gira con su engranaje): cuatro aspas doradas con borde tinta y un cubo.</summary>
-        public static Sprite Fan() => Bake("fan", 40f, 40f, Ppd, (ref Px p, float x, float y) =>
+        /// <summary>La turbina (gira con su engranaje): CINCO aspas doradas con borde tinta y un cubo. Con cuatro formaban una cruz «+» (docs/simbolos-neutros.md); el número de aspas no es una pista del juego (lo que se lee es el sentido del giro).</summary>
+        public const int FanBlades = 5;
+
+        public static Sprite Fan() => Art("turbina") ?? Bake("fan", 40f, 40f, Ppd, (ref Px p, float x, float y) =>
         {
             float aa = Aa;
             float cx = x, cy = -y;                                // coordenadas de lienzo (y hacia abajo), como el boceto
-            for (int j = 0; j < 4; j++)
+            for (int j = 0; j < FanBlades; j++)
             {
-                Rotate(cx, cy, 0f, 0f, -j * Mathf.PI / 2f, out float rx, out float ry);
+                Rotate(cx, cy, 0f, 0f, -j * 2f * Mathf.PI / FanBlades, out float rx, out float ry);
                 Rotate(rx, ry + 7f, 0f, 0f, -0.4f, out float ex, out float ey);
                 float d = Ellipse(ex, ey, 0f, 0f, 4.5f, 8f);
                 Outlined(ref p, d, 1f, Hex(0xFFC94A), Ink, aa);
@@ -269,7 +289,7 @@ namespace NeuroVida.Games.Engranajes
         });
 
         /// <summary>El portón de la compuerta (40 × 48): gris violeta con borde tinta y cuatro rayas.</summary>
-        public static Sprite Door() => Bake("door", 44f, 52f, Ppd, (ref Px p, float x, float y) =>
+        public static Sprite Door() => Art("porton") ?? Bake("door", 44f, 52f, Ppd, (ref Px p, float x, float y) =>
         {
             float aa = Aa;
             float d = RoundBox(x, y, 0f, 0f, 20f, 24f, 6f);
@@ -279,25 +299,25 @@ namespace NeuroVida.Games.Engranajes
         });
 
         /// <summary>El marco del elevador de carga (44 × 64): solo el contorno.</summary>
-        public static Sprite CargoFrame() => Bake("cframe", 48f, 68f, Ppd, (ref Px p, float x, float y) =>
+        public static Sprite CargoFrame() => Art("marco_carga") ?? Bake("cframe", 48f, 68f, Ppd, (ref Px p, float x, float y) =>
             p.Over(Hex(0x6B5FB8), Cover(Mathf.Abs(RoundBox(x, y, 0f, 0f, 22f, 32f, 6f)) - 1f, Aa)));
 
         /// <summary>La plataforma dorada del elevador (36 × 6).</summary>
-        public static Sprite CargoPlate() => Bake("cplate", 40f, 10f, Ppd, (ref Px p, float x, float y) =>
+        public static Sprite CargoPlate() => Art("plataforma") ?? Bake("cplate", 40f, 10f, Ppd, (ref Px p, float x, float y) =>
         {
             float d = RoundBox(x, y, 0f, 0f, 18f, 3f, 2f);
             Outlined(ref p, d, 1f, Hex(0xE9C46A), Ink, Aa);
         });
 
         /// <summary>La caja de carga (28 × 20): celeste con borde tinta.</summary>
-        public static Sprite CargoBox() => Bake("cbox", 32f, 24f, Ppd, (ref Px p, float x, float y) =>
+        public static Sprite CargoBox() => Art("caja_carga") ?? Bake("cbox", 32f, 24f, Ppd, (ref Px p, float x, float y) =>
         {
             float d = RoundBox(x, y, 0f, 0f, 14f, 10f, 4f);
             Outlined(ref p, d, 1f, Hex(0x7FD8FF), Ink, Aa);
         });
 
         /// <summary>Una polea (14 de radio) en el eje del engranaje de cada extremo de una correa: disco oscuro, disco violeta y un agujero de eje.</summary>
-        public static Sprite Pulley() => Bake("pulley", 40f, 40f, Ppd, (ref Px p, float x, float y) =>
+        public static Sprite Pulley() => Art("polea") ?? Bake("pulley", 40f, 40f, Ppd, (ref Px p, float x, float y) =>
         {
             float aa = Aa;
             float r = Mathf.Sqrt(x * x + y * y);
@@ -321,7 +341,7 @@ namespace NeuroVida.Games.Engranajes
         }
 
         /// <summary>La barra dentada de la carga y de la compuerta (20 × 84 dp, centrada en la barra de 9 × 80): violeta con borde tinta y diez dientes tinta a la izquierda.</summary>
-        public static Sprite Rack() => Bake("rack", 20f, 84f, Ppd, (ref Px p, float x, float y) =>
+        public static Sprite Rack() => Art("barra") ?? Bake("rack", 20f, 84f, Ppd, (ref Px p, float x, float y) =>
         {
             float aa = Aa;
             float d = RoundBox(x, y, 0f, 0f, 4.5f, 40f, 3f);
@@ -351,10 +371,25 @@ namespace NeuroVida.Games.Engranajes
         public static Sprite Check() => Bake("check", 14f, 14f, Ppd, (ref Px p, float x, float y) =>
             p.Over(Color.white, Cover(Mathf.Min(Capsule(x, y, -5f, 0.5f, -1.5f, -4.5f, 1.5f), Capsule(x, y, -1.5f, -4.5f, 5.5f, 4.5f, 1.5f)), Aa)));
 
+        /// <summary>La aspa de un cartel que FALLÓ (14 × 14): dos trazos en DIAGONAL (nunca una cruz «+»). Blanca: se tiñe de coral. Acierto y error nunca van solo por color: el cartel que cumple lleva su ✓ y el que falla, su aspa.</summary>
+        public static Sprite Cross() => Bake("cross", 14f, 14f, Ppd, (ref Px p, float x, float y) =>
+            p.Over(Color.white, Cover(Mathf.Min(Capsule(x, y, -4.5f, 4.5f, 4.5f, -4.5f, 1.6f), Capsule(x, y, 4.5f, 4.5f, -4.5f, -4.5f, 1.6f)), Aa)));
+
+        /// <summary>La marca ✓ de un cartel: la moneda verde de plasticina de lo común (ya trae su color: el cartel no la tiñe) o el ✓ blanco de siempre.</summary>
+        public static Sprite CheckBadge() => PlasticArt.Get("comun", "marca_ok") ?? Check();
+
+        /// <summary>La marca de aspa de un cartel que falló: la moneda coral con la aspa diagonal de lo común o la aspa blanca de siempre (que se tiñe de coral).</summary>
+        public static Sprite CrossBadge() => PlasticArt.Get("comun", "marca_no") ?? Cross();
+
+        /// <summary>true si las marcas de los carteles son las monedas de lo común (traen su color) y no las blancas que se tiñen.</summary>
+        public static bool BadgesAreCoins => PlasticArt.Has("comun", "marca_ok") && PlasticArt.Has("comun", "marca_no");
+
         /// <summary>Íconos sueltos: triángulo arriba / abajo y «play» (blancos).</summary>
         public static Sprite GlyphSprite(Glyph g)
         {
             const float box = 56f;
+            var art = Art(g == Glyph.Up ? "tri_arriba" : g == Glyph.Down ? "tri_abajo" : "tri_play");
+            if (art != null) return art;
             switch (g)
             {
                 case Glyph.Up: return Bake("glyph_up", box, box, Ppd, (ref Px p, float x, float y) =>
@@ -394,6 +429,9 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Flecha de giro del motor (arco con punta) de radio <paramref name="radius"/> y grosor <paramref name="lineWidth"/>, centrada en el engranaje. <paramref name="clockwise"/> = como el reloj.</summary>
         public static Sprite Arrow(float radius, float lineWidth, bool clockwise)
         {
+            string size = Mathf.Approximately(radius, EngranajesContract.BigTip + 8f) ? "grande" : Mathf.Approximately(radius, EngranajesContract.SmallTip + 8f) ? "chico" : null;
+            var art = size != null && Mathf.Approximately(lineWidth, 4f) ? Art("flecha_" + size + (clockwise ? "_cw" : "_ccw")) : null;
+            if (art != null) return art;
             float box = 2f * (radius + 14f);
             var head = ArrowHead(radius, ArcEnd, 6f);
             return Bake("arrow" + radius.ToString("0.#") + "_" + lineWidth.ToString("0.#") + (clockwise ? "c" : "a"), box, box, Ppd, (ref Px p, float x, float y) =>
@@ -407,6 +445,8 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>La flechita de giro de un cartel (radio 6,5, casi una vuelta entera: 1,3 π). Blanca: se tiñe.</summary>
         public static Sprite MiniArrow(bool clockwise)
         {
+            var art = Art(clockwise ? "miniflecha_cw" : "miniflecha_ccw");
+            if (art != null) return art;
             const float r = 6.5f, a0 = -Mathf.PI * 1.15f, a1 = Mathf.PI * 0.15f;
             var head = ArrowHead(r, a1, 4f);
             return Bake("miniarrow" + (clockwise ? "c" : "a"), 22f, 22f, Ppd, (ref Px p, float x, float y) =>
@@ -453,7 +493,7 @@ namespace NeuroVida.Games.Engranajes
             Hull(); yield return null;
             Dish(); Fan(); Door(); yield return null;
             CargoFrame(); CargoPlate(); CargoBox(); yield return null;
-            Pulley(); Rack(); Wrench(); Check(); yield return null;
+            Pulley(); Rack(); Wrench(); Check(); Cross(); yield return null;
             foreach (var w in BeltWidths) BeltCap(w);
             yield return null;
             foreach (Glyph g in Enum.GetValues(typeof(Glyph))) GlyphSprite(g);

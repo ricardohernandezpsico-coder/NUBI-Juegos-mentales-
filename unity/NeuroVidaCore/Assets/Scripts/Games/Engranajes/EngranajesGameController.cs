@@ -481,7 +481,7 @@ namespace NeuroVida.Games.Engranajes
             {
                 yield return StartCoroutine(coach.Touch(() => coach.AroundOf(_motorArrowRect, Vector2.one * SceneUnits(100f)), CoachTexts.Engranajes.Motor, circle: true, keep: antena));
                 ok = !t.Skipped;
-                if (ok) ToggleSwitch(EngranajesContract.MotorId);      // el toque en el hueco ES el cambio (la entrada está apagada en la práctica: no se repite)
+                if (ok) { MarkPressed(EngranajesContract.MotorId); ToggleSwitch(EngranajesContract.MotorId); }      // el toque en el hueco ES el cambio (la entrada está apagada en la práctica: no se repite)
                 TutorialGuards.Expect(!ok || _changes.Contains(EngranajesContract.MotorId), "Engranajes", "tras el toque guiado el motor no quedó cambiado");
             }
             if (ok)
@@ -568,7 +568,7 @@ namespace NeuroVida.Games.Engranajes
             }
             var scene = EngranajesLayout.LogicalToScene(_lay, p.x, p.y);
             int id = HitSwitch(scene);
-            if (id != int.MinValue) ToggleSwitch(id);
+            if (id != int.MinValue) { MarkPressed(id); ToggleSwitch(id); }
         }
 
         /// <summary>SOLO EN EL EDITOR (smoke): juega la máquina sola; las pares con la solución guardada y las impares sin tocar nada (así pasa también por el error y su aviso). En el teléfono no hace nada.</summary>
@@ -586,6 +586,7 @@ namespace NeuroVida.Games.Engranajes
         private void PressStart()
         {
             _startPressAt = GameClock.Time;
+            _start.Touch?.Press();                                              // plasticina: la losa de «Arrancar» se ve presionada
             PlayClip(EngranajesSounds.Press(), 0.6f);
             _startRequested = true;
         }

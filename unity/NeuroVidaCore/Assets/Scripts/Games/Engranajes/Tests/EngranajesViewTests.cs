@@ -4,6 +4,7 @@ using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using NeuroVida.Games.Engranajes;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Engranajes.Tests
 {
@@ -114,6 +115,13 @@ namespace NeuroVida.Games.Engranajes.Tests
 
     public class EngranajesArtTests
     {
+        // estas pruebas leen los píxeles del dibujo PROCEDURAL (el que queda sin el atlas de plasticina o si falla); lo de plasticina lo mide EngranajesPlasticTests sobre el atlas
+        [SetUp]
+        public void SetUp() { PlasticArt.Disabled = true; }
+
+        [TearDown]
+        public void TearDown() { PlasticArt.Disabled = false; }
+
         /// <summary>El alfa (0..1) del sprite en el punto (x, y) dp desde el centro, y hacia arriba.</summary>
         private static float AlphaAt(Sprite s, float xDp, float yDp)
         {
