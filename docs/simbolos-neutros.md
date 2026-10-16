@@ -23,6 +23,8 @@ hexágono, una gota o una ola están bien. Lámina para ver el resultado: [`docs
 | Logros «Brillante» (90 puntos) y «Perfecto» (100) en la medalla (`AchievementGlyph.STAR`, Tarea 91) | estrella de 5 puntas | **lucero redondo** (`AchievementGlyph.LUCERO`: cuerpo redondo con su aro de luz y su núcleo sol) |
 | Avatares de Opciones (Tarea 91) | emojis (🧠 por defecto, caras de personas, ⭐, 🌟…) | **ocho objetos de plasticina**: Nubi, cohete, farol, isla, engranaje, planeta sin anillo, lucero redondo y gota. QUITADOS el 14-oct (Tarea 93): ya no hay avatares; el perfil lleva la inicial |
 
+**La ✗ de respuesta y la X de cerrar se quedan** (decisión de Opus, 15-oct): una X en diagonal es la marca universal de «no» y la que se usa para cerrar; no se lee como cruz (la regla busca evitar lecturas religiosas o políticas). Lo que sí se evita es el «+» y la cruz derecha.
+
 ## Premios y calificaciones (tarea 36, aprobado por Ricardo el 4-oct)
 
 También pasaron a **luceros redondos**, para que toda la app hable el mismo lenguaje: las estrellas ganadas de la pantalla de resultado (`ResultStar`) y su lluvia de destellos; el emblema y los puntos de división del escudo de liga (`LeagueShield`);
