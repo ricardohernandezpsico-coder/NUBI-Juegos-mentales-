@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|bodega|correo|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|bodega|correo|aterrizaje|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -347,6 +347,44 @@ def grupo_correo():
     S.append(sprite('reloj_tapa_p', carga_correo('reloj_tapa_p', ANCHOS_CORREO['reloj_tapa'], bruma=True), ppu=4.0))
     return S, med
 
+ANCHOS_ATERRIZAJE = {'nave': 288, 'gallardete': 144, 'tierra': 384, 'satelite': 128, 'domo': 112}
+
+def simetriza(im):
+    """La imagen promediada con su espejo horizontal (con el alfa premultiplicado): la nave de Aterrizaje es simétrica respecto de su eje vertical y SU CENTRO EN X ES LA RESPUESTA, así que ni la luz del render ni el ruido pueden cargarla a un lado.
+    Como la forma es simétrica, es lo mismo que renderizarla con la luz de la izquierda y con la de la derecha y promediar."""
+    a = np.asarray(im.convert('RGBA')).astype(np.float32) / 255.0
+    pm = np.concatenate([a[..., :3] * a[..., 3:4], a[..., 3:4]], axis=2); m = (pm + pm[:, ::-1]) / 2.0; al = m[..., 3:4]
+    rgb = np.where(al > 1e-4, m[..., :3] / np.maximum(al, 1e-4), 0.0)
+    return Image.fromarray((np.clip(np.concatenate([rgb, al], axis=2), 0, 1) * 255.0 + 0.5).astype(np.uint8), 'RGBA')
+
+def carga_aterrizaje(nombre, ancho, bruma=False, simetrica=False):
+    """Un render de Aterrizaje: las piezas SIN suelo (flotan) no llevan bruma que limpiar; [simetrica] promedia la pieza con su espejo (la nave)."""
+    im = Image.open(os.path.join(RENDER, 'aterrizaje', nombre + '.png')).convert('RGBA')
+    if bruma: im = limpia_bruma(im)
+    if simetrica: im = simetriza(im)
+    return quita_ruido_alfa(reduce_premult(im, ancho), 6)
+
+def grupo_aterrizaje():
+    """Aterrizaje Lunar: la nave (SIMÉTRICA: su centro en x es la respuesta), el gallardete, la Tierra, el satélite, las dos cúpulas del marcador (4 px por dp; la Tierra, 3) y la regla (una losa crema sin marcas, nine-slice a lo ancho, a 3 px por dp con los márgenes
+    de las losas del kit). Las marcas de la regla, sus números y el asta NO están: son procedurales y exactas. La luna y las cordilleras tampoco."""
+    S = []; med = []
+    S.append(sprite('nave', carga_aterrizaje('nave', ANCHOS_ATERRIZAJE['nave'], simetrica=True), ppu=4.0))
+    S.append(sprite('gallardete', carga_aterrizaje('gallardete', ANCHOS_ATERRIZAJE['gallardete']), ppu=4.0))
+    S.append(sprite('tierra', carga_aterrizaje('tierra', ANCHOS_ATERRIZAJE['tierra']), ppu=3.0))
+    S.append(sprite('satelite', carga_aterrizaje('satelite', ANCHOS_ATERRIZAJE['satelite']), ppu=4.0))
+    for n in ('domo_on', 'domo_off'): S.append(sprite(n, carga_aterrizaje(n, ANCHOS_ATERRIZAJE['domo']), ppu=4.0))
+    # la regla: una losa del kit de radio 7,5 dp (cuerpo de 39,7 × 20 dp) con los márgenes del kit; los bordes del nine-slice son margen + radio
+    radio = 7.5; kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8')); m = kit['losas']['md']['margenes_dp']
+    cuerpo_w = 2 * radio + (kit['losas']['md']['cuerpo_dp']['ancho'] - 44.0); cuerpo_h = 2 * radio + (kit['losas']['md']['cuerpo_dp']['alto'] - 44.0)
+    W = round((cuerpo_w + m['izq'] + m['der']) * PX_DP); H = round((cuerpo_h + m['arr'] + m['abajo']) * PX_DP)
+    im = carga_render('aterrizaje', 'regla')
+    im = alinea_losa([im], (m['izq'], m['arr']), W, H, im)[0]
+    borde = (round((m['izq'] + radio) * PX_DP), round((m['abajo'] + radio) * PX_DP), round((m['der'] + radio) * PX_DP), round((m['arr'] + radio) * PX_DP))        # izquierda, abajo, derecha, arriba (el orden de Unity)
+    margen = (round(m['izq'] * PX_DP), round(m['arr'] * PX_DP), round(m['der'] * PX_DP), round(m['abajo'] * PX_DP))                                                       # izquierda, arriba, derecha, abajo
+    S.append(sprite('regla', im, borde=borde, margen=margen))
+    med += [('regla_cuerpo_ancho_dp', float(cuerpo_w)), ('regla_cuerpo_alto_dp', float(cuerpo_h))]
+    return S, med
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -390,7 +428,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'aterrizaje': grupo_aterrizaje, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -578,7 +616,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'aterrizaje', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

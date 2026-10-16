@@ -240,7 +240,7 @@ namespace NeuroVida.Games.Aterrizaje
             _flagInk.gameObject.SetActive(top);
             _flagFill.gameObject.SetActive(top);
             _flagText.gameObject.SetActive(top);
-            if (flag) SetRect(_pole.rectTransform, tx, _plan.RulerY - fh * 0.5f, 3f, fh);
+            if (flag) PlacePole(tx, fh);
             if (top)
             {
                 SetRect(_pennant.rectTransform, tx + 15f, _plan.RulerY - fh + 9f, LandingSprites.PennantW, LandingSprites.PennantH);
@@ -254,6 +254,21 @@ namespace NeuroVida.Games.Aterrizaje
                 SetRect(_flagShadow.rectTransform, bx, by + 3f, w + 5.2f, 33.2f);
             }
             AnimateDust(t);
+        }
+
+        /// <summary>El asta de la bandera: de 3 dp de ancho, centrada en x = <paramref name="tx"/> (el lugar justo) y apoyada en la regla. Procedural, en tinta: la plasticina no la toca.</summary>
+        private void PlacePole(float tx, float fh) => SetRect(_pole.rectTransform, tx, _plan.RulerY - fh * 0.5f, 3f, fh);
+
+        /// <summary>Para las pruebas: el centro en x (dp) de la marca del extremo izquierdo, la del medio, la del extremo derecho y el asta de una bandera plantada en la fracción <paramref name="flagFrac"/> de la regla, con el diseño armado
+        /// (con la regla de plasticina o con la de siempre). La regla manda: tienen que quedar donde están desde siempre (x0, el medio, x1 y el lugar justo), a ±1 unidad (1/3 dp).</summary>
+        public float[] RulerMarkCentersDp(float flagFrac)
+        {
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _plan = new LandingPlan(_logicalH, false);
+            LayoutRuler();
+            PlacePole(LandingPlan.FracX(flagFrac), LandingContract.FlagHeight);
+            float X(RectTransform r) => r.anchoredPosition.x / _s + LandingPlan.Width * 0.5f;
+            return new[] { X(_tickL.rectTransform), X(_tickMid.rectTransform), X(_tickR.rectTransform), X(_pole.rectTransform) };
         }
 
         // ------------------------------------------------------------------ polvo

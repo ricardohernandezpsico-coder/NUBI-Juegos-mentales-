@@ -17,12 +17,23 @@ namespace NeuroVida.Games.Aterrizaje
         private const float Aa = 0.03f;
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
 
+        /// <summary>El atlas de plasticina de este juego (<c>Resources/Plasticina/aterrizaje</c>): la nave, el gallardete, la Tierra, el satélite, las dos cúpulas del marcador y la regla (una losa crema sin marcas). Las marcas de la regla, sus números y el asta de la bandera NO están en el atlas:
+        /// se quedan procedurales, en tinta y exactamente en el mismo x (la regla manda). La luna y las cordilleras (pegadas a la regla), la nebulosa, la estrella fugaz y la guía también. Las insignias ✓ y aspa son las monedas de lo común. Sin el atlas todo cae al arte de siempre.</summary>
+        public const string PlasticGroup = "aterrizaje";
+
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "nave");
+
+        private static Sprite Art(string name) => PlasticArt.Get(PlasticGroup, name);
+
+        /// <summary>La regla de plasticina (nine-slice a lo ancho, sin marcas, rayas ni cráteres) o null sin el atlas: entonces se dibuja la de siempre (relleno crema con borde de tinta).</summary>
+        public static Sprite Ruler() => Art("regla");
+
         // ------------------------------------------------------------------ la nave
 
         /// <summary>La nave se dibuja en un cuadro de 72 × 72 dp del boceto (media-lado 36), que en pantalla es ×1,25.</summary>
         public const float LanderUnit = 36f;
 
-        public static Sprite Lander() => Get(1, () => ToSprite(RenderLander(256), 256, 256));
+        public static Sprite Lander() => Art("nave") ?? Get(1, () => ToSprite(RenderLander(256), 256, 256));
 
         private static float U(float dp) => dp / LanderUnit;
 
@@ -76,7 +87,7 @@ namespace NeuroVida.Games.Aterrizaje
         /// <summary>El gallardete de la bandera: un triángulo sol de 26 × 15 dp con borde de tinta. El sprite cubre 36 × 24 dp con el vértice de arriba a la izquierda en (3, 3).</summary>
         public const float PennantW = 36f, PennantH = 24f, PennantPxPerDp = 6f;
 
-        public static Sprite Pennant() => Get(2, () => ToSpriteRect(RenderPennant(), (int)(PennantW * PennantPxPerDp), (int)(PennantH * PennantPxPerDp)));
+        public static Sprite Pennant() => Art("gallardete") ?? Get(2, () => ToSpriteRect(RenderPennant(), (int)(PennantW * PennantPxPerDp), (int)(PennantH * PennantPxPerDp)));
 
         public static Color32[] RenderPennant()
         {
@@ -103,7 +114,7 @@ namespace NeuroVida.Games.Aterrizaje
         /// <summary>La Tierra: 116 dp de diámetro (radio 58) dentro de un cuadro de 128 dp, a 4 píxeles por dp.</summary>
         public const float EarthSide = 128f, EarthRadius = 58f, EarthPxPerDp = 4f;
 
-        public static Sprite Earth() => Get(3, () => ToSprite(RenderEarth((int)(EarthSide * EarthPxPerDp)), (int)(EarthSide * EarthPxPerDp), EarthPxPerDp));
+        public static Sprite Earth() => Art("tierra") ?? Get(3, () => ToSprite(RenderEarth((int)(EarthSide * EarthPxPerDp)), (int)(EarthSide * EarthPxPerDp), EarthPxPerDp));
 
         /// <summary>La Tierra redibujada (versión 3 del boceto): océano en degradado, tierras suaves lima, nubes en trazos, la noche como degradado, borde de atmósfera y borde de tinta.</summary>
         public static Color32[] RenderEarth(int size)
@@ -255,7 +266,7 @@ namespace NeuroVida.Games.Aterrizaje
         /// <summary>El satélite que cruza el cielo: dos paneles azules y un cuerpo crema (32 × 12 dp).</summary>
         public const float SatelliteW = 32f, SatelliteH = 12f, SatellitePxPerDp = 6f;
 
-        public static Sprite Satellite() => Get(8, () => ToSpriteRect(RenderSatellite(), (int)(SatelliteW * SatellitePxPerDp), (int)(SatelliteH * SatellitePxPerDp)));
+        public static Sprite Satellite() => Art("satelite") ?? Get(8, () => ToSpriteRect(RenderSatellite(), (int)(SatelliteW * SatellitePxPerDp), (int)(SatelliteH * SatellitePxPerDp)));
 
         public static Color32[] RenderSatellite()
         {
@@ -298,7 +309,7 @@ namespace NeuroVida.Games.Aterrizaje
         /// <summary>La cúpula de tu base (marcador): media esfera sobre su base, celeste cuando ya hay alguna y apagada si no. 28 × 20 dp.</summary>
         public const float DomeW = 28f, DomeH = 20f, DomePxPerDp = 6f;
 
-        public static Sprite Dome(bool on) => Get(on ? 10 : 11, () => ToSpriteRect(RenderDome(on), (int)(DomeW * DomePxPerDp), (int)(DomeH * DomePxPerDp)));
+        public static Sprite Dome(bool on) => Art(on ? "domo_on" : "domo_off") ?? Get(on ? 10 : 11, () => ToSpriteRect(RenderDome(on), (int)(DomeW * DomePxPerDp), (int)(DomeH * DomePxPerDp)));
 
         public static Color32[] RenderDome(bool on)
         {
@@ -323,7 +334,8 @@ namespace NeuroVida.Games.Aterrizaje
         /// <summary>La insignia del tramo: un círculo de 24 dp con ✓ (lima) o aspa (coral). Nunca solo color.</summary>
         public const float BadgeSide = 28f, BadgePxPerDp = 6f;
 
-        public static Sprite Badge(bool ok) => Get(ok ? 12 : 13, () => ToSprite(RenderBadge(ok, (int)(BadgeSide * BadgePxPerDp)), (int)(BadgeSide * BadgePxPerDp), BadgePxPerDp));
+        /// <summary>La insignia del tramo: la moneda ✓ (lima) o la aspa DIAGONAL (coral) de plasticina de lo común, o la de siempre. Nunca solo color.</summary>
+        public static Sprite Badge(bool ok) => PlasticArt.Get("comun", ok ? "marca_ok" : "marca_no") ?? Get(ok ? 12 : 13, () => ToSprite(RenderBadge(ok, (int)(BadgeSide * BadgePxPerDp)), (int)(BadgeSide * BadgePxPerDp), BadgePxPerDp));
 
         public static Color32[] RenderBadge(bool ok, int size)
         {

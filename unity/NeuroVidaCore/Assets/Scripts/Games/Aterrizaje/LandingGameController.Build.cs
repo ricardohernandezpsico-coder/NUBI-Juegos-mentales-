@@ -35,6 +35,7 @@ namespace NeuroVida.Games.Aterrizaje
 
         // la regla
         private Image _rulerShadow, _rulerInk, _rulerFill, _rulerShine, _tickL, _tickR, _tickMid;
+        private Image _rulerSlab;                                  // la regla de plasticina (null sin el atlas)
         private Text _minLabel, _maxLabel;
         private RectTransform _lineZone;
 
@@ -181,6 +182,13 @@ namespace NeuroVida.Games.Aterrizaje
             _rulerInk = Rr(_rulerLayer, "RulerInk", Ink, 13.4f);
             _rulerFill = Rr(_rulerLayer, "RulerFill", LandingSprites.RulerColor, 10f);
             _rulerShine = Rr(_rulerLayer, "RulerShine", new Color(1f, 1f, 1f, 0.38f), 3f);
+            // con plasticina el cuerpo de la regla es una losa crema lisa (el relleno queda invisible y la losa va detrás, sobresaliendo por sus márgenes); el borde de tinta, la sombra dura y el brillo se apagan.
+            // Las MARCAS (los dos extremos y el medio), los números y el asta de la bandera siguen siendo procedurales, en tinta y en el mismo x de siempre: la regla manda.
+            if (LandingSprites.Ruler() != null)
+            {
+                _rulerSlab = PlasticSlab.TryStyleCustom(_rulerFill, LandingSprites.PlasticGroup, "regla");
+                if (_rulerSlab != null) foreach (var im in new[] { _rulerShadow, _rulerInk, _rulerShine }) im.enabled = false;
+            }
             _tickL = Rr(_rulerLayer, "EndTickL", Ink, 1.7f);
             _tickR = Rr(_rulerLayer, "EndTickR", Ink, 1.7f);
             _tickMid = Rr(_rulerLayer, "MidTick", Ink, 1.3f);
