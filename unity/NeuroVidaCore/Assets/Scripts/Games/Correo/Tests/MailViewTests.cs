@@ -284,6 +284,35 @@ namespace NeuroVida.Games.Correo.Tests
             return n;
         }
 
+        private static float Lum(Color32 c)
+        {
+            float R(float v) { v /= 255f; return v <= 0.03928f ? v / 12.92f : Mathf.Pow((v + 0.055f) / 1.055f, 2.4f); }
+            return 0.2126f * R(c.r) + 0.7152f * R(c.g) + 0.0722f * R(c.b);
+        }
+
+        private static float Ratio(Color32 a, Color32 b) => (Mathf.Max(Lum(a), Lum(b)) + 0.05f) / (Mathf.Min(Lum(a), Lum(b)) + 0.05f);
+
+        [Test]
+        public void TheProceduralFigures_CarryAnInkRingInsideTheirContour_SoTheyReadAtThreeToOneOrMore()
+        {
+            // la figura es la pista principal y el color solo no alcanza (blanco sobre el verde claro de Lima: 1,95:1; la figura del sello, 2,8:1): un aro fino de tinta (MailSprites.FigureInk) por ADENTRO del contorno, sin cambiar la silueta ni el tamaño
+            Assert.That(MailSprites.FigureInk, Is.InRange(0.5f, 1.5f), "fino");
+            // el planeta 0 (círculo): figura de radio 0,9 × 28 / 2 = 12,6 dp en una caja de 64 dp a 4 px por dp (y hacia arriba desde el centro)
+            var planet = MailSprites.Planet(0); var tex = planet.texture; var px = tex.GetPixels32();
+            Color32 PlanetAt(float xDp, float yDp) => px[Mathf.RoundToInt(tex.height / 2f + yDp * 4f) * tex.width + Mathf.RoundToInt(tex.width / 2f + xDp * 4f)];
+            var ring = PlanetAt(12.6f - MailSprites.FigureInk / 2f, 0f); var fill = PlanetAt(0f, 0f); var body = PlanetAt(19f, 0f);
+            Assert.Less(Luma(ring), 0.25f, "el aro de tinta está por adentro del contorno de la figura");
+            Assert.Greater(Luma(fill), 0.93f, "y adentro del aro la figura sigue blanca");
+            Assert.GreaterOrEqual(Ratio(ring, body), 3f, "el aro contra el cuerpo del planeta");
+            Assert.GreaterOrEqual(Ratio(fill, ring), 3f, "la figura blanca contra su aro");
+            Assert.Greater(PlanetAt(12.6f + 0.6f, 0f).r, 100, "afuera del contorno está el planeta, no la tinta (el aro no ensancha la figura)");
+            // el sello normal del planeta 0: figura de 17 dp (radio 8,5) sobre el sello blanco
+            var normal = MailSprites.Letter(0, MailCue.None); float cx = MailSprites.SealCx(false), cy = MailSprites.SealCy(false);
+            var sealRing = LetterPixel(normal, cx + 8.5f - MailSprites.FigureInk / 2f, cy); var sealWhite = LetterPixel(normal, cx + 11.5f, cy);
+            Assert.Less(Luma(sealRing), 0.25f, "el aro de tinta de la figura del sello");
+            Assert.GreaterOrEqual(Ratio(sealRing, sealWhite), 3f, "el aro contra el blanco del sello");
+        }
+
         [Test]
         public void ThePlanets_AreFourDistinctFigures_AndTheOtherPiecesAreBaked()
         {

@@ -169,6 +169,9 @@ namespace NeuroVida.Games.Correo
 
         /// <summary>El sello normal mide 30 dp (liso); el dorado ~1,2 veces más (36 dp) y con el borde dentado de un sello postal. Un cuadrado con dientes, NO rayos: nada que parezca sol o estrella.</summary>
         public const float SealSize = 30f, GoldSealScale = 1.2f;
+        /// <summary>El borde de tinta de las figuras (círculo, triángulo, cuadrado y gota; dp): fino y HACIA ADENTRO, así la silueta y el tamaño de cada figura no cambian. Les da el contraste (≥ 3:1) que no daba el color solo: la figura es la pista principal
+        /// (la figura blanca del planeta rendía 1,95:1 sobre Lima; la del sello, 2,8:1). Lo mismo en el atlas de plasticina (<c>tools/juegos/correo.py</c>).</summary>
+        public const float FigureInk = 0.9f;
         /// <summary>Las perforaciones del sello dorado: mordidas de medio círculo (radio y paso en dp), cinco por lado, a todo el borde.</summary>
         public const float PerfRadius = 1.9f, PerfPitch = 5.5f;
         public const int PerfPerSide = 5;
@@ -224,7 +227,9 @@ namespace NeuroVida.Games.Correo
             float seal = SealShape(gold, x, y, sx, sy);
             if (gold) { p.Over(Hex(0xB07A12), Cover(seal, aa)); p.Over(Gold, Cover(seal + 2.5f, aa)); }                // el borde café va todo hacia adentro: las mordidas dejan ver el papel
             else { p.Over(InkC, Cover(seal - 1f, aa)); p.Over(Color.white, Cover(seal + 1f, aa)); }
-            p.Over(PlanetDark[planet], Cover(Symbol(planet, x, y, sx, sy, 17f * half / SealHalf(false)), aa));
+            float fig = Symbol(planet, x, y, sx, sy, 17f * half / SealHalf(false));
+            p.Over(InkC, Cover(fig, aa));                                                       // el aro de tinta de la figura va por adentro de su contorno
+            p.Over(PlanetDark[planet], Cover(fig + FigureInk, aa));
             // líneas de dirección
             float x0 = -w / 2f + 14f + (cue == MailCue.Lazo ? 24f : 0f);
             var ink35 = new Color(26f / 255f, 18f / 255f, 64f / 255f, 0.35f);
@@ -249,7 +254,9 @@ namespace NeuroVida.Games.Correo
                 float t = Mathf.Clamp01(Mathf.Sqrt((x + R * 0.35f) * (x + R * 0.35f) + (y + R * 0.4f) * (y + R * 0.4f)) / (R * 1.35f));
                 Color c = t < 0.25f ? Color.Lerp(Color.white, PlanetCol[planet], t / 0.25f) : Color.Lerp(PlanetCol[planet], PlanetDark[planet], (t - 0.25f) / 0.75f);
                 p.Over(c, Cover(sdf + 1.5f, aa));
-                p.Over(Color.white, Cover(Symbol(planet, x, y, 0f, 0f, R * 0.9f), aa));
+                float fig = Symbol(planet, x, y, 0f, 0f, R * 0.9f);
+                p.Over(InkC, Cover(fig, aa));                                                   // la figura blanca lleva un aro fino de tinta por adentro de su contorno
+                p.Over(Color.white, Cover(fig + FigureInk, aa));
             });
         }
 

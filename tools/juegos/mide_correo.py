@@ -140,13 +140,47 @@ for v, M in pd.M.items():
     d0, a0, b0 = pares[0]
     pr(f'- {v}: el par de colores más cercano es {PLANETAS[a0].split()[0]} y {PLANETAS[b0].split()[0]}, ΔE {d0:.1f}' + (' (se separan por la figura: IoU %.2f)' % ((masas[a0] & masas[b0]).sum() / max(1, (masas[a0] | masas[b0]).sum())) if d0 < 20 else ' (también se separan por color)'))
 pr()
-pr('Las figuras de los SELLOS de las cartas (oscuras, 17 dp sobre el sello blanco): color medido y contraste contra el sello.')
+def dilata(m, r):
+    o = m.copy()
+    for _ in range(r):
+        q = o.copy(); q[1:] |= o[:-1]; q[:-1] |= o[1:]; q[:, 1:] |= o[:, :-1]; q[:, :-1] |= o[:, 1:]; o = q
+    return o
+
+pr('**Contraste de cada figura (WCAG 1.4.11: un gráfico que informa necesita ≥ 3:1 contra lo que lo rodea).** El color solo no alcanzaba: antes del aro de tinta, la figura BLANCA contra el cuerpo de su planeta rendía 2,62 (Coralia), 2,34 (Celesta), **1,95 (Lima)** y 2,97:1 (Uva), y la figura oscura contra el sello blanco 3,8 / 3,0 / **2,8** / 4,3:1. Ahora cada figura lleva un aro fino de tinta (0,9 dp) HACIA ADENTRO de su contorno (la silueta y el tamaño no cambian). Medido en el atlas:')
+pr()
+pr('| Planeta | Figura blanca contra su aro | Aro contra el cuerpo del planeta | Aro contra el sello blanco | Aro contra el sello dorado | IoU de la silueta con la de antes |')
+pr('|---|---:|---:|---:|---:|---:|')
+peor_aro = 99.0
+for p in range(4):
+    a, e2 = recorte(f'planeta_{p}'); H, W = a.shape[:2]
+    blanco = (a[..., 3] > 200) & (a[..., 0] > 225) & (a[..., 1] > 215) & (a[..., 2] > 205)
+    cerca = dilata(blanco, 4); ancho = dilata(blanco, 9); medio = dilata(blanco, 5)
+    tinta_m = cerca & ~blanco & (a[..., 3] > 200) & (luma(a) < 0.25)
+    cuerpo_m = ancho & ~medio & (a[..., 3] > 240)
+    fb = a[..., :3][blanco].mean(0); ft = a[..., :3][tinta_m].mean(0); fc = a[..., :3][cuerpo_m].mean(0)
+    cel = []
+    for c in (0, 1):
+        ac = cartas[(p, c)]; ec = recorte(f'carta_{p}_{c}')[1]; Hc, Wc = ac.shape[:2]; yy, xx = np.mgrid[0:Hc, 0:Wc]
+        X = (xx + 0.5 - Wc / 2) / ec['ppu']; Y = (Hc / 2 - yy - 0.5) / ec['ppu']
+        sx, sy = (SEAL_G[0], -SEAL_G[1]) if c == 1 else (SEAL_N[0], -SEAL_N[1]); alcance = 13 if c == 1 else 12
+        zona = (np.abs(X - sx) < alcance) & (np.abs(Y - sy) < alcance)
+        anillo = zona & (ac[..., 3] > 200) & (luma(ac) < 0.25)
+        if c == 1: alrededor = zona & (ac[..., 3] > 200) & (ac[..., 0] > 170) & (ac[..., 1] > 120) & (ac[..., 2] < 110) & (ac[..., 0] - ac[..., 2] > 100)
+        else: alrededor = zona & (ac[..., 3] > 200) & (luma(ac) > 0.93)
+        cel.append(contraste(ac[..., :3][anillo].mean(0), ac[..., :3][alrededor].mean(0)) if anillo.sum() and alrededor.sum() else 0.0)
+    peor_aro = min(peor_aro, contraste(fb, ft), contraste(ft, fc), *cel)
+    pr(f'| {PLANETAS[p].split()[0]} | {contraste(fb, ft):.1f}:1 | {contraste(ft, fc):.1f}:1 | {cel[0]:.1f}:1 | {cel[1]:.1f}:1 | (ver la tabla de IoU de arriba) |')
+pr()
+pr(f'**El peor de todos: {peor_aro:.1f}:1** (la prueba `EveryFigure_HasAnInkRing_ThatReadsAtThreeToOneOrMore_OnThePlanetAndOnTheSeal` pide ≥ 3:1 en todos).')
+pr()
+pr('Colores de relleno de las figuras de los SELLOS (oscuras, 17 dp sobre el sello blanco): color medido del relleno y tamaño.')
 pr()
 for p in range(4):
     a = cartas[(p, 0)]; m = mascara_sello(p)
     if m.sum() == 0: pr(f'- {PLANETAS[p]}: no se encontró la figura'); continue
-    f = a[..., :3][m].mean(0); blanco = en_dp(a, e, SEAL_N[0] + 12.5, -SEAL_N[1] + 12.5)[:3]
-    pr(f'- {PLANETAS[p]}: figura {hexs(f)} ({int(m.sum())} px = {m.sum() / e["ppu"] ** 2:.0f} dp²) contra el sello {hexs(blanco)}: {contraste(f, blanco):.1f}:1')
+    interior = m & (luma(a) > 0.25)
+    f = a[..., :3][interior].mean(0)
+    pr(f'- {PLANETAS[p]}: relleno {hexs(f)}, figura entera (con el aro) {int(m.sum())} px = {m.sum() / e["ppu"] ** 2:.0f} dp²')
 pr()
 pr('## 3. La caja fuerte y el faro (4 px por dp)')
 pr()

@@ -78,6 +78,16 @@ def contorno_sdf(f, cx, cy, n=400, rmax=40.0):
         out.append((cx + dx * lo, cy + dy * lo))
     return out
 
+def sdf_poli(pts, x, y):
+    """La distancia con signo (negativa adentro) de (x, y) al polígono [pts] (dp, y abajo)."""
+    d = 1e9; dentro = False; n = len(pts)
+    for i in range(n):
+        ax, ay = pts[i]; bx, by = pts[(i + 1) % n]; ex, ey = bx - ax, by - ay
+        t = max(0.0, min(1.0, ((x - ax) * ex + (y - ay) * ey) / (ex * ex + ey * ey + 1e-12)))
+        d = min(d, math.hypot(x - ax - ex * t, y - ay - ey * t))
+        if (ay > y) != (by > y) and x < ex * (y - ay) / (by - ay + 1e-12) + ax: dentro = not dentro
+    return -d if dentro else d
+
 # ------------------------------------------------------------------ el sello (MailSprites.SealShape, SealSize = 30, GoldSealScale = 1.2, PerfRadius = 1.9, PerfPitch = 5.5, PerfPerSide = 5)
 SEAL, GOLD_K, PERF_R, PERF_P, PERF_N = 30.0, 1.2, 1.9, 5.5, 5
 
@@ -108,6 +118,15 @@ def figura_dp(planeta, s, cx=0.0, cy=0.0):
     pts += [(0.0 + 0.5 * math.cos(a * math.pi / 14), 0.22 + 0.5 * math.sin(a * math.pi / 14)) for a in range(1, 15)]
     pts += bezier((-0.5, 0.22), (-0.5, 0.1), (-0.35, -0.15), (0.0, -0.6))
     return [(cx + x * s, cy + y * s) for (x, y) in pts]
+
+BORDE_FIGURA = 0.9                                                  # el borde de tinta de las figuras (dp): fino y HACIA ADENTRO, la silueta y el tamaño no cambian
+
+def figura_con_borde(planeta, s, cx, cy, w):
+    """(contorno exterior, contorno interior) de la figura: el interior es el exterior corrido [w] dp HACIA ADENTRO. La figura de tinta lleva el exterior; encima, el color de la figura con el interior: queda un aro de tinta de [w] dp
+    que da el contraste (≥ 3:1) contra el sello blanco o contra el planeta, sin tocar la silueta (el IoU entre figuras no cambia)."""
+    ext = figura_dp(planeta, s, cx, cy)
+    inte = contorno_sdf(lambda x, y: sdf_poli(ext, x, y) + w, cx, cy, 240, rmax=s)
+    return ext, inte
 
 # ------------------------------------------------------------------ las capas
 _R = {}
@@ -153,7 +172,9 @@ def carta(planeta, cue):
             capa(K(rr_dp(cx, cy, half + 1.0, half + 1.0, 6.0)), None, 0.04, 0.015, 'sello_tinta', z0=0.09, material=tinta())    # el borde de tinta de 1 dp
             capa(K(rr_dp(cx, cy, half, half, 5.0)), '#FFFFFF', 0.09, 0.03, 'sello', z0=0.09)
             z_fig = 0.17
-        capa(K(figura_dp(planeta, 17.0 * half / sello_mitad(False), cx, cy)), OSCURO[planeta], 0.06, 0.02, 'figura', z0=z_fig, material=mat_oscuro(f'm_j_cor_figura_{planeta}', OSCURO[planeta]))        # color oscuro: sin el velo gris del brillo normal (la figura se lee por la forma y el contraste contra el sello blanco)
+        ext, inte = figura_con_borde(planeta, 17.0 * half / sello_mitad(False), cx, cy, BORDE_FIGURA)                    # aro fino de tinta HACIA ADENTRO: la silueta y el tamaño de la figura no cambian
+        capa(K(ext), None, 0.06, 0.02, 'figura_tinta', z0=z_fig, material=tinta())
+        capa(K(inte), OSCURO[planeta], 0.075, 0.02, 'figura', z0=z_fig, material=mat_oscuro(f'm_j_cor_figura_{planeta}', OSCURO[planeta]))        # color oscuro: sin el velo gris del brillo normal (la figura se lee por la forma y el contraste contra el sello blanco)
     return construir
 
 def render_cartas(solo=None):
@@ -168,9 +189,10 @@ def planeta(p):
     def construir(r):
         sin_suelo(); R_ = 28.0 * DP
         esfera(R_, PLANETA[p], loc=(0, 0, R_), nombre='planeta', seg=96)
-        cont = K(figura_dp(p, 28.0 * 0.9))
-        o = pieza(cont, 0.22, 0.05, '#FFFFFF', 'figura', z0=0.0, material=None, padre=None)                              # la placa se pone mirando a la cámara, a ras de la esfera
-        o.rotation_euler = (T, 0, 0); o.location = tuple(Vector((0.0, 0.0, R_)) + VISTA * (R_ - 0.16))
+        ext, inte = figura_con_borde(p, 28.0 * 0.9, 0.0, 0.0, BORDE_FIGURA)                                             # un aro fino de tinta HACIA ADENTRO: contraste ≥ 3:1 contra el planeta sin cambiar la silueta
+        tint = pieza(K(ext), 0.22, 0.05, None, 'figura_tinta', z0=0.0, material=tinta(), padre=None)
+        o = pieza(K(inte), 0.25, 0.05, '#FFFFFF', 'figura', z0=0.0, material=None, padre=None)                           # la placa se pone mirando a la cámara, a ras de la esfera
+        for pl in (tint, o): pl.rotation_euler = (T, 0, 0); pl.location = tuple(Vector((0.0, 0.0, R_)) + VISTA * (R_ - 0.16))
     return construir
 
 def render_planetas():

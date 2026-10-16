@@ -126,7 +126,7 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 | `meteoros` (Lluvia de meteoros: rocas nine-slice, presionadas, brasa, grietas, estrellas) | 18 | 640×1956 | 386 KB | 0,52 MB | 0,55 MB |
 | `parejas` (Constelaciones: 12 objetos + 4 gemelos, luz dormida, presionada y abierta) | 19 | 1152×940 | 431 KB | 0,55 MB | 0,46 MB |
 | `bodega` (Bodega de carga: 12 objetos, escotilla, robot, caja, esclusa, carro) | 30 | 1024×1384 | 684 KB | 0,89 MB | 0,60 MB |
-| `correo` (La estación de correo: 12 cartas, 4 planetas, dial, puerta, manija, torre, lámparas, nave, saco, raya, reloj) | 28 | 1280×1852 | 1140 KB | 1,47 MB | 1,01 MB |
+| `correo` (La estación de correo: 12 cartas, 4 planetas, dial, puerta, manija, torre, lámparas, nave, saco, raya, reloj) | 28 | 1280×1852 | 1162 KB | 1,49 MB | 1,01 MB |
 | `comun` (losas, marcas, anillo) | 29 | 896×2472 | 849 KB | 1,11 MB | 0,97 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 

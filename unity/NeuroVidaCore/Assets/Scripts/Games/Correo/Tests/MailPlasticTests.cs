@@ -296,6 +296,73 @@ namespace NeuroVida.Games.Correo.Tests
                 }
         }
 
+        /// <summary>[m] con cada <c>true</c> ensanchado [r] píxeles hacia los lados (máximo separable: una pasada por fila y otra por columna).</summary>
+        private static bool[] Dilate(bool[] m, int w, int h, int r)
+        {
+            var a = new bool[m.Length]; var b = new bool[m.Length];
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    bool any = false;
+                    for (int k = Math.Max(0, x - r); k <= Math.Min(w - 1, x + r) && !any; k++) any = m[y * w + k];
+                    a[y * w + x] = any;
+                }
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    bool any = false;
+                    for (int k = Math.Max(0, y - r); k <= Math.Min(h - 1, y + r) && !any; k++) any = a[k * w + x];
+                    b[y * w + x] = any;
+                }
+            return b;
+        }
+
+        private static Color32 Mean(Img im, Func<int, Color32, bool> pick, out int count)
+        {
+            double r = 0, g = 0, b = 0; count = 0;
+            for (int i = 0; i < im.Px.Length; i++) if (pick(i, im.Px[i])) { r += im.Px[i].r; g += im.Px[i].g; b += im.Px[i].b; count++; }
+            return count == 0 ? new Color32(0, 0, 0, 255) : new Color32((byte)(r / count), (byte)(g / count), (byte)(b / count), 255);
+        }
+
+        [Test]
+        public void EveryFigure_HasAnInkRing_ThatReadsAtThreeToOneOrMore_OnThePlanetAndOnTheSeal()
+        {
+            // la figura es la pista principal: un gráfico que informa necesita ≥ 3:1 contra lo que lo rodea (WCAG 1.4.11). El color solo no alcanza (la figura blanca de Lima sobre su planeta rendía 1,95:1; la del sello, 2,8:1);
+            // por eso cada figura lleva un aro fino de tinta HACIA ADENTRO de su contorno (la silueta y el tamaño no cambian)
+            for (int p = 0; p < MailContract.PlanetCount; p++)
+            {
+                // el planeta: figura blanca + aro de tinta sobre el cuerpo coloreado
+                var pl = Load("planeta_" + p);
+                var white = new bool[pl.Px.Length];
+                for (int i = 0; i < white.Length; i++) { var c = pl.Px[i]; white[i] = c.a > 200 && c.r > 225 && c.g > 215 && c.b > 205; }
+                var near = Dilate(white, pl.W, pl.H, 4); var wide = Dilate(white, pl.W, pl.H, 9); var mid = Dilate(white, pl.W, pl.H, 5);
+                var whiteMean = Mean(pl, (i, c) => white[i], out int nw);
+                var inkMean = Mean(pl, (i, c) => near[i] && !white[i] && c.a > 200 && Luma(c) < 0.25f, out int ni);
+                var bodyMean = Mean(pl, (i, c) => wide[i] && !mid[i] && c.a > 240, out int nb);
+                Assert.Greater(nw, 500, "el planeta " + p + " lleva su figura blanca");
+                Assert.Greater(ni, 150, "el planeta " + p + ": la figura lleva un aro de tinta por adentro de su contorno");
+                Assert.GreaterOrEqual(Contrast(inkMean, bodyMean), 3f, "planeta " + p + ": el aro de tinta contra el cuerpo del planeta");
+                Assert.GreaterOrEqual(Contrast(whiteMean, inkMean), 3f, "planeta " + p + ": la figura blanca contra su aro de tinta");
+                // el sello (normal y dorado): el aro de tinta de la figura contra lo que la rodea (el sello blanco o el dorado)
+                foreach (var cue in new[] { MailCue.None, MailCue.Gold })
+                {
+                    bool gold = cue == MailCue.Gold;
+                    var card = Load("carta_" + p + "_" + (int)cue);
+                    float cx = MailSprites.SealCx(gold), cyUp = -MailSprites.SealCy(gold), reach = gold ? 13f : 12f;
+                    bool InRegion(int i)
+                    {
+                        float x = (i % card.W + 0.5f - card.W / 2f) / card.Ppu, y = (i / card.W + 0.5f - card.H / 2f) / card.Ppu;
+                        return Mathf.Abs(x - cx) < reach && Mathf.Abs(y - cyUp) < reach;
+                    }
+                    var ring = Mean(card, (i, c) => InRegion(i) && c.a > 200 && Luma(c) < 0.25f, out int nr);
+                    var around = gold ? Mean(card, (i, c) => InRegion(i) && IsGold(c), out int na) : Mean(card, (i, c) => InRegion(i) && c.a > 200 && Luma(c) > 0.93f, out na);
+                    Assert.Greater(nr, 40, "el sello " + (gold ? "dorado" : "normal") + " del planeta " + p + ": la figura lleva un aro de tinta por adentro");
+                    Assert.Greater(na, 200, "y se ve el " + (gold ? "dorado" : "blanco") + " del sello alrededor");
+                    Assert.GreaterOrEqual(Contrast(ring, around), 3f, "el aro de tinta de la figura contra el " + (gold ? "dorado" : "blanco") + " del sello (planeta " + p + ")");
+                }
+            }
+        }
+
         // ------------------------------------------------------------------ el dial, la puerta, el faro
 
         [Test]
