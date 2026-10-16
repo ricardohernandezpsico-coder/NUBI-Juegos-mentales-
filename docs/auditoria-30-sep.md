@@ -163,6 +163,7 @@ resolvió el riesgo alto. Lo que agrego:
 7. **Páginas de memoria de 16 KB**: desde noviembre de 2025, las apps con código nativo (Unity lo es) que apuntan a
    Android 15+ deben ser compatibles. Unity 6 lo soporta en sus versiones recientes, pero hay que comprobarlo en el
    APK (Analizador de APK de Android Studio).
+   **Resuelto el 16-oct:** REA comprobó el APK (alineación en el ZIP y segmentos LOAD de cada `.so`): pasa; ver `docs/hoja-de-ruta.md`, Etapa 4.
 8. **Tamaño**: `unity/AndroidExport` pesa 2 GB en disco; medir el `.aab` final. Si la descarga pasa de 200 MB, hay que
    usar Play Asset Delivery.
 9. **Versión de tienda optimizada**: hoy `isMinifyEnabled = false`. Activar R8 (más liviana) con reglas para Unity y el

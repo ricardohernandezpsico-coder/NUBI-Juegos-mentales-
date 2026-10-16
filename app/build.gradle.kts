@@ -41,6 +41,10 @@ android {
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
+      // Unity solo viene para arm64-v8a: sin el filtro, el APK trae carpetas vacías de armeabi-v7a/x86/x86_64 (solo una
+      // librería de AndroidX) y Google Play ofrecería Nubi a aparatos donde los juegos se caen. Solo en release: el emulador
+      // medium_phone (x86_64) sigue sirviendo con debug para la UI Compose.
+      ndk { abiFilters += "arm64-v8a" }
     }
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
