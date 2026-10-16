@@ -64,7 +64,7 @@ Solo cuando la app esté casi lista.
 
 - **Abogado y especialista en lanzamiento.**
 - **EsPal, pendiente de consulta (decisión de Ricardo, 10-oct):** la frecuencia de uso que trae SPALEX y que En la punta de la lengua usa para el nivel de cada palabra viene de EsPal, y sus términos de uso no están confirmados. Ya se cita por cortesía en «Licencias y créditos» (sin ninguna licencia escrita); antes de publicar hay que consultar a los autores o al abogado, o sacar esa dependencia (`docs/nombre-marca-y-riesgos.md`, «Licencias de terceros»).
-- **Marca**: búsqueda oficial (clases 9 y 41) y `applicationId` propio (cambiarlo después = app nueva).
+- **Marca**: búsqueda oficial (clases 9 y 41) — pendiente. ~~`applicationId` propio~~: **hecho el 15-oct** (`com.nubibraingames.app`; cambiarlo después de publicar = app nueva).
 - **Ficha de la tienda sin promesas de salud.** Declaración de salud de Google Play («Mental Acuity»); privacidad y seguridad de datos.
 - Página «La ciencia de Nubi» (qué mide cada medida y qué no).
 - Firma de lanzamiento, i18n completo (hoy `ui/i18n/AppStrings` cubre pocos textos) y **prueba cerrada**.

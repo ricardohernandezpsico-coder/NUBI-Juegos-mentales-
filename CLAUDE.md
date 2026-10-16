@@ -3,7 +3,7 @@
 **Nombre público desde el 29-sep: Nubi** ("Nubi – Brain Games"; el personaje es una nebulosa pequeña de arcilla).
 
 > **Nombres internos.** La app es Nubi, pero por dentro todavía dice "NeuroVida" y NO se cambia: el archivo de la base `neurovida_database` y los nombres de las preferencias (renombrarlos perdería el progreso), los namespaces y asmdefs de Unity
-> (`NeuroVida.*`, `unity/NeuroVidaCore/`) y clases Kotlin (`NeuroVidaViewModel`…), y el `applicationId` (`com.aistudio.neurovida.cgnv`, se define UNA vez antes de publicar: `docs/auditoria-30-sep.md`). La carpeta es `C:/Users/RURAL7/Desktop/Proyectos/Nubi`
+> (`NeuroVida.*`, `unity/NeuroVidaCore/`) y clases Kotlin (`NeuroVidaViewModel`…), y el `namespace`/paquete del código (`com.example`). El `applicationId` YA es propio: **`com.nubibraingames.app`** desde el 15-oct (pedido de Ricardo, para no publicar con el heredado de AI Studio, `com.aistudio.neurovida.cgnv`, que queda solo como historia en `docs/auditoria-30-sep.md`); cambiarlo después de publicar sería otra app (`docs/nombre-marca-y-riesgos.md`). La carpeta es `C:/Users/RURAL7/Desktop/Proyectos/Nubi`
 > (renombrada el 1-oct; Unity Hub necesita agregar el proyecto `unity/NeuroVidaCore` de nuevo). La app no muestra "NeuroVida" en ningún texto visible; en los documentos, "NeuroVida" solo aparece en identificadores o para el nombre viejo.
 
 App Android de juegos mentales cortos para mantener la mente activa: 17 juegos en 4 áreas (Memoria, Atención, Razonamiento y Lenguaje; de 6 a 4 áreas el 30-sep; juegos retirados en `docs/juegos/descartados.md`), Room v15, dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
@@ -37,7 +37,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 ## Arquitectura
 
-**App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.aistudio.neurovida.cgnv`):
+**App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.nubibraingames.app`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
 - 3 pestañas (Hoy, Juegos, Avance; se pasan deslizando), perfil y opciones como paneles, inicio «Primer vuelo con Nubi» y sesión diaria (SOLO los 3 juegos del camino): detalle en [`docs/arquitectura-app.md`](docs/arquitectura-app.md).
 - Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DailyPath`, `FirstFlight`, `DdaRating`, `Mail`, `LeagueEvents`, `NumberLine`, `Aterrizaje`, `RetoChoice`,

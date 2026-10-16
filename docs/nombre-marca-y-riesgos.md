@@ -24,6 +24,10 @@ rediseño de Radar: `tools/previews/radar_rescate.py` → `docs/previews/radar-r
 Conclusión: cambiar el nombre antes de publicar. El `applicationId` técnico (`com.aistudio.neurovida.cgnv`) se
 cambia al final, junto con la firma y la tienda (cambiarlo = app nueva), como ya estaba acordado.
 
+**Actualización (15-oct-2026):** Ricardo pidió no publicar con el identificador heredado de AI Studio, así que el `applicationId` ya es **`com.nubibraingames.app`** (debug y release, sin sufijo). El paquete del código (`com.example`) y los nombres internos «NeuroVida» (base de datos, preferencias, asmdefs y clases) NO cambian. Lo que depende del identificador usa `${applicationId}` o `packageName` en tiempo de ejecución (el FileProvider de `ShareCard` y el broadcast del puente `NativeReceiver`), no el texto fijo. La búsqueda de marca (clases 9 y 41) sigue pendiente.
+
+**Decisión de Ricardo (15-oct): NO se traspasa el progreso de la app vieja.** La app nueva (otro identificador = otra app) parte de cero; al teléfono solo se le hace `adb install -r` del APK nuevo y la app vieja la desinstala él. El identificador no lleva su nombre personal.
+
 ## 2. Nombres propuestos
 
 Criterios: palabra INVENTADA (las marcas inventadas son las más fáciles de registrar y proteger; las palabras
