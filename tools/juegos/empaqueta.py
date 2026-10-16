@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|bodega|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -265,6 +265,60 @@ def grupo_parejas():
     S.append(sprite('abierta', carga_parejas('abierta', ANCHOS_PAREJAS['luz']), ppu=3.0))
     return S, med
 
+PX_DP_BODEGA = 160.0 / 20.0                      # la maestra de Bodega: 8 px por dp (la final, 4)
+
+def promedia_cuatro(nombre):
+    """Las cuatro maestras de una pieza que GIRA por código (`<nombre>_d0..3`: la luz del estudio girada 0°, 90°, 180° y 270°) promediadas con alfa premultiplicado: sin luz ni sombra direccional."""
+    ims = [np.asarray(Image.open(os.path.join(RENDER, 'bodega', f'{nombre}_d{k}.png')).convert('RGBA')).astype(np.float32) / 255.0 for k in range(4)]
+    pm = [np.concatenate([x[..., :3] * x[..., 3:4], x[..., 3:4]], axis=2) for x in ims]
+    m = sum(pm) / 4.0; al = m[..., 3:4]
+    rgb = np.where(al > 1e-4, m[..., :3] / np.maximum(al, 1e-4), 0.0)
+    return Image.fromarray((np.clip(np.concatenate([rgb, al], axis=2), 0, 1) * 255.0 + 0.5).astype(np.uint8), 'RGBA')
+
+def carga_bodega(nombre, ancho, bruma=False, promedio=False, extra=None):
+    """Un render de Bodega: las piezas SIN suelo (flotan o van dentro de otra) no llevan bruma que limpiar; las de suelo (marco, caja, objetos) sí. [extra] (maestra → maestra) pone la luz o la sombra que no es plasticina."""
+    im = promedia_cuatro(nombre) if promedio else Image.open(os.path.join(RENDER, 'bodega', nombre + '.png')).convert('RGBA')
+    if bruma: im = limpia_bruma(im)
+    if extra is not None: im = extra(im)
+    return quita_ruido_alfa(reduce_premult(im, ancho), 6)
+
+def oscurece_borde(im, radio_dp, color, alfa_borde):
+    """El interior de una escotilla se oscurece hacia el borde (el boceto: degradé radial): una capa de sombra, no plasticina."""
+    a = np.asarray(im).astype(np.float32); H, W = a.shape[:2]; yy, xx = np.mgrid[0:H, 0:W]
+    t = np.clip(np.hypot(xx + 0.5 - W / 2.0, yy + 0.5 - H / 2.0) / (radio_dp * PX_DP_BODEGA), 0, 1)
+    al = (t ** 2.0) * alfa_borde
+    a[..., :3] = a[..., :3] * (1 - al[..., None]) + np.array(color, np.float32) * al[..., None]
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), 'RGBA')
+
+def con_reflejo(im):
+    """El reflejo del vidrio de la esclusa (boceto: un disco blanco al 18 % de 8 dp de radio a (−8, +8) dp): luz, no plasticina."""
+    a = np.asarray(im).astype(np.float32); H, W = a.shape[:2]; yy, xx = np.mgrid[0:H, 0:W]
+    d = np.hypot(xx + 0.5 - (W / 2.0 - 8 * PX_DP_BODEGA), yy + 0.5 - (H / 2.0 - 8 * PX_DP_BODEGA)) / (8 * PX_DP_BODEGA)
+    al = 0.18 * np.clip(1.0 - np.maximum(d - 0.85, 0) / 0.15, 0, 1) * (a[..., 3] > 250)
+    a[..., :3] = a[..., :3] * (1 - al[..., None]) + 255.0 * al[..., None]
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), 'RGBA')
+
+def grupo_bodega():
+    """Bodega de carga: los 12 objetos (192 px), las piezas de la escotilla (4 px por dp: marco, aro, tres interiores, la hoja de la puerta, la hoja presionada y el disco de la puerta de la tarjeta de entrada), el robot, la caja, la esclusa y los tres círculos del carro."""
+    S = []; med = []
+    for k in range(12): S.append(sprite(f'obj_{k}', carga_bodega(f'obj_{k}', 192, bruma=True)))
+    S.append(sprite('marco', carga_bodega('marco', 276, bruma=True), ppu=4.0))
+    S.append(sprite('aro', carga_bodega('aro', 276), ppu=4.0))
+    realce = {0: (11, 14, 36, 0.75), 1: (11, 14, 36, 0.8), 2: None}
+    for k in range(3):
+        ex = (lambda im, c=realce[k]: oscurece_borde(im, 28.0, c[:3], c[3])) if realce[k] else None
+        S.append(sprite(f'interior_{k}', carga_bodega(f'interior_{k}', 224, extra=ex), ppu=4.0))
+    for n in ('puerta', 'puerta_p', 'puerta_disco'): S.append(sprite(n, carga_bodega(n, 228, promedio=True), ppu=4.0))
+    S.append(sprite('robot', carga_bodega('robot', 236), ppu=4.0))
+    S.append(sprite('visor', carga_bodega('visor', 128), ppu=4.0))
+    S.append(sprite('ojo', carga_bodega('ojo', 40), ppu=4.0))
+    S.append(sprite('tallo', carga_bodega('tallo', 24), ppu=4.0))
+    S.append(sprite('bola', carga_bodega('bola', 40), ppu=4.0))
+    S.append(sprite('caja', carga_bodega('caja', 152, bruma=True), ppu=4.0))
+    S.append(sprite('esclusa', carga_bodega('esclusa', 280, extra=con_reflejo), ppu=4.0))
+    for k in range(3): S.append(sprite(f'carro_{k}', carga_bodega(f'carro_{k}', 160), ppu=4.0))
+    return S, med
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -308,7 +362,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -496,7 +550,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

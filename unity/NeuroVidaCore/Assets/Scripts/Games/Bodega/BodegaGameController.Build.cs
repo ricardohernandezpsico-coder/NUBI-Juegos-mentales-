@@ -35,6 +35,7 @@ namespace NeuroVida.Games.Bodega
             public int Obj_ = -1;                      // lo que de verdad hay adentro (-1 vacía)
             public float Open, Vo, Target;             // apertura 0..1 (puede pasarse apenas) y su resorte
             public float ShowAt = -1f, GlowAt = -10f, ShakeAt = -10f, PressAt = -10f, RevealAt = -10f;
+            public bool Pressed;                       // plasticina: se ve hundida (mientras dura el toque)
         }
 
         private sealed class TrayView
@@ -78,7 +79,7 @@ namespace NeuroVida.Games.Bodega
         private readonly List<Spark> _sparks = new List<Spark>();
         private Text _trayLabel, _recordText;
         // la tarjeta de arriba
-        private Image _cardRim, _cardBg, _cardDisc, _cardObj;
+        private Image _cardRim, _cardBg, _cardDisc, _cardObj, _cardSlab, _toastSlab, _introSlab;
         private Text _cardA, _cardB, _cardT, _cardS;
         private CanvasGroup _cardGroup;
         // el aviso de abajo
@@ -195,7 +196,9 @@ namespace NeuroVida.Games.Bodega
             _cardGroup.blocksRaycasts = false;
             _cardRim = MakeImage(_cardLayer, "Rim", RoundedRectSprite.Get(24));
             _cardBg = MakeImage(_cardLayer, "Bg", RoundedRectSprite.Get(24));
-            _cardBg.color = PanelFill;
+            _cardSlab = PlasticSlab.TryStyle(_cardBg, SlabSize.Button, SlabTone.Night);          // plasticina: la tarjeta es una losa «noche» del kit (sin el borde de color: «Pedido» sigue en el texto); sin ella, el recuadro de siempre
+            if (_cardSlab != null) _cardRim.enabled = false;
+            else _cardBg.color = PanelFill;
             _cardDisc = MakeImage(_cardLayer, "Disc", DiscSprite.Get());
             _cardDisc.color = ClosedFill;
             _cardObj = MakeImage(_cardLayer, "Obj", null);
@@ -247,7 +250,9 @@ namespace NeuroVida.Games.Bodega
             _toastGroup.blocksRaycasts = false;
             _toastRim = MakeImage(_toastRoot, "Rim", RoundedRectSprite.Get(24));
             _toastBg = MakeImage(_toastRoot, "Bg", RoundedRectSprite.Get(24));
-            _toastBg.color = new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.96f);
+            _toastSlab = PlasticSlab.TryStyle(_toastBg, SlabSize.Button, SlabTone.Night);        // plasticina: el aviso es una losa «noche» del kit (bien o mal, lo dice el texto); sin ella, el recuadro de siempre
+            if (_toastSlab != null) _toastRim.enabled = false;
+            else _toastBg.color = new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.96f);
             _toastTitle = MakeLabel(_toastRoot, "Title", 16f, UiFonts.Bold, Mint, TextAnchor.MiddleCenter);
             _toastSub = MakeLabel(_toastRoot, "Sub", 14f, UiFonts.Regular, Gold, TextAnchor.MiddleCenter);
             _toastTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -281,7 +286,9 @@ namespace NeuroVida.Games.Bodega
             _introRim = MakeImage(_introLayer, "CardRim", RoundedRectSprite.Get(24));
             _introRim.color = Gold;
             _introCard = MakeImage(_introLayer, "Card", RoundedRectSprite.Get(24));
-            _introCard.color = PanelFill;
+            _introSlab = PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Night);       // plasticina: la tarjeta de entrada es una losa «noche» del kit; sin ella, el recuadro de siempre con su borde dorado
+            if (_introSlab != null) _introRim.enabled = false;
+            else _introCard.color = PanelFill;
             _introFrame = MakeImage(_introLayer, "Frame", null);
             _introInterior = MakeImage(_introLayer, "Interior", null);
             _introObj = MakeImage(_introLayer, "Obj", null);
@@ -483,7 +490,28 @@ namespace NeuroVida.Games.Bodega
             }
             _robotBody.sprite = BodegaSprites.RobotBody();
             _crateFlight.sprite = _crateCarried.sprite = BodegaSprites.Crate();
-            foreach (var t in _tray) t.Check.sprite = BodegaSprites.Check();
+            foreach (var t in _tray) t.Check.sprite = BodegaSprites.CheckBadge();
+            if (BodegaSprites.Plastic)
+            {
+                // plasticina: el círculo del carro trae su borde (los tres estados), el ✓ es la moneda de lo común, y el robot (visor, ojos, antena) y la puerta de la tarjeta de entrada, sus renders
+                foreach (var t in _tray) { t.Check.color = Color.white; t.Inner.enabled = false; }
+                _cardDisc.sprite = BodegaSprites.TrayCircle(0);
+                _cardDisc.color = Color.white;
+                _visor.sprite = BodegaSprites.Visor();
+                _visor.color = Color.white;
+                foreach (var e in new[] { _eyeL, _eyeR }) { e.sprite = BodegaSprites.Eye(); e.color = Color.white; }
+                _antStalk.sprite = BodegaSprites.AntennaStalk();
+                _antStalk.type = Image.Type.Simple;
+                _antStalk.color = Color.white;
+                _antStalk.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                _antStalk.rectTransform.sizeDelta = new Vector2(6f * Su, 14f * Su);
+                _antStalk.rectTransform.anchoredPosition = new Vector2(0f, 4f * Su);
+                _antBall.sprite = BodegaSprites.AntennaBall();
+                _antBall.color = Color.white;
+                _antBall.rectTransform.sizeDelta = Vector2.one * (BodegaSprites.EyeBox * Su);
+                _introDoor.sprite = BodegaSprites.DoorDisc();
+                _introDoor.color = Color.white;
+            }
             _introFrame.sprite = BodegaSprites.HatchFrame();
             _introInterior.sprite = BodegaSprites.HatchInterior(1);
             _introFrame.rectTransform.sizeDelta = new Vector2(2f * (BodegaSprites.FrameR + 2.5f), 2f * (BodegaSprites.FrameR + 2.5f));
@@ -644,7 +672,8 @@ namespace NeuroVida.Games.Bodega
             float cw = BodegaLayout.W - 20f, top = _lay.CardTop, h = BodegaLayout.CardH;
             if (_cardWide)
             {
-                SetRect(_cardDisc.rectTransform, 10f + 32f, top + h / 2f, 48f, 48f);
+                float cd = BodegaSprites.Plastic ? 48f * 40f / 38f : 48f;                          // (el lienzo del círculo de plasticina trae margen: 40 dp para uno de 38)
+                SetRect(_cardDisc.rectTransform, 10f + 32f, top + h / 2f, cd, cd);
                 SetRect(_cardObj.rectTransform, 10f + 32f, top + h / 2f, 40f, 40f);
                 SetRect(_cardA.rectTransform, 10f + 72f + (cw - 72f - 12f) / 2f, top + 19f, cw - 72f - 12f, 20f);
                 SetRect(_cardB.rectTransform, 10f + 72f + (cw - 72f - 12f) / 2f, top + 44f, cw - 72f - 12f, 28f);
@@ -664,7 +693,8 @@ namespace NeuroVida.Games.Bodega
                 if (!on) continue;
                 float x = BodegaLayout.TrayX(i, n);
                 SetRect(v.Root, x, _lay.TrayCenterY, BodegaLayout.TrayCircle, BodegaLayout.TrayCircle);
-                SetChild(v.Border.rectTransform, 0f, 0f, BodegaLayout.TrayCircle, BodegaLayout.TrayCircle);
+                float tc = BodegaSprites.Plastic ? 40f : BodegaLayout.TrayCircle;
+                SetChild(v.Border.rectTransform, 0f, 0f, tc, tc);
                 SetChild(v.Inner.rectTransform, 0f, 0f, BodegaLayout.TrayCircle - 4f, BodegaLayout.TrayCircle - 4f);
                 SetChild(v.Obj.rectTransform, 0f, 0f, 26f, 26f);
                 SetChild(v.Check.rectTransform, 11f, -14f, 12f, 10f);

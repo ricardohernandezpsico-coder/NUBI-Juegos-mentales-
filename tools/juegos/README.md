@@ -22,6 +22,9 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `constelaciones.py` | Constelaciones: los 12 objetos y los 4 gemelos (1 unidad del boceto = 1/20 de unidad de Blender: relieves apilados de plasticina; el planeta, una esfera de verdad con su anillo inclinado y sin sombra de contacto), la luz dormida (esfera azul noche con un grano claro), su presionada (aplastada, con la huella lejos del núcleo) y la luz abierta (disco claro). |
 | `mide_parejas.py` | Los 16 objetos (silueta, borde de tinta, contraste), los gemelos, la pareja de objetos más parecida en luminancia, las luces y la presionada, y el peso. |
 | `hoja_parejas.py` | Arma `docs/previews/plasticina/parejas-objetos.png`: los 16 objetos sobre su luz abierta como los ve el juego, y la luz dormida y la presionada. |
+| `bodega.py` | Bodega de carga: los 12 objetos (relieves de plasticina sin borde de tinta), las piezas de la escotilla (marco, aro, tres interiores y la hoja de la puerta, normal y presionada con la huella de un dedo; la hoja GIRA por código: se renderiza sin luz direccional, promediando cuatro renders con la luz girada 0°, 90°, 180° y 270°), el robot (cuerpo, visor, ojo, tallo, bolita), la caja (una cinta), la esclusa y los tres círculos del carro. 1 dp = 1/20 de unidad de Blender. |
+| `mide_bodega.py` | Los 12 objetos (tamaño, contraste contra el interior oscuro, pares parecidos en luminancia), la escotilla (la hoja, la presionada y su huella), el robot, la caja, la esclusa, el carro y el peso. |
+| `hoja_bodega.py` | Arma `docs/previews/plasticina/bodega-piezas.png`: los 12 objetos dentro de su escotilla, la escotilla cerrada y presionada, el robot armado, la caja, la esclusa y los círculos del carro. |
 | `mide_presionados.py` | Los estados presionados de Piloto, Freno, Satélites y Punta contra los normales: tamaño y margen del lienzo, centro, color (luminosidad y ΔE), tinta del detalle y el detalle fino donde cae la huella. |
 | `hoja_presionados.py` | Arma `docs/previews/plasticina/presionados.png`: un cuadro normal y uno presionado de lo que se toca en cada juego, con los sprites reales de los atlas. |
 | `piloto.py` | Piloto Estelar: las 15 señales (5 formas × punto, anillo y franja, con el detalle de churro de tinta incrustado) y la nave. Las maestras salen a 384 px; `empaqueta.py` saca de la misma maestra la versión de 192 y la chica de 96. |
@@ -61,8 +64,9 @@ $BLENDER -b -P tools/juegos/rastro.py -- --samples 112 --out tools/juegos/out/ra
 $BLENDER -b -P tools/juegos/stroop.py -- --samples 112 --out tools/juegos/out/stroop        # ~6 min (15 losas y 2 íconos)
 $BLENDER -b -P tools/juegos/punta.py -- --samples 112 --out tools/juegos/out/punta          # ~2 min (ficha, casilla y perla)
 $BLENDER -b -P tools/juegos/constelaciones.py -- --samples 112 --out tools/juegos/out/parejas   # ~9 min (16 objetos a 448 px, la luz dormida, su presionada y la abierta a 504); --solo obj|luces|obj_K_V|dormante|dormante_p|abierta
+$BLENDER -b -P tools/juegos/bodega.py -- --samples 112 --out tools/juegos/out/bodega      # ~14 min (12 objetos a 384 px, la escotilla —las hojas, ×4 luces—, el robot, la caja, la esclusa y el carro); --solo obj|obj_K|escotilla|robot|resto
 $BLENDER -b -P tools/juegos/comun.py -- --samples 112 --out tools/juegos/out/comun        # ~5 min
-python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop punta meteoros parejas comun nubi   # atlas + manifiestos + pesos (segundos)
+python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop punta meteoros parejas bodega comun nubi   # atlas + manifiestos + pesos (segundos)
 python -I tools/juegos/mide_radar.py                          # huella, contraste y siluetas de las cápsulas
 python -I tools/juegos/mide_piloto.py                         # huella, contraste y detalles de las señales y la nave
 python -I tools/juegos/mide_calculo.py                        # tamaño del reactor, núcleo claro y losas de las celdas
@@ -75,6 +79,8 @@ python -I tools/juegos/mide_freno.py                          # huella, contrast
 python -I tools/juegos/mide_parejas.py                        # objetos (silueta, tinta, gemelos, pares parecidos), luces y la presionada
 python -I tools/juegos/mide_meteoros.py                       # roca nine-slice, presionada, color teñido, palabra sobre la placa y estrellas
 python -I tools/juegos/hoja_parejas.py                        # la hoja de los 16 objetos sobre su luz
+python -I tools/juegos/mide_bodega.py                         # objetos, escotilla (hoja y presionada), robot, caja, esclusa y carro
+python -I tools/juegos/hoja_bodega.py                         # la hoja de las piezas de Bodega
 python -I tools/juegos/lamina.py out/lam.png '#0A2A3A' 3 1.5 out/radar/capsula_*.png     # para mirarlos
 ```
 
@@ -113,6 +119,7 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 | `punta` (En la punta de la lengua: ficha, casilla, perla) | 4 | 640×196 | 75 KB | 0,10 MB | 0,06 MB |
 | `meteoros` (Lluvia de meteoros: rocas nine-slice, presionadas, brasa, grietas, estrellas) | 18 | 640×1956 | 386 KB | 0,52 MB | 0,55 MB |
 | `parejas` (Constelaciones: 12 objetos + 4 gemelos, luz dormida, presionada y abierta) | 19 | 1152×940 | 431 KB | 0,55 MB | 0,46 MB |
+| `bodega` (Bodega de carga: 12 objetos, escotilla, robot, caja, esclusa, carro) | 30 | 1024×1384 | 684 KB | 0,89 MB | 0,60 MB |
 | `comun` (losas, marcas, anillo) | 29 | 896×2472 | 849 KB | 1,11 MB | 0,97 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 

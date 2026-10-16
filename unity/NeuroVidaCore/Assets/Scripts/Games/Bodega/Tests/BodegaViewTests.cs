@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
 using UnityEngine;
+using NeuroVida.Games.Shared;
 using NeuroVida.Games.Bodega;
 
 namespace NeuroVida.Games.Bodega.Tests
@@ -200,8 +201,18 @@ namespace NeuroVida.Games.Bodega.Tests
         }
     }
 
+    /// <summary>
+    /// El arte de «Bodega de carga»: todo se hornea, las siluetas se reconocen y la hoja de la puerta llena solo su mitad. Estas pruebas miden píxeles del arte PROCEDURAL (el de respaldo, que se usa sin el atlas de plasticina), así que corren con la plasticina
+    /// apagada; lo mismo sobre el arte de plasticina lo miden <see cref="BodegaPlasticTests"/>.
+    /// </summary>
     public class BodegaArtTests
     {
+        [SetUp]
+        public void SetUp() { PlasticArt.Disabled = true; }
+
+        [TearDown]
+        public void TearDown() { PlasticArt.Disabled = false; }
+
         private static float AlphaAt(Sprite s, float xDp, float yDp)
         {
             var tex = s.texture;
@@ -230,6 +241,21 @@ namespace NeuroVida.Games.Bodega.Tests
                 foreach (var c in px) if (c.a > 20) filled++;
                 Assert.Greater(filled / px.Length, 0.04f, "el sprite " + sprite.name + " no puede estar vacío");
             }
+        }
+
+        [Test]
+        public void TheProceduralCrate_HasOneStrap_NotAPlusSign()
+        {
+            // regla de símbolos neutros (docs/simbolos-neutros.md): la cinta de la caja cruzaba en «+» (una raya vertical y una horizontal); ahora es UNA, de lado a lado
+            var crate = BodegaSprites.Crate();
+            float L(float x, float y)
+            {
+                var t = crate.texture; var c = t.GetPixel(Mathf.RoundToInt(t.width / 2f + x * crate.pixelsPerUnit), Mathf.RoundToInt(t.height / 2f + y * crate.pixelsPerUnit));
+                return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+            }
+            Assert.Less(L(0f, 2f), L(0f, 8.5f) - 0.04f, "una cinta más oscura que la madera de arriba");
+            Assert.AreEqual(L(0f, 8.5f), L(7f, 8.5f), 0.02f, "nada vertical: el centro de arriba es igual que un costado");
+            Assert.AreEqual(L(0f, -6f), L(7f, -6f), 0.02f, "ni abajo");
         }
 
         [Test]
@@ -323,6 +349,24 @@ namespace NeuroVida.Games.Bodega.Tests
                 Assert.IsEmpty(problems, "Piezas que no se verían: " + string.Join(" | ", problems));
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void TheAudit_AlsoPasses_WithoutThePlasticAtlas()
+        {
+            // sin el atlas todo cae al arte de siempre (la tarjeta, el aviso, las escotillas, el robot, el carro, los 12 objetos): nada puede quedar sin imagen
+            PlasticArt.Disabled = true;
+            var go = new GameObject("BodegaAuditProcedural");
+            try
+            {
+                var controller = go.AddComponent<BodegaGameController>();
+                var build = typeof(BodegaGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditVisibility();
+                Assert.IsEmpty(problems, "Piezas que no se verían sin plasticina: " + string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); PlasticArt.Disabled = false; }
         }
 
         private static string Read(string file) => File.ReadAllText(Path.Combine(Application.dataPath, "Scripts", "Games", "Bodega", file));

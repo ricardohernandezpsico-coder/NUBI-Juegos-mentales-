@@ -19,6 +19,35 @@ namespace NeuroVida.Games.Bodega
         public const float Ppd = 3f;
         public const float HatchR = BodegaLayout.HatchR, FrameR = BodegaLayout.HatchR + BodegaLayout.FrameW, WindowR = BodegaLayout.HatchR + 6f, RobotR = 26f;
 
+        /// <summary>El atlas de plasticina de este juego (<c>Resources/Plasticina/bodega</c>): los 12 objetos, el marco, el aro y los tres interiores de la escotilla, la hoja de la puerta (y su presionada), el robot, la caja, la esclusa y el carro.
+        /// El casco, los remaches, el aro de sello y los resplandores siguen procedurales (decoración). Sin el atlas, todo cae al arte horneado de siempre.</summary>
+        public const string PlasticGroup = "bodega";
+
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "marco");
+
+        private static Sprite Art(string name) => PlasticArt.Get(PlasticGroup, name);
+
+        /// <summary>La hoja de la puerta PRESIONADA (un punto más oscura, con la huella de un dedo): null sin plasticina.</summary>
+        public static Sprite DoorLeafPressed() => Art("puerta_p");
+
+        /// <summary>El disco de la puerta de la tarjeta de entrada (null sin plasticina: entonces se usa el disco de siempre). Su lienzo es de 57 dp para un disco de 52.</summary>
+        public static Sprite DoorDisc() => Art("puerta_disco");
+
+        public static Sprite Visor() => Art("visor");
+        public static Sprite Eye() => Art("ojo");
+        public static Sprite AntennaStalk() => Art("tallo");
+        public static Sprite AntennaBall() => Art("bola");
+
+        /// <summary>El círculo del carro de reparto: 0 = pendiente, 1 = llegó al primer intento (borde menta), 2 = llegó con error (borde lila). Null sin plasticina. Su lienzo es de 40 dp para un círculo de 38.</summary>
+        public static Sprite TrayCircle(int state) => Art("carro_" + Mathf.Clamp(state, 0, 2));
+
+        /// <summary>La marca ✓ del carro: la de plasticina de lo común (una moneda verde) o la blanca de siempre.</summary>
+        public static Sprite CheckBadge() => PlasticArt.Get("comun", "marca_ok") ?? Check();
+
+        /// <summary>Lo que hay que estirar el visor y el ojo de plasticina para que el dibujo mida lo de siempre (sus lienzos traen margen): visor 32 × 20 dp para 30 × 18, ojo 10 × 10 dp para un disco de 6.</summary>
+        public static readonly Vector2 VisorScale = new Vector2(32f / 30f, 20f / 18f);
+        public const float EyeBox = 10f;
+
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
         /// <summary>De cada objeto de la bodega al hallazgo de Bitácora cuya silueta usa; -1 = silueta propia (manzana y taza).</summary>
@@ -87,6 +116,8 @@ namespace NeuroVida.Games.Bodega
         /// <summary>La esclusa de carga (la posición 0 del anillo): un vidrio al espacio con marco dorado, cielo, planeta celeste con su anillo, estrellas y un reflejo.</summary>
         public static Sprite Airlock()
         {
+            var art = Art("esclusa");
+            if (art != null) return art;
             const float ppd = 4f, hr = BodegaLayout.HatchR;
             float box = 2f * (WindowR + 2f);
             return Bake("airlock", box, box, ppd, (ref Px p, float x, float y) =>
@@ -109,6 +140,8 @@ namespace NeuroVida.Games.Bodega
         /// <summary>El marco de una escotilla (disco azul noche con borde tinta).</summary>
         public static Sprite HatchFrame()
         {
+            var art = Art("marco");
+            if (art != null) return art;
             const float ppd = 4f;
             float box = 2f * (FrameR + 2.5f);
             return Bake("hframe", box, box, ppd, (ref Px p, float x, float y) =>
@@ -121,6 +154,8 @@ namespace NeuroVida.Games.Bodega
         /// <summary>El interior de una escotilla: 0 = vacío (oscuro), 1 = con algo guardado (luz cálida morada), 2 = cerrada (plano del color del marco: se ve solo el borde alrededor de la puerta).</summary>
         public static Sprite HatchInterior(int kind)
         {
+            var art = Art("interior_" + Mathf.Clamp(kind, 0, 2));
+            if (art != null) return art;
             const float ppd = 4f;
             float box = 2f * (HatchR + 1f);
             return Bake("hin" + kind, box, box, ppd, (ref Px p, float x, float y) =>
@@ -134,6 +169,8 @@ namespace NeuroVida.Games.Bodega
         /// <summary>El aro de tinta que va encima de la máscara redonda de la escotilla (tapa el borde sin suavizar de la máscara).</summary>
         public static Sprite HatchRim()
         {
+            var art = Art("aro");
+            if (art != null) return art;
             const float ppd = 4f;
             float box = 2f * (FrameR + 2.5f);
             return Bake("hrim", box, box, ppd, (ref Px p, float x, float y) =>
@@ -163,6 +200,8 @@ namespace NeuroVida.Games.Bodega
         /// borde tinta, un aro interior y un tirador cerca de la junta.</summary>
         public static Sprite DoorLeaf()
         {
+            var art = Art("puerta");
+            if (art != null) return art;
             const float ppd = 4f;
             float box = 2f * (HatchR + 1.5f);
             return Bake("door", box, box, ppd, (ref Px p, float x, float y) =>
@@ -183,6 +222,8 @@ namespace NeuroVida.Games.Bodega
         /// <summary>El cuerpo del robot: disco de arcilla con degradé (un foco claro arriba a la izquierda) y borde tinta.</summary>
         public static Sprite RobotBody()
         {
+            var art = Art("robot");
+            if (art != null) return art;
             const float ppd = 4f;
             float box = 2f * (RobotR + 3.5f);
             return Bake("robot", box, box, ppd, (ref Px p, float x, float y) =>
@@ -198,13 +239,15 @@ namespace NeuroVida.Games.Bodega
         /// <summary>La caja cerrada que el robot cambia de lugar (madera clara con cinta): 30 × 24 dp.</summary>
         public static Sprite Crate()
         {
+            var art = Art("caja");
+            if (art != null) return art;
             const float ppd = 4f;
             return Bake("crate", 38f, 32f, ppd, (ref Px p, float x, float y) =>
             {
                 float aa = Aa(ppd), sdf = RoundBox(x, y, 0f, 0f, 15f, 12f, 5f);
                 Outlined(ref p, sdf, 1.3f, Hex(0xC9A26B), Ink, aa);
                 var tape = new Color(Ink.r, Ink.g, Ink.b, 0.45f);
-                p.Over(tape, Mathf.Max(Cover(Mathf.Abs(y - 2f) - 1f, aa), Cover(Mathf.Abs(x) - 1f, aa)) * Cover(sdf + 1.3f, aa));
+                p.Over(tape, Cover(Mathf.Abs(y - 2f) - 1.2f, aa) * Cover(sdf + 1.3f, aa));           // UNA cinta de lado a lado: con la vertical cruzaba en «+» y se leía como cruz (docs/simbolos-neutros.md)
             });
         }
 
@@ -225,6 +268,8 @@ namespace NeuroVida.Games.Bodega
         public static Sprite Object(int id)
         {
             id = Mathf.Clamp(id, 0, BodegaContract.ObjectCount - 1);
+            var art = Art("obj_" + id);
+            if (art != null) return art;
             string key = "obj" + id;
             if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
             const int size = 192;

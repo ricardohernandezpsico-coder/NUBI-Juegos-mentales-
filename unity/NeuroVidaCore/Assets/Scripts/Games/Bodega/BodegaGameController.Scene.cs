@@ -109,6 +109,7 @@ namespace NeuroVida.Games.Bodega
                 v.ShowAt = -1f;
                 v.GlowAt = v.ShakeAt = v.PressAt = v.RevealAt = -10f;
                 v.Obj_ = -1;
+                if (v.Pressed) ApplyPressed(v, false);
             }
             foreach (var f in _fly) if (f != null) { f.On = false; f.Glow.gameObject.SetActive(false); f.Obj.gameObject.SetActive(false); }
             foreach (var sp in _sparks) { sp.Alive = false; sp.Img.gameObject.SetActive(false); }
@@ -222,8 +223,9 @@ namespace NeuroVida.Games.Bodega
             foreach (var v in _hv)
             {
                 if (!v.Root.gameObject.activeSelf) continue;
-                if (!Motion.Decorative) { v.Open = v.Target; v.Vo = 0f; }
-                else BodegaMotion.Spring(ref v.Open, ref v.Vo, v.Target, dt, BodegaMotion.DoorOpenFreq, v.Target > v.Open ? BodegaMotion.DoorOpenZeta : BodegaMotion.DoorCloseZeta);
+                float tgt = BodegaMotion.PressedLook(BodegaSprites.Plastic, v.PressAt, GameClock.Time) ? 0f : v.Target;          // plasticina: la escotilla tocada se ve hundida 80 ms antes de abrirse (el estado del juego no espera)
+                if (!Motion.Decorative) { v.Open = tgt; v.Vo = 0f; }
+                else BodegaMotion.Spring(ref v.Open, ref v.Vo, tgt, dt, BodegaMotion.DoorOpenFreq, tgt > v.Open ? BodegaMotion.DoorOpenZeta : BodegaMotion.DoorCloseZeta);
                 if (v.Target <= 0f && v.Open < 0.01f)
                 {
                     v.Open = 0f;
@@ -298,9 +300,13 @@ namespace NeuroVida.Games.Bodega
             var pt = HatchPt(i);
             float sx = 0f;
             if (deco && now - v.ShakeAt < 0.42f) sx = Mathf.Sin((now - v.ShakeAt) * 1000f / 28f) * 4f * (1f - (now - v.ShakeAt) / 0.42f);
+            bool plastic = BodegaSprites.Plastic;
+            bool pressed = BodegaMotion.PressedLook(plastic, v.PressAt, now);
             float pr = now - v.PressAt < 0.18f ? 1f - 0.06f * (1f - (now - v.PressAt) / 0.18f) : 1f;
             v.Root.anchoredPosition = B(pt.x + sx, pt.y);
-            v.Root.localScale = Vector3.one * pr;
+            // plasticina: la escotilla tocada se ve HUNDIDA (aplastada, un punto más oscura y con la huella de un dedo en la hoja); sin ella, el achicado de siempre
+            v.Root.localScale = plastic ? (pressed ? new Vector3(BodegaMotion.PressWide, BodegaMotion.PressTall, 1f) : Vector3.one) : Vector3.one * pr;
+            if (v.Pressed != pressed) ApplyPressed(v, pressed);
 
             // brillo (pista o caja recién movida)
             float g = now - v.GlowAt < 0.9f ? 1f - (now - v.GlowAt) / 0.9f : 0f;
@@ -334,6 +340,19 @@ namespace NeuroVida.Games.Bodega
                 float seam = k > 0.02f && k < 0.35f ? 1f - k / 0.35f : 0f;          // la junta brilla un instante al empezar a abrirse
                 v.Seam.color = new Color(1f, 231f / 255f, 168f / 255f, seam);
             }
+        }
+
+        /// <summary>Plasticina: la escotilla hundida (la hoja de arriba con la huella de un dedo; todo un punto más oscuro, ×0,93) o de vuelta como siempre. El aplastamiento (+4 % de ancho, −8 % de alto) lo hace la escala de la escotilla entera: así gira bien la hoja.</summary>
+        private static void ApplyPressed(HatchView v, bool pressed)
+        {
+            v.Pressed = pressed;
+            var dark = pressed ? new Color(BodegaMotion.PressDark, BodegaMotion.PressDark, BodegaMotion.PressDark, 1f) : Color.white;
+            v.Frame.color = dark;
+            v.Rim.color = dark;
+            v.Interior.color = dark;
+            v.LeafB.color = dark;
+            var leaf = pressed ? BodegaSprites.DoorLeafPressed() : BodegaSprites.DoorLeaf();
+            if (leaf != null) v.LeafA.sprite = leaf;
         }
 
         private void AnimateCrate(float now, bool deco)
@@ -431,11 +450,13 @@ namespace NeuroVida.Games.Bodega
             float look = r.Ang - lean, lx = Mathf.Cos(look) * 9f, ly = Mathf.Sin(look) * 7f;
             var vc = B(BodegaLayout.CenterX + lx * 0.6f, BodegaLayout.CenterY + ly * 0.6f - 2f);
             _visor.rectTransform.anchoredPosition = vc;
-            _visor.rectTransform.sizeDelta = new Vector2(2f * (15f - Mathf.Abs(lx) * 0.25f) * Su, 18f * Su);
+            bool plasticRobot = BodegaSprites.Plastic;
+            var visorSize = new Vector2(2f * (15f - Mathf.Abs(lx) * 0.25f) * Su, 18f * Su);
+            _visor.rectTransform.sizeDelta = plasticRobot ? Vector2.Scale(visorSize, BodegaSprites.VisorScale) : visorSize;
             float blink = deco && (now * 1000f) % 3600f < 110f ? 0.15f : 1f;
             _eyeL.rectTransform.anchoredPosition = vc + new Vector2(-5f * Su, 0f);
             _eyeR.rectTransform.anchoredPosition = vc + new Vector2(5f * Su, 0f);
-            _eyeL.rectTransform.sizeDelta = _eyeR.rectTransform.sizeDelta = new Vector2(6f * Su, 6.4f * Su * blink);
+            _eyeL.rectTransform.sizeDelta = _eyeR.rectTransform.sizeDelta = plasticRobot ? new Vector2(BodegaSprites.EyeBox * Su, BodegaSprites.EyeBox * Su * blink) : new Vector2(6f * Su, 6.4f * Su * blink);
             // la antena con retraso: se queda atrás al moverse y rebota
             _antRoot.localRotation = Quaternion.Euler(0f, 0f, -r.Ant * Mathf.Rad2Deg);
             _antGlow.color = new Color(Gold.r, Gold.g, Gold.b, deco ? 0.5f + 0.5f * Mathf.Sin(now * 1000f / 300f) : 0.5f);
@@ -504,8 +525,16 @@ namespace NeuroVida.Games.Bodega
                 bool landed = fd != null;
                 Color border = landed ? (fd.First ? Mint : new Color(Lavender.r, Lavender.g, Lavender.b, 0.6f)) : new Color(1f, 1f, 1f, 0.12f);
                 float w = landed && fd.First ? 3f : 2f;
-                v.Border.color = border;
-                SetChild(v.Inner.rectTransform, 0f, 0f, BodegaLayout.TrayCircle - 2f * w, BodegaLayout.TrayCircle - 2f * w);
+                if (BodegaSprites.Plastic)
+                {
+                    v.Border.sprite = BodegaSprites.TrayCircle(!landed ? 0 : fd.First ? 1 : 2);        // plasticina: pendiente / de memoria (borde menta, con ✓) / con error (borde lila)
+                    v.Border.color = Color.white;
+                }
+                else
+                {
+                    v.Border.color = border;
+                    SetChild(v.Inner.rectTransform, 0f, 0f, BodegaLayout.TrayCircle - 2f * w, BodegaLayout.TrayCircle - 2f * w);
+                }
                 v.Obj.gameObject.SetActive(landed);
                 v.Check.gameObject.SetActive(landed && fd.First);
                 if (landed)
@@ -659,7 +688,8 @@ namespace NeuroVida.Games.Bodega
             int obj = _introKind == Intro.Gira ? 8 : _introKind == Intro.Mueve ? 7 : 1;
             _introObj.sprite = BodegaSprites.Object(obj);
             SetRect(_introObj.rectTransform, _introIllustration.x, _introIllustration.y, 38f * t + 2f, 38f * t + 2f);
-            SetRect(_introDoor.rectTransform, _introIllustration.x, _introIllustration.y, Mathf.Max(0.5f, (1f - t) * 2f * (BodegaSprites.HatchR - 1f)), 2f * (BodegaSprites.HatchR - 1f));
+            float dd = BodegaSprites.Plastic ? 57f / 52f : 1f;                                          // (el lienzo de la puerta de plasticina trae margen: 57 dp para un disco de 52)
+            SetRect(_introDoor.rectTransform, _introIllustration.x, _introIllustration.y, Mathf.Max(0.5f, (1f - t) * 2f * (BodegaSprites.HatchR - 1f) * dd), 2f * (BodegaSprites.HatchR - 1f) * dd);
             _introTap.color = deco ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.7f + 0.3f * Mathf.Sin(now * 4f)) : Cyan;
         }
 
@@ -718,9 +748,9 @@ namespace NeuroVida.Games.Bodega
                 }
                 if (level == 1 || level == BodegaContract.MaxLevel)
                 {
-                    Check(tag + "tarjeta.fondo", _cardBg, true);
+                    if (_cardSlab != null) Check(tag + "tarjeta.losa", _cardSlab, true); else Check(tag + "tarjeta.fondo", _cardBg, true);          // plasticina: son losas del kit (el fondo de siempre queda invisible)
                     Check(tag + "tarjeta.borde", _cardRim, true, false);
-                    Check(tag + "aviso.fondo", _toastBg, true, false);
+                    if (_toastSlab != null) Check(tag + "aviso.losa", _toastSlab, true, false); else Check(tag + "aviso.fondo", _toastBg, true, false);
                     for (int obj = 0; obj < BodegaContract.ObjectCount; obj++)
                         if (BodegaSprites.Object(obj) == null) problems.Add("objeto " + obj + ": sin imagen");
                 }

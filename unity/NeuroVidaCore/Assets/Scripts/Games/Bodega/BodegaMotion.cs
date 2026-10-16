@@ -1,4 +1,5 @@
 using System;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Bodega
 {
@@ -20,6 +21,12 @@ namespace NeuroVida.Games.Bodega
         public const float DoorOpenFreq = 2.6f, DoorOpenZeta = 0.55f;        // abre y se pasa apenas
         public const float DoorCloseZeta = 0.85f;                            // cierra firme
         public const float MaxLean = 0.22f;                                  // inclinación máxima del robot (rad)
+        /// <summary>Con plasticina la escotilla que se toca se ve HUNDIDA (aplastada ~8 % más baja y ~4 % más ancha, un punto más oscura y con la huella de un dedo en la hoja) al menos lo mismo que en el resto de los juegos (<see cref="PlasticTouch.MinSeconds"/>, 80 ms) antes de abrirse;
+        /// con «quitar animaciones» también (la puerta abre al instante, pero la escotilla hundida se ve esos 80 ms). El estado del juego no espera: solo la puerta.</summary>
+        public const float PressedSeconds = PlasticTouch.MinSeconds, PressWide = 1.04f, PressTall = 0.92f, PressDark = 0.93f;
+
+        /// <summary>¿Se ve la escotilla hundida ahora? Solo con plasticina y solo durante <see cref="PressedSeconds"/> desde el toque [pressAt] (segundos de juego).</summary>
+        public static bool PressedLook(bool plastic, float pressAt, float now) => plastic && pressAt > 0f && now - pressAt < PressedSeconds;
         public const float SquashOnBeam = 0.12f;                             // se aplasta un poco al lanzar el haz
         public const float BeamGrow = 0.26f, BeamFade = 0.22f;               // el haz crece con suavidad y se apaga sin cortarse
         public const float ObjectPopSeconds = 0.42f;                         // el objeto aparece con un rebote (hasta 1,08)
