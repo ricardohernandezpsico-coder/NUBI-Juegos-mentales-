@@ -1,4 +1,5 @@
 using System;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Parejas
 {
@@ -14,6 +15,12 @@ namespace NeuroVida.Games.Parejas
         public const float OpenFreq = 2.6f, OpenZeta = 0.72f, CloseFreq = 3.6f, CloseZeta = 0.95f;
         /// <summary>Al tocar la luz se achica a 0,94 durante 140 ms (la respuesta llega en menos de 150 ms).</summary>
         public const float PressScale = 0.94f, PressSeconds = 0.14f;
+        /// <summary>Con plasticina la luz que se toca se ve HUNDIDA (aplastada, con la huella de un dedo) al menos lo mismo que en el resto de los juegos (<see cref="PlasticTouch.MinSeconds"/>, 80 ms) antes de voltearse;
+        /// con «quitar animaciones» también (el volteo es instantáneo, pero la luz hundida se ve esos 80 ms).</summary>
+        public const float PressedSeconds = PlasticTouch.MinSeconds;
+
+        /// <summary>¿Se ve la luz hundida ahora? Solo con plasticina, solo la que se acaba de tocar (ya no está dormida en el juego) y solo durante <see cref="PressedSeconds"/> desde el toque [pressAt] (segundos de juego).</summary>
+        public static bool PressedLook(bool plastic, bool lightDown, float pressAt, float now) => plastic && !lightDown && pressAt > 0f && now - pressAt < PressedSeconds;
         /// <summary>La línea se traza en 380 ms desacelerando; el brillo del final dura 900 ms.</summary>
         public const float TraceSeconds = 0.38f, GlowSeconds = 0.9f;
         /// <summary>Cuánto sube la etiqueta flotante (dp) y cuánto dura (s).</summary>

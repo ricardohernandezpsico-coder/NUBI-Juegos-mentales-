@@ -30,7 +30,7 @@ namespace NeuroVida.Games.Parejas
             public float F, Vf;
             public float HintAt = -10f, PressAt = -10f;
             public int Kind = -1, Variant = -1;
-            public bool Up;
+            public bool Up, Pressed;
             public ConLine RingKind;
         }
 
@@ -74,7 +74,7 @@ namespace NeuroVida.Games.Parejas
         private readonly DotView[] _dots = new DotView[DotPool];
         private readonly List<Spark> _sparks = new List<Spark>();
         // la tarjeta de arriba y la fila de abajo
-        private Image _cardRim, _cardBg;
+        private Image _cardRim, _cardBg, _cardSlab, _introSlab;
         private Text _cardT, _cardS, _rowLabel, _rowCount;
         private CanvasGroup _cardGroup;
         // la tarjeta «NUEVO»
@@ -186,7 +186,9 @@ namespace NeuroVida.Games.Parejas
             _cardGroup.blocksRaycasts = false;
             _cardRim = MakeImage(_cardLayer, "Rim", RoundedRectSprite.Get(24));
             _cardBg = MakeImage(_cardLayer, "Bg", RoundedRectSprite.Get(24));
-            _cardBg.color = PanelFill;
+            _cardSlab = PlasticSlab.TryStyle(_cardBg, SlabSize.Button, SlabTone.Night);          // plasticina: la tarjeta es una losa «noche» del kit (sin el borde de color; el aviso de «no son iguales» sigue en el texto); sin ella, el recuadro de siempre
+            if (_cardSlab != null) _cardRim.enabled = false;
+            else _cardBg.color = PanelFill;
             _cardT = MakeLabel(_cardLayer, "Title", 18f, UiFonts.Bold, TextColor, TextAnchor.MiddleCenter);
             _cardS = MakeLabel(_cardLayer, "Sub", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             BestFit(_cardT, Mathf.RoundToInt(14f * UnitsPerDp));
@@ -326,7 +328,9 @@ namespace NeuroVida.Games.Parejas
             _introRim = MakeImage(_introLayer, "CardRim", RoundedRectSprite.Get(24));
             _introRim.color = Gold;
             _introCard = MakeImage(_introLayer, "Card", RoundedRectSprite.Get(24));
-            _introCard.color = PanelFill;
+            _introSlab = PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Night);       // plasticina: la tarjeta de entrada es una losa «noche» del kit; sin ella, el recuadro de siempre con su borde dorado
+            if (_introSlab != null) _introRim.enabled = false;
+            else _introCard.color = PanelFill;
             for (int i = 0; i < IntroPool; i++) _introImgs.Add(MakeImage(_introLayer, "Art" + i, null, false));
             _introLine = NewLine(_introLayer, "ArtLine");
             _introLine2 = NewLine(_introLayer, "ArtLine2");

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -216,6 +216,55 @@ def grupo_meteoros():
     med += [('roca_margen_x_u', (ml + mr) / 2 * k), ('roca_margen_arr_u', mt * k), ('roca_margen_abj_u', mb * k)]
     return S, med
 
+ANCHOS_PAREJAS = {'objeto': 224, 'luz': 252}
+TINTA_PAREJAS = (0x1A, 0x12, 0x40)
+CONTORNO_U = 1.3                                 # el borde de tinta del boceto: 1,3 unidades hacia afuera de la silueta (la caja del objeto mide 56 unidades)
+GEMELOS_PAREJAS = (0, 1, 3, 5)
+LUZ_PX_U = 504.0 / (84.0 / 38.0 * 0.94)         # los píxeles por unidad de Blender de la luz maestra (constelaciones.py)
+LUZ_R_PX = 0.94 * LUZ_PX_U                       # el radio de la esfera (38 unidades del boceto) en la maestra
+
+def con_contorno(im, grosor_px):
+    """El borde de tinta del boceto: la silueta del CUERPO (alfa ≥ 235/255: sin la sombra de contacto) engordada [grosor_px], por detrás del render (la sombra queda como está)."""
+    a = np.asarray(im.convert('RGBA')).astype(np.float32); H, W = a.shape[:2]
+    cuerpo = (a[..., 3] >= 235).astype(np.float32); r = int(math.ceil(grosor_px))
+    pad = np.pad(cuerpo, r); dil = np.zeros_like(cuerpo)
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if dx * dx + dy * dy <= grosor_px * grosor_px: dil = np.maximum(dil, pad[r + dy:r + dy + H, r + dx:r + dx + W])
+    dil = np.asarray(Image.fromarray((dil * 255).astype(np.uint8), 'L').filter(ImageFilter.GaussianBlur(0.9))).astype(np.float32)
+    tinta = np.zeros((H, W, 4), np.float32); tinta[..., 0], tinta[..., 1], tinta[..., 2] = TINTA_PAREJAS; tinta[..., 3] = dil
+    fondo = Image.fromarray(tinta.astype(np.uint8), 'RGBA'); fondo.alpha_composite(im.convert('RGBA')); return fondo
+
+def con_nucleo(im):
+    """El brillo suave alrededor del grano del núcleo de la luz dormida (luz, no plasticina: el boceto lo pintaba como un resplandor de 22 unidades de ancho). Busca el grano (lo más claro de la esfera)."""
+    a = np.asarray(im.convert('RGBA')).astype(np.float32); H, W = a.shape[:2]
+    yy, xx = np.mgrid[0:H, 0:W]
+    claro = (a[..., :3].mean(-1) > 175) & (a[..., 3] > 250) & (np.hypot(xx + 0.5 - W / 2.0, yy + 0.5 - H / 2.0) < 0.45 * LUZ_R_PX)        # (el borde de la esfera también brilla: se busca solo hacia el centro)
+    ys, xs = np.nonzero(claro); assert len(ys) > 50, 'no se encontró el grano del núcleo'
+    cy, cx = ys.mean(), xs.mean()
+    gr = np.hypot(xx + 0.5 - cx, yy + 0.5 - cy) / (LUZ_R_PX * 11.0 / 38.0)        # el radio del resplandor del boceto: 11 unidades
+    al = 0.85 * np.where(gr < 0.35, 1.0 - gr / 0.35 * 0.55, 0.45 * (1.0 - (gr - 0.35) / 0.65)); al = np.clip(al, 0, 1) * (gr < 1.0) * (~claro) * (a[..., 3] > 250)
+    glow = np.array([170.0, 190.0, 255.0]); out = a.copy()
+    out[..., :3] = a[..., :3] * (1 - al[..., None]) + glow * al[..., None]
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA')
+
+def carga_parejas(nombre, ancho, contorno=False, nucleo=False):
+    """Un render de Constelaciones: sin bruma, con el contorno de tinta (los objetos) o el brillo del núcleo (la luz dormida) puestos sobre la maestra, y reducido a [ancho] px."""
+    im = limpia_bruma(Image.open(os.path.join(RENDER, 'parejas', nombre + '.png')).convert('RGBA'))
+    if contorno: im = con_contorno(im, CONTORNO_U * im.width / 56.0)
+    if nucleo: im = con_nucleo(im)
+    return quita_ruido_alfa(reduce_premult(im, ancho), 6)
+
+def grupo_parejas():
+    """Constelaciones: los 12 objetos y los 4 gemelos (224 px = la caja de 56 unidades, a 4 px por unidad, con el borde de tinta del boceto) y la luz: dormida, dormida presionada y abierta (252 px = la caja de 84 unidades, a 3 px por unidad)."""
+    S = []; med = []
+    for k in range(12):
+        for v in ((0, 1) if k in GEMELOS_PAREJAS else (0,)):
+            n = f'obj_{k}_{v}'; S.append(sprite(n, carga_parejas(n, ANCHOS_PAREJAS['objeto'], contorno=True), ppu=4.0))
+    for n in ('dormante', 'dormante_p'): S.append(sprite(n, carga_parejas(n, ANCHOS_PAREJAS['luz'], nucleo=True), ppu=3.0))
+    S.append(sprite('abierta', carga_parejas('abierta', ANCHOS_PAREJAS['luz']), ppu=3.0))
+    return S, med
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -259,7 +308,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -447,7 +496,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Parejas.Tests
 {
@@ -78,11 +79,33 @@ namespace NeuroVida.Games.Parejas.Tests
             Assert.AreEqual(0.14f, ConstelacionMotion.PressSeconds);
             Assert.AreEqual(0.38f, ConstelacionMotion.TraceSeconds);
         }
+
+        [Test]
+        public void TheTappedLight_LooksPressedAtLeast80ms_OnlyWithPlasticArt_AndOnlyIfItWasJustTapped()
+        {
+            Assert.GreaterOrEqual(ConstelacionMotion.PressedSeconds, 0.08f, "como en el resto de los juegos: al menos 80 ms");
+            Assert.AreEqual(PlasticTouch.MinSeconds, ConstelacionMotion.PressedSeconds);
+            Assert.IsTrue(ConstelacionMotion.PressedLook(true, false, 5f, 5.0f), "en el mismo instante del toque");
+            Assert.IsTrue(ConstelacionMotion.PressedLook(true, false, 5f, 5.07f), "a los 70 ms todavía");
+            Assert.IsFalse(ConstelacionMotion.PressedLook(true, false, 5f, 5.09f), "a los 90 ms ya se voltea");
+            Assert.IsFalse(ConstelacionMotion.PressedLook(true, true, 5f, 5.01f), "una luz dormida en el juego no se ve hundida");
+            Assert.IsFalse(ConstelacionMotion.PressedLook(false, false, 5f, 5.01f), "sin plasticina se queda el achicado de siempre");
+            Assert.IsFalse(ConstelacionMotion.PressedLook(true, false, -10f, 0.01f), "una luz que nadie tocó (PressAt = −10) no");
+        }
     }
 
-    /// <summary>El arte y el sonido de «Constelaciones»: todo se hornea, las siluetas se distinguen y los gemelos cambian en un detalle grande.</summary>
+    /// <summary>
+    /// El arte y el sonido de «Constelaciones»: todo se hornea, las siluetas se distinguen y los gemelos cambian en un detalle grande. Estas pruebas miden píxeles del arte PROCEDURAL (el de respaldo, que se usa sin el atlas de plasticina),
+    /// así que corren con la plasticina apagada; lo mismo sobre el arte de plasticina lo miden <see cref="ConstelacionPlasticTests"/>.
+    /// </summary>
     public class ConstelacionArtTests
     {
+        [SetUp]
+        public void SetUp() { PlasticArt.Disabled = true; }
+
+        [TearDown]
+        public void TearDown() { PlasticArt.Disabled = false; }
+
         private static int Filled(Sprite s)
         {
             int n = 0;
@@ -261,6 +284,24 @@ namespace NeuroVida.Games.Parejas.Tests
                 Assert.IsEmpty(problems, "Piezas que no se verían: " + string.Join(" | ", problems));
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void TheAudit_AlsoPasses_WithoutThePlasticAtlas()
+        {
+            // sin el atlas todo cae al arte de siempre (la tarjeta, las luces, los 16 objetos): nada puede quedar sin imagen
+            PlasticArt.Disabled = true;
+            var go = new GameObject("ConstelacionAuditProcedural");
+            try
+            {
+                var controller = go.AddComponent<ConstelacionGameController>();
+                var build = typeof(ConstelacionGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditVisibility();
+                Assert.IsEmpty(problems, "Piezas que no se verían sin plasticina: " + string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); PlasticArt.Disabled = false; }
         }
 
         private static string Read(string file) => File.ReadAllText(Path.Combine(Application.dataPath, "Scripts", "Games", "Parejas", file));

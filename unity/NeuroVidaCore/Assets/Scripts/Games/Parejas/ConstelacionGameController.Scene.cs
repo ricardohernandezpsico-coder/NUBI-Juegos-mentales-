@@ -34,7 +34,7 @@ namespace NeuroVida.Games.Parejas
                 var l = sky.Lights[i];
                 v.F = v.Vf = 0f;
                 v.HintAt = v.PressAt = -10f;
-                v.Up = false;
+                v.Up = v.Pressed = false;
                 v.Kind = l.Kind;
                 v.Variant = l.Variant;
                 v.RingKind = ConLine.None;
@@ -111,7 +111,10 @@ namespace NeuroVida.Games.Parejas
                 float ap = deco ? Mathf.Clamp01((nowMs - l.AppearAtMs) / ConstelacionContract.AppearMs) : (nowMs >= l.AppearAtMs ? 1f : 0f);
                 float sc = deco ? ConstelacionMotion.EaseBack(ap) : 1f;
                 if (leaving && deco) sc *= 1f - ConstelacionMotion.EaseOut((now - _leaveAt) / ConstelacionMotion.LeaveSeconds);
-                if (v.PressAt > 0f && now - v.PressAt < ConstelacionMotion.PressSeconds && deco) sc *= 1f - (1f - ConstelacionMotion.PressScale) * (1f - (now - v.PressAt) / ConstelacionMotion.PressSeconds);
+                // la luz que se toca: con plasticina se ve HUNDIDA (aplastada, con la huella de un dedo) un momento antes de voltearse; sin ella, el achicado de siempre
+                var pressedArt = ConstelacionSprites.DormantPressed();
+                bool pressed = ConstelacionMotion.PressedLook(pressedArt != null, l.State == ConState.Down, v.PressAt, now);
+                if (v.PressAt > 0f && now - v.PressAt < ConstelacionMotion.PressSeconds && deco && pressedArt == null) sc *= 1f - (1f - ConstelacionMotion.PressScale) * (1f - (now - v.PressAt) / ConstelacionMotion.PressSeconds);
                 // la luz unida se encoge a estrella chica (aro y objeto incluidos): lo que falta queda como lo más grande del cielo
                 sc *= ConstelacionMotion.DoneScale(l.State == ConState.Done, nowMs - l.DoneAtMs, !deco);
                 bool visible = ap > 0f && sc > 0.01f && _phase != Phase.Done;
@@ -119,14 +122,16 @@ namespace NeuroVida.Games.Parejas
                 if (!visible) continue;
                 v.Root.localScale = Vector3.one * sc;
                 // el volteo: abrir con un poco de rebote, cerrar más rápido y sin rebote
-                float target = l.State == ConState.Down ? 0f : 1f;
+                float target = l.State == ConState.Down || pressed ? 0f : 1f;                      // (el volteo espera a que se vea la luz hundida: ConstelacionMotion.PressedSeconds)
                 if (!deco) { v.F = target; v.Vf = 0f; }
                 else ConstelacionMotion.Flip(ref v.F, ref v.Vf, target, dt);
                 bool up = v.F > 0.5f;
-                if (up != v.Up || v.Body.sprite == null)
+                pressed &= !up;
+                if (up != v.Up || pressed != v.Pressed || v.Body.sprite == null)
                 {
                     v.Up = up;
-                    v.Body.sprite = up ? ConstelacionSprites.Open() : ConstelacionSprites.Dormant();
+                    v.Pressed = pressed;
+                    v.Body.sprite = up ? ConstelacionSprites.Open() : (pressed ? pressedArt : ConstelacionSprites.Dormant());
                 }
                 if (v.Obj.gameObject.activeSelf != up) v.Obj.gameObject.SetActive(up);
                 float sx = ConstelacionMotion.FlipWidth(v.F), lift = ConstelacionMotion.FlipLift(v.F);
@@ -482,7 +487,8 @@ namespace NeuroVida.Games.Parejas
             }
             _cardLayer.gameObject.SetActive(true);
             _rowLayer.gameObject.SetActive(true);
-            Check("tarjeta.fondo", _cardBg, true);
+            if (_cardSlab != null) Check("tarjeta.losa", _cardSlab, true);          // plasticina: la tarjeta es una losa del kit (el fondo de siempre queda invisible)
+            else Check("tarjeta.fondo", _cardBg, true);
             Check("tarjeta.borde", _cardRim, true, false);
             if (_links.Count < LinkPool) problems.Add("faltan vistas de líneas");
             for (int level = 1; level <= ConstelacionContract.MaxLevel; level++)

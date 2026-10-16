@@ -31,7 +31,7 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 | 3 | Freno de Emergencia | `freno` | botón ×2, ¡ALTO!, plataforma, cohete ×3 | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-freno.png) → [después](previews/plasticina/despues-freno.png) |
 | 4 | Satélites | `satelites` | 4 (satélite, planeta, sobre, nube); el resto, losas del kit | integrado (14-oct); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-satelites.png) → [después](previews/plasticina/despues-satelites.png) |
 | 5 | Tinta o Palabra | `stroop` | 15 losas con el color exacto de la tinta, la tarjeta y las orillas + gota y libro | integrado (14-oct, con verificación completa); **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-stroop-arte.png) → [después](previews/plasticina/despues-stroop-arte.png) |
-| 6 | Constelaciones | `parejas` | 20 | inventario | 14-oct | — |
+| 6 | Constelaciones | `parejas` | 19 | 12 objetos + 4 gemelos (con borde de tinta), luz dormida, dormida presionada y abierta; los aros y las líneas, procedurales; la tarjeta de arriba y la de entrada, losas del kit | integrado (15-oct), con el estado presionado desde el inicio; **falta que Ricardo lo pruebe** | 15-oct | [antes](previews/plasticina/antes-parejas-arte.png) → [después](previews/plasticina/despues-parejas-arte.png) · [objetos](previews/plasticina/parejas-objetos.png) |
 | 7 | Bodega de carga | `bodega` | 24 | inventario | 14-oct | — |
 | 8 | La estación de correo | `correo` | 27 | inventario | 14-oct | — |
 | 9 | Rastro de luz | `secuencia` | 9 luceros + 9 presionados (con huella de dedo); el resto, losas del kit | integrado (14-oct), con el estado presionado el mismo día; **falta que Ricardo lo pruebe** | 14-oct | [antes](previews/plasticina/antes-secuencia.png) → [después](previews/plasticina/despues-secuencia.png) |
@@ -163,7 +163,7 @@ Riesgos: el estímulo «ir» se lee en luminancia (apagado oscuro, encendido cla
 | Señal de ALTO | `alto` (400 px, lienzo ±1,1) | octágono coral de plasticina con el aro crema incrustado; el «ALTO» sigue siendo `Text` |
 | Baliza, resplandor del carril, humo, llama, estrellas | se quedan procedurales | son luz o efecto (igual que las balizas de Piloto) |
 
-El cohete de Freno ya NO usa `SymbolSprite.Rocket` (`BrakeSprites.Rocket(carril)`): las cartas de Constelaciones siguen con el suyo hasta que le toque a ese juego (fila 6). Medidas, pruebas y pesos: [`juegos/freno.md`](juegos/freno.md) § Plasticina.
+El cohete de Freno ya NO usa `SymbolSprite.Rocket` (`BrakeSprites.Rocket(carril)`): las cartas de Constelaciones tuvieron el suyo hasta la Tarea 106 (fila 6: ya tienen su propio cohete de plasticina; `SymbolSprite.Rocket` queda solo como respaldo de otros juegos). Medidas, pruebas y pesos: [`juegos/freno.md`](juegos/freno.md) § Plasticina.
 
 ### 5. Satélites «enciende tu planeta» (`satelites`, `Games/Satelites/`)
 
@@ -190,6 +190,8 @@ Riesgos: los satélites son IDÉNTICOS (la señal es el aro y el sobre, nunca el
 | Luz dormida (reverso, idéntico en todas), luz abierta | E + toque | 1 y 1 | Ø168–228 u | no |
 | Aros de pareja hecha (dorado continuo, celeste punteado) | I | 2 | 221–300 u | no |
 | Líneas de unión (3 mallas), fila «De memoria» (puntos y aros), tarjetas, barra | I | — | — | `LineGraphic`, `Disc`, `Ring` |
+
+**Ficha de arte (Tarea 106, 15-oct):** los 12 objetos y los 4 gemelos son el dibujo del boceto aprobado hecho de plasticina (`tools/juegos/constelaciones.py`): piezas planas apiladas con el canto blando, la misma silueta, el mismo tamaño (caja de 56 u, 4 px por unidad) y el mismo detalle GRANDE que distingue a cada gemelo; el planeta es una esfera de verdad con su anillo inclinado (flota, sin sombra de contacto) y el resto son relieves con la sombra de contacto del kit. El **borde de tinta** del boceto (1,3 u hacia afuera de la silueta) lo agrega `empaqueta.py` desde la silueta: separa a los objetos claros (casco, cohete, brújula) del disco claro de la luz abierta. La **luz dormida** es una esfera de arcilla azul noche con un grano claro (el núcleo) y su brillo; su **estado presionado** (regla del 14-oct) es la misma esfera aplastada, un punto más oscura y con la huella de un dedo hundida LEJOS del núcleo (la huella no pisa el estímulo); la luz que se toca se ve así 80 ms ANTES de voltearse (el volteo espera; con «quitar animaciones» también). La **luz abierta** es un disco claro de arcilla. Los aros de las parejas hechas (dorado continuo y celeste punteado), las líneas, los puntos de «De memoria» y las chispas se quedan procedurales (se tiñen, se trazan y se encogen). La **tarjeta de arriba** y la **tarjeta de entrada** son losas «noche» del kit (el aviso de «no son iguales» sigue en el texto, ya no en el borde); el panel del final ya lo era (fase 0). Medidas, pruebas y pesos: [`diseno-constelaciones.md`](diseno-constelaciones.md) §13.
 
 Riesgos: los gemelos se distinguen por un detalle grande (anillo, llama, patas, antena) y los tests de píxeles lo fijan (> 700 px distintos; anillo en (±19,5; ∓6), llama en (0,−24)): no afinar las patas ni la antena; planeta, luna, brújula, casco y cometa son discos (el rasgo interior debe ser grande); el dorso es un único render sin variación por luz; dormida vs abierta se lee en luminancia; luna LLENA sin terminador, cristal sin destello de 4 puntas, brújula de 2 agujas (`NoSymbolOutsideTheRule` busca `Star(/Crescent(/Sun(/Cross(`). **`ConstelacionArtTests` depende de las coordenadas del sprite procedural**: pasar a render obliga a reescribirlas. No tocar: líneas, volteo (la luz se escala en X), pista, chispas.
 
@@ -358,8 +360,9 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 | `stroop` (Tinta o Palabra: 15 losas con el color de la tinta, la tarjeta y las orillas; gota y libro) | 17 | 1536×708 | 547 KB | **0,77 MB** | 0,46 MB |
 | `punta` (En la punta de la lengua: ficha y su presionada, casilla, perla) | 4 | 640×196 | 75 KB | **0,10 MB** | 0,06 MB |
 | `meteoros` (Lluvia de meteoros: 4 rocas nine-slice, 4 presionadas, brasa, grietas, 2 estrellas) | 18 | 640×1956 | 386 KB | **0,52 MB** | 0,55 MB |
+| `parejas` (Constelaciones: 12 objetos + 4 gemelos, luz dormida, dormida presionada y abierta) | 19 | 1152×940 | 431 KB | **0,55 MB** | 0,46 MB |
 
-Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites, Lluvia de meteoros, Rastro de luz, Tinta o Palabra, En la punta de la lengua y La estrella intrusa (radar + piloto + freno + calculo + disparate + satelites + rastro + stroop + punta + meteoros + comun + nubi) son unos 7,4 MB sin comprimir la textura y unos 5,2 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
+Lo nuevo en el APK con Rescate, Piloto, Freno, Carga exacta, ¿Verdad o disparate?, Satélites, Lluvia de meteoros, Constelaciones, Rastro de luz, Tinta o Palabra, En la punta de la lengua y La estrella intrusa (radar + piloto + freno + calculo + disparate + satelites + rastro + stroop + punta + meteoros + parejas + comun + nubi) son unos 8,0 MB sin comprimir la textura y unos 5,7 MB con ASTC; cada juego que se migre suma solo su atlas (≤ 1,5 MB).
 
 ## Estado presionado (regla del 14-oct): cómo quedó cada juego (Tarea 104)
 

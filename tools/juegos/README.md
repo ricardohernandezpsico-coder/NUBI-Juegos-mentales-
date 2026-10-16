@@ -19,6 +19,9 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `meteoros.py` | Lluvia de meteoros: las 4 rocas (nine-slice, gris claro que el código tiñe, con cráteres), sus 4 presionadas (huella en una esquina) y las 2 estrellas de la constelación (esferas). |
 | `meteoros_capas.py` | La brasa del borde que va por delante y las grietas de la roca de polvo (numpy, sobre el mismo lienzo y la misma silueta que la roca: son luz y marca, no plasticina). |
 | `mide_meteoros.py` | La roca (cuerpo, margen), la presionada, el color teñido contra el de diseño, el contraste de la palabra sobre la placa crema y las estrellas. |
+| `constelaciones.py` | Constelaciones: los 12 objetos y los 4 gemelos (1 unidad del boceto = 1/20 de unidad de Blender: relieves apilados de plasticina; el planeta, una esfera de verdad con su anillo inclinado y sin sombra de contacto), la luz dormida (esfera azul noche con un grano claro), su presionada (aplastada, con la huella lejos del núcleo) y la luz abierta (disco claro). |
+| `mide_parejas.py` | Los 16 objetos (silueta, borde de tinta, contraste), los gemelos, la pareja de objetos más parecida en luminancia, las luces y la presionada, y el peso. |
+| `hoja_parejas.py` | Arma `docs/previews/plasticina/parejas-objetos.png`: los 16 objetos sobre su luz abierta como los ve el juego, y la luz dormida y la presionada. |
 | `mide_presionados.py` | Los estados presionados de Piloto, Freno, Satélites y Punta contra los normales: tamaño y margen del lienzo, centro, color (luminosidad y ΔE), tinta del detalle y el detalle fino donde cae la huella. |
 | `hoja_presionados.py` | Arma `docs/previews/plasticina/presionados.png`: un cuadro normal y uno presionado de lo que se toca en cada juego, con los sprites reales de los atlas. |
 | `piloto.py` | Piloto Estelar: las 15 señales (5 formas × punto, anillo y franja, con el detalle de churro de tinta incrustado) y la nave. Las maestras salen a 384 px; `empaqueta.py` saca de la misma maestra la versión de 192 y la chica de 96. |
@@ -57,8 +60,9 @@ $BLENDER -b -P tools/juegos/satelites.py -- --samples 112 --out tools/juegos/out
 $BLENDER -b -P tools/juegos/rastro.py -- --samples 112 --out tools/juegos/out/rastro        # ~15 min (9 esferas y 9 presionadas a 384 px; --solo p renderiza solo las presionadas)
 $BLENDER -b -P tools/juegos/stroop.py -- --samples 112 --out tools/juegos/out/stroop        # ~6 min (15 losas y 2 íconos)
 $BLENDER -b -P tools/juegos/punta.py -- --samples 112 --out tools/juegos/out/punta          # ~2 min (ficha, casilla y perla)
+$BLENDER -b -P tools/juegos/constelaciones.py -- --samples 112 --out tools/juegos/out/parejas   # ~9 min (16 objetos a 448 px, la luz dormida, su presionada y la abierta a 504); --solo obj|luces|obj_K_V|dormante|dormante_p|abierta
 $BLENDER -b -P tools/juegos/comun.py -- --samples 112 --out tools/juegos/out/comun        # ~5 min
-python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop punta meteoros comun nubi   # atlas + manifiestos + pesos (segundos)
+python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop punta meteoros parejas comun nubi   # atlas + manifiestos + pesos (segundos)
 python -I tools/juegos/mide_radar.py                          # huella, contraste y siluetas de las cápsulas
 python -I tools/juegos/mide_piloto.py                         # huella, contraste y detalles de las señales y la nave
 python -I tools/juegos/mide_calculo.py                        # tamaño del reactor, núcleo claro y losas de las celdas
@@ -68,6 +72,9 @@ python -I tools/juegos/mide_rastro.py                         # luceros: huella,
 python -I tools/juegos/mide_stroop.py                         # tintas: ΔE, daltonismo, nombres y fondo de la tarjeta
 python -I tools/juegos/mide_punta.py                          # ficha, casilla, perla y metales de los luceros
 python -I tools/juegos/mide_freno.py                          # huella, contraste y flecha del botón, cohetes, plataforma y ALTO
+python -I tools/juegos/mide_parejas.py                        # objetos (silueta, tinta, gemelos, pares parecidos), luces y la presionada
+python -I tools/juegos/mide_meteoros.py                       # roca nine-slice, presionada, color teñido, palabra sobre la placa y estrellas
+python -I tools/juegos/hoja_parejas.py                        # la hoja de los 16 objetos sobre su luz
 python -I tools/juegos/lamina.py out/lam.png '#0A2A3A' 3 1.5 out/radar/capsula_*.png     # para mirarlos
 ```
 
@@ -105,6 +112,7 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 | `stroop` (Tinta o Palabra: losas de color exacto, gota y libro) | 17 | 1536×708 | 547 KB | 0,77 MB | 0,46 MB |
 | `punta` (En la punta de la lengua: ficha, casilla, perla) | 4 | 640×196 | 75 KB | 0,10 MB | 0,06 MB |
 | `meteoros` (Lluvia de meteoros: rocas nine-slice, presionadas, brasa, grietas, estrellas) | 18 | 640×1956 | 386 KB | 0,52 MB | 0,55 MB |
+| `parejas` (Constelaciones: 12 objetos + 4 gemelos, luz dormida, presionada y abierta) | 19 | 1152×940 | 431 KB | 0,55 MB | 0,46 MB |
 | `comun` (losas, marcas, anillo) | 29 | 896×2472 | 849 KB | 1,11 MB | 0,97 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 

@@ -12,6 +12,8 @@ namespace NeuroVida.Games.Parejas
     /// espacio y los 4 gemelos (planeta sin anillo, cohete con llama grande, ovni con patas, casco con antena; el detalle que los distingue es GRANDE y de forma, nunca un tono parecido), la luz dormida (una esfera
     /// de arcilla oscura con un núcleo tibio), la luz abierta (un disco claro) y los aros de las parejas hechas (dorado continuo y celeste punteado). Sin sol, sin estrellas de puntas, sin media luna y sin cruces
     /// (docs/simbolos-neutros.md). Los objetos se dibujan en las coordenadas del boceto (x a la derecha, y HACIA ABAJO, unos ±22 unidades) y se hornean una sola vez; <see cref="Prewarm"/> los hornea de a uno por cuadro.
+    /// <para>Plasticina (Tarea 106, 15-oct): los 16 objetos, la luz dormida, su estado presionado y la luz abierta salen del atlas «parejas» (render de Blender: <c>tools/juegos/constelaciones.py</c>, misma caja, mismo tamaño y mismo
+    /// detalle que distingue a cada gemelo); los aros de las parejas hechas se quedan procedurales (se tiñen y son una línea). Sin el atlas, todo cae al arte horneado de siempre.</para>
     /// </summary>
     public static class ConstelacionSprites
     {
@@ -20,6 +22,15 @@ namespace NeuroVida.Games.Parejas
         /// <summary>El radio con que se hornean las luces (se achican al radio del cielo, 28 a 38).</summary>
         public const float BakeR = 38f;
         public const float DormantBox = 2f * (BakeR + 4f), RingBox = 2f * (BakeR + 12f);
+
+        /// <summary>El atlas de plasticina de este juego (<c>Resources/Plasticina/parejas</c>).</summary>
+        public const string PlasticGroup = "parejas";
+
+        /// <summary>true si el arte de plasticina está disponible (si no, todo sale del pincel de arcilla de siempre).</summary>
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "dormante");
+
+        /// <summary>La luz dormida PRESIONADA (aplastada, un punto más oscura y con la huella de un dedo hundida lejos del núcleo): null sin plasticina.</summary>
+        public static Sprite DormantPressed() => PlasticArt.Get(PlasticGroup, "dormante_p");
 
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
@@ -124,6 +135,8 @@ namespace NeuroVida.Games.Parejas
         {
             kind = Mathf.Clamp(kind, 0, ConstelacionContract.ObjectKinds - 1);
             variant = variant == 1 && ConstelacionContract.HasTwin(kind) ? 1 : 0;
+            var art = PlasticArt.Get(PlasticGroup, "obj_" + kind + "_" + variant);
+            if (art != null) return art;
             return Bake("obj" + kind + "_" + variant, ObjBox, ObjPpd, (ref Px p, float x, float yUp) =>
             {
                 float y = -yUp;                       // las coordenadas del boceto van con y hacia abajo
@@ -319,6 +332,8 @@ namespace NeuroVida.Games.Parejas
         /// <summary>La luz dormida: una esfera de arcilla oscura con un núcleo tibio (radio 38, sin animación continua; todas se ven iguales).</summary>
         public static Sprite Dormant()
         {
+            var art = PlasticArt.Get(PlasticGroup, "dormante");
+            if (art != null) return art;
             const float ppd = 3f;
             return Bake("dormant", DormantBox, ppd, (ref Px p, float x, float yUp) =>
             {
@@ -339,6 +354,8 @@ namespace NeuroVida.Games.Parejas
         /// <summary>La luz abierta: un disco claro (degradé de blanco a lila) con borde de tinta, donde se ve el objeto.</summary>
         public static Sprite Open()
         {
+            var art = PlasticArt.Get(PlasticGroup, "abierta");
+            if (art != null) return art;
             const float ppd = 3f;
             return Bake("open", DormantBox, ppd, (ref Px p, float x, float yUp) =>
             {
