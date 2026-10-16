@@ -23,7 +23,10 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `mide_parejas.py` | Los 16 objetos (silueta, borde de tinta, contraste), los gemelos, la pareja de objetos más parecida en luminancia, las luces y la presionada, y el peso. |
 | `hoja_parejas.py` | Arma `docs/previews/plasticina/parejas-objetos.png`: los 16 objetos sobre su luz abierta como los ve el juego, y la luz dormida y la presionada. |
 | `bodega.py` | Bodega de carga: los 12 objetos (relieves de plasticina sin borde de tinta), las piezas de la escotilla (marco, aro, tres interiores y la hoja de la puerta, normal y presionada con la huella de un dedo; la hoja GIRA por código: se renderiza sin luz direccional, promediando cuatro renders con la luz girada 0°, 90°, 180° y 270°), el robot (cuerpo, visor, ojo, tallo, bolita), la caja (una cinta), la esclusa y los tres círculos del carro. 1 dp = 1/20 de unidad de Blender. |
+| `correo.py` | La estación de correo: las 12 cartas (4 planetas × normal, sello dorado, lazo; papel, doblez, líneas de dirección, sello —el dorado, de borde de estampilla— y moño), los 4 planetas con su figura en relieve, el dial (ocho puntos; GIRA por código: se renderiza sin luz direccional, promediando cuatro renders con la luz girada), la puerta y la manija de la caja fuerte, la torre y las dos lámparas del faro, la nave, el saco, la marca de raya y el reloj (base, tapa y tapa presionada). 1 dp = 1/20 de unidad de Blender. |
 | `mide_bodega.py` | Los 12 objetos (tamaño, contraste contra el interior oscuro, pares parecidos en luminancia), la escotilla (la hoja, la presionada y su huella), el robot, la caja, la esclusa, el carro y el peso. |
+| `mide_correo.py` | Las 12 cartas (papel, esquinas, ninguna señal parecida), el sello dorado frente al normal (mancha en grises, borde de dientes, interior), las 4 figuras (IoU de las siluetas, colores con protanopía, deuteranopía y tritanopía, contraste de la figura del sello), el dial (8 puntos), la puerta, la manija, la torre, las lámparas, el reloj (tapa presionada y su huella), la nave, el saco, la raya y el peso. |
+| `hoja_correo.py` | Arma `docs/previews/plasticina/correo-piezas.png`: las 12 cartas sobre la cinta, el sello dorado y el normal de cada planeta a tamaño real, en grises y con las tres simulaciones de daltonismo, los planetas, los buzones (y uno presionado), la caja fuerte (y presionada), el faro apagado y encendido, el reloj (tapado, presionado, destapado), la nave, el saco, la raya y el ✓. |
 | `hoja_bodega.py` | Arma `docs/previews/plasticina/bodega-piezas.png`: los 12 objetos dentro de su escotilla, la escotilla cerrada y presionada, el robot armado, la caja, la esclusa y los círculos del carro. |
 | `mide_presionados.py` | Los estados presionados de Piloto, Freno, Satélites y Punta contra los normales: tamaño y margen del lienzo, centro, color (luminosidad y ΔE), tinta del detalle y el detalle fino donde cae la huella. |
 | `hoja_presionados.py` | Arma `docs/previews/plasticina/presionados.png`: un cuadro normal y uno presionado de lo que se toca en cada juego, con los sprites reales de los atlas. |
@@ -65,8 +68,9 @@ $BLENDER -b -P tools/juegos/stroop.py -- --samples 112 --out tools/juegos/out/st
 $BLENDER -b -P tools/juegos/punta.py -- --samples 112 --out tools/juegos/out/punta          # ~2 min (ficha, casilla y perla)
 $BLENDER -b -P tools/juegos/constelaciones.py -- --samples 112 --out tools/juegos/out/parejas   # ~9 min (16 objetos a 448 px, la luz dormida, su presionada y la abierta a 504); --solo obj|luces|obj_K_V|dormante|dormante_p|abierta
 $BLENDER -b -P tools/juegos/bodega.py -- --samples 112 --out tools/juegos/out/bodega      # ~14 min (12 objetos a 384 px, la escotilla —las hojas, ×4 luces—, el robot, la caja, la esclusa y el carro); --solo obj|obj_K|escotilla|robot|resto
+$BLENDER -b -P tools/juegos/correo.py -- --samples 112 --out tools/juegos/out/correo      # ~30 min (12 cartas a 768 px —las cartas, ~1,5 min c/u—, 4 planetas, el dial ×4 luces, la puerta, la manija, la torre, las lámparas, la nave, el saco, la raya y el reloj); --solo cartas|carta_P_C|planetas|piezas|reloj
 $BLENDER -b -P tools/juegos/comun.py -- --samples 112 --out tools/juegos/out/comun        # ~5 min
-python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop punta meteoros parejas bodega comun nubi   # atlas + manifiestos + pesos (segundos)
+python -I tools/juegos/empaqueta.py radar piloto freno calculo disparate satelites rastro stroop punta meteoros parejas bodega correo comun nubi   # atlas + manifiestos + pesos (segundos)
 python -I tools/juegos/mide_radar.py                          # huella, contraste y siluetas de las cápsulas
 python -I tools/juegos/mide_piloto.py                         # huella, contraste y detalles de las señales y la nave
 python -I tools/juegos/mide_calculo.py                        # tamaño del reactor, núcleo claro y losas de las celdas
@@ -81,6 +85,8 @@ python -I tools/juegos/mide_meteoros.py                       # roca nine-slice,
 python -I tools/juegos/hoja_parejas.py                        # la hoja de los 16 objetos sobre su luz
 python -I tools/juegos/mide_bodega.py                         # objetos, escotilla (hoja y presionada), robot, caja, esclusa y carro
 python -I tools/juegos/hoja_bodega.py                         # la hoja de las piezas de Bodega
+python -I tools/juegos/mide_correo.py                         # cartas, sello dorado, figuras (daltonismo), dial, faro, reloj y nave
+python -I tools/juegos/hoja_correo.py                         # la hoja de las piezas de Correo (a tamaño real, en grises y con daltonismo)
 python -I tools/juegos/lamina.py out/lam.png '#0A2A3A' 3 1.5 out/radar/capsula_*.png     # para mirarlos
 ```
 
@@ -120,6 +126,7 @@ El atlas va SIN compresión de textura (la plasticina tiene degradés suaves que
 | `meteoros` (Lluvia de meteoros: rocas nine-slice, presionadas, brasa, grietas, estrellas) | 18 | 640×1956 | 386 KB | 0,52 MB | 0,55 MB |
 | `parejas` (Constelaciones: 12 objetos + 4 gemelos, luz dormida, presionada y abierta) | 19 | 1152×940 | 431 KB | 0,55 MB | 0,46 MB |
 | `bodega` (Bodega de carga: 12 objetos, escotilla, robot, caja, esclusa, carro) | 30 | 1024×1384 | 684 KB | 0,89 MB | 0,60 MB |
+| `correo` (La estación de correo: 12 cartas, 4 planetas, dial, puerta, manija, torre, lámparas, nave, saco, raya, reloj) | 28 | 1280×1852 | 1140 KB | 1,47 MB | 1,01 MB |
 | `comun` (losas, marcas, anillo) | 29 | 896×2472 | 849 KB | 1,11 MB | 0,97 MB |
 | `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
 

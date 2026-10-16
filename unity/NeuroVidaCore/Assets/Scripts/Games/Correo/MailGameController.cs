@@ -374,10 +374,10 @@ namespace NeuroVida.Games.Correo
                     if (Now - _phaseAt > 0.5f) _tapped = true;
                     return;
                 case Phase.Brief:
-                    if (Now - _phaseAt > 0.6f && InButton(p)) _tapped = true;
+                    if (Now - _phaseAt > 0.6f && InButton(p)) { _briefTouch?.Press(); _tapped = true; }
                     return;
                 case Phase.Recap:
-                    if (Now - _phaseAt > 0.9f && InButton(p)) _tapped = true;
+                    if (Now - _phaseAt > 0.9f && InButton(p)) { _recapTouch?.Press(); _tapped = true; }
                     return;
                 case Phase.Play:
                     PressInPlay(p);
@@ -407,10 +407,10 @@ namespace NeuroVida.Games.Correo
             if (_guided && !GuidedAllows(t, box)) return;
             switch (t)
             {
-                case Target.Box: DoBox(box); break;
-                case Target.Safe: DoSafe(); break;
-                case Target.Beacon: DoBeacon(); break;
-                default: DoClock(); break;
+                case Target.Box: _boxes[box].Touch?.Press(); DoBox(box); break;                 // plasticina: el toque aceptado se ve hundido al menos 80 ms (sin plasticina Touch es null)
+                case Target.Safe: _safeTouch?.Press(); DoSafe(); break;
+                case Target.Beacon: _beaconTouch?.Press(); DoBeacon(); break;
+                default: _clockTouch?.Press(); DoClock(); break;
             }
         }
 

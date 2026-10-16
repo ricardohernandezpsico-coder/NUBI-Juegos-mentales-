@@ -21,6 +21,17 @@ namespace NeuroVida.Games.Correo
         public const float LetterBoxW = 128f, LetterBoxH = 92f;
         public const float PlanetBox = 64f, PlanetR = 28f, DialBox = 32f, TowerBoxW = 44f, TowerBoxH = 66f, LampBox = 28f, ShipBoxW = 100f, ShipBoxH = 44f, FlameBoxW = 20f, FlameBoxH = 16f, SackBox = 40f, FrameBoxW = 140f, FrameBoxH = 100f, CheckBox = 32f;
 
+        /// <summary>El atlas de plasticina de este juego (<c>Resources/Plasticina/correo</c>): las 12 cartas, los 4 planetas, el dial, la puerta y la manija de la caja fuerte, la torre y las dos lámparas del faro, la nave, el saco, la marca de raya y el reloj
+        /// (base, tapa y tapa presionada). El marco punteado, la barra del día, el propulsor y los resplandores siguen procedurales (decoración). Sin el atlas, todo cae al arte horneado de siempre.</summary>
+        public const string PlasticGroup = "correo";
+
+        public static bool Plastic => PlasticArt.Has(PlasticGroup, "carta_0_0");
+
+        private static Sprite Art(string name) => PlasticArt.Get(PlasticGroup, name);
+
+        /// <summary>Los lienzos (dp) de las piezas nuevas de plasticina: la puerta de la caja fuerte (62 × 68 de puerta), su manija (28 × 7), la base del reloj (un aro de 59 dp) y su tapa (un disco de 47 dp en 50).</summary>
+        public const float DoorBoxW = 66f, DoorBoxH = 72f, HandleBoxW = 32f, HandleBoxH = 12f, ClockBaseBox = 64f, ClockCoverBox = 50f, ClockCoverDisc = 47f;
+
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
         private static readonly Color InkC = Hex(0x1A1240);
         private static readonly Color Red = Hex(0xE2524A);
@@ -149,6 +160,8 @@ namespace NeuroVida.Games.Correo
         public static Sprite Letter(int planet, MailCue cue)
         {
             planet = Mathf.Clamp(planet, 0, MailContract.PlanetCount - 1);
+            var art = Art("carta_" + planet + "_" + (int)cue);
+            if (art != null) return art;
             return Bake("letter" + planet + "_" + (int)cue, LetterBoxW, LetterBoxH, LetterPpd, (ref Px p, float x, float y) => PaintLetter(ref p, planet, cue, x, y, 1f / LetterPpd));
         }
 
@@ -225,6 +238,8 @@ namespace NeuroVida.Games.Correo
         public static Sprite Planet(int planet)
         {
             planet = Mathf.Clamp(planet, 0, MailContract.PlanetCount - 1);
+            var art = Art("planeta_" + planet);
+            if (art != null) return art;
             return Bake("planet" + planet, PlanetBox, PlanetBox, SmallPpd, (ref Px p, float x, float y) =>
             {
                 float aa = 1f / SmallPpd, R = PlanetR;
@@ -241,7 +256,7 @@ namespace NeuroVida.Games.Correo
         // ------------------------------------------------------------------ la caja fuerte: un dial con marcas (y una manija)
 
         /// <summary>El dial de la caja fuerte (gira al guardar un encargo): un disco oscuro con aro dorado, ocho marcas y un centro. NO es una rueda de radios (parecería el símbolo de la paz).</summary>
-        public static Sprite Dial() => Bake("dial", DialBox, DialBox, SmallPpd, (ref Px p, float x, float y) =>
+        public static Sprite Dial() => Art("dial") ?? Bake("dial", DialBox, DialBox, SmallPpd, (ref Px p, float x, float y) =>
         {
             float aa = 1f / SmallPpd;
             p.Over(Hex(0x2A2350), Cover(Circle(x, y, 0f, 0f, 13f), aa));
@@ -254,12 +269,24 @@ namespace NeuroVida.Games.Correo
             p.Over(Gold, Cover(Circle(x, y, 0f, 0f, 3.5f), aa));
         });
 
+        /// <summary>La puerta de la caja fuerte (62 × 68 dp en un lienzo de 66 × 72). Null sin plasticina: la puerta de siempre es un rectángulo redondeado.</summary>
+        public static Sprite Door() => Art("caja_puerta");
+
+        /// <summary>La manija de la caja fuerte (28 × 7 dp en un lienzo de 32 × 12). Null sin plasticina.</summary>
+        public static Sprite Handle() => Art("manija");
+
+        /// <summary>La base del reloj tapado: el aro de tinta y el fondo azul noche en un lienzo de 64 dp (el aro mide 59). Null sin plasticina.</summary>
+        public static Sprite ClockBase() => Art("reloj_base");
+
+        /// <summary>La tapa del reloj (un disco lila de 47 dp en un lienzo de 50), normal o presionada (hundida, con la huella de un dedo). Null sin plasticina.</summary>
+        public static Sprite ClockCover(bool pressed = false) => Art(pressed ? "reloj_tapa_p" : "reloj_tapa");
+
         // ------------------------------------------------------------------ el faro
 
         private static readonly float[] TowerPts = { -12f, 26f, -8f, -12f, 8f, -12f, 12f, 26f };
 
         /// <summary>La torre del faro (sin la lámpara): un trapecio claro con dos franjas rojas. El origen es el pie de la lámpara (la lámpara va 20 dp arriba).</summary>
-        public static Sprite Tower() => Bake("tower", TowerBoxW, TowerBoxH, SmallPpd, (ref Px p, float x, float y) =>
+        public static Sprite Tower() => Art("torre") ?? Bake("tower", TowerBoxW, TowerBoxH, SmallPpd, (ref Px p, float x, float y) =>
         {
             float aa = 1f / SmallPpd;
             Fill(ref p, Polygon(x, y, TowerPts), Hex(0xEDEAFB), aa, 1.25f);
@@ -268,7 +295,7 @@ namespace NeuroVida.Games.Correo
         });
 
         /// <summary>La lámpara del faro: apagada (gris violeta) o encendida (amarillo claro).</summary>
-        public static Sprite Lamp(bool on) => Bake(on ? "lampOn" : "lampOff", LampBox, LampBox, SmallPpd, (ref Px p, float x, float y) =>
+        public static Sprite Lamp(bool on) => Art(on ? "lampara_1" : "lampara_0") ?? Bake(on ? "lampOn" : "lampOff", LampBox, LampBox, SmallPpd, (ref Px p, float x, float y) =>
         {
             float aa = 1f / SmallPpd;
             Fill(ref p, Circle(x, y, 0f, 0f, 9f), on ? Hex(0xFFE27A) : Hex(0x6E6A9A), aa, 1.25f);
@@ -280,7 +307,7 @@ namespace NeuroVida.Games.Correo
         private static readonly float[] ShipFlap = { -18f, -8f, -7f, 0f, 4f, -8f };
 
         /// <summary>La nave del correo (arcilla clara, ventanilla celeste y un sobre dorado de emblema); sin el propulsor. 100×44 dp con el origen en el centro de la nave.</summary>
-        public static Sprite Ship() => Bake("ship", ShipBoxW, ShipBoxH, SmallPpd, (ref Px p, float x, float y) =>
+        public static Sprite Ship() => Art("nave") ?? Bake("ship", ShipBoxW, ShipBoxH, SmallPpd, (ref Px p, float x, float y) =>
         {
             float aa = 1f / SmallPpd;
             Fill(ref p, Polygon(x, y, ShipBody), Hex(0xECE8FF), aa, 1.5f);
@@ -305,7 +332,7 @@ namespace NeuroVida.Games.Correo
         private static readonly float[] SackBody = new Path().Move(-14f, -6f).Quad(-18f, 16f, 0f, 16f).Quad(18f, 16f, 14f, -6f).Array();
 
         /// <summary>El saco dorado de cartas (el de la nave del correo y el aviso «¡Llega un saco!»).</summary>
-        public static Sprite Sack() => Bake("sack", SackBox, SackBox, SmallPpd, (ref Px p, float x, float y) =>
+        public static Sprite Sack() => Art("saco") ?? Bake("sack", SackBox, SackBox, SmallPpd, (ref Px p, float x, float y) =>
         {
             float aa = 1f / SmallPpd;
             Fill(ref p, Polygon(x, y, SackBody), Hex(0xE8B85A), aa, 1.25f);
@@ -376,14 +403,15 @@ namespace NeuroVida.Games.Correo
 
         private static readonly float[] CheckPath = { -6f, 0f, -1.5f, 5f, 7f, -5f };
 
-        public static Sprite CheckOk() => Bake("checkOk", CheckBox, CheckBox, SmallPpd, (ref Px p, float x, float y) =>
+        /// <summary>La marca ✓ del resumen: la moneda verde de plasticina de lo común, o el círculo menta de siempre.</summary>
+        public static Sprite CheckOk() => PlasticArt.Get("comun", "marca_ok") ?? Bake("checkOk", CheckBox, CheckBox, SmallPpd, (ref Px p, float x, float y) =>
         {
             float aa = 1f / SmallPpd;
             p.Over(Hex(0x9FF5D6), Cover(Circle(x, y, 0f, 0f, 13f), aa));
             p.Over(InkC, Cover(Stroke(x, y, CheckPath, 1.75f), aa));
         });
 
-        public static Sprite CheckNo() => Bake("checkNo", CheckBox, CheckBox, SmallPpd, (ref Px p, float x, float y) =>
+        public static Sprite CheckNo() => Art("marca_raya") ?? Bake("checkNo", CheckBox, CheckBox, SmallPpd, (ref Px p, float x, float y) =>
         {
             float aa = 1f / SmallPpd;
             var coral = Hex(0xFFB4A0);

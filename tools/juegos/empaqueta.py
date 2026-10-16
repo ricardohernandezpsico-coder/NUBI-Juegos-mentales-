@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lleva los renders de Blender (y las losas del kit de la app) a Unity: un ATLAS por grupo, su manifiesto y los `.meta`, y mide cuánto pesa.
 
-Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|bodega|comun|nubi|todo> [--unity DIR] [--render DIR]
+Uso: python -I tools/juegos/empaqueta.py <radar|piloto|freno|calculo|disparate|satelites|rastro|stroop|punta|meteoros|parejas|bodega|correo|comun|nubi|todo> [--unity DIR] [--render DIR]
   - lee los PNG que dejó Blender en tools/juegos/out/<grupo>/ (y `medidas.json` si el script de Blender lo escribió);
   - `comun` toma además las losas del kit de la app (`app/src/main/res/drawable-nodpi/kit_losa_*.webp` + `res/raw/kit.json`: los insets del nine-slice) y la Nubi 3D (`nubi_3d.webp`) con su sombra;
   - escribe en unity/NeuroVidaCore/Assets/Resources/Plasticina/<grupo>/: `atlas.png`, `manifest.json` y sus `.meta` (GUID fijo por ruta: el mismo en cualquier PC), más los `.meta` de las carpetas.
@@ -267,9 +267,9 @@ def grupo_parejas():
 
 PX_DP_BODEGA = 160.0 / 20.0                      # la maestra de Bodega: 8 px por dp (la final, 4)
 
-def promedia_cuatro(nombre):
+def promedia_cuatro(nombre, grupo='bodega'):
     """Las cuatro maestras de una pieza que GIRA por código (`<nombre>_d0..3`: la luz del estudio girada 0°, 90°, 180° y 270°) promediadas con alfa premultiplicado: sin luz ni sombra direccional."""
-    ims = [np.asarray(Image.open(os.path.join(RENDER, 'bodega', f'{nombre}_d{k}.png')).convert('RGBA')).astype(np.float32) / 255.0 for k in range(4)]
+    ims = [np.asarray(Image.open(os.path.join(RENDER, grupo, f'{nombre}_d{k}.png')).convert('RGBA')).astype(np.float32) / 255.0 for k in range(4)]
     pm = [np.concatenate([x[..., :3] * x[..., 3:4], x[..., 3:4]], axis=2) for x in ims]
     m = sum(pm) / 4.0; al = m[..., 3:4]
     rgb = np.where(al > 1e-4, m[..., :3] / np.maximum(al, 1e-4), 0.0)
@@ -319,6 +319,34 @@ def grupo_bodega():
     for k in range(3): S.append(sprite(f'carro_{k}', carga_bodega(f'carro_{k}', 160), ppu=4.0))
     return S, med
 
+ANCHOS_CORREO = {'carta': 384, 'planeta': 256, 'dial': 128, 'puerta': 264, 'manija': 128, 'torre': 176, 'lampara': 112, 'nave': 400, 'saco': 160, 'raya': 128, 'reloj_base': 256, 'reloj_tapa': 200}
+
+def carga_correo(nombre, ancho, bruma=False, promedio=False):
+    """Un render de Correo: las piezas SIN suelo (flotan: planetas, lámparas, nave, saco, dial, manija, raya) no llevan bruma que limpiar; las de suelo (cartas, puerta, torre, reloj) sí. [promedio]: las cuatro luces del dial, que gira por código."""
+    im = promedia_cuatro(nombre, 'correo') if promedio else Image.open(os.path.join(RENDER, 'correo', nombre + '.png')).convert('RGBA')
+    if bruma: im = limpia_bruma(im)
+    return quita_ruido_alfa(reduce_premult(im, ancho), 6)
+
+def grupo_correo():
+    """La estación de correo: las 12 cartas (3 px por dp), los 4 planetas de los buzones, el dial (promedio de cuatro luces: gira), la puerta y la manija de la caja fuerte, la torre y las dos lámparas del faro, la nave, el saco, la marca de raya y el reloj (base, tapa y tapa presionada); 4 px por dp salvo las cartas.
+    Los buzones, la caja fuerte, el faro y las tarjetas son losas del atlas «comun»; el marco punteado, la barra del día, el propulsor y los resplandores siguen procedurales."""
+    S = []; med = []
+    for p in range(4):
+        for c in range(3): S.append(sprite(f'carta_{p}_{c}', carga_correo(f'carta_{p}_{c}', ANCHOS_CORREO['carta'], bruma=True), ppu=3.0))
+    for p in range(4): S.append(sprite(f'planeta_{p}', carga_correo(f'planeta_{p}', ANCHOS_CORREO['planeta']), ppu=4.0))
+    S.append(sprite('dial', carga_correo('dial', ANCHOS_CORREO['dial'], promedio=True), ppu=4.0))
+    S.append(sprite('caja_puerta', carga_correo('caja_puerta', ANCHOS_CORREO['puerta'], bruma=True), ppu=4.0))
+    S.append(sprite('manija', carga_correo('manija', ANCHOS_CORREO['manija']), ppu=4.0))
+    S.append(sprite('torre', carga_correo('torre', ANCHOS_CORREO['torre'], bruma=True), ppu=4.0))
+    for k in range(2): S.append(sprite(f'lampara_{k}', carga_correo(f'lampara_{k}', ANCHOS_CORREO['lampara']), ppu=4.0))
+    S.append(sprite('nave', carga_correo('nave', ANCHOS_CORREO['nave']), ppu=4.0))
+    S.append(sprite('saco', carga_correo('saco', ANCHOS_CORREO['saco']), ppu=4.0))
+    S.append(sprite('marca_raya', carga_correo('marca_raya', ANCHOS_CORREO['raya']), ppu=4.0))
+    S.append(sprite('reloj_base', carga_correo('reloj_base', ANCHOS_CORREO['reloj_base'], bruma=True), ppu=4.0))
+    S.append(sprite('reloj_tapa', carga_correo('reloj_tapa', ANCHOS_CORREO['reloj_tapa'], bruma=True), ppu=4.0))
+    S.append(sprite('reloj_tapa_p', carga_correo('reloj_tapa_p', ANCHOS_CORREO['reloj_tapa'], bruma=True), ppu=4.0))
+    return S, med
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -362,7 +390,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -550,7 +578,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Correo.Tests
 {
@@ -161,9 +162,16 @@ namespace NeuroVida.Games.Correo.Tests
         }
     }
 
-    /// <summary>El arte y el sonido de la estación: todo se hornea, se ve y suena (y ninguno trae símbolos que no van: docs/simbolos-neutros.md).</summary>
+    /// <summary>El arte y el sonido de la estación: todo se hornea, se ve y suena (y ninguno trae símbolos que no van: docs/simbolos-neutros.md). Estas pruebas miden píxeles del arte PROCEDURAL (el de respaldo, que se usa sin el atlas de plasticina),
+    /// así que corren con la plasticina apagada; lo mismo sobre el arte de plasticina lo miden <see cref="MailPlasticTests"/>.</summary>
     public class MailArtTests
     {
+        [SetUp]
+        public void SetUp() { PlasticArt.Disabled = true; }
+
+        [TearDown]
+        public void TearDown() { PlasticArt.Disabled = false; }
+
         private static Sprite Bake(Func<Sprite> f)
         {
             var s = f();
@@ -361,6 +369,24 @@ namespace NeuroVida.Games.Correo.Tests
                 Assert.IsEmpty(problems, "Piezas que no se verían: " + string.Join(" | ", problems));
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void TheAudit_AlsoPasses_WithoutThePlasticAtlas()
+        {
+            // sin el atlas todo cae al arte de siempre (los cuerpos, la puerta, el reloj, las tarjetas): nada puede quedar sin imagen
+            PlasticArt.Disabled = true;
+            var go = new GameObject("MailAuditProcedural");
+            try
+            {
+                var controller = go.AddComponent<MailGameController>();
+                var build = typeof(MailGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditVisibility();
+                Assert.IsEmpty(problems, "Piezas que no se verían sin plasticina: " + string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); PlasticArt.Disabled = false; }
         }
 
         private static MailGameController BuildController(GameObject go)

@@ -438,16 +438,34 @@ namespace NeuroVida.Games.Correo
                 b.Glow.color = new Color(PlanetGlow[i].r, PlanetGlow[i].g, PlanetGlow[i].b, deco ? pk * 0.8f : (pk > 0.2f ? 0.5f : 0f));
                 float R = Mathf.Min(28f, r.W * 0.3f);
                 SetChild(b.Planet.rectTransform, 0f, 60f - r.H / 2f - (deco ? pk * 3f : 0f), MailSprites.PlanetBox * R / MailSprites.PlanetR, MailSprites.PlanetBox * R / MailSprites.PlanetR);
+                if (b.Slab != null)                                                  // plasticina: tocado, el buzón se ve hundido (losa presionada, y la boca, el planeta y el nombre bajan con ella)
+                {
+                    bool down = b.Touch.Down;
+                    if (down != b.SlabDown) { b.SlabDown = down; PlasticSlab.Set(b.Slab, SlabSize.Button, SlabTone.Night, down); }
+                    b.Inner.anchoredPosition = new Vector2(0f, -b.Touch.Drop);
+                }
             }
         }
 
         private void AnimateButtons(float now)
         {
             bool deco = Motion.Decorative;
-            float ps = deco && now - _safePressAt < 0.14f ? 0.96f : 1f;
+            float ps = deco && !_plastic && now - _safePressAt < 0.14f ? 0.96f : 1f;               // con plasticina no se achica: se hunde (la losa presionada)
             _safeRoot.localScale = Vector3.one * ps;
-            float pb = deco && now - _beaconPressAt < 0.14f ? 0.96f : 1f;
+            float pb = deco && !_plastic && now - _beaconPressAt < 0.14f ? 0.96f : 1f;
             _beaconRoot.localScale = Vector3.one * pb;
+            if (_safeSlab != null)
+            {
+                bool down = _safeTouch.Down;
+                if (down != _safeSlabDown) { _safeSlabDown = down; PlasticSlab.Set(_safeSlab, SlabSize.Button, SlabTone.Night, down); }
+                _safeInner.anchoredPosition = new Vector2(0f, -_safeTouch.Drop);
+            }
+            if (_beaconSlab != null)
+            {
+                bool down = _beaconTouch.Down;
+                if (down != _beaconSlabDown) { _beaconSlabDown = down; PlasticSlab.Set(_beaconSlab, SlabSize.Button, SlabTone.Night, down); }
+                _beaconInner.anchoredPosition = new Vector2(0f, -_beaconTouch.Drop);
+            }
             // la caja fuerte: brilla al guardar un encargo (el dial gira) o con un encargo que se perdió
             bool ok = now - _safeOkAt < 0.9f, warn = now - _safeWarnAt < 1.5f;
             float a = ok ? (deco ? 0.9f : 0.6f) : warn ? (deco ? 0.6f + 0.4f * Mathf.Sin(now / 0.09f) : 0.6f) : 0f;
@@ -476,7 +494,13 @@ namespace NeuroVida.Games.Correo
         {
             bool open = now - _peekAt < MailContract.PeekSeconds;
             float k = open ? Mathf.Min(1f, Mathf.Min((now - _peekAt) / 0.16f, (MailContract.PeekSeconds - (now - _peekAt)) / 0.16f)) : 0f;
-            _clockCover.color = new Color(Violet.r, Violet.g, Violet.b, 1f - k);
+            var tint = _plastic ? Color.white : Violet;
+            _clockCover.color = new Color(tint.r, tint.g, tint.b, 1f - k);
+            if (_plastic && _clockTouch.Down != _clockPressedShown)
+            {
+                _clockPressedShown = _clockTouch.Down;
+                _clockCover.sprite = MailSprites.ClockCover(_clockPressedShown);
+            }
             _clockQ.color = new Color(InkEdge.r, InkEdge.g, InkEdge.b, 1f - k);
             _peekGroup.gameObject.SetActive(k > 0f);
             if (k <= 0f) return;
@@ -935,7 +959,8 @@ namespace NeuroVida.Games.Correo
                     ArtLabel(1, cx + 62f, cy + 40f, "a la caja fuerte");
                     break;
                 case MailIntro.Hora:
-                    ArtImage(DiscGlyph(), cx - 50f, cy, 52f, 52f, Violet);
+                    if (_plastic) ArtImage(MailSprites.ClockCover(), cx - 50f, cy, 52f * MailSprites.ClockCoverBox / MailSprites.ClockCoverDisc, 52f * MailSprites.ClockCoverBox / MailSprites.ClockCoverDisc);
+                    else ArtImage(DiscGlyph(), cx - 50f, cy, 52f, 52f, Violet);
                     ArtLabel(0, cx - 50f, cy + 1f, "?", 24f, InkEdge, true);
                     ArtBeacon(cx + 50f, cy);
                     break;
@@ -987,6 +1012,12 @@ namespace NeuroVida.Games.Correo
             Check("faro.cuerpo", _bBody, false); Check("faro.torre", _tower, true); Check("faro.lámpara", _lamp, true);
             Check("nave", _ship, true, false); Check("llama", _flame, true, false); Check("saco de la nave", _shipSack, true, false); Check("saco del aviso", _rushSack, true);
             Check("barra del día", _peekFill, true);
+            if (_plastic)
+            {
+                Check("reloj.base", _clockBase, true); Check("reloj.tapa (plasticina)", _clockCover, true);
+                Check("caja fuerte.losa", _safeSlab, true); Check("caja fuerte.puerta (plasticina)", _safeDoor, true); Check("caja fuerte.manija (plasticina)", _handle, true); Check("faro.losa", _beaconSlab, true);
+                if (_safeTouch == null || _beaconTouch == null || _clockTouch == null) problems.Add("falta el estado presionado de la caja fuerte, el faro o el reloj");
+            }
             foreach (var t in new[] { _hdrCards, _hint, _clockLabel, _safeLabel, _beaconLabel }) if (t == null || !t.gameObject.activeInHierarchy) problems.Add("texto fijo apagado");
             if (_boxes.Length != 4) problems.Add("faltan buzones");
             MailMoment? routine = null;
@@ -1000,6 +1031,7 @@ namespace NeuroVida.Games.Correo
                 {
                     Check("etapa " + level + " buzón " + i + ".cuerpo", _boxes[i].Body, false);
                     Check("etapa " + level + " buzón " + i + ".planeta", _boxes[i].Planet, true);
+                    if (_plastic) { Check("etapa " + level + " buzón " + i + ".losa", _boxes[i].Slab, true); if (_boxes[i].Touch == null) problems.Add("etapa " + level + " buzón " + i + ": sin estado presionado"); }
                     if (_boxes[i].Label.text.Length == 0) problems.Add("etapa " + level + " buzón " + i + ": sin nombre");
                 }
                 for (int i = day.Stage.Boxes; i < 4; i++) if (_boxes[i].Root.gameObject.activeSelf) problems.Add("etapa " + level + ": sobra el buzón " + i);

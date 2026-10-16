@@ -56,6 +56,10 @@ namespace NeuroVida.Games.Correo
             public Image Shadow, Rim, Body, Mouth, Planet, Glow;
             public Text Label;
             public float ShakeAt = -10f, PulseAt = -10f;
+            public RectTransform Inner;                 // lo que va sobre el cuerpo (la boca, el planeta, el nombre): baja lo que baja la losa presionada
+            public Image Slab;                          // la losa del kit (null sin plasticina)
+            public PlasticTouch Touch;
+            public bool SlabDown;
         }
 
         private sealed class FloatView
@@ -92,6 +96,12 @@ namespace NeuroVida.Games.Correo
         private readonly BoxView[] _boxes = new BoxView[4];
         // la caja fuerte y el faro
         private RectTransform _safeRoot, _beaconRoot;
+        // plasticina: los cuerpos son losas del kit (Resources/Plasticina/comun) y las piezas, las del atlas «correo»; sin el atlas todo cae al arte de siempre
+        private bool _plastic;
+        private RectTransform _safeInner, _beaconInner;                // lo que va ENCIMA del cuerpo de la caja fuerte y del faro: baja lo que baja la losa presionada
+        private Image _safeSlab, _beaconSlab, _clockBase;
+        private PlasticTouch _safeTouch, _beaconTouch, _clockTouch, _briefTouch, _recapTouch;
+        private bool _safeSlabDown, _beaconSlabDown, _clockPressedShown;
         private Image _safeShadow, _safeRim, _safeBody, _safeDoor, _safeDoorRim, _dial, _handle, _handleRim, _safeGlow;
         private Text _safeLabel;
         private Image _bShadow, _bRim, _bBody, _tower, _lamp, _lampGlow, _beaconGlow;
@@ -132,6 +142,7 @@ namespace NeuroVida.Games.Correo
 
         protected override void BuildUi()
         {
+            _plastic = MailSprites.Plastic && PlasticSlab.Available(SlabSize.Button, SlabTone.Night) && PlasticSlab.Available(SlabSize.Button, SlabTone.Lime) && PlasticSlab.Available(SlabSize.Button, SlabTone.Sky) && PlasticSlab.Available(SlabSize.Button, SlabTone.Dim);
             var canvasGo = new GameObject("MailCanvas");
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -299,13 +310,41 @@ namespace NeuroVida.Games.Correo
             b.Shadow = Rr(b.Root, "Shadow", new Color(0f, 0f, 0f, 0.35f), 18f);
             b.Rim = Rr(b.Root, "Rim", InkEdge, 19.5f);
             b.Body = Rr(b.Root, "Body", BoxFill, 18f);
-            b.Mouth = Rr(b.Root, "Mouth", BoxMouth, 6f);
-            b.Planet = MakeImage(b.Root, "Planet", null);
-            b.Label = MakeLabel(b.Root, "Label", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            b.Inner = Inner(b.Root, "Inner");
+            b.Mouth = Rr(b.Inner, "Mouth", BoxMouth, 6f);
+            b.Planet = MakeImage(b.Inner, "Planet", null);
+            b.Label = MakeLabel(b.Inner, "Label", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
             b.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
             b.Label.text = MailContract.PlanetNames[i];
+            if (_plastic)
+            {
+                b.Slab = PlasticSlab.Attach(b.Root, SlabSize.Button, SlabTone.Night);                      // el cuerpo del buzón es exactamente el rectángulo de la raíz; la losa sobresale por sus márgenes
+                b.Shadow.enabled = b.Rim.enabled = b.Body.enabled = false;                                  // quedan solo como rectángulos (el tutorial guiado señala el cuerpo)
+                b.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Night);
+            }
             go.SetActive(false);
             return b;
+        }
+
+        /// <summary>Un contenedor SIN tamaño en el centro de [parent]: lo que cuelga de él se coloca igual que si colgara de [parent], y todo se puede bajar junto (la losa presionada).</summary>
+        private static RectTransform Inner(Transform parent, string name)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var r = go.AddComponent<RectTransform>();
+            r.anchorMin = r.anchorMax = r.pivot = new Vector2(0.5f, 0.5f);
+            r.sizeDelta = Vector2.zero;
+            return r;
+        }
+
+        /// <summary>Con plasticina: la losa [tone] del kit en lugar del fondo [bg] (que queda invisible) y sin su borde de color [rim] (se apaga el dibujo, no el objeto: el resto del código lo enciende y apaga). Devuelve la losa, o null sin plasticina:
+        /// entonces el fondo y el borde de siempre.</summary>
+        private Image SlabInstead(Image bg, Image rim, SlabTone tone)
+        {
+            if (!_plastic) return null;
+            var slab = PlasticSlab.TryStyle(bg, SlabSize.Button, tone);
+            if (slab != null && rim != null) rim.enabled = false;
+            return slab;
         }
 
         private void BuildSafe(Transform parent)
@@ -319,15 +358,23 @@ namespace NeuroVida.Games.Correo
             _safeShadow = Rr(_safeRoot, "Shadow", new Color(0f, 0f, 0f, 0.35f), 20f);
             _safeRim = Rr(_safeRoot, "Rim", InkEdge, 21.5f);
             _safeBody = Rr(_safeRoot, "Body", Metal, 20f);
-            _safeDoorRim = Rr(_safeRoot, "DoorRim", InkEdge, 13f);
-            _safeDoor = Rr(_safeRoot, "Door", MetalDoor, 11.5f);
-            _dial = MakeImage(_safeRoot, "Dial", null);
-            _handleRim = Rr(_safeRoot, "HandleRim", InkEdge, 5f);
-            _handle = Rr(_safeRoot, "Handle", Gold, 3.5f);
-            _safeLabel = MakeLabel(_safeRoot, "Label", 17f, UiFonts.Bold, TextColor, TextAnchor.MiddleLeft);
+            _safeInner = Inner(_safeRoot, "Inner");
+            _safeDoorRim = Rr(_safeInner, "DoorRim", InkEdge, 13f);
+            _safeDoor = Rr(_safeInner, "Door", MetalDoor, 11.5f);
+            _dial = MakeImage(_safeInner, "Dial", null);
+            _handleRim = Rr(_safeInner, "HandleRim", InkEdge, 5f);
+            _handle = Rr(_safeInner, "Handle", Gold, 3.5f);
+            _safeLabel = MakeLabel(_safeInner, "Label", 17f, UiFonts.Bold, TextColor, TextAnchor.MiddleLeft);
             _safeLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             _safeLabel.lineSpacing = 1.05f;
             _safeLabel.text = MailContract.SafeLabelA + "\n" + MailContract.SafeLabelB;
+            if (_plastic)
+            {
+                _safeSlab = PlasticSlab.Attach(_safeRoot, SlabSize.Button, SlabTone.Night);
+                foreach (var im in new[] { _safeShadow, _safeRim, _safeBody, _safeDoorRim, _handleRim }) im.enabled = false;
+                _radii.RemoveAll(kv => kv.Key == _safeDoor || kv.Key == _handle);                         // la puerta y la manija de plasticina no se estiran por esquinas
+                _safeTouch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Night);
+            }
         }
 
         private void BuildBeacon(Transform parent)
@@ -341,19 +388,28 @@ namespace NeuroVida.Games.Correo
             _bShadow = Rr(_beaconRoot, "Shadow", new Color(0f, 0f, 0f, 0.35f), 20f);
             _bRim = Rr(_beaconRoot, "Rim", InkEdge, 21.5f);
             _bBody = Rr(_beaconRoot, "Body", Metal, 20f);
-            _lampBeamA = NewWedge(_beaconRoot, "BeamA");
-            _lampBeamB = NewWedge(_beaconRoot, "BeamB");
-            _tower = MakeImage(_beaconRoot, "Tower", null);
-            _lampGlow = MakeImage(_beaconRoot, "LampGlow", RadialGlowSprite.Get());
+            _beaconInner = Inner(_beaconRoot, "Inner");
+            _lampBeamA = NewWedge(_beaconInner, "BeamA");
+            _lampBeamB = NewWedge(_beaconInner, "BeamB");
+            _tower = MakeImage(_beaconInner, "Tower", null);
+            _lampGlow = MakeImage(_beaconInner, "LampGlow", RadialGlowSprite.Get());
             _lampGlow.color = new Color(1f, 226f / 255f, 122f / 255f, 0f);
-            _lamp = MakeImage(_beaconRoot, "Lamp", null);
-            _beaconLabel = MakeLabel(_beaconRoot, "Label", 17f, UiFonts.Bold, TextColor, TextAnchor.MiddleLeft);
+            _lamp = MakeImage(_beaconInner, "Lamp", null);
+            _beaconLabel = MakeLabel(_beaconInner, "Label", 17f, UiFonts.Bold, TextColor, TextAnchor.MiddleLeft);
             _beaconLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             _beaconLabel.text = MailContract.BeaconLabel;
+            if (_plastic)
+            {
+                _beaconSlab = PlasticSlab.Attach(_beaconRoot, SlabSize.Button, SlabTone.Night);
+                foreach (var im in new[] { _bShadow, _bRim, _bBody }) im.enabled = false;
+                _beaconTouch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Night);
+            }
         }
 
         private void BuildClock(Transform parent)
         {
+            _clockBase = MakeImage(parent, "ClockBase", null);
+            _clockBase.gameObject.SetActive(_plastic);
             _clockShadow = MakeImage(parent, "ClockShadow", DiscSprite.Get());
             _clockShadow.color = new Color(0f, 0f, 0f, 0.35f);
             _clockRim = MakeImage(parent, "ClockRim", DiscSprite.Get());
@@ -362,6 +418,11 @@ namespace NeuroVida.Games.Correo
             _clockFill.color = new Color(43f / 255f, 49f / 255f, 112f / 255f);
             _clockCover = MakeImage(parent, "ClockCover", DiscSprite.Get());
             _clockCover.color = Violet;
+            if (_plastic)
+            {
+                foreach (var im in new[] { _clockShadow, _clockRim, _clockFill }) im.enabled = false;      // la base de plasticina trae el aro, el fondo y la sombra; los rectángulos quedan para el tutorial guiado
+                _clockTouch = PlasticTouch.On(_clockCover.gameObject, SlabSize.Button, SlabTone.Night);
+            }
             _clockQ = MakeLabel(parent, "ClockQ", 24f, UiFonts.Bold, InkEdge, TextAnchor.MiddleCenter);
             _clockQ.horizontalOverflow = HorizontalWrapMode.Overflow;
             _clockQ.text = "?";
@@ -402,6 +463,7 @@ namespace NeuroVida.Games.Correo
             _rushGroup.blocksRaycasts = false;
             _rushRim = Rr(rr, "Rim", Gold, 17f);
             _rushBg = Rr(rr, "Bg", new Color(Deep.r, Deep.g, Deep.b, 0.95f), 16f);
+            SlabInstead(_rushBg, _rushRim, SlabTone.Night);
             _rushSack = MakeImage(rr, "Sack", null);
             _rushT = MakeLabel(rr, "Title", 19f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
             _rushS = MakeLabel(rr, "Sub", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
@@ -418,6 +480,7 @@ namespace NeuroVida.Games.Correo
             _radioGroup.blocksRaycasts = false;
             _radioRim = Rr(rd, "Rim", Violet, 17f);
             _radioBg = Rr(rd, "Bg", new Color(Deep.r, Deep.g, Deep.b, 0.96f), 16f);
+            SlabInstead(_radioBg, _radioRim, SlabTone.Night);
             _radioTag = MakeLabel(rd, "Tag", 15f, UiFonts.Bold, Violet, TextAnchor.MiddleCenter);
             _radioText = MakeLabel(rd, "Text", 15f, UiFonts.Bold, TextColor, TextAnchor.MiddleCenter);
             _radioTag.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -435,6 +498,7 @@ namespace NeuroVida.Games.Correo
             _peekGroup.blocksRaycasts = false;
             _peekRim = Rr(r, "Rim", new Color(Violet.r, Violet.g, Violet.b, 0.6f), 21f);
             _peekBg = Rr(r, "Bg", new Color(Deep.r, Deep.g, Deep.b, 0.95f), 20f);
+            SlabInstead(_peekBg, _peekRim, SlabTone.Night);
             _peekTitle = MakeLabel(r, "Title", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _peekTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
             _peekTitle.text = MailContract.ClockPanel;
@@ -487,6 +551,7 @@ namespace NeuroVida.Games.Correo
             r.Root.anchorMin = r.Root.anchorMax = r.Root.pivot = new Vector2(0.5f, 0.5f);
             r.CardRim = Rr(r.Root, "Rim", new Color(142f / 255f, 131f / 255f, 216f / 255f, 0.35f), 19f);
             r.Card = Rr(r.Root, "Card", PanelFill, 18f);
+            SlabInstead(r.Card, r.CardRim, SlabTone.Night);
             r.Icon = MakeImage(r.Root, "Icon", null);
             r.Check = MakeImage(r.Root, "Check", null);
             r.A = MakeLabel(r.Root, "A", brief ? 15f : 16f, brief ? UiFonts.Regular : UiFonts.Bold, brief ? Soft : TextColor, TextAnchor.MiddleLeft);
@@ -521,6 +586,7 @@ namespace NeuroVida.Games.Correo
             for (int i = 0; i < _briefRows.Length; i++) _briefRows[i] = BuildRow(_briefLayer, "Row" + i, true);
             _routineCardRim = Rr(_briefLayer, "RoutineRim", new Color(Violet.r, Violet.g, Violet.b, 0.6f), 19f);
             _routineCard = Rr(_briefLayer, "RoutineCard", PanelFill, 18f);
+            SlabInstead(_routineCard, _routineCardRim, SlabTone.Night);
             _routineT1 = MakeLabel(_briefLayer, "RoutineT1", 16f, UiFonts.Bold, Violet, TextAnchor.MiddleCenter);
             _routineT2 = MakeLabel(_briefLayer, "RoutineT2", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _routineT1.text = MailContract.RoutineTitle;
@@ -532,6 +598,7 @@ namespace NeuroVida.Games.Correo
             foreach (var t in new[] { _briefTag, _briefTitle, _routineT1, _routineT2, _briefNote1, _briefNote2 }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             _briefBtn = BigButton(_briefLayer, "BriefBtn", Lime, out _briefBtnRim, out _briefBtnLabel);
             _briefBtnLabel.text = MailContract.BriefStart;
+            _briefTouch = PlasticTouch.On(_briefBtn.gameObject, SlabInstead(_briefBtn, _briefBtnRim, SlabTone.Lime), SlabSize.Button, SlabTone.Lime, _briefBtnLabel.rectTransform);
             _briefLayer.gameObject.SetActive(false);
         }
 
@@ -550,6 +617,7 @@ namespace NeuroVida.Games.Correo
             _recapUp = MakeLabel(_recapLayer, "Up", 15f, UiFonts.Bold, Mint, TextAnchor.MiddleCenter);
             foreach (var t in new[] { _recapTag, _recapTitle, _recapLine1, _recapLine2, _recapRecord, _recapUp }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             _recapBtn = BigButton(_recapLayer, "RecapBtn", Cyan, out _recapBtnRim, out _recapBtnLabel);
+            _recapTouch = PlasticTouch.On(_recapBtn.gameObject, SlabInstead(_recapBtn, _recapBtnRim, SlabTone.Sky), SlabSize.Button, SlabTone.Sky, _recapBtnLabel.rectTransform);
             _recapLayer.gameObject.SetActive(false);
         }
 
@@ -561,8 +629,10 @@ namespace NeuroVida.Games.Correo
             _dim.raycastTarget = false;
             _introRim = Rr(_introLayer, "CardRim", Gold, 28f);
             _introCard = Rr(_introLayer, "Card", PanelFill, 26f);
+            SlabInstead(_introCard, _introRim, SlabTone.Night);
             for (int i = 0; i < IntroPool; i++) _introImgs.Add(MakeImage(_introLayer, "Art" + i, null, false));
             _introBox = Rr(_introLayer, "ArtBox", new Color(Deep.r, Deep.g, Deep.b, 0.96f), 14f);
+            SlabInstead(_introBox, null, SlabTone.Dim);
             for (int i = 0; i < 3; i++) _introLabels.Add(MakeLabel(_introLayer, "ArtLabel" + i, 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter));
             foreach (var t in _introLabels) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.gameObject.SetActive(false); }
             _introTag = MakeLabel(_introLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
@@ -588,6 +658,7 @@ namespace NeuroVida.Games.Correo
             _endTitle = MakeLabel(_endLayer, "Title", 30f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _endCardRim = Rr(_endLayer, "CardRim", new Color(Gold.r, Gold.g, Gold.b, 0.6f), 23f);
             _endCard = Rr(_endLayer, "Card", PanelFill, 22f);
+            SlabInstead(_endCard, _endCardRim, SlabTone.Night);
             _endHead = MakeLabel(_endLayer, "Head", 15f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _endPct = MakeLabel(_endLayer, "Pct", 42f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endSub = MakeLabel(_endLayer, "Sub", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
@@ -701,6 +772,15 @@ namespace NeuroVida.Games.Correo
             _peekFill.sprite = MailSprites.DayBar();
             for (int i = 0; i < _boxes.Length; i++) _boxes[i].Planet.sprite = MailSprites.Planet(i);
             foreach (var v in _lv) v.Img.sprite = MailSprites.Letter(0, MailCue.None);
+            if (!_plastic) return;
+            _safeDoor.sprite = MailSprites.Door();
+            _safeDoor.type = Image.Type.Simple;
+            _safeDoor.color = Color.white;
+            _handle.sprite = MailSprites.Handle();
+            _handle.type = Image.Type.Simple;
+            _handle.color = Color.white;
+            _clockBase.sprite = MailSprites.ClockBase();
+            _clockCover.sprite = MailSprites.ClockCover(false);
         }
 
         // ------------------------------------------------------------------ disposición
@@ -761,6 +841,11 @@ namespace NeuroVida.Games.Correo
             SetChild(_dial.rectTransform, wx, wy, MailSprites.DialBox, MailSprites.DialBox);
             SetChild(_handleRim.rectTransform, wx, wy + 8f + 20f - 4f, 30f, 9f);
             SetChild(_handle.rectTransform, wx, wy + 8f + 20f - 4f, 28f, 7f);
+            if (_plastic)
+            {
+                SetChild(_safeDoor.rectTransform, -m.Safe.W / 2f + 10f + 31f, 0f, MailSprites.DoorBoxW, MailSprites.DoorBoxH);                // el lienzo de la puerta trae 2 dp de sombra por lado
+                SetChild(_handle.rectTransform, wx, wy + 8f + 20f - 4f, MailSprites.HandleBoxW, MailSprites.HandleBoxH);
+            }
             SetChild(_safeLabel.rectTransform, -m.Safe.W / 2f + 82f + 36f, 0f, 76f, 46f);
             // el faro: la torre y su lámpara
             float fx = -m.Beacon.W / 2f + 40f, fy = 4f;
@@ -774,7 +859,9 @@ namespace NeuroVida.Games.Correo
             SetRect(_clockShadow.rectTransform, m.ClockCx + 2f, m.ClockCy + 4f, MailLayout.ClockR * 2f, MailLayout.ClockR * 2f);
             SetRect(_clockRim.rectTransform, m.ClockCx, m.ClockCy, MailLayout.ClockR * 2f + 3f, MailLayout.ClockR * 2f + 3f);
             SetRect(_clockFill.rectTransform, m.ClockCx, m.ClockCy, MailLayout.ClockR * 2f - 3f, MailLayout.ClockR * 2f - 3f);
-            SetRect(_clockCover.rectTransform, m.ClockCx, m.ClockCy, MailLayout.ClockR * 2f - 8f, MailLayout.ClockR * 2f - 8f);
+            float cover = _plastic ? (MailLayout.ClockR * 2f - 8f) * MailSprites.ClockCoverBox / MailSprites.ClockCoverDisc : MailLayout.ClockR * 2f - 8f;           // el disco de la tapa mide lo de siempre dentro de su lienzo
+            SetRect(_clockCover.rectTransform, m.ClockCx, m.ClockCy, cover, cover);
+            SetRect(_clockBase.rectTransform, m.ClockCx, m.ClockCy, MailSprites.ClockBaseBox, MailSprites.ClockBaseBox);
             SetRect(_clockQ.rectTransform, m.ClockCx, m.ClockCy + 1f, 40f, 34f);
             SetRect(_clockLabel.rectTransform, m.ClockCx, m.LabelY, 60f, 22f);
             SetRect(_hint.rectTransform, MailLayout.W / 2f, m.HintY, 300f, 22f);
