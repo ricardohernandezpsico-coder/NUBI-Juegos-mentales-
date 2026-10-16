@@ -14,6 +14,7 @@ hexágono, una gota o una ola están bien. Lámina para ver el resultado: [`docs
 | Cartas de Parejas (dorso) | destello central de 4 puntas | lucero redondo |
 | Bitácora de Misión, hallazgo 14 | «una estrella de mar» (estrella de 5 puntas) | «una flor» (seis pétalos redondos) |
 | Meteoros: el lucero de la constelación (`StarLit` / `StarDim`) | estrella de 5 puntas | lucero redondo |
+| Constelaciones: los paneles del satélite (`ConstelacionSprites`, su render de plasticina y `SymbolSprite.DrawSatellite`; Tarea 106, 15-oct) | una división en «+» (una raya vertical y una horizontal en cada panel: se lee como cruz) | **tres rayas paralelas** verticales; nada atraviesa el panel (lo vigilan `TheSatellitePanels_HaveThreeParallelStripes_NotAPlusSign` en `ConstelacionArtTests` y `ConstelacionPlasticTests`). Revisados sin cruces: el satélite de Satélites (una raya por panel), la antena de Disparate, y los atlas de Piloto, Rescate, Freno, Carga exacta, Rastro de luz, En la punta de la lengua, Meteoros, Tinta o Palabra y lo común (la ✗ de «error» es una marca de respuesta, no un símbolo) |
 | Aterrizaje Lunar: la bandera del blanco | estrella de 5 puntas | punto redondo |
 | Rumbo a Casa: el faro de la base | estrella de 4 puntas | lucero redondo con su aro |
 | `SparkleSprite` (el «brillo» de cuenta regresiva, celebraciones, racha y cielo) y el brillo de La estrella intrusa | destello de 4 puntas | brillo redondo (núcleo con halo) |

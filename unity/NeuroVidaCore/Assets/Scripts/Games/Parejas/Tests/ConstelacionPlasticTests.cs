@@ -212,6 +212,24 @@ namespace NeuroVida.Games.Parejas.Tests
         }
 
         [Test]
+        public void TheSatellitePanels_HaveThreeParallelStripes_NotAPlusSign()
+        {
+            // regla de símbolos neutros (docs/simbolos-neutros.md): una división en «+» se lee como cruz; cada panel lleva tres rayas verticales y nada atravesado
+            var im = Obj(7, 0);
+            float L(float x, float yUp) => Luminance(im.At(Mathf.RoundToInt(im.W / 2f + x * im.Ppu), Mathf.RoundToInt(im.H / 2f + yUp * im.Ppu)));
+            foreach (float cx in new[] { -14.5f, 14.5f })
+            {
+                foreach (float dx in new[] { -3.5f, 0f, 3.5f })
+                {
+                    Assert.Greater(L(cx + dx, 0f), L(cx + dx + 1.75f, 0f) + 0.08f, "una raya clara a " + (cx + dx) + " (el hueco de al lado es el panel)");
+                    Assert.AreEqual(L(cx + dx, 0f), L(cx + dx, 3.5f), 0.08f, "la raya sigue arriba y abajo: es vertical");
+                }
+                Assert.AreEqual(L(cx + 1.75f, 0f), L(cx + 1.75f, 3.5f), 0.05f, "nada cruza el panel de lado a lado: no hay «+»");
+                Assert.AreEqual(L(cx - 1.75f, 0f), L(cx - 1.75f, -3.5f), 0.05f);
+            }
+        }
+
+        [Test]
         public void NoTwoObjectsLookAlikeInLuminance_SoNothingDependsOnColorAlone()
         {
             var all = new System.Collections.Generic.List<(string name, Img im)>();

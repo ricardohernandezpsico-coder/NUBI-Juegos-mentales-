@@ -232,8 +232,8 @@ def satelite(v):
         for sx in (-1, 1):
             cx = 14.5 * sx
             capa(KP(caja_sk(cx, 0, 6.5, 6, 0)), '#5B8DEF', 1, 'panel', bis=0.025)
-            capa(KP(caja_sk(cx, 0, 0.7, 5.2, 0)), '#B7CDFF', 2, 'rejilla_v', bis=0.012)
-            capa(KP(caja_sk(cx, 0, 5.6, 0.7, 0)), '#B7CDFF', 2, 'rejilla_h', bis=0.012)
+            for dx in (-3.5, 0.0, 3.5):                                                      # tres rayas paralelas (verticales) en cada panel: un «+» se lee como cruz (docs/simbolos-neutros.md)
+                capa(KP(caja_sk(cx + dx, 0, 0.7, 5.0, 0)), '#B7CDFF', 2, 'raya', bis=0.012)
         capa(KP(caja_sk(0, 0, 6, 8, 3)), '#FFC94A', 3, 'cuerpo', bis=0.04)
         tinta_capa(segmento((0, -8), (0, -14), 1.2), 1, 'mastil')
         capa(KP(circ_sk(0, -15, 2.7, 32)), '#E2524A', 3, 'bolita', bis=0.04)

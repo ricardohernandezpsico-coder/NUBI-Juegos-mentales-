@@ -274,9 +274,9 @@ namespace NeuroVida.Games.Parejas
             {
                 float cx = sx < 0 ? -14.5f : 14.5f;
                 Fill(ref p, RoundBox(x, y, cx, 0f, 6.5f, 6f, 0f), Hex(0x5B8DEF), aa);
+                // tres rayas paralelas (verticales) en cada panel: un «+» se lee como cruz (docs/simbolos-neutros.md)
                 var grid = new Color(1f, 1f, 1f, 0.45f);
-                p.Over(grid, Cover(Capsule(x, y, cx, -6f, cx, 6f, 0.6f), aa));
-                p.Over(grid, Cover(Capsule(x, y, sx < 0 ? -21f : 8f, 0f, sx < 0 ? -8f : 21f, 0f, 0.6f), aa));
+                foreach (float off in new[] { -3.5f, 0f, 3.5f }) p.Over(grid, Cover(Capsule(x, y, cx + off, -5f, cx + off, 5f, 0.6f), aa));
             }
             Fill(ref p, RoundBox(x, y, 0f, 0f, 6f, 8f, 3f), Hex(0xFFC94A), aa);
             Line(ref p, Capsule(x, y, 0f, -8f, 0f, -14f, 1f), aa);

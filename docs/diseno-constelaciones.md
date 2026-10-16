@@ -298,6 +298,8 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: las reglas, el DDA, los t
 | la **luz abierta** (`abierta`): disco claro de arcilla | |
 | la **tarjeta de arriba** y la **de entrada**: losas «noche» del kit (el panel del final ya lo era desde la fase 0) | |
 
+**El satélite** lleva tres rayas paralelas (verticales) en cada panel, no una división en «+» (regla de símbolos neutros: se leía como cruz); lo mismo en el dibujo procedural de respaldo y en `SymbolSprite`.
+
 **Los gemelos** (el detalle sigue siendo GRANDE y de forma): planeta sin anillo (el anillo es un toro de verdad inclinado alrededor de una esfera, que flota), cohete con llama grande, ovni con patas y casco con antena. **Los dos objetos de silueta redonda** (luna y brújula) se distinguen por dentro (cráteres hundidos / aguja de dos puntas), no por el color.
 
 **Al tocar una luz** (regla del 14-oct): la luz dormida que se toca se ve **presionada** al menos 80 ms (`ConstelacionMotion.PressedSeconds` = `PlasticTouch.MinSeconds`) y recién entonces se voltea; con «quitar animaciones» también (el volteo es instantáneo, pero la luz hundida se ve esos 80 ms). El estado del juego no espera: la luz ya cuenta como abierta y el tiempo de reacción se mide igual. Sin el atlas se queda el achicado a 0,94 de siempre.

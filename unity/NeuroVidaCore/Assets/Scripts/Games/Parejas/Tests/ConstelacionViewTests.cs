@@ -192,6 +192,28 @@ namespace NeuroVida.Games.Parejas.Tests
         }
 
         [Test]
+        public void TheSatellitePanels_HaveThreeParallelStripes_NotAPlusSign()
+        {
+            // regla de símbolos neutros (docs/simbolos-neutros.md): una división en «+» se lee como cruz; cada panel lleva tres rayas verticales y nada atravesado
+            var s = ConstelacionSprites.Object(7, 0);
+            float L(float x, float yUp)
+            {
+                var t = s.texture; var c = t.GetPixel(Mathf.RoundToInt(t.width / 2f + x * s.pixelsPerUnit), Mathf.RoundToInt(t.height / 2f + yUp * s.pixelsPerUnit));
+                return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+            }
+            foreach (float cx in new[] { -14.5f, 14.5f })
+            {
+                foreach (float dx in new[] { -3.5f, 0f, 3.5f })
+                {
+                    Assert.Greater(L(cx + dx, 0f), L(cx + dx + 1.75f, 0f) + 0.08f, "una raya clara a " + (cx + dx) + " (el hueco de al lado es el panel)");
+                    Assert.AreEqual(L(cx + dx, 0f), L(cx + dx, 3.5f), 0.06f, "la raya sigue arriba y abajo: es vertical");
+                }
+                Assert.AreEqual(L(cx + 1.75f, 0f), L(cx + 1.75f, 3.5f), 0.04f, "nada cruza el panel de lado a lado: no hay «+»");
+                Assert.AreEqual(L(cx - 1.75f, 0f), L(cx - 1.75f, -3.5f), 0.04f);
+            }
+        }
+
+        [Test]
         public void TheDoneRings_OneIsContinuousGold_AndTheOtherIsDashedCyan_SoItDoesNotDependOnColorAlone()
         {
             float radius = ConstelacionSprites.BakeR + 5f;

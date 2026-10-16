@@ -335,7 +335,7 @@ namespace NeuroVida.Games.Parejas
             p.Part(Circle(x, y, 0.50f, -0.04f, 0.07f), Sun, ThinLine);
         }
 
-        /// <summary>Satélite inclinado: cuerpo, dos paneles solares con su grilla y antena.</summary>
+        /// <summary>Satélite inclinado: cuerpo, dos paneles solares con sus tres rayas y antena.</summary>
         private static void DrawSatellite(ref Pen p, float x, float y, Color main)
         {
             Rotate(x, y, 0f, 0f, 0.42f, out float u, out float v);
@@ -343,7 +343,7 @@ namespace NeuroVida.Games.Parejas
             float au = Mathf.Abs(u);
             float panel = RoundBox(au, v, 0.64f, 0f, 0.28f, 0.22f, 0.05f);
             p.Part(panel, Blue);
-            float grid = Mathf.Min(Mathf.Abs(au - 0.64f), Mathf.Abs(v)) - 0.02f;
+            float grid = Mathf.Min(Mathf.Min(Mathf.Abs(au - 0.64f), Mathf.Abs(au - 0.52f)), Mathf.Abs(au - 0.76f)) - 0.02f;      // tres rayas paralelas, no un «+» (que se lee como cruz: docs/simbolos-neutros.md)
             p.Fill(Intersect(grid, panel + 0.02f), WithAlpha(Ink, 0.85f));
             p.Gloss(au, v, 0.56f, 0.12f, 0.12f, 0.04f, panel);
 
