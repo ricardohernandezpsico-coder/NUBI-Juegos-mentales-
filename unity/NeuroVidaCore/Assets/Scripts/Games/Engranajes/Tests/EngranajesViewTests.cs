@@ -288,6 +288,22 @@ namespace NeuroVida.Games.Engranajes.Tests
         }
 
         [Test]
+        public void ATouchWithAllTheKeysUsed_ChangesNothing_ShowsTheCoinAndTheNotice_AndAnUndoStillWorks()
+        {
+            var go = new GameObject("EngranajesBlocked");
+            try
+            {
+                var controller = go.AddComponent<EngranajesGameController>();
+                var build = typeof(EngranajesGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditBlockedTouch();
+                Assert.IsEmpty(problems, string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void TheController_UsesOnlyTheGameClock_SoThePauseStopsEverything()
         {
             // la pausa detiene GameClock: nada del juego puede medir el tiempo con otro reloj ni esperar con WaitForSeconds (que seguiría corriendo)

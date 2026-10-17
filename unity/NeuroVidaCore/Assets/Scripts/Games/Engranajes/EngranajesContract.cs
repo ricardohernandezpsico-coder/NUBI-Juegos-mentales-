@@ -525,6 +525,37 @@ namespace NeuroVida.Games.Engranajes
             return null;
         }
 
+        // ------------------------------------------------------------------ tocar un interruptor (Tarea 114)
+
+        /// <summary>Qué pasó al tocar el motor o una correa: se hizo un cambio, se deshizo uno ya hecho, o NO pasó nada porque ya están todas las llaves usadas.</summary>
+        public enum TouchOutcome { Added, Undone, Blocked }
+
+        /// <summary>
+        /// La regla de las llaves. Tocar algo ya cambiado lo DESHACE; tocar algo sin cambiar lo hace si queda una llave libre; con todas las llaves usadas NO CAMBIA NADA (antes movía la llave en silencio: se deshacía el cambio más antiguo y se hacía el nuevo, y la máquina «se desconfiguraba»).
+        /// </summary>
+        public static TouchOutcome Touch(IList<int> changes, int id, int keys)
+        {
+            int at = changes.IndexOf(id);
+            if (at >= 0)
+            {
+                changes.RemoveAt(at);
+                return TouchOutcome.Undone;
+            }
+            if (changes.Count >= keys) return TouchOutcome.Blocked;
+            changes.Add(id);
+            return TouchOutcome.Added;
+        }
+
+        /// <summary>El aviso de un toque bloqueado, línea 1: «Ya usaste tu cambio» o «Ya usaste tus 2 cambios».</summary>
+        public static string BlockedTitle(int keys) => keys <= 1 ? "Ya usaste tu cambio" : "Ya usaste tus " + keys + " cambios";
+
+        /// <summary>El aviso de un toque bloqueado, línea 2: dónde tocar para deshacer. Con una llave nombra lo cambiado (el motor o la correa dorada); con dos, «uno de ellos».</summary>
+        public static string BlockedHint(IReadOnlyList<int> changes, int keys)
+        {
+            if (keys > 1) return "Toca uno de ellos para deshacerlo";
+            return changes.Count > 0 && changes[0] == MotorId ? "Toca el motor otra vez para deshacerlo" : "Toca la correa dorada otra vez para deshacerlo";
+        }
+
         // ------------------------------------------------------------------ dientes que encajan
 
         /// <summary>El ángulo del diente de <paramref name="gj"/> para que, mirando a <paramref name="gi"/>, cada diente de uno quede frente al hueco del otro.</summary>

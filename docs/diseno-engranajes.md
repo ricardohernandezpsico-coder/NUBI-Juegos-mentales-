@@ -152,10 +152,13 @@ En «cualquier grupo», el grupo «todas fallan», que se arregla con el motor, 
 - **El motor:** se toca el engranaje o su rótulo «MOTOR». La flecha se da vuelta con un giro de 0,3 s y queda dorada.
 - **Una correa:** se toca la correa misma, a 26 u o menos de su línea. Se cruza o se descruza con una animación de 0,32 s y
   queda dorada.
-- **Llaves:**
+- **Llaves** (cambiado el 16-oct, Tarea 114, a pedido de Ricardo: antes, con todas las llaves usadas, tocar otra cosa *movía* la llave en silencio —se deshacía el cambio más antiguo y se hacía el nuevo— y «desconfiguraba todo»):
   - Tocar algo ya cambiado lo deshace.
-  - Con todas las llaves usadas, tocar otra cosa **mueve** la llave: se deshace el cambio más antiguo y se hace el nuevo.
-    No hay mensaje de error.
+  - Con todas las llaves usadas, tocar el motor o una correa NO cambiados **no cambia nada** (`EngranajesContract.Touch` → `Blocked`).
+  - Sobre lo tocado aparece ~1 s la **moneda coral con la aspa** (la de lo común), con una sacudida corta de 0,3 s (con «quitar animaciones» solo aparece y se apaga).
+  - El contador de llaves **late una vez** (el color; el tamaño solo con movimiento), suena el **golpe suave** de «no» (el sordo del cartel que falla, a 0,4) y vibra corto si la vibración está activa.
+  - El aviso de abajo (el mismo de «La turbina giró al revés…») nombra lo cambiado: «Ya usaste tu cambio» y, debajo, «Toca el motor otra vez para deshacerlo» o «Toca la correa dorada otra vez para deshacerlo»; con dos llaves, «Ya usaste tus 2 cambios» y «Toca uno de ellos para deshacerlo».
+  - **No es un error**: no cuenta como fallo, no toca el DDA ni las medidas y no agrega campos de telemetría. La solución guardada nunca pide más cambios que llaves, así que la regla no deja a nadie sin salida (lo vigila `EveryStageGeneratedWithKeys_CanBeSolvedWithoutNeedingToMoveAKey`).
 - **Contador de cambios**, abajo a la izquierda: «1 cambio» o «2 cambios», con llaves inglesas que se llenan de dorado al
   usarlas.
 - **Arrancar:** botón grande con un triángulo de «play», abajo a la derecha. Está siempre activo, también sin cambios,

@@ -591,23 +591,28 @@ namespace NeuroVida.Games.Engranajes
             _startRequested = true;
         }
 
-        /// <summary>Hace (o deshace) un cambio. Tocar algo ya cambiado lo deshace; con todas las llaves usadas, tocar otro interruptor MUEVE la llave: se deshace el cambio más antiguo, sin error.</summary>
+        /// <summary>Hace (o deshace) un cambio (<see cref="EngranajesContract.Touch"/>). Tocar algo ya cambiado lo deshace; con todas las llaves usadas, tocar otro interruptor NO CAMBIA NADA y avisa (<see cref="RejectTouch"/>): no es un error, no toca el DDA ni las medidas.</summary>
         private void ToggleSwitch(int id)
         {
             float now = GameClock.Time;
-            if (_changes.Contains(id)) _changes.Remove(id);
-            else
+            if (EngranajesContract.Touch(_changes, id, _mach.Stage.Keys) == EngranajesContract.TouchOutcome.Blocked)
             {
-                if (_changes.Count >= _mach.Stage.Keys)
-                {
-                    int old = _changes[0];
-                    _changes.RemoveAt(0);
-                    FlipSwitch(old, now);
-                }
-                _changes.Add(id);
+                RejectTouch(id, now);
+                return;
             }
             FlipSwitch(id, now);
             PlayClip(EngranajesSounds.Clank(), 0.7f);
+        }
+
+        /// <summary>Un toque con todas las llaves usadas: la moneda coral con la aspa sobre lo tocado (~1 s, con una sacudida corta salvo con «quitar animaciones»), el contador de llaves late una vez, suena el golpe suave de «no», vibra corto si la vibración está activa y el aviso de abajo dice qué se cambió y cómo deshacerlo.</summary>
+        private void RejectTouch(int id, float now)
+        {
+            _blockAt = now;
+            _blockId = id;
+            _counterPulseAt = now;
+            PlayClip(EngranajesSounds.Thud(), 0.4f);
+            GameFeel.Haptic(GameFeel.HapticKind.Light);
+            Tell(EngranajesContract.BlockedTitle(_mach.Stage.Keys), EngranajesContract.BlockedHint(_changes, _mach.Stage.Keys), false);
         }
 
         private void FlipSwitch(int id, float now)
@@ -635,7 +640,7 @@ namespace NeuroVida.Games.Engranajes
 
         private void PlayClip(AudioClip clip, float volume)
         {
-            if (clip == null || !GameFeel.SoundOn) return;
+            if (clip == null || _audioSource == null || !GameFeel.SoundOn) return;
             if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
             _audioSource.PlayOneShot(clip, volume);
         }

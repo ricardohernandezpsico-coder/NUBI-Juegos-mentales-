@@ -84,6 +84,8 @@ namespace NeuroVida.Games.Engranajes
 
         // ------------------------------------------------------------------ piezas
 
+        private Image _blockCoin;                                                      // la moneda coral con la aspa de un toque bloqueado (con las llaves usadas)
+        private const float BlockCoinDp = 30f, BlockCoinSeconds = 1f;
         private RectTransform _safe, _play, _stripLayer, _sceneRoot, _rocketRoot, _machineLayer, _uiLayer, _fxLayer, _introLayer, _launchLayer, _questionBar, _counterRoot;
         private RectTransform _timerTrack, _timerHead, _motorArrowRect;
         private Image _timerFill, _questionBg, _counterBg;
@@ -336,6 +338,7 @@ namespace NeuroVida.Games.Engranajes
             _motorPill = BuildPill(_machineLayer, "MotorLabel", 62f, 24f, ButtonFill, ButtonText, 14f);
             _motorPill.Label.text = "MOTOR";
             for (int s = 0; s < _cartels.Length; s++) _cartels[s] = BuildCartel(_machineLayer, "Cartel" + (Station)s);
+            _blockCoin = SceneImage(_machineLayer, "BlockCoin", null, 0f, 0f, BlockCoinDp, BlockCoinDp, false);                  // la moneda coral con la aspa de un toque bloqueado: encima de todo lo de la máquina
             _machineLayer.gameObject.SetActive(false);
             _sceneRoot.gameObject.SetActive(false);        // hasta que se horneen los sprites
         }
@@ -715,6 +718,8 @@ namespace NeuroVida.Games.Engranajes
                 c.Check.rectTransform.sizeDelta = c.Cross.rectTransform.sizeDelta = Vector2.one * ((coins ? 17f : 14f) * Su);
                 c.Check.color = coins ? Color.white : Mint;
                 c.Cross.color = coins ? Color.white : Coral;
+                _blockCoin.sprite = EngranajesSprites.CrossBadge();
+                _blockCoin.color = coins ? Color.white : Coral;
             }
             for (int k = 0; k < 2; k++) _wrenches[k].sprite = EngranajesSprites.Wrench();
             _start.Icon.sprite = EngranajesSprites.GlyphSprite(EngranajesSprites.Glyph.Play);

@@ -149,6 +149,9 @@ namespace NeuroVida.Games.Engranajes
         private void ClearMachine()
         {
             _mach = null;
+            _blockAt = -10f;                                   // la moneda de un toque bloqueado no pasa a la máquina siguiente
+            _blockId = int.MinValue;
+            _counterPulseAt = -10f;
             _sol = null;
             _results = null;
             _changes.Clear();
@@ -443,6 +446,7 @@ namespace NeuroVida.Games.Engranajes
             AnimateMotor(m, now, deco, fixing);
             AnimateBelts(m, now, deco, fixing);
             AnimatePressed(m, now);
+            AnimateBlocked(m, now);
             AnimateParts(m, running, run, step, deco);
             AnimatePulses(m, running, run, step, deco);
             AnimateCartels(now, deco);
@@ -489,6 +493,31 @@ namespace NeuroVida.Games.Engranajes
         }
 
         private float _motorPressAt = -10f;
+        private float _blockAt = -10f, _counterPulseAt = -10f;
+        private int _blockId = int.MinValue;
+
+        /// <summary>La moneda coral con la aspa sobre lo tocado cuando ya no quedaban llaves: aparece con un saltito y una sacudida corta (0,3 s; con «quitar animaciones» ni saltito ni sacudida: solo aparece y se apaga), se sostiene ~1 s y se desvanece. Va sobre el engranaje del motor o a la mitad de la correa tocada.</summary>
+        private void AnimateBlocked(Machine m, float now)
+        {
+            float t = now - _blockAt;
+            bool on = t >= 0f && t < BlockCoinSeconds && _blockId != int.MinValue;
+            _blockCoin.gameObject.SetActive(on);
+            if (!on) return;
+            Vector2 at;
+            if (_blockId == EngranajesContract.MotorId) at = new Vector2(m.Gears[0].X, m.Gears[0].Y);
+            else
+            {
+                var l = m.Links[_blockId];
+                at = new Vector2((m.Gears[l.A].X + m.Gears[l.B].X) * 0.5f, (m.Gears[l.A].Y + m.Gears[l.B].Y) * 0.5f);
+            }
+            bool deco = Motion.Decorative;
+            float shake = deco && t < 0.3f ? Mathf.Sin(t * 70f) * 4f * (1f - t / 0.3f) : 0f;
+            float pop = deco && t < 0.14f ? Mathf.Lerp(0.6f, 1.15f, t / 0.14f) : deco && t < 0.26f ? Mathf.Lerp(1.15f, 1f, (t - 0.14f) / 0.12f) : 1f;
+            _blockCoin.rectTransform.anchoredPosition = B(at.x + shake, at.y);
+            _blockCoin.rectTransform.localScale = Vector3.one * pop;
+            float fade = Mathf.Clamp01((BlockCoinSeconds - t) / 0.25f);
+            var c = _blockCoin.color; _blockCoin.color = new Color(c.r, c.g, c.b, fade);
+        }
         private readonly Dictionary<int, float> _beltPressAt = new Dictionary<int, float>();
 
         /// <summary>Un toque aceptado en el motor (id del motor) o en una correa (el índice de su unión): se ve presionado.</summary>
@@ -629,6 +658,10 @@ namespace NeuroVida.Games.Engranajes
             if (_mach == null) return;
             bool can = _phase == Phase.Play;
             _counterGroup.alpha = can ? 1f : 0.5f;
+            float pt = Mathf.Clamp01((now - _counterPulseAt) / 0.3f);
+            float pulse = pt < 1f ? Mathf.Sin(pt * Mathf.PI) : 0f;                           // el contador de llaves late una vez al rechazar un toque (el color late siempre; el tamaño, solo con movimiento)
+            _counterRoot.localScale = Vector3.one * (1f + (Motion.Decorative ? 0.12f * pulse : 0f));
+            _counterText.color = Color.Lerp(Lavender, Coral, pulse);
             for (int k = 0; k < 2; k++)
             {
                 bool shown = k < _mach.Stage.Keys;
@@ -637,7 +670,7 @@ namespace NeuroVida.Games.Engranajes
                 if (!shown) continue;
                 bool used = k < _changes.Count;
                 _wrenchBg[k].color = used ? new Color(Gold.r, Gold.g, Gold.b, 0.18f) : new Color(1f, 1f, 1f, 0.06f);
-                _wrenches[k].color = used ? Gold : new Color(110f / 255f, 106f / 255f, 154f / 255f);
+                _wrenches[k].color = used ? Color.Lerp(Gold, Coral, pulse) : new Color(110f / 255f, 106f / 255f, 154f / 255f);
             }
             var b = _start;
             b.Group.alpha = can ? 1f : 0.45f;
@@ -809,6 +842,45 @@ namespace NeuroVida.Games.Engranajes
             var v = b - a;
             float t = Mathf.Clamp01(Vector2.Dot(p - a, v) / Mathf.Max(0.0001f, Vector2.Dot(v, v)));
             return Vector2.Distance(p, a + v * t);
+        }
+
+        /// <summary>Para las pruebas (Tarea 114): en una máquina de 1 llave y en una de 2 usa todas las llaves y toca otra cosa; devuelve lo que NO pasó como debía: que no cambie nada, que salga la moneda con su imagen, que el aviso nombre lo cambiado y que tocar algo ya cambiado lo deshaga.</summary>
+        public List<string> AuditBlockedTouch()
+        {
+            var problems = new List<string>();
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _lay = EngranajesLayout.Compute(_logicalH);
+            if (_rng == null) _rng = new System.Random(1);
+            var bake = EngranajesSprites.Prewarm();
+            while (bake.MoveNext()) { }
+            AssignSprites();
+            foreach (int level in new[] { 1, 10 })
+            {
+                var m = EngranajesContract.Generate(level, _rng);
+                ShowMachine(m);
+                int keys = m.Stage.Keys;
+                string tag = "nivel " + level + " (" + keys + " llave" + (keys == 1 ? "" : "s") + "): ";
+                var ids = new List<int>();
+                foreach (var sw in m.Switches) ids.Add(sw.Id);
+                for (int i = 0; i < keys; i++) ToggleSwitch(ids[i]);
+                var before = new List<int>(_changes);
+                if (before.Count != keys) problems.Add(tag + "no quedaron usadas todas las llaves (" + before.Count + ")");
+                int other = ids.Find(i => !before.Contains(i));
+                ToggleSwitch(other);
+                if (_changes.Count != before.Count) problems.Add(tag + "el toque bloqueado cambió la cuenta de cambios");
+                else for (int i = 0; i < before.Count; i++) if (_changes[i] != before[i]) problems.Add(tag + "el toque bloqueado cambió los cambios");
+                AnimateBlocked(m, GameClock.Time);
+                if (!_blockCoin.gameObject.activeSelf) problems.Add(tag + "no salió la moneda");
+                if (_blockCoin.sprite == null) problems.Add(tag + "la moneda no tiene imagen");
+                if (_sayTitleFull != EngranajesContract.BlockedTitle(keys)) problems.Add(tag + "el aviso dice «" + _sayTitleFull + "»");
+                if (_saySubFull != EngranajesContract.BlockedHint(before, keys)) problems.Add(tag + "el aviso dice «" + _saySubFull + "» debajo");
+                AnimateBlocked(m, GameClock.Time + BlockCoinSeconds + 0.1f);
+                if (_blockCoin.gameObject.activeSelf) problems.Add(tag + "la moneda no se apagó al pasar su segundo");
+                ToggleSwitch(before[0]);
+                if (_changes.Count != keys - 1 || _changes.Contains(before[0])) problems.Add(tag + "tocar algo ya cambiado no lo deshizo");
+                ClearMachine();
+            }
+            return problems;
         }
 
         // ------------------------------------------------------------------ verificación de que lo dibujado se ve

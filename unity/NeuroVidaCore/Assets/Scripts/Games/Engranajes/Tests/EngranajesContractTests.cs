@@ -589,6 +589,60 @@ namespace NeuroVida.Games.Engranajes.Tests
             Assert.AreEqual(4, r.Orbit);
         }
 
+        // ------------------------------------------------------------------ las llaves (Tarea 114): con todas usadas, tocar otra cosa NO cambia nada
+
+        [Test]
+        public void Touch_AddsWhileThereIsAFreeKey_UndoesWhatWasChanged_AndBlocksWhenAllTheKeysAreUsed()
+        {
+            const int belt = 3;
+            var changes = new List<int>();
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Added, EngranajesContract.Touch(changes, EngranajesContract.MotorId, 1));
+            CollectionAssert.AreEqual(new[] { EngranajesContract.MotorId }, changes);
+            // con la única llave usada, tocar OTRA cosa no cambia nada (antes la llave se movía en silencio)
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Blocked, EngranajesContract.Touch(changes, belt, 1));
+            CollectionAssert.AreEqual(new[] { EngranajesContract.MotorId }, changes, "el toque bloqueado no toca los cambios");
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Blocked, EngranajesContract.Touch(changes, belt, 1), "y lo mismo la segunda vez");
+            // tocar lo ya cambiado lo deshace
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Undone, EngranajesContract.Touch(changes, EngranajesContract.MotorId, 1));
+            CollectionAssert.IsEmpty(changes);
+            // con dos llaves: dos cambios, el tercer toque es bloqueado, y se puede deshacer cualquiera de los dos
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Added, EngranajesContract.Touch(changes, belt, 2));
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Added, EngranajesContract.Touch(changes, EngranajesContract.MotorId, 2));
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Blocked, EngranajesContract.Touch(changes, 7, 2));
+            CollectionAssert.AreEqual(new[] { belt, EngranajesContract.MotorId }, changes, "con las dos llaves usadas, tocar otro tampoco cambia nada ni el orden");
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Undone, EngranajesContract.Touch(changes, belt, 2));
+            CollectionAssert.AreEqual(new[] { EngranajesContract.MotorId }, changes);
+            Assert.AreEqual(EngranajesContract.TouchOutcome.Added, EngranajesContract.Touch(changes, 7, 2), "y la llave liberada se puede volver a usar");
+        }
+
+        [Test]
+        public void TheBlockedNotice_NamesWhatWasChanged_AndHowToUndoIt()
+        {
+            Assert.AreEqual("Ya usaste tu cambio", EngranajesContract.BlockedTitle(1));
+            Assert.AreEqual("Ya usaste tus 2 cambios", EngranajesContract.BlockedTitle(2));
+            Assert.AreEqual("Toca el motor otra vez para deshacerlo", EngranajesContract.BlockedHint(new[] { EngranajesContract.MotorId }, 1));
+            Assert.AreEqual("Toca la correa dorada otra vez para deshacerlo", EngranajesContract.BlockedHint(new[] { 2 }, 1));
+            Assert.AreEqual("Toca uno de ellos para deshacerlo", EngranajesContract.BlockedHint(new[] { 2, EngranajesContract.MotorId }, 2));
+            // lo que se lee: cada línea cabe en una pantalla de teléfono (el aviso de abajo parte las líneas largas en dos)
+            foreach (var text in new[] { EngranajesContract.BlockedTitle(1), EngranajesContract.BlockedTitle(2), EngranajesContract.BlockedHint(new[] { 2 }, 1), EngranajesContract.BlockedHint(new[] { 2, 3 }, 2) })
+                Assert.LessOrEqual(text.Length, 50, text);
+        }
+
+        [Test]
+        public void EveryStageGeneratedWithKeys_CanBeSolvedWithoutNeedingToMoveAKey()
+        {
+            // la solución guardada nunca pide más cambios que llaves (así la regla nueva no puede dejar sin salida a nadie): se aplica con Touch, en orden, y ninguno queda bloqueado
+            var rng = Rng(21);
+            for (int level = 1; level <= EngranajesContract.MaxLevel; level++)
+                for (int n = 0; n < 60; n++)
+                {
+                    var m = EngranajesContract.Generate(level, rng);
+                    var changes = new List<int>();
+                    foreach (int id in m.Solution) Assert.AreEqual(EngranajesContract.TouchOutcome.Added, EngranajesContract.Touch(changes, id, m.Stage.Keys), "nivel " + level + ": la solución cabe en las llaves");
+                    Assert.IsTrue(EngranajesContract.AllOk(EngranajesContract.Results(m, changes)));
+                }
+        }
+
         [Test]
         public void Tally_CountsMachinesPeakEtapaPaceAndLaunches()
         {
