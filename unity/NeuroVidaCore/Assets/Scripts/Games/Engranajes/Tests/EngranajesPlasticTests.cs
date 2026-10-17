@@ -147,7 +147,7 @@ namespace NeuroVida.Games.Engranajes.Tests
             var names = new List<string>();
             foreach (int size in new[] { 0, 1 }) { foreach (int pal in new[] { 0, 1, 2 }) names.Add("gear_" + size + "_" + pal); names.Add("gear_" + size + "_0_p"); }
             names.AddRange(new[] { "radar", "turbina", "polea", "polea_p", "porton", "marco_carga", "plataforma", "caja_carga", "barra", "casco", "flecha_grande_cw", "flecha_grande_ccw", "flecha_chico_cw", "flecha_chico_ccw", "miniflecha_cw", "miniflecha_ccw", "tri_arriba", "tri_abajo", "tri_play" });
-            names.AddRange(new[] { "domo", "moneda", "placa_neutra", "placa_ok", "placa_mala", "pastilla_motor", "pastilla_motor_oro" });                                  // el volumen (Tarea 115): las luces, las llaves, los carteles y el rótulo MOTOR
+            names.AddRange(new[] { "domo", "moneda", "losa_ch_noche", "losa_ch_acierto", "losa_ch_error", "ico_play", "llave_libre", "llave_usada" });                    // el volumen (Tarea 115) y los botones del kit (Tarea 116): las luces, las losas chicas de los carteles y del rótulo MOTOR, el triángulo de «Arrancar» y las monedas de las llaves
             var group = PlasticArt.Group(EngranajesSprites.PlasticGroup);
             foreach (var n in names) Assert.IsNotNull(group.Entry(n), "falta «" + n + "» en el atlas de Engranajes");
             Assert.AreEqual(names.Count, group.Manifest.sprites.Length, "el atlas trae justo las piezas que el juego usa");

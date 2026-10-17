@@ -85,6 +85,13 @@ def fija_volumen(im, bisel_dp=2.2, contraste=1.0, sat=1.14, aclara=0.0, semilla=
     col = np.clip((col + aclara) * (1.0 + (s[..., None] - 1.0) * 0.55 * contraste) * g[..., None], 0, 1)
     return a_imagen(col, a)
 
+def fija_rol(im, rol, bisel_dp=2.2, base=0.10, semilla=3, fuerza=0.16):
+    """Lo que NO gira, con la MISMA receta de color de los engranajes (Tarea 116): la luz del render recorre la rampa de plasticina de su rol (portón y barra lila, caja azul, plataforma dorada), con el bisel y el grano de los engranajes. Antes (`fija_volumen`) conservaba el color gris lavanda del render y se leía más pálido y sucio que los engranajes y que los objetos de Bodega o Correo."""
+    rgb, a = a_float(im); t0 = luz_normalizada(rgb, a)
+    t = t0 * 0.80 + 0.16 + almohada(a, bisel_dp, fuerza) + base
+    g = grano(a.shape, semilla, 0.012, 0.9, 0.0) - 1.0
+    return a_imagen(mapa_color(t + g, rol), a)
+
 def polea_volumen(im):
     """La polea (disco oscuro, disco violeta, eje): los tres tonos conservan su lugar; el bisel es isótropo y la luz fija la pone el canto de Unity (no gira: es una polea, pero así queda igual de plana a la vista)."""
     rgb, a = a_float(im)

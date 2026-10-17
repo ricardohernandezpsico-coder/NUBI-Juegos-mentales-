@@ -422,7 +422,7 @@ def carga_eng(nombre, ancho, bruma=False, promedio=False):
 def grupo_engranajes():
     """Engranajes «Taller de reparación»: los 6 engranajes (grande y chico en las tres paletas) y el estado presionado del motor, el radar y la turbina (que giran: cuatro luces promediadas y vistos desde arriba), la polea (y su presionada), el portón, el marco, la plataforma y la caja de la
     carga, la barra dentada, el casco, las flechas del motor (grande y chica, a favor y en contra del reloj) y del cartel, y los triángulos (blancos: se tildan). 3,5 px por dp salvo el casco y las flechas grandes (3), la flechita (4) y los triángulos (2).
-    Desde la Tarea 115 todo pasa por `engranajes_volumen.py` (el VOLUMEN aprobado el 16-oct: color por rol con un mapa de color, bisel isótropo en lo que gira, casco de cilindro con remaches, flechas de tubo) y suma las placas de los carteles y del rótulo MOTOR (nine-slice con su canto), el domo de las luces y la moneda de las llaves."""
+    Desde la Tarea 115 todo pasa por `engranajes_volumen.py` (el VOLUMEN aprobado el 16-oct: color por rol con un mapa de color, bisel isótropo en lo que gira, casco de cilindro con remaches, flechas de tubo) y suma el domo de las luces y el aro de las luces. Desde la Tarea 116 los carteles y el rótulo MOTOR son losas chicas del kit (`losa_ch_noche/acierto/error`; el rótulo dorado es la `losa_ch_sol` de `comun`) y «Arrancar» y las llaves tienen ícono de plasticina (`ico_play`, `llave_libre`, `llave_usada`)."""
     import engranajes_volumen as vol
     S = []; med = []
     for size, box in ((0, 72.0), (1, 52.0)):
@@ -435,20 +435,22 @@ def grupo_engranajes():
     S.append(sprite('radar', vol.radar_volumen(carga_eng('radar', round(48 * PX_ENG), promedio=True)), ppu=PX_ENG))
     S.append(sprite('turbina', vol.turbina_volumen(carga_eng('turbina', round(40 * PX_ENG), promedio=True)), ppu=PX_ENG))
     for n, w in (('polea', 40), ('polea_p', 40)): S.append(sprite(n, vol.polea_volumen(carga_eng(n, round(w * PX_ENG))), ppu=PX_ENG))
-    for n, w in (('porton', 44), ('marco_carga', 48), ('plataforma', 40), ('caja_carga', 32), ('barra', 20)): S.append(sprite(n, vol.fija_volumen(carga_eng(n, round(w * PX_ENG)), semilla=len(n)), ppu=PX_ENG))
+    for n, w, rol, bisel, base in (('porton', 44, 'lila', 2.2, 0.10), ('marco_carga', 48, 'lila', 1.6, 0.0), ('plataforma', 40, 'oro', 2.2, 0.10), ('caja_carga', 32, 'azul', 2.2, 0.06), ('barra', 20, 'lila', 2.2, -0.10)):       # Tarea 116: con la receta de color de los engranajes (`fija_rol`)
+        S.append(sprite(n, vol.fija_rol(carga_eng(n, round(w * PX_ENG)), rol, bisel, base, semilla=len(n)), ppu=PX_ENG))
     S.append(sprite('casco', vol.casco_volumen(carga_eng('casco', 348)), ppu=3.0))
     for n, box in (('grande', 2 * (33 + 8 + 14)), ('chico', 2 * (23 + 8 + 14))):
         for suf in ('cw', 'ccw'): S.append(sprite(f'flecha_{n}_{suf}', vol.blanca_tubo(carga_eng(f'flecha_{n}_{suf}', round(box * 3)), 1.6 * 3.0 / PX_ENG), ppu=3.0))
     for suf in ('cw', 'ccw'): S.append(sprite(f'miniflecha_{suf}', vol.blanca_tubo(carga_eng(f'miniflecha_{suf}', 88), 1.1 * 4.0 / PX_ENG), ppu=4.0))
     for n in ('tri_arriba', 'tri_abajo', 'tri_play'): S.append(sprite(n, vol.blanca_tubo(carga_eng(n, 112), 1.6 * 2.0 / PX_ENG), ppu=2.0))
     S.append(sprite('domo', vol.domo_sprite(48), ppu=100.0 * 3.0 / 3.0)); S.append(sprite('moneda', vol.moneda_sprite(96), ppu=100.0))
-    for nombre, (cuerpo, rim) in vol.CARTEL.items():                                           # las placas de los carteles (38 dp = 114 px de alto, radio 12 dp) y la pastilla del rótulo MOTOR (24 dp = 72 px)
-        im, m = vol.losa_placa(128, 114, 36, 4.5, cuerpo, rim, canto_dp=5.0, margen=(10, 8, 10, 26))
-        S.append(sprite('placa_' + nombre, im, borde=(50, 83, 50, 65), margen=(10, 8, 10, 26)))
-    im, m = vol.losa_placa(112, 72, 36, 0, (35, 43, 87), (35, 43, 87), canto_dp=4.0, margen=(8, 6, 8, 20))
-    S.append(sprite('pastilla_motor', im, borde=(44, 56, 44, 42), margen=(8, 6, 8, 20)))
-    im, m = vol.losa_placa(112, 72, 36, 0, (255, 201, 74), (255, 201, 74), canto_dp=4.0, margen=(8, 6, 8, 20))                    # el rótulo cuando el motor está cambiado: dorado
-    S.append(sprite('pastilla_motor_oro', im, borde=(44, 56, 44, 42), margen=(8, 6, 8, 20)))
+    # Tarea 116: los carteles y el rótulo MOTOR son losas CHICAS (ch) del kit en el color de Rescate, y «Arrancar» y las llaves llevan íconos de plasticina (`engranajes_botones.py`)
+    kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
+    d = kit['losas']['ch']; W, H = d['imagen_px']; m = d['margenes_dp']; ins = d['insets_px']
+    borde = (ins['izq'], ins['abajo'], ins['der'], ins['arr']); margen = tuple(round(m[k] * PX_DP) for k in ('izq', 'arr', 'der', 'abajo'))
+    nombres = ('losa_ch_noche', 'losa_ch_acierto', 'losa_ch_error')
+    ims = alinea_losa([carga_render('engranajes_botones', n) for n in nombres], (m['izq'], m['arr']), W, H, Image.open(os.path.join(RES_APP, 'drawable-nodpi', 'kit_losa_ch_crema.webp')).convert('RGBA'))
+    for n, im in zip(nombres, ims): S.append(sprite(n, im, borde=borde, margen=margen, baja=d['presionada']['texto_baja_dp'] * PX_DP))
+    for n in ('ico_play', 'llave_libre', 'llave_usada'): S.append(sprite(n, carga_render('engranajes_botones', n, 128)))
     return S, med
 
 def grupo_comun():
@@ -498,7 +500,7 @@ GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
-    """Empaque por estantes: ordena por alto y llena filas; prueba anchos de 512 a [ancho_max] y se queda con el de menos área."""
+    """Empaque por estantes: ordena por alto y llena filas; prueba anchos de 512 a [ancho_max] y se queda con el de menos área (con un alto de a lo más 4096 px)."""
     mejor = None
     for W in range(512, ancho_max + 1, 128):
         x = y = fila = 0; pos = {}; ok = True
@@ -509,8 +511,9 @@ def empaca(sprites, ancho_max=2048, pad=2):
             pos[s['nombre']] = (x + pad, y + pad); x += w + 2 * pad; fila = max(fila, h + 2 * pad)
         if not ok: continue
         H = y + fila
+        if H > 4096: continue                                  # Unity achica a 4096 de alto (tamaño máximo de textura del importador) y los recortes del manifiesto dejan de caber: se prefiere un atlas más ancho
         if mejor is None or W * H < mejor[0] * mejor[1]: mejor = (W, H, pos)
-    if mejor is None: raise SystemExit('un sprite no cabe en el ancho máximo del atlas')
+    if mejor is None: raise SystemExit('un sprite no cabe en el ancho máximo del atlas (o el atlas no cabe en 4096 de alto)')
     return mejor
 
 def guid(ruta_rel):

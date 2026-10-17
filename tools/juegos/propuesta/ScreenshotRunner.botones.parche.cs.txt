@@ -1,0 +1,15 @@
+// El parche TEMPORAL de `ScreenshotRunner.cs` para las tomas de BOTONES de Engranajes (Tarea 116): reposo, «Arrancar» presionado y la cuenta con todas las llaves usadas. NO se commitea: se aplica con PropuestaHook.cs, se saca la corrida y se deshace con `git checkout` del archivo.
+// 1) Renombrar el cuerpo de `private static void Shot(string name)` a `private static void ShotRaw(string name)` y dejar `private static void Shot(string name) { ShotRaw(name); }`.
+// 2) En `PlayShots`, justo después de «else Shot(step.Item1);», agregar:
+//        if (step.Item1 == "t40" && Environment.GetEnvironmentVariable("NUBI_SHOTS_BOTONES") == "1" && _gameId == "engranajes") yield return BotonesTomas();
+// Variable de entorno: NUBI_SHOTS_BOTONES=1.
+
+private static IEnumerator BotonesTomas()
+{
+    if (!NeuroVida.Bridge.EditorTools.PropuestaHook.Hay() || !NeuroVida.Bridge.EditorTools.PropuestaHook.CargaNivel(12)) yield break;
+    yield return Wait.For(2.2);
+    ShotRaw("rep");                                                                                                                  // reposo
+    NeuroVida.Bridge.EditorTools.PropuestaHook.PresionaArrancar(); yield return Wait.For(0.03); ShotRaw("pres");                    // «Arrancar» presionado
+    yield return Wait.For(0.5);
+    NeuroVida.Bridge.EditorTools.PropuestaHook.Bloquea(); yield return Wait.For(0.5); ShotRaw("llaves");                            // las dos llaves usadas
+}

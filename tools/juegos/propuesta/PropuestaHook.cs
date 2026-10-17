@@ -167,6 +167,15 @@ namespace NeuroVida.Bridge.EditorTools
             if (ids.Count > keys) toggle.Invoke(c, new object[] { ids[keys] });
         }
 
+        /// <summary>Aprieta «Arrancar»: `_start.Touch.Press()` (el juego acepta el toque): la losa pasa a su imagen presionada y la letra y el ícono bajan con ella.</summary>
+        public static void PresionaArrancar()
+        {
+            var c = Controller(); if (c == null) return; var tc = c.GetType();
+            var start = tc.GetField("_start", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(c); if (start == null) return;
+            var touch = start.GetType().GetField("Touch").GetValue(start); if (touch == null) return;
+            touch.GetType().GetMethod("Press").Invoke(touch, null);
+        }
+
         /// <summary>Toca el motor y dos correas (o lo que haya) con todas las llaves usadas: deja el cambio bloqueado a la vista (la moneda con la aspa) y el motor presionado.</summary>
         public static void Presiona()
         {

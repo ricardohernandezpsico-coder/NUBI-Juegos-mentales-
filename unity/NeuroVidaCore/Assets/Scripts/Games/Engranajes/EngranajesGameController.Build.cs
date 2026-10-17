@@ -93,6 +93,7 @@ namespace NeuroVida.Games.Engranajes
         private RectTransform _softLayer, _cantoLayer;
         private readonly Image[] _windowRings = new Image[EngranajesContract.RocketLights];
         private bool _volume;
+        private bool _keyArt, _playArt;                                                                                 // las llaves en su moneda de plasticina y el triángulo de «Arrancar» de plasticina (Tarea 116)
         private Image _counterSlab;
         private CantoEffect _dishCanto, _fanCanto;
         private static Color Sh(Color c, float f) => new Color(c.r * f, c.g * f, c.b * f, 1f);             // un tono más claro u oscuro SIN tocar el alfa
@@ -364,13 +365,12 @@ namespace NeuroVida.Games.Engranajes
                 _pulses[i] = SceneImage(_machineLayer, "Pulse" + i, RadialGlowSprite.Get(), 0f, 0f, 32f, 32f, false);
                 _pulses[i].color = new Color(1f, 214f / 255f, 120f / 255f, 1f);
             }
-            _motorPill = BuildPill(_machineLayer, "MotorLabel", 62f, 24f, ButtonFill, ButtonText, 14f);
+            _motorPill = BuildPill(_machineLayer, "MotorLabel", MotorW, MotorH, ButtonFill, ButtonText, 14f);
             _motorPill.Label.text = "MOTOR";
-            if (_volume && EngranajesSprites.HasPlates)
+            if (_volume && EngranajesSprites.HasPlates)                                                                // el rótulo: una losa chica del kit (noche; dorada cuando el motor está cambiado), con el texto liso
             {
-                _motorPill.Slab = PlasticSlab.AttachCustom(_motorPill.Root, EngranajesSprites.PlasticGroup, "pastilla_motor");
+                _motorPill.Slab = PlasticSlab.AttachCustom(_motorPill.Root, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(EngranajesSprites.PlateState.Neutral));
                 if (_motorPill.Slab != null) _motorPill.Bg.enabled = false;
-                PlasticCanto.Relief(_motorPill.Label, 1.3f * Su, Ink2);
             }
             for (int s = 0; s < _cartels.Length; s++) _cartels[s] = BuildCartel(_machineLayer, "Cartel" + (Station)s);
             _blockCoin = SceneImage(_machineLayer, "BlockCoin", null, 0f, 0f, BlockCoinDp, BlockCoinDp, false);                  // la moneda coral con la aspa de un toque bloqueado: encima de todo lo de la máquina
@@ -538,18 +538,14 @@ namespace NeuroVida.Games.Engranajes
             if (_volume && EngranajesSprites.HasPlates)
             {
                 c.Slab = PlasticSlab.AttachCustom(c.Root, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(EngranajesSprites.PlateState.Neutral));
-                if (c.Slab != null) { c.Rim.enabled = false; c.Bg.enabled = false; }
-                PlasticCanto.Relief(c.Name, 1.2f * Su, Ink2);                                                         // las letras, el ícono y las monedas en relieve
-                PlasticCanto.Relief(c.Word, 1.2f * Su, Ink2);
-                PlasticCanto.Relief(c.Icon, 1.0f * Su, Ink2);
-                PlasticCanto.Add(c.Check, 1.3f * Su, new Color(0.06f, 0.25f, 0.18f), new Color(0.12f, 0.40f, 0.30f), 2);
-                PlasticCanto.Add(c.Cross, 1.3f * Su, new Color(0.33f, 0.09f, 0.08f), new Color(0.50f, 0.18f, 0.14f), 2);
+                if (c.Slab != null) { c.Rim.enabled = false; c.Bg.enabled = false; }                                 // el cartel es una losa chica del kit; las letras van lisas y las monedas ✓ / ✗ son las de lo común
             }
             go.SetActive(false);
             return c;
         }
 
         private const float CartelW = 96f, CartelH = 38f;
+        private const float MotorW = 66f, MotorH = 30f;                                                               // el rótulo MOTOR: la losa chica del kit pide al menos ~28 dp de alto (radio 14)
 
         // ------------------------------------------------------------------ abajo: la cuenta de cambios y «Arrancar»; aviso, efectos, despegue y tarjeta «NUEVO»
 
@@ -566,21 +562,12 @@ namespace NeuroVida.Games.Engranajes
             _counterText = MakeLabel(_counterRoot, "Text", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _counterText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _counterText.verticalOverflow = VerticalWrapMode.Overflow;
-            if (_volume)                                                                                              // la cuenta de cambios: una losa del kit (la noche, teñida de azul oscuro) y cada llave en una moneda con su canto
-            {
+            if (_volume)                                                                                              // la cuenta de cambios: la losa «noche» del kit TAL CUAL (como las casillas de Rescate: sin teñir) y cada llave en su moneda de plasticina
                 _counterSlab = PlasticSlab.TryStyle(_counterBg, SlabSize.Button, SlabTone.Night);
-                if (_counterSlab != null) _counterSlab.color = new Color(0.50f, 0.78f, 0.66f);
-                PlasticCanto.Relief(_counterText, 1.1f * Su, Ink2);
-            }
             for (int k = 0; k < 2; k++)
             {
                 _wrenchBg[k] = MakeImage(_counterRoot, "WrenchBg" + k, DiscSprite.Get());
                 _wrenches[k] = MakeImage(_counterRoot, "Wrench" + k, null);
-                if (_volume)
-                {
-                    PlasticCanto.Add(_wrenchBg[k], 1.8f * Su, new Color(0.04f, 0.05f, 0.16f), new Color(0.08f, 0.10f, 0.28f), 3);
-                    PlasticCanto.Relief(_wrenches[k], 1.0f * Su, Ink2);
-                }
             }
             cg.SetActive(false);
 
@@ -607,13 +594,7 @@ namespace NeuroVida.Games.Engranajes
                 if (b.Slab != null)
                 {
                     b.Shadow.enabled = b.Rim.enabled = b.Bg.enabled = false;
-                    b.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Sky);
-                    if (_volume)                                                                                       // «Arrancar» con más canto (su losa baja un poco más que la del kit) y la letra y el triángulo en relieve
-                    {
-                        PlasticCanto.Add(b.Slab, 4f * Su, new Color(0.06f, 0.30f, 0.42f), new Color(0.10f, 0.45f, 0.60f), 4);
-                        PlasticCanto.Relief(b.Label, 1.4f * Su, new Color(0.62f, 0.86f, 0.97f));
-                        PlasticCanto.Relief(b.Icon, 1.2f * Su, new Color(0.62f, 0.86f, 0.97f));
-                    }
+                    b.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Sky);                                      // la losa, el texto liso y el rebote son los de «Reiniciar» de la pausa: nada más encima (Tarea 116)
                 }
             }
             go.SetActive(false);
@@ -781,8 +762,6 @@ namespace NeuroVida.Games.Engranajes
                 PlasticCanto.Add(_cargoFrame, 1.6f * Su, deep, light, 3);
                 PlasticCanto.Add(_cargoPlate, 2.0f * Su, new Color(0.48f, 0.34f, 0.08f), new Color(0.68f, 0.50f, 0.14f), 3);
                 PlasticCanto.Add(_cargoBox, 2.4f * Su, new Color(0.18f, 0.36f, 0.50f), new Color(0.30f, 0.52f, 0.68f), 3);
-                for (int k = 0; k < 2; k++) _wrenchBg[k].sprite = EngranajesSprites.Coin();
-                PlasticCanto.Add(_blockCoin, 1.6f * Su, new Color(0.33f, 0.09f, 0.08f), new Color(0.50f, 0.18f, 0.14f), 2);
             }
             _dish.sprite = EngranajesSprites.Dish();
             _fan.sprite = EngranajesSprites.Fan();
@@ -819,7 +798,10 @@ namespace NeuroVida.Games.Engranajes
                 _blockCoin.color = coins ? Color.white : Coral;
             }
             for (int k = 0; k < 2; k++) _wrenches[k].sprite = EngranajesSprites.Wrench();
-            _start.Icon.sprite = EngranajesSprites.GlyphSprite(EngranajesSprites.Glyph.Play);
+            _keyArt = _volume && EngranajesSprites.KeyCoin(false) != null && EngranajesSprites.KeyCoin(true) != null;
+            if (_keyArt) for (int k = 0; k < 2; k++) { _wrenchBg[k].sprite = EngranajesSprites.KeyCoin(false); _wrenches[k].enabled = false; }       // la llave va dibujada en su moneda de plasticina
+            _playArt = _volume && EngranajesSprites.PlayIcon() != null;
+            _start.Icon.sprite = _playArt ? EngranajesSprites.PlayIcon() : EngranajesSprites.GlyphSprite(EngranajesSprites.Glyph.Play);
             foreach (var g in _gears) PrepareGearSprites(g);
             PrepareGearSprites(_introA);
             PrepareGearSprites(_introB);
@@ -952,7 +934,8 @@ namespace NeuroVida.Games.Engranajes
             for (int k = 0; k < 2; k++)
             {
                 float dx = _mach != null && _mach.Stage.Keys == 2 ? (k == 0 ? -18f : 18f) : 0f;
-                SetChild(_wrenchBg[k].rectTransform, dx, -c.height * 0.5f + 54f, 32f, 32f);
+                float coin = _keyArt ? 44f : 32f;                                                                  // la moneda de plasticina trae su sombra: el disco ocupa 0,73 del lado
+                SetChild(_wrenchBg[k].rectTransform, dx, -c.height * 0.5f + 54f, coin, coin);
                 SetChild(_wrenches[k].rectTransform, dx, -c.height * 0.5f + 54f, 30f, 30f);
             }
 
@@ -967,24 +950,10 @@ namespace NeuroVida.Games.Engranajes
             SetRadius(b.Shadow, 24f * _s);
             SetRadius(b.Rim, 25.5f * _s);
             SetRadius(b.Bg, 24f * _s);
-            SetChild(b.Icon.rectTransform, -w / 2f + 63f, 0f, 28f, 28f);
+            float play = _playArt ? 38f : 28f;                                                                     // el triángulo de plasticina trae su sombra: la cuña ocupa ~0,6 del lado
+            SetChild(b.Icon.rectTransform, -w / 2f + 63f, 0f, play, play);
             b.Label.rectTransform.sizeDelta = new Vector2((w - 88f - 8f) * _s, 40f * _s);
             b.Label.rectTransform.anchoredPosition = new Vector2((-w / 2f + 88f + (w - 96f) / 2f) * _s, 0f);
-            if (_volume)                                                                                           // el canto, el relieve y las monedas de la interfaz: sus distancias son de la pantalla (dp × _s)
-            {
-                if (b.Slab != null)
-                {
-                    PlasticCanto.Add(b.Slab, 4f * _s, new Color(0.06f, 0.30f, 0.42f), new Color(0.10f, 0.45f, 0.60f), 4);
-                    PlasticCanto.Relief(b.Label, 1.4f * _s, new Color(0.62f, 0.86f, 0.97f));
-                    PlasticCanto.Relief(b.Icon, 1.2f * _s, new Color(0.62f, 0.86f, 0.97f));
-                }
-                PlasticCanto.Relief(_counterText, 1.1f * _s, Ink2);
-                for (int k = 0; k < 2; k++)
-                {
-                    PlasticCanto.Add(_wrenchBg[k], 1.8f * _s, new Color(0.04f, 0.05f, 0.16f), new Color(0.08f, 0.10f, 0.28f), 3);
-                    PlasticCanto.Relief(_wrenches[k], 1.0f * _s, Ink2);
-                }
-            }
         }
 
         private void LayoutSay()

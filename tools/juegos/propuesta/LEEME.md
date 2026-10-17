@@ -18,3 +18,7 @@ Además carga a la fuerza las máquinas de los niveles 7 y 12 (`CargaNivel`: cor
 5. `python -I tools/juegos/propuesta_engranajes.py <carpeta con las tomas> n12` (la propuesta compuesta; y `t08` para el cartel que falla), `propuesta_acoplamiento.py`, `propuesta_medidas.py aco | aco2 | eng <carpeta> n12` (la propuesta) o `engr <carpeta> n12` (el juego integrado: con canto contra sin canto) y `propuesta_volumen.py` / `propuesta_acoplamiento_v2.py` (las hojas).
 
 Los niveles salen al azar en cada corrida: las tomas `t08` y `t20` cambian de máquina; `n7` y `n12` sirven para ver correas, barra y tres cartels.
+
+## Las tomas de los botones (Tarea 116)
+
+`ScreenshotRunner.botones.parche.cs.txt` (con `NUBI_SHOTS_BOTONES=1`, el mismo `PropuestaHook.cs` y su método `PresionaArrancar`) saca tres tomas del nivel 12 con «Arrancar» activo: `rep` (en reposo), `pres` (presionado, 30 ms después de tocarlo) y `llaves` (con todas las llaves usadas y el toque bloqueado). `python -I tools/juegos/diagnostico_botones.py --despues <carpeta con rep.png y pres.png>` las mide contra los botones aprobados y arma `docs/previews/plasticina/diagnostico-botones.png`. Igual que lo demás de esta carpeta: gancho y parche son TEMPORALES, se deshacen antes de cualquier commit (`git checkout` de `ScreenshotRunner.cs` y de `docs/previews/capturas/engranajes.png`).

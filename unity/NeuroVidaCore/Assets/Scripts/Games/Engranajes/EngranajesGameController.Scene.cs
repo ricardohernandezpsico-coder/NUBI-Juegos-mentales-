@@ -118,11 +118,11 @@ namespace NeuroVida.Games.Engranajes
             _motorArrow.gameObject.SetActive(true);
             _motorPill.Root.anchoredPosition = B(g0.X, g0.Y + 16f);
             _motorPill.Root.gameObject.SetActive(true);
-            _motorPill.Root.sizeDelta = new Vector2(62f * Su, 24f * Su);
-            SetRadius(_motorPill.Bg, 12f * Su);
+            _motorPill.Root.sizeDelta = new Vector2(MotorW * Su, MotorH * Su);
+            SetRadius(_motorPill.Bg, MotorH * Su / 2f);
             _motorPulse.rectTransform.anchoredPosition = B(g0.X, g0.Y + 16f);
-            _motorPulse.rectTransform.sizeDelta = new Vector2(72f * Su, 34f * Su);
-            SetRadius(_motorPulse, 17f * Su);
+            _motorPulse.rectTransform.sizeDelta = new Vector2((MotorW + 10f) * Su, (MotorH + 10f) * Su);
+            SetRadius(_motorPulse, (MotorH + 10f) * Su / 2f);
             // piezas y carteles: solo las piezas activas llevan cartel; las demás se ven atenuadas
             for (int s = 0; s < 4; s++)
             {
@@ -504,7 +504,11 @@ namespace NeuroVida.Games.Engranajes
             }
             _motorArrowRect.localScale = new Vector3(fk < 0.5f ? 1f - 2f * fk : 2f * fk - 1f, 1f, 1f);
             _motorArrow.color = changed ? Gold : Cyan;
-            if (_motorPill.Slab != null) PlasticSlab.SetCustom(_motorPill.Slab, EngranajesSprites.PlasticGroup, changed ? "pastilla_motor_oro" : "pastilla_motor");
+            if (_motorPill.Slab != null)
+            {
+                if (changed) PlasticSlab.SetCustom(_motorPill.Slab, EngranajesSprites.GoldChipGroup, EngranajesSprites.GoldChip);
+                else PlasticSlab.SetCustom(_motorPill.Slab, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(EngranajesSprites.PlateState.Neutral));
+            }
             _motorPill.Bg.color = changed ? Gold : ButtonFill;
             _motorPill.Label.color = changed ? NeuroStyle.Ink : ButtonText;
             float pulse = 0f;
@@ -712,10 +716,10 @@ namespace NeuroVida.Games.Engranajes
                 _wrenches[k].gameObject.SetActive(shown);
                 if (!shown) continue;
                 bool used = k < _changes.Count;
-                if (_volume)                                                                                          // cada llave en una moneda con canto: vacía = azul noche con la llave lila; usada = dorada
+                if (_keyArt)                                                                                          // cada llave en su moneda de plasticina: libre = lila; usada = dorada (late hacia coral al rechazar un toque)
                 {
-                    _wrenchBg[k].color = used ? new Color(0.42f, 0.34f, 0.20f) : new Color(0.17f, 0.20f, 0.49f);
-                    _wrenches[k].color = used ? Color.Lerp(Gold, Coral, pulse) : new Color(0.75f, 0.72f, 0.96f);
+                    _wrenchBg[k].sprite = EngranajesSprites.KeyCoin(used);
+                    _wrenchBg[k].color = used ? Color.Lerp(Color.white, new Color(1f, 0.72f, 0.66f), pulse) : Color.white;
                     continue;
                 }
                 _wrenchBg[k].color = used ? new Color(Gold.r, Gold.g, Gold.b, 0.18f) : new Color(1f, 1f, 1f, 0.06f);
@@ -727,8 +731,12 @@ namespace NeuroVida.Games.Engranajes
             b.Bg.color = Cyan;
             b.Rim.color = NeuroStyle.Ink;
             b.Label.color = NeuroStyle.Ink;
-            b.Icon.color = NeuroStyle.Ink;
-            if (b.Slab != null) PlasticSlab.Set(b.Slab, SlabSize.Button, SlabTone.Sky, b.Touch.Down);
+            b.Icon.color = _playArt ? Color.white : NeuroStyle.Ink;                                                // el triángulo de plasticina ya trae su tinta
+            if (b.Slab != null)
+            {
+                PlasticSlab.Set(b.Slab, SlabSize.Button, SlabTone.Sky, b.Touch.Down);
+                b.Root.localScale = Vector3.one * (1f + b.Touch.Bounce);                                           // el rebote al soltar, el mismo de las casillas de Rescate
+            }
             var top = new Vector2(0f, -(b.Slab != null ? b.Touch.Drop : pr * 4f * _s));
             b.Bg.rectTransform.anchoredPosition = top;
             b.Rim.rectTransform.anchoredPosition = top;
@@ -934,6 +942,27 @@ namespace NeuroVida.Games.Engranajes
 
         /// <summary>Para las pruebas (Tarea 115, el volumen aprobado el 16-oct): arma máquinas de los niveles 1, 7 y 12 y devuelve lo que NO está como debe: las capas de la sombra blanda y del canto de los engranajes DEBAJO de todos ellos, el canto de cada engranaje (4,5 dp, 5 pasos) con su sombra de contacto, que el canto NO gire
         /// con el engranaje (aunque se gire 37°, su corrimiento en la pantalla sigue siendo hacia ABAJO), las placas de los carteles y del rótulo MOTOR, las luces con su aro y las bandas de las correas con canto. Sin plasticina no hay volumen: no devuelve nada.</summary>
+        /// <summary>Los botones y los rótulos son los del kit, SIN nada de más encima (Tarea 116): «Arrancar», la cuenta de llaves, los carteles y el rótulo MOTOR no llevan canto propio, halo de texto ni teñido (lo que los separaba de VERDAD/DISPARATE y de la pausa).</summary>
+        private void AuditKitButtons(List<string> problems, string tag)
+        {
+            void Bare(Graphic g, string what) { if (g != null && g.GetComponent<CantoEffect>() != null) problems.Add(tag + what + ": lleva canto o halo propio encima de la losa del kit"); }
+            if (_start.Slab != null)
+            {
+                Bare(_start.Slab, "«Arrancar» (losa)"); Bare(_start.Label, "«Arrancar» (texto)"); Bare(_start.Icon, "«Arrancar» (ícono)");
+                if (_start.Slab.color != Color.white) problems.Add(tag + "«Arrancar»: la losa del kit está teñida");
+                if (_start.Touch == null) problems.Add(tag + "«Arrancar» sin estado presionado");
+            }
+            if (_counterSlab != null)
+            {
+                Bare(_counterSlab, "la cuenta de llaves (losa)"); Bare(_counterText, "la cuenta de llaves (texto)");
+                if (_counterSlab.color != Color.white) problems.Add(tag + "la cuenta de llaves: la losa del kit está teñida");
+            }
+            for (int k = 0; k < 2; k++) { Bare(_wrenchBg[k], "la llave " + k + " (moneda)"); Bare(_wrenches[k], "la llave " + k); }
+            foreach (var c in _cartels) { Bare(c.Name, "un cartel (nombre)"); Bare(c.Word, "un cartel (palabra)"); Bare(c.Icon, "un cartel (ícono)"); Bare(c.Check, "un cartel (✓)"); Bare(c.Cross, "un cartel (✗)"); }
+            Bare(_motorPill.Label, "el rótulo MOTOR"); Bare(_blockCoin, "la moneda del toque bloqueado");
+            if (_playArt && _start.Icon.sprite != EngranajesSprites.PlayIcon()) problems.Add(tag + "«Arrancar»: el triángulo no es el de plasticina");
+        }
+
         public List<string> AuditVolume()
         {
             var problems = new List<string>();
@@ -988,6 +1017,7 @@ namespace NeuroVida.Games.Engranajes
                     if (_windowRings[k] == null || _windowRings[k].sprite == null || _windows[k].sprite != EngranajesSprites.Dome()) problems.Add(tag + "la luz " + k + " no tiene su aro y su domo");
                 for (int b = 0; b < _beltLinks.Count; b++)
                     if (_belts[b].Lines[2].Canto == null || _belts[b].Caps[2] == null || _belts[b].CapCanto[2] == null) problems.Add(tag + "la correa " + b + " no tiene el canto de su banda oscura");
+                AuditKitButtons(problems, tag);
                 ClearMachine();
             }
             return problems;

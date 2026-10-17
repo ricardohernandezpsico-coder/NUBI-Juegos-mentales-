@@ -201,13 +201,22 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>La moneda (disco gris claro con el aro levantado; se tiñe): el fondo de cada llave y el aro de cada luz del cohete. Sin atlas, el disco de siempre.</summary>
         public static Sprite Coin() => Art("moneda") ?? DiscSprite.Get();
 
-        /// <summary>El estado de un cartel: neutro (azul noche con borde dorado), cumplido (verde con borde menta) o fallido (granate con borde coral).</summary>
+        /// <summary>El estado de un cartel: neutro (azul noche), cumplido (verde) o fallido (granate): losas CHICAS del kit en los colores de las casillas de Rescate (Tarea 116).</summary>
         public enum PlateState { Neutral, Ok, Bad }
 
-        public static string PlateName(PlateState s) => s == PlateState.Ok ? "placa_ok" : s == PlateState.Bad ? "placa_mala" : "placa_neutra";
+        public static string PlateName(PlateState s) => s == PlateState.Ok ? "losa_ch_acierto" : s == PlateState.Bad ? "losa_ch_error" : "losa_ch_noche";
 
-        /// <summary>true si el atlas trae las placas de los carteles y la pastilla del rótulo MOTOR (nine-slice con su canto): sin ellas los carteles siguen con el relleno y el borde de siempre.</summary>
-        public static bool HasPlates => PlasticArt.Has(PlasticGroup, "placa_neutra") && PlasticArt.Has(PlasticGroup, "placa_ok") && PlasticArt.Has(PlasticGroup, "placa_mala") && PlasticArt.Has(PlasticGroup, "pastilla_motor") && PlasticArt.Has(PlasticGroup, "pastilla_motor_oro");
+        /// <summary>La losa chica dorada del kit (grupo <c>comun</c>): el rótulo MOTOR cuando el motor está cambiado.</summary>
+        public const string GoldChipGroup = "comun", GoldChip = "losa_ch_sol";
+
+        /// <summary>true si el atlas trae las losas de los carteles y el rótulo MOTOR (y el kit común la dorada): sin ellas los carteles siguen con el relleno y el borde de siempre.</summary>
+        public static bool HasPlates => PlasticArt.Has(PlasticGroup, "losa_ch_noche") && PlasticArt.Has(PlasticGroup, "losa_ch_acierto") && PlasticArt.Has(PlasticGroup, "losa_ch_error") && PlasticArt.Has(GoldChipGroup, GoldChip);
+
+        /// <summary>El triángulo de «Arrancar»: una cuña de plasticina de tinta (como los íconos de VERDAD y DISPARATE). Null sin atlas: el glifo plano de siempre.</summary>
+        public static Sprite PlayIcon() => Art("ico_play");
+
+        /// <summary>La llave de la cuenta de cambios sobre su moneda de plasticina (lila = libre, dorada = usada). Null sin atlas.</summary>
+        public static Sprite KeyCoin(bool used) => Art(used ? "llave_usada" : "llave_libre");
 
         /// <summary>El cubo central (no gira): disco tinta con un brillo. Lado 2 = 4 veces el radio del cubo (el cubo mide 0,18 de la punta).</summary>
         public static Sprite Hub() => Bake("hub", 2f, 2f, 40f, (ref Px p, float x, float y) =>
