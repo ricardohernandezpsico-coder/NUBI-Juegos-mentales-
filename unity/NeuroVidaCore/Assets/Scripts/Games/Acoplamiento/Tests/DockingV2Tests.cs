@@ -6,8 +6,8 @@ using UnityEngine;
 namespace NeuroVida.Games.Acoplamiento.Tests
 {
     /// <summary>
-    /// Acoplamiento «muelle de acoplamiento» (Tarea 68, 10-oct; docs/diseno-acoplamiento.md): las piezas caben en 4 × 4 bloques, la pantalla de 360 × 780 dp (y la de 16:9 que escala), la estación de anillos de 8, los textos del aviso, la revelación y el arte (el módulo sin luz horneada: la luz
-    /// y la sombra quedan fijas en la pantalla).
+    /// Acoplamiento «muelle de acoplamiento» (Tarea 68, 10-oct; v3 en la Tarea 118, 17-oct; docs/diseno-acoplamiento.md): las piezas caben en 4 × 4 bloques, la pantalla de 360 × 780 dp (y la de 16:9 que escala; sin la estación, con la fila de 8 luces), los textos del aviso, la revelación y la escultura
+    /// de la pantalla final. El arte de la pieza (la lámpara fija en la pantalla) se prueba en <see cref="DockingV3Tests"/>.
     /// </summary>
     public class DockingV2Tests
     {
@@ -131,40 +131,44 @@ namespace NeuroVida.Games.Acoplamiento.Tests
             Assert.AreEqual("Tu récord: 31 módulos", DockingContract.RecordLine(31));
         }
 
-        // ------------------------------------------------------------------ la pantalla
+        // ------------------------------------------------------------------ la pantalla (v3: sin estación, el bloque de 38 dp y la fila de luces)
 
         [Test]
-        public void OnTheReferenceScreenTheNumbersAreTheOnesOfTheDesign()
+        public void OnTheReferenceScreenTheNumbersAreTheOnesOfTheV3Sheet()
         {
             var p = new DockingPlan(780f, false);
+            float r = (float)Math.Sqrt(32.0) * 0.5f * 38f;
             Assert.AreEqual(1f, p.K, 1e-5f);
             Assert.AreEqual(0f, p.Extra, 1e-5f);
-            Assert.AreEqual(26f, p.Block, 1e-4f, "bloques de 26 dp");
+            Assert.AreEqual(38f, p.Block, 1e-4f, "bloques de 38 dp (hoy 26)");
             Assert.AreEqual(180f, p.ModuleCx, 1e-4f);
-            Assert.AreEqual(360f, p.ModuleCy, 1e-3f, "módulo en (180, 360)");
-            Assert.AreEqual(444f, p.FuelCy, 1e-3f, "barra de tiempo (80, 438) de 200 × 12 → centro y 444");
+            Assert.AreEqual(150f + 8f + r, p.ModuleCy, 1e-3f, "el módulo: 8 dp bajo la franja y a su círculo de giro de 215 dp");
+            Assert.AreEqual(2f * r, p.ModuleBox.Width, 0.01f);
+            Assert.AreEqual(215f, p.ModuleBox.Width, 0.5f);
+            Assert.AreEqual(p.ModuleCy + r + 12f, p.FuelCy, 1e-3f, "la barra de tiempo a 12 dp del círculo");
             Assert.AreEqual(200f, p.FuelW, 1e-4f);
             Assert.AreEqual(12f, p.FuelH, 1e-4f);
-            Assert.AreEqual(534f, p.PortCy, 1e-3f, "puerto en (180, 534)");
-            Assert.AreEqual(168f, p.PortW, 1e-4f);
-            Assert.AreEqual(146f, p.PortH, 1e-4f);
-            Assert.AreEqual(660f, p.ButtonCy, 1e-3f, "botones desde y 622 de 76 de alto → centro y 660");
+            Assert.AreEqual(245.5f, p.PortW, 0.1f, "el panel del puerto de 245 × 214 dp (hoy 168 × 146)");
+            Assert.AreEqual(213.6f, p.PortH, 0.1f);
+            Assert.AreEqual(p.FuelCy + 14f + p.PortH * 0.5f, p.PortCy, 1e-3f);
+            Assert.AreEqual(p.PortCy - 3f, p.HoleCy, 1e-4f, "el hueco, 3 dp más arriba que el centro del panel");
+            Assert.AreEqual(p.PortCy + p.PortH * 0.5f + 14f + 38f, p.ButtonCy, 1e-3f);
             Assert.AreEqual(158f, p.ButtonW, 1e-4f);
-            Assert.AreEqual(76f, p.ButtonH, 1e-4f);
+            Assert.AreEqual(76f, p.ButtonH, 1e-4f, "los botones no cambian: 158 × 76");
             Assert.AreEqual(12f, p.ButtonGap, 1e-4f);
-            Assert.AreEqual(734f, p.HintCy, 1e-3f, "la pista en y 734");
+            Assert.AreEqual(p.ButtonCy + 38f + 20f, p.HintCy, 1e-3f);
+            Assert.Less(p.HintCy + 8f, 780f, "la pista entra con aire");
             var (lx, ly) = p.ButtonCenter(0);
             var (rx, ry) = p.ButtonCenter(1);
             Assert.AreEqual(180f - 85f, lx, 1e-3f, "«Encaja» a la izquierda: x 16 a 174");
             Assert.AreEqual(180f + 85f, rx, 1e-3f, "«Espejo» a la derecha: x 186 a 344");
-            Assert.AreEqual(660f, ly, 1e-3f);
-            Assert.AreEqual(660f, ry, 1e-3f);
-            Assert.AreEqual(246f, DockingPlan.StripTop);
-            Assert.AreEqual(278f, DockingPlan.StripBottom);
-            Assert.AreEqual(200f, DockingPlan.StationBase);
-            Assert.AreEqual(128f, DockingPlan.StationRx);
-            Assert.AreEqual(30f, DockingPlan.StationRy);
-            Assert.AreEqual(24f, DockingPlan.StationStep);
+            Assert.AreEqual(p.ButtonCy, ly, 1e-3f);
+            Assert.AreEqual(p.ButtonCy, ry, 1e-3f);
+            Assert.AreEqual(118f, DockingPlan.StripTop);
+            Assert.AreEqual(150f, DockingPlan.StripBottom);
+            Assert.AreEqual(100f, DockingPlan.LightsCy);
+            Assert.AreEqual(8, DockingPlan.Lights);
+            Assert.AreEqual(38f, DockingPlan.ReferenceBlock);
         }
 
         [Test]
@@ -173,17 +177,19 @@ namespace NeuroVida.Games.Acoplamiento.Tests
             var p = new DockingPlan(640f, false);
             Assert.Less(p.K, 1f);
             Assert.GreaterOrEqual(p.K, 0.6f);
-            Assert.AreEqual(26f * p.K, p.Block, 1e-4f);
-            Assert.AreEqual(168f * p.K, p.PortW, 1e-3f);
+            Assert.AreEqual(38f * p.K, p.Block, 1e-4f);
+            Assert.AreEqual(31.3f, p.Block, 0.1f, "el bloque de 16:9 de la hoja: 31 dp (hoy 20)");
+            Assert.AreEqual(6.46f * p.Block, p.PortW, 1e-3f);
             Assert.AreEqual(158f * p.K, p.ButtonW, 1e-3f);
             Assert.LessOrEqual(p.ButtonBox(0).Y1, 640f, "los botones entran");
             Assert.LessOrEqual(p.HintCy + 7f, 640f, "y la pista también");
+            Assert.GreaterOrEqual(p.ButtonH, 56f, "y miden 56 dp o más (63 en 16:9)");
         }
 
         [Test]
-        public void TheScreenFitsInManyPhoneShapes_AndTheStripNeverTouchesTheModuleThePortOrTheButtons()
+        public void TheScreenFitsInManyPhoneShapes_AndNothingOverlapsInTheEightShapesOfTheSheet()
         {
-            foreach (float h in new[] { 640f, 700f, 720f, 780f, 800f, 900f, 1000f })
+            foreach (float h in new[] { 640f, 700f, 720f, 740f, 780f, 800f, 900f, 1000f })
                 foreach (bool guided in new[] { false, true })
                 {
                     var p = new DockingPlan(h, guided);
@@ -194,19 +200,39 @@ namespace NeuroVida.Games.Acoplamiento.Tests
                     Assert.IsFalse(strip.Intersects(p.ButtonBox(0)), "franja y «Encaja»" + at);
                     Assert.IsFalse(strip.Intersects(p.ButtonBox(1)), "franja y «Espejo»" + at);
                     Assert.IsFalse(strip.Intersects(p.FuelBox), "franja y barra de tiempo" + at);
+                    Assert.IsFalse(strip.Intersects(p.LightsBox), "franja y fila de luces" + at);
+                    Assert.IsFalse(p.LightsBox.Intersects(p.ModuleBox), "fila de luces y módulo" + at);
+                    Assert.LessOrEqual(p.LightsBox.Y1, DockingPlan.StripTop, "la fila de luces va sobre la franja" + at);
+                    Assert.GreaterOrEqual(p.LightsBox.Y0, DockingPlan.HudBottom, "y bajo el marcador" + at);
                     Assert.IsFalse(p.ModuleBox.Intersects(p.PortBox), "módulo y puerto" + at);
                     Assert.IsFalse(p.ModuleBox.Intersects(p.FuelBox), "módulo y barra de tiempo" + at);
                     Assert.IsFalse(p.FuelBox.Intersects(p.PortBox), "barra de tiempo y puerto" + at);
                     Assert.IsFalse(p.PortBox.Intersects(p.ButtonsBox), "puerto y botones" + at);
                     Assert.IsFalse(p.ButtonBox(0).Intersects(p.ButtonBox(1)), "los dos botones" + at);
+                    Assert.IsFalse(p.ButtonsBox.Intersects(p.HintBox), "botones y pista" + at);
                     float bottom = h - (guided ? DockingPlan.TutorialControls : 0f);
                     Assert.LessOrEqual(p.ButtonsBox.Y1, bottom + 0.01f, "los botones entran" + at);
+                    Assert.LessOrEqual(p.HintBox.Y1, bottom + 0.01f, "la pista entra" + at);
                     Assert.GreaterOrEqual(p.ModuleBox.X0, 0f, "el módulo entra a lo ancho" + at);
                     Assert.LessOrEqual(p.ModuleBox.X1, DockingPlan.Width, "el módulo entra a lo ancho" + at);
+                    Assert.LessOrEqual(p.PortBox.X1, DockingPlan.Width, "el puerto entra a lo ancho" + at);
                     Assert.LessOrEqual(p.ButtonsBox.X1, DockingPlan.Width, "los botones entran a lo ancho" + at);
                     Assert.GreaterOrEqual(p.ButtonsBox.X0, 0f, "los botones entran a lo ancho" + at);
                     Assert.GreaterOrEqual(p.K, 0.6f, "la escala no baja de 0,6" + at);
+                    if (!(guided && h < 700f)) Assert.GreaterOrEqual(p.ButtonH, 56f - 1e-3f, "los botones miden 56 dp o más (con el tutorial en 640 la escala llega al piso de 0,6, como hoy)" + at);
+                    else Assert.GreaterOrEqual(p.ButtonH, 76f * 0.6f - 1e-3f, "y nunca menos que el piso de la escala" + at);
+                    Assert.GreaterOrEqual(p.Block, 22.8f - 1e-3f, "la pieza nunca es más chica que 22,8 dp (0,6 de 38)" + at);
                 }
+        }
+
+        [Test]
+        public void TheLightsRowIsEightLightsCenteredAndTheMedalSitsRightOfIt()
+        {
+            Assert.AreEqual(180f - 3.5f * 30f, DockingPlan.LightX(0), 1e-3f);
+            Assert.AreEqual(180f + 3.5f * 30f, DockingPlan.LightX(7), 1e-3f);
+            for (int i = 1; i < DockingPlan.Lights; i++) Assert.AreEqual(30f, DockingPlan.LightX(i) - DockingPlan.LightX(i - 1), 1e-3f, "cada 30 dp");
+            Assert.Greater(DockingPlan.Width * 0.5f + DockingPlan.MedalDx - DockingPlan.MedalSprite * 0.5f, DockingPlan.LightX(7) + DockingPlan.LightSprite * 0.5f - 6f, "la medalla no pisa la última luz");
+            Assert.LessOrEqual(DockingPlan.Width * 0.5f + DockingPlan.MedalDx + DockingPlan.MedalSprite * 0.5f, DockingPlan.Width, "y entra a lo ancho");
         }
 
         [Test]
@@ -217,218 +243,48 @@ namespace NeuroVida.Games.Acoplamiento.Tests
             Assert.AreEqual(a.Block, b.Block, 1e-4f, "las piezas no crecen más");
             Assert.Greater(b.ButtonCy, a.ButtonCy + 90f, "los botones bajan");
             Assert.Greater(b.PortCy, a.PortCy + 50f);
-            Assert.Greater(b.ModuleCy, a.ModuleCy + 30f);
+            Assert.Greater(b.ModuleCy, a.ModuleCy + 20f);
             Assert.LessOrEqual(b.ButtonsBox.Y1, 900f);
         }
 
-        // ------------------------------------------------------------------ la estación
+        // ------------------------------------------------------------------ la escultura de la pantalla final
 
         [Test]
-        public void TheStationDrawsAtMost5RingsAndSlidesTheOldOnesAway()
+        public void TheSculptureDrawsAtMostThreeRings_TheNewestOnes_AndTheOldOnesSlideAway()
         {
             Assert.AreEqual((0, 1), DockingPlan.VisibleRange(0));
-            Assert.AreEqual((0, 1), DockingPlan.VisibleRange(7));
-            Assert.AreEqual((0, 2), DockingPlan.VisibleRange(8), "al completar un anillo aparece uno nuevo encima");
-            Assert.AreEqual((0, 3), DockingPlan.VisibleRange(23));
-            Assert.AreEqual((0, 4), DockingPlan.VisibleRange(24));
-            Assert.AreEqual((0, 5), DockingPlan.VisibleRange(39));
-            Assert.AreEqual((1, 5), DockingPlan.VisibleRange(40), "con 40 módulos ya son 6 anillos: se dibujan los 5 más nuevos");
-            Assert.AreEqual((6, 5), DockingPlan.VisibleRange(80), "con 80 módulos hay 11 anillos: se dibujan del 6.º al 10.º");
-            // la torre y el anillo más alto quedan bajo el marcador (63 dp)
-            float topRing = DockingPlan.RingY(DockingPlan.VisibleRings - 1) - DockingPlan.StationRy - 4.5f;
-            Assert.Greater(topRing, DockingPlan.HudBottom, "el anillo más alto no toca el marcador");
-            Assert.Less(DockingPlan.StationBase + DockingPlan.StationRy + 12f, DockingPlan.StripTop, "el anillo de abajo no llega a la franja de avisos");
+            Assert.AreEqual((0, 1), DockingPlan.VisibleRange(1));
+            Assert.AreEqual((0, 1), DockingPlan.VisibleRange(8), "ocho módulos son un anillo completo");
+            Assert.AreEqual((0, 2), DockingPlan.VisibleRange(9));
+            Assert.AreEqual((0, 3), DockingPlan.VisibleRange(23), "23 módulos: dos anillos completos y siete del tercero");
+            Assert.AreEqual((0, 3), DockingPlan.VisibleRange(24));
+            Assert.AreEqual((1, 3), DockingPlan.VisibleRange(25), "con 25 módulos ya son 4 anillos: se dibujan los 3 más nuevos");
+            Assert.AreEqual((7, 3), DockingPlan.VisibleRange(80), "con 80 módulos hay 10 anillos: se dibujan del 8.º al 10.º");
+            Assert.AreEqual(DockingPlan.SculptureRings, DockingPlan.SculptureRingY.Length);
+            // la escultura cabe entre el título de la pantalla final y la tarjeta de resultados (y 250)
+            float top = DockingPlan.SculptureRingY[DockingPlan.SculptureRings - 1] - DockingPlan.SculptureRy - 2f * DockingPlan.SculptureBlock;
+            float bottom = DockingPlan.SculptureRingY[0] + DockingPlan.SculptureRy + 2f * DockingPlan.SculptureBlock;
+            Assert.Greater(top, 80f, "no toca el título");
+            Assert.Less(bottom, 270f, "no pasa de la tarjeta (con su sombra)");
         }
 
         [Test]
-        public void TheEightSlotsOfARingAreHalfInFrontAndHalfBehind_AndInsideTheEllipse()
+        public void TheEightSlotsOfARingAreFrontAndBackOfTheCore_AndInsideTheEllipse()
         {
-            int front = 0, back = 0, side = 0;
+            int front = 0, back = 0;
             for (int k = 0; k < DockingContract.Slots; k++)
             {
                 var p = DockingPlan.SlotPoint(200f, k);
-                if (p.depth > 0.01f) front++; else if (p.depth < -0.01f) back++; else side++;
-                Assert.LessOrEqual(Math.Abs(p.x - DockingPlan.StationCx), DockingPlan.StationRx + 0.01f);
-                Assert.LessOrEqual(Math.Abs(p.y - 200f), DockingPlan.StationRy + 0.01f);
+                if (DockingPlan.IsFront(k)) front++; else back++;
+                Assert.LessOrEqual(Math.Abs(p.x - DockingPlan.SculptureCx), DockingPlan.SculptureRx + 0.01f);
+                Assert.LessOrEqual(Math.Abs(p.y - 200f), DockingPlan.SculptureRy + 0.01f);
             }
-            Assert.AreEqual(3, front, "tres adelante");
+            Assert.AreEqual(5, front, "tres adelante y uno en cada costado");
             Assert.AreEqual(3, back, "tres atrás");
-            Assert.AreEqual(2, side, "y uno en cada punta");
             var first = DockingPlan.SlotPoint(200f, 0);
             Assert.AreEqual(180f, first.x, 0.01f, "el primer casillero va al frente, abajo");
-            Assert.AreEqual(230f, first.y, 0.01f);
+            Assert.AreEqual(220f, first.y, 0.01f);
             Assert.AreEqual(1f, first.depth, 1e-5f);
-        }
-
-        // ------------------------------------------------------------------ el arte
-
-        private static Cell[] LShape() => new[] { new Cell(0, 0), new Cell(0, 1), new Cell(0, 2), new Cell(1, 0) };
-
-        private static Color32 PixelAt(Color32[] px, int size, Cell[] cells, float gx, float gy)
-        {
-            DockingSprites.PieceCenter(cells, out float cx, out float cy, out _, out _);
-            int x = Mathf.RoundToInt(((gx - cx) / DockingSprites.PieceSideCells + 0.5f) * size - 0.5f);
-            int y = Mathf.RoundToInt(((gy - cy) / DockingSprites.PieceSideCells + 0.5f) * size - 0.5f);
-            return px[y * size + x];
-        }
-
-        [Test]
-        public void TheModuleIsFlatCelesteWithInkBorder_AndHasNoBakedLight()
-        {
-            const int size = 192;
-            var cells = LShape();
-            var px = DockingSprites.RenderPiece(cells, DockingSprites.PieceLayer.Body, size);
-            // el centro de un bloque es celeste, opaco
-            var center = PixelAt(px, size, cells, 0f, 2f);
-            Assert.AreEqual(255, center.a);
-            // fuera de la pieza, transparente
-            Assert.AreEqual(0, PixelAt(px, size, cells, 1.5f, 2f).a, "fuera de la pieza no hay nada");
-            Assert.AreEqual(0, PixelAt(px, size, cells, 1f, 1.5f).a);
-            // el borde de tinta rodea la silueta: justo fuera del bloque (a 0,56 de su centro) hay tinta
-            var edge = PixelAt(px, size, cells, -0.56f, 2f);
-            Assert.Greater(edge.a, 200);
-            Assert.Less(edge.r, 80, "tinta oscura");
-            // SIN luz horneada: el celeste del arriba y del abajo de un mismo bloque (lejos de juntas y remaches) es el mismo; la luz la pone el controlador, fija en la pantalla
-            var top = PixelAt(px, size, cells, 0f, 2.18f);
-            var bottom = PixelAt(px, size, cells, 0f, 1.82f);
-            Assert.AreEqual(top.r, bottom.r, 2, "mismo rojo arriba y abajo");
-            Assert.AreEqual(top.g, bottom.g, 2);
-            Assert.AreEqual(top.b, bottom.b, 2);
-            Assert.AreEqual(top.r, center.r, 2, "y mismo celeste en el centro");
-            var left = PixelAt(px, size, cells, -0.18f, 2f);
-            var right = PixelAt(px, size, cells, 0.18f, 2f);
-            Assert.AreEqual(left.g, right.g, 2, "ni de un lado ni del otro");
-        }
-
-        [Test]
-        public void ThereIsAThinInkJointBetweenNeighborBlocks_AndFourRivetsPerBlock()
-        {
-            const int size = 384;
-            var cells = LShape();
-            var px = DockingSprites.RenderPiece(cells, DockingSprites.PieceLayer.Body, size);
-            var joint = PixelAt(px, size, cells, 0.1f, 0.5f);                          // entre el bloque (0,0) y el (0,1)
-            var flat = PixelAt(px, size, cells, 0.1f, 0.3f);
-            Assert.Less(joint.g, flat.g - 15, "la junta es más oscura que el bloque");
-            var sideJoint = PixelAt(px, size, cells, 0.5f, 0.2f);                       // el borde entre el bloque (0,0) y el (1,0) también es junta
-            Assert.Less(sideJoint.g, flat.g - 15);
-            // los remaches (4 simétricos por bloque): oscuros, en (±0,27; ±0,27) del centro de cada bloque
-            foreach (var c in new[] { new Cell(0, 2), new Cell(1, 0) })
-                foreach (var (dx, dy) in new[] { (-0.27f, -0.27f), (0.27f, -0.27f), (-0.27f, 0.27f), (0.27f, 0.27f) })
-                {
-                    var rivet = PixelAt(px, size, cells, c.X + dx, c.Y + dy);
-                    var plain = PixelAt(px, size, cells, c.X + dx * 0.4f, c.Y + dy * 0.4f);
-                    Assert.Less(rivet.g, plain.g - 20, "remache en el bloque " + c.X + "," + c.Y + " (" + dx + "," + dy + ")");
-                }
-        }
-
-        [Test]
-        public void TheHolePortIsTheSamePieceAtTheSameScale_AndItsEdgeIsLargerThanTheHole()
-        {
-            const int size = 192;
-            var cells = LShape();
-            var edge = DockingSprites.RenderPiece(cells, DockingSprites.PieceLayer.Edge, size);
-            var hole = DockingSprites.RenderPiece(cells, DockingSprites.PieceLayer.Hole, size);
-            var body = DockingSprites.RenderPiece(cells, DockingSprites.PieceLayer.Body, size);
-            int nEdge = 0, nHole = 0, nBody = 0, holeOutsideEdge = 0, bodyOutsideEdge = 0;
-            for (int i = 0; i < edge.Length; i++)
-            {
-                bool e = edge[i].a > 128, h = hole[i].a > 128, b = body[i].a > 128;
-                if (e) nEdge++;
-                if (h) nHole++;
-                if (b) nBody++;
-                if (h && !e) holeOutsideEdge++;
-                if (b && !e) bodyOutsideEdge++;
-            }
-            Assert.Greater(nEdge, nHole, "el borde es más grande que el hueco");
-            Assert.AreEqual(0, holeOutsideEdge, "el hueco queda dentro del borde");
-            Assert.Greater(nHole, 0);
-            // el módulo (con su borde de tinta) y el borde del hueco son la misma silueta: el mismo tamaño
-            Assert.AreEqual(nBody, nEdge, nBody * 0.01, "módulo y hueco a la misma escala");
-            Assert.AreEqual(0, bodyOutsideEdge);
-        }
-
-        [Test]
-        public void ThePieceTextureIsSquareAndBakedPerTrial_AndReleased()
-        {
-            DockingSprites.BakePiece(LShape(), out var body, out var edge, out var hole);
-            Assert.IsNotNull(body);
-            Assert.AreEqual(DockingSprites.PiecePx, body.texture.width);
-            Assert.AreEqual(DockingSprites.PiecePx, body.texture.height);
-            DockingSprites.Release(body);
-            DockingSprites.Release(edge);
-            DockingSprites.Release(hole);
-            DockingSprites.Release(null);                                              // soltar nada no rompe
-        }
-
-        [Test]
-        public void TheEllipseDistanceIsRightOnAndAroundTheRing()
-        {
-            const float a = 128f, b = 30f;
-            Assert.AreEqual(0f, DockingSprites.EllipseDistance(a, 0f, a, b), 0.05f, "en el extremo derecho");
-            Assert.AreEqual(0f, DockingSprites.EllipseDistance(0f, -b, a, b), 0.05f, "abajo");
-            Assert.AreEqual(0f, DockingSprites.EllipseDistance(0f, b, a, b), 0.05f, "arriba");
-            Assert.AreEqual(5f, DockingSprites.EllipseDistance(0f, b + 5f, a, b), 0.2f, "5 dp arriba del anillo");
-            Assert.AreEqual(5f, DockingSprites.EllipseDistance(a + 5f, 0f, a, b), 0.3f, "5 dp afuera del extremo");
-            Assert.Less(DockingSprites.EllipseDistance(0f, 0f, a, b), 0f, "el centro está adentro");
-            Assert.AreEqual(-10f, DockingSprites.EllipseDistance(0f, b - 10f, a, b), 0.2f);
-            // un punto cualquiera del anillo
-            float t = 0.7f;
-            Assert.AreEqual(0f, DockingSprites.EllipseDistance(a * Mathf.Cos(t), b * Mathf.Sin(t), a, b), 0.05f);
-        }
-
-        [Test]
-        public void TheRingSpritesDrawAStrokeAlongTheEllipse()
-        {
-            var ring = DockingSprites.RenderEllipseRing(5f);
-            int w = (int)(DockingSprites.RingSpriteW * DockingSprites.RingPxPerDp), h = (int)(DockingSprites.RingSpriteH * DockingSprites.RingPxPerDp);
-            Assert.AreEqual(w * h, ring.Length);
-            // el trazo pasa por las dos puntas de la elipse (a la altura del centro), no por el centro
-            int cy = h / 2, cx = w / 2, reach = (int)(DockingSprites.RingRx * DockingSprites.RingPxPerDp);
-            Assert.Greater(ring[cy * w + cx + reach].a, 128, "la punta derecha");
-            Assert.Greater(ring[cy * w + cx - reach].a, 128, "la punta izquierda");
-            Assert.AreEqual(0, ring[cy * w + cx].a, "el centro del anillo está vacío");
-            int on = 0;
-            foreach (var p in ring) if (p.a > 128) on++;
-            Assert.Greater(on, 800, "se dibuja el trazo");
-        }
-
-        [Test]
-        public void TheButtonsThePanelAndTheIconsAreDrawn()
-        {
-            var panel = DockingSprites.RenderPortPanel(256);
-            Assert.AreEqual(256 * 256, panel.Length);
-            Assert.AreEqual(255, panel[128 * 256 + 128].a, "el panel es opaco al centro");
-            Assert.AreEqual(0, panel[2 * 256 + 2].a, "y transparente en la esquina");
-            var fit = DockingSprites.RenderButton(256, DockingSprites.LimeColor);
-            var mirror = DockingSprites.RenderButton(256, DockingSprites.GrapeColor);
-            Assert.AreNotEqual(fit[128 * 256 + 128], mirror[128 * 256 + 128], "uno es lima y el otro uva");
-            Assert.Greater(fit[128 * 256 + 128].g, fit[128 * 256 + 128].b, "«Encaja» es lima (más verde que azul)");
-            Assert.Greater(mirror[128 * 256 + 128].b, mirror[128 * 256 + 128].g, "«Espejo» es uva (más azul que verde)");
-            foreach (var icon in new[] { DockingSprites.RenderFitIcon(128), DockingSprites.RenderMirrorIcon(128) })
-            {
-                int on = 0;
-                foreach (var p in icon) if (p.a > 128) on++;
-                Assert.Greater(on, 300, "el ícono se dibuja");
-            }
-            Assert.AreEqual(36f, DockingSprites.SlotSide);
-            foreach (var slot in new[] { DockingSprites.RenderSlot(64, DockingSprites.ModuleColor), DockingSprites.RenderSlot(64, DockingSprites.LimeColor), DockingSprites.RenderSlotEmpty(64), DockingSprites.RenderChevron(64), DockingSprites.RenderSpot(64) })
-            {
-                int on = 0;
-                foreach (var p in slot) if (p.a > 64) on++;
-                Assert.Greater(on, 40);
-            }
-        }
-
-        [Test]
-        public void NothingInThePortOrTheStationDependsOnTheLevel()
-        {
-            // la pantalla y el arte no reciben el nivel: dificultad = tiempo, ángulo y tamaño de la pieza, nunca contraste
-            foreach (var m in typeof(DockingPlan).GetConstructors())
-                foreach (var prm in m.GetParameters())
-                    Assert.IsFalse(prm.Name.ToLowerInvariant().Contains("level") || prm.Name.ToLowerInvariant().Contains("nivel"), "DockingPlan recibe el nivel");
-            foreach (var m in typeof(DockingSprites).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
-                foreach (var prm in m.GetParameters())
-                    Assert.IsFalse(prm.Name.ToLowerInvariant().Contains("level") || prm.Name.ToLowerInvariant().Contains("nivel"), m.Name + " recibe el nivel");
         }
     }
 }

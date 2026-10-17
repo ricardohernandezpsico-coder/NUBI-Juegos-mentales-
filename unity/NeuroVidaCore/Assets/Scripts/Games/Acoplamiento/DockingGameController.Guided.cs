@@ -19,7 +19,7 @@ namespace NeuroVida.Games.Acoplamiento
             _guided = true;
             while (!_baked) yield return null;
             // «Nubi entrenadora» (docs/diseno-acoplamiento.md §9), sobre tres módulos de práctica que no cuentan (no alimentan el motor, las medidas ni el récord): 1) el puerto («el hueco tiene la forma de la pieza»); 2) llega un módulo girado 90° que SÍ encaja: «¿calza en el hueco?»
-            // y un paso de Tocar «Encaja» (toque real); 3) el módulo gira, baja y encaja: se suma a la estación; 4) llega un espejo (L girada 45°) y se muestra sin tocar el giro y la vuelta que lo hace calzar: «Si está dado vuelta, toca Espejo»; 5) otro espejo (90°): «¿Y este?» con un paso de
+            // y un paso de Tocar «Encaja» (toque real); 3) el módulo gira, baja y encaja: hace «plop» y se enciende una luz de la fila de avance; 4) llega un espejo (L girada 45°) y se muestra sin tocar el giro y la vuelta que lo hace calzar: «Si está dado vuelta, toca Espejo»; 5) otro espejo (90°): «¿Y este?» con un paso de
             // Tocar «Espejo» (toque real) y su revelación; 6) «¡Listo!». «La práctica asegura, nunca alterna»: el toque de un paso de Tocar solo lo recibe el paso (la entrada del juego está apagada) y la práctica registra la respuesta si no estaba, con guardias de estado para el smoke.
             int savedShown = _stationShown;
             int savedStreak = _streak;
@@ -32,7 +32,7 @@ namespace NeuroVida.Games.Acoplamiento
             SetNotice("", Lime, false);
             SetFuelVisible(false);
             _hint.gameObject.SetActive(false);
-            RefreshStation();
+            RefreshLights(Now);
             RefreshButtons(Now);
             var coach = t.Coach;
             var script = new GuidedScript(6);
@@ -40,7 +40,7 @@ namespace NeuroVida.Games.Acoplamiento
             var shape = PracticeShape();
             Func<Rect> portZone = coach.Zone(() => PortRect(coach));
             Func<Rect> moduleZone = coach.Zone(() => coach.AroundOf(_moduleRoot, Vector2.one * (ModuleRadius() * 2f * _s)));
-            Func<Rect> stationZone = coach.Zone(_stationZone);
+            Func<Rect> lightsZone = coach.Zone(_lightsZone);
             Func<Rect> buttonsZone = coach.ZoneOf(new[] { _buttons[0].Root, _buttons[1].Root });
 
             // 1) el puerto: el hueco tiene la forma de la pieza
@@ -72,19 +72,19 @@ namespace NeuroVida.Games.Acoplamiento
                 }
             }
 
-            // 3) el módulo gira, baja y encaja: se suma a la estación
+            // 3) el módulo gira, baja y encaja: se enciende una luz de la fila de avance
             if (ok)
             {
                 bool correct = DockingContract.IsCorrect(_trial.Mirrored, _answer);
                 TutorialGuards.Expect(correct, "Acoplamiento", "la primera práctica (un módulo que encaja) no terminó acertada");
                 var reveal = StartCoroutine(RevealRoutine(correct, _answer));
                 yield return null;
-                yield return StartCoroutine(coach.Watch(() => coach.RectOf(_stationZone), CoachTexts.Acoplamiento.Docks, () => !_revealing, 6f, keep: new[] { portZone }));
+                yield return StartCoroutine(coach.Watch(() => coach.RectOf(_lightsZone), CoachTexts.Acoplamiento.Docks, () => !_revealing, 6f, keep: new[] { portZone }));
                 ok = !t.Skipped;
                 while (ok && _revealing) { yield return null; ok = !t.Skipped; }
                 if (ok) script.Success();
                 if (reveal != null) StopCoroutine(reveal);
-                TutorialGuards.Expect(!ok || _stationShown == 1, "Acoplamiento", "tras la primera práctica la estación debía tener 1 módulo y tiene " + _stationShown);
+                TutorialGuards.Expect(!ok || _stationShown == 1, "Acoplamiento", "tras la primera práctica la fila debía tener 1 luz encendida y tiene " + _stationShown);
                 _phase = Phase.Idle;
                 HideModule();
             }
@@ -135,7 +135,7 @@ namespace NeuroVida.Games.Acoplamiento
                     yield return null;
                     while (ok && _revealing) { yield return null; ok = !t.Skipped; }
                     if (reveal != null) StopCoroutine(reveal);
-                    TutorialGuards.Expect(!ok || _stationShown == 2, "Acoplamiento", "tras las dos prácticas la estación debía tener 2 módulos y tiene " + _stationShown);
+                    TutorialGuards.Expect(!ok || _stationShown == 2, "Acoplamiento", "tras las dos prácticas la fila debía tener 2 luces encendidas y tiene " + _stationShown);
                     if (ok) script.Success();
                 }
             }
@@ -159,7 +159,7 @@ namespace NeuroVida.Games.Acoplamiento
         }
         // </guided>
 
-        /// <summary>El panel del puerto tal como se ve (168 × 146 dp, escalado): su sprite es un cuadrado más grande (con el borde y la sombra) y iluminar ese cuadrado dejaba ver franjas de los botones.</summary>
+        /// <summary>El panel del puerto tal como se ve (245 × 214 dp, escalado): su losa sobresale por sus márgenes (sombra y canto) y iluminar ese rectángulo dejaba ver franjas de los botones.</summary>
         private Rect PortRect(NubiCoach coach) => coach.AroundOf(_portPanel.rectTransform, new Vector2(_plan.PortW, _plan.PortH) * _s);
 
         /// <summary>«La práctica asegura, nunca alterna»: registra la respuesta de la práctica solo si todavía no hay una (el toque de un paso de Tocar no llega al juego: su entrada está apagada).</summary>

@@ -6,13 +6,8 @@ using static NeuroVida.Games.Shared.ClayRaster;
 namespace NeuroVida.Games.Acoplamiento
 {
     /// <summary>
-    /// Arte procedural de Acoplamiento (v2, 10-oct; sin assets), con el pincel de arcilla común (<see cref="ClayRaster"/>) y las medidas y colores del boceto aprobado (docs/previews/acoplamiento-boceto.html):
-    /// <list type="bullet">
-    /// <item><see cref="BakePiece"/>: el MÓDULO (bloques de arcilla celeste, planos, con juntas finas de tinta y 4 remaches simétricos por bloque; SIN luz ni sombra horneadas, porque la luz y la sombra quedan FIJAS en la pantalla y no giran con la pieza: las pone el controlador con
-    /// <see cref="LightGradient"/> y <see cref="LightSpot"/> recortadas por la silueta) y el HUECO del puerto (el borde y el fondo oscuro), ambos de la misma pieza, a la misma escala.</item>
-    /// <item><see cref="PortPanel"/>, <see cref="FitButton"/>, <see cref="MirrorButton"/>: el puerto y los dos botones de arcilla, con sus íconos (<see cref="FitIcon"/>, <see cref="MirrorIcon"/>).</item>
-    /// <item><see cref="EllipseInk"/> y <see cref="EllipseColor"/> (los anillos de la estación), <see cref="SlotSky"/>, <see cref="SlotLime"/>, <see cref="SlotEmpty"/> (sus casilleros) y <see cref="Chevron"/> (las luces del puerto).</item>
-    /// </list>
+    /// Arte procedural de Acoplamiento (sin assets), con el pincel de arcilla común (<see cref="ClayRaster"/>): lo que queda de la v2 y sirve de RESPALDO cuando no está el atlas de plasticina (<c>PlasticArt</c>, grupo «acoplamiento» y losas del kit): el panel del puerto, los botones «Encaja» y «Espejo»
+    /// con sus íconos y los chevrones. La pieza y el hueco (la v3, con la lámpara fija en la pantalla) se hornean por módulo en <see cref="DockingArt"/>; la estación de anillos ya no existe en la pantalla de juego.
     /// Las funciones <c>Render*</c> devuelven los píxeles (fila 0 = abajo) para poder previsualizarlos fuera de Unity.
     /// </summary>
     public static class DockingSprites
@@ -21,169 +16,6 @@ namespace NeuroVida.Games.Acoplamiento
 
         private const float Aa = 0.03f;
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
-
-        // ------------------------------------------------------------------ la pieza (módulo y hueco)
-
-        /// <summary>El lado del cuadro de la pieza en bloques (4 de la pieza más margen para el borde): la pieza queda centrada en su caja.</summary>
-        public const float PieceSideCells = 4.8f;
-        public const int PiecePx = 384;
-        /// <summary>El borde de tinta del módulo y del hueco, en bloques (3 dp con bloques de 26 dp).</summary>
-        public const float InkBorder = 3f / 26f, HoleInset = 0.6f / 26f;
-
-        public enum PieceLayer { Body, Edge, Hole }
-
-        /// <summary>La caja de la pieza: el centro de su cuadro delimitador, en coordenadas de bloque.</summary>
-        public static void PieceCenter(IReadOnlyList<Cell> cells, out float cx, out float cy, out int w, out int h)
-        {
-            w = 0;
-            h = 0;
-            foreach (var c in cells) { w = Mathf.Max(w, c.X + 1); h = Mathf.Max(h, c.Y + 1); }
-            cx = (w - 1) * 0.5f;
-            cy = (h - 1) * 0.5f;
-        }
-
-        /// <summary>
-        /// Distancia con signo a la pieza (en bloques): UNA sola silueta. Además de cada bloque se suma un «puente» que cubre cada par de bloques vecinos; sin eso, la unión de cuadrados que se tocan deja la costura entre ellos con distancia 0 (se dibujaría como borde).
-        /// </summary>
-        private static float PieceSdf(Cell[] cells, HashSet<Cell> set, float gx, float gy)
-        {
-            const float r = 0.16f;
-            float d = 1e5f;
-            foreach (var c in cells)
-            {
-                float cx = c.X, cy = c.Y;
-                d = Mathf.Min(d, RoundBox(gx, gy, cx, cy, 0.5f, 0.5f, r));
-                if (set.Contains(new Cell(c.X + 1, c.Y))) d = Mathf.Min(d, RoundBox(gx, gy, cx + 0.5f, cy, 1f, 0.5f, r));
-                if (set.Contains(new Cell(c.X, c.Y + 1))) d = Mathf.Min(d, RoundBox(gx, gy, cx, cy + 0.5f, 0.5f, 1f, r));
-            }
-            return d;
-        }
-
-        /// <summary>
-        /// Los píxeles de una capa de la pieza (fila 0 = abajo), de <paramref name="size"/> × <paramref name="size"/>: <see cref="PieceLayer.Body"/> es el módulo (borde de tinta, celeste plano, juntas de 1 dp entre bloques y 4 remaches simétricos por bloque);
-        /// <see cref="PieceLayer.Edge"/> es la silueta blanca del borde del hueco (se tiñe con el estado del puerto) y <see cref="PieceLayer.Hole"/> el fondo del hueco (blanco: se tiñe de oscuro).
-        /// </summary>
-        public static Color32[] RenderPiece(Cell[] cells, PieceLayer layer, int size)
-        {
-            var body = layer == PieceLayer.Body ? new Color32[size * size] : null;
-            var edge = layer == PieceLayer.Edge ? new Color32[size * size] : null;
-            var hole = layer == PieceLayer.Hole ? new Color32[size * size] : null;
-            RenderPieceLayers(cells, size, body, edge, hole);
-            return body ?? edge ?? hole;
-        }
-
-        /// <summary>Calcula las capas pedidas (las que no son null) en UNA sola pasada: la distancia a la pieza se evalúa una vez por píxel.</summary>
-        public static void RenderPieceLayers(Cell[] cells, int size, Color32[] body, Color32[] edge, Color32[] hole)
-        {
-            var set = new HashSet<Cell>(cells);
-            PieceCenter(cells, out float ccx, out float ccy, out int w, out int h);
-            float aa = PieceSideCells / size * 1.5f;
-            // los píxeles lejos de la caja de la pieza (con su borde) quedan vacíos sin evaluar nada
-            float reach = Mathf.Max(w, h) * 0.5f + 1f;
-            for (int py = 0; py < size; py++)
-            {
-                float gy = ccy + ((py + 0.5f) / size - 0.5f) * PieceSideCells;
-                for (int x = 0; x < size; x++)
-                {
-                    float gx = ccx + ((x + 0.5f) / size - 0.5f) * PieceSideCells;
-                    if (Mathf.Abs(gx - ccx) > reach || Mathf.Abs(gy - ccy) > reach) continue;
-                    float d = PieceSdf(cells, set, gx, gy);
-                    int i = py * size + x;
-                    if (edge != null) { var p = new Px(); p.Over(Color.white, Cover(d - InkBorder, aa)); edge[i] = p.ToColor32(); }
-                    if (hole != null) { var p = new Px(); p.Over(Color.white, Cover(d + HoleInset, aa)); hole[i] = p.ToColor32(); }
-                    if (body == null) continue;
-                    var q = new Px();
-                    q.Over(Ink, Cover(d - InkBorder, aa));
-                    q.Over(ModuleColor, Cover(d + 0.02f, aa));
-                    int ix = Mathf.RoundToInt(gx), iy = Mathf.RoundToInt(gy);
-                    if (set.Contains(new Cell(ix, iy)))
-                    {
-                        float lx = gx - ix, ly = gy - iy, inside = Cover(d + 0.02f, aa);
-                        // las juntas: una línea fina de tinta (1 dp) en cada lado que comparte con un vecino
-                        float joint = 1e5f;
-                        if (Mathf.Abs(ly) <= 0.5f)
-                        {
-                            if (set.Contains(new Cell(ix + 1, iy))) joint = Mathf.Min(joint, Mathf.Abs(lx - 0.5f));
-                            if (set.Contains(new Cell(ix - 1, iy))) joint = Mathf.Min(joint, Mathf.Abs(lx + 0.5f));
-                        }
-                        if (Mathf.Abs(lx) <= 0.5f)
-                        {
-                            if (set.Contains(new Cell(ix, iy + 1))) joint = Mathf.Min(joint, Mathf.Abs(ly - 0.5f));
-                            if (set.Contains(new Cell(ix, iy - 1))) joint = Mathf.Min(joint, Mathf.Abs(ly + 0.5f));
-                        }
-                        q.Over(new Color(Ink.r, Ink.g, Ink.b, 0.55f), Cover(joint - 0.02f, aa) * inside);
-                        // los 4 remaches de cada bloque: simétricos, no delatan la orientación
-                        foreach (var (rx, ry) in Rivets)
-                            q.Over(new Color(26f / 255f, 18f / 255f, 64f / 255f, 0.35f), Cover(Circle(lx, ly, rx, ry, 0.06f), aa) * inside);
-                    }
-                    body[i] = q.ToColor32();
-                }
-            }
-        }
-
-        private static readonly (float, float)[] Rivets = { (-0.27f, -0.27f), (0.27f, -0.27f), (-0.27f, 0.27f), (0.27f, 0.27f) };
-
-        /// <summary>Hornea el módulo, el borde del hueco y el fondo del hueco de una pieza. TEXTURAS NUEVAS en cada llamada: quien las pide libera las anteriores (<see cref="Release"/>).</summary>
-        public static void BakePiece(Cell[] cells, out Sprite body, out Sprite edge, out Sprite hole)
-        {
-            var b = new Color32[PiecePx * PiecePx];
-            var e = new Color32[PiecePx * PiecePx];
-            var o = new Color32[PiecePx * PiecePx];
-            RenderPieceLayers(cells, PiecePx, b, e, o);
-            body = ToSprite(b, PiecePx, PiecePx);
-            edge = ToSprite(e, PiecePx, PiecePx);
-            hole = ToSprite(o, PiecePx, PiecePx);
-        }
-
-        /// <summary>Libera la textura de un sprite horneado por pieza.</summary>
-        public static void Release(Sprite sprite)
-        {
-            if (sprite == null) return;
-            var tex = sprite.texture;
-            if (Application.isPlaying)
-            {
-                Object.Destroy(sprite);
-                if (tex != null) Object.Destroy(tex);
-            }
-            else
-            {
-                Object.DestroyImmediate(sprite);                                  // en las pruebas EditMode Destroy avisa con un error
-                if (tex != null) Object.DestroyImmediate(tex);
-            }
-        }
-
-        // ------------------------------------------------------------------ la luz fija (no gira con la pieza)
-
-        /// <summary>El degradado de luz y sombra sobre el módulo, en la pantalla: arriba un velo blanco (35 %), en el medio nada y abajo un velo oscuro (15 %), como en el boceto (luz de arriba). Va recortado por la silueta del módulo y NO gira con él.</summary>
-        public static Sprite LightGradient() => Get(200, () =>
-        {
-            const int n = 64;
-            var px = new Color32[n * n];
-            for (int y = 0; y < n; y++)
-            {
-                float t = 1f - (y + 0.5f) / n;                         // 0 arriba, 1 abajo
-                Color c = t < 0.55f ? new Color(1f, 1f, 1f, 0.35f * (1f - t / 0.55f)) : new Color(8f / 255f, 6f / 255f, 30f / 255f, 0.18f * ((t - 0.55f) / 0.45f));
-                for (int x = 0; x < n; x++) px[y * n + x] = (Color32)c;
-            }
-            return ToSprite(px, n, n);
-        });
-
-        /// <summary>El brillo de arriba a la izquierda (una elipse blanca; se pinta al 30 %): también fijo en la pantalla.</summary>
-        public static Sprite LightSpot() => Get(201, () => ToSprite(RenderSpot(128), 128, 128));
-
-        public static Color32[] RenderSpot(int size)
-        {
-            var px = new Color32[size * size];
-            for (int py = 0; py < size; py++)
-                for (int x = 0; x < size; x++)
-                {
-                    float u = ((x + 0.5f) / size * 2f - 1f), v = ((py + 0.5f) / size * 2f - 1f);
-                    var p = new Px();
-                    p.Over(Color.white, Cover(Ellipse(u, v, 0f, 0f, 0.9f, 0.9f), 0.04f));
-                    px[py * size + x] = p.ToColor32();
-                }
-            return px;
-        }
 
         // ------------------------------------------------------------------ el puerto y los botones (arcilla)
 
@@ -268,34 +100,7 @@ namespace NeuroVida.Games.Acoplamiento
             return px;
         }
 
-        // ------------------------------------------------------------------ la estación (anillos y casilleros)
-
-        /// <summary>La elipse de un anillo (128 × 30 dp de radios) con su trazo: el de tinta (9 dp) va debajo del de color (5 dp). Textura rectangular, 2 píxeles por dp.</summary>
-        public const float RingRx = DockingPlan.StationRx, RingRy = DockingPlan.StationRy, RingPad = 8f, RingPxPerDp = 2f;
-        public const float RingSpriteW = (2f * RingRx + 2f * RingPad), RingSpriteH = (2f * RingRy + 2f * RingPad);
-
-        public static Sprite EllipseInk() => Get(220, () => ToSpriteRect(RenderEllipseRing(9f), (int)(RingSpriteW * RingPxPerDp), (int)(RingSpriteH * RingPxPerDp)));
-        public static Sprite EllipseColor() => Get(221, () => ToSpriteRect(RenderEllipseRing(5f), (int)(RingSpriteW * RingPxPerDp), (int)(RingSpriteH * RingPxPerDp)));
-
-        /// <summary>El trazo blanco (de <paramref name="strokeDp"/> dp) de la elipse del anillo, en una textura de <see cref="RingSpriteW"/> × <see cref="RingSpriteH"/> dp.</summary>
-        public static Color32[] RenderEllipseRing(float strokeDp)
-        {
-            int w = (int)(RingSpriteW * RingPxPerDp), h = (int)(RingSpriteH * RingPxPerDp);
-            var px = new Color32[w * h];
-            float half = strokeDp * 0.5f, aa = 1.5f / RingPxPerDp;
-            for (int py = 0; py < h; py++)
-            {
-                float v = -(((py + 0.5f) / h * 2f - 1f) * (RingSpriteH * 0.5f));              // y hacia arriba, en dp
-                for (int x = 0; x < w; x++)
-                {
-                    float u = ((x + 0.5f) / w * 2f - 1f) * (RingSpriteW * 0.5f);
-                    float d = Mathf.Abs(EllipseDistance(u, v, RingRx, RingRy)) - half;
-                    byte a = (byte)(Cover(d, aa) * 255f + 0.5f);
-                    if (a > 0) px[py * w + x] = new Color32(255, 255, 255, a);
-                }
-            }
-            return px;
-        }
+        // ------------------------------------------------------------------ la elipse (la pista de los anillos de la escultura final)
 
         /// <summary>Distancia (con signo, aproximada con unas vueltas de Newton) de un punto a una elipse de radios (a, b) centrada en el origen.</summary>
         public static float EllipseDistance(float px, float py, float a, float b)
@@ -317,43 +122,6 @@ namespace NeuroVida.Games.Acoplamiento
             float dist = Mathf.Sqrt(qx * qx + qy * qy);
             bool inside = (ax * ax) / (a * a) + (ay * ay) / (b * b) < 1f;
             return inside ? -dist : dist;
-        }
-
-        /// <summary>Un casillero ocupado: 26 × 18 dp (radio 6, borde de tinta de 2,6 dp). Celeste, o lima cuando su anillo está completo.</summary>
-        public const float SlotW = 26f, SlotH = 18f;
-
-        public static Sprite SlotSky() => Get(222, () => ToSprite(RenderSlot(128, ModuleColor), 128, 128));
-        public static Sprite SlotLime() => Get(223, () => ToSprite(RenderSlot(128, LimeColor), 128, 128));
-        /// <summary>El lado del sprite de un casillero en dp (un poco más que él: borde y sombra).</summary>
-        public const float SlotSide = 36f;
-
-        public static Color32[] RenderSlot(int size, Color fill)
-        {
-            float unit = SlotSide * 0.5f, hx = (SlotW * 0.5f) / unit, hy = (SlotH * 0.5f) / unit, r = 6f / unit;
-            return RenderClay(size, 1f, 2.6f / unit, 3f / unit, Aa, (x, y) => RoundBox(x, y, 0f, 0f, hx, hy, r), (ref Px p, float x, float y) =>
-                p.Over(ClayFill(fill, y, hy), Cover(RoundBox(x, y, 0f, 0f, hx, hy, r) + 0.02f, Aa)));
-        }
-
-        /// <summary>Un casillero libre: un contorno punteado violeta apagado (24 × 16 dp).</summary>
-        public static Sprite SlotEmpty() => Get(224, () => ToSprite(RenderSlotEmpty(128), 128, 128));
-
-        public static Color32[] RenderSlotEmpty(int size)
-        {
-            var px = new Color32[size * size];
-            float unit = SlotSide * 0.5f, hx = 12f / unit, hy = 8f / unit, r = 6f / unit, aa = 1.5f / size * 2f;
-            var col = new Color(184f / 255f, 176f / 255f, 1f, 0.35f);
-            for (int py = 0; py < size; py++)
-                for (int x = 0; x < size; x++)
-                {
-                    float u = ((x + 0.5f) / size * 2f - 1f), v = ((py + 0.5f) / size * 2f - 1f);
-                    float d = Mathf.Abs(RoundBox(u, v, 0f, 0f, hx, hy, r)) - 1f / unit;
-                    // el punteado: tramos de 4 dp cada 8 dp a lo largo del contorno (ángulo)
-                    float dash = Mathf.Sin(Mathf.Atan2(v / hy, u / hx) * 7f) > -0.1f ? 1f : 0f;
-                    var p = new Px();
-                    p.Over(col, Cover(d, aa) * dash);
-                    px[py * size + x] = p.ToColor32();
-                }
-            return px;
         }
 
         /// <summary>Una luz del puerto: una «V» de 12 × 6 dp (trazo de 3 dp). Blanca: se tiñe de lima.</summary>
@@ -397,16 +165,12 @@ namespace NeuroVida.Games.Acoplamiento
             return s;
         }
 
-        /// <summary>Hornea todo lo fijo de a poco (durante la cuenta regresiva): una pieza de arte por cuadro.</summary>
+        /// <summary>Hornea todo lo fijo de a poco (durante la cuenta regresiva): una pieza de arte por cuadro. Con el atlas de plasticina solo hace falta el respaldo de lo que no está en él.</summary>
         public static System.Collections.IEnumerator Prewarm()
         {
-            LightGradient(); LightSpot(); yield return null;
             PortPanel(); yield return null;
             FitButton(); MirrorButton(); yield return null;
             FitIcon(); MirrorIcon(); Chevron(); yield return null;
-            EllipseInk(); yield return null;
-            EllipseColor(); yield return null;
-            SlotSky(); SlotLime(); SlotEmpty();
         }
     }
 }

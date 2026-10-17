@@ -400,14 +400,14 @@ namespace NeuroVida.Bridge.EditorTools
                     else if (index == 2 && !shot3) { Shot("tutorial-3"); shot3 = true; }
                     else if (index == 5 && id == "piloto" && !shotNew) { Shot("tutorial-nueva-mision"); shotNew = true; }
                     else if (index == 6 && id == "piloto" && !shotNew2) { Shot("tutorial-toca-nueva-mision"); shotNew2 = true; }
-                    else if (index == 3 && id == "acoplamiento" && !shotDock) { Shot("tutorial-se-suma"); shotDock = true; }                 // «¡Encaja! Se suma a tu estación» con el módulo volando a su casillero (Tarea 68)
+                    else if (index == 3 && id == "acoplamiento" && !shotDock) { Shot("tutorial-se-enciende"); shotDock = true; }                 // «¡Encaja! Se enciende una luz» con el módulo a ras del hueco y la fila de luces iluminada (Tarea 68; v3 en la 118)
                     else if (index == 6 && id == "acoplamiento" && !shotMirror) { Shot("tutorial-espejo"); shotMirror = true; }             // «¿Y este?» con el espejo esperando
                     else if (index == 1 && id == "aterrizaje" && !shotLand) { Shot("tutorial-suelta"); shotLand = true; }                  // «Suelta para aterrizar» con la nave bajando y el hueco de la regla iluminado
                     else if (index == 3 && id == "radar" && !shotRescue) { Shot("tutorial-rescatar"); shotRescue = true; }          // «Ahora toca ¡Rescatar!» con las dos cápsulas marcadas y el botón encendido (Tarea 65)
                 }
                 return shot3 && shotNew && shotNew2 && shotRescue && shotDock && shotMirror && shotLand;
             }, 90);
-            if (!shotDock || !shotMirror) GameNotes.Add("el tutorial de Acoplamiento no llegó a los pasos de la estación y del espejo (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
+            if (!shotDock || !shotMirror) GameNotes.Add("el tutorial de Acoplamiento no llegó a los pasos de la fila de luces y del espejo (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shotNew || !shotNew2) GameNotes.Add("el tutorial de Piloto no llegó a los pasos de la misión nueva (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shotRescue) GameNotes.Add("el tutorial de Rescate no llegó al paso «¡Rescatar!» (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             if (!shot1) GameNotes.Add("el tutorial no mostró el paso 1 a tiempo");

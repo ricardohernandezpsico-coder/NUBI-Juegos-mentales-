@@ -23,7 +23,7 @@ namespace NeuroVida.Games.Acoplamiento
 
         /// <summary>
         /// SOLO EN EL EDITOR. El guion de las capturas de pantalla reales de Acoplamiento (<c>verificar-todo.sh --capturas Acoplamiento</c>, docs/previews/capturas/acoplamiento.png): lleva la partida (en Reto, para que se vea la barra de «Tiempo») por los momentos que se fotografían usando el flujo REAL del juego: la llegada de un módulo,
-        /// la respuesta, la vuelta del espejo, el acople, el vuelo a la estación, «¡Anillo completo!», un error, «Sin tiempo», la pausa, «quitar animaciones» y la pantalla final. La revelación se detiene a mitad de cada paso con <c>_editorRevealT</c>. Necesita <see cref="EditorShotMode"/>.
+        /// la respuesta, la vuelta del espejo, el acople (el «plop»), la pieza a ras con su luz encendida, «¡Anillo completo!», un error, «Sin tiempo», la pausa, «quitar animaciones» y la pantalla final. La revelación se detiene a mitad de cada paso con <c>_editorRevealT</c>. Necesita <see cref="EditorShotMode"/>.
         /// </summary>
         public IEnumerator EditorShotScript(Action<string> shot, Func<IEnumerator> pauseShot)
         {
@@ -44,12 +44,12 @@ namespace NeuroVida.Games.Acoplamiento
             _editorRevealT = up + flip * 0.28f;                                                   // en plena vuelta (a mitad exacta el módulo está de canto y no se ve)
             yield return WaitSeconds(0.3f);
             shot("vuelta-del-espejo");
-            _editorRevealT = up + flip + down + 0.12f;                                            // en el puerto: encaja (borde y chevrones lima, ✓ en el botón)
+            _editorRevealT = up + flip + down + 0.12f;                                            // en el puerto: el «plop» (cordón y chevrones lima, ✓ en el botón)
             yield return WaitSeconds(0.3f);
             shot("acople");
-            _editorRevealT = up + flip + down + hold + fly * 0.5f;                                // volando a la estación
+            _editorRevealT = up + flip + down + hold + fly * 0.5f;                                // a ras del hueco: el visto lima y la luz encendida
             yield return WaitSeconds(0.3f);
-            shot("vuelo-a-la-estacion");
+            shot("luz-encendida");
             _editorRevealT = -1f;
             _editorMirror = 0;
             _editorAngle = 45;
@@ -60,7 +60,7 @@ namespace NeuroVida.Games.Acoplamiento
             PressButton(DockingContract.AnswerFits);
             _editorRevealT = 0f;
             yield return UntilPhase(Phase.Reveal);
-            _editorRevealT = down + up + hold + fly + 0.05f;                                      // el módulo cae en su casillero: se completa el anillo
+            _editorRevealT = down + up + hold + 0.05f;                                            // el módulo queda a ras: se enciende la 8.ª luz y se completa el anillo (la onda lima corre en tiempo real)
             yield return WaitSeconds(0.5f);
             shot("anillo-completo");
             _editorRevealT = -1f;
@@ -132,7 +132,7 @@ namespace NeuroVida.Games.Acoplamiento
             shot("acople-16x9");
             _editorRevealT = RevealUp + RevealFlip + RevealDown + RevealHold + RevealFly * 0.5f;
             yield return WaitSeconds(0.3f);
-            shot("vuelo-16x9");
+            shot("asentado-16x9");
             _editorRevealT = -1f;
             _editorMirror = -1;
             _editorAngle = NoAngle;
@@ -150,7 +150,7 @@ namespace NeuroVida.Games.Acoplamiento
             EditorShotFinished = true;
         }
 
-        /// <summary>Suma aciertos de golpe (la estación, el contador y las medidas del final): en una partida real cada acierto se acopla una sola vez, así que todo sube junto.</summary>
+        /// <summary>Suma aciertos de golpe (la fila de luces, el contador, las piezas de la escultura y las medidas del final): en una partida real cada acierto se acopla una sola vez, así que todo sube junto.</summary>
         private void AddFakeProgress(int hits, bool curve)
         {
             int[] disparities = { 0, 45, 90, 135, 180 };
@@ -164,11 +164,12 @@ namespace NeuroVida.Games.Acoplamiento
                 _correct++;
                 _docked++;
                 _stationShown++;
+                _dockedShapes.Add(PracticeShape());
                 _streak++;
                 _bestStreak = Mathf.Max(_bestStreak, _streak);
             }
             _rings = _docked / DockingContract.Slots;
-            RefreshStation();
+            RefreshLights(Now);
             UpdateHud();
         }
 

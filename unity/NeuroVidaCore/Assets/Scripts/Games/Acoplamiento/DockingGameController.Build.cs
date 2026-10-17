@@ -9,7 +9,10 @@ namespace NeuroVida.Games.Acoplamiento
 {
     public sealed partial class DockingGameController
     {
-        private const int Rings = DockingPlan.VisibleRings, SlotsPerRing = DockingContract.Slots, ConfettiPool = 50, CurveBars = 5, EndRows = 4, ChevronCount = 4;
+        private const int Lights = DockingPlan.Lights, SlotsPerRing = DockingContract.Slots, SculptureRings = DockingPlan.SculptureRings, ConfettiPool = 50, CurveBars = 5, EndRows = 4, ChevronCount = 4;
+
+        /// <summary>El atlas de plasticina de Acoplamiento (los íconos de los botones, los chevrones y las luces de la fila de avance; el resto sale del kit de la app).</summary>
+        public const string PlasticGroup = "acoplamiento";
 
         private static readonly Color Gold = new Color(255f / 255f, 201f / 255f, 74f / 255f);
         private static readonly Color Cyan = new Color(127f / 255f, 216f / 255f, 255f / 255f);
@@ -22,44 +25,46 @@ namespace NeuroVida.Games.Acoplamiento
         private static readonly Color Ink = new Color(26f / 255f, 18f / 255f, 64f / 255f);
         private static readonly Color Shadow = new Color(8f / 255f, 6f / 255f, 30f / 255f, 0.55f);
         private static readonly Color NoticeFill = new Color(31f / 255f, 27f / 255f, 78f / 255f);
-        private static readonly Color TowerColor = new Color(142f / 255f, 134f / 255f, 216f / 255f);
-        private static readonly Color RingViolet = new Color(91f / 255f, 79f / 255f, 192f / 255f);
-        private static readonly Color PortEdgeIdle = new Color(120f / 255f, 240f / 255f, 220f / 255f, 0.65f);
+        private static readonly Color RingViolet = new Color(140f / 255f, 120f / 255f, 236f / 255f);
+        /// <summary>El cordón del hueco: verde agua en reposo, lima al encajar, celeste al «mostrar» (el tubo de plasticina es gris y se tiñe con estos).</summary>
+        private static readonly Color PortEdgeIdle = new Color(92f / 255f, 200f / 255f, 194f / 255f);
         private static readonly Color CardFill = new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f);
 
-        private RectTransform _safe, _play, _backLayer, _stationLayer, _portLayer, _moduleLayer, _buttonLayer, _hudLayer, _fxLayer, _endLayer;
+        private RectTransform _safe, _play, _backLayer, _portLayer, _moduleLayer, _buttonLayer, _hudLayer, _fxLayer, _endLayer;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Image, float>> _radii = new List<KeyValuePair<Image, float>>();
 
-        // estación: la torre central y, por cada anillo visible, sus 8 casilleros (4 detrás del anillo y 4 delante), el anillo (tinta + color) y el aro blanco del último módulo
-        private Image _towerShadow, _towerInk, _tower, _slotFlash;
-        private RectTransform _stationZone;
-        private readonly Image[] _ringInk = new Image[Rings], _ringColor = new Image[Rings];
-        private readonly Image[,] _slots = new Image[Rings, SlotsPerRing], _slotDots = new Image[Rings, SlotsPerRing];
+        // la fila de 8 luces de avance (con su halo y la medalla de los anillos) y la zona que ilumina el tutorial al hablar de ella
+        private readonly Image[] _lights = new Image[Lights];
+        private Image _lightGlow, _medal;
+        private Text _medalText;
+        private RectTransform _lightsZone;
 
-        // puerto
-        private Image _portPanel, _portEdge, _portHole;
+        // puerto: el panel (losa «noche» del kit), su rótulo, los chevrones, la cavidad del hueco, el cordón (tinta el estado) y la marca de visto
+        private Image _portPanel, _portSlab, _portEdge, _portHole, _portMark;
         private Text _portLabel;
         private readonly Image[] _chevrons = new Image[ChevronCount];
 
-        // módulo: la raíz (posición, tamaño, alfa), la sombra, el cuerpo (con máscara: gira y se da vuelta) y la luz fija (recortada por la silueta; contra-girada para no girar)
-        private RectTransform _moduleRoot, _bodyRect, _shadowRect, _lightRect, _spotRect;
+        // módulo: la raíz (posición, tamaño, alfa) y el cuerpo (la pieza horneada: la mostrada, la alineada o la asentada; gira y se da vuelta en la revelación)
+        private RectTransform _moduleRoot, _bodyRect;
         private CanvasGroup _moduleGroup;
-        private Image _moduleBody, _moduleShadow, _lightImage, _spotImage;
+        private Image _moduleBody;
 
-        // botones
+        // botones: la losa del kit (lima / uva) con su ícono y su texto encima
         private sealed class BtnView
         {
-            public RectTransform Root;
-            public Image Bg, Icon, Badge;
+            public RectTransform Root, Content;
+            public Image Bg, Slab, Icon, Badge;
             public Text Label;
             public CanvasGroup Group;
+            public PlasticTouch Touch;
+            public SlabTone Tone;
         }
 
         private readonly BtnView[] _buttons = new BtnView[2];
 
-        // barra de tiempo, pista y avisos
-        private Image _fuelBorder, _fuelTrack, _fuelFill, _noticeShadow, _noticeBorder, _noticePill;
+        // barra de tiempo, pista y avisos (la losa chica del kit)
+        private Image _fuelBorder, _fuelTrack, _fuelFill, _noticeShadow, _noticeBorder, _noticePill, _noticeSlab;
         private Text _fuelLabel, _hint, _noticeText;
 
         // marcador de la derecha
@@ -71,6 +76,14 @@ namespace NeuroVida.Games.Acoplamiento
         private Text _endTag, _endTitle, _endCurveTitle, _endNote1, _endNote2, _endRecord;
         private readonly Text[] _endLabel = new Text[EndRows], _endValue = new Text[EndRows], _curveValue = new Text[CurveBars], _curveAngle = new Text[CurveBars];
         private readonly Image[] _curveBarInk = new Image[CurveBars], _curveBar = new Image[CurveBars], _confetti = new Image[ConfettiPool];
+
+        // la escultura de «tu estación» (pantalla final): el núcleo, las pistas de los anillos (atrás y adelante) y las piezas acopladas (3 anillos de 8)
+        private RectTransform _sculptBack, _sculptFront;
+        private Image _sculptCore;
+        private readonly Image[] _trackBack = new Image[SculptureRings], _trackFront = new Image[SculptureRings];
+        private readonly Image[,] _sculptPieces = new Image[SculptureRings, SlotsPerRing];
+
+        private static Sprite Art(string name) => PlasticArt.Get(PlasticGroup, name);
 
         // ------------------------------------------------------------------ construcción de UI
 
@@ -106,14 +119,13 @@ namespace NeuroVida.Games.Acoplamiento
             Stretch(_play);
 
             _backLayer = Layer(_play, "Back");
-            _stationLayer = Layer(_play, "Station");
             _portLayer = Layer(_play, "Port");
             _moduleLayer = Layer(_play, "Module");
             _buttonLayer = Layer(_play, "Buttons");
             _hudLayer = Layer(_play, "HudExtra");
             _fxLayer = Layer(_play, "Fx");
             _endLayer = Layer(_play, "End");
-            BuildStation();
+            BuildLights();
             BuildPort();
             BuildModule();
             BuildButtons();
@@ -136,50 +148,38 @@ namespace NeuroVida.Games.Acoplamiento
             ResetViews();
         }
 
-        private void BuildStation()
+        /// <summary>La fila de 8 luces redondas de plasticina junto al marcador (el avance: cada módulo acoplado enciende una; cada 8, un anillo) y la medalla de los anillos a su derecha.</summary>
+        private void BuildLights()
         {
-            var zone = new GameObject("StationZone");
-            zone.transform.SetParent(_stationLayer, false);
-            _stationZone = zone.AddComponent<RectTransform>();
-            _stationZone.anchorMin = _stationZone.anchorMax = _stationZone.pivot = new Vector2(0.5f, 0.5f);
-            _towerShadow = Rr(_stationLayer, "TowerShadow", Shadow, 14f);
-            _towerInk = Rr(_stationLayer, "TowerInk", Ink, 17f);
-            _tower = Rr(_stationLayer, "Tower", TowerColor, 14f);
-            for (int r = 0; r < Rings; r++)
-            {
-                // primero los casilleros de ATRÁS, después el anillo y por último los de ADELANTE: así los módulos pasan por detrás y por delante del aro
-                for (int k = 0; k < SlotsPerRing; k++) if (!IsFront(k)) MakeSlot(r, k);
-                _ringInk[r] = MakeImage(_stationLayer, "RingInk" + r, null);
-                _ringInk[r].color = Ink;
-                _ringColor[r] = MakeImage(_stationLayer, "RingColor" + r, null);
-                for (int k = 0; k < SlotsPerRing; k++) if (IsFront(k)) MakeSlot(r, k);
-            }
-            _slotFlash = MakeImage(_stationLayer, "SlotFlash", RingSprite.Get());
-            _slotFlash.color = new Color(1f, 1f, 1f, 0f);
-            _slotFlash.gameObject.SetActive(false);
-        }
-
-        private static bool IsFront(int slot) => DockingPlan.SlotPoint(0f, slot).depth >= 0f;
-
-        private void MakeSlot(int ring, int k)
-        {
-            _slots[ring, k] = MakeImage(_stationLayer, "Slot" + ring + "_" + k, null);
-            _slotDots[ring, k] = MakeImage(_stationLayer, "SlotDot" + ring + "_" + k, DiscSprite.Get());
-            _slotDots[ring, k].color = new Color(1f, 246f / 255f, 200f / 255f, 1f);
+            var zone = new GameObject("LightsZone");
+            zone.transform.SetParent(_hudLayer, false);
+            _lightsZone = zone.AddComponent<RectTransform>();
+            _lightsZone.anchorMin = _lightsZone.anchorMax = _lightsZone.pivot = new Vector2(0.5f, 0.5f);
+            for (int i = 0; i < Lights; i++) _lights[i] = MakeImage(_hudLayer, "Light" + i, null);
+            _lightGlow = MakeImage(_hudLayer, "LightGlow", RadialGlowSprite.Get());
+            _lightGlow.color = new Color(1f, 0.82f, 0.34f, 0f);
+            _lightGlow.gameObject.SetActive(false);
+            _medal = MakeImage(_hudLayer, "Medal", null);
+            _medalText = MakeLabel(_hudLayer, "MedalText", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
+            _medalText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _medal.gameObject.SetActive(false);
+            _medalText.gameObject.SetActive(false);
         }
 
         private void BuildPort()
         {
             _portPanel = MakeImage(_portLayer, "PortPanel", null);
-            _portLabel = MakeLabel(_portLayer, "PortLabel", 14f, UiFonts.Bold, new Color(214f / 255f, 209f / 255f, 242f / 255f), TextAnchor.MiddleCenter);
+            _portSlab = PlasticSlab.TryStyle(_portPanel, SlabSize.Button, SlabTone.Night);          // el panel «Puerto»: la losa «noche» del kit (la de las casillas de Rescate)
+            _portLabel = MakeLabel(_portLayer, "PortLabel", 15f, UiFonts.Bold, new Color(214f / 255f, 209f / 255f, 242f / 255f), TextAnchor.MiddleCenter);
             _portLabel.text = DockingContract.PortLabel;
             _portLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             for (int i = 0; i < ChevronCount; i++) _chevrons[i] = MakeImage(_portLayer, "Chevron" + i, null);
-            _portEdge = MakeImage(_portLayer, "PortEdge", null);
-            _portHole = MakeImage(_portLayer, "PortHole", null);
-            _portHole.color = DockingSprites.HoleColor;
+            _portHole = MakeImage(_portLayer, "PortHole", null);                                  // la cavidad (fondo oscuro y pared iluminada)
+            _portEdge = MakeImage(_portLayer, "PortEdge", null);                                  // el cordón de plasticina (gris: se tiñe con el estado)
+            _portMark = MakeImage(_portLayer, "PortMark", null);                                  // el visto lima del kit al encajar
             _portEdge.gameObject.SetActive(false);
             _portHole.gameObject.SetActive(false);
+            _portMark.gameObject.SetActive(false);
         }
 
         private void BuildModule()
@@ -190,40 +190,40 @@ namespace NeuroVida.Games.Acoplamiento
             _moduleRoot.anchorMin = _moduleRoot.anchorMax = _moduleRoot.pivot = new Vector2(0.5f, 0.5f);
             _moduleGroup = root.GetComponent<CanvasGroup>();
             _moduleGroup.blocksRaycasts = false;
-            _moduleShadow = MakeImage(_moduleRoot, "Shadow", null);
-            _shadowRect = _moduleShadow.rectTransform;
-            _moduleShadow.color = Shadow;
-            _moduleBody = MakeImage(_moduleRoot, "Body", null);
+            _moduleBody = MakeImage(_moduleRoot, "Body", null);                                   // la pieza ya trae su canto, su sombra y su lámpara horneados (DockingArt)
             _bodyRect = _moduleBody.rectTransform;
-            // la luz va DENTRO del cuerpo y recortada por su silueta (Mask); como el cuerpo gira, la luz gira al revés: queda fija en la pantalla
-            var mask = _moduleBody.gameObject.AddComponent<Mask>();
-            mask.showMaskGraphic = true;
-            _lightImage = MakeImage(_bodyRect, "Light", null);
-            _lightRect = _lightImage.rectTransform;
-            _spotImage = MakeImage(_bodyRect, "Spot", null);
-            _spotRect = _spotImage.rectTransform;
-            _spotImage.color = new Color(1f, 1f, 1f, 0.3f);
             _moduleRoot.gameObject.SetActive(false);
         }
 
         private void BuildButtons()
         {
-            _buttons[0] = BuildButton("Fits", DockingContract.FitsLabel);
-            _buttons[1] = BuildButton("Mirror", DockingContract.MirrorLabel);
+            _buttons[0] = BuildButton("Fits", DockingContract.FitsLabel, SlabTone.Lime);
+            _buttons[1] = BuildButton("Mirror", DockingContract.MirrorLabel, SlabTone.Lilac);
         }
 
-        private BtnView BuildButton(string name, string label)
+        private BtnView BuildButton(string name, string label, SlabTone tone)
         {
-            var v = new BtnView();
+            var v = new BtnView { Tone = tone };
             var go = new GameObject(name);
             go.transform.SetParent(_buttonLayer, false);
             v.Root = go.AddComponent<RectTransform>();
             v.Root.anchorMin = v.Root.anchorMax = v.Root.pivot = new Vector2(0.5f, 0.5f);
             v.Group = go.AddComponent<CanvasGroup>();
             v.Group.blocksRaycasts = false;
-            v.Bg = MakeImage(v.Root, "Bg", null);
-            v.Icon = MakeImage(v.Root, "Icon", null);
-            v.Label = MakeLabel(v.Root, "Label", 22f, UiFonts.Bold, Ink, TextAnchor.MiddleLeft);
+            v.Bg = MakeImage(v.Root, "Bg", null);                                                // el respaldo de arcilla (sin el kit)
+            v.Slab = PlasticSlab.Attach(v.Root, SlabSize.Button, tone);                           // «Encaja» y «Espejo»: la losa lima y la uva del kit TAL CUAL, como VERDAD y DISPARATE
+            if (v.Slab != null)
+            {
+                v.Bg.enabled = false;
+                v.Touch = PlasticTouch.On(go, SlabSize.Button, tone);                              // el estado presionado y el rebote
+            }
+            var content = new GameObject("Content", typeof(RectTransform));
+            content.transform.SetParent(v.Root, false);
+            v.Content = (RectTransform)content.transform;
+            v.Content.anchorMin = v.Content.anchorMax = v.Content.pivot = new Vector2(0.5f, 0.5f);
+            v.Content.sizeDelta = Vector2.zero;
+            v.Icon = MakeImage(v.Content, "Icon", null);
+            v.Label = MakeLabel(v.Content, "Label", 22f, UiFonts.Bold, Ink, TextAnchor.MiddleLeft);
             v.Label.text = label;
             v.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
             v.Badge = MakeImage(v.Root, "Badge", null);
@@ -243,10 +243,17 @@ namespace NeuroVida.Games.Acoplamiento
             _hint = MakeLabel(_hudLayer, "Hint", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _hint.text = DockingContract.Hint;
             _hint.horizontalOverflow = HorizontalWrapMode.Wrap;
-            // el aviso: una píldora oscura con borde de tinta y sombra dura, en la franja de y 246-278
+            // el aviso: la losa chica del kit (dorada si acertó, crema si no) con el texto liso de tinta, en la franja de y 118-150 (sin el kit, la píldora oscura de siempre)
             _noticeShadow = Rr(_hudLayer, "NoticeShadow", Shadow, 16f);
             _noticeBorder = Rr(_hudLayer, "NoticeBorder", Ink, 19f);
             _noticePill = Rr(_hudLayer, "NoticePill", NoticeFill, 16f);
+            _noticeSlab = PlasticSlab.Available(SlabSize.Chip, SlabTone.Sun) && PlasticSlab.Available(SlabSize.Chip, SlabTone.Cream) ? PlasticSlab.Attach(_noticePill.rectTransform, SlabSize.Chip, SlabTone.Sun) : null;
+            if (_noticeSlab != null)
+            {
+                _noticePill.enabled = false;
+                _noticeShadow.enabled = false;
+                _noticeBorder.enabled = false;
+            }
             _noticeText = MakeLabel(_hudLayer, "NoticeText", 17f, UiFonts.Bold, Lime, TextAnchor.MiddleCenter);
             _noticeText.horizontalOverflow = HorizontalWrapMode.Overflow;
             SetNoticeVisible(false);
@@ -271,6 +278,7 @@ namespace NeuroVida.Games.Acoplamiento
         {
             _endShade = MakeImage(_endLayer, "Shade", null);
             _endShade.color = new Color(4f / 255f, 5f / 255f, 26f / 255f, 0.55f);
+            BuildSculpture();
             _endTag = MakeLabel(_endLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endTitle = MakeLabel(_endLayer, "Title", 26f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _endCard = Rr(_endLayer, "Card", CardFill, 22f);
@@ -308,6 +316,22 @@ namespace NeuroVida.Games.Acoplamiento
                 _confetti[i].gameObject.SetActive(false);
             }
             _endLayer.gameObject.SetActive(false);
+        }
+
+        /// <summary>«Tu estación» como una escultura de plasticina: un núcleo y, a su alrededor, hasta 3 anillos de 8 piezas (las que acopló la persona); atrás del núcleo van las pistas y las piezas de atrás, adelante las demás. Se arma al final (<see cref="ShowSculpture"/>).</summary>
+        private void BuildSculpture()
+        {
+            _sculptBack = Layer(_endLayer, "SculptureBack");
+            _sculptCore = MakeImage(_endLayer, "SculptureCore", null);
+            _sculptFront = Layer(_endLayer, "SculptureFront");
+            for (int r = 0; r < SculptureRings; r++)
+            {
+                _trackBack[r] = MakeImage(_sculptBack, "TrackBack" + r, null);
+                _trackFront[r] = MakeImage(_sculptFront, "TrackFront" + r, null);
+            }
+            for (int r = 0; r < SculptureRings; r++)
+                for (int k = 0; k < SlotsPerRing; k++)
+                    _sculptPieces[r, k] = MakeImage(DockingPlan.IsFront(k) ? _sculptFront : _sculptBack, "Piece" + r + "_" + k, null);
         }
 
         /// <summary>El panel de resultado de la clase base (no se muestra: la pantalla final es la de <see cref="BuildEnd"/>; la base pide que exista).</summary>
@@ -425,82 +449,77 @@ namespace NeuroVida.Games.Acoplamiento
             }
             foreach (var kv in _radii) SetRadius(kv.Key, kv.Value * _s);
             AssignSprites();
-            LayoutStation();
+            LayoutLights();
             LayoutPort();
             LayoutModule();
             LayoutButtons();
             LayoutFuelAndNotice();
             LayoutHud();
             LayoutEnd();
-            RefreshStation();
+            RefreshLights(Now);
             ApplyModulePose();
         }
 
-        /// <summary>Pone los sprites horneados (los fijos; los de la pieza se ponen en cada módulo).</summary>
+        /// <summary>Pone los sprites fijos: los del atlas de plasticina y, si no está, los de arcilla de siempre (la pieza y el hueco se ponen en cada módulo).</summary>
         private void AssignSprites()
         {
             if (!_baked) return;
-            _portPanel.sprite = DockingSprites.PortPanel();
-            for (int i = 0; i < ChevronCount; i++) _chevrons[i].sprite = DockingSprites.Chevron();
-            _lightImage.sprite = DockingSprites.LightGradient();
-            _spotImage.sprite = DockingSprites.LightSpot();
-            _buttons[0].Bg.sprite = DockingSprites.FitButton();
-            _buttons[0].Icon.sprite = DockingSprites.FitIcon();
-            _buttons[1].Bg.sprite = DockingSprites.MirrorButton();
-            _buttons[1].Icon.sprite = DockingSprites.MirrorIcon();
-            for (int r = 0; r < Rings; r++)
+            if (_portSlab == null) _portPanel.sprite = DockingSprites.PortPanel();
+            for (int i = 0; i < 2; i++)
             {
-                _ringInk[r].sprite = DockingSprites.EllipseInk();
-                _ringColor[r].sprite = DockingSprites.EllipseColor();
+                var v = _buttons[i];
+                if (v.Slab == null) v.Bg.sprite = i == 0 ? DockingSprites.FitButton() : DockingSprites.MirrorButton();
+                v.Icon.sprite = Art(i == 0 ? "ico_encaja" : "ico_espejo") ?? (i == 0 ? DockingSprites.FitIcon() : DockingSprites.MirrorIcon());
             }
+            if (_noticeSlab == null) { _noticePill.sprite = _noticeBorder.sprite = _noticeShadow.sprite = RoundedRectSprite.Get(24); }
+            _medal.sprite = Art("luz_lima") ?? DiscSprite.Get();
         }
 
-        private void LayoutStation()
+        /// <summary>El sprite de un estado de una luz de la fila (apagada, oro, lima): el del atlas o, sin él, un disco que se tiñe (devuelve también si hay que teñirlo).</summary>
+        private static Sprite LightSprite(int state, out Color tint)
         {
-            float w = DockingSprites.RingSpriteW, h = DockingSprites.RingSpriteH;
-            for (int r = 0; r < Rings; r++)
-            {
-                float y = DockingPlan.RingY(r);
-                SetRect(_ringInk[r].rectTransform, DockingPlan.StationCx, y, w, h);
-                SetRect(_ringColor[r].rectTransform, DockingPlan.StationCx, y, w, h);
-            }
-            SetRect(_slotFlash.rectTransform, DockingPlan.StationCx, DockingPlan.StationBase, 24f, 24f);
-            SetRect(_stationZone, DockingPlan.StationCx, 183f, 276f, 110f);                            // lo que ilumina el tutorial al hablar de la estación (la torre y el primer anillo; no llega al marcador)
+            string name = state == 2 ? "luz_lima" : state == 1 ? "luz_oro" : "luz_apagada";
+            var s = Art(name);
+            if (s != null) { tint = Color.white; return s; }
+            tint = state == 2 ? Lime : state == 1 ? Gold : new Color(42f / 255f, 37f / 255f, 102f / 255f);
+            return DiscSprite.Get();
+        }
+
+        private void LayoutLights()
+        {
+            bool art = Art("luz_oro") != null;
+            for (int i = 0; i < Lights; i++) SetRect(_lights[i].rectTransform, DockingPlan.LightX(i), DockingPlan.LightsCy, art ? DockingPlan.LightSprite : DockingPlan.LightSprite * 0.73f, art ? DockingPlan.LightSprite : DockingPlan.LightSprite * 0.73f);
+            SetRect(_medal.rectTransform, DockingPlan.Width * 0.5f + DockingPlan.MedalDx, DockingPlan.LightsCy, art ? DockingPlan.MedalSprite : DockingPlan.MedalSprite * 0.73f, art ? DockingPlan.MedalSprite : DockingPlan.MedalSprite * 0.73f);
+            SetRect(_medalText.rectTransform, DockingPlan.Width * 0.5f + DockingPlan.MedalDx, DockingPlan.LightsCy - 0.5f, 34f, 22f);
+            SetRect(_lightsZone, DockingPlan.Width * 0.5f + (DockingPlan.MedalDx + DockingPlan.MedalSprite * 0.5f - 4f * DockingPlan.LightsStep) * 0.5f, DockingPlan.LightsCy, 4f * DockingPlan.LightsStep + DockingPlan.MedalDx + DockingPlan.MedalSprite * 0.5f + 10f, 36f);                // lo que ilumina el tutorial al hablar de la fila (las 8 luces y la medalla)
         }
 
         private void LayoutPort()
         {
-            float cx = _plan.PortCx, cy = _plan.PortCy, k = _plan.K;
-            SetRect(_portPanel.rectTransform, cx, cy, DockingSprites.PanelSide * k, DockingSprites.PanelSide * k);
-            SetRect(_portLabel.rectTransform, cx, cy - _plan.PortH * 0.5f + 16f * k, 100f, 20f);
-            for (int i = 0; i < ChevronCount; i++)
-            {
-                float lx = cx - _plan.PortW * 0.5f + 22f * k + i * ((_plan.PortW - 44f * k) / 3f);
-                SetRect(_chevrons[i].rectTransform, lx, cy + _plan.PortH * 0.5f - 11f * k, DockingSprites.ChevronSide * k, DockingSprites.ChevronSide * k);
-            }
-            float side = DockingSprites.PieceSideCells * _plan.Block;
-            SetRect(_portEdge.rectTransform, cx, cy + 6f * k, side, side);
-            SetRect(_portHole.rectTransform, cx, cy + 6f * k, side, side);
+            float cx = _plan.PortCx, cy = _plan.PortCy, k = _plan.K, fb = _plan.Block / 26f;
+            SetRect(_portPanel.rectTransform, cx, cy, _portSlab != null ? _plan.PortW : DockingSprites.PanelSide * fb, _portSlab != null ? _plan.PortH : DockingSprites.PanelSide * fb);
+            SetRect(_portLabel.rectTransform, cx, cy - _plan.PortH * 0.5f + 17f * k, 110f, 22f);
+            float chev = 24f * k;
+            for (int i = 0; i < ChevronCount; i++) SetRect(_chevrons[i].rectTransform, cx + (i - 1.5f) * 26f * k, cy + _plan.PortH * 0.5f - 15f * k, chev, chev);
+            float side = DockingArt.AlignedFrameBlocks * _plan.Block;
+            SetRect(_portHole.rectTransform, cx, _plan.HoleCy, side, side);
+            SetRect(_portEdge.rectTransform, cx, _plan.HoleCy, side, side);
+            float mk = 26f * k;
+            SetRect(_portMark.rectTransform, cx + _plan.PortW * 0.5f - 22f * k, cy - _plan.PortH * 0.5f + 22f * k, mk, mk);
         }
 
         private void LayoutModule()
         {
-            float side = DockingSprites.PieceSideCells * _plan.Block;
             _moduleRoot.sizeDelta = Vector2.zero;
-            _bodyRect.sizeDelta = _shadowRect.sizeDelta = new Vector2(side * _s, side * _s);
-            _shadowRect.anchoredPosition = new Vector2(0f, -6f * _plan.K * _s);                         // la sombra dura cae siempre hacia abajo (la raíz no gira)
-            // la luz: un cuadrado del tamaño de la circunferencia que envuelve la pieza (como en el boceto), centrado y fijo
-            float rad = ModuleRadius();
-            _lightRect.sizeDelta = new Vector2(rad * 2f * _s, rad * 2f * _s);
-            _spotRect.sizeDelta = new Vector2(rad * 1.1f * _s, rad * 0.48f * _s);
-            _spotRect.anchoredPosition = new Vector2(-rad * 0.35f * _s, rad * 0.5f * _s);
+            float side = (_poseAligned ? DockingArt.AlignedFrameBlocks : _dispSideBlocks) * _plan.Block;
+            _bodyRect.sizeDelta = new Vector2(side * _s, side * _s);
         }
 
-        /// <summary>El radio de la circunferencia que envuelve al módulo en curso (dp, a la escala de la pantalla): lo usan la luz y el brillo.</summary>
+        /// <summary>El radio de la circunferencia que envuelve al módulo en curso (dp, a la escala de la pantalla): lo usa la zona que ilumina el tutorial.</summary>
         private float ModuleRadius()
         {
             if (_trial == null) return 2.83f * _plan.Block;
-            DockingSprites.PieceCenter(_trial.Shape, out _, out _, out int w, out int h);
+            DockingArt.PieceCenter(_trial.Shape, out _, out _, out int w, out int h);
             return Mathf.Sqrt(w * w + h * h) * _plan.Block * 0.5f;
         }
 
@@ -513,8 +532,9 @@ namespace NeuroVida.Games.Acoplamiento
                 SetRect(v.Root, cx, cy, _plan.ButtonW, _plan.ButtonH);
                 float bs = DockingSprites.ButtonSide * _plan.K;
                 SetChild(v.Bg.rectTransform, 0f, 0f, bs, bs);
-                SetChild(v.Icon.rectTransform, -_plan.ButtonW * 0.5f + 34f * _plan.K, 0f, 36f * _plan.K, 36f * _plan.K);
-                SetChild(v.Label.rectTransform, -_plan.ButtonW * 0.5f + 58f * _plan.K + 45f, 1f, 90f, 30f);
+                float ico = 54f * _plan.K;
+                SetChild(v.Icon.rectTransform, -_plan.ButtonW * 0.5f + 2f * _plan.K + ico * 0.5f, 0f, ico, ico);
+                SetChild(v.Label.rectTransform, -_plan.ButtonW * 0.5f + 62f * _plan.K + 45f, 1f, 90f, 30f);
                 SetChild(v.Badge.rectTransform, _plan.ButtonW * 0.5f - 12f * _plan.K, -_plan.ButtonH * 0.5f + 10f * _plan.K, 26f * _plan.K, 26f * _plan.K);
             }
         }
@@ -579,6 +599,7 @@ namespace NeuroVida.Games.Acoplamiento
             SetRect(_endRecordBg.rectTransform, cx, pillY, 190f, 28f);
             SetRect(_endRecord.rectTransform, cx, pillY, 190f, 24f);
             PlaceCurve();
+            LayoutSculpture();
         }
 
         /// <summary>Lo que ocupa, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>

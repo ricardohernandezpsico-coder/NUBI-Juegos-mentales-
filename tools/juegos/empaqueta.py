@@ -453,6 +453,15 @@ def grupo_engranajes():
     for n in ('ico_play', 'llave_libre', 'llave_usada'): S.append(sprite(n, carga_render('engranajes_botones', n, 128)))
     return S, med
 
+def grupo_acoplamiento():
+    """Acoplamiento v3 (Tarea 118): lo que sale de Blender (`acoplamiento_v3.py`): los íconos de «Encaja» y «Espejo» (churro de tinta, 128 px), los 4 chevrones del puerto (verde agua, lima, celeste, apagado; 96 px de ancho) y las 3 luces de la fila de avance (apagada, oro, lima; 96 px).
+    La pieza, el hueco y la escultura NO van en el atlas: se hornean por módulo en `DockingArt` (la lámpara se calcula en la orientación que se ve); las losas del panel «Puerto», de «Encaja», de «Espejo» y de los avisos son las del kit (`comun`)."""
+    S = []
+    for n in ('ico_encaja', 'ico_espejo'): S.append(sprite(n, carga_render('acoplamiento_v3', n, 128)))
+    for n in ('chev_verde_agua', 'chev_lima', 'chev_celeste', 'chev_apagado'): S.append(sprite(n, carga_render('acoplamiento_v3', n, 96)))
+    for n in ('luz_apagada', 'luz_oro', 'luz_lima'): S.append(sprite(n, carga_render('acoplamiento_v3', n, 96)))
+    return S, []
+
 def grupo_comun():
     S = []; med = []
     kit = json.load(open(os.path.join(RES_APP, 'raw', 'kit.json'), encoding='utf-8'))
@@ -496,7 +505,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'aterrizaje': grupo_aterrizaje, 'engranajes': grupo_engranajes, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'aterrizaje': grupo_aterrizaje, 'engranajes': grupo_engranajes, 'acoplamiento': grupo_acoplamiento, 'comun': grupo_comun, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -685,7 +694,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'aterrizaje', 'engranajes', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'aterrizaje', 'engranajes', 'acoplamiento', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)

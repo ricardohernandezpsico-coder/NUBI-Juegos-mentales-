@@ -43,19 +43,20 @@ Estás armando una estación espacial. Llegan módulos girados. Si es la misma p
 | Pieza | Valor |
 |---|---|
 | Marcador | arriba, con `GameHud`: «Acoplamiento», «Módulo N de 24» (Reto: «Módulo N» + barra), «Nivel N»; a la derecha, un módulo chico y el número acoplado, y «Racha ×N» desde 2 |
-| Estación | anillos de 8 casilleros; base en y 200; elipse de 128 × 30; cada anillo nuevo 24 dp más arriba; torre central lavanda |
-| Avisos | franja en y ≈ 246-278: NUNCA sobre el módulo, el puerto ni los botones |
-| Módulo | centro (180, 360); bloque de 26 dp |
-| Barra de tiempo | (80, 438), 200 × 12, con el rótulo «Tiempo» (14 dp) |
-| Puerto | centro (180, 534), 168 × 146; hueco a la MISMA escala (26 dp); rótulo «Puerto»; 4 chevrones abajo |
-| Botones | y 622, 158 × 76 cada uno, separados 12: «Encaja» (lima, ícono módulo sobre soporte) y «Espejo» (uva, ícono de dos figuras espejadas con eje punteado); texto de 22 dp |
-| Pista | «Gira la pieza en tu mente y compárala con el hueco» (14 dp, y 734), solo en los primeros 3 módulos |
+| Fila de luces | (v3) 8 luces redondas de plasticina de 22 dp cada 30 dp, centradas, en y 100; la medalla lima de los anillos a la derecha (x 321) |
+| Avisos | franja en y 118-150 (v3; la v2 iba en y 246-278): NUNCA sobre el módulo, el puerto ni los botones |
+| Módulo | centro (180, 265); bloque de **38 dp** (31 en 16:9; la v2, 26); gira en un círculo de 215 dp |
+| Barra de tiempo | centro y 385, 200 × 12, con el rótulo «Tiempo» (14 dp) |
+| Puerto | centro (180, 506), **245 × 214**; hueco a la MISMA escala (38 dp), 3 dp más arriba que el centro; rótulo «Puerto» (15 dp); 4 chevrones abajo |
+| Botones | y 665, 158 × 76 cada uno, separados 12: «Encaja» (lima, ícono de tres bloques que bajan a su soporte) y «Espejo» (uva, ícono de dos figuras espejadas con eje punteado); texto de 22 dp |
+| Pista | «Gira la pieza en tu mente y compárala con el hueco» (14 dp, y 723), solo en los primeros 3 módulos |
 
-- **El módulo:** bloques de arcilla celeste separados por juntas finas de tinta (1 dp), con 4 remaches simétricos por bloque.
-  - **La luz y la sombra quedan fijas en la pantalla:** no giran con la pieza, para no delatar el giro.
-  - La sombra dura cae siempre hacia abajo.
-- **El hueco del puerto:** bloques oscuros (#070818) con borde verde agua. El borde pasa a lima al encajar y a celeste al «mostrar».
-- **Nada gira en el fondo** (regla de hoy): cielo, planeta y estación quietos.
+Todo lo que va bajo la franja se achica parejo en pantallas más bajas (como mínimo 0,6) y lo que sobra en las altas se reparte hacia abajo; ver §13.
+
+- **El módulo (v3):** una almohada de plasticina sin adornos, celeste cálido, con canto de 5 dp hacia abajo y sombra de contacto.
+  - **La lámpara queda fija en la pantalla** (brillo arriba a la izquierda, sombra abajo a la derecha): se hornea en la orientación que se ve, así no delata el giro ni el espejo.
+- **El hueco del puerto (v3):** una cavidad con cordón de plasticina (verde agua; lima al encajar; celeste al «mostrar»), pared iluminada por la misma lámpara y fondo oscuro (#070818).
+- **Nada gira en el fondo** (regla de hoy): cielo y planeta quietos.
 
 ## 6. La revelación (siempre se ve la verdad)
 
@@ -63,10 +64,9 @@ Estás armando una estación espacial. Llegan módulos girados. Si es la misma p
 2. **Vuelta (300 ms), si era espejo:** se da vuelta como en un espejo (escala x de 1 a −1). Ahora calza con el hueco.
 3. **Baja al puerto (380 ms).**
 4. **Si acertaste:**
-   - golpe hueco, el borde y los chevrones se ponen lima y el botón tocado muestra ✓;
-   - 220 ms después, el módulo vuela achicándose hasta su casillero de la estación (520 ms);
-   - el casillero se enciende con un aro blanco que se abre;
-   - cada 8 módulos: «¡Anillo completo!», el anillo se pone lima y aparece uno nuevo encima.
+   - golpe hueco («plop», 220 ms: se hunde un 3,5 %), el cordón y los chevrones se ponen lima y el botón tocado muestra ✓;
+   - queda a ras del hueco (520 ms), con el visto lima del kit en el panel y una luz de la fila encendida con su halo;
+   - cada 8 módulos: una onda lima recorre la fila, «¡Anillo completo!» y una medalla lima cuenta los anillos; la fila empieza de cero.
 5. **Si no acertaste:**
    - el botón tocado muestra el aspa diagonal;
    - el borde se pone celeste («mostrar») y el módulo se aleja hacia la derecha mientras se apaga (600 ms), sin castigo.
@@ -80,7 +80,7 @@ Estás armando una estación espacial. Llegan módulos girados. Si es la misma p
 | Sin tiempo | «Sin tiempo: era su espejo» o «Sin tiempo: sí encajaba» |
 
 - **Llegada de cada módulo:** baja desde arriba en 420 ms.
-- **«Quitar animaciones»:** sin llegada, giro, vuelta ni vuelo; cada paso aparece de una vez y los chevrones no parpadean.
+- **«Quitar animaciones»:** sin llegada, giro, vuelta, plop ni onda de las luces; cada paso aparece de una vez y los chevrones no parpadean.
 
 ## 7. Sonido «Madera cálida» (atado a lo que pasa; versión 2 del boceto)
 
@@ -117,8 +117,8 @@ Todo pasa por la reverberación de Madera cálida. Se porta con `Games/Shared/So
 ## 9. Tutorial con Nubi (práctica que no cuenta; «la práctica asegura, nunca alterna»)
 
 1. **Puerto.** Nubi dice «Este es el puerto: el hueco tiene la forma de la pieza» (hueco del foco: el puerto).
-2. **Llega un módulo.** Llega uno girado 90° que SÍ encaja. Nubi dice «Llega un módulo girado. Gíralo en tu mente: ¿cabe en el hueco?» (era «calza»: con esa palabra el texto medía 63 letras y el tope para que quepa en 3 líneas es 62) (foco: el módulo). Después, «Si calza, toca Encaja» (foco: el botón, con toque real).
-3. **Demostración de encajar.** El módulo gira, baja y encaja. Nubi dice «¡Encaja! Se suma a tu estación» (foco: la estación).
+2. **Llega un módulo.** Llega uno girado 90° que SÍ encaja. Nubi dice «Gíralo en tu mente: ¿cabe en el hueco?» (foco: el módulo; la v3, con la pieza más grande, deja entre el marcador y el módulo lugar para un globo de 2 líneas y no de 3: antes decía «Llega un módulo girado. Gíralo en tu mente: …», que en las tres formas de pantalla del smoke tapaba el módulo). Después, «Si calza, toca Encaja» (foco: el botón, con toque real).
+3. **Demostración de encajar.** El módulo gira, baja y encaja. Nubi dice «¡Encaja! Se enciende una luz» (foco: la fila de luces; en la v2, «Se suma a tu estación» y la estación).
 4. **Demostración del espejo.** Llega un módulo espejo (forma en L, girado 45°) y Nubi dice «Este está dado vuelta: es su espejo». Sin tocar, se muestra el giro hasta quedar derecho y luego la vuelta que lo hace calzar. Nubi dice «Si está dado vuelta, toca Espejo».
 5. **Práctica del espejo.** Llega otro espejo (90°) y Nubi dice «¿Y este?». Toque real en «Espejo» y luego la revelación.
 6. **«¡Listo!».**
@@ -148,12 +148,12 @@ Rotación mental «igual o espejo» con poliominós es una tarea de laboratorio 
 - `DockingGameController.cs` y sus partes `.Build.cs` (la interfaz), `.Scene.cs` (pose del módulo, puerto, botones, estación, aviso y final), `.Guided.cs` (el tutorial) y `.Shots.cs` (las capturas; solo en el Editor).
 
 **Lo que quedó distinto del boceto o del diseño, y por qué:**
-1. **La luz fija se hace con una máscara.** El módulo se hornea plano (celeste, borde de tinta, juntas y remaches) y NO lleva luz. La luz de arriba y el brillo son dos imágenes recortadas por la silueta del módulo (un `Mask` sobre su cuerpo) que giran al revés que él, así que quedan quietas en la pantalla. La vuelta del espejo es la escala en x del cuerpo (la luz no se da vuelta). La sombra es la misma silueta, oscura, en un contenedor que no gira: cae siempre hacia abajo.
+1. **(v2; en la v3 la lámpara se hornea en la pieza, ver §13) La luz fija se hace con una máscara.** El módulo se hornea plano (celeste, borde de tinta, juntas y remaches) y NO lleva luz. La luz de arriba y el brillo son dos imágenes recortadas por la silueta del módulo (un `Mask` sobre su cuerpo) que giran al revés que él, así que quedan quietas en la pantalla. La vuelta del espejo es la escala en x del cuerpo (la luz no se da vuelta). La sombra es la misma silueta, oscura, en un contenedor que no gira: cae siempre hacia abajo.
 2. **La barra de «Tiempo» solo se dibuja en Reto.** En Precisión el plazo de 12 s sigue existiendo (un módulo sin contestar cuenta como error), pero no se muestra para que no apure.
-3. **La estación dibuja como mucho 5 anillos** (los más nuevos); los viejos dejan de dibujarse. Lo que cuenta (módulos, anillos, récord) no depende de lo que se dibuja.
+3. **(v2; en la v3 no hay estación en la pantalla de juego, ver §13) La estación dibuja como mucho 5 anillos** (los más nuevos); los viejos dejan de dibujarse. Lo que cuenta (módulos, anillos, récord) no depende de lo que se dibuja.
 4. **La pantalla final tapa el marcador común** y trae su propia lista (§8). Se quitaron el aviso de subida de nivel y «Con calma»; el smoke `AvisoAcoplamiento` ya no tiene sentido y se quitó.
 5. **Sonido.** Los instrumentos son los de `RadarSounds` (kalimba, marimba, bloque de madera, soplo, golpe), que ya son el port 1 a 1 del laboratorio aprobado. Las 8 recetas de la tabla del §7 se prueban contra la salida del propio boceto corrida en Node (`tools/sonido/referencia-acoplamiento.js` → `Tests/DockingSoundReference.json`, tolerancia 1e-4). 15 clips estéreo (la nota de «Se suma» sube con la racha: 8 clips) pesan 10,3 MB y se calculan de a poco durante la cuenta regresiva (92 cuadros; 365 ms de cálculo en total en el PC).
-6. **16:9.** `DockingPlan` achica todo lo que va bajo la franja de avisos con una escala K (entre 0,6 y 1; el texto de los botones nunca baja de 14 dp) y la estación de arriba no se achica. Con el tutorial se reservan 96 dp abajo para los controles de Nubi.
+6. **16:9.** `DockingPlan` achica todo lo que va bajo la franja de avisos con una escala K (entre 0,6 y 1; el texto de los botones nunca baja de 14 dp; en la v3 ya no hay estación arriba). Con el tutorial se reservan 96 dp abajo para los controles de Nubi.
 7. **Pieza del tutorial:** una L de 4 bloques (siempre quiral). Las dos prácticas que se tocan «aseguran» la respuesta (`EnsureAnswer`) y los pasos esperan el fin de la revelación con una bandera propia (`_revealing`): la fase del juego sigue en «Reveal» hasta que alguien pasa a la siguiente.
 8. **El smoke ahora falla si un tutorial no llega a su último aviso («¡Listo!»)** en los 100 s de tope. Antes un tutorial trabado se daba por bueno al llegar al tope (lo descubrió justo este: la primera versión de la práctica se quedaba esperando el fin de la revelación y el smoke decía OK).
 
@@ -162,3 +162,28 @@ Rotación mental «igual o espejo» con poliominós es una tarea de laboratorio 
 **Pruebas.** Unity: 42 en `Tests/` (`DockingContractTests` 7, `DockingV2Tests` 21: 4 × 4 en 12 niveles × 600 semillas, textos del aviso, tiempos, pantalla de 780 y de 16:9, franja libre en 7 alturas con y sin tutorial, estación y casilleros, arte; `DockingSoundTests` 14: fidelidad de 9 sonidos, nota por racha, niveles de la tabla, memoria y horneado). Smoke: `TutorialAcoplamiento` en 3 formas de pantalla, `Acoplamiento`, `AcoplamientoReto`, `AcoplamientoMudo` (con el sonido apagado nada suena), `PantallaAcoplamiento` y `HowToAcoplamiento`. Kotlin: 17 nuevas (`AcoplamientoTest`, `AcoplamientoRecordTest`, el tutorial, el respaldo y la captura de la pantalla final).
 
 **Capturas reales:** `bash tools/verificar-todo.sh --capturas Acoplamiento` → `docs/previews/capturas/acoplamiento.png`.
+
+## 13. Acoplamiento v3 (Tarea 118, 17-oct): sin estación, plasticina, la pieza almohada con lámpara fija
+
+Ricardo aprobó la hoja [`previews/plasticina/propuesta-acoplamiento-v3.png`](previews/plasticina/propuesta-acoplamiento-v3.png) (Tarea 117; había rechazado las bolitas de la v2: «rellenar por rellenar») y se integró tal cual. **No cambian** las reglas, el DDA, los tiempos (420 ms de llegada, 320 + 300 ms de giro y vuelta, 380 ms de bajada, 220 + 520 + 380 ms después), las medidas, la telemetría (anillos = módulos ÷ 8) ni la app Kotlin. Marca: `estilo 17-oct · acoplamiento v3`.
+
+**Qué se ve ahora**
+| Pieza | v3 |
+|---|---|
+| la **pantalla** | SIN estación: el bloque de la pieza y del hueco sube de 26 a **38 dp** (31 en 16:9), la pieza gira en un círculo de 215 dp y el panel del puerto mide 245 × 214 dp; la franja de avisos sube a y 118-150; los botones siguen en 158 × 76 dp (≥ 56 en las 8 formas de pantalla) y el texto más chico es de 14 dp (`DockingPlan`) |
+| el **avance** | una fila de **8 luces redondas de plasticina** (22 dp, cada 30 dp, y 100) junto al marcador; al 8.º módulo una onda lima las recorre (40 ms por luz; con «quitar animaciones», de golpe), el aviso dice «¡Anillo completo!» y una **medalla lima** cuenta los anillos |
+| el **encaje** | «plop»: la pieza baja al hueco (380 ms), se hunde un 3,5 % mientras el cordón se pone lima (220 ms) y queda a ras del fondo (sin canto ni sombra, con la sombra de la pared) con el visto lima del kit y los chevrones lima; en ese momento se enciende la luz con su halo y sale «¡Encaja!» en la franja |
+| la **pieza** | una **almohada de plasticina sin adornos** (`DockingArt`): la silueta del SDF desenfocada como relieve, canto de 5 dp hacia abajo y sombra de contacto, celeste cálido, grano fino y la **lámpara FIJA** en la pantalla (brillo arriba a la izquierda, sombra abajo a la derecha) |
+| el **hueco** | una **cavidad**: cordón de plasticina (verde agua en reposo, lima al encajar, celeste al mostrar; un tubo gris que se tiñe), pared de 6 dp con la misma lámpara (en sombra arriba y a la izquierda, con luz abajo y a la derecha) y fondo oscuro; con el arreglo del alfiler de 2 × 2 |
+| el **panel «Puerto»**, **«Encaja»** y **«Espejo»** y los **avisos** | las losas del kit (noche; lima y uva; chica dorada o crema) con el texto liso de tinta; los botones con la receta de VERDAD / DISPARATE (estado presionado y rebote) y su ícono de churro de tinta |
+| los **chevrones** y las **luces** | atlas `acoplamiento` (Blender): 4 chevrones de churro, 3 luces (apagada, oro, lima) y los dos íconos de los botones |
+| la **pantalla final** | «tu estación» como una **escultura** de las piezas que acopló la persona (hasta 3 anillos de 8 alrededor de un núcleo, pistas lima en los completos); los datos de siempre no cambian |
+
+**Cómo está hecho**
+1. **La lámpara se hornea en la orientación que se muestra** (no un shader): `DockingArt.BakeFace` evalúa el SDF ya girado y espejado EN LA PANTALLA y la luz sale de esa silueta, así que durante la decisión no hay nada que delate el espejo (la pieza espejada en pantalla y la de celdas reflejadas dan lo mismo: fuga 0). Por módulo se hornean la pieza MOSTRADA y el hueco (cavidad y cordón) al empezar, y la ALINEADA (0° y sin espejo) y la ASENTADA mientras se decide (a los 2 cuadros) o al empezar la revelación si todavía no están; al responder el sprite pasa a la alineada y gira y se espeja con su transform como antes (la lámpara gira esos 0,6 s con la pieza, pero ya contestó). 96 px por bloque (la pantalla los muestra a 114); el relieve y la lámpara se calculan a un cuarto de resolución y el SDF exacto solo en el borde.
+2. **El arreglo del 2 × 2:** `PieceGeo` suma una caja de 2 × 2 por cada 2 × 2 de bloques; sin ella el punto donde se juntan 4 bloques queda en d = 0 y se dibujaba un alfiler translúcido.
+3. **Sin estación:** se quitaron `BuildStation`, `RefreshStation`, `SlotTarget`, `AnimateSlotFlash`, las sprites de los anillos y casilleros, la luz y el brillo con máscara del módulo y el vuelo. `_stationShown` sigue siendo la cuenta de módulos acoplados en la sesión (incluye la práctica del tutorial): ahora enciende las luces de la fila; las piezas que acopló la persona (sin la práctica) se guardan en `_dockedShapes` para la escultura.
+4. **Tutorial:** el paso 3 dice «¡Encaja! Se enciende una luz» y ilumina la fila de luces (`CoachTexts.Acoplamiento.Docks`; ya no nombra la estación ni los casilleros).
+5. **Sin el atlas** (o con `PlasticArt.Disabled`) el panel, los botones, los íconos y los chevrones caen a lo de arcilla de siempre (`DockingSprites`); la pieza, el hueco y la escultura no usan atlas.
+
+**Pruebas** (`DockingV2Tests`, `DockingV3Tests`): el plano v3 (números de la hoja y 8 formas de pantalla, con y sin tutorial: nada se pisa, botones ≥ 56 dp, textos ≥ 14 dp); IoU de la cara contra el SDF del juego ≥ 0,99 (5 piezas, giradas y espejadas); fuga del espejo = 0 (el 8 bits más cercano); lo que se descartó (la luz en el marco con espejo por escala) cae ≥ 8 px del otro lado; el 2 × 2 sin agujero; el contraste del filo oscuro ≥ 3 : 1; el hueco es la silueta de la pieza con el cordón por fuera y la pared de abajo a la derecha más clara que la de arriba a la izquierda; la pieza asentada sin canto ni sombra; la escultura; nada de la estación en la pantalla de juego y 8 luces.

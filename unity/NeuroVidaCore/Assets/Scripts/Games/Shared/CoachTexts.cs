@@ -142,13 +142,13 @@ namespace NeuroVida.Games.Shared
             public const string Rocks = "Las rocas grises no se rescatan: no están en el tablero";
         }
 
-        /// <summary>Acoplamiento (pantalla: la estación arriba, el módulo al centro, el puerto con su hueco y los dos botones abajo). La práctica son tres módulos que no cuentan: uno girado que SÍ encaja (el toque es real), un espejo que se explica solo y otro espejo (toque real).</summary>
+        /// <summary>Acoplamiento (pantalla: la fila de luces de avance arriba, el módulo al centro, el puerto con su hueco y los dos botones abajo). La práctica son tres módulos que no cuentan: uno girado que SÍ encaja (el toque es real), un espejo que se explica solo y otro espejo (toque real).</summary>
         public static class Acoplamiento
         {
             public const string Port = "Este es el puerto: el hueco tiene la forma de la pieza";
-            public const string Arrives = "Llega un módulo girado. Gíralo en tu mente: ¿cabe en el hueco?";
+            public const string Arrives = "Gíralo en tu mente: ¿cabe en el hueco?";
             public const string Fits = "Si calza, toca Encaja";
-            public const string Docks = "¡Encaja! Se suma a tu estación";
+            public const string Docks = "¡Encaja! Se enciende una luz";
             public const string MirrorSeen = "Este está dado vuelta: es su espejo";
             public const string MirrorTouch = "Si está dado vuelta, toca Espejo";
             public const string AndThis = "¿Y este?";

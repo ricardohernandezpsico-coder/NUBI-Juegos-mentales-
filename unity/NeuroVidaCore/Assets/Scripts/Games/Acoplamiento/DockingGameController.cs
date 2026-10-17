@@ -11,11 +11,11 @@ using Motion = NeuroVida.Games.Shared.Motion; // UnityEngine.Motion también exi
 namespace NeuroVida.Games.Acoplamiento
 {
     /// <summary>
-    /// «Acoplamiento: muelle de acoplamiento» (id <c>acoplamiento</c>, renovado el 10-oct; ver <see cref="DockingContract"/> y docs/diseno-acoplamiento.md; el boceto aprobado es docs/previews/acoplamiento-boceto.html): ROTACIÓN MENTAL (Shepard y Metzler, 1971). Estás armando una estación espacial: llega un módulo girado y hay
-    /// que decidir si ENCAJA en el hueco del puerto (es la misma pieza, girada) o es su ESPEJO (dado vuelta). Los dos aciertos suman un módulo a la estación (si era espejo y lo dijiste, el muelle lo da vuelta y también se acopla); cada 8 módulos se completa un anillo. SIEMPRE se ve la verdad:
-    /// el módulo gira hasta quedar derecho, se da vuelta si era espejo y baja al puerto; si acertaste vuela a su casillero de la estación y, si no, se aleja sin castigo. Un módulo: llega (420 ms) → decidir (Reto: de 6 a 2,5 s según el nivel, con su barra de «Tiempo»; Precisión sin apuro) → revelación.
-    /// Reto de 120 s; Precisión de 24 módulos. La pieza cabe en 4 × 4 bloques; la luz y la sombra quedan fijas en la pantalla (no giran con la pieza, para no delatar el giro) y nada gira en el fondo. Los avisos van en una franja fija (y 246-278) y NUNCA sobre el módulo, el puerto ni los botones (el smoke lo comprueba).
-    /// Todo el tiempo va con <see cref="GameClock"/> y lo que se mueve con <see cref="Motion"/>: con «quitar animaciones» el módulo aparece de una vez y cada paso de la revelación (giro, vuelta, bajada, vuelo) cambia de golpe, y los chevrones no parpadean.
+    /// «Acoplamiento: muelle de acoplamiento» (id <c>acoplamiento</c>, renovado el 10-oct y en plasticina desde la v3 del 17-oct; ver <see cref="DockingContract"/>, docs/diseno-acoplamiento.md y docs/previews/plasticina/propuesta-acoplamiento-v3.png): ROTACIÓN MENTAL (Shepard y Metzler, 1971). Llega un módulo girado y hay
+    /// que decidir si ENCAJA en el hueco del puerto (es la misma pieza, girada) o es su ESPEJO (dado vuelta). Los dos aciertos encienden una luz de la fila de avance (si era espejo y lo dijiste, el muelle lo da vuelta y también se acopla); cada 8 módulos se completa un anillo (una onda lima, «¡Anillo completo!» y una medalla). SIEMPRE se ve la verdad:
+    /// el módulo gira hasta quedar derecho, se da vuelta si era espejo y baja al puerto; si acertaste hace «plop» (se hunde y queda a ras con el cordón lima y el visto) y se enciende la luz y, si no, se aleja sin castigo. Un módulo: llega (420 ms) → decidir (Reto: de 6 a 2,5 s según el nivel, con su barra de «Tiempo»; Precisión sin apuro) → revelación.
+    /// Reto de 120 s; Precisión de 24 módulos. La pieza cabe en 4 × 4 bloques; es una almohada de plasticina con la LÁMPARA fija en la pantalla, horneada en la orientación que se ve (<see cref="DockingArt"/>: no delata el giro ni el espejo) y nada gira en el fondo. Los avisos van en una franja fija (y 118-150) y NUNCA sobre el módulo, el puerto ni los botones (el smoke lo comprueba).
+    /// Todo el tiempo va con <see cref="GameClock"/> y lo que se mueve con <see cref="Motion"/>: con «quitar animaciones» el módulo aparece de una vez y cada paso de la revelación (giro, vuelta, bajada, plop, onda de las luces) cambia de golpe, y los chevrones no parpadean.
     /// </summary>
     public sealed partial class DockingGameController : GameControllerBase
     {
@@ -96,6 +96,7 @@ namespace NeuroVida.Games.Acoplamiento
             _rts.Clear();
             _corrects.Clear();
             _trials = _correct = _docked = _rings = _streak = _bestStreak = _stationShown = 0;
+            _dockedShapes.Clear();
             _endsAt = 0f;
             _lastTickSecond = -1;
             _trial = null;
@@ -114,7 +115,12 @@ namespace NeuroVida.Games.Acoplamiento
         }
 
         /// <summary>Las piezas se hornean en cada módulo: al cerrar el juego se liberan sus texturas.</summary>
-        private void OnDestroy() => ReleasePiece();
+        private void OnDestroy()
+        {
+            DiscardPrebake();
+            ReleasePiece();
+            ReleaseSculpture();
+        }
 
         private IEnumerator GameLoop()
         {
@@ -131,8 +137,10 @@ namespace NeuroVida.Games.Acoplamiento
                 ResetViews();
             }
             _safe.gameObject.SetActive(false);
+            StartPrebake();                                                                    // el primer módulo se hornea de a poco durante la cuenta regresiva
             yield return StartCoroutine(_countdown.Play(DockingContract.Title, Assessment.Subtitle(DockingContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
             while (!_baked) yield return null;
+            while (_preTrial != null && !_preReady) yield return null;
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -177,17 +185,25 @@ namespace NeuroVida.Games.Acoplamiento
         private IEnumerator PlayTrial()
         {
             int level = _dda.PresentedLevel;
-            var trial = DockingContract.NextTrial(level, _rng);
-#if UNITY_EDITOR
-            if (_editorMirror >= 0) trial.Mirrored = _editorMirror == 1;                         // las capturas fuerzan el módulo (espejo o igual, y su giro)
-            if (_editorAngle != NoAngle) trial.AngleDeg = _editorAngle;
-#endif
+            DockingTrial trial = null;
+            if (_preTrial != null && PrebakeStillValid())
+            {
+                var chosen = _preTrial;
+                while (_preTrial == chosen && !_preReady) yield return null;                    // casi nunca espera: se hornea mientras se revela el módulo anterior
+                if (_preTrial == chosen) trial = chosen;
+            }
+            if (trial == null)
+            {
+                DiscardPrebake();
+                trial = NewTrial(level);
+            }
             BeginTrial(trial);
             yield return null;                                                                // el horneado de la pieza ya se hizo: el módulo llega en un cuadro limpio
             UpdateHud();
             yield return StartCoroutine(DoArrive());
             yield return StartCoroutine(DoDecide(level));
             EvaluateAnswer(level, out bool correct, out int answer);
+            StartPrebake();                                                                    // el módulo que sigue se hornea de a poco mientras se revela este
             yield return StartCoroutine(RevealRoutine(correct, answer));
             EndTrial();
         }
@@ -209,6 +225,7 @@ namespace NeuroVida.Games.Acoplamiento
             _phase = Phase.Decide;
             _answer = NoAnswer;
             _decideAt = Now;
+            StartCoroutine(BakeAlignedSoon(_trial));                                           // la pieza de la revelación se hornea mientras se piensa (no en el cuadro de la respuesta)
             _deadline = DockingContract.DeadlineMs(level, Precision) / 1000f;
 #if UNITY_EDITOR
             if (GuidedTutorial.EditorAutoPlayGame && !EditorShotMode) _deadline = Mathf.Min(_deadline, 1.6f);                  // el smoke no espera 6 s para ver «Sin tiempo»
@@ -258,8 +275,8 @@ namespace NeuroVida.Games.Acoplamiento
         // ------------------------------------------------------------------ la revelación (siempre se ve la verdad)
 
         /// <summary>
-        /// La revelación: el módulo gira hasta quedar derecho (320 ms), se da vuelta si era espejo (300 ms), baja al puerto (380 ms) y, si acertaste, el borde y los chevrones se ponen lima, 220 ms después vuela a su casillero de la estación (520 ms) y se enciende; cada 8 módulos, «¡Anillo completo!».
-        /// Si no acertaste, el borde se pone celeste («mostrar») y el módulo se aleja hacia la derecha mientras se apaga (600 ms), sin castigo. El movimiento sale del TIEMPO de la revelación (<see cref="RevealT"/>), así las capturas pueden detenerlo a mitad de un paso.
+        /// La revelación: el módulo gira hasta quedar derecho (320 ms), se da vuelta si era espejo (300 ms), baja al puerto (380 ms) y, si acertaste, el cordón y los chevrones se ponen lima y hace «plop» (220 ms: se hunde un 3,5 %); después queda a ras del hueco con el visto lima (520 ms más, con la luz de la fila encendida, la onda lima y «¡Anillo completo!»
+        /// cada 8 módulos). Si no acertaste, el cordón se pone celeste («mostrar») y el módulo se aleja hacia la derecha mientras se apaga (600 ms), sin castigo. Los tiempos son los de siempre. El movimiento sale del TIEMPO de la revelación (<see cref="RevealT"/>), así las capturas pueden detenerlo a mitad de un paso.
         /// </summary>
         private IEnumerator RevealRoutine(bool correct, int answer, bool demo = false)
         {
@@ -287,7 +304,7 @@ namespace NeuroVida.Games.Acoplamiento
                         Play(DockSfx.Dock);
                         GameFeel.Haptic(GameFeel.HapticKind.Firm);
                     }
-                    if (_landingPending && t >= tA + RevealDown + RevealHold + RevealFly) Land();
+                    if (_landingPending && t >= tA + RevealDown + RevealHold) Land();                       // al quedar a ras: se enciende la luz
                 }
                 else if (!soundMiss && t >= tA + 0.12f)
                 {
@@ -317,16 +334,18 @@ namespace NeuroVida.Games.Acoplamiento
             return Now - _revealAt;
         }
 
-        /// <summary>El módulo llegó a su casillero: se suma a la estación (y a la partida, salvo en la práctica del tutorial), se enciende con un aro blanco y suena la kalimba que sube con la racha; cada 8, «¡Anillo completo!».</summary>
+        /// <summary>El módulo quedó a ras del hueco: se enciende una luz de la fila (y se suma a la partida, salvo en la práctica del tutorial) con su halo y suena la kalimba que sube con la racha; cada 8, la onda lima y «¡Anillo completo!».</summary>
         private void Land()
         {
             _landingPending = false;
-            int index = _stationShown;
             _stationShown++;
-            if (!_guided) _docked++;
-            _slotFlashAt = Now;
-            _slotFlashIndex = index;
-            RefreshStation();
+            if (!_guided)
+            {
+                _docked++;
+                if (_trial != null) _dockedShapes.Add(_trial.Shape);
+            }
+            _landAt = Now;
+            RefreshLights(Now);
             UpdateHudExtras();
             Play(DockSfx.Slot, _guided ? 1 : _streak);
             GameFeel.Haptic(GameFeel.HapticKind.Light);
@@ -360,9 +379,9 @@ namespace NeuroVida.Games.Acoplamiento
             int rtN = 0;
             for (int i = 0; i < _rts.Count; i++) if (_corrects[i]) { rtSum += _rts[i]; rtN++; }
 #if UNITY_EDITOR
-            // el contador de arriba, la estación y el título «N módulos acoplados» tienen que decir lo mismo (cada acierto se acopla una sola vez): si no, el smoke falla
+            // el contador de arriba, la fila de luces y el título «N módulos acoplados» tienen que decir lo mismo (cada acierto se acopla una sola vez): si no, el smoke falla
             if (!EditorShotMode && (_docked != _correct || _stationShown != _docked))
-                Debug.LogError("[SmokeTest] Acoplamiento: los acoplados (" + _docked + "), la estación (" + _stationShown + ") y los aciertos (" + _correct + ") no coinciden");
+                Debug.LogError("[SmokeTest] Acoplamiento: los acoplados (" + _docked + "), las luces (" + _stationShown + ") y los aciertos (" + _correct + ") no coinciden");
             Debug.Log("[SmokeTest] Acoplamiento: partida terminada: " + _docked + " módulos, " + _rings + " anillos, " + _correct + " de " + _trials + ", racha mayor " + _bestStreak + ", giro " + speed + " °/s, nivel " + _dda.Level);
 #endif
             HideModule();
@@ -411,6 +430,7 @@ namespace NeuroVida.Games.Acoplamiento
         {
             // el módulo a medias no cuenta: se vuelve a jugar entero (lo ganado hasta ahora se conserva; si ya había acertado, el módulo se acopla)
             if (_landingPending) Land();
+            DiscardPrebake();
             _phase = Phase.Idle;
             _inputOn = false;
             _shownAnswer = NoAnswer;
@@ -479,6 +499,7 @@ namespace NeuroVida.Games.Acoplamiento
             _answer = i;
             _answerAt = Now;
             _pressAt[i] = Now;
+            _buttons[i].Touch?.Press();                                              // la losa del kit se ve presionada y al soltar rebota
             Play(DockSfx.Tap);
             GameFeel.Haptic(GameFeel.HapticKind.Light);
         }
@@ -533,7 +554,7 @@ namespace NeuroVida.Games.Acoplamiento
             var rt = _noticePill.rectTransform;
             var c = ToLogical(rt.anchoredPosition);
             var box = new DockBox(c.x - rt.sizeDelta.x / _s * 0.5f, c.y - rt.sizeDelta.y / _s * 0.5f, c.x + rt.sizeDelta.x / _s * 0.5f, c.y + rt.sizeDelta.y / _s * 0.5f);
-            var zones = new[] { ("el módulo", _plan.ModuleBox), ("el puerto", _plan.PortBox), ("«Encaja»", _plan.ButtonBox(0)), ("«Espejo»", _plan.ButtonBox(1)), ("la barra de tiempo", _plan.FuelBox) };
+            var zones = new[] { ("el módulo", _plan.ModuleBox), ("el puerto", _plan.PortBox), ("«Encaja»", _plan.ButtonBox(0)), ("«Espejo»", _plan.ButtonBox(1)), ("la barra de tiempo", _plan.FuelBox), ("la fila de luces", _plan.LightsBox) };
             foreach (var z in zones)
                 if (box.Intersects(z.Item2))
                 {
