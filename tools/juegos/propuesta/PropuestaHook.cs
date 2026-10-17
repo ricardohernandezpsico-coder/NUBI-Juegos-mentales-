@@ -123,6 +123,58 @@ namespace NeuroVida.Bridge.EditorTools
 
         public static void Vuelve() { Restaura(); }
 
+        /// <summary>Apaga (o enciende) las capas de la sombra blanda y del canto de los engranajes de la máquina: el cuadro «sin canto» para medir qué hace el canto.</summary>
+        public static void SinCanto(bool sin)
+        {
+            var c = Controller(); if (c == null) return;
+            var capa = Campo(c, "_machineLayer") as RectTransform; if (capa == null) return;
+            foreach (var nombre in new[] { "Soft", "Canto" }) { var t = capa.Find(nombre); if (t != null) t.gameObject.SetActive(!sin); }
+        }
+
+        /// <summary>El costo de las capas: [iteraciones] cuadros en los que todos los engranajes giran un poco y se corre `AnimateScene` y se rehacen los lienzos; devuelve los ms por cuadro (CPU del Editor). Se compara con y sin canto.</summary>
+        public static double MideCosto(int iteraciones, Func<double> renderUnaVez = null)
+        {
+            var c = Controller(); if (c == null) return -1;
+            var tc = c.GetType();
+            var maquina = tc.GetField("_mach", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(c); if (maquina == null) return -2;
+            var gears = (System.Collections.IList)maquina.GetType().GetField("Gears").GetValue(maquina);
+            var campoA = gears[0].GetType().GetField("A");
+            var anima = tc.GetMethod("AnimateScene", BindingFlags.NonPublic | BindingFlags.Instance);
+            for (int w = 0; w < 20; w++) Un(c, anima, gears, campoA, w);                       // calentamiento
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < iteraciones; i++) { Un(c, anima, gears, campoA, i + 20); if (renderUnaVez != null) renderUnaVez(); }
+            sw.Stop();
+            return sw.Elapsed.TotalMilliseconds / iteraciones;
+        }
+
+        private static void Un(object c, MethodInfo anima, System.Collections.IList gears, FieldInfo campoA, int i)
+        {
+            foreach (var g in gears) campoA.SetValue(g, (float)campoA.GetValue(g) + 0.03f);
+            anima.Invoke(c, new object[] { Time.realtimeSinceStartup, 0.016f });
+            Canvas.ForceUpdateCanvases();
+        }
+
+        /// <summary>Usa todas las llaves tocando los primeros interruptores y toca uno más: deja el toque BLOQUEADO a la vista (la moneda con la aspa, el aviso y el contador).</summary>
+        public static void Bloquea()
+        {
+            var c = Controller(); if (c == null) return; var tc = c.GetType();
+            var mach = tc.GetField("_mach", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(c); if (mach == null) return;
+            var sw = (System.Collections.IList)mach.GetType().GetField("Switches").GetValue(mach);
+            var stage = mach.GetType().GetField("Stage").GetValue(mach); int keys = (int)stage.GetType().GetField("Keys").GetValue(stage);
+            var ids = new List<int>(); foreach (var x in sw) ids.Add((int)x.GetType().GetField("Id").GetValue(x));
+            var toggle = tc.GetMethod("ToggleSwitch", BindingFlags.NonPublic | BindingFlags.Instance);
+            for (int i = 0; i < keys && i < ids.Count; i++) toggle.Invoke(c, new object[] { ids[i] });
+            if (ids.Count > keys) toggle.Invoke(c, new object[] { ids[keys] });
+        }
+
+        /// <summary>Toca el motor y dos correas (o lo que haya) con todas las llaves usadas: deja el cambio bloqueado a la vista (la moneda con la aspa) y el motor presionado.</summary>
+        public static void Presiona()
+        {
+            var c = Controller(); if (c == null) return;
+            var tc = c.GetType(); var marca = tc.GetMethod("MarkPressed", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (marca != null) marca.Invoke(c, new object[] { -1 });
+        }
+
         /// <summary>Pone en pantalla la máquina de un nivel (con correas, barras y varias piezas) para sacarla: el cohete y la máquina se arman con ese nivel.</summary>
         public static bool CargaNivel(int nivel)
         {

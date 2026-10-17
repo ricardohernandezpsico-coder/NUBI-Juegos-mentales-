@@ -161,7 +161,12 @@ namespace NeuroVida.Games.Engranajes
             _okAnswer = false;
             _startRequested = false;
             if (_machineLayer == null) return;
-            foreach (var g in _gears) g.Root.gameObject.SetActive(false);
+            foreach (var g in _gears)
+            {
+                g.Root.gameObject.SetActive(false);
+                if (g.Soft != null) { g.Soft.gameObject.SetActive(false); g.Shadow.gameObject.SetActive(false); }                    // el canto y la sombra blanda viven en sus capas, no dentro del engranaje
+                g.LastAngle = float.NaN;
+            }
             foreach (var l in _lines) l.Img.gameObject.SetActive(false);
             foreach (var r in _racks) r.gameObject.SetActive(false);
             foreach (var bv in _belts)
@@ -206,15 +211,43 @@ namespace NeuroVida.Games.Engranajes
             v.Hub.sprite = EngranajesSprites.Hub();
             SizeGearParts(v, EngranajesSprites.GearBox(size), g.Tip, Su);
             v.Glow.color = new Color(1f, 214f / 255f, 120f / 255f, 0f);
+            if (v.Soft != null) PlaceGearVolume(v, size, palette);
             ApplyAngle(v, g.A);
             v.Root.gameObject.SetActive(true);
         }
 
+        // el canto de cada engranaje: el color profundo (arriba, junto a la cara, el claro) de su rol: motor azul, camino lila y pieza dorada
+        private static readonly Color[] GearCantoLight = { new Color(0.08f, 0.27f, 0.54f), new Color(0.28f, 0.19f, 0.52f), new Color(0.54f, 0.32f, 0.03f) };
+        private static readonly Color[] GearCantoDeep = { new Color(0.05f, 0.17f, 0.35f), new Color(0.18f, 0.12f, 0.33f), new Color(0.35f, 0.21f, 0.02f) };
+
+        /// <summary>El VOLUMEN de un engranaje de la máquina: su canto (la silueta corrida 4,5 dp hacia ABAJO en la pantalla, que no gira) y la sombra de contacto blanda (un poco más abajo), ambos en las capas de debajo de todos los engranajes.</summary>
+        private void PlaceGearVolume(GearView v, EngranajesSprites.GearSize size, EngranajesSprites.Palette palette)
+        {
+            var pos = v.Root.anchoredPosition;
+            int pal = (int)palette;
+            v.Shadow.rectTransform.anchoredPosition = pos;
+            v.Shadow.color = GearCantoLight[pal];
+            v.Canto.Apply(4.5f * Su, CantoEffect.DefaultSteps, GearCantoDeep[pal], GearCantoLight[pal]);
+            v.Soft.sprite = EngranajesSprites.SilhouetteSoft(size);
+            v.Soft.rectTransform.sizeDelta = Vector2.one * (EngranajesSprites.SoftBox(size) * Su);
+            v.Soft.rectTransform.anchoredPosition = pos + new Vector2(0f, -7f * Su);
+            v.Shadow.gameObject.SetActive(true);
+            v.Soft.gameObject.SetActive(true);
+            v.LastAngle = float.NaN;
+        }
+
         private static void ApplyAngle(GearView v, float radians)
         {
+            if (!float.IsNaN(v.LastAngle) && Mathf.Approximately(v.LastAngle, radians)) return;      // quieto: no hay nada que girar (ni malla de canto que rehacer)
+            v.LastAngle = radians;
             var e = new Vector3(0f, 0f, -radians * Mathf.Rad2Deg);       // el ángulo del boceto es en el sentido del reloj: en la interfaz el giro positivo es al revés
             v.Body.rectTransform.localEulerAngles = e;
             v.Shadow.rectTransform.localEulerAngles = e;
+            if (v.Soft != null)
+            {
+                v.Soft.rectTransform.localEulerAngles = e;
+                if (v.Canto != null) v.Canto.Refresh();                                              // el canto NO gira: su corrimiento se gira al revés que el engranaje
+            }
         }
 
         private LineView NextLine()
@@ -235,6 +268,7 @@ namespace NeuroVida.Games.Engranajes
             lv.Img.color = color;
             SetRadius(lv.Img, widthDp * Su * 0.5f);
             lv.Img.gameObject.SetActive(true);
+            if (lv.Canto != null) lv.Canto.Refresh();
         }
 
         private void AddShaftSegment(Vector2 a, Vector2 b, Color c, float w)
@@ -286,6 +320,8 @@ namespace NeuroVida.Games.Engranajes
                     cap.rectTransform.anchoredPosition = B(center.x, center.y);
                     cap.rectTransform.localEulerAngles = new Vector3(0f, 0f, -ang * Mathf.Rad2Deg + (s == 0 ? 0f : 180f));
                     cap.color = col;
+                    var capCanto = bv.CapCanto[layer * 2 + s];
+                    if (capCanto != null) capCanto.Refresh();
                 }
             }
         }
@@ -351,6 +387,7 @@ namespace NeuroVida.Games.Engranajes
                 var rt = c.Root;
                 float w = rt.sizeDelta.x / Su;
                 rt.anchoredPosition = B(CartelX(w) + shake, CartelY(st));
+                if (c.Slab != null) PlasticSlab.SetCustom(c.Slab, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(ok ? EngranajesSprites.PlateState.Ok : bad ? EngranajesSprites.PlateState.Bad : EngranajesSprites.PlateState.Neutral));
                 c.Bg.color = ok ? CartelOkFill : bad ? CartelBadFill : CartelFill;
                 c.Rim.color = ok ? Mint : bad ? Coral : Gold;
                 var col = ok ? Mint : bad ? CartelBadText : Gold;
@@ -467,6 +504,7 @@ namespace NeuroVida.Games.Engranajes
             }
             _motorArrowRect.localScale = new Vector3(fk < 0.5f ? 1f - 2f * fk : 2f * fk - 1f, 1f, 1f);
             _motorArrow.color = changed ? Gold : Cyan;
+            if (_motorPill.Slab != null) PlasticSlab.SetCustom(_motorPill.Slab, EngranajesSprites.PlasticGroup, changed ? "pastilla_motor_oro" : "pastilla_motor");
             _motorPill.Bg.color = changed ? Gold : ButtonFill;
             _motorPill.Label.color = changed ? NeuroStyle.Ink : ButtonText;
             float pulse = 0f;
@@ -543,11 +581,16 @@ namespace NeuroVida.Games.Engranajes
         private void AnimateParts(Machine m, bool running, float run, float step, bool deco)
         {
             // radar y turbina giran con el engranaje de su pieza
-            if (m.Stations.TryGetValue(Station.Antena, out int ia)) _dish.rectTransform.localEulerAngles = new Vector3(0f, 0f, -m.Gears[ia].A * Mathf.Rad2Deg);
+            if (m.Stations.TryGetValue(Station.Antena, out int ia))
+            {
+                _dish.rectTransform.localEulerAngles = new Vector3(0f, 0f, -m.Gears[ia].A * Mathf.Rad2Deg);
+                if (_dishCanto != null) _dishCanto.Refresh();
+            }
             float flame = 0f;
             if (m.Stations.TryGetValue(Station.Turbina, out int it))
             {
                 _fan.rectTransform.localEulerAngles = new Vector3(0f, 0f, -m.Gears[it].A * Mathf.Rad2Deg);
+                if (_fanCanto != null) _fanCanto.Refresh();
                 if (running && deco && _sol.Depth[it] >= 0)
                     flame = Mathf.Clamp01((run - _sol.Depth[it] * step) / Accel) * Mathf.Min(1f, Mathf.Abs(_sol.Speed[it]));       // la llama llega con la fuerza
             }
@@ -669,6 +712,12 @@ namespace NeuroVida.Games.Engranajes
                 _wrenches[k].gameObject.SetActive(shown);
                 if (!shown) continue;
                 bool used = k < _changes.Count;
+                if (_volume)                                                                                          // cada llave en una moneda con canto: vacía = azul noche con la llave lila; usada = dorada
+                {
+                    _wrenchBg[k].color = used ? new Color(0.42f, 0.34f, 0.20f) : new Color(0.17f, 0.20f, 0.49f);
+                    _wrenches[k].color = used ? Color.Lerp(Gold, Coral, pulse) : new Color(0.75f, 0.72f, 0.96f);
+                    continue;
+                }
                 _wrenchBg[k].color = used ? new Color(Gold.r, Gold.g, Gold.b, 0.18f) : new Color(1f, 1f, 1f, 0.06f);
                 _wrenches[k].color = used ? Color.Lerp(Gold, Coral, pulse) : new Color(110f / 255f, 106f / 255f, 154f / 255f);
             }
@@ -883,6 +932,67 @@ namespace NeuroVida.Games.Engranajes
             return problems;
         }
 
+        /// <summary>Para las pruebas (Tarea 115, el volumen aprobado el 16-oct): arma máquinas de los niveles 1, 7 y 12 y devuelve lo que NO está como debe: las capas de la sombra blanda y del canto de los engranajes DEBAJO de todos ellos, el canto de cada engranaje (4,5 dp, 5 pasos) con su sombra de contacto, que el canto NO gire
+        /// con el engranaje (aunque se gire 37°, su corrimiento en la pantalla sigue siendo hacia ABAJO), las placas de los carteles y del rótulo MOTOR, las luces con su aro y las bandas de las correas con canto. Sin plasticina no hay volumen: no devuelve nada.</summary>
+        public List<string> AuditVolume()
+        {
+            var problems = new List<string>();
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _lay = EngranajesLayout.Compute(_logicalH);
+            if (_rng == null) _rng = new System.Random(1);
+            if (!_volume) return problems;
+            var bake = EngranajesSprites.Prewarm();
+            while (bake.MoveNext()) { }
+            AssignSprites();
+            if (_softLayer == null || _cantoLayer == null) { problems.Add("faltan las capas de la sombra blanda y del canto"); return problems; }
+            int first = int.MaxValue;
+            foreach (var g in _gears) first = Mathf.Min(first, g.Root.GetSiblingIndex());
+            if (_softLayer.GetSiblingIndex() >= _cantoLayer.GetSiblingIndex()) problems.Add("la sombra blanda debe ir debajo del canto");
+            if (_cantoLayer.GetSiblingIndex() >= first) problems.Add("el canto y la sombra de todos los engranajes deben ir DEBAJO de todos los engranajes (el canto de uno no tapa los dientes del vecino)");
+            foreach (int level in new[] { 1, 7, 12 })
+            {
+                var m = EngranajesContract.Generate(level, _rng);
+                ShowMachine(m);
+                string tag = "nivel " + level + ": ";
+                for (int i = 0; i < m.Gears.Count && i < GearPool; i++)
+                {
+                    var v = _gears[i];
+                    if (v.Soft == null || v.Canto == null) { problems.Add(tag + "engranaje " + i + ": sin sombra blanda o sin canto"); continue; }
+                    if (!v.Soft.gameObject.activeSelf || !v.Shadow.gameObject.activeSelf) problems.Add(tag + "engranaje " + i + ": su canto o su sombra están apagados");
+                    if (v.Soft.transform.parent != _softLayer || v.Shadow.transform.parent != _cantoLayer) problems.Add(tag + "engranaje " + i + ": el canto y la sombra no están en sus capas");
+                    if (Mathf.Abs(v.Canto.Distance - 4.5f * Su) > 0.01f || v.Canto.Steps != CantoEffect.DefaultSteps) problems.Add(tag + "engranaje " + i + ": el canto no baja 4,5 dp en " + CantoEffect.DefaultSteps + " pasos");
+                    // el canto no gira: se gira el engranaje 37° y el corrimiento del canto, visto en la pantalla, sigue siendo hacia abajo
+                    ApplyAngle(v, 37f * Mathf.Deg2Rad);
+                    var vh = new UnityEngine.UI.VertexHelper();
+                    vh.AddVert(new Vector3(-10f, -10f, 0f), Color.white, Vector2.zero); vh.AddVert(new Vector3(-10f, 10f, 0f), Color.white, Vector2.zero);
+                    vh.AddVert(new Vector3(10f, 10f, 0f), Color.white, Vector2.zero); vh.AddVert(new Vector3(10f, -10f, 0f), Color.white, Vector2.zero);
+                    vh.AddTriangle(0, 1, 2); vh.AddTriangle(2, 3, 0);
+                    v.Canto.ModifyMesh(vh);
+                    var stream = new List<UIVertex>();
+                    vh.GetUIVertexStream(stream);
+                    vh.Dispose();
+                    if (stream.Count != 6 * (CantoEffect.DefaultSteps + 1)) { problems.Add(tag + "engranaje " + i + ": la malla del canto tiene " + stream.Count + " vértices"); continue; }
+                    var local = stream[0].position - stream[stream.Count - 6].position;                      // la copia más honda menos la cara
+                    var onScreen = Quaternion.Euler(0f, 0f, v.Shadow.rectTransform.localEulerAngles.z) * local;
+                    if (Mathf.Abs(onScreen.x) > 0.05f || Mathf.Abs(onScreen.y + 4.5f * Su) > 0.05f) problems.Add(tag + "engranaje " + i + ": al girar, el canto se corrió a " + onScreen + " en la pantalla (debía ser hacia abajo)");
+                    ApplyAngle(v, m.Gears[i].A);
+                }
+                for (int s2 = 0; s2 < 4; s2++)
+                {
+                    var c = _cartels[s2];
+                    if (!c.Root.gameObject.activeSelf) continue;
+                    if (EngranajesSprites.HasPlates && (c.Slab == null || c.Slab.sprite == null)) problems.Add(tag + "el cartel " + (Station)s2 + " no tiene su placa");
+                }
+                if (EngranajesSprites.HasPlates && (_motorPill.Slab == null || _motorPill.Slab.sprite == null)) problems.Add(tag + "el rótulo MOTOR no tiene su pastilla");
+                for (int k = 0; k < _windows.Length; k++)
+                    if (_windowRings[k] == null || _windowRings[k].sprite == null || _windows[k].sprite != EngranajesSprites.Dome()) problems.Add(tag + "la luz " + k + " no tiene su aro y su domo");
+                for (int b = 0; b < _beltLinks.Count; b++)
+                    if (_belts[b].Lines[2].Canto == null || _belts[b].Caps[2] == null || _belts[b].CapCanto[2] == null) problems.Add(tag + "la correa " + b + " no tiene el canto de su banda oscura");
+                ClearMachine();
+            }
+            return problems;
+        }
+
         // ------------------------------------------------------------------ verificación de que lo dibujado se ve
 
         /// <summary>Para las pruebas: arma una máquina de cada nivel y devuelve lo que NO se vería (pieza apagada, sin imagen o sin opacidad): la sala, el cohete, los engranajes con su cubo y su
@@ -928,6 +1038,7 @@ namespace NeuroVida.Games.Engranajes
                         var v = _gears[i];
                         Check(tag + "engranaje " + i + ".cuerpo", v.Body, true);
                         Check(tag + "engranaje " + i + ".sombra", v.Shadow, true);
+                        if (_volume) { Check(tag + "engranaje " + i + ".sombra blanda", v.Soft, true); if (v.Canto == null) problems.Add(tag + "engranaje " + i + ": sin canto"); }
                         Check(tag + "engranaje " + i + ".cubo", v.Hub, true);
                         Check(tag + "engranaje " + i + ".soporte", v.Support, true);
                     }
@@ -936,7 +1047,8 @@ namespace NeuroVida.Games.Engranajes
                     Check(tag + "consigna", _questionBg, true);
                     Check(tag + "consigna.línea 1", _consigna1, false);
                     Check(tag + "consigna.línea 2", _consigna2, false);
-                    Check(tag + "cuenta de cambios", _counterBg, true);
+                    if (_counterSlab != null) Check(tag + "cuenta de cambios (losa)", _counterSlab, true);                 // con plasticina el fondo es la losa del kit y el Image de siempre queda invisible a propósito
+                    else Check(tag + "cuenta de cambios", _counterBg, true);
                     Check(tag + "cuenta de cambios.texto", _counterText, false);
                     Check(tag + "Arrancar.fondo", _start.Bg, true);
                     Check(tag + "Arrancar.borde", _start.Rim, true);

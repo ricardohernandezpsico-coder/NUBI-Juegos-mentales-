@@ -185,6 +185,30 @@ namespace NeuroVida.Games.Engranajes
             return Bake("sil" + (int)size, box, box, Ppd, (ref Px p, float x, float y) => p.Over(Color.white, Cover(GearSdf(x, y, size) - 1.2f, Aa)));
         }
 
+        /// <summary>El lado (dp) del sprite de la sombra BLANDA de un engranaje: la silueta más un respiro de 12 dp para que el desenfoque no se corte.</summary>
+        public static float SoftBox(GearSize s) => GearBox(s) + 12f;
+
+        /// <summary>La silueta BLANDA del engranaje (blanca, con el borde desenfocado ~4 dp): se tiñe de azul noche translúcido y se corre hacia abajo para dar la sombra de contacto (el volumen de la Tarea 115; detrás del canto, que no gira).</summary>
+        public static Sprite SilhouetteSoft(GearSize size)
+        {
+            float box = SoftBox(size);
+            return Bake("silsoft" + (int)size, box, box, Ppd, (ref Px p, float x, float y) => p.Over(Color.white, Cover(GearSdf(x, y, size) - 1.2f, 4.5f)));
+        }
+
+        /// <summary>El domo de plasticina (una bolita gris claro con un brillo arriba a la izquierda; se tiñe): las luces del cohete. Sin atlas, el disco de siempre.</summary>
+        public static Sprite Dome() => Art("domo") ?? DiscSprite.Get();
+
+        /// <summary>La moneda (disco gris claro con el aro levantado; se tiñe): el fondo de cada llave y el aro de cada luz del cohete. Sin atlas, el disco de siempre.</summary>
+        public static Sprite Coin() => Art("moneda") ?? DiscSprite.Get();
+
+        /// <summary>El estado de un cartel: neutro (azul noche con borde dorado), cumplido (verde con borde menta) o fallido (granate con borde coral).</summary>
+        public enum PlateState { Neutral, Ok, Bad }
+
+        public static string PlateName(PlateState s) => s == PlateState.Ok ? "placa_ok" : s == PlateState.Bad ? "placa_mala" : "placa_neutra";
+
+        /// <summary>true si el atlas trae las placas de los carteles y la pastilla del rótulo MOTOR (nine-slice con su canto): sin ellas los carteles siguen con el relleno y el borde de siempre.</summary>
+        public static bool HasPlates => PlasticArt.Has(PlasticGroup, "placa_neutra") && PlasticArt.Has(PlasticGroup, "placa_ok") && PlasticArt.Has(PlasticGroup, "placa_mala") && PlasticArt.Has(PlasticGroup, "pastilla_motor") && PlasticArt.Has(PlasticGroup, "pastilla_motor_oro");
+
         /// <summary>El cubo central (no gira): disco tinta con un brillo. Lado 2 = 4 veces el radio del cubo (el cubo mide 0,18 de la punta).</summary>
         public static Sprite Hub() => Bake("hub", 2f, 2f, 40f, (ref Px p, float x, float y) =>
         {
@@ -481,6 +505,7 @@ namespace NeuroVida.Games.Engranajes
             foreach (GearSize sz in Enum.GetValues(typeof(GearSize)))
             {
                 Silhouette(sz);
+                SilhouetteSoft(sz);
                 yield return null;
                 foreach (Palette pal in Enum.GetValues(typeof(Palette)))
                 {

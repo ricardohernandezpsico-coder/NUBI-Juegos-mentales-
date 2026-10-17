@@ -6,7 +6,7 @@ ACOPLAMIENTO (camino 2):
   · contraste de la pieza contra el fondo (razón de contraste WCAG): cara y canto, hoy y propuesta.
 ENGRANAJES:
   · legibilidad del hueco entre dientes con el canto detrás: por cada engranaje, el anillo entre la raíz y la punta de los dientes; razón de contraste entre el diente y el hueco, hoy y propuesta, en la mitad de arriba y en la de abajo (donde cae el canto), y la fracción de hueco que se sigue leyendo (razón ≥ 1,5).
-Uso: python -I tools/juegos/propuesta_medidas.py aco | eng <carpeta de tomas> <toma>"""
+Uso: python -I tools/juegos/propuesta_medidas.py aco | aco2 | eng <carpeta de tomas> <toma> | engr <carpeta de tomas del juego integrado> <toma>"""
 import os, sys, math, json
 import numpy as np
 from PIL import Image
@@ -63,11 +63,44 @@ def acoplamiento():
     print('  cara de la propuesta:             %.1f : 1' % razon(cl(prop, azul_cara), lf))
     if canto.sum() > 50: print('  canto de la propuesta:            %.1f : 1  (separa la pieza del fondo por abajo; contra la cara %.1f : 1)' % (razon(cl(prop, canto), lf), razon(cl(prop, canto), cl(prop, azul_cara))))
 
+# ------------------------------------------------------------------ ACOPLAMIENTO v2 (las bolitas y la almohada)
+def acoplamiento_v2():
+    import propuesta_acoplamiento as pa
+    from acopla_geo import normalize, mirror, pick_pieces
+    L4 = pick_pieces()['L4']; P = normalize([(-x, -y) for x, y in L4]); Pm = mirror(P)
+    cara = pa.perfil_cara(P); cara_m = pa.perfil_cara(Pm)
+    A, alfa, cA = pa.compone_modulo_v2(cara, P, 225.0, True)
+    B, alfa_b, cB = pa.compone_modulo_v2(cara_m, Pm, 225.0, False)
+    A1, alfa1 = pa.compone_modulo(cara, P, 225.0, True)
+    print('V2 · SILUETA: la cara de la v2 es la MISMA silueta que la de la v1 (diferencia máxima del alfa %.1e): las bolitas y la almohada van adentro' % np.abs(alfa - alfa1).max())
+    m = (A[..., 3] > 0.01) | (B[..., 3] > 0.01); dif = np.abs(A - B)[m]
+    cs_a = sorted((round(x, 3), round(y, 3)) for x, y in cA); cs_b = sorted((round(x, 3), round(y, 3)) for x, y in cB)
+    print('V2 · FUGA DEL ESPEJO con bolitas, canto y sombras: la pieza espejada en pantalla vs la de celdas reflejadas sin espejar')
+    print('  diferencia máxima %.1e / 255, media %.1e / 255 (%d píxeles); los centros de las bolitas coinciden: %s' % (dif.max() * 255, dif.mean() * 255, m.sum(), max(abs(a[0] - b[0]) + abs(a[1] - b[1]) for a, b in zip(cs_a, cs_b)) < 1e-6))
+    # --- contraste de la bolita contra la cara, a 78 y a 47 u por bloque (y cuánto mide la bolita)
+    print('V2 · CONTRASTE de la bolita contra la cara (razón de luminancia WCAG) y tamaño')
+    for bp in (78, 47):
+        capa, alfa_p, cs = pa.compone_modulo_v2(cara, P, 225.0, True, bp=bp)
+        al = capa[..., 3]; rgb = np.where(al[..., None] > 1e-4, capa[..., :3] / np.maximum(al[..., None], 1e-4), 0.0)
+        r = 0.33 * bp; yy, xx = np.mgrid[0:al.shape[0], 0:al.shape[1]]
+        rho_min = np.full(al.shape, 9.0); centro = np.zeros(al.shape, bool); anillo = np.zeros(al.shape, bool)
+        for (cx, cy) in cs:
+            rho = np.hypot(xx - cx, yy - cy) / r; rho_min = np.minimum(rho_min, rho)
+            centro |= rho < 0.25; anillo |= (rho > 0.78) & (rho < 0.95)
+        cara_ref = (alfa_p > 0.99) & (rho_min > 1.7) & (distancia_adentro(alfa_p) > 0.10 * bp)
+        lc, la, lf = (luminancia_rel(rgb[mk].mean(axis=0)) for mk in (centro, anillo, cara_ref))
+        print('  bloque de %d u: bolita de %.0f u de diámetro (%.1f dp); centro/cara %.2f : 1, filo/cara %.2f : 1 (la mayor %.2f : 1; pedido ≥ 1,3 : 1 o relieve claro)' % (bp, 2 * r, 2 * r / 3.0, razon(lc, lf), razon(la, lf), max(razon(lc, lf), razon(la, lf))))
+
 # ------------------------------------------------------------------ ENGRANAJES
-def engranajes(d, toma):
+def engranajes(d, toma, real=False):
+    """[real] = el cuadro REAL del juego integrado (con canto) contra el mismo cuadro SIN canto (`NN-<toma>-sincanto.png`, que saca el gancho temporal): lo que hace el canto y nada más. Si no, la hoja de la propuesta (hoy vs composición)."""
     import propuesta_engranajes as pe
-    img, T = pe.propuesta(d, toma)
-    F = T.F.astype(np.float64); P = img
+    if real:
+        T = pe.Toma(d, toma); P = T.F.astype(np.float64)
+        F = pe.carga(pe.Toma.__init__.__globals__['glob'].glob(os.path.join(d, '*-' + toma + '-sincanto.png'))[0]).astype(np.float64)
+    else:
+        img, T = pe.propuesta(d, toma)
+        F = T.F.astype(np.float64); P = img
     print('LEGIBILIDAD DEL HUECO ENTRE DIENTES (anillo raíz–punta de cada engranaje; razón de contraste diente/hueco, hoy → propuesta)')
     filas = []; cache = {idx: T.capa(idx) for idx, nm in T.grupos}
     for idx, nm in T.grupos:
@@ -91,7 +124,7 @@ def engranajes(d, toma):
         # solo los huecos que no están tapados por otro engranaje o por una correa: el hueco del exacto está vacío en la capa de ESTE engranaje, pero otro puede entrar; se excluye lo que otro objeto cubre
         otros = np.zeros(a.shape, bool)
         for idx2, nm2 in T.grupos:
-            if nm2 == nm or not nm2.startswith('M.'): continue
+            if nm2 == nm or not nm2.startswith('M.') or nm2 in ('M.Soft', 'M.Canto'): continue
             r2 = cache[idx2]
             if r2 is None: continue
             L2, (xx0, yy0) = r2; ox, oy = xx0 - x0, yy0 - y0
@@ -124,4 +157,6 @@ def engranajes(d, toma):
 
 if __name__ == '__main__':
     if sys.argv[1] == 'aco': acoplamiento()
+    elif sys.argv[1] == 'aco2': acoplamiento_v2()
+    elif sys.argv[1] == 'engr': engranajes(sys.argv[2], sys.argv[3], real=True)
     else: engranajes(sys.argv[2], sys.argv[3])

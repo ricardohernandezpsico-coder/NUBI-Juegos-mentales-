@@ -41,15 +41,18 @@ namespace NeuroVida.Games.Engranajes
         {
             public RectTransform Root;
             public Image Glow, Support, Shadow, Body, Hub;
-            public float Tip;
+            public Image Soft;                               // la sombra de contacto BLANDA (solo en los engranajes de la máquina con volumen; la tarjeta «NUEVO» sigue con su sombra dura)
+            public CantoEffect Canto;                        // el canto del engranaje: su silueta corrida hacia abajo en la pantalla (no gira con él)
+            public float Tip, LastAngle = float.NaN;
         }
 
-        private sealed class LineView { public RectTransform Rt; public Image Img; }
+        private sealed class LineView { public RectTransform Rt; public Image Img; public CantoEffect Canto; }
 
         private sealed class PillView
         {
             public RectTransform Root;
             public Image Bg;
+            public Image Slab;                               // la pastilla de plasticina con su canto (null sin plasticina)
             public Text Label;
         }
 
@@ -59,6 +62,7 @@ namespace NeuroVida.Games.Engranajes
             public readonly Image[] Pulleys = new Image[2];
             public readonly LineView[] Lines = new LineView[6];
             public readonly Image[] Caps = new Image[6];
+            public readonly CantoEffect[] CapCanto = new CantoEffect[6];             // el canto de las medias vueltas de la banda oscura (giran al cruzar la correa)
         }
 
         /// <summary>El cartel de una pieza del cohete: el nombre arriba y, abajo, el ícono con lo que debe hacer.</summary>
@@ -66,6 +70,7 @@ namespace NeuroVida.Games.Engranajes
         {
             public RectTransform Root;
             public Image Rim, Bg, Icon, Check, Cross;                // Check = ✓ (cumplió) y Cross = aspa (falló): acierto y error nunca van solo por color
+            public Image Slab;                                       // la placa de plasticina (el estado cambia su imagen): null sin plasticina
             public Text Name, Word;
         }
 
@@ -83,6 +88,16 @@ namespace NeuroVida.Games.Engranajes
         private sealed class Spark { public Image Img; public Vector2 Pos, Vel; public float Age, Life, Size; public bool Alive; public Color Color; }
 
         // ------------------------------------------------------------------ piezas
+
+        // el VOLUMEN (Tarea 115, aprobado el 16-oct): los cantos y las sombras de contacto de los engranajes van en dos capas DEBAJO de todos ellos (así el canto de uno no tapa los dientes del vecino); el resto lleva su canto como efecto de malla
+        private RectTransform _softLayer, _cantoLayer;
+        private readonly Image[] _windowRings = new Image[EngranajesContract.RocketLights];
+        private bool _volume;
+        private Image _counterSlab;
+        private CantoEffect _dishCanto, _fanCanto;
+        private static Color Sh(Color c, float f) => new Color(c.r * f, c.g * f, c.b * f, 1f);             // un tono más claro u oscuro SIN tocar el alfa
+        private static readonly Color Ink2 = new Color(0.07f, 0.05f, 0.20f, 1f);               // el tono del relieve de las letras
+        private static readonly Color CantoDeepViolet = new Color(0.38f, 0.30f, 0.62f, 1f), CantoLightViolet = new Color(0.58f, 0.48f, 0.82f, 1f);
 
         private Image _blockCoin;                                                      // la moneda coral con la aspa de un toque bloqueado (con las llaves usadas)
         private const float BlockCoinDp = 30f, BlockCoinSeconds = 1f;
@@ -293,6 +308,7 @@ namespace NeuroVida.Games.Engranajes
             var sr = _sceneRoot;
             sr.anchorMin = sr.anchorMax = sr.pivot = new Vector2(0.5f, 0.5f);
             sr.sizeDelta = Vector2.zero;
+            _volume = EngranajesSprites.Plastic;
             _room = SceneImage(sr, "Room", null, 129f, 288f, 242f, 348f);
 
             // el cohete (todo junto: despega entero); la punta en 104
@@ -304,6 +320,12 @@ namespace NeuroVida.Games.Engranajes
                 float y = 162f + k * ((428f - 150f - 90f) / (EngranajesContract.RocketLights - 1));
                 _windowGlows[k] = SceneImage(_rocketRoot, "WindowGlow" + k, RadialGlowSprite.Get(), 338f, y, 20f, 20f);
                 _windowGlows[k].color = new Color(1f, 201f / 255f, 74f / 255f, 0.6f);
+                if (_volume)                                                                                       // cada luz con su aro de plasticina (una ventanilla) y su domo
+                {
+                    _windowRings[k] = SceneImage(_rocketRoot, "WindowRing" + k, EngranajesSprites.Coin(), 338f, y, 12.6f, 12.6f);
+                    _windowRings[k].color = new Color(0.90f, 0.86f, 0.96f);
+                    PlasticCanto.Add(_windowRings[k], 1.1f * Su, new Color(0.30f, 0.24f, 0.46f), new Color(0.44f, 0.36f, 0.62f), 3);
+                }
                 _windows[k] = SceneImage(_rocketRoot, "Window" + k, DiscSprite.Get(), 338f, y, 8.4f, 8.4f);
             }
             BuildParts();
@@ -321,14 +343,21 @@ namespace NeuroVida.Games.Engranajes
             {
                 var img = MakeImage(_machineLayer, "Line" + i, null, false);
                 _lines[i] = new LineView { Rt = img.rectTransform, Img = img };
+                if (_volume) _lines[i].Canto = PlasticCanto.Add(img, 1.4f * Su, new Color(0.10f, 0.08f, 0.26f), new Color(0.16f, 0.13f, 0.38f), 3);          // los ejes a las piezas: un tubo
             }
-            for (int i = 0; i < GearPool; i++) _gears[i] = BuildGear(_machineLayer, "Gear" + i);
-            for (int i = 0; i < _racks.Length; i++) _racks[i] = MakeImage(_machineLayer, "Rack" + i, null, false);
+            if (_volume) { _softLayer = Layer(_machineLayer, "Soft"); _cantoLayer = Layer(_machineLayer, "Canto"); }
+            for (int i = 0; i < GearPool; i++) _gears[i] = BuildGear(_machineLayer, "Gear" + i, _softLayer, _cantoLayer);
+            for (int i = 0; i < _racks.Length; i++)
+            {
+                _racks[i] = MakeImage(_machineLayer, "Rack" + i, null, false);
+                if (_volume) PlasticCanto.Add(_racks[i], 3f * Su, Sh(CantoDeepViolet, 0.55f), Sh(CantoLightViolet, 0.7f), 4);
+            }
             for (int i = 0; i < BeltPool; i++) _belts[i] = BuildBelt(_machineLayer, "Belt" + i);
             _motorPulse = MakeImage(_machineLayer, "MotorPulse", RoundedRectSprite.Get(24), false);
             _motorPulse.color = new Color(Gold.r, Gold.g, Gold.b, 0f);
             _motorArrow = MakeImage(_machineLayer, "MotorArrow", null, false);
             _motorArrow.color = Cyan;
+            if (_volume) PlasticCanto.Add(_motorArrow, 2.2f * Su, new Color(0.05f, 0.18f, 0.40f), new Color(0.10f, 0.32f, 0.62f), 3);       // la flecha, un churro
             _motorArrowRect = _motorArrow.rectTransform;
             for (int i = 0; i < PulsePool; i++)
             {
@@ -337,6 +366,12 @@ namespace NeuroVida.Games.Engranajes
             }
             _motorPill = BuildPill(_machineLayer, "MotorLabel", 62f, 24f, ButtonFill, ButtonText, 14f);
             _motorPill.Label.text = "MOTOR";
+            if (_volume && EngranajesSprites.HasPlates)
+            {
+                _motorPill.Slab = PlasticSlab.AttachCustom(_motorPill.Root, EngranajesSprites.PlasticGroup, "pastilla_motor");
+                if (_motorPill.Slab != null) _motorPill.Bg.enabled = false;
+                PlasticCanto.Relief(_motorPill.Label, 1.3f * Su, Ink2);
+            }
             for (int s = 0; s < _cartels.Length; s++) _cartels[s] = BuildCartel(_machineLayer, "Cartel" + (Station)s);
             _blockCoin = SceneImage(_machineLayer, "BlockCoin", null, 0f, 0f, BlockCoinDp, BlockCoinDp, false);                  // la moneda coral con la aspa de un toque bloqueado: encima de todo lo de la máquina
             _machineLayer.gameObject.SetActive(false);
@@ -403,7 +438,8 @@ namespace NeuroVida.Games.Engranajes
             _fan.rectTransform.sizeDelta = new Vector2(40f * Su, 40f * Su);
         }
 
-        private GearView BuildGear(Transform parent, string name)
+        /// <summary>Un engranaje. Con volumen ([softLayer] y [cantoLayer] dados: los engranajes de la máquina) su sombra de contacto blanda y su canto van en esas dos capas, debajo de TODOS los engranajes; sin ellas (la tarjeta «NUEVO», o sin plasticina) lleva la sombra dura de siempre dentro de su raíz.</summary>
+        private GearView BuildGear(Transform parent, string name, Transform softLayer = null, Transform cantoLayer = null)
         {
             var v = new GearView();
             var go = new GameObject(name);
@@ -414,8 +450,18 @@ namespace NeuroVida.Games.Engranajes
             v.Glow.color = new Color(1f, 214f / 255f, 120f / 255f, 0f);
             v.Support = MakeImage(v.Root, "Support", DiscSprite.Get());
             v.Support.color = new Color(11f / 255f, 16f / 255f, 48f / 255f);
-            v.Shadow = MakeImage(v.Root, "Shadow", null);
-            v.Shadow.color = new Color(0f, 0f, 0f, 0.45f);
+            if (softLayer != null && cantoLayer != null)
+            {
+                v.Soft = MakeImage(softLayer, name + "Soft", null, false);
+                v.Soft.color = new Color(0.02f, 0.02f, 0.10f, 0.50f);
+                v.Shadow = MakeImage(cantoLayer, name + "Canto", null, false);
+                v.Canto = PlasticCanto.Add(v.Shadow, 4.5f * Su, new Color(0.2f, 0.15f, 0.4f), new Color(0.3f, 0.22f, 0.55f), CantoEffect.DefaultSteps);
+            }
+            else
+            {
+                v.Shadow = MakeImage(v.Root, "Shadow", null);
+                v.Shadow.color = new Color(0f, 0f, 0f, 0.45f);
+            }
             v.Body = MakeImage(v.Root, "Body", null);
             v.Hub = MakeImage(v.Root, "Hub", null);
             go.SetActive(false);
@@ -436,6 +482,16 @@ namespace NeuroVida.Games.Engranajes
                 }
             }
             for (int k = 0; k < 2; k++) bv.Pulleys[k] = MakeImage(parent, name + "_pulley" + k, null, false);
+            if (_volume)
+            {
+                var deep = new Color(0.07f, 0.05f, 0.18f); var light = new Color(0.14f, 0.11f, 0.32f);
+                for (int k = 0; k < 2; k++)                                                                          // la banda oscura (capa 1) y sus medias vueltas: el canto de la correa (la capa clara de encima queda plana)
+                {
+                    bv.Lines[2 + k].Canto = PlasticCanto.Add(bv.Lines[2 + k].Img, 3f * Su, deep, light, 4);
+                    bv.CapCanto[2 + k] = PlasticCanto.Add(bv.Caps[2 + k], 3f * Su, deep, light, 4);
+                    PlasticCanto.Add(bv.Pulleys[k], 3.5f * Su, new Color(0.08f, 0.06f, 0.20f), new Color(0.16f, 0.12f, 0.36f), 4);
+                }
+            }
             return bv;
         }
 
@@ -479,6 +535,16 @@ namespace NeuroVida.Games.Engranajes
             c.Cross = MakeImage(c.Root, "Cross", null);
             c.Cross.color = Coral;
             foreach (var t in new[] { c.Name, c.Word }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
+            if (_volume && EngranajesSprites.HasPlates)
+            {
+                c.Slab = PlasticSlab.AttachCustom(c.Root, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(EngranajesSprites.PlateState.Neutral));
+                if (c.Slab != null) { c.Rim.enabled = false; c.Bg.enabled = false; }
+                PlasticCanto.Relief(c.Name, 1.2f * Su, Ink2);                                                         // las letras, el ícono y las monedas en relieve
+                PlasticCanto.Relief(c.Word, 1.2f * Su, Ink2);
+                PlasticCanto.Relief(c.Icon, 1.0f * Su, Ink2);
+                PlasticCanto.Add(c.Check, 1.3f * Su, new Color(0.06f, 0.25f, 0.18f), new Color(0.12f, 0.40f, 0.30f), 2);
+                PlasticCanto.Add(c.Cross, 1.3f * Su, new Color(0.33f, 0.09f, 0.08f), new Color(0.50f, 0.18f, 0.14f), 2);
+            }
             go.SetActive(false);
             return c;
         }
@@ -500,10 +566,21 @@ namespace NeuroVida.Games.Engranajes
             _counterText = MakeLabel(_counterRoot, "Text", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _counterText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _counterText.verticalOverflow = VerticalWrapMode.Overflow;
+            if (_volume)                                                                                              // la cuenta de cambios: una losa del kit (la noche, teñida de azul oscuro) y cada llave en una moneda con su canto
+            {
+                _counterSlab = PlasticSlab.TryStyle(_counterBg, SlabSize.Button, SlabTone.Night);
+                if (_counterSlab != null) _counterSlab.color = new Color(0.50f, 0.78f, 0.66f);
+                PlasticCanto.Relief(_counterText, 1.1f * Su, Ink2);
+            }
             for (int k = 0; k < 2; k++)
             {
                 _wrenchBg[k] = MakeImage(_counterRoot, "WrenchBg" + k, DiscSprite.Get());
                 _wrenches[k] = MakeImage(_counterRoot, "Wrench" + k, null);
+                if (_volume)
+                {
+                    PlasticCanto.Add(_wrenchBg[k], 1.8f * Su, new Color(0.04f, 0.05f, 0.16f), new Color(0.08f, 0.10f, 0.28f), 3);
+                    PlasticCanto.Relief(_wrenches[k], 1.0f * Su, Ink2);
+                }
             }
             cg.SetActive(false);
 
@@ -531,6 +608,12 @@ namespace NeuroVida.Games.Engranajes
                 {
                     b.Shadow.enabled = b.Rim.enabled = b.Bg.enabled = false;
                     b.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Sky);
+                    if (_volume)                                                                                       // «Arrancar» con más canto (su losa baja un poco más que la del kit) y la letra y el triángulo en relieve
+                    {
+                        PlasticCanto.Add(b.Slab, 4f * Su, new Color(0.06f, 0.30f, 0.42f), new Color(0.10f, 0.45f, 0.60f), 4);
+                        PlasticCanto.Relief(b.Label, 1.4f * Su, new Color(0.62f, 0.86f, 0.97f));
+                        PlasticCanto.Relief(b.Icon, 1.2f * Su, new Color(0.62f, 0.86f, 0.97f));
+                    }
                 }
             }
             go.SetActive(false);
@@ -687,6 +770,20 @@ namespace NeuroVida.Games.Engranajes
         {
             _room.sprite = EngranajesSprites.Room();
             _hull.sprite = EngranajesSprites.Hull();
+            if (_volume)
+            {
+                for (int k = 0; k < _windows.Length; k++) { _windows[k].sprite = EngranajesSprites.Dome(); _windowRings[k].sprite = EngranajesSprites.Coin(); }
+                PlasticCanto.Add(_hull, 6f * Su, new Color(0.30f, 0.20f, 0.42f), new Color(0.46f, 0.34f, 0.60f), 6);                  // el casco, un cuerpo con grosor
+                var deep = new Color(0.22f, 0.17f, 0.42f); var light = new Color(0.36f, 0.29f, 0.60f);
+                _dishCanto = PlasticCanto.Add(_dish, 2.2f * Su, deep, light, 3);                                                         // el radar y la turbina giran: su canto se refresca con su ángulo
+                _fanCanto = PlasticCanto.Add(_fan, 2.2f * Su, new Color(0.45f, 0.26f, 0.04f), new Color(0.62f, 0.40f, 0.08f), 3);
+                PlasticCanto.Add(_door, 2.4f * Su, deep, light, 3);
+                PlasticCanto.Add(_cargoFrame, 1.6f * Su, deep, light, 3);
+                PlasticCanto.Add(_cargoPlate, 2.0f * Su, new Color(0.48f, 0.34f, 0.08f), new Color(0.68f, 0.50f, 0.14f), 3);
+                PlasticCanto.Add(_cargoBox, 2.4f * Su, new Color(0.18f, 0.36f, 0.50f), new Color(0.30f, 0.52f, 0.68f), 3);
+                for (int k = 0; k < 2; k++) _wrenchBg[k].sprite = EngranajesSprites.Coin();
+                PlasticCanto.Add(_blockCoin, 1.6f * Su, new Color(0.33f, 0.09f, 0.08f), new Color(0.50f, 0.18f, 0.14f), 2);
+            }
             _dish.sprite = EngranajesSprites.Dish();
             _fan.sprite = EngranajesSprites.Fan();
             _door.sprite = EngranajesSprites.Door();
@@ -838,7 +935,7 @@ namespace NeuroVida.Games.Engranajes
         {
             v.Body.rectTransform.sizeDelta = new Vector2(boxDp * u, boxDp * u);
             v.Shadow.rectTransform.sizeDelta = new Vector2(boxDp * u, boxDp * u);
-            v.Shadow.rectTransform.anchoredPosition = new Vector2(0f, -4f * u);
+            if (v.Soft == null) v.Shadow.rectTransform.anchoredPosition = new Vector2(0f, -4f * u);               // la sombra dura de siempre (la tarjeta «NUEVO»); con volumen el canto y la sombra blanda se colocan en `PlaceGear`
             v.Support.rectTransform.sizeDelta = Vector2.one * (tip * u);
             v.Hub.rectTransform.sizeDelta = Vector2.one * (tip * 0.5f * u);
             v.Glow.rectTransform.sizeDelta = Vector2.one * (tip * 3f * u);
@@ -873,6 +970,21 @@ namespace NeuroVida.Games.Engranajes
             SetChild(b.Icon.rectTransform, -w / 2f + 63f, 0f, 28f, 28f);
             b.Label.rectTransform.sizeDelta = new Vector2((w - 88f - 8f) * _s, 40f * _s);
             b.Label.rectTransform.anchoredPosition = new Vector2((-w / 2f + 88f + (w - 96f) / 2f) * _s, 0f);
+            if (_volume)                                                                                           // el canto, el relieve y las monedas de la interfaz: sus distancias son de la pantalla (dp × _s)
+            {
+                if (b.Slab != null)
+                {
+                    PlasticCanto.Add(b.Slab, 4f * _s, new Color(0.06f, 0.30f, 0.42f), new Color(0.10f, 0.45f, 0.60f), 4);
+                    PlasticCanto.Relief(b.Label, 1.4f * _s, new Color(0.62f, 0.86f, 0.97f));
+                    PlasticCanto.Relief(b.Icon, 1.2f * _s, new Color(0.62f, 0.86f, 0.97f));
+                }
+                PlasticCanto.Relief(_counterText, 1.1f * _s, Ink2);
+                for (int k = 0; k < 2; k++)
+                {
+                    PlasticCanto.Add(_wrenchBg[k], 1.8f * _s, new Color(0.04f, 0.05f, 0.16f), new Color(0.08f, 0.10f, 0.28f), 3);
+                    PlasticCanto.Relief(_wrenches[k], 1.0f * _s, Ink2);
+                }
+            }
         }
 
         private void LayoutSay()

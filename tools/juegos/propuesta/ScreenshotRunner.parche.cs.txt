@@ -1,0 +1,59 @@
+// El parche TEMPORAL de `ScreenshotRunner.cs` (unity/NeuroVidaCore/Assets/Scripts/Bootstrap/Editor/) que usa PropuestaHook.cs. NO se commitea: se aplica, se saca la corrida de capturas y se deshace con `git checkout` del archivo.
+// 1) Renombrar el cuerpo de `private static void Shot(string name)` a `private static void ShotRaw(string name)` y poner delante lo de abajo.
+// 2) En `PlayShots`, justo después de «else Shot(step.Item1);», agregar:
+//        if (step.Item1 == "t40" && PropuestaOn()) yield return PropuestaNiveles();
+// Variable de entorno: NUBI_SHOTS_PROPUESTA=1 (solo Engranajes).
+
+private static bool PropuestaOn() => Environment.GetEnvironmentVariable("NUBI_SHOTS_PROPUESTA") == "1" && _gameId == "engranajes" && NeuroVida.Bridge.EditorTools.PropuestaHook.Hay();
+
+private static IEnumerator PropuestaNiveles()
+{
+    foreach (var nivel in new[] { 7, 12 })
+    {
+        if (!NeuroVida.Bridge.EditorTools.PropuestaHook.CargaNivel(nivel)) continue;
+        yield return Wait.For(2.2);
+        Shot("n" + nivel);
+        if (nivel == 12)
+        {
+            // el costo de las capas (CPU del Editor): con y sin el canto, solo los lienzos y con el dibujo de una cámara
+            var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32);
+            var camGo = new GameObject("CostoCam"); var cam = camGo.AddComponent<Camera>(); cam.orthographic = true; cam.orthographicSize = Height / 2f; cam.transform.position = new Vector3(0f, 0f, -10f); cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = Color.black; cam.targetTexture = rt;
+            Func<double> render = () => { cam.Render(); return 0; };
+            double con1 = NeuroVida.Bridge.EditorTools.PropuestaHook.MideCosto(300, null), conR = NeuroVida.Bridge.EditorTools.PropuestaHook.MideCosto(300, render);
+            NeuroVida.Bridge.EditorTools.PropuestaHook.SinCanto(true);
+            double sin1 = NeuroVida.Bridge.EditorTools.PropuestaHook.MideCosto(300, null), sinR = NeuroVida.Bridge.EditorTools.PropuestaHook.MideCosto(300, render);
+            NeuroVida.Bridge.EditorTools.PropuestaHook.SinCanto(false);
+            Debug.Log("[Propuesta] COSTO nivel 12 (ms por cuadro, CPU del Editor): lienzos con canto " + con1.ToString("0.000") + " / sin canto " + sin1.ToString("0.000") + "; con dibujo de la cámara: con canto " + conR.ToString("0.000") + " / sin canto " + sinR.ToString("0.000"));
+            UnityEngine.Object.DestroyImmediate(camGo); rt.Release(); UnityEngine.Object.DestroyImmediate(rt);
+            NeuroVida.Bridge.EditorTools.PropuestaHook.Presiona(); yield return Wait.For(0.03); ShotRaw("n12p");        // el motor presionado
+            NeuroVida.Bridge.EditorTools.PropuestaHook.Bloquea(); yield return Wait.For(0.3); ShotRaw("n12b");         // el toque bloqueado: la moneda con la aspa
+        }
+    }
+}
+
+private static void Shot(string name)
+{
+    ShotRaw(name);
+    if (!PropuestaOn()) return;
+    if (name != "t08" && name != "t20" && name != "n7" && name != "n12") return;
+    int c0 = _count;
+    var nombres = NeuroVida.Bridge.EditorTools.PropuestaHook.Grupos();
+    var lineas = new List<string>();
+    NeuroVida.Bridge.EditorTools.PropuestaHook.Solo(-1, null); Canvas.ForceUpdateCanvases(); ShotRaw(name + "-fondo");           // sin el cohete ni la máquina
+    NeuroVida.Bridge.EditorTools.PropuestaHook.Vuelve();
+    NeuroVida.Bridge.EditorTools.PropuestaHook.SinCanto(true); Canvas.ForceUpdateCanvases(); ShotRaw(name + "-sincanto"); NeuroVida.Bridge.EditorTools.PropuestaHook.SinCanto(false);   // el mismo cuadro sin el canto ni la sombra blanda
+    for (int i = 0; i < nombres.Count; i++)                                                                                 // cada grupo solo, sobre negro (K) y sobre blanco (W)
+    {
+        lineas.Add(i.ToString("00") + "\t" + nombres[i]);
+        NeuroVida.Bridge.EditorTools.PropuestaHook.Solo(i, Color.black); Canvas.ForceUpdateCanvases(); ShotRaw(name + "-g" + i.ToString("00") + "-K");
+        NeuroVida.Bridge.EditorTools.PropuestaHook.Solo(i, Color.white); Canvas.ForceUpdateCanvases(); ShotRaw(name + "-g" + i.ToString("00") + "-W");
+    }
+    NeuroVida.Bridge.EditorTools.PropuestaHook.Vuelve(); Canvas.ForceUpdateCanvases();
+    File.WriteAllLines(Path.Combine(_dir, name + "-grupos.txt"), lineas.ToArray(), new UTF8Encoding(false));
+    _count = c0;
+}
+
+private static void ShotRaw(string name)
+{
+    // ... aquí va el cuerpo de siempre de `Shot` (la cámara ortográfica, ReadPixels y el PNG numerado)
+}

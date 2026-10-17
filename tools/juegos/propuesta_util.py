@@ -59,19 +59,19 @@ def edt(mask):
 
 def distancia_adentro(alfa, umbral=0.5):
     """La distancia (px) al borde de la silueta de [alfa] (0..1), con sub-píxel: edt de la máscara más la parte fraccionaria del alfa en el borde."""
-    m = alfa >= umbral
+    m = alfa >= umbral - 1e-9                                                        # la tolerancia resuelve igual los empates (un borde justo en 0,5 que el espejo o el giro dejan en 0,5 ± 1e-14)
     d = edt(m)
     return np.where(m, d - 0.5 + np.clip(alfa, 0, 1) * 0.0, 0.0)
 
 # ------------------------------------------------------------------ el relieve sin dirección y la luz fija de pantalla
 LUZ = np.array([-0.55, 0.62, 0.56]); LUZ = LUZ / np.linalg.norm(LUZ)      # (x a la derecha, y hacia ARRIBA, z hacia el ojo): la luz viene de arriba a la izquierda
 
-def infla(alfa, ancho_px, altura=1.0, luz=LUZ):
+def infla(alfa, ancho_px, altura=1.0, luz=LUZ, suave=0.8):
     """«Infla» una silueta: una altura que sube de 0 en el borde a [altura] a [ancho_px] píxeles adentro (un cuarto de círculo: canto redondo) y de ahí es plana. Devuelve (sombreado, d): el sombreado (≈ 1 en la cara plana, más claro mirando a la luz y más oscuro del otro lado) con la luz FIJA
     de pantalla, y la distancia al borde. El relieve sale solo de la distancia: no tiene dirección propia, así que la pieza gira o se espeja sin delatarse; la luz fija es de la pantalla."""
     d = distancia_adentro(alfa); t = np.clip(d / max(ancho_px, 1e-6), 0.0, 1.0)
     h = np.sqrt(np.clip(1 - (1 - t) ** 2, 0, 1)) * altura * ancho_px
-    gy, gx = np.gradient(blur(h, 0.8))                                          # y hacia ABAJO (fila 0 arriba)
+    gy, gx = np.gradient(blur(h, suave))                                          # y hacia ABAJO (fila 0 arriba)
     nx, ny, nz = -gx, gy, np.ones_like(h)                                       # la normal (con y hacia arriba: −dh/dy_abajo = +gy... se invierte el signo)
     n = np.sqrt(nx * nx + ny * ny + nz * nz); nx, ny, nz = nx / n, ny / n, nz / n
     plano = luz[2]                                                              # una cara plana (nx = ny = 0) recibe luz[2]

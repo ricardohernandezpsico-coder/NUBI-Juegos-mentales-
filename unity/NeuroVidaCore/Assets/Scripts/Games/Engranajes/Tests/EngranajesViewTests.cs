@@ -304,6 +304,58 @@ namespace NeuroVida.Games.Engranajes.Tests
         }
 
         [Test]
+        public void TheVolume_EveryGearHasItsCantoAndItsSoftShadowBelowAllTheGears_AndTheCantoNeverTurnsWithTheGear()
+        {
+            var go = new GameObject("EngranajesVolume");
+            try
+            {
+                var controller = go.AddComponent<EngranajesGameController>();
+                var build = typeof(EngranajesGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditVolume();
+                Assert.IsEmpty(problems, string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void TheCantoEffect_RepeatsTheMeshDownwardOnTheScreen_DeepestFirst_AndTheFaceLast()
+        {
+            var go = new GameObject("Canto", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            try
+            {
+                var effect = PlasticCanto.Add(go.GetComponent<UnityEngine.UI.Image>(), 12f, new Color(0.1f, 0.1f, 0.3f), new Color(0.3f, 0.3f, 0.6f), 3);
+                var vh = new UnityEngine.UI.VertexHelper();
+                vh.AddVert(new Vector3(0f, 0f, 0f), Color.white, Vector2.zero); vh.AddVert(new Vector3(0f, 10f, 0f), Color.white, Vector2.zero); vh.AddVert(new Vector3(10f, 10f, 0f), Color.white, Vector2.zero);
+                vh.AddTriangle(0, 1, 2);
+                effect.ModifyMesh(vh);
+                var stream = new List<UIVertex>();
+                vh.GetUIVertexStream(stream);
+                Assert.AreEqual(3 * 4, stream.Count, "3 pasos de canto + la cara");
+                Assert.AreEqual(-12f, stream[0].position.y, 0.001f, "la copia más honda, 12 unidades más abajo");
+                Assert.AreEqual(-8f, stream[3].position.y, 0.001f);
+                Assert.AreEqual(-4f, stream[6].position.y, 0.001f);
+                Assert.AreEqual(0f, stream[9].position.y, 0.001f, "la cara, al final: va encima");
+                Assert.Greater(stream[0].color.b, 0, "tiene color");
+                Assert.Less(stream[0].color.r, stream[6].color.r, "lo hondo es más oscuro que lo que está junto a la cara");
+                // girado 90°: el corrimiento local se gira al revés para que en la pantalla siga siendo hacia abajo
+                go.GetComponent<RectTransform>().localEulerAngles = new Vector3(0f, 0f, 90f);
+                var vh2 = new UnityEngine.UI.VertexHelper();
+                vh2.AddVert(new Vector3(0f, 0f, 0f), Color.white, Vector2.zero); vh2.AddVert(new Vector3(0f, 10f, 0f), Color.white, Vector2.zero); vh2.AddVert(new Vector3(10f, 10f, 0f), Color.white, Vector2.zero);
+                vh2.AddTriangle(0, 1, 2);
+                effect.ModifyMesh(vh2);
+                var s2 = new List<UIVertex>();
+                vh2.GetUIVertexStream(s2);
+                var local = s2[0].position - s2[9].position;
+                var onScreen = Quaternion.Euler(0f, 0f, 90f) * local;
+                Assert.AreEqual(0f, onScreen.x, 0.001f);
+                Assert.AreEqual(-12f, onScreen.y, 0.001f, "en la pantalla el canto sigue hacia abajo aunque el gráfico esté girado");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void TheController_UsesOnlyTheGameClock_SoThePauseStopsEverything()
         {
             // la pausa detiene GameClock: nada del juego puede medir el tiempo con otro reloj ni esperar con WaitForSeconds (que seguiría corriendo)

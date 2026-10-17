@@ -16,6 +16,7 @@ from PIL import Image, ImageFilter
 sys.stdout.reconfigure(encoding='utf-8')
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, AQUI)                                   # `python -I` no pone la carpeta del script: `engranajes_volumen.py` y `propuesta_util.py` viven al lado
 REPO = os.path.normpath(os.path.join(AQUI, '..', '..'))
 RES_APP = os.path.join(REPO, 'app', 'src', 'main', 'res')
 args = sys.argv[1:]
@@ -420,23 +421,34 @@ def carga_eng(nombre, ancho, bruma=False, promedio=False):
 
 def grupo_engranajes():
     """Engranajes «Taller de reparación»: los 6 engranajes (grande y chico en las tres paletas) y el estado presionado del motor, el radar y la turbina (que giran: cuatro luces promediadas y vistos desde arriba), la polea (y su presionada), el portón, el marco, la plataforma y la caja de la
-    carga, la barra dentada, el casco, las flechas del motor (grande y chica, a favor y en contra del reloj) y del cartel, y los triángulos (blancos: se tiñen). 3,5 px por dp salvo el casco y las flechas grandes (3), la flechita (4) y los triángulos (2)."""
+    carga, la barra dentada, el casco, las flechas del motor (grande y chica, a favor y en contra del reloj) y del cartel, y los triángulos (blancos: se tildan). 3,5 px por dp salvo el casco y las flechas grandes (3), la flechita (4) y los triángulos (2).
+    Desde la Tarea 115 todo pasa por `engranajes_volumen.py` (el VOLUMEN aprobado el 16-oct: color por rol con un mapa de color, bisel isótropo en lo que gira, casco de cilindro con remaches, flechas de tubo) y suma las placas de los carteles y del rótulo MOTOR (nine-slice con su canto), el domo de las luces y la moneda de las llaves."""
+    import engranajes_volumen as vol
     S = []; med = []
     for size, box in ((0, 72.0), (1, 52.0)):
         ancho = round(box * PX_ENG)
         for pal in (0, 1, 2):
             im = degrade_engranaje(carga_eng(f'gear_{size}_{pal}', ancho, promedio=True), size, pal, PX_ENG)
-            S.append(sprite(f'gear_{size}_{pal}', im, ppu=PX_ENG))
+            S.append(sprite(f'gear_{size}_{pal}', vol.gear_volumen(im, size, pal, TIP_ENG[size]), ppu=PX_ENG))
         im = degrade_engranaje(carga_eng(f'gear_{size}_0_p', ancho, promedio=True), size, 0, PX_ENG)
-        S.append(sprite(f'gear_{size}_0_p', im, ppu=PX_ENG))
-    S.append(sprite('radar', carga_eng('radar', round(48 * PX_ENG), promedio=True), ppu=PX_ENG))
-    S.append(sprite('turbina', carga_eng('turbina', round(40 * PX_ENG), promedio=True), ppu=PX_ENG))
-    for n, w in (('polea', 40), ('polea_p', 40), ('porton', 44), ('marco_carga', 48), ('plataforma', 40), ('caja_carga', 32), ('barra', 20)): S.append(sprite(n, carga_eng(n, round(w * PX_ENG)), ppu=PX_ENG))
-    S.append(sprite('casco', carga_eng('casco', 348), ppu=3.0))
+        S.append(sprite(f'gear_{size}_0_p', vol.gear_volumen(im, size, 0, TIP_ENG[size], presionado=True), ppu=PX_ENG))
+    S.append(sprite('radar', vol.radar_volumen(carga_eng('radar', round(48 * PX_ENG), promedio=True)), ppu=PX_ENG))
+    S.append(sprite('turbina', vol.turbina_volumen(carga_eng('turbina', round(40 * PX_ENG), promedio=True)), ppu=PX_ENG))
+    for n, w in (('polea', 40), ('polea_p', 40)): S.append(sprite(n, vol.polea_volumen(carga_eng(n, round(w * PX_ENG))), ppu=PX_ENG))
+    for n, w in (('porton', 44), ('marco_carga', 48), ('plataforma', 40), ('caja_carga', 32), ('barra', 20)): S.append(sprite(n, vol.fija_volumen(carga_eng(n, round(w * PX_ENG)), semilla=len(n)), ppu=PX_ENG))
+    S.append(sprite('casco', vol.casco_volumen(carga_eng('casco', 348)), ppu=3.0))
     for n, box in (('grande', 2 * (33 + 8 + 14)), ('chico', 2 * (23 + 8 + 14))):
-        for suf in ('cw', 'ccw'): S.append(sprite(f'flecha_{n}_{suf}', carga_eng(f'flecha_{n}_{suf}', round(box * 3)), ppu=3.0))
-    for suf in ('cw', 'ccw'): S.append(sprite(f'miniflecha_{suf}', carga_eng(f'miniflecha_{suf}', 88), ppu=4.0))
-    for n in ('tri_arriba', 'tri_abajo', 'tri_play'): S.append(sprite(n, carga_eng(n, 112), ppu=2.0))
+        for suf in ('cw', 'ccw'): S.append(sprite(f'flecha_{n}_{suf}', vol.blanca_tubo(carga_eng(f'flecha_{n}_{suf}', round(box * 3)), 1.6 * 3.0 / PX_ENG), ppu=3.0))
+    for suf in ('cw', 'ccw'): S.append(sprite(f'miniflecha_{suf}', vol.blanca_tubo(carga_eng(f'miniflecha_{suf}', 88), 1.1 * 4.0 / PX_ENG), ppu=4.0))
+    for n in ('tri_arriba', 'tri_abajo', 'tri_play'): S.append(sprite(n, vol.blanca_tubo(carga_eng(n, 112), 1.6 * 2.0 / PX_ENG), ppu=2.0))
+    S.append(sprite('domo', vol.domo_sprite(48), ppu=100.0 * 3.0 / 3.0)); S.append(sprite('moneda', vol.moneda_sprite(96), ppu=100.0))
+    for nombre, (cuerpo, rim) in vol.CARTEL.items():                                           # las placas de los carteles (38 dp = 114 px de alto, radio 12 dp) y la pastilla del rótulo MOTOR (24 dp = 72 px)
+        im, m = vol.losa_placa(128, 114, 36, 4.5, cuerpo, rim, canto_dp=5.0, margen=(10, 8, 10, 26))
+        S.append(sprite('placa_' + nombre, im, borde=(50, 83, 50, 65), margen=(10, 8, 10, 26)))
+    im, m = vol.losa_placa(112, 72, 36, 0, (35, 43, 87), (35, 43, 87), canto_dp=4.0, margen=(8, 6, 8, 20))
+    S.append(sprite('pastilla_motor', im, borde=(44, 56, 44, 42), margen=(8, 6, 8, 20)))
+    im, m = vol.losa_placa(112, 72, 36, 0, (255, 201, 74), (255, 201, 74), canto_dp=4.0, margen=(8, 6, 8, 20))                    # el rótulo cuando el motor está cambiado: dorado
+    S.append(sprite('pastilla_motor_oro', im, borde=(44, 56, 44, 42), margen=(8, 6, 8, 20)))
     return S, med
 
 def grupo_comun():
