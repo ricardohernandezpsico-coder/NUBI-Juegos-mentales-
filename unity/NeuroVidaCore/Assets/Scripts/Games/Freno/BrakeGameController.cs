@@ -1252,7 +1252,7 @@ namespace NeuroVida.Games.Freno
             foreach (var l in _lanes) { l.Beacon.color = new Color(1f, 1f, 1f, 0.18f); l.Mark.gameObject.SetActive(false); l.Hint.gameObject.SetActive(false); }
             if (!script.Skipped)
             {
-                PlayTone(523f, 0.4f, 0.08f);
+                GameFeel.Notice();                                              // «¡Listo!» de la práctica: el aviso de la paleta
                 yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             }
             t.EndPractice();

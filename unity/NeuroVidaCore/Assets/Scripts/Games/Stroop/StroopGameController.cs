@@ -814,7 +814,7 @@ namespace NeuroVida.Games.Stroop
                 lr.offsetMin = lr.offsetMax = Vector2.zero;
                 BestFit(label, 60);                                // 20 dp o más: «AMARILLO» cabe sin achicarse mucho
                 label.text = StroopContract.Names[i];
-                if (plastic) go.AddComponent<PlasticPress>().InitCustom(faceSlab, Plastic, ButtonSlabs[i], ButtonSlabs[i] + "_p", lr);      // plasticina: al tocar se hunde la losa y el nombre baja con ella (sin escala)
+                if (plastic) { var press = go.AddComponent<PlasticPress>(); press.InitCustom(faceSlab, Plastic, ButtonSlabs[i], ButtonSlabs[i] + "_p", lr); press.PlaysTap = false; }     // la respuesta ya suena su acierto o su error: sin toque del kit encima      // plasticina: al tocar se hunde la losa y el nombre baja con ella (sin escala)
 
                 _buttonRects.Add(rect);
                 _buttonImages.Add(img);
@@ -1179,7 +1179,7 @@ namespace NeuroVida.Games.Stroop
             _cardGroup.alpha = 0f;
             if (!script.Skipped)
             {
-                PlayTone(523f, 0.4f, 0.08f);
+                GameFeel.Notice();                                              // «¡Listo!» de la práctica: el aviso de la paleta
                 yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             }
             _guided = false;

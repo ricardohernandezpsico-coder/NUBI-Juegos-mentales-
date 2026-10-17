@@ -158,6 +158,7 @@ namespace NeuroVida.Bridge
             _running = true;
             // Sonido y vibración comunes de los 9 juegos (ajustes de la app).
             NeuroVida.Games.Shared.GameFeel.SoundOn = config.config.sound_enabled;
+            NeuroVida.Games.Shared.GameFeel.Warm();                                             // el núcleo común de «Madera cálida»: lo de la cuenta regresiva ya, el resto de a poco (con el sonido apagado no hace nada)
             NeuroVida.Games.Shared.GameFeel.HapticsOn = config.config.haptics_enabled;
             NeuroVida.Games.Shared.GameFeel.ReduceMotion = config.config.reduce_motion;
             NeuroVida.Games.Shared.NubiCoach.DebugOverlay = config.config.debug_overlay;       // solo desde los botones [Debug] de la app: dibuja los rectángulos del tutorial

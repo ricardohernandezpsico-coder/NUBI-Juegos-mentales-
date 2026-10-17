@@ -82,9 +82,13 @@ namespace NeuroVida.Games.Shared
             if (_slab != null) Apply();
         }
 
+        /// <summary>false (por omisión): el juego es quien suena lo que pasa al aceptar el toque (su propia nota, el acierto…). true: un botón que no suena nada más (un «Seguir», un «Listo») suena el toque del kit (<see cref="GameFeel.Tap"/>).</summary>
+        public bool PlaysTap;
+
         /// <summary>El juego aceptó un toque en este objeto: se ve presionado mientras el dedo siga encima y al menos <see cref="MinSeconds"/>.</summary>
         public void Press()
         {
+            if (PlaysTap) GameFeel.Tap();
             _held = true;
             _until = GameClock.Time + MinSeconds;
             Refresh(GameClock.Time);

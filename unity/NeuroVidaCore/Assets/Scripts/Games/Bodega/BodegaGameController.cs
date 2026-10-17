@@ -483,8 +483,7 @@ namespace NeuroVida.Games.Bodega
             ResetBoard();
             int score = BodegaContract.Score(_tally.FirstTry, _tally.Total);
             ShowResult(score);
-            PlayClip(BodegaSounds.Finale(), 0.8f);
-
+            // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,

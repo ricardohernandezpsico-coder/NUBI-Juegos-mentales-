@@ -160,6 +160,9 @@ namespace NeuroVida.Bridge.EditorTools
             ("Freno", "freno", 9f), ("Aterrizaje", "aterrizaje", 30f), ("AterrizajeReto", "aterrizaje", 30f), ("AterrizajeMudo", "aterrizaje", 30f), ("Acoplamiento", "acoplamiento", 30f), ("AcoplamientoReto", "acoplamiento", 30f), ("AcoplamientoMudo", "acoplamiento", 30f),
             ("Bitacora", "bitacora", 9f), ("Rumbo", "rumbo", 9f), ("Correo", "correo", 85f), ("Meteoros", "meteoros", 9f),
             ("Disparate", "disparate", 9f), ("Cosecha", "cosecha", 9f), ("Intrusa", "intrusa", 9f),
+            // «…Mudo» de los juegos que suenan lo común (GameFeel, Fase B): con «Efectos de sonido» apagado no sale NINGÚN sonido (ni la cuenta, ni la pausa, ni los avisos, ni el final)
+            ("RastroMudo", null, 10f), ("StroopMudo", "stroop", 9f), ("FrenoMudo", "freno", 9f), ("MeteorosMudo", "meteoros", 9f), ("DisparateMudo", "disparate", 9f), ("IntrusaMudo", "intrusa", 9f), ("AnagramasMudo", "anagramas", 9f),
+            ("CalculoMudo", "calculo", 9f), ("EngranajesMudo", "engranajes", 24f), ("BodegaMudo", "bodega", 30f), ("ParejasMudo", "parejas", 30f), ("CorreoMudo", "correo", 30f), ("SatelitesMudo", "satelites", 30f),
         };
 
         /// <summary>
@@ -428,6 +431,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.SoundOffOverride = _current.Name.EndsWith("Mudo");                                       // «…Mudo»: con «Efectos de sonido» apagado no tiene que sonar NADA (Tarea 64)
             _audioSampleAt = 0.0;
             _audioHeard = _audioReported = false;
+            NeuroVida.Games.Shared.WoodCore.ResetCounters();                                                                 // lo que suena por partida (Fase B): los sonidos, los omitidos y los finales
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial || _current.Name.StartsWith("HowTo");      // «HowTo*» no arranca con tutorial: lo abre el smoke desde la partida
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas" || _current.Name == "Acoplamiento" || _current.Name == "AcoplamientoReto" || _current.Name == "AcoplamientoMudo" || _current.Name == "PantallaAcoplamiento" || _current.Name == "Aterrizaje" || _current.Name == "AterrizajeReto" || _current.Name == "AterrizajeMudo" || _current.Name == "PantallaAterrizaje";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
@@ -969,6 +973,23 @@ namespace NeuroVida.Bridge.EditorTools
             }
         }
 
+        /// <summary>Los juegos donde la partida arranca con la cuenta regresiva y hay sonido (no «Tutorial», «Corto», «Pantalla», «HowTo» ni «Aviso»): suenan al menos 3, 2, 1 y «¡Ya!».</summary>
+        private static bool CountdownSoundExpected() =>
+            !_current.Name.EndsWith("Mudo") && !_current.Name.StartsWith("Tutorial") && !_current.Name.StartsWith("Corto") && !_current.Name.StartsWith("Pantalla") && !_current.Name.StartsWith("HowTo") && !_current.Name.StartsWith("Aviso") && _currentHeight == 0
+            && _current.Name != "Bitacora" && _current.Name != "Rumbo" && _current.Name != "Cosecha";
+
+        /// <summary>
+        /// El sonido común de la partida (Fase B): con «Efectos de sonido» apagado no suena NADA de la paleta; con sonido suenan la cuenta regresiva y «¡Ya!»; y a lo más UN final por partida (el de <c>ExitButton</c>). Deja en el registro cuántos sonidos salieron, cuántos pidió el juego antes de estar listos y cuántos clips tiene el núcleo.
+        /// </summary>
+        private static void CheckSound()
+        {
+            int played = NeuroVida.Games.Shared.WoodCore.PlayCount, finals = NeuroVida.Games.Shared.WoodCore.FinishPlays, skipped = NeuroVida.Games.Shared.WoodCore.Skipped;
+            Debug.Log($"[SmokeTest] sonido común de {_current.Name}: {played} sonidos, {finals} final(es), {skipped} omitidos por no estar listos, {NeuroVida.Games.Shared.WoodCore.ClipCount} clips en el núcleo");
+            if (finals > 1) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: sonaron {finals} finales en {_current.Name}: tiene que sonar UNO por partida"); }
+            if (_current.Name.EndsWith("Mudo") && played > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: con el sonido apagado la paleta sonó {played} vez/veces en {_current.Name}"); }
+            if (CountdownSoundExpected() && played < 4) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} no sonaron ni la cuenta regresiva ni «¡Ya!» (salieron {played} sonidos)"); }
+        }
+
         private static void PauseFail(string what)
         {
             _errorCount++;
@@ -1000,6 +1021,7 @@ namespace NeuroVida.Bridge.EditorTools
                 Debug.Log($"[SmokeTest] tiempo {_current.Name} ({(_currentHeight > 0 ? "1080x" + _currentHeight : "ventana")}): {Mathf.RoundToInt((float)(EditorApplication.timeSinceStartup - _entryStartAt))} s");
                 CheckCoachAudit();
                 CheckHowTo();
+                CheckSound();
                 if (_current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje")
                     Debug.Log("[SmokeTest] control de audio de " + _current.Name + ": " + (_audioHeard ? "se oyó sonido (el instrumento sirve)" : "NO se detectó ningún sonido: la prueba de «sonido apagado» no sería concluyente"));
                 EditorApplication.ExitPlaymode();

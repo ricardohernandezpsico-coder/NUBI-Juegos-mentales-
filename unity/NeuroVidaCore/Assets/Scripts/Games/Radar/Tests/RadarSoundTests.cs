@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using NUnit.Framework;
+using NeuroVida.Games.Shared;
 using UnityEngine;
 
 namespace NeuroVida.Games.Radar.Tests
@@ -86,9 +87,9 @@ namespace NeuroVida.Games.Radar.Tests
             var clock = System.Diagnostics.Stopwatch.StartNew();
             while (warm.MoveNext()) frames++;
             clock.Stop();
-            Assert.AreEqual(RadarSounds.BakeOrder.Length, RadarSounds.CachedCount, "los 18 sonidos del juego");
-            Assert.AreEqual(18, RadarSounds.CachedCount);
-            Assert.Greater(frames, 18 * 3, "se calculan de a poco (varios cuadros por clip), no de golpe");
+            Assert.AreEqual(RadarSounds.BakeOrder.Length, RadarSounds.CachedCount, "los 17 sonidos del juego (sin el final: es uno solo para toda la app)");
+            Assert.AreEqual(17, RadarSounds.CachedCount);
+            Assert.Greater(frames, 17 * 3, "se calculan de a poco (varios cuadros por clip), no de golpe");
             long bytes = RadarSounds.TotalSamplesPerChannel() * 2 * sizeof(float);
             Debug.Log("[RadarSounds] clips estéreo: " + RadarSounds.TotalSamplesPerChannel() + " muestras por canal = " + (bytes / 1048576.0).ToString("0.0") + " MB, " + frames + " cuadros de precarga, " + clock.ElapsedMilliseconds + " ms de cálculo en total (en el PC)");
             Assert.Less(bytes, 20L * 1024 * 1024, "los clips estéreo pesan menos de 20 MB");
@@ -105,7 +106,8 @@ namespace NeuroVida.Games.Radar.Tests
                 float peak = 0f;
                 foreach (float v in data) peak = Math.Max(peak, Math.Abs(v));
                 Assert.Greater(peak, 0.1f, clip.name + " suena");
-                Assert.LessOrEqual(peak, 0.4001f, clip.name + " no pasa de 0,40 (el nivel más alto del laboratorio)");
+                Assert.LessOrEqual(peak, 0.4001f * (float)WoodKit.MasterGain, clip.name + " no pasa de 0,40 más el volumen maestro (+3 dB)");
+                Assert.LessOrEqual(peak * WoodKit.PlayVolume, 0.5f, clip.name + ": ya reproducido, no pasa de -6 dBFS");
             }
         }
 

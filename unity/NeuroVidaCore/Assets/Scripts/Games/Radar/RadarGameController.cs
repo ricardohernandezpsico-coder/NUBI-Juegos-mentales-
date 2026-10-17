@@ -392,7 +392,7 @@ namespace NeuroVida.Games.Radar
             HideRoundObjects();
             ShowEnd(record, broke);
             _exit.Show();
-            Play(RadarSfx.Finale);
+            // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,

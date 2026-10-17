@@ -359,7 +359,12 @@ namespace NeuroVida.Games.Meteoros
         }
 
         /// <summary>El centro de la roca al nacer: su borde de arriba queda justo DEBAJO del marcador (antes nacían con la roca asomando por encima de él y tapaban el título y los rótulos).</summary>
-        private float SpawnCenterY(Meteor m) => Mathf.Min(_spawnY + m.Ry, _hudBottomY - 20f - m.Ry);
+        private float SpawnCenterY(Meteor m)
+        {
+            // en la práctica el aro de ayuda mide 2,7 veces la roca y se queda quieto arriba mientras Nubi explica: también tiene que caber DEBAJO del marcador (con una roca grande tapaba los rótulos; la guardia del HUD del smoke lo veía según la palabra que tocara)
+            float reach = _guided ? Mathf.Max(m.Ry, Mathf.Max(m.Rx, m.Ry) * 1.35f) : m.Ry;
+            return Mathf.Min(_spawnY + m.Ry, _hudBottomY - 20f - reach);
+        }
 
         /// <summary>¿El recorrido de [m] (de [pos] con [vel]) pisaría la roca de otro meteoro en algún momento de la caída de
         /// ambos? Se mira cada 0,2 s con la caja de las dos rocas más un poco de aire.</summary>
@@ -1209,7 +1214,7 @@ namespace NeuroVida.Games.Meteoros
             foreach (Transform c in _fxRect) Destroy(c.gameObject);
             if (!script.Skipped)
             {
-                PlayTone(523f, 0.4f, 0.08f);
+                GameFeel.Notice();                                              // «¡Listo!» de la práctica: el aviso de la paleta
                 yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             }
             t.EndPractice();

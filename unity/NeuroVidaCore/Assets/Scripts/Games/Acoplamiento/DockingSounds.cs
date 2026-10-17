@@ -82,6 +82,7 @@ namespace NeuroVida.Games.Acoplamiento
             string key = KeyOf(sfx, arg);
             if (Cache.TryGetValue(key, out var clip) && clip != null) return clip;
             RenderStereo(sfx, sfx == DockSfx.Slot ? Math.Max(0, Math.Min(MaxSlotStreak, arg)) : 0, out var l, out var r);
+            WoodKit.ApplyMaster(l, r);                                                       // el volumen de toda «Madera cálida» (+3 dB, Fase B): un solo lugar
             return Cache[key] = ToClip(key, l, r);
         }
 
@@ -89,7 +90,7 @@ namespace NeuroVida.Games.Acoplamiento
         public static readonly (DockSfx Sfx, int Arg)[] BakeOrder =
         {
             (DockSfx.Arrive, 0), (DockSfx.Tap, 0), (DockSfx.Dock, 0), (DockSfx.Slot, 1), (DockSfx.Slot, 2), (DockSfx.Flip, 0), (DockSfx.Miss, 0), (DockSfx.Slot, 3), (DockSfx.Slot, 4),
-            (DockSfx.Ring, 0), (DockSfx.Slot, 5), (DockSfx.Slot, 6), (DockSfx.Slot, 7), (DockSfx.Slot, 8), (DockSfx.Finale, 0),
+            (DockSfx.Ring, 0), (DockSfx.Slot, 5), (DockSfx.Slot, 6), (DockSfx.Slot, 7), (DockSfx.Slot, 8),                     // sin el final propio: el de la partida es UNO para toda la app (GameFeel.Finish)
         };
 
         /// <summary>Calcula todos los clips de a poco: la síntesis de cada uno en un cuadro y su reverberación en pedazos de <see cref="SamplesPerFrame"/> muestras por cuadro, para que el arranque no se trabe.</summary>
@@ -109,6 +110,7 @@ namespace NeuroVida.Games.Acoplamiento
                 }
                 job.Result(out var l, out var r);
                 Finish(l, r, recipe.Level);
+                WoodKit.ApplyMaster(l, r);
                 Cache[key] = ToClip(key, l, r);
                 yield return null;
             }

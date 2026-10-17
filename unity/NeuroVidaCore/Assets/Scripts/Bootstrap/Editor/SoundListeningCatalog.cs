@@ -103,14 +103,8 @@ namespace NeuroVida.Bridge.EditorTools
         private const int LadderSteps = 5, ScaleNotes = 5;
         private const double ScaleSpacing = 0.35, NoteSeconds = 0.8;
 
-        private static AudioClip GameFeelClip(string method, params object[] args)
-        {
-            var m = typeof(GameFeel).GetMethod(method, BindingFlags.NonPublic | BindingFlags.Static);
-            if (m == null) throw new InvalidOperationException("GameFeel ya no tiene " + method);
-            return (AudioClip)m.Invoke(null, args);
-        }
-
-        private static float[] GameFeelPentatonic() => (float[])typeof(GameFeel).GetField("Pentatonic", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+        /// <summary>Lo común de HOY (antes de la Fase B): las recetas congeladas de <c>GameFeel</c> (ver <see cref="GameFeelLegacy"/>); desde la Fase B el juego suena la paleta.</summary>
+        private static float[] GameFeelPentatonic() => GameFeelLegacy.Pentatonic;
 
         /// <summary>Una familia de notas con información: la escala de hoy, la de Madera con kalimba y la de Madera con marimba (las mismas alturas, en el mismo orden y espaciado).</summary>
         private static void Family_(string id, string title, double[] hz, Func<int, AudioClip> hoy, double spacing = 0.42)
@@ -151,11 +145,11 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterCommon()
         {
             var pent = GameFeelPentatonic();
-            Raw("gamefeel.racha", () => Scale(LadderSteps, 0.55, i => Trimmed(FromClip(GameFeelClip("Marimba", pent[Math.Min(i, pent.Length - 1)], 0.26f)), 1.0)));
-            H("gamefeel.wrong", () => GameFeelClip("WrongClip"));
-            H("gamefeel.levelup", () => GameFeelClip("Arpeggio", new[] { 523.25f, 659.25f, 783.99f, 1046.50f }, 0.065f, 0.5f));
-            H("gamefeel.tick", () => GameFeelClip("TickClip"));
-            H("gamefeel.finish", () => GameFeelClip("FinishClip"));
+            Raw("gamefeel.racha", () => Scale(LadderSteps, 0.55, i => Trimmed(FromClip(GameFeelLegacy.Marimba(pent[Math.Min(i, pent.Length - 1)], 0.26f)), 1.0)));
+            H("gamefeel.wrong", () => GameFeelLegacy.Wrong());
+            H("gamefeel.levelup", () => GameFeelLegacy.LevelUp());
+            H("gamefeel.tick", () => GameFeelLegacy.Tick());
+            H("gamefeel.finish", () => GameFeelLegacy.Finish());
 
             const string g = Common;
             E(g, "acierto", "Acertar (la nota sube con la racha: 1 a 8)", "GameFeel: «pling» de marimba (seno + parcial ×4, τ 0,11 s) por la pentatónica do5 a mi6, mono, sin sala; pico ≈ 0,5", "GameFeel.cs:41 Correct(racha). Lo llaman Tinta o Palabra (StroopGameController.cs:287), Freno (BrakeGameController.cs:313, :358), Lluvia de meteoros (MeteorGameController.cs:492), ¿Verdad o disparate? (DisparateGameController.cs:586) y las prácticas de Aterrizaje (LandingGameController.Guided.cs:51), Meteoros (:1231) y Tinta (:1162)",

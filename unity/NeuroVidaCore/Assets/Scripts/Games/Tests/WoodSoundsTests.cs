@@ -69,7 +69,7 @@ namespace NeuroVida.Games.Tests
         [Test]
         public void EveryEvent_IsListed_WithItsVariants_AndItsTier()
         {
-            Assert.AreEqual(8, WoodSounds.Variants(WoodSfx.Correct).Length);
+            Assert.AreEqual(7, WoodSounds.Variants(WoodSfx.Correct).Length, "la racha 7 en adelante suena igual que la 7");
             Assert.AreEqual(10, WoodSounds.Variants(WoodSfx.Select).Length);
             Assert.AreEqual(8, WoodSounds.Variants(WoodSfx.Spark).Length);
             Assert.AreEqual(3, WoodSounds.Variants(WoodSfx.Count).Length);
@@ -178,6 +178,25 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
+        public void TheVolume_IsThreeDecibelsHigher_InOnePlace_AndNothingSaturates()
+        {
+            Assert.AreEqual(3.0, WoodKit.MasterGainDb, "+3 dB sobre lo que Ricardo aprobó el 10-oct");
+            Assert.AreEqual(System.Math.Pow(10.0, 3.0 / 20.0), WoodKit.MasterGain, 1e-12);
+            double loudest = 0, second = 0;
+            foreach (var x in All())
+            {
+                WoodSounds.RenderForClip(x.Sfx, x.Arg, out var l, out var r);
+                string name = WoodSounds.KeyOf(x.Sfx, x.Arg);
+                double stored = SoundMeter.Peak(l, r), calculated = SoundMeter.Peak(x.L, x.R);
+                Assert.That(stored / calculated, Is.InRange(0.75 * WoodKit.MasterGain, 1.06 * WoodKit.MasterGain), name + ": lo guardado es lo calculado con el volumen maestro (el filtro de 22 kHz le quita al pico hasta un 25 % en las notas agudas con clic y parcial metálico (la kalimba de 2 kHz suena un parcial a 12 kHz) y a veces suma un poco)");
+                double played = stored * WoodKit.PlayVolume;                       // el pico ya reproducido
+                Assert.LessOrEqual(played, 0.5, name + ": ya reproducido no pasa de −6 dBFS (pico " + SoundMeter.ToDb(played).ToString("0.0") + ")");
+                if (played > loudest) { second = loudest; loudest = played; } else if (played > second) second = played;
+            }
+            Assert.LessOrEqual(loudest + second, 1.0, "dos de los sonidos más fuertes a la vez no saturan");
+        }
+
+        [Test]
         public void TheHalfRate_KeepsTheLowAndTheMiddle_AndFiltersWhatWouldFold()
         {
             var tone = SoundKit.Render(0.5, t => Math.Sin(SoundKit.Tau * 1000.0 * t));
@@ -206,7 +225,7 @@ namespace NeuroVida.Games.Tests
                 WoodSounds.RenderForClip(x.Sfx, x.Arg, out var l, out var r);
                 string name = WoodSounds.KeyOf(x.Sfx, x.Arg);
                 Assert.AreEqual(WoodSounds.IsMono(x.Sfx), r == null, name);
-                Assert.LessOrEqual(SoundMeter.Peak(l, r), 0.43, name + ": el filtro no sube el pico más de un par de dB");
+                Assert.LessOrEqual(SoundMeter.Peak(l, r), 0.43 * WoodKit.MasterGain, name + ": con el volumen maestro, el filtro no sube el pico más de un par de dB");
                 Assert.AreEqual(0f, l[l.Length - 1], 1e-5f, name);
             }
         }

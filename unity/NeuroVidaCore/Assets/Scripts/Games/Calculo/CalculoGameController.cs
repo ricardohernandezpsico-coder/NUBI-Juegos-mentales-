@@ -334,8 +334,7 @@ namespace NeuroVida.Games.Calculo
             ClearLoad();
             int score = CalculoContract.Score(_tally, Endless);
             ShowResult(score);
-            PlayClip(CargaSounds.Finale(), 0.8f);
-
+            // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,

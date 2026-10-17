@@ -1,7 +1,7 @@
 # Sonido «Madera cálida» para toda la app — inventario, paleta y plan (Tarea 119, Fase A, 17-oct-2026)
 
 Ricardo eligió el 17-oct llevar a todos los juegos los sonidos «Madera cálida» que aprobó el 10-oct en Rescate relámpago (kalimba, marimba y bloque de madera con una sala pequeña y suave: `Games/Radar/RadarSounds.cs`, piezas comunes en `Games/Shared/SoundKit.cs`). El motor «Cohete» de Piloto se queda.
-Esta es la **Fase A: inventario, mapa y página de escucha. NO cambia ningún juego.** Ricardo escucha la página (`docs/previews/sonido-escucha.html`) y aprueba antes de la Fase B.
+La **Fase A** (inventario, mapa, paleta y página de escucha; 17-oct) no cambió ningún juego; Ricardo escuchó la página y aprobó todo (§9). La **Fase B** (lo común; Tarea 120, 17-oct) ya está hecha (§8); las Fases C a E (los sonidos propios de cada juego) siguen.
 
 ## 0. Resumen
 
@@ -250,13 +250,16 @@ Resultado esperado de un juego en Madera: núcleo común (≈ 6 MB) + propios (�
 
 ## 8. Plan por fases
 
-**Fase B — lo común (una tarea).** Cambia `GameFeel` (acierto, error, nivel, tic, fin) y el kit para que suenen con la paleta, y con eso **suenan Madera los 17 juegos en sus eventos básicos**.
-- Mover los instrumentos (`Kalimba`, `Marimba`, `Woodblock`, `Thump`, `NoiseSweep`, `Room`) de `RadarSounds` a un `WoodKit` en `Games/Shared` (Rescate, Acoplamiento y Aterrizaje lo usan igual; sus pruebas de muestras de referencia deben seguir en verde).
-- `GameFeel` precarga el núcleo común de a poco en la cuenta regresiva y lo conserva entre partidas.
-- Cuenta 3-2-1 y «¡Ya!», abrir y seguir la pausa, avisos (`Toast`) y botón presionado (`PlasticTouch` / `PlasticPress`), **solo los que Ricardo apruebe** (§9).
-- **Un solo final** (se quita `GameFeel.Finish` del cierre cuando el juego ya suena su `Finale`, o al revés).
-- Las prácticas de Aterrizaje y Meteoros pasan a la paleta; el «¡Listo!» de las prácticas de Tinta, Freno y Meteoros, a `Notice`.
-- Verificación COMPLETA (toca `Games/Shared`), `--instalar` y que Ricardo escuche en el teléfono. Pruebas: «Mudo» sin ningún sonido (los 17), memoria por juego, latencia del primer sonido, el núcleo se calcula una vez.
+**Fase B — lo común (Tarea 120, 17-oct): HECHA.** `GameFeel` suena la paleta y con eso **suenan Madera los 17 juegos en sus eventos básicos**. Qué cambió:
+- **`WoodKit`** (`Games/Shared`): los instrumentos (`Kalimba`, `Marimba`, `Woodblock`, `Thump`, `NoiseSweep`, `StaticNoise`), la escala, la sala y el volumen. `RadarSounds` los usa a través de envolturas: mismas muestras, bit por bit (las pruebas de referencia de Rescate, Acoplamiento y Aterrizaje siguen en verde).
+- **`GameFeel`** (acierto, error, nivel, tic, fin) suena la paleta a través de **`WoodCore`** (`Games/Shared`): los clips se guardan (22 kHz; micro en mono), se calculan UNA vez y se conservan entre partidas. Lo de la cuenta regresiva (3, 2, 1, «¡Ya!») se calcula de golpe al llegar la configuración (`GameEntryPoint` → `GameFeel.Warm()`, unos 0,2 s); el resto del núcleo (15 clips, ≈ 4,5 MB), de a poco, 5 ms por cuadro. Un sonido del núcleo pedido antes de estar listo NO se calcula en ese momento (tirón): no suena y queda contado (`WoodCore.Skipped`). Con el sonido apagado no se calcula ni se crea nada.
+- **Nuevos:** `CountdownScreen` (3, 2, 1 y «¡Ya!»), `PauseMenu` (abrir y seguir; por un altavoz que ignora la pausa del audio: `ignoreListenerPause`), `Toast` (aviso: una marimba solo si nada más suena con él, decidido un cuadro después; `Show(..., sound: false)` lo apaga), `PlasticPress` (toque del kit al apoyar el dedo; máximo uno cada 50 ms; `PlaysTap = false` lo apaga) y `PlasticTouch` (`PlaysTap`, apagado por omisión: el juego suena lo suyo).
+- **Nada doble:** Tinta o Palabra apaga el toque de sus botones de respuesta (suenan acierto o error); Disparate apaga el aviso de sus dos avisos que ya suenan algo propio; «¡Listo!» y «Seguir» de Rescate, Intrusa y Correo suenan el toque del kit porque no sonaban nada. Las pruebas `SoundRulesTests` lo vigilan leyendo el código (un aviso cerca de un sonido propio exige `sound: false`; un `PlasticPress` en un juego exige `PlaysTap = false`).
+- **UN solo final:** se quitaron los 11 finales propios (Rescate, Acoplamiento, Aterrizaje, Bodega, Carga exacta, Correo, Engranajes, Constelaciones, Piloto, Satélites, En la punta de la lengua); suena el de `ExitButton` (`GameFeel.Finish`). Rescate, Acoplamiento y Aterrizaje ya no calculan el suyo (−1 clip estéreo cada uno). `SoundRulesTests` prohíbe que un juego suene uno propio y el smoke exige a lo más UN final por partida.
+- **Las prácticas** de Aterrizaje y Meteoros ya usaban `GameFeel.Correct` y `Wrong`: suenan la paleta. El «¡Listo!» de las prácticas de Tinta, Freno y Meteoros es `GameFeel.Notice()`.
+- **El volumen: +3 dB**, en UN solo lugar: `WoodKit.MasterGainDb`. Se aplica a las muestras justo antes de crear el clip (`WoodKit.ApplyMaster`): la paleta y los sonidos propios de Rescate, Acoplamiento y Aterrizaje (y el propulsor de Aterrizaje, para que siga a la misma distancia). Los escalones entre familias no cambian. El pico más alto (el final) queda en −6,9 dBFS ya reproducido (≤ −6 exigido) y dos de los sonidos más fuertes a la vez suman menos de 1,0 (no saturan): pruebas `TheVolume_IsThreeDecibelsHigher_InOnePlace_AndNothingSaturates`.
+- **Pruebas nuevas:** `WoodCoreTests` (cuenta lista antes, resto de a poco, núcleo calculado una vez y conservado, «Mudo» sin calcular ni crear nada, el primer sonido no calcula y sale al instante, núcleo < 6 MB, altavoz de interfaz que ignora la pausa, toque limitado, aviso que no se suma, un final contado) y `SoundRulesTests`; en el smoke, corridas «Mudo» de 13 juegos más (ni la cuenta, ni la pausa, ni los avisos, ni el final suenan con el sonido apagado), y cada partida con sonido exige que suenen la cuenta y «¡Ya!» y a lo más un final.
+- La página de escucha sigue mostrando «hoy» tal como sonaba antes de esta fase: las recetas viejas de `GameFeel` quedaron congeladas en `Bootstrap/Editor/SoundListeningLegacy.cs`.
 
 **Fase C — notas con ayuda de memoria (4 o 5 juegos):** Constelaciones, Bodega de carga, La estación de correo, En la punta de la lengua, Carga exacta. Cada nota conserva su altura; sus sonidos propios (voltear luces, puertas, saco, radio…) pasan a Madera. Prueba nueva por juego: **la altura y el instante de cada sonido con información son los de hoy** (comparar `PitchClarity` y el inicio contra la grabación de hoy).
 
@@ -266,14 +269,15 @@ Resultado esperado de un juego en Madera: núcleo común (≈ 6 MB) + propios (�
 
 Cada fase: commit y push, `--instalar`, y Ricardo prueba en el teléfono antes de seguir. **Ninguna fase cambia reglas, DDA, tiempos, medidas ni telemetría.**
 
-## 9. Lo que necesito de Ricardo (después de escuchar la página)
+## 9. Lo que decidió Ricardo (17-oct, después de escuchar la página)
 
-1. **La paleta:** ¿te gusta cómo suena cada evento? Sobre todo: el acierto de dos notas que suben (`Correct`), el «toc» grave (`Knock`), el tic (`Tick`) y el récord (`Record`).
-2. **Sonidos nuevos donde hoy hay silencio:** ¿cuenta regresiva y «¡Ya!»? ¿abrir y seguir la pausa? ¿los avisos? ¿el botón presionado? Cada uno se prende o se deja en silencio por separado.
-3. **Notas con información:** ¿kalimba o marimba para los luceros de Rastro y las campanas de Satélites? (Recomiendo marimba en esas dos; kalimba en las ayudas de memoria.)
-4. **Freno de emergencia:** ¿la señal de salida pasa a Madera con la misma altura y duración? ¿la sirena de ALTO se queda como está? (Recomiendo que se quede.)
-5. **Un solo final:** ¿el final de la paleta (marimba y kalimba larga), sin el segundo acorde?
-6. **Volumen general:** la paleta queda más baja que lo de hoy (como Rescate). ¿Se siente bien o hay que subirla?
+Ricardo escuchó la página de escucha y **aprobó todo**:
+1. **La paleta**, tal cual.
+2. **Sonido donde hoy hay silencio:** cuenta regresiva 3-2-1 y «¡Ya!», abrir la pausa y seguir, los avisos y el toque del kit.
+3. **Notas con información:** **marimba** en Rastro de luz, Satélites, Piloto Estelar y Tinta o Palabra (la altura ES la información); **kalimba** donde la nota es una ayuda de memoria (Constelaciones, Bodega de carga, La estación de correo, En la punta de la lengua). Se aplica en las Fases C a E.
+4. **Freno de emergencia:** la señal de salida pasa a Madera con la misma altura, duración e inicio; la sirena de ALTO se queda como está (Fase E).
+5. **UN solo final** por partida.
+6. **Subir un poco el volumen:** +3 dB a toda «Madera cálida» (hecho en la Fase B, §8).
 
 ## 10. Inventario: cada sonido, dónde se llama y qué receta usa hoy
 

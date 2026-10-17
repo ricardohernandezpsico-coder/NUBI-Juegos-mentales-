@@ -355,7 +355,7 @@ namespace NeuroVida.Games.Parejas
             ResetBoardViews();
             int score = ConstelacionContract.Score(_tally.Hits, _tally.Opportunities);
             ShowResult(score);
-            PlayClip(ConstelacionSounds.Finale(), 0.8f);
+            // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             int record = ConstelacionContract.NewRecord(_bestRecord, _tally.BestStreak);
             var telemetry = new CardsTelemetry
             {

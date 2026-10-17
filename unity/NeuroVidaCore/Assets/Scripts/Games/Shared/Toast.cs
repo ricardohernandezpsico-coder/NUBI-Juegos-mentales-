@@ -175,7 +175,8 @@ namespace NeuroVida.Games.Shared
         /// <summary>Cuánto baja el aviso desde el borde de arriba del contenedor (unidades): lo que fijó <see cref="SetBelowHud"/>. Para las pruebas.</summary>
         public float TopOffsetU => -_basePosition.y;
 
-        public void Show(string title, string subtitle, Color accent, float holdSeconds = 1.2f)
+        /// <param name="sound">true (por omisión): al mostrarse suena <see cref="WoodSfx.Notice"/> SI nada más sonó con el aviso (el acierto, el error o «subir de nivel» ya lo acompañan; <see cref="WoodCore.NoticeUnlessCovered"/>). false: este aviso es silencioso (el juego ya suena su propio sonido con él).</param>
+        public void Show(string title, string subtitle, Color accent, float holdSeconds = 1.2f, bool sound = true)
         {
             bool hasSubtitle = !string.IsNullOrEmpty(subtitle);
             _title.text = title;
@@ -202,6 +203,14 @@ namespace NeuroVida.Games.Shared
             _rect.gameObject.SetActive(true);
             if (_anim != null) _runner.StopCoroutine(_anim);
             _anim = _runner.StartCoroutine(Run(holdSeconds));
+            if (sound && GameFeel.SoundOn) _runner.StartCoroutine(NoticeNextFrame(Time.realtimeSinceStartup));
+        }
+
+        /// <summary>Un cuadro después de mostrarse: si en ese rato no sonó nada más por el altavoz del juego, suena el aviso (así da lo mismo si el juego llama a su sonido antes o después de mostrar el aviso).</summary>
+        private static IEnumerator NoticeNextFrame(float shownAt)
+        {
+            yield return null;
+            WoodCore.NoticeUnlessCovered(shownAt);
         }
 
         /// <summary>Ancho y alto del recuadro a la medida del texto de este aviso, no un tamaño fijo: con textos

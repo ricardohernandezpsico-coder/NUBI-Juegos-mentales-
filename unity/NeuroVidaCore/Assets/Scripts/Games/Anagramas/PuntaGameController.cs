@@ -710,8 +710,7 @@ namespace NeuroVida.Games.Anagramas
 
             int score = PuntaContract.Score(_tally, Endless);
             ShowResult(score);
-            PlayClip(PuntaSounds.Finale(), 0.8f);
-
+            // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,

@@ -245,7 +245,14 @@ namespace NeuroVida.Games.Shared
             _moved.AddRange(movers);
         }
 
-        public void OnPointerDown(PointerEventData eventData) => SetDown(true);
+        /// <summary>true (por omisión): al apoyar el dedo suena el toque del kit (<see cref="GameFeel.Tap"/>: un golpecito de madera apagado). Un botón que ya suena otra cosa al tocarse lo apaga.</summary>
+        public bool PlaysTap = true;
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (PlaysTap) GameFeel.Tap();
+            SetDown(true);
+        }
         public void OnPointerUp(PointerEventData eventData) => SetDown(false);
         public void OnPointerExit(PointerEventData eventData) => SetDown(false);
         private void OnDisable() => SetDown(false);

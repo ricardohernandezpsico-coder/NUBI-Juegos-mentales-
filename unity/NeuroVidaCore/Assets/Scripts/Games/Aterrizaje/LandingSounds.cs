@@ -81,6 +81,7 @@ namespace NeuroVida.Games.Aterrizaje
             string key = sfx.ToString();
             if (Cache.TryGetValue(key, out var clip) && clip != null) return clip;
             RenderStereo(sfx, out var l, out var r);
+            WoodKit.ApplyMaster(l, r);                                                       // el volumen de toda «Madera cálida» (+3 dB, Fase B): un solo lugar
             return Cache[key] = ToClip(key, l, r);
         }
 
@@ -88,6 +89,9 @@ namespace NeuroVida.Games.Aterrizaje
 
         /// <summary>El volumen del propulsor cuando suena (el boceto sube la ganancia a 0,09 con una constante de 0,15 s y la baja a 0 con una de 0,08 s al soltar).</summary>
         public const float HoverVolume = 0.09f;
+
+        /// <summary>El volumen real del propulsor: el de siempre con los +3 dB de toda «Madera cálida» (<see cref="WoodKit.MasterGainDb"/>), para que siga a la misma distancia de los demás sonidos.</summary>
+        public static float HoverPlayVolume => HoverVolume * (float)WoodKit.MasterGain;
 
         /// <summary>
         /// El bucle del propulsor: ruido café (blanco integrado con un poco de fuga) por un paso bajo de 420 Hz (Q 0,7, semilla 43). Se calculan 6 s y los 2 últimos se funden sobre los 2 primeros → 4 s sin costura (mono, 176.400 muestras); el pico queda en 0,5.
@@ -129,7 +133,7 @@ namespace NeuroVida.Games.Aterrizaje
         // ------------------------------------------------------------------ precarga
 
         /// <summary>Lo que se precarga, en este orden.</summary>
-        public static readonly LandSfx[] BakeOrder = { LandSfx.Release, LandSfx.Touch, LandSfx.Flag, LandSfx.Hit, LandSfx.Miss, LandSfx.Bull, LandSfx.Dome, LandSfx.Finale };
+        public static readonly LandSfx[] BakeOrder = { LandSfx.Release, LandSfx.Touch, LandSfx.Flag, LandSfx.Hit, LandSfx.Miss, LandSfx.Bull, LandSfx.Dome };         // sin el final propio: el de la partida es UNO para toda la app (GameFeel.Finish)
 
         /// <summary>Calcula todos los clips de a poco: la síntesis de cada uno en un cuadro y su reverberación en pedazos de <see cref="SamplesPerFrame"/> muestras por cuadro, para que el arranque no se trabe; el bucle del propulsor, en su propio cuadro.</summary>
         public static IEnumerator Prewarm()
@@ -150,6 +154,7 @@ namespace NeuroVida.Games.Aterrizaje
                 }
                 job.Result(out var l, out var r);
                 Finish(l, r, recipe.Level);
+                WoodKit.ApplyMaster(l, r);
                 Cache[key] = ToClip(key, l, r);
                 yield return null;
             }

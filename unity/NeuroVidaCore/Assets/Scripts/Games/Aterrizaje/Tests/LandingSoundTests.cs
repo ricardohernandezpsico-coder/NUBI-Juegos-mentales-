@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using NUnit.Framework;
+using NeuroVida.Games.Shared;
 using UnityEngine;
 
 namespace NeuroVida.Games.Aterrizaje.Tests
@@ -151,7 +152,8 @@ namespace NeuroVida.Games.Aterrizaje.Tests
                 float peak = 0f;
                 foreach (float v in data) peak = Math.Max(peak, Math.Abs(v));
                 Assert.Greater(peak, 0.04f, clip.name + " suena");
-                Assert.LessOrEqual(peak, 0.4001f, clip.name + " no pasa de 0,40");
+                Assert.LessOrEqual(peak, 0.4001f * (float)WoodKit.MasterGain, clip.name + " no pasa de 0,40 más el volumen maestro (+3 dB)");
+                Assert.LessOrEqual(peak * WoodKit.PlayVolume, 0.5f, clip.name + ": ya reproducido, no pasa de -6 dBFS");
             }
             var hover = LandingSounds.HoverLoop();
             Assert.AreEqual(1, hover.channels);

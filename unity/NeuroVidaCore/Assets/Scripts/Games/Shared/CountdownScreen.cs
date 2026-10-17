@@ -37,7 +37,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Muestra la marca de version bajo la cuenta regresiva. Antes dependia de <c>Debug.isDebugBuild</c>,
         /// pero la exportacion de Unity es de produccion y nunca se veia. Poner en false antes de publicar en la tienda.</summary>
         public const bool ShowStyleStamp = true;
-        public const string StyleStamp = "estilo 17-oct · acoplamiento v3";
+        public const string StyleStamp = "estilo 17-oct · sonido madera B";
 
         private static readonly Color[] StepColors = { NeuroStyle.Sky, NeuroStyle.Grape, NeuroStyle.Coral };
         private static readonly float[] StepWarp = { 0.07f, 0.15f, 0.27f };
@@ -224,10 +224,12 @@ namespace NeuroVida.Games.Shared
 
             for (int s = 3; s >= 1; s--)
             {
+                GameFeel.Count(s);                                                              // una marimba que sube un escalón por número (calculada ANTES de la cuenta: WoodCore.EarlySet)
                 var step = calm ? TickCalm(s.ToString(), 3 - s, s < 3) : Tick(s.ToString(), 3 - s, s < 3);
                 while (step.MoveNext()) yield return step.Current;
             }
 
+            GameFeel.Go();
             var go = calm ? GoCalm(onRevealStart) : Go(onRevealStart);
             while (go.MoveNext()) yield return go.Current;
 

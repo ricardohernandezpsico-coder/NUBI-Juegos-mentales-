@@ -337,6 +337,7 @@ namespace NeuroVida.Games.Radar
             _go.Root = go.AddComponent<RectTransform>();
             _go.Root.anchorMin = _go.Root.anchorMax = _go.Root.pivot = new Vector2(0.5f, 0.5f);
             _go.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Sun);
+            if (_go.Touch != null) _go.Touch.PlaysTap = true;                                          // «¡Listo!» no suena nada más al tocarse: suena el toque del kit
             _go.Bg = MakeImage(_go.Root, "Bg", null);
             _go.Label = MakeLabel(_go.Root, "Label", 20f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _go.Label.text = RadarContract.RescueLabel;

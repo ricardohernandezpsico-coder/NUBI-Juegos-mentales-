@@ -1,24 +1,18 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace NeuroVida.Games.Shared
 {
     /// <summary>
-    /// "Sensación" común de los 9 juegos: los mismos sonidos propios de NeuroVida y la misma vibración para
-    /// acertar, fallar, subir de nivel, el tic del reloj y el final de la partida. Antes cada juego tocaba sus
-    /// propios tonos sueltos y ninguno vibraba; ahora acertar se siente igual de bien en todos (criterio de
-    /// ui-ux-pro-max: "motion/feedback consistency").
+    /// "Sensación" común de todos los juegos: el mismo sonido y la misma vibración para acertar, fallar, subir de nivel, el tic del reloj y el final de la partida, y (desde la Fase B, Tarea 120) para la cuenta regresiva, «¡Ya!», abrir y seguir la pausa, los avisos y el toque de un botón. Antes cada juego tocaba sus
+    /// propios tonos sueltos y ninguno vibraba; ahora acertar se siente igual de bien en todos (criterio de ui-ux-pro-max: "motion/feedback consistency").
     ///
-    /// Sonidos sintetizados por código (sin archivos), cálidos y cortos:
-    /// - Acierto: "pling" de marimba que sube por la escala pentatónica con la racha (1ª nota do5, 8ª mi6):
-    ///   la racha se OYE crecer.
-    /// - Error: dos notas graves suaves que bajan (sin chicharra ni castigo).
-    /// - Subir de nivel: arpegio mayor rápido. Final: acorde de campana. Tic: golpecito de madera.
+    /// Los sonidos son los de la paleta «Madera cálida» (<see cref="WoodSounds"/>: kalimba, marimba y bloque de madera con una sala pequeña; ver docs/sonido-madera-plan.md), sintetizados por código y guardados por <see cref="WoodCore"/> (se calculan UNA vez, de a poco, durante la cuenta regresiva):
+    /// - Acierto: kalimba de dos notas que suben; el par sube por la pentatónica con la racha (1 a 7): la racha se OYE crecer.
+    /// - Error: dos marimbas graves y suaves que bajan (sin chicharra ni castigo). Subir de nivel: arpegio de kalimba. Tic: bloque de madera. Final: acorde de marimba y kalimba larga, UNO por partida.
+    /// - Cuenta regresiva: una marimba que sube un escalón por número (3, 2, 1) y «¡Ya!». Pausa: dos marimbas que bajan al abrir y suben al seguir. Aviso: una marimba sola. Toque: un golpecito de madera apagado.
     ///
-    /// Vibración (regla haptic-feedback: solo confirmaciones importantes, nunca en cada toque): error (doble
-    /// toque leve), racha múltiplo de 5, subir de nivel y final (golpe firme). Respeta los ajustes de sonido y
-    /// vibración de la app (<see cref="SoundOn"/>/<see cref="HapticsOn"/>, los fija GameEntryPoint con la config).
-    /// Todo usa el reloj real de audio: con la pausa (<c>AudioListener.pause</c>) también se calla.
+    /// Vibración (regla haptic-feedback: solo confirmaciones importantes, nunca en cada toque): error (doble toque leve), racha múltiplo de 5, subir de nivel y final (golpe firme). Respeta los ajustes de sonido y
+    /// vibración de la app (<see cref="SoundOn"/>/<see cref="HapticsOn"/>, los fija GameEntryPoint con la config); con el sonido apagado no se calcula ni suena nada. Los sonidos del juego se callan con la pausa (<c>AudioListener.pause</c>); los de la interfaz (toque de botón, abrir y seguir la pausa) no.
     /// </summary>
     public static class GameFeel
     {
@@ -28,126 +22,75 @@ namespace NeuroVida.Games.Shared
         /// (respiración, pulsos, destellos). La mecánica del juego no cambia.</summary>
         public static bool ReduceMotion;
 
-        private const int Rate = 44100;
-        // Pentatónica mayor desde do5: suena "bien" en cualquier orden, nunca desafina con la anterior.
-        private static readonly float[] Pentatonic = { 523.25f, 587.33f, 659.25f, 783.99f, 880.00f, 1046.50f, 1174.66f, 1318.51f };
+        /// <summary>Lo más corto que puede pasar entre dos toques de botón con sonido (s, reloj real): un golpeteo rápido no se vuelve una ametralladora.</summary>
+        public const float TapGap = 0.05f;
 
-        private static AudioSource _source;
-        private static readonly Dictionary<string, AudioClip> Clips = new Dictionary<string, AudioClip>();
+        private static float _lastTap = -100f;
+
+        /// <summary>SOLO PARA LAS PRUEBAS: olvida el último toque de botón (para que el límite de <see cref="TapGap"/> no pase de una prueba a otra).</summary>
+        public static void ResetTap() => _lastTap = -100f;
 
         // ------------------------------------------------------------------ API
+
+        /// <summary>
+        /// Prepara el sonido de la partida (<see cref="WoodCore.Warm"/>): calcula lo de la cuenta regresiva y deja el resto del núcleo común para que se calcule de a poco. Lo llama <c>GameEntryPoint</c> en cuanto llega la configuración (ya con <see cref="SoundOn"/>).
+        /// </summary>
+        public static void Warm() => WoodCore.Warm();
 
         /// <summary>Respuesta correcta. <paramref name="streak"/> = racha actual (1 = primer acierto).</summary>
         public static void Correct(int streak)
         {
-            int step = Mathf.Clamp(streak - 1, 0, Pentatonic.Length - 1);
-            Play("pling" + step, () => Marimba(Pentatonic[step], 0.26f), 0.55f);
+            WoodCore.Play(WoodSfx.Correct, streak);
             if (streak > 0 && streak % 5 == 0) Haptic(HapticKind.Light);
         }
 
         /// <summary>Respuesta incorrecta: suave, sin castigo.</summary>
         public static void Wrong()
         {
-            Play("wrong", WrongClip, 0.5f);
+            WoodCore.Play(WoodSfx.Wrong);
             Haptic(HapticKind.Double);
         }
 
         /// <summary>Sube el nivel dentro de la partida.</summary>
         public static void LevelUp()
         {
-            Play("levelup", () => Arpeggio(new[] { 523.25f, 659.25f, 783.99f, 1046.50f }, 0.065f, 0.5f), 0.5f);
+            WoodCore.Play(WoodSfx.LevelUp);
             Haptic(HapticKind.Firm);
         }
 
         /// <summary>Último tramo del reloj (los 5 segundos finales).</summary>
-        public static void Tick() => Play("tick", TickClip, 0.45f);
+        public static void Tick() => WoodCore.Play(WoodSfx.Tick);
 
-        /// <summary>Fin de la partida.</summary>
+        /// <summary>Fin de la partida: el ÚNICO sonido de final de toda la app (lo suena <c>ExitButton</c> al abrir el cierre; ningún juego suena uno propio).</summary>
         public static void Finish()
         {
-            Play("finish", FinishClip, 0.55f);
+            if (WoodCore.Play(WoodSfx.Finish)) WoodCore.CountFinish();
             Haptic(HapticKind.Firm);
         }
 
-        // ------------------------------------------------------------------ audio
+        /// <summary>Un aviso (por ejemplo, el «¡Listo!» de una práctica): una marimba sola. El aviso en pantalla (<see cref="Toast"/>) la suena solo si nada más sonó con él.</summary>
+        public static void Notice() => WoodCore.Play(WoodSfx.Notice);
 
-        private static void Play(string key, System.Func<AudioClip> build, float volume)
+        /// <summary>El toque de un botón del kit: un golpecito de madera apagado, por el altavoz de la interfaz (suena aunque el audio esté en pausa). No más de uno cada <see cref="TapGap"/> s.</summary>
+        public static void Tap()
         {
-            if (!SoundOn) return;
-            if (!Clips.TryGetValue(key, out var clip) || clip == null)
-            {
-                clip = build();
-                Clips[key] = clip;
-            }
-            if (_source == null)
-            {
-                // Vive en su propio objeto: la escena se recarga entre partidas y el objeto se vuelve a crear.
-                var go = new GameObject("GameFeelAudio");
-                _source = go.AddComponent<AudioSource>();
-                _source.playOnAwake = false;
-                _source.spatialBlend = 0f;
-            }
-            _source.PlayOneShot(clip, volume);
+            float now = Time.realtimeSinceStartup;
+            if (now - _lastTap < TapGap) return;
+            _lastTap = now;
+            WoodCore.Play(WoodSfx.Tap, 0, ui: true);
         }
 
-        private static AudioClip Make(string name, float seconds, System.Func<float, float> sample)
-        {
-            int n = Mathf.CeilToInt(seconds * Rate);
-            var data = new float[n];
-            for (int i = 0; i < n; i++) data[i] = Mathf.Clamp(sample(i / (float)Rate), -1f, 1f);
-            // Fundido de 4 ms al final: sin "clic" de corte.
-            int fade = Mathf.Min(n, Rate / 250);
-            for (int i = 0; i < fade; i++) data[n - 1 - i] *= i / (float)fade;
-            var clip = AudioClip.Create(name, n, 1, Rate, false);
-            clip.SetData(data, 0);
-            return clip;
-        }
+        /// <summary>El número de la cuenta regresiva (3, 2 o 1): una marimba que sube un escalón por número.</summary>
+        public static void Count(int number) => WoodCore.Play(WoodSfx.Count, number);
 
-        private static float Sin(float hz, float t) => Mathf.Sin(2f * Mathf.PI * hz * t);
+        /// <summary>«¡Ya!»: la salida de la cuenta regresiva.</summary>
+        public static void Go() => WoodCore.Play(WoodSfx.Go);
 
-        /// <summary>Envolvente: ataque de <paramref name="attack"/> s y caída exponencial con constante <paramref name="tau"/>.</summary>
-        private static float Env(float t, float attack, float tau) =>
-            (t < attack ? t / attack : 1f) * Mathf.Exp(-Mathf.Max(0f, t - attack) / tau);
+        /// <summary>Se abre la pausa (por el altavoz de la interfaz: suena aunque el audio se congele).</summary>
+        public static void PauseIn() => WoodCore.Play(WoodSfx.PauseIn, 0, ui: true);
 
-        /// <summary>Marimba: fundamental + parcial 4x (el "tok" de madera) que se apaga más rápido.</summary>
-        private static AudioClip Marimba(float hz, float seconds) => Make("marimba", seconds, t =>
-            0.8f * Sin(hz, t) * Env(t, 0.004f, 0.11f) + 0.22f * Sin(hz * 4f, t) * Env(t, 0.002f, 0.025f));
-
-        private static AudioClip WrongClip() => Make("wrong", 0.34f, t =>
-        {
-            // "bu-bum": la3 y luego fa#3, con un poco de tercer armónico (redondo, no áspero).
-            float hz = t < 0.11f ? 220f : 185f;
-            float local = t < 0.11f ? t : t - 0.11f;
-            float env = Env(local, 0.006f, 0.09f) * (t < 0.11f ? 0.75f : 1f);
-            return 0.7f * env * (Sin(hz, t) + 0.18f * Sin(hz * 3f, t));
-        });
-
-        private static AudioClip Arpeggio(float[] notes, float gap, float seconds) => Make("arp", seconds, t =>
-        {
-            float s = 0f;
-            for (int i = 0; i < notes.Length; i++)
-            {
-                float start = i * gap;
-                if (t < start) break;
-                float lt = t - start;
-                s += 0.42f * Sin(notes[i], t) * Env(lt, 0.004f, 0.14f) + 0.1f * Sin(notes[i] * 4f, t) * Env(lt, 0.002f, 0.03f);
-            }
-            return s;
-        });
-
-        private static AudioClip FinishClip() => Make("finish", 1.1f, t =>
-        {
-            // Acorde de campana (do-mi-sol-do) con un brillo que entra un poco después.
-            float s = 0f;
-            float[] chord = { 523.25f, 659.25f, 783.99f, 1046.50f };
-            for (int i = 0; i < chord.Length; i++)
-                s += 0.26f * Sin(chord[i], t) * Env(t, 0.006f, 0.42f) + 0.06f * Sin(chord[i] * 2.76f, t) * Env(t, 0.003f, 0.12f);
-            if (t > 0.12f) s += 0.12f * Sin(2093f, t) * Env(t - 0.12f, 0.004f, 0.2f);
-            return s;
-        });
-
-        private static AudioClip TickClip() => Make("tick", 0.06f, t =>
-            0.7f * (Sin(1250f, t) + 0.4f * Sin(2500f, t)) * Env(t, 0.001f, 0.012f));
+        /// <summary>Se sigue jugando después de la pausa.</summary>
+        public static void PauseOut() => WoodCore.Play(WoodSfx.PauseOut, 0, ui: true);
 
         // ------------------------------------------------------------------ vibración
 

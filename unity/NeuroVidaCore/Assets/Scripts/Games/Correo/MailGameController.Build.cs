@@ -599,6 +599,7 @@ namespace NeuroVida.Games.Correo
             _briefBtn = BigButton(_briefLayer, "BriefBtn", Lime, out _briefBtnRim, out _briefBtnLabel);
             _briefBtnLabel.text = MailContract.BriefStart;
             _briefTouch = PlasticTouch.On(_briefBtn.gameObject, SlabInstead(_briefBtn, _briefBtnRim, SlabTone.Lime), SlabSize.Button, SlabTone.Lime, _briefBtnLabel.rectTransform);
+            if (_briefTouch != null) _briefTouch.PlaysTap = true;                                        // el botón de la hoja de la mañana no suena nada más al tocarse: suena el toque del kit
             _briefLayer.gameObject.SetActive(false);
         }
 
@@ -618,6 +619,7 @@ namespace NeuroVida.Games.Correo
             foreach (var t in new[] { _recapTag, _recapTitle, _recapLine1, _recapLine2, _recapRecord, _recapUp }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             _recapBtn = BigButton(_recapLayer, "RecapBtn", Cyan, out _recapBtnRim, out _recapBtnLabel);
             _recapTouch = PlasticTouch.On(_recapBtn.gameObject, SlabInstead(_recapBtn, _recapBtnRim, SlabTone.Sky), SlabSize.Button, SlabTone.Sky, _recapBtnLabel.rectTransform);
+            if (_recapTouch != null) _recapTouch.PlaysTap = true;                                        // ídem el del resumen del día
             _recapLayer.gameObject.SetActive(false);
         }
 

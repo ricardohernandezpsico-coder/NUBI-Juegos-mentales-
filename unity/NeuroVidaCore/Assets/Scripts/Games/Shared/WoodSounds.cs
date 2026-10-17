@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using NeuroVida.Games.Radar;
 using static NeuroVida.Games.Shared.SoundKit;
 
 namespace NeuroVida.Games.Shared
@@ -28,19 +27,19 @@ namespace NeuroVida.Games.Shared
     public enum WoodVoice { Kalimba, Marimba }
 
     /// <summary>
-    /// PALETA SEMÁNTICA «MADERA CÁLIDA» (Tarea 119, Fase A, 17-oct): lo que Ricardo aprobó el 10-oct en Rescate relámpago (kalimba, marimba y bloque de madera con una sala pequeña y suave: <see cref="RadarSounds"/>, <see cref="SoundKit"/>) ordenado como un vocabulario para toda la app. Cada evento
+    /// PALETA SEMÁNTICA «MADERA CÁLIDA» (Tarea 119, Fase A, 17-oct; conectada en la Fase B, Tarea 120): lo que Ricardo aprobó el 10-oct en Rescate relámpago (kalimba, marimba y bloque de madera con una sala pequeña y suave: <see cref="WoodKit"/>, <see cref="SoundKit"/>) ordenado como un vocabulario para toda la app. Cada evento
     /// (tocar, elegir, acertar, errar, ayuda, nuevo, hito, fin…) tiene UN sonido, siempre con el mismo instrumento y la misma altura, y un nivel según su familia (<see cref="WoodTier"/>): lo que pasa todo el tiempo es lo más suave y lo que se celebra es lo más fuerte; así todo queda parejo.
-    /// Reusa tal cual las recetas aprobadas (marcar, desmarcar, ronda perfecta, «no era», final) y arma con las mismas piezas lo que faltaba. TODAVÍA NO LO USA NINGÚN JUEGO: en esta fase solo lo renderiza el exportador de la página de escucha (Bootstrap/Editor/SoundListeningExporter.cs) y lo miden sus pruebas
-    /// (WoodSoundsTests). La Fase B lo conecta a <c>GameFeel</c> y al kit; docs/sonido-madera-plan.md tiene el mapa evento por evento, los niveles medidos y el plan por fases.
-    /// Cada sonido es un clip ESTÉREO a 44.100 Hz (la sala es estéreo); la cola de sala de cada uno es la justa para que no se corte (los más cortos llevan menos cola: menos memoria). Todo es determinista (mismas semillas): el mismo evento suena siempre igual.
+    /// Reusa tal cual las recetas aprobadas (marcar, desmarcar, ronda perfecta, «no era», final) y arma con las mismas piezas lo que faltaba. Desde la Fase B lo suena <c>GameFeel</c> (acierto, error, nivel, tic, fin, cuenta, «¡Ya!», pausa, aviso y toque del kit) a través de <see cref="WoodCore"/>, que lo calcula una vez y lo guarda;
+    /// los sonidos propios de cada juego pasan a la paleta en las Fases C a E. docs/sonido-madera-plan.md tiene el mapa evento por evento, los niveles medidos y el plan por fases. Aquí, <see cref="Render"/> y <see cref="RenderStereo"/> dan las muestras como se CALCULAN (estéreo, a 44.100 Hz, con el pico en el nivel de la receta: lo que escucha la página de escucha) y
+    /// <see cref="RenderForClip"/> y <see cref="BakeJob"/> como se GUARDAN (22.050 Hz, los micro en mono y con el volumen maestro de <see cref="WoodKit.MasterGainDb"/>). Todo es determinista (mismas semillas): el mismo evento suena siempre igual.
     /// </summary>
     public static class WoodSounds
     {
-        /// <summary>El volumen con el que se reproduce cada clip (el del laboratorio donde Ricardo eligió «Madera cálida»; el que ya usan Rescate, Acoplamiento y Aterrizaje).</summary>
-        public const float PlayVolume = 0.8f;
+        /// <summary>El volumen con el que se reproduce cada clip (el del laboratorio donde Ricardo eligió «Madera cálida»; el que ya usan Rescate, Acoplamiento y Aterrizaje): vive en <see cref="WoodKit.PlayVolume"/>.</summary>
+        public const float PlayVolume = WoodKit.PlayVolume;
 
         /// <summary>La pentatónica de do mayor desde do5 (la de todos los juegos): do5, re5, mi5, sol5, la5, do6, re6, mi6, sol6, la6, do7, re7, mi7.</summary>
-        private static readonly double[] P = RadarSounds.P;
+        private static readonly double[] P = WoodKit.P;
 
         /// <summary>La cola de sala que se calcula (como máximo): lo que queda por debajo de lo audible se recorta después (<see cref="Render"/>), así la sala nunca se corta de golpe y los sonidos suaves no gastan memoria en una cola que no se oye.</summary>
         public const double MaxTail = 1.5;
@@ -56,7 +55,7 @@ namespace NeuroVida.Games.Shared
             {
                 X = x;
                 Level = level;
-                Verb = new ReverbSettings(RadarSounds.Room.Room, RadarSounds.Room.Damp, wet, MaxTail, RadarSounds.Room.Width);
+                Verb = new ReverbSettings(WoodKit.Room.Room, WoodKit.Room.Damp, wet, MaxTail, WoodKit.Room.Width);
             }
         }
 
@@ -78,7 +77,8 @@ namespace NeuroVida.Games.Shared
         {
             switch (sfx)
             {
-                case WoodSfx.Correct: case WoodSfx.Spark: return new[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+                case WoodSfx.Correct: return new[] { 1, 2, 3, 4, 5, 6, 7 };                       // la racha 7 en adelante suena igual que la 7
+                case WoodSfx.Spark: return new[] { 1, 2, 3, 4, 5, 6, 7, 8 };
                 case WoodSfx.Select: return new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
                 case WoodSfx.Count: return new[] { 3, 2, 1 };
                 default: return new[] { 0 };
@@ -88,7 +88,7 @@ namespace NeuroVida.Games.Shared
         private static int Clamp(int v, int lo, int hi) => Math.Max(lo, Math.Min(hi, v));
 
         /// <summary>Un rodado de marimba (cada nota <paramref name="gap"/> s después de la anterior).</summary>
-        private static float[] Marimbas(double[] notes, double gap, double tau, double total) => Seq(notes, gap, (f, i) => RadarSounds.Marimba(f, tau), total);
+        private static float[] Marimbas(double[] notes, double gap, double tau, double total) => Seq(notes, gap, (f, i) => WoodKit.Marimba(f, tau), total);
 
         /// <summary>La receta de un evento (<paramref name="arg"/> es la racha, la marca o la cuenta, según el evento).</summary>
         public static Recipe MakeRecipe(WoodSfx sfx, int arg = 0)
@@ -96,84 +96,91 @@ namespace NeuroVida.Games.Shared
             switch (sfx)
             {
                 case WoodSfx.Tap:                                                                      // un toque o un botón presionado: un toque de madera apagado (el de Acoplamiento)
-                    return new Recipe(RadarSounds.Marimba(392, 0.06), 0.07, 0.18);
+                    return new Recipe(WoodKit.Marimba(392, 0.06), 0.07, 0.18);
                 case WoodSfx.Select:                                                                   // elegir o marcar: una kalimba; la altura sube con la cantidad (do5, re5, mi5…): el de Rescate
-                    return new Recipe(RadarSounds.Kalimba(P[Clamp(arg, 0, 9)]), 0.14, 0.18);
+                    return new Recipe(WoodKit.Kalimba(P[Clamp(arg, 0, 9)]), 0.14, 0.18);
                 case WoodSfx.Unselect:                                                                 // quitar o deshacer: una kalimba apagada
-                    return new Recipe(RadarSounds.Kalimba(392, 0.07), 0.16, 0.18);
+                    return new Recipe(WoodKit.Kalimba(392, 0.07), 0.16, 0.18);
                 case WoodSfx.Tick:                                                                     // el último tramo del reloj: un bloque de madera
-                    return new Recipe(RadarSounds.Woodblock(1250), 0.22, 0.25);
+                    return new Recipe(WoodKit.Woodblock(1250), 0.22, 0.25);
                 case WoodSfx.Count:                                                                    // la cuenta regresiva 3, 2, 1: una marimba que sube un escalón por número
-                    return new Recipe(RadarSounds.Marimba(P[Clamp(3 - arg, 0, 2)], 0.12), 0.14, 0.18);
+                    return new Recipe(WoodKit.Marimba(P[Clamp(3 - arg, 0, 2)], 0.12), 0.14, 0.18);
 
                 case WoodSfx.Correct:                                                                  // acertar: una kalimba de DOS notas que suben; la pareja sube por la escala con la racha
                 {
                     int s = Clamp(arg - 1, 0, 6);
                     var x = Blank(1.5);
-                    Add(x, RadarSounds.Kalimba(P[s], 0.3), 0, 0.85);
-                    Add(x, RadarSounds.Kalimba(P[s + 2], 0.42), 0.09, 1.0);
+                    Add(x, WoodKit.Kalimba(P[s], 0.3), 0, 0.85);
+                    Add(x, WoodKit.Kalimba(P[s + 2], 0.42), 0.09, 1.0);
                     return new Recipe(x, 0.24, 0.18);
                 }
                 case WoodSfx.Wrong:                                                                    // errar: dos notas graves y suaves de marimba que bajan (el «no era» de Rescate, Acoplamiento y Aterrizaje)
-                    return new Recipe(Seq(new[] { 196.0, 164.81 }, 0.13, (f, i) => RadarSounds.Marimba(f, 0.25), 0.9), 0.22, 0.18);
+                    return new Recipe(Seq(new[] { 196.0, 164.81 }, 0.13, (f, i) => WoodKit.Marimba(f, 0.25), 0.9), 0.22, 0.18);
                 case WoodSfx.Knock:                                                                    // «eso no se puede»: UN toc de madera grave y hueco
                 {
-                    var x = RadarSounds.Thump(0.25, 120, 70, 0.08);
-                    Add(x, RadarSounds.Marimba(185, 0.12), 0, 0.7);
+                    var x = WoodKit.Thump(0.25, 120, 70, 0.08);
+                    Add(x, WoodKit.Marimba(185, 0.12), 0, 0.7);
                     return new Recipe(x, 0.28, 0.12);
                 }
                 case WoodSfx.Hint:                                                                     // la ayuda de Nubi: un soplo que sube y una kalimba grave
                 {
                     var x = Blank(1.4);
-                    Add(x, RadarSounds.NoiseSweep(0.5, 400, 1600, FilterType.BandPass, 0.8, 0.02, 0.2, 51), 0, 0.5);
-                    Add(x, RadarSounds.Kalimba(392, 0.5), 0.32, 0.8);
+                    Add(x, WoodKit.NoiseSweep(0.5, 400, 1600, FilterType.BandPass, 0.8, 0.02, 0.2, 51), 0, 0.5);
+                    Add(x, WoodKit.Kalimba(392, 0.5), 0.32, 0.8);
                     return new Recipe(x, 0.18, 0.18);
                 }
                 case WoodSfx.New:                                                                      // «NUEVO», sorpresa, algo que se desbloquea: dos kalimbas agudas que suben
                 {
                     var x = Blank(1.6);
-                    Add(x, RadarSounds.Kalimba(P[5], 0.4));
-                    Add(x, RadarSounds.Kalimba(P[7], 0.5), 0.12);
+                    Add(x, WoodKit.Kalimba(P[5], 0.4));
+                    Add(x, WoodKit.Kalimba(P[7], 0.5), 0.12);
                     return new Recipe(x, 0.26, 0.25);
                 }
                 case WoodSfx.Notice:                                                                   // un aviso en pantalla: una marimba sola
-                    return new Recipe(RadarSounds.Marimba(P[5], 0.2), 0.16, 0.18);
+                    return new Recipe(WoodKit.Marimba(P[5], 0.2), 0.16, 0.18);
                 case WoodSfx.Spark:                                                                    // el destello de la racha: una kalimba aguda que sube con cada acierto seguido
-                    return new Recipe(RadarSounds.Kalimba(P[Clamp(4 + arg, 5, 12)], 0.25), 0.14, 0.18);
+                    return new Recipe(WoodKit.Kalimba(P[Clamp(4 + arg, 5, 12)], 0.25), 0.14, 0.18);
 
                 case WoodSfx.Streak:                                                                   // un hito de racha: un arpegio corto de kalimba sobre una marimba grave
                 {
-                    var x = Seq(new[] { P[2], P[4], P[5] }, 0.07, (f, i) => RadarSounds.Kalimba(f, 0.35), 1.6);
-                    Add(x, RadarSounds.Marimba(P[0], 0.3), 0, 0.5);
+                    var x = Seq(new[] { P[2], P[4], P[5] }, 0.07, (f, i) => WoodKit.Kalimba(f, 0.35), 1.6);
+                    Add(x, WoodKit.Marimba(P[0], 0.3), 0, 0.5);
                     return new Recipe(x, 0.30, 0.18);
                 }
                 case WoodSfx.LevelUp:                                                                  // subir de nivel: el arpegio do-mi-sol-do de kalimba (las mismas notas de siempre)
-                    return new Recipe(Seq(new[] { P[0], P[2], P[3], P[5] }, 0.065, (f, i) => RadarSounds.Kalimba(f, 0.35), 1.5), 0.32, 0.18);
+                    return new Recipe(Seq(new[] { P[0], P[2], P[3], P[5] }, 0.065, (f, i) => WoodKit.Kalimba(f, 0.35), 1.5), 0.32, 0.18);
                 case WoodSfx.Perfect:                                                                  // una ronda perfecta: la de Rescate (do-mi-sol-do de marimba y dos kalimbas)
                 {
                     var x = Marimbas(new[] { P[0], P[2], P[3], P[5] }, 0.08, 0.35, 1.6);
-                    Add(x, RadarSounds.Kalimba(P[5]), 0.34, 0.6);
-                    Add(x, RadarSounds.Kalimba(P[7]), 0.42, 0.6);
+                    Add(x, WoodKit.Kalimba(P[5]), 0.34, 0.6);
+                    Add(x, WoodKit.Kalimba(P[7]), 0.42, 0.6);
                     return new Recipe(x, 0.34, 0.18);
                 }
                 case WoodSfx.Go:                                                                       // «¡Ya!»: dos marimbas y una kalimba aguda
                 {
                     var x = Marimbas(new[] { P[0], P[3] }, 0.05, 0.25, 1.4);
-                    Add(x, RadarSounds.Kalimba(P[5], 0.4), 0.1, 0.8);
+                    Add(x, WoodKit.Kalimba(P[5], 0.4), 0.1, 0.8);
                     return new Recipe(x, 0.30, 0.18);
                 }
 
                 case WoodSfx.Record:                                                                   // un récord: una escalera de kalimba hasta lo agudo y el acorde de marimba
                 {
-                    var x = Seq(new[] { P[0], P[2], P[3], P[5], P[7], P[9] }, 0.06, (f, i) => RadarSounds.Kalimba(f, 0.35), 2.2);
+                    var x = Seq(new[] { P[0], P[2], P[3], P[5], P[7], P[9] }, 0.06, (f, i) => WoodKit.Kalimba(f, 0.35), 2.2);
                     double[] chord = { 261.63, 392, 523.25 };
-                    for (int i = 0; i < chord.Length; i++) Add(x, RadarSounds.Marimba(chord[i], 0.5), 0.42 + i * 0.05, 0.75);
+                    for (int i = 0; i < chord.Length; i++) Add(x, WoodKit.Marimba(chord[i], 0.5), 0.42 + i * 0.05, 0.75);
                     return new Recipe(x, 0.40, 0.18);
                 }
                 case WoodSfx.Finish:                                                                   // el fin de la partida: el final de Rescate (acorde de marimba y una kalimba larga)
                 {
-                    var f = RadarSounds.MakeRecipe(RadarSfx.Finale);
-                    return new Recipe(f.X, f.Level, f.Verb.Wet);
+                    var x = Blank(3);                                                                  // la receta de Rescate (RadarSfx.Finale), muestra por muestra: una prueba lo comprueba
+                    double[] chord = { 261.63, 329.63, 392, 523.25, 659.25, 783.99, 1046.5 };
+                    for (int i = 0; i < chord.Length; i++)
+                    {
+                        var m = WoodKit.Marimba(chord[i], 0.4);
+                        for (int h = 0; h < 3; h++) Add(x, m, i * 0.07 + h * 0.05, h != 0 ? 0.35 : 0.8);
+                    }
+                    Add(x, WoodKit.Kalimba(P[7], 0.6), 0.55, 0.7);
+                    return new Recipe(x, 0.4, WoodKit.Room.Wet);
                 }
 
                 case WoodSfx.PauseIn:                                                                  // abrir la pausa: dos marimbas suaves que bajan
@@ -182,20 +189,20 @@ namespace NeuroVida.Games.Shared
                     return new Recipe(Marimbas(new[] { P[0], P[2] }, 0.1, 0.15, 0.8), 0.12, 0.25);
 
                 case WoodSfx.SweepUp:                                                                  // un soplo que sube (algo que aparece o se abre)
-                    return new Recipe(RadarSounds.NoiseSweep(0.5, 500, 2200, FilterType.BandPass, 0.8, 0.01, 0.15, 61), 0.12, 0.1);
+                    return new Recipe(WoodKit.NoiseSweep(0.5, 500, 2200, FilterType.BandPass, 0.8, 0.01, 0.15, 61), 0.12, 0.1);
                 case WoodSfx.SweepDown:                                                                // un soplo que baja (algo que se suelta, se cierra o vuelve): el de Aterrizaje
-                    return new Recipe(RadarSounds.NoiseSweep(0.5, 1400, 300, FilterType.LowPass, 0.7, 0.004, 0.14, 41), 0.12, 0.18);
+                    return new Recipe(WoodKit.NoiseSweep(0.5, 1400, 300, FilterType.LowPass, 0.7, 0.004, 0.14, 41), 0.12, 0.18);
                 case WoodSfx.Hum:                                                                      // un zumbido que arranca: dos marimbas graves
                 {
                     var x = Blank(1.6);
-                    Add(x, RadarSounds.Marimba(196, 0.5));
-                    Add(x, RadarSounds.Marimba(293.66, 0.5), 0.1);
+                    Add(x, WoodKit.Marimba(196, 0.5));
+                    Add(x, WoodKit.Marimba(293.66, 0.5), 0.1);
                     return new Recipe(x, 0.12, 0.18);
                 }
                 default:                                                                               // Clack: un golpe seco de un objeto (el de Aterrizaje al posarse)
                 {
-                    var x = RadarSounds.Thump(0.3, 110, 55, 0.09);
-                    Add(x, RadarSounds.Woodblock(520), 0, 0.25);
+                    var x = WoodKit.Thump(0.3, 110, 55, 0.09);
+                    Add(x, WoodKit.Woodblock(520), 0, 0.25);
                     return new Recipe(x, 0.26, 0.18);
                 }
             }
@@ -207,23 +214,22 @@ namespace NeuroVida.Games.Shared
         /// </summary>
         public static Recipe MakeNote(double hz, WoodVoice voice)
         {
-            if (voice == WoodVoice.Kalimba) return new Recipe(RadarSounds.Kalimba(hz, 0.3), 0.30, 0.18);
-            return new Recipe(RadarSounds.Marimba(hz, 0.3), 0.30, 0.18);
+            if (voice == WoodVoice.Kalimba) return new Recipe(WoodKit.Kalimba(hz, 0.3), 0.30, 0.18);
+            return new Recipe(WoodKit.Marimba(hz, 0.3), 0.30, 0.18);
         }
 
         /// <summary>
         /// Una SEÑAL CORTA con altura (el tono de la regla de Tinta o Palabra, la señal de salida de Freno, el «blip» de Piloto…): la misma altura y un solo golpe seco de marimba que dura lo mismo que el tono de hoy (<paramref name="seconds"/>: 0,06 s la salida de Freno, 0,1 s las reglas de Tinta o Palabra), casi sin sala:
         /// empieza igual de rápido y no se le encima al estímulo siguiente.
         /// </summary>
-        public static Recipe MakeCue(double hz, double seconds = 0.1) => new Recipe(RadarSounds.Marimba(hz, seconds / 3.0), 0.20, 0.05);
+        public static Recipe MakeCue(double hz, double seconds = 0.1) => new Recipe(WoodKit.Marimba(hz, seconds / 3.0), 0.20, 0.05);
 
         /// <summary>Lo que se guarda de un sonido: se corta lo que queda 50 dB bajo su pico o por debajo de −54 dBFS (el final de la cola de la sala: con el teléfono a volumen alto sigue muy por debajo del ruido de cualquier pieza), con un fundido de 30 ms, para no gastar memoria en silencio.</summary>
         public const double TrimDb = 50.0, TrimFloorDbfs = -54.0;
 
-        /// <summary>Las muestras estéreo ya con la sala, recortadas al final audible (<see cref="TrimDb"/>) y con el cierre (el pico queda en el nivel de la receta).</summary>
-        public static void Render(Recipe recipe, out float[] left, out float[] right)
+        /// <summary>Recorta la sala al final audible (<see cref="TrimDb"/>) y cierra: el pico queda en el nivel de la receta y el último tramo se funde (sin clic de corte).</summary>
+        private static void Close(float[] l, float[] r, Recipe recipe, out float[] left, out float[] right)
         {
-            Reverb(recipe.X, recipe.Verb, out var l, out var r);
             int fade = (int)Math.Round(0.03 * Rate);
             int n = Math.Min(l.Length, (int)Math.Ceiling(SoundMeter.DurationMs(l, r, TrimDb, TrimFloorDbfs) * Rate / 1000.0) + fade);
             left = new float[n];
@@ -231,6 +237,13 @@ namespace NeuroVida.Games.Shared
             Array.Copy(l, left, n);
             Array.Copy(r, right, n);
             Finish(left, right, recipe.Level);
+        }
+
+        /// <summary>Las muestras estéreo ya con la sala, recortadas al final audible (<see cref="TrimDb"/>) y con el cierre (el pico queda en el nivel de la receta; sin el volumen maestro: así las mide la página de escucha).</summary>
+        public static void Render(Recipe recipe, out float[] left, out float[] right)
+        {
+            Reverb(recipe.X, recipe.Verb, out var l, out var r);
+            Close(l, r, recipe, out left, out right);
         }
 
         public static void RenderStereo(WoodSfx sfx, int arg, out float[] left, out float[] right) => Render(MakeRecipe(sfx, arg), out left, out right);
@@ -241,39 +254,103 @@ namespace NeuroVida.Games.Shared
         /// <summary>Los eventos MICRO (tocar, tic, cuenta, pausa, quitar) llevan tan poca sala que se guardan en mono: otra mitad de memoria.</summary>
         public static bool IsMono(WoodSfx sfx) => TierOf(sfx) == WoodTier.Micro;
 
-        /// <summary>Lo que se guarda de un evento: las muestras a <see cref="ClipRate"/>, estéreo (en mono, <paramref name="right"/> es null).</summary>
-        public static void RenderForClip(WoodSfx sfx, int arg, out float[] left, out float[] right)
+        /// <summary>De las muestras calculadas (estéreo, 44.100 Hz) a las que se guardan: mono en los micro, a <see cref="ClipRate"/> y con el volumen maestro (<see cref="WoodKit.ApplyMaster"/>).</summary>
+        private static void Store(WoodSfx sfx, float[] l, float[] r, out float[] left, out float[] right)
         {
-            RenderStereo(sfx, arg, out var l, out var r);
             if (IsMono(sfx))
             {
                 var mix = new float[l.Length];
                 for (int i = 0; i < mix.Length; i++) mix[i] = 0.5f * (l[i] + r[i]);
                 left = SoundKit.HalveRate(mix);
                 right = null;
-                return;
             }
-            left = SoundKit.HalveRate(l);
-            right = SoundKit.HalveRate(r);
+            else
+            {
+                left = SoundKit.HalveRate(l);
+                right = SoundKit.HalveRate(r);
+            }
+            WoodKit.ApplyMaster(left, right);
+        }
+
+        /// <summary>Lo que se guarda de un evento: las muestras a <see cref="ClipRate"/>, estéreo (en mono, <paramref name="right"/> es null) y con el volumen maestro.</summary>
+        public static void RenderForClip(WoodSfx sfx, int arg, out float[] left, out float[] right)
+        {
+            RenderStereo(sfx, arg, out var l, out var r);
+            Store(sfx, l, r, out left, out right);
+        }
+
+        /// <summary>Un clip a partir de muestras guardadas (<paramref name="right"/> null = mono).</summary>
+        public static AudioClip MakeClip(string name, float[] left, float[] right)
+        {
+            int n = left.Length, channels = right == null ? 1 : 2;
+            var data = new float[n * channels];
+            for (int i = 0; i < n; i++)
+            {
+                data[i * channels] = left[i];
+                if (channels == 2) data[i * 2 + 1] = right[i];
+            }
+            var clip = AudioClip.Create(name, n, channels, ClipRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// El horneado de UN evento DE A POCO (cada <see cref="Step"/> es la síntesis, un pedazo de la sala o el cierre): así <see cref="WoodCore"/> calcula todo el núcleo común durante la cuenta regresiva sin trabar ningún cuadro. Da el mismo clip que <see cref="ToClip"/>.
+        /// </summary>
+        public sealed class BakeJob
+        {
+            private readonly WoodSfx _sfx;
+            private readonly int _arg;
+            private Recipe _recipe;
+            private ReverbJob _reverb;
+            private int _stage;
+
+            public BakeJob(WoodSfx sfx, int arg)
+            {
+                _sfx = sfx;
+                _arg = arg;
+            }
+
+            public bool Done => _stage >= 3;
+
+            /// <summary>El clip, una vez que <see cref="Done"/>.</summary>
+            public AudioClip Clip { get; private set; }
+
+            /// <summary>Avanza un poco: la síntesis, hasta <paramref name="reverbSamples"/> muestras de sala o el cierre. Devuelve true cuando el clip ya está listo.</summary>
+            public bool Step(int reverbSamples = 24000)
+            {
+                switch (_stage)
+                {
+                    case 0:
+                        _recipe = MakeRecipe(_sfx, _arg);
+                        _reverb = new ReverbJob(_recipe.X, _recipe.Verb);
+                        _stage = 1;
+                        return false;
+                    case 1:
+                        _reverb.Run(reverbSamples);
+                        if (_reverb.Done) _stage = 2;
+                        return false;
+                    case 2:
+                        _reverb.Result(out var l, out var r);
+                        Close(l, r, _recipe, out var cl, out var cr);
+                        Store(_sfx, cl, cr, out var left, out var right);
+                        Clip = MakeClip(KeyOf(_sfx, _arg), left, right);
+                        _stage = 3;
+                        return true;
+                    default:
+                        return true;
+                }
+            }
         }
 
         /// <summary>La clave de un sonido y su variante («correct3»).</summary>
         public static string KeyOf(WoodSfx sfx, int arg) => Variants(sfx).Length > 1 ? sfx.ToString().ToLowerInvariant() + arg : sfx.ToString().ToLowerInvariant();
 
-        /// <summary>El clip de un evento (a <see cref="ClipRate"/>; mono en los micro). Se calcula en el momento; la Fase B los precarga de a poco, como los demás juegos.</summary>
+        /// <summary>El clip de un evento (a <see cref="ClipRate"/>; mono en los micro; con el volumen maestro), calculado de una vez. Para pruebas y recetas sueltas: el juego los hornea de a poco (<see cref="BakeJob"/>).</summary>
         public static AudioClip ToClip(WoodSfx sfx, int arg = 0)
         {
             RenderForClip(sfx, arg, out var l, out var r);
-            int n = l.Length, channels = r == null ? 1 : 2;
-            var data = new float[n * channels];
-            for (int i = 0; i < n; i++)
-            {
-                data[i * channels] = l[i];
-                if (channels == 2) data[i * 2 + 1] = r[i];
-            }
-            var clip = AudioClip.Create(KeyOf(sfx, arg), n, channels, ClipRate, false);
-            clip.SetData(data, 0);
-            return clip;
+            return MakeClip(KeyOf(sfx, arg), l, r);
         }
     }
 }

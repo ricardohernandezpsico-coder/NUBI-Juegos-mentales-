@@ -17,11 +17,11 @@ namespace NeuroVida.Games.Radar
     /// </summary>
     public static class RadarSounds
     {
-        /// <summary>La pentatónica de do mayor desde do5, ampliada (la del laboratorio).</summary>
-        public static readonly double[] P = { 523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760, 2093, 2349.32, 2637.02 };
+        /// <summary>La pentatónica de do mayor desde do5, ampliada (la del laboratorio): ahora vive en <see cref="WoodKit"/>.</summary>
+        public static readonly double[] P = WoodKit.P;
 
-        /// <summary>La sala de «Madera cálida»: pequeña, amortiguada y apenas abierta.</summary>
-        public static readonly ReverbSettings Room = new ReverbSettings(0.7, 0.5, 0.18, 0.9, 0.8);
+        /// <summary>La sala de «Madera cálida»: pequeña, amortiguada y apenas abierta (<see cref="WoodKit.Room"/>).</summary>
+        public static readonly ReverbSettings Room = WoodKit.Room;
 
         /// <summary>Muestras de reverberación que se calculan por cuadro al precargar.</summary>
         private const int SamplesPerFrame = 24000;
@@ -31,68 +31,25 @@ namespace NeuroVida.Games.Radar
         private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();
         private static readonly Dictionary<double, float[]> MarimbaCache = new Dictionary<double, float[]>();
 
-        // ------------------------------------------------------------------ instrumentos (recetas del laboratorio)
+        // ------------------------------------------------------------------ instrumentos (recetas del laboratorio): desde la Fase B viven en WoodKit; estas envolturas dan las mismas muestras
 
-        /// <summary>Kalimba: seno con un leve «golpe» de afinación al principio, un armónico metálico (×5,95), la octava y un clic de ruido de 4 ms.</summary>
-        public static float[] Kalimba(double f, double tau = 0.45, uint seed = 7)
-        {
-            var r = new Rng(seed);
-            return Render(tau * 3, t =>
-            {
-                double bend = 1 + 0.012 * Math.Exp(-t / 0.012);
-                return Math.Sin(Tau * f * bend * t) * Env(t, 0.002, tau) + 0.28 * Math.Sin(Tau * f * 5.95 * t) * Env(t, 0.001, 0.035)
-                     + 0.12 * Math.Sin(Tau * f * 2 * t) * Env(t, 0.002, tau * 0.4) + (t < 0.004 ? (r.Next() * 2 - 1) * 0.3 * (1 - t / 0.004) : 0.0);
-            });
-        }
+        /// <summary>Kalimba (ver <see cref="WoodKit.Kalimba"/>).</summary>
+        public static float[] Kalimba(double f, double tau = 0.45, uint seed = 7) => WoodKit.Kalimba(f, tau, seed);
 
-        /// <summary>Marimba: el fundamental más dos armónicos que se apagan rápido (×4 y ×9,8).</summary>
-        public static float[] Marimba(double f, double tau = 0.3) =>
-            Render(tau * 3.2, t => 0.9 * Math.Sin(Tau * f * t) * Env(t, 0.003, tau) + 0.25 * Math.Sin(Tau * f * 4 * t) * Env(t, 0.002, 0.03) + 0.06 * Math.Sin(Tau * f * 9.8 * t) * Env(t, 0.001, 0.012));
+        /// <summary>Marimba (ver <see cref="WoodKit.Marimba"/>).</summary>
+        public static float[] Marimba(double f, double tau = 0.3) => WoodKit.Marimba(f, tau);
 
-        /// <summary>Bloque de madera: un seno corto y su parcial inarmónico (×2,71).</summary>
-        public static float[] Woodblock(double f) =>
-            Render(0.25, t => Math.Sin(Tau * f * t) * Env(t, 0.001, 0.035) + 0.5 * Math.Sin(Tau * f * 2.71 * t) * Env(t, 0.001, 0.02));
+        /// <summary>Bloque de madera (ver <see cref="WoodKit.Woodblock"/>).</summary>
+        public static float[] Woodblock(double f) => WoodKit.Woodblock(f);
 
-        /// <summary>Ruido filtrado con un barrido de frecuencia exponencial de <paramref name="f0"/> a <paramref name="f1"/>.</summary>
-        public static float[] NoiseSweep(double sec, double f0, double f1, FilterType type = FilterType.BandPass, double q = 0.8, double a = 0.002, double tau = 0.08, uint seed = 1)
-        {
-            var r = new Rng(seed);
-            var flt = new Biquad(type, f0, q);
-            return Render(sec, t =>
-            {
-                flt.Set(f0 * Math.Pow(f1 / f0, Math.Min(1.0, t / sec)));
-                return flt.Run(r.Next() * 2 - 1) * Env(t, a, tau);
-            });
-        }
+        /// <summary>Ruido filtrado con un barrido (ver <see cref="WoodKit.NoiseSweep"/>).</summary>
+        public static float[] NoiseSweep(double sec, double f0, double f1, FilterType type = FilterType.BandPass, double q = 0.8, double a = 0.002, double tau = 0.08, uint seed = 1) => WoodKit.NoiseSweep(sec, f0, f1, type, q, a, tau, seed);
 
-        /// <summary>Estática granulada: ruido de banda con granos al azar (como un sonajero suave).</summary>
-        public static float[] StaticNoise(double sec, double center = 1800, double q = 0.7, uint seed = 3, double grain = 0.003, double flutter = 0)
-        {
-            var r = new Rng(seed);
-            var bp = new Biquad(FilterType.BandPass, center, q);
-            double g = 0, next = 0;
-            return Render(sec, t =>
-            {
-                if (t >= next)
-                {
-                    g = r.Next() < 0.35 ? r.Next() : r.Next() * 0.25;
-                    next = t + grain * (0.5 + r.Next());
-                }
-                double fl = flutter != 0 ? 0.6 + 0.4 * Math.Sin(Tau * flutter * t) : 1;
-                return bp.Run(r.Next() * 2 - 1) * g * fl * Math.Min(1.0, t / 0.01) * Math.Min(1.0, (sec - t) / 0.08);
-            });
-        }
+        /// <summary>Estática granulada (ver <see cref="WoodKit.StaticNoise"/>).</summary>
+        public static float[] StaticNoise(double sec, double center = 1800, double q = 0.7, uint seed = 3, double grain = 0.003, double flutter = 0) => WoodKit.StaticNoise(sec, center, q, seed, grain, flutter);
 
-        /// <summary>Golpe grave: un seno que baja de <paramref name="f0"/> a <paramref name="f1"/> Hz.</summary>
-        public static float[] Thump(double sec, double f0 = 90, double f1 = 50, double tau = 0.09)
-        {
-            double ph = 0;
-            return Render(sec, t =>
-            {
-                ph += f0 * Math.Pow(f1 / f0, Math.Min(1.0, t / sec)) / Rate;
-                return Math.Sin(Tau * ph) * Env(t, 0.002, tau);
-            });
-        }
+        /// <summary>Golpe grave (ver <see cref="WoodKit.Thump"/>).</summary>
+        public static float[] Thump(double sec, double f0 = 90, double f1 = 50, double tau = 0.09) => WoodKit.Thump(sec, f0, f1, tau);
 
         // ------------------------------------------------------------------ los sonidos del juego (antes de la sala)
 
@@ -198,6 +155,7 @@ namespace NeuroVida.Games.Radar
             string key = KeyOf(sfx, arg);
             if (Cache.TryGetValue(key, out var clip) && clip != null) return clip;
             RenderStereo(sfx, sfx == RadarSfx.Dock ? Math.Abs(arg) % 4 : arg, out var l, out var r);
+            WoodKit.ApplyMaster(l, r);                                                       // el volumen de toda «Madera cálida» (+3 dB, Fase B): un solo lugar
             return Cache[key] = ToClip(key, l, r);
         }
 
@@ -205,7 +163,7 @@ namespace NeuroVida.Games.Radar
         public static readonly (RadarSfx Sfx, int Arg)[] BakeOrder =
         {
             (RadarSfx.Ping, 0), (RadarSfx.Flash, 0), (RadarSfx.Static, 0), (RadarSfx.Mark, 1), (RadarSfx.Mark, 2), (RadarSfx.Mark, 3), (RadarSfx.Beam, 0), (RadarSfx.Perfect, 0),
-            (RadarSfx.Dock, 0), (RadarSfx.Dock, 1), (RadarSfx.Dock, 2), (RadarSfx.Unmark, 0), (RadarSfx.Miss, 0), (RadarSfx.Mark, 4), (RadarSfx.Dock, 3), (RadarSfx.Rain, 0), (RadarSfx.Finale, 0), (RadarSfx.Trip, 0),
+            (RadarSfx.Dock, 0), (RadarSfx.Dock, 1), (RadarSfx.Dock, 2), (RadarSfx.Unmark, 0), (RadarSfx.Miss, 0), (RadarSfx.Mark, 4), (RadarSfx.Dock, 3), (RadarSfx.Rain, 0), (RadarSfx.Trip, 0),      // sin el final propio: el de la partida es UNO para toda la app (GameFeel.Finish)
         };
 
         /// <summary>Calcula todos los clips de a poco: la síntesis de cada uno en un cuadro y su reverberación en pedazos de <see cref="SamplesPerFrame"/> muestras por cuadro, para que el arranque no se trabe.</summary>
@@ -225,6 +183,7 @@ namespace NeuroVida.Games.Radar
                 }
                 job.Result(out var l, out var r);
                 Finish(l, r, recipe.Level);
+                WoodKit.ApplyMaster(l, r);
                 Cache[key] = ToClip(key, l, r);
                 yield return null;
             }

@@ -259,7 +259,7 @@ namespace NeuroVida.Games.Correo
             _stageLayer.gameObject.SetActive(false);
             BindEnd();
             _exit.Show();
-            PlayClip(MailSounds.Finale(), 0.8f);
+            // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,

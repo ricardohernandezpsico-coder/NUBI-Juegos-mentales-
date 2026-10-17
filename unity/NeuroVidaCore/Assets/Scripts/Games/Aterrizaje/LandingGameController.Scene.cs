@@ -413,7 +413,7 @@ namespace NeuroVida.Games.Aterrizaje
         {
             if (_hoverSource == null || _hoverSource.clip == null) return;
             bool want = _phase == Phase.Fall && SoundWanted && !GameClock.AudioSilenced;
-            float target = want ? LandingSounds.HoverVolume * GameClock.LoopVolume : 0f;
+            float target = want ? LandingSounds.HoverPlayVolume * GameClock.LoopVolume : 0f;
             float tau = target > _hoverSource.volume ? 0.15f : 0.08f;
             _hoverSource.volume += (target - _hoverSource.volume) * (1f - Mathf.Exp(-realDt / tau));
             if (want && !_hoverSource.isPlaying) _hoverSource.Play();

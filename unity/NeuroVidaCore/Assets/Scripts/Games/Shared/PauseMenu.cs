@@ -115,8 +115,10 @@ namespace NeuroVida.Games.Shared
             {
                 Hide();
                 GameClock.Resume();
+                GameFeel.PauseOut();                                                            // por el altavoz de la interfaz: suena aunque el audio acabe de despausarse
                 _onResume?.Invoke();
             });
+            if (_btnContinue.GetComponent<PlasticPress>() is PlasticPress continuePress) continuePress.PlaysTap = false;     // «Continuar» ya suena su propio «seguimos» (PauseOut): sin toque del kit encima
             _btnRestart = AddButton("Reiniciar", NeuroStyle.Sky, SlabTone.Sky, () =>
             {
                 Hide();
@@ -192,6 +194,7 @@ namespace NeuroVida.Games.Shared
             Relayout(_onHowTo != null && _canHowTo != null && _canHowTo());
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
+            GameFeel.PauseIn();                                                                 // por el altavoz de la interfaz (ignoreListenerPause): suena con el audio del juego ya congelado
             StartCoroutine(PopIn());
         }
 
@@ -221,6 +224,7 @@ namespace NeuroVida.Games.Shared
         {
             Hide();
             GameClock.Resume();
+            GameFeel.PauseOut();
             _onResume?.Invoke();
         }
 

@@ -516,7 +516,7 @@ namespace NeuroVida.Games.Disparate
             if (_guided && !Allows(Allow.Hold)) return;
             _unclearDone = true;
             if (!_guided) _tally.ReportUnclear(_cur.S.i);                // la frase de la práctica no se anota
-            _toast.Show("Gracias, la revisaremos", "Marcaste esta frase como poco clara", AmberColor, 1.0f);
+            _toast.Show("Gracias, la revisaremos", "Marcaste esta frase como poco clara", AmberColor, 1.0f, sound: false);       // ya suena su propio «gracias» (Unclear)
             PlayClip(DisparateSounds.Unclear(), 0.5f);
             GameFeel.Haptic(GameFeel.HapticKind.Double);
             StartCoroutine(UiFx.RingBurst(_fxRect, new Vector2(0f, _plateY), AmberColor, 200f, 700f, 0.45f));
@@ -666,7 +666,7 @@ namespace NeuroVida.Games.Disparate
         {
             BreakStreak();
             PlayClip(DisparateSounds.Lost(), 0.5f);
-            _toast.Show("Se perdió la señal", "Sigue la próxima frase", AmberColor, 0.9f);
+            _toast.Show("Se perdió la señal", "Sigue la próxima frase", AmberColor, 0.9f, sound: false);                         // ya suena su propio «se perdió la señal» (Lost)
             // la frase se disuelve en estática (sin castigo extra)
             BuildDecode(spec.S.f);
             float dur = GameFeel.ReduceMotion ? 0.15f : 0.45f;
@@ -790,7 +790,7 @@ namespace NeuroVida.Games.Disparate
         private IEnumerator PerfectTransmission()
         {
             // 10 seguidas: la antena se enciende (× 1,5) y una aurora suave cruza el cielo
-            _toast.Show("¡Transmisión perfecta!", "Antena encendida: puntos × 1,5", AmberColor, 1.4f);
+            _toast.Show("¡Transmisión perfecta!", "Antena encendida: puntos × 1,5", AmberColor, 1.4f, sound: false);       // ya suenan «subir de nivel» y su propia aurora (Aurora)
             GameFeel.LevelUp();
             PlayClip(DisparateSounds.Aurora(), 0.55f);
             if (GameFeel.ReduceMotion) yield break;

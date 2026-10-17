@@ -1631,6 +1631,7 @@ namespace NeuroVida.Games.Intrusa
             _seguirLabel.font = UiFonts.Word;
             _seguirLabel.text = "Seguir";
             _seguirTouch = PlasticTouch.On(go, seguirSlab, SlabSize.Button, SlabTone.Cream, _seguirLabel.rectTransform);
+            if (_seguirTouch != null) _seguirTouch.PlaysTap = true;                                       // «Seguir» no suena nada más al tocarse: suena el toque del kit
             go.SetActive(false);
         }
 
