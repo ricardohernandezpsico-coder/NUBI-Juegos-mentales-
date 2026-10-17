@@ -277,6 +277,49 @@ namespace NeuroVida.Games.Shared
             }
         }
 
+        // ------------------------------------------------------------------ media frecuencia de muestreo
+
+        /// <summary>La mitad de la frecuencia de muestreo (22.050 Hz): con ella un clip pesa la mitad en memoria y conserva todo hasta los 10 kHz (lo que tienen la kalimba, la marimba y la sala).</summary>
+        public const int HalfRate = Rate / 2;
+
+        private static double[] _halfRateFilter;
+
+        private static double[] BuildHalfRateFilter()
+        {
+            const int taps = 63;
+            double fc = 10000.0 / Rate, sum = 0.0;
+            var h = new double[taps];
+            for (int i = 0; i < taps; i++)
+            {
+                double m = i - (taps - 1) / 2.0;
+                double sinc = Math.Abs(m) < 1e-9 ? 2.0 * fc : Math.Sin(2.0 * Math.PI * fc * m) / (Math.PI * m);
+                h[i] = sinc * (0.5 - 0.5 * Math.Cos(2.0 * Math.PI * i / (taps - 1)));
+                sum += h[i];
+            }
+            for (int i = 0; i < taps; i++) h[i] /= sum;
+            return h;
+        }
+
+        /// <summary>Pasa las muestras a 22.050 Hz: un filtro de paso bajo de 10 kHz (63 coeficientes, ventana de Hann) y una de cada dos. Cuesta unos pocos milisegundos por clip.</summary>
+        public static float[] HalveRate(float[] x)
+        {
+            var h = _halfRateFilter ?? (_halfRateFilter = BuildHalfRateFilter());
+            int half = h.Length / 2, m = x.Length / 2;
+            var y = new float[m];
+            for (int j = 0; j < m; j++)
+            {
+                int centre = j * 2;
+                double acc = 0.0;
+                for (int t = 0; t < h.Length; t++)
+                {
+                    int idx = centre + t - half;
+                    if (idx >= 0 && idx < x.Length) acc += h[t] * x[idx];
+                }
+                y[j] = (float)acc;
+            }
+            return y;
+        }
+
         /// <summary>Un clip estéreo a 44 100 Hz con las dos muestras (izquierda y derecha) entrelazadas.</summary>
         public static AudioClip ToClip(string name, float[] left, float[] right)
         {

@@ -65,3 +65,6 @@ tools/isla/out/
 
 # Renders de Blender de los juegos (tools/juegos): salida intermedia; lo que entra al repo son los atlas de Assets/Resources/Plasticina
 tools/juegos/out/
+
+# la página de escucha de sonido con los WAV adentro (se arma con tools/sonido/armar_escucha.py --incrustar; pesa ~11 MB)
+docs/previews/sonido-escucha-incrustado.html
