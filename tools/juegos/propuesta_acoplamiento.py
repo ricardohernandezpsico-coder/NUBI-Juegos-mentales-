@@ -3,7 +3,11 @@
   - MÓDULO: la misma silueta exacta (SDF), cara mate (sin la franja de brillo vidrioso), bisel ×3, variación a mano, celeste más cálido, CANTO en espacio de pantalla (4,5 dp hacia abajo: no gira ni se espeja) y sombra de contacto.
   - HUECO: una cavidad hundida: el aro de estado (teal / lima / celeste) como un churro de plasticina, la pared de adentro visible arriba (4,5 dp, la silueta corrida hacia abajo) y el fondo negro; el contorno de la abertura es el del SDF.
   - PANEL del puerto, CHEVRONES y «Encaja» / «Espejo» (con las losas del kit) como plasticina con canto y sombra.
-Uso: python -I tools/juegos/propuesta_acoplamiento.py   → tools/juegos/out/propuesta/aco_hoy.png y aco_propuesta.png"""
+V2 (Tarea 115, parte 2; Ricardo aprobó la idea y la quiere ver antes de integrarla): el módulo como un juguete de plasticina hecho de bloques.
+  - Una BOLITA de plasticina (un domo de ~0,33 del bloque) en el centro de cada cuadrito: su sombreado es ISÓTROPO (brillo centrado y borde parejo; ninguna luz que venga de un lado: una luz horneada que gire con la pieza delataría el espejo) y su sombrita de contacto va en la PANTALLA, hacia abajo, como el canto.
+  - El módulo, más inflado («almohada»): el sombreado sale de la distancia al borde (isótropo: se oscurece hacia el borde y sube hacia el centro), un canto redondeado amplio, una leve variación de color hecha a mano, mate, celeste cálido; el canto de 5 dp hacia abajo y la sombra se quedan. Sin juntas ni «+»: en un 2 × 2 las 4 bolitas quedan como 4 puntos sueltos.
+  - El hueco del puerto queda como en la v1 (cavidad hundida), liso, sin bolitas.
+Uso: python -I tools/juegos/propuesta_acoplamiento.py   → tools/juegos/out/propuesta/aco_hoy.png, aco_propuesta.png (v1) y aco_v2.png"""
 import os, sys, math, json
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -84,18 +88,18 @@ def chevron(px=54):
         for (cx, cy) in ((3, 6), (9, 12), (15, 6)): d.ellipse(((cx - 1.5) * s * ss, (cy - 1.5) * s * ss, (cx + 1.5) * s * ss, (cy + 1.5) * s * ss), fill=255)
     return np.pad(dibuja(px, px, dib), 12)
 
-def pieza_en_pantalla(face_sprite, cells, angulo, flip):
+def pieza_en_pantalla(face_sprite, cells, angulo, flip, bp=BP):
     """El sprite de la cara (premultiplicado, fila 0 ABAJO) visto en pantalla (rotado, espejado) → RGBA premultiplicado con fila 0 ARRIBA."""
-    return resample(face_sprite, BP / PX, angulo, flip)[::-1]
+    return resample(face_sprite, bp / PX, angulo, flip)[::-1]
 
 def canvas_de(a): return a.shape[:2]
 
 def sobre_pantalla(img, rgba, cx, cy):
     h, w = rgba.shape[:2]; pega(img, rgba, cx - w // 2, cy - h // 2)
 
-def compone_modulo(cara, P, angulo=225.0, flip=True, canto_dp=5.0):
+def compone_modulo(cara, P, angulo=225.0, flip=True, canto_dp=5.0, bp=BP):
     """El módulo como plasticina: la cara (sprite del camino 2) vista en pantalla con grano a mano, un celeste más cálido y la luz fija mate (sin franja de brillo), el CANTO hacia abajo en la pantalla y la sombra de contacto. Devuelve (RGBA premultiplicado, alfa de la cara)."""
-    pan = pieza_en_pantalla(cara.copy(), P, angulo, flip); alfa = pan[..., 3].copy()
+    pan = pieza_en_pantalla(cara.copy(), P, angulo, flip, bp); alfa = pan[..., 3].copy()
     lut_int = np.array([134, 213, 242]) / 255.0; objetivo = np.array([124, 212, 246]) / 255.0                 # el interior del perfil y el celeste cálido que se quiere
     warm = (objetivo / lut_int)[None, None, :]
     pan[..., :3] = np.minimum(pan[..., :3] * warm * grano(alfa.shape, 7, 0.010, 0.9, 0.022)[..., None], pan[..., 3:4])
@@ -104,12 +108,77 @@ def compone_modulo(cara, P, angulo=225.0, flip=True, canto_dp=5.0):
     s, c = canto_y_sombra(alfa, canto_dp * DP, base_c, sombra_alfa=0.52)
     return over(over(s, c), cara_m), alfa
 
+def centros_en_pantalla(P, angulo=225.0, flip=True, bp=BP):
+    """El centro (columna, fila; fila 0 ARRIBA) de cada cuadrito de la pieza [P] en la imagen de `pieza_en_pantalla`: el mismo giro y espejo con que se muestrea el sprite, aplicados hacia adelante."""
+    scale = bp / PX; n = int(math.ceil(384 * scale * 1.45)); n += n % 2
+    th = math.radians(angulo); c, s_ = math.cos(th), math.sin(th); ccx, ccy, cw, ch = piece_box(P); out = []
+    for (cx, cy) in sorted(P):
+        u = (cx - ccx) * PX; v = (cy - ccy) * PX
+        xi = -u if flip else u; yi = v
+        X = scale * (c * xi - s_ * yi); Y = scale * (s_ * xi + c * yi)
+        out.append((round((n - 1) / 2.0 + X, 4), round((n - 1) / 2.0 - Y, 4)))                                  # redondeados a 1e-4: un centro justo en x,5 no debe saltar de píxel por 1e-13 según el espejo
+    return out
+
+def bolita(r_px, color, semilla=1, pad=10):
+    """Una bolita de plasticina de radio [r_px] (RGBA premultiplicado, lienzo cuadrado de 2 r + 2 pad): sombreado ISÓTROPO, solo función de la distancia al centro: brillo centrado, borde parejo y un anillo de oclusión en el filo. Sin ninguna luz que venga de un lado."""
+    n = int(2 * r_px + 2 * pad); yy, xx = np.mgrid[0:n, 0:n]; c = (n - 1) / 2.0; rho = np.hypot(xx - c, yy - c) / r_px
+    a = np.clip(r_px + 0.5 - np.hypot(xx - c, yy - c), 0, 1)
+    m = 1.12 - 0.50 * np.clip(rho, 0, 1) ** 2 - 0.18 * np.clip((rho - 0.78) / 0.22, 0, 1) ** 2                   # centro 1,12 → filo ~0,44
+    v = grano((n, n), semilla, 0.012, 0.9, 0.0)
+    rgb = np.clip(np.asarray(color)[None, None, :] * (m * v)[..., None], 0, 1)
+    return np.concatenate([rgb * a[..., None], a[..., None]], axis=2), a
+
+def almohada(alfa, ancho_dp=9.0, minimo=0.52):
+    """El sombreado ISÓTROPO de un módulo inflado: sube de [minimo] en el borde a 1 en el centro con un perfil de cuarto de círculo (el canto redondeado), solo de la distancia al borde de la silueta."""
+    d = blur(distancia_adentro(alfa), 1.2); e = np.clip(d / (ancho_dp * DP), 0, 1)
+    return minimo + (1.0 - minimo) * np.sqrt(np.clip(1 - (1 - e) ** 2, 0, 1))
+
+def compone_modulo_v2(cara, P, angulo=225.0, flip=True, canto_dp=5.0, bp=BP, bolitas=True, ancho_almohada_dp=9.0):
+    """El módulo v2 (ver la cabecera): la silueta EXACTA de la cara (la del sprite del camino 2: no cambia), el sombreado de almohada (isótropo), las bolitas, el canto hacia abajo en la pantalla y las sombras de contacto. Devuelve (RGBA premultiplicado, alfa de la cara, centros de las bolitas)."""
+    scale = bp / PX
+    pan = resample(cara.copy(), scale, angulo, flip)[::-1]; alfa = pan[..., 3].copy()
+    objetivo = np.array([124, 212, 246]) / 255.0                                                              # el celeste cálido
+    pill = almohada(alfa, ancho_almohada_dp)
+    gr = grano(alfa.shape, 7, 0.012, 0.9, 0.030)                                                              # la variación a mano
+    tono = gr[..., None]
+    rgb = np.clip(objetivo[None, None, :] * (pill * 1.04)[..., None] * tono, 0, 1)
+    cara_m = np.concatenate([rgb * alfa[..., None], alfa[..., None]], axis=2)
+    cara_m = aplica_luz(cara_m, arriba=0.16, abajo=0.15)
+    centros = centros_en_pantalla(P, angulo, flip, bp)
+    # las bolitas y su sombrita de contacto (en la pantalla, hacia abajo): solo sobre la cara
+    if bolitas:
+        r = 0.33 * bp
+        sombra = np.zeros_like(alfa); cuerpo = np.zeros(alfa.shape + (4,))
+        for k, (cx, cy) in enumerate(centros):
+            b, ab = bolita(r, objetivo * 1.03, semilla=int(round(cx)) * 7 + int(round(cy)) * 13); h = b.shape[0]; x0 = int(round(cx - h / 2.0)); y0 = int(round(cy - h / 2.0))
+            disco = np.zeros_like(alfa); ys0, xs0 = max(0, y0), max(0, x0); ys1, xs1 = min(alfa.shape[0], y0 + h), min(alfa.shape[1], x0 + h)
+            disco[ys0:ys1, xs0:xs1] = ab[ys0 - y0:ys1 - y0, xs0 - x0:xs1 - x0]
+            sombra = np.maximum(sombra, blur(shift(disco, int(round(2.4 * DP))), 2.2) * 0.42)
+            yy, xx = np.mgrid[0:alfa.shape[0], 0:alfa.shape[1]]; rho = np.hypot(xx - cx, yy - cy) / r
+            anillo = np.clip((1.42 - rho) / 0.42, 0, 1) * (rho >= 0.9) * 0.26                                      # un anillo de oclusión ISÓTROPO alrededor de la base: la bolita está asentada en la cara
+            sombra = np.maximum(sombra, anillo)
+            pega(cuerpo, b, x0, y0)
+        sh = np.concatenate([np.array([0.03, 0.10, 0.26])[None, None, :] * (sombra * alfa)[..., None], (sombra * alfa)[..., None]], axis=2)
+        cara_m = over(cara_m, sh); cara_m = over(cara_m, cuerpo)
+    base_c = np.array([54, 128, 186]) / 255.0
+    s_, c_ = canto_y_sombra(alfa, canto_dp * DP, base_c, sombra_alfa=0.52)
+    return over(over(s_, c_), cara_m), alfa, centros
+
+def modulo_suelto(version, bp=BP, fondo=(8, 8, 28), cara=None, P=None, angulo=225.0, flip=True):
+    """El módulo de la v1 (1) o la v2 (2) a [bp] px por bloque sobre un fondo liso de noche: para los recortes y las medidas a otro tamaño de bloque (47 u) y con otras piezas (por omisión, la L de la captura)."""
+    if P is None:
+        L4 = pick_pieces()['L4']; P = normalize([(-x, -y) for x, y in L4])
+    cara = cara if cara is not None else perfil_cara(P)
+    capa = (compone_modulo_v2(cara, P, angulo, flip, bp=bp)[0]) if version == 2 else compone_modulo(cara, P, angulo, flip, bp=bp)[0]
+    img = np.zeros(capa.shape[:2] + (3,)) + (np.array(fondo) / 255.0)[None, None, :]
+    return img * (1 - capa[..., 3:4]) + capa[..., :3]
+
 def perfil_cara(P, relieve=3.0):
     """La cara (sprite 384² del camino 2, fila 0 abajo) de la pieza [P] con el relieve pedido."""
     mod = Maestras(RENDER, 'mod', 0); pm = PerfilSDF(*mod.perfil(-1.0, 0.3))
     return compone_c2(P, pm.con_relieve(relieve), aa_px=1.0)
 
-def construye(estado='idle', flip=True, angulo=225.0, relieve=3.0, canto_dp=4.5, quitar_vidrio=True):
+def construye(estado='idle', flip=True, angulo=225.0, relieve=3.0, canto_dp=4.5, quitar_vidrio=True, v2=False):
     real = carga(os.path.join(CAPT, '02-respuesta.png')); llegada = carga(os.path.join(CAPT, '01-llegada.png'))
     L4 = pick_pieces()['L4']; P = normalize([(-x, -y) for x, y in L4])                  # la pieza de la captura: la L girada 180° (el hueco se ve como un «7»)
     # -------- el estudio: la cara con el perfil del camino 2
@@ -157,13 +226,14 @@ def construye(estado='idle', flip=True, angulo=225.0, relieve=3.0, canto_dp=4.5,
     b1, x1, y1 = boton('losa_md_lima', 'Encaja', icono_encaja, 285, 2031); pega(img, b1, x1, y1)
     b2, x2, y2 = boton('losa_md_lila', 'Espejo', icono_espejo, 795, 2031); pega(img, b2, x2, y2)
     # -------- el módulo
-    capa_mod, _ = compone_modulo(cara, P, angulo, flip)
+    capa_mod = compone_modulo_v2(cara, P, angulo, flip)[0] if v2 else compone_modulo(cara, P, angulo, flip)[0]
     sobre_pantalla(img, capa_mod, MOD_C[0], MOD_C[1])
     return img, real
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     img, real = construye()
+    Image.fromarray((np.clip(construye(v2=True)[0], 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, 'aco_v2.png'))
     Image.fromarray((np.clip(img, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, 'aco_propuesta.png'))
     Image.fromarray((np.clip(real, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, 'aco_hoy.png'))
     print('listo', img.shape)
