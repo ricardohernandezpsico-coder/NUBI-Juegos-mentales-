@@ -403,6 +403,10 @@ patrón; ángulos libres; luceros que suenan) y no se dice que «ninguna app gir
 Código: `Games/Secuencia/RastroContract.cs`, `RastroSession.cs` (`RastroTally`) y `RastroBoard.cs` (reglas y medidas, con pruebas), `app/.../data/Trail.kt`
 (lectura, con pruebas), pantalla en `GameResultScreen`. Ficha técnica: `docs/diseno-rastro-de-luz.md`.
 
+**Qué pasó con el Primer vuelo (Tarea 132, 18-oct).** Desde la Tarea 132 el juego 1 del inicio (Rastro de luz) se juega ANTES de preguntar la edad: corre con el objetivo adulto (80 %) para todas las edades y con el arranque suave (nivel 2), y la edad se pregunta después de su tarjeta.
+Para una persona mayor el objetivo de ese juego es 80 % en vez de 85 %: la escalera la sostiene un escalón más arriba y el `end_rating` de esa primera partida queda **ligeramente más alto**; la diferencia esperada es ≈ 0,02 (≤ 0,03: (logit 0,85 − logit 0,80) / (pendiente × 16 niveles) = (1,73 − 1,39) / 16) y **no se corrige**: es menor que el ruido de
+una partida corta y el DDA la absorbe en la primera partida normal («el DDA lo corrige en la primera partida de cada juego», `Baseline.kt`). Lo medido es el rating propio del juego (la escalera es la misma para todas las edades) y la edad entra al LEER, así que al saberla no hay nada que recalcular. Las partidas normales usan la edad desde la primera.
+
 ## Tinta o Palabra («Dos orillas»): "Cuánto te frenó la palabra" y "Cambiar de orilla te costó"
 
 Ficha completa: [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md). Dos diferencias de tiempo EN ESTA PARTIDA, medidas sobre los aciertos:

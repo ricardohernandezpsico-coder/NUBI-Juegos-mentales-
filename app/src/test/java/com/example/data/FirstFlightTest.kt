@@ -26,9 +26,10 @@ class FirstFlightTest {
 
   @Test
   fun `el recorrido completo tiene los 18 pasos en el orden aprobado`() {
+    // Tarea 132 («Juega primero»): el primer juego va antes de la edad y las metas.
     assertEquals(
       listOf(
-        "HOLA", "NOMBRE", "EDAD", "JUEGO_1", "TARJETA_1", "METAS", "DATO", "JUEGO_2", "TARJETA_2", "COLOR",
+        "HOLA", "NOMBRE", "JUEGO_1", "TARJETA_1", "EDAD", "METAS", "DATO", "JUEGO_2", "TARJETA_2", "COLOR",
         "JUEGO_3", "TARJETA_3", "DIAS", "JUEGO_4", "TARJETA_4", "PUNTO", "AVISO", "CAMINO"
       ),
       FirstFlight.steps(FlightMode.FULL).map { it.name }
@@ -37,9 +38,30 @@ class FirstFlightTest {
   }
 
   @Test
-  fun `antes del primer juego solo van el nombre y la edad`() {
+  fun `antes del primer juego solo va el nombre`() {
     val before = FirstFlight.steps(FlightMode.FULL).takeWhile { !it.isGame }
-    assertEquals(listOf(FlightStep.HOLA, FlightStep.NOMBRE, FlightStep.EDAD), before)
+    assertEquals(listOf(FlightStep.HOLA, FlightStep.NOMBRE), before)
+    // y el orden del enum es el del recorrido (el sentido del deslizamiento sale de él)
+    assertEquals(FirstFlight.steps(FlightMode.FULL), FlightStep.entries.toList())
+  }
+
+  @Test
+  fun `la edad se pregunta despues de la primera tarjeta y solo si no se sabe`() {
+    val card = full(FlightStep.TARJETA_1).copy(measured = mapOf("secuencia" to 0.5f))
+    assertEquals("sin edad, después de la tarjeta se pregunta", FlightStep.EDAD, FirstFlight.next(card)!!.step)
+    assertEquals("con la edad sabida, se salta", FlightStep.METAS, FirstFlight.next(card.copy(age = AgeBand.ADULT))!!.step)
+    assertEquals(FlightStep.METAS, FirstFlight.next(full(FlightStep.EDAD).copy(age = AgeBand.SENIOR))!!.step)
+    assertTrue("sin edad el recorrido pasa por EDAD", FlightStep.EDAD in walk(full()))
+    assertFalse("con la edad sabida desde el inicio no pasa por EDAD", FlightStep.EDAD in walk(full().copy(age = AgeBand.ADULT)))
+    // y «Atrás» desde la pregunta vuelve a la tarjeta
+    assertEquals(FlightStep.TARJETA_1, FirstFlight.back(full(FlightStep.EDAD))!!.step)
+  }
+
+  @Test
+  fun `un recorrido guardado con el orden viejo y la edad respondida no la vuelve a preguntar`() {
+    // quien quedó guardado en METAS con la edad ya respondida (el orden viejo la preguntaba antes del juego 1): «Atrás» cae en la tarjeta, no en EDAD
+    val old = full(FlightStep.METAS).copy(name = "Ana", age = AgeBand.SENIOR, measured = mapOf("secuencia" to 0.5f))
+    assertEquals(FlightStep.TARJETA_1, FirstFlight.back(old)!!.step)
   }
 
   @Test
@@ -91,8 +113,9 @@ class FirstFlightTest {
 
   @Test
   fun `atras vuelve un paso y nunca cae en el medio de un juego`() {
-    assertEquals(FlightStep.EDAD, FirstFlight.back(full(FlightStep.TARJETA_1))!!.step)
-    assertEquals(FlightStep.TARJETA_1, FirstFlight.back(full(FlightStep.METAS))!!.step)
+    assertEquals("antes del primer juego, solo el nombre", FlightStep.NOMBRE, FirstFlight.back(full(FlightStep.TARJETA_1))!!.step)
+    assertEquals(FlightStep.EDAD, FirstFlight.back(full(FlightStep.METAS))!!.step)
+    assertEquals("con la edad ya respondida se salta", FlightStep.TARJETA_1, FirstFlight.back(full(FlightStep.METAS).copy(age = AgeBand.ADULT))!!.step)
     assertEquals(FlightStep.DATO, FirstFlight.back(full(FlightStep.JUEGO_2))!!.step)
     assertNull(FirstFlight.back(full(FlightStep.HOLA)))
     assertNull(FirstFlight.back(FlightState(FlightMode.GAMES, FlightStep.JUEGO_1)))
@@ -138,6 +161,81 @@ class FirstFlightTest {
     assertEquals(1, lastMinutes)
     // Al empezar, «unos 5 minutos» como dice Nubi.
     assertEquals(5, FirstFlight.minutesLeft(full()))
+  }
+
+  // ---- las farolas de etapa (Tarea 132, A4)
+
+  private fun lit(s: FlightState) = FirstFlight.stations(s).map { it.lit }
+  private fun text(step: FlightStep) = FirstFlight.stationText(full(step))
+
+  @Test
+  fun `la primera farola esta encendida desde el primer paso`() {
+    val s = FirstFlight.stations(full())
+    assertEquals(listOf("Empezar", "Memoria", "Atención", "Razonamiento", "Lenguaje", "Tu punto de partida"), s.map { it.label })
+    assertEquals("abrir Nubi es el primer paso", listOf(true, false, false, false, false, false), s.map { it.lit })
+    assertEquals("la actual lleva el aro", listOf(true, false, false, false, false, false), s.map { it.current })
+    assertEquals(1, FirstFlight.stations(full(FlightStep.NOMBRE)).count { it.lit })
+  }
+
+  @Test
+  fun `las farolas avanzan con las etapas y volver atras no apaga ninguna`() {
+    // se juegan los 4 juegos en orden; en cada paso se mira lo que enciende «Continuar» y lo que deja «Atrás»
+    var s = full()
+    var prevLit = lit(s)
+    var prevStage = FirstFlight.stationIndex(s)
+    val seenStages = mutableSetOf(prevStage)
+    while (true) {
+      val back = FirstFlight.back(s)
+      if (back != null) assertEquals("«Atrás» desde ${s.step} apagó o encendió una farola", lit(s), lit(back))
+      s = if (s.step.isGame) FirstFlight.withResult(s, s.gameId(s.step.game!!), 0.5f, null) else FirstFlight.next(s) ?: break
+      val now = lit(s)
+      for (i in now.indices) assertTrue("en ${s.step} se apagó la farola $i", now[i] || !prevLit[i])
+      assertTrue("la etapa retrocedió en ${s.step}", FirstFlight.stationIndex(s) >= prevStage)
+      prevLit = now
+      prevStage = FirstFlight.stationIndex(s)
+      seenStages += prevStage
+    }
+    assertEquals("pasa por las seis etapas", (0..5).toSet(), seenStages)
+    // con el juego 1 medido, la farola de Memoria está encendida; sin él, no
+    assertEquals(listOf(true, true, false, false, false, false), lit(full(FlightStep.TARJETA_1).copy(measured = mapOf("secuencia" to 0.5f))))
+    assertEquals(listOf(true, false, false, false, false, false), lit(full(FlightStep.JUEGO_1)))
+    // la última, cuando el punto de partida se guardó
+    assertEquals(listOf(true, true, true, true, true, true), lit(full(FlightStep.AVISO).copy(measured = BaselinePlan.steps.associate { it.gameId to 0.5f }, applied = true)))
+  }
+
+  @Test
+  fun `un juego dejado para despues enciende su farola igual`() {
+    val s = full(FlightStep.COLOR).copy(skipped = setOf("freno", "aterrizaje", "meteoros"), measured = mapOf("secuencia" to 0.5f))
+    assertEquals("la etapa se pasó: nada se castiga", listOf(true, true, true, true, true, false), lit(s))
+  }
+
+  @Test
+  fun `el texto dice el paso N de 6 y la etapa`() {
+    assertEquals("Ya diste el primer paso", text(FlightStep.HOLA))
+    assertEquals("Ya diste el primer paso", text(FlightStep.NOMBRE))
+    for (step in listOf(FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO)) assertEquals("Paso 2 de 6 · Memoria", text(step))
+    for (step in listOf(FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.COLOR)) assertEquals("Paso 3 de 6 · Atención", text(step))
+    for (step in listOf(FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS)) assertEquals("Paso 4 de 6 · Razonamiento", text(step))
+    for (step in listOf(FlightStep.JUEGO_4, FlightStep.TARJETA_4)) assertEquals("Paso 5 de 6 · Lenguaje", text(step))
+    for (step in listOf(FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO)) assertEquals("Paso 6 de 6 · Tu punto de partida", text(step))
+    // nunca promete tiempo
+    for (step in FirstFlight.steps(FlightMode.FULL)) assertFalse(text(step), text(step).lowercase().contains("minuto"))
+  }
+
+  @Test
+  fun `la evaluacion repetida tiene 4 farolas y Listo`() {
+    val s = FlightState(FlightMode.GAMES, FlightStep.JUEGO_1)
+    assertEquals(listOf("Memoria", "Atención", "Razonamiento", "Lenguaje", "Listo"), FirstFlight.stations(s).map { it.label })
+    assertEquals(listOf(false, false, false, false, false), lit(s))
+    assertEquals(0, FirstFlight.stationIndex(s))
+    assertEquals("Juego 1 de 4 · Memoria", FirstFlight.stationText(s))
+    assertEquals("Juego 2 de 4 · Atención", FirstFlight.stationText(s.copy(step = FlightStep.JUEGO_2)))
+    assertEquals("Juego 4 de 4 · Lenguaje", FirstFlight.stationText(s.copy(step = FlightStep.TARJETA_4)))
+    val punto = s.copy(step = FlightStep.PUNTO, measured = BaselinePlan.steps.associate { it.gameId to 0.5f })
+    assertEquals(4, FirstFlight.stationIndex(punto))
+    assertEquals("Listo · tu punto de partida", FirstFlight.stationText(punto))
+    assertEquals(listOf(true, true, true, true, false), lit(punto))
+    assertEquals(listOf(true, true, true, true, true), lit(punto.copy(applied = true)))
   }
 
   @Test

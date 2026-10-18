@@ -43,8 +43,11 @@ object BaselinePlan {
   /** El juego de la evaluación de esa área. */
   fun stepFor(domain: DomainType): Step = steps.first { it.domain == domain }
 
-  /** Nivel (1-5) con que arrancan los juegos de la evaluación: el medio de la escala, algo más suave en mayores. */
-  fun startLevel(age: AgeBand?): Int = if (age == AgeBand.SENIOR) 2 else 3
+  /**
+   * Nivel (1-5) con que arrancan los juegos de la evaluación: el medio de la escala, algo más suave en mayores y **también sin edad conocida** (Tarea 132: el primer juego se juega ANTES de preguntar la edad; empezar fácil no daña a nadie
+   * y el DDA sube en 2-3 ensayos).
+   */
+  fun startLevel(age: AgeBand?): Int = if (age == null || age == AgeBand.SENIOR) 2 else 3
 }
 
 /** Resultado de la evaluación: rating 0..1 por dominio; [measured] = los que se midieron (el resto se estima). */

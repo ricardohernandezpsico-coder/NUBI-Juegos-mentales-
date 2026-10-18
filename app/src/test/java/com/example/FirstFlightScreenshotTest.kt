@@ -59,17 +59,28 @@ class FirstFlightScreenshotTest {
   @Test
   fun bienvenida() = shot("bienvenida", FlightState(FlightMode.FULL, FlightStep.HOLA))
 
+  /** La pregunta de la edad: desde la Tarea 132 va DESPUÉS de la primera tarjeta, con el juego 1 ya medido. */
   @Test
   fun una_pregunta() = shot(
     "pregunta",
-    FlightState(FlightMode.FULL, FlightStep.METAS, name = "Ana", age = AgeBand.ADULT, goals = setOf(DomainType.MEMORIA, DomainType.RAZONAMIENTO))
+    FlightState(FlightMode.FULL, FlightStep.EDAD, name = "Ana", measured = mapOf("secuencia" to 0.62f), phrases = mapOf("secuencia" to "Repetiste bien un rastro de 5 luces."))
+  )
+
+  @Test
+  fun pregunta_de_metas() = shot(
+    "metas",
+    FlightState(FlightMode.FULL, FlightStep.METAS, name = "Ana", age = AgeBand.ADULT, goals = setOf(DomainType.MEMORIA, DomainType.RAZONAMIENTO), measured = mapOf("secuencia" to 0.62f))
   )
 
   @Test
   fun pregunta_de_color() = shot("color", FlightState(FlightMode.FULL, FlightStep.COLOR, color = ColorVision.DIFICULTAD))
 
+  /** El juego 1, sin edad todavía (Tarea 132): antes del primer juego solo el nombre. */
   @Test
-  fun antes_de_un_juego() = shot("juego", FlightState(FlightMode.FULL, FlightStep.JUEGO_2, measured = mapOf("secuencia" to 0.62f)))
+  fun antes_de_un_juego() = shot("juego", FlightState(FlightMode.FULL, FlightStep.JUEGO_1, name = "Ana"))
+
+  @Test
+  fun antes_del_segundo_juego() = shot("juego2", FlightState(FlightMode.FULL, FlightStep.JUEGO_2, name = "Ana", age = AgeBand.ADULT, measured = mapOf("secuencia" to 0.62f)))
 
   @Test
   fun tarjeta_puso_a_prueba() = shot(

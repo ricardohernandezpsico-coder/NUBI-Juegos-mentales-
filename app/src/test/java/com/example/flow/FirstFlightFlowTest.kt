@@ -79,14 +79,23 @@ class FirstFlightFlowTest {
     TestSupport.awaitUntil(message = "El resultado de $id no llevó a su tarjeta") { vm.flight.value?.step == FlightStep.cardStep(index) }
   }
 
+  /** Hola y el nombre; desde la Tarea 132 («Juega primero») sigue DIRECTO el juego 1: la edad se pregunta después de su tarjeta. */
   private fun answerUntilFirstGame(vm: NeuroVidaViewModel) {
     vm.flightContinue() // HOLA
     vm.flightSetName("Ana")
     vm.flightContinue() // NOMBRE
+    assertEquals(FlightStep.JUEGO_1, vm.flight.value!!.step)
+    assertNull("la edad todavía no se preguntó", vm.flight.value!!.age)
+  }
+
+  /** De la tarjeta del juego 1: «Continuar» pide la edad, se responde y sigue METAS. */
+  private fun answerAgeAfterFirstCard(vm: NeuroVidaViewModel) {
+    vm.flightContinue() // TARJETA_1 -> EDAD
+    assertEquals(FlightStep.EDAD, vm.flight.value!!.step)
     vm.flightSetAge(AgeBand.SENIOR)
     TestSupport.awaitUntil(message = "La edad no quedó en el perfil") { vm.userSettings.value.ageBand == AgeBand.SENIOR }
-    vm.flightContinue() // EDAD
-    assertEquals(FlightStep.JUEGO_1, vm.flight.value!!.step)
+    vm.flightContinue() // EDAD -> METAS
+    assertEquals(FlightStep.METAS, vm.flight.value!!.step)
   }
 
   @Test
@@ -95,17 +104,20 @@ class FirstFlightFlowTest {
     assertNull("la primera vez no hay nada guardado todavía", vm.flight.value)
     assertNull(vm.userSettings.value.ageBand)
     answerUntilFirstGame(vm)
-    // El inicio completo abre SIEMPRE el tutorial guiado y la versión corta.
+    // El inicio completo abre SIEMPRE el tutorial guiado y la versión corta, y el juego 1 arranca suave (sin edad conocida todavía: nivel 2).
     vm.flightPlay(0)
     assertTrue(vm.activeGame.value!!.tutorial)
     assertEquals(1, vm.activeGame.value!!.assessmentStep)
+    assertEquals("sin edad el arranque es el suave", 2, vm.activeGame.value!!.level)
+    assertNull("el juego 1 se lanza sin edad en el perfil (la pantalla la resuelve como adulto)", vm.userSettings.value.ageBand)
     vm.onUnityLaunched("L0")
     vm.onUnityResult(resultFor("secuencia"), "L0")
     TestSupport.awaitUntil { vm.flight.value?.step == FlightStep.TARJETA_1 }
     assertEquals("Repetiste bien un rastro de 5 luces.", vm.flight.value!!.phrases["secuencia"])
     assertNull("el juego del inicio no es una partida de la sesión diaria", vm.lastResult.value)
 
-    vm.flightContinue() // TARJETA_1 -> METAS
+    answerAgeAfterFirstCard(vm) // TARJETA_1 -> EDAD -> METAS
+    assertEquals("la edad respondida después del juego 1 queda en el recorrido", AgeBand.SENIOR, vm.flight.value!!.age)
     vm.flightToggleGoal(DomainType.LENGUAJE)
     vm.flightToggleGoal(DomainType.MEMORIA)
     vm.flightContinue() // METAS -> DATO
@@ -162,7 +174,7 @@ class FirstFlightFlowTest {
     val vm = newViewModel()
     answerUntilFirstGame(vm)
     play(vm, 0)
-    vm.flightContinue(); vm.flightToggleGoal(DomainType.ATENCION); vm.flightContinue() // METAS
+    answerAgeAfterFirstCard(vm); vm.flightToggleGoal(DomainType.ATENCION); vm.flightContinue() // EDAD y METAS
     vm.flightContinue() // DATO -> JUEGO_2
     assertEquals(FlightStep.JUEGO_2, vm.flight.value!!.step)
     vm.flightSkipGames()
@@ -186,7 +198,7 @@ class FirstFlightFlowTest {
     val first = newViewModel()
     answerUntilFirstGame(first)
     play(first, 0)
-    first.flightContinue() // -> METAS
+    answerAgeAfterFirstCard(first) // -> METAS
     first.flightToggleGoal(DomainType.RAZONAMIENTO)
 
     val second = newViewModel() // el proceso murió y volvió
@@ -209,7 +221,7 @@ class FirstFlightFlowTest {
     val first = newViewModel()
     answerUntilFirstGame(first)
     play(first, 0)
-    first.flightContinue(); first.flightToggleGoal(DomainType.MEMORIA); first.flightContinue(); first.flightContinue()
+    answerAgeAfterFirstCard(first); first.flightToggleGoal(DomainType.MEMORIA); first.flightContinue(); first.flightContinue()
     play(first, 1)
     first.flightContinue() // TARJETA_2 -> COLOR
     first.flightSetColorVision(ColorVision.NO_SE); first.flightContinue()
@@ -235,7 +247,7 @@ class FirstFlightFlowTest {
     val first = newViewModel()
     answerUntilFirstGame(first)
     play(first, 0)
-    first.flightContinue(); first.flightToggleGoal(DomainType.MEMORIA); first.flightContinue(); first.flightContinue() // -> JUEGO_2
+    answerAgeAfterFirstCard(first); first.flightToggleGoal(DomainType.MEMORIA); first.flightContinue(); first.flightContinue() // -> JUEGO_2
     assertEquals(FlightStep.JUEGO_2, first.flight.value!!.step)
     first.flightPlay(1)
     first.onUnityLaunched("L1")
@@ -248,6 +260,62 @@ class FirstFlightFlowTest {
     TestSupport.awaitUntil(message = "El resultado pendiente no llevó a la tarjeta") { second.flight.value?.step == FlightStep.TARJETA_2 }
     assertEquals(0.55f, second.flight.value!!.measured["freno"]!!, 1e-3f)
     assertEquals(setOf("secuencia", "freno"), second.flight.value!!.measured.keys)
+  }
+
+  @Test
+  fun `si Android cierra la app en el juego 1, antes de la edad, el resultado sigue a la tarjeta y despues pide la edad`() {
+    val first = newViewModel()
+    answerUntilFirstGame(first)
+    first.flightPlay(0)
+    first.onUnityLaunched("L0") // Unity al frente; la app muere sin que nadie haya respondido la edad
+
+    val second = newViewModel()
+    assertNull(second.activeGame.value)
+    assertEquals(FlightStep.JUEGO_1, second.flight.value!!.step)
+    assertNull(second.flight.value!!.age)
+    assertNull("el relanzamiento usa el perfil sin edad: adulto", second.userSettings.value.ageBand)
+    second.onUnityResult(resultFor("secuencia"), "L0")
+    TestSupport.awaitUntil(message = "El resultado no llevó a la tarjeta del juego 1") { second.flight.value?.step == FlightStep.TARJETA_1 }
+    assertEquals(setOf("secuencia"), second.flight.value!!.measured.keys)
+    second.flightContinue()
+    assertEquals("después de la tarjeta se pide la edad", FlightStep.EDAD, second.flight.value!!.step)
+    second.flightSetAge(AgeBand.ADULT)
+    second.flightContinue()
+    assertEquals(FlightStep.METAS, second.flight.value!!.step)
+  }
+
+  @Test
+  fun `si Android cierra la app en la pregunta de la edad, vuelve ahi con el juego 1 ya medido`() {
+    val first = newViewModel()
+    answerUntilFirstGame(first)
+    play(first, 0)
+    first.flightContinue() // TARJETA_1 -> EDAD
+    assertEquals(FlightStep.EDAD, first.flight.value!!.step)
+
+    val second = newViewModel() // el proceso murió y volvió
+    val s = second.flight.value!!
+    assertEquals(FlightStep.EDAD, s.step)
+    assertEquals(setOf("secuencia"), s.measured.keys)
+    assertNull(s.age)
+    // sigue sin pedir otra vez el juego 1 ni el nombre
+    second.flightSetAge(AgeBand.UNDER_18)
+    second.flightContinue()
+    assertEquals(FlightStep.METAS, second.flight.value!!.step)
+  }
+
+  @Test
+  fun `el punto de partida usa la edad respondida despues del juego 1`() {
+    val vm = newViewModel()
+    answerUntilFirstGame(vm)
+    play(vm, 0)
+    answerAgeAfterFirstCard(vm)
+    val s = vm.flight.value!!
+    assertEquals(AgeBand.SENIOR, s.age)
+    // la medida del juego es el rating propio del juego: la edad entra al LEER (Skill.progress), no al medir
+    val rows = FirstFlight.startingPoint(s, s.age ?: vm.userSettings.value.ageBand)
+    val memoria = rows.first { it.domain == DomainType.MEMORIA }
+    assertTrue(memoria.measured)
+    assertEquals(com.example.data.Skill.progress("secuencia", s.measured.getValue("secuencia"), AgeBand.SENIOR), memoria.progress, 1e-6f)
   }
 
   @Test
@@ -393,6 +461,21 @@ class FirstFlightFlowTest {
     assertNull(FlightStore.decode(null))
     // Un paso que no es de ese recorrido (otra versión de la app) también se descarta.
     assertNull(FlightStore.decode(FlightStore.encode(s.copy(mode = FlightMode.GAMES, step = FlightStep.JUEGO_1)).replace("JUEGO_1", "NOMBRE")))
+  }
+
+  @Test
+  fun `un recorrido guardado con el orden viejo se lee igual y no vuelve a preguntar la edad`() {
+    // Tarea 132: antes la edad se preguntaba ANTES del juego 1. Lo guardado se lee por NOMBRE de paso, así que el orden nuevo no rompe nada.
+    val old = FlightState(mode = FlightMode.FULL, step = FlightStep.METAS, name = "Ana", age = AgeBand.SENIOR, measured = mapOf("secuencia" to 0.5f))
+    assertEquals(old, FlightStore.decode(FlightStore.encode(old)))
+    assertEquals(FlightStep.EDAD, FlightStore.decode(FlightStore.encode(FlightState(FlightMode.FULL, FlightStep.EDAD, name = "Ana", measured = mapOf("secuencia" to 0.5f))))!!.step)
+    FlightStore.save(app, old)
+    val vm = newViewModel()
+    assertEquals(FlightStep.METAS, vm.flight.value!!.step)
+    vm.flightBack()
+    assertEquals("la edad ya respondida no se vuelve a preguntar", FlightStep.TARJETA_1, vm.flight.value!!.step)
+    vm.flightContinue()
+    assertEquals(FlightStep.METAS, vm.flight.value!!.step)
   }
 
   @Test

@@ -29,11 +29,15 @@ enum class ColorVision(val label: String) {
 
 enum class FlightMode { FULL, GAMES }
 
-/** Los pasos del recorrido. [game] = a qué juego (0..3 de [BaselinePlan.steps]) pertenece el paso de juego o de tarjeta. */
+/**
+ * Los pasos del recorrido. [game] = a qué juego (0..3 de [BaselinePlan.steps]) pertenece el paso de juego o de tarjeta.
+ * Desde la Tarea 132 («Juega primero», A2) el primer juego va ANTES de la edad y las metas: antes del primer juego solo el nombre (opcional).
+ * El orden del enum solo decide el sentido del deslizamiento; lo guardado se lee por NOMBRE (`FlightStore`), así que un recorrido guardado con el orden viejo sigue leyéndose.
+ */
 enum class FlightStep(val game: Int? = null) {
-  HOLA, NOMBRE, EDAD,
+  HOLA, NOMBRE,
   JUEGO_1(0), TARJETA_1(0),
-  METAS, DATO,
+  EDAD, METAS, DATO,
   JUEGO_2(1), TARJETA_2(1),
   COLOR,
   JUEGO_3(2), TARJETA_3(2),
@@ -86,8 +90,8 @@ object FirstFlight {
   const val DEFAULT_DAYS = 4
 
   private val full = listOf(
-    FlightStep.HOLA, FlightStep.NOMBRE, FlightStep.EDAD,
-    FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.METAS, FlightStep.DATO,
+    FlightStep.HOLA, FlightStep.NOMBRE,
+    FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO,
     FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.COLOR,
     FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS,
     FlightStep.JUEGO_4, FlightStep.TARJETA_4, FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO
@@ -104,7 +108,8 @@ object FirstFlight {
 
   /**
    * El paso que sigue. Un juego que ya se midió no se vuelve a jugar (de su paso de juego se pasa a su tarjeta) y uno que se
-   * dejó para después se salta junto con su tarjeta. null = era el último paso.
+   * dejó para después se salta junto con su tarjeta. **La edad se pregunta UNA sola vez:** [FlightStep.EDAD] se salta cuando ya se sabe
+   * (quien viene de un recorrido guardado con el orden viejo ya la respondió; en adelante se cambia en Ajustes). null = era el último paso.
    */
   fun next(s: FlightState): FlightState? {
     val list = steps(s.mode)
@@ -113,6 +118,7 @@ object FirstFlight {
       val step = list[i]
       val g = step.game
       when {
+        step == FlightStep.EDAD && s.age != null -> i++ // la edad ya se sabe: no se vuelve a preguntar
         g == null -> return s.copy(step = step)
         s.gameId(g) in s.skipped -> i++ // ni el juego ni su tarjeta
         step.isGame && s.gameId(g) in s.measured -> i++ // ya se jugó: directo a la tarjeta
@@ -124,7 +130,7 @@ object FirstFlight {
 
   /**
    * El paso anterior. «Atrás» vuelve UN paso y nunca cae en el medio de un juego: se salta el paso de juego (para repetirlo
-   * habría que tocar «Jugar» otra vez) y las tarjetas de los juegos que se dejaron para después. null = ya era el primero.
+   * habría que tocar «Jugar» otra vez), las tarjetas de los juegos que se dejaron para después y la pregunta de la edad si ya se respondió. null = ya era el primero.
    */
   fun back(s: FlightState): FlightState? {
     val list = steps(s.mode)
@@ -132,7 +138,7 @@ object FirstFlight {
     while (i >= 0) {
       val step = list[i]
       val g = step.game
-      val hidden = g != null && (step.isGame || s.gameId(g) in s.skipped)
+      val hidden = (step == FlightStep.EDAD && s.age != null) || (g != null && (step.isGame || s.gameId(g) in s.skipped))
       if (!hidden) return s.copy(step = step)
       i--
     }
@@ -192,13 +198,68 @@ object FirstFlight {
     return (total / 60f).roundToInt().coerceAtLeast(1)
   }
 
-  /** «Faltan unos 5 minutos» / «Falta 1 minuto». */
+  /** «Faltan unos 5 minutos» / «Falta 1 minuto». Desde la Tarea 132 ya no se muestra (ver [stationText]); queda para las pruebas. */
   fun minutesLeftText(minutes: Int): String = if (minutes <= 1) "Falta 1 minuto" else "Faltan unos $minutes minutos"
 
   /** Cuánto de la barra va lleno (0..1): el paso actual sobre el total de pasos de ese recorrido. */
   fun progress(s: FlightState): Float {
     val list = steps(s.mode)
     return (list.indexOf(s.step) + 1).toFloat() / list.size
+  }
+
+  // ------------------------------------------------------------------ las farolas de etapa (Tarea 132, A4)
+
+  /**
+   * Una farola de etapa de la cabecera del Primer vuelo (en lugar de la barra y de «Faltan unos 5 minutos», una promesa de tiempo que en una persona de 60+ no se cumple). [lit] = esa etapa ya se dio (la primera, desde el inicio:
+   * abrir Nubi es el primer paso); [current] = donde está la persona (lleva el aro lima de «hoy», como la semana).
+   */
+  data class Station(val label: String, val lit: Boolean, val current: Boolean)
+
+  private const val FIRST_STATION = "Empezar"
+  private const val LAST_STATION = "Tu punto de partida"
+  private const val GAMES_LAST_STATION = "Listo"
+
+  /** En qué etapa del recorrido va [s]: 0 «Empezar» (hola y nombre), 1 a 4 las áreas (su juego, su tarjeta y la pregunta que va con ella) y 5 «Tu punto de partida» (el punto de partida, el aviso y el camino). En la evaluación repetida: 0 a 3 los juegos y 4 «Listo». */
+  fun stationIndex(s: FlightState): Int = if (s.mode == FlightMode.GAMES) {
+    s.step.game ?: 4
+  } else when (s.step) {
+    FlightStep.HOLA, FlightStep.NOMBRE -> 0
+    FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO -> 1
+    FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.COLOR -> 2
+    FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS -> 3
+    FlightStep.JUEGO_4, FlightStep.TARJETA_4 -> 4
+    FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO -> 5
+  }
+
+  /**
+   * Las farolas: **Empezar · Memoria · Atención · Razonamiento · Lenguaje · Tu punto de partida** (el recorrido completo) o las 4 áreas + **Listo** (la evaluación repetida). Una farola de área se enciende cuando su juego se dio (se jugó, o se dejó
+   * «para después»: la etapa se pasó y nada se castiga); la última, cuando el punto de partida se guardó. Como todo sale de lo ya medido, **volver atrás nunca apaga una farola**.
+   */
+  fun stations(s: FlightState): List<Station> {
+    val current = stationIndex(s)
+    val areas = BaselinePlan.steps.map { it.domain.displayName }
+    val labels = if (s.mode == FlightMode.GAMES) areas + GAMES_LAST_STATION else listOf(FIRST_STATION) + areas + LAST_STATION
+    val offset = if (s.mode == FlightMode.GAMES) 0 else 1
+    return labels.mapIndexed { i, label ->
+      val lit = when {
+        s.mode == FlightMode.FULL && i == 0 -> true
+        i == labels.lastIndex -> s.applied
+        else -> s.isGameDone(i - offset)
+      }
+      Station(label, lit, current = i == current)
+    }
+  }
+
+  /**
+   * El texto bajo las farolas: «Ya diste el primer paso» (hola y nombre), «Paso 2 de 6 · Memoria» … «Paso 6 de 6 · Tu punto de partida»; en la evaluación repetida, «Juego 2 de 4 · Atención» y «Listo · tu punto de partida».
+   * Nunca dice cuánto falta en minutos.
+   */
+  fun stationText(s: FlightState): String {
+    val i = stationIndex(s)
+    val st = stations(s)
+    return if (s.mode == FlightMode.GAMES) {
+      if (i >= BaselinePlan.steps.size) "Listo · tu punto de partida" else "Juego ${i + 1} de ${BaselinePlan.steps.size} · ${st[i].label}"
+    } else if (i == 0) "Ya diste el primer paso" else "Paso ${i + 1} de ${st.size} · ${st[i].label}"
   }
 
   // ------------------------------------------------------------------ el punto de partida

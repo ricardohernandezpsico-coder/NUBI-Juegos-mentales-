@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -151,7 +152,8 @@ fun FirstFlightScreen(
   val canGoBack = FirstFlight.back(state) != null
   BackHandler(enabled = canGoBack) { actions.onBack() }
   val reduceMotion = rememberReduceMotion()
-  val minutes = FirstFlight.minutesLeft(state)
+  val stations = FirstFlight.stations(state)
+  val stepText = FirstFlight.stationText(state)
 
   Column(
     modifier = modifier
@@ -160,22 +162,20 @@ fun FirstFlightScreen(
       .imePadding()
       .padding(horizontal = 24.dp)
   ) {
-    // Arriba: volver + barra de avance, y debajo cuánto falta.
+    // Arriba: volver + las farolas de etapa (Tarea 132, A4: en lugar de la barra y de «Faltan unos 5 minutos»), y debajo en qué paso va.
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
       if (canGoBack) {
         com.example.ui.components.KitBackButton(actions.onBack, Modifier.testTag("btn_flight_back"), label = "Atrás")
       } else {
         Spacer(Modifier.size(48.dp))
       }
-      Spacer(Modifier.width(14.dp))
-      ProgressTrack(FirstFlight.progress(state), reduceMotion, Modifier.weight(1f))
-      Spacer(Modifier.width(14.dp))
-      Spacer(Modifier.size(34.dp))
+      Spacer(Modifier.width(8.dp))
+      FlightStations(stations, stepText, reduceMotion, Modifier.weight(1f))
     }
     Text(
-      FirstFlight.minutesLeftText(minutes),
+      stepText,
       color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("flight_minutes")
+      modifier = Modifier.fillMaxWidth().padding(top = 4.dp).heightIn(min = 26.dp).testTag("flight_step_text")
     )
 
     AnimatedContent(
@@ -195,17 +195,32 @@ fun FirstFlightScreen(
   }
 }
 
+/**
+ * Las farolas de etapa (Tarea 132, A4): seis de 40 dp (la farola del kit, la misma de Hoy, Avance y Ajustes; 28 dp de lámpara en una caja de 36 con el aro lima de «hoy» en la etapa actual), o cinco en la evaluación repetida. En pantallas angostas las cajas
+ * se achican parejo (nunca pasan de 40 dp). Una farola se enciende con un fundido de [NubiMotion.STATE_MS] (un salto con «quitar animaciones»); sin sonido ni vibración. Para el lector de pantalla es UN grupo: «Paso 2 de 6 · Memoria. 2 de 6 farolas encendidas».
+ */
 @Composable
-private fun ProgressTrack(fraction: Float, reduceMotion: Boolean, modifier: Modifier) {
-  val shown by animateFloatAsState(fraction, if (reduceMotion) tween(0) else tween(500), label = "flightProgress")
-  Box(
-    modifier
-      .height(10.dp)
-      .clip(RoundedCornerShape(5.dp))
-      .background(TrackColor)
-      .semantics { contentDescription = "Avance del inicio: ${(fraction * 100).toInt()} %" }
+private fun FlightStations(stations: List<FirstFlight.Station>, text: String, reduceMotion: Boolean, modifier: Modifier) {
+  androidx.compose.foundation.layout.BoxWithConstraints(
+    modifier.semantics(mergeDescendants = true) { contentDescription = "$text. ${stations.count { it.lit }} de ${stations.size} farolas encendidas" }.testTag("flight_lamps")
   ) {
-    Box(Modifier.fillMaxHeight().fillMaxWidth(shown.coerceIn(0f, 1f)).clip(RoundedCornerShape(5.dp)).background(Clay.Sun))
+    val cell = minOf(40.dp, maxWidth / stations.size)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+      stations.forEachIndexed { i, st -> FlightLamp(st.lit, st.current, cell, reduceMotion, Modifier.testTag("flight_lamp_$i")) }
+    }
+  }
+}
+
+@Composable
+private fun FlightLamp(lit: Boolean, current: Boolean, cell: androidx.compose.ui.unit.Dp, reduceMotion: Boolean, modifier: Modifier) {
+  val glow by animateFloatAsState(if (lit) 1f else 0f, com.example.ui.components.NubiMotion.spec(reduceMotion, com.example.ui.components.NubiMotion.STATE_MS), label = "farola_etapa")
+  val box = cell - 4.dp
+  Box(
+    modifier.size(cell).padding(2.dp).drawBehind { if (current) drawCircle(Clay.Lime, size.minDimension / 2f - 1.5.dp.toPx(), center, style = Stroke(2.5.dp.toPx())) },
+    contentAlignment = Alignment.Center
+  ) {
+    com.example.ui.components.FarolaImage(on = false, height = box * 0.78f)                                  // la apagada, siempre debajo; la encendida se funde encima
+    com.example.ui.components.FarolaImage(on = true, height = box * 0.78f, modifier = Modifier.alpha(glow))
   }
 }
 

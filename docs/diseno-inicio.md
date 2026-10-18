@@ -17,10 +17,10 @@ copiado: nombres, textos, arte y juegos propios.
 
 1. **Nubi se presenta**: «Vamos a encontrar tu punto de partida jugando. Son unos 5 minutos.»
 2. **¿Cómo te llamo?** (opcional).
-3. **Rango de edad**: ajusta ritmo y tamaño (no la dificultad).
-4. **Juego 1 · Memoria**: Secuencia Lumínica renovada (ver «Juegos del inicio»). Tarjeta de entrada con Nubi maestra →
+3. **Juego 1 · Memoria**: Secuencia Lumínica renovada (ver «Juegos del inicio»). Tarjeta de entrada con Nubi maestra →
    ronda guiada → rondas que miden → tarjeta «Acabas de usar tu memoria de trabajo» con el primer dato en
-   palabras y una línea de para qué sirve esa capacidad en la vida diaria.
+   palabras y una línea de para qué sirve esa capacidad en la vida diaria. **(Tarea 132, 18-oct) Va ANTES de la edad y de las metas**: se juega a los pocos segundos de abrir la app.
+4. **Rango de edad** (después de la tarjeta del juego 1; se salta si ya se sabe): ajusta ritmo y tamaño (no la dificultad).
 5. **¿Qué te gustaría entrenar?** (hasta 3 áreas).
 6. **Nubi: un dato** («poco y seguido rinde más»: práctica distribuida; sin promesas de mejora).
 7. **Juego 2 · Atención**: Freno de Emergencia.
@@ -41,9 +41,10 @@ puesta el 3-oct, tarea 21c): con los finales con sentido de los 18 juegos, que t
 
 ## Reglas
 
-- **Jugar en menos de un minuto**: antes del primer juego solo nombre y edad.
-- **Barra de avance** arriba en todo el recorrido; en los juegos, además, el indicador de 4 pasos (✓ ✓ ● ○).
-  **(nuevo)** Debajo de la barra, «faltan unos N minutos» (estimado, se actualiza).
+- **Jugar en menos de un minuto**: antes del primer juego solo el nombre (opcional). Desde la Tarea 132 (18-oct) la edad se pregunta DESPUÉS de la tarjeta del juego 1, y solo si no se sabe.
+- **Farolas de etapa** arriba en todo el recorrido (Tarea 132, en lugar de la barra de avance): **Empezar · Memoria · Atención · Razonamiento · Lenguaje · Tu punto de partida**, con la farola del kit (la de Hoy, Avance y Ajustes); la primera ya
+  está encendida (abrir Nubi es el primer paso) y la actual lleva el aro lima. Debajo, en palabras: «Ya diste el primer paso» y luego «Paso 2 de 6 · Memoria» … «Paso 6 de 6 · Tu punto de partida». **Ya no se dice «faltan unos N minutos»** (una promesa
+  de tiempo que en una persona de 60+ no se cumplía). En los juegos, además, el indicador de 4 pasos (✓ ✓ ● ○).
 - **Tutorial dentro del juego** (es EL tutorial de cada juego, el mismo que verá quien abra un juego por primera vez):
   - tarjeta de entrada con Nubi maestra y la meta en una frase;
   - ronda guiada: Nubi muestra, una marca indica dónde tocar, si hay error explica la regla y se repite (sin culpa);
@@ -65,7 +66,7 @@ puesta el 3-oct, tarea 21c): con los finales con sentido de los 18 juegos, que t
   dificultad inicial según la edad. El resultado siembra el rating guardado de ese juego y la estimación de su área
   (como hace hoy `data/Baseline.kt`), para que la primera partida normal ya empiece a la medida.
 - Accesibilidad de siempre: texto ≥ 18 sp en el inicio, contraste ≥ 4,5:1, toque ≥ 48 dp, acierto/error con forma o texto,
-  «quitar animaciones» respetado (la barra y los cambios de pantalla con fundido).
+  «quitar animaciones» respetado (las farolas se encienden de una vez y los cambios de pantalla van con fundido).
 
 ## Juegos del inicio (uno por área)
 
@@ -127,3 +128,18 @@ pendiente, evaluación repetida), `BaselineTest`, `FirstDataTest`, `ResultPhrase
 
 **Probarlo**: Ajustes → herramientas de depuración → «[Debug] Repetir el inicio (sin borrar datos)». Para la muerte del proceso: Opciones de desarrollador →
 «No conservar actividades», o cerrar la app desde recientes en medio de un juego.
+
+## El juego primero y las farolas de etapa (Tarea 132, 18-oct)
+
+Pedido de Ricardo (18-oct; spec `auditoria-fable/spec-adopcion-A1-A7.md` §A2 y §A4): jugar antes de contestar y no prometer minutos.
+
+- **Orden nuevo** (`FlightStep`, 18 pasos, los mismos): Hola · Nombre · **Juego 1 · Tarjeta 1 · Edad** · Metas · Dato · Juego 2 … `FlightStore` guarda y lee el paso por NOMBRE, así que un recorrido guardado con el orden viejo sigue leyéndose. `next()` y `back()` se saltan `EDAD` cuando
+  `age != null` (la edad se pregunta una sola vez; después se cambia en Ajustes, «Rango de edad»).
+- **El juego 1 sin edad:** corre con la edad que haya en el perfil (`FirstFlightHost`: `state.age ?: settings.ageBand ?: ADULT`), o sea como adulto (objetivo 80 %), con el arranque suave: `BaselinePlan.startLevel(null) = 2` (empezar fácil no daña a nadie; el DDA sube en 2-3 ensayos).
+  Al saberse la edad no hay nada que recalcular: lo medido es el rating propio del juego y la edad entra al leer (`Skill.progress`, `FirstFlight.startingPoint`). Nota de serie: `docs/medidas-juegos-estrella.md`, § «Rastro de luz».
+- **Si la persona sale a mitad:** de Unity sin terminar el juego 1, sigue en `JUEGO_1` con «Jugar»; si Android cierra la app en el juego 1, el resultado vuelve por `GameSessionStore` → tarjeta 1 → edad; si la cierra en la edad, vuelve en la edad (con el juego 1 ya medido).
+- **Farolas** (`FirstFlight.stations` / `stationText`, `FlightStations` en `FirstFlightScreen.kt`): seis de 40 dp (las cajas se achican en pantallas angostas), un fundido de `NubiMotion.STATE_MS` al encender (un salto con «quitar animaciones»), sin sonido ni vibración. Una farola de área se enciende cuando su juego se dio
+  (se jugó o se dejó «para después»: la etapa se pasó y nada se castiga), la última cuando el punto de partida se guardó: como todo sale de lo ya medido, volver atrás nunca apaga una. La evaluación repetida («Hacer la evaluación» desde Avance) lleva cinco: los cuatro juegos y «Listo»
+  («Juego 2 de 4 · Atención»). Para el lector de pantalla son un grupo: «Paso 2 de 6 · Memoria. 2 de 6 farolas encendidas». `minutesLeft` y `progress` quedan en `FirstFlight.kt` (las usan las pruebas) pero ya no se muestran.
+- **Pruebas:** `FirstFlightTest` (orden, edad una sola vez, orden viejo, farolas, textos), `BaselineTest` (arranque suave), `FirstFlightFlowTest` (los recorridos con el ViewModel, también la app cerrada en el juego 1 y en la edad), `FirstFlightLampsTest` (360 dp con letra 2,0, sin «minutos») y la hoja
+  `docs/previews/primer-vuelo-orden.png` (`FirstFlightOrdenScreenshotTest`, `tools/previews/primer_vuelo_orden.py`).

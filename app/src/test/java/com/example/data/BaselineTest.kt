@@ -18,6 +18,15 @@ class BaselineTest {
   }
 
   @Test
+  fun `sin edad el arranque es el suave`() {
+    // Tarea 132: el primer juego del inicio se juega ANTES de preguntar la edad; sin edad conocida se empieza fácil (el DDA sube en 2-3 ensayos)
+    assertEquals(2, BaselinePlan.startLevel(null))
+    assertEquals(2, BaselinePlan.startLevel(AgeBand.SENIOR))
+    assertEquals(3, BaselinePlan.startLevel(AgeBand.ADULT))
+    assertEquals(3, BaselinePlan.startLevel(AgeBand.UNDER_18))
+  }
+
+  @Test
   fun `la evaluacion tiene 4 juegos, uno por area`() {
     assertEquals(listOf("secuencia", "freno", "aterrizaje", "meteoros"), BaselinePlan.steps.map { it.gameId })
     assertEquals(DomainType.entries.toSet(), BaselinePlan.steps.map { it.domain }.toSet())
