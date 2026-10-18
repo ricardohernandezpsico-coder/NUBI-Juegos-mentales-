@@ -114,7 +114,7 @@ en el inicio.
   tiempo al Reto. «Ahora: PALABRA» solo la primera vez por partida (tampoco gasta tiempo). `StroopSprites.cs`: gota, libro y haz de luz (se tiñen con `Image.color`).
 - Movimiento reducido (`Motion.Decorative`): sin deslizamiento, temblor, chispas ni golpe de la cinta; fundidos con los mismos tiempos (`Motion.Hold`).
 - Tutorial: `GuidedRound` (4 palabras que chocan: TINTA, PALABRA y las mismas dos sin aro; un error repite el paso y explica sin culpa; no suma puntos ni toca el DDA) y «Cómo se juega» en
-  la pausa (`HowToReady/Suspend/Resume`; el Reto no pierde tiempo). Durante la práctica los botones suben 270 u para dejar lugar a «Práctica: no cuenta» y «Saltar tutorial».
+  la pausa (`HowToReady/Suspend/Resume`; el Reto no pierde tiempo). Durante la práctica los botones suben 270 u para dejar lugar a «Práctica (sin puntos)» y «Saltar tutorial».
   `UnityGameLauncher.TUTORIAL_GAMES` incluye `stroop`; el smoke tiene `TutorialStroop`. Sin versión corta.
 - Telemetría: `interference_ms` y `switch_cost_ms` en `StroopSessionMetrics` (lo leen `NativeReceiver` y `GamePlayResult.interferenceMs/switchCostMs`; solo para `stroop`).
   App: `data/DosOrillas.kt` (texto de las medidas y consejo), bloques en `GameResultScreen`, el consejo es el «Truco para la próxima» de su final con sentido (`FinalModels.tinta`; `ResultAdvice.tipOf` separa el «Truco: …»).

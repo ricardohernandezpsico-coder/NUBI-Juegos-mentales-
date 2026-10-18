@@ -284,7 +284,7 @@ namespace NeuroVida.Games.Acoplamiento
         public const int HintModules = 3;
 
         public static string RoundChip(int module, int total) => total > 0 ? "Módulo " + Math.Min(module, total) + " de " + total : "Módulo " + module;
-        public static string StreakChip(int streak) => "Racha ×" + streak;
+        public static string StreakChip(int streak) => streak + " seguidos";
 
         /// <summary>Qué se contestó: 0 = «Encaja», 1 = «Espejo», −1 = no hubo tiempo.</summary>
         public const int AnswerFits = 0, AnswerMirror = 1, AnswerTimeout = -1;
@@ -298,7 +298,7 @@ namespace NeuroVida.Games.Acoplamiento
             if (answer == AnswerTimeout) return mirrored ? "Sin tiempo: era su espejo" : "Sin tiempo: sí encajaba";
             if (!IsCorrect(mirrored, answer)) return mirrored ? "Era su espejo" : "Sí encajaba";
             if (mirrored) return "¡Bien visto! Era su espejo";
-            return streak >= 3 ? "¡Encaja! Racha ×" + streak : "¡Encaja!";
+            return streak >= 3 ? "¡Encaja! " + streak + " seguidos" : "¡Encaja!";
         }
 
         public const string EndTag = "¡TU ESTACIÓN CRECIÓ!";

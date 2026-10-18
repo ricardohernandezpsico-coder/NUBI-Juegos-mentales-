@@ -99,6 +99,9 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     Section("Hecho con Unity")
     Para("Los juegos de Nubi están hechos con Unity, de Unity Technologies (unity.com).")
 
+    Section(com.example.data.HealthNotice.TITLE)
+    Para(com.example.data.HealthNotice.TEXT)
+
     Spacer(Modifier.height(90.dp))
   }
 }

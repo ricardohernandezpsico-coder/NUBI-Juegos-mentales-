@@ -308,7 +308,7 @@ namespace NeuroVida.Games.Aterrizaje
         public const string BullNotice = "¡Diana lunar!", DomeNotice = "¡Nueva cúpula en tu base!";
 
         public static string RoundChip(int n, int total) => total > 0 ? "Aterrizaje " + Math.Min(n, total) + " de " + total : "Aterrizaje " + n;
-        public static string StreakChip(int streak) => "Racha ×" + streak;
+        public static string StreakChip(int streak) => streak + " seguidos";
 
         /// <summary>Cómo salió el aterrizaje.</summary>
         public enum Outcome { Far, Hit, Bull }
@@ -321,7 +321,7 @@ namespace NeuroVida.Games.Aterrizaje
             float err = Error(t, landedValue);
             if (IsBullseye(err)) return BullNotice;
             string d = DistanceText(t, landedValue);
-            if (IsHit(err)) return streak >= 3 ? "¡Justo! " + d + " · Racha ×" + streak : "¡Justo! " + d;
+            if (IsHit(err)) return streak >= 3 ? "¡Justo! " + d + " · " + streak + " seguidos" : "¡Justo! " + d;
             return "Cerca: " + d;
         }
 

@@ -70,8 +70,8 @@ namespace NeuroVida.Games.Acoplamiento.Tests
         {
             Assert.AreEqual("¡Encaja!", DockingContract.Notice(false, DockingContract.AnswerFits, 1));
             Assert.AreEqual("¡Encaja!", DockingContract.Notice(false, DockingContract.AnswerFits, 2));
-            Assert.AreEqual("¡Encaja! Racha ×3", DockingContract.Notice(false, DockingContract.AnswerFits, 3));
-            Assert.AreEqual("¡Encaja! Racha ×7", DockingContract.Notice(false, DockingContract.AnswerFits, 7));
+            Assert.AreEqual("¡Encaja! 3 seguidos", DockingContract.Notice(false, DockingContract.AnswerFits, 3));
+            Assert.AreEqual("¡Encaja! 7 seguidos", DockingContract.Notice(false, DockingContract.AnswerFits, 7));
             Assert.AreEqual("¡Bien visto! Era su espejo", DockingContract.Notice(true, DockingContract.AnswerMirror, 5));
             Assert.AreEqual("Era su espejo", DockingContract.Notice(true, DockingContract.AnswerFits, 0));
             Assert.AreEqual("Sí encajaba", DockingContract.Notice(false, DockingContract.AnswerMirror, 0));

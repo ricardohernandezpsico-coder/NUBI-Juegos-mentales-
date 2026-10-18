@@ -332,6 +332,8 @@ deterioro por la edad o la demencia. Regla para la tienda, la publicidad y los t
 - No apropiarse de estudios ajenos: "basado en el ejercicio del estudio ACTIVE" sugiere que nuestra app tiene esa
   evidencia, y no la tiene.
 - El aviso de Ajustes ("aplicación para el entretenimiento… No constituye diagnóstico") se mantiene.
+- **Aviso de salud de Nubi (Tarea 121, 17-oct; lo exige Google Play y el hallazgo de Fable fue que solo había «No es un diagnóstico» al pie de cada medida):** texto aprobado por Ricardo, **igual** en Ajustes (sección «Aviso de salud», con título y letra de lectura, ya no una nota chica) y en «Licencias y créditos»: «Nubi es un conjunto de juegos para mantener la mente activa. No es un dispositivo médico: no diagnostica, trata, cura ni previene ninguna condición. Ante cualquier duda sobre tu salud, consulta a un profesional.» Vive en `data/HealthNotice.kt`.
+- **Excepción en `VisibleTextsGuardTest`:** la regla de vocabulario prohíbe «previene» (una promesa de salud); en este aviso se NIEGA («ni previene ninguna condición»). La guardia salta SOLO el texto exacto de `HealthNotice.TEXT`, y una prueba nueva exige que el texto sea el aprobado, que lo muestren Ajustes y Licencias, y que «previene» sea la única palabra prohibida que trae. «Dispositivo médico» y «diagnostica» no chocan con ninguna regla.
 
 ## 7. Cuando Ricardo elija
 

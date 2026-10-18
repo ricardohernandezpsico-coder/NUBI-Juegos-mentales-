@@ -14,7 +14,7 @@ namespace NeuroVida.Games.Shared
     /// <item><b>Tarjeta de entrada</b> (<see cref="Intro"/>): Nubi maestra (<see cref="NubiTeacherSprite"/>), el nombre del juego, la meta en una frase,
     /// «Probar una ronda» y «Saltar tutorial».</item>
     /// <item><b>Ronda guiada</b> que arma cada juego (<see cref="GameControllerBase.GuidedRound"/>): mientras dura, <see cref="BeginPractice"/> pone
-    /// el rótulo «Práctica: no cuenta» y el botón «Saltar tutorial» siempre visible; <see cref="Say"/> escribe lo que Nubi dice («Casi: esa no era…»).</item>
+    /// el rótulo «Práctica (sin puntos)» y el botón «Saltar tutorial» siempre visible; <see cref="Say"/> escribe lo que Nubi dice («Casi: esa no era…»).</item>
     /// </list>
     /// La ronda guiada NO cuenta: ni puntos, ni DDA, ni avance, ni rachas, y no se guarda como partida: el juego la juega sin pasarla por su motor.
     /// Se maneja con toques directos (sin <c>Button</c>), igual que el resto de los controles de Unity. Con «quitar animaciones» solo hay fundidos.
@@ -72,7 +72,7 @@ namespace NeuroVida.Games.Shared
         public bool Practicing { get; private set; }
 
         /// <param name="parent">El área segura del juego (el tutorial se dibuja encima de todo lo demás).</param>
-        /// <param name="practiceTopU">Distancia (unidades del lienzo) desde arriba a la que va el rótulo «Práctica: no cuenta»: debajo del marcador de cada juego.</param>
+        /// <param name="practiceTopU">Distancia (unidades del lienzo) desde arriba a la que va el rótulo «Práctica (sin puntos)»: debajo del marcador de cada juego.</param>
         public GuidedTutorial(RectTransform parent, float practiceTopU)
         {
             // ---- tarjeta de entrada
@@ -124,8 +124,8 @@ namespace NeuroVida.Games.Shared
             badge.anchorMin = badge.anchorMax = new Vector2(0.5f, 1f);
             badge.anchoredPosition = new Vector2(0f, -practiceTopU - 48f);
             _badge = badge;
-            var badgeText = Label(badge, "Label", 48, Vector2.zero, new Vector2(620f, 96f), plastic ? NeuroStyle.Ink : NeuroStyle.Grape, TextAnchor.MiddleCenter);
-            badgeText.text = "Práctica: no cuenta";
+            var badgeText = Label(badge, "Label", 45, Vector2.zero, new Vector2(620f, 96f), plastic ? NeuroStyle.Ink : NeuroStyle.Grape, TextAnchor.MiddleCenter);       // 15 dp: «Práctica (sin puntos)» es más larga que el «Práctica: no cuenta» de antes y a 16 dp rozaba un texto del juego (Correo, forma de 1920)
+            badgeText.text = "Práctica (sin puntos)";
             BestFit(badgeText, 45);
 
             _caption = Label(_practiceRoot, "Caption", 60, Vector2.zero, new Vector2(960f, 200f), Color.white, TextAnchor.MiddleCenter);
@@ -151,7 +151,7 @@ namespace NeuroVida.Games.Shared
         {
             if (badgeAtBottom)
             {
-                // «Práctica: no cuenta» arriba de «Saltar tutorial», abajo (juegos con el marcador y el cielo llenos)
+                // «Práctica (sin puntos)» arriba de «Saltar tutorial», abajo (juegos con el marcador y el cielo llenos)
                 _badge.anchorMin = _badge.anchorMax = new Vector2(0.5f, 0f);
                 _badge.anchoredPosition = new Vector2(0f, 36f + 132f + 14f + 48f);
             }
@@ -202,7 +202,7 @@ namespace NeuroVida.Games.Shared
 
         // ------------------------------------------------------------------ ronda guiada
 
-        /// <summary>Empieza la ronda guiada: rótulo «Práctica: no cuenta» y botón «Saltar tutorial» a la vista.</summary>
+        /// <summary>Empieza la ronda guiada: rótulo «Práctica (sin puntos)» y botón «Saltar tutorial» a la vista.</summary>
         public void BeginPractice()
         {
             Practicing = true;

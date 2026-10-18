@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.data.HealthNotice
 import com.example.model.AppLanguage
 import com.example.model.WeeklyChallengeRegistry
 import com.example.ui.i18n.getTranslations
@@ -31,6 +32,7 @@ class VisibleTextsGuardTest {
         for (m in literal.findAll(raw)) {
           val text = m.groupValues[1]
           if (text in internalLiterals || Regex("[a-z0-9_]+").matches(text)) continue      // nombres internos y etiquetas de prueba (snake_case): no se ven
+          if (text == HealthNotice.TEXT) continue          // la ÚNICA excepción: el aviso de salud (dice que Nubi NO «previene» nada); ver `el aviso de salud ...` más abajo
           val low = text.lowercase()
           val hit = banned.firstOrNull { it in low } ?: continue
           found += "${f.name}:${i + 1} «$text» (por «$hit»)"
@@ -125,6 +127,30 @@ class VisibleTextsGuardTest {
     val screen = File("src/main/java/com/example/ui/screens/LicensesScreen.kt").readText()
     assertTrue(screen.contains("R.raw.ofl"))
     for (nombre in listOf("Fredoka", "Nunito", "Atkinson Hyperlegible", "Fraunces")) assertTrue(nombre, screen.contains(nombre))
+  }
+
+  /**
+   * El aviso de salud que exige Google Play (Tarea 121): el texto aprobado por Ricardo, visible en Ajustes y en «Licencias y créditos». La excepción de la guardia es SOLO para este texto y solo por «previene» (se niega, no se promete).
+   */
+  @Test
+  fun `el aviso de salud es el texto aprobado, va en Ajustes y en Licencias y su unica excepcion es previene`() {
+    assertEquals(
+      "Nubi es un conjunto de juegos para mantener la mente activa. No es un dispositivo médico: no diagnostica, trata, cura ni previene ninguna condición. Ante cualquier duda sobre tu salud, consulta a un profesional.",
+      HealthNotice.TEXT
+    )
+    assertEquals("Aviso de salud", HealthNotice.TITLE)
+    assertEquals("de las palabras prohibidas solo «previene», y para negarla", listOf("previene"), banned.filter { it in HealthNotice.TEXT.lowercase() })
+    assertTrue("«no previene» se NIEGA en el aviso", "ni previene ninguna condición" in HealthNotice.TEXT)
+    assertTrue("sin nada de lo que NUNCA puede verse", neverVisibleHit(HealthNotice.TEXT) == null && neverVisibleHit(HealthNotice.TITLE) == null)
+    val settings = File("src/main/java/com/example/ui/screens/SettingsScreen.kt").readText()
+    val licenses = File("src/main/java/com/example/ui/screens/LicensesScreen.kt").readText()
+    for ((name, src) in listOf("Ajustes" to settings, "Licencias y créditos" to licenses)) {
+      assertTrue("$name muestra el título del aviso", src.contains("HealthNotice.TITLE"))
+      assertTrue("$name muestra el texto del aviso", src.contains("HealthNotice.TEXT"))
+    }
+    assertTrue("el aviso de Ajustes tiene su etiqueta de prueba", settings.contains("health_notice"))
+    // el aviso viejo (chico y sin título) ya no está
+    assertFalse(settings.contains("No es una herramienta de salud"))
   }
 
   @Test

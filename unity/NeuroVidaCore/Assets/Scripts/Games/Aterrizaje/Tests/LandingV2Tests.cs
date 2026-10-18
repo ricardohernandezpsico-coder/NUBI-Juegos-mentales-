@@ -88,8 +88,8 @@ namespace NeuroVida.Games.Aterrizaje.Tests
             Assert.AreEqual("¡Diana lunar!", LandingContract.Notice(t, 37f, 9), "la diana no lleva racha");
             Assert.AreEqual("¡Justo! a 3 del blanco", LandingContract.Notice(t, 40f, 1));
             Assert.AreEqual("¡Justo! a 3 del blanco", LandingContract.Notice(t, 40f, 2));
-            Assert.AreEqual("¡Justo! a 3 del blanco · Racha ×3", LandingContract.Notice(t, 40f, 3));
-            Assert.AreEqual("¡Justo! a 4 del blanco · Racha ×7", LandingContract.Notice(t, 33f, 7));
+            Assert.AreEqual("¡Justo! a 3 del blanco · 3 seguidos", LandingContract.Notice(t, 40f, 3));
+            Assert.AreEqual("¡Justo! a 4 del blanco · 7 seguidos", LandingContract.Notice(t, 33f, 7));
             Assert.AreEqual("Cerca: a 23 del blanco", LandingContract.Notice(t, 60f, 0));
             Assert.AreEqual("Cerca: a 6 % del blanco", LandingContract.Notice(Trial(0, 1, 0.5f, false), 0.56f, 4), "lejos no lleva racha");
             Assert.AreEqual(LandingContract.Outcome.Bull, LandingContract.OutcomeOf(0.005f));
@@ -147,7 +147,7 @@ namespace NeuroVida.Games.Aterrizaje.Tests
             Assert.AreEqual("Aterrizaje 3 de 15", LandingContract.RoundChip(3, 15));
             Assert.AreEqual("Aterrizaje 3", LandingContract.RoundChip(3, 0));
             Assert.AreEqual("Aterrizaje 15 de 15", LandingContract.RoundChip(16, 15));
-            Assert.AreEqual("Racha ×5", LandingContract.StreakChip(5));
+            Assert.AreEqual("5 seguidos", LandingContract.StreakChip(5));
         }
 
         // ------------------------------------------------------------------ la pantalla

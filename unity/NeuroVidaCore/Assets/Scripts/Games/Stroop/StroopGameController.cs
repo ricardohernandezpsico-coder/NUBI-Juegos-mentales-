@@ -292,7 +292,7 @@ namespace NeuroVida.Games.Stroop
                     StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[_answerIndex]), Color.white, 120f, 420f, 0.45f));
                 }
                 if (_streak == 4 || _streak == 8 || _streak == 12)
-                    _toast.Show($"Racha de {_streak}", "Sigue así", GoodColor, 0.9f);
+                    _toast.Show($"{_streak} seguidos", "Sigue así", GoodColor, 0.9f);
 
                 // la tarjeta sale hacia la orilla CONTRARIA a la de la que llegó
                 yield return StartCoroutine(SlideOut(Endless ? 0.17f : 0.24f, -_shownCardSide));

@@ -278,7 +278,7 @@ namespace NeuroVida.Games.Correo
         public static string FloatCombo(int combo)
         {
             int tier = combo / ComboStep;
-            return tier <= 1 ? "¡Racha ×" + combo + "!" : tier == 2 ? "¡Imparable! ×" + combo : "¡Maestro del correo! ×" + combo;
+            return tier <= 1 ? "¡" + combo + " seguidos!" : tier == 2 ? "¡Imparable! ×" + combo : "¡Maestro del correo! ×" + combo;
         }
         public static string RadioText(MailMoment m) => "hoy NO hace falta encender el faro " + MomentPhrase(m);
 

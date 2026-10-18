@@ -269,7 +269,7 @@ namespace NeuroVida.Games.Satelites.Tests
             Assert.AreEqual("2 de 3 marcados · otro toque lo quita", SatelliteContract.AnswerSub(2, 3));
             Assert.AreEqual("¡3 de 3!", SatelliteContract.ResultTitle(3, 3));
             Assert.AreEqual("2 de 3", SatelliteContract.ResultTitle(2, 3));
-            Assert.AreEqual("Racha ×3", SatelliteContract.ResultSub(true, 3));
+            Assert.AreEqual("3 seguidos", SatelliteContract.ResultSub(true, 3));
             Assert.AreEqual("Cada mensaje enciende una luz", SatelliteContract.ResultSub(true, 2));
             StringAssert.Contains("punteado", SatelliteContract.ResultSub(false, 0));
             Assert.AreEqual("Ronda 3 de 8", SatelliteContract.RoundHud(3, 8));

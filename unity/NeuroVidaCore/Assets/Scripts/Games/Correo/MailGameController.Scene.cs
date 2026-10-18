@@ -369,7 +369,7 @@ namespace NeuroVida.Games.Correo
             // la píldora de la racha y la de las que esperan fuera de la pantalla
             if (_day.Combo >= 3)
             {
-                _comboText.text = "Racha ×" + _day.Combo;
+                _comboText.text = _day.Combo + " seguidos";
                 float w = _comboText.preferredWidth / _s + 22f;
                 _comboPill.gameObject.SetActive(true);
                 SetRect(_comboPill.rectTransform, MailLayout.BeltXA, m.BeltY - 84f + 13f, w, 26f);

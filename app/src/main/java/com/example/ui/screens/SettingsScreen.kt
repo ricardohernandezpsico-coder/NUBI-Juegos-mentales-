@@ -590,18 +590,22 @@ fun SettingsScreen(
       }
     }
 
-    // Medical Disclaimer
-    ClayPanel(modifier = Modifier.fillMaxWidth(), padding = 16.dp) {
-      Row(
-        verticalAlignment = Alignment.Top
-      ) {
-        KitGlyph(Glyph.INFO)
-        Spacer(modifier = Modifier.width(12.dp))
+    // Aviso de salud (lo exige Google Play; texto aprobado por Ricardo, Tarea 121): sección con título y letra de lectura, no una nota chica. El mismo texto va en «Licencias y créditos».
+    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("health_notice"), padding = 16.dp) {
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          KitGlyph(Glyph.INFO)
+          Spacer(modifier = Modifier.width(12.dp))
+          Text(
+            text = com.example.data.HealthNotice.TITLE,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+          )
+        }
         Text(
-          text = "Nubi es un juego para mantener la mente activa. No es una herramienta de salud: no diagnostica ni trata nada, y no promete resultados. Si te preocupa tu memoria, habla con un profesional.",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          lineHeight = 16.sp
+          text = com.example.data.HealthNotice.TEXT,
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
         )
       }
     }

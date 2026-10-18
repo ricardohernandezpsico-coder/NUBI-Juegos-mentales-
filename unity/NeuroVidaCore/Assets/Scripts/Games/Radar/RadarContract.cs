@@ -306,10 +306,10 @@ namespace NeuroVida.Games.Radar
         public const string WatchMessage = "Atento al relámpago…", AskHint = "Elige solo las que viste", RainMessage = "¡Lluvia de cápsulas!", RescueLabel = "¡Rescatar!";
         public const string RedoMessage = "Otra vez", RedoHint = "La pausa cortó el destello";
         public static string AskMessage(int count) => "¿Qué cápsulas viste? (eran " + count + ")";
-        public static string AllSafe(int streak) => streak >= 3 ? "¡Todos a salvo! Racha ×" + streak : "¡Todos a salvo!";
+        public static string AllSafe(int streak) => streak >= 3 ? "¡Todos a salvo! " + streak + " seguidos" : "¡Todos a salvo!";
         public static string Partial(int hits, int count, int extras) => "Rescataste " + hits + " de " + count + (extras > 0 ? " · " + extras + (extras == 1 ? " no estaba" : " no estaban") : "");
         public static string RoundChip(int round, int total) => total > 0 ? "Ronda " + Math.Min(round, total) + " de " + total : "Ronda " + round;
-        public static string StreakChip(int streak) => "Racha ×" + streak;
+        public static string StreakChip(int streak) => streak + " seguidos";
 
         public const string EndTag = "¡RESCATE COMPLETO!";
         public static string EndTitle(int rescued) => rescued == 1 ? "1 cápsula a salvo" : rescued + " cápsulas a salvo";

@@ -147,7 +147,7 @@ namespace NeuroVida.Games.Satelites
 
         /// <summary>Bajo el resultado: «Racha ×N» desde la tercera ronda perfecta seguida; si faltó alguno, qué marca el aro punteado.</summary>
         public static string ResultSub(bool perfect, int streak) =>
-            perfect ? (streak >= 3 ? "Racha ×" + streak : "Cada mensaje enciende una luz") : "El aro punteado marca el que faltó";
+            perfect ? (streak >= 3 ? streak + " seguidos" : "Cada mensaje enciende una luz") : "El aro punteado marca el que faltó";
 
         public static string RoundHud(int round, int total) => "Ronda " + round + " de " + total;
         public static string RoundHudReto(int round) => "Ronda " + round;

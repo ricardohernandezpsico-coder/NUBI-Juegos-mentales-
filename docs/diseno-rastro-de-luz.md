@@ -101,7 +101,7 @@ de más en «en marcha» y si se permiten cruces. Propuesta (Sonnet puede afinar
 
 - Sale si la persona nunca jugó este juego (la app lo sabe por el historial y manda `show_tutorial=true`).
 - Tarjeta de entrada: Nubi maestra + «Mira el camino de la chispa y repítelo con el dedo».
-- Ronda guiada de 2 luces: rótulo «Práctica: no cuenta», «Saltar tutorial» visible, el siguiente lucero correcto con un aro
+- Ronda guiada de 2 luces: rótulo «Práctica (sin puntos)», «Saltar tutorial» visible, el siguiente lucero correcto con un aro
   sol punteado; si hay error: «Casi: esa no era. Mira otra vez el camino» y se repite. Al acertar: «¡Así se juega! Ahora
   sin ayuda» y empieza la partida. No suma puntos ni ensayos al DDA ni se guarda.
 - Construirlo como pieza común reutilizable (`Games/Shared/`: tarjeta de Nubi maestra, rótulo de práctica, botón saltar),
@@ -175,7 +175,7 @@ partida). La ronda guiada no entra. `average_response_time_ms` = ms por luz en l
 Captura real: `docs/previews/rastro-final-real.png`. La medida y sus límites están en `docs/medidas-juegos-estrella.md`.
 
 **Tutorial guiado (pieza común, `Games/Shared/`).** `GuidedTutorial` (tarjeta de entrada con Nubi maestra —`NubiTeacherSprite`, dibujada con el pincel SDF
-siguiendo `pose_pizarra` de `tools/previews/nubi_guia.py`—, rótulo «Práctica: no cuenta», botón «Saltar tutorial», `Say` para lo que dice Nubi) y el gancho
+siguiendo `pose_pizarra` de `tools/previews/nubi_guia.py`—, rótulo «Práctica (sin puntos)», botón «Saltar tutorial», `Say` para lo que dice Nubi) y el gancho
 en `GameControllerBase`: `BuildTutorial`, `RunTutorialIfNeeded` y `GuidedRound`. **Cómo lo usa otro juego:** (1) llamar a `BuildTutorial(safe, topU)` al final de
 `BuildUi`; (2) reemplazar `GuidedRound(GuidedTutorial t)` con su primera ronda corta (`t.BeginPractice()`, jugarla SIN pasar por el DDA, el puntaje ni el guardado,
 `t.Say(...)`, parar si `t.Skipped`, `t.EndPractice()`); (3) en el `GameLoop`, antes de la cuenta regresiva, `yield return StartCoroutine(RunTutorialIfNeeded(titulo, meta))`;
@@ -219,7 +219,7 @@ rapidez (`secuencia`, `rutatesoro`, `bitacora`, `rumbo`, `satelites`, `aterrizaj
 
 1. En el controlador (hereda `GameControllerBase`): `RunTutorialIfNeeded()` antes de la cuenta regresiva (devuelve la corrutina; sale solo si la app mandó `show_tutorial`) y, en
    `Awake`/construcción de la UI, `BuildTutorial(safe, practiceTopU, "Nombre del juego", "Meta en una frase (≤ 2 líneas, ≥ 18 sp)", skipAtTop, captionFromBottomU, badgeAtBottom)`: los tres
-   últimos mueven el botón «Saltar tutorial», el mensaje de Nubi y el rótulo «Práctica: no cuenta» para no tapar los botones de juego.
+   últimos mueven el botón «Saltar tutorial», el mensaje de Nubi y el rótulo «Práctica (sin puntos)» para no tapar los botones de juego.
 2. Implementar `GuidedRound()` entre las marcas `// <guided>` y `// </guided>`: arma el guion con `GuidedScript` (pasos, errores que repiten el mismo paso, `Skip`), usa `CreateHintRing`
    / `SpinHint` para el aro sol punteado y `Say(...)` para lo que dice Nubi. **No puede tocar** puntaje, DDA, rachas ni conteos: `GuidedTutorialTests` lee el código entre las marcas y
    falla si aparece alguno (lista de símbolos por juego en esa prueba: sumar los del juego nuevo).

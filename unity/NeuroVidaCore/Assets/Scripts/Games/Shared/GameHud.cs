@@ -13,7 +13,7 @@ namespace NeuroVida.Games.Shared
     /// - Título del juego, grande, a la izquierda.
     /// - Debajo, dos chips de arcilla oscura: "Nivel N" (celeste) y la cifra del modo: puntos que CUENTAN hacia
     ///   arriba al sumar (Reto) o el avance "3 de 12" (Precisión) (sol).
-    /// - A la derecha, la racha: número grande y la palabra "racha"; con 3 o más el destello se enciende en coral,
+    /// - A la derecha, los aciertos seguidos: número grande y la palabra "seguidos"; con 3 o más el destello se enciende en coral,
     ///   y en cada múltiplo de 5 la píldora salta con destellos.
     /// Subir de nivel hace saltar y brillar el chip de nivel. Mismo alto que antes (190): no mueve nada de abajo.
     /// </summary>
@@ -51,7 +51,7 @@ namespace NeuroVida.Games.Shared
             Rect.sizeDelta = new Vector2(0f, Height);
             Rect.anchoredPosition = Vector2.zero;
 
-            const float pillW = 240f, pillH = 150f;          // «racha» a 14 dp (42 unidades) pide una píldora más ancha y alta: un texto de Unity cuya línea no cabe en el alto de su caja se OCULTA entero (Truncate)
+            const float pillW = 300f, pillH = 150f;          // «seguidos» a 14 dp (42 unidades) pide una píldora más ancha y alta: un texto de Unity cuya línea no cabe en el alto de su caja se OCULTA entero (Truncate)
             float reserve = withStreak ? pillW + 24f : rightReserve;
 
             var titleText = MakeText(Rect, "Title", 70, TextAnchor.UpperLeft, Color.white, 3f, 0.45f);
@@ -101,7 +101,7 @@ namespace NeuroVida.Games.Shared
                 var lr = _streakLabel.rectTransform;
                 lr.offsetMin = new Vector2(92f, 6f);
                 lr.offsetMax = new Vector2(-14f, -88f);
-                _streakLabel.text = "racha";
+                _streakLabel.text = "seguidos";
                 SetStreak(0, animate: false);
             }
         }

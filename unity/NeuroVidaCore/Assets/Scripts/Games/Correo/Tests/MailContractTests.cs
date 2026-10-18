@@ -819,7 +819,7 @@ namespace NeuroVida.Games.Correo.Tests
             Assert.AreEqual("Si llega una carta con sello dorado,", MailContract.CueLineA(MailCue.Gold));
             Assert.AreEqual("Si llega una carta con lazo,", MailContract.CueLineA(MailCue.Lazo));
             Assert.AreEqual("Se pasó la hora: al anochecer", MailContract.FloatLateWindow(MailMoment.Noche));
-            Assert.AreEqual("¡Racha ×10!", MailContract.FloatCombo(10));
+            Assert.AreEqual("¡10 seguidos!", MailContract.FloatCombo(10));
             Assert.AreEqual("¡Imparable! ×20", MailContract.FloatCombo(20));
             Assert.AreEqual("¡Maestro del correo! ×30", MailContract.FloatCombo(30));
             Assert.AreEqual("¡Maestro del correo! ×40", MailContract.FloatCombo(40));

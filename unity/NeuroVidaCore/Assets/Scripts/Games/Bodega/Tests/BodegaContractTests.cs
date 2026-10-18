@@ -323,7 +323,7 @@ namespace NeuroVida.Games.Bodega.Tests
             Assert.AreEqual("3 de 5 al primer intento · ¡nuevo récord!", BodegaContract.DoneLine(3, 5, true));
             Assert.AreEqual("3 de 5 al primer intento", BodegaContract.DoneLine(3, 5, false));
             Assert.AreEqual("Récord: 4 objetos", BodegaContract.RecordLine(4));
-            Assert.AreEqual("Racha ×3", BodegaContract.StreakLine(3));
+            Assert.AreEqual("3 seguidos", BodegaContract.StreakLine(3));
             Assert.AreEqual("1 error en este pedido", BodegaContract.ToastTitle(1));
             Assert.AreEqual("3 errores en este pedido", BodegaContract.ToastTitle(3));
             StringAssert.DoesNotContain("perfecto", BodegaContract.ToastTitle(1).ToLowerInvariant(), "un pedido con errores nunca dice «perfecto»");

@@ -291,7 +291,7 @@ namespace NeuroVida.Games.Radar.Tests
         {
             Assert.AreEqual("¿Qué cápsulas viste? (eran 3)", RadarContract.AskMessage(3));
             Assert.AreEqual("¡Todos a salvo!", RadarContract.AllSafe(2));
-            Assert.AreEqual("¡Todos a salvo! Racha ×3", RadarContract.AllSafe(3));
+            Assert.AreEqual("¡Todos a salvo! 3 seguidos", RadarContract.AllSafe(3));
             Assert.AreEqual("Rescataste 2 de 3", RadarContract.Partial(2, 3, 0));
             Assert.AreEqual("Rescataste 2 de 3 · 1 no estaba", RadarContract.Partial(2, 3, 1));
             Assert.AreEqual("Rescataste 1 de 4 · 2 no estaban", RadarContract.Partial(1, 4, 2));
