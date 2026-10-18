@@ -42,7 +42,7 @@ import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 
 private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = Color(0xFFC7D0FF)
+private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 
 /**
  * Resumen de la sesión del día (29-sep, pedido de Ricardo): al terminar los 3 juegos, Nubi celebra y dice qué se
@@ -77,7 +77,7 @@ fun SessionSummaryScreen(
       }
 
       Text(
-        "TUS JUEGOS", color = Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+        "TUS JUEGOS", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold,
         modifier = Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 4.dp)
       )
       summary.games.forEach { g ->
@@ -87,17 +87,17 @@ fun SessionSummaryScreen(
           Spacer(Modifier.width(12.dp))
           Column(Modifier.weight(1f)) {
             Text(def?.let { getGameTitle(it.id, lang, it.title) } ?: g.gameId, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text(domainOf(g.area)?.displayName ?: "", color = OnNightDim, fontSize = 14.sp)
+            Text(domainOf(g.area)?.displayName ?: "", color = OnNightDim, fontSize = 16.sp)
           }
           Column(horizontalAlignment = Alignment.End) {
             Text(g.score?.let { "$it" } ?: "—", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("puntaje de 100", color = OnNightDim, fontSize = 14.sp)
+            Text("puntaje de 100", color = OnNightDim, fontSize = 16.sp)
           }
         }
       }
 
       Text(
-        "TU AVANCE", color = Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+        "TU AVANCE", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold,
         modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 4.dp)
       )
       summary.areas.forEachIndexed { i, a ->
@@ -105,12 +105,12 @@ fun SessionSummaryScreen(
           Row(verticalAlignment = Alignment.Bottom) {
             Text(names[i], color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
-            Text(a.value?.let { Skill.stageName(it) } ?: "Sin medir", color = OnNightDim, fontSize = 14.sp)
+            Text(a.value?.let { Skill.stageName(it) } ?: "Sin medir", color = OnNightDim, fontSize = 16.sp)
           }
           AreaBar(a.value, a.change, height = 10.dp, modifier = Modifier.padding(vertical = 8.dp))
           Text(
             if (a.value == null) "Se mide al jugarlo a tu medida" else AreaProgress.changeLine(a, "Hoy"),
-            color = OnNightDim, fontSize = 14.sp
+            color = OnNightDim, fontSize = 16.sp
           )
         }
       }
@@ -119,7 +119,7 @@ fun SessionSummaryScreen(
     Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 12.dp, top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
       Text(
         "Nubi te espera mañana para seguir",
-        color = OnNightDim, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+        color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
       )
       ClayButton(text = "Volver a Hoy", onClick = onClose, modifier = Modifier.testTag("btn_summary_close"))
     }

@@ -107,7 +107,7 @@ object ResultPhrases {
 }
 
 
-private val TextSoft = Color(0xFFB4BFEA) // secundario sobre el cielo nocturno (contraste > 7:1)
+private val TextSoft = com.example.ui.theme.NubiTokens.OnNightDim // secundario sobre el cielo nocturno (contraste > 7:1)
 
 /**
  * Pantalla de resultado de la app, con el sello "noche + arcilla" (rediseño 25-sep): va sobre el cielo
@@ -405,7 +405,7 @@ fun GameResultScreen(
           Spacer(Modifier.height(14.dp))
           Text("Tu reconocimiento", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
           Text(line, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 16.dp))
-          Text("Es normal: las raras tardan más.", color = TextSoft, fontSize = 14.sp)
+          Text("Es normal: las raras tardan más.", color = TextSoft, fontSize = 16.sp)
         }
         vocab.filterHeadline(result.lexFaSeen, result.lexFaHits)?.let { headline ->
           Spacer(Modifier.height(14.dp))
@@ -448,7 +448,7 @@ fun GameResultScreen(
           atlasLogic.trapFooledLine(intrSeen, result.intrHitsType)?.takeIf { f -> f != model.dataLine }?.let { f ->
             Text(f, color = Clay.Coral, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
           }
-          Text(com.example.data.ResultAdvice.body(it), color = Clay.Cream, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
+          Text(com.example.data.ResultAdvice.body(it), color = Clay.Cream, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp))
         }
         atlasLogic.bonusLine(result.intrBonusSeen, result.intrBonusHits)?.takeIf { b -> model.dataLine?.endsWith(b) != true }?.let {
           Spacer(Modifier.height(12.dp))
@@ -725,7 +725,7 @@ fun GameResultScreen(
         Spacer(Modifier.width(10.dp))
         Column {
           Text(rank.label, color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-          Text("${rank.rating} trofeos en este juego", color = TextSoft, fontSize = 14.sp)
+          Text("${rank.rating} trofeos en este juego", color = TextSoft, fontSize = 16.sp)
         }
       }
     }
@@ -808,7 +808,7 @@ private fun DrawScope.drawBurst(center: Offset, progress: Float, reach: Float) {
 private fun Stat(value: String, label: String) {
   Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 6.dp)) {
     Text(value, color = Clay.Cream, fontWeight = FontWeight.Bold, fontSize = 20.sp, fontFamily = AppFamily)
-    Text(label, color = TextSoft, fontSize = 14.sp)
+    Text(label, color = TextSoft, fontSize = 16.sp)
   }
 }
 
@@ -1149,7 +1149,7 @@ private fun VocabBar(label: String, percent: Int, lowest: Boolean, modifier: Mod
         text = if (percent >= 0) "$percent%" else "aún sin medir",
         color = if (percent >= 0) Clay.Cream else TextSoft,
         fontWeight = FontWeight.Bold,
-        fontSize = if (percent >= 0) 17.sp else 14.sp,
+        fontSize = if (percent >= 0) 17.sp else 16.sp,
         textAlign = TextAlign.End
       )
       if (lowest) Text("la más baja", color = Clay.Coral, fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.End)
@@ -1184,7 +1184,7 @@ private fun ReadingBar(row: com.example.data.Reading.TypeRow, fraction: Float, m
         text = com.example.data.Reading.seconds(row.ms),
         color = slowColor, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, softWrap = false
       )
-      if (row.slowest) Text("la más lenta", color = Clay.Coral, fontSize = 14.sp, fontWeight = FontWeight.Bold, softWrap = false)
+      if (row.slowest) Text("la más lenta", color = Clay.Coral, fontSize = 16.sp, fontWeight = FontWeight.Bold, softWrap = false)
     }
   }
 }
@@ -1213,7 +1213,7 @@ private fun AtlasBar(row: com.example.data.Atlas.CategoryRow, modifier: Modifier
     Spacer(Modifier.weight(1f))
     Column(horizontalAlignment = Alignment.End) {
       Text("${row.hits} de ${row.seen}", color = color, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, softWrap = false)
-      if (row.lowest) Text("la más baja", color = Clay.Coral, fontSize = 14.sp, fontWeight = FontWeight.Bold, softWrap = false)
+      if (row.lowest) Text("la más baja", color = Clay.Coral, fontSize = 16.sp, fontWeight = FontWeight.Bold, softWrap = false)
     }
   }
 }
@@ -1230,7 +1230,7 @@ private fun TrailModeBar(row: com.example.data.Trail.ModeRow, modifier: Modifier
   Row(modifier, verticalAlignment = Alignment.CenterVertically) {
     Column(Modifier.width(150.dp)) {
       Text(row.label, color = Clay.Cream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-      if (row.lowest) Text("el que más te costó", color = Clay.Coral, fontSize = 14.sp, fontWeight = FontWeight.Bold, softWrap = false)
+      if (row.lowest) Text("el que más te costó", color = Clay.Coral, fontSize = 16.sp, fontWeight = FontWeight.Bold, softWrap = false)
     }
     Canvas(Modifier.width(70.dp).height(11.dp)) {
       val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
@@ -1276,7 +1276,7 @@ private fun PuntaWordRow(entry: com.example.data.PuntaEntry, modifier: Modifier 
     PuntaLucero(entry.tier)
     Text(entry.word, color = Clay.Cream, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, modifier = Modifier.padding(start = 10.dp))
     Spacer(Modifier.weight(1f))
-    Text(entry.tier.label, color = TextSoft, fontSize = 14.sp, textAlign = TextAlign.End, softWrap = false)
+    Text(entry.tier.label, color = TextSoft, fontSize = 16.sp, textAlign = TextAlign.End, softWrap = false)
   }
 }
 
@@ -1287,7 +1287,7 @@ private fun DetailLine(text: String, tag: String, strong: Boolean = false, soft:
   Text(
     text = text,
     color = if (celebrate) Clay.Sun else if (strong) Clay.Cream else TextSoft,
-    fontSize = if (celebrate || strong || !soft) 15.sp else 14.sp,
+    fontSize = if (celebrate || strong || !soft) 15.sp else 16.sp,
     fontWeight = if (celebrate) FontWeight.SemiBold else FontWeight.Normal,
     textAlign = TextAlign.Center,
     modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).testTag(tag)

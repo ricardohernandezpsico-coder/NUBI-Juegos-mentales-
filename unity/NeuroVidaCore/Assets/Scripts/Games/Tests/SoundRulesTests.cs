@@ -86,5 +86,18 @@ namespace NeuroVida.Games.Tests
                         Assert.Fail("El «¡Listo!» de la práctica en " + Where(file, i) + " tiene que sonar GameFeel.Notice() (la paleta), no un tono suelto");
             }
         }
+
+        /// <summary>El toque del kit (Tarea 123; Fable §3.5): suena el golpecito de madera Y da un tic háptico, con el ajuste de vibración de la app (`HapticsOn`), suene o no el golpecito.</summary>
+        [Test]
+        public void TheKitTap_AlsoGivesAHapticTick()
+        {
+            string text = File.ReadAllText(Path.Combine(Application.dataPath, "Scripts", "Games", "Shared", "GameFeel.cs"));
+            int tap = text.IndexOf("public static void Tap()", System.StringComparison.Ordinal);
+            Assert.GreaterOrEqual(tap, 0, "GameFeel.Tap existe");
+            int end = text.IndexOf("/// <summary>", tap, System.StringComparison.Ordinal);
+            string body = text.Substring(tap, (end > tap ? end : text.Length) - tap);
+            Assert.IsTrue(body.Contains("WoodCore.Play(WoodSfx.Tap"), "el toque suena el golpecito de madera");
+            Assert.IsTrue(body.Contains("Haptic(HapticKind.Light)"), "y da el tic háptico (Haptic respeta HapticsOn, el ajuste de vibración de la app)");
+        }
     }
 }

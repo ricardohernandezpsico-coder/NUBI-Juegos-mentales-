@@ -39,6 +39,7 @@ import com.example.model.GameRegistry
 import com.example.model.UserSettings
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.CosmosBackground
+import com.example.ui.components.LocalBarInset
 import com.example.ui.components.LocalTabSwipeLock
 import com.example.ui.components.NeuroNavBar
 import com.example.ui.screens.FirstFlightScreen
@@ -132,8 +133,11 @@ class AppActualScreenshotTest {
   /** La barra de pestañas como en la app: abajo, sobre la barra de navegación del sistema (48 dp). */
   @androidx.compose.runtime.Composable
   private fun androidx.compose.foundation.layout.BoxScope.NavBar(tab: AppTab) {
-    NeuroNavBar(current = tab, onSelect = {}, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp))
+    NeuroNavBar(current = tab, onSelect = {}, modifier = Modifier.align(Alignment.BottomCenter))
   }
+
+  /** Lo que mide la barra de pestañas a 393 dp de ancho (la bandeja con los cubos y las etiquetas, ~115 dp): la franja que cada pestaña deja libre (`LocalBarInset`). */
+  private val BAR_DP = 115
 
   private enum class Scene { HOY, JUEGOS, FICHA, AVANCE, PERFIL, AJUSTES, LICENCIAS, BARRA, VUELO_1, VUELO_2, VUELO_3, RESULTADO }
 
@@ -161,29 +165,29 @@ class AppActualScreenshotTest {
               // el margen de las barras del sistema: 24 dp arriba y 48 abajo (y la barra de pestañas en las tres pantallas principales)
               val top = Modifier.padding(top = 24.dp)
               when (scene) {
-                Scene.HOY -> Box(Modifier.fillMaxSize()) {
-                  Box(top.padding(bottom = 163.dp)) { HomeScreen(viewModel = vm!!, onNavigateToGames = {}) }
-                  if (!sheetOpen) NavBar(AppTab.HOY)
-                }
-                Scene.JUEGOS -> Box(Modifier.fillMaxSize()) {
-                  Box(top.padding(bottom = 163.dp)) { GamesLibraryScreen(viewModel = vm!!) }
-                  NavBar(AppTab.JUEGOS)
-                }
-                Scene.FICHA -> Box(Modifier.fillMaxSize().background(Color(0xFF050823)).padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.BottomCenter) {
+                Scene.HOY -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {                    // 48 dp de la barra de navegación del sistema; la barra de pestañas es una capa fija (Tarea 123) y la página deja su franja libre con LocalBarInset
+                CompositionLocalProvider(LocalBarInset provides BAR_DP.dp) { Box(top) { HomeScreen(viewModel = vm!!, onNavigateToGames = {}) } }
+                if (!sheetOpen) NavBar(AppTab.HOY)
+              }
+              Scene.JUEGOS -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {
+                CompositionLocalProvider(LocalBarInset provides BAR_DP.dp) { Box(top) { GamesLibraryScreen(viewModel = vm!!) } }
+                NavBar(AppTab.JUEGOS)
+              }
+              Scene.FICHA -> Box(Modifier.fillMaxSize().background(Color(0xFF050823)).padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.BottomCenter) {
                   val g = GameRegistry.getById("radar")!!
                   val now = System.currentTimeMillis()
                   val glance = listOf(260f, 240f, 250f, 210f, 190f, 170f).let { v -> v.mapIndexed { i, x -> MeasurePoint(now - (v.size - i) * day, "glance", x, 0.5f, true) } }
                   val data = cardData(g, g.title, now - day, now, 0.55f, glance, 6)
                   GameSheetContent(data, AgeBand.ADULT, expertOpen = false, choice = PlayMode.A_TU_MEDIDA, onChoose = {}, onPlay = {}, timed = true, onChooseTimed = {})
                 }
-                Scene.AVANCE -> Box(Modifier.fillMaxSize()) {
-                  Box(top.padding(bottom = 163.dp)) { ProgressScreen(viewModel = vm!!) }
-                  NavBar(AppTab.PROGRESO)
-                }
-                Scene.PERFIL -> Box(top) { ProfileScreen(viewModel = vm!!, onClose = {}) }
+                Scene.AVANCE -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {
+                CompositionLocalProvider(LocalBarInset provides BAR_DP.dp) { Box(top) { ProgressScreen(viewModel = vm!!) } }
+                NavBar(AppTab.PROGRESO)
+              }
+              Scene.PERFIL -> Box(top) { ProfileScreen(viewModel = vm!!, onClose = {}) }
                 Scene.AJUSTES -> Box(top) { SettingsPanel(viewModel = vm!!, onClose = {}) }
                 Scene.LICENCIAS -> Box(top) { LicensesScreen(onClose = {}) }
-                Scene.BARRA -> Box(Modifier.fillMaxSize()) { NavBar(AppTab.HOY) }
+                Scene.BARRA -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.HOY) }
                 Scene.VUELO_1 -> FirstFlightScreen(FlightState(FlightMode.FULL, FlightStep.HOLA), emptyList(), FlightActions.None)
                 Scene.VUELO_2 -> FirstFlightScreen(
                   FlightState(FlightMode.FULL, FlightStep.METAS, name = "Ana", age = AgeBand.ADULT, goals = setOf(DomainType.MEMORIA, DomainType.RAZONAMIENTO)), emptyList(), FlightActions.None
@@ -254,7 +258,7 @@ class AppActualScreenshotTest {
     r.settle(); r.shot("avance", 873)
     r.shot("avance-completa", 3900)
     r.go(Scene.PERFIL, 873); r.shot("perfil", 873)
-    r.shot("perfil-completa", 1700)
+    r.shot("perfil-completa", 2100)
   }
 
   @Test

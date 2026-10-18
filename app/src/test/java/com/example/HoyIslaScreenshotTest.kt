@@ -107,14 +107,14 @@ class HoyIslaScreenshotTest {
   fun la_isla_es_la_protagonista_y_toma_lo_que_sobra() {
     show(ui())
     printIsland("393×873 sin el enlace")
-    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(360.dp)   // a 393 × 873 con letra 1,0 y sin el enlace: más de 360 dp con la barra nueva de plasticina (371 en la Tarea 86; con la barra vieja eran ~417 y en la Tarea 83 ~240)
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(340.dp)   // Tarea 123 (letra de 16 sp): 344 dp, 16 menos que con la letra de 14 (antes ≥ 360). A 393 × 873 con letra 1,0 y sin el enlace: más de 360 dp con la barra nueva de plasticina (371 en la Tarea 86; con la barra vieja eran ~417 y en la Tarea 83 ~240)
   }
 
   @Test
   fun con_el_enlace_del_punto_de_partida_la_isla_cede_ese_alto_pero_sigue_siendo_grande() {
     show(ui(hasBaseline = false))
     printIsland("393×873 con el enlace")
-    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(320.dp)   // con el enlace en UNA línea (Tarea 87): 331 dp a 393 × 873 (con la frase de dos líneas eran 307)
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(300.dp)   // Tarea 123 (letra de 16 sp): 304 dp (antes ≥ 320); con el enlace en UNA línea (Tarea 87): 331 dp a 393 × 873 (con la frase de dos líneas eran 307)
     composeTestRule.onNodeWithTag("btn_home_baseline").assertIsDisplayed()
     composeTestRule.onNodeWithTag("btn_home_play").assertIsDisplayed()
   }

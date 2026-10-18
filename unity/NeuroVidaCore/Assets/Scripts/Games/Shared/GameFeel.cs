@@ -78,6 +78,7 @@ namespace NeuroVida.Games.Shared
             if (now - _lastTap < TapGap) return;
             _lastTap = now;
             WoodCore.Play(WoodSfx.Tap, 0, ui: true);
+            Haptic(HapticKind.Light);                                                  // el tic del toque (Tarea 123): con el mismo ajuste de vibración de la app, suene o no el golpecito (Fable §3.5)
         }
 
         /// <summary>El número de la cuenta regresiva (3, 2 o 1): una marimba que sube un escalón por número.</summary>

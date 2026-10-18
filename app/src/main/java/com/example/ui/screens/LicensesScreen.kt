@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private val Title = Color(0xFFEAF0FF)
-private val Body = Color(0xFFC7D0FF)
+private val Body = com.example.ui.theme.NubiTokens.OnNightDim
 
 /**
  * "Licencias y créditos" (Ajustes, 1-oct): lo que hay que citar de lo que no es nuestro. Texto suelto con títulos, sin
@@ -56,7 +56,7 @@ fun LicensesContent(modifier: Modifier = Modifier) {
       .padding(horizontal = 24.dp, vertical = 8.dp)
       .testTag("licenses_content")
   ) {
-    Text(
+    com.example.ui.components.OnBoardText(
       "Nubi usa trabajo de otras personas. Aquí está de quién es y bajo qué licencia.",
       color = Body, fontSize = 16.sp, lineHeight = 22.sp
     )
@@ -120,13 +120,13 @@ private fun OflText() {
     modifier = Modifier.padding(top = 6.dp, bottom = 8.dp).testTag("btn_ofl_text")
   )
   if (open) {
-    Text(text, color = Body, fontSize = 14.sp, lineHeight = 19.sp, modifier = Modifier.padding(bottom = 8.dp).testTag("ofl_text"))
+    com.example.ui.components.OnBoardText(text, color = Body, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 8.dp).testTag("ofl_text"))
   }
 }
 
 @Composable
 private fun Section(text: String) {
-  Text(
+  com.example.ui.components.OnBoardText(
     text, color = Title, fontSize = 19.sp, fontWeight = FontWeight.Bold,
     modifier = Modifier.padding(top = 22.dp, bottom = 6.dp)
   )
@@ -134,5 +134,5 @@ private fun Section(text: String) {
 
 @Composable
 private fun Para(text: String) {
-  Text(text, color = Body, fontSize = 15.sp, lineHeight = 21.sp, modifier = Modifier.padding(bottom = 8.dp))
+  com.example.ui.components.OnBoardText(text, color = Body, fontSize = 15.sp, lineHeight = 21.sp, modifier = Modifier.padding(bottom = 8.dp))
 }

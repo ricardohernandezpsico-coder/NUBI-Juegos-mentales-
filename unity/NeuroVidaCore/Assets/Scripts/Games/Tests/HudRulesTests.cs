@@ -99,19 +99,27 @@ namespace NeuroVida.Games.Tests
         // ------------------------------------------------------------------ letra de 14 dp
 
         [Test]
-        public void GameHud_NoTextIsSmallerThan14Dp()
+        public void GameHud_NoTextIsSmallerThan14Dp_AndTheChipsNotSmallerThan16Dp()
         {
             var hud = new GameHud(NewArea(), "Un título cualquiera", 48f, NewHost());
             hud.SetLevel(1);
             hud.SetInfo("1 de 40");
-            int checkedTexts = 0;
+            int checkedTexts = 0, chips = 0;
             foreach (var t in hud.Rect.GetComponentsInChildren<Text>(true))
             {
                 int smallest = t.resizeTextForBestFit ? t.resizeTextMinSize : t.fontSize;
                 Assert.GreaterOrEqual(smallest, 42, t.name + ": el marcador no baja de 14 dp (42 unidades)");
+                // los chips «Nivel N» y «N de M» y el rótulo «seguidos» van a 16 dp (48 unidades; Tarea 123, letra de 16)
+                string path = t.transform.parent != null ? t.transform.parent.name + "/" + t.name : t.name;
+                if (path == "LevelChip/Text" || path == "InfoChip/Text" || path == "StreakPill/Label")
+                {
+                    Assert.GreaterOrEqual(smallest, 48, path + ": los chips del marcador no bajan de 16 dp (48 unidades)");
+                    chips++;
+                }
                 checkedTexts++;
             }
             Assert.GreaterOrEqual(checkedTexts, 4, "título, nivel, avance y racha");
+            Assert.AreEqual(3, chips, "«Nivel», «N de M» y «seguidos»");
         }
 
         private static readonly Regex MakeTextSize = new Regex(@"MakeText\(\s*[^,;]+,\s*(?:""[^""]*""|[A-Za-z_\.\+ ""]+?),\s*(\d+)\s*,");

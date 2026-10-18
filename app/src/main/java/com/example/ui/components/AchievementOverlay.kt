@@ -202,7 +202,7 @@ fun AchievementOverlay(
           text = "$unlockedCount de $totalCount logros",
           fontFamily = AppFamily,
           fontSize = 15.sp,
-          color = Color(0xFFB4BFEA),
+          color = com.example.ui.theme.NubiTokens.OnNightDim,
           modifier = Modifier.padding(top = 10.dp)
         )
         Spacer(Modifier.height(28.dp))

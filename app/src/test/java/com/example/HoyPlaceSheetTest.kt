@@ -153,30 +153,29 @@ class HoyPlaceSheetTest {
 
   private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTextCount(text: String) = onAllNodes(androidx.compose.ui.test.hasText(text)).fetchSemanticsNodes().size
 
-  // ---- La leyenda de Nubi no cae en la franja que se desvanece abajo (Tarea 86)
+  // ---- La leyenda de Nubi y «Jugar» quedan con aire sobre la barra del teléfono (Tarea 86; desde la Tarea 123 ya no hay franja que se desvanezca: la lámina cubre la barra de pestañas y deja 32 dp de aire abajo)
 
   private fun luminance(c: androidx.compose.ui.graphics.Color): Double {
     fun ch(v: Float): Double = v.toDouble().let { if (it <= 0.03928) it / 12.92 else Math.pow((it + 0.055) / 1.055, 2.4) }
     return 0.2126 * ch(c.red) + 0.7152 * ch(c.green) + 0.0722 * ch(c.blue)
   }
 
-  /** La caja de las pestañas (MainActivity) se desvanece en el último `PAGE_BOTTOM_FADE` de su alto: aquí la caja mide alto − 24 (estado) − 48 (navegación). */
-  private fun assertLegendClearOfFade(heightDp: Int) {
+  /** La caja de las pestañas mide alto − 24 (estado) − 48 (navegación); la lámina deja `PAGE_FOOTER_BOTTOM` (32 dp) de aire abajo, sobre la barra del teléfono. */
+  private fun assertLegendAboveTheFooterMargin(heightDp: Int) {
     val density = rule.density.density
     val pageBottom = (heightDp - 48) * density
-    val pageHeight = (heightDp - 24 - 48) * density
-    val fadeTop = pageBottom - pageHeight * com.example.ui.components.PAGE_BOTTOM_FADE
+    val limit = pageBottom - com.example.ui.screens.PAGE_FOOTER_BOTTOM.value * density
     val legend = bounds("place_chosen")
-    assertTrue("la leyenda «Nubi elige…» termina en ${legend.bottom} y la franja que se desvanece empieza en $fadeTop", legend.bottom <= fadeTop - 4 * density)
+    assertTrue("la leyenda «Nubi elige…» termina en ${legend.bottom} y el aire de abajo empieza en $limit", legend.bottom <= limit + 1f)
     val play = bounds("place_play")
-    assertTrue("«Jugar» también queda sobre la franja", play.bottom <= fadeTop)
+    assertTrue("«Jugar» también queda sobre el aire de abajo", play.bottom <= limit + 1f)
     rule.onNodeWithTag("place_chosen").assertIsDisplayed()
   }
 
-  @Test fun la_leyenda_de_nubi_queda_sobre_la_franja_que_se_desvanece_a_393() { show(393, 873); open("observatorio"); assertLegendClearOfFade(873) }
-  @Test fun la_leyenda_de_nubi_queda_sobre_la_franja_que_se_desvanece_a_360() { show(360, 780); open("antena"); assertLegendClearOfFade(780) }
-  @Test fun la_leyenda_de_nubi_queda_sobre_la_franja_que_se_desvanece_con_letra_1_3() { show(393, 873, 1.3f); open("hangar"); assertLegendClearOfFade(873) }
-  @Test fun la_leyenda_de_nubi_queda_sobre_la_franja_que_se_desvanece_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertLegendClearOfFade(873) }
+  @Test fun la_leyenda_de_nubi_queda_con_aire_abajo_a_393() { show(393, 873); open("observatorio"); assertLegendAboveTheFooterMargin(873) }
+  @Test fun la_leyenda_de_nubi_queda_con_aire_abajo_a_360() { show(360, 780); open("antena"); assertLegendAboveTheFooterMargin(780) }
+  @Test fun la_leyenda_de_nubi_queda_con_aire_abajo_con_letra_1_3() { show(393, 873, 1.3f); open("hangar"); assertLegendAboveTheFooterMargin(873) }
+  @Test fun la_leyenda_de_nubi_queda_con_aire_abajo_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertLegendAboveTheFooterMargin(873) }
 
   @Test
   fun la_leyenda_de_nubi_sobre_la_lamina_tiene_contraste_de_al_menos_4_5() {
@@ -187,10 +186,10 @@ class HoyPlaceSheetTest {
   }
 
   @Test
-  fun el_margen_del_pie_sube_con_el_alto_de_la_pagina_y_nunca_baja_de_32_dp() {
-    assertEquals(48.05f, com.example.ui.screens.pageFooterBottom(801.dp).value, 0.1f)
+  fun el_margen_del_pie_es_de_32_dp_sin_franja_que_se_desvanezca() {
+    assertEquals("la lámina cubre la barra de pestañas y deja 32 dp de aire abajo, a cualquier alto", 32f, com.example.ui.screens.pageFooterBottom(801.dp).value, 0.01f)
     assertEquals(32f, com.example.ui.screens.pageFooterBottom(300.dp).value, 0.01f)
-    assertTrue(com.example.ui.screens.pageFooterBottom(900.dp) > com.example.ui.screens.pageFooterBottom(700.dp))
+    assertEquals(32f, com.example.ui.screens.pageFooterBottom(900.dp).value, 0.01f)
   }
 
   // ---- «Jugar» siempre a la vista

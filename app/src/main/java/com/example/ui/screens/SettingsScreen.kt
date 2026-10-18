@@ -46,8 +46,7 @@ import com.example.ui.components.PanelAccent
 import com.example.ui.i18n.strings
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
-import com.example.ui.theme.EmeraldAccent
-import com.example.ui.theme.TealPrimary
+import com.example.ui.theme.NubiTokens
 import com.example.viewmodel.NeuroVidaViewModel
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
@@ -124,7 +123,7 @@ fun SettingsScreen(
   ) {
     Spacer(modifier = Modifier.height(16.dp))
 
-    Text(
+    com.example.ui.components.OnBoardText(
       text = strings.settingsTitle,
       style = MaterialTheme.typography.headlineMedium,
       fontWeight = FontWeight.Black,
@@ -548,7 +547,7 @@ fun SettingsScreen(
               ) {
                 Column(Modifier.weight(1f)) {
                   Text(text = label, fontSize = 15.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
-                  Text(text = "%02d:%02d".format(h, m), fontSize = 14.sp, color = Clay.InkMuted)
+                  Text(text = "%02d:%02d".format(h, m), fontSize = 16.sp, color = Clay.InkMuted)
                 }
               }
             } } }

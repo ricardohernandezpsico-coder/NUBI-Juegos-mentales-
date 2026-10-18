@@ -64,8 +64,8 @@ val Typography = Typography(
   titleSmall = Base.titleSmall.copy(fontFamily = FredokaFamily),
   bodyLarge = Base.bodyLarge.copy(fontFamily = AppFamily),
   bodyMedium = Base.bodyMedium.copy(fontFamily = AppFamily, fontSize = 15.sp, lineHeight = 21.sp),
-  bodySmall = Base.bodySmall.copy(fontFamily = AppFamily, fontSize = 14.sp, lineHeight = 19.sp),
+  bodySmall = Base.bodySmall.copy(fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp),
   labelLarge = Base.labelLarge.copy(fontFamily = AppFamily),
-  labelMedium = Base.labelMedium.copy(fontFamily = AppFamily, fontSize = 14.sp, lineHeight = 18.sp),
+  labelMedium = Base.labelMedium.copy(fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 21.sp),
   labelSmall = Base.labelSmall.copy(fontFamily = AppFamily, fontSize = 13.sp, lineHeight = 17.sp)
 )

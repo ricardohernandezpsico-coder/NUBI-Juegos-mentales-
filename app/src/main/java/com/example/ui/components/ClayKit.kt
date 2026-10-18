@@ -163,7 +163,7 @@ internal fun DrawScope.drawKitGlyph(image: ImageBitmap, piece: KitPiece, scale: 
 }
 
 /** Lo que tarda la losa en pasar a presionada (y a volver). */
-internal const val PRESS_MS = 80
+internal const val PRESS_MS = NubiMotion.PRESS_MS
 
 /**
  * La losa de plasticina como contenedor: dibuja el nine-slice del [color] y [size] detrás de su contenido (el texto de Compose NO va horneado) y, si hay [onClick], al apoyar el dedo cambia a la imagen presionada en ~80 ms (con «quitar animaciones», de golpe)
@@ -191,7 +191,10 @@ internal fun ClaySlab(
   val source = remember { MutableInteractionSource() }
   val isPressed by source.collectIsPressedAsState()
   val reduce = rememberReduceMotion()
-  val p by animateFloatAsState(if ((isPressed && onClick != null) || forcePressed) 1f else 0f, if (reduce) snap() else tween(PRESS_MS), label = "losa")
+  val pressedNow = (isPressed && onClick != null) || forcePressed
+  val p by animateFloatAsState(if (pressedNow) 1f else 0f, NubiMotion.finger(reduce, pressedNow), label = "losa")       // 80 ms al apretar y 140 al soltar (NubiMotion)
+  val tick = rememberKitTap()
+  androidx.compose.runtime.LaunchedEffect(isPressed) { if (isPressed && onClick != null) tick() }      // el tic háptico al APOYAR el dedo (KitHaptics; solo con la vibración de la app encendida)
   val click = if (onClick != null) Modifier.clickable(interactionSource = source, indication = null, role = role, onClick = onClick) else Modifier
   // El contenido define el tamaño; las imágenes se dibujan en una capa que llena al padre (así la losa nunca se agranda por su cuenta) y el toque va en el contenedor, sin contar los 6 dp de abajo.
   Box(modifier.padding(bottom = 6.dp).then(click), contentAlignment = contentAlignment) {
@@ -266,7 +269,10 @@ internal fun ClayDisc(
   val source = remember { MutableInteractionSource() }
   val isPressed by source.collectIsPressedAsState()
   val reduce = rememberReduceMotion()
-  val p by animateFloatAsState(if ((isPressed && onClick != null) || forcePressed) 1f else 0f, if (reduce) snap() else tween(PRESS_MS), label = "disco")
+  val pressedNow = (isPressed && onClick != null) || forcePressed
+  val p by animateFloatAsState(if (pressedNow) 1f else 0f, NubiMotion.finger(reduce, pressedNow), label = "disco")
+  val tick = rememberKitTap()
+  androidx.compose.runtime.LaunchedEffect(isPressed) { if (isPressed && onClick != null) tick() }
   Box(
     modifier
       .size(disc.bodyWidth.dp, disc.bodyHeight.dp)

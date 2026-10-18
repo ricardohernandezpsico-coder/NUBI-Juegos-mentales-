@@ -30,7 +30,7 @@ import com.example.model.GameRegistry
 import com.example.model.RankTier
 
 private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = Color(0xFFB4BFEA)
+private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 
 /** Titulo de seccion sin recuadro: texto claro con una linea fina encima que separa del bloque anterior. */
 @Composable
@@ -63,7 +63,7 @@ fun LeagueHero(tier: RankTier, rating: Int, progress: Float, index: Int?, modifi
         append("$rating trofeos")
         if (index != null) append("  ·  nivel $index")
       },
-      color = OnNightDim, fontSize = 14.sp
+      color = OnNightDim, fontSize = 16.sp
     )
     if (next != null) {
       Spacer(Modifier.height(12.dp))
@@ -84,7 +84,7 @@ fun LeagueHero(tier: RankTier, rating: Int, progress: Float, index: Int?, modifi
       }
       OnBoardText(
         "faltan ${(next.minRating - rating).coerceAtLeast(0)} para ${next.tierName}",
-        color = OnNightDim, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp)
+        color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp)
       )
     }
   }
@@ -106,7 +106,7 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
             OnBoardText(
               text = if (v == null) "Sin medir" else levelWord(v),
               color = if (v == null) OnNightDim else g.domain.color,
-              fontSize = 14.sp, fontWeight = FontWeight.Bold
+              fontSize = 16.sp, fontWeight = FontWeight.Bold
             )
           }
           Box(
@@ -129,14 +129,14 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
           }
           OnBoardText(
             rank?.label ?: "",
-            color = OnNightDim, fontSize = 14.sp, modifier = Modifier.padding(top = 3.dp)
+            color = OnNightDim, fontSize = 16.sp, modifier = Modifier.padding(top = 3.dp)
           )
         }
       }
     }
     OnBoardText(
       "Estimación interna según cómo se adapta la dificultad a ti; no es una medida clínica.",
-      color = OnNightDim, fontSize = 14.sp
+      color = OnNightDim, fontSize = 16.sp
     )
   }
 }

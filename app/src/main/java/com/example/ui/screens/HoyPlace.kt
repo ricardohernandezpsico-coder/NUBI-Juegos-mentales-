@@ -81,7 +81,6 @@ import com.example.data.PlaceSheets
 import com.example.data.Skill
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitCloseButton
-import com.example.ui.components.PAGE_BOTTOM_FADE
 import com.example.ui.components.PlaceMotion
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
@@ -408,13 +407,16 @@ internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: D
         glyph = Glyph.PLAY, fontSize = 19.sp,
         modifier = Modifier.testTag("place_play")
       )
-      place.chosenLine?.let { Text(it, color = SheetMuted, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp).testTag("place_chosen")) }
+      place.chosenLine?.let { Text(it, color = SheetMuted, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp).testTag("place_chosen")) }
     }
   }
 }
 
 /** Margen de abajo del pie de la lámina: la franja que se desvanece (`PAGE_BOTTOM_FADE` del alto de la página) más 12 dp de aire, y nunca menos de 32. */
-internal fun pageFooterBottom(pageHeight: Dp): Dp = maxOf(32.dp, pageHeight * PAGE_BOTTOM_FADE + 12.dp)
+internal fun pageFooterBottom(@Suppress("UNUSED_PARAMETER") pageHeight: Dp): Dp = PAGE_FOOTER_BOTTOM
+
+/** El aire de abajo de la lámina de un lugar: la lámina cubre la barra de pestañas (capa fija) y termina sobre la barra del sistema; ya no hay franja que se desvanezca (Tarea 123). */
+internal val PAGE_FOOTER_BOTTOM = 32.dp
 
 /** El tamaño (en sp, de 26 a 20) con el que [text] cabe en una línea de [availablePx]; null si ni a 20 sp cabe. */
 @Composable
@@ -497,7 +499,7 @@ private fun StageBar(place: PlaceSheetUi) {
     }
     if (LocalDensity.current.fontScale > 1.15f) {
       Text(
-        "Etapas: " + Skill.STAGES.joinToString(" · ") + (place.stageName?.let { ". Vas en $it" } ?: ""), color = SheetMuted, fontSize = 14.sp,
+        "Etapas: " + Skill.STAGES.joinToString(" · ") + (place.stageName?.let { ". Vas en $it" } ?: ""), color = SheetMuted, fontSize = 14.sp,      // la escala de las 5 etapas: rótulo de gráfico, 14 sp
         modifier = Modifier.testTag("place_stages")
       )
     } else {
@@ -527,7 +529,7 @@ private fun WeeksRow(place: PlaceSheetUi) {
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(place.weeks.getOrNull(i)?.toString() ?: "—", color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-      Text(PlaceSheets.WEEK_LABELS[i], color = SheetMuted, fontSize = 14.sp, textAlign = TextAlign.Center, fontWeight = if (now) FontWeight.Bold else FontWeight.Normal)
+      Text(PlaceSheets.WEEK_LABELS[i], color = SheetMuted, fontSize = 16.sp, textAlign = TextAlign.Center, fontWeight = if (now) FontWeight.Bold else FontWeight.Normal)
     }
   }
   if (LocalDensity.current.fontScale > 1.15f) {
@@ -556,6 +558,6 @@ private fun GameRow(row: PlaceGameRow, color: Color, onClick: () -> Unit) {
   ) {
     Box(Modifier.size(12.dp).clip(CircleShape).background(color).border(2.dp, Clay.Ink, CircleShape))
     Text(row.title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-    Text(row.detail, color = SheetMuted, fontSize = 14.sp, textAlign = TextAlign.End, modifier = Modifier.widthIn(max = 150.dp))
+    Text(row.detail, color = SheetMuted, fontSize = 16.sp, textAlign = TextAlign.End, modifier = Modifier.widthIn(max = 150.dp))
   }
 }

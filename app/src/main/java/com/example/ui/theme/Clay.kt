@@ -108,7 +108,7 @@ fun ClayPill(text: String, modifier: Modifier = Modifier, color: Color = Clay.Su
         Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(4.dp))
       }
-      Text(text, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+      Text(text, color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
   }
 }

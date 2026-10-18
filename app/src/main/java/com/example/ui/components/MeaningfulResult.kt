@@ -148,10 +148,10 @@ fun WhatYouDid(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
           Text(it, color = PanelAccent, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
         }
         model.summaryLine?.let {
-          Text(it, color = Clay.InkMuted, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
+          Text(it, color = Clay.InkMuted, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
         }
         model.extraLine?.let {
-          Text(it, color = Clay.InkMuted, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
+          Text(it, color = Clay.InkMuted, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
         }
       }
     }
@@ -175,7 +175,7 @@ fun YourProgress(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
         ) {
           // los tres cuadros miden lo mismo aunque un valor largo («3,2 a la vez», «zona firme») pase a dos líneas
           Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize()) {
-            Text(chip.label, color = if (chip.highlight) Clay.Ink else Clay.InkMuted, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
+            Text(chip.label, color = if (chip.highlight) Clay.Ink else Clay.InkMuted, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center)
             Text(chip.value, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, textAlign = TextAlign.Center)
           }
         }
@@ -203,7 +203,7 @@ fun NextTrick(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
   ) {
     Column(modifier = Modifier.fillMaxWidth()) {
       Text(model.trickTitle, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-      Text(model.trick, color = Clay.Ink, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+      Text(model.trick, color = Clay.Ink, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp))
     }
   }
 }
@@ -216,9 +216,9 @@ fun WhyItMatters(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Box(Modifier.fillMaxWidth().height(1.dp).background(Faint.copy(alpha = 0.35f)))
-    Text(model.whyTitle, color = Muted, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
-    Text(model.why, color = Muted, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
-    Text(model.source, color = Faint, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
-    Text(model.note, color = Faint, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
+    Text(model.whyTitle, color = Muted, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+    Text(model.why, color = Muted, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
+    Text(model.source, color = Faint, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
+    Text(model.note, color = Faint, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
   }
 }

@@ -11,25 +11,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-// Esquema unico "cosmos": fondo transparente (lo dibuja CosmosBackground), superficies azul noche y acentos
-// azul electrico + naranja. Ver ui/components/CosmosBackground.kt.
+// Esquema unico "cosmos": fondo transparente (lo dibuja el fondo «Espacio profundo»), superficies azul noche y, de acento, los colores del KIT (Clay: cielo, tinta, coral, sol), no los azul eléctrico y naranja con que se armó la app en AI Studio.
+// Todo sale de NubiTokens y Clay (Tarea 123). Cambios de color: `primary`, `secondary`, `tertiary` y sus contenedores (ningún componente visible los lee: se buscó en el código) y `onSurfaceVariant`,
+// que pasa de #B4BFEA a #C7D0FF (el texto secundario sobre el cielo es uno solo). Lo demás, igual que antes.
 private val CosmosColorScheme =
   darkColorScheme(
-    primary = Color(0xFF5B9BFF),
-    onPrimary = Color(0xFF07123A),
-    primaryContainer = Color(0xFF1E3A8A),
-    onPrimaryContainer = Color(0xFFDCE8FF),
-    secondary = Color(0xFFFF8A3D),
-    onSecondary = Color(0xFF2B1200),
-    tertiary = Color(0xFFFFB347),
+    primary = Clay.Sky,
+    onPrimary = Clay.Ink,
+    primaryContainer = Clay.Ink,
+    onPrimaryContainer = Clay.Cream,
+    secondary = Clay.Coral,
+    onSecondary = Clay.Ink,
+    tertiary = Clay.Sun,
     background = Color.Transparent,
-    onBackground = Color(0xFFEAF0FF),
-    surface = Color(0xE6172058),
-    onSurface = Color(0xFFEAF0FF),
-    surfaceVariant = Color(0xFF243078),
-    onSurfaceVariant = Color(0xFFB4BFEA),
-    outline = Color(0xFF4B5AA8),
-    outlineVariant = Color(0xFF34418A)
+    onBackground = NubiTokens.OnNight,
+    surface = NubiTokens.Surface,
+    onSurface = NubiTokens.OnNight,
+    surfaceVariant = NubiTokens.SurfaceVariant,
+    onSurfaceVariant = NubiTokens.OnNightDim,
+    outline = NubiTokens.Outline,
+    outlineVariant = NubiTokens.OutlineVariant
   )
 
 @Composable

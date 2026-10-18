@@ -31,7 +31,7 @@ import com.example.ui.theme.Clay
 fun domainOf(key: String): DomainType? = DomainType.fromStored(key)
 
 /** Color del dominio aclarado para texto sobre el cielo (contraste ≥ 4.5:1 con la noche). */
-fun domainTextColor(key: String): Color = lerp(domainOf(key)?.color ?: Color.White, Color.White, 0.45f)
+fun domainTextColor(key: String): Color = com.example.ui.theme.NubiTokens.onSky(domainOf(key)?.color ?: Color.White)
 
 /** Un juego como planetita de arcilla (color de su dominio + ícono); [done] = ✓ lima de "ya jugado hoy". */
 @Composable

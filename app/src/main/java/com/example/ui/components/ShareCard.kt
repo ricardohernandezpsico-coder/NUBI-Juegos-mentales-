@@ -162,7 +162,7 @@ object ShareCard {
     y = centered(measurer, content.subtitle, sub, y + 18f)
 
     val num = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 92.sp, color = Clay.Sun, textAlign = TextAlign.Center)
-    val lbl = TextStyle(fontFamily = AppFamily, fontSize = 38.sp, color = Color(0xFFB4BFEA), textAlign = TextAlign.Center)
+    val lbl = TextStyle(fontFamily = AppFamily, fontSize = 38.sp, color = com.example.ui.theme.NubiTokens.OnNightDim, textAlign = TextAlign.Center)
     val stats = content.stats.take(2)
     val statsTop = y + 110f
     val colW = w / stats.size.coerceAtLeast(1)
@@ -173,7 +173,7 @@ object ShareCard {
       val lb = measurer.measure(l, lbl, constraints = Constraints.fixedWidth(colW.toInt()))
       drawText(lb, topLeft = Offset(left, statsTop + nb.size.height - 6f))
     }
-    if (stats.size == 2) drawCircle(Color(0xFFB4BFEA).copy(alpha = 0.6f), 7f, Offset(w / 2f, statsTop + 70f))
+    if (stats.size == 2) drawCircle(com.example.ui.theme.NubiTokens.OnNightDim.copy(alpha = 0.6f), 7f, Offset(w / 2f, statsTop + 70f))
 
     // Pie
     val foot = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)

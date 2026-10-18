@@ -128,7 +128,7 @@ fun ProgressTrendChart(
     }
   }
 
-  val activeColor = selectedDomain?.color ?: TealPrimary
+  val activeColor = selectedDomain?.color ?: NubiTokens.Brand
 
   Column(
     modifier = modifier
@@ -164,9 +164,9 @@ fun ProgressTrendChart(
         // Improvement badge
         if (filteredData.size >= 2) {
           val badgeColor = when {
-            stats.improvementPct > 0.5f -> EmeraldAccent
+            stats.improvementPct > 0.5f -> NubiTokens.Success
             stats.improvementPct < -0.5f -> Color(0xFFEF4444)
-            else -> Slate600
+            else -> NubiTokens.Neutral
           }
           Surface(
             shape = RoundedCornerShape(14.dp),
@@ -444,7 +444,7 @@ private fun InteractiveTrendCanvas(
     // Benchmark line at 80 pts (Mastery Zone)
     val benchmarkY = paddingTop + chartHeight * (1f - (80f - minY) / (maxY - minY))
     drawLine(
-      color = EmeraldAccent.copy(alpha = 0.35f),
+      color = NubiTokens.Success.copy(alpha = 0.35f),
       start = Offset(paddingLeft, benchmarkY),
       end = Offset(size.width - paddingRight, benchmarkY),
       strokeWidth = 1.5.dp.toPx(),
@@ -522,7 +522,7 @@ private fun InteractiveTrendCanvas(
       )
 
       drawLine(
-        color = if (slope >= 0f) EmeraldAccent.copy(alpha = 0.6f) else Color(0xFFEF4444).copy(alpha = 0.6f),
+        color = if (slope >= 0f) NubiTokens.Success.copy(alpha = 0.6f) else Color(0xFFEF4444).copy(alpha = 0.6f),
         start = startTrendOffset,
         end = endTrendOffset,
         strokeWidth = 2.dp.toPx(),

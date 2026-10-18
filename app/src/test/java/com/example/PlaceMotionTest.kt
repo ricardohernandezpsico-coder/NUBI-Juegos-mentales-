@@ -13,9 +13,9 @@ class PlaceMotionTest {
   fun los_tiempos_son_los_del_boceto() {
     assertEquals(180, PlaceMotion.LOOK_FADE_MS)
     assertEquals(650, PlaceMotion.LOOK_HOLD_MS)
-    assertEquals(360, PlaceMotion.VEIL_MS)
-    assertEquals(460, PlaceMotion.SHEET_MS)
-    assertEquals(180, PlaceMotion.SHEET_DELAY_MS)
+    assertEquals("el velo es un cambio de estado (escala única, Tarea 123)", 200, PlaceMotion.VEIL_MS)
+    assertEquals("la lámina es un cambio de lugar: 400", 400, PlaceMotion.SHEET_MS)
+    assertEquals("y sale al toque, sin espera", 0, PlaceMotion.SHEET_DELAY_MS)
     assertEquals(820, PlaceMotion.FLIGHT_MS)
     assertEquals(620, PlaceMotion.BACK_FLIGHT_MS)
     assertEquals(320, PlaceMotion.GLOBE_MS)

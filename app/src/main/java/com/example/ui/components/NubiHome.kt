@@ -111,7 +111,7 @@ private fun DrawScope.drawNubiGroundShadow(bodyHeightPx: Float, strength: Float)
 // ------------------------------------------------------------------ Piezas de Hoy y del detalle de un área (la composición vieja «Nubi al centro con 4 áreas» salió con la isla, Tarea 82)
 
 private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = Color(0xFFC7D0FF)
+private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 /** Un solo color para las barras (el lavanda de Nubi): el NOMBRE dice qué área es, no el color. */
 val AreaBarColor = Color(0xFFC4BAFF)
 /** El mismo lavanda, más oscuro, para la barra sobre una tarjeta crema. */
@@ -211,7 +211,7 @@ fun NubiBubble(title: String, text: String, modifier: Modifier = Modifier, tailL
         bottom = if (tailLeft) 14.dp else 20.dp
       )
   ) {
-    Text(title, color = BubbleLabel, fontSize = 14.sp)
+    Text(title, color = BubbleLabel, fontSize = 16.sp)
     Text(text, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
   }
 }

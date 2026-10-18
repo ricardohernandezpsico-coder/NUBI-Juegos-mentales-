@@ -96,7 +96,7 @@ import kotlin.math.abs
 
 private const val DAY_MS = 86_400_000L
 private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = Color(0xFFC7D0FF)
+private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 private val TileClay = Color(0xFF28306E)
 private val CardCream = Color(0xFFFFF8EC)
 private val CardMuted = Color(0xFF514B78) // sobre crema: 7:1
@@ -105,7 +105,7 @@ private val ModeRow = Color(0xFFF6EEDE)
 private val ModeRowOn = Color(0xFFFFF0C8)
 
 // Tamaños pensados para adultos mayores (28-sep, pedido de Ricardo): ningún texto secundario bajo 14 sp.
-private val Small = 14.sp
+private val Small = 16.sp
 private val Body = 16.sp
 
 private fun dayIndex(ts: Long): Long = (ts + java.util.TimeZone.getDefault().getOffset(ts)) / DAY_MS
@@ -173,7 +173,7 @@ fun GamesLibraryScreen(
     val suggestion = remember(history, statuses, now, lang) {
       suggestArea(history.map { it.gameId to it.timestamp }, statuses, now, lang)
     }
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre; la ventana de un área, más abajo, la cubre
       TabTopBar(viewModel) {}
       SuggestionHeader(suggestion)
       AreaGrid(
@@ -856,7 +856,7 @@ private fun StageLine(progress: Float, domain: DomainType) {
 @Composable
 private fun StageNames(current: Int, domain: DomainType) {
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-  val base = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 14.sp))
+  val base = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 14.sp))      // la escala de las 5 etapas es un rótulo de gráfico (como los de ProgressTrendChart): 14 sp, no 16
   val density = androidx.compose.ui.platform.LocalDensity.current
   BoxWithConstraints(Modifier.fillMaxWidth()) {
     val totalPx = constraints.maxWidth

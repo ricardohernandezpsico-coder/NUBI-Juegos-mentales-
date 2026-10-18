@@ -567,6 +567,15 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Tamaño mínimo de letra de TODO texto visible, en dp (el lienzo de los juegos mide 1080 unidades de ancho = 360 dp: 3 unidades por dp). Pensamos en mayores: nada más chico que esto (CLAUDE.md, «Reglas que no se rompen»).</summary>
         private const float MinFontDp = 14f;
 
+        /// <summary>Los chips del marcador de arriba («Nivel N», «N de M» y el rótulo «seguidos») van a 16 dp o más (48 unidades; Tarea 123, letra de 16).</summary>
+        private const float HudChipMinDp = 16f;
+
+        private static bool IsHudChipText(UnityEngine.UI.Text t)
+        {
+            string path = GuardPath(t.transform);
+            return path.EndsWith("Hud/LevelChip/Text") || path.EndsWith("Hud/InfoChip/Text") || path.EndsWith("Hud/StreakPill/Label");
+        }
+
         /// <summary>Textos que a propósito van más chicos que <see cref="MinFontDp"/>: (juego, final de la ruta del objeto, por qué). Cualquier otro texto bajo 14 dp, en cualquier juego, hace FALLAR el smoke. Mantenerla CORTA y justificada.</summary>
         private static readonly (string Id, string PathEnd, string Why)[] TextSizeExceptions =
         {
@@ -713,6 +722,9 @@ namespace NeuroVida.Bridge.EditorTools
                 }
                 if (dp < MinFontDp - 0.05f && !SizeIsException(t))
                 { GuardCandidate(strictGame, "letra menor de " + MinFontDp + " dp (" + dp.ToString("0.0") + " dp)", t, drawn, screen, shape, null); flagged = true; }
+                // (3b) los chips del marcador: 16 dp
+                if (dp < HudChipMinDp - 0.05f && IsHudChipText(t))
+                { GuardCandidate(strictGame, "chip del marcador menor de " + HudChipMinDp + " dp (" + dp.ToString("0.0") + " dp)", t, drawn, screen, shape, null); flagged = true; }
                 // (4) texto CORTADO por el alto de su caja: con «Truncate», una línea que no cabe en el alto del rect se OCULTA entera (el texto desaparece, no se recorta): pasa cuando se agranda la letra sin agrandar la caja. Lo que el texto pide de alto
                 // (con el ajuste automático ya hecho, y en el ancho que tiene) no puede pasar del alto de su caja.
                 if (t.verticalOverflow == VerticalWrapMode.Truncate && t.text.Length > 1)

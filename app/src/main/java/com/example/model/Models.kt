@@ -9,10 +9,10 @@ enum class DomainType(
   val description: String,
   val color: Color
 ) {
-  MEMORIA("Memoria", "recordar y ubicar", "Retención visual, espacial y secuencial", DomainMemoria),
-  ATENCION("Atención", "foco y velocidad", "Foco, control y velocidad de procesamiento", DomainAtencion),
-  RAZONAMIENTO("Razonamiento", "lógica y números", "Lógica, espacio y números", DomainRazonamiento),
-  LENGUAJE("Lenguaje", "palabras y letras", "Fluidez verbal, léxico y ortografía", DomainLenguaje);
+  MEMORIA("Memoria", "recordar y ubicar", "Retención visual, espacial y secuencial", NubiTokens.Memoria),
+  ATENCION("Atención", "foco y velocidad", "Foco, control y velocidad de procesamiento", NubiTokens.Atencion),
+  RAZONAMIENTO("Razonamiento", "lógica y números", "Lógica, espacio y números", NubiTokens.Razonamiento),
+  LENGUAJE("Lenguaje", "palabras y letras", "Fluidez verbal, léxico y ortografía", NubiTokens.Lenguaje);
 
   companion object {
     /**

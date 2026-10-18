@@ -124,7 +124,7 @@ import java.util.TimeZone
 
 private const val DAY_MS = 86_400_000L
 private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = Color(0xFFC7D0FF)
+private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 private val OnNightSoft = Color(0xFF9AA3D6)
 
 private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)) / DAY_MS
@@ -327,6 +327,7 @@ internal fun HomeContent(
 ) {
   val scope = rememberCoroutineScope()
   val reduceMotion = rememberReduceMotion()
+  val confirm = com.example.ui.components.rememberKitConfirm()       // el «listo» háptico al completar la ruta (KitHaptics)
   val layout = rememberIslaLayout()
   // Las farolas de la ruta (Tarea 88): qué se enciende ahora por primera vez hoy y si la ruta quedó completa. El plan sale de lo celebrado; se guarda al empezar a animar, así cada farola pulsa UNA vez por parada y por día.
   val doneKeys = ui.stops.filter { it.state == StopState.DONE }.mapNotNull { RouteLamps.placeKey(it.area) }
@@ -339,23 +340,21 @@ internal fun HomeContent(
     if (routeStore != null && !routeFx.plan.isEmpty) {
       routeStore.save(RouteLamps.consume(routeFx.plan, routeStore.load(), day))
       onRoutePlan(routeFx.plan)
+      if (routeFx.plan.complete) confirm()
       routeFx.run()
     }
   }
   var rootOffset by remember { mutableStateOf(Offset.Zero) }
   var islandWindow by remember { mutableStateOf(Rect.Zero) }
-  // Con la lámina abierta la barra de pestañas se retira y la caja de Hoy crece hacia abajo: Hoy se queda con el alto que tenía al abrir (la isla no salta).
-  var frozenViewport by remember { mutableStateOf<Dp?>(null) }
-  // El alto de Hoy se suelta un momento DESPUÉS de cerrar: la barra de pestañas tarda en volver a su sitio y, si se soltara antes, la isla crecería y se encogería de nuevo.
-  LaunchedEffect(fx.active) { if (!fx.active) { kotlinx.coroutines.delay(450); frozenViewport = null } }
+  // La barra de pestañas es una capa fija (`LocalBarInset`, Tarea 123): la página de Hoy ya no cambia de alto al abrir o cerrar la lámina (antes se congelaba el alto y se soltaba 450 ms después de cerrar), y la lámina cubre la barra.
+  val barInset = com.example.ui.components.LocalBarInset.current
   if (fx.active) {
     LockTabSwipe()                                            // las pestañas no se deslizan con la lámina abierta (y la barra se retira)
     BackHandler { fx.close(scope, reduceMotion) }             // Atrás la cierra
   }
   BoxWithConstraints(modifier.fillMaxSize().onGloballyPositioned { rootOffset = it.positionInWindow() }) {
-    val liveViewport = maxHeight
-    val viewportHeight = frozenViewport ?: liveViewport
-    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState(), enabled = !fx.active)) {
+    val viewportHeight = maxHeight - barInset                  // lo que ve la isla: el alto de la página sin la franja de la barra
+    Box(Modifier.fillMaxSize().padding(bottom = barInset).verticalScroll(rememberScrollState(), enabled = !fx.active)) {
       HoyColumn(
         viewportHeight = viewportHeight,
         top = {
@@ -390,7 +389,6 @@ internal fun HomeContent(
             onPlace = { area ->
               val key = IslaLugar.nameOfArea(area)?.lowercase()
               if (key != null && ui.places.containsKey(area) && !fx.active) {
-                frozenViewport = liveViewport
                 fx.open(scope, key, reduceMotion)
               }
             },
@@ -472,7 +470,7 @@ private fun HoyWeek(ui: HomeUi) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(Icons.Default.Whatshot, contentDescription = null, tint = Clay.Sun, modifier = Modifier.size(18.dp))
       OnBoardText(
-        if (ui.streak == 1) "1 día" else "${ui.streak} días", color = Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+        if (ui.streak == 1) "1 día" else "${ui.streak} días", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold,
         modifier = Modifier.testTag("streak_pill")
       )
     }
@@ -576,7 +574,7 @@ private fun StopNumber(stop: HomeStop, number: Int) {
   val scale = LocalDensity.current.fontScale.coerceIn(1f, 1.6f)   // el círculo crece con la letra: con letra 2,0 el número no cabría en 24 dp
   Box(Modifier.size(24.dp * scale).clip(RoundedCornerShape(50)).background(Color(0xFFFFF8EC)).border(2.dp, Clay.Ink, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
     if (stop.state == StopState.DONE) Icon(Icons.Default.Check, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(15.dp * scale))
-    else Text("$number", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    else Text("$number", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
   }
 }
 
@@ -598,7 +596,7 @@ private fun HoyStone(stop: HomeStop, number: Int, fit: StoneFit, onClick: () -> 
       FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         StopNumber(stop, number)
         Box(Modifier.heightIn(min = 24.dp), contentAlignment = Alignment.CenterStart) {
-          Text(tag, color = if (stop.state == StopState.LATER) HoyStoneMuted else Clay.Ink, fontSize = 14.sp, fontWeight = if (stop.state == StopState.LATER) FontWeight.Normal else FontWeight.Bold, lineHeight = 17.sp)
+          Text(tag, color = if (stop.state == StopState.LATER) HoyStoneMuted else Clay.Ink, fontSize = 16.sp, fontWeight = if (stop.state == StopState.LATER) FontWeight.Normal else FontWeight.Bold, lineHeight = 20.sp)
         }
       }
       Text(stop.title, color = Clay.Ink, fontSize = fit.titleSp.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp, modifier = Modifier.testTag("home_stop_title_$number"))
@@ -620,10 +618,10 @@ private fun HoyStopRow(stop: HomeStop, number: Int, onClick: () -> Unit) {
       Spacer(Modifier.width(10.dp))
       Column(Modifier.weight(1f)) {
         Text(stop.title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 19.sp)
-        Text(stop.place, color = Clay.Ink, fontSize = 14.sp, lineHeight = 17.sp)
+        Text(stop.place, color = Clay.Ink, fontSize = 16.sp, lineHeight = 20.sp)
       }
       Spacer(Modifier.width(8.dp))
-      Text(status, color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold, lineHeight = 17.sp, textAlign = TextAlign.End, modifier = Modifier.widthIn(max = 112.dp))
+      Text(status, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp, textAlign = TextAlign.End, modifier = Modifier.widthIn(max = 112.dp))
     }
   }
 }
@@ -662,7 +660,7 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
     }
     captionLine(ui)?.let { line ->
       OnBoardText(
-        line, color = HoySoft, fontSize = 14.sp, lineHeight = 18.sp, textAlign = TextAlign.Center,
+        line, color = HoySoft, fontSize = 16.sp, lineHeight = 21.sp, textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag(if (ui.flightDay) "home_flight_day" else "home_caption")
       )
     }
@@ -780,7 +778,7 @@ internal fun AreaDetail(
         }
       }
       OnBoardText(
-        "Tus juegos de ${name.lowercase()}", color = Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+        "Tus juegos de ${name.lowercase()}", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold,
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp)
       )
       games.forEach { g ->
@@ -798,7 +796,7 @@ internal fun AreaDetail(
             Spacer(Modifier.width(12.dp))
             Column {
               Text(getGameTitle(g.id, lang, g.title), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-              Text(detail, color = Clay.InkMuted, fontSize = 14.sp)
+              Text(detail, color = Clay.InkMuted, fontSize = 16.sp)
             }
           }
         }
@@ -820,7 +818,7 @@ internal fun AreaDetail(
             last == null -> "Nubi eligió $title: aún no la juegas"
             else -> "Nubi eligió $title: ${playedAgo(now, last).replaceFirstChar { it.lowercase() }}"
           },
-          color = OnNightDim, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp)
+          color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp)
         )
       }
     }

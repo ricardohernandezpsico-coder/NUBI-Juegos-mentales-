@@ -64,7 +64,7 @@ fun ClaySwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: M
   val source = remember { MutableInteractionSource() }
   val isPressed by source.collectIsPressedAsState()
   val reduce = rememberReduceMotion()
-  val travel by animateDpAsState(if (checked) SwitchTravel else 0.dp, if (reduce) snap() else tween(140), label = "interruptor")
+  val travel by animateDpAsState(if (checked) SwitchTravel else 0.dp, if (reduce) snap() else tween(NubiMotion.STATE_FAST_MS), label = "interruptor")
   Box(
     modifier
       .size(SwitchTrackWidth, 48.dp)

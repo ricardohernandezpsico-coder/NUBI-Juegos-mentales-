@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -48,7 +49,6 @@ import com.example.ui.screens.ProgressScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.model.ThemeMode
 import com.example.ui.theme.NeuroVidaTheme
-import com.example.ui.theme.TealPrimary
 import com.example.viewmodel.AppTab
 import com.example.viewmodel.NeuroVidaViewModel
 
@@ -151,8 +151,13 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   // Pestañas que se pasan deslizando con el dedo (29-sep, pedido de Ricardo), sincronizadas con la barra de abajo.
   val tabs = AppTab.entries
   val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = currentTab.ordinal) { tabs.size }
+  val reduceTabs = com.example.ui.components.rememberReduceMotion()
   LaunchedEffect(currentTab) {
-    if (pagerState.currentPage != currentTab.ordinal) pagerState.animateScrollToPage(currentTab.ordinal)
+    if (pagerState.currentPage != currentTab.ordinal) {
+      // Pasar de pestaña: 300 ms con la curva enfatizada (NubiMotion); con «quitar animaciones», de golpe.
+      if (reduceTabs) pagerState.scrollToPage(currentTab.ordinal)
+      else pagerState.animateScrollToPage(currentTab.ordinal, animationSpec = androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.TAB_MS, easing = com.example.ui.components.NubiMotion.Emphasized))
+    }
   }
   LaunchedEffect(pagerState) {
     androidx.compose.runtime.snapshotFlow { pagerState.settledPage }.collect { p ->
@@ -166,44 +171,18 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
     // El fondo de toda la app: el tablero azul marino de la isla (Tarea 82). Una sola capa detrás del pager: al deslizar entre Hoy, Juegos y Avance no salta.
     // La lámina y los luceros, fijos detrás de las tres pestañas (Tarea 87: sin fundido por pestaña).
     com.example.ui.components.BoardBackground()
-    Scaffold(
-      modifier = Modifier
-        .fillMaxSize()
-        .safeDrawingPadding(),
-      containerColor = androidx.compose.ui.graphics.Color.Transparent,
-      bottomBar = {
-        // Show bottom bar only when not playing a game or looking at results
-        if (activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() &&
-          sessionSummary == null && topPanel == null
-        ) {
-          // Con una lámina o ventana abierta (swipeLock > 0) la barra se retira con un deslizamiento corto en vez de desaparecer de golpe (con «quitar animaciones», de golpe).
-          val reduceBar = com.example.ui.components.rememberReduceMotion()
-          androidx.compose.animation.AnimatedVisibility(
-            visible = swipeLock.intValue == 0,
-            enter = if (reduceBar) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(expandFrom = androidx.compose.ui.Alignment.Top),
-            exit = if (reduceBar) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(shrinkTowards = androidx.compose.ui.Alignment.Top)
-          ) {
-            com.example.ui.components.NeuroNavBar(
-              current = currentTab,
-              onSelect = { viewModel.setTab(it) }
-            )
-          }
-        }
-      }
-    ) { innerPadding ->
-      Box(
-        modifier = Modifier
-          .padding(innerPadding)
-          .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-          .drawWithContent {
-            drawContent()
-            // Las pantallas se desvanecen en los bordes en vez de cortarse en seco
-            drawRect(
-              Brush.verticalGradient(0f to Color.Transparent, 0.025f to Color.Black, (1f - com.example.ui.components.PAGE_BOTTOM_FADE) to Color.Black, 1f to Color.Transparent),
-              blendMode = BlendMode.DstIn
-            )
-          }
+    // La barra de pestañas es una capa FIJA encima de las páginas (Tarea 123): no es el `bottomBar` de un Scaffold, así que NO se encoge cuando se abre una lámina o una ventana (que la tapan) y las páginas no saltan; tampoco hay
+    // desvanecido de página (`PAGE_BOTTOM_FADE` se quitó): cada pestaña deja la franja de la barra libre con `LocalBarInset` y su contenido termina nítido sobre ella. La barra tiene su propio inset (las barras del sistema).
+    val barVisible = activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null && topPanel == null
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    // Lo que mide la barra: se recuerda aunque se esconda (la página no cambia de tamaño al abrir o cerrar una ventana).
+    var barHeightPx by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
+    Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+      androidx.compose.runtime.CompositionLocalProvider(
+        com.example.ui.components.LocalBarInset provides with(density) { barHeightPx.toDp() },
+        com.example.ui.components.LocalHapticsEnabled provides userSettings.hapticsEnabled      // «Vibración y respuesta háptica» de Ajustes: el tic del kit (KitHaptics)
       ) {
+      Box(modifier = Modifier.fillMaxSize()) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
         if (activeGame == null && lastResult == null && sessionSummary == null && topPanel == null) {
@@ -323,6 +302,22 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               delayMs = if (celebratedOne) 250L else 1700L
             )
           }
+        }
+      }
+      }
+      // La barra: fija, encima de todo lo de las pestañas. Con una lámina o ventana abierta (swipeLock > 0) se desvanece en 150 ms sin cambiar de tamaño (con «quitar animaciones», de golpe).
+      if (barVisible) {
+        val reduceBar = com.example.ui.components.rememberReduceMotion()
+        androidx.compose.animation.AnimatedVisibility(
+          visible = swipeLock.intValue == 0,
+          modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter).onSizeChanged { if (it.height > 0) barHeightPx = it.height },
+          enter = if (reduceBar) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.STATE_FAST_MS)),
+          exit = if (reduceBar) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.STATE_FAST_MS))
+        ) {
+          com.example.ui.components.NeuroNavBar(
+            current = currentTab,
+            onSelect = { viewModel.setTab(it) }
+          )
         }
       }
     }

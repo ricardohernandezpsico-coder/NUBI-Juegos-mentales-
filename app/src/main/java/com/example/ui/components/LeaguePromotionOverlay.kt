@@ -264,7 +264,7 @@ fun LeaguePromotionOverlay(
           },
           fontFamily = AppFamily,
           fontSize = 15.sp,
-          color = Color(0xFFB4BFEA),
+          color = com.example.ui.theme.NubiTokens.OnNightDim,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 10.dp)
         )

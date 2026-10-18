@@ -12,13 +12,13 @@ import kotlin.math.sin
  */
 object RouteMotion {
   /** El halo de una farola crece de 0 a su tamaño con un pulso suave. */
-  const val PULSE_MS = 600
+  const val PULSE_MS = NubiMotion.CELEBRATE_MS
   /** Cuánto mira Nubi hacia el lugar de la farola que se enciende (entrar, mirar y volver al frente, todo dentro de 1,5 s). */
   const val LOOK_TOTAL_MS = 1500
   /** Si se encienden varias farolas a la vez (volver de una sesión entera), se encienden una tras otra con esta separación y Nubi no mira a ninguna. */
   const val STAGGER_MS = 250
   /** El saltito alegre de Nubi al completar la ruta: dos saltos en este tiempo. */
-  const val JUMP_MS = 900
+  const val JUMP_MS = NubiMotion.CELEBRATE_LONG_MS
   const val JUMP_DP = 12f
   /** El leve giro de cada salto, en grados (a un lado en el primero y al otro en el segundo). */
   const val JUMP_TILT_DEG = 5f

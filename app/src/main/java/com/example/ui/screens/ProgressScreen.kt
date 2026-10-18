@@ -62,14 +62,14 @@ import com.example.ui.components.overallIndex
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.i18n.getDomainName
 import com.example.ui.i18n.getGameTitle
-import com.example.ui.theme.TealPrimary
+import com.example.ui.theme.NubiTokens
 import com.example.viewmodel.NeuroVidaViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = Color(0xFFB4BFEA)
+private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 
 /**
  * Avance (29-sep; antes la pestaña "Liga"; su ícono en la barra de abajo es hoy el farol de la ruta, Tarea 86). Sin tarjetas, en
@@ -134,7 +134,7 @@ fun ProgressScreen(
     return
   }
 
-  Column(modifier.fillMaxSize()) {
+  Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre; el detalle de un área, arriba, la cubre
   TabTopBar(viewModel) { OnBoardText("Tu avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold) }
   LazyColumn(
     modifier = Modifier
@@ -196,7 +196,7 @@ fun ProgressScreen(
               Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                   Text(name, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                  Text(s.value?.let { Skill.stageName(it) } ?: "Sin medir", color = Clay.InkMuted, fontSize = 14.sp)
+                  Text(s.value?.let { Skill.stageName(it) } ?: "Sin medir", color = Clay.InkMuted, fontSize = 16.sp)
                 }
                 AreaBar(s.value, s.change, modifier = Modifier.padding(top = 8.dp), onCard = true)
               }
@@ -220,7 +220,7 @@ fun ProgressScreen(
               OnBoardText(wc.def.title, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
               OnBoardText(
                 if (wc.isComplete) "Listo" else "${wc.progress} de ${wc.def.target}",
-                color = if (wc.isComplete) Clay.Lime else Clay.Sun, fontSize = 14.sp, fontWeight = FontWeight.Bold
+                color = if (wc.isComplete) Clay.Lime else Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold
               )
             }
             Box(
@@ -285,7 +285,7 @@ fun ProgressScreen(
                       Spacer(Modifier.width(8.dp))
                       OnBoardText(getDomainName(info.domain, currentLang), color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
-                    OnBoardText("${info.tier.tierName} · ${info.xpLabel}", color = info.domain.color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    OnBoardText("${info.tier.tierName} · ${info.xpLabel}", color = info.domain.color, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                   }
                   Box(
                     modifier = Modifier
@@ -321,16 +321,16 @@ fun ProgressScreen(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically
               ) {
-                Box(Modifier.size(10.dp).clip(CircleShape).background(game?.domain?.color ?: TealPrimary))
+                Box(Modifier.size(10.dp).clip(CircleShape).background(game?.domain?.color ?: NubiTokens.Brand))
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                   OnBoardText(
                     if (game != null) getGameTitle(game.id, currentLang, game.title) else "Juego",
                     color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold
                   )
-                  OnBoardText(dateFormatter.format(Date(item.timestamp)), color = OnNightDim, fontSize = 14.sp)
+                  OnBoardText(dateFormatter.format(Date(item.timestamp)), color = OnNightDim, fontSize = 16.sp)
                 }
-                OnBoardText("${item.score} pts", color = game?.domain?.color ?: TealPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                OnBoardText("${item.score} pts", color = game?.domain?.color ?: NubiTokens.Brand, fontSize = 15.sp, fontWeight = FontWeight.Bold)
               }
             }
           }

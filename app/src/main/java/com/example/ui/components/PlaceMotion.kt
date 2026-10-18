@@ -14,15 +14,17 @@ object PlaceMotion {
   const val LOOK_SHIFT_MS = 260
   /** Cuánto se queda mirando antes de que caiga el velo. */
   const val LOOK_HOLD_MS = 650
-  const val VEIL_MS = 360
+  /** El velo cae como un cambio de estado (`NubiMotion`, Tarea 123: 360 → 200). */
+  const val VEIL_MS = NubiMotion.STATE_MS
   /**
    * El velo que cae sobre la página cuando se abre la lámina de un lugar (Tarea 122): casi negro (`#070620`) al 45 %. Sobre el cielo «Espacio profundo» (`#151539`) el tinte de antes (`#211C45` al 50 %, MÁS CLARO que el cielo) lo habría
    * aclarado; este lo oscurece un poco y apaga la isla, la ruta y el saludo (la crema de la isla baja de 0,84 a ~0,23 de luminancia, igual que antes). `PlaceMotionTest` mide las dos cosas. El tiempo (360 ms) no cambia: la escala de movimiento entera se rehace aparte.
    */
   val VEIL = Color(0x73070620)
-  const val SHEET_MS = 460
-  /** La lámina sube 180 ms después del velo. */
-  const val SHEET_DELAY_MS = 180
+  /** La lámina es un cambio de lugar (`NubiMotion`, Tarea 123: 460 → 400)… */
+  const val SHEET_MS = NubiMotion.SHEET_MS
+  /** …y sale AL TOQUE, junto con el velo (antes esperaba 180 ms). */
+  const val SHEET_DELAY_MS = 0
   const val FLIGHT_MS = 820
   const val BACK_FLIGHT_MS = 620
   /** El globo aparece cuando Nubi está por posarse (640 ms después de empezar el vuelo). */
@@ -31,14 +33,14 @@ object PlaceMotion {
   const val SHADOW_MS = 320
   const val GLOW_MS = 320
   /** Fundido entre el cubo normal y el elegido de la barra inferior (Tarea 86). */
-  const val CUBE_FADE_MS = 150
+  const val CUBE_FADE_MS = NubiMotion.STATE_FAST_MS
   /** Con «quitar animaciones»: un fundido corto y nada más. */
-  const val REDUCED_FADE_MS = 150
+  const val REDUCED_FADE_MS = NubiMotion.REDUCED_FADE_MS
 
   /** `cubic-bezier(.3,.7,.3,1)` del boceto: arranca rápido y se posa suave. */
   val FlightEasing = CubicBezierEasing(0.3f, 0.7f, 0.3f, 1f)
-  /** `cubic-bezier(.2,.8,.2,1)` del boceto para la lámina. */
-  val SheetEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
+  /** La curva «enfatizada» de la escala única (antes `cubic-bezier(.2,.8,.2,1)` del boceto): arranca rápido y frena suave. */
+  val SheetEasing = NubiMotion.Emphasized
 
   /** Cuánto se corre Nubi (fracción del ANCHO de la isla; negativo = a la izquierda) y cuánto se ladea (grados, positivo = a la derecha) al mirar cada lugar. */
   data class Look(val shift: Float, val tiltDeg: Float)

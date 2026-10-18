@@ -72,7 +72,7 @@ fun PanelHeader(title: String, onBack: () -> Unit) {
   ) {
     com.example.ui.components.KitBackButton(onBack, Modifier.testTag("btn_panel_back"))
     Spacer(Modifier.width(12.dp))
-    Text(title, color = Color(0xFFEAF0FF), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+    com.example.ui.components.OnBoardText(title, color = Color(0xFFEAF0FF), fontSize = 22.sp, fontWeight = FontWeight.Bold)
   }
 }
 
@@ -134,10 +134,10 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
             Text(userSettings.name.trim().firstOrNull()?.uppercase() ?: "", color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold)
           }
         }
-        Text(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
-        Text(
+        com.example.ui.components.OnBoardText(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
+        com.example.ui.components.OnBoardText(
           text = "Liga ${tier.tierName}" + (index?.let { "  ·  nivel ${levelWord(it / 100f).lowercase()}" } ?: ""),
-          color = Color(0xFFB4BFEA),
+          color = com.example.ui.theme.NubiTokens.OnNightDim,
           fontSize = 15.sp
         )
       }
@@ -159,9 +159,9 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
       Column {
         SpaceSectionTitle("Logros", hint = "${unlocks.keys.count { Achievements.byId(it) != null }} de ${Achievements.all.size} conseguidos")
         Spacer(Modifier.height(14.dp))
-        // Cuántas medallas por fila: las que dejen a la palabra más larga («Contrarreloj», ≈ 78 dp a letra normal) entera; con letra grande, menos columnas (nunca se parte una palabra).
+        // Cuántas medallas por fila: las que dejen a la palabra más larga («Contrarreloj», ≈ 90 dp en negrita de 16 sp) entera; con letra grande, menos columnas (nunca se parte una palabra: ni «Contrarrelo / j» ni «Explorad / or»).
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val needed = 78.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale
+        val needed = 90.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale
         val cols = (4 downTo 1).firstOrNull { maxWidth / it - 8.dp >= needed } ?: 1
         Column {
         Achievements.all.chunked(cols).forEach { row ->
@@ -178,15 +178,15 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
                   Text(
                     text = def.title,
                     color = if (got) Clay.Ink else Clay.InkMuted,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     fontWeight = if (got) FontWeight.Bold else FontWeight.Normal,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
-                    lineHeight = 14.sp
+                    lineHeight = 20.sp
                   )
                   if (!got) {
                     val (cur, goal) = def.progress(achStats)
-                    Text("$cur/$goal", color = Clay.Ink, fontSize = 14.sp)
+                    Text("$cur/$goal", color = Clay.Ink, fontSize = 16.sp)
                   }
                 }
               }
@@ -249,10 +249,10 @@ private fun AchievementDetailDialog(def: AchievementDef, unlockedAt: Long?, stat
         Spacer(Modifier.height(10.dp))
         if (unlockedAt != null) {
           val f = java.text.SimpleDateFormat("d 'de' MMMM yyyy", java.util.Locale("es"))
-          Text("Conseguido el ${f.format(java.util.Date(unlockedAt))}", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+          Text("Conseguido el ${f.format(java.util.Date(unlockedAt))}", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         } else {
           val (cur, goal) = def.progress(stats)
-          Text("Llevas $cur de $goal", color = Clay.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+          Text("Llevas $cur de $goal", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
           Box(
             modifier = Modifier
               .padding(top = 8.dp)
@@ -279,8 +279,8 @@ private fun StatText(label: String, value: String, color: Color, modifier: Modif
   Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (fire) Icon(Icons.Default.Whatshot, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-      Text(value, color = color, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+      com.example.ui.components.OnBoardText(value, color = color, fontSize = 34.sp, fontWeight = FontWeight.Bold)
     }
-    Text(label, color = Color(0xFFB4BFEA), fontSize = 15.sp)
+    com.example.ui.components.OnBoardText(label, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 15.sp)
   }
 }

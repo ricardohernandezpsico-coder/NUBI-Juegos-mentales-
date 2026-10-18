@@ -106,7 +106,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = Color(0xFFB4BFEA)
+private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 private val RowBorder = Color(0xFF3A2E78)
 private val RowFill = Color(0xFF0E0C30)
 private val RowSelectedFill = Color(0xFF231C48)
@@ -183,9 +183,9 @@ fun FirstFlightScreen(
       transitionSpec = {
         val dir = if (targetState.ordinal >= initialState.ordinal) 1 else -1
         // «Quitar animaciones»: sin deslizamiento, solo un fundido corto.
-        if (reduceMotion) fadeIn(tween(160)) togetherWith fadeOut(tween(160))
-        else (slideInHorizontally { it / 4 * dir } + fadeIn(tween(260))) togetherWith
-          (slideOutHorizontally { -it / 4 * dir } + fadeOut(tween(200)))
+        if (reduceMotion) fadeIn(tween(com.example.ui.components.NubiMotion.REDUCED_FADE_MS)) togetherWith fadeOut(tween(com.example.ui.components.NubiMotion.REDUCED_FADE_MS))
+        else (slideInHorizontally(tween(com.example.ui.components.NubiMotion.TAB_MS, easing = com.example.ui.components.NubiMotion.Emphasized)) { it / 4 * dir } + fadeIn(tween(com.example.ui.components.NubiMotion.TAB_MS, easing = com.example.ui.components.NubiMotion.Emphasized))) togetherWith
+          (slideOutHorizontally(tween(com.example.ui.components.NubiMotion.STATE_MS, easing = com.example.ui.components.NubiMotion.Standard)) { -it / 4 * dir } + fadeOut(tween(com.example.ui.components.NubiMotion.STATE_MS, easing = com.example.ui.components.NubiMotion.Standard)))
       },
       modifier = Modifier.weight(1f).fillMaxWidth(),
       label = "flightStep"

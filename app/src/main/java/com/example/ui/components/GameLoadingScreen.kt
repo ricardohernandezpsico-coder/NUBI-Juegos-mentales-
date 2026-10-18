@@ -139,7 +139,7 @@ fun GameLoadingScreen(
         fontWeight = FontWeight.SemiBold,
         fontSize = 15.sp,
         letterSpacing = 1.5.sp,
-        color = Color(0xFFB4BFEA)
+        color = com.example.ui.theme.NubiTokens.OnNightDim
       )
       Text(
         text = game.instruction,
