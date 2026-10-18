@@ -33,7 +33,7 @@ Boceto aprobado por Ricardo el 10-oct, versión 4: `docs/previews/aterrizaje-boc
 
 | Pieza | Valor |
 |---|---|
-| Marcador | «Aterrizaje Lunar», «Aterrizaje N de 15» (Reto: «Aterrizaje N» + barra), «Nivel N». A la derecha, una cúpula y el número de cúpulas, más 5 puntos de avance hacia la próxima; «Racha ×N» desde 2 |
+| Marcador | «Aterrizaje Lunar» y el avance en un chip: «N de 15» (Reto: «N.º N» + barra); la consigna en la fila de abajo (Tarea 127: «Nivel N» ya no se ve). A la derecha, una cúpula y el número de cúpulas, más 5 puntos de avance hacia la próxima; «Racha ×N» desde 2 |
 | Misión | «Aterriza en» (16 dp) y el número en sol, 52 dp. Se achica si no cabe; sin tarjeta |
 | Regla | de x 36 a x 324, y 604, alto 20, arcilla crema con borde de tinta. Marcas de extremo más largas; marca del medio solo en los niveles con medio. Extremos en 20 dp |
 | Nave | módulo lunar ×1,25 (unos 75 dp con patas): cabina crema con ventana celeste y base sol. Llama mientras baja; dos luces (coral y lima) que parpadean |

@@ -41,7 +41,7 @@ Con «quitar animaciones» activo:
 | `Toast` | Fundido de entrada y salida, sin caída ni rebote. |
 | `PhasePill` | El texto nuevo entra con fundido (0,35 → 1 en 160 ms), sin rebote. |
 | `ProgressDots` | El punto pasa a verde/rojo con fundido de color, sin pop. |
-| `GameHud` | `CountUp`: número final de una vez. `LevelUpGlow`: el chip queda resaltado (estático) 0,45 s y vuelve con fundido. Racha: sin pop (y sin chispas, por `UiFx`). El salto del chip de nivel y el rebote de «seguidos» (Tarea 126): ninguno, el chip solo cambia de valor. |
+| `GameHud` | `CountUp`: número final de una vez. `LevelUpGlow`: el chip queda resaltado (estático) 0,45 s y vuelve con fundido. Racha: sin pop (y sin chispas, por `UiFx`). Desde la Tarea 127 el salto al subir de nivel lo da el chip de AVANCE (ya no hay chip de nivel) y el rebote es del chip «×N seguidos» (que aparece desde 2): con «quitar animaciones» ninguno se mueve, solo cambian de valor o de color. La fila de consigna de Tinta late al cambiar de regla y la pausa pregunta antes de reiniciar: sin «quitar animaciones» solo cambia el texto. La cuenta regresiva: 2 o 3 pasos con la misma regla. |
 | `GameControllerBase.Flash` | Tinte con alfa ≤ 0,15 y fundido ≤ 0,2 s. |
 | `GameControllerBase.AnimateResult` | Panel con fundido de opacidad y puntaje final de una vez (sin rebote ni cuenta). |
 | `FinishCurtain` | UN solo final (Tarea 126): el momento del objeto es un cuadro fijo (el velo y el emblema del juego quietos, sin chispas, 1,0 s) y la cortina trae el cielo, «¡Listo!» y el subtítulo con fundido, sin rebote ni hiperespacio (1,2 s): dura lo mismo que con movimiento (≈2,2 s). `EndMomentTests` lo mide. |

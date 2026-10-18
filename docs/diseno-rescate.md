@@ -246,7 +246,7 @@ Boceto v4 aprobado por Ricardo el 9-oct: `docs/previews/rescate-boceto-v4.html`.
 
 - **Entre una y otra** (`RadarPlan`, lógica pura con pruebas) la v4 entra de a poco: se mezclan los dos layouts desde que la escala de la v4 iguala al radar de 128 dp (unos 690 dp de alto) hasta que mide 1 (unos 770 dp). El radar nunca se achica al crecer la pantalla y ningún dato se pisa en toda la cuenta (la prueba recorre los cuatro alto de siempre, con y sin tutorial).
 - **Más alto que 780 dp:** el radar ya no crece; lo que sobra se reparte hacia abajo (15 % radar, 40 % nave, 75 % tablero, 90 % «¡Rescatar!»): el tablero sigue al pulgar.
-- **Tutorial:** reserva 96 dp abajo (Nubi y los controles); el plano se calcula con el alto menos 96.
+- **Tutorial:** reserva 72 dp abajo (Nubi y su globo; hasta la Tarea 127 eran 96 porque «Saltar tutorial» iba ahí) y baja TODO `Dy` = 48 dp (`GuidedTutorial.RowInsetDp`) para dejar la fila fija de arriba («Práctica» y «Saltar»): el plano se calcula con el alto menos 72 y la franja de mensajes, el radar y lo de abajo empiezan 48 dp más abajo.
 - **Pantallas bajas:** todo se achica parejo; ningún texto baja de 14 dp.
 - **Botones inactivos** (antes de la respuesta y durante el viaje): SIN brillo de arcilla y a menos de la mitad de luz (45 %); la forma y el nombre siguen leyéndose.
 
