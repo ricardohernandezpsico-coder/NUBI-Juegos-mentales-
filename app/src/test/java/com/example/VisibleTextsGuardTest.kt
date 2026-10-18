@@ -15,7 +15,7 @@ import java.io.File
  * `app/src/main/java` trae esas palabras (los comentarios y los nombres de código no cuentan). Y la licencia de las tipografías va completa con sus avisos de copyright.
  */
 class VisibleTextsGuardTest {
-  private val banned = listOf("cognitiv", "cognitif", "entraîn", "entraine", "entren", "entrén", "estimulaci", "bienestar", "percentil", "cerebro", "neurona", "mejora tu", "fortalece", "previene", "workmanager", " en room", "base de datos room", "dominio", "domínio")
+  private val banned = listOf("cognitiv", "cognitif", "entraîn", "entraine", "entren", "entrén", "estimulaci", "bienestar", "percentil", "cerebro", "neurona", "mejora tu", "fortalece", "previene", "workmanager", " en room", "base de datos room", "dominio", "domínio") + NoLossGuard.literals      // + «sin pérdida» (A7, Tarea 131)
 
   /** Cadenas técnicas que no se ven (nombres internos): se dejan tal cual. */
   private val internalLiterals = setOf("neurovida_daily_cognitive_reminder")
@@ -69,6 +69,20 @@ class VisibleTextsGuardTest {
     // los comentarios no cuentan
     assertTrue(visibleLiteralsOf("""// ¿Qué "entrenamos" hoy?""").isEmpty())
     assertTrue(visibleLiteralsOf("""   * "Entrena" en el KDoc""").isEmpty())
+  }
+
+  /**
+   * La guardia «sin pérdida» (A7): atrapa lo que usa el miedo a perder y deja pasar lo que tranquiliza. Se prueba la lista contra frases reales y contra el mismo escaneo del código (un literal dentro de un `Text(...)`).
+   */
+  @Test
+  fun `la guardia sin perdida atrapa el miedo a perder y deja pasar lo que tranquiliza`() {
+    for (bad in listOf("¡No pierdas tu racha!", "Última oportunidad", "Solo por hoy", "Si no juegas hoy pierdes tu racha", "No te lo pierdas", "Antes de que sea tarde", "Te quedas sin racha")) {
+      assertTrue("la guardia no atrapa «$bad»", NoLossGuard.hit(bad, banned) != null)
+      assertTrue("la guardia no atrapa «$bad» dentro de un Text(...)", visibleLiteralsOf("""Text("$bad", fontSize = 20.sp)""").any { NoLossGuard.hit(it, banned) != null })
+    }
+    for (good in listOf("no pierdes nada si dudas", "Descansaste el martes: tu racha sigue.", "antes de que se acabe", "Un día de descanso por semana no la corta.", "Si un día no puedes, tu racha espera.")) {
+      assertTrue("la guardia atrapa «$good» sin motivo (por «${NoLossGuard.hit(good, banned)}»)", NoLossGuard.hit(good, banned) == null)
+    }
   }
 
   @Test

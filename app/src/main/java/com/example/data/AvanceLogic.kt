@@ -102,5 +102,29 @@ fun weekSummary(lamps: Week.Lamps, goal: Int, streak: Int, areas: Int, noGamesAt
   return WeekSummary(big, rest, if (streak > 0) "Racha: ${if (streak == 1) "1 día" else "$streak días"}" else null, "Áreas esta semana: $areas de ${com.example.model.DomainType.values().size}", false)
 }
 
+/**
+ * Lo que Nubi comenta bajo «Tu semana» (Tarea 131, A6; `auditoria-fable/spec-adopcion-A1-A7.md`): UNA frase, la primera que se cumple de estas seis (en este orden de prioridad), siempre en positivo: nunca «no jugaste», «perdiste» ni «te atrasaste»
+ * (`NoLossGuard` lo vigila en las pruebas).
+ *  1. sin partidas: invita a la primera ruta;
+ *  2. día perdonado esta semana (`streak.forgivenDay`): lo dice como constancia, con el día en español;
+ *  3. meta cumplida (`daysPlayed >= goal`): lo de más es regalo;
+ *  4. las 4 áreas: lo celebra;
+ *  5. falta 1 día: «Cualquier ruta cuenta»;
+ *  6. el resto: cuánto lleva de la meta y que un rato corto suma.
+ * Sin meta (`goal <= 0`) no hay lo de la meta: cae en cuántos días lleva.
+ */
+fun nubiWeekLine(lamps: Week.Lamps, goal: Int, streak: Streak.StreakInfo, areas: Int, noGamesAtAll: Boolean): String {
+  val played = lamps.daysPlayed
+  return when {
+    noGamesAtAll -> "Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana."
+    streak.forgivenDay != null -> "Descansaste el ${Streak.weekdayName(streak.forgivenDay)} y seguiste: eso es constancia."
+    goal > 0 && played >= goal -> "Meta cumplida esta semana. Lo que juegues de más es regalo."
+    areas >= com.example.model.DomainType.values().size -> "Esta semana pasaste por las ${com.example.model.DomainType.values().size} áreas."
+    goal > 0 && goal - played == 1 -> "Te falta 1 día para tu meta. Cualquier ruta cuenta."
+    goal > 0 -> "Llevas $played de $goal. Un rato corto hoy también suma."
+    else -> "Llevas $played ${if (played == 1) "día" else "días"} esta semana. Un rato corto hoy también suma."
+  }
+}
+
 /** El nombre del área de un juego (null si es uno retirado): para contar las áreas de la semana. */
 fun areaNameOf(gameId: String): String? = GameRegistry.getById(gameId)?.domain?.name

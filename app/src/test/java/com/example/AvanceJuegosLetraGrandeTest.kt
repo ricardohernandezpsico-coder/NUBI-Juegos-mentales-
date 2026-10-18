@@ -24,10 +24,12 @@ import com.example.data.Achievements
 import com.example.data.AreaStatus
 import com.example.data.MeasurePoint
 import com.example.data.StarMeasures
+import com.example.data.Streak
 import com.example.data.Week
 import com.example.data.computeAchievementStats
 import com.example.data.familyState
 import com.example.data.leagueRow
+import com.example.data.nubiWeekLine
 import com.example.data.weekSummary
 import com.example.model.AppLanguage
 import com.example.model.DomainType
@@ -116,7 +118,7 @@ class AvanceJuegosLetraGrandeTest {
     val cards = StarMeasures.cards(points, now)
     big {
       Column(Modifier.width(393.dp).background(Color(0xFF0B0C33)).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp)) {
-        AvanceWeek(summary, lamps, "Descansaste el martes: tu racha sigue.")
+        AvanceWeek(summary, lamps, "Descansaste el martes: tu racha sigue.", nubiWeekLine(lamps, 4, Streak.StreakInfo(3, 5L, false), 2, noGamesAtAll = false))   // el día 5 fue martes: la frase más larga de Nubi
         AvanceAreas(statuses, names) {}
         AvanceDiscoveries(cards, null, points, onGame = {}, onPlay = {})
         AvanceMedals(medals) {}

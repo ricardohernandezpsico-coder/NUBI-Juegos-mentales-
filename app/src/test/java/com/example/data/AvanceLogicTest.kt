@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.NoLossGuard
 import com.example.model.GamePlayResult
 import com.example.model.GameRegistry
 import com.example.model.RankTier
@@ -93,6 +94,48 @@ class AvanceLogicTest {
     assertNull("sin racha no hay píldora", weekSummary(lamps, 4, 0, 2, false).streakPill)
     val empty = weekSummary(Week.Lamps(List(7) { false }, 0), 4, 0, 0, noGamesAtAll = true)
     assertTrue(empty.empty); assertEquals("Tu semana empieza hoy", empty.big); assertEquals("Juega tu ruta de hoy y se enciende la primera farola.", empty.areasLine); assertNull(empty.streakPill)
+  }
+
+  // ---- Nubi comenta tu semana (Tarea 131, A6)
+
+  private fun lampsOf(days: Int) = Week.Lamps(List(7) { it < days }, todayIndex = 3)
+  private val noRest = Streak.StreakInfo(3, null, true)
+
+  @Test
+  fun `Nubi comenta la semana con la primera frase que se cumple, en su orden de prioridad`() {
+    // 1. sin partidas, aunque todo lo demás «cumpla»
+    assertEquals("Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana.", nubiWeekLine(lampsOf(0), 4, noRest, 0, noGamesAtAll = true))
+    assertEquals("la primera ruta gana a un día perdonado", "Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana.", nubiWeekLine(lampsOf(5), 4, Streak.StreakInfo(5, 5L, false), 4, noGamesAtAll = true))
+    // 2. día perdonado (el día 5 fue martes): gana a la meta cumplida y a las 4 áreas
+    assertEquals("Descansaste el martes y seguiste: eso es constancia.", nubiWeekLine(lampsOf(5), 4, Streak.StreakInfo(5, 5L, false), 4, noGamesAtAll = false))
+    assertEquals("Descansaste el jueves y seguiste: eso es constancia.", nubiWeekLine(lampsOf(1), 4, Streak.StreakInfo(2, 0L, false), 1, noGamesAtAll = false))
+    // 3. meta cumplida (también pasada), gana a las 4 áreas
+    assertEquals("Meta cumplida esta semana. Lo que juegues de más es regalo.", nubiWeekLine(lampsOf(4), 4, noRest, 4, noGamesAtAll = false))
+    assertEquals("Meta cumplida esta semana. Lo que juegues de más es regalo.", nubiWeekLine(lampsOf(6), 4, noRest, 2, noGamesAtAll = false))
+    // 4. las 4 áreas sin la meta
+    assertEquals("Esta semana pasaste por las 4 áreas.", nubiWeekLine(lampsOf(2), 4, noRest, 4, noGamesAtAll = false))
+    // 5. falta 1 día
+    assertEquals("Te falta 1 día para tu meta. Cualquier ruta cuenta.", nubiWeekLine(lampsOf(3), 4, noRest, 2, noGamesAtAll = false))
+    // 6. faltan más
+    assertEquals("Llevas 1 de 4. Un rato corto hoy también suma.", nubiWeekLine(lampsOf(1), 4, noRest, 1, noGamesAtAll = false))
+    assertEquals("Llevas 2 de 7. Un rato corto hoy también suma.", nubiWeekLine(lampsOf(2), 7, noRest, 2, noGamesAtAll = false))
+    // sin meta no hay frase de meta
+    assertEquals("Llevas 3 días esta semana. Un rato corto hoy también suma.", nubiWeekLine(lampsOf(3), 0, noRest, 2, noGamesAtAll = false))
+    assertEquals("Llevas 1 día esta semana. Un rato corto hoy también suma.", nubiWeekLine(lampsOf(1), 0, noRest, 1, noGamesAtAll = false))
+  }
+
+  @Test
+  fun `ninguna frase de Nubi usa palabras prohibidas ni culpa ni apura`() {
+    val streaks = listOf(noRest, Streak.StreakInfo(5, 5L, false), Streak.StreakInfo(2, 0L, false), Streak.StreakInfo(0, null, true))
+    val lines = mutableSetOf<String>()
+    for (days in 0..7) for (goal in 0..7) for (areas in 0..4) for (st in streaks) for (none in listOf(false, true)) lines += nubiWeekLine(lampsOf(days), goal, st, areas, none)
+    assertTrue("se armaron las 6 frases y sus variantes", lines.size >= 8)
+    for (l in lines) {
+      assertTrue("«$l» usa «${NoLossGuard.hit(l, NoLossGuard.literals)}»", NoLossGuard.hit(l, NoLossGuard.literals) == null)
+      assertTrue("«$l» usa «${NoLossGuard.hit(l, NoLossGuard.reminderRoots)}»", NoLossGuard.hit(l, NoLossGuard.reminderRoots) == null)
+      assertTrue("«$l» usa «${listOf("no jugaste", "perdiste", "te atrasaste", "cognitiv", "cerebro", "entren").firstOrNull { it in l.lowercase() }}»", listOf("no jugaste", "perdiste", "te atrasaste", "cognitiv", "cerebro", "entren").none { it in l.lowercase() })
+      assertTrue("«$l» no es una frase corta de Nubi (≤ 70 letras)", l.length <= 70)
+    }
   }
 
   // ---- el cambio de un área

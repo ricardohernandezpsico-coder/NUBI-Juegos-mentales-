@@ -37,6 +37,7 @@ import com.example.data.Week
 import com.example.data.areaNameOf
 import com.example.data.familyState
 import com.example.data.historyLine
+import com.example.data.nubiWeekLine
 import com.example.data.leagueRow
 import com.example.data.weekSummary
 import com.example.model.DomainType
@@ -99,7 +100,9 @@ fun ProgressScreen(
   val lamps = remember(history, now) { Week.lampsFor(history.map { it.timestamp }, now) }
   val areasPlayed = remember(history, now) { Week.areasPlayedFor(shownHistory.map { it.timestamp to areaNameOf(it.gameId) }, now) }
   val summary = remember(lamps, settings.weeklyGoal, streak, areasPlayed, shownHistory) { weekSummary(lamps, settings.weeklyGoal, streak, areasPlayed, noGamesAtAll = shownHistory.isEmpty()) }
-  val streakNote = remember(history, now) { Streak.forgivenLine(Streak.fromTimestamps(history.map { it.timestamp }, now)) ?: Streak.REST_LINE }
+  val streakInfo = remember(history, now) { Streak.fromTimestamps(history.map { it.timestamp }, now) }
+  val streakNote = remember(streakInfo) { Streak.forgivenLine(streakInfo) ?: Streak.REST_LINE }
+  val nubiLine = remember(lamps, settings.weeklyGoal, streakInfo, areasPlayed, shownHistory) { nubiWeekLine(lamps, settings.weeklyGoal, streakInfo, areasPlayed, noGamesAtAll = shownHistory.isEmpty()) }
   val cards = remember(measures, now) { StarMeasures.cards(measures, now) }
   val nudge = remember(measures, cards) { if (cards.isEmpty()) StarMeasures.nudge(measures) else null }
   val medals = remember(unlocks, achStats) { AchievementFamily.entries.map { Achievements.familyState(it, unlocks.keys, achStats) } }
@@ -134,7 +137,7 @@ fun ProgressScreen(
     contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
     verticalArrangement = Arrangement.spacedBy(26.dp)
   ) {
-    item { AvanceWeek(summary, lamps, streakNote) }
+    item { AvanceWeek(summary, lamps, streakNote, nubiLine) }
 
     item { AvanceAreas(statuses, names) { openArea = it } }
 

@@ -1,5 +1,6 @@
 package com.example.notification
 
+import com.example.NoLossGuard
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -64,5 +65,23 @@ class ReminderContentTest {
       val t = (m.title + " " + m.text).lowercase()
       listOf("neurona", "cerebro", "reserva cognitiva", "salud", "deterioro", "perdiste", "no jugaste").forEach { assertFalse(t, t.contains(it)) }
     }
+  }
+
+  /** La guardia «sin pérdida» (A7, Tarea 131): ningún recordatorio usa el miedo a perder ni apura. Se revisan los 4 casos de `buildReminder` (racha, hito, regreso, sesión a medias) y la semana con y sin meta. */
+  @Test
+  fun `los recordatorios no usan el miedo a perder ni apuran`() {
+    val all = (0 until 6).mapNotNull { buildReminder(input(day = it)) } +
+      listOfNotNull(
+        buildReminder(input(streak = 3)), buildReminder(input(streak = 6)), buildReminder(input(streak = 4)), buildReminder(input(gap = 9)), buildReminder(input(gap = 5)), buildReminder(input(playedToday = true, completed = 2)),
+        buildReminder(input(playedToday = true, completed = 1)), buildReminder(input(week = 1, goal = 4)), buildReminder(input(week = 4, goal = 4)), buildReminder(input(name = ""))
+      )
+    assertTrue("no se armó ningún recordatorio", all.isNotEmpty())
+    all.forEach { m ->
+      val t = m.title + " " + m.text
+      assertTrue("«$t» usa «${NoLossGuard.hit(t, NoLossGuard.reminderRoots)}»", NoLossGuard.hit(t, NoLossGuard.reminderRoots) == null)
+    }
+    // la guardia misma: atrapa lo que apura y deja pasar el tono de Nubi
+    for (bad in listOf("¡No pierdas tu racha!", "Última oportunidad", "Solo hoy", "¡Apúrate!", "Hazlo rápido", "Te olvidaste de jugar")) assertTrue("no atrapa «$bad»", NoLossGuard.hit(bad, NoLossGuard.reminderRoots) != null)
+    for (good in listOf("Tu camino de hoy está listo", "Descansaste el martes: tu racha sigue.", "Un rato corto hoy también suma.")) assertTrue("atrapa «$good» sin motivo", NoLossGuard.hit(good, NoLossGuard.reminderRoots) == null)
   }
 }

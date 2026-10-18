@@ -57,6 +57,7 @@ import com.example.ui.components.KitCloseButton
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.ShieldImage
+import com.example.ui.components.NubiBubble
 import com.example.ui.components.SlabSize
 import com.example.ui.components.SpaceSectionTitle
 import com.example.ui.components.WeekLampRendered
@@ -76,7 +77,7 @@ private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 
 /** Tu semana: las 7 farolas del kit con «hoy», «3 de 4 días» en grande, la racha con su línea de perdón y las áreas de la semana. */
 @Composable
-internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: String) {
+internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: String, nubiLine: String) {
   Column(Modifier.testTag("avance_week")) {
     SpaceSectionTitle("Tu semana")
     Spacer(Modifier.height(10.dp))
@@ -87,6 +88,7 @@ internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: Str
     if (summary.empty) {
       OnBoardText(summary.big, color = OnNight, fontSize = 28.sp, fontWeight = FontWeight.Bold, lineHeight = 32.sp, modifier = Modifier.testTag("avance_week_big"))
       OnBoardText(summary.areasLine, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("avance_week_invite"))
+      NubiWeekComment(nubiLine)
       return@Column
     }
     OnBoardText(summary.big, color = OnNight, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 38.sp, modifier = Modifier.testTag("avance_week_big"))
@@ -97,6 +99,17 @@ internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: Str
       OnBoardText(streakNote, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("streak_note"))
     }
     OnBoardText(summary.areasLine, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 8.dp).testTag("avance_areas_week"))
+    NubiWeekComment(nubiLine)
+  }
+}
+
+/** Nubi comenta tu semana (Tarea 131, A6): Nubi de 56 dp a la izquierda y su globo con UNA frase (`nubiWeekLine`), como la ventana de un área en Juegos pero más chico: el comentario acompaña, no manda. */
+@Composable
+private fun NubiWeekComment(line: String) {
+  if (line.isBlank()) return                                                   // sin frase no hay globo (la hoja «hoy» de la Tarea 131 lo usa)
+  Row(Modifier.fillMaxWidth().padding(top = 14.dp).testTag("avance_nubi"), verticalAlignment = Alignment.CenterVertically) {
+    com.example.ui.components.NubiClay(width = 56.dp, modifier = Modifier.padding(end = 6.dp))
+    NubiBubble(title = "Nubi", text = line, tailLeft = true, modifier = Modifier.weight(1f).testTag("avance_nubi_line"))
   }
 }
 
