@@ -101,25 +101,32 @@ namespace NeuroVida.Games.Tests
         [Test]
         public void GameHud_NoTextIsSmallerThan14Dp_AndTheChipsNotSmallerThan16Dp()
         {
-            var hud = new GameHud(NewArea(), "Un título cualquiera", 48f, NewHost());
+            var area = NewArea();
+            var hud = new GameHud(area, "Un título cualquiera", 48f, NewHost());
             hud.SetLevel(1);
             hud.SetInfo("1 de 40");
+            hud.SetPrompt("Una consigna cualquiera");
+            hud.SetPhase("Una fase");
+            hud.SetStreak(3);
             int checkedTexts = 0, chips = 0;
-            foreach (var t in hud.Rect.GetComponentsInChildren<Text>(true))
+            var all = new List<Text>(hud.Rect.GetComponentsInChildren<Text>(true));
+            all.AddRange(area.Find("StreakChip").GetComponentsInChildren<Text>(true));         // el chip de «seguidos» es hermano del marcador
+            foreach (var t in all)
             {
                 int smallest = t.resizeTextForBestFit ? t.resizeTextMinSize : t.fontSize;
                 Assert.GreaterOrEqual(smallest, 42, t.name + ": el marcador no baja de 14 dp (42 unidades)");
-                // los chips «Nivel N» y «N de M» y el rótulo «seguidos» van a 16 dp (48 unidades; Tarea 123, letra de 16)
+                // el avance, «×N seguidos», la consigna y su fase van a 16 dp o más (48 unidades; Tarea 123, letra de 16) y el título a 18 dp (Tarea 127)
                 string path = t.transform.parent != null ? t.transform.parent.name + "/" + t.name : t.name;
-                if (path == "LevelChip/Text" || path == "InfoChip/Text" || path == "StreakPill/Label")
+                if (path == "InfoChip/Text" || path == "StreakChip/Text" || path == "Prompt/Text" || path == "Prompt/Phase")
                 {
-                    Assert.GreaterOrEqual(smallest, 48, path + ": los chips del marcador no bajan de 16 dp (48 unidades)");
+                    Assert.GreaterOrEqual(smallest, 48, path + ": el marcador no baja de 16 dp (48 unidades)");
                     chips++;
                 }
                 checkedTexts++;
             }
-            Assert.GreaterOrEqual(checkedTexts, 4, "título, nivel, avance y racha");
-            Assert.AreEqual(3, chips, "«Nivel», «N de M» y «seguidos»");
+            Assert.AreEqual(54, hud.Rect.Find("Title").GetComponent<Text>().fontSize, "el título va a 18 dp (54 unidades)");
+            Assert.GreaterOrEqual(checkedTexts, 5, "título, avance, consigna, fase y seguidos");
+            Assert.AreEqual(4, chips, "el avance, la consigna, su fase y «seguidos»");
         }
 
         private static readonly Regex MakeTextSize = new Regex(@"MakeText\(\s*[^,;]+,\s*(?:""[^""]*""|[A-Za-z_\.\+ ""]+?),\s*(\d+)\s*,");

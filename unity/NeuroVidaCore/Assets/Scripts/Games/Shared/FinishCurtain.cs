@@ -22,7 +22,7 @@ namespace NeuroVida.Games.Shared
         public const float CurtainSeconds = 1.2f;
         private const float EmblemMoment = 540f, EmblemCurtain = 440f;                 // lado de la ficha (unidades del lienzo de 1080)
         private static readonly Vector2 MomentAnchor = new Vector2(0.5f, 0.55f), CurtainAnchor = new Vector2(0.5f, 0.64f);
-        private const float VeilAlpha = 0.58f;
+        private const float VeilAlpha = 0.75f;                                           // el velo apaga la escena (y su marcador) para que el emblema mande: 0,58 (0,75 desde la Tarea 127) dejaba el texto blanco a 44 % y se seguía leyendo como «a plena luz» (Tarea 127)
 
         /// <summary>Cómo entra el emblema en el momento del objeto.</summary>
         public enum MomentKind { Pop, Settle, Rise, Rock, Stamp }

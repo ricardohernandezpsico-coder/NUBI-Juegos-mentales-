@@ -314,9 +314,18 @@ namespace NeuroVida.Games.Correo
 
         private void AnimateHeader()
         {
+            // el marcador común (Tarea 127): fila 1 «Correo Estelar» + «Día 1 de 4»; fila 2, la consigna «Toca el buzón del sello» y a la derecha «Cartas: 0» (con las atrasadas si las hay). Antes: «Nivel», «Día», «Cartas», la racha y «+1» sueltos, y la consigna al pie.
             string cards = MailContract.CartasLine(_day.Right, _day.Late);
-            if (cards != _lastCards) { _lastCards = cards; _hdrCards.text = cards; }
-            _hint.gameObject.SetActive(_phase == Phase.Play);
+            string hint = _phase == Phase.Play ? MailContract.PlayHint : "";
+            string key = cards + "|" + hint;
+            if (key != _lastCards)
+            {
+                _lastCards = key;
+                _hud.SetPhase(cards);
+                _hud.SetPromptFit(null, hint, hint.Length > 0 ? "Toca el buzón" : "");
+            }
+            _hdrCards.gameObject.SetActive(false);
+            _hint.gameObject.SetActive(false);
         }
 
         private void AnimateBelt(float now, float dt)
@@ -366,26 +375,9 @@ namespace NeuroVida.Games.Correo
             // si una carta ya no está en la cinta (la guardó un efecto) y no vuela ni cae, se suelta
             foreach (var v in _lv)
                 if (v.InUse && !v.Flying && !v.Falling && (v.L == null || !belt.Contains(v.L))) { v.InUse = false; v.Root.gameObject.SetActive(false); }
-            // la píldora de la racha y la de las que esperan fuera de la pantalla
-            if (_day.Combo >= 3)
-            {
-                _comboText.text = _day.Combo + " seguidos";
-                float w = _comboText.preferredWidth / _s + 22f;
-                _comboPill.gameObject.SetActive(true);
-                SetRect(_comboPill.rectTransform, MailLayout.BeltXA, m.BeltY - 84f + 13f, w, 26f);
-                SetChild(_comboText.rectTransform, 0f, 0.5f, w + 20f, 26f);                 // hijo de la píldora: se posiciona por desplazamiento, no con SetRect
-            }
-            else _comboPill.gameObject.SetActive(false);
-            int waiting = belt.Count - MailContract.BeltCapacity;
-            if (waiting > 0)
-            {
-                _waitText.text = "+" + waiting;
-                float w = _waitText.preferredWidth / _s + 18f;
-                _waitPill.gameObject.SetActive(true);
-                SetRect(_waitPill.rectTransform, MailLayout.W - w / 2f - 8f, m.BeltY - 62f + 12f, w, 24f);
-                SetChild(_waitText.rectTransform, 0f, 0.5f, w + 20f, 24f);
-            }
-            else _waitPill.gameObject.SetActive(false);
+            // la racha grande y el «+1» de las que esperan fuera de la pantalla ya no se dibujan (Tarea 127: el marcador común dice lo que importa)
+            _comboPill.gameObject.SetActive(false);
+            _waitPill.gameObject.SetActive(false);
         }
 
         private void AnimateFlyers(float now)
@@ -1018,7 +1010,7 @@ namespace NeuroVida.Games.Correo
                 Check("caja fuerte.losa", _safeSlab, true); Check("caja fuerte.puerta (plasticina)", _safeDoor, true); Check("caja fuerte.manija (plasticina)", _handle, true); Check("faro.losa", _beaconSlab, true);
                 if (_safeTouch == null || _beaconTouch == null || _clockTouch == null) problems.Add("falta el estado presionado de la caja fuerte, el faro o el reloj");
             }
-            foreach (var t in new[] { _hdrCards, _hint, _clockLabel, _safeLabel, _beaconLabel }) if (t == null || !t.gameObject.activeInHierarchy) problems.Add("texto fijo apagado");
+            foreach (var t in new[] { _clockLabel, _safeLabel, _beaconLabel }) if (t == null || !t.gameObject.activeInHierarchy) problems.Add("texto fijo apagado");
             if (_boxes.Length != 4) problems.Add("faltan buzones");
             MailMoment? routine = null;
             for (int level = 1; level <= MailContract.MaxLevel; level++)

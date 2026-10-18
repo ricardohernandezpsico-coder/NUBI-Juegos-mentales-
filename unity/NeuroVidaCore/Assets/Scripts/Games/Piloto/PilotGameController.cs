@@ -199,7 +199,6 @@ namespace NeuroVida.Games.Piloto
             SetJourney(0f);
             _tintFrom = _tintTo = 0;
             _tintMix = 1f;
-            _hud.SetLevelText(PilotContract.SectorChip(0));
             UpdateHud();
             RequestMissionNotice(0, _mission, NoticeSeconds);
             _phase = Phase.Fly;
@@ -554,7 +553,7 @@ namespace NeuroVida.Games.Piloto
             _tintFrom = _tintTo;
             _tintTo = sector;
             _tintMix = 0f;
-            _hud.SetLevelText(PilotContract.SectorChip(sector), highlight: true);
+            _hud.PulsePrompt();                                      // la fila de consigna (con la misión nueva y el sector) salta y se enciende un momento
             RequestMissionNotice(sector, _mission, NoticeSeconds);   // el aviso muestra la MISIÓN NUEVA (forma dibujada y nombre), no solo el nombre del sector
             PlayClip(PilotSounds.Whoosh(), 0.8f);
             GameFeel.Haptic(GameFeel.HapticKind.Firm);
@@ -645,7 +644,6 @@ namespace NeuroVida.Games.Piloto
             ExtendRoute();
             ShowFlightLayers(true);
             SetMissionCard();
-            _hud.SetLevelText(PilotContract.SectorChip(_sector));            // la práctica dejó el chip en «Sector 1 de 3»
             SetJourney(Endless ? _t / _flightSeconds : (float)(_run.Resolved + _dropped) / _precisionTotal);
             _nextSignalIn = 1.4f;
             UpdateHud();

@@ -76,9 +76,11 @@ namespace NeuroVida.Games.Secuencia
         private Image _disc, _tint, _sparkHalo, _sparkCore;
         private LightMesh _fixedMesh, _trailMesh, _ribbonMesh;
         private Text _rule, _sub;
-        private RectTransform _modePill, _countPill;
-        private Image _modeIcon;
-        private Text _modeText, _countText, _roundText, _counterNum, _counterLabel;
+        private const float MarginU = 48f;        // 16 dp: el margen del marcador de Rastro (el del tablero)
+        private GameHud _ghud;                    // el marcador común (Tarea 127): título y luces recordadas arriba; «2 luces · ronda 1 de 14» y la fase («Mira el rastro» → «Repítelo») en su fila de consigna
+        private RastroMode _hudMode = RastroMode.Rastro;
+        private int _hudAsked;
+        private string _hudPhase = "";
         private readonly Image[] _lifeDots = new Image[RastroContract.Lives];
         private readonly OrbView[] _orbs = new OrbView[RastroBoard.Orbs];
         private readonly List<Particle> _particles = new List<Particle>();
@@ -334,7 +336,7 @@ namespace NeuroVida.Games.Secuencia
         {
             _phase = Phase.Show;
             ClearRound();
-            Rule(RastroModes.WatchRule(r.Mode, r.Asked), RastroModes.Name(r.Mode));
+            ShowPhase(RastroModes.PhaseWatch(r.Mode, r.Asked));
             yield return StartCoroutine(Motion.Hold(0.45f));
 
             Color trail = TrailTint[(int)r.Mode];
@@ -428,7 +430,7 @@ namespace NeuroVida.Games.Secuencia
             _fixed.Clear();
             _ribbon.Clear();
             _events.Clear();
-            Rule(RastroModes.RepeatRule(r.Mode, r.Asked), RastroModes.Name(r.Mode));
+            ShowPhase(RastroModes.PhaseRepeat(r.Mode, r.Asked));
             if (r.Guided) _hintOrb = r.Target[0];
             else ShowCue(r);
             float startedAt = GameClock.Time;
@@ -513,7 +515,7 @@ namespace NeuroVida.Games.Secuencia
             yield return StartCoroutine(Motion.Hold(seconds));
             _counter += add;
             UpdateHud();
-            StartCoroutine(PopRect(_counterNum.rectTransform, 1.18f, 0.25f));
+            StartCoroutine(PopRect(_ghud.InfoRect, 1.12f, 0.25f));
         }
 
         private IEnumerator Fail(RastroRound r, InputResult res)
@@ -584,8 +586,8 @@ namespace NeuroVida.Games.Secuencia
         }
         // </guided>
 
-        /// <summary>El contador «luces recordadas» como zona protegida del tutorial.</summary>
-        private Func<Rect>[] LightsZone(NubiCoach coach) => new[] { coach.ZoneOfTexts(_counterNum, _counterLabel) };
+        /// <summary>El contador «N recordadas» (el chip de avance del marcador) como zona protegida del tutorial.</summary>
+        private Func<Rect>[] LightsZone(NubiCoach coach) => new[] { coach.Zone(_ghud.InfoRect) };
 
         /// <summary>El tablero entero de luceros (para el foco de «mirar»).</summary>
         private Rect BoardHole()
@@ -943,12 +945,12 @@ namespace NeuroVida.Games.Secuencia
                 o.X.gameObject.SetActive(false);
                 o.Hint.gameObject.SetActive(false);
             }
-            Rule("", "");
+            ShowPhase("");
         }
 
         // ------------------------------------------------------------------ marcador y textos
 
-        /// <summary>Rótulo de abajo y su línea de apoyo. Durante la ronda guiada los textos los dice Nubi (<see cref="GuidedTutorial.Say"/>).</summary>
+        /// <summary>Rótulo de abajo y su línea de apoyo: lo que pasó con la jugada («¡Exacto!», «Esa no era»). Durante la ronda guiada los textos los dice Nubi (<see cref="GuidedTutorial.Say"/>).</summary>
         private void Rule(string rule, string sub)
         {
             bool practice = _tutorial != null && _tutorial.Practicing;
@@ -956,13 +958,20 @@ namespace NeuroVida.Games.Secuencia
             _sub.text = practice ? "" : sub;
         }
 
+        /// <summary>
+        /// La fase en la fila de consigna del marcador («Mira el rastro» → «Repítelo»; Tarea 127): antes un rótulo grande al pie, otro de apoyo y un recordatorio del modo («EN ORDEN», con su flecha) arriba del tablero. Durante la ronda guiada también se ve:
+        /// la fila siempre está en el mismo lugar y los textos de Nubi van aparte.
+        /// </summary>
+        private void ShowPhase(string phase)
+        {
+            _hudPhase = phase ?? "";
+            UpdateHud();
+        }
+
         private void ResetHud(RastroMode mode, int asked)
         {
-            _modeText.text = RastroModes.Name(mode);
-            _modeIcon.sprite = RastroSprites.Icon(mode);
-            _countText.text = asked > 0 ? RastroModes.CountLabel(mode, asked) : "";
-            _countPill.gameObject.SetActive(asked > 0);
-            LayoutPills();
+            _hudMode = mode;
+            _hudAsked = asked;
             UpdateHud();
         }
 
@@ -970,10 +979,26 @@ namespace NeuroVida.Games.Secuencia
         {
             for (int i = 0; i < _lifeDots.Length; i++)
                 _lifeDots[i].color = i < _session.Lives ? Cream : new Color(1f, 1f, 1f, 0.18f);
-            _counterNum.text = _counter.ToString();
+            _ghud.SetInfo(RastroModes.RememberedLabel(_counter));
+            // fila de consigna: «2 luces · ronda 1 de 14» (con el modo si no es el rastro simple), con la fase a la derecha; si no cabe, sin la ronda o sin el modo
             bool precision = !_session.Timed && !_session.Assessment;
-            _roundText.gameObject.SetActive(precision);
-            if (precision) _roundText.text = $"Ronda {Mathf.Min(_session.RoundsPlayed + 1, RastroContract.PrecisionRounds)} de {RastroContract.PrecisionRounds}";
+            string count = _hudAsked > 0 ? RastroModes.CountLabel(_hudMode, _hudAsked) : "";
+            string round = precision ? $"ronda {Mathf.Min(_session.RoundsPlayed + 1, RastroContract.PrecisionRounds)} de {RastroContract.PrecisionRounds}" : "";
+            string mode = _hudMode != RastroMode.Rastro && _hudAsked > 0 ? RastroModes.Name(_hudMode) : "";
+            _ghud.SetPhase(_hudPhase);
+            _ghud.SetPromptFit(null,
+                Join(mode, count, round),
+                Join(count, round),
+                Join(count, ""),
+                round);
+            LayoutHud();
+        }
+
+        private static string Join(string a, string b, string c = "")
+        {
+            var parts = new List<string>();
+            foreach (var p in new[] { a, b, c }) if (!string.IsNullOrEmpty(p)) parts.Add(p);
+            return string.Join(" · ", parts);
         }
 
         // ------------------------------------------------------------------ coordenadas
@@ -981,7 +1006,12 @@ namespace NeuroVida.Games.Secuencia
         private Vector2 LogicalToPlay(Vector2 l) => new Vector2((l.x - LogicalW * 0.5f) * _s, _playH * 0.5f - (l.y + _yShift) * _s);
         private Vector2 PlayToLogical(Vector2 u) => new Vector2(u.x / _s + LogicalW * 0.5f, (_playH * 0.5f - u.y) / _s - _yShift);
         private Vector2 OrbPlay(int i) => LogicalToPlay(RastroBoard.Position(i, _angle));
-        private Vector2 CounterPlay() => new Vector2((LogicalW - 16f - 28f - LogicalW * 0.5f) * _s, _playH * 0.5f - 74f * _s);
+        /// <summary>Hacia dónde vuelan las luces recordadas: el centro del chip de avance del marcador (en las coordenadas del campo de juego).</summary>
+        private Vector2 CounterPlay()
+        {
+            var chip = _ghud.InfoRect;
+            return LocalIn(_play, chip) + new Vector2(-chip.rect.width * 0.5f, -chip.rect.height * 0.5f);
+        }
 
         // ------------------------------------------------------------------ construcción de la UI
 
@@ -1044,7 +1074,7 @@ namespace NeuroVida.Games.Secuencia
             BuildCue();
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            BuildTutorial(_safe, 112f * UnitsPerDp, "Rastro de luz", "Mira el camino de la chispa y repítelo con el dedo");
+            BuildTutorial(_safe, GameHud.Height + 10f, "Rastro de luz", "Mira el camino de la chispa y repítelo con el dedo");
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -1088,12 +1118,7 @@ namespace NeuroVida.Games.Secuencia
             _hud = go.AddComponent<RectTransform>();
             Stretch(_hud);
 
-            _modePill = Pill("ModePill", out _modeText, out _modeIcon, Sun, true);
-            _countPill = Pill("CountPill", out _countText, out _, Rgb(127, 216, 255), false);
-            _roundText = MakeText(_hud, "Round", 45, TextAnchor.MiddleLeft, Dim, 0f, 0f);
-            _roundText.font = UiFonts.Regular;
-            _roundText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            AnchorTopLeft(_roundText.rectTransform);
+            _ghud = new GameHud(_safe, "Rastro de luz", MarginU, this, withStreak: false);
 
             for (int i = 0; i < _lifeDots.Length; i++)
             {
@@ -1102,15 +1127,6 @@ namespace NeuroVida.Games.Secuencia
                 d.gameObject.SetActive(true);
                 _lifeDots[i] = d;
             }
-            _counterNum = MakeText(_hud, "Counter", 96, TextAnchor.MiddleRight, Color.white, 0f, 0f);
-            NeuroStyle.ClayText(_counterNum, 3f, 5f);
-            _counterNum.horizontalOverflow = HorizontalWrapMode.Overflow;
-            AnchorTopLeft(_counterNum.rectTransform);
-            _counterLabel = MakeText(_hud, "CounterLabel", 42, TextAnchor.MiddleRight, Dim, 0f, 0f);
-            _counterLabel.font = UiFonts.Regular;
-            _counterLabel.text = "luces recordadas";
-            _counterLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
-            AnchorTopLeft(_counterLabel.rectTransform);
 
             // reloj del Reto: una línea fina arriba que se consume
             var tgo = new GameObject("Timer");
@@ -1136,41 +1152,6 @@ namespace NeuroVida.Games.Secuencia
             fill.sprite = RoundedRectSprite.Get(3);
             fill.type = Image.Type.Sliced;
             fill.raycastTarget = false;
-        }
-
-        /// <summary>Píldora de arcilla del marcador: un ícono dibujado (opcional) y un texto de 15 sp.</summary>
-        private RectTransform Pill(string name, out Text text, out Image icon, Color textColor, bool withIcon)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(_hud, false);
-            var rect = go.AddComponent<RectTransform>();
-            AnchorTopLeft(rect);
-            var bg = go.AddComponent<Image>();
-            if (PlasticSlab.TryStyle(bg, SlabSize.Chip, SlabTone.Night) == null)                    // plasticina: la píldora es una losa «noche» del kit
-            {
-                bg.sprite = RoundedRectSprite.Get(64);
-                bg.type = Image.Type.Sliced;
-                bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
-                bg.raycastTarget = false;
-                NeuroStyle.ClayFrame(bg, 3f, 6f);
-            }
-            icon = null;
-            if (withIcon)
-            {
-                var ig = new GameObject("Icon");
-                ig.transform.SetParent(rect, false);
-                var ir = ig.AddComponent<RectTransform>();
-                ir.anchorMin = ir.anchorMax = ir.pivot = new Vector2(0f, 0.5f);
-                icon = ig.AddComponent<Image>();
-                icon.raycastTarget = false;
-                icon.color = textColor;
-            }
-            text = MakeText(rect, "Text", 45, TextAnchor.MiddleLeft, textColor, 0f, 0f);
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            var tr = text.rectTransform;
-            tr.anchorMin = tr.anchorMax = new Vector2(0f, 0.5f);
-            tr.pivot = new Vector2(0f, 0.5f);
-            return rect;
         }
 
         private void BuildTexts()
@@ -1234,16 +1215,8 @@ namespace NeuroVida.Games.Secuencia
             go.SetActive(false);
         }
 
-        /// <summary>Muestra el recordatorio del modo (empieza la respuesta): del color del modo; el rastro simple, más discreto.</summary>
-        private void ShowCue(RastroRound r)
-        {
-            Color c = r.Mode == RastroMode.Rastro ? Dim : SkyTint[(int)r.Mode];
-            _cueIcon.sprite = RastroSprites.Icon(r.Mode);
-            _cueIcon.color = c;
-            _cueText.color = c;
-            _cueText.text = RastroModes.CueText(r.Mode, r.Asked);
-            _cueRoot.gameObject.SetActive(true);
-        }
+        /// <summary>El recordatorio del modo (empieza la respuesta) ya no es un rótulo grande arriba del tablero: lo dicen el modo en la fila de consigna del marcador y la fase («Al revés», «Últimas 3»; Tarea 127).</summary>
+        private void ShowCue(RastroRound r) { }
 
         private void BuildResultPanel()
         {
@@ -1367,48 +1340,22 @@ namespace NeuroVida.Games.Secuencia
             _cueText.rectTransform.offsetMin = new Vector2(40f * _s, 0f);
             _cueText.rectTransform.offsetMax = new Vector2(-4f * _s, 0f);
             LayoutHud();
-            LayoutPills();
             _unlockGlow.rectTransform.sizeDelta = Vector2.one * (260f * _s);
         }
 
+        /// <summary>Las vidas (tres luces) van en la fila 1 del marcador, a la izquierda del chip de avance.</summary>
         private void LayoutHud()
         {
-            float m = 16f;
             float dot = 12f, gap = 18f;
+            var chip = _ghud.InfoRect;
+            float chipW = chip.gameObject.activeSelf ? chip.sizeDelta.x + 20f : 0f;
+            float width = LogicalW * _s;
             for (int i = 0; i < _lifeDots.Length; i++)
             {
                 var r = _lifeDots[i].rectTransform;
                 r.sizeDelta = new Vector2(dot * _s, dot * _s);
-                r.anchoredPosition = new Vector2((LogicalW - m - dot - (_lifeDots.Length - 1 - i) * gap) * _s, -(28f - dot * 0.5f) * _s);
+                r.anchoredPosition = new Vector2(width - MarginU - chipW - dot * _s - (_lifeDots.Length - 1 - i) * gap * _s, -(45f - dot * _s * 0.5f));
             }
-            _counterNum.rectTransform.sizeDelta = new Vector2(120f * _s, 40f * _s);
-            _counterNum.rectTransform.anchoredPosition = new Vector2((LogicalW - m - 120f) * _s, -50f * _s);
-            _counterLabel.rectTransform.sizeDelta = new Vector2(150f * _s, 20f * _s);
-            _counterLabel.rectTransform.anchoredPosition = new Vector2((LogicalW - m - 150f) * _s, -90f * _s);
-        }
-
-        /// <summary>Ajusta el ancho de cada píldora a su texto y las pone en sus dos filas.</summary>
-        private void LayoutPills()
-        {
-            float m = 16f, h = 36f, pad = 12f, iconD = 22f, iconGap = 6f;
-            // fila 1: ícono + modo
-            float tw = _modeText.preferredWidth / _s;
-            _modeIcon.rectTransform.sizeDelta = new Vector2(iconD * _s, iconD * _s);
-            _modeIcon.rectTransform.anchoredPosition = new Vector2(pad * _s, 0f);
-            _modeText.rectTransform.sizeDelta = new Vector2((tw + 4f) * _s, h * _s);
-            _modeText.rectTransform.anchoredPosition = new Vector2((pad + iconD + iconGap) * _s, 0f);
-            _modePill.sizeDelta = new Vector2((pad * 2f + iconD + iconGap + tw) * _s, h * _s);
-            _modePill.anchoredPosition = new Vector2(m * _s, -10f * _s);
-            // fila 2: cuántas luces
-            float cw = _countText.preferredWidth / _s;
-            _countText.rectTransform.sizeDelta = new Vector2((cw + 4f) * _s, h * _s);
-            _countText.rectTransform.anchoredPosition = new Vector2(pad * _s, 0f);
-            _countPill.sizeDelta = new Vector2((pad * 2f + cw) * _s, h * _s);
-            _countPill.anchoredPosition = new Vector2(m * _s, -52f * _s);
-            // la ronda de Precisión, a la derecha de la píldora
-            _roundText.rectTransform.sizeDelta = new Vector2(110f * _s, h * _s);
-            _roundText.rectTransform.anchoredPosition = new Vector2((m + pad * 2f + cw + 8f) * _s, -52f * _s);
-            if (!_countPill.gameObject.activeSelf) _roundText.rectTransform.anchoredPosition = new Vector2(m * _s, -52f * _s);
         }
     }
 }

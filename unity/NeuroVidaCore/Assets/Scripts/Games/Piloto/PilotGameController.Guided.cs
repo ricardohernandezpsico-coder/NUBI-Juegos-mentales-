@@ -51,7 +51,6 @@ namespace NeuroVida.Games.Piloto
             ShowFlightLayers(true);
             _endLayer.gameObject.SetActive(false);
             SetMissionCard();
-            _hud.SetLevelText(PilotContract.SectorChip(0));
             _practiceSpawn = false;
             _phase = Phase.Idle;                                           // el paso 1 es un cuadro quieto
             var coach = t.Coach;
@@ -65,7 +64,7 @@ namespace NeuroVida.Games.Piloto
                 example = SpawnForced(new PilotSignalKind(_mission.Shape, _mission.Detail, true, false), 999f);
                 var keepExample = new Func<Rect>[] { SignalsZone(coach) };
                 float started = Time.unscaledTime;
-                yield return StartCoroutine(coach.Watch(() => coach.RectOf(_missionFill.rectTransform), CoachTexts.Piloto.Mission, () => Time.unscaledTime - started > 3.2f, 3.6f, keep: keepExample));
+                yield return StartCoroutine(coach.Watch(() => coach.RectOf(_hud.PromptRect), CoachTexts.Piloto.Mission, () => Time.unscaledTime - started > 3.2f, 3.6f, keep: keepExample));
                 ok = !t.Skipped;
                 if (ok) script.Success();
             }
@@ -79,7 +78,7 @@ namespace NeuroVida.Games.Piloto
                 _nextSignalIn = 0.8f;
                 StartEngine();
                 _guidedBotT = 0f;
-                var keepSky = new Func<Rect>[] { coach.Zone(_skyZone), coach.Zone(_missionFill.rectTransform) };
+                var keepSky = new Func<Rect>[] { coach.Zone(_skyZone), coach.Zone(_hud.PromptRect) };
                 yield return StartCoroutine(coach.Watch(() => coach.RectOf(_stripFill.rectTransform), CoachTexts.Piloto.Steer, () => _steeredSeconds >= 1.5f, 12f, keep: keepSky));
                 ok = !t.Skipped;
                 if (ok) script.Success();
@@ -114,7 +113,7 @@ namespace NeuroVida.Games.Piloto
                 _practiceSpawn = false;
                 SpawnForced(new PilotSignalKind(_mission.Shape, SignalDetail.Ring, false, false), 5f);
                 yield return null;
-                yield return StartCoroutine(coach.Notice(CoachTexts.Piloto.Lookalike, 3.4f, keep: new Func<Rect>[] { SignalsZone(coach), coach.Zone(_missionFill.rectTransform) }));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Piloto.Lookalike, 3.4f, keep: new Func<Rect>[] { SignalsZone(coach), coach.Zone(_hud.PromptRect) }));
                 ok = !t.Skipped;
                 if (ok) script.Success();
             }
@@ -125,7 +124,7 @@ namespace NeuroVida.Games.Piloto
                 _practiceCrossed = false;
                 _gates.Clear();
                 _gates.Add(new Gate { P = _dist + (_plan.ShipY - _plan.RouteTop - 14f), Sector = 1 });
-                yield return StartCoroutine(coach.Notice(CoachTexts.Piloto.Sector, 2.0f, keep: new Func<Rect>[] { SignalsZone(coach), coach.Zone(_missionFill.rectTransform) }));
+                yield return StartCoroutine(coach.Notice(CoachTexts.Piloto.Sector, 2.0f, keep: new Func<Rect>[] { SignalsZone(coach), coach.Zone(_hud.PromptRect) }));
                 ok = !t.Skipped;
                 float wait = 0f;
                 while (ok && !_practiceCrossed && wait < 6f) { wait += Time.unscaledDeltaTime; yield return null; ok = !t.Skipped; }
@@ -137,7 +136,7 @@ namespace NeuroVida.Games.Piloto
             if (ok)
             {
                 float started = Time.unscaledTime;
-                yield return StartCoroutine(coach.Watch(() => coach.RectOf(_missionFill.rectTransform), CoachTexts.Piloto.NewMission, () => Time.unscaledTime - started > 2.6f, 3.0f, keep: new Func<Rect>[] { SignalsZone(coach) }));
+                yield return StartCoroutine(coach.Watch(() => coach.RectOf(_hud.PromptRect), CoachTexts.Piloto.NewMission, () => Time.unscaledTime - started > 2.6f, 3.0f, keep: new Func<Rect>[] { SignalsZone(coach) }));
                 ok = !t.Skipped;
                 if (ok) script.Success();
             }

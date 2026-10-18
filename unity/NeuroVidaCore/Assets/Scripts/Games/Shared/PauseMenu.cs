@@ -19,8 +19,14 @@ namespace NeuroVida.Games.Shared
         private CanvasGroup _group;
         private Action _onResume, _onRestart, _onExit, _onHowTo;
         private Func<bool> _canHowTo;
-        private RectTransform _title, _subtitle, _btnContinue, _btnRestart, _btnHowTo, _btnExit;
+        private RectTransform _title, _subtitle, _btnContinue, _btnRestart, _btnHowTo, _btnExit, _btnYes, _btnNo;
+        private Text _subtitleText;
         private bool _plastic;
+        private bool _confirming, _withHowTo;
+        public const string SubtitleText = "Tu partida te espera", ConfirmText = "¿Empezar de nuevo esta partida?";
+
+        /// <summary>true mientras el menú pregunta «¿Empezar de nuevo esta partida?» (Tarea 127: «Reiniciar» está justo debajo de «Continuar» y a 60 dp; ahora pide confirmación en una línea).</summary>
+        public bool Confirming => _confirming;
 
         public bool IsShown => gameObject.activeSelf;
 
@@ -42,7 +48,7 @@ namespace NeuroVida.Games.Shared
         public System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, RectTransform>> VisibleButtons()
         {
             var list = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, RectTransform>>();
-            foreach (var b in new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit })
+            foreach (var b in new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit, _btnYes, _btnNo })
                 if (b != null && b.gameObject.activeInHierarchy) list.Add(new System.Collections.Generic.KeyValuePair<string, RectTransform>(b.name, b));
             return list;
         }
@@ -107,9 +113,10 @@ namespace NeuroVida.Games.Shared
             title.text = "Pausa";
             if (!_plastic) NeuroStyle.ClayText(title, 6f, 12f);
 
-            var sub = MakeText(_panel, "Subtitle", 46, TextAnchor.MiddleCenter, _plastic ? NeuroStyle.InkSoft : NeuroStyle.Hex(0xB4BFEA), 0f, 0f);
+            var sub = MakeText(_panel, "Subtitle", 48, TextAnchor.MiddleCenter, _plastic ? NeuroStyle.InkSoft : NeuroStyle.Hex(0xB4BFEA), 0f, 0f);      // 16 dp (Tarea 127: antes 46 unidades, 15,3 dp)
             _subtitle = sub.rectTransform;
-            sub.text = "Tu partida te espera";
+            _subtitleText = sub;
+            sub.text = SubtitleText;
 
             _btnContinue = AddButton("Continuar", NeuroStyle.Sun, SlabTone.Sun, () =>
             {
@@ -119,11 +126,7 @@ namespace NeuroVida.Games.Shared
                 _onResume?.Invoke();
             });
             if (_btnContinue.GetComponent<PlasticPress>() is PlasticPress continuePress) continuePress.PlaysTap = false;     // «Continuar» ya suena su propio «seguimos» (PauseOut): sin toque del kit encima
-            _btnRestart = AddButton("Reiniciar", NeuroStyle.Sky, SlabTone.Sky, () =>
-            {
-                Hide();
-                _onRestart?.Invoke();
-            });
+            _btnRestart = AddButton("Reiniciar", NeuroStyle.Sky, SlabTone.Sky, () => SetConfirming(true));          // pide confirmación (una línea) antes de tirar la partida
             // «Cómo se juega» (solo en los juegos con tutorial): el reloj lo retoma el juego, no el menú
             _btnHowTo = AddButton("Cómo se juega", NeuroStyle.Grape, SlabTone.Lilac, () =>
             {
@@ -131,24 +134,47 @@ namespace NeuroVida.Games.Shared
                 _onHowTo?.Invoke();
             });
             _btnExit = AddButton("Salir", NeuroStyle.Cream, SlabTone.Cream, () => _onExit?.Invoke());
+            _btnYes = AddButton("Sí, empezar de nuevo", NeuroStyle.Sky, SlabTone.Sky, () =>
+            {
+                Hide();
+                _onRestart?.Invoke();
+            });
+            _btnNo = AddButton("No, seguir jugando", NeuroStyle.Sun, SlabTone.Sun, () => SetConfirming(false));
             Relayout(false);
+        }
+
+        /// <summary>«¿Empezar de nuevo esta partida?»: el subtítulo hace la pregunta y los botones pasan a ser dos («Sí, empezar de nuevo» y «No, seguir jugando»). Atrás la cancela.</summary>
+        private void SetConfirming(bool confirming)
+        {
+            _confirming = confirming;
+            _subtitleText.text = confirming ? ConfirmText : SubtitleText;
+            Relayout(_withHowTo);
         }
 
         /// <summary>Acomoda el panel con tres botones o con cuatro (si se ofrece «Cómo se juega»).</summary>
         private void Relayout(bool withHowTo)
         {
+            _withHowTo = withHowTo;
             float h = withHowTo ? 1130f : 940f;
             _panel.sizeDelta = new Vector2(820f, h);
             float top = h * 0.5f;
             PlaceCentered(_title, new Vector2(0f, top - 140f), new Vector2(760f, 150f));
             PlaceCentered(_subtitle, new Vector2(0f, top - 255f), new Vector2(760f, 70f));
             float y = top - 415f;
+            foreach (var btn in new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit }) btn.gameObject.SetActive(!_confirming && (btn != _btnHowTo || withHowTo));
+            _btnYes.gameObject.SetActive(_confirming);
+            _btnNo.gameObject.SetActive(_confirming);
+            if (_confirming)
+            {
+                PlaceCentered(_btnYes, new Vector2(0f, y), new Vector2(640f, 150f));
+                PlaceCentered(_btnNo, new Vector2(0f, y - 190f), new Vector2(640f, 150f));
+                return;
+            }
             foreach (var btn in withHowTo ? new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit } : new[] { _btnContinue, _btnRestart, _btnExit })
             {
                 PlaceCentered(btn, new Vector2(0f, y), new Vector2(640f, 150f)); // ~50 dp de alto: mayor que el mínimo de 48 dp
                 y -= 190f;
             }
-            _btnHowTo.gameObject.SetActive(withHowTo);
         }
 
         private RectTransform AddButton(string label, Color fill, SlabTone tone, Action onClick)
@@ -191,6 +217,8 @@ namespace NeuroVida.Games.Shared
             GameClock.Pause();
             s_shown = this;
             if (IsShown) return;
+            _confirming = false;
+            _subtitleText.text = SubtitleText;
             Relayout(_onHowTo != null && _canHowTo != null && _canHowTo());
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
@@ -222,6 +250,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Atrás con el menú abierto = Continuar.</summary>
         public void ResumeFromBack()
         {
+            if (_confirming) { SetConfirming(false); return; }          // Atrás en la pregunta de reiniciar vuelve al menú, no sigue la partida
             Hide();
             GameClock.Resume();
             GameFeel.PauseOut();

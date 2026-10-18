@@ -48,6 +48,23 @@ namespace NeuroVida.Games.Secuencia
             }
         }
 
+        /// <summary>La fase en la fila de consigna del marcador (Tarea 127) mientras se mira el camino: «Mira el rastro».</summary>
+        public static string PhaseWatch(RastroMode m, int asked) => m == RastroMode.Marcha ? "Mira… las últimas " + asked : "Mira el rastro";
+
+        /// <summary>La fase mientras se repite el camino: «Repítelo» (en orden), «Al revés», «Últimas 3».</summary>
+        public static string PhaseRepeat(RastroMode m, int asked)
+        {
+            switch (m)
+            {
+                case RastroMode.Reves: return "Al revés";
+                case RastroMode.Marcha: return "Últimas " + asked;
+                default: return "Repítelo";
+            }
+        }
+
+        /// <summary>El chip de avance del marcador: «0 recordadas», «1 recordada» (las luces que ya recordaste).</summary>
+        public static string RememberedLabel(int count) => count == 1 ? "1 recordada" : count + " recordadas";
+
         /// <summary>La píldora de cuántas luces: «3 luces», «Últimas 3 luces».</summary>
         public static string CountLabel(RastroMode m, int asked) => (m == RastroMode.Marcha ? "Últimas " : "") + asked + " luces";
 

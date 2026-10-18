@@ -46,6 +46,7 @@ CAPTIONS = {
     'aviso': 'Un aviso (de prueba)',
     'momento': 'El momento del objeto (emblema del juego)',
     'listo': 'Cortina «¡Listo!» con el emblema',
+    'pausa-reiniciar': 'La pausa: «Reiniciar» pregunta antes de tirar la partida',
     'final': 'La escena donde terminó, con «Continuar» (respaldo; en el teléfono la app se abre sola)',
     'sin-animaciones': 'Con «quitar animaciones»',
     'tutorial-rescatar': 'Tutorial: rescatar (marcadas y botón encendido)',

@@ -29,7 +29,7 @@ namespace NeuroVida.Games.Stroop
         private const float NoAnswer = -2f;
         private const int TimeUp = -3;
         /// <summary>Lugar que se reserva abajo durante la ronda guiada para «Práctica: no cuenta» y «Saltar tutorial» (los botones suben).</summary>
-        private const float GuidedReserveU = 270f;
+        private const float GuidedReserveU = 150f;           // la fila fija del tutorial (Práctica / Saltar) ocupa 140 u bajo el marcador
 
         /// <summary>Tinta de arcilla (<c>Ink</c> 1A1240): el nombre sobre AZUL, AMARILLO y BLANCO (contrastes 4,9 · 11,2 · 15,9 : 1); sobre ROJO va blanco puro (5,0 : 1).</summary>
         private static readonly Color InkLabel = new Color(0x1A / 255f, 0x12 / 255f, 0x40 / 255f);
@@ -43,7 +43,7 @@ namespace NeuroVida.Games.Stroop
         private const string Plastic = StroopSprites.PlasticGroup;
         private static readonly string[] ButtonSlabs = { "losa_md_boton_rojo", "losa_md_boton_azul", "losa_md_boton_amarillo", "losa_md_boton_blanco" };
         private static bool PlasticSlabs => PlasticSlab.AvailableCustom(Plastic, "losa_md_boton_rojo") && PlasticSlab.AvailableCustom(Plastic, "losa_gr_tarjeta_fondo");
-        private Image _ribbonSlab, _cardBorderSlab, _cardCornerSlab;
+        private Image _cardBorderSlab, _cardCornerSlab;
         private const float RingPad = 22f;
 
         private System.Random _rng;
@@ -78,9 +78,9 @@ namespace NeuroVida.Games.Stroop
 
         // UI
         private RectTransform _safe;
-        private Text _wordText, _ribbonText;
-        private Image _ribbonBg, _ribbonIcon, _wordGlow, _cardBorder, _cardCorner, _cardCornerIcon;
-        private RectTransform _ribbonRect, _timerBg, _timerFill, _cardRect, _fxRect, _stageRect;
+        private Text _wordText;
+        private Image _wordGlow, _cardBorder, _cardCorner, _cardCornerIcon;
+        private RectTransform _timerBg, _timerFill, _cardRect, _fxRect, _stageRect;
         private CanvasGroup _cardGroup;
         private readonly CanvasGroup[] _shoreGroup = new CanvasGroup[2];
         private readonly RectTransform[] _shoreRect = new RectTransform[2];
@@ -88,7 +88,6 @@ namespace NeuroVida.Games.Stroop
         private readonly List<Image> _buttonImages = new List<Image>();
         private readonly List<CanvasGroup> _buttonGroups = new List<CanvasGroup>();
         private readonly List<RectTransform> _ringRects = new List<RectTransform>();
-        private ProgressDots _dots;
         private PhasePill _pill;
         private Toast _toast;
         private ExitButton _exit;
@@ -97,7 +96,7 @@ namespace NeuroVida.Games.Stroop
         // «Ahora: PALABRA»
         private RectTransform _ruleCardRoot;
         private CanvasGroup _ruleCardGroup;
-        private float _bottomReserve;
+        private float _bottomReserve, _topReserve;
         private Vector2 _cardRestPos;
         private float _cardW;
 
@@ -123,16 +122,15 @@ namespace NeuroVida.Games.Stroop
             _points = 0;
             _responses.Clear();
             _bottomReserve = 0f;
+            _topReserve = 0f;
             _dda = new AdaptiveDifficulty(StroopContract.MaxLevel, DdaUserProfileConfig.ParseAgeBand(config.config.age_band),
                 AdaptiveDifficulty.StartRating(config.config, StroopContract.MaxLevel),
                 stepUp: config.config.timed ? 0.12f : 0.2f, useReaction: config.config.timed);
             _effLevel = _dda.PresentedLevel;
             _lastTickSecond = -1;
 
-            _dots.Reset();
             _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
-            _ribbonRect.gameObject.SetActive(true);
             _stageRect.gameObject.SetActive(true);
             _pill.Rect.gameObject.SetActive(true);
             foreach (var r in _buttonRects) r.gameObject.SetActive(true);
@@ -143,7 +141,6 @@ namespace NeuroVida.Games.Stroop
             SetStreak(0);
             ApplyRule(StroopRule.Ink, false);
             _timerBg.gameObject.SetActive(config.config.timed);
-            _dots.Rect.gameObject.SetActive(!config.config.timed);
 
             StopAllCoroutines();
             StartCoroutine(GameLoop());
@@ -226,7 +223,6 @@ namespace NeuroVida.Games.Stroop
             _answerIndex = (int)NoAnswer;
             _effLevel = _dda.PresentedLevel;
             _trial = _seq.Next(_effLevel);
-            if (!Endless) _dots.MarkCurrent(_trialIndex);
             UpdateHudText();
             if (!Endless) SetTimerFraction(1f);
             ClearRings();
@@ -272,7 +268,6 @@ namespace NeuroVida.Games.Stroop
 
         private IEnumerator ResolveTrial(bool correct)
         {
-            if (!Endless) _dots.Mark(_trialIndex, correct);
             var ink = StroopContract.Colors[_trial.InkIndex];
 
             if (correct)
@@ -468,8 +463,6 @@ namespace NeuroVida.Games.Stroop
             ApplySafeArea(_safe);
 
             _hud = new GameHud(_safe, "Tinta o Palabra", MarginU, this);
-            _dots = new ProgressDots(_safe, this, UnitsPerDp, StroopContract.TotalTrials);
-            BuildRibbon();
             BuildTimer();
             BuildStage();
             _pill = new PhasePill(_safe, this, UnitsPerDp, 22);
@@ -497,43 +490,6 @@ namespace NeuroVida.Games.Stroop
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
             _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
-        }
-
-        /// <summary>La cinta fija «Responde: TINTA / PALABRA» con su ícono (gota / libro): la regla se lee sin mirar la orilla.</summary>
-        private void BuildRibbon()
-        {
-            var go = new GameObject("RuleRibbon");
-            go.transform.SetParent(_safe, false);
-            _ribbonRect = go.AddComponent<RectTransform>();
-            _ribbonRect.anchorMin = _ribbonRect.anchorMax = new Vector2(0.5f, 1f);
-            _ribbonRect.pivot = new Vector2(0.5f, 0.5f);
-            _ribbonBg = go.AddComponent<Image>();
-            if (PlasticSlabs) _ribbonSlab = PlasticSlab.TryStyleCustom(_ribbonBg, Plastic, "losa_md_cinta_tinta");          // plasticina: la cinta es una losa del color de la regla (violeta oscuro / turquesa oscuro)
-            if (_ribbonSlab == null)
-            {
-                _ribbonBg.sprite = RoundedRectSprite.Get(64);
-                _ribbonBg.type = Image.Type.Sliced;
-                _ribbonBg.raycastTarget = false;
-                NeuroStyle.ClayFrame(_ribbonBg, 4f, 8f);
-            }
-
-            var iconGo = new GameObject("Icon");
-            iconGo.transform.SetParent(go.transform, false);
-            var ir = iconGo.AddComponent<RectTransform>();
-            ir.anchorMin = ir.anchorMax = new Vector2(0f, 0.5f);
-            ir.pivot = new Vector2(0.5f, 0.5f);
-            ir.sizeDelta = new Vector2(84f, 84f);
-            ir.anchoredPosition = new Vector2(66f, 0f);
-            _ribbonIcon = iconGo.AddComponent<Image>();
-            _ribbonIcon.raycastTarget = false;
-
-            _ribbonText = MakeText(go.transform, "Text", 64, TextAnchor.MiddleLeft, Color.white, 3f, 0.4f);
-            var tr = _ribbonText.rectTransform;
-            tr.anchorMin = Vector2.zero;
-            tr.anchorMax = Vector2.one;
-            tr.offsetMin = new Vector2(130f, 4f);
-            tr.offsetMax = new Vector2(-30f, -4f);
-            BestFit(_ribbonText, 42);
         }
 
         private void BuildTimer()
@@ -640,13 +596,6 @@ namespace NeuroVida.Games.Stroop
                 mark.raycastTarget = false;
             }
 
-            var label = MakeText(go.transform, "Name", 44, TextAnchor.MiddleCenter, Color.white, 2f, 0.4f);
-            var lr = label.rectTransform;
-            lr.anchorMin = lr.anchorMax = new Vector2(ink ? 0.84f : 0.16f, 0.5f);
-            lr.pivot = new Vector2(0.5f, 0.5f);
-            lr.sizeDelta = new Vector2(420f, 60f);
-            lr.localRotation = Quaternion.Euler(0f, 0f, ink ? 90f : -90f);
-            label.text = ink ? "TINTA" : "PALABRA";
         }
 
         private void BuildCard(Transform parent)
@@ -928,14 +877,8 @@ namespace NeuroVida.Games.Stroop
             float sh = Mathf.Max(safe.height, 800f);
             float contentW = sw - MarginU * 2f;
 
-            float y = 190f; // debajo del HUD
-            _dots.Rect.anchoredPosition = new Vector2(0f, -y);
-            y += 60f;
-
-            float ribbonH = 104f;
-            _ribbonRect.sizeDelta = new Vector2(contentW * 0.82f, ribbonH);
-            _ribbonRect.anchoredPosition = new Vector2(0f, -(y + ribbonH / 2f));
-            y += ribbonH + 14f;
+            // debajo del marcador, que ya trae la regla («Responde: TINTA») en su fila de consigna (Tarea 127: antes una cinta de 104 u y 16 puntos finos; el chip «3 de 16» basta). En la práctica, los controles del tutorial ocupan su fila fija de arriba.
+            float y = 190f + 24f + _topReserve;
 
             _timerBg.sizeDelta = new Vector2(contentW, 16f);
             _timerBg.anchoredPosition = new Vector2(0f, -(y + 8f));
@@ -1001,11 +944,10 @@ namespace NeuroVida.Games.Stroop
             var shore = ink ? StroopContract.InkShore : StroopContract.WordShore;
             _shoreGroup[0].alpha = ink ? 1f : 0.35f;
             _shoreGroup[1].alpha = ink ? 0.35f : 1f;
-            if (_ribbonSlab != null) PlasticSlab.SetCustom(_ribbonSlab, Plastic, ink ? "losa_md_cinta_tinta" : "losa_md_cinta_palabra");
-            else _ribbonBg.color = Color.Lerp(StroopContract.CardFill, shore, 0.55f);
-            _ribbonIcon.sprite = ink ? StroopSprites.Drop() : StroopSprites.Book();
-            _ribbonIcon.color = Color.Lerp(shore, Color.white, 0.7f);
-            _ribbonText.text = StroopContract.Ribbon(rule);
+            // la regla en la fila de consigna del marcador (18 dp): «Responde: TINTA» con la palabra del color de su orilla y el ícono de su orilla (gota / libro): nunca solo color
+            var light = Color.Lerp(shore, Color.white, 0.55f);
+            _hud.SetPrompt("Responde: <color=#" + ColorUtility.ToHtmlStringRGB(light) + ">" + (ink ? "TINTA" : "PALABRA") + "</color>", ink ? StroopSprites.Drop() : StroopSprites.Book(), 54);
+            _hud.SetPromptIcon(ink ? StroopSprites.Drop() : StroopSprites.Book(), light);
             if (_cardBorderSlab != null) PlasticSlab.SetCustom(_cardBorderSlab, Plastic, ink ? "losa_gr_tarjeta_tinta" : "losa_gr_tarjeta_palabra");
             else _cardBorder.color = new Color(shore.r, shore.g, shore.b, 0.98f);
             if (_cardCornerSlab != null) PlasticSlab.SetCustom(_cardCornerSlab, Plastic, ink ? "losa_ch_chip_tinta" : "losa_ch_chip_palabra");
@@ -1015,7 +957,7 @@ namespace NeuroVida.Games.Stroop
             var cr = _cardCorner.rectTransform;
             cr.anchorMin = cr.anchorMax = new Vector2(ink ? 0f : 1f, 1f);
             cr.anchoredPosition = new Vector2(ink ? 58f : -58f, -58f);
-            if (pop && Motion.Decorative) StartCoroutine(PopRect(_ribbonRect, 1.06f, 0.2f));
+            if (pop && Motion.Decorative) StartCoroutine(PopRect(_hud.PromptRect, 1.04f, 0.2f));
             if (pop) PlayTone(ink ? 330f : 440f, 0.1f, 0.1f);
         }
 
@@ -1102,9 +1044,9 @@ namespace NeuroVida.Games.Stroop
             ClearTransient();
             _acceptInput = false;
             _answerIndex = (int)NoAnswer;
-            _bottomReserve = GuidedReserveU;
+            _bottomReserve = 0f;
+            _topReserve = GuidedReserveU;
             _timerBg.gameObject.SetActive(false);
-            _dots.Rect.gameObject.SetActive(false);
             Layout();
             t.PlaceControls(GameHud.Height + 10f, false, _lastBottom + _lastBlock + 24f, badgeAtBottom: true);
             _pill.Rect.gameObject.SetActive(false);                      // durante la práctica habla Nubi (abajo de la tarjeta), no la píldora
@@ -1116,7 +1058,7 @@ namespace NeuroVida.Games.Stroop
             // (la tarjeta, su orilla y los botones) y el toque en un botón es la respuesta de verdad. Después, un aviso breve.
             var script = new GuidedScript(2);
             // zonas protegidas: la cinta «Responde: TINTA / PALABRA» y la tarjeta con la palabra (de lo que habla Nubi) quedan iluminadas junto a los botones
-            var ribbon = new[] { coach.Zone(_ribbonRect), coach.Zone(_cardRect) };
+            var ribbon = new[] { coach.Zone(_hud.PromptRect), coach.Zone(_cardRect) };
             while (!script.Finished)
             {
                 if (t.Skipped) { script.Skip(); break; }
@@ -1169,9 +1111,9 @@ namespace NeuroVida.Games.Stroop
             }
             _guided = false;
             _bottomReserve = 0f;
+            _topReserve = 0f;
             _pill.Rect.gameObject.SetActive(true);
             _timerBg.gameObject.SetActive(Endless);
-            _dots.Rect.gameObject.SetActive(!Endless);
             Layout();
             ApplyRule(StroopRule.Ink, false);
             t.EndPractice();

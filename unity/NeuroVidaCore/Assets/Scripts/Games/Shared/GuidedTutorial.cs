@@ -22,6 +22,8 @@ namespace NeuroVida.Games.Shared
     public sealed class GuidedTutorial
     {
         private const float Dp = 3f;
+        /// <summary>La fila fija de los controles de la práctica (Tarea 127, §1.7): SIEMPRE arriba, debajo del marcador, en los 17 juegos: «Práctica (sin puntos)» a la izquierda y «Saltar tutorial» a la derecha (es lo que menos se toca: no necesita el pulgar).</summary>
+        public const float RowMarginU = 48f, BadgeW = 540f, BadgeH = 96f, SkipW = 420f, SkipH = 132f, RowGapU = 8f;
 
         private readonly RectTransform _intro, _startRect, _skipIntroRect, _practiceRoot, _skipRect, _badge;
         private readonly CanvasGroup _introGroup;
@@ -120,11 +122,9 @@ namespace NeuroVida.Games.Shared
             _practiceRoot = pgo.AddComponent<RectTransform>();
             Stretch(_practiceRoot);
 
-            var badge = Panel(_practiceRoot, "Badge", new Vector2(640f, 96f), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f, SlabSize.Chip, SlabTone.Cream);
-            badge.anchorMin = badge.anchorMax = new Vector2(0.5f, 1f);
-            badge.anchoredPosition = new Vector2(0f, -practiceTopU - 48f);
+            var badge = Panel(_practiceRoot, "Badge", new Vector2(BadgeW, BadgeH), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f, SlabSize.Chip, SlabTone.Cream);
             _badge = badge;
-            var badgeText = Label(badge, "Label", 45, Vector2.zero, new Vector2(620f, 96f), plastic ? NeuroStyle.Ink : NeuroStyle.Grape, TextAnchor.MiddleCenter);       // 15 dp: «Práctica (sin puntos)» es más larga que el «Práctica: no cuenta» de antes y a 16 dp rozaba un texto del juego (Correo, forma de 1920)
+            var badgeText = Label(badge, "Label", 45, Vector2.zero, new Vector2(BadgeW - 20f, BadgeH), plastic ? NeuroStyle.Ink : NeuroStyle.Grape, TextAnchor.MiddleCenter);       // 15 dp: «Práctica (sin puntos)» es más larga que el «Práctica: no cuenta» de antes y a 16 dp rozaba un texto del juego (Correo, forma de 1920)
             badgeText.text = "Práctica (sin puntos)";
             BestFit(badgeText, 45);
 
@@ -134,38 +134,38 @@ namespace NeuroVida.Games.Shared
             BestFit(_caption, 48);
             NeuroStyle.ClayText(_caption, 3f, 4f);
 
-            _skipRect = Panel(_practiceRoot, "Skip", new Vector2(640f, 132f), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f, SlabSize.Button, SlabTone.Cream);
-            _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(0.5f, 0f);
-            _skipRect.anchoredPosition = new Vector2(0f, 12f * Dp + 66f);
-            _skipPracticeLabel = Label(_skipRect, "Label", 54, Vector2.zero, new Vector2(620f, 132f), plastic ? NeuroStyle.Ink : new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
+            _skipRect = Panel(_practiceRoot, "Skip", new Vector2(SkipW, SkipH), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f, SlabSize.Button, SlabTone.Cream);
+            _skipPracticeLabel = Label(_skipRect, "Label", 48, Vector2.zero, new Vector2(SkipW - 20f, SkipH), plastic ? NeuroStyle.Ink : new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
             _skipPracticeLabel.text = "Saltar tutorial";
             BestFit(_skipPracticeLabel, 45);
+            PlaceRow(practiceTopU);
             Coach.ControlSkip = _skipRect;       // Nubi y su globo no los tapan, estén donde estén
             Coach.ControlBadge = _badge;
             _practiceRoot.gameObject.SetActive(false);
         }
 
-        /// <summary>Acomoda los controles de la ronda guiada para los juegos donde abajo se toca (Freno): «Saltar tutorial» bajo el rótulo, arriba, y el mensaje de Nubi
-        /// a <paramref name="captionFromBottomU"/> unidades del borde de abajo (-1 = donde está por defecto).</summary>
+        /// <summary>
+        /// La fila fija de los controles (Tarea 127): «Práctica (sin puntos)» arriba a la izquierda y «Saltar tutorial» arriba a la derecha, en UNA fila debajo del marcador (<paramref name="practiceTopU"/> unidades desde arriba), igual en los 17 juegos.
+        /// Antes cambiaban de lugar según el juego (abajo en unos, arriba en otros, partidos en Rastro).
+        /// </summary>
+        private void PlaceRow(float practiceTopU)
+        {
+            float y = -(practiceTopU + RowGapU + SkipH * 0.5f);
+            _badge.anchorMin = _badge.anchorMax = new Vector2(0f, 1f);
+            _badge.pivot = new Vector2(0f, 0.5f);
+            _badge.anchoredPosition = new Vector2(RowMarginU, y);
+            _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(1f, 1f);
+            _skipRect.pivot = new Vector2(1f, 0.5f);
+            _skipRect.anchoredPosition = new Vector2(-RowMarginU, y);
+        }
+
+        /// <summary>
+        /// Acomoda lo de la ronda guiada: los controles van SIEMPRE en la fila fija de arriba (los parámetros <paramref name="skipAtTop"/>, <paramref name="badgeAtBottom"/> y <paramref name="skipFromBottomU"/> quedaron de cuando cada juego los ponía donde cabían y ya no hacen nada)
+        /// y el mensaje de Nubi va a <paramref name="captionFromBottomU"/> unidades del borde de abajo (-1 = donde está por defecto).
+        /// </summary>
         public void PlaceControls(float practiceTopU, bool skipAtTop, float captionFromBottomU, bool badgeAtBottom = false, float skipFromBottomU = -1f)
         {
-            if (badgeAtBottom)
-            {
-                // «Práctica (sin puntos)» arriba de «Saltar tutorial», abajo (juegos con el marcador y el cielo llenos)
-                _badge.anchorMin = _badge.anchorMax = new Vector2(0.5f, 0f);
-                _badge.anchoredPosition = new Vector2(0f, 36f + 132f + 14f + 48f);
-            }
-            if (skipAtTop)
-            {
-                _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(0.5f, 1f);
-                _skipRect.anchoredPosition = new Vector2(0f, -(practiceTopU + 96f + 14f + 66f));
-            }
-            if (skipFromBottomU >= 0f)
-            {
-                // «Saltar tutorial» a media altura, en un hueco libre del juego (cuando ni arriba ni abajo hay lugar sin tapar nada)
-                _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(0.5f, 0f);
-                _skipRect.anchoredPosition = new Vector2(0f, skipFromBottomU);
-            }
+            PlaceRow(practiceTopU);
             if (captionFromBottomU >= 0f) _caption.rectTransform.anchoredPosition = new Vector2(0f, captionFromBottomU);
         }
 

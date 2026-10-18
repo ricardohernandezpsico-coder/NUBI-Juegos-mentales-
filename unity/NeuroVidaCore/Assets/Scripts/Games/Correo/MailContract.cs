@@ -246,7 +246,7 @@ namespace NeuroVida.Games.Correo
 
         // ------------------------------------------------------------------ textos (todos de 14 dp o más)
 
-        public const string TitleRun = "La estación de correo";
+        public const string TitleRun = "Correo Estelar";            // el nombre del catálogo de la app (Tarea 127; «La estación de correo» es solo la descripción en los documentos)
         public const string CountdownSub = "Clasifica las cartas y cumple los encargos";
         public const string BriefTitle = "Encargos de hoy";
         public const string BriefStart = "Empezar el día";

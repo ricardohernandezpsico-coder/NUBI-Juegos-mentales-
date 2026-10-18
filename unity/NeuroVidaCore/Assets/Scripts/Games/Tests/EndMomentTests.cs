@@ -158,6 +158,23 @@ namespace NeuroVida.Games.Tests
             Assert.IsFalse(c.transform.Find("SkyGroup").GetComponent<CanvasGroup>().blocksRaycasts, "el cielo no estorba: el velo ya los tapa");
         }
 
+        [Test]
+        public void Las_estrellas_y_las_estelas_de_la_cortina_son_claras()
+        {
+            // Tarea 127: la estrella cálida de antes salía color café a baja opacidad y sus estelas parecían rayones; ahora solo crema, lavanda o blanco
+            var c = Curtain("radar");
+            int stars = 0;
+            foreach (var img in c.transform.Find("SkyGroup/Stars").GetComponentsInChildren<Image>(true))
+            {
+                if (img.name != "Star") continue;
+                stars++;
+                var col = img.color;
+                Assert.GreaterOrEqual(Mathf.Min(col.r, col.g, col.b), 0.8f, "una estrella color café: solo tonos claros del cielo (crema o lavanda)");
+            }
+            Assert.Greater(stars, 20, "la cortina trae su campo de estrellas");
+            Assert.GreaterOrEqual(Contrast(NeuroStyle.StarLavender, NeuroStyle.NightMid), 4.5f);
+        }
+
         // ------------------------------------------------------------------ cielo único
 
         private static float Luminance(Color c)

@@ -76,8 +76,20 @@ namespace NeuroVida.Games.Piloto
             _missionIcon.sprite = PilotSignalSprites.Get(_mission.Shape, _mission.Detail, small: true);
             _missionIcon.enabled = true;
             _missionName.text = PilotContract.MissionName(_mission);
+            SetMissionPrompt();
             _missionFresh = !(Now - _missionFreshAt < 1.6f);          // fuerza que se rearme
             AnimateMission(Now);
+        }
+
+        /// <summary>
+        /// La misión en la fila de consigna del marcador (Tarea 127): el ícono de su señal y «Sector 1 de 3 · misión: hexágono con punto»; si no cabe en una línea, sin el sector. Antes era una tarjeta aparte bajo el marcador
+        /// (<see cref="_missionCard"/>, que ya no se dibuja pero conserva su animación y su texto); el sector también lo dice la barra del viaje.
+        /// </summary>
+        private void SetMissionPrompt()
+        {
+            string name = PilotContract.MissionName(_mission);
+            var icon = PilotSignalSprites.Get(_mission.Shape, _mission.Detail, small: true);
+            _hud.SetPromptFit(icon, PilotContract.SectorChip(_guided ? 0 : _sector) + " · misión: " + name, "Misión: " + name, name);
         }
 
         /// <summary>El rótulo («MISIÓN:» / «NUEVA MISIÓN:») y el nombre uno tras otro; el nombre ocupa lo que sobra de la tarjeta.</summary>

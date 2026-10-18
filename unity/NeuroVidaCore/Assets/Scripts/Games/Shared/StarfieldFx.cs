@@ -58,8 +58,8 @@ namespace NeuroVida.Games.Shared
                 var img = go.AddComponent<Image>();
                 img.sprite = DiscSprite.Get();
                 img.raycastTarget = false;
-                // Una de cada seis estrellas es cálida (como en la app); el resto, blancas.
-                img.color = i % 6 == 0 ? NeuroStyle.StarWarm : Color.white;
+                // Solo blanco o lavanda (Tarea 127): una de cada tres lavanda y el resto blancas. La estrella cálida de antes salía color café a baja opacidad sobre el navy y sus estelas parecían rayones.
+                img.color = i % 3 == 0 ? NeuroStyle.StarLavender : Color.white;
                 _stars[i] = rect;
                 _images[i] = img;
                 _baseSize[i] = starSize * (0.45f + (float)_rng.NextDouble() * 0.75f);

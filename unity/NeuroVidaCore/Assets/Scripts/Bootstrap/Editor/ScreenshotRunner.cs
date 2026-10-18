@@ -685,6 +685,21 @@ namespace NeuroVida.Bridge.EditorTools
             if (menu != null) menu.SettleForCapture();
             LogPauseState();
             Shot("pausa");
+            // la pregunta de «Reiniciar» («¿Empezar de nuevo esta partida?», Tarea 127): una toma y se cancela con Atrás
+            if (menu != null && menu.IsShown)
+                foreach (var kv in menu.VisibleButtons())
+                    if (kv.Key.Contains("Reiniciar"))
+                    {
+                        UnityEngine.EventSystems.ExecuteEvents.ExecuteHierarchy(kv.Value.gameObject, new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current), UnityEngine.EventSystems.ExecuteEvents.pointerClickHandler);
+                        break;
+                    }
+            if (menu != null && menu.Confirming)
+            {
+                menu.SettleForCapture();
+                yield return Wait.For(0.3);
+                Shot("pausa-reiniciar");
+                menu.ResumeFromBack();                                                         // Atrás en la pregunta vuelve al menú
+            }
             if (menu != null && menu.IsShown)
                 foreach (var kv in menu.VisibleButtons())
                     if (kv.Key.Contains("Continuar"))

@@ -258,6 +258,7 @@ namespace NeuroVida.Games.Piloto
             _missionTag.horizontalOverflow = HorizontalWrapMode.Overflow;
             _missionName.horizontalOverflow = HorizontalWrapMode.Overflow;
             _missionName.resizeTextForBestFit = false;
+            card.SetActive(false);                                           // la misión va ahora en la fila de consigna del marcador (Tarea 127): ícono y nombre de la señal, con el sector
             // el cielo de señales como zona protegida para el globo de Nubi en el tutorial (no se dibuja)
             var sz = new GameObject("SkyZone");
             sz.transform.SetParent(_play, false);

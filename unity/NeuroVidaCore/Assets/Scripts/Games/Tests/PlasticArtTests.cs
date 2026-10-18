@@ -191,6 +191,7 @@ namespace NeuroVida.Games.Tests
             var hud = new GameHud(NewArea(), "Sin plasticina", 48f, noHost);
             hud.SetLevel(1);
             hud.SetInfo("1 de 8");
+            hud.SetPrompt("Una consigna");
             foreach (var slab in hud.Rect.GetComponentsInChildren<Transform>(true)) Assert.AreNotEqual("Slab", slab.name, "sin atlas no hay losas");
             var pause = PauseMenu.Create(NewArea(), () => { }, () => { }, () => { });
             _made.Add(pause.gameObject);
@@ -206,10 +207,11 @@ namespace NeuroVida.Games.Tests
             var hud = new GameHud(NewArea(), "Con plasticina", 48f, host);
             hud.SetLevel(2);
             hud.SetInfo("3 de 8");
-            Assert.IsNotNull(hud.Rect.Find("LevelChip/Slab"), "la pastilla de nivel lleva su losa");
-            Assert.IsNotNull(hud.Rect.Find("InfoChip/Slab"));
-            Assert.IsNotNull(hud.Rect.Find("StreakPill/Slab"));
-            Assert.AreEqual(NeuroStyle.Ink, hud.Rect.Find("LevelChip/Text").GetComponent<Text>().color, "texto tinta sobre la losa clara");
+            hud.SetPrompt("Una consigna");
+            Assert.IsNotNull(hud.Rect.Find("InfoChip/Slab"), "la pastilla de avance lleva su losa");
+            Assert.IsNotNull(hud.Rect.Find("Prompt/Slab"), "la fila de consigna es una losa «noche» del kit");
+            Assert.AreEqual(NeuroStyle.Ink, hud.Rect.Find("InfoChip/Text").GetComponent<Text>().color, "texto tinta sobre la losa clara");
+            Assert.AreEqual(NeuroStyle.Cream, hud.Rect.Find("Prompt/Text").GetComponent<Text>().color, "texto crema sobre la losa oscura");
             var pause = PauseMenu.Create(NewArea(), () => { }, () => { }, () => { });
             _made.Add(pause.gameObject);
             int slabs = 0;

@@ -7,34 +7,43 @@ using static NeuroVida.Games.Shared.UiKit;
 namespace NeuroVida.Games.Shared
 {
     /// <summary>
-    /// Marcador común (la franja de arriba) de los juegos del DDA común: antes cada juego armaba el suyo con un
-    /// subtítulo de texto corrido ("Puntos 1250 · Nivel 3") y una píldora gris de racha. Ahora todos se leen igual,
-    /// con una jerarquía clara (ui-ux-pro-max: una cosa principal por zona):
-    /// - Título del juego, grande, a la izquierda.
-    /// - Debajo, dos chips de arcilla oscura: "Nivel N" (celeste) y la cifra del modo: puntos que CUENTAN hacia
-    ///   arriba al sumar (Reto) o el avance "3 de 12" (Precisión) (sol).
-    /// - A la derecha, los aciertos seguidos: número grande y la palabra "seguidos"; con 3 o más el destello se enciende en coral,
-    ///   y en cada múltiplo de 5 la píldora salta con destellos.
-    /// Subir de nivel hace saltar y brillar el chip de nivel. Mismo alto que antes (190): no mueve nada de abajo.
+    /// Marcador común (la franja de arriba) de los juegos, con una jerarquía clara de DOS filas (Tarea 127, <c>auditoria-fable/pulido-juegos.md</c> §1.1 y §1.2):
+    /// - <b>Fila 1</b>: el título del juego a 18 dp a la izquierda y el AVANCE de la partida a la derecha («3 de 12», «1.250 pts»), en un chip crema de 16 dp. «Nivel N» ya no se ve durante la partida (queda en el resultado y en la marca de depuración de la cuenta
+    ///   regresiva): era el nivel interno del ajuste de dificultad, que no se compara entre juegos.
+    /// - <b>Fila 2</b>: la fila de CONSIGNA, una losa «noche» del kit de 16-17 dp con lo que hay que hacer («Lanza el cohete que se enciende», «Responde: TINTA»), un ícono opcional a la izquierda y una FASE opcional a la derecha («Mira el rastro» → «Repítelo»).
+    ///   Un solo lugar, siempre el mismo (reconocer, no recordar): los juegos que la ponían flotando, al pie o en un panel la mueven aquí. Una sola línea: el texto se achica hasta 16 dp y no se parte (los textos son cortos a propósito).
+    /// - Los aciertos seguidos ya no son una píldora grande siempre a la vista (casi siempre decía «0»): un chip «×4 seguidos» que aparece SOLO desde 2, justo debajo del marcador a la derecha, rebota al crecer y en cada múltiplo de 5 suelta destellos.
+    /// Subir de nivel hace saltar el chip de avance (con una chispa redonda de sol). Mismo alto que antes (190): no mueve nada de abajo.
     /// </summary>
     public sealed class GameHud
     {
         public const float Height = 190f;
         private const float ChipH = 72f;          // los chips llevan letra de 16 dp (48 unidades): Tarea 123 (antes 14 dp y 64)
         private const float ChipPad = 26f;
+        private const float TitleTop = 8f, TitleH = 70f;
+        private const float PromptTop = 90f, PromptH = 94f;
+        /// <summary>Tamaño de la letra de la consigna: 17 dp (51 unidades); se achica hasta 16 dp (48) para no partirse.</summary>
+        public const int PromptSize = 51, PromptMin = 48;
+        /// <summary>El chip de «seguidos» aparece desde esta cantidad.</summary>
+        public const int StreakFrom = 2;
 
         public RectTransform Rect { get; }
+        /// <summary>La fila de consigna (la losa de la fila 2).</summary>
+        public RectTransform PromptRect { get; }
+        /// <summary>El chip de avance de la fila 1 (Rastro de luz hace volar hacia él las luces recordadas).</summary>
+        public RectTransform InfoRect => _infoChip;
 
         private readonly MonoBehaviour _runner;
         private readonly float _margin;
-        private readonly RectTransform _levelChip, _infoChip, _streakPill;
-        private readonly Text _levelText, _infoText, _streakNumber, _streakLabel;
-        private readonly Image _levelBg, _streakSpark;
-        /// <summary>Las losas de plasticina de las pastillas (null = el arcilla de siempre): nivel, segundo chip y racha.</summary>
-        private readonly Image _levelSlab, _infoSlab, _streakSlab;
+        private readonly RectTransform _infoChip, _streakChip, _titleRect;
+        private readonly Text _titleText, _infoText, _streakText, _promptText, _phaseText;
+        private readonly Image _infoBg, _promptBg, _promptIcon;
+        /// <summary>Las losas de plasticina de las pastillas (null = el arcilla de siempre): avance, consigna y seguidos.</summary>
+        private readonly Image _infoSlab, _promptSlab, _streakSlab;
         private int _level = -1;
         private int _shownPoints = -1;
         private int _targetPoints;
+        private int _streak;
         private Coroutine _countUp;
 
         public GameHud(RectTransform parent, string title, float marginU, MonoBehaviour runner, bool withStreak = true, float rightReserve = 0f)
@@ -51,71 +60,89 @@ namespace NeuroVida.Games.Shared
             Rect.sizeDelta = new Vector2(0f, Height);
             Rect.anchoredPosition = Vector2.zero;
 
-            const float pillW = 340f, pillH = 150f;          // «seguidos» a 16 dp (48 unidades) pide una píldora de 340 (con 300 la palabra tocaba el borde): un texto de Unity cuya línea no cabe en el alto de su caja se OCULTA entero (Truncate)
-            float reserve = withStreak ? pillW + 24f : rightReserve;
+            // fila 1: el título a 18 dp (54 unidades); se achica hasta 16 dp solo si el chip de avance le deja poco lugar (el título más largo, «En la punta de la lengua»)
+            _titleText = MakeText(Rect, "Title", 54, TextAnchor.MiddleLeft, Color.white, 3f, 0.45f);
+            _titleRect = _titleText.rectTransform;
+            PlaceTopText(_titleText, marginU, marginU + 160f, -TitleTop, TitleH);
+            BestFit(_titleText, 48);
+            _titleText.text = title;
 
-            var titleText = MakeText(Rect, "Title", 70, TextAnchor.UpperLeft, Color.white, 3f, 0.45f);
-            PlaceTopText(titleText, marginU, marginU + reserve, -20f, 92f);
-            BestFit(titleText, 44);
-            titleText.text = title;
-
-            _levelChip = Chip("LevelChip", SlabTone.Cream, out _levelBg, out _levelSlab, out _levelText, NeuroStyle.Sky);
-            _infoChip = Chip("InfoChip", SlabTone.Sun, out _, out _infoSlab, out _infoText, NeuroStyle.Sun);
+            _infoChip = Chip("InfoChip", SlabTone.Cream, out _infoBg, out _infoSlab, out _infoText);
             _infoChip.gameObject.SetActive(false);
+
+            // fila 2: la consigna (losa «noche» del kit con el texto crema; sin plasticina, la superficie azul noche de siempre)
+            var pgo = new GameObject("Prompt");
+            pgo.transform.SetParent(Rect, false);
+            PromptRect = pgo.AddComponent<RectTransform>();
+            PromptRect.anchorMin = new Vector2(0f, 1f);
+            PromptRect.anchorMax = new Vector2(1f, 1f);
+            PromptRect.pivot = new Vector2(0.5f, 1f);
+            PromptRect.offsetMin = new Vector2(marginU, -(PromptTop + PromptH));
+            PromptRect.offsetMax = new Vector2(-marginU, -PromptTop);
+            _promptBg = pgo.AddComponent<Image>();
+            _promptSlab = PlasticSlab.TryStyle(_promptBg, SlabSize.Chip, SlabTone.Night);
+            if (_promptSlab == null)
+            {
+                _promptBg.sprite = RoundedRectSprite.Get(64);
+                _promptBg.type = Image.Type.Sliced;
+                _promptBg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
+                _promptBg.raycastTarget = false;
+                NeuroStyle.ClayFrame(_promptBg, 3f, 6f);
+            }
+            var igo = new GameObject("Icon");
+            igo.transform.SetParent(PromptRect, false);
+            var ir = igo.AddComponent<RectTransform>();
+            ir.anchorMin = ir.anchorMax = ir.pivot = new Vector2(0f, 0.5f);
+            ir.sizeDelta = new Vector2(60f, 60f);
+            ir.anchoredPosition = new Vector2(26f, 0f);
+            _promptIcon = igo.AddComponent<Image>();
+            _promptIcon.raycastTarget = false;
+            _promptIcon.preserveAspect = true;
+            igo.SetActive(false);
+            _promptText = MakeText(PromptRect, "Text", PromptSize, TextAnchor.MiddleLeft, NeuroStyle.Cream, 0f, 0f);
+            _promptText.supportRichText = true;
+            BestFit(_promptText, PromptMin);
+            _phaseText = MakeText(PromptRect, "Phase", PromptSize, TextAnchor.MiddleRight, NeuroStyle.Sun, 0f, 0f);
+            _phaseText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _phaseText.verticalOverflow = VerticalWrapMode.Overflow;
+            _phaseText.gameObject.SetActive(false);
+            PromptRect.gameObject.SetActive(false);                      // sin consigna no hay fila: los juegos que todavía la tienen en otro lugar no ven una losa vacía
+            LayoutPrompt();
 
             if (withStreak)
             {
-                var pillGo = new GameObject("StreakPill");
-                pillGo.transform.SetParent(Rect, false);
-                _streakPill = pillGo.AddComponent<RectTransform>();
-                _streakPill.anchorMin = _streakPill.anchorMax = _streakPill.pivot = new Vector2(1f, 1f);
-                _streakPill.sizeDelta = new Vector2(pillW, pillH);
-                _streakPill.anchoredPosition = new Vector2(-marginU, -26f);
-                var bg = pillGo.AddComponent<Image>();
-                _streakSlab = PlasticSlab.TryStyle(bg, SlabSize.Button, SlabTone.Cream);
+                // el chip de «seguidos»: debajo del marcador, a la derecha, solo desde 2; es hermano del marcador (no hijo) para dibujarse encima del juego cuando aparece
+                var sgo = new GameObject("StreakChip");
+                sgo.transform.SetParent(parent, false);
+                _streakChip = sgo.AddComponent<RectTransform>();
+                _streakChip.anchorMin = _streakChip.anchorMax = _streakChip.pivot = new Vector2(1f, 1f);
+                _streakChip.sizeDelta = new Vector2(300f, ChipH);
+                _streakChip.anchoredPosition = new Vector2(-marginU, -(Height + 36f));             // debajo de la franja fina que muchos juegos ponen pegada al marcador (el viaje de Piloto, el reloj del Reto)
+                var bg = sgo.AddComponent<Image>();
+                _streakSlab = PlasticSlab.TryStyle(bg, SlabSize.Chip, SlabTone.Sun);
                 if (_streakSlab == null)
                 {
                     bg.sprite = RoundedRectSprite.Get(64);
                     bg.type = Image.Type.Sliced;
                     bg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f);
                     bg.raycastTarget = false;
-                    NeuroStyle.ClayFrame(bg, 4f, 8f);
+                    NeuroStyle.ClayFrame(bg, 3f, 6f);
                 }
-
-                var sparkGo = new GameObject("Spark");
-                sparkGo.transform.SetParent(_streakPill, false);
-                var sr = sparkGo.AddComponent<RectTransform>();
-                sr.anchorMin = sr.anchorMax = new Vector2(0f, 0.5f);
-                sr.sizeDelta = new Vector2(64f, 64f);
-                sr.anchoredPosition = new Vector2(52f, 0f);
-                _streakSpark = sparkGo.AddComponent<Image>();
-                _streakSpark.sprite = SparkleSprite.Get();
-                _streakSpark.raycastTarget = false;
-
-                _streakNumber = MakeText(_streakPill, "Number", 60, TextAnchor.MiddleCenter, _streakSlab != null ? NeuroStyle.Ink : NeuroStyle.Cream, 0f, 0f);
-                var nr = _streakNumber.rectTransform;
-                nr.offsetMin = new Vector2(92f, 66f);
-                nr.offsetMax = new Vector2(-14f, -4f);
-                _streakLabel = MakeText(_streakPill, "Label", 48, TextAnchor.MiddleCenter, _streakSlab != null ? NeuroStyle.Ink : NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.7f), 0f, 0f);
-                _streakLabel.font = UiFonts.Regular;
-                var lr = _streakLabel.rectTransform;
-                lr.offsetMin = new Vector2(92f, 6f);
-                lr.offsetMax = new Vector2(-14f, -84f);
-                _streakLabel.text = "seguidos";
-                SetStreak(0, animate: false);
+                _streakText = MakeText(_streakChip, "Text", 48, TextAnchor.MiddleCenter, _streakSlab != null ? NeuroStyle.Ink : NeuroStyle.Sun, 0f, 0f);       // 16 dp (48 unidades)
+                sgo.SetActive(false);
             }
         }
 
         /// <summary>Una pastilla: losa chica de plasticina del color [tone] con el texto en tinta o, sin plasticina, el chip oscuro de siempre con el texto de color.</summary>
-        private RectTransform Chip(string name, SlabTone tone, out Image bg, out Image slab, out Text text, Color textColor)
+        private RectTransform Chip(string name, SlabTone tone, out Image bg, out Image slab, out Text text)
         {
             var go = new GameObject(name);
             go.transform.SetParent(Rect, false);
             var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
+            rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
             rect.sizeDelta = new Vector2(160f, ChipH);
-            rect.anchoredPosition = new Vector2(_margin, -114f);
+            rect.anchoredPosition = new Vector2(-_margin, -(TitleTop + 1f));
             bg = go.AddComponent<Image>();
             slab = PlasticSlab.TryStyle(bg, SlabSize.Chip, tone);
             if (slab == null)
@@ -126,41 +153,56 @@ namespace NeuroVida.Games.Shared
                 bg.raycastTarget = false;
                 NeuroStyle.ClayFrame(bg, 3f, 6f);
             }
-            text = MakeText(rect, "Text", 48, TextAnchor.MiddleCenter, slab != null ? NeuroStyle.Ink : textColor, 0f, 0f);       // 16 dp (48 unidades): los chips del marcador no bajan de ahí (HudRulesTests y el smoke)
+            text = MakeText(rect, "Text", 48, TextAnchor.MiddleCenter, slab != null ? NeuroStyle.Ink : NeuroStyle.Sun, 0f, 0f);       // 16 dp (48 unidades): los chips del marcador no bajan de ahí (HudRulesTests y el smoke)
             return rect;
         }
 
-        /// <summary>Ajusta el ancho de cada chip a su texto y los pone uno al lado del otro.</summary>
+        /// <summary>Ajusta el ancho del chip de avance a su texto y le deja el resto de la fila 1 al título.</summary>
         private void LayoutChips()
         {
-            float x = _margin;
-            foreach (var (chip, text) in new[] { (_levelChip, _levelText), (_infoChip, _infoText) })
+            float w = 0f;
+            if (_infoChip.gameObject.activeSelf)
             {
-                if (!chip.gameObject.activeSelf) continue;
-                chip.sizeDelta = new Vector2(Mathf.Ceil(text.preferredWidth) + ChipPad * 2f, ChipH);
-                chip.anchoredPosition = new Vector2(x, -114f);
-                x += chip.sizeDelta.x + 14f;
+                w = Mathf.Ceil(_infoText.preferredWidth) + ChipPad * 2f;
+                _infoChip.sizeDelta = new Vector2(w, ChipH);
+                _infoChip.anchoredPosition = new Vector2(-_margin, -(TitleTop + 1f));
             }
+            PlaceTopText(_titleText, _margin, _margin + (w > 0f ? w + 20f : 0f), -TitleTop, TitleH);
+        }
+
+        /// <summary>Reparte la fila de consigna: el ícono (si hay), la fase a la derecha (si hay) y el texto en el resto.</summary>
+        private void LayoutPrompt()
+        {
+            float left = _promptIcon.gameObject.activeSelf ? 26f + 60f + 14f : 28f;
+            float right = 24f;
+            if (_phaseText.gameObject.activeSelf)
+            {
+                var pr = _phaseText.rectTransform;
+                float w = Mathf.Ceil(_phaseText.preferredWidth);
+                pr.anchorMin = new Vector2(1f, 0f);
+                pr.anchorMax = new Vector2(1f, 1f);
+                pr.pivot = new Vector2(1f, 0.5f);
+                pr.sizeDelta = new Vector2(w + 4f, 0f);
+                pr.anchoredPosition = new Vector2(-24f, 0f);
+                right = 24f + w + 28f;
+            }
+            var tr = _promptText.rectTransform;
+            tr.anchorMin = Vector2.zero;
+            tr.anchorMax = Vector2.one;
+            tr.offsetMin = new Vector2(left, 4f);
+            tr.offsetMax = new Vector2(-right, -4f);
         }
 
         // ------------------------------------------------------------------ API
 
+        /// <summary>
+        /// El nivel del ajuste de dificultad. Ya NO se dibuja (Tarea 127): solo se recuerda para saber cuándo SUBE, y entonces el chip de avance salta y suelta una chispa de sol (el aviso «Nivel 2» y el sonido los pone cada juego).
+        /// </summary>
         public void SetLevel(int level)
         {
             bool up = _level >= 0 && level > _level;
             _level = level;
-            _levelText.text = $"Nivel {level}";
-            LayoutChips();
             if (up) _runner.StartCoroutine(LevelUpGlow());
-        }
-
-        /// <summary>Texto libre del chip de arriba cuando «Nivel N» no es lo que hay que decir (Piloto Estelar: «Sector 2 de 3»). <paramref name="highlight"/> hace saltar y brillar el chip, como al subir de nivel.</summary>
-        public void SetLevelText(string text, bool highlight = false)
-        {
-            _level = -1;
-            _levelText.text = text;
-            LayoutChips();
-            if (highlight) _runner.StartCoroutine(LevelUpGlow());
         }
 
         /// <summary>Puntos del modo Reto: el número cuenta hacia arriba en ~0,3 s.</summary>
@@ -180,7 +222,7 @@ namespace NeuroVida.Games.Shared
             _countUp = _runner.StartCoroutine(CountUp());
         }
 
-        /// <summary>Texto libre del segundo chip ("3 de 12", "Tesoros 2/5").</summary>
+        /// <summary>Texto libre del chip de avance ("3 de 12", "Tesoros 2/5").</summary>
         public void SetInfo(string text)
         {
             _infoChip.gameObject.SetActive(true);
@@ -189,31 +231,104 @@ namespace NeuroVida.Games.Shared
             LayoutChips();
         }
 
+        /// <summary>
+        /// La fila de consigna (fila 2): <paramref name="text"/> a la izquierda (admite <c>&lt;color&gt;</c>: la regla de Tinta va con el color de su orilla Y su palabra) y un <paramref name="icon"/> opcional (la gota o el libro: la forma además del color).
+        /// <paramref name="sizeU"/> = tamaño de la letra en unidades (51 = 17 dp por defecto; 54 = 18 dp para Tinta). Una sola línea.
+        /// </summary>
+        public void SetPrompt(string text, Sprite icon = null, int sizeU = PromptSize)
+        {
+            if (_promptText.fontSize != sizeU) _promptText.fontSize = sizeU;
+            _promptText.resizeTextMaxSize = sizeU;
+            _promptText.text = text ?? "";
+            bool hasIcon = icon != null && !string.IsNullOrEmpty(text);
+            _promptIcon.gameObject.SetActive(hasIcon);
+            if (hasIcon) _promptIcon.sprite = icon;
+            RefreshRow();
+            LayoutPrompt();
+        }
+
+        /// <summary>La fila se ve si hay consigna o fase: sin ninguna de las dos no hay una losa vacía (los juegos que todavía tienen su consigna en otro lugar).</summary>
+        private void RefreshRow() => PromptRect.gameObject.SetActive(!string.IsNullOrEmpty(_promptText.text) || _phaseText.gameObject.activeSelf);
+
+        /// <summary>
+        /// Como <see cref="SetPrompt"/> con varias versiones del texto, de la más completa a la más corta: pone la primera que cabe en UNA línea a 16 dp (si ninguna cabe, la última). Piloto Estelar: «Sector 1 de 3 · misión: triángulo con franja» →
+        /// «Misión: triángulo con franja» → «triángulo con franja». Con rich text (<c>&lt;color&gt;</c>) se mide lo que se ve, sin las etiquetas.
+        /// </summary>
+        public void SetPromptFit(Sprite icon, params string[] candidates)
+        {
+            if (candidates == null || candidates.Length == 0) { SetPrompt(null); return; }
+            string chosen = candidates[candidates.Length - 1];
+            foreach (var c in candidates) if (!string.IsNullOrEmpty(c) && FitsOneLine(c, icon != null)) { chosen = c; break; }
+            SetPrompt(chosen, icon);
+        }
+
+        /// <summary>¿Cabe <paramref name="text"/> en una línea de la fila de consigna a 16 dp (la letra más chica que permite)? Con el ícono y la fase que haya puestos.</summary>
+        public bool FitsOneLine(string text, bool withIcon)
+        {
+            bool best = _promptText.resizeTextForBestFit;
+            int size = _promptText.fontSize;
+            _promptText.resizeTextForBestFit = false;
+            _promptText.fontSize = PromptMin;
+            _promptText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            string old = _promptText.text;
+            _promptText.text = text;
+            float width = _promptText.preferredWidth;
+            _promptText.text = old;
+            _promptText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _promptText.fontSize = size;
+            _promptText.resizeTextForBestFit = best;
+            float left = withIcon ? 26f + 60f + 14f : 28f;
+            float right = 24f + (_phaseText.gameObject.activeSelf ? Mathf.Ceil(_phaseText.preferredWidth) + 28f : 0f);
+            return width <= 1080f - 2f * _margin - left - right;
+        }
+
+        /// <summary>Solo el ícono de la consigna (la regla de Tinta cambia de color y de ícono con cada palabra).</summary>
+        public void SetPromptIcon(Sprite icon, Color color)
+        {
+            _promptIcon.gameObject.SetActive(icon != null);
+            if (icon != null) { _promptIcon.sprite = icon; _promptIcon.color = color; }
+            LayoutPrompt();
+        }
+
+        /// <summary>La fase de la consigna, a la derecha de la misma fila («Mira el rastro» → «Repítelo»). Vacío = sin fase.</summary>
+        public void SetPhase(string text)
+        {
+            bool show = !string.IsNullOrEmpty(text);
+            _phaseText.gameObject.SetActive(show);
+            if (show) _phaseText.text = text;
+            RefreshRow();
+            LayoutPrompt();
+        }
+
+        /// <summary>La consigna salta un poco y se enciende un momento (un sector nuevo, una misión nueva): sin «quitar animaciones», solo el color.</summary>
+        public void PulsePrompt() => _runner.StartCoroutine(PromptPulse());
+
+        public string PromptText => _promptText.text;
+        public string PhaseText => _phaseText.gameObject.activeSelf ? _phaseText.text : "";
+        public bool StreakVisible => _streakChip != null && _streakChip.gameObject.activeSelf;
+        public string StreakText => _streakText != null ? _streakText.text : "";
+
         public void SetStreak(int streak) => SetStreak(streak, animate: true);
 
         private void SetStreak(int streak, bool animate)
         {
-            if (_streakPill == null) return;
-            _streakNumber.text = streak.ToString();
-            bool hot = streak >= 3;
-            if (_streakSlab != null)
-            {
-                // plasticina: con 3 o más la pastilla pasa de crema a coral (el número y la palabra siguen en tinta, con ≥ 4,5:1 sobre las dos)
-                PlasticSlab.Set(_streakSlab, SlabSize.Button, hot ? SlabTone.Coral : SlabTone.Cream);
-                _streakSpark.color = hot ? Color.white : NeuroStyle.WithAlpha(NeuroStyle.InkSoft, 0.55f);
-            }
-            else
-            {
-                _streakNumber.color = hot ? NeuroStyle.Sun : NeuroStyle.Cream;
-                _streakSpark.color = hot ? NeuroStyle.Coral : NeuroStyle.WithAlpha(Color.white, 0.25f);
-            }
-            if (!animate || streak <= 0) return;
+            if (_streakChip == null) return;
+            bool grew = streak > _streak;
+            _streak = streak;
+            bool show = streak >= StreakFrom;
+            bool wasShown = _streakChip.gameObject.activeSelf;
+            _streakChip.gameObject.SetActive(show);
+            if (!show) return;
+            _streakText.text = "×" + streak + " seguidos";
+            _streakChip.sizeDelta = new Vector2(Mathf.Ceil(_streakText.preferredWidth) + ChipPad * 2f, ChipH);
+            if (!wasShown) _streakChip.SetAsLastSibling();                  // al aparecer se dibuja encima del juego (la zona de debajo del marcador, a la derecha)
+            if (!animate || !grew) return;
             bool milestone = streak % 5 == 0;
-            _runner.StartCoroutine(BounceRect(_streakPill, milestone ? 0.7f : 0.85f, milestone ? 0.42f : 0.3f));       // la racha crece con un rebote (Tarea 126); con «quitar animaciones» solo cambia el número
-            if (milestone)
+            _runner.StartCoroutine(BounceRect(_streakChip, milestone ? 0.7f : 0.85f, milestone ? 0.42f : 0.3f));       // «seguidos» rebota al crecer (Tarea 126); con «quitar animaciones» solo cambia el número
+            if (milestone && Motion.Decorative)
             {
-                var fx = Rect;
-                Vector2 c = LocalIn(fx, _streakPill) + new Vector2(-_streakPill.rect.width * 0.5f, -_streakPill.rect.height * 0.5f);
+                var fx = (RectTransform)_streakChip.parent;
+                Vector2 c = LocalIn(fx, _streakChip) + new Vector2(-_streakChip.rect.width * 0.5f, -_streakChip.rect.height * 0.5f);
                 _runner.StartCoroutine(UiFx.SparkBurst(fx, c, NeuroStyle.Sun, 12, 180f, 30f, 0.55f));
             }
         }
@@ -242,33 +357,33 @@ namespace NeuroVida.Games.Shared
 
         private IEnumerator LevelUpGlow()
         {
-            _runner.StartCoroutine(PopRect(_levelChip, 1.25f, 0.32f)); // sin animaciones: no hace nada (ver UiKit.PopRect)
+            _runner.StartCoroutine(PopRect(_infoChip, 1.25f, 0.32f)); // sin animaciones: no hace nada (ver UiKit.PopRect)
             if (Motion.Decorative)
             {
                 // y una chispa redonda de sol en el chip (Tarea 126): el salto se ve aunque el chip esté chico
                 var fx = Rect;
-                Vector2 c = LocalIn(fx, _levelChip) + new Vector2(_levelChip.rect.width * 0.5f, -_levelChip.rect.height * 0.5f);
+                Vector2 c = LocalIn(fx, _infoChip) + new Vector2(-_infoChip.rect.width * 0.5f, -_infoChip.rect.height * 0.5f);
                 _runner.StartCoroutine(UiFx.SparkBurst(fx, c, NeuroStyle.Sun, 10, 150f, 26f, 0.5f));
             }
-            if (_levelSlab != null)
+            if (_infoSlab != null)
             {
                 // plasticina: la pastilla pasa un momento de crema a lima (con «quitar animaciones» también: es un cambio de color, no movimiento) y vuelve
-                PlasticSlab.Set(_levelSlab, SlabSize.Chip, SlabTone.Lime);
+                PlasticSlab.Set(_infoSlab, SlabSize.Chip, SlabTone.Lime);
                 float hold = Motion.Decorative ? 0.6f : 0.45f, waited = 0f;
                 while (waited < hold) { waited += GameClock.DeltaTime; yield return null; }
-                PlasticSlab.Set(_levelSlab, SlabSize.Chip, SlabTone.Cream);
+                PlasticSlab.Set(_infoSlab, SlabSize.Chip, SlabTone.Cream);
                 yield break;
             }
             var baseColor = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
             if (!Motion.Decorative)
             {
                 // Sin salto ni brillo que va y viene: el chip queda resaltado un momento (estático) y vuelve con un fundido.
-                _levelBg.color = Color.Lerp(baseColor, NeuroStyle.Sun, 0.85f);
-                _levelText.color = NeuroStyle.Ink;
+                _infoBg.color = Color.Lerp(baseColor, NeuroStyle.Sun, 0.85f);
+                _infoText.color = NeuroStyle.Ink;
                 float held = 0f;
                 while (held < 0.45f) { held += GameClock.DeltaTime; yield return null; }
-                _runner.StartCoroutine(Motion.ColorTo(_levelText, NeuroStyle.Sky));
-                yield return Motion.ColorTo(_levelBg, baseColor);
+                _runner.StartCoroutine(Motion.ColorTo(_infoText, NeuroStyle.Sun));
+                yield return Motion.ColorTo(_infoBg, baseColor);
                 yield break;
             }
             float t = 0f;
@@ -279,12 +394,30 @@ namespace NeuroVida.Games.Shared
                 float k = Mathf.Clamp01(t / seconds);
                 // Sube rápido al sol y vuelve más despacio (la salida no compite con lo que sigue).
                 float glow = k < 0.2f ? k / 0.2f : 1f - (k - 0.2f) / 0.8f;
-                _levelBg.color = Color.Lerp(baseColor, NeuroStyle.Sun, glow * 0.85f);
-                _levelText.color = Color.Lerp(NeuroStyle.Sky, NeuroStyle.Ink, glow);
+                _infoBg.color = Color.Lerp(baseColor, NeuroStyle.Sun, glow * 0.85f);
+                _infoText.color = Color.Lerp(NeuroStyle.Sun, NeuroStyle.Ink, glow);
                 yield return null;
             }
-            _levelBg.color = baseColor;
-            _levelText.color = NeuroStyle.Sky;
+            _infoBg.color = baseColor;
+            _infoText.color = NeuroStyle.Sun;
+        }
+
+        private IEnumerator PromptPulse()
+        {
+            _runner.StartCoroutine(PopRect(PromptRect, 1.06f, 0.3f));
+            if (_promptSlab != null)
+            {
+                PlasticSlab.Set(_promptSlab, SlabSize.Chip, SlabTone.Sky);
+                float hold = Motion.Decorative ? 0.7f : 0.5f, waited = 0f;
+                while (waited < hold) { waited += GameClock.DeltaTime; yield return null; }
+                PlasticSlab.Set(_promptSlab, SlabSize.Chip, SlabTone.Night);
+                yield break;
+            }
+            var baseColor = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
+            _promptBg.color = Color.Lerp(baseColor, NeuroStyle.Sky, 0.35f);
+            float held = 0f;
+            while (held < 0.5f) { held += GameClock.DeltaTime; yield return null; }
+            _promptBg.color = baseColor;
         }
 
         /// <summary>"1.250 pts" (separador de miles con punto, como se escribe en español).</summary>

@@ -28,6 +28,8 @@ namespace NeuroVida.Games.Shared
         public static readonly Color NightMid = Hex(0x100F3A);
         public static readonly Color NightTop = Hex(0x07071F);
         public static readonly Color StarWarm = Hex(0xFFC38A);
+        /// <summary>Las estrellas y estelas del campo de estrellas de la cuenta regresiva y la cortina (Tarea 127): solo blanco o lavanda. La estrella cálida de antes (<see cref="StarWarm"/>) a baja opacidad sobre la noche salía color café y las estelas parecían rayones.</summary>
+        public static readonly Color StarLavender = Hex(0xD6D1F2);
 
         /// <summary>Superficie de paneles sobre el cielo (azul noche opaco, como las superficies de la app).</summary>
         public static readonly Color Surface = Hex(0x1B2466);
