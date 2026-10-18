@@ -1272,6 +1272,8 @@ def render_avatares():
 
 def render_kit():
     scene.view_settings.exposure = float(arg('--kit-exp','-0.42'))   # la plasticina clara se quemaba (crema y lima a 255) con el sol desde arriba
+    if KIT_SOLO == 'avance':   # Tarea 124: canal, churro, bolita, 17 emblemas, farola, pedestal, cola del globo, medallas y escudos (`kit_avance.py`; solo si se pide: no entra en 'todo')
+        exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kit_avance.py'), encoding='utf-8').read(), 'kit_avance.py', 'exec'), globals()); render_kit_avance()
     if KIT_SOLO in ('todo', 'losas'): render_losas()
     if KIT_SOLO in ('todo', 'discos'): render_discos()
     if KIT_SOLO in ('todo', 'avatares'): render_avatares()

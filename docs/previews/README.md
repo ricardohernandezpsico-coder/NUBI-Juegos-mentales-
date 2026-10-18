@@ -26,6 +26,12 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 - [`fondo-oscuro.png`](fondo-oscuro.png): cuatro niveles de oscuridad (A actual, B, C, D). Ricardo eligió la **C** el 30-sep.
 - [`fondo-c-antes-despues.png`](fondo-c-antes-despues.png): Hoy y Juegos antes y con el fondo C (capturas reales).
 
+## Piezas del kit para Avance y Juegos (Tarea 124, 18-oct)
+
+- [`kit-avance-juegos.png`](kit-avance-juegos.png): todas las piezas nuevas a tamaño real (1 dp = 3 px) sobre el fondo A: canal, churro y bolita de la barra de avance, los 17 emblemas de juego (y juntos a 48, 40 y 30 dp para compararlos),
+  la farola apagada y encendida (y una semana de farolas), el pedestal de lugar, las colas del globo de Nubi, las 3 medallas conseguidas y bloqueadas y el escudo de liga en los 7 colores. Render de Blender (`tools/isla/isla.py --kit --kit-solo avance`);
+  la hoja la arma `tools/previews/kit_avance_juegos.py`, que también deja los WebP y `kit_avance.json` en [`kit-avance-juegos/`](kit-avance-juegos/). Todavía no están en la app (la Tarea 125 las integra a Avance y Juegos).
+
 ## Cuatro áreas (30-sep)
 
 - [`cuatro-areas.png`](cuatro-areas.png): maqueta de Nubi con 4 áreas sobre el fondo C. Hoy · B final (nombres cortos con
