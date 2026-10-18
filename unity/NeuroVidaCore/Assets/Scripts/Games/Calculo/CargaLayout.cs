@@ -6,7 +6,7 @@ namespace NeuroVida.Games.Calculo
     /// <summary>
     /// Disposición de «Carga exacta» en dp lógicos (360 de ancho; y desde arriba del área de juego, que incluye el marcador). Es la del boceto aprobado
     /// (docs/previews/carga-exacta-boceto.html: reactor arriba, celdas al medio, operaciones y botones abajo) pero ESTIRADA a la altura de cada teléfono: el aire que
-    /// sobra se reparte entre el reactor, las celdas y los botones. Pura, con pruebas. Las celdas miden ≥ 44 dp y los botones ≥ 52 dp.
+    /// sobra se reparte entre el reactor, las celdas y los botones. Pura, con pruebas. Las celdas miden ≥ 56 dp (a lo más 5 por carga) y los botones ≥ 52 dp.
     /// </summary>
     public static class CargaLayout
     {

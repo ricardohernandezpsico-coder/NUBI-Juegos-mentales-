@@ -296,9 +296,9 @@ namespace NeuroVida.Games.Bodega.Tests
             StringAssert.Contains("ApplyPressed(", scene);
             StringAssert.Contains("PressWide", scene);
             string build = Read("BodegaGameController.Build.cs");
-            StringAssert.Contains("PlasticSlab.TryStyle(_cardBg, SlabSize.Button, SlabTone.Night)", build, "la tarjeta de arriba es una losa «noche» del kit");
-            StringAssert.Contains("PlasticSlab.TryStyle(_toastBg, SlabSize.Button, SlabTone.Night)", build, "el aviso también");
-            StringAssert.Contains("PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Night)", build, "y la tarjeta de entrada");
+            StringAssert.Contains("PlasticSlab.TryStyle(_cardBg, SlabSize.Button, SlabTone.Cream)", build, "la tarjeta de arriba es una losa CREMA del kit (Tarea 129)");
+            StringAssert.Contains("PlasticSlab.TryStyle(_toastBg, SlabSize.Button, SlabTone.Cream)", build, "el aviso también");
+            StringAssert.Contains("PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Cream)", build, "y la tarjeta de entrada");
             string sprites = Read("BodegaSprites.cs");
             foreach (var needle in new[] { "\"marco\"", "\"aro\"", "\"puerta\"", "\"puerta_p\"", "\"robot\"", "\"caja\"", "\"esclusa\"", "\"obj_\"", "\"carro_\"" }) StringAssert.Contains(needle, sprites);
         }

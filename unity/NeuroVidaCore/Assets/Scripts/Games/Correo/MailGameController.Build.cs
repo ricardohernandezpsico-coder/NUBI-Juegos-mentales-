@@ -77,7 +77,7 @@ namespace NeuroVida.Games.Correo
         private sealed class RowView
         {
             public RectTransform Root;
-            public Image Card, CardRim, Icon, Pill, Check;
+            public Image Card, CardRim, Icon, IconWin, Pill, Check;
             public Text A, B, PillText;
         }
 
@@ -98,6 +98,8 @@ namespace NeuroVida.Games.Correo
         private RectTransform _safeRoot, _beaconRoot;
         // plasticina: los cuerpos son losas del kit (Resources/Plasticina/comun) y las piezas, las del atlas «correo»; sin el atlas todo cae al arte de siempre
         private bool _plastic;
+        /// <summary>Los paneles de información son losas CREMA del kit con la letra en tinta (Tarea 129: R2); sin el atlas, el recuadro oscuro de siempre con su letra clara.</summary>
+        private bool _cream;
         private RectTransform _safeInner, _beaconInner;                // lo que va ENCIMA del cuerpo de la caja fuerte y del faro: baja lo que baja la losa presionada
         private Image _safeSlab, _beaconSlab, _clockBase;
         private PlasticTouch _safeTouch, _beaconTouch, _clockTouch, _briefTouch, _recapTouch;
@@ -143,6 +145,7 @@ namespace NeuroVida.Games.Correo
         protected override void BuildUi()
         {
             _plastic = MailSprites.Plastic && PlasticSlab.Available(SlabSize.Button, SlabTone.Night) && PlasticSlab.Available(SlabSize.Button, SlabTone.Lime) && PlasticSlab.Available(SlabSize.Button, SlabTone.Sky) && PlasticSlab.Available(SlabSize.Button, SlabTone.Dim);
+            _cream = _plastic && PlasticSlab.Available(SlabSize.Button, SlabTone.Cream) && PlasticSlab.Available(SlabSize.Panel, SlabTone.Cream) && PlasticSlab.Available(SlabSize.Button, SlabTone.Sun);
             var canvasGo = new GameObject("MailCanvas");
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -313,7 +316,7 @@ namespace NeuroVida.Games.Correo
             b.Inner = Inner(b.Root, "Inner");
             b.Mouth = Rr(b.Inner, "Mouth", BoxMouth, 6f);
             b.Planet = MakeImage(b.Inner, "Planet", null);
-            b.Label = MakeLabel(b.Inner, "Label", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            b.Label = MakeLabel(b.Inner, "Label", 16f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
             b.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
             b.Label.text = MailContract.PlanetNames[i];
             if (_plastic)
@@ -339,10 +342,19 @@ namespace NeuroVida.Games.Correo
 
         /// <summary>Con plasticina: la losa [tone] del kit en lugar del fondo [bg] (que queda invisible) y sin su borde de color [rim] (se apaga el dibujo, no el objeto: el resto del código lo enciende y apaga). Devuelve la losa, o null sin plasticina:
         /// entonces el fondo y el borde de siempre.</summary>
-        private Image SlabInstead(Image bg, Image rim, SlabTone tone)
+        /// <summary>El color de un texto sobre un panel de información: [onCream] (tinta) si el panel es la losa crema del kit, [fallback] (letra clara) si es el recuadro oscuro de siempre.</summary>
+        private Color OnCream(Color onCream, Color fallback) => _cream ? onCream : fallback;
+
+        /// <summary>Un panel de información: losa crema (lámina si es grande) o, sin atlas, la noche de siempre.</summary>
+        private Image CreamInstead(Image bg, Image rim, SlabSize size = SlabSize.Button)
+        {
+            return _cream ? SlabInstead(bg, rim, SlabTone.Cream, size) : SlabInstead(bg, rim, SlabTone.Night, size);
+        }
+
+        private Image SlabInstead(Image bg, Image rim, SlabTone tone, SlabSize size = SlabSize.Button)
         {
             if (!_plastic) return null;
-            var slab = PlasticSlab.TryStyle(bg, SlabSize.Button, tone);
+            var slab = PlasticSlab.TryStyle(bg, size, tone);
             if (slab != null && rim != null) rim.enabled = false;
             return slab;
         }
@@ -463,10 +475,10 @@ namespace NeuroVida.Games.Correo
             _rushGroup.blocksRaycasts = false;
             _rushRim = Rr(rr, "Rim", Gold, 17f);
             _rushBg = Rr(rr, "Bg", new Color(Deep.r, Deep.g, Deep.b, 0.95f), 16f);
-            SlabInstead(_rushBg, _rushRim, SlabTone.Night);
+            CreamInstead(_rushBg, _rushRim);
             _rushSack = MakeImage(rr, "Sack", null);
-            _rushT = MakeLabel(rr, "Title", 19f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
-            _rushS = MakeLabel(rr, "Sub", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
+            _rushT = MakeLabel(rr, "Title", 19f, UiFonts.Bold, OnCream(InkEdge, Gold), TextAnchor.MiddleLeft);
+            _rushS = MakeLabel(rr, "Sub", 16f, UiFonts.Regular, OnCream(NeuroStyle.InkMuted, Soft), TextAnchor.MiddleLeft);
             foreach (var t in new[] { _rushT, _rushS }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             _rushT.text = MailContract.RushTitle;
             _rushS.text = MailContract.RushSub;
@@ -480,9 +492,9 @@ namespace NeuroVida.Games.Correo
             _radioGroup.blocksRaycasts = false;
             _radioRim = Rr(rd, "Rim", Violet, 17f);
             _radioBg = Rr(rd, "Bg", new Color(Deep.r, Deep.g, Deep.b, 0.96f), 16f);
-            SlabInstead(_radioBg, _radioRim, SlabTone.Night);
-            _radioTag = MakeLabel(rd, "Tag", 15f, UiFonts.Bold, Violet, TextAnchor.MiddleCenter);
-            _radioText = MakeLabel(rd, "Text", 15f, UiFonts.Bold, TextColor, TextAnchor.MiddleCenter);
+            CreamInstead(_radioBg, _radioRim);
+            _radioTag = MakeLabel(rd, "Tag", 16f, UiFonts.Bold, OnCream(NeuroStyle.InkMuted, Violet), TextAnchor.MiddleCenter);
+            _radioText = MakeLabel(rd, "Text", 16f, UiFonts.Bold, OnCream(InkEdge, TextColor), TextAnchor.MiddleCenter);
             _radioTag.horizontalOverflow = HorizontalWrapMode.Overflow;
             _radioTag.text = MailContract.RadioTag;
             radioGo.SetActive(false);
@@ -498,8 +510,8 @@ namespace NeuroVida.Games.Correo
             _peekGroup.blocksRaycasts = false;
             _peekRim = Rr(r, "Rim", new Color(Violet.r, Violet.g, Violet.b, 0.6f), 21f);
             _peekBg = Rr(r, "Bg", new Color(Deep.r, Deep.g, Deep.b, 0.95f), 20f);
-            SlabInstead(_peekBg, _peekRim, SlabTone.Night);
-            _peekTitle = MakeLabel(r, "Title", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            CreamInstead(_peekBg, _peekRim);
+            _peekTitle = MakeLabel(r, "Title", 16f, UiFonts.Regular, OnCream(NeuroStyle.InkMuted, Lavender), TextAnchor.MiddleCenter);
             _peekTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
             _peekTitle.text = MailContract.ClockPanel;
             _peekTrack = Rr(r, "Track", new Color(43f / 255f, 49f / 255f, 112f / 255f), 6f);
@@ -509,7 +521,7 @@ namespace NeuroVida.Games.Correo
             for (int i = 0; i < 4; i++)
             {
                 _peekTicks[i] = Rr(r, "Tick" + i, new Color(TextColor.r, TextColor.g, TextColor.b, 0.5f), 1f);
-                _peekWords[i] = MakeLabel(r, "Word" + i, 14f, UiFonts.Regular, TextColor, TextAnchor.MiddleCenter);
+                _peekWords[i] = MakeLabel(r, "Word" + i, 16f, UiFonts.Regular, OnCream(NeuroStyle.InkMuted, TextColor), TextAnchor.MiddleCenter);
                 _peekWords[i].horizontalOverflow = HorizontalWrapMode.Overflow;
                 _peekWords[i].text = MailContract.MomentWord(MailContract.AllMoments[i]);
             }
@@ -551,14 +563,17 @@ namespace NeuroVida.Games.Correo
             r.Root.anchorMin = r.Root.anchorMax = r.Root.pivot = new Vector2(0.5f, 0.5f);
             r.CardRim = Rr(r.Root, "Rim", new Color(142f / 255f, 131f / 255f, 216f / 255f, 0.35f), 19f);
             r.Card = Rr(r.Root, "Card", PanelFill, 18f);
-            SlabInstead(r.Card, r.CardRim, SlabTone.Night);
+            CreamInstead(r.Card, r.CardRim);
+            r.IconWin = MakeImage(r.Root, "IconWin", DiscSprite.Get());                            // la ventanilla: la carta y la torre se calibraron sobre oscuro (R4)
+            r.IconWin.color = new Color(20f / 255f, 27f / 255f, 54f / 255f);
+            r.IconWin.gameObject.SetActive(false);
             r.Icon = MakeImage(r.Root, "Icon", null);
             r.Check = MakeImage(r.Root, "Check", null);
-            r.A = MakeLabel(r.Root, "A", brief ? 15f : 16f, brief ? UiFonts.Regular : UiFonts.Bold, brief ? Soft : TextColor, TextAnchor.MiddleLeft);
-            r.B = MakeLabel(r.Root, "B", brief ? 17f : 14f, brief ? UiFonts.Bold : UiFonts.Regular, brief ? Color.white : Lavender, TextAnchor.MiddleLeft);
+            r.A = MakeLabel(r.Root, "A", 16f, brief ? UiFonts.Regular : UiFonts.Bold, brief ? OnCream(NeuroStyle.InkMuted, Soft) : OnCream(InkEdge, TextColor), TextAnchor.MiddleLeft);
+            r.B = MakeLabel(r.Root, "B", brief ? 17f : 16f, brief ? UiFonts.Bold : UiFonts.Regular, brief ? OnCream(InkEdge, Color.white) : OnCream(NeuroStyle.InkMuted, Lavender), TextAnchor.MiddleLeft);
             foreach (var t in new[] { r.A, r.B }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
-            r.Pill = Rr(r.Root, "Pill", Violet, 9f);
-            r.PillText = MakeLabel(r.Pill.transform, "PillText", 14f, UiFonts.Bold, InkEdge, TextAnchor.MiddleCenter);
+            r.Pill = Rr(r.Root, "Pill", OnCream(NeuroStyle.Sun, Violet), 9f);                       // «TODOS LOS DÍAS»: chip sol con tinta sobre la crema
+            r.PillText = MakeLabel(r.Pill.transform, "PillText", 16f, UiFonts.Bold, InkEdge, TextAnchor.MiddleCenter);
             r.PillText.horizontalOverflow = HorizontalWrapMode.Overflow;
             r.PillText.text = MailContract.RoutineTag;
             go.SetActive(false);
@@ -580,19 +595,19 @@ namespace NeuroVida.Games.Correo
             Stretch(_briefDim.rectTransform);
             _briefDim.color = new Color(Night.r, Night.g, Night.b, 0.94f);
             _briefDim.raycastTarget = false;
-            _briefTag = MakeLabel(_briefLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _briefTag = MakeLabel(_briefLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _briefTitle = MakeLabel(_briefLayer, "Title", 28f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _briefTitle.text = MailContract.BriefTitle;
             for (int i = 0; i < _briefRows.Length; i++) _briefRows[i] = BuildRow(_briefLayer, "Row" + i, true);
             _routineCardRim = Rr(_briefLayer, "RoutineRim", new Color(Violet.r, Violet.g, Violet.b, 0.6f), 19f);
             _routineCard = Rr(_briefLayer, "RoutineCard", PanelFill, 18f);
-            SlabInstead(_routineCard, _routineCardRim, SlabTone.Night);
-            _routineT1 = MakeLabel(_briefLayer, "RoutineT1", 16f, UiFonts.Bold, Violet, TextAnchor.MiddleCenter);
-            _routineT2 = MakeLabel(_briefLayer, "RoutineT2", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            CreamInstead(_routineCard, _routineCardRim);
+            _routineT1 = MakeLabel(_briefLayer, "RoutineT1", 16f, UiFonts.Bold, OnCream(InkEdge, Violet), TextAnchor.MiddleCenter);
+            _routineT2 = MakeLabel(_briefLayer, "RoutineT2", 16f, UiFonts.Regular, OnCream(NeuroStyle.InkMuted, Lavender), TextAnchor.MiddleCenter);
             _routineT1.text = MailContract.RoutineTitle;
             _routineT2.text = MailContract.RoutineSub;
-            _briefNote1 = MakeLabel(_briefLayer, "Note1", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            _briefNote2 = MakeLabel(_briefLayer, "Note2", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _briefNote1 = MakeLabel(_briefLayer, "Note1", 16f, UiFonts.Regular, new Color(1f, 0.965f, 0.878f, 0.7f), TextAnchor.MiddleCenter);
+            _briefNote2 = MakeLabel(_briefLayer, "Note2", 16f, UiFonts.Regular, new Color(1f, 0.965f, 0.878f, 0.7f), TextAnchor.MiddleCenter);
             _briefNote1.text = MailContract.BriefNote1;
             _briefNote2.text = MailContract.BriefNote2;
             foreach (var t in new[] { _briefTag, _briefTitle, _routineT1, _routineT2, _briefNote1, _briefNote2 }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -609,13 +624,13 @@ namespace NeuroVida.Games.Correo
             Stretch(_recapDim.rectTransform);
             _recapDim.color = new Color(Night.r, Night.g, Night.b, 0.94f);
             _recapDim.raycastTarget = false;
-            _recapTag = MakeLabel(_recapLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _recapTag = MakeLabel(_recapLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _recapTitle = MakeLabel(_recapLayer, "Title", 26f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             for (int i = 0; i < _recapRows.Length; i++) _recapRows[i] = BuildRow(_recapLayer, "Row" + i, false);
-            _recapLine1 = MakeLabel(_recapLayer, "Line1", 15f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
-            _recapLine2 = MakeLabel(_recapLayer, "Line2", 15f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
-            _recapRecord = MakeLabel(_recapLayer, "Record", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _recapUp = MakeLabel(_recapLayer, "Up", 15f, UiFonts.Bold, Mint, TextAnchor.MiddleCenter);
+            _recapLine1 = MakeLabel(_recapLayer, "Line1", 16f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            _recapLine2 = MakeLabel(_recapLayer, "Line2", 16f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            _recapRecord = MakeLabel(_recapLayer, "Record", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _recapUp = MakeLabel(_recapLayer, "Up", 16f, UiFonts.Bold, Mint, TextAnchor.MiddleCenter);
             foreach (var t in new[] { _recapTag, _recapTitle, _recapLine1, _recapLine2, _recapRecord, _recapUp }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             _recapBtn = BigButton(_recapLayer, "RecapBtn", Cyan, out _recapBtnRim, out _recapBtnLabel);
             _recapTouch = PlasticTouch.On(_recapBtn.gameObject, SlabInstead(_recapBtn, _recapBtnRim, SlabTone.Sky), SlabSize.Button, SlabTone.Sky, _recapBtnLabel.rectTransform);
@@ -631,15 +646,15 @@ namespace NeuroVida.Games.Correo
             _dim.raycastTarget = false;
             _introRim = Rr(_introLayer, "CardRim", Gold, 28f);
             _introCard = Rr(_introLayer, "Card", PanelFill, 26f);
-            SlabInstead(_introCard, _introRim, SlabTone.Night);
+            CreamInstead(_introCard, _introRim, SlabSize.Panel);
+            _introBox = Rr(_introLayer, "ArtBox", new Color(Deep.r, Deep.g, Deep.b, 0.96f), 14f);                     // la ventanilla noche del arte (R4): las cartas, el reloj y el faro se calibraron sobre oscuro
+            SlabInstead(_introBox, null, SlabTone.Night);
             for (int i = 0; i < IntroPool; i++) _introImgs.Add(MakeImage(_introLayer, "Art" + i, null, false));
-            _introBox = Rr(_introLayer, "ArtBox", new Color(Deep.r, Deep.g, Deep.b, 0.96f), 14f);
-            SlabInstead(_introBox, null, SlabTone.Dim);
-            for (int i = 0; i < 3; i++) _introLabels.Add(MakeLabel(_introLayer, "ArtLabel" + i, 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter));
+            for (int i = 0; i < 3; i++) _introLabels.Add(MakeLabel(_introLayer, "ArtLabel" + i, 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter));
             foreach (var t in _introLabels) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.gameObject.SetActive(false); }
-            _introTag = MakeLabel(_introLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _introBody = MakeLabel(_introLayer, "Body", 17f, UiFonts.Bold, Color.white, TextAnchor.UpperCenter);
-            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, Cyan, TextAnchor.MiddleCenter);
+            _introTag = MakeLabel(_introLayer, "Tag", 16f, UiFonts.Bold, OnCream(NeuroStyle.InkMuted, Gold), TextAnchor.MiddleCenter);
+            _introBody = MakeLabel(_introLayer, "Body", 17f, UiFonts.Bold, OnCream(InkEdge, Color.white), TextAnchor.UpperCenter);
+            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, OnCream(NeuroStyle.PanelAccent, Cyan), TextAnchor.MiddleCenter);
             _introTap.text = MailContract.TapToContinue;
             foreach (var t in new[] { _introTag, _introTap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _introBody.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -660,17 +675,17 @@ namespace NeuroVida.Games.Correo
             _endTitle = MakeLabel(_endLayer, "Title", 30f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _endCardRim = Rr(_endLayer, "CardRim", new Color(Gold.r, Gold.g, Gold.b, 0.6f), 23f);
             _endCard = Rr(_endLayer, "Card", PanelFill, 22f);
-            SlabInstead(_endCard, _endCardRim, SlabTone.Night);
-            _endHead = MakeLabel(_endLayer, "Head", 15f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            _endPct = MakeLabel(_endLayer, "Pct", 42f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endSub = MakeLabel(_endLayer, "Sub", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            CreamInstead(_endCard, _endCardRim, SlabSize.Panel);
+            _endHead = MakeLabel(_endLayer, "Head", 16f, UiFonts.Regular, OnCream(NeuroStyle.InkMuted, Lavender), TextAnchor.MiddleCenter);
+            _endPct = MakeLabel(_endLayer, "Pct", 42f, UiFonts.Bold, OnCream(InkEdge, Gold), TextAnchor.MiddleCenter);
+            _endSub = MakeLabel(_endLayer, "Sub", 16f, UiFonts.Regular, OnCream(NeuroStyle.InkMuted, Soft), TextAnchor.MiddleCenter);
             for (int i = 0; i < EndRows; i++)
             {
-                _endLabels[i] = MakeLabel(_endLayer, "Label" + i, 15f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
+                _endLabels[i] = MakeLabel(_endLayer, "Label" + i, 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
                 _endValues[i] = MakeLabel(_endLayer, "Value" + i, 17f, UiFonts.Bold, Color.white, TextAnchor.MiddleRight);
             }
-            _endTip = MakeLabel(_endLayer, "Tip", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            _endNote = MakeLabel(_endLayer, "Note", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _endTip = MakeLabel(_endLayer, "Tip", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _endNote = MakeLabel(_endLayer, "Note", 16f, UiFonts.Regular, new Color(1f, 0.965f, 0.878f, 0.7f), TextAnchor.MiddleCenter);
             foreach (var t in new[] { _endTitle, _endHead, _endPct, _endSub, _endTip, _endNote }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             _endTip.horizontalOverflow = HorizontalWrapMode.Wrap;                 // el consejo es largo («Truco: …»): se parte en dos líneas en vez de salirse de la pantalla
             foreach (var t in _endLabels) t.horizontalOverflow = HorizontalWrapMode.Overflow;

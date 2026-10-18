@@ -142,7 +142,6 @@ namespace NeuroVida.Games.Bodega
             BuildFx();
             BuildIntro();
 
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             var flashGo = new GameObject("Flash");
@@ -190,26 +189,29 @@ namespace NeuroVida.Games.Bodega
 
         // ------------------------------------------------------------------ la tarjeta de arriba, el carro, el aviso, los efectos
 
+        /// <summary>El color de un texto de la tarjeta: tinta si la tarjeta es la losa crema del kit, el de siempre si no hay atlas (la tarjeta oscura).</summary>
+        private Color CardInk(Color onCream, Color fallback) => _cardSlab != null ? onCream : fallback;
+
         private void BuildCard()
         {
             _cardGroup = _cardLayer.gameObject.AddComponent<CanvasGroup>();
             _cardGroup.blocksRaycasts = false;
             _cardRim = MakeImage(_cardLayer, "Rim", RoundedRectSprite.Get(24));
             _cardBg = MakeImage(_cardLayer, "Bg", RoundedRectSprite.Get(24));
-            _cardSlab = PlasticSlab.TryStyle(_cardBg, SlabSize.Button, SlabTone.Night);          // plasticina: la tarjeta es una losa «noche» del kit (sin el borde de color: «Pedido» sigue en el texto); sin ella, el recuadro de siempre
+            _cardSlab = PlasticSlab.TryStyle(_cardBg, SlabSize.Button, SlabTone.Cream);          // plasticina (Tarea 129): la tarjeta es una losa CREMA del kit (sin el borde de color: «Pedido» sigue en el texto), con el objeto en su disco oscuro como ventanilla; sin ella, el recuadro de siempre
             if (_cardSlab != null) _cardRim.enabled = false;
             else _cardBg.color = PanelFill;
             _cardDisc = MakeImage(_cardLayer, "Disc", DiscSprite.Get());
             _cardDisc.color = ClosedFill;
             _cardObj = MakeImage(_cardLayer, "Obj", null);
-            _cardA = MakeLabel(_cardLayer, "LineA", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
-            _cardB = MakeLabel(_cardLayer, "LineB", 20f, UiFonts.Bold, Color.white, TextAnchor.MiddleLeft);
+            _cardA = MakeLabel(_cardLayer, "LineA", 16f, UiFonts.Regular, CardInk(NeuroStyle.InkMuted, Lavender), TextAnchor.MiddleLeft);
+            _cardB = MakeLabel(_cardLayer, "LineB", 20f, UiFonts.Bold, CardInk(NeuroStyle.Ink, Color.white), TextAnchor.MiddleLeft);
             foreach (var t in new[] { _cardA, _cardB }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
-            _cardT = MakeLabel(_cardLayer, "Title", 19f, UiFonts.Bold, ButtonText, TextAnchor.MiddleCenter);
-            _cardS = MakeLabel(_cardLayer, "Sub", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _cardT = MakeLabel(_cardLayer, "Title", 19f, UiFonts.Bold, CardInk(NeuroStyle.Ink, ButtonText), TextAnchor.MiddleCenter);
+            _cardS = MakeLabel(_cardLayer, "Sub", 16f, UiFonts.Regular, CardInk(NeuroStyle.InkMuted, Lavender), TextAnchor.MiddleCenter);
             _cardB.horizontalOverflow = HorizontalWrapMode.Wrap;
-            BestFit(_cardB, Mathf.RoundToInt(14f * UnitsPerDp));
-            BestFit(_cardT, Mathf.RoundToInt(14f * UnitsPerDp));
+            BestFit(_cardB, Mathf.RoundToInt(16f * UnitsPerDp));
+            BestFit(_cardT, Mathf.RoundToInt(16f * UnitsPerDp));
             _cardT.horizontalOverflow = HorizontalWrapMode.Wrap;
             _cardS.horizontalOverflow = HorizontalWrapMode.Wrap;
             _cardLayer.gameObject.SetActive(false);
@@ -217,8 +219,9 @@ namespace NeuroVida.Games.Bodega
 
         private void BuildTray()
         {
-            _trayLabel = MakeLabel(_trayLayer, "Label", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
-            _recordText = MakeLabel(_trayLayer, "Record", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleRight);
+            var skyText = new Color(1f, 0.965f, 0.878f, 0.7f);                    // crema al 70 % (Tarea 129; antes lavanda)
+            _trayLabel = MakeLabel(_trayLayer, "Label", 16f, UiFonts.Regular, skyText, TextAnchor.MiddleLeft);
+            _recordText = MakeLabel(_trayLayer, "Record", 16f, UiFonts.Regular, skyText, TextAnchor.MiddleRight);
             foreach (var t in new[] { _trayLabel, _recordText }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _trayLabel.text = BodegaContract.TrayLabel;
             for (int i = 0; i < _tray.Length; i++)
@@ -250,11 +253,11 @@ namespace NeuroVida.Games.Bodega
             _toastGroup.blocksRaycasts = false;
             _toastRim = MakeImage(_toastRoot, "Rim", RoundedRectSprite.Get(24));
             _toastBg = MakeImage(_toastRoot, "Bg", RoundedRectSprite.Get(24));
-            _toastSlab = PlasticSlab.TryStyle(_toastBg, SlabSize.Button, SlabTone.Night);        // plasticina: el aviso es una losa «noche» del kit (bien o mal, lo dice el texto); sin ella, el recuadro de siempre
+            _toastSlab = PlasticSlab.TryStyle(_toastBg, SlabSize.Button, SlabTone.Cream);        // plasticina (Tarea 129): el aviso es una losa crema del kit (bien o mal, lo dice el texto); sin ella, el recuadro de siempre
             if (_toastSlab != null) _toastRim.enabled = false;
             else _toastBg.color = new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.96f);
-            _toastTitle = MakeLabel(_toastRoot, "Title", 16f, UiFonts.Bold, Mint, TextAnchor.MiddleCenter);
-            _toastSub = MakeLabel(_toastRoot, "Sub", 14f, UiFonts.Regular, Gold, TextAnchor.MiddleCenter);
+            _toastTitle = MakeLabel(_toastRoot, "Title", 17f, UiFonts.Bold, _toastSlab != null ? NeuroStyle.Ink : Mint, TextAnchor.MiddleCenter);
+            _toastSub = MakeLabel(_toastRoot, "Sub", 16f, UiFonts.Regular, _toastSlab != null ? NeuroStyle.InkMuted : Gold, TextAnchor.MiddleCenter);
             _toastTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
             _toastSub.horizontalOverflow = HorizontalWrapMode.Wrap;
             _toastTitle.verticalOverflow = _toastSub.verticalOverflow = VerticalWrapMode.Overflow;
@@ -286,7 +289,7 @@ namespace NeuroVida.Games.Bodega
             _introRim = MakeImage(_introLayer, "CardRim", RoundedRectSprite.Get(24));
             _introRim.color = Gold;
             _introCard = MakeImage(_introLayer, "Card", RoundedRectSprite.Get(24));
-            _introSlab = PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Night);       // plasticina: la tarjeta de entrada es una losa «noche» del kit; sin ella, el recuadro de siempre con su borde dorado
+            _introSlab = PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Cream);       // plasticina (Tarea 129): la tarjeta de entrada es una lámina crema del kit; sin ella, el recuadro de siempre con su borde dorado
             if (_introSlab != null) _introRim.enabled = false;
             else _introCard.color = PanelFill;
             _introFrame = MakeImage(_introLayer, "Frame", null);
@@ -294,9 +297,9 @@ namespace NeuroVida.Games.Bodega
             _introObj = MakeImage(_introLayer, "Obj", null);
             _introDoor = MakeImage(_introLayer, "Door", DiscSprite.Get());
             _introDoor.color = Door;
-            _introTitle = MakeLabel(_introLayer, "Title", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _introBody = MakeLabel(_introLayer, "Body", 16f, UiFonts.Bold, Color.white, TextAnchor.UpperCenter);
-            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, Cyan, TextAnchor.MiddleCenter);
+            _introTitle = MakeLabel(_introLayer, "Title", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.InkMuted : Gold, TextAnchor.MiddleCenter);
+            _introBody = MakeLabel(_introLayer, "Body", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.Ink : Color.white, TextAnchor.UpperCenter);
+            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.PanelAccent : Cyan, TextAnchor.MiddleCenter);
             _introTap.text = "Toca para seguir";
             foreach (var t in new[] { _introTitle, _introTap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _introBody.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -309,27 +312,6 @@ namespace NeuroVida.Games.Bodega
         }
 
         private static readonly Color Door = new Color(201f / 255f, 193f / 255f, 1f);
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-
-            AddResultText("Title", 76, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 46, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            var extra = AddResultText("Extra", 42, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            extra.horizontalOverflow = HorizontalWrapMode.Wrap;
-            go.SetActive(false);
-        }
 
         // ------------------------------------------------------------------ la bodega (coordenadas del boceto; 1 dp = Su unidades)
 
@@ -726,7 +708,7 @@ namespace NeuroVida.Games.Bodega
             for (int i = 0; i < lines.Length; i++)
             {
                 if (i == 0) sb.Append(lines[i]);
-                else sb.Append(i == 1 ? "\n<color=#D6D1F2>" : "\n").Append(lines[i]);
+                else sb.Append(i == 1 ? (_introSlab != null ? "\n<color=#514B78>" : "\n<color=#D6D1F2>") : "\n").Append(lines[i]);
             }
             if (lines.Length > 1) sb.Append("</color>");
             _introBody.text = sb.ToString();

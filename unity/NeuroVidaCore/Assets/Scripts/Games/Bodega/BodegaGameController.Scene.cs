@@ -488,18 +488,18 @@ namespace NeuroVida.Games.Bodega
             switch (_card)
             {
                 case CardKind.Watch:
-                    _cardT.text = BodegaContract.WatchTitle; _cardT.color = ButtonText;
+                    _cardT.text = BodegaContract.WatchTitle; _cardT.color = CardInk(NeuroStyle.Ink, ButtonText);
                     _cardS.text = _order != null ? BodegaContract.ObjectsLine(_order.Objects) : "";
                     break;
                 case CardKind.Move:
-                    _cardT.text = BodegaContract.MoveTitle; _cardT.color = ButtonText; _cardS.text = BodegaContract.MoveSub;
+                    _cardT.text = BodegaContract.MoveTitle; _cardT.color = CardInk(NeuroStyle.Ink, ButtonText); _cardS.text = BodegaContract.MoveSub;
                     break;
                 case CardKind.Spin:
-                    _cardT.text = BodegaContract.SpinTitle; _cardT.color = ButtonText; _cardS.text = BodegaContract.SpinSub;
+                    _cardT.text = BodegaContract.SpinTitle; _cardT.color = CardInk(NeuroStyle.Ink, ButtonText); _cardS.text = BodegaContract.SpinSub;
                     break;
                 case CardKind.Done:
                     _cardT.text = _cardPerfect ? BodegaContract.PerfectTitle : BodegaContract.DoneTitle;
-                    _cardT.color = _cardPerfect ? Mint : WarnText;
+                    _cardT.color = CardInk(NeuroStyle.Ink, _cardPerfect ? Mint : WarnText);
                     _cardS.text = BodegaContract.DoneLine(_cardFirst, _order != null ? _order.Objects : 0, _cardPerfect && _recordNow);
                     break;
                 default:
@@ -637,7 +637,7 @@ namespace NeuroVida.Games.Bodega
             _toastGroup.alpha = Mathf.Clamp01(Mathf.Min(k * 8f, (1f - k) * 4f));
             _toastTitle.text = _toastTitleFull;
             _toastSub.text = _toastSubFull;
-            _toastTitle.color = _toastGood ? Mint : WarnText;
+            _toastTitle.color = _toastSlab != null ? NeuroStyle.Ink : _toastGood ? Mint : WarnText;
             _toastRim.color = _toastGood ? new Color(159f / 255f, 245f / 255f, 214f / 255f, 0.5f) : new Color(1f, 214f / 255f, 160f / 255f, 0.5f);
             LayoutToast(false);
         }

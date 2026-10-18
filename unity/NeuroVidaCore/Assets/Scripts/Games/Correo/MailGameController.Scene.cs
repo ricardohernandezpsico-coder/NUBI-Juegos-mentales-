@@ -706,6 +706,7 @@ namespace NeuroVida.Games.Correo
                 if (beacon) { r.Icon.sprite = MailSprites.Tower(); r.Check.sprite = MailSprites.Lamp(true); r.Check.gameObject.SetActive(true); }
                 else { r.Icon.sprite = MailSprites.Letter(cue == MailCue.Gold ? 0 : 1, cue); r.Check.gameObject.SetActive(false); }
                 r.Pill.gameObject.SetActive(t.Routine);
+                r.IconWin.gameObject.SetActive(_cream);
             }
             LayoutBrief();
         }
@@ -730,6 +731,8 @@ namespace NeuroVida.Games.Correo
                 SetChild(r.CardRim.rectTransform, 0f, 0f, MailLayout.W - 33f, bh + 3f);
                 SetChild(r.Card.rectTransform, 0f, 0f, MailLayout.W - 36f, bh);
                 bool beacon = _briefItems[i].IsTime;
+                float win = Mathf.Min(46f, bh - 6f);
+                SetChild(r.IconWin.rectTransform, -124f, 2f, win, win);
                 if (beacon)
                 {
                     SetChild(r.Icon.rectTransform, -124f, 4f, MailSprites.TowerBoxW * 0.6f, MailSprites.TowerBoxH * 0.6f);
@@ -741,8 +744,8 @@ namespace NeuroVida.Games.Correo
                 if (_briefItems[i].Routine)
                 {
                     float tw = r.PillText.preferredWidth / _s + 16f;
-                    SetChild(r.Pill.rectTransform, (MailLayout.W - 36f) / 2f - 12f - tw / 2f, -bh / 2f + 1f, tw, 20f);
-                    SetChild(r.PillText.rectTransform, 0f, 0f, tw + 20f, 20f);
+                    SetChild(r.Pill.rectTransform, (MailLayout.W - 36f) / 2f - 12f - tw / 2f, -bh / 2f + 1f, tw, 22f);
+                    SetChild(r.PillText.rectTransform, 0f, 0f, tw + 20f, 22f);
                 }
             }
             float y2 = rowsTop + per * n;
@@ -785,6 +788,7 @@ namespace NeuroVida.Games.Correo
                 row.Check.sprite = it.Ok ? MailSprites.CheckOk() : MailSprites.CheckNo();
                 row.Check.gameObject.SetActive(true);
                 row.Icon.gameObject.SetActive(false);
+                row.IconWin.gameObject.SetActive(false);
                 row.Pill.gameObject.SetActive(false);
             }
             _recapLine1.text = MailContract.RecapCards(r.Stat.Right, r.Stat.Sorted + r.Stat.Late, r.Stat.BestCombo);
@@ -895,7 +899,7 @@ namespace NeuroVida.Games.Correo
             return img;
         }
 
-        private void ArtLabel(int i, float cx, float cy, string text, float dp = 14f, Color? color = null, bool bold = false)
+        private void ArtLabel(int i, float cx, float cy, string text, float dp = 16f, Color? color = null, bool bold = false)
         {
             var t = _introLabels[i];
             t.text = text;
@@ -919,7 +923,7 @@ namespace NeuroVida.Games.Correo
             for (int i = 0; i < lines.Length; i++)
             {
                 if (i == 0) sb.Append(lines[i]);
-                else sb.Append(i == 1 ? "\n<color=#D6D1F2>" : "\n").Append(lines[i]);
+                else sb.Append(i == 1 ? (_cream ? "\n<color=#514B78>" : "\n<color=#D6D1F2>") : "\n").Append(lines[i]);
             }
             if (lines.Length > 1) sb.Append("</color>");
             _introBody.text = sb.ToString();
@@ -941,7 +945,8 @@ namespace NeuroVida.Games.Correo
             _artCursor = 0;
             foreach (var i in _introImgs) i.gameObject.SetActive(false);
             foreach (var t in _introLabels) t.gameObject.SetActive(false);
-            _introBox.gameObject.SetActive(false);
+            _introBox.gameObject.SetActive(_cream && _introKind != MailIntro.Cancela);             // la ventanilla noche del arte (R4); la regla «Cancela» trae la suya, más baja
+            if (_introBox.gameObject.activeSelf) SetRect(_introBox.rectTransform, cx, cy + 6f, MailLayout.W - 100f, 108f);
             float lw = MailSprites.LetterBoxW, lh = MailSprites.LetterBoxH;
             switch (_introKind)
             {
@@ -958,14 +963,14 @@ namespace NeuroVida.Games.Correo
                     ArtBeacon(cx + 50f, cy);
                     break;
                 case MailIntro.Rutina:
-                    ArtLabel(0, cx, cy - 18f, MailContract.RoutineTag, 15f, Violet, true);
+                    ArtLabel(0, cx, cy - 18f, MailContract.RoutineTag, 16f, Violet, true);
                     ArtBeacon(cx, cy + 16f);
                     break;
                 case MailIntro.Cancela:
                     _introBox.gameObject.SetActive(true);
                     SetRect(_introBox.rectTransform, cx, cy, MailLayout.W - 100f, 56f);
-                    ArtLabel(0, cx, cy - 12f, MailContract.RadioTag, 14f, Violet, true);
-                    ArtLabel(1, cx, cy + 10f, "hoy NO hace falta el faro", 14f, TextColor, true);
+                    ArtLabel(0, cx, cy - 12f, MailContract.RadioTag, 16f, Violet, true);
+                    ArtLabel(1, cx, cy + 10f, "hoy NO hace falta el faro", 16f, TextColor, true);
                     break;
                 case MailIntro.Lazo:
                     ArtImage(MailSprites.Letter(2, MailCue.Lazo), cx, cy, lw * 0.7f, lh * 0.7f);

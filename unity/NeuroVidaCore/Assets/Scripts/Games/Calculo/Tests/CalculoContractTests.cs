@@ -356,7 +356,7 @@ namespace NeuroVida.Games.Calculo.Tests
             var m = CargaLayout.Compute(700f);
             for (int n = 3; n <= 5; n++)
             {
-                Assert.GreaterOrEqual(CargaLayout.CellW(n), 44f, n + " celdas");
+                Assert.GreaterOrEqual(CargaLayout.CellW(n), 56f, n + " celdas (Tarea 129: lo mínimo para tocar con el pulgar; una carga nunca pasa de 5 celdas)");
                 Assert.GreaterOrEqual(CargaLayout.CellH, 44f);
                 float left = CargaLayout.CellPos(m, 0, n).x - CargaLayout.CellW(n) / 2f;
                 float right = CargaLayout.CellPos(m, n - 1, n).x + CargaLayout.CellW(n) / 2f;
@@ -365,6 +365,13 @@ namespace NeuroVida.Games.Calculo.Tests
                 for (int k = 1; k < n; k++)
                     Assert.Greater(CargaLayout.CellPos(m, k, n).x - CargaLayout.CellPos(m, k - 1, n).x, CargaLayout.CellW(n), "no se pisan");
             }
+        }
+
+        [Test]
+        public void NoLevel_HasMoreCellsThanFitInOneRow_At56Dp()
+        {
+            foreach (var lv in CalculoContract.Levels)
+                Assert.GreaterOrEqual(CargaLayout.CellW(lv.CellsMax), 56f, "nivel " + lv.Level + ": hasta " + lv.CellsMax + " celdas en una fila miden al menos 56 dp (si algún nivel pidiera más, irían en 2 filas)");
         }
 
         [Test]

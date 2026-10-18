@@ -179,6 +179,7 @@ namespace NeuroVida.Games.Anagramas
         private RectTransform _card, _cardShadow, _cardBorder, _cardFill;
         private CanvasGroup _cardGroup;
         private Image _antennaDot;
+        private Color _antennaColor = Color.white;
         private readonly Image[] _waves = new Image[3];
         private Text _cardLabel, _defText, _askText, _sayText;
         private readonly List<Image> _nebulaBlobs = new List<Image>();
@@ -236,7 +237,6 @@ namespace NeuroVida.Games.Anagramas
             ClearWordVisuals();
             ResetSky();
 
-            _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
             _timerTrack.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
@@ -1116,7 +1116,7 @@ namespace NeuroVida.Games.Anagramas
                 float ph = (now / 0.9f + j / 3f) % 1f;
                 float r = 6f + ph * 16f;
                 _waves[j].rectTransform.sizeDelta = Vector2.one * (2f * r * _s);
-                _waves[j].color = NeuroStyle.WithAlpha(Cyan, (1f - ph) * clarity);
+                _waves[j].color = NeuroStyle.WithAlpha(_antennaColor, _antennaColor.a * (1f - ph) * clarity);
             }
 
             // la definición se escribe sola; el resto del texto queda invisible para que las líneas no se corran al escribir
@@ -1398,9 +1398,9 @@ namespace NeuroVida.Games.Anagramas
             b.Root.sizeDelta = new Vector2(rect.width * _s, rect.height * _s);
             b.Root.anchoredPosition = P(rect.center);
             b.Label.text = label;
-            b.Label.color = primary ? NeuroStyle.Ink : ButtonText;
-            if (b.Touch != null) b.Touch.SetTone(primary ? SlabTone.Sky : SlabTone.Night);      // plasticina: cambia la losa conservando si está presionada
-            else if (b.Slab != null) PlasticSlab.Set(b.Slab, SlabSize.Button, primary ? SlabTone.Sky : SlabTone.Night);
+            b.Label.color = primary || b.Slab != null ? NeuroStyle.Ink : ButtonText;
+            if (b.Touch != null) b.Touch.SetTone(primary ? SlabTone.Sky : SlabTone.Lilac);      // plasticina (Tarea 129): cambia la losa conservando si está presionada; la secundaria es lila con tinta
+            else if (b.Slab != null) PlasticSlab.Set(b.Slab, SlabSize.Button, primary ? SlabTone.Sky : SlabTone.Lilac);
             else b.Bg.color = primary ? Cyan : ButtonSecondary;
             b.Label.rectTransform.offsetMin = new Vector2(10f, 4f);
             b.Label.rectTransform.offsetMax = new Vector2(-10f, -4f);
@@ -1546,7 +1546,6 @@ namespace NeuroVida.Games.Anagramas
             BuildFx();
             BuildUiPieces();
 
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
@@ -1644,11 +1643,12 @@ namespace NeuroVida.Games.Anagramas
             _cardShadow = RoundedPanel(_card, "Shadow", new Color(0f, 0f, 0f, 0.4f), 26);
             _cardBorder = RoundedPanel(_card, "Border", NeuroStyle.WithAlpha(Cyan, 0.35f), 26);
             _cardFill = RoundedPanel(_card, "Fill", CardFill, 24);
-            _cardSlab = PlasticSlab.TryStyle(_cardFill.GetComponent<Image>(), SlabSize.Panel, SlabTone.Night);       // plasticina: la tarjeta es una losa «noche» (sin la sombra ni el borde celeste de siempre)
+            _cardSlab = PlasticSlab.TryStyle(_cardFill.GetComponent<Image>(), SlabSize.Panel, SlabTone.Cream);       // plasticina (Tarea 129): la tarjeta es una lámina crema con la definición en tinta (sin la sombra ni el borde celeste de siempre)
+            _antennaColor = _cardSlab != null ? NeuroStyle.WithAlpha(NeuroStyle.Ink, 0.5f) : Cyan;               // el punto y las ondas de la antena, en tinta al 50 % sobre la crema
             if (_cardSlab != null) { _cardShadow.GetComponent<Image>().enabled = false; _cardBorder.GetComponent<Image>().enabled = false; }
 
             _antennaDot = MakeImage(_card, "Dot", DiscSprite.Get());
-            _antennaDot.color = Cyan;
+            _antennaDot.color = _antennaColor;
             _antennaDot.gameObject.SetActive(true);
             for (int j = 0; j < 3; j++)
             {
@@ -1662,9 +1662,9 @@ namespace NeuroVida.Games.Anagramas
                 w.gameObject.SetActive(true);
                 _waves[j] = w;
             }
-            _cardLabel = MakeLabel(_card, "Label", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
+            _cardLabel = MakeLabel(_card, "Label", 16f, UiFonts.Regular, _cardSlab != null ? NeuroStyle.InkMuted : Lavender, TextAnchor.MiddleLeft);
             _cardLabel.text = "Nubi capta una definición";
-            _defText = MakeLabel(_card, "Definition", 20f, UiFonts.Word, Color.white, TextAnchor.UpperLeft);
+            _defText = MakeLabel(_card, "Definition", 20f, UiFonts.Word, _cardSlab != null ? NeuroStyle.Ink : Color.white, TextAnchor.UpperLeft);
             _defText.supportRichText = true;
             BestFit(_defText, Mathf.RoundToInt(16f * UnitsPerDp));
             _card.gameObject.SetActive(false);
@@ -1730,7 +1730,7 @@ namespace NeuroVida.Games.Anagramas
         {
             _sayText = MakeLabel(_uiLayer, "Say", 18f, UiFonts.Bold, GoodText, TextAnchor.MiddleCenter);
             _sayText.gameObject.SetActive(false);
-            _ladderLabel = MakeLabel(_uiLayer, "LadderLabel", 16f, UiFonts.Regular, new Color(171f / 255f, 165f / 255f, 210f / 255f), TextAnchor.MiddleCenter);        // lavanda (el gris Dim daba 3,4:1)
+            _ladderLabel = MakeLabel(_uiLayer, "LadderLabel", 16f, UiFonts.Regular, new Color(1f, 0.965f, 0.878f), TextAnchor.MiddleCenter);        // crema (Tarea 129: antes lavanda; el gris Dim daba 3,4:1)
             _ladderLabel.text = "Ayudas";
             for (int k = 0; k < 3; k++)
             {
@@ -1750,7 +1750,7 @@ namespace NeuroVida.Games.Anagramas
                 b.Group = go.AddComponent<CanvasGroup>();
                 b.Group.blocksRaycasts = false;
                 b.Bg = go.AddComponent<Image>();
-                b.Slab = PlasticSlab.TryStyle(b.Bg, SlabSize.Button, SlabTone.Sky);                 // plasticina: losa del kit (principal: cielo; secundaria: «noche»)
+                b.Slab = PlasticSlab.TryStyle(b.Bg, SlabSize.Button, SlabTone.Sky);                 // plasticina: losa del kit (principal: cielo; secundaria: lila)
                 if (b.Slab == null)
                 {
                     b.Bg.sprite = RoundedRectSprite.Get(48);
@@ -1759,36 +1759,12 @@ namespace NeuroVida.Games.Anagramas
                     NeuroStyle.ClayFrame(b.Bg, 4f, 8f);
                 }
                 b.Label = MakeText(b.Root, "Label", Mathf.RoundToInt(19f * UnitsPerDp), TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
-                BestFit(b.Label, Mathf.RoundToInt(15f * UnitsPerDp));
+                BestFit(b.Label, Mathf.RoundToInt(16f * UnitsPerDp));
                 b.Touch = PlasticTouch.On(go, b.Slab, SlabSize.Button, SlabTone.Sky);            // sin movers: ConfigureButton reacomoda el texto en cada momento
                 go.SetActive(false);
                 _buttons[i] = b;
             }
             _hintRing = GuidedTutorial.CreateHintRing(_uiLayer, 100f);
-        }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)                  // plasticina: losa «noche»
-            {
-                img.sprite = RoundedRectSprite.Get(64);
-                img.type = Image.Type.Sliced;
-                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-            }
-
-            AddResultText("Title", 76, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 46, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            var extra = AddResultText("Extra", 42, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            extra.horizontalOverflow = HorizontalWrapMode.Wrap;
-            go.SetActive(false);
         }
 
         private static RectTransform Layer(Transform parent, string name)
@@ -1927,7 +1903,7 @@ namespace NeuroVida.Games.Anagramas
             SetRect(_cardFill, cx, cy, cardW, PuntaLayout.CardH);
             SetRect(_antennaDot.rectTransform, 46f, _m.CardTop + 30f, 8f, 8f);
             foreach (var wv in _waves) wv.rectTransform.anchoredPosition = P(46f, _m.CardTop + 30f);
-            SetRect(_cardLabel.rectTransform, 64f + 100f, _m.CardTop + 31f, 200f, 20f);
+            SetRect(_cardLabel.rectTransform, 64f + 125f, _m.CardTop + 31f, 250f, 22f);
             SetRect(_defText.rectTransform, cx, _m.CardTop + 54f + (PuntaLayout.CardH - 54f - 12f) / 2f, cardW - 40f, PuntaLayout.CardH - 54f - 12f);
             SetRect(_askText.rectTransform, cx, _m.SlotY, 300f, 28f);
             foreach (var b in _nebulaBlobs) b.rectTransform.sizeDelta = new Vector2(120f * _s, 80f * _s);

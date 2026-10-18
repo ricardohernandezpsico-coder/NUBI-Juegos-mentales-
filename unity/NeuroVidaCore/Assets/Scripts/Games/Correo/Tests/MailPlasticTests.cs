@@ -497,7 +497,7 @@ namespace NeuroVida.Games.Correo.Tests
             StringAssert.Contains("PlasticSlab.Attach(_safeRoot, SlabSize.Button, SlabTone.Night)", build, "la caja fuerte también");
             StringAssert.Contains("PlasticSlab.Attach(_beaconRoot, SlabSize.Button, SlabTone.Night)", build, "y el faro");
             StringAssert.Contains("PlasticTouch.On(", build, "todo lo que se toca tiene su estado presionado");
-            foreach (var card in new[] { "_rushBg", "_radioBg", "_peekBg", "_routineCard", "_introCard", "_endCard", "r.Card" }) StringAssert.Contains("SlabInstead(" + card + ",", build, "«" + card + "» es una losa del kit");
+            foreach (var card in new[] { "_rushBg", "_radioBg", "_peekBg", "_routineCard", "_introCard", "_endCard", "r.Card" }) StringAssert.IsMatch(@"(Slab|Cream)Instead\(" + card + ",", build, "«" + card + "» es una losa del kit");
             StringAssert.Contains("SlabTone.Lime", build, "el botón de la hoja es una losa lima"); StringAssert.Contains("SlabTone.Sky", build, "el del resumen, celeste");
             string main = Read("MailGameController.cs");
             foreach (var needle in new[] { "_boxes[box].Touch?.Press()", "_safeTouch?.Press()", "_beaconTouch?.Press()", "_clockTouch?.Press()", "_briefTouch?.Press()", "_recapTouch?.Press()" }) StringAssert.Contains(needle, main, "el toque aceptado hunde la pieza: " + needle);

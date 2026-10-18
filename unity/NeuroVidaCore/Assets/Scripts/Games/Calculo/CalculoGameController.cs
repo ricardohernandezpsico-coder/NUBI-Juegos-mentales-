@@ -188,7 +188,7 @@ namespace NeuroVida.Games.Calculo
             for (int i = 0; i < _dotState.Length; i++) _dotState[i] = 0;
             ClearLoad();
 
-            _resultRoot.gameObject.SetActive(false);
+            _restartArmedUntil = -1f;
             _exit.Hide();
             _timerTrack.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
@@ -583,6 +583,19 @@ namespace NeuroVida.Games.Calculo
             PlayClip(CargaSounds.Back(), 0.7f);
         }
 
+        public const string UndoLabel = "Deshacer", RestartLabel = "Empezar de nuevo", RestartAskLabel = "¿Seguro? Toca otra vez";
+        /// <summary>Hasta cuándo (<see cref="GameClock.Time"/>) «Empezar de nuevo» espera el segundo toque (Tarea 129: borra el tablero, así que el primer toque pregunta y el segundo, dentro de 2 s, lo hace).</summary>
+        private float _restartArmedUntil = -1f;
+        private const float RestartAskSeconds = 2f;
+
+        private void RestartTap()
+        {
+            if (_phase != Phase.Play || !_board.CanUndo) return;
+            if (GameClock.Time < _restartArmedUntil) { _restartArmedUntil = -1f; Restart(); return; }
+            _restartArmedUntil = GameClock.Time + RestartAskSeconds;
+            PlayClip(CargaSounds.Back(), 0.4f);
+        }
+
         private void Restart()
         {
             if (_phase != Phase.Play || !_board.CanUndo) return;
@@ -748,18 +761,18 @@ namespace NeuroVida.Games.Calculo
             foreach (var v in _views)
             {
                 if (!v.Shown || v.Flying || GameClock.Time < v.BornAt) continue;
-                if (Mathf.Abs(p.x - v.Target.x) < hw && Mathf.Abs(p.y - v.Target.y) < hh) { v.Touch?.Press(); TapCell(v.Id); return; }
+                if (Mathf.Abs(p.x - v.Target.x) < hw && Mathf.Abs(p.y - v.Target.y) < hh) { _restartArmedUntil = -1f; v.Touch?.Press(); TapCell(v.Id); return; }
             }
             for (int i = 0; i < _shownOpCount; i++)
             {
                 var o = _opViews[i];
-                if (o.Rect.Contains(p)) { o.Touch?.Press(); TapOp(o.Op); return; }
+                if (o.Rect.Contains(p)) { _restartArmedUntil = -1f; o.Touch?.Press(); TapOp(o.Op); return; }
             }
             foreach (var tl in _toolViews)
             {
                 if (!tl.Visible || !tl.Rect.Contains(p)) continue;
                 tl.Touch?.Press();
-                if (tl.Undo) Undo(); else Restart();
+                if (tl.Undo) { _restartArmedUntil = -1f; Undo(); } else RestartTap();
                 return;
             }
         }
@@ -866,7 +879,7 @@ namespace NeuroVida.Games.Calculo
                 bool on = _op == (int)o.Op;
                 if (o.Slab != null)
                 {
-                    var tone = on ? SlabTone.Sun : SlabTone.Night;
+                    var tone = on ? SlabTone.Sun : SlabTone.Lilac;
                     o.Touch?.SetTone(tone);
                     bool down = o.Touch != null && o.Touch.Down;                      // plasticina: la losa presionada al tocarla (con su huella)
                     PlasticSlab.Set(o.Slab, SlabSize.Button, tone, down);
@@ -874,8 +887,9 @@ namespace NeuroVida.Games.Calculo
                     o.Label.rectTransform.anchoredPosition = new Vector2(0f, down ? -PlasticSlab.PressDrop(SlabSize.Button, tone) : 0f);
                 }
                 else o.Bg.color = on ? Gold : OpIdle;
-                o.Label.color = on ? NeuroStyle.Ink : ButtonText;
-                o.Group.alpha = canPick ? 1f : 0.45f;
+                o.Label.color = on || o.Slab != null ? NeuroStyle.Ink : ButtonText;
+                if (o.Slab != null) { o.Group.alpha = 1f; o.Slab.color = new Color(1f, 1f, 1f, canPick ? 1f : 0.72f); }          // Tarea 129: lo que todavía no se puede apaga la losa (al 72 %) pero no la letra (tinta sobre lila: 4,9:1)
+                else o.Group.alpha = canPick ? 1f : 0.45f;
             }
         }
 
@@ -885,12 +899,18 @@ namespace NeuroVida.Games.Calculo
             foreach (var t in _toolViews)
             {
                 if (!t.Visible) continue;
-                t.Group.alpha = can ? 1f : 0.45f;
+                if (t.Slab != null) { t.Group.alpha = 1f; t.Slab.color = new Color(1f, 1f, 1f, can ? 1f : 0.72f); }                   // ídem: la losa al 72 % y la letra entera
+                else t.Group.alpha = can ? 1f : 0.45f;
                 if (t.Slab == null) continue;
                 bool down = t.Touch != null && t.Touch.Down;                          // plasticina: la losa presionada al tocarla (con su huella)
-                PlasticSlab.Set(t.Slab, SlabSize.Button, SlabTone.Dim, down);
+                bool asking = !t.Undo && GameClock.Time < _restartArmedUntil;                 // «Empezar de nuevo» borra el tablero: el primer toque pregunta (sol) y el segundo, dentro de 2 s, lo hace
+                var tone = asking ? SlabTone.Sun : SlabTone.Lilac;
+                t.Touch?.SetTone(tone);
+                string want = t.Undo ? UndoLabel : asking ? RestartAskLabel : RestartLabel;
+                if (t.Label.text != want) t.Label.text = want;
+                PlasticSlab.Set(t.Slab, SlabSize.Button, tone, down);
                 t.Slab.rectTransform.localScale = Vector3.one * (1f + (t.Touch != null ? t.Touch.Bounce : 0f));
-                t.Label.rectTransform.anchoredPosition = new Vector2(0f, down ? -PlasticSlab.PressDrop(SlabSize.Button, SlabTone.Dim) : 0f);
+                t.Label.rectTransform.anchoredPosition = new Vector2(0f, down ? -PlasticSlab.PressDrop(SlabSize.Button, tone) : 0f);
             }
         }
 
@@ -1071,7 +1091,6 @@ namespace NeuroVida.Games.Calculo
             BuildUiPieces();
             BuildFx();
 
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             var flashGo = new GameObject("Flash");
@@ -1138,7 +1157,7 @@ namespace NeuroVida.Games.Calculo
                 _reactorShadow.gameObject.SetActive(false);
                 _reactorRim.gameObject.SetActive(false);
             }
-            _reactorLabel = MakeLabel(_reactorLayer, "Label", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _reactorLabel = MakeLabel(_reactorLayer, "Label", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _reactorLabel.text = "carga exacta";
             _targetText = MakeLabel(_reactorLayer, "Target", 52f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _targetText.text = "0";
@@ -1189,7 +1208,7 @@ namespace NeuroVida.Games.Calculo
         {
             _sayText = MakeLabel(_uiLayer, "Say", 18f, UiFonts.Bold, GoodText, TextAnchor.MiddleCenter);
             _sayText.gameObject.SetActive(false);
-            BestFit(_sayText, Mathf.RoundToInt(14f * UnitsPerDp));
+            BestFit(_sayText, Mathf.RoundToInt(16f * UnitsPerDp));
             _guideText = MakeLabel(_uiLayer, "Guide", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             for (int i = 0; i < _opViews.Length; i++)
             {
@@ -1201,8 +1220,8 @@ namespace NeuroVida.Games.Calculo
                 o.Group = go.AddComponent<CanvasGroup>();
                 o.Group.blocksRaycasts = false;
                 o.Bg = go.AddComponent<Image>();
-                o.Slab = PlasticSlab.TryStyle(o.Bg, SlabSize.Button, SlabTone.Night);          // plasticina: losa «noche»; la elegida, sol
-                if (o.Slab != null) o.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Night);
+                o.Slab = PlasticSlab.TryStyle(o.Bg, SlabSize.Button, SlabTone.Lilac);          // plasticina (Tarea 129): losa lila con el signo en tinta; la elegida, sol
+                if (o.Slab != null) o.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Lilac);
                 if (o.Slab == null)
                 {
                     o.Bg.sprite = RoundedRectSprite.Get(48);
@@ -1211,7 +1230,7 @@ namespace NeuroVida.Games.Calculo
                     o.Bg.raycastTarget = false;
                     NeuroStyle.ClayFrame(o.Bg, 4f, 8f);
                 }
-                o.Label = MakeText(o.Root, "Label", Mathf.RoundToInt(30f * UnitsPerDp), TextAnchor.MiddleCenter, ButtonText, 0f, 0f);
+                o.Label = MakeText(o.Root, "Label", Mathf.RoundToInt(30f * UnitsPerDp), TextAnchor.MiddleCenter, o.Slab != null ? NeuroStyle.Ink : ButtonText, 0f, 0f);
                 o.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
                 _fonts.Add(new KeyValuePair<Text, float>(o.Label, 30f));
                 go.SetActive(false);
@@ -1227,8 +1246,8 @@ namespace NeuroVida.Games.Calculo
                 t.Group = go.AddComponent<CanvasGroup>();
                 t.Group.blocksRaycasts = false;
                 t.Bg = go.AddComponent<Image>();
-                t.Slab = PlasticSlab.TryStyle(t.Bg, SlabSize.Button, SlabTone.Dim);            // plasticina: losa apagada (la más oscura: son acciones de segundo plano)
-                if (t.Slab != null) t.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Dim);
+                t.Slab = PlasticSlab.TryStyle(t.Bg, SlabSize.Button, SlabTone.Lilac);          // plasticina (Tarea 129): lila (botón secundario) con el texto en tinta; «apagada» queda solo para lo que de verdad no se puede (alfa 45 %)
+                if (t.Slab != null) t.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Lilac);
                 if (t.Slab == null)
                 {
                     t.Bg.sprite = RoundedRectSprite.Get(48);
@@ -1237,10 +1256,10 @@ namespace NeuroVida.Games.Calculo
                     t.Bg.raycastTarget = false;
                     NeuroStyle.ClayFrame(t.Bg, 3f, 6f);
                 }
-                t.Label = MakeText(t.Root, "Label", Mathf.RoundToInt(16f * UnitsPerDp), TextAnchor.MiddleCenter, ButtonText, 0f, 0f);
+                t.Label = MakeText(t.Root, "Label", Mathf.RoundToInt(16f * UnitsPerDp), TextAnchor.MiddleCenter, t.Slab != null ? NeuroStyle.Ink : ButtonText, 0f, 0f);
                 t.Label.font = UiFonts.Regular;
-                t.Label.text = i == 0 ? "Deshacer" : "Empezar de nuevo";
-                BestFit(t.Label, Mathf.RoundToInt(14f * UnitsPerDp));
+                t.Label.text = i == 0 ? UndoLabel : RestartLabel;
+                BestFit(t.Label, Mathf.RoundToInt(16f * UnitsPerDp));
                 _fonts.Add(new KeyValuePair<Text, float>(t.Label, 16f));
                 _toolViews[i] = t;
             }
@@ -1271,30 +1290,6 @@ namespace NeuroVida.Games.Calculo
                 img.gameObject.SetActive(false);
                 _sparks.Add(new Spark { Img = img });
             }
-        }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)          // plasticina: losa «noche»
-            {
-                img.sprite = RoundedRectSprite.Get(64);
-                img.type = Image.Type.Sliced;
-                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-            }
-
-            AddResultText("Title", 76, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 46, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            var extra = AddResultText("Extra", 42, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            extra.horizontalOverflow = HorizontalWrapMode.Wrap;
-            go.SetActive(false);
         }
 
         private static RectTransform Layer(Transform parent, string name)
@@ -1410,8 +1405,8 @@ namespace NeuroVida.Games.Calculo
                 kv.Key.fontSize = px;
                 if (kv.Key.resizeTextForBestFit) kv.Key.resizeTextMaxSize = px;
             }
-            _sayText.resizeTextMinSize = Mathf.RoundToInt(14f * _s);
-            foreach (var t in _toolViews) t.Label.resizeTextMinSize = Mathf.RoundToInt(14f * _s);
+            _sayText.resizeTextMinSize = Mathf.RoundToInt(16f * _s);
+            foreach (var t in _toolViews) t.Label.resizeTextMinSize = Mathf.RoundToInt(16f * _s);
             _m = CargaLayout.Compute(_logicalH);
 
             // reactor
