@@ -874,13 +874,8 @@ namespace NeuroVida.Games.Meteoros
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Gran vocabulario!" : score >= 65 ? "¡Buena lluvia!" : "Misión completada";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_tally.WordsHit} palabras tocadas · {_tally.DecoysPassed} inventadas dejadas pasar";
-            int fa = _tally.DecoysTappedTotal;
-            _resultRoot.Find("Extra").GetComponent<Text>().text = fa > 0 ? $"Tocaste {fa} inventada{(fa == 1 ? "" : "s")} · mejor racha {_bestStreak}" : $"Ninguna inventada tocada · mejor racha {_bestStreak}";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         // ------------------------------------------------------------------ construcción de UI
@@ -937,7 +932,7 @@ namespace NeuroVida.Games.Meteoros
             _fxRect = Layer(_play, "Fx");
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
             // el campo donde se mueve el estímulo: el aviso nunca va ahí (se mide en Layout)

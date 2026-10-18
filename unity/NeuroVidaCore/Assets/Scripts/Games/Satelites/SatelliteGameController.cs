@@ -394,7 +394,6 @@ namespace NeuroVida.Games.Satelites
             Debug.Log("[SmokeTest] Satelites: partida terminada: " + _run.Lights + " luces, " + _run.Perfect + " rondas perfectas de " + _run.RoundsPlayed + ", seguimiento " + _run.Capacity.ToString("0.0") + ", nivel más alto " + _run.BestCleared);
 #endif
             ClearRoundViews();
-            ShowEnd(record, broke);
             _exit.Show();
             // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry

@@ -384,7 +384,6 @@ namespace NeuroVida.Games.Aterrizaje
             if (!EditorShotMode && _domes != LandingContract.Domes(_hits))
                 Debug.LogError("[SmokeTest] Aterrizaje: las cúpulas (" + _domes + ") no son las de los aterrizajes justos (" + _hits + ")");
 #endif
-            ShowEnd(meanErr);
             _exit.Show();
             // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry

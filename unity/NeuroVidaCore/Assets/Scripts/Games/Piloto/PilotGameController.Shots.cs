@@ -91,8 +91,12 @@ namespace NeuroVida.Games.Piloto
             for (int i = 0; i < 2; i++) _run.FalseAlarm();
             _t = _flightSeconds - 0.3f;
             yield return UntilPhase(Phase.Done);
-            // al terminar, el juego tapa todo con la cortina «¡Listo!» y, fuera del teléfono, la quita y deja ver el resultado con su botón «Continuar» (ver ExitButton): se espera a eso
-            yield return WaitSeconds(7.5f);
+            // UN solo final (Tarea 126): el momento del objeto (emblema del juego sobre la escena apagada), la cortina «¡Listo!» con el emblema y, fuera del teléfono, la escena donde terminó con el «Continuar» de respaldo (ver ExitButton)
+            yield return WaitSeconds(0.8f);
+            shot("momento");
+            yield return WaitSeconds(1.0f);
+            shot("listo");
+            yield return WaitSeconds(4.0f);
             shot("final");
             EditorShotFinished = true;
         }

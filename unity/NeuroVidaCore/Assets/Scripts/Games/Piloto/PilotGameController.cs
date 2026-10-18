@@ -599,7 +599,6 @@ namespace NeuroVida.Games.Piloto
                       + ", racha mayor " + _run.BestStreak + ", hiperimpulsos " + _run.HyperCount + ", sector " + (_sector + 1) + ", nivel de señales " + _signalDda.Level + ", pilotaje " + _driveDda.Level);
 #endif
             ShowFlightLayers(false);
-            ShowEnd(score);
             _exit.Show();
             // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry

@@ -87,7 +87,7 @@ namespace NeuroVida.Games.Piloto.Tests
             var atlas = ReadAtlas();
             try
             {
-                float sky = Luminance(new Color32(0x0A, 0x0F, 0x33, 255));          // el cielo de arriba del hiperespacio (NeuroStyle.NightTop)
+                float sky = Luminance(new Color32(0x1C, 0x1B, 0x52, 255));          // el tono más claro del cielo (NeuroStyle.NightBottom, el de los tres del fondo de la app): el peor caso para el contraste
                 for (int s = 0; s < 5; s++)
                     for (int d = 0; d < 3; d++)
                     {

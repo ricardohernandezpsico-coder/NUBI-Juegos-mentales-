@@ -209,7 +209,7 @@ namespace NeuroVida.Games.Shared
             }
             if (!animate || streak <= 0) return;
             bool milestone = streak % 5 == 0;
-            _runner.StartCoroutine(PopRect(_streakPill, milestone ? 1.22f : 1.1f, milestone ? 0.3f : 0.2f));
+            _runner.StartCoroutine(BounceRect(_streakPill, milestone ? 0.7f : 0.85f, milestone ? 0.42f : 0.3f));       // la racha crece con un rebote (Tarea 126); con «quitar animaciones» solo cambia el número
             if (milestone)
             {
                 var fx = Rect;
@@ -243,6 +243,13 @@ namespace NeuroVida.Games.Shared
         private IEnumerator LevelUpGlow()
         {
             _runner.StartCoroutine(PopRect(_levelChip, 1.25f, 0.32f)); // sin animaciones: no hace nada (ver UiKit.PopRect)
+            if (Motion.Decorative)
+            {
+                // y una chispa redonda de sol en el chip (Tarea 126): el salto se ve aunque el chip esté chico
+                var fx = Rect;
+                Vector2 c = LocalIn(fx, _levelChip) + new Vector2(_levelChip.rect.width * 0.5f, -_levelChip.rect.height * 0.5f);
+                _runner.StartCoroutine(UiFx.SparkBurst(fx, c, NeuroStyle.Sun, 10, 150f, 26f, 0.5f));
+            }
             if (_levelSlab != null)
             {
                 // plasticina: la pastilla pasa un momento de crema a lima (con «quitar animaciones» también: es un cambio de color, no movimiento) y vuelve

@@ -514,19 +514,8 @@ namespace NeuroVida.Games.Bodega
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
-            _boardRoot.gameObject.SetActive(false);
-            _cardLayer.gameObject.SetActive(false);
-            _trayLayer.gameObject.SetActive(false);
-            _toastLayer.gameObject.SetActive(false);
-            _resultRoot.Find("Title").GetComponent<Text>().text = "¡Buen trabajo!";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_tally.FirstTry} de {_tally.Total} objetos al primer intento";
-            int record = BodegaContract.NewRecord(_bestRecord, _tally.BiggestPerfect);
-            _resultRoot.Find("Extra").GetComponent<Text>().text = _tally.BiggestPerfect > 0
-                ? $"Tu bodega más grande hoy: {_tally.BiggestPerfect} objetos" + (record > 0 ? $" · tu récord: {record}" : "")
-                : "Cada objeto que encuentras al primer intento cuenta";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         private void UpdateHud()

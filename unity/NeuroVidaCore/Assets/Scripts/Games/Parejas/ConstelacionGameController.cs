@@ -369,20 +369,8 @@ namespace NeuroVida.Games.Parejas
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
-            _boardRoot.gameObject.SetActive(false);
-            _cardLayer.gameObject.SetActive(false);
-            _rowLayer.gameObject.SetActive(false);
-            _fxLayer.gameObject.SetActive(false);
-            _resultRoot.Find("Title").GetComponent<Text>().text = "¡Buen trabajo!";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = _tally.Opportunities > 0
-                ? $"{_tally.Hits} de {_tally.Opportunities} veces fuiste directo a una pareja que ya habías visto"
-                : ConstelacionContract.LuckyLine;
-            _resultRoot.Find("Extra").GetComponent<Text>().text = _tally.BestStreak > 0
-                ? $"Racha de memoria más larga: {_tally.BestStreak}" + (_bestRecord > 0 ? $" · tu mejor racha: {Mathf.Max(_bestRecord, _tally.BestStreak)}" : "")
-                : "Lo encontrado por suerte no cuenta";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         private void UpdateHud()

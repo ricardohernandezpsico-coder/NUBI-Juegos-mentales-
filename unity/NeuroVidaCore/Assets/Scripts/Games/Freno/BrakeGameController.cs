@@ -751,12 +751,8 @@ namespace NeuroVida.Games.Freno
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Frenos de acero!" : score >= 65 ? "¡Buena base!" : "Lanzamientos completados";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_launched} despegues · {_stopsOk} de {_stopSsds.Count} frenos";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = $"Mejor racha {_bestStreak}";          // «Tu freno» (en zonas y como promedio de varias partidas) se muestra en la pantalla final de la app
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         // ------------------------------------------------------------------ construcción de UI
@@ -811,7 +807,7 @@ namespace NeuroVida.Games.Freno
             _fxRect = Layer(_play, "Fx");
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
             _toast.KeepOut(_stopRect);                      // el lugar de la señal ALTO, aunque en este momento no se vea

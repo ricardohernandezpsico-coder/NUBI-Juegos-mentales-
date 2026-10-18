@@ -41,10 +41,10 @@ Con «quitar animaciones» activo:
 | `Toast` | Fundido de entrada y salida, sin caída ni rebote. |
 | `PhasePill` | El texto nuevo entra con fundido (0,35 → 1 en 160 ms), sin rebote. |
 | `ProgressDots` | El punto pasa a verde/rojo con fundido de color, sin pop. |
-| `GameHud` | `CountUp`: número final de una vez. `LevelUpGlow`: el chip queda resaltado (estático) 0,45 s y vuelve con fundido. Racha: sin pop (y sin chispas, por `UiFx`). |
+| `GameHud` | `CountUp`: número final de una vez. `LevelUpGlow`: el chip queda resaltado (estático) 0,45 s y vuelve con fundido. Racha: sin pop (y sin chispas, por `UiFx`). El salto del chip de nivel y el rebote de «seguidos» (Tarea 126): ninguno, el chip solo cambia de valor. |
 | `GameControllerBase.Flash` | Tinte con alfa ≤ 0,15 y fundido ≤ 0,2 s. |
 | `GameControllerBase.AnimateResult` | Panel con fundido de opacidad y puntaje final de una vez (sin rebote ni cuenta). |
-| `FinishCurtain` | «¡Listo!» y subtítulo con fundido, sin chispas, rebote ni hiperespacio; misma duración (≈1,2 s). |
+| `FinishCurtain` | UN solo final (Tarea 126): el momento del objeto es un cuadro fijo (el velo y el emblema del juego quietos, sin chispas, 1,0 s) y la cortina trae el cielo, «¡Listo!» y el subtítulo con fundido, sin rebote ni hiperespacio (1,2 s): dura lo mismo que con movimiento (≈2,2 s). `EndMomentTests` lo mide. |
 | `PressScale` | No escala; el botón se oscurece 20 % mientras está apretado y vuelve a su color al soltar (la ficha hundida sigue igual). |
 | `UiKit.PopRect`, `UiKit.PopIn` | Sin animación: la escala queda en 1. (Los usan casi todos los juegos: cubre muchos «pops» de golpe.) |
 | `ExitButton`, `PauseMenu` | (Agregados: también eran comunes.) El botón aparece a su tamaño; el menú entra solo con fundido. |

@@ -7,22 +7,23 @@ using NeuroVida.Games.Secuencia;
 namespace NeuroVida.Games.Shared
 {
     /// <summary>
-    /// Cierre de partida común a los 9 juegos. Al terminar ya no se muestra un resultado de Unity y después otro
-    /// de la app (dos pantallas y un toque de más): se ve un momento breve "¡Listo!" con las estrellas acelerando
-    /// a hiperespacio (espejo del "¡Ya!" de la cuenta regresiva), suena el final común (<see cref="GameFeel.Finish"/>)
-    /// y la app se abre sola en su pantalla de resultado, que es la completa (estrellas, liga, logros).
-    /// El botón "Continuar" queda como respaldo: aparece solo si la vuelta automática no ocurrió (Editor, pruebas o
-    /// un error del puente), junto al panel de resultado del juego que sigue armándose debajo.
+    /// Cierre de partida común a los juegos. UN solo final (Tarea 126): Unity no muestra ningún resultado; hay un «momento del objeto» con el emblema del juego (<see cref="FinishCurtain"/>), la cortina
+    /// «¡Listo!» con las estrellas acelerando a hiperespacio (espejo del "¡Ya!" de la cuenta regresiva), suena el final común (<see cref="GameFeel.Finish"/>) y la app se abre sola en su pantalla de resultado,
+    /// que arranca directo con el final con sentido.
+    /// El botón "Continuar" queda como respaldo: aparece solo si la vuelta automática no ocurrió (Editor, pruebas o un error del puente), sobre la escena donde terminó el juego.
     /// </summary>
     public sealed class ExitButton
     {
         private readonly GameObject _root;
         private readonly RectTransform _rect;
         private readonly MonoBehaviour _runner;
+        private readonly string _gameId;
 
-        public ExitButton(Transform parent, MonoBehaviour runner, float unitsPerDp)
+        /// <param name="gameId">El id del juego (<c>radar</c>…): de él salen el emblema y el movimiento del momento del objeto. Null = solo la cortina de siempre.</param>
+        public ExitButton(Transform parent, MonoBehaviour runner, float unitsPerDp, string gameId = null)
         {
             _runner = runner;
+            _gameId = gameId;
             _root = new GameObject("ExitButton");
             _root.transform.SetParent(parent, false);
             _rect = _root.AddComponent<RectTransform>();
@@ -85,12 +86,12 @@ namespace NeuroVida.Games.Shared
         private IEnumerator FinishAndReturn()
         {
             GameFeel.Finish();
-            var curtain = FinishCurtain.Create(_runner.transform);
+            var curtain = FinishCurtain.Create(_runner.transform, _gameId);
             // Reloj real (no GameClock): la partida ya terminó y este cierre no debe congelarse.
             yield return curtain.Play(_runner);
             NativeBridge.CloseGameScreen(); // la app se abre en su pantalla de resultado; Unity recarga la escena
 
-            // Si seguimos acá (Editor, pruebas o el puente falló), se deja ver el resultado del juego y "Continuar".
+            // Si seguimos acá (Editor, pruebas o el puente falló), se deja ver la escena donde terminó el juego y "Continuar".
             float waited = 0f;
             while (waited < 1.2f) { waited += Time.unscaledDeltaTime; yield return null; }
             if (curtain != null) Object.Destroy(curtain.gameObject);
@@ -100,7 +101,7 @@ namespace NeuroVida.Games.Shared
         private IEnumerator PopIn()
         {
             float t = 0f;
-            const float delay = 0.6f; // aparece después de que el panel de resultado termina de animar
+            const float delay = 0.3f; // aparece un momento después de retirarse la cortina
             _rect.localScale = Vector3.zero;
             while (t < delay) { t += GameClock.DeltaTime; yield return null; }
             t = 0f;

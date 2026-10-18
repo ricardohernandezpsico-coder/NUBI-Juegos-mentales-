@@ -1251,7 +1251,7 @@ namespace NeuroVida.Games.Cosecha
             _fxRect = Layer(_play, "Fx");
             BuildReady();
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
             SetUpTutorial();

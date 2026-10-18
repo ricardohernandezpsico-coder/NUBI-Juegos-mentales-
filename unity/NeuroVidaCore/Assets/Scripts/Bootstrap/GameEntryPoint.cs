@@ -83,7 +83,7 @@ namespace NeuroVida.Bridge
             var cam = Camera.main;
             if (cam == null) return;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = NeuroVida.Games.Shared.NeuroStyle.NightBottom;
+            cam.backgroundColor = NeuroVida.Games.Shared.NeuroStyle.NightMid;
         }
 
         private NeuroVida.Games.Shared.PauseMenu _pause;

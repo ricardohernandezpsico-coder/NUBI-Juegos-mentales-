@@ -968,7 +968,7 @@ namespace NeuroVida.Games.Bitacora
             _findHint.color = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.9f);
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
 

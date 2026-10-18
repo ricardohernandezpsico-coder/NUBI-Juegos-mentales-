@@ -118,8 +118,12 @@ namespace NeuroVida.Games.Correo
             yield return WaitSeconds(0.9f);
             _tapped = true;
             while (_phase != Phase.Done) yield return null;
-            // al terminar, el juego tapa todo con la cortina «¡Listo!» y, fuera del teléfono, la quita y deja ver el resultado con su botón «Continuar» (ver ExitButton): se espera a eso
-            yield return WaitSeconds(7.5f);
+            // UN solo final (Tarea 126): el momento del objeto (emblema del juego sobre la escena apagada), la cortina «¡Listo!» con el emblema y, fuera del teléfono, la escena donde terminó con el «Continuar» de respaldo (ver ExitButton)
+            yield return WaitSeconds(0.8f);
+            shot("momento");
+            yield return WaitSeconds(1.0f);
+            shot("listo");
+            yield return WaitSeconds(4.0f);
             shot("final");
             EditorShotFinished = true;
         }

@@ -255,9 +255,7 @@ namespace NeuroVida.Games.Correo
 #endif
             int record = MailContract.NewRecord(_bestRecord, _run.BestDayRecord);
             ClearBelt();
-            ShowOnly(_endLayer);
-            _stageLayer.gameObject.SetActive(false);
-            BindEnd();
+            // UN solo final (Tarea 126): la escena queda como terminó (la mesa y la estación) y la cortina trae el emblema; la app abre con el final con sentido.
             _exit.Show();
             // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry

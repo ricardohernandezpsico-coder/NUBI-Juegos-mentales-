@@ -390,7 +390,6 @@ namespace NeuroVida.Games.Radar
             Debug.Log("[SmokeTest] Radar: partida terminada: " + _run.Rescued + " cápsulas, " + _run.Perfect + " rondas perfectas de " + _run.RoundsPlayed + ", racha mayor " + _run.BestStreak + ", vistazo " + _run.GlanceMs + " ms, captura " + _run.Capture.ToString("0.0") + ", nivel " + _dda.Level);
 #endif
             HideRoundObjects();
-            ShowEnd(record, broke);
             _exit.Show();
             // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry

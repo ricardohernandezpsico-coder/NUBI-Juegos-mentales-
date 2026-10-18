@@ -265,18 +265,8 @@ namespace NeuroVida.Games.Engranajes
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
-            _sceneRoot.gameObject.SetActive(false);
-            _uiLayer.gameObject.SetActive(false);
-            _questionBar.gameObject.SetActive(false);
-            _resultRoot.Find("Title").GetComponent<Text>().text = "¡Buen trabajo!";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_tally.Correct} de {_tally.Total} máquinas arregladas · etapa {_tally.PeakEtapa} de 5";
-            string rocket = _rocket.Lights > 0
-                ? $"Faltan {EngranajesContract.RocketLights - _rocket.Lights} luces: tu cohete espera en el hangar"
-                : _tally.Launches > 0 ? "¡Tu cohete va a la órbita!" : "Cada máquina arreglada enciende una luz del cohete";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = rocket;
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         private void UpdateHud()

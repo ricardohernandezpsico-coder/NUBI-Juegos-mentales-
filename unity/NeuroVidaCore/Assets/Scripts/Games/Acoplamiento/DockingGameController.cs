@@ -385,7 +385,6 @@ namespace NeuroVida.Games.Acoplamiento
             Debug.Log("[SmokeTest] Acoplamiento: partida terminada: " + _docked + " módulos, " + _rings + " anillos, " + _correct + " de " + _trials + ", racha mayor " + _bestStreak + ", giro " + speed + " °/s, nivel " + _dda.Level);
 #endif
             HideModule();
-            ShowEnd(record, broke, speed, curve);
             _exit.Show();
             // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
             var telemetry = new StroopTelemetry

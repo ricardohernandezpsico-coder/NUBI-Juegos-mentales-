@@ -143,7 +143,7 @@ namespace NeuroVida.Games.Bodega
             BuildIntro();
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

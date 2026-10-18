@@ -22,10 +22,11 @@ namespace NeuroVida.Games.Shared
         public static readonly Color Lime = Hex(0x9BE564);
         public static readonly Color Cream = Hex(0xFFFFFF);
 
-        // Cielo nocturno (CosmosBackground.kt, "fondo C" del 30-sep: más oscuro): abajo -> medio -> arriba
-        public static readonly Color NightBottom = Hex(0x02030F);
-        public static readonly Color NightMid = Hex(0x050823);
-        public static readonly Color NightTop = Hex(0x0A0F33);
+        // Cielo nocturno: UN solo cielo en toda la app (Tarea 126; antes el de Unity era más oscuro que el de la app y cada cambio de Activity se notaba). Son los tres tonos de CosmosBackground.kt (fondo «Espacio profundo», Tarea 122):
+        // en la app el degradé va del #07071F arriba al #1C1B52 abajo, así que acá, de abajo a arriba: NightBottom (el más claro, como el horizonte), NightMid y NightTop (el más oscuro: también el del velo y el de la pausa).
+        public static readonly Color NightBottom = Hex(0x1C1B52);
+        public static readonly Color NightMid = Hex(0x100F3A);
+        public static readonly Color NightTop = Hex(0x07071F);
         public static readonly Color StarWarm = Hex(0xFFC38A);
 
         /// <summary>Superficie de paneles sobre el cielo (azul noche opaco, como las superficies de la app).</summary>

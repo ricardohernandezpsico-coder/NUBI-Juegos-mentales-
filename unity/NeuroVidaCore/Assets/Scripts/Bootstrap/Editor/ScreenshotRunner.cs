@@ -17,7 +17,7 @@ namespace NeuroVida.Bridge.EditorTools
     /// Dos modos (variable de entorno <c>NUBI_SHOTS_GAMES</c>: nombres separados por comas, o «todos»):
     ///  - <b>Correo</b> sigue con su guion (<c>MailGameController.EditorShotScript</c>): lleva la partida por sus momentos clave (docs/previews/correo-estacion.png).
     ///  - <b>Por tiempo</b> (cualquier otro juego, sin guion por juego, 4-oct → 8-oct «versión barata»): el piloto automático del smoke juega donde lo hay (Engranajes, Bodega, Constelaciones) y se fotografía la primera pantalla jugable (cuando
-    ///    termina la cuenta regresiva), a los 8, 20 y 40 s de juego, la pausa abierta y, si la partida llega a su fin, la cortina «¡Listo!» y la pantalla final; después UNA toma con «quitar animaciones» y, en los juegos con tutorial, el paso 1 y el paso 3 del tutorial.
+    ///    termina la cuenta regresiva), a los 8, 20 y 40 s de juego, la pausa abierta y, si la partida llega a su fin, el momento del objeto, la cortina «¡Listo!» y la escena final con «Continuar»; después UNA toma con «quitar animaciones» y, en los juegos con tutorial, el paso 1 y el paso 3 del tutorial.
     ///    No se cambia la lógica de ningún juego: solo se mira. Los errores de consola de cada juego quedan en <c>errores.txt</c> de su carpeta y un resumen con los tiempos en <c>_resumen.txt</c>.
     /// Variable <c>NUBI_SHOTS_DIR</c>: carpeta raíz de salida (por defecto unity/test-results/capturas); cada juego va en su subcarpeta (por su id).
     /// </summary>
@@ -309,7 +309,7 @@ namespace NeuroVida.Bridge.EditorTools
 
         // ------------------------------------------------------------------ por tiempo
 
-        /// <summary>La partida real: primera pantalla jugable, 8, 20 y 40 s de juego, la pausa, y la cortina «¡Listo!» y la pantalla final si la partida llega a su fin.</summary>
+        /// <summary>La partida real: primera pantalla jugable, 8, 20 y 40 s de juego, la pausa, y el momento del objeto, la cortina «¡Listo!» y la escena final si la partida llega a su fin.</summary>
         private static IEnumerator PlayShots(string id)
         {
             Configure(id, tutorial: false, reduceMotion: false);
@@ -329,6 +329,7 @@ namespace NeuroVida.Bridge.EditorTools
                 else Shot(step.Item1);
             }
             if (ended || CurtainUp()) yield return EndShots();
+            else yield return ForcedEndShots(id);
             if (_count < 4) GameNotes.Add("solo " + _count + " toma(s) de la partida (¿terminó muy pronto o no arrancó?)");
             yield return ExitPlay();
         }
@@ -357,14 +358,42 @@ namespace NeuroVida.Bridge.EditorTools
             Shot("aviso");
         }
 
-        /// <summary>Cuando aparece la cortina «¡Listo!»: una toma con la cortina y otra con la pantalla final (la cortina se va y queda el resultado con «Continuar»).</summary>
+        /// <summary>
+        /// UN solo final (Tarea 126): cuando aparece el cierre, una toma del «momento del objeto» (la escena apagada y el emblema del juego en su sitio), otra con la cortina «¡Listo!» ya armada y, cuando la cortina se va sin que la app se abra
+        /// (Editor y pruebas), una con la escena donde terminó el juego y el «Continuar» de respaldo. Unity ya no dibuja ningún resultado: ese vive en la app.
+        /// </summary>
         private static IEnumerator EndShots()
         {
-            yield return Wait.For(1.1);
+            yield return Wait.For(0.8);
+            if (CurtainUp()) Shot("momento");
+            yield return Wait.For(1.0);
             if (CurtainUp()) Shot("listo");
             yield return Wait.Until(() => !CurtainUp(), 12);
             yield return Wait.For(1.8);
             Shot("final");
+        }
+
+        /// <summary>
+        /// Los juegos que no llegan a su fin en los 40 s de la toma (la mayoría): se arma el MISMO cierre que usa <c>ExitButton</c> (el momento del objeto y la cortina «¡Listo!», con el emblema del juego) sobre la partida tal como va,
+        /// y se sacan las tomas «momento» y «listo». Así se ve el final real de los 17 juegos sin jugarlos enteros; la escena de abajo es la de los 40 s, no la del último ensayo.
+        /// </summary>
+        private static IEnumerator ForcedEndShots(string id)
+        {
+            MonoBehaviour runner = null;
+            foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+            {
+                var ns = mb.GetType().Namespace;
+                if (mb.isActiveAndEnabled && ns != null && ns.StartsWith("NeuroVida.Games") && mb.GetType().Name.EndsWith("Controller")) { runner = mb; break; }
+            }
+            if (runner == null) { GameNotes.Add("sin controlador para armar el cierre forzado"); yield break; }
+            var curtain = NeuroVida.Games.Shared.FinishCurtain.Create(runner.transform, id);
+            runner.StartCoroutine(curtain.Play(runner));
+            yield return Wait.For(0.8);
+            Shot("momento");
+            yield return Wait.For(1.0);
+            Shot("listo");
+            yield return Wait.For(0.6);                     // la cortina termina de animarse (la corrutina lee sus grupos hasta el último cuadro) antes de quitarla
+            if (curtain != null) UnityEngine.Object.Destroy(curtain.gameObject);
         }
 
         /// <summary>UNA toma de la primera pantalla jugable con «quitar animaciones» activo.</summary>

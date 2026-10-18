@@ -743,13 +743,9 @@ namespace NeuroVida.Games.Anagramas
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
             SetButtonsFor(Phase.Done, false);
-            _resultRoot.Find("Title").GetComponent<Text>().text = "Tu cielo de palabras";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"Encontraste {_tally.Solo} de {_tally.Total} por tu cuenta";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = _tally.Vista > 0 ? "Las azules vuelven en otra partida." : "Cada palabra es un lucero de tu cielo.";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         private void UpdateHud()
@@ -1551,7 +1547,7 @@ namespace NeuroVida.Games.Anagramas
             BuildUiPieces();
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
 

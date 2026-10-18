@@ -1197,13 +1197,8 @@ namespace NeuroVida.Games.Disparate
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Gran lectura!" : score >= 65 ? "¡Buena transmisión!" : "Misión completada";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_tally.Correct} de {_tally.Total} bien · mejor racha {_tally.BestStreak}";
-            int wpm = _tally.Wpm;
-            _resultRoot.Find("Extra").GetComponent<Text>().text = wpm >= 0 ? $"{wpm} palabras por minuto leyendo y decidiendo" : "Juega un poco más para medir tu lectura";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         // ------------------------------------------------------------------ construcción de UI
@@ -1258,7 +1253,7 @@ namespace NeuroVida.Games.Disparate
             _fxRect = Layer(_play, "Fx");
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
             SetUpTutorial();

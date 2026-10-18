@@ -363,18 +363,9 @@ namespace NeuroVida.Games.Calculo
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
             SetToolsVisible(false);
-            for (int i = 0; i < _shownOpCount; i++) _opViews[i].Root.gameObject.SetActive(false);
-            _reactorLayer.gameObject.SetActive(false);
-            _cellLayer.gameObject.SetActive(false);
-            _resultRoot.Find("Title").GetComponent<Text>().text = "¡Reactor cargado!";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_tally.Solved} de {_tally.Total} cargas · {_tally.SolvedAlone} sin pista";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = _tally.MeanAloneMs >= 0
-                ? $"Tiempo medio {_tally.MeanAloneMs / 1000f:0} s por carga sin pista"
-                : "Cada carga logra su camino";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         private void UpdateHud()
@@ -1078,7 +1069,7 @@ namespace NeuroVida.Games.Calculo
             BuildFx();
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

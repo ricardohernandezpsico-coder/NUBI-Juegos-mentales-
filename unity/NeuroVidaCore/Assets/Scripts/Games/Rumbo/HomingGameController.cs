@@ -975,7 +975,7 @@ namespace NeuroVida.Games.Rumbo
             _stopButton = ClayButton("Stop", "¡AQUÍ!", NeuroStyle.Sun);
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
             _toast.KeepOut(_prompt.rectTransform);          // los textos del juego, aunque en este momento estén vacíos

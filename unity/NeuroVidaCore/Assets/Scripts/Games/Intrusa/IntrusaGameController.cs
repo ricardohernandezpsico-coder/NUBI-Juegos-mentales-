@@ -1409,13 +1409,8 @@ namespace NeuroVida.Games.Intrusa
 
         private void ShowResult(int score)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Qué buen cielo!" : score >= 65 ? "¡Buen atlas!" : "Misión completada";
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{_tally.Correct} de {_tally.Total} bien · mejor racha {_tally.BestStreak}";
-            int n = _tally.NewPlates.Count;
-            _resultRoot.Find("Extra").GetComponent<Text>().text = n > 0 ? (n == 1 ? "1 lámina nueva en tu atlas" : $"{n} láminas nuevas en tu atlas") : "Sigue completando tu atlas";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         // ------------------------------------------------------------------ construcción de UI
@@ -1480,7 +1475,7 @@ namespace NeuroVida.Games.Intrusa
             _measure.rectTransform.sizeDelta = new Vector2(4000f, 200f);
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
             SetUpTutorial();

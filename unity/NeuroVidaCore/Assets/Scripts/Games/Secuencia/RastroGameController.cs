@@ -653,14 +653,8 @@ namespace NeuroVida.Games.Secuencia
 
         private void ShowResult(SequenceSessionMetrics m)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
-            int score = m.calculated_score;
-            _resultRoot.Find("Title").GetComponent<Text>().text = score >= 85 ? "¡Qué buen rastro!" : score >= 65 ? "¡Buen camino!" : "Misión completada";
-            int best = _session.Tally.BestLength[(int)RastroMode.Rastro];
-            _resultRoot.Find("Detail").GetComponent<Text>().text = $"{m.correct_rounds} de {m.total_rounds} bien" + (best > 0 ? $" · tu rastro {best} luces" : "");
-            _resultRoot.Find("Extra").GetComponent<Text>().text = _session.NewModes != 0 ? "¡Desbloqueaste un modo nuevo!" : "Sigue encendiendo luces";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
         }
 
         // ------------------------------------------------------------------ entrada del dedo y cuadro a cuadro
@@ -1049,7 +1043,7 @@ namespace NeuroVida.Games.Secuencia
             BuildUnlock();
             BuildCue();
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             BuildTutorial(_safe, 112f * UnitsPerDp, "Rastro de luz", "Mira el camino de la chispa y repítelo con el dedo");
 
             var flashGo = new GameObject("Flash");

@@ -102,6 +102,26 @@ namespace NeuroVida.Games.Shared
             if (rect != null) rect.localScale = Vector3.one;
         }
 
+        /// <summary>Entra con rebote: crece desde <paramref name="from"/> hasta su tamaño pasándose un poco (EaseOutBack). Con «quitar animaciones» queda en su tamaño y espera lo mismo.</summary>
+        public static IEnumerator BounceRect(RectTransform rect, float from, float seconds)
+        {
+            if (!Motion.Decorative)
+            {
+                if (rect != null) rect.localScale = Vector3.one;
+                yield return Motion.Hold(seconds);
+                yield break;
+            }
+            float t = 0f;
+            while (t < seconds)
+            {
+                if (rect == null) yield break;
+                t += GameClock.DeltaTime;
+                rect.localScale = Vector3.one * Mathf.LerpUnclamped(from, 1f, UiFx.EaseOutBack(Mathf.Clamp01(t / seconds)));
+                yield return null;
+            }
+            if (rect != null) rect.localScale = Vector3.one;
+        }
+
         /// <summary>Aparece creciendo desde 0 con rebote.</summary>
 
         public static IEnumerator PopIn(RectTransform rect, float seconds)

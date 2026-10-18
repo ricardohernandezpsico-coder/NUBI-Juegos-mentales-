@@ -84,7 +84,7 @@ namespace NeuroVida.Games.Shared
             scrim.transform.SetParent(root, false);
             var scrimRect = scrim.AddComponent<RectTransform>();
             Stretch(scrimRect);
-            scrim.AddComponent<Image>().color = NeuroStyle.WithAlpha(NeuroStyle.NightBottom, 0.78f);
+            scrim.AddComponent<Image>().color = NeuroStyle.WithAlpha(NeuroStyle.NightTop, 0.78f);
 
             var panelGo = new GameObject("Panel");
             panelGo.transform.SetParent(root, false);

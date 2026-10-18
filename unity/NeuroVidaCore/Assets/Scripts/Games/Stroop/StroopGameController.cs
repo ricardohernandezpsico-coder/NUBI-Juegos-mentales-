@@ -482,7 +482,7 @@ namespace NeuroVida.Games.Stroop
             Stretch(_fxRect);
 
             BuildResultPanel();
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
@@ -914,24 +914,9 @@ namespace NeuroVida.Games.Stroop
 
         private void ShowResult(int score, int avgMs, int total)
         {
+            // UN solo final (Tarea 126): Unity ya no dibuja un resultado; la cortina trae el emblema del juego y la app abre con el final con sentido.
             _exit.Show();
             _acceptInput = false;
-            foreach (var r in _buttonRects) r.gameObject.SetActive(false);
-            _stageRect.gameObject.SetActive(false);
-            _ribbonRect.gameObject.SetActive(false);
-            _timerBg.gameObject.SetActive(false);
-            _dots.Rect.gameObject.SetActive(false);
-            _pill.Rect.gameObject.SetActive(false);
-
-            string title = score >= 90 ? "¡Extraordinario!" : score >= 70 ? "¡Muy bien!" : score >= 50 ? "Buen trabajo" : "Sigue practicando";
-            _resultRoot.Find("Title").GetComponent<Text>().text = title;
-            _resultRoot.Find("Detail").GetComponent<Text>().text = Endless ? $"{_correct} aciertos de {total} · {_points} puntos" : $"{_correct} de {total} aciertos";
-            _resultRoot.Find("Extra").GetComponent<Text>().text = _responseCount > 0
-                ? $"Respuesta media {avgMs / 1000f:0.0} s · mejor racha {_bestStreak}"
-                : $"Mejor racha {_bestStreak}";
-            _resultRoot.gameObject.SetActive(true);
-            StartCoroutine(AnimateResult(score));
-            if (Motion.Decorative) StartCoroutine(UiFx.SparkBurst(_fxRect, Vector2.zero, StroopContract.WordShore, 24, 420f, 56f, 0.9f));
         }
 
         // ------------------------------------------------------------------ layout

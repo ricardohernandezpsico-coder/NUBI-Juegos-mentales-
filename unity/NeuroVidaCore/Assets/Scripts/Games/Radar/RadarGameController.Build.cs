@@ -155,7 +155,7 @@ namespace NeuroVida.Games.Radar
             BuildEnd();
             BuildHiddenResult();
 
-            _exit = new ExitButton(_safe, this, UnitsPerDp);
+            _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
