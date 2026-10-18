@@ -141,8 +141,8 @@ namespace NeuroVida.Games.Piloto
         public const float TargetChance = 0.4f;
         /// <summary>El toque va a la señal viva más cercana dentro de esta distancia (dp; un toque de 80 dp de diámetro).</summary>
         public const float TouchRadius = 40f;
-        /// <summary>El diámetro de una señal (dp) y el del anillo que se vacía con el tiempo que le queda.</summary>
-        public const float SignalSize = 34f, SignalRingSize = 54f;
+        /// <summary>El diámetro de una señal (dp) y el del anillo que se vacía con el tiempo que le queda. Tarea 128 (18-oct-2026): 34 → 44 y 54 → 70 (el dibujo de la señal pasa de ~44 a ~56 dp): misma mecánica, mismo ritmo y mismas cantidades; el aire entre señales (<see cref="PilotSpawn.SignalClear"/>) creció igual.</summary>
+        public const float SignalSize = 44f, SignalRingSize = 70f;
 
         public const int ShapeCount = 5, DetailCount = 3;
 

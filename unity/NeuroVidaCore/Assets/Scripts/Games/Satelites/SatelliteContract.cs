@@ -37,15 +37,15 @@ namespace NeuroVida.Games.Satelites
         // ------------------------------------------------------------------ geometría (dp lógicos de un campo de 360 de ancho)
 
         public const float FieldWidth = 360f;
-        /// <summary>Un satélite mide 28 dp de diámetro (14 de radio) más 9 dp de paneles a cada lado; se toca con un círculo de 60 dp de diámetro.</summary>
-        public const float SatRadius = 14f, PanelReach = 9f, TouchRadius = 30f;
-        /// <summary>Distancia mínima para detenerse (la nube aparte) y para repartirlos al empezar.</summary>
-        public const float StopGap = 38f, SpawnGap = 46f;
+        /// <summary>Un satélite mide 33,6 dp de diámetro (16,8 de radio) más 10,8 dp de paneles a cada lado; se toca con un círculo de 60 dp de diámetro. Tarea 128 (18-oct-2026): ×1,2 (eran 14 y 9; el dibujo pasa de ~40 a ~48 dp); misma velocidad, mismas cantidades, sigue plano y sin respuesta durante el seguimiento.</summary>
+        public const float SatRadius = 16.8f, PanelReach = 10.8f, TouchRadius = 30f;
+        /// <summary>Distancia mínima para detenerse (la nube aparte) y para repartirlos al empezar (×1,2 con el tamaño: eran 38 y 46).</summary>
+        public const float StopGap = 46f, SpawnGap = 55f;
         public const float PlanetRadius = 44f, EdgeMargin = 8f;
         /// <summary>Cuánto sube el sobre de la señal por encima del borde del satélite (dp): el anillo de arriba deja ese aire.</summary>
         public const float EnvelopeRise = 22f;
         /// <summary>Al detenerse, si quedan dos a menos de <see cref="SettleGap"/> se apartan lo mínimo (hasta <see cref="SettleMax"/> dp cada uno) en <see cref="SettleSeconds"/> s.</summary>
-        public const float SettleGap = 36f, SettleMax = 22f, SettleSeconds = 0.35f;
+        public const float SettleGap = 43f, SettleMax = 22f, SettleSeconds = 0.35f;
         /// <summary>Cada satélite lleva su carril: el radio de su anillo × (1 ± 6 %).</summary>
         public const float LaneSpread = 0.06f;
         /// <summary>Los anillos son más altos que anchos: alto = 1,42 × ancho (o lo que quepa).</summary>

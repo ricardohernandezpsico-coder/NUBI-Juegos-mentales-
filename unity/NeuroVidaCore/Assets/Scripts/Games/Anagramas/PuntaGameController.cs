@@ -1730,7 +1730,7 @@ namespace NeuroVida.Games.Anagramas
         {
             _sayText = MakeLabel(_uiLayer, "Say", 18f, UiFonts.Bold, GoodText, TextAnchor.MiddleCenter);
             _sayText.gameObject.SetActive(false);
-            _ladderLabel = MakeLabel(_uiLayer, "LadderLabel", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _ladderLabel = MakeLabel(_uiLayer, "LadderLabel", 16f, UiFonts.Regular, new Color(171f / 255f, 165f / 255f, 210f / 255f), TextAnchor.MiddleCenter);        // lavanda (el gris Dim daba 3,4:1)
             _ladderLabel.text = "Ayudas";
             for (int k = 0; k < 3; k++)
             {
@@ -1932,7 +1932,7 @@ namespace NeuroVida.Games.Anagramas
             SetRect(_askText.rectTransform, cx, _m.SlotY, 300f, 28f);
             foreach (var b in _nebulaBlobs) b.rectTransform.sizeDelta = new Vector2(120f * _s, 80f * _s);
             SetRect(_sayText.rectTransform, cx, _m.SayY, 336f, 28f);
-            SetRect(_ladderLabel.rectTransform, w / 2f - 40f, _m.LadderY, 80f, 20f);
+            SetRect(_ladderLabel.rectTransform, w / 2f - 40f, _m.LadderY, 80f, 22f);
             for (int k = 0; k < 3; k++) SetRect(_ladderDots[k].rectTransform, w / 2f + 4f + k * 20f + 8f, _m.LadderY, 11f, 11f);
         }
 

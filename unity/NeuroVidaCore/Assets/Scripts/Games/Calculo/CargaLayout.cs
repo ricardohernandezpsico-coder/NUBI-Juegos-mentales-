@@ -34,17 +34,18 @@ namespace NeuroVida.Games.Calculo
             var m = new Metrics();
             float free = Math.Max(0f, height - MinHeight);
             m.DotsY = HudDp + 11f;
-            float y = HudDp + 22f + 0.2f * free;
+            // Tarea 128 (18-oct): el aire que sobra va ARRIBA del reactor (0,45) y entre los bloques en poco (0,17 / 0,09 / 0,09): todo el grupo, con las celdas, las operaciones y los botones, queda en la mitad de abajo, sin huecos grandes
+            float y = HudDp + 22f + 0.45f * free;
             m.ReactorY = y + RingR;
             y += 2f * RingR;
             m.SayY = y + 22f;
-            y += 44f + 0.3f * free;
+            y += 44f + 0.17f * free;
             m.CellsY = y + CellH / 2f;
             y += CellH;
             m.GuideY = y + 14f;
-            y += 28f + 0.1f * free;
+            y += 28f + 0.09f * free;
             m.OpsY = y + OpH / 2f;
-            y += OpH + 16f + 0.1f * free;
+            y += OpH + 16f + 0.09f * free;
             m.ToolsY = y + ToolH / 2f;
             return m;
         }

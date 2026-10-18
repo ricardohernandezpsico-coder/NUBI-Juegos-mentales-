@@ -23,7 +23,7 @@ namespace NeuroVida.Games.Shared
     {
         private const float Dp = 3f;
         /// <summary>La fila fija de los controles de la práctica (Tarea 127, §1.7): SIEMPRE arriba, debajo del marcador, en los 17 juegos: «Práctica (sin puntos)» a la izquierda y «Saltar tutorial» a la derecha (es lo que menos se toca: no necesita el pulgar).</summary>
-        public const float RowMarginU = 48f, BadgeW = 540f, BadgeH = 96f, SkipW = 420f, SkipH = 132f, RowGapU = 8f;
+        public const float RowMarginU = 48f, BadgeW = 560f, BadgeH = 96f, SkipW = 410f, SkipH = 132f, RowGapU = 8f;
         /// <summary>Durante la ronda guiada, lo que baja el contenido de un juego que arranca justo bajo el marcador (en dp lógicos de 360 de ancho) para no quedar bajo la fila fija: la fila llega a unos 113 dp y el marcador deja 66, así que 48 dp. Lo usan los juegos con layout propio (<c>topInset</c>).</summary>
         public const float RowInsetDp = 48f, RowInsetU = RowInsetDp * Dp;
         /// <summary>Donde termina la fila fija del tutorial (dp desde arriba): la fila parte 10 unidades bajo el marcador (<c>GameHud.Height + 10</c>, lo que pasan los 17 juegos), deja <see cref="RowGapU"/> y mide <see cref="SkipH"/>.</summary>
@@ -114,7 +114,7 @@ namespace NeuroVida.Games.Shared
             _skipIntroRect = Panel(card, "SkipIntro", new Vector2(640f, 150f), new Vector2(0f, -560f), new Color(0f, 0f, 0f, 0f), 0f, 0f);
             var skipText = Label(_skipIntroRect, "Label", 54, Vector2.zero, new Vector2(640f, 150f), plastic ? NeuroStyle.InkSoft : new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
             skipText.text = "Saltar tutorial";
-            BestFit(skipText, 45);
+            BestFit(skipText, 48);
             _intro.gameObject.SetActive(false);
 
             // ---- «Nubi entrenadora»: el foco (velo con hueco + Nubi y su globo). Va debajo del rótulo y de «Saltar tutorial», que siguen a la vista.
@@ -128,9 +128,9 @@ namespace NeuroVida.Games.Shared
 
             var badge = Panel(_practiceRoot, "Badge", new Vector2(BadgeW, BadgeH), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f, SlabSize.Chip, SlabTone.Cream);
             _badge = badge;
-            var badgeText = Label(badge, "Label", 45, Vector2.zero, new Vector2(BadgeW - 20f, BadgeH), plastic ? NeuroStyle.Ink : NeuroStyle.Grape, TextAnchor.MiddleCenter);       // 15 dp: «Práctica (sin puntos)» es más larga que el «Práctica: no cuenta» de antes y a 16 dp rozaba un texto del juego (Correo, forma de 1920)
+            var badgeText = Label(badge, "Label", 48, Vector2.zero, new Vector2(BadgeW - 20f, BadgeH), plastic ? NeuroStyle.Ink : NeuroStyle.Grape, TextAnchor.MiddleCenter);       // 15 dp: «Práctica (sin puntos)» es más larga que el «Práctica: no cuenta» de antes y a 16 dp rozaba un texto del juego (Correo, forma de 1920)
             badgeText.text = "Práctica (sin puntos)";
-            BestFit(badgeText, 45);
+            BestFit(badgeText, 48);
 
             _caption = Label(_practiceRoot, "Caption", 60, Vector2.zero, new Vector2(960f, 200f), Color.white, TextAnchor.MiddleCenter);
             _caption.rectTransform.anchorMin = _caption.rectTransform.anchorMax = new Vector2(0.5f, 0f);
@@ -141,7 +141,7 @@ namespace NeuroVida.Games.Shared
             _skipRect = Panel(_practiceRoot, "Skip", new Vector2(SkipW, SkipH), Vector2.zero, NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.92f), 4f, 8f, SlabSize.Button, SlabTone.Cream);
             _skipPracticeLabel = Label(_skipRect, "Label", 48, Vector2.zero, new Vector2(SkipW - 20f, SkipH), plastic ? NeuroStyle.Ink : new Color(0.851f, 0.831f, 0.961f, 1f), TextAnchor.MiddleCenter);
             _skipPracticeLabel.text = "Saltar tutorial";
-            BestFit(_skipPracticeLabel, 45);
+            BestFit(_skipPracticeLabel, 48);
             PlaceRow(practiceTopU);
             Coach.ControlSkip = _skipRect;       // Nubi y su globo no los tapan, estén donde estén
             Coach.ControlBadge = _badge;

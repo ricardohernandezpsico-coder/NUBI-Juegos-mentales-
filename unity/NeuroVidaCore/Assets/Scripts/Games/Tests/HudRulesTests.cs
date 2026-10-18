@@ -135,16 +135,19 @@ namespace NeuroVida.Games.Tests
         private static readonly Regex CenteredSize = new Regex(@"CenteredText\(\s*[^,;]+,\s*""[^""]*"",\s*(\d+)\s*,");
         private static readonly Regex ResultSize = new Regex(@"AddResultText\(\s*""[^""]*"",\s*(\d+)\s*,");
 
-        /// <summary>Lo que ningún juego dibuja a menos de 14 dp (42 unidades del lienzo de 1080): se mira el CÓDIGO (el smoke solo ve lo que sale en pantalla durante su corrida). Retirada: Bitácora de Misión.</summary>
+        /// <summary>
+        /// Lo que ningún juego dibuja a menos de 16 dp (48 unidades del lienzo de 1080; Tarea 128: «nada informativo bajo 16 dp»): se mira el CÓDIGO (el smoke solo ve lo que sale en pantalla durante su corrida).
+        /// Excepciones, cada una con su razón: Bitácora de Misión, Rumbo a Casa y Cosecha de palabras (retirados de la app: el código se conserva pero no se juegan) y el panel de resultado de Unity (<c>AddResultText</c>: desde la Tarea 126 Unity no dibuja ningún resultado y esos textos se construyen sin usarse; siguen en 42).
+        /// </summary>
         [Test]
-        public void NoGameDrawsATextBelow14Dp_InItsSources()
+        public void NoGameDrawsAnInformativeTextBelow16Dp_InItsSources()
         {
             var root = Path.Combine(Application.dataPath, "Scripts", "Games");
             var found = new List<string>();
             foreach (var file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
             {
                 string rel = file.Substring(root.Length + 1).Replace('\\', '/');
-                if (rel.Contains("/Tests/") || rel.StartsWith("Bitacora/")) continue;
+                if (rel.Contains("/Tests/") || rel.StartsWith("Bitacora/") || rel.StartsWith("Rumbo/") || rel.StartsWith("Cosecha/")) continue;
                 var lines = File.ReadAllLines(file);
                 for (int i = 0; i < lines.Length; i++)
                 {
@@ -153,11 +156,14 @@ namespace NeuroVida.Games.Tests
                     if (trimmed.StartsWith("//") || trimmed.StartsWith("*") || trimmed.StartsWith("///")) continue;
                     if (rel == "Shared/NubiCoach.cs" && line.Contains("_dbgText")) continue;                  // el rótulo de depuración del foco: solo en builds de prueba
                     foreach (var rx in new[] { MakeTextSize, BestFitMin, BestFitMax, CenteredSize, ResultSize })
+                    {
+                        int min = rx == ResultSize ? 42 : 48;                                   // el panel de resultado de Unity ya no se dibuja (Tarea 126): se queda en 14 dp
                         foreach (Match m in rx.Matches(line))
-                            if (int.Parse(m.Groups[1].Value) < 42) found.Add(rel + ":" + (i + 1) + " " + trimmed);
+                            if (int.Parse(m.Groups[1].Value) < min) found.Add(rel + ":" + (i + 1) + " " + trimmed);
+                    }
                 }
             }
-            Assert.IsEmpty(found, "letra bajo 14 dp (42 unidades): se parte en dos renglones o se acorta el texto, no se achica:\n" + string.Join("\n", found));
+            Assert.IsEmpty(found, "letra bajo 16 dp (48 unidades): se parte en dos renglones o se acorta el texto, no se achica:\n" + string.Join("\n", found));
         }
 
         // ------------------------------------------------------------------ puntos de avance

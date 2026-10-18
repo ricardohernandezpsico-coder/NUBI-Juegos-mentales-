@@ -133,7 +133,7 @@ namespace NeuroVida.Games.Radar.Tests
             Assert.AreEqual(74f, p.CellH, 1e-2f);
             Assert.AreEqual(8f, p.CellGap, 1e-2f);
             Assert.AreEqual(172f, p.GoW, 1e-2f);
-            Assert.AreEqual(44f, p.GoH, 1e-2f);
+            Assert.AreEqual(48f, p.GoH, 1e-2f);
             var (x0, y0) = p.CellCenter(0);
             var (x2, y2) = p.CellCenter(2);
             var (x3, y3) = p.CellCenter(3);

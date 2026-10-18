@@ -232,7 +232,7 @@ namespace NeuroVida.Games.Intrusa.Tests
         {
             var low = IntrusaLayout.Plaque(new Vec2(180f, 330f), 80f);
             Assert.AreEqual(344f, low.Y, 1e-3f);
-            Assert.AreEqual(102f, low.W, 1e-3f);
+            Assert.AreEqual(80f + IntrusaLayout.PlaquePad, low.W, 1e-3f);            // el texto más el relleno (16 desde la Tarea 128: la letra pasó a 18 dp)
             var up = IntrusaLayout.Plaque(new Vec2(180f, 200f), 80f);
             Assert.AreEqual(200f - 14f - 30f, up.Y, 1e-3f);
             // pegada al borde: se corre hacia adentro

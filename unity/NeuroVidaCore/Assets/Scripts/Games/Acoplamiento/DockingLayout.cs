@@ -31,8 +31,8 @@ namespace NeuroVida.Games.Acoplamiento
         public const float Width = 360f;
         /// <summary>Lo que ocupa el marcador común de arriba (190 unidades de 1080 → 63,3 dp).</summary>
         public const float HudBottom = 190f / 3f;
-        /// <summary>Lo que se reserva ABAJO en la ronda guiada (dp) para Nubi y su globo; «Saltar tutorial» ya no va ahí sino en la fila fija de arriba (Tarea 127), así que bajó de 96 a 72.</summary>
-        public const float TutorialControls = 72f;
+        /// <summary>Lo que se reserva ABAJO en la ronda guiada (dp) para Nubi y su globo; «Saltar tutorial» ya no va ahí sino en la fila fija de arriba (Tarea 127), así que bajó de 96 a 72 y, en la Tarea 128, a 60: con la fila fija de arriba la escala bajaba y los botones de la práctica medían 46 dp en 16:9; con 60 miden 48 o más (el globo de Nubi se acomoda donde no tapa).</summary>
+        public const float TutorialControls = 60f;
         public const float StripTop = 118f, StripBottom = 150f, StripCenter = 134f;
         public const float ReferenceHeight = 780f;
         /// <summary>El tamaño de un bloque de la pieza, en dp (el módulo y el hueco, a la misma escala): 38 en la referencia (hoy: 26; 31 en 16:9).</summary>

@@ -798,7 +798,7 @@ namespace NeuroVida.Games.Freno
             _prompt = MakeText(_play, "Prompt", 66, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
             NeuroStyle.ClayText(_prompt, 3.5f, 5f);
             _prompt.rectTransform.anchorMin = _prompt.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            BestFit(_prompt, 42);
+            BestFit(_prompt, 48);
 
             _lanesRoot = Layer(_play, "Lanes");
             for (int i = 0; i < MaxLanes; i++) _lanes.Add(BuildLane(i));
@@ -872,15 +872,15 @@ namespace NeuroVida.Games.Freno
             go.transform.SetParent(_play, false);
             _stopRect = go.AddComponent<RectTransform>();
             _stopRect.anchorMin = _stopRect.anchorMax = new Vector2(0.5f, 0.5f);
-            _stopRect.sizeDelta = new Vector2(420f, 420f);
+            _stopRect.sizeDelta = new Vector2(504f, 504f);
             _stopImage = go.AddComponent<Image>();
             _stopImage.sprite = BrakeSprites.StopSign();
             _stopImage.raycastTarget = false;
-            _stopText = MakeText(_stopRect, "Label", 120, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
+            _stopText = MakeText(_stopRect, "Label", 144, TextAnchor.MiddleCenter, Color.white, 0f, 0f);
             NeuroStyle.ClayText(_stopText, 5f, 7f);
             Stretch(_stopText.rectTransform);
             // la cara de la señal de plasticina queda ~14 u más arriba que el centro de su lienzo (el canto de 0,3 se ve de lado): el texto sube con ella
-            _stopText.rectTransform.offsetMin = new Vector2(0f, BrakeSprites.Plastic ? 40f : 14f);
+            _stopText.rectTransform.offsetMin = new Vector2(0f, BrakeSprites.Plastic ? 48f : 17f);
             _stopText.text = "ALTO";
             go.SetActive(false);
         }
@@ -897,7 +897,7 @@ namespace NeuroVida.Games.Freno
             root.anchoredPosition = new Vector2(0f, -(GameHud.Height + 36f));
             _gaugeRoot = root;
 
-            var label = MakeText(root, "Label", 42, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
+            var label = MakeText(root, "Label", 48, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.9f), 0f, 0f);
             label.text = "Tu freno";
             var lr = label.rectTransform;
             lr.anchorMin = new Vector2(0f, 1f);
@@ -906,7 +906,7 @@ namespace NeuroVida.Games.Freno
             lr.sizeDelta = new Vector2(0f, 58f);
             lr.anchoredPosition = Vector2.zero;
 
-            _gaugeValue = MakeText(root, "Value", 42, TextAnchor.MiddleRight, NeuroStyle.Sky, 0f, 0f);
+            _gaugeValue = MakeText(root, "Value", 48, TextAnchor.MiddleRight, NeuroStyle.Sky, 0f, 0f);
             NeuroStyle.ClayText(_gaugeValue, 2.5f, 3f);
             var vr = _gaugeValue.rectTransform;
             vr.anchorMin = new Vector2(0.6f, 1f);
@@ -1049,7 +1049,7 @@ namespace NeuroVida.Games.Freno
             // el letrero («¡FRENO PERFECTO!», «Lanza el cohete…») va DEBAJO del aro que se abre alrededor de la señal ALTO (radio 260 sobre la señal, que está en bottom+1180): su borde de arriba queda en bottom+905 < 920
             _prompt.rectTransform.anchoredPosition = new Vector2(0f, bottom + 850f);
             _stopRect.anchoredPosition = new Vector2(0f, bottom + 1180f);
-            _stopRect.sizeDelta = new Vector2(400f, 400f);
+            _stopRect.sizeDelta = new Vector2(480f, 480f);                  // 160 dp (Tarea 128: eran 400 unidades, ~133 dp)
         }
 
         /// <summary>Muestra <paramref name="n"/> carriles repartidos a lo ancho (plataforma, cohete, baliza, botón).</summary>

@@ -490,6 +490,7 @@ namespace NeuroVida.Bridge.EditorTools
             _streakNow.Clear();
             _streakPrev.Clear();
             _streakSeen.Clear();
+            _touchSeen.Clear(); _touchBadSince.Clear();
             _howToStarted = _howToDone = false;
             _staleDone = false;
             NeuroVida.Games.Shared.NubiCoach.EditorProbe = _current.Name.StartsWith("Tutorial");        // toque «de verdad» en el hueco de cada paso de Tocar (Tarea 58)
@@ -836,6 +837,76 @@ namespace NeuroVida.Bridge.EditorTools
             ScanHudCover();
             ScanToastCover();
             ScanStreakChip();
+            ScanTouchTargets();
+        }
+
+        /// <summary>Lo menos que mide un botón que se toca (dp, el lado más corto): 48 (Tarea 128; es lo primero que ve una persona de 60+). También en la práctica del tutorial.</summary>
+        private const float MinTouchDp = 48f;
+        private static readonly HashSet<string> _touchSeen = new HashSet<string>();
+        /// <summary>Desde qué cuadro (<c>Time.frameCount</c>) un botón se ve por debajo de 48 dp, sin interrupción: el primer cuadro de una corrida (y el que sigue a un <c>SetActive</c>) todavía no tiene el acomodo hecho (los botones miden 100 u, el tamaño por defecto).</summary>
+        private static readonly Dictionary<string, int> _touchBadSince = new Dictionary<string, int>();
+        private static readonly HashSet<string> _touchBadNow = new HashSet<string>();
+        /// <summary>Cuántos cuadros seguidos tiene que verse chico un botón para que cuente: solo informa lo que el jugador llega a ver.</summary>
+        private const int TouchBadFrames = 5;
+
+        /// <summary>
+        /// Excepciones de la guardia «botones tocables ≥ 48 dp»: (juego, el nombre del botón empieza con, por qué). Hoy no hay ninguna; toda losa de tamaño Button que se toca (<c>PlasticTouch</c>) y mida menos de 48 dp por un lado hace FALLAR el smoke.
+        /// </summary>
+        private static readonly (string Id, string NameStart, string Reason)[] TouchGuardExceptions = new (string, string, string)[0];
+
+        /// <summary>
+        /// «Botones tocables ≥ 48 dp» (Tarea 128): mide, en el juego en marcha y en cada forma de pantalla (1080 × 1920, 2160 y 2400), el lado más corto de cada losa de botón (<c>PlasticTouch</c> de tamaño Button) que está a la vista. Un botón de menos de 48 dp durante
+        /// <see cref="TouchBadFrames"/> cuadros seguidos es un error, una sola vez por botón y forma de pantalla.
+        /// </summary>
+        private static void ScanTouchTargets()
+        {
+            if (_currentHeight <= 0 || Environment.GetEnvironmentVariable("NUBI_TOUCH_GUARD") == "0") return;
+            float minDp = float.TryParse(Environment.GetEnvironmentVariable("NUBI_TOUCH_MIN"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float envMin) ? envMin : MinTouchDp;      // (NUBI_TOUCH_MIN=60: para comprobar que la guardia dispara)
+            _touchBadNow.Clear();
+            foreach (var pt in UnityEngine.Object.FindObjectsOfType<NeuroVida.Games.Shared.PlasticTouch>())
+            {
+                if (pt == null || !pt.isActiveAndEnabled || pt.Rect == null || pt.Size != NeuroVida.Games.Shared.SlabSize.Button) continue;
+                var canvas = pt.Rect.GetComponentInParent<Canvas>();
+                if (canvas == null) continue;
+                var space = (RectTransform)canvas.rootCanvas.transform;
+                var r = NeuroVida.Games.Shared.ToastPlacement.LocalRectOf(space, pt.Rect);
+                float dpPerUnit = 360f / Mathf.Max(1f, space.rect.width);
+                float wDp = r.width * dpPerUnit, hDp = r.height * dpPerUnit, side = Mathf.Min(wDp, hDp);
+                if (side < 1f || side >= minDp - 0.3f) continue;                    // (sin caja o ya mide lo que debe)
+                bool exception = false;
+                foreach (var e in TouchGuardExceptions)
+                    if (e.Id == _current.Id && pt.name.StartsWith(e.NameStart)) { exception = true; break; }
+                if (exception) continue;
+                string key = _current.Name + "|" + _currentHeight + "|" + pt.name + "|" + Mathf.RoundToInt(side);
+                _touchBadNow.Add(key);
+                if (!_touchBadSince.TryGetValue(key, out int since)) { _touchBadSince[key] = Time.frameCount; continue; }
+                if (Time.frameCount - since < TouchBadFrames || !_touchSeen.Add(key)) continue;
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: botón tocable de menos de {minDp} dp: {_current.Name} ({_current.Id}), 1080x{_currentHeight}: [{pt.name}] mide {wDp:0.0} × {hDp:0.0} dp (sizeDelta {pt.Rect.sizeDelta}, escala {pt.Rect.lossyScale.x:0.00}, alfa {AlphaOf(pt.Rect):0.00}, ruta {PathOf(pt.transform)})");
+            }
+            var gone = new List<string>();
+            foreach (var k in _touchBadSince.Keys) if (!_touchBadNow.Contains(k)) gone.Add(k);
+            foreach (var k in gone) _touchBadSince.Remove(k);
+        }
+
+        private static float AlphaOf(Transform t)
+        {
+            float a = 1f;
+            for (var x = t; x != null; x = x.parent)
+            {
+                var g = x.GetComponent<CanvasGroup>();
+                if (g == null) continue;
+                a *= g.alpha;
+                if (g.ignoreParentGroups) break;
+            }
+            return a;
+        }
+
+        private static string PathOf(Transform t)
+        {
+            string p = t.name;
+            for (var x = t.parent; x != null && x.parent != null; x = x.parent) p = x.name + "/" + p;
+            return p;
         }
 
         private static readonly HashSet<string> _toastNow = new HashSet<string>();

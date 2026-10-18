@@ -40,7 +40,9 @@ namespace NeuroVida.Games.Parejas
     public static class ConstelacionLayout
     {
         // el cielo, en dp: ancho fijo (x 14..346 en la pantalla de 360) y un alto que se acomoda al teléfono
-        public const float SkyW = 332f, RefSkyH = 396f, MinScale = 0.88f, MaxSkyH = 560f;
+        public const float SkyW = 332f, RefSkyH = 396f, MinScale = 0.88f;
+        /// <summary>Lo más alto que se arma el cielo (dp; era 560 hasta la Tarea 128, el 18-oct-2026). En pantallas altas el cielo se extendía hasta 560 dp y las luces quedaban desde casi el borde de arriba; ahora no pasa de 460 y todo el aire que sobra queda ARRIBA, así que el cielo baja unos 16 % de la pantalla (las luces siguen del mismo tamaño y el tablero se ve completo a la vez).</summary>
+        public const float MaxSkyH = 460f;
         public const float MinR = 28f, MaxR = 38f, Air = 12f, TouchExtra = 10f;
         public const int Candidates = 40, PushIterations = 500;
 
@@ -213,8 +215,8 @@ namespace NeuroVida.Games.Parejas
             float free = Math.Max(0f, avail - used);
             m.Scale = scale;
             m.SkyH = skyH;
-            m.SkyTop = skyTop + free * 0.35f;
-            m.RowTop = m.SkyTop + used + RowGap + free * 0.25f;
+            m.SkyTop = skyTop + free * 0.85f;                          // el aire sobra ARRIBA: el cielo baja hacia el pulgar (Tarea 128)
+            m.RowTop = m.SkyTop + used + RowGap + free * 0.15f;
             m.Bottom = m.RowTop + RowH;
             return m;
         }

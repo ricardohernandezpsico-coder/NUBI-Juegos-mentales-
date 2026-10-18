@@ -223,7 +223,8 @@ namespace NeuroVida.Games.Radar
                     v.Bg.rectTransform.localScale = Vector3.one * (1f + v.Touch.Bounce);
                 }
                 else v.Bg.color = fill;
-                v.Group.alpha = live ? 1f : 0.45f;                  // apagado (antes de la respuesta y durante el viaje): sin brillo de arcilla, a menos de la mitad de luz
+                v.Group.alpha = live ? 1f : 0.45f;
+                v.LabelGroup.alpha = live ? 1f : 0.7f;              // el rótulo: crema, al 70 % mientras la casilla está apagada (Tarea 128)                  // apagado (antes de la respuesta y durante el viaje): sin brillo de arcilla, a menos de la mitad de luz
                 v.Ring.gameObject.SetActive(ring.HasValue);
                 if (ring.HasValue)
                 {

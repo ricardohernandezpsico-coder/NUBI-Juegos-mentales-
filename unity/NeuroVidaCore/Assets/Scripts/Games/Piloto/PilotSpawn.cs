@@ -28,7 +28,7 @@ namespace NeuroVida.Games.Piloto
     /// </summary>
     public static class PilotSpawn
     {
-        public const float SideMargin = 34f, InnerMargin = 70f, EdgeBand = 30f, RouteClear = 28f, SignalClear = 66f, NoticePad = 6f;
+        public const float SideMargin = 34f, InnerMargin = 70f, EdgeBand = 30f, RouteClear = 28f, SignalClear = 82f, NoticePad = 6f;
 
         /// <summary>
         /// Elige un punto (dp) o devuelve false si en 40 intentos no hubo uno válido (la señal se salta y se prueba de nuevo enseguida). <paramref name="routeAt"/>: centro y medio ancho de la ruta a la altura y (para no caer sobre sus balizas);

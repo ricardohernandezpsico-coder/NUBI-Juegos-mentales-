@@ -81,6 +81,8 @@ namespace NeuroVida.Games.Meteoros
         private GameHud _hud;
         private CountdownScreen _countdown;
         private float _playW, _playH, _spawnY, _atmosphereY, _bottom, _hudBottomY;
+        /// <summary>Dónde nace el centro de la roca, desde arriba, como fracción de la altura del juego (Tarea 128: 0,20).</summary>
+        public const float SpawnFraction = 0.20f;
         private RectTransform _toastKeepOut;
         private Vector2 _starTarget;
 
@@ -364,7 +366,10 @@ namespace NeuroVida.Games.Meteoros
             // en la práctica el aro de ayuda mide 2,7 veces la roca y se queda quieto arriba mientras Nubi explica: también tiene que caber DEBAJO del marcador (con una roca grande tapaba los rótulos; la guardia del HUD del smoke lo veía según la palabra que tocara)
             float reach = _guided ? Mathf.Max(m.Ry, Mathf.Max(m.Rx, m.Ry) * 1.35f) : m.Ry;
             float underRow = _guided ? GuidedTutorial.RowInsetU : 0f;                           // en la práctica, bajo la fila fija del tutorial («Práctica» y «Saltar»): si no, el toque a la roca caería en el botón
-            return Mathf.Min(_spawnY + m.Ry - underRow, _hudBottomY - underRow - 20f - reach);
+            float highest = Mathf.Min(_spawnY + m.Ry - underRow, _hudBottomY - underRow - 20f - reach);
+            if (_guided) return highest;
+            // Tarea 128 (18-oct): las rocas nacen al 20 % de la altura (antes, pegadas al marcador): lo que se toca queda más cerca del pulgar. Mismo tiempo de caída (la velocidad es distancia / FallSeconds: la roca cae más despacio por el camino más corto), misma regla y mismas cantidades.
+            return Mathf.Min(highest, _playH * 0.5f - SpawnFraction * _playH);
         }
 
         /// <summary>¿El recorrido de [m] (de [pos] con [vel]) pisaría la roca de otro meteoro en algún momento de la caída de
@@ -730,7 +735,7 @@ namespace NeuroVida.Games.Meteoros
         private IEnumerator MissedEffect(Meteor m)
         {
             // una palabra real se fue: se apaga y queda su nombre, pequeño
-            if (!m.Spec.Shower) StartCoroutine(FloatText(new Vector2(m.Pos.x, _atmosphereY + 90f), "se fue: " + m.Spec.Word, new Color(1f, 1f, 1f, 0.9f), 46, 1.6f, UiFonts.Word));
+            if (!m.Spec.Shower) StartCoroutine(FloatText(new Vector2(m.Pos.x, _atmosphereY + 90f), "se fue: " + m.Spec.Word, new Color(1f, 1f, 1f, 0.9f), 48, 1.2f, UiFonts.Word));          // 16 dp y 1,2 s (Tarea 128: eran 15 dp y 1,6 s)
             float t = 0f;
             const float seconds = 0.6f;
             while (t < seconds)
@@ -973,7 +978,7 @@ namespace NeuroVida.Games.Meteoros
             var r = t.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(t, 42);                                  // nunca bajo 14 dp: si no cabe en un renglón pasa a dos
+            BestFit(t, 48);                                  // nunca bajo 16 dp: si no cabe en un renglón pasa a dos
             return t;
         }
 

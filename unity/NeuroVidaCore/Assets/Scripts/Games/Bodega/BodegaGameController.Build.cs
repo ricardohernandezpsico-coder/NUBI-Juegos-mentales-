@@ -217,8 +217,8 @@ namespace NeuroVida.Games.Bodega
 
         private void BuildTray()
         {
-            _trayLabel = MakeLabel(_trayLayer, "Label", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
-            _recordText = MakeLabel(_trayLayer, "Record", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleRight);
+            _trayLabel = MakeLabel(_trayLayer, "Label", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
+            _recordText = MakeLabel(_trayLayer, "Record", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleRight);
             foreach (var t in new[] { _trayLabel, _recordText }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _trayLabel.text = BodegaContract.TrayLabel;
             for (int i = 0; i < _tray.Length; i++)
@@ -457,7 +457,7 @@ namespace NeuroVida.Games.Bodega
             var mask = v.Interior.gameObject.AddComponent<Mask>();
             mask.showMaskGraphic = true;
             v.Obj = BoardImage(v.Interior.transform, "Obj", null, 40f, 40f);
-            v.Empty = MakeSceneLabel(v.Interior.transform, "Empty", 14f, UiFonts.Regular, new Color(171f / 255f, 165f / 255f, 210f / 255f, 0.85f), TextAnchor.MiddleCenter);
+            v.Empty = MakeSceneLabel(v.Interior.transform, "Empty", 16f, UiFonts.Regular, new Color(171f / 255f, 165f / 255f, 210f / 255f, 0.85f), TextAnchor.MiddleCenter);
             v.Empty.text = BodegaContract.EmptyLabel;
             var lv = new GameObject("Leaves");
             lv.transform.SetParent(v.Interior.transform, false);
@@ -650,8 +650,8 @@ namespace NeuroVida.Games.Bodega
             LayoutCardTexts();
 
             // el carro de reparto
-            SetRect(_trayLabel.rectTransform, 14f + 70f, _lay.TrayLabelY, 150f, BodegaLayout.TrayLabelH);
-            SetRect(_recordText.rectTransform, BodegaLayout.W - 14f - 80f, _lay.TrayLabelY, 160f, BodegaLayout.TrayLabelH);
+            SetRect(_trayLabel.rectTransform, 14f + 80f, _lay.TrayLabelY, 160f, BodegaLayout.TrayLabelH);
+            SetRect(_recordText.rectTransform, BodegaLayout.W - 14f - 85f, _lay.TrayLabelY, 170f, BodegaLayout.TrayLabelH);
             LayoutTray();
 
             // el aviso de abajo

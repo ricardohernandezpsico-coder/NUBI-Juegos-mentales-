@@ -25,7 +25,7 @@ namespace NeuroVida.Games.Intrusa
     {
         public const float ScreenW = 360f;
         public const float BoxX = 40f, BoxY = 170f, BoxW = 280f, BoxH = 260f;
-        public const float PlaquePad = 22f, PlaqueH = 30f, PlaqueGap = 14f;
+        public const float PlaquePad = 16f, PlaqueH = 30f, PlaqueGap = 14f;           // relleno 16 (eran 22) desde que la letra de las placas pasó de 17 a 18 dp (Tarea 128): tools/intrusa/figuras.py usa los mismos números
         public const float HudBottom = 84f, TextTop = 508f, SideMargin = 8f, OverlapMargin = 3f;
         public const float MaxRotationDeg = 12f;
         public const float AboveFraction = 0.35f;

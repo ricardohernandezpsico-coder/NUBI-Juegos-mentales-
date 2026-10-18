@@ -830,7 +830,7 @@ namespace NeuroVida.Games.Stroop
             lr.anchorMin = new Vector2(0.06f, 0.06f);
             lr.anchorMax = new Vector2(0.94f, 0.38f);
             lr.offsetMin = lr.offsetMax = Vector2.zero;
-            BestFit(line, 42);
+            BestFit(line, 48);
             line.text = "Toca lo que DICE la palabra, no su color";
             go.SetActive(false);
         }

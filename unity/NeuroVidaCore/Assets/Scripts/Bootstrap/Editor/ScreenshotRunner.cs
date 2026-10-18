@@ -238,6 +238,7 @@ namespace NeuroVida.Bridge.EditorTools
                 else yield return PlayShots(id);
                 if (id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
                 if (TutorialGames.Contains(id)) yield return TutorialShots(id);
+                if (id == "acoplamiento" || id == "radar") yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
                 yield return Stopped();
 
                 int shots = _count;
@@ -407,8 +408,9 @@ namespace NeuroVida.Bridge.EditorTools
         }
 
         /// <summary>El tutorial guiado con sus pasos andando solos (el smoke): una toma del paso 1 y otra del paso 3, a 0,3 s de que el paso aparece (para que ya se vea asentado; en algunos juegos el paso 1 dura poco). Piloto suma el paso 6, el de «Cruzaste el arco: ¡tu misión cambió!» (Tarea 63), y el 7, el de tocar la señal de la misión nueva (Tarea 64); Rescate suma el paso 4, «Ahora toca ¡Rescatar!», con lo marcado y el botón encendido (Tarea 65).</summary>
-        private static IEnumerator TutorialShots(string id)
+        private static IEnumerator TutorialShots(string id, int height = 2400, string suffix = "")
         {
+            Height = height;                                                                    // 1920 = la pantalla más baja (16:9): con el tutorial es donde más aprieta la fila fija de arriba (Tarea 128)
             Configure(id, tutorial: true, reduceMotion: false);
             yield return EnterPlay();
             bool shot1 = false, shot3 = false, shotNew = id != "piloto", shotNew2 = id != "piloto", shotRescue = id != "radar", shotDock = id != "acoplamiento", shotMirror = id != "acoplamiento", shotLand = id != "aterrizaje";
@@ -425,14 +427,14 @@ namespace NeuroVida.Bridge.EditorTools
                 if (index != lastIndex) { lastIndex = index; activeSince = Now; }
                 if (Now - activeSince >= 0.3)
                 {
-                    if (index == 0 && !shot1) { Shot("tutorial-1"); shot1 = true; }
-                    else if (index == 2 && !shot3) { Shot("tutorial-3"); shot3 = true; }
-                    else if (index == 5 && id == "piloto" && !shotNew) { Shot("tutorial-nueva-mision"); shotNew = true; }
-                    else if (index == 6 && id == "piloto" && !shotNew2) { Shot("tutorial-toca-nueva-mision"); shotNew2 = true; }
-                    else if (index == 3 && id == "acoplamiento" && !shotDock) { Shot("tutorial-se-enciende"); shotDock = true; }                 // «¡Encaja! Se enciende una luz» con el módulo a ras del hueco y la fila de luces iluminada (Tarea 68; v3 en la 118)
-                    else if (index == 6 && id == "acoplamiento" && !shotMirror) { Shot("tutorial-espejo"); shotMirror = true; }             // «¿Y este?» con el espejo esperando
-                    else if (index == 1 && id == "aterrizaje" && !shotLand) { Shot("tutorial-suelta"); shotLand = true; }                  // «Suelta para aterrizar» con la nave bajando y el hueco de la regla iluminado
-                    else if (index == 3 && id == "radar" && !shotRescue) { Shot("tutorial-rescatar"); shotRescue = true; }          // «Ahora toca ¡Rescatar!» con las dos cápsulas marcadas y el botón encendido (Tarea 65)
+                    if (index == 0 && !shot1) { Shot("tutorial-1" + suffix); shot1 = true; }
+                    else if (index == 2 && !shot3) { Shot("tutorial-3" + suffix); shot3 = true; }
+                    else if (index == 5 && id == "piloto" && !shotNew) { Shot("tutorial-nueva-mision" + suffix); shotNew = true; }
+                    else if (index == 6 && id == "piloto" && !shotNew2) { Shot("tutorial-toca-nueva-mision" + suffix); shotNew2 = true; }
+                    else if (index == 3 && id == "acoplamiento" && !shotDock) { Shot("tutorial-se-enciende" + suffix); shotDock = true; }                 // «¡Encaja! Se enciende una luz» con el módulo a ras del hueco y la fila de luces iluminada (Tarea 68; v3 en la 118)
+                    else if (index == 6 && id == "acoplamiento" && !shotMirror) { Shot("tutorial-espejo" + suffix); shotMirror = true; }             // «¿Y este?» con el espejo esperando
+                    else if (index == 1 && id == "aterrizaje" && !shotLand) { Shot("tutorial-suelta" + suffix); shotLand = true; }                  // «Suelta para aterrizar» con la nave bajando y el hueco de la regla iluminado
+                    else if (index == 3 && id == "radar" && !shotRescue) { Shot("tutorial-rescatar" + suffix); shotRescue = true; }          // «Ahora toca ¡Rescatar!» con las dos cápsulas marcadas y el botón encendido (Tarea 65)
                 }
                 return shot3 && shotNew && shotNew2 && shotRescue && shotDock && shotMirror && shotLand;
             }, 90);
@@ -442,6 +444,7 @@ namespace NeuroVida.Bridge.EditorTools
             if (!shot1) GameNotes.Add("el tutorial no mostró el paso 1 a tiempo");
             if (!shot3) GameNotes.Add("el tutorial no llegó a un paso 3 (pasos que se cerraron: " + NeuroVida.Games.Shared.NubiCoach.AuditSteps.Count + ")");
             NeuroVida.Games.Shared.NubiCoach.AuditEnabled = false;
+            Height = 2400;
             yield return ExitPlay();
         }
 

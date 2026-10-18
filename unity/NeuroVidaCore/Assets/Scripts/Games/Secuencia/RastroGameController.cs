@@ -1161,7 +1161,7 @@ namespace NeuroVida.Games.Secuencia
             BestFit(_rule, 48);                       // se ajusta al ancho (ajuste de línea; si no cabe, achica hasta 16 sp): nunca se corta
             _sub = MakeText(_play, "Sub", 48, TextAnchor.MiddleCenter, Dim, 0f, 0f);
             _sub.font = UiFonts.Regular;
-            BestFit(_sub, 45);
+            BestFit(_sub, 48);
             foreach (var t in new[] { _rule, _sub })
             {
                 var r = t.rectTransform;
@@ -1307,8 +1307,8 @@ namespace NeuroVida.Games.Secuencia
             _playH = _play.rect.height;
             _s = _playW / LogicalW;
             _logicalH = _playH / _s;
-            // en pantallas altas el tablero baja un poco (el aire sobra abajo); en las bajitas, sube un poco
-            _yShift = (_logicalH - 640f) * 0.22f;
+            // en pantallas altas el tablero baja hacia el pulgar (Tarea 128: antes 0,22 del aire que sobra y el anillo quedaba alto con el tercio de abajo vacío; ahora 0,7); en las bajitas (640 dp) no se mueve
+            _yShift = (_logicalH - 640f) * 0.7f;
 
             float diameter = _senior ? RastroBoard.OrbDiameterSenior : RastroBoard.OrbDiameter;
             foreach (var o in _orbs)

@@ -61,7 +61,7 @@ namespace NeuroVida.Games.Radar
             public RectTransform Root;
             public Image Bg, Ring, Emblem, Badge;
             public Text Label;
-            public CanvasGroup Group;
+            public CanvasGroup Group, LabelGroup;       // LabelGroup: el rótulo ignora el 45 % de la casilla apagada (Tarea 128)
             public PlasticTouch Touch;          // plasticina: la losa presionada (con su huella) al tocarla; el juego lee Touch.Down al elegir la imagen
         }
 
@@ -322,9 +322,12 @@ namespace NeuroVida.Games.Radar
             v.Ring = MakeImage(v.Root, "Ring", null);
             v.Ring.gameObject.SetActive(false);
             v.Emblem = MakeImage(v.Root, "Emblem", null);
-            v.Label = MakeLabel(v.Root, "Label", 14f, UiFonts.Bold, new Color(241f / 255f, 238f / 255f, 1f), TextAnchor.MiddleCenter);
+            v.Label = MakeLabel(v.Root, "Label", 16f, UiFonts.Bold, new Color(1f, 0.965f, 0.878f), TextAnchor.MiddleCenter);          // crema (Tarea 128: antes casi blanco lavanda a 14 dp que, con la casilla apagada, quedaba gris sobre navy)
             v.Label.text = label;
             v.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            v.LabelGroup = v.Label.gameObject.AddComponent<CanvasGroup>();
+            v.LabelGroup.ignoreParentGroups = true;                                  // la casilla apagada baja a 45 % de luz, pero el rótulo se queda al 70 % (crema sobre navy, legible)
+            v.LabelGroup.blocksRaycasts = false;
             v.Badge = MakeImage(v.Root, "Badge", null);
             v.Badge.gameObject.SetActive(false);
             return v;
@@ -607,7 +610,7 @@ namespace NeuroVida.Games.Radar
 
         private void LayoutBoard()
         {
-            float c = _plan.CellW / 104f;                                                    // la escala del botón (1 con los 104 × 74 dp de la referencia)
+            float c = Mathf.Min(_plan.CellW / 104f, _plan.CellH / 74f);                      // la escala de lo de ADENTRO (1 con los 104 × 74 dp de la referencia); la casilla es más ancha que alta en las pantallas bajas para que quepa «Triángulo» a 16 dp
             for (int i = 0; i < _buttons.Length; i++)
             {
                 var (cx, cy) = _plan.CellCenter(i);
@@ -618,7 +621,7 @@ namespace NeuroVida.Games.Radar
                 SetChild(v.Ring.rectTransform, 0f, 0f, RadarSprites.ButtonSide * c, RadarSprites.ButtonSide * c);
                 float es = 18f * 2f * RadarSprites.CapsuleSideInSizes * c;                     // forma de 18 (unos 36 dp)
                 SetChild(v.Emblem.rectTransform, 0f, -11f * c, es, es);
-                SetChild(v.Label.rectTransform, 0f, 24f * c, _plan.CellW - 8f, 20f);
+                SetChild(v.Label.rectTransform, 0f, 24f * c, _plan.CellW - 4f, 22f);
                 SetChild(v.Badge.rectTransform, _plan.CellW * 0.5f - 12f * c, -_plan.CellH * 0.5f + 10f * c, 22f * c, 22f * c);
             }
             SetRect(_go.Root, _plan.GoCx, _plan.GoCy, _plan.GoW, _plan.GoH);

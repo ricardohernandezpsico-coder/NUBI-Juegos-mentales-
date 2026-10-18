@@ -1423,7 +1423,7 @@ namespace NeuroVida.Games.Disparate
             _sigFill.raycastTarget = false;
             _sigFill.color = NeuroStyle.Sky;
 
-            _sigLabel = MakeText(_play, "SignalLabel", 44, TextAnchor.MiddleRight, new Color(0.84f, 0.82f, 0.96f, 1f), 0f, 0f);
+            _sigLabel = MakeText(_play, "SignalLabel", 48, TextAnchor.MiddleRight, new Color(0.84f, 0.82f, 0.96f, 1f), 0f, 0f);
             _sigLabel.font = UiFonts.Regular;
             _sigLabel.text = "señal";
             var lr = _sigLabel.rectTransform;
@@ -1478,7 +1478,7 @@ namespace NeuroVida.Games.Disparate
             var r = t.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
-            BestFit(t, 42);                                  // nunca bajo 14 dp: si no cabe en un renglón pasa a dos
+            BestFit(t, 48);                                  // nunca bajo 16 dp: si no cabe en un renglón pasa a dos
             return t;
         }
 

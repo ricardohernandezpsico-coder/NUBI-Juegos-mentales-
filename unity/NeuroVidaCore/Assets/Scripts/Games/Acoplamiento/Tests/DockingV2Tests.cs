@@ -221,8 +221,8 @@ namespace NeuroVida.Games.Acoplamiento.Tests
                     Assert.LessOrEqual(p.ButtonsBox.X1, DockingPlan.Width, "los botones entran a lo ancho" + at);
                     Assert.GreaterOrEqual(p.ButtonsBox.X0, 0f, "los botones entran a lo ancho" + at);
                     Assert.GreaterOrEqual(p.K, 0.6f, "la escala no baja de 0,6" + at);
-                    if (!(guided && h < 720f)) Assert.GreaterOrEqual(p.ButtonH, 56f - 1e-3f, "los botones miden 56 dp o más (con el tutorial y la fila fija de arriba, bajo 720 la escala llega al piso de 0,6, como hoy)" + at);
-                    else Assert.GreaterOrEqual(p.ButtonH, 76f * 0.6f - 1e-3f, "y nunca menos que el piso de la escala" + at);
+                    if (!(guided && h < 720f)) Assert.GreaterOrEqual(p.ButtonH, 56f - 1e-3f, "los botones miden 56 dp o más (con el tutorial y la fila fija de arriba, bajo 720 la escala baja un poco)" + at);
+                    Assert.GreaterOrEqual(p.ButtonH, 48f - 1e-3f, "NINGÚN botón que se toca baja de 48 dp, ni en la práctica (Tarea 128)" + at);
                     Assert.GreaterOrEqual(p.Block, 22.8f - 1e-3f, "la pieza nunca es más chica que 22,8 dp (0,6 de 38)" + at);
                 }
         }

@@ -18,14 +18,14 @@ namespace NeuroVida.Games.Radar.Tests
             Assert.AreEqual(128f, p.GlassR, 1e-3f, "el radar de 128 dp");
             Assert.AreEqual(141f, p.BezelR, 1e-3f);
             Assert.AreEqual(1f, p.Scale, 1e-4f);
-            Assert.AreEqual(261.75f, p.RadarCy, 0.01f);
-            Assert.AreEqual(429.4f, p.ShipY, 0.01f);
-            Assert.AreEqual(442.7f, p.BoardY0, 0.01f);
-            Assert.AreEqual(607.8f, p.GoCy, 0.01f);
+            Assert.AreEqual(260.75f, p.RadarCy, 0.01f);                      // Tarea 128: «¡Rescatar!» mide 48 dp (eran 44) y el aire que sobra bajó de 11 a 7 dp
+            Assert.AreEqual(427.8f, p.ShipY, 0.01f);
+            Assert.AreEqual(439.9f, p.BoardY0, 0.01f);
+            Assert.AreEqual(606.6f, p.GoCy, 0.01f);
             Assert.AreEqual(62f, p.CellH, 1e-3f, "el tablero de 62 dp de alto");
             Assert.AreEqual(8f, p.CellGap, 1e-3f);
             Assert.AreEqual(172f, p.GoW, 1e-3f);
-            Assert.AreEqual(44f, p.GoH, 1e-3f);
+            Assert.AreEqual(48f, p.GoH, 1e-3f);
             Assert.IsFalse(p.ShowShipCount, "en 16:9 no hay lugar para «N de 10 a bordo»");
         }
 
@@ -41,7 +41,7 @@ namespace NeuroVida.Games.Radar.Tests
             Assert.AreEqual(494f, p.ShipY, 1e-2f, "nave en y 494");
             Assert.AreEqual(1f, p.ShipScale, 1e-4f);
             Assert.AreEqual(552f, p.BoardY0, 1e-2f, "tablero en y 552");
-            Assert.AreEqual(740f, p.GoCy, 1e-2f, "«¡Rescatar!» bajo el tablero (172 × 44)");
+            Assert.AreEqual(738f, p.GoCy, 1e-2f, "«¡Rescatar!» bajo el tablero (172 × 48; su borde de abajo sigue en 762)");
             Assert.IsTrue(p.ShowShipCount, "«N de 10 a bordo» a +42 de la nave");
             Assert.AreEqual(p.ShipY + 42f, p.ShipCountY, 1e-3f);
             Assert.LessOrEqual(p.GoBox.Y1, 780f, "todo entra en 780 dp");

@@ -289,7 +289,7 @@ namespace NeuroVida.Games.Parejas
                 _lastOpps = n;
                 LayoutDots();
                 _rowCount.text = ConstelacionContract.MemoryCount(_sky.Hits, n);
-                _rowCount.color = n > 0 ? TextColor : Muted;
+                _rowCount.color = n > 0 ? TextColor : Lavender;                 // «aún nada que recordar» en lavanda (el gris Muted daba 3,4:1; ahora más de 7:1)
             }
         }
 

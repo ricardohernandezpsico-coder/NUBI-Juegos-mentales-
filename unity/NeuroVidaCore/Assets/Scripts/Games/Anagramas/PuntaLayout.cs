@@ -31,8 +31,8 @@ namespace NeuroVida.Games.Anagramas
         public const float GuidedHoleSlack = 7f;
         /// <summary>«Saltar tutorial» mide 132 unidades del lienzo = 44 dp (GuidedTutorial).</summary>
         public const float SkipH = 44f;
-        /// <summary>Altura del rótulo «Ayudas» (con su letra a 14 dp): la mitad cae sobre LadderY.</summary>
-        public const float LadderHalfH = 8f;
+        /// <summary>Altura del rótulo «Ayudas» (con su letra a 16 dp desde la Tarea 128): la mitad cae sobre LadderY.</summary>
+        public const float LadderHalfH = 11f;
         /// <summary>Aire que la ronda guiada deja entre el banco y la escalera de ayudas: «Saltar tutorial» (44 dp) con ~9 dp de cada lado y lo que el hueco sobresale de la ficha.</summary>
         public const float GuidedReserve = 64f;
 

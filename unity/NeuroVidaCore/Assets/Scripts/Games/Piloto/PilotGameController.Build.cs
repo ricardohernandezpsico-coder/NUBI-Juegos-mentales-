@@ -487,7 +487,7 @@ namespace NeuroVida.Games.Piloto
                 SetChild(v.Ring.rectTransform, 0f, 0f, PilotContract.SignalRingSize, PilotContract.SignalRingSize);
                 float body = PilotContract.SignalSize * PilotSignalSprites.SideInDiameters;
                 SetChild(v.Body.rectTransform, 0f, 0f, body, body);
-                SetChild(v.Mark.rectTransform, 0f, 0f, 30f, 30f);
+                SetChild(v.Mark.rectTransform, 0f, 0f, 38f, 38f);
             }
         }
 

@@ -33,6 +33,10 @@ namespace NeuroVida.Games.Shared
         /// <summary>true mientras la imagen presionada tiene que verse (con el dedo encima, y <see cref="MinSeconds"/> más).</summary>
         public bool Down => _shown;
 
+        /// <summary>El tamaño de losa y la caja de lo que se toca: la guardia «botones tocables ≥ 48 dp» del smoke (Tarea 128) mide cada losa de tamaño <see cref="SlabSize.Button"/>.</summary>
+        public SlabSize Size => _size;
+        public RectTransform Rect => _rect;
+
         /// <summary>Cuánto baja lo que va encima (el texto) mientras está presionada, en unidades del lienzo; 0 si no.</summary>
         public float Drop => _shown ? PlasticSlab.PressDrop(_size, _tone) : 0f;
 

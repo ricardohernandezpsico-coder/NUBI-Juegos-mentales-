@@ -34,7 +34,7 @@ G_JSON = os.path.join(ROOT, "unity", "NeuroVidaCore", "Assets", "Resources", "Le
 # Caja de juego (dp) y pantalla lógica del boceto: 360 × 640. La figura se dibuja en BOX; las etiquetas pueden salir un poco de ella.
 W, H = 360, 640
 BOX = (40, 170, 280, 260)          # x, y, ancho, alto
-LABEL_SP = 17                      # tamaño de las etiquetas (sp) para verificar que no se encimen
+LABEL_SP = 18                      # tamaño de las etiquetas (sp) para verificar que no se encimen (18 desde la Tarea 128; eran 17)
 LABEL_H = 30
 HUD_BOTTOM = 84                    # nada de etiquetas por encima (HUD y cometa del tiempo)
 TEXT_TOP = 508                     # nada por debajo (aviso y nombre de la figura)
@@ -295,7 +295,7 @@ def ancho_texto(palabra, sp=LABEL_SP):
 
 
 def placa(x, y, ancho, arriba):
-    w = ancho + 22
+    w = ancho + 16                  # relleno 16 (eran 22 con letra de 17: a 18 el texto crece y la placa no puede crecer igual)
     py = y - 14 - LABEL_H if arriba else y + 14
     px = max(8, min(W - 8 - w, x - w / 2))
     return (px, py, w, LABEL_H)

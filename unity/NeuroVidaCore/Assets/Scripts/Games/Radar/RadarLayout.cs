@@ -31,8 +31,8 @@ namespace NeuroVida.Games.Radar
     {
         public const float Width = 360f;
         public const float HudBottom = 190f / 3f;
-        /// <summary>Lo que se reserva ABAJO en la ronda guiada (dp) para Nubi y su globo; «Saltar tutorial» ya no va ahí sino en la fila fija de arriba (Tarea 127), así que bajó de 96 a 72.</summary>
-        public const float TutorialControls = 72f;
+        /// <summary>Lo que se reserva ABAJO en la ronda guiada (dp) para Nubi y su globo; «Saltar tutorial» ya no va ahí sino en la fila fija de arriba (Tarea 127), así que bajó de 96 a 72 y, en la Tarea 128, a 60 (con la fila fija de arriba las cápsulas del tablero medían 46 dp en 16:9).</summary>
+        public const float TutorialControls = 60f;
         /// <summary>La franja de mensajes: de 78 a 114 dp desde arriba, a todo lo ancho menos 12 dp de cada lado.</summary>
         public const float StripTop = 78f, StripBottom = 114f, StripLineA = 90f, StripLineB = 108f;
         /// <summary>El alto del layout compacto (16:9, el de la Tarea 62) y el de la referencia (20:9, v4).</summary>
@@ -40,12 +40,16 @@ namespace NeuroVida.Games.Radar
 
         // la v4, medida con la referencia de 780 dp (diseno-rescate-v4.md §1)
         private const float TopFixed = StripBottom + 4f;
-        private const float V4GlassR = 146f, V4RadarCy = 290f, V4ShipY = 494f, V4CellH = 74f, V4Gap = 8f, V4BoardY0 = 552f, V4GoCy = 740f, V4GoH = 44f, V4Bottom = 762f;
+        private const float V4GlassR = 146f, V4RadarCy = 290f, V4ShipY = 494f, V4CellH = 74f, V4Gap = 8f, V4BoardY0 = 552f, V4GoH = 48f, V4Bottom = 762f;
+        /// <summary>Lo menos que miden los botones que se tocan (dp): las cápsulas del tablero y «¡Rescatar!» (Tarea 128). Este último no se achica con la escala: vale 48 en toda pantalla.</summary>
+        public const float MinTouchDp = 48f;
+        /// <summary>El ancho mínimo de una cápsula del tablero (dp): con el alto de 48 (16:9) el ancho de la proporción 104:74 daba 68 dp y «Triángulo» a 16 dp no cabía.</summary>
+        public const float MinCellW = 90f;
         /// <summary>El botón del tablero: 104 × 74 dp con la referencia (el ancho sale del alto).</summary>
         public const float CellAspect = 104f / 74f;
 
         // la Tarea 62 (16:9)
-        private const float GlassR1 = RadarContract.RadarRadius, BezelR1 = GlassR1 + 13f, ShipH1 = 32f, CellH1 = 62f, Gap1 = 8f, GoH1 = 44f;
+        private const float GlassR1 = RadarContract.RadarRadius, BezelR1 = GlassR1 + 13f, ShipH1 = 32f, CellH1 = 62f, Gap1 = 8f, GoH1 = 48f;
         private const float Fixed = StripBottom + 4f;                       // lo de arriba (marcador y franja): fijo
         private const float Content1 = 2f * BezelR1 + 9f + ShipH1 - 6f + 2f * CellH1 + Gap1 + 10f + GoH1;      // lo que mide todo lo demás con la escala 1 (503)
 
@@ -81,7 +85,7 @@ namespace NeuroVida.Games.Radar
             ShipY = Lerp(a.ShipY, b.ShipY, T);
             ShipScale = Lerp(a.ShipScale, b.ShipScale, T);
             CellH = Lerp(a.CellH, b.CellH, T);
-            CellW = CellH * CellAspect;
+            CellW = Math.Max(CellH * CellAspect, MinCellW);
             CellGap = Lerp(a.CellGap, b.CellGap, T);
             BoardY0 = Lerp(a.BoardY0, b.BoardY0, T);
             BoardX0 = Width * 0.5f - (3f * CellW + 2f * CellGap) * 0.5f;
@@ -98,8 +102,9 @@ namespace NeuroVida.Games.Radar
         {
             float top = Fixed + dy;
             float avail = height - (guided ? TutorialControls : 0f) - 8f - top;
-            float k = Math.Max(0.75f, Math.Min(1f, avail / Content1));
-            float extra = Math.Max(0f, avail - Content1 * k);
+            float kMin = MinTouchDp / CellH1;                                   // las cápsulas del tablero nunca bajan de 48 dp (62 × 0,774)
+            float k = Math.Max(kMin, Math.Min(1f, (avail - GoH1) / (Content1 - GoH1)));          // «¡Rescatar!» (48 dp) no se achica: la escala es de todo lo demás
+            float extra = Math.Max(0f, avail - ((Content1 - GoH1) * k + GoH1));
             float g1 = extra * 0.25f, g2 = extra * 0.15f, g3 = extra * 0.30f, g4 = extra * 0.10f;
             var p = new Parts
             {
@@ -109,7 +114,7 @@ namespace NeuroVida.Games.Radar
                 CellH = CellH1 * k,
                 CellGap = Gap1 * k,
                 GoW = 172f,
-                GoH = GoH1 * k,
+                GoH = GoH1,
             };
             p.RadarCy = top + g1 + p.BezelR;
             p.ShipY = p.RadarCy + p.BezelR + (9f + g2) * k + ShipH1 * k * 0.5f;
@@ -134,11 +139,11 @@ namespace NeuroVida.Games.Radar
                 CellH = V4CellH * s,
                 CellGap = V4Gap * s,
                 GoW = 172f * Math.Max(0.9f, s),
-                GoH = V4GoH * s,
+                GoH = V4GoH,
                 RadarCy = Down(V4RadarCy),
                 ShipY = Down(V4ShipY),
                 BoardY0 = Down(V4BoardY0),
-                GoCy = Down(V4GoCy),
+                GoCy = Down(V4Bottom) - V4GoH * 0.5f,                    // el borde de abajo de «¡Rescatar!» queda donde estaba; el botón mide 48 dp en toda pantalla
             };
             float extra = Math.Max(0f, eff - dy - TallHeight);
             p.RadarCy += extra * 0.15f;

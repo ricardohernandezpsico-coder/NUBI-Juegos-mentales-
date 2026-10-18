@@ -204,8 +204,8 @@ namespace NeuroVida.Games.Parejas
             rr.transform.SetParent(_rowLayer, false);
             _rowRect = rr.AddComponent<RectTransform>();
             _rowRect.anchorMin = _rowRect.anchorMax = _rowRect.pivot = new Vector2(0.5f, 0.5f);
-            _rowLabel = MakeLabel(_rowLayer, "Label", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
-            _rowCount = MakeLabel(_rowLayer, "Count", 15f, UiFonts.Bold, TextColor, TextAnchor.MiddleRight);
+            _rowLabel = MakeLabel(_rowLayer, "Label", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
+            _rowCount = MakeLabel(_rowLayer, "Count", 16f, UiFonts.Bold, TextColor, TextAnchor.MiddleRight);
             foreach (var t in new[] { _rowLabel, _rowCount }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _rowLabel.text = ConstelacionContract.MemoryLabel;
             for (int i = 0; i < _dots.Length; i++)
@@ -505,8 +505,8 @@ namespace NeuroVida.Games.Parejas
         {
             float top = _lay.RowTop;
             SetRect(_rowRect, ConstelacionLayout.W / 2f, top + ConstelacionLayout.RowH / 2f, ConstelacionLayout.W - 20f, ConstelacionLayout.RowH);
-            SetRect(_rowLabel.rectTransform, 16f + 60f, top + 10f, 120f, 22f);
-            SetRect(_rowCount.rectTransform, ConstelacionLayout.W - 16f - 80f, top + 10f, 160f, 22f);
+            SetRect(_rowLabel.rectTransform, 16f + 65f, top + 11f, 130f, 24f);
+            SetRect(_rowCount.rectTransform, ConstelacionLayout.W - 16f - 100f, top + 11f, 200f, 24f);
             LayoutDots();
         }
 

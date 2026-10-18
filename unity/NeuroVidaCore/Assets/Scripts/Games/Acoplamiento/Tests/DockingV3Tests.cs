@@ -322,9 +322,8 @@ namespace NeuroVida.Games.Acoplamiento.Tests
                 foreach (float h in new[] { 640f, 700f, 780f, 800f, 900f })
                     foreach (bool guided in new[] { false, true })
                     {
-                        if (guided && h < 720f) continue;                                // (con el tutorial y la fila fija de arriba, bajo 720 la escala llega a su piso de 0,6 o se acerca: los botones miden 46 a 55 dp; la práctica no cuenta)
                         var p = new DockingPlan(h, guided);
-                        Assert.GreaterOrEqual(p.ButtonH, 56f - 1e-3f, "botones de 56 dp o más (alto " + h + ", guiada " + guided + ")");
+                        Assert.GreaterOrEqual(p.ButtonH, (guided && h < 720f ? 48f : 56f) - 1e-3f, "botones de 56 dp o más, y de 48 en la práctica de una pantalla baja (alto " + h + ", guiada " + guided + ")");
                         Assert.GreaterOrEqual(Mathf.Max(14f, 22f * p.K), 14f, "el texto de los botones nunca baja de 14 dp");
                     }
                 // nada de la estación: ni la capa, ni la zona, ni los anillos, ni los casilleros

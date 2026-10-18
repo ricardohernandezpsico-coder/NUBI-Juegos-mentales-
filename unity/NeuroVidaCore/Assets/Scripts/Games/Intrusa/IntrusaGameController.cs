@@ -38,7 +38,7 @@ namespace NeuroVida.Games.Intrusa
 
         private const float UnitsPerDp = 3f;
         private const float MarginU = 60f;
-        private const int LabelSp = 17;
+        private const int LabelSp = 18;               // placas de palabra a 18 dp (Tarea 128; eran 17)
 
         private static readonly Color LineGold = new Color(255f / 255f, 217f / 255f, 138f / 255f, 1f);
         private static readonly Color SparkCore = new Color(1f, 0.973f, 0.902f, 1f);
@@ -1686,7 +1686,7 @@ namespace NeuroVida.Games.Intrusa
                 }
                 var label = MakeText(r, "Label", 51, TextAnchor.MiddleCenter, NeuroStyle.Ink, 0f, 0f);
                 label.font = UiFonts.Word;
-                BestFit(label, 42);
+                BestFit(label, 48);
                 var mark = MakeImage(r, "Mark", AnswerMarkSprite.Check());
                 mark.rectTransform.anchorMin = mark.rectTransform.anchorMax = new Vector2(1f, 0.5f);
                 mark.rectTransform.anchoredPosition = new Vector2(-54f, 0f);
@@ -1754,7 +1754,7 @@ namespace NeuroVida.Games.Intrusa
             _s = _playW / IntrusaLayout.ScreenW;
             _logicalH = _playH / _s;
             // en pantallas altas, la escena baja un poco (el aire sobra abajo); en las bajitas, sube un poco
-            _yShift = (_logicalH - 640f) * 0.22f;
+            _yShift = (_logicalH - 640f) * 0.7f;                         // el campo baja hacia el pulgar (Tarea 128; antes 0,22: palabras arriba y el tercio de abajo vacío)
             _widthCache.Clear();
 
             // textos de abajo: nombre, regla, «la nombraste tú» y el aviso de repaso, bajo la caja de la figura

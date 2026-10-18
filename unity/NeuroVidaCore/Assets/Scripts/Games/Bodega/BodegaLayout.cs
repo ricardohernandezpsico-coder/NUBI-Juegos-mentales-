@@ -19,7 +19,7 @@ namespace NeuroVida.Games.Bodega
         /// <summary>Radio del toque de cada escotilla en el boceto (un poco más que el dibujo).</summary>
         public const float TouchR = HatchR + 10f;
 
-        public const float CardH = 66f, TrayCircle = 38f, TrayGap = 8f, TrayLabelH = 20f, ToastH = 58f, MinScale = 0.8f, MaxScale = 1f, MinFree = 36f;
+        public const float CardH = 66f, TrayCircle = 38f, TrayGap = 8f, TrayLabelH = 22f, ToastH = 58f, MinScale = 0.8f, MaxScale = 1f, MinFree = 36f;
         private const float Gap = 4f, TrayBlockH = TrayLabelH + 6f + TrayCircle;
 
         public struct Metrics
@@ -41,9 +41,10 @@ namespace NeuroVida.Games.Bodega
             float free = Math.Max(0f, height - fixedH - boardH);
             m.Scale = scale;
             m.CardTop = HudDp + 2f + topInset;
-            float boardTop = m.CardTop + CardH + Gap + free * 0.4f;
+            // Tarea 128 (18-oct): el aire que sobra va ARRIBA del anillo (que baja hacia el pulgar) y el carro de reparto queda JUSTO debajo de él (antes 0,3 del aire entre los dos); lo demás, bajo el carro, para el aviso
+            float boardTop = m.CardTop + CardH + Gap + free * 0.7f;
             m.BoardCenterY = boardTop + boardH / 2f;
-            float trayTop = boardTop + boardH + 6f + free * 0.3f;
+            float trayTop = boardTop + boardH + 6f;
             m.TrayLabelY = trayTop + TrayLabelH / 2f;
             m.TrayCenterY = trayTop + TrayLabelH + 6f + TrayCircle / 2f;
             m.ToastTop = trayTop + TrayBlockH + 6f + free * 0.3f;
