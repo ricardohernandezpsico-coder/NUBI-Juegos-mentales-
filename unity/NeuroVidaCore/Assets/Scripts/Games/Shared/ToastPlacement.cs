@@ -25,6 +25,9 @@ namespace NeuroVida.Games.Shared
 
         public const float MinStimulusUnits = 80f;
 
+        /// <summary>Piezas chicas que son información y no adorno: las barras del medidor de racha de «¿Verdad o disparate?» (una por cada acierto seguido). Se protegen aunque midan menos de <see cref="MinStimulusUnits"/>: ni un aviso ni el chip «×N seguidos» las tapan (Tarea 127).</summary>
+        private static readonly string[] MeasureNames = { "Meter" };
+
         /// <summary>
         /// Las cajas protegidas, en el espacio local de <paramref name="space"/> y con la «y» medida DESDE ARRIBA hacia abajo (como se coloca el aviso). <paramref name="skip"/>: objetos (y lo que cuelga de ellos) que no cuentan (el propio aviso).
         /// </summary>
@@ -80,7 +83,8 @@ namespace NeuroVida.Games.Shared
                         // el estímulo: una imagen con dibujo, ni chica ni de pantalla completa, sin ser adorno
                         var image = g as Image;
                         if (image == null || image.sprite == null || alpha < 0.45f) continue;
-                        if (w < MinStimulusUnits || h < MinStimulusUnits || w > 0.97f * screenW || h > 0.6f * screenH) continue;
+                        bool measure = System.Array.IndexOf(MeasureNames, g.name) >= 0;
+                        if (((w < MinStimulusUnits || h < MinStimulusUnits) && !measure) || w > 0.97f * screenW || h > 0.6f * screenH) continue;
                         if (IsAmbientName(g.name)) continue;
                     }
                 }

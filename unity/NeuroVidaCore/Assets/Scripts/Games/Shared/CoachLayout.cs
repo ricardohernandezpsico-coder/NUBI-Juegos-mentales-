@@ -247,5 +247,6 @@ namespace NeuroVida.Games.Shared
         public bool Clean;
         public Rect[] Controls = new Rect[0];     // «Saltar tutorial» y «Práctica: no cuenta» (los que estaban a la vista en este paso)
         public float ControlClash;     // área que los controles del tutorial («Saltar tutorial», el rótulo) pisan de lo iluminado o de los textos del juego
+        public string ClashDetail = "";     // qué pisan (el texto o la zona iluminada y su caja), para que el mensaje del smoke diga DÓNDE está el choque
     }
 }

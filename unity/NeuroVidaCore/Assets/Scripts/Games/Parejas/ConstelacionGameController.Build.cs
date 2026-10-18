@@ -476,7 +476,7 @@ namespace NeuroVida.Games.Parejas
             _s = _playW / ConstelacionLayout.W;
             _logicalH = _playH / _s;
             // en la ronda guiada «Práctica: no cuenta» y «Saltar tutorial» ocupan el borde de abajo: el cielo y la fila «De memoria» suben para no quedar debajo de ellos
-            _lay = ConstelacionLayout.Compute(_logicalH - (_guided ? TutorialControlsDp : 0f));
+            _lay = ConstelacionLayout.Compute(_logicalH, _guided ? TutorialRowDp : 0f);
             foreach (var kv in _fonts)
             {
                 int px = Mathf.RoundToInt(kv.Value * _s);
@@ -511,8 +511,8 @@ namespace NeuroVida.Games.Parejas
         }
 
         private const int DotsPerRow = 15;
-        /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>
-        private const float TutorialControlsDp = 96f;
+        /// <summary>Lo que ocupa, bajo el marcador, la fila fija del tutorial («Práctica (sin puntos)» y «Saltar tutorial»; dp).</summary>
+        private const float TutorialRowDp = GuidedTutorial.RowInsetDp;
 
         private void LayoutDots()
         {

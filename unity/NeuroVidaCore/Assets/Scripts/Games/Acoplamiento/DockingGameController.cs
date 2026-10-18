@@ -233,7 +233,7 @@ namespace NeuroVida.Games.Acoplamiento
 #endif
             _inputOn = true;
             SetFuelVisible(Endless);
-            _hint.gameObject.SetActive(_trials < DockingContract.HintModules);
+            _hint.gameObject.SetActive(false);                                         // la consigna vive en la fila del marcador (Tarea 127)
             while (_answer == NoAnswer && Now - _decideAt < _deadline)
             {
                 SetFuel(1f - (Now - _decideAt) / _deadline);

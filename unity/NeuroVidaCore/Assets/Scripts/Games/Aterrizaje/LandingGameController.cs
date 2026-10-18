@@ -216,7 +216,7 @@ namespace NeuroVida.Games.Aterrizaje
             _phase = Phase.Fall;
             _landerRoot.gameObject.SetActive(true);
             _landerGroup.alpha = 1f;
-            _hint.gameObject.SetActive(!_guided && _trials < LandingContract.HintTrials);
+            _hint.gameObject.SetActive(false);                                         // la consigna vive en la fila del marcador (Tarea 127)
             UpdateHud();
 #if UNITY_EDITOR
             _botT = 0f;

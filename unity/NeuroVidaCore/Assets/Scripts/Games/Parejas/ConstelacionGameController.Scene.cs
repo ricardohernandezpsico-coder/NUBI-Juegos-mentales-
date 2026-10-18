@@ -15,7 +15,7 @@ namespace NeuroVida.Games.Parejas
         private void BindBoard(ConstelacionSky sky)
         {
             ResetLinks();
-            _cardLayer.gameObject.SetActive(true);
+            _cardLayer.gameObject.SetActive(false);                                  // la tarjeta de arriba ya no se dibuja: su texto va en la fila de consigna del marcador (Tarea 127)
             _rowLayer.gameObject.SetActive(true);
             _boardRoot.gameObject.SetActive(true);
             _fxLayer.gameObject.SetActive(true);
@@ -246,7 +246,7 @@ namespace NeuroVida.Games.Parejas
 
         private void AnimateCard(float now)
         {
-            if (!_cardLayer.gameObject.activeSelf || _sky == null) return;
+            if (!_rowLayer.gameObject.activeSelf || _sky == null) return;
             string title, sub;
             Color tc, sc = Lavender, rim = new Color(142f / 255f, 131f / 255f, 216f / 255f, 0.35f);
             if (_phase == Phase.BoardEnd || _phase == Phase.Leaving)
@@ -268,11 +268,16 @@ namespace NeuroVida.Games.Parejas
                 tc = TextColor;
                 sub = ConstelacionContract.CardSub(_sky.Stage, _sky.PairsLeft, _sky.TriosLeft);
             }
-            _cardRim.color = rim;
-            _cardT.color = tc;
-            _cardS.color = sc;
-            if (title != _lastCardTitle) { _lastCardTitle = title; _cardT.text = title; }
-            if (sub != _lastCardSub) { _lastCardSub = sub; _cardS.text = sub; }
+            // la fila de consigna del marcador: el título (con el color del estado si no es el de siempre) y, a la derecha, lo corto de la línea de apoyo («Faltan 3 parejas»)
+            if (title != _lastCardTitle || sub != _lastCardSub)
+            {
+                _lastCardTitle = title;
+                _lastCardSub = sub;
+                string phase = ConstelacionContract.PhaseOf(sub);
+                string shown = tc == TextColor ? title : "<color=#" + ColorUtility.ToHtmlStringRGB(tc) + ">" + title + "</color>";
+                _hud.SetPhase(phase);
+                _hud.SetPromptFit(null, phase.Length == 0 && !string.IsNullOrEmpty(sub) ? shown + " · " + sub : shown, shown);
+            }
         }
 
         private void AnimateRow(float now)

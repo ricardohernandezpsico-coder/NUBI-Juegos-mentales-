@@ -24,6 +24,10 @@ namespace NeuroVida.Games.Shared
         private const float Dp = 3f;
         /// <summary>La fila fija de los controles de la práctica (Tarea 127, §1.7): SIEMPRE arriba, debajo del marcador, en los 17 juegos: «Práctica (sin puntos)» a la izquierda y «Saltar tutorial» a la derecha (es lo que menos se toca: no necesita el pulgar).</summary>
         public const float RowMarginU = 48f, BadgeW = 540f, BadgeH = 96f, SkipW = 420f, SkipH = 132f, RowGapU = 8f;
+        /// <summary>Durante la ronda guiada, lo que baja el contenido de un juego que arranca justo bajo el marcador (en dp lógicos de 360 de ancho) para no quedar bajo la fila fija: la fila llega a unos 113 dp y el marcador deja 66, así que 48 dp. Lo usan los juegos con layout propio (<c>topInset</c>).</summary>
+        public const float RowInsetDp = 48f, RowInsetU = RowInsetDp * Dp;
+        /// <summary>Donde termina la fila fija del tutorial (dp desde arriba): la fila parte 10 unidades bajo el marcador (<c>GameHud.Height + 10</c>, lo que pasan los 17 juegos), deja <see cref="RowGapU"/> y mide <see cref="SkipH"/>.</summary>
+        public const float RowBottomDp = (GameHud.Height + 10f + RowGapU + SkipH) / Dp;
 
         private readonly RectTransform _intro, _startRect, _skipIntroRect, _practiceRoot, _skipRect, _badge;
         private readonly CanvasGroup _introGroup;

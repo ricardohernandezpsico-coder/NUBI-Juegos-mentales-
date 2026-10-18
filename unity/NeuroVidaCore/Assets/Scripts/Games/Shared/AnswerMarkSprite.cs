@@ -14,7 +14,27 @@ namespace NeuroVida.Games.Shared
         private const float Aa = 0.035f;
         private const float Line = 0.1f;
         private const float Drop = 0.1f;
-        private static Sprite _check, _cross;
+        private static Sprite _check, _cross, _notice;
+
+        /// <summary>
+        /// El glifo de aviso (Tarea 127): una «!» de churro (un trazo grueso redondeado y su punto) en blanco, para teñirla (tinta sobre la losa de un aviso). Reemplaza al disco liso del punto de los avisos (<see cref="Toast"/>): un glifo del kit en vez de un círculo sin forma.
+        /// </summary>
+        public static Sprite Notice() => _notice != null ? _notice : _notice = ToSprite(RenderNotice(SizePx), SizePx, SizePx);
+
+        /// <summary>Píxeles del glifo de aviso (fila 0 = abajo): blanco con alfa, sin borde ni sombra (la losa que lo lleva ya tiene su volumen).</summary>
+        public static Color32[] RenderNotice(int size)
+        {
+            var pixels = new Color32[size * size];
+            for (int py = 0; py < size; py++)
+                for (int px = 0; px < size; px++)
+                {
+                    float x = ((px + 0.5f) / size * 2f - 1f) * Zoom;
+                    float y = ((py + 0.5f) / size * 2f - 1f) * Zoom;
+                    float d = Mathf.Min(Capsule(x, y, 0f, 0.5f, 0f, -0.1f, 0.18f), Circle(x, y, 0f, -0.52f, 0.21f));
+                    pixels[py * size + px] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Cover(d, Aa) * 255f));
+                }
+            return pixels;
+        }
 
         /// <summary>El visto: de plasticina (disco lima con el visto de churro tinta, el mismo lienzo) si existe el atlas «comun»; si no, el procedural.</summary>
         public static Sprite Check()

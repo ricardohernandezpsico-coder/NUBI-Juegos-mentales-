@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Anagramas.Tests
 {
@@ -527,7 +528,7 @@ namespace NeuroVida.Games.Anagramas.Tests
                 Assert.GreaterOrEqual(pool.Count, 20, "hay palabras de sobra para dos rondas distintas (mayores: " + senior + ")");
                 foreach (var w in pool)
                     foreach (float h in GuidedHeights)
-                        Assert.AreEqual(1, PuntaLayout.Compute(h, w.Tiles.Length + extra, 0f, PuntaLayout.GuidedReserve).Rows, w.Word + " con " + (w.Tiles.Length + extra) + " fichas a " + h + " dp");
+                        Assert.AreEqual(1, PuntaLayout.Compute(h, w.Tiles.Length + extra, 0f, PuntaLayout.GuidedReserve, GuidedTutorial.RowBottomDp + 2f).Rows, w.Word + " con " + (w.Tiles.Length + extra) + " fichas a " + h + " dp");
             }
             Assert.IsFalse(PuntaLayout.FitsGuidedBank("RELOJ", 2), "5 letras + 2 de relleno son 7 fichas: dos filas");
             Assert.IsTrue(PuntaLayout.FitsGuidedBank("CASA", 2));
@@ -536,22 +537,17 @@ namespace NeuroVida.Games.Anagramas.Tests
         }
 
         [Test]
-        public void GuidedSkip_StaysClearOfEveryBankHole_TheAyudasLabelAndTheButtons_AtEveryHeight()
+        public void GuidedLayout_KeepsEverythingInOrder_BelowTheFixedTutorialRow_AtEveryHeight()
         {
-            const float margin = 6f;
+            // «Saltar tutorial» ya no va abajo, entre el banco y «Ayudas»: desde la Tarea 127 está en la fila fija de arriba, así que solo queda comprobar que la tarjeta baja de esa fila y que el resto sigue en orden
             foreach (float h in GuidedHeights)
             {
                 for (int count = 5; count <= PuntaLayout.GuidedMaxTiles; count++)
                 {
-                    var m = PuntaLayout.Compute(h, count, 0f, PuntaLayout.GuidedReserve);
+                    var m = PuntaLayout.Compute(h, count, 0f, PuntaLayout.GuidedReserve, GuidedTutorial.RowBottomDp + 2f);
                     string at = $"alto {h}, {count} fichas";
                     Assert.AreEqual(1, m.Rows, at);
-                    float center = h - PuntaLayout.GuidedSkipFromBottom(m);          // dp desde arriba
-                    float skipTop = center - PuntaLayout.SkipH / 2f, skipBottom = center + PuntaLayout.SkipH / 2f;
-                    for (int k = 0; k < count; k++)
-                        Assert.LessOrEqual(HoleBottom(m, PuntaLayout.BankHome(m, k, count).y) + margin, skipTop, at + ": el hueco de la ficha " + k + " pisa «Saltar tutorial»");
-                    Assert.LessOrEqual(skipBottom + margin, m.LadderY - PuntaLayout.LadderHalfH, at + ": «Saltar tutorial» tapa «Ayudas»");
-                    Assert.LessOrEqual(skipBottom + margin, m.ButtonsTop, at + ": «Saltar tutorial» toca los botones");
+                    Assert.GreaterOrEqual(m.CardTop, GuidedTutorial.RowBottomDp, at + ": la tarjeta queda bajo la fila fija del tutorial");
                     // el resto de la disposición sigue en orden con el aire reservado
                     Assert.Less(m.CardBottom, m.SayY, at);
                     Assert.Less(m.SayY, m.SlotY - 16f, at);

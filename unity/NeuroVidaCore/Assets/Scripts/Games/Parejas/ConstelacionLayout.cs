@@ -189,7 +189,8 @@ namespace NeuroVida.Games.Parejas
 
         // ------------------------------------------------------------------ la disposición en la pantalla
 
-        public const float HudDp = 66f, CardH = 60f, CardGap = 8f, RowH = 64f, RowGap = 8f, BottomMargin = 12f, W = 360f;
+        /// <summary>CardH = 0: la tarjeta de arriba («Busca las parejas / Faltan 3») ya no es un panel sino la fila de consigna del marcador común (Tarea 127); su alto lo aprovecha el cielo.</summary>
+        public const float HudDp = 66f, CardH = 0f, CardGap = 8f, RowH = 64f, RowGap = 8f, BottomMargin = 12f, W = 360f;
 
         public struct Metrics
         {
@@ -199,10 +200,10 @@ namespace NeuroVida.Games.Parejas
 
         /// <summary>La disposición para un área de juego de <paramref name="height"/> dp (incluye el marcador): el cielo ocupa lo que queda entre la tarjeta y la fila de abajo, sin pasar de 560; si la
         /// pantalla es baja el cielo entero se achica pareja (hasta 0,88: una luz de 28 dp de radio sigue siendo de 49 dp de toque) y si sobra aire se reparte.</summary>
-        public static Metrics Compute(float height)
+        public static Metrics Compute(float height, float topInset = 0f)
         {
             var m = new Metrics();
-            m.CardTop = HudDp + 2f;
+            m.CardTop = HudDp + 2f + topInset;                        // topInset: en la ronda guiada, la fila fija del tutorial («Práctica» y «Saltar») ocupa su alto bajo el marcador (Tarea 127)
             float skyTop = m.CardTop + CardH + CardGap;
             float fixedBelow = RowGap + RowH + BottomMargin;
             float avail = height - skyTop - fixedBelow;

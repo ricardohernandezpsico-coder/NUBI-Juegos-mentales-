@@ -488,10 +488,10 @@ namespace NeuroVida.Games.Acoplamiento
         private void LayoutLights()
         {
             bool art = Art("luz_oro") != null;
-            for (int i = 0; i < Lights; i++) SetRect(_lights[i].rectTransform, DockingPlan.LightX(i), DockingPlan.LightsCy, art ? DockingPlan.LightSprite : DockingPlan.LightSprite * 0.73f, art ? DockingPlan.LightSprite : DockingPlan.LightSprite * 0.73f);
-            SetRect(_medal.rectTransform, DockingPlan.Width * 0.5f + DockingPlan.MedalDx, DockingPlan.LightsCy, art ? DockingPlan.MedalSprite : DockingPlan.MedalSprite * 0.73f, art ? DockingPlan.MedalSprite : DockingPlan.MedalSprite * 0.73f);
-            SetRect(_medalText.rectTransform, DockingPlan.Width * 0.5f + DockingPlan.MedalDx, DockingPlan.LightsCy - 0.5f, 34f, 22f);
-            SetRect(_lightsZone, DockingPlan.Width * 0.5f + (DockingPlan.MedalDx + DockingPlan.MedalSprite * 0.5f - 4f * DockingPlan.LightsStep) * 0.5f, DockingPlan.LightsCy, 4f * DockingPlan.LightsStep + DockingPlan.MedalDx + DockingPlan.MedalSprite * 0.5f + 10f, 36f);                // lo que ilumina el tutorial al hablar de la fila (las 8 luces y la medalla)
+            for (int i = 0; i < Lights; i++) SetRect(_lights[i].rectTransform, DockingPlan.LightX(i), _plan.LightsY, art ? DockingPlan.LightSprite : DockingPlan.LightSprite * 0.73f, art ? DockingPlan.LightSprite : DockingPlan.LightSprite * 0.73f);
+            SetRect(_medal.rectTransform, DockingPlan.Width * 0.5f + DockingPlan.MedalDx, _plan.LightsY, art ? DockingPlan.MedalSprite : DockingPlan.MedalSprite * 0.73f, art ? DockingPlan.MedalSprite : DockingPlan.MedalSprite * 0.73f);
+            SetRect(_medalText.rectTransform, DockingPlan.Width * 0.5f + DockingPlan.MedalDx, _plan.LightsY - 0.5f, 34f, 22f);
+            SetRect(_lightsZone, DockingPlan.Width * 0.5f + (DockingPlan.MedalDx + DockingPlan.MedalSprite * 0.5f - 4f * DockingPlan.LightsStep) * 0.5f, _plan.LightsY, 4f * DockingPlan.LightsStep + DockingPlan.MedalDx + DockingPlan.MedalSprite * 0.5f + 10f, 36f);                // lo que ilumina el tutorial al hablar de la fila (las 8 luces y la medalla)
         }
 
         private void LayoutPort()

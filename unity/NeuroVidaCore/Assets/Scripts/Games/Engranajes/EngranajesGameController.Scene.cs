@@ -138,7 +138,9 @@ namespace NeuroVida.Games.Engranajes
             var consigna = EngranajesContract.Consigna(m.Stage);
             _consigna1.text = consigna[0];
             _consigna2.text = consigna[1];
-            _questionBar.gameObject.SetActive(true);
+            _hud.SetPhase(EngranajesContract.HintShort(m.Stage));                                  // la consigna vive en la fila del marcador (Tarea 127); la barra de antes ya no se dibuja
+            _hud.SetPromptFit(null, consigna[0], EngranajesContract.RuleShort);
+            _questionBar.gameObject.SetActive(false);
             _counterText.text = m.Stage.Keys == 1 ? "1 cambio" : "2 cambios";
             _counterRoot.gameObject.SetActive(true);
             _start.Root.gameObject.SetActive(true);
@@ -181,6 +183,8 @@ namespace NeuroVida.Games.Engranajes
             foreach (var p in _pulses) p.gameObject.SetActive(false);
             _motorArrow.gameObject.SetActive(false);
             _questionBar.gameObject.SetActive(false);
+            _hud.SetPrompt("");
+            _hud.SetPhase("");
             _counterRoot.gameObject.SetActive(false);
             _start.Root.gameObject.SetActive(false);
             for (int s = 0; s < 4; s++) if (_partGroups[s] != null) _partGroups[s].alpha = 0.45f;
@@ -1074,9 +1078,6 @@ namespace NeuroVida.Games.Engranajes
                     }
                     Check(tag + "flecha del motor", _motorArrow, false);
                     Check(tag + "MOTOR", _motorPill.Bg, true);
-                    Check(tag + "consigna", _questionBg, true);
-                    Check(tag + "consigna.línea 1", _consigna1, false);
-                    Check(tag + "consigna.línea 2", _consigna2, false);
                     if (_counterSlab != null) Check(tag + "cuenta de cambios (losa)", _counterSlab, true);                 // con plasticina el fondo es la losa del kit y el Image de siempre queda invisible a propósito
                     else Check(tag + "cuenta de cambios", _counterBg, true);
                     Check(tag + "cuenta de cambios.texto", _counterText, false);

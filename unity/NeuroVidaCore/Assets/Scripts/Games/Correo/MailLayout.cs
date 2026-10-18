@@ -36,11 +36,12 @@ namespace NeuroVida.Games.Correo
             public Rect2 Safe, Beacon;
         }
 
-        public static Metrics Compute(float height)
+        /// <param name="topInset">En la ronda guiada, lo que baja todo para no quedar bajo la fila fija del tutorial («Práctica» y «Saltar», Tarea 127): <c>GuidedTutorial.RowInsetDp</c>; 0 en la partida.</param>
+        public static Metrics Compute(float height, float topInset = 0f)
         {
             var m = new Metrics();
-            float s0 = HudDp + 4f;                              // debajo del marcador
-            float extra = Math.Max(0f, height - MinHeight);       // el aire que sobra se reparte entre el cielo (donde pasa la nave), la cinta y los botones
+            float s0 = HudDp + 4f + topInset;                   // debajo del marcador (y de la fila del tutorial, si la hay)
+            float extra = Math.Max(0f, height - topInset - MinHeight);       // el aire que sobra se reparte entre el cielo (donde pasa la nave), la cinta y los botones
             m.ClockCx = W - 44f;
             m.ClockCy = s0 + 30f;
             m.LabelY = m.ClockCy + ClockR + 14f;

@@ -140,10 +140,19 @@ namespace NeuroVida.Games.Radar
         /// <summary>Un mensaje en la franja de mensajes. <paramref name="pill"/> = un aviso (con su píldora oscura); sin ella, el texto suelto de la espera y de la pregunta.</summary>
         private void SetMessage(string a, string b, Color? colorA = null, bool pill = false)
         {
-            _msgA.text = a;
-            _msgA.color = colorA ?? TextColor;
-            _msgB.text = b ?? "";
-            _msgPill.gameObject.SetActive(pill && !string.IsNullOrEmpty(a));
+            if (pill)
+            {
+                // un aviso (la lluvia): sigue flotando con su píldora oscura
+                _msgA.text = a;
+                _msgA.color = colorA ?? TextColor;
+                _msgB.text = b ?? "";
+                _msgPill.gameObject.SetActive(!string.IsNullOrEmpty(a));
+                return;
+            }
+            // el texto suelto de la espera y de la pregunta («Atento al relámpago…», «¿Qué cápsulas viste? (eran 3)») es la consigna: vive en la fila del marcador (Tarea 127); la línea de apoyo ya no se dibuja
+            _msgA.text = _msgB.text = "";
+            _msgPill.gameObject.SetActive(false);
+            if (!string.IsNullOrEmpty(a)) _hud.SetPromptFit(null, a);
         }
 
         // ------------------------------------------------------------------ marcador
@@ -161,10 +170,8 @@ namespace NeuroVida.Games.Radar
         {
             _hudCount.text = _shownRescued.ToString();
             int streak = _run != null ? _run.Streak : 0;
-            bool hot = !_guided && streak >= 2;
-            _streakBg.gameObject.SetActive(hot);
-            _streakText.gameObject.SetActive(hot);
-            if (hot) _streakText.text = RadarContract.StreakChip(streak);
+            _hud.SetPhase(_guided ? "" : RadarContract.RescuedPhase(_shownRescued));           // «40 rescatadas» a la derecha de la consigna
+            _hud.SetStreak(_guided ? 0 : streak);                                              // el chip común «×N seguidos» (desde 2)
         }
 
         // ------------------------------------------------------------------ el tablero

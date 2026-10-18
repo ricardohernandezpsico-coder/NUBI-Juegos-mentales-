@@ -81,9 +81,11 @@ namespace NeuroVida.Games.Satelites
 
         private void SetPrompt(string a, string b, Color colorA)
         {
-            _promptA.text = a;
-            _promptA.color = colorA;
-            _promptB.text = b;
+            // la consigna vive en la fila del marcador (Tarea 127): el título a la izquierda y lo corto de la línea de apoyo a la derecha como fase; los dos textos flotantes de antes ya no se dibujan
+            _promptA.text = _promptB.text = "";
+            string phase = SatelliteContract.PhaseOf(b);
+            _hud.SetPhase(phase);
+            _hud.SetPromptFit(null, string.IsNullOrEmpty(a) ? "" : phase.Length > 0 || string.IsNullOrEmpty(b) ? a : a + " · " + b, a);
         }
 
         private void UpdateFooter()
@@ -101,8 +103,8 @@ namespace NeuroVida.Games.Satelites
                 _discFill[i].sprite = perfect ? DiscSprite.Get() : SatelliteSprites.HalfDisc();
                 _discFill[i].color = perfect ? Good : Gold;
             }
-            _lightsText.gameObject.SetActive(!_guided);
-            _lightsText.text = SatelliteContract.LightsFooter(_lightsShown);
+            _lightsText.gameObject.SetActive(false);
+            if (!_guided) _hud.SetInfo(SatelliteContract.HudChip(_roundHudText, _lightsShown));          // «Ronda 3 de 8 · 5 luces» en el chip de avance, no un pie chico y gris
         }
 
         // ------------------------------------------------------------------ los satélites

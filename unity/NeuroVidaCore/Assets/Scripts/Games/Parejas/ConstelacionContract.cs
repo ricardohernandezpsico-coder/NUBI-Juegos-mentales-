@@ -206,6 +206,16 @@ namespace NeuroVida.Games.Parejas
             : st.Size == 3 ? "Busca tres iguales"
             : "Busca las parejas";
 
+        /// <summary>La fase en la fila de consigna del marcador (Tarea 127): lo corto de la línea de apoyo, «Faltan 3 parejas»; lo que va antes de « · » se pierde (el título ya lo dice); si no es corto, vacío.</summary>
+        public static string PhaseOf(string sub)
+        {
+            if (string.IsNullOrEmpty(sub)) return "";
+            int cut = sub.LastIndexOf(" · ", System.StringComparison.Ordinal);
+            string s = cut >= 0 ? sub.Substring(cut + 3) : sub;
+            if (s.Length > 0) s = char.ToUpperInvariant(s[0]) + s.Substring(1);
+            return s.Length <= 26 ? s : "";
+        }
+
         public static string CardSub(ConStage st, int pairsLeft, int triosLeft)
         {
             string left = Missing(pairsLeft, triosLeft);

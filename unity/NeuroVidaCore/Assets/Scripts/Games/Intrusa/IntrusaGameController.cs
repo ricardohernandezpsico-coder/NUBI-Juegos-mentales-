@@ -199,7 +199,7 @@ namespace NeuroVida.Games.Intrusa
                 HideRound();
                 _safe.gameObject.SetActive(false);
             }
-            yield return StartCoroutine(_countdown.Play("La estrella intrusa", Assessment.Subtitle("Toca la que no pertenece"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("La estrella intrusa", Assessment.Subtitle(IntrusaContract.Rule), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -209,8 +209,7 @@ namespace NeuroVida.Games.Intrusa
 
             _endsAt = GameClock.Time + IntrusaContract.RetoSeconds;
             _phase = Phase.Playing;
-            _hint.gameObject.SetActive(true);
-            _hint.text = "Una estrella no pertenece.\nToca la intrusa";
+            _hud.SetPromptFit(null, IntrusaContract.RuleFull, IntrusaContract.Rule);      // la consigna vive en la fila del marcador (Tarea 127), no flotando sobre el campo
             _nextSpec = PrepareRound();
             _loopOn = true;
             yield return StartCoroutine(MainLoop());

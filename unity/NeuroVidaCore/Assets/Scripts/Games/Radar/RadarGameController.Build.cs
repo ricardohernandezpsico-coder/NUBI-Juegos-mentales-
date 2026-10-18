@@ -132,14 +132,14 @@ namespace NeuroVida.Games.Radar
             _safe = safeGo.AddComponent<RectTransform>();
             ApplySafeArea(_safe);
 
-            _hud = new GameHud(_safe, RadarContract.Title, MarginU, this, withStreak: false, rightReserve: 170f);
+            _hud = new GameHud(_safe, RadarContract.Title, MarginU, this);
 
             var playGo = new GameObject("Play");
             playGo.transform.SetParent(_safe, false);
             _play = playGo.AddComponent<RectTransform>();
             Stretch(_play);
 
-            _backLayer = Layer(_play, "Back");
+            _backLayer = Layer(_play, "Backdrop");                          // el cielo de fondo (planeta, estación, nebulosas): «Backdrop» es ambiente para los avisos y el chip «×N seguidos» (ToastPlacement)
             _radarLayer = Layer(_play, "Radar");
             _shipLayer = Layer(_play, "Ship");
             _fxLayer = Layer(_play, "Fx");
@@ -352,6 +352,11 @@ namespace NeuroVida.Games.Radar
             _streakBg = Rr(_hudLayer, "StreakBg", Gold, 13f, SlabSize.Chip, SlabTone.Sun);
             _streakText = MakeLabel(_hudLayer, "StreakText", 14f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _streakText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            // el contador de rescatadas y la racha viven ahora en el marcador común (la fase de la fila de consigna y el chip «×N seguidos»; Tarea 127): lo de antes ya no se dibuja
+            _hudIcon.gameObject.SetActive(false);
+            _hudCount.gameObject.SetActive(false);
+            _streakBg.gameObject.SetActive(false);
+            _streakText.gameObject.SetActive(false);
             _timerTrack = Rr(_hudLayer, "TimerTrack", new Color(Lavender.r, Lavender.g, Lavender.b, 0.25f), 2.5f);
             _timerFill = Rr(_hudLayer, "TimerFill", Lime, 2.5f);
             _timerFill.rectTransform.pivot = new Vector2(0f, 0.5f);
@@ -639,9 +644,9 @@ namespace NeuroVida.Games.Radar
             SetRect(_hudCount.rectTransform, RadarPlan.Width - 44f - 36f, 26f, 72f, 28f);
             SetRect(_streakBg.rectTransform, RadarPlan.Width - 16f - 56f, 53f, 112f, 26f);
             SetRect(_streakText.rectTransform, RadarPlan.Width - 16f - 56f, 53f, 112f, 22f);
-            SetRect(_msgA.rectTransform, RadarPlan.Width * 0.5f, RadarPlan.StripLineA, RadarPlan.Width - 28f, 26f);
-            SetRect(_msgB.rectTransform, RadarPlan.Width * 0.5f, RadarPlan.StripLineB, RadarPlan.Width - 28f, 20f);
-            SetRect(_msgPill.rectTransform, RadarPlan.Width * 0.5f, 94f, RadarPlan.Width - 24f, 34f);
+            SetRect(_msgA.rectTransform, RadarPlan.Width * 0.5f, RadarPlan.StripLineA + _plan.Dy, RadarPlan.Width - 28f, 26f);
+            SetRect(_msgB.rectTransform, RadarPlan.Width * 0.5f, RadarPlan.StripLineB + _plan.Dy, RadarPlan.Width - 28f, 20f);
+            SetRect(_msgPill.rectTransform, RadarPlan.Width * 0.5f, 94f + _plan.Dy, RadarPlan.Width - 24f, 34f);
             SetRect(_timerTrack.rectTransform, RadarPlan.Width * 0.5f, 71f, RadarPlan.Width - 24f, 5f);
             SetTimer(_timerFraction);
         }

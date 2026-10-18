@@ -413,9 +413,12 @@ namespace NeuroVida.Games.Satelites
             _hud.SetLevel(_dda.PresentedLevel);
             // la ronda que se juega (también durante su revelación: el número no salta hasta que empieza la siguiente)
             int round = Mathf.Max(1, _roundNo);
-            _hud.SetInfo(Endless ? SatelliteContract.RoundHudReto(round)
-                                 : SatelliteContract.RoundHud(Mathf.Min(round, SatelliteContract.PrecisionRounds), SatelliteContract.PrecisionRounds));
+            _roundHudText = Endless ? SatelliteContract.RoundHudReto(round)
+                                    : SatelliteContract.RoundHud(Mathf.Min(round, SatelliteContract.PrecisionRounds), SatelliteContract.PrecisionRounds);
+            _hud.SetInfo(SatelliteContract.HudChip(_roundHudText, _lightsShown));
         }
+
+        private string _roundHudText = "Ronda 1";
 
         private void UpdateClock()
         {

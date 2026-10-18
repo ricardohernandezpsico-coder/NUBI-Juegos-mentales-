@@ -371,6 +371,7 @@ namespace NeuroVida.Games.Aterrizaje
             if (_guided) return;
             _hud.SetLevel(_dda.PresentedLevel);
             _hud.SetInfo(LandingContract.RoundChip(_trials + 1, Endless ? 0 : _trialsTotal));
+            if (!_guided) _hud.SetPromptFit(null, LandingContract.Rule, LandingContract.RuleShort);
             RefreshHudExtras();
         }
 
@@ -378,6 +379,10 @@ namespace NeuroVida.Games.Aterrizaje
         private void RefreshHudExtras()
         {
             if (_hudCount == null) return;
+            bool extras = !_guided;                                                   // en la práctica no hay cúpulas ni puntos: ese lugar es de la fila fija del tutorial
+            _hudDome.gameObject.SetActive(extras);
+            _hudCount.gameObject.SetActive(extras);
+            for (int i = 0; i < ProgressDots; i++) _hudDot[i].gameObject.SetActive(extras);
             _hudCount.text = _shownDomes.ToString();
             if (_baked) _hudDome.sprite = LandingSprites.Dome(_shownDomes > 0);
             int toNext = LandingContract.ToNextDome(_shownHits);
@@ -393,7 +398,7 @@ namespace NeuroVida.Games.Aterrizaje
         {
             float k = (now - _domePopAt) / 0.45f;
             float s = Motion.Decorative && k >= 0f && k < 1f ? 1.1f + 0.3f * Mathf.Sin(k * Mathf.PI) : 1.1f;
-            SetRect(_hudDome.rectTransform, LandingPlan.Width - 30f, 20f, LandingSprites.DomeW * s, LandingSprites.DomeH * s);
+            SetRect(_hudDome.rectTransform, LandingPlan.Width - 30f, LandingPlan.DomeY, LandingSprites.DomeW * s, LandingSprites.DomeH * s);
         }
 
         /// <summary>La barra del Reto (llena = todo el tiempo; baja de sol a lima... a coral): fina, bajo el marcador.</summary>

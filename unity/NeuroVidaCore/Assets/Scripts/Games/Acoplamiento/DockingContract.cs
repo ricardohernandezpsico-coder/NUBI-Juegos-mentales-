@@ -278,6 +278,8 @@ namespace NeuroVida.Games.Acoplamiento
         public const string Title = "Acoplamiento", PortLabel = "Puerto", TimeLabel = "Tiempo";
         public const string FitsLabel = "Encaja", MirrorLabel = "Espejo";
         public const string Hint = "Gira la pieza en tu mente y compárala con el hueco";
+        /// <summary>La consigna del marcador (Tarea 127), siempre a la vista (antes el «Hint» en letra mínima bajo los botones y solo los primeros módulos), y su versión corta.</summary>
+        public const string Rule = "Gira la pieza en tu mente: ¿encaja?", RuleShort = "¿Encaja o es su espejo?";
         public const string RingComplete = "¡Anillo completo!";
         public const string CountdownSub = "¿Encaja en el puerto o es su espejo?";
         /// <summary>La pista de los primeros módulos.</summary>

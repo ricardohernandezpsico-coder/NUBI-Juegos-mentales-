@@ -31,8 +31,8 @@ namespace NeuroVida.Games.Parejas
             _sky.RestartAppearance(NowMs);
             yield return Motion.Hold(0.9f);                            // las luces terminan de aparecer
             bool ok = !t.Skipped;
-            var card = new[] { coach.Zone(() => coach.RectOf(_cardBg.rectTransform)) };
-            var row = new[] { coach.Zone(() => coach.RectOf(_rowRect)), coach.Zone(() => coach.RectOf(_cardBg.rectTransform)) };
+            var card = new[] { coach.Zone(() => coach.RectOf(_hud.PromptRect)) };
+            var row = new[] { coach.Zone(() => coach.RectOf(_rowRect)), coach.Zone(() => coach.RectOf(_hud.PromptRect)) };
             var a1 = _sky.Lights[0];
             var a2 = _sky.Lights.First(l => l.Group == a1.Group && l.Id != a1.Id);
             var b1 = _sky.Lights.First(l => l.Group != a1.Group);

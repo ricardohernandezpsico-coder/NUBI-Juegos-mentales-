@@ -449,6 +449,7 @@ namespace NeuroVida.Games.Engranajes
         {
             t.BeginPractice();
             _guided = true;
+            _stripLayer.gameObject.SetActive(false);                    // «Cohete n.º N» y las 10 luces: en la práctica ese lugar es de la fila fija del tutorial (Tarea 127)
             while (!_baked) yield return null;                         // el arte se hornea mientras Nubi se presenta
             var coach = t.Coach;
             // «Nubi entrenadora»: una máquina de la etapa 1 en la que la antena viene fallando, con tres focos. Los dos de «tocar» congelan el juego y el toque en el hueco es el de verdad:
@@ -492,6 +493,7 @@ namespace NeuroVida.Games.Engranajes
             _phase = Phase.Idle;
             ClearMachine();
             _guided = false;
+            _stripLayer.gameObject.SetActive(true);
             t.EndPractice();
         }
         // </guided>

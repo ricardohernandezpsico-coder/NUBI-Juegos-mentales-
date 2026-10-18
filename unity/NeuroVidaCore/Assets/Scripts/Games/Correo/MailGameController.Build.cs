@@ -811,7 +811,7 @@ namespace NeuroVida.Games.Correo
             _playH = _play.rect.height;
             _s = _playW / MailLayout.W;
             _logicalH = _playH / _s;
-            _lay = MailLayout.Compute(_logicalH - (_guided ? TutorialControlsDp : 0f));
+            _lay = MailLayout.Compute(_logicalH, _guided ? GuidedTutorial.RowInsetDp : 0f);
             foreach (var kv in _fonts)
             {
                 int px = Mathf.RoundToInt(kv.Value * _s);
@@ -941,6 +941,5 @@ namespace NeuroVida.Games.Correo
         private int _boxCount;
 
         /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>
-        private const float TutorialControlsDp = 96f;
     }
 }

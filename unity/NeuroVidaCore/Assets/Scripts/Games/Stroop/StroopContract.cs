@@ -79,6 +79,8 @@ namespace NeuroVida.Games.Stroop
     /// </summary>
     public static class StroopContract
     {
+        /// <summary>El subtítulo de la cuenta regresiva (Tarea 127: la consigna, no «Prepárate»).</summary>
+        public const string CountdownSub = "Responde según la orilla";
         public const string GameId = "stroop";
         public const int MaxLevel = 5;
         /// <summary>Modo Precisión (sin reloj): palabras por partida.</summary>
@@ -268,6 +270,9 @@ namespace NeuroVida.Games.Stroop
             trial.Rule == StroopRule.Ink ? "La tinta era " + LowerNames[trial.InkIndex] : "La palabra decía " + LowerNames[trial.WordIndex];
 
         /// <summary>«Responde: TINTA» / «Responde: PALABRA» (la cinta fija de arriba).</summary>
+        /// <summary>El color de la palabra de la regla en la fila de consigna del marcador («Responde: <b>TINTA</b>»): el de su orilla aclarado hacia el blanco, para leerse (≥ 4,5:1) sobre la losa «noche» (Tarea 127).</summary>
+        public static Color RuleLight(StroopRule rule) => Color.Lerp(rule == StroopRule.Ink ? InkShore : WordShore, Color.white, 0.55f);
+
         public static string Ribbon(StroopRule rule) => rule == StroopRule.Ink ? "Responde: TINTA" : "Responde: PALABRA";
 
         /// <summary>Qué se toca con cada orilla, en una frase.</summary>

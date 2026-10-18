@@ -32,6 +32,22 @@ namespace NeuroVida.Games.Correo.Tests
         }
 
         [Test]
+        public void InTheGuidedRound_EverythingStartsBelowTheFixedTutorialRow_AndStillFits()
+        {
+            // la fila fija del tutorial llega a unos 113 dp (Tarea 127): el reloj, la franja de avisos y la cinta no pueden quedar debajo de ella
+            float rowBottom = ((GameHud.Height + 10f) + GuidedTutorial.RowGapU + GuidedTutorial.SkipH) / 3f;
+            foreach (float h in Heights)
+            {
+                if (h < MailLayout.MinHeight + GuidedTutorial.RowInsetDp) continue;
+                var m = MailLayout.Compute(h, GuidedTutorial.RowInsetDp);
+                string at = " (alto " + h + ")";
+                Assert.GreaterOrEqual(m.ClockCy - MailLayout.ClockR, rowBottom, "el reloj queda bajo la fila del tutorial" + at);
+                Assert.GreaterOrEqual(m.Banner.Y, rowBottom, "y la franja de avisos" + at);
+                Assert.LessOrEqual(m.Bottom, h, "todo cabe en el alto" + at);
+            }
+        }
+
+        [Test]
         public void EveryTouchTargetIsAtLeastFiftySixDp_AndTheBoxesAreCenteredWithoutTouchingEachOther()
         {
             var m = MailLayout.Compute(640f);

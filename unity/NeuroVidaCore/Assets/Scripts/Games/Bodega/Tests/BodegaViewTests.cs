@@ -142,6 +142,22 @@ namespace NeuroVida.Games.Bodega.Tests
         }
 
         [Test]
+        public void InTheGuidedRound_TheCardStartsBelowTheFixedTutorialRow_AndStillFits()
+        {
+            // la fila fija del tutorial llega a unos 113 dp (Tarea 127): la tarjeta del pedido no puede quedar debajo de ella
+            float rowBottom = ((GameHud.Height + 10f) + GuidedTutorial.RowGapU + GuidedTutorial.SkipH) / 3f;
+            foreach (float h in Heights)
+            {
+                var m = BodegaLayout.Compute(h, GuidedTutorial.RowInsetDp);
+                string where = "alto " + h;
+                Assert.GreaterOrEqual(m.CardTop, rowBottom, where + ": la tarjeta queda bajo la fila del tutorial");
+                float boardTop = m.BoardCenterY - BodegaLayout.HullR * m.Scale;
+                Assert.GreaterOrEqual(boardTop, m.CardTop + BodegaLayout.CardH - 0.01f, where + ": la bodega va bajo la tarjeta");
+                Assert.LessOrEqual(m.Bottom, h + 0.01f, where + ": todo cabe en la pantalla");
+            }
+        }
+
+        [Test]
         public void ABoardPointAndItsScreenSpot_ConvertBackAndForth()
         {
             foreach (float h in Heights)

@@ -149,7 +149,7 @@ namespace NeuroVida.Games.Meteoros
                 tutorialPlayed = !_tutorial.Skipped;
             }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Lluvia de meteoros", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("Lluvia de meteoros", Assessment.Subtitle(MeteorContract.Rule), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -158,10 +158,10 @@ namespace NeuroVida.Games.Meteoros
             UpdateHud();
 
             _endsAt = GameClock.Time + RunSeconds;
-            _lastSpawn = GameClock.Time - 2f;
+            // el primer meteoro nace 0,6 s DESPUÉS de que aparece la consigna (antes pisaba el letrero); la consigna vive en la fila del marcador (Tarea 127)
+            _lastSpawn = GameClock.Time + 0.6f - MeteorContract.SpawnGap(false, Assessment.Active, 0);
             _phase = Phase.Playing;
-            _hint.gameObject.SetActive(!tutorialPlayed);       // con el tutorial hecho, la regla ya se vio
-            _hint.text = "Toca las palabras que existen\nLas inventadas, déjalas pasar";
+            _hud.SetPromptFit(null, MeteorContract.RuleFull, MeteorContract.Rule);
             _loopOn = true;
             yield return StartCoroutine(MainLoop());
         }
@@ -363,7 +363,8 @@ namespace NeuroVida.Games.Meteoros
         {
             // en la práctica el aro de ayuda mide 2,7 veces la roca y se queda quieto arriba mientras Nubi explica: también tiene que caber DEBAJO del marcador (con una roca grande tapaba los rótulos; la guardia del HUD del smoke lo veía según la palabra que tocara)
             float reach = _guided ? Mathf.Max(m.Ry, Mathf.Max(m.Rx, m.Ry) * 1.35f) : m.Ry;
-            return Mathf.Min(_spawnY + m.Ry, _hudBottomY - 20f - reach);
+            float underRow = _guided ? GuidedTutorial.RowInsetU : 0f;                           // en la práctica, bajo la fila fija del tutorial («Práctica» y «Saltar»): si no, el toque a la roca caería en el botón
+            return Mathf.Min(_spawnY + m.Ry - underRow, _hudBottomY - underRow - 20f - reach);
         }
 
         /// <summary>¿El recorrido de [m] (de [pos] con [vel]) pisaría la roca de otro meteoro en algún momento de la caída de

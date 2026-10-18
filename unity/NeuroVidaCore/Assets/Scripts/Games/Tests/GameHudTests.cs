@@ -120,6 +120,28 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual("Mira el rastro", hud.PromptText, "si la primera cabe, esa");
         }
 
+        private static float Luminance(Color c)
+        {
+            float R(float v) => v <= 0.03928f ? v / 12.92f : Mathf.Pow((v + 0.055f) / 1.055f, 2.4f);
+            return 0.2126f * R(c.r) + 0.7152f * R(c.g) + 0.0722f * R(c.b);
+        }
+
+        private static float Contrast(Color a, Color b)
+        {
+            float la = Luminance(a), lb = Luminance(b);
+            return (Mathf.Max(la, lb) + 0.05f) / (Mathf.Min(la, lb) + 0.05f);
+        }
+
+        [Test]
+        public void La_palabra_de_la_regla_de_Tinta_se_lee_sobre_la_fila_de_consigna()
+        {
+            // «Responde: TINTA / PALABRA»: la palabra con el color de su orilla (nunca solo color: lleva también la palabra y el ícono) y ≥ 4,5:1 sobre el cuerpo de la losa «noche» de la fila
+            foreach (var rule in new[] { Games.Stroop.StroopRule.Ink, Games.Stroop.StroopRule.Word })
+                Assert.GreaterOrEqual(Contrast(Games.Stroop.StroopContract.RuleLight(rule), GameHud.RowBody), 4.5f, rule + ": la palabra de la regla se lee sobre la fila");
+            Assert.GreaterOrEqual(Contrast(NeuroStyle.Cream, GameHud.RowBody), 4.5f, "el texto de la consigna (crema) también");
+            Assert.GreaterOrEqual(Contrast(NeuroStyle.Sun, GameHud.RowBody), 4.5f, "y la fase (sol)");
+        }
+
         // ------------------------------------------------------------------ la pausa
 
         [Test]

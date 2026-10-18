@@ -43,6 +43,8 @@ namespace NeuroVida.Games.Meteoros
     public static class MeteorContract
     {
         public const string GameId = "meteoros";
+        /// <summary>La consigna del marcador (Tarea 127), completa y corta (la que cabe en una línea).</summary>
+        public const string Rule = "Toca las palabras que existen", RuleFull = "Toca las que existen; las inventadas, no";
         public const int MaxLevel = 12;
 
         /// <summary>Reto: 2 minutos de lluvia.</summary>

@@ -26,7 +26,7 @@ namespace NeuroVida.Games.Piloto
         private const float MarginU = 60f;
         /// <summary>Antes del cambio de sector no nacen señales durante este tiempo (más que la exposición más larga): así la misión nueva no encuentra señales viejas.</summary>
         private const float SpawnPauseSeconds = 2.2f;
-        private const float NoticeSeconds = 2.2f;
+        private const float NoticeSeconds = 2.0f;                  // el aviso de MISIÓN NUEVA se va a los 2 s (Tarea 127)
 
         /// <summary>SOLO EN EL EDITOR, para las capturas de pantalla (<c>verificar-todo.sh --capturas Piloto</c>): con esta bandera el juego NO se juega solo y un guion (<see cref="EditorShotScript"/>) lo lleva por los
         /// momentos que se fotografían. En el teléfono es siempre false.</summary>

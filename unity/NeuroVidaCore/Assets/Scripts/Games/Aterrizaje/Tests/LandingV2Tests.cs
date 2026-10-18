@@ -144,9 +144,9 @@ namespace NeuroVida.Games.Aterrizaje.Tests
             Assert.AreEqual("1 diana lunar · racha mayor — · 1 cúpula", LandingContract.EndSummary(1, 0, 1));
             Assert.AreEqual("0 dianas lunares · racha mayor ×4 · 2 cúpulas", LandingContract.EndSummary(0, 4, 2));
             Assert.AreEqual("2 dianas lunares · racha mayor — · 0 cúpulas", LandingContract.EndSummary(2, 1, 0), "la racha de 1 no se nombra");
-            Assert.AreEqual("Aterrizaje 3 de 15", LandingContract.RoundChip(3, 15));
-            Assert.AreEqual("Aterrizaje 3", LandingContract.RoundChip(3, 0));
-            Assert.AreEqual("Aterrizaje 15 de 15", LandingContract.RoundChip(16, 15));
+            Assert.AreEqual("3 de 15", LandingContract.RoundChip(3, 15));
+            Assert.AreEqual("N.º 3", LandingContract.RoundChip(3, 0));
+            Assert.AreEqual("15 de 15", LandingContract.RoundChip(16, 15));
             Assert.AreEqual("5 seguidos", LandingContract.StreakChip(5));
         }
 

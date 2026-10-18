@@ -303,7 +303,13 @@ namespace NeuroVida.Games.Shared
         /// <summary>La consigna salta un poco y se enciende un momento (un sector nuevo, una misión nueva): sin «quitar animaciones», solo el color.</summary>
         public void PulsePrompt() => _runner.StartCoroutine(PromptPulse());
 
+        /// <summary>El color del cuerpo de la fila de consigna (la losa «noche» del kit): contra él se mide que lo que va en color se lea (≥ 4,5:1). Medido sobre una captura real.</summary>
+        public static readonly Color RowBody = new Color32(0x2F, 0x27, 0x5F, 0xFF);
+
         public string PromptText => _promptText.text;
+        /// <summary>El chip de «seguidos» (null en los juegos sin racha): su caja, para que la guardia del smoke mida que no tapa nada.</summary>
+        public RectTransform StreakRect => _streakChip;
+        public bool HasStreakChip => _streakChip != null;
         public string PhaseText => _phaseText.gameObject.activeSelf ? _phaseText.text : "";
         public bool StreakVisible => _streakChip != null && _streakChip.gameObject.activeSelf;
         public string StreakText => _streakText != null ? _streakText.text : "";
@@ -322,6 +328,7 @@ namespace NeuroVida.Games.Shared
             _streakText.text = "×" + streak + " seguidos";
             _streakChip.sizeDelta = new Vector2(Mathf.Ceil(_streakText.preferredWidth) + ChipPad * 2f, ChipH);
             if (!wasShown) _streakChip.SetAsLastSibling();                  // al aparecer se dibuja encima del juego (la zona de debajo del marcador, a la derecha)
+            if (!wasShown || grew) PlaceStreakChip();
             if (!animate || !grew) return;
             bool milestone = streak % 5 == 0;
             _runner.StartCoroutine(BounceRect(_streakChip, milestone ? 0.7f : 0.85f, milestone ? 0.42f : 0.3f));       // «seguidos» rebota al crecer (Tarea 126); con «quitar animaciones» solo cambia el número
@@ -331,6 +338,27 @@ namespace NeuroVida.Games.Shared
                 Vector2 c = LocalIn(fx, _streakChip) + new Vector2(-_streakChip.rect.width * 0.5f, -_streakChip.rect.height * 0.5f);
                 _runner.StartCoroutine(UiFx.SparkBurst(fx, c, NeuroStyle.Sun, 12, 180f, 30f, 0.55f));
             }
+        }
+
+        /// <summary>
+        /// El chip de «seguidos» no debe tapar nada del juego (Tarea 127): busca su lugar como los avisos (<see cref="ToastPlacement"/>): de abajo del marcador hacia abajo, el primer lugar a la derecha donde no pisa ningún texto, botón ni estímulo (menos de 800 unidades cuadradas
+        /// de choque); si no hay, el de menos choque. La guardia del smoke (<c>Seguidos*</c>) mide lo mismo en los juegos con racha.
+        /// </summary>
+        private void PlaceStreakChip()
+        {
+            var space = _streakChip.parent as RectTransform;
+            if (space == null) return;
+            float first = Height + 36f, best = float.MaxValue, bestY = first;
+            for (float y = first; y <= first + 700f; y += 44f)
+            {
+                _streakChip.anchoredPosition = new Vector2(-_margin, -y);
+                var mine = ToastPlacement.LocalRectOf(space, _streakChip);
+                float overlap = 0f;
+                foreach (var box in ToastPlacement.Collect(space, _streakChip)) overlap += ToastPlacement.Overlap(mine, box);
+                if (overlap < best) { best = overlap; bestY = y; }
+                if (overlap < 800f) break;
+            }
+            _streakChip.anchoredPosition = new Vector2(-_margin, -bestY);
         }
 
         // ------------------------------------------------------------------ animaciones

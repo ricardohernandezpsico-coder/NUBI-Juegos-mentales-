@@ -500,18 +500,19 @@ namespace NeuroVida.Games.Aterrizaje
 
         private void LayoutMission()
         {
-            SetRect(_missionSmall.rectTransform, LandingPlan.Width * 0.5f, LandingPlan.MissionLabelY, 240f, 22f);
-            SetRect(_missionNumber.rectTransform, LandingPlan.Width * 0.5f, LandingPlan.MissionNumberY, 240f, 66f);
+            float dy = _guided ? LandingPlan.GuidedMissionDy : 0f;                     // bajo la fila fija del tutorial
+            SetRect(_missionSmall.rectTransform, LandingPlan.Width * 0.5f, LandingPlan.MissionLabelY + dy, 240f, 22f);
+            SetRect(_missionNumber.rectTransform, LandingPlan.Width * 0.5f, LandingPlan.MissionNumberY + dy, 240f, 66f);
         }
 
         private void LayoutHud()
         {
-            // la cúpula de tu base, su número y los 5 puntos hacia la próxima (arriba a la derecha: nada de esto queda cerca de la regla)
-            SetRect(_hudDome.rectTransform, LandingPlan.Width - 30f, 20f, LandingSprites.DomeW * 1.1f, LandingSprites.DomeH * 1.1f);
-            SetRect(_hudCount.rectTransform, LandingPlan.Width - 48f - 30f, 22f, 60f, 26f);
-            for (int i = 0; i < ProgressDots; i++) SetRect(_hudDot[i].rectTransform, LandingPlan.Width - 70f + i * 11f, 46f, 7.2f, 7.2f);
-            SetRect(_streakBg.rectTransform, LandingPlan.Width - 16f - 56f, 91f, 112f, 26f);                 // bajo los puntos y la barra del Reto
-            SetRect(_streakText.rectTransform, LandingPlan.Width - 16f - 56f, 91.5f, 112f, 22f);
+            // la cúpula de tu base, su número y los 5 puntos hacia la próxima (a la derecha, bajo las dos filas del marcador: nada de esto queda cerca de la regla)
+            SetRect(_hudDome.rectTransform, LandingPlan.Width - 30f, LandingPlan.DomeY, LandingSprites.DomeW * 1.1f, LandingSprites.DomeH * 1.1f);
+            SetRect(_hudCount.rectTransform, LandingPlan.Width - 48f - 30f, LandingPlan.DomeY + 2f, 60f, 26f);
+            for (int i = 0; i < ProgressDots; i++) SetRect(_hudDot[i].rectTransform, LandingPlan.Width - 70f + i * 11f, LandingPlan.DotsY, 7.2f, 7.2f);
+            SetRect(_streakBg.rectTransform, LandingPlan.Width - 16f - 56f, LandingPlan.StreakY, 112f, 26f);                 // bajo los puntos
+            SetRect(_streakText.rectTransform, LandingPlan.Width - 16f - 56f, LandingPlan.StreakY + 0.5f, 112f, 22f);
             SetRect(_hint.rectTransform, LandingPlan.Width * 0.5f, _plan.HintY, 336f, 22f);
             SetRect(_timerTrack.rectTransform, LandingPlan.Width * 0.5f, 71f, LandingPlan.Width - 24f, 5f);
         }

@@ -419,7 +419,7 @@ namespace NeuroVida.Games.Acoplamiento
         /// <summary>Acomoda el aviso al texto (17 dp, 18 en «¡Anillo completo!»; si no cabe en el ancho, achica hasta 14 dp).</summary>
         private void LayoutNotice()
         {
-            float cx = DockingPlan.Width * 0.5f, cy = DockingPlan.StripCenter;
+            float cx = DockingPlan.Width * 0.5f, cy = _plan.StripCy;
             float fs = _noticeBig ? 18f : 17f;
             _noticeText.horizontalOverflow = HorizontalWrapMode.Overflow;
             do
@@ -485,6 +485,7 @@ namespace NeuroVida.Games.Acoplamiento
             if (_guided) return;
             _hud.SetLevel(_dda.PresentedLevel);
             _hud.SetInfo(DockingContract.RoundChip(_moduleNo, Endless ? 0 : _trialsTotal));
+            if (!_guided) _hud.SetPromptFit(null, DockingContract.Rule, DockingContract.RuleShort);
             UpdateHudExtras();
         }
 
@@ -536,7 +537,7 @@ namespace NeuroVida.Games.Acoplamiento
             {
                 int newest = inRing == 0 ? Lights - 1 : inRing - 1;
                 float k = since / LightHaloSeconds;
-                SetRect(_lightGlow.rectTransform, DockingPlan.LightX(newest), DockingPlan.LightsCy, 46f, 46f);
+                SetRect(_lightGlow.rectTransform, DockingPlan.LightX(newest), _plan.LightsY, 46f, 46f);
                 _lightGlow.color = new Color(1f, 0.82f, 0.34f, 0.7f * (1f - k));
             }
         }

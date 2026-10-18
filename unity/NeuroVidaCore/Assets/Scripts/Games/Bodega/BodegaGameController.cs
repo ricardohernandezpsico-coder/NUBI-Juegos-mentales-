@@ -594,6 +594,7 @@ namespace NeuroVida.Games.Bodega
         {
             t.BeginPractice();
             _guided = true;
+            Layout();                                                  // la fila fija del tutorial («Práctica» y «Saltar») ocupa su alto bajo el marcador: la tarjeta y la bodega bajan
             while (!_baked) yield return null;                         // el arte se hornea mientras Nubi se presenta
             var coach = t.Coach;
             // «Nubi entrenadora», en tres tiempos (Ricardo, 6-oct: «primero que diga qué hay que hacer con el fondo oscuro, luego se mueva y se ilumine, y recién ahí pida elegir»):
@@ -669,6 +670,7 @@ namespace NeuroVida.Games.Bodega
             _phase = Phase.Idle;
             ResetBoard();
             _guided = false;
+            Layout();
             t.EndPractice();
         }
         // </guided>

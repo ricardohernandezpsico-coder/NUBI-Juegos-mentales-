@@ -16,6 +16,8 @@ namespace NeuroVida.Games.Freno
     public static class BrakeContract
     {
         public const string GameId = "freno";
+        /// <summary>La consigna del marcador (Tarea 127): lo que hay que hacer, siempre a la vista; la regla del ¡ALTO! se dice antes del primer lanzamiento sin tutorial.</summary>
+        public const string GoRule = "Lanza el cohete que se enciende", StopRule = "Si aparece ¡ALTO!, no toques";
         public const int MaxLevel = 12;
 
         /// <summary>Reto: 2 minutos de lanzamientos.</summary>

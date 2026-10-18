@@ -51,6 +51,11 @@ namespace NeuroVida.Games.Aterrizaje
 
         // la misión
         public const float MissionLabelY = 96f, MissionNumberY = 138f, MissionNumberSize = 52f;
+        /// <summary>En la ronda guiada la misión baja esto (dp): la fila fija del tutorial («Práctica» y «Saltar», Tarea 127) llega a 113 dp y «Aterriza en» quedaba debajo.</summary>
+        public const float GuidedMissionDy = 30f;
+
+        // lo del marcador propio de Aterrizaje, DEBAJO de las dos filas del marcador común (Tarea 127: arriba a la derecha pisaba el chip de avance): la cúpula con su número, los 5 puntos hacia la próxima y «N seguidos»
+        public const float DomeY = 86f, DotsY = 106f, StreakY = 128f;
 
         // el alto de la bandera y de su etiqueta
         public const float FlagHeight = 80f, FlagLabelRise = 22f, FlagLabelHalfH = 14f, FlagLabelHalfW = 56f;

@@ -42,6 +42,8 @@ namespace NeuroVida.Games.Disparate
     public static class DisparateContract
     {
         public const string GameId = "disparate";
+        /// <summary>La consigna del marcador (Tarea 127). Antes «Responde rápido», que contradecía al tutorial («lo que cuenta es acertar»).</summary>
+        public const string Rule = "Decide si es verdad";
         public const int MaxLevel = 12;
 
         /// <summary>Reto: 2 minutos. Precisión (sin señal que se apaga): frases por partida.</summary>

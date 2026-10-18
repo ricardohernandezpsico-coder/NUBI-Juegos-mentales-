@@ -54,7 +54,7 @@ namespace NeuroVida.Games.Correo
         {
             ResetViews();
             _boxCount = day.Stage.Boxes;
-            _lay = MailLayout.Compute(_logicalH - (_guided ? TutorialControlsDp : 0f));
+            _lay = MailLayout.Compute(_logicalH, _guided ? GuidedTutorial.RowInsetDp : 0f);
             LayoutStage();
             ShowOnly(null);
         }
@@ -714,10 +714,11 @@ namespace NeuroVida.Games.Correo
         {
             if (_briefItems.Count == 0 && !_briefRoutineCard) return;
             float h = _logicalH, cx = MailLayout.W / 2f;
-            SetRect(_briefTag.rectTransform, cx, 60f, 240f, 22f);
-            SetRect(_briefTitle.rectTransform, cx, 92f, 320f, 40f);
+            float dy = _guided ? 66f : 0f;                                             // en la ronda guiada, bajo la fila fija del tutorial («Práctica» y «Saltar», hasta 113 dp)
+            SetRect(_briefTag.rectTransform, cx, 60f + dy, 240f, 22f);
+            SetRect(_briefTitle.rectTransform, cx, 92f + dy, 320f, 40f);
             int n = _briefItems.Count;
-            float rowsTop = 124f, bottom = h - 170f;
+            float rowsTop = 124f + dy, bottom = h - 170f;
             float items = n + (_briefRoutineCard ? 1f : 0f);
             float per = Mathf.Clamp((bottom - rowsTop) / Mathf.Max(1f, items), 56f, 88f);
             float bh = per - 12f;

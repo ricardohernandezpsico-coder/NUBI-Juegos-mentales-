@@ -449,7 +449,8 @@ namespace NeuroVida.Games.Piloto
 
         private void AnimateStrip()
         {
-            bool beginner = Gentle || _guided;
+            // las dos instrucciones del panel de abajo (guiar con un dedo, tocar solo tu misión con el otro: siempre JUNTAS) se dicen durante el primer sector; después queda UNA línea («‹ Desliza aquí ›»; Tarea 127)
+            bool beginner = _sector == 0 || _guided;
             _stripLabel.text = beginner ? PilotContract.StripLabelGentle : PilotContract.StripLabel;
             _stripHint.text = beginner ? PilotContract.StripHint : "";
             SetRect(_fingerRing.rectTransform, _steerX, FingerY, 40f, 40f);

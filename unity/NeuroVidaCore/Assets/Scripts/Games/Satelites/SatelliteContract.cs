@@ -149,6 +149,18 @@ namespace NeuroVida.Games.Satelites
         public static string ResultSub(bool perfect, int streak) =>
             perfect ? (streak >= 3 ? streak + " seguidos" : "Cada mensaje enciende una luz") : "El aro punteado marca el que faltó";
 
+        /// <summary>La fase en la fila de consigna del marcador (Tarea 127): lo corto de la línea de apoyo («Síguelos con la vista», «2 de 3 marcados»); si no es corto, vacío (la línea entera se prueba junto a la consigna).</summary>
+        public static string PhaseOf(string support)
+        {
+            if (string.IsNullOrEmpty(support)) return "";
+            int cut = support.IndexOf(" · ", System.StringComparison.Ordinal);
+            if (cut > 0 && cut <= 24) return support.Substring(0, cut);
+            return support.Length <= 24 ? support : "";
+        }
+
+        /// <summary>El chip de avance: la ronda y las luces encendidas («Ronda 3 de 8 · 5 luces»); antes «Luces encendidas: N» era un pie chico y gris.</summary>
+        public static string HudChip(string roundText, int lights) => roundText + " · " + (lights == 1 ? "1 luz" : lights + " luces");
+
         public static string RoundHud(int round, int total) => "Ronda " + round + " de " + total;
         public static string RoundHudReto(int round) => "Ronda " + round;
         public static string LightsFooter(int lights) => "Luces encendidas: " + lights;

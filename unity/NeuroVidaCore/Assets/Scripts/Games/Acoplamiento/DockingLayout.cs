@@ -31,7 +31,8 @@ namespace NeuroVida.Games.Acoplamiento
         public const float Width = 360f;
         /// <summary>Lo que ocupa el marcador común de arriba (190 unidades de 1080 → 63,3 dp).</summary>
         public const float HudBottom = 190f / 3f;
-        public const float TutorialControls = 96f;
+        /// <summary>Lo que se reserva ABAJO en la ronda guiada (dp) para Nubi y su globo; «Saltar tutorial» ya no va ahí sino en la fila fija de arriba (Tarea 127), así que bajó de 96 a 72.</summary>
+        public const float TutorialControls = 72f;
         public const float StripTop = 118f, StripBottom = 150f, StripCenter = 134f;
         public const float ReferenceHeight = 780f;
         /// <summary>El tamaño de un bloque de la pieza, en dp (el módulo y el hueco, a la misma escala): 38 en la referencia (hoy: 26; 31 en 16:9).</summary>
@@ -45,6 +46,8 @@ namespace NeuroVida.Games.Acoplamiento
         private const float NeededBelowStrip = 737f - StripBottom;
 
         public readonly float Height, EffectiveHeight, K, Extra;
+        /// <summary>En la ronda guiada, lo que baja TODO (la fila de luces, la franja y lo de abajo) para dejar la fila fija del tutorial bajo el marcador (<c>GuidedTutorial.RowInsetDp</c>); 0 en la partida.</summary>
+        public readonly float Dy;
         public readonly float Block;
         public readonly float ModuleCx, ModuleCy;
         public readonly float FuelCy, FuelW, FuelH;
@@ -55,15 +58,17 @@ namespace NeuroVida.Games.Acoplamiento
         public DockingPlan(float height, bool guided)
         {
             Height = height;
+            Dy = guided ? NeuroVida.Games.Shared.GuidedTutorial.RowInsetDp : 0f;
             float eff = height - (guided ? TutorialControls : 0f);
             EffectiveHeight = eff;
-            float avail = eff - StripBottom - 6f;
+            float stripBottom = StripBottom + Dy;
+            float avail = eff - stripBottom - 6f;
             K = Math.Max(0.6f, Math.Min(1f, avail / NeededBelowStrip));
-            Extra = Math.Max(0f, eff - ReferenceHeight);
+            Extra = Math.Max(0f, eff - Dy - ReferenceHeight);
             Block = ReferenceBlock * K;
             ModuleCx = PortCx = Width * 0.5f;
             float r = (float)Math.Sqrt(32.0) * 0.5f * Block;
-            ModuleCy = StripBottom + 8f * K + r + Extra * 0.20f;
+            ModuleCy = stripBottom + 8f * K + r + Extra * 0.20f;
             FuelCy = ModuleCy + r + 12f * K + Extra * 0.08f;
             FuelW = 200f * K;
             FuelH = 12f * K;
@@ -83,11 +88,15 @@ namespace NeuroVida.Games.Acoplamiento
         /// <summary>El centro del botón <paramref name="i"/> (0 = «Encaja», izquierda; 1 = «Espejo», derecha).</summary>
         public (float x, float y) ButtonCenter(int i) => (Width * 0.5f + (i == 0 ? -1f : 1f) * (ButtonGap + ButtonW) * 0.5f, ButtonCy);
 
+        /// <summary>El centro (y) de la fila de luces y de la franja de avisos de ESTA pantalla (con la bajada de la ronda guiada).</summary>
+        public float LightsY => LightsCy + Dy;
+        public float StripCy => StripCenter + Dy;
+
         /// <summary>La franja de avisos.</summary>
-        public DockBox StripBox => new DockBox(12f, StripTop, Width - 12f, StripBottom);
+        public DockBox StripBox => new DockBox(12f, StripTop + Dy, Width - 12f, StripBottom + Dy);
 
         /// <summary>La fila de luces de avance (con la medalla de los anillos a su derecha).</summary>
-        public DockBox LightsBox => new DockBox(Width * 0.5f - 4f * LightsStep, LightsCy - LightSprite * 0.5f, Width * 0.5f + MedalDx + MedalSprite * 0.5f, LightsCy + LightSprite * 0.5f);
+        public DockBox LightsBox => new DockBox(Width * 0.5f - 4f * LightsStep, LightsY - LightSprite * 0.5f, Width * 0.5f + MedalDx + MedalSprite * 0.5f, LightsY + LightSprite * 0.5f);
 
         /// <summary>El módulo cuando espera, con todos sus giros: el círculo que lo envuelve (una pieza cabe en 4 × 4 bloques).</summary>
         public DockBox ModuleBox

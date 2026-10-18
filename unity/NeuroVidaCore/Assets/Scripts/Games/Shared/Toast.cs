@@ -58,10 +58,10 @@ namespace NeuroVida.Games.Shared
             dotRect.anchorMin = new Vector2(0f, 0.5f);
             dotRect.anchorMax = new Vector2(0f, 0.5f);
             dotRect.pivot = new Vector2(0.5f, 0.5f);
-            dotRect.sizeDelta = new Vector2(30f * _u, 30f * _u);
+            dotRect.sizeDelta = new Vector2(34f * _u, 34f * _u);
             dotRect.anchoredPosition = new Vector2(44f * _u, 0f);
             _dot = dotGo.AddComponent<Image>();
-            _dot.sprite = DiscSprite.Get();
+            _dot.sprite = AnswerMarkSprite.Notice();                  // el glifo de churro del kit («!») en vez del disco liso (Tarea 127)
             _dot.raycastTarget = false;
 
             _title = NewText("Title", go.transform, 24, new Vector2(0f, 0.5f), new Vector2(1f, 1f));
@@ -185,7 +185,7 @@ namespace NeuroVida.Games.Shared
             if (_slab != null)
             {
                 PlasticSlab.Set(_slab, SlabSize.Button, PlasticSlab.Nearest(accent));      // plasticina: el aviso toma el color del acento; el texto, en tinta y el punto, en tinta suave (50 %: acompaña sin competir con el texto)
-                _dot.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, 0.5f);
+                _dot.color = NeuroStyle.WithAlpha(NeuroStyle.Ink, 0.75f);
             }
             else
             {

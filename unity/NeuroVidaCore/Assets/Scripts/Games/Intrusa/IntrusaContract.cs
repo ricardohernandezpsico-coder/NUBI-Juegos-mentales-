@@ -124,6 +124,8 @@ namespace NeuroVida.Games.Intrusa
     /// </summary>
     public static class IntrusaContract
     {
+        /// <summary>La consigna del marcador (Tarea 127), la corta y la completa (la que cabe en una línea).</summary>
+        public const string Rule = "Toca la que no pertenece", RuleFull = "Una no pertenece: toca la intrusa";
         public const string GameId = "intrusa";
         public const int MaxLevel = 12;
 

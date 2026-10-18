@@ -175,7 +175,7 @@ namespace NeuroVida.Games.Disparate
                 ClearStage();
                 _safe.gameObject.SetActive(false);
             }
-            yield return StartCoroutine(_countdown.Play("¿Verdad o disparate?", Assessment.Subtitle("Lee y decide rápido"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("¿Verdad o disparate?", Assessment.Subtitle(DisparateContract.Rule), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -185,8 +185,7 @@ namespace NeuroVida.Games.Disparate
 
             _endsAt = GameClock.Time + DisparateContract.RetoSeconds;
             _phase = Phase.Playing;
-            _hint.gameObject.SetActive(true);
-            _hint.text = "¿Es verdad o es un disparate?\nResponde rápido";
+            _hud.SetPrompt(DisparateContract.Rule);                    // la consigna vive en la fila del marcador (Tarea 127); el letrero flotante de antes («Responde rápido») ya no se usa
             _loopOn = true;
             yield return StartCoroutine(MainLoop());
         }

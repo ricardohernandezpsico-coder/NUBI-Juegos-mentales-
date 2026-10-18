@@ -369,7 +369,7 @@ namespace NeuroVida.Games.Anagramas
             int n = word.Tiles.Length;
             _extra = PuntaContract.ExtraLetters(level, _senior);
             _maxTiles = n + _extra;
-            _m = PuntaLayout.Compute(_logicalH - _reserve, _maxTiles, _guidedGap, _guided ? PuntaLayout.GuidedReserve : 0f);
+            _m = PuntaLayout.Compute(_logicalH - _reserve, _maxTiles, _guidedGap, _guided ? PuntaLayout.GuidedReserve : 0f, _guided ? GuidedTutorial.RowBottomDp + 2f : 0f);
             _slots = new Tile[n];
             ApplyMetrics(n);
             _cardAt = GameClock.Time;
@@ -787,7 +787,7 @@ namespace NeuroVida.Games.Anagramas
             // «Saltar tutorial» va en la franja libre entre el banco de fichas y «Ayudas» (se calcula de la disposición, no de la altura: ver PuntaLayout.GuidedSkipFromBottom);
             // por eso el banco de la ronda guiada es siempre de UNA fila (GuidedWord) y se deja ese aire bajo él (BeginWord)
             _guided = true;
-            var guidedMetrics = PuntaLayout.Compute(_logicalH - _reserve, PuntaLayout.GuidedMaxTiles, _guidedGap, PuntaLayout.GuidedReserve);
+            var guidedMetrics = PuntaLayout.Compute(_logicalH - _reserve, PuntaLayout.GuidedMaxTiles, _guidedGap, PuntaLayout.GuidedReserve, GuidedTutorial.RowBottomDp + 2f);
             t.PlaceControls(GameHud.Height + 10f, false, -1f, skipFromBottomU: PuntaLayout.GuidedSkipFromBottom(guidedMetrics) * _s);
             SetSkyVisible(false);
             var coach = t.Coach;

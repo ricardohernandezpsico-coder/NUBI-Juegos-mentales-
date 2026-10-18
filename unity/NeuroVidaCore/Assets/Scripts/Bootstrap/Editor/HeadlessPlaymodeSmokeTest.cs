@@ -207,6 +207,78 @@ namespace NeuroVida.Bridge.EditorTools
             ("HowToCosecha", "cosecha", 60f), ("HowToDisparate", "disparate", 60f), ("HowToIntrusa", "intrusa", 60f), ("HowToSatelites", "satelites", 60f), ("HowToPiloto", "piloto", 60f), ("HowToRadar", "radar", 60f), ("HowToAcoplamiento", "acoplamiento", 60f), ("HowToAterrizaje", "aterrizaje", 60f),
         };
 
+        /// <summary>
+        /// Una corrida «Seguidos*» por juego (Tarea 127): a los 5,5 s de partida, en forma de teléfono (20:9 y 16:9), el smoke enciende el chip «×4 seguidos» del marcador del juego y la guardia <see cref="ScanStreakChip"/> comprueba que no tapa ningún texto, botón ni estímulo
+        /// (las mismas reglas que el aviso: <see cref="NeuroVida.Games.Shared.ToastPlacement"/>, 800 unidades cuadradas). Los juegos sin chip (Rescate, Acoplamiento, Aterrizaje, Correo y Rastro no lo usan) solo lo registran.
+        /// </summary>
+        private static readonly (string Name, string Id, float Seconds)[] SeguidosCatalog =
+        {
+            ("SeguidosParejas", "parejas", 10.5f), ("SeguidosRastro", "secuencia", 10.5f), ("SeguidosBodega", "bodega", 10.5f), ("SeguidosCorreo", "correo", 10.5f), ("SeguidosStroop", "stroop", 10.5f), ("SeguidosPiloto", "piloto", 10.5f),
+            ("SeguidosFreno", "freno", 10.5f), ("SeguidosSatelites", "satelites", 10.5f), ("SeguidosRadar", "radar", 10.5f), ("SeguidosCalculo", "calculo", 10.5f), ("SeguidosEngranajes", "engranajes", 10.5f),
+            ("SeguidosAcoplamiento", "acoplamiento", 10.5f), ("SeguidosAterrizaje", "aterrizaje", 10.5f), ("SeguidosAnagramas", "anagramas", 10.5f), ("SeguidosMeteoros", "meteoros", 10.5f),
+            ("SeguidosDisparate", "disparate", 10.5f), ("SeguidosIntrusa", "intrusa", 10.5f),
+        };
+
+        private static bool _sampleStreakShown;
+        private static readonly HashSet<string> _streakNow = new HashSet<string>();
+        private static readonly HashSet<string> _streakPrev = new HashSet<string>();
+        private static readonly HashSet<string> _streakSeen = new HashSet<string>();
+
+        /// <summary>El marcador común (<c>GameHud</c>) del juego en marcha (cada controlador lo guarda en un campo <c>_hud</c>), o null.</summary>
+        private static NeuroVida.Games.Shared.GameHud FindGameHud()
+        {
+            foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+            {
+                foreach (var field in mb.GetType().GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance))
+                {
+                    if (field.FieldType != typeof(NeuroVida.Games.Shared.GameHud)) continue;
+                    var hud = (NeuroVida.Games.Shared.GameHud)field.GetValue(mb);
+                    if (hud != null) return hud;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Enciende el chip «×4 seguidos» del marcador del juego (si lo tiene).</summary>
+        private static void ShowSampleStreak()
+        {
+            _sampleStreakShown = true;
+            var hud = FindGameHud();
+            if (hud == null || !hud.HasStreakChip) { Debug.Log($"[SmokeTest] seguidos de prueba: {_current.Name} no tiene chip de «seguidos»"); return; }
+            hud.SetStreak(4);
+            var space = (RectTransform)hud.StreakRect.parent;
+            Debug.Log($"[SmokeTest] seguidos de prueba en {_current.Name}: el chip queda a {Mathf.RoundToInt(NeuroVida.Games.Shared.ToastPlacement.LocalRectOf(space, hud.StreakRect).yMin)} u del borde de arriba");
+        }
+
+        /// <summary>
+        /// El chip «×N seguidos» a la vista NO tapa nada del juego (Tarea 127): ningún texto, botón ni estímulo por más de 800 unidades cuadradas, en dos revisiones seguidas. Solo corre en las corridas «Seguidos*». Como la partida sigue corriendo y puede apagar el chip, se vuelve a encender en cada revisión.
+        /// </summary>
+        private static void ScanStreakChip()
+        {
+            if (!_current.Name.StartsWith("Seguidos") || !_sampleStreakShown) return;
+            var hud = FindGameHud();
+            if (hud == null || !hud.HasStreakChip) return;
+            if (!hud.StreakVisible) { hud.SetStreak(4); return; }
+            var chip = hud.StreakRect;
+            var space = (RectTransform)chip.parent;
+            var names = new List<string>();
+            var boxes = NeuroVida.Games.Shared.ToastPlacement.Collect(space, chip, names);
+            var mine = NeuroVida.Games.Shared.ToastPlacement.LocalRectOf(space, chip);
+            _streakNow.Clear();
+            for (int i = 0; i < boxes.Count; i++)
+            {
+                float o = NeuroVida.Games.Shared.ToastPlacement.Overlap(mine, boxes[i]);
+                if (o < 800f) continue;
+                string key = names[i];
+                _streakNow.Add(key);
+                if (!_streakPrev.Contains(key) || !_streakSeen.Add(key)) continue;
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: guardia de «seguidos»: {_current.Name} ({_current.Id}), 1080x{_currentHeight}: el chip (de {Mathf.RoundToInt(mine.yMin)} a {Mathf.RoundToInt(mine.yMax)} desde arriba) tapa [{key}] ({Mathf.RoundToInt(o)} u²)");
+            }
+            _streakPrev.Clear();
+            foreach (var k in _streakNow) _streakPrev.Add(k);
+        }
+
         private static bool _howToStarted, _howToDone;
         private static double _howToAt;
 
@@ -293,6 +365,7 @@ namespace NeuroVida.Bridge.EditorTools
                 foreach (var g in Catalog) Enqueue(g);
                 foreach (var g in PantallaCatalog) Enqueue(g);
                 foreach (var g in AvisoCatalog) Enqueue(g);
+                foreach (var g in SeguidosCatalog) Enqueue(g);
                 foreach (var g in HowToCatalog) Enqueue(g);
             }
             else
@@ -310,6 +383,14 @@ namespace NeuroVida.Bridge.EditorTools
                     }
                     if (!found)
                         foreach (var g in AvisoCatalog)
+                        {
+                            if (!string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
+                            Enqueue(g);
+                            found = true;
+                            break;
+                        }
+                    if (!found)
+                        foreach (var g in SeguidosCatalog)
                         {
                             if (!string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
                             Enqueue(g);
@@ -372,7 +453,7 @@ namespace NeuroVida.Bridge.EditorTools
                 }
                 return;
             }
-            if (g.Name.StartsWith("Aviso"))
+            if (g.Name.StartsWith("Aviso") || g.Name.StartsWith("Seguidos"))
             {
                 foreach (var h in new[] { 2400, 1920 }) { _queue.Enqueue(g); _heights.Enqueue(h); }
                 return;
@@ -405,6 +486,10 @@ namespace NeuroVida.Bridge.EditorTools
             _toastPrev.Clear();
             _toastSeen.Clear();
             _sampleToastShown = false;
+            _sampleStreakShown = false;
+            _streakNow.Clear();
+            _streakPrev.Clear();
+            _streakSeen.Clear();
             _howToStarted = _howToDone = false;
             _staleDone = false;
             NeuroVida.Games.Shared.NubiCoach.EditorProbe = _current.Name.StartsWith("Tutorial");        // toque «de verdad» en el hueco de cada paso de Tocar (Tarea 58)
@@ -750,6 +835,7 @@ namespace NeuroVida.Bridge.EditorTools
             foreach (var k in gone) _guardPrev.Remove(k);
             ScanHudCover();
             ScanToastCover();
+            ScanStreakChip();
         }
 
         private static readonly HashSet<string> _toastNow = new HashSet<string>();
@@ -952,7 +1038,7 @@ namespace NeuroVida.Bridge.EditorTools
             {
                 string where = $"{game} {_currentHeight}, paso {st.Index} ({st.Kind}) «{st.Text}»";
                 if (!st.Clean) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: Nubi o el globo tapan algo ({Mathf.RoundToInt(st.Overlap)} u²{(st.TooLong ? ", el texto no cabe en 3 líneas" : "")}): {where}"); }
-                if (st.ControlClash > 20f) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: «Saltar tutorial» o el rótulo de práctica quedan sobre algo del juego ({Mathf.RoundToInt(st.ControlClash)} u²): {where}"); }
+                if (st.ControlClash > 20f) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: «Saltar tutorial» o el rótulo de práctica quedan sobre algo del juego ({Mathf.RoundToInt(st.ControlClash)} u²){st.ClashDetail}: {where}"); }
                 if (st.ActualLines > NeuroVida.Games.Shared.CoachLayout.MaxLines) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el texto se dibuja en {st.ActualLines} líneas: {where}"); }
                 if (st.ActualLines > st.Lines) { if (strict) _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el globo se calculó para {st.Lines} línea(s) y el texto se dibuja en {st.ActualLines} (se saldría del globo): {where}"); }
             }
@@ -1021,6 +1107,7 @@ namespace NeuroVida.Bridge.EditorTools
                 ScanTextPlacement();
                 if (_current.Name.EndsWith("Mudo") || _current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje") SampleAudio();
                 if (_current.Name.StartsWith("Aviso") && !_sampleToastShown && played >= 5.5) ShowSampleToast();
+                if (_current.Name.StartsWith("Seguidos") && !_sampleStreakShown && played >= 5.5) ShowSampleStreak();
                 if (_current.Name.StartsWith("HowTo")) DriveHowTo(played);
                 if (StalePauseRequested && !_staleDone) SimulateStalePause();
                 // la revisión del tutorial espera a que la ronda guiada llegue a su último aviso («¡Listo! Ahora va en serio»), con tope de 100 s

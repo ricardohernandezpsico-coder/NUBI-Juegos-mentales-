@@ -629,7 +629,7 @@ namespace NeuroVida.Games.Bodega
             _playH = _play.rect.height;
             _s = _playW / BodegaLayout.W;
             _logicalH = _playH / _s;
-            _lay = BodegaLayout.Compute(_logicalH);
+            _lay = BodegaLayout.Compute(_logicalH, _guided ? GuidedTutorial.RowInsetDp : 0f);
             foreach (var kv in _fonts)
             {
                 int px = Mathf.RoundToInt(kv.Value * _s);

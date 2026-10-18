@@ -161,7 +161,7 @@ namespace NeuroVida.Games.Stroop
                 yield return StartCoroutine(RunTutorialIfNeeded());
             }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Tinta o Palabra", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("Tinta o Palabra", Assessment.Subtitle(StroopContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null; // deja que el Canvas calcule el rect del Safe Area antes de medir
             ApplySafeArea(_safe);
@@ -945,8 +945,8 @@ namespace NeuroVida.Games.Stroop
             _shoreGroup[0].alpha = ink ? 1f : 0.35f;
             _shoreGroup[1].alpha = ink ? 0.35f : 1f;
             // la regla en la fila de consigna del marcador (18 dp): «Responde: TINTA» con la palabra del color de su orilla y el ícono de su orilla (gota / libro): nunca solo color
-            var light = Color.Lerp(shore, Color.white, 0.55f);
-            _hud.SetPrompt("Responde: <color=#" + ColorUtility.ToHtmlStringRGB(light) + ">" + (ink ? "TINTA" : "PALABRA") + "</color>", ink ? StroopSprites.Drop() : StroopSprites.Book(), 54);
+            var light = StroopContract.RuleLight(rule);
+            _hud.SetPrompt("Responde: <color=#" + ColorUtility.ToHtmlStringRGB(light) + ">" + (ink ? "TINTA" : "PALABRA") + "</color>", ink ? StroopSprites.Drop() : StroopSprites.Book(), 60);
             _hud.SetPromptIcon(ink ? StroopSprites.Drop() : StroopSprites.Book(), light);
             if (_cardBorderSlab != null) PlasticSlab.SetCustom(_cardBorderSlab, Plastic, ink ? "losa_gr_tarjeta_tinta" : "losa_gr_tarjeta_palabra");
             else _cardBorder.color = new Color(shore.r, shore.g, shore.b, 0.98f);

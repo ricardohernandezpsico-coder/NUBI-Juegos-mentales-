@@ -30,15 +30,17 @@ namespace NeuroVida.Games.Bodega
         /// <summary>La altura que pide la pantalla con la bodega a tamaño completo.</summary>
         public static float FullHeight => HudDp + 2f + CardH + Gap + 2f * HullR + 6f + TrayBlockH + 6f + ToastH + 6f;
 
-        public static Metrics Compute(float height)
+        /// <param name="topInset">En la ronda guiada, lo que baja todo para no quedar bajo la fila fija del tutorial («Práctica» y «Saltar», Tarea 127): <c>GuidedTutorial.RowInsetDp</c>; 0 en la partida.</param>
+        public static Metrics Compute(float height, float topInset = 0f)
         {
             var m = new Metrics();
+            height -= topInset;                                                                  // la bodega se achica si hace falta: el alto de verdad es el que queda bajo la fila
             float fixedH = FullHeight - 2f * HullR;
             float scale = Math.Max(MinScale, Math.Min(MaxScale, (height - fixedH - MinFree) / (2f * HullR)));      // siempre queda un respiro (36 dp) para lo que se pone encima (Nubi y su globo en el tutorial)
             float boardH = 2f * HullR * scale;
             float free = Math.Max(0f, height - fixedH - boardH);
             m.Scale = scale;
-            m.CardTop = HudDp + 2f;
+            m.CardTop = HudDp + 2f + topInset;
             float boardTop = m.CardTop + CardH + Gap + free * 0.4f;
             m.BoardCenterY = boardTop + boardH / 2f;
             float trayTop = boardTop + boardH + 6f + free * 0.3f;

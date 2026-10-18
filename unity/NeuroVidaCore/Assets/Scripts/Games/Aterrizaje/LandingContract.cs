@@ -301,13 +301,15 @@ namespace NeuroVida.Games.Aterrizaje
 
         // ------------------------------------------------------------------ textos (docs/diseno-aterrizaje.md §3 y §6)
 
-        public const string Title = "Aterrizaje Lunar", MissionLabel = "Aterriza en", CountdownSub = "Prepárate";
+        public const string Title = "Aterrizaje Lunar", MissionLabel = "Aterriza en", CountdownSub = RuleShort;
+        /// <summary>La consigna del marcador (Tarea 127), siempre a la vista (antes «Arrastra para mover la nave · suelta para aterrizar» en letra mínima al pie y solo las 3 primeras veces), y su versión corta.</summary>
+        public const string Rule = "Arrastra la nave y suelta para aterrizar", RuleShort = "Arrastra y suelta para aterrizar";
         public const string Hint = "Arrastra para mover la nave · suelta para aterrizar";
         /// <summary>La instrucción se ve en los primeros aterrizajes.</summary>
         public const int HintTrials = 3;
         public const string BullNotice = "¡Diana lunar!", DomeNotice = "¡Nueva cúpula en tu base!";
 
-        public static string RoundChip(int n, int total) => total > 0 ? "Aterrizaje " + Math.Min(n, total) + " de " + total : "Aterrizaje " + n;
+        public static string RoundChip(int n, int total) => total > 0 ? Math.Min(n, total) + " de " + total : "N.º " + n;
         public static string StreakChip(int streak) => streak + " seguidos";
 
         /// <summary>Cómo salió el aterrizaje.</summary>

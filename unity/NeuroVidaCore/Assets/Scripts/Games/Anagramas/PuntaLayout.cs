@@ -49,11 +49,12 @@ namespace NeuroVida.Games.Anagramas
 
         /// <param name="extraGap">dp de aire que se suman entre la tarjeta y las casillas (el mensaje de Nubi en el tutorial va ahí y no tapa nada).</param>
         /// <param name="reserveBelowBank">dp que se dejan libres entre el banco de fichas y la escalera de ayudas (la ronda guiada pasa <see cref="GuidedReserve"/>: ahí va «Saltar tutorial»).</param>
-        public static Metrics Compute(float height, int tileCount, float extraGap = 0f, float reserveBelowBank = 0f)
+        /// <param name="minCardTop">Lo más arriba que puede quedar la tarjeta (dp): en la ronda guiada, bajo la fila fija del tutorial («Práctica» y «Saltar», Tarea 127), donde el cielo ya no se ve. 0 = sin tope.</param>
+        public static Metrics Compute(float height, int tileCount, float extraGap = 0f, float reserveBelowBank = 0f, float minCardTop = 0f)
         {
             var m = new Metrics();
             m.SkyY = HudDp + 18f;
-            m.CardTop = m.SkyY + 20f;
+            m.CardTop = Math.Max(m.SkyY + 20f, minCardTop);
             m.CardBottom = m.CardTop + CardH;
             m.SayY = m.CardBottom + 17f;
             m.ButtonsTop = height - ButtonsBottomMargin - ButtonH;

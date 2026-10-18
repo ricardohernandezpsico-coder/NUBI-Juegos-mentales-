@@ -60,6 +60,8 @@ namespace NeuroVida.Contracts
         /// <summary>La persona nunca jugó este juego (la app lo sabe por el historial): el juego abre con su tutorial guiado
         /// (<c>Games/Shared/GuidedTutorial</c>). Hoy lo usa Rastro de luz; los demás juegos lo ignoran.</summary>
         public bool show_tutorial;
+        /// <summary>Los pasos de la cuenta regresiva (Tarea 127): 3 («3 · 2 · 1 · ¡Ya!», 3,1 s) en la primera partida del día y la primera vez de un juego, 2 («2 · 1 · ¡Ya!», 2,4 s) en las demás. La app lo decide (<c>CountdownSteps</c>); 0 (una app vieja no lo manda) = 3. Con «quitar animaciones» rige la misma regla.</summary>
+        public int countdown_steps;
         /// <summary>SOLO depuración (botones [Debug] de la app): dibuja encima del tutorial los rectángulos del foco y el último toque (<c>NubiCoach.DebugOverlay</c>), para mandar una captura de lo que pasa en el teléfono.</summary>
         public bool debug_overlay;
         /// <summary>Solo «En la punta de la lengua» (id <c>anagramas</c>): las palabras que Nubi tuvo que mostrar en partidas anteriores («las azules»), separadas por «;»

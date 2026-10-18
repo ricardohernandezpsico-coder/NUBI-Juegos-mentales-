@@ -311,6 +311,9 @@ namespace NeuroVida.Games.Radar
         public static string RoundChip(int round, int total) => total > 0 ? "Ronda " + Math.Min(round, total) + " de " + total : "Ronda " + round;
         public static string StreakChip(int streak) => streak + " seguidos";
 
+        /// <summary>Las cápsulas rescatadas en la partida, en la fila de consigna del marcador (Tarea 127; antes un número suelto con una cápsula arriba a la derecha).</summary>
+        public static string RescuedPhase(int rescued) => rescued == 1 ? "1 rescatada" : rescued + " rescatadas";
+
         public const string EndTag = "¡RESCATE COMPLETO!";
         public static string EndTitle(int rescued) => rescued == 1 ? "1 cápsula a salvo" : rescued + " cápsulas a salvo";
         public const string EndCapture = "Tu captura", EndShortest = "Destello más corto resuelto", EndPerfect = "Rondas perfectas", EndStreak = "Racha mayor", EndTrips = "Viajes a la estación";

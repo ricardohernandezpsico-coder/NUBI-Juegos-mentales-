@@ -31,7 +31,8 @@ namespace NeuroVida.Games.Radar
     {
         public const float Width = 360f;
         public const float HudBottom = 190f / 3f;
-        public const float TutorialControls = 96f;
+        /// <summary>Lo que se reserva ABAJO en la ronda guiada (dp) para Nubi y su globo; «Saltar tutorial» ya no va ahí sino en la fila fija de arriba (Tarea 127), así que bajó de 96 a 72.</summary>
+        public const float TutorialControls = 72f;
         /// <summary>La franja de mensajes: de 78 a 114 dp desde arriba, a todo lo ancho menos 12 dp de cada lado.</summary>
         public const float StripTop = 78f, StripBottom = 114f, StripLineA = 90f, StripLineB = 108f;
         /// <summary>El alto del layout compacto (16:9, el de la Tarea 62) y el de la referencia (20:9, v4).</summary>
@@ -54,6 +55,8 @@ namespace NeuroVida.Games.Radar
         }
 
         public readonly float Height, EffectiveHeight, T;
+        /// <summary>En la ronda guiada, lo que baja TODO (la franja de mensajes, el radar y lo de abajo) para dejar la fila fija del tutorial bajo el marcador (<c>GuidedTutorial.RowInsetDp</c>); 0 en la partida.</summary>
+        public readonly float Dy;
         /// <summary>El radar con relación al de referencia de 128 dp (el de la v3).</summary>
         public readonly float Scale;
         public readonly float RadarCx, RadarCy, GlassR, BezelR;
@@ -64,11 +67,12 @@ namespace NeuroVida.Games.Radar
         public RadarPlan(float height, bool guided)
         {
             Height = height;
+            Dy = guided ? NeuroVida.Games.Shared.GuidedTutorial.RowInsetDp : 0f;
             float eff = height - (guided ? TutorialControls : 0f);
             EffectiveHeight = eff;
             float sMin = GlassR1 / V4GlassR;                                    // con esta escala el radar de la v4 mide lo mismo que el de 16:9 (128 dp)
-            T = Math.Max(0f, Math.Min(1f, (TallScale(eff) - sMin) / (1f - sMin)));      // la v4 entra de a poco, SIN achicar nunca el radar por debajo de 128 dp
-            Parts a = Compact(height, guided), b = Tall(eff);
+            T = Math.Max(0f, Math.Min(1f, (TallScale(eff, Dy) - sMin) / (1f - sMin)));      // la v4 entra de a poco, SIN achicar nunca el radar por debajo de 128 dp
+            Parts a = Compact(height, guided, Dy), b = Tall(eff, Dy);
             GlassR = Lerp(a.GlassR, b.GlassR, T);
             BezelR = Lerp(a.BezelR, b.BezelR, T);
             Scale = GlassR / GlassR1;
@@ -90,9 +94,10 @@ namespace NeuroVida.Games.Radar
         private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
         /// <summary>El layout de la Tarea 62: todo se achica parejo (mínimo 0,75) en pantallas cortas y el espacio que sobra se reparte entre las piezas. La nave nueva (200 dp de ancho) se dibuja a la mitad para caber en la franja de 40 dp que deja.</summary>
-        private static Parts Compact(float height, bool guided)
+        private static Parts Compact(float height, bool guided, float dy)
         {
-            float avail = height - (guided ? TutorialControls : 0f) - 8f - Fixed;
+            float top = Fixed + dy;
+            float avail = height - (guided ? TutorialControls : 0f) - 8f - top;
             float k = Math.Max(0.75f, Math.Min(1f, avail / Content1));
             float extra = Math.Max(0f, avail - Content1 * k);
             float g1 = extra * 0.25f, g2 = extra * 0.15f, g3 = extra * 0.30f, g4 = extra * 0.10f;
@@ -106,7 +111,7 @@ namespace NeuroVida.Games.Radar
                 GoW = 172f,
                 GoH = GoH1 * k,
             };
-            p.RadarCy = Fixed + g1 + p.BezelR;
+            p.RadarCy = top + g1 + p.BezelR;
             p.ShipY = p.RadarCy + p.BezelR + (9f + g2) * k + ShipH1 * k * 0.5f;
             p.BoardY0 = p.ShipY + ShipH1 * k * 0.5f - 6f * k + g3;
             p.GoCy = p.BoardY0 + 2f * p.CellH + p.CellGap + (10f + g4) * k + p.GoH * 0.5f;
@@ -114,12 +119,13 @@ namespace NeuroVida.Games.Radar
         }
 
         /// <summary>El layout v4: la referencia de 780 dp escalada parejo a lo que cabe (como mucho 1) y, si sobra alto, repartido hacia abajo.</summary>
-        private static float TallScale(float eff) => Math.Max(0.6f, Math.Min(1f, (eff - (TopFixed + 4f)) / (V4Bottom - TopFixed)));
+        private static float TallScale(float eff, float dy) => Math.Max(0.6f, Math.Min(1f, (eff - (TopFixed + dy + 4f)) / (V4Bottom - TopFixed)));
 
-        private static Parts Tall(float eff)
+        private static Parts Tall(float eff, float dy)
         {
-            float s = TallScale(eff);
-            float Down(float y) => TopFixed + (y - TopFixed) * s;
+            float s = TallScale(eff, dy);
+            float top = TopFixed + dy;
+            float Down(float y) => top + (y - TopFixed) * s;
             var p = new Parts
             {
                 GlassR = V4GlassR * s,
@@ -134,7 +140,7 @@ namespace NeuroVida.Games.Radar
                 BoardY0 = Down(V4BoardY0),
                 GoCy = Down(V4GoCy),
             };
-            float extra = Math.Max(0f, eff - TallHeight);
+            float extra = Math.Max(0f, eff - dy - TallHeight);
             p.RadarCy += extra * 0.15f;
             p.ShipY += extra * 0.40f;
             p.BoardY0 += extra * 0.75f;
@@ -146,7 +152,7 @@ namespace NeuroVida.Games.Radar
         public bool ShowShipCount => T >= 0.5f;
 
         /// <summary>La franja de mensajes.</summary>
-        public RadarBox StripBox => new RadarBox(12f, StripTop, Width - 12f, StripBottom);
+        public RadarBox StripBox => new RadarBox(12f, StripTop + Dy, Width - 12f, StripBottom + Dy);
 
         /// <summary>El radar con su bisel: zona prohibida para los avisos.</summary>
         public RadarBox RadarBox => new RadarBox(RadarCx - BezelR, RadarCy - BezelR, RadarCx + BezelR, RadarCy + BezelR);

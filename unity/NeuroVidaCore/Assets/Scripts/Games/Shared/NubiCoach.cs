@@ -62,6 +62,7 @@ namespace NeuroVida.Games.Shared
         private readonly List<Rect> _prefer = new List<Rect>();       // lo que conviene no tapar sin que sea un error (el dedo de ayuda)
         private readonly List<Rect> _soft = new List<Rect>();         // los textos del juego a la vista
         private readonly List<Rect> _textRaw = new List<Rect>();      // los mismos, sin margen, sin los del tutorial
+        private readonly List<string> _textRawNames = new List<string>();     // el texto de cada caja de _textRaw (para decir qué pisan los controles del tutorial)
         private readonly List<Rect> _controls = new List<Rect>();     // los textos de los controles del tutorial («Práctica: no cuenta», «Saltar tutorial»), sin margen
         private readonly List<Text> _textBuf = new List<Text>();
         private List<Rect> _veilRects = new List<Rect>();
@@ -579,6 +580,7 @@ namespace NeuroVida.Games.Shared
         {
             _soft.Clear();
             _textRaw.Clear();
+            _textRawNames.Clear();
             _controls.Clear();
             var scope = _root.parent as RectTransform;
             if (scope == null) return;
@@ -590,7 +592,7 @@ namespace NeuroVida.Games.Shared
                 if (!TextRect(t, out var r)) continue;
                 bool control = false;     // los controles del tutorial (rótulo y «Saltar tutorial») viven bajo «TutorialPractice»
                 for (var p = t.transform.parent; p != null && p != scope; p = p.parent) if (p.name == "TutorialPractice") { control = true; break; }
-                if (control) _controls.Add(r); else _textRaw.Add(r);
+                if (control) _controls.Add(r); else { _textRaw.Add(r); _textRawNames.Add(t.text); }
                 var g = CoachLayout.Grow(r, TextAvoid);
                 bool inside = false;      // ya iluminado y protegido por el hueco o una zona
                 foreach (var h in _hard) if (h.Contains(g.min) && h.Contains(g.max)) { inside = true; break; }
@@ -704,12 +706,24 @@ namespace NeuroVida.Games.Shared
             r.ActualLines = _text.cachedTextGenerator.lineCount;
             // los controles del tutorial («Saltar tutorial», el rótulo) tampoco deben quedar sobre el hueco, las zonas ni los textos del juego
             float clash = 0f;
+            var detail = new System.Text.StringBuilder();
             foreach (var c in _controls)
             {
-                foreach (var l in _lit) clash += CoachLayout.Overlap(c, l);
-                foreach (var t in _textRaw) clash += CoachLayout.Overlap(c, t);
+                for (int i = 0; i < _lit.Count; i++)
+                {
+                    float o = CoachLayout.Overlap(c, _lit[i]);
+                    clash += o;
+                    if (o > 20f) detail.Append(" · zona iluminada ").Append(i).Append(' ').Append(_lit[i]).Append(" (").Append(Mathf.RoundToInt(o)).Append(" u²)");
+                }
+                for (int i = 0; i < _textRaw.Count; i++)
+                {
+                    float o = CoachLayout.Overlap(c, _textRaw[i]);
+                    clash += o;
+                    if (o > 20f) detail.Append(" · texto «").Append(i < _textRawNames.Count ? _textRawNames[i] : "?").Append("» ").Append(_textRaw[i]).Append(" (").Append(Mathf.RoundToInt(o)).Append(" u²)");
+                }
             }
             r.ControlClash = clash;
+            r.ClashDetail = detail.ToString();
             var ctl = new List<Rect>();
             foreach (var c in new[] { ControlSkip, ControlBadge }) if (c != null && c.gameObject.activeInHierarchy) ctl.Add(RectOf(c));
             r.Controls = ctl.ToArray();

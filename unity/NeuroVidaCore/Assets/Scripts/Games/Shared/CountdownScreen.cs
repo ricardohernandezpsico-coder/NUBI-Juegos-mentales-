@@ -27,6 +27,12 @@ namespace NeuroVida.Games.Shared
     public sealed class CountdownScreen
     {
         private const float StepSeconds = 0.7f;
+        /// <summary>«¡Ya!»: lo que dura después de los números (1,0 s).</summary>
+        public const float GoSeconds = 1.0f;
+        /// <summary>Los pasos de la cuenta de esta partida (2 o 3): los fija la config que manda la app (<c>countdown_steps</c>, Tarea 127; <c>GameEntryPoint</c>). 3 por omisión.</summary>
+        public static int Steps = 3;
+        /// <summary>Lo que dura la cuenta con <paramref name="steps"/> pasos: 3 → 3,1 s; 2 → 2,4 s.</summary>
+        public static float TotalSeconds(int steps) => steps * StepSeconds + GoSeconds;
         private const float PopSeconds = 0.24f;
         private const int TickSparkles = 6;
         private const int GoSparkles = 26;
@@ -37,7 +43,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Muestra la marca de version bajo la cuenta regresiva. Antes dependia de <c>Debug.isDebugBuild</c>,
         /// pero la exportacion de Unity es de produccion y nunca se veia. Poner en false antes de publicar en la tienda.</summary>
         public const bool ShowStyleStamp = true;
-        public const string StyleStamp = "estilo 18-oct · un solo final";
+        public const string StyleStamp = "estilo 18-oct · marcador";
 
         private static readonly Color[] StepColors = { NeuroStyle.Sky, NeuroStyle.Grape, NeuroStyle.Coral };
         private static readonly float[] StepWarp = { 0.07f, 0.15f, 0.27f };
@@ -222,10 +228,11 @@ namespace NeuroVida.Games.Shared
             _group.alpha = 1f;
             _titleChipRect.anchoredPosition = _titleChipBase;
 
-            for (int s = 3; s >= 1; s--)
+            int steps = Mathf.Clamp(Steps, 2, 3);                                               // 2 pasos («2 · 1 · ¡Ya!») salvo la primera partida del día y la primera vez de un juego
+            for (int s = steps; s >= 1; s--)
             {
                 GameFeel.Count(s);                                                              // una marimba que sube un escalón por número (calculada ANTES de la cuenta: WoodCore.EarlySet)
-                var step = calm ? TickCalm(s.ToString(), 3 - s, s < 3) : Tick(s.ToString(), 3 - s, s < 3);
+                var step = calm ? TickCalm(s.ToString(), 3 - s, s < steps) : Tick(s.ToString(), 3 - s, s < steps);
                 while (step.MoveNext()) yield return step.Current;
             }
 

@@ -72,7 +72,7 @@ namespace NeuroVida.Games.Freno
         private int _lastTickSecond = -1;
 
         // UI
-        private RectTransform _safe, _play, _fxRect, _lanesRoot, _skyRoot, _stopRect, _timerBg, _timerFill, _gaugeFill, _gaugeBest;
+        private RectTransform _safe, _play, _fxRect, _lanesRoot, _skyRoot, _stopRect, _timerBg, _timerFill, _gaugeFill, _gaugeBest, _gaugeRoot;
         private Image _stopImage;
         private Text _prompt, _stopText, _gaugeValue;
         private readonly List<Lane> _lanes = new List<Lane>();
@@ -146,7 +146,7 @@ namespace NeuroVida.Games.Freno
                 tutorialPlayed = !_tutorial.Skipped;
             }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Freno de Emergencia", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("Freno de Emergencia", Assessment.Subtitle(BrakeContract.GoRule), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -158,12 +158,14 @@ namespace NeuroVida.Games.Freno
 
             // Primera vez sin tutorial (o si lo saltó): las dos reglas, antes del primer lanzamiento.
             SetPrompt("", Color.white);
+            _hud.SetPrompt(BrakeContract.GoRule);                              // la consigna vive en la fila del marcador (Tarea 127), siempre en el mismo lugar
             if (!tutorialPlayed)
             {
-                SetPrompt("Lanza el cohete que se enciende", Color.white);
                 yield return StartCoroutine(Wait(1.6f));
-                SetPrompt("Si aparece ¡ALTO!, no toques", BadColor);
+                _hud.SetPrompt(BrakeContract.StopRule);
+                _hud.PulsePrompt();
                 yield return StartCoroutine(ShowStopPreview());
+                _hud.SetPrompt(BrakeContract.GoRule);
             }
 
             _endsAt = GameClock.Time + BrakeContract.RetoSeconds;
@@ -364,7 +366,7 @@ namespace NeuroVida.Games.Freno
             StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _stopRect), GoodColor, 200f, 520f, 0.45f));
             if (record)
             {
-                _toast.Show("¡Nuevo límite!", $"Frenaste con el alto a {ssd} ms", NeuroStyle.Sun, 1.1f);
+                _toast.Show("¡Nuevo límite!", "Frenaste con el alto más tarde que nunca", NeuroStyle.Sun, 1.1f);
                 GameFeel.LevelUp();
             }
             yield return StartCoroutine(Wait(0.5f));
@@ -661,13 +663,12 @@ namespace NeuroVida.Games.Freno
             float f = Mathf.Clamp01(_ssd / GaugeScaleMs);
             _gaugeFill.anchorMax = new Vector2(f, 1f);
             _gaugeFill.offsetMin = _gaugeFill.offsetMax = Vector2.zero;
-            _gaugeValue.text = $"{_ssd} ms";
+            _gaugeValue.text = "";                                              // nada de milisegundos durante la partida: la app nunca los da en Freno (usa zonas); la barra y la marca del récord hablan solas (Tarea 127)
             if (_bestSsd > 0)
             {
                 _gaugeBest.gameObject.SetActive(true);
                 _gaugeBest.anchoredPosition = new Vector2(_gaugeW * Mathf.Clamp01(_bestSsd / GaugeScaleMs), 0f);
             }
-            if (stopped) StartCoroutine(PopRect(_gaugeValue.rectTransform, 1.25f, 0.25f));
         }
 
         private void SetPrompt(string text, Color color)
@@ -812,8 +813,8 @@ namespace NeuroVida.Games.Freno
             _toast.SetBelowHud();
             _toast.KeepOut(_stopRect);                      // el lugar de la señal ALTO, aunque en este momento no se vea
             _toast.KeepOut(_prompt.rectTransform);          // y el letrero de las instrucciones
-            BuildTutorial(_safe, GameHud.Height + 125f, "Freno de Emergencia", "Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.",
-                skipAtTop: true, captionFromBottomU: 700f);
+            BuildTutorial(_safe, GameHud.Height + 10f, "Freno de Emergencia", "Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.",
+                captionFromBottomU: 700f);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);
@@ -894,9 +895,10 @@ namespace NeuroVida.Games.Freno
             root.pivot = new Vector2(0.5f, 1f);
             root.sizeDelta = new Vector2(960f, 104f);
             root.anchoredPosition = new Vector2(0f, -(GameHud.Height + 36f));
+            _gaugeRoot = root;
 
             var label = MakeText(root, "Label", 42, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.8f), 0f, 0f);
-            label.text = "Límite del freno";
+            label.text = "Tu freno";
             var lr = label.rectTransform;
             lr.anchorMin = new Vector2(0f, 1f);
             lr.anchorMax = new Vector2(0.7f, 1f);
@@ -1160,6 +1162,7 @@ namespace NeuroVida.Games.Freno
         protected override IEnumerator GuidedRound(GuidedTutorial t)
         {
             t.BeginPractice();
+            _gaugeRoot.gameObject.SetActive(false);                             // en la práctica, la fila fija del tutorial va donde está el medidor
             _phase = Phase.Idle;
             SetPrompt("", Color.white);
             SetupLanes(2);
@@ -1252,6 +1255,7 @@ namespace NeuroVida.Games.Freno
                 yield return StartCoroutine(coach.Notice(CoachTexts.Ready, 1.5f));
             }
             t.EndPractice();
+            _gaugeRoot.gameObject.SetActive(true);
             SetPrompt("", Color.white);
         }
         // </guided>

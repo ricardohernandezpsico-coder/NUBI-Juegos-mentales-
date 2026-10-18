@@ -917,11 +917,14 @@ namespace NeuroVida.Games.Calculo
                 if (_sel < 0) guide = "Toca una celda";
                 else if (_op < 0) guide = "Ahora toca una operación";
                 else guide = _views[_sel].Value + " " + CargaRules.Symbol((CargaOp)_op) + " … toca otra celda";
-                _guideText.text = guide;
-                _guideText.gameObject.SetActive(true);
+                // la guía paso a paso vive en la fila de consigna del marcador (Tarea 127), no flotando entre las celdas y los botones
+                if (guide != _lastGuide) { _lastGuide = guide; _hud.SetPrompt(guide); }
             }
-            else _guideText.gameObject.SetActive(false);
+            else if (_phase == Phase.Done && _lastGuide != "") { _lastGuide = ""; _hud.SetPrompt(""); }
+            _guideText.gameObject.SetActive(false);
         }
+
+        private string _lastGuide = "";
 
         private void AnimateDots(float now)
         {

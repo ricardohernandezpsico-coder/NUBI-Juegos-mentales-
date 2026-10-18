@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Acoplamiento.Tests
 {
@@ -202,7 +203,8 @@ namespace NeuroVida.Games.Acoplamiento.Tests
                     Assert.IsFalse(strip.Intersects(p.FuelBox), "franja y barra de tiempo" + at);
                     Assert.IsFalse(strip.Intersects(p.LightsBox), "franja y fila de luces" + at);
                     Assert.IsFalse(p.LightsBox.Intersects(p.ModuleBox), "fila de luces y módulo" + at);
-                    Assert.LessOrEqual(p.LightsBox.Y1, DockingPlan.StripTop, "la fila de luces va sobre la franja" + at);
+                    Assert.LessOrEqual(p.LightsBox.Y1, DockingPlan.StripTop + p.Dy, "la fila de luces va sobre la franja" + at);
+                    if (guided) Assert.GreaterOrEqual(p.LightsBox.Y0, (GameHud.Height + 10f + GuidedTutorial.RowGapU + GuidedTutorial.SkipH) / 3f, "la fila de luces baja de la fila fija del tutorial" + at);
                     Assert.GreaterOrEqual(p.LightsBox.Y0, DockingPlan.HudBottom, "y bajo el marcador" + at);
                     Assert.IsFalse(p.ModuleBox.Intersects(p.PortBox), "módulo y puerto" + at);
                     Assert.IsFalse(p.ModuleBox.Intersects(p.FuelBox), "módulo y barra de tiempo" + at);
@@ -219,7 +221,7 @@ namespace NeuroVida.Games.Acoplamiento.Tests
                     Assert.LessOrEqual(p.ButtonsBox.X1, DockingPlan.Width, "los botones entran a lo ancho" + at);
                     Assert.GreaterOrEqual(p.ButtonsBox.X0, 0f, "los botones entran a lo ancho" + at);
                     Assert.GreaterOrEqual(p.K, 0.6f, "la escala no baja de 0,6" + at);
-                    if (!(guided && h < 700f)) Assert.GreaterOrEqual(p.ButtonH, 56f - 1e-3f, "los botones miden 56 dp o más (con el tutorial en 640 la escala llega al piso de 0,6, como hoy)" + at);
+                    if (!(guided && h < 720f)) Assert.GreaterOrEqual(p.ButtonH, 56f - 1e-3f, "los botones miden 56 dp o más (con el tutorial y la fila fija de arriba, bajo 720 la escala llega al piso de 0,6, como hoy)" + at);
                     else Assert.GreaterOrEqual(p.ButtonH, 76f * 0.6f - 1e-3f, "y nunca menos que el piso de la escala" + at);
                     Assert.GreaterOrEqual(p.Block, 22.8f - 1e-3f, "la pieza nunca es más chica que 22,8 dp (0,6 de 38)" + at);
                 }

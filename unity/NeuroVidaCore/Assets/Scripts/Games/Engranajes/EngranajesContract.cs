@@ -226,6 +226,20 @@ namespace NeuroVida.Games.Engranajes
         }
 
         /// <summary>La consigna de arriba: primera línea fija y segunda según lo que se puede hacer en la etapa.</summary>
+        /// <summary>La consigna del marcador (Tarea 127): la meta («Que cada pieza cumpla su cartel», o «Cada pieza, su cartel» si no cabe) y, a la derecha, lo que se puede hacer en la etapa, en pocas palabras.</summary>
+        public const string RuleShort = "Cada pieza, su cartel";
+
+        public static string HintShort(StageDef st)
+        {
+            switch (st.Hint)
+            {
+                case Hint.Motor: return "Toca el motor";
+                case Hint.Belt: return "Un cambio";
+                case Hint.Ok: return "Uno, o ninguno";
+                default: return "Hasta dos cambios";
+            }
+        }
+
         public static string[] Consigna(StageDef st)
         {
             string second;
