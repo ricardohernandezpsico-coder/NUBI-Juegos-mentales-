@@ -89,6 +89,21 @@ def horizontal(im, ancho_cuerpo_dp):
     return out, b
 
 
+def edificio_sobre_pedestal(area, ancho_dp, meta, farola=False):
+    """El edificio de la isla de [area] sobre el pedestal, como lo arma `BuildingOnPedestal` de la app (el pie del edificio en el centro de la cara de arriba del pedestal; 21,7 dp bajo el borde de arriba de su cuerpo)."""
+    ped = pieza('pedestal'); pb = cuerpo_px(ped); k = ancho_dp / ((pb[2] - pb[0]) / PX)
+    ed = pieza('edificio_' + area); pie = meta['piezas']['edificio_' + area]['pie_dp']
+    W = int((ped.width + 60) * k) + 400; H = int((ped.height + 72 * PX) * k) + 400; canvas = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    ox, oy = 200, 200 + int(72 * PX * k)                                   # dónde cae la esquina de la imagen del pedestal
+    canvas.alpha_composite(escala(ped, k), (ox, oy))
+    fx = ox + (pb[0] + pb[2]) / 2 * k; fy = oy + pb[1] * k + 21.7 * PX * k
+    e = escala(ed, k); canvas.alpha_composite(e, (int(fx - pie[0] * PX * k), int(fy - pie[1] * PX * k)))
+    if farola:
+        fa = pieza('farola_encendida'); fb = cuerpo_px(fa); fa = escala(fa, 1.0)
+        canvas.alpha_composite(fa, (int(ox + (pb[0] + (pb[2] - pb[0]) * 0.8) * k - (fb[0] + fb[2]) / 2), int(fy - fb[3] + 4 * PX)))
+    return canvas.crop(canvas.getbbox())
+
+
 # ------------------------------------------------------------------------------------------------ la hoja
 def fondo(w, h):
     base = Image.open(os.path.join(ROOT, 'docs', 'previews', 'fondo-espacio', 'A-fondo_lamina.webp')).convert('RGBA')
@@ -176,6 +191,18 @@ def hoja():
             pon(fa, M + 190 * PX + 243 - (fb[0] + fb[2]) * k / 2, y + 40 * PX - fb[3] * k)
         d.text((M + 8 * PX, y + 72 * PX), 'el pedestal solo', font=font(11, False), fill=DIM); d.text((M + 198 * PX, y + 72 * PX), 'con la farola, si el lugar es «Sugerida»', font=font(11, False), fill=DIM)
         y += int(92 * PX)
+
+    # 4b. los edificios de la isla sobre el pedestal (la grilla de Juegos)
+    if all(existe('edificio_' + a) for a in ('memoria', 'atencion', 'razonamiento', 'lenguaje')) and existe('pedestal'):
+        meta = json.load(open(os.path.join(SRC, 'kit_avance.json'), encoding='utf-8'))
+        titulo('Edificios de la isla · uno por área', 'observatorio = Memoria, antena = Atención, hangar = Razonamiento, biblioteca = Lenguaje: los mismos modelos de la isla, con la cámara de la isla, parados sobre el pedestal (104 dp; el sugerido, 140 dp y con la farola encendida).')
+        x = M
+        for i, a in enumerate(('memoria', 'atencion', 'razonamiento', 'lenguaje')):
+            im = edificio_sobre_pedestal(a, 104 if i != 2 else 104, meta); pon(im, x, y); x += im.width + 8 * PX
+        h1 = max(im.height for im in [edificio_sobre_pedestal(a, 104, meta) for a in ('memoria',)])
+        y += int(h1 + 10 * PX)
+        d.text((M, y), 'la «Sugerida»', font=font(11, False), fill=DIM); y += int(14 * PX)
+        sug = edificio_sobre_pedestal('razonamiento', 140, meta, farola=True); pon(sug, M, y); y += sug.height + int(10 * PX)
 
     # 5. globo de Nubi
     if existe('cola_izquierda') and existe('cola_derecha'):

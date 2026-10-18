@@ -102,6 +102,25 @@ def cam_pie(w_dp, h_dp, zc):
     scene.render.resolution_x = int(round(w_dp * KIT_PX)); scene.render.resolution_y = int(round(h_dp * KIT_PX)); return cam
 
 
+EDIF_ORTHO = 3.4; EDIF_ZC = 1.05                                                          # unidades que cubre la imagen y altura a la que mira la cámara
+
+
+def cam_edif(w_dp, h_dp):
+    """La cámara de la isla (de frente y a la derecha, ~37° de elevación) pero ortogonal, mirando a un edificio solo; los cuatro con la misma escala (la antena es la más alta)."""
+    cam = bpy.data.cameras.new('cam_edif'); cam.type = 'ORTHO'; cam.ortho_scale = EDIF_ORTHO
+    d = (Vector((12.8, -12.8, 14.5)) - Vector((0, 0, 0.7))).normalized(); tgt = Vector((0, 0, EDIF_ZC))
+    co = bpy.data.objects.new('cam_edif', cam); scene.collection.objects.link(co); co.location = tuple(tgt + d * 30)
+    co.rotation_euler = (tgt - co.location).to_track_quat('-Z', 'Y').to_euler(); scene.camera = co
+    scene.render.resolution_x = int(round(w_dp * KIT_PX)); scene.render.resolution_y = int(round(h_dp * KIT_PX)); return co
+
+
+def pie_en_imagen(co, w_dp, h_dp):
+    """Dónde cae el pie del edificio (el origen) en la imagen, en dp desde la esquina de arriba a la izquierda."""
+    from bpy_extras.object_utils import world_to_camera_view as w2c
+    bpy.context.view_layer.update(); c = w2c(scene, co, Vector((0, 0, 0)))
+    return [round(c.x * w_dp, 2), round((1 - c.y) * h_dp, 2)]
+
+
 def iso_p(u, v, prof=0.0):
     """Punto del mundo que la cámara de pie ve en (u derecha, v arriba) dp del centro, `prof` dp hacia la cámara."""
     return (dp(u), dp(v) * SE - dp(prof) * CE, dp(v) * CE + dp(prof) * SE)
@@ -125,7 +144,8 @@ def una(nombre, w_dp, h_dp, construye, camara='kit', alto_u=0.3, zc=0.6, visible
     """Arma una pieza, la fotografía y la limpia. camara='kit': todo lo que cuelga queda bajo `raiz_kit()` (cara redonda = redonda); 'pie': cámara de los íconos de la barra."""
     if not tiene(nombre): return
     antes = set(bpy.data.objects)
-    cam_tilt(w_dp, h_dp, alto_u) if camara == 'kit' else cam_pie(w_dp, h_dp, zc)
+    cam_tilt(w_dp, h_dp, alto_u) if camara == 'kit' else (cam_edif(w_dp, h_dp) if camara == 'edif' else cam_pie(w_dp, h_dp, zc))
+    if camara == 'edif': meta['pie_dp'] = pie_en_imagen(scene.camera, w_dp, h_dp)
     suelo_kit(); nuevos0 = set(bpy.data.objects)
     construye()
     if camara == 'kit':
@@ -264,10 +284,14 @@ def em_engranajes(z):       # un engranaje de dientes romos
     h = cyl(r=0.3, d=0.4, verts=40, loc=(0, 0, z + 0.3), coll='iconos', name='pz_eje'); redondo(h, 0.06, 4); mat(h, mk(CIELO))
 
 
-def em_acoplamiento(z):     # módulo de 2 × 2 bloques
-    cols = (CIELO, CORAL, SOL, LIMA)
-    for k, (x, y) in enumerate(((-0.46, 0.46), (0.46, 0.46), (-0.46, -0.46), (0.46, -0.46))):
-        b_ = box((0.84, 0.84, 0.42), loc=(x, y, z + 0.21), rot=(0, 0, 6), coll='iconos', name='pz_bloque'); redondo(b_, 0.14, 5); mat(b_, mk(cols[k]))
+def em_acoplamiento(z):     # el módulo en L del juego (la almohada celeste), inclinado y entrando en su hueco de cordón verde agua
+    def ele(e): return [(-18 - e, -21 - e), (18 + e, -21 - e), (18 + e, -8 + e), (-5 + e, -8 + e), (-5 + e, 21 + e), (-18 - e, 21 + e)]     # la L (dp), centrada; e = cuánto se agranda
+    zd = z * KIT_DPU
+    hueco = losa_perfil(redondea(ele(2.0), 0.26, 7), 1.0, 0.4, 'pz_hueco', z_dp=zd); mat(hueco, mk('#0B0D26'))
+    cordon = [(dp(x), dp(y), dp(zd + 1.7)) for (x, y) in redondea(ele(3.6), 0.26, 7)]
+    tubo(cordon, dp(1.8), '#4FD6B0', cerrado=True, name='pz_hueco_cordon', res=8)
+    mod = losa_perfil(redondea(ele(-1.5), 0.3, 8), 7.0, 2.8, 'pz_modulo', z_dp=0); mat(mod, mk(CIELO))
+    mod.location = (dp(7.0), dp(8.0), dp(zd + 8.0)); mod.rotation_euler = (math.radians(-6), math.radians(8), math.radians(12))
 
 
 def em_aterrizaje(z):       # la nave posándose sobre la regla: tres patas gordas con sus pies, el domo y una barra con sus marcas
@@ -305,7 +329,7 @@ def em_intrusa(z):          # el hexágono-figura del juego
     i = cyl(r=0.55, d=0.2, verts=6, loc=(0, 0, z + 0.4), rot=(0, 0, 30), coll='iconos', name='pz_hexagono_centro'); redondo(i, 0.08, 4, 20); mat(i, mk(CREMA))
 
 
-ESCALA = {'piloto': 0.84, 'satelites': 0.8, 'aterrizaje': 0.88, 'meteoros': 0.9, 'secuencia': 0.92, 'radar': 0.92, 'stroop': 0.95, 'parejas': 0.95, 'correo': 0.95}   # lo que se pasa del 70 % se achica
+ESCALA = {'acoplamiento': 0.98, 'piloto': 0.84, 'satelites': 0.8, 'aterrizaje': 0.88, 'meteoros': 0.9, 'secuencia': 0.92, 'radar': 0.92, 'stroop': 0.95, 'parejas': 0.95, 'correo': 0.95}   # lo que se pasa del 70 % se achica
 
 
 EMBLEMAS = (   # (id del juego, área, dibujo)
@@ -331,6 +355,16 @@ def farola(encendida):
         for o in objs:
             if o.name.startswith('ic_luz') or o.name.startswith('ic_vela'): o.data.materials.clear(); mat(o, mk('#CDC6B6'))
     normaliza(objs, 1.5, 0.0)
+
+
+# ---------------------------------------------------------------------------------------------------- los edificios de la isla, uno por área (Tarea 125: la grilla de Juegos y la ventana de un área; `area_<área>.webp` son los planetas planos de antes)
+EDIFICIOS = {'memoria': ('Observatorio', observatorio, 90), 'atencion': ('Antena', antena, 0), 'razonamiento': ('Hangar', hangar, 0), 'lenguaje': ('Biblioteca', biblioteca, 0)}
+
+
+def edificio(area):
+    """El edificio de la isla de esa área, solo, con la luz y la sombra de contacto del kit (los mismos modelos de `build_island`, con el «hecho a mano» de la isla)."""
+    nombre, fn, rz = EDIFICIOS[area]
+    group(nombre, collect(fn), (0, 0), rz); handmade('edificios')
 
 
 # ---------------------------------------------------------------------------------------------------- 3.6 pedestal del lugar
@@ -456,6 +490,8 @@ def render_kit_avance():
     una('farola_apagada', 36.0, 36.0, lambda: farola(False), camara='pie', zc=0.69, usos_dp=[28, 22])
     una('farola_encendida', 36.0, 36.0, lambda: farola(True), camara='pie', zc=0.69, usos_dp=[28, 22])
     una('pedestal', 162.0, 70.0, pedestal, alto_u=0.75, cuerpo_dp=[150, 56])
+    for area in EDIFICIOS:
+        una('edificio_' + area, 144.0, 144.0, lambda a=area: edificio(a), camara='edif', visibles=('iconos', 'luces', 'edificios'), area=area)
     una('cola_izquierda', 28.0, 24.0, lambda: cola(True), alto_u=0.25, cuerpo_dp=[16, 12], nota='la punta hacia abajo a la izquierda')
     una('cola_derecha', 28.0, 24.0, lambda: cola(False), alto_u=0.25, cuerpo_dp=[16, 12], nota='la punta hacia abajo a la derecha')
     for fam in FAMILIAS:
