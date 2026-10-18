@@ -114,3 +114,9 @@ Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presiona
 ## Cambio de diseño del 18-oct-2026 (Tarea 128): todo hacia la mitad de abajo
 
 `CargaLayout.Compute`: el aire que sobra va arriba del reactor (0,45) y entre los bloques en poco (0,17 / 0,09 / 0,09), así que el reactor, las celdas, las operaciones y los botones quedan compactos en la mitad de abajo, sin huecos grandes. Mismos tamaños, reglas y cantidades.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): el kit en los controles
+
+Los operadores + − × ÷ y «Deshacer» / «Empezar de nuevo» pasan de losa noche / apagada a **lila** con la letra en **tinta** (16 dp; el operador elegido sigue en sol). Lo que todavía no se puede (sin celda elegida, sin nada que deshacer) apaga la LOSA al 72 % y deja la letra entera (tinta sobre lila al 72 %: 4,9:1).
+«Empezar de nuevo» borra el tablero, así que ahora **pide un segundo toque**: el primero cambia el botón a sol con «¿Seguro? Toca otra vez» durante 2 s; tocar otra cosa lo desarma. Se borró el panel de resultado que se armaba oculto. Una carga nunca pasa de 5 celdas (`CellsMax` 5) y a 5 miden 60 dp de ancho, o sea ≥ 56 dp: no hacen falta dos filas (`CalculoLayoutTests.NoLevel_HasMoreCellsThanFitInOneRow_At56Dp`).
+Reglas del kit (spec de Fable §1.2): **R1** noche solo para casillas de respuesta con un símbolo de color calibrado sobre oscuro; **R2** paneles de información en crema con la letra en tinta (`NeuroStyle.Ink`, rótulos secundarios en `NeuroStyle.InkMuted` #514B78, acento azul `NeuroStyle.PanelAccent` #2B57B8); **R3** botones secundarios en lila (el principal sigue cielo, sol o lima; «apagada» solo para lo que de verdad no se puede); **R4** un símbolo calibrado sobre oscuro dentro de una tarjeta crema va en su ventanilla noche.

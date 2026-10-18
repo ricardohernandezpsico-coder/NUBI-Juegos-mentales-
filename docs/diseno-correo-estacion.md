@@ -305,3 +305,8 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: las reglas, el DDA, los t
 **Dos arreglos de arte que salieron del render:** las franjas rojas de la torre eran un poco más anchas que el trapecio y se salían por los lados (ahora caben); la solapa del sobre de la nave quedaba tapada por el sobre y solo asomaban sus puntas (ahora se ve la «V»).
 
 **Pruebas:** `MailPlasticTests` mide sobre el atlas lo mismo que `MailArtTests` mide sobre el dibujo procedural (el sello dorado más grande y de borde dentado, los planetas, el dial, la lámpara), con los mismos umbrales, y agrega que cada pieza mide lo de siempre, las tres señales de carta se distinguen sin el color, las cuatro figuras tienen siluetas distintas y se leen, la puerta y la manija, las franjas de la torre, el reloj (base, tapa y tapa presionada con su huella), la nave, el saco y la raya (sin barra vertical: no es una cruz); y que el controlador usa las losas, los estados presionados y las piezas del atlas. Las pruebas procedurales (`MailArtTests`) ahora corren con `PlasticArt.Disabled = true` y la auditoría de lo que se ve corre también sin el atlas.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): el kit en los paneles
+
+Quedan **noche** (R1) los 4 buzones, la caja fuerte y el faro: sus planetas, el reloj y la torre se calibraron sobre oscuro; solo el rótulo del buzón sube a 16 dp. Pasan a **crema** con la letra en tinta: «NUEVO» (lámina con el arte en una ventanilla noche), la hoja «Encargos de hoy» (filas con el ícono en ventanilla noche; «TODOS LOS DÍAS» en un chip sol), el resumen y «Fin del día», «¡Llega un saco!», RADIO y el panel del reloj (la pista queda oscura como canal).
+Todo el texto informativo de esos paneles va a 16 dp o más.

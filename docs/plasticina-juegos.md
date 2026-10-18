@@ -416,3 +416,7 @@ en el botón y en el satélite mide unos 0,3 de diámetro (en el botón apagado,
 (`tools/juegos/hoja_presionados.py`).
 
 Peso (Tarea 104): `piloto` pasa de 0,58 a 1,21 MB (las 15 señales presionadas; 0,64 MB con ASTC), `freno` de 0,50 a 0,66 MB, `satelites` de 0,23 a 0,25 MB, `punta` de 0,06 a 0,10 MB y `comun` de 1,05 a 1,11 MB (la losa apagada presionada); todos bajo el tope de ~1,5 MB por juego.
+
+## El kit sobre el cielo navy (Tarea 129, 18-oct-2026)
+
+La lección del 16-oct aplicada a los juegos: la plasticina se nota en superficies claras y gruesas; una losa noche sobre un cielo del mismo azul no deja ver ni la sombra ni el canto. Reglas del kit (spec de Fable §1.2): **R1** noche solo para casillas de respuesta con un símbolo de color calibrado sobre oscuro; **R2** paneles de información en crema con la letra en tinta (`NeuroStyle.Ink`, rótulos secundarios en `NeuroStyle.InkMuted` #514B78, acento azul `NeuroStyle.PanelAccent` #2B57B8); **R3** botones secundarios en lila (el principal sigue cielo, sol o lima; «apagada» solo para lo que de verdad no se puede); **R4** un símbolo calibrado sobre oscuro dentro de una tarjeta crema va en su ventanilla noche. Hoja: `docs/previews/kit-lo-que-falta.png` (`tools/previews/kit_lo_que_falta.py`).

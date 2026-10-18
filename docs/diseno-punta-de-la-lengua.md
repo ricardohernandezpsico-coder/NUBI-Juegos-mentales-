@@ -151,3 +151,7 @@ El cuerpo de cada pieza mide lo de siempre: la imagen se escala con 0,8 (ficha),
 
 Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
 - **En la punta de la lengua:** la ficha que se toca se ve presionada (`ficha_p`, gris claro como la normal: el código la tiñe igual; la letra de tinta rinde 5,8 a 11,9:1 sobre ella) un instante, y los dos botones (cielo y «noche») pasan a su losa presionada con `PlasticTouch`.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): el kit en la tarjeta y los botones
+
+La tarjeta de la definición es ahora una lámina **crema** (`gr`): la definición en tinta 20 dp (la misma fuente), el rótulo «Nubi capta una definición» en #514B78 a 16 dp y el punto y las ondas de la antena en tinta al 50 %. «Una ayuda», «Borrar» y «Ver la palabra» pasan a **lila** con tinta (letra mínima 16 dp); «¡La tengo!» sigue en cielo. «Ayudas · · ·» va en crema a 16 dp sobre el cielo. Se borró el panel de resultado que se armaba oculto.

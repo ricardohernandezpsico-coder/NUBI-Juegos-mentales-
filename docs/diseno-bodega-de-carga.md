@@ -294,3 +294,7 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: las reglas, el DDA, los t
 ## Cambio de diseño del 18-oct-2026 (Tarea 128): el carro bajo el anillo
 
 `BodegaLayout.Compute`: el aire que sobra va arriba del anillo (0,7: el anillo baja hacia el pulgar) y el «Carro de reparto» queda JUSTO debajo de él (antes 0,3 del aire entre los dos). «Carro de reparto» y «Récord: N objetos» pasan a 16 dp. Mismas reglas, tamaños y cantidades.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): el kit en las tarjetas
+
+La tarjeta del pedido («Pedido · ¿Dónde está…?» / «Llega a la bodega»), el aviso («¡Pedido perfecto!»…) y la tarjeta de entrada son losas **crema** con la letra en tinta (rótulo 16 dp #514B78, pregunta 20 dp tinta); el objeto sigue en su disco oscuro (la ventanilla: se calibró sobre oscuro). «Carro de reparto» y «Récord» van a 16 dp en crema al 70 % sobre el cielo. Se borró el panel de resultado que se armaba oculto.
