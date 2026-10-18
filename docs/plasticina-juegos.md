@@ -64,9 +64,9 @@ Todo el HUD, la pausa, la cuenta regresiva y el cierre son de `Games/Shared`. Ho
 | Pastillas del HUD (nivel, ronda/puntos, racha) | `GameHud` | `RoundedRect(64)` oscura + `ClayFrame`, texto de color | losas `ch` (crema, sol) y `md` (racha), texto tinta |
 | Aviso y píldora de estado | `Toast`, `PhasePill` | `RoundedRect(64)` + `ClayFrame` | losa `md` crema, punto de color |
 | Casillas de respuesta (normal, elegida, acierto, «no estaba») | cada juego; Rescate y `TileSprites` son los modelos | gris 256 px estirado, sin 9-slice, teñido | losa `md` «noche» (oscura, para que los símbolos de color resalten), con marca ✓ / ✗ de plasticina y texto |
-| Paneles de pausa y de final | `PauseMenu`, `GameControllerBase`, `RadarGameController.BuildEnd` | `RoundedRect(64)` azul noche + `ClayFrame` | losa `gr` crema |
+| Paneles de pausa y de final (el de final ya no existe en Unity: Tarea 126, el resultado vive en la app) | `PauseMenu`, `GameControllerBase`, `RadarGameController.BuildEnd` | `RoundedRect(64)` azul noche + `ClayFrame` | losa `gr` crema |
 | Cuenta regresiva (título, anillo) | `CountdownScreen` | píldora de 3 capas, `RingSprite` | losa `ch` crema; anillo de plasticina |
-| Cierre «¡Listo!» | `FinishCurtain` | texto con contorno tinta | placa `gr` sol detrás del texto |
+| Cierre «¡Listo!» | `FinishCurtain` | texto con contorno tinta | placa `gr` sol detrás del texto; desde la Tarea 126 con el emblema del juego (atlas `emblemas`: las 17 fichas de la app a 6 px/dp, 2,4 MB de PNG / ≈ 1,5 MB con ASTC 6×6) en el momento del objeto y sobre «¡Listo!» |
 | Marca de respuesta ✓ / ✗ | `AnswerMarkSprite` (Estrella intrusa, Disparate, Meteoros, Freno, Satélites, Acoplamiento, Rescate) | disco lima/coral con glifo tinta | disco de plasticina con glifo de churro tinta (la ✗ es un aspa, no una cruz) |
 | La Nubi de los tutoriales | `NubiTeacherSprite` | Nubi plana vieja con destellos en cruz y pizarra | `nubi_3d` (el render de la app) con su sombra |
 

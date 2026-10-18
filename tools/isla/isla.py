@@ -1010,7 +1010,7 @@ def render_barra():
 # ------------------------------------------------------------------ kit de plasticina (Tareas 89 y 90): losas de nine-slice en tres radios, discos redondos, íconos de churro tinta y el triángulo de «Jugar», con dos estados las losas y los discos
 # 1 unidad de Blender = 20 dp; se renderiza a 3 px por dp (KIT_PX). Cámara ortogonal, casi desde arriba (KIT_TILT grados de inclinación: se ve un poco el canto de adelante); el sol de la isla (arriba a la izquierda) deja la sombra de contacto abajo a la derecha.
 # `--kit-solo losas|discos|iconos|avatares` renderiza solo una parte (todo por defecto).
-KIT_DPU = 20.0; KIT_PX = 3.0; KIT_TILT = float(arg('--kit-tilt','30')); KIT_SOLO = arg('--kit-solo','todo')
+KIT_DPU = 20.0; KIT_PX = float(arg('--kit-px','3')); KIT_TILT = float(arg('--kit-tilt','30')); KIT_SOLO = arg('--kit-solo','todo')
 KIT_CW = 24.0; KIT_CH = 8.0                                      # ancho y alto del centro que se estira (dp)
 KIT_MARGEN = (8.0, 6.0, 12.0, 14.0)                              # margen de la imagen alrededor del cuerpo: izquierda, arriba, derecha, abajo (dp): ahí cae la sombra
 KIT_H = float(arg('--kit-h','9')); KIT_H_P = KIT_H*0.5           # alto de la losa elevada y presionada (dp)

@@ -493,6 +493,18 @@ def grupo_comun():
     for k in ('px_por_dp',): med.append((k, float(PX_DP)))
     return S, med
 
+EMBLEMAS = ('parejas', 'secuencia', 'bodega', 'correo', 'stroop', 'piloto', 'freno', 'satelites', 'radar', 'calculo', 'engranajes', 'acoplamiento', 'aterrizaje', 'anagramas', 'meteoros', 'disparate', 'intrusa')
+
+def grupo_emblemas():
+    """Los 17 emblemas de juego (la ficha del pastel de su área con el objeto del juego; `tools/isla/kit_avance.py`, la misma pieza de la app) para la cortina del final (`FinishCurtain`, Tarea 126). Se renderizan a 6 px por dp
+    (`isla.py --kit --kit-solo avance --kit-px 6 --pieza emblema_`, en `tools/isla/out/kit-avance-emb6/`): 432 px de lienzo, para que la ficha se vea nítida a ~500 unidades del lienzo de 1080."""
+    base = os.path.join(REPO, 'tools', 'isla', 'out', 'kit-avance-emb6')
+    S = []
+    for j in EMBLEMAS:
+        im = Image.open(os.path.join(base, f'kit_pz_emblema_{j}.png')).convert('RGBA')
+        S.append(sprite('emb_' + j, quita_ruido_alfa(limpia_bruma(im), 6)))
+    return S, [('px_por_dp', 6.0)]
+
 def grupo_nubi():
     """La Nubi 3D de la app (`nubi_3d.webp`, 720×476) con la sombra elíptica de `NubiClay` (NubiHome.kt) horneada: 0,8 del ancho, 0,17 de alto sobre eso, degradado radial 0,55 → 0,45 (a 0,62) → 0."""
     nubi = Image.open(os.path.join(RES_APP, 'drawable-nodpi', 'nubi_3d.webp')).convert('RGBA'); w, h = nubi.size
@@ -505,7 +517,7 @@ def grupo_nubi():
     lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
     return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
 
-GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'aterrizaje': grupo_aterrizaje, 'engranajes': grupo_engranajes, 'acoplamiento': grupo_acoplamiento, 'comun': grupo_comun, 'nubi': grupo_nubi}
+GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'aterrizaje': grupo_aterrizaje, 'engranajes': grupo_engranajes, 'acoplamiento': grupo_acoplamiento, 'comun': grupo_comun, 'emblemas': grupo_emblemas, 'nubi': grupo_nubi}
 
 # ------------------------------------------------------------------ el atlas
 def empaca(sprites, ancho_max=2048, pad=2):
@@ -694,7 +706,7 @@ def construye(nombre):
     return pesos
 
 def main():
-    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'aterrizaje', 'engranajes', 'acoplamiento', 'comun', 'nubi'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
+    nombres = ['radar', 'piloto', 'freno', 'calculo', 'disparate', 'satelites', 'rastro', 'stroop', 'punta', 'meteoros', 'parejas', 'bodega', 'correo', 'aterrizaje', 'engranajes', 'acoplamiento', 'comun', 'nubi', 'emblemas'] if (not GRUPOS or 'todo' in GRUPOS) else GRUPOS
     total = {'png_bytes': 0, 'deflate_rgba32': 0}
     for n in nombres:
         p = construye(n)
