@@ -1308,7 +1308,7 @@ namespace NeuroVida.Games.Secuencia
             _s = _playW / LogicalW;
             _logicalH = _playH / _s;
             // en pantallas altas el tablero baja hacia el pulgar (Tarea 128: antes 0,22 del aire que sobra y el anillo quedaba alto con el tercio de abajo vacío; ahora 0,7); en las bajitas (640 dp) no se mueve
-            _yShift = (_logicalH - 640f) * 0.7f;
+            _yShift = Mathf.Max(0f, (_logicalH - 640f) * 0.7f);
 
             float diameter = _senior ? RastroBoard.OrbDiameterSenior : RastroBoard.OrbDiameter;
             foreach (var o in _orbs)

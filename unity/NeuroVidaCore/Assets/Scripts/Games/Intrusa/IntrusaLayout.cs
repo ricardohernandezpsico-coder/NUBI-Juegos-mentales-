@@ -16,7 +16,7 @@ namespace NeuroVida.Games.Intrusa
     /// <summary>
     /// Geometría pura de la ronda, en unidades lógicas (dp de una pantalla de 360 de ancho; el controlador escala al lienzo). Es la MISMA
     /// regla que usa tools/intrusa/figuras.py para validar cada figura: la caja de juego es (40, 170, 280, 260), la figura se refleja y se
-    /// gira ±12° en cada ronda (para que no se memorice), las placas de las palabras miden «texto + 22 × 30» y van debajo de la estrella
+    /// gira ±12° en cada ronda (para que no se memorice), las placas de las palabras miden «texto + 16 × 30» y van debajo de la estrella
     /// (arriba si la estrella está en el 35% de arriba de la caja). Al armar la ronda se BUSCA una combinación (reflejo, giro, hueco de la
     /// intrusa y reparto de las palabras en las anclas) sin placas encimadas y dentro de la pantalla; las pruebas de Python exigen que para
     /// cada grupo del banco existan al menos 6 de ellas.

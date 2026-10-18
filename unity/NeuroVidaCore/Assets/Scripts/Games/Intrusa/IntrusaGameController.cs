@@ -1325,7 +1325,15 @@ namespace NeuroVida.Games.Intrusa
             GuidedTutorial.EditorPressPos = RectTransformUtility.WorldToScreenPoint(null, _holeRect.position);
             GuidedTutorial.EditorPressFrame = Time.frameCount + 1;
             for (int i = 0; i < 4; i++) yield return null;
-            if (!_practiceHit) Debug.LogError("[SmokeTest] Intrusa: un toque en el centro de la palabra intrusa NO llegó al juego (el hueco no coincide con la estrella)");
+            if (!_practiceHit)
+            {
+                var press = GuidedTutorial.EditorPressPos;
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(_play, press, null, out var local);
+                var logical = PlayToLogical(local);
+                var areas = new System.Text.StringBuilder();
+                for (int i = 0; i < 5; i++) areas.Append($" [{i}: x {_slots[i].Touch.X:0}..{_slots[i].Touch.X + _slots[i].Touch.W:0}, y {_slots[i].Touch.Y:0}..{_slots[i].Touch.Y + _slots[i].Touch.H:0}]");
+                Debug.LogError("[SmokeTest] Intrusa: un toque en el centro de la palabra intrusa NO llegó al juego (el hueco no coincide con la estrella): toque en pantalla " + press + ", lógico (" + logical.x.ToString("0") + ", " + logical.y.ToString("0") + ") con desplazamiento " + _yShift.ToString("0") + "; zonas:" + areas + "; elegida " + PickSlot(logical) + ", _guided=" + _guided);
+            }
             else Debug.Log("[SmokeTest] Intrusa: un toque en el centro de la palabra intrusa llegó al juego");
         }
 #endif
@@ -1754,7 +1762,7 @@ namespace NeuroVida.Games.Intrusa
             _s = _playW / IntrusaLayout.ScreenW;
             _logicalH = _playH / _s;
             // en pantallas altas, la escena baja un poco (el aire sobra abajo); en las bajitas, sube un poco
-            _yShift = (_logicalH - 640f) * 0.7f;                         // el campo baja hacia el pulgar (Tarea 128; antes 0,22: palabras arriba y el tercio de abajo vacío)
+            _yShift = Mathf.Max(0f, (_logicalH - 640f) * 0.7f);                         // el campo baja hacia el pulgar (Tarea 128; antes 0,22: palabras arriba y el tercio de abajo vacío)
             _widthCache.Clear();
 
             // textos de abajo: nombre, regla, «la nombraste tú» y el aviso de repaso, bajo la caja de la figura
