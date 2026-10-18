@@ -201,3 +201,7 @@ Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presiona
 
 **Qué cambió:** el satélite pasa de ~40 a ~48 dp (×1,2: `SatelliteContract.SatRadius` 14 → 16,8 y `PanelReach` 9 → 10,8; las distancias mínimas escalan igual: `StopGap` 38 → 46, `SpawnGap` 46 → 55 y `SettleGap` 36 → 43). **Por qué:** el seguimiento exige distinguirlos a ~40 dp con el planeta y las estrellas detrás; a 48 dp es más fácil de ver sin cambiar la tarea. **Qué NO cambió:** la velocidad, las cantidades por nivel, que sigue siendo plano y que NO hay respuesta durante el seguimiento (regla de patente).
 **Comparabilidad:** la medida del seguimiento (aciertos al señalar) de antes y después del 18-oct puede no ser comparable (blancos más grandes se siguen mejor y se superponen menos). No se comparan series que crucen esa fecha. El juego no guarda una versión de reglas: basta esta nota.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): avisos en crema
+
+El rótulo «¿Aquí se cruzaron?» (losa chica) y el aviso sorpresa («NUEVO · Cambio de órbita…») pasan a **crema** con la letra en tinta (#514B78 el rótulo secundario). Lo demás —plano, sin respuesta durante el seguimiento, sin «firma» por series— no cambia.

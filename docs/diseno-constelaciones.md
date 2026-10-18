@@ -311,3 +311,7 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: las reglas, el DDA, los t
 ## Cambio de diseño del 18-oct-2026 (Tarea 128): el cielo baja hacia el pulgar
 
 `ConstelacionLayout.MaxSkyH` pasa de 560 a 460 dp y todo el aire que sobra queda ARRIBA del cielo (`SkyTop = skyTop + free × 0,85`): en una pantalla de 20:9 el cielo baja unos 16 % de la altura. **Las luces siguen del mismo tamaño y el tablero se ve completo a la vez** (regla de patente: Parejas siempre con el tablero a la vez); no hay cambio de reglas ni de cantidades. El pie «De memoria · …» pasa a 16 dp y a lavanda (el gris daba 3,4:1).
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): la tarjeta de entrada en crema
+
+La tarjeta «NUEVO» de cada regla es una lámina **crema** con la letra en tinta (#514B78 para el rótulo y lo secundario; el dorado de la leyenda pasa a #8A5A00) y el arte (las luces, las líneas doradas y los rótulos, calibrados sobre oscuro) en una ventanilla noche. «Toca para empezar» en #2B57B8. La tarjeta de arriba ya no se dibuja (desde la 127) y no se tocó. Se borró el panel de resultado que se armaba oculto.

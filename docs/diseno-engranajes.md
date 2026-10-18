@@ -378,3 +378,8 @@ Ricardo dijo que los engranajes le encantan (**no se tocan**) pero que los boton
 | el **portón**, el **marco**, la **plataforma**, la **caja** y la **barra** | la misma receta de color de los engranajes (`fija_rol`: la luz del render recorre la rampa de su rol —portón, marco y barra lila; caja azul; plataforma dorada—, con el bisel y el grano de los engranajes) en lugar del gris lavanda del render |
 
 La marca de verificación es `estilo 17-oct · botones del kit en engranajes`. Las pruebas (`AuditVolume` → `AuditKitButtons`) fallan si algo de eso vuelve a llevar canto, halo o teñido propio encima de la losa del kit. **Pendiente (se anota, no se hizo):** las correas siguen siendo bandas planas con canto (no un tubo sombreado) y el casco conserva el cilindro de la Tarea 115.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): el kit en carteles, MOTOR y la cuenta de cambios
+
+Los carteles («Antena · al revés», «Turbina · reloj») y el rótulo MOTOR pasan de la losa chica noche a la **losa chica crema** del kit (`losa_ch_crema`, grupo `comun`): el nombre en #514B78 a 16 dp y la palabra en tinta a 16 dp; cumplido y fallido siguen con sus losas oscuras (acierto/error) y las monedas ✓ / ✗. El cartel pasa de 96 × 38 a **104 × 44 dp** para la letra de 16 dp.
+La cuenta de cambios es una losa crema (`md`): el número a 24 dp en tinta y «cambio/s» a 16 dp en #514B78 (las llaves en sus monedas quedan). Se borró el panel de resultado que se armaba oculto. Mismas reglas, escena y cantidades.

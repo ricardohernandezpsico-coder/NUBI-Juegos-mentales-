@@ -333,3 +333,7 @@ Ricardo (14-oct): todos los juegos pasan a plasticina, empezando por este. Es SO
 
 Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
 - **Rescate:** las 6 casillas de respuesta y «¡Rescatar!» (losas del kit) se ven presionadas al tocarlas (`PlasticTouch` en modo cuenta: `v.Touch.Down` elige la imagen `_p`, con o sin la «elegida» hundida) y vuelven con un rebote chico; sin el hundir de 3 dp de siempre. La lectura del toque y la respuesta no cambian.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): la franja de avisos en crema
+
+La franja de avisos («¡Lluvia de cápsulas!», «¡Todos a salvo!», «Atento al relámpago…») es una losa **crema** con la letra en tinta (el color del mensaje ya no lleva el significado: lo dice el texto). Las 6 casillas siguen noche (R1: los símbolos se calibraron sobre oscuro) y «¡Rescatar!» sigue como estaba. La letra mínima del mensaje es 16 dp.

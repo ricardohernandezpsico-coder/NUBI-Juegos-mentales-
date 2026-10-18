@@ -206,3 +206,8 @@ Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presiona
 
 **Qué cambió:** las señales pasan de ~44 a ~56 dp de dibujo (`PilotContract.SignalSize` 34 → 44 y `SignalRingSize` 54 → 70; el aire mínimo entre señales vivas `PilotSpawn.SignalClear` 66 → 82). **Por qué:** sobre un fondo con estrellas, a ~44 dp costaba distinguir la forma y el detalle a una persona de 60+. **Qué NO cambió:** la mecánica, el ritmo, las cantidades, el radio de toque (80 dp) y la **regla permanente 1**: pilotar y señales siempre juntas (ninguna sola ni medida sola).
 **Comparabilidad:** la medida de las señales (aciertos y tiempo de respuesta) de antes y después del 18-oct puede no ser comparable: una forma más grande se discrimina antes. No se comparan series que crucen esa fecha. El juego no guarda una versión de reglas: basta esta nota.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 129): el kit en los avisos
+
+«¡Tu misión!» (el aviso alto) pasa a una losa **crema** con la señal en su ventanilla noche (las 15 señales se calibraron sobre el cielo oscuro), «MISIÓN» en #514B78 a 18 dp y el nombre en tinta; «¡Nueva misión!» y «¡HIPERIMPULSO! Puntos ×2» (los hitos) pasan a **sol** con tinta. La franja del dedo sigue apagada a propósito. **Regla permanente 1 intacta:** no cambia nada de lo que se pilota ni de las señales (tamaño, forma, tiempos).
+Se borró la pantalla final de Unity que nadie llamaba (`BuildEnd`, `LayoutEnd`, `ShowEnd`: desde la Tarea 126 Unity no dibuja un resultado).

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Lámina «hoy | propuesta» del kit en lo que falta (Tarea 129, paso 1; `auditoria-fable/spec-kit-juice-ajustes.md` §1): Carga exacta, En la punta de la lengua, Bodega de carga y La estación de correo (con «NUEVO» y «Encargos de hoy»)
+"""Lámina «hoy | propuesta» del kit en lo que falta (Tarea 129, paso 1; `auditoria-fable/spec-kit-juice-ajustes.md` §1): Carga exacta, En la punta de la lengua, Bodega de carga y La estación de correo (con «NUEVO» y «Encargos de hoy») y, en el paso 2, Engranajes, Piloto y los extras (Satélites y Rescate)
 con sus capturas REALES de Unity (`bash tools/verificar-todo.sh --capturas calculo,anagramas,bodega,correo`). Los paneles y botones ya eran losas del kit, pero en tono noche sobre un cielo navy; ahora la información va en crema (letra en tinta),
 los botones secundarios en lila y lo calibrado sobre oscuro (los planetas de los buzones, la carta o la torre, el objeto) queda en su ventanilla noche.
 «Hoy» son las tomas de antes de la tarea (variable NUBI_HOY_CAPTURAS = una carpeta PLANA con `<juego>-<toma>.png`) y «propuesta» las de esta (unity/test-results/capturas/<juego>/NN-<toma>.png).
@@ -26,6 +26,12 @@ PRIMERA = [('calculo', 'Carga exacta', 'primera', 'operaciones y botones en lila
            ('correo', 'La estación de correo', 'cinta-dorado', 'los buzones, la caja fuerte y el faro siguen en noche (sus planetas se calibraron sobre oscuro)'),
            ('correo', 'Correo · «NUEVO»', 'nuevo-estacion', 'lámina crema; el arte en su ventanilla noche'),
            ('correo', 'Correo · «Encargos de hoy»', 'hoja', 'filas crema con el ícono en ventanilla; «TODOS LOS DÍAS» en sol')]
+PASO2 = [('engranajes', 'Engranajes · primera pantalla', 'primera', 'carteles y rótulo MOTOR en losas chicas crema; la cuenta de cambios en crema (número a 24 dp)'),
+         ('engranajes', 'Engranajes · a los 40 s', 't40', 'el cartel cumplido o fallido sigue oscuro (verde o granate)'),
+         ('piloto', 'Piloto · «¡Tu misión!»', 'inicio-suave', 'el aviso en crema con la señal en su ventanilla noche'),
+         ('piloto', 'Piloto · «¡HIPERIMPULSO!»', 'hiperimpulso', 'los hitos, en sol con tinta'),
+         ('satelites', 'Satélites · sorpresa', 'aviso-nube', 'el aviso en lámina crema; el seguimiento sigue plano'),
+         ('radar', 'Rescate · «Lluvia de cápsulas»', 'lluvia', 'la franja de avisos en crema; las casillas siguen noche')]
 TAMBIEN = [('calculo', 'Carga exacta · a los 40 s', 't40', 'el reactor, las celdas y los botones'),
            ('anagramas', 'Punta · a los 40 s', 't40', 'la tarjeta crema con el texto que va apareciendo'),
            ('bodega', 'Bodega · a los 40 s', 't40', 'la tarjeta y el carro de reparto a 16 dp'),
@@ -56,7 +62,7 @@ def clave(game, suffix, era): return '%s-%s-%s' % (era, game, suffix)
 def tomar():
     os.makedirs(SRC, exist_ok=True)
     faltan = []
-    for g, _, suffix, _ in PRIMERA + TAMBIEN:
+    for g, _, suffix, _ in PRIMERA + TAMBIEN + PASO2:
         for era, folder, flat in (('hoy', HOY, True), ('prop', CAP, False)):
             p = toma(folder, g, suffix, flat)
             if p: chico(Image.open(p)).save(os.path.join(SRC, clave(g, suffix, era) + '.png'), optimize=True)
@@ -106,7 +112,7 @@ def main():
     ph = int(2400 * PW / 1080)
     Wt = 2 * mar + 6 * PW + 5 * gap
     block = 64 + ph + 110
-    sheet = Image.new('RGB', (Wt, 300 + 4 * block), BG)
+    sheet = Image.new('RGB', (Wt, 300 + 6 * block), BG)
     d = ImageDraw.Draw(sheet)
     d.text((mar, 28), 'El kit en lo que falta: hoy | propuesta', font=f_t, fill=SUN)
     yy = 80
@@ -136,6 +142,8 @@ def main():
     y = fila(PRIMERA, 'Carga, Punta, Bodega y Correo: primera pantalla jugable, «NUEVO» y «Encargos de hoy»', y)
     y += 40
     y = fila(TAMBIEN, 'También cambian', y)
+    y += 40
+    y = fila(PASO2, 'Paso 2: Engranajes, Piloto y los extras (Satélites y Rescate)', y)
     sheet = sheet.crop((0, 0, Wt, y - 40))
     sheet.save(OUT, optimize=True)
     print('ok', OUT, sheet.size)
