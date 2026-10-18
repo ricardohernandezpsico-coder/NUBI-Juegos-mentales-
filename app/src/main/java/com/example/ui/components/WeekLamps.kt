@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -75,4 +77,15 @@ fun WeekLamp(on: Boolean, today: Boolean, size: Dp = 22.dp) {
     }
     if (today) drawCircle(Clay.Lime, this.size.minDimension / 2f - 1.5.dp.toPx(), c, style = Stroke(2.5.dp.toPx()))
   }
+}
+
+/**
+ * Una farola de «Tu semana» de Avance (Tarea 125): la del kit (la de la isla y del ícono de Avance), apagada o encendida, de 28 dp de alto; «hoy» es un aro lima de 2,5 dp dibujado acá (forma, no solo color). La caja mide 36 dp para el aro.
+ */
+@Composable
+fun WeekLampRendered(on: Boolean, today: Boolean, modifier: Modifier = Modifier) {
+  Box(
+    modifier.size(36.dp).drawBehind { if (today) drawCircle(Clay.Lime, size.minDimension / 2f - 1.5.dp.toPx(), center, style = Stroke(2.5.dp.toPx())) },
+    contentAlignment = Alignment.Center
+  ) { FarolaImage(on, 28.dp) }
 }

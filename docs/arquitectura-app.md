@@ -6,9 +6,9 @@ Movido TAL CUAL desde `CLAUDE.md` el 10-oct-2026 (Tarea 69) para dejarle lugar a
 
 - 3 pestañas (29-sep, `docs/previews/navegacion-nubi.png`; `ui/components/NeuroNavBar`, SIN botón "play" central: el
   desafío del día se empieza desde Hoy): Hoy (casa; `HomeScreen`, Nubi al centro con las 4 áreas: ver abajo) · Juegos
-  (player; `GamesLibraryScreen`: ver abajo) · Avance (cerebro dibujado, `BrainIcon`; `ProgressScreen`: tu liga con
-  compartir, tus 4 áreas con la barra de Hoy y su detalle, desafíos de la semana, avance por juego, punto de partida y
-  "Ver más detalles"). No se dice "Mi cerebro" (Ricardo: suena a Lumosity). Arriba a la derecha en las 3
+  (player; `GamesLibraryScreen`: ver abajo) · Avance (la farola; `ProgressScreen` y `AvanceSections`, Tarea 125: **tu semana** con el único número grande
+  («3 de 4 días»), **tus áreas** con el canal y el churro del kit y su detalle, **lo que descubriste** (tus marcas en palabras), **tus medallas** (tres familias por conducta), **tu liga** en una fila con el escudo chico y Compartir, tu punto de partida y
+  «Ver más» con tus últimas partidas en palabras y sin puntos; ya no están el hero de la liga, los desafíos de la semana, el avance por juego, la maestría ni la tendencia en puntos). No se dice "Mi cerebro" (Ricardo: suena a Lumosity). Arriba a la derecha en las 3
   (`TabTopBar` + `components/TopActions`): tu inicial en arcilla celeste = perfil (`ProfileScreen`: escudo, cifras,
   logros) y engranaje = opciones (`SettingsPanel` → `SettingsScreen`); se abren como paneles (`viewModel.topPanel`).
   Inicio «Primer vuelo con Nubi» (`FirstFlightScreen` + `FirstFlightHost`, `data/FirstFlight.kt`, `docs/diseno-inicio.md`): 18 pasos con 4 juegos (uno por área) y preguntas intercaladas, mientras `UserSettings.ageBand == null` o haya un recorrido guardado.
@@ -40,6 +40,17 @@ La lógica que sostiene Avance y Juegos (Fable, `auditoria-fable/spec-avance-jue
   Una siembra silenciosa (`seeded_v2`, antes de guardar la primera partida) marca como ya ganados los logros nuevos que el historial ya cumple, sin avisos. `AchievementsTest` vigila que nadie pierda una medalla.
 - **`LibraryOrder.sort`** (en `data/Library.kt`): el orden de los juegos de un área en la biblioteca, puro y con pruebas (`LibraryOrderTest`): «En tu ruta de hoy» (en el orden de la ruta, con los ya hechos marcados), «Hace días que no juegas» (de más días sin jugar a menos) y «Nuevo para ti»; los grupos vacíos no salen y los empates se rompen por el orden del catálogo.
 - **Movido:** `HoyWeek` y `WeekLamp` viven en `ui/components/WeekLamps.kt` (los comparte Hoy con Avance) y `measureText` en `data/StarMeasures.kt`; `Week.lampsFor` arma los farolitos desde el historial.
+
+## Avance y Juegos con las piezas del kit (Tarea 125, 18-oct)
+
+Las pantallas que usan la lógica de la 124 y las piezas de Blender (`docs/previews/kit-avance-juegos.png`; las lleva a la app `tools/isla/kit_avance_app.py`: `drawable-nodpi/kit_*.webp` + `res/raw/kit_avance.json`, leído por `data/KitAvanceSpec`; `AvanceKitTest` las vigila):
+
+- **`ui/components/AvanceKit.kt`:** `KitBar` (canal + churro nine-slice horizontal + la bolita lima, que marca dónde estabas hace una semana: dentro del churro si subió, más allá de su punta si bajó), `GameEmblem` (la ficha del juego a cualquier tamaño, con el ✓ lima de «jugado hoy»; los retirados caen al `MiniPlanet`), `FarolaImage`, `PedestalImage`,
+  `BuildingOnPedestal` (el edificio de la isla de cada área sobre su pedestal; con `lamp` la farola encendida de la «Sugerida»), `BubbleTail`, `FamilyMedal` (plasticina cruda si está bloqueada; el número del nivel en la placa si mide 96 dp o más) y `ShieldImage`. `NubiBubble` es ahora la losa crema del kit con su cola.
+- **Avance (`ProgressScreen` + `AvanceSections`):** las secciones son funciones sueltas con sus datos armados por lógica pura de `data/AvanceLogic.kt` (`weekSummary`, `leagueRow`, `historyLine`, `Achievements.familyState`, `goalText`), `Week.areasPlayedFor`, `Week.captionParts`, `AreaProgress.cardLine` y `StarMeasures.cards` (`AvanceLogicTest`).
+  Tocar una medalla abre `FamilyMedalDialog` (sus niveles con ✓ y fecha); el Perfil usa las mismas casillas (`FamilyMedalCards`) y deja los logros de desempeño en «Medallas anteriores».
+- **Juegos (`GamesLibraryScreen`):** la grilla pone el EDIFICIO de cada área (observatorio = Memoria, antena = Atención, hangar = Razonamiento, biblioteca = Lenguaje; renders de `kit_avance.py` con la cámara de la isla; los `area_*.webp`, planetas planos de antes, se quitaron) sobre el pedestal; la ventana de un área agrupa los juegos con `LibraryOrder` («En tu ruta de hoy» con la piedrita de su parada,
+  «Hace días que no juegas», «Nuevo para ti»); cada fila lleva el emblema de 56 dp con el marco de avance (un cuadrado de esquinas redondas) y una tercera línea «Jugaste hace 4 días»; la ficha y el detalle de un área usan el emblema.
 
 ## Sesión diaria
 

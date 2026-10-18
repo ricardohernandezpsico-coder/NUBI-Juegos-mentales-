@@ -753,7 +753,7 @@ internal fun AreaDetail(
         // Cada juego es una tarjeta de plasticina tocable (Tarea 90): tocarla abre su ficha.
         ClayCard(Modifier.fillMaxWidth().padding(vertical = 2.dp).testTag("area_game_${g.id}"), onClick = { onGame(g.id) }, contentPadding = 0.dp) {
           Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp, vertical = 6.dp)) {
-            MiniPlanet(g.id, 34.dp)
+            com.example.ui.components.GameEmblem(g.id, 40.dp)
             Spacer(Modifier.width(12.dp))
             Column {
               Text(getGameTitle(g.id, lang, g.title), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)

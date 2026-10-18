@@ -22,6 +22,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -46,8 +47,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
@@ -72,13 +76,16 @@ import com.example.data.AreaSuggestion
 import com.example.data.AreaStatus
 import com.example.data.DiscoveryKind
 import com.example.ui.components.OnBoardText
-import com.example.ui.components.AREA_BODY_FRACTION
 import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.AreaBar
 import com.example.ui.components.LockTabSwipe
 import com.example.ui.components.NubiBubble
+import com.example.ui.components.BuildingIcon
+import com.example.ui.components.BuildingOnPedestal
+import com.example.ui.components.GameEmblem
+import com.example.ui.components.KitBar
+import com.example.data.LibraryOrder
 import com.example.ui.components.areaDescription
-import com.example.ui.components.areaPlanetRes
 import com.example.data.PlayMode
 import com.example.data.Skill
 import com.example.data.measureText
@@ -129,7 +136,10 @@ data class GameCardData(
   val measureSeries: List<Float> = emptyList(),
   val lowerIsBetter: Boolean = false,
   /** Partidas de este juego en los últimos 14 días. */
-  val playsLast14: Int = 0
+  val playsLast14: Int = 0,
+  /** Su número de parada (1 a 3) si es de la ruta de hoy, y si ya se hizo en la ruta (Tarea 125). */
+  val routeStop: Int? = null,
+  val routeDone: Boolean = false
 )
 
 /**
@@ -189,17 +199,25 @@ fun GamesLibraryScreen(
   } else {
     LockTabSwipe()
     BackHandler { viewModel.closeLibraryArea() }
-    val games = remember(open) {
-      GameRegistry.allGames.filter { it.domain == open }.sortedBy { StarMeasures.defForGame(it.id) == null }
+    val daily by viewModel.dailySession.collectAsState()
+    val games = remember(open) { GameRegistry.allGames.filter { it.domain == open } }
+    // «En tu ruta de hoy / Hace días que no juegas / Nuevo para ti» (`LibraryOrder`); el último que abriste ya no reordena, solo se pinta en sol.
+    val sections = remember(open, daily, lastPlayed, now) {
+      LibraryOrder.sort(games.map { it.id }, daily.gameIds, daily.completedCount, lastPlayed.mapValues { dayIndex(it.value) }, dayIndex(now), GameRegistry.allGames.map { it.id })
+    }
+    val windowSections = sections.map { sec ->
+      sec.group.title to sec.entries.map { e ->
+        val g = games.first { it.id == e.gameId }
+        cardData(g, getGameTitle(g.id, lang, g.title), lastPlayed[g.id], now, progress[g.id], measures,
+          history.count { it.gameId == g.id && now - it.timestamp <= 14 * DAY_MS }).copy(routeStop = e.routeStop, routeDone = e.doneToday)
+      }
     }
     AreaWindow(
       domain = open,
       title = getDomainName(open, lang),
       status = statuses.firstOrNull { it.area == open.name },
-      cards = games.map { g ->
-        cardData(g, getGameTitle(g.id, lang, g.title), lastPlayed[g.id], now, progress[g.id], measures,
-          history.count { it.gameId == g.id && now - it.timestamp <= 14 * DAY_MS })
-      },
+      cards = windowSections.flatMap { it.second },
+      sections = windowSections,
       focusGameId = focus.gameId,
       onClose = { viewModel.closeLibraryArea() },
       onGame = { g ->
@@ -299,10 +317,28 @@ internal fun cardData(
   )
 }
 
+/** El marco del avance alrededor del emblema: un cuadrado de esquinas redondas que se recorre desde arriba al centro hacia la derecha; [w] y [h] en px. */
+private fun ringPath(w: Float, h: Float, r: Float): Path = Path().apply {
+  moveTo(w / 2f, 0f); lineTo(w - r, 0f); arcTo(Rect(w - 2 * r, 0f, w, 2 * r), -90f, 90f, false)
+  lineTo(w, h - r); arcTo(Rect(w - 2 * r, h - 2 * r, w, h), 0f, 90f, false)
+  lineTo(r, h); arcTo(Rect(0f, h - 2 * r, 2 * r, h), 90f, 90f, false)
+  lineTo(0f, r); arcTo(Rect(0f, 0f, 2 * r, 2 * r), 180f, 90f, false)
+  lineTo(w / 2f, 0f)
+}
+
+/** La piedrita con el número de parada de la ruta de hoy (o el ✓ si ya se hizo: forma, no solo color). */
+@Composable
+private fun RouteStone(number: Int, done: Boolean) {
+  val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.6f)   // el círculo crece con la letra: con letra 2,0 el número no cabría en 24 dp
+  Box(Modifier.size(24.dp * scale).clip(CircleShape).background(Color(0xFFFFF8EC)).border(2.dp, Clay.Ink, CircleShape).testTag("route_stop_$number"), contentAlignment = Alignment.Center) {
+    if (done) Icon(Icons.Default.Check, contentDescription = "Hecho en tu ruta", tint = Clay.Ink, modifier = Modifier.size(15.dp * scale))
+    else Text("$number", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+  }
+}
+
 /**
- * Casilla de un juego en la lista (arcilla, tocable): planeta con el anillo de tu avance y ✓ si se jugó hoy; el nombre;
- * debajo la etapa y el % (o "Sin medir aún"); a la derecha tu marca si es juego estrella. [highlighted] = la última
- * que se abrió (al volver de jugar se ve dónde estabas).
+ * Casilla de un juego en la lista (plasticina, tocable): su emblema (la ficha con el objeto del juego, Tarea 125) con el marco de tu avance alrededor y ✓ si se jugó hoy; el nombre; debajo la etapa y el % (o "Sin medir aún") y, en una tercera línea,
+ * cuándo lo jugaste por última vez; a la derecha tu marca si es juego estrella. Los de la ruta de hoy llevan antes del emblema la piedrita con su número de parada. [highlighted] = la última que se abrió (al volver de jugar se ve dónde estabas).
  */
 @Composable
 internal fun GameTile(data: GameCardData, highlighted: Boolean, onClick: () -> Unit) {
@@ -315,17 +351,22 @@ internal fun GameTile(data: GameCardData, highlighted: Boolean, onClick: () -> U
     modifier = Modifier.fillMaxWidth().testTag("tile_${g.id}").semantics { if (highlighted) stateDescription = "el último que abriste" }
   ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+      if (data.routeStop != null) { RouteStone(data.routeStop, data.routeDone); Spacer(Modifier.width(8.dp)) }
       Box(
-        Modifier.size(66.dp).drawBehind {
-          val st = 4.dp.toPx()
-          drawCircle(Clay.Ink.copy(alpha = 0.14f), size.minDimension / 2f - st / 2, style = Stroke(st))
-          data.progress?.let {
-            drawArc(ring, -90f, 360f * it.coerceIn(0.03f, 1f), false, Offset(st / 2, st / 2),
-              androidx.compose.ui.geometry.Size(size.width - st, size.height - st), style = Stroke(st, cap = StrokeCap.Round))
+        Modifier.size(70.dp).drawBehind {
+          val st = 4.dp.toPx(); val r = 20.dp.toPx()
+          val frame = ringPath(size.width - st, size.height - st, r)
+          translate(st / 2f, st / 2f) {
+            drawPath(frame, Clay.Ink.copy(alpha = 0.14f), style = Stroke(st))
+            data.progress?.let { p ->
+              val pm = PathMeasure(); pm.setPath(frame, false)
+              val seg = Path(); pm.getSegment(0f, pm.length * p.coerceIn(0.03f, 1f), seg, true)
+              drawPath(seg, ring, style = Stroke(st, cap = StrokeCap.Round))
+            }
           }
         },
         contentAlignment = Alignment.Center
-      ) { com.example.ui.components.MiniPlanet(g.id, 52.dp, done = data.playedToday) }
+      ) { GameEmblem(g.id, 56.dp, done = data.playedToday) }
       Spacer(Modifier.width(14.dp))
       Column(Modifier.weight(1f)) {
         Text(data.title, color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -334,6 +375,7 @@ internal fun GameTile(data: GameCardData, highlighted: Boolean, onClick: () -> U
           color = if (data.progress != null) ring else CardMuted, fontSize = Body, fontWeight = FontWeight.Medium,
           modifier = Modifier.padding(top = 2.dp)
         )
+        Text(data.lastPlayed, color = CardMuted, fontSize = Small, modifier = Modifier.testTag("tile_last_${g.id}"))
       }
       if (data.measureValue != null) {
         Spacer(Modifier.width(8.dp))
@@ -432,14 +474,14 @@ internal fun GameSheetContent(
       // El juego: planeta de 48, título de 21 y subtítulo de 14
       if (largeText) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          com.example.ui.components.MiniPlanet(g.id, 48.dp)
+          GameEmblem(g.id, 48.dp)
           Spacer(Modifier.weight(1f))
           com.example.ui.components.KitCloseButton(onClose, Modifier.testTag("sheet_close"))
         }
         Text(data.title, color = Clay.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp)
         Text(g.subtitle, color = CardMuted, fontSize = Small, lineHeight = 18.sp)
       } else Row(verticalAlignment = Alignment.CenterVertically) {
-        com.example.ui.components.MiniPlanet(g.id, 48.dp)
+        GameEmblem(g.id, 48.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
           Text(data.title, color = Clay.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp)
@@ -671,11 +713,9 @@ internal fun SuggestionHeader(s: AreaSuggestionUi) {
 }
 
 /**
- * Las 4 áreas a la vez, en 2 x 2 que llena la pantalla hasta la barra de pestañas (aprobado por Ricardo,
- * `docs/previews/cuatro-areas.png` Juegos · 2): el planeta del área (el sugerido, más grande, con un aro de luz y el
- * rótulo "Sugerida"; sello sol con ✓ = jugada hoy), el nombre, su subtítulo, la barra de avance de Hoy y "Hábil · 7
- * juegos". Sin flechas ni deslizar: el único gesto hacia los costados de esta pantalla es cambiar de pestaña. Si la letra
- * del sistema es muy grande, la rejilla se desplaza.
+ * Las 4 áreas a la vez, en 2 x 2 que llena la pantalla hasta la barra de pestañas (aprobado por Ricardo, `docs/previews/cuatro-areas.png` Juegos · 2; Tarea 125): el edificio del área (observatorio, antena, hangar o biblioteca de la isla) sobre su pedestal de
+ * plasticina (el sugerido, más grande, con la píldora «Sugerida» y la farola encendida del lugar; sello sol con ✓ = jugada hoy), el nombre, su subtítulo, el canal con el churro del kit y «Hábil · 7 juegos». Sin flechas ni deslizar: el único gesto hacia los costados
+ * de esta pantalla es cambiar de pestaña. Si la letra del sistema es muy grande, la rejilla se desplaza y el nombre pasa a dos líneas.
  */
 @Composable
 internal fun AreaGrid(
@@ -687,7 +727,8 @@ internal fun AreaGrid(
   modifier: Modifier = Modifier
 ) {
   BoxWithConstraints(modifier.fillMaxWidth().testTag("area_grid")) {
-    val rowHeight = maxOf(maxHeight / 2, 262.dp)
+    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    val rowHeight = maxOf(maxHeight / 2, 262.dp * maxOf(1f, fontScale))
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
       statuses.chunked(2).forEach { row ->
         Row(Modifier.fillMaxWidth().height(rowHeight)) {
@@ -696,9 +737,7 @@ internal fun AreaGrid(
             val name = getDomainName(domain, lang)
             val count = GameRegistry.allGames.count { it.domain == domain }
             val isSuggested = s.area == suggested
-            val planet = if (isSuggested) 140.dp else 104.dp
-            // La esfera mide AREA_BODY_FRACTION de la imagen: el aro se dibuja alrededor de la esfera, no de la imagen.
-            val ringRadius = planet * AREA_BODY_FRACTION / 2 + 12.dp
+            val pedestal = if (isSuggested) 140.dp else if (fontScale > 1.15f) 96.dp else 104.dp
             Column(
               horizontalAlignment = Alignment.CenterHorizontally,
               verticalArrangement = Arrangement.Center,
@@ -712,31 +751,19 @@ internal fun AreaGrid(
                 }
                 .testTag("area_${s.area.lowercase()}")
             ) {
-              Box(
-                Modifier.size(150.dp).drawBehind {
-                  if (isSuggested) {
-                    val ring = ringRadius.toPx()
-                    drawCircle(Brush.radialGradient(listOf(Clay.Sun.copy(alpha = 0.14f), Color.Transparent), center, ring * 1.4f), ring * 1.4f, center)
-                    drawCircle(Clay.Sun, ring, center, style = Stroke(3.dp.toPx()))
-                  } else {
-                    // resplandor suave del color del área detrás del planeta
-                    drawCircle(Brush.radialGradient(listOf(domain.color.copy(alpha = 0.38f), Color.Transparent), center, size.minDimension / 2f))
-                  }
-                },
-                contentAlignment = Alignment.Center
-              ) {
-                Image(painterResource(areaPlanetRes(s.area)), contentDescription = null, modifier = Modifier.size(planet))
-                if (s.area in playedToday) {
-                  TodaySeal(Modifier.align(Alignment.Center).offset(x = planet * 0.22f, y = -planet * 0.22f))
-                }
-                if (isSuggested) SuggestedTag(Modifier.align(Alignment.Center).offset(y = -ringRadius))
+              // Todas las cajas miden lo mismo (lo que mide la del sugerido): los nombres y las barras de las cuatro áreas quedan a la misma altura y el sugerido, más grande, crece hacia arriba.
+              Box(Modifier.height(120.dp), contentAlignment = Alignment.BottomCenter) {
+                BuildingOnPedestal(s.area, pedestal, lamp = isSuggested, overlay = {
+                  if (s.area in playedToday) TodaySeal(Modifier.align(Alignment.TopCenter).offset(x = pedestal * 0.16f, y = pedestal * 0.18f))
+                  if (isSuggested) SuggestedTag(Modifier.align(Alignment.BottomCenter).offset(y = 14.dp))      // la píldora «Sugerida» sobre el borde del pedestal
+                })
               }
-              OnBoardText(name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-              OnBoardText(domain.tagline, color = OnNightDim, fontSize = 15.sp, maxLines = 1)
-              AreaBar(s.value, s.change, modifier = Modifier.width(140.dp).padding(vertical = 8.dp), height = 9.dp)
+              OnBoardText(name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 26.sp, modifier = Modifier.padding(top = 18.dp))
+              OnBoardText(domain.tagline, color = OnNightDim, fontSize = 16.sp, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 20.sp)
+              KitBar(s.value, s.change, modifier = Modifier.width(140.dp).padding(vertical = 8.dp), onCard = false)
               OnBoardText(
                 (s.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (count == 1) "1 juego" else "$count juegos",
-                color = OnNightDim, fontSize = 15.sp, maxLines = 1
+                color = OnNightDim, fontSize = 16.sp, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 20.sp
               )
             }
           }
@@ -780,14 +807,16 @@ internal fun AreaWindow(
   focusGameId: String?,
   onClose: () -> Unit,
   onGame: (GameDefinition) -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  /** Los juegos en grupos con su rótulo («En tu ruta de hoy», «Hace días que no juegas», «Nuevo para ti»); null = una sola lista en el orden de [cards]. */
+  sections: List<Pair<String, List<GameCardData>>>? = null
 ) {
   Column(modifier.fillMaxSize().testTag("area_window")) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 6.dp)
     ) {
-      Image(painterResource(areaPlanetRes(domain.name)), contentDescription = null, modifier = Modifier.size(64.dp))
+      BuildingIcon(domain.name, height = 60.dp, box = 72.dp)
       Column(Modifier.weight(1f)) {
         OnBoardText(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
         OnBoardText(
@@ -816,8 +845,13 @@ internal fun AreaWindow(
           )
         }
       }
-      itemsIndexed(cards, key = { _, c -> c.game.id }) { _, data ->
-        GameTile(data, highlighted = data.game.id == focusGameId) { onGame(data.game) }
+      (sections ?: listOf("" to cards)).forEach { (label, group) ->
+        if (label.isNotEmpty()) item(key = "grupo_$label") {
+          OnBoardText(label, color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("group_$label"))
+        }
+        items(group, key = { it.game.id }) { data ->
+          GameTile(data, highlighted = data.game.id == focusGameId) { onGame(data.game) }
+        }
       }
     }
   }

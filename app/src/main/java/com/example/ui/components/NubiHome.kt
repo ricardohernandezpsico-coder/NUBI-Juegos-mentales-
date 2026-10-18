@@ -118,8 +118,6 @@ val AreaBarColor = Color(0xFFC4BAFF)
 private val AreaBarOnCard = Color(0xFF7B6BD6)
 /** Lo que bajó en la semana: lila suave, nunca rojo (sin culpa). */
 private val AreaDownColor = Color(0xFFB2A8E8)
-private val BubbleFill = Color(0xFFFCFAFF)
-private val BubbleLine = Color(0xFF4A3896)
 private val BubbleLabel = Color(0xFF605890)
 
 /** Orden de las áreas (30-sep, 4 áreas): en Hoy, índices pares a la izquierda y impares a la derecha. */
@@ -174,44 +172,18 @@ fun areaDescription(name: String, s: AreaStatus): String {
 }
 
 /**
- * Globo de texto de Nubi (un diálogo de Nubi: el único recuadro de la pantalla), con la cola hacia abajo o, con
- * [tailLeft], hacia la izquierda (Nubi al lado del globo, como en la ventana de un área de Juegos).
+ * Globo de texto de Nubi (un diálogo de Nubi: el único recuadro de la pantalla): la losa crema del kit con su cola de plasticina (Tarea 125; `kit_cola_izq`, 16 × 12 dp) abajo: a la izquierda si Nubi está al lado ([tailLeft], como en la ventana de un área
+ * de Juegos) o al centro si Nubi está debajo. El texto es de Compose.
  */
 @Composable
 fun NubiBubble(title: String, text: String, modifier: Modifier = Modifier, tailLeft: Boolean = false) {
-  Column(
-    modifier
-      .drawBehind {
-        val tl = 12.dp.toPx()
-        val x0 = if (tailLeft) tl else 0f
-        val w = size.width - x0
-        val h = if (tailLeft) size.height - 3.dp.toPx() else size.height - 12.dp.toPx()
-        val r = CornerRadius(18.dp.toPx())
-        val line = 2.dp.toPx()
-        drawRoundRect(BubbleLine, topLeft = Offset(x0, 3.dp.toPx()), size = Size(w, h), cornerRadius = r)
-        drawRoundRect(BubbleFill, topLeft = Offset(x0, 0f), size = Size(w, h), cornerRadius = r)
-        drawRoundRect(BubbleLine, topLeft = Offset(x0, 0f), size = Size(w, h), cornerRadius = r, style = Stroke(line))
-        val t = 9.dp.toPx()
-        if (tailLeft) {
-          val cy = h * 0.5f
-          val tail = Path().apply { moveTo(x0 + line, cy - t); lineTo(x0 - tl + line, cy); lineTo(x0 + line, cy + t); close() }
-          drawPath(tail, BubbleFill)
-          drawLine(BubbleLine, Offset(x0 + line / 2f, cy - t), Offset(x0 - tl + line, cy), line)
-          drawLine(BubbleLine, Offset(x0 + line / 2f, cy + t), Offset(x0 - tl + line, cy), line)
-        } else {
-          val cx = size.width / 2f
-          val tail = Path().apply { moveTo(cx - t, h - line); lineTo(cx, h + 12.dp.toPx() - line); lineTo(cx + t, h - line); close() }
-          drawPath(tail, BubbleFill)
-          drawLine(BubbleLine, Offset(cx - t, h - line / 2f), Offset(cx, h + 12.dp.toPx() - line), line)
-          drawLine(BubbleLine, Offset(cx + t, h - line / 2f), Offset(cx, h + 12.dp.toPx() - line), line)
-        }
+  Box(modifier.padding(bottom = 8.dp)) {
+    ClaySlab(SlabColor.CREAM, Modifier.fillMaxWidth(), SlabSize.MEDIUM) {
+      Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+        Text(title, color = BubbleLabel, fontSize = 16.sp)
+        Text(text, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
       }
-      .padding(
-        start = if (tailLeft) 28.dp else 16.dp, end = 16.dp, top = 8.dp,
-        bottom = if (tailLeft) 14.dp else 20.dp
-      )
-  ) {
-    Text(title, color = BubbleLabel, fontSize = 16.sp)
-    Text(text, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+    }
+    BubbleTail(left = true, Modifier.align(if (tailLeft) Alignment.BottomStart else Alignment.BottomCenter).offset(x = if (tailLeft) 26.dp else 0.dp, y = 2.dp))
   }
 }

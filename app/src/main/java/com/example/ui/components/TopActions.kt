@@ -97,17 +97,3 @@ fun TopActions(
     ClayDisc(DiscStyle.CREAM, onSettings, "Opciones", Modifier.testTag("btn_top_settings")) { KitGlyph(Glyph.GEAR, size = 28.dp) }
   }
 }
-
-/**
- * Planeta de cada área (esfera de color con su ícono blanco; Atención = diana), horneado por
- * `tools/previews/nubi_recursos.py` en drawable-nodpi/area_*.webp. La esfera mide [AREA_BODY_FRACTION] del ancho.
- */
-const val AREA_BODY_FRACTION = 0.6f
-
-@DrawableRes
-fun areaPlanetRes(area: String): Int = when (area) {
-  "MEMORIA" -> R.drawable.area_memoria
-  "ATENCION" -> R.drawable.area_atencion
-  "RAZONAMIENTO" -> R.drawable.area_razonamiento
-  else -> R.drawable.area_lenguaje
-}

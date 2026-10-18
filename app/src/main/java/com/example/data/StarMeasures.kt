@@ -149,6 +149,31 @@ object StarMeasures {
     return Discovery(d, recent(list), DiscoveryKind.STEADY)
   }
 
+  /** Cómo va una serie (comparable, con al menos [MIN_POINTS] partidas): récord reciente, mejorando o se mantiene (la misma regla que [discover]). */
+  private fun kindOf(d: MeasureDef, list: List<MeasurePoint>, now: Long): DiscoveryKind {
+    val last = list.last()
+    if (now - last.timestamp <= 7 * DAY_MS && list.dropLast(1).all { better(d, last.value, it.value) }) return DiscoveryKind.RECORD
+    val v = list.takeLast(MAX_POINTS).map { it.value }; val half = v.size / 2
+    val first = v.take(half).average().toFloat(); val lastAvg = v.takeLast(half).average().toFloat()
+    val gain = (if (d.lowerIsBetter) first - lastAvg else lastAvg - first) / abs(first).coerceAtLeast(1e-3f)
+    return if (gain >= 0.05f) DiscoveryKind.IMPROVING else DiscoveryKind.STEADY
+  }
+
+  /**
+   * «Lo que descubriste» en Avance (Tarea 125): hasta [max] tarjetas. La primera es el descubrimiento del día ([discover]); las otras, las series con al menos [MIN_POINTS] partidas comparables ordenadas por su última partida, sin repetir la medida
+   * del descubrimiento. Vacía = ningún juego estrella tiene todavía [MIN_POINTS] partidas (entonces va el [nudge]).
+   */
+  fun cards(points: List<MeasurePoint>, now: Long, max: Int = 3): List<Discovery> {
+    val first = discover(points, now) ?: return emptyList()
+    val others = points.groupBy { it.key }
+      .mapNotNull { (k, l) -> def(k)?.takeIf { it.key != first.def.key }?.let { it to comparable(l) } }
+      .filter { it.second.size >= MIN_POINTS }
+      .sortedByDescending { it.second.last().timestamp }
+      .take((max - 1).coerceAtLeast(0))
+      .map { (d, list) -> Discovery(d, list.takeLast(MAX_POINTS).map { it.value }, kindOf(d, list, now)) }
+    return listOf(first) + others
+  }
+
   /** Sin descubrimiento: el juego estrella al que le faltan menos partidas (o Rescate relámpago si todavía no hay ninguna). */
   fun nudge(points: List<MeasurePoint>): DiscoveryNudge {
     val counts = points.groupingBy { it.key }.eachCount()

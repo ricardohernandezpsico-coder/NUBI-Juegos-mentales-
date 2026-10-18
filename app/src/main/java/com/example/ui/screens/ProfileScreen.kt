@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.data.AchievementDef
 import com.example.data.AchievementStats
 import com.example.data.Achievements
+import com.example.data.familyState
 import com.example.data.Streak
 import com.example.model.RankTier
 import com.example.ui.components.AchievementMedal
@@ -110,6 +111,8 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
   val unlocks by viewModel.achievementUnlocks.collectAsState()
   val achStats by viewModel.achievementStats.collectAsState()
   var achievementDetail by remember { mutableStateOf<AchievementDef?>(null) }
+  var familyOpen by remember { mutableStateOf<com.example.data.AchievementFamily?>(null) }
+  val medals = remember(unlocks, achStats) { com.example.data.AchievementFamily.entries.map { Achievements.familyState(it, unlocks.keys, achStats) } }
 
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
@@ -160,13 +163,12 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
       com.example.ui.components.OnBoardText(streakNote, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().testTag("streak_note"))
     }
 
-    // Logros: medallas en filas de 4; las bloqueadas muestran cuánto falta.
+    // Logros: las tres familias de medallas por conducta (Constancia, Variedad y Volver), con su último nivel y lo que falta; tocar una abre sus niveles.
     item {
       Column {
-        SpaceSectionTitle("Logros", hint = "${Achievements.all.count { it.id in unlocks }} de ${Achievements.all.size} conseguidos")
+        SpaceSectionTitle("Logros", hint = "Por lo que haces, no por el puntaje")
         Spacer(Modifier.height(14.dp))
-        // Cuántas medallas por fila: las que dejen a la palabra más larga («Contrarreloj», ≈ 90 dp en negrita de 16 sp) entera; con letra grande, menos columnas (nunca se parte una palabra: ni «Contrarrelo / j» ni «Explorad / or»).
-        AchievementGrid(Achievements.all, unlocks.keys, achStats) { achievementDetail = it }
+        FamilyMedalCards(medals) { familyOpen = it }
       }
     }
 
@@ -206,6 +208,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
   achievementDetail?.let { def ->
     AchievementDetailDialog(def, unlocks[def.id], achStats) { achievementDetail = null }
   }
+  familyOpen?.let { f -> medals.firstOrNull { it.family == f }?.let { FamilyMedalDialog(it, unlocks, achStats) { familyOpen = null } } }
 }
 
 /** Detalle de un logro: medalla grande, qué hay que hacer, cuándo se consiguió o cuánto falta. */

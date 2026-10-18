@@ -96,6 +96,22 @@ object AreaProgress {
     }
   }
 
+  /**
+   * La línea del cambio de la tarjeta de un área en Avance (Tarea 125): «Subió 3 puntos esta semana» / «Igual que la semana pasada» / «Bajó 2 puntos: es normal que varíe». null si todavía no hay una semana con qué comparar (menos de dos
+   * valores en [AreaStatus.weeks]) o el área está sin medir.
+   */
+  fun cardLine(s: AreaStatus): String? {
+    val now = s.points ?: return null
+    if (s.weeks.count { it != null } < 2) return null
+    val diff = now - (s.pointsBefore ?: now)
+    fun puntos(n: Int) = if (n == 1) "1 punto" else "$n puntos"
+    return when {
+      s.change > 0f && diff > 0 -> "Subió ${puntos(diff)} esta semana"
+      s.change < 0f && diff < 0 -> "Bajó ${puntos(-diff)}: es normal que varíe"
+      else -> "Igual que la semana pasada"
+    }
+  }
+
   /** "Te faltan 8 para Experto" (null en Maestro o sin medir). */
   fun toNextLine(s: AreaStatus): String? {
     val v = s.value ?: return null

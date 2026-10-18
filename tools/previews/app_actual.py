@@ -26,8 +26,8 @@ SUN = (255, 201, 60)
 
 # Recortes (en píxeles de la captura de 1080 de ancho; los fija mirar las imágenes, ver el README de la carpeta)
 CROPS = {
-    "avance-completa": (0, 8250),          # hasta «Ver más detalles» (debajo solo la barra de pestañas del marco)
-    "perfil-completa": (0, 4900),          # hasta «Prefiero no decir»
+    "avance-completa": (0, 5330),          # hasta «Ver más» (Tarea 125; antes 8250, hasta «Ver más detalles»; debajo solo la barra de pestañas del marco)
+    "perfil-completa": (0, 3450),          # hasta «Prefiero no decir» (Tarea 125; antes 4900: los logros ya no son una rejilla de 18 medallas)
     "resultado-completa": (0, 4380),       # hasta «Jugar de nuevo»
     "ajustes-completa": (0, 5970),         # hasta el aviso de salud (debajo viene el bloque «[Debug]», que solo existe en builds de depuración)
     "licencias-completa": (0, 5400),       # hasta el aviso de salud

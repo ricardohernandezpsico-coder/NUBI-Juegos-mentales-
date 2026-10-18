@@ -1,0 +1,99 @@
+package com.example.data
+
+import com.example.model.GamePlayResult
+import com.example.model.GameRegistry
+import com.example.model.RankTier
+import java.util.Locale
+import kotlin.math.roundToInt
+
+/**
+ * Lo que sostiene las pantallas de Avance y Juegos (Tarea 125; `auditoria-fable/spec-avance-juegos.md` §1 y §2): textos y estados armados con lógica pura, con pruebas (`AvanceLogicTest`).
+ */
+
+/** Lo que cuenta la meta de un nivel de logro, con su unidad: «3 días», «25 partidas», «4 áreas», «9 juegos», «1 regreso». */
+fun AchievementDef.goalText(): String {
+  val n = number ?: 1
+  val unit = when {
+    id.startsWith("racha_") -> if (n == 1) "día" else "días"
+    id == "primer_paso" || id.startsWith("partidas_") -> if (n == 1) "partida" else "partidas"
+    id == "dia_completo" -> "partidas en un día"
+    id == "dominios" -> "áreas"
+    id.startsWith("explorador") -> "juegos"
+    id.startsWith("vuelta_") -> if (n == 1) "regreso" else "regresos"
+    else -> ""
+  }
+  return "$n $unit".trim()
+}
+
+/**
+ * Una familia de medallas en un momento: el último nivel conseguido ([reached], null = ninguno todavía), el siguiente ([next], null = ya está en el más alto) y cuánto lleva hacia el siguiente ([progress]).
+ * La medalla del kit muestra [number] (la meta del último nivel conseguido) sobre su placa; si no hay ninguno, va bloqueada (plasticina cruda) con «x/y» debajo.
+ */
+data class FamilyMedalState(val family: AchievementFamily, val reached: AchievementDef?, val next: AchievementDef?, val progress: Pair<Int, Int>?) {
+  val unlocked: Boolean get() = reached != null
+  val number: Int? get() = reached?.let { it.number ?: 1 }
+
+  /** Bajo el título de la familia: «1/3 días» si está bloqueada; «siguiente: 14 días» si hay otro nivel; «El nivel más alto» si no. */
+  val caption: String
+    get() = when {
+      reached == null -> progress?.let { (cur, goal) -> "$cur/$goal ${next?.goalText()?.substringAfter(' ').orEmpty()}".trim() } ?: ""
+      next != null -> "siguiente: ${next.goalText()}"
+      else -> "El nivel más alto"
+    }
+
+  /** Lo que lee el lector de pantalla. */
+  val spoken: String
+    get() = when {
+      reached == null -> "${family.title}, bloqueada. $caption"
+      next != null -> "${family.title}, nivel ${reached.goalText()}. $caption"
+      else -> "${family.title}, nivel ${reached.goalText()}. $caption"
+    }
+}
+
+fun Achievements.familyState(family: AchievementFamily, unlocked: Set<String>, stats: AchievementStats): FamilyMedalState {
+  val next = next(family, unlocked)
+  return FamilyMedalState(family, reached(family, unlocked), next, next?.progress?.invoke(stats))
+}
+
+/** Los números con punto de miles, como se lee en español («1.240»). */
+fun thousands(n: Int): String = String.format(Locale.GERMANY, "%,d", n)
+
+/** La fila de la liga de Avance (§1.5): «Liga Plata · 1.240 trofeos» y, si hay siguiente liga y ya hay trofeos, «260 para Oro». */
+data class LeagueRow(val tier: RankTier, val title: String, val toNext: String?)
+
+fun leagueRow(avg: Int): LeagueRow {
+  val tier = RankTier.fromRating(avg)
+  val next = RankTier.entries.getOrNull(tier.ordinal + 1)
+  return LeagueRow(
+    tier, "Liga ${tier.tierName} · ${thousands(avg)} ${if (avg == 1) "trofeo" else "trofeos"}",
+    if (next == null || avg <= 0) null else "${thousands((next.minRating - avg).coerceAtLeast(0))} para ${next.tierName}"
+  )
+}
+
+private val SHORT_DAYS = arrayOf("Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb")
+
+/** «Lun 14 · Rescate relámpago · a tu medida» (con reloj: «con reloj»); si el juego tiene medida y hay un punto con la misma marca de tiempo, se agrega su valor en palabras: «· 4 de 4 cápsulas». Sin puntos («pts»). */
+fun historyLine(r: GamePlayResult, measures: List<MeasurePoint>, title: String): String {
+  val cal = java.util.Calendar.getInstance().apply { timeInMillis = r.timestamp }
+  val day = "${SHORT_DAYS[cal.get(java.util.Calendar.DAY_OF_WEEK) - 1]} ${cal.get(java.util.Calendar.DAY_OF_MONTH)}"
+  val def = StarMeasures.defForGame(r.gameId)
+  val point = def?.let { d -> measures.firstOrNull { it.key == d.key && it.timestamp == r.timestamp } }
+  val value = if (def != null && point != null) when (def.key) {
+    "stroop" -> DosOrillas.cost(point.value.roundToInt())                    // en palabras, como en su final
+    Brake.KEY -> StarMeasures.zoneText(def, measures)                        // Freno: la zona, nunca milisegundos
+    else -> measureText(def, point.value)
+  } else null
+  return listOfNotNull(day, title, if (r.timed) "con reloj" else "a tu medida", value).joinToString(" · ")
+}
+
+/** El estado de «Tu semana» (§1.1): los textos y si hay algo que celebrar o invitar. */
+data class WeekSummary(val big: String, val rest: String, val streakPill: String?, val areasLine: String, val empty: Boolean)
+
+fun weekSummary(lamps: Week.Lamps, goal: Int, streak: Int, areas: Int, noGamesAtAll: Boolean): WeekSummary {
+  if (noGamesAtAll) return WeekSummary("Tu semana empieza hoy", "", null, "Juega tu ruta de hoy y se enciende la primera farola.", true)
+  val (big, rest) = Week.captionParts(lamps.daysPlayed, goal)
+  return WeekSummary(big, rest, if (streak > 0) "Racha: ${if (streak == 1) "1 día" else "$streak días"}" else null, "Áreas esta semana: $areas de ${com.example.model.DomainType.values().size}", false)
+}
+
+/** El nombre del área de un juego (null si es uno retirado): para contar las áreas de la semana. */
+fun areaNameOf(gameId: String): String? = GameRegistry.getById(gameId)?.domain?.name

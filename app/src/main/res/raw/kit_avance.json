@@ -1,0 +1,778 @@
+{
+ "px_por_dp": 3,
+ "nota": "Piezas del kit para Avance y Juegos (Tarea 125), de los renders de `tools/isla/isla.py --kit --kit-solo avance` por `tools/isla/kit_avance_app.py`. A 3 px por dp; `cuerpo_dp` y `margenes_dp` medidos en la imagen. Nine-slice horizontal (`insets_px`) en el canal y el churro; `placa_dp` es el sitio del número de la medalla (va en Compose).",
+ "piezas": {
+  "canal_crema": {
+   "imagen_px": [
+    216,
+    72
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 6.67,
+    "der": 6.0,
+    "abajo": 5.0
+   },
+   "cuerpo_dp": {
+    "ancho": 60.0,
+    "alto": 12.33
+   },
+   "insets_px": {
+    "izq": 102,
+    "der": 102
+   }
+  },
+  "canal_cielo": {
+   "imagen_px": [
+    216,
+    72
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 6.67,
+    "der": 6.0,
+    "abajo": 5.0
+   },
+   "cuerpo_dp": {
+    "ancho": 60.0,
+    "alto": 12.33
+   },
+   "insets_px": {
+    "izq": 102,
+    "der": 102
+   }
+  },
+  "churro_sol": {
+   "imagen_px": [
+    216,
+    60
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 5.0,
+    "der": 6.0,
+    "abajo": 6.0
+   },
+   "cuerpo_dp": {
+    "ancho": 60.0,
+    "alto": 9.0
+   },
+   "insets_px": {
+    "izq": 102,
+    "der": 102
+   }
+  },
+  "churro_lima": {
+   "imagen_px": [
+    216,
+    60
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 5.0,
+    "der": 6.0,
+    "abajo": 5.67
+   },
+   "cuerpo_dp": {
+    "ancho": 60.0,
+    "alto": 9.33
+   },
+   "insets_px": {
+    "izq": 102,
+    "der": 102
+   }
+  },
+  "bolita": {
+   "imagen_px": [
+    60,
+    60
+   ],
+   "margenes_dp": {
+    "izq": 5.0,
+    "arr": 4.0,
+    "der": 5.0,
+    "abajo": 6.0
+   },
+   "cuerpo_dp": {
+    "ancho": 10.0,
+    "alto": 10.0
+   }
+  },
+  "farola_off": {
+   "imagen_px": [
+    108,
+    108
+   ],
+   "margenes_dp": {
+    "izq": 10.33,
+    "arr": 5.0,
+    "der": 10.0,
+    "abajo": 3.33
+   },
+   "cuerpo_dp": {
+    "ancho": 15.67,
+    "alto": 27.67
+   }
+  },
+  "farola_on": {
+   "imagen_px": [
+    108,
+    108
+   ],
+   "margenes_dp": {
+    "izq": 10.33,
+    "arr": 5.0,
+    "der": 10.0,
+    "abajo": 3.33
+   },
+   "cuerpo_dp": {
+    "ancho": 15.67,
+    "alto": 27.67
+   }
+  },
+  "pedestal": {
+   "imagen_px": [
+    486,
+    210
+   ],
+   "margenes_dp": {
+    "izq": 5.33,
+    "arr": 7.33,
+    "der": 5.0,
+    "abajo": 9.67
+   },
+   "cuerpo_dp": {
+    "ancho": 151.67,
+    "alto": 53.0
+   }
+  },
+  "cola_izq": {
+   "imagen_px": [
+    84,
+    72
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 6.33,
+    "der": 8.67,
+    "abajo": 7.67
+   },
+   "cuerpo_dp": {
+    "ancho": 13.33,
+    "alto": 10.0
+   }
+  },
+  "cola_der": {
+   "imagen_px": [
+    84,
+    72
+   ],
+   "margenes_dp": {
+    "izq": 8.67,
+    "arr": 6.33,
+    "der": 6.0,
+    "abajo": 7.67
+   },
+   "cuerpo_dp": {
+    "ancho": 13.33,
+    "alto": 10.0
+   }
+  },
+  "emb_parejas": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_secuencia": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_bodega": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_correo": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_stroop": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_piloto": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_freno": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_satelites": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_radar": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_calculo": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_engranajes": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_acoplamiento": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 6.33,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 63.33
+   }
+  },
+  "emb_aterrizaje": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_anagramas": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_meteoros": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_disparate": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "emb_intrusa": {
+   "imagen_px": [
+    216,
+    216
+   ],
+   "margenes_dp": {
+    "izq": 3.67,
+    "arr": 8.0,
+    "der": 3.67,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 64.67,
+    "alto": 61.67
+   }
+  },
+  "med_constancia": {
+   "imagen_px": [
+    288,
+    288
+   ],
+   "margenes_dp": {
+    "izq": 17.0,
+    "arr": 16.33,
+    "der": 17.0,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 62.0,
+    "alto": 77.33
+   },
+   "placa_dp": {
+    "cx": 48.0,
+    "cy": 86.0,
+    "ancho": 52,
+    "alto": 16
+   }
+  },
+  "med_constancia_off": {
+   "imagen_px": [
+    288,
+    288
+   ],
+   "margenes_dp": {
+    "izq": 17.0,
+    "arr": 16.33,
+    "der": 17.0,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 62.0,
+    "alto": 77.33
+   },
+   "placa_dp": {
+    "cx": 48.0,
+    "cy": 86.0,
+    "ancho": 52,
+    "alto": 16
+   }
+  },
+  "med_variedad": {
+   "imagen_px": [
+    288,
+    288
+   ],
+   "margenes_dp": {
+    "izq": 12.67,
+    "arr": 22.0,
+    "der": 10.0,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 73.33,
+    "alto": 71.67
+   },
+   "placa_dp": {
+    "cx": 48.0,
+    "cy": 86.0,
+    "ancho": 52,
+    "alto": 16
+   }
+  },
+  "med_variedad_off": {
+   "imagen_px": [
+    288,
+    288
+   ],
+   "margenes_dp": {
+    "izq": 12.67,
+    "arr": 22.0,
+    "der": 10.0,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 73.33,
+    "alto": 71.67
+   },
+   "placa_dp": {
+    "cx": 48.0,
+    "cy": 86.0,
+    "ancho": 52,
+    "alto": 16
+   }
+  },
+  "med_volver": {
+   "imagen_px": [
+    288,
+    288
+   ],
+   "margenes_dp": {
+    "izq": 17.0,
+    "arr": 24.0,
+    "der": 17.0,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 62.0,
+    "alto": 69.67
+   },
+   "placa_dp": {
+    "cx": 48.0,
+    "cy": 86.0,
+    "ancho": 52,
+    "alto": 16
+   }
+  },
+  "med_volver_off": {
+   "imagen_px": [
+    288,
+    288
+   ],
+   "margenes_dp": {
+    "izq": 17.0,
+    "arr": 24.0,
+    "der": 17.0,
+    "abajo": 2.33
+   },
+   "cuerpo_dp": {
+    "ancho": 62.0,
+    "alto": 69.67
+   },
+   "placa_dp": {
+    "cx": 48.0,
+    "cy": 86.0,
+    "ancho": 52,
+    "alto": 16
+   }
+  },
+  "escudo_bronce": {
+   "imagen_px": [
+    360,
+    402
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 11.33,
+    "der": 6.0,
+    "abajo": 8.0
+   },
+   "cuerpo_dp": {
+    "ancho": 108.0,
+    "alto": 114.67
+   }
+  },
+  "escudo_plata": {
+   "imagen_px": [
+    360,
+    402
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 11.33,
+    "der": 6.0,
+    "abajo": 8.0
+   },
+   "cuerpo_dp": {
+    "ancho": 108.0,
+    "alto": 114.67
+   }
+  },
+  "escudo_oro": {
+   "imagen_px": [
+    360,
+    402
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 11.33,
+    "der": 6.0,
+    "abajo": 8.0
+   },
+   "cuerpo_dp": {
+    "ancho": 108.0,
+    "alto": 114.67
+   }
+  },
+  "escudo_platino": {
+   "imagen_px": [
+    360,
+    402
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 11.33,
+    "der": 6.0,
+    "abajo": 8.0
+   },
+   "cuerpo_dp": {
+    "ancho": 108.0,
+    "alto": 114.67
+   }
+  },
+  "escudo_esmeralda": {
+   "imagen_px": [
+    360,
+    402
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 11.33,
+    "der": 6.0,
+    "abajo": 8.0
+   },
+   "cuerpo_dp": {
+    "ancho": 108.0,
+    "alto": 114.67
+   }
+  },
+  "escudo_diamante": {
+   "imagen_px": [
+    360,
+    402
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 11.33,
+    "der": 6.0,
+    "abajo": 8.0
+   },
+   "cuerpo_dp": {
+    "ancho": 108.0,
+    "alto": 114.67
+   }
+  },
+  "escudo_maestro": {
+   "imagen_px": [
+    360,
+    402
+   ],
+   "margenes_dp": {
+    "izq": 6.0,
+    "arr": 11.33,
+    "der": 6.0,
+    "abajo": 8.0
+   },
+   "cuerpo_dp": {
+    "ancho": 108.0,
+    "alto": 114.67
+   }
+  },
+  "edif_memoria": {
+   "imagen_px": [
+    432,
+    432
+   ],
+   "margenes_dp": {
+    "izq": 43.67,
+    "arr": 62.0,
+    "der": 43.33,
+    "abajo": 19.33
+   },
+   "cuerpo_dp": {
+    "ancho": 57.0,
+    "alto": 62.67
+   },
+   "pie_dp": [
+    72.0,
+    107.37
+   ]
+  },
+  "edif_atencion": {
+   "imagen_px": [
+    432,
+    432
+   ],
+   "margenes_dp": {
+    "izq": 50.0,
+    "arr": 51.33,
+    "der": 49.67,
+    "abajo": 23.33
+   },
+   "cuerpo_dp": {
+    "ancho": 44.33,
+    "alto": 69.33
+   },
+   "pie_dp": [
+    72.0,
+    107.37
+   ]
+  },
+  "edif_razonamiento": {
+   "imagen_px": [
+    432,
+    432
+   ],
+   "margenes_dp": {
+    "izq": 38.0,
+    "arr": 49.67,
+    "der": 38.0,
+    "abajo": 18.0
+   },
+   "cuerpo_dp": {
+    "ancho": 68.0,
+    "alto": 76.33
+   },
+   "pie_dp": [
+    72.0,
+    107.37
+   ]
+  },
+  "edif_lenguaje": {
+   "imagen_px": [
+    432,
+    432
+   ],
+   "margenes_dp": {
+    "izq": 35.33,
+    "arr": 52.0,
+    "der": 35.33,
+    "abajo": 19.0
+   },
+   "cuerpo_dp": {
+    "ancho": 73.33,
+    "alto": 73.0
+   },
+   "pie_dp": [
+    72.0,
+    107.37
+   ]
+  }
+ }
+}

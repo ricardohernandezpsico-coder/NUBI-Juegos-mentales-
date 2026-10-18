@@ -32,6 +32,8 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
   la farola apagada y encendida (y una semana de farolas), el pedestal de lugar, las colas del globo de Nubi, las 3 medallas conseguidas y bloqueadas y el escudo de liga en los 7 colores. Render de Blender (`tools/isla/isla.py --kit --kit-solo avance`);
   la hoja la arma `tools/previews/kit_avance_juegos.py`, que también deja los WebP y `kit_avance.json` en [`kit-avance-juegos/`](kit-avance-juegos/). Todavía no están en la app (la Tarea 125 las integra a Avance y Juegos).
 
+- [`avance-juegos-125.png`](avance-juegos-125.png): Avance, la grilla de Juegos, la ventana de Memoria, la ficha de un juego, Hoy y el Perfil, ANTES (git HEAD de `app-actual/`) | DESPUÉS de la Tarea 125, capturas reales de la app. La arma `tools/previews/avance_juegos_125.py` (antes de regenerar `app-actual/`).
+
 ## Cuatro áreas (30-sep)
 
 - [`cuatro-areas.png`](cuatro-areas.png): maqueta de Nubi con 4 áreas sobre el fondo C. Hoy · B final (nombres cortos con
