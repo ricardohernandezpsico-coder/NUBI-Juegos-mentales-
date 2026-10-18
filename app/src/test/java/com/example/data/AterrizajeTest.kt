@@ -64,8 +64,8 @@ class AterrizajeTest {
     val prev = listOf(10f, 12f, 8f)                       // promedio 10, mejor 8
     assertEquals("Hoy quedaste más cerca que tu promedio.", Aterrizaje.progress(9f, prev).phrase)
     assertEquals("Un poco más lejos que tu promedio: es normal que varíe.", Aterrizaje.progress(11f, prev).phrase)
-    assertEquals("Igual que tu promedio: vas parejo.", Aterrizaje.progress(10.3f, prev).phrase)
-    assertEquals("un tramo de 0,5 alrededor del promedio cuenta como parejo", "Igual que tu promedio: vas parejo.", Aterrizaje.progress(9.6f, prev).phrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", Aterrizaje.progress(10.3f, prev).phrase)
+    assertEquals("un tramo de 0,5 alrededor del promedio cuenta como parejo", "Cerca de tu promedio: vas parejo.", Aterrizaje.progress(9.6f, prev).phrase)
     // sin mejorar la mejor anterior, tu mejor sigue siendo la de antes
     assertEquals(8, Aterrizaje.progress(11f, prev).best)
   }

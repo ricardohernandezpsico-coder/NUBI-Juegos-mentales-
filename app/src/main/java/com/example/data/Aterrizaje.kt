@@ -57,7 +57,7 @@ object Aterrizaje {
 
   /**
    * «Hoy / Tu promedio / Tu mejor» y su frase (§6.3). El promedio y el mejor salen de las partidas ANTERIORES; «Tu mejor» incluye hoy. Sin partidas anteriores: «Juega otra vez para ver tu avance.»; mejor que tu mejor anterior: «¡Tu partida más precisa hasta ahora!»;
-   * más cerca que el promedio (por más de 0,5): «Hoy quedaste más cerca que tu promedio.»; más lejos (por más de 0,5): «Un poco más lejos que tu promedio: es normal que varíe.»; si no: «Igual que tu promedio: vas parejo.»
+   * más cerca que el promedio (por más de 0,5): «Hoy quedaste más cerca que tu promedio.»; más lejos (por más de 0,5): «Un poco más lejos que tu promedio: es normal que varíe.»; si no: «Cerca de tu promedio: vas parejo.»
    */
   fun progress(todayPct: Float?, previous: List<Float>): Progress {
     val today = estimate(todayPct)
@@ -68,7 +68,7 @@ object Aterrizaje {
       todayPct < prevBest -> "¡Tu partida más precisa hasta ahora!"
       todayPct < mean - 0.5f -> "Hoy quedaste más cerca que tu promedio."
       todayPct > mean + 0.5f -> "Un poco más lejos que tu promedio: es normal que varíe."
-      else -> "Igual que tu promedio: vas parejo."
+      else -> "Cerca de tu promedio: vas parejo."
     }
     return Progress(today, estimate(mean), estimate(minOf(prevBest, todayPct)), phrase)
   }

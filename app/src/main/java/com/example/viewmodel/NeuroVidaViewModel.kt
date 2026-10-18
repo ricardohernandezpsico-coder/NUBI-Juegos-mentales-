@@ -475,7 +475,14 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       return
     }
     val withMode = if (current != null) rawResult.copy(playMode = current.mode) else rawResult
-    val result = withMode
+    // La primera partida de un juego no rompe ningún récord (Tarea 127): la marca previa se lee ANTES de guardar; sin ella (0), Unity dice «récord nuevo» a toda primera partida y aquí se apaga (sin tocar la telemetría).
+    val result = com.example.data.FirstRecord.gate(
+      withMode,
+      com.example.data.FirstRecord.Priors(
+        rescate = repository.rescateRecord.value, acoplamiento = repository.acoplamientoRecord.value, correo = repository.correoRecord.value,
+        satelites = repository.satelitesRecord.value, bodega = repository.bodegaRecord.value, constelaciones = repository.constelacionesRecord.value
+      )
+    )
     viewModelScope.launch {
       val outcome = repository.recordGameResult(result)
       if (current != null) {

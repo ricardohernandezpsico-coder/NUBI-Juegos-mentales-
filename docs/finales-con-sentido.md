@@ -21,7 +21,7 @@ Es la plantilla de Aterrizaje Lunar (Tarea 70; componente `ui/components/Meaning
      - «¡Tu mejor partida hasta ahora!»
      - «Hoy te fue mejor que tu promedio.»
      - «Un poco por debajo de tu promedio: es normal que varíe.»
-     - «Igual que tu promedio: vas parejo.»
+     - «Cerca de tu promedio: vas parejo.»
    - La tolerancia para «parejo» se define por medida y se documenta.
    - Si una medida no se puede mostrar honestamente en número, se muestra con sus palabras. Por ejemplo, Freno usa zonas (ágil, firme, pausado), nunca milisegundos.
 3. **Truco para la próxima:**
@@ -72,7 +72,7 @@ Las fuentes se verificaron en PubMed el 10-oct-2026, con el título, el DOI y el
 ### Tu avance: de dónde sale cada cuadro y qué cuenta como «parejo»
 
 - **Hoy** es la medida que el juego guarda de esta partida (`StarMeasures`); **Tu promedio** y **Tu mejor** salen de las partidas ANTERIORES de ese juego (hasta las últimas 10; el mismo reloj y un nivel parecido: `StarMeasures.comparable`, como en Aterrizaje). «Tu mejor» incluye hoy. La partida de hoy no se cuenta dos veces aunque ya esté guardada.
-- La frase: sin partidas anteriores (o sin medida hoy), «Juega otra vez para ver tu avance.»; mejor que tu mejor anterior (por poco que sea), «¡Tu mejor partida hasta ahora!»; si no, comparada con el promedio: más de la tolerancia por encima, «Hoy te fue mejor que tu promedio.»; más de la tolerancia por debajo, «Un poco por debajo de tu promedio: es normal que varíe.»; dentro de la tolerancia, «Igual que tu promedio: vas parejo.».
+- La frase: sin partidas anteriores (o sin medida hoy), «Juega otra vez para ver tu avance.»; mejor que tu mejor anterior (por poco que sea), «¡Tu mejor partida hasta ahora!»; si no, comparada con el promedio: más de la tolerancia por encima, «Hoy te fue mejor que tu promedio.»; más de la tolerancia por debajo, «Un poco por debajo de tu promedio: es normal que varíe.»; dentro de la tolerancia, «Cerca de tu promedio: vas parejo.».
 - **Tolerancia de «parejo» por medida** (la misma unidad de la medida):
 
 | Juego | Medida (unidad) | Mejor es | Tolerancia | Por qué |

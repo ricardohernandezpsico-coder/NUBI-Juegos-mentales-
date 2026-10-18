@@ -120,7 +120,7 @@ En orden de importancia. Es la plantilla que después se puede llevar a los dem�
 | Mejor que su mejor anterior | «¡Tu partida más precisa hasta ahora!» |
 | Más cerca que el promedio (> 0,5) | «Hoy quedaste más cerca que tu promedio.» |
 | Más lejos que el promedio (> 0,5) | «Un poco más lejos que tu promedio: es normal que varíe.» |
-| Parecido al promedio | «Igual que tu promedio: vas parejo.» |
+| Parecido al promedio | «Cerca de tu promedio: vas parejo.» |
 
    Nunca percentiles ni comparación con otras personas.
 4. **«Truco para la próxima»** (recuadro chico), según la lectura:

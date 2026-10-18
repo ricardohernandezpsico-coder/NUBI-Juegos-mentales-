@@ -123,8 +123,9 @@ object FinalModels {
       boxTitle = "Tu memoria de lugar",
       headline = con.percent(hits, opps)?.let { "$it %" } ?: "—",
       unit = con.detailLine(hits, opps),
-      dataLine = if (result.conNewRecord == true) record else con.streakLine(result.conBestStreak) ?: record,
-      conditionalTrick = con.tip(hits, opps)?.let { ResultAdvice.tipOf(it) }
+      dataLine = con.streakLine(result.conBestStreak) ?: record.takeUnless { result.conNewRecord == true },
+      conditionalTrick = con.tip(hits, opps)?.let { ResultAdvice.tipOf(it) },
+      recordNew = result.conNewRecord == true, recordText = record
     )
   }
 
@@ -160,8 +161,9 @@ object FinalModels {
       boxTitle = "Tu bodega",
       headline = if (total > 0) "${firstTry.coerceIn(0, total)} de $total objetos" else "—",
       unit = "al primer intento",
-      dataLine = if (result.bodNewRecord == true) record else bod.biggestLine(result.bodBiggest) ?: bod.streakLine(result.bodBestStreak, total) ?: record,
-      conditionalTrick = bod.tip(firstTry, total)?.let { ResultAdvice.tipOf(it) }
+      dataLine = bod.biggestLine(result.bodBiggest) ?: bod.streakLine(result.bodBestStreak, total) ?: record.takeUnless { result.bodNewRecord == true },
+      conditionalTrick = bod.tip(firstTry, total)?.let { ResultAdvice.tipOf(it) },
+      recordNew = result.bodNewRecord == true, recordText = record
     )
   }
 
@@ -182,8 +184,9 @@ object FinalModels {
       boxTitle = "Tu memoria para lo pendiente",
       headline = mail.percent(ok, all)?.let { "$it %" } ?: "—",
       unit = mail.detailLine(ok, all),
-      dataLine = if (result.mailNewRecord == true) record else mail.clockLine(result.mailPeeksGood, result.mailPeeks) ?: mail.cancelLine(result.mailCancels, result.mailCommissions) ?: mail.cardsLine(result.mailRight) ?: record,
-      conditionalTrick = tip?.let { ResultAdvice.tipOf(it) }
+      dataLine = mail.clockLine(result.mailPeeksGood, result.mailPeeks) ?: mail.cancelLine(result.mailCancels, result.mailCommissions) ?: mail.cardsLine(result.mailRight) ?: record.takeUnless { result.mailNewRecord == true },
+      conditionalTrick = tip?.let { ResultAdvice.tipOf(it) },
+      recordNew = result.mailNewRecord == true, recordText = record
     )
   }
 
@@ -252,8 +255,9 @@ object FinalModels {
       boxTitle = "Tu seguimiento",
       headline = cap?.let { FinalesConSentido.atOnceText(it) } ?: "—",
       unit = if (cap != null) "cuántos seguiste de verdad al mismo tiempo, sin contar la suerte" else "Esta vez no hubo rondas suficientes para medir tu seguimiento.",
-      dataLine = if (result.satNewRecord == true) record else Satelites.lightsLine(result.satLights) ?: Satelites.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak),
-      conditionalTrick = null
+      dataLine = Satelites.lightsLine(result.satLights) ?: Satelites.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak),
+      conditionalTrick = null,
+      recordNew = result.satNewRecord == true, recordText = record
     )
   }
 
@@ -267,8 +271,9 @@ object FinalModels {
       boxTitle = "Tu vistazo",
       headline = ms?.let { "$it ms" } ?: "—",
       unit = if (ms != null) "el destello más breve con el que rescatas casi todas las cápsulas" else "Esta vez no hubo rondas suficientes para medir tu vistazo.",
-      dataLine = if (result.rescNewRecord == true) record else Rescate.rescuedLine(result.rescRescued) ?: record,
-      conditionalTrick = null
+      dataLine = Rescate.rescuedLine(result.rescRescued) ?: record.takeUnless { result.rescNewRecord == true },
+      conditionalTrick = null,
+      recordNew = result.rescNewRecord == true, recordText = record
     )
   }
 
@@ -316,8 +321,9 @@ object FinalModels {
       boxTitle = "Tu giro mental",
       headline = dps?.let { "$it° por segundo" } ?: "—",
       unit = if (dps != null) "los grados que giras la pieza en tu mente cada segundo" else "Se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
-      dataLine = if (result.dockNewRecord == true) record else Acoplamiento.dockedLine(result.dockDocked) ?: record,
-      conditionalTrick = null
+      dataLine = Acoplamiento.dockedLine(result.dockDocked) ?: record.takeUnless { result.dockNewRecord == true },
+      conditionalTrick = null,
+      recordNew = result.dockNewRecord == true, recordText = record
     )
   }
 
@@ -402,12 +408,18 @@ object FinalModels {
     unit: String,
     dataLine: String?,
     conditionalTrick: String?,
-    lowerIsBetter: Boolean = false
+    lowerIsBetter: Boolean = false,
+    recordNew: Boolean = false,
+    recordText: String? = null
   ): MeaningfulResultModel {
     // la partida de hoy tal como se guarda como medida: así se compara con las ANTERIORES (la misma marca de tiempo no se cuenta dos veces)
     val today = todayValue?.let { MeasurePoint(result.timestamp, key, it, result.endRating?.coerceIn(0f, 1f) ?: -1f, result.timed) }
     val previous = if (today != null) FinalesConSentido.previousValues(measures, today) else emptyList()
-    val progress = FinalesConSentido.progress(todayValue, previous, tolerance, lowerIsBetter)
+    val raw = FinalesConSentido.progress(todayValue, previous, tolerance, lowerIsBetter)
+    // El récord se dice UNA vez, con el sello de arriba (Tarea 127). La primera partida de un juego no lo celebra: de eso se encarga la app antes de guardar (`FirstRecord.gate`: la marca previa debe ser mayor que 0; Unity dice «récord nuevo» a toda primera
+    // partida porque la app le manda 0). Con sello, «Tu avance» usa la comparación normal con el promedio.
+    val sealed = recordNew || raw.phrase == FinalesConSentido.PHRASE_BEST
+    val progress = if (sealed && raw.phrase == FinalesConSentido.PHRASE_BEST) FinalesConSentido.progress(todayValue, previous, tolerance, lowerIsBetter, avoidBest = true) else raw
     return MeaningfulResultModel(
       title = "",
       boxTitle = boxTitle,
@@ -428,7 +440,8 @@ object FinalModels {
       why = copy.whyText,
       source = copy.sourceText,
       note = FinalesConSentido.NOTE,
-      spoken = FinalesConSentido.spoken(boxTitle, headline, unit, dataLine, progress.phrase)
+      spoken = FinalesConSentido.spoken(boxTitle, headline, unit, dataLine, progress.phrase),
+      recordSeal = if (sealed) (recordText?.takeIf { recordNew } ?: "¡Récord nuevo!") else null
     )
   }
 }

@@ -5,6 +5,8 @@ import com.example.data.PuntaEntry
 import com.example.data.PuntaTier
 import com.example.model.GamePlayResult
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -46,8 +48,7 @@ class FinalModelsTest {
     assertEquals("Pusiste en juego la memoria de lugar: recordar dónde quedó cada cosa. Recordar qué va con qué, como una cosa y su lugar, es la parte de la memoria que más atención pide con los años.", m.why)
     assertEquals("Fuente: Old y Naveh-Benjamin, 2008", m.source)
     assertEquals("Medida de esta partida. No es un diagnóstico.", m.note)
-    // un récord nuevo es el dato a la vista
-    assertEquals("¡Nuevo récord de seguidos! 6", FinalModels.forGame(constelaciones.copy(conNewRecord = true), emptyList())!!.dataLine)
+    // el récord nuevo lo dice el sello de arriba, no la tarjeta (ver `un record se dice UNA vez`)
   }
 
   @Test
@@ -92,7 +93,6 @@ class FinalModelsTest {
     assertEquals("al primer intento", m.headlineUnit)
     assertEquals("Tu bodega más grande hoy: 5 objetos sin errores", m.dataLine)
     assertEquals("Imagina cada objeto dentro de su escotilla y dile su nombre en voz baja.", m.trick)
-    assertEquals("¡Nuevo récord! 6 objetos", FinalModels.forGame(bodega.copy(bodNewRecord = true), emptyList())!!.dataLine)
     assertEquals("Fuente: Postma, Kessels y van Asselen, 2008", m.source)
     assertEquals("los cuadros van en % porque cada partida trae un total de objetos distinto", "75 %", m.chips[0].value)
   }
@@ -153,11 +153,11 @@ class FinalModelsTest {
     val prev = points("stroop", 300f, 500f, 400f)         // promedio 400 ms, mejor (más bajo) 300 ms
     val m = FinalModels.forGame(tinta, prev)!!              // hoy 420 ms
     assertEquals(listOf("+0,4 s", "+0,4 s", "+0,3 s"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
-    assertEquals("¡Tu mejor partida hasta ahora!", FinalModels.forGame(tinta.copy(interferenceMs = 250), prev)!!.progressPhrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", m.progressPhrase)
+    assertSealed(FinalModels.forGame(tinta.copy(interferenceMs = 250), prev)!!)
     // mejor que el promedio por más de 0,1 s, sin superar tu mejor: antes 250, 500, 600 y 400 ms (promedio 437 ms)
     assertEquals("Hoy te fue mejor que tu promedio.", FinalModels.forGame(tinta.copy(interferenceMs = 300), points("stroop", 250f, 500f, 600f, 400f))!!.progressPhrase)
-    assertEquals("a 0,08 s del promedio todavía es parejo", "Igual que tu promedio: vas parejo.", FinalModels.forGame(tinta.copy(interferenceMs = 320), prev)!!.progressPhrase)
+    assertEquals("a 0,08 s del promedio todavía es parejo", "Cerca de tu promedio: vas parejo.", FinalModels.forGame(tinta.copy(interferenceMs = 320), prev)!!.progressPhrase)
     assertEquals("Un poco por debajo de tu promedio: es normal que varíe.", FinalModels.forGame(tinta.copy(interferenceMs = 560), prev)!!.progressPhrase)
   }
 
@@ -187,7 +187,7 @@ class FinalModelsTest {
     assertEquals("promedio de tus últimas 5 partidas", m.headlineUnit)
     assertEquals("Frenaste 6 de 8 altos", m.dataLine)
     assertEquals(listOf("zona firme", "zona firme", "zona firme"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", m.progressPhrase)
     val all = listOfNotNull(m.headline, m.headlineUnit, m.dataLine, m.progressPhrase, m.trick, m.spoken) + m.chips.map { it.value }
     for (t in all) assertTrue("«$t» dice milisegundos", !Regex("\\d\\s*ms").containsMatchIn(t))
     assertEquals("Lanza sin esperar el ALTO y frena solo si aparece: esperarlo te vuelve más lento.", m.trick)
@@ -213,9 +213,8 @@ class FinalModelsTest {
     assertEquals("cuántos seguiste de verdad al mismo tiempo, sin contar la suerte", m.headlineUnit)
     assertEquals("Encendiste 12 luces", m.dataLine)
     assertEquals(listOf("2,6 a la vez", "2,5 a la vez", "2,9 a la vez"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", m.progressPhrase)
     assertEquals("Une con la mirada los satélites que sigues en una figura, como un triángulo, y sigue la figura.", m.trick)
-    assertEquals("¡Récord nuevo: 22 luces!", FinalModels.forGame(satelites.copy(satNewRecord = true), emptyList())!!.dataLine)
     assertTrue(m.why.startsWith("Pusiste en juego lo que usas para seguir con la vista varias cosas"))
   }
 
@@ -227,9 +226,8 @@ class FinalModelsTest {
     assertEquals("el destello más breve con el que rescatas casi todas las cápsulas", m.headlineUnit)
     assertEquals("23 cápsulas a salvo", m.dataLine)
     assertEquals(listOf("170 ms", "190 ms", "170 ms"), m.chips.map { it.value })
-    assertEquals("más rápido que tu mejor anterior", "¡Tu mejor partida hasta ahora!", m.progressPhrase)
+    assertSealed(m)                                                                                  // más rápido que tu mejor anterior: el sello lo dice, «Tu avance» usa la comparación normal
     assertEquals("Mira el centro del radar y, apenas se apague, nombra por dentro las formas que viste.", m.trick)
-    assertEquals("¡Récord nuevo: 31 cápsulas!", FinalModels.forGame(rescate.copy(rescNewRecord = true), emptyList())!!.dataLine)
     assertEquals("—", FinalModels.forGame(rescate.copy(glanceMs = null), emptyList())!!.headline)
   }
 
@@ -276,8 +274,8 @@ class FinalModelsTest {
     val prev = points("carga", 50f, 75f, 62.5f)
     val m = FinalModels.forGame(carga, prev)!!               // hoy 62,5 %
     assertEquals(listOf("63 %", "63 %", "75 %"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
-    assertEquals("¡Tu mejor partida hasta ahora!", FinalModels.forGame(carga.copy(correctAnswers = 7, cargaAlone = 7), prev)!!.progressPhrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", m.progressPhrase)
+    assertSealed(FinalModels.forGame(carga.copy(correctAnswers = 7, cargaAlone = 7), prev)!!)
   }
 
   @Test
@@ -300,11 +298,10 @@ class FinalModelsTest {
     assertEquals("212° por segundo", m.headline)
     assertEquals("24 módulos acoplados", m.dataLine)
     assertEquals(listOf("212 °/s", "213 °/s", "260 °/s"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", m.progressPhrase)
     assertEquals("Elige una parte que destaque, como una punta o un codo, y gira solo esa en tu mente.", m.trick)
-    assertEquals("¡Récord nuevo: 31 módulos!", FinalModels.forGame(acoplamiento.copy(dockNewRecord = true), emptyList())!!.dataLine)
     assertEquals("Hoy te fue mejor que tu promedio.", FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 270), points("rotation", 180f, 200f, 300f))!!.progressPhrase)
-    assertEquals("¡Tu mejor partida hasta ahora!", FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 320), points("rotation", 180f, 200f, 300f))!!.progressPhrase)
+    assertSealed(FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 320), points("rotation", 180f, 200f, 300f))!!)
     val none = FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = null, rotationCurveMs = null), emptyList())!!
     assertEquals("—", none.headline)
     assertTrue(none.headlineUnit.startsWith("Se calcula con al menos 8 aciertos"))
@@ -367,7 +364,7 @@ class FinalModelsTest {
     assertTrue(m.dataLine!!, m.dataLine!!.startsWith("Reconoces "))
     assertEquals("Las letras cambiadas de lugar engañan a casi todos: leemos la palabra entera. Mira el centro de la palabra para no caer.", m.trick)
     assertEquals(listOf("51 %", "50 %", "60 %"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", m.progressPhrase)
     // sin lo que engaña: el truco general
     assertEquals("Si dudas, mira el centro de la palabra: ahí suelen esconderse las letras cambiadas.", FinalModels.forGame(meteoros.copy(lexFaSeen = listOf(7, 7, 7), lexFaHits = listOf(0, 0, 0)), emptyList())!!.trick)
     val few = FinalModels.forGame(meteoros.copy(lexBandSeen = listOf(2, 2, 2, 2, 2, 2), lexBandHits = listOf(2, 2, 2, 2, 2, 2)), emptyList())!!
@@ -384,7 +381,7 @@ class FinalModelsTest {
     assertTrue(m.dataLine!!, m.dataLine!!.contains("te toman 0,6 s más que las frases simples"))
     assertTrue(m.trick, m.trick.isNotBlank() && m.trick != "Con un «no», lee la frase sin él y después dale la vuelta.")
     assertEquals(listOf("142 ppm", "140 ppm", "150 ppm"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", m.progressPhrase)
     // sin tipo lento: el dato es tu mejor racha y el truco es el general
     val even = FinalModels.forGame(disparate.copy(svRtType = listOf(900, 900, 900, 900, 900, 900)), emptyList())!!
     assertEquals("Más seguidos: 14", even.dataLine)
@@ -401,7 +398,7 @@ class FinalModelsTest {
     assertEquals("Las trampas te engañaron 2 de 4", m.dataLine)
     assertEquals("Antes de tocar, pregúntate qué TIPO de cosa es cada una.", m.trick)
     assertEquals(listOf("79 %", "75 %", "80 %"), m.chips.map { it.value })
-    assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", m.progressPhrase)
     // las resististe todas: el dato es el bonus
     assertEquals("¿Qué las une? Nombraste 3 de 5", FinalModels.forGame(intrusa.copy(intrHitsType = listOf(3, 3, 2, 2, 2, 2)), emptyList())!!.dataLine)
     assertEquals("Fuente: Mirman, Landrigan y Britt, 2017", m.source)
@@ -451,5 +448,48 @@ class FinalModelsTest {
       val all = listOfNotNull(m.boxTitle, m.headline, m.headlineUnit, m.dataLine, m.progressPhrase, m.trick, m.why, m.source, m.note, m.spoken).joinToString(" ").lowercase()
       for (bad in listOf("entren", "cerebro", "cognitiv", "percentil", "otras personas")) assertTrue("${r.gameId}: «$bad»", !all.contains(bad))
     }
+  }
+
+  // ------------------------------------------------------------------ el récord, UNA vez por pantalla y nunca en la primera partida (Tarea 127)
+
+  /** Hay sello de récord y «Tu avance» no repite «¡Tu mejor partida hasta ahora!»: usa la comparación normal con el promedio. */
+  private fun assertSealed(m: com.example.ui.components.MeaningfulResultModel) {
+    assertNotNull("${m.boxTitle}: debería haber sello de récord", m.recordSeal)
+    assertNotEquals("${m.boxTitle}: el sello y «¡Tu mejor partida hasta ahora!» no se repiten", com.example.data.FinalesConSentido.PHRASE_BEST, m.progressPhrase)
+  }
+
+  @Test
+  fun `un record se dice UNA vez`() {
+    // (resultado con el récord que Unity avisó, la medida de sus partidas anteriores, el sello con la cifra)
+    val cases = listOf(
+      Triple(constelaciones.copy(conNewRecord = true), "place", "¡Nuevo récord de seguidos! 6"),
+      Triple(bodega.copy(bodNewRecord = true), "bodega", "¡Nuevo récord! 6 objetos"),
+      Triple(correo.copy(mailNewRecord = true), "estacion", null),
+      Triple(satelites.copy(satNewRecord = true), "tracking", "¡Récord nuevo: 22 luces!"),
+      Triple(rescate.copy(rescNewRecord = true), "glance", "¡Récord nuevo: 31 cápsulas!"),
+      Triple(acoplamiento.copy(dockNewRecord = true), "rotation", "¡Récord nuevo: 31 módulos!")
+    )
+    for ((res, key, seal) in cases) {
+      // UN sello (con la cifra), y ni la tarjeta ni «Tu avance» lo repiten
+      val m = FinalModels.forGame(res, points(key, 70f, 70f))!!
+      assertNotNull("${res.gameId}: hay sello", m.recordSeal)
+      if (seal != null) assertEquals(seal, m.recordSeal)
+      assertFalse("${res.gameId}: la tarjeta no repite el récord", m.dataLine.orEmpty().contains("écord", ignoreCase = true))
+      assertNotEquals("${res.gameId}: «Tu avance» no repite la mejor partida", com.example.data.FinalesConSentido.PHRASE_BEST, m.progressPhrase)
+      // sin récord (la primera partida de un juego llega así: `FirstRecord.gate` apaga lo que Unity dice cuando no había marca previa): ni sello ni récord en la tarjeta
+      val plain = FinalModels.forGame(res.copy(rescNewRecord = false, dockNewRecord = false, mailNewRecord = false, satNewRecord = false, bodNewRecord = false, conNewRecord = false), emptyList())!!
+      assertNull("${res.gameId}: sin récord no hay sello", plain.recordSeal)
+      assertEquals("${res.gameId}: sin partidas anteriores", com.example.data.FinalesConSentido.PHRASE_FIRST, plain.progressPhrase)
+    }
+  }
+
+  @Test
+  fun `sin sello el avance conserva su mejor partida y no hay sello sin record`() {
+    // mejor que tu mejor anterior, sin récord guardado: hay sello («¡Récord nuevo!», sin cifra) y el avance usa el promedio
+    val better = FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 320, dockNewRecord = false), points("rotation", 180f, 200f, 300f))!!
+    assertEquals("¡Récord nuevo!", better.recordSeal)
+    // una partida más floja: sin sello
+    val worse = FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 150, dockNewRecord = false), points("rotation", 180f, 200f, 300f))!!
+    assertNull(worse.recordSeal)
   }
 }

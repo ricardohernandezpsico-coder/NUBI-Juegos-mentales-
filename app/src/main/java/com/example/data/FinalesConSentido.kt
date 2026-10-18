@@ -91,7 +91,7 @@ object FinalesConSentido {
   const val PHRASE_BEST = "¡Tu mejor partida hasta ahora!"
   const val PHRASE_BETTER = "Hoy te fue mejor que tu promedio."
   const val PHRASE_BELOW = "Un poco por debajo de tu promedio: es normal que varíe."
-  const val PHRASE_EVEN = "Igual que tu promedio: vas parejo."
+  const val PHRASE_EVEN = "Cerca de tu promedio: vas parejo."
 
   /**
    * Las partidas ANTERIORES de este juego con las que se compara hoy: las medidas guardadas de [today] (la misma clave) sin la de esta partida (la misma marca de tiempo: funciona igual si todavía no se guardó o ya sí), las que se
@@ -108,16 +108,17 @@ object FinalesConSentido {
    * - Constelaciones, Bodega y Correo (porcentajes de 8 a 20 ensayos, donde un solo ensayo pesa de 5 a 12 puntos): 5 puntos.
    * - Rastro de luz (luces seguidas, números enteros): media luz.
    * Frases: sin partidas anteriores (o sin medida hoy) «Juega otra vez…»; mejor que tu mejor anterior (por poco que sea) «¡Tu mejor partida hasta ahora!»; más que el promedio por sobre la tolerancia «Hoy te fue mejor…»; menos, «Un poco por
-   * debajo…»; si no, «Igual que tu promedio…».
+   * debajo…»; si no, «Cerca de tu promedio…».
    */
-  fun progress(today: Float?, previous: List<Float>, tolerance: Float, lowerIsBetter: Boolean = false): Progress {
+  fun progress(today: Float?, previous: List<Float>, tolerance: Float, lowerIsBetter: Boolean = false, avoidBest: Boolean = false): Progress {
     if (today == null || today.isNaN() || previous.isEmpty()) return Progress(today?.takeIf { !it.isNaN() }, null, null, PHRASE_FIRST)
     val mean = previous.average().toFloat()
     val prevBest = if (lowerIsBetter) previous.min() else previous.max()
     val signed = if (lowerIsBetter) -(today - mean) else today - mean                       // > 0: hoy mejor que el promedio
     val beatsBest = if (lowerIsBetter) today < prevBest else today > prevBest
+    // avoidBest: cuando la pantalla ya celebra el récord con su sello (Tarea 127), «Tu avance» no repite «¡Tu mejor partida hasta ahora!»: usa la comparación de siempre con el promedio
     val phrase = when {
-      beatsBest -> PHRASE_BEST
+      beatsBest && !avoidBest -> PHRASE_BEST
       signed > tolerance -> PHRASE_BETTER
       signed < -tolerance -> PHRASE_BELOW
       else -> PHRASE_EVEN

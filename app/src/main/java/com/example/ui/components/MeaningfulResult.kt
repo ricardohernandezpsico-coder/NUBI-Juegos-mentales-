@@ -75,7 +75,12 @@ data class MeaningfulResultModel(
   val source: String,
   val note: String,
   /** Lo que lee en voz alta un lector de pantalla del recuadro principal. */
-  val spoken: String = ""
+  val spoken: String = "",
+  /**
+   * El sello del récord (Tarea 127): UNA sola vez por pantalla, arriba, con la cifra cuando la hay («¡Récord nuevo: 31 cápsulas!»); null si no hay récord. Nunca en la primera partida de un juego (no hay nada que superar). Si hay sello, ni la tarjeta de la medida
+   * ni «Tu avance» repiten el récord.
+   */
+  val recordSeal: String? = null
 )
 
 // Las piezas de este final son losas de plasticina CLARAS (Tarea 90): crema para lo que hiciste y los números, lima para el truco, sol para el número de hoy; su texto va en tinta.

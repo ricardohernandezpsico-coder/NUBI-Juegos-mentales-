@@ -132,24 +132,22 @@ fun GameResultScreen(
 
   val usesMeaningfulResult = FinalModels.usesMeaningful(result)
   // El récord (Tarea 126; en Unity lo tapaba la cortina): una línea con su sello arriba, la vibración firme y el sonido «Record» de la paleta Madera. Es récord si el juego lo dice (su marca guardada) o si «Tu avance» dice «¡Tu mejor partida hasta ahora!».
-  val isRecord = remember(result, starMeasures) {
-    result.rescNewRecord == true || result.dockNewRecord == true || result.mailNewRecord == true || result.satNewRecord == true || result.bodNewRecord == true || result.conNewRecord == true ||
-      (usesMeaningfulResult && FinalModels.forGame(result, starMeasures)?.progressPhrase == com.example.data.FinalesConSentido.PHRASE_BEST)
-  }
+  // El sello lo trae el modelo (Tarea 127): UNA vez por pantalla, con la cifra cuando la hay, y NUNCA en la primera partida de un juego (no hay nada que superar). Ver `FinalModels.build`.
+  val recordSeal = remember(result, starMeasures) { if (usesMeaningfulResult) FinalModels.forGame(result, starMeasures)?.recordSeal else null }
+  val isRecord = recordSeal != null
 
   val plaquePop = remember(result) { Animatable(if (reduceMotion) 1f else 0.82f) }
   val levelPop = remember(result) { Animatable(if (reduceMotion) 1f else 0f) }
-  LaunchedEffect(result) {
+  LaunchedEffect(result, isRecord) {
+    // La placa entra con su rebote; el récord (la vibración firme y el sonido «Record») suena CUANDO TERMINA ese rebote, no a un tiempo fijo: en un arranque en frío la pantalla puede tardar en verse y el sonido no debe llegar antes que la placa (Tarea 127).
+    if (!reduceMotion) plaquePop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 380f)) else delay(150L)
+    if (isRecord) {
+      if (haptics && android.os.Build.VERSION.SDK_INT >= 30) view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+      if (soundEnabled) com.example.ui.components.RecordSound.play(context)
+    }
     if (reduceMotion) return@LaunchedEffect
-    plaquePop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 380f))
     delay(300L)
     levelPop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 300f))
-  }
-  LaunchedEffect(result, isRecord) {
-    if (!isRecord) return@LaunchedEffect
-    delay(if (reduceMotion) 150L else 450L)
-    if (haptics && android.os.Build.VERSION.SDK_INT >= 30) view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
-    if (soundEnabled) com.example.ui.components.RecordSound.play(context)
   }
 
   CompositionLocalProvider(com.example.ui.components.LocalResultScore provides com.example.ui.components.ResultScore.line(result)) {
@@ -163,7 +161,7 @@ fun GameResultScreen(
   ) {
     // UN solo final (Tarea 126): abre con la placa del juego (su emblema, el nombre y el área) y directo con el final con sentido; sin el puntaje gigante, las tres estrellas ni el elogio. El puntaje se sigue guardando y va en «Ver el detalle de tu partida».
     ResultPlaque(result.gameId, gameDef?.title ?: "Partida terminada", gameDef?.domain?.displayName, domainColor, plaquePop.value)
-    if (isRecord) RecordLine()
+    if (recordSeal != null) RecordLine(recordSeal)
 
     // Datos de la partida, sueltos en una línea. Los juegos con final con sentido (`MeaningfulResult`: Aterrizaje Lunar y, desde la Etapa 3, los que ya se llevaron a ese orden: ver `FinalModels.usesMeaningful`) ya dicen sus aciertos
     // en su propio recuadro («13 aterrizajes justos de 15», «7 de 9 veces…»): ahí la fila deja solo etapa y modo (Tarea 73). Los demás juegos quedan igual.
@@ -193,7 +191,7 @@ fun GameResultScreen(
         pil.levelLine(result.pilSignalLevel)?.let { "piloto_level" to it },
         pil.streakLine(result.pilBestStreak)?.let { "piloto_streak" to it },
         pil.pointsLine(result.pilPoints)?.let { "piloto_points" to it }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = {
         DetailLine(pil.MEASURE_EXPLANATION, "piloto_explain", soft = false)
         pilRows.forEach { (tag, line) -> DetailLine(line, tag, strong = true) }
@@ -212,7 +210,7 @@ fun GameResultScreen(
         resc.tripsLine(result.rescTrips)?.let { "rescate_trips" to it },
         resc.recordLine(result.rescBest, result.rescNewRecord)?.let { "rescate_record" to it },
         resc.totalLine(rescateTotals)?.let { "rescate_total" to it }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = {
         RescuedCapsules(resc.dots(result.rescRescued), Modifier.padding(bottom = 8.dp).semantics { contentDescription = resc.spoken(result.rescRescued, result.captureK, result.glanceMs) })
         rescRows.forEach { (tag, line) -> DetailLine(line, tag, strong = true) }
@@ -240,7 +238,7 @@ fun GameResultScreen(
         sat.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak)?.let { "satelites_perfect" to it },
         sat.recordLine(result.satBest, result.satNewRecord)?.let { "satelites_record" to it },
         result.trackingSpeed?.let { "satelites_speed" to "Velocidad más alta superada: ${String.format(java.util.Locale("es"), "%.1f", it)}×" }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = {
         if (result.satLights != null) LitPlanet(sat.dots(result.satLights), Modifier.size(150.dp).semantics { contentDescription = sat.spoken(result.satLights, cap, targets) })
         satRows.forEach { (tag, line) -> DetailLine(line, tag, strong = true) }
@@ -392,7 +390,7 @@ fun GameResultScreen(
         punta.breakdown(puntaSolo, result.puntaPista, result.puntaLetras, result.puntaVista)?.let { "punta_breakdown" to it },
         punta.blueNote(result.puntaVista)?.let { "punta_blue_note" to it },
         punta.speedLine(result.puntaMs, puntaSolo)?.let { "punta_speed" to it }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = if (puntaEntries.isEmpty() && puntaRows.isEmpty()) null else ({
         if (puntaEntries.isNotEmpty()) {
           Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp).testTag("punta_words")) {
@@ -414,7 +412,7 @@ fun GameResultScreen(
         carga.breakdown(cargaAlone, result.cargaHinted, cargaTotal)?.let { "carga_breakdown" to it },
         carga.shortLine(result.cargaShort, cargaAlone)?.let { "carga_short" to it },
         carga.speedLine(result.cargaMs, cargaAlone)?.let { "carga_speed" to it }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = if (cargaRows.isEmpty()) null else { { cargaRows.forEach { (tag, line) -> DetailLine(line, tag) } } })
     }
 
@@ -430,7 +428,7 @@ fun GameResultScreen(
         eng.hangarLine(result.engrLights)?.let { "engranajes_hangar" to it },
         eng.orbitLine(result.engrOrbit)?.let { "engranajes_orbit" to it },
         eng.paceLine(result.engrMs, engTotal)?.let { "engranajes_pace" to it }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = if (engRows.isEmpty()) null else { { engRows.forEach { (tag, line) -> DetailLine(line, tag) } } })
     }
 
@@ -449,7 +447,7 @@ fun GameResultScreen(
         bod.biggestLine(result.bodBiggest)?.let { "bodega_biggest" to it },
         bod.recordLine(result.bodBest, result.bodNewRecord)?.let { "bodega_record" to it },
         bod.paceLine(result.bodMs, bodTotal)?.let { "bodega_pace" to it }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = if (bodRows.isEmpty()) null else { { bodRows.forEach { (tag, line) -> DetailLine(line, tag) } } })
     }
 
@@ -466,7 +464,7 @@ fun GameResultScreen(
         con.streakLine(result.conBestStreak)?.let { "constelaciones_streak" to it },
         con.groupLine(conGroup)?.let { "constelaciones_group" to it },
         con.recordLine(result.conBest, result.conNewRecord)?.let { "constelaciones_record" to it },
-      ).filter { it.second != model.dataLine } + ("constelaciones_luck" to con.LUCK_NOTE)
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal } + ("constelaciones_luck" to con.LUCK_NOTE)
       MeaningfulResult(model, detail = { conRows.forEach { (tag, line) -> DetailLine(line, tag) } })
     }
 
@@ -538,7 +536,7 @@ fun GameResultScreen(
         aco.ringsLine(result.dockRings)?.let { "acoplamiento_rings" to it },
         aco.recordLine(result.dockBest, result.dockNewRecord)?.let { "acoplamiento_record" to it },
         aco.totalLine(acoplamientoTotals)?.let { "acoplamiento_total" to it }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = {
         acoRows.forEach { (tag, line) -> DetailLine(line, tag) }
         result.rotationCurveMs?.let { curve ->
@@ -576,7 +574,7 @@ fun GameResultScreen(
         mail.cardsLine(result.mailRight)?.let { "correo_cards" to it },
         mail.groupLine(mailGroup)?.let { "correo_group" to it },
         mail.recordLine(result.mailBest, result.mailNewRecord)?.let { "correo_record" to it }
-      ).filter { it.second != model.dataLine }
+      ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = {
         DetailLine("Acordarte de hacer algo en el momento justo, sin que nada te avise del todo: como tomar un remedio o hacer una llamada.", "correo_explain", soft = false)
         mail.eventLine(evHits, evTotal)?.let {
@@ -683,9 +681,9 @@ private fun ResultPlaque(gameId: String, title: String, domainName: String?, dom
 
 /** «¡Récord nuevo!» con su sello (un disco sol con el ✓ de plasticina: forma, no solo color). */
 @Composable
-private fun RecordLine() {
+private fun RecordLine(text: String) {
   Row(
-    Modifier.padding(top = 14.dp).semantics(mergeDescendants = true) { contentDescription = "Récord nuevo" }.testTag("result_record"),
+    Modifier.padding(top = 14.dp).semantics(mergeDescendants = true) { contentDescription = text }.testTag("result_record"),
     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center
   ) {
     Box(
@@ -693,7 +691,7 @@ private fun RecordLine() {
       contentAlignment = Alignment.Center
     ) { com.example.ui.components.KitGlyph(Glyph.CHECK, size = 22.dp) }
     Spacer(Modifier.width(10.dp))
-    Text("¡Récord nuevo!", color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+    Text(text, color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
   }
 }
 

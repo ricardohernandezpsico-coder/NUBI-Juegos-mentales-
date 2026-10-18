@@ -111,9 +111,9 @@ class FinalesConSentidoTest {
   fun `mejor, parejo o por debajo del promedio segun la tolerancia`() {
     val prev = listOf(60f, 80f, 70f, 90f)                 // promedio 75, mejor 90
     assertEquals("Hoy te fue mejor que tu promedio.", FinalesConSentido.progress(85f, prev, tol).phrase)
-    assertEquals("Igual que tu promedio: vas parejo.", FinalesConSentido.progress(79f, prev, tol).phrase)
-    assertEquals("la tolerancia es de 5 puntos alrededor del promedio, en los dos lados", "Igual que tu promedio: vas parejo.", FinalesConSentido.progress(80f, prev, tol).phrase)
-    assertEquals("Igual que tu promedio: vas parejo.", FinalesConSentido.progress(70f, prev, tol).phrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(79f, prev, tol).phrase)
+    assertEquals("la tolerancia es de 5 puntos alrededor del promedio, en los dos lados", "Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(80f, prev, tol).phrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(70f, prev, tol).phrase)
     assertEquals("Un poco por debajo de tu promedio: es normal que varíe.", FinalesConSentido.progress(69f, prev, tol).phrase)
     assertEquals(90f, FinalesConSentido.progress(69f, prev, tol).best!!, 1e-4f)
   }
@@ -121,11 +121,11 @@ class FinalesConSentidoTest {
   @Test
   fun `el rastro tiene media luz de tolerancia`() {
     val prev = listOf(4f, 5f, 4f, 5f, 4f)                // promedio 4,4 y mejor 5
-    assertEquals("Igual que tu promedio: vas parejo.", FinalesConSentido.progress(4f, prev, 0.5f).phrase)         // 0,4 por debajo: parejo
+    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(4f, prev, 0.5f).phrase)         // 0,4 por debajo: parejo
     assertEquals("Hoy te fue mejor que tu promedio.", FinalesConSentido.progress(5f, prev, 0.5f).phrase)          // 0,6 por encima, sin superar tu mejor (5)
     assertEquals("¡Tu mejor partida hasta ahora!", FinalesConSentido.progress(6f, prev, 0.5f).phrase)
     assertEquals("Un poco por debajo de tu promedio: es normal que varíe.", FinalesConSentido.progress(3f, prev, 0.5f).phrase)
-    assertEquals("Igual que tu promedio: vas parejo.", FinalesConSentido.progress(5f, listOf(5f, 5f, 5f, 4f, 5f), 0.5f).phrase)   // promedio 4,8
+    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(5f, listOf(5f, 5f, 5f, 4f, 5f), 0.5f).phrase)   // promedio 4,8
   }
 
   @Test
@@ -134,7 +134,7 @@ class FinalesConSentidoTest {
     assertEquals("¡Tu mejor partida hasta ahora!", FinalesConSentido.progress(250f, prev, 10f, lowerIsBetter = true).phrase)
     assertEquals(250f, FinalesConSentido.progress(250f, prev, 10f, lowerIsBetter = true).best!!, 1e-4f)
     assertEquals("Hoy te fue mejor que tu promedio.", FinalesConSentido.progress(285f, prev, 10f, lowerIsBetter = true).phrase)
-    assertEquals("Igual que tu promedio: vas parejo.", FinalesConSentido.progress(305f, prev, 10f, lowerIsBetter = true).phrase)
+    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(305f, prev, 10f, lowerIsBetter = true).phrase)
     assertEquals("Un poco por debajo de tu promedio: es normal que varíe.", FinalesConSentido.progress(330f, prev, 10f, lowerIsBetter = true).phrase)
   }
 

@@ -38,6 +38,10 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 
 - [`final-unico.png`](final-unico.png): Rescate relámpago, Engranajes y La estación de correo, con los tres cuadros del final (el momento del objeto, la cortina «¡Listo!» y el resultado en la app) en «hoy | propuesta». Las tomas son reales (Unity con `--capturas`, Roborazzi de la app); «hoy» salió del código anterior a la tarea (un `git worktree` en HEAD), salvo la cortina de hoy y el panel de Engranajes de hoy, que son réplicas hechas a mano (la leyenda lo dice). La arma `tools/previews/final_unico.py` (`--tomar` copia las tomas a [`final-unico/`](final-unico/); sin banderas arma la lámina).
 
+## Marcador común y fila de consigna (Tarea 127, 18-oct)
+
+- [`hud-consigna.png`](hud-consigna.png): Tinta o Palabra, Rastro de luz, Correo Estelar y Piloto Estelar con el marcador de dos filas (título a 18 dp y avance en un chip; la consigna y su fase en una losa del kit; «Nivel» fuera; «×N seguidos» solo desde 2), «hoy | propuesta» con capturas reales de Unity; además el tutorial con los controles fijos arriba, la pausa con la pregunta de «Reiniciar» y el velo del momento del objeto de 0,58 a 0,75. La arma `tools/previews/hud_consigna.py` (`--tomar` copia las tomas a [`hud-consigna/`](hud-consigna/)).
+
 ## Cuatro áreas (30-sep)
 
 - [`cuatro-areas.png`](cuatro-areas.png): maqueta de Nubi con 4 áreas sobre el fondo C. Hoy · B final (nombres cortos con
