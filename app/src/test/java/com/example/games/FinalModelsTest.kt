@@ -38,7 +38,7 @@ class FinalModelsTest {
     assertEquals("Tu memoria de lugar", m.boxTitle)
     assertEquals("78 %", m.headline)
     assertEquals("7 de 9 veces fuiste directo a una pareja que ya habías visto", m.headlineUnit)
-    assertEquals("UN dato tuyo: la racha", "Racha de memoria más larga: 5", m.dataLine)
+    assertEquals("UN dato tuyo: la racha", "Más seguidos de memoria: 5", m.dataLine)
     assertEquals("se escapó alguna: el truco condicional", "Da vuelta primero una luz nueva.", m.trick)
     // sin nada que se escapara: el truco general de la tabla
     val perfect = FinalModels.forGame(constelaciones.copy(correctAnswers = 9), emptyList())!!
@@ -47,7 +47,7 @@ class FinalModelsTest {
     assertEquals("Fuente: Old y Naveh-Benjamin, 2008", m.source)
     assertEquals("Medida de esta partida. No es un diagnóstico.", m.note)
     // un récord nuevo es el dato a la vista
-    assertEquals("¡Nueva mejor racha! 6", FinalModels.forGame(constelaciones.copy(conNewRecord = true), emptyList())!!.dataLine)
+    assertEquals("¡Nuevo récord de seguidos! 6", FinalModels.forGame(constelaciones.copy(conNewRecord = true), emptyList())!!.dataLine)
   }
 
   @Test
@@ -387,7 +387,7 @@ class FinalModelsTest {
     assertEquals("Igual que tu promedio: vas parejo.", m.progressPhrase)
     // sin tipo lento: el dato es tu mejor racha y el truco es el general
     val even = FinalModels.forGame(disparate.copy(svRtType = listOf(900, 900, 900, 900, 900, 900)), emptyList())!!
-    assertEquals("Tu mejor racha: 14 seguidas", even.dataLine)
+    assertEquals("Más seguidos: 14", even.dataLine)
     assertEquals("Con un «no», lee la frase sin él y después dale la vuelta.", even.trick)
     assertEquals("—", FinalModels.forGame(disparate.copy(svWpm = null), emptyList())!!.headline)
   }

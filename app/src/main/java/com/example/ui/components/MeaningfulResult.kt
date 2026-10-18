@@ -84,13 +84,24 @@ private val Soft = Color(0xFFD6D1F2)
 private val Muted = Color(0xFFABA5D2)
 private val Faint = Color(0xFF8F8AC0)
 
+/** El puntaje de la partida («74 puntos · 14 de 19 aciertos»): se sigue guardando, pero ya no es lo primero que se ve; va en «Ver el detalle de tu partida» (Tarea 126). La pantalla de resultado lo fija; fuera de ella, nulo. */
+val LocalResultScore = androidx.compose.runtime.compositionLocalOf<String?> { null }
+
+object ResultScore {
+  fun line(r: com.example.model.GamePlayResult): String = "${r.score} ${if (r.score == 1) "punto" else "puntos"}" + if (r.totalTrials > 0) " · ${r.correctAnswers} de ${r.totalTrials} aciertos" else ""
+}
+
 @Composable
 fun MeaningfulResult(model: MeaningfulResultModel, modifier: Modifier = Modifier, detail: (@Composable ColumnScope.() -> Unit)? = null) {
+  val score = LocalResultScore.current
   Column(modifier = modifier.fillMaxWidth().testTag("meaningful_result"), horizontalAlignment = Alignment.CenterHorizontally) {
     WhatYouDid(model)
     YourProgress(model)
     NextTrick(model)
-    if (detail != null) DetailSection(detail)
+    if (detail != null || score != null) DetailSection {
+      if (score != null) Text(score, color = Clay.Cream, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(bottom = 8.dp).testTag("detail_score"))
+      detail?.invoke(this)
+    }
     WhyItMatters(model)
   }
 }

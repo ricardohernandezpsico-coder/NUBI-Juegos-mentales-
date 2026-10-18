@@ -4,6 +4,8 @@
 
 > **Desde el 10-oct (Tarea 80) son 17:** Cosecha de palabras (fila 17 de la tabla y su parte del grupo 4) se retiró de la app. Su final se quitó del código (`FinalModels.cosecha`, su tolerancia de 5 puntos y su prueba); sus filas de abajo quedan solo como historia. Ver `docs/juegos/descartados.md`.
 
+> **UN solo final (Tarea 126, 18-oct):** la pantalla de la app abre DIRECTO con el final con sentido, sin el puntaje gigante, las tres estrellas ni «¡Muy bien!» (decisión de Ricardo, 17-oct): arriba va la placa del juego (su emblema, el nombre y el área) y, si hubo récord, una línea con su sello y su sonido. El puntaje se sigue guardando y es la primera línea de «Ver el detalle de tu partida». En Unity ya no hay panel de resultado: el «momento del objeto» y la cortina «¡Listo!» con el emblema del juego (`docs/arquitectura-app.md` § «Un solo final y un solo cielo»; hoja `docs/previews/final-unico.png`). Las líneas que decían «Racha mayor» o «mejor racha» para aciertos seguidos dicen «Más seguidos».
+
 ## Orden del final, para todos los juegos
 
 Es la plantilla de Aterrizaje Lunar (Tarea 70; componente `ui/components/MeaningfulResult.kt`):

@@ -367,7 +367,7 @@ object FinalModels {
       boxTitle = "Tu lectura con comprensión",
       headline = wpm?.let { "$it ppm" } ?: "—",
       unit = if (wpm != null) "palabras por minuto, leyendo y decidiendo, en las frases que acertaste" else "Juega un poco más para medir tu lectura: hacen falta unas 10 respuestas bien.",
-      dataLine = reading.slowText(rows) ?: reading.streakLine(result.svBestStreak)?.let { "Tu mejor racha: $it" },
+      dataLine = reading.slowText(rows) ?: reading.streakLine(result.svBestStreak)?.let { "Más seguidos: ${result.svBestStreak}" },
       conditionalTrick = reading.tip(rows)?.let { ResultAdvice.tipOf(it) }
     )
   }

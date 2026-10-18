@@ -29,9 +29,10 @@ class AvanceLogicTest {
   fun `una familia bloqueada muestra cuanto lleva y la conseguida cual es la siguiente`() {
     val none = computeAchievementStats(emptyList(), emptyMap())
     val volver = Achievements.familyState(AchievementFamily.VOLVER, emptySet(), none)
-    assertFalse(volver.unlocked); assertNull(volver.number); assertEquals("0/1 regreso", volver.caption)
+    assertFalse(volver.unlocked); assertNull(volver.number); assertEquals("Nivel 0 de 3 · siguiente: volver 1 vez", volver.caption)
     val variedad = Achievements.familyState(AchievementFamily.VARIEDAD, emptySet(), none)
-    assertEquals("0/3 partidas en un día", variedad.caption)
+    assertEquals("Nivel 0 de 4 · siguiente: 3 partidas en un día", variedad.caption)
+    assertEquals(listOf("Nivel 0 de 4", "siguiente: 3 partidas en un día"), variedad.captionLines)
 
     val history = (0 until 3).map { game("secuencia", it) }
     val stats = computeAchievementStats(history, emptyMap())
@@ -39,7 +40,7 @@ class AvanceLogicTest {
     val constancia = Achievements.familyState(AchievementFamily.CONSTANCIA, got, stats)
     assertTrue(constancia.unlocked)
     assertEquals("racha_3", constancia.reached!!.id); assertEquals(3, constancia.number)
-    assertEquals("siguiente: 7 días", constancia.caption)
+    assertEquals("racha_3 es el segundo nivel de ocho (el primero es el primer paso)", "Nivel 2 de 8 · siguiente: 7 días", constancia.caption)
     assertTrue(constancia.spoken.startsWith("Constancia, nivel 3 días"))
   }
 
@@ -47,7 +48,8 @@ class AvanceLogicTest {
   fun `el nivel mas alto de una familia no tiene siguiente`() {
     val all = Achievements.all.filter { it.family == AchievementFamily.VOLVER }.map { it.id }.toSet()
     val st = Achievements.familyState(AchievementFamily.VOLVER, all, computeAchievementStats(emptyList(), emptyMap()))
-    assertNull(st.next); assertEquals("El nivel más alto", st.caption); assertEquals(10, st.number)
+    assertNull(st.next); assertEquals("Nivel 3 de 3 · completa", st.caption); assertEquals(10, st.number)
+    assertEquals("Nivel 2 de 3 · siguiente: volver 10 veces", Achievements.familyState(AchievementFamily.VOLVER, setOf("vuelta_1", "vuelta_3"), computeAchievementStats(emptyList(), emptyMap())).caption)
   }
 
   // ---- liga

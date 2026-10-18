@@ -33,21 +33,28 @@ data class FamilyMedalState(val family: AchievementFamily, val reached: Achievem
   val unlocked: Boolean get() = reached != null
   val number: Int? get() = reached?.let { it.number ?: 1 }
 
-  /** Bajo el título de la familia: «1/3 días» si está bloqueada; «siguiente: 14 días» si hay otro nivel; «El nivel más alto» si no. */
+  /** Cuántos niveles tiene la familia (Constancia 8, Variedad 4, Volver 3). */
+  val totalLevels: Int get() = Achievements.levelsOf(family).size
+
+  /** El nivel en que está: 0 si todavía no consiguió ninguno; si no, su lugar en la familia (1 = el primero). */
+  val level: Int get() = reached?.let { r -> Achievements.levelsOf(family).indexOfFirst { it.id == r.id } + 1 } ?: 0
+
+  /** Lo que falta, dicho como lo diría una persona: «14 días», «25 partidas», «volver 1 vez» (Volver). */
+  private fun ask(def: AchievementDef): String =
+    if (family == AchievementFamily.VOLVER) { val n = def.number ?: 1; "volver $n ${if (n == 1) "vez" else "veces"}" } else def.goalText()
+
+  /**
+   * Bajo el título de la familia, UN solo formato (Tarea 126, a pedido de Opus): «Nivel 2 de 8 · siguiente: 7 días», «Nivel 0 de 3 · siguiente: volver 1 vez» y, en el último, «Nivel 8 de 8 · completa». Se entiende solo, sin «0/1».
+   */
   val caption: String
-    get() = when {
-      reached == null -> progress?.let { (cur, goal) -> "$cur/$goal ${next?.goalText()?.substringAfter(' ').orEmpty()}".trim() } ?: ""
-      next != null -> "siguiente: ${next.goalText()}"
-      else -> "El nivel más alto"
-    }
+    get() = "Nivel $level de $totalLevels · " + (next?.let { "siguiente: ${ask(it)}" } ?: "completa")
+
+  /** El texto de [caption] en dos líneas para la casilla de la medalla: «Nivel 2 de 8» y «siguiente: 7 días». */
+  val captionLines: List<String> get() = caption.split(" · ")
 
   /** Lo que lee el lector de pantalla. */
   val spoken: String
-    get() = when {
-      reached == null -> "${family.title}, bloqueada. $caption"
-      next != null -> "${family.title}, nivel ${reached.goalText()}. $caption"
-      else -> "${family.title}, nivel ${reached.goalText()}. $caption"
-    }
+    get() = if (reached == null) "${family.title}, bloqueada. $caption" else "${family.title}, nivel ${reached.goalText()}. $caption"
 }
 
 fun Achievements.familyState(family: AchievementFamily, unlocked: Set<String>, stats: AchievementStats): FamilyMedalState {

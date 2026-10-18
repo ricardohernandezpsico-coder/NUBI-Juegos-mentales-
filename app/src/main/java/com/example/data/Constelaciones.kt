@@ -42,8 +42,8 @@ object Constelaciones {
     return "Parejas de memoria: ${memGroups.coerceIn(0, groups)} de $groups"
   }
 
-  /** «Racha de memoria más larga: 5»; null sin racha. */
-  fun streakLine(streak: Int?): String? = if (streak == null || streak <= 0) null else "Racha de memoria más larga: $streak"
+  /** «Más seguidos de memoria: 5»; null sin racha. */
+  fun streakLine(streak: Int?): String? = if (streak == null || streak <= 0) null else "Más seguidos de memoria: $streak"
 
   /** «Etapa más alta: 4 de 6 (tríos)»; null si no es un grupo válido (1..6). */
   fun groupLine(group: Int?): String? {
@@ -51,10 +51,10 @@ object Constelaciones {
     return "Etapa más alta: $group de $GROUPS (${GROUP_NAMES[group - 1]})"
   }
 
-  /** «Tu mejor racha: 6»; con «¡Nueva mejor racha!» solo cuando en esta partida se superó la guardada (lo dice Unity: igualarla no cuenta). null sin récord. */
+  /** «Más seguidos: 6»; con «¡Nuevo récord de seguidos!» solo cuando en esta partida se superó la guardada (lo dice Unity: igualarla no cuenta). null sin récord. */
   fun recordLine(best: Int?, isNew: Boolean?): String? {
     if (best == null || best <= 0) return null
-    return if (isNew == true) "¡Nueva mejor racha! $best" else "Tu mejor racha: $best"
+    return if (isNew == true) "¡Nuevo récord de seguidos! $best" else "Más seguidos: $best"
   }
 
   /** La nota que explica por qué la suerte no suma. */

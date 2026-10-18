@@ -43,10 +43,10 @@ object Bodega {
     return "Etapa más alta: $group de ${GROUPS.size} (${GROUPS[group - 1]})"
   }
 
-  /** «Tu racha más larga: 5 seguidos al primer intento»; solo con [MIN_FOR_DETAILS] o más objetos y una racha de 2 o más. */
+  /** «Más seguidos: 5 al primer intento»; solo con [MIN_FOR_DETAILS] o más objetos y una racha de 2 o más. */
   fun streakLine(streak: Int?, total: Int?): String? {
     if (streak == null || streak < 2 || total == null || total < MIN_FOR_DETAILS) return null
-    return "Tu racha más larga: $streak seguidos al primer intento"
+    return "Más seguidos: $streak al primer intento"
   }
 
   /** «Tu bodega más grande hoy: 5 objetos sin errores»; null si ningún pedido salió perfecto. */

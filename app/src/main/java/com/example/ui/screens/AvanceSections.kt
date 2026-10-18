@@ -210,7 +210,7 @@ internal fun FamilyMedalCards(states: List<FamilyMedalState>, onTap: (Achievemen
               Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 FamilyMedal(st, 56.dp)
                 Text(st.family.title, color = if (st.unlocked) Clay.Ink else Clay.InkMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = 20.sp, modifier = Modifier.padding(top = 4.dp))
-                if (st.caption.isNotEmpty()) Text(st.caption, color = Clay.InkMuted, fontSize = 16.sp, textAlign = TextAlign.Center, lineHeight = 20.sp)
+                st.captionLines.forEach { Text(it, color = Clay.InkMuted, fontSize = 16.sp, textAlign = TextAlign.Center, lineHeight = 20.sp) }
               }
             }
           }

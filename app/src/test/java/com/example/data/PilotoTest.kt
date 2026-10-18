@@ -30,7 +30,7 @@ class PilotoTest {
     assertEquals("Toques equivocados: 2", Piloto.wrongLine(2))
     assertEquals("Toques equivocados: 0", Piloto.wrongLine(0))
     assertEquals("Tu nivel de señales: 6 de 9", Piloto.levelLine(6))
-    assertEquals("Racha mayor ×7", Piloto.streakLine(7))
+    assertEquals("Más seguidos ×7", Piloto.streakLine(7))
     assertNull(Piloto.streakLine(1))
     assertNull(Piloto.laneLine(null))
     assertNull(Piloto.missionLine(null, 4))

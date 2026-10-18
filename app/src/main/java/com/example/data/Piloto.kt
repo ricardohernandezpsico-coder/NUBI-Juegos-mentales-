@@ -41,8 +41,8 @@ object Piloto {
   /** «Tu nivel de señales: 6 de 9»; null sin dato. */
   fun levelLine(level: Int?): String? = level?.takeIf { it in 1..MAX_LEVEL }?.let { "Tu nivel de señales: $it de $MAX_LEVEL" }
 
-  /** «Racha mayor ×7» (solo desde 2); null sin dato. */
-  fun streakLine(best: Int?): String? = best?.takeIf { it >= 2 }?.let { "Racha mayor ×$it" }
+  /** «Más seguidos ×7» (solo desde 2); null sin dato. */
+  fun streakLine(best: Int?): String? = best?.takeIf { it >= 2 }?.let { "Más seguidos ×$it" }
 
   /** Los puntos de la partida («1.250 puntos», con el punto de miles como se escribe en español); null sin dato. */
   fun pointsLine(points: Int?): String? = points?.takeIf { it >= 0 }?.let {

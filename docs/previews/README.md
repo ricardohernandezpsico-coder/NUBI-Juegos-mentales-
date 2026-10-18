@@ -34,6 +34,10 @@ como historial de las decisiones de diseño. Si se cambia el arte de algo, hay q
 
 - [`avance-juegos-125.png`](avance-juegos-125.png): Avance, la grilla de Juegos, la ventana de Memoria, la ficha de un juego, Hoy y el Perfil, ANTES (git HEAD de `app-actual/`) | DESPUÉS de la Tarea 125, capturas reales de la app. La arma `tools/previews/avance_juegos_125.py` (antes de regenerar `app-actual/`).
 
+## Un solo final (Tarea 126, 18-oct)
+
+- [`final-unico.png`](final-unico.png): Rescate relámpago, Engranajes y La estación de correo, con los tres cuadros del final (el momento del objeto, la cortina «¡Listo!» y el resultado en la app) en «hoy | propuesta». Las tomas son reales (Unity con `--capturas`, Roborazzi de la app); «hoy» salió del código anterior a la tarea (un `git worktree` en HEAD), salvo la cortina de hoy y el panel de Engranajes de hoy, que son réplicas hechas a mano (la leyenda lo dice). La arma `tools/previews/final_unico.py` (`--tomar` copia las tomas a [`final-unico/`](final-unico/); sin banderas arma la lámina).
+
 ## Cuatro áreas (30-sep)
 
 - [`cuatro-areas.png`](cuatro-areas.png): maqueta de Nubi con 4 áreas sobre el fondo C. Hoy · B final (nombres cortos con

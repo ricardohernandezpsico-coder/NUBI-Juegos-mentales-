@@ -35,12 +35,12 @@ object Aterrizaje {
   /** «12 aterrizajes justos de 15» (en singular: «1 aterrizaje justo de 8»). */
   fun title(hits: Int, total: Int): String = (if (hits == 1) "1 aterrizaje justo" else "$hits aterrizajes justos") + " de $total"
 
-  /** «2 dianas lunares · racha mayor ×4 · 1 cúpula» (en singular cuando corresponde; la racha solo se nombra desde 2). null si no vino ningún dato. */
+  /** «2 dianas lunares · más seguidos ×4 · 1 cúpula» (en singular cuando corresponde; la racha solo se nombra desde 2). null si no vino ningún dato. */
   fun summaryLine(bulls: Int?, bestStreak: Int?, domes: Int?): String? {
     if (bulls == null && bestStreak == null && domes == null) return null
     val b = bulls ?: 0
     val d = domes ?: 0
-    return (if (b == 1) "1 diana lunar" else "$b dianas lunares") + " · racha mayor " + (if ((bestStreak ?: 0) >= 2) "×$bestStreak" else "—") + " · " + (if (d == 1) "1 cúpula" else "$d cúpulas")
+    return (if (b == 1) "1 diana lunar" else "$b dianas lunares") + " · más seguidos " + (if ((bestStreak ?: 0) >= 2) "×$bestStreak" else "—") + " · " + (if (d == 1) "1 cúpula" else "$d cúpulas")
   }
 
   /** Tu avance contigo: los tres números («N %») y la frase. */

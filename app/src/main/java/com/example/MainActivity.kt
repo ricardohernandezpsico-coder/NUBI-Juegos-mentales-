@@ -262,6 +262,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             rescateTotals = rescateTotals,
             acoplamientoTotals = acoplamientoTotals,
             aterrizajeTotals = aterrizajeTotals,
+            soundEnabled = userSettings.soundEnabled,
             onPlayAgain = {
               viewModel.launchGame(result.gameId, customLevel = result.level, customTimed = result.timed, mode = result.playMode)
             },

@@ -42,7 +42,7 @@ class ConstelacionesTest {
     assertEquals("Parejas de memoria: 6 de 6", Constelaciones.memoryGroupsLine(9, 6))
     assertNull(Constelaciones.memoryGroupsLine(null, 6))
     assertNull(Constelaciones.memoryGroupsLine(2, 0))
-    assertEquals("Racha de memoria más larga: 5", Constelaciones.streakLine(5))
+    assertEquals("Más seguidos de memoria: 5", Constelaciones.streakLine(5))
     assertNull(Constelaciones.streakLine(0))
     assertNull(Constelaciones.streakLine(null))
   }
@@ -59,9 +59,9 @@ class ConstelacionesTest {
 
   @Test
   fun `el record dice nueva mejor racha solo cuando Unity avisa que se supero`() {
-    assertEquals("Tu mejor racha: 6", Constelaciones.recordLine(6, false))
-    assertEquals("Tu mejor racha: 6", Constelaciones.recordLine(6, null))
-    assertEquals("¡Nueva mejor racha! 7", Constelaciones.recordLine(7, true))
+    assertEquals("Más seguidos: 6", Constelaciones.recordLine(6, false))
+    assertEquals("Más seguidos: 6", Constelaciones.recordLine(6, null))
+    assertEquals("¡Nuevo récord de seguidos! 7", Constelaciones.recordLine(7, true))
     assertNull(Constelaciones.recordLine(0, true))
     assertNull(Constelaciones.recordLine(null, null))
   }

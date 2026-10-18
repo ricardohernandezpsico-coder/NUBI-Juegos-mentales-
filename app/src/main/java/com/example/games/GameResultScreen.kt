@@ -11,6 +11,10 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,33 +84,6 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
-/**
- * La frase de debajo del título. «Precisión y ritmo / equilibrio entre precisión y velocidad» solo vale donde el puntaje se apoya en la
- * rapidez; los juegos de memoria, estimación o razonamiento sin tiempo de reacción dicen solo «precisión» (Rastro de luz no mide velocidad).
- */
-object ResultPhrases {
-  /** Juegos cuyo puntaje y medida NO usan rapidez: ni tiempo de reacción en el motor ni una medida en ms o por segundo. */
-  val NO_SPEED_GAMES = setOf("secuencia", "satelites", "aterrizaje", "anagramas", "intrusa", "engranajes", "bodega", "parejas", "correo")
-
-  /**
-   * La frase del veredicto: UN solo tono, cálido y sin culpa (el 3-oct se quitaron las variantes de tono). Las reglas de arriba valen: sin «velocidad» ni «ritmo» donde el puntaje no la usa.
-   */
-  fun feedback(gameId: String, score: Int): String {
-    val noSpeed = gameId in NO_SPEED_GAMES
-    return when {
-      noSpeed -> when {
-        score >= 85 -> "¡Qué precisión! Esta partida merece una celebración."
-        score >= 60 -> "¡Muy buena precisión! Sigue así."
-        else -> "¡Jugaste! La dificultad se ajusta para que sigas disfrutando."
-      }
-      score >= 85 -> "¡Excelente! Tu precisión y tu ritmo brillaron hoy."
-      score >= 60 -> "¡Muy bien! Buen equilibrio entre precisión y velocidad."
-      else -> "¡Jugaste! La dificultad se ajusta para que sigas disfrutando."
-    }
-  }
-}
-
-
 private val TextSoft = com.example.ui.theme.NubiTokens.OnNightDim // secundario sobre el cielo nocturno (contraste > 7:1)
 
 /**
@@ -140,45 +117,42 @@ fun GameResultScreen(
   /** Acoplamiento: los módulos acoplados y los anillos completos de toda la vida (ya con esta partida sumada), para «Has acoplado …». */
   acoplamientoTotals: com.example.data.Acoplamiento.Totals? = null,
   /** Aterrizaje Lunar: las cúpulas de tu base de toda la vida (ya con esta partida sumada), para «Tu base lunar: …». */
-  aterrizajeTotals: com.example.data.Aterrizaje.Totals? = null
+  aterrizajeTotals: com.example.data.Aterrizaje.Totals? = null,
+  /** «Efectos de sonido» de Ajustes: con false, el récord no suena (sí vibra, si la vibración está encendida). */
+  soundEnabled: Boolean = true
 ) {
   val gameDef = GameRegistry.getById(result.gameId)
   val domainColor = gameDef?.domain?.color ?: Clay.Sky
-  val stars = when {
-    result.score >= 90 -> 3
-    result.score >= 65 -> 2
-    result.score >= 40 -> 1
-    else -> 0
-  }
   val context = LocalContext.current
   val reduceMotion = rememberReduceMotion()
+  val haptics = com.example.ui.components.LocalHapticsEnabled.current
+  val view = androidx.compose.ui.platform.LocalView.current
 
   BackHandler(onBack = onContinue)
 
-  val shownScore = remember(result) { Animatable(if (reduceMotion) result.score.toFloat() else 0f) }
-  val starScale = remember(result) { List(3) { Animatable(if (reduceMotion) 1f else 0f) } }
-  val burst = remember(result) { Animatable(0f) }
+  val usesMeaningfulResult = FinalModels.usesMeaningful(result)
+  // El récord (Tarea 126; en Unity lo tapaba la cortina): una línea con su sello arriba, la vibración firme y el sonido «Record» de la paleta Madera. Es récord si el juego lo dice (su marca guardada) o si «Tu avance» dice «¡Tu mejor partida hasta ahora!».
+  val isRecord = remember(result, starMeasures) {
+    result.rescNewRecord == true || result.dockNewRecord == true || result.mailNewRecord == true || result.satNewRecord == true || result.bodNewRecord == true || result.conNewRecord == true ||
+      (usesMeaningfulResult && FinalModels.forGame(result, starMeasures)?.progressPhrase == com.example.data.FinalesConSentido.PHRASE_BEST)
+  }
+
+  val plaquePop = remember(result) { Animatable(if (reduceMotion) 1f else 0.82f) }
   val levelPop = remember(result) { Animatable(if (reduceMotion) 1f else 0f) }
   LaunchedEffect(result) {
     if (reduceMotion) return@LaunchedEffect
-    shownScore.animateTo(result.score.toFloat(), tween(900, easing = FastOutSlowInEasing))
-    starScale.forEachIndexed { i, anim ->
-      launch {
-        delay(i * 170L)
-        anim.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = 320f))
-      }
-    }
-    if (stars >= 2) launch { burst.animateTo(1f, tween(1500, easing = LinearOutSlowInEasing)) }
-    delay(3 * 170L)
+    plaquePop.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 380f))
+    delay(300L)
     levelPop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 300f))
   }
-
-  val halo = if (reduceMotion) 1f else {
-    val t = rememberInfiniteTransition(label = "halo")
-    val v by t.animateFloat(0.92f, 1.08f, infiniteRepeatable(tween(2200), RepeatMode.Reverse), label = "haloScale")
-    v
+  LaunchedEffect(result, isRecord) {
+    if (!isRecord) return@LaunchedEffect
+    delay(if (reduceMotion) 150L else 450L)
+    if (haptics && android.os.Build.VERSION.SDK_INT >= 30) view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+    if (soundEnabled) com.example.ui.components.RecordSound.play(context)
   }
 
+  CompositionLocalProvider(com.example.ui.components.LocalResultScore provides com.example.ui.components.ResultScore.line(result)) {
   Column(
     modifier = modifier
       .fillMaxSize()
@@ -187,85 +161,17 @@ fun GameResultScreen(
       .padding(top = 28.dp, bottom = 32.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    // Juego y dominio, como texto suelto.
-    Text(
-      text = gameDef?.title ?: "Partida terminada",
-      color = Clay.Cream,
-      fontFamily = AppFamily,
-      fontWeight = FontWeight.Bold,
-      fontSize = 26.sp,
-      textAlign = TextAlign.Center
-    )
-    if (gameDef != null) {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-        Canvas(Modifier.size(8.dp)) { drawCircle(domainColor) }
-        Spacer(Modifier.width(6.dp))
-        Text(gameDef.domain.displayName, color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-      }
-    }
-
-    // Protagonista: halo del dominio, destellos, luceros y el puntaje gigante de arcilla.
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(250.dp),
-      contentAlignment = Alignment.Center
-    ) {
-      Canvas(Modifier.fillMaxSize()) {
-        val c = Offset(size.width / 2f, size.height * 0.58f)
-        drawCircle(
-          Brush.radialGradient(listOf(domainColor.copy(alpha = 0.40f), Color.Transparent), c, size.minDimension * 0.55f * halo),
-          radius = size.minDimension * 0.55f * halo,
-          center = c
-        )
-        if (burst.value > 0f && burst.value < 1f) drawBurst(c, burst.value, size.minDimension * 0.62f)
-      }
-      Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
-          for (i in 0 until 3) {
-            val big = i == 1
-            ResultStar(
-              earned = i < stars,
-              modifier = Modifier
-                .size(if (big) 58.dp else 46.dp)
-                .offset(y = if (big) (-8).dp else 0.dp)
-                .scale(starScale[i].value)
-            )
-          }
-        }
-        Spacer(Modifier.height(4.dp))
-        ClayNumber(text = shownScore.value.toInt().toString(), color = Clay.Sun, fontSize = 104.sp)
-        Text("puntos", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-      }
-    }
-
-    Text(
-      text = when {
-        result.score >= 90 -> "¡Extraordinario!"
-        result.score >= 70 -> "¡Muy bien!"
-        result.score >= 50 -> "Buen trabajo"
-        else -> "Sigue practicando"
-      },
-      color = Clay.Cream,
-      fontFamily = AppFamily,
-      fontWeight = FontWeight.Bold,
-      fontSize = 28.sp,
-      textAlign = TextAlign.Center
-    )
-    Text(
-      text = ResultPhrases.feedback(result.gameId, result.score),
-      color = TextSoft,
-      fontSize = 16.sp,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.padding(top = 4.dp)
-    )
+    // UN solo final (Tarea 126): abre con la placa del juego (su emblema, el nombre y el área) y directo con el final con sentido; sin el puntaje gigante, las tres estrellas ni el elogio. El puntaje se sigue guardando y va en «Ver el detalle de tu partida».
+    ResultPlaque(result.gameId, gameDef?.title ?: "Partida terminada", gameDef?.domain?.displayName, domainColor, plaquePop.value)
+    if (isRecord) RecordLine()
 
     // Datos de la partida, sueltos en una línea. Los juegos con final con sentido (`MeaningfulResult`: Aterrizaje Lunar y, desde la Etapa 3, los que ya se llevaron a ese orden: ver `FinalModels.usesMeaningful`) ya dicen sus aciertos
     // en su propio recuadro («13 aterrizajes justos de 15», «7 de 9 veces…»): ahí la fila deja solo etapa y modo (Tarea 73). Los demás juegos quedan igual.
-    val usesMeaningfulResult = FinalModels.usesMeaningful(result)
     Spacer(Modifier.height(18.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (!usesMeaningfulResult) {
+        Stat("${result.score}", "puntos")
+        Dot()
         Stat("${result.correctAnswers}/${result.totalTrials}", "aciertos")
         Dot()
       }
@@ -548,7 +454,7 @@ fun GameResultScreen(
     }
 
     // Constelaciones (pantalla final, docs/diseno-constelaciones.md §5): «Tu memoria de lugar». «X de Y veces fuiste directo a una pareja que ya habías visto» con el % en grande, las parejas de memoria,
-    // la racha de memoria más larga, la etapa más alta (de 6), tu mejor racha (con «¡Nueva mejor racha!» si la superaste) y la nota de que lo encontrado por suerte no cuenta. Sin oportunidades no hay % («—»). Sin recuadros.
+    // la racha de memoria más larga, la etapa más alta (de 6), tus más seguidos (con «¡Nuevo récord de seguidos!» si lo superaste) y la nota de que lo encontrado por suerte no cuenta. Sin oportunidades no hay % («—»). Sin recuadros.
     // Final con sentido (Etapa 3, docs/finales-con-sentido.md): lo que hiciste con UN dato tuyo, tu avance, el truco y por qué importa. Lo que este juego mostraba antes NO se borra: va, SIN repetir lo que ya está arriba, detrás de «Ver el detalle de tu partida».
     val conGroup = result.conGroup
     if (conGroup != null) {
@@ -612,10 +518,10 @@ fun GameResultScreen(
           Text("Disparates sutiles", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
           Text(it, color = Clay.Cream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp))
         }
-        streak?.takeIf { "Tu mejor racha: $it" != model.dataLine }?.let { line ->
+        streak?.takeIf { "Más seguidos: ${result.svBestStreak}" != model.dataLine }?.let { line ->
           Spacer(Modifier.height(14.dp))
           Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Tu mejor racha", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
+            Text("Más seguidos", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
             Text(line, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 19.sp, fontFamily = AppFamily)
           }
         }
@@ -753,54 +659,41 @@ fun GameResultScreen(
       )
     }
   }
-}
-
-/** Número "de arcilla": relleno de color, contorno tinta grueso y sombra dura tinta (como en los juegos). */
-@Composable
-private fun ClayNumber(text: String, color: Color, fontSize: TextUnit) {
-  val base = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = fontSize)
-  val stroke = Stroke(width = 16f, join = StrokeJoin.Round)
-  Box {
-    Text(text, style = base.copy(color = Clay.Ink, drawStyle = stroke), modifier = Modifier.offset(y = 6.dp))
-    Text(text, style = base.copy(color = Clay.Ink, drawStyle = stroke))
-    Text(text, style = base.copy(color = color))
   }
 }
 
-/** Lucero REDONDO de arcilla (la «estrella» ganada, 4-oct: nada de estrellas con puntas): sol con borde tinta si se ganó, contorno tenue si no. */
+/** La placa del juego, arriba del final (Tarea 126): su emblema (la ficha con el objeto del juego), el nombre y el área. Entra con un rebote corto (con «quitar animaciones», ya quieta). */
 @Composable
-private fun ResultStar(earned: Boolean, modifier: Modifier = Modifier) {
-  Canvas(modifier) {
-    val center = Offset(size.width / 2f, size.height / 2f)
-    val r = size.minDimension * 0.40f
-    if (earned) {
-      drawCircle(Clay.Sun.copy(alpha = 0.28f), radius = r * 1.22f, center = center)
-      drawCircle(Clay.Ink, radius = r + size.minDimension * 0.06f, center = center)
-      drawCircle(Clay.Sun, radius = r, center = center)
-      // Brillo arriba a la izquierda.
-      drawCircle(Color.White.copy(alpha = 0.55f), radius = size.minDimension * 0.08f, center = Offset(size.width * 0.38f, size.height * 0.36f))
-    } else {
-      drawCircle(Color.White.copy(alpha = 0.10f), radius = r, center = center)
-      drawCircle(Color.White.copy(alpha = 0.30f), radius = r, center = center, style = Stroke(width = size.minDimension * 0.05f))
+private fun ResultPlaque(gameId: String, title: String, domainName: String?, domainColor: Color, pop: Float) {
+  Column(Modifier.fillMaxWidth().testTag("result_plaque"), horizontalAlignment = Alignment.CenterHorizontally) {
+    Box(Modifier.scale(pop)) { com.example.ui.components.GameEmblem(gameId, 112.dp) }
+    Text(
+      text = title, color = Clay.Cream, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 26.sp, textAlign = TextAlign.Center,
+      modifier = Modifier.padding(top = 10.dp)
+    )
+    if (domainName != null) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+        Canvas(Modifier.size(8.dp)) { drawCircle(domainColor) }
+        Spacer(Modifier.width(6.dp))
+        Text(domainName, color = TextSoft, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+      }
     }
   }
 }
 
-private val BurstColors = listOf(Clay.Sun, Clay.Coral, Clay.Sky, Clay.Grape, Clay.Lime, Color.White)
-
-/** Lluvia de destellos REDONDOS que salen del centro y se apagan (celebración de 2-3 luceros). */
-private fun DrawScope.drawBurst(center: Offset, progress: Float, reach: Float) {
-  val rnd = Random(7)
-  val fade = 1f - progress
-  repeat(26) { i ->
-    val angle = rnd.nextFloat() * 2f * PI.toFloat()
-    val speed = 0.45f + rnd.nextFloat() * 0.55f
-    val d = reach * speed * (1f - (1f - progress) * (1f - progress)) // sale rápido y frena
-    val p = Offset(center.x + cos(angle) * d, center.y + sin(angle) * d)
-    val s = (10f + rnd.nextFloat() * 16f) * (1f - progress * 0.5f)
-    val color = BurstColors[i % BurstColors.size].copy(alpha = fade)
-    drawCircle(color.copy(alpha = color.alpha * 0.35f), s * 0.9f, p)
-    drawCircle(color, s * 0.45f, p)
+/** «¡Récord nuevo!» con su sello (un disco sol con el ✓ de plasticina: forma, no solo color). */
+@Composable
+private fun RecordLine() {
+  Row(
+    Modifier.padding(top = 14.dp).semantics(mergeDescendants = true) { contentDescription = "Récord nuevo" }.testTag("result_record"),
+    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center
+  ) {
+    Box(
+      Modifier.size(34.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Clay.Sun).border(2.dp, Clay.Ink, androidx.compose.foundation.shape.CircleShape),
+      contentAlignment = Alignment.Center
+    ) { com.example.ui.components.KitGlyph(Glyph.CHECK, size = 22.dp) }
+    Spacer(Modifier.width(10.dp))
+    Text("¡Récord nuevo!", color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp)
   }
 }
 
