@@ -234,12 +234,12 @@ internal fun PlaceLayer(
   val headerStart = with(density) { perch.right.toDp() } + 6.dp                    // el nombre empieza a la derecha de Nubi
 
   Box(modifier.fillMaxSize()) {
-    // El velo (tinta al ~50 %): tocarlo cierra la lámina.
+    // El velo (casi negro al 45 %, `PlaceMotion.VEIL`): tocarlo cierra la lámina.
     Box(
       Modifier
         .fillMaxSize()
         .graphicsLayer { alpha = fx.veil.value }
-        .background(Color(0x80211C45))
+        .background(PlaceMotion.VEIL)
         .clickable(role = Role.Button, onClickLabel = "Cerrar la lámina", onClick = onClose)
         .testTag("place_veil")
     )

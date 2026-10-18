@@ -22,7 +22,7 @@ El paso del tablero (lámina, luceros y `tablero.py`) se corrió de verdad en la
 
 El fondo B (tablero azul marino con luceros de plasticina) son DOS imágenes apiladas: `fondo_lamina` (la lámina con su nebulosa y su textura, sin luceros) y `fondo_luceros` (las bolitas con su sombra de contacto, transparente, encima). Desde la Tarea 87 van FIJAS detrás de Hoy, Juegos y Avance (~80 luceros visibles; antes solo se veían en Hoy, con 17). En la app: `ui/components/BoardBackground.kt` (sin fundido por pestaña).
 
-Opciones de `isla.py` para el tablero (se usan siempre con `--tablero --lamina B`):
+Opciones de `isla.py` para el tablero (se usan siempre con `--tablero --lamina E`, «Espacio profundo», el fondo vigente desde la Tarea 122; `--lamina B` es el azul marino de antes y `A` el lila descartado; para E, `render.sh` se corre con `E` y trae luces propias: `--tabsol` 1,6 y `--tabcentro` 190):
 
 | Opción | Qué renderiza | Archivo |
 |---|---|---|

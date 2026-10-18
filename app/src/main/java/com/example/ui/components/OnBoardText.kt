@@ -37,10 +37,10 @@ object OnBoardHalo {
   /** Ancho del contorno (1,75 dp hacia afuera de cada trazo). */
   val Outline: Dp = 3.5.dp
   /**
-   * El color del contorno: el de la lámina en su zona más común (mediana de `fondo_lamina`: 50, 51, 103), así sobre el fondo liso casi no se nota; la nebulosa va de ~#292A4E a ~#373A6F, es decir ±12 por canal: en lo más claro se lee como una sombra leve, no como un borde.
-   * Contra una letra clara (luminancia 0,65-0,9) sigue dando 8:1 o más.
+   * El color del contorno: el de la lámina en su zona más común, MEDIDO sobre el render nuevo (mediana de `fondo_lamina` «Espacio profundo»: 21, 21, 57 = `#151539`), así sobre el fondo liso casi no se nota; la lámina va de ~#0F0E2E (pie) a ~#181739 (arriba).
+   * Si cambia la lámina, esto cambia con ella (`BoardBackgroundContrastTest` lo mide): un contorno más claro que el fondo deja cada letra con un aura. Contra una letra clara (luminancia 0,65-0,9) sigue dando 13:1 o más.
    */
-  val Tone: Color = Color(0xFF333369)
+  val Tone: Color = Color(0xFF151539)
 }
 
 /**

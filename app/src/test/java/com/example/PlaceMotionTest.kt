@@ -1,5 +1,6 @@
 package com.example
 
+import androidx.compose.ui.graphics.Color
 import com.example.ui.components.PlaceMotion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -18,6 +19,24 @@ class PlaceMotionTest {
     assertEquals(820, PlaceMotion.FLIGHT_MS)
     assertEquals(620, PlaceMotion.BACK_FLIGHT_MS)
     assertEquals(320, PlaceMotion.GLOBE_MS)
+  }
+
+  /** El velo de la lámina (Tarea 122) sobre el cielo «Espacio profundo»: no lo aclara (el de antes, `#211C45` al 50 %, era más claro que el cielo) y sigue apagando la crema de la isla. */
+  @Test
+  fun el_velo_no_aclara_el_cielo_y_apaga_la_crema_de_la_isla() {
+    fun lum(c: Int): Double {
+      fun ch(v: Int): Double { val x = v / 255.0; return if (x <= 0.03928) x / 12.92 else Math.pow((x + 0.055) / 1.055, 2.4) }
+      return 0.2126 * ch((c shr 16) and 0xFF) + 0.7152 * ch((c shr 8) and 0xFF) + 0.0722 * ch(c and 0xFF)
+    }
+    fun over(bg: Int): Int {
+      val v = PlaceMotion.VEIL; val a = v.alpha
+      fun mix(shift: Int, vc: Float) = Math.round(vc * 255f * a + ((bg shr shift) and 0xFF) * (1f - a))
+      return (mix(16, v.red) shl 16) or (mix(8, v.green) shl 8) or mix(0, v.blue)
+    }
+    val sky = 0x151539; val cream = 0xF6EBD3
+    assertTrue("el velo cae al ~45 %", PlaceMotion.VEIL.alpha in 0.35f..0.55f)
+    assertTrue("el velo no aclara el cielo (%.4f → %.4f)".format(lum(sky), lum(over(sky))), lum(over(sky)) <= lum(sky))
+    assertTrue("el velo apaga la crema de la isla (de %.2f a %.2f)".format(lum(cream), lum(over(cream))), lum(over(cream)) <= 0.35 * lum(cream))
   }
 
   @Test

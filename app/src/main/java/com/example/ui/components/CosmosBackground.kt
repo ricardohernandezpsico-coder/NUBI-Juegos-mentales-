@@ -91,7 +91,7 @@ fun CosmosBackground(modifier: Modifier = Modifier) {
 
     drawRect(
       Brush.verticalGradient(
-        listOf(Color(0xFF02030F), Color(0xFF050823), Color(0xFF0A0F33)),
+        listOf(Color(0xFF07071F), Color(0xFF100F3A), Color(0xFF1C1B52)),     // los tres tonos del fondo «Espacio profundo» (Tarea 122): un solo cielo en toda la app
         startY = 0f, endY = h
       )
     )

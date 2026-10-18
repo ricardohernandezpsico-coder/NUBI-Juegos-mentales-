@@ -1,12 +1,12 @@
 #!/bin/bash
 # Renderiza la isla de Hoy (Blender, Cycles) y prepara lo que entra a la app. NO se corre en las verificaciones: es un paso de arte, a mano.
-#   BLENDER=/ruta/a/blender bash tools/isla/render.sh [lámina]     (lámina A = lila, B = azul marino, la que usa la app; por defecto B)
+#   BLENDER=/ruta/a/blender bash tools/isla/render.sh [lámina]     (lámina A = lila, B = azul marino, E = «Espacio profundo», la que usa la app desde la Tarea 122; por defecto E)
 # Tarda ~20 min con Cycles solo por CPU (Ryzen 5 5625U): isla completa y capas ~90 s, cada mirada de Nubi ~15 s, el tablero completo y la lámina ~2 min cada uno y los luceros ~4 min.
 # Salida: tools/isla/out/ (git-ignorada). Al final se copian a mano (o con las líneas de abajo) a app/src/main/res/.
 set -e
 cd "$(dirname "$0")"
 BLENDER="${BLENDER:-blender}"
-LAMINA="${1:-B}"
+LAMINA="${1:-E}"
 OUT=out
 mkdir -p "$OUT"
 run() { "$BLENDER" -b -P isla.py -- --engine CYCLES --samples 112 --width 1400 "$@" 2>&1 | grep "\[isla\]\|Traceback\|Error" || true; }
@@ -16,7 +16,7 @@ run --layers --json --out "$OUT"
 # 2. Las miradas de Nubi hacia cada edificio (fase 3: todavía no las usa la app) y su perfil.
 for m in frente observatorio antena hangar biblioteca; do run --solo-nubi --mirada "$m" --out "$OUT"; done
 cp "$OUT/capa-nubi-frente.png" "$OUT/capa-nubi.png"
-# 3. El fondo en DOS capas (Tarea 83). La lámina B (azul marino) es la que usa la app; la A (lila) quedó descartada.
+# 3. El fondo en DOS capas (Tarea 83). La lámina E («Espacio profundo», Tarea 122) es la que usa la app; la B (azul marino, 11-oct) y la A (lila) quedaron atrás.
 #    - completo: el B entero con todos sus luceros (--b-aprobado: no quita los de la zona libre de arriba); sirve de referencia para calcular el color de la capa de luceros.
 #    - lámina: sola, sin luceros.   - luceros: solo los luceros y su sombra, con la lámina como «shadow catcher» (transparente), SIN los de la zona libre de arriba (ZONAS_HOY en isla.py: el saludo de Hoy y los títulos de Juegos y Avance); son ~80 luceros (N_LUCEROS).
 run --tablero --lamina "$LAMINA" --b-aprobado --out "$OUT/tablero-completo"

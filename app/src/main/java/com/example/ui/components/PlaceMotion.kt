@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.ui.graphics.Color
 
 /**
  * Los tiempos y las curvas de la lámina del lugar de Hoy (Tarea 85; boceto «A», artboard `Main.dc.html`): Nubi mira hacia el edificio tocado, a los ~650 ms cae el velo, sube la lámina y Nubi vuela en arco hasta posarse arriba a la izquierda de ella.
@@ -14,6 +15,11 @@ object PlaceMotion {
   /** Cuánto se queda mirando antes de que caiga el velo. */
   const val LOOK_HOLD_MS = 650
   const val VEIL_MS = 360
+  /**
+   * El velo que cae sobre la página cuando se abre la lámina de un lugar (Tarea 122): casi negro (`#070620`) al 45 %. Sobre el cielo «Espacio profundo» (`#151539`) el tinte de antes (`#211C45` al 50 %, MÁS CLARO que el cielo) lo habría
+   * aclarado; este lo oscurece un poco y apaga la isla, la ruta y el saludo (la crema de la isla baja de 0,84 a ~0,23 de luminancia, igual que antes). `PlaceMotionTest` mide las dos cosas. El tiempo (360 ms) no cambia: la escala de movimiento entera se rehace aparte.
+   */
+  val VEIL = Color(0x73070620)
   const val SHEET_MS = 460
   /** La lámina sube 180 ms después del velo. */
   const val SHEET_DELAY_MS = 180

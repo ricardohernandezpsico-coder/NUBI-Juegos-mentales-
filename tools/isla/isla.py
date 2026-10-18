@@ -2,7 +2,7 @@
 """
 La isla de Nubi en 3D (versión vigente: ronda 26b, 11-oct-2026): pocas piezas, gordas y redondeadas; Nubi con lóbulos simples y cara
 lisa; torre de celosía sin plato; luz más clara; edificios con silueta de juguete. Blender 4.5, solo herramientas de Blender.
-Uso: blender -b -P isla.py -- [--engine EEVEE|CYCLES] [--samples N] [--width 1080] [--out DIR] [--layers] [--json] [--solo-nubi --mirada X] [--perfil] [--tablero --lamina A|B [--sin-luceros | --solo-luceros] [--b-aprobado]] [--nubi hola|descansa]
+Uso: blender -b -P isla.py -- [--engine EEVEE|CYCLES] [--samples N] [--width 1080] [--out DIR] [--layers] [--json] [--solo-nubi --mirada X] [--perfil] [--tablero --lamina A|B|E [--sin-luceros | --solo-luceros] [--b-aprobado]] [--nubi hola|descansa]
 Ver tools/isla/README.md y tools/isla/render.sh.
 """
 import bpy, bmesh, math, os, sys, time, random
@@ -827,44 +827,66 @@ TEXTO = (0.04, 0.08, 0.70, 0.22); BARRA_Z = (0.0, 0.88, 1.0, 1.0)   # zonas (x0,
 ZONAS_HOY = (
   (0.0, 0.03, 1.0, 0.28),    # encabezado a todo el ancho: saludo de Hoy (a 360 dp en dos líneas), fecha con la meta, farolitos y racha (el texto llega a y 22,5 %), «Tu avance» (y 5-8 %) y «¿Qué jugamos hoy?» con su sugerencia (y 10-20 %); margen para barras de estado más altas. Se mide en las pruebas
 )
-N_LUCEROS = 95   # 95 colocados: ~80 visibles (los demás caen en la banda de arriba o en la de la barra)
+N_LUCEROS = 55 if LAMINA == 'E' else 95   # B: 95 colocados, ~80 visibles (los demás caen en la banda de arriba o en la de la barra). E «Espacio profundo» (Tarea 122): 55 colocados, ~45 visibles
 SIN_LUCEROS = '--sin-luceros' in args; SOLO_LUCEROS = '--solo-luceros' in args; B_APROBADO = '--b-aprobado' in args
 def tablero():
     lam = box((TAB_W, TAB_H, 0.3), loc=(0,0,-0.15), coll='iconos', name='tab_lamina'); bevel(lam, 0.06, 3)
-    m = clay('m_lamina', '#1C1A50' if LAMINA == 'A' else '#23255A', bump=0.7, sss=0.1, vary=0.05, rough=0.72, spec=0.22, dents=1.0, dent_scale=1.6, grain=0.2, mid=0.4, sat=1.0, piece=0, chalk=0, prints=0.15)   # A: lila actual; B: azul noche como la referencia y el fondo de la app
+    m = clay('m_lamina', '#1C1A50' if LAMINA == 'A' else '#0E0D33' if LAMINA == 'E' else '#23255A', bump=0.7, sss=0.1, vary=0.05, rough=0.72, spec=(0.04 if LAMINA == 'E' else 0.22), sheen=(0.0 if LAMINA == 'E' else 0.08), dents=1.0, dent_scale=1.6, grain=0.2, mid=0.4, sat=1.0, piece=0, chalk=0, prints=0.15)   # A: lila actual; B: azul noche como la referencia y el fondo de la app
     nt = m.node_tree; N = nt.nodes; L = nt.links; b = N.get('Principled BSDF')   # nebulosa suave pintada en la lámina: dos manchas grandes lila y azul
     tc = N.new('ShaderNodeTexCoord'); nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 0.22; nz.inputs['Detail'].default_value = 2; L.new(tc.outputs['Object'], nz.inputs['Vector'])
-    c0, c1 = ('#1F1B55', '#5A4FA8') if LAMINA == 'A' else ('#1E2152', '#2E3A8C')   # B: azul marino sin violeta (medido en la referencia, ~#23255A)
+    c0, c1 = ('#1F1B55', '#5A4FA8') if LAMINA == 'A' else ('#15143F', '#262C6E') if LAMINA == 'E' else ('#1E2152', '#2E3A8C')   # B: azul marino sin violeta (medido en la referencia, ~#23255A); E «Espacio profundo» (Tarea 122): casi negro índigo, nebulosa apagada
     ramp = N.new('ShaderNodeValToRGB'); ramp.color_ramp.elements[0].position = 0.40; ramp.color_ramp.elements[0].color = (*lin(hx(c0)),1); ramp.color_ramp.elements[1].position = 0.64; ramp.color_ramp.elements[1].color = (*lin(hx(c1)),1)
     L.new(nz.outputs['Fac'], ramp.inputs['Fac'])
     prev = b.inputs['Base Color'].links[0].from_socket
-    mix = N.new('ShaderNodeMixRGB'); mix.blend_type = 'MIX'; mix.inputs['Fac'].default_value = 0.5; L.new(prev, mix.inputs['Color1']); L.new(ramp.outputs['Color'], mix.inputs['Color2']); L.new(mix.outputs['Color'], b.inputs['Base Color'])
+    mix = N.new('ShaderNodeMixRGB'); mix.blend_type = 'MIX'; mix.inputs['Fac'].default_value = 0.30 if LAMINA == 'E' else 0.5; L.new(prev, mix.inputs['Color1']); L.new(ramp.outputs['Color'], mix.inputs['Color2']); L.new(mix.outputs['Color'], b.inputs['Base Color'])   # E: la nebulosa al 60 % de la intensidad (0,5 → 0,30)
+    if LAMINA == 'E':   # viñeta del 25 %: esquinas y pie más oscuros (lo que la luz del sol deja de alcanzar); coordenadas «Generated» (0-1 sobre la lámina, y hacia arriba)
+        tg = N.new('ShaderNodeTexCoord'); sp = N.new('ShaderNodeSeparateXYZ'); L.new(tg.outputs['Generated'], sp.inputs['Vector'])
+        def mth(op, a=None, b_=None, c=None):
+            nd = N.new('ShaderNodeMath'); nd.operation = op
+            for i, v in enumerate((a, b_, c)):
+                if v is None: continue
+                if isinstance(v, (int, float)): nd.inputs[i].default_value = v
+                else: L.new(v, nd.inputs[i])
+            return nd.outputs['Value']
+        ax = mth('MULTIPLY_ADD', sp.outputs['X'], 2.0, -1.0); ay = mth('MULTIPLY_ADD', sp.outputs['Y'], 2.0, -1.0)   # -1..1
+        rr = mth('MULTIPLY', mth('SQRT', mth('ADD', mth('MULTIPLY', ax, ax), mth('MULTIPLY', ay, ay))), 0.7071)       # 0 en el centro, 1 en las esquinas
+        def rango(v, a, b2):
+            mr_ = N.new('ShaderNodeMapRange'); mr_.interpolation_type = 'SMOOTHSTEP'; mr_.inputs['From Min'].default_value = a; mr_.inputs['From Max'].default_value = b2
+            mr_.inputs['To Min'].default_value = 0.0; mr_.inputs['To Max'].default_value = 1.0; mr_.clamp = True; L.new(v, mr_.inputs['Value']); return mr_.outputs['Result']
+        esquina = rango(rr, 0.45, 1.0); pie = rango(mth('MULTIPLY', ay, -1.0), 0.25, 1.0)
+        oscuro = mth('MAXIMUM', esquina, pie)
+        f = mth('MULTIPLY_ADD', oscuro, -0.25, 1.0)
+        cx = N.new('ShaderNodeCombineXYZ'); L.new(f, cx.inputs['X']); L.new(f, cx.inputs['Y']); L.new(f, cx.inputs['Z'])
+        vg = N.new('ShaderNodeMixRGB'); vg.blend_type = 'MULTIPLY'; vg.inputs['Fac'].default_value = 1.0; L.new(mix.outputs['Color'], vg.inputs['Color1']); L.new(cx.outputs['Vector'], vg.inputs['Color2']); L.new(vg.outputs['Color'], b.inputs['Base Color'])
     mat(lam, m)
     if SOLO_LUCEROS: lam.is_shadow_catcher = True   # tarea 83: la lámina no se ve, solo recibe la sombra y el rebote de cada lucero
     # luceros: bolitas de plasticina crema medio hundidas, 3 tamaños, sin amontonarse, fuera del saludo y de la barra (incluido su borde)
-    rnd = random.Random(5); puestos = []; TAM = ((0.042, 0.55), (0.06, 0.32), (0.085, 0.13)); n = 0   # ronda 26: puntitos, no perlas
+    rnd = random.Random(5); puestos = []; TAM = ((0.030, 0.55), (0.043, 0.32), (0.0595, 0.13)) if LAMINA == 'E' else ((0.042, 0.55), (0.06, 0.32), (0.085, 0.13)); n = 0   # ronda 26: puntitos, no perlas. E: 0,9-2,2 % del ancho (diámetro)
     # bolitas chicas, como las de la referencia (1-2 % del ancho del teléfono)
     mlu = clay('m_lucero_t', '#F3DFBF', bump=0.5, sss=0.3, vary=0.03, dents=0.5, dent_scale=12, grain=0.1, ao=0.2, ao_cool=1.0, sat=1.0, rough=0.7, spec=0.2)
+    # E «Espacio profundo»: tres profundidades; los chicos, más apagados y más hundidos (sombra de contacto más corta)
+    mlus = [clay('m_lucero_e%d' % i, c, bump=0.5, sss=0.3, vary=0.03, dents=0.5, dent_scale=12, grain=0.1, ao=0.2, ao_cool=1.0, sat=1.0, rough=0.7, spec=0.2) for i, c in enumerate(('#B9B3A8', '#D3CBBA', '#EADFC9'))]
+    hundido = (0.45, 0.54, 0.62)
     def zona(fx, fy, z): return z[0] <= fx <= z[2] and z[1] <= fy <= z[3]
     while n < N_LUCEROS and not SIN_LUCEROS:
-        u = rnd.random(); r = (TAM[0][0] if u < 0.55 else TAM[1][0] if u < 0.87 else TAM[2][0]) * rnd.uniform(0.9, 1.1)
+        u = rnd.random(); tier = 0 if u < 0.55 else 1 if u < 0.87 else 2; r = TAM[tier][0] * rnd.uniform(0.9, 1.1)
         fx, fy = rnd.random(), rnd.random(); x, y = (fx - 0.5) * TAB_W, (0.5 - fy) * TAB_H
         fr = r / TAB_W
         if any(zona(fx+dx, fy+dy*TAB_W/TAB_H, TEXTO) or zona(fx+dx, fy+dy*TAB_W/TAB_H, BARRA_Z) for dx in (-fr,0,fr) for dy in (-fr,0,fr)): continue
         if any((x-px)**2 + (y-py)**2 < (r*4.5)**2 for px, py in puestos): continue
         puestos.append((x, y)); n += 1
         if not B_APROBADO and any(zona(fx+dx, fy+dy*TAB_W/TAB_H, z) for z in ZONAS_HOY for dx in (-fr,0,fr) for dy in (-fr,0,fr)): continue   # tarea 83: cuenta para la secuencia pero no se crea
-        o = sphere(r=r, seg=32, loc=(x, y, r*0.62), coll='iconos', name='tab_lucero'); organic(o, 0.012, 0.3, 1); mat(o, mlu)   # ronda 25: menos hundido, para que su sombra se vea
+        o = sphere(r=r, seg=32, loc=(x, y, r*(hundido[tier] if LAMINA == 'E' else 0.62)), coll='iconos', name='tab_lucero'); organic(o, 0.012, 0.3, 1); mat(o, mlus[tier] if LAMINA == 'E' else mlu)   # ronda 25: menos hundido, para que su sombra se vea
 
 def render_tablero():
     tablero()
     cam = bpy.data.cameras.new('cam_tab'); cam.type = 'ORTHO'; cam.ortho_scale = TAB_H
     co = bpy.data.objects.new('cam_tab', cam); co.location = (0,0,12); co.rotation_euler = (0,0,0); scene.collection.objects.link(co); scene.camera = co
     for o in C['luces'].objects:
-        if o.type == 'LIGHT' and o.data.type == 'SUN': o.data.energy = float(arg('--tabsol','2.0')); o.rotation_euler = Vector((1.0, -0.6, -1.0)).to_track_quat('-Z','Y').to_euler()   # en el tablero (visto desde arriba) la sombra cae abajo a la derecha de cada lucero   # ronda 25: más sol que en la 24 (1,1) para que cada lucero deje sombra; la luz central baja a cambio
+        if o.type == 'LIGHT' and o.data.type == 'SUN': o.data.energy = float(arg('--tabsol','1.6' if LAMINA == 'E' else '2.0')); o.rotation_euler = Vector((1.0, -0.6, -1.0)).to_track_quat('-Z','Y').to_euler()   # en el tablero (visto desde arriba) la sombra cae abajo a la derecha de cada lucero   # ronda 25: más sol que en la 24 (1,1) para que cada lucero deje sombra; la luz central baja a cambio
     for nm in ('rebote','nubi_relleno','nubi_rebote'):   # el rebote (área bajo la losa, apuntando arriba) atraviesa la lámina y deja una diagonal nítida en la esquina; las luces de Nubi no pintan nada aquí
         if nm in bpy.data.objects: bpy.data.objects.remove(bpy.data.objects[nm], do_unlink=True)
-    L1 = bpy.data.lights.new('tab_centro','AREA'); L1.energy = float(arg('--tabcentro','260')); L1.size = 4.5; L1.color = lin(hx('#EEF0FF'))   # caída de luz y viñeta naturales: una luz sobre el centro de la lámina
+    L1 = bpy.data.lights.new('tab_centro','AREA'); L1.energy = float(arg('--tabcentro','190' if LAMINA == 'E' else '260')); L1.size = 4.5; L1.color = lin(hx('#EEF0FF'))   # caída de luz y viñeta naturales: una luz sobre el centro de la lámina
     lo = bpy.data.objects.new('tab_centro', L1); lo.location = (0.6, 1.5, 7.5); scene.collection.objects.link(lo); link(lo,'luces'); lo.rotation_euler = (0,0,0)
     scene.render.resolution_x = 720; scene.render.resolution_y = 1200; scene.render.film_transparent = SOLO_LUCEROS
     for nm in arg('--sin','').split(','):
