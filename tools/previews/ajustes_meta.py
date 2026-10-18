@@ -15,8 +15,9 @@ OUT = os.path.join(ROOT, 'docs', 'previews', 'ajustes-meta.png')
 FONT = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'font', 'fredoka.ttf'); NUNITO = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'font', 'nunito_regular.ttf')
 BG = (9, 11, 38); SUN = (255, 201, 60); DIM = (186, 190, 230); WHITE = (255, 255, 255)
 PW = 380
-COLS = [('hoy-393-1_0', 'HOY · letra normal', 'el Slider de Material: pulgar de 20 dp', WHITE), ('prop-393-1_0', 'PROPUESTA · letra normal', '7 farolas del kit con su número', SUN),
-        ('hoy-393-1_3', 'HOY · letra al 130 %', 'igual: el pulgar no crece con la letra', WHITE), ('prop-393-1_3', 'PROPUESTA · letra al 130 %', 'los números pasan a ~21 sp y caben en 46 dp', SUN)]
+COLS = [('hoy-393-1_0', 'HOY · letra normal', 'el Slider de Material: pulgar de 20 dp', WHITE), ('prop-393-1_0', 'PROPUESTA · letra normal', '7 farolas del kit; la elegida, con su número en un chip sol', SUN),
+        ('hoy-393-1_3', 'HOY · letra al 130 %', 'igual: el pulgar no crece con la letra', WHITE), ('prop-393-1_3', 'PROPUESTA · letra al 130 %', 'los números pasan a ~21 sp y caben en 46 dp', SUN),
+        ('prop-360-2_0', 'PROPUESTA · 360 dp, letra al 200 %', 'la pantalla más angosta con la letra más grande: todo entra', SUN)]
 
 
 def fuente(path, size):
@@ -55,14 +56,14 @@ def main():
         ims.append(Image.open(p))
     f_t = fuente(FONT, 36); f_h = fuente(FONT, 24); f_s = fuente(NUNITO, 20); f_c = fuente(NUNITO, 18)
     gap, mar = 24, 40
-    ph = int(ims[0].height * PW / ims[0].width)
-    Wt = 2 * mar + 4 * PW + 3 * gap
+    ph = max(int(im.height * PW / im.width) for im in ims)
+    Wt = 2 * mar + len(COLS) * PW + (len(COLS) - 1) * gap
     sheet = Image.new('RGB', (Wt, 200 + ph + 80), BG)
     d = ImageDraw.Draw(sheet)
     d.text((mar, 26), 'Ajustes: la meta semanal, hoy | propuesta', font=f_t, fill=SUN)
     y = 76
-    for texto in ('El único control de la app que no era del kit (un Slider de Material, de pulgar chico) pasa a 7 farolas del kit —las mismas de Hoy y Avance— con su número 1-7 debajo: se lee como CANTIDAD. Cada una es un botón de radio en una caja de 46 dp con el toque mínimo de Material. '
-                  'Capturas reales (Roborazzi) a 393 × 873 dp.',):
+    for texto in ('El único control de la app que no era del kit (un Slider de Material, de pulgar chico) pasa a 7 farolas del kit —las mismas de Hoy y Avance— con su número 1-7 debajo: se lee como CANTIDAD. Cada una es un botón de radio en una caja de 46 dp con el toque mínimo de Material; la farola mide 32 dp, las encendidas llevan un halo sol y la ELEGIDA se marca además por forma: su número en un chip sol con tinta. '
+                  'Capturas reales (Roborazzi) a 393 × 873 dp (la última, a 360 dp).',):
         for linea in envuelve(d, texto, f_s, Wt - 2 * mar):
             d.text((mar, y), linea, font=f_s, fill=DIM); y += 26
     y += 18
@@ -72,7 +73,7 @@ def main():
         im = telefono(ims[i], PW)
         sheet.paste(im, (x, y + 34), im)
         for j, linea in enumerate(envuelve(d, leyenda, f_c, PW)):
-            d.text((x, y + 34 + ph + 8 + j * 22), linea, font=f_c, fill=color if color == SUN else DIM)
+            d.text((x, y + 34 + im.height + 8 + j * 22), linea, font=f_c, fill=color if color == SUN else DIM)
     sheet = sheet.crop((0, 0, Wt, y + 34 + ph + 70))
     sheet.save(OUT, optimize=True)
     print('ok', OUT, sheet.size)

@@ -364,10 +364,10 @@ namespace NeuroVida.Bridge.EditorTools
             {
                 yield return Wait.Until(() => Convert.ToString(Member(c, "_phase")) == "Play", 20);
                 yield return Wait.For(2.0);
-                // la fusión para la lámina: la suma más alta que todavía no llega a la carga Y mejora la mejor celda (así el aro sube de «antes» a «después»; la solución, de un solo paso en el nivel 1, lo llenaría de una vez).
-                // Si esta carga no tiene una así, se resuelve (para que venga otra) y se vuelve a mirar, hasta 8 veces.
+                // la fusión para la lámina: la suma más alta que todavía no llega a la carga Y mejora la mejor celda en 3 luces o más (así el aro sube de «antes» a «después»; la solución, de un solo paso en el nivel 1, lo llenaría de una vez).
+                // Si esta carga no tiene una así, se resuelve (para que venga otra) y se vuelve a mirar, hasta 12 veces.
                 int ida = -1, idb = -1, target = 0;
-                for (int attempt = 0; attempt < 8 && ida < 0; attempt++)
+                for (int attempt = 0; attempt < 12 && ida < 0; attempt++)
                 {
                     var puzzle = Member(c, "_puzzle");
                     target = (int)Member(puzzle, "Target");
@@ -381,6 +381,7 @@ namespace NeuroVida.Bridge.EditorTools
                             int sum = (int)Member(cells[i], "Value") + (int)Member(cells[j], "Value");
                             if (sum < target && sum > bestSum) { bestSum = sum; ida = (int)Member(cells[i], "Id"); idb = (int)Member(cells[j], "Id"); }
                         }
+                    if (ida >= 0 && Mathf.RoundToInt(12f * bestSum / target) - Mathf.RoundToInt(12f * bestCell / target) < 3) ida = idb = -1;     // el aro tiene que SUBIR a la vista: al menos 3 luces más
                     if (ida >= 0) break;
                     // sin mejora posible: resolver esta carga y esperar la siguiente
                     var sol = (System.Collections.IList)Member(puzzle, "Solution");

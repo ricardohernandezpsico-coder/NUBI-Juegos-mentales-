@@ -3,12 +3,18 @@ package com.example.ui.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Text
@@ -22,7 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -44,6 +53,8 @@ const val WEEKLY_GOAL_MAX = 7
  * Cada farola es un botón de radio (`Role.RadioButton`, `selected` la de la meta) en una caja de 46 dp con el toque mínimo de Material; todas juntas son un grupo (`selectableGroup`). Se enciende con un fundido de
  * [NubiMotion.STATE_MS] y la que se toca da un pulso de [NubiMotion.CELEBRATE_MS]; con «quitar animaciones» todo salta a su estado final. Al apoyar el dedo, el tic del kit ([rememberKitTap]).
  *
+ * La elegida se marca también por FORMA, no solo por brillo: su número va dentro de un chip sol con la letra en tinta (Opus, 18-oct: «cuesta ver cuál está elegida»); las encendidas llevan un halo sol, más fuerte en la elegida.
+ *
  * [goal] es la meta de hoy; [onGoal] recibe la que se toca (no hay que validar el rango: solo existen 1 a 7).
  */
 @Composable
@@ -58,9 +69,12 @@ fun WeeklyGoalLamps(goal: Int, onGoal: (Int) -> Unit, modifier: Modifier = Modif
   }
 }
 
+private const val LAMP_DP = 32                                                   // la farola: 32 dp de alto (28 antes), dentro de la caja de 46
+
 @Composable
 private fun GoalLamp(k: Int, on: Boolean, selected: Boolean, box: Dp, reduce: Boolean, onTap: () -> Unit) {
   val glow by animateFloatAsState(if (on) 1f else 0f, NubiMotion.spec(reduce, NubiMotion.STATE_MS), label = "farola_meta")
+  val halo by animateFloatAsState(if (selected) 0.9f else if (on) 0.55f else 0f, NubiMotion.spec(reduce, NubiMotion.STATE_MS), label = "farola_meta_halo")
   val pulse = remember { Animatable(1f) }
   var pulseKey by remember { mutableIntStateOf(0) }
   LaunchedEffect(pulseKey) {
@@ -78,10 +92,20 @@ private fun GoalLamp(k: Int, on: Boolean, selected: Boolean, box: Dp, reduce: Bo
       .testTag("goal_lamp_$k"),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    androidx.compose.foundation.layout.Box(Modifier.scale(pulse.value), contentAlignment = Alignment.Center) {
-      FarolaImage(on = false, height = 28.dp)                                // la apagada, siempre debajo; la encendida se funde encima
-      FarolaImage(on = true, height = 28.dp, modifier = Modifier.alpha(glow))
+    Box(
+      Modifier
+        .scale(pulse.value)
+        .drawBehind {                                                           // el halo sol de las encendidas (más fuerte en la elegida)
+          if (halo > 0.01f) drawCircle(Brush.radialGradient(listOf(Clay.Sun.copy(alpha = halo), Color.Transparent), center = center, radius = 24.dp.toPx()), radius = 24.dp.toPx(), center = center)
+        },
+      contentAlignment = Alignment.Center
+    ) {
+      FarolaImage(on = false, height = LAMP_DP.dp)                           // la apagada, siempre debajo; la encendida se funde encima
+      FarolaImage(on = true, height = LAMP_DP.dp, modifier = Modifier.alpha(glow))
     }
-    Text(text = "$k", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Clay.InkMuted)
+    Spacer(Modifier.height(2.dp))
+    Box(Modifier.background(if (selected) Clay.Sun else Color.Transparent, RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 1.dp)) {    // la elegida, por forma: su número en un chip sol con tinta
+      Text(text = "$k", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (selected) Clay.Ink else Clay.InkMuted)
+    }
   }
 }

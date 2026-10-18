@@ -38,7 +38,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * La hoja «hoy | propuesta» de la meta semanal de Ajustes (Tarea 130, `docs/previews/ajustes-meta.png`): el panel «Meta semanal de juego» REAL a 393 × 873 dp, con la letra del sistema en 1,0 y en 1,3 (la que usan muchas personas mayores).
+ * La hoja «hoy | propuesta» de la meta semanal de Ajustes (Tarea 130, `docs/previews/ajustes-meta.png`): el panel «Meta semanal de juego» REAL a 393 × 873 dp, con la letra del sistema en 1,0 y en 1,3 (la que usan muchas personas mayores), y la propuesta también a 360 dp con la letra al 200 %.
  * No corre en las pruebas de siempre: solo al grabar capturas (`./gradlew.bat :app:recordRoborazziDebug --tests "*AjustesMetaScreenshotTest*"`), y deja los PNG en `src/test/screenshots/ajustes-meta/`. El prefijo del nombre sale de la variable
  * de entorno AJUSTES_META_PREFIX (`hoy` con el slider de antes, `prop` con las farolas; por defecto `prop`); `tools/previews/ajustes_meta.py` arma la hoja.
  */
@@ -65,7 +65,7 @@ class AjustesMetaScreenshotTest {
     TestSupport.resetDatabase()
   }
 
-  private fun shot(name: String, fontScale: Float) {
+  private fun shot(name: String, fontScale: Float, widthDp: Int = 393) {
     runBlocking { NeuroVidaDatabase.getDatabase(app).userProfileDao().insertOrUpdate(UserSettings(ageBand = AgeBand.ADULT, name = "Ricardo", weeklyGoal = 4).toEntity()) }
     val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
     val prefix = System.getenv("AJUSTES_META_PREFIX") ?: "prop"
@@ -74,7 +74,7 @@ class AjustesMetaScreenshotTest {
       val base = LocalDensity.current
       CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale), LocalReduceMotion provides true) {
         NeuroVidaTheme {
-          Box(Modifier.width(393.dp).height(873.dp).testTag("frame")) {
+          Box(Modifier.width(widthDp.dp).height(873.dp).testTag("frame")) {
             BoardBackground()
             Box(Modifier.padding(top = 24.dp)) { SettingsPanel(viewModel = vm, onClose = {}) }
           }
@@ -92,4 +92,7 @@ class AjustesMetaScreenshotTest {
   @Test fun a_letra_1_0() = shot("393-1_0", 1f)
 
   @Test fun b_letra_1_3() = shot("393-1_3", 1.3f)
+
+  /** La pantalla más angosta que cuidamos con la letra más grande: 360 dp y letra al 200 % (pedido de Opus, 18-oct). */
+  @Test fun c_360_letra_2_0() = shot("360-2_0", 2f, widthDp = 360)
 }

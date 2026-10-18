@@ -145,6 +145,8 @@ namespace NeuroVida.Games.Calculo
         private Image _timerFill;
         private Image _reactorGlow, _reactorShadow, _reactorRim, _reactorBody, _core, _coreHi;
         private readonly Image[] _lights = new Image[12];
+        private readonly Image[] _lightHalos = new Image[12];
+        private const float LightDp = 9f, LightHaloDp = 24f, LightRingR = 78f;      // Tarea 130: las 12 luces de ~9 dp (antes 6,4) en el centro de la banda del aro (de R 72 a 84), cada una con su halo
         // Tarea 130 (juice): el aro de 12 luces se llena según la mejor celda que no se pasa; cada luz cambia en cascada (0,15 s por luz: NubiMotion, estado)
         private const float LightStepSeconds = 0.15f;
         private readonly float[] _lightFrom = new float[12], _lightTo = new float[12], _lightAt = new float[12];
@@ -846,10 +848,14 @@ namespace NeuroVida.Games.Calculo
             for (int i = 0; i < _lights.Length; i++)
             {
                 float a = spin + i * Mathf.PI / 6f;
-                float r = (CargaLayout.CoreR + 3f) * _s;
-                _lights[i].rectTransform.anchoredPosition = center + new Vector2(Mathf.Cos(a), -Mathf.Sin(a)) * r;
-                var lit = Color.Lerp(NeuroStyle.WithAlpha(Cyan, 0.35f), NeuroStyle.WithAlpha(NeuroStyle.Sun, 1f), LightLevel(i, now));       // encendidas en sol, apagadas celeste al 35 % (Tarea 130)
+                float r = LightRingR * _s;
+                var at = center + new Vector2(Mathf.Cos(a), -Mathf.Sin(a)) * r;
+                _lights[i].rectTransform.anchoredPosition = at;
+                _lightHalos[i].rectTransform.anchoredPosition = at;
+                float level = LightLevel(i, now);
+                var lit = Color.Lerp(NeuroStyle.WithAlpha(Cyan, 0.35f), NeuroStyle.WithAlpha(NeuroStyle.Sun, 1f), level);       // encendidas en sol, apagadas celeste al 35 % (Tarea 130)
                 _lights[i].color = Color.Lerp(lit, NeuroStyle.WithAlpha(Gold, 1f), k);
+                _lightHalos[i].color = NeuroStyle.WithAlpha(Color.Lerp(NeuroStyle.Sun, Gold, k), 0.6f * Mathf.Max(level, k));   // el halo suave solo en las encendidas
             }
             _core.color = Color.Lerp(CoreDark, CoreGold, k);
             _coreHi.color = Color.Lerp(NeuroStyle.WithAlpha(CoreLight, 0.9f), NeuroStyle.WithAlpha(CoreGoldLight, 0.95f), k);
@@ -1188,9 +1194,10 @@ namespace NeuroVida.Games.Calculo
             _reactorRim.color = NeuroStyle.Ink;
             _reactorBody = MakeImage(_reactorLayer, "Body", DiscSprite.Get());
             _reactorBody.color = RingBody;
-            for (int i = 0; i < _lights.Length; i++) _lights[i] = MakeImage(_reactorLayer, "Light" + i, DiscSprite.Get());
+            for (int i = 0; i < _lights.Length; i++) _lightHalos[i] = MakeImage(_reactorLayer, "LightHalo" + i, RadialGlowSprite.Get());
             _core = MakeImage(_reactorLayer, "Core", DiscSprite.Get());
             _coreHi = MakeImage(_reactorLayer, "CoreHi", RadialGlowSprite.Get());
+            for (int i = 0; i < _lights.Length; i++) _lights[i] = MakeImage(_reactorLayer, "Light" + i, DiscSprite.Get());       // las luces SOBRE el núcleo: su sombra horneada ya no las apaga (Tarea 130)
             if (PlasticReactor)
             {
                 // plasticina: el aro (azul noche, ya horneado) y el núcleo (gris claro: el código lo tiñe) ocupan el mismo lienzo de ±92 dp; la sombra y el borde de tinta de siempre sobran (el aro trae su sombra de contacto)
@@ -1459,7 +1466,8 @@ namespace NeuroVida.Games.Calculo
             SetRect(_reactorShadow.rectTransform, cx, cy + 6f, outer * 2f, outer * 2f);
             SetRect(_reactorRim.rectTransform, cx, cy, outer * 2f + 4f, outer * 2f + 4f);
             SetRect(_reactorBody.rectTransform, cx, cy, PlasticReactor ? PlasticReactorDp : outer * 2f, PlasticReactor ? PlasticReactorDp : outer * 2f);
-            foreach (var l in _lights) l.rectTransform.sizeDelta = Vector2.one * (6.4f * _s);
+            foreach (var l in _lights) l.rectTransform.sizeDelta = Vector2.one * (LightDp * _s);
+            foreach (var h in _lightHalos) h.rectTransform.sizeDelta = Vector2.one * (LightHaloDp * _s);
             SetRect(_core.rectTransform, cx, cy, PlasticReactor ? PlasticReactorDp : R * 2f, PlasticReactor ? PlasticReactorDp : R * 2f);
             SetRect(_coreHi.rectTransform, cx, cy - 10f, R * 1.7f, R * 1.7f);
             SetRect(_reactorLabel.rectTransform, cx, cy - 30f, 150f, 20f);
