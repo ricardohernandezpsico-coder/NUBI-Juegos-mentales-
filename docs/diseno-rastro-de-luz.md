@@ -260,3 +260,7 @@ Ricardo aprobó la esfera opaca de plasticina (nada de cristal) y pidió que **a
 - **Se ve la huella:** el detalle fino de la cara (la desviación de la luminosidad menos su desenfoque) pasa de 0,5-0,9 a 3,1-5,2 (de 5 a 8 veces).
 - Pesa +0,4 MB en el APK (el atlas pasa de 9 a 18 luceros: 0,39 → 0,83 MB sin comprimir la textura; con ASTC 0,31 MB). Pruebas: `RastroPlasticTests` (`ThePressedOrbs_…`, `AnOrb_ShowsItsPressedImage_…`).
 - Marca de verificación: `estilo 14-oct · luceros presionados de rastro`. Hoja de capturas con un cuadro normal y uno presionado: [`previews/plasticina/rastro-presionado.png`](previews/plasticina/rastro-presionado.png).
+
+## Cambio de diseño del 18-oct-2026 (Tarea 128): el anillo baja
+
+`RastroGameController._yShift` pasa de 0,22 a 0,7 del aire que sobra sobre 640 dp: en 20:9 el anillo baja ~77 dp (casi 10 % de la altura) hacia el pulgar. Mismo tamaño de anillo y de luces, mismas reglas y cantidades.

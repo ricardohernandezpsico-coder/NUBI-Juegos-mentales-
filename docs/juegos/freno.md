@@ -80,3 +80,8 @@ Cada pieza sale en el MISMO lienzo y a la MISMA escala que el sprite procedural 
 
 Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](../plasticina-juegos.md) § «Estado presionado».
 - **Freno:** el botón de cada carril pasa a `boton_encendido_p` / `boton_apagado_p` (aplastado, un punto más oscuro, con la huella de un dedo en el espacio libre de al lado de la flecha: la flecha es lo que se lee y no se pisa) al menos 0,1 s y vuelve con un rebote chico; sin el atlas, el 90 % de escala de siempre (o oscurecer con «quitar animaciones»). En el botón apagado (azul oscuro) la huella se ve poco.
+
+## Cambio de versión del 18-oct-2026 (Tarea 128): el ALTO más grande
+
+**Qué cambió:** la señal ¡ALTO! pasa de ~133 a **160 dp** (de 400 a 480 unidades del lienzo; su letra, de 120 a 144) y «Tu freno» y su valor van a 16 dp. **Por qué:** la mitad de la pantalla estaba vacía y el ALTO es lo que no hay que tocar: verlo grande ayuda a una persona de 60+. **Qué NO cambió:** ningún tiempo (el límite del freno, el momento en que suena la alarma, la ventana de toque), la regla ni las cantidades.
+**Comparabilidad:** una señal más grande se detecta un poco antes: el tiempo de reacción al ALTO de antes y después del 18-oct puede no ser comparable. El juego no guarda una versión de reglas: basta esta nota.

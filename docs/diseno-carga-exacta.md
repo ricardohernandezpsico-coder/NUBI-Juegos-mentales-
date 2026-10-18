@@ -110,3 +110,7 @@ Las dos imágenes del reactor comparten el mismo lienzo cuadrado de ±92 dp cent
 
 Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
 - **Carga exacta:** las celdas, las 4 operaciones y las dos herramientas (Deshacer y Empezar de nuevo) se ven presionadas al tocarlas, con o sin animaciones (`PlasticTouch` en modo cuenta; la «elegida» sigue hundida con «quitar animaciones»). Las herramientas usan la losa «apagada», que ahora trae su `losa_md_apagada_p` en `comun`.
+
+## Cambio de diseño del 18-oct-2026 (Tarea 128): todo hacia la mitad de abajo
+
+`CargaLayout.Compute`: el aire que sobra va arriba del reactor (0,45) y entre los bloques en poco (0,17 / 0,09 / 0,09), así que el reactor, las celdas, las operaciones y los botones quedan compactos en la mitad de abajo, sin huecos grandes. Mismos tamaños, reglas y cantidades.

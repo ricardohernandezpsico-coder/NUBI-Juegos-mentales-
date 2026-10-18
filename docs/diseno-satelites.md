@@ -196,3 +196,8 @@ Cada pieza sale en el MISMO lienzo y a la MISMA escala que el sprite de hoy (`Bo
 
 Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
 - **Satélites:** el satélite que la persona toca al responder se ve presionado (`satelite_p`) al menos 0,1 s y vuelve con un rebote chico, junto al aro de marca y el «pop» de siempre; al marcar y al desmarcar. Todos siguen idénticos (la señal es el aro dorado y el sobre).
+
+## Cambio de versión del 18-oct-2026 (Tarea 128): satélites más grandes
+
+**Qué cambió:** el satélite pasa de ~40 a ~48 dp (×1,2: `SatelliteContract.SatRadius` 14 → 16,8 y `PanelReach` 9 → 10,8; las distancias mínimas escalan igual: `StopGap` 38 → 46, `SpawnGap` 46 → 55 y `SettleGap` 36 → 43). **Por qué:** el seguimiento exige distinguirlos a ~40 dp con el planeta y las estrellas detrás; a 48 dp es más fácil de ver sin cambiar la tarea. **Qué NO cambió:** la velocidad, las cantidades por nivel, que sigue siendo plano y que NO hay respuesta durante el seguimiento (regla de patente).
+**Comparabilidad:** la medida del seguimiento (aciertos al señalar) de antes y después del 18-oct puede no ser comparable (blancos más grandes se siguen mejor y se superponen menos). No se comparan series que crucen esa fecha. El juego no guarda una versión de reglas: basta esta nota.

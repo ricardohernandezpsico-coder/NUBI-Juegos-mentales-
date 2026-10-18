@@ -221,3 +221,7 @@ Con plasticina la opción ya no se tiñe con `Image.color`: cambia de losa (`Set
 
 Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presionado, con textura (la pieza aplastada, un punto más oscura y con la huella de un dedo; mismo lienzo y escala; sin «saltar»). Detalle, medidas y cómo funciona la ayuda común `PlasticTouch`: [`plasticina-juegos.md`](plasticina-juegos.md) § «Estado presionado».
 - **La estrella intrusa:** las 3 opciones y «Seguir» se ven presionadas al tocarlas (`PlasticTouch` dueña de la losa: al acertar o fallar la opción pasa a lima o coral conservando el estado presionado; «Seguir» se ve presionado 0,1 s antes de irse).
+
+## Cambio de diseño del 18-oct-2026 (Tarea 128): el campo baja y las placas a 18 dp
+
+El campo de palabras baja hacia el pulgar (`_yShift` 0,22 → 0,7 del aire sobre 640 dp) y las placas de palabra pasan de 17 a **18 dp** (`LabelSp`; el relleno de la placa baja de 22 a 16 dp para que sigan cabiendo las figuras: `IntrusaLayout.PlaquePad`, `tools/intrusa/figuras.py` y `intrusa_figuras.json` se regeneraron con los mismos números; las 77 figuras siguen validando con al menos 6 combinaciones por grupo). Mismas figuras, reglas y cantidades.
