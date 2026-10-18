@@ -129,7 +129,6 @@ namespace NeuroVida.Games.Stroop
             _effLevel = _dda.PresentedLevel;
             _lastTickSecond = -1;
 
-            _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
             _stageRect.gameObject.SetActive(true);
             _pill.Rect.gameObject.SetActive(true);
@@ -474,7 +473,6 @@ namespace NeuroVida.Games.Stroop
             _fxRect = fxGo.AddComponent<RectTransform>();
             Stretch(_fxRect);
 
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             _toast = new Toast(_safe, this, UnitsPerDp);
@@ -832,32 +830,6 @@ namespace NeuroVida.Games.Stroop
             lr.offsetMin = lr.offsetMax = Vector2.zero;
             BestFit(line, 48);
             line.text = "Toca lo que DICE la palabra, no su color";
-            go.SetActive(false);
-        }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)          // plasticina: losa «noche»
-            {
-                img.sprite = RoundedRectSprite.Get(64);
-                img.type = Image.Type.Sliced;
-                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-                var outline = go.AddComponent<Outline>();
-                outline.effectColor = new Color(1f, 1f, 1f, 0.14f);
-                outline.effectDistance = new Vector2(3f, -3f);
-            }
-
-            AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 56, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            AddResultText("Extra", 44, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
             go.SetActive(false);
         }
 

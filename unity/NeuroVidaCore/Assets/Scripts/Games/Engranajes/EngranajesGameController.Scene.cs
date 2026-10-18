@@ -141,7 +141,8 @@ namespace NeuroVida.Games.Engranajes
             _hud.SetPhase(EngranajesContract.HintShort(m.Stage));                                  // la consigna vive en la fila del marcador (Tarea 127); la barra de antes ya no se dibuja
             _hud.SetPromptFit(null, consigna[0], EngranajesContract.RuleShort);
             _questionBar.gameObject.SetActive(false);
-            _counterText.text = m.Stage.Keys == 1 ? "1 cambio" : "2 cambios";
+            if (_counterSlab != null) { _counterNum.text = m.Stage.Keys.ToString(); _counterText.text = m.Stage.Keys == 1 ? "cambio" : "cambios"; }
+            else _counterText.text = m.Stage.Keys == 1 ? "1 cambio" : "2 cambios";
             _counterRoot.gameObject.SetActive(true);
             _start.Root.gameObject.SetActive(true);
             LayoutBottom();
@@ -350,7 +351,7 @@ namespace NeuroVida.Games.Engranajes
             float k = _lay.SceneScale <= 0f ? 1f : _lay.SceneScale;
             float nameW = c.Name.preferredWidth / Su;
             float wordW = c.Word.preferredWidth / Su;
-            float iconW = 18f;
+            float iconW = 24f;                                                              // el ícono de la acción (22 dp) y un respiro antes de la palabra de 16 dp (Tarea 129)
             float need = Mathf.Max(nameW + 24f, wordW + iconW) + 16f;       // el nombre deja lugar al ✓ de la derecha
             float w = Mathf.Max(CartelW, need);
             c.Root.anchoredPosition = B(CartelX(w), CartelY(st));
@@ -359,13 +360,13 @@ namespace NeuroVida.Games.Engranajes
             SetChildScene(c.Bg.rectTransform, 0f, 0f, w, CartelH);
             SetRadius(c.Rim, 13f * Su);
             SetRadius(c.Bg, 12f * Su);
-            SetChildScene(c.Name.rectTransform, 0f, -9f, w, 16f / k);
+            SetChildScene(c.Name.rectTransform, 0f, -11f, w, 20f / k);
             float group = wordW + iconW;
-            float ix = -group / 2f + 6f;                                                  // la flechita o el triángulo, a la izquierda del grupo
-            c.Word.rectTransform.sizeDelta = new Vector2((wordW + 4f) * Su, 16f / k * Su);
-            c.Word.rectTransform.anchoredPosition = new Vector2((ix + 10f + (wordW + 4f) / 2f) * Su, -9.5f * Su);
-            c.Icon.rectTransform.anchoredPosition = new Vector2(ix * Su, -9.5f * Su);
-            c.Check.rectTransform.anchoredPosition = new Vector2((w / 2f - 11f) * Su, 10f * Su);
+            float ix = -group / 2f + 9f;                                                  // la flechita o el triángulo, a la izquierda del grupo
+            c.Word.rectTransform.sizeDelta = new Vector2((wordW + 4f) * Su, 20f / k * Su);
+            c.Word.rectTransform.anchoredPosition = new Vector2((ix + 15f + (wordW + 4f) / 2f) * Su, -11f * Su);
+            c.Icon.rectTransform.anchoredPosition = new Vector2(ix * Su, -11f * Su);
+            c.Check.rectTransform.anchoredPosition = new Vector2((w / 2f - 11f) * Su, 12f * Su);
             c.Cross.rectTransform.anchoredPosition = c.Check.rectTransform.anchoredPosition;
         }
 
@@ -391,10 +392,16 @@ namespace NeuroVida.Games.Engranajes
                 var rt = c.Root;
                 float w = rt.sizeDelta.x / Su;
                 rt.anchoredPosition = B(CartelX(w) + shake, CartelY(st));
-                if (c.Slab != null) PlasticSlab.SetCustom(c.Slab, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(ok ? EngranajesSprites.PlateState.Ok : bad ? EngranajesSprites.PlateState.Bad : EngranajesSprites.PlateState.Neutral));
+                bool neutralCream = c.Slab != null && !ok && !bad && EngranajesSprites.HasCreamChip;                  // el cartel neutro es crema (Tarea 129): nombre #514B78 y palabra en tinta
+                if (c.Slab != null)
+                {
+                    if (ok || bad) PlasticSlab.SetCustom(c.Slab, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(ok ? EngranajesSprites.PlateState.Ok : EngranajesSprites.PlateState.Bad));
+                    else PlasticSlab.SetCustom(c.Slab, EngranajesSprites.NeutralGroup, EngranajesSprites.NeutralPlate);
+                }
+                c.Name.color = neutralCream ? NeuroStyle.InkMuted : ButtonText;
                 c.Bg.color = ok ? CartelOkFill : bad ? CartelBadFill : CartelFill;
                 c.Rim.color = ok ? Mint : bad ? Coral : Gold;
-                var col = ok ? Mint : bad ? CartelBadText : Gold;
+                var col = ok ? Mint : bad ? CartelBadText : neutralCream ? NeuroStyle.Ink : Gold;
                 c.Word.color = col;
                 c.Icon.color = col;
                 c.Check.gameObject.SetActive(ok);
@@ -511,10 +518,10 @@ namespace NeuroVida.Games.Engranajes
             if (_motorPill.Slab != null)
             {
                 if (changed) PlasticSlab.SetCustom(_motorPill.Slab, EngranajesSprites.GoldChipGroup, EngranajesSprites.GoldChip);
-                else PlasticSlab.SetCustom(_motorPill.Slab, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(EngranajesSprites.PlateState.Neutral));
+                else PlasticSlab.SetCustom(_motorPill.Slab, EngranajesSprites.NeutralGroup, EngranajesSprites.NeutralPlate);
             }
             _motorPill.Bg.color = changed ? Gold : ButtonFill;
-            _motorPill.Label.color = changed ? NeuroStyle.Ink : ButtonText;
+            _motorPill.Label.color = changed || (_motorPill.Slab != null && EngranajesSprites.HasCreamChip) ? NeuroStyle.Ink : ButtonText;
             float pulse = 0f;
             if (fixing && System.Array.IndexOf(m.Solution, EngranajesContract.MotorId) >= 0) pulse = 0.55f + 0.45f * Mathf.Sin((now - _showFixAt) * 5.9f);
             else if (_phase == Phase.Play && deco && m.Stage.Hint == Hint.Motor && now - _hintAt < 2.6f) pulse = 0.35f + 0.3f * Mathf.Sin(now * 4.5f);
@@ -712,7 +719,7 @@ namespace NeuroVida.Games.Engranajes
             float pt = Mathf.Clamp01((now - _counterPulseAt) / 0.3f);
             float pulse = pt < 1f ? Mathf.Sin(pt * Mathf.PI) : 0f;                           // el contador de llaves late una vez al rechazar un toque (el color late siempre; el tamaño, solo con movimiento)
             _counterRoot.localScale = Vector3.one * (1f + (Motion.Decorative ? 0.12f * pulse : 0f));
-            _counterText.color = Color.Lerp(Lavender, Coral, pulse);
+            _counterText.color = _counterSlab != null ? Color.Lerp(NeuroStyle.InkMuted, new Color(0.72f, 0.2f, 0.1f), pulse) : Color.Lerp(Lavender, Coral, pulse);
             for (int k = 0; k < 2; k++)
             {
                 bool shown = k < _mach.Stage.Keys;

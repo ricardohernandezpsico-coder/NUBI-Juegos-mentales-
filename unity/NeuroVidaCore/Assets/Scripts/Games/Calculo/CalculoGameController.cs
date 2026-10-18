@@ -1161,7 +1161,7 @@ namespace NeuroVida.Games.Calculo
             _reactorLabel.text = "carga exacta";
             _targetText = MakeLabel(_reactorLayer, "Target", 52f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _targetText.text = "0";
-            _allText = MakeLabel(_reactorLayer, "All", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _allText = MakeLabel(_reactorLayer, "All", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _allText.text = "usa todas las celdas";
             _allText.gameObject.SetActive(false);
         }

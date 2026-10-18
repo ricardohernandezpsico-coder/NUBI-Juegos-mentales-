@@ -650,8 +650,8 @@ namespace NeuroVida.Bridge.EditorTools
         {
         };
 
-        /// <summary>Tamaño mínimo de letra de TODO texto visible, en dp (el lienzo de los juegos mide 1080 unidades de ancho = 360 dp: 3 unidades por dp). Pensamos en mayores: nada más chico que esto (CLAUDE.md, «Reglas que no se rompen»).</summary>
-        private const float MinFontDp = 14f;
+        /// <summary>Tamaño mínimo de letra de TODO texto visible, en dp (el lienzo de los juegos mide 1080 unidades de ancho = 360 dp: 3 unidades por dp). Pensamos en mayores: nada informativo más chico que esto (16 dp = 48 unidades desde la Tarea 129; antes 14; CLAUDE.md, «Reglas que no se rompen»). Se tolera 0,3 dp de redondeo del tamaño (la letra es un entero en unidades).</summary>
+        private const float MinFontDp = 16f;
 
         /// <summary>Los chips del marcador de arriba («Nivel N», «N de M» y el rótulo «seguidos») van a 16 dp o más (48 unidades; Tarea 123, letra de 16).</summary>
         private const float HudChipMinDp = 16f;
@@ -662,11 +662,14 @@ namespace NeuroVida.Bridge.EditorTools
             return path.EndsWith("Hud/LevelChip/Text") || path.EndsWith("Hud/InfoChip/Text") || path.EndsWith("Hud/StreakPill/Label");
         }
 
-        /// <summary>Textos que a propósito van más chicos que <see cref="MinFontDp"/>: (juego, final de la ruta del objeto, por qué). Cualquier otro texto bajo 14 dp, en cualquier juego, hace FALLAR el smoke. Mantenerla CORTA y justificada.</summary>
+        /// <summary>Textos que a propósito van más chicos que <see cref="MinFontDp"/>: (juego, final de la ruta del objeto, por qué). Cualquier otro texto bajo 16 dp, en cualquier juego, hace FALLAR el smoke. Mantenerla CORTA y justificada.</summary>
         private static readonly (string Id, string PathEnd, string Why)[] TextSizeExceptions =
         {
             ("*", "CountdownScreen/StyleStamp", "marca de versión de las builds de depuración (CountdownScreen.StyleStamp): no es parte del juego y se quita antes de publicar"),
             ("bitacora", "*", "Bitácora de Misión está RETIRADA de la app (5-oct): ya no se ve; su código y su arranque en el smoke se conservan sin rehacerle la letra"),
+            ("rumbo", "*", "Rumbo a Casa está RETIRADO de la app (10-oct): ya no se ve; su código y su arranque en el smoke se conservan sin rehacerle la letra"),
+            ("cosecha", "*", "Cosecha de palabras está RETIRADA de la app (10-oct): ya no se ve; su código y su arranque en el smoke se conservan sin rehacerle la letra"),
+            ("meteoros", "Meteor/Plaque/Word", "la palabra de la roca se achica con ella al tocarla o al irse (animación; el tutorial la congela a medias): su tamaño normal es de 26 dp (30 en mayores) y nunca baja de 22 dp"),
         };
 
         private static bool SizeIsException(UnityEngine.UI.Text t)
@@ -753,7 +756,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// Dos reglas sobre todo <c>Text</c> activo, con texto y visible (opacidad &gt; 0), solo en las corridas en forma de teléfono («Tutorial*» y «Pantalla*»; en la ventana de 640x480 un juego de teléfono no cabe y daría falsos avisos):
         /// (1) lo que se dibuja del texto cae DENTRO de la pantalla (el lienzo raíz); (2) si su padre es un <c>Image</c> (un botón o una píldora), el centro de lo dibujado cae dentro del rect del padre. Atrapa el error de posicionar
         /// un hijo con coordenadas de la capa (queda desplazado y el botón se ve vacío), que las pruebas de lógica no ven. Se revisa cada 0,4 s durante toda la corrida (la primera pantalla jugable, la pausa y cada panel con botón que el
-        /// juego abra). (4) el texto no queda cortado por el alto de su caja (con «Truncate» una línea que no cabe desaparece entera); (3) la letra mide al menos <see cref="MinFontDp"/> dp (14: el tamaño efectivo, con el ajuste automático ya hecho). Y aparte, <see cref="ScanHudCover"/>: nada tapa el HUD. Cada texto se informa una vez por corrida, con el juego, el objeto y la posición. Hace FALLAR el smoke en cualquier juego, salvo las excepciones de <see cref="TextGuardExceptions"/>.
+        /// juego abra). (4) el texto no queda cortado por el alto de su caja (con «Truncate» una línea que no cabe desaparece entera); (3) la letra mide al menos <see cref="MinFontDp"/> dp (16: el tamaño efectivo, con el ajuste automático ya hecho). Y aparte, <see cref="ScanHudCover"/>: nada tapa el HUD. Cada texto se informa una vez por corrida, con el juego, el objeto y la posición. Hace FALLAR el smoke en cualquier juego, salvo las excepciones de <see cref="TextGuardExceptions"/>.
         /// </summary>
         private static void ScanTextPlacement()
         {
@@ -798,7 +801,7 @@ namespace NeuroVida.Bridge.EditorTools
                     { GuardCandidate(strictGame, "fuera de su padre «" + parent.name + "»", t, drawn, screen, shape, pr); flagged = true; }
                 }
                 // (3) tamaño mínimo de letra: 14 dp
-                if (dp < MinFontDp - 0.05f && t.resizeTextForBestFit && !SizeIsException(t))
+                if (dp < MinFontDp - 0.3f && t.resizeTextForBestFit && !SizeIsException(t))
                 {
                     // el tamaño que dejó el ajuste automático puede ser el de antes de pasar el lienzo a «espacio del mundo» (los menús que aparecen a mitad de la corrida): se regenera el texto y se vuelve a medir
                     t.SetAllDirty();
@@ -806,7 +809,7 @@ namespace NeuroVida.Bridge.EditorTools
                     used = t.cachedTextGenerator.fontSizeUsedForBestFit > 0 ? t.cachedTextGenerator.fontSizeUsedForBestFit : t.fontSize;
                     dp = used * (Mathf.Abs(t.transform.lossyScale.y) / rootScale) / (screen.width / 360f);
                 }
-                if (dp < MinFontDp - 0.05f && !SizeIsException(t))
+                if (dp < MinFontDp - 0.3f && !SizeIsException(t))
                 { GuardCandidate(strictGame, "letra menor de " + MinFontDp + " dp (" + dp.ToString("0.0") + " dp)", t, drawn, screen, shape, null); flagged = true; }
                 // (3b) los chips del marcador: 16 dp
                 if (dp < HudChipMinDp - 0.05f && IsHudChipText(t))

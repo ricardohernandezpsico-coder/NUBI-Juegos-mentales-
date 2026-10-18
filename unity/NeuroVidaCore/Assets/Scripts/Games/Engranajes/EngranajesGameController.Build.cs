@@ -106,7 +106,7 @@ namespace NeuroVida.Games.Engranajes
         private RectTransform _timerTrack, _timerHead, _motorArrowRect;
         private Image _timerFill, _questionBg, _counterBg;
         private CanvasGroup _machineGroup, _questionGroup, _sayGroup, _introGroup, _counterGroup;
-        private Text _rocketTitle, _orbitText, _consigna1, _consigna2, _counterText, _sayTitle, _saySub, _introTitle, _introBody, _launchTitle, _launchLine1, _launchLine2;
+        private Text _rocketTitle, _orbitText, _consigna1, _consigna2, _counterText, _counterNum, _sayTitle, _saySub, _introTitle, _introBody, _launchTitle, _launchLine1, _launchLine2;
         private Image _room, _hull, _motorArrow, _motorPulse, _sayBg, _sayRim, _dim, _flyerGlow, _flyerDot, _flame, _gateGlow, _stripGlow;
         private Image _introCard, _introRim;
         private readonly Image[] _windows = new Image[EngranajesContract.RocketLights];
@@ -193,7 +193,6 @@ namespace NeuroVida.Games.Engranajes
             BuildLaunch();
             BuildIntro();
 
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             var flashGo = new GameObject("Flash");
@@ -247,7 +246,7 @@ namespace NeuroVida.Games.Engranajes
             _stripGlow.gameObject.SetActive(false);
             for (int k = 0; k < _lights.Length; k++) _lights[k] = MakeImage(_stripLayer, "Light" + k, DiscSprite.Get());
             _rocketTitle = MakeLabel(_stripLayer, "Title", 17f, UiFonts.Bold, ButtonText, TextAnchor.MiddleLeft);
-            _orbitText = MakeLabel(_stripLayer, "Orbit", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
+            _orbitText = MakeLabel(_stripLayer, "Orbit", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
             _rocketTitle.horizontalOverflow = _orbitText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _rocketTitle.text = "Cohete n.º 1";
         }
@@ -261,7 +260,7 @@ namespace NeuroVida.Games.Engranajes
             _questionGroup = _questionBar.gameObject.AddComponent<CanvasGroup>();
             _questionGroup.blocksRaycasts = false;
             _consigna1 = MakeLabel(_questionBar, "Line1", 17f, UiFonts.Bold, ButtonText, TextAnchor.MiddleCenter);
-            _consigna2 = MakeLabel(_questionBar, "Line2", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _consigna2 = MakeLabel(_questionBar, "Line2", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             foreach (var t in new[] { _consigna1, _consigna2 }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _questionBar.gameObject.SetActive(false);
         }
@@ -365,11 +364,11 @@ namespace NeuroVida.Games.Engranajes
                 _pulses[i] = SceneImage(_machineLayer, "Pulse" + i, RadialGlowSprite.Get(), 0f, 0f, 32f, 32f, false);
                 _pulses[i].color = new Color(1f, 214f / 255f, 120f / 255f, 1f);
             }
-            _motorPill = BuildPill(_machineLayer, "MotorLabel", MotorW, MotorH, ButtonFill, ButtonText, 14f);
+            _motorPill = BuildPill(_machineLayer, "MotorLabel", MotorW, MotorH, ButtonFill, ButtonText, 16f);
             _motorPill.Label.text = "MOTOR";
             if (_volume && EngranajesSprites.HasPlates)                                                                // el rótulo: una losa chica del kit (noche; dorada cuando el motor está cambiado), con el texto liso
             {
-                _motorPill.Slab = PlasticSlab.AttachCustom(_motorPill.Root, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(EngranajesSprites.PlateState.Neutral));
+                _motorPill.Slab = PlasticSlab.AttachCustom(_motorPill.Root, EngranajesSprites.NeutralGroup, EngranajesSprites.NeutralPlate);
                 if (_motorPill.Slab != null) _motorPill.Bg.enabled = false;
             }
             for (int s = 0; s < _cartels.Length; s++) _cartels[s] = BuildCartel(_machineLayer, "Cartel" + (Station)s);
@@ -527,8 +526,8 @@ namespace NeuroVida.Games.Engranajes
             c.Root.sizeDelta = new Vector2(CartelW * Su, CartelH * Su);
             c.Rim = MakeImage(c.Root, "Rim", RoundedRectSprite.Get(24));
             c.Bg = MakeImage(c.Root, "Bg", RoundedRectSprite.Get(24));
-            c.Name = MakeSceneLabel(c.Root, "Name", 14f, UiFonts.Bold, ButtonText, TextAnchor.MiddleCenter);
-            c.Word = MakeSceneLabel(c.Root, "Word", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
+            c.Name = MakeSceneLabel(c.Root, "Name", 16f, UiFonts.Bold, ButtonText, TextAnchor.MiddleCenter);
+            c.Word = MakeSceneLabel(c.Root, "Word", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
             c.Icon = MakeImage(c.Root, "Icon", null);
             c.Check = MakeImage(c.Root, "Check", null);
             c.Check.color = Mint;
@@ -537,14 +536,14 @@ namespace NeuroVida.Games.Engranajes
             foreach (var t in new[] { c.Name, c.Word }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             if (_volume && EngranajesSprites.HasPlates)
             {
-                c.Slab = PlasticSlab.AttachCustom(c.Root, EngranajesSprites.PlasticGroup, EngranajesSprites.PlateName(EngranajesSprites.PlateState.Neutral));
+                c.Slab = PlasticSlab.AttachCustom(c.Root, EngranajesSprites.NeutralGroup, EngranajesSprites.NeutralPlate);
                 if (c.Slab != null) { c.Rim.enabled = false; c.Bg.enabled = false; }                                 // el cartel es una losa chica del kit; las letras van lisas y las monedas ✓ / ✗ son las de lo común
             }
             go.SetActive(false);
             return c;
         }
 
-        private const float CartelW = 96f, CartelH = 38f;
+        private const float CartelW = 104f, CartelH = 44f;                                                           // Tarea 129: 96 × 38 → 104 × 44 para la letra de 16 dp (el neutro es una losa chica crema)
         private const float MotorW = 66f, MotorH = 30f;                                                               // el rótulo MOTOR: la losa chica del kit pide al menos ~28 dp de alto (radio 14)
 
         // ------------------------------------------------------------------ abajo: la cuenta de cambios y «Arrancar»; aviso, efectos, despegue y tarjeta «NUEVO»
@@ -559,11 +558,18 @@ namespace NeuroVida.Games.Engranajes
             _counterGroup.blocksRaycasts = false;
             _counterBg = MakeImage(_counterRoot, "Bg", RoundedRectSprite.Get(24));
             _counterBg.color = new Color(20f / 255f, 27f / 255f, 58f / 255f);
-            _counterText = MakeLabel(_counterRoot, "Text", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _counterText = MakeLabel(_counterRoot, "Text", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _counterText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _counterText.verticalOverflow = VerticalWrapMode.Overflow;
+            _counterNum = MakeLabel(_counterRoot, "Num", 24f, UiFonts.Bold, NeuroStyle.Ink, TextAnchor.MiddleCenter);
+            _counterNum.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _counterNum.verticalOverflow = VerticalWrapMode.Overflow;
+            _counterNum.gameObject.SetActive(false);
             if (_volume)                                                                                              // la cuenta de cambios: la losa «noche» del kit TAL CUAL (como las casillas de Rescate: sin teñir) y cada llave en su moneda de plasticina
-                _counterSlab = PlasticSlab.TryStyle(_counterBg, SlabSize.Button, SlabTone.Night);
+            {
+                _counterSlab = PlasticSlab.TryStyle(_counterBg, SlabSize.Button, SlabTone.Cream);                    // Tarea 129: la cuenta de llaves es una losa crema: el número a 24 en tinta y «cambio/s» a 16 en #514B78
+                if (_counterSlab != null) { _counterText.color = NeuroStyle.InkMuted; _counterNum.gameObject.SetActive(true); }
+            }
             for (int k = 0; k < 2; k++)
             {
                 _wrenchBg[k] = MakeImage(_counterRoot, "WrenchBg" + k, DiscSprite.Get());
@@ -613,7 +619,7 @@ namespace NeuroVida.Games.Engranajes
             _sayBg = MakeImage(r, "Bg", RoundedRectSprite.Get(24));
             _sayBg.color = new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.95f);
             _sayTitle = MakeLabel(r, "Title", 16f, UiFonts.Bold, Mint, TextAnchor.MiddleCenter);
-            _saySub = MakeLabel(r, "Sub", 14f, UiFonts.Regular, Gold, TextAnchor.MiddleCenter);
+            _saySub = MakeLabel(r, "Sub", 16f, UiFonts.Regular, Gold, TextAnchor.MiddleCenter);
             _sayTitle.horizontalOverflow = _saySub.horizontalOverflow = HorizontalWrapMode.Wrap;
             _sayTitle.verticalOverflow = _saySub.verticalOverflow = VerticalWrapMode.Overflow;
             go.SetActive(false);
@@ -672,27 +678,6 @@ namespace NeuroVida.Games.Engranajes
         }
 
         private Text _introTap;
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-
-            AddResultText("Title", 76, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 46, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            var extra = AddResultText("Extra", 42, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            extra.horizontalOverflow = HorizontalWrapMode.Wrap;
-            go.SetActive(false);
-        }
 
         private static RectTransform Layer(Transform parent, string name)
         {
@@ -930,7 +915,12 @@ namespace NeuroVida.Games.Engranajes
             SetRect(_counterRoot, c.center.x, c.center.y, c.width, c.height);
             SetChild(_counterBg.rectTransform, 0f, 0f, c.width, c.height);
             SetRadius(_counterBg, 20f * _s);
-            SetChild(_counterText.rectTransform, 0f, -c.height * 0.5f + 20f, c.width - 8f, 20f);
+            if (_counterSlab != null)
+            {
+                SetChild(_counterNum.rectTransform, -30f, -c.height * 0.5f + 20f, 30f, 30f);
+                SetChild(_counterText.rectTransform, 16f, -c.height * 0.5f + 21f, 90f, 22f);              // «cambio» o «cambios», a la derecha del número (el grupo queda centrado en la losa)
+            }
+            else SetChild(_counterText.rectTransform, 0f, -c.height * 0.5f + 20f, c.width - 8f, 20f);
             for (int k = 0; k < 2; k++)
             {
                 float dx = _mach != null && _mach.Stage.Keys == 2 ? (k == 0 ? -18f : 18f) : 0f;

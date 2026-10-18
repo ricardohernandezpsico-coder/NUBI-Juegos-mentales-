@@ -297,9 +297,9 @@ namespace NeuroVida.Games.Aterrizaje
             _hudCount.horizontalOverflow = HorizontalWrapMode.Overflow;
             for (int i = 0; i < ProgressDots; i++) _hudDot[i] = MakeImage(_hudLayer, "ProgressDot" + i, DiscSprite.Get());
             _streakBg = Rr(_hudLayer, "StreakBg", Gold, 13f);
-            _streakText = MakeLabel(_hudLayer, "StreakText", 14f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
+            _streakText = MakeLabel(_hudLayer, "StreakText", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _streakText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _hint = MakeLabel(_hudLayer, "Hint", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _hint = MakeLabel(_hudLayer, "Hint", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _hint.text = LandingContract.Hint;
             _hint.horizontalOverflow = HorizontalWrapMode.Wrap;
             // la barra del Reto (los 120 s), fina y bajo el marcador
@@ -312,15 +312,15 @@ namespace NeuroVida.Games.Aterrizaje
         {
             _endShade = MakeImage(_endLayer, "Shade", null);
             _endShade.color = new Color(4f / 255f, 5f / 255f, 26f / 255f, 0.62f);
-            _endTag = MakeLabel(_endLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _endTag = MakeLabel(_endLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endTag.text = LandingContract.EndTag;
             _endTitle = MakeLabel(_endLayer, "Title", 25f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _endCard = Rr(_endLayer, "Card", CardFill, 22f);
-            _endBoxTitle = MakeLabel(_endLayer, "BoxTitle", 15f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
+            _endBoxTitle = MakeLabel(_endLayer, "BoxTitle", 16f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
             _endBoxTitle.text = LandingContract.EndBoxTitle;
             _endEstimate = MakeLabel(_endLayer, "Estimate", 34f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endUnit = MakeLabel(_endLayer, "Unit", 16f, UiFonts.Regular, Color.white, TextAnchor.MiddleCenter);
-            _endSummary = MakeLabel(_endLayer, "Summary", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _endSummary = MakeLabel(_endLayer, "Summary", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             foreach (var t in new[] { _endTag, _endTitle, _endBoxTitle, _endEstimate, _endUnit, _endSummary }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
             _endBoxTitle.horizontalOverflow = _endUnit.horizontalOverflow = HorizontalWrapMode.Overflow;          // estas dos se achican (hasta 14 dp) para caber en UNA línea del recuadro: ver FitEndLine
             _endLayer.gameObject.SetActive(false);

@@ -38,7 +38,6 @@ namespace NeuroVida.Games.Piloto
             _gateGraphic.gameObject.SetActive(false);
             _beam.gameObject.SetActive(false);
             _routeGraphic.Clear();
-            _endLayer.gameObject.SetActive(false);
             ShowFlightLayers(true);
             _tintFrom = _tintTo = 0;
             _tintMix = 1f;
@@ -208,6 +207,7 @@ namespace NeuroVida.Games.Piloto
             _tallRim.gameObject.SetActive(r.Tall);
             _tallFill.gameObject.SetActive(r.Tall);
             _tallTitle.gameObject.SetActive(r.Tall);
+            _tallWin.gameObject.SetActive(r.Tall && KitNotices);
             _tallIcon.gameObject.SetActive(r.Tall);
             _tallName.gameObject.SetActive(r.Tall);
             _tallFoot.gameObject.SetActive(r.Tall);
@@ -215,7 +215,7 @@ namespace NeuroVida.Games.Piloto
             {
                 _tallRim.color = r.Tint;
                 _tallTitle.text = PilotContract.MissionNoticeTitle(r.Sector);
-                _tallTitle.color = r.Tint;
+                _tallTitle.color = KitNotices ? NeuroStyle.InkMuted : r.Tint;
                 _tallIcon.sprite = PilotSignalSprites.Get(r.Mission.Shape, r.Mission.Detail);
                 _tallName.text = PilotContract.MissionName(r.Mission);
                 _tallFoot.text = PilotContract.MissionNoticeFoot(r.Sector);
@@ -224,7 +224,7 @@ namespace NeuroVida.Games.Piloto
             else
             {
                 _bannerTag.text = r.Tag;
-                _bannerTag.color = r.Tint;
+                _bannerTag.color = KitNotices ? NeuroStyle.Ink : r.Tint;
                 _bannerTitle.text = r.Title;
                 _bannerRim.color = r.Tint;
             }
@@ -476,40 +476,6 @@ namespace NeuroVida.Games.Piloto
             }
             // el motor «Cohete»: la mezcla y el tono siguen la velocidad. Con Nubi congelando el juego (tutorial) no se corta: baja al 30 % y al soltar vuelve a su volumen (Tarea 64); con la pausa del menú el audio queda callado
             if (_engine != null) _engine.Tick(speedK, Hyper, GameClock.RealDeltaTime, GameClock.LoopVolume, GameClock.AudioSilenced);
-        }
-
-        // ------------------------------------------------------------------ la pantalla final
-
-        private void ShowEnd(float? score)
-        {
-            _endTitle.text = PilotContract.EndTitle(_run.Points);
-            for (int i = 0; i < PilotContract.Sectors; i++)
-            {
-                var c = TintA[i % TintA.Length];
-                _endSector[i].color = new Color(c.r, c.g, c.b, 1f);
-                string name = PilotContract.SectorName(i);
-                int sp = name.IndexOf(' ');
-                _endSectorName[i].text = sp > 0 ? name.Substring(0, sp) + "\n" + name.Substring(sp + 1) : name;
-            }
-            string[] labels =
-            {
-                PilotContract.EndLane, PilotContract.EndMission, PilotContract.EndWrong, PilotContract.EndLevel, PilotContract.EndStreak, PilotContract.EndMeasure
-            };
-            string[] values =
-            {
-                PilotContract.LaneValue(_run.InLaneFraction), PilotContract.MissionValue(_run.Hits, _run.Targets), _run.FalseAlarms.ToString(),
-                PilotContract.LevelValue(_signalDda.Level), PilotContract.StreakValue(_run.BestStreak),
-                score.HasValue ? PilotContract.MeasureValue(score) : PilotContract.MeasureTooFew
-            };
-            for (int i = 0; i < labels.Length; i++)
-            {
-                _endLabel[i].text = labels[i];
-                _endValue[i].text = values[i];
-                bool measure = i == labels.Length - 1;                                    // «Tus señales a los mandos» es la medida propia: va en dorado
-                _endLabel[i].color = measure ? Gold : Soft;
-                _endValue[i].color = measure ? Gold : Color.white;
-            }
-            _endLayer.gameObject.SetActive(true);
         }
     }
 }

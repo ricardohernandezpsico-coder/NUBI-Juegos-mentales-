@@ -144,14 +144,17 @@ namespace NeuroVida.Games.Radar
             {
                 // un aviso (la lluvia): sigue flotando con su píldora oscura
                 _msgA.text = a;
-                _msgA.color = colorA ?? TextColor;
+                _msgA.color = _msgCream ? NeuroStyle.Ink : colorA ?? TextColor;
                 _msgB.text = b ?? "";
                 _msgPill.gameObject.SetActive(!string.IsNullOrEmpty(a));
+                UpdateHudExtras();                                                                                   // mientras hay un aviso, el chip «×N seguidos» se aparta (le tapaba el final del texto)
                 return;
             }
             // el texto suelto de la espera y de la pregunta («Atento al relámpago…», «¿Qué cápsulas viste? (eran 3)») es la consigna: vive en la fila del marcador (Tarea 127); la línea de apoyo ya no se dibuja
             _msgA.text = _msgB.text = "";
+            bool hadPill = _msgPill.gameObject.activeSelf;
             _msgPill.gameObject.SetActive(false);
+            if (hadPill) UpdateHudExtras();
             if (!string.IsNullOrEmpty(a)) _hud.SetPromptFit(null, a);
         }
 
@@ -171,7 +174,7 @@ namespace NeuroVida.Games.Radar
             _hudCount.text = _shownRescued.ToString();
             int streak = _run != null ? _run.Streak : 0;
             _hud.SetPhase(_guided ? "" : RadarContract.RescuedPhase(_shownRescued));           // «40 rescatadas» a la derecha de la consigna
-            _hud.SetStreak(_guided ? 0 : streak);                                              // el chip común «×N seguidos» (desde 2)
+            _hud.SetStreak(_guided || (_msgPill != null && _msgPill.gameObject.activeSelf) ? 0 : streak);     // el chip común «×N seguidos» (desde 2); se aparta mientras la franja de avisos está a la vista
         }
 
         // ------------------------------------------------------------------ el tablero

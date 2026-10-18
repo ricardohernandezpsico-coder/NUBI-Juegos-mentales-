@@ -1689,7 +1689,7 @@ namespace NeuroVida.Games.Anagramas
                 _slotBorders.Add(border);
                 _slotFills.Add(fill);
             }
-            _askText = MakeLabel(_slotLayer, "Ask", 17f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _askText = MakeLabel(_slotLayer, "Ask", 17f, UiFonts.Regular, new Color(1f, 0.965f, 0.878f), TextAnchor.MiddleCenter);
             _askText.text = "¿Cuál es la palabra?";
             _askText.gameObject.SetActive(false);
         }
@@ -1884,7 +1884,7 @@ namespace NeuroVida.Games.Anagramas
             {
                 b.Label.fontSize = Mathf.RoundToInt(19f * _s);
                 b.Label.resizeTextMaxSize = b.Label.fontSize;
-                b.Label.resizeTextMinSize = Mathf.RoundToInt(15f * _s);
+                b.Label.resizeTextMinSize = Mathf.RoundToInt(16f * _s);
             }
             _m = PuntaLayout.Compute(_logicalH - _reserve, 7);
             ApplyMetrics(5);

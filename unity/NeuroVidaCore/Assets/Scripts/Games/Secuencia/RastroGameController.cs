@@ -165,7 +165,6 @@ namespace NeuroVida.Games.Secuencia
             _tintMode = RastroMode.Rastro;
             _events.Clear();
 
-            _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
             _timerTrack.gameObject.SetActive(_session.Timed && !_session.Assessment);
             _unlockRoot.gameObject.SetActive(false);
@@ -1072,7 +1071,6 @@ namespace NeuroVida.Games.Secuencia
             BuildTexts();
             BuildUnlock();
             BuildCue();
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             BuildTutorial(_safe, GameHud.Height + 10f, "Rastro de luz", "Mira el camino de la chispa y repítelo con el dedo");
 
@@ -1217,29 +1215,6 @@ namespace NeuroVida.Games.Secuencia
 
         /// <summary>El recordatorio del modo (empieza la respuesta) ya no es un rótulo grande arriba del tablero: lo dicen el modo en la fila de consigna del marcador y la fase («Al revés», «Últimas 3»; Tarea 127).</summary>
         private void ShowCue(RastroRound r) { }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)                  // plasticina: losa «noche»
-            {
-                img.sprite = RoundedRectSprite.Get(64);
-                img.type = Image.Type.Sliced;
-                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-            }
-            AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 44, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            var extra = AddResultText("Extra", 42, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            extra.horizontalOverflow = HorizontalWrapMode.Wrap;
-            go.SetActive(false);
-        }
 
         // ---- ayudas de construcción
 

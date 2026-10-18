@@ -74,7 +74,7 @@ namespace NeuroVida.Games.Parejas
         private readonly DotView[] _dots = new DotView[DotPool];
         private readonly List<Spark> _sparks = new List<Spark>();
         // la tarjeta de arriba y la fila de abajo
-        private Image _cardRim, _cardBg, _cardSlab, _introSlab;
+        private Image _cardRim, _cardBg, _cardSlab, _introSlab, _introBox;
         private Text _cardT, _cardS, _rowLabel, _rowCount;
         private CanvasGroup _cardGroup;
         // la tarjeta «NUEVO»
@@ -132,7 +132,6 @@ namespace NeuroVida.Games.Parejas
             BuildFx();
             BuildIntro();
 
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
             var flashGo = new GameObject("Flash");
@@ -190,9 +189,9 @@ namespace NeuroVida.Games.Parejas
             if (_cardSlab != null) _cardRim.enabled = false;
             else _cardBg.color = PanelFill;
             _cardT = MakeLabel(_cardLayer, "Title", 18f, UiFonts.Bold, TextColor, TextAnchor.MiddleCenter);
-            _cardS = MakeLabel(_cardLayer, "Sub", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            BestFit(_cardT, Mathf.RoundToInt(14f * UnitsPerDp));
-            BestFit(_cardS, Mathf.RoundToInt(14f * UnitsPerDp));
+            _cardS = MakeLabel(_cardLayer, "Sub", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            BestFit(_cardT, Mathf.RoundToInt(16f * UnitsPerDp));
+            BestFit(_cardS, Mathf.RoundToInt(16f * UnitsPerDp));
             _cardT.horizontalOverflow = HorizontalWrapMode.Wrap;
             _cardS.horizontalOverflow = HorizontalWrapMode.Wrap;
             _cardLayer.gameObject.SetActive(false);
@@ -328,17 +327,20 @@ namespace NeuroVida.Games.Parejas
             _introRim = MakeImage(_introLayer, "CardRim", RoundedRectSprite.Get(24));
             _introRim.color = Gold;
             _introCard = MakeImage(_introLayer, "Card", RoundedRectSprite.Get(24));
-            _introSlab = PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Night);       // plasticina: la tarjeta de entrada es una losa «noche» del kit; sin ella, el recuadro de siempre con su borde dorado
+            _introSlab = PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Cream);       // plasticina (Tarea 129): la tarjeta de entrada es una lámina CREMA del kit con el arte en su ventanilla noche; sin ella, el recuadro de siempre con su borde dorado
             if (_introSlab != null) _introRim.enabled = false;
             else _introCard.color = PanelFill;
+            _introBox = MakeImage(_introLayer, "ArtBox", RoundedRectSprite.Get(24));                                  // la ventanilla: las luces, las líneas doradas y los rótulos se calibraron sobre oscuro (R4)
+            if (_introSlab != null) PlasticSlab.TryStyle(_introBox, SlabSize.Button, SlabTone.Night); else _introBox.color = new Color(0f, 0f, 0f, 0f);
+            _introBox.gameObject.SetActive(false);
             for (int i = 0; i < IntroPool; i++) _introImgs.Add(MakeImage(_introLayer, "Art" + i, null, false));
             _introLine = NewLine(_introLayer, "ArtLine");
             _introLine2 = NewLine(_introLayer, "ArtLine2");
-            for (int i = 0; i < 3; i++) _introLabels.Add(MakeLabel(_introLayer, "ArtLabel" + i, 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter));
+            for (int i = 0; i < 3; i++) _introLabels.Add(MakeLabel(_introLayer, "ArtLabel" + i, 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter));
             foreach (var t in _introLabels) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.gameObject.SetActive(false); }
-            _introTag = MakeLabel(_introLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _introBody = MakeLabel(_introLayer, "Body", 17f, UiFonts.Bold, Color.white, TextAnchor.UpperCenter);
-            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, Cyan, TextAnchor.MiddleCenter);
+            _introTag = MakeLabel(_introLayer, "Tag", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.InkMuted : Gold, TextAnchor.MiddleCenter);
+            _introBody = MakeLabel(_introLayer, "Body", 17f, UiFonts.Bold, _introSlab != null ? NeuroStyle.Ink : Color.white, TextAnchor.UpperCenter);
+            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.PanelAccent : Cyan, TextAnchor.MiddleCenter);
             _introTap.text = ConstelacionContract.TapToStart;
             foreach (var t in new[] { _introTag, _introTap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _introBody.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -348,29 +350,6 @@ namespace NeuroVida.Games.Parejas
             _introGroup = _introLayer.gameObject.AddComponent<CanvasGroup>();
             _introGroup.blocksRaycasts = false;
             _introLayer.gameObject.SetActive(false);
-        }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-
-            AddResultText("Title", 76, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            var detail = AddResultText("Detail", 44, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            detail.horizontalOverflow = HorizontalWrapMode.Wrap;
-            detail.rectTransform.sizeDelta = new Vector2(820f, 130f);
-            var extra = AddResultText("Extra", 42, new Vector2(0f, -270f), new Color(1f, 1f, 1f, 0.65f));
-            extra.horizontalOverflow = HorizontalWrapMode.Wrap;
-            go.SetActive(false);
         }
 
         // ------------------------------------------------------------------ piezas sueltas
@@ -543,10 +522,10 @@ namespace NeuroVida.Games.Parejas
             for (int i = 0; i < lines.Length; i++)
             {
                 if (i == 0) sb.Append(lines[i]);
-                else sb.Append(i == 1 ? "\n<color=#D6D1F2>" : "\n").Append(lines[i]);
+                else sb.Append(i == 1 ? (_introSlab != null ? "\n<color=#514B78>" : "\n<color=#D6D1F2>") : "\n").Append(lines[i]);
             }
             if (lines.Length > 1) sb.Append("</color>");
-            if (_introKind == ConIntro.Cielo) sb.Append("\n<color=#FFC94A>").Append(ConstelacionContract.GoldLegend).Append("</color>");
+            if (_introKind == ConIntro.Cielo) sb.Append(_introSlab != null ? "\n<color=#8A5A00>" : "\n<color=#FFC94A>").Append(ConstelacionContract.GoldLegend).Append("</color>");
             _introBody.text = sb.ToString();
             _introBody.rectTransform.sizeDelta = new Vector2((cw - 28f) * _s, 400f * _s);
             float bodyH = _introBody.preferredHeight / _s;

@@ -49,7 +49,6 @@ namespace NeuroVida.Games.Piloto
             _shipX = _steerX = PilotPlan.Width * 0.5f;
             ExtendRoute();
             ShowFlightLayers(true);
-            _endLayer.gameObject.SetActive(false);
             SetMissionCard();
             _practiceSpawn = false;
             _phase = Phase.Idle;                                           // el paso 1 es un cuadro quieto

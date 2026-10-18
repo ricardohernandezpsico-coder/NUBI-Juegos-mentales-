@@ -110,7 +110,6 @@ namespace NeuroVida.Games.Freno
             _endsAt = 0f;
             _lastTickSecond = -1;
 
-            _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
             _timerBg.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
@@ -807,7 +806,6 @@ namespace NeuroVida.Games.Freno
 
             _fxRect = Layer(_play, "Fx");
 
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
@@ -989,26 +987,6 @@ namespace NeuroVida.Games.Freno
             _timerFill.offsetMin = _timerFill.offsetMax = Vector2.zero;
             _timerFill.GetComponent<Image>().color = fraction > 0.5f ? Color.Lerp(AmberColor, GoodColor, (fraction - 0.5f) * 2f)
                                                                       : Color.Lerp(BadColor, AmberColor, fraction * 2f);
-        }
-
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            img.sprite = RoundedRectSprite.Get(64);
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-
-            AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 48, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            AddResultText("Extra", 44, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            go.SetActive(false);
         }
 
         private static RectTransform Layer(Transform parent, string name)

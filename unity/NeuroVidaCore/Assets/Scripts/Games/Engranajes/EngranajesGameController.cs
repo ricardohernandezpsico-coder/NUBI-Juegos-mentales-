@@ -91,7 +91,6 @@ namespace NeuroVida.Games.Engranajes
             _startRequested = false;
             ClearMachine();
 
-            _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
             _timerTrack.gameObject.SetActive(Endless);
             _hud.SetStreak(0);

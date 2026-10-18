@@ -170,7 +170,7 @@ namespace NeuroVida.Games.Acoplamiento
         {
             _portPanel = MakeImage(_portLayer, "PortPanel", null);
             _portSlab = PlasticSlab.TryStyle(_portPanel, SlabSize.Button, SlabTone.Night);          // el panel «Puerto»: la losa «noche» del kit (la de las casillas de Rescate)
-            _portLabel = MakeLabel(_portLayer, "PortLabel", 15f, UiFonts.Bold, new Color(214f / 255f, 209f / 255f, 242f / 255f), TextAnchor.MiddleCenter);
+            _portLabel = MakeLabel(_portLayer, "PortLabel", 16f, UiFonts.Bold, new Color(214f / 255f, 209f / 255f, 242f / 255f), TextAnchor.MiddleCenter);
             _portLabel.text = DockingContract.PortLabel;
             _portLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             for (int i = 0; i < ChevronCount; i++) _chevrons[i] = MakeImage(_portLayer, "Chevron" + i, null);
@@ -237,10 +237,10 @@ namespace NeuroVida.Games.Acoplamiento
             _fuelTrack = Rr(_hudLayer, "FuelTrack", new Color(8f / 255f, 6f / 255f, 30f / 255f, 0.6f), 6f);
             _fuelFill = Rr(_hudLayer, "FuelFill", Gold, 4f);
             _fuelFill.rectTransform.pivot = new Vector2(0f, 0.5f);
-            _fuelLabel = MakeLabel(_hudLayer, "FuelLabel", 14f, UiFonts.Bold, Soft, TextAnchor.MiddleRight);
+            _fuelLabel = MakeLabel(_hudLayer, "FuelLabel", 16f, UiFonts.Bold, Soft, TextAnchor.MiddleRight);
             _fuelLabel.text = DockingContract.TimeLabel;
             _fuelLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _hint = MakeLabel(_hudLayer, "Hint", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _hint = MakeLabel(_hudLayer, "Hint", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _hint.text = DockingContract.Hint;
             _hint.horizontalOverflow = HorizontalWrapMode.Wrap;
             // el aviso: la losa chica del kit (dorada si acertó, crema si no) con el texto liso de tinta, en la franja de y 118-150 (sin el kit, la píldora oscura de siempre)
@@ -266,7 +266,7 @@ namespace NeuroVida.Games.Acoplamiento
             _hudCount = MakeLabel(_hudLayer, "ScoreCount", 22f, UiFonts.Bold, TextColor, TextAnchor.MiddleRight);
             _hudCount.horizontalOverflow = HorizontalWrapMode.Overflow;
             _streakBg = Rr(_hudLayer, "StreakBg", Gold, 13f);
-            _streakText = MakeLabel(_hudLayer, "StreakText", 14f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
+            _streakText = MakeLabel(_hudLayer, "StreakText", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _streakText.horizontalOverflow = HorizontalWrapMode.Overflow;
             // la barra de tiempo del Reto (los 120 s), fina y bajo el marcador
             _timerTrack = Rr(_hudLayer, "TimerTrack", new Color(Lavender.r, Lavender.g, Lavender.b, 0.25f), 2.5f);
@@ -279,35 +279,35 @@ namespace NeuroVida.Games.Acoplamiento
             _endShade = MakeImage(_endLayer, "Shade", null);
             _endShade.color = new Color(4f / 255f, 5f / 255f, 26f / 255f, 0.55f);
             BuildSculpture();
-            _endTag = MakeLabel(_endLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _endTag = MakeLabel(_endLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endTitle = MakeLabel(_endLayer, "Title", 26f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             _endCard = Rr(_endLayer, "Card", CardFill, 22f);
             string[] labels = { DockingContract.EndHits, DockingContract.EndSpeed, DockingContract.EndRings, DockingContract.EndStreak };
             for (int i = 0; i < EndRows; i++)
             {
-                _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 15f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
+                _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 16f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
                 _endValue[i] = MakeLabel(_endLayer, "Value" + i, 17f, UiFonts.Bold, Color.white, TextAnchor.MiddleRight);
                 _endLabel[i].horizontalOverflow = _endValue[i].horizontalOverflow = HorizontalWrapMode.Overflow;
                 _endLabel[i].text = labels[i];
             }
-            _endCurveTitle = MakeLabel(_endLayer, "CurveTitle", 15f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
+            _endCurveTitle = MakeLabel(_endLayer, "CurveTitle", 16f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
             _endCurveTitle.text = DockingContract.EndCurve;
             for (int i = 0; i < CurveBars; i++)
             {
                 _curveBarInk[i] = Rr(_endLayer, "BarInk" + i, Ink, 10f);
                 _curveBar[i] = Rr(_endLayer, "Bar" + i, DockingSprites.GrapeColor, 8f);
-                _curveValue[i] = MakeLabel(_endLayer, "BarValue" + i, 14f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-                _curveAngle[i] = MakeLabel(_endLayer, "BarAngle" + i, 14f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
+                _curveValue[i] = MakeLabel(_endLayer, "BarValue" + i, 16f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
+                _curveAngle[i] = MakeLabel(_endLayer, "BarAngle" + i, 16f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
                 _curveValue[i].horizontalOverflow = _curveAngle[i].horizontalOverflow = HorizontalWrapMode.Overflow;
                 _curveAngle[i].text = DockingContract.CurveBins[i] + "°";
             }
-            _endNote1 = MakeLabel(_endLayer, "Note1", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote2 = MakeLabel(_endLayer, "Note2", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _endNote1 = MakeLabel(_endLayer, "Note1", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _endNote2 = MakeLabel(_endLayer, "Note2", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
             _endNote1.text = DockingContract.EndNote1;
             _endNote2.text = DockingContract.EndNote2;
             _endNote1.horizontalOverflow = _endNote2.horizontalOverflow = HorizontalWrapMode.Wrap;
             _endRecordBg = Rr(_endLayer, "RecordBg", Gold, 15f);
-            _endRecord = MakeLabel(_endLayer, "Record", 15f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
+            _endRecord = MakeLabel(_endLayer, "Record", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _endTag.text = DockingContract.EndTag;
             foreach (var t in new[] { _endTag, _endTitle, _endCurveTitle, _endRecord }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
             for (int i = 0; i < ConfettiPool; i++)
@@ -442,7 +442,7 @@ namespace NeuroVida.Games.Acoplamiento
             foreach (var kv in _fonts)
             {
                 float dp = kv.Value;
-                if (kv.Key == _buttons[0].Label || kv.Key == _buttons[1].Label) dp = Mathf.Max(14f, dp * _plan.K);          // el texto de los botones se achica con ellos, pero nunca bajo 14 dp
+                if (kv.Key == _buttons[0].Label || kv.Key == _buttons[1].Label) dp = Mathf.Max(16f, dp * _plan.K);          // el texto de los botones se achica con ellos, pero nunca bajo 16 dp (Tarea 129; antes 14)
                 int px = Mathf.RoundToInt(dp * _s);
                 kv.Key.fontSize = px;
                 if (kv.Key.resizeTextForBestFit) kv.Key.resizeTextMaxSize = px;

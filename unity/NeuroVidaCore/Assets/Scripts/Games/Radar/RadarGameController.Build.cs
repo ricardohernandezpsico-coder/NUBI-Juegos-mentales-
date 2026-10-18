@@ -96,6 +96,7 @@ namespace NeuroVida.Games.Radar
         // marcador de la derecha y franja de mensajes
         private Image _hudIcon, _streakBg, _msgPill, _timerTrack, _timerFill;
         private Text _hudCount, _streakText, _msgA, _msgB;
+        private bool _msgCream;
 
         // pantalla final
         private Image _endCard, _endRecordBg;
@@ -274,7 +275,7 @@ namespace NeuroVida.Games.Radar
                 _dockSparks[i] = MakeImage(_shipRoot, "DockSpark" + i, DiscSprite.Get());
                 _dockSparks[i].color = new Color(1f, 236f / 255f, 160f / 255f, 0f);
             }
-            _shipCount = MakeLabel(_shipLayer, "ShipCount", 14f, UiFonts.Bold, new Color(214f / 255f, 209f / 255f, 242f / 255f), TextAnchor.MiddleCenter);
+            _shipCount = MakeLabel(_shipLayer, "ShipCount", 16f, UiFonts.Bold, new Color(214f / 255f, 209f / 255f, 242f / 255f), TextAnchor.MiddleCenter);
             _shipCount.horizontalOverflow = HorizontalWrapMode.Overflow;
         }
 
@@ -353,7 +354,7 @@ namespace NeuroVida.Games.Radar
             _hudCount = MakeLabel(_hudLayer, "RescuedCount", 22f, UiFonts.Bold, TextColor, TextAnchor.MiddleRight);
             _hudCount.horizontalOverflow = HorizontalWrapMode.Overflow;
             _streakBg = Rr(_hudLayer, "StreakBg", Gold, 13f, SlabSize.Chip, SlabTone.Sun);
-            _streakText = MakeLabel(_hudLayer, "StreakText", 14f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
+            _streakText = MakeLabel(_hudLayer, "StreakText", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _streakText.horizontalOverflow = HorizontalWrapMode.Overflow;
             // el contador de rescatadas y la racha viven ahora en el marcador común (la fase de la fila de consigna y el chip «×N seguidos»; Tarea 127): lo de antes ya no se dibuja
             _hudIcon.gameObject.SetActive(false);
@@ -363,31 +364,32 @@ namespace NeuroVida.Games.Radar
             _timerTrack = Rr(_hudLayer, "TimerTrack", new Color(Lavender.r, Lavender.g, Lavender.b, 0.25f), 2.5f);
             _timerFill = Rr(_hudLayer, "TimerFill", Lime, 2.5f);
             _timerFill.rectTransform.pivot = new Vector2(0f, 0.5f);
-            _msgPill = Rr(_hudLayer, "MessagePill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.96f), 17f, SlabSize.Button, SlabTone.Night);
-            _msgA = MakeLabel(_hudLayer, "MessageA", 18f, UiFonts.Bold, TextColor, TextAnchor.MiddleCenter);
-            _msgB = MakeLabel(_hudLayer, "MessageB", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _msgCream = PlasticSlab.Available(SlabSize.Button, SlabTone.Cream);                       // Tarea 129: la franja de avisos es una losa crema con la letra en tinta (las casillas siguen noche: R1)
+            _msgPill = Rr(_hudLayer, "MessagePill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.96f), 17f, SlabSize.Button, _msgCream ? SlabTone.Cream : SlabTone.Night);
+            _msgA = MakeLabel(_hudLayer, "MessageA", 18f, UiFonts.Bold, _msgCream ? NeuroStyle.Ink : TextColor, TextAnchor.MiddleCenter);
+            _msgB = MakeLabel(_hudLayer, "MessageB", 16f, UiFonts.Regular, _msgCream ? NeuroStyle.InkMuted : Lavender, TextAnchor.MiddleCenter);
             _msgA.horizontalOverflow = _msgB.horizontalOverflow = HorizontalWrapMode.Wrap;
-            BestFit(_msgA, 14 * (int)UnitsPerDp);
+            BestFit(_msgA, 16 * (int)UnitsPerDp);
             _msgPill.gameObject.SetActive(false);
         }
 
         private void BuildEnd()
         {
-            _endTag = MakeLabel(_endLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _endTag = MakeLabel(_endLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endTitle = MakeLabel(_endLayer, "Title", 27f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
             for (int i = 0; i < EndCapsPool; i++) { _endCaps[i] = MakeImage(_endLayer, "EndCap" + i, null); _endCaps[i].gameObject.SetActive(false); }
             _endCard = Rr(_endLayer, "Card", new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f), 22f, SlabSize.Button, SlabTone.Night);
             for (int i = 0; i < _endLabel.Length; i++)
             {
-                _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 15f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
+                _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 16f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
                 _endValue[i] = MakeLabel(_endLayer, "Value" + i, 17f, UiFonts.Bold, Color.white, TextAnchor.MiddleRight);
                 _endLabel[i].horizontalOverflow = _endValue[i].horizontalOverflow = HorizontalWrapMode.Overflow;
             }
-            _endNote1 = MakeLabel(_endLayer, "Note1", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote2 = MakeLabel(_endLayer, "Note2", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote3 = MakeLabel(_endLayer, "Note3", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _endNote1 = MakeLabel(_endLayer, "Note1", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _endNote2 = MakeLabel(_endLayer, "Note2", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _endNote3 = MakeLabel(_endLayer, "Note3", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
             _endRecordBg = Rr(_endLayer, "RecordBg", Gold, 15f, SlabSize.Chip, SlabTone.Sun);
-            _endRecord = MakeLabel(_endLayer, "Record", 15f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
+            _endRecord = MakeLabel(_endLayer, "Record", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
             _endTag.text = RadarContract.EndTag;
             _endNote1.text = RadarContract.EndNote1;
             _endNote2.text = RadarContract.EndNote2;

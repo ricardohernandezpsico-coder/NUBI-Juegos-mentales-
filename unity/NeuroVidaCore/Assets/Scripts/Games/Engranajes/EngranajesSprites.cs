@@ -206,6 +206,12 @@ namespace NeuroVida.Games.Engranajes
 
         public static string PlateName(PlateState s) => s == PlateState.Ok ? "losa_ch_acierto" : s == PlateState.Bad ? "losa_ch_error" : "losa_ch_noche";
 
+        /// <summary>La losa chica CREMA del kit (grupo <c>comun</c>, Tarea 129): el estado neutro de los carteles y del rótulo MOTOR (letra en tinta); si el atlas no la trae, la «noche» de siempre.</summary>
+        public const string CreamChipGroup = "comun", CreamChip = "losa_ch_crema";
+        public static bool HasCreamChip => PlasticArt.Has(CreamChipGroup, CreamChip);
+        public static string NeutralGroup => HasCreamChip ? CreamChipGroup : PlasticGroup;
+        public static string NeutralPlate => HasCreamChip ? CreamChip : PlateName(PlateState.Neutral);
+
         /// <summary>La losa chica dorada del kit (grupo <c>comun</c>): el rótulo MOTOR cuando el motor está cambiado.</summary>
         public const string GoldChipGroup = "comun", GoldChip = "losa_ch_sol";
 

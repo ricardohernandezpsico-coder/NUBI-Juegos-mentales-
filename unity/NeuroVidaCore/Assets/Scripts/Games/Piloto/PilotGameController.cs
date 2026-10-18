@@ -194,7 +194,6 @@ namespace NeuroVida.Games.Piloto
             ClearNotices();
             _nextSignalIn = 1.2f;
             ShowFlightLayers(true);
-            _endLayer.gameObject.SetActive(false);
             SetMissionCard();
             SetJourney(0f);
             _tintFrom = _tintTo = 0;

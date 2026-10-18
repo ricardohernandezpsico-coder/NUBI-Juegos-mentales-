@@ -322,7 +322,7 @@ namespace NeuroVida.Games.Parejas.Tests
             StringAssert.Contains("v.Pressed", scene);
             string build = Read("ConstelacionGameController.Build.cs");
             StringAssert.Contains("PlasticSlab.TryStyle(_cardBg, SlabSize.Button, SlabTone.Night)", build, "la tarjeta de arriba es una losa «noche» del kit");
-            StringAssert.Contains("PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Night)", build, "la tarjeta de entrada también");
+            StringAssert.Contains("PlasticSlab.TryStyle(_introCard, SlabSize.Panel, SlabTone.Cream)", build, "la tarjeta de entrada es una lámina CREMA (Tarea 129)");
             string sprites = Read("ConstelacionSprites.cs");
             foreach (var needle in new[] { "\"dormante\"", "\"abierta\"", "\"obj_\"" })
                 StringAssert.Contains(needle, sprites);

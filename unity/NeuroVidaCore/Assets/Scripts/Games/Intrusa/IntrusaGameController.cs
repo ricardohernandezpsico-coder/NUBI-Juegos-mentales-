@@ -164,7 +164,6 @@ namespace NeuroVida.Games.Intrusa
             _pulsing = false;
             _loopOn = _guided = false;
 
-            _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
             _timerTrack.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
@@ -1481,7 +1480,6 @@ namespace NeuroVida.Games.Intrusa
             _measure.color = new Color(0f, 0f, 0f, 0f);
             _measure.rectTransform.sizeDelta = new Vector2(4000f, 200f);
 
-            BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
             _toast = new Toast(_safe, this, UnitsPerDp);
             _toast.SetBelowHud();
@@ -1705,30 +1703,6 @@ namespace NeuroVida.Games.Intrusa
             }
         }
 
-        private void BuildResultPanel()
-        {
-            var go = new GameObject("Result");
-            go.transform.SetParent(_safe, false);
-            _resultRoot = go.AddComponent<RectTransform>();
-            _resultRoot.anchorMin = _resultRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            _resultRoot.pivot = new Vector2(0.5f, 0.5f);
-            _resultRoot.sizeDelta = new Vector2(880f, 760f);
-            var img = go.AddComponent<Image>();
-            if (PlasticSlab.TryStyle(img, SlabSize.Panel, SlabTone.Night) == null)                  // plasticina: losa «noche»
-            {
-                img.sprite = RoundedRectSprite.Get(64);
-                img.type = Image.Type.Sliced;
-                img.color = new Color(0.08f, 0.12f, 0.22f, 0.96f);
-            }
-
-            AddResultText("Title", 84, new Vector2(0f, 250f), Color.white);
-            AddResultText("Score", 260, new Vector2(0f, 60f), Color.white);
-            AddResultText("Detail", 44, new Vector2(0f, -150f), new Color(1f, 1f, 1f, 0.85f));
-            var extra = AddResultText("Extra", 42, new Vector2(0f, -250f), new Color(1f, 1f, 1f, 0.65f));
-            extra.horizontalOverflow = HorizontalWrapMode.Wrap;
-            go.SetActive(false);
-        }
-
         private static RectTransform Layer(Transform parent, string name)
         {
             var go = new GameObject(name);
@@ -1806,12 +1780,12 @@ namespace NeuroVida.Games.Intrusa
             float expY = Mathf.Max(zoneTop + 8f, _logicalH - _yShift - 20f - 64f - 12f - 70f);
             _explain.rectTransform.sizeDelta = new Vector2(330f * _s, 44f * _s);
             _explain.rectTransform.anchoredPosition = LogicalToPlay(new Vector2(180f, expY + 22f));
-            BestFit(_explain, Mathf.RoundToInt(14f * _s));
+            BestFit(_explain, Mathf.RoundToInt(16f * _s));
             _explain.fontSize = Mathf.RoundToInt(17f * _s);
             _explain.resizeTextMaxSize = Mathf.RoundToInt(17f * _s);
             _trapText.rectTransform.sizeDelta = new Vector2(330f * _s, 28f * _s);
             _trapText.rectTransform.anchoredPosition = LogicalToPlay(new Vector2(180f, expY + 58f));
-            BestFit(_trapText, Mathf.RoundToInt(14f * _s));
+            BestFit(_trapText, Mathf.RoundToInt(16f * _s));
             _trapText.fontSize = Mathf.RoundToInt(16f * _s);
             _trapText.resizeTextMaxSize = Mathf.RoundToInt(16f * _s);
 

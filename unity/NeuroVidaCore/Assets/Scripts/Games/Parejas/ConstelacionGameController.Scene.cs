@@ -411,6 +411,8 @@ namespace NeuroVida.Games.Parejas
             foreach (var t in _introLabels) t.gameObject.SetActive(false);
             _introLine.gameObject.SetActive(false);
             _introLine2.gameObject.SetActive(false);
+            _introBox.gameObject.SetActive(_introSlab != null);                                                     // la ventanilla noche del arte (Tarea 129)
+            if (_introSlab != null) SetRect(_introBox.rectTransform, cx, cy + 6f, ConstelacionLayout.W - 70f, 112f);
             var ink = new Color(11f / 255f, 10f / 255f, 38f / 255f, 0.8f);
             float cw = ConstelacionLayout.W;
             switch (_introKind)
@@ -467,7 +469,8 @@ namespace NeuroVida.Games.Parejas
             float k = deco ? 1f - Mathf.Pow(1f - Mathf.Clamp01((now - _introAt) / 0.35f), 3f) : 1f;
             _dim.color = new Color(2f / 255f, 3f / 255f, 15f / 255f, 0.8f * k);
             _introGroup.alpha = k;
-            _introTap.color = deco ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.7f + 0.3f * Mathf.Sin(now * 4f)) : Cyan;
+            var tap = _introSlab != null ? NeuroStyle.PanelAccent : Cyan;
+            _introTap.color = deco ? new Color(tap.r, tap.g, tap.b, 0.7f + 0.3f * Mathf.Sin(now * 4f)) : tap;
         }
 
         // ------------------------------------------------------------------ verificación de que lo dibujado se ve

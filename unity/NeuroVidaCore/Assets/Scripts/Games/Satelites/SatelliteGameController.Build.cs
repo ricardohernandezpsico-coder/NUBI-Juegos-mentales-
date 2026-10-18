@@ -253,8 +253,8 @@ namespace NeuroVida.Games.Satelites
             _crossRing = MakeImage(_crossMarker, "Ring", RingSprite.Get());
             _crossRing.color = Bad;
             _crossPillBg = Rr(_crossMarker, "PillBg", new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.94f), 13f);
-            PlasticSlab.TryStyle(_crossPillBg, SlabSize.Chip, SlabTone.Night);       // plasticina: el rótulo es una losa «noche» (sin el atlas queda la píldora de siempre)
-            _crossLabel = MakeLabel(_crossMarker, "Label", 15f, UiFonts.Bold, Bad, TextAnchor.MiddleCenter);
+            var crossSlab = PlasticSlab.TryStyle(_crossPillBg, SlabSize.Chip, SlabTone.Cream);       // plasticina (Tarea 129): el rótulo es una losa CREMA con la letra en tinta (sin el atlas queda la píldora de siempre)
+            _crossLabel = MakeLabel(_crossMarker, "Label", 16f, UiFonts.Bold, crossSlab != null ? NeuroStyle.Ink : Bad, TextAnchor.MiddleCenter);
             _crossLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             _crossLabel.text = SatelliteContract.CrossText;
             cm.SetActive(false);
@@ -263,7 +263,7 @@ namespace NeuroVida.Games.Satelites
         private void BuildPrompts()
         {
             _promptA = MakeLabel(_promptLayer, "PromptA", 20f, UiFonts.Bold, TextColor, TextAnchor.MiddleCenter);
-            _promptB = MakeLabel(_promptLayer, "PromptB", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _promptB = MakeLabel(_promptLayer, "PromptB", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _promptA.horizontalOverflow = HorizontalWrapMode.Wrap;
             _promptB.horizontalOverflow = HorizontalWrapMode.Wrap;
         }
@@ -276,7 +276,7 @@ namespace NeuroVida.Games.Satelites
                 _discFill[i] = MakeImage(_footerLayer, "DiscFill" + i, DiscSprite.Get());
                 _discFill[i].gameObject.SetActive(false);
             }
-            _lightsText = MakeLabel(_footerLayer, "Lights", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _lightsText = MakeLabel(_footerLayer, "Lights", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _lightsText.horizontalOverflow = HorizontalWrapMode.Overflow;
         }
 
@@ -314,25 +314,26 @@ namespace NeuroVida.Games.Satelites
             Stretch(_surpriseDim.rectTransform);
             _surpriseCardRim = Rr(_surpriseLayer, "CardRim", Gold, 23.5f);
             _surpriseCard = Rr(_surpriseLayer, "Card", PanelFill, 22f);
-            if (PlasticSlab.TryStyle(_surpriseCard, SlabSize.Panel, SlabTone.Night) != null) _surpriseCardRim.enabled = false;       // plasticina: el aviso es una losa «noche»; el borde dorado de siempre sobra (la etiqueta ya va en dorado)
+            bool surpriseCream = PlasticSlab.TryStyle(_surpriseCard, SlabSize.Panel, SlabTone.Cream) != null;
+            if (surpriseCream) _surpriseCardRim.enabled = false;       // plasticina (Tarea 129): el aviso es una lámina CREMA con la letra en tinta; el borde dorado de siempre sobra
             _surpriseIcon = MakeImage(_surpriseLayer, "Icon", null);
-            _surpriseTag = MakeLabel(_surpriseLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _surpriseName = MakeLabel(_surpriseLayer, "Name", 25f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-            _surpriseLine = MakeLabel(_surpriseLayer, "Line", 16f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            _surpriseTag = MakeLabel(_surpriseLayer, "Tag", 16f, UiFonts.Bold, surpriseCream ? NeuroStyle.InkMuted : Gold, TextAnchor.MiddleCenter);
+            _surpriseName = MakeLabel(_surpriseLayer, "Name", 25f, UiFonts.Bold, surpriseCream ? NeuroStyle.Ink : Color.white, TextAnchor.MiddleCenter);
+            _surpriseLine = MakeLabel(_surpriseLayer, "Line", 16f, UiFonts.Regular, surpriseCream ? NeuroStyle.InkMuted : Soft, TextAnchor.MiddleCenter);
             foreach (var t in new[] { _surpriseTag, _surpriseName }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
             _surpriseLayer.gameObject.SetActive(false);
         }
 
         private void BuildEnd()
         {
-            _endTag = MakeLabel(_endLayer, "Tag", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _endTag = MakeLabel(_endLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _endTitle = MakeLabel(_endLayer, "Title", 27f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-            _endLabel = MakeLabel(_endLayer, "Label", 15f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _endLabel = MakeLabel(_endLayer, "Label", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _endValue = MakeLabel(_endLayer, "Value", 30f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endDetail = MakeLabel(_endLayer, "Detail", 15f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
-            _endRecord = MakeLabel(_endLayer, "Record", 15f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            _endNote1 = MakeLabel(_endLayer, "Note1", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote2 = MakeLabel(_endLayer, "Note2", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _endDetail = MakeLabel(_endLayer, "Detail", 16f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            _endRecord = MakeLabel(_endLayer, "Record", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _endNote1 = MakeLabel(_endLayer, "Note1", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _endNote2 = MakeLabel(_endLayer, "Note2", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
             foreach (var t in new[] { _endTag, _endTitle, _endLabel, _endValue, _endDetail, _endRecord, _endNote1, _endNote2 }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
             _endTag.text = "FIN DE LA PARTIDA";
             _endLabel.text = "Tu seguimiento";

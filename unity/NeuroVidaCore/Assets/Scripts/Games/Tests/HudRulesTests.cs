@@ -134,6 +134,10 @@ namespace NeuroVida.Games.Tests
         private static readonly Regex BestFitMax = new Regex(@"BestFit\(\s*[^,;]+,\s*Mathf\.Max\(\s*(\d+)");
         private static readonly Regex CenteredSize = new Regex(@"CenteredText\(\s*[^,;]+,\s*""[^""]*"",\s*(\d+)\s*,");
         private static readonly Regex ResultSize = new Regex(@"AddResultText\(\s*""[^""]*"",\s*(\d+)\s*,");
+        /// <summary>Los rótulos de escena (<c>MakeLabel</c> / <c>MakeSceneLabel</c> en dp, Tarea 129), el último parámetro de <c>BuildPill</c> y los mínimos «<c>RoundToInt(NN f * UnitsPerDp)</c>» del ajuste automático: nada informativo bajo 16 dp.</summary>
+        private static readonly Regex LabelDp = new Regex(@"Make(?:Scene)?Label\([^,()]+,\s*[^,()]+(?:\([^()]*\))?[^,()]*,\s*(\d+(?:\.\d+)?)f,");
+        private static readonly Regex PillDp = new Regex(@"BuildPill\([^;]*,\s*(\d+(?:\.\d+)?)f\)");
+        private static readonly Regex FitDp = new Regex(@"RoundToInt\((\d+(?:\.\d+)?)f \* (?:UnitsPerDp|_s)\)");
 
         /// <summary>
         /// Lo que ningún juego dibuja a menos de 16 dp (48 unidades del lienzo de 1080; Tarea 128: «nada informativo bajo 16 dp»): se mira el CÓDIGO (el smoke solo ve lo que sale en pantalla durante su corrida).
@@ -161,6 +165,10 @@ namespace NeuroVida.Games.Tests
                         foreach (Match m in rx.Matches(line))
                             if (int.Parse(m.Groups[1].Value) < min) found.Add(rel + ":" + (i + 1) + " " + trimmed);
                     }
+                    foreach (var rx in new[] { LabelDp, PillDp, FitDp })                                    // Tarea 129: también los rótulos de escena y los mínimos del ajuste automático, en dp
+                        foreach (Match m in rx.Matches(line))
+                            if (float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) < 16f && !(rx == FitDp && !line.Contains("fontSize") && !line.Contains("resizeTextMinSize") && !line.Contains("BestFit")))
+                                found.Add(rel + ":" + (i + 1) + " " + trimmed);
                 }
             }
             Assert.IsEmpty(found, "letra bajo 16 dp (48 unidades): se parte en dos renglones o se acorta el texto, no se achica:\n" + string.Join("\n", found));

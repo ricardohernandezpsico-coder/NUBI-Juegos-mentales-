@@ -242,7 +242,7 @@ namespace NeuroVida.Games.Correo
         private void BuildStage()
         {
             var s = _stageLayer;
-            _hdrCards = MakeLabel(s, "Cards", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
+            _hdrCards = MakeLabel(s, "Cards", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
             _hdrCards.horizontalOverflow = HorizontalWrapMode.Overflow;
             // la cinta
             _beltBand = MakeImage(s, "Belt", RoundedRectSprite.Get(24));
@@ -272,7 +272,7 @@ namespace NeuroVida.Games.Correo
             BuildSafe(s);
             BuildBeacon(s);
             BuildClock(s);
-            _hint = MakeLabel(s, "Hint", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
+            _hint = MakeLabel(s, "Hint", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
             _hint.horizontalOverflow = HorizontalWrapMode.Overflow;
             _hint.text = MailContract.PlayHint;
             _stageLayer.gameObject.SetActive(false);
@@ -281,7 +281,7 @@ namespace NeuroVida.Games.Correo
         private Image Pill(Transform parent, string name, Color fill, out Text text)
         {
             var bg = Rr(parent, name, fill, 13f);
-            text = MakeLabel(bg.transform, name + "Text", 15f, UiFonts.Bold, InkEdge, TextAnchor.MiddleCenter);
+            text = MakeLabel(bg.transform, name + "Text", 16f, UiFonts.Bold, InkEdge, TextAnchor.MiddleCenter);
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             bg.gameObject.SetActive(false);
             return bg;
@@ -438,7 +438,7 @@ namespace NeuroVida.Games.Correo
             _clockQ = MakeLabel(parent, "ClockQ", 24f, UiFonts.Bold, InkEdge, TextAnchor.MiddleCenter);
             _clockQ.horizontalOverflow = HorizontalWrapMode.Overflow;
             _clockQ.text = "?";
-            _clockLabel = MakeLabel(parent, "ClockLabel", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _clockLabel = MakeLabel(parent, "ClockLabel", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _clockLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             _clockLabel.text = MailContract.ClockLabel;
         }
@@ -547,7 +547,7 @@ namespace NeuroVida.Games.Correo
                 f.Root = go.AddComponent<RectTransform>();
                 f.Root.anchorMin = f.Root.anchorMax = f.Root.pivot = new Vector2(0.5f, 0.5f);
                 f.Bg = Rr(f.Root, "Bg", new Color(Deep.r, Deep.g, Deep.b, 0.92f), 15f);
-                f.Text = MakeLabel(f.Root, "Text", 15f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+                f.Text = MakeLabel(f.Root, "Text", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
                 f.Text.horizontalOverflow = HorizontalWrapMode.Overflow;
                 go.SetActive(false);
                 _floats[i] = f;
@@ -911,7 +911,7 @@ namespace NeuroVida.Games.Correo
             SetChild(_radioBg.rectTransform, 0f, 0f, m.Banner.W, m.Banner.H);
             SetChild(_radioTag.rectTransform, 0f, -m.Banner.H / 2f + 13f, 120f, 22f);
             SetChild(_radioText.rectTransform, 0f, 8f, m.Banner.W - 28f, 40f);
-            foreach (var f in _floats) f.Text.fontSize = Mathf.RoundToInt(15f * _s);
+            foreach (var f in _floats) f.Text.fontSize = Mathf.RoundToInt(16f * _s);
             SetRect(_wash.rectTransform, m.Beacon.X + 40f, m.Beacon.Y + m.Beacon.H / 2f - 16f, 1240f, 1240f);
             float lx = m.Beacon.X + 40f, ly = m.Beacon.Y + m.Beacon.H / 2f - 16f;
             _halo.rectTransform.anchoredPosition = P(lx, ly);

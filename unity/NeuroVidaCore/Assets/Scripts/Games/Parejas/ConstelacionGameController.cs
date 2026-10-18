@@ -83,7 +83,6 @@ namespace NeuroVida.Games.Parejas
             _sky = null;
             ResetBoardViews();
 
-            _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
             _timerTrack.gameObject.SetActive(Endless);
             _hud.SetStreak(0);

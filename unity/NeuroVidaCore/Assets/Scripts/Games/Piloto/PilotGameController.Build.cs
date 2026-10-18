@@ -42,7 +42,7 @@ namespace NeuroVida.Games.Piloto
             public Box Area;
         }
 
-        private RectTransform _safe, _play, _tintLayer, _routeLayer, _sigLayer, _shipLayer, _stripLayer, _topLayer, _noticeLayer, _fxLayer, _endLayer;
+        private RectTransform _safe, _play, _tintLayer, _routeLayer, _sigLayer, _shipLayer, _stripLayer, _topLayer, _noticeLayer, _fxLayer;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Image, float>> _radii = new List<KeyValuePair<Image, float>>();
 
@@ -72,15 +72,9 @@ namespace NeuroVida.Games.Piloto
         private CanvasGroup _bannerGroup;
         private Image _bannerRim, _bannerFill;
         private Text _bannerTag, _bannerTitle;
-        private Image _tallRim, _tallFill, _tallIcon;
+        private Image _tallRim, _tallFill, _tallIcon, _tallWin;
         private Text _tallTitle, _tallName, _tallFoot;
 
-        // la pantalla final
-        private readonly Image[] _endSector = new Image[PilotContract.Sectors], _endLink = new Image[PilotContract.Sectors - 1];
-        private readonly Text[] _endSectorName = new Text[PilotContract.Sectors];
-        private Image _endPanelRim, _endPanel;
-        private Text _endTag, _endTitle, _endNote1, _endNote2;
-        private readonly Text[] _endLabel = new Text[6], _endValue = new Text[6];
 
         // el motor (se repite)
         private PilotEngine _engine;
@@ -127,7 +121,6 @@ namespace NeuroVida.Games.Piloto
             _topLayer = Layer(_play, "Top");
             _noticeLayer = Layer(_play, "Notices");
             _fxLayer = Layer(_play, "Fx");
-            _endLayer = Layer(_play, "End");
             BuildTint();
             BuildRoute();
             BuildSignals();
@@ -135,7 +128,6 @@ namespace NeuroVida.Games.Piloto
             BuildStrip();
             BuildTop();
             BuildNotices();
-            BuildEnd();
             BuildHiddenResult();
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
@@ -233,8 +225,8 @@ namespace NeuroVida.Games.Piloto
             _fingerRing.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.7f);
             _fingerDot = MakeImage(_stripLayer, "FingerDot", DiscSprite.Get());
             _fingerDot.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.5f);
-            _stripLabel = MakeLabel(_stripLayer, "StripLabel", 14f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            _stripHint = MakeLabel(_stripLayer, "StripHint", 15f, UiFonts.Bold, Cyan, TextAnchor.MiddleCenter);
+            _stripLabel = MakeLabel(_stripLayer, "StripLabel", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
+            _stripHint = MakeLabel(_stripLayer, "StripHint", 16f, UiFonts.Bold, Cyan, TextAnchor.MiddleCenter);
             _stripLabel.horizontalOverflow = _stripHint.horizontalOverflow = HorizontalWrapMode.Overflow;
         }
 
@@ -253,8 +245,8 @@ namespace NeuroVida.Games.Piloto
             _missionFill = Rr(_missionCard, "MissionFill", new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0.95f), 17f, slab: true);
             _missionIcon = MakeImage(_missionCard, "MissionIcon", null);
             _missionIcon.enabled = false;
-            _missionTag = MakeLabel(_missionCard, "MissionTag", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
-            _missionName = MakeLabel(_missionCard, "MissionName", 15f, UiFonts.Bold, TextColor, TextAnchor.MiddleLeft);
+            _missionTag = MakeLabel(_missionCard, "MissionTag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleLeft);
+            _missionName = MakeLabel(_missionCard, "MissionName", 16f, UiFonts.Bold, TextColor, TextAnchor.MiddleLeft);
             _missionTag.horizontalOverflow = HorizontalWrapMode.Overflow;
             _missionName.horizontalOverflow = HorizontalWrapMode.Overflow;
             _missionName.resizeTextForBestFit = false;
@@ -266,22 +258,27 @@ namespace NeuroVida.Games.Piloto
             _skyZone.anchorMin = _skyZone.anchorMax = _skyZone.pivot = new Vector2(0.5f, 0.5f);
         }
 
+        /// <summary>true si los avisos son losas del kit: el corto («¡Nueva misión!», «¡HIPERIMPULSO!») en sol y el alto («¡Tu misión!») en crema, ambos con la letra en tinta (R2); sin atlas, la noche de siempre.</summary>
+        private static bool KitNotices => PlasticSlab.Available(SlabSize.Button, SlabTone.Sun) && PlasticSlab.Available(SlabSize.Button, SlabTone.Cream) && PlasticPanels;
+
         private void BuildNotices()
         {
             _bannerGroup = _noticeLayer.gameObject.AddComponent<CanvasGroup>();
             _bannerGroup.blocksRaycasts = false;
             _bannerGroup.interactable = false;
             _bannerRim = Rim(_noticeLayer, "BannerRim", Gold, 19f);
-            _bannerFill = Rr(_noticeLayer, "BannerFill", Pill, 18f, slab: true);
-            _bannerTag = MakeLabel(_noticeLayer, "BannerTag", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _bannerTitle = MakeLabel(_noticeLayer, "BannerTitle", 18f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
+            _bannerFill = Rr(_noticeLayer, "BannerFill", Pill, 18f, slab: true, tone: KitNotices ? SlabTone.Sun : SlabTone.Night);
+            _bannerTag = MakeLabel(_noticeLayer, "BannerTag", 16f, UiFonts.Bold, KitNotices ? NeuroStyle.Ink : Gold, TextAnchor.MiddleCenter);
+            _bannerTitle = MakeLabel(_noticeLayer, "BannerTitle", 18f, UiFonts.Bold, KitNotices ? NeuroStyle.Ink : Color.white, TextAnchor.MiddleCenter);
             _bannerTag.horizontalOverflow = _bannerTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
             _tallRim = Rim(_noticeLayer, "TallRim", Gold, 21f);
-            _tallFill = Rr(_noticeLayer, "TallFill", Pill, 20f, slab: true);
-            _tallTitle = MakeLabel(_noticeLayer, "TallTitle", 18f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
+            _tallFill = Rr(_noticeLayer, "TallFill", Pill, 20f, slab: true, tone: KitNotices ? SlabTone.Cream : SlabTone.Night);
+            _tallTitle = MakeLabel(_noticeLayer, "TallTitle", 18f, UiFonts.Bold, KitNotices ? NeuroStyle.InkMuted : Gold, TextAnchor.MiddleCenter);
+            _tallWin = MakeImage(_noticeLayer, "TallWin", DiscSprite.Get());                                  // la ventanilla: las 15 señales se calibraron sobre el cielo oscuro (R4)
+            _tallWin.color = KitNotices ? new Color(20f / 255f, 27f / 255f, 54f / 255f) : Color.clear;
             _tallIcon = MakeImage(_noticeLayer, "TallIcon", null);
-            _tallName = MakeLabel(_noticeLayer, "TallName", 18f, UiFonts.Bold, Color.white, TextAnchor.MiddleLeft);
-            _tallFoot = MakeLabel(_noticeLayer, "TallFoot", 14f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
+            _tallName = MakeLabel(_noticeLayer, "TallName", 18f, UiFonts.Bold, KitNotices ? NeuroStyle.Ink : Color.white, TextAnchor.MiddleLeft);
+            _tallFoot = MakeLabel(_noticeLayer, "TallFoot", 16f, UiFonts.Regular, KitNotices ? NeuroStyle.InkMuted : Soft, TextAnchor.MiddleCenter);
             _tallTitle.horizontalOverflow = _tallName.horizontalOverflow = _tallFoot.horizontalOverflow = HorizontalWrapMode.Overflow;
             _bannerGroup.alpha = 0f;
             _noticeLayer.gameObject.SetActive(false);
@@ -293,43 +290,11 @@ namespace NeuroVida.Games.Piloto
                 f.Root = go.AddComponent<RectTransform>();
                 f.Root.anchorMin = f.Root.anchorMax = f.Root.pivot = new Vector2(0.5f, 0.5f);
                 f.Bg = Rr(f.Root, "Bg", Pill, 15f, slab: true);
-                f.Label = MakeLabel(f.Root, "Label", 15f, UiFonts.Bold, Good, TextAnchor.MiddleCenter);
+                f.Label = MakeLabel(f.Root, "Label", 16f, UiFonts.Bold, Good, TextAnchor.MiddleCenter);
                 f.Label.horizontalOverflow = HorizontalWrapMode.Overflow;
                 go.SetActive(false);
                 _floatViews[i] = f;
             }
-        }
-
-        private void BuildEnd()
-        {
-            _endTag = MakeLabel(_endLayer, "Tag", 14f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endTitle = MakeLabel(_endLayer, "Title", 26f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-            for (int i = 0; i < PilotContract.Sectors; i++)
-            {
-                _endSector[i] = MakeImage(_endLayer, "Sector" + i, DiscSprite.Get());
-                _endSectorName[i] = MakeLabel(_endLayer, "SectorName" + i, 14f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
-                _endSectorName[i].horizontalOverflow = HorizontalWrapMode.Overflow;
-            }
-            for (int i = 0; i < _endLink.Length; i++)
-            {
-                _endLink[i] = MakeImage(_endLayer, "Link" + i, null);
-                _endLink[i].color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.5f);
-            }
-            _endPanelRim = Rim(_endLayer, "PanelRim", PanelEdge, 19f);
-            _endPanel = Rr(_endLayer, "Panel", new Color(20f / 255f, 18f / 255f, 58f / 255f, 0.96f), 17f, slab: true);
-            for (int i = 0; i < _endLabel.Length; i++)
-            {
-                _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 15f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
-                _endValue[i] = MakeLabel(_endLayer, "Value" + i, 16f, UiFonts.Bold, Color.white, TextAnchor.MiddleRight);
-                _endLabel[i].horizontalOverflow = _endValue[i].horizontalOverflow = HorizontalWrapMode.Overflow;
-            }
-            _endNote1 = MakeLabel(_endLayer, "Note1", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote2 = MakeLabel(_endLayer, "Note2", 14f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endTag.text = PilotContract.EndTag;
-            _endNote1.text = PilotContract.EndNote1;
-            _endNote2.text = PilotContract.EndNote2;
-            foreach (var t in new[] { _endTag, _endTitle, _endNote1, _endNote2 }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _endLayer.gameObject.SetActive(false);
         }
 
         /// <summary>El panel de resultado de la clase base (no se muestra: la pantalla final es la de <see cref="BuildEnd"/>; la base pide que exista).</summary>
@@ -462,7 +427,6 @@ namespace NeuroVida.Games.Piloto
             LayoutStrip();
             LayoutTop();
             LayoutNotices();
-            LayoutEnd();
         }
 
         private void LayoutTint()
@@ -560,39 +524,12 @@ namespace NeuroVida.Games.Piloto
             SetRect(_tallTitle.rectTransform, cx, b.Y0 + 16f, w - 16f, 26f);
             float nameW = Mathf.Min(w - 16f - PilotPlan.NoticeShapeDp - 10f, _tallName.preferredWidth / _s + 6f);
             float left = cx - (PilotPlan.NoticeShapeDp + 10f + nameW) * 0.5f, row = b.Y0 + 56f;
+            SetRect(_tallWin.rectTransform, left + PilotPlan.NoticeShapeDp * 0.5f, row, PilotPlan.NoticeShapeDp + 14f, PilotPlan.NoticeShapeDp + 14f);
             SetRect(_tallIcon.rectTransform, left + PilotPlan.NoticeShapeDp * 0.5f, row, PilotPlan.NoticeShapeDp * PilotSignalSprites.SideInDiameters, PilotPlan.NoticeShapeDp * PilotSignalSprites.SideInDiameters);
             SetRect(_tallName.rectTransform, left + PilotPlan.NoticeShapeDp + 10f + nameW * 0.5f, row, nameW, 24f);
             SetRect(_tallFoot.rectTransform, cx, b.Y0 + 98f, w - 16f, 20f);
         }
 
-
-        private void LayoutEnd()
-        {
-            float cx = PilotPlan.Width * 0.5f, y = PilotPlan.HudBottom;
-            SetRect(_endTag.rectTransform, cx, y + 20f, 300f, 22f);
-            SetRect(_endTitle.rectTransform, cx, y + 50f, 330f, 36f);
-            // el mapa del viaje: tres sectores unidos por una línea punteada
-            float my = y + 108f;
-            for (int i = 0; i < PilotContract.Sectors; i++)
-            {
-                float x = 80f + i * 100f;
-                SetRect(_endSector[i].rectTransform, x, my, 36f, 36f);
-                SetRect(_endSectorName[i].rectTransform, x, my + 42f, 96f, 40f);
-            }
-            for (int i = 0; i < _endLink.Length; i++)
-                SetRect(_endLink[i].rectTransform, 130f + i * 100f, my, 36f, 3f);
-            float py = y + 190f, rowH = 29f, ph = rowH * _endLabel.Length + 18f;
-            SetRect(_endPanelRim.rectTransform, cx, py + ph * 0.5f, 318f, ph + 3f);
-            SetRect(_endPanel.rectTransform, cx, py + ph * 0.5f, 314f, ph);
-            for (int i = 0; i < _endLabel.Length; i++)
-            {
-                float ry = py + 9f + rowH * (i + 0.5f);
-                SetRect(_endLabel[i].rectTransform, 40f + 105f, ry, 210f, 24f);
-                SetRect(_endValue[i].rectTransform, 320f - 70f, ry, 140f, 24f);
-            }
-            SetRect(_endNote1.rectTransform, cx, py + ph + 24f, 336f, 22f);
-            SetRect(_endNote2.rectTransform, cx, py + ph + 46f, 336f, 22f);
-        }
 
         /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>
         private const float TutorialControlsDp = PilotPlan.TutorialControls;
