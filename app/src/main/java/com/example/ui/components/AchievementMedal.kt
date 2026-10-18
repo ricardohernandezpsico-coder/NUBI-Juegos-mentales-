@@ -36,7 +36,7 @@ import kotlin.math.sin
 fun AchievementDef.medalColor(): Color = tier?.palette()?.base ?: when (glyph) {
   AchievementGlyph.PLAY, AchievementGlyph.CALENDAR -> Clay.Sun
   AchievementGlyph.FLAME -> Clay.Coral
-  AchievementGlyph.COMPASS, AchievementGlyph.BOLT -> Clay.Sky
+  AchievementGlyph.COMPASS, AchievementGlyph.BOLT, AchievementGlyph.RETURN -> Clay.Sky
   AchievementGlyph.HEXAGON, AchievementGlyph.CHECK -> Clay.Lime
   AchievementGlyph.LUCERO -> Clay.Grape
   AchievementGlyph.SHIELD -> Clay.Sun
@@ -158,6 +158,16 @@ private fun DrawScope.drawGlyph(def: AchievementDef, c: Offset, box: Float, fill
         drawCircle(Clay.Sun, u * 0.2f, c)
         drawCircle(Color.White.copy(alpha = 0.9f), u * 0.07f, p(-0.12f, -0.12f))
       }
+    }
+    // «Volver» (Tarea 124): una flecha en vuelta redonda (sin cruces): un arco casi entero con su cabeza triangular.
+    AchievementGlyph.RETURN -> {
+      val arc = Path().apply { arcTo(Rect(p(-0.42f, -0.42f), p(0.42f, 0.42f)), -50f, 290f, true) }
+      if (outline != null) drawPath(arc, outline, style = Stroke(u * 0.36f, cap = StrokeCap.Round))
+      drawPath(arc, fill, style = Stroke(u * 0.22f, cap = StrokeCap.Round))
+      val head = Path().apply {
+        p(0.12f, -0.62f).let { moveTo(it.x, it.y) }; p(0.5f, -0.32f).let { lineTo(it.x, it.y) }; p(0.06f, -0.2f).let { lineTo(it.x, it.y) }; close()
+      }
+      shape(head)
     }
     AchievementGlyph.BOLT -> shape(Path().apply {
       val pts = listOf(p(0.1f, -0.58f), p(-0.34f, 0.06f), p(-0.02f, 0.06f), p(-0.12f, 0.58f), p(0.34f, -0.1f), p(0.02f, -0.1f))

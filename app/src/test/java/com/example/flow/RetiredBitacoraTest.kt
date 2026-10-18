@@ -120,7 +120,7 @@ class RetiredBitacoraTest {
     val history = listOf(played(old, 1), played(old, 2), played(old, 3), played("calculo", 5))
     val stats = computeAchievementStats(history, mapOf(old to 5000, "calculo" to 120))
     assertEquals(4, stats.totalGames)
-    assertEquals(3, stats.bestStreak)
+    assertEquals("el hueco de hace 4 días se perdona (un día de descanso por semana): cuenta 1, 2, 3 y 5", 4, stats.bestStreak)
     assertEquals(1, stats.distinctGames)
     assertEquals(120, stats.bestGameRating)
   }

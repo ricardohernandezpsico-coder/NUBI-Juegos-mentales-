@@ -28,6 +28,19 @@ Lo que sostiene todo el pulido visual (Fable, `auditoria-fable/pulido-app-17-oct
 - **Háptica del kit.** `KitHaptics` (`rememberKitTap`): un tic `CONTEXT_CLICK` al APOYAR el dedo en una losa o un disco del kit, solo si «Vibración y respuesta háptica» (Ajustes) está encendida (`LocalHapticsEnabled`, que fija `NeuroVidaApp`); al completar la ruta de hoy, `CONFIRM` (Android 11 o más). En Unity, `GameFeel.Tap` suma `Haptic(HapticKind.Light)` con el mismo ajuste (`HapticsOn`).
 - **Luceros detrás.** El fondo es la primera capa de la app; los textos que van directo sobre él, sin tarjeta (Licencias y créditos, la cabecera de los paneles, el nombre del perfil, el título de Ajustes) usan `OnBoardText` (orilla densa del color de la lámina). `BoardLayersTest` lo vigila.
 
+## Racha que perdona, logros por conducta y orden de la biblioteca (Tarea 124, 18-oct)
+
+La lógica que sostiene Avance y Juegos (Fable, `auditoria-fable/spec-avance-juegos.md` §1 y §2; las pantallas las rehace la Tarea 125):
+
+- **`data/Streak`.** UNA sola racha en toda la app (Hoy, perfil, avisos, logros `racha_N`): se calcula desde el historial con `Streak.compute` / `Streak.fromTimestamps`. **Un día de descanso por semana no la corta**: de los días sin jugar, uno por cada 7 se perdona (no suma ni resta); dos seguidos la cortan. Nunca baja con los mismos datos
+  (`StreakTest`, incluida una prueba aleatoria de «nadie baja») y siempre es ≥ la estricta. El ancla es hoy si ya jugó y, si no, ayer: sin jugar hoy la racha sigue viva (si ayer faltó, queda como «Descansaste ayer»). `Streak.longest` alimenta `racha_N`. Textos aprobados: «Un día de descanso por semana no la corta» y
+  «Descansaste el martes: tu racha sigue» (`Streak.REST_LINE`, `Streak.forgivenLine`); salen en Hoy bajo la semana de farolitos (16 sp: la primera por defecto, la segunda cuando la semana ya usó el perdón) y en el perfil. `NeuroVidaRepository.calculateStreak` y `streakInfo` delegan en `Streak`.
+- **`data/Achievements`: tres familias con niveles.** Constancia (primer paso, racha 3/7/14/30/100, partidas 25/100: ordenados por dificultad), Variedad (día completo, dominios, explorador, `explorador_17` con los juegos activos, sin los retirados) y Volver (`vuelta_1/3/10`: días en que se volvió tras 3 o más días sin partida;
+  `Achievements.countReturns`). Los de desempeño (`brillante`, `perfecto`, `reto_10`, ligas, `general_oro`) pasan a `Achievements.legacy`: **ya no se otorgan**, pero lo ganado se conserva (el almacén guarda los ids viejos y `Achievements.byId` los encuentra) y el perfil los muestra en «Medallas anteriores» solo si se ganaron.
+  Una siembra silenciosa (`seeded_v2`, antes de guardar la primera partida) marca como ya ganados los logros nuevos que el historial ya cumple, sin avisos. `AchievementsTest` vigila que nadie pierda una medalla.
+- **`LibraryOrder.sort`** (en `data/Library.kt`): el orden de los juegos de un área en la biblioteca, puro y con pruebas (`LibraryOrderTest`): «En tu ruta de hoy» (en el orden de la ruta, con los ya hechos marcados), «Hace días que no juegas» (de más días sin jugar a menos) y «Nuevo para ti»; los grupos vacíos no salen y los empates se rompen por el orden del catálogo.
+- **Movido:** `HoyWeek` y `WeekLamp` viven en `ui/components/WeekLamps.kt` (los comparte Hoy con Avance) y `measureText` en `data/StarMeasures.kt`; `Week.lampsFor` arma los farolitos desde el historial.
+
 ## Sesión diaria
 
 - Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`), elegidos por avance real y con variedad por `data/DailyPath` (reglas en su cabecera; nunca un juego sin tutorial que la persona no jugó). El día del Primer vuelo el camino queda cumplido con el vuelo (`completeTodayWithFlight`). Al terminar, el resumen (`data/SessionSummary` + `SessionSummaryScreen`): áreas trabajadas, puntaje de cada juego, racha y «Hoy avanzó de X a Y» por área.

@@ -1,6 +1,7 @@
 package com.example.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** La semana de farolitos de Hoy: lunes a domingo, los días con partida encendidos y el día de hoy marcado. */
@@ -49,5 +50,17 @@ class WeekTest {
     assertEquals("Tu semana: 3 días con partida", Week.lampsSpoken(3))
     assertEquals("Tu semana: 1 día con partida", Week.lampsSpoken(1))
     assertEquals("Tu semana: ningún día con partida todavía", Week.lampsSpoken(0))
+  }
+
+  @Test
+  fun lampsFor_enciende_el_dia_de_hoy_y_los_de_las_partidas_de_la_semana() {
+    val now = System.currentTimeMillis()
+    val empty = Week.lampsFor(emptyList(), now)
+    assertEquals(7, empty.played.size)
+    assertEquals(0, empty.daysPlayed)
+    assertTrue("hoy es un día de la semana (0 a 6)", empty.todayIndex in 0..6)
+    val today = Week.lampsFor(listOf(now), now)
+    assertEquals(1, today.daysPlayed)
+    assertTrue("la partida de hoy enciende el farolito de hoy", today.played[today.todayIndex])
   }
 }

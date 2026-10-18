@@ -21,6 +21,15 @@ object Week {
     return Lamps(List(7) { (monday + it) in days }, offset)
   }
 
+  /**
+   * Los farolitos de la semana de [now] a partir de las marcas de tiempo de las partidas (Tarea 124: antes `weekLamps` de `HomeScreen`): lunes a domingo, los días con partida encendidos. Los días son locales ([Streak.dayOf]).
+   */
+  fun lampsFor(timestamps: List<Long>, now: Long): Lamps {
+    val cal = java.util.Calendar.getInstance().apply { timeInMillis = now }
+    val mondayOffset = (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7   // lunes = 0
+    return lamps(timestamps, now, Streak::dayOf, mondayOffset)
+  }
+
   /** «3 de 4 días de tu meta»; pasada la meta, «6 días esta semana: meta cumplida» (no «6 de 4»); sin meta, «3 días esta semana». */
   fun caption(daysPlayed: Int, goal: Int): String = when {
     goal > 0 && daysPlayed > goal -> "$daysPlayed días esta semana: meta cumplida"

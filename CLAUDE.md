@@ -42,7 +42,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
 - 3 pestañas (Hoy, Juegos, Avance; se pasan deslizando), perfil y opciones como paneles, inicio «Primer vuelo con Nubi» y sesión diaria (SOLO los 3 juegos del camino): detalle en [`docs/arquitectura-app.md`](docs/arquitectura-app.md).
 - Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DailyPath`, `FirstFlight`, `DdaRating`, `Mail`, `LeagueEvents`, `NumberLine`, `Aterrizaje`, `RetoChoice`,
-  `Planet`, `SessionSummary`, `StarMeasures`, `Library`, `Skill`; y
+  `Planet`, `SessionSummary`, `StarMeasures`, `Library` (con `LibraryOrder`), `Skill` y `Streak` (la racha que perdona: un día de descanso por semana no la corta, una sola en toda la app); y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
 - Persistencia: **Room v15** (`data/local/`, `exportSchema`, esquemas en `app/schemas/`; resultados, progreso por
   juego con `ddaRating`, sesión diaria, perfil —uno solo: desde el 8-oct no se crean ni cambian perfiles; la tabla `user_profile` y su DAO se quedan—, maestría, desafíos). Datos que solo se agregan o salen del
@@ -150,7 +150,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 885 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 927 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).

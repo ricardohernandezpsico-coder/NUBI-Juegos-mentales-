@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.data.AchievementDef
 import com.example.data.AchievementStats
 import com.example.data.Achievements
+import com.example.data.Streak
 import com.example.model.RankTier
 import com.example.ui.components.AchievementMedal
 import com.example.ui.components.medalColor
@@ -102,6 +103,8 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
   val userSettings by viewModel.userSettings.collectAsState()
   val streak by viewModel.currentStreak.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
+  // Lo que dice la racha: que un día de descanso por semana no la corta, o cuál fue el que descansó («Descansaste el martes: tu racha sigue.»)
+  val streakNote = remember(history) { Streak.forgivenLine(Streak.fromTimestamps(history.map { it.timestamp }, System.currentTimeMillis())) ?: Streak.REST_LINE }
   val ranks by viewModel.gameRanks.collectAsState()
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val unlocks by viewModel.achievementUnlocks.collectAsState()
@@ -153,49 +156,27 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
         StatText("Mejor", best?.toString() ?: "–", Clay.Lime, Modifier.weight(1f))
       }
     }
+    item {
+      com.example.ui.components.OnBoardText(streakNote, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().testTag("streak_note"))
+    }
 
     // Logros: medallas en filas de 4; las bloqueadas muestran cuánto falta.
     item {
       Column {
-        SpaceSectionTitle("Logros", hint = "${unlocks.keys.count { Achievements.byId(it) != null }} de ${Achievements.all.size} conseguidos")
+        SpaceSectionTitle("Logros", hint = "${Achievements.all.count { it.id in unlocks }} de ${Achievements.all.size} conseguidos")
         Spacer(Modifier.height(14.dp))
         // Cuántas medallas por fila: las que dejen a la palabra más larga («Contrarreloj», ≈ 90 dp en negrita de 16 sp) entera; con letra grande, menos columnas (nunca se parte una palabra: ni «Contrarrelo / j» ni «Explorad / or»).
-        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val needed = 90.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale
-        val cols = (4 downTo 1).firstOrNull { maxWidth / it - 8.dp >= needed } ?: 1
-        Column {
-        Achievements.all.chunked(cols).forEach { row ->
-          Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(bottom = 4.dp)) {
-            row.forEach { def ->
-              val got = def.id in unlocks
-              // Cada medalla es una casilla de plasticina tocable (losa chica crema): tocarla abre su detalle.
-              com.example.ui.theme.ClayCard(
-                modifier = Modifier.weight(1f).fillMaxHeight().padding(horizontal = 2.dp).testTag("achievement_${def.id}"),
-                size = SlabSize.SMALL, onClick = { achievementDetail = def }, contentPadding = 0.dp
-              ) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                  AchievementMedal(def = def, unlocked = got, size = 56.dp)
-                  Text(
-                    text = def.title,
-                    color = if (got) Clay.Ink else Clay.InkMuted,
-                    fontSize = 16.sp,
-                    fontWeight = if (got) FontWeight.Bold else FontWeight.Normal,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    lineHeight = 20.sp
-                  )
-                  if (!got) {
-                    val (cur, goal) = def.progress(achStats)
-                    Text("$cur/$goal", color = Clay.Ink, fontSize = 16.sp)
-                  }
-                }
-              }
-            }
-            repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
-          }
-        }
-        }
-        }
+        AchievementGrid(Achievements.all, unlocks.keys, achStats) { achievementDetail = it }
+      }
+    }
+
+    // Los logros de desempeño (puntaje, Reto y ligas) ya no se otorgan; los que ya ganó se conservan aquí (Tarea 124). Quien no ganó ninguno no ve esta sección.
+    val oldMedals = Achievements.legacyEarned(unlocks.keys)
+    if (oldMedals.isNotEmpty()) item {
+      Column {
+        SpaceSectionTitle("Medallas anteriores", hint = "Las que ganaste antes de que cambiaran los logros")
+        Spacer(Modifier.height(14.dp))
+        AchievementGrid(oldMedals, unlocks.keys, achStats) { achievementDetail = it }
       }
     }
     // Nivel de estudios: ya no se pregunta en el inicio; acá queda como dato opcional (solo ajusta el punto de partida
@@ -283,4 +264,45 @@ private fun StatText(label: String, value: String, color: Color, modifier: Modif
     }
     com.example.ui.components.OnBoardText(label, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 15.sp)
   }
+}
+
+/** Una rejilla de medallas (casillas de plasticina tocables): las bloqueadas muestran cuánto falta. Cuántas por fila lo decide la palabra más larga: nunca se parte una. */
+@Composable
+private fun AchievementGrid(defs: List<AchievementDef>, unlocked: Set<String>, achStats: AchievementStats, onTap: (AchievementDef) -> Unit) {
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val needed = 90.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale
+        val cols = (4 downTo 1).firstOrNull { maxWidth / it - 8.dp >= needed } ?: 1
+        Column {
+        defs.chunked(cols).forEach { row ->
+          Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(bottom = 4.dp)) {
+            row.forEach { def ->
+              val got = def.id in unlocked
+              // Cada medalla es una casilla de plasticina tocable (losa chica crema): tocarla abre su detalle.
+              com.example.ui.theme.ClayCard(
+                modifier = Modifier.weight(1f).fillMaxHeight().padding(horizontal = 2.dp).testTag("achievement_${def.id}"),
+                size = SlabSize.SMALL, onClick = { onTap(def) }, contentPadding = 0.dp
+              ) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                  AchievementMedal(def = def, unlocked = got, size = 56.dp)
+                  Text(
+                    text = def.title,
+                    color = if (got) Clay.Ink else Clay.InkMuted,
+                    fontSize = 16.sp,
+                    fontWeight = if (got) FontWeight.Bold else FontWeight.Normal,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    lineHeight = 20.sp
+                  )
+                  if (!got) {
+                    val (cur, goal) = def.progress(achStats)
+                    Text("$cur/$goal", color = Clay.Ink, fontSize = 16.sp)
+                  }
+                }
+              }
+            }
+            repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
+          }
+        }
+        }
+        }
 }

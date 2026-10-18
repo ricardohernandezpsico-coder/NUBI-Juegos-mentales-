@@ -131,9 +131,9 @@ class RetiredGameTest {
     seedOldData()
     val history = runBlocking { db().gameResultDao().getAllResultsSync().map { it.toDomain() } }
     val stats = computeAchievementStats(history, mapOf(old to 5000, "calculo" to 120))
-    // 4 partidas y 4 días seguidos? ayer, anteayer, hace 3 días (los de Cambio de Chip) y hace 5: la racha larga son los 3 de Cambio de Chip
+    // 4 partidas en 4 días: ayer, anteayer, hace 3 días (los de Cambio de Chip) y hace 5; el hueco de hace 4 días se perdona (racha que perdona, Tarea 124): la racha larga son los 4
     assertEquals(4, stats.totalGames)
-    assertEquals(3, stats.bestStreak)
+    assertEquals("el hueco de hace 4 días se perdona (un día de descanso por semana): cuenta 1, 2, 3 y 5", 4, stats.bestStreak)
     // «Explorador» (9 juegos distintos) y «Mente completa» solo cuentan juegos del registro: Cambio de Chip no suma
     assertEquals(1, stats.distinctGames)
     // la liga más alta tampoco sale de un juego retirado
@@ -188,7 +188,7 @@ class RetiredGameTest {
     val history = listOf(played("comparacion", 1), played("comparacion", 2), played("comparacion", 3), played("calculo", 5))
     val stats = computeAchievementStats(history, mapOf("comparacion" to 5000, "calculo" to 120))
     assertEquals(4, stats.totalGames)
-    assertEquals(3, stats.bestStreak)
+    assertEquals("el hueco de hace 4 días se perdona (un día de descanso por semana): cuenta 1, 2, 3 y 5", 4, stats.bestStreak)
     assertEquals(1, stats.distinctGames)
     assertEquals(120, stats.bestGameRating)
   }
@@ -214,7 +214,7 @@ class RetiredGameTest {
     val history = listOf(played("series", 1), played("series", 2), played("series", 3), played("calculo", 5))
     val stats = computeAchievementStats(history, mapOf("series" to 5000, "calculo" to 120))
     assertEquals(4, stats.totalGames)
-    assertEquals(3, stats.bestStreak)
+    assertEquals("el hueco de hace 4 días se perdona (un día de descanso por semana): cuenta 1, 2, 3 y 5", 4, stats.bestStreak)
     assertEquals(1, stats.distinctGames)
     assertEquals(120, stats.bestGameRating)
   }
@@ -239,7 +239,7 @@ class RetiredGameTest {
     val history = listOf(played("rutatesoro", 1), played("rutatesoro", 2), played("rutatesoro", 3), played("calculo", 5))
     val stats = computeAchievementStats(history, mapOf("rutatesoro" to 5000, "calculo" to 120))
     assertEquals(4, stats.totalGames)
-    assertEquals(3, stats.bestStreak)
+    assertEquals("el hueco de hace 4 días se perdona (un día de descanso por semana): cuenta 1, 2, 3 y 5", 4, stats.bestStreak)
     assertEquals(1, stats.distinctGames)
     assertEquals(120, stats.bestGameRating)
   }
@@ -265,7 +265,7 @@ class RetiredGameTest {
     val history = listOf(played("trafico", 1), played("trafico", 2), played("trafico", 3), played("calculo", 5))
     val stats = computeAchievementStats(history, mapOf("trafico" to 5000, "calculo" to 120))
     assertEquals(4, stats.totalGames)
-    assertEquals(3, stats.bestStreak)
+    assertEquals("el hueco de hace 4 días se perdona (un día de descanso por semana): cuenta 1, 2, 3 y 5", 4, stats.bestStreak)
     assertEquals(1, stats.distinctGames)
     assertEquals(120, stats.bestGameRating)
   }

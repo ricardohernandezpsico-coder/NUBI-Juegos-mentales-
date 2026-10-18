@@ -531,14 +531,15 @@ class NeuroVidaRepository(
    * próxima partida dispararía una lluvia de logros viejos. Debe correr antes de guardar una partida nueva.
    */
   private suspend fun seedAchievementsIfNeeded() {
-    if (achievementPrefs.getBoolean("seeded", false)) return
+    // `seeded` = la siembra de la primera versión; `seeded_v2` (Tarea 124: familias, `explorador_17`, `vuelta_*`) hace lo mismo para lo nuevo, EN SILENCIO: lo que ya se cumple se guarda sin celebrar (no llueven medallas viejas tras actualizar).
+    if (achievementPrefs.getBoolean("seeded", false) && achievementPrefs.getBoolean("seeded_v2", false)) return
     val stats = computeAchievementStats(
       gameResultDao.getAllResultsSync().map { it.toDomain() },
       gameProgressDao.getAllProgressSync().associate { it.gameId to it.eloRating }
     )
     val now = System.currentTimeMillis()
     saveUnlocks(Achievements.unlocked(stats).associateWith { now } + _achievementUnlocks.value)
-    achievementPrefs.edit().putBoolean("seeded", true).apply()
+    achievementPrefs.edit().putBoolean("seeded", true).putBoolean("seeded_v2", true).apply()
   }
 
   /** Registra los logros nuevos con estas cifras y los devuelve (en orden de catálogo). */
@@ -1005,39 +1006,14 @@ class NeuroVidaRepository(
     domainMasteryDao.insertOrUpdate(DomainMasteryEntity(domain = domain.name, xp = current + amount))
   }
 
-  fun calculateStreak(history: List<GamePlayResult>): Int {
-    if (history.isEmpty()) return 0
-    val daysWithSessions = history.map { formatDate(it.timestamp) }.toSet()
-    val cal = Calendar.getInstance()
+  /**
+   * La racha de ahora (Tarea 124): la que PERDONA, derivada del historial (`Streak.compute`): a lo más un día de descanso por cada 7 corridos, siempre ≥ la estricta de antes. Sin estado nuevo.
+   */
+  fun calculateStreak(history: List<GamePlayResult>): Int = streakInfo(history).current
 
-    var streak = 0
-    val todayKey = synchronized(dateFormat) { dateFormat.format(cal.time) }
-    val playedToday = daysWithSessions.contains(todayKey)
-
-    if (!playedToday) {
-      cal.add(Calendar.DAY_OF_YEAR, -1)
-      val yesterdayKey = synchronized(dateFormat) { dateFormat.format(cal.time) }
-      if (!daysWithSessions.contains(yesterdayKey)) {
-        return 0
-      }
-      streak = 1
-      cal.add(Calendar.DAY_OF_YEAR, -1)
-    } else {
-      streak = 1
-      cal.add(Calendar.DAY_OF_YEAR, -1)
-    }
-
-    while (true) {
-      val prevKey = synchronized(dateFormat) { dateFormat.format(cal.time) }
-      if (daysWithSessions.contains(prevKey)) {
-        streak++
-        cal.add(Calendar.DAY_OF_YEAR, -1)
-      } else {
-        break
-      }
-    }
-    return streak
-  }
+  /** La racha con su día perdonado (para «Descansaste el martes: tu racha sigue»). */
+  fun streakInfo(history: List<GamePlayResult>, now: Long = System.currentTimeMillis()): Streak.StreakInfo =
+    Streak.fromTimestamps(history.map { it.timestamp }, now)
 
   suspend fun resetData() = withContext(Dispatchers.IO) {
     gameResultDao.deleteAll()

@@ -94,6 +94,7 @@ import com.example.data.MeasurePoint
 import com.example.data.Skill
 import com.example.data.StarMeasures
 import com.example.data.IslaLugar
+import com.example.data.Streak
 import com.example.data.Week
 import com.example.model.DomainType
 import com.example.model.GamePlayResult
@@ -144,7 +145,6 @@ fun HomeScreen(
   onNavigateToGames: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val streak by viewModel.currentStreak.collectAsState()
   val dailySession by viewModel.dailySession.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
   val ranks by viewModel.gameRanks.collectAsState()
@@ -191,13 +191,16 @@ fun HomeScreen(
     }.toMap()
   }
   val completed = dailySession.completedCount
+  // La racha que perdona (Tarea 124): con el día de descanso, si lo hubo esta semana.
+  val streakInfo = remember(history, clock) { Streak.fromTimestamps(history.map { it.timestamp }, clock) }
   val ui = HomeUi(
     name = settings.name,
     now = clock,
     tier = tier,
-    streak = streak,
+    streak = streakInfo.current,
+    streakNote = Streak.forgivenLine(streakInfo) ?: Streak.REST_LINE,
     weeklyGoal = settings.weeklyGoal,
-    lamps = weekLamps(history.map { it.timestamp }, clock),
+    lamps = Week.lampsFor(history.map { it.timestamp }, clock),
     stops = homeStops(dailySession.gameIds, completed, lang),
     pausedTitle = pausedGameId?.let { GameRegistry.getById(it) }?.let { getGameTitle(it.id, lang, it.title) },
     flightDay = dailySession.gameIds.isNotEmpty() && completed >= dailySession.gameIds.size && dailySession.scores.isEmpty(),
@@ -244,6 +247,8 @@ internal data class HomeUi(
   val now: Long,
   val tier: RankTier,
   val streak: Int,
+  /** Debajo de la racha: «Descansaste el martes: tu racha sigue.» si hubo un día de descanso perdonado en los últimos 7 días; si no, «Un día de descanso por semana no la corta.» (null: sin línea). */
+  val streakNote: String? = null,
   val weeklyGoal: Int,
   val lamps: Week.Lamps,
   val stops: List<HomeStop>,
@@ -273,13 +278,6 @@ internal fun homeStops(gameIds: List<String>, completed: Int, lang: com.example.
       )
     }
   }
-
-/** Lunes a domingo de la semana de [now]: los días con al menos una partida se encienden. */
-internal fun weekLamps(timestamps: List<Long>, now: Long): Week.Lamps {
-  val cal = java.util.Calendar.getInstance().apply { timeInMillis = now }
-  val mondayOffset = (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7   // lunes = 0
-  return Week.lamps(timestamps, now, ::dayIndex, mondayOffset)
-}
 
 /** «Buenos días», «Buenas tardes» o «Buenas noches» según la hora (sin culpa: no habla de lo que falta). */
 internal fun greetingWord(now: Long): String {
@@ -378,7 +376,7 @@ internal fun HomeContent(
               "${dateText(ui.now)} · ${Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal)}",
               color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
             )
-            HoyWeek(ui)
+            com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote)
           }
         },
         island = {
@@ -457,43 +455,6 @@ private fun HoyColumn(viewportHeight: Dp, top: @Composable () -> Unit, island: @
 
 /** Alto mínimo de la isla en Hoy: debajo de esto se ve chica, y la pantalla se desliza antes de achicarla más. A 393 × 873 dp con letra normal la isla pasa de 400 dp. */
 internal val ISLAND_MIN_HEIGHT = 220.dp
-
-/** Los siete farolitos de la semana (los días jugados, encendidos; hoy con un aro lima) y tu racha a su lado, a la izquierda, donde el fondo no tiene luceros. La meta en palabras va en la línea de la fecha. */
-@Composable
-private fun HoyWeek(ui: HomeUi) {
-  Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 4.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-    val spoken = Week.lampsSpoken(ui.lamps.daysPlayed)
-    Row(Modifier.testTag("home_week").semantics { contentDescription = spoken }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-      ui.lamps.played.forEachIndexed { i, on -> WeekLamp(on = on, today = i == ui.lamps.todayIndex) }
-    }
-    Spacer(Modifier.width(12.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(Icons.Default.Whatshot, contentDescription = null, tint = Clay.Sun, modifier = Modifier.size(18.dp))
-      OnBoardText(
-        if (ui.streak == 1) "1 día" else "${ui.streak} días", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold,
-        modifier = Modifier.testTag("streak_pill")
-      )
-    }
-  }
-}
-
-/** Un farolito: encendido = disco sol con resplandor; apagado = anillo tenue (la forma cambia, no solo el color); hoy lleva además un aro lima. */
-@Composable
-private fun WeekLamp(on: Boolean, today: Boolean) {
-  Canvas(Modifier.size(22.dp)) {
-    val c = center
-    val r = size.minDimension * 0.34f
-    if (on) {
-      drawCircle(Brush.radialGradient(listOf(Clay.Sun.copy(alpha = 0.55f), Color.Transparent), c, size.minDimension / 2f), size.minDimension / 2f, c)
-      drawCircle(Clay.Sun, r, c)
-      drawCircle(Color.White.copy(alpha = 0.7f), r * 0.32f, Offset(c.x - r * 0.3f, c.y - r * 0.3f))
-    } else {
-      drawCircle(HoyCream.copy(alpha = 0.16f), r, c)
-      drawCircle(HoyCream.copy(alpha = 0.5f), r, c, style = Stroke(1.5.dp.toPx()))
-    }
-    if (today) drawCircle(Clay.Lime, size.minDimension / 2f - 1.5.dp.toPx(), c, style = Stroke(2.5.dp.toPx()))
-  }
-}
 
 /** Lo que dice la derecha de «Tu ruta de hoy»: cuántos juegos van y cuánto falta («0 de 3 · unos 6 minutos»). */
 internal fun routeMeta(ui: HomeUi): String {

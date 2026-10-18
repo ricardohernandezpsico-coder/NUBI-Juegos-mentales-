@@ -196,3 +196,7 @@ object StarMeasures {
     MeasurePoint(ts, parts[1], v, rating, timed)
   }
 }
+
+/** La marca con su unidad: "84 ms", "a 18% de casa", "96° por segundo" (Tarea 124: antes en `GamesLibraryScreen`; la usan Avance y Juegos). */
+fun measureText(def: MeasureDef, v: Float): String =
+  (if (def.compactPattern.startsWith("a ")) "a " else "") + "${def.format(v)} ${def.unit}".trim()

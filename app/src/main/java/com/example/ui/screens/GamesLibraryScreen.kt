@@ -81,6 +81,7 @@ import com.example.ui.components.areaDescription
 import com.example.ui.components.areaPlanetRes
 import com.example.data.PlayMode
 import com.example.data.Skill
+import com.example.data.measureText
 import com.example.data.StarMeasures
 import com.example.model.AgeBand
 import com.example.model.DomainType
@@ -627,10 +628,6 @@ private fun SelectedMark(on: Boolean) {
   Spacer(Modifier.width(6.dp))
   Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) { if (on) KitGlyph(Glyph.CHECK, size = 22.dp) }
 }
-
-/** La marca con su unidad: "84 ms", "a 18% de casa", "96° por segundo". */
-internal fun measureText(def: com.example.data.MeasureDef, v: Float): String =
-  (if (def.compactPattern.startsWith("a ")) "a " else "") + "${def.format(v)} ${def.unit}".trim()
 
 /** El área que Nubi sugiere hoy: su clave, su nombre visible y el motivo ("Hace 4 días que no lo juegas"). */
 internal data class AreaSuggestionUi(val key: String, val name: String, val reason: String)
