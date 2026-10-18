@@ -77,8 +77,12 @@ namespace NeuroVida.Bridge.EditorTools
             public static Wait Until(Func<bool> cond, double timeout) => new Wait { Cond = cond, Timeout = timeout };
         }
 
+        /// <summary>Modo «juice» (Tarea 130, NUBI_SHOTS_JUICE=1): en vez de la partida entera, cada juego (Carga, Tinta, Punta, Rastro) saca «antes · durante · después» de su efecto nuevo, con el juego REAL (la jugada se hace por reflexión).</summary>
+        private static bool _juice;
+
         public static void Run()
         {
+            _juice = Environment.GetEnvironmentVariable("NUBI_SHOTS_JUICE") == "1";
             var raw = (Environment.GetEnvironmentVariable("NUBI_SHOTS_GAMES") ?? "Correo").Trim();
             _root = Environment.GetEnvironmentVariable("NUBI_SHOTS_DIR");
             if (string.IsNullOrEmpty(_root)) _root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "test-results", "capturas"));
@@ -229,16 +233,17 @@ namespace NeuroVida.Bridge.EditorTools
                 double t0 = Now;
                 Debug.Log("[Capturas] ---- " + id);
 
-                if (id == "correo") yield return CorreoScript();
+                if (_juice) yield return JuiceShots(id);
+                else if (id == "correo") yield return CorreoScript();
                 else if (id == "satelites") yield return SatelitesScript();
                 else if (id == "piloto") yield return PilotoScript();
                 else if (id == "radar") { yield return RadarScript(); yield return RadarScript16(); }
                 else if (id == "acoplamiento") { yield return AcoplamientoScript(); yield return AcoplamientoScript16(); }
                 else if (id == "aterrizaje") { yield return AterrizajeScript(); yield return AterrizajeScript16(); }
                 else yield return PlayShots(id);
-                if (id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
-                if (TutorialGames.Contains(id)) yield return TutorialShots(id);
-                if (id == "acoplamiento" || id == "radar") yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
+                if (!_juice && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
+                if (!_juice && TutorialGames.Contains(id)) yield return TutorialShots(id);
+                if (!_juice && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
                 yield return Stopped();
 
                 int shots = _count;
@@ -311,6 +316,153 @@ namespace NeuroVida.Bridge.EditorTools
         // ------------------------------------------------------------------ por tiempo
 
         /// <summary>La partida real: primera pantalla jugable, 8, 20 y 40 s de juego, la pausa, y el momento del objeto, la cortina «¡Listo!» y la escena final si la partida llega a su fin.</summary>
+        // ------------------------------------------------------------------ juice (Tarea 130): antes · durante · después
+
+        private const System.Reflection.BindingFlags AnyInstance = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance;
+
+        private static object Member(object o, string name)
+        {
+            if (o == null) return null;
+            for (var t = o.GetType(); t != null; t = t.BaseType)
+            {
+                var f = t.GetField(name, AnyInstance | System.Reflection.BindingFlags.DeclaredOnly);
+                if (f != null) return f.GetValue(o);
+                var p = t.GetProperty(name, AnyInstance | System.Reflection.BindingFlags.DeclaredOnly);
+                if (p != null) return p.GetValue(o);
+            }
+            return null;
+        }
+
+        private static object Call(object o, string name, params object[] args)
+        {
+            for (var t = o.GetType(); t != null; t = t.BaseType)
+                foreach (var m in t.GetMethods(AnyInstance | System.Reflection.BindingFlags.DeclaredOnly))
+                    if (m.Name == name && m.GetParameters().Length == args.Length) return m.Invoke(o, args);
+            GameNotes.Add("no encontré el método " + name);
+            return null;
+        }
+
+        private static MonoBehaviour FindController(string typeName)
+        {
+            foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>()) if (mb != null && mb.GetType().Name == typeName) return mb;
+            return null;
+        }
+
+        /// <summary>El efecto nuevo de cada juego, con el juego real: la jugada se hace por reflexión y se saca una toma antes, durante (~0,12 s) y después.</summary>
+        private static IEnumerator JuiceShots(string id)
+        {
+            string typeName = id == "calculo" ? "CalculoGameController" : id == "stroop" ? "StroopGameController" : id == "anagramas" ? "PuntaGameController" : "RastroGameController";
+            Configure(id, tutorial: false, reduceMotion: false);
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
+            yield return EnterPlay();
+            MonoBehaviour c = null;
+            yield return Wait.Until(() => (c = FindController(typeName)) != null, 40);
+            if (c == null) { GameNotes.Add("no apareció " + typeName); yield return ExitPlay(); yield break; }
+            yield return WaitPlayable();
+
+            if (id == "calculo")
+            {
+                yield return Wait.Until(() => Convert.ToString(Member(c, "_phase")) == "Play", 20);
+                yield return Wait.For(2.0);
+                // la fusión para la lámina: la suma más alta que todavía no llega a la carga Y mejora la mejor celda (así el aro sube de «antes» a «después»; la solución, de un solo paso en el nivel 1, lo llenaría de una vez).
+                // Si esta carga no tiene una así, se resuelve (para que venga otra) y se vuelve a mirar, hasta 8 veces.
+                int ida = -1, idb = -1, target = 0;
+                for (int attempt = 0; attempt < 8 && ida < 0; attempt++)
+                {
+                    var puzzle = Member(c, "_puzzle");
+                    target = (int)Member(puzzle, "Target");
+                    var cells = (System.Collections.IList)Member(Member(c, "_board"), "Cells");
+                    int bestCell = 0;
+                    for (int i = 0; i < cells.Count; i++) { int v = (int)Member(cells[i], "Value"); if (v <= target && v > bestCell) bestCell = v; }
+                    int bestSum = bestCell;
+                    for (int i = 0; i < cells.Count; i++)
+                        for (int j = i + 1; j < cells.Count; j++)
+                        {
+                            int sum = (int)Member(cells[i], "Value") + (int)Member(cells[j], "Value");
+                            if (sum < target && sum > bestSum) { bestSum = sum; ida = (int)Member(cells[i], "Id"); idb = (int)Member(cells[j], "Id"); }
+                        }
+                    if (ida >= 0) break;
+                    // sin mejora posible: resolver esta carga y esperar la siguiente
+                    var sol = (System.Collections.IList)Member(puzzle, "Solution");
+                    var st = sol[0];
+                    int sa = (int)Member(st, "A"), sb = (int)Member(st, "B");
+                    int sia = -1, sib = -1;
+                    foreach (var cell in cells)
+                    {
+                        int v = (int)Member(cell, "Value"), cid = (int)Member(cell, "Id");
+                        if (sia < 0 && v == sa) sia = cid; else if (sib < 0 && v == sb) sib = cid;
+                    }
+                    if (sia < 0 || sib < 0) break;
+                    Call(c, "Merge", sia, Member(st, "Op"), sib);
+                    yield return Wait.Until(() => !ReferenceEquals(Member(c, "_puzzle"), puzzle) && Convert.ToString(Member(c, "_phase")) == "Play", 20);
+                    yield return Wait.For(2.0);
+                }
+                Shot("1-antes");
+                if (ida < 0 || idb < 0) { GameNotes.Add("no encontré una fusión que mejore el aro sin resolver la carga"); }
+                else
+                {
+                    Call(c, "Merge", ida, NeuroVida.Games.Calculo.CargaOp.Add, idb);
+                    yield return Wait.For(0.12);
+                    Shot("2-durante");
+                    yield return Wait.For(2.0);
+                    Shot("3-despues");
+                }
+            }
+            else if (id == "stroop")
+            {
+                yield return Wait.Until(() => Member(c, "_acceptInput") is bool ok && ok, 20);
+                yield return Wait.For(0.5);
+                Shot("1-antes");
+                Call(c, "OnColorTapped", (int)Member(Member(c, "_trial"), "CorrectIndex"));
+                yield return Wait.For(0.14);
+                Shot("2-durante");
+                yield return Wait.Until(() => Member(c, "_acceptInput") is bool ok && ok, 10);
+                yield return Wait.For(0.6);
+                int correct = (int)Member(Member(c, "_trial"), "CorrectIndex");
+                Call(c, "OnColorTapped", (correct + 1) % 4);
+                yield return Wait.For(0.5);
+                Shot("3-despues");
+            }
+            else if (id == "anagramas")
+            {
+                yield return Wait.Until(() => Convert.ToString(Member(c, "_phase")) == "Think", 30);
+                yield return Wait.For(2.8);
+                Shot("1-antes");
+                Call(c, "ShowTiles", true);
+                yield return Wait.For(0.14);
+                Shot("2-durante");
+                yield return Wait.For(0.9);
+                Shot("3-despues");
+            }
+            else
+            {
+                yield return Wait.Until(() => Convert.ToString(Member(c, "_phase")) == "Input", 90);
+                yield return Wait.For(0.5);
+                Shot("1-antes");
+                var fixedList = (System.Collections.IList)Member(c, "_fixed");
+                var linkType = fixedList.GetType().GetGenericArguments()[0];
+                object Link(int a, int b, float born)
+                {
+                    object l = Activator.CreateInstance(linkType);
+                    linkType.GetField("A").SetValue(l, a);
+                    linkType.GetField("B").SetValue(l, b);
+                    linkType.GetField("Born").SetValue(l, born);
+                    return l;
+                }
+                float now = NeuroVida.Games.Shared.GameClock.Time;
+                fixedList.Add(Link(0, 1, now - 1f));
+                fixedList.Add(Link(1, 2, now - 1f));
+                fixedList.Add(Link(2, 3, NeuroVida.Games.Shared.GameClock.Time));
+                // el juego arma la malla del hilo en su siguiente cuadro: la toma «durante» sale en cuanto hay tramos (el tercero, recién nacido, a medio tender)
+                var fixedMesh = Member(c, "_fixedMesh");
+                yield return Wait.Until(() => (int)Member(fixedMesh, "Count") > 0, 5);
+                Shot("2-durante");
+                yield return Wait.For(0.8);
+                Shot("3-despues");
+            }
+            yield return ExitPlay();
+        }
+
         private static IEnumerator PlayShots(string id)
         {
             Configure(id, tutorial: false, reduceMotion: false);
@@ -748,6 +900,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Dibuja el lienzo (en espacio del mundo, 1080x2400, centrado en el origen) con una cámara ortográfica y lo guarda como PNG numerado.</summary>
         private static void Shot(string name)
         {
+            if (_juice) Canvas.ForceUpdateCanvases();
             var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32);
             var camGo = new GameObject("ShotCam");
             var cam = camGo.AddComponent<Camera>();

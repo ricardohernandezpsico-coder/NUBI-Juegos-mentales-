@@ -145,6 +145,10 @@ namespace NeuroVida.Games.Calculo
         private Image _timerFill;
         private Image _reactorGlow, _reactorShadow, _reactorRim, _reactorBody, _core, _coreHi;
         private readonly Image[] _lights = new Image[12];
+        // Tarea 130 (juice): el aro de 12 luces se llena según la mejor celda que no se pasa; cada luz cambia en cascada (0,15 s por luz: NubiMotion, estado)
+        private const float LightStepSeconds = 0.15f;
+        private readonly float[] _lightFrom = new float[12], _lightTo = new float[12], _lightAt = new float[12];
+        private int _lit = -1;
         private Text _reactorLabel, _targetText, _allText, _sayText, _guideText;
         private readonly CellView[] _views = new CellView[MaxCells];
         private readonly OpView[] _opViews = new OpView[4];
@@ -447,6 +451,36 @@ namespace NeuroVida.Games.Calculo
                 if (!v.Shown || v.Flying) continue;
                 if (_board.IndexOfId(v.Id) < 0) { v.Shown = false; v.Root.gameObject.SetActive(false); }
             }
+            UpdateLit();
+        }
+
+        /// <summary>Recalcula cuántas luces del reactor van encendidas (<see cref="CargaRules.LitLights"/>) y programa la cascada: hacia arriba al llenar, hacia abajo al vaciar (un «Deshacer» vuelve atrás).</summary>
+        private void UpdateLit()
+        {
+            if (_board == null || _puzzle == null) return;
+            var values = new List<int>(_board.Cells.Count);
+            for (int i = 0; i < _board.Cells.Count; i++) values.Add(_board.Cells[i].Value);
+            int lit = CargaRules.LitLights(values, _puzzle.Target);
+            if (lit == _lit) return;
+            float now = GameClock.Time;
+            int prev = Mathf.Max(0, _lit);
+            for (int i = 0; i < _lightTo.Length; i++)
+            {
+                float to = i < lit ? 1f : 0f;
+                if (_lit >= 0 && Mathf.Approximately(to, _lightTo[i])) continue;
+                _lightFrom[i] = LightLevel(i, now);
+                _lightTo[i] = to;
+                int order = to > 0.5f ? i - prev : prev - 1 - i;
+                _lightAt[i] = now + Mathf.Max(0, order) * LightStepSeconds;
+            }
+            _lit = lit;
+        }
+
+        /// <summary>Cuánto brilla la luz <paramref name="i"/> ahora (0 apagada, 1 encendida): con «quitar animaciones» pasa de una vez a su estado final.</summary>
+        private float LightLevel(int i, float now)
+        {
+            if (!Motion.Decorative) return _lightTo[i];
+            return Mathf.Lerp(_lightFrom[i], _lightTo[i], UiFx.EaseOutCubic(Mathf.Clamp01((now - _lightAt[i]) / LightStepSeconds)));
         }
 
         private void SetValue(CellView v, int value)
@@ -572,6 +606,14 @@ namespace NeuroVida.Games.Calculo
             GameFeel.Haptic(GameFeel.HapticKind.Firm);
             Emit(new Vector2(CargaLayout.W / 2f, _m.ReactorY), 40, 220f, 0.9f, Cyan, 20f);
             Emit(new Vector2(CargaLayout.W / 2f, _m.ReactorY), 30, 160f, 0.8f, Gold, 20f);
+            StartCoroutine(CorePop());
+        }
+
+        /// <summary>Tarea 130 (juice): al dar justo, DESPUÉS del dorado (0,7 s), el núcleo del reactor late una vez (1,15 en 0,6 s). Con «quitar animaciones», <c>PopRect</c> no hace nada.</summary>
+        private IEnumerator CorePop()
+        {
+            yield return Motion.Hold(0.7f);
+            if (_core != null) yield return StartCoroutine(PopRect(_core.rectTransform, 1.15f, 0.6f));
         }
 
         private void Undo()
@@ -806,7 +848,8 @@ namespace NeuroVida.Games.Calculo
                 float a = spin + i * Mathf.PI / 6f;
                 float r = (CargaLayout.CoreR + 3f) * _s;
                 _lights[i].rectTransform.anchoredPosition = center + new Vector2(Mathf.Cos(a), -Mathf.Sin(a)) * r;
-                _lights[i].color = Color.Lerp(NeuroStyle.WithAlpha(Cyan, 0.35f), NeuroStyle.WithAlpha(Gold, 1f), k);
+                var lit = Color.Lerp(NeuroStyle.WithAlpha(Cyan, 0.35f), NeuroStyle.WithAlpha(NeuroStyle.Sun, 1f), LightLevel(i, now));       // encendidas en sol, apagadas celeste al 35 % (Tarea 130)
+                _lights[i].color = Color.Lerp(lit, NeuroStyle.WithAlpha(Gold, 1f), k);
             }
             _core.color = Color.Lerp(CoreDark, CoreGold, k);
             _coreHi.color = Color.Lerp(NeuroStyle.WithAlpha(CoreLight, 0.9f), NeuroStyle.WithAlpha(CoreGoldLight, 0.95f), k);
@@ -835,11 +878,11 @@ namespace NeuroVida.Games.Calculo
                 v.Pos = Motion.Decorative ? Vector2.Lerp(v.Pos, v.Target, follow) : v.Target;
                 float born = Mathf.Clamp01((now - v.BornAt) / (Motion.Decorative ? 0.26f : Motion.FadeSeconds));
                 if (now < v.BornAt) born = 0f;
-                float pop = Motion.Decorative ? Mathf.Max(0f, 1f - (now - v.PopAt) / 0.4f) : 0f;
+                float pop = Motion.Decorative && now >= v.PopAt ? 1f - UiFx.EaseOutBack(Mathf.Clamp01((now - v.PopAt) / 0.30f)) : 0f;           // Tarea 130: late con rebote (0,30 s, EaseOutBack) en vez de la rampa lineal
                 bool sel = _sel == v.Id;
                 bool win = _winId == v.Id && _phase != Phase.Idle;
                 bool hint = _hinted && _board != null && _board.Steps == 0 && (v.Id == _hintIdA || v.Id == _hintIdB) && _phase == Phase.Play;
-                float scale = (1f + 0.18f * pop) * (sel && Motion.Decorative ? 1.08f : 1f) * (Motion.Decorative ? UiFx.EaseOutBack(born) : 1f);
+                float scale = (1f + 0.15f * pop) * (sel && Motion.Decorative ? 1.08f : 1f) * (Motion.Decorative ? UiFx.EaseOutBack(born) : 1f);
                 ApplyView(v, now, scale, born, sel, win, hint);
             }
         }

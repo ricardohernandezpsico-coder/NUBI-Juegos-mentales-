@@ -145,3 +145,8 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: las reglas, el DDA, los t
 | los íconos de las reglas: la **gota** (TINTA) y el **libro** (PALABRA), en gris claro para teñir con `Image.color` (misma huella: razón 1,05 y 1,01) | las marcas de las orillas siguen siendo gota y libro: ahora de plasticina |
 
 `PlasticSlab` ganó las losas con el color exacto de un juego (`AttachCustom`, `TryStyleCustom`, `SetCustom`, `PlasticPress.InitCustom`): viven en el atlas del juego, con el mismo nine-slice y los mismos márgenes que las del kit de su clase. Sin el atlas, todo cae al arte de siempre (`TileSprites` y `ClayFrame`). Pesa 0,77 MB en el APK. Pruebas: `StroopPlasticTests`.
+
+## «Juice» del 18-oct-2026 (Tarea 130): la moneda con forma en el botón
+
+Como en los demás juegos, la respuesta lleva una marca con forma: al ACERTAR, la moneda ✓ (`marca_ok` del kit, 40 dp) en la esquina de arriba a la derecha del botón tocado; al ERRAR, ✗ (`marca_no`) en el tocado y ✓ en el correcto. Entra con `PopIn` (0,30 s) y se va con el deslizamiento de la tarjeta (fundido de 0,15 s).
+Las monedas viven EN EL BOTÓN, no en la tarjeta: no demoran el ensayo siguiente ni tocan `ArrivalSeconds`. **Nunca se tiñe la losa** (la tinta es el estímulo: ΔE ≤ 1,6, §9). Sin sonido nuevo (`SoundRulesTests` sigue verde) y ninguna medida ni tiempo de ensayo cambia. Con «quitar animaciones» cada cosa va a su estado final de una vez, con la misma duración.

@@ -43,6 +43,7 @@ namespace NeuroVida.Games.Secuencia
         private static readonly Color Cream = Rgb(255, 246, 224);
         private static readonly Color Sun = Rgb(255, 201, 74);
         private static readonly Color Coral = Rgb(255, 122, 92);
+        private const float ThreadLaySeconds = 0.20f;         // Tarea 130 (juice): cada tramo nuevo del hilo se tiende desde el lucero anterior al tocado en 0,20 s (NubiMotion: estado)
         private const float TrailFadeSeconds = 0.3f;      // «quitar animaciones»: fundido de los tramos
 
         private enum Phase { Idle, Show, Turn, Input, Done }
@@ -811,7 +812,13 @@ namespace NeuroVida.Games.Secuencia
             foreach (var l in _fixed)
             {
                 float fade = Motion.Decorative ? 1f : Mathf.Clamp01((now - l.Born) / TrailFadeSeconds);
-                _fixedMesh.Add(OrbPlay(l.A), OrbPlay(l.B), (3f + 3f * winK) * _s, NeuroStyle.WithAlpha(tc, (0.55f + 0.45f * winK) * fade));
+                // Tarea 130 (juice): el hilo toma cuerpo —dos pasadas por tramo: debajo 11 de ancho del color del modo al 50 %, encima 7 en sol al 90 %— y cada tramo nuevo se tiende en 0,20 s desde el lucero anterior;
+                // con «quitar animaciones» aparece entero con el fundido de siempre. Une solo lo que la persona ya tocó: no da ninguna pista.
+                float lay = Motion.Decorative ? UiFx.EaseOutCubic(Mathf.Clamp01((now - l.Born) / ThreadLaySeconds)) : 1f;
+                var from = OrbPlay(l.A);
+                var to = from + (OrbPlay(l.B) - from) * lay;
+                _fixedMesh.Add(from, to, (11f + 3f * winK) * _s, NeuroStyle.WithAlpha(tc, (0.5f + 0.3f * winK) * fade));
+                _fixedMesh.Add(from, to, (7f + 2f * winK) * _s, NeuroStyle.WithAlpha(NeuroStyle.Sun, (0.9f + 0.1f * winK) * fade));
             }
             _fixedMesh.Commit();
 

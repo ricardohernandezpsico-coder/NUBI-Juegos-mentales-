@@ -91,6 +91,8 @@ namespace NeuroVida.Games.Anagramas
             public bool Locked, Gone, Lit;
             public float Born, Phase, Fade, ScaleNow;
             public float PressedAt = -10f;      // el último toque de la persona sobre la ficha (plasticina: se ve la ficha presionada un instante)
+            public float FlyAt = -10f;          // Tarea 130 (juice): la ficha que revela «Una ayuda» viaja desde la tarjeta hasta su casilla en 0,40 s (EaseOutCubic)
+            public Vector2 FlyFrom;
             public Color LitColor;
         }
 
@@ -160,6 +162,7 @@ namespace NeuroVida.Games.Anagramas
         private bool _built;
         private int _maxTiles, _extra;
         private float _cardAt, _typedDoneAt, _helpAt, _shakeAt, _validateAt, _haveAt;
+        private float _cardAsideAt = -10f, _wordPulseAt = -10f;        // Tarea 130 (juice): la tarjeta se hace a un lado al sacar las fichas; la palabra late una vez al completarse
         private PuntaTier _outcome;
         private bool _inputOn;
         private Vector2? _press;
@@ -373,6 +376,7 @@ namespace NeuroVida.Games.Anagramas
             _slots = new Tile[n];
             ApplyMetrics(n);
             _cardAt = GameClock.Time;
+            _cardAsideAt = _wordPulseAt = -10f;
             _typedDoneAt = _cardAt + PuntaContract.TypeSeconds(word.Clue.Length, GameFeel.ReduceMotion || _guided);
             _typedCount = -1;
             _defText.text = "";
@@ -434,7 +438,8 @@ namespace NeuroVida.Games.Anagramas
         {
             var chars = withExtra ? PuntaContract.BuildTiles(_word.Tiles, _extra, _rng) : PuntaContract.OnlyLetters(_word.Tiles, _rng);
             float now = GameClock.Time;
-            Vector2 from = new Vector2(PuntaLayout.W / 2f, _m.SlotY);
+            Vector2 from = Motion.Decorative ? CardEdge() : new Vector2(PuntaLayout.W / 2f, _m.SlotY);          // las fichas nacen desde el borde de la tarjeta (Tarea 130)
+            _cardAsideAt = now;
             for (int k = 0; k < chars.Length; k++)
             {
                 var t = MakeTile(chars[k]);
@@ -452,11 +457,14 @@ namespace NeuroVida.Games.Anagramas
             if (_helps >= 2)
             {
                 var f = _tiles.Find(t => t.Char == _word.Tiles[0]);
-                if (f != null) { f.Pos = PuntaLayout.SlotPos(_m, 0, _word.Tiles.Length); f.Born = now; PlaceTile(f, 0, true); }
+                if (f != null) { f.Pos = PuntaLayout.SlotPos(_m, 0, _word.Tiles.Length); f.Born = now; PlaceTile(f, 0, true); if (Motion.Decorative) { f.FlyFrom = CardEdge(); f.FlyAt = now; } }
             }
             SetButtonsFor(Phase.Build, true);
             PlayClip(PuntaSounds.Appear(), 0.6f);
         }
+
+        /// <summary>De dónde nacen las fichas y viaja la que revela una ayuda: el borde de abajo de la tarjeta de la definición (lógico).</summary>
+        private Vector2 CardEdge() => new Vector2(PuntaLayout.W / 2f, _m.CardTop + PuntaLayout.CardH);
 
         private bool AllFilled()
         {
@@ -598,6 +606,7 @@ namespace NeuroVida.Games.Anagramas
                     {
                         if (f.Slot >= 0) Unplace(f);
                         PlaceTile(f, 0, true);
+                        if (Motion.Decorative) { f.FlyFrom = CardEdge(); f.FlyAt = GameClock.Time; }          // la ficha revelada viaja desde la tarjeta (Tarea 130)
                     }
                     _validateAt = 0f;
                 }
@@ -630,6 +639,7 @@ namespace NeuroVida.Games.Anagramas
             _ghost.Pos = _ghost.Target = PuntaLayout.SlotPos(_m, 0, _word.Tiles.Length);
             _ghost.Born = GameClock.Time;
             _ghost.Slot = 0;
+            if (Motion.Decorative) { _ghost.FlyFrom = CardEdge(); _ghost.FlyAt = GameClock.Time; }
             RefreshTileLook(_ghost);
         }
 
@@ -653,6 +663,7 @@ namespace NeuroVida.Games.Anagramas
                 }
             }
             float tail = calm ? 0.3f : n * 0.09f + 0.5f;
+            if (!calm) _wordPulseAt = GameClock.Time + Mathf.Max(0f, n * 0.09f - 0.1f);          // el latido cabe dentro del tail que ya existe: no cambia la duración total
             if (tier != PuntaTier.Vista) StartCoroutine(ChordAfter(Mathf.Max(0f, tail - 0.2f)));
             if (tier != PuntaTier.Vista) GameFeel.Haptic(GameFeel.HapticKind.Light);
             Say(tier == PuntaTier.Solo ? "¡La encontraste sola!" : tier == PuntaTier.Vista ? "Era «" + word.Word + "». Volverá otro día." : "¡Estaba en la punta de la lengua!", tier != PuntaTier.Vista);
@@ -1105,6 +1116,12 @@ namespace NeuroVida.Games.Anagramas
             float k = Motion.Decorative && !_guided ? UiFx.EaseOutCubic(Mathf.Clamp01((now - _cardAt) / 0.42f)) : 1f;
             _cardGroup.alpha = k;
             _card.anchoredPosition = new Vector2(0f, -(1f - k) * 12f * _s);
+            // Tarea 130 (juice): con «¡La tengo!» la tarjeta se hace a un lado: escala 1 → 0,94 y sube 10 dp en 0,30 s (EaseOutCubic); con «quitar animaciones», nada. La escala es sobre el centro de la tarjeta (la capa mide toda la pantalla)
+            float aside = Motion.Decorative && _cardAsideAt > 0f ? UiFx.EaseOutCubic(Mathf.Clamp01((now - _cardAsideAt) / 0.30f)) : 0f;
+            float sc = 1f - 0.06f * aside;
+            _card.localScale = Vector3.one * sc;
+            float cardY = _playH * 0.5f - (_m.CardTop + PuntaLayout.CardH * 0.5f) * _s;
+            _card.anchoredPosition += new Vector2(0f, (1f - sc) * cardY + aside * 10f * _s);
 
             // ondas de la señal: más nítidas con cada ayuda (sin ondas con «quitar animaciones»)
             float clarity = 0.35f + _helps * 0.2f;
@@ -1198,14 +1215,17 @@ namespace NeuroVida.Games.Anagramas
             if (t.Root.gameObject.activeSelf != visible) t.Root.gameObject.SetActive(visible);
             if (!visible) return;
             float wob = bob && t.Slot < 0 && Motion.Decorative ? Mathf.Sin(now / 0.8f + t.Phase) * 3f : 0f;
-            t.Pos = Vector2.Lerp(t.Pos, t.Target + new Vector2(0f, wob), spring);
+            if (t.FlyAt > 0f && Motion.Decorative && now - t.FlyAt < 0.40f) t.Pos = Vector2.Lerp(t.FlyFrom, t.Target, UiFx.EaseOutCubic(Mathf.Clamp01((now - t.FlyAt) / 0.40f)));
+            else t.Pos = Vector2.Lerp(t.Pos, t.Target + new Vector2(0f, wob), spring);
             var shown = t.Pos + new Vector2(t.Slot >= 0 ? shake : 0f, 0f);
             t.Root.anchoredPosition = P(shown);
             float born = Motion.Decorative ? UiFx.EaseOutBack(Mathf.Clamp01((now - t.Born) / 0.25f)) : 1f;
             float target = (t.Slot >= 0 ? placedScale : 1f) * born * (t.Gone ? 1f - t.Fade : 1f);
             t.ScaleNow = Mathf.Lerp(t.ScaleNow <= 0f ? target : t.ScaleNow, target, spring);
             if (t.Gone) { t.Fade = Mathf.Min(1f, t.Fade + 0.06f); }
-            t.Root.localScale = Vector3.one * Mathf.Max(0.0001f, t.ScaleNow);
+            float pulse = 1f;
+            if (_wordPulseAt > 0f && t.Slot >= 0 && Motion.Decorative && now >= _wordPulseAt && now - _wordPulseAt < 0.6f) pulse = 1f + 0.08f * Mathf.Sin(Mathf.PI * (now - _wordPulseAt) / 0.6f);          // la palabra entera late una vez: 1 → 1,08 → 1 (0,6 s)
+            t.Root.localScale = Vector3.one * Mathf.Max(0.0001f, t.ScaleNow * pulse);
             if (PlasticTiles && t.Face != null)
             {
                 var face = PlasticArt.Get(PlasticGroup, now - t.PressedAt < PlasticTouch.MinSeconds + 0.04f ? "ficha_p" : "ficha");
@@ -1662,11 +1682,11 @@ namespace NeuroVida.Games.Anagramas
                 w.gameObject.SetActive(true);
                 _waves[j] = w;
             }
-            _cardLabel = MakeLabel(_card, "Label", 16f, UiFonts.Regular, _cardSlab != null ? NeuroStyle.InkMuted : Lavender, TextAnchor.MiddleLeft);
+            _cardLabel = MakeLabel(_card, "Label", 17f, UiFonts.Regular, _cardSlab != null ? NeuroStyle.InkMuted : Lavender, TextAnchor.MiddleLeft);          // 17: con la tarjeta a un lado (escala 0,94) queda en 16 dp (Tarea 130)
             _cardLabel.text = "Nubi capta una definición";
             _defText = MakeLabel(_card, "Definition", 20f, UiFonts.Word, _cardSlab != null ? NeuroStyle.Ink : Color.white, TextAnchor.UpperLeft);
             _defText.supportRichText = true;
-            BestFit(_defText, Mathf.RoundToInt(16f * UnitsPerDp));
+            BestFit(_defText, Mathf.RoundToInt(17f * UnitsPerDp));                 // ídem: 17 de mínimo, 16 con la tarjeta a un lado
             _card.gameObject.SetActive(false);
         }
 
@@ -1879,7 +1899,7 @@ namespace NeuroVida.Games.Anagramas
                 kv.Key.fontSize = px;
                 if (kv.Key.resizeTextForBestFit) kv.Key.resizeTextMaxSize = px;
             }
-            if (_defText != null) _defText.resizeTextMinSize = Mathf.RoundToInt(16f * _s);
+            if (_defText != null) _defText.resizeTextMinSize = Mathf.RoundToInt(17f * _s);
             foreach (var b in _buttons)
             {
                 b.Label.fontSize = Mathf.RoundToInt(19f * _s);

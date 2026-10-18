@@ -10,6 +10,7 @@ namespace NeuroVida.Games.Secuencia
     /// capa, en vez de cien <c>Image</c> que se mueven por cuadro (60 fps en el Motorola). Las posiciones están en el espacio local del
     /// rectángulo (el mismo de <c>anchoredPosition</c> de un hijo centrado). Sin raycast.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public sealed class LightMesh : MaskableGraphic
     {
         private struct Seg { public Vector2 A, B; public float WA, WB; public Color CA, CB; }

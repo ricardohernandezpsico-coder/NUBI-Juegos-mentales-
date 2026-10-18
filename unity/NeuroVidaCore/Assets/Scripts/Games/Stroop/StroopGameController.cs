@@ -88,6 +88,10 @@ namespace NeuroVida.Games.Stroop
         private readonly List<Image> _buttonImages = new List<Image>();
         private readonly List<CanvasGroup> _buttonGroups = new List<CanvasGroup>();
         private readonly List<RectTransform> _ringRects = new List<RectTransform>();
+        /// <summary>Las monedas ✓ / ✗ de cada botón (Tarea 130): viven en el botón, no en la tarjeta, así que no demoran el ensayo siguiente ni tocan <c>ArrivalSeconds</c>. Nunca se tiñe la losa: la tinta es el estímulo.</summary>
+        private readonly List<Image> _markImages = new List<Image>();
+        private Coroutine _markFade;
+        private const float MarkDp = 40f;
         private PhasePill _pill;
         private Toast _toast;
         private ExitButton _exit;
@@ -279,6 +283,8 @@ namespace NeuroVida.Games.Stroop
                 SetStreak(_streak);
                 _pill.Set("¡Bien!", GoodColor);
                 GameFeel.Correct(_streak);
+                ShowMark(_answerIndex, true);                                                            // la moneda ✓ en el botón tocado (Tarea 130)
+                _markFade = StartCoroutine(FadeMarksAfter(Mathf.Max(0f, (Endless ? 0.17f : 0.24f + 0.08f) - 0.15f), 0.15f));        // se va con el deslizamiento de la tarjeta, sin demorar el ensayo siguiente
                 StartCoroutine(Flash(GoodColor, 0.08f, 0.24f));
                 if (Motion.Decorative)
                 {
@@ -305,9 +311,12 @@ namespace NeuroVida.Games.Stroop
                 if (Motion.Decorative) StartCoroutine(UiFx.Shake(20f, 0.35f, _cardRect));
                 ShowRing(correctIndex);
                 if (Motion.Decorative) StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[correctIndex]), Color.white, 140f, 460f, 0.55f));
+                if (_answerIndex >= 0 && _answerIndex < _markImages.Count && _answerIndex != correctIndex) ShowMark(_answerIndex, false);          // ✗ en el tocado y ✓ en el correcto (Tarea 130)
+                ShowMark(correctIndex, true);
                 // una pausa para leer la explicación; no le gasta tiempo al Reto
                 yield return Motion.Hold(StroopContract.ErrorPauseSeconds);
                 if (Endless) _roundEndsAt += StroopContract.ErrorPauseSeconds;
+                _markFade = StartCoroutine(FadeMarksAfter(0f, 0.15f));
                 yield return StartCoroutine(FadeCardOut());
             }
             _cardGroup.alpha = 0f;
@@ -763,6 +772,18 @@ namespace NeuroVida.Games.Stroop
                 label.text = StroopContract.Names[i];
                 if (plastic) { var press = go.AddComponent<PlasticPress>(); press.InitCustom(faceSlab, Plastic, ButtonSlabs[i], ButtonSlabs[i] + "_p", lr); press.PlaysTap = false; }     // la respuesta ya suena su acierto o su error: sin toque del kit encima      // plasticina: al tocar se hunde la losa y el nombre baja con ella (sin escala)
 
+                var markGo = new GameObject("Mark", typeof(RectTransform), typeof(Image));            // la moneda ✓ / ✗, en la esquina de arriba a la derecha del botón
+                markGo.transform.SetParent(go.transform, false);
+                var markRect = (RectTransform)markGo.transform;
+                markRect.anchorMin = markRect.anchorMax = new Vector2(1f, 1f);
+                markRect.pivot = new Vector2(0.5f, 0.5f);
+                markRect.sizeDelta = Vector2.one * (MarkDp * UnitsPerDp);
+                markRect.anchoredPosition = new Vector2(-0.34f, -0.34f) * (MarkDp * UnitsPerDp);
+                var markImg = markGo.GetComponent<Image>();
+                markImg.raycastTarget = false;
+                markImg.preserveAspect = true;
+                markGo.SetActive(false);
+                _markImages.Add(markImg);
                 _buttonRects.Add(rect);
                 _buttonImages.Add(img);
                 _buttonGroups.Add(group);
@@ -953,6 +974,38 @@ namespace NeuroVida.Games.Stroop
             _hud.SetStreak(streak);
         }
 
+        /// <summary>La moneda ✓ / ✗ entra en el botón con rebote (0,30 s; con «quitar animaciones» aparece sin rebote y dura lo mismo).</summary>
+        private void ShowMark(int index, bool ok)
+        {
+            if (index < 0 || index >= _markImages.Count) return;
+            if (_markFade != null) { StopCoroutine(_markFade); _markFade = null; }
+            var img = _markImages[index];
+            img.sprite = ok ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
+            img.color = Color.white;
+            img.gameObject.SetActive(true);
+            StartCoroutine(PopIn(img.rectTransform, 0.30f));
+        }
+
+        private IEnumerator FadeMarksAfter(float delay, float seconds)
+        {
+            if (delay > 0f) yield return Motion.Hold(delay);
+            float t = 0f;
+            while (t < seconds)
+            {
+                t += GameClock.DeltaTime;
+                float a = 1f - Mathf.Clamp01(t / seconds);
+                foreach (var m in _markImages) if (m.gameObject.activeSelf) m.color = new Color(1f, 1f, 1f, a);
+                yield return null;
+            }
+            HideMarks();
+            _markFade = null;
+        }
+
+        private void HideMarks()
+        {
+            foreach (var m in _markImages) { m.gameObject.SetActive(false); m.color = Color.white; }
+        }
+
         private void ResetButtons()
         {
             for (int i = 0; i < _buttonGroups.Count; i++) _buttonGroups[i].alpha = 1f;
@@ -971,6 +1024,8 @@ namespace NeuroVida.Games.Stroop
 
         private void ClearRings()
         {
+            if (_markFade != null) { StopCoroutine(_markFade); _markFade = null; }
+            HideMarks();
             for (int i = 0; i < _ringRects.Count; i++) _ringRects[i].gameObject.SetActive(false);
             ResetButtons();
         }

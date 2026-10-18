@@ -83,3 +83,9 @@ Las pantallas que usan la lógica de la 124 y las piezas de Blender (`docs/previ
 ## Sesión diaria
 
 - Sesión diaria = SOLO los 3 juegos del camino (`startDailySession` → `continueDailyFlow`), elegidos por avance real y con variedad por `data/DailyPath` (reglas en su cabecera; nunca un juego sin tutorial que la persona no jugó). El día del Primer vuelo el camino queda cumplido con el vuelo (`completeTodayWithFlight`). Al terminar, el resumen (`data/SessionSummary` + `SessionSummaryScreen`): áreas trabajadas, puntaje de cada juego, racha y «Hoy avanzó de X a Y» por área.
+
+## Ajustes: la meta semanal en 7 farolas (Tarea 130, 18-oct)
+
+El `Slider` de Material de «Meta semanal de juego» (el único control de la app que no era del kit) se reemplazó por `ui/components/WeeklyGoalLamps.kt`: 7 farolas del kit (`FarolaImage`, la misma de Hoy y Avance) encendidas de la 1 a la meta, con su número 1-7 debajo (16 sp, `Clay.InkMuted`): los números hacen que se lea como CANTIDAD (en Hoy y Avance la misma farola significa lunes … domingo). 
+Cada farola es un botón de radio (`Role.RadioButton`, `selectableGroup`) en una caja de 46 dp con `minimumInteractiveComponentSize`, `contentDescription` «k días por semana» y `testTag("goal_lamp_k")` (reemplaza a `slider_weekly_goal`); mismo `viewModel.updateSettings(...)`, mínimo 1, máximo 7, por defecto 4. Movimiento: fundido de `NubiMotion.STATE_MS` al encender y pulso de `CELEBRATE_MS` en la tocada (`snap()` con «quitar animaciones»); tic del kit al apoyar (`rememberKitTap`). En pantallas más angostas que 322 dp las cajas se achican parejo. 
+Pruebas: `WeeklyGoalLampsTest` (selección, `Role`, descripción, cabe en 393 y en 360 dp con letra 1,3 y 2,0); hoja `docs/previews/ajustes-meta.png` (`tools/previews/ajustes_meta.py`, Roborazzi `AjustesMetaScreenshotTest`).

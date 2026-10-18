@@ -329,6 +329,44 @@ namespace NeuroVida.Games.Calculo.Tests
         }
     }
 
+    /// <summary>El aro de 12 luces del reactor (Tarea 130, juice): se llena con la mejor celda que no se pasa de la carga, <c>round(12 · mejor / carga)</c>. Es una lectura del tablero, no una pista.</summary>
+    public class CargaLitLightsTests
+    {
+        [Test]
+        public void TheBestCellThatDoesNotPass_FillsTheRing_InTwelfths()
+        {
+            Assert.AreEqual(9, CargaRules.LitLights(new[] { 3, 7, 9 }, 12), "9 de 12: nueve luces");
+            Assert.AreEqual(5, CargaRules.LitLights(new[] { 5, 20, 31 }, 12), "las celdas que se pasan no cuentan: la mejor es 5");
+            Assert.AreEqual(12, CargaRules.LitLights(new[] { 2, 12 }, 12), "justo: las doce");
+            Assert.AreEqual(2, CargaRules.LitLights(new[] { 4 }, 30), "4 de 30 = 1,6: redondea a 2");
+            Assert.AreEqual(0, CargaRules.LitLights(new[] { 1 }, 30), "1 de 30 = 0,4: ninguna");
+            Assert.AreEqual(1, CargaRules.LitLights(new[] { 6 }, 99), "6 de 99 = 0,7: una");
+        }
+
+        [Test]
+        public void WhenEveryCellPassesTheTarget_OrThereIsNoTarget_TheRingIsDark()
+        {
+            Assert.AreEqual(0, CargaRules.LitLights(new[] { 13, 20 }, 12));
+            Assert.AreEqual(0, CargaRules.LitLights(new int[0], 12));
+            Assert.AreEqual(0, CargaRules.LitLights(new[] { 3 }, 0));
+            Assert.AreEqual(0, CargaRules.LitLights(null, 12));
+        }
+
+        [Test]
+        public void TheRing_NeverHasMoreThanTwelveLights_NorGoesBackwardsWhenTheBestCellGrows()
+        {
+            int last = 0;
+            for (int best = 0; best <= 24; best++)
+            {
+                int lit = CargaRules.LitLights(new[] { best }, 24);
+                Assert.GreaterOrEqual(lit, last, "con una celda mejor nunca hay menos luces");
+                Assert.LessOrEqual(lit, 12);
+                last = lit;
+            }
+            Assert.AreEqual(12, last);
+        }
+    }
+
     public class CalculoLayoutTests
     {
         private static readonly float[] Heights = { 600f, 640f, 700f, 780f, 860f, 960f };

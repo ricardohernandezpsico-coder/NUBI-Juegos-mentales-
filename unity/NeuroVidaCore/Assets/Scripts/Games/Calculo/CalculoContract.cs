@@ -25,6 +25,18 @@ namespace NeuroVida.Games.Calculo
     /// </summary>
     public static class CargaRules
     {
+        /// <summary>
+        /// Las luces del aro del reactor que se encienden (0 a 12; Tarea 130): según lo cerca que está de la carga la MEJOR celda que no se pasa, <c>round(12 · mejor / carga)</c>. Es una lectura del tablero, no una pista: el número de la celda ya se ve.
+        /// Sin celda que se pase de la carga: 0.
+        /// </summary>
+        public static int LitLights(IEnumerable<int> cellValues, int target)
+        {
+            if (target <= 0 || cellValues == null) return 0;
+            int best = 0;
+            foreach (int v in cellValues) if (v <= target && v > best) best = v;
+            return Math.Max(0, Math.Min(12, (int)Math.Round(12.0 * best / target, MidpointRounding.AwayFromZero)));
+        }
+
         public static string Symbol(CargaOp op)
         {
             switch (op)

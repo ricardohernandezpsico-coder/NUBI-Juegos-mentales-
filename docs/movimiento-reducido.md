@@ -455,3 +455,14 @@ Ficha del componente de los tutoriales (ver `docs/diseno-rastro-de-luz.md`, punt
 | Nubi que entra deslizándose por el costado | DECORATIVA | Aparece con un fundido |
 | El globo que salta y el dedo que señala cuando insiste (a los 5 s) | DECORATIVA | El globo no salta y el dedo queda quieto |
 | El juego congelado mientras hay un foco de «tocar» (`GameClock`) | ESENCIAL | Igual |
+
+## Tarea 130 (18-oct): el «juice» de cuatro juegos y las farolas de Ajustes
+
+| Efecto | Clase | Con «quitar animaciones» |
+|---|---|---|
+| Carga: el aro de 12 luces se llena en cascada de 0,15 s por luz | DECORATIVA (la lectura del número ya está en la celda) | Las luces cambian de una vez |
+| Carga: la celda que recibe late con rebote (0,30 s) y el núcleo late al dar justo (0,6 s) | DECORATIVA | Nada |
+| Tinta: la moneda ✓ / ✗ entra con rebote (0,30 s) y se va con fundido (0,15 s) | ESENCIAL (es la marca con forma de acierto / error) | Aparece sin rebote y dura lo mismo |
+| Punta: la tarjeta se hace a un lado (0,30 s), la ficha de la ayuda viaja desde ella (0,40 s) y la palabra late (0,6 s) | DECORATIVA | Nada: la ficha aparece en su casilla |
+| Rastro: cada tramo del hilo se tiende en 0,20 s | DECORATIVA | El tramo aparece entero con el fundido de 0,3 s que ya tenía |
+| Ajustes: la farola de la meta se enciende con un fundido de 200 ms y la tocada da un pulso de 600 ms | DECORATIVA | `snap()`: sin fundido ni pulso |

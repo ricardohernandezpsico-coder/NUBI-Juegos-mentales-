@@ -43,6 +43,7 @@ import com.example.ui.components.ClayTextField
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.PanelAccent
+import com.example.ui.components.WeeklyGoalLamps
 import com.example.ui.i18n.strings
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
@@ -256,10 +257,11 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Slider(
-          value = weeklyGoal.toFloat(),
-          onValueChange = {
-            weeklyGoal = it.toInt()
+        // Tarea 130: 7 farolas del kit con su número (1 a 7) en lugar del Slider de Material: la meta se lee como CANTIDAD y es el mismo objeto de Hoy y Avance
+        WeeklyGoalLamps(
+          goal = weeklyGoal,
+          onGoal = { k ->
+            weeklyGoal = k
             viewModel.updateSettings(
               name = nameInput,
               weeklyGoal = weeklyGoal,
@@ -271,17 +273,7 @@ fun SettingsScreen(
               reminderMinute = reminderMinute,
               difficultyMode = difficultyMode
             )
-          },
-          valueRange = 1f..7f,
-          steps = 5,
-          colors = SliderDefaults.colors(
-            thumbColor = PanelAccent,
-            activeTrackColor = PanelAccent,
-            inactiveTrackColor = Clay.Ink.copy(alpha = 0.18f),
-            activeTickColor = Color.White,
-            inactiveTickColor = Clay.InkMuted
-          ),
-          modifier = Modifier.testTag("slider_weekly_goal")
+          }
         )
       }
     }

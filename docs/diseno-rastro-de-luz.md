@@ -264,3 +264,8 @@ Ricardo aprobó la esfera opaca de plasticina (nada de cristal) y pidió que **a
 ## Cambio de diseño del 18-oct-2026 (Tarea 128): el anillo baja
 
 `RastroGameController._yShift` pasa de 0,22 a 0,7 del aire que sobra sobre 640 dp: en 20:9 el anillo baja ~77 dp (casi 10 % de la altura) hacia el pulgar. Mismo tamaño de anillo y de luces, mismas reglas y cantidades.
+
+## «Juice» del 18-oct-2026 (Tarea 130): el hilo toma cuerpo
+
+El hilo que une los luceros bien repetidos ya existía (`_fixed` / `_fixedMesh`) pero a distancia de teléfono no se veía (3 de ancho, 55 % de alfa). Ahora cada tramo se dibuja en dos pasadas: debajo 11 de ancho del color del modo al 50 %, encima 7 en sol (`NeuroStyle.Sun`) al 90 %; con el acierto de la ronda ensancha y brilla como antes. Cada tramo nuevo se TIENDE desde el lucero anterior al tocado en 0,20 s (`EaseOutCubic`); con «quitar animaciones» aparece entero con el fundido de 0,3 s de siempre.
+Sin información oculta: el hilo une solo lo que la persona ya tocó; el rastro de la muestra sigue borrándose al empezar la repetición. La secuencia, los tiempos y `LightMesh` no cambian.

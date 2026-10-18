@@ -155,3 +155,8 @@ Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presiona
 ## Cambio de diseño del 18-oct-2026 (Tarea 129): el kit en la tarjeta y los botones
 
 La tarjeta de la definición es ahora una lámina **crema** (`gr`): la definición en tinta 20 dp (la misma fuente), el rótulo «Nubi capta una definición» en #514B78 a 16 dp y el punto y las ondas de la antena en tinta al 50 %. «Una ayuda», «Borrar» y «Ver la palabra» pasan a **lila** con tinta (letra mínima 16 dp); «¡La tengo!» sigue en cielo. «Ayudas · · ·» va en crema a 16 dp sobre el cielo. Se borró el panel de resultado que se armaba oculto.
+
+## «Juice» del 18-oct-2026 (Tarea 130): la tarjeta participa
+
+Con «¡La tengo!» la tarjeta de la definición se hace a un lado (escala 1 → 0,94 y sube 10 dp en 0,30 s, `EaseOutCubic`, sobre su propio centro) y las fichas nacen desde su borde de abajo. Con «Una ayuda» que revela la primera letra, esa ficha viaja DESDE la tarjeta hasta su casilla (0,40 s). Al completar, la palabra entera late una vez (1 → 1,08 → 1 en 0,6 s) dentro del `tail` que ya existía (`n · 0,09 + 0,5 s`): la duración total no cambia.
+Como la tarjeta baja a 0,94, su letra mínima es de 17 dp (queda en 16 con la tarjeta a un lado). Sin sonido nuevo (`SoundRulesTests` sigue verde) y ninguna medida ni tiempo de ensayo cambia. Con «quitar animaciones» cada cosa va a su estado final de una vez, con la misma duración.
