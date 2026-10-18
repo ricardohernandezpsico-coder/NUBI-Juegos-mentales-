@@ -50,6 +50,8 @@ object UnityGameLauncher {
     val reduce_motion: Boolean = false,
     // Tutorial guiado común (Games/Shared/GuidedTutorial.cs): la persona nunca jugó este juego. Hoy solo Rastro de luz lo usa.
     val show_tutorial: Boolean = false,
+    // Los pasos de la cuenta regresiva (Tarea 127, data/CountdownSteps.kt): 3 la primera partida del día y la primera vez de un juego; 2 en las demás. Una app vieja no lo manda: Unity usa 3.
+    val countdown_steps: Int = 3,
     // SOLO depuración (botones [Debug]): Unity dibuja encima del tutorial los rectángulos del foco y el último toque, para mandar una captura de lo que pasa en el teléfono.
     val debug_overlay: Boolean = false,
     // Solo «En la punta de la lengua» (anagramas): las palabras que Nubi mostró en partidas anteriores («las azules»), separadas por «;». Vuelven en otra partida.
@@ -177,6 +179,7 @@ object UnityGameLauncher {
           context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         ) == 0f,
         show_tutorial = forceTutorial || shouldShowTutorial(gameId, com.example.NeuroVidaApplication.instance.repository.gameHistory.value),
+        countdown_steps = if (assessment) com.example.data.CountdownSteps.FULL else com.example.data.CountdownSteps.steps(gameId, com.example.NeuroVidaApplication.instance.repository.gameHistory.value, System.currentTimeMillis()),
         debug_overlay = debugOverlay,
         punta_pending = if (gameId == "anagramas") com.example.data.Punta.encode(com.example.NeuroVidaApplication.instance.repository.puntaPending.value) else "",
         engr_lights = if (gameId == "engranajes") com.example.NeuroVidaApplication.instance.repository.engranajesRocket.value.lights else 0,
