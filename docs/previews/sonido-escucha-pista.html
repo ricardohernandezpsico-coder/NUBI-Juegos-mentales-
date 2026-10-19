@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>La pista de Constelaciones: elige</title>
+<style>
+:root{
+  --bg:#07081F; --panel:#121236; --panel2:#1B1A4A; --line:#2C2A66; --ink:#EEEBFC; --dim:#ABA5D2; --faint:#8C86BD;
+  --sky:#7FD8FF; --sun:#FFC94A; --lime:#A6E36B; --coral:#FF8A6B; --grape:#B79BFF; --inkd:#1A1240;
+  --f-display:'Fredoka','Nunito',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body)}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+h1{font:700 clamp(26px,5vw,38px)/1.1 var(--f-display);margin:0 0 8px}
+.eyebrow{font:700 14px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--sun);margin:0 0 4px}
+.lead{color:var(--dim);margin:0 0 8px;max-width:68ch}
+.tip{color:var(--faint);font-size:15px;margin:0 0 18px;max-width:68ch}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 85%,transparent);padding:10px 0 12px;margin:0 -16px 8px;padding-inline:16px}
+.bar .row{display:flex;flex-wrap:wrap;gap:0 16px;align-items:center}
+.switch{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;font-weight:600;font-size:15px}
+.switch input{width:22px;height:22px;accent-color:var(--sky)}
+label.vol{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+input[type=range]{width:120px;accent-color:var(--sky)}
+.now{min-height:22px;color:var(--sky);font:600 14px var(--f-display);margin-top:2px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 6px;scrollbar-width:thin}
+.chip{flex:none;min-height:44px;padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font:600 14px var(--f-display);text-decoration:none;display:flex;align-items:center}
+details.grupo{margin:14px 0;border:3px solid var(--line);border-radius:22px;background:var(--panel)}
+details.grupo>summary{list-style:none;cursor:pointer;padding:14px 18px;min-height:56px;display:flex;flex-direction:column;justify-content:center}
+details.grupo>summary::-webkit-details-marker{display:none}
+details.grupo>summary .t{font:700 20px var(--f-display)}
+details.grupo>summary .a{font-size:14px;color:var(--dim)}
+.eventos{padding:0 12px 14px;display:grid;gap:10px}
+.ev{background:var(--panel2);border:2px solid var(--line);border-radius:18px;padding:12px 14px}
+.ev h3{font:600 17px/1.25 var(--f-display);margin:0 0 6px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.tag{font:700 12px var(--f-display);letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--line);color:var(--ink)}
+.tag.info{background:var(--grape);color:var(--inkd)}
+.tag.senal{background:var(--coral);color:var(--inkd)}
+.tag.tiempo{background:var(--sky);color:var(--inkd)}
+.tag.bucle{background:var(--faint);color:var(--inkd)}
+.tag.nuevo{background:var(--lime);color:var(--inkd)}
+.btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.btn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:64px;padding:8px 14px;border-radius:16px;border:3px solid var(--inkd);color:var(--inkd);font:700 17px var(--f-display);cursor:pointer;text-align:left;box-shadow:0 4px 0 #03041A}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #03041A}
+.btn small{font:600 12px/1.25 var(--f-body);opacity:.85}
+.btn.hoy{background:var(--sky)}
+.btn.madera{background:var(--sun)}
+.btn.alt{background:var(--lime)}
+.btn.ya{background:var(--grape)}
+.btn.playing{outline:3px solid var(--ink);outline-offset:2px}
+.mudo{display:flex;align-items:center;min-height:64px;padding:8px 14px;border-radius:16px;border:2px dashed var(--line);color:var(--dim);font:600 15px var(--f-display)}
+.map{margin:8px 0 0;font-size:14px;color:var(--dim)}
+.map b{color:var(--ink)}
+.note{margin:6px 0 0;font-size:14px;color:var(--sun)}
+details.mas{margin-top:6px}
+details.mas>summary{cursor:pointer;color:var(--faint);font-size:14px;min-height:32px;display:flex;align-items:center}
+.mas p{margin:4px 0;font-size:14px;color:var(--dim)}
+.pie{color:var(--faint);font-size:14px;margin-top:28px;max-width:70ch}
+:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+@media (max-width:520px){.btns{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Tarea 135 · Elegir la pista de Constelaciones</p>
+  <h1>La pista de Constelaciones: elige de oído</h1>
+  <p class="lead"><b>Qué hace la pista en el juego:</b> si abres una luz y después otra que NO es su pareja, un momento después las luces hermanas de la primera (las que ya habías visto) brillan un instante para que recuerdes dónde estaban. Hoy suenan dos campanitas muy suaves; el soplo de «Hint» de la paleta no te sonó a ayuda y no se cableó. Escucha las tres opciones: cada una tiene su botón y, al lado, «Hoy» para comparar con lo que suena ahora.</p>
+  <p class="tip">Las tres opciones suenan SUAVES a propósito (−6 dB; la pista es un aviso, no un acierto). En (a) y (b) cada luz hermana suena la nota de SU grupo en el momento en que brilla (el ejemplo tiene dos hermanas: dos notas); con una pareja es una sola nota y con un trío son dos. Mejor con audífonos o con el parlante a volumen medio.</p>
+
+  <div class="bar">
+    <div class="row">
+      <label class="switch"><input type="checkbox" id="igual"> Igualar volumen</label>
+      <label class="vol">Volumen <input type="range" id="vol" min="0.1" max="1" step="0.05" value="1"></label>
+    </div>
+    <div class="now" id="now" aria-live="polite"></div>
+    <nav class="chips" id="chips" aria-label="Juegos"></nav>
+  </div>
+
+  <div id="grupos"></div>
+
+  <p class="pie">Etiquetas: <b>INFO</b> = la altura, el orden o el momento de la nota es información del juego (no se cambia, solo el timbre). <b>SEÑAL</b> = es parte del estímulo o de la instrucción. <b>TIEMPO</b> = va sincronizado con algo y no puede atrasarse. <b>BUCLE</b> = suena debajo del juego y se queda como está. <b>NUEVO</b> = hoy no suena nada. Los números de cada botón son el pico en dBFS y la sonoridad aproximada (LUFS, ventana de 400 ms) ya con el volumen que usa el juego. Detalle completo en docs/sonido-madera-plan.md.</p>
+</div>
+
+<script>
+const DATA = {"grupos":[{"id":"pista","title":"La pista de Constelaciones","area":"Memoria"}],"events":[{"group":"pista","id":"pista.a","title":"Opción (a) · la nota del propio grupo, en kalimba, suave","today":"Hoy: dos campanitas (mi y la), muy suaves, las mismas para todos los grupos","sites":"ConstelacionGameController.cs: la pista, unos 0,4 s después de errar (ConstelacionSounds.PlayHint)","map":"PlayNote(NoteHz(grupo), Kalimba, gainDb −6): una vez por cada luz hermana, cuando brilla","flag":"recomendada","note":"LA RECOMENDADA: la hermana suena con la nota de SU grupo (la misma que sonó al abrirla); así la pareja «se oye» y ayuda a recordar con el oído. El ejemplo suena con dos hermanas.","hoy":"parejas.chime","hoyGain":0.25,"wood":"pista.a","woodGain":0.4009,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":"Opción (a)"},{"group":"pista","id":"pista.b","title":"Opción (b) · la misma nota del grupo, en marimba, suave","today":"Hoy: dos campanitas (mi y la), muy suaves, las mismas para todos los grupos","sites":"ConstelacionGameController.cs: la pista, unos 0,4 s después de errar (ConstelacionSounds.PlayHint)","map":"PlayNote(NoteHz(grupo), Marimba, gainDb −6): una vez por cada luz hermana, cuando brilla","flag":"","note":"La misma idea con marimba: más seca y con más cuerpo que la kalimba. El ejemplo suena con dos hermanas.","hoy":"parejas.chime","hoyGain":0.25,"wood":"pista.b","woodGain":0.4009,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":"Opción (b)"},{"group":"pista","id":"pista.c","title":"Opción (c) · las dos campanitas de hoy (mi y la), en kalimba, suaves","today":"Hoy: dos campanitas (mi y la), muy suaves, las mismas para todos los grupos","sites":"ConstelacionGameController.cs: la pista, unos 0,4 s después de errar (ConstelacionSounds.PlayHint)","map":"Dos kalimbas, mi (659 Hz) y la (880 Hz), 90 ms entre una y otra: el mismo gesto de hoy con el timbre de Madera","flag":"","note":"Igual de suave que hoy y con la misma melodía para todos los grupos (no dice cuál es la pareja, solo avisa).","hoy":"parejas.chime","hoyGain":0.25,"wood":"pista.c","woodGain":0.4009,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":"Opción (c)"}],"clips":{"parejas.chime":{"file":"parejas-chime.wav","peakDb":-11.4114,"lufs":-18.6074,"onsetMs":1.746,"scale":0.2987},"pista.a":{"file":"pista-a.wav","peakDb":-10.4576,"lufs":-16.664,"onsetMs":0,"scale":0.3333},"pista.b":{"file":"pista-b.wav","peakDb":-10.4576,"lufs":-16.3987,"onsetMs":0.3628,"scale":0.3333},"pista.c":{"file":"pista-c.wav","peakDb":-5.9291,"lufs":-14.253,"onsetMs":0,"scale":0.5614}}};
+const INCRUSTADO = false;
+const AUDIO = {};
+const CARPETA = 'sonido-escucha/';
+
+const $ = (s, r = document) => r.querySelector(s);
+const fmt = (v, d = 1) => (v == null ? '—' : v.toFixed(d).replace('.', ','));
+let ctx = null, current = null, currentBtn = null;
+const buffers = new Map(), elements = new Map();
+
+function url(file) { return INCRUSTADO ? AUDIO[file] : CARPETA + file; }
+
+async function loadBuffer(file) {
+  if (buffers.has(file)) return buffers.get(file);
+  if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (C) ctx = new C(); }
+  if (ctx) {
+    try {
+      const r = await fetch(url(file));
+      const ab = await r.arrayBuffer();
+      const buf = await new Promise((ok, err) => ctx.decodeAudioData(ab, ok, err));
+      buffers.set(file, buf);
+      return buf;
+    } catch (e) { /* si no se puede leer con fetch (archivo local), se usa un <audio> */ }
+  }
+  buffers.set(file, null);
+  return null;
+}
+
+function stopAll() {
+  if (current) { try { current.stop(); } catch (e) {} current = null; }
+  for (const el of elements.values()) { el.pause(); }
+  if (currentBtn) currentBtn.classList.remove('playing');
+  currentBtn = null;
+}
+
+async function play(btn, key, gain, label) {
+  stopAll();
+  const igual = $('#igual').checked;
+  const clip = DATA.clips[key], file = clip.file;
+  const g = (igual ? 0.7 : gain * clip.scale) * parseFloat($('#vol').value);
+  btn.classList.add('playing'); currentBtn = btn;
+  $('#now').textContent = label;
+  const buf = await loadBuffer(file);
+  if (currentBtn !== btn) return;
+  if (buf) {
+    const src = ctx.createBufferSource(), gn = ctx.createGain();
+    src.buffer = buf; gn.gain.value = g;
+    src.connect(gn); gn.connect(ctx.destination);
+    if (ctx.state === 'suspended') await ctx.resume();
+    src.onended = () => { if (current === src) { btn.classList.remove('playing'); current = null; currentBtn = null; } };
+    current = src; src.start();
+  } else {
+    let el = elements.get(file);
+    if (!el) { el = new Audio(url(file)); elements.set(file, el); }
+    el.volume = Math.max(0, Math.min(1, g)); el.currentTime = 0;
+    el.onended = () => { btn.classList.remove('playing'); if (currentBtn === btn) currentBtn = null; };
+    el.play();
+  }
+}
+
+function levels(key, gain) {
+  const c = DATA.clips[key]; if (!c) return '';
+  const k = 20 * Math.log10(gain);
+  return 'pico ' + fmt(c.peakDb + k) + ' dBFS · ' + fmt(c.lufs + k) + ' LUFS · inicio ' + fmt(c.onsetMs) + ' ms';
+}
+
+function button(cls, title, key, gain, extra) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'btn ' + cls;
+  b.innerHTML = '<span>' + title + '</span><small>' + levels(key, gain) + (extra ? ' · ' + extra : '') + '</small>';
+  b.addEventListener('click', () => play(b, key, gain, title));
+  return b;
+}
+
+function evento(e) {
+  const d = document.createElement('div'); d.className = 'ev';
+  const tags = [];
+  if (e.flag) tags.push('<span class="tag ' + e.flag.replace('ñ', 'n') + '">' + e.flag + '</span>');
+  if (e.note && e.note.indexOf('NUEVO') === 0) tags.push('<span class="tag nuevo">nuevo</span>');
+  d.innerHTML = '<h3>' + e.title + '</h3>' + (tags.length ? '<div class="tags">' + tags.join('') + '</div>' : '');
+  const btns = document.createElement('div'); btns.className = 'btns';
+  if (!e.wood && e.noWood) {
+    if (e.hoy) btns.appendChild(button('hoy', 'Hoy', e.hoy, e.hoyGain, ''));
+    const m = document.createElement('div'); m.className = 'mudo'; m.textContent = e.noWood; btns.appendChild(m);
+  } else if (!e.wood) {
+    const m = document.createElement('div'); m.className = 'mudo';
+    m.textContent = e.flag === 'bucle' ? 'Suena en bucle y se queda como está.' : (e.alreadyWood ? 'Ya suena en Madera cálida (aprobado): sin botón.' : 'Sonido propio del juego: se diseña en su fase.');
+    btns.appendChild(m);
+  } else {
+    if (e.hoy) btns.appendChild(button('hoy', 'Hoy', e.hoy, e.hoyGain, ''));
+    else { const m = document.createElement('div'); m.className = 'mudo'; m.textContent = 'Hoy: silencio'; btns.appendChild(m); }
+    btns.appendChild(button('madera', e.woodLabel || 'Madera', e.wood, e.woodGain, ''));
+    if (e.woodAlt) btns.appendChild(button('alt', e.woodAltLabel, e.woodAlt, e.woodGain, ''));
+  }
+  d.appendChild(btns);
+  d.insertAdjacentHTML('beforeend', '<p class="map">' + (e.alreadyWood ? 'Ya suena en Madera cálida. ' : '') + 'Paleta: <b>' + e.map + '</b></p>');
+  if (e.note) d.insertAdjacentHTML('beforeend', '<p class="note">' + e.note + '</p>');
+  d.insertAdjacentHTML('beforeend', '<details class="mas"><summary>Cómo suena hoy y dónde se llama</summary><p>' + e.today + '</p><p>' + e.sites + '</p></details>');
+  return d;
+}
+
+function armar() {
+  const cont = $('#grupos'), chips = $('#chips');
+  DATA.grupos.forEach((g, i) => {
+    const evs = DATA.events.filter(e => e.group === g.id);
+    if (!evs.length) return;
+    const det = document.createElement('details'); det.className = 'grupo'; det.id = 'g-' + g.id;
+    if (i === 0) det.open = true;
+    det.innerHTML = '<summary><span class="t">' + g.title + '</span><span class="a">' + g.area + ' · ' + evs.length + ' sonidos</span></summary>';
+    const box = document.createElement('div'); box.className = 'eventos';
+    evs.forEach(e => box.appendChild(evento(e)));
+    det.appendChild(box); cont.appendChild(det);
+    const a = document.createElement('a'); a.className = 'chip'; a.href = '#g-' + g.id; a.textContent = g.title;
+    a.addEventListener('click', () => { det.open = true; });
+    chips.appendChild(a);
+  });
+}
+armar();
+</script>
+</body>
+</html>

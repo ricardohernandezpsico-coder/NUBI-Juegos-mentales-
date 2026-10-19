@@ -47,6 +47,7 @@ namespace NeuroVida.Bridge.EditorTools
             RegisterPalette();
             RegisterRastro();
             RegisterParejas();
+            RegisterPista();
             RegisterBodega();
             RegisterCorreo();
             RegisterStroop();
@@ -83,6 +84,7 @@ namespace NeuroVida.Bridge.EditorTools
                 case "calculo": case "anagramas": case "parejas": case "bodega": case "correo": return "C";
                 case "secuencia": case "satelites": case "piloto": case "intrusa": return "D";
                 case "stroop": case "meteoros": case "freno": case "disparate": case "engranajes": return "E";
+                case "pista": return "P";                                    // la mini página de la pista de Constelaciones (Tarea 135): tres opciones para que Ricardo elija de oído
                 default: return "";
             }
         }
@@ -287,6 +289,33 @@ namespace NeuroVida.Bridge.EditorTools
                 "DECIDIDO por Ricardo (18-oct): el «Hint» de la paleta no le sonó a ayuda; la pista sigue sonando como HOY (esta receta, con el mismo volumen) hasta que elija entre tres opciones en docs/previews/sonido-escucha-pista.html.");
             hermanas.NoWood = "Se queda como hoy por ahora: a Ricardo el soplo de «Hint» no le sonó a ayuda. Las tres opciones para elegir están en sonido-escucha-pista.html.";
             E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s, con eco", "ConstelacionGameController.cs:358", "parejas.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (el común; se quita el doble final)");
+        }
+
+        // ------------------------------------------------------------------ La pista de Constelaciones: tres opciones para elegir (Tarea 135)
+
+        /// <summary>
+        /// «Las luces hermanas brillan»: a Ricardo el <c>Hint</c> de la paleta no le sonó a ayuda (18-oct) y la pista sigue sonando COMO HOY (<see cref="ConstelacionSounds.HintRecipe"/>) hasta que elija. Tres opciones, cada una con su botón «Hoy»:
+        /// (a) la NOTA DEL PROPIO GRUPO en kalimba, suave (−6 dB respecto de la nota normal), una vez por cada luz hermana en el momento en que brilla (la recomendada: la pareja «se oye» y ayuda a recordar); (b) la misma nota en marimba, suave;
+        /// (c) las dos campanitas de hoy (mi y la) en kalimba, suaves. Los ejemplos suenan con dos hermanas (dos notas, una cada 0,16 s; con una pareja es una sola, con un trío son dos).
+        /// </summary>
+        private static void RegisterPista()
+        {
+            const string g = "pista";
+            double hz = ConstelacionContract.NoteHz(3);                                    // el ejemplo: el grupo de la 4.ª nota (sol5)
+            Raw("pista.a", () => Scale(2, 0.16, i => FromRecipe(WoodSounds.MakeNote(hz, WoodVoice.Kalimba))));
+            Raw("pista.b", () => Scale(2, 0.16, i => FromRecipe(WoodSounds.MakeNote(hz, WoodVoice.Marimba))));
+            Raw("pista.c", () => Scale(2, 0.09, i => FromRecipe(WoodSounds.MakeNote(i == 0 ? 659.25 : 880.0, WoodVoice.Kalimba))));
+            const string today = "Hoy: dos campanitas (mi y la), muy suaves, las mismas para todos los grupos";
+            const string sites = "ConstelacionGameController.cs: la pista, unos 0,4 s después de errar (ConstelacionSounds.PlayHint)";
+            var a = E(g, "a", "Opción (a) · la nota del propio grupo, en kalimba, suave", today, sites, "parejas.chime", 0.25f, "pista.a", "PlayNote(NoteHz(grupo), Kalimba, gainDb −6): una vez por cada luz hermana, cuando brilla",
+                "recomendada", "LA RECOMENDADA: la hermana suena con la nota de SU grupo (la misma que sonó al abrirla); así la pareja «se oye» y ayuda a recordar con el oído. El ejemplo suena con dos hermanas.");
+            a.WoodGain = Atten(-6.0); a.WoodLabel = "Opción (a)";
+            var b = E(g, "b", "Opción (b) · la misma nota del grupo, en marimba, suave", today, sites, "parejas.chime", 0.25f, "pista.b", "PlayNote(NoteHz(grupo), Marimba, gainDb −6): una vez por cada luz hermana, cuando brilla",
+                "", "La misma idea con marimba: más seca y con más cuerpo que la kalimba. El ejemplo suena con dos hermanas.");
+            b.WoodGain = Atten(-6.0); b.WoodLabel = "Opción (b)";
+            var c = E(g, "c", "Opción (c) · las dos campanitas de hoy (mi y la), en kalimba, suaves", today, sites, "parejas.chime", 0.25f, "pista.c", "Dos kalimbas, mi (659 Hz) y la (880 Hz), 90 ms entre una y otra: el mismo gesto de hoy con el timbre de Madera",
+                "", "Igual de suave que hoy y con la misma melodía para todos los grupos (no dice cuál es la pareja, solo avisa).");
+            c.WoodGain = Atten(-6.0); c.WoodLabel = "Opción (c)";
         }
 
         // ------------------------------------------------------------------ Bodega de carga

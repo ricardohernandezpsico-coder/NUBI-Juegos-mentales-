@@ -51,6 +51,8 @@ namespace NeuroVida.Bridge.EditorTools
             public string Phase = "";
             /// <summary>Si el evento NO tiene sonido de Madera a propósito (se quita, o se queda como está), lo que dice la página en lugar del botón.</summary>
             public string NoWood = "";
+            /// <summary>Lo que dice el segundo botón de la página (por defecto «Madera»): en la página de la pista de Constelaciones cada evento es una OPCIÓN («Opción (a)»).</summary>
+            public string WoodLabel = "";
             public float HoyGain = 1f, WoodGain = WoodSounds.PlayVolume;
             public bool AlreadyWood;
             public string WoodAltLabel = "Madera (marimba)";
@@ -484,7 +486,7 @@ namespace NeuroVida.Bridge.EditorTools
                   .Append(",\"wood\":").Append(Q(e.WoodKey)).Append(",\"woodGain\":").Append(N(e.WoodGain))
                   .Append(",\"woodAlt\":").Append(Q(e.WoodAltKey)).Append(",\"woodAltLabel\":").Append(Q(e.WoodAltLabel))
                   .Append(",\"alreadyWood\":").Append(e.AlreadyWood ? "true" : "false")
-                  .Append(",\"phase\":").Append(Q(e.Phase)).Append(",\"noWood\":").Append(Q(e.NoWood)).Append('}')
+                  .Append(",\"phase\":").Append(Q(e.Phase)).Append(",\"noWood\":").Append(Q(e.NoWood)).Append(",\"woodLabel\":").Append(Q(e.WoodLabel)).Append('}')
                   .Append(i + 1 < Events.Count ? ",\n" : "\n");
             }
             sb.Append("],\n").Append(FamiliesJson()).Append("\n}\n");

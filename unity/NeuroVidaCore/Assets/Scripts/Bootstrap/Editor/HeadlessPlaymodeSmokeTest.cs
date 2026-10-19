@@ -479,6 +479,7 @@ namespace NeuroVida.Bridge.EditorTools
             _textGuardSeen.Clear();
             _guardPrev.Clear();
             _guardOk.Clear();
+            _guardScale.Clear();
             _hudNow.Clear();
             _hudPrev.Clear();
             _hudSeen.Clear();
@@ -698,6 +699,9 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Texto → huella de lo que se revisó (su rect, su texto y el rect del padre) la última vez que estaba bien: mientras no cambie, no se vuelve a medir (medir el texto es lo caro).</summary>
         private static readonly Dictionary<int, int> _guardOk = new Dictionary<int, int>();
 
+        /// <summary>La escala (en pantalla) que tenía cada texto en la revisión anterior: la letra se mide EN REPOSO (a su escala final). Un texto que todavía cambia de escala (un flotante que aparece con un «pop», 0,94 → 1) mide un poco menos a mitad de la animación y daba falsos avisos de 16 dp (15,0 y 15,1): su tamaño se revisa cuando la escala se queda quieta entre dos revisiones, sin bajar el umbral.</summary>
+        private static readonly Dictionary<int, float> _guardScale = new Dictionary<int, float>();
+
         /// <summary>Un texto solo se informa si queda fuera de lugar en DOS revisiones seguidas (0,4 s) y en el mismo sitio (≤ 2 unidades): lo que está animándose (una burbuja que entra, un número que crece) pasa por posiciones raras de camino y no es el error;
         /// un texto mal posicionado se queda quieto donde está.</summary>
         private static void GuardCandidate(bool strict, string rule, UnityEngine.UI.Text t, Rect drawn, Rect screen, string shape, Rect? parent)
@@ -785,6 +789,9 @@ namespace NeuroVida.Bridge.EditorTools
                 float dp = used * (Mathf.Abs(t.transform.lossyScale.y) / rootScale) / (screen.width / 360f);
                 int sig = unchecked((((Mathf.RoundToInt(raw.x) * 31 + Mathf.RoundToInt(raw.y)) * 31 + Mathf.RoundToInt(raw.width)) * 31 + Mathf.RoundToInt(raw.height)) * 31 + t.text.GetHashCode() + (inImage ? Mathf.RoundToInt(pr.x) * 17 + Mathf.RoundToInt(pr.y) * 13 + Mathf.RoundToInt(pr.width) * 7 + Mathf.RoundToInt(pr.height) : 0) + used * 3 + Mathf.RoundToInt(dp * 10f));
                 int id = t.GetInstanceID();
+                float curScale = Mathf.Abs(t.transform.lossyScale.y);
+                bool atRest = _guardScale.TryGetValue(id, out var prevScale) && Mathf.Abs(prevScale - curScale) <= 0.01f * Mathf.Max(curScale, 0.0001f);          // la escala no cambió desde la revisión anterior: ya está en reposo
+                _guardScale[id] = curScale;
                 if (_guardOk.TryGetValue(id, out var okSig) && okSig == sig) continue;          // no cambió desde que estaba bien
                 var drawn = GuardTextRect(t);
                 float tol = 0.004f * screen.width + 1f;
@@ -809,10 +816,10 @@ namespace NeuroVida.Bridge.EditorTools
                     used = t.cachedTextGenerator.fontSizeUsedForBestFit > 0 ? t.cachedTextGenerator.fontSizeUsedForBestFit : t.fontSize;
                     dp = used * (Mathf.Abs(t.transform.lossyScale.y) / rootScale) / (screen.width / 360f);
                 }
-                if (dp < MinFontDp - 0.3f && !SizeIsException(t))
+                if (dp < MinFontDp - 0.3f && atRest && !SizeIsException(t))
                 { GuardCandidate(strictGame, "letra menor de " + MinFontDp + " dp (" + dp.ToString("0.0") + " dp)", t, drawn, screen, shape, null); flagged = true; }
                 // (3b) los chips del marcador: 16 dp
-                if (dp < HudChipMinDp - 0.05f && IsHudChipText(t))
+                if (dp < HudChipMinDp - 0.05f && atRest && IsHudChipText(t))
                 { GuardCandidate(strictGame, "chip del marcador menor de " + HudChipMinDp + " dp (" + dp.ToString("0.0") + " dp)", t, drawn, screen, shape, null); flagged = true; }
                 // (4) texto CORTADO por el alto de su caja: con «Truncate», una línea que no cabe en el alto del rect se OCULTA entera (el texto desaparece, no se recorta): pasa cuando se agranda la letra sin agrandar la caja. Lo que el texto pide de alto
                 // (con el ajuste automático ya hecho, y en el ancho que tiene) no puede pasar del alto de su caja.

@@ -32,7 +32,8 @@ GRUPOS = [
     ('parejas', 'Constelaciones', 'Memoria'),
     ('secuencia', 'Rastro de luz', 'Memoria'),
     ('bodega', 'Bodega de carga', 'Memoria'),
-    ('correo', 'La estación de correo', 'Memoria'),
+    ('correo', 'Correo Estelar', 'Memoria'),
+    ('pista', 'La pista de Constelaciones', 'Memoria'),
     ('stroop', 'Tinta o Palabra', 'Atención'),
     ('piloto', 'Piloto Estelar', 'Atención'),
     ('freno', 'Freno de emergencia', 'Atención'),
@@ -55,8 +56,17 @@ FASES = {
         'etiqueta': 'Tarea 133 · Fase C',
         'titulo': 'Fase C · hoy | Madera',
         'tag': 'Fase C: hoy y Madera cálida',
-        'lead': 'Estos son los cinco juegos de la Fase C: <b>Carga exacta, En la punta de la lengua, Constelaciones, Bodega de carga y La estación de correo</b>. El botón azul es cómo suena HOY (tal como sonaba el 17-oct); el amarillo, cómo sonará con «Madera cálida» (kalimba, marimba y bloque de madera con la sala pequeña de Rescate); donde una nota lleva información, el verde es la misma nota con marimba para comparar. Ningún juego está cableado todavía: aprueba de oído y yo conecto después.',
+        'lead': 'Estos son los cinco juegos de la Fase C: <b>Carga exacta, En la punta de la lengua, Constelaciones, Bodega de carga y Correo Estelar</b>. El botón azul es cómo suena HOY (tal como sonaba el 17-oct); el amarillo, cómo sonará con «Madera cálida» (kalimba, marimba y bloque de madera con la sala pequeña de Rescate); donde una nota lleva información, el verde es la misma nota con marimba para comparar. Ningún juego está cableado todavía: aprueba de oído y yo conecto después.',
         'tip': 'Qué escuchar: (1) las <b>37 notas de memoria</b> en kalimba (11 de Constelaciones, 12 de Bodega, 10 de Punta, 4 de Correo): que se reconozca cada una y que se entienda el orden; (2) los <b>8 sonidos propios nuevos</b> (Bodega 5: llega la carga, el haz, abrir, volar y la matraca; Correo 3: la bocina, el saco y la radio); (3) tres cambios de criterio que decides tú: <b>quitar el destello</b> en Constelaciones, la <b>bocina de fondo</b> bajo la fanfarria del faro de Correo y la <b>pista</b> de las luces hermanas como «ayuda». Mejor con audífonos o con el parlante a volumen medio; los sonidos están al volumen real del juego. Para comparar solo el timbre, prende «Igualar volumen».',
+    },
+    'P': {
+        'grupos': ['pista'],
+        'archivo': 'pista',
+        'etiqueta': 'Tarea 135 · Elegir la pista de Constelaciones',
+        'titulo': 'La pista de Constelaciones: elige de oído',
+        'tag': 'La pista de Constelaciones: elige',
+        'lead': '<b>Qué hace la pista en el juego:</b> si abres una luz y después otra que NO es su pareja, un momento después las luces hermanas de la primera (las que ya habías visto) brillan un instante para que recuerdes dónde estaban. Hoy suenan dos campanitas muy suaves; el soplo de «Hint» de la paleta no te sonó a ayuda y no se cableó. Escucha las tres opciones: cada una tiene su botón y, al lado, «Hoy» para comparar con lo que suena ahora.',
+        'tip': 'Las tres opciones suenan SUAVES a propósito (−6 dB; la pista es un aviso, no un acierto). En (a) y (b) cada luz hermana suena la nota de SU grupo en el momento en que brilla (el ejemplo tiene dos hermanas: dos notas); con una pareja es una sola nota y con un trío son dos. Mejor con audífonos o con el parlante a volumen medio.',
     },
     'D': {
         'grupos': ['secuencia', 'satelites', 'piloto', 'intrusa'],
@@ -254,7 +264,7 @@ function evento(e) {
   } else {
     if (e.hoy) btns.appendChild(button('hoy', 'Hoy', e.hoy, e.hoyGain, ''));
     else { const m = document.createElement('div'); m.className = 'mudo'; m.textContent = 'Hoy: silencio'; btns.appendChild(m); }
-    btns.appendChild(button('madera', 'Madera', e.wood, e.woodGain, ''));
+    btns.appendChild(button('madera', e.woodLabel || 'Madera', e.wood, e.woodGain, ''));
     if (e.woodAlt) btns.appendChild(button('alt', e.woodAltLabel, e.woodAlt, e.woodGain, ''));
   }
   d.appendChild(btns);
@@ -294,7 +304,7 @@ def cargar():
 
 def datos_pagina(cat, fase=None):
     """Lo mínimo que necesita la página: los grupos, los eventos y, por cada sonido, su archivo y sus niveles. Con `fase`, solo los juegos de esa fase (en su orden) y solo los sonidos que sus eventos nombran."""
-    campos = ('group', 'id', 'title', 'today', 'sites', 'map', 'flag', 'note', 'hoy', 'hoyGain', 'wood', 'woodGain', 'woodAlt', 'woodAltLabel', 'alreadyWood', 'noWood')
+    campos = ('group', 'id', 'title', 'today', 'sites', 'map', 'flag', 'note', 'hoy', 'hoyGain', 'wood', 'woodGain', 'woodAlt', 'woodAltLabel', 'alreadyWood', 'noWood', 'woodLabel')
     eventos = []
     for e in cat['events']:
         if fase and (e.get('phase') != fase or e['group'] not in FASES[fase]['grupos']):
@@ -347,7 +357,7 @@ def main():
             .replace('__DATOS__', json.dumps(datos, ensure_ascii=False, separators=(',', ':')))
             .replace('__INCRUSTADO__', 'true' if args.incrustar else 'false')
             .replace('__AUDIO__', json.dumps(audio, separators=(',', ':'))))
-    sufijo = '-' + args.fase if args.fase else ''
+    sufijo = '-' + FASES[args.fase].get('archivo', args.fase) if args.fase else ''
     salida = args.salida or os.path.join(RAIZ, 'docs', 'previews', 'sonido-escucha%s%s.html' % (sufijo, '-incrustado' if args.incrustar else ''))
     with io.open(salida, 'w', encoding='utf-8', newline='\n') as f:
         f.write(html)
