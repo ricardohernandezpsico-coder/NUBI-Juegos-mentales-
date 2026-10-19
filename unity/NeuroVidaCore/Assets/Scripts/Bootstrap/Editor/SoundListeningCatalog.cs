@@ -631,7 +631,7 @@ namespace NeuroVida.Bridge.EditorTools
             const string g = "meteoros";
             H("meteoros.destruir", () => HarmonicTone.Build(330f, 0.12f, 0.03f));
             Raw("meteoros.destruir.madera", () => FromRecipe(WoodSounds.MakeCue(330, 0.12)));
-            E(g, "destruir", "Se destruye un meteoro", "PlayTone: 330 Hz, 0,12 s, amplitud 0,03 (se suma al acierto común)", "MeteorGameController.cs:520, :1250", "meteoros.destruir", 1f, "meteoros.destruir.madera", "Cue(330)", "", "Es retroalimentación, no información: se evalúa en la Fase C si se queda o se quita (ya suena el Acierto común).");
+            E(g, "destruir", "Se deja pasar una palabra inventada (el acierto sin ruido)", "PlayTone: 330 Hz, 0,12 s, amplitud 0,03 (el único sonido de ese acierto)", "MeteorGameController.cs: dejar pasar una inventada (MeteorSounds.PlayLetPass); y en la práctica", "meteoros.destruir", 1f, "meteoros.destruir.madera", "PlayCue(330, 0,12, gainDb −9)", "", "Es retroalimentación suave, no información. SE QUEDA (Tarea 139): el plan creía que se sumaba al acierto común y proponía quitarlo, pero no suena junto a ningún Correct: es el único sonido de «dejar pasar una inventada». Misma altura y duración, −9 dB: igual de discreto.").WoodGain = Atten(-9.0);
             E(g, "listo", "Práctica: «¡Listo!»", "PlayTone: 523 Hz, 0,4 s", "MeteorGameController.cs:1212", "stroop.listo", 1f, Wk(WoodSfx.Notice), "Notice");
             E(g, "comun", "Acierto, error, subir de nivel y tic", "Comunes (GameFeel)", "MeteorGameController.cs:492, :499, :187, :466", "gamefeel.wrong", 0.5f, Wk(WoodSfx.Wrong), "Wrong (ver «Lo común»)");
         }

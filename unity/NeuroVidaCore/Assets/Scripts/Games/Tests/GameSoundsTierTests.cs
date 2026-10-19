@@ -7,6 +7,7 @@ using NeuroVida.Games.Bodega;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Correo;
 using NeuroVida.Games.Intrusa;
+using NeuroVida.Games.Meteoros;
 using NeuroVida.Games.Parejas;
 using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Satelites;
@@ -43,6 +44,7 @@ namespace NeuroVida.Games.Tests
             new GameSounds { Id = "piloto", All = PilotSounds.All, Request = PilotSounds.Request },
             new GameSounds { Id = "intrusa", All = IntrusaSounds.All, Request = IntrusaSounds.Request },
             new GameSounds { Id = "stroop", All = StroopSounds.All, Request = StroopSounds.Request },
+            new GameSounds { Id = "meteoros", All = MeteorSounds.All, Request = MeteorSounds.Request },
         };
 
         [SetUp]

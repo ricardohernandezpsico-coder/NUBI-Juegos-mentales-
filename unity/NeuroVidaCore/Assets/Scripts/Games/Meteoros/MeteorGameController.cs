@@ -135,6 +135,7 @@ namespace NeuroVida.Games.Meteoros
 
         private IEnumerator GameLoop()
         {
+            MeteorSounds.Request();                  // la señal de «dejar pasar una inventada» se pide ANTES de la cuenta (lo demás va con el núcleo)
             StartCoroutine(PrewarmSprites());
             bool tutorialPlayed = false;
             if (TutorialWanted)
@@ -527,7 +528,7 @@ namespace NeuroVida.Games.Meteoros
                 _streak++;
                 _bestStreak = Mathf.Max(_bestStreak, _streak);
                 _points += MeteorContract.Points(false, _dda.PresentedLevel, _streak, false, false);
-                PlayTone(330f, 0.12f, 0.03f);
+                MeteorSounds.PlayLetPass();               // el acierto sin ruido: 330 Hz, 0,12 s, suave (-9 dB); es el único sonido de este acierto
                 StartCoroutine(DissolveEffect(m));
                 if (_streak == MeteorContract.StreakGlow) RefreshTrails();
             }
@@ -1230,7 +1231,7 @@ namespace NeuroVida.Games.Meteoros
             }
             else
             {
-                PlayTone(330f, 0.12f, 0.03f);
+                MeteorSounds.PlayLetPass();
                 StartCoroutine(DissolveEffect(m));
                 _guidedOutcome = 4;
             }
