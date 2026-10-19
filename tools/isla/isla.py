@@ -3,6 +3,7 @@
 La isla de Nubi en 3D (versión vigente: ronda 26b, 11-oct-2026): pocas piezas, gordas y redondeadas; Nubi con lóbulos simples y cara
 lisa; torre de celosía sin plato; luz más clara; edificios con silueta de juguete. Blender 4.5, solo herramientas de Blender.
 Uso: blender -b -P isla.py -- [--engine EEVEE|CYCLES] [--samples N] [--width 1080] [--out DIR] [--layers] [--json] [--solo-nubi --mirada X] [--perfil] [--tablero --lamina A|B|E [--sin-luceros | --solo-luceros] [--b-aprobado]] [--nubi hola|descansa]
+     [--deco [--deco-solo c1,v1] [--deco-completa] [--deco-lamina --deco-zoom 2 [--deco-sin-capa]]]    (Tarea 134: las diez piezas de la isla por medallas)
 Ver tools/isla/README.md y tools/isla/render.sh.
 """
 import bpy, bmesh, math, os, sys, time, random
@@ -14,6 +15,7 @@ ENGINE = arg('--engine','EEVEE').upper(); SAMPLES = int(arg('--samples','48')); 
 OUT = os.path.abspath(arg('--out', os.path.join(os.path.dirname(os.path.abspath(__file__)),'out'))); LAYERS = '--layers' in args; POSE = arg('--nubi','hola')
 JSON = '--json' in args; NORENDER = '--no-render' in args; ICONOS = '--iconos' in args; REPISA = '--repisa' in args; ALTERNATIVAS = '--alternativas' in args
 LAMINA = arg('--lamina','A').upper(); MIRADA = arg('--mirada','frente'); SOLO_NUBI = '--solo-nubi' in args; FONDO = '--fondo' in args; SOLO_EDIFICIOS = '--solo-edificios' in args; PERFIL = '--perfil' in args; TABLERO = '--tablero' in args; KIT = '--kit' in args; BARRA = '--barra' in args
+DECO = '--deco' in args; DECO_COMPLETA = '--deco-completa' in args; DECO_LAMINA = '--deco-lamina' in args; DECO_ZOOM = float(arg('--deco-zoom', '2')); DECO_SIN_CAPA = '--deco-sin-capa' in args; DECO_SOLO = [s for s in arg('--deco-solo', '').split(',') if s]
 os.makedirs(OUT, exist_ok=True); random.seed(5)
 
 def hx(h): h=h.lstrip('#'); return tuple(int(h[i:i+2],16)/255 for i in (0,2,4))
@@ -23,9 +25,12 @@ COL = {'cream':'#F6EAD2','creamDk':'#E8D6B2','tan':'#DDB782','tanDk':'#C09560','
  'mem':'#8FC0F5','memDk':'#3E6FBF','ate':'#F5B672','ateDk':'#B5631F','raz':'#BDA7F2','razDk':'#6A55B8','len':'#8FD9B0','lenDk':'#2F7E5C',
  'nubi':'#CBB8F4','nubiBlue':'#9FCBF7','rose':'#F6AFC4','glint':'#FFFFFF','window':'#FFE8A8','smoke':'#EFE7D6'}
 
+# Tarea 134: las diez piezas de la isla por medallas (spec-adopcion-A1-A7 §A1.1): una colección deco_<id> por pieza; solo se ven si un render las pide (los demás renders, y las capas vigentes de la app, no cambian)
+DECO_IDS = ('c1', 'c2', 'c3', 'c4', 'v1', 'v2', 'v3', 'vo1', 'vo2', 'vo3')     # el orden de dibujo de la app (suelo y aire por separado)
+DECO_CAPA = {'c1': 'suelo', 'c2': 'suelo', 'c3': 'suelo', 'c4': 'suelo', 'v1': 'aire', 'v2': 'aire', 'v3': 'aire', 'vo1': 'suelo', 'vo2': 'suelo', 'vo3': 'suelo'}
 scene = bpy.context.scene
 for o in list(bpy.data.objects): bpy.data.objects.remove(o, do_unlink=True)
-for n in ('isla','edificios','nubi','luces','iconos'):
+for n in ('isla','edificios','nubi','luces','iconos') + tuple('deco_' + i for i in DECO_IDS):
     c = bpy.data.collections.new(n); scene.collection.children.link(c)
 C = {c.name: c for c in scene.collection.children}
 def link(obj, coll):
@@ -258,7 +263,7 @@ def churro(p0, p1, r, m, coll='edificios', name='churro', caps=True):
     return o
 
 HAND = random.Random(23)
-def handmade(coll_name, skip=('obs_cortador',), bev=0.14, noise=0.015, rot=1.2, scl=0.02):
+def handmade(coll_name, skip=('obs_cortador',), bev=0.14, noise=0.015, rot=1.2, scl=0.02, rng=None):
     """Hecho a mano: biseles gordos (bev × dimensión menor, ≥4 segmentos), ruido de baja frecuencia (noise × tamaño), giro leve y escala irregular por pieza."""
     for o in list(C[coll_name].objects):
         if o.type != 'MESH' or o.name.split('.')[0] in skip or o.hide_render: continue
@@ -273,8 +278,9 @@ def handmade(coll_name, skip=('obs_cortador',), bev=0.14, noise=0.015, rot=1.2, 
         if not any(md.type == 'DISPLACE' for md in o.modifiers) and mx > 0.08:
             tex = bpy.data.textures.new('mano','CLOUDS'); tex.noise_scale = mx*1.2; tex.noise_depth = 0
             md = o.modifiers.new('Mano','DISPLACE'); md.texture = tex; md.strength = noise*mx; md.mid_level = 0.5; md.texture_coords = 'GLOBAL'
-        o.rotation_euler = (o.rotation_euler.x + math.radians(HAND.uniform(-rot*0.6, rot*0.6)), o.rotation_euler.y + math.radians(HAND.uniform(-rot*0.6, rot*0.6)), o.rotation_euler.z + math.radians(HAND.uniform(-rot, rot)))
-        f = HAND.uniform(1-scl, 1+scl); o.scale = (o.scale.x*f, o.scale.y*HAND.uniform(1-scl, 1+scl), o.scale.z*HAND.uniform(1-scl, 1+scl))
+        H_ = rng or HAND   # (Tarea 134) las piezas de la isla traen su propio azar: la secuencia HAND de la isla no cambia
+        o.rotation_euler = (o.rotation_euler.x + math.radians(H_.uniform(-rot*0.6, rot*0.6)), o.rotation_euler.y + math.radians(H_.uniform(-rot*0.6, rot*0.6)), o.rotation_euler.z + math.radians(H_.uniform(-rot, rot)))
+        f = H_.uniform(1-scl, 1+scl); o.scale = (o.scale.x*f, o.scale.y*H_.uniform(1-scl, 1+scl), o.scale.z*H_.uniform(1-scl, 1+scl))
 
 def lamp(x, y, coll='isla', h=0.4):
     post = cyl(r=0.065, d=h, verts=20, loc=(x,y,h/2), coll=coll, name='farola'); bevel(post,0.025,3); organic(post,0.006,0.4,1); mat(post, clay('m_tanDk', COL['tanDk'], bump=0.5, sss=0.1))
@@ -636,15 +642,31 @@ def setup_render():
         ee = scene.eevee; ee.taa_render_samples = SAMPLES
         for a,v in (('use_gtao',True),('use_shadows',True),('use_raytracing',True),('shadow_ray_count',2),('shadow_step_count',4)):
             if hasattr(ee,a): setattr(ee,a,v)
-def render(name, visible, holdout=()):
+def render(name, visible, holdout=(), catcher=(), border=None, crop=False, sin_sombra_holdout=False):
+    """catcher: colecciones que no se ven y solo reciben la sombra (como la lámina de los luceros); border: (x0, y0, x1, y1) en fracción del encuadre (y hacia abajo): solo se renderiza ese rectángulo
+       (la imagen sale entera, con el resto transparente, o recortada si crop); sin_sombra_holdout: los holdout ocultan lo que tapan pero NO proyectan sombra (para que una pieza no duplique la sombra de los edificios)."""
     for cn,c in C.items(): c.hide_render = cn not in visible
+    TIPOS = ('MESH', 'FONT', 'CURVE', 'SURFACE') if sin_sombra_holdout else ('MESH',)   # (Tarea 134) en las piezas también el texto del letrero de la Biblioteca («Ñ», un objeto de texto) sale de holdout: si no, se ve como una mancha oscura
     for cn in holdout:   # presentes pero invisibles: solo proyectan sombra y rebotes (para que cada capa de la app lleve las sombras de las otras)
         for o in C[cn].objects:
-            if o.type == 'MESH': o.is_holdout = True
-    scene.render.filepath = os.path.join(OUT, name+'.png'); t0=time.time(); bpy.ops.render.render(write_still=True); dt=time.time()-t0
+            if o.type in TIPOS:
+                o.is_holdout = True
+                if sin_sombra_holdout: o.visible_shadow = False
+    for cn in catcher:
+        for o in C[cn].objects:
+            if o.type == 'MESH': o.is_shadow_catcher = True
+    rd = scene.render
+    if border:
+        rd.use_border = True; rd.use_crop_to_border = crop
+        rd.border_min_x, rd.border_max_x, rd.border_min_y, rd.border_max_y = border[0], border[2], 1.0 - border[3], 1.0 - border[1]
+    rd.filepath = os.path.join(OUT, name+'.png'); t0=time.time(); bpy.ops.render.render(write_still=True); dt=time.time()-t0
+    if border: rd.use_border = False; rd.use_crop_to_border = False
+    for cn in catcher:
+        for o in C[cn].objects:
+            if o.type == 'MESH': o.is_shadow_catcher = False
     for cn in holdout:
         for o in C[cn].objects:
-            if o.type == 'MESH': o.is_holdout = False
+            if o.type in TIPOS: o.is_holdout = False; o.visible_shadow = True
     print(f'[isla] {name}: {dt:.1f} s'); return dt
 
 def export_json():
@@ -671,6 +693,11 @@ def export_json():
         else:
             data['lugares'][name.lower()] = {'pie': px((x,y,0)), 'centro': px((x,y,alt[name]*0.5)), 'techo': px((x,y,alt[name])), 'area': {'Observatorio':'memoria','Antena':'atencion','Hangar':'razonamiento','Biblioteca':'lenguaje'}[name]}
             if name == 'Antena': data['lugares']['antena']['lampara'] = px((x,y,1.41*K))
+    if DECO_ANCLA:   # Tarea 134: dónde toca la isla cada pieza (la app la escala desde ahí al aparecer) y en qué capa va; vo3 trae además la bombilla (el halo se hornea en su capa)
+        def px_borde(i):
+            b = deco_borde(i); return [[round(b[0]*W, 1), round(b[1]*H, 1)], [round(b[2]*W, 1), round(b[3]*H, 1)]]
+        data['deco'] = {i: {'ancla': px(DECO_ANCLA[i]), 'capa': DECO_CAPA[i], 'borde': px_borde(i)} for i in DECO_IDS if i in DECO_ANCLA}
+        if 'vo3' in DECO_HALO: data['deco']['vo3']['halo'] = px(DECO_HALO['vo3'])
     with open(os.path.join(OUT,'isla.json'),'w',encoding='utf-8') as f: json.dump(data, f, ensure_ascii=False, indent=1)
     print('[isla] isla.json escrito')
 
@@ -1307,6 +1334,206 @@ def render_repisa():
     scene.render.resolution_x = 256; scene.render.resolution_y = 88
     times['repisa_huellas'] = render('repisa_huellas', {'iconos','luces'})
 
+# ------------------------------------------------------------------ piezas de la isla por medallas (Tarea 134; spec-adopcion-A1-A7 §A1): diez piezas, cada una en su colección deco_<id>
+# Cada pieza se renderiza SOLA (capa-deco-<id>.png): las de suelo con la isla de «shadow catcher» (su sombra de contacto sobre la losa) y los edificios (y las piezas de abajo que la puedan tapar) de «holdout», que la recortan donde
+# quedan delante; las de aire flotan sin sombra. La app las apila: suelo entre la base y los edificios, aire encima de los edificios. Nada con puntas de estrella, medias lunas ni cruces: los banderines son triángulos.
+DECO_RNG = random.Random(134)   # propio: no toca la secuencia HAND de la isla (la base, los edificios y Nubi salen idénticos)
+DECO_ANCLA = {}                 # id -> punto del mundo donde la pieza toca la isla: la app la escala desde ahí al aparecer (sale en isla.json)
+DECO_HALO = {}                  # vo3: la bombilla del farolito; componer.py hornea ahí el halo
+CAM_D = Vector((12.8, -12.8, 14.5)).normalized()   # hacia la cámara: lo que mira de frente se ve entero
+
+def dmat(nombre, color, **kw):
+    """Plasticina con el brillo y el jaspeado de los edificios."""
+    base = dict(bump=0.55, sss=0.22, rough=0.62, vary=0.04, ao=0.35, ao_cool=1.0); base.update(kw)
+    return clay(nombre, color, **base)
+
+def dhecho(coll, **kw):
+    handmade(coll, rng=DECO_RNG, **kw)
+
+# --- Constancia: el jardín crece
+ARBUSTOS = ((-0.15, -2.10, 0.28, KIT_LIMA, 'a'), (0.60, -2.08, 0.27, '#B9EE7C', 'b'))   # la franja libre del borde delantero izquierdo (comprobada contra la silueta del Observatorio y del Hangar) mide ~0,9 de largo   # x, y, radio, color
+FLORES = ((-0.55, -2.08, '#B8A4FF', 0.18), (-0.52, -2.00, KIT_CORAL, 0.20), (0.225, -1.76, KIT_SOL, 0.34), (0.225, -1.92, KIT_CORAL, 0.28), (0.225, -2.10, '#B8A4FF', 0.18))   # x, y, color, alto del tallo: dos a la izquierda del arbusto de adelante y tres en el hueco entre los dos
+ARBOL = (1.95, -0.35)           # pie del tronco: el único hueco de la losa donde la copa no pisa edificios, piezas ni Nubi (comprobado contra sus siluetas): borde delantero derecho, entre el Hangar y el muelle
+COPA_Z, COPA_R = 0.80, 0.31
+
+def deco_c1():
+    for (x, y, r, col, k) in ARBUSTOS:
+        b = sphere(r=r, seg=48, loc=(x, y, r*0.84), scale=(1, 1, 0.9), coll='deco_c1', name='arbusto'); organic(b, 0.04, 0.5, 2)
+        mat(b, dmat('m_arbusto_' + k, col, bump=0.85, dents=0.9, dent_scale=9, ao=0.45, vary=0.05, sat=1.0))
+    DECO_ANCLA['c1'] = (sum(a[0] for a in ARBUSTOS)/2, sum(a[1] for a in ARBUSTOS)/2, 0.0)
+
+def deco_c2():
+    ms = dmat('m_tallo', '#5DAA3E', bump=0.3, dents=0.0, vary=0.05)
+    d = CAM_D
+    for k, (x, y, col, h) in enumerate(FLORES):
+        churro((x, y, 0.0), (x, y, h), 0.02, ms, 'deco_c2', 'tallo')
+        hoja = sphere(r=0.06, seg=16, loc=(x + 0.05, y - 0.03, 0.035), scale=(1, 0.5, 0.3), coll='deco_c2', name='hoja'); mat(hoja, ms)
+        cab = sphere(r=0.095, seg=32, loc=(x, y, h + 0.03), scale=(1, 1, 0.42), coll='deco_c2', name='flor'); cab.rotation_euler = d.to_track_quat('Z', 'Y').to_euler(); organic(cab, 0.006, 0.3, 1)
+        mat(cab, dmat('m_flor_' + col.lstrip('#'), col, bump=0.3, dents=0.0, vary=0.02, rough=0.55))
+        cen = sphere(r=0.04, seg=16, loc=(x + d.x*0.05, y + d.y*0.05, h + 0.03 + d.z*0.05), coll='deco_c2', name='flor_centro'); mat(cen, dmat('m_flor_centro', '#FFF3C4', bump=0.2, dents=0.0, vary=0.0))
+    DECO_ANCLA['c2'] = (sum(f[0] for f in FLORES)/len(FLORES), sum(f[1] for f in FLORES)/len(FLORES), 0.0)
+
+def deco_c3():
+    x, y = ARBOL
+    tr = cyl(r=0.075, d=0.66, verts=24, loc=(x, y, 0.3), coll='deco_c3', name='tronco'); bevel(tr, 0.03, 3); organic(tr, 0.012, 0.5, 1); mat(tr, dmat('m_tronco', '#C69A62', bump=0.65, dents=0.4, dent_scale=6, ao=0.4, veta=0.1))
+    pie = sphere(r=0.115, seg=24, loc=(x, y, 0.02), scale=(1, 1, 0.45), coll='deco_c3', name='raiz'); mat(pie, dmat('m_tronco', '#C69A62', bump=0.65, dents=0.4, dent_scale=6, ao=0.4, veta=0.1))
+    cp = sphere(r=COPA_R, seg=64, loc=(x, y, COPA_Z), scale=(1, 1, 0.94), coll='deco_c3', name='copa'); organic(cp, 0.05, 0.6, 2)
+    mat(cp, dmat('m_copa', '#78BE45', bump=0.85, dents=0.9, dent_scale=9, ao=0.45, vary=0.05, sat=1.0))
+    DECO_ANCLA['c3'] = (x, y, 0.0)
+
+FRUTAS = ((0.10, 0.4), (0.72, 0.1), (0.72, 1.4), (0.72, 2.6), (0.72, 3.75), (0.72, 5.0))   # (separación del eje hacia la cámara, giro) en radianes
+def deco_c4():
+    x, y = ARBOL; a = CAM_D; e1 = a.cross(Vector((0, 0, 1))).normalized(); e2 = a.cross(e1); mf = dmat('m_fruto', KIT_SOL, bump=0.3, dents=0.0, vary=0.02, rough=0.5)
+    for (th, ph) in FRUTAS:
+        v = (a*math.cos(th) + (e1*math.cos(ph) + e2*math.sin(ph))*math.sin(th)).normalized(); p = Vector((x, y, COPA_Z)) + v*(COPA_R*0.99)
+        fr = sphere(r=0.064, seg=24, loc=tuple(p), coll='deco_c4', name='fruto'); mat(fr, mf)
+    DECO_ANCLA['c4'] = (x, y, COPA_Z)
+
+# --- Variedad: los banderines unen los lugares
+V_COL = (KIT_CREMA, KIT_SOL, KIT_CIELO, KIT_CORAL)
+def banderin(coll, loc, rotz, ancho, alto, color, pitch=0.0, asta=False, name='banderin', grosor=0.04):
+    """Triángulo de 3 vértices extruido (con bisel): colgante (base arriba, punta abajo) o de asta (lado en el asta, punta a un costado). NADA de estrellas ni cruces."""
+    me = bpy.data.meshes.new(name); bm = bmesh.new()
+    pts = [(0, 0, 0), (0, 0, -alto), (ancho, 0, -alto/2)] if asta else [(-ancho/2, 0, 0), (ancho/2, 0, 0), (0, 0, -alto)]
+    f = bm.faces.new([bm.verts.new(p) for p in pts]); r = bmesh.ops.extrude_face_region(bm, geom=[f])
+    bmesh.ops.translate(bm, vec=(0, grosor, 0), verts=[v for v in r['geom'] if isinstance(v, bmesh.types.BMVert)])
+    bmesh.ops.translate(bm, vec=(0, -grosor/2, 0), verts=list(bm.verts)); bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(me); bm.free(); me.update()
+    o = bpy.data.objects.new(name, me); scene.collection.objects.link(o); place(o, loc=loc, rot=(0, math.degrees(pitch), math.degrees(rotz)), coll=coll)
+    bevel(o, 0.012, 3, ang=80); mat(o, dmat('m_banderin_' + color.lstrip('#'), color, bump=0.3, dents=0.0, vary=0.02, rough=0.55, ao=0.25)); return o
+
+def cuerda(coll, p0, p1, comba, n, ancho, alto, cols, grosor=0.024, desde=0.0, hasta=1.0):
+    """Cuerda con comba (parábola) y n banderines triangulares colgando a trechos iguales; devuelve el punto medio."""
+    p0, p1 = Vector(p0), Vector(p1); mc = dmat('m_cuerda', '#E2C79A', bump=0.2, dents=0.0, vary=0.02, ao=0.2)
+    def en(t):
+        q = p0.lerp(p1, t); q.z -= 4*comba*t*(1 - t); return q
+    N = 16
+    for i in range(N): churro(en(i/N), en((i+1)/N), grosor, mc, coll, 'cuerda')
+    yaw = math.atan2(p1.y - p0.y, p1.x - p0.x); L = (p1 - p0).length
+    for k in range(n):
+        t = desde + (hasta - desde)*(k + 0.5)/n; q = en(t); dz = (en(t + 0.01).z - en(t - 0.01).z)/(0.02*L)   # pendiente a lo largo de la cuerda
+        banderin(coll, (q.x, q.y, q.z - 0.012), yaw, ancho, alto, cols[k % len(cols)], pitch=-math.atan(dz*1.0))
+    for p, nm in ((p0, 'nudo'), (p1, 'nudo')):
+        kn = sphere(r=0.04, seg=16, loc=tuple(p), coll=coll, name=nm); mat(kn, dmat('m_nudo', KIT_SOL, bump=0.2, dents=0.0, vary=0.0))
+    return en(0.5)
+
+# puntos de amarre (mundo): la lámpara de la Antena (bulbo en (-1,7; 0,1; 1,41), radio 0,21), el lomo de la Biblioteca y el domo del Observatorio
+AMARRE = {'antena_v1': (-1.50, 0.14, 1.40), 'antena_v2': (-1.64, -0.09, 1.40), 'bib': (1.32, 0.80, 1.55), 'obs': (-1.32, -1.10, 1.10)}   # el amarre de la Biblioteca es un posteciito sobre el lomo del techo (ahí mismo se para después el asta de V3)
+def deco_v1():
+    poste = churro((1.32, 0.80, 1.30), (1.32, 0.80, 1.55), 0.03, dmat('m_asta', '#E2C79A', bump=0.25, dents=0.0, vary=0.02, ao=0.2), 'deco_v1', 'poste_amarre')
+    m = cuerda('deco_v1', AMARRE['antena_v1'], AMARRE['bib'], 0.06, 9, 0.30, 0.36, V_COL, desde=0.13, hasta=0.93); DECO_ANCLA['v1'] = tuple(m)   # casi tensa y con los banderines lejos de los anclajes: pasa entre Nubi (arriba) y las farolas de la ruta (abajo)
+def deco_v2():
+    m = cuerda('deco_v2', AMARRE['obs'], AMARRE['antena_v2'], 0.07, 4, 0.26, 0.32, V_COL, desde=0.10, hasta=0.80); DECO_ANCLA['v2'] = tuple(m)
+def deco_v3():
+    ma = dmat('m_asta', '#E2C79A', bump=0.25, dents=0.0, vary=0.02, ao=0.2)
+    bases = (('obs', (-1.32, -1.10, 1.10), KIT_SOL), ('antena', (-1.70, 0.10, 1.58), KIT_CIELO), ('bib', (1.32, 0.80, 1.30), KIT_CORAL), ('han', (1.32, -1.32, 1.06), KIT_CORAL))
+    for (nm, (x, y, z), col) in bases:
+        churro((x, y, z), (x, y, z + 0.80), 0.022, ma, 'deco_v3', 'asta')
+        banderin('deco_v3', (x, y, z + 0.78), math.radians(45), 0.30, 0.42, col, asta=True, name='bandera_' + nm)
+    DECO_ANCLA['v3'] = (sum(b[1][0] for b in bases)/4, sum(b[1][1] for b in bases)/4, 1.2)
+
+# --- Volver: el muelle, la nave y el farolito
+DOCK_Y, DOCK_X0, DOCK_N, DOCK_PASO, DOCK_W = 0.05, 1.98, 6, 0.19, 0.58
+DOCK_X1 = DOCK_X0 + DOCK_N*DOCK_PASO
+def deco_vo1():
+    mt = dmat('m_tablon', '#EBD3A2', bump=0.5, dents=0.3, dent_scale=6, ao=0.3, veta=0.12, vary=0.03)
+    mv = dmat('m_viga', '#B98A55', bump=0.5, dents=0.2, ao=0.4, veta=0.1)
+    for i in range(DOCK_N):
+        t = box((DOCK_PASO - 0.025, DOCK_W, 0.075), loc=(DOCK_X0 + (i + 0.5)*DOCK_PASO, DOCK_Y, 0.04), coll='deco_vo1', name='tablon'); bevel(t, 0.025, 4); mat(t, mt)
+    for sy in (-1, 1):
+        v = box((DOCK_X1 - DOCK_X0 + 0.08, 0.075, 0.075), loc=((DOCK_X0 + DOCK_X1)/2 + 0.02, DOCK_Y + sy*(DOCK_W/2 - 0.08), -0.025), coll='deco_vo1', name='viga'); bevel(v, 0.02, 3); mat(v, mv)
+    for (px_, sy, alto) in ((DOCK_X1 - 0.09, -1, 0.20), (DOCK_X1 - 0.09, 1, 0.20), (DOCK_X0 + 0.55, -1, 0.07), (DOCK_X0 + 0.55, 1, 0.07)):
+        p = cyl(r=0.05, d=0.75 + alto, verts=20, loc=(px_, DOCK_Y + sy*(DOCK_W/2 + 0.005), (alto - 0.75)/2 + 0.005), coll='deco_vo1', name='pilote'); bevel(p, 0.02, 3); mat(p, mv)
+        cap = sphere(r=0.052, seg=16, loc=(px_, DOCK_Y + sy*(DOCK_W/2 + 0.005), alto + 0.005), scale=(1, 1, 0.6), coll='deco_vo1', name='pilote_tapa'); mat(cap, mv)
+    dhecho('deco_vo1', bev=0.1, noise=0.008, rot=1.4, scl=0.015)
+    DECO_ANCLA['vo1'] = (DOCK_X0 + 0.15, DOCK_Y, 0.0)
+
+NAVE = (2.78, -0.78, -0.10)     # centro de la nave, junto a la punta del muelle, del lado de la cámara
+def deco_vo2():
+    cx, cy, cz = NAVE; L = 'deco_vo2'
+    lila = dmat('m_nave', KIT_LILA, bump=0.6, dents=0.5, dent_scale=7, ao=0.4, vary=0.05); lilaDk = dmat('m_naveDk', '#8D77E6', bump=0.5, dents=0.3, ao=0.4, vary=0.04)
+    cuerpo = sphere(r=1.0, seg=64, loc=(cx, cy, cz), scale=(0.46, 0.32, 0.32), coll=L, name='nave'); organic(cuerpo, 0.012, 0.6, 2); mat(cuerpo, lila)   # una cápsula redonda, no un pez: sin aleta dorsal ni cola
+    banda = torus(R=0.318, r=0.034, loc=(cx - 0.10, cy, cz), rot=(0, 90, 0), coll=L, name='nave_banda'); mat(banda, lilaDk)
+    # la ventanilla mira a la cámara (el costado -y); aro tan y cristal crema
+    aro = cyl(r=0.112, d=0.05, verts=32, loc=(cx + 0.16, cy - 0.303, cz + 0.05), rot=(90, 0, 0), coll=L, name='nave_aro'); bevel(aro, 0.015, 3); mat(aro, dmat('m_nave_aro', '#C69A62', bump=0.3, dents=0.0))
+    vid = cyl(r=0.084, d=0.06, verts=32, loc=(cx + 0.16, cy - 0.325, cz + 0.05), rot=(90, 0, 0), coll=L, name='nave_ventana'); mat(vid, dmat('m_nave_vid', '#FFF1C8', bump=0.1, dents=0.0, vary=0.0, sss=0.0, emit='#FFE8A8', emit_strength=0.7))
+    # faro redondo al frente (sol) y atrás una boquilla con su anillo coral: de nave, y simétrico (nada que parezca una cara)
+    faro = sphere(r=0.075, seg=24, loc=(cx + 0.45, cy, cz + 0.01), coll=L, name='nave_faro'); mat(faro, dmat('m_nave_faro', KIT_SOL, bump=0.2, dents=0.0, vary=0.0, emit='#FFD36B', emit_strength=0.6))
+    bq = cyl(r=0.13, d=0.11, verts=32, loc=(cx - 0.47, cy, cz), rot=(0, 90, 0), coll=L, name='nave_boquilla'); bevel(bq, 0.03, 3); mat(bq, dmat('m_nave_boq', '#4A3C8F', bump=0.3, dents=0.0))
+    ani = torus(R=0.12, r=0.028, loc=(cx - 0.40, cy, cz), rot=(0, 90, 0), coll=L, name='nave_anillo'); mat(ani, dmat('m_nave_ani', KIT_CORAL, bump=0.3, dents=0.0, vary=0.02))
+    # antena con su bolita en lo alto
+    churro((cx + 0.02, cy, cz + 0.29), (cx + 0.02, cy, cz + 0.48), 0.02, dmat('m_nave_ant', '#E2C79A', bump=0.2, dents=0.0, vary=0.02), L, 'nave_antena')
+    bo = sphere(r=0.06, seg=20, loc=(cx + 0.02, cy, cz + 0.51), coll=L, name='nave_bolita'); mat(bo, dmat('m_nave_bol', KIT_SOL, bump=0.2, dents=0.0, vary=0.0))
+    # amarra: del pilote de la punta del muelle a la nariz, con comba
+    mc = dmat('m_cuerda', '#E2C79A', bump=0.2, dents=0.0, vary=0.02, ao=0.2); a = Vector((DOCK_X1 - 0.09, DOCK_Y - DOCK_W/2, 0.10)); b = Vector((cx + 0.44, cy - 0.05, cz + 0.10))
+    for i in range(10):
+        t0, t1 = i/10, (i + 1)/10; f = lambda t: a.lerp(b, t) - Vector((0, 0, 0.10*4*t*(1 - t)))
+        churro(f(t0), f(t1), 0.02, mc, L, 'amarra')
+    lazo = torus(R=0.062, r=0.018, loc=(DOCK_X1 - 0.09, DOCK_Y - DOCK_W/2 + 0.005, 0.10), coll=L, name='amarra_lazo'); mat(lazo, mc)
+    DECO_ANCLA['vo2'] = (cx, cy, cz)
+
+FAROL = (DOCK_X1 - 0.09, DOCK_Y + DOCK_W/2 + 0.005, 0.2)    # el pilote de atrás de la punta
+def deco_vo3():
+    x, y, z0 = FAROL; s = 0.85; h = 0.3
+    before = set(bpy.data.objects); lamp(x, y, coll='deco_vo3', h=h); nuevos = [o for o in bpy.data.objects if o not in before]
+    for o in nuevos:
+        o.location = (x + (o.location.x - x)*s, y + (o.location.y - y)*s, z0 + o.location.z*s)
+        if o.type == 'MESH': o.scale = tuple(v*s for v in o.scale)
+        if o.type == 'LIGHT': link(o, 'deco_vo3'); o.data.energy = 1.4          # la luz del farolito solo existe en su capa
+    DECO_HALO['vo3'] = (x, y, z0 + (h + 0.095)*s); DECO_ANCLA['vo3'] = (x, y, z0)
+
+DECO_FN = {'c1': deco_c1, 'c2': deco_c2, 'c3': deco_c3, 'c4': deco_c4, 'v1': deco_v1, 'v2': deco_v2, 'v3': deco_v3, 'vo1': deco_vo1, 'vo2': deco_vo2, 'vo3': deco_vo3}
+def build_deco():
+    for i in DECO_IDS: DECO_FN[i]()
+
+CROP_NORM = (225.0, 220.0, 930.0, 1042.0)    # recorte común de la isla (x0, y0, ancho, alto) en el render de 1400 de ancho (componer.py lo calcula igual): para medir en dp
+def deco_puntos(i, sombra=False):
+    """Esquinas (mundo) de lo que ocupa la pieza i, evaluadas con sus modificadores; con sombra=True suma dónde cae su sombra con el sol de la isla (hacia +X, 45°)."""
+    dg = bpy.context.evaluated_depsgraph_get(); pts = []
+    for o in C['deco_' + i].objects:
+        if o.type != 'MESH': continue
+        ev = o.evaluated_get(dg)
+        for c in ev.bound_box:
+            p = ev.matrix_world @ Vector(c); pts.append(p)
+            if sombra: pts.append(Vector((p.x + max(p.z, 0.0)*1.0 + 0.1, p.y + max(p.z, 0.0)*0.18, 0.0)))
+    return pts
+def deco_caja(i, sombra=False):
+    """(x0, y0, x1, y1) de la pieza en fracción del encuadre completo (y hacia abajo)."""
+    from bpy_extras.object_utils import world_to_camera_view as w2c
+    bpy.context.view_layer.update(); xs, ys = [], []
+    for p in deco_puntos(i, sombra):
+        c = w2c(scene, scene.camera, p); xs.append(c.x); ys.append(1 - c.y)
+    return min(xs), min(ys), max(xs), max(ys)
+def deco_stats():
+    """Imprime dónde cae cada pieza en el recorte común (0-1) y cuánto mide en dp en una isla de 390 dp de ancho."""
+    fw, fh = 1400.0, 1330.0; cx0, cy0, cw, ch = CROP_NORM
+    for i in DECO_IDS:
+        x0, y0, x1, y1 = deco_caja(i)
+        n = ((x0*fw - cx0)/cw, (y0*fh - cy0)/ch, (x1*fw - cx0)/cw, (y1*fh - cy0)/ch); w = (n[2] - n[0])*390.0; h = (n[3] - n[1])*390.0*ch/cw
+        print(f'[isla] deco {i}: caja ({n[0]:.3f}, {n[1]:.3f})-({n[2]:.3f}, {n[3]:.3f})  {w:.0f} x {h:.0f} dp')
+def deco_abajo(i):
+    """Piezas que pueden TAPAR a la pieza i (van debajo en el orden de dibujo de la app): salen de «holdout» en su render."""
+    return {'c2': ('c1',), 'c4': ('c3',), 'vo2': ('vo1',), 'vo3': ('vo1',)}.get(i, ())
+def deco_borde(i, con=()):
+    """Rectángulo (en fracción del encuadre, y hacia abajo) que se renderiza de la pieza i (y de las piezas `con`): su caja, con su sombra si va en el suelo, más un margen."""
+    cajas = [deco_caja(j, sombra=DECO_CAPA[j] == 'suelo') for j in (i,) + tuple(con)]
+    x0, y0, x1, y1 = min(c[0] for c in cajas), min(c[1] for c in cajas), max(c[2] for c in cajas), max(c[3] for c in cajas); pad = 56.0/1400.0
+    return (max(0.0, x0 - pad), max(0.0, y0 - pad*1.05), min(1.0, x1 + pad), min(1.0, y1 + pad*1.05))
+def render_deco(i, zoom=1.0):
+    """Renderiza la capa de la pieza i. Suelo: isla de catcher (solo su sombra), edificios y piezas de abajo de holdout SIN sombra (la de los edificios ya está en isla_base y se duplicaría). Aire: sin sombra; la isla y los edificios de holdout."""
+    suelo = DECO_CAPA[i] == 'suelo'; abajo = ['deco_' + a for a in deco_abajo(i)]
+    visible = {'edificios', 'luces', 'deco_' + i, 'isla'} | set(abajo)
+    if zoom != 1.0:    # primer plano de la lámina: la pieza se ve CON las de abajo (las flores sobre los arbustos, los frutos sobre el árbol, la nave y el farol sobre el muelle), no recortada por ellas
+        border = deco_borde(i, con=deco_abajo(i)); abajo_holdout = ()
+    else:
+        border = deco_borde(i); abajo_holdout = tuple(abajo)
+    rx, ry = scene.render.resolution_x, scene.render.resolution_y
+    if zoom != 1.0: scene.render.resolution_x = int(rx*zoom); scene.render.resolution_y = int(ry*zoom)
+    nombre = ('lamina-deco-' if zoom != 1.0 else 'capa-deco-') + i
+    dt = render(nombre, visible, holdout=(('edificios',) if suelo else ('edificios', 'isla')) + abajo_holdout, catcher=(('isla',) if suelo else ()), border=border, crop=(zoom != 1.0), sin_sombra_holdout=True)
+    scene.render.resolution_x, scene.render.resolution_y = rx, ry
+    return dt
+
 t_all = time.time()
 times = {}
 if ICONOS or REPISA or ALTERNATIVAS or FONDO or TABLERO or BARRA or KIT:
@@ -1328,7 +1555,8 @@ group('Hangar', collect(hangar), (P,-P), 0)
 handmade('edificios'); handmade('isla', skip=('losa','base_tierra','punto'))
 nubi(0.5,0.5,2.75,POSE,MIRADA)
 studio(); camera(); compositor(); setup_render()
-if JSON: export_json()
+build_deco(); deco_stats()          # Tarea 134: ocultas en todos los renders salvo los de --deco (las capas vigentes no cambian)
+if JSON or DECO: export_json()
 def export_marcas():
     import json
     from bpy_extras.object_utils import world_to_camera_view as w2c
@@ -1352,9 +1580,16 @@ elif SOLO_NUBI:
     times = {} if NORENDER else {'nubi_'+MIRADA: render('capa-nubi-'+MIRADA, {'nubi','luces'})}
 elif SOLO_EDIFICIOS:
     times = {'edificios': render('capa-edificios', {'isla','edificios','luces'}, holdout=('isla',))}
+elif DECO:
+    ids = [i for i in DECO_IDS if not DECO_SOLO or i in DECO_SOLO]; times = {}
+    if not NORENDER:
+        if DECO_COMPLETA: times['deco_completa'] = render('isla-completa-deco', {'isla','edificios','nubi','luces'} | {'deco_' + i for i in DECO_IDS})
+        for i in ids:
+            if not DECO_SIN_CAPA: times['deco_' + i] = render_deco(i)
+            if DECO_LAMINA: times['lamina_' + i] = render_deco(i, zoom=DECO_ZOOM)
 else:
     times = {} if NORENDER else {'completa': render('isla-completa', {'isla','edificios','nubi','luces'})}
-if LAYERS and not NORENDER and not SOLO_NUBI and not SOLO_EDIFICIOS and not PERFIL:
+if LAYERS and not NORENDER and not SOLO_NUBI and not SOLO_EDIFICIOS and not PERFIL and not DECO:
     times['base'] = render('capa-isla', {'isla','edificios','luces'}, holdout=('edificios',)); times['edificios'] = render('capa-edificios', {'isla','edificios','luces'}, holdout=('isla',)); times['nubi'] = render('capa-nubi', {'nubi','luces'})
 with open(os.path.join(OUT,'tiempos.txt'),'w',encoding='utf-8') as f:
     f.write(f'motor={ENGINE} muestras={SAMPLES} ancho={WIDTH} pose={POSE}\n')

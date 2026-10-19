@@ -13,6 +13,9 @@ run() { "$BLENDER" -b -P isla.py -- --engine CYCLES --samples 112 --width 1400 "
 
 # 1. Capas (isla completa, base, edificios, Nubi) y isla.json con las coordenadas en píxeles del render.
 run --layers --json --out "$OUT"
+# 1b. (Tarea 134) las DIEZ piezas de la isla por medallas (spec-adopcion-A1-A7 §A1): cada una en su capa capa-deco-<id>.png (isla de «shadow catcher», edificios y piezas de abajo de «holdout»; solo se renderiza el rectángulo de la pieza),
+#     la isla completa con las diez (isla-completa-deco.png) y los primeros planos de la lámina (lamina-deco-<id>.png). ~12 min. NO entran a la app todavía (tarea T-D2): ver tools/isla/README.md.
+run --deco --deco-completa --deco-lamina --out "$OUT"
 # 2. Las miradas de Nubi hacia cada edificio (fase 3: todavía no las usa la app) y su perfil.
 for m in frente observatorio antena hangar biblioteca; do run --solo-nubi --mirada "$m" --out "$OUT"; done
 cp "$OUT/capa-nubi-frente.png" "$OUT/capa-nubi.png"
@@ -36,5 +39,6 @@ Listo. Para llevarlo a la app (a drawable-nodpi: NO en carpetas de densidad, ah�
   cp $OUT/app/nubi_hola.webp ../../app/src/main/res/drawable-nodpi/isla_nubi_hola.webp      # el prefijo isla_ evita chocar con el nubi_hola de la app
   cp $OUT/app/isla.json ../../app/src/main/res/raw/isla.json
   cp $OUT/fondo/fondo_lamina.webp $OUT/fondo/fondo_luceros.webp ../../app/src/main/res/drawable-nodpi/
+(Tarea 134) Las piezas de la isla salen en $OUT/app/isla_deco_<id>.webp (10 capas, ≤ 200 KB en total) y en `decoraciones` de isla.json; la lámina y la copia al repo: `python -I ../previews/isla_piezas.py $OUT` (docs/previews/isla-piezas.png). No se copian a la app hasta que Ricardo apruebe la lámina.
 Después: correr IslaJsonTest, BoardBackgroundContrastTest y HoyIslaScreenshotTest (miden que las imágenes y el JSON sigan siendo del mismo render, que el saludo se lea y que ningún texto de Hoy caiga sobre un lucero).
 MSG

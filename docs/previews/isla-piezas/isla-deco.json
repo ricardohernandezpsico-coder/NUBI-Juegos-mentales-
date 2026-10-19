@@ -1,0 +1,87 @@
+{
+ "nota": "Piezas de la isla por medallas (Tarea 134): capas WebP con el MISMO recorte que isla_base e isla_edificios (930 x 1042). `capa` = suelo (entre la base y los edificios) o aire (encima de los edificios); `ancla` = donde la pieza toca la isla, en 0-1 del recorte. NO están en la app todavía (tarea T-D2).",
+ "recorte_px": [
+  930,
+  1042
+ ],
+ "decoraciones": {
+  "c1": {
+   "ancla": [
+    0.284,
+    0.6648
+   ],
+   "capa": "suelo"
+  },
+  "c2": {
+   "ancla": [
+    0.264,
+    0.6348
+   ],
+   "capa": "suelo"
+  },
+  "c3": {
+   "ancla": [
+    0.7053,
+    0.6637
+   ],
+   "capa": "suelo"
+  },
+  "c4": {
+   "ancla": [
+    0.7097,
+    0.5693
+   ],
+   "capa": "suelo"
+  },
+  "v1": {
+   "ancla": [
+    0.5554,
+    0.3071
+   ],
+   "capa": "aire"
+  },
+  "v2": {
+   "ancla": [
+    0.2703,
+    0.3157
+   ],
+   "capa": "aire"
+  },
+  "v3": {
+   "ancla": [
+    0.4541,
+    0.3856
+   ],
+   "capa": "aire"
+  },
+  "vo1": {
+   "ancla": [
+    0.7742,
+    0.648
+   ],
+   "capa": "suelo"
+  },
+  "vo2": {
+   "ancla": [
+    0.7613,
+    0.7689
+   ],
+   "capa": "suelo"
+  },
+  "vo3": {
+   "ancla": [
+    0.9274,
+    0.6684
+   ],
+   "capa": "suelo",
+   "halo": {
+    "centro": [
+     0.9314,
+     0.6287
+    ],
+    "radio": 0.0753,
+    "nota": "horneado en isla_deco_vo3 (sol, alfa 0,7 al centro)"
+   }
+  }
+ }
+}
