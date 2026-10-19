@@ -129,6 +129,7 @@ namespace NeuroVida.Games.Freno
 
         private IEnumerator GameLoop()
         {
+            BrakeSounds.Request();                  // la señal de salida (el ESTÍMULO) y el «¡Más rápido!» se piden ANTES de la cuenta: la señal nunca puede esperar a calcularse
             bool tutorialPlayed = false;
             if (TutorialWanted)
             {
@@ -234,7 +235,7 @@ namespace NeuroVida.Games.Freno
             var L = _lanes[lane];
             SetLit(L, true);
             SetPrompt("", Color.white); // la luz es la señal: nada de texto que distraiga
-            PlayTone(784f, 0.06f, 0.06f);
+            BrakeSounds.PlayExit();                 // la SEÑAL de salida: 784 Hz, 60 ms, la misma de hoy en marimba seca (el tiempo de reacción se mide desde aquí)
             _phase = Phase.Respond;
             _tapped = false;
             _tapLane = -1;
@@ -313,7 +314,6 @@ namespace NeuroVida.Games.Freno
             _points += pts;
             GameFeel.Correct(_streak);
             GameFeel.Haptic(GameFeel.HapticKind.Light);
-            PlayTone(196f, 0.25f, 0.05f); // rugido grave del motor
             SetPrompt(rtMs < deadline * 0.45f ? "¡Despegue relámpago!" : "¡Despegue!", GoodColor);
             StartCoroutine(FloatText(L.RocketRect, "+" + pts, NeuroStyle.Sun));
             StartCoroutine(FlyAway(L));
@@ -342,7 +342,7 @@ namespace NeuroVida.Games.Freno
         {
             _streak = 0;
             SetPrompt("¡Más rápido!", AmberColor);
-            PlayTone(262f, 0.12f, 0.05f);
+            WoodCore.Play(WoodSfx.Knock);           // «¡Más rápido!»: el toc hueco de la paleta
             StartCoroutine(Blink(lit.Beacon, AmberColor));
             yield return StartCoroutine(Wait(0.55f));
         }
@@ -357,7 +357,6 @@ namespace NeuroVida.Games.Freno
             bool record = ssd > _bestSsd && _stopsOk >= 2;
             _bestSsd = Mathf.Max(_bestSsd, ssd);
             GameFeel.Correct(_streak);
-            PlayTone(147f, 0.3f, 0.05f); // resoplido de los frenos
             SetPrompt("¡FRENO PERFECTO!", GoodColor);
             ShowMark(lit, true);
             StartCoroutine(Steam(lit));
@@ -1157,7 +1156,7 @@ namespace NeuroVida.Games.Freno
                 var L = _lanes[lane];
 
                 SetLit(L, true);                      // el cohete se enciende y se queda encendido hasta que se toque
-                PlayTone(784f, 0.06f, 0.06f);
+                BrakeSounds.PlayExit();
                 _tutorialLane = lane;
                 L.Hint.gameObject.SetActive(!isStop); // el aro marca el que se toca; el del ¡ALTO! no lleva aro
                 _tapped = false;
@@ -1189,7 +1188,7 @@ namespace NeuroVida.Games.Freno
                 {
                     if (_tapped && _tapLane == lane)
                     {
-                        PlayTone(196f, 0.25f, 0.05f);
+                        GameFeel.Correct(1);                // la práctica suena el acierto de la paleta, como el juego (antes un rugido propio)
                         StartCoroutine(FlyAway(L, false));
                         GameFeel.Haptic(GameFeel.HapticKind.Light);
                         script.Success();
@@ -1205,7 +1204,7 @@ namespace NeuroVida.Games.Freno
                 }
                 else if (!_tapped)
                 {
-                    PlayTone(147f, 0.3f, 0.05f);
+                    GameFeel.Correct(1);                    // el acierto de la paleta (antes un resoplido propio)
                     ShowMark(L, true);
                     StartCoroutine(Steam(L));
                     script.Success();

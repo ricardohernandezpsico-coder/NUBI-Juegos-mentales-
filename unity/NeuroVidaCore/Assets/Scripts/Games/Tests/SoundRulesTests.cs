@@ -6,6 +6,7 @@ using NeuroVida.Games.Anagramas;
 using NeuroVida.Games.Bodega;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Correo;
+using NeuroVida.Games.Freno;
 using NeuroVida.Games.Intrusa;
 using NeuroVida.Games.Meteoros;
 using NeuroVida.Games.Parejas;
@@ -46,7 +47,7 @@ namespace NeuroVida.Games.Tests
         /// <summary>
         /// Los juegos YA CABLEADOS a <c>WoodCore</c> (carpeta de <c>Games/</c>): rigen las reglas (b), (c) y (d). Paso 0 de las Fases C a E (Tarea 133): ninguno todavía; cada tarea de cableado suma su carpeta aquí (Calculo, Anagramas, Parejas, Bodega, Correo en la Fase C…).
         /// </summary>
-        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo", "Secuencia", "Satelites", "Piloto", "Intrusa", "Stroop", "Meteoros" };
+        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo", "Secuencia", "Satelites", "Piloto", "Intrusa", "Stroop", "Meteoros", "Freno" };
 
         /// <summary>Los bucles aprobados que se quedan con su propio altavoz (el zumbido de Satélites, el motor de Piloto y el propulsor de Aterrizaje).</summary>
         private static readonly string[] LoopFiles = { "PilotSounds.cs", "SatelliteSounds.cs", "SatelliteGameController.cs", "SatelliteGameController.Build.cs", "SatelliteGameController.Scene.cs", "PilotGameController.cs", "PilotGameController.Scene.cs", "PilotEngine.cs", "LandingGameController.Scene.cs" };
@@ -142,12 +143,34 @@ namespace NeuroVida.Games.Tests
         {
             foreach (var file in MigratedControllers())
             {
-                if (Path.GetFileName(file) == "BrakeGameController.cs") continue;
+                if (Path.GetFileName(file) == "BrakeGameController.cs") { TheBrakeSirenIsTheOnlyLooseTone(file); continue; }
                 var lines = File.ReadAllLines(file);
                 for (int i = 0; i < lines.Length; i++)
                     if (!lines[i].TrimStart().StartsWith("//") && lines[i].Contains("PlayTone("))
                         Assert.Fail("«" + lines[i].Trim() + "» en " + Where(file, i) + ": un tono suelto; los juegos cableados suenan la paleta o una receta propia (WoodCore)");
             }
+        }
+
+        /// <summary>En Freno solo quedan los TRES <c>PlayTone</c> de la sirena de «¡ALTO!» (988, 740 y 988 Hz), y dentro de <c>ShowStop</c> y <c>SirenTail</c>: la salida, el «¡Más rápido!» y el acierto ya no son tonos sueltos.</summary>
+        private static void TheBrakeSirenIsTheOnlyLooseTone(string file)
+        {
+            var lines = File.ReadAllLines(file);
+            int shown = -1, tail = -1, tailEnd = lines.Length;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].Contains("private void ShowStop()")) shown = i;
+                if (lines[i].Contains("private IEnumerator SirenTail()")) tail = i;
+            }
+            Assert.IsTrue(shown >= 0 && tail > shown, "ShowStop y SirenTail existen en BrakeGameController.cs");
+            for (int i = tail + 1; i < lines.Length; i++) if (lines[i].Contains("private ")) { tailEnd = i; break; }
+            int count = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].TrimStart().StartsWith("//") || !lines[i].Contains("PlayTone(")) continue;
+                count++;
+                Assert.IsTrue(i > shown && i < tailEnd, "«" + lines[i].Trim() + "» en " + Where(file, i) + ": solo la sirena (ShowStop y SirenTail) suena con PlayTone en Freno");
+            }
+            Assert.AreEqual(3, count, "la sirena son tres tonos (988, 740 y 988 Hz)");
         }
 
         /// <summary>(d) Toda clase de sonidos de un juego cableado expone <c>All()</c> (la lista de sus recetas propias) y ya no define <c>Bell(</c> ni <c>Make(</c>: el idioma viejo (campanas copiadas en cada juego) desaparece.</summary>
@@ -190,6 +213,7 @@ namespace NeuroVida.Games.Tests
             { "Intrusa", ("intrusa", IntrusaSounds.Request) },
             { "Stroop", ("stroop", StroopSounds.Request) },
             { "Meteoros", ("meteoros", MeteorSounds.Request) },
+            { "Freno", ("freno", BrakeSounds.Request) },
         };
 
         /// <summary>Lo que el controlador de un juego cableado le pide a la paleta (<c>WoodCore.Play(WoodSfx.X[, n])</c>): (sonido, variante o -1 si el argumento es una expresión que recorre todas), con el archivo y la línea.</summary>

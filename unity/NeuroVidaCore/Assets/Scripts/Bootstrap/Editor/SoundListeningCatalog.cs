@@ -10,6 +10,7 @@ using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Correo;
 using NeuroVida.Games.Disparate;
 using NeuroVida.Games.Engranajes;
+using NeuroVida.Games.Freno;
 using NeuroVida.Games.Intrusa;
 using NeuroVida.Games.Parejas;
 using NeuroVida.Games.Piloto;
@@ -424,22 +425,25 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterFreno()
         {
             const string g = "freno";
+            // «hoy» de Freno sale de HarmonicTone, que se queda (la sirena lo usa): se sigue renderizando de ahí
             H("freno.salida", () => HarmonicTone.Build(784f, 0.06f, 0.06f));
             H("freno.rugido", () => HarmonicTone.Build(196f, 0.25f, 0.05f));
             H("freno.lento", () => HarmonicTone.Build(262f, 0.12f, 0.05f));
             H("freno.resoplido", () => HarmonicTone.Build(147f, 0.3f, 0.05f));
             Raw("freno.sirena", () => Sequence(new[] { FromClip(HarmonicTone.Build(988f, 0.09f, 0.08f)), FromClip(HarmonicTone.Build(740f, 0.09f, 0.08f)), FromClip(HarmonicTone.Build(988f, 0.09f, 0.07f)) }, new[] { 0.0, 0.1, 0.2 }));
-            Raw("freno.salida.madera", () => FromRecipe(WoodSounds.MakeCue(784, 0.06)));
-            Raw("freno.sirena.madera", () => Sequence(new[] { FromRecipe(WoodSounds.MakeCue(988, 0.09)), FromRecipe(WoodSounds.MakeCue(740, 0.09)), FromRecipe(WoodSounds.MakeCue(988, 0.09)) }, new[] { 0.0, 0.1, 0.2 }));
-            E(g, "salida", "Se enciende un cohete: SEÑAL de salida", "PlayTone: 784 Hz, 60 ms (seno + 2.º y 3.er armónico; amplitud 0,06)", "BrakeGameController.cs:236, :1183 (práctica)", "freno.salida", 1f, "freno.salida.madera", "Cue(784)", "señal",
-                "Es el ESTÍMULO: el tiempo de reacción se mide desde que se enciende la luz y suena este tono. Misma altura, misma duración y el inicio igual de inmediato (nada de ataques lentos).");
-            E(g, "sirena", "¡ALTO!: la sirena de dos tonos (988, 740, 988 Hz)", "Tres tonos de 90 ms cada 100 ms", "BrakeGameController.cs:444-453", "freno.sirena", 1f, "freno.sirena.madera", "Cue × 3 (mismas alturas y ritmo)", "señal",
-                "Es la señal de PARAR: tiene que seguir sonando a ALARMA y no a otra cosa. Se mantiene el patrón de tres tonos; cuidar que no se confunda con la señal de salida.");
-            E(g, "rugido", "Despegue acertado: rugido grave (con el acierto común)", "PlayTone: 196 Hz, 0,25 s", "BrakeGameController.cs:315", "freno.rugido", 1f, null, "propio (Fase C): se evalúa quitarlo (ya suena el Acierto común)");
-            E(g, "lento", "«¡Más rápido!»", "PlayTone: 262 Hz, 0,12 s", "BrakeGameController.cs:344", "freno.lento", 1f, Wk(WoodSfx.Knock), "Knock");
-            E(g, "resoplido", "Freno perfecto: resoplido (con el acierto común)", "PlayTone: 147 Hz, 0,3 s", "BrakeGameController.cs:359", "freno.resoplido", 1f, null, "propio (Fase C): se evalúa quitarlo (ya suena el Acierto común)");
-            E(g, "listo", "Práctica: «¡Listo!»", "PlayTone: 523 Hz, 0,4 s", "BrakeGameController.cs:1255", "stroop.listo", 1f, Wk(WoodSfx.Notice), "Notice");
-            E(g, "comun", "Acierto, error, subir de nivel y tic", "Comunes (GameFeel)", "BrakeGameController.cs:313/358, :331/379, :288/323/368, :421", "gamefeel.wrong", 0.5f, Wk(WoodSfx.Wrong), "Wrong (ver «Lo común»)");
+            Raw("freno.salida.madera", () => FromRecipe(WoodSounds.MakeCue(BrakeSounds.ExitHz, BrakeSounds.ExitSeconds)));
+            E(g, "salida", "Se enciende un cohete: SEÑAL de salida", "PlayTone: 784 Hz, 60 ms (seno + 2.º y 3.er armónico; amplitud 0,06)", "BrakeGameController.cs: la salida (BrakeSounds.PlayExit) y la práctica", "freno.salida", 1f, "freno.salida.madera", "PlayCue(784, 0,06, gainDb −6)", "señal",
+                "Es el ESTÍMULO: el tiempo de reacción se mide desde que se enciende la luz y suena este tono. Misma altura (784 Hz), misma duración (60 ms) y el mismo nivel; el inicio llega ANTES (0,5 ms contra 15 ms de ataque del tono de hoy). Ya suena en el juego (Tarea 139); la fecha del cambio de timbre está en docs/medidas-juegos-estrella.md.").WoodGain = Atten(-6.0);
+            var sirena = E(g, "sirena", "¡ALTO!: la sirena de dos tonos (988, 740, 988 Hz)", "Tres tonos de 90 ms cada 100 ms", "BrakeGameController.cs: ShowStop y SirenTail (PlayTone)", "freno.sirena", 1f, null, "SE QUEDA tal cual (PlayTone; decisión de Ricardo)", "señal",
+                "Es la señal de PARAR: tiene que seguir sonando a ALARMA. Se queda con su tono armónico de siempre y su ritmo de siempre: es el único uso vivo de PlayTone/HarmonicTone.");
+            sirena.NoWood = "SE QUEDA tal cual: sigue sonando como hoy (el botón azul). Es el único sonido suelto (PlayTone) que queda en los juegos, por decisión de Ricardo.";
+            var rugido = E(g, "rugido", "Despegue acertado: rugido grave (con el acierto común)", "PlayTone: 196 Hz, 0,25 s", "BrakeGameController.cs: el despegue acertado", "freno.rugido", 1f, null, "QUITADO: ya suena el acierto", "", "DECIDIDO (Ricardo): se quita. Sonaba JUNTO con el acierto común (dos sonidos por una respuesta); queda solo el acierto de la paleta.");
+            rugido.NoWood = "QUITADO: silencio (ya suena el acierto de la paleta).";
+            E(g, "lento", "«¡Más rápido!»", "PlayTone: 262 Hz, 0,12 s", "BrakeGameController.cs: TooSlow", "freno.lento", 1f, Wk(WoodSfx.Knock), "Knock", "", "Sube ≈ 8 LU respecto de hoy: hoy casi no se oía.");
+            var resoplido = E(g, "resoplido", "Freno perfecto: resoplido (con el acierto común)", "PlayTone: 147 Hz, 0,3 s", "BrakeGameController.cs: StopSuccess", "freno.resoplido", 1f, null, "QUITADO: ya suena el acierto", "", "DECIDIDO (Ricardo): se quita (la otra opción era un SweepDown suave solo aquí).");
+            resoplido.NoWood = "QUITADO: silencio (ya suena el acierto de la paleta).";
+            E(g, "listo", "Práctica: «¡Listo!»", "PlayTone: 523 Hz, 0,4 s", "BrakeGameController.cs: la práctica (GameFeel.Notice)", "stroop.listo", 1f, Wk(WoodSfx.Notice), "Notice");
+            E(g, "comun", "Acierto, error, subir de nivel y tic", "Comunes (GameFeel)", "BrakeGameController.cs: GameFeel.Correct, Wrong, LevelUp y Tick; la práctica suena también el acierto de la paleta", "gamefeel.wrong", 0.5f, Wk(WoodSfx.Wrong), "Wrong (ver «Lo común»)");
         }
 
         // ------------------------------------------------------------------ Satélites
