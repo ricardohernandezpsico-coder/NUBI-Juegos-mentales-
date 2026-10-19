@@ -259,21 +259,11 @@ namespace NeuroVida.Games.Secuencia
         /// <summary>Hornea sprites y sintetiza sonidos durante la tarjeta y la cuenta regresiva (así la primera ronda no traba).</summary>
         private IEnumerator Prewarm()
         {
+            RastroSounds.Request();                  // los sonidos (las 9 notas, los avisos de modo, el soplo y «NUEVO») se piden ANTES de la cuenta: los calcula WoodCore de a poco, sin trabar
             RastroSprites.XMark();
             RastroSprites.DashedRing();
             yield return null;
             foreach (var m in RastroModes.All) { RastroSprites.Icon(m); yield return null; }
-            for (int i = 0; i < RastroBoard.Orbs; i++)
-            {
-                RastroSounds.Orb(i);
-                if (i % 3 == 2) yield return null;
-            }
-            RastroSounds.Chord();
-            yield return null;
-            RastroSounds.Wrong();
-            RastroSounds.Air();
-            RastroSounds.Unlock();
-            foreach (var m in RastroModes.All) { RastroSounds.ModeCue(m); yield return null; }
         }
 
         // ------------------------------------------------------------------ una ronda
@@ -316,7 +306,7 @@ namespace NeuroVida.Games.Secuencia
         {
             _hintOrb = -1;
             _cueRoot.gameObject.SetActive(false);
-            PlayClip(RastroSounds.ModeCue(r.Mode), 0.8f);
+            RastroSounds.PlayCue(r.Mode);
             string what = r.Mode == RastroMode.Reves ? "Esta era al revés" : "Esta era en marcha: solo las últimas " + r.Asked;
             Rule("Nubi: ¡Ojo! " + what + ". Mírala de nuevo", "Esta vez no cuenta");
             yield return StartCoroutine(Motion.Hold(2.4f));
@@ -388,7 +378,7 @@ namespace NeuroVida.Games.Secuencia
         /// <summary>La chispa llega a un lucero: suena su nota, florece y salen chispas de su color.</summary>
         private void Arrive(int orb)
         {
-            PlayClip(RastroSounds.Orb(orb), 1f);
+            RastroSounds.PlayOrb(orb);
             Flash(orb, 10, 90f);
         }
 
@@ -405,7 +395,7 @@ namespace NeuroVida.Games.Secuencia
         {
             _phase = Phase.Turn;
             Rule("¡El cielo gira!", RastroModes.Name(r.Mode));
-            PlayClip(RastroSounds.Air(), 1f);
+            WoodCore.Play(WoodSfx.SweepUp);
             float from = _angle, to = _angle + r.TurnDegrees;
             float dur = Motion.Decorative ? 1.4f : 1.5f;     // el giro SE QUEDA con «quitar animaciones» (es la tarea), pero lineal
             float t = 0f;
@@ -466,7 +456,7 @@ namespace NeuroVida.Games.Secuencia
                         _phase = Phase.Idle;
                         yield break;
                     }
-                    PlayClip(RastroSounds.Orb(orb), 0.88f);
+                    RastroSounds.PlayOrb(orb);
                     Flash(orb, 12, 110f);
                     if (k > 0) _fixed.Add(new Link { A = _input[k - 1], B = orb, Born = GameClock.Time });
                     if (_input.Count == r.Asked)
@@ -488,7 +478,7 @@ namespace NeuroVida.Games.Secuencia
         {
             Rule("¡Exacto!", "");
             _hintOrb = -1;
-            PlayClip(RastroSounds.Chord(), 1f);
+            WoodCore.Play(WoodSfx.Correct, RastroSounds.RoundStep(r.Asked));                // la ronda lograda: el par sube con el largo del camino
             GameFeel.Haptic(GameFeel.HapticKind.Light);
             _winAt = GameClock.Time;
             if (!r.Guided)
@@ -529,7 +519,7 @@ namespace NeuroVida.Games.Secuencia
             wrong.X.gameObject.SetActive(true);
             right.Aro.color = NeuroStyle.WithAlpha(Sun, 1f);
             right.Aro.gameObject.SetActive(true);
-            PlayClip(RastroSounds.Wrong(), 1f);
+            WoodCore.Play(WoodSfx.Wrong);
             GameFeel.Haptic(GameFeel.HapticKind.Double);
             Rule("Esa no era", "La correcta tiene el aro amarillo");
             yield return StartCoroutine(Motion.Hold(1.8f));
@@ -561,7 +551,7 @@ namespace NeuroVida.Games.Secuencia
                 if (tutorial.Skipped) break;
                 if (res.Complete)
                 {
-                    PlayClip(RastroSounds.Chord(), 1f);
+                    WoodCore.Play(WoodSfx.Correct, RastroSounds.RoundStep(r.Asked));
                     _winAt = GameClock.Time;
                     _hintOrb = -1;
                     yield return StartCoroutine(coach.Notice(CoachTexts.Rastro.Good, 1.8f, counter));
@@ -574,7 +564,7 @@ namespace NeuroVida.Games.Secuencia
                 _orbs[res.Wrong].X.gameObject.SetActive(true);
                 _orbs[res.Expected].Aro.color = NeuroStyle.WithAlpha(Sun, 1f);
                 _orbs[res.Expected].Aro.gameObject.SetActive(true);
-                PlayClip(RastroSounds.Wrong(), 1f);
+                WoodCore.Play(WoodSfx.Wrong);
                 yield return StartCoroutine(coach.Notice(CoachTexts.Rastro.Missed, 2.4f, counter));
                 ClearRound();
             }
@@ -623,7 +613,7 @@ namespace NeuroVida.Games.Secuencia
             _unlockName.text = isNew ? RastroModes.Name(mode) : RastroModes.NoticeTitle(mode);
             _unlockLine.text = isNew ? RastroModes.UnlockLine(mode) : RastroModes.NoticeLine(mode, r.Asked);
             _unlockRoot.gameObject.SetActive(true);
-            PlayClip(isNew ? RastroSounds.Unlock() : RastroSounds.ModeCue(mode), 1f);
+            if (isNew) WoodCore.Play(WoodSfx.New); else RastroSounds.PlayCue(mode);
             if (isNew) GameFeel.Haptic(GameFeel.HapticKind.Firm);
             yield return StartCoroutine(Motion.Fade(_unlockGroup, 0f, 1f, Motion.Decorative && isNew ? 0.4f : Motion.FadeSeconds));
             float seconds = isNew ? RastroContract.UnlockSeconds : RastroContract.NoticeSeconds;
@@ -915,12 +905,6 @@ namespace NeuroVida.Games.Secuencia
                 f.Start = start;
                 return;
             }
-        }
-
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            _audioSource.PlayOneShot(clip, volume);
         }
 
         private void ClearFx()

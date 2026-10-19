@@ -134,7 +134,7 @@ namespace NeuroVida.Bridge.EditorTools
         private static float[] GameFeelPentatonic() => GameFeelLegacy.Pentatonic;
 
         /// <summary>Una familia de notas con información: la escala de hoy, la de Madera con kalimba y la de Madera con marimba (las mismas alturas, en el mismo orden y espaciado). Con <paramref name="hoy"/> = null (los juegos ya cableados) la escala de hoy sale congelada del 17-oct.</summary>
-        private static void Family_(string id, string title, double[] hz, Func<int, AudioClip> hoy, double spacing = 0.42)
+        private static void Family_(string id, string title, double[] hz, Func<int, AudioClip> hoy, double spacing = 0.42, double tau = 0.3)
         {
             var fam = new Family { Id = id, Title = title, Hz = hz, Hoy = hoy == null ? null : (Func<int, Clip>)(i => FromClip(hoy(i))) };
             Families.Add(fam);
@@ -147,17 +147,19 @@ namespace NeuroVida.Bridge.EditorTools
             foreach (var voice in new[] { WoodVoice.Kalimba, WoodVoice.Marimba })
             {
                 var v = voice;
-                string key = "fam.madera." + v.ToString().ToLowerInvariant() + "." + sig;
-                if (!Factories.ContainsKey(key)) Raw(key, () => Scale(n, ScaleSpacing, i => Trimmed(FromRecipe(WoodSounds.MakeNote(hz[i], v)), NoteSeconds)));
+                string key = "fam.madera." + v.ToString().ToLowerInvariant() + (Math.Abs(tau - 0.3) > 1e-9 ? ".tau" + tau.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "") + "." + sig;      // otra caída = otro archivo
+                if (!Factories.ContainsKey(key)) Raw(key, () => Scale(n, ScaleSpacing, i => Trimmed(FromRecipe(WoodSounds.MakeNote(hz[i], v, tau)), NoteSeconds)));
                 fam.WoodKeys[v == WoodVoice.Kalimba ? 0 : 1] = key;
             }
         }
 
-        private static Ev FamilyEvent(string group, string id, string title, string today, string sites, string famId, float gain, string map, string note = "")
+        private static Ev FamilyEvent(string group, string id, string title, string today, string sites, string famId, float gain, string map, string note = "", bool marimba = false)
         {
             Family fam = Families.Find(f => f.Id == famId);
-            var e = E(group, id, title, today, sites, "fam." + famId + ".hoy", gain, fam.WoodKeys[0], map, "info", note);
-            e.WoodAltKey = fam.WoodKeys[1];
+            // «Madera» es la voz del juego (kalimba en la Fase C, marimba en la D) y el tercer botón, la otra para comparar
+            var e = E(group, id, title, today, sites, "fam." + famId + ".hoy", gain, fam.WoodKeys[marimba ? 1 : 0], map, "info", note);
+            e.WoodAltKey = fam.WoodKeys[marimba ? 0 : 1];
+            if (marimba) e.WoodAltLabel = "Madera (kalimba)";
             return e;
         }
 
@@ -224,43 +226,30 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterRastro()
         {
             const string g = "secuencia";
-            Family_("rastro", "Rastro de luz: las 9 notas de los luceros", Hz(i => RastroBoard.Notes[i], RastroBoard.Notes.Length), i => RastroSounds.Orb(i));
-            H("rastro.chord", () => RastroSounds.Chord());
-            H("rastro.wrong", () => RastroSounds.Wrong());
-            H("rastro.unlock", () => RastroSounds.Unlock());
-            H("rastro.air", () => RastroSounds.Air());
-            foreach (RastroMode m in Enum.GetValues(typeof(RastroMode))) { var mode = m; H("rastro.cue" + (int)mode, () => RastroSounds.ModeCue(mode)); }
-            // el aviso de cada modo con las mismas notas y el mismo ritmo, en Madera
-            Raw("rastro.cue0.madera", () => ModeCueWood(new[] { 659.25 }, new[] { 0.0 }));
-            Raw("rastro.cue1.madera", () => ModeCueWood(new[] { 880.0, 659.25 }, new[] { 0.0, 0.11 }));
-            Raw("rastro.cue2.madera", () => ModeCueWood(new[] { 659.25, 880.0, 659.25 }, new[] { 0.0, 0.12, 0.24 }));
-            Raw("rastro.cue3.madera", () => ModeCueWood(new[] { 523.25, 659.25, 783.99 }, new[] { 0.0, 0.09, 0.18 }));
+            // «hoy» sale CONGELADO del 17-oct (Tarea 138): la clase de campanas de Rastro se borró al cablear el juego
+            Family_("rastro", "Rastro de luz: las 9 notas de los luceros", Hz(i => RastroSounds.OrbHz(i), RastroBoard.Notes.Length), null, 0.42, RastroSounds.OrbTau);
+            foreach (var k in new[] { "chord", "wrong", "unlock", "air", "cue0", "cue1", "cue2", "cue3" }) Frozen("rastro." + k);
+            // el aviso de cada modo: la MISMA receta que va al juego (marimba de caída 0,2 con las alturas y los instantes de hoy)
+            foreach (var r in RastroSounds.All()) { var recipe = r.Recipe; Raw(r.Key + ".madera", () => FromRecipe(recipe)); }
 
             FamilyEvent(g, "orbes", "Cada lucero suena SU nota (9 luceros, 392 a 1175 Hz)", "Campana: seno + parciales ×2,76 y ×5,4, ataque 8 ms, cae hasta el silencio en 1,3 s; mono, sin sala; pico ≈ 0,3",
-                "RastroGameController.cs:389 (al tocar el lucero, vol 1), :467 (al mostrar el camino, vol 0,88)", "rastro", 1f,
-                "Note(hz): kalimba (o marimba) en el MISMO Hz",
-                "El camino se aprende con el oído y la vista: la altura, el orden y el momento de cada nota no cambian; solo el timbre. Ver la tabla de afinación del plan.");
-            E(g, "acierto", "Ronda lograda: do-mi-sol-do", "Campana: cuatro notas escalonadas 70 ms, 2 s", "RastroGameController.cs:489, :562 (vol 1)", "rastro.chord", 1f, Wk(WoodSfx.Correct, 1), "Correct (o Perfect): a decidir en la Fase C");
-            E(g, "error", "Error: campana grave", "Campana de 196 Hz, 0,7 s", "RastroGameController.cs:530, :575 (vol 1)", "rastro.wrong", 1f, Wk(WoodSfx.Wrong), "Wrong");
-            E(g, "nuevo", "«¡NUEVO!»: modo desbloqueado", "Dos campanas (do6 y mi6), 1,7 s", "RastroGameController.cs:624 (vol 1)", "rastro.unlock", 1f, Wk(WoodSfx.New), "New");
+                "RastroGameController.cs: Arrive (cuando la chispa llega al lucero) y la entrada del jugador (RastroSounds.PlayOrb)", "rastro",
+                1f, "PlayNote(Notes[orb], Marimba, τ 0,2): la MISMA altura de siempre",
+                "El camino se aprende con el oído y la vista: la altura, el orden y el momento de cada nota no cambian; solo el timbre. La caída es de 0,2 s (la campana de hoy cae 20 dB en 450 ms): con la marimba de 0,3 s las notas de un camino rápido se encimarían más que hoy. Suena igual cuando la chispa llega y cuando el jugador toca (un solo nivel).", marimba: true);
+            E(g, "acierto", "Ronda lograda: do-mi-sol-do", "Campana: cuatro notas escalonadas 70 ms, 2 s", "RastroGameController.cs: Win y la ronda guiada del tutorial", "rastro.chord", 1f, WoodLadder(WoodSfx.Correct, WoodSounds.Variants(WoodSfx.Correct), 0.7), "Correct(largo del camino − 2, de 1 a 7): el par de kalimbas sube con el largo del camino",
+                "", "DECIDIDO (Ricardo, 19-oct): la ronda lograda es una respuesta, no un hito en cada ronda (sale cada 6-10 s): suena como el acierto de toda la app y sube con el largo del camino; el hito (Perfect) no.");
+            E(g, "error", "Error: campana grave", "Campana de 196 Hz, 0,7 s", "RastroGameController.cs: Wrong (y el error del tutorial)", "rastro.wrong", 1f, Wk(WoodSfx.Wrong), "Wrong");
+            E(g, "nuevo", "«¡NUEVO!»: modo desbloqueado", "Dos campanas (do6 y mi6), 1,7 s", "RastroGameController.cs: ModeScreen (el cartel de un modo nuevo)", "rastro.unlock", 1f, Wk(WoodSfx.New), "New");
             for (int i = 0; i < 4; i++)
             {
-                var mode = (RastroMode)i;
                 string[] names = { "Rastro (una campana)", "Al revés (dos que bajan)", "El cielo gira (tres: sube, baja)", "En marcha (tres que suben rápido)" };
-                var e = E(g, "modo" + i, "Aviso de modo: " + names[i], "Campanas de la misma familia, cortas", "RastroGameController.cs:317 (vol 0,8), :624 (vol 1)", "rastro.cue" + i, 0.8f, "rastro.cue" + i + ".madera", "Note(hz) con el mismo patrón y ritmo", "info",
-                    "Es la INSTRUCCIÓN del modo: el patrón de notas (cuántas, hacia dónde van) tiene que seguir distinguiéndose.");
+                var e = E(g, "modo" + i, "Aviso de modo: " + names[i], "Campanas de la misma familia, cortas", "RastroGameController.cs: ConfusionMessage y ModeScreen (RastroSounds.PlayCue)", "rastro.cue" + i, 0.8f, "rastro.cue" + i + ".madera", "Propio rastro.cue" + i + ": marimbas de τ 0,2 con las mismas notas y el mismo ritmo", "info",
+                    "Es la INSTRUCCIÓN del modo: el patrón de notas (cuántas, hacia dónde van) tiene que seguir distinguiéndose. Mismo nivel en los dos sitios donde suena (antes 0,8 y 1,0).");
                 e.WoodGain = WoodSounds.PlayVolume;
             }
-            E(g, "aire", "El cielo gira: soplo de aire", "Ruido por un filtro de banda 900 → 2400 Hz, 0,5 s", "RastroGameController.cs:406 (vol 1)", "rastro.air", 1f, Wk(WoodSfx.SweepUp), "SweepUp");
-            E(g, "tic", "Tic del reloj", "Común (GameFeel.Tick)", "RastroGameController.cs:717", "gamefeel.tick", 0.45f, Wk(WoodSfx.Tick), "Tick");
-        }
-
-        private static Clip ModeCueWood(double[] hz, double[] at)
-        {
-            var notes = new List<Clip>();
-            var starts = new List<double>();
-            for (int i = 0; i < hz.Length; i++) { notes.Add(FromRecipe(WoodSounds.MakeNote(hz[i], WoodVoice.Kalimba))); starts.Add(at[i]); }
-            return Sequence(notes, starts);
+            E(g, "aire", "El cielo gira: soplo de aire", "Ruido por un filtro de banda 900 → 2400 Hz, 0,5 s", "RastroGameController.cs: Turn", "rastro.air", 1f, Wk(WoodSfx.SweepUp), "SweepUp", "",
+                "El soplo baja 12 LU respecto de hoy (hoy era de los más fuertes por ser un ruido). Si se quiere más presente: un propio con NoiseSweep(0.5, 900, 2400) a nivel 0,18.");
+            E(g, "tic", "Tic del reloj", "Común (GameFeel.Tick)", "RastroGameController.cs: UpdateClock", "gamefeel.tick", 0.45f, Wk(WoodSfx.Tick), "Tick");
         }
 
         // ------------------------------------------------------------------ Constelaciones

@@ -1,113 +1,93 @@
-using System;
 using System.Collections.Generic;
-using UnityEngine;
+using NeuroVida.Games.Shared;
+using static NeuroVida.Games.Shared.SoundKit;
 
 namespace NeuroVida.Games.Secuencia
 {
+    /// <summary>Los sonidos PROPIOS de Rastro de luz en «Madera cálida» (Fase D): el aviso de cada modo (el patrón de notas que lo distingue).</summary>
+    public enum RastroSfx { Cue0, Cue1, Cue2, Cue3 }
+
     /// <summary>
-    /// Sonido de «Rastro de luz» (docs/diseno-rastro-de-luz.md §7), sintetizado por código como el boceto aprobado: cada lucero suena con su nota
-    /// de la pentatónica (una campana cristalina: fundamental + parcial 2,76× + 5,4×), así el camino se ve y se OYE como una melodía; el acierto
-    /// es un acorde de cuatro notas; el error, una campana grave y suave; al girar, un soplo de aire; y «¡NUEVO!», dos campanas. Nada arcade.
+    /// «Madera cálida» en Rastro de luz (Fase D; spec `auditoria-fable/spec-sonido-CDE.md` §3.1; cableada el 19-oct, Tarea 138). El camino se aprende con el oído: cada lucero suena SU nota (9, <see cref="RastroBoard.Notes"/>, 392 a 1175 Hz) en MARIMBA con una caída de
+    /// <see cref="OrbTau"/> = 0,2 s (la campana de hoy caía 20 dB en 450 ms; la marimba de 0,3 s caería en 700 y en un camino rápido las notas se encimarían más que hoy): MISMA altura, mismo orden y mismo momento, solo cambia el timbre. La nota suena igual cuando la chispa llega
+    /// a un lucero y cuando el jugador lo toca (un solo nivel). El resto es de la paleta: la ronda lograda <c>Correct</c> que SUBE con el largo del camino (<see cref="RoundStep"/>; decisión de Ricardo: respuesta, no hito en cada ronda), el error <c>Wrong</c>, «¡NUEVO!» <c>New</c> y el soplo
+    /// del cielo que gira <c>SweepUp</c>. Y CUATRO propios (<see cref="RastroSfx"/>): el aviso de cada modo, marimbas de la misma caída con las alturas y los instantes de hoy (cuántas notas y hacia dónde van es la información: <see cref="CueHz"/> y <see cref="CueAt"/> NO cambian).
     /// </summary>
     public static class RastroSounds
     {
-        private const int Rate = 44100;
-        /// <summary>Las campanas del boceto suenan a 0,05-0,08 de amplitud en el navegador; en el teléfono se suben para que se oigan igual.</summary>
-        private const float Gain = 3.2f;
-        private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();
+        /// <summary>La caída de las notas de los luceros y de los avisos: 0,2 s (20 dB en ≈ 0,45 s, lo mismo que la campana de hoy).</summary>
+        public const double OrbTau = 0.2;
 
-        /// <summary>La nota del lucero <paramref name="orb"/>: siempre la misma.</summary>
-        public static AudioClip Orb(int orb) => Get("orb" + orb, () => Make("orb", 1.3f, t => Bell(RastroBoard.Notes[orb], t, 0.08f, 1.3f)));
+        /// <summary>La frecuencia de la nota del lucero [orb] (la de hoy: NO cambia).</summary>
+        public static double OrbHz(int orb) => RastroBoard.Notes[orb];
 
-        /// <summary>Acierto de ronda: do-mi-sol-do con las campanas escalonadas 70 ms.</summary>
-        public static AudioClip Chord() => Get("chord", () => Make("chord", 2.0f, t =>
-        {
-            float[] n = { 523.25f, 659.25f, 783.99f, 1046.5f };
-            float s = 0f;
-            for (int i = 0; i < n.Length; i++) s += Bell(n[i], t - i * 0.07f, 0.05f, 1.6f);
-            return s;
-        }));
+        /// <summary>Suena la nota del lucero [orb] (marimba, misma altura de siempre): cuando la chispa llega y cuando el jugador lo toca.</summary>
+        public static bool PlayOrb(int orb) => WoodCore.PlayNote(OrbHz(orb), WoodVoice.Marimba, OrbTau);
 
-        /// <summary>Error: una campana grave y suave (196 Hz).</summary>
-        public static AudioClip Wrong() => Get("wrong", () => Make("wrong", 0.7f, t => Bell(196f, t, 0.06f, 0.6f)));
+        /// <summary>Qué escalón sube la ronda lograda: el par de <c>Correct</c> sube con el largo del camino (Rastro no tiene racha en el marcador). Un camino de 3 luceros es el escalón 1; de 9, el 7 (el tope de la paleta).</summary>
+        public static int RoundStep(int asked) => System.Math.Max(1, System.Math.Min(7, asked - 2));
 
-        /// <summary>«¡NUEVO!»: dos campanas, la segunda 120 ms después.</summary>
-        public static AudioClip Unlock() => Get("unlock", () => Make("unlock", 1.7f, t =>
-            Bell(1046.5f, t, 0.05f, 1.4f) + Bell(1318.5f, t - 0.12f, 0.05f, 1.4f)));
-
-        /// <summary>El aviso de cada modo al cambiar (de la misma familia de campanas, cortos): el rastro una campana, al revés dos que bajan,
-        /// el cielo gira tres que suben y bajan (un arco) y en marcha tres que suben rápido.</summary>
-        public static AudioClip ModeCue(RastroMode mode)
+        /// <summary>Qué propio avisa cada modo (el rastro, al revés, el cielo gira y en marcha).</summary>
+        public static RastroSfx CueOf(RastroMode mode)
         {
             switch (mode)
             {
-                case RastroMode.Reves: return Get("cue1", () => Make("cue", 1.0f, t => Bell(880f, t, 0.06f, 0.7f) + Bell(659.25f, t - 0.11f, 0.06f, 0.8f)));
-                case RastroMode.Gira: return Get("cue2", () => Make("cue", 1.1f, t => Bell(659.25f, t, 0.06f, 0.6f) + Bell(880f, t - 0.12f, 0.06f, 0.6f) + Bell(659.25f, t - 0.24f, 0.06f, 0.8f)));
-                case RastroMode.Marcha: return Get("cue3", () => Make("cue", 1.0f, t => Bell(523.25f, t, 0.06f, 0.6f) + Bell(659.25f, t - 0.09f, 0.06f, 0.6f) + Bell(783.99f, t - 0.18f, 0.06f, 0.8f)));
-                default: return Get("cue0", () => Make("cue", 0.8f, t => Bell(659.25f, t, 0.06f, 0.7f)));
+                case RastroMode.Reves: return RastroSfx.Cue1;
+                case RastroMode.Gira: return RastroSfx.Cue2;
+                case RastroMode.Marcha: return RastroSfx.Cue3;
+                default: return RastroSfx.Cue0;
             }
         }
 
-        /// <summary>El soplo de aire del cielo al girar: ruido que pasa por un filtro de banda que sube de 900 a 2400 Hz en medio segundo.</summary>
-        public static AudioClip Air() => Get("air", () =>
+        /// <summary>Las alturas de cada aviso (las de hoy): el rastro una nota, al revés dos que bajan, el cielo gira tres (sube y baja: un arco) y en marcha tres que suben rápido.</summary>
+        public static readonly double[][] CueHz =
         {
-            int n = Rate / 2;
-            var data = new float[n];
-            var rng = new System.Random(77);
-            float y1 = 0f, y2 = 0f, x1 = 0f, x2 = 0f, peak = 1e-6f;
-            for (int i = 0; i < n; i++)
-            {
-                float k = i / (float)n;
-                float f = 900f * Mathf.Pow(2400f / 900f, k);
-                float w0 = 2f * Mathf.PI * f / Rate, alpha = Mathf.Sin(w0) / (2f * 6f);
-                float b0 = alpha, b2 = -alpha, a0 = 1f + alpha, a1 = -2f * Mathf.Cos(w0), a2 = 1f - alpha;
-                float x0 = ((float)rng.NextDouble() * 2f - 1f) * Mathf.Sin(Mathf.PI * k);
-                float y0 = (b0 * x0 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
-                x2 = x1; x1 = x0; y2 = y1; y1 = y0;
-                data[i] = y0;
-                peak = Mathf.Max(peak, Mathf.Abs(y0));
-            }
-            float scale = 0.28f / peak;
-            for (int i = 0; i < n; i++) data[i] *= scale;
-            var clip = AudioClip.Create("air", n, 1, Rate, false);
-            clip.SetData(data, 0);
-            return clip;
-        });
+            new[] { 659.25 },
+            new[] { 880.0, 659.25 },
+            new[] { 659.25, 880.0, 659.25 },
+            new[] { 523.25, 659.25, 783.99 },
+        };
 
-        // ------------------------------------------------------------------ síntesis
-
-        /// <summary>Una campana de frecuencia <paramref name="hz"/>: ataque de 8 ms hasta <paramref name="vol"/> y caída exponencial hasta el silencio en <paramref name="dur"/> s.</summary>
-        private static float Bell(float hz, float t, float vol, float dur)
+        /// <summary>Los instantes de cada nota de cada aviso, en segundos (los de hoy: 0,11 / 0,12 / 0,09 s entre una y otra).</summary>
+        public static readonly double[][] CueAt =
         {
-            if (t < 0f || t >= dur) return 0f;
-            const float floor = 0.0001f, attack = 0.008f;
-            float amp = t < attack ? floor * Mathf.Pow(vol / floor, t / attack) : vol * Mathf.Pow(floor / vol, (t - attack) / (dur - attack));
-            float s = Sin(hz, t) + 0.18f * Sin(hz * 2.76f, t) + 0.06f * Sin(hz * 5.4f, t);
-            return amp * s * Gain;
+            new[] { 0.0 },
+            new[] { 0.0, 0.11 },
+            new[] { 0.0, 0.12, 0.24 },
+            new[] { 0.0, 0.09, 0.18 },
+        };
+
+        /// <summary>La receta de un aviso de modo: marimbas de <see cref="OrbTau"/> con las alturas y los instantes de <see cref="CueHz"/> y <see cref="CueAt"/>; nivel 0,20, sala 0,18, familia «respuesta».</summary>
+        public static WoodSounds.Recipe MakeRecipe(RastroSfx sfx)
+        {
+            int k = (int)sfx;
+            var x = Blank(1.0);
+            for (int i = 0; i < CueHz[k].Length; i++) Add(x, WoodKit.Marimba(CueHz[k][i], OrbTau), CueAt[k][i]);
+            return new WoodSounds.Recipe(x, 0.20, 0.18, WoodTier.Respuesta);
         }
 
-        private static float Sin(float hz, float t) => Mathf.Sin(2f * Mathf.PI * hz * t);
+        /// <summary>La clave de un sonido propio («rastro.cue2»).</summary>
+        public static string Key(RastroSfx sfx) => "rastro." + sfx.ToString().ToLowerInvariant();
 
-        private static AudioClip Get(string key, Func<AudioClip> build)
+        /// <summary>Los avisos son señales cortas con altura, pero van con la sala de la familia (no son micro): estéreo.</summary>
+        public static bool Mono(RastroSfx sfx) => false;
+
+        /// <summary>Los sonidos propios con su clave y su receta: los lee la prueba de niveles y la página de escucha.</summary>
+        public static IEnumerable<(string Key, WoodSounds.Recipe Recipe, bool Mono)> All()
         {
-            if (!Cache.TryGetValue(key, out var clip) || clip == null)
-            {
-                clip = build();
-                Cache[key] = clip;
-            }
-            return clip;
+            foreach (RastroSfx sfx in System.Enum.GetValues(typeof(RastroSfx))) yield return (Key(sfx), MakeRecipe(sfx), Mono(sfx));
         }
 
-        private static AudioClip Make(string name, float seconds, Func<float, float> sample)
+        /// <summary>Suena el aviso del modo [mode].</summary>
+        public static bool PlayCue(RastroMode mode) => WoodCore.Play(Key(CueOf(mode)));
+
+        /// <summary>Lo que Rastro pide antes de la cuenta regresiva, en el orden en que suena: las 9 notas de los luceros (la muestra del primer camino), los avisos de modo, el soplo del giro y «NUEVO». <c>Correct 1 a 7</c> y <c>Wrong</c> ya van con el núcleo.</summary>
+        public static void Request()
         {
-            int n = Mathf.CeilToInt(seconds * Rate);
-            var data = new float[n];
-            for (int i = 0; i < n; i++) data[i] = Mathf.Clamp(sample(i / (float)Rate), -1f, 1f);
-            int f = Mathf.Min(n, Rate / 100);
-            for (int i = 0; i < f; i++) data[n - 1 - i] *= i / (float)f;
-            var clip = AudioClip.Create(name, n, 1, Rate, false);
-            clip.SetData(data, 0);
-            return clip;
+            for (int i = 0; i < RastroBoard.Notes.Length; i++) WoodCore.RequestNote(OrbHz(i), WoodVoice.Marimba, OrbTau);
+            foreach (RastroSfx sfx in System.Enum.GetValues(typeof(RastroSfx))) { var s = sfx; WoodCore.Request(Key(s), () => MakeRecipe(s), Mono(s)); }
+            WoodCore.Request(WoodSfx.SweepUp);
+            WoodCore.Request(WoodSfx.New);
         }
     }
 }

@@ -7,6 +7,7 @@ using NeuroVida.Games.Bodega;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Correo;
 using NeuroVida.Games.Parejas;
+using NeuroVida.Games.Secuencia;
 using NeuroVida.Games.Shared;
 using NUnit.Framework;
 using UnityEngine;
@@ -40,7 +41,7 @@ namespace NeuroVida.Games.Tests
         /// <summary>
         /// Los juegos YA CABLEADOS a <c>WoodCore</c> (carpeta de <c>Games/</c>): rigen las reglas (b), (c) y (d). Paso 0 de las Fases C a E (Tarea 133): ninguno todavía; cada tarea de cableado suma su carpeta aquí (Calculo, Anagramas, Parejas, Bodega, Correo en la Fase C…).
         /// </summary>
-        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo" };
+        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo", "Secuencia" };
 
         /// <summary>Los bucles aprobados que se quedan con su propio altavoz (el zumbido de Satélites, el motor de Piloto y el propulsor de Aterrizaje).</summary>
         private static readonly string[] LoopFiles = { "SatelliteGameController.cs", "SatelliteGameController.Scene.cs", "PilotGameController.cs", "PilotGameController.Scene.cs", "PilotEngine.cs", "LandingGameController.Scene.cs" };
@@ -122,7 +123,7 @@ namespace NeuroVida.Games.Tests
             var own = new Regex(@"PlayOneShot\(|AudioClip\.Create\(|AddComponent<AudioSource>");
             foreach (var file in MigratedControllers())
             {
-                if (System.Array.IndexOf(LoopFiles, Path.GetFileName(file)) >= 0) continue;
+                if (System.Array.IndexOf(LoopFiles, Path.GetFileName(file)) >= 0 || Path.GetFileName(file) == "HarmonicTone.cs") continue;        // HarmonicTone.cs vive en la carpeta de Rastro pero es el generador de tonos de GameControllerBase.PlayTone: la sirena de Freno, que se queda
                 var lines = File.ReadAllLines(file);
                 for (int i = 0; i < lines.Length; i++)
                     if (!lines[i].TrimStart().StartsWith("//") && own.IsMatch(lines[i]))
@@ -178,6 +179,7 @@ namespace NeuroVida.Games.Tests
             { "Parejas", ("parejas", ConstelacionSounds.Request) },
             { "Bodega", ("bodega", BodegaSounds.Request) },
             { "Correo", ("correo", MailSounds.Request) },
+            { "Secuencia", ("secuencia", RastroSounds.Request) },
         };
 
         /// <summary>Lo que el controlador de un juego cableado le pide a la paleta (<c>WoodCore.Play(WoodSfx.X[, n])</c>): (sonido, variante o -1 si el argumento es una expresión que recorre todas), con el archivo y la línea.</summary>
