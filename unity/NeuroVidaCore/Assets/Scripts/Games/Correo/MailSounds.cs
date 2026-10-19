@@ -1,179 +1,83 @@
-using System;
 using System.Collections.Generic;
-using UnityEngine;
+using NeuroVida.Games.Shared;
+using static NeuroVida.Games.Shared.SoundKit;
 
 namespace NeuroVida.Games.Correo
 {
+    /// <summary>Los sonidos PROPIOS de La estación de correo en «Madera cálida» (Fase C): lo que no es de la paleta ni una nota de buzón.</summary>
+    public enum MailSfx { Horn, Sack, Radio }
+
     /// <summary>
-    /// Sonido PROPIO de «La estación de correo», sintetizado por código como el del boceto aprobado (docs/diseno-correo-estacion.md §6 y §11): cada buzón tiene su nota pentatónica con un brillo que sube con la racha; fanfarria de
-    /// tres notas al cumplir un encargo; un tono grave y corto al equivocarse (nunca un castigo); el tic del reloj; dos tonos con ruido para la radio; la bocina grave de tres notas de la nave del correo; el sonido del saco;
-    /// un zumbido al empezar el día y campanas al cerrarlo. Nada suena fuerte: todo ≤ 0,5.
+    /// «Madera cálida» en La estación de correo (Fase C; spec `auditoria-fable/spec-sonido-CDE.md` §2.5): cada buzón suena SU nota (do5, mi5, sol5, do6: <see cref="MailContract.PlanetNotes"/>, kalimba); el brillo de la racha <c>Spark</c> junto a la nota (pareja permitida), el escalón de racha <c>Streak</c>,
+    /// la carta que cae o el buzón equivocado <c>Wrong</c>, «esa carta no» <c>Knock</c>, el encargo cumplido <c>Perfect</c>, mirar el reloj <c>Tick</c>, empieza el día <c>Hum</c>, la hoja de la mañana <c>Notice</c>, el cierre del día <c>LevelUp</c>, «NUEVO» <c>New</c>; y TRES propios con las piezas de <see cref="WoodKit"/>:
+    /// la bocina del faro (<see cref="MailSfx.Horn"/>: 8 LU más baja que hoy, de fondo bajo la fanfarria <c>Perfect</c>; decisión 5 de §8, Ricardo la aprueba de oído), «¡llega un saco!» (<see cref="MailSfx.Sack"/>) y la radio (<see cref="MailSfx.Radio"/>). Esta parte de la clase solo dice las recetas y qué pide el juego
+    /// ANTES de la cuenta regresiva. Cableada el 19-oct (Tarea 135): el controlador ya no suena campanas propias; Ricardo escuchó el faro (fanfarria y la bocina 8 LU más abajo) y quedó como está.
     /// </summary>
-    public static partial class MailSounds
+    public static class MailSounds
     {
-        private const int Rate = 44100;
-        private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();
-
-        /// <summary>La nota del buzón <paramref name="planet"/>: una campana suave.</summary>
-        public static AudioClip BoxNote(int planet) => Get("box" + planet, () => Make("box", 0.7f, t => 0.3f * Bell(MailContract.PlanetNotes[Mathf.Clamp(planet, 0, 3)], t, 0.2f)));
-
-        /// <summary>El brillo de la racha (desde ×3): una campanita aguda que sube por la escala con la racha.</summary>
-        public static AudioClip ComboBell(int combo) => Get("combo" + (combo % 10), () => Make("combo", 0.6f, t => 0.12f * Bell(MailContract.Penta[Mathf.Clamp(combo % 10, 0, 9)] * 2f, t - 0.06f, 0.16f)));
-
-        /// <summary>Una carta atrasada que cae, o un buzón equivocado: un golpe sordo y corto que baja (no es un castigo).</summary>
-        public static AudioClip Thud() => Get("thud", () => Make("thud", 0.34f, t =>
+        /// <summary>La receta de un sonido propio: el nivel (pico) y la sala de cada una son los de la spec; la familia declara a qué banda de sonoridad pertenece.</summary>
+        public static WoodSounds.Recipe MakeRecipe(MailSfx sfx)
         {
-            float hz = 220f * Mathf.Pow(130f / 220f, Mathf.Clamp01(t / 0.25f));
-            return 0.3f * Mathf.Sin(2f * Mathf.PI * hz * t) * Mathf.Exp(-t / 0.09f);
-        }));
-
-        /// <summary>«Esa carta no» / «aún no es la hora»: un tono suave que baja (392 → 330 Hz).</summary>
-        public static AudioClip Soft() => Get("soft", () => Make("soft", 0.28f, t =>
-        {
-            float hz = 392f * Mathf.Pow(330f / 392f, Mathf.Clamp01(t / 0.2f));
-            return 0.2f * Mathf.Sin(2f * Mathf.PI * hz * t) * Mathf.Exp(-t / 0.08f);
-        }));
-
-        /// <summary>El tic del reloj al mirarlo.</summary>
-        public static AudioClip Tick() => Get("tick", () => Make("tick", 0.4f, t =>
-        {
-            float k = Mathf.Clamp01(t / 0.05f);
-            float noise = t < 0.05f ? 0.18f * Noise(t, 3200f * Mathf.Pow(2400f / 3200f, k)) * Mathf.Sin(k * Mathf.PI) : 0f;
-            return noise + 0.1f * Bell(1318.5f, t - 0.05f, 0.07f);
-        }));
-
-        /// <summary>Un encargo cumplido: fanfarria de tres notas (sol, si y re agudos).</summary>
-        public static AudioClip Fanfare() => Get("fanfare", () => Make("fanfare", 1.6f, t =>
-            0.22f * (Bell(783.99f, t, 0.35f) + 0.9f * Bell(987.77f, t - 0.08f, 0.35f) + 0.9f * Bell(1174.66f, t - 0.16f, 0.4f))));
-
-        /// <summary>La radio: dos tonos y un siseo.</summary>
-        public static AudioClip Radio() => Get("radio", () => Make("radio", 0.7f, t =>
-        {
-            float n = t < 0.35f ? 0.12f * Noise(t, 1500f * Mathf.Pow(900f / 1500f, t / 0.35f)) * Mathf.Sin(Mathf.PI * t / 0.35f) : 0f;
-            return 0.2f * (Bell(880f, t, 0.07f) + Bell(1174.66f, t - 0.14f, 0.07f)) + n;
-        }));
-
-        /// <summary>La bocina grave de tres notas (146, 220 y 293 Hz) de la nave del correo.</summary>
-        public static AudioClip Horn() => Get("horn", () => Make("horn", 2.1f, t =>
-        {
-            float s = 0f;
-            float[] hz = { 146.83f, 220f, 293.66f };
-            for (int i = 0; i < 3; i++)
+            switch (sfx)
             {
-                float tt = t - i * 0.05f;
-                if (tt < 0f) continue;
-                float env = tt < 0.35f ? tt / 0.35f : Mathf.Exp(-(tt - 0.35f) / 0.5f);
-                s += (0.3f - i * 0.06f) * env * Triangle(hz[i], tt);
+                case MailSfx.Horn:                                                 // la bocina del faro: tres notas graves de marimba (re3, la3, re4), dos golpes por nota para que «dure»; de fondo
+                {
+                    var x = Blank(2.0);
+                    double[] hz = { 146.83, 220, 293.66 };
+                    for (int i = 0; i < hz.Length; i++)
+                        for (int h = 0; h < 2; h++) Add(x, WoodKit.Marimba(hz[i], 0.45), i * 0.05 + h * 0.30, h == 0 ? 0.9 - i * 0.2 : 0.5);
+                    return new WoodSounds.Recipe(x, 0.16, 0.25, WoodTier.Textura);
+                }
+                case MailSfx.Sack:                                                 // «¡llega un saco!»: un siseo que sube, un golpe grave y dos kalimbas
+                {
+                    var x = Blank(1.2);
+                    Add(x, WoodKit.NoiseSweep(0.45, 400, 1400, FilterType.BandPass, 0.8, 0.01, 0.15, 61), 0, 0.8);
+                    Add(x, WoodKit.Thump(0.25, 120, 70, 0.08), 0.05, 0.7);
+                    Add(x, WoodKit.Kalimba(659.25, 0.25), 0.15, 0.6);
+                    Add(x, WoodKit.Kalimba(880, 0.25), 0.25, 0.6);
+                    return new WoodSounds.Recipe(x, 0.20, 0.18, WoodTier.Respuesta);
+                }
+                default:                                                           // Radio: estática granulada y dos marimbas cortas
+                {
+                    var x = Blank(1.0);
+                    Add(x, WoodKit.StaticNoise(0.35, 1500, 0.7, 3, 0.003), 0, 0.5);
+                    Add(x, WoodKit.Marimba(880, 0.07), 0, 0.8);
+                    Add(x, WoodKit.Marimba(1174.66, 0.07), 0.14, 0.8);
+                    return new WoodSounds.Recipe(x, 0.18, 0.12, WoodTier.Respuesta);
+                }
             }
-            return s;
-        }));
-
-        /// <summary>«¡Llega un saco!»: un siseo que sube, un golpe y dos campanitas.</summary>
-        public static AudioClip Sack() => Get("sack", () => Make("sack", 0.9f, t =>
-        {
-            float k = Mathf.Clamp01(t / 0.45f);
-            float n = t < 0.45f ? 0.14f * Noise(t, 400f * Mathf.Pow(1400f / 400f, k)) * Mathf.Sin(k * Mathf.PI) : 0f;
-            float hz = 220f * Mathf.Pow(130f / 220f, Mathf.Clamp01(t / 0.25f));
-            float thud = 0.2f * Mathf.Sin(2f * Mathf.PI * hz * t) * Mathf.Exp(-t / 0.09f);
-            return n + thud + 0.12f * (Bell(659.25f, t - 0.15f, 0.12f) + Bell(880f, t - 0.25f, 0.12f));
-        }));
-
-        /// <summary>Al empezar el día: un zumbido (sol y re graves) que sube y se apaga.</summary>
-        public static AudioClip Hum() => Get("hum", () => Make("hum", 1.6f, t =>
-        {
-            float env = Mathf.Clamp01(t / 0.3f) * Mathf.Exp(-Mathf.Max(0f, t - 0.3f) / 0.45f);
-            return 0.1f * env * (Mathf.Sin(2f * Mathf.PI * 196f * t) + Mathf.Sin(2f * Mathf.PI * 293.66f * Mathf.Max(0f, t - 0.1f)));
-        }));
-
-        /// <summary>La hoja de la mañana: una campana (sol).</summary>
-        public static AudioClip BriefBell() => Get("brief", () => Make("brief", 0.9f, t => 0.2f * Bell(784f, t, 0.3f)));
-
-        /// <summary>«NUEVO»: dos campanas (mi y la).</summary>
-        public static AudioClip Chime() => Get("chime", () => Make("chime", 1.2f, t => 0.16f * (Bell(659.25f, t, 0.2f) + Bell(880f, t - 0.09f, 0.26f))));
-
-        /// <summary>El cierre del día: tres campanas que suben (mi, sol y si agudos).</summary>
-        public static AudioClip DayEnd() => Get("dayend", () => Make("dayend", 1.6f, t =>
-            0.2f * (Bell(MailContract.Penta[2], t, 0.35f) + Bell(MailContract.Penta[4], t - 0.11f, 0.35f) + Bell(MailContract.Penta[6], t - 0.22f, 0.4f)), echo: true));
-
-        /// <summary>Fin de la partida: dos campanas lentas (sol y do agudos).</summary>
-        public static AudioClip Finale() => Get("finale", () => Make("finale", 2.0f, t =>
-            0.2f * (Bell(784f, t, 0.5f) + Bell(1046.5f, t - 0.15f, 0.55f)), echo: true));
-
-        /// <summary>El destello del escalón de la racha (×10, ×20, ×30): dos campanas y, más arriba, una más.</summary>
-        public static AudioClip Tier(int tier) => Get("tier" + Mathf.Clamp(tier, 1, 3), () => Make("tier", 1.4f, t =>
-        {
-            float s = Bell(659.25f, t, 0.18f) + Bell(880f, t - 0.09f, 0.22f);
-            if (tier >= 2) s += Bell(1567.98f, t - 0.12f, 0.3f);
-            if (tier >= 3) s += Bell(2093f, t - 0.2f, 0.35f);
-            return 0.14f * s;
-        }));
-
-        // ------------------------------------------------------------------ síntesis
-
-        private static float Bell(float hz, float t, float tau)
-        {
-            if (t < 0f) return 0f;
-            float env = (t < 0.01f ? t / 0.01f : 1f) * Mathf.Exp(-Mathf.Max(0f, t - 0.01f) / tau);
-            return env * (Sin(hz, t) + 0.16f * Sin(hz * 2.76f, t) + 0.05f * Sin(hz * 5.4f, t));
         }
 
-        private static float Noise(float t, float center)
+        /// <summary>La clave de un sonido propio («correo.horn»).</summary>
+        public static string Key(MailSfx sfx) => "correo." + sfx.ToString().ToLowerInvariant();
+
+        /// <summary>Ninguno de los propios de Correo es un micro sin sala: todos se guardan en estéreo.</summary>
+        public static bool Mono(MailSfx sfx) => false;
+
+        /// <summary>Los sonidos propios con su clave y su receta: los lee la prueba de niveles y la página de escucha.</summary>
+        public static IEnumerable<(string Key, WoodSounds.Recipe Recipe, bool Mono)> All()
         {
-            float s = 0f;
-            float[] ratios = { 0.71f, 0.93f, 1.07f, 1.29f, 1.51f, 0.83f, 1.17f };
-            for (int i = 0; i < ratios.Length; i++) s += Mathf.Sin(2f * Mathf.PI * center * ratios[i] * t + i * 1.7f);
-            return s / ratios.Length;
+            foreach (MailSfx sfx in System.Enum.GetValues(typeof(MailSfx))) yield return (Key(sfx), MakeRecipe(sfx), Mono(sfx));
         }
 
-        private static float Sin(float hz, float t) => Mathf.Sin(2f * Mathf.PI * hz * t);
-        private static float Triangle(float hz, float t) => 2f / Mathf.PI * (float)System.Math.Asin(Mathf.Sin(2f * Mathf.PI * hz * t));
-
-        private static AudioClip Get(string key, Func<AudioClip> build)
+        /// <summary>Lo que Correo pide antes de la cuenta regresiva, en el orden en que suena: las 4 notas de los buzones, el zumbido del día, el destello de racha (1 a 8), «esa carta no», el escalón de racha, la radio, el saco, la fanfarria con la bocina y «NUEVO». Wrong, Tick, LevelUp y Notice ya van con el núcleo.</summary>
+        public static void Request()
         {
-            if (!Cache.TryGetValue(key, out var clip) || clip == null)
-            {
-                clip = build();
-                Cache[key] = clip;
-            }
-            return clip;
+            for (int b = 0; b < MailContract.PlanetNotes.Length; b++) WoodCore.RequestNote(MailContract.PlanetNotes[b], WoodVoice.Kalimba);
+            WoodCore.Request(WoodSfx.Hum);
+            for (int n = 1; n <= 8; n++) WoodCore.Request(WoodSfx.Spark, n);
+            WoodCore.Request(WoodSfx.Knock);
+            WoodCore.Request(WoodSfx.Streak);
+            RequestOwn(MailSfx.Radio);
+            RequestOwn(MailSfx.Sack);
+            WoodCore.Request(WoodSfx.Perfect);
+            RequestOwn(MailSfx.Horn);
+            WoodCore.Request(WoodSfx.New);
         }
 
-        private static AudioClip Make(string name, float seconds, Func<float, float> sample, bool echo = false)
-        {
-            int n = Mathf.CeilToInt(seconds * Rate);
-            var data = new float[n];
-            for (int i = 0; i < n; i++) data[i] = sample(i / (float)Rate);
-            if (echo)
-            {
-                int d = (int)(0.16f * Rate);
-                for (int i = n - 1; i >= d; i--) data[i] += 0.28f * data[i - d];
-            }
-            float peak = 0f;
-            for (int i = 0; i < n; i++) peak = Mathf.Max(peak, Mathf.Abs(data[i]));
-            float gain = peak > 0.5f ? 0.5f / peak : 1f;            // nada pasa de 0,5
-            for (int i = 0; i < n; i++) data[i] = Mathf.Clamp(data[i] * gain, -1f, 1f);
-            int f = Mathf.Min(n, Rate / 100);
-            for (int i = 0; i < f; i++) data[n - 1 - i] *= i / (float)f;
-            var clip = AudioClip.Create(name, n, 1, Rate, false);
-            clip.SetData(data, 0);
-            return clip;
-        }
+        private static void RequestOwn(MailSfx sfx) => WoodCore.Request(Key(sfx), () => MakeRecipe(sfx), Mono(sfx));
 
-        /// <summary>Para las pruebas y el calentamiento: sintetiza todos los clips (cada uno una sola vez), de a poco.</summary>
-        public static System.Collections.IEnumerator Prewarm()
-        {
-            for (int i = 0; i < MailContract.PlanetCount; i++) BoxNote(i);
-            Thud(); Soft(); Tick();
-            yield return null;
-            for (int c = 0; c < 10; c++) ComboBell(c);
-            Fanfare(); Radio();
-            yield return null;
-            Horn(); Sack(); Hum();
-            yield return null;
-            BriefBell(); Chime(); DayEnd(); Finale();
-            for (int tier = 1; tier <= 3; tier++) Tier(tier);
-        }
-
-        public static int CachedCount => Cache.Count;
+        /// <summary>Suena un sonido propio (si no estaba listo no suena y queda contado).</summary>
+        public static void Play(MailSfx sfx, float gainDb = 0f) => WoodCore.Play(Key(sfx), gainDb);
     }
 }

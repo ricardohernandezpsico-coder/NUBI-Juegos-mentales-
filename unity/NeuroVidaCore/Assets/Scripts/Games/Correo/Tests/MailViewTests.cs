@@ -366,28 +366,6 @@ namespace NeuroVida.Games.Correo.Tests
             int goldPixels = dial.texture.GetPixels32().Count(p => p.a > 200 && p.r > 200 && p.g > 150 && p.b < 120);
             Assert.Greater(goldPixels, 40);
         }
-
-        [Test]
-        public void EverySound_IsAudible_NeverLouderThanHalf_AndTheMailboxesSoundDifferent()
-        {
-            var clips = new List<AudioClip>();
-            for (int i = 0; i < 4; i++) clips.Add(MailSounds.BoxNote(i));
-            clips.AddRange(new[] { MailSounds.Thud(), MailSounds.Soft(), MailSounds.Tick(), MailSounds.Fanfare(), MailSounds.Radio(), MailSounds.Horn(), MailSounds.Sack(), MailSounds.Hum(), MailSounds.BriefBell(), MailSounds.Chime(), MailSounds.DayEnd(), MailSounds.Finale() });
-            for (int tier = 1; tier <= 3; tier++) clips.Add(MailSounds.Tier(tier));
-            for (int c = 0; c < 10; c++) clips.Add(MailSounds.ComboBell(c));
-            foreach (var clip in clips)
-            {
-                var data = new float[clip.samples];
-                clip.GetData(data, 0);
-                float peak = data.Max(Mathf.Abs);
-                Assert.Greater(peak, 0.03f, clip.name + ": se oye");
-                Assert.LessOrEqual(peak, 0.5001f, clip.name + ": no pasa de 0,5");
-            }
-            Assert.AreNotSame(MailSounds.BoxNote(0), MailSounds.BoxNote(1), "cada buzón suena distinto");
-            Assert.AreNotSame(MailSounds.Fanfare(), MailSounds.Soft(), "acertar y equivocarse no suenan igual");
-            Assert.AreSame(MailSounds.Horn(), MailSounds.Horn(), "se sintetiza una sola vez");
-            Assert.GreaterOrEqual(MailSounds.Horn().length, 1.9f, "la bocina de tres notas dura más que un golpe");
-        }
     }
 
     /// <summary>La vista de la estación: todo lo que se dibuja se ve, el reloj es el del juego y las reglas de patentes (docs §8).</summary>
@@ -547,7 +525,8 @@ namespace NeuroVida.Games.Correo.Tests
         [Test]
         public void NoFacesReactToThePerformance_AndTheFlightIsGone_NoPilotingNoRouteNoAsteroidsNoShieldNoPorts()
         {
-            string all = string.Concat(ControllerFiles.Select(Read)) + Read("MailContract.cs") + Read("MailSprites.cs") + Read("MailSounds.cs");
+            string noSounds = string.Concat(ControllerFiles.Select(Read)) + Read("MailContract.cs") + Read("MailSprites.cs");
+            string all = noSounds + Read("MailSounds.cs");
             // regla de patentes (Akili): nada de caras felices o tristes según cómo se juega
             foreach (var banned in new[] { "mood", "Mood", "happy", "Happy", "emotion", "Emotion", "feliz", "triste" })
                 StringAssert.DoesNotContain(banned, all, "no hay caras que reaccionen al desempeño: «" + banned + "»");
@@ -556,7 +535,7 @@ namespace NeuroVida.Games.Correo.Tests
                 StringAssert.DoesNotContain(gone, all, "se fue con el vuelo: «" + gone + "»");
             // patentes de Lumos Labs (docs §8): sin vías ni desvíos, sin pedidos con componentes ni tiempos de entrega
             foreach (var banned in new[] { "Order", "Recipe", "Ingredient", "Switch(", "Junction", "Rail(" })
-                StringAssert.DoesNotContain(banned, all, "regla de patentes: «" + banned + "»");
+                StringAssert.DoesNotContain(banned, noSounds, "regla de patentes: «" + banned + "»");          // (los sonidos tienen «recetas» de sonido, que nada tienen que ver con los pedidos con componentes)
         }
 
         [Test]

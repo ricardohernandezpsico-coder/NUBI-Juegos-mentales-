@@ -155,14 +155,14 @@ namespace NeuroVida.Games.Correo
             if (res.Kind == MailTap.BoxRight)
             {
                 b.PulseAt = Now;
-                PlayClip(MailSounds.BoxNote(box), 0.5f);
-                if (res.Combo >= 3) PlayClip(MailSounds.ComboBell(res.Combo), 0.35f);
+                WoodCore.PlayNote(MailContract.PlanetNotes[Mathf.Clamp(box, 0, MailContract.PlanetNotes.Length - 1)], WoodVoice.Kalimba);       // la nota del buzón (información)
+                if (res.Combo >= 3) WoodCore.Play(WoodSfx.Spark, Mathf.Clamp(res.Combo - 2, 1, 8));                                              // el brillo de la racha junto a la nota: pareja permitida
                 if (res.ComboTier > 0) ComboTierFx(res.ComboTier, res.Combo);
             }
             else
             {
                 b.ShakeAt = Now;
-                PlayClip(MailSounds.Thud(), 0.6f);
+                WoodCore.Play(WoodSfx.Wrong);
                 AddFloat(r.Cx, r.Y - 10f, MailContract.FloatWrongBox, Salmon);
             }
             if (res.CueMissed) CueMissedFx(res.Letter);
@@ -172,7 +172,7 @@ namespace NeuroVida.Games.Correo
         {
             _safeWarnAt = Now;
             AddFloatAbove(_lay.Safe, l.Cue == MailCue.Gold ? MailContract.FloatGoldMissed : MailContract.FloatLazoMissed, GoldSoft);
-            PlayClip(MailSounds.Soft(), 0.5f);
+            WoodCore.Play(WoodSfx.Knock);
         }
 
         private void ComboTierFx(int tier, int combo)
@@ -180,7 +180,7 @@ namespace NeuroVida.Games.Correo
             _comboFxAt = Now;
             _comboTier = tier;
             AddFloat(MailLayout.BeltXA, _lay.BeltY - 70f, MailContract.FloatCombo(combo), Gold, true);
-            PlayClip(MailSounds.Tier(tier), 0.7f);
+            WoodCore.Play(WoodSfx.Streak);                                              // uno solo para los tres escalones (×10, ×20, ×30)
             if (tier >= 3)
             {
                 var cols = new[] { Gold, Cyan, Violet, Lime };
@@ -199,17 +199,17 @@ namespace NeuroVida.Games.Correo
                 case MailTap.SafeCue:
                     StartFlight(Detach(res.Letter), s.Cx, s.Y + 30f, MailMotion.FlySafeSeconds, 2, -1);
                     AddFloatAbove(s, MailContract.FloatCueDone, Gold, true);
-                    PlayClip(MailSounds.Fanfare(), 0.8f);
+                    WoodCore.Play(WoodSfx.Perfect);
                     Emit(new Vector2(s.Cx, s.Y + 20f), 24, 160f, 0.8f, Gold, 20f);
                     _safeOkAt = Now;
                     break;
                 case MailTap.SafeWrongLetter:
                     if (_lvOf.TryGetValue(res.Letter, out var v)) v.Bounce = Now;
                     AddFloatAbove(s, MailContract.FloatNotSafe, Salmon);
-                    PlayClip(MailSounds.Thud(), 0.6f);
+                    WoodCore.Play(WoodSfx.Wrong);
                     break;
                 default:
-                    PlayClip(MailSounds.Soft(), 0.4f);
+                    WoodCore.Play(WoodSfx.Knock);
                     break;
             }
         }
@@ -227,8 +227,8 @@ namespace NeuroVida.Games.Correo
                     _showAt = Now;
                     _sackDone = false;
                     AddFloatAbove(b, MailContract.FloatBeaconOn, Gold, true);
-                    PlayClip(MailSounds.Fanfare(), 0.8f);
-                    PlayClip(MailSounds.Horn(), 0.6f);
+                    WoodCore.Play(WoodSfx.Perfect);                                      // la fanfarria del faro y, 8 LU más abajo, la bocina de fondo (Ricardo lo escuchó y quedó así)
+                    MailSounds.Play(MailSfx.Horn);
                     Emit(new Vector2(b.Cx, b.Y + 20f), 24, 160f, 0.8f, new Color(1f, 214f / 255f, 120f / 255f), 20f);
                     // destellos que suben por el cielo (empiezan escalonados)
                     if (Motion.Decorative)
@@ -237,15 +237,15 @@ namespace NeuroVida.Games.Correo
                     break;
                 case MailTap.BeaconCommission:
                     AddFloatAbove(b, MailContract.FloatCancelled, Salmon);
-                    PlayClip(MailSounds.Thud(), 0.6f);
+                    WoodCore.Play(WoodSfx.Wrong);
                     break;
                 case MailTap.BeaconEarly:
                     AddFloatAbove(b, MailContract.FloatTooEarly, GoldSoft);
-                    PlayClip(MailSounds.Soft(), 0.5f);
+                    WoodCore.Play(WoodSfx.Knock);
                     break;
                 default:
                     AddFloatAbove(b, MailContract.FloatNotNow, GoldSoft);
-                    PlayClip(MailSounds.Soft(), 0.5f);
+                    WoodCore.Play(WoodSfx.Knock);
                     break;
             }
         }
@@ -256,7 +256,7 @@ namespace NeuroVida.Games.Correo
             var res = _day.TapClock();
             if (res.Kind != MailTap.Peek) return;
             _peekAt = Now;
-            PlayClip(MailSounds.Tick(), 0.5f);
+            WoodCore.Play(WoodSfx.Tick);
         }
 
         /// <summary>Lo que pasa solo durante el día (cartas que caen, el saco, la radio, la ventana de hora que se cierra).</summary>
@@ -269,22 +269,22 @@ namespace NeuroVida.Games.Correo
                 {
                     case MailEventKind.Fell:
                         StartFall(Detach(e.Letter));
-                        PlayClip(MailSounds.Thud(), 0.5f);
+                        WoodCore.Play(WoodSfx.Wrong);
                         if (e.WasCue) CueMissedFx(e.Letter);
                         break;
                     case MailEventKind.RushStarted:
                         _rushAt = Now;
-                        PlayClip(MailSounds.Sack(), 0.7f);
+                        MailSounds.Play(MailSfx.Sack);
                         break;
                     case MailEventKind.RadioCancelled:
                         _radioAt = Now;
                         _radioText.text = MailContract.RadioText(e.Todo.Moment);
-                        PlayClip(MailSounds.Radio(), 0.7f);
+                        MailSounds.Play(MailSfx.Radio);
                         break;
                     case MailEventKind.WindowClosed:
                         _beaconWarnAt = Now;
                         AddFloatAbove(_lay.Beacon, MailContract.FloatLateWindow(e.Todo.Moment), GoldSoft);
-                        PlayClip(MailSounds.Soft(), 0.5f);
+                        WoodCore.Play(WoodSfx.Knock);
                         break;
                 }
             }
@@ -550,7 +550,7 @@ namespace NeuroVida.Games.Correo
             {
                 _sackDone = true;
                 Emit(new Vector2(MailLayout.W / 2f, _lay.BeltY - 30f), 30, 190f, 0.9f, Gold, 20f);
-                PlayClip(MailSounds.Tier(1), 0.5f);
+                WoodCore.Play(WoodSfx.Streak, gainDb: -3f);                                  // la demostración de la llegada del saco: 3 dB más baja
                 AddFloat(MailLayout.W / 2f, _lay.BeltY - 96f, MailContract.FloatShipArrived, Gold, true);
             }
         }

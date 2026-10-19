@@ -324,25 +324,13 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterCorreo()
         {
             const string g = "correo";
-            Family_("correo", "Correo: la nota de cada buzón (4)", Hz(i => MailContract.PlanetNotes[i], 4), i => MailSounds.BoxNote(i));
-            H("correo.combo", () => MailSounds.ComboBell(3));
-            H("correo.thud", () => MailSounds.Thud());
-            H("correo.soft", () => MailSounds.Soft());
-            H("correo.tick", () => MailSounds.Tick());
-            H("correo.fanfare", () => MailSounds.Fanfare());
-            H("correo.radio", () => MailSounds.Radio());
-            H("correo.horn", () => MailSounds.Horn());
-            H("correo.sack", () => MailSounds.Sack());
-            H("correo.hum", () => MailSounds.Hum());
-            H("correo.brief", () => MailSounds.BriefBell());
-            H("correo.chime", () => MailSounds.Chime());
-            H("correo.dayend", () => MailSounds.DayEnd());
-            H("correo.finale", () => MailSounds.Finale());
-            Raw("correo.tier", () => Scale(3, 1.0, i => Trimmed(FromClip(MailSounds.Tier(i + 1)), 1.4)));
+            Family_("correo", "Correo: la nota de cada buzón (4)", Hz(i => MailContract.PlanetNotes[i], 4), null);
+            // «hoy» sale CONGELADO del 17-oct: la clase de campanas de Correo se borró al cablear el juego
+            foreach (var k in new[] { "combo", "thud", "soft", "tick", "fanfare", "radio", "horn", "sack", "hum", "brief", "chime", "dayend", "finale", "tier" }) Frozen("correo." + k);
             // los TRES sonidos propios de Correo en Madera: las mismas recetas que van al juego (MailSounds.MakeRecipe)
             foreach (var (key, recipe, mono) in MailSounds.All()) { var r = recipe; Raw(key + ".madera", () => FromRecipe(r)); }
             // el faro: hoy suenan a la vez la fanfarria (vol 0,8) y la bocina (vol 0,6); con Madera, la fanfarria (Perfect) y la bocina de fondo, 8 LU más baja
-            Raw("correo.faro.hoy", () => Mix((Get("correo.fanfare"), 0.8), (Get("correo.horn"), 0.6)));
+            Frozen("correo.faro.hoy");
             Raw("correo.faro.madera", () => Mix((FromWood("", WoodSfx.Perfect, 0), 1.0), (FromRecipe(MailSounds.MakeRecipe(MailSfx.Horn)), 1.0)));
 
             FamilyEvent(g, "buzones", "Cada buzón suena SU nota (do5, mi5, sol5, do6)", "Campana suave (τ 0,2 s, 0,7 s), mono, sin sala; pico 0,3",

@@ -126,9 +126,10 @@ namespace NeuroVida.Games.Correo
             yield return StartCoroutine(FinishGame());
         }
 
-        /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
+        /// <summary>Hornea los sprites durante la cuenta regresiva, de a poco por cuadro (así nada se traba); las 4 notas de los buzones, los 3 sonidos propios y el resto de Madera los pide <see cref="MailSounds.Request"/> y los calcula <see cref="WoodCore"/> detrás de la cuenta.</summary>
         private IEnumerator Prewarm()
         {
+            MailSounds.Request();
             if (!_baked)
             {
                 var sprites = MailSprites.Prewarm();
@@ -136,8 +137,6 @@ namespace NeuroVida.Games.Correo
                 AssignSprites();
                 _baked = true;
             }
-            var sounds = MailSounds.Prewarm();
-            while (sounds.MoveNext()) yield return null;
         }
 
         // ------------------------------------------------------------------ un día
@@ -180,7 +179,7 @@ namespace NeuroVida.Games.Correo
             _press = null;
             ShowOnly(null);
             _day.Begin();
-            PlayClip(MailSounds.Hum(), 0.5f);
+            WoodCore.Play(WoodSfx.Hum);
         }
 
         /// <summary>El fin del día: el resumen (cada encargo con su marca), el motor común (cada encargo es un ensayo), la etapa de mañana y el botón de seguir.</summary>
@@ -195,7 +194,7 @@ namespace NeuroVida.Games.Correo
                 if (_run.NewRecordToday) _recordBroken = true;
             }
             ClearBelt();
-            PlayClip(MailSounds.DayEnd(), 0.8f);
+            WoodCore.Play(WoodSfx.LevelUp);
             BindRecap();
 #if UNITY_EDITOR
             Debug.Log("[SmokeTest] Correo: fin del día " + _day.DayNo + " (etapa " + _day.Level + "): encargos " + _recap.Stat.PmOk + " de " + _recap.Stat.PmAll + ", cartas " + _recap.Stat.Right + " de " + (_recap.Stat.Sorted + _recap.Stat.Late) + ", miradas al reloj " + _recap.Stat.Peeks);
@@ -222,7 +221,7 @@ namespace NeuroVida.Games.Correo
             _phase = Phase.Brief;
             BindBrief();
             ShowOnly(_briefLayer);
-            PlayClip(MailSounds.BriefBell(), 0.7f);
+            WoodCore.Play(WoodSfx.Notice);
             _phaseAt = Now;
             _tapped = false;
             _inputOn = true;
@@ -293,7 +292,7 @@ namespace NeuroVida.Games.Correo
             LayoutIntro(MailContract.IntroLines(intro));
             ShowOnly(_introLayer);
             _phaseAt = Now;
-            PlayClip(MailSounds.Chime(), 0.7f);
+            WoodCore.Play(WoodSfx.New);
             _inputOn = true;
             _press = null;
             float waited = 0f;
@@ -412,12 +411,6 @@ namespace NeuroVida.Games.Correo
             }
         }
 
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            _audioSource.PlayOneShot(clip, volume);
-        }
 
 #if UNITY_EDITOR
         private float _botT;
