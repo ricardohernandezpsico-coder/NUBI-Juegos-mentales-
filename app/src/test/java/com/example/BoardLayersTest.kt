@@ -20,8 +20,9 @@ class BoardLayersTest {
     val main = src("MainActivity.kt")
     val bg = main.indexOf("BoardBackground()")
     val pager = main.indexOf("HorizontalPager(")
-    val bar = main.indexOf("NeuroNavBar(")
+    val bar = main.indexOf("PagerNavBar(")                       // Tarea 142: la barra se pone con `PagerNavBar` (lee el pager en vivo) y esta envuelve a `NeuroNavBar`
     assertTrue("el fondo está en MainActivity", bg > 0 && pager > 0 && bar > 0)
+    assertTrue("PagerNavBar dibuja la barra de plasticina", src("ui/components/TabPager.kt").contains("NeuroNavBar(current = "))
     assertTrue("el fondo se compone ANTES que las páginas (queda detrás de todo)", bg < pager)
     assertTrue("la barra se compone DESPUÉS de las páginas (capa fija encima)", pager < bar)
     assertFalse("la barra ya no es el bottomBar de un Scaffold", main.contains("Scaffold(") || main.contains("bottomBar"))

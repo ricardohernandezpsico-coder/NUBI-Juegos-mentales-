@@ -150,20 +150,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val swipeLock = remember { androidx.compose.runtime.mutableIntStateOf(0) }
   // Pestañas que se pasan deslizando con el dedo (29-sep, pedido de Ricardo), sincronizadas con la barra de abajo.
   val tabs = AppTab.entries
-  val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = currentTab.ordinal) { tabs.size }
-  val reduceTabs = com.example.ui.components.rememberReduceMotion()
-  LaunchedEffect(currentTab) {
-    if (pagerState.currentPage != currentTab.ordinal) {
-      // Pasar de pestaña: 300 ms con la curva enfatizada (NubiMotion); con «quitar animaciones», de golpe.
-      if (reduceTabs) pagerState.scrollToPage(currentTab.ordinal)
-      else pagerState.animateScrollToPage(currentTab.ordinal, animationSpec = androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.TAB_MS, easing = com.example.ui.components.NubiMotion.Emphasized))
-    }
-  }
-  LaunchedEffect(pagerState) {
-    androidx.compose.runtime.snapshotFlow { pagerState.settledPage }.collect { p ->
-      if (p != viewModel.currentTab.value.ordinal) viewModel.setTab(tabs[p])
-    }
-  }
+  // El pager y su sincronía con la pestaña del ViewModel viven en `rememberTabPager` (Tarea 142); la barra lee el pager EN VIVO (`PagerNavBar`), no la pestaña ya asentada del ViewModel.
+  val pagerState = com.example.ui.components.rememberTabPager(currentTab) { viewModel.setTab(it) }
   // Tras la primera celebración de una partida, las siguientes (más logros) aparecen enseguida.
   var celebratedOne by remember(lastResult) { mutableStateOf(false) }
 
@@ -316,10 +304,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           enter = if (reduceBar) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.STATE_FAST_MS)),
           exit = if (reduceBar) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.STATE_FAST_MS))
         ) {
-          com.example.ui.components.NeuroNavBar(
-            current = currentTab,
-            onSelect = { viewModel.setTab(it) }
-          )
+          com.example.ui.components.PagerNavBar(pagerState = pagerState, onSelect = { viewModel.setTab(it) })
         }
       }
     }
