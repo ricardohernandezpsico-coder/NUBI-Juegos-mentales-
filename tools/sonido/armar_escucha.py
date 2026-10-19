@@ -78,11 +78,11 @@ FASES = {
     },
     'E': {
         'grupos': ['stroop', 'meteoros', 'freno', 'disparate', 'engranajes'],
-        'etiqueta': 'Fase E',
-        'titulo': 'Fase E · hoy | Madera',
+        'etiqueta': 'Tarea 139 · Fase E (registro)',
+        'titulo': 'Fase E · hoy | Madera (ya cableada)',
         'tag': 'Fase E: hoy y Madera cálida',
-        'lead': 'Los cinco juegos de la Fase E: Tinta o Palabra, Lluvia de meteoros, Freno de emergencia, ¿Verdad o disparate? y Engranajes (señales y propios largos). El botón azul es HOY y el amarillo, Madera.',
-        'tip': 'Mejor con audífonos o con el parlante a volumen medio. Para comparar solo el timbre, prende «Igualar volumen».',
+        'lead': '<b>Esta fase se cableó el 19-oct (Tarea 139) SIN pausa de escucha</b> (Ricardo: «hazlos con tu criterio»): la página queda como registro de lo que suena y CIERRA el plan de sonido «Madera cálida». Los cinco juegos: <b>Tinta o Palabra, Lluvia de meteoros, Freno de emergencia, ¿Verdad o disparate? y Engranajes</b> (señales y propios largos). El botón azul es cómo sonaba HOY (congelado del 17-oct) y el amarillo, Madera: lo que ya suena en el juego (las señales con la misma altura y duración de siempre, y los 14 propios de Engranajes de las mismas recetas del juego).',
+        'tip': 'Qué escuchar si quieres revisarlo: (1) las <b>señales con altura</b> (las tres de Tinta, la salida de Freno y el 330 Hz de Meteoros): la misma altura y duración, el inicio llega antes; (2) los <b>14 propios de Engranajes</b>: los diez pasos de la cascada (la escalera), la antena, la turbina, la compuerta y el despegue; (3) lo <b>QUITADO</b> (el rugido y el resoplido de Freno, la onda y la estática de Disparate: «Madera: silencio, ya suena el acierto o el error») y lo que se queda como hoy (la sirena de ¡ALTO!). Mejor con audífonos o con el parlante a volumen medio.',
     },
 }
 

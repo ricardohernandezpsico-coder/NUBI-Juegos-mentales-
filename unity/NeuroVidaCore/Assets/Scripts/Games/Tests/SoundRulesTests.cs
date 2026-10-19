@@ -189,16 +189,36 @@ namespace NeuroVida.Games.Tests
                 }
         }
 
-        /// <summary>Las clases de sonidos de las Fases C y D (Carga, Punta, Constelaciones, Bodega, Correo, Rastro, Satélites, Piloto e Intrusa) dicen sus recetas propias y qué piden antes de la cuenta: <c>All()</c> y <c>Request()</c>.</summary>
+        /// <summary>Las clases de sonidos de las Fases C, D y E (Carga, Punta, Constelaciones, Bodega, Correo, Rastro, Satélites, Piloto, Intrusa, Tinta, Meteoros, Freno y Engranajes; Disparate ya no tiene) dicen sus recetas propias y qué piden antes de la cuenta: <c>All()</c> y <c>Request()</c>.</summary>
         [Test]
-        public void ThePhaseCAndDSoundClasses_ListTheirRecipesAndWhatTheyRequest()
+        public void TheSoundClassesOfThePlan_ListTheirRecipesAndWhatTheyRequest()
         {
             string dir = Path.Combine(Application.dataPath, "Scripts", "Games");
-            foreach (var rel in new[] { "Calculo/CargaSounds.cs", "Anagramas/PuntaSounds.cs", "Parejas/ConstelacionSounds.cs", "Bodega/BodegaSounds.cs", "Correo/MailSounds.cs", "Secuencia/RastroSounds.cs", "Satelites/SatelliteSounds.cs", "Piloto/PilotSounds.cs", "Intrusa/IntrusaSounds.cs" })
+            foreach (var rel in new[] { "Calculo/CargaSounds.cs", "Anagramas/PuntaSounds.cs", "Parejas/ConstelacionSounds.cs", "Bodega/BodegaSounds.cs", "Correo/MailSounds.cs", "Secuencia/RastroSounds.cs", "Satelites/SatelliteSounds.cs", "Piloto/PilotSounds.cs", "Intrusa/IntrusaSounds.cs", "Stroop/StroopSounds.cs", "Meteoros/MeteorSounds.cs", "Freno/BrakeSounds.cs", "Engranajes/EngranajesSounds.cs" })
             {
                 string text = File.ReadAllText(Path.Combine(dir, rel));
                 Assert.IsTrue(text.Contains("All()") && text.Contains("static void Request()"), rel + ": expone All() y Request()");
             }
+        }
+
+        /// <summary>
+        /// El CIERRE del plan de sonido (Tarea 139): los catorce juegos que el plan migraba están cableados (Carga, Punta, Constelaciones, Bodega, Correo, Rastro, Satélites, Piloto, Intrusa, Tinta, Meteoros, Freno, Disparate y Engranajes), ninguno tiene ya un <c>PlayClip</c> propio y
+        /// <c>DisparateSounds.cs</c> desapareció (no le quedaba ningún propio). Los tres juegos que ya estaban en Madera (Rescate, Acoplamiento y Aterrizaje: sus clases arman las recetas con <c>RadarSounds</c>) y los retirados de la app no entran.
+        /// </summary>
+        [Test]
+        public void ThePlanIsClosed_FourteenGamesAreWired_NoOwnPlayClipIsLeft()
+        {
+            CollectionAssert.AreEquivalent(new[] { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo", "Secuencia", "Satelites", "Piloto", "Intrusa", "Stroop", "Meteoros", "Freno", "Disparate", "Engranajes" }, Migrated, "los 14 juegos del plan");
+            Assert.AreEqual(14, Migrated.Length);
+            foreach (var file in MigratedControllers())
+            {
+                var lines = File.ReadAllLines(file);
+                for (int i = 0; i < lines.Length; i++)
+                    if (!lines[i].TrimStart().StartsWith("//") && Regex.IsMatch(lines[i], @"\bPlayClip\("))
+                        Assert.Fail("«" + lines[i].Trim() + "» en " + Where(file, i) + ": ya no queda ningún PlayClip propio en los juegos del plan");
+            }
+            Assert.IsFalse(File.Exists(Path.Combine(Application.dataPath, "Scripts", "Games", "Disparate", "DisparateSounds.cs")), "DisparateSounds.cs desapareció");
+            Assert.IsEmpty(Directory.GetFiles(Path.Combine(Application.dataPath, "Scripts", "Games", "Disparate"), "*Sounds.cs"), "Disparate no tiene clase de sonidos");
         }
 
         /// <summary>Para cada juego cableado: qué pide por adelantado (<c>Request</c>) y su id (el que recibe <c>WoodCore.Warm</c>). Cada tarea de cableado suma su fila.</summary>

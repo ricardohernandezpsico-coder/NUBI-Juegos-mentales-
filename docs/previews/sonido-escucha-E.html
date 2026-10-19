@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fase E: hoy y Madera cálida</title>
+<style>
+:root{
+  --bg:#07081F; --panel:#121236; --panel2:#1B1A4A; --line:#2C2A66; --ink:#EEEBFC; --dim:#ABA5D2; --faint:#8C86BD;
+  --sky:#7FD8FF; --sun:#FFC94A; --lime:#A6E36B; --coral:#FF8A6B; --grape:#B79BFF; --inkd:#1A1240;
+  --f-display:'Fredoka','Nunito',system-ui,sans-serif; --f-body:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body)}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+h1{font:700 clamp(26px,5vw,38px)/1.1 var(--f-display);margin:0 0 8px}
+.eyebrow{font:700 14px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--sun);margin:0 0 4px}
+.lead{color:var(--dim);margin:0 0 8px;max-width:68ch}
+.tip{color:var(--faint);font-size:15px;margin:0 0 18px;max-width:68ch}
+.bar{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 85%,transparent);padding:10px 0 12px;margin:0 -16px 8px;padding-inline:16px}
+.bar .row{display:flex;flex-wrap:wrap;gap:0 16px;align-items:center}
+.switch{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;font-weight:600;font-size:15px}
+.switch input{width:22px;height:22px;accent-color:var(--sky)}
+label.vol{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+input[type=range]{width:120px;accent-color:var(--sky)}
+.now{min-height:22px;color:var(--sky);font:600 14px var(--f-display);margin-top:2px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 6px;scrollbar-width:thin}
+.chip{flex:none;min-height:44px;padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font:600 14px var(--f-display);text-decoration:none;display:flex;align-items:center}
+details.grupo{margin:14px 0;border:3px solid var(--line);border-radius:22px;background:var(--panel)}
+details.grupo>summary{list-style:none;cursor:pointer;padding:14px 18px;min-height:56px;display:flex;flex-direction:column;justify-content:center}
+details.grupo>summary::-webkit-details-marker{display:none}
+details.grupo>summary .t{font:700 20px var(--f-display)}
+details.grupo>summary .a{font-size:14px;color:var(--dim)}
+.eventos{padding:0 12px 14px;display:grid;gap:10px}
+.ev{background:var(--panel2);border:2px solid var(--line);border-radius:18px;padding:12px 14px}
+.ev h3{font:600 17px/1.25 var(--f-display);margin:0 0 6px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.tag{font:700 12px var(--f-display);letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--line);color:var(--ink)}
+.tag.info{background:var(--grape);color:var(--inkd)}
+.tag.senal{background:var(--coral);color:var(--inkd)}
+.tag.tiempo{background:var(--sky);color:var(--inkd)}
+.tag.bucle{background:var(--faint);color:var(--inkd)}
+.tag.nuevo{background:var(--lime);color:var(--inkd)}
+.tag.elegida{background:var(--lime);color:var(--inkd)}
+.btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.btn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:64px;padding:8px 14px;border-radius:16px;border:3px solid var(--inkd);color:var(--inkd);font:700 17px var(--f-display);cursor:pointer;text-align:left;box-shadow:0 4px 0 #03041A}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #03041A}
+.btn small{font:600 12px/1.25 var(--f-body);opacity:.85}
+.btn.hoy{background:var(--sky)}
+.btn.madera{background:var(--sun)}
+.btn.alt{background:var(--lime)}
+.btn.ya{background:var(--grape)}
+.btn.playing{outline:3px solid var(--ink);outline-offset:2px}
+.mudo{display:flex;align-items:center;min-height:64px;padding:8px 14px;border-radius:16px;border:2px dashed var(--line);color:var(--dim);font:600 15px var(--f-display)}
+.map{margin:8px 0 0;font-size:14px;color:var(--dim)}
+.map b{color:var(--ink)}
+.note{margin:6px 0 0;font-size:14px;color:var(--sun)}
+details.mas{margin-top:6px}
+details.mas>summary{cursor:pointer;color:var(--faint);font-size:14px;min-height:32px;display:flex;align-items:center}
+.mas p{margin:4px 0;font-size:14px;color:var(--dim)}
+.pie{color:var(--faint);font-size:14px;margin-top:28px;max-width:70ch}
+:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+@media (max-width:520px){.btns{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Tarea 139 · Fase E (registro)</p>
+  <h1>Fase E · hoy | Madera (ya cableada)</h1>
+  <p class="lead"><b>Esta fase se cableó el 19-oct (Tarea 139) SIN pausa de escucha</b> (Ricardo: «hazlos con tu criterio»): la página queda como registro de lo que suena y CIERRA el plan de sonido «Madera cálida». Los cinco juegos: <b>Tinta o Palabra, Lluvia de meteoros, Freno de emergencia, ¿Verdad o disparate? y Engranajes</b> (señales y propios largos). El botón azul es cómo sonaba HOY (congelado del 17-oct) y el amarillo, Madera: lo que ya suena en el juego (las señales con la misma altura y duración de siempre, y los 14 propios de Engranajes de las mismas recetas del juego).</p>
+  <p class="tip">Qué escuchar si quieres revisarlo: (1) las <b>señales con altura</b> (las tres de Tinta, la salida de Freno y el 330 Hz de Meteoros): la misma altura y duración, el inicio llega antes; (2) los <b>14 propios de Engranajes</b>: los diez pasos de la cascada (la escalera), la antena, la turbina, la compuerta y el despegue; (3) lo <b>QUITADO</b> (el rugido y el resoplido de Freno, la onda y la estática de Disparate: «Madera: silencio, ya suena el acierto o el error») y lo que se queda como hoy (la sirena de ¡ALTO!). Mejor con audífonos o con el parlante a volumen medio.</p>
+
+  <div class="bar">
+    <div class="row">
+      <label class="switch"><input type="checkbox" id="igual"> Igualar volumen</label>
+      <label class="vol">Volumen <input type="range" id="vol" min="0.1" max="1" step="0.05" value="1"></label>
+    </div>
+    <div class="now" id="now" aria-live="polite"></div>
+    <nav class="chips" id="chips" aria-label="Juegos"></nav>
+  </div>
+
+  <div id="grupos"></div>
+
+  <p class="pie">Etiquetas: <b>INFO</b> = la altura, el orden o el momento de la nota es información del juego (no se cambia, solo el timbre). <b>SEÑAL</b> = es parte del estímulo o de la instrucción. <b>TIEMPO</b> = va sincronizado con algo y no puede atrasarse. <b>BUCLE</b> = suena debajo del juego y se queda como está. <b>NUEVO</b> = hoy no suena nada. Los números de cada botón son el pico en dBFS y la sonoridad aproximada (LUFS, ventana de 400 ms) ya con el volumen que usa el juego. Detalle completo en docs/sonido-madera-plan.md.</p>
+</div>
+
+<script>
+const DATA = {"grupos":[{"id":"stroop","title":"Tinta o Palabra","area":"Atención"},{"id":"meteoros","title":"Lluvia de meteoros","area":"Lenguaje"},{"id":"freno","title":"Freno de emergencia","area":"Atención"},{"id":"disparate","title":"¿Verdad o disparate?","area":"Lenguaje"},{"id":"engranajes","title":"Engranajes","area":"Razonamiento"}],"events":[{"group":"stroop","id":"stroop.regla","title":"Aparece la tarjeta de la regla","today":"PlayTone: 392 Hz, 0,14 s (seno + 2.º y 3.er armónico; ataque 15 ms; amplitud 0,1)","sites":"StroopGameController.cs: ShowRuleCard (StroopSounds.PlayCard)","map":"PlayCue(392, 0,14): marimba seca, casi sin sala","flag":"señal","note":"Avisa que hay una regla nueva. Misma altura y duración; el inicio llega ANTES (0,5 ms contra 15 ms de ataque del tono de hoy). Ya suena en el juego (Tarea 139). Tinta mide tiempos de reacción: la fecha del cambio de timbre está en docs/medidas-juegos-estrella.md.","hoy":"stroop.regla","hoyGain":1,"wood":"stroop.regla.madera","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"stroop","id":"stroop.cambia-tinta","title":"La regla pasa a «el color de la tinta»","today":"PlayTone: 330 Hz, 0,1 s","sites":"StroopGameController.cs: SetRule (StroopSounds.PlayRule)","map":"PlayCue(330, 0,1)","flag":"señal","note":"La ALTURA dice qué regla vale: 330 Hz = tinta, 440 Hz = palabra. No se cambia.","hoy":"stroop.tinta","hoyGain":1,"wood":"stroop.tinta.madera","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"stroop","id":"stroop.cambia-palabra","title":"La regla pasa a «lo que dice la palabra»","today":"PlayTone: 440 Hz, 0,1 s","sites":"StroopGameController.cs: SetRule (StroopSounds.PlayRule)","map":"PlayCue(440, 0,1)","flag":"señal","note":"","hoy":"stroop.palabra","hoyGain":1,"wood":"stroop.palabra.madera","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"stroop","id":"stroop.listo","title":"Práctica: «¡Listo!»","today":"PlayTone: 523 Hz, 0,4 s","sites":"StroopGameController.cs:1182","map":"Notice","flag":"","note":"","hoy":"stroop.listo","hoyGain":1,"wood":"wood.notice","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"stroop","id":"stroop.comun","title":"Acierto, error, subir de nivel y tic","today":"Comunes (GameFeel)","sites":"StroopGameController.cs:287, :307, :212, :364","map":"Wrong (ver «Lo común»)","flag":"","note":"","hoy":"gamefeel.wrong","hoyGain":0.5,"wood":"wood.wrong","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"freno","id":"freno.salida","title":"Se enciende un cohete: SEÑAL de salida","today":"PlayTone: 784 Hz, 60 ms (seno + 2.º y 3.er armónico; amplitud 0,06)","sites":"BrakeGameController.cs: la salida (BrakeSounds.PlayExit) y la práctica","map":"PlayCue(784, 0,06, gainDb −6)","flag":"señal","note":"Es el ESTÍMULO: el tiempo de reacción se mide desde que se enciende la luz y suena este tono. Misma altura (784 Hz), misma duración (60 ms) y el mismo nivel; el inicio llega ANTES (0,5 ms contra 15 ms de ataque del tono de hoy). Ya suena en el juego (Tarea 139); la fecha del cambio de timbre está en docs/medidas-juegos-estrella.md.","hoy":"freno.salida","hoyGain":1,"wood":"freno.salida.madera","woodGain":0.4009,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"freno","id":"freno.sirena","title":"¡ALTO!: la sirena de dos tonos (988, 740, 988 Hz)","today":"Tres tonos de 90 ms cada 100 ms","sites":"BrakeGameController.cs: ShowStop y SirenTail (PlayTone)","map":"SE QUEDA tal cual (PlayTone; decisión de Ricardo)","flag":"señal","note":"Es la señal de PARAR: tiene que seguir sonando a ALARMA. Se queda con su tono armónico de siempre y su ritmo de siempre: es el único uso vivo de PlayTone/HarmonicTone.","hoy":"freno.sirena","hoyGain":1,"wood":null,"woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"SE QUEDA tal cual: sigue sonando como hoy (el botón azul). Es el único sonido suelto (PlayTone) que queda en los juegos, por decisión de Ricardo.","woodLabel":""},{"group":"freno","id":"freno.rugido","title":"Despegue acertado: rugido grave (con el acierto común)","today":"PlayTone: 196 Hz, 0,25 s","sites":"BrakeGameController.cs: el despegue acertado","map":"QUITADO: ya suena el acierto","flag":"","note":"DECIDIDO (Ricardo): se quita. Sonaba JUNTO con el acierto común (dos sonidos por una respuesta); queda solo el acierto de la paleta.","hoy":"freno.rugido","hoyGain":1,"wood":null,"woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"QUITADO: silencio (ya suena el acierto de la paleta).","woodLabel":""},{"group":"freno","id":"freno.lento","title":"«¡Más rápido!»","today":"PlayTone: 262 Hz, 0,12 s","sites":"BrakeGameController.cs: TooSlow","map":"Knock","flag":"","note":"Sube ≈ 8 LU respecto de hoy: hoy casi no se oía.","hoy":"freno.lento","hoyGain":1,"wood":"wood.knock","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"freno","id":"freno.resoplido","title":"Freno perfecto: resoplido (con el acierto común)","today":"PlayTone: 147 Hz, 0,3 s","sites":"BrakeGameController.cs: StopSuccess","map":"QUITADO: ya suena el acierto","flag":"","note":"DECIDIDO (Ricardo): se quita (la otra opción era un SweepDown suave solo aquí).","hoy":"freno.resoplido","hoyGain":1,"wood":null,"woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"QUITADO: silencio (ya suena el acierto de la paleta).","woodLabel":""},{"group":"freno","id":"freno.listo","title":"Práctica: «¡Listo!»","today":"PlayTone: 523 Hz, 0,4 s","sites":"BrakeGameController.cs: la práctica (GameFeel.Notice)","map":"Notice","flag":"","note":"","hoy":"stroop.listo","hoyGain":1,"wood":"wood.notice","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"freno","id":"freno.comun","title":"Acierto, error, subir de nivel y tic","today":"Comunes (GameFeel)","sites":"BrakeGameController.cs: GameFeel.Correct, Wrong, LevelUp y Tick; la práctica suena también el acierto de la paleta","map":"Wrong (ver «Lo común»)","flag":"","note":"","hoy":"gamefeel.wrong","hoyGain":0.5,"wood":"wood.wrong","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.arrancar","title":"Tocar «Arrancar»","today":"Campanita (la nota 3), 0,4 s","sites":"EngranajesGameController.cs: PressStart (PlasticTouch.PlaysTap en el botón)","map":"El toque del kit (PlaysTap), sin nota propia","flag":"","note":"DECIDIDO (Ricardo): «Arrancar» suena como «¡Listo!» y «Seguir» de los demás juegos: el toque del kit. Sin nota propia.","hoy":"engranajes.press","hoyGain":0.6,"wood":"wood.tap","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.motor","title":"El motor arranca: zumbido grave","today":"Triángulo 70 → 95 Hz, 0,7 s","sites":"EngranajesGameController.cs: PlayMachine (al empezar cada máquina)","map":"Hum","flag":"","note":"","hoy":"engranajes.motor","hoyGain":0.6,"wood":"wood.hum","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.pasos","title":"Cada paso de la cascada: clic de dientes y una nota que sube","today":"Chasquido de 50 ms y campanita de la escala","sites":"EngranajesGameController.cs: la cascada (EngranajesSounds.PlayStep, cada 0,15 s; 0,21 en mayores)","map":"Propios engranajes.step0..9: bloque de madera (1800 Hz) y marimba de τ 0,15 con la nota Penta[profundidad + 1]","flag":"info","note":"La ALTURA sube con la profundidad del paso, y el tiempo es el de hoy (un paso cada 0,15 s: el reloj no se toca). Es la secuencia más densa de la app (hasta 10 notas en 1,5 s): la marimba cae 20 dB en ≈ 0,35 s para que la pila sea la de hoy; entran a la familia «respuesta» (baja) para que el acierto final mande.","hoy":"fam.engranajes-pasos.hoy","hoyGain":0.9,"wood":"engranajes.pasos.madera","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.clank","title":"Un cambio (tocar el motor o una correa, o deshacer): «clank» de llave","today":"Golpe metálico corto y campanita aguda","sites":"EngranajesGameController.cs: ToggleSwitch","map":"Clack","flag":"","note":"","hoy":"engranajes.clank","hoyGain":0.7,"wood":"wood.clack","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.cartel","title":"Un cartel que no cumplió / una jugada que no era","today":"Golpe grave y blando, 0,4 s","sites":"EngranajesGameController.cs: la cascada (Knock) y RejectTouch (Knock, gainDb −6)","map":"Knock (y −6 dB cuando es una jugada que no era)","flag":"","note":"","hoy":"engranajes.thud","hoyGain":0.8,"wood":"wood.knock","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.antena","title":"La antena: silbido de viento y campana aguda","today":"Ruido 600 → 2600 Hz y campana, 1,2 s","sites":"EngranajesGameController.cs: PlayPartSound","map":"Propio engranajes.antenna: silbido de viento y kalimba sol6 (nivel 0,16)","flag":"","note":"Baja ≈ 4 LU respecto de hoy (hoy estaba a nivel de hito sin serlo).","hoy":"engranajes.antenna","hoyGain":0.8,"wood":"engranajes.antenna.madera","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.turbina","title":"La turbina: rugido que sube","today":"Ruido 180 → 900 Hz con retumbo, 1,3 s","sites":"EngranajesGameController.cs: PlayPartSound","map":"Propio engranajes.turbine: rugido que sube y un golpe grave que sube de retumbo (nivel 0,18)","flag":"","note":"Baja ≈ 4 LU respecto de hoy.","hoy":"engranajes.turbine","hoyGain":0.8,"wood":"engranajes.turbine.madera","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.compuerta","title":"La compuerta y el elevador: motor eléctrico y golpe seco","today":"Diente de sierra suave 90 → 140 Hz y golpe, 1,1 s","sites":"EngranajesGameController.cs: PlayPartSound","map":"Propio engranajes.rack: tres golpes graves a 0,27 s (el motor) y un golpe seco al parar (nivel 0,18)","flag":"tiempo","note":"Baja ≈ 6 LU respecto de hoy. Los golpes caen a 0, 0,27, 0,54 y 0,8 s: se miden en las pruebas.","hoy":"engranajes.rack","hoyGain":0.8,"wood":"engranajes.rack.madera","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.acierto","title":"Acierto de la máquina: tres campanas que suben","today":"Tres campanas, 2,2 s, con eco","sites":"EngranajesGameController.cs: el acierto (a arrive + 0,6 s)","map":"Perfect","flag":"","note":"","hoy":"engranajes.success","hoyGain":0.8,"wood":"wood.perfect","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.luz","title":"La luz del cohete que se enciende (la nota sube con cada luz)","today":"Campanita de la escala (τ 0,22 s)","sites":"EngranajesGameController.Scene.cs: la luz que llega al cohete","map":"Spark(luz + 1, de 1 a 8)","flag":"info","note":"","hoy":"fam.engranajes-luces.hoy","hoyGain":0.8,"wood":"wood.ladder.spark","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.despegue","title":"El despegue: rugido que sube y cinco campanas","today":"3,8 s con eco","sites":"EngranajesGameController.cs: LaunchRoutine (EngranajesSounds.Play(Launch))","map":"Propio engranajes.launch: rugido de 2,6 s, cinco kalimbas desde 1,0 s cada 0,14 s y un acorde de marimba (nivel 0,30, HITO)","flag":"","note":"Es un HITO, no el Record: ese es el del récord en la app y no puede sonar en un despegue. Hoy era el sonido más fuerte del juego (−14,8 LUFS); baja ≈ 6 LU.","hoy":"engranajes.launch","hoyGain":0.9,"wood":"engranajes.launch.madera","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.nuevo","title":"«NUEVO»","today":"Dos campanas (mi y la)","sites":"EngranajesGameController.cs: la tarjeta «NUEVO»","map":"New","flag":"","note":"","hoy":"engranajes.chime","hoyGain":0.7,"wood":"wood.new","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"engranajes","id":"engranajes.final","title":"Fin de la partida","today":"Tres campanas que suben, 2 s","sites":"ExitButton (GameFeel.Finish)","map":"Finish","flag":"","note":"","hoy":"engranajes.finale","hoyGain":0.8,"wood":"wood.finish","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"meteoros","id":"meteoros.destruir","title":"Se deja pasar una palabra inventada (el acierto sin ruido)","today":"PlayTone: 330 Hz, 0,12 s, amplitud 0,03 (el único sonido de ese acierto)","sites":"MeteorGameController.cs: dejar pasar una inventada (MeteorSounds.PlayLetPass); y en la práctica","map":"PlayCue(330, 0,12, gainDb −9)","flag":"","note":"Es retroalimentación suave, no información. SE QUEDA (Tarea 139): el plan creía que se sumaba al acierto común y proponía quitarlo, pero no suena junto a ningún Correct: es el único sonido de «dejar pasar una inventada». Misma altura y duración, −9 dB: igual de discreto.","hoy":"meteoros.destruir","hoyGain":1,"wood":"meteoros.destruir.madera","woodGain":0.2839,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"meteoros","id":"meteoros.listo","title":"Práctica: «¡Listo!»","today":"PlayTone: 523 Hz, 0,4 s","sites":"MeteorGameController.cs:1212","map":"Notice","flag":"","note":"","hoy":"stroop.listo","hoyGain":1,"wood":"wood.notice","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"meteoros","id":"meteoros.comun","title":"Acierto, error, subir de nivel y tic","today":"Comunes (GameFeel)","sites":"MeteorGameController.cs:492, :499, :187, :466","map":"Wrong (ver «Lo común»)","flag":"","note":"","hoy":"gamefeel.wrong","hoyGain":0.5,"wood":"wood.wrong","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"disparate","id":"disparate.sintonia","title":"Llega la frase: sintonía","today":"Barrido de ruido que sube y se aclara, 0,3 s","sites":"DisparateGameController.cs: la frase que llega (SweepUp, gainDb −3)","map":"SweepUp, gainDb −3","flag":"","note":"","hoy":"disparate.tune","hoyGain":0.5,"wood":"wood.sweepup","woodGain":0.5664,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"disparate","id":"disparate.acierto","title":"Acierto: onda que sale de la antena (junto al acierto común)","today":"Soplo que sube y campanita, 0,45 s","sites":"DisparateGameController.cs: el acierto","map":"QUITADA: queda solo el acierto común","flag":"","note":"DECIDIDO (Ricardo): se quita. Sonaba JUNTO con el acierto común (dos sonidos por una respuesta); queda solo el Correct de la paleta, que sube con la racha.","hoy":"disparate.wave","hoyGain":0.45,"wood":null,"woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"QUITADA: silencio (ya suena el acierto de la paleta, que sube con la racha).","woodLabel":""},{"group":"disparate","id":"disparate.error","title":"Error: chasquido de estática (junto al error común)","today":"Chasquido y golpe grave suave, 0,22 s","sites":"DisparateGameController.cs: el error","map":"QUITADA: queda solo el error común","flag":"","note":"DECIDIDO (Ricardo): se quita (dos sonidos por una respuesta); queda solo el Wrong de la paleta.","hoy":"disparate.static","hoyGain":0.45,"wood":null,"woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"QUITADA: silencio (ya suena el error de la paleta).","woodLabel":""},{"group":"disparate","id":"disparate.perdida","title":"Se perdió la señal","today":"Ruido que se apaga y nota grave, 0,7 s","sites":"DisparateGameController.cs: LostFeedback (el aviso sigue mudo)","map":"Wrong","flag":"","note":"","hoy":"disparate.lost","hoyGain":0.5,"wood":"wood.wrong","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"disparate","id":"disparate.aurora","title":"Transmisión perfecta (10 seguidas)","today":"Cascada de campanas altas, 1,8 s (y «subir de nivel» encima)","sites":"DisparateGameController.cs: PerfectTransmission (el aviso sigue mudo)","map":"Streak solo","flag":"","note":"DECIDIDO (Ricardo): es un hito de racha (× 1,5), no un nivel: suena solo el Streak; se quitó el LevelUp que sonaba encima (hoy sonaban dos hitos juntos).","hoy":"disparate.aurora","hoyGain":0.55,"wood":"wood.streak","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"disparate","id":"disparate.aviso","title":"Gracias por avisar (frase poco clara)","today":"Dos marimbas suaves que suben","sites":"DisparateGameController.cs: el aviso de «frase poco clara»","map":"Notice del propio aviso","flag":"","note":"DECIDIDO (Ricardo): vuelve al Notice del aviso (se borró el «gracias» propio y el aviso ya no va mudo).","hoy":"disparate.unclear","hoyGain":0.5,"wood":"wood.notice","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""},{"group":"disparate","id":"disparate.comun","title":"Acierto, error, subir de nivel, tic y fin","today":"Comunes (GameFeel); no tiene Finale propio","sites":"DisparateGameController.cs: GameFeel.Correct, Wrong, LevelUp («¡Ráfaga!») y Tick","map":"Wrong (ver «Lo común»)","flag":"","note":"","hoy":"gamefeel.wrong","hoyGain":0.5,"wood":"wood.wrong","woodGain":0.8,"woodAlt":null,"woodAltLabel":"Madera (marimba)","alreadyWood":false,"noWood":"","woodLabel":""}],"clips":{"gamefeel.wrong":{"file":"gamefeel-wrong.wav","peakDb":-4.4428,"lufs":-11.4512,"onsetMs":0.8163,"scale":0.6662},"wood.wrong":{"file":"wood-wrong.wav","peakDb":-13.1515,"lufs":-20.878,"onsetMs":0.5896,"scale":0.2444},"wood.finish":{"file":"wood-finish.wav","peakDb":-7.9588,"lufs":-16.0089,"onsetMs":1.1565,"scale":0.4444},"wood.notice":{"file":"wood-notice.wav","peakDb":-15.9176,"lufs":-23.5722,"onsetMs":0.2948,"scale":0.1778},"wood.tap":{"file":"wood-tap.wav","peakDb":-23.098,"lufs":-36.2146,"onsetMs":0.5442,"scale":0.0778},"wood.knock":{"file":"wood-knock.wav","peakDb":-11.0568,"lufs":-23.9064,"onsetMs":0.4762,"scale":0.3111},"wood.new":{"file":"wood-new.wav","peakDb":-11.7005,"lufs":-19.1449,"onsetMs":0,"scale":0.2889},"wood.ladder.spark":{"file":"wood-ladder-spark.wav","peakDb":-16.3778,"lufs":-22.3085,"onsetMs":0,"scale":0.1686},"wood.streak":{"file":"wood-streak.wav","peakDb":-10.4576,"lufs":-18.6629,"onsetMs":0,"scale":0.3333},"wood.perfect":{"file":"wood-perfect.wav","peakDb":-9.3704,"lufs":-17.4536,"onsetMs":1.2245,"scale":0.3778},"wood.sweepup":{"file":"wood-sweepup.wav","peakDb":-18.4164,"lufs":-29.7119,"onsetMs":2.2449,"scale":0.1333},"wood.hum":{"file":"wood-hum.wav","peakDb":-18.4164,"lufs":-25.4524,"onsetMs":1.0658,"scale":0.1333},"wood.clack":{"file":"wood-clack.wav","peakDb":-11.7005,"lufs":-25.2809,"onsetMs":0.4082,"scale":0.2889},"stroop.regla":{"file":"stroop-regla.wav","peakDb":-19.0721,"lufs":-27.4374,"onsetMs":4.2404,"scale":0.1236},"stroop.regla.madera":{"file":"stroop-regla-madera.wav","peakDb":-13.9794,"lufs":-28.1523,"onsetMs":0.5442,"scale":0.2222},"stroop.tinta":{"file":"stroop-tinta.wav","peakDb":-19.0796,"lufs":-28.3804,"onsetMs":3.3333,"scale":0.1235},"stroop.tinta.madera":{"file":"stroop-tinta-madera.wav","peakDb":-13.9794,"lufs":-29.225,"onsetMs":0.6349,"scale":0.2222},"stroop.palabra":{"file":"stroop-palabra.wav","peakDb":-19.0891,"lufs":-28.2759,"onsetMs":3.8776,"scale":0.1234},"stroop.palabra.madera":{"file":"stroop-palabra-madera.wav","peakDb":-13.9794,"lufs":-29.3819,"onsetMs":0.4989,"scale":0.2222},"stroop.listo":{"file":"stroop-listo.wav","peakDb":-21.0135,"lufs":-27.9604,"onsetMs":3.3787,"scale":0.0989},"freno.salida":{"file":"freno-salida.wav","peakDb":-23.5132,"lufs":-34.0155,"onsetMs":3.5147,"scale":0.0741},"freno.salida.madera":{"file":"freno-salida-madera.wav","peakDb":-13.9794,"lufs":-30.4681,"onsetMs":0.3628,"scale":0.2222},"freno.sirena":{"file":"freno-sirena.wav","peakDb":-21.0102,"lufs":-25.4042,"onsetMs":3.1746,"scale":0.0989},"freno.rugido":{"file":"freno-rugido.wav","peakDb":-25.1097,"lufs":-32.7732,"onsetMs":3.6961,"scale":0.0617},"freno.lento":{"file":"freno-lento.wav","peakDb":-25.0972,"lufs":-33.9682,"onsetMs":3.1293,"scale":0.0618},"freno.resoplido":{"file":"freno-resoplido.wav","peakDb":-25.0976,"lufs":-32.832,"onsetMs":4.3991,"scale":0.0618},"engranajes.press":{"file":"engranajes-press.wav","peakDb":-12.6305,"lufs":-23.9366,"onsetMs":1.7007,"scale":0.2596},"engranajes.motor":{"file":"engranajes-motor.wav","peakDb":-14.1195,"lufs":-22.5036,"onsetMs":13.22,"scale":0.2187},"fam.engranajes-pasos.hoy":{"file":"fam-engranajes-pasos-hoy.wav","peakDb":-12.995,"lufs":-24.6515,"onsetMs":1.9955,"scale":0.2489},"engranajes.pasos.madera":{"file":"engranajes-pasos-madera.wav","peakDb":-13.5961,"lufs":-21.8678,"onsetMs":0.3628,"scale":0.2322},"engranajes.clank":{"file":"engranajes-clank.wav","peakDb":-13.1872,"lufs":-25.868,"onsetMs":1.9048,"scale":0.2434},"engranajes.thud":{"file":"bodega-thud.wav","peakDb":-10.5683,"lufs":-21.0148,"onsetMs":0.0907,"scale":0.3291},"engranajes.antenna":{"file":"engranajes-antenna.wav","peakDb":-13.3029,"lufs":-20.1534,"onsetMs":59.4104,"scale":0.2402},"engranajes.antenna.madera":{"file":"engranajes-antenna-madera.wav","peakDb":-15.9176,"lufs":-22.2525,"onsetMs":8.5714,"scale":0.1778},"engranajes.turbine":{"file":"engranajes-turbine.wav","peakDb":-11.1129,"lufs":-18.5304,"onsetMs":37.6644,"scale":0.3091},"engranajes.turbine.madera":{"file":"engranajes-turbine-madera.wav","peakDb":-14.8945,"lufs":-22.5634,"onsetMs":0.839,"scale":0.2},"engranajes.rack":{"file":"engranajes-rack.wav","peakDb":-11.4405,"lufs":-16.8042,"onsetMs":0.068,"scale":0.2977},"engranajes.rack.madera":{"file":"engranajes-rack-madera.wav","peakDb":-14.8945,"lufs":-25.7073,"onsetMs":0.907,"scale":0.2},"engranajes.success":{"file":"engranajes-success.wav","peakDb":-8.5658,"lufs":-13.5195,"onsetMs":1.678,"scale":0.4144},"fam.engranajes-luces.hoy":{"file":"fam-engranajes-luces-hoy.wav","peakDb":-10.5683,"lufs":-17.6157,"onsetMs":1.2925,"scale":0.3291},"engranajes.launch":{"file":"engranajes-launch.wav","peakDb":-6.0206,"lufs":-13.9321,"onsetMs":280.2948,"scale":0.5556},"engranajes.launch.madera":{"file":"engranajes-launch-madera.wav","peakDb":-10.4576,"lufs":-18.4103,"onsetMs":1.9728,"scale":0.3333},"engranajes.chime":{"file":"parejas-chime.wav","peakDb":-11.4114,"lufs":-18.6074,"onsetMs":1.746,"scale":0.2987},"engranajes.finale":{"file":"parejas-finale.wav","peakDb":-9.5017,"lufs":-15.2701,"onsetMs":2.1088,"scale":0.3721},"meteoros.destruir":{"file":"meteoros-destruir.wav","peakDb":-29.5372,"lufs":-38.3327,"onsetMs":3.3333,"scale":0.0371},"meteoros.destruir.madera":{"file":"meteoros-destruir-madera.wav","peakDb":-13.9794,"lufs":-28.6056,"onsetMs":0.6349,"scale":0.2222},"disparate.tune":{"file":"disparate-tune.wav","peakDb":-12.612,"lufs":-23.66,"onsetMs":19.1383,"scale":0.2601},"disparate.wave":{"file":"disparate-wave.wav","peakDb":-14.2799,"lufs":-22.8203,"onsetMs":27.7778,"scale":0.2147},"disparate.static":{"file":"disparate-static.wav","peakDb":-6.7865,"lufs":-21.8097,"onsetMs":0.4989,"scale":0.5087},"disparate.lost":{"file":"disparate-lost.wav","peakDb":-9.5433,"lufs":-18.3106,"onsetMs":0.9524,"scale":0.3703},"disparate.aurora":{"file":"disparate-aurora.wav","peakDb":-9.725,"lufs":-14.7431,"onsetMs":0.6349,"scale":0.3627},"disparate.unclear":{"file":"disparate-unclear.wav","peakDb":-9.5485,"lufs":-18.9945,"onsetMs":0.4535,"scale":0.3701}}};
+const INCRUSTADO = false;
+const AUDIO = {};
+const CARPETA = 'sonido-escucha/';
+
+const $ = (s, r = document) => r.querySelector(s);
+const fmt = (v, d = 1) => (v == null ? '—' : v.toFixed(d).replace('.', ','));
+let ctx = null, current = null, currentBtn = null;
+const buffers = new Map(), elements = new Map();
+
+function url(file) { return INCRUSTADO ? AUDIO[file] : CARPETA + file; }
+
+async function loadBuffer(file) {
+  if (buffers.has(file)) return buffers.get(file);
+  if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (C) ctx = new C(); }
+  if (ctx) {
+    try {
+      const r = await fetch(url(file));
+      const ab = await r.arrayBuffer();
+      const buf = await new Promise((ok, err) => ctx.decodeAudioData(ab, ok, err));
+      buffers.set(file, buf);
+      return buf;
+    } catch (e) { /* si no se puede leer con fetch (archivo local), se usa un <audio> */ }
+  }
+  buffers.set(file, null);
+  return null;
+}
+
+function stopAll() {
+  if (current) { try { current.stop(); } catch (e) {} current = null; }
+  for (const el of elements.values()) { el.pause(); }
+  if (currentBtn) currentBtn.classList.remove('playing');
+  currentBtn = null;
+}
+
+async function play(btn, key, gain, label) {
+  stopAll();
+  const igual = $('#igual').checked;
+  const clip = DATA.clips[key], file = clip.file;
+  const g = (igual ? 0.7 : gain * clip.scale) * parseFloat($('#vol').value);
+  btn.classList.add('playing'); currentBtn = btn;
+  $('#now').textContent = label;
+  const buf = await loadBuffer(file);
+  if (currentBtn !== btn) return;
+  if (buf) {
+    const src = ctx.createBufferSource(), gn = ctx.createGain();
+    src.buffer = buf; gn.gain.value = g;
+    src.connect(gn); gn.connect(ctx.destination);
+    if (ctx.state === 'suspended') await ctx.resume();
+    src.onended = () => { if (current === src) { btn.classList.remove('playing'); current = null; currentBtn = null; } };
+    current = src; src.start();
+  } else {
+    let el = elements.get(file);
+    if (!el) { el = new Audio(url(file)); elements.set(file, el); }
+    el.volume = Math.max(0, Math.min(1, g)); el.currentTime = 0;
+    el.onended = () => { btn.classList.remove('playing'); if (currentBtn === btn) currentBtn = null; };
+    el.play();
+  }
+}
+
+function levels(key, gain) {
+  const c = DATA.clips[key]; if (!c) return '';
+  const k = 20 * Math.log10(gain);
+  return 'pico ' + fmt(c.peakDb + k) + ' dBFS · ' + fmt(c.lufs + k) + ' LUFS · inicio ' + fmt(c.onsetMs) + ' ms';
+}
+
+function button(cls, title, key, gain, extra) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'btn ' + cls;
+  b.innerHTML = '<span>' + title + '</span><small>' + levels(key, gain) + (extra ? ' · ' + extra : '') + '</small>';
+  b.addEventListener('click', () => play(b, key, gain, title));
+  return b;
+}
+
+function evento(e) {
+  const d = document.createElement('div'); d.className = 'ev';
+  const tags = [];
+  if (e.flag) tags.push('<span class="tag ' + e.flag.replace('ñ', 'n') + '">' + e.flag + '</span>');
+  if (e.note && e.note.indexOf('NUEVO') === 0) tags.push('<span class="tag nuevo">nuevo</span>');
+  d.innerHTML = '<h3>' + e.title + '</h3>' + (tags.length ? '<div class="tags">' + tags.join('') + '</div>' : '');
+  const btns = document.createElement('div'); btns.className = 'btns';
+  if (!e.wood && e.noWood) {
+    if (e.hoy) btns.appendChild(button('hoy', 'Hoy', e.hoy, e.hoyGain, ''));
+    const m = document.createElement('div'); m.className = 'mudo'; m.textContent = e.noWood; btns.appendChild(m);
+  } else if (!e.wood) {
+    const m = document.createElement('div'); m.className = 'mudo';
+    m.textContent = e.flag === 'bucle' ? 'Suena en bucle y se queda como está.' : (e.alreadyWood ? 'Ya suena en Madera cálida (aprobado): sin botón.' : 'Sonido propio del juego: se diseña en su fase.');
+    btns.appendChild(m);
+  } else {
+    if (e.hoy) btns.appendChild(button('hoy', 'Hoy', e.hoy, e.hoyGain, ''));
+    else { const m = document.createElement('div'); m.className = 'mudo'; m.textContent = 'Hoy: silencio'; btns.appendChild(m); }
+    btns.appendChild(button('madera', e.woodLabel || 'Madera', e.wood, e.woodGain, ''));
+    if (e.woodAlt) btns.appendChild(button('alt', e.woodAltLabel, e.woodAlt, e.woodGain, ''));
+  }
+  d.appendChild(btns);
+  d.insertAdjacentHTML('beforeend', '<p class="map">' + (e.alreadyWood ? 'Ya suena en Madera cálida. ' : '') + 'Paleta: <b>' + e.map + '</b></p>');
+  if (e.note) d.insertAdjacentHTML('beforeend', '<p class="note">' + e.note + '</p>');
+  d.insertAdjacentHTML('beforeend', '<details class="mas"><summary>Cómo suena hoy y dónde se llama</summary><p>' + e.today + '</p><p>' + e.sites + '</p></details>');
+  return d;
+}
+
+function armar() {
+  const cont = $('#grupos'), chips = $('#chips');
+  DATA.grupos.forEach((g, i) => {
+    const evs = DATA.events.filter(e => e.group === g.id);
+    if (!evs.length) return;
+    const det = document.createElement('details'); det.className = 'grupo'; det.id = 'g-' + g.id;
+    if (i === 0) det.open = true;
+    det.innerHTML = '<summary><span class="t">' + g.title + '</span><span class="a">' + g.area + ' · ' + evs.length + ' sonidos</span></summary>';
+    const box = document.createElement('div'); box.className = 'eventos';
+    evs.forEach(e => box.appendChild(evento(e)));
+    det.appendChild(box); cont.appendChild(det);
+    const a = document.createElement('a'); a.className = 'chip'; a.href = '#g-' + g.id; a.textContent = g.title;
+    a.addEventListener('click', () => { det.open = true; });
+    chips.appendChild(a);
+  });
+}
+armar();
+</script>
+</body>
+</html>
