@@ -258,33 +258,6 @@ namespace NeuroVida.Games.Parejas.Tests
             Assert.AreEqual(12, ConstelacionContract.ObjectKinds);
             foreach (var name in ConstelacionContract.ObjectNames) Assert.AreNotEqual("sol", name);
         }
-
-        [Test]
-        public void EverySound_IsSynthesized_AudibleButNotLoud()
-        {
-            var warm = ConstelacionSounds.Prewarm();
-            while (warm.MoveNext()) { }
-            var clips = new List<AudioClip>
-            {
-                ConstelacionSounds.FlipUp(), ConstelacionSounds.FlipDown(), ConstelacionSounds.Soft(), ConstelacionSounds.Hum(), ConstelacionSounds.Chime(), ConstelacionSounds.BoardEnd(), ConstelacionSounds.Finale(),
-                ConstelacionSounds.Spark(1), ConstelacionSounds.Spark(8)
-            };
-            for (int g = 0; g < 11; g++) { clips.Add(ConstelacionSounds.Note(g)); clips.Add(ConstelacionSounds.FoundMemory(g)); clips.Add(ConstelacionSounds.FoundNew(g)); }
-            foreach (var clip in clips)
-            {
-                Assert.IsNotNull(clip);
-                var data = new float[clip.samples];
-                clip.GetData(data, 0);
-                float peak = 0f;
-                foreach (float f in data) peak = Mathf.Max(peak, Mathf.Abs(f));
-                Assert.Greater(peak, 0.03f, clip.name + ": se oye");
-                Assert.LessOrEqual(peak, 0.5001f, clip.name + ": no pasa de 0,5");
-            }
-            Assert.AreNotSame(ConstelacionSounds.Note(0), ConstelacionSounds.Note(1), "cada grupo tiene su nota");
-            Assert.AreNotSame(ConstelacionSounds.FoundMemory(0), ConstelacionSounds.FoundNew(0), "de memoria suena distinto que a la primera vista");
-            Assert.AreNotSame(ConstelacionSounds.Soft(), ConstelacionSounds.BoardEnd(), "el «no son iguales» y el cielo completo no suenan igual");
-            Assert.AreNotSame(ConstelacionSounds.Spark(1), ConstelacionSounds.Spark(5), "el destello sube con la racha");
-        }
     }
 
     /// <summary>La vista y la pantalla de «Constelaciones»: todo lo que se dibuja se ve, los pools alcanzan, el reloj es el del juego, y las reglas de patentes.</summary>

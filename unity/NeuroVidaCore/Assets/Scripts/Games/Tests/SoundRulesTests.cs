@@ -40,7 +40,7 @@ namespace NeuroVida.Games.Tests
         /// <summary>
         /// Los juegos YA CABLEADOS a <c>WoodCore</c> (carpeta de <c>Games/</c>): rigen las reglas (b), (c) y (d). Paso 0 de las Fases C a E (Tarea 133): ninguno todavía; cada tarea de cableado suma su carpeta aquí (Calculo, Anagramas, Parejas, Bodega, Correo en la Fase C…).
         /// </summary>
-        private static readonly string[] Migrated = { "Calculo", "Anagramas" };
+        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas" };
 
         /// <summary>Los bucles aprobados que se quedan con su propio altavoz (el zumbido de Satélites, el motor de Piloto y el propulsor de Aterrizaje).</summary>
         private static readonly string[] LoopFiles = { "SatelliteGameController.cs", "SatelliteGameController.Scene.cs", "PilotGameController.cs", "PilotGameController.Scene.cs", "PilotEngine.cs", "LandingGameController.Scene.cs" };
@@ -163,7 +163,7 @@ namespace NeuroVida.Games.Tests
         public void ThePhaseCSoundClasses_ListTheirRecipesAndWhatTheyRequest()
         {
             string dir = Path.Combine(Application.dataPath, "Scripts", "Games");
-            foreach (var rel in new[] { "Calculo/CargaSounds.cs", "Anagramas/PuntaSounds.cs", "Parejas/ConstelacionSounds.Wood.cs", "Bodega/BodegaSounds.Wood.cs", "Correo/MailSounds.Wood.cs" })
+            foreach (var rel in new[] { "Calculo/CargaSounds.cs", "Anagramas/PuntaSounds.cs", "Parejas/ConstelacionSounds.cs", "Bodega/BodegaSounds.Wood.cs", "Correo/MailSounds.Wood.cs" })
             {
                 string text = File.ReadAllText(Path.Combine(dir, rel));
                 Assert.IsTrue(text.Contains("All()") && text.Contains("static void Request()"), rel + ": expone All() y Request()");
@@ -175,6 +175,7 @@ namespace NeuroVida.Games.Tests
         {
             { "Calculo", ("calculo", CargaSounds.Request) },
             { "Anagramas", ("anagramas", PuntaSounds.Request) },
+            { "Parejas", ("parejas", ConstelacionSounds.Request) },
         };
 
         /// <summary>Lo que el controlador de un juego cableado le pide a la paleta (<c>WoodCore.Play(WoodSfx.X[, n])</c>): (sonido, variante o -1 si el argumento es una expresión que recorre todas), con el archivo y la línea.</summary>

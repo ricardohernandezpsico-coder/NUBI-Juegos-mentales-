@@ -136,9 +136,10 @@ namespace NeuroVida.Games.Parejas
         /// <summary>El Reto se acabó (solo cuenta con la partida en marcha).</summary>
         private bool Over => Endless && _loopOn && GameClock.Time >= _endsAt;
 
-        /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
+        /// <summary>Hornea los sprites durante la cuenta regresiva, de a poco por cuadro (así nada se traba); las 11 notas y los demás sonidos de Madera los pide <see cref="ConstelacionSounds.Request"/> y los calcula <see cref="WoodCore"/> detrás de la cuenta.</summary>
         private IEnumerator Prewarm()
         {
+            ConstelacionSounds.Request();
             if (!_baked)
             {
                 var sprites = ConstelacionSprites.Prewarm();
@@ -146,8 +147,6 @@ namespace NeuroVida.Games.Parejas
                 AssignSprites();
                 _baked = true;
             }
-            var sounds = ConstelacionSounds.Prewarm();
-            while (sounds.MoveNext()) yield return null;
         }
 
         // ------------------------------------------------------------------ un cielo
@@ -201,7 +200,7 @@ namespace NeuroVida.Games.Parejas
             _inputOn = true;
             _press = null;
             _msgAt = -10f;
-            PlayClip(ConstelacionSounds.Hum(), 0.5f);
+            WoodCore.Play(WoodSfx.Hum);
         }
 
         /// <summary>Fin de un cielo: «¡Constelación completa!», el arpegio, las líneas se iluminan una por una (queda a la vista qué parte armaste con la memoria) y las luces se encogen.</summary>
@@ -220,7 +219,7 @@ namespace NeuroVida.Games.Parejas
                 _recordBroken = true;
             }
             _boardDoneAt = GameClock.Time;
-            PlayClip(ConstelacionSounds.BoardEnd(), 0.8f);
+            WoodCore.Play(WoodSfx.Perfect);
             float now = NowMs;
             for (int i = 0; i < _sky.Links.Count; i++) _linkGlowAt[_sky.Links[i]] = now + 300f + i * 90f;
             UpdateHud();
@@ -243,11 +242,11 @@ namespace NeuroVida.Games.Parejas
             float nowMs = NowMs, now = GameClock.Time;
             var res = _sky.Tap(id, nowMs);
             if (!res.Accepted) return res;
-            if (res.ClosedNow.Count > 0) PlayClip(ConstelacionSounds.FlipDown(), 0.5f);
+            if (res.ClosedNow.Count > 0) WoodCore.Play(WoodSfx.Unselect);
             var v = _lv[id];
             v.PressAt = now;
-            PlayClip(ConstelacionSounds.FlipUp(), 0.5f);
-            PlayClip(ConstelacionSounds.Note(_sky.Lights[id].Group), 0.35f);
+            WoodCore.Play(WoodSfx.Tap);                                                                           // dar vuelta una luz (por el altavoz del juego); suena a la vez que la nota del grupo: pareja permitida
+            WoodCore.PlayNote(ConstelacionContract.NoteHz(_sky.Lights[id].Group), WoodVoice.Kalimba);            // la nota del grupo: las dos luces de una pareja suenan igual (información)
             if (res.Opportunity && !_guided)
             {
                 _dda.Register(res.Hit);                           // cada oportunidad de memoria es un ensayo
@@ -263,13 +262,13 @@ namespace NeuroVida.Games.Parejas
                 {
                     var a = _sky.Face[0];
                     AddFloat(MidOf(a, _sky.Face[1]), ConstelacionContract.FloatThird, new Color(1f, 231f / 255f, 168f / 255f));
-                    PlayClip(ConstelacionSounds.Note(a.Group), 0.3f);
+                    WoodCore.PlayNote(ConstelacionContract.NoteHz(a.Group), WoodVoice.Kalimba, gainDb: -3f);
                 }
             }
             else if (res.Pending.Count > 0)
             {
                 // no son iguales: quedan abiertas un momento (o hasta el próximo toque)
-                PlayClip(ConstelacionSounds.Soft(), 0.5f);
+                WoodCore.Play(WoodSfx.Knock);
                 if (res.Miss)
                 {
                     _hintLights = res.Kin;
@@ -289,14 +288,13 @@ namespace NeuroVida.Games.Parejas
             {
                 AddFloat(mid, ConstelacionContract.FloatMemory, new Color(1f, 201f / 255f, 74f / 255f));
                 Emit(mid, 22, 140f, 0.7f, new Color(1f, 201f / 255f, 74f / 255f), 20f);
-                PlayClip(ConstelacionSounds.FoundMemory(f[0].Group), 0.8f);
-                PlayClip(ConstelacionSounds.Spark(Mathf.Max(1, _sky.Streak)), 0.6f);
+                WoodCore.Play(WoodSfx.Correct, Mathf.Clamp(_sky.Streak, 1, 7));                                      // el par de kalimbas sube con la racha; el destello (Spark) se quitó: lo decidió Ricardo de oído
             }
             else
             {
                 AddFloat(mid, f.Count == 3 ? ConstelacionContract.FloatTrio : ConstelacionContract.FloatFound, new Color(191f / 255f, 233f / 255f, 1f));
                 Emit(mid, 10, 80f, 0.5f, new Color(191f / 255f, 233f / 255f, 1f), 20f);
-                PlayClip(ConstelacionSounds.FoundNew(f[0].Group), 0.7f);
+                WoodCore.Play(WoodSfx.Correct, 1, gainDb: -3f);                                                      // a la primera vista: no sube (no fue memoria)
             }
         }
 
@@ -403,7 +401,7 @@ namespace NeuroVida.Games.Parejas
             _introLayer.gameObject.SetActive(true);
             LayoutIntro(ConstelacionContract.IntroLines(intro));
             _introAt = GameClock.Time;
-            PlayClip(ConstelacionSounds.Chime(), 0.7f);
+            WoodCore.Play(WoodSfx.New);
             _inputOn = true;
             _press = null;
             float waited = 0f;
@@ -452,12 +450,12 @@ namespace NeuroVida.Games.Parejas
             if (_sky != null)
             {
                 var closed = _sky.Tick(NowMs);                          // las abiertas que no coinciden se cierran solas a los 850 ms
-                if (closed.Count > 0) PlayClip(ConstelacionSounds.FlipDown(), 0.5f);
+                if (closed.Count > 0) WoodCore.Play(WoodSfx.Unselect);
                 if (_hintDueAt > 0f && now >= _hintDueAt)
                 {
                     _hintDueAt = -1f;
                     foreach (var k in _hintLights) if (k.State == ConState.Down) { _lv[k.Id].HintAt = now; }
-                    PlayClip(ConstelacionSounds.Chime(), 0.25f);
+                    ConstelacionSounds.PlayHint();                                      // la pista sigue sonando COMO HOY hasta que Ricardo elija (sonido-escucha-pista.html)
                 }
             }
             AnimateBoard(now, dt);
@@ -527,11 +525,5 @@ namespace NeuroVida.Games.Parejas
             }
         }
 
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            _audioSource.PlayOneShot(clip, volume);
-        }
     }
 }

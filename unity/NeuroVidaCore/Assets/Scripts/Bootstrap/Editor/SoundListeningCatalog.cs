@@ -266,17 +266,9 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterParejas()
         {
             const string g = "parejas";
-            Family_("parejas", "Constelaciones: la nota de cada grupo (11)", Hz(i => ConstelacionContract.NoteHz(i), 11), i => ConstelacionSounds.Note(i));
-            H("parejas.hum", () => ConstelacionSounds.Hum());
-            H("parejas.boardend", () => ConstelacionSounds.BoardEnd());
-            H("parejas.flipup", () => ConstelacionSounds.FlipUp());
-            H("parejas.flipdown", () => ConstelacionSounds.FlipDown());
-            H("parejas.soft", () => ConstelacionSounds.Soft());
-            H("parejas.foundmem", () => ConstelacionSounds.FoundMemory(0));
-            H("parejas.foundnew", () => ConstelacionSounds.FoundNew(0));
-            Raw("parejas.spark", () => Scale(LadderSteps, 0.55, i => Trimmed(FromClip(ConstelacionSounds.Spark(i + 1)), 1.0)));
-            H("parejas.finale", () => ConstelacionSounds.Finale());
-            H("parejas.chime", () => ConstelacionSounds.Chime());
+            Family_("parejas", "Constelaciones: la nota de cada grupo (11)", Hz(i => ConstelacionContract.NoteHz(i), 11), null);
+            // «hoy» sale CONGELADO del 17-oct: la clase de campanas de Constelaciones se borró al cablear el juego
+            foreach (var k in new[] { "hum", "boardend", "flipup", "flipdown", "soft", "foundmem", "foundnew", "spark", "finale", "chime" }) Frozen("parejas." + k);
 
             FamilyEvent(g, "notas", "Cada grupo de luces suena SU nota (11: la 11.ª, una octava arriba)", "Campana de la pentatónica (τ 0,22 s, 0,9 s), mono, sin sala; pico ≈ 0,3",
                 "ConstelacionGameController.cs:250 (al abrir una luz, vol 0,35), :266 (al fallar, vol 0,3; con Madera 3 dB más baja)", "parejas", 0.35f, "PlayNote(NoteHz(g), Kalimba): 11 notas",
@@ -286,12 +278,14 @@ namespace NeuroVida.Bridge.EditorTools
             E(g, "noigual", "«No son iguales»", "Seno grave y corto que baja 330 → 247 Hz, 0,32 s", "ConstelacionGameController.cs:272 (vol 0,5)", "parejas.soft", 0.5f, Wk(WoodSfx.Knock), "Knock");
             E(g, "grupo-memoria", "Encontrar un grupo de memoria (la nota sube con la racha)", "Dos campanas (nota del grupo y su quinta), 1,6 s", "ConstelacionGameController.cs:292 (vol 0,8)", "parejas.foundmem", 0.8f, WoodLadder(WoodSfx.Correct, WoodSounds.Variants(WoodSfx.Correct), 0.7f), "Correct(racha 1 a 7): el par de kalimbas sube con la racha");
             E(g, "grupo-vista", "Encontrar un grupo a la primera vista (suerte)", "Dos campanas (nota y tercera), más calladas, 1,4 s", "ConstelacionGameController.cs:299 (vol 0,7)", "parejas.foundnew", 0.7f, Wk(WoodSfx.Correct, 1), "Correct(1), 3 dB más bajo (no sube: no fue memoria)").WoodGain = Atten(-3.0);
-            var racha = E(g, "racha", "Destello de racha de memoria (1 a 8): SE QUITA", "Campanita aguda que sube por la escala, junto al acierto", "ConstelacionGameController.cs:293 (vol 0,6)", "parejas.spark", 0.6f, null, "se quita: el par de Correct ya sube con la racha", "", "DECISIÓN 1 para que la apruebes de oído: hoy suenan los dos a la vez (el acierto y el destello); con Madera queda solo el acierto, que ya sube con la racha. Si prefieres conservar los dos, el destello suena 90 ms después.");
-            racha.NoWood = "Con Madera este destello se quita: el par de Correct ya sube con la racha (compara el botón «Hoy» con el del acierto de arriba).";
+            var racha = E(g, "racha", "Destello de racha de memoria (1 a 8): SE QUITA", "Campanita aguda que sube por la escala, junto al acierto", "ConstelacionGameController.cs:293 (vol 0,6)", "parejas.spark", 0.6f, null, "se quita: el par de Correct ya sube con la racha", "", "DECIDIDO por Ricardo de oído (18-oct): hoy suenan los dos a la vez (el acierto y el destello); con Madera queda solo el acierto, que ya sube con la racha. Si prefieres conservar los dos, el destello suena 90 ms después.");
+            racha.NoWood = "SE QUITÓ (decisión de Ricardo, 18-oct): con Madera el par de Correct ya sube con la racha, y dos sonidos por acierto es lo que la paleta evita.";
             E(g, "cielo", "Un cielo completo", "Arpegio de cuatro campanas, 1,8 s", "ConstelacionGameController.cs:223 (vol 0,8)", "parejas.boardend", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
             E(g, "zumbido", "Empieza el cielo: zumbido de fondo", "Dos senos graves (196 y 294 Hz), 1,7 s", "ConstelacionGameController.cs:204 (vol 0,5)", "parejas.hum", 0.5f, Wk(WoodSfx.Hum), "Hum");
             E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "ConstelacionGameController.cs:406 (vol 0,7)", "parejas.chime", 0.7f, Wk(WoodSfx.New), "New");
-            E(g, "hermanas", "Las luces hermanas brillan (la pista, 850 ms después de errar)", "Dos campanas (mi y la), muy suaves", "ConstelacionGameController.cs:460 (vol 0,25)", "parejas.chime", 0.25f, Wk(WoodSfx.Hint), "Hint (es la ayuda de Nubi, no un «nuevo»)", "", "DECISIÓN: hoy suena el mismo «NUEVO»; con Madera es la ayuda.");
+            var hermanas = E(g, "hermanas", "Las luces hermanas brillan (la pista, 850 ms después de errar)", "Dos campanas (mi y la), muy suaves", "ConstelacionGameController.cs:460 (vol 0,25)", "parejas.chime", 0.25f, null, "se queda como hoy (por ahora)", "",
+                "DECIDIDO por Ricardo (18-oct): el «Hint» de la paleta no le sonó a ayuda; la pista sigue sonando como HOY (esta receta, con el mismo volumen) hasta que elija entre tres opciones en docs/previews/sonido-escucha-pista.html.");
+            hermanas.NoWood = "Se queda como hoy por ahora: a Ricardo el soplo de «Hint» no le sonó a ayuda. Las tres opciones para elegir están en sonido-escucha-pista.html.";
             E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s, con eco", "ConstelacionGameController.cs:358", "parejas.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (el común; se quita el doble final)");
         }
 

@@ -1,146 +1,66 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using NeuroVida.Games.Shared;
 
 namespace NeuroVida.Games.Parejas
 {
     /// <summary>
-    /// Sonido PROPIO de «Constelaciones», sintetizado por código como el del boceto aprobado (docs/diseno-constelaciones.md §6). Cada grupo tiene su NOTA (pentatónica de la app, una octava arriba desde el 11.º) y la luz suena
-    /// suave al abrirse: las dos de una pareja suenan igual, así se recuerda con la vista y con el oído. Al encontrar un grupo suena un acorde de quinta (de memoria) o de tercera (a la primera vista), y un acierto de
-    /// memoria suma un brillo que sube con la racha. El «no son iguales» es un tono grave y corto, nunca un castigo. Al empezar el cielo suena un zumbido de fondo. Nada suena fuerte: todo ≤ 0,5.
+    /// «Madera cálida» en Constelaciones (Fase C; spec `auditoria-fable/spec-sonido-CDE.md` §2.3; cableada el 19-oct, Tarea 135): cada grupo suena SU nota (11, la 11.ª una octava arriba: <see cref="ConstelacionContract.NoteHz"/>) con kalimba (<c>WoodCore.PlayNote</c>: al abrir una luz y, 3 dB más baja, en «falta la tercera»);
+    /// dar vuelta una luz <c>Tap</c> (por el altavoz del juego), cerrarla <c>Unselect</c>, «no son iguales» <c>Knock</c>, grupo encontrado de memoria <c>Correct(racha)</c> (el par de kalimbas sube con la racha) y a la primera vista <c>Correct 1</c> 3 dB más bajo, cielo completo <c>Perfect</c>,
+    /// empieza el cielo <c>Hum</c> y la tarjeta «NUEVO» <c>New</c>. <b>El destello (<c>Spark</c>) se QUITÓ</b>: Ricardo lo decidió de oído (18-oct); el par de <c>Correct</c> ya sube con la racha y dos sonidos por acierto es lo que la paleta evita.
+    /// <para><b>La pista («Las luces hermanas brillan», 850 ms después de errar) se queda como HOY</b> (las dos campanitas mi y la, muy suaves): a Ricardo el <c>Hint</c> de la paleta no le sonó a ayuda. La receta de abajo reproduce ese sonido por código (mismas campanas, mismo volumen) hasta que él elija de oído entre las tres opciones
+    /// de <c>docs/previews/sonido-escucha-pista.html</c>; entonces esta receta se reemplaza por la elegida y se borra.</para>
     /// </summary>
-    public static partial class ConstelacionSounds
+    public static class ConstelacionSounds
     {
-        private const int Rate = 44100;
-        private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();
-        private static readonly float[] Penta = ConstelacionContract.Penta;
+        /// <summary>La clave de la pista «como hoy» (un sonido propio temporal, con su receta).</summary>
+        public const string HintKey = "parejas.hint";
 
-        /// <summary>La nota propia del grupo: una campana suave (se oye al abrir cualquiera de sus luces).</summary>
-        public static AudioClip Note(int group) => Get("note" + group, () => Make("note", 0.9f, t => 0.3f * Bell(ConstelacionContract.NoteHz(group), t, 0.22f)));
-
-        /// <summary>Dar vuelta una luz: un siseo corto y agudo que sube.</summary>
-        public static AudioClip FlipUp() => Get("flipup", () => Make("flipup", 0.12f, t =>
+        /// <summary>
+        /// La pista como suena hoy: dos campanitas, mi (659,25 Hz, τ 0,2 s) y la (880 Hz, τ 0,26 s, 90 ms después), secas y en mono, a 0,16 y reproducidas con volumen 0,25. La receta lleva el nivel que da ESE volumen
+        /// con el volumen maestro y el de reproducción de la paleta (<see cref="WoodKit.MasterGain"/> y <see cref="WoodKit.PlayVolume"/>), para que no suene más fuerte ni más suave que antes.
+        /// </summary>
+        public static WoodSounds.Recipe HintRecipe()
         {
-            float k = Mathf.Clamp01(t / 0.09f);
-            return 0.2f * Noise(t, 2200f + 1200f * k) * Mathf.Sin(k * Mathf.PI);
-        }));
-
-        /// <summary>Cerrar una luz: un siseo más corto y más grave que baja.</summary>
-        public static AudioClip FlipDown() => Get("flipdown", () => Make("flipdown", 0.1f, t =>
-        {
-            float k = Mathf.Clamp01(t / 0.07f);
-            return 0.16f * Noise(t, 1600f * Mathf.Pow(900f / 1600f, k)) * Mathf.Sin(k * Mathf.PI);
-        }));
-
-        /// <summary>No son iguales: un tono grave y corto que baja (sin chicharra ni nada que regañe).</summary>
-        public static AudioClip Soft() => Get("soft", () => Make("soft", 0.32f, t =>
-        {
-            float hz = 330f * Mathf.Pow(247f / 330f, Mathf.Clamp01(t / 0.22f));
-            return 0.18f * Mathf.Sin(2f * Mathf.PI * hz * t) * Mathf.Exp(-t / 0.1f);
-        }));
-
-        /// <summary>Al empezar el cielo: un zumbido de fondo (sol y re graves) que sube y se apaga.</summary>
-        public static AudioClip Hum() => Get("hum", () => Make("hum", 1.7f, t =>
-        {
-            float env = Mathf.Clamp01(t / 0.4f) * Mathf.Exp(-Mathf.Max(0f, t - 0.4f) / 0.5f);
-            return 0.1f * env * (Mathf.Sin(2f * Mathf.PI * 196f * t) + Mathf.Sin(2f * Mathf.PI * 293.66f * Mathf.Max(0f, t - 0.12f)));
-        }));
-
-        /// <summary>Encontrar un grupo de memoria: un acorde de quinta (la nota del grupo y su quinta).</summary>
-        public static AudioClip FoundMemory(int group) => Get("fm" + group, () => Make("fm", 1.6f, t =>
-        {
-            float hz = ConstelacionContract.NoteHz(group);
-            return 0.2f * (Bell(hz, t, 0.4f) + 0.7f * Bell(hz * 1.5f, t - 0.08f, 0.4f));
-        }));
-
-        /// <summary>El destello de la racha: una campanita aguda, un poco después del acorde, que sube de tono con cada acierto de memoria seguido.</summary>
-        public static AudioClip Spark(int streak) => Get("spark" + Mathf.Clamp(streak, 1, 8), () => Make("spark", 1.2f, t => 0.12f * Bell(Penta[Mathf.Min(9, 2 + Mathf.Clamp(streak, 1, 8))] * 2f, t - 0.18f, 0.28f)));
-
-        /// <summary>Encontrar un grupo a la primera vista: un acorde de tercera, más callado (fue suerte, no memoria).</summary>
-        public static AudioClip FoundNew(int group) => Get("fn" + group, () => Make("fn", 1.4f, t =>
-        {
-            float hz = ConstelacionContract.NoteHz(group);
-            return 0.17f * (Bell(hz, t, 0.35f) + 0.7f * Bell(hz * 1.25f, t - 0.08f, 0.32f));
-        }));
-
-        /// <summary>«NUEVO»: dos campanas (mi y la).</summary>
-        public static AudioClip Chime() => Get("chime", () => Make("chime", 1.2f, t => 0.16f * (Bell(659.25f, t, 0.2f) + Bell(880f, t - 0.09f, 0.26f))));
-
-        /// <summary>Un cielo completo: un arpegio de cuatro campanas.</summary>
-        public static AudioClip BoardEnd() => Get("boardend", () => Make("boardend", 1.8f, t =>
-        {
-            float s = 0f;
-            for (int k = 0; k < 4; k++) s += 0.2f * Bell(Penta[Mathf.Min(9, 3 + k * 2)], t - k * 0.1f, 0.3f);
-            return s;
-        }, echo: true));
-
-        /// <summary>Fin de la partida: tres campanas que suben, lentas.</summary>
-        public static AudioClip Finale() => Get("finale", () => Make("finale", 2.0f, t =>
-            0.18f * (Bell(784f, t, 0.3f) + Bell(1046.5f, t - 0.15f, 0.34f) + Bell(1318.5f, t - 0.3f, 0.4f)), echo: true));
-
-        // ------------------------------------------------------------------ síntesis
-
-        private static float Bell(float hz, float t, float tau)
-        {
-            if (t < 0f) return 0f;
-            float env = (t < 0.01f ? t / 0.01f : 1f) * Mathf.Exp(-Mathf.Max(0f, t - 0.01f) / tau);
-            return env * (Sin(hz, t) + 0.16f * Sin(hz * 2.76f, t) + 0.05f * Sin(hz * 5.4f, t));
-        }
-
-        private static float Noise(float t, float center)
-        {
-            float s = 0f;
-            float[] ratios = { 0.71f, 0.93f, 1.07f, 1.29f, 1.51f, 0.83f, 1.17f };
-            for (int i = 0; i < ratios.Length; i++) s += Mathf.Sin(2f * Mathf.PI * center * ratios[i] * t + i * 1.7f);
-            return s / ratios.Length;
-        }
-
-        private static float Sin(float hz, float t) => Mathf.Sin(2f * Mathf.PI * hz * t);
-
-        private static AudioClip Get(string key, Func<AudioClip> build)
-        {
-            if (!Cache.TryGetValue(key, out var clip) || clip == null)
+            int n = (int)Math.Ceiling(1.2 * SoundKit.Rate);
+            var x = new float[n];
+            double peak = 0.0;
+            for (int i = 0; i < n; i++)
             {
-                clip = build();
-                Cache[key] = clip;
+                double t = i / (double)SoundKit.Rate;
+                double v = 0.16 * (HintBell(659.25, t, 0.2) + HintBell(880.0, t - 0.09, 0.26));
+                x[i] = (float)v;
+                peak = Math.Max(peak, Math.Abs(v));
             }
-            return clip;
+            double level = peak * 0.25 / (WoodKit.MasterGain * WoodKit.PlayVolume);             // hoy: el clip sonaba a 0,25 de su volumen
+            return new WoodSounds.Recipe(x, level, 0.0, WoodTier.Micro);
         }
 
-        private static AudioClip Make(string name, float seconds, Func<float, float> sample, bool echo = false)
+        /// <summary>Una campanita de las de antes (seno con dos parciales inarmónicos y una caída exponencial): solo para la pista «como hoy».</summary>
+        private static double HintBell(double hz, double t, double tau)
         {
-            int n = Mathf.CeilToInt(seconds * Rate);
-            var data = new float[n];
-            for (int i = 0; i < n; i++) data[i] = sample(i / (float)Rate);
-            if (echo)
-            {
-                int d = (int)(0.16f * Rate);
-                for (int i = n - 1; i >= d; i--) data[i] += 0.28f * data[i - d];
-            }
-            float peak = 0f;
-            for (int i = 0; i < n; i++) peak = Mathf.Max(peak, Mathf.Abs(data[i]));
-            float gain = peak > 0.5f ? 0.5f / peak : 1f;            // nada pasa de 0,5
-            for (int i = 0; i < n; i++) data[i] = Mathf.Clamp(data[i] * gain, -1f, 1f);
-            int f = Mathf.Min(n, Rate / 100);
-            for (int i = 0; i < f; i++) data[n - 1 - i] *= i / (float)f;
-            var clip = AudioClip.Create(name, n, 1, Rate, false);
-            clip.SetData(data, 0);
-            return clip;
+            if (t < 0.0) return 0.0;
+            double env = (t < 0.01 ? t / 0.01 : 1.0) * Math.Exp(-Math.Max(0.0, t - 0.01) / tau);
+            double w = 2.0 * Math.PI * t;
+            return env * (Math.Sin(w * hz) + 0.16 * Math.Sin(w * hz * 2.76) + 0.05 * Math.Sin(w * hz * 5.4));
         }
 
-        /// <summary>Para las pruebas y el calentamiento: sintetiza todos los clips (cada uno una sola vez), de a poco.</summary>
-        public static System.Collections.IEnumerator Prewarm()
+        /// <summary>Suena la pista de las luces hermanas (como hoy).</summary>
+        public static void PlayHint() => WoodCore.Play(HintKey);
+
+        /// <summary>Lo que Constelaciones pide antes de la cuenta regresiva: las 11 notas (suenan al abrir la primera luz), después el zumbido, cerrar, «no son iguales», la pista, el cielo completo y «NUEVO». Tap y Correct 1 a 7 ya van con el núcleo.</summary>
+        public static void Request()
         {
-            FlipUp(); FlipDown(); Soft(); Hum(); Chime();
-            yield return null;
-            for (int g = 0; g < 11; g++) Note(g);
-            yield return null;
-            for (int g = 0; g < 11; g++) { FoundNew(g); FoundMemory(g); }
-            yield return null;
-            for (int s = 1; s <= 8; s++) Spark(s);
-            BoardEnd(); Finale();
+            for (int g = 0; g < 11; g++) WoodCore.RequestNote(ConstelacionContract.NoteHz(g), WoodVoice.Kalimba);
+            WoodCore.Request(WoodSfx.Hum);
+            WoodCore.Request(WoodSfx.Unselect);
+            WoodCore.Request(WoodSfx.Knock);
+            WoodCore.Request(HintKey, HintRecipe, true);
+            WoodCore.Request(WoodSfx.Perfect);
+            WoodCore.Request(WoodSfx.New);
         }
 
-        public static int CachedCount => Cache.Count;
+        /// <summary>Los sonidos PROPIOS de Constelaciones: solo la pista «como hoy» (temporal, hasta que Ricardo elija): la prueba de niveles recorre esta lista.</summary>
+        public static IEnumerable<(string Key, WoodSounds.Recipe Recipe, bool Mono)> All() { yield return (HintKey, HintRecipe(), true); }
     }
 }
