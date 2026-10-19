@@ -395,28 +395,28 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterPiloto()
         {
             const string g = "piloto";
-            Family_("piloto-balizas", "Piloto: las 4 balizas dentro de la ruta", Hz(i => PilotSounds.Penta[1 + i], 4), i => PilotSounds.Beacon(i), 0.45);
-            Family_("piloto-atrapar", "Piloto: atrapar una señal (la racha sube la nota)", Hz(i => PilotSounds.Penta[3 + i], 5), i => PilotSounds.Catch(i), 0.5);
-            H("piloto.buzz", () => PilotSounds.Buzz());
-            H("piloto.blip", () => PilotSounds.Blip());
-            H("piloto.thud", () => PilotSounds.Thud());
-            H("piloto.hyper", () => PilotSounds.Hyper());
-            H("piloto.whoosh", () => PilotSounds.Whoosh());
-            H("piloto.mission", () => PilotSounds.MissionChange());
-            H("piloto.finale", () => PilotSounds.Finale());
-            Raw("piloto.blip.madera", () => FromRecipe(WoodSounds.MakeCue(880, 0.12)));
-            Raw("piloto.mission.madera", () => Sequence(new[] { FromRecipe(WoodSounds.MakeNote(659.25, WoodVoice.Kalimba)), FromRecipe(WoodSounds.MakeNote(987.77, WoodVoice.Kalimba)) }, new[] { 0.0, PilotContract.PulseBeatSeconds }));
+            // «hoy» sale CONGELADO del 17-oct (Tarea 138): la clase de campanas de Piloto ya no existe (queda solo el motor «Cohete»)
+            Family_("piloto-balizas", "Piloto: las 4 balizas dentro de la ruta", Hz(i => PilotSounds.BeaconHz(i), 4), null, 0.45);
+            Family_("piloto-atrapar", "Piloto: atrapar una señal (la racha sube la nota)", Hz(i => PilotSounds.Penta[3 + i], 5), null, 0.5);
+            foreach (var k in new[] { "buzz", "blip", "thud", "hyper", "whoosh", "mission", "finale" }) Frozen("piloto." + k);
+            // lo que va al juego, de las MISMAS recetas: el blip (la señal igual para todas, −6 dB) y el aviso de misión (dos marimbas a 0,4 s)
+            Raw("piloto.blip.madera", () => FromRecipe(WoodSounds.MakeCue(PilotSounds.BlipHz, PilotSounds.BlipSeconds)));
+            foreach (var r in PilotSounds.All()) { var recipe = r.Recipe; Raw(r.Key + ".madera", () => FromRecipe(recipe)); }
 
-            FamilyEvent(g, "balizas", "Baliza dentro de la ruta: una nota de la escala", "Campana corta (τ 0,1 s, 0,3 s), mono; pico ≈ 0,3", "PilotGameController.cs:268 (vol 0,6)", "piloto-balizas", 0.6f, "Note(hz): kalimba (o marimba)", "Dentro de la ruta suena una nota y fuera suena el zumbido: no es solo el color.");
-            E(g, "zumbido", "Baliza FUERA de la ruta: zumbido grave", "Dos senos (130 y 138 Hz) con ruido, 0,22 s", "PilotGameController.cs:274 (vol 0,7)", "piloto.buzz", 0.7f, Wk(WoodSfx.Knock), "Knock", "info", "Tiene que seguir siendo CLARAMENTE distinto de las notas de las balizas buenas.");
-            E(g, "blip", "Aparece una señal (el MISMO blip para todas)", "Seno 880 Hz, τ 35 ms, 0,12 s", "PilotGameController.cs:378 (vol 0,5)", "piloto.blip", 0.5f, "piloto.blip.madera", "Cue(880)", "señal", "Por diseño es IGUAL para todas las señales (no delata cuál es la de la misión). Debe seguir idéntico entre sí.");
-            FamilyEvent(g, "atrapar", "Atrapar la señal de la misión (la racha sube la nota)", "Campana de la escala (τ 0,25 s, 0,8 s)", "PilotGameController.cs:447 (vol 0,8)", "piloto-atrapar", 0.8f, "Correct(racha) o Note(hz)", "");
-            E(g, "error", "Toque equivocado", "Golpe sordo y corto (220 → 130 Hz), 0,3 s", "PilotGameController.cs:460 (vol 0,7)", "piloto.thud", 0.7f, Wk(WoodSfx.Wrong), "Wrong");
-            E(g, "sector", "Cruzas el arco de un sector", "Soplido que sube 300 → 2400 Hz, 0,8 s", "PilotGameController.cs:559 (vol 0,8); PilotGameController.Guided.cs:210", "piloto.whoosh", 0.8f, Wk(WoodSfx.SweepUp), "SweepUp");
-            E(g, "mision", "La misión cambió: dos notas que suben (con el latido de la tarjeta)", "Dos triángulos (mi6 y si6) a 0,4 s uno del otro, 1 s", "PilotGameController.Scene.cs:71 (vol 0,85)", "piloto.mission", 0.85f, "piloto.mission.madera", "Note(hz) × 2 a 0,4 s", "tiempo", "Va sincronizado con los dos latidos de la tarjeta: el segundo suena exactamente 0,4 s después del primero. No se mueve.");
-            E(g, "hiper", "Hiperimpulso", "Destello de ruido que se abre y cuatro campanas que suben, 1,6 s", "PilotGameController.cs:484 (vol 0,8)", "piloto.hyper", 0.8f, Wk(WoodSfx.Streak), "Streak");
-            E(g, "final", "Llegada al puerto: fin del vuelo", "Dos campanas lentas, 2 s", "PilotGameController.cs:604 (vol 0,8)", "piloto.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
-            E(g, "motor", "El motor «Cohete» (bucle de 4 s en tres capas)", "Ruido café filtrado con turbulencia; ya aprobado por Ricardo (10-oct)", "PilotEngine.cs (PilotGameController.Scene.cs:465 Tick)", null, 1f, null, "SE QUEDA como está (Ricardo lo aprobó)", "bucle");
+            FamilyEvent(g, "balizas", "Baliza dentro de la ruta: una nota de la escala", "Campana corta (τ 0,1 s, 0,3 s), mono; pico ≈ 0,3", "PilotGameController.cs: la baliza que se pasa dentro (PilotSounds.PlayBeacon)", "piloto-balizas", 0.6f, "PlayNote(Penta[1 + baliza % 4], Marimba): la altura de hoy",
+                "Dentro de la ruta suena una nota y fuera suena un golpe hueco: no es solo el color. Mismas 4 alturas, mismo momento.", marimba: true);
+            E(g, "zumbido", "Baliza FUERA de la ruta: zumbido grave", "Dos senos (130 y 138 Hz) con ruido, 0,22 s", "PilotGameController.cs: la baliza que se pasa fuera de la ruta", "piloto.buzz", 0.7f, Wk(WoodSfx.Knock), "Knock", "info", "Tiene que seguir siendo CLARAMENTE distinto de las notas de las balizas buenas: un golpe hueco (120 → 70 Hz) contra marimbas de 587 a 880 Hz.");
+            E(g, "blip", "Aparece una señal (el MISMO blip para todas)", "Seno 880 Hz, τ 35 ms, 0,12 s", "PilotGameController.cs: SpawnSignal (PilotSounds.PlayBlip)", "piloto.blip", 0.5f, "piloto.blip.madera", "PlayCue(880, 0,12, gainDb −6)", "señal",
+                "Por diseño es IGUAL para todas las señales (no delata cuál es la de la misión): PlayCue con los mismos argumentos da siempre el mismo clip (una prueba lo exige). Debe seguir idéntico entre sí.").WoodGain = Atten(-6.0);
+            E(g, "atrapar", "Atrapar la señal de la misión (la racha sube la nota)", "Campana de la escala (τ 0,25 s, 0,8 s)", "PilotGameController.cs: atrapar la señal de la misión", "fam.piloto-atrapar.hoy", 0.8f, WoodLadder(WoodSfx.Correct, WoodSounds.Variants(WoodSfx.Correct), 0.7), "Correct(racha): el par de kalimbas sube con la racha, como en toda la app", "info",
+                "Pasa la racha de la misión (cuántas seguidas): sube de a un escalón, igual que hoy sube la campana. Por encima del motor «Cohete» es la primera vez que la paleta compite con un bucle: si en el teléfono no se oyera sobre el motor en velocidad alta, Correct sin atenuación es el techo y habría que bajar el motor 2 dB (decisión aparte).");
+            E(g, "error", "Toque equivocado", "Golpe sordo y corto (220 → 130 Hz), 0,3 s", "PilotGameController.cs: WrongTap", "piloto.thud", 0.7f, Wk(WoodSfx.Wrong), "Wrong");
+            E(g, "sector", "Cruzas el arco de un sector", "Soplido que sube 300 → 2400 Hz, 0,8 s", "PilotGameController.cs: el arco del sector; PilotGameController.Guided.cs", "piloto.whoosh", 0.8f, Wk(WoodSfx.SweepUp), "SweepUp", "", "Baja ≈ 8 LU respecto de hoy: el arco se ve y el motor ya llena el fondo.");
+            E(g, "mision", "La misión cambió: dos notas que suben (con el latido de la tarjeta)", "Dos triángulos (mi6 y si6) a 0,4 s uno del otro, 1 s", "PilotGameController.Scene.cs: MissionChanged (PilotSounds.PlayMission)", "piloto.mission", 0.85f, "piloto.mission.madera", "Propio piloto.mission: dos marimbas (mi6 y si6) a PulseBeatSeconds = 0,4 s, en UN clip", "tiempo",
+                "Va sincronizado con los dos latidos de la tarjeta: el 0,4 s es exacto (viene del contrato y va dentro de un solo clip: no depende del cuadro).");
+            E(g, "hiper", "Hiperimpulso", "Destello de ruido que se abre y cuatro campanas que suben, 1,6 s", "PilotGameController.cs: StartHyper", "piloto.hyper", 0.8f, Wk(WoodSfx.Streak), "Streak");
+            E(g, "final", "Llegada al puerto: fin del vuelo", "Dos campanas lentas, 2 s", "ExitButton (GameFeel.Finish)", "piloto.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
+            E(g, "motor", "El motor «Cohete» (bucle de 4 s en tres capas)", "Ruido café filtrado con turbulencia; ya aprobado por Ricardo (10-oct)", "PilotEngine.cs", null, 1f, null, "SE QUEDA como está (Ricardo lo aprobó)", "bucle");
         }
 
         // ------------------------------------------------------------------ Freno de emergencia

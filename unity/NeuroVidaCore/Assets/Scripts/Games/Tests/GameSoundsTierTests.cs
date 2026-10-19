@@ -7,6 +7,7 @@ using NeuroVida.Games.Bodega;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Correo;
 using NeuroVida.Games.Parejas;
+using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Satelites;
 using NeuroVida.Games.Secuencia;
 using NeuroVida.Games.Shared;
@@ -37,6 +38,7 @@ namespace NeuroVida.Games.Tests
             new GameSounds { Id = "correo", All = MailSounds.All, Request = MailSounds.Request },
             new GameSounds { Id = "secuencia", All = RastroSounds.All, Request = RastroSounds.Request },
             new GameSounds { Id = "satelites", All = SatelliteSounds.All, Request = SatelliteSounds.Request },
+            new GameSounds { Id = "piloto", All = PilotSounds.All, Request = PilotSounds.Request },
         };
 
         [SetUp]
@@ -137,6 +139,7 @@ namespace NeuroVida.Games.Tests
             // Fase D (Tarea 138): Rastro 4 (el aviso de cada modo)
             CollectionAssert.AreEquivalent(new[] { "rastro.cue0", "rastro.cue1", "rastro.cue2", "rastro.cue3" }, Keys(RastroSounds.All()));
             CollectionAssert.IsEmpty(Keys(SatelliteSounds.All()), "Satélites: todo es de la paleta (el zumbido es el bucle aprobado)");
+            CollectionAssert.AreEquivalent(new[] { "piloto.mission" }, Keys(PilotSounds.All()));
             // los que van en mono son los micro sin sala: solo «abrir una puerta»
             foreach (var (key, recipe, mono) in BodegaSounds.All()) Assert.AreEqual(key == "bodega.open", mono, key);
         }

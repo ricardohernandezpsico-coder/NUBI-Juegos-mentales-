@@ -163,13 +163,14 @@ namespace NeuroVida.Games.Piloto
         /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
         private IEnumerator Prewarm()
         {
+            PilotSounds.Request();                  // los sonidos (las balizas, el blip, el golpe, la misión, el soplo y el hiperimpulso) se piden ANTES de la cuenta: los calcula WoodCore de a poco, sin trabar
             if (_baked) yield break;
             var sprites = PilotSignalSprites.Prewarm();
             while (sprites.MoveNext()) yield return null;
             PilotShipSprite.Get();
             yield return null;
-            var sounds = PilotSounds.Prewarm();
-            while (sounds.MoveNext()) yield return null;
+            var engine = PilotSounds.PrewarmEngine();                 // el motor «Cohete» (tres capas en bucle) se calcula de a una por cuadro
+            while (engine.MoveNext()) yield return null;
             _baked = true;
         }
 
@@ -263,13 +264,13 @@ namespace NeuroVida.Games.Piloto
                 if (_insideNow)
                 {
                     b.LitAt = now;
-                    PlayClip(PilotSounds.Beacon(Mathf.RoundToInt(b.P / PilotContract.BeaconGap)), 0.6f);
+                    PilotSounds.PlayBeacon(Mathf.RoundToInt(b.P / PilotContract.BeaconGap));
                 }
                 else
                 {
                     b.BadAt = now;
                     _wobbleAt = now;
-                    PlayClip(PilotSounds.Buzz(), 0.7f);
+                    WoodCore.Play(WoodSfx.Knock);                          // fuera de la ruta: un golpe hueco, claramente distinto de las notas
                     GameFeel.Haptic(GameFeel.HapticKind.Light);
                 }
             }
@@ -373,7 +374,7 @@ namespace NeuroVida.Games.Piloto
             v.Root.localScale = Vector3.one;
             v.Root.anchoredPosition = P(x, y);
             if (!_guided) _spawned++;
-            PlayClip(PilotSounds.Blip(), 0.5f);
+            PilotSounds.PlayBlip();                                    // el MISMO blip para todas las señales: no delata cuál es la de la misión
             return s;
         }
 
@@ -442,7 +443,7 @@ namespace NeuroVida.Games.Piloto
             _beamY = s.Y;
             ShowFloat("+" + pts, Good, s.X, s.Y, s);
             if (Motion.Decorative) StartCoroutine(UiFx.SparkBurst(_fxLayer, P(s.X, s.Y), Gold, 8, 60f * _s, 5f * _s, 0.45f));
-            PlayClip(PilotSounds.Catch(_run.Streak), 0.8f);
+            WoodCore.Play(WoodSfx.Correct, _run.Streak);                // el par sube con la racha, como en toda la app
             GameFeel.Haptic(GameFeel.HapticKind.Light);
             UpdateHud();
             AfterResolve();
@@ -455,7 +456,7 @@ namespace NeuroVida.Games.Piloto
             _run.FalseAlarm();
             if (!_guided) _signalDda.Register(false);
             ShowFloat(PilotContract.WrongText, Bad, s.X, s.Y, s);
-            PlayClip(PilotSounds.Thud(), 0.7f);
+            WoodCore.Play(WoodSfx.Wrong);
             GameFeel.Haptic(GameFeel.HapticKind.Double);
             UpdateHud();
             AfterResolve();
@@ -479,7 +480,7 @@ namespace NeuroVida.Games.Piloto
             _hyperLeft = PilotContract.HyperSeconds;
             _run.CountHyper();
             RequestNotice(PilotContract.HyperTitle, PilotContract.HyperSub, 1.8f, Cyan);
-            PlayClip(PilotSounds.Hyper(), 0.8f);
+            WoodCore.Play(WoodSfx.Streak);                              // el hiperimpulso es un hito de racha
             GameFeel.Haptic(GameFeel.HapticKind.Firm);
             if (Motion.Decorative) StartCoroutine(UiFx.RingBurst(_fxLayer, P(_shipX, _plan.ShipY), Gold, 40f * _s, 230f * _s, 0.55f));
             UpdateHud();
@@ -554,7 +555,7 @@ namespace NeuroVida.Games.Piloto
             _tintMix = 0f;
             _hud.PulsePrompt();                                      // la fila de consigna (con la misión nueva y el sector) salta y se enciende un momento
             RequestMissionNotice(sector, _mission, NoticeSeconds);   // el aviso muestra la MISIÓN NUEVA (forma dibujada y nombre), no solo el nombre del sector
-            PlayClip(PilotSounds.Whoosh(), 0.8f);
+            WoodCore.Play(WoodSfx.SweepUp);                             // se cruza el arco de un sector
             GameFeel.Haptic(GameFeel.HapticKind.Firm);
         }
 
@@ -713,12 +714,6 @@ namespace NeuroVida.Games.Piloto
         {
             _steerX = Mathf.Clamp(x, 20f, PilotPlan.Width - 20f);
             if (dt > 0f) _steeredSeconds += dt;
-        }
-
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !SoundWanted) return;
-            _audioSource.PlayOneShot(clip, volume);
         }
 
         private bool SoundWanted => GameFeel.SoundOn && (_config == null || _config.config == null || _config.config.sound_enabled);

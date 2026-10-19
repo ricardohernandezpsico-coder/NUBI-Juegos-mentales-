@@ -2,20 +2,26 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using NeuroVida.Games.Shared;
+using static NeuroVida.Games.Shared.SoundKit;
 
 namespace NeuroVida.Games.Piloto
 {
+    /// <summary>Los sonidos PROPIOS de Piloto Estelar en «Madera cálida» (Fase D): el aviso de misión nueva.</summary>
+    public enum PilotSfx { Mission }
+
     /// <summary>
-    /// Sonido PROPIO de «Piloto Estelar: la ruta de las balizas», sintetizado por código (docs/diseno-piloto.md §8): el motor «Cohete» (tres capas en bucle sin costura, de 4 s: crucero, rápido e hiperimpulso; ruido grave con turbulencia, como un despegue; la velocidad las mezcla y les sube el tono: ver <see cref="PilotEngine"/>),
-    /// una nota para cada baliza que se pasa DENTRO de la ruta (la escala pentatónica) y un zumbido para la que se pasa fuera, un «blip» igual para todas las señales (no delata cuál es la de la misión), una campana al atrapar, un golpe sordo al equivocarse, un soplido al cruzar el arco de un sector, DOS NOTAS QUE SUBEN (con timbre de triángulo, no de campana) al cambiar la misión
-    /// y un destello al entrar en hiperimpulso. Nada suena fuerte: todo ≤ 0,5.
+    /// «Madera cálida» en «Piloto Estelar: la ruta de las balizas» (Fase D; spec `auditoria-fable/spec-sonido-CDE.md` §3.3; cableada el 19-oct, Tarea 138). Lo que lleva información conserva su altura y su momento y solo cambia el timbre: una nota de MARIMBA para cada baliza que se pasa DENTRO de la ruta
+    /// (<see cref="BeaconHz"/>, la escala de hoy) y un golpe hueco (<c>Knock</c>: claramente distinto de las marimbas) para la que se pasa FUERA; el «blip» de las señales es el MISMO para todas, por construcción (<see cref="PlayBlip"/>: la misma señal de 880 Hz a −6 dB siempre: no delata cuál es la de la misión);
+    /// atrapar una señal de la misión es <c>Correct(racha)</c> (el par sube con la racha, como en toda la app), el toque equivocado <c>Wrong</c>, el arco de un sector <c>SweepUp</c> y el hiperimpulso <c>Streak</c>. La misión que cambia es el único PROPIO (<see cref="PilotSfx.Mission"/>): dos marimbas
+    /// (mi6 y si6) separadas exactamente <see cref="PilotContract.PulseBeatSeconds"/> = 0,4 s, una por cada latido de la tarjeta, en UN solo clip (así el 0,4 s queda exacto, sin depender del cuadro). <b>El motor «Cohete» se queda tal cual</b> (tres capas en bucle sin costura, de 4 s: crucero, rápido e hiperimpulso;
+    /// la velocidad las mezcla y les sube el tono: ver <see cref="PilotEngine"/>; aprobado: no se toca).
     /// </summary>
     public static class PilotSounds
     {
         private const int Rate = 44100;
         private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();
 
-        /// <summary>La escala pentatónica de do mayor desde do5: la de los otros juegos.</summary>
+        /// <summary>La escala pentatónica de do mayor desde do5: la de los otros juegos. Las alturas de hoy NO cambian.</summary>
         public static readonly float[] Penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880f, 1046.5f, 1174.66f, 1318.51f, 1567.98f, 1760f };
 
         // ------------------------------------------------------------------ el motor «Cohete» (Tarea 66)
@@ -119,79 +125,6 @@ namespace NeuroVida.Games.Piloto
             return output;
         }
 
-        /// <summary>Una baliza que se pasa dentro de la ruta: una nota corta y suave de la pentatónica (la baliza número <paramref name="index"/>).</summary>
-        public static AudioClip Beacon(int index) => Get("beacon" + (Mathf.Abs(index) % 4), () => Make("beacon", 0.3f, t => 0.22f * Bell(Penta[1 + Mathf.Abs(index) % 4], t, 0.1f)));
-
-        /// <summary>Una baliza que se pasa fuera de la ruta: un zumbido grave y corto (no solo color).</summary>
-        public static AudioClip Buzz() => Get("buzz", () => Make("buzz", 0.22f, t =>
-        {
-            float env = Mathf.Exp(-t / 0.09f);
-            return 0.3f * env * (Mathf.Sin(2f * Mathf.PI * 130f * t) + 0.5f * Mathf.Sin(2f * Mathf.PI * 138f * t) + 0.25f * Noise(t, 260f));
-        }));
-
-        /// <summary>Aparece una señal: el MISMO blip para todas (no delata cuál es de la misión).</summary>
-        public static AudioClip Blip() => Get("blip", () => Make("blip", 0.12f, t => 0.2f * Sin(880f, t) * Mathf.Exp(-t / 0.035f)));
-
-        /// <summary>Una señal de la misión atrapada: una campana que sube por la escala con la racha.</summary>
-        public static AudioClip Catch(int streak) => Get("catch" + (Mathf.Abs(streak) % 5), () => Make("catch", 0.8f, t => 0.3f * Bell(Penta[3 + Mathf.Abs(streak) % 5], t, 0.25f)));
-
-        /// <summary>Un toque equivocado (no era de la misión): un golpe sordo y corto que baja (no es un castigo).</summary>
-        public static AudioClip Thud() => Get("thud", () => Make("thud", 0.3f, t =>
-        {
-            float hz = 220f * Mathf.Pow(130f / 220f, Mathf.Clamp01(t / 0.2f));
-            return 0.3f * Sin(hz, t) * Mathf.Exp(-t / 0.08f);
-        }));
-
-        /// <summary>Se cruza el arco de un sector: un soplido que sube (las notas de la misión nueva van aparte: <see cref="MissionChange"/>).</summary>
-        public static AudioClip Whoosh() => Get("whoosh", () => Make("whoosh", 0.8f, t =>
-        {
-            float k = Mathf.Clamp01(t / 0.7f);
-            return t < 0.7f ? 0.2f * Noise(t, 300f * Mathf.Pow(2400f / 300f, k)) * Mathf.Sin(k * Mathf.PI) : 0f;
-        }));
-
-        /// <summary>
-        /// La misión cambió (Tarea 63): dos notas que suben (mi y si agudos), una por cada latido de la tarjeta (0,4 s entre una y otra), con timbre de triángulo y caída rápida: se distingue de la campana de atrapar, que es larga y con armónicos.
-        /// </summary>
-        public static AudioClip MissionChange() => Get("mission", () => Make("mission", 1.0f, t => 0.3f * (Pluck(659.25f, t, 0.16f) + Pluck(987.77f, t - PilotContract.PulseBeatSeconds, 0.24f)), echo: true));
-
-        /// <summary>El hiperimpulso: un destello que se abre y cuatro campanas que suben.</summary>
-        public static AudioClip Hyper() => Get("hyper", () => Make("hyper", 1.6f, t =>
-        {
-            float k = Mathf.Clamp01(t / 0.9f);
-            float n = t < 0.9f ? 0.12f * Noise(t, 200f * Mathf.Pow(3800f / 200f, k)) * Mathf.Sin(k * Mathf.PI) : 0f;
-            return n + 0.14f * (Bell(Penta[4], t, 0.3f) + Bell(Penta[5], t - 0.08f, 0.3f) + Bell(Penta[6], t - 0.16f, 0.32f) + Bell(Penta[7], t - 0.24f, 0.4f));
-        }, echo: true));
-
-        /// <summary>Fin del vuelo (llegada al puerto): dos campanas lentas (sol y do agudos).</summary>
-        public static AudioClip Finale() => Get("finale", () => Make("finale", 2.0f, t => 0.2f * (Bell(784f, t, 0.5f) + Bell(1046.5f, t - 0.15f, 0.55f)), echo: true));
-
-        // ------------------------------------------------------------------ síntesis
-
-        private static float Bell(float hz, float t, float tau)
-        {
-            if (t < 0f) return 0f;
-            float env = (t < 0.01f ? t / 0.01f : 1f) * Mathf.Exp(-Mathf.Max(0f, t - 0.01f) / tau);
-            return env * (Sin(hz, t) + 0.16f * Sin(hz * 2.76f, t) + 0.05f * Sin(hz * 5.4f, t));
-        }
-
-        private static float Pluck(float hz, float t, float tau)
-        {
-            if (t < 0f) return 0f;
-            float env = (t < 0.008f ? t / 0.008f : 1f) * Mathf.Exp(-Mathf.Max(0f, t - 0.008f) / tau);
-            float tri = 2f / Mathf.PI * Mathf.Asin(Mathf.Sin(2f * Mathf.PI * hz * t));
-            return env * (0.85f * tri + 0.15f * Sin(hz * 2f, t));
-        }
-
-        private static float Noise(float t, float center)
-        {
-            float s = 0f;
-            float[] ratios = { 0.71f, 0.93f, 1.07f, 1.29f, 1.51f, 0.83f, 1.17f };
-            for (int i = 0; i < ratios.Length; i++) s += Mathf.Sin(2f * Mathf.PI * center * ratios[i] * t + i * 1.7f);
-            return s / ratios.Length;
-        }
-
-        private static float Sin(float hz, float t) => Mathf.Sin(2f * Mathf.PI * hz * t);
-
         private static AudioClip Get(string key, Func<AudioClip> build)
         {
             if (!Cache.TryGetValue(key, out var clip) || clip == null)
@@ -202,45 +135,66 @@ namespace NeuroVida.Games.Piloto
             return clip;
         }
 
-        private static AudioClip Make(string name, float seconds, Func<float, float> sample, bool echo = false)
-        {
-            int n = Mathf.CeilToInt(seconds * Rate);
-            var data = new float[n];
-            for (int i = 0; i < n; i++) data[i] = sample(i / (float)Rate);
-            if (echo)
-            {
-                int d = (int)(0.16f * Rate);
-                for (int i = n - 1; i >= d; i--) data[i] += 0.28f * data[i - d];
-            }
-            float peak = 0f;
-            for (int i = 0; i < n; i++) peak = Mathf.Max(peak, Mathf.Abs(data[i]));
-            float gain = peak > 0.5f ? 0.5f / peak : 1f;            // nada pasa de 0,5
-            for (int i = 0; i < n; i++) data[i] = Mathf.Clamp(data[i] * gain, -1f, 1f);
-            int f = Mathf.Min(n, Rate / 100);
-            for (int i = 0; i < f; i++) data[n - 1 - i] *= i / (float)f;
-            var clip = AudioClip.Create(name, n, 1, Rate, false);
-            clip.SetData(data, 0);
-            return clip;
-        }
-
-        /// <summary>Para las pruebas y el calentamiento: sintetiza todos los clips (cada uno una sola vez), de a poco.</summary>
-        public static System.Collections.IEnumerator Prewarm()
+        /// <summary>Calcula las tres capas del motor durante la cuenta regresiva, de a una por cuadro (así nada se traba al arrancar el vuelo).</summary>
+        public static System.Collections.IEnumerator PrewarmEngine()
         {
             EngineLoop(EngineLayer.Cruise);
             yield return null;
             EngineLoop(EngineLayer.Fast);
             yield return null;
             EngineLoop(EngineLayer.Boost);
-            yield return null;
-            for (int i = 0; i < 4; i++) Beacon(i);
-            Buzz(); Blip();
-            yield return null;
-            for (int i = 0; i < 5; i++) Catch(i);
-            Thud();
-            yield return null;
-            Whoosh(); MissionChange(); Hyper(); Finale();
         }
 
+        /// <summary>Cuántos clips del motor hay calculados (las pruebas).</summary>
         public static int CachedCount => Cache.Count;
+
+        // ------------------------------------------------------------------ lo que suena en «Madera cálida»
+
+        /// <summary>La frecuencia de la nota de la baliza número [index] que se pasa dentro de la ruta (4 notas, mi5 a la5…: las de hoy).</summary>
+        public static float BeaconHz(int index) => Penta[1 + Mathf.Abs(index) % 4];
+
+        /// <summary>Suena la nota de una baliza dentro de la ruta (marimba, la altura de hoy).</summary>
+        public static bool PlayBeacon(int index) => WoodCore.PlayNote(BeaconHz(index), WoodVoice.Marimba);
+
+        /// <summary>El blip de una señal que aparece: una señal corta de 880 Hz, IGUAL para todas (no delata cuál es de la misión), −6 dB.</summary>
+        public const double BlipHz = 880.0, BlipSeconds = 0.12;
+
+        /// <summary>Suena el blip (el mismo clip para todas las señales: <c>PlayCue</c> con los mismos argumentos da siempre el mismo sonido).</summary>
+        public static bool PlayBlip() => WoodCore.PlayCue(BlipHz, BlipSeconds, gainDb: -6f);
+
+        /// <summary>La receta de un sonido propio: la misión que cambia (dos marimbas que suben, mi6 y si6, separadas por <see cref="PilotContract.PulseBeatSeconds"/>: una por latido de la tarjeta). Nivel 0,26, sala 0,18, familia «hito».</summary>
+        public static WoodSounds.Recipe MakeRecipe(PilotSfx sfx)
+        {
+            var x = Blank(1.6);
+            Add(x, WoodKit.Marimba(659.25, 0.3));
+            Add(x, WoodKit.Marimba(987.77, 0.3), PilotContract.PulseBeatSeconds);
+            return new WoodSounds.Recipe(x, 0.26, 0.18, WoodTier.Hito);
+        }
+
+        /// <summary>La clave de un sonido propio («piloto.mission»).</summary>
+        public static string Key(PilotSfx sfx) => "piloto." + sfx.ToString().ToLowerInvariant();
+
+        /// <summary>Estéreo (con su sala).</summary>
+        public static bool Mono(PilotSfx sfx) => false;
+
+        /// <summary>Los sonidos propios con su clave y su receta: los lee la prueba de niveles y la página de escucha.</summary>
+        public static IEnumerable<(string Key, WoodSounds.Recipe Recipe, bool Mono)> All()
+        {
+            foreach (PilotSfx sfx in Enum.GetValues(typeof(PilotSfx))) yield return (Key(sfx), MakeRecipe(sfx), Mono(sfx));
+        }
+
+        /// <summary>Suena el aviso de misión nueva.</summary>
+        public static bool PlayMission() => WoodCore.Play(Key(PilotSfx.Mission));
+
+        /// <summary>Lo que Piloto pide antes de la cuenta regresiva, en el orden en que suena: las 4 notas de las balizas, el blip de las señales, el golpe de la baliza fuera, la misión, el soplo del sector y el hiperimpulso. <c>Correct 1 a 7</c> y <c>Wrong</c> ya van con el núcleo.</summary>
+        public static void Request()
+        {
+            for (int i = 0; i < 4; i++) WoodCore.RequestNote(BeaconHz(i), WoodVoice.Marimba);
+            WoodCore.RequestCue(BlipHz, BlipSeconds);
+            WoodCore.Request(WoodSfx.Knock);
+            foreach (PilotSfx sfx in Enum.GetValues(typeof(PilotSfx))) { var s = sfx; WoodCore.Request(Key(s), () => MakeRecipe(s), Mono(s)); }
+            WoodCore.Request(WoodSfx.SweepUp);
+            WoodCore.Request(WoodSfx.Streak);
+        }
     }
 }

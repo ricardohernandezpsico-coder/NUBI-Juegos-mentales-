@@ -67,7 +67,7 @@ namespace NeuroVida.Games.Piloto
             _missionFreshAt = now;
             _missionPulseAt = now;
             SetMissionCard();
-            PlayClip(PilotSounds.MissionChange(), 0.85f);
+            PilotSounds.PlayMission();                                 // dos marimbas que suben, una por latido de la tarjeta (0,4 s)
         }
 
         private void SetMissionCard()

@@ -322,15 +322,15 @@ namespace NeuroVida.Games.Piloto.Tests
         }
 
         [Test]
-        public void TheSoundsAreSynthesizedOnceAndNothingIsLoud()
+        public void TheEngineLoopsAreSynthesizedOnce_AndNothingIsLoud()
         {
-            var warm = PilotSounds.Prewarm();
+            var warm = PilotSounds.PrewarmEngine();
             while (warm.MoveNext()) { }
-            Assert.GreaterOrEqual(PilotSounds.CachedCount, 14);
+            Assert.AreEqual(3, PilotSounds.CachedCount, "las tres capas del motor (lo demás es de la paleta: PilotSoundTests)");
             int before = PilotSounds.CachedCount;
-            Assert.AreSame(PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), "un clip por sonido");
+            Assert.AreSame(PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), "un clip por capa");
             Assert.AreEqual(before, PilotSounds.CachedCount);
-            foreach (var clip in new[] { PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Fast), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Boost), PilotSounds.Beacon(2), PilotSounds.Buzz(), PilotSounds.Blip(), PilotSounds.Catch(3), PilotSounds.Thud(), PilotSounds.Whoosh(), PilotSounds.MissionChange(), PilotSounds.Hyper(), PilotSounds.Finale() })
+            foreach (var clip in new[] { PilotSounds.EngineLoop(PilotSounds.EngineLayer.Cruise), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Fast), PilotSounds.EngineLoop(PilotSounds.EngineLayer.Boost) })
             {
                 var data = new float[clip.samples * clip.channels];
                 clip.GetData(data, 0);

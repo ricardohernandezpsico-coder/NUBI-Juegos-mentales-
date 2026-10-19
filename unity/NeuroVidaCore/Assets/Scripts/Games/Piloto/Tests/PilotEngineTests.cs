@@ -1,3 +1,4 @@
+using NeuroVida.Games.Shared;
 using System;
 using System.IO;
 using NUnit.Framework;
@@ -150,7 +151,7 @@ namespace NeuroVida.Games.Piloto.Tests
         }
 
         [Test]
-        public void TheEngineIsABackground_ClearlyBelowTheCatchBellAndTheNewMissionNotice()
+        public void TheEngineIsABackground_ClearlyBelowTheCorrectAndTheNewMissionNotice()
         {
             var cruise = PilotSounds.MakeEngineLoop(PilotSounds.EngineLayer.Cruise);
             var fast = PilotSounds.MakeEngineLoop(PilotSounds.EngineLayer.Fast);
@@ -174,20 +175,17 @@ namespace NeuroVida.Games.Piloto.Tests
                 worstPeak = Math.Max(worstPeak, peak);
                 table += "k=" + k + (hyper ? " hiper" : "") + ": RMS " + rms.ToString("0.000") + " pico " + peak.ToString("0.000") + "; ";
             }
-            // las campanas: se mide lo que suena de verdad (clip × volumen con que el juego las toca) en su parte más fuerte
-            var catchClip = PilotSounds.Catch(0);
-            var mission = PilotSounds.MissionChange();
-            var catchData = new float[catchClip.samples];
-            catchClip.GetData(catchData, 0);
-            var missionData = new float[mission.samples];
-            mission.GetData(missionData, 0);
-            double catchRms = Rms(catchData, 0, (int)(0.3 * 44100), 0.8), missionRms = Rms(missionData, 0, (int)(0.8 * 44100), 0.85);
+            // lo que suena de verdad en «Madera cálida» (Tarea 138): el acierto (Correct, el par de kalimbas que sube con la racha) y el aviso de misión nueva (el propio de Piloto), tal como se guardan (con el volumen maestro) × el volumen de reproducción de la paleta, en su parte más fuerte
+            WoodSounds.RenderForClip(WoodSfx.Correct, 1, out var catchData, out _);
+            WoodSounds.RenderForClip(PilotSounds.MakeRecipe(PilotSfx.Mission), PilotSounds.Mono(PilotSfx.Mission), out var missionData, out _);
+            double play = WoodKit.PlayVolume;
+            double catchRms = Rms(catchData, 0, (int)(0.3 * WoodSounds.ClipRate), play), missionRms = Rms(missionData, 0, (int)(0.8 * WoodSounds.ClipRate), play);
             double catchPeak = 0, missionPeak = 0;
-            foreach (float v in catchData) catchPeak = Math.Max(catchPeak, Math.Abs(v * 0.8));
-            foreach (float v in missionData) missionPeak = Math.Max(missionPeak, Math.Abs(v * 0.85));
-            Debug.Log("[PilotEngine] nivel general " + PilotEngine.MasterLevel + " · motor: " + table + "· campana de atrapar: RMS " + catchRms.ToString("0.000") + " pico " + catchPeak.ToString("0.000") + " · aviso de misión: RMS " + missionRms.ToString("0.000") + " pico " + missionPeak.ToString("0.000"));
+            foreach (float v in catchData) catchPeak = Math.Max(catchPeak, Math.Abs(v * play));
+            foreach (float v in missionData) missionPeak = Math.Max(missionPeak, Math.Abs(v * play));
+            Debug.Log("[PilotEngine] nivel general " + PilotEngine.MasterLevel + " · motor: " + table + "· acierto: RMS " + catchRms.ToString("0.000") + " pico " + catchPeak.ToString("0.000") + " · aviso de misión: RMS " + missionRms.ToString("0.000") + " pico " + missionPeak.ToString("0.000") + " · peor motor: RMS " + worstRms.ToString("0.000") + " pico " + worstPeak.ToString("0.000"));
             Assert.AreEqual(0.35f, PilotEngine.MasterLevel, 1e-6f, "el nivel general que se eligió al medir (con 0,7 el motor llegaba a la fuerza del aviso de misión)");
-            Assert.Less(worstRms, 0.5 * catchRms, "el motor (RMS, el peor caso: hiperimpulso) queda al menos 6 dB por debajo de la campana de atrapar");
+            Assert.Less(worstRms, 0.5 * catchRms, "el motor (RMS, el peor caso: hiperimpulso) queda al menos 6 dB por debajo del acierto");
             Assert.Less(worstRms, 0.51 * missionRms, "y del aviso de misión nueva");
             Assert.Less(worstPeak, 0.65 * catchPeak, "también en el pico");
             Assert.Less(worstPeak, 0.65 * missionPeak);

@@ -205,7 +205,7 @@ namespace NeuroVida.Games.Piloto
             foreach (var s in _signals) if (s.Alive) { s.Outcome = Outcome.Gone; s.DoneAt = now - SignalFadeSeconds + 0.12f; }
             _mission = _practiceNewMission;
             MissionChanged(now);
-            PlayClip(PilotSounds.Whoosh(), 0.8f);
+            WoodCore.Play(WoodSfx.SweepUp);
             GameFeel.Haptic(GameFeel.HapticKind.Firm);
         }
 
