@@ -6,6 +6,7 @@ using NeuroVida.Games.Anagramas;
 using NeuroVida.Games.Bodega;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Correo;
+using NeuroVida.Games.Engranajes;
 using NeuroVida.Games.Freno;
 using NeuroVida.Games.Intrusa;
 using NeuroVida.Games.Meteoros;
@@ -47,6 +48,7 @@ namespace NeuroVida.Games.Tests
             new GameSounds { Id = "stroop", All = StroopSounds.All, Request = StroopSounds.Request },
             new GameSounds { Id = "meteoros", All = MeteorSounds.All, Request = MeteorSounds.Request },
             new GameSounds { Id = "freno", All = BrakeSounds.All, Request = BrakeSounds.Request },
+            new GameSounds { Id = "engranajes", All = EngranajesSounds.All, Request = EngranajesSounds.Request },
         };
 
         [SetUp]

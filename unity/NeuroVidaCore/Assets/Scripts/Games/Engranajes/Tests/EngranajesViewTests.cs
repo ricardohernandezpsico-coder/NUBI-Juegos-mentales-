@@ -238,33 +238,7 @@ namespace NeuroVida.Games.Engranajes.Tests
             Assert.AreNotEqual(AlphaAt(cw, 25f, 30f) + AlphaAt(cw, -25f, 30f), 0f, "la flecha se dibuja arriba");
         }
 
-        [Test]
-        public void EverySound_IsSynthesized_WithAudibleButNotLoudSamples()
-        {
-            var warm = EngranajesSounds.Prewarm();
-            while (warm.MoveNext()) { }
-            var clips = new[]
-            {
-                EngranajesSounds.Step(0), EngranajesSounds.Step(5), EngranajesSounds.Step(9), EngranajesSounds.MotorStart(), EngranajesSounds.Antenna(), EngranajesSounds.Turbine(),
-                EngranajesSounds.Rack(), EngranajesSounds.Thud(), EngranajesSounds.Clank(), EngranajesSounds.Press(), EngranajesSounds.Chime(),
-                EngranajesSounds.Success(), EngranajesSounds.Light(0), EngranajesSounds.Light(9), EngranajesSounds.Launch(), EngranajesSounds.Finale()
-            };
-            foreach (var clip in clips)
-            {
-                Assert.IsNotNull(clip);
-                var data = new float[clip.samples];
-                clip.GetData(data, 0);
-                float peak = 0f;
-                foreach (float f in data) peak = Mathf.Max(peak, Mathf.Abs(f));
-                Assert.Greater(peak, 0.03f, clip.name + ": se oye");
-                Assert.LessOrEqual(peak, 0.5001f, clip.name + ": no pasa de 0,5");
-            }
-            // cada pieza del cohete suena distinto
-            Assert.AreNotSame(EngranajesSounds.Antenna(), EngranajesSounds.Turbine());
-            Assert.AreNotSame(EngranajesSounds.Turbine(), EngranajesSounds.Rack());
-            Assert.AreNotSame(EngranajesSounds.Clank(), EngranajesSounds.Thud(), "el clic de un cambio y el golpe del cartel que falla son dos sonidos");
-            Assert.Greater(EngranajesSounds.Launch().length, 3f);
-        }
+        // Los sonidos de Engranajes en «Madera cálida» (Tarea 139) los prueba EngranajesSoundTests: los diez pasos, la compuerta, el despegue, lo que pide antes de la cuenta y el toque del kit de «Arrancar».
     }
 
     public class EngranajesVisibilityTests

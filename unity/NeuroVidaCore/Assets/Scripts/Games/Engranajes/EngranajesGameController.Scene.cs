@@ -816,7 +816,7 @@ namespace NeuroVida.Games.Engranajes
                 _shownLights = Mathf.Min(EngranajesContract.RocketLights, _shownLights + 1);
                 _lastLightAt = now;
                 Emit(to, 14, 90f, 0.6f, Gold, 20f);
-                PlayClip(EngranajesSounds.Light(idx), 0.8f);
+                WoodCore.Play(WoodSfx.Spark, Mathf.Clamp(idx + 1, 1, 8));     // la nota sube con cada luz (1 a 8)
                 return;
             }
             float e = 1f - Mathf.Pow(1f - Mathf.Clamp01(k), 3f);

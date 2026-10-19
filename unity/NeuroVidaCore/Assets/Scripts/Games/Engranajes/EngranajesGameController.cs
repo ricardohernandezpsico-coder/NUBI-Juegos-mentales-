@@ -150,6 +150,7 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
         private IEnumerator Prewarm()
         {
+            EngranajesSounds.Request();             // los sonidos (el zumbido, los diez pasos, las piezas, las luces y el despegue) se piden ANTES de la cuenta: los calcula WoodCore de a poco, sin trabar
             if (!_baked)
             {
                 var sprites = EngranajesSprites.Prewarm();
@@ -157,8 +158,6 @@ namespace NeuroVida.Games.Engranajes
                 AssignSprites();
                 _baked = true;
             }
-            var sounds = EngranajesSounds.Prewarm();
-            while (sounds.MoveNext()) yield return null;
         }
 
         /// <summary>Una máquina: se arma, se mira, se hacen los cambios, se arranca y se cuenta. Si se acaba el tiempo del Reto mientras se mira, no cuenta (ni a favor ni en contra).</summary>
@@ -180,7 +179,7 @@ namespace NeuroVida.Games.Engranajes
             _startRequested = false;
             _t0 = GameClock.Time;
             _hintAt = _t0;
-            PlayClip(EngranajesSounds.MotorStart(), 0.6f);
+            WoodCore.Play(WoodSfx.Hum);                                // el motor arranca: un zumbido grave
             float waitedPlay = 0f;
             while (!_startRequested)
             {
@@ -300,7 +299,7 @@ namespace NeuroVida.Games.Engranajes
             _introLayer.gameObject.SetActive(true);
             LayoutIntro(EngranajesContract.IntroText(intro));
             _introAt = GameClock.Time;
-            PlayClip(EngranajesSounds.Chime(), 0.7f);
+            WoodCore.Play(WoodSfx.New);
             _inputOn = true;
             _press = null;
             float waitedIntro = 0f;
@@ -346,7 +345,7 @@ namespace NeuroVida.Games.Engranajes
                 float t = GameClock.Time - t0;
                 while (nextStep <= maxD && t >= 0.12f + nextStep * step)
                 {
-                    PlayClip(EngranajesSounds.Step(nextStep), 0.9f);
+                    EngranajesSounds.PlayStep(nextStep);                 // el clic de dientes y la nota de marimba que sube con la profundidad (el reloj de la cascada no se toca)
                     nextStep++;
                 }
                 for (int k = 0; k < soundedPart.Length; k++)
@@ -354,14 +353,14 @@ namespace NeuroVida.Games.Engranajes
                     if (soundedPart[k] || t < arrive + k * 0.12f) continue;
                     soundedPart[k] = true;
                     PlayPartSound(m.Targets[k]);
-                    if (!_results[k].Ok) PlayClip(EngranajesSounds.Thud(), 0.8f);
+                    if (!_results[k].Ok) WoodCore.Play(WoodSfx.Knock);            // el cartel que no cumplió
                 }
                 if (!resultShown && t >= arrive + 0.6f)
                 {
                     resultShown = true;
                     if (ok)
                     {
-                        PlayClip(EngranajesSounds.Success(), 0.8f);
+                        WoodCore.Play(WoodSfx.Perfect);                          // el acierto de la máquina
                         if (!_guided) Tell(EngranajesContract.SuccessText(m, changes, _okCount), null, true);      // en el tutorial habla Nubi
                         foreach (var target in m.Targets)
                         {
@@ -389,9 +388,9 @@ namespace NeuroVida.Games.Engranajes
         {
             switch (s)
             {
-                case Station.Antena: PlayClip(EngranajesSounds.Antenna(), 0.8f); break;
-                case Station.Turbina: PlayClip(EngranajesSounds.Turbine(), 0.8f); break;
-                default: PlayClip(EngranajesSounds.Rack(), 0.8f); break;
+                case Station.Antena: EngranajesSounds.Play(EngranajesSfx.Antenna); break;
+                case Station.Turbina: EngranajesSounds.Play(EngranajesSfx.Turbine); break;
+                default: EngranajesSounds.Play(EngranajesSfx.Rack); break;
             }
         }
 
@@ -407,7 +406,7 @@ namespace NeuroVida.Games.Engranajes
             _launchLine1.text = "Tu cohete n.º " + _launchNumber;
             _launchLine2.text = "va a la órbita";
             _launchLayer.gameObject.SetActive(true);
-            PlayClip(EngranajesSounds.Launch(), 0.9f);
+            EngranajesSounds.Play(EngranajesSfx.Launch);                  // el despegue: un propio de HITO (no el Record de la app)
             float dur = Motion.Decorative ? 3.2f : 1.2f;
             while (GameClock.Time - before < dur) yield return null;
             _launchLayer.gameObject.SetActive(false);
@@ -576,8 +575,8 @@ namespace NeuroVida.Games.Engranajes
         private void PressStart()
         {
             _startPressAt = GameClock.Time;
-            _start.Touch?.Press();                                              // plasticina: la losa de «Arrancar» se ve presionada
-            PlayClip(EngranajesSounds.Press(), 0.6f);
+            if (_start.Touch != null) _start.Touch.Press();                     // plasticina: la losa de «Arrancar» se ve presionada y suena el toque del kit (PlaysTap, sin nota propia)
+            else GameFeel.Tap();                                                // sin plasticina: el mismo toque del kit
             _startRequested = true;
         }
 
@@ -591,7 +590,7 @@ namespace NeuroVida.Games.Engranajes
                 return;
             }
             FlipSwitch(id, now);
-            PlayClip(EngranajesSounds.Clank(), 0.7f);
+            WoodCore.Play(WoodSfx.Clack);                              // un cambio: el «clank» de la llave
         }
 
         /// <summary>Un toque con todas las llaves usadas: la moneda coral con la aspa sobre lo tocado (~1 s, con una sacudida corta salvo con «quitar animaciones»), el contador de llaves late una vez, suena el golpe suave de «no», vibra corto si la vibración está activa y el aviso de abajo dice qué se cambió y cómo deshacerlo.</summary>
@@ -600,7 +599,7 @@ namespace NeuroVida.Games.Engranajes
             _blockAt = now;
             _blockId = id;
             _counterPulseAt = now;
-            PlayClip(EngranajesSounds.Thud(), 0.4f);
+            WoodCore.Play(WoodSfx.Knock, gainDb: -6f);                  // una jugada que no era: el mismo golpe, 6 dB más suave
             GameFeel.Haptic(GameFeel.HapticKind.Light);
             Tell(EngranajesContract.BlockedTitle(_mach.Stage.Keys), EngranajesContract.BlockedHint(_changes, _mach.Stage.Keys), false);
         }
@@ -628,11 +627,5 @@ namespace NeuroVida.Games.Engranajes
 
         private float SceneUnits(float dp) => dp * _s * (_lay.SceneScale <= 0f ? 1f : _lay.SceneScale);
 
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || _audioSource == null || !GameFeel.SoundOn) return;
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            _audioSource.PlayOneShot(clip, volume);
-        }
     }
 }

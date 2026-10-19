@@ -601,6 +601,7 @@ namespace NeuroVida.Games.Engranajes
                 {
                     b.Shadow.enabled = b.Rim.enabled = b.Bg.enabled = false;
                     b.Touch = PlasticTouch.On(go, SlabSize.Button, SlabTone.Sky);                                      // la losa, el texto liso y el rebote son los de «Reiniciar» de la pausa: nada más encima (Tarea 116)
+                    if (b.Touch != null) b.Touch.PlaysTap = true;                                                      // «Arrancar» no suena nada más al tocarse: suena el toque del kit (sin nota propia; Tarea 139)
                 }
             }
             go.SetActive(false);

@@ -530,33 +530,31 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterEngranajes()
         {
             const string g = "engranajes";
-            Family_("engranajes-pasos", "Engranajes: la nota de cada paso de la cascada", Hz(i => EngranajesSounds.Penta[Math.Min(9, i + 1)], 10), i => EngranajesSounds.Step(i), 0.45);
-            Family_("engranajes-luces", "Engranajes: la luz del cohete que se enciende", Hz(i => EngranajesSounds.Penta[i], 10), i => EngranajesSounds.Light(i), 0.45);
-            H("engranajes.motor", () => EngranajesSounds.MotorStart());
-            H("engranajes.antenna", () => EngranajesSounds.Antenna());
-            H("engranajes.turbine", () => EngranajesSounds.Turbine());
-            H("engranajes.rack", () => EngranajesSounds.Rack());
-            H("engranajes.thud", () => EngranajesSounds.Thud());
-            H("engranajes.clank", () => EngranajesSounds.Clank());
-            H("engranajes.press", () => EngranajesSounds.Press());
-            H("engranajes.chime", () => EngranajesSounds.Chime());
-            H("engranajes.success", () => EngranajesSounds.Success());
-            H("engranajes.launch", () => EngranajesSounds.Launch());
-            H("engranajes.finale", () => EngranajesSounds.Finale());
+            // «hoy» sale CONGELADO del 17-oct (Tarea 139): las campanas de Engranajes se borraron al cablear el juego
+            Family_("engranajes-pasos", "Engranajes: la nota de cada paso de la cascada", Hz(i => EngranajesSounds.Penta[Math.Min(9, i + 1)], 10), null, 0.45, EngranajesSounds.StepTau);
+            Family_("engranajes-luces", "Engranajes: la luz del cohete que se enciende", Hz(i => EngranajesSounds.Penta[i], 10), null, 0.45);
+            foreach (var k in new[] { "motor", "antenna", "turbine", "rack", "thud", "clank", "press", "chime", "success", "launch", "finale" }) Frozen("engranajes." + k);
+            // los 14 propios, de las MISMAS recetas que van al juego; los pasos, además, en una escalera (los cinco primeros, uno cada 0,15 s)
+            foreach (var r in EngranajesSounds.All()) { var recipe = r.Recipe; Raw(r.Key + ".madera", () => FromRecipe(recipe)); }
+            Raw("engranajes.pasos.madera", () => Scale(5, EngranajesContract.StepSeconds(false), i => Trimmed(FromRecipe(EngranajesSounds.MakeRecipe(EngranajesSounds.StepSfx(i))), 0.9)));
 
-            E(g, "arrancar", "Tocar «Arrancar»", "Campanita (la nota 3), 0,4 s", "EngranajesGameController.cs:590 (vol 0,6)", "engranajes.press", 0.6f, Wk(WoodSfx.Tap), "Tap");
-            E(g, "motor", "El motor arranca: zumbido grave", "Triángulo 70 → 95 Hz, 0,7 s", "EngranajesGameController.cs:184 (vol 0,6)", "engranajes.motor", 0.6f, Wk(WoodSfx.Hum), "Hum");
-            FamilyEvent(g, "pasos", "Cada paso de la cascada: clic de dientes y una nota que sube", "Chasquido de 50 ms y campanita de la escala", "EngranajesGameController.cs:361 (vol 0,9)", "engranajes-pasos", 0.9f, "Select(k)", "La altura sube con la profundidad del paso.");
-            E(g, "clank", "Un cambio (tocar el motor o una correa, o deshacer): «clank» de llave", "Golpe metálico corto y campanita aguda", "EngranajesGameController.cs:604 (vol 0,7)", "engranajes.clank", 0.7f, Wk(WoodSfx.Clack), "Clack");
-            E(g, "cartel", "Un cartel que no cumplió / una jugada que no era", "Golpe grave y blando, 0,4 s", "EngranajesGameController.cs:369 (vol 0,8), :613 (vol 0,4)", "engranajes.thud", 0.8f, Wk(WoodSfx.Knock), "Knock");
-            E(g, "antena", "La antena: silbido de viento y campana aguda", "Ruido 600 → 2600 Hz y campana, 1,2 s", "EngranajesGameController.cs:404 (vol 0,8)", "engranajes.antenna", 0.8f, null, "propio (Fase C)");
-            E(g, "turbina", "La turbina: rugido que sube", "Ruido 180 → 900 Hz con retumbo, 1,3 s", "EngranajesGameController.cs:405 (vol 0,8)", "engranajes.turbine", 0.8f, null, "propio (Fase C)");
-            E(g, "compuerta", "La compuerta y el elevador: motor eléctrico y golpe seco", "Diente de sierra suave 90 → 140 Hz y golpe, 1,1 s", "EngranajesGameController.cs:406 (vol 0,8)", "engranajes.rack", 0.8f, null, "propio (Fase C)");
-            E(g, "acierto", "Acierto de la máquina: tres campanas que suben", "Tres campanas, 2,2 s, con eco", "EngranajesGameController.cs:376 (vol 0,8)", "engranajes.success", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
-            FamilyEvent(g, "luz", "La luz del cohete que se enciende (la nota sube con cada luz)", "Campanita de la escala (τ 0,22 s)", "EngranajesGameController.Scene.cs:808 (vol 0,8)", "engranajes-luces", 0.8f, "Spark(n)");
-            E(g, "despegue", "El despegue: rugido que sube y cinco campanas", "3,8 s con eco", "EngranajesGameController.cs:422 (vol 0,9)", "engranajes.launch", 0.9f, null, "propio (Fase C): rugido de ruido + Record");
-            E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "EngranajesGameController.cs:315 (vol 0,7)", "engranajes.chime", 0.7f, Wk(WoodSfx.New), "New");
-            E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s", "EngranajesGameController.cs:238 (vol 0,8)", "engranajes.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
+            E(g, "arrancar", "Tocar «Arrancar»", "Campanita (la nota 3), 0,4 s", "EngranajesGameController.cs: PressStart (PlasticTouch.PlaysTap en el botón)", "engranajes.press", 0.6f, Wk(WoodSfx.Tap), "El toque del kit (PlaysTap), sin nota propia", "",
+                "DECIDIDO (Ricardo): «Arrancar» suena como «¡Listo!» y «Seguir» de los demás juegos: el toque del kit. Sin nota propia.");
+            E(g, "motor", "El motor arranca: zumbido grave", "Triángulo 70 → 95 Hz, 0,7 s", "EngranajesGameController.cs: PlayMachine (al empezar cada máquina)", "engranajes.motor", 0.6f, Wk(WoodSfx.Hum), "Hum");
+            E(g, "pasos", "Cada paso de la cascada: clic de dientes y una nota que sube", "Chasquido de 50 ms y campanita de la escala", "EngranajesGameController.cs: la cascada (EngranajesSounds.PlayStep, cada 0,15 s; 0,21 en mayores)", "fam.engranajes-pasos.hoy", 0.9f, "engranajes.pasos.madera",
+                "Propios engranajes.step0..9: bloque de madera (1800 Hz) y marimba de τ 0,15 con la nota Penta[profundidad + 1]", "info",
+                "La ALTURA sube con la profundidad del paso, y el tiempo es el de hoy (un paso cada 0,15 s: el reloj no se toca). Es la secuencia más densa de la app (hasta 10 notas en 1,5 s): la marimba cae 20 dB en ≈ 0,35 s para que la pila sea la de hoy; entran a la familia «respuesta» (baja) para que el acierto final mande.");
+            E(g, "clank", "Un cambio (tocar el motor o una correa, o deshacer): «clank» de llave", "Golpe metálico corto y campanita aguda", "EngranajesGameController.cs: ToggleSwitch", "engranajes.clank", 0.7f, Wk(WoodSfx.Clack), "Clack");
+            E(g, "cartel", "Un cartel que no cumplió / una jugada que no era", "Golpe grave y blando, 0,4 s", "EngranajesGameController.cs: la cascada (Knock) y RejectTouch (Knock, gainDb −6)", "engranajes.thud", 0.8f, Wk(WoodSfx.Knock), "Knock (y −6 dB cuando es una jugada que no era)");
+            E(g, "antena", "La antena: silbido de viento y campana aguda", "Ruido 600 → 2600 Hz y campana, 1,2 s", "EngranajesGameController.cs: PlayPartSound", "engranajes.antenna", 0.8f, "engranajes.antenna.madera", "Propio engranajes.antenna: silbido de viento y kalimba sol6 (nivel 0,16)", "", "Baja ≈ 4 LU respecto de hoy (hoy estaba a nivel de hito sin serlo).");
+            E(g, "turbina", "La turbina: rugido que sube", "Ruido 180 → 900 Hz con retumbo, 1,3 s", "EngranajesGameController.cs: PlayPartSound", "engranajes.turbine", 0.8f, "engranajes.turbine.madera", "Propio engranajes.turbine: rugido que sube y un golpe grave que sube de retumbo (nivel 0,18)", "", "Baja ≈ 4 LU respecto de hoy.");
+            E(g, "compuerta", "La compuerta y el elevador: motor eléctrico y golpe seco", "Diente de sierra suave 90 → 140 Hz y golpe, 1,1 s", "EngranajesGameController.cs: PlayPartSound", "engranajes.rack", 0.8f, "engranajes.rack.madera", "Propio engranajes.rack: tres golpes graves a 0,27 s (el motor) y un golpe seco al parar (nivel 0,18)", "tiempo", "Baja ≈ 6 LU respecto de hoy. Los golpes caen a 0, 0,27, 0,54 y 0,8 s: se miden en las pruebas.");
+            E(g, "acierto", "Acierto de la máquina: tres campanas que suben", "Tres campanas, 2,2 s, con eco", "EngranajesGameController.cs: el acierto (a arrive + 0,6 s)", "engranajes.success", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
+            E(g, "luz", "La luz del cohete que se enciende (la nota sube con cada luz)", "Campanita de la escala (τ 0,22 s)", "EngranajesGameController.Scene.cs: la luz que llega al cohete", "fam.engranajes-luces.hoy", 0.8f, WoodLadder(WoodSfx.Spark, new[] { 1, 2, 3, 4, 5 }, 0.55), "Spark(luz + 1, de 1 a 8)", "info");
+            E(g, "despegue", "El despegue: rugido que sube y cinco campanas", "3,8 s con eco", "EngranajesGameController.cs: LaunchRoutine (EngranajesSounds.Play(Launch))", "engranajes.launch", 0.9f, "engranajes.launch.madera", "Propio engranajes.launch: rugido de 2,6 s, cinco kalimbas desde 1,0 s cada 0,14 s y un acorde de marimba (nivel 0,30, HITO)", "",
+                "Es un HITO, no el Record: ese es el del récord en la app y no puede sonar en un despegue. Hoy era el sonido más fuerte del juego (−14,8 LUFS); baja ≈ 6 LU.");
+            E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "EngranajesGameController.cs: la tarjeta «NUEVO»", "engranajes.chime", 0.7f, Wk(WoodSfx.New), "New");
+            E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s", "ExitButton (GameFeel.Finish)", "engranajes.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
         }
 
         // ------------------------------------------------------------------ Acoplamiento y Aterrizaje (ya en Madera cálida)
