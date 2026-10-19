@@ -382,10 +382,10 @@ namespace NeuroVida.Bridge.EditorTools
             Raw("stroop.regla.madera", () => FromRecipe(WoodSounds.MakeCue(392, 0.14)));
             Raw("stroop.tinta.madera", () => FromRecipe(WoodSounds.MakeCue(330, 0.1)));
             Raw("stroop.palabra.madera", () => FromRecipe(WoodSounds.MakeCue(440, 0.1)));
-            E(g, "regla", "Aparece la tarjeta de la regla", "PlayTone: 392 Hz, 0,14 s (seno + 2.º y 3.er armónico; ataque 15 ms; amplitud 0,1)", "StroopGameController.cs:377", "stroop.regla", 1f, "stroop.regla.madera", "Cue(392): marimba seca de ~0,1 s", "señal",
-                "Avisa que hay una regla nueva. Misma altura; el inicio no se atrasa.");
-            E(g, "cambia-tinta", "La regla pasa a «el color de la tinta»", "PlayTone: 330 Hz, 0,1 s", "StroopGameController.cs:1034", "stroop.tinta", 1f, "stroop.tinta.madera", "Cue(330)", "señal", "La ALTURA dice qué regla vale: 330 Hz = tinta, 440 Hz = palabra. No se cambia.");
-            E(g, "cambia-palabra", "La regla pasa a «lo que dice la palabra»", "PlayTone: 440 Hz, 0,1 s", "StroopGameController.cs:1034", "stroop.palabra", 1f, "stroop.palabra.madera", "Cue(440)", "señal");
+            E(g, "regla", "Aparece la tarjeta de la regla", "PlayTone: 392 Hz, 0,14 s (seno + 2.º y 3.er armónico; ataque 15 ms; amplitud 0,1)", "StroopGameController.cs: ShowRuleCard (StroopSounds.PlayCard)", "stroop.regla", 1f, "stroop.regla.madera", "PlayCue(392, 0,14): marimba seca, casi sin sala", "señal",
+                "Avisa que hay una regla nueva. Misma altura y duración; el inicio llega ANTES (0,5 ms contra 15 ms de ataque del tono de hoy). Ya suena en el juego (Tarea 139). Tinta mide tiempos de reacción: la fecha del cambio de timbre está en docs/medidas-juegos-estrella.md.");
+            E(g, "cambia-tinta", "La regla pasa a «el color de la tinta»", "PlayTone: 330 Hz, 0,1 s", "StroopGameController.cs: SetRule (StroopSounds.PlayRule)", "stroop.tinta", 1f, "stroop.tinta.madera", "PlayCue(330, 0,1)", "señal", "La ALTURA dice qué regla vale: 330 Hz = tinta, 440 Hz = palabra. No se cambia.");
+            E(g, "cambia-palabra", "La regla pasa a «lo que dice la palabra»", "PlayTone: 440 Hz, 0,1 s", "StroopGameController.cs: SetRule (StroopSounds.PlayRule)", "stroop.palabra", 1f, "stroop.palabra.madera", "PlayCue(440, 0,1)", "señal");
             E(g, "listo", "Práctica: «¡Listo!»", "PlayTone: 523 Hz, 0,4 s", "StroopGameController.cs:1182", "stroop.listo", 1f, Wk(WoodSfx.Notice), "Notice");
             E(g, "comun", "Acierto, error, subir de nivel y tic", "Comunes (GameFeel)", "StroopGameController.cs:287, :307, :212, :364", "gamefeel.wrong", 0.5f, Wk(WoodSfx.Wrong), "Wrong (ver «Lo común»)");
         }

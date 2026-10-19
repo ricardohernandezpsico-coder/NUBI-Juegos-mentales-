@@ -12,6 +12,7 @@ using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Satelites;
 using NeuroVida.Games.Secuencia;
 using NeuroVida.Games.Shared;
+using NeuroVida.Games.Stroop;
 
 namespace NeuroVida.Games.Tests
 {
@@ -41,6 +42,7 @@ namespace NeuroVida.Games.Tests
             new GameSounds { Id = "satelites", All = SatelliteSounds.All, Request = SatelliteSounds.Request },
             new GameSounds { Id = "piloto", All = PilotSounds.All, Request = PilotSounds.Request },
             new GameSounds { Id = "intrusa", All = IntrusaSounds.All, Request = IntrusaSounds.Request },
+            new GameSounds { Id = "stroop", All = StroopSounds.All, Request = StroopSounds.Request },
         };
 
         [SetUp]

@@ -424,6 +424,7 @@ Ficha completa: [diseno-tinta-o-palabra.md](diseno-tinta-o-palabra.md). Dos dife
 - **Paleta**: 4 tintas para todos (ROJO C93C3C, AZUL 4A86E8, AMARILLO F2CC1D, BLANCO F4F4F4) verificadas con `tools/paleta_daltonismo.py` (diferencia ≥ 20 en visión típica, protanopía y
   deuteranopía; Machado et al., 2009). Una sola paleta para todos; no depende de `color_vision`.
 - Telemetría en `StroopSessionMetrics`; lectura en `data/DosOrillas.kt` (con pruebas).
+- **Cambio de timbre de la señal de la regla (19-oct-2026, Tarea 139, sonido «Madera cálida»):** las tres señales que suenan (la tarjeta de la regla, 392 Hz, y el cambio de regla, 330 Hz «tinta» y 440 Hz «palabra») pasaron del tono armónico de antes a una marimba seca con la MISMA altura (±1 %) y la misma duración; el inicio es más rápido (0,5 ms contra 15 ms de ataque del tono viejo: la instrucción llega antes, no después). **La altura ES la regla**, así que no se tocó. No se cambió ninguna regla ni ningún tiempo del juego, pero un tiempo de reacción medido ANTES del 19-oct y otro DESPUÉS podrían moverse unos milisegundos por el timbre: al comparar partidas de una y otra fecha, tenerlo presente (`interference_ms` y `switch_cost_ms` son diferencias dentro de una misma partida, así que casi no se afectan).
 
 ## En la punta de la lengua (id `anagramas`): "Encontraste X de N por tu cuenta" y "Tu cielo de palabras"
 

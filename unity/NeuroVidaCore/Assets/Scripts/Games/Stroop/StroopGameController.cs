@@ -151,6 +151,7 @@ namespace NeuroVida.Games.Stroop
 
         private IEnumerator GameLoop()
         {
+            StroopSounds.Request();                  // las tres señales (tarjeta de la regla y los dos cambios de regla) se piden ANTES de la cuenta: la señal del estímulo no puede esperar a calcularse
             _safe.gameObject.SetActive(false);
             if (TutorialWanted)
             {
@@ -377,7 +378,7 @@ namespace NeuroVida.Games.Stroop
             float began = GameClock.Time;
             _acceptInput = false;
             _ruleCardRoot.gameObject.SetActive(true);
-            PlayTone(392f, 0.14f, 0.1f);
+            StroopSounds.PlayCard();                  // 392 Hz, 0,14 s: la misma altura de hoy, en marimba seca
             yield return StartCoroutine(Motion.Fade(_ruleCardGroup, 0f, 1f, Motion.FadeSeconds));
             float t = 0f;
             while (t < 2.4f)
@@ -951,7 +952,7 @@ namespace NeuroVida.Games.Stroop
             cr.anchorMin = cr.anchorMax = new Vector2(ink ? 0f : 1f, 1f);
             cr.anchoredPosition = new Vector2(ink ? 58f : -58f, -58f);
             if (pop && Motion.Decorative) StartCoroutine(PopRect(_hud.PromptRect, 1.04f, 0.2f));
-            if (pop) PlayTone(ink ? 330f : 440f, 0.1f, 0.1f);
+            if (pop) StroopSounds.PlayRule(ink);      // la ALTURA es la regla: 330 Hz «tinta», 440 Hz «palabra» (solo cambió el timbre)
         }
 
         private void UpdateHudText()

@@ -12,6 +12,7 @@ using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Satelites;
 using NeuroVida.Games.Secuencia;
 using NeuroVida.Games.Shared;
+using NeuroVida.Games.Stroop;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -44,7 +45,7 @@ namespace NeuroVida.Games.Tests
         /// <summary>
         /// Los juegos YA CABLEADOS a <c>WoodCore</c> (carpeta de <c>Games/</c>): rigen las reglas (b), (c) y (d). Paso 0 de las Fases C a E (Tarea 133): ninguno todavía; cada tarea de cableado suma su carpeta aquí (Calculo, Anagramas, Parejas, Bodega, Correo en la Fase C…).
         /// </summary>
-        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo", "Secuencia", "Satelites", "Piloto", "Intrusa" };
+        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo", "Secuencia", "Satelites", "Piloto", "Intrusa", "Stroop" };
 
         /// <summary>Los bucles aprobados que se quedan con su propio altavoz (el zumbido de Satélites, el motor de Piloto y el propulsor de Aterrizaje).</summary>
         private static readonly string[] LoopFiles = { "PilotSounds.cs", "SatelliteSounds.cs", "SatelliteGameController.cs", "SatelliteGameController.Build.cs", "SatelliteGameController.Scene.cs", "PilotGameController.cs", "PilotGameController.Scene.cs", "PilotEngine.cs", "LandingGameController.Scene.cs" };
@@ -186,6 +187,7 @@ namespace NeuroVida.Games.Tests
             { "Satelites", ("satelites", SatelliteSounds.Request) },
             { "Piloto", ("piloto", PilotSounds.Request) },
             { "Intrusa", ("intrusa", IntrusaSounds.Request) },
+            { "Stroop", ("stroop", StroopSounds.Request) },
         };
 
         /// <summary>Lo que el controlador de un juego cableado le pide a la paleta (<c>WoodCore.Play(WoodSfx.X[, n])</c>): (sonido, variante o -1 si el argumento es una expresión que recorre todas), con el archivo y la línea.</summary>
