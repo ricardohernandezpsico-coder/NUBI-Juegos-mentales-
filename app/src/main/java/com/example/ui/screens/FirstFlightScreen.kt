@@ -108,7 +108,6 @@ import kotlin.math.sin
 
 private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
-private val RowBorder = Color(0xFF3A2E78)
 private val RowFill = Color(0xFF0E0C30)
 private val RowSelectedFill = Color(0xFF231C48)
 private val TrackColor = Color(0xFF221D55)
@@ -394,34 +393,6 @@ private fun LinkButton(text: String, tag: String, onClick: () -> Unit) {
   ClayButton(text = text, onClick = onClick, color = Clay.Cream, fontSize = 18.sp, modifier = Modifier.padding(top = 4.dp).testTag(tag))
 }
 
-/** Los 4 pasos de juego (✓ ✓ ● ○): [done] los medidos y [now] el que toca. */
-@Composable
-private fun GameStepper(s: FlightState, now: Int?) {
-  Row(
-    Modifier.fillMaxWidth().semantics {
-      contentDescription = if (now != null) "Juego ${now + 1} de ${BaselinePlan.steps.size}" else "${s.playedCount} de ${BaselinePlan.steps.size} juegos hechos"
-    },
-    horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
-  ) {
-    BaselinePlan.steps.forEachIndexed { i, step ->
-      if (i > 0) Box(Modifier.width(14.dp).height(2.dp).background(RowBorder))
-      val done = step.gameId in s.measured
-      val isNow = i == now
-      Box(
-        Modifier
-          .size(30.dp)
-          .clip(CircleShape)
-          .background(if (done) Clay.Lime else Color.Transparent)
-          .border(2.dp, if (done) Clay.Lime else if (isNow) Clay.Sun else RowBorder, CircleShape),
-        contentAlignment = Alignment.Center
-      ) {
-        if (done) CheckMark(Modifier.size(14.dp), Color(0xFF0E3A06))
-        else Text("${i + 1}", color = if (isNow) Clay.Sun else OnNightDim, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-      }
-    }
-  }
-}
-
 // ------------------------------------------------------------------ las pantallas
 
 @Composable
@@ -432,7 +403,7 @@ private fun HolaPage(a: FlightActions) {
   ) {
     NubiClay(width = 210.dp)
     Title("Hola, soy Nubi", center = true, size = 34)
-    Say("Vamos a encontrar tu punto de partida jugando. Son unos 5 minutos.", highlight = "jugando", center = true)
+    Say("Vamos a encontrar tu punto de partida jugando. Son 4 juegos cortos.", highlight = "jugando", center = true)
   }
 }
 
@@ -501,7 +472,6 @@ private fun GameIntroPage(index: Int, s: FlightState, a: FlightActions) {
       LinkButton("Terminar después", "btn_flight_skip", a.onSkipGames)
     }
   ) {
-    GameStepper(s, now = index)
     Eyebrow(step.domain.displayName, center = true)
     Title(game?.title ?: step.gameId, center = true)
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(width = 150.dp) }
@@ -517,7 +487,6 @@ private fun GameCardPage(index: Int, s: FlightState, a: FlightActions) {
   val game = GameRegistry.getById(step.gameId)
   val copy = FlightCopy.of(step.gameId)
   PageFrame(footer = { MainButton("Continuar", onClick = a.onContinue) }) {
-    GameStepper(s, now = null)
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(width = 150.dp) }
     Title("Acabas de usar tu ${copy.short}", center = true, size = 26)
     Say(s.phrases[step.gameId] ?: FlightCopy.NO_DATA_LINE, center = true)

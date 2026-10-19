@@ -12,6 +12,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
@@ -61,6 +62,18 @@ class FirstFlightLampsTest {
     frame(FlightState(FlightMode.FULL, FlightStep.HOLA))
     rule.onNodeWithTag("flight_step_text").assertTextEquals("Ya diste el primer paso")
     rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Ya diste el primer paso. 1 de 6 farolas encendidas")
+    // el saludo ya no promete tiempo: «Son 4 juegos cortos.»
+    rule.onNodeWithText("Son 4 juegos cortos.", substring = true).assertIsDisplayed()
+    rule.onAllNodesWithText("Son unos 5 minutos", substring = true).assertCountEquals(0)
+  }
+
+  @Test
+  fun los_juegos_no_traen_un_segundo_indicador_de_avance() {
+    // Ricardo, 18-oct: dos indicadores apilados confunden a los 60+; las farolas ya dicen en qué juego va
+    frame(FlightState(FlightMode.FULL, FlightStep.TARJETA_1, name = "Ana", measured = mapOf("secuencia" to 0.5f)))
+    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Juego 1 de 4")).assertCountEquals(0)
+    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("1 de 4 juegos hechos")).assertCountEquals(0)
+    rule.onNodeWithTag("flight_step_text").assertIsDisplayed().assertTextEquals("Paso 2 de 6 · Memoria")
   }
 
   @Test

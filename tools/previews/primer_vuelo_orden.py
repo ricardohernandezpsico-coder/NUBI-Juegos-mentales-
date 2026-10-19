@@ -67,8 +67,8 @@ def main():
     d = ImageDraw.Draw(sheet)
     d.text((mar, 26), 'Primer vuelo: el juego primero y farolas de etapa, hoy | propuesta', font=f_t, fill=SUN)
     y = 78
-    for texto in ('Tres cambios que Ricardo eligió el 18-oct: (1) el primer juego va ANTES de la edad y de las metas: antes del primer juego solo el nombre (opcional); (2) la edad se pregunta después de la primera tarjeta, solo si no se sabe, y el juego 1 corre como adulto con el arranque suave; '
-                  '(3) seis farolas de etapa (Empezar · Memoria · Atención · Razonamiento · Lenguaje · Tu punto de partida; la primera ya encendida, la actual con el aro lima) en lugar de la barra y de los minutos. Capturas reales (Roborazzi); «hoy» es el código de antes.',):
+    for texto in ('Cuatro cambios que Ricardo eligió el 18-oct: (1) el primer juego va ANTES de la edad y de las metas: antes del primer juego solo el nombre (opcional); (2) la edad se pregunta después de la primera tarjeta, solo si no se sabe, y el juego 1 corre como adulto con el arranque suave; '
+                  '(3) seis farolas de etapa (Empezar · Memoria · Atención · Razonamiento · Lenguaje · Tu punto de partida; la primera ya encendida, la actual con el aro lima) en lugar de la barra y de los minutos; (4) el saludo dice «Son 4 juegos cortos.» y el indicador ✓ 2 3 4 de los juegos sale (las farolas ya dicen en qué juego va). Capturas reales (Roborazzi); «hoy» es el código de antes.',):
         for linea in envuelve(d, texto, f_s, Wt - 2 * mar):
             d.text((mar, y), linea, font=f_s, fill=DIM); y += 26
     y += 16

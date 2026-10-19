@@ -8,14 +8,14 @@ Ricardo dio libertad para sumar ideas; las que agregué después de la maqueta e
 ## La idea
 
 Se juega desde el primer minuto. Cada juego enseña mientras se juega (la primera ronda es guiada) y mide el punto de
-partida de su área; las pocas preguntas necesarias van entre juego y juego, de un toque y con su porqué. Unos 5 minutos.
+partida de su área; las pocas preguntas necesarias van entre juego y juego, de un toque y con su porqué. Cuatro juegos cortos.
 Inspirado en lo observable del inicio de Lumosity (capturas en `Proyectos/pantallazos Lomosity/`): jugar pronto, tutorial
 dentro del juego con «Saltar tutorial», tarjeta «Acabas de usar tu {capacidad}» (antes «X puso a prueba tu Y»: igual a la de Lumosity), preguntas intercaladas y barra de avance. Nada
 copiado: nombres, textos, arte y juegos propios.
 
 ## Recorrido
 
-1. **Nubi se presenta**: «Vamos a encontrar tu punto de partida jugando. Son unos 5 minutos.»
+1. **Nubi se presenta**: «Vamos a encontrar tu punto de partida jugando. Son 4 juegos cortos.» (desde el 18-oct, Tarea 132: antes decía «Son unos 5 minutos», una promesa de tiempo)
 2. **¿Cómo te llamo?** (opcional).
 3. **Juego 1 · Memoria**: Secuencia Lumínica renovada (ver «Juegos del inicio»). Tarjeta de entrada con Nubi maestra →
    ronda guiada → rondas que miden → tarjeta «Acabas de usar tu memoria de trabajo» con el primer dato en
@@ -44,7 +44,8 @@ puesta el 3-oct, tarea 21c): con los finales con sentido de los 18 juegos, que t
 - **Jugar en menos de un minuto**: antes del primer juego solo el nombre (opcional). Desde la Tarea 132 (18-oct) la edad se pregunta DESPUÉS de la tarjeta del juego 1, y solo si no se sabe.
 - **Farolas de etapa** arriba en todo el recorrido (Tarea 132, en lugar de la barra de avance): **Empezar · Memoria · Atención · Razonamiento · Lenguaje · Tu punto de partida**, con la farola del kit (la de Hoy, Avance y Ajustes); la primera ya
   está encendida (abrir Nubi es el primer paso) y la actual lleva el aro lima. Debajo, en palabras: «Ya diste el primer paso» y luego «Paso 2 de 6 · Memoria» … «Paso 6 de 6 · Tu punto de partida». **Ya no se dice «faltan unos N minutos»** (una promesa
-  de tiempo que en una persona de 60+ no se cumplía). En los juegos, además, el indicador de 4 pasos (✓ ✓ ● ○).
+  de tiempo que en una persona de 60+ no se cumplía). El indicador de 4 pasos de los juegos (✓ ✓ ● ○) salió el 18-oct (decisión de Ricardo): dos indicadores de avance apilados confunden a los 60+ y las farolas ya dicen en qué juego va (etapas 2 a 5 = juegos 1 a 4;
+  en la evaluación repetida, «Juego 2 de 4 · Atención»). El saludo dice «Son 4 juegos cortos.» en vez de «Son unos 5 minutos.».
 - **Tutorial dentro del juego** (es EL tutorial de cada juego, el mismo que verá quien abra un juego por primera vez):
   - tarjeta de entrada con Nubi maestra y la meta en una frase;
   - ronda guiada: Nubi muestra, una marca indica dónde tocar, si hay error explica la regla y se repite (sin culpa);
