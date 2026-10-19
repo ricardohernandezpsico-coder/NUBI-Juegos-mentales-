@@ -604,7 +604,7 @@ namespace NeuroVida.Games.Bodega
                     {
                         f.Out = true;
                         _lockOutAt = now;
-                        PlayClip(BodegaSounds.Whoosh(), 0.5f);
+                        BodegaSounds.Play(BodegaSfx.Fly);
                     }
                     e = BodegaMotion.EaseOut((k - 0.5f) / 0.5f);
                     var start = L(lk.x, lk.y);

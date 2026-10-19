@@ -318,33 +318,6 @@ namespace NeuroVida.Games.Bodega.Tests
                 Assert.IsFalse(used.Contains(banned));
             Assert.AreEqual(12, BodegaContract.ObjectCount);
         }
-
-        [Test]
-        public void EverySound_IsSynthesized_WithAudibleButNotLoudSamples()
-        {
-            var warm = BodegaSounds.Prewarm();
-            while (warm.MoveNext()) { }
-            var clips = new List<AudioClip>
-            {
-                BodegaSounds.Open(), BodegaSounds.Close(), BodegaSounds.Thud(), BodegaSounds.Hum(), BodegaSounds.Beam(), BodegaSounds.Clank(), BodegaSounds.Whoosh(), BodegaSounds.Arrive(),
-                BodegaSounds.Ratchet(), BodegaSounds.Ping(), BodegaSounds.Perfect(), BodegaSounds.Chime(), BodegaSounds.Finale(), BodegaSounds.Spark(1), BodegaSounds.Spark(8)
-            };
-            for (int h = 0; h < 10; h++) clips.Add(BodegaSounds.Note(h));
-            foreach (var clip in clips)
-            {
-                Assert.IsNotNull(clip);
-                var data = new float[clip.samples];
-                clip.GetData(data, 0);
-                float peak = 0f;
-                foreach (float f in data) peak = Mathf.Max(peak, Mathf.Abs(f));
-                Assert.Greater(peak, 0.03f, clip.name + ": se oye");
-                Assert.LessOrEqual(peak, 0.5001f, clip.name + ": no pasa de 0,5");
-            }
-            Assert.AreNotSame(BodegaSounds.Note(0), BodegaSounds.Note(1), "cada escotilla tiene su nota");
-            Assert.AreNotSame(BodegaSounds.Open(), BodegaSounds.Close(), "abrir (siseo agudo) y cerrar (golpe grave) son dos sonidos");
-            Assert.AreNotSame(BodegaSounds.Thud(), BodegaSounds.Perfect(), "el error y el pedido perfecto no suenan igual");
-            Assert.AreEqual(BodegaMotion.SpinSeconds + 0.1f, BodegaSounds.Ratchet().length, 0.02f, "la matraca dura lo que el giro");
-        }
     }
 
     public class BodegaVisibilityTests

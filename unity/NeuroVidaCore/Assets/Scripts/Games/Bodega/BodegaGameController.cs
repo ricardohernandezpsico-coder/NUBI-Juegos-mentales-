@@ -134,9 +134,10 @@ namespace NeuroVida.Games.Bodega
         /// <summary>El Reto se acabó (solo cuenta con la partida en marcha).</summary>
         private bool Over => Endless && _loopOn && GameClock.Time >= _endsAt;
 
-        /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
+        /// <summary>Hornea los sprites durante la cuenta regresiva, de a poco por cuadro (así nada se traba); las 12 notas, los 5 sonidos propios y el resto de Madera los pide <see cref="BodegaSounds.Request"/> y los calcula <see cref="WoodCore"/> detrás de la cuenta.</summary>
         private IEnumerator Prewarm()
         {
+            BodegaSounds.Request();
             if (!_baked)
             {
                 var sprites = BodegaSprites.Prewarm();
@@ -144,8 +145,6 @@ namespace NeuroVida.Games.Bodega
                 AssignSprites();
                 _baked = true;
             }
-            var sounds = BodegaSounds.Prewarm();
-            while (sounds.MoveNext()) yield return null;
         }
 
         // ------------------------------------------------------------------ un pedido
@@ -186,7 +185,7 @@ namespace NeuroVida.Games.Bodega
             _inputOn = false;
             _card = CardKind.Watch;
             _cardObj_ = -1;
-            PlayClip(BodegaSounds.Hum(), 0.5f);
+            WoodCore.Play(WoodSfx.Hum);
             yield return Motion.Hold(0.5f);
             float slow = BodegaContract.Slow(_senior);
             foreach (int hi in o.StoreOrder)
@@ -199,7 +198,7 @@ namespace NeuroVida.Games.Bodega
                 _cardObj_ = h.Obj_;
                 _cardAt = now;
                 _lockInAt = now;
-                PlayClip(BodegaSounds.Arrive(), 0.6f);
+                BodegaSounds.Play(BodegaSfx.Arrive);
                 LookAtLock();
                 _flyActive = true;
                 _flyObjId = h.Obj_;
@@ -210,21 +209,21 @@ namespace NeuroVida.Games.Bodega
                 // el robot lo toma con su haz y lo lleva por dentro del anillo hasta su escotilla
                 BeamStart(-1);
                 _robot.Sq = BodegaMotion.SquashOnBeam;
-                PlayClip(BodegaSounds.Beam(), 0.6f);
+                BodegaSounds.Play(BodegaSfx.Beam);
                 yield return Motion.Hold(0.33f * slow);
                 h.Target = 1f;
-                PlayClip(BodegaSounds.Open(), 0.6f);
+                BodegaSounds.Play(BodegaSfx.Open);
                 yield return Motion.Hold(0.42f * slow);
                 _flyActive = false;
                 RobotHome();
                 h.ShowAt = GameClock.Time;
-                PlayClip(BodegaSounds.Note(hi), 0.9f);
+                WoodCore.PlayNote(BodegaSounds.NoteHz(hi), WoodVoice.Kalimba);                              // la nota de SU escotilla (información)
                 var p = HatchPos(hi);
                 Emit(L(p.x, p.y), 10, 60f, 0.5f, Gold, 20f);
                 BeamStop();
                 yield return Motion.Hold(0.95f * slow);
                 h.Target = 0f;
-                PlayClip(BodegaSounds.Close(), 0.5f);
+                WoodCore.Play(WoodSfx.Clack, gainDb: -6f);                                                  // cerrar una puerta
                 _card = CardKind.Watch;
                 yield return Motion.Hold(0.2f);
             }
@@ -250,17 +249,17 @@ namespace NeuroVida.Games.Bodega
                 _robot.Tx = A.x; _robot.Ty = A.y; _robot.Ta = A.a;
                 yield return Motion.Hold(0.65f);
                 BeamStart(m.From);
-                PlayClip(BodegaSounds.Beam(), 0.6f);
+                BodegaSounds.Play(BodegaSfx.Beam);
                 _robot.Sq = BodegaMotion.SquashOnBeam;
                 _hv[m.From].GlowAt = GameClock.Time;
                 yield return Motion.Hold(0.22f);
                 _hv[m.From].Obj_ = -1;
                 CrateStart(CrateMode.Pull, m.From, 0.45f);
-                PlayClip(BodegaSounds.Clank(), 0.6f);
+                WoodCore.Play(WoodSfx.Clack);
                 yield return Motion.Hold(0.45f);
                 _crateMode = CrateMode.Carry;
                 BeamStop();
-                PlayClip(BodegaSounds.Whoosh(), 0.6f);
+                BodegaSounds.Play(BodegaSfx.Fly);
                 // el vuelo por el anillo, por el camino más corto; el resorte del robot le da la estela suave
                 float dAng = BodegaMotion.AngleDelta(A.a, B.a);
                 float dur = 1.3f * slow;
@@ -280,13 +279,13 @@ namespace NeuroVida.Games.Bodega
                 _robot.Ta = B.a;
                 yield return Motion.Hold(0.45f);
                 BeamStart(m.To);
-                PlayClip(BodegaSounds.Beam(), 0.6f);
+                BodegaSounds.Play(BodegaSfx.Beam);
                 CrateStart(CrateMode.Push, m.To, 0.42f);
                 yield return Motion.Hold(0.42f);
                 _hv[m.To].Obj_ = m.Obj;
                 _crateMode = CrateMode.None;
                 _hv[m.To].GlowAt = GameClock.Time;
-                PlayClip(BodegaSounds.Clank(), 0.6f);
+                WoodCore.Play(WoodSfx.Clack);
                 BeamStop();
                 yield return Motion.Hold(0.3f);
                 RobotHome();
@@ -305,7 +304,7 @@ namespace NeuroVida.Games.Bodega
             float slow = BodegaContract.Slow(_senior);
             float from = _rot, to = from + o.Spin * 2f * Mathf.PI / (o.Hatches + 1);
             float dur = BodegaMotion.SpinSeconds * slow;
-            PlayClip(BodegaSounds.Ratchet(), 0.6f);
+            BodegaSounds.Play(BodegaSfx.Ratchet);
             float t = 0f;
             while (t < dur)
             {
@@ -351,7 +350,7 @@ namespace NeuroVida.Games.Bodega
             _phase = Phase.Ask;
             _inputOn = true;
             _press = null;
-            PlayClip(BodegaSounds.Ping(), 0.6f);
+            WoodCore.Play(WoodSfx.Notice);
         }
 
         /// <summary>Un toque en una escotilla (cuando se está pidiendo un objeto).</summary>
@@ -381,17 +380,17 @@ namespace NeuroVida.Games.Bodega
                 RecordMiss();
                 h.Target = 1f;
                 h.ShakeAt = h.RevealAt = now;
-                PlayClip(BodegaSounds.Open(), 0.6f);
+                BodegaSounds.Play(BodegaSfx.Open);
                 yield return Motion.Hold(0.16f);
-                PlayClip(BodegaSounds.Thud(), 0.7f);
+                WoodCore.Play(WoodSfx.Wrong);
                 int right = RightHatch(want);
                 yield return Motion.Hold(0.75f);
                 h.Target = 0f;
-                PlayClip(BodegaSounds.Close(), 0.5f);
+                WoodCore.Play(WoodSfx.Clack, gainDb: -6f);
                 yield return Motion.Hold(0.25f);
                 _hv[right].GlowAt = GameClock.Time;
                 _hint = right;
-                PlayClip(BodegaSounds.Ping(), 0.6f);
+                WoodCore.Play(WoodSfx.Notice);
                 yield return Motion.Hold(0.7f);
                 _hint = -1;
                 yield return StartCoroutine(FoundRoutine(right, false));
@@ -404,12 +403,12 @@ namespace NeuroVida.Games.Bodega
             int obj = h.Obj_;
             float now = GameClock.Time;
             h.Target = 1f;
-            PlayClip(BodegaSounds.Open(), 0.6f);
+            BodegaSounds.Play(BodegaSfx.Open);
             yield return Motion.Hold(0.16f);
-            PlayClip(BodegaSounds.Note(i), 0.9f);
+            WoodCore.PlayNote(BodegaSounds.NoteHz(i), WoodVoice.Kalimba);                                   // la nota de la escotilla que abriste (información)
             int ms = Mathf.RoundToInt((GameClock.Time - _t0) * 1000f);
             if (!_guided) RecordFound(first, ms);
-            if (first && !_guided) PlayClip(BodegaSounds.Spark(_tally.Streak), 0.6f);
+            if (first && !_guided) WoodCore.Play(WoodSfx.Spark, Mathf.Clamp(_tally.Streak, 1, 8));          // el destello de la racha junto a la nota: pareja permitida (la nota es la información, el destello la racha)
             int slot = _found.Count;
             _found.Add(new Found { Obj = obj, First = first });
             h.Obj_ = -1;
@@ -418,7 +417,7 @@ namespace NeuroVida.Games.Bodega
             LaunchFlyer(slot, obj, i, first);
             yield return Motion.Hold(0.65f);
             h.Target = 0f;
-            PlayClip(BodegaSounds.Close(), 0.5f);
+            WoodCore.Play(WoodSfx.Clack, gainDb: -6f);
             _askI++;
             yield return Motion.Hold(0.3f);
             _phase = Phase.Idle;
@@ -468,7 +467,7 @@ namespace NeuroVida.Games.Bodega
             _cardPerfect = perfect;
             _cardFirst = _found.FindAll(f => f.First).Count;
             _cardAt = GameClock.Time;
-            if (perfect) PlayClip(BodegaSounds.Perfect(), 0.8f);
+            if (perfect) WoodCore.Play(WoodSfx.Perfect);
             else Tell(BodegaContract.ToastTitle(_errs), BodegaContract.ToastTip(_ordersDone, _errs), true, 2.8f);
             UpdateHud();
             yield return Motion.Hold(perfect ? 2f : 3f);
@@ -549,7 +548,7 @@ namespace NeuroVida.Games.Bodega
             _introLayer.gameObject.SetActive(true);
             LayoutIntro(BodegaContract.IntroText(intro));
             _introAt = GameClock.Time;
-            PlayClip(BodegaSounds.Chime(), 0.7f);
+            WoodCore.Play(WoodSfx.New);
             _inputOn = true;
             _press = null;
             float waitedIntro = 0f;
@@ -685,7 +684,7 @@ namespace NeuroVida.Games.Bodega
                 h.Target = open ? 1f : 0f;
                 if (open) h.ShowAt = now;
             }
-            PlayClip(open ? BodegaSounds.Open() : BodegaSounds.Close(), 0.6f);
+            if (open) BodegaSounds.Play(BodegaSfx.Open); else WoodCore.Play(WoodSfx.Clack, gainDb: -6f);
         }
 
 #if UNITY_EDITOR
@@ -818,11 +817,5 @@ namespace NeuroVida.Games.Bodega
             }
         }
 
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            _audioSource.PlayOneShot(clip, volume);
-        }
     }
 }

@@ -294,21 +294,9 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterBodega()
         {
             const string g = "bodega";
-            Family_("bodega", "Bodega de carga: la nota de cada escotilla (12)", Hz(i => BodegaSounds.NoteHz(i), 12), i => BodegaSounds.Note(i));
-            H("bodega.whoosh", () => BodegaSounds.Whoosh());
-            H("bodega.hum", () => BodegaSounds.Hum());
-            H("bodega.arrive", () => BodegaSounds.Arrive());
-            H("bodega.beam", () => BodegaSounds.Beam());
-            H("bodega.open", () => BodegaSounds.Open());
-            H("bodega.close", () => BodegaSounds.Close());
-            H("bodega.clank", () => BodegaSounds.Clank());
-            H("bodega.ratchet", () => BodegaSounds.Ratchet());
-            H("bodega.ping", () => BodegaSounds.Ping());
-            H("bodega.thud", () => BodegaSounds.Thud());
-            Raw("bodega.spark", () => Scale(LadderSteps, 0.55, i => Trimmed(FromClip(BodegaSounds.Spark(i + 1)), 1.0)));
-            H("bodega.perfect", () => BodegaSounds.Perfect());
-            H("bodega.finale", () => BodegaSounds.Finale());
-            H("bodega.chime", () => BodegaSounds.Chime());
+            Family_("bodega", "Bodega de carga: la nota de cada escotilla (12)", Hz(i => BodegaSounds.NoteHz(i), 12), null);
+            // «hoy» sale CONGELADO del 17-oct: la clase de campanas de Bodega se borró al cablear el juego
+            foreach (var k in new[] { "whoosh", "hum", "arrive", "beam", "open", "close", "clank", "ratchet", "ping", "thud", "spark", "perfect", "finale", "chime" }) Frozen("bodega." + k);
             // los CINCO sonidos propios de Bodega en Madera: las mismas recetas que van al juego (BodegaSounds.MakeRecipe)
             foreach (var (key, recipe, mono) in BodegaSounds.All()) { var r = recipe; Raw(key + ".madera", () => FromRecipe(r)); }
 
