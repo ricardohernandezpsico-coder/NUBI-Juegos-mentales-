@@ -210,6 +210,36 @@ class FirstFlightTest {
   }
 
   @Test
+  fun `con los 4 juegos para despues las pantallas que siguen dicen Paso 6 de 6 y la etapa nunca salta de 4 a 6`() {
+    // «Terminar después» en el juego 1: se saltan los 4 juegos, pero siguen la edad, las metas, el dato, el color, los días, el punto de partida, el aviso y el camino
+    var s = FirstFlight.skipRemainingGames(full(FlightStep.JUEGO_1))
+    val shown = mutableListOf<String>()
+    while (true) {
+      s = FirstFlight.next(s) ?: break
+      shown += FirstFlight.stationText(s)
+      assertEquals("en ${s.step} la etapa actual es «Tu punto de partida»", 5, FirstFlight.stationIndex(s))
+      assertTrue("en ${s.step} el aro va en la última farola", FirstFlight.stations(s).last().current)
+    }
+    assertEquals(listOf(FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO, FlightStep.COLOR, FlightStep.DIAS, FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO).size, shown.size)
+    assertTrue(shown.all { it == "Paso 6 de 6 · Tu punto de partida" })
+    // con el juego 1 medido y los demás para después: Memoria hasta el dato; desde ahí, directo a la última
+    var t = FirstFlight.skipRemainingGames(full(FlightStep.JUEGO_2).copy(measured = mapOf("secuencia" to 0.5f), age = AgeBand.ADULT, goals = setOf(DomainType.MEMORIA)))
+    assertEquals("Paso 2 de 6 · Memoria", FirstFlight.stationText(full(FlightStep.DATO).copy(skipped = t.skipped, measured = t.measured)))
+    for (step in listOf(FlightStep.COLOR, FlightStep.DIAS, FlightStep.PUNTO)) assertEquals("Paso 6 de 6 · Tu punto de partida", FirstFlight.stationText(full(step).copy(skipped = t.skipped, measured = t.measured)))
+    // sin juegos saltados nada cambia: el orden de siempre (Memoria, Atención, Razonamiento, Lenguaje)
+    assertEquals("Paso 3 de 6 · Atención", FirstFlight.stationText(full(FlightStep.COLOR)))
+    // los números de paso que se ven en todo el recorrido nunca bajan
+    var w = FirstFlight.skipRemainingGames(full(FlightStep.JUEGO_3).copy(measured = mapOf("secuencia" to 0.5f, "freno" to 0.5f), age = AgeBand.ADULT))
+    var last = -1
+    while (true) {
+      val n = FirstFlight.stationIndex(w)
+      assertTrue("la etapa bajó en ${w.step}", n >= last)
+      last = n
+      w = FirstFlight.next(w) ?: break
+    }
+  }
+
+  @Test
   fun `el texto dice el paso N de 6 y la etapa`() {
     assertEquals("Ya diste el primer paso", text(FlightStep.HOLA))
     assertEquals("Ya diste el primer paso", text(FlightStep.NOMBRE))

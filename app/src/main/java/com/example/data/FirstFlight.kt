@@ -219,16 +219,23 @@ object FirstFlight {
   private const val LAST_STATION = "Tu punto de partida"
   private const val GAMES_LAST_STATION = "Listo"
 
-  /** En qué etapa del recorrido va [s]: 0 «Empezar» (hola y nombre), 1 a 4 las áreas (su juego, su tarjeta y la pregunta que va con ella) y 5 «Tu punto de partida» (el punto de partida, el aviso y el camino). En la evaluación repetida: 0 a 3 los juegos y 4 «Listo». */
-  fun stationIndex(s: FlightState): Int = if (s.mode == FlightMode.GAMES) {
-    s.step.game ?: 4
-  } else when (s.step) {
-    FlightStep.HOLA, FlightStep.NOMBRE -> 0
-    FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO -> 1
-    FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.COLOR -> 2
-    FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS -> 3
-    FlightStep.JUEGO_4, FlightStep.TARJETA_4 -> 4
-    FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO -> 5
+  /**
+   * En qué etapa del recorrido va [s]: 0 «Empezar» (hola y nombre), 1 a 4 las áreas (su juego, su tarjeta y la pregunta que va con ella) y 5 «Tu punto de partida» (el punto de partida, el aviso y el camino). En la evaluación repetida: 0 a 3 los juegos y 4 «Listo».
+   * **La etapa que se muestra es la primera que aún no se dio** (Tarea 133, a pedido de Opus): una etapa cuyo juego se dejó «para después» ya se pasó, así que se salta. Con los 4 juegos para después, las pantallas que siguen (la edad, las metas, el color, los días…) dicen
+   * «Paso 6 de 6 · Tu punto de partida» y la etapa nunca salta de la 4 a la 6 mientras queda una por dar.
+   */
+  fun stationIndex(s: FlightState): Int {
+    if (s.mode == FlightMode.GAMES) return s.step.game ?: 4
+    var i = when (s.step) {
+      FlightStep.HOLA, FlightStep.NOMBRE -> 0
+      FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO -> 1
+      FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.COLOR -> 2
+      FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS -> 3
+      FlightStep.JUEGO_4, FlightStep.TARJETA_4 -> 4
+      FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO -> 5
+    }
+    while (i in 1..4 && s.gameId(i - 1) in s.skipped) i++      // un juego dejado para después: su etapa ya se pasó
+    return i
   }
 
   /**
