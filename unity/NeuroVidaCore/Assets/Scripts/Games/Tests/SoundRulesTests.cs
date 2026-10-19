@@ -6,6 +6,7 @@ using NeuroVida.Games.Anagramas;
 using NeuroVida.Games.Bodega;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Correo;
+using NeuroVida.Games.Disparate;
 using NeuroVida.Games.Freno;
 using NeuroVida.Games.Intrusa;
 using NeuroVida.Games.Meteoros;
@@ -47,7 +48,7 @@ namespace NeuroVida.Games.Tests
         /// <summary>
         /// Los juegos YA CABLEADOS a <c>WoodCore</c> (carpeta de <c>Games/</c>): rigen las reglas (b), (c) y (d). Paso 0 de las Fases C a E (Tarea 133): ninguno todavía; cada tarea de cableado suma su carpeta aquí (Calculo, Anagramas, Parejas, Bodega, Correo en la Fase C…).
         /// </summary>
-        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo", "Secuencia", "Satelites", "Piloto", "Intrusa", "Stroop", "Meteoros", "Freno" };
+        private static readonly string[] Migrated = { "Calculo", "Anagramas", "Parejas", "Bodega", "Correo", "Secuencia", "Satelites", "Piloto", "Intrusa", "Stroop", "Meteoros", "Freno", "Disparate" };
 
         /// <summary>Los bucles aprobados que se quedan con su propio altavoz (el zumbido de Satélites, el motor de Piloto y el propulsor de Aterrizaje).</summary>
         private static readonly string[] LoopFiles = { "PilotSounds.cs", "SatelliteSounds.cs", "SatelliteGameController.cs", "SatelliteGameController.Build.cs", "SatelliteGameController.Scene.cs", "PilotGameController.cs", "PilotGameController.Scene.cs", "PilotEngine.cs", "LandingGameController.Scene.cs" };
@@ -214,6 +215,7 @@ namespace NeuroVida.Games.Tests
             { "Stroop", ("stroop", StroopSounds.Request) },
             { "Meteoros", ("meteoros", MeteorSounds.Request) },
             { "Freno", ("freno", BrakeSounds.Request) },
+            { "Disparate", ("disparate", DisparateGameController.RequestSounds) },
         };
 
         /// <summary>Lo que el controlador de un juego cableado le pide a la paleta (<c>WoodCore.Play(WoodSfx.X[, n])</c>): (sonido, variante o -1 si el argumento es una expresión que recorre todas), con el archivo y la línea.</summary>

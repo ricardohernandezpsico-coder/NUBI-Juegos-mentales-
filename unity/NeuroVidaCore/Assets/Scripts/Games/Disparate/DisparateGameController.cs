@@ -160,6 +160,7 @@ namespace NeuroVida.Games.Disparate
         {
             _safe.gameObject.SetActive(false);
             _baked = false;
+            RequestSounds();                         // SweepUp y Streak (lo único que no va con el núcleo) se piden ANTES de la cuenta
             StartCoroutine(PrewarmSprites());
             if (TutorialWanted)
             {
@@ -220,12 +221,17 @@ namespace NeuroVida.Games.Disparate
             DisparateSprites.Band();
             DisparateSprites.NoiseTexture();
             yield return null;
-            DisparateSounds.Tune();
-            DisparateSounds.StaticClick();
-            yield return null;
-            DisparateSounds.WaveRing();
-            DisparateSounds.Lost();
             _baked = true;
+        }
+
+        /// <summary>
+        /// Lo que Disparate pide antes de la cuenta regresiva (Fase E, Tarea 139): el juego ya NO tiene sonidos propios, todo es de la paleta: la sintonía <c>SweepUp</c> (−3 dB), «se perdió la señal» <c>Wrong</c>, la transmisión perfecta <c>Streak</c>, el aviso de «gracias» <c>Notice</c>
+        /// y el acierto y el error comunes (<c>GameFeel</c>). Solo <c>SweepUp</c> y <c>Streak</c> no van con el núcleo.
+        /// </summary>
+        public static void RequestSounds()
+        {
+            WoodCore.Request(WoodSfx.SweepUp);
+            WoodCore.Request(WoodSfx.Streak);
         }
 
         // ------------------------------------------------------------------ preparar y mostrar la frase
@@ -305,7 +311,7 @@ namespace NeuroVida.Games.Disparate
             _signalSeconds = spec.SignalSeconds;
             SetSignal(1f);
 
-            PlayClip(DisparateSounds.Tune(), 0.5f);
+            WoodCore.Play(WoodSfx.SweepUp, gainDb: -3f);               // llega la frase: la sintonía (suave)
             float dur = GameFeel.ReduceMotion ? 0.1f : (spec.Burst ? 0.14f : 0.2f);
             StartCoroutine(RibbonSweep(dur));
             float t = 0f;
@@ -514,8 +520,7 @@ namespace NeuroVida.Games.Disparate
             if (_guided && !Allows(Allow.Hold)) return;
             _unclearDone = true;
             if (!_guided) _tally.ReportUnclear(_cur.S.i);                // la frase de la práctica no se anota
-            _toast.Show("Gracias, la revisaremos", "Marcaste esta frase como poco clara", AmberColor, 1.0f, sound: false);       // ya suena su propio «gracias» (Unclear)
-            PlayClip(DisparateSounds.Unclear(), 0.5f);
+            _toast.Show("Gracias, la revisaremos", "Marcaste esta frase como poco clara", AmberColor, 1.0f);                       // suena el Notice del propio aviso (antes un «gracias» propio)
             GameFeel.Haptic(GameFeel.HapticKind.Double);
             StartCoroutine(UiFx.RingBurst(_fxRect, new Vector2(0f, _plateY), AmberColor, 200f, 700f, 0.45f));
         }
@@ -581,8 +586,7 @@ namespace NeuroVida.Games.Disparate
             _streak++;
             int pts = DisparateContract.Points(_dda.PresentedLevel, _streak, spec.Burst);
             _points += pts;
-            GameFeel.Correct(_streak);
-            PlayClip(DisparateSounds.WaveRing(), 0.45f);
+            GameFeel.Correct(_streak);                                  // queda SOLO el acierto común (la onda de la antena, que sonaba encima, se quitó)
             _hud.SetStreak(_streak);
             SetMeter(Mathf.Min(5, _streak), true);
             _plateGlow.color = new Color(GoodColor.r, GoodColor.g, GoodColor.b, 0.5f);
@@ -616,8 +620,7 @@ namespace NeuroVida.Games.Disparate
         private IEnumerator WrongFeedback(SentenceSpec spec)
         {
             BreakStreak();
-            GameFeel.Wrong();
-            PlayClip(DisparateSounds.StaticClick(), 0.45f);
+            GameFeel.Wrong();                                           // queda SOLO el error común (la estática, que sonaba encima, se quitó)
             _plateGlow.color = new Color(BadColor.r, BadColor.g, BadColor.b, 0.5f);
             _mark.sprite = AnswerMarkSprite.Cross();
             _mark.gameObject.SetActive(true);
@@ -663,8 +666,8 @@ namespace NeuroVida.Games.Disparate
         private IEnumerator LostFeedback(SentenceSpec spec)
         {
             BreakStreak();
-            PlayClip(DisparateSounds.Lost(), 0.5f);
-            _toast.Show("Se perdió la señal", "Sigue la próxima frase", AmberColor, 0.9f, sound: false);                         // ya suena su propio «se perdió la señal» (Lost)
+            WoodCore.Play(WoodSfx.Wrong);                               // se perdió la señal
+            _toast.Show("Se perdió la señal", "Sigue la próxima frase", AmberColor, 0.9f, sound: false);                         // ya suena el Wrong: el aviso va mudo
             // la frase se disuelve en estática (sin castigo extra)
             BuildDecode(spec.S.f);
             float dur = GameFeel.ReduceMotion ? 0.15f : 0.45f;
@@ -788,9 +791,8 @@ namespace NeuroVida.Games.Disparate
         private IEnumerator PerfectTransmission()
         {
             // 10 seguidas: la antena se enciende (× 1,5) y una aurora suave cruza el cielo
-            _toast.Show("¡Transmisión perfecta!", "Antena encendida: puntos × 1,5", AmberColor, 1.4f, sound: false);       // ya suenan «subir de nivel» y su propia aurora (Aurora)
-            GameFeel.LevelUp();
-            PlayClip(DisparateSounds.Aurora(), 0.55f);
+            _toast.Show("¡Transmisión perfecta!", "Antena encendida: puntos × 1,5", AmberColor, 1.4f, sound: false);       // ya suena su Streak: el aviso va mudo
+            WoodCore.Play(WoodSfx.Streak);                              // un hito de racha (× 1,5), no un nivel: solo el Streak (se quitó el LevelUp que sonaba encima)
             if (GameFeel.ReduceMotion) yield break;
             float t = 0f;
             const float seconds = 4f;
@@ -905,12 +907,6 @@ namespace NeuroVida.Games.Disparate
             _sigFillRect.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
             _sigFillRect.offsetMin = _sigFillRect.offsetMax = Vector2.zero;
             _sigFill.color = fraction > 0.25f ? Color.Lerp(AmberColor, NeuroStyle.Sky, Mathf.Clamp01((fraction - 0.25f) / 0.5f)) : Color.Lerp(BadColor, AmberColor, fraction / 0.25f);
-        }
-
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            _audioSource.PlayOneShot(clip, volume);
         }
 
         private void UpdateClock()

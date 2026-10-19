@@ -645,19 +645,19 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterDisparate()
         {
             const string g = "disparate";
-            H("disparate.tune", () => DisparateSounds.Tune());
-            H("disparate.static", () => DisparateSounds.StaticClick());
-            H("disparate.lost", () => DisparateSounds.Lost());
-            H("disparate.wave", () => DisparateSounds.WaveRing());
-            H("disparate.aurora", () => DisparateSounds.Aurora());
-            H("disparate.unclear", () => DisparateSounds.Unclear());
-            E(g, "sintonia", "Llega la frase: sintonía", "Barrido de ruido que sube y se aclara, 0,3 s", "DisparateGameController.cs:310 (vol 0,5)", "disparate.tune", 0.5f, Wk(WoodSfx.SweepUp), "SweepUp");
-            E(g, "acierto", "Acierto: onda que sale de la antena (junto al acierto común)", "Soplo que sube y campanita, 0,45 s", "DisparateGameController.cs:587 (vol 0,45)", "disparate.wave", 0.45f, null, "propio: se suma al Acierto común; en la Fase C queda solo el Acierto");
-            E(g, "error", "Error: chasquido de estática (junto al error común)", "Chasquido y golpe grave suave, 0,22 s", "DisparateGameController.cs:622 (vol 0,45)", "disparate.static", 0.45f, null, "propio: se suma al Error común; en la Fase C queda solo el Error");
-            E(g, "perdida", "Se perdió la señal", "Ruido que se apaga y nota grave, 0,7 s", "DisparateGameController.cs:668 (vol 0,5)", "disparate.lost", 0.5f, Wk(WoodSfx.Wrong), "Wrong");
-            E(g, "aurora", "Transmisión perfecta (10 seguidas)", "Cascada de campanas altas, 1,8 s", "DisparateGameController.cs:795 (vol 0,55)", "disparate.aurora", 0.55f, Wk(WoodSfx.Streak), "Streak");
-            E(g, "aviso", "Gracias por avisar (frase poco clara)", "Dos marimbas suaves que suben", "DisparateGameController.cs:520 (vol 0,5)", "disparate.unclear", 0.5f, Wk(WoodSfx.Notice), "Notice");
-            E(g, "comun", "Acierto, error, subir de nivel, tic y fin", "Comunes (GameFeel); no tiene Finale propio", "DisparateGameController.cs:586, :621, :292/:794, :927", "gamefeel.wrong", 0.5f, Wk(WoodSfx.Wrong), "Wrong (ver «Lo común»)");
+            // «hoy» sale CONGELADO del 17-oct (Tarea 139): DisparateSounds.cs se borró (el juego ya no tiene sonidos propios)
+            foreach (var k in new[] { "tune", "static", "lost", "wave", "aurora", "unclear" }) Frozen("disparate." + k);
+            E(g, "sintonia", "Llega la frase: sintonía", "Barrido de ruido que sube y se aclara, 0,3 s", "DisparateGameController.cs: la frase que llega (SweepUp, gainDb −3)", "disparate.tune", 0.5f, Wk(WoodSfx.SweepUp), "SweepUp, gainDb −3").WoodGain = Atten(-3.0);
+            var acierto = E(g, "acierto", "Acierto: onda que sale de la antena (junto al acierto común)", "Soplo que sube y campanita, 0,45 s", "DisparateGameController.cs: el acierto", "disparate.wave", 0.45f, null, "QUITADA: queda solo el acierto común", "", "DECIDIDO (Ricardo): se quita. Sonaba JUNTO con el acierto común (dos sonidos por una respuesta); queda solo el Correct de la paleta, que sube con la racha.");
+            acierto.NoWood = "QUITADA: silencio (ya suena el acierto de la paleta, que sube con la racha).";
+            var error = E(g, "error", "Error: chasquido de estática (junto al error común)", "Chasquido y golpe grave suave, 0,22 s", "DisparateGameController.cs: el error", "disparate.static", 0.45f, null, "QUITADA: queda solo el error común", "", "DECIDIDO (Ricardo): se quita (dos sonidos por una respuesta); queda solo el Wrong de la paleta.");
+            error.NoWood = "QUITADA: silencio (ya suena el error de la paleta).";
+            E(g, "perdida", "Se perdió la señal", "Ruido que se apaga y nota grave, 0,7 s", "DisparateGameController.cs: LostFeedback (el aviso sigue mudo)", "disparate.lost", 0.5f, Wk(WoodSfx.Wrong), "Wrong");
+            E(g, "aurora", "Transmisión perfecta (10 seguidas)", "Cascada de campanas altas, 1,8 s (y «subir de nivel» encima)", "DisparateGameController.cs: PerfectTransmission (el aviso sigue mudo)", "disparate.aurora", 0.55f, Wk(WoodSfx.Streak), "Streak solo", "",
+                "DECIDIDO (Ricardo): es un hito de racha (× 1,5), no un nivel: suena solo el Streak; se quitó el LevelUp que sonaba encima (hoy sonaban dos hitos juntos).");
+            E(g, "aviso", "Gracias por avisar (frase poco clara)", "Dos marimbas suaves que suben", "DisparateGameController.cs: el aviso de «frase poco clara»", "disparate.unclear", 0.5f, Wk(WoodSfx.Notice), "Notice del propio aviso", "",
+                "DECIDIDO (Ricardo): vuelve al Notice del aviso (se borró el «gracias» propio y el aviso ya no va mudo).");
+            E(g, "comun", "Acierto, error, subir de nivel, tic y fin", "Comunes (GameFeel); no tiene Finale propio", "DisparateGameController.cs: GameFeel.Correct, Wrong, LevelUp («¡Ráfaga!») y Tick", "gamefeel.wrong", 0.5f, Wk(WoodSfx.Wrong), "Wrong (ver «Lo común»)");
         }
 
         // ------------------------------------------------------------------ La estrella intrusa
