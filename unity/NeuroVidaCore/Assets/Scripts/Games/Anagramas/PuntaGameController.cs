@@ -258,6 +258,7 @@ namespace NeuroVida.Games.Anagramas
 
         private IEnumerator GameLoop()
         {
+            PuntaSounds.Request();                          // las 10 notas de las casillas y los sonidos de Madera que no van con el núcleo, antes de la cuenta regresiva (el cómputo corre detrás, de a poco)
             StartCoroutine(Prewarm());
             if (TutorialWanted)
             {
@@ -300,24 +301,13 @@ namespace NeuroVida.Games.Anagramas
             return _resolved >= PuntaContract.PrecisionWords;
         }
 
-        /// <summary>Sintetiza los sonidos y hornea los sprites durante la cuenta regresiva (así la primera palabra no traba).</summary>
+        /// <summary>Hornea los sprites durante la cuenta regresiva (así la primera palabra no traba); los sonidos los calcula <see cref="WoodCore"/> detrás de la cuenta.</summary>
         private IEnumerator Prewarm()
         {
             DiscSprite.Get();
             RingSprite.Get();
             RadialGlowSprite.Get();
             yield return null;
-            for (int k = 0; k < 6; k++) PuntaSounds.Note(k);
-            PuntaSounds.Appear();
-            PuntaSounds.Help();
-            yield return null;
-            for (int k = 6; k < PuntaSounds.Penta.Length; k++) PuntaSounds.Note(k);
-            PuntaSounds.Back();
-            PuntaSounds.Thud();
-            yield return null;
-            PuntaSounds.Chord();
-            PuntaSounds.Chime();
-            PuntaSounds.Finale();
         }
 
         // ------------------------------------------------------------------ una palabra
@@ -460,7 +450,7 @@ namespace NeuroVida.Games.Anagramas
                 if (f != null) { f.Pos = PuntaLayout.SlotPos(_m, 0, _word.Tiles.Length); f.Born = now; PlaceTile(f, 0, true); if (Motion.Decorative) { f.FlyFrom = CardEdge(); f.FlyAt = now; } }
             }
             SetButtonsFor(Phase.Build, true);
-            PlayClip(PuntaSounds.Appear(), 0.6f);
+            WoodCore.Play(WoodSfx.SweepUp);
         }
 
         /// <summary>De dónde nacen las fichas y viaja la que revela una ayuda: el borde de abajo de la tarjeta de la definición (lógico).</summary>
@@ -505,13 +495,13 @@ namespace NeuroVida.Games.Anagramas
                 if (t.Locked) { StartCoroutine(PopRect(t.Root, 1.12f, 0.18f)); return; }
                 Unplace(t);
                 _validateAt = 0f;
-                PlayClip(PuntaSounds.Back(), 0.5f);
+                WoodCore.Play(WoodSfx.Unselect);
                 return;
             }
             int k = FirstEmptySlot();
             if (k < 0) return;
             PlaceTile(t, k);
-            PlayClip(PuntaSounds.Note(Mathf.Min(PuntaSounds.Penta.Length - 1, k)), 0.8f);
+            WoodCore.PlayNote(PuntaSounds.Penta[Mathf.Min(PuntaSounds.Penta.Length - 1, k)], WoodVoice.Kalimba);       // la nota de la casilla: el orden en que se arma la palabra es información
             if (AllFilled()) _validateAt = GameClock.Time + 0.26f;
         }
 
@@ -520,7 +510,7 @@ namespace NeuroVida.Games.Anagramas
             bool any = false;
             foreach (var t in _tiles) if (t.Slot >= 0 && !t.Locked) { Unplace(t); any = true; }
             _validateAt = 0f;
-            if (any && sound) PlayClip(PuntaSounds.Back(), 0.5f);
+            if (any && sound) WoodCore.Play(WoodSfx.Unselect);
         }
 
         private string FormedTiles()
@@ -540,7 +530,7 @@ namespace NeuroVida.Games.Anagramas
                 yield break;
             }
             _tries++;
-            PlayClip(PuntaSounds.Thud(), 0.8f);
+            WoodCore.Play(WoodSfx.Wrong);
             GameFeel.Haptic(GameFeel.HapticKind.Light);
             _shakeAt = GameClock.Time;
             if (_tries >= 2)
@@ -588,7 +578,7 @@ namespace NeuroVida.Games.Anagramas
             if (_helps >= PuntaContract.HelpSteps) return;
             _helps++;
             _helpAt = GameClock.Time;
-            PlayClip(PuntaSounds.Help(), 0.7f);
+            WoodCore.Play(WoodSfx.Hint);
             int n = _word.Tiles.Length;
             if (_helps == 1)
             {
@@ -681,14 +671,14 @@ namespace NeuroVida.Games.Anagramas
             t.Lit = true;
             t.LitColor = color;
             RefreshTileLook(t);
-            PlayClip(PuntaSounds.Note(Mathf.Min(PuntaSounds.Penta.Length - 1, k + 1)), 0.8f);
+            WoodCore.PlayNote(PuntaSounds.Penta[Mathf.Min(PuntaSounds.Penta.Length - 1, k + 1)], WoodVoice.Kalimba);   // la cascada: cada letra con la nota siguiente (el retardo k · 0,09 s no se toca)
             Emit(t.Pos, 8, 70f, 0.6f, color, 10f);
         }
 
         private IEnumerator ChordAfter(float delay)
         {
             if (delay > 0f) yield return Motion.Hold(delay);
-            PlayClip(PuntaSounds.Chord(), 0.8f);
+            WoodCore.Play(WoodSfx.Perfect);
         }
 
         private IEnumerator FadeOutWord()
@@ -1433,7 +1423,7 @@ namespace NeuroVida.Games.Anagramas
             if (!Motion.Decorative)
             {
                 FillLucero(skyIndex, tier);
-                PlayClip(PuntaSounds.Chime(), 0.5f);
+                WoodCore.Play(WoodSfx.New, gainDb: -3f);
                 return;
             }
             Flyer f = _flyers.Find(x => !x.Alive);
@@ -1463,7 +1453,7 @@ namespace NeuroVida.Games.Anagramas
                     f.Alive = false;
                     f.Root.gameObject.SetActive(false);
                     FillLucero(f.Index, f.Tier);
-                    PlayClip(PuntaSounds.Chime(), 0.5f);
+                    WoodCore.Play(WoodSfx.New, gainDb: -3f);
                     Emit(to, 14, 80f, 0.7f, TierColor(f.Tier), 0f);
                     continue;
                 }
@@ -1509,12 +1499,6 @@ namespace NeuroVida.Games.Anagramas
                 p.Img.rectTransform.sizeDelta = Vector2.one * (p.Size * 2f * _s);
                 p.Img.color = NeuroStyle.WithAlpha(p.Color, 1f - k);
             }
-        }
-
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            _audioSource.PlayOneShot(clip, volume);
         }
 
         // ------------------------------------------------------------------ construcción de UI

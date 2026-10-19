@@ -179,10 +179,24 @@ namespace NeuroVida.Bridge.EditorTools
 
         private static string _frozenText;
 
+        private static string FrozenText() => _frozenText ?? (_frozenText = File.ReadAllText(Path.Combine(RepoRoot(), "tools", "sonido", "catalogo-hoy-17-oct.json")));
+
+        /// <summary>Las medidas de la nota <paramref name="i"/> de la familia <paramref name="famId"/> con el sonido de HOY (afinación, caída, inicio y duración), del catálogo congelado del 17-oct.</summary>
+        private static double[] FrozenHoyNote(string famId, int i)
+        {
+            string t = FrozenText(); int fams = t.IndexOf("\"families\":[", StringComparison.Ordinal);
+            int at = fams < 0 ? -1 : t.IndexOf("{\"id\":\"" + famId + "\"", fams, StringComparison.Ordinal);
+            if (at < 0) throw new InvalidOperationException("la familia «" + famId + "» no está en el catálogo congelado del 17-oct");
+            var ms = System.Text.RegularExpressions.Regex.Matches(t.Substring(at), "\"hoyF0\":(null|-?[0-9.]+),\"hoyT20\":(null|-?[0-9.]+),\"hoyOnset\":(null|-?[0-9.]+),\"hoyDur\":(null|-?[0-9.]+)");
+            if (i >= ms.Count) throw new InvalidOperationException("la nota " + i + " de «" + famId + "» no está en el catálogo congelado");
+            var r = new double[4];
+            for (int k = 0; k < 4; k++) r[k] = ms[i].Groups[k + 1].Value == "null" ? double.NaN : double.Parse(ms[i].Groups[k + 1].Value, CultureInfo.InvariantCulture);
+            return r;
+        }
+
         private static Clip FrozenClip(string key)
         {
-            if (_frozenText == null) _frozenText = File.ReadAllText(Path.Combine(RepoRoot(), "tools", "sonido", "catalogo-hoy-17-oct.json"));
-            var m = System.Text.RegularExpressions.Regex.Match(_frozenText, "\"" + System.Text.RegularExpressions.Regex.Escape(key) + "\":\\{([^}]*)\\}");
+            var m = System.Text.RegularExpressions.Regex.Match(FrozenText(), "\"" + System.Text.RegularExpressions.Regex.Escape(key) + "\":\\{([^}]*)\\}");
             if (!m.Success) throw new InvalidOperationException("«" + key + "» no está en el catálogo congelado del 17-oct (tools/sonido/catalogo-hoy-17-oct.json)");
             string body = m.Groups[1].Value;
             double Num(string name)
@@ -414,8 +428,9 @@ namespace NeuroVida.Bridge.EditorTools
                 for (int i = 0; i < fam.Hz.Length; i++)
                 {
                     double hz = fam.Hz[i];
-                    var hoy = fam.Hoy(i);
-                    Measure(hoy);
+                    var hoy = fam.Hoy == null ? null : fam.Hoy(i);
+                    double[] fz = hoy == null ? FrozenHoyNote(fam.Id, i) : null;                // F0, T20, inicio y duración de «hoy»: medidos, o del catálogo congelado
+                    if (hoy != null) Measure(hoy);
                     int window = cues ? 100 : 300;                                           // las señales duran 0,1 s: se mide su altura en ese tramo
                     Clip kal = null, mar;
                     if (cues) mar = FromRecipe(WoodSounds.MakeCue(hz, 0.1));
@@ -423,7 +438,7 @@ namespace NeuroVida.Bridge.EditorTools
                     Measure(mar);
                     if (kal != null) Measure(kal);
                     sb.Append("{\"hz\":").Append(N(hz))
-                      .Append(",\"hoyF0\":").Append(N(SoundMeter.PitchClarity(hoy.L, hoy.R, hz, 2, window))).Append(",\"hoyT20\":").Append(N(hoy.T20Ms)).Append(",\"hoyOnset\":").Append(N(hoy.OnsetMs)).Append(",\"hoyDur\":").Append(N(hoy.DurMs))
+                      .Append(",\"hoyF0\":").Append(N(hoy != null ? SoundMeter.PitchClarity(hoy.L, hoy.R, hz, 2, window) : fz[0])).Append(",\"hoyT20\":").Append(N(hoy != null ? hoy.T20Ms : fz[1])).Append(",\"hoyOnset\":").Append(N(hoy != null ? hoy.OnsetMs : fz[2])).Append(",\"hoyDur\":").Append(N(hoy != null ? hoy.DurMs : fz[3]))
                       .Append(",\"marF0\":").Append(N(SoundMeter.PitchClarity(mar.L, mar.R, hz, 2, window))).Append(",\"marT20\":").Append(N(mar.T20Ms)).Append(",\"marOnset\":").Append(N(mar.OnsetMs)).Append(",\"marDur\":").Append(N(mar.DurMs));
                     if (kal != null) sb.Append(",\"kalF0\":").Append(N(SoundMeter.PitchClarity(kal.L, kal.R, hz, 2, window))).Append(",\"kalT20\":").Append(N(kal.T20Ms)).Append(",\"kalOnset\":").Append(N(kal.OnsetMs)).Append(",\"kalDur\":").Append(N(kal.DurMs));
                     sb.Append('}').Append(i + 1 < fam.Hz.Length ? "," : "");

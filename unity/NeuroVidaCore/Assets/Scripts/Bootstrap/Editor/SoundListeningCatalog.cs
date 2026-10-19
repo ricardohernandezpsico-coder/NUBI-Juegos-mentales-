@@ -131,13 +131,14 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Lo común de HOY (antes de la Fase B): las recetas congeladas de <c>GameFeel</c> (ver <see cref="GameFeelLegacy"/>); desde la Fase B el juego suena la paleta.</summary>
         private static float[] GameFeelPentatonic() => GameFeelLegacy.Pentatonic;
 
-        /// <summary>Una familia de notas con información: la escala de hoy, la de Madera con kalimba y la de Madera con marimba (las mismas alturas, en el mismo orden y espaciado).</summary>
+        /// <summary>Una familia de notas con información: la escala de hoy, la de Madera con kalimba y la de Madera con marimba (las mismas alturas, en el mismo orden y espaciado). Con <paramref name="hoy"/> = null (los juegos ya cableados) la escala de hoy sale congelada del 17-oct.</summary>
         private static void Family_(string id, string title, double[] hz, Func<int, AudioClip> hoy, double spacing = 0.42)
         {
-            var fam = new Family { Id = id, Title = title, Hz = hz, Hoy = i => FromClip(hoy(i)) };
+            var fam = new Family { Id = id, Title = title, Hz = hz, Hoy = hoy == null ? null : (Func<int, Clip>)(i => FromClip(hoy(i))) };
             Families.Add(fam);
             int n = Math.Min(hz.Length, ScaleNotes);
-            Raw("fam." + id + ".hoy", () => Scale(n, ScaleSpacing, i => Trimmed(fam.Hoy(i), NoteSeconds)));
+            if (hoy == null) Frozen("fam." + id + ".hoy");              // el juego ya suena Madera y su clase de campanas se borró: «hoy» sale CONGELADO del 17-oct (el archivo y las medidas de cada nota)
+            else Raw("fam." + id + ".hoy", () => Scale(n, ScaleSpacing, i => Trimmed(fam.Hoy(i), NoteSeconds)));
             // la escala de Madera depende solo de las alturas: las familias con las mismas notas comparten el archivo
             string sig = "";
             for (int i = 0; i < n; i++) sig += (i > 0 ? "-" : "") + Math.Round(hz[i]);
@@ -610,7 +611,7 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterPunta()
         {
             const string g = "anagramas";
-            Family_("punta", "En la punta de la lengua: la nota de cada casilla (10)", Hz(i => PuntaSounds.Penta[i], 10), i => PuntaSounds.Note(i), 0.4);
+            Family_("punta", "En la punta de la lengua: la nota de cada casilla (10)", Hz(i => PuntaSounds.Penta[i], 10), null, 0.4);
             Frozen("punta.appear");
             Frozen("punta.back");
             Frozen("punta.thud");
@@ -619,7 +620,7 @@ namespace NeuroVida.Bridge.EditorTools
             Frozen("punta.chime");
             Frozen("punta.finale");
             // la cascada del final: la palabra salió y cada letra se enciende con la nota siguiente, cada 0,09 s (hoy y Madera, con la caída de siempre y con una caída más corta por si se oye espesa)
-            Raw("punta.cascada.hoy", () => Scale(7, 0.09, i => FromClip(PuntaSounds.Note(i + 1))));
+            Frozen("punta.cascada.hoy");
             Raw("punta.cascada.madera", () => Scale(7, 0.09, i => FromRecipe(WoodSounds.MakeNote(PuntaSounds.Penta[i + 1], WoodVoice.Kalimba))));
             Raw("punta.cascada.madera.tau02", () => Scale(7, 0.09, i => FromRecipe(WoodSounds.MakeNote(PuntaSounds.Penta[i + 1], WoodVoice.Kalimba, 0.2))));
             FamilyEvent(g, "notas", "Cada ficha que se coloca suena la nota de su casilla", "Campana de la pentatónica (τ 0,22 s, 1,2 s)", "PuntaGameController.cs:514 (vol 0,8)", "punta", 0.8f, "PlayNote(Penta[k], Kalimba): 10 notas, do5 a la6",
