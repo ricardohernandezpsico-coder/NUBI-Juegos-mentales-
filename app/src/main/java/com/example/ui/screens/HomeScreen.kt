@@ -51,8 +51,14 @@ import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.SlabSize
 import com.example.ui.components.OnBoardText
+import com.example.ui.components.PieceFx
 import com.example.ui.components.RouteFx
 import com.example.ui.components.RouteMotion
+import com.example.data.IslaPieza
+import com.example.data.IslaPiezas
+import com.example.data.IslaPiezasStore
+import com.example.data.PiezasPlan
+import com.example.data.PrefsIslaPiezasStore
 import com.example.data.PrefsRouteCelebrationStore
 import com.example.data.RouteCelebrationStore
 import com.example.data.RouteLamps
@@ -154,6 +160,9 @@ fun HomeScreen(
   val baseline by viewModel.baseline.collectAsState()
   val measures by viewModel.starMeasures.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
+  val unlocks by viewModel.achievementUnlocks.collectAsState()
+  val achievementQueue by viewModel.achievementQueue.collectAsState()
+  val debugPieces by viewModel.debugIslaPieces.collectAsState()
   // Reloj de la semana de cada área: cada 30 s.
   var clock by remember { mutableStateOf(System.currentTimeMillis()) }
   LaunchedEffect(Unit) {
@@ -205,10 +214,12 @@ fun HomeScreen(
     pausedTitle = pausedGameId?.let { GameRegistry.getById(it) }?.let { getGameTitle(it.id, lang, it.title) },
     flightDay = dailySession.gameIds.isNotEmpty() && completed >= dailySession.gameIds.size && dailySession.scores.isEmpty(),
     hasBaseline = baseline != null,
-    places = places
+    places = places,
+    islandPieces = debugPieces ?: IslaPiezas.earned(unlocks.keys)          // «Tu isla crece»: todo se deriva de las medallas (solo el botón [Debug] de Ajustes lo cambia)
   )
   val appContext = androidx.compose.ui.platform.LocalContext.current
   val routeStore = remember { PrefsRouteCelebrationStore(appContext) }
+  val pieceStore = remember { PrefsIslaPiezasStore(appContext) }
   HomeContent(
     ui = ui,
     onProfile = { viewModel.openTopPanel(TopPanel.PERFIL) },
@@ -220,7 +231,9 @@ fun HomeScreen(
     onResume = { viewModel.resumePausedGame() },
     onBaseline = { viewModel.startBaseline() },
     modifier = modifier,
-    routeStore = routeStore
+    routeStore = routeStore,
+    pieceStore = pieceStore,
+    holdPieces = achievementQueue.isNotEmpty()          // la celebración de la medalla está encima: la pieza nueva espera a que se cierre para entrar
   )
 
   // La ficha del juego que se tocó (una piedrita de «Tu ruta de hoy» o una fila de la lámina de un lugar): la misma de Juegos (avance, marca, constancia, cómo jugar y Jugar). Al volver de la partida se queda en Hoy.
@@ -258,7 +271,9 @@ internal data class HomeUi(
   val flightDay: Boolean,
   val hasBaseline: Boolean,
   /** La lámina de cada lugar (por área: `MEMORIA`…) que se abre al tocar su edificio. */
-  val places: Map<String, com.example.data.PlaceSheetUi> = emptyMap()
+  val places: Map<String, com.example.data.PlaceSheetUi> = emptyMap(),
+  /** Las piezas de la isla que dan las medallas ganadas («Tu isla crece»; `data/IslaPiezas.kt`), en el orden de dibujo. */
+  val islandPieces: List<IslaPieza> = emptyList()
 ) {
   val completed: Int get() = stops.count { it.state == StopState.DONE }
 }
@@ -294,7 +309,7 @@ internal fun dateText(now: Long): String =
  * (algo hecho) o «Tu isla: ruta completa, hechos …». Las farolas y su animación son decorativas: lo que importa para el lector es esto.
  */
 internal fun islandDescription(ui: HomeUi): String =
-  RouteLamps.description(ui.stops.mapNotNull { s -> IslaLugar.withArticle(s.area)?.let { it to (s.state == StopState.DONE) } })
+  RouteLamps.description(ui.stops.mapNotNull { s -> IslaLugar.withArticle(s.area)?.let { it to (s.state == StopState.DONE) } }) + IslaPiezas.description(ui.islandPieces)
 
 /**
  * El contenido de Hoy sin ViewModel (Tarea 84, distribución «A» aprobada por Ricardo el 12-oct): saludo con tu perfil y opciones, la fecha con la meta de la semana, los siete farolitos con tu racha, LA ISLA (la protagonista: toma todo lo que sobra),
@@ -321,7 +336,13 @@ internal fun HomeContent(
   /** Dónde se guarda lo celebrado hoy (las farolas que ya pulsaron y la ruta completa). Con null (pruebas de dibujo) no hay celebración: las farolas de las paradas hechas están encendidas y quietas. */
   routeStore: RouteCelebrationStore? = null,
   /** Avisa qué se va a animar (pruebas): se llama una vez por plan no vacío, justo antes de animar. */
-  onRoutePlan: (RoutePlan) -> Unit = {}
+  onRoutePlan: (RoutePlan) -> Unit = {},
+  /** Dónde se guardan las piezas de la isla que Hoy ya mostró (pasajero). Con null (pruebas de dibujo) no hay revelación: las piezas están puestas. */
+  pieceStore: IslaPiezasStore? = null,
+  /** Hay una celebración de medalla encima de Hoy: las piezas nuevas esperan (sin aparecer) hasta que se cierre. */
+  holdPieces: Boolean = false,
+  /** Avisa qué piezas se van a revelar (pruebas): se llama una vez por plan no vacío, justo antes de animar. */
+  onPiecePlan: (List<IslaPieza>) -> Unit = {}
 ) {
   val scope = rememberCoroutineScope()
   val reduceMotion = rememberReduceMotion()
@@ -340,6 +361,22 @@ internal fun HomeContent(
       onRoutePlan(routeFx.plan)
       if (routeFx.plan.complete) confirm()
       routeFx.run()
+    }
+  }
+  // Las piezas de la isla («Tu isla crece»): la primera vez con esta versión (o en un teléfono nuevo) lo que ya se tiene se siembra en silencio; una pieza nueva entra UNA vez (de a una, sin sonido ni vibración: ya los dio la celebración de la medalla)
+  // y se anota al empezar. Con «quitar animaciones» nace puesta y se anota igual (sin segunda vez).
+  val pieceFx = remember(ui.islandPieces, pieceStore, reduceMotion) {
+    PieceFx(plan = if (pieceStore == null) PiezasPlan.NONE else IslaPiezas.plan(ui.islandPieces, pieceStore.load()), reduceMotion = reduceMotion)
+  }
+  LaunchedEffect(pieceFx, holdPieces) {
+    if (pieceStore != null && !holdPieces) {
+      val seen = pieceStore.load()
+      val next = IslaPiezas.consume(ui.islandPieces, seen)
+      if (next != seen) pieceStore.save(next)
+      if (!pieceFx.plan.isEmpty) {
+        onPiecePlan(pieceFx.plan.reveal)
+        pieceFx.run()
+      }
     }
   }
   var rootOffset by remember { mutableStateOf(Offset.Zero) }
@@ -397,6 +434,8 @@ internal fun HomeContent(
             sparks = { routeFx.sparks.value },
             nubiLiftDp = { RouteMotion.jumpLiftDp(routeFx.jump.value) },
             nubiTiltDeg = { RouteMotion.jumpTiltDeg(routeFx.jump.value) },
+            pieces = ui.islandPieces,
+            pieceReveal = { pieceFx.progress(it) },
             nubiAlpha = { if (fx.flight.value > 0f) 0f else 1f },
             shadowAlpha = { fx.shadow.value },
             glowKey = fx.key,

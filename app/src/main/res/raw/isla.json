@@ -298,5 +298,85 @@
    "color": "#FFC86A"
   },
   "nota": "farola de una parada HECHA hoy: disco sol en el tope, halo de 2x el de las apagadas (alfa 0,8) y un leve resplandor en la losa a su pie (`pie_dy` = alto del poste, normalizado al alto del recorte); las apagadas quedan con `halos_farolas`"
+ },
+ "decoraciones": {
+  "c1": {
+   "ancla": [
+    0.284,
+    0.6648
+   ],
+   "capa": "suelo"
+  },
+  "c2": {
+   "ancla": [
+    0.264,
+    0.6348
+   ],
+   "capa": "suelo"
+  },
+  "c3": {
+   "ancla": [
+    0.7053,
+    0.6637
+   ],
+   "capa": "suelo"
+  },
+  "c4": {
+   "ancla": [
+    0.7097,
+    0.5693
+   ],
+   "capa": "suelo"
+  },
+  "v1": {
+   "ancla": [
+    0.5554,
+    0.3071
+   ],
+   "capa": "aire"
+  },
+  "v2": {
+   "ancla": [
+    0.2703,
+    0.3157
+   ],
+   "capa": "aire"
+  },
+  "v3": {
+   "ancla": [
+    0.4541,
+    0.3856
+   ],
+   "capa": "aire"
+  },
+  "vo1": {
+   "ancla": [
+    0.7742,
+    0.648
+   ],
+   "capa": "suelo"
+  },
+  "vo2": {
+   "ancla": [
+    0.7613,
+    0.7689
+   ],
+   "capa": "suelo"
+  },
+  "vo3": {
+   "ancla": [
+    0.9274,
+    0.6684
+   ],
+   "capa": "suelo",
+   "halo": {
+    "centro": [
+     0.9314,
+     0.6287
+    ],
+    "radio": 0.0753,
+    "nota": "horneado en isla_deco_vo3 (sol, alfa 0,7 al centro)"
+   }
+  }
  }
 }

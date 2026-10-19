@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -36,7 +37,9 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.IslaHalo
 import com.example.data.IslaLayout
+import com.example.data.IslaCapa
 import com.example.data.IslaLugar
+import com.example.data.IslaPieza
 import com.example.data.RouteLamps
 
 /** Carga y lee `res/raw/isla.json` una sola vez (son 4 KB). */
@@ -65,6 +68,10 @@ private const val SHADOW_REST_ALPHA = 0.83f
  * [lookKey] = el lugar al que mira Nubi (null = de frente) y [lookAmount] cuánto (0 → 1: fundido a `mira_<lugar>`, corrimiento y ladeo; con [lookMoves] en false, solo el fundido); [nubiAlpha] = 0 mientras Nubi vuela por encima (la dibuja la capa de la lámina);
  * [shadowAlpha] apaga la sombra mientras Nubi no está; [glowKey]/[glowAlpha] = el brillo sol suave del edificio tocado; [onDrawnRect] avisa dónde quedó la isla en la ventana (para que la capa de la lámina sepa dónde está Nubi).
  *
+ * Las piezas por medallas (Tarea 136, «Tu isla crece»; `data/IslaPiezas.kt`): [pieces] = las que la persona ya ganó, cada una una capa transparente con el MISMO recorte que la base (`isla_deco_<id>`: trae su propia posición). Las de SUELO se dibujan después de la base y de la sombra de Nubi y ANTES de los edificios
+ * (el Hangar y la Biblioteca las tapan donde corresponde); las de AIRE (banderines), encima de los edificios. [pieceReveal] = cuánto lleva revelada cada una (0 → 1; 1 = puesta; alfa y escala 0,9 → 1 desde su ancla; se lee al dibujar). No cambian el tamaño de la isla ni los toques: son decorativas
+ * y el lector de pantalla las nombra en [description].
+ *
  * Las farolas de la ruta (Tarea 88): la farola de cada lugar de [doneAreas] (parada hecha hoy) está ENCENDIDA: un disco sol en su tope, un halo cálido de 2× el de las apagadas y un leve resplandor en la losa a su pie. [lampProgress] = cuánto lleva encendida
  * la farola de un lugar (0 → 1, con un pulso suave; 1 = encendida y quieta), [sparks] = el progreso de las chispas de la ruta completa (1 = no se ven) y [nubiLiftDp]/[nubiTiltDeg] = el saltito de Nubi. Las farolas de lugares que no están en la ruta de hoy, o que aún no se hacen, quedan como siempre.
  */
@@ -86,7 +93,9 @@ fun Island(
   lampProgress: (placeKey: String) -> Float = { 1f },
   sparks: () -> Float = { 1f },
   nubiLiftDp: () -> Float = { 0f },
-  nubiTiltDeg: () -> Float = { 0f }
+  nubiTiltDeg: () -> Float = { 0f },
+  pieces: List<IslaPieza> = emptyList(),
+  pieceReveal: (id: String) -> Float = { 1f }
 ) {
   BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
     val width = minOf(maxHeight * layout.aspect, maxWidth + 28.dp, 480.dp)
@@ -108,7 +117,9 @@ fun Island(
         drawNubiShadow(layout, shiftX = if (lookMoves) look.shift * size.width * lookAmount() else 0f, strength = shadowAlpha() * (1f - 0.25f * (nubiLiftDp() / RouteMotion.JUMP_DP).coerceIn(0f, 1f)))
         drawLitFootGlows(layout, lit, lampProgress)      // debajo de los edificios: el del Hangar tapa el resplandor de las farolas de adelante
       }
+      pieces.filter { it.capa == IslaCapa.SUELO }.forEach { IslaPieceImage(it, layout, pieceReveal) }
       Image(painterResource(R.drawable.isla_edificios), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+      pieces.filter { it.capa == IslaCapa.AIRE }.forEach { IslaPieceImage(it, layout, pieceReveal) }
       Canvas(Modifier.fillMaxSize()) {
         drawHalo(layout.antennaHalo)
         drawHalo(layout.lampHalos, skip = lit.map { it.index }.toSet())
@@ -168,6 +179,53 @@ fun Island(
       }
     }
   }
+}
+
+/** Una pieza por medallas: su capa del recorte común (`FillBounds` sobre la misma caja que la base: la capa trae su posición). Aparece con alfa y escala 0,9 → 1 desde su ancla, no desde el centro de la isla. */
+@Composable
+private fun IslaPieceImage(piece: IslaPieza, layout: IslaLayout, reveal: (String) -> Float) {
+  val origin = layout.deco[piece.id]?.anchor?.let { TransformOrigin(it.x, it.y) } ?: TransformOrigin.Center
+  Image(
+    painterResource(islaPiezaDrawable(piece)), contentDescription = null,
+    modifier = Modifier.fillMaxSize().testTag("isla_pieza_${piece.id}").graphicsLayer {
+      val p = reveal(piece.id)
+      alpha = PieceFx.alpha(p)
+      scaleX = PieceFx.scale(p)
+      scaleY = PieceFx.scale(p)
+      transformOrigin = origin
+    },
+    contentScale = ContentScale.FillBounds
+  )
+}
+
+/** La capa de la pieza (mismo recorte que `isla_base`). */
+@androidx.annotation.DrawableRes
+internal fun islaPiezaDrawable(piece: IslaPieza): Int = when (piece) {
+  IslaPieza.C1 -> R.drawable.isla_deco_c1
+  IslaPieza.C2 -> R.drawable.isla_deco_c2
+  IslaPieza.C3 -> R.drawable.isla_deco_c3
+  IslaPieza.C4 -> R.drawable.isla_deco_c4
+  IslaPieza.V1 -> R.drawable.isla_deco_v1
+  IslaPieza.V2 -> R.drawable.isla_deco_v2
+  IslaPieza.V3 -> R.drawable.isla_deco_v3
+  IslaPieza.VO1 -> R.drawable.isla_deco_vo1
+  IslaPieza.VO2 -> R.drawable.isla_deco_vo2
+  IslaPieza.VO3 -> R.drawable.isla_deco_vo3
+}
+
+/** La imagen chica de la pieza (264 × 168 px = 88 × 56 dp) para la celebración de la medalla. */
+@androidx.annotation.DrawableRes
+internal fun islaPiezaChica(piece: IslaPieza): Int = when (piece) {
+  IslaPieza.C1 -> R.drawable.kit_pz_deco_c1
+  IslaPieza.C2 -> R.drawable.kit_pz_deco_c2
+  IslaPieza.C3 -> R.drawable.kit_pz_deco_c3
+  IslaPieza.C4 -> R.drawable.kit_pz_deco_c4
+  IslaPieza.V1 -> R.drawable.kit_pz_deco_v1
+  IslaPieza.V2 -> R.drawable.kit_pz_deco_v2
+  IslaPieza.V3 -> R.drawable.kit_pz_deco_v3
+  IslaPieza.VO1 -> R.drawable.kit_pz_deco_vo1
+  IslaPieza.VO2 -> R.drawable.kit_pz_deco_vo2
+  IslaPieza.VO3 -> R.drawable.kit_pz_deco_vo3
 }
 
 /** La imagen de Nubi mirando hacia [key] (`observatorio`, `antena`, `biblioteca` o `hangar`). */

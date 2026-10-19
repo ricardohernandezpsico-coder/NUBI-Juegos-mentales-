@@ -363,6 +363,17 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     _achievementQueue.value = _achievementQueue.value + "racha_7"
   }
 
+  /**
+   * Solo depuración (botones en Ajustes): las piezas de la isla que Hoy muestra EN LUGAR de las que dan las medallas reales (null = las reales). No guarda nada de progreso: sirve para ver la isla con 0, 3 y 10 piezas sin ganar las medallas.
+   * Los botones que lo usan solo se muestran con `BuildConfig.DEBUG` (`DebugTools`).
+   */
+  private val _debugIslaPieces = MutableStateFlow<List<com.example.data.IslaPieza>?>(null)
+  val debugIslaPieces: StateFlow<List<com.example.data.IslaPieza>?> = _debugIslaPieces.asStateFlow()
+
+  fun debugSetIslaPieces(pieces: List<com.example.data.IslaPieza>?) {
+    _debugIslaPieces.value = pieces
+  }
+
   /** Solo depuración (botón en Ajustes): muestra la celebración sin tener que ganar 250 trofeos. */
   fun debugShowPromotion() {
     _promotion.value = LeaguePromotion(RankTier.PLATA, RankTier.BRONCE, gameId = "secuencia", rating = 255)

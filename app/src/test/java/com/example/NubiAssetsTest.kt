@@ -87,6 +87,24 @@ class NubiAssetsTest {
   }
 
   @Test
+  fun `las diez piezas de la isla y sus imagenes chicas estan en la app (Tarea 136)`() {
+    val ids = listOf("c1", "c2", "c3", "c4", "v1", "v2", "v3", "vo1", "vo2", "vo3")
+    val base = imageSize(File(res, "drawable-nodpi/isla_base.webp"))
+    var kb = 0L
+    for (id in ids) {
+      val capa = File(res, "drawable-nodpi/isla_deco_$id.webp"); assertTrue("falta isla_deco_$id", capa.exists())
+      assertEquals("isla_deco_$id mide lo mismo que isla_base (mismo recorte)", base, imageSize(capa))
+      kb += capa.length() / 1024
+      val chica = File(res, "drawable-nodpi/kit_pz_deco_$id.webp"); assertTrue("falta kit_pz_deco_$id", chica.exists())
+      assertEquals("kit_pz_deco_$id: 88 × 56 dp a 3×", 264 to 168, imageSize(chica))
+      assertTrue("kit_pz_deco_$id pesa poco (${chica.length() / 1024} KB)", chica.length() < 30 * 1024)
+    }
+    assertTrue("las diez capas pesan $kb KB (tope 200)", kb <= 200)
+    val wav = File(res, "raw/madera_nuevo.wav").readBytes()
+    assertEquals("RIFF", String(wav, 0, 4)); assertEquals("WAVE", String(wav, 8, 4))
+  }
+
+  @Test
   fun `el APK no lleva arte sin uso en drawable-nodpi`() {
     val sources = code() + xmls() + res.resolve("raw").walkTopDown().filter { it.isFile && it.extension == "json" }.map { it.path to it.readText() }.toList()
     val unused = File(res, "drawable-nodpi").listFiles().orEmpty().filter { it.isFile }.map { it.nameWithoutExtension }.filter { it !in UNUSED_ALLOWED }

@@ -300,7 +300,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               totalCount = com.example.data.Achievements.all.size,
               streak = streak,
               onDismiss = { celebratedOne = true; viewModel.dismissAchievement() },
-              delayMs = if (celebratedOne) 250L else 1700L
+              delayMs = if (celebratedOne) 250L else 1700L,
+              soundEnabled = userSettings.soundEnabled
             )
           }
         }

@@ -9,15 +9,28 @@ import com.example.R
  * final; ahora lo celebra la pantalla de resultado, que dice «¡Récord nuevo!» con su sello. Respeta «Efectos de sonido» de Ajustes (quien llama no lo suena con el sonido apagado). Si el dispositivo no puede reproducirlo, no pasa nada.
  */
 object RecordSound {
-  fun play(context: Context) {
+  fun play(context: Context) = WoodClip.play(context, R.raw.madera_record)
+}
+
+/**
+ * El sonido de una pieza nueva de la isla (Tarea 136, «Tu isla crece»): el `New` de la paleta Madera («algo que se desbloquea»; `res/raw/madera_nuevo.wav`, el `wood-new.wav` de `docs/previews/sonido-escucha/`) suena UNA vez, en la celebración de la medalla que trae pieza, junto con
+ * la línea «Y en tu isla aparece: …» (`AchievementOverlay`). Hoy no vuelve a sonar. Respeta «Efectos de sonido» de Ajustes (quien llama no lo suena con el sonido apagado). Si el dispositivo no puede reproducirlo, no pasa nada.
+ */
+object NewPieceSound {
+  fun play(context: Context) = WoodClip.play(context, R.raw.madera_nuevo)
+}
+
+/** Reproduce un clip corto de `res/raw` una vez y libera el reproductor al terminar. */
+private object WoodClip {
+  fun play(context: Context, @androidx.annotation.RawRes clip: Int) {
     try {
-      MediaPlayer.create(context.applicationContext, R.raw.madera_record)?.apply {
+      MediaPlayer.create(context.applicationContext, clip)?.apply {
         setOnCompletionListener { it.release() }
         setOnErrorListener { mp, _, _ -> mp.release(); true }
         start()
       }
     } catch (_: Throwable) {
-      // sin reproductor (pruebas, dispositivo sin audio): el récord se ve igual
+      // sin reproductor (pruebas, dispositivo sin audio): se ve igual
     }
   }
 }

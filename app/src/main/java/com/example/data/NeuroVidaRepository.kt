@@ -421,6 +421,9 @@ class NeuroVidaRepository(
   private val _achievementUnlocks = MutableStateFlow(decodeUnlocks(achievementPrefs.getString("unlocks", null)))
   val achievementUnlocks: StateFlow<Map<String, Long>> = _achievementUnlocks.asStateFlow()
 
+  /** Las piezas de la isla que Hoy ya mostró (pasajero, `isla_piezas`; ver `IslaPiezasSeen.kt`): acá solo se anota lo que se siembra en silencio. */
+  private val islaPiezasSeen: IslaPiezasStore = PrefsIslaPiezasStore(context)
+
   // "Tu punto de partida" (ver Baseline.kt): nivel educacional, metas y el mapa de la evaluación inicial. En
   // SharedPreferences (como ligas y logros) para no migrar Room por datos que solo se escriben en el onboarding.
   private val profilePrefs = context.getSharedPreferences("profile_extra", Context.MODE_PRIVATE)
@@ -538,8 +541,11 @@ class NeuroVidaRepository(
       gameProgressDao.getAllProgressSync().associate { it.gameId to it.eloRating }
     )
     val now = System.currentTimeMillis()
-    saveUnlocks(Achievements.unlocked(stats).associateWith { now } + _achievementUnlocks.value)
+    val seeded = Achievements.unlocked(stats)
+    saveUnlocks(seeded.associateWith { now } + _achievementUnlocks.value)
     achievementPrefs.edit().putBoolean("seeded", true).putBoolean("seeded_v2", true).apply()
+    // Las piezas de la isla de lo sembrado también nacen «ya vistas» (Tarea 136): si Hoy ya se había abierto (y sembró lo que había), no se revelan con animación. Si Hoy aún no se abrió, él mismo siembra todo lo que haya en silencio.
+    islaPiezasSeen.load()?.let { seen -> islaPiezasSeen.save(IslaPiezas.consume(IslaPiezas.earned(seeded), seen)) }
   }
 
   /** Registra los logros nuevos con estas cifras y los devuelve (en orden de catálogo). */

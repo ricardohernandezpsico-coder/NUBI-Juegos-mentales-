@@ -18,6 +18,9 @@ data class IslaNubiBox(val topLeft: IslaPoint, val bottomRight: IslaPoint, val w
 /** La sombra de Nubi sobre la losa: elipse de tinta, ancho y alto normalizados a ese ancho y alto del recorte. */
 data class IslaShadow(val center: IslaPoint, val width: Float, val height: Float, val opacity: Float, val blur: Float)
 
+/** Una pieza de la isla por medallas (`IslaPieza`; Tarea 136): [anchor] = donde toca la isla (0-1 del recorte común; de ahí crece al revelarse) y [capa] = `suelo` o `aire` (`res/raw/isla.json`, `decoraciones`). */
+data class IslaDeco(val anchor: IslaPoint, val capa: String)
+
 /** Uno o varios halos (degradado radial de [colorHex], de [opacity] al centro): [radius] es una fracción del ANCHO del recorte. */
 data class IslaHalo(val centers: List<IslaPoint>, val radius: Float, val opacity: Float, val colorHex: String)
 
@@ -56,7 +59,9 @@ data class IslaLayout(
   val miraBoxes: Map<String, IslaNubiBox> = emptyMap(),
   /** Qué farola (índice en [lamps]) es de cada lugar (`observatorio`…): la de menor distancia total entre el pie de cada edificio y el tope de cada farola (Tarea 88; `tools/isla/componer.py`). */
   val lampOf: Map<String, Int> = emptyMap(),
-  val litLamp: IslaLitLamp = IslaLitLamp.DEFAULT
+  val litLamp: IslaLitLamp = IslaLitLamp.DEFAULT,
+  /** Las diez piezas por medallas (por id: `c1`…`vo3`): su ancla y su capa. Vacío si el JSON no las trae. */
+  val deco: Map<String, IslaDeco> = emptyMap()
 ) {
   /** Ancho / alto del recorte (0,89): el `Box` de la isla en pantalla. */
   val aspect: Float get() = widthPx.toFloat() / heightPx
@@ -99,6 +104,7 @@ data class IslaLayout(
           f.getDouble("pie_dy").toFloat(), g.getDouble("radio").toFloat(), g.getDouble("opacidad").toFloat(), g.getString("color")
         )
       } ?: IslaLitLamp.DEFAULT
+      val deco = root.optJSONObject("decoraciones")?.let { d -> d.keys().asSequence().associateWith { k -> d.getJSONObject(k).let { o -> IslaDeco(pt(o.getJSONArray("ancla")), o.getString("capa")) } } } ?: emptyMap()
       val ha = root.getJSONObject("halo_antena")
       val hf = root.getJSONObject("halos_farolas")
       return IslaLayout(
@@ -110,7 +116,7 @@ data class IslaLayout(
         shadow = IslaShadow(pt(sh.getJSONArray("centro")), sh.getDouble("ancho").toFloat(), sh.getDouble("alto").toFloat(), sh.getDouble("opacidad").toFloat(), sh.getDouble("desenfoque").toFloat()),
         antennaHalo = IslaHalo(listOf(pt(ha.getJSONArray("centro"))), ha.getDouble("radio").toFloat(), ha.getDouble("opacidad").toFloat(), ha.getString("color")),
         lampHalos = IslaHalo(pts(hf.getJSONArray("centros")), hf.getDouble("radio").toFloat(), hf.getDouble("opacidad").toFloat(), hf.getString("color")),
-        miraBoxes = mira, lampOf = lampOf, litLamp = litLamp
+        miraBoxes = mira, lampOf = lampOf, litLamp = litLamp, deco = deco
       )
     }
   }

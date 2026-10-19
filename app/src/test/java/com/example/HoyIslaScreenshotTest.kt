@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.example.data.IslaPieza
 import com.example.data.Week
 import com.example.model.AppLanguage
 import com.example.model.RankTier
@@ -333,6 +334,30 @@ class HoyIslaScreenshotTest {
     show(ui(hasBaseline = false))
     composeTestRule.onNodeWithTag("btn_home_baseline").assertExists()
     composeTestRule.onNodeWithText("Encuentra tu punto de partida · 5 min").assertExists()
+  }
+
+  // ---- Las piezas de la isla por medallas (Tarea 136, «Tu isla crece»): 0, 3 (arbustos, banderines y muelle: las primeras) y las 10, a 393 × 873 y a 360 × 780. Que no pisen edificios, zonas tocables, farolas ni a Nubi lo mide `IslaPiezasImagesTest` sobre los píxeles.
+
+  private val tresPiezas = listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1)
+
+  private fun piezas(pieces: List<IslaPieza>, widthDp: Int, heightDp: Int, file: String) {
+    show(ui().copy(islandPieces = pieces), widthDp, heightDp)
+    assertEquals(pieces.map { it.id }, IslaPieza.entries.map { it.id }.filter { composeTestRule.onAllNodes(hasTestTag("isla_pieza_$it")).fetchSemanticsNodes().isNotEmpty() })
+    for (tag in listOf("home_isla", "home_stop_1", "home_stop_2", "home_stop_3", "btn_home_play")) composeTestRule.onNodeWithTag(tag).assertIsDisplayed()
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/$file")
+  }
+
+  @Test fun hoy_393_con_0_piezas() = piezas(emptyList(), 393, 873, "hoy-isla-393-piezas-0.png")
+  @Test fun hoy_393_con_3_piezas() = piezas(tresPiezas, 393, 873, "hoy-isla-393-piezas-3.png")
+  @Test fun hoy_393_con_las_10_piezas() = piezas(IslaPieza.entries, 393, 873, "hoy-isla-393-piezas-10.png")
+  @Test fun hoy_360_con_0_piezas() = piezas(emptyList(), 360, 780, "hoy-isla-360-piezas-0.png")
+  @Test fun hoy_360_con_3_piezas() = piezas(tresPiezas, 360, 780, "hoy-isla-360-piezas-3.png")
+  @Test fun hoy_360_con_las_10_piezas() = piezas(IslaPieza.entries, 360, 780, "hoy-isla-360-piezas-10.png")
+
+  @Test
+  fun con_las_10_piezas_los_cuatro_edificios_siguen_siendo_botones_con_su_nombre() {
+    show(ui(completed = 1).copy(islandPieces = IslaPieza.entries))
+    for (name in listOf("Observatorio, Memoria", "Antena, Atención", "Biblioteca, Lenguaje", "Hangar, Razonamiento")) composeTestRule.onNodeWithContentDescription(name).assertExists()
   }
 
   // ---- La isla
