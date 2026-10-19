@@ -162,12 +162,12 @@ namespace NeuroVida.Games.Tests
                 }
         }
 
-        /// <summary>Las cinco clases de la Fase C ya dicen sus recetas propias y qué piden antes de la cuenta (aunque ningún controlador las use todavía): <c>All()</c> y <c>Request()</c>.</summary>
+        /// <summary>Las clases de sonidos de las Fases C y D (Carga, Punta, Constelaciones, Bodega, Correo, Rastro, Satélites, Piloto e Intrusa) dicen sus recetas propias y qué piden antes de la cuenta: <c>All()</c> y <c>Request()</c>.</summary>
         [Test]
-        public void ThePhaseCSoundClasses_ListTheirRecipesAndWhatTheyRequest()
+        public void ThePhaseCAndDSoundClasses_ListTheirRecipesAndWhatTheyRequest()
         {
             string dir = Path.Combine(Application.dataPath, "Scripts", "Games");
-            foreach (var rel in new[] { "Calculo/CargaSounds.cs", "Anagramas/PuntaSounds.cs", "Parejas/ConstelacionSounds.cs", "Bodega/BodegaSounds.cs", "Correo/MailSounds.cs" })
+            foreach (var rel in new[] { "Calculo/CargaSounds.cs", "Anagramas/PuntaSounds.cs", "Parejas/ConstelacionSounds.cs", "Bodega/BodegaSounds.cs", "Correo/MailSounds.cs", "Secuencia/RastroSounds.cs", "Satelites/SatelliteSounds.cs", "Piloto/PilotSounds.cs", "Intrusa/IntrusaSounds.cs" })
             {
                 string text = File.ReadAllText(Path.Combine(dir, rel));
                 Assert.IsTrue(text.Contains("All()") && text.Contains("static void Request()"), rel + ": expone All() y Request()");

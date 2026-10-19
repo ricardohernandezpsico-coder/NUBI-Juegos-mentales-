@@ -581,13 +581,13 @@ namespace NeuroVida.Games.Correo
             f.At = Now;
             f.Dur = big ? 1.4f : 1.1f;
             f.Color = color;
-            // el texto más grande que quepa (de 17 o 15 a 14 dp); si aun así no cabe en una línea, se parte en dos
+            // el texto más grande que quepa (de 17 o 16 a 16 dp: NUNCA menos de 16, el mínimo de letra de los juegos; antes llegaba a 15 y 14 y la guardia del smoke lo atrapaba solo a veces); si aun así no cabe en una línea, se parte en dos
             float maxW = MailLayout.W - 62f;
-            float dp = big ? 17f : 15f;
+            float dp = big ? 17f : 16f;
             f.Text.text = text;
             f.Text.horizontalOverflow = HorizontalWrapMode.Overflow;
             f.Text.fontSize = Mathf.RoundToInt(dp * _s);
-            while (f.Text.preferredWidth / _s > maxW && dp > 14f) { dp -= 1f; f.Text.fontSize = Mathf.RoundToInt(dp * _s); }
+            while (f.Text.preferredWidth / _s > maxW && dp > 16f) { dp -= 1f; f.Text.fontSize = Mathf.RoundToInt(dp * _s); }
             float w = f.Text.preferredWidth / _s, h = above ? MailLayout.AboveH : 30f;
             if (w > maxW)
             {

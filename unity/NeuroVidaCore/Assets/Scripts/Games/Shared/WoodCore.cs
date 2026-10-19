@@ -202,7 +202,12 @@ namespace NeuroVida.Games.Shared
         private static void Enqueue(string key, Func<WoodSounds.Recipe> make, bool mono)
         {
             if (!GameFeel.SoundOn) return;                                         // con el sonido apagado no se calcula nada
-            if (Extras.ContainsKey(key) || Queued(key)) return;
+            if (Extras.TryGetValue(key, out var have))
+            {
+                if (have != null) return;
+                Extras.Remove(key);                                                // un clip que Unity destruyó (en el editor, al salir de Play con la recarga de dominio apagada: la cadena del smoke): se vuelve a calcular, no se da por presente
+            }
+            if (Queued(key)) return;
             Pending.Enqueue(new Job { Key = key, Make = make, Mono = mono });
             EnsureObject();
         }

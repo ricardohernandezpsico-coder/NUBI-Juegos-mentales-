@@ -243,6 +243,35 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
+        public void ADestroyedExtra_IsRequestedAndBakedAgain_NotTakenAsPresent()
+        {
+            // Unity destruye los objetos creados en Play al salir de él cuando la recarga de dominio está apagada (la cadena del smoke): el diccionario guarda el clip «nulo» y un pedido nuevo tenía que recalcularlo
+            // (si se daba por presente, la nota se calculaba tarde y los demás extras se omitían durante toda la partida siguiente del mismo juego).
+            GameFeel.Warm("juego-a");
+            Drain();
+            WoodCore.RequestNote(523.25, WoodVoice.Kalimba);
+            WoodCore.Request(WoodSfx.Spark, 4);
+            WoodCore.Request("test.propio", OwnRecipe, true);
+            Drain();
+            var key = WoodCore.NoteKey(523.25, WoodVoice.Kalimba);
+            Assert.IsNotNull(WoodCore.GetExtra(key));
+            foreach (var k in new[] { key, WoodSounds.KeyOf(WoodSfx.Spark, 4), "test.propio" }) UnityEngine.Object.DestroyImmediate(WoodCore.GetExtra(k));
+            Assert.IsTrue(WoodCore.GetExtra(key) == null, "el clip quedó destruido (nulo de Unity)");
+            WoodCore.RequestNote(523.25, WoodVoice.Kalimba);
+            WoodCore.Request(WoodSfx.Spark, 4);
+            WoodCore.Request("test.propio", OwnRecipe, true);
+            Assert.IsFalse(WoodCore.Idle, "los tres se volvieron a poner en la cola");
+            Drain();
+            Assert.IsNotNull(WoodCore.GetExtra(key), "la nota se calculó de nuevo");
+            Assert.IsNotNull(WoodCore.Get(WoodSfx.Spark, 4), "y el destello");
+            Assert.IsNotNull(WoodCore.GetExtra("test.propio"), "y el propio");
+            WoodCore.ResetCounters();
+            Assert.IsTrue(WoodCore.PlayNote(523.25, WoodVoice.Kalimba));
+            Assert.AreEqual(0, WoodCore.LateBakes, "ya no se calcula tarde");
+            Assert.AreEqual(3, WoodCore.ExtraCount, "sin entradas repetidas");
+        }
+
+        [Test]
         public void ReleaseExtras_ReleasesOnlyWhatIsExtra_TheCoreKeepsItsClips()
         {
             GameFeel.Warm("juego-a");

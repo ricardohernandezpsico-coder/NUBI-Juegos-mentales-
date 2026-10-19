@@ -70,11 +70,11 @@ FASES = {
     },
     'D': {
         'grupos': ['secuencia', 'satelites', 'piloto', 'intrusa'],
-        'etiqueta': 'Fase D',
-        'titulo': 'Fase D · hoy | Madera',
+        'etiqueta': 'Tarea 138 · Fase D (registro)',
+        'titulo': 'Fase D · hoy | Madera (ya cableada)',
         'tag': 'Fase D: hoy y Madera cálida',
-        'lead': 'Los cuatro juegos de la Fase D: Rastro de luz, Satélites, Piloto Estelar y La estrella intrusa (información fuerte, marimba). El botón azul es HOY y el amarillo, Madera.',
-        'tip': 'Mejor con audífonos o con el parlante a volumen medio. Para comparar solo el timbre, prende «Igualar volumen».',
+        'lead': '<b>Esta fase se cableó el 19-oct (Tarea 138) SIN pausa de escucha</b> (Ricardo: «hazlos con tu criterio»): la página queda como registro de lo que suena. Los cuatro juegos: <b>Rastro de luz, Satélites, Piloto Estelar y La estrella intrusa</b> (información fuerte, marimba). El botón azul es cómo sonaba HOY (congelado del 17-oct) y el amarillo, Madera: lo que ya suena en el juego (las notas de marimba con la misma altura, orden y momento de siempre, y los propios hechos con las mismas recetas del juego).',
+        'tip': 'Qué escuchar si quieres revisarlo: (1) las <b>27 notas con información</b> en marimba (9 de Rastro, 5 campanas y 7 marcas de Satélites, 4 balizas de Piloto, 9 de Intrusa), con la kalimba al lado para comparar; (2) los 8 propios: los 4 avisos de modo de Rastro, la misión de Piloto (dos notas a 0,4 s), el grabado y la estrella fugaz de Intrusa; (3) los criterios: la ronda de Rastro es un Correct que sube con el largo del camino, el blip de Piloto es el mismo para todas las señales (−6 dB) y la estrella con palabra de Intrusa suena 6 dB más fuerte. Mejor con audífonos o con el parlante a volumen medio.',
     },
     'E': {
         'grupos': ['stroop', 'meteoros', 'freno', 'disparate', 'engranajes'],
