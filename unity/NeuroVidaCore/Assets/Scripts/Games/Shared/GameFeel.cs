@@ -35,7 +35,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>
         /// Prepara el sonido de la partida (<see cref="WoodCore.Warm"/>): calcula lo de la cuenta regresiva y deja el resto del núcleo común para que se calcule de a poco. Lo llama <c>GameEntryPoint</c> en cuanto llega la configuración (ya con <see cref="SoundOn"/>).
         /// </summary>
-        public static void Warm() => WoodCore.Warm();
+        public static void Warm(string gameId = null) => WoodCore.Warm(gameId);
 
         /// <summary>Respuesta correcta. <paramref name="streak"/> = racha actual (1 = primer acierto).</summary>
         public static void Correct(int streak)

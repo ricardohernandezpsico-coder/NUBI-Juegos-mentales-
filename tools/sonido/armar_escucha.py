@@ -10,6 +10,10 @@ Flujo (docs/sonido-madera-plan.md §7):
        python tools/sonido/armar_escucha.py                 # la página liviana: pide los WAV de la carpeta sonido-escucha/ que está al lado
        python tools/sonido/armar_escucha.py --incrustar     # UN solo archivo con los WAV adentro (para el teléfono o para publicarla como página)
      Con --incrustar el archivo pesa unos MB: se escribe donde diga --salida (por defecto docs/previews/sonido-escucha-incrustado.html, que no va a git).
+  3. POR FASE (Tarea 133 en adelante, spec auditoria-fable/spec-sonido-CDE.md §1.5): una página con SOLO los juegos de una fase, «hoy | Madera»:
+       python tools/sonido/armar_escucha.py --fase C                       # docs/previews/sonido-escucha-C.html (liviana, va a git; pide los WAV de sonido-escucha/)
+       python tools/sonido/armar_escucha.py --fase C --incrustar           # docs/previews/sonido-escucha-C-incrustado.html: UN solo archivo para el teléfono (no va a git)
+     «Hoy» sale CONGELADO del 17-oct (tools/sonido/catalogo-hoy-17-oct.json: el exportador no lo renderiza); «Madera» sale de las mismas recetas que van al juego.
 """
 import argparse
 import base64
@@ -44,12 +48,40 @@ GRUPOS = [
     ('intrusa', 'La estrella intrusa', 'Lenguaje'),
 ]
 
+# Las fases del plan (spec-sonido-CDE.md §7): qué juegos entran y cómo se presenta cada página
+FASES = {
+    'C': {
+        'grupos': ['calculo', 'anagramas', 'parejas', 'bodega', 'correo'],
+        'etiqueta': 'Tarea 133 · Fase C',
+        'titulo': 'Fase C · hoy | Madera',
+        'tag': 'Fase C: hoy y Madera cálida',
+        'lead': 'Estos son los cinco juegos de la Fase C: <b>Carga exacta, En la punta de la lengua, Constelaciones, Bodega de carga y La estación de correo</b>. El botón azul es cómo suena HOY (tal como sonaba el 17-oct); el amarillo, cómo sonará con «Madera cálida» (kalimba, marimba y bloque de madera con la sala pequeña de Rescate); donde una nota lleva información, el verde es la misma nota con marimba para comparar. Ningún juego está cableado todavía: aprueba de oído y yo conecto después.',
+        'tip': 'Qué escuchar: (1) las <b>37 notas de memoria</b> en kalimba (11 de Constelaciones, 12 de Bodega, 10 de Punta, 4 de Correo): que se reconozca cada una y que se entienda el orden; (2) los <b>8 sonidos propios nuevos</b> (Bodega 5: llega la carga, el haz, abrir, volar y la matraca; Correo 3: la bocina, el saco y la radio); (3) tres cambios de criterio que decides tú: <b>quitar el destello</b> en Constelaciones, la <b>bocina de fondo</b> bajo la fanfarria del faro de Correo y la <b>pista</b> de las luces hermanas como «ayuda». Mejor con audífonos o con el parlante a volumen medio; los sonidos están al volumen real del juego. Para comparar solo el timbre, prende «Igualar volumen».',
+    },
+    'D': {
+        'grupos': ['secuencia', 'satelites', 'piloto', 'intrusa'],
+        'etiqueta': 'Fase D',
+        'titulo': 'Fase D · hoy | Madera',
+        'tag': 'Fase D: hoy y Madera cálida',
+        'lead': 'Los cuatro juegos de la Fase D: Rastro de luz, Satélites, Piloto Estelar y La estrella intrusa (información fuerte, marimba). El botón azul es HOY y el amarillo, Madera.',
+        'tip': 'Mejor con audífonos o con el parlante a volumen medio. Para comparar solo el timbre, prende «Igualar volumen».',
+    },
+    'E': {
+        'grupos': ['stroop', 'meteoros', 'freno', 'disparate', 'engranajes'],
+        'etiqueta': 'Fase E',
+        'titulo': 'Fase E · hoy | Madera',
+        'tag': 'Fase E: hoy y Madera cálida',
+        'lead': 'Los cinco juegos de la Fase E: Tinta o Palabra, Lluvia de meteoros, Freno de emergencia, ¿Verdad o disparate? y Engranajes (señales y propios largos). El botón azul es HOY y el amarillo, Madera.',
+        'tip': 'Mejor con audífonos o con el parlante a volumen medio. Para comparar solo el timbre, prende «Igualar volumen».',
+    },
+}
+
 PLANTILLA = r"""<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Escucha: hoy y Madera cálida</title>
+<title>__TITLE_TAG__</title>
 <style>
 :root{
   --bg:#07081F; --panel:#121236; --panel2:#1B1A4A; --line:#2C2A66; --ink:#EEEBFC; --dim:#ABA5D2; --faint:#8C86BD;
@@ -112,10 +144,9 @@ details.mas>summary{cursor:pointer;color:var(--faint);font-size:14px;min-height:
 </head>
 <body>
 <div class="wrap">
-  <p class="eyebrow">Tarea 119 · Fase A</p>
-  <h1>Escucha: hoy y Madera cálida</h1>
-  <p class="lead">Cada fila es algo que pasa en un juego. El botón azul es cómo suena HOY; el amarillo, cómo sonaría con la paleta «Madera cálida» (kalimba, marimba y bloque de madera con una sala pequeña: lo que aprobaste en Rescate). Primero va lo común, que cambia en todos los juegos a la vez.</p>
-  <p class="tip">Mejor con audífonos o con el parlante a volumen medio. Los sonidos están al volumen real del juego (los chicos suenan chicos). Para comparar solo el timbre, prende «Igualar volumen» (todos suenan igual de fuerte). Los archivos de esta página son mono y de 22 kHz solo para escuchar; en el juego suenan estéreo y a 44,1 kHz.</p>
+  <p class="eyebrow">__ETIQUETA__</p>
+  <h1>__TITULO__</h1>
+  __LEAD_Y_TIP__
 
   <div class="bar">
     <div class="row">
@@ -213,9 +244,12 @@ function evento(e) {
   if (e.note && e.note.indexOf('NUEVO') === 0) tags.push('<span class="tag nuevo">nuevo</span>');
   d.innerHTML = '<h3>' + e.title + '</h3>' + (tags.length ? '<div class="tags">' + tags.join('') + '</div>' : '');
   const btns = document.createElement('div'); btns.className = 'btns';
-  if (!e.wood) {
+  if (!e.wood && e.noWood) {
+    if (e.hoy) btns.appendChild(button('hoy', 'Hoy', e.hoy, e.hoyGain, ''));
+    const m = document.createElement('div'); m.className = 'mudo'; m.textContent = e.noWood; btns.appendChild(m);
+  } else if (!e.wood) {
     const m = document.createElement('div'); m.className = 'mudo';
-    m.textContent = e.flag === 'bucle' ? 'Suena en bucle y se queda como está.' : (e.alreadyWood ? 'Ya suena en Madera cálida (aprobado): sin botón.' : 'Sonido propio del juego: se diseña en la Fase C.');
+    m.textContent = e.flag === 'bucle' ? 'Suena en bucle y se queda como está.' : (e.alreadyWood ? 'Ya suena en Madera cálida (aprobado): sin botón.' : 'Sonido propio del juego: se diseña en su fase.');
     btns.appendChild(m);
   } else {
     if (e.hoy) btns.appendChild(button('hoy', 'Hoy', e.hoy, e.hoyGain, ''));
@@ -258,37 +292,63 @@ def cargar():
         return json.load(f)
 
 
-def datos_pagina(cat):
-    """Lo mínimo que necesita la página: los grupos, los eventos y, por cada sonido, su archivo y sus niveles."""
-    clips = {}
-    for clave, c in cat['clips'].items():
-        if c['file']:
-            clips[clave] = {'file': c['file'], 'peakDb': c['peakDb'], 'lufs': c['lufs'], 'onsetMs': c['onsetMs'], 'scale': c['scale']}
+def datos_pagina(cat, fase=None):
+    """Lo mínimo que necesita la página: los grupos, los eventos y, por cada sonido, su archivo y sus niveles. Con `fase`, solo los juegos de esa fase (en su orden) y solo los sonidos que sus eventos nombran."""
+    campos = ('group', 'id', 'title', 'today', 'sites', 'map', 'flag', 'note', 'hoy', 'hoyGain', 'wood', 'woodGain', 'woodAlt', 'woodAltLabel', 'alreadyWood', 'noWood')
     eventos = []
     for e in cat['events']:
-        eventos.append({k: e[k] for k in ('group', 'id', 'title', 'today', 'sites', 'map', 'flag', 'note', 'hoy', 'hoyGain', 'wood', 'woodGain', 'woodAlt', 'woodAltLabel', 'alreadyWood')})
-    return {'grupos': [{'id': g[0], 'title': g[1], 'area': g[2]} for g in GRUPOS], 'events': eventos, 'clips': clips}
+        if fase and (e.get('phase') != fase or e['group'] not in FASES[fase]['grupos']):
+            continue
+        eventos.append({k: e.get(k, '') for k in campos})
+    usados = set()
+    for e in eventos:
+        for k in ('hoy', 'wood', 'woodAlt'):
+            if e[k]:
+                usados.add(e[k])
+    clips = {}
+    for clave, c in cat['clips'].items():
+        if c['file'] and (not fase or clave in usados):
+            clips[clave] = {'file': c['file'], 'peakDb': c['peakDb'], 'lufs': c['lufs'], 'onsetMs': c['onsetMs'], 'scale': c['scale']}
+    if fase:
+        orden = {g: i for i, g in enumerate(FASES[fase]['grupos'])}
+        grupos = sorted((g for g in GRUPOS if g[0] in orden), key=lambda g: orden[g[0]])
+    else:
+        grupos = GRUPOS
+    return {'grupos': [{'id': g[0], 'title': g[1], 'area': g[2]} for g in grupos], 'events': eventos, 'clips': clips}
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--incrustar', action='store_true', help='mete los WAV adentro de la página (un solo archivo)')
-    ap.add_argument('--salida', help='archivo de salida (por defecto docs/previews/sonido-escucha.html, o -incrustado si se incrusta)')
+    ap.add_argument('--salida', help='archivo de salida (por defecto docs/previews/sonido-escucha.html, o -incrustado si se incrusta; con --fase X, sonido-escucha-X.html)')
+    ap.add_argument('--fase', choices=sorted(FASES), help='una página solo con los juegos de esa fase del plan (C, D o E): «hoy | Madera»')
     args = ap.parse_args()
     if not os.path.exists(CATALOGO):
         sys.exit('Falta tools/sonido/catalogo.json: corre primero el exportador en Unity (ver el encabezado de este script).')
     cat = cargar()
-    datos = datos_pagina(cat)
+    datos = datos_pagina(cat, args.fase)
+    if not datos['events']:
+        sys.exit('No hay eventos de la fase %s en el catálogo.' % args.fase)
     audio = {}
     if args.incrustar:
         for archivo in sorted({c['file'] for c in datos['clips'].values()}):
             with open(os.path.join(CARPETA_WAV, archivo), 'rb') as f:
                 audio[archivo] = 'data:audio/wav;base64,' + base64.b64encode(f.read()).decode('ascii')
+    if args.fase:
+        f = FASES[args.fase]
+        encabezado = '<p class="lead">%s</p>\n  <p class="tip">%s</p>' % (f['lead'], f['tip'])
+        etiqueta, titulo, tag = f['etiqueta'], f['titulo'], f['tag']
+    else:
+        encabezado = ('<p class="lead">Cada fila es algo que pasa en un juego. El botón azul es cómo suena HOY; el amarillo, cómo sonaría con la paleta «Madera cálida» (kalimba, marimba y bloque de madera con una sala pequeña: lo que aprobaste en Rescate).</p>\n'
+                      '  <p class="tip">Mejor con audífonos o con el parlante a volumen medio. Para comparar solo el timbre, prende «Igualar volumen».</p>')
+        etiqueta, titulo, tag = 'Tarea 119 · Fase A', 'Escucha: hoy y Madera cálida', 'Escucha: hoy y Madera cálida'
     html = (PLANTILLA
+            .replace('__LEAD_Y_TIP__', encabezado).replace('__ETIQUETA__', etiqueta).replace('__TITULO__', titulo).replace('__TITLE_TAG__', tag)
             .replace('__DATOS__', json.dumps(datos, ensure_ascii=False, separators=(',', ':')))
             .replace('__INCRUSTADO__', 'true' if args.incrustar else 'false')
             .replace('__AUDIO__', json.dumps(audio, separators=(',', ':'))))
-    salida = args.salida or os.path.join(RAIZ, 'docs', 'previews', 'sonido-escucha-incrustado.html' if args.incrustar else 'sonido-escucha.html')
+    sufijo = '-' + args.fase if args.fase else ''
+    salida = args.salida or os.path.join(RAIZ, 'docs', 'previews', 'sonido-escucha%s%s.html' % (sufijo, '-incrustado' if args.incrustar else ''))
     with io.open(salida, 'w', encoding='utf-8', newline='\n') as f:
         f.write(html)
     peso = os.path.getsize(salida)

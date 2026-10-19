@@ -11,7 +11,7 @@ namespace NeuroVida.Games.Bodega
     /// 110 ms) mientras la bodega gira. Respuestas: acierto = la nota de la escotilla más un destello que sube de tono con la racha; error = un golpe sordo (sin chicharra); pedido perfecto = arpegio.
     /// Nada suena fuerte: todo ≤ 0,5.
     /// </summary>
-    public static class BodegaSounds
+    public static partial class BodegaSounds
     {
         private const int Rate = 44100;
         public static readonly float[] Penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880f, 1046.5f, 1174.66f, 1318.5f, 1567.98f, 1760f };

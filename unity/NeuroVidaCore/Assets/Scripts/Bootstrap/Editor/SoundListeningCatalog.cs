@@ -69,9 +69,34 @@ namespace NeuroVida.Bridge.EditorTools
 
         private static Ev E(string group, string id, string title, string today, string sites, string hoy, float hoyGain, string wood, string map, string flag = "", string note = "")
         {
-            var e = new Ev { Group = group, Id = group + "." + id, Title = title, Today = today, Sites = sites, HoyKey = hoy, HoyGain = hoyGain, WoodKey = wood, Map = map, Flag = flag, Note = note };
+            var e = new Ev { Group = group, Id = group + "." + id, Title = title, Today = today, Sites = sites, HoyKey = hoy, HoyGain = hoyGain, WoodKey = wood, Map = map, Flag = flag, Note = note, Phase = PhaseOf(group) };
             Events.Add(e);
             return e;
+        }
+
+        /// <summary>La fase del plan en que se migra cada juego (spec `auditoria-fable/spec-sonido-CDE.md` §7): «B» lo común (ya suena), «C» Carga, Punta, Constelaciones, Bodega y Correo; «D» Rastro, Satélites, Piloto e Intrusa; «E» Tinta, Meteoros, Freno, Disparate y Engranajes. Rescate, Acoplamiento y Aterrizaje ya están en Madera: sin fase.</summary>
+        internal static string PhaseOf(string group)
+        {
+            switch (group)
+            {
+                case Common: return "B";
+                case "calculo": case "anagramas": case "parejas": case "bodega": case "correo": return "C";
+                case "secuencia": case "satelites": case "piloto": case "intrusa": return "D";
+                case "stroop": case "meteoros": case "freno": case "disparate": case "engranajes": return "E";
+                default: return "";
+            }
+        }
+
+        /// <summary>El volumen con que suena la Madera de un evento que el juego atenúa (−3, −6 o −9 dB): así el botón suena como va a sonar.</summary>
+        private static float Atten(double db) => WoodSounds.PlayVolume * (float)Math.Pow(10.0, db / 20.0);
+
+        /// <summary>Un sonido que se mezcla con otro (la fanfarria y la bocina a la vez): cada uno con su volumen de hoy, sumados en un solo archivo.</summary>
+        private static Clip Mix(params (Clip Clip, double Gain)[] parts)
+        {
+            var clips = new List<Clip>();
+            var starts = new List<double>();
+            foreach (var (clip, gain) in parts) { clips.Add(Math.Abs(gain - 1.0) < 1e-9 ? clip : Scaled(clip, gain)); starts.Add(0.0); }
+            return Sequence(clips, starts);
         }
 
         /// <summary>Un evento de un juego que YA suena en Madera cálida (Rescate, Acoplamiento, Aterrizaje): lo de hoy ES Madera.</summary>
@@ -253,18 +278,20 @@ namespace NeuroVida.Bridge.EditorTools
             H("parejas.chime", () => ConstelacionSounds.Chime());
 
             FamilyEvent(g, "notas", "Cada grupo de luces suena SU nota (11: la 11.ª, una octava arriba)", "Campana de la pentatónica (τ 0,22 s, 0,9 s), mono, sin sala; pico ≈ 0,3",
-                "ConstelacionGameController.cs:251 (al abrir una luz, vol 0,35), :267 (al fallar, vol 0,3)", "parejas", 0.35f, "Note(hz): kalimba (o marimba)",
+                "ConstelacionGameController.cs:250 (al abrir una luz, vol 0,35), :266 (al fallar, vol 0,3; con Madera 3 dB más baja)", "parejas", 0.35f, "PlayNote(NoteHz(g), Kalimba): 11 notas",
                 "Las dos luces de una pareja suenan igual: es una ayuda para recordar con el oído. La altura de cada grupo no cambia.");
-            E(g, "voltear", "Dar vuelta una luz", "Siseo agudo que sube (2200 → 3400 Hz), 0,12 s", "ConstelacionGameController.cs:250 (vol 0,5)", "parejas.flipup", 0.5f, Wk(WoodSfx.Tap), "Tap (más seco)");
-            E(g, "cerrar", "Cerrar una luz", "Siseo corto que baja, 0,1 s", "ConstelacionGameController.cs:247, :468 (vol 0,5)", "parejas.flipdown", 0.5f, Wk(WoodSfx.Unselect), "Unselect");
-            E(g, "noigual", "«No son iguales»", "Seno grave y corto que baja 330 → 247 Hz, 0,32 s", "ConstelacionGameController.cs:273 (vol 0,5)", "parejas.soft", 0.5f, Wk(WoodSfx.Knock), "Knock");
-            E(g, "grupo-memoria", "Encontrar un grupo de memoria", "Dos campanas (nota del grupo y su quinta), 1,6 s", "ConstelacionGameController.cs:293 (vol 0,8)", "parejas.foundmem", 0.8f, Wk(WoodSfx.Correct, 3), "Correct (más alto si fue de memoria)");
-            E(g, "grupo-vista", "Encontrar un grupo a la primera vista (suerte)", "Dos campanas (nota y tercera), más calladas, 1,4 s", "ConstelacionGameController.cs:300 (vol 0,7)", "parejas.foundnew", 0.7f, Wk(WoodSfx.Correct, 1), "Correct, 3 dB más bajo");
-            E(g, "racha", "Destello de racha de memoria (1 a 8)", "Campanita aguda que sube por la escala", "ConstelacionGameController.cs:294 (vol 0,6)", "parejas.spark", 0.6f, WoodLadder(WoodSfx.Spark, WoodSounds.Variants(WoodSfx.Spark), 0.55f), "Spark(n)");
-            E(g, "cielo", "Un cielo completo", "Arpegio de cuatro campanas, 1,8 s", "ConstelacionGameController.cs:224 (vol 0,8)", "parejas.boardend", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
-            E(g, "zumbido", "Empieza el cielo: zumbido de fondo", "Dos senos graves (196 y 294 Hz), 1,7 s", "ConstelacionGameController.cs:205 (vol 0,5)", "parejas.hum", 0.5f, Wk(WoodSfx.Hum), "Hum");
-            E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "ConstelacionGameController.cs:419 (vol 0,7), :473 (vol 0,25)", "parejas.chime", 0.7f, Wk(WoodSfx.New), "New");
-            E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s, con eco", "ConstelacionGameController.cs:358 (vol 0,8)", "parejas.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (y se quita el doble final)");
+            E(g, "voltear", "Dar vuelta una luz", "Siseo agudo que sube (2200 → 3400 Hz), 0,12 s", "ConstelacionGameController.cs:249 (vol 0,5)", "parejas.flipup", 0.5f, Wk(WoodSfx.Tap), "Tap: marimba apagada de 60 ms (por el altavoz del juego); suena a la vez que la nota del grupo (pareja permitida)");
+            E(g, "cerrar", "Cerrar una luz", "Siseo corto que baja, 0,1 s", "ConstelacionGameController.cs:246, :455 (vol 0,5)", "parejas.flipdown", 0.5f, Wk(WoodSfx.Unselect), "Unselect");
+            E(g, "noigual", "«No son iguales»", "Seno grave y corto que baja 330 → 247 Hz, 0,32 s", "ConstelacionGameController.cs:272 (vol 0,5)", "parejas.soft", 0.5f, Wk(WoodSfx.Knock), "Knock");
+            E(g, "grupo-memoria", "Encontrar un grupo de memoria (la nota sube con la racha)", "Dos campanas (nota del grupo y su quinta), 1,6 s", "ConstelacionGameController.cs:292 (vol 0,8)", "parejas.foundmem", 0.8f, WoodLadder(WoodSfx.Correct, WoodSounds.Variants(WoodSfx.Correct), 0.7f), "Correct(racha 1 a 7): el par de kalimbas sube con la racha");
+            E(g, "grupo-vista", "Encontrar un grupo a la primera vista (suerte)", "Dos campanas (nota y tercera), más calladas, 1,4 s", "ConstelacionGameController.cs:299 (vol 0,7)", "parejas.foundnew", 0.7f, Wk(WoodSfx.Correct, 1), "Correct(1), 3 dB más bajo (no sube: no fue memoria)").WoodGain = Atten(-3.0);
+            var racha = E(g, "racha", "Destello de racha de memoria (1 a 8): SE QUITA", "Campanita aguda que sube por la escala, junto al acierto", "ConstelacionGameController.cs:293 (vol 0,6)", "parejas.spark", 0.6f, null, "se quita: el par de Correct ya sube con la racha", "", "DECISIÓN 1 para que la apruebes de oído: hoy suenan los dos a la vez (el acierto y el destello); con Madera queda solo el acierto, que ya sube con la racha. Si prefieres conservar los dos, el destello suena 90 ms después.");
+            racha.NoWood = "Con Madera este destello se quita: el par de Correct ya sube con la racha (compara el botón «Hoy» con el del acierto de arriba).";
+            E(g, "cielo", "Un cielo completo", "Arpegio de cuatro campanas, 1,8 s", "ConstelacionGameController.cs:223 (vol 0,8)", "parejas.boardend", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
+            E(g, "zumbido", "Empieza el cielo: zumbido de fondo", "Dos senos graves (196 y 294 Hz), 1,7 s", "ConstelacionGameController.cs:204 (vol 0,5)", "parejas.hum", 0.5f, Wk(WoodSfx.Hum), "Hum");
+            E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "ConstelacionGameController.cs:406 (vol 0,7)", "parejas.chime", 0.7f, Wk(WoodSfx.New), "New");
+            E(g, "hermanas", "Las luces hermanas brillan (la pista, 850 ms después de errar)", "Dos campanas (mi y la), muy suaves", "ConstelacionGameController.cs:460 (vol 0,25)", "parejas.chime", 0.25f, Wk(WoodSfx.Hint), "Hint (es la ayuda de Nubi, no un «nuevo»)", "", "DECISIÓN: hoy suena el mismo «NUEVO»; con Madera es la ayuda.");
+            E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s, con eco", "ConstelacionGameController.cs:358", "parejas.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (el común; se quita el doble final)");
         }
 
         // ------------------------------------------------------------------ Bodega de carga
@@ -287,24 +314,26 @@ namespace NeuroVida.Bridge.EditorTools
             H("bodega.perfect", () => BodegaSounds.Perfect());
             H("bodega.finale", () => BodegaSounds.Finale());
             H("bodega.chime", () => BodegaSounds.Chime());
+            // los CINCO sonidos propios de Bodega en Madera: las mismas recetas que van al juego (BodegaSounds.MakeRecipe)
+            foreach (var (key, recipe, mono) in BodegaSounds.All()) { var r = recipe; Raw(key + ".madera", () => FromRecipe(r)); }
 
-            FamilyEvent(g, "notas", "Cada escotilla suena SU nota (la 11.ª y siguientes, una octava arriba)", "Campana de la pentatónica (τ 0,42 s, 1,3 s), mono, sin sala; pico 0,3",
-                "BodegaGameController.cs:222 (al mostrar, vol 0,9), :410 (al abrir, vol 0,9)", "bodega", 0.9f, "Note(hz): kalimba (o marimba)",
+            FamilyEvent(g, "notas", "Cada escotilla suena SU nota (12; la 11.ª y siguientes, una octava arriba)", "Campana de la pentatónica (τ 0,42 s, 1,3 s), mono, sin sala; pico 0,3",
+                "BodegaGameController.cs:221 (al guardar, vol 0,9), :409 (al abrir, vol 0,9)", "bodega", 0.9f, "PlayNote(NoteHz(h), Kalimba): 12 notas",
                 "Con la vista y con el oído se recuerda dónde está cada cosa: la altura de cada escotilla no cambia.");
-            E(g, "zumbido", "El robot arranca: zumbido grave", "Triángulo 65 → 90 Hz, 0,85 s", "BodegaGameController.cs:190 (vol 0,5)", "bodega.hum", 0.5f, Wk(WoodSfx.Hum), "Hum");
-            E(g, "llega", "Llega la carga por la esclusa", "Soplido que baja y campanita aguda, 0,6 s", "BodegaGameController.cs:203 (vol 0,6)", "bodega.arrive", 0.6f, null, "propio (Fase C): SweepDown + una kalimba aguda");
-            E(g, "haz", "El haz del robot («piu» 420 → 880 Hz)", "Seno que sube, 0,34 s", "BodegaGameController.cs:214, :254, :284 (vol 0,6)", "bodega.beam", 0.6f, null, "propio (Fase C): kalimba corta que sube");
-            E(g, "volar", "El robot vuela con la caja", "Soplido de ruido 300 → 1500 Hz, 1,1 s", "BodegaGameController.cs:264 (vol 0,6); BodegaGameController.Scene.cs:607 (vol 0,5)", "bodega.whoosh", 0.6f, Wk(WoodSfx.SweepUp), "SweepUp (más largo)");
-            E(g, "abrir", "Abrir una puerta", "Siseo agudo que baja, 0,2 s", "BodegaGameController.cs:217, :385, :408, :699 (vol 0,6)", "bodega.open", 0.6f, null, "propio (Fase C): SweepUp corto");
-            E(g, "cerrar", "Cerrar una puerta", "Golpe grave y suave (ruido 700 → 250 Hz), 0,2 s", "BodegaGameController.cs:228, :391, :422, :699 (vol 0,5)", "bodega.close", 0.5f, Wk(WoodSfx.Clack), "Clack (más suave)");
-            E(g, "caja", "Tomar o dejar la caja («clank»)", "Golpe metálico corto y campanita aguda, 0,4 s", "BodegaGameController.cs:260, :290 (vol 0,6)", "bodega.clank", 0.6f, Wk(WoodSfx.Clack), "Clack");
-            E(g, "matraca", "La bodega gira: matraca de engranes", "Un clic cada 110 ms durante 1,5 s y zumbido grave", "BodegaGameController.cs:309 (vol 0,6)", "bodega.ratchet", 0.6f, null, "propio (Fase C): una fila de bloques de madera");
-            E(g, "pedido", "La pregunta de un pedido", "Campanita (mi agudo), 0,6 s", "BodegaGameController.cs:355, :395 (vol 0,6)", "bodega.ping", 0.6f, Wk(WoodSfx.Notice), "Notice");
-            E(g, "error", "Error: golpe sordo", "Seno grave que baja 220 → 130 Hz, 0,4 s", "BodegaGameController.cs:387 (vol 0,7)", "bodega.thud", 0.7f, Wk(WoodSfx.Wrong), "Wrong");
-            E(g, "racha", "Destello de racha (1 a 8)", "Campanita aguda que sube de tono", "BodegaGameController.cs:413 (vol 0,6)", "bodega.spark", 0.6f, WoodLadder(WoodSfx.Spark, WoodSounds.Variants(WoodSfx.Spark), 0.55f), "Spark(n)");
-            E(g, "perfecto", "Pedido perfecto", "Arpegio de cuatro campanas, 1,8 s", "BodegaGameController.cs:472 (vol 0,8)", "bodega.perfect", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
-            E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "BodegaGameController.cs:565 (vol 0,7)", "bodega.chime", 0.7f, Wk(WoodSfx.New), "New");
-            E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s, con eco", "BodegaGameController.cs:486 (vol 0,8)", "bodega.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
+            E(g, "zumbido", "El robot arranca: zumbido grave", "Triángulo 65 → 90 Hz, 0,85 s", "BodegaGameController.cs:189 (vol 0,5)", "bodega.hum", 0.5f, Wk(WoodSfx.Hum), "Hum");
+            E(g, "llega", "Llega la carga por la esclusa", "Soplido que baja y campanita aguda, 0,6 s", "BodegaGameController.cs:202 (vol 0,6)", "bodega.arrive", 0.6f, "bodega.arrive.madera", "PROPIO bodega.arrive: un soplido que baja y una kalimba aguda (sol6)", "", "NUEVO: sonido propio de Bodega.");
+            E(g, "haz", "El haz del robot («piu» 420 → 880 Hz)", "Seno que sube, 0,34 s", "BodegaGameController.cs:213, :253, :283 (vol 0,6)", "bodega.beam", 0.6f, "bodega.beam.madera", "PROPIO bodega.beam: tres marimbas que suben (una kalimba no puede deslizarse)", "", "NUEVO: sonido propio de Bodega.");
+            E(g, "abrir", "Abrir una puerta", "Siseo agudo que baja, 0,2 s", "BodegaGameController.cs:216, :384, :407, :688 (vol 0,6)", "bodega.open", 0.6f, "bodega.open.madera", "PROPIO bodega.open (mono): un siseo corto que sube", "", "NUEVO: sonido propio de Bodega.");
+            E(g, "cerrar", "Cerrar una puerta", "Golpe grave y suave (ruido 700 → 250 Hz), 0,2 s", "BodegaGameController.cs:227, :390, :421, :688 (vol 0,5)", "bodega.close", 0.5f, Wk(WoodSfx.Clack), "Clack, 6 dB más bajo").WoodGain = Atten(-6.0);
+            E(g, "caja", "Tomar o dejar la caja («clank»)", "Golpe metálico corto y campanita aguda, 0,4 s", "BodegaGameController.cs:259, :289 (vol 0,6)", "bodega.clank", 0.6f, Wk(WoodSfx.Clack), "Clack");
+            E(g, "volar", "El robot vuela con la caja", "Soplido de ruido 300 → 1500 Hz, 1,1 s", "BodegaGameController.cs:263 (vol 0,6); BodegaGameController.Scene.cs:607 (vol 0,5)", "bodega.whoosh", 0.6f, "bodega.fly.madera", "PROPIO bodega.fly: un soplido de 1 s de 300 a 1500 Hz (el SweepUp de la paleta dura 0,5 s: corto para el vuelo)", "", "NUEVO: sonido propio de Bodega.");
+            E(g, "matraca", "La bodega gira: matraca de engranes", "Un clic cada 110 ms durante 1,5 s y zumbido grave", "BodegaGameController.cs:308 (vol 0,6)", "bodega.ratchet", 0.6f, "bodega.ratchet.madera", "PROPIO bodega.ratchet: 14 bloques de madera, uno cada 110 ms, y dos marimbas graves", "tiempo", "NUEVO: sonido propio de Bodega; dura lo que el giro (1,5 s). Hoy suena −19 LUFS; con Madera −32 (a propósito: era fuerte por accidente).");
+            E(g, "pedido", "La pregunta de un pedido", "Campanita (mi agudo), 0,6 s", "BodegaGameController.cs:354, :394 (vol 0,6)", "bodega.ping", 0.6f, Wk(WoodSfx.Notice), "Notice");
+            E(g, "error", "Error: golpe sordo", "Seno grave que baja 220 → 130 Hz, 0,4 s", "BodegaGameController.cs:386 (vol 0,7)", "bodega.thud", 0.7f, Wk(WoodSfx.Wrong), "Wrong");
+            E(g, "racha", "Destello de racha (1 a 8), junto a la nota", "Campanita aguda que sube de tono", "BodegaGameController.cs:412 (vol 0,6)", "bodega.spark", 0.6f, WoodLadder(WoodSfx.Spark, WoodSounds.Variants(WoodSfx.Spark), 0.55f), "Spark(n): pareja permitida (la nota es la información, el destello es la racha)");
+            E(g, "perfecto", "Pedido perfecto", "Arpegio de cuatro campanas, 1,8 s", "BodegaGameController.cs:471 (vol 0,8)", "bodega.perfect", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
+            E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "BodegaGameController.cs:552 (vol 0,7)", "bodega.chime", 0.7f, Wk(WoodSfx.New), "New");
+            E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s, con eco", "BodegaGameController.cs:486", "bodega.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (el común)");
         }
 
         // ------------------------------------------------------------------ La estación de correo
@@ -327,23 +356,29 @@ namespace NeuroVida.Bridge.EditorTools
             H("correo.dayend", () => MailSounds.DayEnd());
             H("correo.finale", () => MailSounds.Finale());
             Raw("correo.tier", () => Scale(3, 1.0, i => Trimmed(FromClip(MailSounds.Tier(i + 1)), 1.4)));
+            // los TRES sonidos propios de Correo en Madera: las mismas recetas que van al juego (MailSounds.MakeRecipe)
+            foreach (var (key, recipe, mono) in MailSounds.All()) { var r = recipe; Raw(key + ".madera", () => FromRecipe(r)); }
+            // el faro: hoy suenan a la vez la fanfarria (vol 0,8) y la bocina (vol 0,6); con Madera, la fanfarria (Perfect) y la bocina de fondo, 8 LU más baja
+            Raw("correo.faro.hoy", () => Mix((Get("correo.fanfare"), 0.8), (Get("correo.horn"), 0.6)));
+            Raw("correo.faro.madera", () => Mix((FromWood("", WoodSfx.Perfect, 0), 1.0), (FromRecipe(MailSounds.MakeRecipe(MailSfx.Horn)), 1.0)));
 
             FamilyEvent(g, "buzones", "Cada buzón suena SU nota (do5, mi5, sol5, do6)", "Campana suave (τ 0,2 s, 0,7 s), mono, sin sala; pico 0,3",
-                "MailGameController.Scene.cs:158 (al entregar, vol 0,5)", "correo", 0.5f, "Note(hz): kalimba (o marimba)", "La nota identifica el buzón (planeta): no cambia la altura.");
-            E(g, "combo", "Brillo de la racha (desde ×3)", "Campanita aguda que sube por la escala", "MailGameController.Scene.cs:159 (vol 0,35)", "correo.combo", 0.35f, WoodLadder(WoodSfx.Spark, WoodSounds.Variants(WoodSfx.Spark), 0.55f), "Spark(n)");
-            E(g, "escalon", "Escalón de racha (×10, ×20, ×30)", "Dos a cuatro campanas, 1,4 s", "MailGameController.Scene.cs:183 (vol 0,7), :561 (vol 0,5)", "correo.tier", 0.7f, Wk(WoodSfx.Streak), "Streak");
-            E(g, "error", "Carta atrasada que cae / buzón equivocado", "Golpe sordo (220 → 130 Hz), 0,34 s", "MailGameController.Scene.cs:165, :209, :240, :272 (vol 0,5 a 0,6)", "correo.thud", 0.6f, Wk(WoodSfx.Wrong), "Wrong");
-            E(g, "esanoo", "«Esa carta no» / «aún no es la hora»", "Tono suave que baja 392 → 330 Hz, 0,28 s", "MailGameController.Scene.cs:175, :212, :244, :248, :287 (vol 0,4 a 0,5)", "correo.soft", 0.5f, Wk(WoodSfx.Knock), "Knock");
-            E(g, "cumplido", "Encargo cumplido", "Fanfarria de tres campanas (sol, si, re agudos), 1,6 s", "MailGameController.Scene.cs:202, :230 (vol 0,8)", "correo.fanfare", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
+                "MailGameController.Scene.cs:158 (al entregar, vol 0,5)", "correo", 0.5f, "PlayNote(PlanetNotes[b], Kalimba): 4 notas", "La nota identifica el buzón (planeta): no cambia la altura.");
+            E(g, "combo", "Brillo de la racha (desde ×3), junto a la nota", "Campanita aguda que sube por la escala", "MailGameController.Scene.cs:159 (vol 0,35)", "correo.combo", 0.35f, WoodLadder(WoodSfx.Spark, WoodSounds.Variants(WoodSfx.Spark), 0.55f), "Spark(n): pareja permitida (la nota es la información, el brillo la racha)");
+            E(g, "escalon", "Escalón de racha (×10, ×20, ×30)", "Dos a cuatro campanas, 1,4 s", "MailGameController.Scene.cs:183 (vol 0,7), :553 (vol 0,5, demostración; con Madera 3 dB más baja)", "correo.tier", 0.7f, Wk(WoodSfx.Streak), "Streak (uno solo para los tres escalones)");
+            E(g, "error", "Carta atrasada que cae / buzón equivocado / no va en la caja fuerte", "Golpe sordo (220 → 130 Hz), 0,34 s", "MailGameController.Scene.cs:165, :209, :240, :272 (vol 0,5 a 0,6)", "correo.thud", 0.6f, Wk(WoodSfx.Wrong), "Wrong");
+            E(g, "esanoo", "«Esa carta no» / «aún no es la hora» / ventana cerrada", "Tono suave que baja 392 → 330 Hz, 0,28 s", "MailGameController.Scene.cs:175, :212, :244, :248, :287 (vol 0,4 a 0,5)", "correo.soft", 0.5f, Wk(WoodSfx.Knock), "Knock");
+            E(g, "cumplido", "Encargo cumplido (caja fuerte)", "Fanfarria de tres campanas (sol, si, re agudos), 1,6 s", "MailGameController.Scene.cs:202 (vol 0,8)", "correo.fanfare", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
+            E(g, "faro", "Se enciende el faro: fanfarria Y bocina a la vez", "La fanfarria (vol 0,8) y la bocina grave (vol 0,6) suenan juntas", "MailGameController.Scene.cs:230-231", "correo.faro.hoy", 1f, "correo.faro.madera", "Perfect + la bocina propia de fondo (8 LU más baja)", "", "DECISIÓN 5 para que la apruebes de oído: hoy son dos hitos encimados; con Madera manda la fanfarria y la bocina queda de fondo. Otras opciones: solo la bocina (sin premio) o solo la fanfarria.");
+            E(g, "bocina", "La nave del correo: bocina grave de tres notas", "Tres triángulos (146, 220, 293 Hz), 2,1 s", "MailGameController.Scene.cs:231 (vol 0,6)", "correo.horn", 0.6f, "correo.horn.madera", "PROPIO correo.horn: tres marimbas graves, dos golpes por nota para que «dure»", "", "NUEVO: sonido propio de Correo; hoy −18 LUFS, con Madera −26 (la bocina ya no manda sobre la fanfarria).");
             E(g, "tic", "Mirar el reloj: tic", "Ruido y campanita, 0,4 s", "MailGameController.Scene.cs:259 (vol 0,5)", "correo.tick", 0.5f, Wk(WoodSfx.Tick), "Tick");
-            E(g, "bocina", "La nave del correo: bocina grave de tres notas", "Tres triángulos (146, 220, 293 Hz), 2,1 s", "MailGameController.Scene.cs:231 (vol 0,6)", "correo.horn", 0.6f, null, "propio (Fase C): marimbas graves");
-            E(g, "saco", "«¡Llega un saco!»", "Siseo que sube, golpe y dos campanitas, 0,9 s", "MailGameController.Scene.cs:277 (vol 0,7)", "correo.sack", 0.7f, null, "propio (Fase C): SweepUp + Clack + dos notas");
-            E(g, "radio", "La radio", "Dos tonos y un siseo, 0,7 s", "MailGameController.Scene.cs:282 (vol 0,7)", "correo.radio", 0.7f, null, "propio (Fase C)");
+            E(g, "saco", "«¡Llega un saco!»", "Siseo que sube, golpe y dos campanitas, 0,9 s", "MailGameController.Scene.cs:277 (vol 0,7)", "correo.sack", 0.7f, "correo.sack.madera", "PROPIO correo.sack: un siseo que sube, un golpe grave y dos kalimbas", "", "NUEVO: sonido propio de Correo.");
+            E(g, "radio", "La radio", "Dos tonos y un siseo, 0,7 s", "MailGameController.Scene.cs:282 (vol 0,7)", "correo.radio", 0.7f, "correo.radio.madera", "PROPIO correo.radio: estática granulada y dos marimbas cortas", "", "NUEVO: sonido propio de Correo.");
             E(g, "dia", "Empieza el día: zumbido (sol y re graves)", "Dos senos, 1,6 s", "MailGameController.cs:183 (vol 0,5)", "correo.hum", 0.5f, Wk(WoodSfx.Hum), "Hum");
             E(g, "hoja", "La hoja de la mañana", "Campana (sol), 0,9 s", "MailGameController.cs:225 (vol 0,7)", "correo.brief", 0.7f, Wk(WoodSfx.Notice), "Notice");
             E(g, "cierre-dia", "Cierre del día: tres campanas que suben", "Tres campanas, 1,6 s, con eco", "MailGameController.cs:198 (vol 0,8)", "correo.dayend", 0.8f, Wk(WoodSfx.LevelUp), "LevelUp");
-            E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "MailGameController.cs:298 (vol 0,7)", "correo.chime", 0.7f, Wk(WoodSfx.New), "New");
-            E(g, "final", "Fin de la partida", "Dos campanas lentas (sol y do agudos), 2 s", "MailGameController.cs:262 (vol 0,8)", "correo.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
+            E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "MailGameController.cs:296 (vol 0,7)", "correo.chime", 0.7f, Wk(WoodSfx.New), "New");
+            E(g, "final", "Fin de la partida", "Dos campanas lentas (sol y do agudos), 2 s", "MailGameController.cs:262", "correo.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (el común)");
         }
 
         // ------------------------------------------------------------------ Tinta o Palabra
@@ -478,22 +513,25 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterCarga()
         {
             const string g = "calculo";
-            H("calculo.select", () => CargaSounds.Select());
-            H("calculo.operation", () => CargaSounds.Operation());
+            // «hoy» de las cinco clases de la Fase C: lo que suena con el juego tal como está; los clips sueltos salen CONGELADOS del 17-oct (nada se renderiza), lo que se mezcla o es una escala sale del código de hoy
+            Frozen("calculo.select");
+            Frozen("calculo.operation");
             Raw("calculo.merge", () => Scale(LadderSteps, 0.55, i => Trimmed(FromClip(CargaSounds.Merge(i + 1)), 1.0)));
-            H("calculo.thud", () => CargaSounds.Thud());
-            H("calculo.back", () => CargaSounds.Back());
-            H("calculo.hint", () => CargaSounds.Hint());
-            H("calculo.arpeggio", () => CargaSounds.Arpeggio());
-            H("calculo.finale", () => CargaSounds.Finale());
-            E(g, "celda", "Elegir una celda", "Campanita (la nota 3 de la escala), 0,5 s", "CalculoGameController.cs:509, :515 (vol 0,7)", "calculo.select", 0.7f, Wk(WoodSfx.Select, 2), "Select(2): mi5, la misma altura");
-            E(g, "operacion", "Elegir una operación", "Campanita (la nota 6), 0,5 s", "CalculoGameController.cs:530 (vol 0,7)", "calculo.operation", 0.7f, Wk(WoodSfx.Select, 5), "Select(5): do6, la misma altura");
-            E(g, "juntar", "Juntar dos celdas (la nota sube con cada paso)", "Campana de la escala (τ 0,22 s) y un soplo de luz", "CalculoGameController.cs:553 (vol 0,8)", "calculo.merge", 0.8f, WoodLadder(WoodSfx.Correct, WoodSounds.Variants(WoodSfx.Correct), 0.7f), "Correct(paso)", "info", "La altura sube con cada paso (cuánto avanzó la cuenta).");
-            E(g, "imposible", "Una jugada imposible", "Golpe grave y blando, 0,34 s", "CalculoGameController.cs:540 (vol 0,8), :571 (vol 0,6)", "calculo.thud", 0.8f, Wk(WoodSfx.Knock), "Knock");
-            E(g, "deshacer", "Deshacer o empezar de nuevo", "Soplo corto que baja, 0,3 s", "CalculoGameController.cs:593, :603 (vol 0,7)", "calculo.back", 0.7f, Wk(WoodSfx.Unselect), "Unselect");
-            E(g, "pista", "La pista de Nubi", "Dos campanas (mi y la), 1,1 s", "CalculoGameController.cs:624 (vol 0,8)", "calculo.hint", 0.8f, Wk(WoodSfx.Hint), "Hint");
-            E(g, "exacta", "La carga está exacta: arpegio", "Cuatro campanas que suben, 2 s, con eco", "CalculoGameController.cs:581 (vol 0,9)", "calculo.arpeggio", 0.9f, Wk(WoodSfx.Perfect), "Perfect");
-            E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s", "CalculoGameController.cs:337 (vol 0,8)", "calculo.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
+            Frozen("calculo.thud");
+            Frozen("calculo.back");
+            Frozen("calculo.hint");
+            Frozen("calculo.arpeggio");
+            Frozen("calculo.finale");
+            E(g, "celda", "Elegir una celda", "Campanita (la nota 3 de la escala), 0,5 s", "CalculoGameController.cs:535, :541 (vol 0,7)", "calculo.select", 0.7f, Wk(WoodSfx.Select, 2), "Select(2): kalimba mi5, la misma altura");
+            E(g, "operacion", "Elegir una operación", "Campanita (la nota 6), 0,5 s", "CalculoGameController.cs:556 (vol 0,7)", "calculo.operation", 0.7f, Wk(WoodSfx.Select, 5), "Select(5): kalimba do6, la misma altura");
+            E(g, "juntar", "Juntar dos celdas (la nota sube con cada paso)", "Campana de la escala (τ 0,22 s) y un soplo de luz", "CalculoGameController.cs:579 (vol 0,8)", "calculo.merge", 0.8f, WoodLadder(WoodSfx.Correct, WoodSounds.Variants(WoodSfx.Correct), 0.7f), "Correct(paso 1 a 7): el par de kalimbas sube con el paso", "info", "La altura sube con cada paso (cuánto avanzó la cuenta).");
+            E(g, "imposible", "Una jugada imposible", "Golpe grave y blando, 0,34 s", "CalculoGameController.cs:566 (vol 0,8)", "calculo.thud", 0.8f, Wk(WoodSfx.Knock), "Knock");
+            E(g, "quedo", "«Quedó X: deshaz y prueba otro camino»", "Golpe grave y blando, 0,34 s", "CalculoGameController.cs:597 (vol 0,6)", "calculo.thud", 0.6f, Wk(WoodSfx.Knock), "Knock, 3 dB más bajo").WoodGain = Atten(-3.0);
+            E(g, "deshacer", "Deshacer o empezar de nuevo", "Soplo corto que baja, 0,3 s", "CalculoGameController.cs:627, :650 (vol 0,7)", "calculo.back", 0.7f, Wk(WoodSfx.Unselect), "Unselect");
+            E(g, "armado", "«Empezar de nuevo» armado (primer toque)", "Soplo corto que baja, 0,3 s", "CalculoGameController.cs:640 (vol 0,4)", "calculo.back", 0.4f, Wk(WoodSfx.Unselect), "Unselect, 6 dB más bajo").WoodGain = Atten(-6.0);
+            E(g, "pista", "La pista de Nubi", "Dos campanas (mi y la), 1,1 s", "CalculoGameController.cs:671 (vol 0,8)", "calculo.hint", 0.8f, Wk(WoodSfx.Hint), "Hint: soplo que sube y kalimba grave");
+            E(g, "exacta", "La carga está exacta: arpegio", "Cuatro campanas que suben, 2 s, con eco", "CalculoGameController.cs:607 (vol 0,9)", "calculo.arpeggio", 0.9f, Wk(WoodSfx.Perfect), "Perfect", "", "Hoy es el sonido más fuerte de toda la app (−11 LUFS): con Madera queda a −19 LUFS (8 LU más bajo), a propósito.");
+            E(g, "final", "Fin de la partida", "Ya no suena (el final lo suena ExitButton, uno por partida)", "CalculoGameController.cs:343", "calculo.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (el común)");
         }
 
         // ------------------------------------------------------------------ Engranajes
@@ -573,21 +611,30 @@ namespace NeuroVida.Bridge.EditorTools
         {
             const string g = "anagramas";
             Family_("punta", "En la punta de la lengua: la nota de cada casilla (10)", Hz(i => PuntaSounds.Penta[i], 10), i => PuntaSounds.Note(i), 0.4);
-            H("punta.appear", () => PuntaSounds.Appear());
-            H("punta.back", () => PuntaSounds.Back());
-            H("punta.thud", () => PuntaSounds.Thud());
-            H("punta.help", () => PuntaSounds.Help());
-            H("punta.chord", () => PuntaSounds.Chord());
-            H("punta.chime", () => PuntaSounds.Chime());
-            H("punta.finale", () => PuntaSounds.Finale());
-            FamilyEvent(g, "notas", "Cada ficha que se coloca suena la nota de su casilla", "Campana de la pentatónica (τ 0,22 s, 1,2 s)", "PuntaGameController.cs:506 (vol 0,8), :673 (al completar, la siguiente)", "punta", 0.8f, "Select(k)", "La casilla k suena la nota k.");
-            E(g, "aparecen", "Aparecen las fichas", "Barrido de ruido que sube 600 → 2200 Hz, 0,55 s", "PuntaGameController.cs:458 (vol 0,6)", "punta.appear", 0.6f, Wk(WoodSfx.SweepUp), "SweepUp");
-            E(g, "volver", "Una ficha vuelve al banco", "Soplo corto y bajo, 0,2 s", "PuntaGameController.cs:500, :515 (vol 0,5)", "punta.back", 0.5f, Wk(WoodSfx.Unselect), "Unselect");
-            E(g, "casi", "«Casi»: golpe grave y blando", "Seno 220 → 130 Hz, 0,34 s", "PuntaGameController.cs:535 (vol 0,8)", "punta.thud", 0.8f, Wk(WoodSfx.Wrong), "Wrong");
-            E(g, "ayuda", "Una ayuda: soplo que sube y campana grave", "Ruido 300 → 1800 Hz y campana de 392 Hz, 1 s", "PuntaGameController.cs:583 (vol 0,7)", "punta.help", 0.7f, Wk(WoodSfx.Hint), "Hint");
-            E(g, "palabra", "La palabra salió: acorde que cierra", "Tres campanas que suben, 1,6 s", "PuntaGameController.cs:680 (vol 0,8)", "punta.chord", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
-            E(g, "luz", "El lucero llega al cielo", "Dos campanitas, 1,1 s", "PuntaGameController.cs:1421, :1451 (vol 0,5)", "punta.chime", 0.5f, Wk(WoodSfx.New), "New");
-            E(g, "final", "Fin de la partida", "Tres campanas que suben, lentas", "PuntaGameController.cs:713 (vol 0,8)", "punta.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
+            Frozen("punta.appear");
+            Frozen("punta.back");
+            Frozen("punta.thud");
+            Frozen("punta.help");
+            Frozen("punta.chord");
+            Frozen("punta.chime");
+            Frozen("punta.finale");
+            // la cascada del final: la palabra salió y cada letra se enciende con la nota siguiente, cada 0,09 s (hoy y Madera, con la caída de siempre y con una caída más corta por si se oye espesa)
+            Raw("punta.cascada.hoy", () => Scale(7, 0.09, i => FromClip(PuntaSounds.Note(i + 1))));
+            Raw("punta.cascada.madera", () => Scale(7, 0.09, i => FromRecipe(WoodSounds.MakeNote(PuntaSounds.Penta[i + 1], WoodVoice.Kalimba))));
+            Raw("punta.cascada.madera.tau02", () => Scale(7, 0.09, i => FromRecipe(WoodSounds.MakeNote(PuntaSounds.Penta[i + 1], WoodVoice.Kalimba, 0.2))));
+            FamilyEvent(g, "notas", "Cada ficha que se coloca suena la nota de su casilla", "Campana de la pentatónica (τ 0,22 s, 1,2 s)", "PuntaGameController.cs:514 (vol 0,8)", "punta", 0.8f, "PlayNote(Penta[k], Kalimba): 10 notas, do5 a la6",
+                "La casilla k suena la nota k: el orden en que se arma la palabra es información (la altura no cambia).");
+            var cascada = E(g, "cascada", "La palabra salió: cada letra se enciende con la nota siguiente (cada 0,09 s)", "Las mismas notas, una cada 0,09 s (hasta 7)", "PuntaGameController.cs:684 desde LightUp (:662, k · 0,09 s)", "punta.cascada.hoy", 0.8f, "punta.cascada.madera", "Las mismas 10 notas de kalimba, el mismo retardo k · 0,09 s (no se toca LightUp)", "info",
+                "Si se oye espesa, la alternativa es pedir las notas de la cascada con una caída de 0,2 s (el botón verde). Con el acorde final encima (Perfect) es la misma escala y la misma sala.");
+            cascada.WoodAltKey = "punta.cascada.madera.tau02";
+            cascada.WoodAltLabel = "Madera (caída más corta)";
+            E(g, "aparecen", "Aparecen las fichas", "Barrido de ruido que sube 600 → 2200 Hz, 0,55 s", "PuntaGameController.cs:463 (vol 0,6)", "punta.appear", 0.6f, Wk(WoodSfx.SweepUp), "SweepUp");
+            E(g, "volver", "Una ficha vuelve al banco", "Soplo corto y bajo, 0,2 s", "PuntaGameController.cs:508, :523 (vol 0,5)", "punta.back", 0.5f, Wk(WoodSfx.Unselect), "Unselect");
+            E(g, "casi", "«Casi»: golpe grave y blando", "Seno 220 → 130 Hz, 0,34 s", "PuntaGameController.cs:543 (vol 0,8)", "punta.thud", 0.8f, Wk(WoodSfx.Wrong), "Wrong");
+            E(g, "ayuda", "Una ayuda: soplo que sube y campana grave", "Ruido 300 → 1800 Hz y campana de 392 Hz, 1 s", "PuntaGameController.cs:591 (vol 0,7)", "punta.help", 0.7f, Wk(WoodSfx.Hint), "Hint");
+            E(g, "palabra", "La palabra salió: acorde que cierra", "Tres campanas que suben, 1,6 s", "PuntaGameController.cs:691 (vol 0,8)", "punta.chord", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
+            E(g, "luz", "El lucero llega al cielo", "Dos campanitas, 1,1 s", "PuntaGameController.cs:1436, :1466 (vol 0,5)", "punta.chime", 0.5f, Wk(WoodSfx.New), "New, 3 dB más bajo").WoodGain = Atten(-3.0);
+            E(g, "final", "Fin de la partida", "Tres campanas que suben, lentas", "PuntaGameController.cs:713", "punta.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (el común)");
         }
 
         // ------------------------------------------------------------------ Lluvia de meteoros

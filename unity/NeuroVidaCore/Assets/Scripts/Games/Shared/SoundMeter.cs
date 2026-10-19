@@ -105,6 +105,40 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>
+        /// Los inicios (en ms) de un clip con VARIAS notas o golpes (la matraca de Bodega, la bocina de Correo, una cascada): cada vez que la envolvente de la DIFERENCIA SEGUNDA de las muestras (un «filtro pasa-altos»: un ataque trae agudos que enseguida se apagan, así una nota grave
+        /// que todavía suena no esconde la que entra; el máximo de cada 2 ms) sube de golpe (más de 1,8 veces la ventana anterior) y llega al menos a <paramref name="thresholdDb"/> dB del pico de esa envolvente, y a lo menos <paramref name="minGapMs"/> ms después del inicio anterior. Las pruebas de los sonidos propios con secuencia fijan así sus tiempos (paso 0 de las Fases C a E).
+        /// </summary>
+        public static System.Collections.Generic.List<double> OnsetsMs(float[] left, float[] right = null, double thresholdDb = -30.0, double minGapMs = 40.0)
+        {
+            var onsets = new System.Collections.Generic.List<double>();
+            int n = left.Length;
+            var d = new double[n];                                              // la diferencia segunda de las muestras (la mayor de los dos canales)
+            double top = 0;
+            for (int i = 2; i < n; i++)
+            {
+                d[i] = Math.Abs((double)left[i] - 2.0 * left[i - 1] + left[i - 2]);
+                if (right != null) d[i] = Math.Max(d[i], Math.Abs((double)right[i] - 2.0 * right[i - 1] + right[i - 2]));
+                top = Math.Max(top, d[i]);
+            }
+            if (top <= 0) return onsets;
+            double threshold = top * Math.Pow(10.0, thresholdDb / 20.0);
+            int window = Math.Max(1, (int)Math.Round(0.002 * Rate)), gap = (int)Math.Round(minGapMs * Rate / 1000.0), last = -gap;
+            double previous = 0;
+            for (int s = 0; s + window <= n; s += window)
+            {
+                double e = 0;
+                for (int i = s; i < s + window; i++) e = Math.Max(e, d[i]);
+                if (e >= threshold && e > 1.8 * previous && s - last >= gap)
+                {
+                    onsets.Add(s * 1000.0 / Rate);
+                    last = s;
+                }
+                previous = e;
+            }
+            return onsets;
+        }
+
+        /// <summary>
         /// Los milisegundos hasta la última muestra que supera <paramref name="belowPeakDb"/> dB por debajo del pico: cuánto dura de verdad el sonido. Si se da <paramref name="floorDbfs"/>, lo que queda bajo ese nivel ABSOLUTO (en dBFS) tampoco cuenta: una cola de sala de −70 dBFS no se oye aunque
         /// sea fuerte para un sonido muy suave.
         /// </summary>

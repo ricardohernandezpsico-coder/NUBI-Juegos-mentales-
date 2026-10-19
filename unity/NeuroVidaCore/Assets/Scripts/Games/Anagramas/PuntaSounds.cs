@@ -9,7 +9,7 @@ namespace NeuroVida.Games.Anagramas
     /// nota de la escala (la casilla k suena la nota k); al completar bien, cada letra se enciende con la nota siguiente y cierra un acorde; el error es un
     /// golpe grave y blando (sin chicharra); la ayuda, un soplo que sube y una campana; las fichas aparecen con un barrido suave. Sintetizado por código.
     /// </summary>
-    public static class PuntaSounds
+    public static partial class PuntaSounds
     {
         private const int Rate = 44100;
         /// <summary>La escala del juego (do mayor pentatónica, dos octavas): casilla k → nota k.</summary>

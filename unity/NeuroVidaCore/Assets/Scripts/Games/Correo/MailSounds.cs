@@ -9,7 +9,7 @@ namespace NeuroVida.Games.Correo
     /// tres notas al cumplir un encargo; un tono grave y corto al equivocarse (nunca un castigo); el tic del reloj; dos tonos con ruido para la radio; la bocina grave de tres notas de la nave del correo; el sonido del saco;
     /// un zumbido al empezar el día y campanas al cerrarlo. Nada suena fuerte: todo ≤ 0,5.
     /// </summary>
-    public static class MailSounds
+    public static partial class MailSounds
     {
         private const int Rate = 44100;
         private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();

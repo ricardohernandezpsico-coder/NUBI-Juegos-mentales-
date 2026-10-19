@@ -9,7 +9,7 @@ namespace NeuroVida.Games.Calculo
     /// elegir una celda o una operación es una campanita suave; juntar dos celdas hace sonar una nota que SUBE con cada paso (la nota 4, 5, 6… de la escala) con un
     /// soplo de luz; lo imposible es un golpe grave y blando (sin chicharra); la pista de Nubi son dos campanas; al lograr la carga, un arpegio que sube.
     /// </summary>
-    public static class CargaSounds
+    public static partial class CargaSounds
     {
         private const int Rate = 44100;
         public static readonly float[] Penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880f, 1046.5f, 1174.66f, 1318.5f, 1567.98f, 1760f };

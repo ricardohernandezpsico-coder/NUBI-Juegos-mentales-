@@ -279,6 +279,82 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
+        public void TheNoteWithATighterDecay_FallsFasterAndKeepsItsPitch()
+        {
+            // paso 0 de las Fases C a E: MakeNote(hz, voz, tau). Rastro necesita 0,2 s y la cascada de Engranajes 0,15 s; la de siempre (0,3 s) cae a -20 dB cerca de los 0,7 s (con la sala de Rescate)
+            var table = new System.Text.StringBuilder("voz hz: -20 dB con tau 0,3 / 0,2 / 0,15 (ms)");
+            var rows = new List<(string Name, double T30, double T20, double T15)>();
+            foreach (var voice in new[] { WoodVoice.Kalimba, WoodVoice.Marimba })
+                foreach (double hz in new[] { 440.0, 783.99, 1318.51 })
+                {
+                    double t30 = Decay(WoodSounds.MakeNote(hz, voice), hz), t20 = Decay(WoodSounds.MakeNote(hz, voice, 0.2), hz), t15 = Decay(WoodSounds.MakeNote(hz, voice, 0.15), hz);
+                    rows.Add((voice + " " + hz, t30, t20, t15));
+                    table.Append("\n  " + voice + " " + hz + ": " + t30.ToString("0") + " / " + t20.ToString("0") + " / " + t15.ToString("0"));
+                    foreach (double tau in new[] { 0.2, 0.15 })
+                    {
+                        WoodSounds.Render(WoodSounds.MakeNote(hz, voice, tau), out var l, out var r);
+                        Assert.Greater(SoundMeter.PitchClarity(l, r, hz), 0.6, voice + " " + hz + " tau " + tau + ": la misma claridad de altura");
+                        Assert.Less(SoundMeter.OnsetMs(l, r), 3.0, voice + " " + hz + " tau " + tau + ": empieza en menos de 3 ms");
+                    }
+                }
+            foreach (var row in rows)
+            {
+                string why = row.Name + table;
+                Assert.That(row.T30, Is.InRange(550.0, 800.0), why);
+                Assert.Less(row.T20, row.T30 - 120.0, why + "\n  tau 0,2 cae bastante antes que tau 0,3");
+                Assert.Less(row.T15, row.T20 - 30.0, why + "\n  y tau 0,15 antes que tau 0,2");
+                Assert.That(row.T20, Is.InRange(300.0, 500.0), why);
+                Assert.That(row.T15, Is.InRange(200.0, 450.0), why);
+            }
+            var a = WoodSounds.MakeNote(523.25, WoodVoice.Kalimba);
+            var b = WoodSounds.MakeNote(523.25, WoodVoice.Kalimba, 0.3);
+            Assert.AreEqual(a.X.Length, b.X.Length);
+            for (int i = 0; i < a.X.Length; i++) Assert.AreEqual(a.X[i], b.X[i], 0f, "sin tau es la de siempre, muestra por muestra");
+            Assert.AreEqual(0.30, a.Level, 1e-9);
+        }
+
+        private static double Decay(WoodSounds.Recipe recipe, double hz)
+        {
+            WoodSounds.Render(recipe, out var l, out var r);
+            return SoundMeter.DecayMs(l, r, 20.0);
+        }
+
+        [Test]
+        public void TheGenericBakeJob_GivesTheSameClip_AsToClip_ForARecipeOfThePalette()
+        {
+            foreach (var (sfx, arg) in new[] { (WoodSfx.Select, 2), (WoodSfx.Tap, 0), (WoodSfx.Perfect, 0), (WoodSfx.Hum, 0) })
+            {
+                var recipe = WoodSounds.MakeRecipe(sfx, arg);
+                string key = WoodSounds.KeyOf(sfx, arg);
+                bool mono = WoodSounds.IsMono(sfx);
+                var job = new WoodSounds.BakeJob(recipe, key, mono);
+                int steps = 0;
+                while (!job.Step(8000)) steps++;
+                Assert.Greater(steps, 1, key + ": se hornea de a poco");
+                var direct = WoodSounds.ToClip(sfx, arg);
+                var viaRecipe = WoodSounds.ToClip(recipe, key, mono);
+                foreach (var other in new[] { direct, viaRecipe })
+                {
+                    Assert.AreEqual(other.channels, job.Clip.channels, key);
+                    Assert.AreEqual(other.samples, job.Clip.samples, key);
+                    var x = new float[other.samples * other.channels];
+                    var y = new float[x.Length];
+                    other.GetData(x, 0);
+                    job.Clip.GetData(y, 0);
+                    for (int i = 0; i < x.Length; i++) Assert.AreEqual(x[i], y[i], 0f, key + " muestra " + i);
+                }
+                Assert.AreEqual(key, job.Clip.name);
+            }
+            // y con una receta suelta (no de la paleta) el trabajo con la receta en el primer paso da lo mismo que con la receta ya armada
+            var own = new WoodSounds.Recipe(WoodKit.Woodblock(900), 0.1, 0.1, WoodTier.Micro);
+            var lazy = new WoodSounds.BakeJob(() => own, "propio", true);
+            while (!lazy.Step()) { }
+            var eager = WoodSounds.ToClip(own, "propio", true);
+            Assert.AreEqual(eager.samples, lazy.Clip.samples);
+            Assert.AreEqual(1, lazy.Clip.channels, "mono");
+        }
+
+        [Test]
         public void TheCue_IsShortAndStartsRightAway()
         {
             foreach (double hz in new[] { 147.0, 330.0, 784.0, 988.0 })

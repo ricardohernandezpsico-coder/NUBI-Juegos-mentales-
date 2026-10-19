@@ -9,7 +9,7 @@ namespace NeuroVida.Games.Parejas
     /// suave al abrirse: las dos de una pareja suenan igual, así se recuerda con la vista y con el oído. Al encontrar un grupo suena un acorde de quinta (de memoria) o de tercera (a la primera vista), y un acierto de
     /// memoria suma un brillo que sube con la racha. El «no son iguales» es un tono grave y corto, nunca un castigo. Al empezar el cielo suena un zumbido de fondo. Nada suena fuerte: todo ≤ 0,5.
     /// </summary>
-    public static class ConstelacionSounds
+    public static partial class ConstelacionSounds
     {
         private const int Rate = 44100;
         private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();

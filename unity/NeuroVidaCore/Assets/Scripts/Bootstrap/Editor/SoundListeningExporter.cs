@@ -28,8 +28,11 @@ namespace NeuroVida.Bridge.EditorTools
         {
             public string Key;
             public float[] L, R;
-            public int Channels => R == null ? 1 : 2;
-            public int Samples => L.Length;
+            /// <summary>Un sonido de «hoy» CONGELADO (Tarea 133, paso 0): no se renderiza; su WAV y sus medidas salen del catálogo del 17-oct (<c>tools/sonido/catalogo-hoy-17-oct.json</c>). Así «hoy» sigue siendo el sonido real que sonaba aunque se borren las clases <c>XSounds</c> de cada juego.</summary>
+            public bool Frozen;
+            public int FrozenChannels, FrozenSamples;
+            public int Channels => Frozen ? FrozenChannels : (R == null ? 1 : 2);
+            public int Samples => Frozen ? FrozenSamples : L.Length;
             // medidas (con ganancia 1)
             public double Peak, Lufs, OnsetMs, AttackMs, DurMs, F0Frac, T20Ms;
             public double F0Hz;
@@ -44,11 +47,15 @@ namespace NeuroVida.Bridge.EditorTools
         {
             public string Group, Id, Title, Today, Sites, Map, Flag = "", Note = "";
             public string HoyKey, WoodKey, WoodAltKey;
+            /// <summary>La fase del plan en que se migra el juego del evento: «B» lo común (ya suena), «C», «D» o «E»; vacío = el juego ya está en Madera (Rescate, Acoplamiento y Aterrizaje).</summary>
+            public string Phase = "";
+            /// <summary>Si el evento NO tiene sonido de Madera a propósito (se quita, o se queda como está), lo que dice la página en lugar del botón.</summary>
+            public string NoWood = "";
             public float HoyGain = 1f, WoodGain = WoodSounds.PlayVolume;
             public bool AlreadyWood;
             public string WoodAltLabel = "Madera (marimba)";
             /// <summary>Solo los eventos con un sonido de Madera (o de la paleta) llevan botones en la página; los demás se miden y se listan, pero no se tocan en esta fase.</summary>
-            public bool Audio => !string.IsNullOrEmpty(WoodKey);
+            public bool Audio => !string.IsNullOrEmpty(WoodKey) || !string.IsNullOrEmpty(NoWood);          // un evento que se queda sin Madera a propósito lleva igual su botón «Hoy» y la explicación
         }
 
         internal static readonly List<Ev> Events = new List<Ev>();
@@ -93,7 +100,7 @@ namespace NeuroVida.Bridge.EditorTools
             ClipOrder.Clear();
             RegisterAll();
             Directory.CreateDirectory(outDir);
-            foreach (var old in Directory.GetFiles(outDir, "*.wav")) File.Delete(old);
+            // (Tarea 133) ya NO se borran todos los WAV al empezar: los de «hoy» congelados (del 17-oct) tienen que quedarse; los demás se reescriben con los mismos bytes (el render es determinista)
 
             // 1) renderizar cada sonido que usa algún evento
             var used = new List<string>();
@@ -126,6 +133,11 @@ namespace NeuroVida.Bridge.EditorTools
             {
                 if (!needed.Contains(k)) continue;
                 var c = Get(k);
+                if (c.Frozen)
+                {
+                    if (string.IsNullOrEmpty(c.File) || !File.Exists(Path.Combine(outDir, c.File))) throw new InvalidOperationException("el WAV congelado de «" + k + "» (" + c.File + ") no está en " + outDir);
+                    continue;
+                }
                 short[] pcm = ToWav22(c);
                 string hash = Hash(pcm);
                 if (byHash.TryGetValue(hash, out var existing)) { c.File = existing; c.WavBytes = 0; continue; }
@@ -158,6 +170,35 @@ namespace NeuroVida.Bridge.EditorTools
 
         /// <summary>Un sonido de HOY que ya es un clip del juego.</summary>
         internal static void H(string key, Func<AudioClip> make) => Factories[key] = () => FromClip(make());
+
+        /// <summary>
+        /// Un sonido de HOY congelado (Tarea 133): NO se renderiza; toma el WAV ya escrito y las medidas del catálogo del 17-oct (<c>tools/sonido/catalogo-hoy-17-oct.json</c>, solo lectura). Cuando un juego se migra a Madera y se borran sus clases <c>XSounds</c>, sus líneas
+        /// <c>H("bodega.hum", () => BodegaSounds.Hum())</c> pasan a <c>Frozen("bodega.hum")</c>: «hoy» sigue siendo el sonido real que sonaba.
+        /// </summary>
+        internal static void Frozen(string key) => Factories[key] = () => FrozenClip(key);
+
+        private static string _frozenText;
+
+        private static Clip FrozenClip(string key)
+        {
+            if (_frozenText == null) _frozenText = File.ReadAllText(Path.Combine(RepoRoot(), "tools", "sonido", "catalogo-hoy-17-oct.json"));
+            var m = System.Text.RegularExpressions.Regex.Match(_frozenText, "\"" + System.Text.RegularExpressions.Regex.Escape(key) + "\":\\{([^}]*)\\}");
+            if (!m.Success) throw new InvalidOperationException("«" + key + "» no está en el catálogo congelado del 17-oct (tools/sonido/catalogo-hoy-17-oct.json)");
+            string body = m.Groups[1].Value;
+            double Num(string name)
+            {
+                var n = System.Text.RegularExpressions.Regex.Match(body, "\"" + name + "\":(null|-?[0-9.]+(?:[eE][-+]?[0-9]+)?)");
+                if (!n.Success) throw new InvalidOperationException("«" + key + "» congelado no trae «" + name + "»");
+                return n.Groups[1].Value == "null" ? 0.0 : double.Parse(n.Groups[1].Value, CultureInfo.InvariantCulture);
+            }
+            var f = System.Text.RegularExpressions.Regex.Match(body, "\"file\":\"([^\"]*)\"");
+            if (!f.Success) throw new InvalidOperationException("«" + key + "» congelado no tiene WAV");
+            return new Clip
+            {
+                Frozen = true, File = f.Groups[1].Value, FrozenChannels = (int)Num("channels"), FrozenSamples = (int)Num("samples"), WavBytes = (int)Num("wavBytes"), StoredBytes = (long)Num("bytesStored"),
+                Peak = Num("peak"), Lufs = Num("lufs"), OnsetMs = Num("onsetMs"), AttackMs = Num("attackMs"), DurMs = Num("durMs"), T20Ms = Num("t20Ms"), F0Hz = Num("f0Hz"), F0Frac = Num("f0Frac"),
+            };
+        }
 
         /// <summary>Un sonido de hoy hecho de muestras mono.</summary>
         internal static void HRaw(string key, Func<float[]> make) => Factories[key] = () => new Clip { L = make() };
@@ -264,6 +305,7 @@ namespace NeuroVida.Bridge.EditorTools
 
         private static void Measure(Clip c)
         {
+            if (c.Frozen) return;                                              // las medidas del congelado salen del catálogo del 17-oct
             c.Peak = Math.Max(SoundMeter.Peak(c.L, c.R), 1e-12);
             c.Lufs = SoundMeter.MomentaryLufs(c.L, c.R);
             c.DurMs = SoundMeter.DurationMs(c.L, c.R);
@@ -426,7 +468,8 @@ namespace NeuroVida.Bridge.EditorTools
                   .Append(",\"hoy\":").Append(Q(e.HoyKey)).Append(",\"hoyGain\":").Append(N(e.HoyGain))
                   .Append(",\"wood\":").Append(Q(e.WoodKey)).Append(",\"woodGain\":").Append(N(e.WoodGain))
                   .Append(",\"woodAlt\":").Append(Q(e.WoodAltKey)).Append(",\"woodAltLabel\":").Append(Q(e.WoodAltLabel))
-                  .Append(",\"alreadyWood\":").Append(e.AlreadyWood ? "true" : "false").Append('}')
+                  .Append(",\"alreadyWood\":").Append(e.AlreadyWood ? "true" : "false")
+                  .Append(",\"phase\":").Append(Q(e.Phase)).Append(",\"noWood\":").Append(Q(e.NoWood)).Append('}')
                   .Append(i + 1 < Events.Count ? ",\n" : "\n");
             }
             sb.Append("],\n").Append(FamiliesJson()).Append("\n}\n");

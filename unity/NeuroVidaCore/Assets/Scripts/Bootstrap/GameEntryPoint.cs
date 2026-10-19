@@ -158,7 +158,7 @@ namespace NeuroVida.Bridge
             _running = true;
             // Sonido y vibración comunes de los 9 juegos (ajustes de la app).
             NeuroVida.Games.Shared.GameFeel.SoundOn = config.config.sound_enabled;
-            NeuroVida.Games.Shared.GameFeel.Warm();                                             // el núcleo común de «Madera cálida»: lo de la cuenta regresiva ya, el resto de a poco (con el sonido apagado no hace nada)
+            NeuroVida.Games.Shared.GameFeel.Warm(config.game_id);                               // el núcleo común de «Madera cálida»: lo de la cuenta regresiva ya, el resto de a poco (con el sonido apagado no hace nada)
             NeuroVida.Games.Shared.GameFeel.HapticsOn = config.config.haptics_enabled;
             NeuroVida.Games.Shared.GameFeel.ReduceMotion = config.config.reduce_motion;
             NeuroVida.Games.Shared.CountdownScreen.Steps = config.config.countdown_steps == 2 ? 2 : 3;          // la app decide (primera partida del día o primera vez de un juego: 3; las demás: 2)

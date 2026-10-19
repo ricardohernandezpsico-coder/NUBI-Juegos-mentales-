@@ -43,7 +43,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Muestra la marca de version bajo la cuenta regresiva. Antes dependia de <c>Debug.isDebugBuild</c>,
         /// pero la exportacion de Unity es de produccion y nunca se veia. Poner en false antes de publicar en la tienda.</summary>
         public const bool ShowStyleStamp = true;
-        public const string StyleStamp = "estilo 18-oct · juice";
+        public const string StyleStamp = "estilo 18-oct · sonido 0";
 
         private static readonly Color[] StepColors = { NeuroStyle.Sky, NeuroStyle.Grape, NeuroStyle.Coral };
         private static readonly float[] StepWarp = { 0.07f, 0.15f, 0.27f };
@@ -228,6 +228,7 @@ namespace NeuroVida.Games.Shared
             _group.alpha = 1f;
             _titleChipRect.anchoredPosition = _titleChipBase;
 
+            WoodCore.CountdownRunning = true;                                                   // mientras corre la cuenta el calculo del sonido usa 8 ms por cuadro (la pantalla de la cuenta es liviana); vuelve a 5 al empezar la partida
             int steps = Mathf.Clamp(Steps, 2, 3);                                               // 2 pasos («2 · 1 · ¡Ya!») salvo la primera partida del día y la primera vez de un juego
             for (int s = steps; s >= 1; s--)
             {
@@ -239,6 +240,7 @@ namespace NeuroVida.Games.Shared
             GameFeel.Go();
             var go = calm ? GoCalm(onRevealStart) : Go(onRevealStart);
             while (go.MoveNext()) yield return go.Current;
+            WoodCore.CountdownRunning = false;
 
             _stars.Warp = 0f;
             _root.gameObject.SetActive(false);

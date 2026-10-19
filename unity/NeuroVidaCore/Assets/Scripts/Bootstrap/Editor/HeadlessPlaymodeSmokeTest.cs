@@ -1155,8 +1155,11 @@ namespace NeuroVida.Bridge.EditorTools
         /// </summary>
         private static void CheckSound()
         {
-            int played = NeuroVida.Games.Shared.WoodCore.PlayCount, finals = NeuroVida.Games.Shared.WoodCore.FinishPlays, skipped = NeuroVida.Games.Shared.WoodCore.Skipped;
-            Debug.Log($"[SmokeTest] sonido común de {_current.Name}: {played} sonidos, {finals} final(es), {skipped} omitidos por no estar listos, {NeuroVida.Games.Shared.WoodCore.ClipCount} clips en el núcleo");
+            int played = NeuroVida.Games.Shared.WoodCore.PlayCount, finals = NeuroVida.Games.Shared.WoodCore.FinishPlays, skipped = NeuroVida.Games.Shared.WoodCore.Skipped, late = NeuroVida.Games.Shared.WoodCore.LateBakes;
+            Debug.Log($"[SmokeTest] sonido común de {_current.Name}: {played} sonidos, {finals} final(es), {skipped} omitidos por no estar listos, {late} calculados tarde, {NeuroVida.Games.Shared.WoodCore.ClipCount} clips en el núcleo y {NeuroVida.Games.Shared.WoodCore.ExtraCount} extra");
+            // paso 0 de las Fases C a E: en una partida con cuenta regresiva y sonido nada se omite ni se calcula tarde (si pasa, la cuenta no alcanzó o el juego no pidió algo antes)
+            if (CountdownSoundExpected() && skipped > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} {skipped} sonido(s) se pidieron antes de estar listos y no sonaron (Skipped): la cuenta regresiva no alcanzó o el juego no pidió algo antes de ella"); }
+            if (CountdownSoundExpected() && late > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} {late} nota(s) o señal(es) se calcularon en el momento de sonar (LateBakes): el juego tiene que pedirlas antes de la cuenta regresiva"); }
             if (finals > 1) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: sonaron {finals} finales en {_current.Name}: tiene que sonar UNO por partida"); }
             if (_current.Name.EndsWith("Mudo") && played > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: con el sonido apagado la paleta sonó {played} vez/veces en {_current.Name}"); }
             if (CountdownSoundExpected() && played < 4) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} no sonaron ni la cuenta regresiva ni «¡Ya!» (salieron {played} sonidos)"); }

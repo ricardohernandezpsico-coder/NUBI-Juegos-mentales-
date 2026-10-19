@@ -44,18 +44,23 @@ namespace NeuroVida.Games.Shared
         /// <summary>La cola de sala que se calcula (como máximo): lo que queda por debajo de lo audible se recorta después (<see cref="Render"/>), así la sala nunca se corta de golpe y los sonidos suaves no gastan memoria en una cola que no se oye.</summary>
         public const double MaxTail = 1.5;
 
-        /// <summary>La receta de un sonido: las muestras mono antes de la sala, el nivel del pico final y la mezcla de sala (la sala es la de Rescate).</summary>
+        /// <summary>
+        /// La receta de un sonido: las muestras mono antes de la sala, el nivel del pico final y la mezcla de sala (la sala es la de Rescate). Desde el paso 0 de las Fases C a E lleva también su FAMILIA (<see cref="Tier"/>): los sonidos propios de cada juego declaran a cuál pertenecen y la prueba de niveles
+        /// (<c>GameSoundsTierTests</c>) los mide contra la banda de esa familia. Los de la paleta no la usan (su familia sale de <see cref="TierOf"/>).
+        /// </summary>
         public readonly struct Recipe
         {
             public readonly float[] X;
             public readonly double Level;
             public readonly ReverbSettings Verb;
+            public readonly WoodTier Tier;
 
-            public Recipe(float[] x, double level, double wet)
+            public Recipe(float[] x, double level, double wet, WoodTier tier = WoodTier.Textura)
             {
                 X = x;
                 Level = level;
                 Verb = new ReverbSettings(WoodKit.Room.Room, WoodKit.Room.Damp, wet, MaxTail, WoodKit.Room.Width);
+                Tier = tier;
             }
         }
 
@@ -210,19 +215,20 @@ namespace NeuroVida.Games.Shared
 
         /// <summary>
         /// La receta de UNA NOTA que lleva información (la altura del juego: la del lucero, del grupo, de la escotilla, del buzón…): el mismo Hz de siempre con el timbre de la paleta. Kalimba: el timbre de Rescate pero con una caída de 0,3 s (la de Rescate, de 0,45 s, sigue sonando más de un segundo y se encimaría con la nota siguiente de una secuencia: la
-        /// caída de hoy de estas notas es de unos 0,2 a 0,4 s); marimba: más «afinada» (sus parciales son múltiplos). Las dos caen a −20 dB en cerca de 0,7 s.
+        /// caída de hoy de estas notas es de unos 0,2 a 0,4 s); marimba: más «afinada» (sus parciales son múltiplos). Las dos caen a −20 dB en cerca de 0,7 s con la caída de siempre (<paramref name="tau"/> 0,3 s).
+        /// <para><paramref name="tau"/> (paso 0 de las Fases C a E): donde el juego marca el ritmo y las notas se encimarían, la caída es más corta: 0,2 s en Rastro de luz y 0,15 s en la cascada de Engranajes (nivel 0,30 y sala 0,18 no cambian).</para>
         /// </summary>
-        public static Recipe MakeNote(double hz, WoodVoice voice)
+        public static Recipe MakeNote(double hz, WoodVoice voice, double tau = 0.3)
         {
-            if (voice == WoodVoice.Kalimba) return new Recipe(WoodKit.Kalimba(hz, 0.3), 0.30, 0.18);
-            return new Recipe(WoodKit.Marimba(hz, 0.3), 0.30, 0.18);
+            if (voice == WoodVoice.Kalimba) return new Recipe(WoodKit.Kalimba(hz, tau), 0.30, 0.18, WoodTier.Respuesta);
+            return new Recipe(WoodKit.Marimba(hz, tau), 0.30, 0.18, WoodTier.Respuesta);
         }
 
         /// <summary>
         /// Una SEÑAL CORTA con altura (el tono de la regla de Tinta o Palabra, la señal de salida de Freno, el «blip» de Piloto…): la misma altura y un solo golpe seco de marimba que dura lo mismo que el tono de hoy (<paramref name="seconds"/>: 0,06 s la salida de Freno, 0,1 s las reglas de Tinta o Palabra), casi sin sala:
         /// empieza igual de rápido y no se le encima al estímulo siguiente.
         /// </summary>
-        public static Recipe MakeCue(double hz, double seconds = 0.1) => new Recipe(WoodKit.Marimba(hz, seconds / 3.0), 0.20, 0.05);
+        public static Recipe MakeCue(double hz, double seconds = 0.1) => new Recipe(WoodKit.Marimba(hz, seconds / 3.0), 0.20, 0.05, WoodTier.Respuesta);
 
         /// <summary>Lo que se guarda de un sonido: se corta lo que queda 50 dB bajo su pico o por debajo de −54 dBFS (el final de la cola de la sala: con el teléfono a volumen alto sigue muy por debajo del ruido de cualquier pieza), con un fundido de 30 ms, para no gastar memoria en silencio.</summary>
         public const double TrimDb = 50.0, TrimFloorDbfs = -54.0;
@@ -254,10 +260,10 @@ namespace NeuroVida.Games.Shared
         /// <summary>Los eventos MICRO (tocar, tic, cuenta, pausa, quitar) llevan tan poca sala que se guardan en mono: otra mitad de memoria.</summary>
         public static bool IsMono(WoodSfx sfx) => TierOf(sfx) == WoodTier.Micro;
 
-        /// <summary>De las muestras calculadas (estéreo, 44.100 Hz) a las que se guardan: mono en los micro, a <see cref="ClipRate"/> y con el volumen maestro (<see cref="WoodKit.ApplyMaster"/>).</summary>
-        private static void Store(WoodSfx sfx, float[] l, float[] r, out float[] left, out float[] right)
+        /// <summary>De las muestras calculadas (estéreo, 44.100 Hz) a las que se guardan: mono si <paramref name="mono"/> (los micro de la paleta y los propios cortos sin sala), a <see cref="ClipRate"/> y con el volumen maestro (<see cref="WoodKit.ApplyMaster"/>).</summary>
+        private static void Store(bool mono, float[] l, float[] r, out float[] left, out float[] right)
         {
-            if (IsMono(sfx))
+            if (mono)
             {
                 var mix = new float[l.Length];
                 for (int i = 0; i < mix.Length; i++) mix[i] = 0.5f * (l[i] + r[i]);
@@ -276,7 +282,14 @@ namespace NeuroVida.Games.Shared
         public static void RenderForClip(WoodSfx sfx, int arg, out float[] left, out float[] right)
         {
             RenderStereo(sfx, arg, out var l, out var r);
-            Store(sfx, l, r, out left, out right);
+            Store(IsMono(sfx), l, r, out left, out right);
+        }
+
+        /// <summary>Lo que se guarda de una receta suelta (una nota, una señal o un sonido propio de un juego): como <see cref="RenderForClip(WoodSfx,int,out float[],out float[])"/>, con <paramref name="mono"/> a elección.</summary>
+        public static void RenderForClip(Recipe recipe, bool mono, out float[] left, out float[] right)
+        {
+            Render(recipe, out var l, out var r);
+            Store(mono, l, r, out left, out right);
         }
 
         /// <summary>Un clip a partir de muestras guardadas (<paramref name="right"/> null = mono).</summary>
@@ -301,6 +314,9 @@ namespace NeuroVida.Games.Shared
         {
             private readonly WoodSfx _sfx;
             private readonly int _arg;
+            private readonly Func<Recipe> _make;                         // un horneado GENÉRICO (nota, señal o propio de un juego): la receta se arma en el primer paso, no al crear el trabajo
+            private readonly string _key;
+            private readonly bool _mono;
             private Recipe _recipe;
             private ReverbJob _reverb;
             private int _stage;
@@ -309,7 +325,18 @@ namespace NeuroVida.Games.Shared
             {
                 _sfx = sfx;
                 _arg = arg;
+                _mono = IsMono(sfx);
             }
+
+            /// <summary>Un horneado genérico (paso 0 de las Fases C a E): una receta suelta con su clave y si se guarda en mono. Da el mismo clip que <see cref="ToClip(Recipe,string,bool)"/>; con una receta de la paleta y <c>mono = IsMono</c>, el mismo que <see cref="ToClip(WoodSfx,int)"/>.</summary>
+            public BakeJob(Func<Recipe> make, string key, bool mono)
+            {
+                _make = make;
+                _key = key;
+                _mono = mono;
+            }
+
+            public BakeJob(Recipe recipe, string key, bool mono) : this(() => recipe, key, mono) { }
 
             public bool Done => _stage >= 3;
 
@@ -322,7 +349,7 @@ namespace NeuroVida.Games.Shared
                 switch (_stage)
                 {
                     case 0:
-                        _recipe = MakeRecipe(_sfx, _arg);
+                        _recipe = _make != null ? _make() : MakeRecipe(_sfx, _arg);
                         _reverb = new ReverbJob(_recipe.X, _recipe.Verb);
                         _stage = 1;
                         return false;
@@ -333,8 +360,8 @@ namespace NeuroVida.Games.Shared
                     case 2:
                         _reverb.Result(out var l, out var r);
                         Close(l, r, _recipe, out var cl, out var cr);
-                        Store(_sfx, cl, cr, out var left, out var right);
-                        Clip = MakeClip(KeyOf(_sfx, _arg), left, right);
+                        Store(_mono, cl, cr, out var left, out var right);
+                        Clip = MakeClip(_make != null ? _key : KeyOf(_sfx, _arg), left, right);
                         _stage = 3;
                         return true;
                     default:
@@ -351,6 +378,13 @@ namespace NeuroVida.Games.Shared
         {
             RenderForClip(sfx, arg, out var l, out var r);
             return MakeClip(KeyOf(sfx, arg), l, r);
+        }
+
+        /// <summary>El clip de una receta suelta (de una vez): para pruebas; el juego lo hornea de a poco con <see cref="BakeJob"/>.</summary>
+        public static AudioClip ToClip(Recipe recipe, string key, bool mono)
+        {
+            RenderForClip(recipe, mono, out var l, out var r);
+            return MakeClip(key, l, r);
         }
     }
 }
