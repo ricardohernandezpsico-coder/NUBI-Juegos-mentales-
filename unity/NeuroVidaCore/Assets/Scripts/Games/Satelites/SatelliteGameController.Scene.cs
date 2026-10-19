@@ -228,7 +228,7 @@ namespace NeuroVida.Games.Satelites
                 d.Root.gameObject.SetActive(true);
                 if (Motion.Decorative) StartCoroutine(UiFx.SparkBurst(_fxLayer, P(_plan.Cx + d.Spot.x, _plan.Cy + d.Spot.y), Gold, 5, 40f * _s, 6f * _s, 0.4f));
             }
-            PlayClip(SatelliteSounds.LightOn(_lightsShown), 0.7f);
+            SatelliteSounds.PlayLight(_lightsShown);
             UpdateFooter();
         }
 

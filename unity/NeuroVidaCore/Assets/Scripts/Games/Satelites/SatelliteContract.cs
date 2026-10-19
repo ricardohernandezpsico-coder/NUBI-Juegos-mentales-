@@ -26,6 +26,8 @@ namespace NeuroVida.Games.Satelites
         public const float ReadySeconds = 0.45f;
         /// <summary>Presentación: los que traen mensaje con su aro dorado y su sobre; la señal se desvanece en los últimos 300 ms.</summary>
         public const float CueSeconds = 1.8f, CueFadeSeconds = 0.3f;
+        /// <summary>Al presentar los satélites con mensaje suena UNA campana por cada uno, cada 0,12 s (la cantidad se oye: es lo que hay que recordar). El juego y el tutorial usan este mismo intervalo (la prueba lo exige).</summary>
+        public const float CueBellGap = 0.12f;
         /// <summary>Un satélite se detiene a lo más 0,9 s más tarde si todavía hay dos muy juntos o alguno bajo la nube.</summary>
         public const float MaxExtraTrackSeconds = 0.9f;
         /// <summary>Al marcar el k-ésimo se evalúa 0,55 s después: un margen para corregir el último.</summary>

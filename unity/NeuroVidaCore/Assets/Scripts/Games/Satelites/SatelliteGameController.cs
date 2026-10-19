@@ -152,8 +152,7 @@ namespace NeuroVida.Games.Satelites
                 AssignSprites();
                 _baked = true;
             }
-            var sounds = SatelliteSounds.Prewarm();
-            while (sounds.MoveNext()) yield return null;
+            SatelliteSounds.Request();               // los sonidos (las 5 campanas, el «clac», las marcas, las luces…) se piden ANTES de la cuenta: los calcula WoodCore de a poco, sin trabar
         }
 
         // ------------------------------------------------------------------ una ronda
@@ -217,7 +216,7 @@ namespace NeuroVida.Games.Satelites
             while (t < SatelliteContract.CueSeconds)
             {
                 t += GameClock.DeltaTime;
-                if (rung < targets.Count && t >= rung * 0.12f) { PlayClip(SatelliteSounds.CueBell(rung), 0.7f); rung++; }
+                if (rung < targets.Count && t >= rung * SatelliteContract.CueBellGap) { SatelliteSounds.PlayCue(rung); rung++; }
                 float fade = Mathf.Clamp01((SatelliteContract.CueSeconds - t) / SatelliteContract.CueFadeSeconds);
                 float pulse = Motion.Decorative ? 0.75f + 0.25f * Mathf.Sin(t * 7.1f) : 1f;          // sin «quitar animaciones» la señal queda fija
                 foreach (int i in targets) SetCue(i, fade, pulse);
@@ -255,7 +254,7 @@ namespace NeuroVida.Games.Satelites
             _swarm.EndCloud();
             _cloud.gameObject.SetActive(false);
             StopHum();
-            PlayClip(SatelliteSounds.Stop(), 0.8f);
+            WoodCore.Play(WoodSfx.Clack);                       // «clac»: empieza la respuesta
             // si todavía hay dos casi tocándose, se apartan lo mínimo en 0,35 s (así nunca quedan encimados al responder)
             if (_swarm.PlanSettle())
             {
@@ -352,12 +351,12 @@ namespace NeuroVida.Games.Satelites
             if (perfect)
             {
                 GameFeel.Haptic(GameFeel.HapticKind.Firm);
-                PlayClip(SatelliteSounds.Perfect(), 0.8f);          // el sonido es el propio del juego (un arpegio), no el pling común
+                WoodCore.Play(WoodSfx.Perfect);
             }
             else
             {
                 GameFeel.Haptic(GameFeel.HapticKind.Double);
-                PlayClip(SatelliteSounds.Partial(), 0.7f);          // nunca un castigo: un tono suave que baja
+                WoodCore.Play(WoodSfx.Wrong);                       // nunca un castigo: la paleta, suave
             }
             SetPrompt(SatelliteContract.ResultTitle(hits, k), SatelliteContract.ResultSub(perfect, streak), perfect ? Good : Gold);
             StartCoroutine(PopRect(_promptA.rectTransform, 1.12f, 0.25f));
@@ -463,7 +462,7 @@ namespace NeuroVida.Games.Satelites
             _surpriseLine.text = SatelliteContract.SurpriseLine(s);
             _surpriseLayer.gameObject.SetActive(true);
             _surpriseGroup.alpha = 0f;
-            PlayClip(SatelliteSounds.Chime(), 0.7f);
+            WoodCore.Play(WoodSfx.New);
             float total = isNew ? SatelliteContract.SurpriseFirstSeconds : SatelliteContract.SurpriseSeconds;
             float t = 0f;
             while (t < total)
@@ -585,11 +584,11 @@ namespace NeuroVida.Games.Satelites
                 n--;
                 StartCoroutine(PressSat(i));
                 _sats[i].MarkRing.gameObject.SetActive(false);
-                PlayClip(SatelliteSounds.Unmark(), 0.7f);
+                WoodCore.Play(WoodSfx.Unselect);
             }
             else if (n >= _spec.K)
             {
-                PlayClip(SatelliteSounds.Blocked(), 0.6f);          // ya están todos: para cambiar uno, primero se quita otro
+                WoodCore.Play(WoodSfx.Knock);                       // ya están todos: para cambiar uno, primero se quita otro
                 return;
             }
             else
@@ -601,18 +600,11 @@ namespace NeuroVida.Games.Satelites
                 ring.color = Cyan;
                 ring.gameObject.SetActive(true);
                 StartCoroutine(PopRect(_sats[i].Root, 1.12f, 0.18f));
-                PlayClip(SatelliteSounds.Mark(n), 0.8f);
+                SatelliteSounds.PlayMark(n);                        // kalimba: la altura sube con cada marca
             }
             GameFeel.Haptic(GameFeel.HapticKind.Light);
             _evalAt = n == _spec.K ? Now + SatelliteContract.EvalDelaySeconds : 0f;
             UpdateAnswerPrompt();
-        }
-
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            _audioSource.PlayOneShot(clip, volume);
         }
 
         private void StartHum()

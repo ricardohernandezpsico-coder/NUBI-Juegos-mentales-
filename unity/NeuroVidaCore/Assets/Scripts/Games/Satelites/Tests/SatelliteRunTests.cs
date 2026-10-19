@@ -133,25 +133,6 @@ namespace NeuroVida.Games.Satelites.Tests
             Assert.AreEqual(0, px[24 * 48 + 36].a, "a la derecha no");
         }
 
-        [Test]
-        public void EverySoundIsSynthesizedOnce_AndNothingIsLoud()
-        {
-            var warm = SatelliteSounds.Prewarm();
-            while (warm.MoveNext()) { }
-            Assert.GreaterOrEqual(SatelliteSounds.CachedCount, 20);
-            int before = SatelliteSounds.CachedCount;
-            Assert.AreSame(SatelliteSounds.Perfect(), SatelliteSounds.Perfect(), "un clip por sonido");
-            Assert.AreEqual(before, SatelliteSounds.CachedCount);
-            foreach (var clip in new[] { SatelliteSounds.CueBell(0), SatelliteSounds.Stop(), SatelliteSounds.Mark(3), SatelliteSounds.Perfect(), SatelliteSounds.Partial(), SatelliteSounds.LightOn(2), SatelliteSounds.Finale(), SatelliteSounds.Hum() })
-            {
-                var data = new float[clip.samples];
-                clip.GetData(data, 0);
-                float peak = 0f;
-                foreach (float s in data) peak = Mathf.Max(peak, Mathf.Abs(s));
-                Assert.Greater(peak, 0.05f, clip.name + " suena");
-                Assert.LessOrEqual(peak, 0.5001f, clip.name + " no pasa de 0,5");
-            }
-            Assert.AreEqual(44100, SatelliteSounds.Hum().samples, "el zumbido dura un segundo exacto: se repite sin chasquido");
-        }
+        // Los sonidos de Satélites en «Madera cálida» (Tarea 138) los prueba SatelliteSoundTests: las campanas de la presentación, las marcas, las luces, lo que pide antes de la cuenta y el zumbido en bucle.
     }
 }

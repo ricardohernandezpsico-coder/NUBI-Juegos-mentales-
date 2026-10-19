@@ -46,7 +46,7 @@ namespace NeuroVida.Games.Satelites
             {
                 _phase = Phase.Cue;
                 foreach (int i in targets) SetCue(i, 1f, 1f);
-                for (int j = 0; j < targets.Count; j++) PlayClip(SatelliteSounds.CueBell(j), 0.7f);
+                StartCoroutine(RingCues(targets.Count));                    // una campana por cada mensaje, cada CueBellGap (como en el juego: la cantidad se oye)
                 keepRects = new Func<Rect>[targets.Count];
                 for (int j = 0; j < targets.Count; j++)
                 {
@@ -124,6 +124,19 @@ namespace NeuroVida.Games.Satelites
             t.EndPractice();
         }
         // </guided>
+
+        /// <summary>Las campanas de la presentación del tutorial: una por cada satélite con mensaje, cada <see cref="SatelliteContract.CueBellGap"/> s (el mismo ritmo que el juego; antes sonaban todas de golpe).</summary>
+        private IEnumerator RingCues(int count)
+        {
+            float t = 0f;
+            int rung = 0;
+            while (rung < count)
+            {
+                if (t >= rung * SatelliteContract.CueBellGap) { SatelliteSounds.PlayCue(rung); rung++; continue; }
+                t += GameClock.DeltaTime;
+                yield return null;
+            }
+        }
 
         private IEnumerator PracticeTrack()
         {

@@ -447,30 +447,28 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterSatelites()
         {
             const string g = "satelites";
-            Family_("satelites-campanas", "Satélites: las campanas de la presentación (una por satélite)", Hz(i => SatelliteSounds.Penta[2 + i], 5), i => SatelliteSounds.CueBell(i), 0.3);
-            Family_("satelites-marcas", "Satélites: marcar (cada marca sube)", Hz(i => SatelliteSounds.Penta[Math.Min(8, i + 2)], 7), i => SatelliteSounds.Mark(i + 1), 0.4);
-            Family_("satelites-luces", "Satélites: una luz que se enciende", Hz(i => SatelliteSounds.Penta[4 + i], 5), i => SatelliteSounds.LightOn(i), 0.45);
-            H("satelites.stop", () => SatelliteSounds.Stop());
-            H("satelites.unmark", () => SatelliteSounds.Unmark());
-            H("satelites.blocked", () => SatelliteSounds.Blocked());
-            H("satelites.perfect", () => SatelliteSounds.Perfect());
-            H("satelites.partial", () => SatelliteSounds.Partial());
-            H("satelites.chime", () => SatelliteSounds.Chime());
-            H("satelites.finale", () => SatelliteSounds.Finale());
-            H("satelites.hum", () => SatelliteSounds.Hum());
+            // «hoy» sale CONGELADO del 17-oct (Tarea 138): la clase de campanas de Satélites ya no existe (queda solo el zumbido en bucle)
+            Family_("satelites-campanas", "Satélites: las campanas de la presentación (una por satélite)", Hz(i => SatelliteSounds.CueHz(i), 5), null, 0.3);
+            Family_("satelites-marcas", "Satélites: marcar (cada marca sube)", Hz(i => SatelliteSounds.Penta[SatelliteSounds.MarkStep(i + 1)], 7), null, 0.4);
+            Family_("satelites-luces", "Satélites: una luz que se enciende", Hz(i => SatelliteSounds.Penta[4 + i], 5), null, 0.45);
+            foreach (var k in new[] { "stop", "unmark", "blocked", "perfect", "partial", "chime", "finale" }) Frozen("satelites." + k);
+            H("satelites.hum", () => SatelliteSounds.Hum());                // el bucle aprobado: sigue siendo el clip del juego
 
-            FamilyEvent(g, "campanas", "Se presentan los satélites con mensaje: una campana cada 0,12 s", "Campana de la escala (τ 0,3 s, 1 s)", "SatelliteGameController.cs:220 (vol 0,7); SatelliteGameController.Guided.cs:49", "satelites-campanas", 0.7f, "Note(hz): kalimba (o marimba)",
-                "La CANTIDAD de campanas es la información (cuántos satélites hay que seguir) y cada una cae a los 0,12 s: orden y momento no se mueven.");
-            E(g, "zumbido", "Los satélites giran: zumbido en bucle", "Dos senos (110 y 165 Hz), bucle exacto de 1 s, volumen 0,12", "SatelliteGameController.cs:513, :619 (AudioSource en bucle)", "satelites.hum", 0.12f, null, "SE QUEDA (bucle grave y suave); ver Fase C", "bucle");
-            E(g, "clac", "Se detienen: «clac»", "Seno 260 → 150 Hz y chasquido, 0,3 s", "SatelliteGameController.cs:258 (vol 0,8)", "satelites.stop", 0.8f, Wk(WoodSfx.Clack), "Clack", "tiempo", "Marca el momento en que el seguimiento termina y empieza la respuesta.");
-            FamilyEvent(g, "marcar", "Marcar un satélite (cada marca sube)", "Campana de la escala (τ 0,12 s, 0,5 s)", "SatelliteGameController.cs:602 (vol 0,8)", "satelites-marcas", 0.8f, "Select(k)", "");
-            E(g, "quitar", "Quitar una marca", "Seno que baja 440 → 330 Hz, 0,2 s", "SatelliteGameController.cs:586 (vol 0,7)", "satelites.unmark", 0.7f, Wk(WoodSfx.Unselect), "Unselect");
-            E(g, "bloqueado", "Ya están todos marcados (un toque que no cuenta)", "Seno 300 Hz, 0,2 s", "SatelliteGameController.cs:590 (vol 0,6)", "satelites.blocked", 0.6f, Wk(WoodSfx.Knock), "Knock");
-            E(g, "perfecto", "Acertar todo: arpegio", "Cuatro campanas que suben, 1,5 s", "SatelliteGameController.cs:355 (vol 0,8)", "satelites.perfect", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
-            E(g, "falto", "Faltó alguno: tono suave que baja", "Seno 392 → 330 Hz, 0,5 s", "SatelliteGameController.cs:360 (vol 0,7)", "satelites.partial", 0.7f, Wk(WoodSfx.Wrong), "Wrong");
-            FamilyEvent(g, "luz", "Una luz se enciende en el planeta", "Campanita aguda que sube por la escala (τ 0,22 s)", "SatelliteGameController.Scene.cs:229 (vol 0,7)", "satelites-luces", 0.7f, "Spark(n)");
-            E(g, "nuevo", "Aviso de sorpresa", "Dos campanas (mi y la)", "SatelliteGameController.cs:464 (vol 0,7)", "satelites.chime", 0.7f, Wk(WoodSfx.New), "New");
-            E(g, "final", "Fin de la partida", "Dos campanas lentas (sol y do agudos), 2 s", "SatelliteGameController.cs:399 (vol 0,8)", "satelites.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
+            FamilyEvent(g, "campanas", "Se presentan los satélites con mensaje: una campana cada 0,12 s", "Campana de la escala (τ 0,3 s, 1 s)", "SatelliteGameController.cs: DoCue (SatelliteSounds.PlayCue, cada SatelliteContract.CueBellGap); SatelliteGameController.Guided.cs: RingCues", "satelites-campanas", 0.7f, "PlayNote(CueHz(i), Marimba): la altura de hoy, τ 0,3 s como hoy",
+                "La CANTIDAD de campanas es la información (cuántos satélites hay que seguir) y cada una cae a los 0,12 s: orden y momento no se mueven (el 0,12 es SatelliteContract.CueBellGap y el juego y el tutorial lo usan). En el tutorial antes sonaban todas de golpe; ahora una por una, como en el juego.", marimba: true);
+            E(g, "zumbido", "Los satélites giran: zumbido en bucle", "Dos senos (110 y 165 Hz), bucle exacto de 1 s, volumen 0,12", "SatelliteGameController.cs: StartHum/StopHum (AudioSource en bucle)", "satelites.hum", 0.12f, null, "SE QUEDA (bucle grave y suave: como el motor de Piloto y el propulsor de Aterrizaje)", "bucle");
+            E(g, "clac", "Se detienen: «clac»", "Seno 260 → 150 Hz y chasquido, 0,3 s", "SatelliteGameController.cs: DoTrack (al terminar el seguimiento)", "satelites.stop", 0.8f, Wk(WoodSfx.Clack), "Clack", "tiempo", "Marca el momento en que el seguimiento termina y empieza la respuesta.");
+            E(g, "marcar", "Marcar un satélite (cada marca sube)", "Campana de la escala (τ 0,12 s, 0,5 s)", "SatelliteGameController.cs: Toggle (SatelliteSounds.PlayMark)", "fam.satelites-marcas.hoy", 0.8f, WoodLadder(WoodSfx.Select, new[] { 2, 3, 4, 5, 6, 7, 8 }, 0.7), "Select(n + 1): kalimba, el mismo evento de Rescate; la altura de cada marca es la de hoy (mi5 con la primera)", "info",
+                "DECIDIDO (Ricardo, 19-oct): un evento, un sonido (el de Rescate). Las marcas las pone el dedo (≥ 0,3 s entre una y otra) y la kalimba suena más de un segundo: no se encima. Si en el teléfono se oyera arrastrada, la alternativa es PlayNote(Penta[n + 1], Marimba).");
+            E(g, "quitar", "Quitar una marca", "Seno que baja 440 → 330 Hz, 0,2 s", "SatelliteGameController.cs: Toggle", "satelites.unmark", 0.7f, Wk(WoodSfx.Unselect), "Unselect");
+            E(g, "bloqueado", "Ya están todos marcados (un toque que no cuenta)", "Seno 300 Hz, 0,2 s", "SatelliteGameController.cs: Toggle", "satelites.blocked", 0.6f, Wk(WoodSfx.Knock), "Knock", "",
+                "Sube ≈ 10 LU respecto de hoy (hoy casi no se oía): es a propósito.");
+            E(g, "perfecto", "Acertar todo: arpegio", "Cuatro campanas que suben, 1,5 s", "SatelliteGameController.cs: Evaluate", "satelites.perfect", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
+            E(g, "falto", "Faltó alguno: tono suave que baja", "Seno 392 → 330 Hz, 0,5 s", "SatelliteGameController.cs: Evaluate", "satelites.partial", 0.7f, Wk(WoodSfx.Wrong), "Wrong");
+            E(g, "luz", "Una luz se enciende en el planeta", "Campanita aguda que sube por la escala (τ 0,22 s)", "SatelliteGameController.Scene.cs: LightUp (SatelliteSounds.PlayLight)", "fam.satelites-luces.hoy", 0.7f, WoodLadder(WoodSfx.Spark, new[] { 1, 2, 3, 4, 5 }, 0.55), "Spark(1 + luces % 5): la misma escalera de cinco notas que sube y vuelve a empezar (un escalón arriba: la paleta empieza en el do6)", "info",
+                "DECISIÓN DE SONNET: la spec decía Spark(luces + 1) con tope en 8; hoy la escalera es de cinco notas que se repite, así que se conserva el ciclo (si no, a partir de la 8.ª luz sonaría siempre la misma).");
+            E(g, "nuevo", "Aviso de sorpresa", "Dos campanas (mi y la)", "SatelliteGameController.cs: ShowSurprise", "satelites.chime", 0.7f, Wk(WoodSfx.New), "New");
+            E(g, "final", "Fin de la partida", "Dos campanas lentas (sol y do agudos), 2 s", "ExitButton (GameFeel.Finish)", "satelites.finale", 0.8f, Wk(WoodSfx.Finish), "Finish");
         }
 
         // ------------------------------------------------------------------ Rescate relámpago (ya en Madera cálida)
