@@ -6,6 +6,7 @@ using NeuroVida.Games.Anagramas;
 using NeuroVida.Games.Bodega;
 using NeuroVida.Games.Calculo;
 using NeuroVida.Games.Correo;
+using NeuroVida.Games.Intrusa;
 using NeuroVida.Games.Parejas;
 using NeuroVida.Games.Piloto;
 using NeuroVida.Games.Satelites;
@@ -39,6 +40,7 @@ namespace NeuroVida.Games.Tests
             new GameSounds { Id = "secuencia", All = RastroSounds.All, Request = RastroSounds.Request },
             new GameSounds { Id = "satelites", All = SatelliteSounds.All, Request = SatelliteSounds.Request },
             new GameSounds { Id = "piloto", All = PilotSounds.All, Request = PilotSounds.Request },
+            new GameSounds { Id = "intrusa", All = IntrusaSounds.All, Request = IntrusaSounds.Request },
         };
 
         [SetUp]
@@ -140,6 +142,7 @@ namespace NeuroVida.Games.Tests
             CollectionAssert.AreEquivalent(new[] { "rastro.cue0", "rastro.cue1", "rastro.cue2", "rastro.cue3" }, Keys(RastroSounds.All()));
             CollectionAssert.IsEmpty(Keys(SatelliteSounds.All()), "Satélites: todo es de la paleta (el zumbido es el bucle aprobado)");
             CollectionAssert.AreEquivalent(new[] { "piloto.mission" }, Keys(PilotSounds.All()));
+            CollectionAssert.AreEquivalent(new[] { "intrusa.engrave", "intrusa.fall" }, Keys(IntrusaSounds.All()));
             // los que van en mono son los micro sin sala: solo «abrir una puerta»
             foreach (var (key, recipe, mono) in BodegaSounds.All()) Assert.AreEqual(key == "bodega.open", mono, key);
         }

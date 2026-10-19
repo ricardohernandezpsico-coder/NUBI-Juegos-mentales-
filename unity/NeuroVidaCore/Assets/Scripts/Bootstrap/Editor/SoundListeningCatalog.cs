@@ -661,25 +661,27 @@ namespace NeuroVida.Bridge.EditorTools
         private static void RegisterIntrusa()
         {
             const string g = "intrusa";
-            Family_("intrusa-suave", "Intrusa: la chispa traza la figura (estrella sin palabra)", Hz(i => PuntaSounds.Penta[i], 9), i => IntrusaSounds.Note(i, false), 0.4);
-            Family_("intrusa-fuerte", "Intrusa: la chispa traza la figura (estrella con palabra: más fuerte)", Hz(i => PuntaSounds.Penta[i], 9), i => IntrusaSounds.Note(i, true), 0.4);
-            H("intrusa.chord", () => IntrusaSounds.Chord());
-            H("intrusa.fall", () => IntrusaSounds.Fall());
-            H("intrusa.glass", () => IntrusaSounds.Glass());
-            H("intrusa.engrave", () => IntrusaSounds.Engrave());
-            H("intrusa.named", () => IntrusaSounds.Named());
-            H("intrusa.pulse", () => IntrusaSounds.Pulse());
-            H("intrusa.dull", () => IntrusaSounds.Dull());
-            FamilyEvent(g, "suave", "La chispa pasa por una estrella sin palabra: nota que sube", "Marimba suave (pico 0,3) y brillo; 0,4 s", "IntrusaGameController.cs:885 (vol 0,55)", "intrusa-suave", 0.55f, "Note(hz)", "");
-            FamilyEvent(g, "fuerte", "La chispa pasa por una estrella CON palabra: nota más fuerte y brillante", "Marimba fuerte (pico 0,5) con campana una octava arriba; 0,55 s", "IntrusaGameController.cs:885 (vol 0,55)", "intrusa-fuerte", 0.55f, "Note(hz)", "Lo fuerte avisa que esa estrella lleva palabra: se mantiene la diferencia entre fuerte y suave.");
-            E(g, "acorde", "Se cierra la figura: acorde de cuatro notas", "Cuatro campanas do-mi-sol-do con brillo, 1,3 s", "IntrusaGameController.cs:832, :871 (vol 0,35 a 0,65)", "intrusa.chord", 0.6f, Wk(WoodSfx.Perfect), "Perfect");
-            E(g, "cae", "La estrella fugaz cae", "Soplo brillante que baja y campanita, 0,95 s", "IntrusaGameController.cs:758 (vol 0,55)", "intrusa.fall", 0.55f, Wk(WoodSfx.SweepDown), "SweepDown");
-            E(g, "error", "Error: cristal suave y apagado", "Dos campanas graves que bajan, 0,6 s", "IntrusaGameController.cs:486 (vol 0,5)", "intrusa.glass", 0.5f, Wk(WoodSfx.Wrong), "Wrong");
-            E(g, "grabado", "El grabado: barrido cálido que sube", "Ruido y seno 700 → 2500 Hz, 1,2 s", "IntrusaGameController.cs:982 (vol 0,4)", "intrusa.engrave", 0.4f, Wk(WoodSfx.SweepUp), "SweepUp");
-            E(g, "une", "«¿Qué las une?» acertada", "Tres campanas que suben, 1 s", "IntrusaGameController.cs:438 (vol 0,6)", "intrusa.named", 0.6f, Wk(WoodSfx.Correct, 3), "Correct");
-            E(g, "latido", "Latido de las cuatro estrellas mientras se piensa", "Golpecito grave suave, 0,35 s", "IntrusaGameController.cs:397 (vol 0,5)", "intrusa.pulse", 0.5f, Wk(WoodSfx.Tap), "Tap");
-            E(g, "noera", "La opción no era: golpecito de madera sordo", "Seno 180 Hz, 0,25 s", "IntrusaGameController.cs:437 (vol 0,5)", "intrusa.dull", 0.5f, Wk(WoodSfx.Knock), "Knock");
-            E(g, "comun", "Subir de nivel, tic y fin", "Comunes (GameFeel); no tiene Finale propio", "IntrusaGameController.cs:1055, :1171", "gamefeel.levelup", 0.5f, Wk(WoodSfx.LevelUp), "LevelUp (ver «Lo común»)");
+            // «hoy» sale CONGELADO del 17-oct (Tarea 138): la clase de campanas de Intrusa se borró al cablear el juego
+            Family_("intrusa-suave", "Intrusa: la chispa traza la figura (estrella sin palabra)", Hz(i => IntrusaSounds.NoteHz(i), 9), null, 0.4);
+            Family_("intrusa-fuerte", "Intrusa: la chispa traza la figura (estrella con palabra: más fuerte)", Hz(i => IntrusaSounds.NoteHz(i), 9), null, 0.4);
+            foreach (var k in new[] { "chord", "fall", "glass", "engrave", "named", "pulse", "dull" }) Frozen("intrusa." + k);
+            // los dos propios, de las MISMAS recetas que van al juego
+            foreach (var r in IntrusaSounds.All()) { var recipe = r.Recipe; Raw(r.Key + ".madera", () => FromRecipe(recipe)); }
+
+            // la estrella con palabra suena 6 dB más fuerte que la que no la tiene: la misma nota de marimba con dos pasos de ganancia (el botón suena como va a sonar)
+            FamilyEvent(g, "suave", "La chispa pasa por una estrella sin palabra: nota que sube", "Marimba suave (pico 0,3) y brillo; 0,4 s", "IntrusaGameController.cs: ArriveAt (IntrusaSounds.PlayNote(step, false))", "intrusa-suave", 0.55f, "PlayNote(NoteHz(paso), Marimba, gainDb −6)", "", marimba: true).WoodGain = Atten(-6.0);
+            FamilyEvent(g, "fuerte", "La chispa pasa por una estrella CON palabra: nota más fuerte y brillante", "Marimba fuerte (pico 0,5) con campana una octava arriba; 0,55 s", "IntrusaGameController.cs: ArriveAt (IntrusaSounds.PlayNote(step, true))", "intrusa-fuerte", 0.55f, "PlayNote(NoteHz(paso), Marimba): la MISMA nota, 6 dB más fuerte",
+                "Lo fuerte avisa que esa estrella lleva palabra: se mantiene la diferencia, ahora medida (6,0 dB exactos: dos pasos de ganancia de 3 dB, una sola receta por nota). DECIDIDO (Ricardo, 19-oct): solo 6 dB más fuerte; la alternativa era sumar el brillo de la octava (9 recetas más).", marimba: true);
+            E(g, "acorde", "Se cierra la figura: acorde de cuatro notas", "Cuatro campanas do-mi-sol-do con brillo, 1,3 s", "IntrusaGameController.cs: Trace (al cerrar la figura; en la variante tranquila, −6 dB)", "intrusa.chord", 0.6f, Wk(WoodSfx.Perfect), "Perfect");
+            E(g, "cae", "La estrella fugaz cae", "Soplo brillante que baja y campanita, 0,95 s", "IntrusaGameController.cs: FallStar (IntrusaSounds.Play(Fall))", "intrusa.fall", 0.55f, "intrusa.fall.madera", "Propio intrusa.fall: un soplo que baja (4200 → 500 Hz) y una kalimba aguda (sol6), nivel 0,14", "",
+                "DECISIÓN DE SONNET: la spec dejaba SweepDown de la paleta, que queda 9 LU más baja que hoy (≈ −35 LUFS: una textura casi inaudible). Es el momento en que la intrusa se va, un hito del juego: se usa la alternativa de la spec, un propio atado al juego (≈ −28 LUFS).");
+            E(g, "error", "Error: cristal suave y apagado", "Dos campanas graves que bajan, 0,6 s", "IntrusaGameController.cs: la elección equivocada", "intrusa.glass", 0.5f, Wk(WoodSfx.Wrong), "Wrong");
+            E(g, "grabado", "El grabado: barrido cálido que sube", "Ruido y seno 700 → 2500 Hz, 1,2 s", "IntrusaGameController.cs: el grabado del dibujo (IntrusaSounds.Play(Engrave))", "intrusa.engrave", 0.4f, "intrusa.engrave.madera", "Propio intrusa.engrave: barrido de ruido 700 → 2500 Hz y marimba grave (do4), tan largo como el dibujo", "tiempo");
+            E(g, "une", "«¿Qué las une?» acertada", "Tres campanas que suben, 1 s", "IntrusaGameController.cs: Bonus", "intrusa.named", 0.6f, Wk(WoodSfx.Correct, 3), "Correct 3");
+            E(g, "latido", "Latido de las cuatro estrellas mientras se piensa", "Golpecito grave suave, 0,35 s", "IntrusaGameController.cs: Bonus", "intrusa.pulse", 0.5f, Wk(WoodSfx.Hum), "Hum, gainDb −3", "",
+                "DECIDIDO (Ricardo, 19-oct): Hum grave. El plan decía Tap, que es un toque agudo de 60 ms; el Hum son dos marimbas graves que arrancan: un latido.").WoodGain = Atten(-3.0);
+            E(g, "noera", "La opción no era: golpecito de madera sordo", "Seno 180 Hz, 0,25 s", "IntrusaGameController.cs: Bonus", "intrusa.dull", 0.5f, Wk(WoodSfx.Knock), "Knock");
+            E(g, "comun", "Subir de nivel, tic y fin", "Comunes (GameFeel); no tiene Finale propio", "IntrusaGameController.cs: LevelUp, el tic del reloj", "gamefeel.levelup", 0.5f, Wk(WoodSfx.LevelUp), "LevelUp (ver «Lo común»)");
         }
 
         // ------------------------------------------------------------------ las señales cortas (para medir su afinación)

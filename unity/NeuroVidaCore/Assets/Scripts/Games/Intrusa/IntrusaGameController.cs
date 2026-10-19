@@ -237,20 +237,10 @@ namespace NeuroVida.Games.Intrusa
         /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva (así la primera ronda no traba).</summary>
         private IEnumerator PrewarmSprites()
         {
+            IntrusaSounds.Request();                  // los sonidos (las 9 notas, el cierre, la estrella fugaz, el latido, el grabado…) se piden ANTES de la cuenta: los calcula WoodCore de a poco, sin trabar
             IntrusaSprites.Line();
             IntrusaSprites.Flare();
             yield return null;
-            IntrusaSounds.Note(0, true);
-            IntrusaSounds.Fall();
-            IntrusaSounds.Chord();
-            yield return null;
-            for (int i = 1; i < 6; i++) IntrusaSounds.Note(i, i % 2 == 0);
-            IntrusaSounds.Glass();
-            yield return null;
-            IntrusaSounds.Engrave();
-            IntrusaSounds.Named();
-            IntrusaSounds.Pulse();
-            IntrusaSounds.Dull();
             _baked = true;
         }
 
@@ -392,7 +382,7 @@ namespace NeuroVida.Games.Intrusa
             var g = spec.G;
             float window = IntrusaContract.BonusWindow(Senior);
             _pulsing = true;
-            PlayClip(IntrusaSounds.Pulse(), 0.5f);
+            WoodCore.Play(WoodSfx.Hum, gainDb: -3f);                      // el latido de las cuatro estrellas mientras se piensa: un golpecito grave
             for (int i = 0; i < 3; i++)
             {
                 var o = _options[i];
@@ -432,8 +422,8 @@ namespace NeuroVida.Games.Intrusa
                 SetOptionTone(ob, result.Named ? SlabTone.Lime : SlabTone.Coral, result.Named ? GoodColor : BadColor);
                 ob.Mark.sprite = result.Named ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
                 ob.Mark.gameObject.SetActive(true);
-                if (!result.Named) { var ok = _options[g.c]; SetOptionTone(ok, SlabTone.Lime, GoodColor); PlayClip(IntrusaSounds.Dull(), 0.5f); }
-                else PlayClip(IntrusaSounds.Named(), 0.6f);
+                if (!result.Named) { var ok = _options[g.c]; SetOptionTone(ok, SlabTone.Lime, GoodColor); WoodCore.Play(WoodSfx.Knock); }
+                else WoodCore.Play(WoodSfx.Correct, 3);
                 StartCoroutine(PopRect(ob.Rect, 1.08f, 0.2f));
                 float e = 0f;
                 while (e < 0.55f) { e += GameClock.DeltaTime; yield return null; }
@@ -481,7 +471,7 @@ namespace NeuroVida.Games.Intrusa
             _streak = 0;
             _hud.SetStreak(0);
             CheckClearSky();
-            PlayClip(IntrusaSounds.Glass(), 0.5f);
+            WoodCore.Play(WoodSfx.Wrong);
             Slot wrong = _slots[choice], intruder = _slots[4];
 
             // la tocada: aro coral y una X dibujada (nunca solo color); la verdadera intrusa: aro sol que late
@@ -753,7 +743,7 @@ namespace NeuroVida.Games.Intrusa
 
         private IEnumerator FallStar(Slot s)
         {
-            PlayClip(IntrusaSounds.Fall(), 0.55f);
+            IntrusaSounds.Play(IntrusaSfx.Fall);                           // la estrella fugaz cae: un propio del juego (un soplo que baja y una kalimba aguda)
             s.PlateGroup.alpha = 0f;
             if (GameFeel.ReduceMotion)
             {
@@ -827,7 +817,7 @@ namespace NeuroVida.Games.Intrusa
                     yield return null;
                 }
                 for (int i = 0; i < segs.Count; i++) SetLine(_lines[i], 1f, 1f);
-                PlayClip(IntrusaSounds.Chord(), quiet ? 0.35f : 0.6f);
+                WoodCore.Play(WoodSfx.Perfect, gainDb: quiet ? -6f : 0f);
                 GameFeel.Haptic(GameFeel.HapticKind.Firm);
                 yield break;
             }
@@ -866,7 +856,7 @@ namespace NeuroVida.Games.Intrusa
             for (int i = 0; i < segs.Count; i++) SetLine(_lines[i], 1f, 1f);
             _headHalo.gameObject.SetActive(false);
             _headCore.gameObject.SetActive(false);
-            PlayClip(IntrusaSounds.Chord(), quiet ? 0.35f : 0.65f);
+            WoodCore.Play(WoodSfx.Perfect, gainDb: quiet ? -6f : 0f);
             GameFeel.Haptic(GameFeel.HapticKind.Firm);
             float settle = 0f;
             while (settle < 0.38f)
@@ -880,7 +870,7 @@ namespace NeuroVida.Games.Intrusa
         {
             bool word = isAnchor.Contains(point);
             FlashRing(pos[point], word && !quiet);
-            PlayClip(IntrusaSounds.Note(step, word && !quiet), 0.55f);
+            IntrusaSounds.PlayNote(step, word && !quiet);                  // la estrella con palabra suena 6 dB más fuerte: esa diferencia es la información
             step = Mathf.Min(step + 1, IntrusaSounds.NoteCount - 1);
             if (word && anchorSlot.TryGetValue(point, out var slot)) StartCoroutine(PopRect(slot.Core.rectTransform, 1.7f, 0.3f));
         }
@@ -977,7 +967,7 @@ namespace NeuroVida.Games.Intrusa
             var f = spec.Figure;
             float speed = review ? 2.2f : 1f;
             bool calm = GameFeel.ReduceMotion;
-            PlayClip(IntrusaSounds.Engrave(), 0.4f);
+            IntrusaSounds.Play(IntrusaSfx.Engrave);
 
             if (_engraving != null)
             {
@@ -1053,12 +1043,6 @@ namespace NeuroVida.Games.Intrusa
                 GameFeel.LevelUp();
             }
             else if (!clear) _clearShown = false;
-        }
-
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            _audioSource.PlayOneShot(clip, volume);
         }
 
         private IEnumerator FloatText(Vector2 pos, string text, Color color)
