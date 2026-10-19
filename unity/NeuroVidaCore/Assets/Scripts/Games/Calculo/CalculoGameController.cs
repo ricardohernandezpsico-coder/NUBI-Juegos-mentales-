@@ -207,6 +207,7 @@ namespace NeuroVida.Games.Calculo
 
         private IEnumerator GameLoop()
         {
+            CargaSounds.Request();                          // los sonidos de Madera que no van con el núcleo, antes de la cuenta regresiva (el cómputo corre detrás, de a poco)
             StartCoroutine(Prewarm());
             if (TutorialWanted)
             {
@@ -248,23 +249,13 @@ namespace NeuroVida.Games.Calculo
             return _resolved >= CalculoContract.PrecisionLoads;
         }
 
-        /// <summary>Sintetiza los sonidos y hornea los sprites durante la cuenta regresiva (así la primera carga no traba).</summary>
+        /// <summary>Hornea los sprites durante la cuenta regresiva (así la primera carga no traba); los sonidos los calcula <see cref="WoodCore"/> detrás de la cuenta.</summary>
         private IEnumerator Prewarm()
         {
             DiscSprite.Get();
             RingSprite.Get();
             RadialGlowSprite.Get();
             yield return null;
-            CargaSounds.Select();
-            CargaSounds.Operation();
-            CargaSounds.Thud();
-            CargaSounds.Back();
-            yield return null;
-            for (int step = 1; step <= 6; step++) CargaSounds.Merge(step);
-            CargaSounds.Hint();
-            yield return null;
-            CargaSounds.Arpeggio();
-            CargaSounds.Finale();
         }
 
         /// <summary>Una carga: se arma, se juega hasta lograrla (o hasta la pista, o hasta que se acabe el tiempo del Reto) y se cuenta.</summary>
@@ -532,13 +523,13 @@ namespace NeuroVida.Games.Calculo
             {
                 _sel = _sel == id ? -1 : id;
                 _op = -1;
-                PlayClip(CargaSounds.Select(), 0.7f);
+                WoodCore.Play(WoodSfx.Select, 2);
                 return;
             }
             if (_op < 0)
             {
                 _sel = id;                                  // cambia de celda elegida
-                PlayClip(CargaSounds.Select(), 0.7f);
+                WoodCore.Play(WoodSfx.Select, 2);
                 return;
             }
             Merge(_sel, (CargaOp)_op, id);
@@ -553,7 +544,7 @@ namespace NeuroVida.Games.Calculo
                 return;
             }
             _op = _op == (int)op ? -1 : (int)op;
-            PlayClip(CargaSounds.Operation(), 0.7f);
+            WoodCore.Play(WoodSfx.Select, 5);
         }
 
         private void Merge(int idA, CargaOp op, int idB)
@@ -563,7 +554,7 @@ namespace NeuroVida.Games.Calculo
             var vb = _views[idB];
             if (!_board.TryMerge(ia, op, ib, out var move, out var reject))
             {
-                PlayClip(CargaSounds.Thud(), 0.8f);
+                WoodCore.Play(WoodSfx.Knock);
                 GameFeel.Haptic(GameFeel.HapticKind.Double);
                 Tell(CargaRules.Explain(_board.Cells[ia].Value, op, _board.Cells[ib].Value, reject), false);
                 _op = -1;
@@ -576,7 +567,7 @@ namespace NeuroVida.Games.Calculo
             va.FlyAt = now;
             va.FlyFrom = va.Pos;
             va.FlyToId = idB;
-            PlayClip(CargaSounds.Merge(_board.Steps), 0.8f);
+            WoodCore.Play(WoodSfx.Correct, Mathf.Clamp(_board.Steps, 1, 7));            // el par de kalimbas sube con el paso
             GameFeel.Haptic(GameFeel.HapticKind.Light);
             _sel = _op = -1;
             _hintShownUntil = 0f;
@@ -594,7 +585,7 @@ namespace NeuroVida.Games.Calculo
             else if (_board.Stuck(_puzzle.Target))
             {
                 Tell($"Quedó {_board.Cells[0].Value}: deshaz y prueba otro camino", false);
-                PlayClip(CargaSounds.Thud(), 0.6f);
+                WoodCore.Play(WoodSfx.Knock, gainDb: -3f);
             }
         }
 
@@ -604,7 +595,7 @@ namespace NeuroVida.Games.Calculo
             _phase = Phase.Solved;
             _winId = winningId;
             _solvedAt = GameClock.Time;
-            PlayClip(CargaSounds.Arpeggio(), 0.9f);
+            WoodCore.Play(WoodSfx.Perfect);
             GameFeel.Haptic(GameFeel.HapticKind.Firm);
             Emit(new Vector2(CargaLayout.W / 2f, _m.ReactorY), 40, 220f, 0.9f, Cyan, 20f);
             Emit(new Vector2(CargaLayout.W / 2f, _m.ReactorY), 30, 160f, 0.8f, Gold, 20f);
@@ -624,7 +615,7 @@ namespace NeuroVida.Games.Calculo
             _board.Undo();
             _sel = _op = -1;
             SyncViews(reborn: false);
-            PlayClip(CargaSounds.Back(), 0.7f);
+            WoodCore.Play(WoodSfx.Unselect);
         }
 
         public const string UndoLabel = "Deshacer", RestartLabel = "Empezar de nuevo", RestartAskLabel = "¿Seguro? Toca otra vez";
@@ -637,7 +628,7 @@ namespace NeuroVida.Games.Calculo
             if (_phase != Phase.Play || !_board.CanUndo) return;
             if (GameClock.Time < _restartArmedUntil) { _restartArmedUntil = -1f; Restart(); return; }
             _restartArmedUntil = GameClock.Time + RestartAskSeconds;
-            PlayClip(CargaSounds.Back(), 0.4f);
+            WoodCore.Play(WoodSfx.Unselect, gainDb: -6f);
         }
 
         private void Restart()
@@ -647,7 +638,7 @@ namespace NeuroVida.Games.Calculo
             _sel = _op = -1;
             foreach (var v in _views) { v.Flying = false; }
             SyncViews(reborn: true);
-            PlayClip(CargaSounds.Back(), 0.7f);
+            WoodCore.Play(WoodSfx.Unselect);
         }
 
         /// <summary>La pista de Nubi: vuelve a las celdas originales y dice el primer paso de una solución; esas dos celdas laten. Una vez por carga.</summary>
@@ -668,7 +659,7 @@ namespace NeuroVida.Games.Calculo
             _hintShownUntil = float.MaxValue;
             _hintText = text;
             Tell(text, null);
-            PlayClip(CargaSounds.Hint(), 0.8f);
+            WoodCore.Play(WoodSfx.Hint);
         }
 
         private string _hintText = "";
@@ -1087,13 +1078,6 @@ namespace NeuroVida.Games.Calculo
             _sayFull = text;
             _sayAt = GameClock.Time;
             _sayColor = good == true ? GoodText : good == false ? WarnText : Gold;
-        }
-
-        private void PlayClip(AudioClip clip, float volume)
-        {
-            if (clip == null || !GameFeel.SoundOn) return;
-            if (_config != null && _config.config != null && !_config.config.sound_enabled) return;
-            _audioSource.PlayOneShot(clip, volume);
         }
 
         // ------------------------------------------------------------------ construcción de UI

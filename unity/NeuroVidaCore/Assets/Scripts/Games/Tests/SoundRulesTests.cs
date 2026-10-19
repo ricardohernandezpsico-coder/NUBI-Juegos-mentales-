@@ -1,6 +1,13 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
+using NeuroVida.Games.Anagramas;
+using NeuroVida.Games.Bodega;
+using NeuroVida.Games.Calculo;
+using NeuroVida.Games.Correo;
+using NeuroVida.Games.Parejas;
+using NeuroVida.Games.Shared;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -33,7 +40,7 @@ namespace NeuroVida.Games.Tests
         /// <summary>
         /// Los juegos YA CABLEADOS a <c>WoodCore</c> (carpeta de <c>Games/</c>): rigen las reglas (b), (c) y (d). Paso 0 de las Fases C a E (Tarea 133): ninguno todavía; cada tarea de cableado suma su carpeta aquí (Calculo, Anagramas, Parejas, Bodega, Correo en la Fase C…).
         /// </summary>
-        private static readonly string[] Migrated = { };
+        private static readonly string[] Migrated = { "Calculo" };
 
         /// <summary>Los bucles aprobados que se quedan con su propio altavoz (el zumbido de Satélites, el motor de Piloto y el propulsor de Aterrizaje).</summary>
         private static readonly string[] LoopFiles = { "SatelliteGameController.cs", "SatelliteGameController.Scene.cs", "PilotGameController.cs", "PilotGameController.Scene.cs", "PilotEngine.cs", "LandingGameController.Scene.cs" };
@@ -156,11 +163,57 @@ namespace NeuroVida.Games.Tests
         public void ThePhaseCSoundClasses_ListTheirRecipesAndWhatTheyRequest()
         {
             string dir = Path.Combine(Application.dataPath, "Scripts", "Games");
-            foreach (var rel in new[] { "Calculo/CargaSounds.Wood.cs", "Anagramas/PuntaSounds.Wood.cs", "Parejas/ConstelacionSounds.Wood.cs", "Bodega/BodegaSounds.Wood.cs", "Correo/MailSounds.Wood.cs" })
+            foreach (var rel in new[] { "Calculo/CargaSounds.cs", "Anagramas/PuntaSounds.Wood.cs", "Parejas/ConstelacionSounds.Wood.cs", "Bodega/BodegaSounds.Wood.cs", "Correo/MailSounds.Wood.cs" })
             {
                 string text = File.ReadAllText(Path.Combine(dir, rel));
                 Assert.IsTrue(text.Contains("All()") && text.Contains("static void Request()"), rel + ": expone All() y Request()");
             }
+        }
+
+        /// <summary>Para cada juego cableado: qué pide por adelantado (<c>Request</c>) y su id (el que recibe <c>WoodCore.Warm</c>). Cada tarea de cableado suma su fila.</summary>
+        private static readonly Dictionary<string, (string Id, System.Action Request)> Requests = new Dictionary<string, (string, System.Action)>
+        {
+            { "Calculo", ("calculo", CargaSounds.Request) },
+        };
+
+        /// <summary>Lo que el controlador de un juego cableado le pide a la paleta (<c>WoodCore.Play(WoodSfx.X[, n])</c>): (sonido, variante o -1 si el argumento es una expresión que recorre todas), con el archivo y la línea.</summary>
+        private static IEnumerable<(WoodSfx Sfx, int Arg, string At)> PaletteCalls(string file)
+        {
+            var text = File.ReadAllText(file); var head = new Regex(@"WoodCore\.Play\(\s*WoodSfx\.(\w+)");
+            foreach (Match m in head.Matches(text))
+            {
+                int open = text.IndexOf('(', m.Index); int depth = 0, end = open, i = open;
+                for (; i < text.Length; i++) { if (text[i] == '(') depth++; else if (text[i] == ')' && --depth == 0) { end = i; break; } }
+                var args = new List<string>(); int d2 = 0, start = open + 1;
+                for (int j = open + 1; j < end; j++) { char c = text[j]; if (c == '(') d2++; else if (c == ')') d2--; else if (c == ',' && d2 == 0) { args.Add(text.Substring(start, j - start).Trim()); start = j + 1; } }
+                args.Add(text.Substring(start, end - start).Trim());
+                var sfx = (WoodSfx)System.Enum.Parse(typeof(WoodSfx), m.Groups[1].Value);
+                int line = text.Substring(0, m.Index).Count(ch => ch == '\n') + 1; string at = Path.GetFileName(file) + ":" + line;
+                if (args.Count < 2 || args[1].Contains(":")) { yield return (sfx, 0, at); continue; }                  // sin variante o con argumentos con nombre (gainDb:, ui:)
+                if (int.TryParse(args[1], out int n)) yield return (sfx, n, at); else yield return (sfx, -1, at);
+            }
+        }
+
+        /// <summary>Todo lo que un juego cableado le suena a la paleta está listo después de <c>Warm</c> + el <c>Request</c> de su clase de sonidos: o va con el núcleo o lo pidió por adelantado (si no, sonaría tarde o no sonaría: <c>Skipped</c>).</summary>
+        [Test]
+        public void EverythingAWiredGameSoundsFromThePalette_IsAskedForBeforeTheCountdown()
+        {
+            bool soundWas = GameFeel.SoundOn; GameFeel.SoundOn = true;
+            try
+            {
+                foreach (var kv in Requests)
+                {
+                    WoodCore.Reset(); GameFeel.Warm(kv.Value.Id); kv.Value.Request();
+                    int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000, "el cálculo no termina"); }
+                    foreach (var file in MigratedControllers().Where(f => f.Replace('\\', '/').Contains("/" + kv.Key + "/")))
+                        foreach (var (sfx, arg, at) in PaletteCalls(file))
+                        {
+                            var variants = arg >= 0 ? new[] { arg } : WoodSounds.Variants(sfx);
+                            foreach (int v in variants) Assert.IsNotNull(WoodCore.Get(sfx, v), at + ": suena " + sfx + (v != 0 ? " " + v : "") + " y " + kv.Key + " no lo pide por adelantado (ni va con el núcleo): se saltaría");
+                        }
+                }
+            }
+            finally { WoodCore.Reset(); GameFeel.SoundOn = soundWas; }
         }
 
         /// <summary>(e) Dos sonidos por una misma respuesta (un <c>WoodCore.Play</c> / <c>PlayNote</c> en la misma línea o la siguiente de un <c>GameFeel.Correct/Wrong/LevelUp</c>) fallan, salvo las parejas permitidas a propósito (lista explícita; hoy ninguna: las dos de la Fase C, nota + destello en Bodega y Correo y toque + nota en Constelaciones, no usan <c>GameFeel.Correct</c>).</summary>

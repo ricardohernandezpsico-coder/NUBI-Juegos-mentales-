@@ -516,7 +516,7 @@ namespace NeuroVida.Bridge.EditorTools
             // «hoy» de las cinco clases de la Fase C: lo que suena con el juego tal como está; los clips sueltos salen CONGELADOS del 17-oct (nada se renderiza), lo que se mezcla o es una escala sale del código de hoy
             Frozen("calculo.select");
             Frozen("calculo.operation");
-            Raw("calculo.merge", () => Scale(LadderSteps, 0.55, i => Trimmed(FromClip(CargaSounds.Merge(i + 1)), 1.0)));
+            Frozen("calculo.merge");
             Frozen("calculo.thud");
             Frozen("calculo.back");
             Frozen("calculo.hint");
