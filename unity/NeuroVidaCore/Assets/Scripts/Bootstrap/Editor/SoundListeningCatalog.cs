@@ -285,16 +285,16 @@ namespace NeuroVida.Bridge.EditorTools
             E(g, "cielo", "Un cielo completo", "Arpegio de cuatro campanas, 1,8 s", "ConstelacionGameController.cs:223 (vol 0,8)", "parejas.boardend", 0.8f, Wk(WoodSfx.Perfect), "Perfect");
             E(g, "zumbido", "Empieza el cielo: zumbido de fondo", "Dos senos graves (196 y 294 Hz), 1,7 s", "ConstelacionGameController.cs:204 (vol 0,5)", "parejas.hum", 0.5f, Wk(WoodSfx.Hum), "Hum");
             E(g, "nuevo", "«NUEVO»", "Dos campanas (mi y la)", "ConstelacionGameController.cs:406 (vol 0,7)", "parejas.chime", 0.7f, Wk(WoodSfx.New), "New");
-            var hermanas = E(g, "hermanas", "Las luces hermanas brillan (la pista, 850 ms después de errar)", "Dos campanas (mi y la), muy suaves", "ConstelacionGameController.cs:460 (vol 0,25)", "parejas.chime", 0.25f, null, "se queda como hoy (por ahora)", "",
-                "DECIDIDO por Ricardo (18-oct): el «Hint» de la paleta no le sonó a ayuda; la pista sigue sonando como HOY (esta receta, con el mismo volumen) hasta que elija entre tres opciones en docs/previews/sonido-escucha-pista.html.");
-            hermanas.NoWood = "Se queda como hoy por ahora: a Ricardo el soplo de «Hint» no le sonó a ayuda. Las tres opciones para elegir están en sonido-escucha-pista.html.";
+            var hermanas = E(g, "hermanas", "Las luces hermanas brillan (la pista, 380 ms después de errar)", "Dos campanas (mi y la), muy suaves", "ConstelacionGameController.cs:460 (vol 0,25)", "parejas.chime", 0.25f, "pista.a", "PlayNote(NoteHz(grupo), Kalimba, gainDb −6): una vez por cada luz hermana, cuando brilla", "",
+                "ELEGIDO por Ricardo (19-oct, Tarea 137): el «Hint» de la paleta no le sonó a ayuda y de las tres opciones de docs/previews/sonido-escucha-pista.html eligió la (a): cada luz hermana suena la nota de SU grupo en kalimba, suave (−6 dB), en el momento en que brilla (con dos hermanas, dos notas 0,16 s aparte).");
+            hermanas.WoodGain = Atten(-6.0);
             E(g, "final", "Fin de la partida", "Tres campanas que suben, 2 s, con eco", "ConstelacionGameController.cs:358", "parejas.finale", 0.8f, Wk(WoodSfx.Finish), "Finish (el común; se quita el doble final)");
         }
 
         // ------------------------------------------------------------------ La pista de Constelaciones: tres opciones para elegir (Tarea 135)
 
         /// <summary>
-        /// «Las luces hermanas brillan»: a Ricardo el <c>Hint</c> de la paleta no le sonó a ayuda (18-oct) y la pista sigue sonando COMO HOY (<see cref="ConstelacionSounds.HintRecipe"/>) hasta que elija. Tres opciones, cada una con su botón «Hoy»:
+        /// «Las luces hermanas brillan»: a Ricardo el <c>Hint</c> de la paleta no le sonó a ayuda (18-oct) y eligió de oído la opción (a) (19-oct, Tarea 137: cableada con <see cref="ConstelacionSounds.PlayHint"/>); la página queda como registro. Tres opciones, cada una con su botón «Hoy»:
         /// (a) la NOTA DEL PROPIO GRUPO en kalimba, suave (−6 dB respecto de la nota normal), una vez por cada luz hermana en el momento en que brilla (la recomendada: la pareja «se oye» y ayuda a recordar); (b) la misma nota en marimba, suave;
         /// (c) las dos campanitas de hoy (mi y la) en kalimba, suaves. Los ejemplos suenan con dos hermanas (dos notas, una cada 0,16 s; con una pareja es una sola, con un trío son dos).
         /// </summary>
@@ -308,7 +308,7 @@ namespace NeuroVida.Bridge.EditorTools
             const string today = "Hoy: dos campanitas (mi y la), muy suaves, las mismas para todos los grupos";
             const string sites = "ConstelacionGameController.cs: la pista, unos 0,4 s después de errar (ConstelacionSounds.PlayHint)";
             var a = E(g, "a", "Opción (a) · la nota del propio grupo, en kalimba, suave", today, sites, "parejas.chime", 0.25f, "pista.a", "PlayNote(NoteHz(grupo), Kalimba, gainDb −6): una vez por cada luz hermana, cuando brilla",
-                "recomendada", "LA RECOMENDADA: la hermana suena con la nota de SU grupo (la misma que sonó al abrirla); así la pareja «se oye» y ayuda a recordar con el oído. El ejemplo suena con dos hermanas.");
+                "elegida", "LA ELEGIDA por Ricardo (19-oct), ya en el juego: la hermana suena con la nota de SU grupo (la misma que sonó al abrirla); así la pareja «se oye» y ayuda a recordar con el oído. El ejemplo suena con dos hermanas.");
             a.WoodGain = Atten(-6.0); a.WoodLabel = "Opción (a)";
             var b = E(g, "b", "Opción (b) · la misma nota del grupo, en marimba, suave", today, sites, "parejas.chime", 0.25f, "pista.b", "PlayNote(NoteHz(grupo), Marimba, gainDb −6): una vez por cada luz hermana, cuando brilla",
                 "", "La misma idea con marimba: más seca y con más cuerpo que la kalimba. El ejemplo suena con dos hermanas.");

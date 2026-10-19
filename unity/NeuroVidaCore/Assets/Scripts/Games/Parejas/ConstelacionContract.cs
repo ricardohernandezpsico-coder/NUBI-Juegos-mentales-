@@ -58,6 +58,26 @@ namespace NeuroVida.Games.Parejas
         public const float CloseAfterMs = 850f;
         /// <summary>Tras un «se te escapó», a los 380 ms la compañera ya vista brilla 1,1 s (sin darse vuelta).</summary>
         public const float HintDelayMs = 380f, HintMs = 1100f;
+        /// <summary>Las luces hermanas de la pista brillan de a una, 160 ms entre cada una (Tarea 137): a cada una le suena la nota de su grupo en el momento en que brilla (lo que Ricardo escuchó en la opción (a) de la página de la pista).</summary>
+        public const float HintStaggerMs = 160f;
+
+        /// <summary>Una luz hermana de la pista: cuándo brilla (y suena) y la nota de qué grupo.</summary>
+        public struct ConHintCue
+        {
+            public int LightId, Group;
+            public float At;
+        }
+
+        /// <summary>
+        /// La pista de «se te escapó»: UNA señal por cada luz hermana todavía dormida ([sleeping]), la primera en [now] (segundos del reloj de juego) y las demás cada <see cref="HintStaggerMs"/>. Cada una lleva el grupo de SU luz (el de la que acabas de abrir: las hermanas
+        /// son del mismo grupo y suena la misma nota que cuando la viste); con una pareja es una sola luz y con un trío son dos.
+        /// </summary>
+        public static List<ConHintCue> HintCues(IList<ConLight> sleeping, float now)
+        {
+            var cues = new List<ConHintCue>(sleeping.Count);
+            for (int i = 0; i < sleeping.Count; i++) cues.Add(new ConHintCue { LightId = sleeping[i].Id, Group = sleeping[i].Group, At = now + i * HintStaggerMs / 1000f });
+            return cues;
+        }
         /// <summary>Una luz recién aparecida se puede tocar apenas termina de crecer un poco (150 ms): nada más la bloquea.</summary>
         public const float TapableAfterMs = 150f;
         /// <summary>Las luces aparecen escalonadas: 45 ms entre una y otra, cada una con 380 ms de escala.</summary>

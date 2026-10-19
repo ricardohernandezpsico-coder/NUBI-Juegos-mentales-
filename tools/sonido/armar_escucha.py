@@ -62,10 +62,10 @@ FASES = {
     'P': {
         'grupos': ['pista'],
         'archivo': 'pista',
-        'etiqueta': 'Tarea 135 · Elegir la pista de Constelaciones',
-        'titulo': 'La pista de Constelaciones: elige de oído',
-        'tag': 'La pista de Constelaciones: elige',
-        'lead': '<b>Qué hace la pista en el juego:</b> si abres una luz y después otra que NO es su pareja, un momento después las luces hermanas de la primera (las que ya habías visto) brillan un instante para que recuerdes dónde estaban. Hoy suenan dos campanitas muy suaves; el soplo de «Hint» de la paleta no te sonó a ayuda y no se cableó. Escucha las tres opciones: cada una tiene su botón y, al lado, «Hoy» para comparar con lo que suena ahora.',
+        'etiqueta': 'Tareas 135 y 137 · La pista de Constelaciones: elegida la (a)',
+        'titulo': 'La pista de Constelaciones: Ricardo eligió la (a)',
+        'tag': 'La pista de Constelaciones: elegida la (a)',
+        'lead': '<b>ELEGIDA por Ricardo (19-oct): la opción (a), ya cableada en el juego (Tarea 137).</b> Las otras dos quedan aquí solo como registro. <b>Qué hace la pista en el juego:</b> si abres una luz y después otra que NO es su pareja, un momento después las luces hermanas de la primera (las que ya habías visto) brillan un instante para que recuerdes dónde estaban. Hoy suenan dos campanitas muy suaves; el soplo de «Hint» de la paleta no te sonó a ayuda y no se cableó. Escucha las tres opciones: cada una tiene su botón y, al lado, «Hoy» para comparar con lo que suena ahora.',
         'tip': 'Las tres opciones suenan SUAVES a propósito (−6 dB; la pista es un aviso, no un acierto). En (a) y (b) cada luz hermana suena la nota de SU grupo en el momento en que brilla (el ejemplo tiene dos hermanas: dos notas); con una pareja es una sola nota y con un trío son dos. Mejor con audífonos o con el parlante a volumen medio.',
     },
     'D': {
@@ -131,6 +131,7 @@ details.grupo>summary .a{font-size:14px;color:var(--dim)}
 .tag.tiempo{background:var(--sky);color:var(--inkd)}
 .tag.bucle{background:var(--faint);color:var(--inkd)}
 .tag.nuevo{background:var(--lime);color:var(--inkd)}
+.tag.elegida{background:var(--lime);color:var(--inkd)}
 .btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .btn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:64px;padding:8px 14px;border-radius:16px;border:3px solid var(--inkd);color:var(--inkd);font:700 17px var(--f-display);cursor:pointer;text-align:left;box-shadow:0 4px 0 #03041A}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #03041A}

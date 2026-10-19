@@ -46,6 +46,8 @@ namespace NeuroVida.Games.Parejas
         private ConIntro _introKind;
         private float _hintDueAt = -1f;
         private List<ConLight> _hintLights = new List<ConLight>();
+        /// <summary>Las notas de la pista que faltan por sonar (una por luz hermana, cada una cuando esa luz brilla; Tarea 137).</summary>
+        private readonly List<ConstelacionContract.ConHintCue> _hintNotes = new List<ConstelacionContract.ConHintCue>();
         private float _msgAt = -10f;
 
         // escala y disposición
@@ -80,6 +82,7 @@ namespace NeuroVida.Games.Parejas
             _recordNow = _recordBroken = false;
             _hintDueAt = -1f;
             _hintLights.Clear();
+            _hintNotes.Clear();
             _sky = null;
             ResetBoardViews();
 
@@ -454,8 +457,18 @@ namespace NeuroVida.Games.Parejas
                 if (_hintDueAt > 0f && now >= _hintDueAt)
                 {
                     _hintDueAt = -1f;
-                    foreach (var k in _hintLights) if (k.State == ConState.Down) { _lv[k.Id].HintAt = now; }
-                    ConstelacionSounds.PlayHint();                                      // la pista sigue sonando COMO HOY hasta que Ricardo elija (sonido-escucha-pista.html)
+                    var sleeping = new List<ConLight>();
+                    foreach (var k in _hintLights) if (k.State == ConState.Down) sleeping.Add(k);
+                    foreach (var cue in ConstelacionContract.HintCues(sleeping, now))      // las hermanas brillan de a una (160 ms) y cada una suena la nota de SU grupo cuando brilla
+                    {
+                        _lv[cue.LightId].HintAt = cue.At;
+                        _hintNotes.Add(cue);
+                    }
+                }
+                while (_hintNotes.Count > 0 && now >= _hintNotes[0].At)
+                {
+                    ConstelacionSounds.PlayHint(_hintNotes[0].Group);                  // la pista (opción a, Tarea 137): kalimba, -6 dB
+                    _hintNotes.RemoveAt(0);
                 }
             }
             AnimateBoard(now, dt);

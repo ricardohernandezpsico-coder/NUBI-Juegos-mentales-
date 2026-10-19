@@ -20,6 +20,7 @@ namespace NeuroVida.Games.Parejas
             _boardRoot.gameObject.SetActive(true);
             _fxLayer.gameObject.SetActive(true);
             _hintLights.Clear();
+            _hintNotes.Clear();
             _hintDueAt = -1f;
             _lastOpps = -1;
             _lastCardTitle = _lastCardSub = null;
@@ -64,6 +65,7 @@ namespace NeuroVida.Games.Parejas
             foreach (var sp in _sparks) { sp.Alive = false; sp.Img.gameObject.SetActive(false); }
             foreach (var d in _dots) if (d != null) d.Root.gameObject.SetActive(false);
             _hintLights.Clear();
+            _hintNotes.Clear();
             _hintDueAt = -1f;
             _lastOpps = -1;
             _msgAt = -10f;

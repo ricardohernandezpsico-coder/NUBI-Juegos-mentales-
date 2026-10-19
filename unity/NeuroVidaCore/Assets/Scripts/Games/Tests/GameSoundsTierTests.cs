@@ -126,11 +126,10 @@ namespace NeuroVida.Games.Tests
         [Test]
         public void TheOwnSoundsOfThePhase_AreTheOnesOfTheSpec()
         {
-            // Fase C: Bodega 5 propios, Correo 3 (Carga y Punta no tienen; Constelaciones solo la pista «como hoy», temporal hasta que Ricardo elija)
+            // Fase C: Bodega 5 propios, Correo 3 (Carga, Punta y Constelaciones no tienen: la pista de Constelaciones es la nota del grupo, opción (a) que eligió Ricardo, Tarea 137)
             CollectionAssert.AreEquivalent(new[] { "bodega.arrive", "bodega.beam", "bodega.open", "bodega.fly", "bodega.ratchet" }, Keys(BodegaSounds.All()));
             CollectionAssert.AreEquivalent(new[] { "correo.horn", "correo.sack", "correo.radio" }, Keys(MailSounds.All()));
-            foreach (var g in new[] { Games[0], Games[1] }) CollectionAssert.IsEmpty(Keys(g.All()), g.Id);
-            CollectionAssert.AreEquivalent(new[] { "parejas.hint" }, Keys(Games[2].All()));
+            foreach (var g in new[] { Games[0], Games[1], Games[2] }) CollectionAssert.IsEmpty(Keys(g.All()), g.Id);
             // los que van en mono son los micro sin sala: solo «abrir una puerta»
             foreach (var (key, recipe, mono) in BodegaSounds.All()) Assert.AreEqual(key == "bodega.open", mono, key);
         }
