@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -181,6 +182,8 @@ internal fun ClaySlab(
   forcePressed: Boolean = false,
   /** Dónde cae el contenido dentro del cuerpo de la losa (por defecto arriba a la izquierda; las casillas lo centran a lo alto). */
   contentAlignment: Alignment = Alignment.TopStart,
+  /** Lo que dice el lector de pantalla que pasa al tocar («Mostrar opciones»); sin valor, solo «tocar dos veces para activar». */
+  onClickLabel: String? = null,
   content: @Composable BoxScope.() -> Unit
 ) {
   val spec = rememberClayKitSpec()
@@ -195,7 +198,7 @@ internal fun ClaySlab(
   val p by animateFloatAsState(if (pressedNow) 1f else 0f, NubiMotion.finger(reduce, pressedNow), label = "losa")       // 80 ms al apretar y 140 al soltar (NubiMotion)
   val tick = rememberKitTap()
   androidx.compose.runtime.LaunchedEffect(isPressed) { if (isPressed && onClick != null) tick() }      // el tic háptico al APOYAR el dedo (KitHaptics; solo con la vibración de la app encendida)
-  val click = if (onClick != null) Modifier.clickable(interactionSource = source, indication = null, role = role, onClick = onClick) else Modifier
+  val click = if (onClick != null) Modifier.clickable(interactionSource = source, indication = null, role = role, onClickLabel = onClickLabel, onClick = onClick) else Modifier
   // El contenido define el tamaño; las imágenes se dibujan en una capa que llena al padre (así la losa nunca se agranda por su cuenta) y el toque va en el contenedor, sin contar los 6 dp de abajo.
   Box(modifier.padding(bottom = 6.dp).then(click), contentAlignment = contentAlignment) {
     Box(
@@ -313,20 +316,33 @@ internal fun KitButton(
   glyph: Glyph? = null,
   fontSize: TextUnit = 17.sp,
   textColor: Color = Clay.Ink,
-  /** Ancho de toda la fila (lo normal); false = solo lo que mide su contenido (p. ej. «Compartir mi liga», centrado). */
   wide: Boolean = true,
-  forcePressed: Boolean = false
+  forcePressed: Boolean = false,
+  /** Alto mínimo (56 por defecto; la ficha del juego usa 48 para «Cambiar cómo jugar»). */
+  minHeight: Dp = 56.dp,
+  /** Una segunda línea más chica bajo [text] (el «Jugar» de la ficha con lo elegido, en pantallas angostas o con letra grande): dos textos, cada uno entero, y nunca se parte una palabra. */
+  secondLine: String? = null,
+  secondLineSize: TextUnit = 16.sp,
+  /** Lo que dice el lector de pantalla que pasa al tocar («Mostrar opciones»). */
+  onClickLabel: String? = null
 ) {
-  ClaySlab(color, if (wide) modifier.fillMaxWidth() else modifier, onClick = onClick, forcePressed = forcePressed) {
+  ClaySlab(color, if (wide) modifier.fillMaxWidth() else modifier, onClick = onClick, forcePressed = forcePressed, onClickLabel = onClickLabel) {
     Row(
-      (if (wide) Modifier.fillMaxWidth() else Modifier).heightIn(min = 56.dp).padding(horizontal = if (wide) 12.dp else 20.dp, vertical = 8.dp),
+      (if (wide) Modifier.fillMaxWidth() else Modifier).heightIn(min = minHeight).padding(horizontal = if (wide) 12.dp else 20.dp, vertical = if (minHeight < 56.dp) 4.dp else 8.dp),
       horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
     ) {
       if (glyph != null) {
         KitGlyph(glyph)
         Spacer(Modifier.width(10.dp))
       }
-      Text(text, color = textColor, fontSize = fontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+      if (secondLine == null) {
+        Text(text, color = textColor, fontSize = fontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+      } else {
+        Column(Modifier.weight(1f, fill = false), horizontalAlignment = Alignment.CenterHorizontally) {
+          Text(text, color = textColor, fontSize = fontSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+          Text(secondLine, color = textColor, fontSize = secondLineSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        }
+      }
     }
   }
 }

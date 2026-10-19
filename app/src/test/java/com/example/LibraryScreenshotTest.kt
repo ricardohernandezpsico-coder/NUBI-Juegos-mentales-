@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.example.data.AreaStatus
 import com.example.data.MeasurePoint
@@ -110,6 +112,9 @@ class LibraryScreenshotTest {
         }
       }
     }
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-ficha.png")
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-ficha.png")                // plegada (por defecto)
+    composeTestRule.onNodeWithTag("sheet_change").performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-ficha-desplegada.png")     // «Listo»: las dos secciones como siempre
   }
 }

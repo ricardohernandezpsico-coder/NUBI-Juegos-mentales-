@@ -11,7 +11,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onLast
@@ -99,18 +99,18 @@ class HoyFichaDesdeLaminaTest {
     rule.onNodeWithTag("isla_observatorio").performClick()
     rule.waitForIdle()
     rule.onNodeWithTag("place_sheet").assertIsDisplayed()
-    assertEquals("la ficha todavía no está", 0, rule.onAllNodes(hasText("Jugar a tu medida")).fetchSemanticsNodes().size)
+    assertEquals("la ficha todavía no está", 0, rule.onAllNodes(hasTestTag("sheet_play")).fetchSemanticsNodes().size)
 
     // la fila de Constelaciones (id `parejas`, área Memoria) en la lámina del Observatorio
     val row = "place_game_parejas"
     rule.onNodeWithTag(row).performScrollTo().performClick()
     rule.waitForIdle()
-    assertTrue("la ficha del juego se abre encima", rule.onAllNodes(hasText("Jugar a tu medida")).fetchSemanticsNodes().isNotEmpty())
+    assertTrue("la ficha del juego se abre encima", rule.onAllNodes(hasTestTag("sheet_play")).fetchSemanticsNodes().isNotEmpty())
     assertEquals("la partida NO se lanzó: el ViewModel sigue sin juego activo", null, vm.activeGame.value)
 
     rule.onAllNodesWithContentDescription("Cerrar").onLast().performClick()           // la X de la ficha (la lámina también tiene la suya: la de la ficha es la última, del diálogo)
     rule.waitForIdle()
-    assertEquals("cerrar la ficha", 0, rule.onAllNodes(hasText("Jugar a tu medida")).fetchSemanticsNodes().size)
+    assertEquals("cerrar la ficha", 0, rule.onAllNodes(hasTestTag("sheet_play")).fetchSemanticsNodes().size)
     rule.onNodeWithTag("place_sheet").assertIsDisplayed()
   }
 }

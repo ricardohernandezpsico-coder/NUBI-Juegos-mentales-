@@ -51,6 +51,36 @@ object RetoChoice {
 
   const val UNTIMED_LABEL = "Sin reloj"
 
+  // ---- Lo elegido, dicho en palabras (Tarea 140: la ficha con UNA decisión visible; funciones puras con pruebas) ----
+
+  /** El modo como suena en el botón «Jugar · …»: «a tu medida», «suave», «en Desafío», «en Experto». */
+  fun modeWords(mode: PlayMode): String = when (mode) {
+    PlayMode.SUAVE -> "suave"
+    PlayMode.A_TU_MEDIDA -> "a tu medida"
+    PlayMode.DESAFIO -> "en Desafío"
+    PlayMode.EXPERTO -> "en Experto"
+  }
+
+  /** «con reloj» o «sin reloj»; nada en un juego sin Reto (Correo): ahí no hay nada que decir del reloj. [timed] sin valor cuenta como «sin reloj». */
+  private fun clockWords(timed: Boolean?, supportsReto: Boolean): String? = if (!supportsReto) null else if (timed == true) "con reloj" else "sin reloj"
+
+  /** Lo elegido en dos o tres palabras: «a tu medida · con reloj», «suave · sin reloj», «en Desafío · con reloj»; en un juego sin Reto, solo «a tu medida». */
+  fun playDetail(mode: PlayMode, timed: Boolean?, supportsReto: Boolean): String =
+    listOfNotNull(modeWords(mode), clockWords(timed, supportsReto)).joinToString(" · ")
+
+  /** El texto del botón grande de la ficha: «Jugar · a tu medida · con reloj», «Jugar · suave · sin reloj», «Jugar · en Experto · sin reloj»; en un juego sin Reto, «Jugar · a tu medida». */
+  fun playLabel(mode: PlayMode, timed: Boolean?, supportsReto: Boolean): String = "Jugar · " + playDetail(mode, timed, supportsReto)
+
+  /** Lo mismo para el lector de pantalla, con comas en vez de puntos medios: «a tu medida, con reloj». */
+  fun playSpoken(mode: PlayMode, timed: Boolean?, supportsReto: Boolean): String =
+    listOfNotNull(modeWords(mode), clockWords(timed, supportsReto)).joinToString(", ")
+
+  /** La línea de resumen de la ficha plegada: «A tu medida · con reloj (2 min)», «Suave · sin reloj», «Desafío · con reloj (2 min)»; en un juego sin Reto, solo «A tu medida». [seconds] = la duración del Reto de ese juego. */
+  fun summaryLabel(mode: PlayMode, timed: Boolean?, supportsReto: Boolean, seconds: Int? = null): String {
+    val clock = clockWords(timed, supportsReto)?.let { if (timed == true && seconds != null) "$it (${durationText(seconds)})" else it }
+    return listOfNotNull(mode.label, clock).joinToString(" · ")
+  }
+
   /** La línea de ayuda de la opción elegida. */
   fun help(timed: Boolean): String =
     if (timed) "Hay un tiempo límite: haz todo lo que puedas antes de que se acabe."

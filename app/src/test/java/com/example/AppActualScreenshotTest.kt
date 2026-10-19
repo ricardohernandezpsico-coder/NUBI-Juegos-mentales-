@@ -173,7 +173,7 @@ class AppActualScreenshotTest {
                 CompositionLocalProvider(LocalBarInset provides BAR_DP.dp) { Box(top) { GamesLibraryScreen(viewModel = vm!!) } }
                 NavBar(AppTab.JUEGOS)
               }
-              Scene.FICHA -> Box(Modifier.fillMaxSize().background(Color(0xFF050823)).padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.BottomCenter) {
+              Scene.FICHA -> Box(Modifier.fillMaxSize().background(Color(0xFF050823)).padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
                   val g = GameRegistry.getById("radar")!!
                   val now = System.currentTimeMillis()
                   val glance = listOf(260f, 240f, 250f, 210f, 190f, 170f).let { v -> v.mapIndexed { i, x -> MeasurePoint(now - (v.size - i) * day, "glance", x, 0.5f, true) } }
